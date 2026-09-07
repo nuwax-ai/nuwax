@@ -29,6 +29,8 @@ export interface ConversationAgentFilePreviewProps {
   versionPanel?: React.ReactNode;
   /** 「数据库」页签内容 */
   databasePanel?: React.ReactNode;
+  /** 「远程桌面」页签内容 */
+  remoteDesktopPanel?: React.ReactNode;
   /** 外层容器类名（来自 useFileTreePreviewView） */
   providerClassName?: string;
   className?: string;
@@ -47,6 +49,7 @@ const ConversationAgentFilePreview: React.FC<
   previewPanel,
   versionPanel,
   databasePanel,
+  remoteDesktopPanel,
   providerClassName,
   className,
 }) => {
@@ -135,6 +138,15 @@ const ConversationAgentFilePreview: React.FC<
       );
     }
 
+    /** 显示远程桌面页签内容（与数据库同一内容区尺寸） */
+    if (activeTab?.type === 'tool' && activeTab.toolId === 'remote-desktop') {
+      return (
+        <div className={cx(styles['workspace-panel'])}>
+          {remoteDesktopPanel ?? <ToolTabContent toolId="remote-desktop" />}
+        </div>
+      );
+    }
+
     /** 显示其他工具内容 */
     if (showOtherToolContent && activeTab?.toolId) {
       return <ToolTabContent toolId={activeTab.toolId} />;
@@ -154,6 +166,7 @@ const ConversationAgentFilePreview: React.FC<
     activeTab?.type,
     activeTab?.toolId,
     databasePanel,
+    remoteDesktopPanel,
   ]);
 
   return (

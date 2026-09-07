@@ -2567,6 +2567,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPreview.unsavedChanges": "Unsaved changes",
   "PC.Pages.AppDevPreview.viewFullErrorInfo": "View full error details",
   "PC.Pages.AppDevPro.appPreview": "App preview",
+  "PC.Pages.AppDevPro.appPreviewEmpty": "No preview URL available for this environment",
   "PC.Pages.AppDevPro.database": "Database",
   "PC.Pages.AppDevPro.databaseDesc": "View and manage the app database",
   "PC.Pages.AppDevPro.databaseEmpty": "No URL available for this environment",

@@ -1,4 +1,5 @@
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
+import { SvgIcon } from '@/components/base';
 import { dict } from '@/services/i18nRuntime';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { ModelConfigInfo } from '@/types/interfaces/model';
@@ -10,7 +11,9 @@ import {
   CodeOutlined,
   DatabaseOutlined,
   FormOutlined,
+  LockOutlined,
   PushpinFilled,
+  ReloadOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
@@ -28,6 +31,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import type { Transform } from '@dnd-kit/utilities';
+import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
@@ -78,6 +82,10 @@ export interface PreviewTabBarProps {
   agentConfigInfo?: AgentConfigInfo;
   /** 切换模型 */
   onModelChange?: (modelId: number, modelName: string) => void | Promise<void>;
+  /** 当前环境的应用预览地址（传入后在操作区前展示地址栏） */
+  previewUrl?: string;
+  /** 刷新应用预览 iframe */
+  onRefreshPreview?: () => void;
 }
 
 interface TabItemFaceProps {
@@ -282,6 +290,9 @@ const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
   'subscription-setting': <SettingOutlined style={{ fontSize: 14 }} />,
   'subscription-stats': <BarChartOutlined style={{ fontSize: 14 }} />,
   database: <DatabaseOutlined style={{ fontSize: 14 }} />,
+  'remote-desktop': (
+    <SvgIcon name="icons-nav-computer-star" style={{ fontSize: 14 }} />
+  ),
 };
 
 /**
@@ -305,6 +316,8 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   originalModelConfigList,
   agentConfigInfo,
   onModelChange,
+  previewUrl,
+  onRefreshPreview,
 }) => {
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
@@ -677,6 +690,39 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
             />
           </div>
         </div>
+      </div>
+
+        {/* 当前应用预览地址栏 */}
+        {previewUrl !== undefined && (
+          <div className={cx(styles['preview-address-bar'])}>
+            <LockOutlined className={cx(styles['preview-address-lock'])} />
+            <span
+              className={cx(styles['preview-address-url'], {
+                [styles['preview-address-url-empty']]: !previewUrl,
+              })}
+              title={previewUrl || undefined}
+            >
+              {previewUrl || dict('PC.Pages.AppDevPro.appPreviewEmpty')}
+            </span>
+            <Tooltip
+              title={dict('PC.Pages.AppDevEditorHeaderRight.refreshPreview')}
+            >
+              <span className={cx(styles['preview-address-refresh-wrap'])}>
+                <button
+                  type="button"
+                  className={cx(styles['preview-address-refresh'])}
+                  aria-label={dict(
+                    'PC.Pages.AppDevEditorHeaderRight.refreshPreview',
+                  )}
+                  disabled={!previewUrl}
+                  onClick={onRefreshPreview}
+                >
+                  <ReloadOutlined />
+                </button>
+              </span>
+            </Tooltip>
+          </div>
+        )}
 
         {/* 更多操作菜单 */}
         <div className={cx(styles['tab-bar-actions'])}>
@@ -692,7 +738,6 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
             isCloudComputer={isCloudComputer}
           />
         </div>
-      </div>
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}
       <PreviewTabContextMenu

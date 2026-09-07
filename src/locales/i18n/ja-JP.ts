@@ -2595,6 +2595,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPreview.unsavedChanges": "未保存の変更",
   "PC.Pages.AppDevPreview.viewFullErrorInfo": "エラーの完全な詳細を表示する",
   "PC.Pages.AppDevPro.appPreview": "アプリプレビュー",
+  "PC.Pages.AppDevPro.appPreviewEmpty": "この環境のプレビュー先がありません",
   "PC.Pages.AppDevPro.database": "データベース",
   "PC.Pages.AppDevPro.databaseDesc": "アプリのデータベースを表示・管理します",
   "PC.Pages.AppDevPro.databaseEmpty": "この環境のアクセス先がありません",

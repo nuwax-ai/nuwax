@@ -2567,6 +2567,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPreview.unsavedChanges": "未保存的更改",
   "PC.Pages.AppDevPreview.viewFullErrorInfo": "查看完整错误信息",
   "PC.Pages.AppDevPro.appPreview": "应用预览",
+  "PC.Pages.AppDevPro.appPreviewEmpty": "暂无该环境的预览地址",
   "PC.Pages.AppDevPro.database": "数据库",
   "PC.Pages.AppDevPro.databaseDesc": "查看和管理应用数据库",
   "PC.Pages.AppDevPro.databaseEmpty": "暂无该环境的访问地址",

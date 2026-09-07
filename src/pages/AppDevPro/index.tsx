@@ -52,12 +52,14 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import AppDevProHeader from './AppDevProHeader';
+import AppDevAppPreviewPanel from './components/AppDevAppPreviewPanel';
 import AppDevDatabasePanel from './components/AppDevDatabasePanel';
 import AppDevRemoteDesktopPanel from './components/AppDevRemoteDesktopPanel';
 import AppDevSettingsModal from './components/AppDevSettingsModal';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
+  getToolTabId,
   usePreviewTabs,
   WORKSPACE_PREVIEW_TOOL_IDS,
   type PreviewToolId,
@@ -68,6 +70,7 @@ import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
 import {
   apiUserAppDomainList,
+  getUserAppPreviewUrl,
   type UserAppDomainInfo,
 } from './services/appDomain';
 import { UserAppDbEnvEnum } from './services/appDb';
@@ -179,8 +182,8 @@ const AppDevPro: React.FC = () => {
   >([]);
   /** 当前环境：开发 / 线上，Header 中间切换 */
   const [dbEnv, setDbEnv] = useState<UserAppDbEnvEnum>(UserAppDbEnvEnum.Dev);
-  /** 右侧工作区是否展示远程桌面（与文件树、终端全屏互斥） */
-  const [isAgentDesktopOpen, setIsAgentDesktopOpen] = useState<boolean>(false);
+  /** 应用预览 iframe 刷新计数 */
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
 
   // ==================== 全局状态模型 ====================
   /**
@@ -212,12 +215,6 @@ const AppDevPro: React.FC = () => {
     refreshGitListRef,
   } = useModel('conversationInfo');
 
-  /** 关闭远程桌面（切换标签/文件等预览操作时调用） */
-  const closeAgentDesktop = useCallback(() => {
-    setIsAgentDesktopOpen(false);
-    closePreviewView();
-  }, [closePreviewView]);
-
   /** 文件树数据 ref，供防抖保存读取最新列表 */
   const fileTreeDataRef = useRef(fileTreeData);
   /** 文件树数据 ref，供防抖保存读取最新列表 */
@@ -233,9 +230,9 @@ const AppDevPro: React.FC = () => {
     [conversationInfo, enableVersionControl],
   );
 
-  /** 常驻工作区工具页签 */
+  /** 常驻工作区工具页签（应用预览改为按需打开，可关闭） */
   const workspaceToolIds = useMemo((): PreviewToolId[] => {
-    const tools: PreviewToolId[] = ['preview'];
+    const tools: PreviewToolId[] = [];
     if (isVersionControlEnabled) {
       tools.push('version-control');
     }
@@ -766,25 +763,11 @@ const AppDevPro: React.FC = () => {
   };
 
   /**
-   * 切换中间文件树栏显隐（与终端全屏、远程桌面互斥，仅一个图标 active）
+   * 切换中间文件树栏显隐（与终端全屏互斥）
    */
   const handleToggleFileTreeSidebar = useCallback(() => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
-    // 如果远程桌面打开，则关闭远程桌面，并打开文件树
-    if (isAgentDesktopOpen) {
-      setIsAgentDesktopOpen(false);
-      setDevConsoleExpandSignal(0);
-      setCanShowFileView(true);
-      if (queryConversationId) {
-        handleRefreshFileList(queryConversationId);
-        void openPreviewView(queryConversationId);
-      }
-      if (isTerminalExpanded) {
-        setDevConsoleCollapseSignal((n) => n + 1);
-      }
-      return;
-    }
 
     // 如果终端全屏，则折叠终端，并打开文件树
     if (isTerminalExpanded) {
@@ -808,8 +791,6 @@ const AppDevPro: React.FC = () => {
     devConsoleActiveTab,
     devConsoleLayoutMode,
     handleRefreshFileList,
-    isAgentDesktopOpen,
-    openPreviewView,
     queryConversationId,
   ]);
 
@@ -818,11 +799,11 @@ const AppDevPro: React.FC = () => {
    * 同时关闭文件预览视图和取消文件树固定状态
    */
   const handleClosePreviewPanel = useCallback(() => {
-    closeAgentDesktop();
+    closePreviewView();
     setIsFileTreePinned(false);
     setSelectedChangeFile(null);
     previewTabsRef.current?.clearTabs();
-  }, [closeAgentDesktop, setIsFileTreePinned]);
+  }, [closePreviewView, setIsFileTreePinned]);
 
   /** 切换预览标签/文件时，底部终端若处于 expanded 则恢复 default */
   const resetDevConsoleExpandedLayout = useCallback(() => {
@@ -839,7 +820,6 @@ const AppDevPro: React.FC = () => {
       return;
     }
 
-    setIsAgentDesktopOpen(false);
     setSelectedChangeFile(null);
     if (queryConversationId) {
       void openPreviewView(queryConversationId);
@@ -858,11 +838,9 @@ const AppDevPro: React.FC = () => {
   const isTerminalPanelOpen =
     devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
 
-  /** 顶部三入口互斥 active：同一时刻仅高亮一个 */
-  const isFileTreeIconActive =
-    canShowFileView && !isTerminalPanelOpen && !isAgentDesktopOpen;
-  const isTerminalIconActive = isTerminalPanelOpen && !isAgentDesktopOpen;
-  const isDesktopIconActive = isAgentDesktopOpen;
+  /** 顶部入口互斥 active：同一时刻仅高亮一个 */
+  const isFileTreeIconActive = canShowFileView && !isTerminalPanelOpen;
+  const isTerminalIconActive = isTerminalPanelOpen;
 
   // ==================================== 文件视图 & 编排面板 ====================================
   /**
@@ -1029,7 +1007,6 @@ const AppDevPro: React.FC = () => {
     workspaceToolIds,
     // 打开文件标签
     onFileTabActivate: async (fileId, isDiff) => {
-      closeAgentDesktop();
       // 重置终端布局
       resetDevConsoleExpandedLayout();
       // 选中差异文件
@@ -1052,7 +1029,6 @@ const AppDevPro: React.FC = () => {
     },
     // 打开工具标签
     onToolTabActivate: (toolId: PreviewToolId) => {
-      closeAgentDesktop();
       // 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置
       if (skipDevConsoleResetRef.current) {
         skipDevConsoleResetRef.current = false;
@@ -1068,7 +1044,11 @@ const AppDevPro: React.FC = () => {
       // 选中差异文件
       setSelectedChangeFile(null);
       // 预览 / 编排 / 版本控制 / 数据库：工作区页签，收起文件预览侧栏
-      if (WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) || toolId === 'database') {
+      if (
+        WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) ||
+        toolId === 'database' ||
+        toolId === 'remote-desktop'
+      ) {
         closePreviewView();
         return;
       }
@@ -1081,6 +1061,11 @@ const AppDevPro: React.FC = () => {
   });
 
   previewTabsRef.current = previewTabs;
+
+  /** 进入页面时默认打开应用预览页签（可关闭，也可从 Header 再次打开） */
+  useEffect(() => {
+    previewTabsRef.current?.openToolTab('preview');
+  }, []);
 
   // ==================================== git 版本控制 ====================================
 
@@ -1258,9 +1243,19 @@ const AppDevPro: React.FC = () => {
     previewTabs.openToolTab('database');
   }, [previewTabs]);
 
+  /** 打开应用预览页签（已存在则激活） */
+  const handleOpenAppPreview = useCallback(() => {
+    previewTabs.openToolTab('preview');
+  }, [previewTabs]);
+
+  /** 刷新应用预览 iframe */
+  const handleRefreshPreview = useCallback(() => {
+    setPreviewRefreshKey((prev) => prev + 1);
+  }, []);
+
   /**
-   * 打开 / 切换远程桌面（与文件树、终端全屏互斥）
-   * 逻辑对齐 ConversationAgent，iframe 地址为 userapp VNC 代理
+   * 打开 / 关闭远程桌面页签
+   * 内容区与数据库页签同一尺寸；再次点击关闭
    */
   const handleOpenDesktopPanel = useCallback(() => {
     if (!appId) {
@@ -1268,30 +1263,38 @@ const AppDevPro: React.FC = () => {
       return;
     }
 
-    if (isAgentDesktopOpen) {
-      closePreviewView();
-      setIsAgentDesktopOpen(false);
-      setDevConsoleExpandSignal(0);
+    if (previewTabs.activeTab?.toolId === 'remote-desktop') {
+      previewTabs.closeTab(getToolTabId('remote-desktop'));
       return;
     }
 
-    setDevConsoleLayoutMode('collapsed');
-    setDevConsoleCollapseSignal(0);
-    setCanShowFileView(false);
-    setDevConsoleExpandSignal(0);
-    setIsAgentDesktopOpen(true);
-  }, [appId, closePreviewView, isAgentDesktopOpen]);
+    previewTabs.openToolTab('remote-desktop');
+  }, [appId, previewTabs]);
 
-  /** 切换环境：离开开发环境时关闭远程桌面 */
-  const handleEnvChange = useCallback((nextEnv: UserAppDbEnvEnum) => {
-    setDbEnv(nextEnv);
-    if (nextEnv !== UserAppDbEnvEnum.Dev) {
-      setIsAgentDesktopOpen(false);
-    }
-  }, []);
+  /** 切换环境：离开开发环境时关闭远程桌面页签 */
+  const handleEnvChange = useCallback(
+    (nextEnv: UserAppDbEnvEnum) => {
+      setDbEnv(nextEnv);
+      if (nextEnv !== UserAppDbEnvEnum.Dev) {
+        previewTabs.closeTab(getToolTabId('remote-desktop'));
+      }
+    },
+    [previewTabs],
+  );
 
   /** 数据库页签是否激活（Header 图标高亮） */
   const isDatabasePanelOpen = previewTabs.activeTab?.toolId === 'database';
+  /** 应用预览页签是否激活（Header 图标高亮） */
+  const isAppPreviewOpen = previewTabs.activeTab?.toolId === 'preview';
+  /** 远程桌面页签是否激活（Header 图标高亮） */
+  const isAgentDesktopOpen =
+    previewTabs.activeTab?.toolId === 'remote-desktop';
+
+  /** 当前环境对应的应用预览地址 */
+  const appPreviewUrl = useMemo(
+    () => getUserAppPreviewUrl(userAppDomainList, dbEnv),
+    [userAppDomainList, dbEnv],
+  );
 
   /** 「数据库」页签：按 Header 所选环境加载 iframe */
   const databasePanel = useMemo(
@@ -1299,13 +1302,21 @@ const AppDevPro: React.FC = () => {
     [appId, dbEnv],
   );
 
-  /**
-   * 渲染远程桌面，占满文件树 + 右侧面板工作区
-   */
-  const renderAgentDesktopPanel = () => (
-    <div className={cx(styles['agent-desktop-workspace'])}>
-      <AppDevRemoteDesktopPanel appId={appId} />
-    </div>
+  /** 「应用预览」页签：嵌入当前环境访问地址 */
+  const appPreviewPanel = useMemo(
+    () => (
+      <AppDevAppPreviewPanel
+        previewUrl={appPreviewUrl}
+        refreshKey={previewRefreshKey}
+      />
+    ),
+    [appPreviewUrl, previewRefreshKey],
+  );
+
+  /** 「远程桌面」页签：与数据库同一内容区嵌入 iframe */
+  const remoteDesktopPanel = useMemo(
+    () => <AppDevRemoteDesktopPanel appId={appId} />,
+    [appId],
   );
 
   // ==================================== 渲染组件元素 ====================================
@@ -1376,6 +1387,8 @@ const AppDevPro: React.FC = () => {
           }}
           /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
+          previewUrl={appPreviewUrl}
+          onRefreshPreview={handleRefreshPreview}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1387,8 +1400,11 @@ const AppDevPro: React.FC = () => {
               diffFile={gitSourceControl.selectedDiffFile ?? undefined}
               // 选中标签
               activeTab={previewTabs.activeTab}
+              // 应用预览页签
+              previewPanel={appPreviewPanel}
               // 数据库页签
               databasePanel={databasePanel}
+              remoteDesktopPanel={remoteDesktopPanel}
               // 版本控制面板（Git 提交记录）
               versionPanel={versionControlPanel}
               providerClassName={fileView.className}
@@ -1465,8 +1481,10 @@ const AppDevPro: React.FC = () => {
         onOpenSettings={() => setSettingsOpen(true)}
         isDatabasePanelOpen={isDatabasePanelOpen}
         onOpenDatabase={handleOpenDatabasePanel}
+        isAppPreviewOpen={isAppPreviewOpen}
+        onOpenAppPreview={handleOpenAppPreview}
         isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
-        isAgentDesktopOpen={isDesktopIconActive}
+        isAgentDesktopOpen={isAgentDesktopOpen}
         onOpenDesktopPanel={handleOpenDesktopPanel}
         env={dbEnv}
         onEnvChange={handleEnvChange}
@@ -1498,10 +1516,7 @@ const AppDevPro: React.FC = () => {
             })}
           >
             {/* 中间面板（文件树） + 右侧面板（文件预览 + 终端） */}
-            {isAgentDesktopOpen && appId ? (
-              renderAgentDesktopPanel()
-            ) : (
-              <>
+            <>
               {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
               <div
                 className={cx(styles['middle-panel'], {
@@ -1544,7 +1559,6 @@ const AppDevPro: React.FC = () => {
               {/* 右侧面板：文件预览 + 终端 */}
               {renderRightPanel()}
             </>
-            )}
           </div>
         </div>
       </section>

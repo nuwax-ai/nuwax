@@ -219,6 +219,71 @@
   gap: @marginXs;
 }
 
+.preview-address-bar {
+  display: flex;
+  align-items: center;
+  flex: 0 1 320px;
+  min-width: 180px;
+  max-width: 380px;
+  height: 32px;
+  margin-left: @marginXs;
+  padding: 0 10px 0 12px;
+  border: @lineWidth solid @colorBorder;
+  border-radius: 999px;
+  background: @colorBgContainer;
+  gap: 8px;
+}
+
+.preview-address-lock {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: @colorTextTertiary;
+}
+
+.preview-address-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 20px;
+  color: @colorText;
+  user-select: text;
+
+  &-empty {
+    color: @colorTextTertiary;
+  }
+}
+
+.preview-address-refresh-wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.preview-address-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: @colorTextTertiary;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: @colorText;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
 .add-tab-btn {
   display: inline-flex;
   align-items: center;
