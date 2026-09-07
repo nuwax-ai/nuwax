@@ -1,27 +1,16 @@
 import { t } from '@/services/i18nRuntime';
-import {
-  apiCustomPageCreateDomain,
-  apiCustomPageDeleteDomain,
-  apiCustomPageGetDomainList,
-  apiPageUpdateProject,
-} from '@/services/pageDev';
-import type { DomainInfo, PageUpdateParams } from '@/types/interfaces/pageDev';
 import { copyTextToClipboard } from '@/utils/clipboard';
-import { ExclamationCircleFilled, InfoCircleOutlined } from '@ant-design/icons';
-import {
-  Button,
-  Divider,
-  Input,
-  Modal,
-  Space,
-  Spin,
-  Switch,
-  Tag,
-  message,
-} from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { Button, Input, Modal, Space, Spin, message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useRequest } from 'umi';
+import {
+  apiUserAppDomainCreate,
+  apiUserAppDomainDelete,
+  UserAppDomainTypeEnum,
+  type UserAppDomainInfo,
+} from '../../services/appDomain';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -29,137 +18,76 @@ const cx = classNames.bind(styles);
 const DOMAIN_REGEX =
   /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
 
-/** 设置弹窗所需的项目字段 */
+/** 设置弹窗所需的应用字段（不含域名，域名由独立列表传入） */
 export interface AppDevSettingsProjectInfo {
   projectId: number;
   name: string;
-  needLogin?: boolean;
-  pageUrl?: string;
 }
 
 export interface AppDevSettingsModalProps {
   /** 是否显示弹窗 */
   open: boolean;
-  /** 当前项目详情 */
+  /** 当前应用详情 */
   projectInfo?: AppDevSettingsProjectInfo | null;
+  /** 应用绑定的域名列表 */
+  domains?: UserAppDomainInfo[];
+  /** 域名列表加载中 */
+  domainListLoading?: boolean;
   /** 关闭弹窗 */
   onCancel: () => void;
-  /** 保存认证配置成功后的回调 */
+  /** 域名变更成功后的回调 */
   onSuccess?: () => void;
 }
 
 /**
- * 从站点地址或当前页面解析主机名。
- */
-const resolveSiteHost = (siteUrl?: string): string => {
-  try {
-    if (siteUrl) {
-      return new URL(siteUrl).host;
-    }
-  } catch {
-    // ignore invalid siteUrl
-  }
-  return window.location.host;
-};
-
-/**
- * 计算平台默认分配的二级域名展示文案。
- */
-const getDefaultDomain = (
-  projectInfo?: AppDevSettingsProjectInfo | null,
-  siteUrl?: string,
-): string => {
-  const pageUrl = projectInfo?.pageUrl?.trim();
-  if (pageUrl) {
-    if (/^https?:\/\//i.test(pageUrl)) {
-      try {
-        return new URL(pageUrl).host;
-      } catch {
-        return pageUrl.replace(/^https?:\/\//i, '').split('/')[0];
-      }
-    }
-    if (!pageUrl.startsWith('/') && pageUrl.includes('.')) {
-      return pageUrl.split('/')[0];
-    }
-  }
-
-  const slug =
-    (projectInfo?.name || 'app')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'app';
-  return `${slug}.${resolveSiteHost(siteUrl)}`;
-};
-
-/**
- * AppDevPro 项目设置弹窗：复用平台认证 + 域名绑定。
+ * AppDevPro 项目设置弹窗：域名绑定。
  */
 const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
   open,
   projectInfo,
+  domains = [],
+  domainListLoading = false,
   onCancel,
   onSuccess,
 }) => {
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  const [reusePlatformAuth, setReusePlatformAuth] = useState(false);
-  const [domains, setDomains] = useState<DomainInfo[]>([]);
   const [domainInput, setDomainInput] = useState('');
-  const [listLoading, setListLoading] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
   const [bindLoading, setBindLoading] = useState(false);
 
   const projectId = projectInfo?.projectId;
+
   const defaultDomain = useMemo(
-    () => getDefaultDomain(projectInfo, tenantConfigInfo?.siteUrl),
-    [projectInfo, tenantConfigInfo?.siteUrl],
+    () =>
+      domains.find((item) => item.domainType === UserAppDomainTypeEnum.Default)
+        ?.domain || '',
+    [domains],
   );
 
-  const { run: runGetDomains } = useRequest(apiCustomPageGetDomainList, {
-    manual: true,
-    onSuccess: (result: DomainInfo[]) => {
-      setDomains(result || []);
-      setListLoading(false);
-    },
-    onError: () => {
-      setListLoading(false);
-    },
-  });
+  const customDomains = useMemo(
+    () =>
+      domains.filter(
+        (item) => item.domainType === UserAppDomainTypeEnum.Custom,
+      ),
+    [domains],
+  );
 
-  const { run: runAddDomain } = useRequest(apiCustomPageCreateDomain, {
+  const { run: runAddDomain } = useRequest(apiUserAppDomainCreate, {
     manual: true,
     onSuccess: () => {
       message.success(t('PC.Pages.AppDevSettingsModal.bindSuccess'));
       setDomainInput('');
       setBindLoading(false);
-      if (projectId) {
-        runGetDomains(projectId);
-      }
+      onSuccess?.();
     },
     onError: () => {
       setBindLoading(false);
     },
   });
 
-  const { run: runDeleteDomain } = useRequest(apiCustomPageDeleteDomain, {
+  const { run: runDeleteDomain } = useRequest(apiUserAppDomainDelete, {
     manual: true,
     onSuccess: () => {
       message.success(t('PC.Pages.AppDevSettingsModal.unbindSuccess'));
-      if (projectId) {
-        runGetDomains(projectId);
-      }
-    },
-  });
-
-  const { run: runUpdatePage } = useRequest(apiPageUpdateProject, {
-    manual: true,
-    onSuccess: () => {
-      message.success(t('PC.Pages.AppDevSettingsModal.saveSuccess'));
-      setSaveLoading(false);
       onSuccess?.();
-    },
-    onError: () => {
-      setSaveLoading(false);
-      setReusePlatformAuth(!!projectInfo?.needLogin);
     },
   });
 
@@ -167,15 +95,8 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
     if (!open) {
       return;
     }
-    setReusePlatformAuth(!!projectInfo?.needLogin);
     setDomainInput('');
-    if (projectId) {
-      setListLoading(true);
-      runGetDomains(projectId);
-    } else {
-      setDomains([]);
-    }
-  }, [open, projectId, projectInfo?.needLogin, runGetDomains]);
+  }, [open]);
 
   /**
    * 复制平台默认二级域名。
@@ -205,14 +126,14 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
       return;
     }
     setBindLoading(true);
-    runAddDomain({ projectId, domain });
+    runAddDomain({ appId: projectId, domain });
   }, [domainInput, projectId, runAddDomain]);
 
   /**
    * 解绑自定义域名。
    */
   const handleUnbindDomain = useCallback(
-    (domain: DomainInfo) => {
+    (domain: UserAppDomainInfo) => {
       Modal.confirm({
         title: t('PC.Pages.AppDevSettingsModal.unbindConfirmTitle'),
         icon: <ExclamationCircleFilled />,
@@ -223,36 +144,10 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
         okText: t('PC.Pages.AppDevSettingsModal.unbind'),
         okType: 'danger',
         cancelText: t('PC.Common.Global.cancel'),
-        onOk: () => runDeleteDomain({ id: domain.id }),
+        onOk: () => runDeleteDomain(domain.id),
       });
     },
     [runDeleteDomain],
-  );
-
-  /**
-   * 切换复用平台认证并立即保存。
-   */
-  const handleAuthChange = useCallback(
-    (checked: boolean) => {
-      if (!projectId || !projectInfo?.name) {
-        message.error(t('PC.Pages.AppDevSettingsModal.projectIdMissing'));
-        return;
-      }
-      setReusePlatformAuth(checked);
-      setSaveLoading(true);
-      const data: PageUpdateParams = {
-        projectId,
-        projectName: projectInfo.name,
-        needLogin: checked,
-      } as PageUpdateParams;
-      runUpdatePage(data);
-    },
-    [projectId, projectInfo?.name, runUpdatePage],
-  );
-
-  const customDomains = useMemo(
-    () => domains.filter((item) => item.domain !== defaultDomain),
-    [domains, defaultDomain],
   );
 
   return (
@@ -265,38 +160,23 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
       footer={null}
     >
       <div className={cx('settingsModal')}>
-        <div className={cx('authRow')}>
-          <div className={cx('authLabel')}>
-            {t('PC.Pages.AppDevSettingsModal.reusePlatformAuth')}
-          </div>
-          <Switch
-            checked={reusePlatformAuth}
-            loading={saveLoading}
-            onChange={handleAuthChange}
-          />
-        </div>
-        <div className={cx('authDesc')}>
-          <InfoCircleOutlined className={cx('authDescIcon')} />
-          <span>{t('PC.Pages.AppDevSettingsModal.reusePlatformAuthDesc')}</span>
-        </div>
-
-        <Divider className={cx('sectionDivider')} />
-
         <div className={cx('sectionTitle')}>
           {t('PC.Pages.AppDevSettingsModal.domainBinding')}
         </div>
 
-        <div className={cx('defaultDomain')}>
-          <div className={cx('defaultDomainInfo')}>
-            <div className={cx('defaultDomainLabel')}>
-              {t('PC.Pages.AppDevSettingsModal.defaultDomain')}
+        {defaultDomain ? (
+          <div className={cx('defaultDomain')}>
+            <div className={cx('defaultDomainInfo')}>
+              <div className={cx('defaultDomainLabel')}>
+                {t('PC.Pages.AppDevSettingsModal.defaultDomain')}
+              </div>
+              <div className={cx('defaultDomainValue')}>{defaultDomain}</div>
             </div>
-            <div className={cx('defaultDomainValue')}>{defaultDomain}</div>
+            <Button onClick={handleCopyDefaultDomain}>
+              {t('PC.Common.Global.copy')}
+            </Button>
           </div>
-          <Button onClick={handleCopyDefaultDomain}>
-            {t('PC.Common.Global.copy')}
-          </Button>
-        </div>
+        ) : null}
 
         <Space.Compact className={cx('bindRow')}>
           <Input
@@ -315,18 +195,11 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
           </Button>
         </Space.Compact>
 
-        <Spin spinning={listLoading}>
+        <Spin spinning={domainListLoading}>
           <div className={cx('domainList')}>
             {customDomains.map((domain) => (
               <div key={domain.id} className={cx('domainItem')}>
                 <span className={cx('domainName')}>{domain.domain}</span>
-                <Tag
-                  color={domain.status === 'pending' ? 'warning' : 'success'}
-                >
-                  {domain.status === 'pending'
-                    ? t('PC.Pages.AppDevSettingsModal.pending')
-                    : t('PC.Pages.AppDevSettingsModal.verified')}
-                </Tag>
                 <Button
                   type="text"
                   className={cx('unbindBtn')}

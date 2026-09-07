@@ -29,7 +29,7 @@ export async function apiUserAppCreate(
   });
 }
 
-/** 创建全栈应用 */
+/** 按应用ID查询（主键 id 即 app_id） */
 export async function apiUserAppGetById(
   id: number,
 ): Promise<RequestResponse<UserAppInfo>> {

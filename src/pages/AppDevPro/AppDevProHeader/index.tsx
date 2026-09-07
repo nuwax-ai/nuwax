@@ -3,35 +3,37 @@ import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
-import { PermissionsEnum } from '@/types/enums/common';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
+import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { CodeOutlined, FormOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
-import dayjs from 'dayjs';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { history } from 'umi';
+import CreateUserApp from '../components/CreateUserApp';
+import type { UserAppInfo } from '../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const defaultAgentIcon = agentImage as string;
+const defaultAppIcon = agentImage as string;
 
 /** 图片加载失败时使用默认图标 */
 const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
   e.currentTarget.onerror = null;
-  e.currentTarget.src = defaultAgentIcon;
+  e.currentTarget.src = defaultAppIcon;
 };
 
-export interface ConversationAgentHeaderProps {
+export interface AppDevProHeaderProps {
   /** 外层容器类名 */
   className?: string;
   /** 是否隐藏返回箭头 */
   hideBack?: boolean;
-  /** 智能体配置信息 */
-  agentConfigInfo?: AgentConfigInfo;
-  /** 编辑智能体 */
-  onEditAgent?: () => void;
+  /** 全栈应用详情 */
+  userAppInfo?: UserAppInfo | null;
+  /** 空间 ID（创建应用时使用） */
+  spaceId?: number;
+  /** 更新应用成功 */
+  onConfirmUpdate?: (info: UserAppInfo) => void;
   /** 点击发布 */
   onPublish?: () => void;
   /** 文件树侧边栏是否可见 */
@@ -47,13 +49,14 @@ export interface ConversationAgentHeaderProps {
 }
 
 /**
- * ConversationAgent 页面顶部 Header
+ * AppDevPro 页面顶部 Header
  */
-const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
+const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   className,
   hideBack = false,
-  agentConfigInfo,
-  onEditAgent,
+  userAppInfo,
+  spaceId,
+  onConfirmUpdate,
   onPublish,
   isFileTreeSidebarVisible = false,
   onToggleFileTreeSidebar,
@@ -61,27 +64,52 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
   onOpenTerminalPanel,
   onOpenSettings,
 }) => {
+  const [editOpen, setEditOpen] = useState(false);
+
   const displayName =
-    agentConfigInfo?.name || dict('PC.Pages.ConversationAgent.prototypeTitle');
+    userAppInfo?.name || dict('PC.Pages.ConversationAgent.prototypeTitle');
+
+  const handleOpenEdit = useCallback(() => {
+    setEditOpen(true);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditOpen(false);
+  }, []);
+
+  const handleConfirmUpdate = useCallback(
+    (info: UserAppInfo) => {
+      setEditOpen(false);
+      onConfirmUpdate?.(info);
+    },
+    [onConfirmUpdate],
+  );
 
   /** 发布按钮是否禁用 */
   const publishDisabled = useMemo(() => {
-    if (agentConfigInfo) {
-      return !agentConfigInfo.permissions?.includes(PermissionsEnum.Publish);
+    if (!userAppInfo) {
+      return true;
     }
-    return false;
-  }, [agentConfigInfo]);
+    return userAppInfo.publishStatus === PublishStatusEnum.Applying;
+  }, [userAppInfo]);
+
+  const showUnpublishedTag =
+    !!onPublish &&
+    !!userAppInfo &&
+    userAppInfo.publishStatus !== PublishStatusEnum.Published &&
+    userAppInfo.publishStatus !== PublishStatusEnum.Applying;
 
   return (
-    <header
-      className={cx(
-        'flex',
-        'items-center',
-        'relative',
-        styles.header,
-        className,
-      )}
-    >
+    <>
+      <header
+        className={cx(
+          'flex',
+          'items-center',
+          'relative',
+          styles.header,
+          className,
+        )}
+      >
       {/* 返回按钮 */}
       <ConditionRender condition={!hideBack}>
         <SvgIcon
@@ -93,46 +121,42 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
         />
       </ConditionRender>
 
-      {/* 智能体头像 */}
+      {/* 应用头像 */}
       <img
         className={cx(styles.avatar, { [styles['hide-back']]: hideBack })}
-        src={agentConfigInfo?.icon || defaultAgentIcon}
+        src={userAppInfo?.icon || defaultAppIcon}
         alt=""
         onError={handleError}
       />
 
-      {/* 智能体信息 */}
+      {/* 应用信息 */}
       <div className={cx('flex', 'items-center', styles['header-info'])}>
         <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
           {displayName}
         </h3>
 
         {/* 编辑按钮 */}
-        <ConditionRender condition={!!agentConfigInfo && !!onEditAgent}>
+        <ConditionRender condition={!!userAppInfo}>
           <Button
             type="text"
             icon={<FormOutlined />}
             className={cx(styles['edit-ico'])}
-            onClick={onEditAgent}
+            onClick={handleOpenEdit}
           />
         </ConditionRender>
       </div>
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/* 未发布变更提示 */}
-        {onPublish &&
-          agentConfigInfo?.publishDate !== null &&
-          dayjs(agentConfigInfo?.publishDate).isBefore(
-            agentConfigInfo?.modified,
-          ) && (
-            <Tag
-              bordered={false}
-              color="volcano"
-              className={cx(styles['publish-status-tag'])}
-            >
-              {dict('PC.Pages.AgentEdit.unpublishedChanges')}
-            </Tag>
-          )}
+        {showUnpublishedTag && (
+          <Tag
+            bordered={false}
+            color="volcano"
+            className={cx(styles['publish-status-tag'])}
+          >
+            {dict('PC.Pages.AgentEdit.unpublishedChanges')}
+          </Tag>
+        )}
 
         {/* 项目设置：始终显示 */}
         <TooltipIcon
@@ -180,7 +204,17 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
         )}
       </div>
     </header>
+
+    <CreateUserApp
+      open={editOpen}
+      mode={CreateUpdateModeEnum.Update}
+      spaceId={spaceId ?? userAppInfo?.spaceId}
+      userAppInfo={userAppInfo}
+      onCancel={handleCancelEdit}
+      onConfirmUpdate={handleConfirmUpdate}
+    />
+    </>
   );
 };
 
-export default ConversationAgentHeader;
+export default AppDevProHeader;

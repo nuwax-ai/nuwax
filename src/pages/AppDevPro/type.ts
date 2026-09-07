@@ -20,6 +20,8 @@ export interface CreateUserAppParams {
   name?: string;
   /** 应用描述 */
   description?: string;
+  /** 应用图标 */
+  icon?: string;
   /** 沙箱ID */
   sandboxId?: number;
 }
