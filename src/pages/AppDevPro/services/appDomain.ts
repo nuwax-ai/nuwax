@@ -1,3 +1,4 @@
+import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -76,5 +77,30 @@ export async function apiUserAppDomainDelete(id: number): Promise<RequestRespons
     data: {
       id,
     },
+  });
+}
+
+// ============================ 下架应用 ============================
+
+/** 下架应用参数 */
+export interface PublishedOffShelfParams {
+  /*类型，智能体、插件、工作流可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill,Model,PageApp,Mcp,UserApp */
+  targetType?: AgentComponentTypeEnum;
+
+  /*智能体、插件或工作流ID */
+  targetId?: number;
+
+  /*发布ID，下架时必填 */
+  publishId?: number;
+
+  /*是否仅下架模板，默认为false */
+  justOffShelfTemplate?: boolean;
+}
+
+// 智能体、插件、工作流下架
+export async function apiPublishedOffShelf(data: PublishedOffShelfParams): Promise<RequestResponse<null>> {
+  return request('/api/published/offShelf', {
+    method: 'POST',
+    data,
   });
 }
