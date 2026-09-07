@@ -83,6 +83,7 @@ const beSilentRequestList = (url: string): boolean => {
     '/api/custom-page/restart-dev', // 开发页面重启
     '/api/custom-page/get-dev-log', // 开发页面获取日志
     '/api/computer/logs', // 获取沙盒日志
+    '/api/userapp/logs/query', // 全栈应用日志
     '/api/computer/pod/keepalive', // 远程桌面容器保活
     '/api/computer/pod/vnc-status', // 远程桌面容器检查启动状态
     '/api/computer/pod/ensure', // 远程桌面容器触发重启

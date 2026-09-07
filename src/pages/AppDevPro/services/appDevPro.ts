@@ -5,6 +5,8 @@ import type {
   UpdateUserAppParams,
   UserAppDevTaskInfo,
   UserAppInfo,
+  UserAppLogsQueryParams,
+  UserAppLogsQueryResult,
   UserAppStartDevParams,
   UserProjectPageQueryParams,
 } from '../type';
@@ -144,6 +146,16 @@ export async function apiUserAppProdStop(
   data: UserAppStartDevParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/userapp/prod/stop', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 查询应用日志 */
+export async function apiUserAppLogsQuery(
+  data: UserAppLogsQueryParams,
+): Promise<RequestResponse<UserAppLogsQueryResult>> {
+  return request('/api/userapp/logs/query', {
     method: 'POST',
     data,
   });

@@ -1,6 +1,6 @@
 /**
- * ConversationAgent 沙盒日志轮询 Hook
- * 打开日志 Tab 时轮询 /api/computer/logs，渲染逻辑对齐 AppDev useDevLogs
+ * AppDevPro 应用日志轮询 Hook
+ * 打开日志 Tab 时轮询 /api/userapp/logs/query，渲染逻辑对齐 AppDev useDevLogs
  */
 
 import {
@@ -8,15 +8,14 @@ import {
   generateErrorFingerprint,
   getNewErrors,
   groupLogsByTimestamp,
+  parseLogEntry,
 } from '@/pages/AppDev/utils/devLogParser';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
+import type { RequestResponse } from '@/types/interfaces/request';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiGetAgentDevLog,
-  GetAgentDevLogResponse,
-  normalizeAgentDevLogEntries,
-} from '../services/agent-dev';
+import { apiUserAppLogsQuery } from '../services/appDevPro';
+import type { UserAppLogItem, UserAppLogsQueryResult } from '../type';
 
 /**
  * 沙盒日志 Hook 的配置选项
@@ -89,13 +88,66 @@ const getLatestErrorLogs = (logs: DevLogEntry[]): string => {
 };
 
 /**
- * ConversationAgent 沙盒日志管理 Hook
- * @param conversationId 会话 ID（对应接口 cId）
+ * 从接口回调中取出日志查询结果。
+ */
+const unwrapLogsResult = (
+  result: UserAppLogsQueryResult | RequestResponse<UserAppLogsQueryResult> | undefined,
+): UserAppLogsQueryResult | undefined => {
+  if (!result) {
+    return undefined;
+  }
+  if ('data' in result && result.data) {
+    return result.data;
+  }
+  if ('logs' in result || 'lines' in result || 'records' in result) {
+    return result as UserAppLogsQueryResult;
+  }
+  return undefined;
+};
+
+/**
+ * 将应用日志接口返回规范化为 DevLogEntry 列表。
+ *
+ * @param data 日志查询结果
+ * @returns 可供控制台渲染的日志条目
+ */
+const normalizeUserAppLogEntries = (
+  data: UserAppLogsQueryResult | string | undefined,
+): DevLogEntry[] => {
+  if (!data) {
+    return [];
+  }
+
+  if (typeof data === 'string') {
+    return data
+      .split('\n')
+      .filter((line) => line.length > 0)
+      .map((line, index) => parseLogEntry(line, index + 1));
+  }
+
+  const rawList = data.logs || data.lines || data.records;
+  if (!Array.isArray(rawList) || rawList.length === 0) {
+    return [];
+  }
+
+  return rawList.map((log: UserAppLogItem | string, index: number) => {
+    if (typeof log === 'string') {
+      return parseLogEntry(log, index + 1);
+    }
+    const content = log.content ?? log.message ?? log.text ?? '';
+    const lineNumber = log.line ?? index + 1;
+    return parseLogEntry(content, lineNumber);
+  });
+};
+
+/**
+ * AppDevPro 应用日志管理 Hook
+ * @param appId 应用 ID
  * @param options 轮询与拉取配置
  * @returns 日志状态与操作方法
  */
 export const useConversationAgentDevLogs = (
-  conversationId?: number,
+  appId?: number,
   options: UseConversationAgentDevLogsOptions = {},
 ): UseConversationAgentDevLogsReturn => {
   const { pollInterval = 5000, tailLines = 1000, enabled = false } = options;
@@ -112,13 +164,13 @@ export const useConversationAgentDevLogs = (
   const sentErrorsRef = useRef<Set<string>>(new Set());
   /** 上一轮日志快照，供 getNewErrors 对比增量 */
   const previousLogsRef = useRef<DevLogEntry[]>([]);
-  /** 当前会话 ID，避免轮询闭包读取过期值 */
-  const conversationIdRef = useRef(conversationId);
+  /** 当前应用 ID，避免轮询闭包读取过期值 */
+  const appIdRef = useRef(appId);
   /** 当前 tailLines，避免 useRequest 因依赖变化重建 */
   const tailLinesRef = useRef(tailLines);
 
   // 每次渲染都同步最新参数，避免 useEffect 异步更新导致「点击刷新时偶发读到旧值」。
-  conversationIdRef.current = conversationId;
+  appIdRef.current = appId;
   tailLinesRef.current = tailLines;
 
   /**
@@ -139,19 +191,20 @@ export const useConversationAgentDevLogs = (
   }, []);
 
   /**
-   * 使用 umi useRequest 轮询 /api/computer/logs
+   * 使用 umi useRequest 轮询 /api/userapp/logs/query
    * manual: true，由 enabled 变化时显式 start/stop
    */
   const devLogsPolling = useRequest(
     () => {
-      const currentConversationId = conversationIdRef.current;
-      if (!currentConversationId) {
+      const currentAppId = appIdRef.current;
+      if (!currentAppId) {
         return Promise.resolve([]);
       }
 
-      return apiGetAgentDevLog({
-        cId: currentConversationId,
-        tailLines: tailLinesRef.current,
+      return apiUserAppLogsQuery({
+        appId: currentAppId,
+        env: 'dev',
+        tail: tailLinesRef.current,
       });
     },
     {
@@ -161,8 +214,11 @@ export const useConversationAgentDevLogs = (
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
       throwOnError: false,
-      onSuccess: (data: GetAgentDevLogResponse) => {
-        const newLogs = normalizeAgentDevLogEntries(data);
+      onSuccess: (
+        result: UserAppLogsQueryResult | RequestResponse<UserAppLogsQueryResult>,
+      ) => {
+        const payload = unwrapLogsResult(result);
+        const newLogs = normalizeUserAppLogEntries(payload);
         updateLogsSnapshot(newLogs || []);
       },
       onError: () => {
@@ -207,8 +263,8 @@ export const useConversationAgentDevLogs = (
 
   /** 清空后手动触发一次拉取 */
   const refreshLogs = useCallback(async () => {
-    // conversationId 缺失时直接返回，避免出现“点击刷新但没有实际请求”的错觉。
-    if (!conversationIdRef.current) {
+    // appId 缺失时直接返回，避免出现“点击刷新但没有实际请求”的错觉。
+    if (!appIdRef.current) {
       return;
     }
 
@@ -240,9 +296,9 @@ export const useConversationAgentDevLogs = (
     });
   }, [logs]);
 
-  /** enabled 或 conversationId 变化时自动启停轮询 */
+  /** enabled 或 appId 变化时自动启停轮询 */
   useEffect(() => {
-    if (enabled && conversationId) {
+    if (enabled && appId) {
       startPolling();
     } else {
       stopPolling();
@@ -251,7 +307,7 @@ export const useConversationAgentDevLogs = (
     return () => {
       stopPolling();
     };
-  }, [enabled, conversationId, startPolling, stopPolling]);
+  }, [enabled, appId, startPolling, stopPolling]);
 
   /** 组件卸载时标记并停止轮询 */
   useEffect(() => {

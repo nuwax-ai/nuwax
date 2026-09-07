@@ -127,3 +127,66 @@ export interface UserAppDevTaskInfo {
   /** 更新时间 */
   modified: string;
 }
+
+export interface UserAppLogsQueryParams {
+  /*应用ID */
+  appId: number;
+
+  /*环境：dev 开发环境（默认）；prod 发布环境 */
+  env?: string;
+
+  /*增量拉取游标（上次响应返回的 cursor，支持断点续拉） */
+  cursor?: string;
+
+  /*关键字过滤（子串匹配） */
+  keyword?: string;
+
+  /*日志级别过滤，如 ["WARN","ERROR"]；空 = 不过滤 */
+  levels?: Record<string, unknown>[];
+
+  /*服务/日志源选择器 */
+  selectors?: {
+    /*服务ID（manifest 中声明的 service 名，如 "api"、"web"） */
+    serviceId: string;
+
+    /*日志源 ID 列表（空 = 该服务全部源） */
+    sourceIds?: Record<string, unknown>[];
+  }[];
+
+  /*起始时间过滤（RFC3339） */
+  since?: string;
+
+  /*每源尾部行数限制（单源上限 10000） */
+  tail?: number;
+
+  /*结束时间过滤（RFC3339） */
+  until?: string;
+}
+
+/** 应用日志单行 */
+export interface UserAppLogItem {
+  /** 行号 */
+  line?: number;
+  /** 日志内容 */
+  content?: string;
+  /** 日志内容（兼容 message 字段） */
+  message?: string;
+  /** 日志内容（兼容 text 字段） */
+  text?: string;
+  /** 时间戳 */
+  timestamp?: string;
+  /** 日志级别 */
+  level?: string;
+}
+
+/** 查询应用日志返回 */
+export interface UserAppLogsQueryResult {
+  /** 增量拉取游标 */
+  cursor?: string;
+  /** 日志列表 */
+  logs?: Array<UserAppLogItem | string>;
+  /** 日志列表（兼容 lines） */
+  lines?: Array<UserAppLogItem | string>;
+  /** 日志列表（兼容 records） */
+  records?: Array<UserAppLogItem | string>;
+}
