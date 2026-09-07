@@ -109,7 +109,8 @@ const useLayout = () => {
   };
 
   // 动态计算菜单宽度
-  // 单栏模式（主导航改造）：一级 icon 竖栏已移除，菜单宽度=侧栏宽度
+  // 单栏模式（style3 默认）：一级 icon 竖栏已移除，菜单宽度=侧栏宽度；
+  // 经典模式（style1/2）下仅用于移动端菜单平移动画的偏移基准
   const getCurrentMenuWidth = () => {
     return isSecondMenuCollapsed
       ? 0

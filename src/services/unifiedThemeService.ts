@@ -23,6 +23,7 @@ import {
   ThemeLayoutColorStyle,
   ThemeNavigationStyleType,
 } from '@/types/enums/theme';
+import { migrateLegacyNavigationStyleToStyle3 } from './navStyleMigration';
 
 /**
  * 统一主题配置接口
@@ -95,6 +96,10 @@ class UnifiedThemeService {
    */
   private loadUserSettings(): UnifiedThemeData | null {
     try {
+      // 一次性迁移：存量 style1/style2（单栏硬编码时期的默认回声）→ style3，
+      // 保证默认切到单栏后存量用户无感（guard 保证不覆盖迁移后的显式选择）
+      migrateLegacyNavigationStyleToStyle3(localStorage);
+
       // 从用户主题配置加载
       const userThemeConfig = localStorage.getItem(
         STORAGE_KEYS.USER_THEME_CONFIG,
@@ -435,10 +440,9 @@ class UnifiedThemeService {
         this.currentData.layoutStyle === ThemeLayoutColorStyle.DARK
           ? 'dark'
           : 'light';
-      const navigationStyleKey =
-        this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE1
-          ? 'style1'
-          : 'style2';
+      // 枚举值与组合键后缀同名（style1/style2/style3），直接透传；
+      // style3（单栏）的变量组克隆自 style1，缺失时走下方兜底
+      const navigationStyleKey = this.currentData.navigationStyle;
       const styleConfigKey = `${layoutStyleKey}-${navigationStyleKey}`;
 
       const styleConfig = STYLE_CONFIGS[styleConfigKey];
@@ -468,7 +472,9 @@ class UnifiedThemeService {
         'data-nav-style',
         this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE1
           ? 'compact'
-          : 'expanded',
+          : this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE3
+            ? 'sidebar'
+            : 'expanded',
       );
       this.updateBodyClasses();
     } catch (error) {
@@ -486,6 +492,7 @@ class UnifiedThemeService {
       'xagi-layout-dark',
       'xagi-nav-style1',
       'xagi-nav-style2',
+      'xagi-nav-style3',
     );
 
     // 添加当前样式对应的类名

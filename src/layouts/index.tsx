@@ -5,6 +5,7 @@ import {
 } from '@/constants/layout.constants';
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
@@ -45,8 +46,8 @@ const Layout: React.FC = () => {
 
   const { runQueryCategory } = useCategory();
 
-  // 导航风格管理（使用统一主题系统）
-  const { navigationStyle, layoutStyle } = useUnifiedTheme();
+  // 导航风格管理（使用统一主题系统）；渲染决策统一读 effective 值（桌面端锁定单栏）
+  const { effectiveNavigationStyle, layoutStyle } = useUnifiedTheme();
   const { isSecondMenuCollapsed } = useModel('layout');
   const { token } = theme.useToken();
 
@@ -227,9 +228,9 @@ const Layout: React.FC = () => {
         'h-full',
         styles.container,
         `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
-        `xagi-nav-${navigationStyle}`, // 导航风格类
+        `xagi-nav-${effectiveNavigationStyle}`, // 导航风格类
       ),
-    [layoutStyle, navigationStyle],
+    [layoutStyle, effectiveNavigationStyle],
   );
 
   /**
@@ -245,9 +246,9 @@ const Layout: React.FC = () => {
         ],
         styles['page-container'],
         styles[`xagi-layout-${layoutStyle}`],
-        styles[`xagi-nav-${navigationStyle}`],
+        styles[`xagi-nav-${effectiveNavigationStyle}`],
       ),
-    [layoutStyle, navigationStyle, isSecondMenuCollapsed],
+    [layoutStyle, effectiveNavigationStyle, isSecondMenuCollapsed],
   );
 
   return (
@@ -265,8 +266,10 @@ const Layout: React.FC = () => {
           isMobile={isMobile}
         />
 
-        {/* 悬浮菜单 */}
-        <HoverMenu />
+        {/* 悬浮菜单（经典布局折叠态专用；单栏模式不渲染） */}
+        {effectiveNavigationStyle !== ThemeNavigationStyleType.STYLE3 && (
+          <HoverMenu />
+        )}
 
         {/* 消息弹窗 */}
         <Message />

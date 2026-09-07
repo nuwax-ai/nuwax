@@ -312,6 +312,8 @@ const ThemeConfig: React.FC = () => {
             onNavigationThemeToggle={handleNavigationThemeToggle}
             onNavigationStyleChange={handleNavigationStyleChange}
             currentNavigationStyle={previewNavigationStyle}
+            // 租户模板仅支持经典两档：单栏（style3）为用户级布局类型，不对租户透出
+            availableStyles={['style1', 'style2']}
           />
         </div>
         <div className={cx(styles.configItem)}>

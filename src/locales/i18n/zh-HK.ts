@@ -896,6 +896,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.ThemeConfigNavigationStylePanel.style1Description": "緊湊模式：60px寬度，無文字顯示，頁面容器有外邊距和圓角",
   "PC.Components.ThemeConfigNavigationStylePanel.style1Name": "風格1",
   "PC.Components.ThemeConfigNavigationStylePanel.style2Description": "展開模式：88px寬度，顯示文字，頁面容器無外邊距和圓角",
+  "PC.Components.ThemeConfigNavigationStylePanel.style3Name": "單欄",
+  "PC.Components.ThemeConfigNavigationStylePanel.style3Description": "單欄模式：會話側欄常駐，配並列二級菜單列，默認佈局形態",
   "PC.Components.ThemeConfigNavigationStylePanel.style2Name": "風格2",
   "PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle": "風格樣式",
   "PC.Components.ThemeConfigThemeColorPanel.customName": "自定義",

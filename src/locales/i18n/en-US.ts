@@ -1030,6 +1030,8 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ThemeConfigNavigationStylePanel.style1Description": "Compact mode: 60px width, no text, container with margin and rounded corners.",
   "PC.Components.ThemeConfigNavigationStylePanel.style1Name": "Style 1",
   "PC.Components.ThemeConfigNavigationStylePanel.style2Description": "Expanded mode: 88px width with text, container without margin or rounded corners.",
+  "PC.Components.ThemeConfigNavigationStylePanel.style3Name": "Sidebar",
+  "PC.Components.ThemeConfigNavigationStylePanel.style3Description": "Sidebar mode: persistent conversation sidebar with a parallel secondary menu column. Default layout.",
   "PC.Components.ThemeConfigNavigationStylePanel.style2Name": "Style 2",
   "PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle": "Style",
   "PC.Components.ThemeConfigThemeColorPanel.customName": "Custom",

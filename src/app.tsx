@@ -266,7 +266,11 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         );
         document.documentElement.setAttribute(
           'data-nav-style',
-          data.navigationStyle === 'style1' ? 'compact' : 'expanded',
+          data.navigationStyle === 'style1'
+            ? 'compact'
+            : data.navigationStyle === 'style3'
+              ? 'sidebar'
+              : 'expanded',
         );
 
         unifiedThemeService.updateData(data, {

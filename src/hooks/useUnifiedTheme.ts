@@ -15,6 +15,7 @@ import {
   ThemeLayoutColorStyle,
   ThemeNavigationStyleType,
 } from '@/types/enums/theme';
+import { isNuwaClaw } from '@/utils/nuwaClawBridge';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
 
@@ -77,6 +78,11 @@ interface UseUnifiedThemeReturn {
   isNavigationExpanded: boolean;
   isChineseLanguage: boolean;
 
+  /** 实际生效的导航风格：桌面端（nuwaclaw webview）锁定单栏 style3，其余随配置 */
+  effectiveNavigationStyle: ThemeNavigationStyleType;
+  /** 导航风格是否被环境锁定（桌面端为 true，切换 UI 据此隐藏） */
+  isNavigationStyleLocked: boolean;
+
   // 额外功能
   extraColors: string[];
 }
@@ -105,6 +111,13 @@ export const useUnifiedTheme = (): UseUnifiedThemeReturn => {
       unifiedThemeService.removeListener(handleDataChange);
     };
   }, []);
+
+  // 桌面端锁定单栏：布局分发、壳 class 等渲染决策统一读 effective 值
+  // （须先于各 toggle/衍生计算声明）
+  const isNavigationStyleLocked = isNuwaClaw();
+  const effectiveNavigationStyle = isNavigationStyleLocked
+    ? ThemeNavigationStyleType.STYLE3
+    : data.navigationStyle;
 
   // 创建更新方法（带loading状态）
   const createUpdateMethod = useCallback(
@@ -158,12 +171,20 @@ export const useUnifiedTheme = (): UseUnifiedThemeReturn => {
   }, [data.layoutStyle, updateLayoutStyle]);
 
   const toggleNavigationStyle = useCallback(async () => {
+    // style3（单栏）是独立布局形态，不参与紧凑/展开互切；
+    // 桌面端锁定单栏（沉浸式折叠/壳同步只按单栏维护）
+    if (
+      isNavigationStyleLocked ||
+      data.navigationStyle === ThemeNavigationStyleType.STYLE3
+    ) {
+      return;
+    }
     const newStyle =
       data.navigationStyle === ThemeNavigationStyleType.STYLE1
         ? ThemeNavigationStyleType.STYLE2
         : ThemeNavigationStyleType.STYLE1;
     await updateNavigationStyle(newStyle);
-  }, [data.navigationStyle, updateNavigationStyle]);
+  }, [data.navigationStyle, isNavigationStyleLocked, updateNavigationStyle]);
 
   const toggleLanguage = useCallback(async () => {
     const newLanguage = data.language === 'zh-CN' ? 'en-US' : 'zh-CN';
@@ -218,6 +239,8 @@ export const useUnifiedTheme = (): UseUnifiedThemeReturn => {
     isNavigationDark,
     isNavigationExpanded,
     isChineseLanguage,
+    effectiveNavigationStyle,
+    isNavigationStyleLocked,
 
     // 额外功能
     extraColors,

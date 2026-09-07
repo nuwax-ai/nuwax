@@ -896,6 +896,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ThemeConfigNavigationStylePanel.style1Description": "コンパクト モード: 幅 60 ピクセル、テキストなし、マージンと丸い角のあるコンテナー。",
   "PC.Components.ThemeConfigNavigationStylePanel.style1Name": "スタイル1",
   "PC.Components.ThemeConfigNavigationStylePanel.style2Description": "拡張モード: テキストを含む幅 88 ピクセル、余白や丸い角のないコンテナ。",
+  "PC.Components.ThemeConfigNavigationStylePanel.style3Name": "シングルバー",
+  "PC.Components.ThemeConfigNavigationStylePanel.style3Description": "シングルバーモード：会話サイドバー常駐、並列サブメニュー列、既定のレイアウト。",
   "PC.Components.ThemeConfigNavigationStylePanel.style2Name": "スタイル2",
   "PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle": "スタイル",
   "PC.Components.ThemeConfigThemeColorPanel.customName": "カスタム",
