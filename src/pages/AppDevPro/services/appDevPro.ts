@@ -7,6 +7,7 @@ import type {
   UserAppInfo,
   UserAppLogsQueryParams,
   UserAppLogsQueryResult,
+  UserAppStageEnum,
   UserAppStartDevParams,
   UserProjectPageQueryParams,
 } from '../type';
@@ -160,3 +161,26 @@ export async function apiUserAppLogsQuery(
     data,
   });
 }
+
+/** 查询应用日志来源 */
+export async function apiUserAppLogsSourcesQuery(
+  id: number,
+  appStage: UserAppStageEnum,
+): Promise<RequestResponse<UserAppLogsQueryResult>> {
+  return request(`/api/userapp/${id}/${appStage}/logs/sources/query`, {
+    method: 'GET',
+  });
+}
+
+/**
+ * 开发环境远程桌面代理地址（iframe）
+ * /api/userapp/proxy/vnc/dev/{appId}/
+ *
+ * @param appId 应用 ID
+ * @returns 可嵌入 iframe 的绝对或相对地址
+ */
+export const getUserAppVncProxyUrl = (appId: number): string => {
+  const path = `/api/userapp/proxy/vnc/dev/${appId}/`;
+  const baseUrl = process.env.BASE_URL || '';
+  return `${baseUrl}${path}`;
+};

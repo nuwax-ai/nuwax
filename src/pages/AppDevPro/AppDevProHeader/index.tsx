@@ -41,7 +41,7 @@ export interface AppDevProHeaderProps {
   /** 更新应用成功 */
   onConfirmUpdate?: (info: UserAppInfo) => void;
   /** 点击发布 */
-  onPublish?: () => void;
+  onPublish: () => void;
   /** 文件树侧边栏是否可见 */
   isFileTreeSidebarVisible?: boolean;
   /** 切换文件树侧边栏显隐 */
@@ -56,6 +56,12 @@ export interface AppDevProHeaderProps {
   isDatabasePanelOpen?: boolean;
   /** 打开数据库页签 */
   onOpenDatabase?: () => void;
+  /** 是否显示远程桌面入口（仅开发环境） */
+  isShowDesktop?: boolean;
+  /** 远程桌面是否已打开 */
+  isAgentDesktopOpen?: boolean;
+  /** 打开 / 关闭远程桌面 */
+  onOpenDesktopPanel?: () => void;
   /** 当前环境 */
   env?: UserAppDbEnvEnum;
   /** 切换开发 / 线上环境 */
@@ -79,6 +85,9 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   onOpenSettings,
   isDatabasePanelOpen = false,
   onOpenDatabase,
+  isShowDesktop = false,
+  isAgentDesktopOpen = false,
+  onOpenDesktopPanel,
   env = UserAppDbEnvEnum.Dev,
   onEnvChange,
 }) => {
@@ -172,24 +181,31 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
         </ConditionRender>
       </div>
 
-      {/* 环境切换：水平居中 */}
-      <div className={cx(styles['env-switch'])}>
-        <span
-          className={cx(styles['env-item'], {
+      {/* 环境切换：样式对齐 MCP 编辑页中间菜单 */}
+      <div
+        className={cx(
+          'flex',
+          'items-center',
+          'content-center',
+          styles['env-switch'],
+        )}
+      >
+        <div
+          className={cx('cursor-pointer', styles['env-item'], {
             [styles.active]: env === UserAppDbEnvEnum.Dev,
           })}
           onClick={handleSelectDevEnv}
         >
           {dict('PC.Pages.AppDevPro.devEnv')}
-        </span>
-        <span
-          className={cx(styles['env-item'], {
+        </div>
+        <div
+          className={cx('cursor-pointer', styles['env-item'], {
             [styles.active]: env === UserAppDbEnvEnum.Prod,
           })}
           onClick={handleSelectProdEnv}
         >
           {dict('PC.Pages.AppDevPro.onlineEnv')}
-        </span>
+        </div>
       </div>
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
@@ -253,12 +269,35 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
           onClick={onOpenTerminalPanel}
         />
 
+        {/* 远程桌面：仅开发环境显示，交互对齐 ConversationAgent */}
+        <ConditionRender condition={isShowDesktop}>
+          <TooltipIcon
+            title={
+              isAgentDesktopOpen
+                ? dict(
+                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeAgentDesktop',
+                  )
+                : dict(
+                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openAgentDesktop',
+                  )
+            }
+            className={cx(styles['panel-btn'], {
+              [styles.active]: isAgentDesktopOpen,
+            })}
+            icon={
+              <SvgIcon
+                name="icons-nav-computer-star"
+                style={{ fontSize: 16 }}
+              />
+            }
+            onClick={onOpenDesktopPanel}
+          />
+        </ConditionRender>
+
         {/* 发布按钮 */}
-        {onPublish && (
-          <Button type="primary" onClick={onPublish} disabled={publishDisabled}>
-            {dict('PC.Pages.AgentEdit.publish')}
-          </Button>
-        )}
+        <Button type="primary" onClick={onPublish} disabled={publishDisabled}>
+          {dict('PC.Pages.AgentEdit.publish')}
+        </Button>
       </div>
     </header>
 

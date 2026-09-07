@@ -2,6 +2,11 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { TablePageRequest } from '@/types/interfaces/request';
 
+export enum UserAppStageEnum {
+  Dev = 'dev',
+  Prod = 'prod',
+}
+
 /** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
 export type UserProjectPageQueryParams = TablePageRequest<{
   spaceId: number;

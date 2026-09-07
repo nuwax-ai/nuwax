@@ -53,6 +53,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import AppDevProHeader from './AppDevProHeader';
 import AppDevDatabasePanel from './components/AppDevDatabasePanel';
+import AppDevRemoteDesktopPanel from './components/AppDevRemoteDesktopPanel';
 import AppDevSettingsModal from './components/AppDevSettingsModal';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
@@ -178,6 +179,8 @@ const AppDevPro: React.FC = () => {
   >([]);
   /** 当前环境：开发 / 线上，Header 中间切换 */
   const [dbEnv, setDbEnv] = useState<UserAppDbEnvEnum>(UserAppDbEnvEnum.Dev);
+  /** 右侧工作区是否展示远程桌面（与文件树、终端全屏互斥） */
+  const [isAgentDesktopOpen, setIsAgentDesktopOpen] = useState<boolean>(false);
 
   // ==================== 全局状态模型 ====================
   /**
@@ -208,6 +211,12 @@ const AppDevPro: React.FC = () => {
     restartVncPod,
     refreshGitListRef,
   } = useModel('conversationInfo');
+
+  /** 关闭远程桌面（切换标签/文件等预览操作时调用） */
+  const closeAgentDesktop = useCallback(() => {
+    setIsAgentDesktopOpen(false);
+    closePreviewView();
+  }, [closePreviewView]);
 
   /** 文件树数据 ref，供防抖保存读取最新列表 */
   const fileTreeDataRef = useRef(fileTreeData);
@@ -757,11 +766,25 @@ const AppDevPro: React.FC = () => {
   };
 
   /**
-   * 切换中间文件树栏显隐（与终端全屏互斥）
+   * 切换中间文件树栏显隐（与终端全屏、远程桌面互斥，仅一个图标 active）
    */
   const handleToggleFileTreeSidebar = useCallback(() => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+    // 如果远程桌面打开，则关闭远程桌面，并打开文件树
+    if (isAgentDesktopOpen) {
+      setIsAgentDesktopOpen(false);
+      setDevConsoleExpandSignal(0);
+      setCanShowFileView(true);
+      if (queryConversationId) {
+        handleRefreshFileList(queryConversationId);
+        void openPreviewView(queryConversationId);
+      }
+      if (isTerminalExpanded) {
+        setDevConsoleCollapseSignal((n) => n + 1);
+      }
+      return;
+    }
 
     // 如果终端全屏，则折叠终端，并打开文件树
     if (isTerminalExpanded) {
@@ -785,6 +808,8 @@ const AppDevPro: React.FC = () => {
     devConsoleActiveTab,
     devConsoleLayoutMode,
     handleRefreshFileList,
+    isAgentDesktopOpen,
+    openPreviewView,
     queryConversationId,
   ]);
 
@@ -793,11 +818,11 @@ const AppDevPro: React.FC = () => {
    * 同时关闭文件预览视图和取消文件树固定状态
    */
   const handleClosePreviewPanel = useCallback(() => {
-    closePreviewView();
+    closeAgentDesktop();
     setIsFileTreePinned(false);
     setSelectedChangeFile(null);
     previewTabsRef.current?.clearTabs();
-  }, [closePreviewView, setIsFileTreePinned]);
+  }, [closeAgentDesktop, setIsFileTreePinned]);
 
   /** 切换预览标签/文件时，底部终端若处于 expanded 则恢复 default */
   const resetDevConsoleExpandedLayout = useCallback(() => {
@@ -814,6 +839,7 @@ const AppDevPro: React.FC = () => {
       return;
     }
 
+    setIsAgentDesktopOpen(false);
     setSelectedChangeFile(null);
     if (queryConversationId) {
       void openPreviewView(queryConversationId);
@@ -832,9 +858,11 @@ const AppDevPro: React.FC = () => {
   const isTerminalPanelOpen =
     devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
 
-  /** 顶部入口互斥 active：同一时刻仅高亮一个 */
-  const isFileTreeIconActive = canShowFileView && !isTerminalPanelOpen;
-  const isTerminalIconActive = isTerminalPanelOpen;
+  /** 顶部三入口互斥 active：同一时刻仅高亮一个 */
+  const isFileTreeIconActive =
+    canShowFileView && !isTerminalPanelOpen && !isAgentDesktopOpen;
+  const isTerminalIconActive = isTerminalPanelOpen && !isAgentDesktopOpen;
+  const isDesktopIconActive = isAgentDesktopOpen;
 
   // ==================================== 文件视图 & 编排面板 ====================================
   /**
@@ -1001,6 +1029,7 @@ const AppDevPro: React.FC = () => {
     workspaceToolIds,
     // 打开文件标签
     onFileTabActivate: async (fileId, isDiff) => {
+      closeAgentDesktop();
       // 重置终端布局
       resetDevConsoleExpandedLayout();
       // 选中差异文件
@@ -1023,6 +1052,7 @@ const AppDevPro: React.FC = () => {
     },
     // 打开工具标签
     onToolTabActivate: (toolId: PreviewToolId) => {
+      closeAgentDesktop();
       // 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置
       if (skipDevConsoleResetRef.current) {
         skipDevConsoleResetRef.current = false;
@@ -1228,6 +1258,38 @@ const AppDevPro: React.FC = () => {
     previewTabs.openToolTab('database');
   }, [previewTabs]);
 
+  /**
+   * 打开 / 切换远程桌面（与文件树、终端全屏互斥）
+   * 逻辑对齐 ConversationAgent，iframe 地址为 userapp VNC 代理
+   */
+  const handleOpenDesktopPanel = useCallback(() => {
+    if (!appId) {
+      message.warning(dict('PC.Pages.AppDevPro.remoteDesktopEmpty'));
+      return;
+    }
+
+    if (isAgentDesktopOpen) {
+      closePreviewView();
+      setIsAgentDesktopOpen(false);
+      setDevConsoleExpandSignal(0);
+      return;
+    }
+
+    setDevConsoleLayoutMode('collapsed');
+    setDevConsoleCollapseSignal(0);
+    setCanShowFileView(false);
+    setDevConsoleExpandSignal(0);
+    setIsAgentDesktopOpen(true);
+  }, [appId, closePreviewView, isAgentDesktopOpen]);
+
+  /** 切换环境：离开开发环境时关闭远程桌面 */
+  const handleEnvChange = useCallback((nextEnv: UserAppDbEnvEnum) => {
+    setDbEnv(nextEnv);
+    if (nextEnv !== UserAppDbEnvEnum.Dev) {
+      setIsAgentDesktopOpen(false);
+    }
+  }, []);
+
   /** 数据库页签是否激活（Header 图标高亮） */
   const isDatabasePanelOpen = previewTabs.activeTab?.toolId === 'database';
 
@@ -1235,6 +1297,15 @@ const AppDevPro: React.FC = () => {
   const databasePanel = useMemo(
     () => <AppDevDatabasePanel appId={appId} env={dbEnv} />,
     [appId, dbEnv],
+  );
+
+  /**
+   * 渲染远程桌面，占满文件树 + 右侧面板工作区
+   */
+  const renderAgentDesktopPanel = () => (
+    <div className={cx(styles['agent-desktop-workspace'])}>
+      <AppDevRemoteDesktopPanel appId={appId} />
+    </div>
   );
 
   // ==================================== 渲染组件元素 ====================================
@@ -1394,8 +1465,11 @@ const AppDevPro: React.FC = () => {
         onOpenSettings={() => setSettingsOpen(true)}
         isDatabasePanelOpen={isDatabasePanelOpen}
         onOpenDatabase={handleOpenDatabasePanel}
+        isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
+        isAgentDesktopOpen={isDesktopIconActive}
+        onOpenDesktopPanel={handleOpenDesktopPanel}
         env={dbEnv}
-        onEnvChange={setDbEnv}
+        onEnvChange={handleEnvChange}
       />
 
       {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}
@@ -1424,7 +1498,10 @@ const AppDevPro: React.FC = () => {
             })}
           >
             {/* 中间面板（文件树） + 右侧面板（文件预览 + 终端） */}
-            <>
+            {isAgentDesktopOpen && appId ? (
+              renderAgentDesktopPanel()
+            ) : (
+              <>
               {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
               <div
                 className={cx(styles['middle-panel'], {
@@ -1467,6 +1544,7 @@ const AppDevPro: React.FC = () => {
               {/* 右侧面板：文件预览 + 终端 */}
               {renderRightPanel()}
             </>
+            )}
           </div>
         </div>
       </section>
