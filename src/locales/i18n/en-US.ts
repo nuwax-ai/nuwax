@@ -5978,4 +5978,14 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': 'Setting recall results',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': 'Failed to parse history record results',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'Query click event triggered',
+  // Experts · Skills · Connectors framework page
+  'PC.Pages.ExpertSkillConnector.pageTitle': 'Experts · Skills · Connectors',
+  'PC.Pages.ExpertSkillConnector.menuExpert': 'Experts & Expert Teams',
+  'PC.Pages.ExpertSkillConnector.menuSkill': 'Skills',
+  'PC.Pages.ExpertSkillConnector.menuConnector': 'Connectors',
+  'PC.Pages.ExpertSkillConnector.mainTabSystem': 'System Square',
+  'PC.Pages.ExpertSkillConnector.mainTabTeam': 'Team Space',
+  'PC.Pages.ExpertSkillConnector.tabAll': 'All',
+  'PC.Pages.ExpertSkillConnector.searchPlaceholder': 'Search by name or description...',
+  'PC.Pages.ExpertSkillConnector.more': 'More',
 };

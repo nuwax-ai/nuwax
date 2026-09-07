@@ -1,12 +1,10 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
-  apiConnectorProviderPageList,
   apiConnectorRuntimeExecute,
   apiSystemConnectorProviderDetail,
 } from '@/services/systemManage';
 import type {
   ConnectorProviderAction,
-  ConnectorProviderInfo,
   ConnectorRuntimeExecuteResult,
 } from '@/types/interfaces/systemManage';
 import { MinusOutlined } from '@ant-design/icons';
@@ -17,22 +15,15 @@ import styles from './index.less';
 /** 调试接口默认空间 ID（与连接器管理页保持一致） */
 const DEFAULT_SPACE_ID = 52;
 
-/** 列表一次拉全量：pageNum 固定 1、pageSize 固定 2000 */
-const DEBUG_LIST_PAGE_NUM = 1;
-const DEBUG_LIST_PAGE_SIZE = 2000;
-
 export interface ConnectorActionDebugModalProps {
   /** 是否打开 */
   open: boolean;
   /** 空间 ID（不传时按默认值 52） */
   spaceId?: number | string;
-  /**
-   * 默认选中的连接器 service：详情抽屉「调试」按钮传入当前连接器，
-   * 弹窗初始化时优先选中它（不传则按列表第一条，管理端独立入口的历史行为）
-   */
+  /** 调试目标连接器 service（固定展示，不可切换其他连接器） */
   defaultService?: string;
   /**
-   * 默认选中的动作 actionKey：详情抽屉「调试」按钮传入所点工具，
+   * 默认选中的动作 actionKey：详情页「调试」按钮传入所点工具，
    * 拉到详情后优先选中它（不传或匹配不到则选第一个动作）
    */
   defaultActionKey?: string;
@@ -60,18 +51,16 @@ const toArgsTemplate = (
  * 工具调试弹窗
  *
  * 打开时数据流（初始化逻辑）：
- *   1. GET /api/connector/providers?spaceId=&pageNum=1&pageSize=2000
- *      —— 分页拉连接器列表（data.records），默认选中 defaultService
- *      （详情抽屉「调试」传入的当前连接器），未传回退列表第一条
- *   2. GET /api/connector/providers/{service}?spaceId=
- *      —— 拉详情（provider + actions）
- *   3. 动作下拉默认选中 defaultActionKey 匹配项（详情抽屉传入的所点工具），
+ *   1. GET /api/connector/providers/{service}?spaceId=
+ *      —— 直接拉传入连接器（defaultService，固定展示不可切换）的详情
+ *   2. 动作下拉默认选中 defaultActionKey 匹配项（详情页「调试」传入的所点工具），
  *      匹配不到回退第一个，并按其 inputArgs 生成输入参数 JSON 模板
  *
- * 左栏「执行参数」：连接器 / 动作 / 使用连接 三个下拉 + 输入参数 JSON 文本域 +
- * 「执行」按钮（POST /api/connector/runtime/execute）
- * 右栏「执行结果」：深色标题栏（可折叠）+ 米色结果区，pretty JSON 展示响应
- * data（success / message / data / errorCode / meta），未执行时展示「尚未执行。」
+ * 左栏「执行参数」：连接器（只读展示）+ 动作下拉 + 输入参数 JSON 文本域 +
+ * 「执行」按钮（POST /api/connector/runtime/execute，跟随系统主题色）
+ * 右栏「执行结果」：实色标题栏（可折叠）+ 淡填充结果区（背景/文字色均随主题
+ * 切换），pretty JSON 展示响应 data（success / message / data / errorCode /
+ * meta），未执行时展示「尚未执行。」
  */
 const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
   open,
@@ -80,14 +69,10 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
   defaultActionKey,
   onClose,
 }) => {
-  // 初始化加载中（拉连接器列表）
+  // 连接器详情加载中（初始化拉详情；外层 Spin 与动作下拉 loading 共用）
   const [loading, setLoading] = useState<boolean>(false);
-  // 连接器详情加载中（切换连接器时刷新动作下拉）
-  const [detailLoading, setDetailLoading] = useState<boolean>(false);
-  // 连接器列表（下拉数据源）
-  const [providers, setProviders] = useState<ConnectorProviderInfo[]>([]);
-  // 当前选中的连接器 service
-  const [selectedService, setSelectedService] = useState<string>();
+  // 当前连接器展示名（详情接口 provider.displayName，缺失回退 service）
+  const [providerName, setProviderName] = useState<string>('');
   // 当前连接器详情（actions 为动作下拉数据源）
   const [detailActions, setDetailActions] = useState<ConnectorProviderAction[]>(
     [],
@@ -115,18 +100,6 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
     return Math.min(920, Math.max(360, window.innerWidth - 48));
   }, []);
 
-  /** 连接器下拉选项（展示 displayName，缺失回退 service） */
-  const providerOptions = useMemo(
-    () =>
-      providers
-        .filter((item) => item?.service)
-        .map((item) => ({
-          label: item.displayName || item.service,
-          value: item.service,
-        })),
-    [providers],
-  );
-
   /** 动作下拉选项（设计稿展示形态：名称（actionKey）） */
   const actionOptions = useMemo(
     () =>
@@ -143,13 +116,13 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
 
   /**
    * 拉取连接器详情并重置动作选择：
-   * 动作优先选 preferredActionKey 匹配项（详情抽屉「调试」传入的 actionKey），
-   * 匹配不到回退第一条；同时生成输入参数 JSON 模板
+   * 动作优先选 preferredActionKey 匹配项（详情页「调试」传入的 actionKey），
+   * 匹配不到回退第一条；同时回填连接器展示名、生成输入参数 JSON 模板
    */
   const fetchDetail = useCallback(
     async (service: string, preferredActionKey?: string) => {
       try {
-        setDetailLoading(true);
+        setLoading(true);
         const response = await apiSystemConnectorProviderDetail({
           service,
           spaceId: resolvedSpaceId,
@@ -159,6 +132,7 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
         if (response?.code !== SUCCESS_CODE) {
           throw new Error(response?.message || 'fetch detail failed');
         }
+        setProviderName(response.data?.provider?.displayName || service);
         const actions = response.data?.actions ?? [];
         setDetailActions(actions);
         const preferredAction =
@@ -175,22 +149,22 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
         );
         setArgsJson(toArgsTemplate(preferredAction));
       } catch {
+        setProviderName('');
         setDetailActions([]);
         setSelectedActionKey(undefined);
         setArgsJson('');
         message.error('加载连接器详情失败');
       } finally {
-        setDetailLoading(false);
+        setLoading(false);
       }
     },
     [resolvedSpaceId],
   );
 
-  // 打开弹窗：拉连接器列表 → 默认选中第一条 → 拉其详情；关闭时重置全部状态
+  // 打开弹窗：直接拉传入连接器（固定展示，不可切换）的详情；关闭时重置全部状态
   useEffect(() => {
     if (!open) {
-      setProviders([]);
-      setSelectedService(undefined);
+      setProviderName('');
       setDetailActions([]);
       setSelectedActionKey(undefined);
       setArgsJson('');
@@ -199,55 +173,12 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
       return;
     }
 
-    let cancelled = false;
-    (async () => {
-      try {
-        setLoading(true);
-        const response = await apiConnectorProviderPageList({
-          spaceId: resolvedSpaceId,
-          pageNum: DEBUG_LIST_PAGE_NUM,
-          pageSize: DEBUG_LIST_PAGE_SIZE,
-        });
-        if (cancelled) return;
-        if (response?.code !== SUCCESS_CODE) {
-          throw new Error(response?.message || 'fetch providers failed');
-        }
-        const records = response.data?.records ?? [];
-        setProviders(records);
-        // 默认选中：详情抽屉传入的连接器（defaultService）优先，回退列表第一条；
-        // 动作优先选传入的 actionKey（fetchDetail 内处理匹配与回退）
-        const initialService = defaultService ?? records[0]?.service;
-        if (initialService) {
-          setSelectedService(initialService);
-          await fetchDetail(initialService, defaultActionKey);
-        }
-      } catch {
-        if (!cancelled) {
-          message.error('加载连接器列表失败');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    if (defaultService) {
+      void fetchDetail(defaultService, defaultActionKey);
+    }
     // fetchDetail 依赖 resolvedSpaceId，此处随 spaceId 变化重新初始化；
-    // defaultService/defaultActionKey 由详情抽屉每次打开前设置，随 open 一起生效
+    // defaultService/defaultActionKey 由详情页每次打开前设置，随 open 一起生效
   }, [open, resolvedSpaceId, defaultService, defaultActionKey, fetchDetail]);
-
-  /** 切换连接器：刷新动作下拉与输入参数模板，旧执行结果失效清空 */
-  const handleServiceChange = useCallback(
-    async (service: string) => {
-      setSelectedService(service);
-      setResult(undefined);
-      await fetchDetail(service);
-    },
-    [fetchDetail],
-  );
 
   /** 切换动作：重生成输入参数模板，旧执行结果失效清空 */
   const handleActionChange = useCallback(
@@ -270,7 +201,7 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
    * - 业务失败（如 connection_required）由 data.success=false 传达，不算请求错误
    */
   const handleExecute = useCallback(async () => {
-    if (!selectedService || !selectedActionKey) return;
+    if (!defaultService || !selectedActionKey) return;
 
     let args: Record<string, unknown> = {};
     const trimmed = argsJson.trim();
@@ -295,7 +226,7 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
     try {
       setExecuting(true);
       const response = await apiConnectorRuntimeExecute({
-        providerService: selectedService,
+        providerService: defaultService,
         actionKey: selectedActionKey,
         args,
       });
@@ -312,7 +243,7 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
     } finally {
       setExecuting(false);
     }
-  }, [selectedService, selectedActionKey, argsJson]);
+  }, [defaultService, selectedActionKey, argsJson]);
 
   return (
     <Modal
@@ -333,14 +264,14 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
 
             <div className={styles.field}>
               <div className={styles.fieldLabel}>连接器</div>
-              <Select
-                value={selectedService}
-                options={providerOptions}
-                onChange={handleServiceChange}
-                placeholder="请选择连接器"
-                showSearch
-                optionFilterProp="label"
-              />
+              {/* 固定展示当前传入的连接器（只读，不可切换其他连接器）：
+                  展示名取详情接口 provider.displayName，加载中回退 service */}
+              <div
+                className={styles.connectorValue}
+                title={providerName || defaultService}
+              >
+                {providerName || defaultService || '-'}
+              </div>
             </div>
 
             <div className={styles.field}>
@@ -349,21 +280,10 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
                 value={selectedActionKey}
                 options={actionOptions}
                 onChange={handleActionChange}
-                placeholder={detailLoading ? '加载中…' : '请选择动作'}
-                loading={detailLoading}
+                placeholder={loading ? '加载中…' : '请选择动作'}
+                loading={loading}
                 showSearch
                 optionFilterProp="label"
-              />
-            </div>
-
-            <div className={styles.field}>
-              <div className={styles.fieldLabel}>使用连接</div>
-              <Select
-                value="auto"
-                options={[
-                  // 暂无连接列表接口：仅提供自动匹配（第一个 active 连接）
-                  { label: '自动（第一个 active 连接）', value: 'auto' },
-                ]}
               />
             </div>
 
@@ -379,13 +299,13 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
               />
             </div>
 
-            {/* 执行：POST /api/connector/runtime/execute，结果展示在右侧「执行结果」区 */}
+            {/* 执行：POST /api/connector/runtime/execute，结果展示在右侧「执行结果」区。
+                不写死背景色，type="primary" 走主题变量，跟随系统主题自动切换颜色 */}
             <Button
               type="primary"
               className={styles.executeButton}
-              style={{ background: '#1f1f1f' }}
               loading={executing}
-              disabled={!selectedService || !selectedActionKey}
+              disabled={!defaultService || !selectedActionKey}
               onClick={handleExecute}
             >
               执行

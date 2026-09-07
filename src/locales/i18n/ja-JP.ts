@@ -5942,4 +5942,14 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': '召回結果を設定',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': '履歴レコード結果の解析に失敗',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'クエリクリックイベントが発生',
+  // 専門家・スキル・コネクタ フレームページ
+  'PC.Pages.ExpertSkillConnector.pageTitle': '専門家・スキル・コネクタ',
+  'PC.Pages.ExpertSkillConnector.menuExpert': '専門家&専門家チーム',
+  'PC.Pages.ExpertSkillConnector.menuSkill': 'スキル',
+  'PC.Pages.ExpertSkillConnector.menuConnector': 'コネクタ',
+  'PC.Pages.ExpertSkillConnector.mainTabSystem': 'システム広場',
+  'PC.Pages.ExpertSkillConnector.mainTabTeam': 'チームスペース',
+  'PC.Pages.ExpertSkillConnector.tabAll': 'すべて',
+  'PC.Pages.ExpertSkillConnector.searchPlaceholder': '名前または説明で検索...',
+  'PC.Pages.ExpertSkillConnector.more': 'もっと見る',
 };

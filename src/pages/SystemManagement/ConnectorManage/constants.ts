@@ -34,3 +34,9 @@ export const STATUS_OPTIONS: Array<{ label: string; value: string }> = [
   { label: '启用', value: 'enabled' },
   { label: '停用', value: 'disabled' },
 ];
+
+/* 连接状态筛选选项（管理侧筛选器与空间侧 connected 参数共用） */
+export const CONNECTED_OPTIONS: Array<{ label: string; value: string }> = [
+  { label: '已连接', value: 'true' },
+  { label: '未连接', value: 'false' },
+];

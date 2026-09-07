@@ -116,6 +116,11 @@ const routes = [
         path: '/space/:spaceId/connector',
         component: '@/pages/SpaceResource/Connector',
       },
+      // 连接器详情子页面（列表"查看"跳转；service/spaceId 走 query）
+      {
+        path: '/space/:spaceId/connector/detail',
+        component: '@/pages/ConnectorProviderDetail',
+      },
       // 资源定价
       {
         path: '/space/:spaceId/resource-pricing',
@@ -197,6 +202,28 @@ const routes = [
       {
         path: '/square/publish/skill/:skillId',
         component: '@/pages/Square/SkillDetail',
+      },
+      // 专家·技能·连接器框架页（左侧分类菜单 + 右侧聚合内容，组件内按路径解析）
+      {
+        path: '/expert-skill-connector',
+        redirect: '/expert-skill-connector/expert',
+      },
+      {
+        path: '/expert-skill-connector/expert',
+        component: '@/pages/ExpertSkillConnector',
+      },
+      {
+        path: '/expert-skill-connector/skill',
+        component: '@/pages/ExpertSkillConnector',
+      },
+      {
+        path: '/expert-skill-connector/connector',
+        component: '@/pages/ExpertSkillConnector',
+      },
+      // 专家·技能·连接器-"更多"聚合列表页（框架内子路由，不携带来源页筛选状态）
+      {
+        path: '/expert-skill-connector/list/:resourceType',
+        component: '@/pages/ExpertSkillConnector',
       },
       {
         path: '/history-conversation',
@@ -295,6 +322,12 @@ const routes = [
             path: 'connector-manage',
             name: getRouteLabel('PC.Routes.connectorManage'),
             component: '@/pages/SystemManagement/ConnectorManage',
+          },
+          // 连接器详情子页面（列表"查看"跳转，不进菜单；service 走 query）
+          {
+            path: 'connector-manage/detail',
+            component: '@/pages/ConnectorProviderDetail',
+            hideInMenu: true,
           },
           {
             path: 'model/pricing',

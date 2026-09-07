@@ -1,0 +1,69 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.toolbar {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+
+  // 主行：主tab居左，搜索/更多靠右（全局工具类未提供 justify-between，此处局部实现）
+  .toolbar-main {
+    justify-content: space-between;
+  }
+
+  .toolbar-right {
+    gap: 12px;
+  }
+
+  .search-input {
+    width: 240px;
+    border-radius: 8px;
+    background-color: @WHITE08;
+
+    &:hover {
+      background-color: #fff;
+    }
+  }
+
+  .more-btn {
+    flex-shrink: 0;
+    font-size: @fontSizeSm;
+    color: @GRAY05;
+    white-space: nowrap;
+
+    &:hover {
+      color: @colorPrimary;
+    }
+  }
+
+  // 占位隐藏（visibility 保留布局空间，且不可点击）
+  .more-btn-hidden {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .category-tabs {
+    gap: 8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  .category-tab {
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: @fontSizeSm;
+    color: @GRAY05;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: @BLANK04;
+      background-color: @WHITE04;
+    }
+  }
+
+  .category-tab-active {
+    color: @BLANK04;
+    background-color: @WHITE08;
+    font-weight: 500;
+  }
+}

@@ -5938,4 +5938,14 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': '設置召回結果',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': '解析歷史記錄結果失敗',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'Query點擊事件觸發',
+  // 專家·技能·連接器框架頁
+  'PC.Pages.ExpertSkillConnector.pageTitle': '專家·技能·連接器',
+  'PC.Pages.ExpertSkillConnector.menuExpert': '專家&專家團',
+  'PC.Pages.ExpertSkillConnector.menuSkill': '技能',
+  'PC.Pages.ExpertSkillConnector.menuConnector': '連接器',
+  'PC.Pages.ExpertSkillConnector.mainTabSystem': '系統廣場',
+  'PC.Pages.ExpertSkillConnector.mainTabTeam': '團隊空間',
+  'PC.Pages.ExpertSkillConnector.tabAll': '全部',
+  'PC.Pages.ExpertSkillConnector.searchPlaceholder': '搜索名稱或描述...',
+  'PC.Pages.ExpertSkillConnector.more': '更多',
 };

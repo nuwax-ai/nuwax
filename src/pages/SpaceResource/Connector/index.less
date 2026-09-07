@@ -1,47 +1,13 @@
-/* 空间连接器页面：白底（与项目其他页面背景一致） */
+/* 空间连接器页面：表格四边不加 padding，撑满内容区 */
 .page {
   min-height: 100%;
-  padding: 16px 20px 24px;
   background: #fff;
   border-radius: 8px;
 }
 
-/* ---------- 筛选栏 ---------- */
-.filterBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-}
+/* ---------- 空间选择器（页面顶部、新增连接器按钮左侧） ---------- */
 
-/* 关键字输入框（带搜索图标时 className 落在 affix 包装层上）；
-   位于状态/连接筛选之后，行内定宽展示（inline-flex，行内效果同 inline-block，
-   但保留 antd 内部前缀图标/清除按钮的垂直居中），高度与筛选项容器一致。
-   antd 类名必须 :global 包裹，否则被 CSS Modules 哈希后选择器不生效 */
-.searchInput:global(.ant-input-affix-wrapper) {
-  display: inline-flex;
-  align-items: center;
-
-  /* 加长到能完整放下 placeholder（前缀图标 + 「搜索空间连接器（名称 / service / 分类 / 标签）」） */
-  width: 370px;
-  height: 32px;
-  max-width: 100%;
-  background: #fff;
-  border-color: #ddd8d0;
-  border-radius: 6px;
-
-  &:hover,
-  &:focus,
-  &:global(.ant-input-affix-wrapper-focused) {
-    border-color: #b8b2a6;
-  }
-}
-
-.searchIcon {
-  color: #8a857c;
-}
-
-/* 筛选项：一个白底细边框容器内含「标签: + 下拉」（与管理端 LightFilter 视觉对齐） */
+/* 空间选择器容器：白底细边框（与管理端 LightFilter 视觉对齐） */
 .filterItem {
   display: flex;
   align-items: center;
@@ -67,34 +33,20 @@
   white-space: nowrap;
 }
 
-.filterItemSelect {
-  min-width: 56px;
-}
-
 /* 空间选择器：选项为空间名，稍宽 */
 .spaceSelect {
   min-width: 160px;
   max-width: 240px;
 }
 
-.flexSpace {
-  flex: 1 1 auto;
-}
-
-/* ---------- 卡片网格 ---------- */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
+/* 空间列表加载中 */
 .loadingWrap {
   display: flex;
   justify-content: center;
   padding: 96px 0;
 }
 
+/* 当前账号没有空间 */
 .emptyWrap {
   display: flex;
   justify-content: center;

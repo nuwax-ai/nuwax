@@ -5974,4 +5974,14 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': '设置召回结果',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': '解析历史记录结果失败',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'Query点击事件触发',
+  // 专家·技能·连接器框架页
+  'PC.Pages.ExpertSkillConnector.pageTitle': '专家·技能·连接器',
+  'PC.Pages.ExpertSkillConnector.menuExpert': '专家&专家团',
+  'PC.Pages.ExpertSkillConnector.menuSkill': '技能',
+  'PC.Pages.ExpertSkillConnector.menuConnector': '连接器',
+  'PC.Pages.ExpertSkillConnector.mainTabSystem': '系统广场',
+  'PC.Pages.ExpertSkillConnector.mainTabTeam': '团队空间',
+  'PC.Pages.ExpertSkillConnector.tabAll': '全部',
+  'PC.Pages.ExpertSkillConnector.searchPlaceholder': '搜索名称或描述...',
+  'PC.Pages.ExpertSkillConnector.more': '更多',
 };

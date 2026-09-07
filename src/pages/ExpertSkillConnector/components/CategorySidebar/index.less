@@ -1,0 +1,52 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.sidebar {
+  flex-shrink: 0;
+  width: 200px;
+  height: 100%;
+  padding: 16px 12px;
+  border-right: 1px solid @WHITE14;
+  overflow-y: auto;
+
+  .title {
+    padding: 4px 8px 16px;
+    font-size: @fontSizeLg;
+    font-weight: 600;
+    color: @BLANK04;
+  }
+
+  .menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: @fontSize;
+    color: @GRAY04;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: @BLANK04;
+      background-color: @WHITE04;
+    }
+  }
+
+  .menu-item-active {
+    color: @purple;
+    background-color: @GRAY08;
+    font-weight: 500;
+  }
+
+  .menu-icon {
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+}
