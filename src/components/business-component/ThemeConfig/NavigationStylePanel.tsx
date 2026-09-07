@@ -26,30 +26,28 @@ interface NavigationStylePanelProps {
   availableStyles?: string[];
 }
 
-const ALL_NAVIGATION_STYLES: NavigationStyle[] = [
+/** 全量导航风格（词表 key 骨架；词条在组件体内取，跟随语言切换刷新） */
+const ALL_NAVIGATION_STYLE_KEYS = [
   {
     id: 'style1',
-    name: t('PC.Components.ThemeConfigNavigationStylePanel.style1Name'),
-    description: t(
+    nameKey: 'PC.Components.ThemeConfigNavigationStylePanel.style1Name',
+    descriptionKey:
       'PC.Components.ThemeConfigNavigationStylePanel.style1Description',
-    ),
   },
   {
     id: 'style2',
-    name: t('PC.Components.ThemeConfigNavigationStylePanel.style2Name'),
-    description: t(
+    nameKey: 'PC.Components.ThemeConfigNavigationStylePanel.style2Name',
+    descriptionKey:
       'PC.Components.ThemeConfigNavigationStylePanel.style2Description',
-    ),
   },
   {
     id: 'style3',
-    name: t('PC.Components.ThemeConfigNavigationStylePanel.style3Name'),
-    description: t(
+    nameKey: 'PC.Components.ThemeConfigNavigationStylePanel.style3Name',
+    descriptionKey:
       'PC.Components.ThemeConfigNavigationStylePanel.style3Description',
-    ),
     isDefault: true,
   },
-];
+] as const;
 
 const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
   isNavigationDarkMode,
@@ -62,10 +60,14 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
   // 风格切换整节隐藏，仅保留导航深浅色切换
   const isNavStyleLocked = isNuwaClaw();
 
-  // 导航栏风格配置（按可选集合过滤）
-  const navigationStyles: NavigationStyle[] = ALL_NAVIGATION_STYLES.filter(
-    (style) => !availableStyles || availableStyles.includes(style.id),
-  );
+  // 导航栏风格配置（渲染期取词 + 按可选集合过滤）
+  const navigationStyles: NavigationStyle[] = ALL_NAVIGATION_STYLE_KEYS.map(
+    ({ nameKey, descriptionKey, ...skeleton }) => ({
+      ...skeleton,
+      name: t(nameKey),
+      description: t(descriptionKey),
+    }),
+  ).filter((style) => !availableStyles || availableStyles.includes(style.id));
 
   // 导航栏风格状态管理（使用传入的值或默认值）
   const [localNavigationStyle, setLocalNavigationStyle] = useState<string>(
@@ -123,8 +125,8 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
                       style.id === 'style1'
                         ? styles.compactNavbar
                         : style.id === 'style2'
-                          ? styles.expandedNavbar
-                          : styles.sidebarNavbar,
+                        ? styles.expandedNavbar
+                        : styles.sidebarNavbar,
                     )}
                   >
                     {style.id === 'style3' ? (
