@@ -35,6 +35,15 @@ const PROJECT_STRATEGIES: Partial<
     getUrl: ({ spaceId, targetId, conversationId }) =>
       `/space/${spaceId}/agent-dev?agentId=${targetId}&conversationId=${conversationId}`,
   },
+  [AgentComponentTypeEnum.UserApp]: {
+    getUrl: ({ spaceId, targetId, conversationId }) =>
+      `/space/${spaceId}/app-pro?appId=${targetId}&conversationId=${conversationId}`,
+  },
+  // todo： 根据实际需求，修改跳转路径
+  [AgentComponentTypeEnum.NormalProject]: {
+    getUrl: ({ spaceId, targetId, conversationId }) =>
+      `/space/${spaceId}/app-pro?appId=${targetId}&conversationId=${conversationId}`,
+  },
   [AgentComponentTypeEnum.PageApp]: {
     getUrl: ({ spaceId, targetId }) => `/space/${spaceId}/app-dev/${targetId}`,
   },
@@ -71,6 +80,7 @@ export const createProjectAndNavigate = async ({
     spaceId,
     targetType: flowTargetType,
     subType: payload.subType,
+    sandboxId: payload.computerId ? Number(payload.computerId) : undefined,
   });
   const { targetId, conversationId } = res.data;
 

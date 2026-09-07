@@ -123,10 +123,10 @@ export interface PublishItem {
 
 // 提交发布申请请求参数
 export interface PublishApplyParams {
-  // 类型，智能体、插件、工作流、技能可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill
+  // 发布目标类型,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill,Model,PageApp,Mcp,UserApp
   targetType: AgentComponentTypeEnum;
 
-  /* 发布目标ID，例如智能体ID；工作流ID；插件ID；技能ID */
+  /* 发布目标ID，例如智能体ID；工作流ID；插件ID；技能ID；应用ID */
   targetId?: number;
 
   /* 发布记录 */

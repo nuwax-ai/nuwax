@@ -114,6 +114,11 @@ const routes = [
         path: '/space/:spaceId/model-manage',
         component: '@/pages/SpaceResource/ModelManage',
       },
+      // 连接器
+      {
+        path: '/space/:spaceId/connector',
+        component: '@/pages/SpaceResource/Connector',
+      },
       // 资源定价
       {
         path: '/space/:spaceId/resource-pricing',
@@ -288,6 +293,11 @@ const routes = [
             path: 'model/manage',
             name: getRouteLabel('PC.Routes.publicModelManagement'),
             component: '@/pages/GlobalModelManage',
+          },
+          {
+            path: 'connector-manage',
+            name: getRouteLabel('PC.Routes.connectorManage'),
+            component: '@/pages/SystemManagement/ConnectorManage',
           },
           {
             path: 'model/pricing',
@@ -570,6 +580,12 @@ const routes = [
     path: '/space/:spaceId/app-dev/:projectId',
     component: '@/pages/AppDev',
     wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
+    layout: false,
+  },
+  {
+    path: '/space/:spaceId/app-pro',
+    component: '@/pages/AppDevPro',
+    wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
   },
   {

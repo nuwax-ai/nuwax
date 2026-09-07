@@ -41,6 +41,8 @@ function XProTable<
   props: ProTableProps<DataType, Params, ValueType> & {
     fullHeight?: boolean;
     scrollYOffset?: number;
+    /** 虚拟列表单行高度，适合两行内容等自定义 row 高度场景 */
+    listItemHeight?: number;
     /** 是否显示工具栏右侧的操作按钮（查询/重置），默认为 true */
     showQueryButtons?: boolean;
     /** 是否显示序号列（支持自定义），默认为 true。若 columns 中已存在 index 列，以此为准。 */
@@ -52,6 +54,7 @@ function XProTable<
   const {
     fullHeight = true,
     scrollYOffset,
+    listItemHeight,
     onReset,
     showQueryButtons = true,
     showIndex = false,
@@ -321,6 +324,7 @@ function XProTable<
         <ProTable<DataType, Params, ValueType>
           {...COMMON_PRO_TABLE_PROPS}
           {...restProps}
+          {...(typeof listItemHeight === 'number' ? { listItemHeight } : {})}
           form={mergedForm}
           formRef={formRef}
           actionRef={actionRef}

@@ -178,6 +178,10 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
       else if (pathname.includes('mcp')) {
         resolvedPath = `/space/${spaceId}/mcp`;
       }
+      // 连接器
+      else if (pathname.includes('connector')) {
+        resolvedPath = `/space/${spaceId}/connector`;
+      }
       // 任务中心
       else if (pathname.includes('task-center')) {
         resolvedPath = `/space/${spaceId}/task-center`;
