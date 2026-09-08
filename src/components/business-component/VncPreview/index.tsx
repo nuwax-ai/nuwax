@@ -40,6 +40,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       className,
       idleDetection,
       onReconnect,
+      appStage,
     },
     ref,
   ) => {
@@ -47,6 +48,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [iframeUrl, setIframeUrl] = useState<string | null>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const appStageRef = useRef(appStage);
+    appStageRef.current = appStage;
 
     // 空闲警告弹窗状态
     const [showIdleWarning, setShowIdleWarning] = useState<boolean>(false);
@@ -68,7 +71,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       maxRetryDuration: 60000, // 最长重试 1 分钟
       retryStatusCodes: [404], // 仅对 404 重试
       checkFn: async () => {
-        const res = await apiCheckVncStatus(Number(cId));
+        const res = await apiCheckVncStatus(Number(cId), appStageRef.current);
         const isReady = res.data?.novnc_ready ?? false;
         return { ok: isReady, status: isReady ? 200 : 404 };
       },

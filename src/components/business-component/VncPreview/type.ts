@@ -71,6 +71,11 @@ export interface VncPreviewProps {
    * 未传入时，重试按钮仅执行本地 connect（兼容旧用法）。
    */
   onReconnect?: () => Promise<void> | void;
+  /**
+   * 全栈应用环境，仅 AppDevPro 传入。
+   * 未传时 vnc-status 老接口不带 appStage。
+   */
+  appStage?: 'dev' | 'prod';
 }
 
 export type ConnectionStatus =

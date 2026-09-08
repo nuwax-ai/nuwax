@@ -1,4 +1,4 @@
-@import '@/styles/color';
+@import '@/styles/color.less';
 @import '@/styles/token';
 
 .header {
@@ -50,31 +50,30 @@
   }
 
   .env-switch {
+    gap: 10px;
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
+    top: 50%;
+    height: 40px;
+    padding: 0 8px;
+    transform: translate(-50%, -50%);
+    border-radius: 5px;
+    background: @WHITE21;
 
-  .env-item {
-    padding: 4px 12px;
-    font-size: 14px;
-    line-height: 22px;
-    color: @navFirstMenuTextSecondary;
-    cursor: pointer;
-    border-radius: 6px;
-    user-select: none;
-    white-space: nowrap;
+    .env-item {
+      height: 32px;
+      line-height: 32px;
+      padding: 0 15px;
+      font-size: 14px;
+      color: @BLANK04;
+      user-select: none;
+      white-space: nowrap;
 
-    &:hover:not(.active) {
-      background: @colorFillTertiary;
-    }
-
-    &.active {
-      color: @colorText;
-      background: #e8e8e8;
+      &.active {
+        border-radius: 5px;
+        background: @WHITE;
+        color: @BLUE07;
+      }
     }
   }
 

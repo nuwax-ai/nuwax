@@ -42,6 +42,8 @@ export interface AppDevProHeaderProps {
   onConfirmUpdate?: (info: UserAppInfo) => void;
   /** 点击发布 */
   onPublish?: () => void;
+  /** 发布进行中（构建 / 提交申请） */
+  publishing?: boolean;
   /** 文件树侧边栏是否可见 */
   isFileTreeSidebarVisible?: boolean;
   /** 切换文件树侧边栏显隐 */
@@ -56,6 +58,16 @@ export interface AppDevProHeaderProps {
   isDatabasePanelOpen?: boolean;
   /** 打开数据库页签 */
   onOpenDatabase?: () => void;
+  /** 是否显示远程桌面入口（仅开发环境） */
+  isShowDesktop?: boolean;
+  /** 远程桌面是否已打开 */
+  isAgentDesktopOpen?: boolean;
+  /** 打开 / 关闭远程桌面 */
+  onOpenDesktopPanel?: () => void;
+  /** 应用预览页签是否处于激活状态 */
+  isAppPreviewOpen?: boolean;
+  /** 打开应用预览页签 */
+  onOpenAppPreview?: () => void;
   /** 当前环境 */
   env?: UserAppDbEnvEnum;
   /** 切换开发 / 线上环境 */
@@ -72,6 +84,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   spaceId,
   onConfirmUpdate,
   onPublish,
+  publishing = false,
   isFileTreeSidebarVisible = false,
   onToggleFileTreeSidebar,
   isTerminalPanelOpen = false,
@@ -79,6 +92,11 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   onOpenSettings,
   isDatabasePanelOpen = false,
   onOpenDatabase,
+  isShowDesktop = false,
+  isAgentDesktopOpen = false,
+  onOpenDesktopPanel,
+  isAppPreviewOpen = false,
+  onOpenAppPreview,
   env = UserAppDbEnvEnum.Dev,
   onEnvChange,
 }) => {
@@ -105,11 +123,11 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
 
   /** 发布按钮是否禁用 */
   const publishDisabled = useMemo(() => {
-    if (!userAppInfo) {
+    if (!userAppInfo || publishing) {
       return true;
     }
     return userAppInfo.publishStatus === PublishStatusEnum.Applying;
-  }, [userAppInfo]);
+  }, [publishing, userAppInfo]);
 
   const showUnpublishedTag =
     !!onPublish &&
@@ -172,98 +190,144 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
           </ConditionRender>
         </div>
 
-        {/* 环境切换：水平居中 */}
-        <div className={cx(styles['env-switch'])}>
-          <span
-            className={cx(styles['env-item'], {
+        {/* 环境切换：样式对齐 MCP 编辑页中间菜单 */}
+        <div
+          className={cx(
+            'flex',
+            'items-center',
+            'content-center',
+            styles['env-switch'],
+          )}
+        >
+          <div
+            className={cx('cursor-pointer', styles['env-item'], {
               [styles.active]: env === UserAppDbEnvEnum.Dev,
             })}
             onClick={handleSelectDevEnv}
           >
             {dict('PC.Pages.AppDevPro.devEnv')}
-          </span>
-          <span
-            className={cx(styles['env-item'], {
+          </div>
+          <div
+            className={cx('cursor-pointer', styles['env-item'], {
               [styles.active]: env === UserAppDbEnvEnum.Prod,
             })}
             onClick={handleSelectProdEnv}
           >
             {dict('PC.Pages.AppDevPro.onlineEnv')}
-          </span>
+          </div>
         </div>
 
         <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-          {/* 未发布变更提示 */}
-          {showUnpublishedTag && (
-            <Tag
-              bordered={false}
-              color="volcano"
-              className={cx(styles['publish-status-tag'])}
-            >
-              {dict('PC.Pages.AgentEdit.unpublishedChanges')}
-            </Tag>
-          )}
+        {/* 未发布变更提示 */}
+        {showUnpublishedTag && (
+          <Tag
+            bordered={false}
+            color="volcano"
+            className={cx(styles['publish-status-tag'])}
+          >
+            {dict('PC.Pages.AgentEdit.unpublishedChanges')}
+          </Tag>
+        )}
 
-          {/* 项目设置：始终显示 */}
-          <TooltipIcon
-            title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
-            className={cx(styles['panel-btn'])}
-            icon={<SettingOutlined style={{ fontSize: 16 }} />}
-            onClick={onOpenSettings}
-          />
+        {/* 项目设置：始终显示 */}
+        <TooltipIcon
+          title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
+          className={cx(styles['panel-btn'])}
+          icon={<SettingOutlined style={{ fontSize: 16 }} />}
+          onClick={onOpenSettings}
+        />
 
-          {/* 数据库页签 */}
-          <TooltipIcon
-            title={dict('PC.Pages.AppDevPro.database')}
-            ariaLabel={dict('PC.Pages.AppDevPro.database')}
-            className={cx(styles['panel-btn'], {
-              [styles.active]: isDatabasePanelOpen,
-            })}
-            icon={<DatabaseOutlined style={{ fontSize: 16 }} />}
-            onClick={onOpenDatabase}
-          />
+        {/* 数据库页签 */}
+        <TooltipIcon
+          title={dict('PC.Pages.AppDevPro.database')}
+          ariaLabel={dict('PC.Pages.AppDevPro.database')}
+          className={cx(styles['panel-btn'], {
+            [styles.active]: isDatabasePanelOpen,
+          })}
+          icon={<DatabaseOutlined style={{ fontSize: 16 }} />}
+          onClick={onOpenDatabase}
+        />
 
-          {/* 文件树侧边栏按钮 */}
+        {/* 文件树侧边栏按钮 */}
+        <TooltipIcon
+          title={
+            isFileTreeSidebarVisible
+              ? dict('PC.Components.FilePathHeader.collapseFileTree')
+              : dict('PC.Components.FilePathHeader.expandFileTree')
+          }
+          className={cx(styles['panel-btn'], {
+            [styles.active]: isFileTreeSidebarVisible,
+          })}
+          icon={
+            <SvgIcon
+              name="icons-common-file_preview"
+              style={{ fontSize: 16 }}
+            />
+          }
+          onClick={onToggleFileTreeSidebar}
+        />
+
+        {/* 终端按钮（再次点击收起，active 态由父组件互斥控制） */}
+        <TooltipIcon
+          title={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
+          ariaLabel={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
+          className={cx(styles['panel-btn'], {
+            [styles.active]: isTerminalPanelOpen,
+          })}
+          icon={<CodeOutlined style={{ fontSize: 16 }} />}
+          onClick={onOpenTerminalPanel}
+        />
+
+        {/* 应用预览页签 */}
+        <TooltipIcon
+          title={dict('PC.Pages.AppDevPro.appPreview')}
+          ariaLabel={dict('PC.Pages.AppDevPro.appPreview')}
+          className={cx(styles['panel-btn'], {
+            [styles.active]: isAppPreviewOpen,
+          })}
+          icon={
+            <SvgIcon name="icons-common-preview" style={{ fontSize: 16 }} />
+          }
+          onClick={onOpenAppPreview}
+        />
+
+        {/* 远程桌面：仅开发环境显示，交互对齐 ConversationAgent */}
+        <ConditionRender condition={isShowDesktop}>
           <TooltipIcon
             title={
-              isFileTreeSidebarVisible
-                ? dict('PC.Components.FilePathHeader.collapseFileTree')
-                : dict('PC.Components.FilePathHeader.expandFileTree')
+              isAgentDesktopOpen
+                ? dict(
+                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeAgentDesktop',
+                  )
+                : dict(
+                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openAgentDesktop',
+                  )
             }
             className={cx(styles['panel-btn'], {
-              [styles.active]: isFileTreeSidebarVisible,
+              [styles.active]: isAgentDesktopOpen,
             })}
             icon={
               <SvgIcon
-                name="icons-common-file_preview"
+                name="icons-nav-computer-star"
                 style={{ fontSize: 16 }}
               />
             }
-            onClick={onToggleFileTreeSidebar}
+            onClick={onOpenDesktopPanel}
           />
+        </ConditionRender>
 
-          {/* 终端按钮（再次点击收起，active 态由父组件互斥控制） */}
-          <TooltipIcon
-            title={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
-            ariaLabel={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
-            className={cx(styles['panel-btn'], {
-              [styles.active]: isTerminalPanelOpen,
-            })}
-            icon={<CodeOutlined style={{ fontSize: 16 }} />}
-            onClick={onOpenTerminalPanel}
-          />
-
-          {/* 发布按钮 */}
-          {onPublish && (
-            <Button
-              type="primary"
-              onClick={onPublish}
-              disabled={publishDisabled}
-            >
-              {dict('PC.Pages.AgentEdit.publish')}
-            </Button>
-          )}
-        </div>
+        {/* 发布按钮 */}
+        <Button
+          type="primary"
+          onClick={onPublish}
+          loading={publishing}
+          disabled={publishDisabled}
+        >
+          {publishing
+            ? dict('PC.Pages.AppDevHeader.publishing')
+            : dict('PC.Pages.AgentEdit.publish')}
+        </Button>
+      </div>
       </header>
 
       <CreateUserApp

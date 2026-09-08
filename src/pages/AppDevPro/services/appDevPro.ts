@@ -7,6 +7,7 @@ import type {
   UserAppInfo,
   UserAppLogsQueryParams,
   UserAppLogsQueryResult,
+  UserAppLogsSourcesQueryParams,
   UserAppStartDevParams,
   UserProjectPageQueryParams,
   UserProjectPageResult,
@@ -122,20 +123,37 @@ export async function apiUserAppBuildLogsStream(
   });
 }
 
-/** 生产部署（要求发布审核通过） */
+/**
+ * 任务进度 SSE 地址（实际拉流请用 fetchEventSource，不要走 umi request）
+ *
+ * @param taskId 构建任务 ID
+ * @param fromSeq 断点序号
+ * @returns SSE URL
+ */
+export const getUserAppTaskLogsStreamUrl = (
+  taskId: string,
+  fromSeq?: number,
+): string => {
+  const baseUrl = process.env.BASE_URL || '';
+  const search =
+    fromSeq !== undefined && fromSeq !== null ? `?fromSeq=${fromSeq}` : '';
+  return `${baseUrl}/api/userapp/tasks/${encodeURIComponent(taskId)}/logs/stream${search}`;
+};
+
+/** 生产部署（要求发布审核通过；异步任务，返回任务行） */
 export async function apiUserAppProdStart(
   data: UserAppStartDevParams,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<UserAppDevTaskInfo>> {
   return request('/api/userapp/prod/start', {
     method: 'POST',
     data,
   });
 }
 
-/** 生产重启 */
+/** 生产重启（异步任务，返回任务行） */
 export async function apiUserAppProdRestart(
   data: UserAppStartDevParams,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<UserAppDevTaskInfo>> {
   return request('/api/userapp/prod/restart', {
     method: 'POST',
     data,
@@ -161,3 +179,26 @@ export async function apiUserAppLogsQuery(
     data,
   });
 }
+
+/** 查询应用日志来源 */
+export async function apiUserAppLogsSourcesQuery(
+  data: UserAppLogsSourcesQueryParams,
+): Promise<RequestResponse<UserAppLogsQueryResult>> {
+  return request('/api/userapp/logs/sources/query', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 开发环境远程桌面代理地址（iframe）
+ * /api/userapp/proxy/vnc/dev/{appId}/
+ *
+ * @param appId 应用 ID
+ * @returns 可嵌入 iframe 的绝对或相对地址
+ */
+export const getUserAppVncProxyUrl = (appId: number): string => {
+  const path = `/api/userapp/proxy/vnc/dev/${appId}/`;
+  const baseUrl = process.env.BASE_URL || '';
+  return `${baseUrl}${path}`;
+};

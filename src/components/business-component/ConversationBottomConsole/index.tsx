@@ -6,6 +6,7 @@ import {
   apiEnsurePod,
   apiKeepalivePod,
   isEnsurePodThrottledError,
+  type ComputerPodAppStage,
 } from '@/services/vncDesktop';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import {
@@ -72,6 +73,11 @@ export interface ConversationBottomConsoleProps {
    */
   conversationId?: number;
   /**
+   * 全栈应用环境，仅 AppDevPro 传入。
+   * 未传时 computer/pod 老接口不带 appStage，会话智能体等页面行为不变。
+   */
+  appStage?: ComputerPodAppStage;
+  /**
    * 容器启动成功后是否开启保活轮询 @default true
    * 网页应用开发只需要确保/重启服务，不需要轮询保活接口。
    */
@@ -124,6 +130,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   devLog,
   wsUrl,
   conversationId,
+  appStage,
   enableKeepalivePolling = true,
   wsSubprotocols,
   wireProtocol,
@@ -197,9 +204,21 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
    */
   const runKeepaliveRef = useRef<(cId: number) => void>(() => {});
   const stopKeepaliveRef = useRef<() => void>(() => {});
+  /** 用 ref 持有 appStage，避免保活轮询闭包读到过期环境 */
+  const appStageRef = useRef<ComputerPodAppStage | undefined>(appStage);
+  appStageRef.current = appStage;
+
+  const ensurePodWithStage = useCallback(
+    (cId: number) => apiEnsurePod(cId, appStageRef.current),
+    [],
+  );
+  const keepalivePodWithStage = useCallback(
+    (cId: number) => apiKeepalivePod(cId, appStageRef.current),
+    [],
+  );
 
   const { run: runKeepalivePodPolling, cancel: stopKeepalivePodPolling } =
-    useRequest(apiKeepalivePod, {
+    useRequest(keepalivePodWithStage, {
       manual: true,
       loadingDelay: 30000,
       debounceWait: 5000,
@@ -216,7 +235,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
         if (shouldEnsureContainer) {
           try {
-            await apiEnsurePod(params[0]);
+            await ensurePodWithStage(params[0]);
           } catch (error) {
             console.error('[keepalive] apiEnsurePod failed:', error);
           }
@@ -245,7 +264,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     async (cId: number): Promise<boolean> => {
       setContainerStatus('starting');
       try {
-        const { code } = await apiEnsurePod(cId);
+        const { code } = await ensurePodWithStage(cId);
         if (code === SUCCESS_CODE) {
           setContainerStatus('running');
           if (enableKeepalivePolling) {
@@ -269,7 +288,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         return false;
       }
     },
-    [enableKeepalivePolling],
+    [enableKeepalivePolling, ensurePodWithStage],
   );
 
   /** 挂载时仅清理状态，不自动启动容器；等用户首次展开时触发 */
@@ -716,7 +735,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
                     if (!conversationId) {
                       return;
                     }
-                    void apiEnsurePod(conversationId).catch((error) => {
+                    void ensurePodWithStage(conversationId).catch((error) => {
                       console.error(
                         '[ConversationBottomConsole] ensurePod on disconnect failed:',
                         error,
