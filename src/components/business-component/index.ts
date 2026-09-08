@@ -10,6 +10,7 @@ export type {
 } from './ChangeFileGitDiffView';
 export {
   default as ConversationBottomConsole,
+  type ConsoleExternalContainerStatus,
   type ConsoleLayoutMode,
   type ConversationBottomConsoleDevLogProps,
   type ConversationBottomConsoleProps,

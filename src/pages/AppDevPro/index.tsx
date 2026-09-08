@@ -2,6 +2,7 @@ import {
   ConversationBottomConsole,
   DevLogActions,
   GitVersionRecordPanel,
+  type ConsoleExternalContainerStatus,
   type ConsoleLayoutMode,
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
@@ -15,7 +16,6 @@ import type { FileTreePreviewViewProps } from '@/components/business-component/F
 import Loading from '@/components/custom/Loading';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -23,6 +23,7 @@ import {
   apiImportProject,
   apiUpdateStaticFile,
   apiUploadFiles,
+  isEnsurePodThrottledError,
 } from '@/services/vncDesktop';
 import { MessageTypeEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
@@ -72,7 +73,10 @@ import { useUserAppRuntime } from './hooks/useUserAppRuntime';
 import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
 import { UserAppDbEnvEnum } from './services/appDb';
-import { apiUserAppGetById } from './services/appDevPro';
+import {
+  apiUserAppGetById,
+  getUserAppTtydProxyWsUrl,
+} from './services/appDevPro';
 import {
   apiUserAppDomainList,
   getUserAppPreviewUrl,
@@ -185,6 +189,11 @@ const AppDevPro: React.FC = () => {
   >([]);
   /** 当前环境：开发 / 线上，Header 中间切换 */
   const [dbEnv, setDbEnv] = useState<UserAppDbEnvEnum>(UserAppDbEnvEnum.Dev);
+  /** 进页容器状态：成功后才拉文件树 / git status，打开终端时复用该结果 */
+  const [podStatus, setPodStatus] = useState<
+    'idle' | 'starting' | 'running' | 'error'
+  >('idle');
+  const podReady = podStatus === 'running';
   /** 应用预览 iframe 刷新计数 */
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
 
@@ -217,6 +226,7 @@ const AppDevPro: React.FC = () => {
     restartVncPod,
     setPodAppStage,
     restartAgent,
+    ensureDesktopConnection,
     refreshGitListRef,
   } = useModel('conversationInfo');
 
@@ -239,6 +249,51 @@ const AppDevPro: React.FC = () => {
     },
     [setPodAppStage],
   );
+
+  /**
+   * 进入页面即启动容器并开启保活，默认开发环境 dev。
+   * 容器启动成功后再拉文件树、Git status；打开终端时复用本次结果，不再重复 ensure。
+   */
+  useEffect(() => {
+    if (!queryConversationId) {
+      setPodStatus('idle');
+      return;
+    }
+
+    setPodStatus('starting');
+    setPodAppStage(UserAppDbEnvEnum.Dev);
+
+    let cancelled = false;
+    const afterPodReady = () => {
+      if (cancelled) {
+        return;
+      }
+      setPodStatus('running');
+      void refreshFileListImmediately(queryConversationId);
+    };
+
+    void ensureDesktopConnection(queryConversationId)
+      .then(afterPodReady)
+      .catch((error: any) => {
+        if (isEnsurePodThrottledError(error)) {
+          afterPodReady();
+          return;
+        }
+        if (!cancelled) {
+          setPodStatus('error');
+          console.error('[AppDevPro] ensure pod on enter failed:', error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    ensureDesktopConnection,
+    queryConversationId,
+    refreshFileListImmediately,
+    setPodAppStage,
+  ]);
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
@@ -317,9 +372,36 @@ const AppDevPro: React.FC = () => {
   }, [selectedComputerId, conversationInfo, history.action, location.state]);
 
   /**
-   * 终端 WebSocket 连接地址（ttyd）
+   * 终端 WebSocket 地址：按 Header 当前环境走 userapp ttyd 代理
+   * 开发环境 /api/userapp/proxy/ttyd/dev/{appId}
+   * 线上环境 /api/userapp/proxy/ttyd/prod/{appId}
    */
-  const terminalWsUrl = useTerminalWsUrl(queryConversationId);
+  const terminalWsUrl = useMemo(
+    () => getUserAppTtydProxyWsUrl(appId, dbEnv),
+    [appId, dbEnv],
+  );
+
+  /**
+   * 告诉底部终端如何复用进页启动结果。
+   * 开发环境进页会预启动：已成功则打开终端只保活；启动中则等待；失败再由终端 ensure。
+   * 线上环境进页不预启动，打开终端时由控制台 ensure。
+   */
+  const terminalExternalContainerStatus =
+    useMemo((): ConsoleExternalContainerStatus | undefined => {
+      if (!queryConversationId || finalSelectedComputerId !== '-1') {
+        return undefined;
+      }
+      if (dbEnv !== UserAppDbEnvEnum.Dev) {
+        return undefined;
+      }
+      if (podStatus === 'running') {
+        return 'running';
+      }
+      if (podStatus === 'error') {
+        return 'error';
+      }
+      return 'starting';
+    }, [dbEnv, finalSelectedComputerId, podStatus, queryConversationId]);
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(appId, {
@@ -455,9 +537,6 @@ const AppDevPro: React.FC = () => {
 
       // 查询会话
       runQueryConversation(queryConversationId);
-
-      // 立即刷新文件列表
-      void refreshFileListImmediately(queryConversationId);
     }
 
     // 在 queryConversationId 变更前或组件卸载时清理会话数据
@@ -974,8 +1053,8 @@ const AppDevPro: React.FC = () => {
       },
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
-      /** 仅配置加载完成且开启版本管理时拉取 Git status */
-      enableGitStatus: isVersionControlEnabled,
+      /** 容器启动成功且开启版本管理时才拉取 Git status */
+      enableGitStatus: isVersionControlEnabled && podReady,
       enableVersionControl,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
@@ -1045,6 +1124,7 @@ const AppDevPro: React.FC = () => {
     refreshFileListImmediately,
     enableVersionControl,
     isVersionControlEnabled,
+    podReady,
     openPreviewView,
     resetDevConsoleExpandedLayout,
     handleImportProject,
@@ -1505,13 +1585,14 @@ const AppDevPro: React.FC = () => {
           </div>
 
           {/* 底部终端、开发日志合集面板 */}
-          {/** 云端电脑传入 conversationId 以启动容器；个人电脑直接通过 wsUrl 连接终端 */}
+          {/** 云端电脑传入 conversationId；进页已启动容器时打开终端只保活，失败再 ensure */}
           <ConversationBottomConsole
             // 在ConversationAgent中，conversationId 为 queryConversationId
             conversationId={
               finalSelectedComputerId === '-1' ? queryConversationId : undefined
             }
             appStage={dbEnv}
+            externalContainerStatus={terminalExternalContainerStatus}
             visible={showDevConsole}
             wsUrl={terminalWsUrl}
             wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
