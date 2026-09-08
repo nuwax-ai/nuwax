@@ -39,8 +39,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   published_manage: 'icons-nav-publish_manage',
   // 公共模型管理
   model_manage: 'icons-nav-model',
-  // 连接器管理
-  connector_manage: 'icons-nav-cube',
+  // 连接器管理（管理侧，与空间侧连接器共用图标）
+  lianjieqiguanli: 'icons-nav-connector',
   // 系统配置
   system_config: 'icons-nav-settings',
   // 多语言管理
@@ -79,6 +79,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   skill_dev: 'icons-nav-skill',
   // MCP管理
   mcp_dev: 'icons-nav-mcp',
+  // 连接器（空间侧，与管理侧共用图标）
+  lianjieqi: 'icons-nav-connector',
   // 任务中心
   space_task_dev: 'icons-nav-task-time',
   // 日志查询
