@@ -660,6 +660,8 @@ export const apiProjectCreate = async (data: {
   subType?: string;
   /** 沙箱ID */
   sandboxId?: number;
+  /** 调试关联智能体ID（首页选中 agent 创建项目时传入） */
+  devAgentId?: number;
 }): Promise<any> => {
   return request('/api/project/create', {
     method: 'POST',
