@@ -468,6 +468,11 @@ const NewHomeSection: React.FC<{
       );
     } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
       jumpTo(`/space/${devSpaceId}/app-dev/${devTargetId}`);
+    } else if (devTargetType === 'UserApp' && devSpaceId && devTargetId) {
+      // 全栈应用会话：跳全栈应用开发详情页，conversationId 用于恢复该会话
+      jumpTo(
+        `/space/${devSpaceId}/app-pro?appId=${devTargetId}&conversationId=${id}`,
+      );
     } else {
       history.push('/home/chat/' + id + '/' + agentId);
     }
