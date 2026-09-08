@@ -1,23 +1,36 @@
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { apiUserProjectPageQuery } from '@/pages/AppDevPro/services/appDevPro';
+import {
+  apiUserAppDelete,
+  apiUserAppUpdate,
+  apiUserProjectDelete,
+  apiUserProjectPageQuery,
+  apiUserProjectUpdate,
+} from '@/pages/AppDevPro/services/appDevPro';
 import { dict } from '@/services/i18nRuntime';
-import { TaskStatus } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import {
   DeleteOutlined,
+  DownOutlined,
   EditOutlined,
   ExclamationCircleFilled,
+  FolderOutlined,
   InboxOutlined,
   MoreOutlined,
   PushpinFilled,
   PushpinOutlined,
-  RightOutlined,
   StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
 import { Dropdown, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from 'react';
 import { useParams } from 'umi';
 import styles from './index.less';
 
@@ -35,6 +48,8 @@ export interface ProjectChildItem {
 export interface ProjectItem {
   id: number;
   name: string;
+  /** 项目类型（重命名/删除按类型路由到 user-project / userapp 接口） */
+  projectType?: AgentComponentTypeEnum;
   children?: ProjectChildItem[];
 }
 
@@ -46,20 +61,29 @@ export interface ProjectItem {
  * **项目子项(项目下的会话):不做置顶**(同日定调),仅 重命名/删除 + 状态徽标。
  *
  * 数据走 apiUserProjectPageQuery 真实接口（当前空间全量项目）；
+ * 重命名/删除已接真实接口（常规项目→user-project、全栈应用→userapp，2026-09-08 契约），
+ * PageApp 契约未覆盖改名删除、置顶/归档/收藏后端接口开发中，仍维持本地标记；
  * 项目下会话列表后端暂无端点，children 先空（TODO(后端):会话列表接口就绪后接入）。
- * 置顶/归档/收藏/重命名/删除仍为本地标记(后端置顶/归档接口开发中)；
- * 后端就绪后项目操作迁到服务端、子项删除/重命名切到会话真实接口
- * (apiAgentConversationDelete/Update)。
  */
-const ProjectPanel: React.FC<{
-  /** 可见项目数变化上报(分组头计数用,对齐任务计数=过滤归档后的可见数) */
-  onVisibleCountChange?: (count: number) => void;
-}> = ({ onVisibleCountChange }) => {
+export interface ProjectPanelHandle {
+  toggleAll: () => void;
+}
+
+const ProjectPanel = forwardRef<
+  ProjectPanelHandle,
+  {
+    compact?: boolean;
+    /** 可见项目数变化上报(分组头计数用,对齐任务计数=过滤归档后的可见数) */
+    onVisibleCountChange?: (count: number) => void;
+  }
+>(({ onVisibleCountChange, compact = false }, ref) => {
   const { spaceId: spaceIdParam } = useParams() as { spaceId?: string };
   const spaceId = Number(spaceIdParam) || undefined;
 
   const [projects, setProjects] = useState<ProjectItem[]>([]);
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(() => new Set());
+  const [collapsedIds, setCollapsedIds] = useState<Set<number>>(
+    () => new Set(),
+  );
   // 项目级标记(置顶/归档/收藏后端接口开发中,先本地 state)
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => new Set());
   const [archivedIds, setArchivedIds] = useState<Set<number>>(() => new Set());
@@ -96,6 +120,7 @@ const ProjectPanel: React.FC<{
             res.data.records.map((item) => ({
               id: item.id,
               name: item.name,
+              projectType: item.projectType,
             })),
           );
         }
@@ -116,7 +141,7 @@ const ProjectPanel: React.FC<{
   );
 
   const handleProjectClick = (project: ProjectItem) => {
-    setExpandedIds((prev) => {
+    setCollapsedIds((prev) => {
       const next = new Set(prev);
       if (next.has(project.id)) {
         next.delete(project.id);
@@ -136,6 +161,25 @@ const ProjectPanel: React.FC<{
       (a, b) => Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id)),
     );
   }, [projects, archivedIds, showArchived, pinnedIds]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      toggleAll: () =>
+        setCollapsedIds((previous) => {
+          const allExpanded = visibleProjects.every(
+            (project) => !previous.has(project.id),
+          );
+          const next = new Set(previous);
+          visibleProjects.forEach((project) => {
+            if (allExpanded) next.add(project.id);
+            else next.delete(project.id);
+          });
+          return next;
+        }),
+    }),
+    [visibleProjects],
+  );
 
   const archivedProjectCount = useMemo(
     () => projects.filter((item) => archivedIds.has(item.id)).length,
@@ -187,9 +231,22 @@ const ProjectPanel: React.FC<{
     message.success(dict(toastKeyMap[kind]));
   };
 
-  const handleProjectRenameSubmit = () => {
+  // 项目重命名:常规项目/全栈应用走真实接口,PageApp 契约未覆盖暂维持本地改名
+  const handleProjectRenameSubmit = async () => {
     const trimmed = projectRenameName.trim();
     if (!trimmed || !renameProjectId) return;
+    const target = projects.find((project) => project.id === renameProjectId);
+    if (!target) return;
+    if (
+      target.projectType === AgentComponentTypeEnum.NormalProject ||
+      target.projectType === AgentComponentTypeEnum.UserApp
+    ) {
+      const res =
+        target.projectType === AgentComponentTypeEnum.UserApp
+          ? await apiUserAppUpdate({ id: target.id, name: trimmed })
+          : await apiUserProjectUpdate({ id: target.id, name: trimmed });
+      if (res?.code !== SUCCESS_CODE) return;
+    }
     setProjects((prev) =>
       prev.map((project) =>
         project.id !== renameProjectId
@@ -200,14 +257,25 @@ const ProjectPanel: React.FC<{
     setRenameProjectId(undefined);
   };
 
+  // 项目删除:常规项目/全栈应用走真实接口,PageApp 契约未覆盖暂维持本地移除
   const openProjectDelete = (project: ProjectItem) => {
+    const usesRealApi =
+      project.projectType === AgentComponentTypeEnum.NormalProject ||
+      project.projectType === AgentComponentTypeEnum.UserApp;
     Modal.confirm({
       title: dict('PC.Common.Global.deleteConfirmTitle'),
       content: dict('PC.Common.Global.deleteConfirmContent'),
       okButtonProps: { danger: true },
       okText: dict('PC.Common.Global.delete'),
       cancelText: dict('PC.Common.Global.cancel'),
-      onOk: () => {
+      onOk: async () => {
+        if (usesRealApi) {
+          const res =
+            project.projectType === AgentComponentTypeEnum.UserApp
+              ? await apiUserAppDelete(project.id)
+              : await apiUserProjectDelete(project.id);
+          if (res?.code !== SUCCESS_CODE) return;
+        }
         setProjects((prev) => prev.filter((item) => item.id !== project.id));
         setPinnedIds((prev) => {
           const next = new Set(prev);
@@ -358,7 +426,9 @@ const ProjectPanel: React.FC<{
 
   if (projects.length === 0) {
     return (
-      <div className={cx(styles['project-panel'])}>
+      <div
+        className={cx(styles['project-panel'], { [styles.compact]: compact })}
+      >
         <div className={cx(styles['project-empty'])}>
           <img
             className={cx(styles['project-empty-img'])}
@@ -374,9 +444,9 @@ const ProjectPanel: React.FC<{
   }
 
   return (
-    <div className={cx(styles['project-panel'])}>
+    <div className={cx(styles['project-panel'], { [styles.compact]: compact })}>
       {visibleProjects.map((project) => {
-        const expanded = expandedIds.has(project.id);
+        const expanded = !collapsedIds.has(project.id);
         return (
           <div key={project.id} className={cx(styles.project)}>
             <Dropdown
@@ -387,8 +457,19 @@ const ProjectPanel: React.FC<{
                 className={cx(styles.row, { [styles.expanded]: expanded })}
                 onClick={() => handleProjectClick(project)}
                 role="button"
-                tabIndex={-1}
+                tabIndex={0}
+                aria-expanded={expanded}
+                onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget) return;
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleProjectClick(project);
+                  }
+                }}
               >
+                {compact && (
+                  <FolderOutlined className={styles['project-icon']} />
+                )}
                 {pinnedIds.has(project.id) && (
                   <PushpinFilled className={cx(styles['pin-icon'])} />
                 )}
@@ -398,23 +479,25 @@ const ProjectPanel: React.FC<{
                 <span className={cx(styles.name)} title={project.name}>
                   {project.name}
                 </span>
-                {/* 新建会话入口:mock 阶段不触发动作,仅阻断行展开 */}
-                <span
-                  className={cx(styles.add)}
-                  onClick={(event) => event.stopPropagation()}
-                  title={dict('PC.Constants.Menus.newChat')}
-                >
-                  +
-                </span>
-                <RightOutlined
+                <Dropdown menu={buildProjectMenu(project)} trigger={['click']}>
+                  <button
+                    type="button"
+                    className={styles['project-more']}
+                    aria-label={dict('PC.Components.ActionMenu.more')}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <MoreOutlined />
+                  </button>
+                </Dropdown>
+                <DownOutlined
                   className={cx(styles.arrow, {
                     [styles.arrowExpanded]: expanded,
                   })}
                 />
               </div>
             </Dropdown>
-            {expanded &&
-              (project.children ?? []).map((child) => (
+            <div className={styles.children} hidden={!expanded}>
+              {(project.children ?? []).map((child) => (
                 <div key={child.id} className={cx(styles.child)}>
                   {child.taskStatus === TaskStatus.EXECUTING && (
                     <span
@@ -450,6 +533,7 @@ const ProjectPanel: React.FC<{
                   </Dropdown>
                 </div>
               ))}
+            </div>
           </div>
         );
       })}
@@ -504,6 +588,6 @@ const ProjectPanel: React.FC<{
       </Modal>
     </div>
   );
-};
+});
 
 export default ProjectPanel;

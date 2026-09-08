@@ -52,6 +52,30 @@ export interface UserProjectPageResult {
   size: number;
 }
 
+/** 创建常规项目参数（管理端 /api/user-project/create；首页对话框创建走 /api/project/create 另一套） */
+export interface CreateUserProjectParams {
+  spaceId?: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  sandboxId?: number;
+  devAgentId?: number;
+}
+
+/** 更新常规项目参数（传 null 的字段不更新，与全栈应用 update 同语义） */
+export interface UpdateUserProjectParams {
+  id: number;
+  name?: string;
+  description?: string;
+  icon?: string;
+}
+
+/** 项目最新会话返回（后端契约未细化字段，调用侧防御式取 conversationId/id） */
+export interface ProjectLatestConversationResult {
+  conversationId?: number;
+  id?: number;
+}
+
 /** 创建全栈应用参数 */
 export interface CreateUserAppParams {
   /** 空间ID，不传则默认放在个人空间 */
