@@ -38,11 +38,12 @@ export interface ConnectorProviderEditDrawerProps {
     payload: CreateConnectorProviderParams,
   ) => Promise<RequestResponse<null>>;
   /**
-   * 自定义 OAuth 平台 App 配置保存接口：入参/返回与管理端
+   * 自定义 OAuth App 配置保存接口：入参/返回与管理端
    * POST /api/system/connector/oauth-config 一致。
    * 工作空间连接器页传 space 维度接口
    * （POST /api/connector/oauth/shared-config），不传走管理端默认。
-   * 仅 oauth2 + platform 模式且用户重填了 CLIENT SECRET 时调用。
+   * 注入后（空间侧）认证方式为 oauth2 即调用；管理端默认实现仍要求
+   * oauth2 + platform 模式且用户重填了 CLIENT SECRET。
    */
   saveOauthConfig?: (
     params: SaveConnectorOauthConfigParams,
@@ -199,9 +200,11 @@ const ConnectorProviderEditDrawer: React.FC<
    * 1. 校验必填项 —— 失败时表单控件下方已有红字提示，静默返回
    * 2. PUT /api/system/connector/providers/{service}/meta（body 与新增接口
    *    一致，由共享函数 toConnectorProviderPayload 组装）
-   * 3. oauth2 + platform 且用户重填了 CLIENT SECRET 时，追加调用
-   *    POST /api/system/connector/oauth-config 更新平台 App 配置
-   *    （clientSecret 加密落库不回显，留空 = 跳过，避免空值覆盖已存配置）
+   * 3. App 配置追加保存（clientSecret 加密落库不回显，留空 = 保持已存密钥）：
+   *    - 空间侧（注入 saveOauthConfig）：认证方式为 oauth2 即调
+   *      POST /api/connector/oauth/shared-config
+   *    - 管理端默认：oauth2 + platform 且重填了 CLIENT SECRET 时才调
+   *      POST /api/system/connector/oauth-config（留空跳过，避免空值覆盖）
    * 4. 成功后关闭抽屉并触发 onSaved —— 父组件刷新列表并打开详情抽屉
    */
   const handleSave = useCallback(async () => {
@@ -220,6 +223,16 @@ const ConnectorProviderEditDrawer: React.FC<
     const isOauth2Platform =
       values.authType === 'oauth2' && values.oauthAppMode !== 'byo';
     const secretReentered = Boolean(values.oauthClientSecret?.trim());
+    /**
+     * App 配置保存时机：
+     * - 空间侧（注入了 saveOauthConfig）：认证方式为 oauth2 即保存 ——
+     *   clientId / 授权端点 / 令牌端点 / scopes 的修改不能因未重填
+     *   CLIENT SECRET 而丢失（secret 留空时后端保持已存密钥）
+     * - 管理端默认接口：维持 oauth2 + platform 且重填 Secret 才保存
+     */
+    const shouldSaveOauthConfig = saveOauthConfig
+      ? values.authType === 'oauth2'
+      : isOauth2Platform && secretReentered;
 
     try {
       setSubmitting(true);
@@ -231,9 +244,9 @@ const ConnectorProviderEditDrawer: React.FC<
       if (response?.code !== SUCCESS_CODE) {
         throw new Error(response?.message || 'update provider failed');
       }
-      // App 配置更新失败不回滚 meta —— 提示用户重填 Secret 后再试
+      // App 配置更新失败不回滚 meta —— 提示用户重试
       let oauthConfigFailed = false;
-      if (isOauth2Platform && secretReentered) {
+      if (shouldSaveOauthConfig) {
         try {
           // oauth 接口可注入：管理端默认 POST /api/system/connector/oauth-config，
           // 工作空间连接器页传 POST /api/connector/oauth/shared-config
@@ -253,7 +266,7 @@ const ConnectorProviderEditDrawer: React.FC<
       }
       message.success('连接器更新成功');
       if (oauthConfigFailed) {
-        message.warning('OAuth App 配置保存失败，请重填 Client Secret 后重试');
+        message.warning('OAuth App 配置保存失败，请重试');
       }
       onClose();
       onSaved?.(payload);

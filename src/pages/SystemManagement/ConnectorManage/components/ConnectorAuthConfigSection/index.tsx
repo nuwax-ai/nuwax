@@ -91,8 +91,8 @@ export interface ConnectorAuthConfigSectionProps {
   /** 所属抽屉的表单实例（useWatch 监听认证方式 / 注入位置 / OAUTH 模式） */
   form: FormInstance;
   /**
-   * 编辑模式：CLIENT SECRET 不强制重填（加密落库不回显，留空 = 保存时
-   * 跳过 oauth-config 调用，保持已存配置不被空值覆盖）
+   * 编辑模式：CLIENT SECRET 不强制重填（加密落库不回显，留空 = 保持已存密钥；
+   * 管理端留空时跳过 oauth-config 调用，空间侧仍保存其余 App 配置项）
    */
   editMode?: boolean;
 }
