@@ -42,8 +42,7 @@ export interface ConnectorProviderEditDrawerProps {
    * POST /api/system/connector/oauth-config 一致。
    * 工作空间连接器页传 space 维度接口
    * （POST /api/connector/oauth/shared-config），不传走管理端默认。
-   * 注入后（空间侧）认证方式为 oauth2 即调用；管理端默认实现仍要求
-   * oauth2 + platform 模式且用户重填了 CLIENT SECRET。
+   * 认证方式为 oauth2 时在 meta 保存成功后追加调用。
    */
   saveOauthConfig?: (
     params: SaveConnectorOauthConfigParams,
@@ -200,11 +199,10 @@ const ConnectorProviderEditDrawer: React.FC<
    * 1. 校验必填项 —— 失败时表单控件下方已有红字提示，静默返回
    * 2. PUT /api/system/connector/providers/{service}/meta（body 与新增接口
    *    一致，由共享函数 toConnectorProviderPayload 组装）
-   * 3. App 配置追加保存（clientSecret 加密落库不回显，留空 = 保持已存密钥）：
-   *    - 空间侧（注入 saveOauthConfig）：认证方式为 oauth2 即调
-   *      POST /api/connector/oauth/shared-config
-   *    - 管理端默认：oauth2 + platform 且重填了 CLIENT SECRET 时才调
-   *      POST /api/system/connector/oauth-config（留空跳过，避免空值覆盖）
+   * 3. 认证方式为 oauth2 时追加保存 App 配置：管理端默认
+   *    POST /api/system/connector/oauth-config，空间侧注入
+   *    saveOauthConfig（POST /api/connector/oauth/shared-config）；
+   *    clientSecret 加密落库不回显，留空 = 保持已存密钥
    * 4. 成功后关闭抽屉并触发 onSaved —— 父组件刷新列表并打开详情抽屉
    */
   const handleSave = useCallback(async () => {
@@ -220,19 +218,12 @@ const ConnectorProviderEditDrawer: React.FC<
 
     // service 创建后不可改，提交值以列表行/详情的 service 为准
     const payload = toConnectorProviderPayload({ ...values, service });
-    const isOauth2Platform =
-      values.authType === 'oauth2' && values.oauthAppMode !== 'byo';
-    const secretReentered = Boolean(values.oauthClientSecret?.trim());
     /**
-     * App 配置保存时机：
-     * - 空间侧（注入了 saveOauthConfig）：认证方式为 oauth2 即保存 ——
-     *   clientId / 授权端点 / 令牌端点 / scopes 的修改不能因未重填
-     *   CLIENT SECRET 而丢失（secret 留空时后端保持已存密钥）
-     * - 管理端默认接口：维持 oauth2 + platform 且重填 Secret 才保存
+     * App 配置保存时机：认证方式为 oauth2 即保存（管理侧 / 空间侧一致，
+     * 与新增连接器一致）—— clientId / 授权端点 / 令牌端点 / scopes 的修改
+     * 不能因未重填 CLIENT SECRET 而丢失（secret 留空时后端保持已存密钥）
      */
-    const shouldSaveOauthConfig = saveOauthConfig
-      ? values.authType === 'oauth2'
-      : isOauth2Platform && secretReentered;
+    const shouldSaveOauthConfig = values.authType === 'oauth2';
 
     try {
       setSubmitting(true);
