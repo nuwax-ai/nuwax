@@ -127,8 +127,9 @@ const ConnectorProviderDetailDrawer: React.FC<
   /** scope：管理侧走管理端工具接口，空间侧走空间维度接口 */
   const isSpaceScope = scope === 'space';
   /**
-   * 连接动作（建立连接 / OAuth 授权 / 连接列表）使用的空间 ID：
-   * 空间侧用当前选中空间；管理侧无空间上下文，按约定固定传 0
+   * 连接动作（建立连接 / OAuth 授权）使用的空间 ID：
+   * 空间侧用当前选中空间；管理侧无空间上下文，按约定固定传 0。
+   * 连接列表 GET /api/connector/connections 管理侧不传 spaceId（见 fetchConnectionId）
    */
   const connectSpaceId = isSpaceScope ? spaceId : 0;
 
@@ -202,9 +203,10 @@ const ConnectorProviderDetailDrawer: React.FC<
   const fetchConnectionId = useCallback(
     async (targetService: string) => {
       try {
-        // 管理侧连接建立在 spaceId=0 下，连接列表也按 0 查询才能匹配到
+        // 管理侧不传 spaceId（后端按管理员上下文返回连接列表）；
+        // 空间侧传当前选中空间。服务层对 undefined 不透传该参数
         const response = await apiConnectorConnectionList({
-          spaceId: connectSpaceId,
+          spaceId: isSpaceScope ? spaceId : undefined,
         });
         if (response?.code !== SUCCESS_CODE) return;
         const list = Array.isArray(response.data) ? response.data : [];
@@ -216,7 +218,7 @@ const ConnectorProviderDetailDrawer: React.FC<
         /* 连接 id 拉取失败不阻塞详情展示，断开时按连接 id 缺失提示 */
       }
     },
-    [connectSpaceId],
+    [isSpaceScope, spaceId],
   );
 
   /**
