@@ -11,6 +11,7 @@ import {
   apiConnectorActionToggleStatus,
   apiConnectorActionUpdate,
   apiConnectorConnectionDelete,
+  apiConnectorConnectionList,
   apiConnectorOauthAuthorize,
   apiSystemConnectorActionDelete,
   apiSystemConnectorActionToggleStatus,
@@ -58,7 +59,8 @@ import styles from './index.less';
  *      连接状态取代原抽屉的「归属」展示；空间侧未连接时在状态后展示
  *      「去连接」（oauth2 →「发起OAuth授权」），免鉴权（no_auth）不展示；
  *      已连接时状态后展示「断开连接」（Popconfirm 二次确认后
- *      DELETE /api/connector/connections/{id}，管理侧 / 空间侧均展示）
+ *      DELETE /api/connector/connections/{id}，id 为连接列表接口按
+ *      service 匹配出的连接 id，管理侧 / 空间侧均展示）
  *   2. 工具栏（「+ 添加工具」打开 ConnectorActionCreateModal 新增/编辑工具弹窗）
  *   3. 工具列表（表格呈现：工具名称 / ACTIONKEY / 工具说明 / 状态 / 接口 / 操作）
  *
@@ -131,6 +133,11 @@ const ConnectorProviderDetailPage: React.FC = () => {
   const [oauthOpening, setOauthOpening] = useState<boolean>(false);
   /** 「断开连接」请求中（给按钮与 Popconfirm 确定键加 loading，防重复点击） */
   const [disconnecting, setDisconnecting] = useState<boolean>(false);
+  /**
+   * 当前连接器对应的连接 id（GET /api/connector/connections 按 service
+   * 匹配得出；断开连接 DELETE /api/connector/connections/{id} 寻址用）
+   */
+  const [connectionId, setConnectionId] = useState<number | null>(null);
   /** 授权弹窗引用：重复点击时聚焦已有弹窗；轮询其 closed 判断授权流程结束 */
   const oauthWinRef = useRef<Window | null>(null);
   /** 授权弹窗关闭轮询定时器（组件卸载时清理） */
@@ -151,6 +158,30 @@ const ConnectorProviderDetailPage: React.FC = () => {
     : apiSystemConnectorActionDelete;
 
   /**
+   * 拉取连接列表并按 service 匹配出连接 id
+   * GET /api/connector/connections 返回当前用户（空间维度）的连接列表，
+   * 取 providerService 与当前连接器 service 相同的连接对象的 id
+   * （注意：连接 id ≠ 连接器 id，断开连接 DELETE /api/connector/connections/{id}
+   * 只能用连接 id 寻址）
+   */
+  const fetchConnectionId = useCallback(
+    async (targetService: string) => {
+      try {
+        const response = await apiConnectorConnectionList({ spaceId });
+        if (response?.code !== SUCCESS_CODE) return;
+        const list = Array.isArray(response.data) ? response.data : [];
+        const matched = list.find(
+          (item) => (item.providerService ?? item.service) === targetService,
+        );
+        setConnectionId(matched?.id ?? null);
+      } catch {
+        /* 连接 id 拉取失败不阻塞详情展示，断开时按连接 id 缺失提示 */
+      }
+    },
+    [spaceId],
+  );
+
+  /**
    * 获取详情
    * 返回最新详情（而非 void）：授权弹窗关闭后调用方要据此提示连接结果
    */
@@ -168,17 +199,25 @@ const ConnectorProviderDetailPage: React.FC = () => {
         if (response?.code === SUCCESS_CODE) {
           const latest = response.data ?? null;
           setDetail(latest);
+          // 详情刷新时同步刷新连接 id（页面打开 / 连接 / 断开 / 授权后都会走到这里）
+          if (latest?.provider?.service) {
+            void fetchConnectionId(latest.provider.service);
+          } else {
+            setConnectionId(null);
+          }
           return latest;
         }
         setDetail(null);
+        setConnectionId(null);
         return null;
       } catch {
         setDetail(null);
+        setConnectionId(null);
         return null;
       } finally {
         setLoading(false);
       }
-    }, [service, spaceId]);
+    }, [service, spaceId, fetchConnectionId]);
 
   // 页面打开：拉取详情（service 变化时也会重新拉取）
   useEffect(() => {
@@ -471,15 +510,17 @@ const ConnectorProviderDetailPage: React.FC = () => {
   /**
    * 断开连接（「已连接」后的「断开连接」按钮，Popconfirm 二次确认后触发；
    * 管理侧 / 空间侧均展示）
-   * DELETE /api/connector/connections/{id}，id 取详情响应的 provider.id，
-   * 成功后刷新详情（connected 变 false、按钮消失，空间侧随之出现「去连接」）。
+   * DELETE /api/connector/connections/{id}，id 为连接 id：详情加载时由
+   * GET /api/connector/connections 响应中 providerService 与 provider.service
+   * 相同的连接对象取得（详情响应 provider.id 是连接器 id，不能用于断开）。
+   * 成功后刷新详情（connected 变 false、按钮消失，空间侧随之出现「去连接」；
+   * fetchDetail 内会同步刷新连接 id）。
    * 业务/网络错误由全局 errorHandler 统一提示后端报错，此处不重复弹错，
    * 且不能在 onConfirm 里抛错（会同 Modal.confirm 一样被 antd 转成
    * Unhandled Rejection 导致页面崩溃），catch 全部静默吞掉
    */
   const handleDisconnect = useCallback(async () => {
-    const connectionId = provider?.id;
-    if (connectionId === undefined || connectionId === null) {
+    if (connectionId === null) {
       message.error('连接 id 缺失，无法断开连接');
       return;
     }
@@ -497,7 +538,7 @@ const ConnectorProviderDetailPage: React.FC = () => {
     } finally {
       setDisconnecting(false);
     }
-  }, [provider, disconnecting, fetchDetail]);
+  }, [connectionId, disconnecting, fetchDetail]);
 
   // ---------------- 工具表格列 ----------------
   const toolColumns: ColumnsType<ConnectorProviderAction> = [

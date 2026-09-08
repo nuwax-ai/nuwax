@@ -14,6 +14,7 @@ import type {
   ApplyConnectorImportParams,
   ConnectorBindableItem,
   ConnectorBindableParams,
+  ConnectorConnectionInfo,
   ConnectorImportDiff,
   ConnectorOauthAuthorizeResult,
   ConnectorProviderDetail,
@@ -607,10 +608,31 @@ export async function apiConnectorConnectionCreate(
 }
 
 /**
+ * 连接列表（GET /api/connector/connections?spaceId=）
+ *
+ * - 返回当前用户（空间维度）已建立的连接列表
+ * - 连接器详情页据此按 providerService 匹配出当前连接器的连接对象，
+ *   取其 id 供断开连接 DELETE /api/connector/connections/{id} 寻址
+ *   （连接 id ≠ 连接器 id，详情响应 provider.id 不能直接用于断开）
+ */
+export async function apiConnectorConnectionList(params: {
+  spaceId?: number;
+}): Promise<RequestResponse<ConnectorConnectionInfo[]>> {
+  const { spaceId } = params;
+  return request('/api/connector/connections', {
+    method: 'GET',
+    params: {
+      // 只在 spaceId 是有限数时透传，避免传 undefined / NaN
+      spaceId: Number.isFinite(Number(spaceId)) ? Number(spaceId) : undefined,
+    },
+  });
+}
+
+/**
  * 断开连接（DELETE /api/connector/connections/{id}）
  *
- * - id 为连接 id，取连接器详情接口（GET /api/connector/providers/{service}）
- *   响应里的 provider.id（管理侧 / 空间侧响应均返回）
+ * - id 为连接 id，取连接列表接口（GET /api/connector/connections）响应中
+ *   providerService 与连接器 service 相同的连接对象（≠ 详情响应的 provider.id）
  * - 断开后详情接口的 connected 变 false，由调用方刷新详情
  *
  * 用于连接器详情页概览「连接状态」的「断开连接」按钮（Popconfirm 二次确认后调用）。
