@@ -16,16 +16,12 @@ const MENU_ICON_MAP: Record<string, string> = {
   new_conversation: 'icons-nav-new_chat',
   // 主页
   homepage: 'icons-nav-home',
-  // 资料库（icon 依赖租户远程配置，未配置时走本地图标兜底）
-  ziliaoku: 'icons-nav-knowledge',
   // 工作空间
   workspace: 'icons-nav-workspace',
   // 系统广场
   system_square: 'icons-nav-square',
   // 生态市场
   eco_market: 'icons-nav-ecosystem',
-  // 生态测试（与生态市场同族图标）
-  shengtaiceshi: 'icons-nav-ecosystem',
   // 系统管理
   system_manage: 'icons-nav-settings',
 
@@ -73,6 +69,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   // 二级菜单 - 工作空间
   // 新建项目
   create_project: 'icons-common-plus',
+  // 项目管理（后端菜单未下发期间的本地占位 code）
+  project_manage: 'icons-nav-cube',
   // 智能体开发
   agent_dev: 'icons-nav-stars',
   // 网页应用开发"

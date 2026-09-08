@@ -14,6 +14,58 @@
   margin-left: @sectionMarginLeft;
   margin-top: @sectionMarginTop;
 
+  // ===== 单栏（style3）分组头：项目/任务两个折叠分组（原型 .tabs/.tab 移植） =====
+  .section-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-top: 15px;
+    padding: 0 15px 8px;
+    cursor: pointer;
+    user-select: none;
+
+    .section-tab-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: @navSecondMenuAdaptiveTextSecondary;
+    }
+
+    .section-tab-chev {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      transition: transform 0.2s ease;
+
+      > svg {
+        width: 12px;
+        height: 12px;
+      }
+    }
+
+    &.section-tabs-collapsed .section-tab-chev {
+      transform: rotate(-90deg);
+    }
+  }
+
+  // 任务分组头：滚动区内、项目列表下方；与项目头平级，左缘同 15px 垂直对齐
+  // （原型 .tabs.task-tabs 带 30px 缩进，按需求定调改为平级不缩进）
+  .task-section-tabs {
+    margin-top: 6px;
+    padding: 2px 15px 8px;
+  }
+
+  // 单栏项目列表：原型 .list 的 15px 侧距（经典 tab 内维持 ProjectPanel 直排现状）
+  .project-list-section {
+    padding: 0 15px 16px;
+  }
+
+  // ===== 经典布局（style1/2）tab 切换：维持改版前形态，仅任务/项目两项 =====
   .tabs {
     display: flex;
     align-items: center;
@@ -24,8 +76,7 @@
     margin: 15px 0 0;
     padding: 0;
 
-    // 经典布局：上方紧邻搜索栏（showSearchHeader），顶距收紧；
-    // 单栏保持 15px 原型基线不动
+    // 上方紧邻经典布局搜索栏，顶距收紧
     &.tabs-under-search {
       margin-top: 8px;
     }
@@ -59,13 +110,13 @@
       }
     }
 
-    // 滑动指示条（原型 tab-indicator 的 CSS-only 等价）：滑轨 1/3 宽按位次平移，
+    // 滑动指示条（原型 tab-indicator 的 CSS-only 等价）：滑轨 1/2 宽按位次平移，
     // 内部 44px 圆角短条居中，缓动与原型同款
     .tab-indicator {
       position: absolute;
       bottom: -1px;
       left: 0;
-      width: calc(100% / 3);
+      width: calc(100% / 2);
       height: 2.5px;
       pointer-events: none;
       transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
@@ -88,10 +139,6 @@
 
     &[data-active='1'] .tab-indicator {
       transform: translateX(100%);
-    }
-
-    &[data-active='2'] .tab-indicator {
-      transform: translateX(200%);
     }
   }
 

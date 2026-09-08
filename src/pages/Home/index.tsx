@@ -6,15 +6,9 @@ import {
 import ChatInputHome, {
   type ChatInputHomeRef,
 } from '@/components/ChatInputHome';
-import Loading from '@/components/custom/Loading';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
-import {
-  apiCollectAgent,
-  apiHomeCategoryList,
-  apiPublishedAgentInfo,
-  apiUnCollectAgent,
-} from '@/services/agentDev';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -27,10 +21,6 @@ import type {
   AgentManualComponentInfo,
 } from '@/types/interfaces/agent';
 import type {
-  CategoryItemInfo,
-  HomeAgentCategoryInfo,
-} from '@/types/interfaces/agentConfig';
-import type {
   MessageSourceType,
   UploadFileInfo,
 } from '@/types/interfaces/common';
@@ -38,8 +28,7 @@ import {
   DisplayRecommendFunctionTypeEnum,
   type DisplayRecommendInfo,
 } from '@/types/interfaces/displayRecommend';
-import { jumpTo } from '@/utils/router';
-import { App, message as antdMessage } from 'antd';
+import { App } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -48,13 +37,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, useModel, useRequest } from 'umi';
+import { useModel } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
 import HomeCategoryTabs, {
   type HomeCategoryDef,
 } from './components/HomeCategoryTabs';
-import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -112,15 +100,11 @@ const Home: React.FC = () => {
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
-  const [activeTab, setActiveTab] = useState<string>();
-  const [loading, setLoading] = useState<boolean>(false);
   const [recommendNavList, setRecommendNavList] = useState<
     DisplayRecommendInfo[]
   >([]);
   const [selectedRecommend, setSelectedRecommend] =
     useState<DisplayRecommendInfo>();
-  const [homeCategoryInfo, setHomeCategoryInfo] =
-    useState<HomeAgentCategoryInfo>();
   const [submitting, setSubmitting] = useState<boolean>(false);
   // 输入区上方内容分类:用户手动选择(null=未选过,自动取第一个有内容的分类)
   const [userPickedCategory, setUserPickedCategory] = useState<string | null>(
@@ -163,24 +147,6 @@ const Home: React.FC = () => {
     }
   }, []);
 
-  const runCategoryList = useCallback(async () => {
-    try {
-      const result = await apiHomeCategoryList({ skipErrorHandler: true });
-      if (result?.success === false) {
-        antdMessage.warning(result.message);
-        setLoading(false);
-        return;
-      }
-
-      const { data } = result;
-      setHomeCategoryInfo(data);
-      setActiveTab(data?.categories?.[0]?.type);
-      setLoading(false);
-    } catch {
-      setLoading(false);
-    }
-  }, []);
-
   const runRecommendNavList = useCallback(async () => {
     try {
       const result = await apiDisplayRecommendList({ skipErrorHandler: true });
@@ -198,27 +164,9 @@ const Home: React.FC = () => {
     }
   }, []);
 
-  const { run: runCollectAgent } = useRequest(apiCollectAgent, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      runCategoryList();
-    },
-  });
-
-  const { run: runUnCollectAgent } = useRequest(apiUnCollectAgent, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      runCategoryList();
-    },
-  });
-
   useEffect(() => {
-    setLoading(true);
-    runCategoryList();
     runRecommendNavList();
-  }, [runCategoryList, runRecommendNavList]);
+  }, [runRecommendNavList]);
 
   useEffect(() => {
     setAgentDetail(undefined);
@@ -285,6 +233,8 @@ const Home: React.FC = () => {
             computerId: selectedComputerId,
             agentMode,
             agentId: currentAgentId,
+            // 首页选中 agent 创建项目：把该 agent 作为项目调试智能体传给后端
+            devAgentId: currentAgentId,
           },
           spaceId,
           tenantConfigInfo,
@@ -360,29 +310,6 @@ const Home: React.FC = () => {
       setSelectedRecommend(undefined);
       chatInputRef.current?.clear();
     }
-  };
-
-  const handleTabClick = (type: string) => {
-    setActiveTab(type);
-  };
-
-  const handleToggleCollect = (_type: string, info: CategoryItemInfo) => {
-    if (info.collect) {
-      runUnCollectAgent(info.targetId);
-    } else {
-      runCollectAgent(info.targetId);
-    }
-  };
-
-  const handleAgentClick = (agentInfo: CategoryItemInfo) => {
-    const { targetId, lastConversationId } = agentInfo;
-
-    if (lastConversationId) {
-      history.push(`/home/chat/${lastConversationId}/${targetId}`);
-      return;
-    }
-
-    jumpTo(`/agent/${targetId}`);
   };
 
   const handleRecommendSelect = (item: DisplayRecommendInfo) => {
@@ -478,24 +405,6 @@ const Home: React.FC = () => {
           }
         />
       </main>
-      <section className={cx(styles.recommendSection)}>
-        <div className={cx(styles.wrapper)}>
-          {loading ? (
-            <Loading className={cx('h-full')} />
-          ) : (
-            homeCategoryInfo && (
-              <DraggableHomeContent
-                homeCategoryInfo={homeCategoryInfo}
-                activeTab={activeTab}
-                onTabClick={handleTabClick}
-                onAgentClick={handleAgentClick}
-                onToggleCollect={handleToggleCollect}
-                onDataUpdate={runCategoryList}
-              />
-            )
-          )}
-        </div>
-      </section>
       <footer className={cx(styles['foot-tip'])}>
         {dict('PC.Pages.Home.aiGeneratedTip')}
       </footer>
