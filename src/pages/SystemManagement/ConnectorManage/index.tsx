@@ -31,11 +31,13 @@ import {
 } from '@dnd-kit/sortable';
 import { Button, Input, message, Space, Spin, Tag } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 import ConnectorImportDrawer from './ConnectorImportDrawer';
 import ConnectorProviderCreateDrawer from './ConnectorProviderCreateDrawer';
+import ConnectorProviderDetailDrawer from './ConnectorProviderDetailDrawer';
 import ConnectorProviderEditDrawer from './ConnectorProviderEditDrawer';
 import {
+  AUTH_TYPE_COLOR_MAP,
   AUTH_TYPE_LABEL_MAP,
   AUTH_TYPE_OPTIONS,
   CONNECTED_OPTIONS,
@@ -47,7 +49,7 @@ import {
  * 视觉与交互参考 GlobalModelManage（公共模型管理）
  * 数据源：GET /api/system/connector/providers（非分页）
  * 排序持久化：PUT /api/system/connector/providers/order
- * 查看详情：GET /api/connector/providers/{service}?spaceId=xxx
+ * 查看详情：右侧 ConnectorProviderDetailDrawer 抽屉（内部拉 GET /api/connector/providers/{service}?spaceId=xxx）
  * 筛选：LightFilter（认证方式/启用状态/连接状态，本地过滤）+
  * 工具栏右侧搜索框（回车查询 displayName/service，无 查询/重置 按钮）
  */
@@ -89,6 +91,11 @@ const ConnectorManage: React.FC = () => {
   const [editRecord, setEditRecord] = useState<ConnectorProviderInfo | null>(
     null,
   );
+  /**
+   * 「查看」详情抽屉当前展示的连接器 service（null = 关闭）
+   * 原地展开抽屉而非跳转子页面路由 —— 列表筛选态与滚动位置得以保留
+   */
+  const [detailService, setDetailService] = useState<string | null>(null);
   /**
    * "新增官方连接器"抽屉开关
    * 抽屉内「创建连接器」按钮暂为占位（功能待实现），这里只负责开关
@@ -321,13 +328,11 @@ const ConnectorManage: React.FC = () => {
       const toggling = togglingServices.has(record.service);
       return (
         <Space size={12} className="connector-row-actions">
-          {/* 查看：跳转详情子页面（概览 + 工具列表表格） */}
+          {/* 查看：原地打开右侧详情抽屉（概览 + 工具列表表格，不跳路由保住筛选态） */}
           <a
             onClick={() => {
               setEditRecord(null);
-              history.push(
-                `/system/connector-manage/detail?service=${record.service}`,
-              );
+              setDetailService(record.service);
             }}
           >
             查看
@@ -475,7 +480,7 @@ const ConnectorManage: React.FC = () => {
         options: AUTH_TYPE_OPTIONS.filter((v) => v.value !== ''),
       },
       render: (_, record) => (
-        <Tag color={record.authType === 'no_auth' ? 'default' : 'blue'}>
+        <Tag color={AUTH_TYPE_COLOR_MAP[record.authType] ?? 'default'}>
           {AUTH_TYPE_LABEL_MAP[record.authType] ?? record.authType}
         </Tag>
       ),
@@ -747,7 +752,7 @@ const ConnectorManage: React.FC = () => {
           record={editRecord}
           onClose={() => setEditRecord(null)}
           // 保存成功：刷新连接器列表（GET /api/system/connector/providers），
-          // 并跳转「查看」详情子页面（页面内部会拉
+          // 并原地打开「查看」详情抽屉（抽屉内部会拉
           // GET /api/connector/providers/{service} 展示最新数据）
           onSaved={(payload) => {
             actionRef.current?.reload();
@@ -755,12 +760,21 @@ const ConnectorManage: React.FC = () => {
               editRecord?.service ??
               (payload as { service?: string } | undefined)?.service;
             if (service) {
-              history.push(
-                `/system/connector-manage/detail?service=${service}`,
-              );
+              setDetailService(service);
             }
             setEditRecord(null);
           }}
+        />
+        {/*
+          查看详情抽屉（右侧滑出，原地展开不跳路由 —— 列表筛选态保留）：
+          连接状态变化（连接/授权/断开）与工具增删改后刷新列表展示
+        */}
+        <ConnectorProviderDetailDrawer
+          open={detailService !== null}
+          service={detailService ?? ''}
+          onClose={() => setDetailService(null)}
+          onConnectionChanged={() => actionRef.current?.reload()}
+          onActionsChanged={() => actionRef.current?.reload()}
         />
         {/*
           新增官方连接器抽屉（右侧滑出）

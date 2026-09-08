@@ -1,5 +1,4 @@
 import Loading from '@/components/custom/Loading';
-import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import ConnectorConnectDrawer from '@/pages/SpaceResource/Connector/components/ConnectorConnectDrawer';
 import ConnectorActionCreateModal from '@/pages/SystemManagement/ConnectorManage/components/ConnectorActionCreateModal';
@@ -11,6 +10,7 @@ import {
   apiConnectorActionToggleStatus,
   apiConnectorActionUpdate,
   apiConnectorConnectionDelete,
+  apiConnectorConnectionList,
   apiConnectorOauthAuthorize,
   apiSystemConnectorActionDelete,
   apiSystemConnectorActionToggleStatus,
@@ -24,6 +24,7 @@ import type {
 } from '@/types/interfaces/systemManage';
 import {
   Button,
+  Drawer,
   Empty,
   message,
   Popconfirm,
@@ -40,25 +41,24 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useSearchParams } from 'umi';
 import styles from './index.less';
 
 /**
- * 连接器详情子页面（管理侧 / 空间侧共用）
+ * 连接器详情抽屉（管理侧 / 空间侧共用）
  *
- * 路由：
- *   - 管理侧：/system/connector-manage/detail?service=xxx
- *   - 空间侧：/space/:spaceId/connector/detail?service=xxx&spaceId=xxx
- *   （按路径前缀区分 scope：/system/ 开走管理端工具接口，其余走空间维度接口）
+ * 由连接器列表行内「查看」打开（原地展开，不跳路由 —— 列表筛选态得以保留）：
+ *   - 管理侧：ConnectorManage 列表，scope = system
+ *   - 空间侧：SpaceResource/Connector 列表，scope = space（传当前选中 spaceId）
  *
  * 数据源：GET /api/connector/providers/{service}?spaceId=xxx&includeDisabled=true
  *
- * 页面结构：
+ * 抽屉内容：
  *   1. 顶部概览（认证方式 / BASE URL / 通用代理 / 连接状态）：
- *      连接状态取代原抽屉的「归属」展示；空间侧未连接时在状态后展示
- *      「去连接」（oauth2 →「发起OAuth授权」），免鉴权（no_auth）不展示；
+ *      连接状态取代原抽屉的「归属」展示，免鉴权（no_auth）整项不展示；
+ *      空间侧未连接时在状态后展示「去连接」（oauth2 →「去授权」）；
  *      已连接时状态后展示「断开连接」（Popconfirm 二次确认后
- *      DELETE /api/connector/connections/{id}，管理侧 / 空间侧均展示）
+ *      DELETE /api/connector/connections/{id}，id 为连接列表接口按
+ *      service 匹配出的连接 id，管理侧 / 空间侧均展示）
  *   2. 工具栏（「+ 添加工具」打开 ConnectorActionCreateModal 新增/编辑工具弹窗）
  *   3. 工具列表（表格呈现：工具名称 / ACTIONKEY / 工具说明 / 状态 / 接口 / 操作）
  *
@@ -69,14 +69,13 @@ import styles from './index.less';
  * 工具的 删除 走 Popconfirm 二次确认（管理端 DELETE /api/system/connector/actions/{id}，
  * 空间侧 DELETE /api/connector/actions/{id}）。
  *
- * 「发起OAuth授权」（oauth2）：GET /api/connector/oauth/authorize 拿授权地址后
+ * 「去授权」（oauth2）：GET /api/connector/oauth/authorize 拿授权地址后
  * window.open 新窗口打开（IdP 授权页带 X-Frame-Options 拒绝 iframe 嵌入），
  * 轮询弹窗 closed 后刷新详情（connected 变 true 按钮自动消失）。
  */
 
 /**
  * 「去连接」点击上下文（凭据抽屉用它渲染表单并回调刷新）
- * 与原详情抽屉导出的 ConnectorGoConnectContext 同构
  */
 interface GoConnectContext {
   /** 当前连接器（详情接口返回的 provider） */
@@ -87,20 +86,45 @@ interface GoConnectContext {
   refresh: () => void;
 }
 
-const ConnectorProviderDetailPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const location = useLocation();
+export interface ConnectorProviderDetailDrawerProps {
+  /** 是否打开 */
+  open: boolean;
+  /** 要查看的连接器 service（列表行 / 新增编辑保存回传） */
+  service: string;
+  /**
+   * scope：space = 空间侧（展示连接按钮，工具启停/删除走空间维度接口）；
+   * 不传默认 system = 管理侧（走管理端默认接口）
+   */
+  scope?: 'system' | 'space';
+  /** 空间 ID（空间侧传当前选中空间；管理侧不传） */
+  spaceId?: number;
+  /** 关闭回调 */
+  onClose: () => void;
+  /**
+   * 连接状态变化回调（连接成功 / 授权成功 / 断开成功）：
+   * 列表刷新连接状态列 / 连接状态筛选展示
+   */
+  onConnectionChanged?: () => void;
+  /**
+   * 工具列表变化回调（新增/编辑/删除工具成功）：
+   * 列表刷新工具数列展示
+   */
+  onActionsChanged?: () => void;
+}
 
-  /** 路径参数：service（接口寻址）、spaceId（空间维度接口 query） */
-  const service = searchParams.get('service') || '';
-  const spaceIdParam = Number(searchParams.get('spaceId'));
-  const spaceId =
-    Number.isFinite(spaceIdParam) && spaceIdParam > 0
-      ? spaceIdParam
-      : undefined;
-
-  /** scope：管理侧（/system/ 前缀）走管理端工具接口，空间侧走空间维度接口 */
-  const isSpaceScope = !location.pathname.startsWith('/system/');
+const ConnectorProviderDetailDrawer: React.FC<
+  ConnectorProviderDetailDrawerProps
+> = ({
+  open,
+  service,
+  scope = 'system',
+  spaceId,
+  onClose,
+  onConnectionChanged,
+  onActionsChanged,
+}) => {
+  /** scope：管理侧走管理端工具接口，空间侧走空间维度接口 */
+  const isSpaceScope = scope === 'space';
 
   // 详情加载中
   const [loading, setLoading] = useState<boolean>(false);
@@ -127,16 +151,28 @@ const ConnectorProviderDetailPage: React.FC = () => {
     useState<ConnectorProviderAction | null>(null);
   /** 「去连接」凭据抽屉上下文（api_key/bearer/custom；null = 关闭） */
   const [connectCtx, setConnectCtx] = useState<GoConnectContext | null>(null);
-  /** 「发起OAuth授权」：授权地址请求中（按钮 loading） */
+  /** 「去授权」：授权地址请求中（按钮 loading） */
   const [oauthOpening, setOauthOpening] = useState<boolean>(false);
   /** 「断开连接」请求中（给按钮与 Popconfirm 确定键加 loading，防重复点击） */
   const [disconnecting, setDisconnecting] = useState<boolean>(false);
+  /**
+   * 当前连接器对应的连接 id（GET /api/connector/connections 按 service
+   * 匹配得出；断开连接 DELETE /api/connector/connections/{id} 寻址用）
+   */
+  const [connectionId, setConnectionId] = useState<number | null>(null);
   /** 授权弹窗引用：重复点击时聚焦已有弹窗；轮询其 closed 判断授权流程结束 */
   const oauthWinRef = useRef<Window | null>(null);
-  /** 授权弹窗关闭轮询定时器（组件卸载时清理） */
+  /** 授权弹窗关闭轮询定时器（抽屉关闭 / 组件卸载时清理） */
   const oauthPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  /** 页面标题：详情 displayName 优先，回退 service */
+  /** 抽屉宽度：内容含工具表格（scroll.x 900），取大屏宽度并限幅 */
+  const drawerWidth = useMemo(() => {
+    if (typeof window === 'undefined') return 1080;
+    const w = window.innerWidth || 1080;
+    return Math.min(1080, Math.max(360, Math.floor(w * 0.92)));
+  }, []);
+
+  /** 抽屉标题：详情 displayName 优先，回退 service */
   const title = useMemo(
     () => detail?.provider?.displayName || service || '',
     [detail, service],
@@ -151,6 +187,30 @@ const ConnectorProviderDetailPage: React.FC = () => {
     : apiSystemConnectorActionDelete;
 
   /**
+   * 拉取连接列表并按 service 匹配出连接 id
+   * GET /api/connector/connections 返回当前用户（空间维度）的连接列表，
+   * 取 providerService 与当前连接器 service 相同的连接对象的 id
+   * （注意：连接 id ≠ 连接器 id，断开连接 DELETE /api/connector/connections/{id}
+   * 只能用连接 id 寻址）
+   */
+  const fetchConnectionId = useCallback(
+    async (targetService: string) => {
+      try {
+        const response = await apiConnectorConnectionList({ spaceId });
+        if (response?.code !== SUCCESS_CODE) return;
+        const list = Array.isArray(response.data) ? response.data : [];
+        const matched = list.find(
+          (item) => (item.providerService ?? item.service) === targetService,
+        );
+        setConnectionId(matched?.id ?? null);
+      } catch {
+        /* 连接 id 拉取失败不阻塞详情展示，断开时按连接 id 缺失提示 */
+      }
+    },
+    [spaceId],
+  );
+
+  /**
    * 获取详情
    * 返回最新详情（而非 void）：授权弹窗关闭后调用方要据此提示连接结果
    */
@@ -162,31 +222,55 @@ const ConnectorProviderDetailPage: React.FC = () => {
         const response = await apiSystemConnectorProviderDetail({
           service,
           spaceId,
-          // 页面需要展示已停用工具的「停用」状态 + 「启用」按钮，因此 includeDisabled=true
+          // 抽屉需要展示已停用工具的「停用」状态 + 「启用」按钮，因此 includeDisabled=true
           includeDisabled: true,
         });
         if (response?.code === SUCCESS_CODE) {
           const latest = response.data ?? null;
           setDetail(latest);
+          // 详情刷新时同步刷新连接 id（打开 / 连接 / 断开 / 授权后都会走到这里）
+          if (latest?.provider?.service) {
+            void fetchConnectionId(latest.provider.service);
+          } else {
+            setConnectionId(null);
+          }
           return latest;
         }
         setDetail(null);
+        setConnectionId(null);
         return null;
       } catch {
         setDetail(null);
+        setConnectionId(null);
         return null;
       } finally {
         setLoading(false);
       }
-    }, [service, spaceId]);
+    }, [service, spaceId, fetchConnectionId]);
 
-  // 页面打开：拉取详情（service 变化时也会重新拉取）
+  /** 抽屉打开 / service 变化：拉取详情；关闭：清空本地状态（下次打开重新加载） */
   useEffect(() => {
-    if (service) {
+    if (open && service) {
       setDetail(null);
+      setConnectionId(null);
       fetchDetail();
+      return;
     }
-  }, [service, fetchDetail]);
+    if (!open) {
+      setDetail(null);
+      setConnectionId(null);
+      setConnectCtx(null);
+      setActionModalOpen(false);
+      setEditingAction(null);
+      setDebugModalOpen(false);
+      setDebuggingAction(null);
+      if (oauthPollRef.current) {
+        clearInterval(oauthPollRef.current);
+        oauthPollRef.current = null;
+      }
+      oauthWinRef.current = null;
+    }
+  }, [open, service, fetchDetail]);
 
   // 组件卸载时清理授权弹窗轮询定时器（防止泄漏与卸载后更新 state）
   useEffect(() => {
@@ -285,7 +369,7 @@ const ConnectorProviderDetailPage: React.FC = () => {
 
   /**
    * 删除单个工具（Popconfirm 的「确定」触发，UI 层已二次确认）
-   * 接口成功后从本地列表里直接移除该项，无需重新拉详情
+   * 接口成功后从本地列表里直接移除该项并通知列表刷新工具数
    */
   const handleDeleteAction = useCallback(
     async (action: ConnectorProviderAction) => {
@@ -317,6 +401,7 @@ const ConnectorProviderDetailPage: React.FC = () => {
           };
         });
         message.success('已删除该工具');
+        onActionsChanged?.();
       } catch {
         message.error('删除工具失败');
       } finally {
@@ -327,16 +412,17 @@ const ConnectorProviderDetailPage: React.FC = () => {
         });
       }
     },
-    [deletingActionIds, doDeleteAction],
+    [deletingActionIds, doDeleteAction, onActionsChanged],
   );
 
-  /** 新增/编辑工具成功：重新拉取详情刷新工具表格（列表页返回时会自行重拉） */
+  /** 新增/编辑工具成功：重新拉取详情刷新工具表格，并通知列表刷新工具数 */
   const handleActionCreated = useCallback(() => {
     fetchDetail();
-  }, [fetchDetail]);
+    onActionsChanged?.();
+  }, [fetchDetail, onActionsChanged]);
 
   /**
-   * 发起 OAuth 授权（「发起OAuth授权」按钮，认证方式 oauth2，空间侧）
+   * 发起 OAuth 授权（「去授权」按钮，认证方式 oauth2，空间侧）
    * GET /api/connector/oauth/authorize 拿地址 → window.open 新窗口 →
    * 轮询 closed → 刷新详情（connected 变 true 时按钮消失并提示「连接成功」）
    */
@@ -379,6 +465,7 @@ const ConnectorProviderDetailPage: React.FC = () => {
           void fetchDetail().then((latest) => {
             if (latest?.provider?.connected) {
               message.success('连接成功');
+              onConnectionChanged?.();
             }
           });
         }
@@ -386,7 +473,7 @@ const ConnectorProviderDetailPage: React.FC = () => {
     } finally {
       setOauthOpening(false);
     }
-  }, [service, spaceId, fetchDetail]);
+  }, [service, spaceId, fetchDetail, onConnectionChanged]);
 
   /**
    * 「去连接」抽屉的凭证字段定义（优先详情接口）：
@@ -443,14 +530,14 @@ const ConnectorProviderDetailPage: React.FC = () => {
 
   /**
    * 概览「连接状态」后的连接按钮（仅空间侧）：
-   * - oauth2 →「发起OAuth授权」（页面内部打开授权窗口并监听关闭）
+   * - oauth2 →「去授权」（抽屉内部打开授权窗口并监听关闭）
    * - api_key/bearer/custom →「去连接」（打开凭据抽屉）
-   * - no_auth（免鉴权）→ 不展示；管理侧不展示（连接是空间用户动作）
+   * - no_auth（免鉴权）→ 连接状态整项不展示；管理侧不展示（连接是空间用户动作）
    */
   const connectButtonText =
     isSpaceScope && authTypeValue && authTypeValue !== 'no_auth'
       ? authTypeValue === 'oauth2'
-        ? '发起OAuth授权'
+        ? '去授权'
         : '去连接'
       : null;
 
@@ -460,7 +547,7 @@ const ConnectorProviderDetailPage: React.FC = () => {
       return;
     }
     // 携带 record/detail/refresh：凭据抽屉用 authConfig.fields 渲染表单，
-    // 连接成功后调 refresh 刷新本页（connected 变 true、按钮消失）
+    // 连接成功后调 refresh 刷新本抽屉（connected 变 true、按钮消失）
     setConnectCtx({
       record: provider,
       detail,
@@ -471,15 +558,17 @@ const ConnectorProviderDetailPage: React.FC = () => {
   /**
    * 断开连接（「已连接」后的「断开连接」按钮，Popconfirm 二次确认后触发；
    * 管理侧 / 空间侧均展示）
-   * DELETE /api/connector/connections/{id}，id 取详情响应的 provider.id，
-   * 成功后刷新详情（connected 变 false、按钮消失，空间侧随之出现「去连接」）。
+   * DELETE /api/connector/connections/{id}，id 为连接 id：详情加载时由
+   * GET /api/connector/connections 响应中 providerService 与 provider.service
+   * 相同的连接对象取得（详情响应 provider.id 是连接器 id，不能用于断开）。
+   * 成功后刷新详情（connected 变 false、按钮消失，空间侧随之出现「去连接」；
+   * fetchDetail 内会同步刷新连接 id），并通知列表刷新连接状态。
    * 业务/网络错误由全局 errorHandler 统一提示后端报错，此处不重复弹错，
    * 且不能在 onConfirm 里抛错（会同 Modal.confirm 一样被 antd 转成
    * Unhandled Rejection 导致页面崩溃），catch 全部静默吞掉
    */
   const handleDisconnect = useCallback(async () => {
-    const connectionId = provider?.id;
-    if (connectionId === undefined || connectionId === null) {
+    if (connectionId === null) {
       message.error('连接 id 缺失，无法断开连接');
       return;
     }
@@ -490,6 +579,7 @@ const ConnectorProviderDetailPage: React.FC = () => {
       if (response?.code === SUCCESS_CODE) {
         message.success('已断开连接');
         await fetchDetail();
+        onConnectionChanged?.();
       }
       // 非成功码理论上会被全局拦截器 reject，不会 resolve 到这里
     } catch {
@@ -497,7 +587,7 @@ const ConnectorProviderDetailPage: React.FC = () => {
     } finally {
       setDisconnecting(false);
     }
-  }, [provider, disconnecting, fetchDetail]);
+  }, [connectionId, disconnecting, fetchDetail, onConnectionChanged]);
 
   // ---------------- 工具表格列 ----------------
   const toolColumns: ColumnsType<ConnectorProviderAction> = [
@@ -608,8 +698,18 @@ const ConnectorProviderDetailPage: React.FC = () => {
   ];
 
   return (
-    <WorkspaceLayout title={title} back hideScroll>
-      <div className={styles.page}>
+    <Drawer
+      className={styles.drawer}
+      title={title}
+      placement="right"
+      open={open}
+      onClose={onClose}
+      width={drawerWidth}
+      destroyOnHidden
+      rootStyle={{ overflow: 'hidden' }}
+      styles={{ body: { padding: 0 } }}
+    >
+      <div className={styles.content}>
         {!service ? (
           <div className={styles.emptyWrap}>
             <Empty description="缺少 service 参数" />
@@ -636,50 +736,58 @@ const ConnectorProviderDetailPage: React.FC = () => {
                 <span className={styles.infoLabel}>通用代理</span>
                 <span className={styles.infoValue}>{proxyLabel}</span>
               </div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>连接状态</span>
-                <span className={`${styles.infoValue} ${styles.connectValue}`}>
-                  {connected ? (
-                    <>
-                      <span className={styles.connectedText}>已连接</span>
-                      {/* 断开连接：Popconfirm 二次确认（交互同工具删除），
-                          管理侧 / 空间侧均展示；成功后 connected 变 false、
-                          按钮消失（空间侧随之出现「去连接」） */}
-                      <Popconfirm
-                        title="确认断开该连接？"
-                        okText="确认断开"
-                        cancelText="取消"
-                        okButtonProps={{ danger: true, loading: disconnecting }}
-                        onConfirm={handleDisconnect}
-                      >
-                        <Button
-                          size="small"
-                          danger
-                          className={styles.disconnectBtn}
-                          loading={disconnecting}
+              {/* 免鉴权（no_auth）无连接概念：连接状态整项不展示 */}
+              {authTypeValue !== 'no_auth' ? (
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>连接状态</span>
+                  <span
+                    className={`${styles.infoValue} ${styles.connectValue}`}
+                  >
+                    {connected ? (
+                      <>
+                        <span className={styles.connectedText}>已连接</span>
+                        {/* 断开连接：Popconfirm 二次确认（交互同工具删除），
+                            管理侧 / 空间侧均展示；成功后 connected 变 false、
+                            按钮消失（空间侧随之出现「去连接」） */}
+                        <Popconfirm
+                          title="确认断开该连接？"
+                          okText="确认断开"
+                          cancelText="取消"
+                          okButtonProps={{
+                            danger: true,
+                            loading: disconnecting,
+                          }}
+                          onConfirm={handleDisconnect}
                         >
-                          断开连接
-                        </Button>
-                      </Popconfirm>
-                    </>
-                  ) : (
-                    <>
-                      <span className={styles.disconnectedText}>未连接</span>
-                      {connectButtonText ? (
-                        <Button
-                          type="primary"
-                          size="small"
-                          className={styles.goConnectBtn}
-                          loading={oauthOpening}
-                          onClick={handleConnectClick}
-                        >
-                          {connectButtonText}
-                        </Button>
-                      ) : null}
-                    </>
-                  )}
-                </span>
-              </div>
+                          <Button
+                            size="small"
+                            danger
+                            className={styles.disconnectBtn}
+                            loading={disconnecting}
+                          >
+                            断开连接
+                          </Button>
+                        </Popconfirm>
+                      </>
+                    ) : (
+                      <>
+                        <span className={styles.disconnectedText}>未连接</span>
+                        {connectButtonText ? (
+                          <Button
+                            type="primary"
+                            size="small"
+                            className={styles.goConnectBtn}
+                            loading={oauthOpening}
+                            onClick={handleConnectClick}
+                          >
+                            {connectButtonText}
+                          </Button>
+                        ) : null}
+                      </>
+                    )}
+                  </span>
+                </div>
+              ) : null}
             </div>
 
             {/* 工具栏：工具列表标题 + 「+ 添加工具」 */}
@@ -740,7 +848,7 @@ const ConnectorProviderDetailPage: React.FC = () => {
 
       {/* 去连接凭据抽屉（认证方式 custom/api_key/bearer）：凭证字段按
           authConfig.fields 动态渲染，提交 POST /api/connector/connections/api-key；
-          连接成功后刷新本页（connected 变 true、按钮消失） */}
+          连接成功后刷新本抽屉（connected 变 true、按钮消失） */}
       <ConnectorConnectDrawer
         open={connectCtx !== null}
         record={connectCtx?.record ?? null}
@@ -750,10 +858,11 @@ const ConnectorProviderDetailPage: React.FC = () => {
         onConnected={() => {
           connectCtx?.refresh();
           fetchDetail();
+          onConnectionChanged?.();
         }}
       />
-    </WorkspaceLayout>
+    </Drawer>
   );
 };
 
-export default ConnectorProviderDetailPage;
+export default ConnectorProviderDetailDrawer;

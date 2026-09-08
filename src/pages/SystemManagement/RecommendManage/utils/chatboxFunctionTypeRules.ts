@@ -28,14 +28,17 @@ export const getUsedChatboxSingleInstanceTypes = (
 };
 
 /**
- * 子类型下拉是否禁用（智能体 Chat 始终可选；编辑时当前子类型保持可选）
+ * 子类型下拉是否禁用（智能体 Chat、常规项目 NormalProjectDev 始终可选；编辑时当前子类型保持可选）
  */
 export const isChatboxFunctionTypeDisabled = (
   type: DisplayRecommendFunctionTypeEnum,
   usedTypes: Set<DisplayRecommendFunctionTypeEnum>,
   currentFunctionType?: string,
 ): boolean => {
-  if (type === DisplayRecommendFunctionTypeEnum.Chat) {
+  if (
+    type === DisplayRecommendFunctionTypeEnum.Chat ||
+    type === DisplayRecommendFunctionTypeEnum.NormalProjectDev
+  ) {
     return false;
   }
   if (!CHATBOX_SINGLE_INSTANCE_FUNCTION_TYPES.includes(type)) {
