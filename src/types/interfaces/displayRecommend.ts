@@ -28,6 +28,7 @@ export interface DisplayRecommendInfo {
   label: string;
   icon?: string;
   placeholder?: string;
+  category?: string;
   sort?: number;
   modified?: string;
   created?: string;

@@ -53,6 +53,7 @@ export interface DisplayRecommendParams {
   label?: string;
   icon?: string;
   placeholder?: string;
+  category?: string;
   sort?: number;
 }
 
@@ -107,6 +108,9 @@ export interface DisplayRecommendListParams {
 
   /*目标类型：Agent、PageApp、Skill、Plugin、Workflow */
   targetType?: DisplayRecommendTargetTypeEnum;
+
+  /*分类 */
+  category?: string;
 }
 
 /**
@@ -122,6 +126,7 @@ export interface DisplayRecommendInfo {
   label: string;
   icon: string;
   placeholder: string;
+  category?: string;
   sort: number;
   modified: string;
   created: string;

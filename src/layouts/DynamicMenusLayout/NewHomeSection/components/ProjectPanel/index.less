@@ -207,3 +207,231 @@
     opacity: 0.35;
   }
 }
+
+.project-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: @navSecondMenuAdaptiveTextTertiary;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.16s ease, background 0.16s ease;
+
+  &:hover {
+    background: @colorFillTertiary;
+    color: @colorPrimary;
+  }
+}
+
+.project .row:hover .project-more,
+.project .row:focus-within .project-more {
+  opacity: 1;
+}
+.project .row:focus-visible {
+  outline: 2px solid @colorPrimary;
+  outline-offset: -2px;
+}
+.project .row .arrowExpanded {
+  transform: rotate(180deg);
+}
+
+.compact {
+  gap: 0;
+  padding: 0;
+
+  .row {
+    position: relative;
+    gap: 2px;
+    padding: 8px 10px;
+    border-radius: 15px;
+    min-height: 36px;
+    box-sizing: border-box;
+    transition: background 0.18s ease;
+
+    .name {
+      font-size: 14px;
+      font-weight: 400;
+    }
+    &.expanded .name {
+      font-weight: 400;
+    }
+    .arrow {
+      width: 18px;
+      font-size: 12px;
+      margin-left: 2px;
+    }
+  }
+
+  .project-icon {
+    flex-shrink: 0;
+    font-size: 15px;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    margin-right: 4px;
+  }
+  .project-more {
+    position: absolute;
+    right: 30px;
+    background: @colorBgContainer;
+  }
+  .row:hover .name,
+  .row:focus-within .name {
+    padding-right: 24px;
+  }
+  .children {
+    position: relative;
+    margin: 2px 0 2px 10px;
+    padding-left: 10px;
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 8px;
+      left: 0;
+      width: 1px;
+      background: @colorBorderSecondary;
+    }
+  }
+  .child {
+    margin-left: 0;
+    padding: 8px 4px;
+    border-radius: 10px;
+    .child-name {
+      font-size: 13.5px;
+      line-height: 19px;
+    }
+    &:focus-within .child-more {
+      opacity: 1;
+    }
+  }
+}
+
+@media (hover: none) {
+  .project-more {
+    opacity: 1;
+  }
+  .compact .row .name {
+    padding-right: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project .row .arrow,
+  .project-more {
+    transition: none;
+  }
+  .project .child .status-dot {
+    animation: none;
+  }
+}
+
+// 原型 hover：项目行内按钮组；子任务以白色浮层覆盖时间，避免行高变化。
+.project-actions,
+.child-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    background: transparent;
+    cursor: pointer;
+    &:hover,
+    &:focus-visible {
+      color: @colorPrimary;
+      background: @colorPrimaryBg;
+    }
+    &:focus-visible {
+      outline: 2px solid @colorPrimary;
+      outline-offset: -2px;
+    }
+  }
+}
+.project-actions {
+  flex-shrink: 0;
+  .project-more {
+    opacity: 1;
+  }
+}
+.project .child {
+  position: relative;
+}
+.child-actions {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 1px;
+  background: @colorBgContainer;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.project .child .child-actions .child-more {
+  opacity: 1;
+}
+.project .row:hover,
+.project .row:focus-within,
+.project .child:hover,
+.project .child:focus-within {
+  background: color-mix(in srgb, @colorBgContainer 72%, transparent);
+  .project-actions,
+  .child-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+.compact {
+  .project-actions {
+    position: absolute;
+    right: 30px;
+    background: @colorBgContainer;
+    border-radius: 8px;
+  }
+  .project-actions .project-more {
+    position: static;
+    background: transparent;
+  }
+  .row:hover .name,
+  .row:focus-within .name {
+    padding-right: 50px;
+  }
+  .child:hover .child-time,
+  .child:focus-within .child-time {
+    visibility: hidden;
+  }
+}
+@media (hover: none) {
+  .project-actions,
+  .child-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .compact .row .name {
+    padding-right: 50px;
+  }
+  .project .child {
+    padding-right: 56px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .project-actions,
+  .child-actions {
+    transition: none;
+  }
+}

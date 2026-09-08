@@ -4,6 +4,7 @@ import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
+import { fetchChatboxCategories } from '@/services/square';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -69,6 +70,11 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
 
   const [records, setRecords] = useState<DisplayRecommendInfo[]>([]);
 
+  /** 对话框智能体分类下拉选项(已发布分类接口 ChatBox 分类,与首页 pill 同源) */
+  const [chatboxCategoryOptions, setChatboxCategoryOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] =
@@ -80,6 +86,35 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
 
   const isChatboxPage = config.recType === DisplayRecTypeEnum.ChatBoxNav;
   const isOfficialPage = config.recType === DisplayRecTypeEnum.Official;
+
+  useEffect(() => {
+    if (!isChatboxPage) return;
+    let cancelled = false;
+    fetchChatboxCategories()
+      .then((children) => {
+        if (!cancelled) {
+          setChatboxCategoryOptions(
+            children.map((item) => ({
+              value: item.key,
+              label: item.label,
+            })),
+          );
+        }
+      })
+      .catch((error) => {
+        console.error('fetch chatbox category list failed:', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isChatboxPage]);
+
+  /** 分类 key → 名称(列表列展示用) */
+  const categoryLabelMap = useMemo(() => {
+    return Object.fromEntries(
+      chatboxCategoryOptions.map((option) => [option.value, option.label]),
+    );
+  }, [chatboxCategoryOptions]);
 
   /** 官方推荐：当前目标类型 Tab */
   const [activeTargetType, setActiveTargetType] =
@@ -112,11 +147,13 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
 
   /**
    * 表格横向滚动宽度（Ant Design fixed 列要求 scroll.x 为数值）
-   * 排序 72 + 名称 200 + 目标ID 120 + 类型/子类型 120 + 创建/修改 340 + 操作
+   * 排序 72 + 名称 200 + 目标ID 120 + 类型/子类型 120(对话框页再加分类列 120)
+   * + 创建/修改 340 + 操作
    */
   const tableScrollX = useMemo(() => {
     const actionWidth = isChatboxPage ? 120 : 80;
-    return 72 + 200 + 120 + 120 + 170 + 170 + actionWidth;
+    const categoryWidth = isChatboxPage ? 120 : 0;
+    return 72 + 200 + 120 + 120 + categoryWidth + 170 + 170 + actionWidth;
   }, [isChatboxPage]);
 
   /** 重新加载表格 */
@@ -147,6 +184,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
       pageSize?: number;
       label?: string;
       name?: string;
+      category?: string;
     }) => {
       // 查询推荐列表（按当前页面 recType 筛选）
       const res = await apiSystemGetDisplayRecommendList({
@@ -155,6 +193,9 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         name: params.label || params.name,
         recType: config.recType,
         ...(isOfficialPage ? { targetType: activeTargetType } : {}),
+        ...(isChatboxPage && params.category
+          ? { category: params.category }
+          : {}),
       });
 
       if (res?.code !== SUCCESS_CODE) {
@@ -169,7 +210,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         total: records.length,
       };
     },
-    [activeTargetType, config.recType, isOfficialPage],
+    [activeTargetType, config.recType, isChatboxPage, isOfficialPage],
   );
 
   /**
@@ -281,6 +322,21 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
               )
             : '-',
       });
+
+      // 分类列:展示分类名称,搜索栏按分类筛选(筛选值=分类 key)
+      baseColumns.push({
+        title: dict('PC.Pages.SystemRecommendManage.colCategory'),
+        dataIndex: 'category',
+        width: 120,
+        valueType: 'select',
+        fieldProps: {
+          options: chatboxCategoryOptions,
+          allowClear: true,
+          placeholder: dict('PC.Common.Global.pleaseSelect'),
+        },
+        render: (_, record) =>
+          categoryLabelMap[record.category || ''] || record.category || '-',
+      });
     }
 
     baseColumns.push(
@@ -312,7 +368,13 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     );
 
     return baseColumns;
-  }, [config.recType, getActions, isChatboxPage]);
+  }, [
+    categoryLabelMap,
+    chatboxCategoryOptions,
+    config.recType,
+    getActions,
+    isChatboxPage,
+  ]);
 
   /**
    * 拖拽结束

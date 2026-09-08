@@ -3,15 +3,20 @@ import { normalizeTerminalWsUrl } from '@/utils/terminalWsUrl';
 import { request } from 'umi';
 import type {
   CreateUserAppParams,
+  CreateUserProjectParams,
+  ProjectLatestConversationResult,
   UpdateUserAppParams,
+  UpdateUserProjectParams,
   UserAppDevTaskInfo,
   UserAppInfo,
   UserAppLogsQueryParams,
   UserAppLogsQueryResult,
   UserAppLogsSourcesQueryParams,
   UserAppStartDevParams,
+  UserProjectItem,
   UserProjectPageQueryParams,
   UserProjectPageResult,
+  UserProjectTabPageResult,
 } from '../type';
 import { UserAppDbEnvEnum } from './appDb';
 
@@ -22,6 +27,75 @@ export async function apiUserProjectPageQuery(
   return request('/api/user-project/page-query', {
     method: 'POST',
     data,
+  });
+}
+
+/**
+ * tab 项目分页查询（2026-09-08 新接口）：项目列表 + 每个项目下的会话列表，
+ * 供首页侧栏「项目」Tab 使用。
+ */
+export async function apiUserProjectTabPageQuery(
+  data: UserProjectPageQueryParams,
+): Promise<RequestResponse<UserProjectTabPageResult>> {
+  return request('/api/user-project/tab/page-query', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 创建常规项目（管理端入口；首页对话框创建仍走 /api/project/create） */
+export async function apiUserProjectCreate(
+  data: CreateUserProjectParams,
+): Promise<RequestResponse<UserProjectItem>> {
+  return request('/api/user-project/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 按ID查询常规项目 */
+export async function apiUserProjectGetById(
+  id: number,
+): Promise<RequestResponse<UserProjectItem>> {
+  return request(`/api/user-project/get/${id}`, {
+    method: 'GET',
+  });
+}
+
+/** 更新常规项目基本信息 */
+export async function apiUserProjectUpdate(
+  data: UpdateUserProjectParams,
+): Promise<RequestResponse<UserProjectItem>> {
+  return request('/api/user-project/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 删除常规项目 */
+export async function apiUserProjectDelete(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user-project/delete/${id}`, {
+    method: 'POST',
+  });
+}
+
+/** 常规项目：获取当前用户最新会话（进项目详情无会话 id 时调用） */
+export async function apiUserProjectLatestConversation(
+  id: number,
+): Promise<RequestResponse<ProjectLatestConversationResult>> {
+  return request(`/api/user-project/conversation/${id}`, {
+    method: 'GET',
+  });
+}
+
+/** 全栈应用：获取当前用户最新会话（进项目详情无会话 id 时调用） */
+export async function apiUserAppLatestConversation(
+  id: number,
+): Promise<RequestResponse<ProjectLatestConversationResult>> {
+  return request(`/api/userapp/conversation/${id}`, {
+    method: 'GET',
   });
 }
 
@@ -126,7 +200,9 @@ export const getUserAppTaskLogsStreamUrl = (
   const baseUrl = process.env.BASE_URL || '';
   const search =
     fromSeq !== undefined && fromSeq !== null ? `?fromSeq=${fromSeq}` : '';
-  return `${baseUrl}/api/userapp/tasks/${encodeURIComponent(taskId)}/logs/stream${search}`;
+  return `${baseUrl}/api/userapp/tasks/${encodeURIComponent(
+    taskId,
+  )}/logs/stream${search}`;
 };
 
 /** 生产部署（要求发布审核通过；异步任务，返回任务行） */

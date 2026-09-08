@@ -1414,6 +1414,7 @@ export async function apiSystemCategoryCreate(data: {
   name: string;
   code: string;
   description: string;
+  icon?: string;
   type: CategoryTypeEnum | string;
 }): Promise<RequestResponse<any>> {
   return request('/api/system/category/create', {
@@ -1430,6 +1431,7 @@ export async function apiSystemCategoryUpdate(data: {
   name: string;
   code: string;
   description: string;
+  icon?: string;
   type: CategoryTypeEnum | string;
 }): Promise<RequestResponse<null>> {
   return request('/api/system/category/update', {

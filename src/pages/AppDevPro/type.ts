@@ -1,4 +1,5 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { TablePageRequest } from '@/types/interfaces/request';
 
@@ -50,6 +51,72 @@ export interface UserProjectPageResult {
   total: number;
   current: number;
   size: number;
+}
+
+/**
+ * tab 项目条目：/api/user-project/tab/page-query 记录行（2026-09-08 新接口，实测契约）。
+ * 与 UserProjectItem 的差异：主键字段为 projectId、无 publishStatus、附带项目下会话列表。
+ */
+export interface UserProjectTabItem {
+  /** 项目ID（UserApp/NormalProject 即 app_id） */
+  projectId: number;
+  /** 空间ID */
+  spaceId: number;
+  /** 项目类型 */
+  projectType: AgentComponentTypeEnum;
+  /** 项目名称 */
+  name: string;
+  /** 项目描述 */
+  description?: string | null;
+  /** 项目图标 */
+  icon?: string | null;
+  /** 沙箱ID */
+  sandboxId?: number;
+  /** 沙箱类型（Cloud 等） */
+  sandboxType?: string;
+  /** 工作目录 */
+  workspaceDir?: string | null;
+  /** 项目绑定的最新会话 ID（无则为 null） */
+  conversationId?: number | null;
+  /** 项目下的会话列表（tab 接口附带返回） */
+  conversations?: ConversationInfo[];
+  /** 更新时间 */
+  modified: string;
+  /** 创建时间 */
+  created: string;
+}
+
+/** tab 项目分页查询结果（mybatis-plus IPage 风格） */
+export interface UserProjectTabPageResult {
+  records: UserProjectTabItem[];
+  total: number;
+  current: number;
+  size: number;
+  pages?: number;
+}
+
+/** 创建常规项目参数（管理端 /api/user-project/create；首页对话框创建走 /api/project/create 另一套） */
+export interface CreateUserProjectParams {
+  spaceId?: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  sandboxId?: number;
+  devAgentId?: number;
+}
+
+/** 更新常规项目参数（传 null 的字段不更新，与全栈应用 update 同语义） */
+export interface UpdateUserProjectParams {
+  id: number;
+  name?: string;
+  description?: string;
+  icon?: string;
+}
+
+/** 项目最新会话返回（后端契约未细化字段，调用侧防御式取 conversationId/id） */
+export interface ProjectLatestConversationResult {
+  conversationId?: number;
+  id?: number;
 }
 
 /** 创建全栈应用参数 */

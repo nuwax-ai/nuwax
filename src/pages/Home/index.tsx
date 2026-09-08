@@ -11,6 +11,7 @@ import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { dict } from '@/services/i18nRuntime';
+import { fetchChatboxCategories } from '@/services/square';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
@@ -28,6 +29,7 @@ import {
   DisplayRecommendFunctionTypeEnum,
   type DisplayRecommendInfo,
 } from '@/types/interfaces/displayRecommend';
+import type { SquareCategoryInfo } from '@/types/interfaces/square';
 import { App } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -103,6 +105,10 @@ const Home: React.FC = () => {
   const [recommendNavList, setRecommendNavList] = useState<
     DisplayRecommendInfo[]
   >([]);
+  /** 内容分类 pill 数据源:已发布分类接口的 ChatBox 分类(与推荐管理配置同源) */
+  const [chatboxCategories, setChatboxCategories] = useState<
+    SquareCategoryInfo[]
+  >([]);
   const [selectedRecommend, setSelectedRecommend] =
     useState<DisplayRecommendInfo>();
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -167,6 +173,22 @@ const Home: React.FC = () => {
   useEffect(() => {
     runRecommendNavList();
   }, [runRecommendNavList]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchChatboxCategories()
+      .then((children) => {
+        if (!cancelled) {
+          setChatboxCategories(children);
+        }
+      })
+      .catch((error) => {
+        console.error('fetch chatbox categories failed:', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     setAgentDetail(undefined);
@@ -268,36 +290,27 @@ const Home: React.FC = () => {
     tenantConfigInfo.defaultTaskAgentId > 0
   );
 
-  // 内容分类列表(对话任务/项目开发/AI教育等)。
-  // TODO(后端):分类维度接口就绪后,改为直接消费接口返回的分类+pill;
-  // 当前接口只有 recChatBoxNav 一组 pill(无分类字段),先按 functionType
-  // 归类构造临时分类,文案走 i18n,接口 ready 后整体替换此适配层
+  // 内容分类列表(对话任务/项目开发/AI教育等):pill 来自已发布分类接口的
+  // ChatBox 分类,推荐按 category(分类 key)归入对应 pill;
+  // 存量未配置分类的推荐归入第一个 pill,避免内容丢失
   const categoryNavList = useMemo<HomeCategoryDef[]>(() => {
-    const isProjectDev = (item: DisplayRecommendInfo) =>
-      SPACE_SELECTOR_FUNCTION_TYPES.has(String(item.functionType || ''));
-    return [
-      {
-        key: 'chat',
-        label: dict('PC.Pages.Home.categoryChatTask'),
-        items: recommendNavList.filter((item) => !isProjectDev(item)),
-      },
-      {
-        key: 'project',
-        label: dict('PC.Pages.Home.categoryProjectDev'),
-        items: recommendNavList.filter(isProjectDev),
-      },
-      {
-        key: 'education',
-        label: dict('PC.Pages.Home.categoryAiEducation'),
-        items: [] as DisplayRecommendInfo[],
-      },
-    ];
-  }, [recommendNavList]);
+    if (chatboxCategories.length === 0) return [];
+    const firstKey = chatboxCategories[0].key;
+    return chatboxCategories.map((category) => ({
+      key: category.key,
+      label: category.label,
+      items: recommendNavList.filter(
+        (item) => (item.category || firstKey) === category.key,
+      ),
+    }));
+  }, [chatboxCategories, recommendNavList]);
 
   // 默认分类 = 第一个有内容的分类(数据到达时 Segmented 才首挂,值直接就位,
   // 避免挂载后回落引发滑块从起始分类滑过来的无意义动画);用户手动点过则优先
   const autoCategoryKey =
-    categoryNavList.find((c) => c.items.length > 0)?.key ?? 'chat';
+    categoryNavList.find((c) => c.items.length > 0)?.key ??
+    chatboxCategories[0]?.key ??
+    '';
   const activeCategory = userPickedCategory ?? autoCategoryKey;
 
   const activeCategoryItems =
