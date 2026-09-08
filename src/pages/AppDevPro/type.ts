@@ -195,3 +195,52 @@ export interface UserAppLogsQueryResult {
   /** 日志列表（兼容 records） */
   records?: Array<UserAppLogItem | string>;
 }
+
+/** 运行时操作：启动 / 重启 / 停止 */
+export type UserAppRuntimeAction = 'start' | 'restart' | 'stop';
+
+/** 发布 / 启动任务流程阶段 */
+export type UserAppPublishPhase =
+  | 'idle'
+  | 'starting'
+  | 'building'
+  | 'applying'
+  | 'success'
+  | 'failed'
+  | 'cancelled';
+
+/** 任务终态 */
+export type UserAppTaskTerminalStatus = 'succeeded' | 'failed' | 'cancelled';
+
+/** 单个服务（serviceId）的构建进度 */
+export interface UserAppTaskServiceProgress {
+  /** 服务 ID，如 web / api */
+  serviceId: string;
+  /** 进度 0-100 */
+  progress: number;
+  /** 服务状态文案 */
+  status: string;
+  /** 日志行 */
+  logs: string[];
+}
+
+/** 任务进度 SSE 事件（字段做兼容解析） */
+export interface UserAppTaskLogEvent {
+  seq?: number;
+  serviceId?: string;
+  service?: string;
+  status?: string;
+  taskStatus?: string;
+  progress?: number;
+  percent?: number;
+  message?: string;
+  log?: string;
+  content?: string;
+  text?: string;
+  line?: string;
+  error?: string;
+  done?: boolean;
+  completed?: boolean;
+  type?: string;
+  [key: string]: unknown;
+}

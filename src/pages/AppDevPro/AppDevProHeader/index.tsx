@@ -41,7 +41,9 @@ export interface AppDevProHeaderProps {
   /** 更新应用成功 */
   onConfirmUpdate?: (info: UserAppInfo) => void;
   /** 点击发布 */
-  onPublish: () => void;
+  onPublish?: () => void;
+  /** 发布进行中（构建 / 提交申请） */
+  publishing?: boolean;
   /** 文件树侧边栏是否可见 */
   isFileTreeSidebarVisible?: boolean;
   /** 切换文件树侧边栏显隐 */
@@ -82,6 +84,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   spaceId,
   onConfirmUpdate,
   onPublish,
+  publishing = false,
   isFileTreeSidebarVisible = false,
   onToggleFileTreeSidebar,
   isTerminalPanelOpen = false,
@@ -120,11 +123,11 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
 
   /** 发布按钮是否禁用 */
   const publishDisabled = useMemo(() => {
-    if (!userAppInfo) {
+    if (!userAppInfo || publishing) {
       return true;
     }
     return userAppInfo.publishStatus === PublishStatusEnum.Applying;
-  }, [userAppInfo]);
+  }, [publishing, userAppInfo]);
 
   const showUnpublishedTag =
     !!onPublish &&
@@ -314,8 +317,15 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
         </ConditionRender>
 
         {/* 发布按钮 */}
-        <Button type="primary" onClick={onPublish} disabled={publishDisabled}>
-          {dict('PC.Pages.AgentEdit.publish')}
+        <Button
+          type="primary"
+          onClick={onPublish}
+          loading={publishing}
+          disabled={publishDisabled}
+        >
+          {publishing
+            ? dict('PC.Pages.AppDevHeader.publishing')
+            : dict('PC.Pages.AgentEdit.publish')}
         </Button>
       </div>
     </header>

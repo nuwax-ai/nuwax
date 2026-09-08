@@ -7,12 +7,15 @@ import { getFileIcon } from '@/utils/fileTree';
 import {
   BarChartOutlined,
   BranchesOutlined,
+  CaretRightOutlined,
   CloseOutlined,
   CodeOutlined,
   DatabaseOutlined,
   FormOutlined,
   LockOutlined,
+  PoweroffOutlined,
   PushpinFilled,
+  RedoOutlined,
   ReloadOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
@@ -36,6 +39,7 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
 import {
+  getToolTabId,
   isPermanentWorkspaceToolTab,
   WORKSPACE_PREVIEW_TOOL_IDS,
 } from '../hooks/usePreviewTabs';
@@ -86,6 +90,18 @@ export interface PreviewTabBarProps {
   previewUrl?: string;
   /** 刷新应用预览 iframe */
   onRefreshPreview?: () => void;
+  /** 启动当前环境预览服务 */
+  onStartPreviewRuntime?: () => void;
+  /** 重启当前环境预览服务 */
+  onRestartPreviewRuntime?: () => void;
+  /** 停止当前环境预览服务 */
+  onStopPreviewRuntime?: () => void;
+  /** 启动 / 重启进行中 */
+  previewRuntimeBusy?: boolean;
+  /** 服务是否已启动 */
+  previewRuntimeRunning?: boolean;
+  /** 停止进行中 */
+  previewRuntimeStopping?: boolean;
 }
 
 interface TabItemFaceProps {
@@ -318,6 +334,12 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onModelChange,
   previewUrl,
   onRefreshPreview,
+  onStartPreviewRuntime,
+  onRestartPreviewRuntime,
+  onStopPreviewRuntime,
+  previewRuntimeBusy = false,
+  previewRuntimeRunning = false,
+  previewRuntimeStopping = false,
 }) => {
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
@@ -691,6 +713,49 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           </div>
         </div>
       </div>
+
+        {/* 应用预览：启动 / 重启 / 停止 */}
+        {activeTabId === getToolTabId('preview') && onStartPreviewRuntime && (
+          <div className={cx(styles['preview-runtime-actions'])}>
+            <Tooltip title={dict('PC.Pages.AppDevPro.startService')}>
+              <button
+                type="button"
+                className={cx(styles['preview-runtime-btn'])}
+                aria-label={dict('PC.Pages.AppDevPro.startService')}
+                disabled={previewRuntimeBusy || previewRuntimeRunning}
+                onClick={onStartPreviewRuntime}
+              >
+                <CaretRightOutlined />
+              </button>
+            </Tooltip>
+            <Tooltip title={dict('PC.Pages.AppDevPro.restartService')}>
+              <button
+                type="button"
+                className={cx(styles['preview-runtime-btn'])}
+                aria-label={dict('PC.Pages.AppDevPro.restartService')}
+                disabled={previewRuntimeBusy || previewRuntimeStopping}
+                onClick={onRestartPreviewRuntime}
+              >
+                <RedoOutlined />
+              </button>
+            </Tooltip>
+            <Tooltip title={dict('PC.Pages.AppDevPro.stopService')}>
+              <button
+                type="button"
+                className={cx(styles['preview-runtime-btn'], styles['preview-runtime-btn-stop'])}
+                aria-label={dict('PC.Pages.AppDevPro.stopService')}
+                disabled={
+                  previewRuntimeBusy ||
+                  previewRuntimeStopping ||
+                  !previewRuntimeRunning
+                }
+                onClick={onStopPreviewRuntime}
+              >
+                <PoweroffOutlined />
+              </button>
+            </Tooltip>
+          </div>
+        )}
 
         {/* 当前应用预览地址栏 */}
         {previewUrl !== undefined && (

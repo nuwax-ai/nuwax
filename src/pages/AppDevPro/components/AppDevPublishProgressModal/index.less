@@ -1,0 +1,96 @@
+@import '@/styles/token';
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.overall {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phaseText {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  color: @colorTextSecondary;
+}
+
+.successIcon {
+  color: @colorSuccess;
+}
+
+.errorIcon {
+  color: @colorError;
+}
+
+.serviceList {
+  background: transparent;
+
+  :global(.ant-collapse-item) {
+    margin-bottom: 8px;
+    border: @lineWidth solid @colorBorderSecondary;
+    border-radius: @borderRadius;
+    overflow: hidden;
+  }
+
+  :global(.ant-collapse-header) {
+    align-items: center !important;
+  }
+}
+
+.serviceHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  padding-right: 8px;
+}
+
+.serviceName {
+  flex-shrink: 0;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: @colorText;
+}
+
+.serviceTag {
+  flex-shrink: 0;
+  margin-inline-end: 0;
+}
+
+.serviceProgress {
+  flex: 1;
+  min-width: 80px;
+  margin-bottom: 0 !important;
+}
+
+.log {
+  max-height: 180px;
+  margin: 0;
+  padding: 8px 12px;
+  overflow: auto;
+  background: @colorFillTertiary;
+  border-radius: @borderRadiusSm;
+  color: @colorText;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.emptyLogs {
+  padding: 16px 0;
+  color: @colorTextTertiary;
+  font-size: 13px;
+  text-align: center;
+}

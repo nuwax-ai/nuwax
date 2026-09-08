@@ -33,6 +33,7 @@ import {
   apiRestartAgent,
   apiRestartPod,
   isEnsurePodThrottledError,
+  type ComputerPodAppStage,
 } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
@@ -309,9 +310,35 @@ export default () => {
     },
   });
 
+  /**
+   * 全栈应用环境（仅 AppDevPro 设置）。
+   * 未设置时 computer/pod 老接口不带 appStage，保证会话智能体等页面行为不变。
+   */
+  const podAppStageRef = useRef<ComputerPodAppStage | undefined>(undefined);
+  const setPodAppStage = useCallback((stage?: ComputerPodAppStage) => {
+    podAppStageRef.current = stage;
+  }, []);
+
+  const ensurePodWithStage = useCallback(
+    (cId: number) => apiEnsurePod(cId, podAppStageRef.current),
+    [],
+  );
+  const keepalivePodWithStage = useCallback(
+    (cId: number) => apiKeepalivePod(cId, podAppStageRef.current),
+    [],
+  );
+  const restartPodWithStage = useCallback(
+    (cId: number) => apiRestartPod(cId, podAppStageRef.current),
+    [],
+  );
+  const restartAgentWithStage = useCallback(
+    (cId: number) => apiRestartAgent(cId, podAppStageRef.current),
+    [],
+  );
+
   // 重启智能体
   const { run: restartAgent, loading: isRestartAgentLoading } = useRequest(
-    apiRestartAgent,
+    restartAgentWithStage,
     {
       manual: true,
       debounceWait: 500,
@@ -359,7 +386,7 @@ export default () => {
 
   // 远程桌面容器保活轮询
   const { run: runKeepalivePodPolling, cancel: stopKeepalivePodPolling } =
-    useRequest(apiKeepalivePod, {
+    useRequest(keepalivePodWithStage, {
       manual: true,
       loadingDelay: 30000,
       debounceWait: 5000,
@@ -376,7 +403,7 @@ export default () => {
             console.log(
               '[keepalive] Page visible, calling apiEnsurePod to ensure container running',
             );
-            await apiEnsurePod(params[0]);
+            await ensurePodWithStage(params[0]);
           } catch (error) {
             console.error('[keepalive] apiEnsurePod failed:', error);
           }
@@ -398,7 +425,7 @@ export default () => {
     }
     try {
       // 启动容器
-      const { code, data } = await apiEnsurePod(cId);
+      const { code, data } = await ensurePodWithStage(cId);
       if (code === SUCCESS_CODE) {
         // 设置远程桌面容器信息
         setVncContainerInfo(data?.container_info);
@@ -421,7 +448,7 @@ export default () => {
    */
   const ensureDesktopConnection = useCallback(async (cId: number) => {
     try {
-      const { code, data } = await apiEnsurePod(cId);
+      const { code, data } = await ensurePodWithStage(cId);
       if (code !== SUCCESS_CODE) {
         // HTTP 200 但业务码非成功（配额/权限/策略等）：抛错让调用方感知
         throw new Error(`ensurePod failed (code: ${code})`);
@@ -462,7 +489,7 @@ export default () => {
         }
       }
 
-      const result = await apiRestartPod(cId);
+      const result = await restartPodWithStage(cId);
       if (result.code === SUCCESS_CODE) {
         message.success(
           dict('PC.Models.ConversationInfo.restartVncPodSuccess'),
@@ -2123,6 +2150,11 @@ export default () => {
     openPreviewView,
     // 重启智能体电脑
     restartVncPod,
+    /**
+     * 仅 AppDevPro 设置：computer/pod 老接口附带 appStage。
+     * 离开页面时需清空，避免污染会话智能体等页面。
+     */
+    setPodAppStage,
     // 重启智能体
     restartAgent,
     isRestartAgentLoading,

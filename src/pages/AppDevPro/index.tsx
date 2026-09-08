@@ -54,6 +54,7 @@ import AgentConversationChatPanel from './AgentConversationChatPanel';
 import AppDevProHeader from './AppDevProHeader';
 import AppDevAppPreviewPanel from './components/AppDevAppPreviewPanel';
 import AppDevDatabasePanel from './components/AppDevDatabasePanel';
+import AppDevPublishProgressModal from './components/AppDevPublishProgressModal';
 import AppDevRemoteDesktopPanel from './components/AppDevRemoteDesktopPanel';
 import AppDevSettingsModal from './components/AppDevSettingsModal';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
@@ -66,6 +67,8 @@ import {
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
+import { useUserAppPublish } from './hooks/useUserAppPublish';
+import { useUserAppRuntime } from './hooks/useUserAppRuntime';
 import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
 import {
@@ -212,6 +215,8 @@ const AppDevPro: React.FC = () => {
     runAsync,
     resetInit,
     restartVncPod,
+    setPodAppStage,
+    restartAgent,
     refreshGitListRef,
   } = useModel('conversationInfo');
 
@@ -219,6 +224,21 @@ const AppDevPro: React.FC = () => {
   const fileTreeDataRef = useRef(fileTreeData);
   /** 文件树数据 ref，供防抖保存读取最新列表 */
   fileTreeDataRef.current = fileTreeData;
+
+  /**
+   * 仅在 AppDevPro 把当前环境写入 conversationInfo，
+   * 供 ensure/restart/keepalive/stop 老接口附带 appStage；离开页面时清空，避免污染其它页面。
+   */
+  useEffect(() => {
+    setPodAppStage(dbEnv);
+  }, [dbEnv, setPodAppStage]);
+
+  useEffect(
+    () => () => {
+      setPodAppStage(undefined);
+    },
+    [setPodAppStage],
+  );
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
@@ -462,6 +482,52 @@ const AppDevPro: React.FC = () => {
       }
     },
   });
+
+  /** 发布：构建 → SSE 进度 → 提交发布申请 */
+  const publishFlow = useUserAppPublish({
+    appId,
+    spaceId,
+    onPublished: () => {
+      if (appId) {
+        runGetUserAppInfo(appId);
+      }
+    },
+  });
+
+  /** 应用预览：按环境启动 / 重启 / 停止，启动过程走任务 SSE */
+  const previewRuntime = useUserAppRuntime({
+    appId,
+    env: dbEnv,
+    userAppInfo,
+    onReady: () => {
+      setPreviewRefreshKey((prev) => prev + 1);
+    },
+  });
+
+  /** 预览启动 / 重启进度弹窗文案 */
+  const previewRuntimeModalCopy = useMemo(() => {
+    const isRestart = previewRuntime.action === 'restart';
+    return {
+      title: isRestart
+        ? dict('PC.Pages.AppDevPro.restartService')
+        : dict('PC.Pages.AppDevPro.startService'),
+      startingText: isRestart
+        ? dict('PC.Pages.AppDevPro.restartingService')
+        : dict('PC.Pages.AppDevPro.startingService'),
+      runningText: isRestart
+        ? dict('PC.Pages.AppDevPro.restartingService')
+        : dict('PC.Pages.AppDevPro.startingService'),
+      successText: isRestart
+        ? dict('PC.Pages.AppDevPro.restartSuccess')
+        : dict('PC.Pages.AppDevPro.startSuccess'),
+      failedText: isRestart
+        ? dict('PC.Pages.AppDevPro.restartFailed')
+        : dict('PC.Pages.AppDevPro.startFailed'),
+      cancelledText: dict('PC.Pages.AppDevPro.startCancelled'),
+      cancelTitle: dict('PC.Pages.AppDevPro.cancelStartTitle'),
+      cancelContent: dict('PC.Pages.AppDevPro.cancelStartContent'),
+    };
+  }, [previewRuntime.action]);
 
   /** 查询应用绑定的域名列表 */
   const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
@@ -874,6 +940,8 @@ const AppDevPro: React.FC = () => {
           restartVncPod(queryConversationId, finalSelectedComputerId);
         }
       },
+      /** 全栈应用环境，computer/pod 老接口附带 appStage */
+      appStage: dbEnv,
       /** 重命名文件 */
       onRenameFile: handleConfirmRenameFile,
       /** 创建文件 */
@@ -982,6 +1050,7 @@ const AppDevPro: React.FC = () => {
     handleImportProject,
     isImportingProject,
     restartVncPod,
+    dbEnv,
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
@@ -1243,10 +1312,22 @@ const AppDevPro: React.FC = () => {
     previewTabs.openToolTab('database');
   }, [previewTabs]);
 
-  /** 打开应用预览页签（已存在则激活） */
+  /** 打开应用预览页签（已存在则激活），并按需启动当前环境服务 */
   const handleOpenAppPreview = useCallback(() => {
     previewTabs.openToolTab('preview');
-  }, [previewTabs]);
+    previewRuntime.startIfNeeded();
+  }, [previewRuntime, previewTabs]);
+
+  /** 停止当前环境预览服务 */
+  const handleStopPreviewRuntime = useCallback(() => {
+    modalConfirm(
+      dict('PC.Pages.AppDevPro.confirmStopTitle'),
+      dict('PC.Pages.AppDevPro.confirmStopContent'),
+      () => {
+        void previewRuntime.stop();
+      },
+    );
+  }, [previewRuntime]);
 
   /** 刷新应用预览 iframe */
   const handleRefreshPreview = useCallback(() => {
@@ -1381,6 +1462,11 @@ const AppDevPro: React.FC = () => {
               restartVncPod(queryConversationId, finalSelectedComputerId);
             }
           }}
+          onRestartAgent={() => {
+            if (queryConversationId) {
+              restartAgent(queryConversationId);
+            }
+          }}
           /** 导出项目 */
           onExportProject={() => {
             void fileView.tree.handleExportProject?.();
@@ -1389,6 +1475,12 @@ const AppDevPro: React.FC = () => {
           isCloudComputer={finalSelectedComputerId === '-1'}
           previewUrl={appPreviewUrl}
           onRefreshPreview={handleRefreshPreview}
+          onStartPreviewRuntime={previewRuntime.start}
+          onRestartPreviewRuntime={previewRuntime.restart}
+          onStopPreviewRuntime={handleStopPreviewRuntime}
+          previewRuntimeBusy={previewRuntime.busy}
+          previewRuntimeRunning={previewRuntime.running}
+          previewRuntimeStopping={previewRuntime.stopping}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1419,6 +1511,7 @@ const AppDevPro: React.FC = () => {
             conversationId={
               finalSelectedComputerId === '-1' ? queryConversationId : undefined
             }
+            appStage={dbEnv}
             visible={showDevConsole}
             wsUrl={terminalWsUrl}
             wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
@@ -1474,6 +1567,8 @@ const AppDevPro: React.FC = () => {
         userAppInfo={userAppInfo}
         spaceId={spaceId}
         onConfirmUpdate={setUserAppInfo}
+        onPublish={publishFlow.startPublish}
+        publishing={publishFlow.publishing}
         isFileTreeSidebarVisible={isFileTreeIconActive}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
         isTerminalPanelOpen={isTerminalIconActive}
@@ -1592,6 +1687,39 @@ const AppDevPro: React.FC = () => {
             runGetUserAppDomainList(appId);
           }
         }}
+      />
+
+      {/* 发布进度：构建日志 + 提交申请 */}
+      <AppDevPublishProgressModal
+        open={publishFlow.open}
+        phase={publishFlow.phase}
+        services={publishFlow.services}
+        overallProgress={publishFlow.overallProgress}
+        errorMessage={publishFlow.errorMessage}
+        cancelLoading={publishFlow.cancelLoading}
+        onCancelTask={publishFlow.cancelTask}
+        onClose={publishFlow.closeModal}
+      />
+
+      {/* 应用预览启动 / 重启进度 */}
+      <AppDevPublishProgressModal
+        open={previewRuntime.open}
+        phase={previewRuntime.phase}
+        services={previewRuntime.services}
+        overallProgress={previewRuntime.overallProgress}
+        errorMessage={previewRuntime.errorMessage}
+        cancelLoading={previewRuntime.cancelLoading}
+        onCancelTask={previewRuntime.cancelTask}
+        onClose={previewRuntime.closeModal}
+        showSteps={false}
+        title={previewRuntimeModalCopy.title}
+        startingText={previewRuntimeModalCopy.startingText}
+        runningText={previewRuntimeModalCopy.runningText}
+        successText={previewRuntimeModalCopy.successText}
+        failedText={previewRuntimeModalCopy.failedText}
+        cancelledText={previewRuntimeModalCopy.cancelledText}
+        cancelTitle={previewRuntimeModalCopy.cancelTitle}
+        cancelContent={previewRuntimeModalCopy.cancelContent}
       />
     </div>
   );
