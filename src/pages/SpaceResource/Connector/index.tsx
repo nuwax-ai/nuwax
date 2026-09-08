@@ -2,6 +2,7 @@ import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import ConnectorProviderCreateDrawer from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderCreateDrawer';
+import ConnectorProviderDetailDrawer from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderDetailDrawer';
 import ConnectorProviderEditDrawer from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderEditDrawer';
 import {
   AUTH_TYPE_COLOR_MAP,
@@ -47,7 +48,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history } from 'umi';
 import ConnectorImportDrawer from './components/ConnectorImportDrawer';
 import styles from './index.less';
 
@@ -77,8 +77,8 @@ import styles from './index.less';
  * 行内「编辑」复用管理端 ConnectorProviderEditDrawer，
  * meta 更新走 PUT /api/connector/providers/{service}，
  * oauth2+platform 的 App 配置保存走 POST /api/connector/oauth/shared-config；
- * 行内「查看」跳转详情子页面 /space/:spaceId/connector/detail
- * （概览含连接状态 + 工具列表表格 + 去连接/OAuth 授权流程）。
+ * 行内「查看」原地打开右侧 ConnectorProviderDetailDrawer 详情抽屉
+ * （概览含连接状态 + 工具列表表格 + 去连接/OAuth 授权流程，不跳路由保住筛选态）。
  */
 
 /** 检查导出数据是否为空（数组看长度、对象看 key 数、字符串看 trim 后长度） */
@@ -155,6 +155,11 @@ const SpaceConnector: React.FC = () => {
   const [editDrawerOpen, setEditDrawerOpen] = useState<boolean>(false);
   const [editingRecord, setEditingRecord] =
     useState<ConnectorProviderInfo | null>(null);
+  /**
+   * 「查看」详情抽屉当前展示的连接器 service（null = 关闭）
+   * 原地展开抽屉而非跳转子页面路由 —— 列表筛选态与滚动位置得以保留
+   */
+  const [detailService, setDetailService] = useState<string | null>(null);
   /** 正在导出的连接器 service（防重复触发，同一时间仅一条导出在飞） */
   const [exportingService, setExportingService] = useState<string | null>(null);
   /** 正在启停切换的连接器 service（防重复触发） */
@@ -294,15 +299,13 @@ const SpaceConnector: React.FC = () => {
   );
 
   /**
-   * 行内「查看」按钮：跳转连接器详情子页面
-   * （概览 + 工具列表表格 + 连接流程；service/spaceId 走 query）
+   * 行内「查看」按钮：原地打开连接器详情抽屉
+   * （概览 + 工具列表表格 + 连接流程；spaceId 取当前选中空间）
    */
   const handleView = useCallback(
     (record: ConnectorProviderInfo) => {
       if (selectedSpaceId === null) return;
-      history.push(
-        `/space/${selectedSpaceId}/connector/detail?service=${record.service}&spaceId=${selectedSpaceId}`,
-      );
+      setDetailService(record.service);
     },
     [selectedSpaceId],
   );
@@ -679,8 +682,8 @@ const SpaceConnector: React.FC = () => {
           setEditDrawerOpen(false);
           setEditingRecord(null);
         }}
-        // 保存成功：刷新表格列表，并跳转「查看」详情子页面
-        // （详情页内部会拉 GET /api/connector/providers/{service} 展示最新数据）
+        // 保存成功：刷新表格列表，并原地打开「查看」详情抽屉
+        // （抽屉内部会拉 GET /api/connector/providers/{service} 展示最新数据）
         onSaved={(payload) => {
           actionRef.current?.reload();
           const service =
@@ -688,15 +691,25 @@ const SpaceConnector: React.FC = () => {
             (payload as { service?: string } | undefined)?.service;
           setEditDrawerOpen(false);
           setEditingRecord(null);
-          if (service && selectedSpaceId !== null) {
-            history.push(
-              `/space/${selectedSpaceId}/connector/detail?service=${service}&spaceId=${selectedSpaceId}`,
-            );
+          if (service) {
+            setDetailService(service);
           }
         }}
         updateProviderMeta={apiConnectorProviderUpdateMeta}
         saveOauthConfig={apiConnectorOauthSharedConfigSave}
         spaceId={selectedSpaceId ?? undefined}
+      />
+
+      {/* 查看详情抽屉（右侧滑出，空间维度：展示去连接/去授权，工具增删改走空间接口；
+          原地展开不跳路由 —— 列表筛选态保留；连接状态与工具数变化后刷新列表） */}
+      <ConnectorProviderDetailDrawer
+        open={detailService !== null}
+        service={detailService ?? ''}
+        scope="space"
+        spaceId={selectedSpaceId ?? undefined}
+        onClose={() => setDetailService(null)}
+        onConnectionChanged={() => actionRef.current?.reload()}
+        onActionsChanged={() => actionRef.current?.reload()}
       />
     </WorkspaceLayout>
   );
