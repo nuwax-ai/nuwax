@@ -25,9 +25,10 @@ import styles from './index.less';
  * - no_auth：免鉴权提示（无配置项）
  * - bearer：固定约定提示（建连收集 Token，自动注入 Authorization 头）
  * - api_key：凭证字段名 + 注入位置（header 时含请求头名称）+ 值前缀
- * - custom：凭证字段 + 注入规则两组动态行（行可增删）
+ * - custom：凭证字段 + 注入规则两组动态行（行可增删；凭证字段
+ *   至少一行填了字段名，提交时列表级校验拦截）
  * - oauth2：OAUTH APP 模式二选一；platform 展示平台 App 配置（Client ID /
- *   Secret / 授权端点 / 令牌端点 / scopes / 回调地址），byo 仅提示
+ *   Secret / 授权端点 / 令牌端点必填，scopes / 回调地址），byo 仅提示
  *
  * 表单字段直接挂在所属抽屉的 form 上（name 与两处抽屉的表单值类型
  * ConnectorAuthFormValues 对齐），本组件不维护自身状态。
@@ -264,9 +265,26 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
         </div>
       ) : authType === 'custom' ? (
         <>
-          {/* ===== 凭证字段（连接界面逐项收集）：动态行，支持添加/删除 ===== */}
-          <Form.List name="customCredentialFields">
-            {(fields, { add, remove }) => (
+          {/* ===== 凭证字段（连接界面逐项收集）：动态行，支持添加/删除；
+              列表级校验：至少要有一行填了字段名，否则提交拦截
+              （空行提交时会被过滤，等于没有凭证字段可收集） ===== */}
+          <Form.List
+            name="customCredentialFields"
+            rules={[
+              {
+                validator: async (_, value) => {
+                  const rows =
+                    (value as Array<{ name?: string }> | undefined) ?? [];
+                  if (!rows.some((row) => row?.name?.trim())) {
+                    return Promise.reject(
+                      new Error('至少配置一个凭证字段（字段名必填）'),
+                    );
+                  }
+                },
+              },
+            ]}
+          >
+            {(fields, { add, remove }, meta) => (
               <>
                 <div className={styles.customGroupHeader}>
                   <span className={styles.customGroupTitle}>
@@ -310,6 +328,10 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                     />
                   </div>
                 ))}
+                {/* 列表级校验错误：Form.List 的 rules 错误需自行渲染 */}
+                {meta.errors.length > 0 ? (
+                  <div className={styles.customListError}>{meta.errors[0]}</div>
+                ) : null}
               </>
             )}
           </Form.List>
@@ -420,7 +442,11 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
               </Row>
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item name="oauthAuthUrl" label="授权端点 AUTHURL">
+                  <Form.Item
+                    name="oauthAuthUrl"
+                    label="授权端点 AUTHURL"
+                    rules={[{ required: true, message: '请输入授权端点' }]}
+                  >
                     <Input
                       placeholder="https://idp.example.com/oauth"
                       allowClear
@@ -428,7 +454,11 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="oauthTokenUrl" label="令牌端点 TOKENURL">
+                  <Form.Item
+                    name="oauthTokenUrl"
+                    label="令牌端点 TOKENURL"
+                    rules={[{ required: true, message: '请输入令牌端点' }]}
+                  >
                     <Input
                       placeholder="https://idp.example.com/oauth"
                       allowClear
@@ -451,12 +481,6 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                 >
                   {OAUTH_CALLBACK_URL}
                 </Typography.Text>
-              </div>
-              <div className={styles.authHint}>
-                该 App
-                配置为共享：平台级管理员维护后全员共用（自建连接器为空间共享）。
-                <br />
-                client_secret 加密落库，界面与日志不回显明文。
               </div>
             </>
           )}
