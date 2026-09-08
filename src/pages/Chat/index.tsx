@@ -12,12 +12,14 @@ import ResizableSplit from '@/components/ResizableSplit';
 
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
@@ -40,21 +42,21 @@ import {
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
+import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import { apiAgentConversation } from '@/services/agentConfig';
+import { fetchContentOutcome } from '@/services/skill';
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
-import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
-import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 
-import { updateFilesListContent } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
 } from '@/utils/terminalWsUrl';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Form } from 'antd';
+import { message as antdMessage, Form } from 'antd';
 import classNames from 'classnames';
+import { throttle } from 'lodash';
 import React, {
   useCallback,
   useEffect,
@@ -71,7 +73,15 @@ import { useChatFiles } from './hooks/useChatFiles';
 import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
+import { useLocalDirectoryFiles } from './hooks/useLocalDirectoryFiles';
+import { useWorkspaceDirectoryFiles } from './hooks/useWorkspaceDirectoryFiles';
 import styles from './index.less';
+import {
+  parentDirectory,
+  WORKSPACE_SOURCE_ID,
+  workspaceNodeId,
+  workspaceRelativePath,
+} from './utils/fileDataSource';
 
 const cx = classNames.bind(styles);
 export interface ChatCoreProps {
@@ -83,6 +93,12 @@ export interface ChatCoreProps {
   enableResizable?: boolean; // 是否开启拖拽分栏布局，默认 true
   showClearContext?: boolean; // 是否展示清除上下文按钮（刷子），默认 true
   defaultFileTreeVisible?: boolean; // 是否默认显示文件树，默认 false
+  /**
+   * #5a 文件树懒加载收尾：本页是否自管文件树数据（单层 hook），默认 true。
+   * 置 true 时模型层跳过全量递归拉取、只发刷新信号；依赖模型全量树做
+   * 变更信号的宿主（如 SkillDetailsConversation）显式传 false 保持原行为。
+   */
+  fileTreeSelfManaged?: boolean;
   renderTitle?: (props: {
     effectiveAgent: any;
     isAppSidebarMode: boolean;
@@ -102,6 +118,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   enableResizable = true,
   showClearContext = true,
   defaultFileTreeVisible = false,
+  fileTreeSelfManaged = true,
   renderTitle,
   renderHeaderRight,
 }) => {
@@ -140,6 +157,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
 
   // 开放应用智能体会话聊天页面相关状态
+  const localDirectoryFiles = useLocalDirectoryFiles(id);
+  const workspaceDirectoryFiles = useWorkspaceDirectoryFiles(
+    id,
+    !localDirectoryFiles.active,
+  );
   const {
     handleSetAppAgentDetail,
     isAppSidebarMode,
@@ -209,6 +231,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     loadingSuggest,
     onMessageSend,
     messageViewRef,
+    // 双线分支：新线 effects 所需页面资源补充解构（单份共享注入；其余基线已解构）
+    setCardList,
+    setTaskAgentSelectTrigger,
+    setFileTreeRefreshTrigger,
+    setFileTreeSelfManaged,
     allowAutoScrollRef,
     scrollTimeoutRef,
     showScrollBtn,
@@ -231,9 +258,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     closePreviewView,
     // 清除文件面板信息
     clearFilePanelInfo,
-    // 文件树数据
-    fileTreeData,
-    fileTreeDataLoading,
     // 文件树视图模式
     viewMode,
     // 处理文件列表刷新事件
@@ -281,8 +305,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   const { isMobile } = useModel('layout');
 
+  // 会话记录目录回显（wiki #17）：打开会话时把创建时记录的 workspaceDir
+  // 补入文件树本地目录数据源
+  useEffect(() => {
+    localDirectoryFiles.seedRecordedRoot(conversationInfo?.workspaceDir);
+  }, [conversationInfo?.workspaceDir, localDirectoryFiles.seedRecordedRoot]);
+
   // 会话记录
-  const { runHistoryItem } = useModel('conversationHistory');
+  const { runHistory, runHistoryItem } = useModel('conversationHistory');
 
   // 统一 Agent 数据源：优先使用会话关联的智能体快照，兜底使用详情接口数据
   const effectiveAgent = useMemo(() => {
@@ -647,8 +677,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     handleExportProject,
   } = useChatFiles({
     id,
-    fileTreeData,
-    handleRefreshFileList,
+    fileTreeData: workspaceDirectoryFiles.files,
+    handleRefreshFileList: async () => workspaceDirectoryFiles.refresh(),
     onFileMutationSuccessRef: refreshGitListRef,
   });
 
@@ -667,31 +697,125 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
   const isGitStatusRefreshDisabled = !hasValidMessageList;
 
+  const workspaceTaskSelectedFileId = taskAgentSelectedFileId
+    ? workspaceNodeId(workspaceRelativePath(taskAgentSelectedFileId))
+    : '';
+
+  /**
+   * TaskResult/Markdown 仍传历史相对路径。逐层文件树必须先进入父目录，
+   * 再由 useFileTreePreviewView 在当前层数据到达后完成自动选中。
+   */
+  useEffect(() => {
+    if (!taskAgentSelectedFileId || taskAgentSelectTrigger === undefined) {
+      return;
+    }
+    const relativePath = workspaceRelativePath(taskAgentSelectedFileId);
+    if (localDirectoryFiles.active) {
+      void localDirectoryFiles.navigation?.onSelectSource(WORKSPACE_SOURCE_ID);
+    }
+    workspaceDirectoryFiles.navigate(parentDirectory(relativePath));
+  }, [taskAgentSelectTrigger]);
+
+  /**
+   * #5a 文件树懒加载收尾：向模型声明本页自管文件树（单层 hook）。
+   * 模型层据此跳过全量递归拉取；卸载时复位，避免影响后续依赖模型树的页面。
+   */
+  useEffect(() => {
+    setFileTreeSelfManaged(fileTreeSelfManaged);
+    return () => setFileTreeSelfManaged(false);
+  }, [fileTreeSelfManaged, setFileTreeSelfManaged]);
+
+  /**
+   * #5a 文件树懒加载收尾：订阅模型层刷新信号，节流刷新当前层目录列表。
+   * 门控后模型层不再全量拉树、只发 fileTreeRefreshTrigger（SSE 流式期间 /
+   * 任务结束 / 打开预览均会触发），此处刷新 active 源当前目录补齐列表同步。
+   * 当前打开文件的正文重拉由 useFileTreePreviewView 内已有的 trigger
+   * 监听负责，两者互不重复。
+   */
+  const handledDirectoryRefreshTriggerRef = useRef<number>(0);
+  const activeDirectoryRefreshRef = useRef<() => void>(() => {});
+  activeDirectoryRefreshRef.current = localDirectoryFiles.active
+    ? localDirectoryFiles.refresh
+    : workspaceDirectoryFiles.refresh;
+  const throttledRefreshActiveDirectory = useMemo(
+    () =>
+      throttle(() => activeDirectoryRefreshRef.current(), 2000, {
+        leading: true,
+        trailing: true,
+      }),
+    [],
+  );
+  useEffect(
+    () => () => throttledRefreshActiveDirectory.cancel(),
+    [throttledRefreshActiveDirectory],
+  );
+  useEffect(() => {
+    if (
+      !fileTreeRefreshTrigger ||
+      handledDirectoryRefreshTriggerRef.current === fileTreeRefreshTrigger
+    ) {
+      return;
+    }
+    handledDirectoryRefreshTriggerRef.current = fileTreeRefreshTrigger;
+    throttledRefreshActiveDirectory();
+  }, [fileTreeRefreshTrigger, throttledRefreshActiveDirectory]);
+
   /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
   const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
 
   // 文件视图 props
   const fileView = useFileTreePreviewView({
-    taskAgentSelectedFileId,
+    taskAgentSelectedFileId: workspaceTaskSelectedFileId,
     taskAgentSelectTrigger,
     // 会话结束文件树刷新后兜底重拉当前打开文件正文
     fileTreeRefreshTrigger,
-    originalFiles: fileTreeData,
-    fileTreeDataLoading,
+    originalFiles: localDirectoryFiles.active
+      ? localDirectoryFiles.files
+      : workspaceDirectoryFiles.files,
+    fileTreeDataLoading: localDirectoryFiles.active
+      ? localDirectoryFiles.loading
+      : workspaceDirectoryFiles.loading,
     targetId: id?.toString() || '',
     readOnly: false,
-    onUploadFiles: handleUploadMultipleFiles,
-    onExportProject: handleExportProject,
-    onRenameFile: handleConfirmRenameFile,
-    onCreateFileNode: handleCreateFileNode,
-    onDeleteFile: handleDeleteFile,
-    onSaveFiles: handleSaveFiles,
+    onUploadFiles: localDirectoryFiles.active
+      ? localDirectoryFiles.upload
+      : (files, filePaths) =>
+          handleUploadMultipleFiles(
+            files,
+            filePaths.map((filePath) =>
+              [workspaceDirectoryFiles.currentPath, filePath]
+                .filter(Boolean)
+                .join('/'),
+            ),
+          ),
+    onExportProject: localDirectoryFiles.active
+      ? localDirectoryFiles.exportZip
+      : handleExportProject,
+    onRenameFile: localDirectoryFiles.active
+      ? localDirectoryFiles.rename
+      : handleConfirmRenameFile,
+    onCreateFileNode: localDirectoryFiles.active
+      ? localDirectoryFiles.create
+      : (node, newName) =>
+          handleCreateFileNode(
+            { ...node, parentPath: workspaceDirectoryFiles.currentPath },
+            newName,
+          ),
+    onDeleteFile: localDirectoryFiles.active
+      ? localDirectoryFiles.remove
+      : (node) =>
+          handleDeleteFile(
+            node.type === 'folder' && node.relativePath
+              ? { ...node, id: node.relativePath }
+              : node,
+          ),
+    onSaveFiles: localDirectoryFiles.active
+      ? localDirectoryFiles.saveMany
+      : handleSaveFiles,
     onSaveFileContent: async (fileId, content, originalFileContent) => {
-      const result = await handleSaveFileContent(
-        fileId,
-        content,
-        originalFileContent,
-      );
+      const result = localDirectoryFiles.active
+        ? await localDirectoryFiles.saveOne(fileId, content)
+        : await handleSaveFileContent(fileId, content, originalFileContent);
       return result ?? false;
     },
     agentSandboxId: finalSelectedId,
@@ -699,11 +823,21 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isFileTreePinned,
     onFileTreePinnedChange: setIsFileTreePinned,
     isCanDeleteSkillFile: true,
-    onRefreshFileTree: () => refreshFileListImmediately(id),
+    onRefreshFileTree: localDirectoryFiles.active
+      ? localDirectoryFiles.refresh
+      : workspaceDirectoryFiles.refresh,
+    onOpenDirectory: localDirectoryFiles.active
+      ? localDirectoryFiles.openDirectory
+      : (node) => {
+          if (node.relativePath) {
+            workspaceDirectoryFiles.navigate(node.relativePath);
+          }
+        },
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
     isDynamicTheme: true,
     enableGitStatus:
+      !localDirectoryFiles.active &&
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
       hasValidMessageList &&
       isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl),
@@ -716,6 +850,67 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       closeVersionPanelForFilePreviewRef.current();
     },
   });
+
+  const [pendingWorkspaceSelectionId, setPendingWorkspaceSelectionId] =
+    useState('');
+
+  const openWorkspaceFile = useCallback(
+    (fileId: string) => {
+      const relativePath = workspaceRelativePath(fileId);
+      const selectionId = workspaceNodeId(relativePath);
+      setPendingWorkspaceSelectionId(selectionId);
+      if (localDirectoryFiles.active) {
+        void localDirectoryFiles.navigation?.onSelectSource(
+          WORKSPACE_SOURCE_ID,
+        );
+      }
+      workspaceDirectoryFiles.navigate(parentDirectory(relativePath));
+    },
+    [
+      localDirectoryFiles.active,
+      localDirectoryFiles.navigation,
+      workspaceDirectoryFiles.navigate,
+    ],
+  );
+
+  useEffect(() => {
+    if (
+      !pendingWorkspaceSelectionId ||
+      localDirectoryFiles.active ||
+      !workspaceDirectoryFiles.files.some(
+        (file) => file.fileId === pendingWorkspaceSelectionId,
+      )
+    ) {
+      return;
+    }
+    const selectionId = pendingWorkspaceSelectionId;
+    setPendingWorkspaceSelectionId('');
+    void fileView.tree.handleFileSelect(selectionId);
+  }, [
+    pendingWorkspaceSelectionId,
+    localDirectoryFiles.active,
+    workspaceDirectoryFiles.files,
+    fileView.tree.handleFileSelect,
+  ]);
+
+  useEffect(() => {
+    const selectionId = localDirectoryFiles.pendingSelectionId;
+    if (
+      !selectionId ||
+      !localDirectoryFiles.active ||
+      !localDirectoryFiles.files.some((file) => file.fileId === selectionId)
+    ) {
+      return;
+    }
+    localDirectoryFiles.clearPendingSelection();
+    void fileView.tree.handleFileSelect(selectionId);
+  }, [
+    localDirectoryFiles.active,
+    localDirectoryFiles.pendingSelectionId,
+    localDirectoryFiles.files,
+    localDirectoryFiles.clearPendingSelection,
+    fileView.tree.handleFileSelect,
+  ]);
 
   // 刷新 Git 列表
   refreshGitListRef.current = fileView.refreshGitList;
@@ -869,64 +1064,45 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       }
 
       const gitignoreId = '.gitignore';
-      const existing = fileTreeData?.find(
-        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      // #5a 懒加载收尾：模型层不再全量拉树，.gitignore 现内容操作时按需拉取。
+      // file-server 对「create 已存在文件」「modify 不存在文件」都是静默 no-op
+      // 且返回成功，因此必须按三态严格路由：404→create、存在（含空文件）→modify、
+      // 拉取失败→中止，否则会出现提示成功、条目未写入的假成功
+      const plan = resolveGitignoreWritePlan(
+        await fetchContentOutcome(`/api/computer/static/${id}/${gitignoreId}`),
+        fileId,
       );
-      const currentContent = existing?.contents ?? '';
-      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
 
-      if (
-        currentContent
-          .split('\n')
-          .some(
-            (line: string) => line.trim() === entry || line.trim() === fileId,
-          )
-      ) {
-        message.info(
+      if (plan.action === 'abort-fetch-error') {
+        antdMessage.error(
+          t('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
+        );
+        return;
+      }
+      if (plan.action === 'skip-duplicate') {
+        antdMessage.info(
           t('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
         );
         return;
       }
 
-      const newContent = currentContent
-        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
-        : entry;
-
       try {
-        if (existing) {
-          const updatedFilesList = updateFilesListContent(
-            fileTreeData || [],
-            [
-              {
-                fileId: gitignoreId,
-                fileContent: newContent,
-                originalFileContent: currentContent,
-              },
-            ],
-            'modify',
-          );
-          await apiUpdateStaticFile({
-            cId: id,
-            files: updatedFilesList as UpdateFileInfo[],
-          });
-        } else {
-          await apiUpdateStaticFile({
-            cId: id,
-            files: [
-              {
-                name: gitignoreId,
-                contents: `${newContent}\n`,
-                operation: 'create',
-                binary: false,
-                sizeExceeded: false,
-                renameFrom: '',
-                isDir: false,
-              },
-            ],
-          });
-        }
+        await apiUpdateStaticFile({
+          cId: id,
+          files: [
+            {
+              name: gitignoreId,
+              contents: plan.contents,
+              operation: plan.operation,
+              binary: false,
+              sizeExceeded: false,
+              renameFrom: '',
+              isDir: false,
+            },
+          ],
+        });
 
-        message.success(
+        antdMessage.success(
           t('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
         );
         await handleRefreshFileList(id);
@@ -935,7 +1111,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         console.error('Add to gitignore failed:', error);
       }
     },
-    [id, fileTreeData, handleRefreshFileList],
+    [id, handleRefreshFileList],
   );
 
   // Git 源代码管理 props
@@ -951,7 +1127,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       openChangeFile: (fileId: string) => {
         setSelectedChangeFile(null);
         setTaskAgentSelectedFileId('');
-        void fileView.tree.handleFileSelect(fileId);
+        openWorkspaceFile(fileId);
       },
       addFileToGitignore: handleAddToGitignore,
       onDiffFileSelect: () => {
@@ -1016,7 +1192,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     hasTerminalConsoleRendered,
     terminalConsoleVisible,
   ]);
-  
+
   // 切换会话时，重置 Git 版本记录面板和终端状态
   useEffect(() => {
     setGitVersionPanelOpen(false);
@@ -1039,6 +1215,23 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
+      dataSourceNavigation: localDirectoryFiles.navigation
+        ? {
+            ...localDirectoryFiles.navigation,
+            currentPath: localDirectoryFiles.active
+              ? localDirectoryFiles.navigation.currentPath
+              : workspaceDirectoryFiles.currentPath,
+            onNavigate: localDirectoryFiles.active
+              ? localDirectoryFiles.navigation.onNavigate
+              : workspaceDirectoryFiles.navigate,
+          }
+        : undefined,
+      searchFiles: localDirectoryFiles.active
+        ? localDirectoryFiles.search
+        : undefined,
+      onSearchResultSelect: localDirectoryFiles.active
+        ? localDirectoryFiles.selectSearchResult
+        : undefined,
       handleFileSelect: async (
         fileId: string,
         options?: { selectFolder?: boolean },
@@ -1054,6 +1247,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }),
     [
       fileView.tree,
+      localDirectoryFiles.navigation,
+      localDirectoryFiles.active,
+      localDirectoryFiles.search,
+      localDirectoryFiles.selectSearchResult,
+      workspaceDirectoryFiles.currentPath,
+      workspaceDirectoryFiles.navigate,
       setTaskAgentSelectedFileId,
       gitSourceControl.setSelectedChangeFile,
       collapseTerminalConsole,
@@ -1095,7 +1294,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       gitVersionPanelOpen,
       onToggleGitVersionPanel: handleToggleGitVersionPanel,
       bottomContent: terminalConsole,
-      showSourceControl: isVersionControlEnabled,
+      showSourceControl: isVersionControlEnabled && !localDirectoryFiles.active,
       enableVersionControl: effectiveAgent?.enableVersionControl,
       gitVersionControl:
         effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
@@ -1243,12 +1442,44 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     handleOpenDesktopView: handleOpenDesktopViewClick,
     renderTitle,
     renderHeaderRight,
+    // 会话内搜索：当前会话 + 已有会话记录（本会话发过消息，或打开旧会话已加载出消息）
+    searchConversationId: conversationInfo?.id ?? null,
+    searchHasMessages: hasUserSentMessage || messageList.length > 0,
   };
 
   // 聊天会话相关 props
+  // 渲染线（V2 双线重构）：URL > 会话覆盖 > 全局偏好 > 默认 V2，与数据线正交
+  const { renderer: conversationRendererVersion } =
+    useConversationRendererPreference(id);
+  // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线 session 的
+  // 会话面 props 覆盖旧线字段；flag 关闭（默认）时 conversationProps 为空对象，
+  // 旧线路径原值原行为。页面资源（卡片/桌面/文件树等）单份共享注入新线 effects。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: id,
+    messageViewRef,
+    allowAutoScrollRef,
+    effectsResources: {
+      isAppSidebarMode,
+      runHistory,
+      runHistoryItem,
+      showPagePreview,
+      openDesktopView,
+      setCardList,
+      setShowType,
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshFileListImmediately,
+      refreshGitListRef,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+      setFileTreeRefreshTrigger,
+    },
+  });
+
   const chatSessionProps = {
     conversationId: id,
     messageList,
+    messageRenderer: conversationRendererVersion,
     roleInfo,
     isLoading: loadingConversation,
     loadingMore,
@@ -1337,6 +1568,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     loadingConversation,
     isLoadingOtherInterface,
     conversationInfo,
+    // 双线分派：新线会话面在末尾展开覆盖（flag off 时空对象不影响旧线值）
+    ...(runtimeLine?.conversationProps ?? {}),
   };
 
   // 仅首屏/切会话（loadingAsync）使用整页 Loading。

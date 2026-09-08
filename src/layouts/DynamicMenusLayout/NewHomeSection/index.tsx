@@ -1,3 +1,4 @@
+import { jumpTo } from '@/utils/router';
 import { useDebounceFn } from 'ahooks';
 import { Spin } from 'antd';
 import classNames from 'classnames';
@@ -12,10 +13,15 @@ import { history, useLocation, useModel, useParams } from 'umi';
 
 import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
+import ProjectPanel from './components/ProjectPanel';
 import RecentAgentItem from './components/RecentAgentItem';
 import SearchHeader from './components/SearchHeader';
 import { getAgentIdFromHomePathname } from './utils';
 
+import {
+  CONVERSATION_FLAGS_EVENT,
+  loadConversationFlags,
+} from '@/components/business-component/ConversationContextMenu/conversationLocalFlags';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import { apiAgentConversationList } from '@/services/agentConfig';
@@ -33,7 +39,7 @@ const ITEM_HEIGHT = 58; // 列表项重构后高度增加
 const RECENT_PAGE_SIZE = 30;
 const ACTIVE_TAB_STORAGE_KEY = 'PC_HOME_SECTION_ACTIVE_TAB';
 
-type HomeTab = 'conversation' | 'recent';
+type HomeTab = 'conversation' | 'recent' | 'project';
 type LoadRecentList = (
   isRefresh?: boolean,
   options?: { silent?: boolean; keyword?: string },
@@ -42,7 +48,9 @@ type LoadRecentList = (
 const getInitialActiveTab = (): HomeTab => {
   if (typeof window === 'undefined') return 'recent';
   const storedTab = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-  return storedTab === 'conversation' || storedTab === 'recent'
+  return storedTab === 'conversation' ||
+    storedTab === 'recent' ||
+    storedTab === 'project'
     ? storedTab
     : 'recent';
 };
@@ -61,9 +69,18 @@ const componentCache = {
   scrollTop: 0,
 };
 
+/** tab 指示条位次：CSS 侧以 data-active 驱动滑动（原型同款动效的 CSS-only 等价实现） */
+const HOME_TAB_INDEX: Record<HomeTab, number> = {
+  recent: 0,
+  conversation: 1,
+  project: 2,
+};
+
 const NewHomeSection: React.FC<{
   style?: React.CSSProperties;
-}> = ({ style }) => {
+  /** 经典布局（style1/2）：渲染顶部搜索框 + 新建会话入口（单栏由 SidebarNavHeader 提供，不传即不渲染） */
+  showSearchHeader?: boolean;
+}> = ({ style, showSearchHeader = false }) => {
   const { id: chatIdParam } = useParams();
   const location = useLocation();
   const chatId =
@@ -86,6 +103,20 @@ const NewHomeSection: React.FC<{
     componentCache.list || [],
   );
   const [loading, setLoading] = useState(false);
+  // 会话本地标记（置顶/归档/收藏过渡方案）：菜单 toggle 后经全局事件重读，驱动排序/过滤
+  const [conversationFlags, setConversationFlags] = useState(() =>
+    loadConversationFlags(),
+  );
+  const [showArchived, setShowArchived] = useState(false);
+  useEffect(() => {
+    const refreshFlags = () => setConversationFlags(loadConversationFlags());
+    window.addEventListener(CONVERSATION_FLAGS_EVENT, refreshFlags);
+    window.addEventListener('conversation-deleted', refreshFlags);
+    return () => {
+      window.removeEventListener(CONVERSATION_FLAGS_EVENT, refreshFlags);
+      window.removeEventListener('conversation-deleted', refreshFlags);
+    };
+  }, []);
   const [hasMore, setHasMore] = useState(
     componentCache.list ? componentCache.hasMore : true,
   );
@@ -105,6 +136,50 @@ const NewHomeSection: React.FC<{
   const [recentSearchKeyword, setRecentSearchKeyword] = useState(
     componentCache.recentSearchKeyword,
   );
+
+  // 右键菜单删除/重命名后,同步「最近」分组的会话数据(全局事件来自 ConversationContextMenu)
+  useEffect(() => {
+    const removeRecentConversation = (event: Event) => {
+      const id = (event as CustomEvent<{ id: number }>).detail?.id;
+      if (id === undefined || id === null) return;
+      setRecentList((prev) =>
+        prev.map((agent) => ({
+          ...agent,
+          conversationList: agent.conversationList?.filter(
+            (conversation) => Number(conversation.id) !== Number(id),
+          ),
+        })),
+      );
+    };
+    const renameRecentConversation = (event: Event) => {
+      const detail = (event as CustomEvent<{ id: number; topic: string }>)
+        .detail;
+      if (!detail?.id) return;
+      setRecentList((prev) =>
+        prev.map((agent) => ({
+          ...agent,
+          conversationList: agent.conversationList?.map((conversation) =>
+            Number(conversation.id) === Number(detail.id)
+              ? { ...conversation, topic: detail.topic }
+              : conversation,
+          ),
+        })),
+      );
+    };
+    window.addEventListener('conversation-deleted', removeRecentConversation);
+    window.addEventListener('conversation-updated', renameRecentConversation);
+    return () => {
+      window.removeEventListener(
+        'conversation-deleted',
+        removeRecentConversation,
+      );
+      window.removeEventListener(
+        'conversation-updated',
+        renameRecentConversation,
+      );
+    };
+  }, []);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const listInnerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
@@ -195,6 +270,31 @@ const NewHomeSection: React.FC<{
     conversationList: localList,
     onChatFinished: handleConversationChatFinished,
   });
+
+  // 会话记录 Tab 展示列表：默认隐藏归档项、置顶项排前（稳定排序保持原相对顺序）；
+  // 「已归档」视图只看归档项
+  const visibleConversationList = useMemo(() => {
+    if (activeTab !== 'conversation') return localList;
+    const archivedSet = new Set(conversationFlags.archived);
+    const filtered = showArchived
+      ? localList.filter((item) => archivedSet.has(Number(item.id)))
+      : localList.filter((item) => !archivedSet.has(Number(item.id)));
+    if (showArchived) return filtered;
+    const pinnedSet = new Set(conversationFlags.pinned);
+    return [...filtered].sort(
+      (a, b) =>
+        Number(pinnedSet.has(Number(b.id))) -
+        Number(pinnedSet.has(Number(a.id))),
+    );
+  }, [activeTab, localList, conversationFlags, showArchived]);
+
+  const archivedCount = useMemo(
+    () =>
+      localList.filter((item) =>
+        conversationFlags.archived.includes(Number(item.id)),
+      ).length,
+    [localList, conversationFlags],
+  );
 
   const scheduleRecentAutoLoad = useCallback((hasNextPage: boolean) => {
     if (!hasNextPage) return;
@@ -644,10 +744,12 @@ const NewHomeSection: React.FC<{
     const val = e.target.value;
     if (activeTab === 'conversation') {
       setKeyword(val);
-    } else {
+    } else if (activeTab === 'recent') {
       setRecentKeyword(val);
     }
-    debouncedSearch(val, activeTab);
+    if (activeTab !== 'project') {
+      debouncedSearch(val, activeTab);
+    }
   };
 
   const handleSearchSubmit = () => {
@@ -658,10 +760,12 @@ const NewHomeSection: React.FC<{
       } else {
         setSearchKeyword(keyword);
       }
-    } else if (recentKeyword === recentSearchKeyword) {
-      loadRecentListRef.current(true);
-    } else {
-      setRecentSearchKeyword(recentKeyword);
+    } else if (activeTab === 'recent') {
+      if (recentKeyword === recentSearchKeyword) {
+        loadRecentListRef.current(true);
+      } else {
+        setRecentSearchKeyword(recentKeyword);
+      }
     }
   };
 
@@ -671,6 +775,10 @@ const NewHomeSection: React.FC<{
     componentCache.activeTab = tab;
     window.localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tab);
     if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+    if (tab === 'project') {
+      // 项目数据接口后端尚未提供,暂无数据加载
+      return;
+    }
     if (tab === 'recent') {
       setRecentKeyword('');
       setRecentSearchKeyword('');
@@ -695,7 +803,7 @@ const NewHomeSection: React.FC<{
         `/space/${devSpaceId}/agent-dev?agentId=${devTargetId}&conversationId=${id}`,
       );
     } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
-      history.push(`/space/${devSpaceId}/app-dev/${devTargetId}`);
+      jumpTo(`/space/${devSpaceId}/app-dev/${devTargetId}`);
     } else {
       history.push('/home/chat/' + id + '/' + agentId);
     }
@@ -707,7 +815,7 @@ const NewHomeSection: React.FC<{
       history.push(`/home/chat/${item.lastConversationId}/${item.agentId}`);
       return;
     }
-    history.push(`/agent/${item.agentId}`);
+    jumpTo(`/agent/${item.agentId}`);
   };
 
   const handleNewConversation = () => {
@@ -715,6 +823,8 @@ const NewHomeSection: React.FC<{
     history.push('/home');
   };
 
+  // 单栏模式：新建会话入口在侧栏顶部操作区（SidebarNavHeader），本组件不渲染头部；
+  // 经典布局（showSearchHeader）：恢复改版前的搜索框 + 新建会话入口
   const showNewChatButton = firstLevelMenus?.some(
     (menu: any) => menu?.code === 'new_conversation',
   );
@@ -723,18 +833,24 @@ const NewHomeSection: React.FC<{
 
   return (
     <div style={style} className={cx(styles['new-home-section'])}>
-      <SearchHeader
-        keyword={activeTab === 'conversation' ? keyword : recentKeyword}
-        placeholder={dict(
-          'PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder',
-        )}
-        onSearchChange={handleSearchChange}
-        onSearchSubmit={handleSearchSubmit}
-        onNewChat={handleNewConversation}
-        showNewChatButton={showNewChatButton}
-      />
-
-      <div className={cx(styles.tabs)}>
+      {showSearchHeader && (
+        <SearchHeader
+          keyword={activeTab === 'conversation' ? keyword : recentKeyword}
+          placeholder={dict(
+            'PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder',
+          )}
+          onSearchChange={handleSearchChange}
+          onSearchSubmit={handleSearchSubmit}
+          onNewChat={handleNewConversation}
+          showNewChatButton={showNewChatButton}
+        />
+      )}
+      <div
+        className={cx(styles.tabs, {
+          [styles['tabs-under-search']]: showSearchHeader,
+        })}
+        data-active={HOME_TAB_INDEX[activeTab] ?? 0}
+      >
         <button
           type="button"
           className={cx(styles.tab, {
@@ -742,7 +858,7 @@ const NewHomeSection: React.FC<{
           })}
           onClick={() => handleTabChange('recent')}
         >
-          {dict('PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed')}
+          {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabSession')}
         </button>
         <button
           type="button"
@@ -751,62 +867,104 @@ const NewHomeSection: React.FC<{
           })}
           onClick={() => handleTabChange('conversation')}
         >
-          {dict(
-            'PC.Layouts.DynamicMenusLayout.HomeSection.conversationHistory',
-          )}
+          {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask')}
         </button>
+        <button
+          type="button"
+          className={cx(styles.tab, {
+            [styles.active]: activeTab === 'project',
+          })}
+          onClick={() => handleTabChange('project')}
+        >
+          {dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab')}
+        </button>
+        {/* 滑动指示条：位次由容器 data-active 控制（原型 tab-indicator 的 CSS-only 等价） */}
+        <span className={cx(styles['tab-indicator'])} aria-hidden />
       </div>
 
-      {/* 会话记录列表 */}
+      {/* 列表区:最近 / 会话 / 项目 */}
       <div
         ref={scrollContainerRef}
         className={cx(styles['conversation-list-wrapper'])}
       >
-        {!loading &&
-          (activeTab === 'conversation' ? localList : recentList).length ===
-            0 && (
-            <EmptyState
-              keyword={activeTab === 'conversation' ? keyword : recentKeyword}
-              type={activeTab}
-            />
-          )}
-
-        <div ref={listInnerRef} className={cx(styles['conversation-list'])}>
-          {activeTab === 'conversation'
-            ? localList.map((item) => (
-                <ConversationItem
-                  key={item.id}
-                  item={item}
-                  isActive={chatId === item.id?.toString()}
-                  onClick={() => handleConversationClick(item)}
+        {activeTab === 'project' ? (
+          <ProjectPanel />
+        ) : (
+          <>
+            {!loading &&
+              (activeTab === 'conversation'
+                ? visibleConversationList
+                : recentList
+              ).length === 0 && (
+                <EmptyState
+                  keyword={
+                    activeTab === 'conversation' ? keyword : recentKeyword
+                  }
+                  type={activeTab}
                 />
-              ))
-            : recentList.map((item) => (
-                <RecentAgentItem
-                  key={item.id}
-                  item={item}
-                  isActive={currentAgentId === item.agentId?.toString()}
-                  onClick={() => handleRecentAgentClick(item)}
-                  onConversationClick={(conversationId) => {
-                    handleCloseMobileMenu();
-                    history.push(
-                      `/home/chat/${conversationId}/${item.agentId}`,
-                    );
-                  }}
-                />
-              ))}
+              )}
 
-          {loading && (
-            <div className={cx(styles['load-more'])}>
-              <Spin size="small" />
+            <div ref={listInnerRef} className={cx(styles['conversation-list'])}>
+              {activeTab === 'conversation'
+                ? visibleConversationList.map((item) => (
+                    <ConversationItem
+                      key={item.id}
+                      item={item}
+                      isActive={chatId === item.id?.toString()}
+                      onClick={() => handleConversationClick(item)}
+                      pinned={conversationFlags.pinned.includes(
+                        Number(item.id),
+                      )}
+                      collected={conversationFlags.collected.includes(
+                        Number(item.id),
+                      )}
+                      archived={conversationFlags.archived.includes(
+                        Number(item.id),
+                      )}
+                    />
+                  ))
+                : recentList.map((item) => (
+                    <RecentAgentItem
+                      key={item.id}
+                      item={item}
+                      isActive={currentAgentId === item.agentId?.toString()}
+                      onClick={() => handleRecentAgentClick(item)}
+                      onConversationClick={(conversationId) => {
+                        handleCloseMobileMenu();
+                        history.push(
+                          `/home/chat/${conversationId}/${item.agentId}`,
+                        );
+                      }}
+                      conversationFlags={conversationFlags}
+                    />
+                  ))}
+
+              {loading && (
+                <div className={cx(styles['load-more'])}>
+                  <Spin size="small" />
+                </div>
+              )}
+
+              {/* 已归档入口:存在归档项或处于已归档视图时显示(本地标记过渡方案) */}
+              {activeTab === 'conversation' &&
+                !loading &&
+                (archivedCount > 0 || showArchived) && (
+                  <div
+                    className={cx(styles['archived-entry'])}
+                    onClick={() => setShowArchived(!showArchived)}
+                  >
+                    {showArchived
+                      ? dict(
+                          'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations',
+                        )
+                      : `${dict(
+                          'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations',
+                        )} (${archivedCount})`}
+                  </div>
+                )}
             </div>
-          )}
-          {/* {!loading && !hasMore && localList.length > 0 && (
-            <div className={cx(styles['no-more'])}>
-              <Typography.Text type="secondary">{noMoreText}</Typography.Text>
-            </div>
-          )} */}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

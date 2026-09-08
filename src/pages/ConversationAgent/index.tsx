@@ -10,6 +10,7 @@ import FileTreeGitSourcePanel, {
   type ChangeListSection,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
+import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import VncPreview from '@/components/business-component/VncPreview';
@@ -30,6 +31,7 @@ import {
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
+import { fetchContentOutcome } from '@/services/skill';
 import {
   apiDownloadAllFiles,
   apiImportProject,
@@ -1143,6 +1145,17 @@ const ConversationAgent: React.FC = () => {
     finalSelectedComputerId === '-1';
 
   /**
+   * 切到非云端电脑时，若智能体电脑面板开着则关闭并恢复文件预览，
+   * 避免入口隐藏后面板残留（与 Chat 页兜底同口径，见 3f8a2426a）。
+   */
+  useEffect(() => {
+    if (finalSelectedComputerId !== '-1' && isAgentDesktopOpen) {
+      closeAgentDesktop();
+      setCanShowFileView(true);
+    }
+  }, [finalSelectedComputerId, isAgentDesktopOpen, closeAgentDesktop]);
+
+  /**
    * 关闭预览面板
    * 同时关闭文件预览视图和取消文件树固定状态
    */
@@ -1433,62 +1446,45 @@ const ConversationAgent: React.FC = () => {
       }
 
       const gitignoreId = '.gitignore';
-      const existing = fileTreeData?.find(
-        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      // file-server 对「create 已存在文件」「modify 不存在文件」都是静默 no-op
+      // 且返回成功，因此按三态严格路由：404→create、存在（含空文件）→modify、
+      // 拉取失败→中止。不再从模型树取 contents——树条目运行时不填充该字段，
+      // 旧实现追加恒基于空串，会用单条目覆写整个 .gitignore
+      const plan = resolveGitignoreWritePlan(
+        await fetchContentOutcome(
+          `/api/computer/static/${queryConversationId}/${gitignoreId}`,
+        ),
+        fileId,
       );
-      const currentContent = existing?.contents ?? '';
-      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
 
-      if (
-        currentContent
-          .split('\n')
-          .some(
-            (line: string) => line.trim() === entry || line.trim() === fileId,
-          )
-      ) {
+      if (plan.action === 'abort-fetch-error') {
+        message.error(
+          dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
+        );
+        return;
+      }
+      if (plan.action === 'skip-duplicate') {
         message.info(
           dict('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
         );
         return;
       }
 
-      const newContent = currentContent
-        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
-        : entry;
-
       try {
-        if (existing) {
-          const updatedFilesList = updateFilesListContent(
-            fileTreeData || [],
-            [
-              {
-                fileId: gitignoreId,
-                fileContent: newContent,
-                originalFileContent: currentContent,
-              },
-            ],
-            'modify',
-          );
-          await apiUpdateStaticFile({
-            cId: queryConversationId,
-            files: updatedFilesList as UpdateFileInfo[],
-          });
-        } else {
-          await apiUpdateStaticFile({
-            cId: queryConversationId,
-            files: [
-              {
-                name: gitignoreId,
-                contents: `${newContent}\n`,
-                operation: 'create',
-                binary: false,
-                sizeExceeded: false,
-                renameFrom: '',
-                isDir: false,
-              },
-            ],
-          });
-        }
+        await apiUpdateStaticFile({
+          cId: queryConversationId,
+          files: [
+            {
+              name: gitignoreId,
+              contents: plan.contents,
+              operation: plan.operation,
+              binary: false,
+              sizeExceeded: false,
+              renameFrom: '',
+              isDir: false,
+            },
+          ],
+        });
 
         message.success(
           dict('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
@@ -1498,7 +1494,7 @@ const ConversationAgent: React.FC = () => {
         console.error('Add to gitignore failed:', error);
       }
     },
-    [fileTreeData, handleRefreshFileList],
+    [queryConversationId, handleRefreshFileList],
   );
 
   /**
@@ -1808,6 +1804,7 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 主渲染 ====================
   return (
+    // 顶部退让由路由层 wrappers/immersiveShellAvoid 统一承担
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       {/* 页面顶部 Header：返回、智能体信息、文件树/远程桌面入口 */}
       <ConversationAgentHeader
@@ -1848,6 +1845,9 @@ const ConversationAgent: React.FC = () => {
             className={cx('flex', 'flex-1', styles['content-container'], {
               [styles['content-container-fullscreen']]:
                 fileView.preview.isFullscreen,
+              // 全屏预览是 fixed 元件（module 类被哈希，避让层无法全局选择器命中），
+              // 挂稳定全局类供 styles/nuwaclawShell.less 做 top/height 补偿
+              'nuwaclaw-shell-fullscreen': fileView.preview.isFullscreen,
             })}
           >
             {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}

@@ -2,14 +2,18 @@ import ChangeFileGitDiffView, {
   DiffModeEnum,
 } from '@/components/business-component/ChangeFileGitDiffView';
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
+import MarkdownCustomPlanDoc, {
+  extractPlanDocument,
+} from '@/components/MarkdownCustomPlanDoc';
 import { t } from '@/services/i18nRuntime';
+import { ProcessingEnum } from '@/types/enums/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
   SafetyOutlined,
 } from '@ant-design/icons';
-import { Button, Tag, Typography } from 'antd';
+import { Button, Input, Tag, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -18,8 +22,10 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { isFormFieldTarget } from '../hooks/useInterventionEscapeKey';
 import type {
   AcpPermissionInteraction,
+  AcpPermissionRespondExtras,
   AcpRequestPermissionResponse,
 } from '../types/acpIntervention';
 import styles from './index.less';
@@ -32,12 +38,34 @@ const { Text } = Typography;
 
 const HIDDEN_OPTION_KINDS = new Set(['reject_always']);
 
+/** kind（allow_once 等）→ kind 级 i18n key */
+function kindLabelKey(kind: string): string {
+  const camelCaseKind = kind.replace(/_([a-z])/g, (_, letter: string) =>
+    letter.toUpperCase(),
+  );
+  return `PC.Components.AcpPermissionCard.${camelCaseKind}`;
+}
+
+/** switch_mode 语义选项（如 ExitPlanMode 的模式切换）→ optionId 专属 i18n key */
+function optionLabelKey(optionId: string): string {
+  return `PC.Components.AcpPermissionCard.option.${optionId}`;
+}
+
+/** t() 对未命中 key 可能返回 key 本身（i18next 默认/测试 mock），统一视为无翻译 */
+function translate(key: string): string {
+  const text = t(key as any);
+  return text && text !== key ? text : '';
+}
+
 interface AcpPermissionCardProps {
   interaction: AcpPermissionInteraction;
   docked?: boolean;
   dockShellClassName?: string;
   keyboardShortcutsEnabled?: boolean;
-  onRespond?: (response: AcpRequestPermissionResponse) => void;
+  onRespond?: (
+    response: AcpRequestPermissionResponse,
+    extras?: AcpPermissionRespondExtras,
+  ) => void;
 }
 
 const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
@@ -114,6 +142,35 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     [toolCall.rawInput, toolCall.locations],
   );
 
+  // switch_mode（ExitPlanMode）审批：把计划文档直接渲染进审批卡。
+  // PROCESSING 消息流的 PlanDoc 依赖服务端翻译透传 rawInput（实测会丢失，卡片降级），
+  // 而 request_permission 的 toolCall 数据完整（rawInput.plan 或 content 文本块），就地展示。
+  const planDocument = useMemo(() => {
+    if (toolCall.kind !== 'switch_mode') {
+      return null;
+    }
+    const extracted = extractPlanDocument(toolCall);
+    if (extracted) {
+      return extracted;
+    }
+    // request_permission 抓包形状：rawInput 可能为空，plan 全文在 content 文本块里
+    const blocks: any[] = Array.isArray(toolCall.content)
+      ? toolCall.content
+      : [];
+    const text = blocks.find(
+      (block) => typeof block?.content?.text === 'string',
+    )?.content?.text as string | undefined;
+    const plan = text?.trim().startsWith('#') ? text.trim() : '';
+    return plan
+      ? {
+          plan,
+          planFilePath: (toolCall.rawInput as any)?.planFilePath as
+            | string
+            | undefined,
+        }
+      : null;
+  }, [toolCall]);
+
   const visibleOptions = useMemo(
     () =>
       (request.options ?? [])
@@ -136,6 +193,105 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     [request.options],
   );
 
+  const isSwitchMode = toolCall.kind === 'switch_mode';
+
+  /**
+   * switch_mode 简化视图的批准项：UI 折叠为单一「批准」（业务档位由响应层
+   * 回写为切 plan 前的档位），规范 yes optionId 优先 allow_once（claude 的
+   * default=手动逐项审批，与 ask 语义一致），否则首个 allow_*。
+   */
+  const approveOption = useMemo(() => {
+    if (!isSwitchMode) return undefined;
+    const allows = visibleOptions.filter((option) =>
+      option.kind.startsWith('allow'),
+    );
+    return allows.find((option) => option.kind === 'allow_once') ?? allows[0];
+  }, [isSwitchMode, visibleOptions]);
+
+  // 修订输入：有文字提交 = 应答「继续完善计划」+ 文本作为新消息发给 agent
+  const [revisionText, setRevisionText] = useState('');
+
+  const handlePlanSubmit = useCallback(() => {
+    const text = revisionText.trim();
+    if (text) {
+      if (isSubmitting || isSubmitted || !onRespond || !rejectOption) {
+        return;
+      }
+      setSubmitType('confirm');
+      onRespond(
+        {
+          outcome: { outcome: 'selected', optionId: rejectOption.optionId },
+        },
+        { revisionText: text },
+      );
+      return;
+    }
+    if (approveOption) {
+      handleSelect(approveOption.optionId, 'confirm');
+    }
+  }, [
+    revisionText,
+    rejectOption,
+    approveOption,
+    handleSelect,
+    onRespond,
+    isSubmitting,
+    isSubmitted,
+  ]);
+
+  // switch_mode 卡片 Enter 提交（输入框内由 onPressEnter 处理，此处覆盖卡片焦点态）
+  useEffect(() => {
+    if (!isSwitchMode || disabled) {
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        return; // Esc 由 useAcpPermissionShortcuts 的 escape 钩子处理
+      }
+      if (
+        event.key === 'Enter' &&
+        !event.shiftKey &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !isFormFieldTarget(event.target)
+      ) {
+        event.preventDefault();
+        handlePlanSubmit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [isSwitchMode, disabled, handlePlanSubmit]);
+
+  /**
+   * 选项标签解析（避免同 kind 选项坍缩成同一文案，如 ExitPlanMode 的
+   * 3 个 allow_always 全部显示「始终允许」）：
+   * ① switch_mode 时 optionId 专属文案（模式切换选项语义互不相同）
+   * ② kind 级通用文案（允许一次/始终允许/拒绝）——仅当该文案在可见选项中唯一
+   * ③ 引擎提供的 option.name，④ optionId 兜底
+   */
+  const optionLabels = useMemo(() => {
+    const kindLabelCounts = new Map<string, number>();
+    for (const option of visibleOptions) {
+      const label = translate(kindLabelKey(option.kind));
+      kindLabelCounts.set(label, (kindLabelCounts.get(label) ?? 0) + 1);
+    }
+    const isSwitchMode = toolCall.kind === 'switch_mode';
+    return new Map(
+      visibleOptions.map((option) => {
+        const byOptionId = isSwitchMode
+          ? translate(optionLabelKey(option.optionId))
+          : '';
+        if (byOptionId) return [option.optionId, byOptionId] as const;
+        const byKind = translate(kindLabelKey(option.kind));
+        if (byKind && (kindLabelCounts.get(byKind) ?? 0) < 2) {
+          return [option.optionId, byKind] as const;
+        }
+        return [option.optionId, option.name || option.optionId] as const;
+      }),
+    );
+  }, [visibleOptions, toolCall.kind]);
+
   useEffect(() => {
     setActiveIndex(0);
   }, [visibleOptions]);
@@ -151,8 +307,9 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   const isCancelLoading = isSubmitting && submitType === 'cancel';
 
   useAcpPermissionShortcuts({
-    enabled: !disabled && keyboardShortcutsEnabled,
-    options: visibleOptions,
+    // switch_mode：多选项快捷键禁用（UI 折叠为单批准+输入框），Esc 仍生效
+    enabled: !disabled && keyboardShortcutsEnabled && !isSwitchMode,
+    options: isSwitchMode ? [] : visibleOptions,
     onSelect: handleSelect,
     onCancel: handleCancel,
     activeIndex,
@@ -201,6 +358,18 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
       </header>
 
       <div className={styles.body}>
+        {planDocument ? (
+          <div className={styles.planDocWrap}>
+            <MarkdownCustomPlanDoc
+              title={title}
+              plan={planDocument.plan}
+              planFilePath={planDocument.planFilePath}
+              status={
+                isSubmitted ? ProcessingEnum.FINISHED : ProcessingEnum.EXECUTING
+              }
+            />
+          </div>
+        ) : null}
         {fileDiffItems.length ? (
           <div className={styles.filePreview}>
             {fileDiffItems.map((item) => (
@@ -227,50 +396,82 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
           </div>
         ) : null}
         <div className={styles.actions}>
-          {visibleOptions.map((option, index) => {
-            const isAllow = option.kind.startsWith('allow');
-            const isActive = index === activeIndex;
-            const camelCaseKind = option.kind.replace(
-              /_([a-z])/g,
-              (_, letter) => letter.toUpperCase(),
-            );
-            const label =
-              t(`PC.Components.AcpPermissionCard.${camelCaseKind}` as any) ||
-              option.name ||
-              option.optionId;
-            return (
-              <Button
-                key={option.optionId}
-                className={classNames(styles.actionBtn, {
-                  [styles.allowBtn]: isAllow && !isActive,
-                  [styles.rejectBtn]:
-                    option.kind.startsWith('reject') && !isActive,
-                  [styles['active-btn']]: isActive,
-                })}
-                // loading={
-                //   isSubmitting &&
-                //   interaction.selectedOptionId === option.optionId
-                // }
+          {isSwitchMode ? (
+            <>
+              {approveOption ? (
+                <Button
+                  className={classNames(styles.actionBtn, styles['active-btn'])}
+                  disabled={disabled}
+                  onClick={() => handleSelect(approveOption.optionId)}
+                >
+                  <span className={styles.buttonLabel}>
+                    <span className={styles['option-index']}>1</span>
+                    <EllipsisTooltip
+                      text={t(
+                        'PC.Components.AcpPermissionCard.option.planApprove',
+                      )}
+                      className={styles['button-text']}
+                    />
+                  </span>
+                </Button>
+              ) : null}
+              <Input.TextArea
+                className={styles.revisionInput}
+                value={revisionText}
                 disabled={disabled}
-                onClick={() => setActiveIndex(index)}
-                onDoubleClick={() => handleSelect(option.optionId)}
-              >
-                <span className={styles.buttonLabel}>
-                  <span className={styles['option-index']}>{index + 1}</span>
-                  <EllipsisTooltip
-                    text={label}
-                    className={styles['button-text']}
-                  />
-                  {isActive && !isSubmitted && (
-                    <span className={styles['arrow-indicators']}>
-                      <ArrowUpOutlined className={styles.arrowIcon} />
-                      <ArrowDownOutlined className={styles.arrowIcon} />
-                    </span>
-                  )}
-                </span>
-              </Button>
-            );
-          })}
+                autoSize={{ minRows: 1, maxRows: 4 }}
+                placeholder={t(
+                  'PC.Components.AcpPermissionCard.revisionPlaceholder',
+                )}
+                onChange={(e) => setRevisionText(e.target.value)}
+                onPressEnter={(e) => {
+                  if (!(e as unknown as KeyboardEvent).shiftKey) {
+                    e.preventDefault();
+                    handlePlanSubmit();
+                  }
+                }}
+              />
+            </>
+          ) : (
+            visibleOptions.map((option, index) => {
+              const isAllow = option.kind.startsWith('allow');
+              const isActive = index === activeIndex;
+              const label =
+                optionLabels.get(option.optionId) || option.optionId;
+              return (
+                <Button
+                  key={option.optionId}
+                  className={classNames(styles.actionBtn, {
+                    [styles.allowBtn]: isAllow && !isActive,
+                    [styles.rejectBtn]:
+                      option.kind.startsWith('reject') && !isActive,
+                    [styles['active-btn']]: isActive,
+                  })}
+                  // loading={
+                  //   isSubmitting &&
+                  //   interaction.selectedOptionId === option.optionId
+                  // }
+                  disabled={disabled}
+                  onClick={() => setActiveIndex(index)}
+                  onDoubleClick={() => handleSelect(option.optionId)}
+                >
+                  <span className={styles.buttonLabel}>
+                    <span className={styles['option-index']}>{index + 1}</span>
+                    <EllipsisTooltip
+                      text={label}
+                      className={styles['button-text']}
+                    />
+                    {isActive && !isSubmitted && (
+                      <span className={styles['arrow-indicators']}>
+                        <ArrowUpOutlined className={styles.arrowIcon} />
+                        <ArrowDownOutlined className={styles.arrowIcon} />
+                      </span>
+                    )}
+                  </span>
+                </Button>
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -293,6 +494,11 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
           loading={isSubmitLoading}
           disabled={disabled}
           onClick={() => {
+            if (isSwitchMode) {
+              // 有修订文字 → 应答「继续完善计划」+ 文本；无文字 → 批准
+              handlePlanSubmit();
+              return;
+            }
             const activeOption = visibleOptions[activeIndex];
             if (activeOption) {
               handleSelect(activeOption.optionId, 'confirm');

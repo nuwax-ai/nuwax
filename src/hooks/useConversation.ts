@@ -29,6 +29,11 @@ const useConversation = () => {
       files?: UploadFileInfo[];
       infos?: AgentSelectedComponentInfo[];
       selectedComputerId?: string;
+      /**
+       * 发起会话时选择的工作目录（wiki #17）：仅个人电脑（selectedComputerId
+       * 非 '-1'）时生效，随会话创建记录（sandboxId + workspaceDir）。
+       */
+      workspaceDir?: string;
       // 默认智能体详情
       defaultAgentDetail?: AgentDetailDto;
       // 变量参数
@@ -44,10 +49,21 @@ const useConversation = () => {
     },
   ) => {
     const variableParams = attach?.variableParams;
+    // wiki #17：选择个人电脑时把沙箱与工作目录记录到会话上
+    const personalComputerId =
+      attach?.selectedComputerId && attach.selectedComputerId !== '-1'
+        ? attach.selectedComputerId
+        : undefined;
     const { success, data } = await runAsyncConversationCreate({
       agentId,
       devMode: false,
       variables: variableParams,
+      ...(personalComputerId
+        ? {
+            sandboxId: Number(personalComputerId),
+            workspaceDir: attach?.workspaceDir || undefined,
+          }
+        : {}),
     });
 
     if (success) {

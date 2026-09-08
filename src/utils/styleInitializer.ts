@@ -172,8 +172,12 @@ export class StyleInitializer {
         'xagi-layout-dark',
         'xagi-nav-style1',
         'xagi-nav-style2',
+        'xagi-nav-style3',
       );
-      document.body.classList.add('xagi-layout-light', 'xagi-nav-style1');
+      document.body.classList.add(
+        'xagi-layout-light',
+        `xagi-nav-${DEFAULT_THEME_CONFIG.NAVIGATION_STYLE}`,
+      );
 
       console.log(
         `${context}: fallback CSS variable configuration applied (includes theme color, navbar style, theme mode, background image)`,

@@ -1,0 +1,195 @@
+@import '@/styles/token.less';
+
+@headerPaddingVertical: 2px;
+
+.markdown-custom-think {
+  position: relative;
+  margin: @marginXs 0;
+  border-radius: 5px;
+  background-color: @colorBgContainer;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: @colorBorder;
+    z-index: 1;
+    transition: background-color @motionDurationMid @motionEaseInOut;
+  }
+
+  &:hover {
+    &::before {
+      background-color: @colorTextTertiary;
+    }
+
+    .think-header {
+      background-color: #f7f8fa;
+
+      .header-right {
+        .expand-icon {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  // 思考中：单行滚动条带（不做多行预览）——尾部跟随产生文字快速流动效果
+  .think-ticker {
+    display: flex;
+    align-items: center;
+    gap: @paddingXs;
+    padding: @headerPaddingVertical @paddingSm @headerPaddingVertical @padding;
+    background-color: @colorBgContainer;
+
+    .think-ticker-label {
+      display: flex;
+      align-items: center;
+      gap: @paddingXs;
+      flex-shrink: 0;
+      font-weight: @fontWeightStrong;
+      color: @colorTextTertiary;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .think-ticker-viewport {
+      flex: 1;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      scrollbar-width: none; // 滚动由尾部跟随驱动，滚动条隐藏保持「播放」观感
+      // 不设 scroll-behavior:smooth——会把程序赋值异步动画化，部分浏览器不生效
+      // 左缘淡出，强化内容从右侧持续流出的方向感
+      -webkit-mask-image: linear-gradient(to right, transparent, #000 @padding);
+      mask-image: linear-gradient(to right, transparent, #000 @padding);
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+
+      .think-ticker-text {
+        display: inline-block;
+        font-size: @fontSizeSm;
+        line-height: @lineHeight;
+        // 文字渐变扫光动效（仅思考态——该类只在 ticker 分支渲染）：
+        // 底色铺基色，高光带从左到右周期扫过
+        color: transparent;
+        background-image: linear-gradient(
+          90deg,
+          @colorTextDescription 0%,
+          @colorTextDescription 42%,
+          @colorText 50%,
+          @colorTextDescription 58%,
+          @colorTextDescription 100%
+        );
+        background-size: 200% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        animation: think-ticker-sheen 2.4s linear infinite;
+      }
+    }
+  }
+
+  .think-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @headerPaddingVertical @paddingSm @headerPaddingVertical @padding;
+    cursor: pointer;
+    user-select: none;
+    background-color: @colorBgContainer;
+    transition: background-color @motionDurationFast;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: @paddingXs;
+
+      .think-icon {
+        font-size: @fontSizeSm;
+        color: @colorTextQuaternary;
+
+        &.is-thinking {
+          color: @colorTextTertiary;
+          animation: think-pulse 1.2s @motionEaseInOut infinite;
+        }
+      }
+
+      .think-title {
+        font-size: @fontSize;
+        font-weight: @fontWeightStrong;
+        color: @colorTextTertiary;
+      }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: @paddingXs;
+
+      .expand-icon {
+        font-size: @fontSizeSm;
+        color: @colorTextQuaternary;
+        opacity: 0;
+        transition: transform @motionDurationMid @motionEaseInOut,
+          opacity @motionDurationMid @motionEaseInOut;
+
+        &.is-expanded {
+          transform: rotate(180deg);
+        }
+      }
+    }
+  }
+}
+
+.think-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows @motionDurationMid @motionEaseInOut,
+    opacity @motionDurationFast @motionEaseInOut;
+
+  &.is-expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .think-content-inner {
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 @padding;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    color: @colorTextDescription;
+    white-space: pre-wrap;
+    word-break: break-word;
+    scrollbar-width: thin;
+
+    // 思考块限高，超长内容滚动查看，避免流式思考把消息撑得过长
+    max-height: 240px;
+    overflow-y: auto;
+  }
+}
+
+@keyframes think-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes think-ticker-sheen {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}

@@ -16,6 +16,37 @@ export const insertPlanBlock = (
   return result;
 };
 
+/** 匹配 insertPlanBlock 生成的完整 plan 块（含 data 属性） */
+const PLAN_BLOCK_PATTERN =
+  /\n*<div><appdev-plan data="([^"]*)"><\/appdev-plan><\/div>\n*/g;
+
+const decodePlanId = (encoded: string): string | null => {
+  try {
+    const parsed = JSON.parse(decodeURIComponent(encoded));
+    return typeof parsed?.planId === 'string' ? parsed.planId : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * ACP plan/plan_update 全量替换语义：同 planId 的旧块被替换为新块
+ * （TodoWrite 会高频重发完整计划，不做替换会堆叠多张计划卡）
+ */
+export const upsertPlanBlock = (
+  markdownText: string,
+  planData: { planId: string; entries: PlanEntry[] },
+): string => {
+  const kept = markdownText.replace(PLAN_BLOCK_PATTERN, (match, encoded) =>
+    decodePlanId(encoded) === planData.planId ? '' : match,
+  );
+  return insertPlanBlock(kept, planData);
+};
+
+/** ACP plan_removed：计划不再适用，移除全部计划块 */
+export const removePlanBlocks = (markdownText: string): string =>
+  markdownText.replace(PLAN_BLOCK_PATTERN, '');
+
 /**
  * 生成 Tool Call 标记（创建新的）
  * <div><appdev-toolcall toolcallid="xxx" type="tool_call" data="serialized JSON"></appdev-toolcall></div>

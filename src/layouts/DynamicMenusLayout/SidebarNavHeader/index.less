@@ -1,0 +1,131 @@
+@import '@/styles/token.less';
+
+.sidebar-nav-header {
+  flex-shrink: 0;
+  padding: 0 15px;
+
+  // 顶栏：原型 15px 栅格内再缩进 10px，操作区贴右侧 15px 基线
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 41px;
+    padding: 5px 0 0 10px;
+    box-sizing: border-box;
+  }
+
+  .header-logo {
+    height: 26px;
+    width: auto;
+    border-radius: 7px;
+    display: block;
+    cursor: pointer;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .header-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    font-size: 20px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: @colorFillSecondary;
+      color: @navSecondMenuAdaptiveText;
+    }
+
+    > svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:last-child > svg {
+      height: 22px;
+    }
+  }
+
+  // 行通用：15px 外边距 + 12px 内容缩进，对齐原型 27px 图标基线
+  .action-row,
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 33px;
+    padding: 7px 12px;
+    border-radius: 11px;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveText;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: normal;
+    transition: background-color 0.2s ease;
+    user-select: none;
+
+    &:hover {
+      background-color: @colorFillSecondary;
+    }
+  }
+
+  .new-task-row {
+    margin-top: 13px;
+  }
+
+  .action-icon,
+  .nav-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    flex-shrink: 0;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    font-size: 16px;
+  }
+
+  // 菜单无图标时的首字兜底（对齐经典布局 DynamicTabs 的降级形态）
+  .nav-item-default {
+    font-size: 14px;
+    font-weight: @fontWeightStrong;
+    line-height: 1;
+    color: @navSecondMenuAdaptiveTextSecondary;
+  }
+
+  .action-label,
+  .nav-item-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .action-shortcut {
+    flex-shrink: 0;
+    font-size: @fontSizeSm;
+    color: @navSecondMenuAdaptiveTextTertiary;
+  }
+
+  // 导航行（菜单接口下发）
+  .nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+  }
+
+  .nav-item-active {
+    background-color: @colorFillSecondary;
+    font-weight: @fontWeightStrong;
+  }
+}

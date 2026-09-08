@@ -12,6 +12,8 @@ vi.mock('@/utils/eventBus', () => ({
   default: {
     on: mockEventBusOn,
     off: mockEventBusOff,
+    // 新版 util 在终态同步时补偿侧栏列表（emit）；基线断言不涉及，仅补齐 mock 面
+    emit: vi.fn(),
   },
 }));
 
@@ -367,8 +369,11 @@ describe('conversationTaskStatusSync', () => {
       );
     });
 
-    it('其它 success=false / undefined → undefined（不落，交后端轮询兜底）', () => {
-      expect(resolveTerminalTaskStatus(false)).toBeUndefined();
+    it('FINAL_RESULT success=false → FAILED，不依赖后端轮询解锁发送', () => {
+      expect(resolveTerminalTaskStatus(false)).toBe(TaskStatus.FAILED);
+    });
+
+    it('任务冲突型 success=false 不落终态，旧任务仍保持执行', () => {
       expect(resolveTerminalTaskStatus(undefined)).toBeUndefined();
       expect(
         resolveTerminalTaskStatus(false, 'Agent正在执行任务'),
@@ -377,12 +382,12 @@ describe('conversationTaskStatusSync', () => {
         resolveTerminalTaskStatus(false, {
           message: '会话已经结束，无法继续发送消息',
         }),
-      ).toBeUndefined();
+      ).toBe(TaskStatus.FAILED);
       expect(
         resolveTerminalTaskStatus(false, {
           error: '用户主动取消任务',
         }),
-      ).toBeUndefined();
+      ).toBe(TaskStatus.CANCEL);
     });
   });
 

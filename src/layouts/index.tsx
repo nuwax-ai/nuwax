@@ -5,6 +5,8 @@ import {
 } from '@/constants/layout.constants';
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
+import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -44,8 +46,8 @@ const Layout: React.FC = () => {
 
   const { runQueryCategory } = useCategory();
 
-  // 导航风格管理（使用统一主题系统）
-  const { navigationStyle, layoutStyle } = useUnifiedTheme();
+  // 导航风格管理（使用统一主题系统）；渲染决策统一读 effective 值（桌面端锁定单栏）
+  const { effectiveNavigationStyle, layoutStyle } = useUnifiedTheme();
   const { isSecondMenuCollapsed } = useModel('layout');
   const { token } = theme.useToken();
 
@@ -226,9 +228,9 @@ const Layout: React.FC = () => {
         'h-full',
         styles.container,
         `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
-        `xagi-nav-${navigationStyle}`, // 导航风格类
+        `xagi-nav-${effectiveNavigationStyle}`, // 导航风格类
       ),
-    [layoutStyle, navigationStyle],
+    [layoutStyle, effectiveNavigationStyle],
   );
 
   /**
@@ -244,9 +246,9 @@ const Layout: React.FC = () => {
         ],
         styles['page-container'],
         styles[`xagi-layout-${layoutStyle}`],
-        styles[`xagi-nav-${navigationStyle}`],
+        styles[`xagi-nav-${effectiveNavigationStyle}`],
       ),
-    [layoutStyle, navigationStyle, isSecondMenuCollapsed],
+    [layoutStyle, effectiveNavigationStyle, isSecondMenuCollapsed],
   );
 
   return (
@@ -264,8 +266,10 @@ const Layout: React.FC = () => {
           isMobile={isMobile}
         />
 
-        {/* 悬浮菜单 */}
-        <HoverMenu />
+        {/* 悬浮菜单（经典布局折叠态专用；单栏模式不渲染） */}
+        {effectiveNavigationStyle !== ThemeNavigationStyleType.STYLE3 && (
+          <HoverMenu />
+        )}
 
         {/* 消息弹窗 */}
         <Message />
@@ -291,6 +295,14 @@ const Layout: React.FC = () => {
           // { 'w-full': isMobile }, // 存在 BUG 需要注释掉
         ])}
         id="page-container-selector"
+        style={{
+          // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
+          // - Win/Linux 桌面端恒避让（右上自绘三键 + 工具栏浮层）；
+          // - mac 展开态无需避让（二级菜单列顶着工具栏 icon 组），但收起二级菜单后
+          //   内容区左移顶到工具栏 icon 组（x≈80-240）下方，需与 Win/Linux 同样下移；
+          // - 独立窗口（系统标题栏）与浏览器不避让。
+          marginTop: isImmersiveShell() ? shellAvoid.TOP + 8 : undefined,
+        }}
       >
         <Outlet />
       </div>

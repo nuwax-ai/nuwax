@@ -32,7 +32,7 @@ import type {
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
-import { Input, message } from 'antd';
+import { message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -40,13 +40,13 @@ import { useParams, useRequest } from 'umi';
 import DocWrap from './DocWrap';
 import GraphDocTable from './GraphDocTable';
 import styles from './index.less';
+import KnowledgeAccuracyTest from './KnowledgeAccuracyTest';
 import KnowledgeHeader from './KnowledgeHeader';
 import LocalDocModal from './LocalCustomDocModal';
 import QaBatchModal from './QaBatchModal';
 import QaModal from './QaModal';
 import QaTableList, { QaTableListRef } from './QaTableList';
 import RawSegmentInfo from './RawSegmentInfo';
-import KnowledgeAccuracyTest from './KnowledgeAccuracyTest';
 import SourceDocumentComparison from './SourceDocumentComparison';
 
 const cx = classNames.bind(styles);
@@ -185,8 +185,8 @@ const SpaceKnowledge: React.FC = () => {
         name: searchName,
       });
       if (response.code === SUCCESS_CODE && response.data) {
-        // 直接使用返回的数据
-        setGraphDocList(response.data || []);
+        // 直接使用返回的数据（响应体 data 为 { data: 文档列表 } 结构）
+        setGraphDocList(response.data.data || []);
       }
     } catch (error) {
       // console.error('加载知识图谱列表失败:', error);
@@ -475,11 +475,6 @@ const SpaceKnowledge: React.FC = () => {
       }
     } catch {}
   };
-  // 添加问题搜索功能 点击按钮搜索
-  const handleSearch = (value: string) => {
-    setQuestion(value);
-    handleQaList();
-  };
 
   // 点击表格中的文档，进入图谱详情页
   const handleGraphDocClick = (doc: KnowledgeTripleDocumentInfo) => {
@@ -588,6 +583,8 @@ const SpaceKnowledge: React.FC = () => {
         documentName: dict('PC.Pages.SpaceKnowledge.Index.allKnowledgeGraphs'),
         fileType: 'all',
         tripleStatus: 2,
+        createdTime: '',
+        updatedTime: '',
       });
     } catch (error) {
       console.error('查看全部知识图谱失败:', error);
@@ -732,7 +729,8 @@ const SpaceKnowledge: React.FC = () => {
         {docType === KnowledgeDocTypeEnum.DOC && renderDocContent()}
         {docType === KnowledgeDocTypeEnum.QA && renderQaContent()}
         {docType === KnowledgeDocTypeEnum.GRAPH && renderGraphContent()}
-        {docType === KnowledgeDocTypeEnum.ACCURACYTEST && renderAccuracyTestContent()}
+        {docType === KnowledgeDocTypeEnum.ACCURACYTEST &&
+          renderAccuracyTestContent()}
       </div>
 
       {/*本地文档弹窗*/}

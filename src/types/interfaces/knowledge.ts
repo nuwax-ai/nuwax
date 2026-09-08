@@ -225,8 +225,9 @@ export interface KnowledgeRawSegmentUpdateParams {
 }
 
 // 知识库分段配置 - 数据列表查询
+// spaceId 可选：按 docId 定位文档的场景（如原文对照）可不传
 export type KnowledgeRawSegmentListParams = TablePageRequest<{
-  spaceId: number;
+  spaceId?: number;
   docId: number;
 }>;
 
@@ -437,6 +438,10 @@ export interface CreateSetProps {
   form: FormInstance;
   autoSegmentConfigFlag: boolean;
   onChoose: (flag: boolean) => void;
+  /** AI 分段开关当前值（新导入流程传入） */
+  isAiSegment?: boolean;
+  /** AI 分段开关切换回调 */
+  onAiSegmentChoose?: (flag: boolean) => void;
 }
 
 // 数据处理组件

@@ -17,10 +17,13 @@ export enum ThemeLayoutColorStyle {
  * 导航风格类型
  * style1: 紧凑模式（无文字导航，有外边距和圆角）
  * style2: 展开模式（有文字导航，无外边距和圆角）
+ * style3: 单栏模式（主导航改造形态：会话侧栏常驻 + 二级菜单列并列）
  */
 export enum ThemeNavigationStyleType {
   /** 紧凑模式 */
   STYLE1 = 'style1',
   /** 展开模式 */
   STYLE2 = 'style2',
+  /** 单栏模式（主导航改造形态） */
+  STYLE3 = 'style3',
 }

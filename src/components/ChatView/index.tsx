@@ -6,10 +6,15 @@ import { stripOpenUiResumeDisplayArtifacts } from '@/components/business-compone
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
+import {
+  collapseTerminalProcesses,
+  groupMarkdownProcesses,
+} from '@/components/MarkdownRenderer/utils';
 import { USER_INFO } from '@/constants/home.constants';
+import { useConversationDensity } from '@/hooks/useConversationDensity';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { getLegacyThinkBlock } from '@/plugins/ds-markdown-think';
 import { dict } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
@@ -17,6 +22,7 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
+import { resolveDensityPolicy } from '@/utils/conversationDensity';
 import { message, theme } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
@@ -46,9 +52,51 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const { data } = useUnifiedTheme();
     const isDarkMode = data.antdTheme === 'dark';
 
+    // 会话密度（P1-6）：compact 流式也收起 / normal 现行 / detailed 恒展开不聚合
+    const { density } = useConversationDensity();
+    const densityPolicy = useMemo(
+      () => resolveDensityPolicy(density),
+      [density],
+    );
+
+    // 任务终态（非流式中）：终态聚合只展示最后一段正文，其余统一进「执行过程」折叠区
+    const isTerminalStatus = useMemo(
+      () =>
+        messageInfo?.status !== MessageStatusEnum.Incomplete &&
+        messageInfo?.status !== MessageStatusEnum.Loading,
+      [messageInfo?.status],
+    );
+
+    // 工具组默认收起：compact 恒收起；normal 终态收起；detailed 恒展开
+    const groupDefaultCollapsed =
+      densityPolicy.collapseDuringStreaming ||
+      (isTerminalStatus && densityPolicy.collapseTerminal);
+
     const processedText = useMemo(() => {
-      return groupMarkdownProcesses(messageInfo?.text || '');
-    }, [messageInfo?.text]);
+      const rawText = messageInfo?.text || '';
+      const grouped = groupMarkdownProcesses(rawText);
+      // 思考按流式位置内联渲染：新消息 text 已含 markdown-custom-think 标签；
+      // 存量历史消息只有聚合 think 字段（无位置信息），合成为消息开头的内联块，
+      // 与新消息形态统一。
+      const withLegacyThink =
+        !rawText.includes('markdown-custom-think') && messageInfo?.think
+          ? `${getLegacyThinkBlock(messageInfo.think)}${grouped}`
+          : grouped;
+      return isTerminalStatus && densityPolicy.terminalAggregate
+        ? collapseTerminalProcesses(withLegacyThink)
+        : withLegacyThink;
+    }, [
+      messageInfo?.text,
+      messageInfo?.think,
+      isTerminalStatus,
+      densityPolicy.terminalAggregate,
+    ]);
+
+    // text 含内联思考标签（含历史合成）时不再走旧顶部思考区，避免双份渲染
+    const hasInlineThink = useMemo(
+      () => processedText.includes('markdown-custom-think'),
+      [processedText],
+    );
 
     const userDisplayText = useMemo(() => {
       return stripOpenUiResumeDisplayArtifacts(
@@ -60,7 +108,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
 
     const { markdownRef, messageIdRef } = useMarkdownRender({
       answer: processedText,
-      thinking: messageInfo?.think || '',
+      thinking: hasInlineThink ? '' : messageInfo?.think || '',
       id: messageInfo?.clientRenderKey || messageInfo?.id || '',
     });
     const _userInfo =
@@ -213,13 +261,11 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     markdownRef={markdownRef}
                     conversationId={conversationId}
                     answer={processedText}
-                    thinking={messageInfo?.think}
+                    thinking={hasInlineThink ? '' : messageInfo?.think}
                     status={messageInfo?.status}
                     thinkingFinished={messageInfo?.thinkingFinished}
-                    collapseProcessGroups={
-                      messageInfo?.status !== MessageStatusEnum.Incomplete &&
-                      messageInfo?.status !== MessageStatusEnum.Loading
-                    }
+                    collapseProcessGroups={groupDefaultCollapsed}
+                    autoCollapseEnabled={densityPolicy.autoCollapseEnabled}
                   />
                 </div>
               </div>

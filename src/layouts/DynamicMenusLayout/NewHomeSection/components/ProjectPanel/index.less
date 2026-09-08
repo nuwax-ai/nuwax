@@ -1,0 +1,164 @@
+@import '@/styles/token.less';
+
+.project-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: @paddingXxs @paddingXs;
+}
+
+.project-empty {
+  font-size: @fontSizeSm;
+}
+
+.project {
+  .row {
+    display: flex;
+    align-items: center;
+    gap: @marginXxs;
+    padding: @paddingXs @paddingXxs;
+    border-radius: @borderRadius;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      background-color: @colorFillQuaternary;
+    }
+
+    &.expanded .name {
+      color: @navSecondMenuAdaptiveText;
+      font-weight: @fontWeightStrong;
+    }
+
+    .name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: @fontSize;
+      color: @navSecondMenuAdaptiveTextSecondary;
+      line-height: 20px;
+    }
+
+    .add {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: @borderRadiusSm;
+      font-size: @fontSize;
+      color: @navSecondMenuAdaptiveTextTertiary;
+    }
+
+    .add:hover {
+      background-color: @colorFillTertiary;
+      color: @navSecondMenuAdaptiveText;
+    }
+
+    .arrow {
+      flex-shrink: 0;
+      font-size: 10px;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .arrowExpanded {
+      transform: rotate(90deg);
+    }
+  }
+
+  .child {
+    display: flex;
+    align-items: center;
+    gap: @marginXxs;
+    margin-left: @paddingXs;
+    padding: 3px @paddingXxs;
+    border-radius: @borderRadiusSm;
+    cursor: pointer;
+
+    &:hover {
+      background-color: @colorFillQuaternary;
+
+      .child-more {
+        opacity: 1;
+      }
+    }
+
+    // 执行中绿点(呼吸闪烁,与「最近」分组子条目同款)
+    .status-dot {
+      flex-shrink: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: @colorSuccess;
+      animation: project-status-pulse 1.6s ease-in-out infinite;
+    }
+
+    // 失败红叹号
+    .status-failed {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: @colorError;
+    }
+
+    // 置顶图钉
+    .pin-icon {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: @colorPrimary;
+    }
+
+    .child-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: @fontSizeSm;
+      color: @navSecondMenuAdaptiveTextSecondary;
+      line-height: 18px;
+    }
+
+    .child-time {
+      flex-shrink: 0;
+      font-size: @fontSizeSm;
+      color: @navSecondMenuAdaptiveTextTertiary;
+    }
+
+    // 「⋯」操作菜单按钮:默认隐藏,hover 行时显示;触屏常显
+    .child-more {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: @fontSizeSm;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+
+      &:hover {
+        color: @navSecondMenuAdaptiveText;
+      }
+    }
+
+    @media (hover: none) {
+      .child-more {
+        opacity: 1;
+      }
+    }
+  }
+}
+
+@keyframes project-status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}

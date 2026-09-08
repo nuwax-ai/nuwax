@@ -1,9 +1,12 @@
+import { t } from '@/services/i18nRuntime';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useActiveInterventionQueue } from '../hooks/useActiveInterventionQueue';
+import { useInterventionDialogFocus } from '../hooks/useInterventionDialogFocus';
 import type {
   AcpPermissionInteraction,
+  AcpPermissionRespondExtras,
   AcpRequestPermissionResponse,
 } from '../types/acpIntervention';
 import type {
@@ -19,6 +22,7 @@ export interface AgentInterventionChatLayerProps {
   onRespondAcpPermission: (
     interaction: AcpPermissionInteraction,
     response: AcpRequestPermissionResponse,
+    extras?: AcpPermissionRespondExtras,
   ) => void | Promise<void>;
   onRespondMcpAsk: (
     interaction: McpAskInteraction,
@@ -82,6 +86,9 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
     [onRespondMcpAsk],
   );
 
+  // 遮罩对话框的焦点管理：有干预时聚焦入内 + Tab 循环 + 关闭还原（hook 须无条件调用）
+  const dialogFocus = useInterventionDialogFocus(queueItems.length > 0);
+
   if (!queueItems.length) {
     return null;
   }
@@ -90,6 +97,12 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
     <div
       className={classNames(styles.host, className)}
       data-agent-intervention-dock
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('PC.Components.AgentInterventionChatLayer.dialogLabel')}
+      tabIndex={-1}
+      ref={dialogFocus.containerRef}
+      onKeyDown={dialogFocus.handleKeyDown}
     >
       <DockPanel
         items={queueItems}

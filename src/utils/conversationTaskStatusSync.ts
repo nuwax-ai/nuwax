@@ -1,11 +1,15 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
+import {
+  isTerminalTaskStatus,
+  mergeConversationInfoTaskStatus,
+  resolveTaskStatusFromMessageList,
+  resolveTaskStatusFromMessageLists,
+  resolveTerminalTaskStatus,
+} from '@/features/conversation/domain/taskStatus';
 import { apiAgentConversation } from '@/services/agentConfig';
-import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
-import type {
-  ConversationInfo,
-  MessageInfo,
-} from '@/types/interfaces/conversationInfo';
+import { TaskStatus } from '@/types/enums/agent';
+import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
 import { conversationErrorTerminalLogger } from '@/utils/logger';
 import type { Dispatch, SetStateAction } from 'react';
@@ -13,207 +17,14 @@ import type { Dispatch, SetStateAction } from 'react';
 /** ChatFinished 事件载荷 */
 export type ChatFinishedPayload = { conversationId: string };
 
-/** 会话 taskStatus 终态（非 EXECUTING / CREATE） */
-const TERMINAL_TASK_STATUSES = new Set<TaskStatus>([
-  TaskStatus.COMPLETE,
-  TaskStatus.CANCEL,
-  TaskStatus.FAILED,
-]);
-
-/** 判断 taskStatus 是否为终态 */
-export function isTerminalTaskStatus(
-  status: TaskStatus | undefined | null,
-): boolean {
-  return (
-    status !== undefined &&
-    status !== null &&
-    TERMINAL_TASK_STATUSES.has(status)
-  );
-}
-
-function normalizeTaskStatus(value: unknown): TaskStatus | undefined {
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-  const normalized = value.trim().toUpperCase();
-  if (
-    normalized === TaskStatus.COMPLETE ||
-    normalized === TaskStatus.CANCEL ||
-    normalized === TaskStatus.FAILED
-  ) {
-    return normalized as TaskStatus;
-  }
-  return undefined;
-}
-
-function normalizeStopReason(value: unknown): TaskStatus | undefined {
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replace(/[-_\s]/g, '');
-  if (
-    normalized === 'endturn' ||
-    normalized === 'complete' ||
-    normalized === 'completed' ||
-    normalized === 'success'
-  ) {
-    return TaskStatus.COMPLETE;
-  }
-  if (
-    normalized === 'cancel' ||
-    normalized === 'cancelled' ||
-    normalized === 'canceled'
-  ) {
-    return TaskStatus.CANCEL;
-  }
-  if (
-    normalized === 'error' ||
-    normalized === 'fail' ||
-    normalized === 'failed'
-  ) {
-    return TaskStatus.FAILED;
-  }
-  return undefined;
-}
-
-function resolveStructuredTerminalStatus(
-  signal: unknown,
-): TaskStatus | undefined {
-  const directStatus = normalizeTaskStatus(signal);
-  if (directStatus) {
-    return directStatus;
-  }
-
-  if (!signal || typeof signal !== 'object') {
-    return undefined;
-  }
-
-  const payload = signal as Record<string, unknown>;
-  const status =
-    normalizeTaskStatus(payload.taskStatus) ||
-    normalizeTaskStatus(payload.task_status) ||
-    normalizeTaskStatus(payload.status) ||
-    normalizeTaskStatus(payload.terminalStatus);
-  if (status) {
-    return status;
-  }
-
-  return (
-    normalizeStopReason(payload.stop_reason) ||
-    normalizeStopReason(payload.stopReason) ||
-    normalizeStopReason(payload.reason)
-  );
-}
-
-/**
- * 从 FINAL_RESULT 解析终态 taskStatus。
- *
- * FINAL_RESULT（completed:true）是确定结束信号，但只在 success=true 时落 COMPLETE——
- * 正常完成是「后端落库 COMPLETE 有延迟」的高风险场景，直接落终态绕过后端轮询，
- * 修复 taskStatus 固化 EXECUTING（UI 长期显示「智能体正在执行」/ 发送按钮进行中）。
- *
- * success=false（取消/冲突/失败）不在前端据 error/message 文案猜终态——文案匹配脆弱、
- * 与后端措辞强耦合。仅接受结构化 taskStatus / stop_reason / reason 等协议字段；
- * 未命中则返回 undefined，由 applyTerminalTaskStatus 跳过写回，交 onClose 的
- * syncTerminalConversationTaskStatus 拉后端真实 taskStatus；
- * 此时后端已返回 FINAL_RESULT，终态通常已落库，轮询可拿到正确值。
- *
- * - success === true → COMPLETE
- * - taskStatus/status/task_status/terminalStatus 为终态枚举 → 对应终态
- * - stop_reason/stopReason/reason 为协议终止原因枚举 → 对应终态
- * - 其它 → undefined（不落，交后端轮询兜底）
- */
-export function resolveTerminalTaskStatus(
-  success: boolean | undefined,
-  ...terminalSignals: unknown[]
-): TaskStatus | undefined {
-  if (success) {
-    return TaskStatus.COMPLETE;
-  }
-
-  for (const signal of terminalSignals) {
-    const status = resolveStructuredTerminalStatus(signal);
-    if (status) {
-      return status;
-    }
-  }
-
-  return undefined;
-}
-
-/**
- * 从消息列表【最后一条 assistant】的 finalResult 解析终态 taskStatus。
- * 若最后一条 assistant 尚无 finalResult，视为当前轮仍在执行，不沿用历史轮次结果。
- */
-export function resolveTaskStatusFromMessageList(
-  messageList: MessageInfo[] | undefined | null,
-): TaskStatus | undefined {
-  if (!messageList?.length) {
-    return undefined;
-  }
-  for (let i = messageList.length - 1; i >= 0; i -= 1) {
-    const message = messageList[i];
-    if (message.role !== AssistantRoleEnum.ASSISTANT) {
-      continue;
-    }
-    const { finalResult } = message;
-    if (finalResult) {
-      return resolveTerminalTaskStatus(finalResult.success, finalResult);
-    }
-    // 命中最后一条 assistant 但无 finalResult → 当前轮仍在流式/执行中
-    return undefined;
-  }
-  return undefined;
-}
-
-/**
- * 依次从传入的 messageList 解析终态（前者优先）。
- * 取最后一条 assistant 的 finalResult 判定；sub 关闭后传入本地 messageList
- * （FINAL_RESULT 已落本地）即可解析，无需额外 reload。
- */
-export function resolveTaskStatusFromMessageLists(
-  ...messageLists: Array<MessageInfo[] | undefined | null>
-): TaskStatus | undefined {
-  for (const list of messageLists) {
-    const status = resolveTaskStatusFromMessageList(list);
-    if (status !== undefined) {
-      return status;
-    }
-  }
-  return undefined;
-}
-
-/**
- * reload 历史时合并 taskStatus：接口仍返回 EXECUTING 时，优先从消息 finalResult
- * 经 resolveTerminalTaskStatus 落终态；解析失败则保留 prev 已落下的终态，避免覆盖。
- */
-export function mergeConversationInfoTaskStatus(
-  prev: ConversationInfo | null | undefined,
-  incoming: ConversationInfo,
-): ConversationInfo {
-  if (!incoming || incoming.taskStatus !== TaskStatus.EXECUTING) {
-    return incoming;
-  }
-  const sameConversation =
-    prev !== undefined &&
-    prev !== null &&
-    String(prev.id) === String(incoming.id);
-  const resolved =
-    resolveTaskStatusFromMessageList(incoming.messageList) ||
-    (sameConversation
-      ? resolveTaskStatusFromMessageList(prev.messageList)
-      : undefined);
-  if (resolved) {
-    return { ...incoming, taskStatus: resolved };
-  }
-  if (sameConversation && isTerminalTaskStatus(prev.taskStatus)) {
-    return { ...incoming, taskStatus: prev.taskStatus };
-  }
-  return incoming;
-}
+// 兼容现有调用方；迁移期间旧 Interface 继续从该路径导出纯领域规则。
+export {
+  isTerminalTaskStatus,
+  mergeConversationInfoTaskStatus,
+  resolveTaskStatusFromMessageList,
+  resolveTaskStatusFromMessageLists,
+  resolveTerminalTaskStatus,
+};
 
 /**
  * 订阅 ChatFinished 事件

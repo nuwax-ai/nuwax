@@ -30,9 +30,10 @@ import {
 } from '@/constants/codes.constants';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import {
-  insertPlanBlock,
   insertToolCallBlock,
   insertToolCallUpdateBlock,
+  removePlanBlocks,
+  upsertPlanBlock,
 } from '@/pages/AppDev/utils/markdownProcess';
 import { t } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
@@ -307,7 +308,11 @@ export const useAppDevChat = ({
             }
           }
 
-          if (subType === AgentSessionUpdateSubType.PLAN) {
+          // ACP plan/plan_update：全量替换语义，同 planId 的旧块被新块替换
+          if (
+            subType === AgentSessionUpdateSubType.PLAN ||
+            subType === AgentSessionUpdateSubType.PLAN_UPDATE
+          ) {
             // 插入 Plan 前先刷新文本缓冲区，确保顺序正确
             flushTextBuffer(false);
             setChatMessages((prev) =>
@@ -318,7 +323,7 @@ export const useAppDevChat = ({
                 ) {
                   return {
                     ...msg,
-                    text: insertPlanBlock(msg.text || '', {
+                    text: upsertPlanBlock(msg.text || '', {
                       planId: data.planId || 'default-plan',
                       entries: data.entries || [],
                     }),
@@ -327,6 +332,30 @@ export const useAppDevChat = ({
                 return msg;
               }),
             );
+          }
+          // ACP plan_removed：计划不再适用，移除已渲染的计划块
+          if (subType === AgentSessionUpdateSubType.PLAN_REMOVED) {
+            setChatMessages((prev) =>
+              prev.map((msg) => {
+                if (
+                  msg.requestId === activeRequestId &&
+                  msg.role === AssistantRoleEnum.ASSISTANT
+                ) {
+                  return {
+                    ...msg,
+                    text: removePlanBlocks(msg.text || ''),
+                  };
+                }
+                return msg;
+              }),
+            );
+          }
+          // ACP 引擎侧模式变化（如 ExitPlanMode 批准后切回执行模式）
+          if (subType === AgentSessionUpdateSubType.CURRENT_MODE_UPDATE) {
+            const modeId = data?.currentModeId ?? data?.modeId;
+            if (typeof modeId === 'string' && modeId) {
+              message.info(t('PC.Pages.AppDevChat.agentModeChanged', modeId));
+            }
           }
           if (subType === AgentSessionUpdateSubType.TOOL_CALL) {
             // 插入 ToolCall 前先刷新文本缓冲区，确保顺序正确

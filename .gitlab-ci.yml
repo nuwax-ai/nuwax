@@ -1,0 +1,31 @@
+# nuwa-sdlc-kit · 规则文件 evals 门禁（GitLab CI 版；播种一次，本地所有；后续修改归本仓）
+# 触发面 = 规则层文件：AGENTS/CLAUDE 指针、.claude/、templates/、REVIEW.md、plans/specs 工件
+# 注意：仓库已有业务 .gitlab-ci.yml 时本文件不会自动播种（init 跳过已存在文件），请人工合入 evals job
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+evals:
+  stage: test
+  image: node:$NODE
+  parallel:
+    matrix:
+      - NODE: ["20", "22"]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        paths: &sdlc_rule_paths
+          - AGENTS.md
+          - CLAUDE.md
+          - ".claude/**"
+          - templates/**
+          - REVIEW.md
+          - plans/**
+          - specs/**
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        paths: *sdlc_rule_paths
+  script:
+    - node scripts/sdlc-evals.mjs --dir .
+  # 本仓业务测试自行追加 job（测试命令见 .sdlc.json：pnpm exec vitest run）

@@ -1,7 +1,9 @@
+import CreditsBalance from '@/components/business-component/CreditsBalance';
 import { USER_AVATAR_LIST } from '@/constants/menus.constants';
 import { apiLogout } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import { UserAvatarEnum } from '@/types/enums/menus';
+import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { redirectToLogin } from '@/utils/router';
 import { Popover } from 'antd';
 import { TooltipPlacement } from 'antd/es/tooltip';
@@ -48,6 +50,8 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
     debounceInterval: 300,
     onSuccess: () => {
       localStorage.clear();
+      // nuwaclaw 客户端：联动清除宿主持久化 token（无桥/失败自动忽略）
+      void nuwaClawHost.auth.clear();
       // 清除菜单信息
       clearMenuInfo();
 
@@ -142,6 +146,10 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
       }}
       content={
         <div className={cx(styles.container)}>
+          {/* 积分入口（主导航改造：自侧栏底部收进用户弹层；订阅关闭时组件自隐藏） */}
+          <div style={{ padding: '8px 8px 4px' }}>
+            <CreditsBalance showFooter={false} stacked />
+          </div>
           {menuList.map((item) => {
             const style =
               item.type === UserAvatarEnum.Log_Out ? styles['log-out'] : '';

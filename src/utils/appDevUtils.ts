@@ -74,14 +74,17 @@ export const transformFlatListToTree = (
   filteredFiles.forEach((file) => {
     const pathParts = file.name.split('/').filter(Boolean);
     const fileName = pathParts[pathParts.length - 1];
-    // 如果文件是目录，则认为是文件（后端给了isDir字段，表示是否为目录），兼容之前逻辑
-    const isFile = !file.isDir || fileName.includes('.');
+    // 后端已经提供明确的 isDir；目录名可以合法包含点号（如 foo.bar）。
+    const isFile = file.isDir !== true;
 
+    const isExternalDataSource = Boolean(
+      file.dataSourceId && file.relativePath,
+    );
     const node: FileNode = {
-      id: file.name,
+      id: isExternalDataSource ? file.fileId : file.name,
       name: fileName,
       type: isFile ? 'file' : 'folder',
-      path: file.name,
+      path: isExternalDataSource ? file.relativePath : file.name,
       children: [],
       binary: file.binary || false,
       size:
@@ -89,18 +92,23 @@ export const transformFlatListToTree = (
           ? FILE_CONSTANTS.FALLBACK_SIZE
           : file.contents?.length || FILE_CONSTANTS.FALLBACK_SIZE,
       status: file.status || null,
-      fullPath: file.name,
-      parentPath: pathParts.slice(0, -1).join('/') || null,
+      fullPath: isExternalDataSource ? file.relativePath : file.name,
+      parentPath: isExternalDataSource
+        ? file.relativePath.split('/').slice(0, -1).join('/') || null
+        : pathParts.slice(0, -1).join('/') || null,
       content: file.contents || '',
       lastModified: Date.now(),
       fileProxyUrl: file?.fileProxyUrl || '',
       isLink: file?.isLink || false,
+      dataSourceId: file?.dataSourceId,
+      relativePath: file?.relativePath,
     };
 
-    map.set(file.name, node);
+    const mapKey = isExternalDataSource ? file.fileId : file.name;
+    map.set(mapKey, node);
 
     // 如果文件在子目录中，确保创建所有必要的父文件夹节点
-    if (pathParts.length > 1) {
+    if (!isExternalDataSource && pathParts.length > 1) {
       for (let i = pathParts.length - 2; i >= 0; i--) {
         const parentPath = pathParts.slice(0, i + 1).join('/');
         const parentName = pathParts[i];
@@ -130,7 +138,7 @@ export const transformFlatListToTree = (
       ) {
         parentNode.children?.push(node);
       }
-    } else if (!node.parentPath) {
+    } else if (!node.parentPath || node.dataSourceId) {
       if (!root.find((item: FileNode) => item.id === node.id)) {
         root.push(node);
       }

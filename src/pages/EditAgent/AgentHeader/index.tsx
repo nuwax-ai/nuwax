@@ -13,6 +13,7 @@ import type {
   AgentHeaderProps,
   AgentHeaderTabKey,
 } from '@/types/interfaces/agentConfig';
+import { immersiveHeaderCompact } from '@/utils/nuwaClawBridge';
 import { FormOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Segmented, Tag } from 'antd';
 import classNames from 'classnames';
@@ -147,7 +148,10 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   }, [showSubscriptionTabs]);
 
   return (
-    <header className={cx('flex', 'items-center', 'relative', styles.header)}>
+    <header
+      className={cx('flex', 'items-center', 'relative', styles.header)}
+      style={immersiveHeaderCompact()}
+    >
       <ConditionRender condition={!hideBack}>
         <SvgIcon
           name="icons-nav-backward"

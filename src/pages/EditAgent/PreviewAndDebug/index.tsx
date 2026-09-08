@@ -2,6 +2,7 @@ import { UnifiedChatSession } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -108,6 +109,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   const hasAutoPreviewedRef = useRef(false);
 
   const {
+    setCardList,
+    handleRefreshFileList,
+    refreshFileListImmediately,
+    refreshGitListRef,
+    setFileTreeRefreshTrigger,
+
     conversationInfo,
     messageList,
     setMessageList,
@@ -456,6 +463,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     ],
   );
 
+  /**
+   * 切到非云端电脑时，若停留在智能体电脑视图则关闭，
+   * 避免入口隐藏后残留桌面预览（与 Chat 页兜底同口径，见 3f8a2426a）。
+   */
+  useEffect(() => {
+    if (effectiveSandboxId !== '-1' && viewMode === 'desktop') {
+      closePreviewView();
+    }
+  }, [effectiveSandboxId, viewMode, closePreviewView]);
+
   // 消息发送
   const handleMessageSend = (
     messageInfo: string,
@@ -614,6 +631,25 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     return true;
   }, [agentConfigInfo?.type, messageList]);
 
+  // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
+  // 关闭（默认）为空对象，旧线原值原行为。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: devConversationIdRef.current || undefined,
+    effectsResources: {
+      showPagePreview,
+      openDesktopView,
+      setCardList,
+      setShowType,
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshFileListImmediately,
+      refreshGitListRef,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+      setFileTreeRefreshTrigger,
+    },
+  });
+
   return (
     <div className={cx(styles.container, 'flex', 'h-full')}>
       {/* 主内容区域 */}
@@ -733,6 +769,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 (await runAsync(Number(id)))?.data?.messageList
               }
               resumeDebugSource="edit-agent:preview-and-debug"
+              {...(runtimeLine?.conversationProps ?? {})}
             />
           </div>
         </div>

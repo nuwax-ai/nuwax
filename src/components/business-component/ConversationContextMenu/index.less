@@ -1,0 +1,17 @@
+// 「⋯」兜底按钮：默认透明，由调用方容器 hover 时控制显隐或常显（触屏）
+.more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  color: rgba(0, 0, 0, 45%);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 6%);
+    color: rgba(0, 0, 0, 88%);
+  }
+}

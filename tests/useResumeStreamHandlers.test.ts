@@ -352,4 +352,158 @@ describe('useResumeStreamHandlers', () => {
     expect(abortSse).toHaveBeenCalledTimes(1);
     expect(mockCreateSSEConnection).toHaveBeenCalledTimes(3);
   });
+
+  describe('新增干预回调（onTerminalEvent / onStreamClosed / onStreamError）', () => {
+    it('sub onMessage 收到 FINAL_RESULT 时调用 onTerminalEvent', () => {
+      const onTerminalEvent = vi.fn();
+      const { result } = renderHook(() =>
+        useResumeStreamHandlers({
+          setMessageList: vi.fn(),
+          handleChangeMessageList: vi.fn(),
+          messageViewRef: { current: null },
+          allowAutoScrollRef: { current: false },
+          onTerminalEvent,
+        }),
+      );
+
+      act(() => {
+        result.current.resumeConversationStream(999, [
+          { role: AssistantRoleEnum.USER, text: '问', id: 'u1' },
+        ] as MessageInfo[]);
+      });
+
+      const handlers = mockCreateSSEConnection.mock.calls[0][0];
+      act(() => {
+        handlers.onMessage({
+          eventType: ConversationEventTypeEnum.FINAL_RESULT,
+          requestId: 'req-1',
+          data: { success: true, outputText: '结果' },
+          completed: true,
+        });
+      });
+
+      expect(onTerminalEvent).toHaveBeenCalledWith(999, {
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        requestId: 'req-1',
+        data: { success: true, outputText: '结果' },
+        completed: true,
+      });
+    });
+
+    it('sub onMessage 收到 ERROR 时调用 onTerminalEvent', () => {
+      const onTerminalEvent = vi.fn();
+      const { result } = renderHook(() =>
+        useResumeStreamHandlers({
+          setMessageList: vi.fn(),
+          handleChangeMessageList: vi.fn(),
+          messageViewRef: { current: null },
+          allowAutoScrollRef: { current: false },
+          onTerminalEvent,
+        }),
+      );
+
+      act(() => {
+        result.current.resumeConversationStream(888, [
+          { role: AssistantRoleEnum.USER, text: '问', id: 'u2' },
+        ] as MessageInfo[]);
+      });
+
+      const handlers = mockCreateSSEConnection.mock.calls[0][0];
+      act(() => {
+        handlers.onMessage({
+          eventType: ConversationEventTypeEnum.ERROR,
+          requestId: 'req-err',
+          error: 'Internal error',
+        });
+      });
+
+      expect(onTerminalEvent).toHaveBeenCalledWith(888, {
+        eventType: ConversationEventTypeEnum.ERROR,
+        requestId: 'req-err',
+        error: 'Internal error',
+      });
+    });
+
+    it('sub onMessage 收到 MESSAGE 时不调用 onTerminalEvent', () => {
+      const onTerminalEvent = vi.fn();
+      const { result } = renderHook(() =>
+        useResumeStreamHandlers({
+          setMessageList: vi.fn(),
+          handleChangeMessageList: vi.fn(),
+          messageViewRef: { current: null },
+          allowAutoScrollRef: { current: false },
+          onTerminalEvent,
+        }),
+      );
+
+      act(() => {
+        result.current.resumeConversationStream(777, [
+          { role: AssistantRoleEnum.USER, text: '问', id: 'u3' },
+        ] as MessageInfo[]);
+      });
+
+      const handlers = mockCreateSSEConnection.mock.calls[0][0];
+      act(() => {
+        handlers.onMessage({
+          eventType: ConversationEventTypeEnum.MESSAGE,
+          requestId: 'req-msg',
+          data: { type: 'THINK', text: '思考中', finished: false },
+        });
+      });
+
+      expect(onTerminalEvent).not.toHaveBeenCalled();
+    });
+
+    it('sub onClose 时调用 onStreamClosed 并传入占位 id', () => {
+      const onStreamClosed = vi.fn();
+      const { result } = renderHook(() =>
+        useResumeStreamHandlers({
+          setMessageList: vi.fn(),
+          handleChangeMessageList: vi.fn(),
+          messageViewRef: { current: null },
+          allowAutoScrollRef: { current: false },
+          onStreamClosed,
+        }),
+      );
+
+      act(() => {
+        result.current.resumeConversationStream(666, [
+          { role: AssistantRoleEnum.USER, text: '问', id: 'u4' },
+        ] as MessageInfo[]);
+      });
+
+      const handlers = mockCreateSSEConnection.mock.calls[0][0];
+      act(() => {
+        handlers.onClose();
+      });
+
+      expect(onStreamClosed).toHaveBeenCalledWith(expect.any(String));
+    });
+
+    it('sub onerror 时调用 onStreamError 并传入占位 id', () => {
+      const onStreamError = vi.fn();
+      const { result } = renderHook(() =>
+        useResumeStreamHandlers({
+          setMessageList: vi.fn(),
+          handleChangeMessageList: vi.fn(),
+          messageViewRef: { current: null },
+          allowAutoScrollRef: { current: false },
+          onStreamError,
+        }),
+      );
+
+      act(() => {
+        result.current.resumeConversationStream(555, [
+          { role: AssistantRoleEnum.USER, text: '问', id: 'u5' },
+        ] as MessageInfo[]);
+      });
+
+      const handlers = mockCreateSSEConnection.mock.calls[0][0];
+      act(() => {
+        handlers.onError(new TypeError('network error'));
+      });
+
+      expect(onStreamError).toHaveBeenCalledWith(expect.any(String));
+    });
+  });
 });

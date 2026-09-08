@@ -1,7 +1,7 @@
 import { t } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, Input, Modal, Space, Spin, message } from 'antd';
+import { Button, Input, message, Modal, Space, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';

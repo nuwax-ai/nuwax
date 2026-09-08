@@ -2,6 +2,7 @@ import type {
   AgentInterventionHandlersOverride,
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversation from '@/hooks/useConversation';
 import {
   areMessageListsEquivalent,
@@ -248,6 +249,15 @@ export function useConversationAgentChatSession(
     [respondAcpPermission, respondMcpAsk],
   );
 
+  // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
+  // 关闭（默认）为空对象，旧线原值原行为。隔离入口注入空资源（隔离子集语义）。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: devConversationId,
+    effectsResources: {},
+    // 隔离入口与旧线一致：不同步会话记录（不发乐观列表标记、不更新主题）
+    isSync: false,
+  });
+
   return {
     conversationId: devConversationId,
     messageList,
@@ -356,5 +366,7 @@ export function useConversationAgentChatSession(
     isLoadingOtherInterface,
     conversationInfo,
     interventionHandlers,
+    // 双线分派：新线会话面在末尾展开覆盖（flag off 时空对象不影响旧线值）
+    ...(runtimeLine?.conversationProps ?? {}),
   };
 }

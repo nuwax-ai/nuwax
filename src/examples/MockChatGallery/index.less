@@ -1,0 +1,79 @@
+// 综合验收画廊（/mock-gallery，dev-only）：纯结构性布局，语义色走 antd 组件。
+.gallery-page {
+  min-height: 100vh;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gallery-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.gallery-group-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  > :first-child {
+    flex: 0 0 auto;
+    min-width: 180px;
+  }
+}
+
+.gallery-grid {
+  display: grid;
+  // 大屏 2~3 列，窄屏单列；卡片内会话区固定高度
+  grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.gallery-card {
+  min-width: 0;
+}
+
+.gallery-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.gallery-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gallery-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.gallery-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gallery-card-assertions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.gallery-card-session {
+  height: 420px;
+  overflow-y: auto;
+  border: 1px solid rgba(5, 5, 5, 6%);
+  border-radius: 8px;
+}

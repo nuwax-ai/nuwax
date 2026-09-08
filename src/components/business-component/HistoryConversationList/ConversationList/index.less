@@ -179,3 +179,20 @@
   color: var(--ant-color-text-description);
   font-size: 12px;
 }
+
+// 已归档会话入口（本地标记过渡方案）
+.archived-entry {
+  text-align: center;
+  padding: 8px 12px;
+  color: var(--ant-color-text-description);
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--ant-color-fill-quaternary);
+    color: var(--ant-color-text-secondary);
+  }
+}

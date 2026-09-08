@@ -42,6 +42,8 @@ export interface AppDevProHeaderProps {
   onConfirmUpdate?: (info: UserAppInfo) => void;
   /** 点击发布 */
   onPublish?: () => void;
+  /** 发布进行中（构建 / 提交申请） */
+  publishing?: boolean;
   /** 文件树侧边栏是否可见 */
   isFileTreeSidebarVisible?: boolean;
   /** 切换文件树侧边栏显隐 */
@@ -56,6 +58,16 @@ export interface AppDevProHeaderProps {
   isDatabasePanelOpen?: boolean;
   /** 打开数据库页签 */
   onOpenDatabase?: () => void;
+  /** 是否显示远程桌面入口（仅开发环境） */
+  isShowDesktop?: boolean;
+  /** 远程桌面是否已打开 */
+  isAgentDesktopOpen?: boolean;
+  /** 打开 / 关闭远程桌面 */
+  onOpenDesktopPanel?: () => void;
+  /** 应用预览页签是否处于激活状态 */
+  isAppPreviewOpen?: boolean;
+  /** 打开应用预览页签 */
+  onOpenAppPreview?: () => void;
   /** 当前环境 */
   env?: UserAppDbEnvEnum;
   /** 切换开发 / 线上环境 */
@@ -72,6 +84,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   spaceId,
   onConfirmUpdate,
   onPublish,
+  publishing = false,
   isFileTreeSidebarVisible = false,
   onToggleFileTreeSidebar,
   isTerminalPanelOpen = false,
@@ -79,6 +92,11 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   onOpenSettings,
   isDatabasePanelOpen = false,
   onOpenDatabase,
+  isShowDesktop = false,
+  isAgentDesktopOpen = false,
+  onOpenDesktopPanel,
+  isAppPreviewOpen = false,
+  onOpenAppPreview,
   env = UserAppDbEnvEnum.Dev,
   onEnvChange,
 }) => {
@@ -105,11 +123,11 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
 
   /** 发布按钮是否禁用 */
   const publishDisabled = useMemo(() => {
-    if (!userAppInfo) {
+    if (!userAppInfo || publishing) {
       return true;
     }
     return userAppInfo.publishStatus === PublishStatusEnum.Applying;
-  }, [userAppInfo]);
+  }, [publishing, userAppInfo]);
 
   const showUnpublishedTag =
     !!onPublish &&
@@ -136,63 +154,70 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
           className,
         )}
       >
-      {/* 返回按钮 */}
-      <ConditionRender condition={!hideBack}>
-        <SvgIcon
-          name="icons-nav-backward"
-          className={cx(styles['icon-backward'])}
-          onClick={() => {
-            history.back();
-          }}
-        />
-      </ConditionRender>
-
-      {/* 应用头像 */}
-      <img
-        className={cx(styles.avatar, { [styles['hide-back']]: hideBack })}
-        src={userAppInfo?.icon || defaultAppIcon}
-        alt=""
-        onError={handleError}
-      />
-
-      {/* 应用信息 */}
-      <div className={cx('flex', 'items-center', styles['header-info'])}>
-        <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
-          {displayName}
-        </h3>
-
-        {/* 编辑按钮 */}
-        <ConditionRender condition={!!userAppInfo}>
-          <Button
-            type="text"
-            icon={<FormOutlined />}
-            className={cx(styles['edit-ico'])}
-            onClick={handleOpenEdit}
+        {/* 返回按钮 */}
+        <ConditionRender condition={!hideBack}>
+          <SvgIcon
+            name="icons-nav-backward"
+            className={cx(styles['icon-backward'])}
+            onClick={() => {
+              history.back();
+            }}
           />
         </ConditionRender>
-      </div>
 
-      {/* 环境切换：水平居中 */}
-      <div className={cx(styles['env-switch'])}>
-        <span
-          className={cx(styles['env-item'], {
-            [styles.active]: env === UserAppDbEnvEnum.Dev,
-          })}
-          onClick={handleSelectDevEnv}
-        >
-          {dict('PC.Pages.AppDevPro.devEnv')}
-        </span>
-        <span
-          className={cx(styles['env-item'], {
-            [styles.active]: env === UserAppDbEnvEnum.Prod,
-          })}
-          onClick={handleSelectProdEnv}
-        >
-          {dict('PC.Pages.AppDevPro.onlineEnv')}
-        </span>
-      </div>
+        {/* 应用头像 */}
+        <img
+          className={cx(styles.avatar, { [styles['hide-back']]: hideBack })}
+          src={userAppInfo?.icon || defaultAppIcon}
+          alt=""
+          onError={handleError}
+        />
 
-      <div className={cx(styles['right-box'], 'flex', 'items-center')}>
+        {/* 应用信息 */}
+        <div className={cx('flex', 'items-center', styles['header-info'])}>
+          <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
+            {displayName}
+          </h3>
+
+          {/* 编辑按钮 */}
+          <ConditionRender condition={!!userAppInfo}>
+            <Button
+              type="text"
+              icon={<FormOutlined />}
+              className={cx(styles['edit-ico'])}
+              onClick={handleOpenEdit}
+            />
+          </ConditionRender>
+        </div>
+
+        {/* 环境切换：样式对齐 MCP 编辑页中间菜单 */}
+        <div
+          className={cx(
+            'flex',
+            'items-center',
+            'content-center',
+            styles['env-switch'],
+          )}
+        >
+          <div
+            className={cx('cursor-pointer', styles['env-item'], {
+              [styles.active]: env === UserAppDbEnvEnum.Dev,
+            })}
+            onClick={handleSelectDevEnv}
+          >
+            {dict('PC.Pages.AppDevPro.devEnv')}
+          </div>
+          <div
+            className={cx('cursor-pointer', styles['env-item'], {
+              [styles.active]: env === UserAppDbEnvEnum.Prod,
+            })}
+            onClick={handleSelectProdEnv}
+          >
+            {dict('PC.Pages.AppDevPro.onlineEnv')}
+          </div>
+        </div>
+
+        <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/* 未发布变更提示 */}
         {showUnpublishedTag && (
           <Tag
@@ -253,23 +278,66 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
           onClick={onOpenTerminalPanel}
         />
 
-        {/* 发布按钮 */}
-        {onPublish && (
-          <Button type="primary" onClick={onPublish} disabled={publishDisabled}>
-            {dict('PC.Pages.AgentEdit.publish')}
-          </Button>
-        )}
-      </div>
-    </header>
+        {/* 应用预览页签 */}
+        <TooltipIcon
+          title={dict('PC.Pages.AppDevPro.appPreview')}
+          ariaLabel={dict('PC.Pages.AppDevPro.appPreview')}
+          className={cx(styles['panel-btn'], {
+            [styles.active]: isAppPreviewOpen,
+          })}
+          icon={
+            <SvgIcon name="icons-common-preview" style={{ fontSize: 16 }} />
+          }
+          onClick={onOpenAppPreview}
+        />
 
-    <CreateUserApp
-      open={editOpen}
-      mode={CreateUpdateModeEnum.Update}
-      spaceId={spaceId ?? userAppInfo?.spaceId}
-      userAppInfo={userAppInfo}
-      onCancel={handleCancelEdit}
-      onConfirmUpdate={handleConfirmUpdate}
-    />
+        {/* 远程桌面：仅开发环境显示，交互对齐 ConversationAgent */}
+        <ConditionRender condition={isShowDesktop}>
+          <TooltipIcon
+            title={
+              isAgentDesktopOpen
+                ? dict(
+                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeAgentDesktop',
+                  )
+                : dict(
+                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openAgentDesktop',
+                  )
+            }
+            className={cx(styles['panel-btn'], {
+              [styles.active]: isAgentDesktopOpen,
+            })}
+            icon={
+              <SvgIcon
+                name="icons-nav-computer-star"
+                style={{ fontSize: 16 }}
+              />
+            }
+            onClick={onOpenDesktopPanel}
+          />
+        </ConditionRender>
+
+        {/* 发布按钮 */}
+        <Button
+          type="primary"
+          onClick={onPublish}
+          loading={publishing}
+          disabled={publishDisabled}
+        >
+          {publishing
+            ? dict('PC.Pages.AppDevHeader.publishing')
+            : dict('PC.Pages.AgentEdit.publish')}
+        </Button>
+      </div>
+      </header>
+
+      <CreateUserApp
+        open={editOpen}
+        mode={CreateUpdateModeEnum.Update}
+        spaceId={spaceId ?? userAppInfo?.spaceId}
+        userAppInfo={userAppInfo}
+        onCancel={handleCancelEdit}
+        onConfirmUpdate={handleConfirmUpdate}
+      />
     </>
   );
 };

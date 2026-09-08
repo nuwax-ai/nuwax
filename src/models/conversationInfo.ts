@@ -19,6 +19,11 @@ import { useConversationActiveState } from '@/hooks/useConversationActiveState';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
+  appendThinkChunk,
+  finalizeThinkBlock,
+  hasOpenThinkBlock,
+} from '@/plugins/ds-markdown-think';
+import {
   apiAgentConversation,
   apiAgentConversationChatStop,
   apiAgentConversationChatSuggest,
@@ -33,6 +38,7 @@ import {
   apiRestartAgent,
   apiRestartPod,
   isEnsurePodThrottledError,
+  type ComputerPodAppStage,
 } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
@@ -265,6 +271,22 @@ export default () => {
   // 文件树数据加载状态
   const [fileTreeDataLoading, setFileTreeDataLoading] =
     useState<boolean>(false);
+  /**
+   * 页面自管文件树标志（#5a 文件树懒加载收尾）：Chat 页可见树已切单层懒加载 hook，
+   * 模型层全量递归拉取对其无消费价值。置 true 后 refreshFileListImmediately 不再
+   * 发起全量拉取，改发 fileTreeRefreshTrigger 由页面层自行刷新当前层。
+   * 依赖模型全量树的页面（ConversationAgent / EditAgent 预览调试 /
+   * SkillDetailsConversation）保持默认 false，行为不变。
+   */
+  const [fileTreeSelfManaged, setFileTreeSelfManagedState] =
+    useState<boolean>(false);
+  // ref 镜像：refreshFileListImmediately 读取标志时不引入依赖重建，
+  // 避免 SSE 闭包持有旧的节流函数
+  const fileTreeSelfManagedRef = useRef<boolean>(false);
+  const setFileTreeSelfManaged = useCallback((value: boolean) => {
+    fileTreeSelfManagedRef.current = value;
+    setFileTreeSelfManagedState(value);
+  }, []);
   // 文件树视图模式
   const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
   // 使用 ref 跟踪当前视图模式和文件树可见状态，用于避免不必要的刷新
@@ -309,9 +331,35 @@ export default () => {
     },
   });
 
+  /**
+   * 全栈应用环境（仅 AppDevPro 设置）。
+   * 未设置时 computer/pod 老接口不带 appStage，保证会话智能体等页面行为不变。
+   */
+  const podAppStageRef = useRef<ComputerPodAppStage | undefined>(undefined);
+  const setPodAppStage = useCallback((stage?: ComputerPodAppStage) => {
+    podAppStageRef.current = stage;
+  }, []);
+
+  const ensurePodWithStage = useCallback(
+    (cId: number) => apiEnsurePod(cId, podAppStageRef.current),
+    [],
+  );
+  const keepalivePodWithStage = useCallback(
+    (cId: number) => apiKeepalivePod(cId, podAppStageRef.current),
+    [],
+  );
+  const restartPodWithStage = useCallback(
+    (cId: number) => apiRestartPod(cId, podAppStageRef.current),
+    [],
+  );
+  const restartAgentWithStage = useCallback(
+    (cId: number) => apiRestartAgent(cId, podAppStageRef.current),
+    [],
+  );
+
   // 重启智能体
   const { run: restartAgent, loading: isRestartAgentLoading } = useRequest(
-    apiRestartAgent,
+    restartAgentWithStage,
     {
       manual: true,
       debounceWait: 500,
@@ -330,6 +378,12 @@ export default () => {
   const refreshFileListImmediately = useCallback(
     async (cId?: number) => {
       if (!cId) {
+        return;
+      }
+      // 页面自管文件树：跳过全量递归拉取，改发时间戳由页面层（Chat 单层
+      // hook 订阅 fileTreeRefreshTrigger）自行刷新当前层
+      if (fileTreeSelfManagedRef.current) {
+        setFileTreeRefreshTrigger(Date.now());
         return;
       }
       setFileTreeDataLoading(true);
@@ -359,7 +413,7 @@ export default () => {
 
   // 远程桌面容器保活轮询
   const { run: runKeepalivePodPolling, cancel: stopKeepalivePodPolling } =
-    useRequest(apiKeepalivePod, {
+    useRequest(keepalivePodWithStage, {
       manual: true,
       loadingDelay: 30000,
       debounceWait: 5000,
@@ -376,7 +430,7 @@ export default () => {
             console.log(
               '[keepalive] Page visible, calling apiEnsurePod to ensure container running',
             );
-            await apiEnsurePod(params[0]);
+            await ensurePodWithStage(params[0]);
           } catch (error) {
             console.error('[keepalive] apiEnsurePod failed:', error);
           }
@@ -398,7 +452,7 @@ export default () => {
     }
     try {
       // 启动容器
-      const { code, data } = await apiEnsurePod(cId);
+      const { code, data } = await ensurePodWithStage(cId);
       if (code === SUCCESS_CODE) {
         // 设置远程桌面容器信息
         setVncContainerInfo(data?.container_info);
@@ -421,7 +475,7 @@ export default () => {
    */
   const ensureDesktopConnection = useCallback(async (cId: number) => {
     try {
-      const { code, data } = await apiEnsurePod(cId);
+      const { code, data } = await ensurePodWithStage(cId);
       if (code !== SUCCESS_CODE) {
         // HTTP 200 但业务码非成功（配额/权限/策略等）：抛错让调用方感知
         throw new Error(`ensurePod failed (code: ${code})`);
@@ -462,7 +516,7 @@ export default () => {
         }
       }
 
-      const result = await apiRestartPod(cId);
+      const result = await restartPodWithStage(cId);
       if (result.code === SUCCESS_CODE) {
         message.success(
           dict('PC.Models.ConversationInfo.restartVncPodSuccess'),
@@ -1068,6 +1122,15 @@ export default () => {
 
       let newMessage: any = null;
 
+      // 收口 text 中未闭合的思考标签块：思考被工具调用/正文/终态超越时调用。
+      // 终态兜底路径拿不到 thinkBlocks 时传空串，由插件保留标签内已写出的内容。
+      const closeOpenThinkBlock = () =>
+        finalizeThinkBlock(
+          currentMessage.text || '',
+          currentMessage.thinkBlocks?.[currentMessage.thinkBlocks.length - 1] ||
+            '',
+        );
+
       const interventionPatch = processInterventionSsePatch(
         res,
         currentMessage,
@@ -1104,7 +1167,8 @@ export default () => {
 
         newMessage = {
           ...currentMessage,
-          text: getCustomBlock(currentMessage.text || '', data),
+          // 工具调用出现即超越当前思考轮：先收口思考标签，再追加工具调用标签
+          text: getCustomBlock(closeOpenThinkBlock(), data),
           // 实际 SSE 不会为 THINK 单独下发 finished=true；PROCESSING 表示模型已从
           // 当前思考阶段进入工具调用阶段，因此必须在这里结束本轮思考态。
           thinkingFinished: true,
@@ -1194,12 +1258,25 @@ export default () => {
         }
 
         // 通用型任务处理(打开远程桌面)
+        // 仅云电脑（'-1'）会话响应 OPEN_DESKTOP 自动打开：个人/共享电脑会话入口按钮已隐藏，
+        // 桌面路由也不可达（ttyd gateway route not found），且 openDesktopView 会 ensurePod
+        // 拉起云端容器——gate 必须挡在 ensurePod 之前。
         if (
           data.type === AgentComponentTypeEnum.Event &&
           data.subEventType === 'OPEN_DESKTOP' &&
           // 优先使用本次会话请求携带的 conversationId，避免闭包中拿到的旧会话信息
           params.conversationId &&
-          conversationInfo?.agent?.hideDesktop !== HideDesktopEnum.Yes
+          conversationInfo?.agent?.hideDesktop !== HideDesktopEnum.Yes &&
+          // 生效电脑判定：发送参数（live 路径页面传入的生效 id）> 智能体绑定
+          // 个人电脑 > 共享电脑 > 兜底云电脑；resume 路径 params 仅含
+          // conversationId，须由 agent.sandboxId / sandboxServerId 推导拦截，
+          // 避免对非云电脑会话 ensurePod 拉起云端容器
+          String(
+            params.sandboxId ||
+              conversationInfo?.agent?.sandboxId ||
+              conversationInfo?.sandboxServerId ||
+              '-1',
+          ) === '-1'
         ) {
           // 打开远程桌面
           openDesktopView(params.conversationId);
@@ -1235,9 +1312,22 @@ export default () => {
         }
         // 思考think
         if (type === MessageModeEnum.THINK) {
+          // 思考按流式位置写入 text 内联标签（plugins/ds-markdown-think），
+          // think 字段继续累积全量思考供持久化与旧消费方使用。
+          const thinkBlocks = [...(currentMessage.thinkBlocks || [])];
+          if (!hasOpenThinkBlock(currentMessage.text || '')) {
+            thinkBlocks.push('');
+          }
+          thinkBlocks[thinkBlocks.length - 1] += text;
           newMessage = {
             ...currentMessage,
+            text: appendThinkChunk(
+              currentMessage.text || '',
+              thinkBlocks[thinkBlocks.length - 1],
+              finished === true,
+            ),
             think: `${currentMessage.think}${text}`,
+            thinkBlocks,
             // 每一轮 THINK 都独立更新状态：新分片会将上一轮的“已思考”
             // 重新切回“正在思考”，本轮 finished=true 后再显示“已思考”。
             thinkingFinished: finished === true,
@@ -1248,7 +1338,7 @@ export default () => {
         else if (type === MessageModeEnum.QUESTION) {
           newMessage = {
             ...currentMessage,
-            text: `${currentMessage.text}${text}`,
+            text: `${closeOpenThinkBlock()}${text}`,
             // QUESTION/CHAT 是 THINK 阶段之后的输出边界。
             thinkingFinished: true,
             // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
@@ -1260,7 +1350,7 @@ export default () => {
             newMessage = {
               ...currentMessage,
               id,
-              text: `${currentMessage.text}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
+              text: `${closeOpenThinkBlock()}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
               thinkingFinished: true,
               status: null, // 隐藏运行状态
             };
@@ -1270,7 +1360,7 @@ export default () => {
             messageIdRef.current = id;
             newMessage = {
               ...currentMessage,
-              text: `${currentMessage.text}${text}`,
+              text: `${closeOpenThinkBlock()}${text}`,
               // 后端 THINK 分片始终可能为 finished=false；首个正文分片即代表本轮思考结束。
               thinkingFinished: true,
               // 如果finished为true，则状态为Complete，否则为Incomplete
@@ -1420,6 +1510,8 @@ export default () => {
 
         newMessage = {
           ...(reconcileFinalMessageState(currentMessage, data) || {}),
+          // 终态兜底收口：流若结束于思考中，text 里的思考标签保持 finished 形态
+          text: closeOpenThinkBlock(),
           thinkingFinished: true,
           status: MessageStatusEnum.Complete,
           finalResult: data,
@@ -1462,6 +1554,7 @@ export default () => {
       if (eventType === ConversationEventTypeEnum.ERROR) {
         newMessage = {
           ...currentMessage,
+          text: closeOpenThinkBlock(),
           thinkingFinished: true,
           status: MessageStatusEnum.Error,
         };
@@ -2108,6 +2201,9 @@ export default () => {
     fileTreeData,
     fileTreeDataLoading,
     setFileTreeData,
+    // 页面自管文件树（#5a 懒加载收尾）：Chat 页置 true 后模型层跳过全量拉取
+    fileTreeSelfManaged,
+    setFileTreeSelfManaged,
     // 文件树视图模式
     viewMode,
     setViewMode,
@@ -2123,6 +2219,11 @@ export default () => {
     openPreviewView,
     // 重启智能体电脑
     restartVncPod,
+    /**
+     * 仅 AppDevPro 设置：computer/pod 老接口附带 appStage。
+     * 离开页面时需清空，避免污染会话智能体等页面。
+     */
+    setPodAppStage,
     // 重启智能体
     restartAgent,
     isRestartAgentLoading,

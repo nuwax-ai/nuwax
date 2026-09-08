@@ -10,6 +10,8 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { isConversationMockPage } from '@/utils/isConversationMockPage';
+import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
 import { message, Modal } from 'antd';
@@ -155,13 +157,21 @@ const errorHandler = (error: any, opts: any) => {
       switch (code) {
         // 用户未登录，跳转到登录页
         case USER_NO_LOGIN:
+          if (isConversationMockPage()) {
+            return;
+          }
           localStorage.clear();
+          // nuwaclaw 客户端：联动清除宿主持久化 token（无桥/失败自动忽略）
+          void nuwaClawHost.auth.clear();
           clearLoginStatusCache();
           redirectToLogin(-1);
           break;
 
         // 重定向到登录页
         case REDIRECT_LOGIN:
+          if (isConversationMockPage()) {
+            return;
+          }
           clearLoginStatusCache();
           window.location.href = errorMessage;
           break;
@@ -235,7 +245,8 @@ const errorHandler = (error: any, opts: any) => {
 const requestInterceptors = [
   // 添加基础URL
   (url: string, options: any) => {
-    const newUrl = process.env.BASE_URL + url;
+    // 调用方显式传入绝对地址时保持原样；Mock 页用它绕过远端 BASE_URL。
+    const newUrl = /^https?:\/\//.test(url) ? url : process.env.BASE_URL + url;
     return { url: newUrl, options };
   },
 

@@ -13,6 +13,8 @@ const useLayout = () => {
   const [openMessage, setOpenMessage] = useState<boolean>(false);
   const [openAdmin, setOpenAdmin] = useState<boolean>(false);
   const [openSetting, setOpenSetting] = useState<boolean>(false);
+  // 搜索弹窗（命令面板）：顶栏搜索 icon / ⌘K 触发
+  const [openSearchModal, setOpenSearchModal] = useState<boolean>(false);
   // 二级菜单收起/展开状态
   const [isSecondMenuCollapsed, setIsSecondMenuCollapsed] =
     useState<boolean>(false);
@@ -107,10 +109,12 @@ const useLayout = () => {
   };
 
   // 动态计算菜单宽度
+  // 单栏模式（style3 默认）：一级 icon 竖栏已移除，菜单宽度=侧栏宽度；
+  // 经典模式（style1/2）下仅用于移动端菜单平移动画的偏移基准
   const getCurrentMenuWidth = () => {
     return isSecondMenuCollapsed
-      ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1
-      : NAVIGATION_LAYOUT_SIZES.getTotalMenuWidth('style1');
+      ? 0
+      : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH;
   };
 
   // 查询用户未读消息数量
@@ -139,6 +143,8 @@ const useLayout = () => {
     runNotifyMessageUnreadCount,
     openMessage,
     setOpenMessage,
+    openSearchModal,
+    setOpenSearchModal,
     openAdmin,
     setOpenAdmin,
     openSetting,

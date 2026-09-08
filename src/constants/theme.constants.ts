@@ -57,7 +57,8 @@ export const STORAGE_KEYS = {
 export const DEFAULT_THEME_CONFIG = {
   PRIMARY_COLOR: '#5147ff',
   BACKGROUND_ID: '',
-  NAVIGATION_STYLE: 'style1',
+  // 默认单栏模式（主导航改造形态）；style1/style2 = 旧经典布局（可在设置里切回）
+  NAVIGATION_STYLE: 'style3',
   LAYOUT_STYLE: 'light',
   THEME: 'light',
   LANGUAGE: 'zh-CN',
@@ -68,6 +69,14 @@ export const DEFAULT_THEME_CONFIG = {
  * 根据背景图的明暗程度来确定适合的布局风格
  */
 export const THEME_BACKGROUND_CONFIGS: ThemeBackgroundConfig[] = [
+  // 纯色背景（无图）：url 为空串，applyToDOM 显式置 --xagi-background-image:none
+  {
+    id: 'bg-solid',
+    name: dict('PC.Constants.Theme.bgSolid'),
+    url: '',
+    layoutStyle: ThemeLayoutColorStyle.LIGHT,
+    description: dict('PC.Constants.Theme.bgSolidDesc'),
+  },
   {
     id: 'bg-variant-1',
     name: dict('PC.Constants.Theme.bgStarryNight'),
@@ -253,6 +262,18 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-page-container-border-color': 'rgba(0, 0, 0, 0.15)',
     },
   },
+};
+
+// style3（单栏模式）：layout 变量与 style1 同源（单栏导航尺寸走组件内常量，
+// page-container 沿 style1 分支 = 单栏改造上线时的线上表现）
+// 注：字面量内自引用 STYLE_CONFIGS 会触发 TDZ，故在字面量之后克隆写入
+STYLE_CONFIGS['light-style3'] = {
+  layout: { ...STYLE_CONFIGS['light-style1'].layout },
+  navigation: { ...STYLE_CONFIGS['light-style1'].navigation },
+};
+STYLE_CONFIGS['dark-style3'] = {
+  layout: { ...STYLE_CONFIGS['dark-style1'].layout },
+  navigation: { ...STYLE_CONFIGS['dark-style1'].navigation },
 };
 
 /**

@@ -14,8 +14,8 @@ import type { DevLogEntry } from '@/types/interfaces/appDev';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiUserAppLogsQuery } from '../services/appDevPro';
-import type { UserAppLogItem, UserAppLogsQueryResult } from '../type';
+import { apiUserAppLogsSourcesQuery } from '../services/appDevPro';
+import { UserAppStageEnum, type UserAppLogItem, type UserAppLogsQueryResult } from '../type';
 
 /**
  * 沙盒日志 Hook 的配置选项
@@ -91,7 +91,10 @@ const getLatestErrorLogs = (logs: DevLogEntry[]): string => {
  * 从接口回调中取出日志查询结果。
  */
 const unwrapLogsResult = (
-  result: UserAppLogsQueryResult | RequestResponse<UserAppLogsQueryResult> | undefined,
+  result:
+    | UserAppLogsQueryResult
+    | RequestResponse<UserAppLogsQueryResult>
+    | undefined,
 ): UserAppLogsQueryResult | undefined => {
   if (!result) {
     return undefined;
@@ -201,10 +204,9 @@ export const useConversationAgentDevLogs = (
         return Promise.resolve([]);
       }
 
-      return apiUserAppLogsQuery({
+      return apiUserAppLogsSourcesQuery({
         appId: currentAppId,
-        env: 'dev',
-        tail: tailLinesRef.current,
+        env: UserAppStageEnum.Dev,
       });
     },
     {
@@ -215,7 +217,9 @@ export const useConversationAgentDevLogs = (
       pollingErrorRetryCount: -1,
       throwOnError: false,
       onSuccess: (
-        result: UserAppLogsQueryResult | RequestResponse<UserAppLogsQueryResult>,
+        result:
+          | UserAppLogsQueryResult
+          | RequestResponse<UserAppLogsQueryResult>,
       ) => {
         const payload = unwrapLogsResult(result);
         const newLogs = normalizeUserAppLogEntries(payload);

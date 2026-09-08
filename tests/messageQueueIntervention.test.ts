@@ -416,9 +416,9 @@ describe('消息队列与 Intervention 协调', () => {
     });
   });
 
-  // ============ 场景4：错误状态与 Intervention 交互 ============
+  // ============ 场景4：Error 不永久阻断，Intervention 仍独立阻塞 ============
   describe('错误状态与 Intervention 交互', () => {
-    it('最后一条消息出错时，即使 Intervention 解除也不消费', () => {
+    it('最后一条消息出错时，Intervention 解除后继续消费', () => {
       const { result, rerender } = setup({ isConversationActive: true });
 
       // 入队消息
@@ -445,7 +445,14 @@ describe('消息队列与 Intervention 协调', () => {
       act(() => {
         vi.advanceTimersByTime(1000);
       });
-      expect(sendMessage).not.toHaveBeenCalled();
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('错误消息修复后，Intervention 解除可恢复消费', () => {
