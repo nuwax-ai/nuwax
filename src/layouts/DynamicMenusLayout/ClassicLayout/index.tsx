@@ -31,10 +31,10 @@ import DynamicSecondMenu from '../DynamicSecondMenu';
 import DynamicTabs from '../DynamicTabs';
 // 复用原有组件
 import CreditsBalance from '@/components/business-component/CreditsBalance';
-import CollapseButton from './CollapseButton';
 import Header from '../Header';
 import User from '../User';
 import UserOperateArea from '../UserOperateArea';
+import CollapseButton from './CollapseButton';
 // 复用原有样式
 import { PATH_URL } from '@/constants/home.constants';
 import {
@@ -46,7 +46,6 @@ import {
 } from '@/constants/menus.constants';
 import useConversation from '@/hooks/useConversation';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import styles from './index.less';
 import NewHomeSection from '../NewHomeSection';
 import SpaceSection from '../SpaceSection';
 import SquareSection from '../SquareSection';
@@ -58,6 +57,7 @@ import {
   normalizeMenuPathname,
   removePathUrlFromLocalStorage,
 } from '../utils';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 /** 桌面端沉浸式：顶部下移避让 nuwaclaw 工具栏（macOS 红绿灯在其左；Win/Linux 左侧自绘按钮组）。
@@ -92,10 +92,8 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
   const params = useParams();
   const { token } = theme.useToken();
   // 桌面端锁定 style3 时不会挂载本布局；仍统一读 effective 值保持口径一致
-  const {
-    effectiveNavigationStyle: navigationStyle,
-    layoutStyle,
-  } = useUnifiedTheme();
+  const { effectiveNavigationStyle: navigationStyle, layoutStyle } =
+    useUnifiedTheme();
   const {
     isSecondMenuCollapsed,
     setIsSecondMenuCollapsed,
@@ -744,7 +742,7 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
       // activeTab === 'my_computer' ||
       // activeTab === 'documents'
     ) {
-      return <NewHomeSection style={overrideContainerStyle} />;
+      return <NewHomeSection style={overrideContainerStyle} showSearchHeader />;
     }
 
     // 工作空间

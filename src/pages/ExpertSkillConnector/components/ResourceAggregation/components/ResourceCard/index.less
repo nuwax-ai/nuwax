@@ -1,0 +1,81 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  border: 1px solid @WHITE14;
+  border-radius: 10px;
+  background-color: #fff;
+  cursor: default;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    border-color: @WHITE11;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 6%);
+  }
+
+  .card-head {
+    gap: 10px;
+  }
+
+  .card-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    font-size: 36px;
+  }
+
+  .card-avatar {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: @fontSizeLg;
+    font-weight: 600;
+  }
+
+  .card-name {
+    font-size: @fontSize;
+    font-weight: 600;
+    color: @BLANK04;
+  }
+
+  .card-category {
+    align-self: flex-start;
+    margin-top: 8px;
+    padding: 1px 8px;
+    border-radius: 4px;
+    background-color: @WHITE08;
+    font-size: @fontSizeSm;
+    color: @GRAY05;
+  }
+
+  .card-desc {
+    margin-top: 8px;
+    min-height: 40px;
+    font-size: @fontSizeSm;
+    line-height: 20px;
+    color: @GRAY04;
+    // 两行省略
+    display: box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-stats {
+    gap: 16px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid @WHITE04;
+  }
+
+  .card-stat {
+    gap: 4px;
+    font-size: @fontSizeSm;
+    color: @GRAY05;
+  }
+}

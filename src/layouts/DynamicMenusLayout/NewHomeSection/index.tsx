@@ -15,6 +15,7 @@ import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
 import ProjectPanel from './components/ProjectPanel';
 import RecentAgentItem from './components/RecentAgentItem';
+import SearchHeader from './components/SearchHeader';
 import { getAgentIdFromHomePathname } from './utils';
 
 import {
@@ -68,9 +69,18 @@ const componentCache = {
   scrollTop: 0,
 };
 
+/** tab 指示条位次：CSS 侧以 data-active 驱动滑动（原型同款动效的 CSS-only 等价实现） */
+const HOME_TAB_INDEX: Record<HomeTab, number> = {
+  recent: 0,
+  conversation: 1,
+  project: 2,
+};
+
 const NewHomeSection: React.FC<{
   style?: React.CSSProperties;
-}> = ({ style }) => {
+  /** 经典布局（style1/2）：渲染顶部搜索框 + 新建会话入口（单栏由 SidebarNavHeader 提供，不传即不渲染） */
+  showSearchHeader?: boolean;
+}> = ({ style, showSearchHeader = false }) => {
   const { id: chatIdParam } = useParams();
   const location = useLocation();
   const chatId =
@@ -80,6 +90,7 @@ const NewHomeSection: React.FC<{
   currentAgentIdRef.current = currentAgentId;
 
   const { handleCloseMobileMenu } = useModel('layout');
+  const { firstLevelMenus } = useModel('menuModel');
 
   const [activeTab, setActiveTab] = useState<HomeTab>(() => {
     const initialTab = getInitialActiveTab();
@@ -812,14 +823,34 @@ const NewHomeSection: React.FC<{
     history.push('/home');
   };
 
-  // 新建会话入口已上移至侧栏顶部操作区（SidebarNavHeader），此处仅保留搜索框
-  const showNewChatButton = false;
+  // 单栏模式：新建会话入口在侧栏顶部操作区（SidebarNavHeader），本组件不渲染头部；
+  // 经典布局（showSearchHeader）：恢复改版前的搜索框 + 新建会话入口
+  const showNewChatButton = firstLevelMenus?.some(
+    (menu: any) => menu?.code === 'new_conversation',
+  );
 
   // const noMoreText = dict('PC.Components.HistoryConversationList.noMore');
 
   return (
     <div style={style} className={cx(styles['new-home-section'])}>
-      <div className={cx(styles.tabs)}>
+      {showSearchHeader && (
+        <SearchHeader
+          keyword={activeTab === 'conversation' ? keyword : recentKeyword}
+          placeholder={dict(
+            'PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder',
+          )}
+          onSearchChange={handleSearchChange}
+          onSearchSubmit={handleSearchSubmit}
+          onNewChat={handleNewConversation}
+          showNewChatButton={showNewChatButton}
+        />
+      )}
+      <div
+        className={cx(styles.tabs, {
+          [styles['tabs-under-search']]: showSearchHeader,
+        })}
+        data-active={HOME_TAB_INDEX[activeTab] ?? 0}
+      >
         <button
           type="button"
           className={cx(styles.tab, {
@@ -847,6 +878,8 @@ const NewHomeSection: React.FC<{
         >
           {dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab')}
         </button>
+        {/* 滑动指示条：位次由容器 data-active 控制（原型 tab-indicator 的 CSS-only 等价） */}
+        <span className={cx(styles['tab-indicator'])} aria-hidden />
       </div>
 
       {/* 列表区:最近 / 会话 / 项目 */}

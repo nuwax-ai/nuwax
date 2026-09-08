@@ -1,0 +1,133 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 弹窗内容区去掉默认底部内边距（无 footer，双栏撑满高度）
+.modal {
+  :global {
+    .ant-modal-body {
+      padding-bottom: 24px;
+    }
+  }
+}
+
+// 双栏布局：左「执行参数」/ 右「执行结果」
+.layout {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  min-height: 420px;
+}
+
+// ===== 左栏：执行参数卡片 =====
+// 颜色全部走主题 token（CSS 变量），跟随系统明暗主题自动切换
+.paramsCard {
+  display: flex;
+  flex: 1 1 45%;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 8px;
+  background: @colorBgContainer;
+}
+
+// 卡片标题（标题下带分隔线，与设计稿一致）
+.paramsTitle {
+  padding-bottom: 12px;
+  border-bottom: 1px solid @colorBorderSecondary;
+  color: @colorText;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+// 表单字段：label 在上、控件独占一行
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.fieldLabel {
+  color: @colorTextSecondary;
+  font-size: 13px;
+}
+
+// 连接器只读展示：淡填充底 + 与输入控件同高，超长省略（title 悬浮看全名）
+.connectorValue {
+  min-height: 32px;
+  padding: 4px 11px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: @colorFillQuaternary;
+  color: @colorText;
+  font-size: 14px;
+  line-height: 24px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// JSON 输入框：等宽字体，强化代码输入语义
+.jsonInput {
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, Courier,
+    monospace;
+}
+
+// 执行按钮：左对齐；颜色不写死，type="primary" 交由主题变量驱动
+.executeButton {
+  align-self: flex-start;
+  min-width: 96px;
+  margin-top: 20px;
+}
+
+// ===== 右栏：执行结果面板 =====
+.resultPanel {
+  display: flex;
+  flex: 1 1 55%;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid @colorBorder;
+  border-radius: 8px;
+}
+
+// 实色标题栏：左侧标题文案 + 右侧折叠按钮；
+// @colorBgSolid / @colorTextLightSolid 是明暗主题成对翻转的 token
+// （亮色主题深底白字，暗色主题浅底深字）
+.resultHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: @colorBgSolid;
+  color: @colorTextLightSolid;
+  font-size: 14px;
+}
+
+.resultCollapseBtn {
+  padding: 0 4px;
+  color: @colorTextLightSolid;
+  cursor: pointer;
+}
+
+// 淡填充结果区：折叠时隐藏；未执行展示占位文案，执行后展示响应 data
+.resultBody {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: @colorFillQuaternary;
+  color: @colorTextTertiary;
+  font-size: 13px;
+}
+
+// 执行结果 JSON：pretty JSON 等宽展示（无语法高亮，与设计稿一致）
+.resultJson {
+  margin: 0;
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, Courier,
+    monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: @colorText;
+}

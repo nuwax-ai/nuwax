@@ -2,6 +2,7 @@ import { ReactComponent as ApiKeySvgFile } from '@/assets/icons/nav/api_key.svg'
 import { ReactComponent as BackwardSvgFile } from '@/assets/icons/nav/backward.svg';
 import { ReactComponent as ComponentsSvgFile } from '@/assets/icons/nav/components.svg';
 import { ReactComponent as ComputerSvgFile } from '@/assets/icons/nav/computer.svg';
+import { ReactComponent as ConnectorSvgFile } from '@/assets/icons/nav/connector.svg';
 import { ReactComponent as CubeSvgFile } from '@/assets/icons/nav/cube.svg';
 import { ReactComponent as DashboardSvgFile } from '@/assets/icons/nav/dashboard.svg';
 import { ReactComponent as DocSvgFile } from '@/assets/icons/nav/doc.svg';
@@ -89,6 +90,7 @@ const PaletteSvg = wrapSvg(PaletteSvgFile);
 const PermissionSvg = wrapSvg(PermissionSvgFile);
 const SidebarSvg = wrapSvg(SidebarSvgFile);
 const ComputerSvg = wrapSvg(ComputerSvgFile);
+const ConnectorSvg = wrapSvg(ConnectorSvgFile);
 const ModelSvg = wrapSvg(ModelSvgFile);
 const PublishManageSvg = wrapSvg(PublishManageSvgFile);
 const SubscriptionSvg = wrapSvg(SubscriptionSvgFile);
@@ -136,6 +138,7 @@ export default {
   'icons-nav-log-operation': LogOperationSvg,
   'icons-nav-log-running': LogRunningSvg,
   'icons-nav-computer': ComputerSvg,
+  'icons-nav-connector': ConnectorSvg,
   'icons-nav-robot': RobotSvg,
   'icons-nav-model': ModelSvg,
   'icons-nav-publish_manage': PublishManageSvg,

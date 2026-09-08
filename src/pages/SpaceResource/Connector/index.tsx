@@ -1,15 +1,15 @@
+import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import ConnectorProviderCreateDrawer from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderCreateDrawer';
-import ConnectorProviderDetailDrawer, {
-  type ConnectorGoConnectContext,
-} from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderDetailDrawer';
 import ConnectorProviderEditDrawer from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderEditDrawer';
 import {
-  apiConnectorActionCreate,
-  apiConnectorActionDelete,
-  apiConnectorActionToggleStatus,
-  apiConnectorActionUpdate,
+  AUTH_TYPE_LABEL_MAP,
+  AUTH_TYPE_OPTIONS,
+  CONNECTED_OPTIONS,
+  STATUS_OPTIONS,
+} from '@/pages/SystemManagement/ConnectorManage/constants';
+import {
   apiConnectorOauthSharedConfigSave,
   apiConnectorProviderCreate,
   apiConnectorProviderDelete,
@@ -20,16 +20,14 @@ import {
 } from '@/services/systemManage';
 import { apiSpaceList } from '@/services/workspace';
 import { SpaceTypeEnum } from '@/types/enums/space';
-import type {
-  ConnectorAuthConfigField,
-  ConnectorProviderInfo,
-} from '@/types/interfaces/systemManage';
+import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import {
   PlusOutlined,
   SearchOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import {
   Button,
   Empty,
@@ -39,10 +37,16 @@ import {
   Select,
   Space,
   Spin,
+  Tag,
 } from 'antd';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import ConnectorCard from './components/ConnectorCard';
-import ConnectorConnectDrawer from './components/ConnectorConnectDrawer';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { history } from 'umi';
 import ConnectorImportDrawer from './components/ConnectorImportDrawer';
 import styles from './index.less';
 
@@ -56,36 +60,25 @@ import styles from './index.less';
  *   2. 按选中空间 + 筛选条件调
  *      GET /api/connector/providers?spaceId=&scope=space&status=&connected=&keyword=&pageNum=1&pageSize=500
  *
- * 视觉：卡片网格（与管理端 /system/connector-manage 的表格列表不同）；
- * 顶部筛选栏样式参考管理端连接器列表（关键字 + 状态 + 连接）。
+ * 视觉：与管理端 /system/connector-manage 相同的表格列表呈现
+ * （LightFilter 筛选 + XProTable），差异：无勾选列、无拖拽排序列；
+ * 「认证方式」为前端本地筛选（接口不支持 authType 参数）；
+ * 空间选择器放在页面顶部「新增连接器」按钮左侧；
+ * 工具栏右侧为搜索框（回车查询，无 查询/重置 按钮，与管理端一致）。
  * 「导入」走 ConnectorImportDrawer（预览 diff + 确认导入，接口 space 维度）；
- * 卡片「删除」二次确认后调 DELETE /api/connector/providers/{service}；
- * 卡片「导出」调 POST /api/connector/export?service=&spaceId=，
+ * 行内「删除」二次确认后调 DELETE /api/connector/providers/{service}；
+ * 行内「导出」调 POST /api/connector/export?service=&spaceId=，
  * 下载文件名 {service}.connector.json；
- * 卡片「停用/启用」调 POST /api/connector/providers/{service}/status?enabled=；
+ * 行内「停用/启用」调 POST /api/connector/providers/{service}/status?enabled=；
  * 「新增连接器」复用管理端 ConnectorProviderCreateDrawer（展示/交互一致），
  * 提交走 POST /api/connector/providers（body 带当前空间 spaceId，必填），
  * service 失焦自动补 s_ 前缀；
- * 卡片「编辑」复用管理端 ConnectorProviderEditDrawer，
+ * 行内「编辑」复用管理端 ConnectorProviderEditDrawer，
  * meta 更新走 PUT /api/connector/providers/{service}，
  * oauth2+platform 的 App 配置保存走 POST /api/connector/oauth/shared-config；
- * 卡片「查看工具」复用管理端 ConnectorProviderDetailDrawer
- * （GET /api/connector/providers/{service}?spaceId=，工具栏仅「+ 添加工具」）。
+ * 行内「查看」跳转详情子页面 /space/:spaceId/connector/detail
+ * （概览含连接状态 + 工具列表表格 + 去连接/OAuth 授权流程）。
  */
-
-/** 状态筛选选项（value 直接透传接口 status 参数） */
-const STATUS_FILTER_OPTIONS: Array<{ label: string; value: string }> = [
-  { label: '全部', value: 'all' },
-  { label: '启用', value: 'enabled' },
-  { label: '禁用', value: 'disabled' },
-];
-
-/** 连接筛选选项（value 直接透传接口 connected 参数） */
-const CONNECTED_FILTER_OPTIONS: Array<{ label: string; value: string }> = [
-  { label: '全部', value: 'all' },
-  { label: '已连接', value: 'true' },
-  { label: '未连接', value: 'false' },
-];
 
 /** 检查导出数据是否为空（数组看长度、对象看 key 数、字符串看 trim 后长度） */
 const isExportDataEmpty = (data: unknown): boolean => {
@@ -144,6 +137,7 @@ const triggerJsonDownload = async (
 };
 
 const SpaceConnector: React.FC = () => {
+  const actionRef = useRef<ActionType>();
   // 空间列表（下拉框数据源）
   const [spaces, setSpaces] = useState<SpaceInfo[]>([]);
   const [spaceLoading, setSpaceLoading] = useState<boolean>(true);
@@ -152,15 +146,6 @@ const SpaceConnector: React.FC = () => {
   /** 空间下拉搜索关键字（自行过滤，以便过滤后剔除空分组） */
   const [spaceSearch, setSpaceSearch] = useState<string>('');
 
-  // 筛选条件（value 与接口参数一一对应）
-  const [keyword, setKeyword] = useState<string>('');
-  const [debouncedKeyword, setDebouncedKeyword] = useState<string>('');
-  const [status, setStatus] = useState<string>('all');
-  const [connected, setConnected] = useState<string>('all');
-
-  // 连接器卡片列表
-  const [records, setRecords] = useState<ConnectorProviderInfo[]>([]);
-  const [listLoading, setListLoading] = useState<boolean>(false);
   /** 「导入」抽屉开关 */
   const [importOpen, setImportOpen] = useState<boolean>(false);
   /** 「新增连接器」抽屉开关（复用管理端创建抽屉） */
@@ -169,19 +154,14 @@ const SpaceConnector: React.FC = () => {
   const [editDrawerOpen, setEditDrawerOpen] = useState<boolean>(false);
   const [editingRecord, setEditingRecord] =
     useState<ConnectorProviderInfo | null>(null);
-  /** 「查看工具」详情抽屉正在查看的连接器（null = 关闭，复用管理端详情抽屉） */
-  const [detailRecord, setDetailRecord] =
-    useState<ConnectorProviderInfo | null>(null);
-  /**
-   * 「去连接」凭据抽屉的上下文（详情抽屉「去连接」按钮写入；null = 关闭）：
-   * detail 里的 authConfig.fields 驱动凭证表单，refresh 用于连接成功后刷新详情
-   */
-  const [connectCtx, setConnectCtx] =
-    useState<ConnectorGoConnectContext | null>(null);
   /** 正在导出的连接器 service（防重复触发，同一时间仅一条导出在飞） */
   const [exportingService, setExportingService] = useState<string | null>(null);
   /** 正在启停切换的连接器 service（防重复触发） */
   const [togglingService, setTogglingService] = useState<string | null>(null);
+  /** 工具栏搜索框输入值（未提交，回车 / 清空才触发查询） */
+  const [keyword, setKeyword] = useState<string>('');
+  /** 已提交的搜索关键字（经 params 注入 request，变化自动触发重载） */
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
 
   /** 页面打开：拉空间列表并默认选中第一个空间 */
   useEffect(() => {
@@ -211,103 +191,38 @@ const SpaceConnector: React.FC = () => {
     };
   }, []);
 
-  /** 关键字防抖：输入停止 400ms 后才触发列表请求 */
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedKeyword(keyword.trim());
-    }, 400);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [keyword]);
-
   /**
-   * 拉取连接器列表：选中空间或任一筛选条件变化时重新请求；
-   * 导入抽屉「确认导入」成功后也手动调用刷新。
-   * isCancelled 由调用方（useEffect 清理逻辑）传入，防止竞态写入过期响应
-   */
-  const fetchList = useCallback(
-    async (isCancelled?: () => boolean) => {
-      // 空间未就绪（列表还在加载 / 当前账号没有空间）时不请求
-      if (selectedSpaceId === null) return;
-      try {
-        setListLoading(true);
-        const response = await apiConnectorProviderPageList({
-          spaceId: selectedSpaceId,
-          scope: 'space',
-          status,
-          connected,
-          keyword: debouncedKeyword,
-          pageNum: 1,
-          pageSize: 500,
-        });
-        if (isCancelled?.()) return;
-        if (response?.code === SUCCESS_CODE) {
-          setRecords(response.data?.records ?? []);
-        } else {
-          setRecords([]);
-          message.error(response?.message || '获取连接器列表失败');
-        }
-      } catch {
-        if (!isCancelled?.()) {
-          setRecords([]);
-        }
-      } finally {
-        if (!isCancelled?.()) {
-          setListLoading(false);
-        }
-      }
-    },
-    [selectedSpaceId, status, connected, debouncedKeyword],
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetchList(() => cancelled);
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchList]);
-
-  /**
-   * 删除连接器：卡片「删除」按钮触发，先弹二次确认；
+   * 删除连接器：行内「删除」按钮触发，先弹二次确认；
    * 确认后调 DELETE /api/connector/providers/{service}，成功刷新列表。
-   * 失败（如仍有用户连接被后端拒绝）时提示后端 message 并保持弹窗打开便于重试
+   * 业务/网络错误由全局 errorHandler 统一提示（如「连接器仍存在连接或绑定，不能删除」），
+   * 此处不重复弹错；antd confirm 的 onOk 内抛错会被转成 Unhandled Rejection
+   * 导致页面崩溃（见 antd ActionButton 对 onOk reject 的处理），故不能 throw
    */
-  const handleDelete = useCallback(
-    (record: ConnectorProviderInfo) => {
-      Modal.confirm({
-        title: `删除连接器 ${record.displayName || record.service}？`,
-        content:
-          '其全部工具将一并删除。若仍有用户连接，删除会被拒绝（需先断开）。',
-        okText: '删除',
-        okButtonProps: { danger: true },
-        cancelText: '取消',
-        onOk: async () => {
-          let errorMessage = '';
-          try {
-            const response = await apiConnectorProviderDelete(record.service);
-            if (response?.code !== SUCCESS_CODE) {
-              errorMessage = response?.message || '删除连接器失败';
-            }
-          } catch {
-            errorMessage = '删除连接器失败';
+  const handleDelete = useCallback((record: ConnectorProviderInfo) => {
+    Modal.confirm({
+      title: `删除连接器 ${record.displayName || record.service}？`,
+      content:
+        '其全部工具将一并删除。若仍有用户连接，删除会被拒绝（需先断开）。',
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const response = await apiConnectorProviderDelete(record.service);
+          if (response?.code === SUCCESS_CODE) {
+            message.success('删除成功');
+            actionRef.current?.reload();
           }
-          if (errorMessage) {
-            message.error(errorMessage);
-            // 抛出让 Modal 保持打开，用户可取消去断开连接后重试
-            throw new Error(errorMessage);
-          }
-          message.success('删除成功');
-          void fetchList();
-        },
-      });
-    },
-    [fetchList],
-  );
+          // 非成功码理论上会被全局拦截器 reject，不会 resolve 到这里；静默关闭弹窗即可
+        } catch {
+          // 业务/网络错误：全局 errorHandler 已弹过后端报错信息，此处不再重复提示
+        }
+      },
+    });
+  }, []);
 
   /**
-   * 导出连接器：卡片「导出」按钮触发，
+   * 导出连接器：行内「导出」按钮触发，
    * 调 POST /api/connector/export?service=&spaceId=（blob 同管理端导出），
    * 下载文件名 {service}.connector.json
    */
@@ -341,10 +256,10 @@ const SpaceConnector: React.FC = () => {
   );
 
   /**
-   * 启用/停用连接器：卡片「停用/启用」按钮触发，
+   * 启用/停用连接器：行内「停用/启用」按钮触发，
    * 调 POST /api/connector/providers/{service}/status?enabled={boolean}
    * （当前已启用 → enabled=false 停用；已停用 → enabled=true 启用），
-   * 成功后刷新列表，按钮文案与状态徽章随之切换
+   * 成功后刷新列表，按钮文案与状态列随之切换
    */
   const handleToggleStatus = useCallback(
     async (record: ConnectorProviderInfo) => {
@@ -367,28 +282,32 @@ const SpaceConnector: React.FC = () => {
           return;
         }
         message.success(nextEnabled ? '已启用' : '已停用');
-        void fetchList();
+        actionRef.current?.reload();
       } catch {
         message.error(nextEnabled ? '启用失败' : '停用失败');
       } finally {
         setTogglingService(null);
       }
     },
-    [fetchList, togglingService],
+    [togglingService],
   );
 
   /**
-   * 打开详情抽屉：卡片「查看工具」按钮触发。
-   * 抽屉复用管理端 ConnectorProviderDetailDrawer（工具栏仅「+ 添加工具」，
-   * 无编辑/删除/导出连接器按钮），详情/工具操作接口由抽屉内部调用，
-   * spaceId 传当前选中空间（管理端是写死的 52）
+   * 行内「查看」按钮：跳转连接器详情子页面
+   * （概览 + 工具列表表格 + 连接流程；service/spaceId 走 query）
    */
-  const handleView = useCallback((record: ConnectorProviderInfo) => {
-    setDetailRecord(record);
-  }, []);
+  const handleView = useCallback(
+    (record: ConnectorProviderInfo) => {
+      if (selectedSpaceId === null) return;
+      history.push(
+        `/space/${selectedSpaceId}/connector/detail?service=${record.service}&spaceId=${selectedSpaceId}`,
+      );
+    },
+    [selectedSpaceId],
+  );
 
   /**
-   * 打开编辑抽屉：卡片「编辑」按钮触发。
+   * 打开编辑抽屉：行内「编辑」按钮触发。
    * 抽屉复用管理端 ConnectorProviderEditDrawer，差异点通过注入实现：
    * meta 更新走 PUT /api/connector/providers/{service}、
    * oauth2+platform 的 App 配置保存走 POST /api/connector/oauth/shared-config、
@@ -398,51 +317,6 @@ const SpaceConnector: React.FC = () => {
     setEditingRecord(record);
     setEditDrawerOpen(true);
   }, []);
-
-  /**
-   * 「去连接」抽屉的凭证字段定义（优先详情接口，回退列表行）：
-   * - 自定义认证：authConfig.fields 数组直接驱动（如 clientId / apiKey）
-   * - API Key 认证：authConfig 无 fields（形如 { base64, prefix, keyName,
-   *   injectTo, headerName }），按 keyName 生成单个凭证字段——
-   *   如 keyName: "apiKey" →「凭证字段 · APIKEY」，提交键即 keyName
-   * - Bearer 认证：fields 缺失时兜底生成 token 字段（提交键 token，
-   *   与建立连接接口的 bearer 示例 fields: { token } 一致）
-   */
-  const connectFields = useMemo(() => {
-    const source = connectCtx?.detail?.provider ?? connectCtx?.record ?? null;
-    const authType = source?.authType;
-    const authConfig = source?.authConfig as
-      | Record<string, unknown>
-      | undefined;
-    if (Array.isArray(authConfig?.fields)) {
-      return authConfig.fields as ConnectorAuthConfigField[];
-    }
-    if (authType === 'api_key') {
-      const keyName =
-        typeof authConfig?.keyName === 'string' && authConfig.keyName
-          ? authConfig.keyName
-          : 'apiKey';
-      return [
-        {
-          name: keyName,
-          label: keyName,
-          placeholder: '粘贴 API Key',
-          secret: true,
-        },
-      ];
-    }
-    if (authType === 'bearer') {
-      return [
-        {
-          name: 'token',
-          label: 'token',
-          placeholder: '粘贴 Token',
-          secret: true,
-        },
-      ];
-    }
-    return [];
-  }, [connectCtx]);
 
   /**
    * 空间下拉框分组选项：按 SpaceInfo.type 分为「个人空间 / 团队空间」两组
@@ -474,11 +348,230 @@ const SpaceConnector: React.FC = () => {
     return groups;
   }, [spaces, spaceSearch]);
 
+  /** 操作列：5 个按钮（查看/编辑/导出/停用|启用/删除），与管理端风格一致 */
+  const renderActions = useCallback(
+    (record: ConnectorProviderInfo) => {
+      const isEnabled = record.status === 'enabled';
+      const toggling = togglingService === record.service;
+      return (
+        <Space size={12} className="connector-row-actions">
+          <a onClick={() => handleView(record)}>查看</a>
+          <a onClick={() => handleEdit(record)}>编辑</a>
+          <a onClick={() => handleExport(record)}>导出</a>
+          {toggling ? (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                color: isEnabled ? '#ff4d4f' : '#1890ff',
+              }}
+            >
+              <Spin size="small" />
+              <span>{isEnabled ? '停用中…' : '启用中…'}</span>
+            </span>
+          ) : (
+            <a
+              onClick={() => handleToggleStatus(record)}
+              style={{ color: isEnabled ? '#ff4d4f' : undefined }}
+            >
+              {isEnabled ? '停用' : '启用'}
+            </a>
+          )}
+          <a onClick={() => handleDelete(record)} style={{ color: '#ff4d4f' }}>
+            删除
+          </a>
+        </Space>
+      );
+    },
+    [
+      handleView,
+      handleEdit,
+      handleExport,
+      handleToggleStatus,
+      handleDelete,
+      togglingService,
+    ],
+  );
+
+  /** 列定义（与管理端一致，去掉勾选列与拖拽排序列；新增「已连接」列） */
+  const columns: ProColumns<ConnectorProviderInfo>[] = [
+    {
+      // 连接器：显示名 + 标签副标题（2 行布局，同管理端）；
+      // 搜索已移到工具栏右侧搜索框（回车查询），此列不再进 LightFilter
+      title: '连接器',
+      dataIndex: 'displayName',
+      width: 120,
+      hideInSearch: true,
+      render: (_, record) => (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontWeight: 500 }}>{record.displayName}</span>
+          {record.tags?.length ? (
+            <span style={{ color: '#999', fontSize: 12 }}>
+              {record.tags.join(', ')}
+            </span>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      // service：等宽字体
+      title: 'service',
+      dataIndex: 'service',
+      width: 160,
+      hideInSearch: true,
+      render: (_, record) => (
+        <code style={{ fontSize: 12 }}>{record.service}</code>
+      ),
+    },
+    {
+      // 认证方式（本地筛选：接口不支持 authType 参数）
+      title: '认证方式',
+      dataIndex: 'authType',
+      width: 120,
+      align: 'center',
+      valueType: 'select',
+      valueEnum: Object.fromEntries(
+        Object.entries(AUTH_TYPE_LABEL_MAP).map(([k, v]) => [k, { text: v }]),
+      ),
+      fieldProps: {
+        options: AUTH_TYPE_OPTIONS.filter((v) => v.value !== ''),
+      },
+      render: (_, record) => (
+        <Tag color={record.authType === 'no_auth' ? 'default' : 'blue'}>
+          {AUTH_TYPE_LABEL_MAP[record.authType] ?? record.authType}
+        </Tag>
+      ),
+    },
+    {
+      // 工具数
+      title: '工具数',
+      dataIndex: 'actionCount',
+      width: 80,
+      align: 'center',
+      hideInSearch: true,
+    },
+    {
+      // 启用状态
+      title: '启用状态',
+      dataIndex: 'status',
+      width: 100,
+      align: 'center',
+      valueType: 'select',
+      valueEnum: {
+        enabled: { text: '启用', status: 'Success' },
+        disabled: { text: '停用', status: 'Default' },
+      },
+      fieldProps: {
+        options: STATUS_OPTIONS.filter((v) => v.value !== ''),
+      },
+      render: (_, record) => (
+        <Tag color={record.status === 'enabled' ? 'green' : 'default'}>
+          {record.status === 'enabled' ? '启用' : '停用'}
+        </Tag>
+      ),
+    },
+    {
+      // 连接状态（空间维度特有，对应接口 connected 参数）
+      title: '连接状态',
+      dataIndex: 'connected',
+      width: 100,
+      align: 'center',
+      valueType: 'select',
+      valueEnum: {
+        true: { text: '已连接' },
+        false: { text: '未连接' },
+      },
+      fieldProps: {
+        options: CONNECTED_OPTIONS,
+      },
+      render: (_, record) => (
+        <Tag color={record.connected ? 'green' : 'default'}>
+          {record.connected ? '已连接' : '未连接'}
+        </Tag>
+      ),
+    },
+    {
+      // 更新时间
+      title: '更新时间',
+      dataIndex: 'modified',
+      width: 170,
+      hideInSearch: true,
+      valueType: 'dateTime',
+      align: 'center',
+    },
+    {
+      // 操作列：5 个按钮平铺（fixed right 保证滚动时常驻）
+      title: '操作',
+      width: 260,
+      align: 'center',
+      fixed: 'right',
+      hideInSearch: true,
+      render: (_, record) => renderActions(record),
+    },
+  ];
+
+  /**
+   * request 回调：LightFilter 筛选 + params 注入的 spaceId/keyword 组装查询；
+   * 接口一次性拉全量（pageSize 500），认证方式在前端本地过滤。
+   * spaceId 与 keyword 均通过 XProTable 的 params prop 注入，
+   * 切换空间 / 提交搜索自动触发重载。
+   */
+  const request = async (params: any = {}) => {
+    const { spaceId, keyword: kw, status, authType, connected } = params;
+    // 空间未就绪（列表还在加载 / 当前账号没有空间）时不请求
+    if (spaceId === undefined || spaceId === null) {
+      return { data: [], total: 0, success: true };
+    }
+    try {
+      const response = await apiConnectorProviderPageList({
+        spaceId,
+        scope: 'space',
+        status: status || 'all',
+        connected: connected || 'all',
+        keyword: String(kw ?? '').trim(),
+        pageNum: 1,
+        pageSize: 500,
+      });
+      if (response?.code !== SUCCESS_CODE) {
+        message.error(response?.message || '获取连接器列表失败');
+        return { data: [], total: 0, success: false };
+      }
+      let data = response.data?.records ?? [];
+      // 认证方式：接口无 authType 参数，前端本地过滤
+      if (authType) {
+        data = data.filter((item) => item.authType === authType);
+      }
+      return { data, total: data.length, success: true };
+    } catch {
+      return { data: [], total: 0, success: false };
+    }
+  };
+
   return (
     <WorkspaceLayout
       title="连接器"
       rightSlot={
         <Space size={12}>
+          {/* 空间选择器：个人空间 / 团队空间分组展示，切换后按新 spaceId 重新拉取列表；
+              位于「新增连接器」按钮左侧 */}
+          <div className={styles.filterItem}>
+            <span className={styles.filterItemLabel}>空间:</span>
+            <Select
+              className={styles.spaceSelect}
+              variant="borderless"
+              showSearch
+              filterOption={false}
+              searchValue={spaceSearch}
+              onSearch={setSpaceSearch}
+              loading={spaceLoading}
+              value={selectedSpaceId ?? undefined}
+              options={spaceOptions}
+              onChange={(value) => setSelectedSpaceId(value)}
+              popupMatchSelectWidth={false}
+              notFoundContent={spaceLoading ? <Spin size="small" /> : null}
+            />
+          </div>
           {/* 新增连接器：与管理端同款 primary 按钮，右侧滑出创建抽屉；
               未选中空间时禁用（创建接口 body 必传 spaceId，与「导入」一致） */}
           <Button
@@ -501,61 +594,8 @@ const SpaceConnector: React.FC = () => {
       }
     >
       <div className={styles.page}>
-        {/* 筛选栏：状态 + 连接 + 关键字（样式参考管理端连接器列表）；右侧为空间选择器 */}
-        <div className={styles.filterBar}>
-          <div className={styles.filterItem}>
-            <span className={styles.filterItemLabel}>状态:</span>
-            <Select
-              className={styles.filterItemSelect}
-              variant="borderless"
-              value={status}
-              options={STATUS_FILTER_OPTIONS}
-              onChange={setStatus}
-              popupMatchSelectWidth={false}
-            />
-          </div>
-          <div className={styles.filterItem}>
-            <span className={styles.filterItemLabel}>连接:</span>
-            <Select
-              className={styles.filterItemSelect}
-              variant="borderless"
-              value={connected}
-              options={CONNECTED_FILTER_OPTIONS}
-              onChange={setConnected}
-              popupMatchSelectWidth={false}
-            />
-          </div>
-          <Input
-            className={styles.searchInput}
-            allowClear
-            prefix={<SearchOutlined className={styles.searchIcon} />}
-            placeholder="搜索空间连接器（名称 / service / 分类 / 标签）"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
-          <div className={styles.flexSpace} />
-          {/* 空间选择器：个人空间 / 团队空间分组展示，切换后按新 spaceId 重新拉取列表 */}
-          <div className={styles.filterItem}>
-            <span className={styles.filterItemLabel}>空间:</span>
-            <Select
-              className={styles.spaceSelect}
-              variant="borderless"
-              showSearch
-              filterOption={false}
-              searchValue={spaceSearch}
-              onSearch={setSpaceSearch}
-              loading={spaceLoading}
-              value={selectedSpaceId ?? undefined}
-              options={spaceOptions}
-              onChange={(value) => setSelectedSpaceId(value)}
-              popupMatchSelectWidth={false}
-              notFoundContent={spaceLoading ? <Spin size="small" /> : null}
-            />
-          </div>
-        </div>
-
-        {/* 卡片网格 */}
-        {listLoading ? (
+        {/* 表格列表（与管理端同款呈现；无勾选列、无拖拽排序） */}
+        {spaceLoading ? (
           <div className={styles.loadingWrap}>
             <Spin />
           </div>
@@ -563,24 +603,40 @@ const SpaceConnector: React.FC = () => {
           <div className={styles.emptyWrap}>
             <Empty description="暂无空间" />
           </div>
-        ) : records.length ? (
-          <div className={styles.grid}>
-            {records.map((record) => (
-              <ConnectorCard
-                key={record.id}
-                record={record}
-                onDelete={handleDelete}
-                onExport={handleExport}
-                onToggleStatus={handleToggleStatus}
-                onEdit={handleEdit}
-                onView={handleView}
-              />
-            ))}
-          </div>
         ) : (
-          <div className={styles.emptyWrap}>
-            <Empty description="暂无连接器" />
-          </div>
+          <XProTable<ConnectorProviderInfo>
+            actionRef={actionRef}
+            rowKey="id"
+            columns={columns}
+            request={request}
+            params={{ spaceId: selectedSpaceId, keyword: searchKeyword }}
+            pagination={false}
+            size="large"
+            listItemHeight={74}
+            tableLayout="fixed"
+            scroll={{ x: 1100 }}
+            virtual
+            /**
+             * 工具栏右侧放搜索框（原 查询/重置 按钮的位置，与管理端一致）：
+             * 回车提交搜索、清空即重置；LightFilter 下拉筛选变化即时生效，
+             * 因此不再需要 查询/重置 按钮。样式对齐其他列表页
+             * （prefix 放大镜 + allowClear），宽度在其基础上加长 50px。
+             */
+            showQueryButtons={false}
+            toolBarRender={() => [
+              <Input
+                key="connector-search"
+                allowClear
+                prefix={<SearchOutlined />}
+                placeholder="搜索连接器（名称 / service）"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onPressEnter={() => setSearchKeyword(keyword.trim())}
+                onClear={() => setSearchKeyword('')}
+                style={{ width: 264 }}
+              />,
+            ]}
+          />
         )}
       </div>
 
@@ -590,7 +646,7 @@ const SpaceConnector: React.FC = () => {
           open={importOpen}
           onClose={() => setImportOpen(false)}
           spaceId={selectedSpaceId}
-          onImported={() => void fetchList()}
+          onImported={() => actionRef.current?.reload()}
         />
       ) : null}
 
@@ -601,7 +657,7 @@ const SpaceConnector: React.FC = () => {
       <ConnectorProviderCreateDrawer
         open={createDrawerOpen}
         onClose={() => setCreateDrawerOpen(false)}
-        onCreated={() => void fetchList()}
+        onCreated={() => actionRef.current?.reload()}
         createProvider={(payload) =>
           apiConnectorProviderCreate({
             ...payload,
@@ -622,66 +678,24 @@ const SpaceConnector: React.FC = () => {
           setEditDrawerOpen(false);
           setEditingRecord(null);
         }}
-        // 保存成功：刷新卡片列表，并用最新提交值合成详情行打开「查看工具」
-        // 抽屉（与管理端一致；详情抽屉内部会再拉
-        // GET /api/connector/providers/{service} 详情覆盖展示）
+        // 保存成功：刷新表格列表，并跳转「查看」详情子页面
+        // （详情页内部会拉 GET /api/connector/providers/{service} 展示最新数据）
         onSaved={(payload) => {
-          void fetchList();
-          setDetailRecord({
-            ...(editingRecord ?? ({} as ConnectorProviderInfo)),
-            ...payload,
-          } as ConnectorProviderInfo);
+          actionRef.current?.reload();
+          const service =
+            editingRecord?.service ??
+            (payload as { service?: string } | undefined)?.service;
           setEditDrawerOpen(false);
           setEditingRecord(null);
+          if (service && selectedSpaceId !== null) {
+            history.push(
+              `/space/${selectedSpaceId}/connector/detail?service=${service}&spaceId=${selectedSpaceId}`,
+            );
+          }
         }}
         updateProviderMeta={apiConnectorProviderUpdateMeta}
         saveOauthConfig={apiConnectorOauthSharedConfigSave}
         spaceId={selectedSpaceId ?? undefined}
-      />
-
-      {/* 查看工具详情抽屉：展示/交互与管理端一致（工具栏仅「+ 添加工具」），
-          详情拉取 spaceId 用当前选中空间；工具启停走
-          POST /api/connector/actions/{id}/status；工具编辑走
-          POST /api/connector/actions/{id}；添加工具走
-          POST /api/connector/providers/{service}/actions；
-          删除工具走 DELETE /api/connector/actions/{id}（Popconfirm 二次确认）；
-          添加工具成功后刷新卡片列表的工具数徽章；
-          未连接时工具列表底部按认证方式动态展示连接按钮（不受工具
-          列表是否有数据影响）：oauth2 → 发起OAuth授权（抽屉内调
-          GET /api/connector/oauth/authorize 后新窗口打开授权页，
-          授权窗口关闭后自动刷新详情）；api_key/bearer/custom → 去连接
-          （打开 ConnectorConnectDrawer 凭据抽屉，凭证字段按
-          authConfig.fields 动态渲染，提交走
-          POST /api/connector/connections/api-key）；免鉴权无按钮 */}
-      <ConnectorProviderDetailDrawer
-        open={detailRecord !== null}
-        record={detailRecord}
-        spaceId={selectedSpaceId ?? undefined}
-        onClose={() => setDetailRecord(null)}
-        onActionCreated={() => void fetchList()}
-        showGoConnect
-        onGoConnect={(ctx) => setConnectCtx(ctx)}
-        toggleActionStatus={apiConnectorActionToggleStatus}
-        updateAction={apiConnectorActionUpdate}
-        createAction={apiConnectorActionCreate}
-        deleteAction={apiConnectorActionDelete}
-      />
-
-      {/* 去连接凭据抽屉（认证方式 custom/api_key/bearer）：详情抽屉
-          「去连接」按钮打开，凭证字段按 authConfig.fields 动态渲染，
-          提交 POST /api/connector/connections/api-key；
-          连接成功后刷新详情抽屉（按钮消失）与卡片列表（已连接徽章） */}
-      <ConnectorConnectDrawer
-        open={connectCtx !== null}
-        record={connectCtx?.record ?? null}
-        fields={connectFields}
-        spaceId={selectedSpaceId ?? undefined}
-        onClose={() => setConnectCtx(null)}
-        onConnected={() => {
-          // 连接成功：刷新详情抽屉（connected 变 true、按钮消失）+ 卡片列表徽章
-          connectCtx?.refresh();
-          void fetchList();
-        }}
       />
     </WorkspaceLayout>
   );
