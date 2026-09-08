@@ -79,10 +79,13 @@ const ConnectorManage: React.FC = () => {
   /** 已提交的搜索关键字（经 params 注入 request，变化自动触发重载） */
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   /**
-   * 导出进行中标记：'all' / 'selected' / null
-   * 用来给对应 toolbar 按钮加 loading 态，并避免重复点击。
+   * 导出进行中标记：'all' / 'selected' / 'single' / null
+   * 给触发导出的那个按钮加 loading 态（工具栏两个按钮互不影响样式），
+   * 并作为防重复点击的守卫标记（'single' 对应行内单条导出）。
    */
-  const [exporting, setExporting] = useState<'all' | 'selected' | null>(null);
+  const [exporting, setExporting] = useState<
+    'all' | 'selected' | 'single' | null
+  >(null);
   const [editRecord, setEditRecord] = useState<ConnectorProviderInfo | null>(
     null,
   );
@@ -156,7 +159,7 @@ const ConnectorManage: React.FC = () => {
   const handleExportCore = useCallback(
     async (
       services: string[] | undefined,
-      mode: 'all' | 'selected',
+      mode: 'all' | 'selected' | 'single',
       displayName?: string,
     ): Promise<boolean> => {
       if (exporting) return false;
@@ -181,7 +184,11 @@ const ConnectorManage: React.FC = () => {
         const ok = await triggerJsonDownload(response, filename);
         if (ok) {
           message.success(
-            mode === 'all' ? '已导出全部连接器' : '已导出所选连接器',
+            mode === 'all'
+              ? '已导出全部连接器'
+              : mode === 'single'
+              ? '已导出连接器'
+              : '已导出所选连接器',
           );
         }
         return ok;
@@ -217,14 +224,14 @@ const ConnectorManage: React.FC = () => {
     return handleExportCore(services, 'selected');
   }, [selectedRowKeys, draggableData, handleExportCore]);
 
-  /** 单行导出：操作列的"导出"按钮调用 */
+  /** 单行导出：操作列的"导出"按钮调用（mode='single'，不影响工具栏按钮样式） */
   const handleExportSingle = useCallback(
     (record: ConnectorProviderInfo) => {
       if (!record.service) {
         message.error('连接器 service 缺失，无法导出');
         return;
       }
-      handleExportCore([record.service], 'selected', record.displayName);
+      handleExportCore([record.service], 'single', record.displayName);
     },
     [handleExportCore],
   );
@@ -589,10 +596,11 @@ const ConnectorManage: React.FC = () => {
       hideScroll
       rightSlot={
         <Space size={12}>
+          {/* 导出按钮各自只在自己导出时转 loading，互不禁用：
+              并发点击由 handleExportCore 内的 exporting 守卫拦截 */}
           <Button
             icon={<DownloadOutlined />}
             loading={exporting === 'selected'}
-            disabled={exporting === 'all'}
             onClick={handleExportSelected}
           >
             导出所选
@@ -601,7 +609,6 @@ const ConnectorManage: React.FC = () => {
             type="primary"
             icon={<DownloadOutlined />}
             loading={exporting === 'all'}
-            disabled={exporting === 'selected'}
             onClick={handleExportAll}
           >
             导出全部

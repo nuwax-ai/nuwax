@@ -194,7 +194,9 @@ const SpaceConnector: React.FC = () => {
   /**
    * 删除连接器：行内「删除」按钮触发，先弹二次确认；
    * 确认后调 DELETE /api/connector/providers/{service}，成功刷新列表。
-   * 失败（如仍有用户连接被后端拒绝）时提示后端 message 并保持弹窗打开便于重试
+   * 业务/网络错误由全局 errorHandler 统一提示（如「连接器仍存在连接或绑定，不能删除」），
+   * 此处不重复弹错；antd confirm 的 onOk 内抛错会被转成 Unhandled Rejection
+   * 导致页面崩溃（见 antd ActionButton 对 onOk reject 的处理），故不能 throw
    */
   const handleDelete = useCallback((record: ConnectorProviderInfo) => {
     Modal.confirm({
@@ -205,22 +207,16 @@ const SpaceConnector: React.FC = () => {
       okButtonProps: { danger: true },
       cancelText: '取消',
       onOk: async () => {
-        let errorMessage = '';
         try {
           const response = await apiConnectorProviderDelete(record.service);
-          if (response?.code !== SUCCESS_CODE) {
-            errorMessage = response?.message || '删除连接器失败';
+          if (response?.code === SUCCESS_CODE) {
+            message.success('删除成功');
+            actionRef.current?.reload();
           }
+          // 非成功码理论上会被全局拦截器 reject，不会 resolve 到这里；静默关闭弹窗即可
         } catch {
-          errorMessage = '删除连接器失败';
+          // 业务/网络错误：全局 errorHandler 已弹过后端报错信息，此处不再重复提示
         }
-        if (errorMessage) {
-          message.error(errorMessage);
-          // 抛出让 Modal 保持打开，用户可取消去断开连接后重试
-          throw new Error(errorMessage);
-        }
-        message.success('删除成功');
-        actionRef.current?.reload();
       },
     });
   }, []);

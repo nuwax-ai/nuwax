@@ -607,6 +607,23 @@ export async function apiConnectorConnectionCreate(
 }
 
 /**
+ * 断开连接（DELETE /api/connector/connections/{id}）
+ *
+ * - id 为连接 id，取连接器详情接口（GET /api/connector/providers/{service}）
+ *   响应里的 provider.id（管理侧 / 空间侧响应均返回）
+ * - 断开后详情接口的 connected 变 false，由调用方刷新详情
+ *
+ * 用于连接器详情页概览「连接状态」的「断开连接」按钮（Popconfirm 二次确认后调用）。
+ */
+export async function apiConnectorConnectionDelete(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/connector/connections/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
  * 更新空间连接器提供方元信息（PUT /api/connector/providers/{service}）
  *
  * - service 拼到 URL path 上；body 与管理端 meta 更新接口（PUT
