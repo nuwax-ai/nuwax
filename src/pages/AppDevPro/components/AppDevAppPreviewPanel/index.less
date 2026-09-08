@@ -1,0 +1,163 @@
+@import '@/styles/token';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: @colorBgLayout;
+}
+
+.iframeWrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.iframe {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: @colorBgContainer;
+}
+
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background-color: @colorBgLayout;
+  background-image: radial-gradient(
+    @colorBorderSecondary 0.7px,
+    transparent 0.7px
+  );
+  background-size: 14px 14px;
+}
+
+.hero {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.mark {
+  width: 44px;
+  height: 32px;
+  margin-bottom: 4px;
+  border: 1.5px solid @colorTextQuaternary;
+  border-radius: 8px;
+  position: relative;
+  opacity: 0.85;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 8px;
+    height: 2px;
+    border-radius: 1px;
+    background: @colorTextQuaternary;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+  color: @colorTextSecondary;
+}
+
+.hint {
+  margin: 0;
+  max-width: 360px;
+  font-size: 12px;
+  line-height: 20px;
+  color: @colorTextTertiary;
+}
+
+.error {
+  margin: 0;
+  max-width: 420px;
+  font-size: 12px;
+  line-height: 20px;
+  color: @colorError;
+}
+
+.logBoard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  margin: 20px 24px 24px;
+  overflow: hidden;
+  border: @lineWidth solid @colorBorderSecondary;
+  border-radius: 12px;
+  background: @colorBgContainer;
+  box-shadow: @boxShadowSecondary;
+}
+
+.logHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border-bottom: @lineWidth solid @colorBorderSecondary;
+}
+
+.logHeadText {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: @colorTextSecondary;
+}
+
+.logProgress {
+  flex-shrink: 0;
+  margin: 0 !important;
+  padding: 0 14px 8px;
+}
+
+.logBody {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 12px 16px 16px;
+  overflow: auto;
+  font-family: @fontFamilyCode;
+  font-size: 12px;
+  line-height: 1.75;
+  color: @colorTextSecondary;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.logLine {
+  display: block;
+}
+
+.logEmpty {
+  color: @colorTextQuaternary;
+}

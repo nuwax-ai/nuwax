@@ -744,11 +744,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
                 type="button"
                 className={cx(styles['preview-runtime-btn'], styles['preview-runtime-btn-stop'])}
                 aria-label={dict('PC.Pages.AppDevPro.stopService')}
-                disabled={
-                  previewRuntimeBusy ||
-                  previewRuntimeStopping ||
-                  !previewRuntimeRunning
-                }
+                disabled={previewRuntimeStopping}
                 onClick={onStopPreviewRuntime}
               >
                 <PoweroffOutlined />
