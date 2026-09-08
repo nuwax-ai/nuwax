@@ -56,8 +56,8 @@ import styles from './index.less';
  *
  * 页面结构：
  *   1. 顶部概览（认证方式 / BASE URL / 通用代理 / 连接状态）：
- *      连接状态取代原抽屉的「归属」展示；空间侧未连接时在状态后展示
- *      「去连接」（oauth2 →「发起OAuth授权」），免鉴权（no_auth）不展示；
+ *      连接状态取代原抽屉的「归属」展示，免鉴权（no_auth）整项不展示；
+ *      空间侧未连接时在状态后展示「去连接」（oauth2 →「去授权」）；
  *      已连接时状态后展示「断开连接」（Popconfirm 二次确认后
  *      DELETE /api/connector/connections/{id}，id 为连接列表接口按
  *      service 匹配出的连接 id，管理侧 / 空间侧均展示）
@@ -482,14 +482,14 @@ const ConnectorProviderDetailPage: React.FC = () => {
 
   /**
    * 概览「连接状态」后的连接按钮（仅空间侧）：
-   * - oauth2 →「发起OAuth授权」（页面内部打开授权窗口并监听关闭）
+   * - oauth2 →「去授权」（页面内部打开授权窗口并监听关闭）
    * - api_key/bearer/custom →「去连接」（打开凭据抽屉）
-   * - no_auth（免鉴权）→ 不展示；管理侧不展示（连接是空间用户动作）
+   * - no_auth（免鉴权）→ 连接状态整项不展示；管理侧不展示（连接是空间用户动作）
    */
   const connectButtonText =
     isSpaceScope && authTypeValue && authTypeValue !== 'no_auth'
       ? authTypeValue === 'oauth2'
-        ? '发起OAuth授权'
+        ? '去授权'
         : '去连接'
       : null;
 
@@ -677,50 +677,58 @@ const ConnectorProviderDetailPage: React.FC = () => {
                 <span className={styles.infoLabel}>通用代理</span>
                 <span className={styles.infoValue}>{proxyLabel}</span>
               </div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>连接状态</span>
-                <span className={`${styles.infoValue} ${styles.connectValue}`}>
-                  {connected ? (
-                    <>
-                      <span className={styles.connectedText}>已连接</span>
-                      {/* 断开连接：Popconfirm 二次确认（交互同工具删除），
-                          管理侧 / 空间侧均展示；成功后 connected 变 false、
-                          按钮消失（空间侧随之出现「去连接」） */}
-                      <Popconfirm
-                        title="确认断开该连接？"
-                        okText="确认断开"
-                        cancelText="取消"
-                        okButtonProps={{ danger: true, loading: disconnecting }}
-                        onConfirm={handleDisconnect}
-                      >
-                        <Button
-                          size="small"
-                          danger
-                          className={styles.disconnectBtn}
-                          loading={disconnecting}
+              {/* 免鉴权（no_auth）无连接概念：连接状态整项不展示 */}
+              {authTypeValue !== 'no_auth' ? (
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>连接状态</span>
+                  <span
+                    className={`${styles.infoValue} ${styles.connectValue}`}
+                  >
+                    {connected ? (
+                      <>
+                        <span className={styles.connectedText}>已连接</span>
+                        {/* 断开连接：Popconfirm 二次确认（交互同工具删除），
+                            管理侧 / 空间侧均展示；成功后 connected 变 false、
+                            按钮消失（空间侧随之出现「去连接」） */}
+                        <Popconfirm
+                          title="确认断开该连接？"
+                          okText="确认断开"
+                          cancelText="取消"
+                          okButtonProps={{
+                            danger: true,
+                            loading: disconnecting,
+                          }}
+                          onConfirm={handleDisconnect}
                         >
-                          断开连接
-                        </Button>
-                      </Popconfirm>
-                    </>
-                  ) : (
-                    <>
-                      <span className={styles.disconnectedText}>未连接</span>
-                      {connectButtonText ? (
-                        <Button
-                          type="primary"
-                          size="small"
-                          className={styles.goConnectBtn}
-                          loading={oauthOpening}
-                          onClick={handleConnectClick}
-                        >
-                          {connectButtonText}
-                        </Button>
-                      ) : null}
-                    </>
-                  )}
-                </span>
-              </div>
+                          <Button
+                            size="small"
+                            danger
+                            className={styles.disconnectBtn}
+                            loading={disconnecting}
+                          >
+                            断开连接
+                          </Button>
+                        </Popconfirm>
+                      </>
+                    ) : (
+                      <>
+                        <span className={styles.disconnectedText}>未连接</span>
+                        {connectButtonText ? (
+                          <Button
+                            type="primary"
+                            size="small"
+                            className={styles.goConnectBtn}
+                            loading={oauthOpening}
+                            onClick={handleConnectClick}
+                          >
+                            {connectButtonText}
+                          </Button>
+                        ) : null}
+                      </>
+                    )}
+                  </span>
+                </div>
+              ) : null}
             </div>
 
             {/* 工具栏：工具列表标题 + 「+ 添加工具」 */}
