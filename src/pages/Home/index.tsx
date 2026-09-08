@@ -36,9 +36,9 @@ import type {
 } from '@/types/interfaces/common';
 import {
   DisplayRecommendFunctionTypeEnum,
-  DisplayRecommendTargetTypeEnum,
   type DisplayRecommendInfo,
 } from '@/types/interfaces/displayRecommend';
+import { jumpTo } from '@/utils/router';
 import { App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -51,6 +51,9 @@ import React, {
 import { history, useModel, useRequest } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
+import HomeCategoryTabs, {
+  type HomeCategoryDef,
+} from './components/HomeCategoryTabs';
 import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
 
@@ -87,8 +90,6 @@ const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
 ]);
 
 /** 首页本地补充导航项 ID，避免与后台推荐 ID 冲突 */
-const LOCAL_USER_APP_NAV_ID = -90001;
-const LOCAL_NORMAL_PROJECT_NAV_ID = -90002;
 
 const Home: React.FC = () => {
   const { message } = App.useApp();
@@ -106,6 +107,8 @@ const Home: React.FC = () => {
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
   const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
   const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
+  /** 发起会话时选择的工作目录（wiki #17：仅个人电脑时随会话创建记录） */
+  const [workspaceDir, setWorkspaceDir] = useState<string>('');
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
@@ -119,6 +122,10 @@ const Home: React.FC = () => {
   const [homeCategoryInfo, setHomeCategoryInfo] =
     useState<HomeAgentCategoryInfo>();
   const [submitting, setSubmitting] = useState<boolean>(false);
+  // 输入区上方内容分类:用户手动选择(null=未选过,自动取第一个有内容的分类)
+  const [userPickedCategory, setUserPickedCategory] = useState<string | null>(
+    null,
+  );
 
   const defaultAgentId =
     isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
@@ -292,6 +299,10 @@ const Home: React.FC = () => {
         infos: selectedComponentList,
         messageSourceType: 'home' as MessageSourceType,
         selectedComputerId,
+        workspaceDir:
+          selectedComputerId && selectedComputerId !== '-1'
+            ? workspaceDir || undefined
+            : undefined,
         skillIds,
         modelId: modelId || selectedModelId,
         agentMode,
@@ -306,6 +317,50 @@ const Home: React.FC = () => {
     tenantConfigInfo?.defaultTaskAgentId &&
     tenantConfigInfo.defaultTaskAgentId > 0
   );
+
+  // 内容分类列表(对话任务/项目开发/AI教育等)。
+  // TODO(后端):分类维度接口就绪后,改为直接消费接口返回的分类+pill;
+  // 当前接口只有 recChatBoxNav 一组 pill(无分类字段),先按 functionType
+  // 归类构造临时分类,文案走 i18n,接口 ready 后整体替换此适配层
+  const categoryNavList = useMemo<HomeCategoryDef[]>(() => {
+    const isProjectDev = (item: DisplayRecommendInfo) =>
+      SPACE_SELECTOR_FUNCTION_TYPES.has(String(item.functionType || ''));
+    return [
+      {
+        key: 'chat',
+        label: dict('PC.Pages.Home.categoryChatTask'),
+        items: recommendNavList.filter((item) => !isProjectDev(item)),
+      },
+      {
+        key: 'project',
+        label: dict('PC.Pages.Home.categoryProjectDev'),
+        items: recommendNavList.filter(isProjectDev),
+      },
+      {
+        key: 'education',
+        label: dict('PC.Pages.Home.categoryAiEducation'),
+        items: [] as DisplayRecommendInfo[],
+      },
+    ];
+  }, [recommendNavList]);
+
+  // 默认分类 = 第一个有内容的分类(数据到达时 Segmented 才首挂,值直接就位,
+  // 避免挂载后回落引发滑块从起始分类滑过来的无意义动画);用户手动点过则优先
+  const autoCategoryKey =
+    categoryNavList.find((c) => c.items.length > 0)?.key ?? 'chat';
+  const activeCategory = userPickedCategory ?? autoCategoryKey;
+
+  const activeCategoryItems =
+    categoryNavList.find((c) => c.key === activeCategory)?.items ?? [];
+
+  const handleCategoryChange = (key: string) => {
+    setUserPickedCategory(key);
+    // 切换分类后清掉已选 pill,避免跨分类残留选中态
+    if (selectedRecommend) {
+      setSelectedRecommend(undefined);
+      chatInputRef.current?.clear();
+    }
+  };
 
   const handleTabClick = (type: string) => {
     setActiveTab(type);
@@ -327,7 +382,7 @@ const Home: React.FC = () => {
       return;
     }
 
-    history.push(`/agent/${targetId}`);
+    jumpTo(`/agent/${targetId}`);
   };
 
   const handleRecommendSelect = (item: DisplayRecommendInfo) => {
@@ -337,57 +392,6 @@ const Home: React.FC = () => {
       chatInputRef.current?.focus();
     }, 0);
   };
-
-  /** 推荐导航：后台列表 + 本地「全栈应用 / 常规项目」（若后台尚未配置） */
-  const recommendNavItems = useMemo(() => {
-    const list = [...recommendNavList];
-    const agentDevItem = list.find(
-      (item) => item.functionType === DisplayRecommendFunctionTypeEnum.AgentDev,
-    );
-    const targetId =
-      agentDevItem?.targetId ||
-      tenantConfigInfo?.agentDevAgentId ||
-      tenantConfigInfo?.defaultTaskAgentId ||
-      tenantConfigInfo?.defaultAgentId ||
-      0;
-
-    // todo： 根据实际需求，修改本地导航项
-    const localItems: DisplayRecommendInfo[] = [
-      {
-        id: LOCAL_USER_APP_NAV_ID,
-        tenantId: 0,
-        targetType: DisplayRecommendTargetTypeEnum.Agent,
-        targetId,
-        recType: 'ChatBoxNav',
-        functionType: DisplayRecommendFunctionTypeEnum.UserAppDev,
-        label: dict('PC.Pages.Home.userApp'),
-        icon: agentDevItem?.icon,
-        placeholder: dict('PC.Pages.Home.placeholderUserApp'),
-      },
-      {
-        id: LOCAL_NORMAL_PROJECT_NAV_ID,
-        tenantId: 0,
-        targetType: DisplayRecommendTargetTypeEnum.Agent,
-        targetId,
-        recType: 'ChatBoxNav',
-        functionType: DisplayRecommendFunctionTypeEnum.NormalProjectDev,
-        label: dict('PC.Pages.Home.normalProject'),
-        icon: agentDevItem?.icon,
-        placeholder: dict('PC.Pages.Home.placeholderNormalProject'),
-      },
-    ];
-
-    localItems.forEach((item) => {
-      const exists = list.some(
-        (nav) => nav.functionType === item.functionType,
-      );
-      if (!exists) {
-        list.push(item);
-      }
-    });
-
-    return list;
-  }, [recommendNavList, tenantConfigInfo]);
 
   return (
     <div
@@ -400,9 +404,21 @@ const Home: React.FC = () => {
             className={cx(styles.title)}
             dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
           />
+          <p className={cx(styles['hero-subtitle'])}>
+            {dict('PC.Pages.Home.heroSubtitle')}
+          </p>
         </div>
+        {/* 推荐数据到达后再渲染分类区:Segmented 首挂时选中值即最终值,
+            避免挂载后调整引发滑块从起始分类滑过来的动画 */}
+        {recommendNavList.length > 0 && (
+          <HomeCategoryTabs
+            categories={categoryNavList}
+            activeKey={activeCategory}
+            onChange={handleCategoryChange}
+          />
+        )}
         <ChatBoxRecommendNav
-          items={recommendNavItems}
+          items={activeCategoryItems}
           selectedId={selectedRecommend?.id}
           onSelect={handleRecommendSelect}
         />
@@ -422,7 +438,13 @@ const Home: React.FC = () => {
           isTaskAgentActive={effectiveTaskAgentActive}
           onToggleTaskAgent={() => setIsTaskAgentMode((prev) => !prev)}
           selectedComputerId={selectedComputerId}
-          onComputerSelect={setSelectedComputerId}
+          onComputerSelect={(id) => {
+            setSelectedComputerId(id);
+            // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
+            if (id === '-1' && workspaceDir) setWorkspaceDir('');
+          }}
+          workspaceDir={workspaceDir}
+          onWorkspaceDirChange={setWorkspaceDir}
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
           readonly={!agentDetail?.allowPrivateSandbox}
@@ -474,6 +496,9 @@ const Home: React.FC = () => {
           )}
         </div>
       </section>
+      <footer className={cx(styles['foot-tip'])}>
+        {dict('PC.Pages.Home.aiGeneratedTip')}
+      </footer>
     </div>
   );
 };

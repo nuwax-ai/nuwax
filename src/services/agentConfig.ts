@@ -38,7 +38,12 @@ import type {
   ShareFileInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { isConversationMockPage } from '@/utils/isConversationMockPage';
 import { request } from 'umi';
+
+/** 开发验收页（含 /app/mock-chat）的会话接口走同源 Umi mock，不受全局远端 baseURL 影响。 */
+const conversationApiUrl = (path: string) =>
+  isConversationMockPage() ? `${window.location.origin}${path}` : path;
 
 // 智能体迁移接口
 export function apiAgentTransfer(
@@ -287,35 +292,42 @@ export async function apiAgentCardList(): Promise<
 export async function apiAgentConversation(
   conversationId: number,
 ): Promise<RequestResponse<ConversationInfo>> {
-  return await request(`/api/agent/conversation/${conversationId}`, {
-    method: 'POST',
-  });
+  return await request(
+    conversationApiUrl(`/api/agent/conversation/${conversationId}`),
+    { method: 'POST' },
+  );
 }
 
 // 查询会话消息列表
 export async function apiAgentConversationMessageList(
   data: ConversationMessageListParams,
 ): Promise<RequestResponse<MessageInfo[]>> {
-  return await request('/api/agent/conversation/message/list', {
-    method: 'POST',
-    data,
-  });
+  return await request(
+    conversationApiUrl('/api/agent/conversation/message/list'),
+    {
+      method: 'POST',
+      data,
+    },
+  );
 }
 
 // 停止会话
 export async function apiAgentConversationChatStop(
   requestId: string,
 ): Promise<RequestResponse<null>> {
-  return request(`/api/agent/conversation/chat/stop/${requestId}`, {
-    method: 'POST',
-  });
+  return request(
+    conversationApiUrl(`/api/agent/conversation/chat/stop/${requestId}`),
+    {
+      method: 'POST',
+    },
+  );
 }
 
 // ACP 权限审批结果回调
 export function apiResolveAcpPermission(
   data: RcoderNotifyResolvedRequest,
 ): Promise<RequestResponse<any> | Record<string, any>> {
-  return request('/api/computer/notify-resolved', {
+  return request(conversationApiUrl('/api/computer/notify-resolved'), {
     method: 'POST',
     data,
   });
@@ -336,21 +348,26 @@ export function apiAgentInterventionRespond(
       ? 'reject'
       : undefined;
 
-  return request('/api/agent/conversation/chat/permission-request/response', {
-    method: 'POST',
-    // 审批结果提交的错误由 respondAcpPermission 自行处理（卡片关闭 + 友好 toast），
-    // 跳过全局 errorHandler 以避免与后端原始 message（如 "permission request not
-    // found or already resolved"）重复弹窗。
-    skipErrorHandler: true,
-    data: {
-      conversationId: data.conversation_id,
-      toolId: permissionRequest?.tool_call_id,
-      option: {
-        optionId: selected?.option_id || fallbackOptionId,
-        outcome: selected ? 'selected' : 'cancelled',
+  return request(
+    conversationApiUrl(
+      '/api/agent/conversation/chat/permission-request/response',
+    ),
+    {
+      method: 'POST',
+      // 审批结果提交的错误由 respondAcpPermission 自行处理（卡片关闭 + 友好 toast），
+      // 跳过全局 errorHandler 以避免与后端原始 message（如 "permission request not
+      // found or already resolved"）重复弹窗。
+      skipErrorHandler: true,
+      data: {
+        conversationId: data.conversation_id,
+        toolId: permissionRequest?.tool_call_id,
+        option: {
+          optionId: selected?.option_id || fallbackOptionId,
+          outcome: selected ? 'selected' : 'cancelled',
+        },
       },
     },
-  });
+  );
 }
 
 // 停止临时会话
@@ -366,7 +383,7 @@ export async function apiTempChatConversationStop(
 export async function apiAgentConversationUpdate(
   data: AgentConversationUpdateParams,
 ): Promise<RequestResponse<ConversationInfo>> {
-  return request('/api/agent/conversation/update', {
+  return request(conversationApiUrl('/api/agent/conversation/update'), {
     method: 'POST',
     data,
   });
@@ -405,7 +422,7 @@ export async function apiAgentConversationCreate(
 export async function apiAgentConversationChatSuggest(
   data: ConversationChatSuggestParams,
 ): Promise<RequestResponse<string[]>> {
-  return request('/api/agent/conversation/chat/suggest', {
+  return request(conversationApiUrl('/api/agent/conversation/chat/suggest'), {
     method: 'POST',
     data,
   });
@@ -436,6 +453,26 @@ export async function apiAgentConversationShare(
   data: AgentConversationShareParams,
 ): Promise<RequestResponse<ShareFileInfo>> {
   return request('/api/agent/conversation/share', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 会话/消息分享(markdown 产物,需求 5c)。
+ * TODO(后端):真实分享接口支持会话/消息 type 后,切回
+ * /api/agent/conversation/share(参数带 messageId/组装好的 markdown),
+ * 删除 mock 层 conversationShareMd 三个端点即可,弹窗与落地页链路不变。
+ */
+export async function apiConversationShareMd(data: {
+  conversationId: number | string;
+  kind: 'MESSAGE' | 'CONVERSATION';
+  title: string;
+  markdown: string;
+  expireSeconds?: number | null;
+  allowDownload?: boolean;
+}): Promise<RequestResponse<{ shareKey: string }>> {
+  return request('/api/agent/conversation/share-md', {
     method: 'POST',
     data,
   });

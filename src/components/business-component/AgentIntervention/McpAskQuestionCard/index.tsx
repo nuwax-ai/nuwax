@@ -29,7 +29,7 @@ import {
 import styles from './index.less';
 import McpAskFormField from './McpAskFormField';
 
-const { Text } = Typography;
+const { Paragraph, Text } = Typography;
 
 interface McpAskQuestionCardProps {
   interaction: McpAskInteraction;
@@ -75,7 +75,10 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   const isLastStep = currentStep >= steps.length - 1;
 
   const title = input.title || ui.title;
+  const subTitle = input.subTitle || ui.subTitle;
   const description = input.description || ui.description;
+  // 长描述默认 2 行截断，展开后看全文
+  const [descExpanded, setDescExpanded] = useState(false);
 
   useEffect(() => {
     setCurrentStep(0);
@@ -276,13 +279,57 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
           <span className={styles.eyebrow}>
             {t('PC.Components.McpAskQuestionCard.eyebrow')}
           </span>
-          <Text strong className={styles.title}>
+          <Paragraph
+            strong
+            className={styles.title}
+            ellipsis={{
+              rows: 2,
+              // 'collapsible' 才支持展开后再收起；旧写法 expand:'expanded' 是无效 prop（antd 5 EllipsisConfig 无此字段）
+              expandable: 'collapsible',
+              symbol: (expanded) =>
+                expanded
+                  ? t('PC.Components.McpAskQuestionCard.titleCollapse')
+                  : t('PC.Components.McpAskQuestionCard.titleExpand'),
+            }}
+          >
             {title}
-          </Text>
+          </Paragraph>
+          {subTitle ? (
+            <Paragraph
+              type="secondary"
+              className={styles.subTitle}
+              ellipsis={{
+                rows: 1,
+                expandable: 'collapsible',
+                symbol: (expanded) =>
+                  expanded
+                    ? t('PC.Components.McpAskQuestionCard.titleCollapse')
+                    : t('PC.Components.McpAskQuestionCard.titleExpand'),
+              }}
+            >
+              {subTitle}
+            </Paragraph>
+          ) : null}
           {description ? (
-            <Text type="secondary" className={styles.desc}>
-              {description}
-            </Text>
+            <div className={styles.descWrap}>
+              <Text
+                type="secondary"
+                className={classNames(styles.desc, {
+                  [styles['desc-expanded']]: descExpanded,
+                })}
+              >
+                {description}
+              </Text>
+              <button
+                type="button"
+                className={styles.descToggle}
+                onClick={() => setDescExpanded((prev) => !prev)}
+              >
+                {descExpanded
+                  ? t('PC.Components.McpAskQuestionCard.collapseDesc')
+                  : t('PC.Components.McpAskQuestionCard.expandDesc')}
+              </button>
+            </div>
           ) : null}
         </div>
         {renderStatusTag()}

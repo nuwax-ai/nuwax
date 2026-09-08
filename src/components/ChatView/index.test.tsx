@@ -149,7 +149,7 @@ describe('ChatView', () => {
     );
   });
 
-  it('助手消息渲染 MarkdownRenderer，并透传 answer/thinking/status', () => {
+  it('助手消息渲染 MarkdownRenderer：存量 think 合成为内联块并抑制旧顶部思考区', () => {
     render(
       <ChatView
         roleInfo={roleInfo}
@@ -162,8 +162,12 @@ describe('ChatView', () => {
     );
 
     const markdown = screen.getByTestId('markdown-renderer');
-    expect(markdown).toHaveAttribute('data-answer', 'assistant answer');
-    expect(markdown).toHaveAttribute('data-thinking', 'assistant thinking');
+    // 思考内容合成为消息开头的 markdown-custom-think 内联块，不再走旧 thinking 通道
+    expect(markdown).toHaveAttribute('data-thinking', '');
+    const answer = markdown.getAttribute('data-answer') || '';
+    expect(answer).toContain('markdown-custom-think');
+    expect(answer).toContain(encodeURIComponent('assistant thinking'));
+    expect(answer.endsWith('assistant answer')).toBe(true);
     expect(markdown).toHaveAttribute(
       'data-status',
       MessageStatusEnum.Incomplete,
@@ -172,6 +176,32 @@ describe('ChatView', () => {
       'data-status',
       MessageStatusEnum.Incomplete,
     );
+  });
+
+  it('流式消息 text 含内联思考标签时按流式位置透传并抑制旧思考区', () => {
+    render(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          text: [
+            '<div><markdown-custom-think status="finished" content="%E7%AC%AC%E4%B8%80%E8%BD%AE%E6%80%9D%E8%80%83"></markdown-custom-think></div>',
+            '<div><markdown-custom-process executeId="t1" name="tool" type="ToolCall" status="FINISHED"></markdown-custom-process></div>',
+            '正文',
+          ].join('\n\n'),
+          think: '第一轮思考',
+          status: MessageStatusEnum.Incomplete,
+        })}
+      />,
+    );
+
+    const markdown = screen.getByTestId('markdown-renderer');
+    expect(markdown).toHaveAttribute('data-thinking', '');
+    const answer = markdown.getAttribute('data-answer') || '';
+    // 思考块在前、工具调用在后，保持流式发生位置
+    expect(answer.indexOf('markdown-custom-think')).toBeLessThan(
+      answer.indexOf('markdown-custom-process'),
+    );
+    expect(answer).toContain('正文');
   });
 
   it('助手消息透传思考流完成状态，不以正文内容推断思考已结束', () => {

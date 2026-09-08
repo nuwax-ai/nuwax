@@ -8,13 +8,16 @@
  * - handleChangeMessageList：PROCESSING / MESSAGE / FINAL_RESULT / ERROR
  * - SSE onError / onClose 收尾状态
  */
+import { apiEnsurePod, apiGetStaticFileList } from '@/services/vncDesktop';
 import {
+  AgentComponentTypeEnum,
   ConversationEventTypeEnum,
   MessageModeEnum,
 } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
   ConversationChatResponse,
+  ConversationInfo,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import { act, renderHook, waitFor } from '@testing-library/react';
@@ -548,27 +551,27 @@ describe('conversationInfo model', () => {
     expect(mockSyncTerminalConversationTaskStatus).not.toHaveBeenCalled();
   });
 
-  it('SSE FINAL_RESULT 未提供明确失败终态时，onClose 保留兜底查询', async () => {
+  it('SSE FINAL_RESULT success=false 立即落 FAILED，onClose 不再依赖兜底查询', async () => {
     const { result } = renderHook(() => useConversationInfo());
-    await sendAndGetAssistantId(result);
+    const assistantId = await sendAndGetAssistantId(result);
 
     await act(async () => {
       sseHandlers.onMessage?.({
-        requestId: 'req-final-unknown',
+        requestId: 'req-final-failed',
         eventType: ConversationEventTypeEnum.FINAL_RESULT,
         data: {
           success: false,
-          outputText: 'unknown failure',
+          outputText: 'failed',
         },
       } as ConversationChatResponse);
       await sseHandlers.onClose?.();
     });
 
-    expect(mockSyncTerminalConversationTaskStatus).toHaveBeenCalledTimes(1);
-    expect(mockSyncTerminalConversationTaskStatus).toHaveBeenCalledWith(
-      1001,
-      expect.any(Function),
-    );
+    expect(mockSyncTerminalConversationTaskStatus).not.toHaveBeenCalled();
+    expect(result.current.isConversationActive).toBe(false);
+    expect(
+      result.current.messageList.some((item) => item.id === assistantId),
+    ).toBe(true);
   });
 
   it('SSE onClose：终态查询未返回时也立即释放本地活跃态', async () => {
@@ -720,6 +723,86 @@ describe('conversationInfo model', () => {
     expect(result.current.messageList.some((item) => item.id === 'wf-2')).toBe(
       true,
     );
+  });
+
+  describe('OPEN_DESKTOP 云电脑 gate', () => {
+    /**
+     * 经 SSE 包装层喂一条 OPEN_DESKTOP 组件事件（生产链路同款入口）。
+     * sendParams 不带 sandboxId 时，handleChangeMessageList 收到的 params 仅含
+     * conversationId——与 resumeController.ts 的 resume 形态一致，生效电脑
+     * 只能靠 conversationInfo 推导，gate 缺层时此处会误放行并 ensurePod。
+     * 注意：SSE onMessage 闭包捕获建连那一轮渲染的 conversationInfo，
+     * 因此必须先 setConversationInfo 再 onMessageSend。
+     */
+    const setupAndFeedOpenDesktop = async (
+      result: { current: ReturnType<typeof useConversationInfo> },
+      conversationInfo: ConversationInfo,
+      sendParams: Record<string, unknown> = {},
+    ) => {
+      await act(async () => {
+        result.current.setConversationInfo(conversationInfo);
+      });
+      await act(async () => {
+        await result.current.onMessageSend({
+          id: 1001,
+          messageInfo: 'hello',
+          ...sendParams,
+        });
+      });
+      await act(async () => {
+        sseHandlers.onMessage?.({
+          requestId: 'req-desktop',
+          eventType: ConversationEventTypeEnum.PROCESSING,
+          data: {
+            type: AgentComponentTypeEnum.Event,
+            subEventType: 'OPEN_DESKTOP',
+          },
+        } as ConversationChatResponse);
+      });
+    };
+
+    it('resume 形态下绑个人电脑（agent.sandboxId）的会话不拉起云端 pod', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+
+      await setupAndFeedOpenDesktop(result, {
+        agent: { sandboxId: 'sb-personal' },
+      } as ConversationInfo);
+
+      expect(vi.mocked(apiEnsurePod)).not.toHaveBeenCalled();
+    });
+
+    it('resume 形态下绑共享电脑（sandboxServerId）的会话不拉起云端 pod', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+
+      await setupAndFeedOpenDesktop(result, {
+        agent: {},
+        sandboxServerId: 'srv-shared',
+      } as ConversationInfo);
+
+      expect(vi.mocked(apiEnsurePod)).not.toHaveBeenCalled();
+    });
+
+    it('纯云电脑会话（无个人/共享绑定，兜底 -1）放行并 ensurePod', async () => {
+      vi.mocked(apiEnsurePod).mockResolvedValue({
+        code: '0000',
+        data: {},
+      } as never);
+      const { result } = renderHook(() => useConversationInfo());
+
+      await setupAndFeedOpenDesktop(result, { agent: {} } as ConversationInfo);
+
+      expect(vi.mocked(apiEnsurePod)).toHaveBeenCalledWith(1001);
+    });
+
+    it('live 路径 params.sandboxId 为非云电脑时同样拦截', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+
+      await setupAndFeedOpenDesktop(result, { agent: {} } as ConversationInfo, {
+        sandboxId: 'sb-live',
+      });
+
+      expect(vi.mocked(apiEnsurePod)).not.toHaveBeenCalled();
+    });
   });
 
   it('handleClearSideEffect：中止 SSE 并清空建议列表', async () => {
@@ -948,7 +1031,7 @@ describe('conversationInfo model', () => {
       expect(result.current.isConversationActive).toBe(true);
     });
 
-    it('「解析不出终态」的 FINAL_RESULT 不 ack：旧任务仍在执行时不误封上升沿', async () => {
+    it('「正在执行任务」冲突型 FINAL_RESULT 不 ack：旧任务仍在执行时不误封上升沿', async () => {
       const { result } = renderHook(() => useConversationInfo());
       await sendAndGetAssistantId(result);
 
@@ -956,11 +1039,64 @@ describe('conversationInfo model', () => {
         sseHandlers.onMessage?.({
           requestId: 'req-ack-4',
           eventType: ConversationEventTypeEnum.FINAL_RESULT,
+          error: 'Agent正在执行任务，请等待当前任务完成后再发送新请求',
           data: { success: false, outputText: 'task conflict' },
         } as ConversationChatResponse);
       });
       // sweep 早退（解析不出终态枚举），活跃态不被误清
       expect(result.current.isConversationActive).toBe(true);
+    });
+
+    it('fileTreeSelfManaged 门控：refreshFileListImmediately 跳过全量拉取并改发刷新信号（#5a 懒加载收尾）', async () => {
+      const runStaticFileList = vi
+        .fn()
+        .mockResolvedValue({ code: '0000', data: { files: [] } });
+      mockUseRequest.mockImplementation((service: unknown) => {
+        if (service === apiGetStaticFileList) {
+          return {
+            run: vi.fn(),
+            runAsync: runStaticFileList,
+            loading: false,
+            cancel: vi.fn(),
+          };
+        }
+        return {
+          run: vi.fn(),
+          runAsync: vi.fn().mockResolvedValue({ code: '0000', data: [] }),
+          loading: false,
+          cancel: vi.fn(),
+        };
+      });
+
+      const { result } = renderHook(() => useConversationInfo());
+
+      // 默认（未门控）：走全量拉取，行为与原路径一致
+      await act(async () => {
+        await result.current.refreshFileListImmediately(1001);
+      });
+      expect(runStaticFileList).toHaveBeenCalledWith(1001);
+
+      // 门控：跳过全量拉取，改发 fileTreeRefreshTrigger 时间戳
+      act(() => {
+        result.current.setFileTreeSelfManaged(true);
+      });
+      const triggerBefore = result.current.fileTreeRefreshTrigger;
+      await act(async () => {
+        await result.current.refreshFileListImmediately(1001);
+      });
+      expect(runStaticFileList).toHaveBeenCalledTimes(1);
+      expect(result.current.fileTreeRefreshTrigger).toBeGreaterThan(
+        triggerBefore,
+      );
+
+      // 复位后恢复全量拉取
+      act(() => {
+        result.current.setFileTreeSelfManaged(false);
+      });
+      await act(async () => {
+        await result.current.refreshFileListImmediately(1001);
+      });
+      expect(runStaticFileList).toHaveBeenCalledTimes(2);
     });
   });
 });

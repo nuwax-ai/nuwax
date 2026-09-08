@@ -68,7 +68,15 @@ const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
               >
                 <div
                   className={cx(styles.backgroundPreview)}
-                  style={{ backgroundImage: `url(${bg.preview})` }}
+                  style={
+                    bg.preview
+                      ? { backgroundImage: `url(${bg.preview})` }
+                      : {
+                          // 纯色背景选项（无图）：灰白色块示意
+                          background:
+                            'linear-gradient(135deg, #F7F8FA 0%, #E8EBF0 100%)',
+                        }
+                  }
                 />
               </div>
             ))}

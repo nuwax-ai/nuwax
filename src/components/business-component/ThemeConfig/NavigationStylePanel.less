@@ -139,6 +139,39 @@
   }
 }
 
+// 单栏导航样式（风格3，主导航改造形态）：纯 CSS 缩略示意（左列=会话侧栏）
+.sidebarNavbar {
+  .navbarContent {
+    display: flex;
+    padding: 0;
+  }
+}
+
+.sidebarMockCol {
+  width: 30%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 3px;
+  background-color: #f2f2f2; // 对齐单栏侧栏灰底
+  border-right: 1px solid rgba(0, 0, 0, 6%);
+}
+
+.sidebarMockLogo {
+  height: 8px;
+  margin-bottom: 2px;
+  border-radius: 2px;
+  background-color: rgba(0, 0, 0, 20%);
+}
+
+.sidebarMockRow {
+  height: 4px;
+  border-radius: 1px;
+  background-color: rgba(0, 0, 0, 10%);
+}
+
 // 风格提示文字
 .styleText {
   font-size: 8px;

@@ -2,6 +2,7 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
+import { ConversationRendererV2Lazy } from '@/features/conversation/LazyConversationRendererV2';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import * as React from 'react';
@@ -47,7 +48,7 @@ export interface ChatContentAreaProps {
   userFillVariables?: any;
   isVariablesFilled?: boolean;
   isVariablesDisabled?: boolean;
-  variableParams?: Record<string, string | number> | null;
+  variableParams?: Record<string, string | number | null> | null;
   messageList?: MessageInfo[];
   isMoreMessage?: boolean;
   loadMoreRef: any;
@@ -65,6 +66,12 @@ export interface ChatContentAreaProps {
   handleMessageSend: (...args: any[]) => void;
   showTaskExecutingWait: boolean;
   renderEmptyState?: () => React.ReactNode;
+  /**
+   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView（默认，零行为变化）；
+   * v2 = ConversationRendererV2（轮次工作轨迹 + 最终回答）。
+   * renderMessageItem 自定义入口恒走原逻辑，不受本参数影响。
+   */
+  messageRenderer?: 'v1' | 'v2';
 }
 
 export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
@@ -94,6 +101,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
   handleMessageSend,
   showTaskExecutingWait,
   renderEmptyState,
+  messageRenderer = 'v1',
 }) => {
   const renderedMessageList = React.useMemo(() => {
     if (!messageList || messageList.length <= 1) {
@@ -108,6 +116,26 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
     }
     return messageList;
   }, [messageList]);
+
+  // V1 列表渲染（默认分支与 V2 chunk 失败回退共用）
+  const renderV1MessageList = () =>
+    renderedMessageList?.map((item: MessageInfo, idx: number) => {
+      const isLastMessage = idx === renderedMessageList.length - 1;
+      if (renderMessageItem) {
+        return renderMessageItem(item, isLastMessage);
+      }
+      return (
+        <ChatView
+          key={getChatMessageRenderKey(item, idx)}
+          conversationId={conversationId}
+          messageInfo={item}
+          roleInfo={effectiveRoleInfo}
+          mode={messageBottomMode}
+          showDebug={showDebug}
+          showStatusDesc={agentInfo?.type !== AgentTypeEnum.TaskAgent}
+        />
+      );
+    });
 
   return (
     <div
@@ -153,26 +181,20 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
                     </div>
                   )}
 
-                {/* 消息渲染列表 */}
-                {renderedMessageList?.map((item: MessageInfo, idx: number) => {
-                  const isLastMessage = idx === renderedMessageList.length - 1;
-                  if (renderMessageItem) {
-                    return renderMessageItem(item, isLastMessage);
-                  }
-                  return (
-                    <ChatView
-                      key={getChatMessageRenderKey(item, idx)}
-                      conversationId={conversationId}
-                      messageInfo={item}
-                      roleInfo={effectiveRoleInfo}
-                      mode={messageBottomMode}
-                      showDebug={showDebug}
-                      showStatusDesc={
-                        agentInfo?.type !== AgentTypeEnum.TaskAgent
-                      }
-                    />
-                  );
-                })}
+                {/* 消息渲染列表：渲染线选择（V2 双线重构）。自定义 renderMessageItem 恒走原逻辑 */}
+                {messageRenderer === 'v2' && !renderMessageItem ? (
+                  <ConversationRendererV2Lazy
+                    fallback={<>{renderV1MessageList()}</>}
+                    conversationId={conversationId}
+                    messageList={renderedMessageList}
+                    roleInfo={effectiveRoleInfo}
+                    messageBottomMode={messageBottomMode}
+                    showDebug={showDebug}
+                    showStatusDesc={agentInfo?.type !== AgentTypeEnum.TaskAgent}
+                  />
+                ) : (
+                  renderV1MessageList()
+                )}
 
                 {/* 问题建议：仅会话空闲且队列已排空时展示，避免与队列中的下一轮消息割裂 */}
                 {shouldShowSessionSuggest && (

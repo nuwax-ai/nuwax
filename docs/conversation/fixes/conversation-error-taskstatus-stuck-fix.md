@@ -227,8 +227,8 @@ if (eventTypeStr == `${ConversationEventTypeEnum.ERROR}`) {
 
 ## 6. 相关文档
 
-- `docs/message-queue-design.md` — 队列设计（其中「Error 暂停消费」已被本修复调整：Error 不再永久阻断）
-- `docs/conversation-stream-resume-and-intervention.md` — 轮询 / sub 恢复
+- `docs/conversation/message-queue-design.md` — 队列设计（其中「Error 暂停消费」已被本修复调整：Error 不再永久阻断）
+- `docs/conversation/archive/conversation-stream-resume-and-intervention.md` — 轮询 / sub 恢复
 - PC 工具：`src/utils/conversationTaskStatusSync.ts`（`applyTerminalTaskStatus` / `emitConversationListTaskStatus`）
 
 ---

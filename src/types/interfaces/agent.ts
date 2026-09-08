@@ -56,6 +56,8 @@ export interface AgentRecentConversationInfo {
   id: number | string;
   topic?: string | null;
   taskStatus?: TaskStatus;
+  /** 会话更新时间(接口当前未返回,后端补字段后自动展示) */
+  modified?: string;
 }
 
 // 智能体信息

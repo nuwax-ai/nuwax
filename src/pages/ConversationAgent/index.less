@@ -9,7 +9,9 @@
   background-attachment: fixed;
   transition: background-image 0.3s ease;
   min-width: 1400px;
-  height: 100vh;
+  // h-full 语义（相对 wrappers/immersiveShellAvoid 的内盒）：沉浸态退让发生在
+  // 路由层，页根若用 100vh 会比内盒高出避让高度、底部溢出产生滚动条。
+  height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;

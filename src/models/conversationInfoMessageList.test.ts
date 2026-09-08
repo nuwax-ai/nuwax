@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   appendOutgoingConversationMessages,
   areMessageListsEquivalent,
+  findCurrentRoundStart,
   isOptimisticMessageId,
   needsTerminalHistoryReload,
   preserveOptimisticMessageTail,
@@ -190,6 +191,57 @@ describe('terminal history reload helpers', () => {
 
     expect(merged).toHaveLength(1);
     expect(merged[0]).toBe(current[0]);
+  });
+
+  it('流式中的快照无思考时保留本地已渲染思考（正文仍以快照为准）', () => {
+    const current = [
+      {
+        id: '056c255fee9e4a1f8347e022a6c80e1d',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '流式正文',
+        think: '本地流式渲染的第一轮思考',
+        thinkingFinished: false,
+        status: MessageStatusEnum.Incomplete,
+        clientRenderKey: 'round-1',
+      },
+    ] as MessageInfo[];
+    // 轮询/resume 快照：正文已更新，但不带 think（思考只存在于流式管道）
+    const incoming = [
+      {
+        ...current[0],
+        text: '流式正文（快照版）',
+        think: '',
+      },
+    ] as MessageInfo[];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged[0].text).toBe('流式正文（快照版）');
+    expect(merged[0].think).toBe('本地流式渲染的第一轮思考');
+    expect(merged[0].thinkingFinished).toBe(false);
+  });
+
+  it('流式中的快照携带思考时仍以快照为准', () => {
+    const current = [
+      {
+        id: '056c255fee9e4a1f8347e022a6c80e1d',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '流式正文',
+        think: '本地思考',
+        status: MessageStatusEnum.Incomplete,
+        clientRenderKey: 'round-1',
+      },
+    ] as MessageInfo[];
+    const incoming = [
+      {
+        ...current[0],
+        think: '快照思考',
+      },
+    ] as MessageInfo[];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged[0].think).toBe('快照思考');
   });
 
   it('requires terminal reload when incoming contains a missing persisted message', () => {
@@ -747,6 +799,50 @@ describe('preserveOptimisticMessageTail', () => {
       status: MessageStatusEnum.Complete,
       thinkingFinished: true,
     });
+  });
+});
+
+describe('findCurrentRoundStart 轮次边界', () => {
+  it('空列表/undefined 返回 0', () => {
+    expect(findCurrentRoundStart([])).toBe(0);
+    expect(findCurrentRoundStart(undefined)).toBe(0);
+    expect(findCurrentRoundStart(null)).toBe(0);
+  });
+
+  it('无 USER 消息时返回 0（全列表视为当前轮）', () => {
+    const list = [
+      { role: AssistantRoleEnum.ASSISTANT, text: 'a' },
+      { role: AssistantRoleEnum.ASSISTANT, text: 'b' },
+    ] as MessageInfo[];
+    expect(findCurrentRoundStart(list)).toBe(0);
+  });
+
+  it('最后一条 USER 之后有消息 → 返回 USER 下一条索引', () => {
+    const list = [
+      { role: AssistantRoleEnum.USER, text: '问' },
+      { role: AssistantRoleEnum.ASSISTANT, text: '步1' },
+      { role: AssistantRoleEnum.ASSISTANT, text: '步2' },
+    ] as MessageInfo[];
+    expect(findCurrentRoundStart(list)).toBe(1);
+  });
+
+  it('多轮对话 → 返回最后一条 USER 的下一条（不是第一条）', () => {
+    const list = [
+      { role: AssistantRoleEnum.USER, text: '第1轮' },
+      { role: AssistantRoleEnum.ASSISTANT, text: '回答1' },
+      { role: AssistantRoleEnum.USER, text: '第2轮' },
+      { role: AssistantRoleEnum.ASSISTANT, text: '步1' },
+      { role: AssistantRoleEnum.ASSISTANT, text: '步2' },
+    ] as MessageInfo[];
+    expect(findCurrentRoundStart(list)).toBe(3);
+  });
+
+  it('USER 是末条（刚发送无回复）→ 返回列表长度', () => {
+    const list = [
+      { role: AssistantRoleEnum.ASSISTANT, text: '前轮' },
+      { role: AssistantRoleEnum.USER, text: '新消息' },
+    ] as MessageInfo[];
+    expect(findCurrentRoundStart(list)).toBe(2);
   });
 });
 

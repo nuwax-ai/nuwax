@@ -2,10 +2,19 @@
  * 会话流式/执行态判定 helper 测试
  */
 import {
+  isSessionStreamBusy as isRuntimeSessionStreamBusy,
+  isTaskExecuting,
+  selectQueueGate,
+  selectSessionActive,
+  shouldShowSessionSuggest,
+  shouldShowTaskExecutingWait,
+} from '@/features/conversation/domain/runtimeSelectors';
+import {
   hasActiveStreamingInMessages,
   hasExecutingProcessingInMessages,
   isSessionStreamBusy,
 } from '@/hooks/useExecutingTaskStatusPoll';
+import { TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import { describe, expect, it } from 'vitest';
 
@@ -70,5 +79,56 @@ describe('isSessionStreamBusy', () => {
     expect(
       isSessionStreamBusy([{ status: MessageStatusEnum.Incomplete } as any]),
     ).toBe(true);
+  });
+});
+
+describe('conversation runtime selectors', () => {
+  const completeMessages = [{ status: MessageStatusEnum.Complete } as any];
+
+  it('任务状态与流式活跃态保持两个维度，再由 session selector 合并', () => {
+    expect(isTaskExecuting(TaskStatus.EXECUTING)).toBe(true);
+    expect(isSessionStreamBusy(completeMessages)).toBe(false);
+    expect(
+      selectSessionActive(false, completeMessages, TaskStatus.EXECUTING),
+    ).toBe(true);
+  });
+
+  it('历史 processing EXECUTING 不驱动输入框 busy', () => {
+    expect(
+      isRuntimeSessionStreamBusy([
+        {
+          status: MessageStatusEnum.Complete,
+          processingList: [{ status: ProcessingEnum.EXECUTING }],
+        } as any,
+      ]),
+    ).toBe(false);
+  });
+
+  it('队列门禁：任务/流阻塞入队，Intervention 只额外阻塞消费', () => {
+    expect(
+      selectQueueGate(false, completeMessages, TaskStatus.COMPLETE, true),
+    ).toMatchObject({
+      streamActive: false,
+      taskExecuting: false,
+      enqueueBlocked: false,
+      consumeBlocked: true,
+    });
+  });
+
+  it('任务等待横幅仅在 EXECUTING 且最后消息没有流式输出时展示', () => {
+    expect(
+      shouldShowTaskExecutingWait(TaskStatus.EXECUTING, completeMessages),
+    ).toBe(true);
+    expect(
+      shouldShowTaskExecutingWait(TaskStatus.EXECUTING, [
+        { status: MessageStatusEnum.Loading } as any,
+      ]),
+    ).toBe(false);
+  });
+
+  it('suggest 只在有消息、无队列且流已结束时展示', () => {
+    expect(shouldShowSessionSuggest(completeMessages, false, false)).toBe(true);
+    expect(shouldShowSessionSuggest(completeMessages, true, false)).toBe(false);
+    expect(shouldShowSessionSuggest(completeMessages, false, true)).toBe(false);
   });
 });

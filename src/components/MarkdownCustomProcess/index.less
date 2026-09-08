@@ -81,6 +81,10 @@
         cursor: pointer;
       }
 
+      &.is-terminal {
+        cursor: pointer;
+      }
+
       .title-left-wrapper {
         display: flex;
         align-items: center;
@@ -88,6 +92,40 @@
         min-width: 0;
         flex: 1;
         margin-right: @marginSm;
+      }
+
+      .exit-badge {
+        flex-shrink: 0;
+        font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+        font-size: @fontSizeSm;
+        font-weight: @fontWeightStrong;
+        padding: 0 @paddingXxs;
+        border-radius: @borderRadiusXs;
+
+        &.exit-ok {
+          color: @colorSuccess;
+          background: @colorSuccessBg;
+        }
+
+        &.exit-error {
+          color: @colorError;
+          background: @colorErrorBg;
+        }
+      }
+
+      .plan-progress-chip {
+        flex-shrink: 0;
+        max-width: 45%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+        background-color: @colorFillSecondary;
+        padding: 1px @paddingXs;
+        border-radius: 10px;
+        line-height: @lineHeightSm;
+        font-variant-numeric: tabular-nums;
       }
 
       .diff-badges {
@@ -121,6 +159,13 @@
       gap: 8px;
       opacity: 0; // 默认隐藏，在 hover 整个容器时展现
       transition: opacity @motionDurationMid @motionEaseInOut;
+
+      .duration-chip {
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
 
       .status-completed {
         display: flex;
@@ -295,6 +340,33 @@
   }
 }
 
+// 终端输出内容区（P0-1）：等宽、暗底，流式预览与展开全量共用
+.terminal-output {
+  border-top: 1px solid rgba(0, 0, 0, 6%);
+  background-color: @colorBgLayout; // 与亮暗主题的「控制台」底色观感对齐
+  margin-bottom: @marginXs;
+
+  .terminal-output-text {
+    margin: 0;
+    padding: @paddingXs @paddingSm;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+    font-size: @fontSizeSm;
+    line-height: 1.6;
+    color: @colorText;
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow: auto;
+    scrollbar-width: thin;
+    max-height: 240px; // 展开全量时限高滚动
+  }
+
+  &.is-preview {
+    .terminal-output-text {
+      max-height: calc(1.6 * @fontSizeSm * 6); // 尾部 6 行预览
+    }
+  }
+}
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -302,5 +374,150 @@
 
   100% {
     transform: rotate(360deg);
+  }
+}
+
+// ---- 通用工具「参数 / 结果」内联展开区 ----
+.params-response-view {
+  margin-bottom: @marginXs;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadius;
+  overflow: hidden;
+  background: @colorBgContainer;
+
+  // 「参数」「结果」两个 section 相互独立:标题行(▼+复制)各自吸顶,
+  // body 各自限高滚动——长 JSON 参数滚动不影响结果区(参考稿形态)
+  .detail-block {
+    .detail-block-toggle {
+      appearance: none;
+      border: none;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+      min-height: 30px;
+      padding: 4px @paddingXs;
+      cursor: pointer;
+      font-size: @fontSizeSm;
+      font-weight: @fontWeightStrong;
+      color: @colorTextSecondary;
+
+      &:hover {
+        color: @colorText;
+      }
+    }
+
+    & + .detail-block {
+      border-top: 1px solid @colorBorderSecondary;
+    }
+  }
+
+  .detail-section {
+    border-top: 1px solid @colorBorderSecondary;
+    background-color: @colorBgLayout;
+
+    .detail-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px @paddingSm;
+      // header 不随 body 滚动(section 内视觉锚点)
+      position: sticky;
+      top: 0;
+      background-color: @colorBgLayout;
+      z-index: 1;
+      border-bottom: 1px solid @colorBorderSecondary;
+
+      .detail-section-title {
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+      }
+
+      .detail-section-copy {
+        color: @colorTextTertiary;
+      }
+    }
+
+    .detail-section-body {
+      margin: 0;
+      padding: @paddingXs @paddingSm;
+      font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+      font-size: @fontSizeSm;
+      line-height: 1.6;
+      color: @colorText;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow: auto;
+      scrollbar-width: thin;
+      max-height: 240px; // 每个 section 独立限高滚动
+    }
+  }
+
+  &.is-terminal-detail {
+    .detail-section-body {
+      max-height: 220px;
+    }
+  }
+
+  &.is-search-detail,
+  &.is-browser-detail,
+  &.is-file-read-detail {
+    .detail-section-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  }
+}
+
+// 技能不是参数 JSON：对齐参考稿，名称作为小型代码标签，正文独立滚动。
+.skill-detail-card {
+  background: @colorBgContainer;
+
+  .skill-detail-header {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: @marginXs;
+    padding: @paddingXs @paddingSm;
+    border-bottom: 1px solid @colorBorderSecondary;
+  }
+
+  .skill-detail-label {
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+    flex-shrink: 0;
+  }
+
+  .skill-detail-name {
+    min-width: 0;
+    max-width: 72%;
+    padding: 2px @paddingXs;
+    border-radius: @borderRadiusSm;
+    background: @colorFillSecondary;
+    color: @colorText;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .detail-section-copy {
+    margin-left: auto;
+    color: @colorTextTertiary;
+  }
+
+  .skill-detail-body {
+    margin: 0;
+    max-height: 280px;
+    overflow: auto;
+    scrollbar-width: thin;
+    padding: @paddingSm;
+    background: @colorBgLayout;
+    color: @colorText;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+    font-size: @fontSizeSm;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 }

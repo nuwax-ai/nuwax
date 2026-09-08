@@ -207,7 +207,7 @@ describe('消息队列功能', () => {
       expect(sendMessage).not.toHaveBeenCalled();
     });
 
-    it('最近一条消息出错时暂停自动消费，等待用户处理', () => {
+    it('最近一条消息出错时仍继续消费，Error 不作为永久阻断', () => {
       const { result, rerender } = setup({ isConversationActive: true });
       act(() => {
         result.current.trySend('m1');
@@ -221,7 +221,14 @@ describe('消息队列功能', () => {
       act(() => {
         vi.advanceTimersByTime(500);
       });
-      expect(sendMessage).not.toHaveBeenCalled();
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('流式结束但后台任务仍执行时不自动消费', () => {

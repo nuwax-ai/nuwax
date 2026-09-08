@@ -13,19 +13,81 @@ import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';
 
-// 查询文件列表
+// 查询文件列表（customTargetDir：工作区之外的目录，如用户打开的本地目录）
 export async function apiGetStaticFileList(
   cId: number,
+  options?: {
+    relativePath?: string;
+    recursive?: boolean;
+    customTargetDir?: string;
+  },
 ): Promise<RequestResponse<StaticFileListResponse>> {
   return request('/api/computer/static/file-list', {
     method: 'GET',
     params: {
       cId,
+      ...(options
+        ? {
+            relativePath: options.relativePath || '',
+            recursive: options.recursive ?? false,
+            ...(options.customTargetDir
+              ? { customTargetDir: options.customTargetDir }
+              : {}),
+          }
+        : {}),
+    },
+  });
+}
+
+// 有界实时搜索（服务端限时限量递归，limit/maxVisit/timeoutMs 为 file-server 必填项；
+// 若网关未透传该端点会失败，调用方需准备本地过滤兜底）
+export interface ISearchFilesParams {
+  cId: number;
+  kw: string;
+  customTargetDir?: string;
+  relativePath?: string;
+  limit?: number;
+  maxVisit?: number;
+  timeoutMs?: number;
+}
+
+export interface SearchFilesResponse extends StaticFileListResponse {
+  truncated?: boolean;
+  visited?: number;
+}
+
+export async function apiSearchFiles(
+  params: ISearchFilesParams,
+): Promise<RequestResponse<SearchFilesResponse>> {
+  const {
+    cId,
+    kw,
+    customTargetDir,
+    relativePath = '',
+    limit = 200,
+    maxVisit = 20000,
+    timeoutMs = 2000,
+  } = params;
+  return request('/api/computer/static/search-files', {
+    method: 'GET',
+    params: {
+      cId,
+      kw,
+      relativePath,
+      limit,
+      maxVisit,
+      timeoutMs,
+      ...(customTargetDir ? { customTargetDir } : {}),
     },
   });
 }
 
 // 静态文件访问
+/**
+ * @deprecated 占位实现，路径中的 `**` 为字面量、不可用（历史遗留）。
+ * 单文件存在性检查请用 `apiGetStaticFileList(cId, { relativePath: 父目录,
+ * recursive: false })`；文件内容请用 `fetchContentFromUrl(静态预览 URL)`。
+ */
 export async function apiGetStaticFileDetail(
   cId: number,
 ): Promise<RequestResponse<any>> {
@@ -60,11 +122,11 @@ export async function apiUploadFile(
   });
 }
 
-// 批量文件上传
+// 批量文件上传（customTargetDir：上传到工作区之外的目录）
 export async function apiUploadFiles(
   params: IUploadFilesParams,
 ): Promise<RequestResponse<number>> {
-  const { files, cId, filePaths } = params;
+  const { files, cId, filePaths, customTargetDir } = params;
   const formData = new FormData();
 
   // 批量上传文件：将每个文件 append 到 FormData
@@ -82,17 +144,27 @@ export async function apiUploadFiles(
     formData.append('filePaths', filePath);
   });
 
+  if (customTargetDir) {
+    formData.append('customTargetDir', customTargetDir);
+  }
+
   return request('/api/computer/static/upload-files', {
     method: 'POST',
     data: formData,
   });
 }
 
-// 下载全部文件
-export async function apiDownloadAllFiles(cId: number): Promise<void> {
+// 下载全部文件（customTargetDir：打包下载工作区之外的目录）
+export async function apiDownloadAllFiles(
+  cId: number,
+  customTargetDir?: string,
+): Promise<void> {
   try {
+    const query = customTargetDir
+      ? `cId=${cId}&customTargetDir=${encodeURIComponent(customTargetDir)}`
+      : `cId=${cId}`;
     // 获取导出文件链接地址
-    const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?cId=${cId}`;
+    const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?${query}`;
     // 通过浏览器下载文件
     exportFileViaBrowserDownload(linkUrl);
     message.success(t('PC.Pages.Chat.exportSuccess'));

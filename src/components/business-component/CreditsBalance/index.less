@@ -33,6 +33,21 @@
     transition: transform 0.2s, box-shadow 0.2s;
     white-space: nowrap;
 
+    &.stacked {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      row-gap: @paddingXxs;
+
+      .balance {
+        margin-left: 0;
+      }
+
+      .top-up-btn {
+        grid-column: 1 / -1;
+        justify-self: end;
+      }
+    }
+
     .label {
       color: @navSecondMenuTextSecondary;
       font-size: @fontSizeSm;

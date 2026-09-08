@@ -435,7 +435,12 @@ export enum AgentSessionUpdateSubType {
   AGENT_MESSAGE_CHUNK = 'agent_message_chunk',
   TOOL_CALL = 'tool_call',
   TOOL_CALL_UPDATE = 'tool_call_update',
+  /** ACP 计划全量更新（每次携带完整 entries，客户端全量替换） */
   PLAN = 'plan',
+  PLAN_UPDATE = 'plan_update',
+  PLAN_REMOVED = 'plan_removed',
+  /** ACP 引擎侧模式变化（如 ExitPlanMode 批准后切回执行模式） */
+  CURRENT_MODE_UPDATE = 'current_mode_update',
   ERROR = 'error',
 }
 
@@ -453,6 +458,9 @@ export interface UnifiedSessionMessage {
     | 'tool_call_update'
     | 'agent_message_chunk'
     | 'plan'
+    | 'plan_update'
+    | 'plan_removed'
+    | 'current_mode_update'
     | 'session_id';
   sessionId: string;
   messageType: SessionMessageType;
@@ -679,6 +687,10 @@ export interface FileNode {
   fileProxyUrl?: string;
   /** 是否为链接文件 */
   isLink?: boolean;
+  /** 本地目录数据源中的根记录 ID */
+  dataSourceId?: string;
+  /** 本地目录数据源中的根内相对路径 */
+  relativePath?: string;
 }
 
 /**

@@ -1,0 +1,590 @@
+// V2 会话渲染器样式（克制工具型时间线）：
+// 布局走本文件；语义色优先由组件内 antd token 内联提供（自动跟随明暗主题），
+// 此处仅保留结构性样式与少量弱色（同时给 xagi-layout-dark 提供覆盖）。
+
+.turn-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.agent-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  .avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .author {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .run-over {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// ---- 外层工作轨迹：单 hairline + 三层渐进 disclosure ----
+.trace {
+  margin-top: 8px;
+}
+
+.trace-toggle {
+  appearance: none;
+  border: none;
+  border-bottom: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  background: transparent;
+  width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.16s ease, border-color 0.16s ease;
+
+  &:hover {
+    background: var(--v2-color-fill, rgba(5, 5, 5, 2%));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: 1px;
+  }
+}
+
+.trace[data-trace-running='true'] .trace-toggle {
+  border-bottom-color: var(--v2-color-primary-border, rgba(106, 90, 249, 35%));
+}
+
+.trace-chevron,
+.tool-group-chevron,
+.node-disclosure {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
+  transform: rotate(-90deg);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.trace-chevron-open,
+.tool-group-chevron-open,
+.node-disclosure-open {
+  transform: rotate(0deg);
+}
+
+.trace-chevron-trailing {
+  margin-left: 0;
+}
+
+.trace-metrics {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font-size: 13px;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-metrics-leading {
+  flex: 0 1 auto;
+}
+
+.trace-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 0 8px;
+}
+
+// ---- 连续工具组 ----
+.tool-group {
+  min-width: 0;
+}
+
+.tool-group-toggle,
+.node-row {
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+}
+
+.tool-group-toggle,
+.node-row:not(.is-static) {
+  cursor: pointer;
+
+  &:hover {
+    background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: -1px;
+  }
+}
+
+.tool-group-icon,
+.node-kind-icon {
+  width: 14px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.tool-group-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-group-status,
+.node-status-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.tool-group-chevron,
+.node-disclosure {
+  opacity: 0;
+  transition: transform 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+}
+
+.tool-group-chevron-open,
+.node-disclosure-open {
+  opacity: 1;
+}
+
+.tool-group-body {
+  position: relative;
+  margin: 1px 0 5px 12px;
+  padding-left: 8px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 0;
+    width: 1px;
+    background: var(--v2-color-border, rgba(5, 5, 5, 8%));
+  }
+}
+
+// ---- 单行过程节点 / 工具事件 ----
+.node-row-wrapper {
+  min-width: 0;
+
+  &.is-failed .node-title {
+    color: var(--v2-color-error, #ff4d4f);
+  }
+}
+
+.node-title {
+  max-width: 42%;
+  overflow: hidden;
+  font-weight: 500;
+  flex-shrink: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-summary {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-meta {
+  flex-shrink: 0;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font: 12px/20px Menlo, Monaco, Consolas, monospace;
+}
+
+.node-row:hover .node-disclosure,
+.node-row:focus-visible .node-disclosure,
+.tool-group-toggle:hover .tool-group-chevron,
+.tool-group-toggle:focus-visible .tool-group-chevron {
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  opacity: 1;
+}
+
+.node-detail {
+  max-height: ~'min(420px, 52vh)';
+  overflow-y: auto;
+  margin: 2px 6px 8px 27px;
+  padding-left: 0;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  border-left: 0;
+}
+
+.node-detail-text {
+  padding: 4px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+// ---- 类型化工具详情：只有富内容使用承载面板，不再嵌旧工具卡 ----
+.tool-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.tool-terminal,
+.tool-file-preview,
+.tool-diff-view {
+  overflow: hidden;
+  padding: 10px 12px;
+  border: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  border-radius: 8px;
+  background: var(--v2-color-fill, rgba(5, 5, 5, 2%));
+}
+
+.tool-terminal-header,
+.tool-file-header,
+.tool-diff-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+}
+
+.tool-terminal-header {
+  justify-content: space-between;
+  padding-bottom: 6px;
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+}
+
+.tool-terminal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tool-detail-description,
+.tool-detail-section-label,
+.tool-file-header > span,
+.tool-diff-summary {
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+}
+
+.tool-detail-path,
+.tool-detail-resource {
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--v2-color-link, #1677ff);
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button.tool-detail-resource {
+  appearance: none;
+  border: none;
+  border-bottom: 1px dotted currentcolor;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: 2px;
+  }
+}
+
+a.tool-detail-resource {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.tool-detail-command {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  padding: 7px 0;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  border-top: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  border-bottom: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+}
+
+.tool-detail-text {
+  min-width: 0;
+  max-height: 240px;
+  margin: 0;
+  padding: 7px 9px;
+  overflow: auto;
+  border-radius: 5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
+  font: 12px/1.55 Menlo, Monaco, Consolas, monospace;
+
+  &.is-command {
+    padding: 0;
+    background: transparent;
+  }
+
+  &.is-input {
+    color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  }
+}
+
+.tool-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tool-detail-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tool-detail.is-failed .tool-detail-text.is-output {
+  border-left: 2px solid var(--v2-color-error, #ff4d4f);
+}
+
+.tool-detail-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  > div {
+    display: flex;
+    gap: 7px;
+    align-items: baseline;
+  }
+}
+
+.tool-diff-summary {
+  padding-bottom: 6px;
+}
+
+.is-added-text {
+  color: var(--v2-color-success, #52c41a);
+}
+
+.is-removed-text {
+  color: var(--v2-color-error, #ff4d4f);
+}
+
+.tool-detail-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 7px;
+  border-top: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+
+  pre {
+    margin: 0;
+    padding: 5px 8px;
+    overflow: auto;
+    white-space: pre-wrap;
+    font: 12px/1.5 Menlo, Monaco, Consolas, monospace;
+  }
+
+  .is-removed {
+    background: rgba(255, 77, 79, 8%);
+  }
+
+  .is-added {
+    background: rgba(82, 196, 26, 8%);
+  }
+}
+
+.tool-result-view {
+  padding: 5px 0;
+
+  p {
+    margin: 0;
+    color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  }
+}
+
+.tool-detail-query {
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 7px;
+  overflow: hidden;
+  border-radius: 5px;
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-result-title {
+  font-size: 13px;
+}
+
+// 隐藏项恢复入口
+.hidden-entry {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  margin-left: 16px;
+  font-size: 12px;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+
+  &:hover {
+    color: var(--v2-color-link, #1677ff);
+    background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: 1px;
+  }
+}
+
+// ---- 最终回答：常显区 + 操作栏 ----
+.answer-block {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.answer-status {
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.answer-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 0;
+}
+
+// 消息相对时间：规则与 V1 ChatSampleBottom 一致，固定在操作栏最右侧。
+.answer-time {
+  font-size: 12px;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  flex-shrink: 0;
+  margin-left: auto;
+  text-align: right;
+}
+
+// 用户消息气泡沿用 ChatView，不再重写（视觉零差异）
+.user-message-wrapper {
+  width: 100%;
+}
+
+// ---- 用户输入气泡折叠：内容超限（默认 200px，阈值常量在 UserBubbleCollapse）默认收起 ----
+.user-bubble-collapse {
+  position: relative;
+  width: 100%;
+}
+
+.user-bubble-toggle {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+
+  &:hover {
+    color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  }
+}
+
+// ---- 过程说明（narration）穿插直出：留在轨迹体原位的正文 ----
+.narration-text {
+  margin: 6px 0;
+  width: 100%;
+}
+
+// 无节点行轮次（纯说明）的直出容器
+.narration-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 4px;
+  width: 100%;
+}
+
+// 回退 V1 时的容器（与 ChatContentArea V1 分支同构）
+.fallback-list {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-toggle,
+  .trace-chevron,
+  .tool-group-chevron,
+  .node-disclosure {
+    transition: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .node-title {
+    max-width: 38%;
+  }
+
+  .tool-group-toggle,
+  .node-row {
+    gap: 5px;
+    padding-inline: 3px;
+  }
+
+  .node-detail {
+    margin-left: 18px;
+    padding-left: 8px;
+  }
+
+  .tool-terminal,
+  .tool-file-preview,
+  .tool-diff-view {
+    padding: 8px;
+  }
+}

@@ -26,6 +26,16 @@ export interface ConnectorActionDebugModalProps {
   open: boolean;
   /** 空间 ID（不传时按默认值 52） */
   spaceId?: number | string;
+  /**
+   * 默认选中的连接器 service：详情抽屉「调试」按钮传入当前连接器，
+   * 弹窗初始化时优先选中它（不传则按列表第一条，管理端独立入口的历史行为）
+   */
+  defaultService?: string;
+  /**
+   * 默认选中的动作 actionKey：详情抽屉「调试」按钮传入所点工具，
+   * 拉到详情后优先选中它（不传或匹配不到则选第一个动作）
+   */
+  defaultActionKey?: string;
   /** 关闭回调 */
   onClose: () => void;
 }
@@ -49,13 +59,14 @@ const toArgsTemplate = (
 /**
  * 工具调试弹窗
  *
- * 打开时数据流（按设计稿固定初始化逻辑）：
- *   1. GET /api/connector/providers?spaceId=52&pageNum=1&pageSize=2000
- *      —— 分页拉连接器列表（data.records），默认选中第一条
- *   2. GET /api/connector/providers/{service}?spaceId=52
- *      —— service 取上一步第一条数据的 service，拉详情（provider + actions）
- *   3. 动作下拉默认选中详情 actions 的第一个，并按其 inputArgs 生成
- *      输入参数 JSON 模板
+ * 打开时数据流（初始化逻辑）：
+ *   1. GET /api/connector/providers?spaceId=&pageNum=1&pageSize=2000
+ *      —— 分页拉连接器列表（data.records），默认选中 defaultService
+ *      （详情抽屉「调试」传入的当前连接器），未传回退列表第一条
+ *   2. GET /api/connector/providers/{service}?spaceId=
+ *      —— 拉详情（provider + actions）
+ *   3. 动作下拉默认选中 defaultActionKey 匹配项（详情抽屉传入的所点工具），
+ *      匹配不到回退第一个，并按其 inputArgs 生成输入参数 JSON 模板
  *
  * 左栏「执行参数」：连接器 / 动作 / 使用连接 三个下拉 + 输入参数 JSON 文本域 +
  * 「执行」按钮（POST /api/connector/runtime/execute）
@@ -65,6 +76,8 @@ const toArgsTemplate = (
 const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
   open,
   spaceId,
+  defaultService,
+  defaultActionKey,
   onClose,
 }) => {
   // 初始化加载中（拉连接器列表）
@@ -130,10 +143,11 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
 
   /**
    * 拉取连接器详情并重置动作选择：
-   * 动作默认选 actions 第一条，同时生成输入参数 JSON 模板
+   * 动作优先选 preferredActionKey 匹配项（详情抽屉「调试」传入的 actionKey），
+   * 匹配不到回退第一条；同时生成输入参数 JSON 模板
    */
   const fetchDetail = useCallback(
-    async (service: string) => {
+    async (service: string, preferredActionKey?: string) => {
       try {
         setDetailLoading(true);
         const response = await apiSystemConnectorProviderDetail({
@@ -147,13 +161,19 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
         }
         const actions = response.data?.actions ?? [];
         setDetailActions(actions);
-        const firstAction = actions[0];
+        const preferredAction =
+          (preferredActionKey &&
+            actions.find(
+              (item) =>
+                String(item.actionKey ?? item.name) === preferredActionKey,
+            )) ||
+          actions[0];
         setSelectedActionKey(
-          firstAction
-            ? String(firstAction.actionKey ?? firstAction.name)
+          preferredAction
+            ? String(preferredAction.actionKey ?? preferredAction.name)
             : undefined,
         );
-        setArgsJson(toArgsTemplate(firstAction));
+        setArgsJson(toArgsTemplate(preferredAction));
       } catch {
         setDetailActions([]);
         setSelectedActionKey(undefined);
@@ -194,11 +214,12 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
         }
         const records = response.data?.records ?? [];
         setProviders(records);
-        // 默认选中第一条数据的 service，并拉取其详情
-        const firstService = records[0]?.service;
-        if (firstService) {
-          setSelectedService(firstService);
-          await fetchDetail(firstService);
+        // 默认选中：详情抽屉传入的连接器（defaultService）优先，回退列表第一条；
+        // 动作优先选传入的 actionKey（fetchDetail 内处理匹配与回退）
+        const initialService = defaultService ?? records[0]?.service;
+        if (initialService) {
+          setSelectedService(initialService);
+          await fetchDetail(initialService, defaultActionKey);
         }
       } catch {
         if (!cancelled) {
@@ -214,8 +235,9 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
     return () => {
       cancelled = true;
     };
-    // fetchDetail 依赖 resolvedSpaceId，此处随 spaceId 变化重新初始化
-  }, [open, resolvedSpaceId, fetchDetail]);
+    // fetchDetail 依赖 resolvedSpaceId，此处随 spaceId 变化重新初始化；
+    // defaultService/defaultActionKey 由详情抽屉每次打开前设置，随 open 一起生效
+  }, [open, resolvedSpaceId, defaultService, defaultActionKey, fetchDetail]);
 
   /** 切换连接器：刷新动作下拉与输入参数模板，旧执行结果失效清空 */
   const handleServiceChange = useCallback(

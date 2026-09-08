@@ -27,6 +27,10 @@ export interface Page<T> {
   optimizeJoinOfCountSql: boolean;
   maxLimit: number;
   countId: string;
+  /** 权限拒绝标记：部分后端接口不抛异常而以此字段告知（如知识库原文对照） */
+  permissionDenied?: boolean;
+  /** 文档名称：部分分页接口在响应携带（如知识库原文对照），按需取用 */
+  docname?: string;
 }
 
 // 分页响应数据

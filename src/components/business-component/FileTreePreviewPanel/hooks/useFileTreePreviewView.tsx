@@ -143,6 +143,7 @@ export function useFileTreePreviewView(
     onFileRenamed,
     /** 文件/文件夹删除成功后回调 */
     onFileDeleted,
+    onOpenDirectory,
     /** 刷新文件树后，当前选中文件已不存在时回调 */
     onSelectedFileMissing,
     isDynamicTheme = false,
@@ -620,6 +621,10 @@ export function useFileTreePreviewView(
 
       if (fileNode) {
         // 文件树中点击文件夹：更新树选中态（与文件高亮互斥），不切换预览区
+        if (fileNode.type === 'folder' && onOpenDirectory) {
+          await onOpenDirectory(fileNode);
+          return;
+        }
         if (fileNode.type === 'folder' && options?.selectFolder) {
           setSelectedFolderId(fileNode.id);
           return;
@@ -760,7 +765,7 @@ export function useFileTreePreviewView(
         setSelectedFileId('');
       }
     },
-    [onFileSelectOpenPreview, initViewFileType],
+    [onFileSelectOpenPreview, initViewFileType, onOpenDirectory],
   );
 
   // 文件选择（对外接口，用于用户主动选择）

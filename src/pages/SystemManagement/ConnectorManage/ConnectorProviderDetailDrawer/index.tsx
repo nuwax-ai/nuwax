@@ -2,14 +2,19 @@ import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { AUTH_TYPE_LABEL_MAP } from '@/pages/SystemManagement/ConnectorManage/constants';
 import {
+  apiConnectorOauthAuthorize,
   apiSystemConnectorActionDelete,
   apiSystemConnectorActionToggleStatus,
   apiSystemConnectorProviderDetail,
 } from '@/services/systemManage';
+import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   ConnectorProviderAction,
   ConnectorProviderDetail,
   ConnectorProviderInfo,
+  CreateConnectorActionParams,
+  DeleteConnectorActionParams,
+  ToggleConnectorActionStatusParams,
 } from '@/types/interfaces/systemManage';
 import {
   Button,
@@ -21,7 +26,14 @@ import {
   Spin,
   Tag,
 } from 'antd';
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import ConnectorActionCreateModal from './components/ConnectorActionCreateModal';
 import ConnectorActionDebugModal from './components/ConnectorActionDebugModal';
 import styles from './index.less';
@@ -49,7 +61,25 @@ import styles from './index.less';
  *   PUT /api/system/connector/actions/{id}/status?enabled={boolean}
  * 工具的 删除 按钮调：
  *   DELETE /api/system/connector/actions/{id}（点击后会先弹 Popconfirm 二次确认）
+ *
+ * 工具列表底部的「发起OAuth授权」按钮（工作空间连接器页专用，oauth2 认证方式）：
+ *   GET /api/connector/oauth/authorize 拿授权地址后 window.open 新窗口打开
+ *   （不用 iframe：IdP 授权页均带 X-Frame-Options 拒绝嵌入，且 iframe 内
+ *   无法复用 IdP 登录态），用户关闭授权窗口后刷新详情（connected 变 true
+ *   按钮自动消失）
  */
+
+/**
+ * 「去连接」点击上下文（工作空间连接器页用它打开凭据填写抽屉）
+ */
+export interface ConnectorGoConnectContext {
+  /** 当前查看的连接器行 */
+  record: ConnectorProviderInfo | null;
+  /** 抽屉内最新详情（凭证字段定义在 provider.authConfig.fields 里） */
+  detail: ConnectorProviderDetail | null;
+  /** 连接成功后调用：刷新详情抽屉（connected 变 true、按钮消失） */
+  refresh: () => void;
+}
 
 export interface ConnectorProviderDetailDrawerProps {
   /** 是否打开 */
@@ -66,6 +96,59 @@ export interface ConnectorProviderDetailDrawerProps {
    * 抽屉内部同时会刷新工具列表详情
    */
   onActionCreated?: () => void;
+  /**
+   * 是否展示工具列表底部连接按钮（工作空间连接器页传 true）：
+   * 连接器未连接即展示（不受工具列表是否有数据影响），文案按认证方式
+   * 动态切换——oauth2 →「发起OAuth授权」；api_key/bearer/custom →「去连接」；
+   * no_auth（免鉴权）不展示。管理端不传即不展示，行为不变。
+   */
+  showGoConnect?: boolean;
+  /**
+   * 「去连接」点击回调（api_key / bearer / custom 认证方式），携带
+   * record / detail / refresh 上下文：工作空间连接器页凭 detail 里的
+   * authConfig.fields 打开凭据填写抽屉，连接成功后调 refresh 刷新本抽屉。
+   * oauth2 的「发起OAuth授权」不走该回调，由抽屉内部实现：
+   * GET /api/connector/oauth/authorize 拿地址后新窗口打开，
+   * 授权窗口关闭后自动刷新详情。
+   */
+  onGoConnect?: (context: ConnectorGoConnectContext) => void;
+  /**
+   * 自定义工具启停接口：入参/返回与管理端
+   * PUT /api/system/connector/actions/{id}/status 一致。
+   * 工作空间连接器页传 space 维度接口
+   * （POST /api/connector/actions/{id}/status），不传走管理端默认。
+   */
+  toggleActionStatus?: (
+    params: ToggleConnectorActionStatusParams,
+  ) => Promise<RequestResponse<null>>;
+  /**
+   * 自定义工具更新接口：按工具 id 寻址（POST /api/connector/actions/{id}），
+   * body 与管理端更新接口一致。工作空间连接器页传空间维度实现，
+   * 不传则「编辑工具」走管理端
+   * PUT /api/system/connector/providers/{service}/actions/{actionKey}。
+   */
+  updateAction?: (
+    params: CreateConnectorActionParams & { id: string | number },
+  ) => Promise<RequestResponse<null>>;
+  /**
+   * 自定义工具创建接口：body 与管理端
+   * POST /api/system/connector/providers/{service}/actions 一致。
+   * 工作空间连接器页传空间维度实现
+   * （POST /api/connector/providers/{service}/actions），不传走管理端默认。
+   */
+  createAction?: (
+    params: CreateConnectorActionParams & { service: string },
+  ) => Promise<RequestResponse<null>>;
+  /**
+   * 自定义工具删除接口：入参/返回与管理端
+   * DELETE /api/system/connector/actions/{id} 一致。
+   * 工作空间连接器页传空间维度实现
+   * （DELETE /api/connector/actions/{id}），不传走管理端默认。
+   * 删除前的二次确认（Popconfirm）由抽屉内部完成，两个入口一致。
+   */
+  deleteAction?: (
+    params: DeleteConnectorActionParams,
+  ) => Promise<RequestResponse<null>>;
 }
 
 /**
@@ -182,6 +265,16 @@ const ConnectorProviderDetailContent: React.FC<{
   onEditAction: (action: ConnectorProviderAction) => void;
   /** 打开「工具调试」弹窗 */
   onDebugAction: (action: ConnectorProviderAction) => void;
+  /** 是否展示连接按钮（连接器未连接即展示，不受工具列表是否有数据影响） */
+  showGoConnect?: boolean;
+  /** 「去连接」点击回调（api_key/bearer/custom 认证方式，携带连接上下文） */
+  onGoConnect?: (context: ConnectorGoConnectContext) => void;
+  /** 「发起OAuth授权」点击回调（oauth2 认证方式；抽屉内部打开授权弹窗并监听关闭） */
+  onOauthAuthorize: () => void;
+  /** 「发起OAuth授权」授权地址请求中（按钮 loading） */
+  oauthOpening?: boolean;
+  /** 刷新详情（「去连接」连接成功后由凭据抽屉调用，更新 connected 状态） */
+  onRefreshDetail: () => void;
 }> = ({
   detail,
   record,
@@ -192,6 +285,11 @@ const ConnectorProviderDetailContent: React.FC<{
   onOpenActionCreate,
   onEditAction,
   onDebugAction,
+  showGoConnect,
+  onGoConnect,
+  onOauthAuthorize,
+  oauthOpening,
+  onRefreshDetail,
 }) => {
   // 鉴权方式：与列表"认证"列保持完全一致的展示 —— 找不到标签就 fallback 到原始值
   const authTypeValue = detail?.provider?.authType ?? record?.authType;
@@ -208,6 +306,23 @@ const ConnectorProviderDetailContent: React.FC<{
     detail?.provider?.proxyEnabled ?? record?.proxyEnabled ?? false;
   const managedBy = detail?.provider?.managedBy ?? record?.managedBy;
   const proxyLabel = proxyEnabled ? '已开启' : '未开启';
+
+  // 是否已连接：连接按钮的展示条件（未连接即展示，与工具列表是否有数据无关）
+  const connected = detail?.provider?.connected ?? record?.connected ?? false;
+
+  /**
+   * 工具列表底部按钮（工作空间连接器页，按认证方式动态展示）：
+   * - oauth2        →「发起OAuth授权」
+   * - api_key/bearer/custom →「去连接」
+   * - no_auth（免鉴权）→ 不展示
+   * 展示前提：showGoConnect + 未连接；不受工具列表是否有数据影响
+   */
+  const connectButtonText =
+    authTypeValue === 'oauth2'
+      ? '发起OAuth授权'
+      : authTypeValue && authTypeValue !== 'no_auth'
+      ? '去连接'
+      : null;
 
   return (
     <div className={styles.content}>
@@ -233,6 +348,10 @@ const ConnectorProviderDetailContent: React.FC<{
                 ? '官方目录'
                 : managedBy === 'ADMIN'
                 ? '管理员可编辑'
+                : // 空间用户自建连接器（managedBy = 'user'，见
+                // GET /api/connector/providers/{service} 响应）
+                managedBy === 'user'
+                ? '本空间自定义'
                 : managedBy
               : '-'}
           </span>
@@ -270,6 +389,35 @@ const ConnectorProviderDetailContent: React.FC<{
         ) : (
           <Empty description="暂无工具" />
         )}
+        {/*
+          去连接/发起OAuth授权：连接器未连接时展示在工具列表底部
+          （工具列表无数据时展示在空态下方），文案与点击行为按认证方式区分
+          （见 connectButtonText；工作空间连接器页传 showGoConnect）：
+          - oauth2 →「发起OAuth授权」（onOauthAuthorize，抽屉内部实现）
+          - 其余   →「去连接」（onGoConnect，由空间页打开「连接设置」凭据抽屉）
+        */}
+        {showGoConnect && !connected && connectButtonText ? (
+          <Button
+            type="primary"
+            className={styles.goConnectBtn}
+            loading={oauthOpening}
+            onClick={() => {
+              if (authTypeValue === 'oauth2') {
+                onOauthAuthorize();
+              } else {
+                // 携带 record/detail/refresh：凭据抽屉用 detail 里的
+                // authConfig.fields 渲染表单，连接成功后调 refresh 刷新本抽屉
+                onGoConnect?.({
+                  record,
+                  detail,
+                  refresh: onRefreshDetail,
+                });
+              }
+            }}
+          >
+            {connectButtonText}
+          </Button>
+        ) : null}
       </div>
     </div>
   );
@@ -277,7 +425,19 @@ const ConnectorProviderDetailContent: React.FC<{
 
 const ConnectorProviderDetailDrawer: React.FC<
   ConnectorProviderDetailDrawerProps
-> = ({ open, record, spaceId, onClose, onActionCreated }) => {
+> = ({
+  open,
+  record,
+  spaceId,
+  onClose,
+  onActionCreated,
+  showGoConnect,
+  onGoConnect,
+  toggleActionStatus,
+  updateAction,
+  createAction,
+  deleteAction,
+}) => {
   /**
    * 抽屉宽度：PC 端固定 720，移动端尽量占满
    * 与 LogQuery/OperationLog/LogDetailDrawer 保持一致
@@ -320,10 +480,20 @@ const ConnectorProviderDetailDrawer: React.FC<
   /**
    * 「工具调试」弹窗开关
    * - 工具卡片「调试」按钮打开（已停用的工具按钮置灰不可点）
-   * - 弹窗自身按设计稿固定初始化：连接器默认选列表第一条 + 动作默认选第一条
+   * - 打开时把所点工具传给弹窗：连接器默认选中当前连接器、
+   *   动作默认选中该工具的 actionKey
    * - 抽屉关闭时同步收起
    */
   const [debugModalOpen, setDebugModalOpen] = useState<boolean>(false);
+  /** 「调试」的工具定义（传给调试弹窗做默认选中；null = 未从工具卡片进入） */
+  const [debuggingAction, setDebuggingAction] =
+    useState<ConnectorProviderAction | null>(null);
+  /** 「发起OAuth授权」：授权地址请求中（按钮 loading） */
+  const [oauthOpening, setOauthOpening] = useState<boolean>(false);
+  /** 授权弹窗引用：重复点击时聚焦已有弹窗；轮询其 closed 判断授权流程结束 */
+  const oauthWinRef = useRef<Window | null>(null);
+  /** 授权弹窗关闭轮询定时器（抽屉关闭 / 组件卸载时清理） */
+  const oauthPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
    * 抽屉标题：以接口返回的 displayName 优先；其次 record.displayName；最后回退到 service
@@ -338,28 +508,35 @@ const ConnectorProviderDetailDrawer: React.FC<
     );
   }, [detail, record]);
 
-  /** 获取详情 */
-  const fetchDetail = useCallback(async () => {
-    if (!record?.service) return;
-    try {
-      setLoading(true);
-      const response = await apiSystemConnectorProviderDetail({
-        service: record.service,
-        spaceId,
-        // 抽屉里需要展示已停用工具的"已停用" tag + "启用" 按钮，因此 includeDisabled=true
-        includeDisabled: true,
-      });
-      if (response?.code === SUCCESS_CODE) {
-        setDetail(response.data ?? null);
-      } else {
+  /**
+   * 获取详情
+   * 返回最新详情（而非 void）：授权弹窗关闭后调用方要据此提示连接结果
+   */
+  const fetchDetail =
+    useCallback(async (): Promise<ConnectorProviderDetail | null> => {
+      if (!record?.service) return null;
+      try {
+        setLoading(true);
+        const response = await apiSystemConnectorProviderDetail({
+          service: record.service,
+          spaceId,
+          // 抽屉里需要展示已停用工具的"已停用" tag + "启用" 按钮，因此 includeDisabled=true
+          includeDisabled: true,
+        });
+        if (response?.code === SUCCESS_CODE) {
+          const latest = response.data ?? null;
+          setDetail(latest);
+          return latest;
+        }
         setDetail(null);
+        return null;
+      } catch {
+        setDetail(null);
+        return null;
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setDetail(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [record?.service, spaceId]);
+    }, [record?.service, spaceId]);
 
   // 打开抽屉 / 切换查看的连接器时，重新拉取详情
   useEffect(() => {
@@ -372,8 +549,25 @@ const ConnectorProviderDetailDrawer: React.FC<
       setActionModalOpen(false);
       setEditingAction(null);
       setDebugModalOpen(false);
+      setDebuggingAction(null);
+      // 授权弹窗轮询一并停止（抽屉已关闭，无需再刷新详情）
+      if (oauthPollRef.current) {
+        clearInterval(oauthPollRef.current);
+        oauthPollRef.current = null;
+      }
+      oauthWinRef.current = null;
     }
   }, [open, record?.service, spaceId, fetchDetail]);
+
+  // 组件卸载时清理授权弹窗轮询定时器（防止泄漏与卸载后更新 state）
+  useEffect(() => {
+    return () => {
+      if (oauthPollRef.current) {
+        clearInterval(oauthPollRef.current);
+        oauthPollRef.current = null;
+      }
+    };
+  }, []);
 
   /**
    * 切换单个工具的启用状态
@@ -419,7 +613,11 @@ const ConnectorProviderDetailDrawer: React.FC<
       });
 
       try {
-        const response = await apiSystemConnectorActionToggleStatus({
+        // 工具启停接口可注入：管理端默认 PUT /api/system/connector/actions/{id}/status，
+        // 工作空间连接器页传 POST /api/connector/actions/{id}/status
+        const doToggleActionStatus =
+          toggleActionStatus ?? apiSystemConnectorActionToggleStatus;
+        const response = await doToggleActionStatus({
           id: idKey,
           enabled: nextEnabled,
         });
@@ -464,7 +662,7 @@ const ConnectorProviderDetailDrawer: React.FC<
         });
       }
     },
-    [togglingActionIds, record?.service, spaceId],
+    [togglingActionIds, record?.service, spaceId, toggleActionStatus],
   );
 
   /**
@@ -510,7 +708,10 @@ const ConnectorProviderDetailDrawer: React.FC<
       });
 
       try {
-        const response = await apiSystemConnectorActionDelete({ id: idKey });
+        // 工具删除接口可注入：管理端默认 DELETE /api/system/connector/actions/{id}，
+        // 工作空间连接器页传 DELETE /api/connector/actions/{id}
+        const doDeleteAction = deleteAction ?? apiSystemConnectorActionDelete;
+        const response = await doDeleteAction({ id: idKey });
         if (response?.code !== SUCCESS_CODE) {
           throw new Error(response?.message || 'delete failed');
         }
@@ -533,8 +734,69 @@ const ConnectorProviderDetailDrawer: React.FC<
         });
       }
     },
-    [deletingActionIds],
+    [deletingActionIds, deleteAction],
   );
+
+  /**
+   * 发起 OAuth 授权（「发起OAuth授权」按钮，认证方式 oauth2）
+   *
+   * 流程：
+   *   1. GET /api/connector/oauth/authorize?service=&spaceId= 拿授权页地址
+   *      （redirect_uri / state / PKCE 均由后端生成，前端原样打开）
+   *   2. window.open 新窗口打开授权页：顶级浏览上下文不受 IdP 授权页
+   *      X-Frame-Options 限制，也能复用用户在 IdP 的已有登录态（不用 iframe）
+   *   3. 用户登录并同意后，IdP 回调后端 /api/connector/oauth/callback，
+   *      code 换 token 由后端完成
+   *   4. 轮询弹窗 closed：用户关闭授权窗口后拉一次详情，
+   *      connected 变 true 时按钮自动消失并提示「连接成功」
+   */
+  const handleOauthAuthorize = useCallback(async () => {
+    if (!record?.service) {
+      message.error('连接器 service 缺失，无法发起授权');
+      return;
+    }
+    // 已有授权弹窗在打开：聚焦既有弹窗即可，不重复发起
+    if (oauthWinRef.current && !oauthWinRef.current.closed) {
+      oauthWinRef.current.focus();
+      return;
+    }
+    try {
+      setOauthOpening(true);
+      const response = await apiConnectorOauthAuthorize({
+        service: record.service,
+        spaceId,
+      });
+      if (response?.code !== SUCCESS_CODE || !response.data?.authorizeUrl) {
+        message.error(response?.message || '获取授权地址失败');
+        return;
+      }
+      // 保持 window 引用（不加 noopener），后续要轮询它的 closed 状态
+      const win = window.open(response.data.authorizeUrl, '_blank');
+      if (!win) {
+        message.warning('授权窗口被浏览器拦截，请允许弹窗后重试');
+        return;
+      }
+      oauthWinRef.current = win;
+      win.focus();
+      oauthPollRef.current = setInterval(() => {
+        if (oauthWinRef.current?.closed) {
+          if (oauthPollRef.current) {
+            clearInterval(oauthPollRef.current);
+            oauthPollRef.current = null;
+          }
+          oauthWinRef.current = null;
+          // 弹窗关闭即刷新详情：授权成功则 connected=true、按钮消失
+          void fetchDetail().then((latest) => {
+            if (latest?.provider?.connected) {
+              message.success('连接成功');
+            }
+          });
+        }
+      }, 500);
+    } finally {
+      setOauthOpening(false);
+    }
+  }, [record?.service, spaceId, fetchDetail]);
 
   return (
     <>
@@ -565,7 +827,16 @@ const ConnectorProviderDetailDrawer: React.FC<
               setActionModalOpen(true);
             }}
             onEditAction={handleOpenActionEdit}
-            onDebugAction={() => setDebugModalOpen(true)}
+            onDebugAction={(action) => {
+              // 记住所点工具：调试弹窗默认选中当前连接器 + 该工具的 actionKey
+              setDebuggingAction(action);
+              setDebugModalOpen(true);
+            }}
+            showGoConnect={showGoConnect}
+            onGoConnect={onGoConnect}
+            onOauthAuthorize={() => void handleOauthAuthorize()}
+            oauthOpening={oauthOpening}
+            onRefreshDetail={() => void fetchDetail()}
           />
         ) : (
           <div className={styles.emptyWrap}>
@@ -581,12 +852,21 @@ const ConnectorProviderDetailDrawer: React.FC<
         editAction={editingAction}
         onClose={() => setActionModalOpen(false)}
         onCreated={handleActionCreated}
+        updateAction={updateAction}
+        createAction={createAction}
       />
 
-      {/* 工具调试弹窗（打开时自动拉连接器列表 + 第一条连接器详情） */}
+      {/* 工具调试弹窗（打开时默认选中当前连接器 + 所点工具的 actionKey；
+          连接器/动作下拉仍可自由切换） */}
       <ConnectorActionDebugModal
         open={debugModalOpen}
         spaceId={spaceId}
+        defaultService={record?.service}
+        defaultActionKey={
+          debuggingAction
+            ? String(debuggingAction.actionKey ?? debuggingAction.name)
+            : undefined
+        }
         onClose={() => setDebugModalOpen(false)}
       />
     </>

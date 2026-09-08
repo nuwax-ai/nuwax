@@ -159,22 +159,31 @@ export async function apiSkillConfigHistoryList(
  * @param url Relative URL, e.g. '/api/computer/static/1461016/daily-news-report.md'
  * @returns Promise<RequestResponse<string>> 返回URL的内容
  */
+/** 文本内容拉取的三态结果：missing 仅指 HTTP 404（文件不存在），其余失败一律 error */
+export type ContentFetchOutcome =
+  | { status: 'ok'; content: string }
+  | { status: 'missing' }
+  | { status: 'error' };
+
+async function fetchContentResponse(url: string): Promise<Response> {
+  // 判断是否为绝对路径（以 http://, https:// 或 // 开头）
+  const isAbsoluteUrl = /^(https?:)?\/\//i.test(url);
+  const fullUrl = isAbsoluteUrl ? url : `${process.env.BASE_URL || ''}${url}`;
+  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+  return fetch(fullUrl, {
+    method: 'GET',
+    /** 不走浏览器 HTTP 缓存，便于文件树预览每次拿到服务端最新内容 */
+    cache: 'no-store',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Accept: 'text/plain, application/json, */*',
+    },
+  });
+}
+
 export async function fetchContentFromUrl(url: string): Promise<string> {
   try {
-    // 判断是否为绝对路径（以 http://, https:// 或 // 开头）
-    const isAbsoluteUrl = /^(https?:)?\/\//i.test(url);
-    const fullUrl = isAbsoluteUrl ? url : `${process.env.BASE_URL || ''}${url}`;
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      /** 不走浏览器 HTTP 缓存，便于文件树预览每次拿到服务端最新内容 */
-      cache: 'no-store',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        Accept: 'text/plain, application/json, */*',
-      },
-    });
-
+    const response = await fetchContentResponse(url);
     if (!response.ok) {
       throw new Error(`Failed to get file content: ${response.status}`);
     }
@@ -184,6 +193,31 @@ export async function fetchContentFromUrl(url: string): Promise<string> {
   } catch (error) {
     console.error('Failed to get file content: ', error);
     throw error;
+  }
+}
+
+/**
+ * 三态版内容拉取：永不抛错。
+ * 200（含空文件）→ ok；404 → missing；其余非 2xx 与网络异常 → error。
+ * 需要区分「文件不存在」与「拉取失败」的调用方（如 .gitignore 追加）用它，
+ * 其余沿用 fetchContentFromUrl。
+ */
+export async function fetchContentOutcome(
+  url: string,
+): Promise<ContentFetchOutcome> {
+  try {
+    const response = await fetchContentResponse(url);
+    if (response.status === 404) {
+      return { status: 'missing' };
+    }
+    if (!response.ok) {
+      console.error('Failed to get file content: ', response.status);
+      return { status: 'error' };
+    }
+    return { status: 'ok', content: await response.text() };
+  } catch (error) {
+    console.error('Failed to get file content: ', error);
+    return { status: 'error' };
   }
 }
 

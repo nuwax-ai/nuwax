@@ -1,9 +1,10 @@
 @import '@/styles/token.less';
+@import '@/styles/scrollbar.less';
 
-@sectionMarginLeft: -16px;
-@sectionMarginTop: -9px;
-@listItemGap: 4px;
-@listMarginRight: -8px;
+@sectionMarginLeft: 0;
+@sectionMarginTop: 0;
+@listItemGap: 0;
+@listMarginRight: 0;
 
 .new-home-section {
   display: flex;
@@ -15,29 +16,36 @@
 
   .tabs {
     display: flex;
+    align-items: center;
+    gap: 0;
     flex-shrink: 0;
     border-bottom: 1px solid @colorBorderSecondary;
-    margin: 0 @paddingXs @paddingXs;
+    margin: 15px 0 0;
+    padding: 0;
 
     .tab {
       position: relative;
       flex: 1;
-      height: @controlHeightLg;
+      min-width: 0;
+      height: 44px;
       padding: 0;
       border: 0;
       background: transparent;
       color: @navSecondMenuAdaptiveTextSecondary;
-      font-size: @fontSize;
+      font-size: 14.5px;
+      font-weight: 500;
       cursor: pointer;
 
       &::after {
         position: absolute;
-        right: 0;
+        right: auto;
         bottom: -1px;
-        left: 0;
-        height: 1px;
-        border-radius: 2px;
+        left: 50%;
+        width: 44px;
+        height: 2.5px;
+        border-radius: 2.5px;
         background: transparent;
+        transform: translateX(-50%);
         content: '';
       }
 
@@ -59,20 +67,18 @@
     flex: 1;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: hidden; // 默认隐藏原生滚动条
+    overflow-y: auto;
     padding: 0;
-    scrollbar-gutter: stable; // 始终保留滚动条通道，防止 layout shift
-
-    &:hover {
-      overflow-y: auto; // 鼠标移入时开启滚动，展现与全局一致的原生滚动条样式
-    }
+    // 始终预留 8px 轨道，默认透明、hover 显示滑块，避免 hover 时列表宽度被挤占。
+    .scrollbar-auto-hide();
 
     // 会话列表
     .conversation-list {
       display: flex;
       flex-direction: column;
       gap: @listItemGap;
-      padding: 0 @paddingXs;
+      // 右侧 8px 由稳定滚动轨道占用，补偿后列表正文仍保持原来的 230px 宽度。
+      padding: 7px 7px 16px 15px;
       margin-right: @listMarginRight;
 
       // 加载更多提示与无更多提示
@@ -87,6 +93,23 @@
           .ant-typography {
             color: @navSecondMenuAdaptiveTextTertiary !important;
           }
+        }
+      }
+
+      // 已归档会话入口（本地标记过渡方案）
+      .archived-entry {
+        padding: @paddingXs @paddingSm;
+        text-align: center;
+        font-size: @fontSizeSm;
+        color: @navSecondMenuAdaptiveTextTertiary;
+        border-radius: @borderRadiusSm;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: @colorFillQuaternary;
+          color: @navSecondMenuAdaptiveTextSecondary;
         }
       }
     }

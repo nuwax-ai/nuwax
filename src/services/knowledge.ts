@@ -26,8 +26,10 @@ import type {
   KnowledgeRawSegmentListParams,
   KnowledgeRawSegmentUpdateParams,
   KnowledgeTripleGenerateParams,
+  KnowledgeTripleListByKnowledgeParams,
   KnowledgeTripleListParams,
   KnowledgeTripleListResponse,
+  KnowledgeTriplePageResponse,
 } from '@/types/interfaces/knowledge';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import {
@@ -282,7 +284,11 @@ export async function apiKnowledgeSegOriginalText(
 ): Promise<RequestResponse<Page<KnowledgeRawSegmentInfo>>> {
   return request('/api/knowledge/segOriginalText/list', {
     method: 'GET',
-    params: { segmentId, ...(agentId != null && { agentId: Number(agentId) }) },
+    params: {
+      segmentId,
+      ...(agentId !== null &&
+        agentId !== undefined && { agentId: Number(agentId) }),
+    },
   });
 }
 

@@ -5,6 +5,7 @@ import {
   apiSystemConnectorActionUpdate,
 } from '@/services/systemManage';
 import { apiSpaceList } from '@/services/workspace';
+import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   ConnectorActionBindSpec,
   ConnectorActionBodyField,
@@ -141,6 +142,26 @@ export interface ConnectorActionCreateModalProps {
   onClose: () => void;
   /** 创建/编辑成功回调（父组件用它刷新工具列表与连接器列表） */
   onCreated?: () => void;
+  /**
+   * 自定义工具更新接口（工作空间连接器页传）：
+   * POST /api/connector/actions/{id}，按工具 id 寻址，body 与创建一致。
+   * 不传则编辑走管理端
+   * PUT /api/system/connector/providers/{service}/actions/{actionKey}。
+   * 仅编辑模式调用。
+   */
+  updateAction?: (
+    params: CreateConnectorActionParams & { id: string | number },
+  ) => Promise<RequestResponse<null>>;
+  /**
+   * 自定义工具创建接口（工作空间连接器页传）：
+   * POST /api/connector/providers/{service}/actions，body 与管理端一致。
+   * 不传则新增走管理端
+   * POST /api/system/connector/providers/{service}/actions。
+   * 仅新增模式调用。
+   */
+  createAction?: (
+    params: CreateConnectorActionParams & { service: string },
+  ) => Promise<RequestResponse<null>>;
 }
 
 /**
@@ -832,6 +853,8 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
   editAction,
   onClose,
   onCreated,
+  updateAction,
+  createAction,
 }) => {
   /** 编辑模式：传入了 editAction（工具卡片「编辑」进入），否则为新增模式 */
   const isEdit = Boolean(editAction);
@@ -1113,8 +1136,18 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
       // 编辑：PUT /api/system/connector/providers/{service}/actions/{actionKey}
       // （两者 body 一致；actionKey 表单必填校验已保证非空）
       const requestParams = { service: record.service, ...payload };
+      // 编辑：更新接口可注入 —— 空间维度按工具 id 寻址
+      // （POST /api/connector/actions/{id}），管理端按 service+actionKey 寻址；
+      // 新增：创建接口可注入 —— 空间维度 POST /api/connector/providers/{service}/actions
       const response = isEdit
-        ? await apiSystemConnectorActionUpdate(requestParams)
+        ? updateAction
+          ? await updateAction({
+              id: (editAction?.id ?? '') as string | number,
+              ...payload,
+            })
+          : await apiSystemConnectorActionUpdate(requestParams)
+        : createAction
+        ? await createAction(requestParams)
         : await apiSystemConnectorActionCreate(requestParams);
       if (response?.code !== SUCCESS_CODE) {
         throw new Error(response?.message || 'save action failed');
@@ -1127,7 +1160,16 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
     } finally {
       setSubmitting(false);
     }
-  }, [form, record?.service, onClose, onCreated, selectedBindable, editAction]);
+  }, [
+    form,
+    record?.service,
+    onClose,
+    onCreated,
+    selectedBindable,
+    editAction,
+    updateAction,
+    createAction,
+  ]);
 
   return (
     <Modal

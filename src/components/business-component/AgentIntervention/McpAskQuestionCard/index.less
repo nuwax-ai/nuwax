@@ -44,29 +44,68 @@
       }
 
       .title {
-        display: block;
-        min-width: 0;
-        max-width: 100%;
-        color: @colorTextBase;
-        font-size: @fontSize;
-        font-weight: 600;
-        line-height: @lineHeight;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .desc {
-        display: block;
         min-width: 0;
         max-width: 100%;
         margin-top: @marginXxs;
+        margin-bottom: 0; // 清掉 Paragraph 默认外距，折叠/展开行高由组件自管
+        color: @colorTextBase;
+        // 标题提级展示：字号加大、允许换行；超 2 行省略 + 展开/收起由 antd Paragraph ellipsis 托管
+        font-size: @fontSizeLg;
+        font-weight: 600;
+        line-height: 1.4;
+        word-break: break-word;
+      }
+
+      // 副标题：标题下方次级说明，超 1 行省略 + 展开/收起由 antd Paragraph ellipsis 托管
+      .subTitle {
+        min-width: 0;
+        max-width: 100%;
+        margin-top: @marginXxs;
+        margin-bottom: 0; // 清掉 Paragraph 默认外距，折叠/展开行高由组件自管
+        font-size: @fontSize;
+        color: @colorTextSecondary;
+        line-height: @lineHeight;
+        word-break: break-word;
+      }
+
+      .descWrap {
+        margin-top: @marginXxs;
+      }
+
+      .desc {
+        min-width: 0;
+        max-width: 100%;
         font-size: @fontSizeSm;
         color: @colorTextSecondary;
-        line-height: 1.4;
+        line-height: 1.5;
+        display: box;
+        -webkit-box-orient: vertical;
+        // 默认 2 行截断，展开后完整显示
+        -webkit-line-clamp: 2;
         overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        word-break: break-word;
+        white-space: normal;
+
+        &.desc-expanded {
+          display: block;
+          -webkit-line-clamp: unset;
+        }
+      }
+
+      .descToggle {
+        margin-top: 2px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: @colorPrimary;
+        font-size: @fontSizeSm;
+        line-height: 20px;
+        cursor: pointer;
+        user-select: none;
+
+        &:hover {
+          opacity: 0.8;
+        }
       }
     }
 

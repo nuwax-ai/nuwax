@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { PLAN_MODE_ENABLED } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import {
   ChatInputVoiceFooter,
@@ -22,7 +23,8 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { selectSessionActive } from '@/features/conversation/domain/runtimeSelectors';
+import { useConversationDensity } from '@/hooks/useConversationDensity';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
@@ -33,6 +35,7 @@ import type {
   ConversationInfo,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { ConversationDensity } from '@/utils/conversationDensity';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
@@ -40,6 +43,7 @@ import {
   CheckOutlined,
   DesktopOutlined,
   LoadingOutlined,
+  MenuFoldOutlined,
 } from '@ant-design/icons';
 import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
@@ -52,12 +56,41 @@ import React, {
 } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import ConversationDisplaySettings from './ConversationDisplaySettings';
+import { clearDraft, loadDraft, saveDraft } from './draftStorage';
 
 const cx = classNames.bind(styles);
 
 const VoiceFooter = ChatInputVoiceFooter;
 
-const AGENT_MODE_OPTIONS: AgentMode[] = ['yolo', 'ask'];
+const AGENT_MODE_OPTIONS: AgentMode[] = PLAN_MODE_ENABLED
+  ? ['yolo', 'ask', 'plan']
+  : ['yolo', 'ask'];
+
+// 会话密度三档（P1-6）：复用 agentMode 下拉的选项样式
+const DENSITY_OPTIONS: ConversationDensity[] = [
+  'compact',
+  'normal',
+  'detailed',
+];
+
+const DENSITY_I18N: Record<
+  ConversationDensity,
+  { label: string; desc: string }
+> = {
+  compact: {
+    label: 'PC.Components.ChatInputHome.densityCompact',
+    desc: 'PC.Components.ChatInputHome.densityCompactDesc',
+  },
+  normal: {
+    label: 'PC.Components.ChatInputHome.densityNormal',
+    desc: 'PC.Components.ChatInputHome.densityNormalDesc',
+  },
+  detailed: {
+    label: 'PC.Components.ChatInputHome.densityDetailed',
+    desc: 'PC.Components.ChatInputHome.densityDetailedDesc',
+  },
+};
 
 const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
   yolo: {
@@ -67,6 +100,10 @@ const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
   ask: {
     label: 'PC.Components.ChatInputHome.agentModeApproval',
     desc: 'PC.Components.ChatInputHome.agentModeApprovalDesc',
+  },
+  plan: {
+    label: 'PC.Components.ChatInputHome.agentModePlan',
+    desc: 'PC.Components.ChatInputHome.agentModePlanDesc',
   },
 };
 
@@ -226,6 +263,9 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
+  // 会话密度（P1-6）：输入框入口设置，会话渲染即时生效
+  const { density, setDensity } = useConversationDensity();
+
   const {
     createSubscriptionOrder,
     querySkillSubscriptionPlans,
@@ -289,9 +329,11 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
    */
   const isSessionActive = useMemo(
     () =>
-      isConversationActive ||
-      isSessionStreamBusy(messageList) ||
-      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+      selectSessionActive(
+        isConversationActive,
+        messageList,
+        conversationInfo?.taskStatus,
+      ),
     [isConversationActive, messageList, conversationInfo?.taskStatus],
   );
 
@@ -301,6 +343,13 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     }
   }, [isSessionActive]);
 
+  // 本输入框所属会话 id（发送清草稿 / 队列编辑回填过滤 / 草稿缓存共用；
+  // 须先于 confirmSendMessage 定义，ref 供其读取当前值）
+  const ownConversationId =
+    getCurrentConversationId?.() ?? conversationInfo?.id ?? null;
+  const ownConversationIdRef = useRef(ownConversationId);
+  ownConversationIdRef.current = ownConversationId;
+
   const confirmSendMessage = (value: string) => {
     if (!!value.trim() || !!files?.length) {
       onEnter(value, files, skillIds, selectedModelId, agentMode);
@@ -309,6 +358,10 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
         setMessageInfo('');
         setSkillIds([]);
         mentionEditorRef.current?.clear();
+        // 已发送内容不再是草稿
+        if (ownConversationIdRef.current) {
+          clearDraft(ownConversationIdRef.current);
+        }
       }
     }
   };
@@ -631,11 +684,57 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 本输入框所属会话 id，用于过滤队列编辑回填（避免主聊天 / 预览 Tab 串扰）
-  const ownConversationId =
-    getCurrentConversationId?.() ?? conversationInfo?.id ?? null;
-  const ownConversationIdRef = useRef(ownConversationId);
-  ownConversationIdRef.current = ownConversationId;
+  // ===== 输入草稿缓存（按会话 id 持久化，切回/刷新后恢复） =====
+  // 最新输入镜像：卸载兜底落盘用（节流定时器可能尚未触发）
+  const draftStateRef = useRef({ text: messageInfo, skillIds });
+  draftStateRef.current = { text: messageInfo, skillIds };
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 恢复：进入会话时输入为空才回填草稿，不覆盖已开始的输入（含队列编辑回填内容）
+  useEffect(() => {
+    if (!ownConversationId) return;
+    const draft = loadDraft(ownConversationId);
+    if (!draft) return;
+    setMessageInfo((prev) => (prev ? prev : draft.text));
+    if (draft.skillIds?.length) {
+      setSkillIds((prev) => (prev.length ? prev : draft.skillIds!));
+    }
+  }, [ownConversationId]);
+
+  // 节流写回：输入 / 技能选择变化 ~1s 后落盘
+  useEffect(() => {
+    if (!ownConversationId) return;
+    if (draftSaveTimerRef.current) {
+      clearTimeout(draftSaveTimerRef.current);
+    }
+    draftSaveTimerRef.current = setTimeout(() => {
+      draftSaveTimerRef.current = null;
+      saveDraft(ownConversationId, {
+        version: 1,
+        text: draftStateRef.current.text,
+        skillIds: draftStateRef.current.skillIds,
+      });
+    }, 1000);
+    return () => {
+      if (draftSaveTimerRef.current) {
+        clearTimeout(draftSaveTimerRef.current);
+        draftSaveTimerRef.current = null;
+      }
+    };
+  }, [messageInfo, skillIds, ownConversationId]);
+
+  // 卸载兜底：离开会话时把当前输入立即落盘（发送成功路径已在 confirmSendMessage 清除草稿）
+  useEffect(() => {
+    if (!ownConversationId) return;
+    const conversationId = ownConversationId;
+    return () => {
+      saveDraft(conversationId, {
+        version: 1,
+        text: draftStateRef.current.text,
+        skillIds: draftStateRef.current.skillIds,
+      });
+    };
+  }, [ownConversationId]);
 
   // 监听队列消息编辑回填（含 skillIds / modelId / agentMode 快照）
   useEffect(() => {
@@ -910,6 +1009,65 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                       </Tooltip>
                     </Dropdown>
                   )}
+                </VoiceFooter.HideWhenActive>
+                {/* 会话密度（P1-6）：compact/normal/detailed 三档控制过程内容折叠密度 */}
+                <VoiceFooter.HideWhenActive>
+                  <Dropdown
+                    menu={{
+                      selectedKeys: [density],
+                      items: DENSITY_OPTIONS.map((option) => ({
+                        key: option,
+                        label: (
+                          <div
+                            className={cx(styles['agent-mode-dropdown-item'])}
+                          >
+                            <div className={cx(styles['item-content'])}>
+                              <span className={cx(styles['item-name'])}>
+                                {t(DENSITY_I18N[option].label)}
+                              </span>
+                              <span className={cx(styles['item-desc'])}>
+                                {t(DENSITY_I18N[option].desc)}
+                              </span>
+                            </div>
+                            {density === option && (
+                              <CheckOutlined
+                                className={cx(styles['agent-mode-check'])}
+                              />
+                            )}
+                          </div>
+                        ),
+                        onClick: () => setDensity(option),
+                      })),
+                    }}
+                    trigger={['click']}
+                    placement="topLeft"
+                    overlayClassName="agent-mode-dropdown-overlay"
+                  >
+                    <Tooltip
+                      title={t(
+                        'PC.Components.ChatInputHome.conversationDensity',
+                      )}
+                    >
+                      <span
+                        className={cx(
+                          'flex',
+                          'items-center',
+                          'content-center',
+                          'cursor-pointer',
+                          styles.box,
+                          styles['plus-box'],
+                        )}
+                      >
+                        <MenuFoldOutlined style={{ fontSize: '14px' }} />
+                      </span>
+                    </Tooltip>
+                  </Dropdown>
+                </VoiceFooter.HideWhenActive>
+                {/* 会话显示（V2 双线重构）：渲染版本 / V2 预设 / 逐类覆盖 / 会话覆盖 */}
+                <VoiceFooter.HideWhenActive>
+                  <ConversationDisplaySettings
+                    conversationId={ownConversationId}
+                  />
                 </VoiceFooter.HideWhenActive>
                 <VoiceFooter.HideWhenActive>
                   {showTaskAgentToggle && (

@@ -54,6 +54,9 @@ export const useRawSegments = (
             queryFilter: { docId: Number(docId) },
             current,
             pageSize,
+            orders: [],
+            filters: [],
+            columns: [],
           });
 
           if (cancelled || reqIdRef.current !== currentReqId) {

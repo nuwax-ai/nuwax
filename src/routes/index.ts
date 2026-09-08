@@ -6,6 +6,9 @@ import { EN_US } from '../locales/i18n/en-US';
  * 因此路由名称统一从本地静态词典读取，缺失时回退为 key 本身。
  */
 const getRouteLabel = (key: string): string => EN_US[key] || key;
+const isDevelopment =
+  process.env.UMI_ENV === 'development' ||
+  process.env.NODE_ENV === 'development';
 
 const routes = [
   {
@@ -110,6 +113,11 @@ const routes = [
       {
         path: '/space/:spaceId/model-manage',
         component: '@/pages/SpaceResource/ModelManage',
+      },
+      // 连接器
+      {
+        path: '/space/:spaceId/connector',
+        component: '@/pages/SpaceResource/Connector',
       },
       // 资源定价
       {
@@ -559,19 +567,19 @@ const routes = [
   {
     path: '/space/:spaceId/workflow/:workflowId',
     component: '@/pages/Antv-X6',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
     path: '/space/:spaceId/agent/:agentId',
     component: '@/pages/EditAgent',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
     path: '/space/:spaceId/app-dev/:projectId',
     component: '@/pages/AppDev',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
@@ -583,13 +591,13 @@ const routes = [
   {
     path: '/space/:spaceId/app-dev-design/:projectId',
     component: '@/pages/AppDevDesign',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
     path: '/space/:spaceId/agent-dev',
     component: '@/pages/ConversationAgent',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
@@ -637,6 +645,32 @@ const routes = [
     component: '@/pages/403',
     layout: false,
   },
+  ...(isDevelopment
+    ? [
+        {
+          path: '/mock-chat',
+          component: '@/examples/MockChat',
+          layout: false,
+        },
+        {
+          // /app 前缀让 useOpenApp 自动进入应用内嵌形态，验收 app 侧渲染分支
+          path: '/app/mock-chat',
+          component: '@/examples/MockChat',
+          layout: false,
+        },
+        {
+          // 综合验收画廊：多场景并行一次验收（仅 runtime 轨，legacy 轨走单页）
+          path: '/mock-gallery',
+          component: '@/examples/MockChatGallery',
+          layout: false,
+        },
+        {
+          path: '/app/mock-gallery',
+          component: '@/examples/MockChatGallery',
+          layout: false,
+        },
+      ]
+    : []),
   {
     path: '/*',
     component: '@/pages/404',
@@ -655,6 +689,11 @@ const routes = [
   {
     path: '/examples/svg-icon-showcase',
     component: '@/examples/SvgIconShowcase',
+    layout: false,
+  },
+  {
+    path: '/examples/openui-showcase',
+    component: '@/examples/OpenUiShowcase',
     layout: false,
   },
   {

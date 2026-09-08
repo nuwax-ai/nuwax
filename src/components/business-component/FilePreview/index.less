@@ -388,6 +388,36 @@
     }
   }
 
+  // 会话区同款 md-code-block（语言标签+复制/下载+高亮）：内部样式由 ds-markdown.css 接管，
+  // 重置上面的行内 code / pre 规则，避免灰底、85% 字号等 GitHub 风格叠加到代码块内
+  :global(.md-code-block) {
+    margin: 0 0 16px;
+
+    code,
+    pre {
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      font-size: inherit;
+      word-break: normal;
+      white-space: pre;
+    }
+
+    // 会话区同款表格卡：外壳与代码块一致，内部表格保持 GitHub 风格
+    // （重置卡内 table 的 margin，抵消下方 .markdownPreview table 的 16px 下边距，
+    //   与静态页 file-preview.css 的 .md-table-content table { margin: 0 } 同构）
+    :global(.md-table-content) {
+      padding: 8px 12px;
+      overflow-x: auto;
+
+      table {
+        margin: 0;
+      }
+    }
+  }
+
   blockquote {
     padding: 0 1em;
     color: #6a737d;
@@ -395,10 +425,25 @@
     margin: 0 0 16px;
   }
 
+  // 列表样式对齐会话区渲染(ds-markdown):12px 垂直间距 / 24px 缩进 /
+  // 行间距 4px / 灰色 marker(neutral-450),显式写死不依赖 CSS 加载顺序
   ul,
   ol {
-    padding-left: 2em;
-    margin-bottom: 16px;
+    margin: 12px 0;
+    padding-left: 24px;
+  }
+
+  li:not(:first-child) {
+    margin-top: 4px;
+  }
+
+  li::marker {
+    color: #8b8b8b;
+  }
+
+  li > ul,
+  li > ol {
+    margin-top: 4px;
   }
 
   table {

@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { PLAN_MODE_ENABLED } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import {
   ChatInputVoiceFooter,
@@ -11,7 +12,10 @@ import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import {
+  selectSessionActive,
+  selectSessionStreamActive,
+} from '@/features/conversation/domain/runtimeSelectors';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
@@ -20,11 +24,14 @@ import { AgentTypeEnum } from '@/types/enums/space';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
+import { pickSingleLocalDirectory } from '@/utils/pickLocalDirectory';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
   CheckOutlined,
+  CloseOutlined,
   DesktopOutlined,
+  FolderOpenOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
 import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
@@ -52,9 +59,17 @@ import SpaceSelector from './SpaceSelector';
 
 const cx = classNames.bind(styles);
 
+/** 工作目录 chip 的展示名：取路径末段，超长省略由样式处理 */
+function workspaceDirTailLabel(dir: string): string {
+  const tail = dir.split(/[\\/]/).filter(Boolean).pop();
+  return tail || dir;
+}
+
 const VoiceFooter = ChatInputVoiceFooter;
 
-const AGENT_MODE_OPTIONS: AgentMode[] = ['yolo', 'ask'];
+const AGENT_MODE_OPTIONS: AgentMode[] = PLAN_MODE_ENABLED
+  ? ['yolo', 'ask', 'plan']
+  : ['yolo', 'ask'];
 
 const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
   yolo: {
@@ -64,6 +79,10 @@ const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
   ask: {
     label: 'PC.Components.ChatInputHome.agentModeApproval',
     desc: 'PC.Components.ChatInputHome.agentModeApprovalDesc',
+  },
+  plan: {
+    label: 'PC.Components.ChatInputHome.agentModePlan',
+    desc: 'PC.Components.ChatInputHome.agentModePlanDesc',
   },
 };
 
@@ -98,6 +117,8 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       onToggleTaskAgent,
       selectedComputerId,
       onComputerSelect,
+      workspaceDir,
+      onWorkspaceDirChange,
       agentId,
       agentSandboxId,
       fixedSelection,
@@ -302,10 +323,14 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
      * model 流式信号 + messageList 兜底 + 后台 taskStatus
      */
     const streamActive = useMemo(
-      () => isConversationActive || isSessionStreamBusy(messageList),
+      () => selectSessionStreamActive(isConversationActive, messageList),
       [isConversationActive, messageList],
     );
-    const isActiveConversation = streamActive || effectiveTaskExecuting;
+    const isActiveConversation = selectSessionActive(
+      streamActive,
+      messageList,
+      effectiveTaskExecuting ? TaskStatus.EXECUTING : undefined,
+    );
 
     /** 按钮区活跃态（延迟回落）：吸收 model / taskStatus 短暂抖动，避免停止钮与发送钮来回闪 */
     const BUTTON_SLOT_RELEASE_MS = 800;
@@ -1150,7 +1175,13 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                               ? String(conversationInfo.sandboxServerId)
                               : selectedComputerId
                           }
-                          onChange={(id: string) => onComputerSelect?.(id)}
+                          onChange={(id: string) => {
+                            onComputerSelect?.(id);
+                            // 切回云电脑时工作目录失效，一并清空（仅个人电脑生效）
+                            if (id === '-1' && workspaceDir) {
+                              onWorkspaceDirChange?.('');
+                            }
+                          }}
                           disabled={wholeDisabled}
                           agentId={agentId}
                           fixedSelection={
@@ -1164,6 +1195,67 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                           isPersonalComputer={isPersonalComputer}
                           readonly={readonly}
                         />
+                      )}
+                    {/**
+                     * 工作目录入口（wiki #17 / 5-b）：用户自选个人电脑时可选目录，
+                     * 目录随会话创建记录（sandboxId+workspaceDir）。
+                     * 仅用户主动选择的个人电脑场景展示——智能体绑定电脑
+                     * （agentSandboxId 固定）与云电脑不展示。
+                     */}
+                    {(isTaskAgentActive ||
+                      agentType === AgentTypeEnum.TaskAgent) &&
+                      !readonly &&
+                      !fixedSelection &&
+                      selectedComputerId &&
+                      selectedComputerId !== '-1' &&
+                      onWorkspaceDirChange && (
+                        <span
+                          className={cx(
+                            'flex',
+                            'items-center',
+                            'cursor-pointer',
+                            styles.box,
+                          )}
+                          title={
+                            workspaceDir || t('PC.Components.WorkspaceDir.pick')
+                          }
+                          onClick={() => {
+                            void (async () => {
+                              const dir = await pickSingleLocalDirectory();
+                              if (dir) onWorkspaceDirChange(dir);
+                            })();
+                          }}
+                        >
+                          <FolderOpenOutlined
+                            style={{ fontSize: '14px' }}
+                            className={cx({
+                              [styles['workspace-dir-active']]: !!workspaceDir,
+                            })}
+                          />
+                          {workspaceDir ? (
+                            <>
+                              <span
+                                className={cx(styles['workspace-dir-label'])}
+                              >
+                                {workspaceDirTailLabel(workspaceDir)}
+                              </span>
+                              <CloseOutlined
+                                className={cx(
+                                  'cursor-pointer',
+                                  styles['workspace-dir-clear'],
+                                )}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  onWorkspaceDirChange('');
+                                }}
+                              />
+                            </>
+                          ) : (
+                            <span className={cx(styles['workspace-dir-label'])}>
+                              {t('PC.Components.WorkspaceDir.pick')}
+                            </span>
+                          )}
+                        </span>
                       )}
                     {allowOtherModel === DefaultSelectedEnum.Yes && (
                       <ModelSelector

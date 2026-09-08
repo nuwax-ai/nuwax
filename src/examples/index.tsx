@@ -85,6 +85,25 @@ const ExamplesIndex: React.FC = () => {
       featured: true,
     },
     {
+      id: 'openui-showcase',
+      title: isChineseLanguage
+        ? 'OpenUI 宿主样式回归'
+        : 'OpenUI Host Style Showcase',
+      description: isChineseLanguage
+        ? '在 .ds-markdown 宿主容器内渲染 OpenUI inline 看板（统计卡/环形图/概览列表），验证宿主样式隔离不误伤组件库样式。'
+        : 'Render an OpenUI inline dashboard (KPI cards / donut / overview list) inside a .ds-markdown host container to verify host style isolation.',
+      tags: [
+        { text: isChineseLanguage ? 'OpenUI' : 'OpenUI', color: 'blue' },
+        {
+          text: isChineseLanguage ? '样式回归' : 'Style Regression',
+          color: 'green',
+        },
+      ],
+      icon: <ExperimentOutlined />,
+      path: '/examples/openui-showcase',
+      featured: false,
+    },
+    {
       id: 'theme-demo',
       title: isChineseLanguage ? '主题功能演示' : 'Theme Demo',
       description: isChineseLanguage

@@ -101,6 +101,13 @@
   .body {
     padding: 0;
 
+    .planDocWrap {
+      flex-shrink: 0;
+      margin: @marginXs @paddingSm 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
     .filePreview {
       flex: 0 1 auto;
       min-height: 0;
@@ -134,7 +141,8 @@
     }
 
     .diffPreview {
-      max-height: calc(var(--intervention-max-height, 80vh) - 260px);
+      // diff 预览固定矮窗：派生自面板总高的旧预算会随遮罩化放宽而过高
+      max-height: 90px;
       overflow: hidden;
 
       // DiffView 根节点原本使用 `height: 100%`，在自适应预览中会随内容继续撑开。
@@ -418,6 +426,13 @@
     display: block;
     padding: 0 @paddingSm @paddingXs;
     font-size: @fontSizeSm;
+  }
+
+  /* switch_mode 修订输入：计划完成确认卡片的「让 agent 重新修改计划」入口 */
+  .revisionInput {
+    margin-top: @paddingXs;
+    font-size: @fontSizeSm;
+    resize: none;
   }
 }
 

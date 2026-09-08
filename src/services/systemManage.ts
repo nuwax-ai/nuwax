@@ -15,6 +15,7 @@ import type {
   ConnectorBindableItem,
   ConnectorBindableParams,
   ConnectorImportDiff,
+  ConnectorOauthAuthorizeResult,
   ConnectorProviderDetail,
   ConnectorProviderInfo,
   ConnectorProviderListParams,
@@ -24,6 +25,7 @@ import type {
   ConnectorRuntimeExecuteResult,
   ConversationStatsResult,
   CreateConnectorActionParams,
+  CreateConnectorConnectionParams,
   CreateConnectorProviderParams,
   DeleteConnectorActionParams,
   ExportConnectorProvidersParams,
@@ -396,6 +398,47 @@ export async function apiConnectorImportApply(
 }
 
 /**
+ * 预览空间连接器导入 diff（POST /api/connector/import/space?spaceId=）
+ *
+ * - 与管理端预览接口（POST /api/connector/import）同构：入参为导入包 JSON
+ *   （「导出」生成的 JSON，粘贴或选择文件带入），传解析后的对象；
+ *   差异是导入目标是具体空间，spaceId 挂在 query 上
+ * - 返回 diff 预览：importId + 四类变更计数 + items 明细，不执行导入；
+ *   确认导入由后续接口引用 importId 完成
+ *
+ * 用于工作空间连接器页「导入」抽屉的「预览导入 diff」按钮。
+ */
+export async function apiConnectorSpaceImport(
+  spaceId: number,
+  data: unknown,
+): Promise<RequestResponse<ConnectorImportDiff>> {
+  return request('/api/connector/import/space', {
+    method: 'POST',
+    params: { spaceId },
+    data,
+  });
+}
+
+/**
+ * 确认空间连接器导入（POST /api/connector/import/space/apply?spaceId=）
+ *
+ * - query 传 spaceId，body 仅 importId：引用「预览导入 diff」返回的导入会话标识，
+ *   后端按预览阶段解析好的导入包在对应空间内执行导入
+ *
+ * 用于工作空间连接器页「导入」抽屉的「确认导入」按钮；成功后由调用方刷新列表。
+ */
+export async function apiConnectorSpaceImportApply(
+  spaceId: number,
+  data: ApplyConnectorImportParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/connector/import/space/apply', {
+    method: 'POST',
+    params: { spaceId },
+    data,
+  });
+}
+
+/**
  * 分页获取连接器提供方列表（GET /api/connector/providers?spaceId=&pageNum=&pageSize=）
  *
  * - 与系统连接器列表接口（GET /api/system/connector/providers，非分页返回数组）不同，
@@ -411,6 +454,249 @@ export async function apiConnectorProviderPageList(
   return request('/api/connector/providers', {
     method: 'GET',
     params,
+  });
+}
+
+/**
+ * 删除连接器提供方（DELETE /api/connector/providers/{service}）
+ *
+ * - service 拼到 URL path 上；无 body
+ * - 其下全部工具一并删除；仍有用户连接时后端会拒绝删除（需先断开），
+ *   拒绝原因走响应 message，由调用方提示
+ *
+ * 用于工作空间连接器卡片「删除」按钮（UI 层弹 Modal.confirm 二次确认）；
+ * 删除成功后由调用方刷新连接器列表。
+ */
+export async function apiConnectorProviderDelete(
+  service: string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/connector/providers/${service}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * 导出连接器提供方（POST /api/connector/export?service=&spaceId=）
+ *
+ * - service / spaceId 挂 query；无 body，单条导出
+ * - 与管理端导出（POST /api/system/connector/providers/export）同型：
+ *   以 blob 接收原始响应并原样返回（含 blob data + headers），
+ *   由调用方解析 JSON（RequestResponse 包装）后触发下载
+ *
+ * 用于工作空间连接器卡片「导出」按钮；下载文件名 {service}.connector.json。
+ */
+export async function apiConnectorProviderExport(params: {
+  service: string;
+  spaceId: number;
+}): Promise<any> {
+  const { service, spaceId } = params;
+  return request('/api/connector/export', {
+    method: 'POST',
+    params: { service, spaceId },
+    responseType: 'blob',
+    getResponse: true,
+    skipErrorHandler: true,
+  });
+}
+
+/**
+ * 启用/停用连接器提供方（POST /api/connector/providers/{service}/status?enabled={boolean}）
+ *
+ * - service 拼 path，enabled 挂 query；无 body
+ * - 成功后由调用方刷新列表（卡片按钮文案与状态徽章随之切换）
+ *
+ * 用于工作空间连接器卡片「停用/启用」按钮。
+ */
+export async function apiConnectorProviderToggleStatus(
+  service: string,
+  enabled: boolean,
+): Promise<RequestResponse<null>> {
+  return request(`/api/connector/providers/${service}/status`, {
+    method: 'POST',
+    params: { enabled },
+  });
+}
+
+/**
+ * 新增空间连接器提供方（POST /api/connector/providers）
+ *
+ * - body 与管理端创建接口（POST /api/system/connector/providers）一致：
+ *   service 唯一标识 + 基本信息（displayName / baseUrl / category / tags 等）
+ *   + 认证方式 authType 及其配置 authConfig（免鉴权传空对象）
+ * - 差异：body 需额外携带 spaceId（当前选中空间，后端必填校验，
+ *   缺失时返回「spaceId 必填」）
+ * - 创建成功后连接器暂无工具，需到「查看工具」里添加
+ *
+ * 用于工作空间连接器页「新增连接器」抽屉（复用管理端 ConnectorProviderCreateDrawer，
+ * 由页面在 createProvider 注入点补上 spaceId）。
+ */
+export async function apiConnectorProviderCreate(
+  data: CreateConnectorProviderParams & { spaceId?: number },
+): Promise<RequestResponse<null>> {
+  return request('/api/connector/providers', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 保存空间维度 OAuth 平台 App 共享配置（POST /api/connector/oauth/shared-config）
+ *
+ * - body 与管理端 oauth-config 接口一致：service + 平台公共 App 配置
+ *   （clientId / clientSecret / authUrl / tokenUrl / scopes）
+ * - 创建 oauth2 + platform 模式的空间连接器成功后追加调用；
+ *   clientSecret 不进创建接口，由此接口加密落库
+ *
+ * 用于工作空间连接器页「新增连接器」抽屉（复用管理端 ConnectorProviderCreateDrawer，
+ * 通过 saveOauthConfig 注入点替换管理端默认的 oauth-config 接口）。
+ */
+export async function apiConnectorOauthSharedConfigSave(
+  data: SaveConnectorOauthConfigParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/connector/oauth/shared-config', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 发起 OAuth 授权（GET /api/connector/oauth/authorize?service=&spaceId=）
+ *
+ * - 返回带 state / PKCE 的授权页地址 authorizeUrl（redirect_uri 指向后端
+ *   /api/connector/oauth/callback，均由后端生成，前端原样打开即可）
+ * - 前端用 window.open 新窗口打开授权页（顶级浏览上下文不受 IdP 的
+ *   X-Frame-Options 限制，且能复用用户已有登录态，因此不用 iframe）；
+ *   用户登录并同意后由后端回调完成 code 换 token，
+ *   前端只需在授权窗口关闭后刷新连接状态
+ *
+ * 用于工作空间连接器详情抽屉的「发起OAuth授权」按钮（认证方式 oauth2）。
+ */
+export async function apiConnectorOauthAuthorize(params: {
+  service: string;
+  spaceId?: number | string;
+}): Promise<RequestResponse<ConnectorOauthAuthorizeResult>> {
+  const { service, spaceId } = params;
+  return request('/api/connector/oauth/authorize', {
+    method: 'GET',
+    params: {
+      service,
+      // 只在 spaceId 是有限数时透传，避免传 undefined / NaN
+      spaceId: Number.isFinite(Number(spaceId)) ? Number(spaceId) : undefined,
+    },
+  });
+}
+
+/**
+ * 建立连接（POST /api/connector/connections/api-key）
+ *
+ * - 自定义 / API Key / Bearer 认证统一走该接口：凭证按
+ *   authConfig.fields 定义的键值对放进 fields（如 clientId / apiKey / token），
+ *   由后端加密落库并建立连接
+ * - name 为连接名称（可选）：未填由后端默认使用连接器名称
+ *
+ * 用于工作空间连接器「去连接」凭据抽屉的「加密保存并建立连接」按钮；
+ * 成功后由调用方关闭抽屉并刷新详情（connected 变 true）与卡片列表。
+ */
+export async function apiConnectorConnectionCreate(
+  data: CreateConnectorConnectionParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/connector/connections/api-key', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 更新空间连接器提供方元信息（PUT /api/connector/providers/{service}）
+ *
+ * - service 拼到 URL path 上；body 与管理端 meta 更新接口（PUT
+ *   /api/system/connector/providers/{service}/meta）一致
+ * - service 创建后不可改，以 body 中的 service 为准
+ *
+ * 用于工作空间连接器卡片「编辑」抽屉（复用管理端 ConnectorProviderEditDrawer）。
+ */
+export async function apiConnectorProviderUpdateMeta(
+  data: CreateConnectorProviderParams,
+): Promise<RequestResponse<null>> {
+  return request(`/api/connector/providers/${data.service}`, {
+    method: 'PUT',
+    data,
+  });
+}
+
+/**
+ * 启用/停用连接器下的工具（POST /api/connector/actions/{id}/status?enabled={boolean}）
+ *
+ * - id 拼 path，enabled 挂 query；无 body
+ * - 与管理端（PUT /api/system/connector/actions/{id}/status）入参一致，
+ *   仅 method 与路径前缀不同
+ *
+ * 用于工作空间连接器详情抽屉工具列表的「停用/启用」按钮。
+ */
+export async function apiConnectorActionToggleStatus(
+  params: ToggleConnectorActionStatusParams,
+): Promise<RequestResponse<null>> {
+  const { id, enabled } = params;
+  return request(`/api/connector/actions/${id}/status`, {
+    method: 'POST',
+    params: { enabled },
+  });
+}
+
+/**
+ * 更新空间连接器下的工具（POST /api/connector/actions/{id}）
+ *
+ * - id（工具 id，详情接口 actions 列表项的 id）拼到 URL path 上
+ * - body 与管理端更新接口（PUT /api/system/connector/providers/{service}/
+ *   actions/{actionKey}）一致：actionKey / inputArgs / httpSpec 等；
+ *   区别仅在寻址方式（管理端按 service+actionKey，空间按工具 id）与 method
+ *
+ * 用于工作空间连接器详情抽屉工具列表的「编辑」按钮。
+ */
+export async function apiConnectorActionUpdate(
+  params: CreateConnectorActionParams & { id: string | number },
+): Promise<RequestResponse<null>> {
+  const { id, ...data } = params;
+  return request(`/api/connector/actions/${id}`, {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 新增空间连接器下的工具（POST /api/connector/providers/{service}/actions）
+ *
+ * - service 拼到 URL path 上；body 与管理端创建接口（POST
+ *   /api/system/connector/providers/{service}/actions）一致，
+ *   仅路径前缀不同
+ *
+ * 用于工作空间连接器详情抽屉的「+ 添加工具」弹窗。
+ */
+export async function apiConnectorActionCreate(
+  params: CreateConnectorActionParams & { service: string },
+): Promise<RequestResponse<null>> {
+  const { service, ...data } = params;
+  return request(`/api/connector/providers/${service}/actions`, {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 删除空间连接器下的工具（DELETE /api/connector/actions/{id}）
+ *
+ * - id（工具 id）拼到 URL path 上；无 body
+ * - 与管理端（DELETE /api/system/connector/actions/{id}）入参一致，
+ *   仅路径前缀不同；删除前的二次确认由 UI 层 Popconfirm 完成
+ *
+ * 用于工作空间连接器详情抽屉工具列表的「删除」按钮。
+ */
+export async function apiConnectorActionDelete(
+  params: DeleteConnectorActionParams,
+): Promise<RequestResponse<null>> {
+  const { id } = params;
+  return request(`/api/connector/actions/${id}`, {
+    method: 'DELETE',
   });
 }
 

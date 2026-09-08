@@ -20,6 +20,7 @@ import type {
   MessageSourceType,
   UploadFileInfo,
 } from '@/types/interfaces/common';
+import { jumpTo } from '@/utils/router';
 import { AffixRef, App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -208,7 +209,7 @@ const Home: React.FC = () => {
       return;
     }
 
-    history.push(`/agent/${targetId}`);
+    jumpTo(`/agent/${targetId}`);
   };
 
   const affixRef = useRef<AffixRef>(null);

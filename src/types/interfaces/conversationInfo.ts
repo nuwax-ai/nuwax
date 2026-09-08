@@ -213,6 +213,15 @@ export interface ConversationCreateParams {
   // 开发模式
   devMode: boolean;
   variables?: Record<string, string | number> | null;
+  /**
+   * 会话沙箱 ID（用户个人电脑或云端沙箱）。
+   * 发起会话时选择了个人电脑则携带（wiki #17：选择个人电脑时可选目录）。
+   */
+  sandboxId?: number;
+  /**
+   * 会话工作目录，仅当 sandboxId 为用户个人电脑（USER 类型沙箱）时生效。
+   */
+  workspaceDir?: string;
 }
 
 // 消息查询过程信息
@@ -294,6 +303,8 @@ export interface MessageInfo extends ChatMessageDto {
   status?: MessageStatusEnum;
   /** 思考流是否已收到结束分片；未设置时按历史消息状态兼容处理。 */
   thinkingFinished?: boolean;
+  /** 思考内容按轮次分块（前端流式态），与 text 内联思考标签的轮次一一对应。 */
+  thinkBlocks?: string[];
   // 自定义添加字段：chat 会话结果
   finalResult?: ConversationFinalResult;
   // 消息查询过程信息
@@ -400,6 +411,8 @@ export interface ConversationInfo {
     hasPermission?: boolean;
     /** 会话关联的智能体电脑是否不可用 */
     isSandboxUnavailable?: boolean;
+    /** 智能体绑定的个人电脑 ID，与 AgentDetailDto.sandboxId 同源 */
+    sandboxId?: string | number;
     /** 是否允许用户在对话框中选择 Agent 模式，1 允许，其他不允许 */
     allowChooseMode?: number;
     /** 是否开启版本管理，1 开启，其他不开启 */
@@ -423,6 +436,11 @@ export interface ConversationInfo {
   sandboxServerId: string;
   // 沙盒会话ID
   sandboxSessionId: string;
+  /**
+   * 会话记录的工作目录（创建会话时传入，仅个人电脑沙箱生效）。
+   * 打开会话时以此目录作为文件树本地目录数据源的初始根（wiki #17 会话上记录目录）。
+   */
+  workspaceDir?: string;
   // 已分享的URI地址，比对上了则不需要认证
   sharedUris: string[];
   /** 是否有权限使用该智能体 */
