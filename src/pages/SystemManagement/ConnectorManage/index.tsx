@@ -13,6 +13,7 @@ import { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import {
   DownloadOutlined,
   PlusOutlined,
+  SearchOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import type {
@@ -28,16 +29,16 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, message, Space, Spin, Tag } from 'antd';
+import { Button, Input, message, Space, Spin, Tag } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation } from 'umi';
+import { history, useLocation } from 'umi';
 import ConnectorImportDrawer from './ConnectorImportDrawer';
 import ConnectorProviderCreateDrawer from './ConnectorProviderCreateDrawer';
-import ConnectorProviderDetailDrawer from './ConnectorProviderDetailDrawer';
 import ConnectorProviderEditDrawer from './ConnectorProviderEditDrawer';
 import {
   AUTH_TYPE_LABEL_MAP,
   AUTH_TYPE_OPTIONS,
+  CONNECTED_OPTIONS,
   STATUS_OPTIONS,
 } from './constants';
 
@@ -47,6 +48,8 @@ import {
  * 数据源：GET /api/system/connector/providers（非分页）
  * 排序持久化：PUT /api/system/connector/providers/order
  * 查看详情：GET /api/connector/providers/{service}?spaceId=xxx
+ * 筛选：LightFilter（认证方式/启用状态/连接状态，本地过滤）+
+ * 工具栏右侧搜索框（回车查询 displayName/service，无 查询/重置 按钮）
  */
 
 const ConnectorManage: React.FC = () => {
@@ -67,22 +70,19 @@ const ConnectorManage: React.FC = () => {
     () => new Set(),
   );
   /**
-   * 当前是否处于筛选态（任一筛选条件非空）。
+   * 表单筛选态（LightFilter 任一条件非空）。
    * 筛选态下禁用拖拽排序：排序值是全局的，对过滤后的子集重排会让全量顺序错乱。
    */
-  const [filtered, setFiltered] = useState<boolean>(false);
+  const [formFiltered, setFormFiltered] = useState<boolean>(false);
+  /** 工具栏搜索框输入值（未提交，回车 / 清空才触发查询） */
+  const [keyword, setKeyword] = useState<string>('');
+  /** 已提交的搜索关键字（经 params 注入 request，变化自动触发重载） */
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
   /**
    * 导出进行中标记：'all' / 'selected' / null
    * 用来给对应 toolbar 按钮加 loading 态，并避免重复点击。
    */
   const [exporting, setExporting] = useState<'all' | 'selected' | null>(null);
-  /**
-   * "查看"抽屉状态：当前正在查看的连接器行（null=未打开）
-   * 抽屉内部会基于 record.service 调 GET /api/connector/providers/{service}?spaceId=xxx
-   * spaceId 直接取自 record.spaceId（即当前行所属空间），而非 URL 查询参数
-   */
-  const [detailRecord, setDetailRecord] =
-    useState<ConnectorProviderInfo | null>(null);
   const [editRecord, setEditRecord] = useState<ConnectorProviderInfo | null>(
     null,
   );
@@ -232,18 +232,23 @@ const ConnectorManage: React.FC = () => {
   /** 根据当前表单值更新筛选态（任一筛选条件非空即视为筛选态） */
   const updateFilteredFromForm = useCallback(() => {
     const values = formRef.current?.getFieldsValue() as
-      | { displayName?: string; status?: string; authType?: string }
+      | { status?: string; authType?: string; connected?: string }
       | undefined;
-    setFiltered(
-      Boolean(values?.displayName || values?.status || values?.authType),
+    setFormFiltered(
+      Boolean(values?.status || values?.authType || values?.connected),
     );
   }, []);
 
-  /** 重置：清空表单 + 重置分页 + 重载 */
+  /** 筛选态 = 表单筛选（认证方式/启用状态/连接状态）或搜索关键字任一非空 */
+  const filtered = Boolean(searchKeyword) || formFiltered;
+
+  /** 重置：清空表单与搜索关键字 + 重置分页 + 重载 */
   const handleReset = useCallback(() => {
     formRef.current?.resetFields();
     // antd Form.resetFields() 不会触发 onValuesChange，需手动同步筛选态
     updateFilteredFromForm();
+    setKeyword('');
+    setSearchKeyword('');
     actionRef.current?.reset?.();
     actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     actionRef.current?.reload();
@@ -309,17 +314,19 @@ const ConnectorManage: React.FC = () => {
       const toggling = togglingServices.has(record.service);
       return (
         <Space size={12} className="connector-row-actions">
+          {/* 查看：跳转详情子页面（概览 + 工具列表表格） */}
           <a
             onClick={() => {
               setEditRecord(null);
-              setDetailRecord(record);
+              history.push(
+                `/system/connector-manage/detail?service=${record.service}`,
+              );
             }}
           >
             查看
           </a>
           <a
             onClick={() => {
-              setDetailRecord(null);
               setEditRecord(record);
             }}
           >
@@ -410,14 +417,22 @@ const ConnectorManage: React.FC = () => {
   /** 列定义 */
   const columns: ProColumns<ConnectorProviderInfo>[] = [
     {
+      // 拖拽手柄列：紧跟勾选列之后、连接器列之前（勾选列由 rowSelection 自动前置）
+      title: '排序',
+      key: 'sort',
+      align: 'center',
+      width: 64,
+      hideInSearch: true,
+      render: () => <DragHandle />,
+    },
+    {
       // 连接器：显示名 + 标签副标题（2 行布局）
       // XProTable 已通过 size="large" 把行高拉到 ~64px，可容纳副标题不被裁剪。
+      // 搜索已移到工具栏右侧搜索框（回车查询），此列不再进 LightFilter
       title: '连接器',
       dataIndex: 'displayName',
       width: 120,
-      fieldProps: {
-        placeholder: '搜索连接器（名称 / service）',
-      },
+      hideInSearch: true,
       render: (_, record) => (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontWeight: 500 }}>{record.displayName}</span>
@@ -441,7 +456,7 @@ const ConnectorManage: React.FC = () => {
     },
     {
       // 鉴权方式
-      title: '认证',
+      title: '认证方式',
       dataIndex: 'authType',
       width: 120,
       align: 'center',
@@ -467,8 +482,8 @@ const ConnectorManage: React.FC = () => {
       hideInSearch: true,
     },
     {
-      // 状态
-      title: '状态',
+      // 启用状态
+      title: '启用状态',
       dataIndex: 'status',
       width: 100,
       align: 'center',
@@ -487,6 +502,21 @@ const ConnectorManage: React.FC = () => {
       ),
     },
     {
+      // 连接状态筛选器：仅作为 LightFilter 筛选项（不在表格中占列），
+      // 前端本地按 provider.connected 过滤
+      title: '连接状态',
+      dataIndex: 'connected',
+      valueType: 'select',
+      hideInTable: true,
+      valueEnum: {
+        true: { text: '已连接' },
+        false: { text: '未连接' },
+      },
+      fieldProps: {
+        options: CONNECTED_OPTIONS,
+      },
+    },
+    {
       // 更新时间
       title: '更新时间',
       dataIndex: 'modified',
@@ -494,15 +524,6 @@ const ConnectorManage: React.FC = () => {
       hideInSearch: true,
       valueType: 'dateTime',
       align: 'center',
-    },
-    {
-      // 拖拽手柄列（移到操作列左侧）
-      title: '排序',
-      key: 'sort',
-      align: 'center',
-      width: 64,
-      hideInSearch: true,
-      render: () => <DragHandle />,
     },
     {
       // 操作列：4 个按钮平铺（fixed right 保证滚动时常驻）
@@ -515,9 +536,9 @@ const ConnectorManage: React.FC = () => {
     },
   ];
 
-  /** request 回调：拉取全量后客户端过滤 */
+  /** request 回调：拉取全量后客户端过滤（keyword 由工具栏搜索框经 params 注入） */
   const request = async (params: any = {}) => {
-    const { displayName, status, authType } = params;
+    const { keyword: kw, status, authType, connected } = params;
     try {
       const res = await apiSystemConnectorProviderList();
 
@@ -530,21 +551,26 @@ const ConnectorManage: React.FC = () => {
       let data = rawData as ConnectorProviderInfo[];
 
       // 关键字搜索：匹配 displayName 或 service（OR 语义）
-      if (displayName) {
-        const kw = String(displayName).toLowerCase();
+      if (kw) {
+        const lower = String(kw).toLowerCase();
         data = data.filter(
           (v) =>
-            v.displayName?.toLowerCase().includes(kw) ||
-            v.service?.toLowerCase().includes(kw),
+            v.displayName?.toLowerCase().includes(lower) ||
+            v.service?.toLowerCase().includes(lower),
         );
       }
-      // 状态筛选
+      // 启用状态筛选
       if (status) {
         data = data.filter((v) => v.status === status);
       }
-      // 鉴权筛选
+      // 认证方式筛选
       if (authType) {
         data = data.filter((v) => v.authType === authType);
+      }
+      // 连接状态筛选（provider.connected 本地过滤）
+      if (connected) {
+        const want = connected === 'true';
+        data = data.filter((v) => Boolean(v.connected) === want);
       }
 
       return {
@@ -600,23 +626,19 @@ const ConnectorManage: React.FC = () => {
     >
       <div className="connector-manage-page">
         <style>{`
-          /* 勾选列表头与列表左对齐：覆盖 XProTable 默认 24px 内边距 */
+          /* 勾选列表头与列表行左对齐：覆盖 XProTable 默认 24px 内边距。
+             注意 virtual 模式下表体行/单元格渲染为 div（非 tr/td），
+             tr>td 选择器匹配不到虚拟单元格，需补一条 div 规则，
+             否则表头按 28px 左对齐、表体按默认内边距居中，宽屏下错位明显 */
           .connector-manage-page .x-pro-table .ant-table-thead > tr > th.ant-table-selection-column,
-          .connector-manage-page .x-pro-table .ant-table-tbody > tr > td.ant-table-selection-column {
+          .connector-manage-page .x-pro-table .ant-table-tbody > tr > td.ant-table-selection-column,
+          .connector-manage-page .x-pro-table .ant-table-tbody-virtual .ant-table-row .ant-table-cell.ant-table-selection-column {
             padding-left: 28px !important;
             text-align: left !important;
           }
           /* 整个 ant-pro-table-alert 区域（含提示文本和操作按钮）都隐藏 */
           .connector-manage-page .x-pro-table .ant-pro-table-alert {
             display: none !important;
-          }
-          /* 仅对"连接器"筛选 popover 加宽：
-             antd popover 通过 Portal 渲染到 document.body 下，不在 .connector-manage-page 子树里，
-             因此无法用祖先选择器做作用域。改为靠 input[placeholder^="搜索连接器"] 作唯一锚点
-             —— 只有本页"连接器"筛选的 placeholder 以"搜索连接器"开头，其他页 LightFilter 不会命中。
-             兼容主流浏览器（Chrome 105+/Edge 105+/Safari 15.4+/Firefox 121+ 支持 :has()）。 */
-          .ant-popover .ant-popover-content:has(input[placeholder^="搜索连接器"]) {
-            min-width: 260px !important;
           }
         `}</style>
         <DndContext
@@ -637,8 +659,27 @@ const ConnectorManage: React.FC = () => {
               dataSource={draggableData}
               pagination={false}
               showIndex={false}
-              onReset={handleReset}
-              showQueryButtons
+              params={{ keyword: searchKeyword }}
+              showQueryButtons={false}
+              /**
+               * 工具栏右侧放搜索框（原 查询/重置 按钮的位置）：
+               * 回车提交搜索、清空即重置；LightFilter 下拉筛选变化即时生效，
+               * 因此不再需要 查询/重置 按钮。样式对齐其他列表页
+               * （prefix 放大镜 + allowClear），宽度在其基础上加长 50px。
+               */
+              toolBarRender={() => [
+                <Input
+                  key="connector-search"
+                  allowClear
+                  prefix={<SearchOutlined />}
+                  placeholder="搜索连接器（名称 / service）"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  onPressEnter={() => setSearchKeyword(keyword.trim())}
+                  onClear={() => setSearchKeyword('')}
+                  style={{ width: 264 }}
+                />,
+              ]}
               /**
                * 两行内容需要更高的虚拟项高度；这里显式对齐到实际 row 高度，避免最后一行被裁切。
                * 列宽总和 ≈ 1014（不含勾选列 50），无横向滚动。
@@ -664,7 +705,7 @@ const ConnectorManage: React.FC = () => {
                */
               tableAlertRender={() => null}
               /**
-               * 跟踪筛选状态：任一筛选条件（displayName/status/authType）非空即认为处于筛选态。
+               * 跟踪筛选状态：任一筛选条件（status/authType/connected）非空即认为处于筛选态。
                * 筛选态下拖拽排序会让全局顺序错乱，因此禁用。
                */
               form={{
@@ -694,34 +735,23 @@ const ConnectorManage: React.FC = () => {
           </SortableContext>
         </DndContext>
 
-        {/*
-          连接器详情抽屉（右侧滑出）
-          - open=true 时 drawer 内部按 record.service 拉详情
-          - 关闭时清空 detailRecord，避免下次打开瞬间闪现旧内容
-        */}
-        <ConnectorProviderDetailDrawer
-          open={detailRecord !== null}
-          record={detailRecord}
-          // TODO: 新接口 /api/connector/providers/{service} 不再需要 spaceId 参数，
-          // 临时写死 52 以便页面开发时有数据可联调；接口对接完成后删除该 prop。
-          spaceId={52}
-          onClose={() => setDetailRecord(null)}
-          // 新增工具成功后刷新连接器列表（GET /api/system/connector/providers）
-          onActionCreated={() => actionRef.current?.reload()}
-        />
         <ConnectorProviderEditDrawer
           open={editRecord !== null}
           record={editRecord}
           onClose={() => setEditRecord(null)}
           // 保存成功：刷新连接器列表（GET /api/system/connector/providers），
-          // 并用最新提交值合成详情行打开「查看」抽屉（抽屉内部会再拉
-          // GET /api/connector/providers/{service} 详情覆盖展示）
+          // 并跳转「查看」详情子页面（页面内部会拉
+          // GET /api/connector/providers/{service} 展示最新数据）
           onSaved={(payload) => {
             actionRef.current?.reload();
-            setDetailRecord({
-              ...(editRecord ?? ({} as ConnectorProviderInfo)),
-              ...payload,
-            } as ConnectorProviderInfo);
+            const service =
+              editRecord?.service ??
+              (payload as { service?: string } | undefined)?.service;
+            if (service) {
+              history.push(
+                `/system/connector-manage/detail?service=${service}`,
+              );
+            }
             setEditRecord(null);
           }}
         />

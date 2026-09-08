@@ -1,0 +1,91 @@
+/* 连接器详情子页面：白底卡片（与连接器列表页背景一致） */
+.page {
+  min-height: 100%;
+  padding: 16px 20px 24px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+/* ---------- 顶部概览（label / value 两列网格） ---------- */
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.infoLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: #8a857c;
+}
+
+.infoValue {
+  font-size: 14px;
+  color: #262626;
+  word-break: break-all;
+}
+
+/* 连接状态值区：文本 + 按钮横排 */
+.connectValue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.connectedText {
+  color: #52c41a;
+}
+
+.disconnectedText {
+  color: #8a857c;
+}
+
+.goConnectBtn {
+  flex-shrink: 0;
+}
+
+/* ---------- 工具栏 ---------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0 12px;
+}
+
+.toolSectionTitle {
+  font-size: 15px;
+  font-weight: 500;
+  color: #262626;
+}
+
+/* ---------- 行内操作 ---------- */
+
+/* 置灰的「调试」（已停用工具不可调试） */
+.actionDisabled {
+  color: #bfbfbf;
+  cursor: not-allowed;
+}
+
+/* 行内操作：启停切换 loading 态（替换按钮文案，防止重复点击） */
+.actionLoading {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 空态 / 参数缺失 */
+.emptyWrap {
+  display: flex;
+  justify-content: center;
+  padding: 96px 0;
+}

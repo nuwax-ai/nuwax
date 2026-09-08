@@ -15,32 +15,18 @@ import type { FileTreePreviewViewProps } from '@/components/business-component/F
 import Loading from '@/components/custom/Loading';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
-import {
-  apiAgentComponentModelUpdate,
-  apiAgentConfigInfo,
-} from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
-import { apiModelList } from '@/services/modelConfig';
-import { apiPageGetProjectInfoByAgent } from '@/services/pageDev';
 import {
   apiDownloadAllFiles,
   apiImportProject,
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import { AgentComponentTypeEnum, MessageTypeEnum } from '@/types/enums/agent';
-import { ModelTypeEnum } from '@/types/enums/modelConfig';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
+import { MessageTypeEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
-import type {
-  ModelConfigInfo,
-  ModelListParams,
-} from '@/types/interfaces/model';
-import type { CustomPageDto } from '@/types/interfaces/pageDev';
 import { RequestResponse } from '@/types/interfaces/request';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
@@ -65,6 +51,8 @@ import React, {
 } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
+import AppDevProHeader from './AppDevProHeader';
+import AppDevDatabasePanel from './components/AppDevDatabasePanel';
 import AppDevSettingsModal from './components/AppDevSettingsModal';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
@@ -74,11 +62,16 @@ import {
   type PreviewToolId,
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
-import ConversationAgentHeader from './ConversationAgentHeader';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
-import { apiInstallAgentProjectDependencies } from './services/agent-dev';
+import { UserAppDbEnvEnum } from './services/appDb';
+import { apiUserAppGetById } from './services/appDevPro';
+import {
+  apiUserAppDomainList,
+  type UserAppDomainInfo,
+} from './services/appDomain';
+import type { UserAppInfo } from './type';
 
 const cx = classNames.bind(styles);
 // const devConversationPollLogger = createLogger(
@@ -167,27 +160,24 @@ const AppDevPro: React.FC = () => {
   /** 统一主题样式（导航栏风格等） */
   const { navigationStyle } = useUnifiedTheme();
 
-  /** 智能体完整配置信息，驱动整个页面的渲染 */
-  const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
-  // 当前选中的电脑 ID
-  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
-
-  /** 智能体配置加载中状态 */
+  /** 会话/页面数据加载中（用于首屏 Loading） */
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] = useState<boolean>(
-    !!appId,
+    !!queryConversationId,
   );
-  /** 空间下可用的模型列表（用于模型选择器） */
-  const [originalModelConfigList, setOriginalModelConfigList] = useState<
-    ModelConfigInfo[]
-  >([]);
+  /** 当前选中的电脑 ID */
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
   /** 文件树区域是否显示（header 图标控制，默认折叠） */
   const [canShowFileView, setCanShowFileView] = useState<boolean>(false);
   /** 项目设置弹窗 */
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
-  /** 页面项目详情（设置弹窗：认证 / 域名绑定） */
-  const [pageProjectInfo, setPageProjectInfo] = useState<CustomPageDto | null>(
-    null,
-  );
+  /** 全栈应用详情 */
+  const [userAppInfo, setUserAppInfo] = useState<UserAppInfo | null>(null);
+  /** 应用绑定的域名列表 */
+  const [userAppDomainList, setUserAppDomainList] = useState<
+    UserAppDomainInfo[]
+  >([]);
+  /** 当前环境：开发 / 线上，Header 中间切换 */
+  const [dbEnv, setDbEnv] = useState<UserAppDbEnvEnum>(UserAppDbEnvEnum.Dev);
 
   // ==================== 全局状态模型 ====================
   /**
@@ -306,22 +296,15 @@ const AppDevPro: React.FC = () => {
   const terminalWsUrl = useTerminalWsUrl(queryConversationId);
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
-  const devLogs = useConversationAgentDevLogs(queryConversationId, {
+  const devLogs = useConversationAgentDevLogs(appId, {
     enabled:
       showDevConsole &&
       devConsoleActiveTab === 'logs' &&
       devConsoleLayoutMode !== 'collapsed' &&
-      !!queryConversationId,
+      !!appId,
     pollInterval: 5000,
     tailLines: 1000,
   });
-
-  // ==================== 数据请求 ====================
-  /** 加载空间下可用的聊天模型列表 */
-  const runMode = async (modelParams: ModelListParams) => {
-    const result = await apiModelList(modelParams);
-    setOriginalModelConfigList(result?.data || []);
-  };
 
   // ==================== 副作用 (Effects) ====================
 
@@ -387,27 +370,10 @@ const AppDevPro: React.FC = () => {
     queryConversationId,
   ]);
 
-  /** 空间变化时重新加载模型列表 */
-  useEffect(() => {
-    runMode({
-      spaceId,
-      modelType: ModelTypeEnum.Chat,
-    });
-  }, [spaceId]);
-
   /** URL 中的 appId 变化时同步到本地状态 */
   useEffect(() => {
     setAppId(appIdFromQuery);
   }, [appIdFromQuery]);
-
-  /** 安装项目依赖 */
-  const { runAsync: runInstallProject } = useRequest(
-    apiInstallAgentProjectDependencies,
-    {
-      manual: true,
-      debounceWait: 300,
-    },
-  );
 
   /** 打开导入项目弹窗 */
   const handleImportProject = useCallback(async () => {
@@ -440,10 +406,6 @@ const AppDevPro: React.FC = () => {
           clearFileTreeSelectionRef.current?.();
           setTaskAgentSelectedFileId('');
           void refreshFileListImmediately(queryConversationId);
-          await runInstallProject({
-            programmingLanguage: 'typescript',
-            cId: queryConversationId,
-          });
           void refreshGitListIfEnabled();
         }
       } catch (error) {
@@ -465,12 +427,6 @@ const AppDevPro: React.FC = () => {
     if (queryConversationId) {
       setLoadingAgentConfigInfo(true);
 
-      // 安装项目依赖
-      runInstallProject({
-        programmingLanguage: 'typescript',
-        cId: queryConversationId,
-      });
-
       // 查询会话
       runQueryConversation(queryConversationId);
 
@@ -491,107 +447,49 @@ const AppDevPro: React.FC = () => {
     }
   }, [conversationInfo]);
 
-  /**
-   * 智能体配置加载请求（带防抖）
-   * 用于首次加载或 appId 切换时获取完整配置
-   */
-  const { run: runAgentConfigInfo } = useRequest(apiAgentConfigInfo, {
+  /** 按应用 ID 查询项目详情 */
+  const { run: runGetUserAppInfo } = useRequest(apiUserAppGetById, {
     manual: true,
-    debounceWait: 300,
-    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
-      setLoadingAgentConfigInfo(false);
-      const data = result?.data;
-      // 回显模型选择 (如果从创建项目页面带过来)
-      if (
-        data &&
-        history.action === 'PUSH' &&
-        (location.state as any)?.modelId
-      ) {
-        if (!data.modelComponentConfig) {
-          data.modelComponentConfig = {} as any;
-        }
-        const stateModelId = (location.state as any).modelId;
-        data.modelComponentConfig.targetId = stateModelId;
-
-        // 尝试从列表中回显名称
-        const matchedModel = originalModelConfigList.find(
-          (m) => m.id === stateModelId,
-        );
-        if (matchedModel) {
-          data.modelComponentConfig.name = matchedModel.name;
-        }
-
-        // 自动保存绑定模型到后端
-        const componentId = data.modelComponentConfig.id;
-        const bindConfig = data.modelComponentConfig.bindConfig;
-        if (componentId) {
-          void apiAgentComponentModelUpdate({
-            id: componentId,
-            targetId: stateModelId,
-            bindConfig,
-          }).catch((err) => {
-            console.error('Failed to auto save model config to backend:', err);
-          });
-        }
+    onSuccess: (result: RequestResponse<UserAppInfo>) => {
+      if (result?.code === SUCCESS_CODE && result.data) {
+        setUserAppInfo(result.data);
       }
-      setAgentConfigInfo(data);
-    },
-    onError: () => {
-      setLoadingAgentConfigInfo(false);
     },
   });
 
-  /** 根据智能体查询页面项目详情，供设置弹窗使用 */
-  const { run: runGetPageProjectInfo } = useRequest(
-    apiPageGetProjectInfoByAgent,
-    {
+  /** 查询应用绑定的域名列表 */
+  const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
+    useRequest(apiUserAppDomainList, {
       manual: true,
-      onSuccess: (result: RequestResponse<CustomPageDto>) => {
-        if (result?.code === SUCCESS_CODE && result.data) {
-          setPageProjectInfo(result.data);
+      onSuccess: (result: RequestResponse<UserAppDomainInfo[]>) => {
+        if (result?.code === SUCCESS_CODE) {
+          setUserAppDomainList(result.data || []);
         }
       },
-    },
-  );
+    });
 
-  /** 初始化项目元数据 */
-  useInitProjectMetadata({
-    targetType: AgentComponentTypeEnum.Agent,
-    targetId: appId,
-    onSuccess: () => {
-      if (appId) runAgentConfigInfo(appId);
-    },
-  });
-
-  /** 将配置加载状态同步到全局 model，供其他组件感知 */
+  /** 将加载状态同步到全局 model，供其他组件感知 */
   useEffect(() => {
     setIsLoadingOtherInterface(loadingAgentConfigInfo);
   }, [loadingAgentConfigInfo]);
 
-  /**
-   * appId 变化时触发配置加载
-   * - appId 为 0 时（新建场景）跳过请求
-   * - 同时重置页面标题
-   */
+  /** appId 变化时拉取应用详情 */
   useEffect(() => {
     if (!appId) {
-      setLoadingAgentConfigInfo(false);
-      setAgentConfigInfo(undefined);
+      setUserAppInfo(null);
       return;
     }
-    setAgentConfigInfo(undefined);
-    setLoadingAgentConfigInfo(true);
-    runAgentConfigInfo(appId);
-  }, [appId, runAgentConfigInfo]);
+    runGetUserAppInfo(appId);
+  }, [appId, runGetUserAppInfo]);
 
-  /** appId 变化时拉取页面项目详情（设置弹窗） */
+  /** appId 变化时拉取域名列表 */
   useEffect(() => {
     if (!appId) {
-      setPageProjectInfo(null);
+      setUserAppDomainList([]);
       return;
     }
-    runGetPageProjectInfo(appId);
-  }, [appId, runGetPageProjectInfo]);
+    runGetUserAppDomainList(appId);
+  }, [appId, runGetUserAppDomainList]);
 
   /** 初始化页面基础配置：为页面中所有链接添加 target 属性 */
   useEffect(() => {
@@ -604,7 +502,6 @@ const AppDevPro: React.FC = () => {
    * 聊天会话结束后统一刷新页面数据
    * - 刷新文件树
    * - 刷新 Git 源代码管理列表
-   * - 刷新智能体编排配置
    */
   const handleConversationEnd = useCallback(() => {
     // 刷新文件树；如果当前有选中文件，同步刷新当前文件内容
@@ -620,16 +517,9 @@ const AppDevPro: React.FC = () => {
 
     // 刷新 Git 源代码管理状态列表
     void refreshGitListIfEnabled();
-
-    // 刷新智能体编排等信息（重新拉取完整配置）
-    if (appId) {
-      runAgentConfigInfo(appId);
-    }
   }, [
     queryConversationId,
     refreshFileListImmediately,
-    appId,
-    runAgentConfigInfo,
     refreshGitListIfEnabled,
   ]);
 
@@ -1008,7 +898,6 @@ const AppDevPro: React.FC = () => {
           await refreshFileListImmediately(queryConversationId);
         }
       },
-      hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
       /** 仅配置加载完成且开启版本管理时拉取 Git status */
@@ -1080,8 +969,6 @@ const AppDevPro: React.FC = () => {
     setIsFileTreePinned,
     canShowFileView,
     refreshFileListImmediately,
-    agentConfigInfo?.type,
-    agentConfigInfo?.hideDesktop,
     enableVersionControl,
     isVersionControlEnabled,
     openPreviewView,
@@ -1150,8 +1037,11 @@ const AppDevPro: React.FC = () => {
       resetDevConsoleExpandedLayout();
       // 选中差异文件
       setSelectedChangeFile(null);
-      // 预览 / 编排 / 版本控制：工作区页签，收起文件预览侧栏
-      if (WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId)) {
+      // 预览 / 编排 / 版本控制 / 数据库：工作区页签，收起文件预览侧栏
+      if (
+        WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) ||
+        toolId === 'database'
+      ) {
         closePreviewView();
         return;
       }
@@ -1336,6 +1226,20 @@ const AppDevPro: React.FC = () => {
     [fileView.changeFiles, gitSourceControl, isGitUntrackedFile, previewTabs],
   );
 
+  /** 打开数据库页签（已存在则激活） */
+  const handleOpenDatabasePanel = useCallback(() => {
+    previewTabs.openToolTab('database');
+  }, [previewTabs]);
+
+  /** 数据库页签是否激活（Header 图标高亮） */
+  const isDatabasePanelOpen = previewTabs.activeTab?.toolId === 'database';
+
+  /** 「数据库」页签：按 Header 所选环境加载 iframe */
+  const databasePanel = useMemo(
+    () => <AppDevDatabasePanel appId={appId} env={dbEnv} />,
+    [appId, dbEnv],
+  );
+
   // ==================================== 渲染组件元素 ====================================
 
   /** 「版本控制」页签：Git 提交记录 */
@@ -1415,6 +1319,8 @@ const AppDevPro: React.FC = () => {
               diffFile={gitSourceControl.selectedDiffFile ?? undefined}
               // 选中标签
               activeTab={previewTabs.activeTab}
+              // 数据库页签
+              databasePanel={databasePanel}
               // 版本控制面板（Git 提交记录）
               versionPanel={versionControlPanel}
               providerClassName={fileView.className}
@@ -1458,8 +1364,8 @@ const AppDevPro: React.FC = () => {
   );
 
   // ==================== 加载状态 ====================
-  // 配置加载中时显示全屏 Loading，避免渲染不完整的页面
-  if (loadingAgentConfigInfo && appId) {
+  // 会话加载中时显示全屏 Loading，避免渲染不完整的页面
+  if (loadingAgentConfigInfo && queryConversationId) {
     return (
       <div
         className={cx(
@@ -1479,14 +1385,20 @@ const AppDevPro: React.FC = () => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       {/* 页面顶部 Header：返回、项目信息、文件树/终端入口 */}
-      <ConversationAgentHeader
+      <AppDevProHeader
         className={styles['page-header']}
-        agentConfigInfo={agentConfigInfo}
+        userAppInfo={userAppInfo}
+        spaceId={spaceId}
+        onConfirmUpdate={setUserAppInfo}
         isFileTreeSidebarVisible={isFileTreeIconActive}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
         isTerminalPanelOpen={isTerminalIconActive}
         onOpenTerminalPanel={handleOpenTerminalPanel}
         onOpenSettings={() => setSettingsOpen(true)}
+        isDatabasePanelOpen={isDatabasePanelOpen}
+        onOpenDatabase={handleOpenDatabasePanel}
+        env={dbEnv}
+        onEnvChange={setDbEnv}
       />
 
       {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}
@@ -1575,11 +1487,20 @@ const AppDevPro: React.FC = () => {
       {/* 项目设置：复用平台认证 + 域名绑定 */}
       <AppDevSettingsModal
         open={settingsOpen}
-        projectInfo={pageProjectInfo}
+        projectInfo={
+          userAppInfo
+            ? {
+                projectId: userAppInfo.id,
+                name: userAppInfo.name,
+              }
+            : null
+        }
+        domains={userAppDomainList}
+        domainListLoading={userAppDomainListLoading}
         onCancel={() => setSettingsOpen(false)}
         onSuccess={() => {
           if (appId) {
-            runGetPageProjectInfo(appId);
+            runGetUserAppDomainList(appId);
           }
         }}
       />
