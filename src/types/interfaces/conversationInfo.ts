@@ -213,6 +213,15 @@ export interface ConversationCreateParams {
   // 开发模式
   devMode: boolean;
   variables?: Record<string, string | number> | null;
+  /**
+   * 会话沙箱 ID（用户个人电脑或云端沙箱）。
+   * 发起会话时选择了个人电脑则携带（wiki #17：选择个人电脑时可选目录）。
+   */
+  sandboxId?: number;
+  /**
+   * 会话工作目录，仅当 sandboxId 为用户个人电脑（USER 类型沙箱）时生效。
+   */
+  workspaceDir?: string;
 }
 
 // 消息查询过程信息
@@ -427,6 +436,11 @@ export interface ConversationInfo {
   sandboxServerId: string;
   // 沙盒会话ID
   sandboxSessionId: string;
+  /**
+   * 会话记录的工作目录（创建会话时传入，仅个人电脑沙箱生效）。
+   * 打开会话时以此目录作为文件树本地目录数据源的初始根（wiki #17 会话上记录目录）。
+   */
+  workspaceDir?: string;
   // 已分享的URI地址，比对上了则不需要认证
   sharedUris: string[];
   /** 是否有权限使用该智能体 */

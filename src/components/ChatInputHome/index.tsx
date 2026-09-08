@@ -24,11 +24,14 @@ import { AgentTypeEnum } from '@/types/enums/space';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
+import { pickSingleLocalDirectory } from '@/utils/pickLocalDirectory';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
   CheckOutlined,
+  CloseOutlined,
   DesktopOutlined,
+  FolderOpenOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
 import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
@@ -55,6 +58,12 @@ import ModelSelector from './ModelSelector';
 import SpaceSelector from './SpaceSelector';
 
 const cx = classNames.bind(styles);
+
+/** 工作目录 chip 的展示名：取路径末段，超长省略由样式处理 */
+function workspaceDirTailLabel(dir: string): string {
+  const tail = dir.split(/[\\/]/).filter(Boolean).pop();
+  return tail || dir;
+}
 
 const VoiceFooter = ChatInputVoiceFooter;
 
@@ -108,6 +117,8 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       onToggleTaskAgent,
       selectedComputerId,
       onComputerSelect,
+      workspaceDir,
+      onWorkspaceDirChange,
       agentId,
       agentSandboxId,
       fixedSelection,
@@ -1164,7 +1175,13 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                               ? String(conversationInfo.sandboxServerId)
                               : selectedComputerId
                           }
-                          onChange={(id: string) => onComputerSelect?.(id)}
+                          onChange={(id: string) => {
+                            onComputerSelect?.(id);
+                            // 切回云电脑时工作目录失效，一并清空（仅个人电脑生效）
+                            if (id === '-1' && workspaceDir) {
+                              onWorkspaceDirChange?.('');
+                            }
+                          }}
                           disabled={wholeDisabled}
                           agentId={agentId}
                           fixedSelection={
@@ -1178,6 +1195,67 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                           isPersonalComputer={isPersonalComputer}
                           readonly={readonly}
                         />
+                      )}
+                    {/**
+                     * 工作目录入口（wiki #17 / 5-b）：用户自选个人电脑时可选目录，
+                     * 目录随会话创建记录（sandboxId+workspaceDir）。
+                     * 仅用户主动选择的个人电脑场景展示——智能体绑定电脑
+                     * （agentSandboxId 固定）与云电脑不展示。
+                     */}
+                    {(isTaskAgentActive ||
+                      agentType === AgentTypeEnum.TaskAgent) &&
+                      !readonly &&
+                      !fixedSelection &&
+                      selectedComputerId &&
+                      selectedComputerId !== '-1' &&
+                      onWorkspaceDirChange && (
+                        <span
+                          className={cx(
+                            'flex',
+                            'items-center',
+                            'cursor-pointer',
+                            styles.box,
+                          )}
+                          title={
+                            workspaceDir || t('PC.Components.WorkspaceDir.pick')
+                          }
+                          onClick={() => {
+                            void (async () => {
+                              const dir = await pickSingleLocalDirectory();
+                              if (dir) onWorkspaceDirChange(dir);
+                            })();
+                          }}
+                        >
+                          <FolderOpenOutlined
+                            style={{ fontSize: '14px' }}
+                            className={cx({
+                              [styles['workspace-dir-active']]: !!workspaceDir,
+                            })}
+                          />
+                          {workspaceDir ? (
+                            <>
+                              <span
+                                className={cx(styles['workspace-dir-label'])}
+                              >
+                                {workspaceDirTailLabel(workspaceDir)}
+                              </span>
+                              <CloseOutlined
+                                className={cx(
+                                  'cursor-pointer',
+                                  styles['workspace-dir-clear'],
+                                )}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  onWorkspaceDirChange('');
+                                }}
+                              />
+                            </>
+                          ) : (
+                            <span className={cx(styles['workspace-dir-label'])}>
+                              {t('PC.Components.WorkspaceDir.pick')}
+                            </span>
+                          )}
+                        </span>
                       )}
                     {allowOtherModel === DefaultSelectedEnum.Yes && (
                       <ModelSelector

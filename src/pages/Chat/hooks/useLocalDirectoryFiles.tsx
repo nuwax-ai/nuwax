@@ -11,7 +11,8 @@ import {
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { localFiles } from '@/utils/nuwaClawBridge';
-import { Input, message, Modal } from 'antd';
+import { promptForManualDirectoryPath } from '@/utils/pickLocalDirectory';
+import { message, Modal } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { resolveDirectoryLevelFiles } from '../utils/fileDataSource';
@@ -110,10 +111,14 @@ export function useLocalDirectoryFiles(conversationId?: number) {
   const activeRoot = roots.find((root) => root.id === sourceId);
   const active = enabled && sourceId !== WORKSPACE_SOURCE_ID;
 
+  /** 会话记录目录回显的去重标记（wiki #17，见 seedRecordedRoot） */
+  const seededRef = useRef('');
+
   // 切换会话（ChatCore 不随会话 id 重挂载）时整体重置：载入该会话自己的
   // 根列表与导航状态，避免上一会话的目录/路径/条目泄漏到下一会话
   useEffect(() => {
     requestToken.current += 1;
+    seededRef.current = '';
     const nextRoots = loadRoots(rootsKey);
     rootsRef.current = nextRoots;
     setRoots(nextRoots);
@@ -188,31 +193,25 @@ export function useLocalDirectoryFiles(conversationId?: number) {
     [updateRoots],
   );
 
-  const promptForManualPath = useCallback(() => {
-    let value = '';
-    Modal.confirm({
-      title: dict('PC.Components.LocalFiles.openByPathTitle'),
-      content: (
-        <div>
-          <p
-            style={{ color: 'var(--ant-color-text-tertiary)', marginBottom: 8 }}
-          >
-            {dict('PC.Components.LocalFiles.openByPathHint')}
-          </p>
-          <Input
-            placeholder={dict('PC.Components.LocalFiles.pathPlaceholder')}
-            onChange={(event) => {
-              value = event.target.value;
-            }}
-          />
-        </div>
-      ),
-      okText: dict('PC.Components.LocalFiles.open'),
-      cancelText: dict('PC.Components.LocalFiles.cancel'),
-      onOk: async () => {
-        await addRoots([value]);
-      },
-    });
+  /**
+   * 会话记录目录回显（wiki #17）：打开会话时把创建会话记录的 workspaceDir
+   * 作为本地目录数据源的根补入。同一目录只补种一次，不覆盖用户已加的根。
+   */
+  const seedRecordedRoot = useCallback(
+    (dir?: string) => {
+      const trimmed = (dir || '').trim();
+      if (!enabled || !trimmed) return;
+      const seedKey = `${conversationId}:${trimmed}`;
+      if (seededRef.current === seedKey) return;
+      seededRef.current = seedKey;
+      void addRoots([trimmed]);
+    },
+    [enabled, conversationId, addRoots],
+  );
+
+  const promptForManualPath = useCallback(async () => {
+    const dir = await promptForManualDirectoryPath();
+    if (dir) await addRoots([dir]);
   }, [addRoots]);
 
   const openRoots = useCallback(async () => {
@@ -221,7 +220,7 @@ export function useLocalDirectoryFiles(conversationId?: number) {
       if (!result.canceled && result.paths.length) await addRoots(result.paths);
       return;
     }
-    promptForManualPath();
+    await promptForManualPath();
   }, [addRoots, promptForManualPath]);
 
   const loadEntries = useCallback(
@@ -559,6 +558,7 @@ export function useLocalDirectoryFiles(conversationId?: number) {
   return {
     enabled,
     active,
+    seedRecordedRoot,
     files,
     loading,
     refresh,

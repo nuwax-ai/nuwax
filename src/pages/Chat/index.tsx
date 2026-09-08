@@ -305,6 +305,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   const { isMobile } = useModel('layout');
 
+  // 会话记录目录回显（wiki #17）：打开会话时把创建时记录的 workspaceDir
+  // 补入文件树本地目录数据源
+  useEffect(() => {
+    localDirectoryFiles.seedRecordedRoot(conversationInfo?.workspaceDir);
+  }, [conversationInfo?.workspaceDir, localDirectoryFiles.seedRecordedRoot]);
+
   // 会话记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
 

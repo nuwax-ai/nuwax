@@ -2684,6 +2684,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.LocalFiles.deleteConfirm": "刪除",
   "PC.Components.LocalFiles.saveFailed": "儲存失敗",
   "PC.Components.LocalFiles.upToParent": "返回上一級目錄",
+  "PC.Components.WorkspaceDir.pick": "工作目錄",
   "PC.Pages.Chat.fileNotFoundDelete": "文件不存在，無法刪除",
   "PC.Pages.Chat.inputConversationName": "請輸入會話名稱",
   "PC.Pages.Chat.invalidConversationIdExport": "會話ID不存在或無效，無法導出",

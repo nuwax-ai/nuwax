@@ -2704,6 +2704,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.LocalFiles.deleteConfirm": "削除",
   "PC.Components.LocalFiles.saveFailed": "保存に失敗しました",
   "PC.Components.LocalFiles.upToParent": "上位ディレクトリへ戻る",
+  "PC.Components.WorkspaceDir.pick": "作業ディレクトリ",
   "PC.Pages.Chat.fileNotFoundDelete": "ファイルが存在しないため削除できません",
   "PC.Pages.Chat.inputConversationName": "会話名を入力してください",
   "PC.Pages.Chat.invalidConversationIdExport": "会話 ID が見つからないか無効なので、エクスポートできません",

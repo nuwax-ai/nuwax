@@ -107,6 +107,8 @@ const Home: React.FC = () => {
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
   const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
   const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
+  /** 发起会话时选择的工作目录（wiki #17：仅个人电脑时随会话创建记录） */
+  const [workspaceDir, setWorkspaceDir] = useState<string>('');
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
@@ -297,6 +299,10 @@ const Home: React.FC = () => {
         infos: selectedComponentList,
         messageSourceType: 'home' as MessageSourceType,
         selectedComputerId,
+        workspaceDir:
+          selectedComputerId && selectedComputerId !== '-1'
+            ? workspaceDir || undefined
+            : undefined,
         skillIds,
         modelId: modelId || selectedModelId,
         agentMode,
@@ -432,7 +438,13 @@ const Home: React.FC = () => {
           isTaskAgentActive={effectiveTaskAgentActive}
           onToggleTaskAgent={() => setIsTaskAgentMode((prev) => !prev)}
           selectedComputerId={selectedComputerId}
-          onComputerSelect={setSelectedComputerId}
+          onComputerSelect={(id) => {
+            setSelectedComputerId(id);
+            // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
+            if (id === '-1' && workspaceDir) setWorkspaceDir('');
+          }}
+          workspaceDir={workspaceDir}
+          onWorkspaceDirChange={setWorkspaceDir}
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
           readonly={!agentDetail?.allowPrivateSandbox}

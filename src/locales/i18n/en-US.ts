@@ -2775,6 +2775,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.LocalFiles.deleteConfirm": "Delete",
   "PC.Components.LocalFiles.saveFailed": "Failed to save",
   "PC.Components.LocalFiles.upToParent": "Go to parent directory",
+  "PC.Components.WorkspaceDir.pick": "Working directory",
   "PC.Pages.Chat.fileNotFoundDelete": "File does not exist and cannot be deleted",
   "PC.Pages.Chat.inputConversationName": "Enter conversation name",
   "PC.Pages.Chat.invalidConversationIdExport": "Conversation ID is missing or invalid, cannot export",

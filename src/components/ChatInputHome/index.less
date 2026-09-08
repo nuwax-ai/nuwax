@@ -443,3 +443,26 @@
     max-width: 100%;
   }
 }
+
+/* 工作目录入口（wiki #17）：选中个人电脑后展示 */
+.workspace-dir-label {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.workspace-dir-active {
+  color: var(--ant-color-primary);
+}
+
+.workspace-dir-clear {
+  margin-left: 2px;
+  color: var(--ant-color-text-quaternary);
+  font-size: 10px;
+
+  &:hover {
+    color: var(--ant-color-text-secondary);
+  }
+}

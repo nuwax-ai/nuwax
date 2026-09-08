@@ -561,6 +561,12 @@ export interface ChatInputProps extends ManualComponentItemProps {
   // 电脑类型选择相关
   selectedComputerId?: string;
   onComputerSelect?: (id: string) => void;
+  /**
+   * 发起会话时选择的工作目录（仅个人电脑时生效，wiki #17）。
+   * 选中个人电脑后展示「工作目录」入口，目录随会话创建记录在会话上。
+   */
+  workspaceDir?: string;
+  onWorkspaceDirChange?: (dir: string) => void;
   // 智能体ID，用于保存用户对电脑类型的选择
   agentId?: number;
   /** 智能体绑定的云电脑ID */

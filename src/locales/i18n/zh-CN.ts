@@ -2773,6 +2773,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.LocalFiles.deleteConfirm": "删除",
   "PC.Components.LocalFiles.saveFailed": "保存失败",
   "PC.Components.LocalFiles.upToParent": "返回上级目录",
+  "PC.Components.WorkspaceDir.pick": "工作目录",
   "PC.Pages.Chat.fileNotFoundDelete": "文件不存在，无法删除",
   "PC.Pages.Chat.inputConversationName": "请输入会话名称",
   "PC.Pages.Chat.invalidConversationIdExport": "会话ID不存在或无效，无法导出",
