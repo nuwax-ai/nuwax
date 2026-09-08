@@ -10,7 +10,9 @@
   padding: 0 @paddingXs;
   box-sizing: border-box;
   flex-shrink: 0;
-  margin: 17px 0 10px -3px;
+  // 上边距对齐一级竖栏 Logo 的垂直中心（Logo 中心 ≈ 顶栏下 40px，行高 32px → 上移至 y≈24）；
+  // 下边距收紧，与 tabs 的 15px 顶距合计保持呼吸感
+  margin: 8px 0;
   gap: @paddingXs;
 
   .search-input-wrapper {
