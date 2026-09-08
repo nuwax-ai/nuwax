@@ -1,0 +1,159 @@
+@import '@/styles/token.less';
+
+.project-manage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: @borderRadius;
+  cursor: pointer;
+  font-size: @fontSize;
+  color: @colorTextSecondary;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: @colorText;
+    background: @colorFillSecondary;
+  }
+}
+
+.tab-active {
+  color: @colorPrimary;
+  background: @colorPrimaryBg;
+  font-weight: @fontWeightStrong;
+}
+
+.search {
+  width: 240px;
+  flex-shrink: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: @borderRadius;
+  background: @colorBgContainer;
+  border: 1px solid @colorBorderSecondary;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: @boxShadowTertiary;
+    border-color: @colorPrimaryBorder;
+  }
+}
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: @borderRadius;
+  background: @colorFillSecondary;
+  color: @colorTextSecondary;
+  font-size: 20px;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorText;
+}
+
+.badge {
+  flex-shrink: 0;
+  font-size: @fontSizeSm;
+  line-height: 18px;
+  padding: 0 8px;
+  border-radius: 9px;
+}
+
+// 类型徽标配色：常规=蓝 / 网页=紫 / 全栈=绿
+.badge-normalproject {
+  color: @colorPrimary;
+  background: @colorPrimaryBg;
+}
+
+.badge-pageapp {
+  color: @colorInfo;
+  background: @colorInfoBg;
+}
+
+.badge-userapp {
+  color: @colorSuccess;
+  background: @colorSuccessBg;
+}
+
+.card-desc {
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  display: box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-time {
+  margin-top: auto;
+  font-size: @fontSizeSm;
+  color: @colorTextQuaternary;
+}
+
+.empty {
+  margin-top: 80px;
+}

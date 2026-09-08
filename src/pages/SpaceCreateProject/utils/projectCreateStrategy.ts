@@ -16,6 +16,8 @@ export interface ProjectCreatePayload {
   computerId?: string;
   agentMode?: string;
   agentId?: number;
+  /** 调试关联智能体ID，透传 /api/project/create */
+  devAgentId?: number;
 }
 
 interface ProjectStrategy {
@@ -81,6 +83,7 @@ export const createProjectAndNavigate = async ({
     targetType: flowTargetType,
     subType: payload.subType,
     sandboxId: payload.computerId ? Number(payload.computerId) : undefined,
+    devAgentId: payload.devAgentId,
   });
   const { targetId, conversationId } = res.data;
 

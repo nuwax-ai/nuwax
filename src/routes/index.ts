@@ -58,6 +58,11 @@ const routes = [
         path: '/space/:spaceId/create-project',
         component: '@/pages/SpaceCreateProject',
       },
+      // 项目管理（三类项目列表：常规项目/网页应用/全栈应用）
+      {
+        path: '/space/:spaceId/project-manage',
+        component: '@/pages/SpaceProjectManage',
+      },
       // 技能管理
       {
         path: '/space/:spaceId/skill-manage',
