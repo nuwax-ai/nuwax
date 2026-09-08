@@ -7,8 +7,10 @@
  */
 import SvgIcon from '@/components/base/SvgIcon';
 import useConversation from '@/hooks/useConversation';
+import { MenuEnabledEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
+import type { MenuItemDto } from '@/types/interfaces/menu';
 import { isMac } from '@/utils/nuwaClawBridge';
 import type { InputRef } from 'antd';
 import { Input, Modal, Spin } from 'antd';
@@ -53,14 +55,10 @@ interface ActionItem {
 }
 
 const SidebarSearchModal: React.FC = () => {
-  const {
-    openSearchModal,
-    setOpenSearchModal,
-    setOpenSetting,
-    isSecondMenuCollapsed,
-    setIsSecondMenuCollapsed,
-  } = useModel('layout');
+  const { openSearchModal, setOpenSearchModal, setOpenSetting } =
+    useModel('layout');
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const { firstLevelMenus } = useModel('menuModel');
   const { handleCreateConversation } = useConversation();
   const { toggleCollapse } = useSidebarCollapse();
   const inputRef = useRef<InputRef>(null);
@@ -136,6 +134,22 @@ const SidebarSearchModal: React.FC = () => {
     [closeModal],
   );
 
+  /**
+   * 工作空间入口是否对当前用户开放：与侧栏一致，以后端菜单树为准
+   * （动态菜单 code=workspace / 静态菜单 code=space，且处于启用状态）。
+   * 菜单未下发工作空间时（无权限租户），命令面板不再提供直跳入口，
+   * 避免 URL 直达绕过菜单权限。
+   */
+  const hasWorkspaceMenu = useMemo(
+    () =>
+      firstLevelMenus.some(
+        (menu: MenuItemDto) =>
+          menu.status === MenuEnabledEnum.Enabled &&
+          (menu.code === 'workspace' || menu.code === 'space'),
+      ),
+    [firstLevelMenus],
+  );
+
   /** 操作项（建议 + 面板） */
   const actions = useMemo<ActionItem[]>(() => {
     const createTask = () => {
@@ -156,7 +170,9 @@ const SidebarSearchModal: React.FC = () => {
         shortcut: `${MOD_KEY}N`,
         run: createTask,
       },
-      {
+    ];
+    if (hasWorkspaceMenu) {
+      list.push({
         key: 'open-workspace',
         label: dict(
           'PC.Layouts.DynamicMenusLayout.SidebarSearchModal.actionOpenWorkspace',
@@ -166,21 +182,27 @@ const SidebarSearchModal: React.FC = () => {
           closeModal();
           history.push('/space');
         },
+      });
+    }
+    list.push({
+      key: 'setting',
+      label: dict(
+        'PC.Layouts.DynamicMenusLayout.SidebarSearchModal.actionSetting',
+      ),
+      icon: 'icons-nav-settings',
+      run: () => {
+        closeModal();
+        setOpenSetting(true);
       },
-      {
-        key: 'setting',
-        label: dict(
-          'PC.Layouts.DynamicMenusLayout.SidebarSearchModal.actionSetting',
-        ),
-        icon: 'icons-nav-settings',
-        run: () => {
-          closeModal();
-          setOpenSetting(true);
-        },
-      },
-    ];
+    });
     return list;
-  }, [closeModal, handleCreateConversation, setOpenSetting, tenantConfigInfo]);
+  }, [
+    closeModal,
+    handleCreateConversation,
+    setOpenSetting,
+    tenantConfigInfo,
+    hasWorkspaceMenu,
+  ]);
 
   const panelActions = useMemo<ActionItem[]>(
     () => [
@@ -193,11 +215,12 @@ const SidebarSearchModal: React.FC = () => {
         shortcut: `${MOD_KEY}B`,
         run: () => {
           closeModal();
-          setIsSecondMenuCollapsed(!isSecondMenuCollapsed);
+          // 走统一入口：移动端切抽屉、桌面端折叠（含偏好持久化）
+          toggleCollapse();
         },
       },
     ],
-    [closeModal, isSecondMenuCollapsed, setIsSecondMenuCollapsed],
+    [closeModal, toggleCollapse],
   );
 
   /** 当前 tab 下的平铺条目（键盘导航用） */
@@ -259,19 +282,14 @@ const SidebarSearchModal: React.FC = () => {
         setOpenSearchModal(!openSearchModal);
       } else if (key === 'b' && openSearchModal) {
         e.preventDefault();
-        setIsSecondMenuCollapsed(!isSecondMenuCollapsed);
+        // 走统一入口：移动端切抽屉、桌面端折叠（含偏好持久化）
+        toggleCollapse();
         closeModal();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [
-    openSearchModal,
-    setOpenSearchModal,
-    isSecondMenuCollapsed,
-    setIsSecondMenuCollapsed,
-    closeModal,
-  ]);
+  }, [openSearchModal, setOpenSearchModal, toggleCollapse, closeModal]);
 
   const renderTaskRow = (item: ConversationLike) => {
     const idx = flatItems.findIndex(

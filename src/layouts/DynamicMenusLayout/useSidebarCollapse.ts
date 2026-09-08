@@ -12,14 +12,25 @@ import { useModel, useSearchParams } from 'umi';
 export const COLLAPSE_STORAGE_KEY = 'menu-collapsed-user-preference';
 
 export const useSidebarCollapse = () => {
-  const { isSecondMenuCollapsed, setIsSecondMenuCollapsed } =
-    useModel('layout');
+  const {
+    isSecondMenuCollapsed,
+    setIsSecondMenuCollapsed,
+    isMobile,
+    setFullMobileMenu,
+  } = useModel('layout');
   const [searchParams] = useSearchParams();
 
   // 折叠偏好初始化：用户操作 > URL hideMenu > 默认展开；
-  // 桌面端沉浸式收起能力在 nuwaclaw 原生工具栏，跳过初始化
+  // 桌面端沉浸式收起能力在 nuwaclaw 原生工具栏，跳过初始化；
+  // 移动端禁止进入折叠态：单栏模式折叠会让整屏 fixed 容器失去平移偏移
+  // （getCurrentMenuWidth=0 → translateX(0)，空壳侧栏盖死内容且 caret 失效），
+  // 移动端侧栏显隐由 fullMobileMenu 抽屉控制
   useEffect(() => {
     if (isImmersiveShell()) return;
+    if (isMobile) {
+      setIsSecondMenuCollapsed(false);
+      return;
+    }
     try {
       const raw = sessionStorage.getItem(COLLAPSE_STORAGE_KEY);
       if (raw) {
@@ -40,8 +51,12 @@ export const useSidebarCollapse = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, location.pathname]);
 
-  /** 折叠/展开：保存用户偏好到 sessionStorage */
+  /** 折叠/展开：保存用户偏好到 sessionStorage；移动端切换抽屉开合 */
   const toggleCollapse = useCallback(() => {
+    if (isMobile) {
+      setFullMobileMenu((prev: boolean) => !prev);
+      return;
+    }
     const next = !isSecondMenuCollapsed;
     try {
       if (next) {
@@ -56,7 +71,12 @@ export const useSidebarCollapse = () => {
       console.warn('Failed to save menu preference:', error);
     }
     setIsSecondMenuCollapsed(next);
-  }, [isSecondMenuCollapsed, setIsSecondMenuCollapsed]);
+  }, [
+    isSecondMenuCollapsed,
+    setIsSecondMenuCollapsed,
+    isMobile,
+    setFullMobileMenu,
+  ]);
 
   return { isSecondMenuCollapsed, toggleCollapse };
 };
