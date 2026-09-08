@@ -838,7 +838,11 @@ const NewHomeSection: React.FC<{
           showNewChatButton={showNewChatButton}
         />
       )}
-      <div className={cx(styles.tabs)}>
+      <div
+        className={cx(styles.tabs, {
+          [styles['tabs-under-search']]: showSearchHeader,
+        })}
+      >
         <button
           type="button"
           className={cx(styles.tab, {

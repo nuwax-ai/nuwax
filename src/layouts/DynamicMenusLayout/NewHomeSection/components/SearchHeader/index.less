@@ -11,8 +11,8 @@
   box-sizing: border-box;
   flex-shrink: 0;
   // 上边距对齐一级竖栏 Logo 的垂直中心（Logo 中心 ≈ 顶栏下 40px，行高 32px → 上移至 y≈24）；
-  // 下边距收紧，与 tabs 的 15px 顶距合计保持呼吸感
-  margin: 8px 0;
+  // 下边距 0，经典布局下 tabs 顶距另有 8px 覆盖（.tabs-under-search），合计紧凑间隙
+  margin: 8px 0 0;
   gap: @paddingXs;
 
   .search-input-wrapper {
