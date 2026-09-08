@@ -7,6 +7,7 @@ import ConnectorAuthConfigSection, {
 } from '@/pages/SystemManagement/ConnectorManage/components/ConnectorAuthConfigSection';
 import { AUTH_TYPE_OPTIONS } from '@/pages/SystemManagement/ConnectorManage/constants';
 import {
+  apiSystemConnectorOauthConfigGet,
   apiSystemConnectorOauthConfigSave,
   apiSystemConnectorProviderDetail,
   apiSystemConnectorProviderUpdateMeta,
@@ -37,11 +38,11 @@ export interface ConnectorProviderEditDrawerProps {
     payload: CreateConnectorProviderParams,
   ) => Promise<RequestResponse<null>>;
   /**
-   * 自定义 OAuth 平台 App 配置保存接口：入参/返回与管理端
+   * 自定义 OAuth App 配置保存接口：入参/返回与管理端
    * POST /api/system/connector/oauth-config 一致。
    * 工作空间连接器页传 space 维度接口
    * （POST /api/connector/oauth/shared-config），不传走管理端默认。
-   * 仅 oauth2 + platform 模式且用户重填了 CLIENT SECRET 时调用。
+   * 认证方式为 oauth2 时在 meta 保存成功后追加调用。
    */
   saveOauthConfig?: (
     params: SaveConnectorOauthConfigParams,
@@ -198,9 +199,10 @@ const ConnectorProviderEditDrawer: React.FC<
    * 1. 校验必填项 —— 失败时表单控件下方已有红字提示，静默返回
    * 2. PUT /api/system/connector/providers/{service}/meta（body 与新增接口
    *    一致，由共享函数 toConnectorProviderPayload 组装）
-   * 3. oauth2 + platform 且用户重填了 CLIENT SECRET 时，追加调用
-   *    POST /api/system/connector/oauth-config 更新平台 App 配置
-   *    （clientSecret 加密落库不回显，留空 = 跳过，避免空值覆盖已存配置）
+   * 3. 认证方式为 oauth2 时追加保存 App 配置：管理端默认
+   *    POST /api/system/connector/oauth-config，空间侧注入
+   *    saveOauthConfig（POST /api/connector/oauth/shared-config）；
+   *    clientSecret 加密落库不回显，留空 = 保持已存密钥
    * 4. 成功后关闭抽屉并触发 onSaved —— 父组件刷新列表并打开详情抽屉
    */
   const handleSave = useCallback(async () => {
@@ -216,9 +218,12 @@ const ConnectorProviderEditDrawer: React.FC<
 
     // service 创建后不可改，提交值以列表行/详情的 service 为准
     const payload = toConnectorProviderPayload({ ...values, service });
-    const isOauth2Platform =
-      values.authType === 'oauth2' && values.oauthAppMode !== 'byo';
-    const secretReentered = Boolean(values.oauthClientSecret?.trim());
+    /**
+     * App 配置保存时机：认证方式为 oauth2 即保存（管理侧 / 空间侧一致，
+     * 与新增连接器一致）—— clientId / 授权端点 / 令牌端点 / scopes 的修改
+     * 不能因未重填 CLIENT SECRET 而丢失（secret 留空时后端保持已存密钥）
+     */
+    const shouldSaveOauthConfig = values.authType === 'oauth2';
 
     try {
       setSubmitting(true);
@@ -230,9 +235,9 @@ const ConnectorProviderEditDrawer: React.FC<
       if (response?.code !== SUCCESS_CODE) {
         throw new Error(response?.message || 'update provider failed');
       }
-      // App 配置更新失败不回滚 meta —— 提示用户重填 Secret 后再试
+      // App 配置更新失败不回滚 meta —— 提示用户重试
       let oauthConfigFailed = false;
-      if (isOauth2Platform && secretReentered) {
+      if (shouldSaveOauthConfig) {
         try {
           // oauth 接口可注入：管理端默认 POST /api/system/connector/oauth-config，
           // 工作空间连接器页传 POST /api/connector/oauth/shared-config
@@ -252,7 +257,7 @@ const ConnectorProviderEditDrawer: React.FC<
       }
       message.success('连接器更新成功');
       if (oauthConfigFailed) {
-        message.warning('OAuth App 配置保存失败，请重填 Client Secret 后重试');
+        message.warning('OAuth App 配置保存失败，请重试');
       }
       onClose();
       onSaved?.(payload);
@@ -271,6 +276,31 @@ const ConnectorProviderEditDrawer: React.FC<
       form.setFieldsValue(toFormValues(source));
     };
 
+    /**
+     * oauth2：追加 GET /api/system/connector/oauth-config?service= 回填
+     * 平台 App 配置（scopeType → 模式，clientId / authUrl / tokenUrl /
+     * scopes → 表单项；clientSecret 不回明文，编辑留空 = 保持已存配置）
+     */
+    const applyOauthConfig = async (service: string) => {
+      try {
+        const response = await apiSystemConnectorOauthConfigGet({ service });
+        if (cancelled) return;
+        if (response?.code !== SUCCESS_CODE || !response.data) return;
+        const config = response.data;
+        form.setFieldsValue({
+          oauthAppMode: config.scopeType === 'byo' ? 'byo' : 'platform',
+          oauthClientId: config.clientId || '',
+          oauthAuthUrl: config.authUrl || '',
+          oauthTokenUrl: config.tokenUrl || '',
+          oauthScopes: Array.isArray(config.scopes)
+            ? config.scopes.join(' ')
+            : '',
+        });
+      } catch {
+        // oauth 配置拉取失败：保留 authConfig 的回填值，不阻塞编辑
+      }
+    };
+
     if (!open || !record) {
       form.resetFields();
       return () => {
@@ -282,6 +312,8 @@ const ConnectorProviderEditDrawer: React.FC<
     applyValues(record);
 
     (async () => {
+      // 实际回填来源：详情成功取 provider，失败沿用列表行
+      let applied: ConnectorProviderInfo = record;
       try {
         // 详情接口为 space 维度（GET /api/connector/providers/{service}）：
         // 优先用注入的 spaceId（空间页当前选中空间），
@@ -301,12 +333,16 @@ const ConnectorProviderEditDrawer: React.FC<
         if (response?.code === SUCCESS_CODE && response.data) {
           // 详情响应为嵌套结构：提供方信息在 data.provider 下（data.actions
           // 为工具列表）；provider 缺失时沿用列表行回填值，避免被空值覆盖
-          applyValues(response.data.provider ?? record);
+          applied = response.data.provider ?? record;
+          applyValues(applied);
         }
       } catch {
         // 详情拉取失败时继续沿用列表行回填值
-      } finally {
-        // no-op
+      }
+      // provider.authType = oauth2：再拉平台 App 配置回填认证配置表单
+      // （放在详情回填之后，避免 setFieldsValue 相互覆盖）
+      if (applied.authType === 'oauth2') {
+        await applyOauthConfig(record.service);
       }
     })();
 
