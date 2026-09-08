@@ -1,0 +1,139 @@
+@import '@/styles/token';
+
+// 头部：图标 + 标题 + 当前路径（右侧省略）
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-right: @padding;
+}
+
+.header-icon {
+  color: @colorPrimary;
+  font-size: 16px;
+}
+
+.header-title {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: @fontWeightStrong;
+}
+
+.header-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+}
+
+// 工具栏：上一级 + 面包屑
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+  padding-bottom: @paddingSm;
+  border-bottom: 1px solid @colorBorderSecondary;
+}
+
+.breadcrumb {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  font-size: @fontSizeSm;
+
+  :global(.ant-breadcrumb-link) {
+    cursor: pointer;
+  }
+}
+
+// 列表主体
+.body {
+  max-height: 46vh;
+  min-height: 160px;
+  overflow-y: auto;
+  padding: @paddingXs 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 14px;
+  border-radius: @borderRadius;
+  cursor: pointer;
+  font-size: @fontSize;
+  color: @colorText;
+  transition: background-color 0.12s ease;
+
+  &:hover {
+    background-color: @colorFillTertiary;
+  }
+
+  .row-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    flex-shrink: 0;
+    font-size: 16px;
+    color: @colorPrimary;
+  }
+
+  .row-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row-arrow {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: @colorTextQuaternary;
+  }
+
+  // 文件行：不可选弱化态（目录才可作为工作目录）
+  &.row-file {
+    cursor: default;
+
+    &:hover {
+      background-color: transparent;
+    }
+
+    .row-icon {
+      color: @colorTextQuaternary;
+    }
+
+    .row-name {
+      color: @colorTextQuaternary;
+    }
+  }
+}
+
+// 加载/空态/错误态居中
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: @marginXs;
+  min-height: 160px;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+}
+
+// 底部操作区
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: @marginSm;
+  padding-top: @paddingSm;
+  border-top: 1px solid @colorBorderSecondary;
+}

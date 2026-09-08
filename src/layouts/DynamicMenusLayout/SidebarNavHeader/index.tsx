@@ -181,14 +181,8 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
             onClick={() => onMenuClick(menu)}
           >
             <span className={cx(styles['nav-item-icon'])}>
-              {menu.icon ? (
-                <SvgIcon name={menu.icon} />
-              ) : (
-                // 菜单无图标时首字兜底（与经典布局 DynamicTabs 同款降级，避免图标位空白）
-                <span className={cx(styles['nav-item-default'])}>
-                  {menu.name?.[0]}
-                </span>
-              )}
+              {/* 菜单 icon 动态下发，空时走默认兜底图标（与经典布局 TabItem 同款） */}
+              <SvgIcon name={menu.icon || 'icons-nav-task-time'} />
             </span>
             <span className={cx(styles['nav-item-label'])}>{menu.name}</span>
           </div>

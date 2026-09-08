@@ -7,11 +7,56 @@
   padding: @paddingXxs @paddingXs;
 }
 
-.project-empty {
+// 已归档项目入口(对齐任务列表 archived-entry 形态)
+.archived-entry {
+  padding: @paddingXs @paddingSm;
+  text-align: center;
   font-size: @fontSizeSm;
+  color: @navSecondMenuAdaptiveTextTertiary;
+  border-radius: @borderRadiusSm;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: @colorFillQuaternary;
+    color: @navSecondMenuAdaptiveTextSecondary;
+  }
+}
+
+.project-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: @paddingXs;
+  padding: @paddingLg 0;
+
+  .project-empty-img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .project-empty-text {
+    font-size: @fontSizeSm;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    text-align: center;
+  }
 }
 
 .project {
+  // 项目行置顶图钉/收藏星标(全功能菜单标记,2026-09-08)
+  .pin-icon,
+  .star-icon {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: @colorPrimary;
+  }
+
+  .star-icon {
+    color: @colorWarning;
+  }
+
   .row {
     display: flex;
     align-items: center;

@@ -28,6 +28,16 @@ export const AUTH_TYPE_LABEL_MAP: Record<string, string> = {
   custom: '自定义',
 };
 
+/* 鉴权方式 → 列表 Tag 颜色（antd 预设色，未知类型兜底 default；
+   管理侧 / 空间侧两处列表共用，写法同 ConnectorImportDrawer 的 OP_COLOR_MAP） */
+export const AUTH_TYPE_COLOR_MAP: Record<string, string> = {
+  no_auth: 'default',
+  api_key: 'gold',
+  bearer: 'geekblue',
+  oauth2: 'purple',
+  custom: 'cyan',
+};
+
 /* 状态筛选选项（空串=全部） */
 export const STATUS_OPTIONS: Array<{ label: string; value: string }> = [
   { label: '全部', value: '' },

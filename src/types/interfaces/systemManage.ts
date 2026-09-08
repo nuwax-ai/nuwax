@@ -1290,6 +1290,27 @@ export interface SaveConnectorOauthConfigParams {
 }
 
 /**
+ * 连接器 OAuth App 配置（GET /api/system/connector/oauth-config?service= 响应）
+ * 编辑 oauth2 连接器时回填认证配置表单用
+ */
+export interface ConnectorOauthConfigInfo {
+  /** 连接器 service 标识 */
+  providerService: string;
+  /** App 模式：platform / byo */
+  scopeType?: string;
+  /** Client ID */
+  clientId?: string;
+  /** 授权端点 */
+  authUrl?: string;
+  /** 令牌端点 */
+  tokenUrl?: string;
+  /** 授权 scopes */
+  scopes?: string[];
+  /** 是否已存 Client Secret（加密不回显，编辑留空 = 保持不变） */
+  hasClientSecret?: boolean;
+}
+
+/**
  * OAuth 授权发起结果（GET /api/connector/oauth/authorize）
  * 返回带 state / PKCE 的授权页地址，由前端新窗口打开让用户登录并同意
  */
@@ -1311,6 +1332,23 @@ export interface CreateConnectorConnectionParams {
   name?: string;
   /** 凭证键值对（键为 authConfig.fields[].name，如 clientId / apiKey / token） */
   fields: Record<string, string>;
+}
+
+/**
+ * 连接信息（GET /api/connector/connections 响应元素）
+ * 当前用户（空间维度）已建立连接的列表项
+ */
+export interface ConnectorConnectionInfo {
+  /** 连接主键（断开连接 DELETE /api/connector/connections/{id} 寻址用，≠ 连接器 id） */
+  id: number;
+  /** 所属空间 ID */
+  spaceId?: number;
+  /** 连接器 service 标识（与详情响应 provider.service 匹配定位连接） */
+  providerService?: string;
+  /** 兼容：部分实现直接以 service 字段返回连接器标识 */
+  service?: string;
+  /** 连接名称（建连未填时后端默认使用连接器名称） */
+  name?: string;
 }
 
 /**

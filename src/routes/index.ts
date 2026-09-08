@@ -58,6 +58,11 @@ const routes = [
         path: '/space/:spaceId/create-project',
         component: '@/pages/SpaceCreateProject',
       },
+      // 项目管理（三类项目列表：常规项目/网页应用/全栈应用）
+      {
+        path: '/space/:spaceId/project-manage',
+        component: '@/pages/SpaceProjectManage',
+      },
       // 技能管理
       {
         path: '/space/:spaceId/skill-manage',
@@ -118,11 +123,6 @@ const routes = [
       {
         path: '/space/:spaceId/connector',
         component: '@/pages/SpaceResource/Connector',
-      },
-      // 连接器详情子页面（列表"查看"跳转；service/spaceId 走 query）
-      {
-        path: '/space/:spaceId/connector/detail',
-        component: '@/pages/ConnectorProviderDetail',
       },
       // 资源定价
       {
@@ -325,12 +325,6 @@ const routes = [
             path: 'connector-manage',
             name: getRouteLabel('PC.Routes.connectorManage'),
             component: '@/pages/SystemManagement/ConnectorManage',
-          },
-          // 连接器详情子页面（列表"查看"跳转，不进菜单；service 走 query）
-          {
-            path: 'connector-manage/detail',
-            component: '@/pages/ConnectorProviderDetail',
-            hideInMenu: true,
           },
           {
             path: 'model/pricing',

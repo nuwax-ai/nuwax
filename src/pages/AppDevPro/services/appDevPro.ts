@@ -11,13 +11,14 @@ import type {
   UserAppLogsSourcesQueryParams,
   UserAppStartDevParams,
   UserProjectPageQueryParams,
+  UserProjectPageResult,
 } from '../type';
 import { UserAppDbEnvEnum } from './appDb';
 
 /** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
 export async function apiUserProjectPageQuery(
   data: UserProjectPageQueryParams,
-): Promise<RequestResponse<any>> {
+): Promise<RequestResponse<UserProjectPageResult>> {
   return request('/api/user-project/page-query', {
     method: 'POST',
     data,

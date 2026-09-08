@@ -1,7 +1,11 @@
 @import '@/styles/color';
 @import '@/styles/token';
+@import '@/styles/scrollbar';
 
 .container {
+  // 二级菜单列滚动条走统一方案：默认透明、hover 容器才显示滑块
+  .scrollbar-auto-hide();
+
   .collection-title {
     margin-top: @margin;
     padding: @paddingXs;
