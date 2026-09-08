@@ -55,10 +55,11 @@ import styles from './index.less';
  * 抽屉内容：
  *   1. 顶部概览（认证方式 / BASE URL / 通用代理 / 连接状态）：
  *      连接状态取代原抽屉的「归属」展示，免鉴权（no_auth）整项不展示；
- *      空间侧未连接时在状态后展示「去连接」（oauth2 →「去授权」）；
- *      已连接时状态后展示「断开连接」（Popconfirm 二次确认后
+ *      未连接时在状态后展示「去连接」（oauth2 →「去授权」，管理侧 /
+ *      空间侧均展示，管理侧连接接口 spaceId 固定传 0）；已连接时状态后
+ *      展示「断开连接」（Popconfirm 二次确认后
  *      DELETE /api/connector/connections/{id}，id 为连接列表接口按
- *      service 匹配出的连接 id，管理侧 / 空间侧均展示）
+ *      service 匹配出的连接 id）
  *   2. 工具栏（「+ 添加工具」打开 ConnectorActionCreateModal 新增/编辑工具弹窗）
  *   3. 工具列表（表格呈现：工具名称 / ACTIONKEY / 工具说明 / 状态 / 接口 / 操作）
  *
@@ -92,8 +93,8 @@ export interface ConnectorProviderDetailDrawerProps {
   /** 要查看的连接器 service（列表行 / 新增编辑保存回传） */
   service: string;
   /**
-   * scope：space = 空间侧（展示连接按钮，工具启停/删除走空间维度接口）；
-   * 不传默认 system = 管理侧（走管理端默认接口）
+   * scope：space = 空间侧（连接用传入 spaceId，工具启停/删除走空间维度接口）；
+   * 不传默认 system = 管理侧（走管理端默认接口，连接接口 spaceId 固定传 0）
    */
   scope?: 'system' | 'space';
   /** 空间 ID（空间侧传当前选中空间；管理侧不传） */
@@ -125,6 +126,11 @@ const ConnectorProviderDetailDrawer: React.FC<
 }) => {
   /** scope：管理侧走管理端工具接口，空间侧走空间维度接口 */
   const isSpaceScope = scope === 'space';
+  /**
+   * 连接动作（建立连接 / OAuth 授权 / 连接列表）使用的空间 ID：
+   * 空间侧用当前选中空间；管理侧无空间上下文，按约定固定传 0
+   */
+  const connectSpaceId = isSpaceScope ? spaceId : 0;
 
   // 详情加载中
   const [loading, setLoading] = useState<boolean>(false);
@@ -196,7 +202,10 @@ const ConnectorProviderDetailDrawer: React.FC<
   const fetchConnectionId = useCallback(
     async (targetService: string) => {
       try {
-        const response = await apiConnectorConnectionList({ spaceId });
+        // 管理侧连接建立在 spaceId=0 下，连接列表也按 0 查询才能匹配到
+        const response = await apiConnectorConnectionList({
+          spaceId: connectSpaceId,
+        });
         if (response?.code !== SUCCESS_CODE) return;
         const list = Array.isArray(response.data) ? response.data : [];
         const matched = list.find(
@@ -207,7 +216,7 @@ const ConnectorProviderDetailDrawer: React.FC<
         /* 连接 id 拉取失败不阻塞详情展示，断开时按连接 id 缺失提示 */
       }
     },
-    [spaceId],
+    [connectSpaceId],
   );
 
   /**
@@ -422,7 +431,7 @@ const ConnectorProviderDetailDrawer: React.FC<
   }, [fetchDetail, onActionsChanged]);
 
   /**
-   * 发起 OAuth 授权（「去授权」按钮，认证方式 oauth2，空间侧）
+   * 发起 OAuth 授权（「去授权」按钮，认证方式 oauth2，管理侧 / 空间侧）
    * GET /api/connector/oauth/authorize 拿地址 → window.open 新窗口 →
    * 轮询 closed → 刷新详情（connected 变 true 时按钮消失并提示「连接成功」）
    */
@@ -440,7 +449,7 @@ const ConnectorProviderDetailDrawer: React.FC<
       setOauthOpening(true);
       const response = await apiConnectorOauthAuthorize({
         service,
-        spaceId,
+        spaceId: connectSpaceId,
       });
       if (response?.code !== SUCCESS_CODE || !response.data?.authorizeUrl) {
         message.error(response?.message || '获取授权地址失败');
@@ -473,7 +482,7 @@ const ConnectorProviderDetailDrawer: React.FC<
     } finally {
       setOauthOpening(false);
     }
-  }, [service, spaceId, fetchDetail, onConnectionChanged]);
+  }, [service, connectSpaceId, fetchDetail, onConnectionChanged]);
 
   /**
    * 「去连接」抽屉的凭证字段定义（优先详情接口）：
@@ -529,13 +538,13 @@ const ConnectorProviderDetailDrawer: React.FC<
   const connected = provider?.connected ?? false;
 
   /**
-   * 概览「连接状态」后的连接按钮（仅空间侧）：
+   * 概览「连接状态」后的连接按钮（管理侧 / 空间侧均展示）：
    * - oauth2 →「去授权」（抽屉内部打开授权窗口并监听关闭）
    * - api_key/bearer/custom →「去连接」（打开凭据抽屉）
-   * - no_auth（免鉴权）→ 连接状态整项不展示；管理侧不展示（连接是空间用户动作）
+   * - no_auth（免鉴权）→ 连接状态整项不展示，无按钮
    */
   const connectButtonText =
-    isSpaceScope && authTypeValue && authTypeValue !== 'no_auth'
+    authTypeValue && authTypeValue !== 'no_auth'
       ? authTypeValue === 'oauth2'
         ? '去授权'
         : '去连接'
@@ -853,7 +862,7 @@ const ConnectorProviderDetailDrawer: React.FC<
         open={connectCtx !== null}
         record={connectCtx?.record ?? null}
         fields={connectFields}
-        spaceId={spaceId}
+        spaceId={connectSpaceId}
         onClose={() => setConnectCtx(null)}
         onConnected={() => {
           connectCtx?.refresh();
