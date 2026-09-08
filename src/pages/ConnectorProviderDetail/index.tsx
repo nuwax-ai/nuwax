@@ -10,6 +10,7 @@ import {
   apiConnectorActionDelete,
   apiConnectorActionToggleStatus,
   apiConnectorActionUpdate,
+  apiConnectorConnectionDelete,
   apiConnectorOauthAuthorize,
   apiSystemConnectorActionDelete,
   apiSystemConnectorActionToggleStatus,
@@ -55,7 +56,9 @@ import styles from './index.less';
  * 页面结构：
  *   1. 顶部概览（认证方式 / BASE URL / 通用代理 / 连接状态）：
  *      连接状态取代原抽屉的「归属」展示；空间侧未连接时在状态后展示
- *      「去连接」（oauth2 →「发起OAuth授权」），免鉴权（no_auth）不展示
+ *      「去连接」（oauth2 →「发起OAuth授权」），免鉴权（no_auth）不展示；
+ *      已连接时状态后展示「断开连接」（Popconfirm 二次确认后
+ *      DELETE /api/connector/connections/{id}，管理侧 / 空间侧均展示）
  *   2. 工具栏（「+ 添加工具」打开 ConnectorActionCreateModal 新增/编辑工具弹窗）
  *   3. 工具列表（表格呈现：工具名称 / ACTIONKEY / 工具说明 / 状态 / 接口 / 操作）
  *
@@ -126,6 +129,8 @@ const ConnectorProviderDetailPage: React.FC = () => {
   const [connectCtx, setConnectCtx] = useState<GoConnectContext | null>(null);
   /** 「发起OAuth授权」：授权地址请求中（按钮 loading） */
   const [oauthOpening, setOauthOpening] = useState<boolean>(false);
+  /** 「断开连接」请求中（给按钮与 Popconfirm 确定键加 loading，防重复点击） */
+  const [disconnecting, setDisconnecting] = useState<boolean>(false);
   /** 授权弹窗引用：重复点击时聚焦已有弹窗；轮询其 closed 判断授权流程结束 */
   const oauthWinRef = useRef<Window | null>(null);
   /** 授权弹窗关闭轮询定时器（组件卸载时清理） */
@@ -463,6 +468,37 @@ const ConnectorProviderDetailPage: React.FC = () => {
     });
   };
 
+  /**
+   * 断开连接（「已连接」后的「断开连接」按钮，Popconfirm 二次确认后触发；
+   * 管理侧 / 空间侧均展示）
+   * DELETE /api/connector/connections/{id}，id 取详情响应的 provider.id，
+   * 成功后刷新详情（connected 变 false、按钮消失，空间侧随之出现「去连接」）。
+   * 业务/网络错误由全局 errorHandler 统一提示后端报错，此处不重复弹错，
+   * 且不能在 onConfirm 里抛错（会同 Modal.confirm 一样被 antd 转成
+   * Unhandled Rejection 导致页面崩溃），catch 全部静默吞掉
+   */
+  const handleDisconnect = useCallback(async () => {
+    const connectionId = provider?.id;
+    if (connectionId === undefined || connectionId === null) {
+      message.error('连接 id 缺失，无法断开连接');
+      return;
+    }
+    if (disconnecting) return;
+    try {
+      setDisconnecting(true);
+      const response = await apiConnectorConnectionDelete(connectionId);
+      if (response?.code === SUCCESS_CODE) {
+        message.success('已断开连接');
+        await fetchDetail();
+      }
+      // 非成功码理论上会被全局拦截器 reject，不会 resolve 到这里
+    } catch {
+      // 业务/网络错误：全局 errorHandler 已提示后端报错，此处不再重复弹错
+    } finally {
+      setDisconnecting(false);
+    }
+  }, [provider, disconnecting, fetchDetail]);
+
   // ---------------- 工具表格列 ----------------
   const toolColumns: ColumnsType<ConnectorProviderAction> = [
     {
@@ -604,7 +640,28 @@ const ConnectorProviderDetailPage: React.FC = () => {
                 <span className={styles.infoLabel}>连接状态</span>
                 <span className={`${styles.infoValue} ${styles.connectValue}`}>
                   {connected ? (
-                    <span className={styles.connectedText}>已连接</span>
+                    <>
+                      <span className={styles.connectedText}>已连接</span>
+                      {/* 断开连接：Popconfirm 二次确认（交互同工具删除），
+                          管理侧 / 空间侧均展示；成功后 connected 变 false、
+                          按钮消失（空间侧随之出现「去连接」） */}
+                      <Popconfirm
+                        title="确认断开该连接？"
+                        okText="确认断开"
+                        cancelText="取消"
+                        okButtonProps={{ danger: true, loading: disconnecting }}
+                        onConfirm={handleDisconnect}
+                      >
+                        <Button
+                          size="small"
+                          danger
+                          className={styles.disconnectBtn}
+                          loading={disconnecting}
+                        >
+                          断开连接
+                        </Button>
+                      </Popconfirm>
+                    </>
                   ) : (
                     <>
                       <span className={styles.disconnectedText}>未连接</span>
