@@ -112,22 +112,9 @@ export async function apiUserAppBuildCancel(
   });
 }
 
-/** 任务进度 SSE（dev-start、dev-restart、build 共用） */
-export async function apiUserAppBuildLogsStream(
-  taskId: string,
-  fromSeq?: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/userapp/tasks/${taskId}/logs/stream`, {
-    method: 'GET',
-    params: {
-      fromSeq,
-    },
-  });
-}
-
 /**
  * 任务进度 SSE 地址（实际拉流请用 fetchEventSource，不要走 umi request）
- *
+ * 任务进度 SSE（dev-start、dev-restart、build 共用）
  * @param taskId 构建任务 ID
  * @param fromSeq 断点序号
  * @returns SSE URL

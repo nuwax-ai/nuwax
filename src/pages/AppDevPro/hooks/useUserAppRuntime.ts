@@ -167,13 +167,11 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         }
       }
       if (phase === 'starting' || phase === 'building') {
-        setOpen(true);
         return;
       }
 
       resetProgress();
       setAction(nextAction);
-      setOpen(true);
       setPhase('starting');
 
       const failedMessage = getFailedMessage(nextAction);
@@ -283,7 +281,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
    */
   const startIfNeeded = useCallback(() => {
     if (phase === 'starting' || phase === 'building') {
-      setOpen(true);
       return;
     }
     if (running) {
@@ -301,6 +298,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       return;
     }
     setStopping(true);
+    cancelledRef.current = true;
+    stopStream();
     try {
       const params = buildParams();
       const result =
@@ -316,6 +315,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         }
       }
       setRunning(false);
+      setPhase('idle');
+      resetProgress();
       message.success(dict('PC.Pages.AppDevPro.stopSuccess'));
     } catch (error) {
       const text =
@@ -326,8 +327,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     } finally {
       setStopping(false);
     }
-  }, [appId, buildParams, env]);
+  }, [appId, buildParams, env, resetProgress, stopStream]);
 
+  // 取消当前启动 / 重启任务
   const cancelTask = useCallback(async () => {
     const currentTaskId = taskIdRef.current || taskId;
     if (!currentTaskId) {

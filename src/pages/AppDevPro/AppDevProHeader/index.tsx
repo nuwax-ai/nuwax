@@ -130,10 +130,14 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   }, [publishing, userAppInfo]);
 
   const showUnpublishedTag =
-    !!onPublish &&
     !!userAppInfo &&
     userAppInfo.publishStatus !== PublishStatusEnum.Published &&
-    userAppInfo.publishStatus !== PublishStatusEnum.Applying;
+    !(userAppInfo.publishVersions?.length > 0);
+
+  /** 已发布才展示开发 / 线上环境切换 */
+  const showEnvSwitch =
+    userAppInfo?.publishStatus === PublishStatusEnum.Published ||
+    (userAppInfo?.publishVersions?.length ?? 0) > 0;
 
   const handleSelectDevEnv = useCallback(() => {
     onEnvChange?.(UserAppDbEnvEnum.Dev);
@@ -188,47 +192,49 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
               onClick={handleOpenEdit}
             />
           </ConditionRender>
+
+          {/* 未发布：环境切换不展示，标题后显示发布状态 */}
+          {showUnpublishedTag && (
+            <Tag
+              bordered={false}
+              color="volcano"
+              className={cx(styles['publish-status-tag'])}
+            >
+              {dict('PC.Common.Global.unpublished')}
+            </Tag>
+          )}
         </div>
 
-        {/* 环境切换：样式对齐 MCP 编辑页中间菜单 */}
-        <div
-          className={cx(
-            'flex',
-            'items-center',
-            'content-center',
-            styles['env-switch'],
-          )}
-        >
+        {/* 环境切换：仅已发布应用展示 */}
+        <ConditionRender condition={showEnvSwitch}>
           <div
-            className={cx('cursor-pointer', styles['env-item'], {
-              [styles.active]: env === UserAppDbEnvEnum.Dev,
-            })}
-            onClick={handleSelectDevEnv}
+            className={cx(
+              'flex',
+              'items-center',
+              'content-center',
+              styles['env-switch'],
+            )}
           >
-            {dict('PC.Pages.AppDevPro.devEnv')}
+            <div
+              className={cx('cursor-pointer', styles['env-item'], {
+                [styles.active]: env === UserAppDbEnvEnum.Dev,
+              })}
+              onClick={handleSelectDevEnv}
+            >
+              {dict('PC.Pages.AppDevPro.devEnv')}
+            </div>
+            <div
+              className={cx('cursor-pointer', styles['env-item'], {
+                [styles.active]: env === UserAppDbEnvEnum.Prod,
+              })}
+              onClick={handleSelectProdEnv}
+            >
+              {dict('PC.Pages.AppDevPro.onlineEnv')}
+            </div>
           </div>
-          <div
-            className={cx('cursor-pointer', styles['env-item'], {
-              [styles.active]: env === UserAppDbEnvEnum.Prod,
-            })}
-            onClick={handleSelectProdEnv}
-          >
-            {dict('PC.Pages.AppDevPro.onlineEnv')}
-          </div>
-        </div>
+        </ConditionRender>
 
         <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        {/* 未发布变更提示 */}
-        {showUnpublishedTag && (
-          <Tag
-            bordered={false}
-            color="volcano"
-            className={cx(styles['publish-status-tag'])}
-          >
-            {dict('PC.Pages.AgentEdit.unpublishedChanges')}
-          </Tag>
-        )}
-
         {/* 项目设置：始终显示 */}
         <TooltipIcon
           title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
