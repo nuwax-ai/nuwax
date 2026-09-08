@@ -13,7 +13,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 
 import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
-import ProjectPanel from './components/ProjectPanel';
+import ProjectPanel, { ProjectPanelHandle } from './components/ProjectPanel';
 import SearchHeader from './components/SearchHeader';
 
 import {
@@ -66,6 +66,7 @@ const NewHomeSection: React.FC<{
   showSearchHeader?: boolean;
 }> = ({ style, showSearchHeader = false }) => {
   const isSidebarNavMode = !showSearchHeader;
+  const projectPanelRef = useRef<ProjectPanelHandle>(null);
 
   const { id: chatIdParam } = useParams();
   const location = useLocation();
@@ -118,9 +119,9 @@ const NewHomeSection: React.FC<{
   const calcPageSize = useCallback(() => {
     const height = scrollContainerRef.current?.clientHeight ?? 0;
     if (!height) return 30;
-    const count = Math.ceil(height / ITEM_HEIGHT);
+    const count = Math.ceil(height / (isSidebarNavMode ? 36 : ITEM_HEIGHT));
     return Math.max(count, 10);
-  }, []);
+  }, [isSidebarNavMode]);
 
   const loadList = useCallback(
     async (
@@ -512,7 +513,14 @@ const NewHomeSection: React.FC<{
       })}
       onClick={options.onToggle}
       role="button"
-      tabIndex={-1}
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          options.onToggle();
+        }
+      }}
       aria-expanded={!options.collapsed}
     >
       <span className={cx(styles['section-tab-text'])}>
@@ -530,6 +538,35 @@ const NewHomeSection: React.FC<{
           <path d="m6 9 6 6 6-6" />
         </svg>
       </span>
+      {!options.task && (
+        <button
+          type="button"
+          className={styles['section-tool']}
+          title={dict(
+            'PC.Layouts.DynamicMenusLayout.NewHomeSection.toggleAllProjects',
+          )}
+          aria-label={dict(
+            'PC.Layouts.DynamicMenusLayout.NewHomeSection.toggleAllProjects',
+          )}
+          disabled={projectCount === 0}
+          onClick={(event) => {
+            event.stopPropagation();
+            setProjectCollapsed(false);
+            projectPanelRef.current?.toggleAll();
+          }}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          >
+            <path d="m8 9 4-4 4 4M8 15l4 4 4-4" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 
@@ -544,6 +581,7 @@ const NewHomeSection: React.FC<{
         {visibleConversationList.map((item) => (
           <ConversationItem
             key={item.id}
+            compact={isSidebarNavMode}
             item={item}
             isActive={chatId === item.id?.toString()}
             onClick={() => handleConversationClick(item)}
@@ -608,11 +646,17 @@ const NewHomeSection: React.FC<{
             ref={scrollContainerRef}
             className={cx(styles['conversation-list-wrapper'])}
           >
-            {!projectCollapsed && (
-              <div className={cx(styles['project-list-section'])}>
-                <ProjectPanel onVisibleCountChange={handleProjectCountChange} />
-              </div>
-            )}
+            <div
+              className={cx(styles['project-list-section'])}
+              hidden={projectCollapsed}
+            >
+              <ProjectPanel
+                ref={projectPanelRef}
+                compact
+                onVisibleCountChange={handleProjectCountChange}
+                onConversationClick={handleConversationClick}
+              />
+            </div>
 
             {renderSectionHeader({
               label: dict(
@@ -661,7 +705,10 @@ const NewHomeSection: React.FC<{
             className={cx(styles['conversation-list-wrapper'])}
           >
             {activeTab === 'project' ? (
-              <ProjectPanel onVisibleCountChange={handleProjectCountChange} />
+              <ProjectPanel
+                onVisibleCountChange={handleProjectCountChange}
+                onConversationClick={handleConversationClick}
+              />
             ) : (
               renderTaskList
             )}

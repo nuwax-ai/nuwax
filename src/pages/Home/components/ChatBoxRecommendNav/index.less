@@ -1,26 +1,88 @@
 @import '@/styles/token.less';
 
 .recommend-nav {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  row-gap: 8px;
-  column-gap: @marginSm;
+  position: relative;
   width: 100%;
-  margin: 0 auto 20px;
+  min-width: 0;
+  margin: 0 auto 9px;
+}
+.recommend-list {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  .recommend-item:first-child {
+    margin-left: auto;
+  }
+  .recommend-item:last-child {
+    margin-right: auto;
+  }
+}
+.has-left .recommend-list {
+  mask-image: linear-gradient(90deg, transparent 38px, #000 58px);
+}
+.has-right .recommend-list {
+  mask-image: linear-gradient(270deg, transparent 38px, #000 58px);
+}
+.has-left.has-right .recommend-list {
+  mask-image: linear-gradient(
+    90deg,
+    transparent 38px,
+    #000 58px,
+    #000 calc(100% - 58px),
+    transparent calc(100% - 38px)
+  );
+}
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid @colorBorderSecondary;
+  background: @colorBgContainer;
+  color: @colorTextSecondary;
+  cursor: pointer;
+  &:disabled {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  &:hover {
+    color: @colorPrimary;
+    border-color: @colorPrimaryBorder;
+  }
+  &:focus-visible {
+    outline: 2px solid @colorPrimary;
+    outline-offset: 2px;
+  }
+}
+.arrow-left {
+  left: 0;
+}
+.arrow-right {
+  right: 0;
 }
 
 .recommend-item {
+  flex: none;
   display: inline-flex;
   align-items: center;
   gap: @marginXs;
   max-width: 220px;
   height: 32px;
   padding: 0 @paddingSm;
-  border: @lineWidth @lineType transparent;
-  border-radius: @borderRadius;
-  background: @colorFillQuaternary;
+  border: @lineWidth @lineType @colorBorderSecondary;
+  border-radius: 999px;
+  background: @colorBgContainer;
   color: @colorTextSecondary;
   font-size: @fontSize;
   font-weight: 500;

@@ -4,25 +4,31 @@ import {
   apiUserAppDelete,
   apiUserAppUpdate,
   apiUserProjectDelete,
-  apiUserProjectPageQuery,
+  apiUserProjectTabPageQuery,
   apiUserProjectUpdate,
 } from '@/pages/AppDevPro/services/appDevPro';
+import {
+  apiAgentConversationDelete,
+  apiAgentConversationUpdate,
+} from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
+import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   DeleteOutlined,
   DownOutlined,
   EditOutlined,
+  EllipsisOutlined,
   ExclamationCircleFilled,
   FolderOutlined,
   InboxOutlined,
-  MoreOutlined,
+  PlusOutlined,
   PushpinFilled,
   PushpinOutlined,
   StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
-import { Dropdown, Input, message, Modal } from 'antd';
+import { Dropdown, Input, message, Modal, Tooltip } from 'antd';
 import classNames from 'classnames';
 import {
   forwardRef,
@@ -32,16 +38,19 @@ import {
   useState,
 } from 'react';
 import { useParams } from 'umi';
+import { formatRelativeTime } from '../../utils';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-/** 项目子项(项目下的会话等内容) */
+/** 项目子项(项目下的会话,来自 tab 接口 conversations) */
 export interface ProjectChildItem {
-  id: string;
+  id: number;
   name: string;
   modified?: string;
   taskStatus?: TaskStatus;
+  /** 原始会话数据(点击跳转用) */
+  conversation?: ConversationInfo;
 }
 
 /** 项目列表项 */
@@ -60,10 +69,9 @@ export interface ProjectItem {
  * 置顶排前、归档默认隐藏+「已归档」入口,对齐任务列表会话的交互形态。
  * **项目子项(项目下的会话):不做置顶**(同日定调),仅 重命名/删除 + 状态徽标。
  *
- * 数据走 apiUserProjectPageQuery 真实接口（当前空间全量项目）；
- * 重命名/删除已接真实接口（常规项目→user-project、全栈应用→userapp，2026-09-08 契约），
- * PageApp 契约未覆盖改名删除、置顶/归档/收藏后端接口开发中，仍维持本地标记；
- * 项目下会话列表后端暂无端点，children 先空（TODO(后端):会话列表接口就绪后接入）。
+ * 数据走 apiUserProjectTabPageQuery（2026-09-08 新接口：项目列表附带各项目会话列表）；
+ * 重命名/删除已接真实接口（项目→user-project/userapp、子项会话→agent conversation），
+ * PageApp 契约未覆盖改名删除、置顶/归档/收藏后端接口开发中，仍维持本地标记。
  */
 export interface ProjectPanelHandle {
   toggleAll: () => void;
@@ -75,8 +83,10 @@ const ProjectPanel = forwardRef<
     compact?: boolean;
     /** 可见项目数变化上报(分组头计数用,对齐任务计数=过滤归档后的可见数) */
     onVisibleCountChange?: (count: number) => void;
+    /** 子项会话点击跳转(与任务列表同一路由逻辑) */
+    onConversationClick?: (item: ConversationInfo) => void;
   }
->(({ onVisibleCountChange, compact = false }, ref) => {
+>(({ onVisibleCountChange, onConversationClick, compact = false }, ref) => {
   const { spaceId: spaceIdParam } = useParams() as { spaceId?: string };
   const spaceId = Number(spaceIdParam) || undefined;
 
@@ -94,19 +104,19 @@ const ProjectPanel = forwardRef<
   // 子项重命名弹窗状态(projectId + childId 定位目标子项)
   const [renameTarget, setRenameTarget] = useState<{
     projectId: number;
-    childId: string;
+    childId: number;
   }>();
   const [renameName, setRenameName] = useState('');
   // 项目重命名弹窗状态
   const [renameProjectId, setRenameProjectId] = useState<number>();
   const [projectRenameName, setProjectRenameName] = useState('');
 
-  // 拉取当前空间的项目列表(真实接口,失败保持空列表由空态兜底)
+  // 拉取当前空间的项目列表(tab 接口附带各项目会话列表,失败保持空列表由空态兜底)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await apiUserProjectPageQuery({
+        const res = await apiUserProjectTabPageQuery({
           queryFilter: { spaceId },
           current: 1,
           pageSize: 100,
@@ -118,9 +128,20 @@ const ProjectPanel = forwardRef<
         if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
           setProjects(
             res.data.records.map((item) => ({
-              id: item.id,
+              id: item.projectId,
               name: item.name,
               projectType: item.projectType,
+              children: (item.conversations ?? []).map((conversation) => ({
+                id: conversation.id,
+                // 空主题回退与任务列表 ConversationItem 同口径
+                name:
+                  conversation.topic ||
+                  conversation.agent?.name ||
+                  dict('PC.Constants.Menus.newChat'),
+                modified: conversation.modified,
+                taskStatus: conversation.taskStatus,
+                conversation,
+              })),
             })),
           );
         }
@@ -355,24 +376,36 @@ const ProjectPanel = forwardRef<
     },
   });
 
-  const handleChildRenameSubmit = () => {
+  // 子项重命名:走会话改名真实接口,成功后派发 conversation-updated 供任务列表同步
+  const handleChildRenameSubmit = async () => {
     const trimmed = renameName.trim();
     if (!trimmed || !renameTarget) return;
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id !== renameTarget.projectId
-          ? project
-          : {
-              ...project,
-              children: project.children?.map((child) =>
-                child.id === renameTarget.childId
-                  ? { ...child, name: trimmed }
-                  : child,
-              ),
-            },
-      ),
-    );
-    setRenameTarget(undefined);
+    const res = await apiAgentConversationUpdate({
+      id: renameTarget.childId,
+      topic: trimmed,
+    });
+    if (res?.success) {
+      window.dispatchEvent(
+        new CustomEvent('conversation-updated', {
+          detail: { id: renameTarget.childId, topic: trimmed },
+        }),
+      );
+      setProjects((prev) =>
+        prev.map((project) =>
+          project.id !== renameTarget.projectId
+            ? project
+            : {
+                ...project,
+                children: project.children?.map((child) =>
+                  child.id === renameTarget.childId
+                    ? { ...child, name: trimmed }
+                    : child,
+                ),
+              },
+        ),
+      );
+      setRenameTarget(undefined);
+    }
   };
 
   const openChildDelete = (projectId: number, child: ProjectChildItem) => {
@@ -382,19 +415,27 @@ const ProjectPanel = forwardRef<
       okButtonProps: { danger: true },
       okText: dict('PC.Common.Global.delete'),
       cancelText: dict('PC.Common.Global.cancel'),
-      onOk: () => {
-        setProjects((prev) =>
-          prev.map((project) =>
-            project.id !== projectId
-              ? project
-              : {
-                  ...project,
-                  children: project.children?.filter(
-                    (item) => item.id !== child.id,
-                  ),
-                },
-          ),
-        );
+      onOk: async () => {
+        const res = await apiAgentConversationDelete(child.id);
+        if (res?.success) {
+          window.dispatchEvent(
+            new CustomEvent('conversation-deleted', {
+              detail: { id: child.id },
+            }),
+          );
+          setProjects((prev) =>
+            prev.map((project) =>
+              project.id !== projectId
+                ? project
+                : {
+                    ...project,
+                    children: project.children?.filter(
+                      (item) => item.id !== child.id,
+                    ),
+                  },
+            ),
+          );
+        }
       },
     });
   };
@@ -423,6 +464,32 @@ const ProjectPanel = forwardRef<
       }
     },
   });
+
+  const addConversationButton = (
+    <Tooltip
+      title={dict(
+        'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation',
+      )}
+    >
+      <button
+        type="button"
+        className={styles['add-conversation']}
+        aria-label={dict(
+          'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation',
+        )}
+        onClick={(event) => {
+          event.stopPropagation();
+          message.info(
+            dict(
+              'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable',
+            ),
+          );
+        }}
+      >
+        <PlusOutlined />
+      </button>
+    </Tooltip>
+  );
 
   if (projects.length === 0) {
     return (
@@ -479,16 +546,22 @@ const ProjectPanel = forwardRef<
                 <span className={cx(styles.name)} title={project.name}>
                   {project.name}
                 </span>
-                <Dropdown menu={buildProjectMenu(project)} trigger={['click']}>
-                  <button
-                    type="button"
-                    className={styles['project-more']}
-                    aria-label={dict('PC.Components.ActionMenu.more')}
-                    onClick={(event) => event.stopPropagation()}
+                <div className={styles['project-actions']}>
+                  {addConversationButton}
+                  <Dropdown
+                    menu={buildProjectMenu(project)}
+                    trigger={['click']}
                   >
-                    <MoreOutlined />
-                  </button>
-                </Dropdown>
+                    <button
+                      type="button"
+                      className={styles['project-more']}
+                      aria-label={dict('PC.Components.ActionMenu.more')}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <EllipsisOutlined />
+                    </button>
+                  </Dropdown>
+                </div>
                 <DownOutlined
                   className={cx(styles.arrow, {
                     [styles.arrowExpanded]: expanded,
@@ -498,7 +571,26 @@ const ProjectPanel = forwardRef<
             </Dropdown>
             <div className={styles.children} hidden={!expanded}>
               {(project.children ?? []).map((child) => (
-                <div key={child.id} className={cx(styles.child)}>
+                <div
+                  key={child.id}
+                  className={cx(styles.child)}
+                  onClick={() => {
+                    if (child.conversation) {
+                      onConversationClick?.(child.conversation);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      if (child.conversation) {
+                        onConversationClick?.(child.conversation);
+                      }
+                    }
+                  }}
+                >
                   {child.taskStatus === TaskStatus.EXECUTING && (
                     <span
                       className={cx(styles['status-dot'])}
@@ -516,21 +608,26 @@ const ProjectPanel = forwardRef<
                   </span>
                   {child.modified && (
                     <span className={cx(styles['child-time'])}>
-                      {child.modified}
+                      {formatRelativeTime(child.modified)}
                     </span>
                   )}
-                  {/* 「⋯」操作菜单:mock 阶段操作仅改本地数据 */}
-                  <Dropdown
-                    menu={buildChildMenu(project.id, child)}
-                    trigger={['click']}
-                  >
-                    <span
-                      className={cx(styles['child-more'])}
-                      onClick={(event) => event.stopPropagation()}
+                  <div className={styles['child-actions']}>
+                    {addConversationButton}
+                    {/* 子任务悬停操作浮层 */}
+                    <Dropdown
+                      menu={buildChildMenu(project.id, child)}
+                      trigger={['click']}
                     >
-                      <MoreOutlined />
-                    </span>
-                  </Dropdown>
+                      <button
+                        type="button"
+                        aria-label={dict('PC.Components.ActionMenu.more')}
+                        className={cx(styles['child-more'])}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <EllipsisOutlined />
+                      </button>
+                    </Dropdown>
+                  </div>
                 </div>
               ))}
             </div>

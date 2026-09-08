@@ -15,6 +15,7 @@ import type {
   UserProjectItem,
   UserProjectPageQueryParams,
   UserProjectPageResult,
+  UserProjectTabPageResult,
 } from '../type';
 
 /** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
@@ -22,6 +23,19 @@ export async function apiUserProjectPageQuery(
   data: UserProjectPageQueryParams,
 ): Promise<RequestResponse<UserProjectPageResult>> {
   return request('/api/user-project/page-query', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * tab 项目分页查询（2026-09-08 新接口）：项目列表 + 每个项目下的会话列表，
+ * 供首页侧栏「项目」Tab 使用。
+ */
+export async function apiUserProjectTabPageQuery(
+  data: UserProjectPageQueryParams,
+): Promise<RequestResponse<UserProjectTabPageResult>> {
+  return request('/api/user-project/tab/page-query', {
     method: 'POST',
     data,
   });

@@ -197,3 +197,43 @@
     }
   }
 }
+
+.new-home-section {
+  .project-list-section {
+    padding: 7px 7px 16px 15px;
+  }
+  .section-tabs:focus-visible {
+    outline: 2px solid @colorPrimary;
+    outline-offset: -2px;
+  }
+  .section-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    margin-left: auto;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.16s ease;
+    &:hover {
+      color: @colorPrimary;
+      background: @colorFillTertiary;
+    }
+    &:disabled {
+      cursor: default;
+    }
+  }
+  .section-tabs:hover .section-tool,
+  .section-tabs:focus-within .section-tool {
+    opacity: 1;
+  }
+  @media (hover: none) {
+    .section-tool {
+      opacity: 1;
+    }
+  }
+}

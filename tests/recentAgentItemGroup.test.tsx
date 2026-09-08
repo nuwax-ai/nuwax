@@ -19,6 +19,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
+  // fixture 日期随时间漂移超过「昨天」后,formatModifiedTime 会走到日期回退分支
+  getCurrentLang: () => 'zh-CN',
 }));
 vi.mock('@/assets/images/agent_image.png', () => ({ default: 'agent.png' }));
 vi.mock(

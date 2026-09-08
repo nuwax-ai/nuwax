@@ -3,6 +3,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
+import { fetchChatboxCategories } from '@/services/square';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { Form, Input, message, Select } from 'antd';
 import classNames from 'classnames';
@@ -84,6 +85,12 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   const [recommendIconUrl, setRecommendIconUrl] = useState<string>('');
   /** 占位提示文案 */
   const [placeholder, setPlaceholder] = useState<string>('');
+  /** 对话框智能体分类（来源：系统管理-分类管理 ChatBox 分类） */
+  const [category, setCategory] = useState<string>('');
+  /** 对话框智能体分类下拉选项 */
+  const [categoryOptions, setCategoryOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
   /** 选择智能体弹窗 */
   const [pickModalOpen, setPickModalOpen] = useState<boolean>(false);
 
@@ -141,6 +148,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
     setSelectedTarget(null);
     setRecommendIconUrl('');
     setPlaceholder('');
+    setCategory('');
   }, []);
 
   /** 编辑模式：回填已选智能体（图标来自智能体，不用推荐记录的 icon） */
@@ -162,6 +170,29 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
     [],
   );
 
+  /** 弹窗打开时拉取对话框智能体分类选项(已发布分类接口 ChatBox 分类,与首页 pill 同源) */
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetchChatboxCategories()
+      .then((children) => {
+        if (!cancelled) {
+          setCategoryOptions(
+            children.map((item) => ({
+              value: item.key,
+              label: item.label,
+            })),
+          );
+        }
+      })
+      .catch((error) => {
+        console.error('fetch chatbox category list failed:', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   /** 弹窗打开时：编辑回填 / 新增重置 */
   useEffect(() => {
     if (!open) return;
@@ -172,6 +203,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       );
       setRecommendIconUrl(editingRecord.icon || '');
       setPlaceholder(editingRecord.placeholder || '');
+      setCategory(editingRecord.category || '');
       void hydrateEditingSelectedTarget(editingRecord);
       return;
     }
@@ -201,6 +233,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       label: selectedTarget.name || '',
       icon: recommendIconUrl || '',
       placeholder: placeholder || '',
+      category: category || '',
       sort: editingRecord?.sort ?? defaultSort,
     };
 
@@ -276,6 +309,19 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
             maxLength={200}
             showCount
             allowClear
+          />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>
+            {dict('PC.Pages.SystemRecommendManage.chatboxCategory')}
+          </div>
+          <Select
+            style={{ width: '100%' }}
+            value={category || undefined}
+            options={categoryOptions}
+            allowClear
+            placeholder={dict('PC.Common.Global.pleaseSelect')}
+            onChange={(v) => setCategory(v || '')}
           />
         </div>
         <div style={{ marginBottom: 16 }}>
