@@ -24,14 +24,14 @@ import { AgentTypeEnum } from '@/types/enums/space';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
-import { pickSingleLocalDirectory } from '@/utils/pickLocalDirectory';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
   CheckOutlined,
-  CloseOutlined,
   DesktopOutlined,
+  DownOutlined,
   FolderOpenOutlined,
+  FolderOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
 import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
@@ -56,14 +56,9 @@ import MentionEditor from './MentionEditor';
 import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
 import ModelSelector from './ModelSelector';
 import SpaceSelector from './SpaceSelector';
+import WorkspaceDirPickerModal from './WorkspaceDirPickerModal';
 
 const cx = classNames.bind(styles);
-
-/** 工作目录 chip 的展示名：取路径末段，超长省略由样式处理 */
-function workspaceDirTailLabel(dir: string): string {
-  const tail = dir.split(/[\\/]/).filter(Boolean).pop();
-  return tail || dir;
-}
 
 const VoiceFooter = ChatInputVoiceFooter;
 
@@ -216,6 +211,8 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
 
     // 是否打开订阅弹窗
     const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
+    // 工作目录浏览弹窗（env-bar「打开电脑文件夹」入口）
+    const [workspaceDirPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
 
     // 文档
     const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
@@ -900,168 +897,82 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
               }
             >
               {(isVoiceActive) => (
-                <footer
-                  className={cx('flex', 'flex-1', styles.footer, {
-                    [styles['footer-voice-active']]: isVoiceActive,
-                  })}
-                >
-                  {/* 清空会话记录 */}
-                  {!!messageList?.filter((item: MessageInfo) => item.id)
-                    ?.length && (
-                    <ConditionRender condition={!!onClear}>
-                      <Tooltip
-                        title={t('PC.Components.ChatInputHome.clearRecord')}
-                      >
-                        <span
-                          className={cx(
-                            styles.clear,
-                            'flex',
-                            'items-center',
-                            'content-center',
-                            'cursor-pointer',
-                            styles.box,
-                            styles['plus-box'],
-                            {
-                              [styles.disabled]:
-                                clearDisabled || wholeDisabled || clearLoading,
-                            },
-                          )}
-                          onClick={handleClear}
-                        >
-                          {clearLoading ? (
-                            <LoadingOutlined />
-                          ) : (
-                            <SvgIcon
-                              name="icons-chat-clear"
-                              style={{ fontSize: '14px' }}
-                              className={cx(styles['svg-icon'])}
-                            />
-                          )}
-                        </span>
-                      </Tooltip>
-                    </ConditionRender>
-                  )}
-
-                  <VoiceFooter.HideWhenActive>
-                    <AtMentionIcon
-                      enableMention={enableMention}
-                      mentionPlacement={mentionPlacement}
-                      enableSubscription={isEnableSubscription}
-                      onSelectMention={handleInsertAtMention}
-                      usageScenarios={usageScenarios}
-                      disabled={wholeDisabled}
-                    />
-                  </VoiceFooter.HideWhenActive>
-
-                  {/*上传按钮*/}
-                  <Upload
-                    action={UPLOAD_FILE_ACTION}
-                    disabled={wholeDisabled}
-                    onChange={handleChange}
-                    multiple={true}
-                    fileList={uploadFiles}
-                    headers={{
-                      Authorization: token ? `Bearer ${token}` : '',
-                    }}
-                    data={{
-                      type: 'tmp',
-                    }}
-                    showUploadList={false}
+                <>
+                  <footer
+                    className={cx('flex', 'flex-1', styles.footer, {
+                      [styles['footer-voice-active']]: isVoiceActive,
+                    })}
                   >
-                    <Tooltip
-                      title={t('PC.Components.ChatInputHome.uploadAttachment')}
+                    {/* 清空会话记录 */}
+                    {!!messageList?.filter((item: MessageInfo) => item.id)
+                      ?.length && (
+                      <ConditionRender condition={!!onClear}>
+                        <Tooltip
+                          title={t('PC.Components.ChatInputHome.clearRecord')}
+                        >
+                          <span
+                            className={cx(
+                              styles.clear,
+                              'flex',
+                              'items-center',
+                              'content-center',
+                              'cursor-pointer',
+                              styles.box,
+                              styles['plus-box'],
+                              {
+                                [styles.disabled]:
+                                  clearDisabled ||
+                                  wholeDisabled ||
+                                  clearLoading,
+                              },
+                            )}
+                            onClick={handleClear}
+                          >
+                            {clearLoading ? (
+                              <LoadingOutlined />
+                            ) : (
+                              <SvgIcon
+                                name="icons-chat-clear"
+                                style={{ fontSize: '14px' }}
+                                className={cx(styles['svg-icon'])}
+                              />
+                            )}
+                          </span>
+                        </Tooltip>
+                      </ConditionRender>
+                    )}
+
+                    <VoiceFooter.HideWhenActive>
+                      <AtMentionIcon
+                        enableMention={enableMention}
+                        mentionPlacement={mentionPlacement}
+                        enableSubscription={isEnableSubscription}
+                        onSelectMention={handleInsertAtMention}
+                        usageScenarios={usageScenarios}
+                        disabled={wholeDisabled}
+                      />
+                    </VoiceFooter.HideWhenActive>
+
+                    {/*上传按钮*/}
+                    <Upload
+                      action={UPLOAD_FILE_ACTION}
+                      disabled={wholeDisabled}
+                      onChange={handleChange}
+                      multiple={true}
+                      fileList={uploadFiles}
+                      headers={{
+                        Authorization: token ? `Bearer ${token}` : '',
+                      }}
+                      data={{
+                        type: 'tmp',
+                      }}
+                      showUploadList={false}
                     >
-                      <span
-                        className={cx(
-                          'flex',
-                          'items-center',
-                          'content-center',
-                          'cursor-pointer',
-                          styles.box,
-                          styles['plus-box'],
-                          { [styles['upload-box-disabled']]: wholeDisabled },
+                      <Tooltip
+                        title={t(
+                          'PC.Components.ChatInputHome.uploadAttachment',
                         )}
                       >
-                        <SvgIcon
-                          name="icons-chat-add"
-                          style={{ fontSize: '14px' }}
-                          className={cx(styles['svg-icon'])}
-                        />
-                      </span>
-                    </Tooltip>
-                  </Upload>
-                  <VoiceFooter.HideWhenActive>
-                    {showAgentModeSelector && (
-                      <Dropdown
-                        menu={{
-                          selectedKeys: [agentMode],
-                          items: AGENT_MODE_OPTIONS.map((mode) => ({
-                            key: mode,
-                            label: (
-                              <div
-                                className={cx(
-                                  styles['agent-mode-dropdown-item'],
-                                )}
-                              >
-                                <div className={cx(styles['item-content'])}>
-                                  <span className={cx(styles['item-name'])}>
-                                    {t(AGENT_MODE_I18N[mode].label)}
-                                  </span>
-                                  <span className={cx(styles['item-desc'])}>
-                                    {t(AGENT_MODE_I18N[mode].desc)}
-                                  </span>
-                                </div>
-                                {agentMode === mode && (
-                                  <CheckOutlined
-                                    className={cx(styles['agent-mode-check'])}
-                                  />
-                                )}
-                              </div>
-                            ),
-                            onClick: () => onAgentModeChange?.(mode),
-                          })),
-                        }}
-                        trigger={['click']}
-                        placement="topLeft"
-                        disabled={wholeDisabled || streamActive}
-                        overlayClassName="agent-mode-dropdown-overlay"
-                        // 让菜单渲染到 body，避免被父容器 overflow: hidden 裁剪
-                      >
-                        <Tooltip
-                          title={t('PC.Components.ChatInputHome.agentMode')}
-                        >
-                          <span className={cx(styles['agent-mode-select'])}>
-                            <span
-                              className={cx(
-                                styles['agent-mode-trigger'],
-                                styles[`agent-mode-option-${agentMode}`],
-                              )}
-                            >
-                              <span>{t(AGENT_MODE_I18N[agentMode].label)}</span>
-                              <SvgIcon
-                                name="icons-common-caret_down"
-                                style={{ fontSize: '14px' }}
-                                className={cx(styles['agent-mode-arrow'])}
-                              />
-                            </span>
-                          </span>
-                        </Tooltip>
-                      </Dropdown>
-                    )}
-                  </VoiceFooter.HideWhenActive>
-                  <VoiceFooter.HideWhenActive>
-                    {showTaskAgentToggle && (
-                      <Tooltip
-                        title={
-                          isTaskAgentActive
-                            ? t(
-                                'PC.Components.ChatInputHome.switchToNormalMode',
-                              )
-                            : t(
-                                'PC.Components.ChatInputHome.useAgentComputerTask',
-                              )
-                        }
-                      >
                         <span
                           className={cx(
                             'flex',
@@ -1070,209 +981,315 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                             'cursor-pointer',
                             styles.box,
                             styles['plus-box'],
-                            styles['task-agent-box'],
-                            {
-                              [styles['task-agent-active']]: isTaskAgentActive,
-                            },
+                            { [styles['upload-box-disabled']]: wholeDisabled },
                           )}
-                          onClick={onToggleTaskAgent}
                         >
-                          <DesktopOutlined style={{ fontSize: '14px' }} />
+                          <SvgIcon
+                            name="icons-chat-add"
+                            style={{ fontSize: '14px' }}
+                            className={cx(styles['svg-icon'])}
+                          />
                         </span>
                       </Tooltip>
-                    )}
-                  </VoiceFooter.HideWhenActive>
-
-                  <VoiceFooter.HideWhenActive>
-                    <ManualComponentItem
-                      manualComponents={manualComponents}
-                      selectedComponentList={selectedComponentList}
-                      onSelectComponent={onSelectComponent}
-                    />
-                  </VoiceFooter.HideWhenActive>
-
-                  <VoiceFooter.Expand />
-
-                  <VoiceFooter.Right
-                    defaultActions={
-                      showStopButton ? (
-                        <Tooltip title={getStopButtonTooltip()}>
-                          <span
-                            onClick={handleStopConversation}
-                            className={cx(
-                              'flex',
-                              'items-center',
-                              'content-center',
-                              'cursor-pointer',
-                              styles.box,
-                              styles['send-box'],
-                              styles['stop-box'],
-                              {
-                                [styles['stop-box-active']]:
-                                  !isStoppingConversation,
-                              },
-                            )}
+                    </Upload>
+                    <VoiceFooter.HideWhenActive>
+                      {showAgentModeSelector && (
+                        <Dropdown
+                          menu={{
+                            selectedKeys: [agentMode],
+                            items: AGENT_MODE_OPTIONS.map((mode) => ({
+                              key: mode,
+                              label: (
+                                <div
+                                  className={cx(
+                                    styles['agent-mode-dropdown-item'],
+                                  )}
+                                >
+                                  <div className={cx(styles['item-content'])}>
+                                    <span className={cx(styles['item-name'])}>
+                                      {t(AGENT_MODE_I18N[mode].label)}
+                                    </span>
+                                    <span className={cx(styles['item-desc'])}>
+                                      {t(AGENT_MODE_I18N[mode].desc)}
+                                    </span>
+                                  </div>
+                                  {agentMode === mode && (
+                                    <CheckOutlined
+                                      className={cx(styles['agent-mode-check'])}
+                                    />
+                                  )}
+                                </div>
+                              ),
+                              onClick: () => onAgentModeChange?.(mode),
+                            })),
+                          }}
+                          trigger={['click']}
+                          placement="topLeft"
+                          disabled={wholeDisabled || streamActive}
+                          overlayClassName="agent-mode-dropdown-overlay"
+                          // 让菜单渲染到 body，避免被父容器 overflow: hidden 裁剪
+                        >
+                          <Tooltip
+                            title={t('PC.Components.ChatInputHome.agentMode')}
                           >
-                            {isStoppingConversation ? (
-                              <div className={cx(styles['loading-box'])}>
-                                <LoadingOutlined
-                                  className={cx(styles['loading-icon'])}
+                            <span className={cx(styles['agent-mode-select'])}>
+                              <span
+                                className={cx(
+                                  styles['agent-mode-trigger'],
+                                  styles[`agent-mode-option-${agentMode}`],
+                                )}
+                              >
+                                <span>
+                                  {t(AGENT_MODE_I18N[agentMode].label)}
+                                </span>
+                                <SvgIcon
+                                  name="icons-common-caret_down"
+                                  style={{ fontSize: '14px' }}
+                                  className={cx(styles['agent-mode-arrow'])}
                                 />
-                              </div>
-                            ) : (
-                              <SvgIcon name="icons-chat-stop" />
-                            )}
-                          </span>
-                        </Tooltip>
-                      ) : (
+                              </span>
+                            </span>
+                          </Tooltip>
+                        </Dropdown>
+                      )}
+                    </VoiceFooter.HideWhenActive>
+                    <VoiceFooter.HideWhenActive>
+                      {showTaskAgentToggle && (
                         <Tooltip
                           title={
-                            buttonSlotActive
-                              ? '加入发送队列'
-                              : getButtonTooltip()
+                            isTaskAgentActive
+                              ? t(
+                                  'PC.Components.ChatInputHome.switchToNormalMode',
+                                )
+                              : t(
+                                  'PC.Components.ChatInputHome.useAgentComputerTask',
+                                )
                           }
                         >
                           <span
-                            onClick={handleSendMessage}
                             className={cx(
                               'flex',
                               'items-center',
                               'content-center',
                               'cursor-pointer',
                               styles.box,
-                              styles['send-box'],
+                              styles['plus-box'],
+                              styles['task-agent-box'],
                               {
-                                [styles['send-box-queue']]: buttonSlotActive,
-                                [styles.disabled]:
-                                  disabledSend ||
-                                  wholeDisabled ||
-                                  loadingConversation ||
-                                  isLoadingOtherInterface,
+                                [styles['task-agent-active']]:
+                                  isTaskAgentActive,
                               },
                             )}
+                            onClick={onToggleTaskAgent}
                           >
-                            <SvgIcon
-                              name="icons-chat-send"
-                              style={{ fontSize: '14px' }}
-                            />
+                            <DesktopOutlined style={{ fontSize: '14px' }} />
                           </span>
                         </Tooltip>
-                      )
-                    }
-                  >
-                    {prefix}
-                    {(isTaskAgentActive ||
-                      agentType === AgentTypeEnum.TaskAgent) &&
-                      !readonly && (
-                        <ComputerTypeSelector
-                          value={
-                            agentSandboxId !== undefined &&
-                            agentSandboxId !== null
-                              ? String(agentSandboxId)
-                              : conversationInfo?.sandboxServerId !==
-                                  undefined &&
-                                conversationInfo?.sandboxServerId !== null
-                              ? String(conversationInfo.sandboxServerId)
-                              : selectedComputerId
-                          }
-                          onChange={(id: string) => {
-                            onComputerSelect?.(id);
-                            // 切回云电脑时工作目录失效，一并清空（仅个人电脑生效）
-                            if (id === '-1' && workspaceDir) {
-                              onWorkspaceDirChange?.('');
+                      )}
+                    </VoiceFooter.HideWhenActive>
+
+                    <VoiceFooter.HideWhenActive>
+                      <ManualComponentItem
+                        manualComponents={manualComponents}
+                        selectedComponentList={selectedComponentList}
+                        onSelectComponent={onSelectComponent}
+                      />
+                    </VoiceFooter.HideWhenActive>
+
+                    <VoiceFooter.Expand />
+
+                    <VoiceFooter.Right
+                      defaultActions={
+                        showStopButton ? (
+                          <Tooltip title={getStopButtonTooltip()}>
+                            <span
+                              onClick={handleStopConversation}
+                              className={cx(
+                                'flex',
+                                'items-center',
+                                'content-center',
+                                'cursor-pointer',
+                                styles.box,
+                                styles['send-box'],
+                                styles['stop-box'],
+                                {
+                                  [styles['stop-box-active']]:
+                                    !isStoppingConversation,
+                                },
+                              )}
+                            >
+                              {isStoppingConversation ? (
+                                <div className={cx(styles['loading-box'])}>
+                                  <LoadingOutlined
+                                    className={cx(styles['loading-icon'])}
+                                  />
+                                </div>
+                              ) : (
+                                <SvgIcon name="icons-chat-stop" />
+                              )}
+                            </span>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip
+                            title={
+                              buttonSlotActive
+                                ? '加入发送队列'
+                                : getButtonTooltip()
                             }
-                          }}
-                          disabled={wholeDisabled}
+                          >
+                            <span
+                              onClick={handleSendMessage}
+                              className={cx(
+                                'flex',
+                                'items-center',
+                                'content-center',
+                                'cursor-pointer',
+                                styles.box,
+                                styles['send-box'],
+                                {
+                                  [styles['send-box-queue']]: buttonSlotActive,
+                                  [styles.disabled]:
+                                    disabledSend ||
+                                    wholeDisabled ||
+                                    loadingConversation ||
+                                    isLoadingOtherInterface,
+                                },
+                              )}
+                            >
+                              <SvgIcon
+                                name="icons-chat-send"
+                                style={{ fontSize: '14px' }}
+                              />
+                            </span>
+                          </Tooltip>
+                        )
+                      }
+                    >
+                      {prefix}
+                      {(isTaskAgentActive ||
+                        agentType === AgentTypeEnum.TaskAgent) &&
+                        !readonly && (
+                          <ComputerTypeSelector
+                            value={
+                              agentSandboxId !== undefined &&
+                              agentSandboxId !== null
+                                ? String(agentSandboxId)
+                                : conversationInfo?.sandboxServerId !==
+                                    undefined &&
+                                  conversationInfo?.sandboxServerId !== null
+                                ? String(conversationInfo.sandboxServerId)
+                                : selectedComputerId
+                            }
+                            onChange={(id: string) => {
+                              onComputerSelect?.(id);
+                              // 切回云电脑时工作目录失效，一并清空（仅个人电脑生效）
+                              if (id === '-1' && workspaceDir) {
+                                onWorkspaceDirChange?.('');
+                              }
+                            }}
+                            disabled={wholeDisabled}
+                            agentId={agentId}
+                            fixedSelection={
+                              fixedSelection ||
+                              streamActive ||
+                              effectiveTaskExecuting
+                            }
+                            unavailable={isSandboxUnavailable}
+                            autoSelect={autoSelectComputer}
+                            saveOnSelect={saveComputerOnSelect}
+                            isPersonalComputer={isPersonalComputer}
+                            readonly={readonly}
+                          />
+                        )}
+                      {allowOtherModel === DefaultSelectedEnum.Yes && (
+                        <ModelSelector
                           agentId={agentId}
-                          fixedSelection={
-                            fixedSelection ||
-                            streamActive ||
-                            effectiveTaskExecuting
-                          }
-                          unavailable={isSandboxUnavailable}
-                          autoSelect={autoSelectComputer}
-                          saveOnSelect={saveComputerOnSelect}
-                          isPersonalComputer={isPersonalComputer}
-                          readonly={readonly}
+                          selectedModelId={selectedModelId}
+                          onModelSelect={onModelSelect}
+                          agentType={agentType}
                         />
                       )}
-                    {/**
-                     * 工作目录入口（wiki #17 / 5-b）：用户自选个人电脑时可选目录，
-                     * 目录随会话创建记录（sandboxId+workspaceDir）。
-                     * 仅用户主动选择的个人电脑场景展示——智能体绑定电脑
-                     * （agentSandboxId 固定）与云电脑不展示。
-                     */}
-                    {(isTaskAgentActive ||
-                      agentType === AgentTypeEnum.TaskAgent) &&
-                      !readonly &&
-                      !fixedSelection &&
-                      selectedComputerId &&
-                      selectedComputerId !== '-1' &&
-                      onWorkspaceDirChange && (
-                        <span
-                          className={cx(
-                            'flex',
-                            'items-center',
-                            'cursor-pointer',
-                            styles.box,
-                          )}
-                          title={
-                            workspaceDir || t('PC.Components.WorkspaceDir.pick')
-                          }
-                          onClick={() => {
-                            void (async () => {
-                              const dir = await pickSingleLocalDirectory();
-                              if (dir) onWorkspaceDirChange(dir);
-                            })();
+                      {showSpaceSelector && (
+                        <SpaceSelector
+                          selectedSpaceId={selectedSpaceId}
+                          onSpaceSelect={onSpaceSelect}
+                        />
+                      )}
+                    </VoiceFooter.Right>
+                  </footer>
+                  {/**
+                   * 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，
+                   * 仅用户自选个人电脑时展示（智能体绑定电脑 agentSandboxId 固定、
+                   * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspaceDir）。
+                   * 「默认工作目录」=不传 workspaceDir；「打开电脑文件夹」=可视化浏览弹窗。
+                   */}
+                  {(isTaskAgentActive ||
+                    agentType === AgentTypeEnum.TaskAgent) &&
+                    !readonly &&
+                    !fixedSelection &&
+                    selectedComputerId &&
+                    selectedComputerId !== '-1' &&
+                    onWorkspaceDirChange && (
+                      <div className={cx(styles['workspace-dir-bar'])}>
+                        <Dropdown
+                          trigger={['click']}
+                          menu={{
+                            selectable: true,
+                            selectedKeys: [
+                              workspaceDir ? 'pick-folder' : 'default',
+                            ],
+                            items: [
+                              {
+                                key: 'default',
+                                icon: <FolderOutlined />,
+                                label: t(
+                                  'PC.Components.WorkspaceDir.defaultDir',
+                                ),
+                              },
+                              {
+                                key: 'pick-folder',
+                                icon: <FolderOpenOutlined />,
+                                label: t(
+                                  'PC.Components.WorkspaceDir.openComputerFolder',
+                                ),
+                              },
+                            ],
+                            onClick: ({ key }: { key: string }) => {
+                              if (key === 'pick-folder') {
+                                setWorkspaceDirPickerOpen(true);
+                              } else {
+                                onWorkspaceDirChange('');
+                              }
+                            },
                           }}
                         >
-                          <FolderOpenOutlined
-                            style={{ fontSize: '14px' }}
-                            className={cx({
-                              [styles['workspace-dir-active']]: !!workspaceDir,
-                            })}
-                          />
-                          {workspaceDir ? (
-                            <>
-                              <span
-                                className={cx(styles['workspace-dir-label'])}
-                              >
-                                {workspaceDirTailLabel(workspaceDir)}
-                              </span>
-                              <CloseOutlined
-                                className={cx(
-                                  'cursor-pointer',
-                                  styles['workspace-dir-clear'],
-                                )}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  onWorkspaceDirChange('');
-                                }}
-                              />
-                            </>
-                          ) : (
-                            <span className={cx(styles['workspace-dir-label'])}>
-                              {t('PC.Components.WorkspaceDir.pick')}
+                          <button
+                            type="button"
+                            className={cx(styles['workspace-dir-trigger'])}
+                            title={workspaceDir || undefined}
+                          >
+                            <FolderOutlined />
+                            <span className={cx(styles['workspace-dir-text'])}>
+                              {workspaceDir ||
+                                t('PC.Components.WorkspaceDir.defaultDir')}
                             </span>
-                          )}
-                        </span>
-                      )}
-                    {allowOtherModel === DefaultSelectedEnum.Yes && (
-                      <ModelSelector
-                        agentId={agentId}
-                        selectedModelId={selectedModelId}
-                        onModelSelect={onModelSelect}
-                        agentType={agentType}
-                      />
+                            <DownOutlined
+                              className={cx(styles['workspace-dir-caret'])}
+                            />
+                          </button>
+                        </Dropdown>
+                        <WorkspaceDirPickerModal
+                          open={workspaceDirPickerOpen}
+                          sandboxId={selectedComputerId}
+                          onCancel={() => setWorkspaceDirPickerOpen(false)}
+                          onConfirm={(dir) => {
+                            setWorkspaceDirPickerOpen(false);
+                            onWorkspaceDirChange(dir);
+                          }}
+                        />
+                      </div>
                     )}
-                    {showSpaceSelector && (
-                      <SpaceSelector
-                        selectedSpaceId={selectedSpaceId}
-                        onSpaceSelect={onSpaceSelect}
-                      />
-                    )}
-                  </VoiceFooter.Right>
-                </footer>
+                </>
               )}
             </VoiceFooter.Provider>
           </div>

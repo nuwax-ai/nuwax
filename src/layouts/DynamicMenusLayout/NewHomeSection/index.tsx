@@ -14,9 +14,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
 import ProjectPanel from './components/ProjectPanel';
-import RecentAgentItem from './components/RecentAgentItem';
 import SearchHeader from './components/SearchHeader';
-import { getAgentIdFromHomePathname } from './utils';
 
 import {
   CONVERSATION_FLAGS_EVENT,
@@ -25,10 +23,8 @@ import {
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import { apiAgentConversationList } from '@/services/agentConfig';
-import { apiUserUsedAgentList } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
-import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
 import styles from './index.less';
@@ -36,58 +32,45 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const ITEM_HEIGHT = 58; // 列表项重构后高度增加
-const RECENT_PAGE_SIZE = 30;
 const ACTIVE_TAB_STORAGE_KEY = 'PC_HOME_SECTION_ACTIVE_TAB';
 
-type HomeTab = 'conversation' | 'recent' | 'project';
-type LoadRecentList = (
-  isRefresh?: boolean,
-  options?: { silent?: boolean; keyword?: string },
-) => Promise<void>;
+type HomeTab = 'conversation' | 'project';
 
 const getInitialActiveTab = (): HomeTab => {
-  if (typeof window === 'undefined') return 'recent';
+  if (typeof window === 'undefined') return 'conversation';
   const storedTab = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-  return storedTab === 'conversation' ||
-    storedTab === 'recent' ||
-    storedTab === 'project'
+  return storedTab === 'conversation' || storedTab === 'project'
     ? storedTab
-    : 'recent';
+    : 'conversation';
 };
 
 const componentCache = {
-  activeTab: 'recent' as HomeTab,
+  activeTab: 'conversation' as HomeTab,
   list: null as ConversationInfo[] | null,
   hasMore: true,
   keyword: '',
   searchKeyword: '',
-  recentList: null as AgentInfo[] | null,
-  recentHasMore: true,
-  recentKeyword: '',
-  recentSearchKeyword: '',
-  recentPage: 1,
   scrollTop: 0,
 };
 
-/** tab 指示条位次：CSS 侧以 data-active 驱动滑动（原型同款动效的 CSS-only 等价实现） */
+/** 经典布局 tab 指示条位次：CSS 侧以 data-active 驱动滑动（原型同款动效的 CSS-only 等价实现） */
 const HOME_TAB_INDEX: Record<HomeTab, number> = {
-  recent: 0,
-  conversation: 1,
-  project: 2,
+  conversation: 0,
+  project: 1,
 };
 
 const NewHomeSection: React.FC<{
   style?: React.CSSProperties;
-  /** 经典布局（style1/2）：渲染顶部搜索框 + 新建会话入口（单栏由 SidebarNavHeader 提供，不传即不渲染） */
+  /** 经典布局（style1/2）：渲染顶部搜索框 + 新建会话入口 + 任务/项目 tab 切换；
+   * 单栏（style3）不传：SidebarNavHeader 提供头部，列表区为「项目/任务」双分组折叠形态（原型同款） */
   showSearchHeader?: boolean;
 }> = ({ style, showSearchHeader = false }) => {
+  const isSidebarNavMode = !showSearchHeader;
+
   const { id: chatIdParam } = useParams();
   const location = useLocation();
   const chatId =
     chatIdParam || location.pathname.match(/\/home\/chat\/([^/]+)/)?.[1];
-  const currentAgentId = getAgentIdFromHomePathname(location.pathname);
-  const currentAgentIdRef = useRef(currentAgentId);
-  currentAgentIdRef.current = currentAgentId;
 
   const { handleCloseMobileMenu } = useModel('layout');
   const { firstLevelMenus } = useModel('menuModel');
@@ -97,8 +80,6 @@ const NewHomeSection: React.FC<{
     componentCache.activeTab = initialTab;
     return initialTab;
   });
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
   const [localList, setLocalList] = useState<ConversationInfo[]>(
     componentCache.list || [],
   );
@@ -124,71 +105,15 @@ const NewHomeSection: React.FC<{
   const [searchKeyword, setSearchKeyword] = useState(
     componentCache.searchKeyword,
   );
-  const [recentList, setRecentList] = useState<AgentInfo[]>(
-    componentCache.recentList || [],
-  );
-  const [recentHasMore, setRecentHasMore] = useState(
-    componentCache.recentList ? componentCache.recentHasMore : true,
-  );
-  const [recentKeyword, setRecentKeyword] = useState(
-    componentCache.recentKeyword,
-  );
-  const [recentSearchKeyword, setRecentSearchKeyword] = useState(
-    componentCache.recentSearchKeyword,
-  );
-
-  // 右键菜单删除/重命名后,同步「最近」分组的会话数据(全局事件来自 ConversationContextMenu)
-  useEffect(() => {
-    const removeRecentConversation = (event: Event) => {
-      const id = (event as CustomEvent<{ id: number }>).detail?.id;
-      if (id === undefined || id === null) return;
-      setRecentList((prev) =>
-        prev.map((agent) => ({
-          ...agent,
-          conversationList: agent.conversationList?.filter(
-            (conversation) => Number(conversation.id) !== Number(id),
-          ),
-        })),
-      );
-    };
-    const renameRecentConversation = (event: Event) => {
-      const detail = (event as CustomEvent<{ id: number; topic: string }>)
-        .detail;
-      if (!detail?.id) return;
-      setRecentList((prev) =>
-        prev.map((agent) => ({
-          ...agent,
-          conversationList: agent.conversationList?.map((conversation) =>
-            Number(conversation.id) === Number(detail.id)
-              ? { ...conversation, topic: detail.topic }
-              : conversation,
-          ),
-        })),
-      );
-    };
-    window.addEventListener('conversation-deleted', removeRecentConversation);
-    window.addEventListener('conversation-updated', renameRecentConversation);
-    return () => {
-      window.removeEventListener(
-        'conversation-deleted',
-        removeRecentConversation,
-      );
-      window.removeEventListener(
-        'conversation-updated',
-        renameRecentConversation,
-      );
-    };
-  }, []);
+  // 单栏分组折叠态（原型：点击分组头折叠/展开对应列表，不做持久化）
+  const [projectCollapsed, setProjectCollapsed] = useState(false);
+  const [taskCollapsed, setTaskCollapsed] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const listInnerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
   const pageSizeRef = useRef(30);
   const loadingRef = useRef(false);
-  const recentLoadingRef = useRef(false);
-  const recentPageRef = useRef(componentCache.recentPage);
-  const recentAutoLoadFrameRef = useRef<number | null>(null);
-  const loadRecentListRef = useRef<LoadRecentList>(async () => undefined);
 
   const calcPageSize = useCallback(() => {
     const height = scrollContainerRef.current?.clientHeight ?? 0;
@@ -271,10 +196,9 @@ const NewHomeSection: React.FC<{
     onChatFinished: handleConversationChatFinished,
   });
 
-  // 会话记录 Tab 展示列表：默认隐藏归档项、置顶项排前（稳定排序保持原相对顺序）；
+  // 任务列表：默认隐藏归档项、置顶项排前（稳定排序保持原相对顺序）；
   // 「已归档」视图只看归档项
   const visibleConversationList = useMemo(() => {
-    if (activeTab !== 'conversation') return localList;
     const archivedSet = new Set(conversationFlags.archived);
     const filtered = showArchived
       ? localList.filter((item) => archivedSet.has(Number(item.id)))
@@ -286,7 +210,7 @@ const NewHomeSection: React.FC<{
         Number(pinnedSet.has(Number(b.id))) -
         Number(pinnedSet.has(Number(a.id))),
     );
-  }, [activeTab, localList, conversationFlags, showArchived]);
+  }, [localList, conversationFlags, showArchived]);
 
   const archivedCount = useMemo(
     () =>
@@ -296,107 +220,12 @@ const NewHomeSection: React.FC<{
     [localList, conversationFlags],
   );
 
-  const scheduleRecentAutoLoad = useCallback((hasNextPage: boolean) => {
-    if (!hasNextPage) return;
-
-    if (recentAutoLoadFrameRef.current !== null) {
-      window.cancelAnimationFrame(recentAutoLoadFrameRef.current);
-    }
-
-    recentAutoLoadFrameRef.current = window.requestAnimationFrame(() => {
-      recentAutoLoadFrameRef.current = null;
-      const container = scrollContainerRef.current;
-      if (
-        activeTabRef.current === 'recent' &&
-        container &&
-        container.clientHeight > 0 &&
-        container.scrollHeight <= container.clientHeight
-      ) {
-        loadRecentListRef.current();
-      }
-    });
-  }, []);
-
-  const loadRecentList = useCallback(
-    async (
-      isRefresh = false,
-      options?: { silent?: boolean; keyword?: string },
-    ) => {
-      if (recentLoadingRef.current || (!recentHasMore && !isRefresh)) return;
-      recentLoadingRef.current = true;
-      if (!options?.silent) setLoading(true);
-
-      const pageIndex = isRefresh ? 1 : recentPageRef.current + 1;
-      const keyword = options?.keyword ?? recentSearchKeyword;
-      let hasNextPage = false;
-      try {
-        const res = await apiUserUsedAgentList({
-          size: RECENT_PAGE_SIZE,
-          pageIndex,
-          keyword: keyword || undefined,
-        });
-        const data = res.data ?? [];
-        if (isRefresh) {
-          setRecentList(data);
-        } else {
-          setRecentList((previous) => {
-            const seen = new Set(previous.map((item) => item.agentId));
-            return [
-              ...previous,
-              ...data.filter((item) => !seen.has(item.agentId)),
-            ];
-          });
-        }
-        recentPageRef.current = pageIndex;
-        hasNextPage = data.length > 0;
-        setRecentHasMore(hasNextPage);
-      } finally {
-        recentLoadingRef.current = false;
-        if (!options?.silent) setLoading(false);
-      }
-
-      scheduleRecentAutoLoad(hasNextPage);
-    },
-    [recentHasMore, recentSearchKeyword, scheduleRecentAutoLoad],
-  );
-
-  useEffect(() => {
-    loadRecentListRef.current = loadRecentList;
-  }, [loadRecentList]);
-
-  useEffect(
-    () => () => {
-      if (recentAutoLoadFrameRef.current !== null) {
-        window.cancelAnimationFrame(recentAutoLoadFrameRef.current);
-      }
-    },
-    [],
-  );
-
-  const recentConversationList = useMemo(
-    () => recentList.flatMap((item) => item.conversationList ?? []),
-    [recentList],
-  );
-
-  const handleRecentChatFinished = useCallback(() => {
-    loadRecentListRef.current(true, { silent: true });
-  }, []);
-
-  useChatFinishedWhenListExecuting({
-    conversationList: recentConversationList,
-    onChatFinished: handleRecentChatFinished,
-  });
-
   const stateRef = useRef({
     activeTab,
     localList,
     hasMore,
     keyword,
     searchKeyword,
-    recentList,
-    recentHasMore,
-    recentKeyword,
-    recentSearchKeyword,
   });
   stateRef.current = {
     activeTab,
@@ -404,23 +233,16 @@ const NewHomeSection: React.FC<{
     hasMore,
     keyword,
     searchKeyword,
-    recentList,
-    recentHasMore,
-    recentKeyword,
-    recentSearchKeyword,
   };
 
   useEffect(() => {
     if (!initializedRef.current) {
       initializedRef.current = true;
-      if (activeTab === 'recent') {
-        loadRecentList(true, {
-          silent: componentCache.recentList !== null,
-        });
-      } else {
+      // 单栏双分组常驻任务列表；经典布局停留在项目 tab 时延后到切换加载
+      if (isSidebarNavMode || activeTab === 'conversation') {
         loadList(true, { silent: componentCache.list !== null });
       }
-      if (componentCache.list || componentCache.recentList) {
+      if (componentCache.list) {
         setTimeout(() => {
           if (scrollContainerRef.current && componentCache.scrollTop) {
             scrollContainerRef.current.scrollTop = componentCache.scrollTop;
@@ -435,11 +257,6 @@ const NewHomeSection: React.FC<{
       componentCache.hasMore = stateRef.current.hasMore;
       componentCache.keyword = stateRef.current.keyword;
       componentCache.searchKeyword = stateRef.current.searchKeyword;
-      componentCache.recentList = stateRef.current.recentList;
-      componentCache.recentHasMore = stateRef.current.recentHasMore;
-      componentCache.recentKeyword = stateRef.current.recentKeyword;
-      componentCache.recentSearchKeyword = stateRef.current.recentSearchKeyword;
-      componentCache.recentPage = recentPageRef.current;
       if (scrollContainerRef.current) {
         componentCache.scrollTop = scrollContainerRef.current.scrollTop;
       }
@@ -454,23 +271,16 @@ const NewHomeSection: React.FC<{
     const wasHomeRoute = prevPathnameRef.current.startsWith('/home');
     const isHomepageMenuClick =
       (location.state as { menuCode?: string } | null)?.menuCode === 'homepage';
-    const refreshActiveTab = () => {
-      if (stateRef.current.activeTab === 'recent') {
-        loadRecentListRef.current(true, { silent: true });
-      } else {
-        loadListRef.current(true, { silent: true });
-      }
-    };
 
     if (isHomepageMenuClick || location.pathname === '/home') {
-      // 点击主页菜单时，即使路径没有变化，也按当前 Tab 静默更新并回到顶部
-      refreshActiveTab();
+      // 点击主页菜单时，即使路径没有变化，也按当前视图静默更新并回到顶部
+      loadListRef.current(true, { silent: true });
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop = 0;
       }
     } else if (isHomeRoute && !wasHomeRoute) {
       // 从其他页面（如 /space）切回到 /home/chat 页面，即使组件未销毁也应当静默更新一次
-      refreshActiveTab();
+      loadListRef.current(true, { silent: true });
     }
 
     prevPathnameRef.current = location.pathname;
@@ -487,7 +297,7 @@ const NewHomeSection: React.FC<{
       const { id, topic, icon } = customEvent.detail;
       const targetId = String(id);
 
-      // 同步「会话记录」列表中的名称/图标
+      // 同步「任务」列表中的名称/图标（本地补丁是最快路径）
       setLocalList((prev) =>
         prev.map((item) => {
           if (String(item.id) === targetId) {
@@ -501,35 +311,10 @@ const NewHomeSection: React.FC<{
         }),
       );
 
-      // 同步「最近使用」列表中的会话名称（执行中下拉展示 topic）
-      if (topic !== undefined) {
-        setRecentList((prev) =>
-          prev.map((item) => {
-            const conversationList = item.conversationList ?? [];
-            if (
-              !conversationList.some(
-                (conversation) => String(conversation.id) === targetId,
-              )
-            ) {
-              return item;
-            }
-            return {
-              ...item,
-              conversationList: conversationList.map((conversation) =>
-                String(conversation.id) === targetId
-                  ? { ...conversation, topic }
-                  : conversation,
-              ),
-            };
-          }),
-        );
-      }
-
       // 补一次静默重新查询与后端对齐：本地补丁是最快路径，但列表未加载、
       // id 未命中或组件刚挂载等场景下补丁会落空，重新查询可确保接口
-      // 返回的最新 topic/icon 真正应用到「会话记录 / 最近使用」两个列表
+      // 返回的最新 topic/icon 真正应用到列表
       loadListRef.current(true, { silent: true });
-      loadRecentListRef.current(true, { silent: true });
     };
 
     const handleConversationDeleted = (e: Event) => {
@@ -540,26 +325,20 @@ const NewHomeSection: React.FC<{
     };
 
     const handleRefreshConversationList = () => {
-      // 会话结束（SSE 关闭）/主题更新时：两个 Tab 都静默刷新，
-      // 让「最近使用」的执行中角标与话题名称也能及时同步
+      // 会话结束（SSE 关闭）/主题更新时：静默刷新任务列表
       loadListRef.current(true, { silent: true });
-      loadRecentListRef.current(true, { silent: true });
     };
 
     const handleUpdateConversationListTaskStatus = ({
       conversationId,
       taskStatus,
-      agentId,
-      topic,
     }: {
       conversationId: number | string;
       taskStatus: TaskStatus;
-      agentId?: number | string;
-      topic?: string;
     }) => {
       const targetConversationId = String(conversationId);
 
-      // 「会话记录」本地补丁。轮询补偿会周期性补发终态事件，命中条目无实际变化时
+      // 「任务」列表本地补丁。轮询补偿会周期性补发终态事件，命中条目无实际变化时
       // 返回原引用，避免列表每 5s 无谓重渲染。
       setLocalList((prev) => {
         const targetIndex = prev.findIndex(
@@ -572,85 +351,6 @@ const NewHomeSection: React.FC<{
         next[targetIndex] = { ...next[targetIndex], taskStatus };
         return next;
       });
-
-      const targetAgentId = agentId ?? currentAgentIdRef.current;
-
-      // 「最近使用」当前快照中是否已包含该智能体或该会话：
-      // 发起会话的智能体不在最近列表时，乐观追加无处可挂，静默刷新兜底
-      const foundInRecentList = (stateRef.current.recentList ?? []).some(
-        (item) =>
-          item.agentId.toString() === targetAgentId?.toString() ||
-          (item.conversationList ?? []).some(
-            (conversation) => String(conversation.id) === targetConversationId,
-          ),
-      );
-
-      setRecentList((prev) => {
-        let changed = false;
-        const next = prev.map((item) => {
-          const conversationList = item.conversationList ?? [];
-          const hasConversation = conversationList.some(
-            (conversation) =>
-              conversation.id?.toString() === targetConversationId,
-          );
-
-          if (hasConversation) {
-            let conversationChanged = false;
-            const nextConversationList = conversationList.map(
-              (conversation) => {
-                if (conversation.id?.toString() !== targetConversationId) {
-                  return conversation;
-                }
-                // 状态与主题都无变化时保留原引用：轮询补偿周期内避免无谓重渲染
-                if (
-                  conversation.taskStatus === taskStatus &&
-                  (!topic || conversation.topic === topic)
-                ) {
-                  return conversation;
-                }
-                conversationChanged = true;
-                return {
-                  ...conversation,
-                  taskStatus,
-                  ...(topic ? { topic } : {}),
-                };
-              },
-            );
-            if (!conversationChanged) {
-              return item;
-            }
-            changed = true;
-            return { ...item, conversationList: nextConversationList };
-          }
-
-          if (
-            taskStatus === TaskStatus.EXECUTING &&
-            targetAgentId !== undefined &&
-            item.agentId.toString() === targetAgentId.toString()
-          ) {
-            changed = true;
-            return {
-              ...item,
-              conversationList: [
-                ...conversationList,
-                { id: conversationId, topic, taskStatus },
-              ],
-            };
-          }
-
-          return item;
-        });
-        return changed ? next : prev;
-      });
-
-      // 新智能体首次发起会话：最近列表尚未包含该智能体时，静默刷新让其及时出现
-      if (
-        taskStatus === TaskStatus.EXECUTING &&
-        targetAgentId !== undefined &&
-        !foundInRecentList
-      ) {
-        loadRecentListRef.current(true, { silent: true });
-      }
     };
 
     window.addEventListener('conversation-updated', handleConversationUpdated);
@@ -695,77 +395,49 @@ const NewHomeSection: React.FC<{
     loadList(true);
   }, [searchKeyword]);
 
-  const isFirstRecentSearchKeywordEffect = useRef(true);
-  useEffect(() => {
-    if (isFirstRecentSearchKeywordEffect.current) {
-      isFirstRecentSearchKeywordEffect.current = false;
-      return;
-    }
-    setRecentHasMore(true);
-    setRecentList([]);
-    recentPageRef.current = 1;
-    loadRecentList(true);
-  }, [recentSearchKeyword]);
+  // 任务列表是否在滚动视口内（触底加载分页仅在其可见时生效）
+  const taskListVisible = isSidebarNavMode
+    ? !taskCollapsed
+    : activeTab === 'conversation';
 
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
     const handleScroll = () => {
-      const currentHasMore =
-        activeTab === 'conversation' ? hasMore : recentHasMore;
-      if (loading || !currentHasMore) return;
+      if (loading || !hasMore || !taskListVisible) return;
       const { scrollTop, scrollHeight, clientHeight } = container;
       if (scrollTop + clientHeight >= scrollHeight - 30) {
-        if (activeTab === 'conversation') {
-          loadList();
-        } else {
-          loadRecentList();
-        }
+        loadList();
       }
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [activeTab, loading, hasMore, recentHasMore, loadList, loadRecentList]);
+  }, [taskListVisible, loading, hasMore, loadList]);
 
   const { run: debouncedSearch, cancel: cancelDebouncedSearch } = useDebounceFn(
-    (val: string, tab: HomeTab) => {
-      if (tab === 'conversation') {
-        setSearchKeyword(val);
-      } else {
-        setRecentSearchKeyword(val);
-      }
+    (val: string) => {
+      setSearchKeyword(val);
     },
     { wait: 500 },
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 项目 tab 数据接口未就绪，搜索不生效（维持改版前行为）
+    if (activeTab === 'project') return;
     const val = e.target.value;
-    if (activeTab === 'conversation') {
-      setKeyword(val);
-    } else if (activeTab === 'recent') {
-      setRecentKeyword(val);
-    }
-    if (activeTab !== 'project') {
-      debouncedSearch(val, activeTab);
-    }
+    setKeyword(val);
+    debouncedSearch(val);
   };
 
   const handleSearchSubmit = () => {
+    if (activeTab === 'project') return;
     cancelDebouncedSearch();
-    if (activeTab === 'conversation') {
-      if (keyword === searchKeyword) {
-        loadListRef.current(true);
-      } else {
-        setSearchKeyword(keyword);
-      }
-    } else if (activeTab === 'recent') {
-      if (recentKeyword === recentSearchKeyword) {
-        loadRecentListRef.current(true);
-      } else {
-        setRecentSearchKeyword(recentKeyword);
-      }
+    if (keyword === searchKeyword) {
+      loadListRef.current(true);
+    } else {
+      setSearchKeyword(keyword);
     }
   };
 
@@ -779,19 +451,11 @@ const NewHomeSection: React.FC<{
       // 项目数据接口后端尚未提供,暂无数据加载
       return;
     }
-    if (tab === 'recent') {
-      setRecentKeyword('');
-      setRecentSearchKeyword('');
-      componentCache.recentKeyword = '';
-      componentCache.recentSearchKeyword = '';
-      loadRecentListRef.current(true, { keyword: '' });
-    } else {
-      setKeyword('');
-      setSearchKeyword('');
-      componentCache.keyword = '';
-      componentCache.searchKeyword = '';
-      loadListRef.current(true, { topic: '' });
-    }
+    setKeyword('');
+    setSearchKeyword('');
+    componentCache.keyword = '';
+    componentCache.searchKeyword = '';
+    loadListRef.current(true, { topic: '' });
   };
 
   const handleConversationClick = (item: ConversationInfo) => {
@@ -809,33 +473,111 @@ const NewHomeSection: React.FC<{
     }
   };
 
-  const handleRecentAgentClick = (item: AgentInfo) => {
-    handleCloseMobileMenu();
-    if (item.lastConversationId) {
-      history.push(`/home/chat/${item.lastConversationId}/${item.agentId}`);
-      return;
-    }
-    jumpTo(`/agent/${item.agentId}`);
-  };
-
   const handleNewConversation = () => {
     handleCloseMobileMenu();
     history.push('/home');
   };
 
-  // 单栏模式：新建会话入口在侧栏顶部操作区（SidebarNavHeader），本组件不渲染头部；
-  // 经典布局（showSearchHeader）：恢复改版前的搜索框 + 新建会话入口
+  // 经典布局：新建会话入口在搜索栏右侧（单栏在侧栏顶部操作区 SidebarNavHeader）
   const showNewChatButton = firstLevelMenus?.some(
     (menu: any) => menu?.code === 'new_conversation',
   );
 
-  // const noMoreText = dict('PC.Components.HistoryConversationList.noMore');
+  // 分组头计数：任务 = 当前展示列表数（含归档过滤）；项目 = 可见项目数（ProjectPanel 上报，
+  // 过滤归档后的可见数，与任务计数口径一致；真实接口数据到达前先计 0）
+  const taskCount = visibleConversationList.length;
+  const [projectCount, setProjectCount] = useState(0);
+  const handleProjectCountChange = useCallback(
+    (count: number) => setProjectCount(count),
+    [],
+  );
+
+  // 单栏分组头（原型 .tabs/.tab）：12.5px 文案 + 12px chevron，折叠时箭头转 -90°
+  const renderSectionHeader = (options: {
+    label: string;
+    count: number;
+    collapsed: boolean;
+    task?: boolean;
+    onToggle: () => void;
+  }) => (
+    <div
+      className={cx(styles['section-tabs'], {
+        [styles['task-section-tabs']]: options.task,
+        [styles['section-tabs-collapsed']]: options.collapsed,
+      })}
+      onClick={options.onToggle}
+      role="button"
+      tabIndex={-1}
+      aria-expanded={!options.collapsed}
+    >
+      <span className={cx(styles['section-tab-text'])}>
+        {`${options.label} (${options.count})`}
+      </span>
+      <span className={cx(styles['section-tab-chev'])} aria-hidden>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </span>
+    </div>
+  );
+
+  // 任务列表块：经典 tab 与单栏分组共用（空态 + 会话项 + 加载更多 + 已归档入口）
+  const renderTaskList = (
+    <>
+      {!loading && visibleConversationList.length === 0 && (
+        <EmptyState keyword={keyword} />
+      )}
+
+      <div ref={listInnerRef} className={cx(styles['conversation-list'])}>
+        {visibleConversationList.map((item) => (
+          <ConversationItem
+            key={item.id}
+            item={item}
+            isActive={chatId === item.id?.toString()}
+            onClick={() => handleConversationClick(item)}
+            pinned={conversationFlags.pinned.includes(Number(item.id))}
+            collected={conversationFlags.collected.includes(Number(item.id))}
+            archived={conversationFlags.archived.includes(Number(item.id))}
+          />
+        ))}
+
+        {loading && (
+          <div className={cx(styles['load-more'])}>
+            <Spin size="small" />
+          </div>
+        )}
+
+        {/* 已归档入口:存在归档项或处于已归档视图时显示(本地标记过渡方案) */}
+        {!loading && (archivedCount > 0 || showArchived) && (
+          <div
+            className={cx(styles['archived-entry'])}
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            {showArchived
+              ? dict(
+                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations',
+                )
+              : `${dict(
+                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations',
+                )} (${archivedCount})`}
+          </div>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div style={style} className={cx(styles['new-home-section'])}>
       {showSearchHeader && (
         <SearchHeader
-          keyword={activeTab === 'conversation' ? keyword : recentKeyword}
+          keyword={keyword}
           placeholder={dict(
             'PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder',
           )}
@@ -845,127 +587,82 @@ const NewHomeSection: React.FC<{
           showNewChatButton={showNewChatButton}
         />
       )}
-      <div
-        className={cx(styles.tabs, {
-          [styles['tabs-under-search']]: showSearchHeader,
-        })}
-        data-active={HOME_TAB_INDEX[activeTab] ?? 0}
-      >
-        <button
-          type="button"
-          className={cx(styles.tab, {
-            [styles.active]: activeTab === 'recent',
+
+      {isSidebarNavMode ? (
+        <>
+          {/* 项目分组头：固定于滚动区上方（原型 panel-header 内 .tabs 位） */}
+          {renderSectionHeader({
+            label: dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab'),
+            count: projectCount,
+            collapsed: projectCollapsed,
+            onToggle: () => setProjectCollapsed((prev) => !prev),
           })}
-          onClick={() => handleTabChange('recent')}
-        >
-          {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabSession')}
-        </button>
-        <button
-          type="button"
-          className={cx(styles.tab, {
-            [styles.active]: activeTab === 'conversation',
-          })}
-          onClick={() => handleTabChange('conversation')}
-        >
-          {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask')}
-        </button>
-        <button
-          type="button"
-          className={cx(styles.tab, {
-            [styles.active]: activeTab === 'project',
-          })}
-          onClick={() => handleTabChange('project')}
-        >
-          {dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab')}
-        </button>
-        {/* 滑动指示条：位次由容器 data-active 控制（原型 tab-indicator 的 CSS-only 等价） */}
-        <span className={cx(styles['tab-indicator'])} aria-hidden />
-      </div>
 
-      {/* 列表区:最近 / 会话 / 项目 */}
-      <div
-        ref={scrollContainerRef}
-        className={cx(styles['conversation-list-wrapper'])}
-      >
-        {activeTab === 'project' ? (
-          <ProjectPanel />
-        ) : (
-          <>
-            {!loading &&
-              (activeTab === 'conversation'
-                ? visibleConversationList
-                : recentList
-              ).length === 0 && (
-                <EmptyState
-                  keyword={
-                    activeTab === 'conversation' ? keyword : recentKeyword
-                  }
-                  type={activeTab}
-                />
-              )}
+          {/* 滚动区：项目列表 + 任务分组头 + 任务列表（原型 scroll-area 同构） */}
+          <div
+            ref={scrollContainerRef}
+            className={cx(styles['conversation-list-wrapper'])}
+          >
+            {!projectCollapsed && (
+              <div className={cx(styles['project-list-section'])}>
+                <ProjectPanel onVisibleCountChange={handleProjectCountChange} />
+              </div>
+            )}
 
-            <div ref={listInnerRef} className={cx(styles['conversation-list'])}>
-              {activeTab === 'conversation'
-                ? visibleConversationList.map((item) => (
-                    <ConversationItem
-                      key={item.id}
-                      item={item}
-                      isActive={chatId === item.id?.toString()}
-                      onClick={() => handleConversationClick(item)}
-                      pinned={conversationFlags.pinned.includes(
-                        Number(item.id),
-                      )}
-                      collected={conversationFlags.collected.includes(
-                        Number(item.id),
-                      )}
-                      archived={conversationFlags.archived.includes(
-                        Number(item.id),
-                      )}
-                    />
-                  ))
-                : recentList.map((item) => (
-                    <RecentAgentItem
-                      key={item.id}
-                      item={item}
-                      isActive={currentAgentId === item.agentId?.toString()}
-                      onClick={() => handleRecentAgentClick(item)}
-                      onConversationClick={(conversationId) => {
-                        handleCloseMobileMenu();
-                        history.push(
-                          `/home/chat/${conversationId}/${item.agentId}`,
-                        );
-                      }}
-                      conversationFlags={conversationFlags}
-                    />
-                  ))}
+            {renderSectionHeader({
+              label: dict(
+                'PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask',
+              ),
+              count: taskCount,
+              collapsed: taskCollapsed,
+              task: true,
+              onToggle: () => setTaskCollapsed((prev) => !prev),
+            })}
 
-              {loading && (
-                <div className={cx(styles['load-more'])}>
-                  <Spin size="small" />
-                </div>
-              )}
+            {!taskCollapsed && renderTaskList}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* 经典布局：任务/项目 tab 切换（维持改版前形态，指示条随位次滑动） */}
+          <div
+            className={cx(styles.tabs, styles['tabs-under-search'])}
+            data-active={HOME_TAB_INDEX[activeTab] ?? 0}
+          >
+            <button
+              type="button"
+              className={cx(styles.tab, {
+                [styles.active]: activeTab === 'conversation',
+              })}
+              onClick={() => handleTabChange('conversation')}
+            >
+              {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask')}
+            </button>
+            <button
+              type="button"
+              className={cx(styles.tab, {
+                [styles.active]: activeTab === 'project',
+              })}
+              onClick={() => handleTabChange('project')}
+            >
+              {dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab')}
+            </button>
+            {/* 滑动指示条：位次由容器 data-active 控制（原型 tab-indicator 的 CSS-only 等价） */}
+            <span className={cx(styles['tab-indicator'])} aria-hidden />
+          </div>
 
-              {/* 已归档入口:存在归档项或处于已归档视图时显示(本地标记过渡方案) */}
-              {activeTab === 'conversation' &&
-                !loading &&
-                (archivedCount > 0 || showArchived) && (
-                  <div
-                    className={cx(styles['archived-entry'])}
-                    onClick={() => setShowArchived(!showArchived)}
-                  >
-                    {showArchived
-                      ? dict(
-                          'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations',
-                        )
-                      : `${dict(
-                          'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations',
-                        )} (${archivedCount})`}
-                  </div>
-                )}
-            </div>
-          </>
-        )}
-      </div>
+          <div
+            ref={scrollContainerRef}
+            className={cx(styles['conversation-list-wrapper'])}
+          >
+            {activeTab === 'project' ? (
+              <ProjectPanel onVisibleCountChange={handleProjectCountChange} />
+            ) : (
+              renderTaskList
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

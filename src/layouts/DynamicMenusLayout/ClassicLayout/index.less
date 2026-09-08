@@ -1,5 +1,6 @@
 @import '@/styles/color';
 @import '@/styles/token';
+@import '@/styles/scrollbar';
 
 .mobile-container {
   box-shadow: 12px 0 24px -4px rgba(0, 0, 0, 12%);
@@ -43,6 +44,8 @@
     .nav-menus-scroll {
       flex: 1;
       min-height: 0;
+      // 二级菜单列滚动条走统一方案：默认透明、hover 容器才显示滑块
+      .scrollbar-auto-hide();
     }
 
     .integral-footer {
