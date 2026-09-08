@@ -42,6 +42,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onDeleteFile,
       idleDetection,
       hideDesktop,
+      appStage,
       isFullscreenPreview,
       onFullscreenPreview,
       onSaveFiles,
@@ -355,6 +356,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           idleDetection,
           hideDesktop,
           onReconnect,
+          appStage,
         }}
       />
     );
