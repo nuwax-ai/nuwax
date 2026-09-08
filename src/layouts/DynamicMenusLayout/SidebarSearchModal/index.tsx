@@ -127,6 +127,11 @@ const SidebarSearchModal: React.FC = () => {
         );
       } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
         history.push(`/space/${devSpaceId}/app-dev/${devTargetId}`);
+      } else if (devTargetType === 'UserApp' && devSpaceId && devTargetId) {
+        // 全栈应用会话：跳全栈应用开发详情页，conversationId 用于恢复该会话
+        history.push(
+          `/space/${devSpaceId}/app-pro?appId=${devTargetId}&conversationId=${id}`,
+        );
       } else {
         history.push('/home/chat/' + id + '/' + agentId);
       }

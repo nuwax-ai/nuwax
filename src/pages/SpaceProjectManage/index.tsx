@@ -1,18 +1,29 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { apiUserProjectPageQuery } from '@/pages/AppDevPro/services/appDevPro';
+import {
+  apiUserAppDelete,
+  apiUserAppLatestConversation,
+  apiUserAppUpdate,
+  apiUserProjectDelete,
+  apiUserProjectLatestConversation,
+  apiUserProjectPageQuery,
+  apiUserProjectUpdate,
+} from '@/pages/AppDevPro/services/appDevPro';
 import type { UserProjectItem } from '@/pages/AppDevPro/type';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { PageDevelopCreateTypeEnum } from '@/types/enums/pageDev';
 import {
+  DeleteOutlined,
   DownOutlined,
+  EditOutlined,
   FolderOpenOutlined,
+  MoreOutlined,
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, Empty, Input, Spin } from 'antd';
+import { Button, Dropdown, Empty, Input, Modal, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useParams } from 'umi';
 import CreateUserApp from '../AppDevPro/components/CreateUserApp';
@@ -29,7 +40,9 @@ import {
 
 /**
  * 项目管理：个人/团队空间下的三类项目列表（常规项目/网页应用/全栈应用）。
- * 数据走 apiUserProjectPageQuery（后端未就绪期间 dev 由 mock 供数）；
+ * 数据走 apiUserProjectPageQuery；
+ * 常规项目/全栈应用的重命名、删除走真实接口（user-project / userapp 契约），
+ * 打开项目时取当前用户最新会话直达续聊；PageApp 契约未覆盖改名删除，不挂菜单。
  * 菜单入口为 menuModel 的 project_manage 占位项。
  */
 const SpaceProjectManage: React.FC = () => {
@@ -45,6 +58,9 @@ const SpaceProjectManage: React.FC = () => {
   const [openCreateNormal, setOpenCreateNormal] = useState(false);
   const [openCreateUserApp, setOpenCreateUserApp] = useState(false);
   const [openCreatePageApp, setOpenCreatePageApp] = useState(false);
+  // 重命名弹窗态
+  const [renameTarget, setRenameTarget] = useState<UserProjectItem>();
+  const [renameName, setRenameName] = useState('');
 
   const queryProjects = useCallback(async () => {
     if (!spaceId) return;
@@ -125,6 +141,97 @@ const SpaceProjectManage: React.FC = () => {
     }
   };
 
+  /**
+   * 打开项目：PageApp 直达网页 IDE；其余先取当前用户最新会话再进全栈 IDE，
+   * 取不到（含接口失败/尚无会话）不阻塞进入，由 IDE 内自行建立。
+   */
+  const handleOpenProject = useCallback(
+    async (item: Pick<UserProjectItem, 'id' | 'projectType'>) => {
+      if (item.projectType === AgentComponentTypeEnum.PageApp) {
+        openProject(spaceId, item);
+        return;
+      }
+      const fetchLatest =
+        item.projectType === AgentComponentTypeEnum.UserApp
+          ? apiUserAppLatestConversation
+          : apiUserProjectLatestConversation;
+      let conversationId: number | undefined;
+      try {
+        const res = await fetchLatest(item.id);
+        if (res?.code === SUCCESS_CODE) {
+          conversationId = res.data?.conversationId ?? res.data?.id;
+        }
+      } catch {
+        // 最新会话获取失败不阻塞进入项目
+      }
+      openProject(spaceId, item, conversationId);
+    },
+    [spaceId],
+  );
+
+  const handleRenameSubmit = async () => {
+    const name = renameName.trim();
+    if (!name || !renameTarget) return;
+    const { id, projectType } = renameTarget;
+    const res =
+      projectType === AgentComponentTypeEnum.UserApp
+        ? await apiUserAppUpdate({ id, name })
+        : await apiUserProjectUpdate({ id, name });
+    if (res?.code !== SUCCESS_CODE) return;
+    setList((prev) =>
+      prev.map((item) =>
+        item.id === id && item.projectType === projectType
+          ? { ...item, name }
+          : item,
+      ),
+    );
+    setRenameTarget(undefined);
+  };
+
+  const openDeleteConfirm = (item: UserProjectItem) => {
+    Modal.confirm({
+      title: dict('PC.Common.Global.deleteConfirmTitle'),
+      content: dict('PC.Common.Global.deleteConfirmContent'),
+      okButtonProps: { danger: true },
+      okText: dict('PC.Common.Global.delete'),
+      cancelText: dict('PC.Common.Global.cancel'),
+      onOk: async () => {
+        const res =
+          item.projectType === AgentComponentTypeEnum.UserApp
+            ? await apiUserAppDelete(item.id)
+            : await apiUserProjectDelete(item.id);
+        if (res?.code === SUCCESS_CODE) {
+          void queryProjects();
+        }
+      },
+    });
+  };
+
+  const buildCardMenu = (item: UserProjectItem) => ({
+    items: [
+      {
+        key: 'rename',
+        icon: <EditOutlined />,
+        label: dict('PC.Components.ConversationContextMenu.rename'),
+      },
+      { type: 'divider' as const },
+      {
+        key: 'delete',
+        icon: <DeleteOutlined />,
+        danger: true,
+        label: dict('PC.Common.Global.delete'),
+      },
+    ],
+    onClick: ({ key }: { key: string }) => {
+      if (key === 'rename') {
+        setRenameTarget(item);
+        setRenameName(item.name);
+      } else if (key === 'delete') {
+        openDeleteConfirm(item);
+      }
+    },
+  });
+
   return (
     <WorkspaceLayout title={dict('PC.Pages.SpaceProjectManage.menuTitle')}>
       <div className={styles['project-manage']}>
@@ -187,7 +294,7 @@ const SpaceProjectManage: React.FC = () => {
                 <div
                   key={`${item.projectType}-${item.id}`}
                   className={styles.card}
-                  onClick={() => openProject(spaceId, item)}
+                  onClick={() => void handleOpenProject(item)}
                 >
                   <div className={styles['card-icon']}>
                     {item.icon ? (
@@ -208,6 +315,22 @@ const SpaceProjectManage: React.FC = () => {
                       >
                         {dict(PROJECT_TAB_LABEL_KEYS[item.projectType])}
                       </span>
+                      {/* 契约只覆盖常规项目/全栈应用的改名删除，PageApp 不挂菜单 */}
+                      {item.projectType !== AgentComponentTypeEnum.PageApp && (
+                        <Dropdown
+                          trigger={['click']}
+                          menu={buildCardMenu(item)}
+                        >
+                          <button
+                            type="button"
+                            className={styles['card-more']}
+                            aria-label={dict('PC.Components.ActionMenu.more')}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <MoreOutlined />
+                          </button>
+                        </Dropdown>
+                      )}
                     </div>
                     <div
                       className={styles['card-desc']}
@@ -258,6 +381,24 @@ const SpaceProjectManage: React.FC = () => {
           history.push(`/space/${spaceId}/app-pro?appId=${result.id}`);
         }}
       />
+      {/* 重命名（常规项目/全栈应用，走真实接口） */}
+      <Modal
+        title={dict('PC.Components.HistoryConversationList.renameModalTitle')}
+        open={renameTarget !== undefined}
+        onOk={() => void handleRenameSubmit()}
+        onCancel={() => setRenameTarget(undefined)}
+        okButtonProps={{ disabled: !renameName.trim() }}
+        okText={dict('PC.Common.Global.confirm')}
+        cancelText={dict('PC.Common.Global.cancel')}
+        destroyOnHidden
+      >
+        <Input
+          value={renameName}
+          onChange={(event) => setRenameName(event.target.value)}
+          onPressEnter={() => void handleRenameSubmit()}
+          maxLength={50}
+        />
+      </Modal>
     </WorkspaceLayout>
   );
 };
