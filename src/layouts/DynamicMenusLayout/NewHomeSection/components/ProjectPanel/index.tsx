@@ -1,4 +1,6 @@
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { apiUserProjectPageQuery } from '@/pages/AppDevPro/services/appDevPro';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import {
@@ -16,11 +18,12 @@ import {
 import { Dropdown, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-/** 项目子项(文档/会话等内容) */
+/** 项目子项(项目下的会话等内容) */
 export interface ProjectChildItem {
   id: string;
   name: string;
@@ -30,47 +33,10 @@ export interface ProjectChildItem {
 
 /** 项目列表项 */
 export interface ProjectItem {
-  id: string;
+  id: number;
   name: string;
   children?: ProjectChildItem[];
 }
-
-/**
- * MOCK:项目列表数据(参照设计原型样例),仅用于交互/UI 确认。
- * 导出供分组头展示项目计数；TODO(后端):项目数据接口就绪后删除此 mock,数据改为接口下发。
- */
-export const MOCK_PROJECTS: ProjectItem[] = [
-  {
-    id: 'p-1',
-    name: '类飞书文档协作工具',
-    children: [
-      {
-        id: 'c-1-1',
-        name: '技术方案评审稿 v1.1',
-        modified: '昨天',
-        taskStatus: TaskStatus.EXECUTING,
-      },
-      {
-        id: 'c-1-2',
-        name: '租户隔离与需求裁剪',
-        modified: '8月18日',
-        taskStatus: TaskStatus.FAILED,
-      },
-      { id: 'c-1-3', name: 'Yjs 实时协作接入', modified: '8月17日' },
-    ],
-  },
-  {
-    id: 'p-2',
-    name: '智能音箱音乐源接入',
-    children: [
-      { id: 'c-2-1', name: '音源协议调研', modified: '前天' },
-      { id: 'c-2-2', name: 'Demo 工程搭建', modified: '8月20日' },
-    ],
-  },
-  { id: 'p-3', name: '云南出行方案预览页' },
-  { id: 'p-4', name: '湖光秋色志' },
-  { id: 'p-5', name: '女娲智能体OS产品介绍PPT' },
-];
 
 /**
  * 「项目」Tab 面板。
@@ -79,35 +45,68 @@ export const MOCK_PROJECTS: ProjectItem[] = [
  * 置顶排前、归档默认隐藏+「已归档」入口,对齐任务列表会话的交互形态。
  * **项目子项(项目下的会话):不做置顶**(同日定调),仅 重命名/删除 + 状态徽标。
  *
- * 当前为 mock 数据阶段(后端项目接口未 ready,置顶/归档接口后端开发中):
- * 项目级与子项操作仅改本地数据用于交互验证;后端就绪后项目操作迁到服务端、
- * 子项删除/重命名切到会话真实接口(apiAgentConversationDelete/Update)。
+ * 数据走 apiUserProjectPageQuery 真实接口（当前空间全量项目）；
+ * 项目下会话列表后端暂无端点，children 先空（TODO(后端):会话列表接口就绪后接入）。
+ * 置顶/归档/收藏/重命名/删除仍为本地标记(后端置顶/归档接口开发中)；
+ * 后端就绪后项目操作迁到服务端、子项删除/重命名切到会话真实接口
+ * (apiAgentConversationDelete/Update)。
  */
 const ProjectPanel: React.FC<{
   /** 可见项目数变化上报(分组头计数用,对齐任务计数=过滤归档后的可见数) */
   onVisibleCountChange?: (count: number) => void;
 }> = ({ onVisibleCountChange }) => {
-  const [projects, setProjects] = useState<ProjectItem[]>(MOCK_PROJECTS);
-  // 默认展开第一个项目(与原型一致)
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set(MOCK_PROJECTS[0] ? [MOCK_PROJECTS[0].id] : []),
-  );
-  // 项目级标记(mock 阶段本地 state;后端置顶/归档接口就绪后迁移服务端)
-  const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => new Set());
-  const [archivedIds, setArchivedIds] = useState<Set<string>>(() => new Set());
-  const [collectedIds, setCollectedIds] = useState<Set<string>>(
+  const { spaceId: spaceIdParam } = useParams() as { spaceId?: string };
+  const spaceId = Number(spaceIdParam) || undefined;
+
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(() => new Set());
+  // 项目级标记(置顶/归档/收藏后端接口开发中,先本地 state)
+  const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => new Set());
+  const [archivedIds, setArchivedIds] = useState<Set<number>>(() => new Set());
+  const [collectedIds, setCollectedIds] = useState<Set<number>>(
     () => new Set(),
   );
   const [showArchived, setShowArchived] = useState(false);
   // 子项重命名弹窗状态(projectId + childId 定位目标子项)
   const [renameTarget, setRenameTarget] = useState<{
-    projectId: string;
+    projectId: number;
     childId: string;
   }>();
   const [renameName, setRenameName] = useState('');
   // 项目重命名弹窗状态
-  const [renameProjectId, setRenameProjectId] = useState<string>();
+  const [renameProjectId, setRenameProjectId] = useState<number>();
   const [projectRenameName, setProjectRenameName] = useState('');
+
+  // 拉取当前空间的项目列表(真实接口,失败保持空列表由空态兜底)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiUserProjectPageQuery({
+          queryFilter: { spaceId },
+          current: 1,
+          pageSize: 100,
+          orders: [],
+          filters: [],
+          columns: [],
+        });
+        if (cancelled) return;
+        if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
+          setProjects(
+            res.data.records.map((item) => ({
+              id: item.id,
+              name: item.name,
+            })),
+          );
+        }
+      } catch {
+        // 忽略:保持空列表
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [spaceId]);
 
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
@@ -308,7 +307,7 @@ const ProjectPanel: React.FC<{
     setRenameTarget(undefined);
   };
 
-  const openChildDelete = (projectId: string, child: ProjectChildItem) => {
+  const openChildDelete = (projectId: number, child: ProjectChildItem) => {
     Modal.confirm({
       title: dict('PC.Common.Global.deleteConfirmTitle'),
       content: dict('PC.Common.Global.deleteConfirmContent'),
@@ -333,7 +332,7 @@ const ProjectPanel: React.FC<{
   };
 
   // 子项菜单:项目下的会话不做置顶(2026-09-08 定调),仅 重命名/删除
-  const buildChildMenu = (projectId: string, child: ProjectChildItem) => ({
+  const buildChildMenu = (projectId: number, child: ProjectChildItem) => ({
     items: [
       {
         key: 'rename',

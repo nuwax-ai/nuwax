@@ -13,7 +13,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 
 import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
-import ProjectPanel, { MOCK_PROJECTS } from './components/ProjectPanel';
+import ProjectPanel from './components/ProjectPanel';
 import SearchHeader from './components/SearchHeader';
 
 import {
@@ -484,9 +484,9 @@ const NewHomeSection: React.FC<{
   );
 
   // 分组头计数：任务 = 当前展示列表数（含归档过滤）；项目 = 可见项目数（ProjectPanel 上报，
-  // 过滤归档后的可见数，与任务计数口径一致；mock 阶段初始值取数据量）
+  // 过滤归档后的可见数，与任务计数口径一致；真实接口数据到达前先计 0）
   const taskCount = visibleConversationList.length;
-  const [projectCount, setProjectCount] = useState(MOCK_PROJECTS.length);
+  const [projectCount, setProjectCount] = useState(0);
   const handleProjectCountChange = useCallback(
     (count: number) => setProjectCount(count),
     [],
