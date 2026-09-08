@@ -1,4 +1,5 @@
 import type { RequestResponse } from '@/types/interfaces/request';
+import { normalizeTerminalWsUrl } from '@/utils/terminalWsUrl';
 import { request } from 'umi';
 import type {
   CreateUserAppParams,
@@ -17,6 +18,7 @@ import type {
   UserProjectPageResult,
   UserProjectTabPageResult,
 } from '../type';
+import { UserAppDbEnvEnum } from './appDb';
 
 /** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
 export async function apiUserProjectPageQuery(
@@ -277,4 +279,39 @@ export const getUserAppVncProxyUrl = (appId: number): string => {
   const path = `/api/userapp/proxy/vnc/dev/${appId}/`;
   const baseUrl = process.env.BASE_URL || '';
   return `${baseUrl}${path}`;
+};
+
+/**
+ * 全栈应用终端 ttyd 代理 WebSocket 地址
+ * 开发环境：/api/userapp/proxy/ttyd/dev/{appId}
+ * 线上环境：/api/userapp/proxy/ttyd/prod/{appId}
+ *
+ * @param appId 应用 ID
+ * @param env 当前环境（开发 / 线上）
+ * @returns 终端 WebSocket 地址；缺少 appId 时返回空字符串
+ */
+export const getUserAppTtydProxyWsUrl = (
+  appId: number,
+  env: UserAppDbEnvEnum,
+): string => {
+  if (!appId) {
+    return '';
+  }
+
+  const path = `/api/userapp/proxy/ttyd/${env}/${appId}`;
+  const baseUrl = process.env.BASE_URL || '';
+
+  if (typeof window !== 'undefined') {
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = window.location.host;
+    if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+      return normalizeTerminalWsUrl(`${baseUrl}${path}`);
+    }
+    return normalizeTerminalWsUrl(`${wsScheme}://${host}${baseUrl}${path}`);
+  }
+
+  if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+    return normalizeTerminalWsUrl(`${baseUrl}${path}`);
+  }
+  return '';
 };
