@@ -6,12 +6,13 @@ import { PushpinFilled, StarFilled } from '@ant-design/icons';
 import { Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { formatModifiedTime } from '../../utils';
+import { formatRelativeTime } from '../../utils';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 interface ConversationItemProps {
+  compact?: boolean;
   item: ConversationInfo;
   isActive: boolean;
   onClick: () => void;
@@ -25,6 +26,7 @@ interface ConversationItemProps {
 
 const ConversationItem: React.FC<ConversationItemProps> = ({
   item,
+  compact = false,
   isActive,
   onClick,
   pinned = false,
@@ -34,12 +36,15 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
   );
-  const hasAgentName = Boolean(item.agent?.name && item.agent.name.trim());
+  const hasAgentName =
+    !compact && Boolean(item.agent?.name && item.agent.name.trim());
 
   return (
     <ConversationContextMenu
       conversationId={item.id}
-      currentTopic={item.topic}
+      currentTopic={
+        item.topic || item.agent?.name || dict('PC.Constants.Menus.newChat')
+      }
       pinned={pinned}
       archived={archived}
       collected={collected}
@@ -49,8 +54,19 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         <div
           className={cx(styles['conversation-item'], {
             [styles['active']]: isActive,
+            [styles.compact]: compact,
           })}
           onClick={onClick}
+          role="button"
+          tabIndex={0}
+          aria-current={isActive ? 'page' : undefined}
+          onKeyDown={(event) => {
+            if (event.target !== event.currentTarget) return;
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onClick();
+            }
+          }}
         >
           <div className={cx(styles['conversation-item-content'])}>
             <div className={cx(styles['conversation-topic-row'])}>
@@ -59,7 +75,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                 className={cx(styles['conversation-topic'])}
                 ellipsis={true}
               >
-                {item.topic}
+                {item.topic ||
+                  item.agent?.name ||
+                  dict('PC.Constants.Menus.newChat')}
               </Typography.Text>
               {collected && <StarFilled className={cx(styles['star-icon'])} />}
               {item.taskStatus === TaskStatus.EXECUTING && (
@@ -70,7 +88,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
               {moreButton}
               {!hasAgentName && (
                 <span className={cx(styles['conversation-date'])}>
-                  {formatModifiedTime(item.modified)}
+                  {formatRelativeTime(item.modified)}
                 </span>
               )}
             </div>
@@ -83,7 +101,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                   {item.agent?.name}
                 </Typography.Text>
                 <span className={cx(styles['conversation-date'])}>
-                  {formatModifiedTime(item.modified)}
+                  {formatRelativeTime(item.modified)}
                 </span>
               </div>
             )}

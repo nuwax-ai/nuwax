@@ -28,15 +28,21 @@ export const projectTypeBadgeClass = (type: string): string =>
 /**
  * 按项目类型跳转对应 IDE（与 PROJECT_STRATEGIES 目标路由同源）：
  * - PageApp → 网页应用 IDE（沉浸式路由）
- * - NormalProject / UserApp → 全栈应用 IDE
+ * - NormalProject / UserApp → 全栈应用 IDE（可携带最新会话 id 直达续聊）
  */
 export const openProject = (
   spaceId: number,
   item: Pick<UserProjectItem, 'id' | 'projectType'>,
+  conversationId?: number,
 ) => {
   if (item.projectType === AgentComponentTypeEnum.PageApp) {
     history.push(`/space/${spaceId}/app-dev/${item.id}`);
     return;
   }
-  history.push(`/space/${spaceId}/app-pro?appId=${item.id}`);
+  const conversationSuffix = conversationId
+    ? `&conversationId=${conversationId}`
+    : '';
+  history.push(
+    `/space/${spaceId}/app-pro?appId=${item.id}${conversationSuffix}`,
+  );
 };

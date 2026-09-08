@@ -104,6 +104,21 @@
   gap: 8px;
 }
 
+.card-more {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: @borderRadius;
+  color: @colorTextTertiary;
+  cursor: pointer;
+
+  &:hover {
+    color: @colorText;
+    background: @colorFillSecondary;
+  }
+}
+
 .card-title {
   flex: 1;
   min-width: 0;

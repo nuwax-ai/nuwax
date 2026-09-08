@@ -67,6 +67,18 @@ const CategoryManage: React.FC = () => {
       label: t('PC.Pages.SystemConfigCategoryManage.component'),
       value: CategoryTypeEnum.Component,
     },
+    {
+      label: t('PC.Pages.SystemConfigCategoryManage.chatbox'),
+      value: CategoryTypeEnum.ChatBox,
+    },
+    {
+      label: t('PC.Pages.SystemConfigCategoryManage.connector'),
+      value: CategoryTypeEnum.Connector,
+    },
+    {
+      label: t('PC.Pages.SystemConfigCategoryManage.skill'),
+      value: CategoryTypeEnum.Skill,
+    },
   ];
 
   // 获取当前分类标签
@@ -205,7 +217,16 @@ const CategoryManage: React.FC = () => {
               title: {
                 dataIndex: 'name',
                 render: (_, record) => (
-                  <span style={{ fontSize: 14 }}>{record.name}</span>
+                  <span className={styles['category-title']}>
+                    {record.icon && (
+                      <img
+                        src={record.icon}
+                        alt={record.name}
+                        className={styles['category-icon']}
+                      />
+                    )}
+                    <span style={{ fontSize: 14 }}>{record.name}</span>
+                  </span>
                 ),
               },
               description: {
