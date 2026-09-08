@@ -44,7 +44,8 @@ export const NUWACLAW_BACKGROUND_ID = 'bg-solid';
 export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
   '--xagi-layout-bg-primary': '#F3F4F6', // 主内容区（用户指定基色 rgb(243,244,246)，中性冷灰）
   '--xagi-layout-bg-secondary': '#F2F2F2', // 侧栏/次面板（原型同款中性浅灰，2026-09-04 对齐）
-  '--xagi-layout-bg-container': '#F3F4F6', // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
+  // --xagi-layout-bg-container 不覆盖：page-container 背景与其他主题一致
+  // （通用 light 组 rgba(255,255,255,0.95) 半透明白），仅主内容底色走灰（2026-09-08 对齐）
   '--xagi-layout-bg-card': '#FFFFFF', // 卡片（白卡浮于灰底，保层次）
   '--xagi-layout-bg-input': '#FFFFFF', // 输入框
   '--xagi-layout-border-primary': '#D3D5DC', // 主描边（保证二级菜单左边框在灰底上可见）
