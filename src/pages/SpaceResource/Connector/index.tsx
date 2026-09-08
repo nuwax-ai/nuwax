@@ -4,6 +4,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import ConnectorProviderCreateDrawer from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderCreateDrawer';
 import ConnectorProviderEditDrawer from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderEditDrawer';
 import {
+  AUTH_TYPE_COLOR_MAP,
   AUTH_TYPE_LABEL_MAP,
   AUTH_TYPE_OPTIONS,
   CONNECTED_OPTIONS,
@@ -438,7 +439,7 @@ const SpaceConnector: React.FC = () => {
         options: AUTH_TYPE_OPTIONS.filter((v) => v.value !== ''),
       },
       render: (_, record) => (
-        <Tag color={record.authType === 'no_auth' ? 'default' : 'blue'}>
+        <Tag color={AUTH_TYPE_COLOR_MAP[record.authType] ?? 'default'}>
           {AUTH_TYPE_LABEL_MAP[record.authType] ?? record.authType}
         </Tag>
       ),
