@@ -15,12 +15,14 @@ interface CreditsBalanceProps {
   className?: string;
   showFooter?: boolean;
   onClick?: () => void;
+  stacked?: boolean;
 }
 
 const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   className,
   showFooter = true,
   onClick,
+  stacked = false,
 }) => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const [balance, setBalance] = useState<number | null>(null);
@@ -74,7 +76,9 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
     <div className={cx(styles['credits-balance-wrapper'])}>
       {showCredits && (
         <div
-          className={cx(styles.container, className)}
+          className={cx(styles.container, className, {
+            [styles.stacked]: stacked,
+          })}
           onClick={handleClickBalance}
         >
           <span className={cx(styles.label)}>

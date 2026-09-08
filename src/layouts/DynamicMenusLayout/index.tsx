@@ -34,6 +34,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import DynamicSecondMenu from './DynamicSecondMenu';
 // 复用原有组件
 import SvgIcon from '@/components/base/SvgIcon';
+import { resolveSidebarCollapsePolicy } from './sidebarCollapsePolicy';
 import SidebarNavHeader from './SidebarNavHeader';
 import SidebarSearchModal from './SidebarSearchModal';
 import User from './User';
@@ -740,6 +741,13 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     return <DynamicSecondMenu parentCode={activeTab} />;
   }, [activeTab, overrideContainerStyle]);
 
+  const { primarySidebarCollapsed, secondMenuVisible } =
+    resolveSidebarCollapsePolicy({
+      collapsed: isSecondMenuCollapsed,
+      immersiveShell: isImmersiveShell(),
+      secondMenuAvailable: shouldShowSecondMenu,
+    });
+
   return (
     <div className={navigationClassName}>
       {/* 会话侧栏列（常驻）：顶栏(Logo+搜索+折叠) + 新建任务 + 导航行(接口) +
@@ -747,15 +755,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       <div
         className={cx(styles['nav-menus'], 'noselect')}
         style={{
-          width: isSecondMenuCollapsed
+          width: primarySidebarCollapsed
             ? 0
             : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
           // 桌面端沉浸式：顶部留白避让 nuwaclaw 红绿灯工具栏；
           // 一级栏已移除，浏览器端也不再需要 border-left（侧栏即最左列）
           paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
           borderLeft: 'none',
-          paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
-          opacity: isSecondMenuCollapsed ? 0 : 1,
+          paddingLeft: primarySidebarCollapsed ? 0 : token.padding,
+          opacity: primarySidebarCollapsed ? 0 : 1,
           backgroundColor: secondaryBackgroundColor,
         }}
       >
@@ -821,7 +829,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       </div>
 
       {/* 二级菜单列：选中「有子菜单/Section」的域时在会话列右侧并列展开（原二级菜单保留） */}
-      {shouldShowSecondMenu && !isSecondMenuCollapsed && (
+      {secondMenuVisible && (
         <div
           className={cx(styles['second-column'], 'noselect')}
           style={{
@@ -870,7 +878,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       )}
 
       {/* 折叠态：屏幕左缘悬浮展开按钮（侧栏收起后顶栏随列隐藏，从边缘展开） */}
-      {isSecondMenuCollapsed && !isImmersiveShell() && (
+      {primarySidebarCollapsed && (
         <Tooltip
           title={dict(
             'PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu',

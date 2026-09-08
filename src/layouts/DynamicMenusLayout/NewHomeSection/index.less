@@ -1,4 +1,5 @@
 @import '@/styles/token.less';
+@import '@/styles/scrollbar.less';
 
 @sectionMarginLeft: -16px;
 @sectionMarginTop: -9px;
@@ -59,13 +60,10 @@
     flex: 1;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: hidden; // 默认隐藏原生滚动条
+    overflow-y: auto;
     padding: 0;
-    scrollbar-gutter: stable; // 始终保留滚动条通道，防止 layout shift
-
-    &:hover {
-      overflow-y: auto; // 鼠标移入时开启滚动，展现与全局一致的原生滚动条样式
-    }
+    // 始终保留滚动轨道，默认透明、hover 显示滑块，避免 hover 时列表宽度被挤占。
+    .scrollbar-auto-hide();
 
     // 会话列表
     .conversation-list {
