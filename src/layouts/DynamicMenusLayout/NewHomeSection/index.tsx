@@ -69,6 +69,13 @@ const componentCache = {
   scrollTop: 0,
 };
 
+/** tab 指示条位次：CSS 侧以 data-active 驱动滑动（原型同款动效的 CSS-only 等价实现） */
+const HOME_TAB_INDEX: Record<HomeTab, number> = {
+  recent: 0,
+  conversation: 1,
+  project: 2,
+};
+
 const NewHomeSection: React.FC<{
   style?: React.CSSProperties;
   /** 经典布局（style1/2）：渲染顶部搜索框 + 新建会话入口（单栏由 SidebarNavHeader 提供，不传即不渲染） */
@@ -842,6 +849,7 @@ const NewHomeSection: React.FC<{
         className={cx(styles.tabs, {
           [styles['tabs-under-search']]: showSearchHeader,
         })}
+        data-active={HOME_TAB_INDEX[activeTab] ?? 0}
       >
         <button
           type="button"
@@ -870,6 +878,8 @@ const NewHomeSection: React.FC<{
         >
           {dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab')}
         </button>
+        {/* 滑动指示条：位次由容器 data-active 控制（原型 tab-indicator 的 CSS-only 等价） */}
+        <span className={cx(styles['tab-indicator'])} aria-hidden />
       </div>
 
       {/* 列表区:最近 / 会话 / 项目 */}

@@ -19,6 +19,7 @@
     align-items: center;
     gap: 0;
     flex-shrink: 0;
+    position: relative;
     border-bottom: 1px solid @colorBorderSecondary;
     margin: 15px 0 0;
     padding: 0;
@@ -41,28 +42,56 @@
       font-size: 14.5px;
       font-weight: 500;
       cursor: pointer;
+      transition: color 0.2s ease, transform 0.15s ease;
 
-      &::after {
-        position: absolute;
-        right: auto;
-        bottom: -1px;
-        left: 50%;
-        width: 44px;
-        height: 2.5px;
-        border-radius: 2.5px;
-        background: transparent;
-        transform: translateX(-50%);
-        content: '';
+      &:hover {
+        color: @navSecondMenuAdaptiveText;
+      }
+
+      // 按压反馈：轻微缩放，松手回弹
+      &:active {
+        transform: scale(0.96);
       }
 
       &.active {
         color: @navSecondMenuAdaptiveText;
         font-weight: @fontWeightStrong;
-
-        &::after {
-          background: @colorPrimary;
-        }
       }
+    }
+
+    // 滑动指示条（原型 tab-indicator 的 CSS-only 等价）：滑轨 1/3 宽按位次平移，
+    // 内部 44px 圆角短条居中，缓动与原型同款
+    .tab-indicator {
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: calc(100% / 3);
+      height: 2.5px;
+      pointer-events: none;
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &::after {
+        position: absolute;
+        left: 50%;
+        width: 44px;
+        height: 2.5px;
+        border-radius: 2.5px;
+        background: @colorPrimary;
+        transform: translateX(-50%);
+        content: '';
+      }
+    }
+
+    &[data-active='0'] .tab-indicator {
+      transform: translateX(0);
+    }
+
+    &[data-active='1'] .tab-indicator {
+      transform: translateX(100%);
+    }
+
+    &[data-active='2'] .tab-indicator {
+      transform: translateX(200%);
     }
   }
 
