@@ -17,6 +17,7 @@ const TOOL_DESC_MAP: Record<PreviewToolId, string> = {
   'subscription-stats':
     'PC.Pages.ConversationAgentTabPicker.subscriptionStatsDesc',
   database: 'PC.Pages.AppDevPro.databaseDesc',
+  'remote-desktop': 'PC.Pages.AppDevPro.remoteDesktopDesc',
 };
 
 export interface ToolTabContentProps {

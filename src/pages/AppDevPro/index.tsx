@@ -52,23 +52,30 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import AppDevProHeader from './AppDevProHeader';
+import AppDevAppPreviewPanel from './components/AppDevAppPreviewPanel';
 import AppDevDatabasePanel from './components/AppDevDatabasePanel';
+import AppDevPublishProgressModal from './components/AppDevPublishProgressModal';
+import AppDevRemoteDesktopPanel from './components/AppDevRemoteDesktopPanel';
 import AppDevSettingsModal from './components/AppDevSettingsModal';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
+  getToolTabId,
   usePreviewTabs,
   WORKSPACE_PREVIEW_TOOL_IDS,
   type PreviewToolId,
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
+import { useUserAppPublish } from './hooks/useUserAppPublish';
+import { useUserAppRuntime } from './hooks/useUserAppRuntime';
 import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
 import { UserAppDbEnvEnum } from './services/appDb';
 import { apiUserAppGetById } from './services/appDevPro';
 import {
   apiUserAppDomainList,
+  getUserAppPreviewUrl,
   type UserAppDomainInfo,
 } from './services/appDomain';
 import type { UserAppInfo } from './type';
@@ -178,6 +185,8 @@ const AppDevPro: React.FC = () => {
   >([]);
   /** 当前环境：开发 / 线上，Header 中间切换 */
   const [dbEnv, setDbEnv] = useState<UserAppDbEnvEnum>(UserAppDbEnvEnum.Dev);
+  /** 应用预览 iframe 刷新计数 */
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
 
   // ==================== 全局状态模型 ====================
   /**
@@ -206,6 +215,8 @@ const AppDevPro: React.FC = () => {
     runAsync,
     resetInit,
     restartVncPod,
+    setPodAppStage,
+    restartAgent,
     refreshGitListRef,
   } = useModel('conversationInfo');
 
@@ -213,6 +224,21 @@ const AppDevPro: React.FC = () => {
   const fileTreeDataRef = useRef(fileTreeData);
   /** 文件树数据 ref，供防抖保存读取最新列表 */
   fileTreeDataRef.current = fileTreeData;
+
+  /**
+   * 仅在 AppDevPro 把当前环境写入 conversationInfo，
+   * 供 ensure/restart/keepalive/stop 老接口附带 appStage；离开页面时清空，避免污染其它页面。
+   */
+  useEffect(() => {
+    setPodAppStage(dbEnv);
+  }, [dbEnv, setPodAppStage]);
+
+  useEffect(
+    () => () => {
+      setPodAppStage(undefined);
+    },
+    [setPodAppStage],
+  );
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
@@ -224,9 +250,9 @@ const AppDevPro: React.FC = () => {
     [conversationInfo, enableVersionControl],
   );
 
-  /** 常驻工作区工具页签 */
+  /** 常驻工作区工具页签（应用预览改为按需打开，可关闭） */
   const workspaceToolIds = useMemo((): PreviewToolId[] => {
-    const tools: PreviewToolId[] = ['preview'];
+    const tools: PreviewToolId[] = [];
     if (isVersionControlEnabled) {
       tools.push('version-control');
     }
@@ -456,6 +482,52 @@ const AppDevPro: React.FC = () => {
       }
     },
   });
+
+  /** 发布：构建 → SSE 进度 → 提交发布申请 */
+  const publishFlow = useUserAppPublish({
+    appId,
+    spaceId,
+    onPublished: () => {
+      if (appId) {
+        runGetUserAppInfo(appId);
+      }
+    },
+  });
+
+  /** 应用预览：按环境启动 / 重启 / 停止，启动过程走任务 SSE */
+  const previewRuntime = useUserAppRuntime({
+    appId,
+    env: dbEnv,
+    userAppInfo,
+    onReady: () => {
+      setPreviewRefreshKey((prev) => prev + 1);
+    },
+  });
+
+  /** 预览启动 / 重启进度弹窗文案 */
+  const previewRuntimeModalCopy = useMemo(() => {
+    const isRestart = previewRuntime.action === 'restart';
+    return {
+      title: isRestart
+        ? dict('PC.Pages.AppDevPro.restartService')
+        : dict('PC.Pages.AppDevPro.startService'),
+      startingText: isRestart
+        ? dict('PC.Pages.AppDevPro.restartingService')
+        : dict('PC.Pages.AppDevPro.startingService'),
+      runningText: isRestart
+        ? dict('PC.Pages.AppDevPro.restartingService')
+        : dict('PC.Pages.AppDevPro.startingService'),
+      successText: isRestart
+        ? dict('PC.Pages.AppDevPro.restartSuccess')
+        : dict('PC.Pages.AppDevPro.startSuccess'),
+      failedText: isRestart
+        ? dict('PC.Pages.AppDevPro.restartFailed')
+        : dict('PC.Pages.AppDevPro.startFailed'),
+      cancelledText: dict('PC.Pages.AppDevPro.startCancelled'),
+      cancelTitle: dict('PC.Pages.AppDevPro.cancelStartTitle'),
+      cancelContent: dict('PC.Pages.AppDevPro.cancelStartContent'),
+    };
+  }, [previewRuntime.action]);
 
   /** 查询应用绑定的域名列表 */
   const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
@@ -868,6 +940,8 @@ const AppDevPro: React.FC = () => {
           restartVncPod(queryConversationId, finalSelectedComputerId);
         }
       },
+      /** 全栈应用环境，computer/pod 老接口附带 appStage */
+      appStage: dbEnv,
       /** 重命名文件 */
       onRenameFile: handleConfirmRenameFile,
       /** 创建文件 */
@@ -976,6 +1050,7 @@ const AppDevPro: React.FC = () => {
     handleImportProject,
     isImportingProject,
     restartVncPod,
+    dbEnv,
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
@@ -1040,7 +1115,8 @@ const AppDevPro: React.FC = () => {
       // 预览 / 编排 / 版本控制 / 数据库：工作区页签，收起文件预览侧栏
       if (
         WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) ||
-        toolId === 'database'
+        toolId === 'database' ||
+        toolId === 'remote-desktop'
       ) {
         closePreviewView();
         return;
@@ -1054,6 +1130,11 @@ const AppDevPro: React.FC = () => {
   });
 
   previewTabsRef.current = previewTabs;
+
+  /** 进入页面时默认打开应用预览页签（可关闭，也可从 Header 再次打开） */
+  useEffect(() => {
+    previewTabsRef.current?.openToolTab('preview');
+  }, []);
 
   // ==================================== git 版本控制 ====================================
 
@@ -1231,13 +1312,92 @@ const AppDevPro: React.FC = () => {
     previewTabs.openToolTab('database');
   }, [previewTabs]);
 
+  /** 打开应用预览页签（已存在则激活），并按需启动当前环境服务 */
+  const handleOpenAppPreview = useCallback(() => {
+    previewTabs.openToolTab('preview');
+    previewRuntime.startIfNeeded();
+  }, [previewRuntime, previewTabs]);
+
+  /** 停止当前环境预览服务 */
+  const handleStopPreviewRuntime = useCallback(() => {
+    modalConfirm(
+      dict('PC.Pages.AppDevPro.confirmStopTitle'),
+      dict('PC.Pages.AppDevPro.confirmStopContent'),
+      () => {
+        void previewRuntime.stop();
+      },
+    );
+  }, [previewRuntime]);
+
+  /** 刷新应用预览 iframe */
+  const handleRefreshPreview = useCallback(() => {
+    setPreviewRefreshKey((prev) => prev + 1);
+  }, []);
+
+  /**
+   * 打开 / 关闭远程桌面页签
+   * 内容区与数据库页签同一尺寸；再次点击关闭
+   */
+  const handleOpenDesktopPanel = useCallback(() => {
+    if (!appId) {
+      message.warning(dict('PC.Pages.AppDevPro.remoteDesktopEmpty'));
+      return;
+    }
+
+    if (previewTabs.activeTab?.toolId === 'remote-desktop') {
+      previewTabs.closeTab(getToolTabId('remote-desktop'));
+      return;
+    }
+
+    previewTabs.openToolTab('remote-desktop');
+  }, [appId, previewTabs]);
+
+  /** 切换环境：离开开发环境时关闭远程桌面页签 */
+  const handleEnvChange = useCallback(
+    (nextEnv: UserAppDbEnvEnum) => {
+      setDbEnv(nextEnv);
+      if (nextEnv !== UserAppDbEnvEnum.Dev) {
+        previewTabs.closeTab(getToolTabId('remote-desktop'));
+      }
+    },
+    [previewTabs],
+  );
+
   /** 数据库页签是否激活（Header 图标高亮） */
   const isDatabasePanelOpen = previewTabs.activeTab?.toolId === 'database';
+  /** 应用预览页签是否激活（Header 图标高亮） */
+  const isAppPreviewOpen = previewTabs.activeTab?.toolId === 'preview';
+  /** 远程桌面页签是否激活（Header 图标高亮） */
+  const isAgentDesktopOpen =
+    previewTabs.activeTab?.toolId === 'remote-desktop';
+
+  /** 当前环境对应的应用预览地址 */
+  const appPreviewUrl = useMemo(
+    () => getUserAppPreviewUrl(userAppDomainList, dbEnv),
+    [userAppDomainList, dbEnv],
+  );
 
   /** 「数据库」页签：按 Header 所选环境加载 iframe */
   const databasePanel = useMemo(
     () => <AppDevDatabasePanel appId={appId} env={dbEnv} />,
     [appId, dbEnv],
+  );
+
+  /** 「应用预览」页签：嵌入当前环境访问地址 */
+  const appPreviewPanel = useMemo(
+    () => (
+      <AppDevAppPreviewPanel
+        previewUrl={appPreviewUrl}
+        refreshKey={previewRefreshKey}
+      />
+    ),
+    [appPreviewUrl, previewRefreshKey],
+  );
+
+  /** 「远程桌面」页签：与数据库同一内容区嵌入 iframe */
+  const remoteDesktopPanel = useMemo(
+    () => <AppDevRemoteDesktopPanel appId={appId} />,
+    [appId],
   );
 
   // ==================================== 渲染组件元素 ====================================
@@ -1302,12 +1462,25 @@ const AppDevPro: React.FC = () => {
               restartVncPod(queryConversationId, finalSelectedComputerId);
             }
           }}
+          onRestartAgent={() => {
+            if (queryConversationId) {
+              restartAgent(queryConversationId);
+            }
+          }}
           /** 导出项目 */
           onExportProject={() => {
             void fileView.tree.handleExportProject?.();
           }}
           /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
+          previewUrl={appPreviewUrl}
+          onRefreshPreview={handleRefreshPreview}
+          onStartPreviewRuntime={previewRuntime.start}
+          onRestartPreviewRuntime={previewRuntime.restart}
+          onStopPreviewRuntime={handleStopPreviewRuntime}
+          previewRuntimeBusy={previewRuntime.busy}
+          previewRuntimeRunning={previewRuntime.running}
+          previewRuntimeStopping={previewRuntime.stopping}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1319,8 +1492,11 @@ const AppDevPro: React.FC = () => {
               diffFile={gitSourceControl.selectedDiffFile ?? undefined}
               // 选中标签
               activeTab={previewTabs.activeTab}
+              // 应用预览页签
+              previewPanel={appPreviewPanel}
               // 数据库页签
               databasePanel={databasePanel}
+              remoteDesktopPanel={remoteDesktopPanel}
               // 版本控制面板（Git 提交记录）
               versionPanel={versionControlPanel}
               providerClassName={fileView.className}
@@ -1335,6 +1511,7 @@ const AppDevPro: React.FC = () => {
             conversationId={
               finalSelectedComputerId === '-1' ? queryConversationId : undefined
             }
+            appStage={dbEnv}
             visible={showDevConsole}
             wsUrl={terminalWsUrl}
             wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
@@ -1390,6 +1567,8 @@ const AppDevPro: React.FC = () => {
         userAppInfo={userAppInfo}
         spaceId={spaceId}
         onConfirmUpdate={setUserAppInfo}
+        onPublish={publishFlow.startPublish}
+        publishing={publishFlow.publishing}
         isFileTreeSidebarVisible={isFileTreeIconActive}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
         isTerminalPanelOpen={isTerminalIconActive}
@@ -1397,8 +1576,13 @@ const AppDevPro: React.FC = () => {
         onOpenSettings={() => setSettingsOpen(true)}
         isDatabasePanelOpen={isDatabasePanelOpen}
         onOpenDatabase={handleOpenDatabasePanel}
+        isAppPreviewOpen={isAppPreviewOpen}
+        onOpenAppPreview={handleOpenAppPreview}
+        isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
+        isAgentDesktopOpen={isAgentDesktopOpen}
+        onOpenDesktopPanel={handleOpenDesktopPanel}
         env={dbEnv}
-        onEnvChange={setDbEnv}
+        onEnvChange={handleEnvChange}
       />
 
       {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}
@@ -1503,6 +1687,39 @@ const AppDevPro: React.FC = () => {
             runGetUserAppDomainList(appId);
           }
         }}
+      />
+
+      {/* 发布进度：构建日志 + 提交申请 */}
+      <AppDevPublishProgressModal
+        open={publishFlow.open}
+        phase={publishFlow.phase}
+        services={publishFlow.services}
+        overallProgress={publishFlow.overallProgress}
+        errorMessage={publishFlow.errorMessage}
+        cancelLoading={publishFlow.cancelLoading}
+        onCancelTask={publishFlow.cancelTask}
+        onClose={publishFlow.closeModal}
+      />
+
+      {/* 应用预览启动 / 重启进度 */}
+      <AppDevPublishProgressModal
+        open={previewRuntime.open}
+        phase={previewRuntime.phase}
+        services={previewRuntime.services}
+        overallProgress={previewRuntime.overallProgress}
+        errorMessage={previewRuntime.errorMessage}
+        cancelLoading={previewRuntime.cancelLoading}
+        onCancelTask={previewRuntime.cancelTask}
+        onClose={previewRuntime.closeModal}
+        showSteps={false}
+        title={previewRuntimeModalCopy.title}
+        startingText={previewRuntimeModalCopy.startingText}
+        runningText={previewRuntimeModalCopy.runningText}
+        successText={previewRuntimeModalCopy.successText}
+        failedText={previewRuntimeModalCopy.failedText}
+        cancelledText={previewRuntimeModalCopy.cancelledText}
+        cancelTitle={previewRuntimeModalCopy.cancelTitle}
+        cancelContent={previewRuntimeModalCopy.cancelContent}
       />
     </div>
   );

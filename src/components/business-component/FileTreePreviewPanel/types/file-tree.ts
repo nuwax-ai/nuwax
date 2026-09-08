@@ -82,6 +82,8 @@ export interface FileTreeViewProps {
   showRefreshButton?: boolean;
   idleDetection?: IdleDetectionConfig;
   hideDesktop?: HideDesktopEnum;
+  /** 全栈应用环境，仅 AppDevPro 传入 */
+  appStage?: 'dev' | 'prod';
   isDynamicTheme?: boolean;
   isShowExportPdfButton?: boolean;
   isShowDownloadButton?: boolean;

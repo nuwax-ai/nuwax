@@ -173,12 +173,31 @@ export async function apiDownloadAllFiles(
   }
 }
 
+/** 全栈应用环境，仅 AppDevPro 调用 computer/pod 老接口时传入 */
+export type ComputerPodAppStage = 'dev' | 'prod';
+
 const ENSURE_POD_THROTTLE_MS = 5000;
-let lastSuccessfulEnsurePod: { cId: number; time: number } | null = null;
+let lastSuccessfulEnsurePod: { key: string; time: number } | null = null;
 const ensurePodInFlightMap = new Map<
-  number,
+  string,
   Promise<RequestResponse<EnsurePodResponse>>
 >();
+
+/**
+ * 组装 computer/pod 请求参数：仅在传入 appStage 时附加，避免老页面带上空字段。
+ * @param cId 会话 ID
+ * @param appStage 全栈应用环境，仅 AppDevPro 传入
+ */
+const buildPodRequestParams = (
+  cId: number,
+  appStage?: ComputerPodAppStage,
+) => (appStage ? { cId, appStage } : { cId });
+
+/** ensure 限流/并发去重 key：同一会话的 dev/prod 互不影响 */
+const getEnsurePodCacheKey = (
+  cId: number,
+  appStage?: ComputerPodAppStage,
+) => (appStage ? `${cId}:${appStage}` : String(cId));
 
 /** ensure 请求被 5s 限流（通常因 VNC/终端等刚调过 ensure，容器已在运行） */
 export const isEnsurePodThrottledError = (error: unknown): boolean => {
@@ -189,16 +208,17 @@ export const isEnsurePodThrottledError = (error: unknown): boolean => {
 // 启动容器
 export async function apiEnsurePod(
   cId: number,
-  appStage?: 'dev' | 'prod',
+  appStage?: ComputerPodAppStage,
 ): Promise<RequestResponse<EnsurePodResponse>> {
   const now = Date.now();
-  const inFlightRequest = ensurePodInFlightMap.get(cId);
+  const cacheKey = getEnsurePodCacheKey(cId, appStage);
+  const inFlightRequest = ensurePodInFlightMap.get(cacheKey);
   if (inFlightRequest) {
     return inFlightRequest;
   }
 
   if (
-    lastSuccessfulEnsurePod?.cId === cId &&
+    lastSuccessfulEnsurePod?.key === cacheKey &&
     now - lastSuccessfulEnsurePod.time < ENSURE_POD_THROTTLE_MS
   ) {
     console.log('Requests are too frequent. Please retry after 5s');
@@ -209,55 +229,52 @@ export async function apiEnsurePod(
 
   const ensureRequest = request('/api/computer/pod/ensure', {
     method: 'POST',
-    params: {
-      cId,
-      appStage,
-    },
+    params: buildPodRequestParams(cId, appStage),
   })
     .then((result: RequestResponse<EnsurePodResponse>) => {
       if (result.code === SUCCESS_CODE) {
-        lastSuccessfulEnsurePod = { cId, time: Date.now() };
+        lastSuccessfulEnsurePod = { key: cacheKey, time: Date.now() };
       }
       return result;
     })
     .finally(() => {
-      ensurePodInFlightMap.delete(cId);
+      ensurePodInFlightMap.delete(cacheKey);
     });
 
-  ensurePodInFlightMap.set(cId, ensureRequest);
+  ensurePodInFlightMap.set(cacheKey, ensureRequest);
   return ensureRequest;
 }
 
 // 重启容器(销毁后重建)
 export async function apiRestartPod(
   cId: number,
+  appStage?: ComputerPodAppStage,
 ): Promise<RequestResponse<RestartPodResponse>> {
   return request('/api/computer/pod/restart', {
     method: 'POST',
-    params: {
-      cId,
-    },
+    params: buildPodRequestParams(cId, appStage),
   });
 }
 
 // 重启智能体
 export async function apiRestartAgent(
   cId: number,
+  appStage?: ComputerPodAppStage,
 ): Promise<RequestResponse<null>> {
   return request(`/api/computer/agent/stop/${cId}`, {
     method: 'POST',
+    params: appStage ? { appStage } : undefined,
   });
 }
 
 // 容器保活
 export async function apiKeepalivePod(
   cId: number,
+  appStage?: ComputerPodAppStage,
 ): Promise<RequestResponse<EnsurePodResponse>> {
   return request('/api/computer/pod/keepalive', {
     method: 'POST',
-    params: {
-      cId,
-    },
+    params: buildPodRequestParams(cId, appStage),
   });
 }
 
@@ -275,12 +292,11 @@ export interface VncStatusResponse {
 
 export async function apiCheckVncStatus(
   cId: number,
+  appStage?: ComputerPodAppStage,
 ): Promise<RequestResponse<VncStatusResponse>> {
   return request('/api/computer/pod/vnc-status', {
     method: 'GET',
-    params: {
-      cId,
-    },
+    params: buildPodRequestParams(cId, appStage),
   });
 }
 

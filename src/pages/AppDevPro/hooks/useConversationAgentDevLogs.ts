@@ -14,8 +14,8 @@ import type { DevLogEntry } from '@/types/interfaces/appDev';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiUserAppLogsQuery } from '../services/appDevPro';
-import type { UserAppLogItem, UserAppLogsQueryResult } from '../type';
+import { apiUserAppLogsSourcesQuery } from '../services/appDevPro';
+import { UserAppStageEnum, type UserAppLogItem, type UserAppLogsQueryResult } from '../type';
 
 /**
  * 沙盒日志 Hook 的配置选项
@@ -204,10 +204,9 @@ export const useConversationAgentDevLogs = (
         return Promise.resolve([]);
       }
 
-      return apiUserAppLogsQuery({
+      return apiUserAppLogsSourcesQuery({
         appId: currentAppId,
-        env: 'dev',
-        tail: tailLinesRef.current,
+        env: UserAppStageEnum.Dev,
       });
     },
     {
