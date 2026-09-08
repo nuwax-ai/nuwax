@@ -1,5 +1,28 @@
 /* 连接器详情抽屉（管理侧 / 空间侧列表共用） */
 
+/* 抽屉壳样式（对齐 ConnectorProviderEditDrawer 等其他连接器抽屉） */
+.drawer {
+  :global {
+    .ant-drawer-header {
+      border-bottom: 1px solid rgba(5, 5, 5, 6%);
+    }
+
+    .ant-drawer-mask {
+      overflow: hidden;
+    }
+
+    .ant-drawer-content-wrapper {
+      overflow: hidden;
+    }
+
+    // 关闭按钮固定在 header 右侧（与新增/编辑/导入抽屉同款）
+    .ant-drawer-header .ant-drawer-close {
+      order: 2;
+      margin-inline-start: auto;
+    }
+  }
+}
+
 .content {
   min-height: 100%;
   padding: 16px 20px 24px;
