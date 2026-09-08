@@ -73,6 +73,8 @@ export interface FileTreeContainerProps {
   readOnly?: boolean;
   /** 工作区/本地目录切换与当前层面包屑（桌面宿主可用时提供） */
   dataSourceNavigation?: {
+    conversationId?: number;
+    customTargetDir?: string;
     currentSourceId: string;
     currentLabel: string;
     currentPath: string;

@@ -191,24 +191,24 @@ export function useLocalDirectoryFiles(conversationId?: number) {
   const promptForManualPath = useCallback(() => {
     let value = '';
     Modal.confirm({
-      title: dict('PC.Chat.LocalFiles.openByPathTitle'),
+      title: dict('PC.Components.LocalFiles.openByPathTitle'),
       content: (
         <div>
           <p
             style={{ color: 'var(--ant-color-text-tertiary)', marginBottom: 8 }}
           >
-            {dict('PC.Chat.LocalFiles.openByPathHint')}
+            {dict('PC.Components.LocalFiles.openByPathHint')}
           </p>
           <Input
-            placeholder={dict('PC.Chat.LocalFiles.pathPlaceholder')}
+            placeholder={dict('PC.Components.LocalFiles.pathPlaceholder')}
             onChange={(event) => {
               value = event.target.value;
             }}
           />
         </div>
       ),
-      okText: dict('PC.Chat.LocalFiles.open'),
-      cancelText: dict('PC.Chat.LocalFiles.cancel'),
+      okText: dict('PC.Components.LocalFiles.open'),
+      cancelText: dict('PC.Components.LocalFiles.cancel'),
       onOk: async () => {
         await addRoots([value]);
       },
@@ -264,7 +264,7 @@ export function useLocalDirectoryFiles(conversationId?: number) {
         message.error(
           error instanceof Error && error.message
             ? error.message
-            : dict('PC.Chat.LocalFiles.listFailed'),
+            : dict('PC.Components.LocalFiles.listFailed'),
         );
       } finally {
         if (requestToken.current === token) setLoading(false);
@@ -353,7 +353,7 @@ export function useLocalDirectoryFiles(conversationId?: number) {
       }
       if (!newName.trim() || newName.includes('/')) return false;
       if (nameExistsInCurrentDir(newName.trim())) {
-        message.error(dict('PC.Chat.LocalFiles.nameExists'));
+        message.error(dict('PC.Components.LocalFiles.nameExists'));
         return false;
       }
       const parent = node.relativePath.split('/').slice(0, -1).join('/');
@@ -379,7 +379,7 @@ export function useLocalDirectoryFiles(conversationId?: number) {
       if (!active || !activeRoot || !conversationId) return false;
       if (!newName.trim() || newName.includes('/')) return false;
       if (nameExistsInCurrentDir(newName.trim())) {
-        message.error(dict('PC.Chat.LocalFiles.nameExists'));
+        message.error(dict('PC.Components.LocalFiles.nameExists'));
         return false;
       }
       await apiUpdateStaticFile({
@@ -416,14 +416,14 @@ export function useLocalDirectoryFiles(conversationId?: number) {
           return;
         }
         Modal.confirm({
-          title: dict('PC.Chat.LocalFiles.deleteTitle'),
-          content: dict('PC.Chat.LocalFiles.deleteWarning').replace(
+          title: dict('PC.Components.LocalFiles.deleteTitle'),
+          content: dict('PC.Components.LocalFiles.deleteWarning').replace(
             '{name}',
             node.name,
           ),
-          okText: dict('PC.Chat.LocalFiles.deleteConfirm'),
+          okText: dict('PC.Components.LocalFiles.deleteConfirm'),
           okButtonProps: { danger: true },
-          cancelText: dict('PC.Chat.LocalFiles.cancel'),
+          cancelText: dict('PC.Components.LocalFiles.cancel'),
           onOk: async () => {
             await apiUpdateStaticFile({
               cId: conversationId,
@@ -464,7 +464,7 @@ export function useLocalDirectoryFiles(conversationId?: number) {
         message.error(
           error instanceof Error && error.message
             ? error.message
-            : dict('PC.Chat.LocalFiles.saveFailed'),
+            : dict('PC.Components.LocalFiles.saveFailed'),
         );
         return false;
       }
@@ -576,9 +576,12 @@ export function useLocalDirectoryFiles(conversationId?: number) {
     clearPendingSelection,
     navigation: enabled
       ? {
+          conversationId,
+          customTargetDir: activeRoot?.targetDir,
           currentSourceId: sourceId,
           currentLabel:
-            activeRoot?.label || dict('PC.Chat.LocalFiles.workspaceLabel'),
+            activeRoot?.label ||
+            dict('PC.Components.LocalFiles.workspaceLabel'),
           currentPath,
           roots: roots.map((root) => ({
             id: root.id,

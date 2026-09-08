@@ -8,6 +8,7 @@ import {
 import { Breadcrumb, Button, Dropdown, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
 import type { FileTreeContainerProps } from '../types/file-tree-git-source';
+import OpenFileByPath from './OpenFileByPath';
 
 type Navigation = NonNullable<FileTreeContainerProps['dataSourceNavigation']>;
 
@@ -26,7 +27,7 @@ const DirectorySourceNavigator: React.FC<{ navigation: Navigation }> = ({
         {
           key: 'workspace',
           icon: <FolderOutlined />,
-          label: dict('PC.Chat.LocalFiles.workspaceLabel'),
+          label: dict('PC.Components.LocalFiles.workspaceLabel'),
         },
         ...navigation.roots.map((root) => ({
           key: root.id,
@@ -46,14 +47,14 @@ const DirectorySourceNavigator: React.FC<{ navigation: Navigation }> = ({
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {root.label}
                   {!root.available
-                    ? dict('PC.Chat.LocalFiles.unavailableSuffix')
+                    ? dict('PC.Components.LocalFiles.unavailableSuffix')
                     : ''}
                 </span>
               </Tooltip>
               <Button
                 type="text"
                 size="small"
-                aria-label={dict('PC.Chat.LocalFiles.removeRoot')}
+                aria-label={dict('PC.Components.LocalFiles.removeRoot')}
                 icon={<DeleteOutlined />}
                 onClick={(event) => {
                   event.preventDefault();
@@ -68,7 +69,7 @@ const DirectorySourceNavigator: React.FC<{ navigation: Navigation }> = ({
         {
           key: '__open__',
           icon: <FolderOpenOutlined />,
-          label: dict('PC.Chat.LocalFiles.openLocalDirectory'),
+          label: dict('PC.Components.LocalFiles.openLocalDirectory'),
         },
       ],
     }),
@@ -118,12 +119,20 @@ const DirectorySourceNavigator: React.FC<{ navigation: Navigation }> = ({
           <DownOutlined />
         </Button>
       </Dropdown>
+      {navigation.conversationId && (
+        <OpenFileByPath
+          conversationId={navigation.conversationId}
+          sourceId={navigation.currentSourceId}
+          currentPath={navigation.currentPath}
+          customTargetDir={navigation.customTargetDir}
+        />
+      )}
       {pathParts.length > 0 && (
         <Button
           type="text"
           size="small"
           style={{ marginTop: 4 }}
-          title={dict('PC.Chat.LocalFiles.upToParent')}
+          title={dict('PC.Components.LocalFiles.upToParent')}
           onClick={() =>
             void navigation.onNavigate(pathParts.slice(0, -1).join('/'))
           }

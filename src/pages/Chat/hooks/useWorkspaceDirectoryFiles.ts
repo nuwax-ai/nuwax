@@ -74,7 +74,7 @@ export function useWorkspaceDirectoryFiles(
       message.error(
         error instanceof Error && error.message
           ? error.message
-          : dict('PC.Chat.LocalFiles.workspaceListFailed'),
+          : dict('PC.Components.LocalFiles.workspaceListFailed'),
       );
     } finally {
       if (requestToken.current === token) setLoading(false);
