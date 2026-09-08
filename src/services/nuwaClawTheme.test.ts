@@ -149,10 +149,9 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     expect(root.style.getPropertyValue('--xagi-layout-bg-secondary')).toBe(
       '#F2F2F2',
     );
-    // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
-    expect(root.style.getPropertyValue('--xagi-layout-bg-container')).toBe(
-      '#F3F4F6',
-    );
+    // page-container 背景不覆盖：与其他主题一致（通用 light 组半透明白），
+    // 覆盖层不写该键，值交给 unifiedThemeService 的 styleConfig 链路
+    expect(root.style.getPropertyValue('--xagi-layout-bg-container')).toBe('');
     // html 灰底兜住 style1 浮动面板的缝隙（jsdom 会把颜色规范化成 rgb() 形式）
     expect(root.style.backgroundColor).toBe('rgb(242, 242, 242)');
     // 桌面端不用背景图（米白纯色）

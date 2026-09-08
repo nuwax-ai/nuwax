@@ -43,6 +43,7 @@ export function useFileTreePreviewPanel(
     onExportProject,
     idleDetection,
     onReconnect,
+    appStage,
     hideDesktop = HideDesktopEnum.No,
     diffFile,
     showGitVersionButton = false,
@@ -141,6 +142,7 @@ export function useFileTreePreviewPanel(
         idleDetection={wrappedIdleDetection}
         // 重试前先 ensurePod + 恢复 keepalive，避免容器被回收后仅检测状态永远失败
         onReconnect={onReconnect}
+        appStage={appStage}
       />
     ) : diffFile ? (
       <ChangeFileGitDiffView
