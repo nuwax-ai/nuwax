@@ -357,6 +357,23 @@ export default () => {
     [],
   );
 
+  /**
+   * 仅在标签页从隐藏恢复时，keepalive 轮询才补一次 ensure。
+   * 否则 onBefore 会在「刚 ensure 完立刻启动保活」时再打一次 ensure。
+   */
+  const keepaliveNeedEnsureRef = useRef(false);
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        keepaliveNeedEnsureRef.current = true;
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, []);
+
   // 重启智能体
   const { run: restartAgent, loading: isRestartAgentLoading } = useRequest(
     restartAgentWithStage,
@@ -422,18 +439,23 @@ export default () => {
       pollingWhenHidden: false,
       // 轮询错误重试次数。如果设置为 -1，则无限次
       pollingErrorRetryCount: -1,
-      // 页面重新可见时，调用 apiEnsurePod 确保容器运行
+      // 仅标签页从隐藏恢复时补 ensure；刚启动保活时页面本来就是可见的，不能再打一次
       onBefore: async (params) => {
-        // 如果是从不可见状态恢复，先调用 ensurePod
-        if (document.visibilityState === 'visible' && params[0]) {
-          try {
-            console.log(
-              '[keepalive] Page visible, calling apiEnsurePod to ensure container running',
-            );
-            await ensurePodWithStage(params[0]);
-          } catch (error) {
-            console.error('[keepalive] apiEnsurePod failed:', error);
-          }
+        if (
+          !keepaliveNeedEnsureRef.current ||
+          document.visibilityState !== 'visible' ||
+          !params[0]
+        ) {
+          return;
+        }
+        keepaliveNeedEnsureRef.current = false;
+        try {
+          console.log(
+            '[keepalive] Page visible, calling apiEnsurePod to ensure container running',
+          );
+          await ensurePodWithStage(params[0]);
+        } catch (error) {
+          console.error('[keepalive] apiEnsurePod failed:', error);
         }
       },
     });

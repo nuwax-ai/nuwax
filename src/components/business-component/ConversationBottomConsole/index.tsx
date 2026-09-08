@@ -47,6 +47,12 @@ const cx = classNames.bind(styles);
 /** 底部控制台布局模式 */
 export type ConsoleLayoutMode = 'default' | 'expanded' | 'collapsed';
 
+/**
+ * 页面层容器状态（仅 AppDevPro 传入）。
+ * 未传时打开终端仍由本组件 ensure；传入后打开终端优先复用进页启动结果。
+ */
+export type ConsoleExternalContainerStatus = 'starting' | 'running' | 'error';
+
 /** 开发服务器日志相关配置（网页应用） */
 export interface ConversationBottomConsoleDevLogProps {
   logs: DevLogEntry[];
@@ -67,8 +73,8 @@ export interface ConversationBottomConsoleProps {
   /** 终端 WebSocket 地址；传入后终端 Tab 渲染 XtermTerminal */
   wsUrl?: string;
   /**
-   * 会话 ID；传入后组件挂载时自动调用 apiEnsurePod 启动容器，
-   * 容器启动成功后才允许终端发起 WebSocket 连接。
+   * 会话 ID；传入后首次展开终端时按需接入容器，
+   * 容器就绪后才允许终端发起 WebSocket 连接。
    * 若不传，则不启动容器，终端在有 wsUrl 时直接连接。
    */
   conversationId?: number;
@@ -77,6 +83,14 @@ export interface ConversationBottomConsoleProps {
    * 未传时 computer/pod 老接口不带 appStage，会话智能体等页面行为不变。
    */
   appStage?: ComputerPodAppStage;
+  /**
+   * 页面层容器状态，仅 AppDevPro 传入。
+   * - running：进页已启动成功，打开终端只保活并连接，不再 ensure
+   * - starting：进页正在启动，打开终端等待页面结果
+   * - error：进页启动失败，打开终端再 ensure
+   * 未传时保持原行为：首次展开终端时 ensure。
+   */
+  externalContainerStatus?: ConsoleExternalContainerStatus;
   /**
    * 容器启动成功后是否开启保活轮询 @default true
    * 网页应用开发只需要确保/重启服务，不需要轮询保活接口。
@@ -131,6 +145,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   wsUrl,
   conversationId,
   appStage,
+  externalContainerStatus,
   enableKeepalivePolling = true,
   wsSubprotocols,
   wireProtocol,
@@ -326,16 +341,43 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     };
   }, [conversationId]);
 
-  /** 用户首次展开终端面板时，触发容器启动 / 终端直接连接 */
-  const handleFirstExpand = useCallback(() => {
-    terminalActivatedRef.current = true;
+  /** 用 ref 持有页面层容器状态，避免 attach 闭包读到过期值 */
+  const externalContainerStatusRef = useRef(externalContainerStatus);
+  externalContainerStatusRef.current = externalContainerStatus;
 
+  /**
+   * 打开终端时接入容器：
+   * - 页面层已 running：不再 ensure，只保活后连接
+   * - 页面层正在 starting：等待页面结果
+   * - 页面层失败或未接管：由终端 ensure 成功后再连接
+   */
+  const attachOrStartContainer = useCallback(() => {
     if (!conversationId || ensureInFlightRef.current) {
       return;
     }
 
+    const external = externalContainerStatusRef.current;
     const status = containerStatusRef.current;
-    if (status === 'starting' || status === 'running') {
+
+    if (external === 'running') {
+      if (status !== 'running') {
+        setContainerStatus('running');
+        if (enableKeepalivePolling) {
+          runKeepaliveRef.current(conversationId);
+        }
+      }
+      return;
+    }
+
+    if (external === 'starting') {
+      if (status !== 'starting') {
+        setContainerStatus('starting');
+      }
+      return;
+    }
+
+    // 页面未接管或启动失败：running 说明终端侧已经拉起过，不再重复 ensure
+    if (status === 'running') {
       return;
     }
 
@@ -343,7 +385,53 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     void startContainer(conversationId).finally(() => {
       ensureInFlightRef.current = false;
     });
-  }, [conversationId, startContainer]);
+  }, [conversationId, enableKeepalivePolling, startContainer]);
+
+  /** 用户首次展开终端面板时，触发容器接入 / 终端直接连接 */
+  const handleFirstExpand = useCallback(() => {
+    terminalActivatedRef.current = true;
+    attachOrStartContainer();
+  }, [attachOrStartContainer]);
+
+  /**
+   * 进页容器状态变化后，若用户已打开终端，按最新结果接入：
+   * 启动成功则只保活；启动失败则由终端 ensure。
+   */
+  useEffect(() => {
+    if (!conversationId || !terminalActivatedRef.current) {
+      return;
+    }
+    attachOrStartContainer();
+  }, [attachOrStartContainer, conversationId, externalContainerStatus]);
+
+  /**
+   * 切换开发/线上环境后，当前容器状态作废。
+   * 若终端已打开，按新环境重新接入（已就绪则只保活，否则 ensure）。
+   */
+  const prevAppStageRef = useRef(appStage);
+  useEffect(() => {
+    if (prevAppStageRef.current === appStage) {
+      return;
+    }
+    prevAppStageRef.current = appStage;
+    if (!conversationId) {
+      return;
+    }
+    ensureInFlightRef.current = false;
+    if (enableKeepalivePolling) {
+      stopKeepaliveRef.current();
+    }
+    setContainerStatus('idle');
+    containerStatusRef.current = 'idle';
+    if (terminalActivatedRef.current) {
+      attachOrStartContainer();
+    }
+  }, [
+    appStage,
+    attachOrStartContainer,
+    conversationId,
+    enableKeepalivePolling,
+  ]);
 
   /** 终端可见后 fit / sync / focus（委托给 EmbeddedConsoleTerminal） */
   const syncTerminalLayoutAndFocus = useCallback(() => {
