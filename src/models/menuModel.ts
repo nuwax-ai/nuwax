@@ -2,6 +2,7 @@
  * 动态菜单权限管理 Model
  * @description 管理用户的菜单树数据和功能权限，提供权限检查方法
  */
+import { dict } from '@/services/i18nRuntime';
 import { apiQueryMenus } from '@/services/menuService';
 import { UserService } from '@/services/userService';
 import type { MenuItemDto } from '@/types/interfaces/menu';
@@ -10,12 +11,50 @@ import { useModel } from 'umi';
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { OTHER_MENU_CODES } from '@/constants/menus.constants';
-import { MenuEnabledEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
+import {
+  MenuBindTypeEnum,
+  MenuEnabledEnum,
+} from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import {
   extractAllMenuCodes,
   extractAllPermissions,
   isRoutePathHidden,
 } from '@/utils/permission';
+
+/**
+ * 「项目管理」菜单占位（TODO：后端 /api/user/list-menu 在 workspace children
+ * 下发 project_manage 后删除本段——按 code 去重，后端就绪即自动让位）。
+ * 前端先行：个人/团队空间的二级菜单增加「项目管理」，指向项目列表页。
+ */
+export const PROJECT_MANAGE_MENU_CODE = 'project_manage';
+
+/** 需要注入占位菜单的父级 code（工作空间=个人空间/团队空间共用入口） */
+const PROJECT_MANAGE_PLACEHOLDER_CODES = ['workspace'];
+
+/** 后端未下发时本地追加的占位菜单项 */
+const appendProjectManagePlaceholder = (
+  children: MenuItemDto[],
+): MenuItemDto[] => {
+  if (children.some((menu) => menu.code === PROJECT_MANAGE_MENU_CODE)) {
+    return children;
+  }
+  return [
+    ...children,
+    {
+      // 占位 id（后端真实菜单就绪后本项不再注入，id 不会与真实菜单冲突即可）
+      id: -1,
+      code: PROJECT_MANAGE_MENU_CODE,
+      // 渲染期取词（getSecondLevelMenus 每次调用时解析，跟随语言切换）
+      name: dict('PC.Pages.SpaceProjectManage.menuTitle'),
+      path: '/space/:spaceId/project-manage',
+      // 注入项不经 mapSysMenuToMenuItem 的 MENU_ICON_MAP 兜底，直接带图标名
+      icon: 'icons-nav-cube',
+      children: [],
+      status: MenuEnabledEnum.Enabled,
+      menuBindType: MenuBindTypeEnum.AllBound,
+    } as MenuItemDto,
+  ];
+};
 
 /**
  * 菜单权限模型
@@ -217,11 +256,13 @@ export default function useMenuModel() {
       };
 
       const parent = findParent(menuTree);
-      return (
+      const children =
         parent?.children?.filter(
           (menu: MenuItemDto) => menu.status === MenuEnabledEnum.Enabled,
-        ) || []
-      );
+        ) || [];
+      return PROJECT_MANAGE_PLACEHOLDER_CODES.includes(parentCode)
+        ? appendProjectManagePlaceholder(children)
+        : children;
     },
     [menuTree],
   );

@@ -3,14 +3,49 @@ import { PublishStatusEnum } from '@/types/enums/common';
 import { TablePageRequest } from '@/types/interfaces/request';
 
 /** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
-export type UserProjectPageQueryParams = TablePageRequest<{
+export type UserProjectPageQueryParams = TablePageRequest<
+  Partial<{
+    spaceId: number;
+    creatorId: number;
+    // 项目类型：NormalProject/UserApp/PageApp,可用值:Agent,Plugin,Skill,PageApp,UserApp,NormalProject,Workflow,Knowledge,Table,Model,Mcp
+    projectType: AgentComponentTypeEnum;
+    // 项目名称（模糊匹配）
+    name: string;
+  }>
+>;
+
+/**
+ * 用户项目分页查询结果行（前端先行定义，与 mock 对齐；
+ * 后端真实结构若不同只需改此类型一处）
+ */
+export interface UserProjectItem {
+  /** 项目ID（UserApp/NormalProject 即 app_id；PageApp 为页面项目 id） */
+  id: number;
+  /** 空间ID */
   spaceId: number;
-  creatorId: number;
-  // 项目类型：NormalProject/UserApp/PageApp,可用值:Agent,Plugin,Skill,PageApp,UserApp,NormalProject,Workflow,Knowledge,Table,Model,Mcp
+  /** 项目类型 */
   projectType: AgentComponentTypeEnum;
-  // 项目名称（模糊匹配）
+  /** 项目名称 */
   name: string;
-}>;
+  /** 项目描述 */
+  description: string;
+  /** 项目图标 */
+  icon: string;
+  /** 发布状态（PageApp/UserApp 语义一致；常规项目为草稿态） */
+  publishStatus: PublishStatusEnum;
+  /** 更新时间 */
+  modified: string;
+  /** 创建时间 */
+  created: string;
+}
+
+/** 用户项目分页查询结果（mybatis-plus IPage 风格） */
+export interface UserProjectPageResult {
+  records: UserProjectItem[];
+  total: number;
+  current: number;
+  size: number;
+}
 
 /** 创建全栈应用参数 */
 export interface CreateUserAppParams {

@@ -73,6 +73,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   // 二级菜单 - 工作空间
   // 新建项目
   create_project: 'icons-common-plus',
+  // 项目管理（后端菜单未下发期间的本地占位 code）
+  project_manage: 'icons-nav-cube',
   // 智能体开发
   agent_dev: 'icons-nav-stars',
   // 网页应用开发"
