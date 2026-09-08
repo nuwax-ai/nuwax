@@ -314,3 +314,23 @@ export async function apiImportProject(
     data: formData,
   });
 }
+
+/**
+ * 浏览个人电脑目录（首页发起会话前，按 sandboxId 定位，非会话 cId 通道）。
+ *
+ * file-server 侧单层列目录能力已就绪（customTargetDir + relativePath + recursive=false，
+ * 见 nuwa-work nuwax-file-server getFileList）；本端点为「会话创建前按 sandboxId 路由」的
+ * 网关契约假定形态，dev 由 mock/computerBrowse.ts 提供走查数据，网关/后端契约对齐后
+ * 仅需调整此处 URL（调用方 WorkspaceDirPickerModal 不感知）。
+ */
+export async function apiBrowseSandboxDirectory(params: {
+  sandboxId: number | string;
+  /** 相对于根（'/'）的子路径，空串=根目录 */
+  relativePath?: string;
+}): Promise<RequestResponse<StaticFileListResponse>> {
+  const { sandboxId, relativePath = '' } = params;
+  return request(`/api/sandbox/${sandboxId}/directory`, {
+    method: 'GET',
+    params: { relativePath, recursive: false },
+  });
+}

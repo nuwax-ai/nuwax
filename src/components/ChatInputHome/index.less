@@ -444,25 +444,53 @@
   }
 }
 
-/* 工作目录入口（wiki #17）：选中个人电脑后展示 */
-.workspace-dir-label {
-  max-width: 120px;
+/* 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，仅个人电脑时展示；
+   负边距抵消卡片 padding 贴住下缘，底圆角与卡片(20px)承接 */
+.workspace-dir-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  // var() 别名 token 不能做 less 负号运算，负边距需包 calc
+  margin: @marginXxs calc(0px - @padding) -12px;
+  padding: 6px @padding;
+  border-radius: 0 0 20px 20px;
+  background: var(--xagi-layout-bg-secondary, #f2f2f2);
+}
+
+.workspace-dir-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  font-size: @fontSizeSm;
+  font-weight: 500;
+  color: @colorTextTertiary;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+
+  &:hover {
+    background-color: @colorFillTertiary;
+    color: @colorText;
+  }
+}
+
+.workspace-dir-text {
+  min-width: 0;
+  max-width: 420px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  text-align: left;
 }
 
-.workspace-dir-active {
-  color: var(--ant-color-primary);
-}
-
-.workspace-dir-clear {
-  margin-left: 2px;
-  color: var(--ant-color-text-quaternary);
+.workspace-dir-caret {
+  flex-shrink: 0;
   font-size: 10px;
-
-  &:hover {
-    color: var(--ant-color-text-secondary);
-  }
+  color: @colorTextQuaternary;
 }
