@@ -2,7 +2,7 @@
  * /mock-chat 断言型 + 交互型全场景回归套件（ego-browser 驱动，无登录态依赖）
  *
  * 用法：
- *   1. 启动 dev server（npm run dev:mock，默认 localhost:3000；dev 默认 MOCK=none 会关掉 mock 数据）
+ *   1. 启动 dev server（npm run dev，默认 localhost:3000）
  *   2. npm run e2e:mock-chat
  *      等价于 ego-browser nodejs < scripts/e2e/mock-chat-acceptance.mjs（经
  *      ego-run.mjs 桥接 env）
@@ -143,7 +143,7 @@ const KNOWN_ISSUES = [
   if (!reachable) {
     cliLog(
       `❌ dev server 未启动或编译未完成（${APP_BASE} 不可达）。\n` +
-        `   请先运行: npm run dev:mock（等待首次 Compiled 完成后再跑套件；本套件依赖 mock 数据，dev 默认 MOCK=none 不可用）\n` +
+        `   请先运行: npm run dev（等待首次 Compiled 完成后再跑套件）\n` +
         `   或通过环境变量指定已运行的地址: E2E_BASE_URL=http://<host:port> npm run e2e:mock-chat`,
     );
     throw new Error('dev server unreachable');

@@ -16,13 +16,7 @@ import type {
 export async function apiUserProjectPageQuery(
   data: UserProjectPageQueryParams,
 ): Promise<RequestResponse<UserProjectPageResult>> {
-  // TODO(后端就绪后移除)：分页查询后端未上线，dev 走同源 Umi mock
-  // （全局 request 拦截器会把相对路径前缀到远端 BASE_URL，mock 拦不到）
-  const url =
-    process.env.NODE_ENV === 'development'
-      ? `${window.location.origin}/api/user-project/page-query`
-      : '/api/user-project/page-query';
-  return request(url, {
+  return request('/api/user-project/page-query', {
     method: 'POST',
     data,
   });
