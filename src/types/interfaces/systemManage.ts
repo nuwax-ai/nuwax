@@ -1290,6 +1290,27 @@ export interface SaveConnectorOauthConfigParams {
 }
 
 /**
+ * 连接器 OAuth App 配置（GET /api/system/connector/oauth-config?service= 响应）
+ * 编辑 oauth2 连接器时回填认证配置表单用
+ */
+export interface ConnectorOauthConfigInfo {
+  /** 连接器 service 标识 */
+  providerService: string;
+  /** App 模式：platform / byo */
+  scopeType?: string;
+  /** Client ID */
+  clientId?: string;
+  /** 授权端点 */
+  authUrl?: string;
+  /** 令牌端点 */
+  tokenUrl?: string;
+  /** 授权 scopes */
+  scopes?: string[];
+  /** 是否已存 Client Secret（加密不回显，编辑留空 = 保持不变） */
+  hasClientSecret?: boolean;
+}
+
+/**
  * OAuth 授权发起结果（GET /api/connector/oauth/authorize）
  * 返回带 state / PKCE 的授权页地址，由前端新窗口打开让用户登录并同意
  */

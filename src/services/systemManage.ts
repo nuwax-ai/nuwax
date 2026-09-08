@@ -17,6 +17,7 @@ import type {
   ConnectorConnectionInfo,
   ConnectorImportDiff,
   ConnectorOauthAuthorizeResult,
+  ConnectorOauthConfigInfo,
   ConnectorProviderDetail,
   ConnectorProviderInfo,
   ConnectorProviderListParams,
@@ -219,6 +220,23 @@ export async function apiSystemConnectorOauthConfigSave(
   return request('/api/system/connector/oauth-config', {
     method: 'POST',
     data,
+  });
+}
+
+/**
+ * 查询连接器 OAuth App 配置
+ * 对应接口：GET /api/system/connector/oauth-config?service=
+ *
+ * - 编辑 oauth2 连接器时回填认证配置表单（scopeType / clientId / authUrl /
+ *   tokenUrl / scopes）；clientSecret 不回明文，hasClientSecret 标记是否已存
+ * - 管理侧 / 空间侧编辑抽屉共用
+ */
+export async function apiSystemConnectorOauthConfigGet(params: {
+  service: string;
+}): Promise<RequestResponse<ConnectorOauthConfigInfo>> {
+  return request('/api/system/connector/oauth-config', {
+    method: 'GET',
+    params,
   });
 }
 

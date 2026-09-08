@@ -7,6 +7,7 @@ import ConnectorAuthConfigSection, {
 } from '@/pages/SystemManagement/ConnectorManage/components/ConnectorAuthConfigSection';
 import { AUTH_TYPE_OPTIONS } from '@/pages/SystemManagement/ConnectorManage/constants';
 import {
+  apiSystemConnectorOauthConfigGet,
   apiSystemConnectorOauthConfigSave,
   apiSystemConnectorProviderDetail,
   apiSystemConnectorProviderUpdateMeta,
@@ -271,6 +272,31 @@ const ConnectorProviderEditDrawer: React.FC<
       form.setFieldsValue(toFormValues(source));
     };
 
+    /**
+     * oauth2：追加 GET /api/system/connector/oauth-config?service= 回填
+     * 平台 App 配置（scopeType → 模式，clientId / authUrl / tokenUrl /
+     * scopes → 表单项；clientSecret 不回明文，编辑留空 = 保持已存配置）
+     */
+    const applyOauthConfig = async (service: string) => {
+      try {
+        const response = await apiSystemConnectorOauthConfigGet({ service });
+        if (cancelled) return;
+        if (response?.code !== SUCCESS_CODE || !response.data) return;
+        const config = response.data;
+        form.setFieldsValue({
+          oauthAppMode: config.scopeType === 'byo' ? 'byo' : 'platform',
+          oauthClientId: config.clientId || '',
+          oauthAuthUrl: config.authUrl || '',
+          oauthTokenUrl: config.tokenUrl || '',
+          oauthScopes: Array.isArray(config.scopes)
+            ? config.scopes.join(' ')
+            : '',
+        });
+      } catch {
+        // oauth 配置拉取失败：保留 authConfig 的回填值，不阻塞编辑
+      }
+    };
+
     if (!open || !record) {
       form.resetFields();
       return () => {
@@ -282,6 +308,8 @@ const ConnectorProviderEditDrawer: React.FC<
     applyValues(record);
 
     (async () => {
+      // 实际回填来源：详情成功取 provider，失败沿用列表行
+      let applied: ConnectorProviderInfo = record;
       try {
         // 详情接口为 space 维度（GET /api/connector/providers/{service}）：
         // 优先用注入的 spaceId（空间页当前选中空间），
@@ -301,12 +329,16 @@ const ConnectorProviderEditDrawer: React.FC<
         if (response?.code === SUCCESS_CODE && response.data) {
           // 详情响应为嵌套结构：提供方信息在 data.provider 下（data.actions
           // 为工具列表）；provider 缺失时沿用列表行回填值，避免被空值覆盖
-          applyValues(response.data.provider ?? record);
+          applied = response.data.provider ?? record;
+          applyValues(applied);
         }
       } catch {
         // 详情拉取失败时继续沿用列表行回填值
-      } finally {
-        // no-op
+      }
+      // provider.authType = oauth2：再拉平台 App 配置回填认证配置表单
+      // （放在详情回填之后，避免 setFieldsValue 相互覆盖）
+      if (applied.authType === 'oauth2') {
+        await applyOauthConfig(record.service);
       }
     })();
 
