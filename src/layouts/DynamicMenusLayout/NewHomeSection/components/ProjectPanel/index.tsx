@@ -1,17 +1,21 @@
+import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import {
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleFilled,
+  InboxOutlined,
   MoreOutlined,
   PushpinFilled,
   PushpinOutlined,
   RightOutlined,
+  StarFilled,
+  StarOutlined,
 } from '@ant-design/icons';
-import { Dropdown, Input, message, Modal, Typography } from 'antd';
+import { Dropdown, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,9 +37,9 @@ export interface ProjectItem {
 
 /**
  * MOCK:项目列表数据(参照设计原型样例),仅用于交互/UI 确认。
- * TODO(后端):项目数据接口就绪后删除此 mock,数据改为接口下发。
+ * 导出供分组头展示项目计数；TODO(后端):项目数据接口就绪后删除此 mock,数据改为接口下发。
  */
-const MOCK_PROJECTS: ProjectItem[] = [
+export const MOCK_PROJECTS: ProjectItem[] = [
   {
     id: 'p-1',
     name: '类飞书文档协作工具',
@@ -71,27 +75,39 @@ const MOCK_PROJECTS: ProjectItem[] = [
 /**
  * 「项目」Tab 面板。
  *
- * 项目行:名称 + 「+」新建 + 展开箭头;点击行切换展开,展开显示项目子项。
- * 子项:执行中绿点 / 失败红叹号状态徽标 + 悬停「⋯」菜单(置顶/重命名/删除)。
+ * **项目行:全功能**(2026-09-08 定调)——右键菜单 置顶/归档/收藏/重命名/删除,
+ * 置顶排前、归档默认隐藏+「已归档」入口,对齐任务列表会话的交互形态。
+ * **项目子项(项目下的会话):不做置顶**(同日定调),仅 重命名/删除 + 状态徽标。
  *
- * 当前为 mock 数据阶段(后端接口未 ready):菜单操作仅改本地 mock 数据
- * 用于交互验证,子项点击与「+」均不触发跳转/创建。
+ * 当前为 mock 数据阶段(后端项目接口未 ready,置顶/归档接口后端开发中):
+ * 项目级与子项操作仅改本地数据用于交互验证;后端就绪后项目操作迁到服务端、
+ * 子项删除/重命名切到会话真实接口(apiAgentConversationDelete/Update)。
  */
-const ProjectPanel: React.FC = () => {
+const ProjectPanel: React.FC<{
+  /** 可见项目数变化上报(分组头计数用,对齐任务计数=过滤归档后的可见数) */
+  onVisibleCountChange?: (count: number) => void;
+}> = ({ onVisibleCountChange }) => {
   const [projects, setProjects] = useState<ProjectItem[]>(MOCK_PROJECTS);
   // 默认展开第一个项目(与原型一致)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(
     () => new Set(MOCK_PROJECTS[0] ? [MOCK_PROJECTS[0].id] : []),
   );
-  const [pinnedChildIds, setPinnedChildIds] = useState<Set<string>>(
+  // 项目级标记(mock 阶段本地 state;后端置顶/归档接口就绪后迁移服务端)
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => new Set());
+  const [archivedIds, setArchivedIds] = useState<Set<string>>(() => new Set());
+  const [collectedIds, setCollectedIds] = useState<Set<string>>(
     () => new Set(),
   );
-  // 重命名弹窗状态(projectId + childId 定位目标子项)
+  const [showArchived, setShowArchived] = useState(false);
+  // 子项重命名弹窗状态(projectId + childId 定位目标子项)
   const [renameTarget, setRenameTarget] = useState<{
     projectId: string;
     childId: string;
   }>();
   const [renameName, setRenameName] = useState('');
+  // 项目重命名弹窗状态
+  const [renameProjectId, setRenameProjectId] = useState<string>();
+  const [projectRenameName, setProjectRenameName] = useState('');
 
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
@@ -112,39 +128,167 @@ const ProjectPanel: React.FC = () => {
     });
   };
 
-  const sortChildren = (children: ProjectChildItem[]) =>
-    [...children].sort(
-      (a, b) =>
-        Number(pinnedChildIds.has(b.id)) - Number(pinnedChildIds.has(a.id)),
+  // 项目可见列表:默认隐藏归档、置顶排前(稳定排序保持原相对顺序);已归档视图只看归档项
+  const visibleProjects = useMemo(() => {
+    const filtered = showArchived
+      ? projects.filter((item) => archivedIds.has(item.id))
+      : projects.filter((item) => !archivedIds.has(item.id));
+    return [...filtered].sort(
+      (a, b) => Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id)),
     );
+  }, [projects, archivedIds, showArchived, pinnedIds]);
 
-  const handleTogglePin = (projectId: string, child: ProjectChildItem) => {
-    const nextPinned = !pinnedChildIds.has(child.id);
-    setPinnedChildIds((prev) => {
+  const archivedProjectCount = useMemo(
+    () => projects.filter((item) => archivedIds.has(item.id)).length,
+    [projects, archivedIds],
+  );
+
+  useEffect(() => {
+    onVisibleCountChange?.(visibleProjects.length);
+  }, [visibleProjects.length, onVisibleCountChange]);
+
+  // 项目标记 toggle:toast 反馈(与任务会话菜单同款文案)
+  const toggleProjectFlag = (
+    kind: 'pinned' | 'archived' | 'collected',
+    project: ProjectItem,
+  ) => {
+    const setter =
+      kind === 'pinned'
+        ? setPinnedIds
+        : kind === 'archived'
+        ? setArchivedIds
+        : setCollectedIds;
+    setter((prev) => {
       const next = new Set(prev);
-      if (nextPinned) {
-        next.add(child.id);
+      if (next.has(project.id)) {
+        next.delete(project.id);
       } else {
-        next.delete(child.id);
+        next.add(project.id);
       }
       return next;
     });
-    message.success(
-      dict(
-        nextPinned
-          ? 'PC.Components.ConversationContextMenu.pinnedToast'
-          : 'PC.Components.ConversationContextMenu.unpinnedToast',
+    const enabled = !(
+      kind === 'pinned'
+        ? pinnedIds
+        : kind === 'archived'
+        ? archivedIds
+        : collectedIds
+    ).has(project.id);
+    const toastKeyMap = {
+      pinned: enabled
+        ? 'PC.Components.ConversationContextMenu.pinnedToast'
+        : 'PC.Components.ConversationContextMenu.unpinnedToast',
+      archived: enabled
+        ? 'PC.Components.ConversationContextMenu.archivedToast'
+        : 'PC.Components.ConversationContextMenu.unarchivedToast',
+      collected: enabled
+        ? 'PC.Components.ConversationContextMenu.collectedToast'
+        : 'PC.Components.ConversationContextMenu.uncollectedToast',
+    } as const;
+    message.success(dict(toastKeyMap[kind]));
+  };
+
+  const handleProjectRenameSubmit = () => {
+    const trimmed = projectRenameName.trim();
+    if (!trimmed || !renameProjectId) return;
+    setProjects((prev) =>
+      prev.map((project) =>
+        project.id !== renameProjectId
+          ? project
+          : { ...project, name: trimmed },
       ),
     );
-    void projectId;
+    setRenameProjectId(undefined);
   };
 
-  const openRename = (projectId: string, child: ProjectChildItem) => {
-    setRenameTarget({ projectId, childId: child.id });
-    setRenameName(child.name);
+  const openProjectDelete = (project: ProjectItem) => {
+    Modal.confirm({
+      title: dict('PC.Common.Global.deleteConfirmTitle'),
+      content: dict('PC.Common.Global.deleteConfirmContent'),
+      okButtonProps: { danger: true },
+      okText: dict('PC.Common.Global.delete'),
+      cancelText: dict('PC.Common.Global.cancel'),
+      onOk: () => {
+        setProjects((prev) => prev.filter((item) => item.id !== project.id));
+        setPinnedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(project.id);
+          return next;
+        });
+        setArchivedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(project.id);
+          return next;
+        });
+        setCollectedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(project.id);
+          return next;
+        });
+      },
+    });
   };
 
-  const handleRenameSubmit = () => {
+  // 项目行右键菜单:置顶/归档/收藏/重命名/删除(全功能,对齐任务会话菜单结构)
+  const buildProjectMenu = (project: ProjectItem) => ({
+    items: [
+      {
+        key: 'pin',
+        icon: <PushpinOutlined />,
+        label: dict(
+          pinnedIds.has(project.id)
+            ? 'PC.Components.ConversationContextMenu.unpin'
+            : 'PC.Components.ConversationContextMenu.pin',
+        ),
+      },
+      {
+        key: 'archive',
+        icon: <InboxOutlined />,
+        label: dict(
+          archivedIds.has(project.id)
+            ? 'PC.Components.ConversationContextMenu.unarchive'
+            : 'PC.Components.ConversationContextMenu.archive',
+        ),
+      },
+      {
+        key: 'favorite',
+        icon: collectedIds.has(project.id) ? <StarFilled /> : <StarOutlined />,
+        label: dict(
+          collectedIds.has(project.id)
+            ? 'PC.Components.ConversationContextMenu.unfavorite'
+            : 'PC.Components.ConversationContextMenu.favorite',
+        ),
+      },
+      { type: 'divider' as const },
+      {
+        key: 'rename',
+        icon: <EditOutlined />,
+        label: dict('PC.Components.ConversationContextMenu.rename'),
+      },
+      {
+        key: 'delete',
+        icon: <DeleteOutlined />,
+        danger: true,
+        label: dict('PC.Common.Global.delete'),
+      },
+    ],
+    onClick: ({ key }: { key: string }) => {
+      if (key === 'pin') {
+        toggleProjectFlag('pinned', project);
+      } else if (key === 'archive') {
+        toggleProjectFlag('archived', project);
+      } else if (key === 'favorite') {
+        toggleProjectFlag('collected', project);
+      } else if (key === 'rename') {
+        setRenameProjectId(project.id);
+        setProjectRenameName(project.name);
+      } else if (key === 'delete') {
+        openProjectDelete(project);
+      }
+    },
+  });
+
+  const handleChildRenameSubmit = () => {
     const trimmed = renameName.trim();
     if (!trimmed || !renameTarget) return;
     setProjects((prev) =>
@@ -164,7 +308,7 @@ const ProjectPanel: React.FC = () => {
     setRenameTarget(undefined);
   };
 
-  const openDelete = (projectId: string, child: ProjectChildItem) => {
+  const openChildDelete = (projectId: string, child: ProjectChildItem) => {
     Modal.confirm({
       title: dict('PC.Common.Global.deleteConfirmTitle'),
       content: dict('PC.Common.Global.deleteConfirmContent'),
@@ -184,26 +328,13 @@ const ProjectPanel: React.FC = () => {
                 },
           ),
         );
-        setPinnedChildIds((prev) => {
-          const next = new Set(prev);
-          next.delete(child.id);
-          return next;
-        });
       },
     });
   };
 
+  // 子项菜单:项目下的会话不做置顶(2026-09-08 定调),仅 重命名/删除
   const buildChildMenu = (projectId: string, child: ProjectChildItem) => ({
     items: [
-      {
-        key: 'pin',
-        icon: <PushpinOutlined />,
-        label: dict(
-          pinnedChildIds.has(child.id)
-            ? 'PC.Components.ConversationContextMenu.unpin'
-            : 'PC.Components.ConversationContextMenu.pin',
-        ),
-      },
       {
         key: 'rename',
         icon: <EditOutlined />,
@@ -217,12 +348,11 @@ const ProjectPanel: React.FC = () => {
       },
     ],
     onClick: ({ key }: { key: string }) => {
-      if (key === 'pin') {
-        handleTogglePin(projectId, child);
-      } else if (key === 'rename') {
-        openRename(projectId, child);
+      if (key === 'rename') {
+        setRenameTarget({ projectId, childId: child.id });
+        setRenameName(child.name);
       } else if (key === 'delete') {
-        openDelete(projectId, child);
+        openChildDelete(projectId, child);
       }
     },
   });
@@ -230,47 +360,62 @@ const ProjectPanel: React.FC = () => {
   if (projects.length === 0) {
     return (
       <div className={cx(styles['project-panel'])}>
-        <Typography.Text
-          type="secondary"
-          className={cx(styles['project-empty'])}
-        >
-          {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects')}
-        </Typography.Text>
+        <div className={cx(styles['project-empty'])}>
+          <img
+            className={cx(styles['project-empty-img'])}
+            src={emptyStateNoData}
+            alt=""
+          />
+          <div className={cx(styles['project-empty-text'])}>
+            {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects')}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className={cx(styles['project-panel'])}>
-      {projects.map((project) => {
+      {visibleProjects.map((project) => {
         const expanded = expandedIds.has(project.id);
         return (
           <div key={project.id} className={cx(styles.project)}>
-            <div
-              className={cx(styles.row, { [styles.expanded]: expanded })}
-              onClick={() => handleProjectClick(project)}
-              role="button"
-              tabIndex={-1}
+            <Dropdown
+              menu={buildProjectMenu(project)}
+              trigger={['contextMenu']}
             >
-              <span className={cx(styles.name)} title={project.name}>
-                {project.name}
-              </span>
-              {/* 新建会话入口:mock 阶段不触发动作,仅阻断行展开 */}
-              <span
-                className={cx(styles.add)}
-                onClick={(event) => event.stopPropagation()}
-                title={dict('PC.Constants.Menus.newChat')}
+              <div
+                className={cx(styles.row, { [styles.expanded]: expanded })}
+                onClick={() => handleProjectClick(project)}
+                role="button"
+                tabIndex={-1}
               >
-                +
-              </span>
-              <RightOutlined
-                className={cx(styles.arrow, {
-                  [styles.arrowExpanded]: expanded,
-                })}
-              />
-            </div>
+                {pinnedIds.has(project.id) && (
+                  <PushpinFilled className={cx(styles['pin-icon'])} />
+                )}
+                {collectedIds.has(project.id) && (
+                  <StarFilled className={cx(styles['star-icon'])} />
+                )}
+                <span className={cx(styles.name)} title={project.name}>
+                  {project.name}
+                </span>
+                {/* 新建会话入口:mock 阶段不触发动作,仅阻断行展开 */}
+                <span
+                  className={cx(styles.add)}
+                  onClick={(event) => event.stopPropagation()}
+                  title={dict('PC.Constants.Menus.newChat')}
+                >
+                  +
+                </span>
+                <RightOutlined
+                  className={cx(styles.arrow, {
+                    [styles.arrowExpanded]: expanded,
+                  })}
+                />
+              </div>
+            </Dropdown>
             {expanded &&
-              sortChildren(project.children ?? []).map((child) => (
+              (project.children ?? []).map((child) => (
                 <div key={child.id} className={cx(styles.child)}>
                   {child.taskStatus === TaskStatus.EXECUTING && (
                     <span
@@ -283,9 +428,6 @@ const ProjectPanel: React.FC = () => {
                       className={cx(styles['status-failed'])}
                       aria-label={failedText}
                     />
-                  )}
-                  {pinnedChildIds.has(child.id) && (
-                    <PushpinFilled className={cx(styles['pin-icon'])} />
                   )}
                   <span className={cx(styles['child-name'])} title={child.name}>
                     {child.name}
@@ -312,10 +454,25 @@ const ProjectPanel: React.FC = () => {
           </div>
         );
       })}
+      {/* 已归档项目入口:存在归档项或处于已归档视图时显示(mock 阶段本地标记) */}
+      {(archivedProjectCount > 0 || showArchived) && (
+        <div
+          className={cx(styles['archived-entry'])}
+          onClick={() => setShowArchived(!showArchived)}
+        >
+          {showArchived
+            ? dict(
+                'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToProjects',
+              )
+            : `${dict(
+                'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedProjects',
+              )} (${archivedProjectCount})`}
+        </div>
+      )}
       <Modal
         title={dict('PC.Components.HistoryConversationList.renameModalTitle')}
         open={renameTarget !== undefined}
-        onOk={handleRenameSubmit}
+        onOk={handleChildRenameSubmit}
         onCancel={() => setRenameTarget(undefined)}
         okButtonProps={{ disabled: !renameName.trim() }}
         okText={dict('PC.Common.Global.confirm')}
@@ -325,7 +482,24 @@ const ProjectPanel: React.FC = () => {
         <Input
           value={renameName}
           onChange={(event) => setRenameName(event.target.value)}
-          onPressEnter={handleRenameSubmit}
+          onPressEnter={handleChildRenameSubmit}
+          maxLength={50}
+        />
+      </Modal>
+      <Modal
+        title={dict('PC.Components.HistoryConversationList.renameModalTitle')}
+        open={renameProjectId !== undefined}
+        onOk={handleProjectRenameSubmit}
+        onCancel={() => setRenameProjectId(undefined)}
+        okButtonProps={{ disabled: !projectRenameName.trim() }}
+        okText={dict('PC.Common.Global.confirm')}
+        cancelText={dict('PC.Common.Global.cancel')}
+        destroyOnHidden
+      >
+        <Input
+          value={projectRenameName}
+          onChange={(event) => setProjectRenameName(event.target.value)}
+          onPressEnter={handleProjectRenameSubmit}
           maxLength={50}
         />
       </Modal>
