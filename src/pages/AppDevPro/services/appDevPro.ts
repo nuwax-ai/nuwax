@@ -7,7 +7,7 @@ import type {
   UserAppInfo,
   UserAppLogsQueryParams,
   UserAppLogsQueryResult,
-  UserAppStageEnum,
+  UserAppLogsSourcesQueryParams,
   UserAppStartDevParams,
   UserProjectPageQueryParams,
 } from '../type';
@@ -181,11 +181,11 @@ export async function apiUserAppLogsQuery(
 
 /** 查询应用日志来源 */
 export async function apiUserAppLogsSourcesQuery(
-  id: number,
-  appStage: UserAppStageEnum,
+  data: UserAppLogsSourcesQueryParams,
 ): Promise<RequestResponse<UserAppLogsQueryResult>> {
-  return request(`/api/userapp/${id}/${appStage}/logs/sources/query`, {
-    method: 'GET',
+  return request('/api/userapp/logs/sources/query', {
+    method: 'POST',
+    data,
   });
 }
 

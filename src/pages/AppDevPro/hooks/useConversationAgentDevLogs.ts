@@ -201,7 +201,10 @@ export const useConversationAgentDevLogs = (
         return Promise.resolve([]);
       }
 
-      return apiUserAppLogsSourcesQuery(currentAppId, UserAppStageEnum.Dev);
+      return apiUserAppLogsSourcesQuery({
+        appId: currentAppId,
+        env: UserAppStageEnum.Dev,
+      });
     },
     {
       manual: true,

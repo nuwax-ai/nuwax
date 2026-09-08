@@ -184,6 +184,13 @@ export interface UserAppLogItem {
   level?: string;
 }
 
+export interface UserAppLogsSourcesQueryParams {
+  /*应用ID */
+  appId: number;
+  /*环境：dev 开发环境（默认）；prod 发布环境 */
+  env?: UserAppStageEnum;
+}
+
 /** 查询应用日志返回 */
 export interface UserAppLogsQueryResult {
   /** 增量拉取游标 */
