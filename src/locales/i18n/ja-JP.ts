@@ -5255,7 +5255,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ModelPermissions.modelIdCopied": "モデルIDをコピーしました",
   "PC.Routes.permissionResources": "権限リソース",
   "PC.Routes.publicModelManagement": "パブリックモデル管理",
-  "PC.Routes.connectorManage": "コネクタ管理",
+  "PC.Routes.connectorManage": "公式コネクタ",
   "PC.Routes.modelMonitor": "モデルモニター",
   "PC.Routes.publishAudit": "監査の公開",
   "PC.Routes.recommendManage": "おすすめ管理",

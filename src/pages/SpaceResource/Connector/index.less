@@ -5,48 +5,7 @@
   border-radius: 8px;
 }
 
-/* ---------- 空间选择器（页面顶部、新增连接器按钮左侧） ---------- */
-
-/* 空间选择器容器：白底细边框（与管理端 LightFilter 视觉对齐） */
-.filterItem {
-  display: flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 4px 0 10px;
-  background: #fff;
-  border: 1px solid #ddd8d0;
-  border-radius: 6px;
-
-  &:hover {
-    border-color: #b8b2a6;
-  }
-
-  &:has(.ant-select-open) {
-    border-color: #1a1a1a;
-  }
-}
-
-.filterItemLabel {
-  margin-right: 2px;
-  font-size: 13px;
-  color: #6b665d;
-  white-space: nowrap;
-}
-
-/* 空间选择器：选项为空间名，稍宽 */
-.spaceSelect {
-  min-width: 160px;
-  max-width: 240px;
-}
-
-/* 空间列表加载中 */
-.loadingWrap {
-  display: flex;
-  justify-content: center;
-  padding: 96px 0;
-}
-
-/* 当前账号没有空间 */
+/* 路由参数异常（spaceId 缺失 / 非数字）时的空态 */
 .emptyWrap {
   display: flex;
   justify-content: center;

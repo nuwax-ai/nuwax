@@ -5554,7 +5554,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ModelPermissions.modelIdCopied": "Model ID copied",
   "PC.Routes.permissionResources": "Permission Resources",
   "PC.Routes.publicModelManagement": "Public Model Mgmt",
-  "PC.Routes.connectorManage": "Connector Management",
+  "PC.Routes.connectorManage": "Official Connectors",
   "PC.Routes.publishAudit": "Publish Audit",
   "PC.Routes.recommendManage": "Recommendation Management",
   "PC.Routes.homeRecommend": "Home Recommendations",

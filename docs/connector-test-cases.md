@@ -9,14 +9,14 @@
 | 前端地址 | 本地 dev server(如 `http://198.18.0.1:3000`) |
 | 后端 | 测试环境后端(以本地 `.env` / 代理配置为准,勿写入仓库) |
 | 登录账号 | 测试账号(向团队索取,勿将真实账号密码写入仓库) |
-| 管理侧入口 | `/system/connector-manage` |
+| 管理侧入口 | `/system/content/official-connector` |
 | 空间侧入口 | `/space/{spaceId}/connector`(用例使用 spaceId=57) |
 | 测试数据约定 | service 一律 `at_` 前缀(空间侧自动加 `s_` 前缀),**验证完成后必须全部删除** |
 | 假凭证 | Api Key 用 `sk-autotest-123456`;Bearer 用 `test-bearer-token-123`;BASE URL 用 `https://api.example.com`(不可达域名,调试预期返回 upstream_error) |
 
 ---
 
-## 一、管理侧用例(`/system/connector-manage`)
+## 一、管理侧用例(`/system/content/official-connector`)
 
 ### A. 列表与搜索
 

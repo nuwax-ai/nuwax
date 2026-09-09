@@ -41,8 +41,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   published_manage: 'icons-nav-publish_manage',
   // 公共模型管理
   model_manage: 'icons-nav-model',
-  // 连接器管理（管理侧，与空间侧连接器共用图标）
-  lianjieqiguanli: 'icons-nav-connector',
+  // 官方连接器
+  guanfanglianjieqi: 'icons-nav-connector',
   // 系统配置
   system_config: 'icons-nav-settings',
   // 多语言管理

@@ -1,5 +1,9 @@
 import { DragHandle, Row } from '@/components/base/DraggableTableRow';
-import { XProTable } from '@/components/ProComponents';
+import {
+  TableActions,
+  XProTable,
+  type ActionItem,
+} from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -14,7 +18,6 @@ import { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import {
   DownloadOutlined,
   PlusOutlined,
-  SearchOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import type {
@@ -30,8 +33,14 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Input, message, Modal, Space, Spin, Tag } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Button, message, Modal, Space, Tag } from 'antd';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation } from 'umi';
 import ConnectorImportDrawer from './ConnectorImportDrawer';
 import ConnectorProviderCreateDrawer from './ConnectorProviderCreateDrawer';
@@ -46,13 +55,13 @@ import {
 } from './constants';
 
 /**
- * 连接器管理列表页
+ * 官方连接器列表页（原"连接器管理"）
  * 视觉与交互参考 GlobalModelManage（公共模型管理）
  * 数据源：GET /api/system/connector/providers（非分页）
  * 排序持久化：PUT /api/system/connector/providers/order
  * 查看详情：右侧 ConnectorProviderDetailDrawer 抽屉（内部拉 GET /api/connector/providers/{service}?spaceId=xxx）
- * 筛选：LightFilter（认证方式/启用状态/连接状态，本地过滤）+
- * 工具栏右侧搜索框（回车查询 displayName/service，无 查询/重置 按钮）
+ * 筛选：LightFilter（连接器名称搜索 + 认证方式/启用状态/连接状态，本地过滤），
+ * 筛选行右侧带 重置/查询 按钮（XProTable showQueryButtons，对齐菜单管理）
  * 删除：行内「删除」二次确认后 DELETE /api/system/connector/providers/{service}
  * （管理端接口；空间侧列表走 DELETE /api/connector/providers/{service}）
  */
@@ -79,10 +88,6 @@ const ConnectorManage: React.FC = () => {
    * 筛选态下禁用拖拽排序：排序值是全局的，对过滤后的子集重排会让全量顺序错乱。
    */
   const [formFiltered, setFormFiltered] = useState<boolean>(false);
-  /** 工具栏搜索框输入值（未提交，回车 / 清空才触发查询） */
-  const [keyword, setKeyword] = useState<string>('');
-  /** 已提交的搜索关键字（经 params 注入 request，变化自动触发重载） */
-  const [searchKeyword, setSearchKeyword] = useState<string>('');
   /**
    * 导出进行中标记：'all' / 'selected' / 'single' / null
    * 给触发导出的那个按钮加 loading 态（工具栏两个按钮互不影响样式），
@@ -249,26 +254,36 @@ const ConnectorManage: React.FC = () => {
   /** 根据当前表单值更新筛选态（任一筛选条件非空即视为筛选态） */
   const updateFilteredFromForm = useCallback(() => {
     const values = formRef.current?.getFieldsValue() as
-      | { status?: string; authType?: string; connected?: string }
+      | {
+          displayName?: string;
+          status?: string;
+          authType?: string;
+          connected?: string;
+        }
       | undefined;
     setFormFiltered(
-      Boolean(values?.status || values?.authType || values?.connected),
+      Boolean(
+        values?.displayName?.trim() ||
+          values?.status ||
+          values?.authType ||
+          values?.connected,
+      ),
     );
   }, []);
 
-  /** 筛选态 = 表单筛选（认证方式/启用状态/连接状态）或搜索关键字任一非空 */
-  const filtered = Boolean(searchKeyword) || formFiltered;
+  /** 筛选态 = LightFilter 任一条件（连接器名称/认证方式/启用状态/连接状态）非空 */
+  const filtered = formFiltered;
 
-  /** 重置：清空表单与搜索关键字 + 重置分页 + 重载 */
+  /**
+   * 重置（由筛选行右侧「重置」按钮触发）：
+   * 走 ProTable 官方 reset 流程（清表单 + 清内部 formSearch + 重载，
+   * 对齐菜单管理），再手动同步筛选态并清空勾选。
+   * 注意 XProTable 传了 onReset 后会跳过默认 reset，必须在这里自行调用。
+   */
   const handleReset = useCallback(() => {
-    formRef.current?.resetFields();
+    actionRef.current?.reset?.();
     // antd Form.resetFields() 不会触发 onValuesChange，需手动同步筛选态
     updateFilteredFromForm();
-    setKeyword('');
-    setSearchKeyword('');
-    actionRef.current?.reset?.();
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
-    actionRef.current?.reload();
     setSelectedRowKeys([]);
   }, [updateFilteredFromForm]);
 
@@ -358,54 +373,51 @@ const ConnectorManage: React.FC = () => {
     });
   }, []);
 
-  /** 操作列：5 个按钮（按 record.status 动态展示启用/停用，启用/停用调用真实接口） */
+  /**
+   * 操作列：5 个按钮，走 TableActions（link 模式，统一蓝色文字，对齐菜单管理），
+   * 按 record.status 动态展示启用/停用；启用/停用按钮自带 loading（防重复点击）
+   */
   const renderActions = useCallback(
     (record: ConnectorProviderInfo) => {
-      const isEnabled = record.status === 'enabled';
-      const toggling = togglingServices.has(record.service);
+      const actions: ActionItem<ConnectorProviderInfo>[] = [
+        {
+          // 查看：原地打开右侧详情抽屉（概览 + 工具列表表格，不跳路由保住筛选态）
+          key: 'detail',
+          label: '查看',
+          onClick: () => {
+            setEditRecord(null);
+            setDetailService(record.service);
+          },
+        },
+        {
+          key: 'edit',
+          label: '编辑',
+          onClick: () => {
+            setEditRecord(record);
+          },
+        },
+        {
+          key: 'export',
+          label: '导出',
+          onClick: () => handleExportSingle(record),
+        },
+        {
+          key: 'toggle',
+          label: record.status === 'enabled' ? '停用' : '启用',
+          loading: togglingServices.has(record.service),
+          onClick: () => handleToggleStatus(record),
+        },
+        {
+          key: 'delete',
+          label: '删除',
+          onClick: () => handleDelete(record),
+        },
+      ];
       return (
-        <Space size={12} className="connector-row-actions">
-          {/* 查看：原地打开右侧详情抽屉（概览 + 工具列表表格，不跳路由保住筛选态） */}
-          <a
-            onClick={() => {
-              setEditRecord(null);
-              setDetailService(record.service);
-            }}
-          >
-            查看
-          </a>
-          <a
-            onClick={() => {
-              setEditRecord(record);
-            }}
-          >
-            编辑
-          </a>
-          <a onClick={() => handleExportSingle(record)}>导出</a>
-          {toggling ? (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                color: isEnabled ? '#ff4d4f' : '#1890ff',
-              }}
-            >
-              <Spin size="small" />
-              <span>{isEnabled ? '停用中…' : '启用中…'}</span>
-            </span>
-          ) : (
-            <a
-              onClick={() => handleToggleStatus(record)}
-              style={{ color: isEnabled ? '#ff4d4f' : undefined }}
-            >
-              {isEnabled ? '停用' : '启用'}
-            </a>
-          )}
-          <a onClick={() => handleDelete(record)} style={{ color: '#ff4d4f' }}>
-            删除
-          </a>
-        </Space>
+        <TableActions<ConnectorProviderInfo>
+          record={record}
+          actions={actions}
+        />
       );
     },
     [handleToggleStatus, togglingServices, handleExportSingle, handleDelete],
@@ -466,6 +478,25 @@ const ConnectorManage: React.FC = () => {
     }
   };
 
+  /**
+   * 拖拽行组件：必须保持引用稳定（useCallback + useMemo）。
+   * antd Table 的 components.body.row 是行元素类型，内联箭头函数会每次渲染
+   * 生成新类型 → 全表行卸载重挂（TableActions 重新测宽 → 操作列闪动）。
+   * 仅筛选态切换（filtered 变化，需更新行内 disabled）时才更换引用。
+   */
+  const dndBodyRow = useCallback(
+    (
+      props: React.HTMLAttributes<HTMLTableRowElement> & {
+        'data-row-key': string | number;
+      },
+    ) => <Row {...props} disabled={filtered} />,
+    [filtered],
+  );
+  const tableComponents = useMemo(
+    () => ({ body: { row: dndBodyRow } }),
+    [dndBodyRow],
+  );
+
   /** 列定义 */
   const columns: ProColumns<ConnectorProviderInfo>[] = [
     {
@@ -473,28 +504,22 @@ const ConnectorManage: React.FC = () => {
       title: '排序',
       key: 'sort',
       align: 'center',
-      width: 64,
+      width: 52,
+      fixed: 'left',
       hideInSearch: true,
       render: () => <DragHandle />,
     },
     {
-      // 连接器：显示名 + 标签副标题（2 行布局）
-      // XProTable 已通过 size="large" 把行高拉到 ~64px，可容纳副标题不被裁剪。
-      // 搜索已移到工具栏右侧搜索框（回车查询），此列不再进 LightFilter
+      // 连接器：仅展示名称（不加粗、无副标题，行高随之收紧）
+      // 进 LightFilter：点击搜索图标展开输入框（回车 / 查询按钮触发），匹配 displayName 或 service
       title: '连接器',
       dataIndex: 'displayName',
-      width: 120,
-      hideInSearch: true,
-      render: (_, record) => (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontWeight: 500 }}>{record.displayName}</span>
-          {record.tags?.length ? (
-            <span style={{ color: '#999', fontSize: 12 }}>
-              {record.tags.join(', ')}
-            </span>
-          ) : null}
-        </div>
-      ),
+      width: 200,
+      fieldProps: {
+        placeholder: '请输入连接器名称/service',
+        // 弹层挂在 body 下无法用页面祖先选择器，借此 class 反查所属 popover 放宽宽度（见下方 style 标签）
+        className: 'connector-name-filter-input',
+      },
     },
     {
       // service：等宽字体
@@ -578,9 +603,9 @@ const ConnectorManage: React.FC = () => {
       align: 'center',
     },
     {
-      // 操作列：5 个按钮平铺（fixed right 保证滚动时常驻）
+      // 操作列：TableActions 渲染的蓝色文字链接（fixed right 保证滚动时常驻）
       title: '操作',
-      width: 260,
+      width: 240,
       align: 'center',
       fixed: 'right',
       hideInSearch: true,
@@ -588,9 +613,9 @@ const ConnectorManage: React.FC = () => {
     },
   ];
 
-  /** request 回调：拉取全量后客户端过滤（keyword 由工具栏搜索框经 params 注入） */
+  /** request 回调：拉取全量后客户端过滤（displayName 由 LightFilter 表单提交） */
   const request = async (params: any = {}) => {
-    const { keyword: kw, status, authType, connected } = params;
+    const { displayName, status, authType, connected } = params;
     try {
       const res = await apiSystemConnectorProviderList();
 
@@ -603,8 +628,8 @@ const ConnectorManage: React.FC = () => {
       let data = rawData as ConnectorProviderInfo[];
 
       // 关键字搜索：匹配 displayName 或 service（OR 语义）
-      if (kw) {
-        const lower = String(kw).toLowerCase();
+      if (displayName) {
+        const lower = String(displayName).toLowerCase();
         data = data.filter(
           (v) =>
             v.displayName?.toLowerCase().includes(lower) ||
@@ -637,7 +662,7 @@ const ConnectorManage: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="连接器管理"
+      title="官方连接器"
       hideScroll
       rightSlot={
         <Space size={12}>
@@ -676,165 +701,126 @@ const ConnectorManage: React.FC = () => {
         </Space>
       }
     >
-      <div className="connector-manage-page">
-        <style>{`
-          /* 勾选列表头与列表行左对齐：覆盖 XProTable 默认 24px 内边距。
-             注意 virtual 模式下表体行/单元格渲染为 div（非 tr/td），
-             tr>td 选择器匹配不到虚拟单元格，需补一条 div 规则，
-             否则表头按 28px 左对齐、表体按默认内边距居中，宽屏下错位明显 */
-          .connector-manage-page .x-pro-table .ant-table-thead > tr > th.ant-table-selection-column,
-          .connector-manage-page .x-pro-table .ant-table-tbody > tr > td.ant-table-selection-column,
-          .connector-manage-page .x-pro-table .ant-table-tbody-virtual .ant-table-row .ant-table-cell.ant-table-selection-column {
-            padding-left: 28px !important;
-            text-align: left !important;
-          }
-          /* 整个 ant-pro-table-alert 区域（含提示文本和操作按钮）都隐藏 */
-          .connector-manage-page .x-pro-table .ant-pro-table-alert {
-            display: none !important;
-          }
-        `}</style>
-        <DndContext
-          collisionDetection={closestCenter}
-          modifiers={[restrictToVerticalAxis]}
-          onDragEnd={onDragEnd}
+      {/* 连接器名称筛选下拉加宽：弹层（.ant-popover）挂在 body 下，无法用页面祖先选择器；
+          借输入框上的 class 反查所属 popover，放宽弹层内层宽度到 250px（完整展示 placeholder） */}
+      <style>{`
+        .ant-popover:has(.connector-name-filter-input) .ant-popover-inner {
+          width: 250px;
+        }
+      `}</style>
+      <DndContext
+        collisionDetection={closestCenter}
+        modifiers={[restrictToVerticalAxis]}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext
+          items={draggableData.map((item) => String(item.id))}
+          strategy={verticalListSortingStrategy}
         >
-          <SortableContext
-            items={draggableData.map((item) => String(item.id))}
-            strategy={verticalListSortingStrategy}
-          >
-            <XProTable<ConnectorProviderInfo>
-              actionRef={actionRef}
-              formRef={formRef}
-              rowKey="id"
-              columns={columns}
-              request={request}
-              dataSource={draggableData}
-              pagination={false}
-              showIndex={false}
-              params={{ keyword: searchKeyword }}
-              showQueryButtons={false}
-              /**
-               * 工具栏右侧放搜索框（原 查询/重置 按钮的位置）：
-               * 回车提交搜索、清空即重置；LightFilter 下拉筛选变化即时生效，
-               * 因此不再需要 查询/重置 按钮。样式对齐其他列表页
-               * （prefix 放大镜 + allowClear），宽度在其基础上加长 50px。
-               */
-              toolBarRender={() => [
-                <Input
-                  key="connector-search"
-                  allowClear
-                  prefix={<SearchOutlined />}
-                  placeholder="搜索连接器（名称 / service）"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  onPressEnter={() => setSearchKeyword(keyword.trim())}
-                  onClear={() => setSearchKeyword('')}
-                  style={{ width: 264 }}
-                />,
-              ]}
-              /**
-               * 两行内容需要更高的虚拟项高度；这里显式对齐到实际 row 高度，避免最后一行被裁切。
-               * 列宽总和 ≈ 1054（不含勾选列 50），无横向滚动。
-               */
-              size="large"
-              listItemHeight={74}
-              tableLayout="fixed"
-              scroll={{ x: 1104 }}
-              /**
-               * 启用虚拟滚动：仅渲染可视区内的行，1256 条也无压力。
-               * drag-sort 仍可用：SortableContext 按 ID 追踪，虚拟 row mount/unmount 不影响。
-               */
-              virtual
-              rowSelection={{
-                selectedRowKeys,
-                onChange: (keys) => setSelectedRowKeys(keys),
-                preserveSelectedRowKeys: true,
-                columnWidth: 50,
-              }}
-              /**
-               * 隐藏 ProTable 默认的"已选择 X 项"提示条。
-               * 传 () => null 让整条 alert 区域不渲染，避免和工具栏操作混淆。
-               */
-              tableAlertRender={() => null}
-              /**
-               * 跟踪筛选状态：任一筛选条件（status/authType/connected）非空即认为处于筛选态。
-               * 筛选态下拖拽排序会让全局顺序错乱，因此禁用。
-               */
-              form={{
-                onValuesChange: () => {
-                  // 实时同步筛选态（用户修改 LightFilter 字段时触发）
-                  updateFilteredFromForm();
-                },
-              }}
-              components={{
-                body: {
-                  // 筛选态下禁用整行的 useSortable，DragHandle 通过 Context 也会自动禁用
-                  row: (
-                    props: React.HTMLAttributes<HTMLTableRowElement> & {
-                      'data-row-key': string | number;
-                    },
-                  ) => <Row {...props} disabled={filtered} />,
-                },
-              }}
-              postData={(data: ConnectorProviderInfo[]) => {
-                // 拖拽过程中不要用 request 的响应覆盖乐观排序结果
-                if (!isDraggingRef.current) {
-                  setDraggableData(data || []);
-                }
-                return data;
-              }}
-            />
-          </SortableContext>
-        </DndContext>
+          <XProTable<ConnectorProviderInfo>
+            actionRef={actionRef}
+            formRef={formRef}
+            rowKey="id"
+            columns={columns}
+            request={request}
+            dataSource={draggableData}
+            pagination={false}
+            showIndex={false}
+            /**
+             * 筛选行右侧的 重置/查询 按钮（showQueryButtons 默认开启，对齐菜单管理）：
+             * 重置走 onReset（清表单 + 清勾选 + 重载），查询走 form submit
+             */
+            onReset={handleReset}
+            /**
+             * 启用虚拟滚动：仅渲染可视区内的行，1256 条也无压力。
+             * drag-sort 仍可用：SortableContext 按 ID 追踪，虚拟 row mount/unmount 不影响。
+             * listItemHeight 对齐 middle 单行内容实际行高，避免最后一行被裁切。
+             */
+            virtual
+            listItemHeight={48}
+            tableLayout="fixed"
+            scroll={{ x: 'max-content' }}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (keys) => setSelectedRowKeys(keys),
+              preserveSelectedRowKeys: true,
+              // 勾选列宽度：对齐 antd 默认 32（复选框 16 + 两侧各 8 内边距）
+              columnWidth: 32,
+            }}
+            /**
+             * 隐藏 ProTable 默认的"已选择 X 项"提示条。
+             * 传 () => null 让整条 alert 区域不渲染，避免和工具栏操作混淆。
+             */
+            tableAlertRender={() => null}
+            /**
+             * 跟踪筛选状态：任一筛选条件（displayName/status/authType/connected）非空即认为处于筛选态。
+             * 筛选态下拖拽排序会让全局顺序错乱，因此禁用。
+             */
+            form={{
+              onValuesChange: () => {
+                // 实时同步筛选态（用户修改 LightFilter 字段时触发）
+                updateFilteredFromForm();
+              },
+            }}
+            components={tableComponents}
+            postData={(data: ConnectorProviderInfo[]) => {
+              // 拖拽过程中不要用 request 的响应覆盖乐观排序结果
+              if (!isDraggingRef.current) {
+                setDraggableData(data || []);
+              }
+              return data;
+            }}
+          />
+        </SortableContext>
+      </DndContext>
 
-        <ConnectorProviderEditDrawer
-          open={editRecord !== null}
-          record={editRecord}
-          onClose={() => setEditRecord(null)}
-          // 保存成功：刷新连接器列表（GET /api/system/connector/providers），
-          // 并原地打开「查看」详情抽屉（抽屉内部会拉
-          // GET /api/connector/providers/{service} 展示最新数据）
-          onSaved={(payload) => {
-            actionRef.current?.reload();
-            const service =
-              editRecord?.service ??
-              (payload as { service?: string } | undefined)?.service;
-            if (service) {
-              setDetailService(service);
-            }
-            setEditRecord(null);
-          }}
-        />
-        {/*
+      <ConnectorProviderEditDrawer
+        open={editRecord !== null}
+        record={editRecord}
+        onClose={() => setEditRecord(null)}
+        // 保存成功：刷新连接器列表（GET /api/system/connector/providers），
+        // 并原地打开「查看」详情抽屉（抽屉内部会拉
+        // GET /api/connector/providers/{service} 展示最新数据）
+        onSaved={(payload) => {
+          actionRef.current?.reload();
+          const service =
+            editRecord?.service ??
+            (payload as { service?: string } | undefined)?.service;
+          if (service) {
+            setDetailService(service);
+          }
+          setEditRecord(null);
+        }}
+      />
+      {/*
           查看详情抽屉（右侧滑出，原地展开不跳路由 —— 列表筛选态保留）：
           连接状态变化（连接/授权/断开）与工具增删改后刷新列表展示
         */}
-        <ConnectorProviderDetailDrawer
-          open={detailService !== null}
-          service={detailService ?? ''}
-          onClose={() => setDetailService(null)}
-          onConnectionChanged={() => actionRef.current?.reload()}
-          onActionsChanged={() => actionRef.current?.reload()}
-        />
-        {/*
+      <ConnectorProviderDetailDrawer
+        open={detailService !== null}
+        service={detailService ?? ''}
+        onClose={() => setDetailService(null)}
+        onConnectionChanged={() => actionRef.current?.reload()}
+        onActionsChanged={() => actionRef.current?.reload()}
+      />
+      {/*
           新增官方连接器抽屉（右侧滑出）
           创建成功后刷新连接器列表（GET /api/system/connector/providers）
         */}
-        <ConnectorProviderCreateDrawer
-          open={createDrawerOpen}
-          onClose={() => setCreateDrawerOpen(false)}
-          onCreated={() => actionRef.current?.reload()}
-        />
-        {/*
+      <ConnectorProviderCreateDrawer
+        open={createDrawerOpen}
+        onClose={() => setCreateDrawerOpen(false)}
+        onCreated={() => actionRef.current?.reload()}
+      />
+      {/*
           导入官方包抽屉（右侧滑出）
           导入成功后刷新连接器列表（GET /api/system/connector/providers）
         */}
-        <ConnectorImportDrawer
-          open={importDrawerOpen}
-          onClose={() => setImportDrawerOpen(false)}
-          onImported={() => actionRef.current?.reload()}
-        />
-      </div>
+      <ConnectorImportDrawer
+        open={importDrawerOpen}
+        onClose={() => setImportDrawerOpen(false)}
+        onImported={() => actionRef.current?.reload()}
+      />
     </WorkspaceLayout>
   );
 };
