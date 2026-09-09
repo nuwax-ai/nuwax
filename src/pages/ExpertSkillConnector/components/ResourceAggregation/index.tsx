@@ -170,7 +170,8 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
         onCategoryChange={setCategory}
         keyword={keywordInput}
         onKeywordChange={setKeywordInput}
-        showMore={mode === 'framework'}
+        // 连接器页不展示"更多"入口（产品要求），专家/技能框架页保留
+        showMore={mode === 'framework' && resourceType !== 'connector'}
       />
 
       {initialLoading ? (
