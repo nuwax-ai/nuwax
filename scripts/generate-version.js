@@ -34,10 +34,12 @@ export const APP_NAME = '${appName}';
     }
 
     // 检查文件是否存在以及内容是否相同
+    // 换行符归一化后比较：Windows 工作区多为 CRLF（core.autocrlf），
+    // 直接与 LF 模板严格比较会导致每次运行都误判"有变化"而重写文件
     let shouldWrite = true;
     if (fs.existsSync(versionFilePath)) {
       const existingContent = fs.readFileSync(versionFilePath, 'utf-8');
-      if (existingContent === versionContent) {
+      if (existingContent.replace(/\r\n/g, '\n') === versionContent) {
         shouldWrite = false;
         console.log('✨ 版本文件内容已是最新，无需更新');
       }
@@ -45,7 +47,20 @@ export const APP_NAME = '${appName}';
 
     // 写入文件
     if (shouldWrite) {
-      fs.writeFileSync(versionFilePath, versionContent, 'utf-8');
+      // 保留现有文件的换行符风格（Windows 工作区通常为 CRLF），
+      // 避免 git 在 autocrlf 下产生内容为空的幻影改动
+      let eol = '\n';
+      if (fs.existsSync(versionFilePath)) {
+        const raw = fs.readFileSync(versionFilePath, 'utf-8');
+        if (raw.includes('\r\n')) {
+          eol = '\r\n';
+        }
+      }
+      fs.writeFileSync(
+        versionFilePath,
+        versionContent.replace(/\n/g, eol),
+        'utf-8',
+      );
       console.log(`✅ 版本文件已更新: ${versionFilePath}`);
       console.log(`📦 应用名称: ${appName}`);
       console.log(`🔖 版本号: ${appVersion}`);
