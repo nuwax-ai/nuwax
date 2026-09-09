@@ -9,7 +9,9 @@
   background-attachment: fixed;
   transition: background-image 0.3s ease;
   min-width: 1400px;
-  height: 100vh;
+  // h-full 语义（相对 page-container 内容盒）：工作台页与主站同容器后，
+  // 页根用 100vh 会比容器高出上下边距、底部（终端/日志条）被 overflow 裁掉
+  height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
