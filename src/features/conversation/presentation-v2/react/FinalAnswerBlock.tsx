@@ -28,7 +28,7 @@ export interface FinalAnswerBlockProps {
 const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
   turn,
   messageBottomMode = 'chat',
-  showDebug = true,
+  showDebug = false,
 }) => {
   const { data: themeData } = useUnifiedTheme();
   const lastAssistant = [...turn.assistantMessages]
@@ -117,7 +117,7 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
             {dict('PC.Components.ChatView.copy')}
           </CopyButton>
           <ShareMessageButton text={answerText} isUser={false} />
-          {showDebug !== false && lastAssistant && (
+          {showDebug && lastAssistant && (
             <ChatBottomDebug messageInfo={lastAssistant} />
           )}
           {/* 沿用 V1 消息时间规则，并固定在当前操作栏最右侧。 */}

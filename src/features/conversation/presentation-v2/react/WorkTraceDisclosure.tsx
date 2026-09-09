@@ -28,7 +28,7 @@ import type {
 } from '../types';
 import ProcessNodeRow from './ProcessNodeRow';
 import ToolGroupDisclosure from './ToolGroupDisclosure';
-import { formatElapsed } from './formatElapsed';
+import { formatElapsed, formatElapsedClock } from './formatElapsed';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -199,9 +199,9 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
       ),
     );
   }
-  const elapsedText = formatElapsed(
-    elapsedMs ?? (turn.running ? 0 : undefined),
-  );
+  const elapsedText = turn.running
+    ? formatElapsedClock(elapsedMs ?? 0)
+    : formatElapsed(elapsedMs);
   if (elapsedText) {
     metricParts.push(
       dict(
