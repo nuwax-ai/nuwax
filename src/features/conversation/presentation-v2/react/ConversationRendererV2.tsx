@@ -140,32 +140,34 @@ const TurnBlock: React.FC<{
           </div>
         )}
       </div>
-      {showTrace && (
-        <WorkTraceDisclosure
+      <div className={cx(styles['inner-container'])}>
+        {showTrace && (
+          <WorkTraceDisclosure
+            turn={turn}
+            preferences={preferences}
+            manualExpanded={manualExpanded}
+            onManualToggle={setManualExpanded}
+            onOpenResource={onOpenToolResource}
+          />
+        )}
+        {/* 无节点行的轮次（纯说明）：narration 直接以正文展示 */}
+        {!showTrace && narrationOnly && (
+          <div className={cx(styles['narration-block'])}>
+            {turn.nodes
+              .filter((node) => node.kind === 'narration')
+              .map((node) => (
+                <NarrationText key={node.id} narrationId={node.id}>
+                  {node.text ?? ''}
+                </NarrationText>
+              ))}
+          </div>
+        )}
+        <FinalAnswerBlock
           turn={turn}
-          preferences={preferences}
-          manualExpanded={manualExpanded}
-          onManualToggle={setManualExpanded}
-          onOpenResource={onOpenToolResource}
+          messageBottomMode={messageBottomMode}
+          showDebug={showDebug}
         />
-      )}
-      {/* 无节点行的轮次（纯说明）：narration 直接以正文展示 */}
-      {!showTrace && narrationOnly && (
-        <div className={cx(styles['narration-block'])}>
-          {turn.nodes
-            .filter((node) => node.kind === 'narration')
-            .map((node) => (
-              <NarrationText key={node.id} narrationId={node.id}>
-                {node.text ?? ''}
-              </NarrationText>
-            ))}
-        </div>
-      )}
-      <FinalAnswerBlock
-        turn={turn}
-        messageBottomMode={messageBottomMode}
-        showDebug={showDebug}
-      />
+      </div>
     </div>
   );
 };
