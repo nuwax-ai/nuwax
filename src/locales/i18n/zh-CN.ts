@@ -6257,6 +6257,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.ExpertSkillConnector.tabAll': '全部',
   'PC.Pages.ExpertSkillConnector.searchPlaceholder': '搜索名称或描述...',
   'PC.Pages.ExpertSkillConnector.more': '更多',
+  'PC.Pages.ExpertSkillConnector.summon': '召唤',
   "PC.Pages.SpaceProjectManage.menuTitle": "项目管理",
   "PC.Pages.SpaceProjectManage.tabAll": "全部",
   "PC.Pages.SpaceProjectManage.tabNormalProject": "常规项目",

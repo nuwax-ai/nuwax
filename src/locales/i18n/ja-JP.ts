@@ -6129,6 +6129,7 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.ExpertSkillConnector.tabAll': 'すべて',
   'PC.Pages.ExpertSkillConnector.searchPlaceholder': '名前または説明で検索...',
   'PC.Pages.ExpertSkillConnector.more': 'もっと見る',
+  'PC.Pages.ExpertSkillConnector.summon': '召喚',
   "PC.Pages.SpaceProjectManage.menuTitle": "プロジェクト管理",
   "PC.Pages.SpaceProjectManage.tabAll": "すべて",
   "PC.Pages.SpaceProjectManage.tabNormalProject": "通常プロジェクト",

@@ -1,16 +1,22 @@
 /**
  * 资源卡片（纯展示）
- * @description 专家/技能/连接器通用的聚合卡片：图标 + 名称 + 分类标签 + 描述 + 底部统计
+ * @description 专家/技能/连接器通用的聚合卡片，容器复用 CardWrapper，
+ * 与广场（Square/SingleAgent）卡片样式保持一致：
+ * 图标 + 标题 + 发布者（头像/昵称）+ 两行描述 + 底部统计行；
+ * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮（点击逻辑暂未接入，仅展示）。
  */
 
-import SvgIcon from '@/components/base/SvgIcon';
+import agentImage from '@/assets/images/agent_image.png';
+import defaultAvatar from '@/assets/images/avatar.png';
+import CardWrapper from '@/components/business-component/CardWrapper';
 import {
-  LinkOutlined,
-  StarOutlined,
-  ToolOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
-import { Tooltip } from 'antd';
+  ICON_MESSAGE,
+  ICON_STAR,
+  ICON_USER,
+} from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
+import { ToolOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { ResourceItem, ResourceStatType } from '../../../../types';
@@ -18,83 +24,63 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-/** 首字回退头像的背景色板（按名称哈希取色，保证同名同色） */
-const AVATAR_COLORS = [
-  '#7C5CFF',
-  '#3B82F6',
-  '#14B8A6',
-  '#F59E0B',
-  '#EC4899',
-  '#8B5CF6',
-  '#06B6D4',
-  '#84CC16',
-];
-
-const getAvatarColor = (name: string) => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = (hash * 31 + name.charCodeAt(i)) % 997;
-  }
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
-};
-
+/** 统计项图标（与广场卡片同款，连接器工具数沿用 Outline 图标） */
 const STAT_ICON_MAP: Record<ResourceStatType, React.ReactNode> = {
-  user: <UserOutlined />,
-  link: <LinkOutlined />,
-  star: <StarOutlined />,
+  user: <ICON_USER />,
+  link: <ICON_MESSAGE />,
+  star: <ICON_STAR />,
   tool: <ToolOutlined />,
 };
 
-const ResourceCard: React.FC<{ item: ResourceItem }> = ({ item }) => {
-  const { name, description, icon, category, stats } = item;
+interface ResourceCardProps {
+  item: ResourceItem;
+  /** 是否显示召唤按钮（专家&专家团卡片） */
+  showSummon?: boolean;
+}
+
+const ResourceCard: React.FC<ResourceCardProps> = ({ item, showSummon }) => {
+  const { name, description, icon, publishUser, stats } = item;
 
   return (
-    <div className={cx(styles.card)}>
-      <div className={cx('flex', 'items-center', styles['card-head'])}>
-        {icon ? (
-          <SvgIcon name={icon} className={cx(styles['card-icon'])} />
-        ) : (
-          <div
-            className={cx(
-              'flex',
-              'items-center',
-              'content-center',
-              styles['card-avatar'],
-            )}
-            style={{ backgroundColor: getAvatarColor(name) }}
-          >
-            {name?.charAt(0)}
-          </div>
-        )}
-        <Tooltip title={name}>
-          <span className={cx('text-ellipsis', 'flex-1', styles['card-name'])}>
-            {name}
-          </span>
-        </Tooltip>
-      </div>
-
-      {category ? (
-        <div className={cx(styles['card-category'])}>{category}</div>
-      ) : null}
-
-      <Tooltip title={description} placement="topLeft">
-        <div className={cx(styles['card-desc'])}>{description || '-'}</div>
-      </Tooltip>
-
-      {stats && stats.length > 0 ? (
-        <div className={cx('flex', 'items-center', styles['card-stats'])}>
-          {stats.map((stat) => (
-            <span
-              key={stat.type}
-              className={cx('flex', 'items-center', styles['card-stat'])}
-            >
-              {STAT_ICON_MAP[stat.type]}
-              <span>{stat.value}</span>
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </div>
+    <CardWrapper
+      className={cx(styles['card-wrapper'])}
+      title={name}
+      // 发布者信息（与广场卡片一致：头像兜底默认头像，昵称缺失回退用户名；
+      // 团队空间/连接器数据无发布者时不渲染该行）
+      avatar={publishUser ? publishUser.avatar || defaultAvatar : undefined}
+      name={publishUser?.nickName || publishUser?.userName || ''}
+      content={description || ''}
+      icon={icon || ''}
+      defaultIcon={agentImage}
+      footer={
+        <>
+          <footer className={cx('flex', 'items-center', styles.footer)}>
+            <div className={cx('flex', 'items-center', styles['count-box'])}>
+              {(stats || []).map((stat) => (
+                <span key={stat.type} className={cx(styles.text)}>
+                  {STAT_ICON_MAP[stat.type]}
+                  <span>{stat.value}</span>
+                </span>
+              ))}
+            </div>
+          </footer>
+          {showSummon ? (
+            <div className={cx(styles['summon-box'])}>
+              <Button
+                type="primary"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // TODO 召唤逻辑暂未接入，按钮仅展示
+                }}
+              >
+                {dict('PC.Pages.ExpertSkillConnector.summon')}
+              </Button>
+            </div>
+          ) : null}
+        </>
+      }
+    />
   );
 };
 

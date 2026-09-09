@@ -189,7 +189,11 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
           >
             <div className={cx(styles['list-section'])} ref={contentRef}>
               {list.map((item) => (
-                <ResourceCard key={item.id} item={item} />
+                <ResourceCard
+                  key={item.id}
+                  item={item}
+                  showSummon={resourceType === 'expert'}
+                />
               ))}
             </div>
           </InfiniteScrollDiv>

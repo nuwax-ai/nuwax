@@ -7,6 +7,7 @@
 import type {
   AgentConfigInfo,
   AgentStatisticsInfo,
+  CreatorInfo,
 } from '@/types/interfaces/agent';
 import type { SkillInfo } from '@/types/interfaces/library';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
@@ -35,10 +36,12 @@ export interface ResourceItem {
   name: string;
   /** 描述 */
   description?: string;
-  /** 图标（URL 或 SvgIcon 名称，为空时卡片渲染首字回退头像） */
+  /** 图标（URL，为空时回退默认图） */
   icon?: string;
-  /** 分类（用于团队空间接口的客户端筛选，可能为空） */
+  /** 分类（用于团队空间接口的客户端筛选，卡片上不展示） */
   category?: string;
+  /** 发布者信息（系统广场已发布数据携带，卡片标题下方展示头像与昵称） */
+  publishUser?: CreatorInfo;
   /** 标签 */
   tags?: string[];
   /** 底部统计项 */
