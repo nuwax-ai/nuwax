@@ -1,5 +1,4 @@
 import type { RequestResponse } from '@/types/interfaces/request';
-import { request } from 'umi';
 import type {
   AddMenuParams,
   BindMenuResourceParams,
@@ -7,8 +6,9 @@ import type {
   MenuNodeInfo,
   UpdateMenuParams,
   UpdateMenuSortParams,
-} from '../types/menu-manage';
-import { ResourceTreeNode } from '../types/permission-resources';
+} from '@/types/menuPermission/menu-manage';
+import { ResourceTreeNode } from '@/types/menuPermission/permission-resources';
+import { request } from 'umi';
 
 /**
  * 更新菜单

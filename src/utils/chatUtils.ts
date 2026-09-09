@@ -2,11 +2,6 @@
  * 聊天相关工具函数
  */
 
-import {
-  insertPlanBlock,
-  insertToolCallBlock,
-  insertToolCallUpdateBlock,
-} from '@/pages/AppDev/utils/markdownProcess';
 import { dict } from '@/services/i18nRuntime';
 import { MessageModeEnum } from '@/types/enums/agent';
 import {
@@ -19,6 +14,11 @@ import {
   type FileStreamAttachment,
   type ToolCallInfo,
 } from '@/types/interfaces/appDev';
+import {
+  insertPlanBlock,
+  insertToolCallBlock,
+  insertToolCallUpdateBlock,
+} from '@/utils/markdownProcess';
 
 /**
  * 检测是否为依赖操作（安装、删除、升级依赖）

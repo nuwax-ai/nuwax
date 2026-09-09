@@ -1,13 +1,13 @@
 import { RequestResponse } from '@/types/interfaces/request';
-import { request } from 'umi';
 import {
   RoleSourceEnum,
   RoleStatusEnum,
-} from '../MenuPermission/types/role-manage';
+} from '@/types/menuPermission/role-manage';
 import {
   UserGroupSourceEnum,
   UserGroupStatusEnum,
-} from '../MenuPermission/types/user-group-manage';
+} from '@/types/menuPermission/user-group-manage';
+import { request } from 'umi';
 
 /**
  * 可访问的角色信息

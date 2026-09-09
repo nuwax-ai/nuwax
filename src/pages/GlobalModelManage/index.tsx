@@ -1,4 +1,5 @@
 import { DragHandle, Row } from '@/components/base/DraggableTableRow';
+import CreateModel from '@/components/business-component/CreateModel';
 import {
   ActionItem,
   TableActions,
@@ -38,7 +39,6 @@ import { Button, message, Switch } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
 import ModalitiesTagsCell from '../MorePage/ModelPermissions/ModalitiesTagsCell';
-import CreateModel from '../SpaceLibrary/CreateModel';
 import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthModal';
 
 /**

@@ -1,6 +1,23 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiAddMenu,
+  apiGetMenuById,
+  apiGetMenuList,
+  apiUpdateMenu,
+} from '@/services/menuPermission/menuManage';
+import { apiGetResourceList } from '@/services/menuPermission/permissionResources';
+import {
+  MenuEnabledEnum,
+  MenuSourceEnum,
+  OpenTypeEnum,
+  type MenuNodeInfo,
+} from '@/types/menuPermission/menu-manage';
+import {
+  ResourceBindTypeEnum,
+  ResourceTreeNode,
+} from '@/types/menuPermission/permission-resources';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -18,23 +35,6 @@ import {
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiAddMenu,
-  apiGetMenuById,
-  apiGetMenuList,
-  apiUpdateMenu,
-} from '../../services/menu-manage';
-import { apiGetResourceList } from '../../services/permission-resources';
-import {
-  MenuEnabledEnum,
-  MenuSourceEnum,
-  OpenTypeEnum,
-  type MenuNodeInfo,
-} from '../../types/menu-manage';
-import {
-  ResourceBindTypeEnum,
-  ResourceTreeNode,
-} from '../../types/permission-resources';
 import styles from './index.less';
 
 const { TextArea } = Input;
