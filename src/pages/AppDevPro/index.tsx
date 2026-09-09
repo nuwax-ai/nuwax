@@ -26,6 +26,7 @@ import {
   isEnsurePodThrottledError,
 } from '@/services/vncDesktop';
 import { MessageTypeEnum } from '@/types/enums/agent';
+import { PublishStatusEnum } from '@/types/enums/common';
 import { FileNode } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import { RequestResponse } from '@/types/interfaces/request';
@@ -228,6 +229,7 @@ const AppDevPro: React.FC = () => {
     restartAgent,
     ensureDesktopConnection,
     refreshGitListRef,
+    isConversationActive,
   } = useModel('conversationInfo');
 
   /** 文件树数据 ref，供防抖保存读取最新列表 */
@@ -582,31 +584,8 @@ const AppDevPro: React.FC = () => {
       setPreviewRefreshKey((prev) => prev + 1);
     },
   });
-
-  /** 预览启动 / 重启进度弹窗文案 */
-  const previewRuntimeModalCopy = useMemo(() => {
-    const isRestart = previewRuntime.action === 'restart';
-    return {
-      title: isRestart
-        ? dict('PC.Pages.AppDevPro.restartService')
-        : dict('PC.Pages.AppDevPro.startService'),
-      startingText: isRestart
-        ? dict('PC.Pages.AppDevPro.restartingService')
-        : dict('PC.Pages.AppDevPro.startingService'),
-      runningText: isRestart
-        ? dict('PC.Pages.AppDevPro.restartingService')
-        : dict('PC.Pages.AppDevPro.startingService'),
-      successText: isRestart
-        ? dict('PC.Pages.AppDevPro.restartSuccess')
-        : dict('PC.Pages.AppDevPro.startSuccess'),
-      failedText: isRestart
-        ? dict('PC.Pages.AppDevPro.restartFailed')
-        : dict('PC.Pages.AppDevPro.startFailed'),
-      cancelledText: dict('PC.Pages.AppDevPro.startCancelled'),
-      cancelTitle: dict('PC.Pages.AppDevPro.cancelStartTitle'),
-      cancelContent: dict('PC.Pages.AppDevPro.cancelStartContent'),
-    };
-  }, [previewRuntime.action]);
+  const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
+  startPreviewIfNeededRef.current = previewRuntime.startIfNeeded;
 
   /** 查询应用绑定的域名列表 */
   const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
@@ -1216,6 +1195,21 @@ const AppDevPro: React.FC = () => {
     previewTabsRef.current?.openToolTab('preview');
   }, []);
 
+  /**
+   * 容器启动成功后再启动当前环境预览服务：
+   * 开发环境 /api/userapp/dev/start，线上环境 /api/userapp/prod/start。
+   * 返回的 taskId 用于在预览区内拉取启动进度，成功后再展示 iframe。
+   */
+  useEffect(() => {
+    if (!appId || !podReady) {
+      return;
+    }
+    if (dbEnv === UserAppDbEnvEnum.Prod && !userAppInfo) {
+      return;
+    }
+    startPreviewIfNeededRef.current();
+  }, [appId, dbEnv, podReady, userAppInfo]);
+
   // ==================================== git 版本控制 ====================================
 
   /** 将文件路径添加到 .gitignore */
@@ -1392,11 +1386,28 @@ const AppDevPro: React.FC = () => {
     previewTabs.openToolTab('database');
   }, [previewTabs]);
 
-  /** 打开应用预览页签（已存在则激活），并按需启动当前环境服务 */
+  /** 打开应用预览页签（已存在则激活），容器就绪后再按需启动服务 */
   const handleOpenAppPreview = useCallback(() => {
     previewTabs.openToolTab('preview');
-    previewRuntime.startIfNeeded();
-  }, [previewRuntime, previewTabs]);
+    if (podReady) {
+      previewRuntime.startIfNeeded();
+    }
+  }, [podReady, previewRuntime, previewTabs]);
+
+  /** 容器就绪后才能启动 / 重启预览服务 */
+  const handleStartPreviewRuntime = useCallback(() => {
+    if (!podReady) {
+      return;
+    }
+    void previewRuntime.start();
+  }, [podReady, previewRuntime]);
+
+  const handleRestartPreviewRuntime = useCallback(() => {
+    if (!podReady) {
+      return;
+    }
+    void previewRuntime.restart();
+  }, [podReady, previewRuntime]);
 
   /** 停止当前环境预览服务 */
   const handleStopPreviewRuntime = useCallback(() => {
@@ -1443,6 +1454,18 @@ const AppDevPro: React.FC = () => {
     [previewTabs],
   );
 
+  /**
+   * 未发布时不能停留在线上环境。
+   */
+  useEffect(() => {
+    const published =
+      userAppInfo?.publishStatus === PublishStatusEnum.Published ||
+      (userAppInfo?.publishVersions?.length ?? 0) > 0;
+    if (!published && dbEnv === UserAppDbEnvEnum.Prod) {
+      setDbEnv(UserAppDbEnvEnum.Dev);
+    }
+  }, [dbEnv, userAppInfo?.publishStatus, userAppInfo?.publishVersions]);
+
   /** 数据库页签是否激活（Header 图标高亮） */
   const isDatabasePanelOpen = previewTabs.activeTab?.toolId === 'database';
   /** 应用预览页签是否激活（Header 图标高亮） */
@@ -1463,15 +1486,42 @@ const AppDevPro: React.FC = () => {
     [appId, dbEnv],
   );
 
-  /** 「应用预览」页签：嵌入当前环境访问地址 */
+  /** 「应用预览」页签：准备中 / 启动预览 / 启动日志 / 应用加载 / iframe */
   const appPreviewPanel = useMemo(
     () => (
       <AppDevAppPreviewPanel
         previewUrl={appPreviewUrl}
         refreshKey={previewRefreshKey}
+        running={previewRuntime.running}
+        busy={previewRuntime.busy}
+        phase={previewRuntime.phase}
+        services={previewRuntime.services}
+        overallProgress={previewRuntime.overallProgress}
+        errorMessage={previewRuntime.errorMessage}
+        cancelLoading={previewRuntime.cancelLoading}
+        isGeneratingFiles={isConversationActive}
+        podReady={podReady}
+        onCancelTask={previewRuntime.cancelTask}
+        onRetryStart={handleRestartPreviewRuntime}
+        onStart={handleStartPreviewRuntime}
       />
     ),
-    [appPreviewUrl, previewRefreshKey],
+    [
+      appPreviewUrl,
+      handleRestartPreviewRuntime,
+      handleStartPreviewRuntime,
+      isConversationActive,
+      podReady,
+      previewRefreshKey,
+      previewRuntime.busy,
+      previewRuntime.cancelLoading,
+      previewRuntime.cancelTask,
+      previewRuntime.errorMessage,
+      previewRuntime.overallProgress,
+      previewRuntime.phase,
+      previewRuntime.running,
+      previewRuntime.services,
+    ],
   );
 
   /** 「远程桌面」页签：与数据库同一内容区嵌入 iframe */
@@ -1555,8 +1605,8 @@ const AppDevPro: React.FC = () => {
           isCloudComputer={finalSelectedComputerId === '-1'}
           previewUrl={appPreviewUrl}
           onRefreshPreview={handleRefreshPreview}
-          onStartPreviewRuntime={previewRuntime.start}
-          onRestartPreviewRuntime={previewRuntime.restart}
+          onStartPreviewRuntime={handleStartPreviewRuntime}
+          onRestartPreviewRuntime={handleRestartPreviewRuntime}
           onStopPreviewRuntime={handleStopPreviewRuntime}
           previewRuntimeBusy={previewRuntime.busy}
           previewRuntimeRunning={previewRuntime.running}
@@ -1780,27 +1830,6 @@ const AppDevPro: React.FC = () => {
         cancelLoading={publishFlow.cancelLoading}
         onCancelTask={publishFlow.cancelTask}
         onClose={publishFlow.closeModal}
-      />
-
-      {/* 应用预览启动 / 重启进度 */}
-      <AppDevPublishProgressModal
-        open={previewRuntime.open}
-        phase={previewRuntime.phase}
-        services={previewRuntime.services}
-        overallProgress={previewRuntime.overallProgress}
-        errorMessage={previewRuntime.errorMessage}
-        cancelLoading={previewRuntime.cancelLoading}
-        onCancelTask={previewRuntime.cancelTask}
-        onClose={previewRuntime.closeModal}
-        showSteps={false}
-        title={previewRuntimeModalCopy.title}
-        startingText={previewRuntimeModalCopy.startingText}
-        runningText={previewRuntimeModalCopy.runningText}
-        successText={previewRuntimeModalCopy.successText}
-        failedText={previewRuntimeModalCopy.failedText}
-        cancelledText={previewRuntimeModalCopy.cancelledText}
-        cancelTitle={previewRuntimeModalCopy.cancelTitle}
-        cancelContent={previewRuntimeModalCopy.cancelContent}
       />
     </div>
   );
