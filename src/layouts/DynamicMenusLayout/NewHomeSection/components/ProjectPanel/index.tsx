@@ -28,7 +28,7 @@ import {
   StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
-import { Dropdown, Input, message, Modal, Tooltip } from 'antd';
+import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import {
   forwardRef,
@@ -91,6 +91,8 @@ const ProjectPanel = forwardRef<
   const spaceId = Number(spaceIdParam) || undefined;
 
   const [projects, setProjects] = useState<ProjectItem[]>([]);
+  // 空态仅在接口返回后展示：加载中先渲染 Spin，避免一进来就闪「暂无项目」
+  const [loading, setLoading] = useState(true);
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(
     () => new Set(),
   );
@@ -147,6 +149,8 @@ const ProjectPanel = forwardRef<
         }
       } catch {
         // 忽略:保持空列表
+      } finally {
+        setLoading(false);
       }
     })();
     return () => {
@@ -490,6 +494,18 @@ const ProjectPanel = forwardRef<
       </button>
     </Tooltip>
   );
+
+  if (loading) {
+    return (
+      <div
+        className={cx(styles['project-panel'], { [styles.compact]: compact })}
+      >
+        <div className={cx(styles['project-loading'])}>
+          <Spin size="small" />
+        </div>
+      </div>
+    );
+  }
 
   if (projects.length === 0) {
     return (

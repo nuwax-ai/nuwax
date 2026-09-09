@@ -1,5 +1,18 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiAddResource,
+  apiGetResourceById,
+  apiGetResourceList,
+  apiUpdateResource,
+} from '@/services/menuPermission/permissionResources';
+import {
+  ResourceEnabledEnum,
+  ResourceSourceEnum,
+  ResourceTreeNode,
+  ResourceTypeEnum,
+  type ResourceInfo,
+} from '@/types/menuPermission/permission-resources';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -16,19 +29,6 @@ import {
 import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiAddResource,
-  apiGetResourceById,
-  apiGetResourceList,
-  apiUpdateResource,
-} from '../../services/permission-resources';
-import {
-  ResourceEnabledEnum,
-  ResourceSourceEnum,
-  ResourceTreeNode,
-  ResourceTypeEnum,
-  type ResourceInfo,
-} from '../../types/permission-resources';
 import styles from './index.less';
 
 const { TextArea } = Input;

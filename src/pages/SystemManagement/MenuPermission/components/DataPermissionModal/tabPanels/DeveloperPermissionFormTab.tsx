@@ -7,12 +7,12 @@
  * @see DataPermissionModal
  */
 import { dict } from '@/services/i18nRuntime';
+import type { DataPermission } from '@/types/menuPermission/role-manage';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Col, Form, InputNumber, Row } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import classNames from 'classnames';
 import React from 'react';
-import type { DataPermission } from '../../../types/role-manage';
 import styles from '../index.less';
 
 const cx = classNames.bind(styles);

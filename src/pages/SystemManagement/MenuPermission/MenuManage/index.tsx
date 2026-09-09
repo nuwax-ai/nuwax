@@ -7,6 +7,20 @@ import {
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiDeleteMenu,
+  apiGetMenuList,
+  apiUpdateMenu,
+  apiUpdateMenuSort,
+} from '@/services/menuPermission/menuManage';
+import {
+  MenuEnabledEnum,
+  MenuSourceEnum,
+  type GetMenuListParams,
+  type MenuNodeInfo,
+  type UpdateMenuParams,
+  type UpdateMenuSortItem,
+} from '@/types/menuPermission/menu-manage';
 import { modalConfirm } from '@/utils/ant-custom';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
@@ -27,20 +41,6 @@ import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
-import {
-  apiDeleteMenu,
-  apiGetMenuList,
-  apiUpdateMenu,
-  apiUpdateMenuSort,
-} from '../services/menu-manage';
-import {
-  MenuEnabledEnum,
-  MenuSourceEnum,
-  type GetMenuListParams,
-  type MenuNodeInfo,
-  type UpdateMenuParams,
-  type UpdateMenuSortItem,
-} from '../types/menu-manage';
 import styles from './index.less';
 import MenuFormModal from './MenuFormModal';
 

@@ -5,14 +5,14 @@
 
 import { getDevLogs } from '@/services/appDev';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRequest } from 'umi';
 import {
   filterErrorLogs,
   generateErrorFingerprint,
   getNewErrors,
   groupLogsByTimestamp,
-} from '../utils/devLogParser';
+} from '@/utils/devLogParser';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRequest } from 'umi';
 
 /**
  * 日志管理Hook的配置选项

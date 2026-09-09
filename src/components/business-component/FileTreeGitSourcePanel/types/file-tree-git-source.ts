@@ -71,28 +71,6 @@ export interface FileTreeGitSourcePanelProps {
 export interface FileTreeContainerProps {
   /** 是否只读（只读时禁用新建/上传等写操作） */
   readOnly?: boolean;
-  /** 工作区/本地目录切换与当前层面包屑（桌面宿主可用时提供） */
-  dataSourceNavigation?: {
-    conversationId?: number;
-    customTargetDir?: string;
-    currentSourceId: string;
-    currentLabel: string;
-    currentPath: string;
-    roots: Array<{
-      id: string;
-      label: string;
-      path?: string;
-      available: boolean;
-    }>;
-    onSelectSource: (id: string) => void | Promise<void>;
-    onOpenRoots: () => void | Promise<void>;
-    onRemoveRoot: (id: string) => void | Promise<void>;
-    onNavigate: (path: string) => void | Promise<void>;
-  };
-  /** 显式搜索数据源（本地目录由宿主执行有界递归搜索） */
-  searchFiles?: (keyword: string) => Promise<FileNode[]>;
-  /** 搜索结果定位；用于逐层数据源先进入结果所在目录 */
-  onSearchResultSelect?: (node: FileNode) => void | Promise<void>;
   /** 文件树节点列表（树形结构） */
   files: FileNode[];
   /** 当前选中的文件 ID */

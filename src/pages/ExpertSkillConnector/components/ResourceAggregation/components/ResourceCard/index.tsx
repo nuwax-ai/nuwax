@@ -3,7 +3,8 @@
  * @description 专家/技能/连接器通用的聚合卡片，容器复用 CardWrapper，
  * 与广场（Square/SingleAgent）卡片样式保持一致：
  * 图标 + 标题 + 发布者（头像/昵称）+ 两行描述 + 底部统计行；
- * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮（点击逻辑暂未接入，仅展示）。
+ * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮、技能卡片浮现「立即使用」按钮
+ * （点击逻辑均暂未接入，仅展示）。
  */
 
 import agentImage from '@/assets/images/agent_image.png';
@@ -36,14 +37,26 @@ interface ResourceCardProps {
   item: ResourceItem;
   /** 是否显示召唤按钮（专家&专家团卡片） */
   showSummon?: boolean;
+  /** 是否显示立即使用按钮（技能卡片） */
+  showUse?: boolean;
+  /** 是否显示底部统计行（使用用户数等） */
+  showStats?: boolean;
 }
 
-const ResourceCard: React.FC<ResourceCardProps> = ({ item, showSummon }) => {
+const ResourceCard: React.FC<ResourceCardProps> = ({
+  item,
+  showSummon,
+  showUse,
+  showStats = true,
+}) => {
   const { name, description, icon, publishUser, stats } = item;
 
   return (
     <CardWrapper
-      className={cx(styles['card-wrapper'])}
+      className={cx(styles['card-wrapper'], {
+        // 无统计行的紧凑卡片（技能页）
+        [styles['card-compact']]: !showStats,
+      })}
       title={name}
       // 发布者信息（与广场卡片一致：头像兜底默认头像，昵称缺失回退用户名；
       // 团队空间/连接器数据无发布者时不渲染该行）
@@ -54,30 +67,34 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ item, showSummon }) => {
       defaultIcon={agentImage}
       footer={
         <>
-          <footer className={cx('flex', 'items-center', styles.footer)}>
-            <div className={cx('flex', 'items-center', styles['count-box'])}>
-              {(stats || []).map((stat) => (
-                <span key={stat.type} className={cx(styles.text)}>
-                  {STAT_ICON_MAP[stat.type]}
-                  <span>{stat.value}</span>
-                </span>
-              ))}
-            </div>
-          </footer>
-          {showSummon ? (
-            <div className={cx(styles['summon-box'])}>
+          {showStats && (
+            <footer className={cx('flex', 'items-center', styles.footer)}>
+              <div className={cx('flex', 'items-center', styles['count-box'])}>
+                {(stats || []).map((stat) => (
+                  <span key={stat.type} className={cx(styles.text)}>
+                    {STAT_ICON_MAP[stat.type]}
+                    <span>{stat.value}</span>
+                  </span>
+                ))}
+              </div>
+            </footer>
+          )}
+          {(showSummon || showUse) && (
+            <div className={cx(styles['action-box'])}>
               <Button
                 type="primary"
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // TODO 召唤逻辑暂未接入，按钮仅展示
+                  // TODO 召唤/立即使用逻辑暂未接入，按钮仅展示
                 }}
               >
-                {dict('PC.Pages.ExpertSkillConnector.summon')}
+                {showSummon
+                  ? dict('PC.Pages.ExpertSkillConnector.summon')
+                  : dict('PC.Pages.ExpertSkillConnector.useNow')}
               </Button>
             </div>
-          ) : null}
+          )}
         </>
       }
     />

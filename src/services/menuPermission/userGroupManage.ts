@@ -1,7 +1,6 @@
 import type { Page, RequestResponse } from '@/types/interfaces/request';
-import { request } from 'umi';
-import { MenuNodeInfo } from '../types/menu-manage';
-import { DataPermission, UserInfo } from '../types/role-manage';
+import { MenuNodeInfo } from '@/types/menuPermission/menu-manage';
+import { DataPermission, UserInfo } from '@/types/menuPermission/role-manage';
 import type {
   AddUserGroupParams,
   GetUserGroupListParams,
@@ -11,7 +10,8 @@ import type {
   UpdateUserGroupParams,
   UpdateUserGroupSortParams,
   UserGroupInfo,
-} from '../types/user-group-manage';
+} from '@/types/menuPermission/user-group-manage';
+import { request } from 'umi';
 
 /**
  * 更新用户组

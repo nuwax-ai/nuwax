@@ -1,8 +1,4 @@
 import {
-  apiGetRoleBoundDataPermissionList,
-  apiRoleBindDataPermission,
-} from '@/pages/SystemManagement/MenuPermission/services/role-manage';
-import {
   apiSystemResourceAgentListByIds,
   apiSystemResourceKnowledgeListByIds,
   apiSystemResourcePageListByIds,
@@ -12,6 +8,14 @@ import {
   OpenApiPermissionTargetTypeEnum,
 } from '@/services/account';
 import { dict, t } from '@/services/i18nRuntime';
+import {
+  apiGetRoleBoundDataPermissionList,
+  apiRoleBindDataPermission,
+} from '@/services/menuPermission/roleManage';
+import {
+  apiGetGroupBoundDataPermissionList,
+  apiGroupBindDataPermission,
+} from '@/services/menuPermission/userGroupManage';
 import { apiPublishedAgentList } from '@/services/square';
 import {
   apiSystemModelList,
@@ -30,16 +34,15 @@ import type {
   SystemKnowledgeInfo,
   SystemKnowledgePage,
 } from '@/types/interfaces/systemManage';
+import {
+  DataPermission,
+  OpenApiConfigInfo,
+} from '@/types/menuPermission/role-manage';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Form, message, Modal, Tabs, TabsProps, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiGetGroupBoundDataPermissionList,
-  apiGroupBindDataPermission,
-} from '../../services/user-group-manage';
-import { DataPermission, OpenApiConfigInfo } from '../../types/role-manage';
 import styles from './index.less';
 import {
   AgentTabPanel,

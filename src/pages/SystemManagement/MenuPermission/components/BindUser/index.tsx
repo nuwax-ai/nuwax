@@ -3,10 +3,21 @@ import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiAddRoleUser,
+  apiGetRoleBoundUserList,
+  apiRemoveRoleUser,
+} from '@/services/menuPermission/roleManage';
+import {
+  apiAddUserGroupUser,
+  apiGetGroupUserList,
+  apiRemoveUserGroupUser,
+} from '@/services/menuPermission/userGroupManage';
 import { apiSearchUser } from '@/services/teamSetting';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import { Page } from '@/types/interfaces/request';
 import type { SearchUserInfo } from '@/types/interfaces/teamSetting';
+import { UserInfo } from '@/types/menuPermission/role-manage';
 import { CloseOutlined } from '@ant-design/icons';
 import {
   Avatar,
@@ -21,17 +32,6 @@ import {
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiAddRoleUser,
-  apiGetRoleBoundUserList,
-  apiRemoveRoleUser,
-} from '../../services/role-manage';
-import {
-  apiAddUserGroupUser,
-  apiGetGroupUserList,
-  apiRemoveUserGroupUser,
-} from '../../services/user-group-manage';
-import { UserInfo } from '../../types/role-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

@@ -81,6 +81,8 @@ export interface ConnectorProviderSubmitValues extends ConnectorAuthFormValues {
   service: string;
   displayName?: string;
   description?: string;
+  /** 图标 URL（UploadAvatar 上传成功回写，随表单一起提交） */
+  icon?: string;
   baseUrl?: string;
   category?: string;
   /** 标签：逗号分隔字符串（提交前拆成数组） */
@@ -197,6 +199,8 @@ export const toConnectorProviderPayload = (
     service: values.service.trim(),
     displayName: values.displayName?.trim() ?? '',
     description: values.description ?? '',
+    // 图标：未上传时传空串（后端按空处理）
+    icon: values.icon ?? '',
     // '' 仅用于列表筛选枚举，表单默认 no_auth，不会出现
     authType: (values.authType || 'no_auth') as Exclude<ConnectorAuthType, ''>,
     baseUrl: values.baseUrl?.trim() ?? '',
@@ -305,14 +309,15 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                       name={[name, 'name']}
                       className={styles.customField}
                     >
-                      <Input placeholder="字段名 如 apiKey" />
+                      {/* 紧凑动态行只限字数不加 showCount（计数后缀会挤占行内输入宽度） */}
+                      <Input placeholder="字段名 如 apiKey" maxLength={100} />
                     </Form.Item>
                     <Form.Item
                       {...restField}
                       name={[name, 'label']}
                       className={styles.customField}
                     >
-                      <Input placeholder="显示名 如 API Key" />
+                      <Input placeholder="显示名 如 API Key" maxLength={100} />
                     </Form.Item>
                     <Form.Item
                       {...restField}
@@ -362,7 +367,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                       name={[name, 'field']}
                       className={styles.customField}
                     >
-                      <Input placeholder="凭证字段 如 apiKey" />
+                      <Input placeholder="凭证字段 如 apiKey" maxLength={100} />
                     </Form.Item>
                     <span className={styles.customArrow}>→</span>
                     <Form.Item
@@ -377,7 +382,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                       name={[name, 'targetName']}
                       className={styles.customField}
                     >
-                      <Input placeholder="名称 如 X-Api-Key" />
+                      <Input placeholder="名称 如 X-Api-Key" maxLength={100} />
                     </Form.Item>
                     <CloseOutlined
                       className={styles.customRowRemove}
@@ -415,7 +420,12 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                     label="CLIENT ID"
                     rules={[{ required: true, message: '请输入 Client ID' }]}
                   >
-                    <Input placeholder="在 IdP 注册的 Client ID" allowClear />
+                    <Input
+                      placeholder="在 IdP 注册的 Client ID"
+                      maxLength={100}
+                      showCount
+                      allowClear
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
@@ -435,6 +445,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                           ? '留空保持不变（加密落库）'
                           : '首次必填（加密落库）'
                       }
+                      maxLength={100}
                       autoComplete="new-password"
                     />
                   </Form.Item>
@@ -449,6 +460,8 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                   >
                     <Input
                       placeholder="https://idp.example.com/oauth"
+                      maxLength={100}
+                      showCount
                       allowClear
                     />
                   </Form.Item>
@@ -461,6 +474,8 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                   >
                     <Input
                       placeholder="https://idp.example.com/oauth"
+                      maxLength={100}
+                      showCount
                       allowClear
                     />
                   </Form.Item>
@@ -470,7 +485,12 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                 name="oauthScopes"
                 label="SCOPES（空格或逗号分隔，可选）"
               >
-                <Input placeholder="如 read:user repo" allowClear />
+                <Input
+                  placeholder="如 read:user repo"
+                  maxLength={100}
+                  showCount
+                  allowClear
+                />
               </Form.Item>
               {/* 回调地址：只读提示条，支持一键复制 */}
               <div className={styles.callbackBar}>
@@ -490,7 +510,12 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="credentialFieldName" label="凭证字段名">
-                <Input placeholder="如 apiKey" allowClear />
+                <Input
+                  placeholder="如 apiKey"
+                  maxLength={100}
+                  showCount
+                  allowClear
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -504,13 +529,23 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
             <Col span={12}>
               {injectionLocation === 'header' ? (
                 <Form.Item name="requestHeaderName" label="请求头名称">
-                  <Input placeholder="如 Authorization" allowClear />
+                  <Input
+                    placeholder="如 Authorization"
+                    maxLength={100}
+                    showCount
+                    allowClear
+                  />
                 </Form.Item>
               ) : null}
             </Col>
             <Col span={12}>
               <Form.Item name="valuePrefix" label="值前缀（可选）">
-                <Input placeholder="如 Token（可留空）" allowClear />
+                <Input
+                  placeholder="如 Token（可留空）"
+                  maxLength={100}
+                  showCount
+                  allowClear
+                />
               </Form.Item>
             </Col>
           </Row>

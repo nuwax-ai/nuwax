@@ -1,7 +1,7 @@
 import { SvgIcon } from '@/components/base';
+import CreateModel from '@/components/business-component/CreateModel';
 import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import CreateModel from '@/pages/SpaceLibrary/CreateModel';
 import { apiAgentConversationModelOptions } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelDelete } from '@/services/modelConfig';

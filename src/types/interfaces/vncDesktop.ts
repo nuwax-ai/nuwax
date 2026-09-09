@@ -37,8 +37,6 @@ export interface IUpdateStaticFileParams {
   cId: number;
   // 文件列表
   files: UpdateFileInfo[];
-  // 目标目录（缺省为会话工作区；本地目录场景传打开目录的绝对路径）
-  customTargetDir?: string;
 }
 
 // 静态文件上传参数
@@ -59,8 +57,6 @@ export interface IUploadFilesParams {
   cId: number;
   // 文件路径列表
   filePaths: string[];
-  // 目标目录（缺省为会话工作区；本地目录场景传打开目录的绝对路径）
-  customTargetDir?: string;
 }
 
 // 容器信息

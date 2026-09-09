@@ -1,6 +1,6 @@
 /**
  * 通用资源聚合内容区
- * @description 专家/技能/连接器三个页面与"更多"聚合列表页共用的内容组件：
+ * @description 专家/技能/连接器三个页面共用的内容组件：
  * 工具栏（主tab/二级tab/搜索/更多）+ 卡片网格 + 滚动加载
  */
 
@@ -33,28 +33,21 @@ let scrollIdSeq = 0;
 export interface ResourceAggregationProps {
   /** 资源类型 */
   resourceType: ResourceTypeEnum;
-  /**
-   * framework = 框架页（主tab/分类/关键字同步 URL，显示"更多"入口）
-   * list = "更多"聚合列表页（不读写 URL 状态，不显示"更多"入口）
-   */
-  mode?: 'framework' | 'list';
 }
 
 const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   resourceType,
-  mode = 'framework',
 }) => {
-  const syncUrl = mode === 'framework';
   const location = useLocation();
 
-  // 初始状态优先从 URL 恢复（框架页刷新/分享可还原筛选状态）
+  // 初始状态优先从 URL 恢复（刷新/分享可还原筛选状态）
   const initialParams = useMemo(() => {
-    const searchParams = new URLSearchParams(syncUrl ? location.search : '');
+    const searchParams = new URLSearchParams(location.search);
     const source = searchParams.get('source');
     return {
       source: source === 'team' ? ('team' as const) : ('system' as const),
       category: searchParams.get('category') || '',
-      keyword: syncUrl ? searchParams.get('kw') || '' : '',
+      keyword: searchParams.get('kw') || '',
     };
     // 仅挂载时读取一次
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,11 +86,8 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     return () => window.clearTimeout(timer);
   }, [keywordInput]);
 
-  // 筛选状态同步 URL（框架页，replace 不产生历史记录）
+  // 筛选状态同步 URL（replace 不产生历史记录）
   useEffect(() => {
-    if (!syncUrl) {
-      return;
-    }
     const searchParams = new URLSearchParams();
     if (source !== 'system') {
       searchParams.set('source', source);
@@ -116,7 +106,7 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncUrl, source, category, keyword]);
+  }, [source, category, keyword]);
 
   // 滚动容器与内容区域，用于不满屏自动补拉
   const scrollIdRef = useRef<string>(`esc-scroll-container-${++scrollIdSeq}`);
@@ -170,8 +160,8 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
         onCategoryChange={setCategory}
         keyword={keywordInput}
         onKeywordChange={setKeywordInput}
-        // 连接器页不展示"更多"入口（产品要求），专家/技能框架页保留
-        showMore={mode === 'framework' && resourceType !== 'connector'}
+        // 连接器页不展示"更多"入口（产品要求），专家/技能页保留
+        showMore={resourceType !== 'connector'}
       />
 
       {initialLoading ? (
@@ -194,6 +184,9 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   key={item.id}
                   item={item}
                   showSummon={resourceType === 'expert'}
+                  showUse={resourceType === 'skill'}
+                  // 技能卡片不展示底部统计行（使用用户数等）
+                  showStats={resourceType !== 'skill'}
                 />
               ))}
             </div>

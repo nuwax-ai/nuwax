@@ -1,8 +1,8 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import Loading from '@/components/custom/Loading';
-import type { MenuNodeInfo } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
-import type { ResourceTreeNode } from '@/pages/SystemManagement/MenuPermission/types/permission-resources';
 import { dict } from '@/services/i18nRuntime';
+import type { MenuNodeInfo } from '@/types/menuPermission/menu-manage';
+import type { ResourceTreeNode } from '@/types/menuPermission/permission-resources';
 import { DownOutlined } from '@ant-design/icons';
 import { Form, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
