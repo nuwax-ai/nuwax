@@ -15,37 +15,9 @@ import type { MentionPosition } from './types';
 
 /**
  * 扁平化文件列表（只显示文件，不显示文件夹）
+ * 实现已下沉至共享层 @/utils/fileTree（分层红线：非页面层禁止依赖 @/pages/**），此处保留转发
  */
-export const flattenFiles = (
-  nodes: FileNode[],
-  searchText?: string,
-): FileNode[] => {
-  const result: FileNode[] = [];
-  const searchLower = searchText?.toLowerCase() || '';
-
-  const traverse = (nodeList: FileNode[]) => {
-    nodeList.forEach((node) => {
-      if (node.type === 'file') {
-        // 只添加文件节点
-        if (
-          !searchText ||
-          node.name.toLowerCase().includes(searchLower) ||
-          node.path?.toLowerCase().includes(searchLower) ||
-          node.id.toLowerCase().includes(searchLower)
-        ) {
-          result.push(node);
-        }
-      }
-      // 递归处理子节点
-      if (node.children && node.children.length > 0) {
-        traverse(node.children);
-      }
-    });
-  };
-
-  traverse(nodes);
-  return result;
-};
+export { flattenFiles } from '@/utils/fileTree';
 
 /**
  * 扁平化文件树，提取所有目录节点

@@ -1,7 +1,6 @@
-import { flattenFiles } from '@/pages/AppDev/components/ChatArea/components/MentionSelector/utils';
 import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
-import { getFileIcon } from '@/utils/fileTree';
+import { flattenFiles, getFileIcon } from '@/utils/fileTree';
 import { SearchOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import classNames from 'classnames';
@@ -14,8 +13,6 @@ interface SearchViewProps {
   className?: string;
   files: FileNode[];
   onFileSelect?: (fileId: string) => void;
-  searchFiles?: (keyword: string) => Promise<FileNode[]>;
-  onSearchResultSelect?: (file: FileNode) => void | Promise<void>;
 }
 
 /**
@@ -26,14 +23,10 @@ const SearchView: React.FC<SearchViewProps> = ({
   className,
   files,
   onFileSelect,
-  searchFiles,
-  onSearchResultSelect,
 }) => {
   const [searchValue, setSearchValue] = useState<string>('');
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isDropdownVisible, setIsDropdownVisible] = useState<boolean>(false);
-  const [remoteFiles, setRemoteFiles] = useState<FileNode[]>([]);
-  const searchTokenRef = useRef(0);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -44,8 +37,8 @@ const SearchView: React.FC<SearchViewProps> = ({
     if (!searchValue.trim()) {
       return [];
     }
-    return searchFiles ? remoteFiles : flattenFiles(files, searchValue);
-  }, [files, remoteFiles, searchFiles, searchValue]);
+    return flattenFiles(files, searchValue);
+  }, [files, searchValue]);
 
   /**
    * 处理搜索输入变化
@@ -55,25 +48,13 @@ const SearchView: React.FC<SearchViewProps> = ({
     setSearchValue(value);
     setIsDropdownVisible(value.trim().length > 0);
     setSelectedIndex(0);
-    const keyword = value.trim();
-    if (searchFiles && keyword) {
-      const token = ++searchTokenRef.current;
-      void searchFiles(keyword).then((results) => {
-        if (searchTokenRef.current === token) setRemoteFiles(results);
-      });
-    } else {
-      searchTokenRef.current += 1;
-      setRemoteFiles([]);
-    }
   };
 
   /**
    * 处理文件选择
    */
   const handleFileClick = (file: FileNode) => {
-    if (onSearchResultSelect) {
-      void onSearchResultSelect(file);
-    } else if (onFileSelect) {
+    if (onFileSelect) {
       onFileSelect(file.id);
     }
     setSearchValue('');

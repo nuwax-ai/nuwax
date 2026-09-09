@@ -87,13 +87,6 @@ interface Window {
         path: string,
       ) => Promise<{ success: boolean; error?: string }>;
     };
-    /** 宿主原生目录选择器：仅返回所选绝对路径，文件数据面走 file-server（customTargetDir）。 */
-    localFiles?: {
-      pickDirectory?: () => Promise<{
-        canceled: boolean;
-        paths: string[];
-      }>;
-    };
     // nuwaclaw 宿主→nuwax 入站命令通道（contextBridge 注册回调；host 触发时 cb 在 guest 上下文执行）
     events?: {
       /** 注册/注销宿主命令回调（传 null 注销）。 */

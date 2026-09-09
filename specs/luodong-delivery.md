@@ -2,7 +2,9 @@
 
 对应 intent：../plans/20260908-luodong-delivery-intent.md。用户已授权实施，未确认的产品语义保留为待办。
 
-## 首批：#5a 按路径预览
+> **回滚注记（2026-09-09）**：「文件树选择非工作空间目录（本地目录数据源）」需求取消，已回滚—— DirectorySourceNavigator、OpenFileByPath（按路径打开文件）、useLocalDirectoryFiles、 filePathPreview、pickLocalDirectory 及 customTargetDir 数据面均删除；输入框侧工作目录栏（WorkspaceDirPickerModal + 会话记录 workspaceDir，wiki #17）按用户定调保留；#5a 工作区内部能力（逐层文件树导航、懒加载、TaskResult 选文件路由）不受影响。
+
+## 首批：#5a 按路径预览（已回滚，见顶部注记）
 
 - 文件树数据源导航提供“按路径打开文件”。路径相对当前所选根目录，默认输入当前层路径；支持中文、空格、隐藏文件。
 - 使用现有 `/api/computer/static/{cId}/{encodedPath}`，本地根额外传 `customTargetDir`，路径段分别编码。仅以用户明确选择的当前数据源为根，不自动推断本机绝对目录。
