@@ -14,7 +14,7 @@ import { OTHER_MENU_CODES } from '@/constants/menus.constants';
 import {
   MenuBindTypeEnum,
   MenuEnabledEnum,
-} from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
+} from '@/types/menuPermission/menu-manage';
 import {
   extractAllMenuCodes,
   extractAllPermissions,

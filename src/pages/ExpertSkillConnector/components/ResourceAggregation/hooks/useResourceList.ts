@@ -131,6 +131,8 @@ const RESOURCE_ADAPTERS: Record<
           // 查询智能体需设置目标子类型：ChatBot 含对话型与通用型，排除网页应用
           targetType: AgentComponentTypeEnum.Agent,
           targetSubType: 'ChatBot',
+          // 仅展示官方智能体
+          official: true,
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'agent'),
     },

@@ -94,9 +94,7 @@ describe('项目侧栏原型交互', () => {
 
   it('tab 接口子会话渲染:相对时间 + 点击回调携带原始会话', async () => {
     const onConversationClick = vi.fn();
-    render(
-      <ProjectPanel compact onConversationClick={onConversationClick} />,
-    );
+    render(<ProjectPanel compact onConversationClick={onConversationClick} />);
     const child = await screen.findByText('子会话一');
     // dict mock 为返回 key 本身,渲染出 relativeMinutes 即证明时间走相对格式化
     expect(

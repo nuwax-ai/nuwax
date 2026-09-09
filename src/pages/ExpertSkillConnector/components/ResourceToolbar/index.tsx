@@ -9,7 +9,7 @@ import { Input, Segmented } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { history } from 'umi';
-import { ESC_BASE_PATH } from '../../constants';
+import { RESOURCE_MORE_SQUARE_PATH } from '../../constants';
 import type {
   ResourceCategoryInfo,
   ResourceSourceEnum,
@@ -36,7 +36,7 @@ export interface ResourceToolbarProps {
   keyword: string;
   /** 搜索输入回调（防抖由上层处理） */
   onKeywordChange: (keyword: string) => void;
-  /** 是否显示"更多"入口（聚合列表页为 false） */
+  /** 是否显示"更多"入口（连接器页为 false） */
   showMore?: boolean;
 }
 
@@ -62,9 +62,12 @@ const ResourceToolbar: React.FC<ResourceToolbarProps> = ({
     },
   ];
 
-  // "更多"跳转到聚合列表页（不带筛选状态）
+  // "更多"跳转：专家/技能跳对应广场分类页（连接器页不展示"更多"入口）
   const handleMoreClick = () => {
-    history.push(`${ESC_BASE_PATH}/list/${resourceType}`);
+    const squarePath = RESOURCE_MORE_SQUARE_PATH[resourceType];
+    if (squarePath) {
+      history.push(squarePath);
+    }
   };
 
   return (
@@ -76,16 +79,6 @@ const ResourceToolbar: React.FC<ResourceToolbarProps> = ({
           onChange={(value) => onSourceChange(value as ResourceSourceEnum)}
         />
         <div className={cx('flex', 'items-center', styles['toolbar-right'])}>
-          <Input
-            className={cx(styles['search-input'])}
-            allowClear
-            prefix={<SearchOutlined style={{ color: '#95979c' }} />}
-            placeholder={dict(
-              'PC.Pages.ExpertSkillConnector.searchPlaceholder',
-            )}
-            value={keyword}
-            onChange={(e) => onKeywordChange(e.target.value)}
-          />
           {/* "更多"仅系统广场维度可见；用 visibility 隐藏保留占位，避免切换主tab时右侧容器宽度跳动 */}
           {showMore && (
             <a
@@ -97,6 +90,16 @@ const ResourceToolbar: React.FC<ResourceToolbarProps> = ({
               {dict('PC.Pages.ExpertSkillConnector.more')}
             </a>
           )}
+          <Input
+            className={cx(styles['search-input'])}
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder={dict(
+              'PC.Pages.ExpertSkillConnector.searchPlaceholder',
+            )}
+            value={keyword}
+            onChange={(e) => onKeywordChange(e.target.value)}
+          />
         </div>
       </div>
 

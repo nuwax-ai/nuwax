@@ -282,7 +282,9 @@
   padding: 0 16px;
   background-color: @WHITE02;
   box-sizing: border-box;
-  position: fixed;
+  // 锚定 #container（页面自身），不锚定视口：工作流详情现与主站同用
+  // page-container 容器（卡片内有边距），fixed 会横跨视口顶部与卡片错位
+  position: absolute;
   width: 100%;
   top: 0;
   left: 0;

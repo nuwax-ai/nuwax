@@ -15,6 +15,8 @@ export interface DynamicMenusLayoutProps {
   overrideContainerStyle?: React.CSSProperties;
   /** 是否为移动端 */
   isMobile?: boolean;
+  /** 抑制二级菜单列（全屏工作台页宿主：只保留主会话列，不并列二级列） */
+  suppressSecondMenu?: boolean;
 }
 
 // 历史兼容导出（外部引用点已清零，保留别名以防遗漏）

@@ -6,8 +6,13 @@
 .card-wrapper {
   position: relative;
 
+  // 无统计行时收紧卡片高度（去掉 footer 行 24px + 行间距 16px）
+  &.card-compact {
+    height: 130px;
+  }
+
   &:hover {
-    .summon-box {
+    .action-box {
       opacity: 1;
       z-index: 1;
     }
@@ -30,8 +35,8 @@
     }
   }
 
-  // 召唤按钮：hover 时卡片右上角浮现（点击逻辑暂未接入，仅展示）
-  .summon-box {
+  // 操作按钮（召唤/立即使用）：hover 时卡片右上角浮现（点击逻辑暂未接入，仅展示）
+  .action-box {
     position: absolute;
     top: 12px;
     right: 16px;

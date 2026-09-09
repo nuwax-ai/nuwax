@@ -63,6 +63,46 @@ const routes = [
         path: '/space/:spaceId/project-manage',
         component: '@/pages/SpaceProjectManage',
       },
+      // 全屏工作台页组：单栏模式（style3）下与主站同用 page-container 容器、
+      // 侧栏常驻并抑制二级菜单列（由 layouts/index.tsx 依 fullscreenWorkbenchPaths
+      // 判定，侧栏实例跨跳转存活）；经典风格/移动端经 SidebarShell bare 形态
+      // 维持全屏现状。鉴权由根路由 authWithLoading 统一承担（子路由不再套一层，
+      // 避免每次跳转闪 Loading）；immersiveShellAvoid 继续负责沉浸态顶部避让。
+      {
+        path: '/space/:spaceId/workflow/:workflowId',
+        component: '@/pages/Antv-X6',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
+      },
+      {
+        path: '/space/:spaceId/agent/:agentId',
+        component: '@/pages/EditAgent',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
+      },
+      {
+        path: '/space/:spaceId/app-dev/:projectId',
+        component: '@/pages/AppDev',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
+      },
+      {
+        path: '/space/:spaceId/app-pro',
+        component: '@/pages/AppDevPro',
+        layout: false,
+      },
+      {
+        path: '/space/:spaceId/app-dev-design/:projectId',
+        component: '@/pages/AppDevDesign',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
+      },
+      {
+        path: '/space/:spaceId/agent-dev',
+        component: '@/pages/ConversationAgent',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
+        layout: false,
+      },
       // 技能管理
       {
         path: '/space/:spaceId/skill-manage',
@@ -221,11 +261,6 @@ const routes = [
       },
       {
         path: '/expert-skill-connector/connector',
-        component: '@/pages/ExpertSkillConnector',
-      },
-      // 专家·技能·连接器-"更多"聚合列表页（框架内子路由，不携带来源页筛选状态）
-      {
-        path: '/expert-skill-connector/list/:resourceType',
         component: '@/pages/ExpertSkillConnector',
       },
       {
@@ -589,42 +624,6 @@ const routes = [
     path: '/space/original-text/:segmentId/:agentId',
     component: '@/pages/SpaceKnowledgeOriginalText',
     wrappers: ['@/wrappers/authWithLoading'],
-    layout: false,
-  },
-  {
-    path: '/space/:spaceId/workflow/:workflowId',
-    component: '@/pages/Antv-X6',
-    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
-    layout: false,
-  },
-  {
-    path: '/space/:spaceId/agent/:agentId',
-    component: '@/pages/EditAgent',
-    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
-    layout: false,
-  },
-  {
-    path: '/space/:spaceId/app-dev/:projectId',
-    component: '@/pages/AppDev',
-    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
-    layout: false,
-  },
-  {
-    path: '/space/:spaceId/app-pro',
-    component: '@/pages/AppDevPro',
-    wrappers: ['@/wrappers/authWithLoading'],
-    layout: false,
-  },
-  {
-    path: '/space/:spaceId/app-dev-design/:projectId',
-    component: '@/pages/AppDevDesign',
-    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
-    layout: false,
-  },
-  {
-    path: '/space/:spaceId/agent-dev',
-    component: '@/pages/ConversationAgent',
-    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {

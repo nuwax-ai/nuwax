@@ -51,3 +51,51 @@
     scrollbar-color: @thumb-color transparent;
   }
 }
+
+/**
+ * 滚动条「滚动时才显示」Mixin
+ * 与 .scrollbar-auto-hide 的区别：滑块不再由容器 hover 触发，
+ * 而是由容器上的 data-is-scrolling 属性驱动（滚动中浮现，停止约 1s 后淡出）。
+ * 该属性由配套 hook src/hooks/useScrollbarScrollShow.ts 负责增删。
+ *
+ * 注意：必须用属性选择器而非 .is-scrolling 类——mixin 会被 css-modules 文件引入，
+ * 类名会被哈希（is-scrolling___xxx）而 JS 写入的是字面量，属性选择器不被哈希、两种上下文通用。
+ *
+ * 参数与使用方式同 .scrollbar-auto-hide：
+ * .your-scroll-container {
+ *   .scrollbar-scroll-show();
+ * }
+ */
+.scrollbar-scroll-show(@width: 8px, @thumb-color: rgba(0, 0, 0, 20%), @radius: 4px) {
+  // 保持滚动条空间，避免内容抖动
+  scrollbar-gutter: stable;
+
+  // Webkit 浏览器 (Chrome, Safari, Edge)
+  &::-webkit-scrollbar {
+    width: @width;
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: @radius;
+    transition: background 0.3s ease;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  // 仅滚动中（data-is-scrolling 由 useScrollbarScrollShow 维护）显示滑块
+  &[data-is-scrolling]::-webkit-scrollbar-thumb {
+    background: @thumb-color;
+  }
+
+  // Firefox 浏览器
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  &[data-is-scrolling] {
+    scrollbar-color: @thumb-color transparent;
+  }
+}

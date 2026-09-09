@@ -6,7 +6,6 @@ import { findFileNode } from '@/utils/appDevUtils';
 import classNames from 'classnames';
 import React, { useRef } from 'react';
 import type { FileTreeContainerProps } from '../types/file-tree-git-source';
-import DirectorySourceNavigator from './DirectorySourceNavigator';
 import FileContextMenu from './FileContextMenu';
 import FileTree from './FileTree';
 import type { FileTreeRef } from './FileTree/types';
@@ -163,17 +162,11 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         text={dict('PC.Components.FileTreeView.importing')}
       />
 
-      {tree.dataSourceNavigation && (
-        <DirectorySourceNavigator navigation={tree.dataSourceNavigation} />
-      )}
-
       {/* 搜索框 */}
       <SearchView
         className={headerClassName}
         files={files}
         onFileSelect={handleFileSelect}
-        searchFiles={tree.searchFiles}
-        onSearchResultSelect={tree.onSearchResultSelect}
       />
 
       {/* 文件树工具栏 */}

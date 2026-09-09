@@ -1,6 +1,6 @@
-import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import { RequestResponse } from '@/types/interfaces/request';
+import { parseLogEntry } from '@/utils/devLogParser';
 import { request } from 'umi';
 
 export interface GetAgentDevLogParams {

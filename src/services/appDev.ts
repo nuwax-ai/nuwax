@@ -1,4 +1,3 @@
-import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
@@ -23,6 +22,7 @@ import type {
 } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { parseLogEntry } from '@/utils/devLogParser';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';

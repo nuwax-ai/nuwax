@@ -1,7 +1,7 @@
 /**
  * 侧栏折叠/展开 hook
  * @description 主导航改造（单栏模式）：折叠入口在侧栏顶栏 icon（展开态），
- * 折叠态在屏幕左缘显示悬浮展开按钮（见 DynamicMenusLayout）。
+ * 折叠态在原收起按钮位置显示悬浮展开按钮（见 DynamicMenusLayout）。
  * 偏好持久化沿用原 CollapseButton 的 sessionStorage key，老用户偏好兼容。
  */
 import { isImmersiveShell } from '@/utils/nuwaClawBridge';

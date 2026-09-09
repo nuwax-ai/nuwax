@@ -33,6 +33,8 @@ export interface SquarePublishedListParams {
   allowCopy?: AllowCopyEnum;
   // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
   accessControl?: number;
+  // 仅返回官方内容
+  official?: boolean;
 }
 
 // 广场-已发布的组件单项信息

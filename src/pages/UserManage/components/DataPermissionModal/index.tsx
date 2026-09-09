@@ -3,7 +3,6 @@ import {
   DataPermissionTabKey,
   getDataPermissionTabItems,
 } from '@/pages/SystemManagement/MenuPermission/components/DataPermissionModal';
-import type { OpenApiConfigInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import {
   apiGetOpenApiList,
   OpenApiPermissionTargetTypeEnum,
@@ -17,6 +16,7 @@ import type {
   KnowledgeInfoById,
   ModelConfigDto,
 } from '@/types/interfaces/systemManage';
+import type { OpenApiConfigInfo } from '@/types/menuPermission/role-manage';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Col, Empty, Form, InputNumber, Modal, Row, Tabs } from 'antd';
 import classNames from 'classnames';

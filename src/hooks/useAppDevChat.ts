@@ -29,12 +29,6 @@ import {
   SUCCESS_CODE,
 } from '@/constants/codes.constants';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
-import {
-  insertToolCallBlock,
-  insertToolCallUpdateBlock,
-  removePlanBlocks,
-  upsertPlanBlock,
-} from '@/pages/AppDev/utils/markdownProcess';
 import { t } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { DataSourceSelection, FileNode } from '@/types/interfaces/appDev';
@@ -57,6 +51,12 @@ import {
   markStreamingMessageError,
   sortMessagesByTimestamp,
 } from '@/utils/chatUtils';
+import {
+  insertToolCallBlock,
+  insertToolCallUpdateBlock,
+  removePlanBlocks,
+  upsertPlanBlock,
+} from '@/utils/markdownProcess';
 
 /**
  * @ 提及的项类型（与 ChatInputHome 保持一致）

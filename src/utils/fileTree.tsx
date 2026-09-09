@@ -67,6 +67,40 @@ export const getFileIcon = (name: string) => {
 };
 
 /**
+ * 扁平化文件列表（只显示文件，不显示文件夹）
+ */
+export const flattenFiles = (
+  nodes: FileNode[],
+  searchText?: string,
+): FileNode[] => {
+  const result: FileNode[] = [];
+  const searchLower = searchText?.toLowerCase() || '';
+
+  const traverse = (nodeList: FileNode[]) => {
+    nodeList.forEach((node) => {
+      if (node.type === 'file') {
+        // 只添加文件节点
+        if (
+          !searchText ||
+          node.name.toLowerCase().includes(searchLower) ||
+          node.path?.toLowerCase().includes(searchLower) ||
+          node.id.toLowerCase().includes(searchLower)
+        ) {
+          result.push(node);
+        }
+      }
+      // 递归处理子节点
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    });
+  };
+
+  traverse(nodes);
+  return result;
+};
+
+/**
  * 更新文件树中的文件名、路径（用于即时反馈），用于文件树视图
  */
 export const updateFileTreeName = (

@@ -1,0 +1,2215 @@
+[
+  {
+    "type": "dependency",
+    "from": "src/features/conversation/runtime/conversationMessageStore.ts",
+    "to": "src/models/conversationInfoMessageList.ts",
+    "unresolvedTo": "@/models/conversationInfoMessageList",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "components-not-to-models"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/hooks/useCopyTemplate.tsx",
+    "to": "src/components/MoveCopyComponent/index.tsx",
+    "unresolvedTo": "@/components/MoveCopyComponent",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "hooks-not-to-components"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/hooks/useMcp.tsx",
+    "to": "src/components/business-component/GuardedFormModal/index.tsx",
+    "unresolvedTo": "@/components/business-component/GuardedFormModal",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "hooks-not-to-components"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/hooks/useMcp.tsx",
+    "to": "src/components/custom/TooltipIcon/index.tsx",
+    "unresolvedTo": "@/components/custom/TooltipIcon",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "hooks-not-to-components"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/hooks/useMcp.tsx",
+    "to": "src/components/McpCollapseComponentList/index.tsx",
+    "unresolvedTo": "@/components/McpCollapseComponentList",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "hooks-not-to-components"
+    }
+  },
+  {
+    "type": "cycle",
+    "from": "src/components/business-component/FileTreePreviewPanel/FileTreeViewPanel.tsx",
+    "to": "src/components/business-component/FileTreePreviewPanel/index.tsx",
+    "unresolvedTo": "./index",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/components/business-component/FileTreePreviewPanel/index.tsx",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/components/business-component/FileTreePreviewPanel/FileTreeViewPanel.tsx",
+        "dependencyTypes": ["local", "export"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/components/ChatView/promptView.tsx",
+    "to": "src/components/MarkdownRenderer/index.tsx",
+    "unresolvedTo": "../MarkdownRenderer",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/components/MarkdownRenderer/index.tsx",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/components/MarkdownRenderer/genCustomPlugin.tsx",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/components/MarkdownCustomProcess/index.tsx",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/components/MarkdownCustomProcess/SeeDetailModal.tsx",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/components/CodeEditor/index.tsx",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/components/CodeOptimizeModal/index.tsx",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/components/ChatView/promptView.tsx",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/components/Created/index.tsx",
+    "to": "src/components/CreateKnowledge/index.tsx",
+    "unresolvedTo": "../CreateKnowledge",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/components/CreateKnowledge/index.tsx",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/components/Created/index.tsx",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/constants/home.constants.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/services/i18nRuntime.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/services/i18n.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/services/account.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/services/userService.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/constants/home.constants.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/pages/Antv-X6/v3/utils/graphV3.ts",
+    "to": "src/pages/Antv-X6/v3/utils/workflowV3.tsx",
+    "unresolvedTo": "./workflowV3",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/pages/Antv-X6/v3/utils/workflowV3.tsx",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/pages/Antv-X6/v3/utils/graphV3.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/pages/SpaceResource/Pricing/ToolPricingTab/index.tsx",
+    "to": "src/pages/SpaceResource/Pricing/ToolPricingTab/ToolPricingFormModal/index.tsx",
+    "unresolvedTo": "./ToolPricingFormModal",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/pages/SpaceResource/Pricing/ToolPricingTab/ToolPricingFormModal/index.tsx",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/pages/SpaceResource/Pricing/ToolPricingTab/index.tsx",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/services/account.ts",
+    "to": "src/services/userService.ts",
+    "unresolvedTo": "./userService",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/services/userService.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/services/account.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/services/agentDev.ts",
+    "to": "src/utils/exportImportFile.ts",
+    "unresolvedTo": "@/utils/exportImportFile",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/utils/exportImportFile.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/services/agentDev.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/services/dataTable.ts",
+    "to": "src/utils/exportImportFile.ts",
+    "unresolvedTo": "@/utils/exportImportFile",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/utils/exportImportFile.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/services/dataTable.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/services/i18n.ts",
+    "to": "src/utils/i18nConfigExportBlob.ts",
+    "unresolvedTo": "@/utils/i18nConfigExportBlob",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/utils/i18nConfigExportBlob.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/services/i18nRuntime.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/services/i18n.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/services/userService.ts",
+    "to": "src/utils/router.ts",
+    "unresolvedTo": "@/utils/router",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/utils/router.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/utils/common.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/services/i18nRuntime.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/services/i18n.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "src/services/account.ts",
+        "dependencyTypes": [
+          "aliased",
+          "aliased-tsconfig",
+          "aliased-tsconfig-paths",
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/services/userService.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/business-component/CreditsBalance/index.tsx",
+    "to": "src/pages/MorePage/MySubscriptions/components/CreditsBreakdown/components/PurchaseModal/index.tsx",
+    "unresolvedTo": "@/pages/MorePage/MySubscriptions/components/CreditsBreakdown/components/PurchaseModal",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/business-component/FileTreeGitSourcePanel/FileTreePanel/SearchView/index.tsx",
+    "to": "src/pages/AppDev/components/ChatArea/components/MentionSelector/utils.ts",
+    "unresolvedTo": "@/pages/AppDev/components/ChatArea/components/MentionSelector/utils",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView.tsx",
+    "to": "src/pages/AppDev/components/index.ts",
+    "unresolvedTo": "@/pages/AppDev/components",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/business-component/PaymentSubscriptionModal/index.tsx",
+    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
+    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/ExpandTextArea/index.tsx",
+    "to": "src/pages/Antv-X6/v3/constants/editorConfig.ts",
+    "unresolvedTo": "@/pages/Antv-X6/v3/constants/editorConfig",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/FormListItem/components/TreeNodeTitle.tsx",
+    "to": "src/pages/Antv-X6/params.tsx",
+    "unresolvedTo": "@/pages/Antv-X6/params",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/components/FormListItem/components/TreeNodeTitleBody.tsx",
+    "to": "src/pages/Antv-X6/params.tsx",
+    "unresolvedTo": "@/pages/Antv-X6/params",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/hooks/useSubscription.ts",
+    "to": "src/pages/EditAgent/services/agent-subscription-plan.ts",
+    "unresolvedTo": "@/pages/EditAgent/services/agent-subscription-plan",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/hooks/useSubscription.ts",
+    "to": "src/pages/MorePage/MySubscriptions/hooks/useSubscriptionPurchase.ts",
+    "unresolvedTo": "@/pages/MorePage/MySubscriptions/hooks/useSubscriptionPurchase",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/hooks/useSubscription.ts",
+    "to": "src/pages/SpaceResource/services/resource.ts",
+    "unresolvedTo": "@/pages/SpaceResource/services/resource",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/hooks/useSubscription.ts",
+    "to": "src/pages/SpaceResource/types/resource.ts",
+    "unresolvedTo": "@/pages/SpaceResource/types/resource",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/hooks/useSubscription.ts",
+    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
+    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel/index.tsx",
+    "to": "src/pages/AppDevPro/services/appDevPro.ts",
+    "unresolvedTo": "@/pages/AppDevPro/services/appDevPro",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/resourcePricing.ts",
+    "to": "src/pages/SpaceResource/types/resource.ts",
+    "unresolvedTo": "@/pages/SpaceResource/types/resource",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "non-pages-not-to-pages"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/AppDevDesign/index.tsx",
+    "to": "src/pages/AppDev/components/ChatArea/index.tsx",
+    "unresolvedTo": "@/pages/AppDev/components/ChatArea",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[AppDevDesign]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/AppDevDesign/index.tsx",
+    "to": "src/pages/AppDev/components/EditorHeaderRight/index.tsx",
+    "unresolvedTo": "@/pages/AppDev/components/EditorHeaderRight",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[AppDevDesign]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/AppDevDesign/index.tsx",
+    "to": "src/pages/AppDev/components/FileOperatingMask/index.tsx",
+    "unresolvedTo": "@/pages/AppDev/components/FileOperatingMask",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[AppDevDesign]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/AppDevDesign/index.tsx",
+    "to": "src/pages/AppDev/components/index.ts",
+    "unresolvedTo": "@/pages/AppDev/components",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[AppDevDesign]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/AppDevDesign/index.tsx",
+    "to": "src/pages/AppDev/components/PageEditModal/index.tsx",
+    "unresolvedTo": "@/pages/AppDev/components/PageEditModal",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[AppDevDesign]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/AppDevDesign/index.tsx",
+    "to": "src/pages/AppDev/hooks/useDevLogs.ts",
+    "unresolvedTo": "@/pages/AppDev/hooks/useDevLogs",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[AppDevDesign]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/AppDevPro/AgentConversationChatPanel/index.test.tsx",
+    "to": "src/pages/ConversationAgent/AgentConversationChatPanel/index.tsx",
+    "unresolvedTo": "@/pages/ConversationAgent/AgentConversationChatPanel",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[AppDevPro]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/ConversationAgent/index.tsx",
+    "to": "src/pages/EditAgent/DebugDetails/index.tsx",
+    "unresolvedTo": "@/pages/EditAgent/DebugDetails",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[ConversationAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/AgentFlowCanvas/index.tsx",
+    "to": "src/pages/Antv-X6/v3/agentFlow/register.ts",
+    "unresolvedTo": "@/pages/Antv-X6/v3/agentFlow/register",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/AgentFlowCanvas/index.tsx",
+    "to": "src/pages/Antv-X6/v3/indexV3.tsx",
+    "unresolvedTo": "@/pages/Antv-X6/v3/indexV3",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/index.tsx",
+    "to": "src/pages/SpaceDevelop/AnalyzeStatistics/index.tsx",
+    "unresolvedTo": "@/pages/SpaceDevelop/AnalyzeStatistics",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/index.tsx",
+    "to": "src/pages/SpaceDevelop/CreateTempChatModal/index.tsx",
+    "unresolvedTo": "@/pages/SpaceDevelop/CreateTempChatModal",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/PreviewAndDebug/index.tsx",
+    "to": "src/pages/Chat/hooks/useAutoPreviewFile.ts",
+    "unresolvedTo": "@/pages/Chat/hooks/useAutoPreviewFile",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/SubscriptionSetting/CreatePlanModal/index.tsx",
+    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
+    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/SubscriptionSetting/index.tsx",
+    "to": "src/pages/SpaceResource/services/resource.ts",
+    "unresolvedTo": "@/pages/SpaceResource/services/resource",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/SubscriptionSetting/index.tsx",
+    "to": "src/pages/SpaceResource/types/resource.ts",
+    "unresolvedTo": "@/pages/SpaceResource/types/resource",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/SubscriptionSetting/index.tsx",
+    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
+    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/SubscriptionSetting/SubscriptionPlanCard/index.tsx",
+    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
+    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/EditAgent/SubscriptionStats/index.tsx",
+    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
+    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[EditAgent]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/GlobalModelManage/index.tsx",
+    "to": "src/pages/MorePage/ModelPermissions/ModalitiesTagsCell/index.tsx",
+    "unresolvedTo": "../MorePage/ModelPermissions/ModalitiesTagsCell",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[GlobalModelManage]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/GlobalModelManage/index.tsx",
+    "to": "src/pages/SystemManagement/Content/components/TargetAuthModal/index.tsx",
+    "unresolvedTo": "../SystemManagement/Content/components/TargetAuthModal",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[GlobalModelManage]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/GlobalModelManage/Pricing/ModelPricingTab/index.tsx",
+    "to": "src/pages/SpaceResource/types/resource.ts",
+    "unresolvedTo": "@/pages/SpaceResource/types/resource",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[GlobalModelManage]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/Home/index.tsx",
+    "to": "src/pages/SpaceCreateProject/utils/projectCreateStrategy.ts",
+    "unresolvedTo": "../SpaceCreateProject/utils/projectCreateStrategy",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[Home]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/IMChannel/components/CreateIMChannel/index.tsx",
+    "to": "src/pages/SpaceTaskCenter/CreateTimedTask/components/SelectTargetFormItem/index.tsx",
+    "unresolvedTo": "@/pages/SpaceTaskCenter/CreateTimedTask/components/SelectTargetFormItem",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[IMChannel]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/MorePage/ApiKeyLogs/LogProTable/index.tsx",
+    "to": "src/pages/SystemManagement/LogQuery/RunningLog/LogDetailDrawer/index.tsx",
+    "unresolvedTo": "@/pages/SystemManagement/LogQuery/RunningLog/LogDetailDrawer",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[MorePage]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/MorePage/MyEarnings/components/DailyEarningsList/components/DailyEarningsDetailModal/index.tsx",
+    "to": "src/pages/SystemManagement/PaymentEarnings/constants.ts",
+    "unresolvedTo": "@/pages/SystemManagement/PaymentEarnings/constants",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[MorePage]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/MorePage/MySubscriptions/hooks/useSubscriptionPurchase.ts",
+    "to": "src/pages/EditAgent/services/agent-subscription-plan.ts",
+    "unresolvedTo": "@/pages/EditAgent/services/agent-subscription-plan",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[MorePage]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/OpenApp/CreditRecords/index.tsx",
+    "to": "src/pages/MorePage/CreditRecords/index.tsx",
+    "unresolvedTo": "@/pages/MorePage/CreditRecords",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[OpenApp]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/OpenApp/MyOrders/index.tsx",
+    "to": "src/pages/MorePage/MyOrders/index.tsx",
+    "unresolvedTo": "@/pages/MorePage/MyOrders",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[OpenApp]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/OpenApp/MySubscriptions/index.tsx",
+    "to": "src/pages/MorePage/MySubscriptions/index.tsx",
+    "unresolvedTo": "@/pages/MorePage/MySubscriptions",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[OpenApp]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/OpenApp/UsageStats/index.tsx",
+    "to": "src/pages/MorePage/UsageStats/index.tsx",
+    "unresolvedTo": "@/pages/MorePage/UsageStats",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[OpenApp]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SetPassword/index.tsx",
+    "to": "src/pages/Login/BasicLayout/index.tsx",
+    "unresolvedTo": "@/pages/Login/BasicLayout",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SetPassword]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SkillDetails/index.tsx",
+    "to": "src/pages/SpaceSkillManage/CreateSkill/index.tsx",
+    "unresolvedTo": "@/pages/SpaceSkillManage/CreateSkill",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SkillDetails]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SkillDetails/index.tsx",
+    "to": "src/pages/SpaceSkillManage/ImportSkillProjectModal/index.tsx",
+    "unresolvedTo": "@/pages/SpaceSkillManage/ImportSkillProjectModal",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SkillDetails]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SkillDetailsConversation/components/SkillHeader/index.tsx",
+    "to": "src/pages/SpaceSkillManage/CreateSkill/index.tsx",
+    "unresolvedTo": "@/pages/SpaceSkillManage/CreateSkill",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SkillDetailsConversation]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SkillDetailsConversation/index.tsx",
+    "to": "src/pages/Chat/index.tsx",
+    "unresolvedTo": "@/pages/Chat",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SkillDetailsConversation]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpacePluginCloudTool/index.tsx",
+    "to": "src/pages/Antv-X6/params.tsx",
+    "unresolvedTo": "@/pages/Antv-X6/params",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpacePluginCloudTool]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpacePluginCloudTool/index.tsx",
+    "to": "src/pages/SpacePluginTool/components/PluginChatSession/index.tsx",
+    "unresolvedTo": "../SpacePluginTool/components/PluginChatSession",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpacePluginCloudTool]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpacePluginTool/components/PluginInputTable/index.tsx",
+    "to": "src/pages/Antv-X6/params.tsx",
+    "unresolvedTo": "@/pages/Antv-X6/params",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpacePluginTool]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpacePluginTool/components/PluginOutputTable/index.tsx",
+    "to": "src/pages/Antv-X6/params.tsx",
+    "unresolvedTo": "@/pages/Antv-X6/params",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpacePluginTool]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceProjectManage/index.tsx",
+    "to": "src/pages/AppDevPro/components/CreateUserApp/index.tsx",
+    "unresolvedTo": "../AppDevPro/components/CreateUserApp",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceProjectManage]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceProjectManage/index.tsx",
+    "to": "src/pages/AppDevPro/services/appDevPro.ts",
+    "unresolvedTo": "@/pages/AppDevPro/services/appDevPro",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceProjectManage]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceProjectManage/index.tsx",
+    "to": "src/pages/SpacePageDevelop/PageCreateModal/index.tsx",
+    "unresolvedTo": "../SpacePageDevelop/PageCreateModal",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceProjectManage]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceResource/components/ComponentList/index.tsx",
+    "to": "src/pages/SpaceLibrary/ComponentItem/index.tsx",
+    "unresolvedTo": "../../../SpaceLibrary/ComponentItem",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceResource]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceResource/Connector/index.tsx",
+    "to": "src/pages/SystemManagement/ConnectorManage/ConnectorProviderCreateDrawer/index.tsx",
+    "unresolvedTo": "@/pages/SystemManagement/ConnectorManage/ConnectorProviderCreateDrawer",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceResource]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceResource/Connector/index.tsx",
+    "to": "src/pages/SystemManagement/ConnectorManage/ConnectorProviderDetailDrawer/index.tsx",
+    "unresolvedTo": "@/pages/SystemManagement/ConnectorManage/ConnectorProviderDetailDrawer",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceResource]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceResource/Connector/index.tsx",
+    "to": "src/pages/SystemManagement/ConnectorManage/ConnectorProviderEditDrawer/index.tsx",
+    "unresolvedTo": "@/pages/SystemManagement/ConnectorManage/ConnectorProviderEditDrawer",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceResource]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceResource/Connector/index.tsx",
+    "to": "src/pages/SystemManagement/ConnectorManage/constants.ts",
+    "unresolvedTo": "@/pages/SystemManagement/ConnectorManage/constants",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceResource]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceResource/Knowledge/index.tsx",
+    "to": "src/pages/SpaceLibrary/ComponentItem/index.tsx",
+    "unresolvedTo": "../../SpaceLibrary/ComponentItem",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceResource]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceResource/ModelManage/index.tsx",
+    "to": "src/pages/SpaceLibrary/ComponentItem/index.tsx",
+    "unresolvedTo": "../../SpaceLibrary/ComponentItem",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceResource]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceResource/Storage/index.tsx",
+    "to": "src/pages/SpaceLibrary/ComponentItem/index.tsx",
+    "unresolvedTo": "../../SpaceLibrary/ComponentItem",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceResource]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceSquare/index.tsx",
+    "to": "src/pages/Square/SingleAgent/index.tsx",
+    "unresolvedTo": "../Square/SingleAgent",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceSquare]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceSquare/index.tsx",
+    "to": "src/pages/Square/SquareComponentInfo/index.tsx",
+    "unresolvedTo": "../Square/SquareComponentInfo",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceSquare]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SpaceSquare/index.tsx",
+    "to": "src/pages/Square/TemplateItem/index.tsx",
+    "unresolvedTo": "../Square/TemplateItem",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SpaceSquare]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/Square/PluginDetail/PluginHeader/index.tsx",
+    "to": "src/pages/SpaceDevelop/ApplicationItem/CollectStar/index.tsx",
+    "unresolvedTo": "@/pages/SpaceDevelop/ApplicationItem/CollectStar",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[Square]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SystemManagement/ConnectorManage/ConnectorProviderDetailDrawer/index.tsx",
+    "to": "src/pages/SpaceResource/Connector/components/ConnectorConnectDrawer/index.tsx",
+    "unresolvedTo": "@/pages/SpaceResource/Connector/components/ConnectorConnectDrawer",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SystemManagement]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/SystemManagement/MenuPermission/components/DataPermissionModal/index.tsx",
+    "to": "src/pages/UserManage/user-manage.ts",
+    "unresolvedTo": "@/pages/UserManage/user-manage",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[SystemManagement]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/UserManage/components/DataPermissionModal/index.tsx",
+    "to": "src/pages/SystemManagement/MenuPermission/components/DataPermissionModal/index.tsx",
+    "unresolvedTo": "@/pages/SystemManagement/MenuPermission/components/DataPermissionModal",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[UserManage]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/pages/VerifyCode/index.tsx",
+    "to": "src/pages/Login/BasicLayout/index.tsx",
+    "unresolvedTo": "@/pages/Login/BasicLayout",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "pages-not-to-other-pages[VerifyCode]"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/ant-custom.tsx",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/applyGeneratedIcon.ts",
+    "to": "src/services/agentConfig.ts",
+    "unresolvedTo": "@/services/agentConfig",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/applyGeneratedIcon.ts",
+    "to": "src/services/appDev.ts",
+    "unresolvedTo": "@/services/appDev",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/applyGeneratedIcon.ts",
+    "to": "src/services/mcp.ts",
+    "unresolvedTo": "@/services/mcp",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/applyGeneratedIcon.ts",
+    "to": "src/services/pageDev.ts",
+    "unresolvedTo": "@/services/pageDev",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/applyGeneratedIcon.ts",
+    "to": "src/services/plugin.ts",
+    "unresolvedTo": "@/services/plugin",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/applyGeneratedIcon.ts",
+    "to": "src/services/skill.ts",
+    "unresolvedTo": "@/services/skill",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/chatUtils.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/clipboard.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/common.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/conversationShareMd.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/conversationTaskStatusSync.ts",
+    "to": "src/services/agentConfig.ts",
+    "unresolvedTo": "@/services/agentConfig",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/dateUtils.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/exportImportFile.ts",
+    "to": "src/services/agentDev.ts",
+    "unresolvedTo": "@/services/agentDev",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/exportImportFile.ts",
+    "to": "src/services/dataTable.ts",
+    "unresolvedTo": "@/services/dataTable",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/exportImportFile.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/fetchEventSourceConversationInfo.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/fileTree.tsx",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/generatedMetadata.ts",
+    "to": "src/services/appDev.ts",
+    "unresolvedTo": "@/services/appDev",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/graph.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/htmlToPdf.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/i18nConfigExportBlob.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/inputValidation.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/mcp.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/mermaidExporter.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/navigationStyleDebugger.ts",
+    "to": "src/services/unifiedThemeService.ts",
+    "unresolvedTo": "@/services/unifiedThemeService",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/pickLocalDirectory.tsx",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/pptxFallbackRenderer.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/resourcePricing.ts",
+    "to": "src/services/i18nRuntime.ts",
+    "unresolvedTo": "@/services/i18nRuntime",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/styleInitializer.ts",
+    "to": "src/services/unifiedThemeService.ts",
+    "unresolvedTo": "@/services/unifiedThemeService",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/updateEdge.ts",
+    "to": "src/services/workflow.ts",
+    "unresolvedTo": "@/services/workflow",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/utils/updateNode.ts",
+    "to": "src/services/modifyNode.ts",
+    "unresolvedTo": "@/services/modifyNode",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "utils-not-to-services"
+    }
+  }
+]
