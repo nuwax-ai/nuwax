@@ -7,10 +7,10 @@
  */
 import SvgIcon from '@/components/base/SvgIcon';
 import useConversation from '@/hooks/useConversation';
-import { MenuEnabledEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
+import { MenuEnabledEnum } from '@/types/menuPermission/menu-manage';
 import { isMac } from '@/utils/nuwaClawBridge';
 import type { InputRef } from 'antd';
 import { Input, Modal, Spin } from 'antd';

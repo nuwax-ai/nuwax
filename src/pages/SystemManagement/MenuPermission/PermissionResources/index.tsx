@@ -7,6 +7,22 @@ import {
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiDeleteResource,
+  apiGetResourceList,
+  apiUpdateResource,
+  apiUpdateResourceSort,
+} from '@/services/menuPermission/permissionResources';
+import {
+  ResourceEnabledEnum,
+  ResourceSourceEnum,
+  ResourceTypeEnum,
+  type GetResourceListParams,
+  type ResourceInfo,
+  type ResourceTreeNode,
+  type UpdateResourceParams,
+  type UpdateResourceSortItem,
+} from '@/types/menuPermission/permission-resources';
 import { modalConfirm } from '@/utils/ant-custom';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
@@ -27,22 +43,6 @@ import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
-import {
-  apiDeleteResource,
-  apiGetResourceList,
-  apiUpdateResource,
-  apiUpdateResourceSort,
-} from '../services/permission-resources';
-import {
-  ResourceEnabledEnum,
-  ResourceSourceEnum,
-  ResourceTypeEnum,
-  type GetResourceListParams,
-  type ResourceInfo,
-  type ResourceTreeNode,
-  type UpdateResourceParams,
-  type UpdateResourceSortItem,
-} from '../types/permission-resources';
 import styles from './index.less';
 import ResourceFormModal from './ResourceFormModal';
 

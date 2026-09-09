@@ -1,3 +1,4 @@
+import CreateModel from '@/components/business-component/CreateModel';
 import ButtonToggle from '@/components/ButtonToggle';
 import ConditionRender from '@/components/ConditionRender';
 import Loading from '@/components/custom/Loading';
@@ -22,7 +23,6 @@ import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import ComponentItem from '../../SpaceLibrary/ComponentItem';
-import CreateModel from '../../SpaceLibrary/CreateModel';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

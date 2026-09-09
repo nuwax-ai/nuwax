@@ -1,5 +1,4 @@
 import type { RequestResponse } from '@/types/interfaces/request';
-import { request } from 'umi';
 import type {
   AddResourceParams,
   GetResourceListParams,
@@ -7,7 +6,8 @@ import type {
   ResourceTreeNode,
   UpdateResourceParams,
   UpdateResourceSortParams,
-} from '../types/permission-resources';
+} from '@/types/menuPermission/permission-resources';
+import { request } from 'umi';
 
 /**
  * 添加权限资源
