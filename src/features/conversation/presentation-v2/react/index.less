@@ -119,8 +119,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 4px 6px;
-  border-radius: 6px;
+  padding: 0;
   color: var(--v2-color-text, rgba(0, 0, 0, 88%));
   font-size: 13px;
   line-height: 20px;
@@ -130,10 +129,6 @@
 .tool-group-toggle,
 .node-row:not(.is-static) {
   cursor: pointer;
-
-  &:hover {
-    background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
-  }
 
   &:focus-visible {
     outline: 2px solid var(--v2-color-primary, #6a5af9);
@@ -235,7 +230,7 @@
 .node-detail {
   max-height: ~'min(420px, 52vh)';
   overflow-y: auto;
-  margin: 2px 6px 8px 27px;
+  margin: 2px 6px 8px 21px;
   padding-left: 0;
   color: var(--v2-color-text, rgba(0, 0, 0, 88%));
   border-left: 0;
@@ -342,7 +337,7 @@ a.tool-detail-resource {
 
 .tool-detail-text {
   min-width: 0;
-  max-height: 240px;
+  max-height: 80px;
   margin: 0;
   padding: 7px 9px;
   overflow: auto;
@@ -468,7 +463,6 @@ a.tool-detail-resource {
 
   &:hover {
     color: var(--v2-color-link, #1677ff);
-    background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
   }
 
   &:focus-visible {
@@ -570,11 +564,10 @@ a.tool-detail-resource {
   .tool-group-toggle,
   .node-row {
     gap: 5px;
-    padding-inline: 3px;
   }
 
   .node-detail {
-    margin-left: 18px;
+    margin-left: 19px;
     padding-left: 8px;
   }
 

@@ -3,19 +3,23 @@
  * 打开日志 Tab 时轮询 /api/userapp/logs/query，渲染逻辑对齐 AppDev useDevLogs
  */
 
+import { apiUserAppLogsSourcesQuery } from '@/pages/AppDevPro/services/appDevPro';
+import {
+  UserAppStageEnum,
+  type UserAppLogItem,
+  type UserAppLogsQueryResult,
+} from '@/pages/AppDevPro/type';
+import type { DevLogEntry } from '@/types/interfaces/appDev';
+import type { RequestResponse } from '@/types/interfaces/request';
 import {
   filterErrorLogs,
   generateErrorFingerprint,
   getNewErrors,
   groupLogsByTimestamp,
   parseLogEntry,
-} from '@/pages/AppDev/utils/devLogParser';
-import type { DevLogEntry } from '@/types/interfaces/appDev';
-import type { RequestResponse } from '@/types/interfaces/request';
+} from '@/utils/devLogParser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiUserAppLogsSourcesQuery } from '../services/appDevPro';
-import { UserAppStageEnum, type UserAppLogItem, type UserAppLogsQueryResult } from '../type';
 
 /**
  * 沙盒日志 Hook 的配置选项

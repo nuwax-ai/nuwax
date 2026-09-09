@@ -1,6 +1,6 @@
-import { ResourceTreeNode } from '@/pages/SystemManagement/MenuPermission/types/permission-resources';
 import routes from '@/routes';
 import type { MenuItemDto } from '@/types/interfaces/menu';
+import { ResourceTreeNode } from '@/types/menuPermission/permission-resources';
 
 /**
  * 从菜单树中提取所有权限码

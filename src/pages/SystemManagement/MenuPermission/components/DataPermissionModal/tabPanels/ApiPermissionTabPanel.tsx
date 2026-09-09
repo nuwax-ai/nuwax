@@ -10,10 +10,10 @@
 import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
 import type { OpenApiDefinition } from '@/types/interfaces/account';
+import type { OpenApiConfigInfo } from '@/types/menuPermission/role-manage';
 import { Empty, InputNumber, Tree, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback } from 'react';
-import type { OpenApiConfigInfo } from '../../../types/role-manage';
 import styles from '../index.less';
 
 const cx = classNames.bind(styles);

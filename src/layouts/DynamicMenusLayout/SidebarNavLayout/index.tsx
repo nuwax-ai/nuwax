@@ -45,7 +45,6 @@ import {
   OTHER_MENU_CODES,
 } from '@/constants/menus.constants';
 import useConversation from '@/hooks/useConversation';
-import styles from './index.less';
 import NewHomeSection from '../NewHomeSection';
 import SpaceSection from '../SpaceSection';
 import SquareSection from '../SquareSection';
@@ -58,6 +57,7 @@ import {
   normalizeMenuPathname,
   removePathUrlFromLocalStorage,
 } from '../utils';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 /** 桌面端沉浸式：顶部下移避让 nuwaclaw 工具栏（macOS 红绿灯在其左；Win/Linux 左侧自绘按钮组）。
@@ -74,12 +74,28 @@ const SECOND_MENU_SECTION_TABS = new Set([
 ]);
 /** 二级菜单列宽度（原型窄列形态，非原二级导航的 240） */
 const SECOND_COLUMN_WIDTH = 200;
+/** 折叠态展开按钮（主站页形态）：原位复刻收起按钮形态（SidebarNavHeader header-bar 内 34×34
+ *  圆角钮、距侧栏右缘 15px），收起后浮于页面内容上层，与原收起按钮同位。
+ *  left = 侧栏宽 260 − 顶栏右内边距 15 − 按钮宽 34；
+ *  top = 侧栏 padding-top 15 + header-bar 顶 padding 5 + 36px 内容行居中偏移 1。
+ *  全屏工作台页宿主不用此形态：页面自带头部（返回/标题/状态标签）占据左上角，
+ *  原位会压住头部内容，改走 less 的左缘把手变体 sidebar-expand-btn-edge。
+ *  定位数值在 TSX 内联注入（引用宽度常量，避免与 less 双源漂移）。 */
+const EXPAND_BTN_SIZE = 34;
+const EXPAND_BTN_STYLE: React.CSSProperties = {
+  left: NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - 15 - EXPAND_BTN_SIZE,
+  top: 15 + 5 + 1,
+  width: EXPAND_BTN_SIZE,
+  height: EXPAND_BTN_SIZE,
+};
 
 export interface DynamicMenusLayoutProps {
   /** 覆盖容器样式 */
   overrideContainerStyle?: React.CSSProperties;
   /** 是否为移动端 */
   isMobile?: boolean;
+  /** 抑制二级菜单列（全屏工作台页宿主：只保留主会话列，不并列二级列） */
+  suppressSecondMenu?: boolean;
 }
 
 /**
@@ -88,6 +104,7 @@ export interface DynamicMenusLayoutProps {
 const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   overrideContainerStyle,
   isMobile = false,
+  suppressSecondMenu = false,
 }) => {
   const location = useLocation();
   const params = useParams();
@@ -121,7 +138,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const { handleCreateConversation } = useConversation();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
-  // 折叠态左缘悬浮展开按钮（侧栏收起后顶栏不可点）
+  // 折叠态展开按钮（原位复刻收起按钮位置，侧栏收起后顶栏不可点）
   const { toggleCollapse } = useSidebarCollapse();
 
   // 是否点击菜单
@@ -651,6 +668,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 右侧并列展开原二级菜单列；主页=会话域无二级列
    */
   const shouldShowSecondMenu = useMemo(() => {
+    // 全屏工作台页宿主：只保留主会话列，不并列二级菜单列
+    if (suppressSecondMenu) return false;
+
     if (!activeTab) return false;
 
     if (SECOND_MENU_SECTION_TABS.has(activeTab)) {
@@ -666,7 +686,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     }
 
     return !!currentMenu.children?.length;
-  }, [activeTab, firstLevelMenus, otherMenus]);
+  }, [activeTab, firstLevelMenus, otherMenus, suppressSecondMenu]);
 
   // 桌面端：把「当前页是否有二级菜单」同步给 nuwaclaw 壳，工具栏据此显隐收起按钮。
   // 布局卸载（如 /Login 等无布局页）时推 false。
@@ -873,17 +893,24 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         </div>
       )}
 
-      {/* 折叠态：屏幕左缘悬浮展开按钮（侧栏收起后顶栏随列隐藏，从边缘展开） */}
+      {/* 折叠态展开按钮。主站页：原位复刻收起按钮位置（顶栏随侧栏收起而不可点，
+          按钮浮于页面内容上层同位复现）；全屏工作台页宿主：页面自带头部
+          （返回/标题/状态标签）占据左上角，原位会压住头部内容，改用左缘居中
+          把手形态（贴边半胶囊、hover 实显），不与页面 UI 抢位 */}
       {primarySidebarCollapsed && (
         <Tooltip
           title={dict(
             'PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu',
           )}
-          placement="right"
+          placement={suppressSecondMenu ? 'right' : 'bottom'}
           arrow={false}
         >
           <div
-            className={cx(styles['sidebar-expand-btn'])}
+            className={cx(
+              styles['sidebar-expand-btn'],
+              suppressSecondMenu && styles['sidebar-expand-btn-edge'],
+            )}
+            style={suppressSecondMenu ? undefined : EXPAND_BTN_STYLE}
             onClick={toggleCollapse}
           >
             <SvgIcon name="icons-common-caret_left" rotate={180} />

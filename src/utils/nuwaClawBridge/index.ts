@@ -222,21 +222,6 @@ export const native = {
 };
 
 /**
- * 宿主原生目录选择器：仅客户端可用，返回所选目录绝对路径。
- * 文件数据面统一走 file-server（customTargetDir），浏览器无桥时由页面手输路径。
- */
-export const localFiles = {
-  hasNativePicker(): boolean {
-    return typeof getBridge()?.localFiles?.pickDirectory === 'function';
-  },
-  pickDirectory(): Promise<{ canceled: boolean; paths: string[] }> {
-    const fn = getBridge()?.localFiles?.pickDirectory;
-    if (!fn) return Promise.resolve({ canceled: true, paths: [] });
-    return fn();
-  },
-};
-
-/**
  * 宿主入站事件（host→guest）：nuwaclaw 工具栏等触发的命令经 webviewPerfBridge
  * 转发到 nuwax；浏览器无桥时 no-op。命令协议见 global.d.ts 的 HostCommand。
  */

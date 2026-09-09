@@ -1,312 +1,37 @@
-import {
-  ANIMATION_DURATION,
-  MOBILE_BREAKPOINT,
-  MOBILE_MENU_TOP_PADDING,
-} from '@/constants/layout.constants';
-import useCategory from '@/hooks/useCategory';
+/**
+ * Layout 主布局组件（主站路由 / 下的布局宿主）
+ * @description 布局本体（侧栏容器 + 内容区 + 弹窗 + 数据加载）收口在
+ * SidebarShell 共享壳。全屏工作台页组（fullscreenWorkbenchPaths）也挂在同一
+ * 路由树下：单栏模式时与主站同用 page-container 容器、侧栏常驻，仅抑制二级
+ * 菜单列；经典风格/移动端以 bare 形态裸渲染（维持历史全屏行为）。
+ */
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
-import { theme } from 'antd';
-import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Outlet, useModel } from 'umi';
-import DynamicMenusLayout from './DynamicMenusLayout';
-import HoverMenu from './HoverMenu';
-import styles from './index.less';
-import Message from './Message';
-import MobileMenu from './MobileMenu';
-import Setting from './Setting';
+import React from 'react';
+import { Outlet, useLocation, useModel } from 'umi';
+import { isFullscreenWorkbenchPath } from './fullscreenWorkbenchPaths';
+import SidebarShell, { type SidebarShellVariant } from './SidebarShell';
 
-// 绑定 classNames，便于动态样式组合
-const cx = classNames.bind(styles);
-
-// 开发环境判断
-// const isDev = process.env.NODE_ENV === 'development';
-// const isDevOrTest = isDev || process.env.CI;
-
-/**
- * Layout 主布局组件
- * 负责响应式菜单、历史会话、消息、设置弹窗的布局与展示
- */
 const Layout: React.FC = () => {
-  // 使用 useRef 避免重复获取 DOM 元素
-  const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
-  // 全局主题与语言（已在 app.tsx 统一注入，这里仅保留使用场景需要时可读取）
-  // const {
-  //   language,
-  //   toggleTheme,
-  //   toggleLanguage,
-  //   primaryColor,
-  //   setPrimaryColor,
-  //   isDarkMode,
-  //   backgroundImageId,
-  //   setBackgroundImage,
-  // } = useGlobalSettings();
+  const location = useLocation();
+  const { effectiveNavigationStyle } = useUnifiedTheme();
+  const { isMobile } = useModel('layout');
 
-  const { runQueryCategory } = useCategory();
-
-  // 导航风格管理（使用统一主题系统）；渲染决策统一读 effective 值（桌面端锁定单栏）
-  const { effectiveNavigationStyle, layoutStyle } = useUnifiedTheme();
-  const { isSecondMenuCollapsed } = useModel('layout');
-  const { token } = theme.useToken();
-
-  // 状态管理
-  const {
-    isMobile,
-    setIsMobile,
-    realHidden,
-    setRealHidden,
-    fullMobileMenu,
-    setFullMobileMenu,
-    getCurrentMenuWidth,
-  } = useModel('layout');
-
-  const { asyncSpaceListFun } = useModel('spaceModel');
-  const { loadMenus } = useModel('menuModel');
-
-  // 移除对 @@initialState 的依赖，统一由 useGlobalSettings 管理全局配置
-
-  /**
-   * 检查是否为移动端设备
-   * 使用 useCallback 优化，避免重复创建函数
-   */
-  const checkIsMobile = useCallback(() => {
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-  }, []);
-
-  /**
-   * 切换移动端菜单展开/收起
-   * 使用 useCallback 优化，避免不必要的重渲染
-   */
-  const toggleFullMobileMenu = useCallback(() => {
-    setFullMobileMenu((prev: boolean) => {
-      const newState = !prev;
-      // 展开时立即设置为非隐藏状态
-      if (newState) {
-        setRealHidden(false);
-      }
-      return newState;
-    });
-  }, []);
-
-  /**
-   * 处理动画完成事件
-   * 使用 useCallback 优化，避免重复创建函数
-   */
-  const handleTransitionEnd = useCallback(
-    (event: TransitionEvent) => {
-      // 确保是 transform 属性的动画完成
-      if (event.propertyName === 'transform' && !fullMobileMenu) {
-        setRealHidden(true);
-      }
-    },
-    [fullMobileMenu],
-  );
-
-  useEffect(() => {
-    // 初始化加载菜单数据
-    loadMenus();
-    // 查询广场分类列表
-    runQueryCategory();
-    // 工作空间列表查询接口
-    asyncSpaceListFun();
-  }, []);
-
-  /**
-   * 监听窗口尺寸变化，判断是否为移动端
-   * 使用防抖优化性能
-   */
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    const handleResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(checkIsMobile, 100); // 100ms 防抖
-    };
-
-    window.addEventListener('resize', handleResize);
-    checkIsMobile(); // 初始化判断
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(timeoutId);
-    };
-  }, [checkIsMobile]);
-
-  /**
-   * 控制移动端菜单平移动画
-   * 监听 fullMobileMenu 和 isMobile 状态
-   * 使用 transitionend 事件监听动画完成
-   */
-  useEffect(() => {
-    const container = mobileMenuContainerRef.current;
-
-    if (!container) return;
-
-    if (isMobile) {
-      // 添加动画完成监听器
-      container.addEventListener('transitionend', handleTransitionEnd);
-
-      // 设置动画样式
-      container.style.transform = fullMobileMenu
-        ? 'translateX(0)'
-        : `translateX(-${getCurrentMenuWidth()}px)`;
-
-      // 清理函数
-      return () => {
-        container.removeEventListener('transitionend', handleTransitionEnd);
-      };
-    } else {
-      // 非移动端时重置样式和状态
-      container.style.transform = 'none';
-      setRealHidden(false);
-      setFullMobileMenu(false); // 重置菜单状态
-    }
-  }, [fullMobileMenu, isMobile, handleTransitionEnd, getCurrentMenuWidth]);
-
-  /**
-   * 侧边栏样式配置
-   * 使用 useMemo 优化，避免不必要的重新计算
-   */
-  const sidebarStyle = useMemo<React.CSSProperties>(() => {
-    if (isMobile) {
-      return {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        transition: `transform ${ANIMATION_DURATION}ms ease-in-out`,
-        zIndex: 999,
-        pointerEvents: 'auto',
-        ...({
-          ['--xagi-layout-second-menu-text-color']: token.colorText, // 悬浮菜单文字颜色 覆写
-          ['--xagi-layout-second-menu-text-color-secondary']:
-            token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
-        } as React.CSSProperties),
-      };
-    }
-
-    return {
-      position: 'relative',
-      height: '100%',
-    };
-  }, [isMobile]);
-
-  /**
-   * 菜单栏容器样式类名
-   * 使用 useMemo 优化
-   */
-  const containerClassName = useMemo(
-    () =>
-      cx(
-        'flex',
-        'h-full',
-        realHidden && styles['mobile-menu-container-hidden'],
-        // { 'scroll-container': !isMobile },
-      ),
-    [realHidden],
-  );
-
-  /**
-   * 菜单栏覆盖样式
-   * 使用 useMemo 优化
-   */
-  const menuOverrideStyle = useMemo(
-    () => (isMobile ? { paddingTop: MOBILE_MENU_TOP_PADDING } : {}),
-    [isMobile],
-  );
-  /**
-   * 主容器样式类名（使用独立的布局风格类）
-   * 包含导航风格和布局风格类
-   */
-  const mainContainerClassName = useMemo(
-    () =>
-      cx(
-        'flex',
-        'h-full',
-        styles.container,
-        `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
-        `xagi-nav-${effectiveNavigationStyle}`, // 导航风格类
-      ),
-    [layoutStyle, effectiveNavigationStyle],
-  );
-
-  /**
-   * 页面容器样式类名（使用独立的布局风格类）
-   * 根据导航风格动态调整
-   */
-  const pageContainerClassName = useMemo(
-    () =>
-      cx(
-        'flex-1',
-        styles[
-          `xagi-layout-${isSecondMenuCollapsed ? 'collapsed' : 'expanded'}`
-        ],
-        styles['page-container'],
-        styles[`xagi-layout-${layoutStyle}`],
-        styles[`xagi-nav-${effectiveNavigationStyle}`],
-      ),
-    [layoutStyle, effectiveNavigationStyle, isSecondMenuCollapsed],
-  );
+  const onFullscreenWorkbench = isFullscreenWorkbenchPath(location.pathname);
+  const style3Desktop =
+    effectiveNavigationStyle === ThemeNavigationStyleType.STYLE3 && !isMobile;
+  const variant: SidebarShellVariant =
+    onFullscreenWorkbench && !style3Desktop ? 'bare' : 'page';
 
   return (
-    <div className={mainContainerClassName}>
-      {/* 侧边菜单栏及弹窗区域 */}
-      <div
-        ref={mobileMenuContainerRef}
-        className={containerClassName}
-        id="mobile-menu-container"
-        style={sidebarStyle}
-      >
-        {/* 菜单栏 */}
-        <DynamicMenusLayout
-          overrideContainerStyle={menuOverrideStyle}
-          isMobile={isMobile}
-        />
-
-        {/* 悬浮菜单（经典布局折叠态专用；单栏模式不渲染） */}
-        {effectiveNavigationStyle !== ThemeNavigationStyleType.STYLE3 && (
-          <HoverMenu />
-        )}
-
-        {/* 消息弹窗 */}
-        <Message />
-
-        {/* 设置弹窗 */}
-        <Setting />
-
-        {/* 移动端菜单按钮和遮罩层 */}
-        {isMobile && (
-          <MobileMenu
-            isOpen={fullMobileMenu}
-            onToggle={toggleFullMobileMenu}
-            menuWidth={getCurrentMenuWidth()}
-          />
-        )}
-      </div>
-
-      {/* 主内容区 */}
-      <div
-        className={cx(pageContainerClassName, 'overflow-hide', [
-          // { 'scroll-container': !isMobile },
-          // 移动端模式下宽度100%
-          // { 'w-full': isMobile }, // 存在 BUG 需要注释掉
-        ])}
-        id="page-container-selector"
-        style={{
-          // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
-          // - Win/Linux 桌面端恒避让（右上自绘三键 + 工具栏浮层）；
-          // - mac 展开态无需避让（二级菜单列顶着工具栏 icon 组），但收起二级菜单后
-          //   内容区左移顶到工具栏 icon 组（x≈80-240）下方，需与 Win/Linux 同样下移；
-          // - 独立窗口（系统标题栏）与浏览器不避让。
-          marginTop: isImmersiveShell() ? shellAvoid.TOP + 8 : undefined,
-        }}
-      >
-        <Outlet />
-      </div>
-    </div>
+    <SidebarShell
+      variant={variant}
+      suppressSecondMenu={onFullscreenWorkbench}
+      // 工作台页沉浸避让由路由层 immersiveShellAvoid 承担，page-container 不叠加
+      immersiveMarginTop={!onFullscreenWorkbench}
+    >
+      <Outlet />
+    </SidebarShell>
   );
 };
 

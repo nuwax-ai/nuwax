@@ -1,6 +1,5 @@
 import type { Page, RequestResponse } from '@/types/interfaces/request';
-import { request } from 'umi';
-import type { MenuNodeInfo } from '../types/menu-manage';
+import type { MenuNodeInfo } from '@/types/menuPermission/menu-manage';
 import type {
   AddRoleParams,
   DataPermission,
@@ -12,7 +11,8 @@ import type {
   UpdateRoleParams,
   UpdateRoleSortParams,
   UserInfo,
-} from '../types/role-manage';
+} from '@/types/menuPermission/role-manage';
+import { request } from 'umi';
 
 /**
  * 更新角色

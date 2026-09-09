@@ -1,7 +1,7 @@
 import CustomFormModal from '@/components/CustomFormModal';
-import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
-import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
 import { dict } from '@/services/i18nRuntime';
+import { apiGetUserGroupList } from '@/services/menuPermission/userGroupManage';
+import { UserGroupInfo } from '@/types/menuPermission/user-group-manage';
 import { customizeRequiredMark } from '@/utils/form';
 import type { InputRef } from 'antd';
 import {

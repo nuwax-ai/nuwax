@@ -13,13 +13,12 @@ import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';
 
-// 查询文件列表（customTargetDir：工作区之外的目录，如用户打开的本地目录）
+// 查询文件列表
 export async function apiGetStaticFileList(
   cId: number,
   options?: {
     relativePath?: string;
     recursive?: boolean;
-    customTargetDir?: string;
   },
 ): Promise<RequestResponse<StaticFileListResponse>> {
   return request('/api/computer/static/file-list', {
@@ -30,9 +29,6 @@ export async function apiGetStaticFileList(
         ? {
             relativePath: options.relativePath || '',
             recursive: options.recursive ?? false,
-            ...(options.customTargetDir
-              ? { customTargetDir: options.customTargetDir }
-              : {}),
           }
         : {}),
     },
@@ -44,7 +40,6 @@ export async function apiGetStaticFileList(
 export interface ISearchFilesParams {
   cId: number;
   kw: string;
-  customTargetDir?: string;
   relativePath?: string;
   limit?: number;
   maxVisit?: number;
@@ -62,7 +57,6 @@ export async function apiSearchFiles(
   const {
     cId,
     kw,
-    customTargetDir,
     relativePath = '',
     limit = 200,
     maxVisit = 20000,
@@ -77,7 +71,6 @@ export async function apiSearchFiles(
       limit,
       maxVisit,
       timeoutMs,
-      ...(customTargetDir ? { customTargetDir } : {}),
     },
   });
 }
@@ -122,11 +115,11 @@ export async function apiUploadFile(
   });
 }
 
-// 批量文件上传（customTargetDir：上传到工作区之外的目录）
+// 批量文件上传
 export async function apiUploadFiles(
   params: IUploadFilesParams,
 ): Promise<RequestResponse<number>> {
-  const { files, cId, filePaths, customTargetDir } = params;
+  const { files, cId, filePaths } = params;
   const formData = new FormData();
 
   // 批量上传文件：将每个文件 append 到 FormData
@@ -144,27 +137,17 @@ export async function apiUploadFiles(
     formData.append('filePaths', filePath);
   });
 
-  if (customTargetDir) {
-    formData.append('customTargetDir', customTargetDir);
-  }
-
   return request('/api/computer/static/upload-files', {
     method: 'POST',
     data: formData,
   });
 }
 
-// 下载全部文件（customTargetDir：打包下载工作区之外的目录）
-export async function apiDownloadAllFiles(
-  cId: number,
-  customTargetDir?: string,
-): Promise<void> {
+// 下载全部文件
+export async function apiDownloadAllFiles(cId: number): Promise<void> {
   try {
-    const query = customTargetDir
-      ? `cId=${cId}&customTargetDir=${encodeURIComponent(customTargetDir)}`
-      : `cId=${cId}`;
     // 获取导出文件链接地址
-    const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?${query}`;
+    const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?cId=${cId}`;
     // 通过浏览器下载文件
     exportFileViaBrowserDownload(linkUrl);
     message.success(t('PC.Pages.Chat.exportSuccess'));
@@ -188,16 +171,12 @@ const ensurePodInFlightMap = new Map<
  * @param cId 会话 ID
  * @param appStage 全栈应用环境，仅 AppDevPro 传入
  */
-const buildPodRequestParams = (
-  cId: number,
-  appStage?: ComputerPodAppStage,
-) => (appStage ? { cId, appStage } : { cId });
+const buildPodRequestParams = (cId: number, appStage?: ComputerPodAppStage) =>
+  appStage ? { cId, appStage } : { cId };
 
 /** ensure 限流/并发去重 key：同一会话的 dev/prod 互不影响 */
-const getEnsurePodCacheKey = (
-  cId: number,
-  appStage?: ComputerPodAppStage,
-) => (appStage ? `${cId}:${appStage}` : String(cId));
+const getEnsurePodCacheKey = (cId: number, appStage?: ComputerPodAppStage) =>
+  appStage ? `${cId}:${appStage}` : String(cId);
 
 /** ensure 请求被 5s 限流（通常因 VNC/终端等刚调过 ensure，容器已在运行） */
 export const isEnsurePodThrottledError = (error: unknown): boolean => {

@@ -3,10 +3,10 @@ import { RoleInfo } from '@/types/interfaces/conversationInfo';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
 import { RequestResponse } from '@/types/interfaces/request';
 import type { KnowledgeInfoById } from '@/types/interfaces/systemManage';
+import { MenuNodeInfo } from '@/types/menuPermission/menu-manage';
+import { DataPermission } from '@/types/menuPermission/role-manage';
+import { UserGroupInfo } from '@/types/menuPermission/user-group-manage';
 import { request } from 'umi';
-import { MenuNodeInfo } from '../SystemManagement/MenuPermission/types/menu-manage';
-import { DataPermission } from '../SystemManagement/MenuPermission/types/role-manage';
-import { UserGroupInfo } from '../SystemManagement/MenuPermission/types/user-group-manage';
 
 interface UserBindRoleParams {
   userId: number;

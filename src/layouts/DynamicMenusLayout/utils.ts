@@ -1,7 +1,7 @@
 import { PATH_URL } from '@/constants/home.constants';
 import { MENU_PATH_NORMALIZATION_MAP } from '@/constants/menus.constants';
-import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { MenuItemDto } from '@/types/interfaces/menu';
+import { OpenTypeEnum } from '@/types/menuPermission/menu-manage';
 import { isImmersiveShell, nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { history } from 'umi';
 

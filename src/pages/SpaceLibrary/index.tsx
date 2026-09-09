@@ -8,6 +8,7 @@ import CreatedItem from '@/components/CreatedItem';
 import CustomPopover from '@/components/CustomPopover';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import UploadImportConfig from '@/components/UploadImportConfig';
+import CreateModel from '@/components/business-component/CreateModel';
 import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
 import {
@@ -55,7 +56,6 @@ import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import ComponentItem from './ComponentItem';
-import CreateModel from './CreateModel';
 import styles from './index.less';
 type IQuery = 'type' | 'create' | 'status' | 'keyword';
 
