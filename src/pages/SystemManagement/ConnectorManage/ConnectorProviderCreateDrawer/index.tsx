@@ -5,6 +5,7 @@ import ConnectorAuthConfigSection, {
   toConnectorProviderPayload,
 } from '@/pages/SystemManagement/ConnectorManage/components/ConnectorAuthConfigSection';
 import { AUTH_TYPE_OPTIONS } from '@/pages/SystemManagement/ConnectorManage/constants';
+import useConnectorCategoryOptions from '@/pages/SystemManagement/ConnectorManage/hooks/useConnectorCategoryOptions';
 import {
   apiSystemConnectorOauthConfigSave,
   apiSystemConnectorProviderCreate,
@@ -77,6 +78,21 @@ const ConnectorProviderCreateDrawer: React.FC<
     () => AUTH_TYPE_OPTIONS.filter((item) => item.value !== ''),
     [],
   );
+
+  /**
+   * 分类下拉字典（GET /api/published/category/list → Connector.children，
+   * 与编辑抽屉共用 hook）；新增模式在字典到达后默认选中第一个
+   */
+  const { categoryOptions, categoryLoading } =
+    useConnectorCategoryOptions(open);
+
+  // 默认选中第一个分类：表单打开重置后 category 为空，字典拉取成功即预选。
+  // 仅在 category 为空时写入，不覆盖用户已选 / 已清空的状态
+  useEffect(() => {
+    if (categoryOptions.length > 0 && !form.getFieldValue('category')) {
+      form.setFieldValue('category', categoryOptions[0].value);
+    }
+  }, [categoryOptions, form]);
 
   useEffect(() => {
     if (!open) {
@@ -267,8 +283,15 @@ const ConnectorProviderCreateDrawer: React.FC<
               </Form.Item>
             </Col>
             <Col span={12}>
+              {/* 分类：已发布分类接口 Connector.children 字典中选择，
+                  打开抽屉时默认选中第一个（见上方拉取 effect） */}
               <Form.Item name="category" label="分类">
-                <Input placeholder="如 代码托管" allowClear />
+                <Select
+                  options={categoryOptions}
+                  loading={categoryLoading}
+                  placeholder="请选择分类"
+                  allowClear
+                />
               </Form.Item>
             </Col>
           </Row>

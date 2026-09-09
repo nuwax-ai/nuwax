@@ -56,7 +56,7 @@ import styles from './index.less';
  *   1. 顶部概览（认证方式 / BASE URL / 通用代理 / 连接状态）：
  *      连接状态取代原抽屉的「归属」展示，免鉴权（no_auth）整项不展示；
  *      未连接时在状态后展示「去连接」（oauth2 →「去授权」，管理侧 /
- *      空间侧均展示，管理侧连接接口 spaceId 固定传 0）；已连接时状态后
+ *      空间侧均展示，管理侧连接接口不传 spaceId）；已连接时状态后
  *      展示「断开连接」（Popconfirm 二次确认后
  *      DELETE /api/connector/connections/{id}，id 为连接列表接口按
  *      service 匹配出的连接 id）
@@ -94,7 +94,7 @@ export interface ConnectorProviderDetailDrawerProps {
   service: string;
   /**
    * scope：space = 空间侧（连接用传入 spaceId，工具启停/删除走空间维度接口）；
-   * 不传默认 system = 管理侧（走管理端默认接口，连接接口 spaceId 固定传 0）
+   * 不传默认 system = 管理侧（走管理端默认接口，连接接口不传 spaceId）
    */
   scope?: 'system' | 'space';
   /** 空间 ID（空间侧传当前选中空间；管理侧不传） */
@@ -128,10 +128,11 @@ const ConnectorProviderDetailDrawer: React.FC<
   const isSpaceScope = scope === 'space';
   /**
    * 连接动作（建立连接 / OAuth 授权）使用的空间 ID：
-   * 空间侧用当前选中空间；管理侧无空间上下文，按约定固定传 0。
+   * 空间侧用当前选中空间；管理侧无空间上下文，不传 spaceId
+   * （后端按管理员上下文处理）。
    * 连接列表 GET /api/connector/connections 管理侧不传 spaceId（见 fetchConnectionId）
    */
-  const connectSpaceId = isSpaceScope ? spaceId : 0;
+  const connectSpaceId = isSpaceScope ? spaceId : undefined;
 
   // 详情加载中
   const [loading, setLoading] = useState<boolean>(false);

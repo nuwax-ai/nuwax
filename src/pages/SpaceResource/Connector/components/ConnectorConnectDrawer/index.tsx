@@ -23,9 +23,10 @@ import styles from './index.less';
  *   4. 底部通栏「加密保存并建立连接」主按钮
  *
  * 提交：POST /api/connector/connections/api-key（自定义 / API Key / Bearer
- * 统一走该接口）——body：spaceId / providerService / name（可选，未填由后端
- * 默认使用连接器名称）/ fields（键为 authConfig.fields[].name，值为用户
- * 输入的凭证）；成功后关闭抽屉并触发 onConnected（父组件刷新详情与列表）
+ * 统一走该接口）——body：spaceId（空间侧传，管理侧不传）/ providerService /
+ * name（可选，未填由后端默认使用连接器名称）/ fields（键为
+ * authConfig.fields[].name，值为用户输入的凭证）；成功后关闭抽屉并触发
+ * onConnected（父组件刷新详情与列表）
  */
 export interface ConnectorConnectDrawerProps {
   /** 是否打开 */
@@ -34,7 +35,7 @@ export interface ConnectorConnectDrawerProps {
   record: ConnectorProviderInfo | null;
   /** 凭证字段定义（详情接口 authConfig.fields，驱动表单动态渲染） */
   fields: ConnectorAuthConfigField[];
-  /** 空间 ID（提交建立连接接口的必传参数） */
+  /** 空间 ID（空间侧传当前选中空间；管理侧不传，由后端按管理员上下文处理） */
   spaceId?: number | string;
   /** 关闭回调 */
   onClose: () => void;
@@ -77,7 +78,7 @@ const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
   /**
    * 加密保存并建立连接
    * POST /api/connector/connections/api-key（自定义 / API Key / Bearer 统一）：
-   * body = spaceId / providerService / name（可选，未填不传，
+   * body = spaceId（管理侧不传）/ providerService / name（可选，未填不传，
    * 由后端默认使用连接器名称）/ fields（键为 authConfig.fields[].name）
    */
   const handleSubmit = useCallback(async () => {
@@ -94,17 +95,12 @@ const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
       message.error('连接器 service 缺失，无法建立连接');
       return;
     }
-    const spaceIdValue = Number(spaceId);
-    if (!Number.isFinite(spaceIdValue)) {
-      message.error('空间信息缺失，无法建立连接');
-      return;
-    }
-
     const connectionName = String(values.connectionName ?? '').trim();
     try {
       setSubmitting(true);
       const response = await apiConnectorConnectionCreate({
-        spaceId: spaceIdValue,
+        // 只在 spaceId 是有限数时透传（空间侧），管理侧不传
+        spaceId: Number.isFinite(Number(spaceId)) ? Number(spaceId) : undefined,
         providerService: record.service,
         name: connectionName || undefined,
         fields: values.credentials ?? {},
