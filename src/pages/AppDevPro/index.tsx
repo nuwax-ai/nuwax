@@ -71,6 +71,7 @@ import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
 import { useUserAppRuntime } from './hooks/useUserAppRuntime';
+import { useUserAppTasksActive } from './hooks/useUserAppTasksActive';
 import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
 import { UserAppDbEnvEnum } from './services/appDb';
@@ -84,6 +85,8 @@ import {
   type UserAppDomainInfo,
 } from './services/appDomain';
 import type { UserAppInfo } from './type';
+import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
+import { pickActiveUserAppTask } from './utils/userAppTaskStream';
 
 const cx = classNames.bind(styles);
 // const devConversationPollLogger = createLogger(
@@ -197,6 +200,8 @@ const AppDevPro: React.FC = () => {
   const podReady = podStatus === 'running';
   /** 应用预览 iframe 刷新计数 */
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
+  /** 用户在地址栏跳转后的 iframe 地址（环境切换时重置为代理根路径） */
+  const [previewIframeUrl, setPreviewIframeUrl] = useState('');
 
   // ==================== 全局状态模型 ====================
   /**
@@ -388,22 +393,23 @@ const AppDevPro: React.FC = () => {
    * 开发环境进页会预启动：已成功则打开终端只保活；启动中则等待；失败再由终端 ensure。
    * 线上环境进页不预启动，打开终端时由控制台 ensure。
    */
-  const terminalExternalContainerStatus =
-    useMemo((): ConsoleExternalContainerStatus | undefined => {
-      if (!queryConversationId || finalSelectedComputerId !== '-1') {
-        return undefined;
-      }
-      if (dbEnv !== UserAppDbEnvEnum.Dev) {
-        return undefined;
-      }
-      if (podStatus === 'running') {
-        return 'running';
-      }
-      if (podStatus === 'error') {
-        return 'error';
-      }
-      return 'starting';
-    }, [dbEnv, finalSelectedComputerId, podStatus, queryConversationId]);
+  const terminalExternalContainerStatus = useMemo(():
+    | ConsoleExternalContainerStatus
+    | undefined => {
+    if (!queryConversationId || finalSelectedComputerId !== '-1') {
+      return undefined;
+    }
+    if (dbEnv !== UserAppDbEnvEnum.Dev) {
+      return undefined;
+    }
+    if (podStatus === 'running') {
+      return 'running';
+    }
+    if (podStatus === 'error') {
+      return 'error';
+    }
+    return 'starting';
+  }, [dbEnv, finalSelectedComputerId, podStatus, queryConversationId]);
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(appId, {
@@ -586,6 +592,18 @@ const AppDevPro: React.FC = () => {
   });
   const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
   startPreviewIfNeededRef.current = previewRuntime.startIfNeeded;
+  const attachExistingTaskRef = useRef(previewRuntime.attachExistingTask);
+  attachExistingTaskRef.current = previewRuntime.attachExistingTask;
+
+  /** 进入页面后轮询开发启动 / 发布构建是否占用中 */
+  const {
+    devActionAllowed,
+    ready: tasksActiveReady,
+    tasks: activeTasks,
+  } = useUserAppTasksActive(appId);
+  /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
+  const previewDevActionLocked =
+    dbEnv === UserAppDbEnvEnum.Dev && !devActionAllowed;
 
   /** 查询应用绑定的域名列表 */
   const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
@@ -1196,9 +1214,9 @@ const AppDevPro: React.FC = () => {
   }, []);
 
   /**
-   * 容器启动成功后再启动当前环境预览服务：
-   * 开发环境 /api/userapp/dev/start，线上环境 /api/userapp/prod/start。
-   * 返回的 taskId 用于在预览区内拉取启动进度，成功后再展示 iframe。
+   * 进页且容器就绪后启动当前环境预览服务。
+   * 开发环境须等 tasks/active 首包：允许则 start，不允许则接入已有任务 stream。
+   * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
    */
   useEffect(() => {
     if (!appId || !podReady) {
@@ -1207,8 +1225,21 @@ const AppDevPro: React.FC = () => {
     if (dbEnv === UserAppDbEnvEnum.Prod && !userAppInfo) {
       return;
     }
+    if (dbEnv === UserAppDbEnvEnum.Dev) {
+      if (!tasksActiveReady) {
+        return;
+      }
+      if (!devActionAllowed) {
+        const activeTask = pickActiveUserAppTask(activeTasks);
+        if (activeTask) {
+          void attachExistingTaskRef.current(activeTask);
+        }
+        return;
+      }
+    }
     startPreviewIfNeededRef.current();
-  }, [appId, dbEnv, podReady, userAppInfo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 进页启动只跟首包 ready 走，不跟随后续 allowed 变化
+  }, [appId, dbEnv, podReady, tasksActiveReady, userAppInfo]);
 
   // ==================================== git 版本控制 ====================================
 
@@ -1389,25 +1420,33 @@ const AppDevPro: React.FC = () => {
   /** 打开应用预览页签（已存在则激活），容器就绪后再按需启动服务 */
   const handleOpenAppPreview = useCallback(() => {
     previewTabs.openToolTab('preview');
-    if (podReady) {
+    if (podReady && !previewDevActionLocked) {
       previewRuntime.startIfNeeded();
     }
-  }, [podReady, previewRuntime, previewTabs]);
+  }, [podReady, previewDevActionLocked, previewRuntime, previewTabs]);
 
   /** 容器就绪后才能启动 / 重启预览服务 */
   const handleStartPreviewRuntime = useCallback(() => {
     if (!podReady) {
       return;
     }
+    if (previewDevActionLocked) {
+      message.warning(dict('PC.Pages.AppDevPro.devActionBusyHint'));
+      return;
+    }
     void previewRuntime.start();
-  }, [podReady, previewRuntime]);
+  }, [podReady, previewDevActionLocked, previewRuntime]);
 
   const handleRestartPreviewRuntime = useCallback(() => {
     if (!podReady) {
       return;
     }
+    if (previewDevActionLocked) {
+      message.warning(dict('PC.Pages.AppDevPro.devActionBusyHint'));
+      return;
+    }
     void previewRuntime.restart();
-  }, [podReady, previewRuntime]);
+  }, [podReady, previewDevActionLocked, previewRuntime]);
 
   /** 停止当前环境预览服务 */
   const handleStopPreviewRuntime = useCallback(() => {
@@ -1471,13 +1510,39 @@ const AppDevPro: React.FC = () => {
   /** 应用预览页签是否激活（Header 图标高亮） */
   const isAppPreviewOpen = previewTabs.activeTab?.toolId === 'preview';
   /** 远程桌面页签是否激活（Header 图标高亮） */
-  const isAgentDesktopOpen =
-    previewTabs.activeTab?.toolId === 'remote-desktop';
+  const isAgentDesktopOpen = previewTabs.activeTab?.toolId === 'remote-desktop';
 
   /** 启动成功后通过环境代理地址访问预览页 */
   const appPreviewUrl = useMemo(
     () => getUserAppAppProxyUrl(appId, dbEnv),
     [appId, dbEnv],
+  );
+
+  /** 环境或应用变化时，地址栏与 iframe 回到对应代理根路径 */
+  useEffect(() => {
+    setPreviewIframeUrl(appPreviewUrl);
+  }, [appPreviewUrl]);
+
+  /** 地址栏与 iframe 实际使用的预览地址（含用户跳转路径） */
+  const activePreviewUrl = previewIframeUrl || appPreviewUrl;
+
+  /**
+   * 地址栏回车后更新预览 iframe。
+   * 相对路径相对于当前环境代理根路径解析；目标与当前相同则强制刷新。
+   *
+   * @param input 地址栏原始输入
+   */
+  const handleNavigatePreview = useCallback(
+    (input: string) => {
+      const url = resolveUserAppPreviewNavigateUrl(input, appPreviewUrl);
+      setPreviewIframeUrl((prev) => {
+        if (prev === url) {
+          setPreviewRefreshKey((key) => key + 1);
+        }
+        return url;
+      });
+    },
+    [appPreviewUrl],
   );
 
   /** 「数据库」页签：按 Header 所选环境加载 iframe */
@@ -1490,7 +1555,7 @@ const AppDevPro: React.FC = () => {
   const appPreviewPanel = useMemo(
     () => (
       <AppDevAppPreviewPanel
-        previewUrl={appPreviewUrl}
+        previewUrl={activePreviewUrl}
         refreshKey={previewRefreshKey}
         running={previewRuntime.running}
         busy={previewRuntime.busy}
@@ -1504,14 +1569,16 @@ const AppDevPro: React.FC = () => {
         onCancelTask={previewRuntime.cancelTask}
         onRetryStart={handleRestartPreviewRuntime}
         onStart={handleStartPreviewRuntime}
+        devActionLocked={previewDevActionLocked}
       />
     ),
     [
-      appPreviewUrl,
+      activePreviewUrl,
       handleRestartPreviewRuntime,
       handleStartPreviewRuntime,
       isConversationActive,
       podReady,
+      previewDevActionLocked,
       previewRefreshKey,
       previewRuntime.busy,
       previewRuntime.cancelLoading,
@@ -1603,7 +1670,8 @@ const AppDevPro: React.FC = () => {
           }}
           /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
-          previewUrl={appPreviewUrl}
+          previewUrl={activePreviewUrl}
+          onNavigatePreview={handleNavigatePreview}
           onRefreshPreview={handleRefreshPreview}
           onStartPreviewRuntime={handleStartPreviewRuntime}
           onRestartPreviewRuntime={handleRestartPreviewRuntime}
@@ -1611,6 +1679,7 @@ const AppDevPro: React.FC = () => {
           previewRuntimeBusy={previewRuntime.busy}
           previewRuntimeRunning={previewRuntime.running}
           previewRuntimeStopping={previewRuntime.stopping}
+          previewDevActionLocked={previewDevActionLocked}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>

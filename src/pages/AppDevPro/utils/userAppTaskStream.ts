@@ -3,11 +3,12 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { getUserAppTaskLogsStreamUrl } from '../services/appDevPro';
-import type {
-  UserAppDevTaskInfo,
-  UserAppTaskLogEvent,
-  UserAppTaskServiceProgress,
-  UserAppTaskTerminalStatus,
+import {
+  UserAppTaskTypeEnum,
+  type UserAppDevTaskInfo,
+  type UserAppTaskLogEvent,
+  type UserAppTaskServiceProgress,
+  type UserAppTaskTerminalStatus,
 } from '../type';
 import {
   getEventTerminalStatus,
@@ -77,6 +78,39 @@ export const pickUserAppTaskId = (
     return data;
   }
   return data.taskId || '';
+};
+
+const TASK_TYPE_RANK: Record<string, number> = {
+  [UserAppTaskTypeEnum.DevStart]: 0,
+  [UserAppTaskTypeEnum.DevRestart]: 1,
+  [UserAppTaskTypeEnum.Build]: 2,
+};
+
+/**
+ * 从进行中任务里选出应接入进度流的一条。
+ * 优先开发启动 / 重启，其次构建；同类型取更新时间更近的。
+ *
+ * @param tasks 进行中任务
+ * @returns 任务行；没有可监听任务时为 null
+ */
+export const pickActiveUserAppTask = (
+  tasks?: UserAppDevTaskInfo[] | null,
+): UserAppDevTaskInfo | null => {
+  const list = (tasks || []).filter((item) => item?.taskId);
+  if (!list.length) {
+    return null;
+  }
+  return [...list].sort((left, right) => {
+    const rankDiff =
+      (TASK_TYPE_RANK[left.taskType] ?? 9) -
+      (TASK_TYPE_RANK[right.taskType] ?? 9);
+    if (rankDiff !== 0) {
+      return rankDiff;
+    }
+    return String(right.modified || right.created || '').localeCompare(
+      String(left.modified || left.created || ''),
+    );
+  })[0];
 };
 
 /**
@@ -169,12 +203,16 @@ export const listenUserAppTaskStream = (
         const list = getServices();
         if (
           list.length > 0 &&
-          list.every((item) => getTaskTerminalStatus(item.status) === 'succeeded')
+          list.every(
+            (item) => getTaskTerminalStatus(item.status) === 'succeeded',
+          )
         ) {
           finish('succeeded');
           return;
         }
-        if (list.some((item) => getTaskTerminalStatus(item.status) === 'failed')) {
+        if (
+          list.some((item) => getTaskTerminalStatus(item.status) === 'failed')
+        ) {
           finish('failed', new Error(failedMessage));
           return;
         }

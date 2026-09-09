@@ -1,6 +1,9 @@
 @import '@/styles/token';
 
 @tab-list-scrollbar-size: 8px;
+@preview-address-bar-width: 360px;
+@preview-address-bar-min-width: 180px;
+@preview-address-bar-max-width: 420px;
 
 // 标签栏 Tooltip：置于标签之上、可选中文本，避免事件穿透触发拖拽
 :global(.preview-tab-label-tooltip) {
@@ -14,6 +17,38 @@
   }
 }
 
+// 地址栏跳转提示：与输入框容器同宽，长地址换行
+:global(.preview-address-jump-tooltip) {
+  width: @preview-address-bar-width;
+  min-width: @preview-address-bar-min-width;
+  max-width: @preview-address-bar-max-width;
+  z-index: @zIndexPopupBase;
+  box-sizing: border-box;
+  padding: 0;
+
+  :global {
+    .ant-tooltip-content,
+    .ant-tooltip-inner {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .ant-tooltip-inner {
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: @colorBgElevated;
+      color: @colorTextSecondary;
+      box-shadow: @boxShadowSecondary;
+      font-size: 13px;
+      line-height: 20px;
+      white-space: normal;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
 .tab-bar {
   display: flex;
   align-items: center;
@@ -22,6 +57,7 @@
   padding: 0 @paddingXs 0 0;
   border-bottom: @lineWidth solid @colorSplit;
   flex-shrink: 0;
+  overflow: visible;
 }
 
 .tab-bar-left {
@@ -232,6 +268,10 @@
   gap: 2px;
 }
 
+.preview-runtime-btn-wrap {
+  display: inline-flex;
+}
+
 .preview-runtime-btn {
   display: inline-flex;
   align-items: center;
@@ -263,9 +303,9 @@
 .preview-address-bar {
   display: flex;
   align-items: center;
-  flex: 0 1 320px;
-  min-width: 180px;
-  max-width: 380px;
+  flex: 0 1 @preview-address-bar-width;
+  min-width: @preview-address-bar-min-width;
+  max-width: @preview-address-bar-max-width;
   height: 32px;
   margin-left: @marginXs;
   padding: 0 10px 0 12px;
@@ -273,6 +313,8 @@
   border-radius: 999px;
   background: @colorBgContainer;
   gap: 8px;
+  position: relative;
+  z-index: 2;
 }
 
 .preview-address-lock {
@@ -281,19 +323,33 @@
   color: @colorTextTertiary;
 }
 
-.preview-address-url {
+.preview-address-input-wrap {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.preview-address-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 20px;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
   font-size: 13px;
   line-height: 20px;
   color: @colorText;
-  user-select: text;
 
+  &::placeholder,
   &-empty {
     color: @colorTextTertiary;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
   }
 }
 

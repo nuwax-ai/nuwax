@@ -1,8 +1,14 @@
 import { dict } from '@/services/i18nRuntime';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Button, Empty, Progress } from 'antd';
+import { Button, Empty, Progress, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type {
   UserAppPublishPhase,
   UserAppTaskServiceProgress,
@@ -40,6 +46,8 @@ export interface AppDevAppPreviewPanelProps {
   onRetryStart?: () => void;
   /** 停止后重新启动预览（dev/start 或 prod/start） */
   onStart?: () => void;
+  /** 开发环境进行中任务锁定启动 / 重启 */
+  devActionLocked?: boolean;
 }
 
 /**
@@ -92,7 +100,77 @@ const PreviewStartLogBoard: React.FC<{
 };
 
 /**
- * 居中提示（准备中 / 启动预览 / 应用加载中）。
+ * iframe 加载中的粉色角色插画（浮动 + 速度线）。
+ *
+ * @returns 加载插画
+ */
+const PreviewLoadingMascot: React.FC = () => (
+  <svg
+    className={cx(styles.mascot)}
+    viewBox="0 0 140 128"
+    width="112"
+    height="102"
+    aria-hidden
+  >
+    <defs>
+      <linearGradient
+        id="previewMascotGrad"
+        x1="50%"
+        y1="0%"
+        x2="50%"
+        y2="100%"
+      >
+        <stop offset="0%" stopColor="#FF8FA3" />
+        <stop offset="100%" stopColor="#FFC2CE" />
+      </linearGradient>
+    </defs>
+    <g
+      className={cx(styles.mascotMotion)}
+      stroke="#D4D4D4"
+      strokeLinecap="round"
+    >
+      <line x1="96" y1="36" x2="124" y2="36" strokeWidth="3" />
+      <line x1="102" y1="50" x2="132" y2="50" strokeWidth="2.5" />
+      <line x1="98" y1="64" x2="122" y2="64" strokeWidth="2.5" />
+    </g>
+    <g className={cx(styles.mascotBody)}>
+      <path
+        fill="url(#previewMascotGrad)"
+        d="M24.5 54c0-22 14.5-36 33.5-36s33.5 14 33.5 36c0 20.5-13 34-33.5 36.5C38 88 24.5 74.5 24.5 54Z"
+      />
+      <rect x="44" y="40" width="8" height="20" rx="2.5" fill="#1F1F1F" />
+      <rect x="62" y="42" width="7.5" height="17" rx="2.5" fill="#1F1F1F" />
+    </g>
+    <ellipse
+      className={cx(styles.mascotShadow)}
+      cx="58"
+      cy="116"
+      rx="26"
+      ry="6"
+      fill="#E8E8E8"
+    />
+  </svg>
+);
+
+/**
+ * iframe 加载遮罩：插画 + 标题 + 说明。
+ *
+ * @returns 加载遮罩内容
+ */
+const PreviewIframeLoading: React.FC = () => (
+  <div className={cx(styles.iframeLoading)}>
+    <PreviewLoadingMascot />
+    <p className={cx(styles.iframeLoadingTitle)}>
+      {dict('PC.Pages.AppDevPro.previewAppLoading')}
+    </p>
+    <p className={cx(styles.iframeLoadingHint)}>
+      {dict('PC.Pages.AppDevPro.previewAppLoadingHint')}
+    </p>
+  </div>
+);
+
+/**
+ * 居中提示（准备中 / 启动预览）。
  *
  * @param props.title 标题
  * @param props.hint 说明
@@ -141,6 +219,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   onCancelTask,
   onRetryStart,
   onStart,
+  devActionLocked = false,
 }) => {
   const logs = useMemo(() => flattenTaskLogs(services), [services]);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -180,9 +259,24 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
               </Button>
             ) : null}
             {showStartFailed && onRetryStart ? (
-              <Button size="small" type="primary" onClick={onRetryStart}>
-                {dict('PC.Pages.AppDevPro.previewStartRetry')}
-              </Button>
+              <Tooltip
+                title={
+                  devActionLocked
+                    ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                    : undefined
+                }
+              >
+                <span>
+                  <Button
+                    size="small"
+                    type="primary"
+                    disabled={devActionLocked}
+                    onClick={onRetryStart}
+                  >
+                    {dict('PC.Pages.AppDevPro.previewStartRetry')}
+                  </Button>
+                </span>
+              </Tooltip>
             ) : null}
           </div>
           {!showStartFailed ? (
@@ -216,11 +310,8 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
             onLoad={handleIframeLoad}
           />
           {!iframeLoaded ? (
-            <div className={cx(styles.stage, styles.loadingOverlay)}>
-              <PreviewHero
-                spinning
-                title={dict('PC.Pages.AppDevPro.previewAppLoading')}
-              />
+            <div className={cx(styles.loadingOverlay)}>
+              <PreviewIframeLoading />
             </div>
           ) : null}
         </div>
@@ -264,9 +355,23 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
         hint={dict('PC.Pages.AppDevPro.previewStartHint')}
         action={
           onStart ? (
-            <Button type="primary" onClick={onStart}>
-              {dict('PC.Pages.AppDevPro.startService')}
-            </Button>
+            <Tooltip
+              title={
+                devActionLocked
+                  ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                  : undefined
+              }
+            >
+              <span>
+                <Button
+                  type="primary"
+                  disabled={devActionLocked}
+                  onClick={onStart}
+                >
+                  {dict('PC.Pages.AppDevPro.startService')}
+                </Button>
+              </span>
+            </Tooltip>
           ) : null
         }
       />

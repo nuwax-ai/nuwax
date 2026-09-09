@@ -13,6 +13,7 @@ import type {
   UserAppLogsQueryResult,
   UserAppLogsSourcesQueryParams,
   UserAppStartDevParams,
+  UserAppTasksActiveResult,
   UserProjectItem,
   UserProjectPageQueryParams,
   UserProjectPageResult,
@@ -254,6 +255,20 @@ export async function apiUserAppLogsSourcesQuery(
     data,
   });
 }
+
+/** 查询应用进行中任务与操作可用性（tasks：为进行中的任务；devActionAllowed-buildAllowed：标志可否发起） */
+export async function apiUserAppTasksActive(
+  appId: number,
+): Promise<RequestResponse<UserAppTasksActiveResult>> {
+  return request('/api/userapp/tasks/active', {
+    method: 'GET',
+    params: {
+      appId,
+    },
+  });
+}
+
+// ================================ 应用预览代理地址 ================================
 
 /**
  * 开发环境远程桌面代理地址（iframe）
