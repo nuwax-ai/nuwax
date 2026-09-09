@@ -722,12 +722,12 @@ export async function apiConnectorActionToggleStatus(
 }
 
 /**
- * 更新空间连接器下的工具（POST /api/connector/actions/{id}）
+ * 更新空间连接器下的工具（PUT /api/connector/actions/{id}）
  *
  * - id（工具 id，详情接口 actions 列表项的 id）拼到 URL path 上
  * - body 与管理端更新接口（PUT /api/system/connector/providers/{service}/
  *   actions/{actionKey}）一致：actionKey / inputArgs / httpSpec 等；
- *   区别仅在寻址方式（管理端按 service+actionKey，空间按工具 id）与 method
+ *   区别仅在寻址方式（管理端按 service+actionKey，空间按工具 id）
  *
  * 用于工作空间连接器详情抽屉工具列表的「编辑」按钮。
  */
@@ -736,7 +736,7 @@ export async function apiConnectorActionUpdate(
 ): Promise<RequestResponse<null>> {
   const { id, ...data } = params;
   return request(`/api/connector/actions/${id}`, {
-    method: 'POST',
+    method: 'PUT',
     data,
   });
 }
