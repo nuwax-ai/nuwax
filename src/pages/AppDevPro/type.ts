@@ -8,6 +8,16 @@ export enum UserAppStageEnum {
   Prod = 'prod',
 }
 
+/** 应用进行中任务类型 */
+export enum UserAppTaskTypeEnum {
+  /** 启动开发容器 */
+  DevStart = 'dev_start',
+  /** 重启开发容器 */
+  DevRestart = 'dev_restart',
+  /** 构建 */
+  Build = 'build',
+}
+
 /** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
 export type UserProjectPageQueryParams = TablePageRequest<
   Partial<{
@@ -220,7 +230,7 @@ export interface UserAppDevTaskInfo {
   /** 发起用户ID */
   userId: number;
   /** 任务类型 */
-  taskType: string;
+  taskType: UserAppTaskTypeEnum;
   /** 任务ID */
   taskId: string;
   /** 任务状态 */
@@ -233,6 +243,20 @@ export interface UserAppDevTaskInfo {
   created: string;
   /** 更新时间 */
   modified: string;
+}
+
+/** 
+ * 查询应用进行中任务与操作可用性返回
+ * devActionAllowed-标志可否在开发环境下，是否可以启动服务发起, true 可以, false 不可以
+ * buildAllowed-标志可否发起构建, true 可以, false 不可以
+ */
+export interface UserAppTasksActiveResult {
+  /** 进行中的任务列表 */
+  tasks: UserAppDevTaskInfo[];
+  /** 是否允许发起开发操作 */
+  devActionAllowed: boolean;
+  /** 是否允许发起构建操作 */
+  buildAllowed: boolean;
 }
 
 export interface UserAppLogsQueryParams {
