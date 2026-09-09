@@ -223,11 +223,6 @@ const routes = [
         path: '/expert-skill-connector/connector',
         component: '@/pages/ExpertSkillConnector',
       },
-      // 专家·技能·连接器-"更多"聚合列表页（框架内子路由，不携带来源页筛选状态）
-      {
-        path: '/expert-skill-connector/list/:resourceType',
-        component: '@/pages/ExpertSkillConnector',
-      },
       {
         path: '/history-conversation',
         component: '@/pages/HistoryConversation',

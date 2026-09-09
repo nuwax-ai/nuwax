@@ -6269,6 +6269,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.ExpertSkillConnector.searchPlaceholder': 'Search by name or description...',
   'PC.Pages.ExpertSkillConnector.more': 'More',
   'PC.Pages.ExpertSkillConnector.summon': 'Summon',
+  'PC.Pages.ExpertSkillConnector.useNow': 'Use Now',
   "PC.Pages.SpaceProjectManage.menuTitle": "Projects",
   "PC.Pages.SpaceProjectManage.tabAll": "All",
   "PC.Pages.SpaceProjectManage.tabNormalProject": "Normal Project",

@@ -22,14 +22,16 @@
     gap: 4px;
   }
 
+  // 导航项：对齐设计稿（灰底胶囊 + 深灰文字；设计稿为灰底侧栏白胶囊，
+  // 本页侧栏为白底，按同等视觉关系反转为白底灰胶囊）
   .menu-item {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: @fontSize;
-    color: @GRAY04;
+    color: @BLANK32;
     cursor: pointer;
     transition: all 0.2s ease;
 
@@ -40,9 +42,13 @@
   }
 
   .menu-item-active {
-    color: @purple;
-    background-color: @GRAY08;
+    color: @BLANK04;
+    background-color: @GRAY09;
     font-weight: 500;
+
+    &:hover {
+      background-color: @GRAY09;
+    }
   }
 
   .menu-icon {
