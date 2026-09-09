@@ -76,6 +76,7 @@ import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
 import { UserAppDbEnvEnum } from './services/appDb';
 import {
+  apiUserAppBuildCancel,
   apiUserAppGetById,
   getUserAppAppProxyUrl,
   getUserAppTtydProxyWsUrl,
@@ -84,7 +85,7 @@ import {
   apiUserAppDomainList,
   type UserAppDomainInfo,
 } from './services/appDomain';
-import type { UserAppInfo } from './type';
+import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { pickActiveUserAppTask } from './utils/userAppTaskStream';
 
@@ -598,12 +599,25 @@ const AppDevPro: React.FC = () => {
   /** 进入页面后轮询开发启动 / 发布构建是否占用中 */
   const {
     devActionAllowed,
+    buildAllowed,
     ready: tasksActiveReady,
     tasks: activeTasks,
+    refresh: refreshTasksActive,
   } = useUserAppTasksActive(appId);
   /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
   const previewDevActionLocked =
     dbEnv === UserAppDbEnvEnum.Dev && !devActionAllowed;
+  /** 构建占用中：buildAllowed 为 false，或 tasks 中存在 build 任务 */
+  const remoteBuildTask = useMemo(
+    () =>
+      activeTasks.find(
+        (item) => item.taskType === UserAppTaskTypeEnum.Build && !!item.taskId,
+      ) ?? null,
+    [activeTasks],
+  );
+  const remotePublishing = !buildAllowed || !!remoteBuildTask;
+  const [cancelRemotePublishLoading, setCancelRemotePublishLoading] =
+    useState(false);
 
   /** 查询应用绑定的域名列表 */
   const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
@@ -1459,6 +1473,35 @@ const AppDevPro: React.FC = () => {
     );
   }, [previewRuntime]);
 
+  /** 取消 tasks/active 中的构建任务 */
+  const handleCancelRemotePublish = useCallback(async () => {
+    const taskId = remoteBuildTask?.taskId;
+    if (!taskId) {
+      return;
+    }
+    setCancelRemotePublishLoading(true);
+    try {
+      const result = await apiUserAppBuildCancel(taskId);
+      if (result && typeof result === 'object' && 'code' in result) {
+        if (result.code && result.code !== SUCCESS_CODE) {
+          throw new Error(
+            result.message || dict('PC.Pages.AppDevPro.publishFailed'),
+          );
+        }
+      }
+      message.success(dict('PC.Pages.AppDevPro.publishCancelled'));
+      refreshTasksActive();
+    } catch (error) {
+      const text =
+        error instanceof Error
+          ? error.message
+          : dict('PC.Pages.AppDevPro.publishFailed');
+      message.error(text);
+    } finally {
+      setCancelRemotePublishLoading(false);
+    }
+  }, [refreshTasksActive, remoteBuildTask?.taskId]);
+
   /** 刷新应用预览 iframe */
   const handleRefreshPreview = useCallback(() => {
     setPreviewRefreshKey((prev) => prev + 1);
@@ -1769,6 +1812,9 @@ const AppDevPro: React.FC = () => {
         onConfirmUpdate={setUserAppInfo}
         onPublish={publishFlow.startPublish}
         publishing={publishFlow.publishing}
+        remotePublishing={remotePublishing}
+        onCancelRemotePublish={handleCancelRemotePublish}
+        cancelRemotePublishLoading={cancelRemotePublishLoading}
         isFileTreeSidebarVisible={isFileTreeIconActive}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
         isTerminalPanelOpen={isTerminalIconActive}

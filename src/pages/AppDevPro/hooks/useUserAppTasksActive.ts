@@ -1,7 +1,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { useRequest } from 'ahooks';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiUserAppTasksActive } from '../services/appDevPro';
 import type { UserAppTasksActiveResult } from '../type';
 
@@ -9,7 +9,7 @@ const TASKS_ACTIVE_POLL_INTERVAL = 5000;
 
 /**
  * 进入页面后轮询进行中任务与操作可用性。
- * 当开发启动与构建都已允许时停止轮询。
+ * 当开发启动与构建都已允许、且没有进行中任务时停止轮询。
  *
  * @param appId 应用 ID
  * @returns 开发操作 / 构建是否允许、进行中任务，以及是否已拿到首次结果
@@ -23,7 +23,7 @@ export function useUserAppTasksActive(appId?: number) {
   const [ready, setReady] = useState(false);
   /** 进行中任务，供进页接入已有 stream */
   const [tasks, setTasks] = useState<UserAppTasksActiveResult['tasks']>([]);
-  /** 两侧都允许后停止轮询 */
+  /** 两侧都允许且无进行中任务后停止轮询 */
   const [polling, setPolling] = useState(true);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export function useUserAppTasksActive(appId?: number) {
     setPolling(true);
   }, [appId]);
 
-  useRequest(() => apiUserAppTasksActive(appId as number), {
+  const { run } = useRequest(() => apiUserAppTasksActive(appId as number), {
     ready: !!appId,
     refreshDeps: [appId],
     pollingInterval: polling ? TASKS_ACTIVE_POLL_INTERVAL : 0,
@@ -45,9 +45,13 @@ export function useUserAppTasksActive(appId?: number) {
         const nextBuildAllowed = result.data.buildAllowed !== false;
         setDevActionAllowed(nextDevAllowed);
         setBuildAllowed(nextBuildAllowed);
-        setTasks(result.data.tasks || []);
-        if (nextDevAllowed && nextBuildAllowed) {
+        const nextTasks = result.data.tasks || [];
+        setTasks(nextTasks);
+        // 两侧都允许且没有进行中任务时才停轮询，避免 build 任务进行中按钮状态卡住
+        if (nextDevAllowed && nextBuildAllowed && nextTasks.length === 0) {
           setPolling(false);
+        } else {
+          setPolling(true);
         }
       }
       setReady(true);
@@ -57,10 +61,19 @@ export function useUserAppTasksActive(appId?: number) {
     },
   });
 
+  /** 手动刷新并恢复轮询（取消构建后同步状态） */
+  const refresh = useCallback(() => {
+    setPolling(true);
+    if (appId) {
+      void run();
+    }
+  }, [appId, run]);
+
   return {
     devActionAllowed,
     buildAllowed,
     ready,
     tasks,
+    refresh,
   };
 }
