@@ -1256,6 +1256,8 @@ export interface CreateConnectorProviderParams {
   displayName: string;
   /** 描述 */
   description?: string;
+  /** 图标 URL（上传接口 /api/file/upload 返回，目录卡片展示） */
+  icon?: string;
   /** 鉴权方式（'' 仅用于筛选，不入参） */
   authType: Exclude<ConnectorAuthType, ''>;
   /** 请求基础地址 */

@@ -1,3 +1,4 @@
+import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import ConnectorAuthConfigSection, {
   type ConnectorProviderSubmitValues,
@@ -106,6 +107,8 @@ const toFormValues = (
     service: source?.service || '',
     displayName: source?.displayName || '',
     description: source?.description || '',
+    // 图标回填：详情接口 provider.icon（无图标时为空串 → 显示占位 svg）
+    icon: source?.icon || '',
     baseUrl: source?.baseUrl || '',
     authType,
     category: source?.category || '',
@@ -183,6 +186,8 @@ const ConnectorProviderEditDrawer: React.FC<
   const [form] = Form.useForm<ConnectorProviderSubmitValues>();
   // 保存中：给「保存修改」按钮加 loading，防止重复提交
   const [submitting, setSubmitting] = useState<boolean>(false);
+  /** 图标 URL（回填 provider.icon；重新上传后覆盖隐藏表单字段 icon） */
+  const iconUrl = (Form.useWatch('icon', form) ?? '') as string;
 
   const drawerWidth = useMemo(() => {
     if (typeof window === 'undefined') return 720;
@@ -396,17 +401,44 @@ const ConnectorProviderEditDrawer: React.FC<
             label="显示名称"
             rules={[{ required: true, message: '请输入显示名称' }]}
           >
-            <Input placeholder="请输入显示名称" allowClear />
+            <Input
+              placeholder="请输入显示名称"
+              maxLength={100}
+              showCount
+              allowClear
+            />
+          </Form.Item>
+          {/* 图标：点击上传连接器图标（jpg/png/svg、<2M，样式对齐推荐位新增弹窗）；
+              回填已存图标，重新上传即覆盖隐藏字段 icon，随表单一起提交 */}
+          <Form.Item label="图标（可选）">
+            <UploadAvatar
+              imageUrl={iconUrl}
+              onUploadSuccess={(url) => form.setFieldValue('icon', url)}
+              svgIconName="icons-nav-connector"
+            />
+          </Form.Item>
+          <Form.Item name="icon" hidden>
+            <Input />
           </Form.Item>
           <Form.Item name="description" label="描述（可选）">
-            <Input.TextArea rows={3} placeholder="连接器介绍，展示在目录卡片" />
+            <Input.TextArea
+              rows={3}
+              placeholder="连接器介绍，展示在目录卡片"
+              maxLength={1000}
+              showCount
+            />
           </Form.Item>
           <Form.Item
             name="baseUrl"
             label="BASE URL"
             rules={[{ required: true, message: '请输入 BASE URL' }]}
           >
-            <Input placeholder="请输入 BASE URL" allowClear />
+            <Input
+              placeholder="请输入 BASE URL"
+              maxLength={100}
+              showCount
+              allowClear
+            />
           </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
@@ -428,7 +460,12 @@ const ConnectorProviderEditDrawer: React.FC<
             </Col>
           </Row>
           <Form.Item name="tags" label="标签（逗号分隔）">
-            <Input placeholder="请输入标签" allowClear />
+            <Input
+              placeholder="请输入标签"
+              maxLength={100}
+              showCount
+              allowClear
+            />
           </Form.Item>
 
           {/* 认证配置区：按认证方式切换展示（与新增抽屉共用组件，行为保持一致；

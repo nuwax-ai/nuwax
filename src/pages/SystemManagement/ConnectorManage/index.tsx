@@ -89,13 +89,13 @@ const ConnectorManage: React.FC = () => {
    */
   const [formFiltered, setFormFiltered] = useState<boolean>(false);
   /**
-   * 导出进行中标记：'all' / 'selected' / 'single' / null
-   * 给触发导出的那个按钮加 loading 态（工具栏两个按钮互不影响样式），
+   * 导出进行中标记：'selected' / 'single' / null
+   * 给触发导出的按钮加 loading 态（与行内单条导出互不影响样式），
    * 并作为防重复点击的守卫标记（'single' 对应行内单条导出）。
    */
-  const [exporting, setExporting] = useState<
-    'all' | 'selected' | 'single' | null
-  >(null);
+  const [exporting, setExporting] = useState<'selected' | 'single' | null>(
+    null,
+  );
   const [editRecord, setEditRecord] = useState<ConnectorProviderInfo | null>(
     null,
   );
@@ -173,37 +173,23 @@ const ConnectorManage: React.FC = () => {
   /** 核心导出逻辑：调 POST /api/system/connector/providers/export，处理下载 */
   const handleExportCore = useCallback(
     async (
-      services: string[] | undefined,
-      mode: 'all' | 'selected' | 'single',
+      services: string[],
+      mode: 'selected' | 'single',
       displayName?: string,
     ): Promise<boolean> => {
       if (exporting) return false;
       setExporting(mode);
       try {
-        const response = await apiSystemConnectorProviderExport(
-          services ? { services } : undefined,
-        );
-        // 文件名按场景生成：
-        // - 单条导出：用该连接器的 displayName
-        // - 多条选中：用条数
-        // - 全部导出：固定名称
-        let filename: string;
-        if (mode === 'all') {
-          filename = 'connector-export-all.json';
-        } else if (displayName) {
-          const safe = displayName.replace(/[\\/:*?"<>|]/g, '_');
-          filename = `${safe}.connector.json`;
-        } else {
-          filename = `connector-export-${services?.length ?? 0}.json`;
-        }
+        const response = await apiSystemConnectorProviderExport({ services });
+        // 文件名按场景生成：单条导出用该连接器的 displayName，多条选中用条数
+        const safe = displayName?.replace(/[\\/:*?"<>|]/g, '_');
+        const filename = safe
+          ? `${safe}.connector.json`
+          : `connector-export-${services.length}.json`;
         const ok = await triggerJsonDownload(response, filename);
         if (ok) {
           message.success(
-            mode === 'all'
-              ? '已导出全部连接器'
-              : mode === 'single'
-              ? '已导出连接器'
-              : '已导出所选连接器',
+            mode === 'single' ? '已导出连接器' : '已导出所选连接器',
           );
         }
         return ok;
@@ -216,11 +202,6 @@ const ConnectorManage: React.FC = () => {
     },
     [exporting],
   );
-
-  /** 导出全部：不传参 */
-  const handleExportAll = useCallback(() => {
-    return handleExportCore(undefined, 'all');
-  }, [handleExportCore]);
 
   /** 导出所选：根据 selectedRowKeys 映射出 service 列表；勾选为空时给出提示 */
   const handleExportSelected = useCallback(() => {
@@ -666,23 +647,6 @@ const ConnectorManage: React.FC = () => {
       hideScroll
       rightSlot={
         <Space size={12}>
-          {/* 导出按钮各自只在自己导出时转 loading，互不禁用：
-              并发点击由 handleExportCore 内的 exporting 守卫拦截 */}
-          <Button
-            icon={<DownloadOutlined />}
-            loading={exporting === 'selected'}
-            onClick={handleExportSelected}
-          >
-            导出所选
-          </Button>
-          <Button
-            type="primary"
-            icon={<DownloadOutlined />}
-            loading={exporting === 'all'}
-            onClick={handleExportAll}
-          >
-            导出全部
-          </Button>
           {/* 新增官方连接器：右侧滑出 ConnectorProviderCreateDrawer（创建逻辑待实现） */}
           <Button
             type="primary"
@@ -697,6 +661,15 @@ const ConnectorManage: React.FC = () => {
             onClick={() => setImportDrawerOpen(true)}
           >
             导入官方包
+          </Button>
+          {/* 导出所选：需先勾选行；仅自己导出时转 loading（与行内单条导出互不影响），
+              并发点击由 handleExportCore 内的 exporting 守卫拦截 */}
+          <Button
+            icon={<DownloadOutlined />}
+            loading={exporting === 'selected'}
+            onClick={handleExportSelected}
+          >
+            导出所选
           </Button>
         </Space>
       }
