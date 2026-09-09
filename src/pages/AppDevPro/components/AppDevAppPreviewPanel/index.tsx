@@ -32,14 +32,14 @@ export interface AppDevAppPreviewPanelProps {
   services?: UserAppTaskServiceProgress[];
   /** 整体进度 0-100 */
   overallProgress?: number;
-  /** 失败信息 */
-  errorMessage?: string;
   /** 取消任务 loading */
   cancelLoading?: boolean;
   /** 容器是否已就绪 */
   podReady?: boolean;
   /** 会话是否仍在生成项目文件 */
   isGeneratingFiles?: boolean;
+  /** 会话结束后是否仍在等待用户确认 */
+  isWaitingForUserConfirmation?: boolean;
   /** 取消当前启动任务 */
   onCancelTask?: () => void;
   /** 启动失败后重新启动（dev/restart 或 prod/restart） */
@@ -179,7 +179,7 @@ const PreviewIframeLoading: React.FC = () => (
  * @returns 居中内容
  */
 const PreviewHero: React.FC<{
-  title: string;
+  title?: string;
   hint?: string;
   spinning?: boolean;
   action?: React.ReactNode;
@@ -190,7 +190,7 @@ const PreviewHero: React.FC<{
     ) : (
       <div className={cx(styles.mark)} aria-hidden />
     )}
-    <p className={cx(styles.title)}>{title}</p>
+    {title ? <p className={cx(styles.title)}>{title}</p> : null}
     {hint ? <p className={cx(styles.hint)}>{hint}</p> : null}
     {action}
   </div>
@@ -212,10 +212,10 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   phase = 'idle',
   services,
   overallProgress = 0,
-  errorMessage,
   cancelLoading = false,
   podReady = false,
   isGeneratingFiles = false,
+  isWaitingForUserConfirmation = false,
   onCancelTask,
   onRetryStart,
   onStart,
@@ -235,12 +235,33 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     setIframeLoaded(true);
   }, []);
 
+  if (isGeneratingFiles || isWaitingForUserConfirmation || !podReady) {
+    return (
+      <div className={cx(styles.container, styles.stage)}>
+        <PreviewHero
+          spinning
+          title={
+            isWaitingForUserConfirmation
+              ? dict('PC.Pages.AppDevPro.confirmingDevelopment')
+              : dict('PC.Pages.AppDevPro.previewPreparing')
+          }
+          hint={
+            isWaitingForUserConfirmation
+              ? dict('PC.Pages.AppDevPro.confirmingDevelopmentHint')
+              : isGeneratingFiles
+              ? dict('PC.Pages.AppDevPro.previewGeneratingHint')
+              : dict('PC.Pages.AppDevPro.previewPreparingHint')
+          }
+        />
+      </div>
+    );
+  }
+
   if (showStartProgress || showStartFailed) {
     const headText = showStartFailed
-      ? errorMessage ||
-        (phase === 'cancelled'
-          ? dict('PC.Pages.AppDevPro.startCancelled')
-          : dict('PC.Pages.AppDevPro.startFailed'))
+      ? phase === 'cancelled'
+        ? dict('PC.Pages.AppDevPro.startCancelled')
+        : dict('PC.Pages.AppDevPro.startFailed')
       : dict('PC.Pages.AppDevPro.startingService');
 
     return (
@@ -263,6 +284,8 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
                 title={
                   devActionLocked
                     ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                    : !podReady
+                    ? dict('PC.Pages.AppDevPro.previewPreparing')
                     : undefined
                 }
               >
@@ -270,7 +293,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
                   <Button
                     size="small"
                     type="primary"
-                    disabled={devActionLocked}
+                    disabled={devActionLocked || !podReady}
                     onClick={onRetryStart}
                   >
                     {dict('PC.Pages.AppDevPro.previewStartRetry')}
@@ -332,26 +355,9 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  if (!podReady) {
-    return (
-      <div className={cx(styles.container, styles.stage)}>
-        <PreviewHero
-          spinning
-          title={dict('PC.Pages.AppDevPro.previewPreparing')}
-          hint={
-            isGeneratingFiles
-              ? dict('PC.Pages.AppDevPro.previewGeneratingHint')
-              : dict('PC.Pages.AppDevPro.previewPreparingHint')
-          }
-        />
-      </div>
-    );
-  }
-
   return (
     <div className={cx(styles.container, styles.stage)}>
       <PreviewHero
-        title={dict('PC.Pages.AppDevPro.previewStartTitle')}
         hint={dict('PC.Pages.AppDevPro.previewStartHint')}
         action={
           onStart ? (
@@ -368,7 +374,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
                   disabled={devActionLocked}
                   onClick={onStart}
                 >
-                  {dict('PC.Pages.AppDevPro.startService')}
+                  {dict('PC.Pages.AppDevPro.previewStartTitle')}
                 </Button>
               </span>
             </Tooltip>

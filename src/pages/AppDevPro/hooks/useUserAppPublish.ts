@@ -14,6 +14,7 @@ import type {
   UserAppPublishPhase,
   UserAppTaskLogEvent,
   UserAppTaskServiceProgress,
+  UserAppTaskTerminalStatus,
 } from '../type';
 import {
   getOverallTaskProgress,
@@ -31,6 +32,8 @@ export interface UseUserAppPublishOptions {
   appId?: number;
   /** 当前空间 ID，提交发布申请时写入发布项 */
   spaceId?: number;
+  /** SSE 检测到构建失败后恢复 active 任务轮询 */
+  onBuildFailed?: () => void;
   /** 发布申请提交成功后刷新详情 */
   onPublished?: () => void;
 }
@@ -40,11 +43,12 @@ export interface UseUserAppPublishOptions {
  *
  * @param options.appId 应用 ID
  * @param options.spaceId 空间 ID
+ * @param options.onBuildFailed 构建失败回调
  * @param options.onPublished 发布成功回调
  * @returns 发布状态与操作
  */
 export function useUserAppPublish(options: UseUserAppPublishOptions) {
-  const { appId, spaceId, onPublished } = options;
+  const { appId, spaceId, onBuildFailed, onPublished } = options;
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
@@ -229,8 +233,18 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
           : dict('PC.Pages.AppDevPro.publishFailed');
       setErrorMessage(text);
       setPhase('failed');
+      if (taskIdRef.current) {
+        onBuildFailed?.();
+      }
     }
-  }, [appId, listenBuildProgress, phase, resetProgress, submitPublishApply]);
+  }, [
+    appId,
+    listenBuildProgress,
+    onBuildFailed,
+    phase,
+    resetProgress,
+    submitPublishApply,
+  ]);
 
   /**
    * 取消当前构建任务。
@@ -241,6 +255,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       cancelledRef.current = true;
       stopStream();
       setPhase('cancelled');
+      setOpen(false);
       return;
     }
     setCancelLoading(true);
@@ -249,13 +264,11 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       await apiUserAppBuildCancel(currentTaskId);
       stopStream();
       setPhase('cancelled');
+      setOpen(false);
       message.success(dict('PC.Pages.AppDevPro.publishCancelled'));
     } catch (error) {
-      const text =
-        error instanceof Error
-          ? error.message
-          : dict('PC.Pages.AppDevPro.publishFailed');
-      message.error(text);
+      // 请求层会统一展示错误，避免与局部 message 重复提示
+      console.error('[AppDevPro] Cancel publishing failed:', error);
     } finally {
       setCancelLoading(false);
     }

@@ -25,6 +25,8 @@ export function useUserAppTasksActive(appId?: number) {
   const [tasks, setTasks] = useState<UserAppTasksActiveResult['tasks']>([]);
   /** 两侧都允许且无进行中任务后停止轮询 */
   const [polling, setPolling] = useState(true);
+  /** 手动恢复轮询版本号，确保 useRequest 使用最新 pollingInterval 重新执行 */
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
     setDevActionAllowed(true);
@@ -34,9 +36,9 @@ export function useUserAppTasksActive(appId?: number) {
     setPolling(true);
   }, [appId]);
 
-  const { run } = useRequest(() => apiUserAppTasksActive(appId as number), {
+  useRequest(() => apiUserAppTasksActive(appId as number), {
     ready: !!appId,
-    refreshDeps: [appId],
+    refreshDeps: [appId, refreshVersion],
     pollingInterval: polling ? TASKS_ACTIVE_POLL_INTERVAL : 0,
     pollingWhenHidden: false,
     onSuccess: (result: RequestResponse<UserAppTasksActiveResult>) => {
@@ -63,11 +65,12 @@ export function useUserAppTasksActive(appId?: number) {
 
   /** 手动刷新并恢复轮询（取消构建后同步状态） */
   const refresh = useCallback(() => {
-    setPolling(true);
-    if (appId) {
-      void run();
+    if (!appId) {
+      return;
     }
-  }, [appId, run]);
+    setPolling(true);
+    setRefreshVersion((version) => version + 1);
+  }, [appId]);
 
   return {
     devActionAllowed,

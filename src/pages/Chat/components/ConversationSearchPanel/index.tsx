@@ -245,7 +245,7 @@ const ConversationSearchPanel: React.FC<ConversationSearchPanelProps> = ({
         }
       }}
       content={content}
-      overlayClassName={cx('conversation-search-popover')}
+      classNames={{ root: 'conversation-search-popover' }}
     >
       <span className={cx('search-trigger')}>
         <SearchOutlined style={{ fontSize: 16 }} />
