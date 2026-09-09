@@ -2760,6 +2760,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.cancelStartTitle": "Cancel start?",
   "PC.Pages.AppDevPro.cancelTask": "Cancel task",
   "PC.Pages.AppDevPro.close": "Close",
+  "PC.Pages.AppDevPro.confirmingDevelopment": "Confirming development",
+  "PC.Pages.AppDevPro.confirmingDevelopmentHint": "Development will continue after confirmation",
   "PC.Pages.AppDevPro.confirmStopContent": "The current environment will no longer be previewable after stop. Continue?",
   "PC.Pages.AppDevPro.confirmStopTitle": "Stop the service?",
   "PC.Pages.AppDevPro.database": "Database",

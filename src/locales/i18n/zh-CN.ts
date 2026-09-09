@@ -2758,6 +2758,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.cancelStartTitle": "确认取消启动？",
   "PC.Pages.AppDevPro.cancelTask": "取消任务",
   "PC.Pages.AppDevPro.close": "关闭",
+  "PC.Pages.AppDevPro.confirmingDevelopment": "确认开发中",
+  "PC.Pages.AppDevPro.confirmingDevelopmentHint": "确认后将继续开发项目",
   "PC.Pages.AppDevPro.confirmStopContent": "停止后当前环境将无法继续预览，确认停止？",
   "PC.Pages.AppDevPro.confirmStopTitle": "确认停止服务？",
   "PC.Pages.AppDevPro.database": "数据库",

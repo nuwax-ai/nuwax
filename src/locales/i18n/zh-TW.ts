@@ -2646,6 +2646,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppDevPro.cancelStartTitle": "確認取消啟動？",
   "PC.Pages.AppDevPro.cancelTask": "取消任務",
   "PC.Pages.AppDevPro.close": "關閉",
+  "PC.Pages.AppDevPro.confirmingDevelopment": "確認開發中",
+  "PC.Pages.AppDevPro.confirmingDevelopmentHint": "確認後將繼續開發專案",
   "PC.Pages.AppDevPro.confirmStopContent": "停止後目前環境將無法繼續預覽，確認停止？",
   "PC.Pages.AppDevPro.confirmStopTitle": "確認停止服務？",
   "PC.Pages.AppDevPro.database": "資料庫",

@@ -38,6 +38,8 @@ export interface AppDevAppPreviewPanelProps {
   podReady?: boolean;
   /** 会话是否仍在生成项目文件 */
   isGeneratingFiles?: boolean;
+  /** 会话结束后是否仍在等待用户确认 */
+  isWaitingForUserConfirmation?: boolean;
   /** 取消当前启动任务 */
   onCancelTask?: () => void;
   /** 启动失败后重新启动（dev/restart 或 prod/restart） */
@@ -213,6 +215,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   cancelLoading = false,
   podReady = false,
   isGeneratingFiles = false,
+  isWaitingForUserConfirmation = false,
   onCancelTask,
   onRetryStart,
   onStart,
@@ -231,6 +234,28 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   const handleIframeLoad = useCallback(() => {
     setIframeLoaded(true);
   }, []);
+
+  if (isGeneratingFiles || isWaitingForUserConfirmation || !podReady) {
+    return (
+      <div className={cx(styles.container, styles.stage)}>
+        <PreviewHero
+          spinning
+          title={
+            isWaitingForUserConfirmation
+              ? dict('PC.Pages.AppDevPro.confirmingDevelopment')
+              : dict('PC.Pages.AppDevPro.previewPreparing')
+          }
+          hint={
+            isWaitingForUserConfirmation
+              ? dict('PC.Pages.AppDevPro.confirmingDevelopmentHint')
+              : isGeneratingFiles
+              ? dict('PC.Pages.AppDevPro.previewGeneratingHint')
+              : dict('PC.Pages.AppDevPro.previewPreparingHint')
+          }
+        />
+      </div>
+    );
+  }
 
   if (showStartProgress || showStartFailed) {
     const headText = showStartFailed
@@ -326,22 +351,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
             description={dict('PC.Pages.AppDevPro.appPreviewEmpty')}
           />
         </div>
-      </div>
-    );
-  }
-
-  if (!podReady) {
-    return (
-      <div className={cx(styles.container, styles.stage)}>
-        <PreviewHero
-          spinning
-          title={dict('PC.Pages.AppDevPro.previewPreparing')}
-          hint={
-            isGeneratingFiles
-              ? dict('PC.Pages.AppDevPro.previewGeneratingHint')
-              : dict('PC.Pages.AppDevPro.previewPreparingHint')
-          }
-        />
       </div>
     );
   }
