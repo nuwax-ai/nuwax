@@ -1605,7 +1605,6 @@ const AppDevPro: React.FC = () => {
         phase={previewRuntime.phase}
         services={previewRuntime.services}
         overallProgress={previewRuntime.overallProgress}
-        errorMessage={previewRuntime.errorMessage}
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={isConversationActive}
         podReady={podReady}

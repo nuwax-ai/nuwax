@@ -32,8 +32,6 @@ export interface AppDevAppPreviewPanelProps {
   services?: UserAppTaskServiceProgress[];
   /** 整体进度 0-100 */
   overallProgress?: number;
-  /** 失败信息 */
-  errorMessage?: string;
   /** 取消任务 loading */
   cancelLoading?: boolean;
   /** 容器是否已就绪 */
@@ -212,7 +210,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   phase = 'idle',
   services,
   overallProgress = 0,
-  errorMessage,
   cancelLoading = false,
   podReady = false,
   isGeneratingFiles = false,
@@ -237,10 +234,9 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
 
   if (showStartProgress || showStartFailed) {
     const headText = showStartFailed
-      ? errorMessage ||
-        (phase === 'cancelled'
-          ? dict('PC.Pages.AppDevPro.startCancelled')
-          : dict('PC.Pages.AppDevPro.startFailed'))
+      ? phase === 'cancelled'
+        ? dict('PC.Pages.AppDevPro.startCancelled')
+        : dict('PC.Pages.AppDevPro.startFailed')
       : dict('PC.Pages.AppDevPro.startingService');
 
     return (
