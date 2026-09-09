@@ -1324,8 +1324,8 @@ export interface ConnectorOauthAuthorizeResult {
  * 自定义 / API Key / Bearer 认证统一走该接口，凭证键值对放 fields
  */
 export interface CreateConnectorConnectionParams {
-  /** 空间 ID */
-  spaceId: number;
+  /** 空间 ID（空间侧传当前选中空间；管理侧不传，后端按管理员上下文处理） */
+  spaceId?: number;
   /** 连接器 service 标识 */
   providerService: string;
   /** 连接名称（可选，未填由后端默认使用连接器名称） */

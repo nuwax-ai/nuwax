@@ -288,6 +288,27 @@ export async function apiSystemConnectorProviderToggleStatus(
 }
 
 /**
+ * 删除连接器提供方（管理端）
+ * 对应接口：DELETE /api/system/connector/providers/{service}
+ * service 拼到 URL path 上；无 body
+ *
+ * - 其下全部工具一并删除；仍有用户连接时后端会拒绝删除（需先断开），
+ *   拒绝原因走响应 message，由全局 errorHandler 统一提示
+ * - 与空间侧删除（DELETE /api/connector/providers/{service}，
+ *   apiConnectorProviderDelete）区分：管理端接口可删除官方目录条目
+ *
+ * 用于管理侧连接器列表「删除」按钮（UI 层弹 Modal.confirm 二次确认）；
+ * 删除成功后由调用方刷新连接器列表。
+ */
+export async function apiSystemConnectorProviderDelete(
+  service: string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/connector/providers/${service}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
  * 启用/停用连接器下的工具/动作
  * 对应接口：PUT /api/system/connector/actions/{id}/status?enabled={boolean}
  * id 拼到 URL path 上；enabled 作为 query 参数（Boolean）

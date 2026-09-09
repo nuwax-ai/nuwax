@@ -6,6 +6,7 @@ import ConnectorAuthConfigSection, {
   toConnectorProviderPayload,
 } from '@/pages/SystemManagement/ConnectorManage/components/ConnectorAuthConfigSection';
 import { AUTH_TYPE_OPTIONS } from '@/pages/SystemManagement/ConnectorManage/constants';
+import useConnectorCategoryOptions from '@/pages/SystemManagement/ConnectorManage/hooks/useConnectorCategoryOptions';
 import {
   apiSystemConnectorOauthConfigGet,
   apiSystemConnectorOauthConfigSave,
@@ -193,6 +194,15 @@ const ConnectorProviderEditDrawer: React.FC<
     () => AUTH_TYPE_OPTIONS.filter((item) => item.value !== ''),
     [],
   );
+
+  /**
+   * 分类下拉字典（GET /api/published/category/list → Connector.children，
+   * 与新增抽屉共用 hook）。编辑模式回填已存 category 原值：
+   * 历史自由文本值（不在字典 key 中）下拉会原样展示、保存不丢；
+   * 不做「默认选中第一个」预选 —— 以存储值为准，避免保存时静默改分类
+   */
+  const { categoryOptions, categoryLoading } =
+    useConnectorCategoryOptions(open);
 
   /**
    * 保存修改：
@@ -405,8 +415,15 @@ const ConnectorProviderEditDrawer: React.FC<
               </Form.Item>
             </Col>
             <Col span={12}>
+              {/* 分类：已发布分类接口 Connector.children 字典中选择（与新增
+                  抽屉同款）；存量自由文本值不在字典中时原样展示、保存不丢 */}
               <Form.Item name="category" label="分类">
-                <Input placeholder="请输入分类" allowClear />
+                <Select
+                  options={categoryOptions}
+                  loading={categoryLoading}
+                  placeholder="请选择分类"
+                  allowClear
+                />
               </Form.Item>
             </Col>
           </Row>

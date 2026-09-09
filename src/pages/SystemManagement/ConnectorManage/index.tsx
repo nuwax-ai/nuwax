@@ -4,6 +4,7 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
+  apiSystemConnectorProviderDelete,
   apiSystemConnectorProviderExport,
   apiSystemConnectorProviderList,
   apiSystemConnectorProviderOrder,
@@ -29,7 +30,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Input, message, Space, Spin, Tag } from 'antd';
+import { Button, Input, message, Modal, Space, Spin, Tag } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 import ConnectorImportDrawer from './ConnectorImportDrawer';
@@ -52,6 +53,8 @@ import {
  * 查看详情：右侧 ConnectorProviderDetailDrawer 抽屉（内部拉 GET /api/connector/providers/{service}?spaceId=xxx）
  * 筛选：LightFilter（认证方式/启用状态/连接状态，本地过滤）+
  * 工具栏右侧搜索框（回车查询 displayName/service，无 查询/重置 按钮）
+ * 删除：行内「删除」二次确认后 DELETE /api/system/connector/providers/{service}
+ * （管理端接口；空间侧列表走 DELETE /api/connector/providers/{service}）
  */
 
 const ConnectorManage: React.FC = () => {
@@ -321,7 +324,41 @@ const ConnectorManage: React.FC = () => {
     [togglingServices],
   );
 
-  /** 操作列：4 个按钮（按 record.status 动态展示启用/停用，启用/停用调用真实接口） */
+  /**
+   * 删除连接器：行内「删除」按钮触发，先弹二次确认（与空间侧一致）；
+   * 确认后调 DELETE /api/system/connector/providers/{service}（管理端接口，
+   * 可删除官方目录条目；空间侧走 DELETE /api/connector/providers/{service}），
+   * 成功刷新列表。业务/网络错误由全局 errorHandler 统一提示（如
+   * 「连接器仍存在连接或绑定，不能删除」），此处不重复弹错；
+   * antd confirm 的 onOk 内抛错会被转成 Unhandled Rejection
+   * 导致页面崩溃（见 antd ActionButton 对 onOk reject 的处理），故不能 throw
+   */
+  const handleDelete = useCallback((record: ConnectorProviderInfo) => {
+    Modal.confirm({
+      title: `删除连接器 ${record.displayName || record.service}？`,
+      content:
+        '其全部工具将一并删除。若仍有用户连接，删除会被拒绝（需先断开）。',
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const response = await apiSystemConnectorProviderDelete(
+            record.service,
+          );
+          if (response?.code === SUCCESS_CODE) {
+            message.success('删除成功');
+            actionRef.current?.reload();
+          }
+          // 非成功码理论上会被全局拦截器 reject，不会 resolve 到这里；静默关闭弹窗即可
+        } catch {
+          // 业务/网络错误：全局 errorHandler 已弹过后端报错信息，此处不再重复提示
+        }
+      },
+    });
+  }, []);
+
+  /** 操作列：5 个按钮（按 record.status 动态展示启用/停用，启用/停用调用真实接口） */
   const renderActions = useCallback(
     (record: ConnectorProviderInfo) => {
       const isEnabled = record.status === 'enabled';
@@ -365,10 +402,13 @@ const ConnectorManage: React.FC = () => {
               {isEnabled ? '停用' : '启用'}
             </a>
           )}
+          <a onClick={() => handleDelete(record)} style={{ color: '#ff4d4f' }}>
+            删除
+          </a>
         </Space>
       );
     },
-    [handleToggleStatus, togglingServices, handleExportSingle],
+    [handleToggleStatus, togglingServices, handleExportSingle, handleDelete],
   );
 
   /** 拖拽结束：乐观更新 + 持久化 + 失败回滚 */
@@ -538,9 +578,9 @@ const ConnectorManage: React.FC = () => {
       align: 'center',
     },
     {
-      // 操作列：4 个按钮平铺（fixed right 保证滚动时常驻）
+      // 操作列：5 个按钮平铺（fixed right 保证滚动时常驻）
       title: '操作',
-      width: 220,
+      width: 260,
       align: 'center',
       fixed: 'right',
       hideInSearch: true,
@@ -694,12 +734,12 @@ const ConnectorManage: React.FC = () => {
               ]}
               /**
                * 两行内容需要更高的虚拟项高度；这里显式对齐到实际 row 高度，避免最后一行被裁切。
-               * 列宽总和 ≈ 1014（不含勾选列 50），无横向滚动。
+               * 列宽总和 ≈ 1054（不含勾选列 50），无横向滚动。
                */
               size="large"
               listItemHeight={74}
               tableLayout="fixed"
-              scroll={{ x: 1064 }}
+              scroll={{ x: 1104 }}
               /**
                * 启用虚拟滚动：仅渲染可视区内的行，1256 条也无压力。
                * drag-sort 仍可用：SortableContext 按 ID 追踪，虚拟 row mount/unmount 不影响。
