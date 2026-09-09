@@ -8,7 +8,10 @@ import {
 import { Button, Collapse, Modal, Progress, Steps, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { UserAppPublishPhase, UserAppTaskServiceProgress } from '../../type';
+import type {
+  UserAppPublishPhase,
+  UserAppTaskServiceProgress,
+} from '../../type';
 import { DEFAULT_TASK_SERVICE_ID } from '../../utils/userAppTaskLog';
 import styles from './index.less';
 
@@ -78,7 +81,9 @@ const getStepsStatus = (
 
 const getServiceTagColor = (status: string): string => {
   const value = status.toLowerCase();
-  if (['succeeded', 'success', 'completed', 'complete', 'done'].includes(value)) {
+  if (
+    ['succeeded', 'success', 'completed', 'complete', 'done'].includes(value)
+  ) {
     return 'success';
   }
   if (['failed', 'fail', 'error'].includes(value)) {
@@ -109,9 +114,7 @@ const ServiceLogBlock: React.FC<{ logs: string[] }> = ({ logs }) => {
 
   return (
     <pre ref={logRef} className={cx(styles.log)}>
-      {logs.length
-        ? logs.join('\n')
-        : dict('PC.Pages.AppDevPro.waitingLogs')}
+      {logs.length ? logs.join('\n') : dict('PC.Pages.AppDevPro.waitingLogs')}
     </pre>
   );
 };
@@ -165,7 +168,10 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
                 ? dict('PC.Pages.AppDevPro.defaultService')
                 : item.serviceId}
             </span>
-            <Tag color={getServiceTagColor(item.status)} className={cx(styles.serviceTag)}>
+            <Tag
+              color={getServiceTagColor(item.status)}
+              className={cx(styles.serviceTag)}
+            >
               {item.status || dict('PC.Pages.AppDevPro.publishBuilding')}
             </Tag>
             <Progress
@@ -216,22 +222,29 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
       maskClosable={!running}
       destroyOnHidden
       width={640}
-      footer={[
-        canCancelTask ? (
-          <Button
-            key="cancel-task"
-            danger
-            loading={cancelLoading}
-            onClick={handleRequestCancel}
-          >
-            {dict('PC.Pages.AppDevPro.cancelTask')}
-          </Button>
-        ) : (
-          <Button key="close" type="primary" onClick={onClose} disabled={running}>
-            {dict('PC.Pages.AppDevPro.close')}
-          </Button>
-        ),
-      ]}
+      footer={
+        canCancelTask
+          ? [
+              <Button
+                key="cancel-task"
+                danger
+                loading={cancelLoading}
+                onClick={handleRequestCancel}
+              >
+                {dict('PC.Pages.AppDevPro.cancelTask')}
+              </Button>,
+            ]
+          : [
+              <Button
+                key="close"
+                type="primary"
+                onClick={onClose}
+                disabled={running}
+              >
+                {dict('PC.Pages.AppDevPro.close')}
+              </Button>,
+            ]
+      }
     >
       <div className={cx(styles.modalBody)}>
         {showSteps && (

@@ -2698,7 +2698,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.publishBuilding": "ビルド中",
   "PC.Pages.AppDevPro.publishCancelled": "公開をキャンセルしました",
   "PC.Pages.AppDevPro.publishFailed": "公開に失敗しました",
-  "PC.Pages.AppDevPro.publishing": "公開中",
+  "PC.Pages.AppDevPro.appPublishing": "アプリ公開中",
   "PC.Pages.AppDevPro.publishNoApp": "先にアプリを作成または選択してください",
   "PC.Pages.AppDevPro.publishStarting": "ビルドタスクを作成しています...",
   "PC.Pages.AppDevPro.publishStreamClosed": "ビルドタスクの接続が切断されました",

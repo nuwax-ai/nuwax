@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { history } from 'umi';
 import CreateUserApp from '../components/CreateUserApp';
 import { UserAppDbEnvEnum } from '../services/appDb';
@@ -44,7 +44,7 @@ export interface AppDevProHeaderProps {
   onPublish?: () => void;
   /** 发布进行中（构建 / 提交申请） */
   publishing?: boolean;
-  /** 进行中的远程构建任务：按钮展示发布中，点击取消 */
+  /** 进行中的远程构建任务：按钮展示应用发布中，点击取消 */
   remotePublishing?: boolean;
   /** 取消远程构建 */
   onCancelRemotePublish?: () => void;
@@ -129,17 +129,6 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
     },
     [onConfirmUpdate],
   );
-
-  /** 发布按钮是否禁用（远程构建中保持可点，用于取消） */
-  const publishDisabled = useMemo(() => {
-    if (remotePublishing) {
-      return false;
-    }
-    if (!userAppInfo || publishing) {
-      return true;
-    }
-    return userAppInfo.publishStatus === PublishStatusEnum.Applying;
-  }, [publishing, remotePublishing, userAppInfo]);
 
   const handlePublishClick = useCallback(() => {
     if (remotePublishing) {
@@ -342,7 +331,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
             />
           </ConditionRender>
 
-          {/* 发布按钮：远程构建中展示「发布中」，悬停提示点击取消 */}
+          {/* 发布按钮：远程构建中可点击取消，本地发布仅展示 loading */}
           <Tooltip
             title={
               remotePublishing
@@ -357,10 +346,9 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
                 loading={
                   remotePublishing ? cancelRemotePublishLoading : publishing
                 }
-                disabled={publishDisabled}
               >
-                {remotePublishing || publishing
-                  ? dict('PC.Pages.AppDevPro.publishing')
+                {remotePublishing
+                  ? dict('PC.Pages.AppDevPro.appPublishing')
                   : dict('PC.Pages.AgentEdit.publish')}
               </Button>
             </span>

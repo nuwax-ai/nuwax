@@ -16,6 +16,7 @@ import type { FileTreePreviewViewProps } from '@/components/business-component/F
 import Loading from '@/components/custom/Loading';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -25,7 +26,7 @@ import {
   apiUploadFiles,
   isEnsurePodThrottledError,
 } from '@/services/vncDesktop';
-import { MessageTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { FileNode } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
@@ -78,6 +79,7 @@ import { UserAppDbEnvEnum } from './services/appDb';
 import {
   apiUserAppBuildCancel,
   apiUserAppGetById,
+  apiUserAppUpdate,
   getUserAppAppProxyUrl,
   getUserAppTtydProxyWsUrl,
 } from './services/appDevPro';
@@ -571,10 +573,39 @@ const AppDevPro: React.FC = () => {
     },
   });
 
+  /** Prompt 创建并进入页面后生成应用名称、描述和图标，再刷新应用详情 */
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.UserApp,
+    targetId: appId,
+    applyMetadata: async (meta) => {
+      await apiUserAppUpdate({
+        id: appId,
+        name: meta.name?.trim() || undefined,
+        description: meta.description?.trim() || undefined,
+        icon: meta.iconUrl?.trim() || undefined,
+      });
+    },
+    onSuccess: () => {
+      if (appId) {
+        runGetUserAppInfo(appId);
+      }
+    },
+  });
+
+  /** 进入页面后轮询开发启动 / 发布构建是否占用中 */
+  const {
+    devActionAllowed,
+    buildAllowed,
+    ready: tasksActiveReady,
+    tasks: activeTasks,
+    refresh: refreshTasksActive,
+  } = useUserAppTasksActive(appId);
+
   /** 发布：构建 → SSE 进度 → 提交发布申请 */
   const publishFlow = useUserAppPublish({
     appId,
     spaceId,
+    onBuildFailed: refreshTasksActive,
     onPublished: () => {
       if (appId) {
         runGetUserAppInfo(appId);
@@ -596,18 +627,10 @@ const AppDevPro: React.FC = () => {
   const attachExistingTaskRef = useRef(previewRuntime.attachExistingTask);
   attachExistingTaskRef.current = previewRuntime.attachExistingTask;
 
-  /** 进入页面后轮询开发启动 / 发布构建是否占用中 */
-  const {
-    devActionAllowed,
-    buildAllowed,
-    ready: tasksActiveReady,
-    tasks: activeTasks,
-    refresh: refreshTasksActive,
-  } = useUserAppTasksActive(appId);
   /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
   const previewDevActionLocked =
     dbEnv === UserAppDbEnvEnum.Dev && !devActionAllowed;
-  /** 构建占用中：buildAllowed 为 false，或 tasks 中存在 build 任务 */
+  /** tasks/active 中的构建任务，用于 Header 取消远程发布 */
   const remoteBuildTask = useMemo(
     () =>
       activeTasks.find(
@@ -616,8 +639,22 @@ const AppDevPro: React.FC = () => {
     [activeTasks],
   );
   const remotePublishing = !buildAllowed || !!remoteBuildTask;
+  /** 取消远程发布成功后隐藏远程发布状态，无需等待 active 下一次轮询 */
+  const [hideRemotePublishingAfterCancel, setHideRemotePublishingAfterCancel] =
+    useState(false);
   const [cancelRemotePublishLoading, setCancelRemotePublishLoading] =
     useState(false);
+  /** 手动发布流程优先：过程中及结束/失败结果展示阶段不切换为「应用发布中」 */
+  const showRemotePublishing =
+    publishFlow.phase === 'idle' &&
+    (cancelRemotePublishLoading ||
+      (remotePublishing && !hideRemotePublishingAfterCancel));
+
+  useEffect(() => {
+    if (!remotePublishing) {
+      setHideRemotePublishingAfterCancel(false);
+    }
+  }, [remotePublishing]);
 
   /** 查询应用绑定的域名列表 */
   const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
@@ -1439,28 +1476,15 @@ const AppDevPro: React.FC = () => {
     }
   }, [podReady, previewDevActionLocked, previewRuntime, previewTabs]);
 
-  /** 容器就绪后才能启动 / 重启预览服务 */
+  /** 启动预览服务；可用性统一由按钮禁用状态控制 */
   const handleStartPreviewRuntime = useCallback(() => {
-    if (!podReady) {
-      return;
-    }
-    if (previewDevActionLocked) {
-      message.warning(dict('PC.Pages.AppDevPro.devActionBusyHint'));
-      return;
-    }
     void previewRuntime.start();
-  }, [podReady, previewDevActionLocked, previewRuntime]);
+  }, [previewRuntime]);
 
+  /** 重启预览服务；可用性统一由按钮禁用状态控制 */
   const handleRestartPreviewRuntime = useCallback(() => {
-    if (!podReady) {
-      return;
-    }
-    if (previewDevActionLocked) {
-      message.warning(dict('PC.Pages.AppDevPro.devActionBusyHint'));
-      return;
-    }
     void previewRuntime.restart();
-  }, [podReady, previewDevActionLocked, previewRuntime]);
+  }, [previewRuntime]);
 
   /** 停止当前环境预览服务 */
   const handleStopPreviewRuntime = useCallback(() => {
@@ -1473,7 +1497,7 @@ const AppDevPro: React.FC = () => {
     );
   }, [previewRuntime]);
 
-  /** 取消 tasks/active 中的构建任务 */
+  /** 取消 tasks/active 中的远程构建任务 */
   const handleCancelRemotePublish = useCallback(async () => {
     const taskId = remoteBuildTask?.taskId;
     if (!taskId) {
@@ -1482,25 +1506,21 @@ const AppDevPro: React.FC = () => {
     setCancelRemotePublishLoading(true);
     try {
       const result = await apiUserAppBuildCancel(taskId);
-      if (result && typeof result === 'object' && 'code' in result) {
-        if (result.code && result.code !== SUCCESS_CODE) {
-          throw new Error(
-            result.message || dict('PC.Pages.AppDevPro.publishFailed'),
-          );
-        }
+      if (result.code && result.code !== SUCCESS_CODE) {
+        throw new Error(
+          result.message || dict('PC.Pages.AppDevPro.publishFailed'),
+        );
       }
+      setHideRemotePublishingAfterCancel(true);
       message.success(dict('PC.Pages.AppDevPro.publishCancelled'));
-      refreshTasksActive();
     } catch (error) {
-      const text =
-        error instanceof Error
-          ? error.message
-          : dict('PC.Pages.AppDevPro.publishFailed');
-      message.error(text);
+      setHideRemotePublishingAfterCancel(false);
+      // 请求层会统一展示错误，避免与局部 message 重复提示
+      console.error('[AppDevPro] Cancel remote publishing failed:', error);
     } finally {
       setCancelRemotePublishLoading(false);
     }
-  }, [refreshTasksActive, remoteBuildTask?.taskId]);
+  }, [remoteBuildTask?.taskId]);
 
   /** 刷新应用预览 iframe */
   const handleRefreshPreview = useCallback(() => {
@@ -1721,6 +1741,7 @@ const AppDevPro: React.FC = () => {
           previewRuntimeBusy={previewRuntime.busy}
           previewRuntimeRunning={previewRuntime.running}
           previewRuntimeStopping={previewRuntime.stopping}
+          previewRuntimeReady={podReady}
           previewDevActionLocked={previewDevActionLocked}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
@@ -1811,7 +1832,7 @@ const AppDevPro: React.FC = () => {
         onConfirmUpdate={setUserAppInfo}
         onPublish={publishFlow.startPublish}
         publishing={publishFlow.publishing}
-        remotePublishing={remotePublishing}
+        remotePublishing={showRemotePublishing}
         onCancelRemotePublish={handleCancelRemotePublish}
         cancelRemotePublishLoading={cancelRemotePublishLoading}
         isFileTreeSidebarVisible={isFileTreeIconActive}

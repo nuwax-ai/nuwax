@@ -177,7 +177,7 @@ const PreviewIframeLoading: React.FC = () => (
  * @returns 居中内容
  */
 const PreviewHero: React.FC<{
-  title: string;
+  title?: string;
   hint?: string;
   spinning?: boolean;
   action?: React.ReactNode;
@@ -188,7 +188,7 @@ const PreviewHero: React.FC<{
     ) : (
       <div className={cx(styles.mark)} aria-hidden />
     )}
-    <p className={cx(styles.title)}>{title}</p>
+    {title ? <p className={cx(styles.title)}>{title}</p> : null}
     {hint ? <p className={cx(styles.hint)}>{hint}</p> : null}
     {action}
   </div>
@@ -259,6 +259,8 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
                 title={
                   devActionLocked
                     ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                    : !podReady
+                    ? dict('PC.Pages.AppDevPro.previewPreparing')
                     : undefined
                 }
               >
@@ -266,7 +268,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
                   <Button
                     size="small"
                     type="primary"
-                    disabled={devActionLocked}
+                    disabled={devActionLocked || !podReady}
                     onClick={onRetryStart}
                   >
                     {dict('PC.Pages.AppDevPro.previewStartRetry')}
@@ -347,7 +349,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   return (
     <div className={cx(styles.container, styles.stage)}>
       <PreviewHero
-        title={dict('PC.Pages.AppDevPro.previewStartTitle')}
         hint={dict('PC.Pages.AppDevPro.previewStartHint')}
         action={
           onStart ? (
@@ -364,7 +365,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
                   disabled={devActionLocked}
                   onClick={onStart}
                 >
-                  {dict('PC.Pages.AppDevPro.startService')}
+                  {dict('PC.Pages.AppDevPro.previewStartTitle')}
                 </Button>
               </span>
             </Tooltip>

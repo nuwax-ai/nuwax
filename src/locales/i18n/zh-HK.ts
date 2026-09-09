@@ -2678,7 +2678,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevPro.publishBuilding": "正在構建",
   "PC.Pages.AppDevPro.publishCancelled": "已取消發布",
   "PC.Pages.AppDevPro.publishFailed": "發布失敗",
-  "PC.Pages.AppDevPro.publishing": "發布中",
+  "PC.Pages.AppDevPro.appPublishing": "應用發布中",
   "PC.Pages.AppDevPro.publishNoApp": "請先創建或選擇應用",
   "PC.Pages.AppDevPro.publishStarting": "正在創建構建任務...",
   "PC.Pages.AppDevPro.publishStreamClosed": "構建任務連接已斷開",

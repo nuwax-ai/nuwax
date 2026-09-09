@@ -104,6 +104,8 @@ export interface PreviewTabBarProps {
   previewRuntimeRunning?: boolean;
   /** 停止进行中 */
   previewRuntimeStopping?: boolean;
+  /** 预览容器是否已就绪 */
+  previewRuntimeReady?: boolean;
   /**
    * 开发环境进行中任务锁定启动 / 重启（线上环境不传或 false）
    */
@@ -347,6 +349,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   previewRuntimeBusy = false,
   previewRuntimeRunning = false,
   previewRuntimeStopping = false,
+  previewRuntimeReady = true,
   previewDevActionLocked = false,
 }) => {
   /** 拖拽中的标签 ID */
@@ -775,6 +778,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
                     : dict('PC.Pages.AppDevPro.startService')
                 }
                 disabled={
+                  !previewRuntimeReady ||
                   previewDevActionLocked ||
                   previewRuntimeBusy ||
                   previewRuntimeRunning
@@ -802,6 +806,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
                     : dict('PC.Pages.AppDevPro.restartService')
                 }
                 disabled={
+                  !previewRuntimeReady ||
                   previewDevActionLocked ||
                   previewRuntimeBusy ||
                   previewRuntimeStopping
@@ -840,7 +845,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           open={addressFocused && !!addressDraft}
           placement="bottomLeft"
           arrow={false}
-          overlayClassName="preview-address-jump-tooltip"
+          classNames={{ root: 'preview-address-jump-tooltip' }}
           getPopupContainer={() => document.body}
         >
           <div className={cx(styles['preview-address-bar'])}>

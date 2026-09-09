@@ -2775,7 +2775,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.publishBuilding": "Building",
   "PC.Pages.AppDevPro.publishCancelled": "Publishing cancelled",
   "PC.Pages.AppDevPro.publishFailed": "Publish failed",
-  "PC.Pages.AppDevPro.publishing": "Publishing",
+  "PC.Pages.AppDevPro.appPublishing": "Publishing application",
   "PC.Pages.AppDevPro.publishNoApp": "Please create or select an app first",
   "PC.Pages.AppDevPro.publishStarting": "Creating build task...",
   "PC.Pages.AppDevPro.publishStreamClosed": "Build task connection closed",

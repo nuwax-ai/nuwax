@@ -2773,7 +2773,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.publishBuilding": "正在构建",
   "PC.Pages.AppDevPro.publishCancelled": "已取消发布",
   "PC.Pages.AppDevPro.publishFailed": "发布失败",
-  "PC.Pages.AppDevPro.publishing": "发布中",
+  "PC.Pages.AppDevPro.appPublishing": "应用发布中",
   "PC.Pages.AppDevPro.publishNoApp": "请先创建或选择应用",
   "PC.Pages.AppDevPro.publishStarting": "正在创建构建任务...",
   "PC.Pages.AppDevPro.publishStreamClosed": "构建任务连接已断开",
