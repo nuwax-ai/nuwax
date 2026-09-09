@@ -44,6 +44,7 @@ package-lock.json
 .temp
 .hermes
 # /deploy_test.sh
+.playwright-mcp/
 
 # 微信公众/小程序域名校验文件：仅在生产 Nginx/网关/Volume 部署，勿放入 public/
 public/MP_verify_*.txt
