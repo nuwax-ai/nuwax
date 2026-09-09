@@ -62,18 +62,19 @@ const messageStableKey = (
   return `idx-${message.index ?? fallbackIndex}`;
 };
 
-/** 按会话顺序稳定排序：有 index 用 index，无 index 保持原相对顺序 */
-const sortMessages = (list: MessageInfo[]): MessageInfo[] =>
-  list
-    .map((message, position) => ({ message, position }))
-    .sort((a, b) => {
-      const ai =
-        typeof a.message.index === 'number' ? a.message.index : a.position;
-      const bi =
-        typeof b.message.index === 'number' ? b.message.index : b.position;
-      return ai - bi;
-    })
-    .map((entry) => entry.message);
+/**
+ * 按会话顺序稳定排序。
+ *
+ * 只有全部消息都带有后端全局 index 时才可直接比较；本地乐观消息和
+ * sub 恢复占位没有 index，若用它们的数组位置与历史全局 index 混排，
+ * 最新流式轮次会被错误提到列表头部。混合场景以消息仓的数组顺序为准。
+ */
+const sortMessages = (list: MessageInfo[]): MessageInfo[] => {
+  if (!list.every((message) => typeof message.index === 'number')) {
+    return list;
+  }
+  return list.slice().sort((a, b) => a.index - b.index);
+};
 
 /** 历史执行结果 → ProcessingInfo（success 推断终态，与 reconcileFinalMessageState.toProcessingData 同规则） */
 const toProcessingFromResult = (result: ExecuteResultInfo): ProcessingInfo =>
@@ -550,10 +551,15 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
       .filter((value): value is number => typeof value === 'number');
     const minStart = starts.length ? Math.min(...starts) : undefined;
     const maxEnd = ends.length ? Math.max(...ends) : undefined;
-    if (typeof minStart === 'number' && typeof maxEnd === 'number') {
+    if (running) {
+      // 与页面底部 ConversationStatus 使用同一计时起点：从本轮用户消息发出时开始。
+      // sub 恢复的历史半轮可能没有 userMessage，才回退到最早工具开始时间。
+      const userStartTime = draft.userMessage?.time
+        ? new Date(draft.userMessage.time).getTime()
+        : Number.NaN;
+      elapsedAnchor = Number.isFinite(userStartTime) ? userStartTime : minStart;
+    } else if (typeof minStart === 'number' && typeof maxEnd === 'number') {
       elapsedMs = Math.max(0, maxEnd - minStart);
-    } else if (typeof minStart === 'number' && running) {
-      elapsedAnchor = minStart;
     }
   }
 

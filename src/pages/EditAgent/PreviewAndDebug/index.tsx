@@ -692,6 +692,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             )}
           >
             <UnifiedChatSession
+              showDebug
               conversationId={devConversationIdRef.current}
               messageList={messageList}
               roleInfo={roleInfo}

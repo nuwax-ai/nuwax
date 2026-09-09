@@ -126,6 +126,43 @@ describe('parseMessageSegments', () => {
 });
 
 describe('projectConversation · 轮次分组', () => {
+  it('历史全局 index 与无 index 流式轮次混合时，最新输出保持在列表末尾', () => {
+    const turns = projectConversation([
+      msg({
+        id: 101,
+        role: AssistantRoleEnum.USER,
+        text: '历史问题',
+        index: 57,
+      }),
+      msg({
+        id: 102,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '历史回答',
+        index: 58,
+      }),
+      msg({
+        id: '7d879be8-f6b4-4db5-9ee7-ad7955a4364b',
+        role: AssistantRoleEnum.USER,
+        text: '最新问题',
+        index: undefined,
+      }),
+      msg({
+        id: '074513b7-f006-49c1-9170-347a61a8e9c6',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '正在输出',
+        status: MessageStatusEnum.Loading,
+        index: undefined,
+      }),
+    ]).turns;
+
+    expect(turns.map((turn) => turn.userMessage?.text)).toEqual([
+      '历史问题',
+      '最新问题',
+    ]);
+    expect(turns.at(-1)?.assistantMessages.at(-1)?.text).toBe('正在输出');
+    expect(turns.at(-1)?.running).toBe(true);
+  });
+
   it('USER 消息切轮（requestId 缺失回退）', () => {
     const turns = projectConversation([
       msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务一' }),

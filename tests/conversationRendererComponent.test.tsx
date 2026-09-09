@@ -303,6 +303,7 @@ const buildGroupedTurn = (
 const renderV2 = (
   messageList: MessageInfo[],
   preferences = PREFS('balanced'),
+  showDebug?: boolean,
 ) =>
   render(
     <ConversationRendererV2
@@ -311,6 +312,7 @@ const renderV2 = (
       roleInfo={ROLE_INFO}
       messageBottomMode="chat"
       preferences={preferences}
+      showDebug={showDebug}
     />,
   );
 
@@ -345,17 +347,21 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('运行轮外层默认展开，仅显示工作时长且箭头位于文字之后', () => {
-    renderV2(
-      buildTurn({ status: MessageStatusEnum.Loading }),
-      PREFS('focused'),
-    );
+  it('运行轮默认展开，工作时长沿用会话状态栏的用户消息起点与 MM:SS 格式', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-09T12:03:14+08:00'));
+    const messages = buildTurn({ status: MessageStatusEnum.Loading });
+    messages[0] = {
+      ...messages[0],
+      time: '2026-09-09T12:00:00+08:00',
+    };
+    renderV2(messages, PREFS('focused'));
     const toggle = screen.getByTestId('v2-trace-toggle');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(
       document.querySelector('[data-trace-running="true"]'),
     ).not.toBeNull();
-    expect(toggle.textContent).toContain('traceMetricRunning');
+    expect(toggle.textContent).toContain('traceMetricRunning:03:14');
     expect(toggle.textContent).not.toContain('traceMetricElapsed');
     expect(toggle.textContent).not.toContain('traceMetricTools');
     expect(toggle.textContent).not.toContain('traceMetricMessages');
@@ -398,6 +404,18 @@ describe('ConversationRendererV2 · 三层结构', () => {
     const answerTime = screen.getByTestId('v2-answer-time');
     expect(answerTime).toHaveTextContent('PC.Utils.Common.yesterday');
     expect(answerTime.parentElement?.lastElementChild).toBe(answerTime);
+  });
+
+  it('普通会话默认不展示终态调试信息', () => {
+    renderV2(buildTurn());
+
+    expect(screen.queryByTestId('chat-debug')).toBeNull();
+  });
+
+  it('智能体开发调试场景可显式开启终态调试信息', () => {
+    renderV2(buildTurn(), PREFS('balanced'), true);
+
+    expect(screen.getByTestId('chat-debug')).toBeInTheDocument();
   });
 
   it('home 模式（默认入口）终态操作栏也显示：V1 由 ChatSampleBottom 提供复制+时间，V2 对齐', () => {

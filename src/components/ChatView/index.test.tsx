@@ -286,7 +286,7 @@ describe('ChatView', () => {
     );
   });
 
-  it('助手消息完成后展示底部操作区', () => {
+  it('普通会话的助手消息完成后不展示调试信息', () => {
     render(
       <ChatView
         roleInfo={roleInfo}
@@ -299,6 +299,22 @@ describe('ChatView', () => {
     );
 
     expect(screen.getByTestId('chat-bottom-more')).toBeInTheDocument();
+    expect(screen.queryByTestId('chat-bottom-debug')).toBeNull();
+  });
+
+  it('智能体开发调试场景可显式开启调试信息', () => {
+    render(
+      <ChatView
+        roleInfo={roleInfo}
+        mode="chat"
+        showDebug
+        messageInfo={createMessage({
+          text: 'done',
+          status: MessageStatusEnum.Complete,
+        })}
+      />,
+    );
+
     expect(screen.getByTestId('chat-bottom-debug')).toBeInTheDocument();
   });
 
