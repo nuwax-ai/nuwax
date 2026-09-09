@@ -22,6 +22,7 @@ import {
 } from '@/components/business-component/ConversationContextMenu/conversationLocalFlags';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
+import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
@@ -111,6 +112,8 @@ const NewHomeSection: React.FC<{
   const [taskCollapsed, setTaskCollapsed] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // 滚动条仅滚动时显示：data-is-scrolling 属性由该 hook 维护，mirrorRef 同步既有触底加载逻辑
+  const scrollShowRef = useScrollbarScrollShow(1000, scrollContainerRef);
   const listInnerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
   const pageSizeRef = useRef(30);
@@ -643,7 +646,7 @@ const NewHomeSection: React.FC<{
 
           {/* 滚动区：项目列表 + 任务分组头 + 任务列表（原型 scroll-area 同构） */}
           <div
-            ref={scrollContainerRef}
+            ref={scrollShowRef}
             className={cx(styles['conversation-list-wrapper'])}
           >
             <div
@@ -701,7 +704,7 @@ const NewHomeSection: React.FC<{
           </div>
 
           <div
-            ref={scrollContainerRef}
+            ref={scrollShowRef}
             className={cx(styles['conversation-list-wrapper'])}
           >
             {activeTab === 'project' ? (
