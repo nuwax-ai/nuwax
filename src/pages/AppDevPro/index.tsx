@@ -76,11 +76,11 @@ import styles from './index.less';
 import { UserAppDbEnvEnum } from './services/appDb';
 import {
   apiUserAppGetById,
+  getUserAppAppProxyUrl,
   getUserAppTtydProxyWsUrl,
 } from './services/appDevPro';
 import {
   apiUserAppDomainList,
-  getUserAppPreviewUrl,
   type UserAppDomainInfo,
 } from './services/appDomain';
 import type { UserAppInfo } from './type';
@@ -1474,10 +1474,10 @@ const AppDevPro: React.FC = () => {
   const isAgentDesktopOpen =
     previewTabs.activeTab?.toolId === 'remote-desktop';
 
-  /** 当前环境对应的应用预览地址 */
+  /** 启动成功后通过环境代理地址访问预览页 */
   const appPreviewUrl = useMemo(
-    () => getUserAppPreviewUrl(userAppDomainList, dbEnv),
-    [userAppDomainList, dbEnv],
+    () => getUserAppAppProxyUrl(appId, dbEnv),
+    [appId, dbEnv],
   );
 
   /** 「数据库」页签：按 Header 所选环境加载 iframe */
