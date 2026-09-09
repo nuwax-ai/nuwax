@@ -152,6 +152,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.ChatInputHome.uploadFailedWithName": "{0} 上傳失敗",
   "PC.Components.ChatInputHome.useAgentComputerTask": "使用我的智能體電腦執行任務",
   "PC.Components.ChatInputHome.agentMode": "Agent 模式",
+  "PC.Components.ChatInputHome.conversationDebugEntry": "會話調試",
   "PC.Components.ChatInputHome.conversationDensity": "會話密度",
   "PC.Components.ChatInputHome.densityCompact": "緊湊",
   "PC.Components.ChatInputHome.densityCompactDesc": "過程預設收起，只看結果",

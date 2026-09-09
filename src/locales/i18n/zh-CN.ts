@@ -158,6 +158,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ChatBottomDebug.debug": "调试",
   "PC.Components.ChatInputHome.agentComputerUnavailable": "会话关联的智能体电脑不可用",
   "PC.Components.ChatInputHome.agentMode": "Agent 模式",
+  "PC.Components.ChatInputHome.conversationDebugEntry": "会话调试",
   "PC.Components.ChatInputHome.conversationDensity": "会话密度",
   "PC.Components.ChatInputHome.densityCompact": "紧凑",
   "PC.Components.ChatInputHome.densityCompactDesc": "过程默认收起，只看结果",

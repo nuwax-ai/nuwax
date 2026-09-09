@@ -158,6 +158,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ChatBottomDebug.debug": "Debug",
   "PC.Components.ChatInputHome.agentComputerUnavailable": "The agent computer associated with the conversation is unavailable",
   "PC.Components.ChatInputHome.agentMode": "Agent mode",
+  "PC.Components.ChatInputHome.conversationDebugEntry": "Conversation debug",
   "PC.Components.ChatInputHome.conversationDensity": "Conversation density",
   "PC.Components.ChatInputHome.densityCompact": "Compact",
   "PC.Components.ChatInputHome.densityCompactDesc": "Collapse processes by default, results only",

@@ -152,6 +152,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ChatInputHome.uploadFailedWithName": "{0} アップロードに失敗しました",
   "PC.Components.ChatInputHome.useAgentComputerTask": "エージェント コンピュータを使用してタスクを実行する",
   "PC.Components.ChatInputHome.agentMode": "エージェントモード",
+  "PC.Components.ChatInputHome.conversationDebugEntry": "会話デバッグ",
   "PC.Components.ChatInputHome.conversationDensity": "会話密度",
   "PC.Components.ChatInputHome.densityCompact": "コンパクト",
   "PC.Components.ChatInputHome.densityCompactDesc": "過程はデフォルトで折りたたみ、結果のみ表示",
