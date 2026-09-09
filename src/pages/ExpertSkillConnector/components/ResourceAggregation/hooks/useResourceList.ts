@@ -17,6 +17,7 @@ import {
   apiConnectorProviderPageList,
   apiSystemConnectorProviderList,
 } from '@/services/systemManage';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { SkillInfo } from '@/types/interfaces/library';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
@@ -73,6 +74,7 @@ const mapPublishedItem = (
   description: item.description,
   icon: item.icon,
   category: item.category || undefined,
+  publishUser: item.publishUser,
   stats: mapPublishedStats(item.statistics),
 });
 
@@ -126,6 +128,9 @@ const RESOURCE_ADAPTERS: Record<
           pageSize,
           category,
           kw: keyword || undefined,
+          // 查询智能体需设置目标子类型：ChatBot 含对话型与通用型，排除网页应用
+          targetType: AgentComponentTypeEnum.Agent,
+          targetSubType: 'ChatBot',
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'agent'),
     },

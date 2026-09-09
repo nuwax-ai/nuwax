@@ -24,6 +24,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   eco_market: 'icons-nav-ecosystem',
   // 系统管理
   system_manage: 'icons-nav-settings',
+  // 专家·技能·连接器（三合一资源聚合页）
+  zhuanjia_jineng_lianjieqi: 'icons-nav-expert-skill-connector',
 
   // 用户操作区域
   documents: 'icons-nav-doc',
@@ -39,8 +41,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   published_manage: 'icons-nav-publish_manage',
   // 公共模型管理
   model_manage: 'icons-nav-model',
-  // 连接器管理（管理侧，与空间侧连接器共用图标）
-  lianjieqiguanli: 'icons-nav-connector',
+  // 官方连接器
+  guanfanglianjieqi: 'icons-nav-connector',
   // 系统配置
   system_config: 'icons-nav-settings',
   // 多语言管理

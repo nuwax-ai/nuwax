@@ -322,11 +322,6 @@ const routes = [
             component: '@/pages/GlobalModelManage',
           },
           {
-            path: 'connector-manage',
-            name: getRouteLabel('PC.Routes.connectorManage'),
-            component: '@/pages/SystemManagement/ConnectorManage',
-          },
-          {
             path: 'model/pricing',
             name: getRouteLabel('PC.Pages.SpaceResourcePricing.pageTitle'),
             component: '@/pages/GlobalModelManage/Pricing',
@@ -423,6 +418,11 @@ const routes = [
                 path: 'content-skill',
                 name: getRouteLabel('PC.Routes.contentSkill'),
                 component: '@/pages/SystemManagement/Content/Skill',
+              },
+              {
+                path: 'official-connector',
+                name: getRouteLabel('PC.Routes.connectorManage'),
+                component: '@/pages/SystemManagement/ConnectorManage',
               },
             ],
           },

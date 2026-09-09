@@ -7,6 +7,7 @@ import { ReactComponent as CubeSvgFile } from '@/assets/icons/nav/cube.svg';
 import { ReactComponent as DashboardSvgFile } from '@/assets/icons/nav/dashboard.svg';
 import { ReactComponent as DocSvgFile } from '@/assets/icons/nav/doc.svg';
 import { ReactComponent as EcosystemSvgFile } from '@/assets/icons/nav/ecosystem.svg';
+import { ReactComponent as ExpertSkillConnectorSvgFile } from '@/assets/icons/nav/expert_skill_connector.svg';
 import { ReactComponent as HistoryConversationSvgFile } from '@/assets/icons/nav/history_conversation.svg';
 import { ReactComponent as HomeSvgFile } from '@/assets/icons/nav/home.svg';
 import { ReactComponent as ModelSvgFile } from '@/assets/icons/nav/icons-nav-model.svg';
@@ -91,6 +92,7 @@ const PermissionSvg = wrapSvg(PermissionSvgFile);
 const SidebarSvg = wrapSvg(SidebarSvgFile);
 const ComputerSvg = wrapSvg(ComputerSvgFile);
 const ConnectorSvg = wrapSvg(ConnectorSvgFile);
+const ExpertSkillConnectorSvg = wrapSvg(ExpertSkillConnectorSvgFile);
 const ModelSvg = wrapSvg(ModelSvgFile);
 const PublishManageSvg = wrapSvg(PublishManageSvgFile);
 const SubscriptionSvg = wrapSvg(SubscriptionSvgFile);
@@ -139,6 +141,7 @@ export default {
   'icons-nav-log-running': LogRunningSvg,
   'icons-nav-computer': ComputerSvg,
   'icons-nav-connector': ConnectorSvg,
+  'icons-nav-expert-skill-connector': ExpertSkillConnectorSvg,
   'icons-nav-robot': RobotSvg,
   'icons-nav-model': ModelSvg,
   'icons-nav-publish_manage': PublishManageSvg,
