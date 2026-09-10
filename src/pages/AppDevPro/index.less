@@ -2,13 +2,11 @@
 @import '@/styles/token';
 
 .container {
-  // background-image: @backgroundImage;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   transition: background-image 0.3s ease;
-  min-width: 1400px;
   // h-full 语义（相对 page-container 内容盒）：工作台页与主站同容器后，
   // 页根用 100vh 会比容器高出上下边距、底部（终端/日志条）被 overflow 裁掉
   height: 100%;
@@ -16,14 +14,6 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-
-  /** 页面顶部 Header，横跨整页宽度 */
-  // .page-header {
-  //   flex-shrink: 0;
-  //   width: 100%;
-  //   // padding-left: @marginSm;
-  //   // padding-right: @marginSm;
-  // }
 
   .section {
     flex: 1;
