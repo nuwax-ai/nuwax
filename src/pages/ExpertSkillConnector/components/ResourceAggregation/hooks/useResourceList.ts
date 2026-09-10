@@ -149,6 +149,10 @@ const RESOURCE_ADAPTERS: Record<
           name: item.name,
           description: item.description,
           icon: item.icon,
+          // 创建人以发布者行展示（与系统广场卡片同款：头像+昵称）
+          publishUser: item.creator,
+          // 统计行与系统广场卡片同款（用户人数/会话次数/收藏次数），取 agentStatistics
+          stats: mapPublishedStats(item.agentStatistics),
         }));
       },
     },
@@ -178,6 +182,16 @@ const RESOURCE_ADAPTERS: Record<
           description: item.description,
           icon: item.icon,
           category: item.category || undefined,
+          // 创建人映射为发布者行展示（与系统广场技能卡片同款；
+          // SkillInfo 无头像/昵称，头像走默认头像兜底）
+          publishUser: item.creatorName
+            ? {
+                userId: item.creatorId ?? 0,
+                userName: item.creatorName,
+                nickName: item.creatorName,
+                avatar: '',
+              }
+            : undefined,
         }));
       },
     },

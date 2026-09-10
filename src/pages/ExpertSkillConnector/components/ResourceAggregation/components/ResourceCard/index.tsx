@@ -97,7 +97,8 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
                   : styles['status-disconnected'],
               )}
             >
-              <span className={cx(styles['status-dot'])} />
+              {/* 分类为空时，连接状态前的圆点不展示 */}
+              {item.category && <span className={cx(styles['status-dot'])} />}
               {item.connected ? '已连接' : '未连接'}
             </span>
           </div>
