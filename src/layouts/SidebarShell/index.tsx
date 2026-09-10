@@ -257,8 +257,9 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
    */
   const contentNode = useMemo(() => {
     // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
-    // - Win/Linux 恒避让 shellAvoid.TOP（自绘三键+菜单栏所在的 36px 顶行恒在；
-    //   原 TOP+8=44 偏大，评审要求收窄至与顶行同高）；
+    // - Win/Linux 避让 shellAvoid.CONTENT_TOP（28 < 顶行行高 36：顶行透明，
+    //   图标/菜单字形实际只占行上部 ~26px，内容卡可上提到字形下沿，
+    //   减少顶部空白；行内字形与卡片的层叠由壳侧顶行 z-index 保证）；
     // - mac 默认不退让（顶行透明、图标组悬浮于侧栏列上方，展开态内容区
     //   直接顶到窗口上沿）；仅整条侧栏收起后内容区顶到窗口上沿时，
     //   才避让工具栏整条高度（图标簇悬浮于内容区左上，需要让位）；
@@ -266,7 +267,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     // - 全屏工作台页（immersiveMarginTop=false）由路由层 immersiveShellAvoid
     //   承担避让，此处叠加会造成双重下移。
     const macAvoidance = isSecondMenuCollapsed ? shellAvoid.TOOLBAR : undefined;
-    const immersiveMargin = isMac() ? macAvoidance : shellAvoid.TOP;
+    const immersiveMargin = isMac() ? macAvoidance : shellAvoid.CONTENT_TOP;
     return (
       <div
         className={cx(

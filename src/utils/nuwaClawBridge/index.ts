@@ -93,8 +93,14 @@ export function needsTopRightAvoid(): boolean {
 export const shellAvoid = {
   /** mac 红绿灯 {16,16} + 沉浸工具栏条：壳内一级/二级菜单等顶部下移量。 */
   TOP: 36,
-  /** Win/Linux 自绘三键贴死右上角（46×3=138px）：右上角浮层避让宽度（含间隙）。 */
-  RIGHT: 150,
+  /**
+   * Win/Linux 内容区（page-container）顶部避让：壳顶行行高为 36 但全透明，
+   * 图标/菜单字形只占行上部（~26px），内容卡可上提到字形下沿以减少顶部空白。
+   * 比 TOP 小、比 0 大——保证卡片不被窗口拖拽带（整条 36px）当作可拖拽区吞点击。
+   */
+  CONTENT_TOP: 28,
+  /** Win/Linux 自绘三键贴死右上角（40×3=120px）：右上角浮层避让宽度（含间隙）。 */
+  RIGHT: 130,
   /** 沉浸工具栏整条高度（同窗承载的无菜单详情页标题返回栏等顶部下移量）。 */
   TOOLBAR: 44,
 };
