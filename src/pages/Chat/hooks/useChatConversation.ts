@@ -11,6 +11,7 @@ import {
 } from '@/types/interfaces/conversationInfo';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import eventBus from '@/utils/eventBus';
+import { appendOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 import { FormInstance, message } from 'antd';
 import React, { useEffect } from 'react';
 
@@ -103,6 +104,8 @@ export const useChatConversation = ({
           url = conversationUrl
             .replace(':agentId', newAgentId.toString())
             .replace(':id', newConversationId?.toString() || '');
+
+          url = appendOpenAppChromeFlags(url, location.search);
         } else {
           url = `/home/chat/${newConversationId}/${newAgentId}`;
         }

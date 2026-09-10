@@ -8,6 +8,7 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { ANIMATION_DURATION } from '@/constants/layout.constants';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
+import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import useSubscription from '@/hooks/useSubscription';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Message from '@/layouts/Message';
@@ -18,6 +19,7 @@ import { UserAvatarEnum } from '@/types/enums/menus';
 import { AgentDetailDto, CustomPageNavItem } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
+import { appendOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 import {
   CreditCardOutlined,
   FileTextOutlined,
@@ -55,6 +57,7 @@ const cx = classNames.bind(styles);
  */
 const BaseTemplate: React.FC = () => {
   const location = useLocation();
+  const chromeFlags = useOpenAppChromeFlags();
   const { id: cId, agentId } = useParams();
   const {
     openAdmin,
@@ -220,13 +223,15 @@ const BaseTemplate: React.FC = () => {
   // 查看全部历史会话
   const handleViewAllHistory = () => {
     closeSidebarIfMobileOpen();
-    history.push(`/app/history/conversation/${agentId}`);
+    history.push(
+      appendOpenAppChromeFlags(`/app/history/conversation/${agentId}`),
+    );
   };
 
   // 会话跳转
   const handleLink = (id: number, agentId: number) => {
     closeSidebarIfMobileOpen();
-    history.push(`/app/chat/${agentId}/${id}`);
+    history.push(appendOpenAppChromeFlags(`/app/chat/${agentId}/${id}`));
   };
 
   // 页面导航跳转
@@ -235,7 +240,9 @@ const BaseTemplate: React.FC = () => {
     const url = page.path ? `${process.env.BASE_URL}${page.path}` : '';
     if (url) {
       history.push(
-        `/app/open-iframe-page/${agentId}?url=${encodeURIComponent(url)}`,
+        appendOpenAppChromeFlags(
+          `/app/open-iframe-page/${agentId}?url=${encodeURIComponent(url)}`,
+        ),
       );
     }
   };
@@ -283,8 +290,13 @@ const BaseTemplate: React.FC = () => {
    * 监听新建会话快捷键：
    * - Mac: ⌘ + J
    * - Windows: Ctrl + J
+   * hideNew 时禁用快捷键，与隐藏新建会话入口保持一致
    */
   useEffect(() => {
+    if (chromeFlags.hideNew) {
+      return;
+    }
+
     const handleKeydown = (event: KeyboardEvent) => {
       const isNKey = event.key.toLowerCase() === 'j';
       if (!isNKey) return;
@@ -306,6 +318,7 @@ const BaseTemplate: React.FC = () => {
     isMacSystem,
     agentId,
     closeSidebarIfMobileOpen,
+    chromeFlags.hideNew,
   ]);
 
   useEffect(() => {
@@ -401,7 +414,7 @@ const BaseTemplate: React.FC = () => {
   const showAppSidebarLoading = appAgentDetailLoading || !appAgentDetail;
 
   const handleOpenCreditsBalance = () => {
-    history.push(`/app/${agentId}/my-subscriptions`);
+    history.push(appendOpenAppChromeFlags(`/app/${agentId}/my-subscriptions`));
   };
 
   const subMenus = [
@@ -409,19 +422,24 @@ const BaseTemplate: React.FC = () => {
       type: UserAvatarEnum.My_Subscriptions,
       icon: <CreditCardOutlined style={{ fontSize: 14 }} />,
       text: dict('PC.Pages.MorePage.MySubscriptions.pageTitle'),
-      onClick: () => history.push(`/app/${agentId}/my-subscriptions`),
+      onClick: () =>
+        history.push(
+          appendOpenAppChromeFlags(`/app/${agentId}/my-subscriptions`),
+        ),
     },
     {
       type: UserAvatarEnum.My_Orders,
       icon: <FileTextOutlined style={{ fontSize: 14 }} />,
       text: dict('PC.Pages.MorePage.MyOrders.pageTitle'),
-      onClick: () => history.push(`/app/${agentId}/my-orders`),
+      onClick: () =>
+        history.push(appendOpenAppChromeFlags(`/app/${agentId}/my-orders`)),
     },
     {
       type: UserAvatarEnum.Usage_Stats,
       icon: <LineChartOutlined style={{ fontSize: 14 }} />,
       text: dict('PC.Pages.UsageStats.pageTitle'),
-      onClick: () => history.push(`/app/${agentId}/usage-stats`),
+      onClick: () =>
+        history.push(appendOpenAppChromeFlags(`/app/${agentId}/usage-stats`)),
     },
   ];
 
@@ -490,29 +508,35 @@ const BaseTemplate: React.FC = () => {
               />
             </header>
 
-            {/* 新建会话按钮 */}
-            <div
-              className={styles.newSessionBtn}
-              onClick={() => {
-                createAppNewConversation(agentId);
-                closeSidebarIfMobileOpen();
-              }}
-            >
-              <span
-                className={cx(styles.newSessionText, 'flex-1', 'overflow-hide')}
+            {/* 新建会话按钮；hideNew 时隐藏 */}
+            <ConditionRender condition={!chromeFlags.hideNew}>
+              <div
+                className={styles.newSessionBtn}
+                onClick={() => {
+                  createAppNewConversation(agentId);
+                  closeSidebarIfMobileOpen();
+                }}
               >
-                <SvgIcon name="icons-nav-new_chat" style={{ fontSize: 16 }} />
-                <span className="text-ellipsis">
-                  {dict('PC.Pages.OpenApp.newConversation')}
+                <span
+                  className={cx(
+                    styles.newSessionText,
+                    'flex-1',
+                    'overflow-hide',
+                  )}
+                >
+                  <SvgIcon name="icons-nav-new_chat" style={{ fontSize: 16 }} />
+                  <span className="text-ellipsis">
+                    {dict('PC.Pages.OpenApp.newConversation')}
+                  </span>
                 </span>
-              </span>
-              <div className={cx('flex', 'items-center', 'gap-4')}>
-                <span className={styles.shortcutTag}>
-                  {isMacSystem ? '⌘' : 'ctrl'}
-                </span>
-                <span className={styles.shortcutTag}>J</span>
+                <div className={cx('flex', 'items-center', 'gap-4')}>
+                  <span className={styles.shortcutTag}>
+                    {isMacSystem ? '⌘' : 'ctrl'}
+                  </span>
+                  <span className={styles.shortcutTag}>J</span>
+                </div>
               </div>
-            </div>
+            </ConditionRender>
 
             {/* 页面导航 */}
             <ConditionRender

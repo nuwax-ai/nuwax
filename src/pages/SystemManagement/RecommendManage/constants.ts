@@ -52,14 +52,13 @@ export const CHATBOX_RECOMMEND_CONFIG: RecommendPageConfig = {
   defaultFunctionType: DisplayRecommendFunctionTypeEnum.AgentDev,
 };
 
-/** 对话框智能体：每种仅可添加一项的子类型（智能体 Chat、常规项目 NormalProjectDev 可多项） */
+/** 对话框智能体：每种仅可添加一项的子类型（智能体 Chat、全栈应用开发 UserAppDev、常规项目 NormalProjectDev 可多项） */
 export const CHATBOX_SINGLE_INSTANCE_FUNCTION_TYPES: DisplayRecommendFunctionTypeEnum[] =
   [
     DisplayRecommendFunctionTypeEnum.AgentDev,
     DisplayRecommendFunctionTypeEnum.PageAppDev,
     DisplayRecommendFunctionTypeEnum.SkillDev,
     DisplayRecommendFunctionTypeEnum.PluginDev,
-    DisplayRecommendFunctionTypeEnum.UserAppDev,
   ];
 
 /** recType → 页面配置 */

@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import { t } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -31,6 +32,7 @@ const OpenIframePage: React.FC = () => {
   const isAppShell = location.pathname.startsWith('/app/');
   const { isAppSidebarVisible, toggleAppSidebarVisible, isAppSidebarMode } =
     useModel('useOpenApp');
+  const chromeFlags = useOpenAppChromeFlags();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   /** 生态市场页面域名地址，用于 postMessage 来源校验与回传 */
@@ -112,7 +114,12 @@ const OpenIframePage: React.FC = () => {
     <div className={classNames('h-full', 'w-full', 'relative')}>
       {/* 独立会话页面 BaseTemplate 侧边栏隐藏时的展开按钮 */}
       <ConditionRender
-        condition={isAppShell && isAppSidebarMode && !isAppSidebarVisible}
+        condition={
+          isAppShell &&
+          isAppSidebarMode &&
+          !isAppSidebarVisible &&
+          !chromeFlags.hideMenu
+        }
       >
         <div
           style={{

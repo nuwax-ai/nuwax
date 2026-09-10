@@ -44,9 +44,13 @@ const LeftContent: React.FC<LeftContentProps> = ({
           })}
         >
           <div className={cx('flex', 'items-center', 'gap-4')}>
-            {/* 应用智能体模式下，显示内容导航按钮 */}
+            {/* 应用智能体模式下，显示内容导航按钮；hideMenu 时隐藏展开导航图标 */}
             <ConditionRender
-              condition={isAppSidebarMode && !headerProps.isAppSidebarVisible}
+              condition={
+                isAppSidebarMode &&
+                !headerProps.isAppSidebarVisible &&
+                !headerProps.hideMenu
+              }
             >
               <TooltipIcon
                 title={t('PC.Pages.Chat.expandNavigation')}
@@ -59,8 +63,16 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   />
                 }
               />
+            </ConditionRender>
 
-              {/* 新建会话 */}
+            {/* 新建会话；hideNew 时隐藏新建会话图标 */}
+            <ConditionRender
+              condition={
+                isAppSidebarMode &&
+                !headerProps.isAppSidebarVisible &&
+                !headerProps.hideNew
+              }
+            >
               <TooltipIcon
                 title={t('PC.Pages.Chat.newConversation')}
                 className={cx(styles['icon-box'])}
@@ -75,17 +87,18 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 }
               />
             </ConditionRender>
-            {/* 下拉重命名会话、删除会话 */}
-            {headerProps.renderTitle ? (
-              headerProps.renderTitle({ effectiveAgent, isAppSidebarMode })
-            ) : (
-              <DropdownChangeName
-                agentId={headerProps.agentId}
-                conversationInfo={headerProps.conversationInfo}
-                setConversationInfo={headerProps.setConversationInfo}
-                isAppSidebarMode={isAppSidebarMode}
-              />
-            )}
+            {/* 下拉重命名会话、删除会话；hideTitle 时隐藏会话主题 */}
+            {!headerProps.hideTitle &&
+              (headerProps.renderTitle ? (
+                headerProps.renderTitle({ effectiveAgent, isAppSidebarMode })
+              ) : (
+                <DropdownChangeName
+                  agentId={headerProps.agentId}
+                  conversationInfo={headerProps.conversationInfo}
+                  setConversationInfo={headerProps.setConversationInfo}
+                  isAppSidebarMode={isAppSidebarMode}
+                />
+              ))}
           </div>
 
           <div className={cx('flex', 'items-center', 'gap-4')}>
@@ -156,36 +169,40 @@ const LeftContent: React.FC<LeftContentProps> = ({
             {/* 通用智能体, 有有效消息时，文件预览/智能体电脑切换按钮 */}
             {headerProps.isShowFilePanel && (
               <>
-                {/* 文件预览视图 */}
-                <TooltipIcon
-                  title={
-                    headerProps.isFileTreeIconActive
-                      ? t('PC.Pages.Chat.closeFilePreview')
-                      : t('PC.Pages.Chat.openFilePreview')
-                  }
-                  className={cx(styles['icon-box'], {
-                    [styles['active']]: headerProps.isFileTreeIconActive,
-                  })}
-                  icon={
-                    <SvgIcon
-                      name="icons-common-file_preview"
-                      style={{ fontSize: 16 }}
-                    />
-                  }
-                  onClick={headerProps.handleFileTreeVisible}
-                />
+                {/* 文件预览视图；hideTree 时隐藏文件树图标 */}
+                {!headerProps.hideTree && (
+                  <TooltipIcon
+                    title={
+                      headerProps.isFileTreeIconActive
+                        ? t('PC.Pages.Chat.closeFilePreview')
+                        : t('PC.Pages.Chat.openFilePreview')
+                    }
+                    className={cx(styles['icon-box'], {
+                      [styles['active']]: headerProps.isFileTreeIconActive,
+                    })}
+                    icon={
+                      <SvgIcon
+                        name="icons-common-file_preview"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
+                    onClick={headerProps.handleFileTreeVisible}
+                  />
+                )}
 
-                {/* 终端视图 */}
-                <TooltipIcon
-                  title={t(
-                    'PC.Components.ConversationBottomConsole.tabTerminal',
-                  )}
-                  className={cx(styles['icon-box'], {
-                    [styles['active']]: headerProps.isTerminalIconActive,
-                  })}
-                  icon={<CodeOutlined style={{ fontSize: 16 }} />}
-                  onClick={headerProps.handleOpenTerminalPanel}
-                />
+                {/* 终端视图；hideTerminal 时隐藏终端图标 */}
+                {!headerProps.hideTerminal && (
+                  <TooltipIcon
+                    title={t(
+                      'PC.Components.ConversationBottomConsole.tabTerminal',
+                    )}
+                    className={cx(styles['icon-box'], {
+                      [styles['active']]: headerProps.isTerminalIconActive,
+                    })}
+                    icon={<CodeOutlined style={{ fontSize: 16 }} />}
+                    onClick={headerProps.handleOpenTerminalPanel}
+                  />
+                )}
 
                 {/* 智能体电脑视图：仅云端电脑 + 未隐藏远程桌面时展示 */}
                 <ConditionRender condition={headerProps.isShowDesktop}>
@@ -240,13 +257,16 @@ const LeftContent: React.FC<LeftContentProps> = ({
         >
           <UnifiedChatSession
             {...chatSessionProps}
-            showClearIcon={effectiveAgent?.deviceAgent !== 1}
+            showClearIcon={
+              effectiveAgent?.deviceAgent !== 1 && !headerProps.hideNew
+            }
           />
         </div>
 
-        {/* 通用型(TaskAgent)智能体专用文件树区域 */}
+        {/* 通用型(TaskAgent)智能体专用文件树区域；hideTree 时不展示 */}
         {effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-          isFileTreeVisible && (
+          isFileTreeVisible &&
+          !headerProps.hideTree && (
             <div
               className={cx(
                 styles['file-tree-sidebar'],
