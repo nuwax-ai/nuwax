@@ -3,8 +3,9 @@
  * @description 专家/技能/连接器通用的聚合卡片，容器复用 CardWrapper，
  * 与广场（Square/SingleAgent）卡片样式保持一致：
  * 图标 + 标题 + 发布者（头像/昵称）+ 两行描述 + 底部统计行；
- * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮、技能卡片浮现「立即使用」按钮
- * （点击逻辑均暂未接入，仅展示）；
+ * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮（经 onSummon 回调携带专家信息
+ * 透传跳转 /home 首页）、技能卡片浮现「选择」按钮及右侧 pin 图标按钮
+ * （点击逻辑暂未接入，仅展示）；
  * 连接器卡片标题下方展示 分类 + 连接状态（no_auth 无连接概念不展示），
  * hover 右上角浮现「连接/断开」按钮（点击逻辑暂未接入，仅展示）。
  */
@@ -19,6 +20,7 @@ import {
 } from '@/constants/images.constants';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { dict } from '@/services/i18nRuntime';
+import { PushpinOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -38,7 +40,9 @@ interface ResourceCardProps {
   item: ResourceItem;
   /** 是否显示召唤按钮（专家&专家团卡片） */
   showSummon?: boolean;
-  /** 是否显示立即使用按钮（技能卡片） */
+  /** 召唤按钮点击回调（携带卡片条目；仅专家卡片传入） */
+  onSummon?: (item: ResourceItem) => void;
+  /** 是否显示选择按钮与 pin 图标按钮（技能卡片） */
   showUse?: boolean;
   /** 是否显示底部统计行（使用用户数等） */
   showStats?: boolean;
@@ -49,6 +53,7 @@ interface ResourceCardProps {
 const ResourceCard: React.FC<ResourceCardProps> = ({
   item,
   showSummon,
+  onSummon,
   showUse,
   showStats = true,
   showConnect,
@@ -125,13 +130,41 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // TODO 召唤/立即使用逻辑暂未接入，按钮仅展示
+                  if (showSummon) {
+                    onSummon?.(item);
+                    return;
+                  }
+                  // TODO 技能「选择」逻辑暂未接入，按钮仅展示
                 }}
               >
                 {showSummon
                   ? dict('PC.Pages.ExpertSkillConnector.summon')
-                  : dict('PC.Pages.ExpertSkillConnector.useNow')}
+                  : dict('PC.Pages.ExpertSkillConnector.select')}
               </Button>
+              {showUse && (
+                // 技能卡片：选择按钮右侧 pin 图标按钮，hover 高亮；
+                // 提示按常驻状态切换（未常驻→常驻 / 已常驻→取消常驻）
+                <Button
+                  type="text"
+                  size="small"
+                  className={cx(styles['pin-btn'])}
+                  icon={<PushpinOutlined />}
+                  aria-label={dict(
+                    item.pinned
+                      ? 'PC.Pages.ExpertSkillConnector.unpin'
+                      : 'PC.Pages.ExpertSkillConnector.pin',
+                  )}
+                  title={dict(
+                    item.pinned
+                      ? 'PC.Pages.ExpertSkillConnector.unpin'
+                      : 'PC.Pages.ExpertSkillConnector.pin',
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // TODO pin/取消 pin 接口未定，点击逻辑暂未接入，按钮仅展示
+                  }}
+                />
+              )}
             </div>
           )}
           {showConnectState && (

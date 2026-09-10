@@ -6,6 +6,7 @@
 
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
 import { dict } from '@/services/i18nRuntime';
 import { Empty } from 'antd';
 import classNames from 'classnames';
@@ -17,7 +18,11 @@ import React, {
   useState,
 } from 'react';
 import { history, useLocation } from 'umi';
-import type { ResourceSourceEnum, ResourceTypeEnum } from '../../types';
+import type {
+  ResourceItem,
+  ResourceSourceEnum,
+  ResourceTypeEnum,
+} from '../../types';
 import ResourceToolbar from '../ResourceToolbar';
 import ResourceCard from './components/ResourceCard';
 import useResourceCategories from './hooks/useResourceCategories';
@@ -108,6 +113,23 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     const timer = window.setTimeout(() => setKeyword(keywordInput), 400);
     return () => window.clearTimeout(timer);
   }, [keywordInput]);
+
+  /** 专家卡片「召唤」：携带专家信息透传并跳转 /home 首页 */
+  const { summon } = useSummonExpertHandoff();
+  const handleSummon = useCallback(
+    (item: ResourceItem) => {
+      if (!item.agentId) {
+        // 数据异常兜底：缺智能体 ID 无法召唤（正常数据两个维度均有值）
+        console.warn(
+          '[ExpertSkillConnector] summon skipped: missing agentId, item =',
+          item.id,
+        );
+        return;
+      }
+      summon({ agentId: item.agentId, name: item.name, icon: item.icon });
+    },
+    [summon],
+  );
 
   // 筛选状态同步 URL（replace 不产生历史记录）
   useEffect(() => {
@@ -212,6 +234,9 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   key={item.id}
                   item={item}
                   showSummon={resourceType === 'expert'}
+                  onSummon={
+                    resourceType === 'expert' ? handleSummon : undefined
+                  }
                   showUse={resourceType === 'skill'}
                   // 底部统计行仅专家卡片展示（技能本就无统计；
                   // 连接器工具数统计已下线）

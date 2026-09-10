@@ -35,16 +35,27 @@
     }
   }
 
-  // 操作按钮（召唤/立即使用/连接/断开）：hover 时卡片右上角浮现（点击逻辑暂未接入，仅展示）
+  // 操作按钮（召唤/选择/连接/断开）：hover 时卡片右上角浮现（点击逻辑暂未接入，仅展示）
   .action-box {
     position: absolute;
     top: 12px;
     right: 16px;
     display: flex;
     align-items: center;
+    gap: 4px;
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
     z-index: -1;
+  }
+
+  // 技能卡片：选择按钮右侧 pin 图标按钮（hover 图标转主题色；
+  // pin/取消 pin 接口未定，点击逻辑暂未接入，仅展示）
+  .pin-btn {
+    color: @colorTextSecondary;
+
+    &:hover {
+      color: @colorPrimary;
+    }
   }
 
   // 连接器卡片：标题下方 分类 + 连接状态行（颜色对齐连接器详情抽屉）
