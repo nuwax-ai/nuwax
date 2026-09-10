@@ -1,6 +1,10 @@
 import { MOBILE_BREAKPOINT } from '@/constants/layout.constants';
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import {
+  appendOpenAppChromeFlags,
+  parseOpenAppChromeFlags,
+} from '@/utils/openAppChromeFlags';
+import {
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -46,6 +50,9 @@ const useOpenApp = () => {
       location.pathname.startsWith('/app/')
     ) {
       setIsAppSidebarMode(true);
+      if (parseOpenAppChromeFlags(window.location.search).hideMenu) {
+        setIsAppSidebarVisible(false);
+      }
       appSidebarPrevNarrow = null;
     } else {
       setIsAppSidebarMode(false);
@@ -60,6 +67,12 @@ const useOpenApp = () => {
     if (!isAppSidebarModeRef.current) return;
     const narrow = window.innerWidth < MOBILE_BREAKPOINT;
     setIsMobile(narrow);
+    // hideMenu：独立会话嵌入态强制收起侧栏，且不因桌面宽度恢复展开
+    if (parseOpenAppChromeFlags(window.location.search).hideMenu) {
+      appSidebarPrevNarrow = narrow;
+      setIsAppSidebarVisible(false);
+      return;
+    }
     const prev = appSidebarPrevNarrow;
     if (prev === null) {
       appSidebarPrevNarrow = narrow;
@@ -165,9 +178,9 @@ const useOpenApp = () => {
     localCalledTrialAgentIdRef.current = null;
   }, []);
 
-  // 创建应用智能体新会话
+  // 创建应用智能体新会话（保留独立会话 hide* query）
   const createAppNewConversation = (agentId: number) => {
-    history.push(`/app/${agentId}`);
+    history.push(appendOpenAppChromeFlags(`/app/${agentId}`));
   };
 
   return {
