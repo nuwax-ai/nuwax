@@ -9,9 +9,9 @@ export enum UserAppDbEnvEnum {
 
 export interface UserAppDbCredentialInfo {
   /** 数据库账号 */
-  username: string;
+  username: string | null;
   /** 数据库密码 */
-  password: string;
+  password: string | null;
 }
 
 /** 保存数据库账号密码参数 */
