@@ -30,7 +30,9 @@ import type {
   ResourceTypeEnum,
 } from '../../types';
 import ResourceToolbar from '../ResourceToolbar';
+import ConnectorConnectModal from './components/ConnectorConnectModal';
 import ResourceCard from './components/ResourceCard';
+import useConnectorConnect from './hooks/useConnectorConnect';
 import useResourceCategories from './hooks/useResourceCategories';
 import useResourceList from './hooks/useResourceList';
 import styles from './index.less';
@@ -205,6 +207,23 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     [disconnectingIds, source, listSpaceId, updateItem],
   );
 
+  /**
+   * 连接器卡片「连接」：按认证方式分流（oauth2 → 授权弹窗；
+   * api_key/bearer/custom → 凭据抽屉），与管理侧/空间侧详情抽屉同口径；
+   * 连接成功后就地更新卡片为已连接
+   */
+  const {
+    handleConnect,
+    connectingIds,
+    connectCtx,
+    closeConnectModal,
+    handleConnected,
+  } = useConnectorConnect({
+    source,
+    spaceId: listSpaceId,
+    updateItem,
+  });
+
   // 筛选状态同步 URL（replace 不产生历史记录）
   useEffect(() => {
     const searchParams = new URLSearchParams();
@@ -322,6 +341,14 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                     resourceType === 'connector' &&
                     disconnectingIds.includes(item.id)
                   }
+                  // 连接器卡片「连接」：仅未连接状态生效（oauth2 授权弹窗 / 凭据抽屉）
+                  onConnect={
+                    resourceType === 'connector' ? handleConnect : undefined
+                  }
+                  connecting={
+                    resourceType === 'connector' &&
+                    connectingIds.includes(item.id)
+                  }
                   showUse={resourceType === 'skill'}
                   // 底部统计行仅专家卡片展示（技能本就无统计；
                   // 连接器工具数统计已下线）
@@ -337,6 +364,20 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
         <div className={cx('flex', 'flex-1', 'items-center', 'content-center')}>
           <Empty description={dict('PC.Common.Global.emptyData')} />
         </div>
+      )}
+
+      {/* 连接器「连接」凭据弹窗（认证方式 api_key/bearer/custom；oauth2 走授权弹窗）：
+          表单与提交链路同空间侧/管理侧凭据抽屉口径（原抽屉不变，本页按需求用弹窗），
+          提交 POST /api/connector/connections/api-key，成功后就地更新卡片为已连接 */}
+      {resourceType === 'connector' && (
+        <ConnectorConnectModal
+          open={connectCtx !== null}
+          record={connectCtx?.record ?? null}
+          fields={connectCtx?.fields ?? []}
+          spaceId={source === 'team' ? listSpaceId : undefined}
+          onClose={closeConnectModal}
+          onConnected={handleConnected}
+        />
       )}
     </div>
   );

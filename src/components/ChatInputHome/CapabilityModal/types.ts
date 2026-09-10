@@ -43,6 +43,8 @@ export interface CapabilityItem {
   connected?: boolean;
   /** 资料格式；未返回时仅从文件扩展名推导。 */
   fileType?: string;
+  /** 资料库文档类型（knowledge 项；随 selectedDocs 的 pageType 发送） */
+  pageType?: string;
   /** 是否需要付费（系统广场条目；选中付费未订阅技能时上层需拉起订阅弹窗） */
   paymentRequired?: boolean;
   /** 是否已订阅（系统广场条目） */

@@ -6,10 +6,13 @@ import {
   ChatInputVoiceFooter,
   mergeVoiceTranscript,
 } from '@/components/business-component/VoiceInput';
+import type { CapabilityTypeEnum } from '@/components/ChatInputHome/CapabilityModal/types';
 import ComputerTypeSelector from '@/components/ChatInputHome/ComputerTypeSelector';
 import styles from '@/components/ChatInputHome/index.less';
 import ManualComponentItem from '@/components/ChatInputHome/ManualComponentItem';
-import MentionEditor from '@/components/ChatInputHome/MentionEditor';
+import MentionEditor, {
+  DEFAULT_CAPABILITY_RESOURCE_TYPES,
+} from '@/components/ChatInputHome/MentionEditor';
 import type {
   ExpertMentionInfo,
   FetchMentionFiles,
@@ -17,7 +20,9 @@ import type {
   MentionItem,
 } from '@/components/ChatInputHome/MentionPopup/types';
 import ModelSelector from '@/components/ChatInputHome/ModelSelector';
+import SpaceSelector from '@/components/ChatInputHome/SpaceSelector';
 import { useSlashPlugins } from '@/components/ChatInputHome/useSlashPlugins';
+import WorkspaceDirPickerModal from '@/components/ChatInputHome/WorkspaceDirPickerModal';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
@@ -49,6 +54,9 @@ import {
   CheckOutlined,
   CloseOutlined,
   DesktopOutlined,
+  DownOutlined,
+  FolderOpenOutlined,
+  FolderOutlined,
   LoadingOutlined,
   PaperClipOutlined,
   PlusOutlined,
@@ -56,8 +64,11 @@ import {
 import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
+  forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -91,11 +102,21 @@ const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
 };
 
 /**
- * ChatInputHomeIndependent 组件的 Props 类型
+ * 召唤专家 chip 展示信息（首页场景：以该专家智能体身份创建会话；
+ * iconSrc 为经 useAuthProtectedImageSrc 鉴权解析后的地址，加载失败隐藏）
+ */
+export interface SummonedExpertChipInfo {
+  agentId: number;
+  name: string;
+  iconSrc?: string;
+}
+
+/**
+ * ChatInputUnified 组件的 Props 类型
  * 将原 ChatInputHome 中 useModel('conversationInfo') 的数据改为外部传入，
  * 实现组件独立性，避免与 model 强关联。
  */
-export interface ChatInputHomeIndependentProps {
+export interface ChatInputUnifiedProps {
   // ===== 原 ChatInputHome 的受控属性 =====
   className?: React.CSSProperties;
   wholeDisabled?: boolean;
@@ -126,6 +147,42 @@ export interface ChatInputHomeIndependentProps {
   onToggleTaskAgent?: () => void;
   selectedComputerId?: string;
   onComputerSelect?: (id: string) => void;
+  /**
+   * 发起会话时选择的工作目录（仅个人电脑场景）：
+   * 不传 onWorkspaceDirChange 时工作目录栏不渲染
+   */
+  workspaceDir?: string;
+  onWorkspaceDirChange?: (dir: string) => void;
+  /** 禁用个人电脑（如全栈应用等类型）：电脑选择锁定云端、工作目录栏隐藏 */
+  disablePersonalComputer?: boolean;
+  /** 是否展示空间选择器（首页创建项目类推荐时使用） */
+  showSpaceSelector?: boolean;
+  selectedSpaceId?: number;
+  onSpaceSelect?: (spaceId: number) => void;
+  /** 推荐标签 pill：选中后内联展示在输入框行首，可取消 */
+  selectedTag?: { label: string };
+  onClearSelectedTag?: () => void;
+  /** 会话调试悬浮按钮（会话页默认展示；首页等场景传 false 关闭） */
+  showDebugFab?: boolean;
+  /**
+   * / 能力弹窗是否开放「专家」类型（产品策略：选择专家仅首页开放；
+   * 默认 false 仅隐藏入口，专家选中链路 expertComponents 保持可用）
+   */
+  showExpertCapability?: boolean;
+  /**
+   * 草稿缓存作用域 key：默认按当前会话 id 持久化；
+   * 首页等无会话场景传固定 key（如 'home'）即可启用草稿
+   */
+  draftKey?: string;
+  /** 召唤专家回执 chip（首页场景：提交时以该专家 agentId 创建会话） */
+  summonedExpert?: SummonedExpertChipInfo;
+  onClearSummonedExpert?: () => void;
+  /**
+   * 首页场景：能力弹窗选中专家 = 切换会话智能体（清掉分类/推荐所选，
+   * 提交时以专家 agentId 走会话创建）。提供本回调时专家选中不再走内部
+   * expertComponents（消息级组件）通道；会话页不传，保持消息级语义。
+   */
+  onExpertAgentSelect?: (expert: ExpertMentionInfo) => void;
   agentId?: number;
   agentSandboxId?: string | number;
   fixedSelection?: boolean;
@@ -179,12 +236,23 @@ export interface ChatInputHomeIndependentProps {
   conversationInfo?: ConversationInfo | null;
 }
 
+/** 组件 ref 协议：外部清空/聚焦输入（首页切推荐/分类时使用） */
+export interface ChatInputUnifiedRef {
+  focus: () => void;
+  clear: () => void;
+}
+
 /**
- * 独立版聊天输入组件
+ * 统一聊天输入组件
  * 与原 ChatInputHome 功能完全一致，但 conversationInfo model 数据全部从外部 props 传入，
- * 实现与 model 的解耦，便于在不同上下文（如 conversationAgent model）中复用。
+ * 实现与 model 的解耦；会话页（UnifiedChatSession）与首页（/home）共用本组件，
+ * 会话态（停止/队列/草稿按会话）与首页态（工作目录/空间/推荐标签/召唤专家）由 props 按需启用。
  */
-const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
+const ChatInputUnifiedImpl: React.FC<
+  ChatInputUnifiedProps & {
+    forwardedRef?: React.ForwardedRef<ChatInputUnifiedRef>;
+  }
+> = ({
   className,
   wholeDisabled = false,
   clearDisabled = false,
@@ -206,6 +274,20 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   onToggleTaskAgent,
   selectedComputerId,
   onComputerSelect,
+  workspaceDir,
+  onWorkspaceDirChange,
+  disablePersonalComputer = false,
+  showSpaceSelector = false,
+  selectedSpaceId,
+  onSpaceSelect,
+  selectedTag,
+  onClearSelectedTag,
+  showDebugFab = true,
+  showExpertCapability = false,
+  draftKey,
+  summonedExpert,
+  onClearSummonedExpert,
+  onExpertAgentSelect,
   agentId,
   agentSandboxId,
   fixedSelection,
@@ -245,6 +327,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   loadingConversation = false,
   isLoadingOtherInterface = false,
   conversationInfo,
+  forwardedRef,
 }) => {
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -279,6 +362,46 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   const [isStoppingConversation, setIsStoppingConversation] =
     useState<boolean>(false);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
+  // 工作目录浏览弹窗（env-bar「打开电脑文件夹」入口）
+  const [workspaceDirPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
+  // 推荐标签 pill 实测宽度：编辑器 inlinePrefixWidth 让行首文本绕开标签
+  const selectedTagRef = useRef<HTMLDivElement>(null);
+  const [selectedTagWidth, setSelectedTagWidth] = useState<number>(0);
+  const selectedTagOffset = selectedTag?.label ? selectedTagWidth + 8 : 0;
+
+  useImperativeHandle(forwardedRef, () => ({
+    focus: () => {
+      mentionEditorRef.current?.focus?.();
+    },
+    clear: () => {
+      mentionEditorRef.current?.clear?.();
+    },
+  }));
+
+  useLayoutEffect(() => {
+    if (!selectedTag?.label || !selectedTagRef.current) {
+      setSelectedTagWidth(0);
+      return;
+    }
+
+    const selectedTagElement = selectedTagRef.current;
+    const updateSelectedTagWidth = () => {
+      setSelectedTagWidth(selectedTagElement.offsetWidth);
+    };
+
+    updateSelectedTagWidth();
+
+    if (typeof ResizeObserver === 'undefined') {
+      const frameId = window.requestAnimationFrame(updateSelectedTagWidth);
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    const resizeObserver = new ResizeObserver(updateSelectedTagWidth);
+    resizeObserver.observe(selectedTagElement);
+
+    return () => resizeObserver.disconnect();
+  }, [selectedTag?.label]);
+
   const [isHoveringBtn, setIsHoveringBtn] = useState<boolean>(false);
   const [delayedVisible, setDelayedVisible] = useState<boolean>(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -346,6 +469,13 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   const ownConversationIdRef = useRef(ownConversationId);
   ownConversationIdRef.current = ownConversationId;
 
+  // 草稿作用域：默认按会话 id；首页等无会话场景由 draftKey 指定（如 'home'）
+  const draftScope =
+    draftKey ?? (ownConversationId !== null ? String(ownConversationId) : null);
+  // 发送后草稿已消费：卸载兜底跳过回写（isClearInput=false 时输入仍在，
+  // 不把已发送内容重新落成草稿）；后续再次编辑会复位该标记
+  const draftConsumedRef = useRef(false);
+
   const confirmSendMessage = (value: string) => {
     if (!!value.trim() || !!files?.length) {
       onEnter(
@@ -357,6 +487,17 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
         selectedDocs,
         expertComponents,
       );
+      // 已发送内容不再是草稿：无论 isClearInput 与否都清除（isClearInput=false
+      // 时输入保留供失败重试，但草稿已消费，卸载兜底不再回写旧内容）
+      draftConsumedRef.current = true;
+      const scope =
+        draftKey ??
+        (ownConversationIdRef.current !== null
+          ? String(ownConversationIdRef.current)
+          : null);
+      if (scope) {
+        clearDraft(scope);
+      }
       if (isClearInput) {
         setUploadFiles([]);
         setMessageInfo('');
@@ -364,10 +505,6 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
         setSelectedDocs([]);
         setExpertComponents([]);
         mentionEditorRef.current?.clear();
-        // 已发送内容不再是草稿
-        if (ownConversationIdRef.current) {
-          clearDraft(ownConversationIdRef.current);
-        }
       }
     }
   };
@@ -690,7 +827,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ===== 输入草稿缓存（按会话 id 持久化，切回/刷新后恢复） =====
+  // ===== 输入草稿缓存（按草稿作用域持久化，切回/刷新后恢复） =====
   // 最新输入镜像：卸载兜底落盘用（节流定时器可能尚未触发）
   const draftStateRef = useRef({ text: messageInfo, skillIds });
   draftStateRef.current = { text: messageInfo, skillIds };
@@ -698,24 +835,25 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
 
   // 恢复：进入会话时输入为空才回填草稿，不覆盖已开始的输入（含队列编辑回填内容）
   useEffect(() => {
-    if (!ownConversationId) return;
-    const draft = loadDraft(ownConversationId);
+    if (!draftScope) return;
+    const draft = loadDraft(draftScope);
     if (!draft) return;
     setMessageInfo((prev) => (prev ? prev : draft.text));
     if (draft.skillIds?.length) {
       setSkillIds((prev) => (prev.length ? prev : draft.skillIds!));
     }
-  }, [ownConversationId]);
+  }, [draftScope]);
 
   // 节流写回：输入 / 技能选择变化 ~1s 后落盘
   useEffect(() => {
-    if (!ownConversationId) return;
+    if (!draftScope) return;
     if (draftSaveTimerRef.current) {
       clearTimeout(draftSaveTimerRef.current);
     }
+    draftConsumedRef.current = false;
     draftSaveTimerRef.current = setTimeout(() => {
       draftSaveTimerRef.current = null;
-      saveDraft(ownConversationId, {
+      saveDraft(draftScope, {
         version: 1,
         text: draftStateRef.current.text,
         skillIds: draftStateRef.current.skillIds,
@@ -727,20 +865,21 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
         draftSaveTimerRef.current = null;
       }
     };
-  }, [messageInfo, skillIds, ownConversationId]);
+  }, [messageInfo, skillIds, draftScope]);
 
   // 卸载兜底：离开会话时把当前输入立即落盘（发送成功路径已在 confirmSendMessage 清除草稿）
   useEffect(() => {
-    if (!ownConversationId) return;
-    const conversationId = ownConversationId;
+    if (!draftScope) return;
+    const scope = draftScope;
     return () => {
-      saveDraft(conversationId, {
+      if (draftConsumedRef.current) return;
+      saveDraft(scope, {
         version: 1,
         text: draftStateRef.current.text,
         skillIds: draftStateRef.current.skillIds,
       });
     };
-  }, [ownConversationId]);
+  }, [draftScope]);
 
   // 监听队列消息编辑回填（含 skillIds / modelId / agentMode 快照）
   useEffect(() => {
@@ -789,6 +928,15 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     manualComponents,
     selectedComponentList,
     onSelectComponent,
+  );
+
+  // / 能力弹窗开放范围：默认不含专家（仅首页经 showExpertCapability 开放）
+  const capabilityResourceTypes = useMemo<CapabilityTypeEnum[]>(
+    () =>
+      showExpertCapability
+        ? [...DEFAULT_CAPABILITY_RESOURCE_TYPES, 'expert']
+        : DEFAULT_CAPABILITY_RESOURCE_TYPES,
+    [showExpertCapability],
   );
 
   /** 资料库文档 chip 派生（编辑器内容变化自动同步，替代此前的单选追加） */
@@ -856,8 +1004,10 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
           }
         />
 
-        {/* 会话调试悬浮按钮：收纳「会话密度」「会话显示」两个调试入口 */}
-        <ConversationDebugFab conversationId={ownConversationId} />
+        {/* 会话调试悬浮按钮：收纳「会话密度」「会话显示」两个调试入口（首页等场景关闭） */}
+        {showDebugFab && (
+          <ConversationDebugFab conversationId={ownConversationId} />
+        )}
 
         {tabsSlot && (
           <div className={cx(styles['tabs-wrapper'])}>{tabsSlot}</div>
@@ -867,28 +1017,46 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
           <ConditionRender condition={uploadFiles?.length}>
             <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
           </ConditionRender>
-          <MentionEditor
-            onPluginSelect={onPluginSelect}
-            onFetchMentionFiles={onFetchMentionFiles}
-            ref={mentionEditorRef}
-            className={cx(styles.input)}
-            disabled={wholeDisabled}
-            value={messageInfo}
-            onChange={setMessageInfo}
-            onSkillIdsChange={setSkillIds}
-            enableMention={enableMention}
-            slashMode="capability"
-            onDocsChange={handleDocsChange}
-            onExpertSelect={handleExpertSelect}
-            mentionPlacement={mentionPlacement}
-            onPressEnter={handlePressEnter}
-            onPaste={handlePaste}
-            placeholder={placeholder}
-            defaultMentions={defaultMentions}
-            enableSubscription={isEnableSubscription}
-            onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
-            usageScenarios={usageScenarios}
-          />
+          {/* 输入行：推荐标签 pill 内联在编辑器行首，编辑器文本绕开（inlinePrefixWidth） */}
+          <div className={cx(styles['input-line'])}>
+            <ConditionRender condition={!!selectedTag?.label}>
+              <div ref={selectedTagRef} className={cx(styles['selected-tag'])}>
+                <span className={cx(styles['tag-label'])}>
+                  {selectedTag?.label}
+                </span>
+                <button
+                  type="button"
+                  className={cx(styles['tag-close'])}
+                  aria-label="Clear selected tag"
+                  onClick={onClearSelectedTag}
+                />
+              </div>
+            </ConditionRender>
+            <MentionEditor
+              onPluginSelect={onPluginSelect}
+              onFetchMentionFiles={onFetchMentionFiles}
+              ref={mentionEditorRef}
+              className={cx(styles.input)}
+              disabled={wholeDisabled}
+              value={messageInfo}
+              inlinePrefixWidth={selectedTagOffset}
+              onChange={setMessageInfo}
+              onSkillIdsChange={setSkillIds}
+              enableMention={enableMention}
+              capabilityResourceTypes={capabilityResourceTypes}
+              onDocsChange={handleDocsChange}
+              // 首页场景专家选中走外部（切换会话智能体）；否则走内部消息级 expertComponents
+              onExpertSelect={onExpertAgentSelect ?? handleExpertSelect}
+              mentionPlacement={mentionPlacement}
+              onPressEnter={handlePressEnter}
+              onPaste={handlePaste}
+              placeholder={placeholder}
+              defaultMentions={defaultMentions}
+              enableSubscription={isEnableSubscription}
+              onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
+              usageScenarios={usageScenarios}
+            />
+          </div>
           <VoiceFooter.Provider
             disabled={
               wholeDisabled ||
@@ -906,36 +1074,58 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
             }
           >
             {(isVoiceActive) => (
-              <footer
-                className={cx('flex', 'flex-1', styles.footer, {
-                  [styles['footer-voice-active']]: isVoiceActive,
-                })}
-              >
-                {/* + 号聚合菜单：附件上传 / @ 上下文 / / 能力（原独立入口收进此处） */}
-                <VoiceFooter.HideWhenActive>
-                  <Dropdown
-                    trigger={['click']}
-                    placement="topLeft"
-                    overlayClassName={cx(styles['plus-menu-overlay'])}
-                    menu={{
-                      items: [
-                        {
-                          key: 'attachment',
-                          label: (
-                            <Upload
-                              action={UPLOAD_FILE_ACTION}
-                              disabled={wholeDisabled}
-                              onChange={handleChange}
-                              multiple={true}
-                              fileList={uploadFiles}
-                              headers={{
-                                Authorization: token ? `Bearer ${token}` : '',
-                              }}
-                              data={{
-                                type: 'tmp',
-                              }}
-                              showUploadList={false}
-                            >
+              <>
+                <footer
+                  className={cx('flex', 'flex-1', styles.footer, {
+                    [styles['footer-voice-active']]: isVoiceActive,
+                  })}
+                >
+                  {/* + 号聚合菜单：附件上传 / @ 上下文 / / 能力（原独立入口收进此处） */}
+                  <VoiceFooter.HideWhenActive>
+                    <Dropdown
+                      trigger={['click']}
+                      placement="topLeft"
+                      overlayClassName={cx(styles['plus-menu-overlay'])}
+                      menu={{
+                        items: [
+                          {
+                            key: 'attachment',
+                            label: (
+                              <Upload
+                                action={UPLOAD_FILE_ACTION}
+                                disabled={wholeDisabled}
+                                onChange={handleChange}
+                                multiple={true}
+                                fileList={uploadFiles}
+                                headers={{
+                                  Authorization: token ? `Bearer ${token}` : '',
+                                }}
+                                data={{
+                                  type: 'tmp',
+                                }}
+                                showUploadList={false}
+                              >
+                                <span
+                                  className={cx(
+                                    'flex',
+                                    'items-center',
+                                    styles['plus-menu-label'],
+                                  )}
+                                >
+                                  <span className={styles['trigger-pill']}>
+                                    <PaperClipOutlined />
+                                  </span>
+                                  {t('PC.Components.ChatInputHome.attachFile')}
+                                </span>
+                              </Upload>
+                            ),
+                          },
+                          {
+                            key: 'at-context',
+                            // 无文件数据源时保持可点击：插入 @ 作普通文本，
+                            // 检测层发现无数据源自然不弹提示框
+                            disabled: wholeDisabled,
+                            label: (
                               <span
                                 className={cx(
                                   'flex',
@@ -943,272 +1133,279 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                                   styles['plus-menu-label'],
                                 )}
                               >
-                                <PaperClipOutlined
-                                  className={styles['plus-menu-icon']}
-                                />
-                                {t('PC.Components.ChatInputHome.attachFile')}
+                                <span className={styles['trigger-pill']}>
+                                  @
+                                </span>
+                                {t('PC.Components.ChatInputHome.atContext')}
                               </span>
-                            </Upload>
-                          ),
-                        },
-                        {
-                          key: 'at-context',
-                          // @ 弹窗依赖文件提及数据源（与原 @ 图标入口一致的能力边界）
-                          disabled: wholeDisabled || !onFetchMentionFiles,
-                          label: (
-                            <span
-                              className={cx(
-                                'flex',
-                                'items-center',
-                                styles['plus-menu-label'],
-                              )}
-                            >
-                              <span className={styles['trigger-pill']}>@</span>
-                              {t('PC.Components.ChatInputHome.atContext')}
-                            </span>
-                          ),
-                          onClick: () =>
-                            mentionEditorRef.current?.insertTriggerText('@'),
-                        },
-                        {
-                          key: 'slash-capability',
-                          disabled: wholeDisabled,
-                          label: (
-                            <span
-                              className={cx(
-                                'flex',
-                                'items-center',
-                                styles['plus-menu-label'],
-                              )}
-                            >
-                              <span className={styles['trigger-pill']}>/</span>
-                              {t('PC.Components.ChatInputHome.slashCapability')}
-                            </span>
-                          ),
-                          onClick: () =>
-                            mentionEditorRef.current?.insertTriggerText('/'),
-                        },
-                      ],
-                    }}
-                  >
-                    <Tooltip title={t('PC.Components.ChatInputHome.plusMenu')}>
-                      <span
-                        className={cx(
-                          'flex',
-                          'items-center',
-                          'content-center',
-                          'cursor-pointer',
-                          styles.box,
-                          styles['plus-box'],
-                          { [styles.disabled]: wholeDisabled },
-                        )}
-                      >
-                        <PlusOutlined className={cx(styles['svg-icon'])} />
-                      </span>
-                    </Tooltip>
-                  </Dropdown>
-                </VoiceFooter.HideWhenActive>
-
-                {!!messageList?.filter((item: MessageInfo) => item.id)
-                  ?.length && (
-                  <ConditionRender condition={showClearIcon && !!onClear}>
-                    <Tooltip
-                      title={t('PC.Components.ChatInputHome.clearRecord')}
-                    >
-                      <span
-                        className={cx(
-                          styles.clear,
-                          'flex',
-                          'items-center',
-                          'content-center',
-                          'cursor-pointer',
-                          styles.box,
-                          styles['plus-box'],
-                          {
-                            [styles.disabled]:
-                              clearDisabled || wholeDisabled || clearLoading,
+                            ),
+                            onClick: () =>
+                              mentionEditorRef.current?.insertTriggerText('@'),
                           },
-                        )}
-                        onClick={handleClear}
-                      >
-                        {clearLoading ? (
-                          <LoadingOutlined />
-                        ) : (
-                          <SvgIcon
-                            name="icons-chat-clear"
-                            style={{ fontSize: '14px' }}
-                            className={cx(styles['svg-icon'])}
-                          />
-                        )}
-                      </span>
-                    </Tooltip>
-                  </ConditionRender>
-                )}
-
-                <VoiceFooter.HideWhenActive>
-                  {showAgentModeSelector && (
-                    <Dropdown
-                      menu={{
-                        selectedKeys: [agentMode],
-                        items: AGENT_MODE_OPTIONS.map((mode) => ({
-                          key: mode,
-                          label: (
-                            <div
-                              className={cx(styles['agent-mode-dropdown-item'])}
-                            >
-                              <div className={cx(styles['item-content'])}>
-                                <span className={cx(styles['item-name'])}>
-                                  {t(AGENT_MODE_I18N[mode].label)}
+                          {
+                            key: 'slash-capability',
+                            disabled: wholeDisabled,
+                            label: (
+                              <span
+                                className={cx(
+                                  'flex',
+                                  'items-center',
+                                  styles['plus-menu-label'],
+                                )}
+                              >
+                                <span className={styles['trigger-pill']}>
+                                  /
                                 </span>
-                                <span className={cx(styles['item-desc'])}>
-                                  {t(AGENT_MODE_I18N[mode].desc)}
-                                </span>
-                              </div>
-                              {agentMode === mode && (
-                                <CheckOutlined
-                                  className={cx(styles['agent-mode-check'])}
-                                />
-                              )}
-                            </div>
-                          ),
-                          onClick: () => onAgentModeChange?.(mode),
-                        })),
+                                {t(
+                                  'PC.Components.ChatInputHome.slashCapability',
+                                )}
+                              </span>
+                            ),
+                            onClick: () =>
+                              mentionEditorRef.current?.insertTriggerText('/'),
+                          },
+                        ],
                       }}
-                      trigger={['click']}
-                      placement="topLeft"
-                      disabled={wholeDisabled || isSessionActive}
-                      overlayClassName="agent-mode-dropdown-overlay"
                     >
                       <Tooltip
-                        title={t('PC.Components.ChatInputHome.agentMode')}
+                        title={t('PC.Components.ChatInputHome.plusMenu')}
                       >
-                        <span className={cx(styles['agent-mode-select'])}>
-                          <span
-                            className={cx(
-                              styles['agent-mode-trigger'],
-                              styles[`agent-mode-option-${agentMode}`],
-                            )}
-                          >
-                            <span>{t(AGENT_MODE_I18N[agentMode].label)}</span>
-                            <SvgIcon
-                              name="icons-common-caret_down"
-                              style={{ fontSize: '14px' }}
-                              className={cx(styles['agent-mode-arrow'])}
-                            />
-                          </span>
-                        </span>
-                      </Tooltip>
-                    </Dropdown>
-                  )}
-                </VoiceFooter.HideWhenActive>
-                {/* 已选专家回填：会话仅一个专家，展示在工具栏最右；
-                    专家不进输入框（无 chip），pill 即唯一事实源 */}
-                {expertComponents.length > 0 && (
-                  <VoiceFooter.HideWhenActive>
-                    <span
-                      className={cx(
-                        'flex',
-                        'items-center',
-                        styles['expert-pill'],
-                      )}
-                    >
-                      <span className={cx(styles['expert-pill-name'])}>
-                        {expertComponents[0].name}
-                      </span>
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        aria-label={t('PC.Common.Global.delete')}
-                        className={cx(styles['expert-pill-remove'])}
-                        onClick={() => setExpertComponents([])}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setExpertComponents([]);
-                          }
-                        }}
-                      >
-                        <CloseOutlined />
-                      </span>
-                    </span>
-                  </VoiceFooter.HideWhenActive>
-                )}
-                <VoiceFooter.HideWhenActive>
-                  {showTaskAgentToggle && (
-                    <Tooltip
-                      title={
-                        isTaskAgentActive
-                          ? t('PC.Components.ChatInputHome.switchToNormalMode')
-                          : t(
-                              'PC.Components.ChatInputHome.useAgentComputerTask',
-                            )
-                      }
-                    >
-                      <span
-                        className={cx(
-                          'flex',
-                          'items-center',
-                          'content-center',
-                          'cursor-pointer',
-                          styles.box,
-                          styles['plus-box'],
-                          styles['task-agent-box'],
-                          { [styles['task-agent-active']]: isTaskAgentActive },
-                        )}
-                        onClick={onToggleTaskAgent}
-                      >
-                        <DesktopOutlined style={{ fontSize: '14px' }} />
-                      </span>
-                    </Tooltip>
-                  )}
-                </VoiceFooter.HideWhenActive>
-
-                <VoiceFooter.HideWhenActive>
-                  <ManualComponentItem
-                    manualComponents={commandManualComponents}
-                    selectedComponentList={selectedComponentList}
-                    onSelectComponent={onSelectComponent}
-                  />
-                </VoiceFooter.HideWhenActive>
-
-                <VoiceFooter.Expand />
-
-                <VoiceFooter.Right
-                  defaultActions={
-                    isSessionActive ? (
-                      <Tooltip title={getStopButtonTooltip()}>
                         <span
-                          onClick={handleStopConversation}
                           className={cx(
                             'flex',
                             'items-center',
                             'content-center',
                             'cursor-pointer',
                             styles.box,
-                            styles['send-box'],
-                            styles['stop-box'],
-                            {
-                              [styles['stop-box-active']]:
-                                !isStoppingConversation,
-                            },
+                            styles['plus-box'],
+                            { [styles.disabled]: wholeDisabled },
                           )}
                         >
-                          {isStoppingConversation ? (
-                            <div className={cx(styles['loading-box'])}>
-                              <LoadingOutlined
-                                className={cx(styles['loading-icon'])}
-                              />
-                            </div>
+                          <PlusOutlined className={cx(styles['svg-icon'])} />
+                        </span>
+                      </Tooltip>
+                    </Dropdown>
+                  </VoiceFooter.HideWhenActive>
+
+                  {!!messageList?.filter((item: MessageInfo) => item.id)
+                    ?.length && (
+                    <ConditionRender condition={showClearIcon && !!onClear}>
+                      <Tooltip
+                        title={t('PC.Components.ChatInputHome.clearRecord')}
+                      >
+                        <span
+                          className={cx(
+                            styles.clear,
+                            'flex',
+                            'items-center',
+                            'content-center',
+                            'cursor-pointer',
+                            styles.box,
+                            styles['plus-box'],
+                            {
+                              [styles.disabled]:
+                                clearDisabled || wholeDisabled || clearLoading,
+                            },
+                          )}
+                          onClick={handleClear}
+                        >
+                          {clearLoading ? (
+                            <LoadingOutlined />
                           ) : (
-                            <SvgIcon name="icons-chat-stop" />
+                            <SvgIcon
+                              name="icons-chat-clear"
+                              style={{ fontSize: '14px' }}
+                              className={cx(styles['svg-icon'])}
+                            />
                           )}
                         </span>
                       </Tooltip>
-                    ) : (
-                      <>
-                        <Tooltip title={getButtonTooltip()}>
+                    </ConditionRender>
+                  )}
+
+                  <VoiceFooter.HideWhenActive>
+                    {showAgentModeSelector && (
+                      <Dropdown
+                        menu={{
+                          selectedKeys: [agentMode],
+                          items: AGENT_MODE_OPTIONS.map((mode) => ({
+                            key: mode,
+                            label: (
+                              <div
+                                className={cx(
+                                  styles['agent-mode-dropdown-item'],
+                                )}
+                              >
+                                <div className={cx(styles['item-content'])}>
+                                  <span className={cx(styles['item-name'])}>
+                                    {t(AGENT_MODE_I18N[mode].label)}
+                                  </span>
+                                  <span className={cx(styles['item-desc'])}>
+                                    {t(AGENT_MODE_I18N[mode].desc)}
+                                  </span>
+                                </div>
+                                {agentMode === mode && (
+                                  <CheckOutlined
+                                    className={cx(styles['agent-mode-check'])}
+                                  />
+                                )}
+                              </div>
+                            ),
+                            onClick: () => onAgentModeChange?.(mode),
+                          })),
+                        }}
+                        trigger={['click']}
+                        placement="topLeft"
+                        disabled={wholeDisabled || isSessionActive}
+                        overlayClassName="agent-mode-dropdown-overlay"
+                      >
+                        <Tooltip
+                          title={t('PC.Components.ChatInputHome.agentMode')}
+                        >
+                          <span className={cx(styles['agent-mode-select'])}>
+                            <span
+                              className={cx(
+                                styles['agent-mode-trigger'],
+                                styles[`agent-mode-option-${agentMode}`],
+                              )}
+                            >
+                              <span>{t(AGENT_MODE_I18N[agentMode].label)}</span>
+                              <SvgIcon
+                                name="icons-common-caret_down"
+                                style={{ fontSize: '14px' }}
+                                className={cx(styles['agent-mode-arrow'])}
+                              />
+                            </span>
+                          </span>
+                        </Tooltip>
+                      </Dropdown>
+                    )}
+                  </VoiceFooter.HideWhenActive>
+                  {/* 已选专家回填：会话仅一个专家，展示在工具栏最右；
+                    专家不进输入框（无 chip），pill 即唯一事实源 */}
+                  {expertComponents.length > 0 && (
+                    <VoiceFooter.HideWhenActive>
+                      <span
+                        className={cx(
+                          'flex',
+                          'items-center',
+                          styles['expert-pill'],
+                        )}
+                      >
+                        <span className={cx(styles['expert-pill-name'])}>
+                          {expertComponents[0].name}
+                        </span>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={t('PC.Common.Global.delete')}
+                          className={cx(styles['expert-pill-remove'])}
+                          onClick={() => setExpertComponents([])}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setExpertComponents([]);
+                            }
+                          }}
+                        >
+                          <CloseOutlined />
+                        </span>
+                      </span>
+                    </VoiceFooter.HideWhenActive>
+                  )}
+                  <VoiceFooter.HideWhenActive>
+                    {showTaskAgentToggle && (
+                      <Tooltip
+                        title={
+                          isTaskAgentActive
+                            ? t(
+                                'PC.Components.ChatInputHome.switchToNormalMode',
+                              )
+                            : t(
+                                'PC.Components.ChatInputHome.useAgentComputerTask',
+                              )
+                        }
+                      >
+                        <span
+                          className={cx(
+                            'flex',
+                            'items-center',
+                            'content-center',
+                            'cursor-pointer',
+                            styles.box,
+                            styles['plus-box'],
+                            styles['task-agent-box'],
+                            {
+                              [styles['task-agent-active']]: isTaskAgentActive,
+                            },
+                          )}
+                          onClick={onToggleTaskAgent}
+                        >
+                          <DesktopOutlined style={{ fontSize: '14px' }} />
+                        </span>
+                      </Tooltip>
+                    )}
+                  </VoiceFooter.HideWhenActive>
+
+                  <VoiceFooter.HideWhenActive>
+                    <ManualComponentItem
+                      manualComponents={commandManualComponents}
+                      selectedComponentList={selectedComponentList}
+                      onSelectComponent={onSelectComponent}
+                    />
+                  </VoiceFooter.HideWhenActive>
+
+                  {/* 召唤专家回执 chip（首页场景）：展示在工具栏左区最右侧，
+                      提交时以该专家智能体身份创建会话；可取消回落原智能体 */}
+                  {summonedExpert && (
+                    <VoiceFooter.HideWhenActive>
+                      <span
+                        className={cx(
+                          'flex',
+                          'items-center',
+                          styles['expert-pill'],
+                        )}
+                      >
+                        {summonedExpert.iconSrc && (
+                          <img
+                            src={summonedExpert.iconSrc}
+                            alt=""
+                            className={cx(styles['expert-pill-icon'])}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        <span className={cx(styles['expert-pill-name'])}>
+                          {summonedExpert.name}
+                        </span>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={t('PC.Common.Global.delete')}
+                          className={cx(styles['expert-pill-remove'])}
+                          onClick={onClearSummonedExpert}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onClearSummonedExpert?.();
+                            }
+                          }}
+                        >
+                          <CloseOutlined />
+                        </span>
+                      </span>
+                    </VoiceFooter.HideWhenActive>
+                  )}
+
+                  <VoiceFooter.Expand />
+
+                  <VoiceFooter.Right
+                    defaultActions={
+                      isSessionActive ? (
+                        <Tooltip title={getStopButtonTooltip()}>
                           <span
-                            onClick={handleSendMessage}
+                            onClick={handleStopConversation}
                             className={cx(
                               'flex',
                               'items-center',
@@ -1216,60 +1413,175 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                               'cursor-pointer',
                               styles.box,
                               styles['send-box'],
+                              styles['stop-box'],
                               {
-                                [styles.disabled]:
-                                  disabledSend ||
-                                  wholeDisabled ||
-                                  loadingConversation ||
-                                  isLoadingOtherInterface,
+                                [styles['stop-box-active']]:
+                                  !isStoppingConversation,
                               },
                             )}
                           >
-                            <SvgIcon
-                              name="icons-chat-send"
-                              style={{ fontSize: '14px' }}
-                            />
+                            {isStoppingConversation ? (
+                              <div className={cx(styles['loading-box'])}>
+                                <LoadingOutlined
+                                  className={cx(styles['loading-icon'])}
+                                />
+                              </div>
+                            ) : (
+                              <SvgIcon name="icons-chat-stop" />
+                            )}
                           </span>
                         </Tooltip>
-                      </>
-                    )
-                  }
-                >
-                  {prefix}
-                  {(isTaskAgentActive ||
-                    agentType === AgentTypeEnum.TaskAgent) &&
-                    !readonly && (
-                      <ComputerTypeSelector
-                        value={
-                          agentSandboxId !== undefined &&
-                          agentSandboxId !== null
-                            ? String(agentSandboxId)
-                            : conversationInfo?.sandboxServerId !== undefined &&
-                              conversationInfo?.sandboxServerId !== null
-                            ? String(conversationInfo.sandboxServerId)
-                            : selectedComputerId
-                        }
-                        onChange={(id: string) => onComputerSelect?.(id)}
-                        disabled={wholeDisabled}
+                      ) : (
+                        <>
+                          <Tooltip title={getButtonTooltip()}>
+                            <span
+                              onClick={handleSendMessage}
+                              className={cx(
+                                'flex',
+                                'items-center',
+                                'content-center',
+                                'cursor-pointer',
+                                styles.box,
+                                styles['send-box'],
+                                {
+                                  [styles.disabled]:
+                                    disabledSend ||
+                                    wholeDisabled ||
+                                    loadingConversation ||
+                                    isLoadingOtherInterface,
+                                },
+                              )}
+                            >
+                              <SvgIcon
+                                name="icons-chat-send"
+                                style={{ fontSize: '14px' }}
+                              />
+                            </span>
+                          </Tooltip>
+                        </>
+                      )
+                    }
+                  >
+                    {prefix}
+                    {(isTaskAgentActive ||
+                      agentType === AgentTypeEnum.TaskAgent) &&
+                      !readonly && (
+                        <ComputerTypeSelector
+                          value={
+                            agentSandboxId !== undefined &&
+                            agentSandboxId !== null
+                              ? String(agentSandboxId)
+                              : conversationInfo?.sandboxServerId !==
+                                  undefined &&
+                                conversationInfo?.sandboxServerId !== null
+                              ? String(conversationInfo.sandboxServerId)
+                              : selectedComputerId
+                          }
+                          onChange={(id: string) => {
+                            onComputerSelect?.(id);
+                            // 切回云电脑时工作目录失效，一并清空（仅个人电脑生效）
+                            if (id === '-1' && workspaceDir) {
+                              onWorkspaceDirChange?.('');
+                            }
+                          }}
+                          disabled={wholeDisabled}
+                          agentId={agentId}
+                          fixedSelection={fixedSelection || isSessionActive}
+                          unavailable={isSandboxUnavailable}
+                          autoSelect={autoSelectComputer}
+                          saveOnSelect={saveComputerOnSelect}
+                          isPersonalComputer={isPersonalComputer}
+                          readonly={readonly}
+                          cloudOnly={disablePersonalComputer}
+                        />
+                      )}
+                    {allowOtherModel === DefaultSelectedEnum.Yes && (
+                      <ModelSelector
                         agentId={agentId}
-                        fixedSelection={fixedSelection || isSessionActive}
-                        unavailable={isSandboxUnavailable}
-                        autoSelect={autoSelectComputer}
-                        saveOnSelect={saveComputerOnSelect}
-                        isPersonalComputer={isPersonalComputer}
-                        readonly={readonly}
+                        selectedModelId={selectedModelId}
+                        onModelSelect={onModelSelect}
+                        agentType={agentType}
                       />
                     )}
-                  {allowOtherModel === DefaultSelectedEnum.Yes && (
-                    <ModelSelector
-                      agentId={agentId}
-                      selectedModelId={selectedModelId}
-                      onModelSelect={onModelSelect}
-                      agentType={agentType}
-                    />
+                    {showSpaceSelector && (
+                      <SpaceSelector
+                        selectedSpaceId={selectedSpaceId}
+                        onSpaceSelect={onSpaceSelect}
+                      />
+                    )}
+                  </VoiceFooter.Right>
+                </footer>
+                {/**
+                 * 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，
+                 * 仅用户自选个人电脑时展示（智能体绑定电脑 agentSandboxId 固定、
+                 * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspaceDir）。
+                 * 「默认工作目录」=不传 workspaceDir；「打开电脑文件夹」=可视化浏览弹窗。
+                 */}
+                {(isTaskAgentActive || agentType === AgentTypeEnum.TaskAgent) &&
+                  !readonly &&
+                  !fixedSelection &&
+                  !disablePersonalComputer &&
+                  selectedComputerId &&
+                  selectedComputerId !== '-1' &&
+                  onWorkspaceDirChange && (
+                    <div className={cx(styles['workspace-dir-bar'])}>
+                      <Dropdown
+                        trigger={['click']}
+                        menu={{
+                          selectable: true,
+                          selectedKeys: [
+                            workspaceDir ? 'pick-folder' : 'default',
+                          ],
+                          items: [
+                            {
+                              key: 'default',
+                              icon: <FolderOutlined />,
+                              label: t('PC.Components.WorkspaceDir.defaultDir'),
+                            },
+                            {
+                              key: 'pick-folder',
+                              icon: <FolderOpenOutlined />,
+                              label: t(
+                                'PC.Components.WorkspaceDir.openComputerFolder',
+                              ),
+                            },
+                          ],
+                          onClick: ({ key }: { key: string }) => {
+                            if (key === 'pick-folder') {
+                              setWorkspaceDirPickerOpen(true);
+                            } else {
+                              onWorkspaceDirChange('');
+                            }
+                          },
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className={cx(styles['workspace-dir-trigger'])}
+                          title={workspaceDir || undefined}
+                        >
+                          <FolderOutlined />
+                          <span className={cx(styles['workspace-dir-text'])}>
+                            {workspaceDir ||
+                              t('PC.Components.WorkspaceDir.defaultDir')}
+                          </span>
+                          <DownOutlined
+                            className={cx(styles['workspace-dir-caret'])}
+                          />
+                        </button>
+                      </Dropdown>
+                      <WorkspaceDirPickerModal
+                        sandboxId={selectedComputerId}
+                        open={workspaceDirPickerOpen}
+                        onCancel={() => setWorkspaceDirPickerOpen(false)}
+                        onConfirm={(dir) => {
+                          setWorkspaceDirPickerOpen(false);
+                          onWorkspaceDirChange(dir);
+                        }}
+                      />
+                    </div>
                   )}
-                </VoiceFooter.Right>
-              </footer>
+              </>
             )}
           </VoiceFooter.Provider>
         </div>
@@ -1313,4 +1625,9 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   );
 };
 
-export default ChatInputHomeIndependent;
+/** 对外组件：forwardRef 暴露 focus/clear（首页切推荐/分类时由页面调用） */
+const ChatInputUnified = forwardRef<ChatInputUnifiedRef, ChatInputUnifiedProps>(
+  (props, ref) => <ChatInputUnifiedImpl {...props} forwardedRef={ref} />,
+);
+
+export default ChatInputUnified;

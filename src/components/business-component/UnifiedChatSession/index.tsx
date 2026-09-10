@@ -28,8 +28,8 @@ import type {
 } from '@/types/interfaces/openUi';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 
+import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import ChatContentArea from './components/ChatContentArea';
-import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
 import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
 
@@ -430,7 +430,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
             />
           </div>
         )}
-        <ChatInputHomeIndependent
+        <ChatInputUnified
           key={`chat-input-${conversationId}`}
           clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}

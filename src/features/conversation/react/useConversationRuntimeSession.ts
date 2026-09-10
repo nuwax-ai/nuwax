@@ -31,6 +31,7 @@ import type {
   ConversationInfo,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isConversationRuntimeEnabled } from '@/utils/conversationRuntimeFlag';
 import {
@@ -255,6 +256,7 @@ export function useConversationRuntimeSession(
       skillIds?: number[],
       modelId?: number,
       agentMode?: AgentMode,
+      selectedDocs?: SelectedDocInfo[],
     ) => {
       if (!session || conversationId === undefined) {
         return;
@@ -271,6 +273,7 @@ export function useConversationRuntimeSession(
         isSuggestEnabled: isSuggestEnabledRef.current,
         topicGate: { isSync },
         skillIds,
+        selectedDocs,
         modelId,
         agentMode,
       });

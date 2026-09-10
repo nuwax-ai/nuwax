@@ -117,10 +117,12 @@ export interface CapabilityModalProps {
   onClose: () => void;
   /** 选中能力回调（rawId 为原始标识，系统广场条目另有 targetId 本体 ID） */
   onSelect: (item: CapabilityItem) => void;
-  /** 初始能力类型，默认技能 */
+  /** 初始能力类型，默认技能；不在 resourceTypes 允许范围内时回落首个可用类型 */
   defaultResourceType?: CapabilityTypeEnum;
   /** 选中后是否自动关闭，默认 true */
   closeOnSelect?: boolean;
+  /** 开放的能力类型列表，缺省全部；用于按入口收敛可选范围（如专家仅首页开放） */
+  resourceTypes?: CapabilityTypeEnum[];
 }
 
 const CapabilityModal: React.FC<CapabilityModalProps> = ({
@@ -129,12 +131,28 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   onSelect,
   defaultResourceType = 'skill',
   closeOnSelect = true,
+  resourceTypes,
 }) => {
+  /** 按入口开放范围过滤后的左侧导航（缺省=全部四类） */
+  const menus = useMemo(
+    () =>
+      RESOURCE_MENUS.filter(
+        (menu) => !resourceTypes || resourceTypes.includes(menu.type),
+      ),
+    [resourceTypes],
+  );
+  /** 初始能力类型：defaultResourceType 被过滤时回落首个可用类型 */
+  const initialResourceType = menus.some(
+    (menu) => menu.type === defaultResourceType,
+  )
+    ? defaultResourceType
+    : menus[0]?.type ?? 'skill';
+
   // 能力类型 / 数据源（资料库=空间文档仓库，仅团队空间维度，初始即为 team）
   const [resourceType, setResourceType] =
-    useState<CapabilityTypeEnum>(defaultResourceType);
+    useState<CapabilityTypeEnum>(initialResourceType);
   const [source, setSource] = useState<CapabilitySourceEnum>(
-    defaultResourceType === 'knowledge' ? 'team' : 'system',
+    initialResourceType === 'knowledge' ? 'team' : 'system',
   );
   // 二级分类 key：system 维度为内容分类（空串=全部），team 维度为选中的空间 ID
   const [category, setCategory] = useState<string>('');
@@ -436,7 +454,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
             </div>
           </div>
           <nav className={cx('flex', 'flex-col', 'flex-1', styles.menu)}>
-            {RESOURCE_MENUS.map((menu) => (
+            {menus.map((menu) => (
               <button
                 key={menu.type}
                 type="button"

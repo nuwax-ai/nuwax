@@ -4,8 +4,8 @@
  * 与「会话显示」配置；高级配置每个 Select 有关联的可访问名称
  * （label 包裹 + aria-label），Segmented 分组有 aria-label。
  */
-import ConversationDebugFab from '@/components/business-component/UnifiedChatSession/components/ChatInputHomeIndependent/ConversationDebugFab';
-import ConversationDisplaySettings from '@/components/business-component/UnifiedChatSession/components/ChatInputHomeIndependent/ConversationDisplaySettings';
+import ConversationDebugFab from '@/components/business-component/ChatInputUnified/ConversationDebugFab';
+import ConversationDisplaySettings from '@/components/business-component/ChatInputUnified/ConversationDisplaySettings';
 import { PROCESS_NODE_KINDS } from '@/features/conversation/presentation-v2';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

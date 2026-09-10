@@ -3,12 +3,16 @@ import {
   readAgentModeCache,
   writeAgentModeCache,
 } from '@/components/business-component/AgentIntervention/hooks/useAgentInterventionLayer';
-import ChatInputHome, {
-  type ChatInputHomeRef,
-} from '@/components/ChatInputHome';
+import ChatInputUnified, {
+  type ChatInputUnifiedRef,
+} from '@/components/business-component/ChatInputUnified';
 import { getWorkspaceDirPolicy } from '@/constants/workspaceDirPolicy.constants';
+import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import useSummonExpertHandoff, {
+  type SummonedExpertInfo,
+} from '@/hooks/useSummonExpertHandoff';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { dict } from '@/services/i18nRuntime';
@@ -17,10 +21,10 @@ import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
 } from '@/types/enums/agent';
-import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentDetailDto,
   AgentManualComponentInfo,
+  AgentSelectedComponentInfo,
 } from '@/types/interfaces/agent';
 import type {
   MessageSourceType,
@@ -30,6 +34,7 @@ import {
   DisplayRecommendFunctionTypeEnum,
   type DisplayRecommendInfo,
 } from '@/types/interfaces/displayRecommend';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { SquareCategoryInfo } from '@/types/interfaces/square';
 import { App } from 'antd';
 import classNames from 'classnames';
@@ -88,7 +93,8 @@ const Home: React.FC = () => {
   const { getSpaceId } = useModel('spaceModel');
   const { setContext } = useModel('pageHandoffContext');
   const { handleCreateConversation } = useConversation();
-  const chatInputRef = useRef<ChatInputHomeRef>(null);
+  const chatInputRef = useRef<ChatInputUnifiedRef>(null);
+  const { consume: consumeSummonedExpert } = useSummonExpertHandoff();
   const {
     selectedComponentList,
     handleSelectComponent,
@@ -117,12 +123,31 @@ const Home: React.FC = () => {
   const [userPickedCategory, setUserPickedCategory] = useState<string | null>(
     null,
   );
+  // 专家召唤回执（专家页「召唤」经 pageHandoffContext 一次性透传，刷新即失效）
+  const [summonedExpert, setSummonedExpert] = useState<SummonedExpertInfo>();
+  // 召唤专家图标：受保护地址(/api/f/)需 Bearer fetch 转 blob 展示
+  const { displaySrc: summonedExpertIconSrc } = useAuthProtectedImageSrc(
+    summonedExpert?.icon,
+  );
+
+  // 召唤透传消费：读取即清；if 守卫规避 StrictMode 双执行把一次性值洗掉
+  useEffect(() => {
+    const payload = consumeSummonedExpert();
+    if (payload) {
+      setSummonedExpert(payload);
+      // 召唤专家优先于推荐 pill：显式清掉 pill 选中态
+      setSelectedRecommend(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const defaultAgentId =
     isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
       ? tenantConfigInfo.defaultTaskAgentId
       : tenantConfigInfo?.defaultAgentId;
-  const currentAgentId = selectedRecommend?.targetId || defaultAgentId;
+  // 会话对象优先级：召唤专家 > 推荐pill > 默认智能体
+  const currentAgentId =
+    summonedExpert?.agentId || selectedRecommend?.targetId || defaultAgentId;
 
   const handleAgentModeChange = useCallback(
     (mode: AgentMode) => {
@@ -196,8 +221,10 @@ const Home: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 切换会话对象（默认/推荐/专家）：重拉智能体详情；
+    // 不在此清空输入——清输入只发生在用户显式切 pill/分类时（见对应 handler），
+    // 选专家仅替换上方所选智能体，已输入内容与其他已选项保持
     setAgentDetail(undefined);
-    chatInputRef.current?.clear();
     if (currentAgentId) {
       runDetail(currentAgentId);
     }
@@ -218,18 +245,14 @@ const Home: React.FC = () => {
     initSelectedComponentList(agentDetail?.manualComponents);
   }, [agentDetail?.manualComponents]);
 
-  useEffect(() => {
-    setSelectedComputerId(selectedRecommend ? '' : '-1');
-    setSelectedModelId(undefined);
-    setSelectedSpaceId(undefined);
-  }, [selectedRecommend]);
-
   const handleEnter = async (
     inputMessage: string,
     files?: UploadFileInfo[],
     skillIds?: number[],
     modelId?: number,
     agentMode?: AgentMode,
+    selectedDocs?: SelectedDocInfo[],
+    expertComponents?: AgentSelectedComponentInfo[],
   ) => {
     if (submitting) return;
 
@@ -237,6 +260,18 @@ const Home: React.FC = () => {
       message.warning(dict('PC.Pages.Home.noTenantInfo'));
       return;
     }
+
+    // 专家 chip 合并进组件列表：与外部受控列表按 id+type 去重（对齐会话页规则）
+    const mergedInfos = [
+      ...selectedComponentList,
+      ...(expertComponents || []).filter(
+        (expert) =>
+          !selectedComponentList.some(
+            (selected) =>
+              selected.id === expert.id && selected.type === expert.type,
+          ),
+      ),
+    ];
 
     setSubmitting(true);
     try {
@@ -256,7 +291,7 @@ const Home: React.FC = () => {
             files,
             skillIds,
             modelId: modelId || selectedModelId,
-            tools: selectedComponentList,
+            tools: mergedInfos,
             computerId: selectedComputerId,
             // 自定义工作目录（wiki #17）：仅个人电脑生效，选中目录被占用时创建报错
             workspaceDir:
@@ -267,6 +302,8 @@ const Home: React.FC = () => {
             agentId: currentAgentId,
             // 首页选中 agent 创建项目：把该 agent 作为项目调试智能体传给后端
             devAgentId: currentAgentId,
+            // 资料库文档随 routeState 透传（项目页消费链路后续接入）
+            selectedDocs,
           },
           spaceId,
           tenantConfigInfo,
@@ -278,7 +315,7 @@ const Home: React.FC = () => {
       await handleCreateConversation(currentAgentId, {
         message: inputMessage,
         files,
-        infos: selectedComponentList,
+        infos: mergedInfos,
         messageSourceType: 'home' as MessageSourceType,
         selectedComputerId,
         workspaceDir:
@@ -288,6 +325,7 @@ const Home: React.FC = () => {
         skillIds,
         modelId: modelId || selectedModelId,
         agentMode,
+        selectedDocs,
       });
     } finally {
       setSubmitting(false);
@@ -328,15 +366,28 @@ const Home: React.FC = () => {
 
   const handleCategoryChange = (key: string) => {
     setUserPickedCategory(key);
-    // 切换分类后清掉已选 pill,避免跨分类残留选中态
-    if (selectedRecommend) {
+    // 切换分类后清掉已选 pill 与召唤态，避免跨分类残留选中态；
+    // 无选中时不清输入（用户可能只是浏览分类）
+    if (selectedRecommend || summonedExpert) {
       setSelectedRecommend(undefined);
+      setSummonedExpert(undefined);
+      // 智能体随分类重选：电脑/模型/空间等 agent 相关已选项一并复位
+      setSelectedComputerId('-1');
+      setSelectedModelId(undefined);
+      setSelectedSpaceId(undefined);
       chatInputRef.current?.clear();
     }
   };
 
   const handleRecommendSelect = (item: DisplayRecommendInfo) => {
+    // 推荐 pill = 显式切换会话对象，清掉召唤态（优先级让位）；
+    // 电脑置 '' 交选择器按新智能体记忆自动选，模型/空间复位，输入清空
+    setSummonedExpert(undefined);
     setSelectedRecommend((prev) => (prev?.id === item.id ? undefined : item));
+    setSelectedComputerId('');
+    setSelectedModelId(undefined);
+    setSelectedSpaceId(undefined);
+    chatInputRef.current?.clear();
     // 延迟以确保重新渲染后聚焦
     setTimeout(() => {
       chatInputRef.current?.focus();
@@ -372,12 +423,18 @@ const Home: React.FC = () => {
           selectedId={selectedRecommend?.id}
           onSelect={handleRecommendSelect}
         />
-        <ChatInputHome
+        <ChatInputUnified
           ref={chatInputRef}
           className={cx(styles.textarea)}
           onEnter={handleEnter}
           isClearInput={false}
           wholeDisabled={submitting}
+          // 首页草稿：固定作用域 key（无会话 id），24h 内回首页恢复未发送输入
+          draftKey="home"
+          // 首页不展示会话调试悬浮按钮
+          showDebugFab={false}
+          // 选择专家仅首页开放（其余入口能力弹窗隐藏专家导航）
+          showExpertCapability
           placeholder={selectedRecommend?.placeholder || undefined}
           manualComponents={
             agentDetail?.manualComponents || EMPTY_MANUAL_COMPONENTS
@@ -386,7 +443,11 @@ const Home: React.FC = () => {
           onSelectComponent={handleSelectComponent}
           showTaskAgentToggle={showTaskAgentToggle}
           isTaskAgentActive={effectiveTaskAgentActive}
-          onToggleTaskAgent={() => setIsTaskAgentMode((prev) => !prev)}
+          onToggleTaskAgent={() => {
+            // 电脑开关 = 显式切换会话对象，清掉召唤态
+            setSummonedExpert(undefined);
+            setIsTaskAgentMode((prev) => !prev);
+          }}
           selectedComputerId={selectedComputerId}
           onComputerSelect={(id) => {
             setSelectedComputerId(id);
@@ -402,10 +463,9 @@ const Home: React.FC = () => {
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
           readonly={!agentDetail?.allowPrivateSandbox}
-          enableMention={
-            agentDetail?.type === AgentTypeEnum.TaskAgent &&
-            agentDetail?.allowAtSkill === DefaultSelectedEnum.Yes
-          }
+          /* / 能力弹窗是首页自身特性（选技能/连接器/专家/资料库发起会话），
+             不随 agentDetail 重载/专家切换抖动 —— 不传 enableMention，
+             维持组件默认恒开（首页无 onFetchMentionFiles，@ 仍是纯文本） */
           allowOtherModel={agentDetail?.allowOtherModel}
           selectedModelId={selectedModelId}
           onModelSelect={setSelectedModelId}
@@ -430,6 +490,28 @@ const Home: React.FC = () => {
           showAgentModeSelector={
             agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
           }
+          // 召唤专家 chip：提交时以该专家 agentId 创建会话（优先级高于推荐 pill）
+          summonedExpert={
+            summonedExpert
+              ? {
+                  agentId: summonedExpert.agentId,
+                  name: summonedExpert.name,
+                  iconSrc: summonedExpertIconSrc,
+                }
+              : undefined
+          }
+          onClearSummonedExpert={() => setSummonedExpert(undefined)}
+          // 能力弹窗选中专家 = 切换会话智能体：仅清上方所选的推荐智能体，
+          // 输入内容与电脑/模型/空间等已选项保持；复用召唤链路
+          // （chip 展示 + 提交时以专家 agentId 走会话创建）
+          onExpertAgentSelect={(expert) => {
+            setSelectedRecommend(undefined);
+            setSummonedExpert({
+              agentId: expert.targetId,
+              name: expert.name,
+              icon: expert.icon,
+            });
+          }}
         />
       </main>
       <footer className={cx(styles['foot-tip'])}>

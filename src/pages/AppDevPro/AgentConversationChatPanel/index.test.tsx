@@ -24,6 +24,13 @@ vi.mock('umi', () => ({
   useModel: (...args: unknown[]) => mockUseModel(...args),
 }));
 
+// useConversationMentionFiles → services 链（vncDesktop → userService → 常量表）
+// 在 vitest 环境不可用，统一桩掉 i18n 与文件列表接口
+vi.mock('@/services/i18nRuntime', () => ({
+  t: (key: string) => key,
+  dict: (key: string) => key,
+}));
+
 function createConversationInfoModel(overrides: Record<string, any> = {}) {
   return {
     conversationInfo: {

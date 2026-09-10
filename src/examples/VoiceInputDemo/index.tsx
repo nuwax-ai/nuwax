@@ -1,7 +1,7 @@
 /**
  * Agent 会话框语音交互示例页
  *
- * 使用真实 UnifiedChatSession + ChatInputHomeIndependent（与 Agent 开发页一致），
+ * 使用真实 UnifiedChatSession + ChatInputUnified（与 Agent 开发页一致），
  * 消息发送为本地 Mock，语音录制/转写亦为模拟，无需麦克风与后端。
  *
  * 访问：/examples/voice-input-demo
