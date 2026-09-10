@@ -102,7 +102,7 @@ describe('创建项目切换个人电脑', () => {
         spaceId: 1,
         name: 'project',
         sandboxId: 22,
-        workspaceDir: undefined,
+        workspacePath: undefined,
       }),
     );
   });

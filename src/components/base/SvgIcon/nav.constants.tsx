@@ -50,6 +50,7 @@ import { ReactComponent as PricingSvgFile } from '@/assets/icons/nav/icons-nav-p
 import { ReactComponent as SubscriptionSvgFile } from '@/assets/icons/nav/icons-nav-subscription.svg';
 
 import { ReactComponent as DingyueyujifenSvgFile } from '@/assets/icons/nav/dingyueyujifen.svg';
+import { ReactComponent as NvwayingyongSvgFile } from '@/assets/icons/nav/nvwayingyong.svg';
 import { ReactComponent as YongliangtongjiSvgFile } from '@/assets/icons/nav/yongliangtongji.svg';
 import { ReactComponent as ZhifuyushouyiSvgFile } from '@/assets/icons/nav/zhifuyushouyi.svg';
 import { ReactComponent as ZiyuandingjiaSvgFile } from '@/assets/icons/nav/ziyuandingjia.svg';
@@ -105,6 +106,7 @@ const CreditsSvg = wrapSvg(CreditsSvgFile);
 const YongliangtongjiSvg = wrapSvg(YongliangtongjiSvgFile, {
   viewBox: '0 0 1024 1024',
 });
+const NvwayingyongSvg = wrapSvg(NvwayingyongSvgFile);
 export default {
   'icons-nav-api_key': ApiKeySvg,
   'icons-nav-home': HomeSvg,
@@ -160,4 +162,6 @@ export default {
   'icons-nav-ziyuandingjia': ZiyuandingjiaSvgFile,
   'icons-nav-dingyueyujifen': DingyueyujifenSvgFile,
   'icons-nav-zhifuyushouyi': ZhifuyushouyiSvgFile,
+  // 女娲应用(一级菜单,菜单 code nvwayingyong 经 menuService MENU_ICON_MAP 解析)
+  'icons-nav-nvwayingyong': NvwayingyongSvg,
 } as Record<string, React.FC>;

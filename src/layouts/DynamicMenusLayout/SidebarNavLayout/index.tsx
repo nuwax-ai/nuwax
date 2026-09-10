@@ -896,8 +896,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       {/* 折叠态展开按钮。主站页：原位复刻收起按钮位置（顶栏随侧栏收起而不可点，
           按钮浮于页面内容上层同位复现）；全屏工作台页宿主：页面自带头部
           （返回/标题/状态标签）占据左上角，原位会压住头部内容，改用左缘居中
-          把手形态（贴边半胶囊、hover 实显），不与页面 UI 抢位 */}
-      {primarySidebarCollapsed && (
+          把手形态（贴边半胶囊、hover 实显），不与页面 UI 抢位。
+          沉浸式桌面壳不渲染：整条侧栏的收起/展开由壳顶栏 ☰ 承担，
+          浮出钮在桌面上会与 ☰ 重复并压住内容区左上角 */}
+      {primarySidebarCollapsed && !isImmersiveShell() && (
         <Tooltip
           title={dict(
             'PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu',

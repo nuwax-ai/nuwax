@@ -565,10 +565,10 @@ export interface ChatInputProps extends ManualComponentItemProps {
    * 发起会话时选择的工作目录（仅个人电脑时生效，wiki #17）。
    * 选中个人电脑后展示「工作目录」入口，目录随会话创建记录在会话上。
    */
-  workspaceDir?: string;
+  workspacePath?: string;
   onWorkspaceDirChange?: (dir: string) => void;
   /**
-   * 仅云端模式（workspaceDir 策略，见 workspaceDirPolicy.constants）：隐藏个人电脑
+   * 仅云端模式（workspacePath 策略，见 workspaceDirPolicy.constants）：隐藏个人电脑
    * 选项（如全栈应用当前版本仅支持云端沙箱），工作目录栏一并隐藏。
    */
   disablePersonalComputer?: boolean;
@@ -622,6 +622,21 @@ export interface ChatInputProps extends ManualComponentItemProps {
     label: string;
   };
   onClearSelectedTag?: () => void;
+  /**
+   * 首页项目上框（项目列表「+ 新建会话」透传）：输入卡底部灰底栏展示绑定项目
+   * （类型徽标 + 名称，可删除）。存在期间工作区/沙箱由项目隐含，
+   * 隐藏工作目录栏与电脑选择器。
+   */
+  pinnedProject?: {
+    /** 项目名称 */
+    name: string;
+    /** 项目类型（UserApp=全栈 / NormalProject=常规，类型徽标文案用） */
+    projectType: AgentComponentTypeEnum;
+    /** 项目图标 URL（可为受保护地址，展示走 useAuthProtectedImageSrc） */
+    icon?: string;
+  };
+  /** 移除项目上框（恢复首页默认形态） */
+  onClearPinnedProject?: () => void;
   /** 可用值:PageApp,TaskAgent */
   usageScenarios?: AgentTypeEnum[];
   /**

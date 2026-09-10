@@ -106,7 +106,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
    * 自定义工作目录（wiki #17）：选中个人电脑后展示工作目录栏（单独一行），
    * 随创建流程透传到 /api/project/create；目录被占用时后端报错。
    */
-  const [workspaceDir, setWorkspaceDir] = useState<string>('');
+  const [workspacePath, setWorkspaceDir] = useState<string>('');
 
   // 选中的 Agent 模式（yolo/ask），随新建流程透传到目标会话页
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
@@ -198,9 +198,9 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
           tools: selectedComponentList,
           computerId: selectedComputerId,
           // 仅个人电脑时带上自定义工作目录（非空才传）
-          workspaceDir:
+          workspacePath:
             selectedComputerId && selectedComputerId !== '-1'
-              ? workspaceDir || undefined
+              ? workspacePath || undefined
               : undefined,
           agentMode,
         }),
@@ -210,7 +210,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
       onSubmit,
       selectedComponentList,
       selectedComputerId,
-      workspaceDir,
+      workspacePath,
       agentMode,
       isSubmitting,
     ],
@@ -241,7 +241,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
           // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
           if (id !== selectedComputerId) setWorkspaceDir('');
         }}
-        workspaceDir={workspaceDir}
+        workspacePath={workspacePath}
         onWorkspaceDirChange={setWorkspaceDir}
         agentType={matchingAgentDetail?.type}
         agentId={matchingAgentDetail?.agentId}

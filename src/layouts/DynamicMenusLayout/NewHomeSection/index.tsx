@@ -506,17 +506,20 @@ const NewHomeSection: React.FC<{
   );
 
   // 单栏分组头（原型 .tabs/.tab）：12.5px 文案 + 12px chevron，折叠时箭头转 -90°
+  // sticky：滚动到对应区域时分组头相互顶替、钉在滚动区顶部（配合 .section-tabs-sticky）
   const renderSectionHeader = (options: {
     label: string;
     count: number;
     collapsed: boolean;
     task?: boolean;
+    sticky?: boolean;
     onToggle: () => void;
   }) => (
     <div
       className={cx(styles['section-tabs'], {
         [styles['task-section-tabs']]: options.task,
         [styles['section-tabs-collapsed']]: options.collapsed,
+        [styles['section-tabs-sticky']]: options.sticky,
       })}
       onClick={options.onToggle}
       role="button"
@@ -639,20 +642,22 @@ const NewHomeSection: React.FC<{
       )}
 
       {isSidebarNavMode ? (
-        <>
-          {/* 项目分组头：固定于滚动区上方（原型 panel-header 内 .tabs 位） */}
-          {renderSectionHeader({
-            label: dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab'),
-            count: projectCount,
-            collapsed: projectCollapsed,
-            onToggle: () => setProjectCollapsed((prev) => !prev),
-          })}
-
-          {/* 滚动区：项目列表 + 任务分组头 + 任务列表（原型 scroll-area 同构） */}
-          <div
-            ref={scrollShowRef}
-            className={cx(styles['conversation-list-wrapper'])}
-          >
+        /* 滚动区：项目/任务两个分组（原型 scroll-area 同构）。分组头 sticky 吸顶——
+           滚动到对应区域时该区分组头把上一区分组头顶出、自动替换钉在滚动区顶部 */
+        <div
+          ref={scrollShowRef}
+          className={cx(styles['conversation-list-wrapper'])}
+        >
+          <div className={cx(styles['section-group'])}>
+            {renderSectionHeader({
+              label: dict(
+                'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab',
+              ),
+              count: projectCount,
+              collapsed: projectCollapsed,
+              sticky: true,
+              onToggle: () => setProjectCollapsed((prev) => !prev),
+            })}
             <div
               className={cx(styles['project-list-section'])}
               hidden={projectCollapsed}
@@ -664,7 +669,9 @@ const NewHomeSection: React.FC<{
                 onConversationClick={handleConversationClick}
               />
             </div>
+          </div>
 
+          <div className={cx(styles['section-group'])}>
             {renderSectionHeader({
               label: dict(
                 'PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask',
@@ -672,12 +679,12 @@ const NewHomeSection: React.FC<{
               count: taskCount,
               collapsed: taskCollapsed,
               task: true,
+              sticky: true,
               onToggle: () => setTaskCollapsed((prev) => !prev),
             })}
-
             {!taskCollapsed && renderTaskList}
           </div>
-        </>
+        </div>
       ) : (
         <>
           {/* 经典布局：任务/项目 tab 切换（维持改版前形态，指示条随位次滑动） */}

@@ -18,7 +18,7 @@ import {
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell, isMac, shellAvoid } from '@/utils/nuwaClawBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -256,6 +256,18 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
    * 二级列差异由 suppressSecondMenu 承担）
    */
   const contentNode = useMemo(() => {
+    // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
+    // - Win/Linux 避让 shellAvoid.CONTENT_TOP（28 < 顶行行高 36：顶行透明，
+    //   图标/菜单字形实际只占行上部 ~26px，内容卡可上提到字形下沿，
+    //   减少顶部空白；行内字形与卡片的层叠由壳侧顶行 z-index 保证）；
+    // - mac 默认不退让（顶行透明、图标组悬浮于侧栏列上方，展开态内容区
+    //   直接顶到窗口上沿）；仅整条侧栏收起后内容区顶到窗口上沿时，
+    //   才避让工具栏整条高度（图标簇悬浮于内容区左上，需要让位）；
+    // - 独立窗口（系统标题栏）与浏览器不避让；
+    // - 全屏工作台页（immersiveMarginTop=false）由路由层 immersiveShellAvoid
+    //   承担避让，此处叠加会造成双重下移。
+    const macAvoidance = isSecondMenuCollapsed ? shellAvoid.TOOLBAR : undefined;
+    const immersiveMargin = isMac() ? macAvoidance : shellAvoid.CONTENT_TOP;
     return (
       <div
         className={cx(
@@ -270,16 +282,9 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
         )}
         id="page-container-selector"
         style={{
-          // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
-          // - Win/Linux 桌面端恒避让（右上自绘三键 + 工具栏浮层）；
-          // - mac 展开态无需避让（二级菜单列顶着工具栏 icon 组），但收起二级菜单后
-          //   内容区左移顶到工具栏 icon 组（x≈80-240）下方，需与 Win/Linux 同样下移；
-          // - 独立窗口（系统标题栏）与浏览器不避让；
-          // - 全屏工作台页（immersiveMarginTop=false）由路由层 immersiveShellAvoid
-          //   承担避让，此处叠加会造成双重下移。
           marginTop:
             isImmersiveShell() && immersiveMarginTop
-              ? shellAvoid.TOP + 8
+              ? immersiveMargin
               : undefined,
         }}
       >
