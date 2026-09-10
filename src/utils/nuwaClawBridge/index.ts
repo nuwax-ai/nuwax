@@ -137,7 +137,13 @@ export function syncShellAvoidanceCss(): void {
   const vars: Array<[string, string | null]> = immersive
     ? [
         ['--nuwaclaw-shell-top', `${shellAvoid.TOP}px`],
-        ['--nuwaclaw-shell-toolbar', `${shellAvoid.TOOLBAR}px`],
+        // 独立全屏页（layout:false 路由）顶部退让：mac 不做——红绿灯悬浮于左上、
+        // 图标簇只占左侧 300px，页头（返回/标题/tabs）自 x≈260 起，无需让位；
+        // Win/Linux 保留——自绘菜单栏横跨到内容区（x 至 ~400），不避让会压住页头。
+        [
+          '--nuwaclaw-shell-toolbar',
+          isMac() ? '0px' : `${shellAvoid.TOOLBAR}px`,
+        ],
         ['--nuwaclaw-shell-right', `${shellAvoid.RIGHT}px`],
       ]
     : [
