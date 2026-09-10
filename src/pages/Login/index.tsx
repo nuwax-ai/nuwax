@@ -222,7 +222,9 @@ const Login: React.FC = () => {
   };
 
   useEffect(() => {
-    unifiedThemeService.clearUserThemeConfig();
+    // 认证闪断会短暂进入登录页；若用户已显式选择主题，不应在这里再次删除，
+    // 否则 style3 会回落为经典风格，工作台详情随即误走 bare 而非 page-container。
+    unifiedThemeService.clearUserThemeConfig({ preserveExplicitChoice: true });
     runTenantConfig();
   }, []);
 

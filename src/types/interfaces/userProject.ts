@@ -37,8 +37,9 @@ export type UserProjectPageQueryParams = TablePageRequest<
 >;
 
 /**
- * 用户项目分页查询结果行（前端先行定义，与 mock 对齐；
- * 后端真实结构若不同只需改此类型一处）
+ * 用户项目分页查询结果行（前端先行定义；2026-09-10 实测 page-query 真实行
+ * 与 tab 接口同款：主键字段为 projectId（无 id）、附带 conversationId/sandboxId，
+ * 消费侧（SpaceProjectManage）已就地归一 id，其余字段名一致）
  */
 export interface UserProjectItem {
   /** 项目ID（UserApp/NormalProject 即 app_id；PageApp 为页面项目 id） */
@@ -55,6 +56,10 @@ export interface UserProjectItem {
   icon: string;
   /** 发布状态（PageApp/UserApp 语义一致；常规项目为草稿态） */
   publishStatus: PublishStatusEnum;
+  /** 项目绑定的最新会话 ID（实测行附带，无会话为 null） */
+  conversationId?: number | null;
+  /** 沙箱ID（实测行附带） */
+  sandboxId?: number;
   /** 更新时间 */
   modified: string;
   /** 创建时间 */
@@ -91,9 +96,15 @@ export interface UserProjectTabItem {
   /** 沙箱类型（Cloud 等） */
   sandboxType?: string;
   /** 工作目录 */
-  workspaceDir?: string | null;
+  workspacePath?: string | null;
   /** 项目绑定的最新会话 ID（无则为 null） */
   conversationId?: number | null;
+  /**
+   * 项目绑定的调试智能体 ID（全栈项目默认命中智能体用）。
+   * 契约先行（2026-09-10 后端未 ready，接口暂不返回 → undefined，
+   * 首页走「提示手动选择」降级路径）。
+   */
+  devAgentId?: number;
   /** 项目下的会话列表（tab 接口附带返回） */
   conversations?: ConversationInfo[];
   /** 更新时间 */
@@ -109,6 +120,28 @@ export interface UserProjectTabPageResult {
   current: number;
   size: number;
   pages?: number;
+}
+
+/**
+ * 首页项目上框信息（项目列表「+ 新建会话」→ /home 的页面间透传协议，
+ * 落 types 层供 hooks/utils/layouts/pages 共用）。
+ * 上框存在期间：首页只允许同类型智能体切换、发送直接建会话不走 project/create。
+ */
+export interface PinnedProjectInfo {
+  /** 项目 ID（UserApp/NormalProject 即 app_id） */
+  projectId: number;
+  /** 项目所属空间 ID（全栈跳转 IDE 用） */
+  spaceId?: number;
+  /** 项目类型（UserApp=全栈 / NormalProject=常规；PageApp 不上框） */
+  projectType: AgentComponentTypeEnum;
+  /** 项目名称（上框展示） */
+  name: string;
+  /** 项目图标（上框展示，可能为 null） */
+  icon?: string | null;
+  /** 项目沙箱 ID（会话创建优先携带） */
+  sandboxId?: number;
+  /** 项目绑定的调试智能体 ID（全栈默认命中用；契约先行，缺失走手选降级） */
+  devAgentId?: number;
 }
 
 /** 创建常规项目参数（管理端 /api/user-project/create；首页对话框创建走 /api/project/create 另一套） */
@@ -129,10 +162,12 @@ export interface UpdateUserProjectParams {
   icon?: string;
 }
 
-/** 项目最新会话返回（后端契约未细化字段，调用侧防御式取 conversationId/id） */
+/** 项目最新会话返回（后端契约未细化字段，调用侧防御式取 conversationId/id/agentId） */
 export interface ProjectLatestConversationResult {
   conversationId?: number;
   id?: number;
+  /** 会话归属智能体（常规项目跳 home/chat 详情的路由参数，缺省时回退 IDE 路由） */
+  agentId?: number;
 }
 
 /** 创建全栈应用参数 */
@@ -145,8 +180,16 @@ export interface CreateUserAppParams {
   description?: string;
   /** 应用图标 */
   icon?: string;
-  /** 沙箱ID */
+  /**
+   * 沙箱ID。全栈仅云端（workspaceDirPolicy）：传云电脑哨兵值 -1，
+   * 由后端分配云端沙箱（与首页 /api/project/create 创建全栈的传值对齐）。
+   */
   sandboxId?: number;
+  /**
+   * 调试关联智能体ID（对齐首页创建全栈：首页传生效智能体，无推荐位场景
+   * 传租户默认任务智能体；契约先行，后端就绪即生效）。
+   */
+  devAgentId?: number;
 }
 
 /** 发布版本记录 */
@@ -197,6 +240,11 @@ export interface UserAppInfo {
   modified: string;
   /** 创建时间 */
   created: string;
+  /**
+   * 首个会话 ID：仅创建接口响应携带（创建即建会话，随跳转直达续聊；
+   * 详情等其余接口不返回，契约先行，缺省时跳转不拼该参数）。
+   */
+  conversationId?: number;
 }
 
 /** 更新全栈应用参数 */

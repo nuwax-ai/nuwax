@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveSidebarCollapsePolicy } from '@/layouts/DynamicMenusLayout/sidebarCollapsePolicy';
 
 describe('resolveSidebarCollapsePolicy', () => {
-  it('Electron 沉浸式折叠时保留主会话列，仅隐藏二级菜单', () => {
+  it('沉浸壳折叠时整条侧栏收起（单栏 + 二级菜单一起）', () => {
     expect(
       resolveSidebarCollapsePolicy({
         collapsed: true,
@@ -11,12 +11,12 @@ describe('resolveSidebarCollapsePolicy', () => {
         secondMenuAvailable: true,
       }),
     ).toEqual({
-      primarySidebarCollapsed: false,
+      primarySidebarCollapsed: true,
       secondMenuVisible: false,
     });
   });
 
-  it('Electron 展开时主会话列与可用二级菜单都显示', () => {
+  it('沉浸壳展开时单栏与可用二级菜单都显示', () => {
     expect(
       resolveSidebarCollapsePolicy({
         collapsed: false,
@@ -29,7 +29,7 @@ describe('resolveSidebarCollapsePolicy', () => {
     });
   });
 
-  it('浏览器折叠时沿用整栏隐藏行为', () => {
+  it('浏览器折叠时整栏隐藏', () => {
     expect(
       resolveSidebarCollapsePolicy({
         collapsed: true,
