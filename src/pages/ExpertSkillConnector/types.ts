@@ -63,7 +63,10 @@ export interface ResourceItem {
    * pin/取消 pin 接口未定，数据源暂缺，默认按未常驻展示
    */
   pinned?: boolean;
-  /** 认证方式（连接器特有：no_auth 无连接概念，不展示连接状态与连接按钮） */
+  /**
+   * 认证方式（连接器特有：no_auth 免鉴权无连接概念，卡片状态恒展示已连接、
+   * 不展示 连接/断开 按钮；oauth2/api_key/bearer/custom 按连接状态展示）
+   */
   authType?: string;
   /** 底部统计项 */
   stats?: ResourceStat[];
