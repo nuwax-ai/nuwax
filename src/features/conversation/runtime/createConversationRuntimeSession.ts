@@ -13,6 +13,7 @@ import type {
   ConversationInfo,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import { syncTerminalConversationTaskStatus } from '@/utils/conversationTaskStatusSync';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -49,6 +50,8 @@ export interface RuntimeSessionSendInput {
   modelId?: number;
   agentMode?: string;
   skillIds?: number[];
+  /** 选中的资料库文档（能力弹窗资料库 chip，与旧线 selectedDocs 对齐） */
+  selectedDocs?: SelectedDocInfo[];
   sandboxId?: string;
   infos?: unknown[];
 }
@@ -401,6 +404,7 @@ export function createConversationRuntimeSession(
       selectedComponents: input.infos,
       sandboxId: input.sandboxId,
       skillIds: input.skillIds,
+      selectedDocs: input.selectedDocs,
       modelId: input.modelId,
       agentMode: input.agentMode,
     } as unknown as ConversationChatParams;

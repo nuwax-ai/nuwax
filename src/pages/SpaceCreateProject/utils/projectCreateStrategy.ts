@@ -4,6 +4,7 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentSubTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import { message } from 'antd';
 import { history } from 'umi';
 
@@ -25,6 +26,8 @@ export interface ProjectCreatePayload {
   agentId?: number;
   /** 调试关联智能体ID，透传 /api/project/create */
   devAgentId?: number;
+  /** 资料库已选文档：随 routeState 透传给目标页（消费链路后续接入） */
+  selectedDocs?: SelectedDocInfo[];
 }
 
 interface ProjectStrategy {
@@ -110,6 +113,7 @@ export const createProjectAndNavigate = async ({
       infos: payload.tools,
       selectedComputerId: payload.computerId,
       agentMode: payload.agentMode,
+      selectedDocs: payload.selectedDocs,
     };
 
     if (payload.type === AgentComponentTypeEnum.PageApp) {

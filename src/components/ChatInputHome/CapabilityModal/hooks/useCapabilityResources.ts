@@ -132,6 +132,7 @@ const flattenRepoTree = (nodes: RepoPageTreeNode[]): CapabilityItem[] => {
           rawId: page.id,
           slugId: page.slugId,
           name: page.title,
+          pageType: page.pageType,
           // 源文件扩展名清洗为资料格式（如 ".md" / "md" → MD）
           fileType: page.sourceExt?.replace(/^\./, '')?.toUpperCase(),
         });

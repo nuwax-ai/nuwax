@@ -6,10 +6,9 @@ import type {
   MentionItem,
   MentionPopupHandle,
   MentionPopupProps,
-  SlashItem,
 } from './types';
 
-type Item = MentionItem | SlashItem;
+type Item = MentionItem;
 interface Props extends Omit<MentionPopupProps, 'onSelect'> {
   items: Item[];
   onSelect: (item: Item) => void;

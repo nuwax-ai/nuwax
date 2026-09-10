@@ -1,9 +1,10 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
+import useConversationMentionFiles from '@/hooks/useConversationMentionFiles';
 import { TaskStatus } from '@/types/enums/agent';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 
 /**
@@ -99,6 +100,17 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     prevIsActiveRef.current = isConversationActive;
   }, [isConversationActive, onConversationEnd]);
 
+  // @ 文件提及数据源：URL 会话 id 进页即得——若等会话详情回填 conversationInfo，
+  // 进入后一段时间内 @ 会是纯文本；开发会话均为任务型智能体，文件按会话维度取数，
+  // 无需 agent 类型门槛
+  const queryConversationId = useMemo(() => {
+    const id = new URLSearchParams(location.search).get('conversationId');
+    return id ? Number(id) : undefined;
+  }, [location.search]);
+  const mentionConversationId = conversationInfo?.id ?? queryConversationId;
+  const fetchMentionFiles = useConversationMentionFiles(mentionConversationId);
+  const mentionFilesEnabled = !!mentionConversationId;
+
   // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
   // 关闭（默认）为空对象，旧线原值原行为。
   const runtimeLine = useConversationRuntimeSession({
@@ -129,6 +141,9 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           sandboxId: selectedComputerId,
         }}
         allowOtherModel={conversationInfo?.agent?.allowOtherModel}
+        onFetchMentionFiles={
+          mentionFilesEnabled ? fetchMentionFiles : undefined
+        }
         initialAgentMode={initialAgentMode}
         selectedModelId={selectedModelId}
         onModelSelect={setSelectedModelId}

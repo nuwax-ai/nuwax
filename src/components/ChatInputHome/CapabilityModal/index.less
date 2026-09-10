@@ -438,27 +438,21 @@
 }
 
 .card-desc {
-  display: box;
   overflow: hidden;
   color: @capability-muted;
   font-size: 12px;
   line-height: 20px;
+  // display 必须是 -webkit-box，写成 box 会被浏览器判无效导致截断失效
+  display: box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
+  word-break: break-word;
 }
 
 .card-expert {
   min-height: 150px;
   box-sizing: border-box;
-}
-
-// 连接器卡片：描述单行省略（对齐设计稿的紧凑两列卡）
-.card-connector {
-  .card-desc {
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
-  }
 }
 
 .card-tags {
