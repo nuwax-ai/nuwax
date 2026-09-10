@@ -5,6 +5,7 @@ import type {
   ApplicationMoreActionEnum,
 } from '@/types/enums/space';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
+import type { PublishItem } from '@/types/interfaces/publish';
 import type { CollapseProps, TooltipProps } from 'antd';
 import { TooltipPlacement } from 'antd/es/tooltip';
 import type { MouseEventHandler } from 'react';
@@ -86,6 +87,15 @@ export interface PublishComponentModalProps {
   onConfirm: () => void;
   // 定义一个发布智能体前执行的方法函数
   onBeforePublishFn?: () => Promise<void>;
+  /**
+   * 自定义提交：收集分类、发布空间后交由调用方处理（不再由弹窗内直接提交申请）。
+   * 用于全栈应用等「先选范围、再构建、最后申请」的流程。
+   */
+  onSubmitPublish?: (payload: {
+    remark?: string;
+    category?: string;
+    items: PublishItem[];
+  }) => void | Promise<void>;
 }
 
 // 创建临时会话弹窗属性

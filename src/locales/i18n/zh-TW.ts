@@ -822,6 +822,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.PublishComponentModal.publishTitle": "釋出{0}",
   "PC.Components.PublishComponentModal.selectPublishScope": "選擇釋出範圍",
   "PC.Components.PublishComponentModal.skill": "技能",
+  "PC.Components.PublishComponentModal.userApp": "全棧應用",
   "PC.Components.PublishComponentModal.space": "空間",
   "PC.Components.PublishComponentModal.spaceSquareTip": "2. 空間廣場：智慧體將出現在選擇的空間廣場中。",
   "PC.Components.PublishComponentModal.systemSquare": "系統廣場",

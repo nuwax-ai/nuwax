@@ -15,6 +15,7 @@ import FileTreeGitSourcePanel, {
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import Loading from '@/components/custom/Loading';
+import PublishComponentModal from '@/components/PublishComponentModal';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
@@ -658,6 +659,8 @@ const AppDevPro: React.FC = () => {
     useState(false);
   const [cancelRemotePublishLoading, setCancelRemotePublishLoading] =
     useState(false);
+  /** 发布前：选择分类与发布空间 */
+  const [openPublishModal, setOpenPublishModal] = useState<boolean>(false);
   /** 手动发布流程优先：过程中及结束/失败结果展示阶段不切换为「应用发布中」 */
   const showRemotePublishing =
     publishFlow.phase === 'idle' &&
@@ -1572,6 +1575,19 @@ const AppDevPro: React.FC = () => {
     }
   }, [remoteBuildTask?.taskId]);
 
+  /** 点击发布：先选择分类与发布空间，确定后再走构建与申请 */
+  const handleOpenPublish = useCallback(() => {
+    if (!appId) {
+      message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
+      return;
+    }
+    if (publishFlow.publishing) {
+      publishFlow.startPublish();
+      return;
+    }
+    setOpenPublishModal(true);
+  }, [appId, publishFlow]);
+
   /** 刷新应用预览 iframe */
   const handleRefreshPreview = useCallback(() => {
     setPreviewRefreshKey((prev) => prev + 1);
@@ -1893,7 +1909,7 @@ const AppDevPro: React.FC = () => {
         userAppInfo={userAppInfo}
         spaceId={spaceId}
         onConfirmUpdate={setUserAppInfo}
-        onPublish={publishFlow.startPublish}
+        onPublish={handleOpenPublish}
         publishing={publishFlow.publishing}
         remotePublishing={showRemotePublishing}
         onCancelRemotePublish={handleCancelRemotePublish}
@@ -2016,6 +2032,20 @@ const AppDevPro: React.FC = () => {
           if (appId) {
             runGetUserAppDomainList(appId);
           }
+        }}
+      />
+
+      {/* 发布前：选择分类与发布空间（与智能体编排一致） */}
+      <PublishComponentModal
+        mode={AgentComponentTypeEnum.UserApp}
+        targetId={appId || 0}
+        open={openPublishModal}
+        spaceId={spaceId}
+        onCancel={() => setOpenPublishModal(false)}
+        onConfirm={() => setOpenPublishModal(false)}
+        onSubmitPublish={(payload) => {
+          setOpenPublishModal(false);
+          void publishFlow.startPublish(payload);
         }}
       />
 

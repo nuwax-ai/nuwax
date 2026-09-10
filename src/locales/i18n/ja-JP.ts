@@ -804,6 +804,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.PublishComponentModal.publishTitle": "{0} を公開する",
   "PC.Components.PublishComponentModal.selectPublishScope": "公開範囲の選択",
   "PC.Components.PublishComponentModal.skill": "スキル",
+  "PC.Components.PublishComponentModal.userApp": "フルスタックアプリ",
   "PC.Components.PublishComponentModal.space": "空間",
   "PC.Components.PublishComponentModal.spaceSquareTip": "2. スペーススクエア: エージェントは選択したスペーススクエアに表示されます。",
   "PC.Components.PublishComponentModal.systemSquare": "システムスクエア",

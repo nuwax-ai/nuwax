@@ -938,6 +938,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.PublishComponentModal.publishTitle": "Publish {0}",
   "PC.Components.PublishComponentModal.selectPublishScope": "Select publish scope",
   "PC.Components.PublishComponentModal.skill": "Skill",
+  "PC.Components.PublishComponentModal.userApp": "Full-stack app",
   "PC.Components.PublishComponentModal.space": "Space",
   "PC.Components.PublishComponentModal.spaceSquareTip": "2. Space Square: The agent will appear in the selected space square.",
   "PC.Components.PublishComponentModal.systemSquare": "System Square",

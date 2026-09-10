@@ -943,6 +943,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.PublishComponentModal.publishTitle": "发布{0}",
   "PC.Components.PublishComponentModal.selectPublishScope": "选择发布范围",
   "PC.Components.PublishComponentModal.skill": "技能",
+  "PC.Components.PublishComponentModal.userApp": "全栈应用",
   "PC.Components.PublishComponentModal.space": "空间",
   "PC.Components.PublishComponentModal.spaceSquareTip": "2. 空间广场：智能体将出现在选择的空间广场中。",
   "PC.Components.PublishComponentModal.systemSquare": "系统广场",
