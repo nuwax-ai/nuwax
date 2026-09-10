@@ -111,5 +111,10 @@ interface Window {
       /** 同步二级菜单真实收起态给壳（壳工具栏 icon 以此为准，修 reload 后失同步）。 */
       setSecondMenuCollapsed?: (collapsed: boolean) => void;
     };
+    // nuwaclaw 客户端宿主注入：宿主身份只读信息（host→guest，构建期注入非 IPC）
+    host?: {
+      /** 宿主产品标识：nuwaclaw（社区版）/ nuwawork（商业版，NuwaWork）。 */
+      getProduct?: () => string;
+    };
   };
 }
