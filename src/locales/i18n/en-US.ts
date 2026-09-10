@@ -2842,6 +2842,13 @@ export const EN_US: SystemLangMap = {
   "PC.Components.WorkspaceDir.useThisFolder": "Use this folder",
   "PC.Components.WorkspaceDir.reload": "Reload",
   "PC.Components.WorkspaceDir.emptyDir": "This folder is empty",
+  "PC.Components.WorkspaceDir.homeDir": "Home",
+  "PC.Components.WorkspaceDir.recent": "Recent",
+  "PC.Components.WorkspaceDir.createConversationFailed":
+    "Failed to create conversation",
+  "PC.Components.WorkspaceDir.createProjectFailed": "Failed to create project",
+  "PC.Pages.SpaceProjectManage.runtimeEnv": "Runtime Environment",
+  "PC.Pages.SpaceProjectManage.cloudComputer": "Cloud Computer",
   "PC.Pages.Chat.fileNotFoundDelete": "File does not exist and cannot be deleted",
   "PC.Pages.Chat.inputConversationName": "Enter conversation name",
   "PC.Pages.Chat.invalidConversationIdExport": "Conversation ID is missing or invalid, cannot export",

@@ -2768,6 +2768,13 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.WorkspaceDir.useThisFolder": "このフォルダを使用",
   "PC.Components.WorkspaceDir.reload": "再読み込み",
   "PC.Components.WorkspaceDir.emptyDir": "このフォルダは空です",
+  "PC.Components.WorkspaceDir.homeDir": "ホーム",
+  "PC.Components.WorkspaceDir.recent": "最近の選択",
+  "PC.Components.WorkspaceDir.createConversationFailed": "会話の作成に失敗しました",
+  "PC.Components.WorkspaceDir.createProjectFailed":
+    "プロジェクトの作成に失敗しました",
+  "PC.Pages.SpaceProjectManage.runtimeEnv": "実行環境",
+  "PC.Pages.SpaceProjectManage.cloudComputer": "クラウドコンピューター",
   "PC.Pages.Chat.fileNotFoundDelete": "ファイルが存在しないため削除できません",
   "PC.Pages.Chat.inputConversationName": "会話名を入力してください",
   "PC.Pages.Chat.invalidConversationIdExport": "会話 ID が見つからないか無効なので、エクスポートできません",
