@@ -40,4 +40,9 @@ export interface ComputerTypeSelectorProps {
   isPersonalComputer?: boolean;
   /** 是否为只读模式：只允许查看，禁止手动切换 */
   readonly?: boolean;
+  /**
+   * 仅云端模式（workspaceDir 策略：全栈应用等不支持个人电脑的场景）：
+   * 列表只保留云电脑，已选个人电脑时由既有自动选择逻辑回落到 '-1'。
+   */
+  cloudOnly?: boolean;
 }

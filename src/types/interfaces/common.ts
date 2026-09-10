@@ -567,6 +567,11 @@ export interface ChatInputProps extends ManualComponentItemProps {
    */
   workspaceDir?: string;
   onWorkspaceDirChange?: (dir: string) => void;
+  /**
+   * 仅云端模式（workspaceDir 策略，见 workspaceDirPolicy.constants）：隐藏个人电脑
+   * 选项（如全栈应用当前版本仅支持云端沙箱），工作目录栏一并隐藏。
+   */
+  disablePersonalComputer?: boolean;
   // 智能体ID，用于保存用户对电脑类型的选择
   agentId?: number;
   /** 智能体绑定的云电脑ID */

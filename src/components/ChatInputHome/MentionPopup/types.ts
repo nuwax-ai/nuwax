@@ -7,6 +7,7 @@ import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentStatisticsInfo, CreatorInfo } from '@/types/interfaces/agent';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 
 // 已收藏的技能列表接口 - 参数接口
 export interface SkillListForAtParams {
@@ -99,11 +100,10 @@ export interface SkillInfoForAt {
   usageScenarios?: AgentTypeEnum[];
 }
 
-export interface MentionItem {
+interface MentionBase {
   /** 唯一标识符 */
   id?: string | number;
   // 技能ID
-  targetId: number;
   /** 显示名称 */
   name: string;
   /** 图标（emoji 或图标类名） */
@@ -115,6 +115,48 @@ export interface MentionItem {
   /** 是否已订阅 */
   subscribed?: boolean;
 }
+
+export interface SkillMentionItem extends MentionBase {
+  /** 缺省仅兼容存量 defaultMentions；新选择统一写入 skill。 */
+  kind?: 'skill';
+  targetId: number;
+}
+
+export interface FileMentionItem extends MentionBase {
+  kind: 'file';
+  relativePath: string;
+  targetId?: never;
+}
+
+/** 资料库文档 chip：随消息以 selectedDocs({slugId,name}) 发送 */
+export interface DocMentionItem extends MentionBase {
+  kind: 'doc';
+  slugId: string;
+  targetId?: never;
+}
+
+/** 专家选中通知（onExpertSelect 单选，工具栏 pill 回填，随消息合并进 selectedComponents） */
+export interface ExpertMentionInfo {
+  targetId: number;
+  name: string;
+  icon?: string;
+  description?: string;
+}
+
+export type MentionItem = SkillMentionItem | FileMentionItem | DocMentionItem;
+export type FetchMentionFiles = () => Promise<FileMentionItem[]>;
+
+export interface PluginCommandItem extends MentionBase {
+  kind: 'plugin';
+  targetId: number;
+  /**
+   * 组件类型：默认 Plugin。能力面板（/ 唤起）选中的连接器/专家/资料库
+   * 复用该通道并入 selectedComponents，分别映射为 Mcp / Agent / Knowledge。
+   */
+  componentType?: AgentComponentTypeEnum;
+}
+
+export type SlashItem = SkillMentionItem | PluginCommandItem;
 
 /**
  * Tab 类型枚举
@@ -141,6 +183,7 @@ export interface TabConfig {
  * 支持受控和非受控两种模式
  */
 export interface MentionPopupProps {
+  onFetchMentionFiles?: FetchMentionFiles;
   /** 是否显示弹窗 */
   visible: boolean;
   /** 弹窗位置（相对于视口） */
@@ -199,6 +242,12 @@ export interface MentionPopupHandle {
  * 支持受控模式（通过 value 和 onChange）
  */
 export interface MentionEditorProps {
+  onFetchMentionFiles?: FetchMentionFiles;
+  onPluginSelect?: (item: PluginCommandItem) => void;
+  /** 专家选中（单选，工具栏 pill 回填；再选其他专家由消费方整体替换） */
+  onExpertSelect?: (expert: ExpertMentionInfo) => void;
+  /** 资料库文档 chip 列表变化（从编辑器内容派生，增删/清空自动同步） */
+  onDocsChange?: (docs: SelectedDocInfo[]) => void;
   /** 编辑器内容值（受控模式） */
   value?: string;
   /** 内容变化时的回调 */
@@ -219,6 +268,12 @@ export interface MentionEditorProps {
   inlinePrefixWidth?: number;
   /** 是否启用 @ 提及功能，默认 true */
   enableMention?: boolean;
+  /**
+   * / 触发的弹窗形态：
+   * - popup（默认）：跟随光标的 SlashPopup（技能/插件 Tab，输入即过滤）
+   * - capability：居中的添加能力大弹窗（技能/连接器/专家/资料库 × 系统广场/团队空间）
+   */
+  slashMode?: 'popup' | 'capability';
   /** MentionPopup 弹窗的展示方向：auto | up | down，默认 auto */
   mentionPlacement?: 'auto' | 'up' | 'down';
   /** 用于回显的默认提及项列表（需同时传入 value 文本） */
@@ -253,4 +308,9 @@ export interface MentionEditorHandle {
   handleAtIconMentionSelect: (item: MentionItem) => void;
   /** 获取焦点 */
   focus?: () => void;
+  /**
+   * 在光标处插入 @ / 触发字符并唤起对应弹窗（+ 号菜单入口）。
+   * 光标前非空白时自动补空格以满足触发白名单
+   */
+  insertTriggerText: (text: string) => void;
 }

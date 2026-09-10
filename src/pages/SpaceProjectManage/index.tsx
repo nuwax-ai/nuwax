@@ -13,7 +13,6 @@ import type { UserProjectItem } from '@/pages/AppDevPro/type';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { PageDevelopCreateTypeEnum } from '@/types/enums/pageDev';
 import {
   DeleteOutlined,
   DownOutlined,
@@ -27,7 +26,6 @@ import { Button, Dropdown, Empty, Input, Modal, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useParams } from 'umi';
 import CreateUserApp from '../AppDevPro/components/CreateUserApp';
-import PageCreateModal from '../SpacePageDevelop/PageCreateModal';
 import CreateNormalProjectModal from './components/CreateNormalProjectModal';
 import styles from './index.less';
 import {
@@ -43,7 +41,8 @@ import {
  * 数据走 apiUserProjectPageQuery；
  * 常规项目/全栈应用的重命名、删除走真实接口（user-project / userapp 契约），
  * 打开项目时取当前用户最新会话直达续聊；PageApp 契约未覆盖改名删除，不挂菜单。
- * 菜单入口为 menuModel 的 project_manage 占位项。
+ * 新建入口仅常规项目/全栈应用（2026-09-10 去除网页应用）；存量 PageApp
+ * 项目仍照常列表/打开。菜单入口为 menuModel 的 project_manage 占位项。
  */
 const SpaceProjectManage: React.FC = () => {
   const params = useParams();
@@ -57,7 +56,6 @@ const SpaceProjectManage: React.FC = () => {
   // 新建弹窗态
   const [openCreateNormal, setOpenCreateNormal] = useState(false);
   const [openCreateUserApp, setOpenCreateUserApp] = useState(false);
-  const [openCreatePageApp, setOpenCreatePageApp] = useState(false);
   // 重命名弹窗态
   const [renameTarget, setRenameTarget] = useState<UserProjectItem>();
   const [renameName, setRenameName] = useState('');
@@ -122,10 +120,6 @@ const SpaceProjectManage: React.FC = () => {
       label: dict('PC.Pages.SpaceProjectManage.createNormalProject'),
     },
     {
-      key: AgentComponentTypeEnum.PageApp,
-      label: dict('PC.Pages.SpaceProjectManage.createPageApp'),
-    },
-    {
       key: AgentComponentTypeEnum.UserApp,
       label: dict('PC.Pages.SpaceProjectManage.createUserApp'),
     },
@@ -134,8 +128,6 @@ const SpaceProjectManage: React.FC = () => {
   const handleCreateMenuClick = (key: string) => {
     if (key === AgentComponentTypeEnum.NormalProject) {
       setOpenCreateNormal(true);
-    } else if (key === AgentComponentTypeEnum.PageApp) {
-      setOpenCreatePageApp(true);
     } else {
       setOpenCreateUserApp(true);
     }
@@ -358,17 +350,6 @@ const SpaceProjectManage: React.FC = () => {
         onConfirm={(targetId) => {
           setOpenCreateNormal(false);
           history.push(`/space/${spaceId}/app-pro?appId=${targetId}`);
-        }}
-      />
-      {/* 新建：网页应用（复用页面开发创建弹窗；成功后跳开发页，与 SpacePageDevelop 同款） */}
-      <PageCreateModal
-        spaceId={spaceId}
-        type={PageDevelopCreateTypeEnum.Online_Develop}
-        open={openCreatePageApp}
-        onCancel={() => setOpenCreatePageApp(false)}
-        onConfirm={(info) => {
-          setOpenCreatePageApp(false);
-          history.push(`/space/${spaceId}/app-dev/${info.projectId}`);
         }}
       />
       {/* 新建：全栈应用（复用 AppDevPro 创建弹窗，成功即进 IDE） */}

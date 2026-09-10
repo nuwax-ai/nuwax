@@ -2020,6 +2020,7 @@ export default () => {
       isSync = true,
       data = null,
       skillIds,
+      selectedDocs,
       modelId,
       agentMode = 'yolo',
     } = sendParams;
@@ -2113,6 +2114,8 @@ export default () => {
       sandboxId,
       // 技能ID列表
       skillIds,
+      // 选中的资料库文档（空间文档仓库页面）
+      selectedDocs,
       // 模型ID
       modelId,
       agentMode,

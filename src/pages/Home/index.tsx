@@ -6,6 +6,7 @@ import {
 import ChatInputHome, {
   type ChatInputHomeRef,
 } from '@/components/ChatInputHome';
+import { getWorkspaceDirPolicy } from '@/constants/workspaceDirPolicy.constants';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
@@ -137,6 +138,10 @@ const Home: React.FC = () => {
     () => PROJECT_FUNCTION_TYPE_MAP[selectedFunctionType],
     [selectedFunctionType],
   );
+  // 全栈应用等不支持个人电脑的类型：电脑选择锁定云端、工作目录栏一并隐藏
+  const disablePersonalComputer = selectedProjectType
+    ? !getWorkspaceDirPolicy(selectedProjectType).personalComputer
+    : false;
   const effectiveTaskAgentActive = selectedRecommend
     ? TASK_AGENT_FUNCTION_TYPES.has(selectedFunctionType)
     : isTaskAgentMode;
@@ -253,6 +258,11 @@ const Home: React.FC = () => {
             modelId: modelId || selectedModelId,
             tools: selectedComponentList,
             computerId: selectedComputerId,
+            // 自定义工作目录（wiki #17）：仅个人电脑生效，选中目录被占用时创建报错
+            workspaceDir:
+              selectedComputerId && selectedComputerId !== '-1'
+                ? workspaceDir || undefined
+                : undefined,
             agentMode,
             agentId: currentAgentId,
             // 首页选中 agent 创建项目：把该 agent 作为项目调试智能体传给后端
@@ -381,10 +391,14 @@ const Home: React.FC = () => {
           onComputerSelect={(id) => {
             setSelectedComputerId(id);
             // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
-            if (id === '-1' && workspaceDir) setWorkspaceDir('');
+            if (id !== selectedComputerId) setWorkspaceDir('');
           }}
           workspaceDir={workspaceDir}
-          onWorkspaceDirChange={setWorkspaceDir}
+          onWorkspaceDirChange={
+            // 无目录能力的类型（全栈等）不传回调 → 工作目录栏不渲染
+            disablePersonalComputer ? undefined : setWorkspaceDir
+          }
+          disablePersonalComputer={disablePersonalComputer}
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
           readonly={!agentDetail?.allowPrivateSandbox}

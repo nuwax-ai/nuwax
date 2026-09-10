@@ -1,7 +1,6 @@
 import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
-import { UserAppDbEnvEnum } from './appDb';
 
 /** 应用域名类型 */
 export enum UserAppDomainTypeEnum {

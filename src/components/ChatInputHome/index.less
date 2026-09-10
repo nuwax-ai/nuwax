@@ -494,3 +494,81 @@
   font-size: 10px;
   color: @colorTextQuaternary;
 }
+
+/* + 号聚合菜单（附件 / @ 上下文 / / 能力）：白色卡片 + 图标列 + 文案 */
+.plus-menu-overlay {
+  :global(.ant-dropdown-menu) {
+    min-width: 208px;
+    padding: 6px;
+    border-radius: 12px;
+  }
+
+  :global(.ant-dropdown-menu-item) {
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+}
+
+.plus-menu-label {
+  gap: 10px;
+  color: @colorText;
+  font-size: 13px;
+}
+
+.plus-menu-icon {
+  width: 16px;
+  color: @colorTextSecondary;
+  font-size: 15px;
+  text-align: center;
+}
+
+/* @ / 触发字符胶囊（与附件图标同宽对齐） */
+.trigger-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: @colorFillSecondary;
+  color: @colorTextSecondary;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* 已选专家回填 pill（工具栏最右）：会话仅一个专家，随消息以 selectedComponents 发送 */
+.expert-pill {
+  gap: 4px;
+  max-width: 180px;
+  padding: 3px 6px 3px 10px;
+  border-radius: 999px;
+  background: @colorFillSecondary;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.expert-pill-name {
+  overflow: hidden;
+  color: @colorText;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expert-pill-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: @colorTextSecondary;
+  cursor: pointer;
+
+  &:hover {
+    color: @colorText;
+    background: @colorFill;
+  }
+}

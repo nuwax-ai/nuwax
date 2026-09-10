@@ -294,6 +294,8 @@ describe('UnifiedChatSession 行为', () => {
       [],
       undefined,
       undefined,
+      undefined,
+      undefined,
     );
   });
 

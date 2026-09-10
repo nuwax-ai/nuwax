@@ -36,7 +36,7 @@
   align-items: center;
   justify-content: center;
   background: @colorBgContainer;
-  animation: previewLoadingFadeIn 0.2s ease;
+  animation: preview-loading-fade-in 0.2s ease;
 }
 
 .iframeLoading {
@@ -55,19 +55,19 @@
 .mascotBody {
   transform-box: fill-box;
   transform-origin: center;
-  animation: previewMascotFloat 1.6s ease-in-out infinite;
+  animation: preview-mascot-float 1.6s ease-in-out infinite;
 }
 
 .mascotMotion {
   transform-box: fill-box;
   transform-origin: center;
-  animation: previewMascotDash 1.6s ease-in-out infinite;
+  animation: preview-mascot-dash 1.6s ease-in-out infinite;
 }
 
 .mascotShadow {
   transform-box: fill-box;
   transform-origin: center;
-  animation: previewMascotShadow 1.6s ease-in-out infinite;
+  animation: preview-mascot-shadow 1.6s ease-in-out infinite;
 }
 
 .iframeLoadingTitle {
@@ -85,44 +85,48 @@
   color: @colorTextSecondary;
 }
 
-@keyframes previewMascotFloat {
+@keyframes preview-mascot-float {
   0%,
   100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-8px);
   }
 }
 
-@keyframes previewMascotDash {
+@keyframes preview-mascot-dash {
   0%,
   100% {
     opacity: 0.35;
     transform: translateX(0);
   }
+
   50% {
     opacity: 1;
     transform: translateX(6px);
   }
 }
 
-@keyframes previewMascotShadow {
+@keyframes preview-mascot-shadow {
   0%,
   100% {
     transform: scaleX(1);
     opacity: 0.9;
   }
+
   50% {
     transform: scaleX(0.78);
     opacity: 0.45;
   }
 }
 
-@keyframes previewLoadingFadeIn {
+@keyframes preview-loading-fade-in {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
