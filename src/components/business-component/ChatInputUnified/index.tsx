@@ -152,7 +152,7 @@ export interface ChatInputUnifiedProps {
    * 发起会话时选择的工作目录（仅个人电脑场景）：
    * 不传 onWorkspaceDirChange 时工作目录栏不渲染
    */
-  workspaceDir?: string;
+  workspacePath?: string;
   onWorkspaceDirChange?: (dir: string) => void;
   /** 禁用个人电脑（如全栈应用等类型）：电脑选择锁定云端、工作目录栏隐藏 */
   disablePersonalComputer?: boolean;
@@ -290,7 +290,7 @@ const ChatInputUnifiedImpl: React.FC<
   onToggleTaskAgent,
   selectedComputerId,
   onComputerSelect,
-  workspaceDir,
+  workspacePath,
   onWorkspaceDirChange,
   disablePersonalComputer = false,
   showSpaceSelector = false,
@@ -381,7 +381,7 @@ const ChatInputUnifiedImpl: React.FC<
     useState<boolean>(false);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
   // 工作目录浏览弹窗（env-bar「打开电脑文件夹」入口）
-  const [workspaceDirPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
+  const [workspacePathPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
   // 项目上框图标（可能为 /api/f/ 受保护地址，走鉴权 fetch + blob）
   const pinnedProjectIcon = useAuthProtectedImageSrc(pinnedProject?.icon);
   // 推荐标签 pill 实测宽度：编辑器 inlinePrefixWidth 让行首文本绕开标签
@@ -1502,7 +1502,7 @@ const ChatInputUnifiedImpl: React.FC<
                           onChange={(id: string) => {
                             onComputerSelect?.(id);
                             // 切回云电脑时工作目录失效，一并清空（仅个人电脑生效）
-                            if (id === '-1' && workspaceDir) {
+                            if (id === '-1' && workspacePath) {
                               onWorkspaceDirChange?.('');
                             }
                           }}
@@ -1588,8 +1588,8 @@ const ChatInputUnifiedImpl: React.FC<
                 {/**
                  * 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，
                  * 仅用户自选个人电脑时展示（智能体绑定电脑 agentSandboxId 固定、
-                 * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspaceDir）。
-                 * 「默认工作目录」=不传 workspaceDir；「打开电脑文件夹」=可视化浏览弹窗。
+                 * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspacePath）。
+                 * 「默认工作目录」=不传 workspacePath；「打开电脑文件夹」=可视化浏览弹窗。
                  */}
                 {(isTaskAgentActive || agentType === AgentTypeEnum.TaskAgent) &&
                   !readonly &&
@@ -1605,7 +1605,7 @@ const ChatInputUnifiedImpl: React.FC<
                         menu={{
                           selectable: true,
                           selectedKeys: [
-                            workspaceDir ? 'pick-folder' : 'default',
+                            workspacePath ? 'pick-folder' : 'default',
                           ],
                           items: [
                             {
@@ -1633,11 +1633,11 @@ const ChatInputUnifiedImpl: React.FC<
                         <button
                           type="button"
                           className={cx(styles['workspace-dir-trigger'])}
-                          title={workspaceDir || undefined}
+                          title={workspacePath || undefined}
                         >
                           <FolderOutlined />
                           <span className={cx(styles['workspace-dir-text'])}>
-                            {workspaceDir ||
+                            {workspacePath ||
                               t('PC.Components.WorkspaceDir.defaultDir')}
                           </span>
                           <DownOutlined
@@ -1647,7 +1647,7 @@ const ChatInputUnifiedImpl: React.FC<
                       </Dropdown>
                       <WorkspaceDirPickerModal
                         sandboxId={selectedComputerId}
-                        open={workspaceDirPickerOpen}
+                        open={workspacePathPickerOpen}
                         onCancel={() => setWorkspaceDirPickerOpen(false)}
                         onConfirm={(dir) => {
                           setWorkspaceDirPickerOpen(false);

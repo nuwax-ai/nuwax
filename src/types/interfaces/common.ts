@@ -565,10 +565,10 @@ export interface ChatInputProps extends ManualComponentItemProps {
    * 发起会话时选择的工作目录（仅个人电脑时生效，wiki #17）。
    * 选中个人电脑后展示「工作目录」入口，目录随会话创建记录在会话上。
    */
-  workspaceDir?: string;
+  workspacePath?: string;
   onWorkspaceDirChange?: (dir: string) => void;
   /**
-   * 仅云端模式（workspaceDir 策略，见 workspaceDirPolicy.constants）：隐藏个人电脑
+   * 仅云端模式（workspacePath 策略，见 workspaceDirPolicy.constants）：隐藏个人电脑
    * 选项（如全栈应用当前版本仅支持云端沙箱），工作目录栏一并隐藏。
    */
   disablePersonalComputer?: boolean;

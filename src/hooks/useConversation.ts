@@ -34,9 +34,9 @@ const useConversation = () => {
       selectedComputerId?: string;
       /**
        * 发起会话时选择的工作目录（wiki #17）：仅个人电脑（selectedComputerId
-       * 非 '-1'）时生效，随会话创建记录（sandboxId + workspaceDir）。
+       * 非 '-1'）时生效，随会话创建记录（sandboxId + workspacePath）。
        */
-      workspaceDir?: string;
+      workspacePath?: string;
       // 默认智能体详情
       defaultAgentDetail?: AgentDetailDto;
       // 变量参数
@@ -74,7 +74,7 @@ const useConversation = () => {
     /**
      * TODO(契约缺口，2026-09-10)：选个人电脑 + 自定义目录时「隐式创建常规项目 +
      * 目录占用校验」的接口归属待后端确认。当前按假定形态实现——单次
-     * conversation/create 携带 workspaceDir，由后端隐式建项目并校验占用；
+     * conversation/create 携带 workspacePath，由后端隐式建项目并校验占用；
      * 若契约改为前端两步走（先 normal-project/create 再挂会话），仅需在
      * 此处切换（全仓唯一改动点）。
      */
@@ -82,8 +82,8 @@ const useConversation = () => {
       agentId,
       devMode: false,
       variables: variableParams,
-      // 项目上框：绑定已有项目（工作区由项目隐含，不携带 workspaceDir）；
-      // 否则维持个人电脑口径（sandboxId + workspaceDir）
+      // 项目上框：绑定已有项目（工作区由项目隐含，不携带 workspacePath）；
+      // 否则维持个人电脑口径（sandboxId + workspacePath）
       ...(attach?.projectId
         ? {
             projectId: attach.projectId,
@@ -93,7 +93,7 @@ const useConversation = () => {
         : personalComputerId
         ? {
             sandboxId: Number(personalComputerId),
-            workspaceDir: attach?.workspaceDir || undefined,
+            workspacePath: attach?.workspacePath || undefined,
           }
         : {}),
     });

@@ -30,11 +30,11 @@ import type { PinnedProjectInfo } from '@/types/interfaces/userProject';
  * 自定义工作目录仅个人电脑沙箱生效（wiki #17）：云电脑或未选电脑一律不带。
  * 原逻辑在首页两个分支与 useConversation 重复三处，收敛于此。
  */
-export const resolvePersonalWorkspaceDir = (
+export const resolvePersonalWorkspacePath = (
   computerId?: string,
-  workspaceDir?: string,
+  workspacePath?: string,
 ): string | undefined =>
-  computerId && computerId !== '-1' ? workspaceDir || undefined : undefined;
+  computerId && computerId !== '-1' ? workspacePath || undefined : undefined;
 
 /** 建项目分支 payload（与 pages 层 ProjectCreatePayload 结构对齐；utils 禁依赖 pages） */
 export interface HomeProjectCreatePayload {
@@ -46,8 +46,8 @@ export interface HomeProjectCreatePayload {
   modelId?: number;
   tools?: AgentSelectedComponentInfo[];
   computerId?: string;
-  /** 仅个人电脑生效（resolvePersonalWorkspaceDir 产物） */
-  workspaceDir?: string;
+  /** 仅个人电脑生效（resolvePersonalWorkspacePath 产物） */
+  workspacePath?: string;
   agentMode?: AgentMode;
   agentId?: number;
   /** 调试关联智能体ID，透传 /api/project/create */
@@ -63,8 +63,8 @@ export interface HomeConversationAttach {
   infos?: AgentSelectedComponentInfo[];
   messageSourceType?: MessageSourceType;
   selectedComputerId?: string;
-  /** 仅个人电脑生效（resolvePersonalWorkspaceDir 产物） */
-  workspaceDir?: string;
+  /** 仅个人电脑生效（resolvePersonalWorkspacePath 产物） */
+  workspacePath?: string;
   skillIds?: number[];
   modelId?: number;
   agentMode?: AgentMode;
@@ -98,7 +98,7 @@ export interface HomeSendPlanInput {
   /** 资料库文档（建项目随 routeState 透传 / 会话随首条消息发送） */
   selectedDocs?: SelectedDocInfo[];
   selectedComputerId?: string;
-  workspaceDir?: string;
+  workspacePath?: string;
   /** 项目类推荐展示空间选择器时的选中空间 */
   selectedSpaceId?: number;
   /** 当前空间（getSpaceId 解析产物） */
@@ -132,7 +132,7 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
     infos,
     selectedDocs,
     selectedComputerId,
-    workspaceDir,
+    workspacePath,
     selectedSpaceId,
     fallbackSpaceId,
   } = input;
@@ -189,9 +189,9 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
         tools: infos,
         computerId: selectedComputerId,
         // 自定义工作目录（wiki #17）：仅个人电脑生效，选中目录被占用时创建报错
-        workspaceDir: resolvePersonalWorkspaceDir(
+        workspacePath: resolvePersonalWorkspacePath(
           selectedComputerId,
-          workspaceDir,
+          workspacePath,
         ),
         agentMode,
         agentId: currentAgentId,
@@ -212,9 +212,9 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
       infos,
       messageSourceType: 'home' as MessageSourceType,
       selectedComputerId,
-      workspaceDir: resolvePersonalWorkspaceDir(
+      workspacePath: resolvePersonalWorkspacePath(
         selectedComputerId,
-        workspaceDir,
+        workspacePath,
       ),
       skillIds,
       modelId,

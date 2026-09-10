@@ -668,13 +668,13 @@ export const apiProjectCreate = async (data: {
    * 按「契约先行」惯例先发送，后端就绪即生效；当前多余字段应被后端忽略。
    * 目录被占用的报错同样待后端 ready 后补错误码映射。
    */
-  workspaceDir?: string;
+  workspacePath?: string;
 }): Promise<any> => {
   return request('/api/project/create', {
     method: 'POST',
     data: {
       ...data,
-      workspaceDir: data.workspaceDir || undefined,
+      workspacePath: data.workspacePath || undefined,
     },
   });
 };
@@ -692,7 +692,7 @@ export const apiNormalProjectCreate = async (data: {
   /** 个人电脑沙箱 ID；云电脑（默认分配）不传 */
   sandboxId?: number;
   /** 自定义工作目录（仅个人电脑），非空才传；被占用时后端报错 */
-  workspaceDir?: string;
+  workspacePath?: string;
 }): Promise<
   RequestResponse<{
     id?: number;
@@ -707,7 +707,7 @@ export const apiNormalProjectCreate = async (data: {
       spaceId: data.spaceId,
       name: data.name,
       sandboxId: data.sandboxId || undefined,
-      workspaceDir: data.workspaceDir || undefined,
+      workspacePath: data.workspacePath || undefined,
     },
   });
 };

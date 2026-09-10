@@ -96,7 +96,7 @@ export interface UserProjectTabItem {
   /** 沙箱类型（Cloud 等） */
   sandboxType?: string;
   /** 工作目录 */
-  workspaceDir?: string | null;
+  workspacePath?: string | null;
   /** 项目绑定的最新会话 ID（无则为 null） */
   conversationId?: number | null;
   /**

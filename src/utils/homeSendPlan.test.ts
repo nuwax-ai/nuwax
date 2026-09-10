@@ -3,7 +3,7 @@ import { DisplayRecommendFunctionTypeEnum } from '@/types/interfaces/displayReco
 import { describe, expect, it } from 'vitest';
 import {
   buildHomeSendPlan,
-  resolvePersonalWorkspaceDir,
+  resolvePersonalWorkspacePath,
   type HomeSendPlanInput,
 } from './homeSendPlan';
 
@@ -12,16 +12,16 @@ const BASE_INPUT: HomeSendPlanInput = {
   message: 'hello',
 };
 
-describe('resolvePersonalWorkspaceDir', () => {
+describe('resolvePersonalWorkspacePath', () => {
   it('个人电脑 + 目录 → 带目录', () => {
-    expect(resolvePersonalWorkspaceDir('5', '/home/x')).toBe('/home/x');
+    expect(resolvePersonalWorkspacePath('5', '/home/x')).toBe('/home/x');
   });
 
   it('个人电脑未选目录 / 云电脑 / 未选电脑 → 不带', () => {
-    expect(resolvePersonalWorkspaceDir('5', '')).toBeUndefined();
-    expect(resolvePersonalWorkspaceDir('5', undefined)).toBeUndefined();
-    expect(resolvePersonalWorkspaceDir('-1', '/home/x')).toBeUndefined();
-    expect(resolvePersonalWorkspaceDir(undefined, '/home/x')).toBeUndefined();
+    expect(resolvePersonalWorkspacePath('5', '')).toBeUndefined();
+    expect(resolvePersonalWorkspacePath('5', undefined)).toBeUndefined();
+    expect(resolvePersonalWorkspacePath('-1', '/home/x')).toBeUndefined();
+    expect(resolvePersonalWorkspacePath(undefined, '/home/x')).toBeUndefined();
   });
 });
 
@@ -40,23 +40,23 @@ describe('buildHomeSendPlan 分支决策', () => {
     expect(plan.attach.projectId).toBeUndefined();
   });
 
-  it('纯对话：workspaceDir 仅个人电脑时携带', () => {
+  it('纯对话：workspacePath 仅个人电脑时携带', () => {
     const cloud = buildHomeSendPlan({
       ...BASE_INPUT,
       selectedComputerId: '-1',
-      workspaceDir: '/tmp/a',
+      workspacePath: '/tmp/a',
     });
     expect(
-      cloud.kind === 'createConversation' && cloud.attach.workspaceDir,
+      cloud.kind === 'createConversation' && cloud.attach.workspacePath,
     ).toBeUndefined();
 
     const personal = buildHomeSendPlan({
       ...BASE_INPUT,
       selectedComputerId: '9',
-      workspaceDir: '/tmp/a',
+      workspacePath: '/tmp/a',
     });
     expect(
-      personal.kind === 'createConversation' && personal.attach.workspaceDir,
+      personal.kind === 'createConversation' && personal.attach.workspacePath,
     ).toBe('/tmp/a');
   });
 
@@ -68,7 +68,7 @@ describe('buildHomeSendPlan 分支决策', () => {
       fallbackSpaceId: 3,
       infos: [{ componentId: 1 } as never],
       selectedComputerId: '9',
-      workspaceDir: '/tmp/a',
+      workspacePath: '/tmp/a',
     });
     expect(plan.kind).toBe('createProject');
     if (plan.kind !== 'createProject') return;
@@ -77,7 +77,7 @@ describe('buildHomeSendPlan 分支决策', () => {
     expect(plan.payload.prompt).toBe('hello');
     expect(plan.payload.tools).toHaveLength(1);
     expect(plan.payload.computerId).toBe('9');
-    expect(plan.payload.workspaceDir).toBe('/tmp/a');
+    expect(plan.payload.workspacePath).toBe('/tmp/a');
     expect(plan.payload.agentId).toBe(42);
     expect(plan.payload.devAgentId).toBe(42);
   });
@@ -118,7 +118,7 @@ describe('buildHomeSendPlan 分支决策', () => {
         sandboxId: 66,
       },
       selectedComputerId: '9',
-      workspaceDir: '/tmp/a',
+      workspacePath: '/tmp/a',
     });
     expect(plan.kind).toBe('createConversation');
     if (plan.kind !== 'createConversation') return;
@@ -129,7 +129,7 @@ describe('buildHomeSendPlan 分支决策', () => {
     expect(plan.attach.redirectUrl).toBeUndefined();
     // 上框期间工作区由项目隐含，不携带电脑选择与目录
     expect(plan.attach.selectedComputerId).toBeUndefined();
-    expect(plan.attach.workspaceDir).toBeUndefined();
+    expect(plan.attach.workspacePath).toBeUndefined();
   });
 
   it('上框（全栈项目）：带 devAgentId + redirectUrl 前缀 + 项目沙箱', () => {

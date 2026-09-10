@@ -1,6 +1,6 @@
 /**
  * 发起会话选目录（wiki #17）链路测试：
- * useConversation：选个人电脑时创建参数携带 sandboxId（数值）+ workspaceDir；
+ * useConversation：选个人电脑时创建参数携带 sandboxId（数值）+ workspacePath；
  * 云电脑（'-1'）不携带（避免污染云端沙箱语义）。
  * 注：文件树侧「会话记录目录回显（seedRecordedRoot）」已随文件树本地目录
  * 数据源回滚删除（2026-09-09，需求取消），输入框工作目录栏保留。
@@ -42,18 +42,18 @@ describe('useConversation 创建会话携带工作目录（wiki #17）', () => {
     } as never);
   });
 
-  it('选个人电脑时创建参数携带 sandboxId 数值与 workspaceDir', async () => {
+  it('选个人电脑时创建参数携带 sandboxId 数值与 workspacePath', async () => {
     const { result } = renderHook(() => useConversation());
     await result.current.handleCreateConversation(5, {
       message: 'hi',
       selectedComputerId: '4321',
-      workspaceDir: '/Users/me/project',
+      workspacePath: '/Users/me/project',
     });
     expect(createMock).toHaveBeenCalledWith(
       expect.objectContaining({
         agentId: 5,
         sandboxId: 4321,
-        workspaceDir: '/Users/me/project',
+        workspacePath: '/Users/me/project',
       }),
     );
     expect(historyPush).toHaveBeenCalledWith(
@@ -62,19 +62,19 @@ describe('useConversation 创建会话携带工作目录（wiki #17）', () => {
     );
   });
 
-  it('云电脑（-1）不携带 sandboxId/workspaceDir', async () => {
+  it('云电脑（-1）不携带 sandboxId/workspacePath', async () => {
     const { result } = renderHook(() => useConversation());
     await result.current.handleCreateConversation(5, {
       message: 'hi',
       selectedComputerId: '-1',
-      workspaceDir: '/should/not/send',
+      workspacePath: '/should/not/send',
     });
     const params = createMock.mock.calls[0][0];
     expect(params.sandboxId).toBeUndefined();
-    expect(params.workspaceDir).toBeUndefined();
+    expect(params.workspacePath).toBeUndefined();
   });
 
-  it('选个人电脑但未选目录时不携带 workspaceDir，仍带 sandboxId', async () => {
+  it('选个人电脑但未选目录时不携带 workspacePath，仍带 sandboxId', async () => {
     const { result } = renderHook(() => useConversation());
     await result.current.handleCreateConversation(5, {
       message: 'hi',
@@ -84,7 +84,7 @@ describe('useConversation 创建会话携带工作目录（wiki #17）', () => {
       expect.objectContaining({ sandboxId: 88 }),
     );
     const params = createMock.mock.calls[0][0];
-    expect(params.workspaceDir).toBeUndefined();
+    expect(params.workspacePath).toBeUndefined();
   });
 
   it('创建失败（如目录被占用）时中止跳转会话页', async () => {
@@ -98,7 +98,7 @@ describe('useConversation 创建会话携带工作目录（wiki #17）', () => {
     await result.current.handleCreateConversation(5, {
       message: 'hi',
       selectedComputerId: '4321',
-      workspaceDir: '/Users/me/project',
+      workspacePath: '/Users/me/project',
     });
     expect(historyPush).not.toHaveBeenCalled();
   });

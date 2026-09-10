@@ -118,7 +118,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       onToggleTaskAgent,
       selectedComputerId,
       onComputerSelect,
-      workspaceDir,
+      workspacePath,
       onWorkspaceDirChange,
       disablePersonalComputer = false,
       agentId,
@@ -221,7 +221,8 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
     // 是否打开订阅弹窗
     const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
     // 工作目录浏览弹窗（env-bar「打开电脑文件夹」入口）
-    const [workspaceDirPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
+    const [workspacePathPickerOpen, setWorkspaceDirPickerOpen] =
+      useState(false);
     // 项目上框图标（可能为 /api/f/ 受保护地址，走鉴权 fetch + blob）
     const pinnedProjectIcon = useAuthProtectedImageSrc(pinnedProject?.icon);
 
@@ -1192,7 +1193,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                             onChange={(id: string) => {
                               onComputerSelect?.(id);
                               // 切回云电脑时工作目录失效，一并清空（仅个人电脑生效）
-                              if (id === '-1' && workspaceDir) {
+                              if (id === '-1' && workspacePath) {
                                 onWorkspaceDirChange?.('');
                               }
                             }}
@@ -1282,8 +1283,8 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                   {/**
                    * 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，
                    * 仅用户自选个人电脑时展示（智能体绑定电脑 agentSandboxId 固定、
-                   * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspaceDir）。
-                   * 「默认工作目录」=不传 workspaceDir；「打开电脑文件夹」=可视化浏览弹窗。
+                   * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspacePath）。
+                   * 「默认工作目录」=不传 workspacePath；「打开电脑文件夹」=可视化浏览弹窗。
                    */}
                   {(isTaskAgentActive ||
                     agentType === AgentTypeEnum.TaskAgent) &&
@@ -1300,7 +1301,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                           menu={{
                             selectable: true,
                             selectedKeys: [
-                              workspaceDir ? 'pick-folder' : 'default',
+                              workspacePath ? 'pick-folder' : 'default',
                             ],
                             items: [
                               {
@@ -1330,11 +1331,11 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                           <button
                             type="button"
                             className={cx(styles['workspace-dir-trigger'])}
-                            title={workspaceDir || undefined}
+                            title={workspacePath || undefined}
                           >
                             <FolderOutlined />
                             <span className={cx(styles['workspace-dir-text'])}>
-                              {workspaceDir ||
+                              {workspacePath ||
                                 t('PC.Components.WorkspaceDir.defaultDir')}
                             </span>
                             <DownOutlined
@@ -1344,7 +1345,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                         </Dropdown>
                         <WorkspaceDirPickerModal
                           sandboxId={selectedComputerId}
-                          open={workspaceDirPickerOpen}
+                          open={workspacePathPickerOpen}
                           onCancel={() => setWorkspaceDirPickerOpen(false)}
                           onConfirm={(dir) => {
                             setWorkspaceDirPickerOpen(false);

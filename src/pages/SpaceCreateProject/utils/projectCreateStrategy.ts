@@ -21,7 +21,7 @@ export interface ProjectCreatePayload {
    * 自定义工作目录（wiki #17）：仅个人电脑沙箱生效，非空才传；
    * 选中目录被占用时后端报错（目录禁止跨项目复用）。
    */
-  workspaceDir?: string;
+  workspacePath?: string;
   agentMode?: string;
   agentId?: number;
   /** 调试关联智能体ID，透传 /api/project/create */
@@ -94,7 +94,7 @@ export const createProjectAndNavigate = async ({
       targetType: flowTargetType,
       subType: payload.subType,
       sandboxId: payload.computerId ? Number(payload.computerId) : undefined,
-      workspaceDir: payload.workspaceDir,
+      workspacePath: payload.workspacePath,
       devAgentId: payload.devAgentId,
     });
     if (!res?.data?.targetId) {

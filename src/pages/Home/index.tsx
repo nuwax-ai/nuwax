@@ -84,7 +84,7 @@ const Home: React.FC = () => {
   const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
   const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
   /** 发起会话时选择的工作目录（wiki #17：仅个人电脑时随会话创建记录） */
-  const [workspaceDir, setWorkspaceDir] = useState<string>('');
+  const [workspacePath, setWorkspaceDir] = useState<string>('');
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
@@ -318,7 +318,7 @@ const Home: React.FC = () => {
         infos: mergedInfos,
         selectedDocs,
         selectedComputerId,
-        workspaceDir,
+        workspacePath,
         selectedSpaceId,
         fallbackSpaceId: Number(getSpaceId()),
       });
@@ -497,7 +497,7 @@ const Home: React.FC = () => {
             // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
             if (id !== selectedComputerId) setWorkspaceDir('');
           }}
-          workspaceDir={workspaceDir}
+          workspacePath={workspacePath}
           onWorkspaceDirChange={
             // 无目录能力的类型（全栈等）不传回调 → 工作目录栏不渲染
             disablePersonalComputer ? undefined : setWorkspaceDir
