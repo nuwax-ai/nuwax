@@ -27,18 +27,23 @@ export const getUsedChatboxSingleInstanceTypes = (
   return used;
 };
 
+/** 允许添加多项的子类型：智能体、全栈应用开发、常规项目 */
+const CHATBOX_MULTI_INSTANCE_FUNCTION_TYPES: DisplayRecommendFunctionTypeEnum[] =
+  [
+    DisplayRecommendFunctionTypeEnum.Chat,
+    DisplayRecommendFunctionTypeEnum.UserAppDev,
+    DisplayRecommendFunctionTypeEnum.NormalProjectDev,
+  ];
+
 /**
- * 子类型下拉是否禁用（智能体 Chat、常规项目 NormalProjectDev 始终可选；编辑时当前子类型保持可选）
+ * 子类型下拉是否禁用（智能体 Chat、全栈应用开发 UserAppDev、常规项目 NormalProjectDev 始终可选；编辑时当前子类型保持可选）
  */
 export const isChatboxFunctionTypeDisabled = (
   type: DisplayRecommendFunctionTypeEnum,
   usedTypes: Set<DisplayRecommendFunctionTypeEnum>,
   currentFunctionType?: string,
 ): boolean => {
-  if (
-    type === DisplayRecommendFunctionTypeEnum.Chat ||
-    type === DisplayRecommendFunctionTypeEnum.NormalProjectDev
-  ) {
+  if (CHATBOX_MULTI_INSTANCE_FUNCTION_TYPES.includes(type)) {
     return false;
   }
   if (!CHATBOX_SINGLE_INSTANCE_FUNCTION_TYPES.includes(type)) {

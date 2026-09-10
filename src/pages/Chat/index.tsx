@@ -17,6 +17,7 @@ import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
+import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
@@ -126,6 +127,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   renderHeaderRight,
 }) => {
   const location = useLocation();
+  const chromeFlags = useOpenAppChromeFlags();
   const { handleAutoPreviewLastFile } = useAutoPreviewFile();
   const stateToUse = locationState || location.state;
   // 附加state
@@ -1337,6 +1339,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     createAppNewConversation,
+    hideMenu: chromeFlags.hideMenu,
+    hideNew: chromeFlags.hideNew,
+    hideTitle: chromeFlags.hideTitle,
+    hideTerminal: chromeFlags.hideTerminal,
+    hideTree: chromeFlags.hideTree,
     agentId,
     conversationInfo,
     setConversationInfo,
@@ -1466,7 +1473,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       allowChooseMode: effectiveAgent?.allowChooseMode,
     },
     onSendMessage: handleMessageSend,
-    onClear: showClearContext ? handleClear : undefined,
+    onClear: showClearContext && !chromeFlags.hideNew ? handleClear : undefined,
     onLoadMoreMessage: handleLoadMoreMessage,
     selectedModelId,
     onModelSelect: setSelectedModelId,

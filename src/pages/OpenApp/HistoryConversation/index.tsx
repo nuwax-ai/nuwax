@@ -2,7 +2,9 @@ import SvgIcon from '@/components/base/SvgIcon';
 import HistoryConversationList from '@/components/business-component/HistoryConversationList';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import { t } from '@/services/i18nRuntime';
+import { appendOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 import classNames from 'classnames';
 import React from 'react';
 import { history, useModel, useParams } from 'umi';
@@ -18,10 +20,11 @@ const HistoryConversation: React.FC = () => {
   const agentId = Number(params.agentId);
   const { isAppSidebarVisible, toggleAppSidebarVisible, isAppSidebarMode } =
     useModel('useOpenApp');
+  const chromeFlags = useOpenAppChromeFlags();
 
   // 跳转会话聊天页
   const handleLink = (id: number, agentId: number) => {
-    history.push(`/app/chat/${agentId}/${id}`);
+    history.push(appendOpenAppChromeFlags(`/app/chat/${agentId}/${id}`));
   };
 
   return (
@@ -30,7 +33,11 @@ const HistoryConversation: React.FC = () => {
       onClickLink={handleLink}
       isAppSidebarMode={true}
       titleLeftSlot={
-        <ConditionRender condition={isAppSidebarMode && !isAppSidebarVisible}>
+        <ConditionRender
+          condition={
+            isAppSidebarMode && !isAppSidebarVisible && !chromeFlags.hideMenu
+          }
+        >
           <TooltipIcon
             className={cx(styles['icon-box'])}
             title={t('PC.Components.ConversationDetails.expandNavigation')}

@@ -3,10 +3,12 @@
  * @description 专家/技能/连接器通用的聚合卡片，容器复用 CardWrapper，
  * 与广场（Square/SingleAgent）卡片样式保持一致：
  * 图标 + 标题 + 发布者（头像/昵称）+ 两行描述 + 底部统计行；
- * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮、技能卡片浮现「立即使用」按钮
- * （点击逻辑均暂未接入，仅展示）；
+ * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮（经 onSummon 回调携带专家信息
+ * 透传跳转 /home 首页）、技能卡片浮现「选择」按钮及右侧 pin 图标按钮
+ * （点击逻辑暂未接入，仅展示）；
  * 连接器卡片标题下方展示 分类 + 连接状态（no_auth 无连接概念不展示），
- * hover 右上角浮现「连接/断开」按钮（点击逻辑暂未接入，仅展示）。
+ * hover 右上角浮现「连接/断开」按钮：已连接 → 断开（DELETE 连接后经
+ * onDisconnect 回调更新卡片连接状态）；未连接 → 连接（逻辑暂未接入，仅展示）。
  */
 
 import agentImage from '@/assets/images/agent_image.png';
@@ -19,6 +21,7 @@ import {
 } from '@/constants/images.constants';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { dict } from '@/services/i18nRuntime';
+import { PushpinOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -38,20 +41,32 @@ interface ResourceCardProps {
   item: ResourceItem;
   /** 是否显示召唤按钮（专家&专家团卡片） */
   showSummon?: boolean;
-  /** 是否显示立即使用按钮（技能卡片） */
+  /** 召唤按钮点击回调（携带卡片条目；仅专家卡片传入） */
+  onSummon?: (item: ResourceItem) => void;
+  /** 选择按钮点击回调（携带卡片条目；仅技能卡片传入） */
+  onSelect?: (item: ResourceItem) => void;
+  /** 是否显示选择按钮与 pin 图标按钮（技能卡片） */
   showUse?: boolean;
   /** 是否显示底部统计行（使用用户数等） */
   showStats?: boolean;
   /** 是否按连接器卡片展示（分类 + 连接状态行、hover 连接/断开按钮） */
   showConnect?: boolean;
+  /** 断开按钮点击回调（携带卡片条目；仅连接器卡片且已连接时生效） */
+  onDisconnect?: (item: ResourceItem) => void;
+  /** 断开请求中（按钮 loading 防重复点击） */
+  disconnecting?: boolean;
 }
 
 const ResourceCard: React.FC<ResourceCardProps> = ({
   item,
   showSummon,
+  onSummon,
+  onSelect,
   showUse,
   showStats = true,
   showConnect,
+  onDisconnect,
+  disconnecting,
 }) => {
   const { name, description, icon, publishUser, stats } = item;
   /**
@@ -125,25 +140,60 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // TODO 召唤/立即使用逻辑暂未接入，按钮仅展示
+                  if (showSummon) {
+                    onSummon?.(item);
+                    return;
+                  }
+                  // 技能卡「选择」：透传技能信息并跳转（上层未传时仅展示）
+                  onSelect?.(item);
                 }}
               >
                 {showSummon
                   ? dict('PC.Pages.ExpertSkillConnector.summon')
-                  : dict('PC.Pages.ExpertSkillConnector.useNow')}
+                  : dict('PC.Pages.ExpertSkillConnector.select')}
               </Button>
+              {showUse && (
+                // 技能卡片：选择按钮右侧 pin 图标按钮，hover 高亮；
+                // 提示按常驻状态切换（未常驻→常驻 / 已常驻→取消常驻）
+                <Button
+                  type="text"
+                  size="small"
+                  className={cx(styles['pin-btn'])}
+                  icon={<PushpinOutlined />}
+                  aria-label={dict(
+                    item.pinned
+                      ? 'PC.Pages.ExpertSkillConnector.unpin'
+                      : 'PC.Pages.ExpertSkillConnector.pin',
+                  )}
+                  title={dict(
+                    item.pinned
+                      ? 'PC.Pages.ExpertSkillConnector.unpin'
+                      : 'PC.Pages.ExpertSkillConnector.pin',
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // TODO pin/取消 pin 接口未定，点击逻辑暂未接入，按钮仅展示
+                  }}
+                />
+              )}
             </div>
           )}
           {showConnectState && (
             <div className={cx(styles['action-box'])}>
-              {/* 已连接 → 断开（红色）；未连接 → 连接。逻辑暂未接入，仅展示 */}
+              {/* 已连接 → 断开（红色，DELETE 连接后更新卡片状态）；
+                  未连接 → 连接（逻辑暂未接入，仅展示） */}
               <Button
                 type="primary"
                 size="small"
                 danger={item.connected}
+                loading={item.connected && disconnecting}
                 onClick={(e) => {
                   e.stopPropagation();
-                  // TODO 连接/断开逻辑暂未接入，按钮仅展示
+                  if (!item.connected) {
+                    // TODO 未连接 → 连接逻辑暂未接入，按钮仅展示
+                    return;
+                  }
+                  onDisconnect?.(item);
                 }}
               >
                 {item.connected ? '断开' : '连接'}
