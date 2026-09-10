@@ -263,6 +263,11 @@ const routes = [
         path: '/expert-skill-connector/connector',
         component: '@/pages/ExpertSkillConnector',
       },
+      // 女娲应用（一级菜单入口,菜单由菜单管理后台按 path 配置）
+      {
+        path: '/nuwa-apps',
+        component: '@/pages/NuwaApps',
+      },
       {
         path: '/history-conversation',
         component: '@/pages/HistoryConversation',

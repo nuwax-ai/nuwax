@@ -26,6 +26,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   system_manage: 'icons-nav-settings',
   // 专家·技能·连接器（三合一资源聚合页）
   zhuanjia_jineng_lianjieqi: 'icons-nav-expert-skill-connector',
+  // 女娲应用
+  nvwayingyong: 'icons-nav-nvwayingyong',
 
   // 用户操作区域
   documents: 'icons-nav-doc',

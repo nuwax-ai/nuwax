@@ -1,0 +1,176 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: 16px 24px;
+
+  .header {
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+
+    .title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: @fontWeightStrong;
+      color: @BLANK04;
+    }
+
+    .header-actions {
+      gap: 12px;
+    }
+
+    .search-input {
+      width: 240px;
+    }
+
+    // 「更多」:样式对齐专家·技能·连接器页 ResourceToolbar 的 more-btn
+    .more-btn {
+      flex-shrink: 0;
+      font-size: @fontSizeSm;
+      color: @GRAY05;
+      white-space: nowrap;
+
+      &:hover {
+        color: @colorPrimary;
+      }
+    }
+  }
+
+  .section-title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: @fontWeightStrong;
+    color: @BLANK04;
+  }
+
+  .min-height-300 {
+    min-height: 300px;
+  }
+
+  // ===================== 最近使用 =====================
+  .recent-list {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-radius: @borderRadius;
+      background-color: @WHITE01;
+      cursor: pointer;
+      transition: background-color 0.3s;
+
+      &:hover {
+        background-color: @WHITE04;
+      }
+
+      .recent-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        overflow: hidden;
+        background-color: @WHITE04;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+
+      .recent-name {
+        margin: 0;
+        font-size: 14px;
+        font-weight: @fontWeightStrong;
+        color: @BLANK04;
+      }
+
+      .recent-desc {
+        margin: 0;
+        font-size: @fontSizeSm;
+        color: @GRAY11;
+      }
+    }
+  }
+
+  // ===================== 分类标签 =====================
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid @GRAY17;
+
+    .tab {
+      position: relative;
+      padding: 4px 0 12px;
+      font-size: 14px;
+      color: @GRAY11;
+      cursor: pointer;
+
+      &:hover {
+        color: @BLUE01;
+      }
+
+      &.active {
+        color: @BLUE01;
+        font-weight: @fontWeightStrong;
+
+        // 激活态蓝色下划线
+        &::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: -1px;
+          height: 2px;
+          border-radius: 1px;
+          background-color: @BLUE01;
+        }
+      }
+    }
+  }
+
+  // ===================== 应用卡片网格 =====================
+  .app-list {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+    align-content: start;
+  }
+
+  @media (max-width: 1600px) {
+    .app-list {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .app-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .recent-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .recent-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .app-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}

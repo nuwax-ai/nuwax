@@ -60,6 +60,7 @@ const SvgIconShowcase: React.FC = () => {
         'icons-nav-components',
         'icons-nav-space_square',
         'icons-nav-user',
+        'icons-nav-nvwayingyong',
         'icons-nav-publish_audit',
         'icons-nav-backward',
         'icons-nav-palette',
