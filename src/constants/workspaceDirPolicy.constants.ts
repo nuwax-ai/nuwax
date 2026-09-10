@@ -9,7 +9,8 @@ export const CLOUD_SANDBOX_ID = '-1';
 /**
  * 项目类型 × 个人电脑/自定义目录能力策略（单一定义处，勿在入口散落判断）。
  * 依据「全栈应用任务及接口清单」wiki（2026-09-10）目录选择规格：
- * - 全栈应用（UserApp）当前版本不支持个人电脑，仅云端沙箱，无自定义目录；
+ * - 全栈应用（UserApp）与网页应用（PageApp）当前版本不支持个人电脑，仅云端沙箱，
+ *   无自定义目录；
  * - 常规项目支持个人电脑 + 指定工作目录（目录被占用则创建报错，禁止跨项目复用）；
  * - 项目外建会话选个人电脑 + 自定义目录时，由后端隐式创建常规项目并挂会话。
  */
@@ -29,6 +30,10 @@ const POLICY_OVERRIDES: Partial<
   Record<AgentComponentTypeEnum, WorkspaceDirPolicy>
 > = {
   [AgentComponentTypeEnum.UserApp]: {
+    personalComputer: false,
+    customDir: false,
+  },
+  [AgentComponentTypeEnum.PageApp]: {
     personalComputer: false,
     customDir: false,
   },
