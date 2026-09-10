@@ -13,14 +13,15 @@ import {
   apiUserAppStartDev,
   apiUserAppStopDev,
 } from '../services/appDevPro';
-import type {
-  UserAppDevTaskInfo,
-  UserAppInfo,
-  UserAppPublishPhase,
-  UserAppRuntimeAction,
-  UserAppStartDevParams,
-  UserAppTaskLogEvent,
-  UserAppTaskServiceProgress,
+import {
+  UserAppTaskTypeEnum,
+  type UserAppDevTaskInfo,
+  type UserAppInfo,
+  type UserAppPublishPhase,
+  type UserAppRuntimeAction,
+  type UserAppStartDevParams,
+  type UserAppTaskLogEvent,
+  type UserAppTaskServiceProgress,
 } from '../type';
 import {
   getOverallTaskProgress,
@@ -250,8 +251,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           setPhase('cancelled');
           return;
         }
-        const text =
-          error instanceof Error ? error.message : failedMessage;
+        const text = error instanceof Error ? error.message : failedMessage;
         setErrorMessage(text);
         setPhase('failed');
         setRunning(false);
@@ -269,11 +269,105 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     ],
   );
 
-  const start = useCallback(() => runStartOrRestart('start'), [runStartOrRestart]);
+  const start = useCallback(
+    () => runStartOrRestart('start'),
+    [runStartOrRestart],
+  );
 
   const restart = useCallback(
     () => runStartOrRestart('restart'),
     [runStartOrRestart],
+  );
+
+  /**
+   * 接入已有进行中任务的进度流，不再调用 start。
+   *
+   * @param task tasks/active 返回的进行中任务
+   */
+  const attachExistingTask = useCallback(
+    async (task: UserAppDevTaskInfo) => {
+      const currentTaskId = pickUserAppTaskId(task);
+      if (!currentTaskId) {
+        return;
+      }
+      if (
+        taskIdRef.current === currentTaskId &&
+        (phase === 'starting' || phase === 'building')
+      ) {
+        return;
+      }
+      if (phase === 'starting' || phase === 'building') {
+        return;
+      }
+
+      const nextAction: UserAppRuntimeAction =
+        task.taskType === UserAppTaskTypeEnum.DevRestart ? 'restart' : 'start';
+      const isBuild = task.taskType === UserAppTaskTypeEnum.Build;
+      const failedMessage = getFailedMessage(nextAction);
+
+      resetProgress();
+      cancelledRef.current = false;
+      setAction(nextAction);
+      setTaskId(currentTaskId);
+      taskIdRef.current = currentTaskId;
+      setPhase('starting');
+
+      try {
+        const immediate = getTaskTerminalStatus(task.status);
+        if (immediate === 'failed') {
+          throw new Error(task.error || failedMessage);
+        }
+        if (immediate === 'cancelled') {
+          setPhase('cancelled');
+          return;
+        }
+        if (immediate === 'succeeded') {
+          if (!isBuild) {
+            setPhase('success');
+            setOverallProgress(100);
+            setRunning(true);
+            onReady?.();
+          } else {
+            setPhase('idle');
+          }
+          return;
+        }
+
+        setPhase('building');
+        const streamResult = await listenProgress(currentTaskId, nextAction);
+        if (streamResult === 'cancelled' || cancelledRef.current) {
+          setPhase('cancelled');
+          return;
+        }
+        if (streamResult === 'failed') {
+          throw new Error(failedMessage);
+        }
+        if (cancelledRef.current) {
+          setPhase('cancelled');
+          return;
+        }
+
+        setPhase('success');
+        setOverallProgress(100);
+        if (!isBuild) {
+          setRunning(true);
+          onReady?.();
+        }
+      } catch (error) {
+        if (
+          cancelledRef.current ||
+          (error instanceof Error && error.name === 'AbortError')
+        ) {
+          setPhase('cancelled');
+          return;
+        }
+        const text = error instanceof Error ? error.message : failedMessage;
+        setErrorMessage(text);
+        setPhase('failed');
+        setRunning(false);
+      }
+    },
+    [listenProgress, onReady, phase, resetProgress],
   );
 
   /**
@@ -309,9 +403,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       if (result && typeof result === 'object' && 'code' in result) {
         const res = result as RequestResponse<null>;
         if (res.code && res.code !== SUCCESS_CODE) {
-          throw new Error(
-            res.message || dict('PC.Pages.AppDevPro.stopFailed'),
-          );
+          throw new Error(res.message || dict('PC.Pages.AppDevPro.stopFailed'));
         }
       }
       setRunning(false);
@@ -396,6 +488,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     restart,
     stop,
     startIfNeeded,
+    attachExistingTask,
     cancelTask,
     closeModal,
   };

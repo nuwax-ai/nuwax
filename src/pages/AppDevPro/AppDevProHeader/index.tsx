@@ -2,15 +2,17 @@ import agentImage from '@/assets/images/agent_image.png';
 import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import CustomPopover from '@/components/CustomPopover';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
+import type { CustomPopoverItem } from '@/types/interfaces/common';
 import {
   CodeOutlined,
   DatabaseOutlined,
   FormOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { Button, Tag } from 'antd';
+import { Button, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
 import { history } from 'umi';
@@ -44,6 +46,12 @@ export interface AppDevProHeaderProps {
   onPublish?: () => void;
   /** 发布进行中（构建 / 提交申请） */
   publishing?: boolean;
+  /** 进行中的远程构建任务：按钮展示应用发布中，点击取消 */
+  remotePublishing?: boolean;
+  /** 取消远程构建 */
+  onCancelRemotePublish?: () => void;
+  /** 取消远程构建 loading */
+  cancelRemotePublishLoading?: boolean;
   /** 文件树侧边栏是否可见 */
   isFileTreeSidebarVisible?: boolean;
   /** 切换文件树侧边栏显隐 */
@@ -58,6 +66,8 @@ export interface AppDevProHeaderProps {
   isDatabasePanelOpen?: boolean;
   /** 打开数据库页签 */
   onOpenDatabase?: () => void;
+  /** 打开数据库配置页签 */
+  onOpenDatabaseConfig?: () => void;
   /** 是否显示远程桌面入口（仅开发环境） */
   isShowDesktop?: boolean;
   /** 远程桌面是否已打开 */
@@ -85,6 +95,9 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   onConfirmUpdate,
   onPublish,
   publishing = false,
+  remotePublishing = false,
+  onCancelRemotePublish,
+  cancelRemotePublishLoading = false,
   isFileTreeSidebarVisible = false,
   onToggleFileTreeSidebar,
   isTerminalPanelOpen = false,
@@ -92,6 +105,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   onOpenSettings,
   isDatabasePanelOpen = false,
   onOpenDatabase,
+  onOpenDatabaseConfig,
   isShowDesktop = false,
   isAgentDesktopOpen = false,
   onOpenDesktopPanel,
@@ -121,13 +135,35 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
     [onConfirmUpdate],
   );
 
-  /** 发布按钮是否禁用 */
-  const publishDisabled = useMemo(() => {
-    if (!userAppInfo || publishing) {
-      return true;
+  const handlePublishClick = useCallback(() => {
+    if (remotePublishing) {
+      onCancelRemotePublish?.();
+      return;
     }
-    return userAppInfo.publishStatus === PublishStatusEnum.Applying;
-  }, [publishing, userAppInfo]);
+    onPublish?.();
+  }, [onCancelRemotePublish, onPublish, remotePublishing]);
+
+  /** 数据库图标下拉操作 */
+  const databaseActions = useMemo<CustomPopoverItem[]>(
+    () => [
+      {
+        key: 'database-config',
+        label: dict('PC.Pages.AppDevPro.databaseConfig'),
+        icon: <SettingOutlined />,
+      },
+    ],
+    [],
+  );
+
+  /** 打开所选数据库功能 */
+  const handleDatabaseAction = useCallback(
+    (item: CustomPopoverItem) => {
+      if (item.key === 'database-config') {
+        onOpenDatabaseConfig?.();
+      }
+    },
+    [onOpenDatabaseConfig],
+  );
 
   const showUnpublishedTag =
     !!userAppInfo &&
@@ -235,105 +271,118 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
         </ConditionRender>
 
         <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        {/* 项目设置：始终显示 */}
-        <TooltipIcon
-          title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
-          className={cx(styles['panel-btn'])}
-          icon={<SettingOutlined style={{ fontSize: 16 }} />}
-          onClick={onOpenSettings}
-        />
+          {/* 项目设置：始终显示 */}
+          <TooltipIcon
+            title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
+            className={cx(styles['panel-btn'])}
+            icon={<SettingOutlined style={{ fontSize: 16 }} />}
+            onClick={onOpenSettings}
+          />
 
-        {/* 数据库页签 */}
-        <TooltipIcon
-          title={dict('PC.Pages.AppDevPro.database')}
-          ariaLabel={dict('PC.Pages.AppDevPro.database')}
-          className={cx(styles['panel-btn'], {
-            [styles.active]: isDatabasePanelOpen,
-          })}
-          icon={<DatabaseOutlined style={{ fontSize: 16 }} />}
-          onClick={onOpenDatabase}
-        />
-
-        {/* 文件树侧边栏按钮 */}
-        <TooltipIcon
-          title={
-            isFileTreeSidebarVisible
-              ? dict('PC.Components.FilePathHeader.collapseFileTree')
-              : dict('PC.Components.FilePathHeader.expandFileTree')
-          }
-          className={cx(styles['panel-btn'], {
-            [styles.active]: isFileTreeSidebarVisible,
-          })}
-          icon={
-            <SvgIcon
-              name="icons-common-file_preview"
-              style={{ fontSize: 16 }}
+          {/* 数据库页签及数据库配置入口 */}
+          <CustomPopover list={databaseActions} onClick={handleDatabaseAction}>
+            <TooltipIcon
+              title={dict('PC.Pages.AppDevPro.database')}
+              ariaLabel={dict('PC.Pages.AppDevPro.database')}
+              className={cx(styles['panel-btn'], {
+                [styles.active]: isDatabasePanelOpen,
+              })}
+              icon={<DatabaseOutlined style={{ fontSize: 16 }} />}
+              onClick={onOpenDatabase}
             />
-          }
-          onClick={onToggleFileTreeSidebar}
-        />
+          </CustomPopover>
 
-        {/* 终端按钮（再次点击收起，active 态由父组件互斥控制） */}
-        <TooltipIcon
-          title={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
-          ariaLabel={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
-          className={cx(styles['panel-btn'], {
-            [styles.active]: isTerminalPanelOpen,
-          })}
-          icon={<CodeOutlined style={{ fontSize: 16 }} />}
-          onClick={onOpenTerminalPanel}
-        />
-
-        {/* 应用预览页签 */}
-        <TooltipIcon
-          title={dict('PC.Pages.AppDevPro.appPreview')}
-          ariaLabel={dict('PC.Pages.AppDevPro.appPreview')}
-          className={cx(styles['panel-btn'], {
-            [styles.active]: isAppPreviewOpen,
-          })}
-          icon={
-            <SvgIcon name="icons-common-preview" style={{ fontSize: 16 }} />
-          }
-          onClick={onOpenAppPreview}
-        />
-
-        {/* 远程桌面：仅开发环境显示，交互对齐 ConversationAgent */}
-        <ConditionRender condition={isShowDesktop}>
+          {/* 文件树侧边栏按钮 */}
           <TooltipIcon
             title={
-              isAgentDesktopOpen
-                ? dict(
-                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeAgentDesktop',
-                  )
-                : dict(
-                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openAgentDesktop',
-                  )
+              isFileTreeSidebarVisible
+                ? dict('PC.Components.FilePathHeader.collapseFileTree')
+                : dict('PC.Components.FilePathHeader.expandFileTree')
             }
             className={cx(styles['panel-btn'], {
-              [styles.active]: isAgentDesktopOpen,
+              [styles.active]: isFileTreeSidebarVisible,
             })}
             icon={
               <SvgIcon
-                name="icons-nav-computer-star"
+                name="icons-common-file_preview"
                 style={{ fontSize: 16 }}
               />
             }
-            onClick={onOpenDesktopPanel}
+            onClick={onToggleFileTreeSidebar}
           />
-        </ConditionRender>
 
-        {/* 发布按钮 */}
-        <Button
-          type="primary"
-          onClick={onPublish}
-          loading={publishing}
-          disabled={publishDisabled}
-        >
-          {publishing
-            ? dict('PC.Pages.AppDevHeader.publishing')
-            : dict('PC.Pages.AgentEdit.publish')}
-        </Button>
-      </div>
+          {/* 终端按钮（再次点击收起，active 态由父组件互斥控制） */}
+          <TooltipIcon
+            title={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
+            ariaLabel={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
+            className={cx(styles['panel-btn'], {
+              [styles.active]: isTerminalPanelOpen,
+            })}
+            icon={<CodeOutlined style={{ fontSize: 16 }} />}
+            onClick={onOpenTerminalPanel}
+          />
+
+          {/* 应用预览页签 */}
+          <TooltipIcon
+            title={dict('PC.Pages.AppDevPro.appPreview')}
+            ariaLabel={dict('PC.Pages.AppDevPro.appPreview')}
+            className={cx(styles['panel-btn'], {
+              [styles.active]: isAppPreviewOpen,
+            })}
+            icon={
+              <SvgIcon name="icons-common-preview" style={{ fontSize: 16 }} />
+            }
+            onClick={onOpenAppPreview}
+          />
+
+          {/* 远程桌面：仅开发环境显示，交互对齐 ConversationAgent */}
+          <ConditionRender condition={isShowDesktop}>
+            <TooltipIcon
+              title={
+                isAgentDesktopOpen
+                  ? dict(
+                      'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeAgentDesktop',
+                    )
+                  : dict(
+                      'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openAgentDesktop',
+                    )
+              }
+              className={cx(styles['panel-btn'], {
+                [styles.active]: isAgentDesktopOpen,
+              })}
+              icon={
+                <SvgIcon
+                  name="icons-nav-computer-star"
+                  style={{ fontSize: 16 }}
+                />
+              }
+              onClick={onOpenDesktopPanel}
+            />
+          </ConditionRender>
+
+          {/* 发布按钮：远程构建中可点击取消，本地发布仅展示 loading */}
+          <Tooltip
+            title={
+              remotePublishing
+                ? dict('PC.Pages.AppDevPro.clickToCancelPublish')
+                : undefined
+            }
+          >
+            <span>
+              <Button
+                type="primary"
+                onClick={handlePublishClick}
+                loading={
+                  remotePublishing ? cancelRemotePublishLoading : publishing
+                }
+              >
+                {remotePublishing
+                  ? dict('PC.Pages.AppDevPro.appPublishing')
+                  : dict('PC.Pages.AgentEdit.publish')}
+              </Button>
+            </span>
+          </Tooltip>
+        </div>
       </header>
 
       <CreateUserApp

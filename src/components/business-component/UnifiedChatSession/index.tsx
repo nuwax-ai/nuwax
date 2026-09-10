@@ -19,12 +19,15 @@ import { useConversationStreamResume } from '@/features/conversation/react/useCo
 import { dict } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
+import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import type {
   OpenUiAction,
   OpenUiActionArtifact,
 } from '@/types/interfaces/openUi';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
+
 import ChatContentArea from './components/ChatContentArea';
 import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
@@ -93,6 +96,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   renderEmptyState,
   messageRenderer,
   enableMention = true,
+  onFetchMentionFiles,
   placeholder,
 
   messageViewRef: externalMessageViewRef,
@@ -269,6 +273,8 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     skillIds: number[] = [],
     modelId?: number,
     selectedAgentMode?: AgentMode,
+    selectedDocs?: SelectedDocInfo[],
+    expertComponents?: AgentSelectedComponentInfo[],
   ) => {
     // 用户在会话中发送新提示词：恢复队列自动消费（解除此前主动停止造成的暂停）
     messageQueue.resumeAutoConsume();
@@ -282,6 +288,8 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
       skillIds,
       modelId,
       selectedAgentMode,
+      selectedDocs,
+      expertComponents,
     );
   };
 
@@ -457,6 +465,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
           isPersonalComputer={!!agentInfo?.sandboxId}
           {...interventionLayer.agentModeInputProps}
           showAgentModeSelector={showAgentModeSelector}
+          onFetchMentionFiles={onFetchMentionFiles}
           enableMention={enableMention}
           placeholder={placeholder}
           readonly={readonly}

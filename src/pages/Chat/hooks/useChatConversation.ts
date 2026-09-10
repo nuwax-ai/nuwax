@@ -3,11 +3,13 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
+import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import {
   MessageInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import eventBus from '@/utils/eventBus';
 import { FormInstance, message } from 'antd';
 import React, { useEffect } from 'react';
@@ -137,6 +139,8 @@ export const useChatConversation = ({
     skillIds: number[] = [],
     modelId?: number,
     selectedAgentMode?: AgentMode,
+    selectedDocs?: SelectedDocInfo[],
+    expertComponents?: AgentSelectedComponentInfo[],
   ) => {
     // 变量参数为空，不发送消息
     if (isChatInputDisabled) {
@@ -150,15 +154,28 @@ export const useChatConversation = ({
     isSendMessageRef.current = true;
     const effectiveSandboxId = getEffectiveSandboxId();
 
+    // 专家 chip（输入框 @ 选择）合并进组件列表：与外部受控列表按 id+type 去重
+    const mergedInfos = [
+      ...selectedComponentList,
+      ...(expertComponents || []).filter(
+        (expert) =>
+          !selectedComponentList.some(
+            (selected) =>
+              selected.id === expert.id && selected.type === expert.type,
+          ),
+      ),
+    ];
+
     // 发送消息参数
     const sendParams: SendMessageParams = {
       id,
       messageInfo,
       files,
-      infos: selectedComponentList,
+      infos: mergedInfos,
       variableParams: variableParams || undefined,
       sandboxId: effectiveSandboxId || undefined,
       skillIds,
+      selectedDocs,
       modelId: modelId || selectedModelId,
       agentMode: selectedAgentMode || 'yolo',
     };

@@ -6,16 +6,18 @@ import {
   ChatInputVoiceFooter,
   mergeVoiceTranscript,
 } from '@/components/business-component/VoiceInput';
-import AtMentionIcon from '@/components/ChatInputHome/AtMentionIcon';
 import ComputerTypeSelector from '@/components/ChatInputHome/ComputerTypeSelector';
 import styles from '@/components/ChatInputHome/index.less';
 import ManualComponentItem from '@/components/ChatInputHome/ManualComponentItem';
 import MentionEditor from '@/components/ChatInputHome/MentionEditor';
 import type {
+  ExpertMentionInfo,
+  FetchMentionFiles,
   MentionEditorHandle,
   MentionItem,
 } from '@/components/ChatInputHome/MentionPopup/types';
 import ModelSelector from '@/components/ChatInputHome/ModelSelector';
+import { useSlashPlugins } from '@/components/ChatInputHome/useSlashPlugins';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
@@ -26,21 +28,30 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { selectSessionActive } from '@/features/conversation/domain/runtimeSelectors';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
-import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  DefaultSelectedEnum,
+  TaskStatus,
+} from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
+import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
   CheckOutlined,
+  CloseOutlined,
   DesktopOutlined,
   LoadingOutlined,
+  PaperClipOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
@@ -101,8 +112,11 @@ export interface ChatInputHomeIndependentProps {
     skillIds?: number[],
     modelId?: number,
     agentMode?: AgentMode,
+    selectedDocs?: SelectedDocInfo[],
+    expertComponents?: AgentSelectedComponentInfo[],
   ) => void;
   enableMention?: boolean;
+  onFetchMentionFiles?: FetchMentionFiles;
   mentionPlacement?: 'auto' | 'up' | 'down';
   showAnnouncement?: boolean;
   onTempChatStop?: (requestId: string) => void;
@@ -203,6 +217,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   isPersonalComputer,
   readonly,
   enableMention = true,
+  onFetchMentionFiles,
   mentionPlacement = 'auto',
   placeholder,
   defaultMentions,
@@ -249,6 +264,18 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [messageInfo, setMessageInfo] = useState<string>('');
   const [skillIds, setSkillIds] = useState<number[]>([]);
+  // 资料库（空间文档仓库）已选文档：编辑器 chip 派生（增删/清空自动同步），随消息以 selectedDocs 发送
+  const [selectedDocs, setSelectedDocs] = useState<SelectedDocInfo[]>([]);
+  // 已选专家（单选，pill 即唯一事实源）：随消息合并进 selectedComponents(Agent)；
+  // 附 name 供工具栏回填 pill 展示
+  const [expertComponents, setExpertComponents] = useState<
+    (AgentSelectedComponentInfo & {
+      name: string;
+      icon: string;
+      description: string;
+      defaultSelected: DefaultSelectedEnum;
+    })[]
+  >([]);
   const [isStoppingConversation, setIsStoppingConversation] =
     useState<boolean>(false);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
@@ -321,11 +348,21 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
 
   const confirmSendMessage = (value: string) => {
     if (!!value.trim() || !!files?.length) {
-      onEnter(value, files, skillIds, selectedModelId, agentMode);
+      onEnter(
+        value,
+        files,
+        skillIds,
+        selectedModelId,
+        agentMode,
+        selectedDocs,
+        expertComponents,
+      );
       if (isClearInput) {
         setUploadFiles([]);
         setMessageInfo('');
         setSkillIds([]);
+        setSelectedDocs([]);
+        setExpertComponents([]);
         mentionEditorRef.current?.clear();
         // 已发送内容不再是草稿
         if (ownConversationIdRef.current) {
@@ -748,16 +785,42 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
       eventBus.off(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
   }, [onModelSelect, onAgentModeChange]);
 
-  const handleInsertAtMention = useCallback(
-    (item: MentionItem) => {
-      mentionEditorRef.current?.handleAtIconMentionSelect(item);
-    },
-    [mentionEditorRef],
+  const { onPluginSelect, commandManualComponents } = useSlashPlugins(
+    manualComponents,
+    selectedComponentList,
+    onSelectComponent,
   );
+
+  /** 资料库文档 chip 派生（编辑器内容变化自动同步，替代此前的单选追加） */
+  const handleDocsChange = useCallback((docs: SelectedDocInfo[]) => {
+    setSelectedDocs(docs);
+  }, []);
+
+  /** 专家选中（单选）：组为 Agent 组件整体替换（会话仅一个专家，
+   * 随消息合并进 selectedComponents，工具栏 pill 回填展示） */
+  const handleExpertSelect = useCallback((expert: ExpertMentionInfo) => {
+    setExpertComponents([
+      {
+        id: expert.targetId,
+        type: AgentComponentTypeEnum.Agent,
+        name: expert.name,
+        icon: expert.icon ?? '',
+        description: expert.description ?? '',
+        defaultSelected: DefaultSelectedEnum.No,
+      },
+    ]);
+  }, []);
 
   const handleUnsubscribedSkillSelect = useCallback(
     (item: MentionItem) => {
-      if (!isEnableSubscription || !item.paymentRequired || item.subscribed) {
+      // 订阅拦截只关乎技能 chip（资料库文档无付费语义）
+      const isSkill = item.kind !== 'file' && item.kind !== 'doc';
+      if (
+        !isSkill ||
+        !isEnableSubscription ||
+        !item.paymentRequired ||
+        item.subscribed
+      ) {
         return;
       }
       querySkillSubscriptionPlans(item.targetId);
@@ -805,6 +868,8 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
             <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
           </ConditionRender>
           <MentionEditor
+            onPluginSelect={onPluginSelect}
+            onFetchMentionFiles={onFetchMentionFiles}
             ref={mentionEditorRef}
             className={cx(styles.input)}
             disabled={wholeDisabled}
@@ -812,6 +877,9 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
             onChange={setMessageInfo}
             onSkillIdsChange={setSkillIds}
             enableMention={enableMention}
+            slashMode="capability"
+            onDocsChange={handleDocsChange}
+            onExpertSelect={handleExpertSelect}
             mentionPlacement={mentionPlacement}
             onPressEnter={handlePressEnter}
             onPaste={handlePaste}
@@ -843,6 +911,104 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                   [styles['footer-voice-active']]: isVoiceActive,
                 })}
               >
+                {/* + 号聚合菜单：附件上传 / @ 上下文 / / 能力（原独立入口收进此处） */}
+                <VoiceFooter.HideWhenActive>
+                  <Dropdown
+                    trigger={['click']}
+                    placement="topLeft"
+                    overlayClassName={cx(styles['plus-menu-overlay'])}
+                    menu={{
+                      items: [
+                        {
+                          key: 'attachment',
+                          label: (
+                            <Upload
+                              action={UPLOAD_FILE_ACTION}
+                              disabled={wholeDisabled}
+                              onChange={handleChange}
+                              multiple={true}
+                              fileList={uploadFiles}
+                              headers={{
+                                Authorization: token ? `Bearer ${token}` : '',
+                              }}
+                              data={{
+                                type: 'tmp',
+                              }}
+                              showUploadList={false}
+                            >
+                              <span
+                                className={cx(
+                                  'flex',
+                                  'items-center',
+                                  styles['plus-menu-label'],
+                                )}
+                              >
+                                <PaperClipOutlined
+                                  className={styles['plus-menu-icon']}
+                                />
+                                {t('PC.Components.ChatInputHome.attachFile')}
+                              </span>
+                            </Upload>
+                          ),
+                        },
+                        {
+                          key: 'at-context',
+                          // @ 弹窗依赖文件提及数据源（与原 @ 图标入口一致的能力边界）
+                          disabled: wholeDisabled || !onFetchMentionFiles,
+                          label: (
+                            <span
+                              className={cx(
+                                'flex',
+                                'items-center',
+                                styles['plus-menu-label'],
+                              )}
+                            >
+                              <span className={styles['trigger-pill']}>@</span>
+                              {t('PC.Components.ChatInputHome.atContext')}
+                            </span>
+                          ),
+                          onClick: () =>
+                            mentionEditorRef.current?.insertTriggerText('@'),
+                        },
+                        {
+                          key: 'slash-capability',
+                          disabled: wholeDisabled,
+                          label: (
+                            <span
+                              className={cx(
+                                'flex',
+                                'items-center',
+                                styles['plus-menu-label'],
+                              )}
+                            >
+                              <span className={styles['trigger-pill']}>/</span>
+                              {t('PC.Components.ChatInputHome.slashCapability')}
+                            </span>
+                          ),
+                          onClick: () =>
+                            mentionEditorRef.current?.insertTriggerText('/'),
+                        },
+                      ],
+                    }}
+                  >
+                    <Tooltip title={t('PC.Components.ChatInputHome.plusMenu')}>
+                      <span
+                        className={cx(
+                          'flex',
+                          'items-center',
+                          'content-center',
+                          'cursor-pointer',
+                          styles.box,
+                          styles['plus-box'],
+                          { [styles.disabled]: wholeDisabled },
+                        )}
+                      >
+                        <PlusOutlined className={cx(styles['svg-icon'])} />
+                      </span>
+                    </Tooltip>
+                  </Dropdown>
+                </VoiceFooter.HideWhenActive>
+
                 {!!messageList?.filter((item: MessageInfo) => item.id)
                   ?.length && (
                   <ConditionRender condition={showClearIcon && !!onClear}>
@@ -879,53 +1045,6 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                   </ConditionRender>
                 )}
 
-                <VoiceFooter.HideWhenActive>
-                  <AtMentionIcon
-                    enableMention={enableMention}
-                    mentionPlacement={mentionPlacement}
-                    enableSubscription={isEnableSubscription}
-                    onSelectMention={handleInsertAtMention}
-                    usageScenarios={usageScenarios}
-                    disabled={wholeDisabled}
-                  />
-                </VoiceFooter.HideWhenActive>
-
-                <Upload
-                  action={UPLOAD_FILE_ACTION}
-                  disabled={wholeDisabled}
-                  onChange={handleChange}
-                  multiple={true}
-                  fileList={uploadFiles}
-                  headers={{
-                    Authorization: token ? `Bearer ${token}` : '',
-                  }}
-                  data={{
-                    type: 'tmp',
-                  }}
-                  showUploadList={false}
-                >
-                  <Tooltip
-                    title={t('PC.Components.ChatInputHome.uploadAttachment')}
-                  >
-                    <span
-                      className={cx(
-                        'flex',
-                        'items-center',
-                        'content-center',
-                        'cursor-pointer',
-                        styles.box,
-                        styles['plus-box'],
-                        { [styles['upload-box-disabled']]: wholeDisabled },
-                      )}
-                    >
-                      <SvgIcon
-                        name="icons-chat-add"
-                        style={{ fontSize: '14px' }}
-                        className={cx(styles['svg-icon'])}
-                      />
-                    </span>
-                  </Tooltip>
-                </Upload>
                 <VoiceFooter.HideWhenActive>
                   {showAgentModeSelector && (
                     <Dropdown
@@ -982,6 +1101,38 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                     </Dropdown>
                   )}
                 </VoiceFooter.HideWhenActive>
+                {/* 已选专家回填：会话仅一个专家，展示在工具栏最右；
+                    专家不进输入框（无 chip），pill 即唯一事实源 */}
+                {expertComponents.length > 0 && (
+                  <VoiceFooter.HideWhenActive>
+                    <span
+                      className={cx(
+                        'flex',
+                        'items-center',
+                        styles['expert-pill'],
+                      )}
+                    >
+                      <span className={cx(styles['expert-pill-name'])}>
+                        {expertComponents[0].name}
+                      </span>
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label={t('PC.Common.Global.delete')}
+                        className={cx(styles['expert-pill-remove'])}
+                        onClick={() => setExpertComponents([])}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setExpertComponents([]);
+                          }
+                        }}
+                      >
+                        <CloseOutlined />
+                      </span>
+                    </span>
+                  </VoiceFooter.HideWhenActive>
+                )}
                 <VoiceFooter.HideWhenActive>
                   {showTaskAgentToggle && (
                     <Tooltip
@@ -1014,7 +1165,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
 
                 <VoiceFooter.HideWhenActive>
                   <ManualComponentItem
-                    manualComponents={manualComponents}
+                    manualComponents={commandManualComponents}
                     selectedComponentList={selectedComponentList}
                     onSelectComponent={onSelectComponent}
                   />

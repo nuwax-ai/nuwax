@@ -535,8 +535,9 @@ const MappingRow: React.FC<{
 }) => (
   <div className={styles.mappingRow}>
     <div className={styles.mappingRowName}>
+      {/* 紧凑映射行只限字数不加 showCount（计数后缀会挤占行内输入宽度） */}
       <Form.Item name={namePath} noStyle>
-        <Input placeholder={namePlaceholder} allowClear />
+        <Input placeholder={namePlaceholder} maxLength={100} allowClear />
       </Form.Item>
     </div>
     {typePath ? (
@@ -549,7 +550,7 @@ const MappingRow: React.FC<{
     <span className={styles.mappingRowDash}>—</span>
     <div className={styles.mappingRowValue}>
       <Form.Item name={valuePath} noStyle>
-        <Input placeholder={valuePlaceholder} allowClear />
+        <Input placeholder={valuePlaceholder} maxLength={100} allowClear />
       </Form.Item>
     </div>
     <Button
@@ -593,7 +594,7 @@ const BodyFieldRow: React.FC<{
       <div className={styles.mappingRow}>
         <div className={styles.mappingRowName}>
           <Form.Item name={[field.name, 'name']} noStyle>
-            <Input placeholder="字段名" allowClear />
+            <Input placeholder="字段名" maxLength={100} allowClear />
           </Form.Item>
         </div>
         <div className={styles.mappingRowType}>
@@ -613,6 +614,7 @@ const BodyFieldRow: React.FC<{
                       ? '值为整个数组的输入参数名'
                       : '输入参数名 / opt:参数名'
                   }
+                  maxLength={100}
                   allowClear
                 />
               </Form.Item>
@@ -780,12 +782,22 @@ const ArgRow: React.FC<{
       <div className={styles.argRow}>
         <div className={styles.argRowName}>
           <Form.Item name={[field.name, 'name']} noStyle>
-            <Input placeholder="参数名" allowClear disabled={readOnly} />
+            <Input
+              placeholder="参数名"
+              maxLength={100}
+              allowClear
+              disabled={readOnly}
+            />
           </Form.Item>
         </div>
         <div className={styles.argRowDescription}>
           <Form.Item name={[field.name, 'description']} noStyle>
-            <Input placeholder="参数说明" allowClear disabled={readOnly} />
+            <Input
+              placeholder="参数说明"
+              maxLength={100}
+              allowClear
+              disabled={readOnly}
+            />
           </Form.Item>
         </div>
         <div className={styles.argRowType}>
@@ -1196,7 +1208,13 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
               rules={[{ required: true, message: '请输入 actionKey' }]}
             >
               {/* 编辑模式禁改（后端唯一键），值原样提交 */}
-              <Input placeholder="如 get_repo" allowClear disabled={isEdit} />
+              <Input
+                placeholder="如 get_repo"
+                maxLength={100}
+                showCount
+                allowClear
+                disabled={isEdit}
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -1205,7 +1223,12 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
               label="工具名称"
               rules={[{ required: true, message: '请输入工具名称' }]}
             >
-              <Input placeholder="如 查询仓库" allowClear />
+              <Input
+                placeholder="如 查询仓库"
+                maxLength={100}
+                showCount
+                allowClear
+              />
             </Form.Item>
           </Col>
         </Row>
@@ -1213,14 +1236,19 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
           <Input.TextArea
             rows={3}
             placeholder="说明用途、关键入参约定与返回结构"
-            maxLength={500}
+            maxLength={1000}
             showCount
           />
         </Form.Item>
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item name="tags" label="标签（可选，逗号分隔）">
-              <Input placeholder="如 演示" allowClear />
+              <Input
+                placeholder="如 演示"
+                maxLength={100}
+                showCount
+                allowClear
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -1275,7 +1303,12 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
                     label="路径（{名称} 占位符取输入参数）"
                     rules={[{ required: true, message: '请输入请求路径' }]}
                   >
-                    <Input placeholder="/repos/{owner}/{repo}" allowClear />
+                    <Input
+                      placeholder="/repos/{owner}/{repo}"
+                      maxLength={100}
+                      showCount
+                      allowClear
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -1296,6 +1329,8 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
                   <Form.Item name="responsePath" label="响应提取路径（可选）">
                     <Input
                       placeholder="如 $.data.list；缺省取响应整体"
+                      maxLength={100}
+                      showCount
                       allowClear
                     />
                   </Form.Item>
@@ -1307,6 +1342,8 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
               >
                 <Input
                   placeholder="填输入参数名，其值原样作为请求体发送"
+                  maxLength={100}
+                  showCount
                   allowClear
                 />
               </Form.Item>

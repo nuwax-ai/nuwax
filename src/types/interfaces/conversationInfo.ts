@@ -31,6 +31,7 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type { RcoderAcpPermissionInteraction } from './acpPermission';
+import type { SelectedDocInfo } from './repo';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -155,6 +156,8 @@ export interface SendMessageParams {
   data?: any;
   // 技能ID列表
   skillIds?: number[];
+  // 选中的资料库文档列表（空间文档仓库页面）
+  selectedDocs?: SelectedDocInfo[];
   // 模型ID
   modelId?: number;
   // Agent mode, 默认 yolo
@@ -178,6 +181,8 @@ export interface ConversationChatParams {
   sandboxId?: string;
   // 技能ID列表
   skillIds?: number[];
+  // 选中的资料库文档列表（空间文档仓库页面）
+  selectedDocs?: SelectedDocInfo[];
   // 模型ID
   modelId?: number;
   // Agent mode, 默认 yolo

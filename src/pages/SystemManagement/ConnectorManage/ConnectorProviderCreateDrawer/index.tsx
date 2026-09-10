@@ -1,4 +1,6 @@
+import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import ConnectorAuthConfigSection, {
   type ConnectorProviderSubmitValues,
   toConnectorOauthConfigParams,
@@ -67,6 +69,14 @@ const ConnectorProviderCreateDrawer: React.FC<
   const [form] = Form.useForm<ConnectorProviderSubmitValues>();
   // 创建中：给「创建连接器」按钮加 loading，防止重复提交
   const [submitting, setSubmitting] = useState<boolean>(false);
+  /** 图标 URL（上传成功回写隐藏表单字段 icon，随表单一起提交） */
+  const iconUrl = (Form.useWatch('icon', form) ?? '') as string;
+  /**
+   * 图标展示地址：/api/f/ 为需鉴权的受保护文件地址，img 直接请求不带
+   * Authorization 会被拒（Chrome ORB 拦截 → 图片加载失败宽度为 0），
+   * 走 Bearer fetch + blob object URL 展示；表单里存的仍是原始 URL（提交用）
+   */
+  const { displaySrc: iconDisplaySrc } = useAuthProtectedImageSrc(iconUrl);
 
   const drawerWidth = useMemo(() => {
     if (typeof window === 'undefined') return 720;
@@ -103,6 +113,7 @@ const ConnectorProviderCreateDrawer: React.FC<
       service: '',
       displayName: '',
       description: '',
+      icon: '',
       baseUrl: '',
       authType: 'no_auth',
       category: '',
@@ -254,6 +265,8 @@ const ConnectorProviderCreateDrawer: React.FC<
           >
             <Input
               placeholder="小写字母开头，小写字母/数字/下划线，如 github"
+              maxLength={100}
+              showCount
               allowClear
               onBlur={handleServiceBlur}
             />
@@ -263,17 +276,44 @@ const ConnectorProviderCreateDrawer: React.FC<
             label="显示名称"
             rules={[{ required: true, message: '请输入显示名称' }]}
           >
-            <Input placeholder="目录卡片展示名称" allowClear />
+            <Input
+              placeholder="目录卡片展示名称"
+              maxLength={100}
+              showCount
+              allowClear
+            />
+          </Form.Item>
+          {/* 图标：点击上传连接器图标（jpg/png/svg、<2M，样式对齐推荐位新增弹窗），
+              上传成功即回显并写入隐藏字段 icon，随表单一起提交 */}
+          <Form.Item label="图标（可选）">
+            <UploadAvatar
+              imageUrl={iconDisplaySrc}
+              onUploadSuccess={(url) => form.setFieldValue('icon', url)}
+              svgIconName="icons-nav-connector"
+            />
+          </Form.Item>
+          <Form.Item name="icon" hidden>
+            <Input />
           </Form.Item>
           <Form.Item name="description" label="描述（可选）">
-            <Input.TextArea rows={3} placeholder="连接器介绍，展示在目录卡片" />
+            <Input.TextArea
+              rows={3}
+              placeholder="连接器介绍，展示在目录卡片"
+              maxLength={1000}
+              showCount
+            />
           </Form.Item>
           <Form.Item
             name="baseUrl"
             label="BASE URL"
             rules={[{ required: true, message: '请输入 BASE URL' }]}
           >
-            <Input placeholder="https://api.example.com" allowClear />
+            <Input
+              placeholder="https://api.example.com"
+              maxLength={100}
+              showCount
+              allowClear
+            />
           </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
@@ -296,7 +336,12 @@ const ConnectorProviderCreateDrawer: React.FC<
             </Col>
           </Row>
           <Form.Item name="tags" label="标签（逗号分隔）">
-            <Input placeholder="如 github,dev" allowClear />
+            <Input
+              placeholder="如 github,dev"
+              maxLength={100}
+              showCount
+              allowClear
+            />
           </Form.Item>
 
           {/* 认证配置区：按认证方式切换展示（与编辑抽屉共用组件，行为保持一致） */}

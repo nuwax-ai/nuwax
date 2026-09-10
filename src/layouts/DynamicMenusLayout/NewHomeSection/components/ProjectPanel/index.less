@@ -119,11 +119,12 @@
     }
 
     .arrowExpanded {
-      transform: rotate(90deg);
+      transform: rotate(180deg);
     }
   }
 
   .child {
+    position: relative;
     display: flex;
     align-items: center;
     gap: @marginXxs;
@@ -242,12 +243,10 @@
 .project .row:focus-within .project-more {
   opacity: 1;
 }
+
 .project .row:focus-visible {
   outline: 2px solid @colorPrimary;
   outline-offset: -2px;
-}
-.project .row .arrowExpanded {
-  transform: rotate(180deg);
 }
 
 .compact {
@@ -267,9 +266,11 @@
       font-size: 14px;
       font-weight: 400;
     }
+
     &.expanded .name {
       font-weight: 400;
     }
+
     .arrow {
       width: 18px;
       font-size: 12px;
@@ -283,19 +284,24 @@
     color: @navSecondMenuAdaptiveTextTertiary;
     margin-right: 4px;
   }
+
   .project-more {
     position: absolute;
     right: 30px;
     background: @colorBgContainer;
   }
+
   .row:hover .name,
   .row:focus-within .name {
-    padding-right: 24px;
+    // 50px 让位绝对定位的 actions 浮层(见下方 .project-actions 覆盖)
+    padding-right: 50px;
   }
+
   .children {
     position: relative;
     margin: 2px 0 2px 10px;
     padding-left: 10px;
+
     &::before {
       content: '';
       position: absolute;
@@ -306,17 +312,38 @@
       background: @colorBorderSecondary;
     }
   }
+
   .child {
     margin-left: 0;
     padding: 8px 4px;
     border-radius: 10px;
+
     .child-name {
       font-size: 13.5px;
       line-height: 19px;
     }
+
     &:focus-within .child-more {
       opacity: 1;
     }
+  }
+
+  // 紧凑态 actions 浮层覆盖(原型 hover):浮层贴右侧白底,行名与子任务时间让位
+  .project-actions {
+    position: absolute;
+    right: 30px;
+    background: @colorBgContainer;
+    border-radius: 8px;
+  }
+
+  .project-actions .project-more {
+    position: static;
+    background: transparent;
+  }
+
+  .child:hover .child-time,
+  .child:focus-within .child-time {
+    visibility: hidden;
   }
 }
 
@@ -324,6 +351,7 @@
   .project-more {
     opacity: 1;
   }
+
   .compact .row .name {
     padding-right: 24px;
   }
@@ -334,6 +362,7 @@
   .project-more {
     transition: none;
   }
+
   .project .child .status-dot {
     animation: none;
   }
@@ -348,6 +377,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.16s ease;
+
   button {
     display: inline-flex;
     align-items: center;
@@ -360,26 +390,28 @@
     color: @navSecondMenuAdaptiveTextTertiary;
     background: transparent;
     cursor: pointer;
+
     &:hover,
     &:focus-visible {
       color: @colorPrimary;
       background: @colorPrimaryBg;
     }
+
     &:focus-visible {
       outline: 2px solid @colorPrimary;
       outline-offset: -2px;
     }
   }
 }
+
 .project-actions {
   flex-shrink: 0;
+
   .project-more {
     opacity: 1;
   }
 }
-.project .child {
-  position: relative;
-}
+
 .child-actions {
   position: absolute;
   right: 4px;
@@ -388,40 +420,23 @@
   padding: 1px;
   background: @colorBgContainer;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 12%);
 }
+
 .project .child .child-actions .child-more {
   opacity: 1;
 }
+
 .project .row:hover,
 .project .row:focus-within,
 .project .child:hover,
 .project .child:focus-within {
   background: color-mix(in srgb, @colorBgContainer 72%, transparent);
+
   .project-actions,
   .child-actions {
     opacity: 1;
     pointer-events: auto;
-  }
-}
-.compact {
-  .project-actions {
-    position: absolute;
-    right: 30px;
-    background: @colorBgContainer;
-    border-radius: 8px;
-  }
-  .project-actions .project-more {
-    position: static;
-    background: transparent;
-  }
-  .row:hover .name,
-  .row:focus-within .name {
-    padding-right: 50px;
-  }
-  .child:hover .child-time,
-  .child:focus-within .child-time {
-    visibility: hidden;
   }
 }
 @media (hover: none) {
@@ -430,9 +445,11 @@
     opacity: 1;
     pointer-events: auto;
   }
+
   .compact .row .name {
     padding-right: 50px;
   }
+
   .project .child {
     padding-right: 56px;
   }

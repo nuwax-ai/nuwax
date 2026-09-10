@@ -1,0 +1,636 @@
+/**
+ * 添加能力弹窗：与设计稿一致的双栏、轻边框卡片和中性聚焦态。
+ * 颜色全部走 token.less（--xagi-* 主题变量），随亮/暗主题自动切换。
+ */
+@import '@/styles/token';
+
+@capability-accent: @colorPrimary;
+@capability-text: @colorText;
+@capability-secondary: @colorTextSecondary;
+@capability-muted: @colorTextTertiary;
+@capability-faint: @colorTextQuaternary;
+@capability-fill: @colorFillSecondary;
+@capability-border: @colorBorderSecondary;
+
+.capability-modal {
+  max-width: calc(100vw - 24px);
+  padding-bottom: 0;
+}
+
+// 双写提权：压过 antd Modal 默认 content 内边距（同因 :where 降权后特异性打平）
+.capability-modal.capability-modal {
+  :global(.ant-modal-content) {
+    padding: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: @colorBgContainer;
+    box-shadow: none;
+  }
+}
+
+.root {
+  display: flex;
+  height: min(600px, calc(100dvh - 24px));
+  outline: none;
+  background: @colorBgContainer;
+  color: @capability-text;
+
+  button {
+    font-family: inherit;
+  }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 220px;
+  flex-shrink: 0;
+  padding: 22px 12px 20px;
+  background: @colorBgContainer;
+  border-right: 1px solid @capability-border;
+}
+
+.sidebar-header {
+  padding: 0 10px 16px;
+}
+
+.sidebar-title {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  color: @capability-text;
+}
+
+.sidebar-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 18px;
+  letter-spacing: 1.8px;
+  color: @capability-faint;
+}
+
+.menu {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 39px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: @capability-secondary;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: @capability-fill;
+  }
+
+  &.menu-item-active {
+    background: @capability-fill;
+    color: @capability-accent;
+    font-weight: 600;
+  }
+}
+
+.menu-label {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 18px;
+  flex-shrink: 0;
+  font-size: 16px;
+  color: inherit;
+}
+
+.sidebar-hints {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 12px 10px 0;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 16px;
+  color: @capability-faint;
+
+  i {
+    font-style: normal;
+  }
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  min-height: 52px;
+  padding: 0 20px;
+  border-bottom: 1px solid @capability-border;
+}
+
+.tabs {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  gap: 22px;
+}
+
+.tab {
+  position: relative;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: @capability-muted;
+  font-size: 14px;
+  line-height: 20px;
+  cursor: pointer;
+
+  &:hover {
+    color: @capability-secondary;
+  }
+
+  &.tab-active {
+    color: @capability-accent;
+    font-weight: 600;
+
+    &::after {
+      position: absolute;
+      right: 0;
+      bottom: -1px;
+      left: 0;
+      height: 2px;
+      border-radius: 2px;
+      background: @capability-accent;
+      content: '';
+    }
+  }
+}
+
+.header-title {
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: @capability-accent;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.close-btn,
+.search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: @capability-muted;
+  font-size: 16px;
+  cursor: pointer;
+
+  &:hover {
+    background: @capability-fill;
+    color: @capability-text;
+  }
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 60px 12px 20px;
+  box-sizing: border-box;
+}
+
+.categories {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.category-pill {
+  flex-shrink: 0;
+  padding: 6px 13px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: @capability-secondary;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: @capability-fill;
+  }
+
+  &.category-pill-active {
+    background: @capability-fill;
+    color: @capability-accent;
+    font-weight: 500;
+  }
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.search-input {
+  width: 180px;
+  border-radius: 8px;
+}
+
+.list {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  padding: 0 24px 14px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  // 滚动条出现/消失时保留沟槽，避免内容横向抖动
+  scrollbar-gutter: stable;
+  scrollbar-color: @colorTextQuaternary transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: @colorTextQuaternary;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+.list-knowledge {
+  row-gap: 8px;
+  padding-right: 20px;
+}
+
+.list-loading {
+  grid-column: 1 / -1;
+  padding: 8px 0;
+  color: @capability-muted;
+  font-size: 12px;
+}
+
+// 首次加载/空态：占满整行并撑起可视高度，保持滚动容器尺寸稳定（防三态切换闪跳）
+.list-state {
+  grid-column: 1 / -1;
+  min-height: 320px;
+}
+
+// 卡片基于 antd Card：背景/边框/圆角走主题 token，这里只接管布局与交互态
+.card {
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover,
+  &.card-focused {
+    border-color: @colorBorder;
+    box-shadow: 0 4px 14px @colorFill;
+  }
+}
+
+// 类名双写提权：antd 基础样式经 :where 降权后与本类同为 0-2-0，
+// cssinjs 运行时注入在后会反超默认 24px 内边距，双写保证覆盖恒定生效
+.card.card {
+  :global(.ant-card-body) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    padding: 14px;
+  }
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  min-height: 40px;
+}
+
+.card-icon,
+.card-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: @capability-secondary;
+  font-size: 20px;
+
+  img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
+}
+
+.card-heading {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.card-name {
+  overflow: hidden;
+  color: @capability-text;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 18px;
+  color: @capability-muted;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.card-category {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: @capability-faint;
+  white-space: nowrap;
+
+  &::before {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentcolor;
+    content: '';
+  }
+
+  &.connected {
+    color: @colorSuccess;
+  }
+}
+
+.card-desc {
+  display: box;
+  overflow: hidden;
+  color: @capability-muted;
+  font-size: 12px;
+  line-height: 20px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.card-expert {
+  min-height: 150px;
+  box-sizing: border-box;
+}
+
+// 连接器卡片：描述单行省略（对齐设计稿的紧凑两列卡）
+.card-connector {
+  .card-desc {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+.card-tag,
+.file-type {
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: @capability-fill;
+  color: @capability-secondary;
+  font-size: 12px;
+  line-height: 17px;
+}
+
+// 双写提权：padding/底色/圆角等需压过 antd Button 默认形态（:where 降权后特异性打平）
+.card-action.card-action {
+  flex-shrink: 0;
+  height: auto;
+  padding: 6px 14px;
+  border-radius: 9px;
+  background: @capability-fill;
+  color: @capability-secondary;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  // antd v5 样式经 :where 降权，text 按钮 hover 底色可能被本类覆盖，这里显式兜底保证有反馈
+  &:hover {
+    background: @colorFill;
+    color: @capability-text;
+  }
+
+  &:active {
+    background: @colorFillSecondary;
+    color: @capability-text;
+  }
+}
+
+.card-pin.card-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  padding: 0;
+  border: 1px solid @capability-border;
+  border-radius: 9px;
+  background: @colorBgContainer;
+  color: @capability-muted;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover,
+  &.card-pin-active {
+    color: @capability-accent;
+  }
+}
+
+// 双写提权：尺寸与选中底色需压过 antd Switch 默认形态（:where 降权后特异性打平）
+.card-switch.card-switch {
+  min-width: 36px;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  // 未选中底色交由 antd Switch 主题 token 控制（随亮/暗主题切换）
+  &:global(.ant-switch-checked) {
+    background: @capability-accent;
+  }
+
+  :global(.ant-switch-handle) {
+    top: 2px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &:global(.ant-switch-checked) :global(.ant-switch-handle) {
+    inset-inline-start: calc(100% - 18px);
+  }
+}
+
+// 资料库横排行：同样的双写提权（10px 14px 内边距 + row 布局）
+.card-knowledge.card-knowledge {
+  :global(.ant-card-body) {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    min-height: 50px;
+    padding: 10px 14px;
+  }
+}
+
+.card-knowledge {
+  .card-name {
+    flex: 0 1 auto;
+  }
+
+  .file-type {
+    flex-shrink: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .card-action {
+    margin-left: auto;
+    color: @capability-text;
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    width: 160px;
+    padding-inline: 8px;
+  }
+
+  .sidebar-hints {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .toolbar {
+    padding-right: 20px;
+  }
+
+  .list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .sidebar {
+    width: 116px;
+  }
+
+  .sidebar-title {
+    font-size: 16px;
+  }
+
+  .sidebar-subtitle {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+
+  .menu-item {
+    gap: 8px;
+    padding-inline: 8px;
+  }
+
+  .header,
+  .toolbar {
+    padding-inline: 12px;
+  }
+
+  .list {
+    padding-inline: 12px;
+  }
+
+  .tabs {
+    gap: 12px;
+  }
+
+  .search-input {
+    width: 130px;
+  }
+}

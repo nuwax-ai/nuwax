@@ -2,7 +2,8 @@
  * 资源二级分类字典 hook
  * @description
  * - 系统广场维度（source=system）：调用 /api/published/category/list，
- *   按资源类型（expert/skill/connector）匹配根节点类型，取其 children 作为分类字典；
+ *   按资源类型匹配根节点（expert/skill 按 type，connector 按 key=Connector），
+ *   取其 children 作为分类字典；
  * - 团队空间维度（source=team）：调用 /api/space/list，将空间列表映射为分类字典；
  * - 接口未就绪/失败时降级为仅"全部"。
  */
@@ -37,16 +38,22 @@ const useResourceCategories = (
 
   /**
    * 系统广场维度：
-   * 调用 /api/published/category/list，按 resourceType 找到对应根节点
-   * （type=Agent/Skill/Plugin），取其 children 渲染二级分类。
+   * 调用 /api/published/category/list，按 resourceType 找到对应根节点取其 children：
+   * - expert/skill：按根节点 type（Agent/Skill）匹配；
+   * - connector：与新建/编辑连接器抽屉同源，按根节点 key=Connector 匹配。
    */
   const fetchSystemCategories = useCallback(async () => {
     const res = await apiPublishedCategoryList();
     const list = (res?.data as SquareCategoryInfo[] | undefined) || [];
-    const targetType = RESOURCE_TYPE_TO_CATEGORY_TYPE[resourceType];
-    const root = list.find((item) => item.type === targetType);
+    const root = list.find((item) =>
+      resourceType === 'connector'
+        ? item.key === 'Connector'
+        : item.type === RESOURCE_TYPE_TO_CATEGORY_TYPE[resourceType],
+    );
     const children = root?.children || [];
-    return children.map((item) => ({ key: item.key, label: item.label }));
+    return children
+      .filter((item) => Boolean(item?.key))
+      .map((item) => ({ key: item.key, label: item.label || item.key }));
   }, [resourceType]);
 
   /**

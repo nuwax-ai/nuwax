@@ -1,17 +1,17 @@
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
+  apiAgentConversationDelete,
+  apiAgentConversationUpdate,
+} from '@/services/agentConfig';
+import { dict } from '@/services/i18nRuntime';
+import {
   apiUserAppDelete,
   apiUserAppUpdate,
   apiUserProjectDelete,
   apiUserProjectTabPageQuery,
   apiUserProjectUpdate,
-} from '@/pages/AppDevPro/services/appDevPro';
-import {
-  apiAgentConversationDelete,
-  apiAgentConversationUpdate,
-} from '@/services/agentConfig';
-import { dict } from '@/services/i18nRuntime';
+} from '@/services/userProjectApp';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {

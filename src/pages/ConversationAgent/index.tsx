@@ -1808,7 +1808,6 @@ const ConversationAgent: React.FC = () => {
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       {/* 页面顶部 Header：返回、智能体信息、文件树/远程桌面入口 */}
       <ConversationAgentHeader
-        className={styles['page-header']}
         agentConfigInfo={agentConfigInfo}
         onEditAgent={() => setOpenEditAgent(true)}
         onPublish={() => setOpen(true)}

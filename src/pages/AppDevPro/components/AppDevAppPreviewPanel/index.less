@@ -32,6 +32,112 @@
   position: absolute;
   inset: 0;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: @colorBgContainer;
+  animation: preview-loading-fade-in 0.2s ease;
+}
+
+.iframeLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+}
+
+.mascot {
+  display: block;
+  overflow: visible;
+}
+
+.mascotBody {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: preview-mascot-float 1.6s ease-in-out infinite;
+}
+
+.mascotMotion {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: preview-mascot-dash 1.6s ease-in-out infinite;
+}
+
+.mascotShadow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: preview-mascot-shadow 1.6s ease-in-out infinite;
+}
+
+.iframeLoadingTitle {
+  margin: 18px 0 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: @colorText;
+}
+
+.iframeLoadingHint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 22px;
+  color: @colorTextSecondary;
+}
+
+@keyframes preview-mascot-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes preview-mascot-dash {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateX(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateX(6px);
+  }
+}
+
+@keyframes preview-mascot-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: scaleX(0.78);
+    opacity: 0.45;
+  }
+}
+
+@keyframes preview-loading-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascotBody,
+  .mascotMotion,
+  .mascotShadow {
+    animation: none;
+  }
 }
 
 .stage {

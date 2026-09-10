@@ -17,6 +17,7 @@ import {
   apiConnectorProviderPageList,
   apiSystemConnectorProviderList,
 } from '@/services/systemManage';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { SkillInfo } from '@/types/interfaces/library';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
@@ -69,14 +70,22 @@ const mapPublishedItem = (
   idPrefix: string,
 ): ResourceItem => ({
   id: `${idPrefix}-${item.id}`,
+  // 仅专家（前缀 agent）填：targetId 即智能体 ID，供「召唤」跳转 home 使用；
+  // 技能（前缀 skill）的 targetId 是技能 ID，不能当 agentId 用
+  agentId: idPrefix === 'agent' ? item.targetId : undefined,
   name: item.name,
   description: item.description,
   icon: item.icon,
   category: item.category || undefined,
+  publishUser: item.publishUser,
   stats: mapPublishedStats(item.statistics),
 });
 
-/** 连接器提供方归一化 */
+/**
+ * 连接器提供方归一化
+ * 卡片不展示工具数统计（需求下线）；connected / authType 驱动
+ * 标题下方的连接状态行与 hover 右上角的 连接/断开 按钮
+ */
 const mapConnectorItem = (
   item: ConnectorProviderInfo,
   idPrefix: string,
@@ -87,10 +96,8 @@ const mapConnectorItem = (
   icon: item.icon,
   category: item.category || undefined,
   tags: item.tags,
-  stats: [
-    // 工具/动作数量
-    { type: 'tool', value: item.actionCount ?? 0 },
-  ],
+  connected: item.connected,
+  authType: item.authType,
 });
 
 /** 已发布接口响应提取（Page 分页结构） */
@@ -126,6 +133,11 @@ const RESOURCE_ADAPTERS: Record<
           pageSize,
           category,
           kw: keyword || undefined,
+          // 查询智能体需设置目标子类型：ChatBot 含对话型与通用型，排除网页应用
+          targetType: AgentComponentTypeEnum.Agent,
+          targetSubType: 'ChatBot',
+          // 仅展示官方智能体
+          official: true,
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'agent'),
     },
@@ -137,9 +149,15 @@ const RESOURCE_ADAPTERS: Record<
         const records = (res.data as AgentConfigInfo[] | null) || [];
         return records.map((item) => ({
           id: `space-agent-${item.id}`,
+          // 空间智能体 id 即智能体 ID，供「召唤」跳转 home 使用
+          agentId: item.id,
           name: item.name,
           description: item.description,
           icon: item.icon,
+          // 创建人以发布者行展示（与系统广场卡片同款：头像+昵称）
+          publishUser: item.creator,
+          // 统计行与系统广场卡片同款（用户人数/会话次数/收藏次数），取 agentStatistics
+          stats: mapPublishedStats(item.agentStatistics),
         }));
       },
     },
@@ -169,6 +187,16 @@ const RESOURCE_ADAPTERS: Record<
           description: item.description,
           icon: item.icon,
           category: item.category || undefined,
+          // 创建人映射为发布者行展示（与系统广场技能卡片同款；
+          // SkillInfo 无头像/昵称，头像走默认头像兜底）
+          publishUser: item.creatorName
+            ? {
+                userId: item.creatorId ?? 0,
+                userName: item.creatorName,
+                nickName: item.creatorName,
+                avatar: '',
+              }
+            : undefined,
         }));
       },
     },

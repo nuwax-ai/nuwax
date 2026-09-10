@@ -84,6 +84,16 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
     [onDiffFileSelect],
   );
 
+  /** 切换到源代码管理时重新查询 Git 状态，兜底同步最新变更列表 */
+  const handleSourceControlClick = useCallback(async () => {
+    setActiveView('sourceControl');
+    try {
+      await onRefreshGitList?.();
+    } catch (error) {
+      console.error('Refresh git status on source control open failed:', error);
+    }
+  }, [onRefreshGitList]);
+
   const panelBody = (
     <>
       {enableSourceControl && (
@@ -124,7 +134,7 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
                   )}
                 </>
               }
-              onClick={() => setActiveView('sourceControl')}
+              onClick={() => void handleSourceControlClick()}
             />
           </div>
         </div>

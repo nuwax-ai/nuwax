@@ -263,11 +263,6 @@ const routes = [
         path: '/expert-skill-connector/connector',
         component: '@/pages/ExpertSkillConnector',
       },
-      // 专家·技能·连接器-"更多"聚合列表页（框架内子路由，不携带来源页筛选状态）
-      {
-        path: '/expert-skill-connector/list/:resourceType',
-        component: '@/pages/ExpertSkillConnector',
-      },
       {
         path: '/history-conversation',
         component: '@/pages/HistoryConversation',
@@ -360,11 +355,6 @@ const routes = [
             path: 'model/manage',
             name: getRouteLabel('PC.Routes.publicModelManagement'),
             component: '@/pages/GlobalModelManage',
-          },
-          {
-            path: 'connector-manage',
-            name: getRouteLabel('PC.Routes.connectorManage'),
-            component: '@/pages/SystemManagement/ConnectorManage',
           },
           {
             path: 'model/pricing',
@@ -463,6 +453,11 @@ const routes = [
                 path: 'content-skill',
                 name: getRouteLabel('PC.Routes.contentSkill'),
                 component: '@/pages/SystemManagement/Content/Skill',
+              },
+              {
+                path: 'official-connector',
+                name: getRouteLabel('PC.Routes.connectorManage'),
+                component: '@/pages/SystemManagement/ConnectorManage',
               },
             ],
           },
