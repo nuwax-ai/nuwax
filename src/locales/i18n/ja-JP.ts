@@ -2713,6 +2713,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.publishApplying": "公開申請を送信しています...",
   "PC.Pages.AppDevPro.publishBuildStep": "ビルド",
   "PC.Pages.AppDevPro.publishBuilding": "ビルド中",
+  "PC.Pages.AppDevPro.buildStatusOk": "ビルド成功",
+  "PC.Pages.AppDevPro.buildStatusFailed": "ビルド失敗",
   "PC.Pages.AppDevPro.publishCancelled": "公開をキャンセルしました",
   "PC.Pages.AppDevPro.publishFailed": "公開に失敗しました",
   "PC.Pages.AppDevPro.appPublishing": "アプリ公開中",

@@ -2788,6 +2788,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.publishApplying": "正在提交发布申请...",
   "PC.Pages.AppDevPro.publishBuildStep": "构建打包",
   "PC.Pages.AppDevPro.publishBuilding": "正在构建",
+  "PC.Pages.AppDevPro.buildStatusOk": "构建成功",
+  "PC.Pages.AppDevPro.buildStatusFailed": "构建失败",
   "PC.Pages.AppDevPro.publishCancelled": "已取消发布",
   "PC.Pages.AppDevPro.publishFailed": "发布失败",
   "PC.Pages.AppDevPro.appPublishing": "应用发布中",

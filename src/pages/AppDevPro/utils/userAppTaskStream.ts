@@ -13,6 +13,7 @@ import {
 import {
   getEventTerminalStatus,
   getTaskTerminalStatus,
+  isStreamLaggedEvent,
   parseUserAppTaskLogEvent,
 } from './userAppTaskLog';
 
@@ -136,6 +137,10 @@ export const listenUserAppTaskStream = (
   return new Promise<UserAppTaskTerminalStatus>((resolve, reject) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     let settled = false;
+    let lastSeq = fromSeq;
+    let lagged = false;
+    let connectionId = 0;
+    const maxLagReconnect = 8;
 
     const finish = (status: UserAppTaskTerminalStatus, error?: Error) => {
       if (settled) {
@@ -156,90 +161,148 @@ export const listenUserAppTaskStream = (
       resolve(status);
     };
 
-    void fetchEventSource(getUserAppTaskLogsStreamUrl(taskId, fromSeq), {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'text/event-stream',
-      },
-      signal: abortController.signal,
-      openWhenHidden: true,
-      onmessage: (msg) => {
-        if (isCancelled()) {
-          finish('cancelled');
-          return;
+    const inferClosedStatus = () => {
+      const list = getServices();
+      if (
+        list.length > 0 &&
+        list.every((item) => getTaskTerminalStatus(item.status) === 'succeeded')
+      ) {
+        finish('succeeded');
+        return;
+      }
+      if (
+        list.some((item) => getTaskTerminalStatus(item.status) === 'failed')
+      ) {
+        finish('failed', new Error(failedMessage));
+        return;
+      }
+      finish('failed', new Error(streamClosedMessage));
+    };
+
+    const startConnection = (lagReconnectCount = 0) => {
+      const myId = ++connectionId;
+      lagged = false;
+      const inner = new AbortController();
+      if (abortController.signal.aborted) {
+        finish('cancelled');
+        return;
+      }
+      abortController.signal.addEventListener('abort', () => inner.abort(), {
+        once: true,
+      });
+
+      const reconnectAfterLag = (): boolean => {
+        if (myId !== connectionId || settled || !lagged) {
+          return false;
         }
-        if (!msg.data) {
-          return;
+        lagged = false;
+        if (lagReconnectCount >= maxLagReconnect) {
+          finish('failed', new Error(streamClosedMessage));
+          return true;
         }
-        let parsed: unknown = msg.data;
-        try {
-          parsed = JSON.parse(msg.data);
-        } catch {
-          parsed = msg.data;
-        }
-        const event = parseUserAppTaskLogEvent(parsed, msg.event);
-        if (!event) {
-          return;
-        }
-        onEvent(event);
-        const terminal = getEventTerminalStatus(event, msg.event);
-        if (terminal) {
+        startConnection(lagReconnectCount + 1);
+        return true;
+      };
+
+      void fetchEventSource(getUserAppTaskLogsStreamUrl(taskId, lastSeq), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'text/event-stream',
+        },
+        signal: inner.signal,
+        openWhenHidden: true,
+        onmessage: (msg) => {
+          if (isCancelled() || abortController.signal.aborted) {
+            finish('cancelled');
+            return;
+          }
+          if (!msg.data) {
+            return;
+          }
+          let parsed: unknown = msg.data;
+          try {
+            parsed = JSON.parse(msg.data);
+          } catch {
+            parsed = msg.data;
+          }
+          const event = parseUserAppTaskLogEvent(parsed, msg.event);
+          if (!event) {
+            return;
+          }
+          if (event.seq === undefined && msg.id) {
+            const seqFromId = Number(msg.id);
+            if (Number.isFinite(seqFromId)) {
+              event.seq = seqFromId;
+            }
+          }
+          if (typeof event.seq === 'number') {
+            lastSeq = event.seq;
+          }
+          if (isStreamLaggedEvent(event.type || msg.event)) {
+            lagged = true;
+            return;
+          }
+          onEvent(event);
+          const terminal = getEventTerminalStatus(event, msg.event);
+          if (terminal) {
+            finish(
+              terminal,
+              terminal === 'failed'
+                ? new Error(event.error || failedMessage)
+                : undefined,
+            );
+          }
+        },
+        onclose: () => {
+          if (myId !== connectionId) {
+            return;
+          }
+          if (settled || isCancelled() || abortController.signal.aborted) {
+            if (!settled) {
+              finish('cancelled');
+            }
+            return;
+          }
+          if (reconnectAfterLag()) {
+            return;
+          }
+          inferClosedStatus();
+        },
+        onerror: (error) => {
+          if (isCancelled() || abortController.signal.aborted) {
+            finish('cancelled');
+            throw error;
+          }
+          if (lagged) {
+            throw error;
+          }
           finish(
-            terminal,
-            terminal === 'failed'
-              ? new Error(event.error || event.message || failedMessage)
-              : undefined,
+            'failed',
+            error instanceof Error ? error : new Error(failedMessage),
           );
+          throw error;
+        },
+      }).catch((error: unknown) => {
+        if (myId !== connectionId) {
+          return;
         }
-      },
-      onclose: () => {
-        if (settled || isCancelled()) {
+        if (settled || isCancelled() || abortController.signal.aborted) {
           if (!settled) {
             finish('cancelled');
           }
           return;
         }
-        const list = getServices();
-        if (
-          list.length > 0 &&
-          list.every(
-            (item) => getTaskTerminalStatus(item.status) === 'succeeded',
-          )
-        ) {
-          finish('succeeded');
+        if (reconnectAfterLag()) {
           return;
-        }
-        if (
-          list.some((item) => getTaskTerminalStatus(item.status) === 'failed')
-        ) {
-          finish('failed', new Error(failedMessage));
-          return;
-        }
-        finish('failed', new Error(streamClosedMessage));
-      },
-      onerror: (error) => {
-        if (isCancelled()) {
-          finish('cancelled');
-          throw error;
         }
         finish(
           'failed',
           error instanceof Error ? error : new Error(failedMessage),
         );
-        throw error;
-      },
-    }).catch((error: unknown) => {
-      if (settled || isCancelled()) {
-        if (!settled) {
-          finish('cancelled');
-        }
-        return;
-      }
-      finish(
-        'failed',
-        error instanceof Error ? error : new Error(failedMessage),
-      );
-    });
+      });
+    };
+
+    startConnection();
   });
 };

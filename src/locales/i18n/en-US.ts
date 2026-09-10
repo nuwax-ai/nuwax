@@ -2790,6 +2790,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.publishApplying": "Submitting publish request...",
   "PC.Pages.AppDevPro.publishBuildStep": "Build package",
   "PC.Pages.AppDevPro.publishBuilding": "Building",
+  "PC.Pages.AppDevPro.buildStatusOk": "Build succeeded",
+  "PC.Pages.AppDevPro.buildStatusFailed": "Build failed",
   "PC.Pages.AppDevPro.publishCancelled": "Publishing cancelled",
   "PC.Pages.AppDevPro.publishFailed": "Publish failed",
   "PC.Pages.AppDevPro.appPublishing": "Publishing application",

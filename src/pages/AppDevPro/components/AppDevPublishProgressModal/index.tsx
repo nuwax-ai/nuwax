@@ -5,7 +5,7 @@ import {
   CloseCircleFilled,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { Button, Collapse, Modal, Progress, Steps, Tag } from 'antd';
+import { Button, Collapse, Modal, Steps, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type {
@@ -24,8 +24,8 @@ export interface AppDevPublishProgressModalProps {
   phase: UserAppPublishPhase;
   /** 按 serviceId 分组的进度 */
   services: UserAppTaskServiceProgress[];
-  /** 整体进度 0-100 */
-  overallProgress: number;
+  /** 整体进度 0-100（兼容入参，弹窗不再展示进度条） */
+  overallProgress?: number;
   /** 失败信息 */
   errorMessage?: string;
   /** 取消接口 loading */
@@ -80,19 +80,30 @@ const getStepsStatus = (
 };
 
 const getServiceTagColor = (status: string): string => {
-  const value = status.toLowerCase();
-  if (
-    ['succeeded', 'success', 'completed', 'complete', 'done'].includes(value)
-  ) {
+  if (status === 'build_ok') {
     return 'success';
   }
-  if (['failed', 'fail', 'error'].includes(value)) {
+  if (status === 'build_fail') {
     return 'error';
   }
-  if (['cancelled', 'canceled'].includes(value)) {
-    return 'default';
-  }
   return 'processing';
+};
+
+/**
+ * 将服务状态映射为展示文案。
+ * building → 正在构建；build_ok → 构建成功；build_fail → 构建失败。
+ *
+ * @param status 服务状态
+ * @returns 展示文案
+ */
+const getServiceStatusLabel = (status: string): string => {
+  if (status === 'build_ok') {
+    return dict('PC.Pages.AppDevPro.buildStatusOk');
+  }
+  if (status === 'build_fail') {
+    return dict('PC.Pages.AppDevPro.buildStatusFailed');
+  }
+  return dict('PC.Pages.AppDevPro.publishBuilding');
 };
 
 /**
@@ -120,7 +131,7 @@ const ServiceLogBlock: React.FC<{ logs: string[] }> = ({ logs }) => {
 };
 
 /**
- * 发布进度弹窗：展示构建各 serviceId 的日志与进度，支持取消任务。
+ * 发布进度弹窗：按 SSE 事件展示各 service 构建状态与日志，支持取消任务。
  *
  * @param props 弹窗属性
  * @returns 发布进度弹窗
@@ -129,7 +140,6 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   open,
   phase,
   services,
-  overallProgress,
   errorMessage,
   cancelLoading = false,
   onCancelTask,
@@ -172,20 +182,8 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
               color={getServiceTagColor(item.status)}
               className={cx(styles.serviceTag)}
             >
-              {item.status || dict('PC.Pages.AppDevPro.publishBuilding')}
+              {getServiceStatusLabel(item.status)}
             </Tag>
-            <Progress
-              percent={item.progress}
-              size="small"
-              className={cx(styles.serviceProgress)}
-              status={
-                getServiceTagColor(item.status) === 'error'
-                  ? 'exception'
-                  : item.progress >= 100
-                  ? 'success'
-                  : 'active'
-              }
-            />
           </div>
         ),
         children: <ServiceLogBlock logs={item.logs} />,
@@ -260,16 +258,6 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
         )}
 
         <div className={cx(styles.overall)}>
-          <Progress
-            percent={overallProgress}
-            status={
-              phase === 'failed' || phase === 'cancelled'
-                ? 'exception'
-                : phase === 'success'
-                ? 'success'
-                : 'active'
-            }
-          />
           <div className={cx(styles.phaseText)}>
             {phase === 'starting' && (
               <>

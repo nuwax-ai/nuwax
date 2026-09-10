@@ -350,35 +350,45 @@ export type UserAppPublishPhase =
 /** 任务终态 */
 export type UserAppTaskTerminalStatus = 'succeeded' | 'failed' | 'cancelled';
 
+/**
+ * 构建任务 SSE 事件名（与 event 字段一致）。
+ * building / log / build_ok / build_fail 为服务级；completed / failed / cancelled 为任务终态；
+ * stream_lagged 为协议事件，需带 fromSeq 重连。
+ */
+export type UserAppBuildSseEventName =
+  | 'building'
+  | 'log'
+  | 'build_ok'
+  | 'build_fail'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'stream_lagged';
+
+/** 单个服务的构建状态：building 期间穿插 log，以 build_ok / build_fail 结束 */
+export type UserAppBuildServiceStatus = 'building' | 'build_ok' | 'build_fail';
+
 /** 单个服务（serviceId）的构建进度 */
 export interface UserAppTaskServiceProgress {
   /** 服务 ID，如 web / api */
   serviceId: string;
   /** 进度 0-100 */
   progress: number;
-  /** 服务状态文案 */
-  status: string;
+  /** 服务构建状态：building / build_ok / build_fail */
+  status: UserAppBuildServiceStatus;
   /** 日志行 */
   logs: string[];
 }
 
-/** 任务进度 SSE 事件（字段做兼容解析） */
+/** 任务进度 SSE 事件（与协议 event 字段一致） */
 export interface UserAppTaskLogEvent {
   seq?: number;
   serviceId?: string;
   service?: string;
-  status?: string;
-  taskStatus?: string;
-  progress?: number;
-  percent?: number;
-  message?: string;
   log?: string;
-  content?: string;
-  text?: string;
   line?: string;
   error?: string;
-  done?: boolean;
-  completed?: boolean;
-  type?: string;
+  skipped?: number;
+  type?: UserAppBuildSseEventName | string;
   [key: string]: unknown;
 }
