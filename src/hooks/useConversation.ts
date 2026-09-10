@@ -48,6 +48,17 @@ const useConversation = () => {
       modelId?: number;
       // 智能体模式
       agentMode?: AgentMode;
+      /**
+       * 首页项目上框：直接建会话绑定已有项目（不走隐式建项目），
+       * 携带 projectId/devAgentId/sandboxId（契约先行，2026-09-10 后端未 ready）。
+       */
+      projectId?: number;
+      /** 项目绑定的调试智能体 ID（全栈项目上框携带） */
+      devAgentId?: number;
+      /** 项目沙箱（上框项目自带，优先于个人电脑选择） */
+      sandboxId?: number;
+      /** 创建成功后的跳转 URL 前缀（尾部拼接会话 id；全栈跳 app-pro 用） */
+      redirectUrl?: string;
     },
   ) => {
     const variableParams = attach?.variableParams;
@@ -67,7 +78,15 @@ const useConversation = () => {
       agentId,
       devMode: false,
       variables: variableParams,
-      ...(personalComputerId
+      // 项目上框：绑定已有项目（工作区由项目隐含，不携带 workspaceDir）；
+      // 否则维持个人电脑口径（sandboxId + workspaceDir）
+      ...(attach?.projectId
+        ? {
+            projectId: attach.projectId,
+            ...(attach.devAgentId ? { devAgentId: attach.devAgentId } : {}),
+            ...(attach.sandboxId ? { sandboxId: attach.sandboxId } : {}),
+          }
+        : personalComputerId
         ? {
             sandboxId: Number(personalComputerId),
             workspaceDir: attach?.workspaceDir || undefined,
@@ -86,8 +105,11 @@ const useConversation = () => {
 
     const id = res.data?.id;
     if (id) {
-      // 跳转会话页面
-      const url = `/home/chat/${id}/${agentId}`;
+      // 跳转会话页面；项目上框带 redirectUrl 时跳指定页（如全栈 IDE），
+      // attach（含 message/files 等）作为 route state 由目标页自动发首条消息
+      const url = attach?.redirectUrl
+        ? `${attach.redirectUrl}${id}`
+        : `/home/chat/${id}/${agentId}`;
       history.push(url, attach);
     }
   };

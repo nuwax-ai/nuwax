@@ -4,6 +4,7 @@ import GuardedFormModal, {
 } from '@/components/business-component/GuardedFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -11,7 +12,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { Form, FormProps, Input, message } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import { apiUserAppCreate, apiUserAppUpdate } from '../../services/appDevPro';
 import type {
   CreateUserAppParams,
@@ -63,6 +64,8 @@ const unwrapUserAppInfo = (
  *
  * 参考 CreateAgent：名称、介绍、图标表单；创建走 apiUserAppCreate，更新走 apiUserAppUpdate。
  * 创建时若未上传图标，会尝试根据名称和介绍自动生成图标。
+ * 创建参数对齐首页创建全栈口径：sandboxId 传云电脑哨兵 -1（全栈仅云端）、
+ * devAgentId 传租户默认任务智能体（契约先行）。
  *
  * @param props 弹窗属性
  * @param props.spaceId 空间 ID
@@ -88,6 +91,10 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
   const [imageUrl, setImageUrl] = useState<string>('');
   /** 提交中，用于弹窗确认按钮 loading */
   const [loading, setLoading] = useState<boolean>(false);
+
+  // 租户配置：devAgentId 取租户默认任务智能体（全栈开发为任务智能体形态，
+  // 与首页 currentAgentId 的默认解析同源；创建参数对齐见 onFinish 处注释）
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 创建全栈应用
   const { run: runAdd } = useRequest(apiUserAppCreate, {
@@ -167,11 +174,18 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
           name: values.name,
           description: values.description,
         });
+        // 创建参数对齐首页创建全栈（/api/project/create）的传值口径：
+        // sandboxId=云电脑哨兵 -1（全栈仅云端，由后端分配云端沙箱）、
+        // devAgentId=生效智能体（本入口无推荐位，取租户默认任务智能体）
         runAdd({
           ...values,
           description: description ?? values.description,
           icon,
           spaceId,
+          sandboxId: Number(CLOUD_SANDBOX_ID),
+          devAgentId:
+            tenantConfigInfo?.defaultTaskAgentId ??
+            tenantConfigInfo?.defaultAgentId,
         });
       } else {
         // 更新应用：缺少 id 时不发请求

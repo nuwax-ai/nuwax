@@ -1,5 +1,6 @@
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import {
   apiAgentConversationDelete,
   apiAgentConversationUpdate,
@@ -59,6 +60,14 @@ export interface ProjectItem {
   name: string;
   /** 项目类型（重命名/删除按类型路由到 user-project / userapp 接口） */
   projectType?: AgentComponentTypeEnum;
+  /** 项目所属空间 ID（「+ 新建会话」上框跳全栈 IDE 用） */
+  spaceId?: number;
+  /** 项目图标（上框展示） */
+  icon?: string | null;
+  /** 项目沙箱 ID（上框会话创建携带） */
+  sandboxId?: number;
+  /** 项目绑定的调试智能体 ID（全栈默认命中用；契约先行，接口暂不返回） */
+  devAgentId?: number;
   children?: ProjectChildItem[];
 }
 
@@ -89,6 +98,7 @@ const ProjectPanel = forwardRef<
 >(({ onVisibleCountChange, onConversationClick, compact = false }, ref) => {
   const { spaceId: spaceIdParam } = useParams() as { spaceId?: string };
   const spaceId = Number(spaceIdParam) || undefined;
+  const { pin } = useHomePinnedProjectHandoff();
 
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   // 空态仅在接口返回后展示：加载中先渲染 Spin，避免一进来就闪「暂无项目」
@@ -133,6 +143,10 @@ const ProjectPanel = forwardRef<
               id: item.projectId,
               name: item.name,
               projectType: item.projectType,
+              spaceId: item.spaceId,
+              icon: item.icon,
+              sandboxId: item.sandboxId,
+              devAgentId: item.devAgentId,
               children: (item.conversations ?? []).map((conversation) => ({
                 id: conversation.id,
                 // 空主题回退与任务列表 ConversationItem 同口径
@@ -469,7 +483,9 @@ const ProjectPanel = forwardRef<
     },
   });
 
-  const addConversationButton = (
+  // 「+ 新建会话」：常规/全栈项目 → 跳 /home 首页项目上框（同类型智能体约束 +
+  // 直接建会话绑定项目）；PageApp 契约未覆盖维持提示；无类型按常规项目兜底
+  const renderAddConversationButton = (project: ProjectItem) => (
     <Tooltip
       title={dict(
         'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation',
@@ -483,11 +499,24 @@ const ProjectPanel = forwardRef<
         )}
         onClick={(event) => {
           event.stopPropagation();
-          message.info(
-            dict(
-              'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable',
-            ),
-          );
+          if (project.projectType === AgentComponentTypeEnum.PageApp) {
+            message.info(
+              dict(
+                'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable',
+              ),
+            );
+            return;
+          }
+          pin({
+            projectId: project.id,
+            spaceId: project.spaceId,
+            projectType:
+              project.projectType ?? AgentComponentTypeEnum.NormalProject,
+            name: project.name,
+            icon: project.icon,
+            sandboxId: project.sandboxId,
+            devAgentId: project.devAgentId,
+          });
         }}
       >
         <PlusOutlined />
@@ -563,7 +592,7 @@ const ProjectPanel = forwardRef<
                   {project.name}
                 </span>
                 <div className={styles['project-actions']}>
-                  {addConversationButton}
+                  {renderAddConversationButton(project)}
                   <Dropdown
                     menu={buildProjectMenu(project)}
                     trigger={['click']}
@@ -628,7 +657,7 @@ const ProjectPanel = forwardRef<
                     </span>
                   )}
                   <div className={styles['child-actions']}>
-                    {addConversationButton}
+                    {renderAddConversationButton(project)}
                     {/* 子任务悬停操作浮层 */}
                     <Dropdown
                       menu={buildChildMenu(project.id, child)}

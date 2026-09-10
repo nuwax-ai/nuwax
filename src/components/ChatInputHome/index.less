@@ -495,6 +495,61 @@
   color: @colorTextQuaternary;
 }
 
+/* 项目上框栏：与工作目录栏同槽位（复用 workspace-dir-bar 基样式），
+   直接展示项目名（类型不作徽标、降级为整行 title 悬停提示）+ 移除按钮；
+   清空按钮贴文案并排（后续目录选择等同行并排时各自按钮跟各自文案），
+   hover 整行时才出现 */
+.pinned-project-bar {
+  gap: 6px;
+
+  &:hover .pinned-project-remove,
+  .pinned-project-remove:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.pinned-project-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: cover;
+  color: @colorTextTertiary;
+  font-size: 14px;
+}
+
+.pinned-project-name {
+  // 覆盖 workspace-dir-text 的 420px，给移除按钮留位
+  max-width: 360px;
+  font-weight: 500;
+}
+
+.pinned-project-remove {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: @colorTextQuaternary;
+  font-size: 11px;
+  // 默认隐藏，hover 上框栏出现（占位保留，避免出现时行内跳动）
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background-color: @colorFillTertiary;
+    color: @colorText;
+  }
+}
+
 /* + 号聚合菜单（附件 / @ 上下文 / / 能力）：白色卡片 + 图标列 + 文案 */
 .plus-menu-overlay {
   :global(.ant-dropdown-menu) {

@@ -227,6 +227,17 @@ export interface ConversationCreateParams {
    * 会话工作目录，仅当 sandboxId 为用户个人电脑（USER 类型沙箱）时生效。
    */
   workspaceDir?: string;
+  /**
+   * 关联项目 ID（首页项目上框：已有项目下直接新建会话时携带，
+   * 后端按此把会话绑定到项目，不再隐式建项目）。
+   * 契约先行（2026-09-10 后端未 ready，前端照发）。
+   */
+  projectId?: number;
+  /**
+   * 项目绑定的调试智能体 ID（全栈项目上框时携带，值为当前选中的
+   * 全栈类智能体）。契约先行（2026-09-10 后端未 ready，前端照发）。
+   */
+  devAgentId?: number;
 }
 
 // 消息查询过程信息

@@ -16,9 +16,14 @@ import {
   selectSessionActive,
   selectSessionStreamActive,
 } from '@/features/conversation/domain/runtimeSelectors';
+import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
-import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  DefaultSelectedEnum,
+  TaskStatus,
+} from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
@@ -28,6 +33,7 @@ import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
   CheckOutlined,
+  CloseOutlined,
   DesktopOutlined,
   DownOutlined,
   FolderOpenOutlined,
@@ -147,6 +153,8 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       tabsSlot,
       selectedTag,
       onClearSelectedTag,
+      pinnedProject,
+      onClearPinnedProject,
       prefix,
       agentMode = 'yolo',
       onAgentModeChange,
@@ -215,6 +223,8 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
     const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
     // 工作目录浏览弹窗（env-bar「打开电脑文件夹」入口）
     const [workspaceDirPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
+    // 项目上框图标（可能为 /api/f/ 受保护地址，走鉴权 fetch + blob）
+    const pinnedProjectIcon = useAuthProtectedImageSrc(pinnedProject?.icon);
 
     // 文档
     const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
@@ -1183,6 +1193,8 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                       {prefix}
                       {(isTaskAgentActive ||
                         agentType === AgentTypeEnum.TaskAgent) &&
+                        // 项目上框期间沙箱由项目隐含，隐藏电脑选择器
+                        !pinnedProject &&
                         !readonly && (
                           <ComputerTypeSelector
                             value={
@@ -1234,6 +1246,58 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                     </VoiceFooter.Right>
                   </footer>
                   {/**
+                   * 项目上框栏（项目列表「+ 新建会话」）：与工作目录栏同槽位同基样式
+                   * （workspace-dir-bar 灰底贴边栏），直接展示项目名并可移除
+                   * （清空按钮贴文案并排、hover 整行出现；项目类型不作徽标展示，
+                   * 降级为整行 title 悬停提示）；存在期间工作区由项目隐含，
+                   * 不渲染工作目录栏与电脑选择器。
+                   */}
+                  {pinnedProject && onClearPinnedProject && (
+                    <div
+                      className={cx(
+                        styles['workspace-dir-bar'],
+                        styles['pinned-project-bar'],
+                      )}
+                      title={
+                        pinnedProject.projectType ===
+                        AgentComponentTypeEnum.UserApp
+                          ? t('PC.Pages.Home.pinnedProject.userAppBadge')
+                          : t('PC.Pages.Home.pinnedProject.normalProjectBadge')
+                      }
+                    >
+                      {pinnedProjectIcon.displaySrc ? (
+                        <img
+                          src={pinnedProjectIcon.displaySrc}
+                          alt=""
+                          className={cx(styles['pinned-project-icon'])}
+                        />
+                      ) : (
+                        <FolderOutlined
+                          className={cx(styles['pinned-project-icon'])}
+                        />
+                      )}
+                      <span
+                        className={cx(
+                          styles['workspace-dir-text'],
+                          styles['pinned-project-name'],
+                        )}
+                        title={pinnedProject.name}
+                      >
+                        {pinnedProject.name}
+                      </span>
+                      <Tooltip title={t('PC.Pages.Home.pinnedProject.remove')}>
+                        <button
+                          type="button"
+                          className={cx(styles['pinned-project-remove'])}
+                          aria-label={t('PC.Pages.Home.pinnedProject.remove')}
+                          onClick={onClearPinnedProject}
+                        >
+                          <CloseOutlined />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  )}
+                  {/**
                    * 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，
                    * 仅用户自选个人电脑时展示（智能体绑定电脑 agentSandboxId 固定、
                    * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspaceDir）。
@@ -1243,6 +1307,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                     agentType === AgentTypeEnum.TaskAgent) &&
                     !readonly &&
                     !fixedSelection &&
+                    !pinnedProject &&
                     !disablePersonalComputer &&
                     selectedComputerId &&
                     selectedComputerId !== '-1' &&
