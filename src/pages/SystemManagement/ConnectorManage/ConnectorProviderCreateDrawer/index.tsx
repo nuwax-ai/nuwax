@@ -1,5 +1,6 @@
 import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import ConnectorAuthConfigSection, {
   type ConnectorProviderSubmitValues,
   toConnectorOauthConfigParams,
@@ -70,6 +71,12 @@ const ConnectorProviderCreateDrawer: React.FC<
   const [submitting, setSubmitting] = useState<boolean>(false);
   /** 图标 URL（上传成功回写隐藏表单字段 icon，随表单一起提交） */
   const iconUrl = (Form.useWatch('icon', form) ?? '') as string;
+  /**
+   * 图标展示地址：/api/f/ 为需鉴权的受保护文件地址，img 直接请求不带
+   * Authorization 会被拒（Chrome ORB 拦截 → 图片加载失败宽度为 0），
+   * 走 Bearer fetch + blob object URL 展示；表单里存的仍是原始 URL（提交用）
+   */
+  const { displaySrc: iconDisplaySrc } = useAuthProtectedImageSrc(iconUrl);
 
   const drawerWidth = useMemo(() => {
     if (typeof window === 'undefined') return 720;
@@ -280,7 +287,7 @@ const ConnectorProviderCreateDrawer: React.FC<
               上传成功即回显并写入隐藏字段 icon，随表单一起提交 */}
           <Form.Item label="图标（可选）">
             <UploadAvatar
-              imageUrl={iconUrl}
+              imageUrl={iconDisplaySrc}
               onUploadSuccess={(url) => form.setFieldValue('icon', url)}
               svgIconName="icons-nav-connector"
             />
