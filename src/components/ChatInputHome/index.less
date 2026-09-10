@@ -570,14 +570,7 @@
   font-size: 13px;
 }
 
-.plus-menu-icon {
-  width: 16px;
-  color: @colorTextSecondary;
-  font-size: 15px;
-  text-align: center;
-}
-
-/* @ / 触发字符胶囊（与附件图标同宽对齐） */
+/* 图标胶囊：附件 / @ / / 三个入口统一 16×16 灰底圆角容器 */
 .trigger-pill {
   display: inline-flex;
   align-items: center;
@@ -609,6 +602,15 @@
   color: @colorText;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 召唤专家 chip 图标（iconSrc 为鉴权解析后的地址，加载失败隐藏） */
+.expert-pill-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .expert-pill-remove {

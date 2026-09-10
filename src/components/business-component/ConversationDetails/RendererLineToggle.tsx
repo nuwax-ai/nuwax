@@ -12,7 +12,7 @@ import { Popover, Segmented, Tooltip, theme } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 // 复用本目录既有样式模块（icon-box 与头部 TooltipIcon 同款；勿新建本地 less）。
-// 与 ChatInputHomeIndependent/ConversationDisplaySettings 同款别名导入模式。
+// 与 ChatInputUnified/ConversationDisplaySettings 同款别名导入模式。
 import styles from '@/components/business-component/ConversationDetails/index.less';
 
 const cx = classNames.bind(styles);

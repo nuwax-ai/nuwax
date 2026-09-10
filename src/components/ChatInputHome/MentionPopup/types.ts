@@ -2,6 +2,7 @@
  * MentionPopup 和 MentionEditor 组件类型定义
  */
 
+import type { CapabilityTypeEnum } from '@/components/ChatInputHome/CapabilityModal/types';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { PluginTypeEnum } from '@/types/enums/plugin';
@@ -132,6 +133,8 @@ export interface FileMentionItem extends MentionBase {
 export interface DocMentionItem extends MentionBase {
   kind: 'doc';
   slugId: string;
+  /** 文档类型（随 selectedDocs 的 pageType 透传给 chat 请求） */
+  pageType?: string;
   targetId?: never;
 }
 
@@ -155,8 +158,6 @@ export interface PluginCommandItem extends MentionBase {
    */
   componentType?: AgentComponentTypeEnum;
 }
-
-export type SlashItem = SkillMentionItem | PluginCommandItem;
 
 /**
  * Tab 类型枚举
@@ -266,14 +267,17 @@ export interface MentionEditorProps {
   className?: string;
   /** Width reserved before the first line of text. */
   inlinePrefixWidth?: number;
-  /** 是否启用 @ 提及功能，默认 true */
+  /**
+   * 是否启用技能 chip 能力（编程化插入与 defaultMentions 回显守卫），默认 true。
+   * 不影响 / 能力弹窗——能力弹窗随时可唤起，仅按 capabilityResourceTypes 收敛可选类型
+   */
   enableMention?: boolean;
   /**
-   * / 触发的弹窗形态：
-   * - popup（默认）：跟随光标的 SlashPopup（技能/插件 Tab，输入即过滤）
-   * - capability：居中的添加能力大弹窗（技能/连接器/专家/资料库 × 系统广场/团队空间）
+   * / 能力弹窗开放的能力类型，缺省 DEFAULT_CAPABILITY_RESOURCE_TYPES
+   * （不含专家——产品策略：选择专家仅首页开放，其余入口仅隐藏入口，
+   * 专家选中链路 onExpertSelect/expertComponents 保持可用）
    */
-  slashMode?: 'popup' | 'capability';
+  capabilityResourceTypes?: CapabilityTypeEnum[];
   /** MentionPopup 弹窗的展示方向：auto | up | down，默认 auto */
   mentionPlacement?: 'auto' | 'up' | 'down';
   /** 用于回显的默认提及项列表（需同时传入 value 文本） */
@@ -304,7 +308,7 @@ export interface MentionEditorProps {
 export interface MentionEditorHandle {
   /** 清空编辑器内容 */
   clear: () => void;
-  /** 处理从弹窗中选择提及项 */
+  /** 以编程方式插入提及项（追加到编辑器末尾） */
   handleAtIconMentionSelect: (item: MentionItem) => void;
   /** 获取焦点 */
   focus?: () => void;

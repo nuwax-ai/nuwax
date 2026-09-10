@@ -46,8 +46,10 @@ export interface RepoPageTreeNode {
 
 /** 会话选中的资料库文档（selectedDocs 元素，传给 /api/agent/conversation/chat） */
 export interface SelectedDocInfo {
-  /** 页面短链标识 */
+  /** 选择的资料库文档 ID（页面短链标识） */
   slugId: string;
-  /** 页面标题 */
-  name: string;
+  /** 选择的资料库文档名称 */
+  title: string;
+  /** 选择的资料库文档类型 */
+  pageType?: string;
 }

@@ -54,7 +54,6 @@ import React, {
 } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import AtMentionIcon from './AtMentionIcon';
 import ComputerTypeSelector from './ComputerTypeSelector';
 import styles from './index.less';
 import ManualComponentItem from './ManualComponentItem';
@@ -790,7 +789,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
     }, []);
 
     /**
-     * 将底部 @ 图标选择的提及项插入到 MentionEditor
+     * 命令选择回调：能力面板选中的连接器等经此并入底部组件栏
      */
     const { onPluginSelect, commandManualComponents } = useSlashPlugins(
       manualComponents,
@@ -798,20 +797,15 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       onSelectComponent,
     );
 
-    const handleInsertAtMention = useCallback(
-      (item: MentionItem) => {
-        mentionEditorRef.current?.handleAtIconMentionSelect(item);
-      },
-      [mentionEditorRef],
-    );
-
     /**
      * 选中未订阅的付费技能时，打开订阅弹窗并拉取套餐列表
      */
     const handleUnsubscribedSkillSelect = useCallback(
       (item: MentionItem) => {
+        // 订阅拦截只关乎技能 chip（文件/资料库文档无付费语义）
         if (
           item.kind === 'file' ||
+          item.kind === 'doc' ||
           !isEnableSubscription ||
           !item.paymentRequired ||
           item.subscribed
@@ -965,18 +959,6 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                         </Tooltip>
                       </ConditionRender>
                     )}
-
-                    <VoiceFooter.HideWhenActive>
-                      <AtMentionIcon
-                        onPluginSelect={onPluginSelect}
-                        enableMention={enableMention}
-                        mentionPlacement={mentionPlacement}
-                        enableSubscription={isEnableSubscription}
-                        onSelectMention={handleInsertAtMention}
-                        usageScenarios={usageScenarios}
-                        disabled={wholeDisabled}
-                      />
-                    </VoiceFooter.HideWhenActive>
 
                     {/*上传按钮*/}
                     <Upload

@@ -37,6 +37,11 @@ export interface ResourceItem {
    * 系统广场取发布项 targetId，团队空间取智能体 id；技能/连接器不填
    */
   agentId?: number;
+  /**
+   * 技能 ID（选择透传跳转用）：
+   * 系统广场取发布项 targetId，团队空间取技能 id；专家/连接器不填
+   */
+  skillId?: number;
   /** 名称 */
   name: string;
   /** 描述 */
@@ -49,6 +54,8 @@ export interface ResourceItem {
   publishUser?: CreatorInfo;
   /** 标签 */
   tags?: string[];
+  /** 连接器服务标识（连接器特有：断开连接按 service 匹配用户连接 id） */
+  service?: string;
   /** 连接状态（连接器特有：卡片标题下方展示已连接/未连接） */
   connected?: boolean;
   /**
@@ -56,7 +63,10 @@ export interface ResourceItem {
    * pin/取消 pin 接口未定，数据源暂缺，默认按未常驻展示
    */
   pinned?: boolean;
-  /** 认证方式（连接器特有：no_auth 无连接概念，不展示连接状态与连接按钮） */
+  /**
+   * 认证方式（连接器特有：no_auth 免鉴权无连接概念，卡片状态恒展示已连接、
+   * 不展示 连接/断开 按钮；oauth2/api_key/bearer/custom 按连接状态展示）
+   */
   authType?: string;
   /** 底部统计项 */
   stats?: ResourceStat[];

@@ -17,6 +17,7 @@ import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
+import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
@@ -126,14 +127,18 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   renderHeaderRight,
 }) => {
   const location = useLocation();
+  const chromeFlags = useOpenAppChromeFlags();
   const { handleAutoPreviewLastFile } = useAutoPreviewFile();
   const stateToUse = locationState || location.state;
   // 附加state
   const message = stateToUse?.message;
   const files = stateToUse?.files;
+  // 组件列表（首页传入时已含专家合并，按 id+type 去重）
   const infos = stateToUse?.infos;
   // 技能ID列表
   const skillIds = stateToUse?.skillIds;
+  // 资料库已选文档（首页能力弹窗选中，随首条消息发送）
+  const firstSelectedDocs = stateToUse?.selectedDocs;
   // 消息来源
   const messageSourceType: MessageSourceType =
     (stateToUse?.messageSourceType as MessageSourceType) || 'new_chat'; // new_chat 新增会话
@@ -551,6 +556,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             sandboxId: effectiveSandboxId,
             data,
             skillIds,
+            selectedDocs: firstSelectedDocs,
             modelId: selectedModelId,
             agentMode: (stateToUse?.agentMode as AgentMode) || 'yolo',
           };
@@ -560,7 +566,15 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       };
       asyncFun();
     }
-  }, [id, message, files, infos, firstVariableParams, skillIds]);
+  }, [
+    id,
+    message,
+    files,
+    infos,
+    firstVariableParams,
+    skillIds,
+    firstSelectedDocs,
+  ]);
 
   useEffect(() => {
     // 应用智能体模式下，不获取当前智能体的历史记录
@@ -1337,6 +1351,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     createAppNewConversation,
+    hideMenu: chromeFlags.hideMenu,
+    hideNew: chromeFlags.hideNew,
+    hideTitle: chromeFlags.hideTitle,
+    hideTerminal: chromeFlags.hideTerminal,
+    hideTree: chromeFlags.hideTree,
     agentId,
     conversationInfo,
     setConversationInfo,
@@ -1466,7 +1485,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       allowChooseMode: effectiveAgent?.allowChooseMode,
     },
     onSendMessage: handleMessageSend,
-    onClear: showClearContext ? handleClear : undefined,
+    onClear: showClearContext && !chromeFlags.hideNew ? handleClear : undefined,
     onLoadMoreMessage: handleLoadMoreMessage,
     selectedModelId,
     onModelSelect: setSelectedModelId,

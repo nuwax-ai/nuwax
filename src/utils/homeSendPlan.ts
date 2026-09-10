@@ -9,6 +9,7 @@ import type {
   MessageSourceType,
   UploadFileInfo,
 } from '@/types/interfaces/common';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { PinnedProjectInfo } from '@/types/interfaces/userProject';
 
 /**
@@ -51,6 +52,8 @@ export interface HomeProjectCreatePayload {
   agentId?: number;
   /** 调试关联智能体ID，透传 /api/project/create */
   devAgentId?: number;
+  /** 资料库文档（首页能力弹窗选中，随 routeState 透传，项目页消费） */
+  selectedDocs?: SelectedDocInfo[];
 }
 
 /** 会话分支 attach（与 useConversation.handleCreateConversation 的 attach 结构对齐） */
@@ -73,6 +76,9 @@ export interface HomeConversationAttach {
   sandboxId?: number;
   /** 创建成功后的跳转 URL 前缀（拼接会话 id；全栈跳 app-pro 用） */
   redirectUrl?: string;
+  /** 资料库文档（首页能力弹窗选中，随首条 chat 消息发送；
+   *  专家组件已由调用方按 id+type 去重合并进 infos，不单独透传） */
+  selectedDocs?: SelectedDocInfo[];
 }
 
 export interface HomeSendPlanInput {
@@ -87,8 +93,10 @@ export interface HomeSendPlanInput {
   skillIds?: number[];
   modelId?: number;
   agentMode?: AgentMode;
-  /** 手选组件（建项目分支作 tools、会话分支作 infos） */
+  /** 手选组件（建项目分支作 tools、会话分支作 infos；专家组件由页面侧合并后传入） */
   infos?: AgentSelectedComponentInfo[];
+  /** 资料库文档（建项目随 routeState 透传 / 会话随首条消息发送） */
+  selectedDocs?: SelectedDocInfo[];
   selectedComputerId?: string;
   workspaceDir?: string;
   /** 项目类推荐展示空间选择器时的选中空间 */
@@ -122,6 +130,7 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
     modelId,
     agentMode,
     infos,
+    selectedDocs,
     selectedComputerId,
     workspaceDir,
     selectedSpaceId,
@@ -143,6 +152,7 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
         skillIds,
         modelId,
         agentMode,
+        selectedDocs,
         projectId: pinnedProject.projectId,
         ...(pinnedProject.sandboxId
           ? { sandboxId: pinnedProject.sandboxId }
@@ -187,6 +197,7 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
         agentId: currentAgentId,
         // 首页选中 agent 创建项目：把该 agent 作为项目调试智能体传给后端
         devAgentId: currentAgentId,
+        selectedDocs,
       },
     };
   }
@@ -208,6 +219,7 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
       skillIds,
       modelId,
       agentMode,
+      selectedDocs,
     },
   };
 };

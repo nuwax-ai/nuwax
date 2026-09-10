@@ -35,7 +35,10 @@ import React, {
   useState,
 } from 'react';
 import CapabilityModal from '../CapabilityModal';
-import type { CapabilityItem } from '../CapabilityModal/types';
+import type {
+  CapabilityItem,
+  CapabilityTypeEnum,
+} from '../CapabilityModal/types';
 import MentionPopup from '../MentionPopup';
 import type {
   DocMentionItem,
@@ -43,12 +46,21 @@ import type {
   MentionEditorProps,
   MentionItem,
   MentionPopupHandle,
-  SlashItem,
 } from '../MentionPopup/types';
-import SlashPopup from '../SlashPopup';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/**
+ * / 能力弹窗默认开放的能力类型（不含专家）：
+ * 产品策略——选择专家仅首页开放，其余入口仅隐藏导航项，
+ * 专家选中链路（onExpertSelect → expertComponents 随消息发送）保持可用。
+ */
+export const DEFAULT_CAPABILITY_RESOURCE_TYPES: CapabilityTypeEnum[] = [
+  'skill',
+  'connector',
+  'knowledge',
+];
 
 type CaretPlacement = 'up' | 'down';
 
@@ -430,12 +442,12 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       enableSubscription = false,
       onUnsubscribedSkillSelect,
       onSkillIdsChange,
-      // 是否启用 @ 提及功能，默认启用
+      // 是否启用技能 chip 能力（编程化插入/回显守卫）；/ 能力弹窗不受此门控
       enableMention = true,
+      // / 能力弹窗开放的能力类型（缺省不含专家，产品策略：专家仅首页开放）
+      capabilityResourceTypes = DEFAULT_CAPABILITY_RESOURCE_TYPES,
       // @ 弹窗展示方向：auto | up | down
       mentionPlacement = 'auto',
-      // / 触发形态：popup 跟随光标浮层 | capability 添加能力大弹窗
-      slashMode = 'popup',
       // 默认需要回显为 mention chip 的技能列表（按顺序渲染）
       defaultMentions,
       minRows = 2,
@@ -472,7 +484,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     // ==================== State ====================
     /** 是否显示提及弹窗 */
     const [showMentionPopup, setShowMentionPopup] = useState<boolean>(false);
-    /** 是否显示添加能力大弹窗（slashMode=capability 时 / 触发） */
+    /** 是否显示添加能力大弹窗（/ 触发） */
     const [capabilityOpen, setCapabilityOpen] = useState<boolean>(false);
     /** capabilityOpen 的同步镜像：删除触发串会经 commitEditorChange 重入检测，用于防递归 */
     const capabilityOpenRef = useRef<boolean>(false);
@@ -561,6 +573,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
                     kind: 'doc' as const,
                     slugId: el.dataset.mentionSlugId || '',
                     name: el.dataset.mentionName || '',
+                    pageType: el.dataset.mentionPageType || undefined,
                   }
                 : {
                     kind: 'skill' as const,
@@ -619,11 +632,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
     /** 检测 @ 并控制弹窗 */
     const runMentionDetection = useCallback(() => {
-      if (
-        (!enableMention && !onFetchMentionFiles) ||
-        disabled ||
-        !editorRef.current
-      ) {
+      if (disabled || !editorRef.current) {
         closeMentionPopup();
         return;
       }
@@ -636,16 +645,12 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       const textBeforeCaret = getTextBeforeCaret(editorRef.current);
       const fileInfo = detectMention(textBeforeCaret);
       const slashInfo = detectMention(textBeforeCaret, '/');
+      // @ 文件提及需数据源；/ 能力弹窗随时可唤起（不随 enableMention/智能体配置门控）
       const trigger = onFetchMentionFiles && fileInfo.hasMention ? '@' : '/';
-      const mentionInfo =
-        trigger === '@'
-          ? fileInfo
-          : enableMention
-          ? slashInfo
-          : { hasMention: false, searchText: '', atIndex: -1 };
+      const mentionInfo = trigger === '@' ? fileInfo : slashInfo;
 
-      // capability 模式：/ 命中即打开添加能力大弹窗（不弹光标浮层）
-      if (trigger === '/' && slashMode === 'capability') {
+      // / 命中即打开添加能力大弹窗（不弹光标浮层）
+      if (trigger === '/') {
         // 已打开时被删除触发串的 commit 重入，直接跳过
         if (capabilityOpenRef.current) {
           closeMentionPopup();
@@ -697,12 +702,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       }
     }, [
       closeMentionPopup,
-      enableMention,
       onFetchMentionFiles,
       disabled,
       mentionPlacement,
       mentionPopupHeight,
-      slashMode,
     ]);
 
     /** 提交一次编辑变更：入栈 + 同步文本 + mention 检测 */
@@ -768,8 +771,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     }, [onSkillIdsChange, selectedMentions]);
 
     /**
-     * 资料库文档 chip 派生：随消息以 selectedDocs({slugId,name}) 发送，
-     * 与 skillIds 同源（selectedMentions），删除/清空自动同步
+     * 资料库文档 chip 派生：随消息以 selectedDocs({slugId,title,pageType}) 发送
+     * （对齐 chat 接口 SelectedDocDto 契约），与 skillIds 同源（selectedMentions），
+     * 删除/清空自动同步
      */
     useEffect(() => {
       const docs = selectedMentions.filter(
@@ -778,7 +782,11 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       onDocsChange?.(
         Array.from(
           new Map(docs.map((item) => [item.slugId, item])).values(),
-        ).map((item) => ({ slugId: item.slugId, name: item.name })),
+        ).map((item) => ({
+          slugId: item.slugId,
+          title: item.name,
+          pageType: item.pageType,
+        })),
       );
     }, [onDocsChange, selectedMentions]);
 
@@ -787,14 +795,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       if (!!defaultPlaceholder) {
         return defaultPlaceholder;
       }
-      // 如果启用 @ 提及功能，则显示默认占位符文本
-      if (enableMention) {
-        return t('PC.Components.ChatInputCommands.hint');
-      }
-      return t(
-        'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
-      );
-    }, [enableMention, defaultPlaceholder]);
+      // / 能力弹窗随时可唤起，统一展示含 / 引导的默认占位文案
+      return t('PC.Components.ChatInputCommands.hint');
+    }, [defaultPlaceholder]);
 
     /**
      * 弹窗最大高度：不超过视口内从弹窗 top 到底部的空间，避免弹窗撑出页面滚动条导致左右闪动
@@ -969,9 +972,12 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         mentionSpan.dataset.mentionKind = item.kind ?? 'skill';
         if (item.kind === 'file')
           mentionSpan.dataset.mentionPath = item.relativePath;
-        // 资料库文档：slugId 存 dataset，供 prevMap 失效（撤销/重做）后的重建
-        if (item.kind === 'doc')
+        // 资料库文档：slugId/pageType 存 dataset，供 prevMap 失效（撤销/重做）后的重建
+        if (item.kind === 'doc') {
           mentionSpan.dataset.mentionSlugId = item.slugId;
+          if (item.pageType)
+            mentionSpan.dataset.mentionPageType = item.pageType;
+        }
         mentionSpan.dataset.mentionName = item.name;
 
         // 创建内容容器
@@ -1019,7 +1025,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     );
 
     /**
-     * 处理从底部 @ 图标选择提及项
+     * 以编程方式插入提及项（编辑器对外 ref 能力）
      * 将选中的提及追加到编辑器内容末尾，不替换已有内容
      *
      * @param item - 选中的提及项
@@ -1176,7 +1182,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       resetUndoStack,
     ]);
 
-    // ==================== 能力弹窗（slashMode=capability 的 / 触发）====================
+    // ==================== 能力弹窗（/ 触发）====================
 
     /**
      * 删除光标前的 "/" 触发串（打开能力弹窗前调用）。
@@ -1322,6 +1328,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             kind: 'doc',
             slugId: String(item.slugId ?? ''),
             name: item.name,
+            pageType: item.pageType,
           });
           return;
         }
@@ -1364,7 +1371,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * @param item - 选中的提及项
      */
     const handleMentionSelect = useCallback(
-      (item: MentionItem | SlashItem) => {
+      (item: MentionItem) => {
         const editor = editorRef.current;
         const savedRange = savedRangeRef.current;
         if (
@@ -1373,7 +1380,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           !editor.contains(savedRange.startContainer)
         )
           return;
-        if (item.kind === 'plugin' && !onPluginSelect) return;
         // 从保存的光标向前定位触发串，支持浏览器把文本拆成多个节点。
         const range = savedRange.cloneRange();
         let remaining = mentionSearchText.length + 1;
@@ -1399,11 +1405,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           return;
         range.deleteContents();
         const fragment = document.createDocumentFragment();
-        if (item.kind !== 'plugin')
-          fragment.appendChild(createMentionChip(item));
-        const spacer = document.createTextNode(
-          item.kind === 'plugin' ? '' : ' ',
-        );
+        fragment.appendChild(createMentionChip(item));
+        const spacer = document.createTextNode(' ');
         fragment.appendChild(spacer);
         range.insertNode(fragment);
         range.setStart(spacer, spacer.length);
@@ -1413,14 +1416,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         selection?.addRange(range);
         editor.focus();
         closeMentionPopup();
-        if (item.kind === 'plugin') {
-          onPluginSelect?.(item);
-          commitEditorChange();
-        } else {
-          onMentionSelect?.(item);
-          notifyUnsubscribedSkillSelect(item);
-          commitEditorChange({ pendingMention: item });
-        }
+        onMentionSelect?.(item);
+        notifyUnsubscribedSkillSelect(item);
+        commitEditorChange({ pendingMention: item });
       },
       [
         activeTrigger,
@@ -1428,7 +1426,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         closeMentionPopup,
         commitEditorChange,
         onMentionSelect,
-        onPluginSelect,
         createMentionChip,
         notifyUnsubscribedSkillSelect,
       ],
@@ -1773,9 +1770,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           suppressContentEditableWarning
         />
 
-        {/* @提及技能选择弹窗 */}
+        {/* @提及文件选择弹窗（/ 触发走下方能力大弹窗） */}
         <div className={styles['mention-popup-wrapper']}>
-          {activeTrigger === '@' ? (
+          {activeTrigger === '@' && (
             <MentionPopup
               onFetchMentionFiles={onFetchMentionFiles}
               ref={mentionPopupRef}
@@ -1789,31 +1786,16 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
               onHeightChange={handlePopupHeightChange}
               usageScenarios={usageScenarios}
             />
-          ) : slashMode === 'popup' ? (
-            <SlashPopup
-              enablePlugins={!!onPluginSelect}
-              ref={mentionPopupRef}
-              visible={showMentionPopup}
-              position={mentionPosition}
-              onSelect={handleMentionSelect}
-              enableSubscription={enableSubscription}
-              onClose={closeMentionPopup}
-              searchText={mentionSearchText}
-              maxHeight={mentionPopupMaxHeight}
-              onHeightChange={handlePopupHeightChange}
-              usageScenarios={usageScenarios}
-            />
-          ) : null}
+          )}
         </div>
 
-        {/* capability 模式：居中的添加能力大弹窗（portal 渲染，与光标浮层互斥） */}
-        {slashMode === 'capability' && (
-          <CapabilityModal
-            open={capabilityOpen}
-            onClose={handleCapabilityClose}
-            onSelect={handleCapabilitySelect}
-          />
-        )}
+        {/* 添加能力大弹窗（portal 渲染，与光标浮层互斥） */}
+        <CapabilityModal
+          open={capabilityOpen}
+          onClose={handleCapabilityClose}
+          onSelect={handleCapabilitySelect}
+          resourceTypes={capabilityResourceTypes}
+        />
       </div>
     );
   },

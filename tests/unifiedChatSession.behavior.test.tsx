@@ -108,31 +108,28 @@ vi.mock(
   }),
 );
 
-vi.mock(
-  '@/components/business-component/UnifiedChatSession/components/ChatInputHomeIndependent',
-  () => ({
-    default: (props: any) => {
-      chatInputPropsRef.current = props;
-      return (
-        <div data-testid="chat-input">
-          <button
-            type="button"
-            data-testid="send-btn"
-            onClick={() => props.onEnter?.('hello from input')}
-          >
-            send
-          </button>
-          <span data-testid="whole-disabled">
-            {String(!!props.wholeDisabled)}
-          </span>
-          <span data-testid="show-agent-mode">
-            {String(!!props.showAgentModeSelector)}
-          </span>
-        </div>
-      );
-    },
-  }),
-);
+vi.mock('@/components/business-component/ChatInputUnified', () => ({
+  default: (props: any) => {
+    chatInputPropsRef.current = props;
+    return (
+      <div data-testid="chat-input">
+        <button
+          type="button"
+          data-testid="send-btn"
+          onClick={() => props.onEnter?.('hello from input')}
+        >
+          send
+        </button>
+        <span data-testid="whole-disabled">
+          {String(!!props.wholeDisabled)}
+        </span>
+        <span data-testid="show-agent-mode">
+          {String(!!props.showAgentModeSelector)}
+        </span>
+      </div>
+    );
+  },
+}));
 
 vi.mock('@/components/business-component/ConversationStatus', () => ({
   default: () => <div data-testid="conversation-status" />,

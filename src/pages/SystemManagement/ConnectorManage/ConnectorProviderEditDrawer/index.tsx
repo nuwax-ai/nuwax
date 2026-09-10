@@ -431,7 +431,7 @@ const ConnectorProviderEditDrawer: React.FC<
             <Input.TextArea
               rows={3}
               placeholder="连接器介绍，展示在目录卡片"
-              maxLength={1000}
+              maxLength={500}
               showCount
             />
           </Form.Item>

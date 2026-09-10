@@ -21,6 +21,7 @@ import ResizableSplit from '@/components/ResizableSplit';
 import { ConversationRendererV2Lazy } from '@/features/conversation/LazyConversationRendererV2';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
+import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
@@ -51,6 +52,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
+import { appendOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message, Typography } from 'antd';
@@ -101,6 +103,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   skillInfo,
 }) => {
   const location = useLocation();
+  const chromeFlags = useOpenAppChromeFlags();
   const [form] = Form.useForm();
   const { isMobile } = useModel('layout');
   const { runHistoryItem } = useModel('conversationHistory');
@@ -288,6 +291,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       url = conversationUrl
         .replace(':id', cId?.toString() || '')
         .replace(':agentId', agentId.toString());
+
+      url = appendOpenAppChromeFlags(url, location.search);
     } else {
       url = `/home/chat/${cId}/${agentId}`;
     }
@@ -740,9 +745,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 'overflow-hide',
               )}
             >
-              {/* 应用智能体模式下，显示内容导航按钮 */}
+              {/* 应用智能体模式下，显示内容导航按钮；hideMenu 时隐藏展开导航图标 */}
               <ConditionRender
-                condition={isAppSidebarMode && !isAppSidebarVisible}
+                condition={
+                  isAppSidebarMode &&
+                  !isAppSidebarVisible &&
+                  !chromeFlags.hideMenu
+                }
               >
                 <TooltipIcon
                   title={t(
@@ -758,19 +767,23 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                   }
                 />
               </ConditionRender>
-              {/* 左侧标题 */}
-              <Typography.Title
-                level={5}
-                className={cx(styles.title, 'flex-1')}
-                ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
+              {/* 左侧标题；hideTitle 时隐藏会话主题 */}
+              <ConditionRender
+                condition={isAppSidebarMode && !chromeFlags.hideTitle}
               >
-                {cachedAgentName
-                  ? t(
-                      'PC.Components.ConversationDetails.startConversationWithAgent',
-                      cachedAgentName,
-                    )
-                  : ''}
-              </Typography.Title>
+                <Typography.Title
+                  level={5}
+                  className={cx(styles.title, 'flex-1')}
+                  ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
+                >
+                  {cachedAgentName
+                    ? t(
+                        'PC.Components.ConversationDetails.startConversationWithAgent',
+                        cachedAgentName,
+                      )
+                    : ''}
+                </Typography.Title>
+              </ConditionRender>
             </div>
 
             {/* 右侧按钮区域 */}

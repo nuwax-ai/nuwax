@@ -1,19 +1,15 @@
 import {
   loadDraft,
   saveDraft,
-} from '@/components/business-component/UnifiedChatSession/components/ChatInputHomeIndependent/draftStorage';
+} from '@/components/business-component/ChatInputUnified/draftStorage';
 import MentionEditor, {
   detectMention,
   getSerializedEditorText,
 } from '@/components/ChatInputHome/MentionEditor';
 import MentionPopup from '@/components/ChatInputHome/MentionPopup';
-import { apiSkillListForAt } from '@/components/ChatInputHome/MentionPopup/atSkill';
 import type { MentionEditorHandle } from '@/components/ChatInputHome/MentionPopup/types';
-import SlashPopup from '@/components/ChatInputHome/SlashPopup';
 import { useSlashPlugins } from '@/components/ChatInputHome/useSlashPlugins';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
-import { getList } from '@/services/created';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   act,
@@ -40,6 +36,7 @@ const capabilityModalProps = vi.hoisted(
       open?: boolean;
       onSelect?: (item: unknown) => void;
       onClose?: () => void;
+      resourceTypes?: string[];
     }),
 );
 vi.mock('@/components/ChatInputHome/CapabilityModal', () => ({
@@ -48,12 +45,9 @@ vi.mock('@/components/ChatInputHome/CapabilityModal', () => ({
     return null;
   },
 }));
-vi.mock('@/services/i18nRuntime', () => ({ t: (key: string) => key }));
-vi.mock('@/services/created', () => ({ getList: vi.fn() }));
-vi.mock('@/components/ChatInputHome/MentionPopup/atSkill', () => ({
-  apiSkillListForAt: vi.fn(),
-  apiSkillCollectListForAt: vi.fn(),
-  apiSkillRecentlyUsedListForAt: vi.fn(),
+vi.mock('@/services/i18nRuntime', () => ({
+  t: (key: string) => key,
+  dict: (key: string) => key,
 }));
 const file = {
   kind: 'file' as const,
@@ -99,14 +93,6 @@ beforeEach(() => {
       width: 10,
       height: 25,
     } as DOMRect);
-  vi.mocked(apiSkillListForAt).mockResolvedValue({
-    code: SUCCESS_CODE,
-    data: { records: [skill], total: 1 },
-  } as never);
-  vi.mocked(getList).mockResolvedValue({
-    code: SUCCESS_CODE,
-    data: { records: [plugin], total: 1 },
-  } as never);
 });
 afterEach(cleanup);
 
@@ -133,28 +119,18 @@ describe('触发规则', () => {
 });
 
 describe('编辑器发送协议和历史', () => {
-  it('首页 @ 为普通文本，/技能插入 chip 并产生原 skillIds', async () => {
-    const ids = vi.fn();
+  it('无文件数据源时 @ 输入为普通文本，不弹浮层', () => {
     const onChange = vi.fn();
     const { container } = render(
-      <MentionEditor
-        autoFocus={false}
-        onPaste={vi.fn()}
-        onSkillIdsChange={ids}
-        onChange={onChange}
-      />,
+      <MentionEditor autoFocus={false} onPaste={vi.fn()} onChange={onChange} />,
     );
     const editor = container.querySelector(
       '[contenteditable="true"]',
     ) as HTMLElement;
     type(editor, '@写作');
     expect(screen.queryByRole('listbox')).toBeNull();
-    type(editor, '/写作');
-    await screen.findByText('写作');
-    fireEvent.keyDown(editor, { key: 'Enter' });
-    expect(editor.querySelector('[data-mention-kind="skill"]')).not.toBeNull();
-    expect(onChange).toHaveBeenLastCalledWith('@写作 ');
-    expect(ids).toHaveBeenLastCalledWith([42]);
+    expect(capabilityModalProps.open).not.toBe(true);
+    expect(onChange).toHaveBeenLastCalledWith('@写作');
   });
   it('@文件独立于技能开关，删除和撤销不产生技能 ID，历史恢复后仍能点删除', async () => {
     const ids = vi.fn();
@@ -186,37 +162,7 @@ describe('编辑器发送协议和历史', () => {
     expect(editor.querySelector('[data-mention-id]')).toBeNull();
     expect(ids).toHaveBeenLastCalledWith([]);
   });
-  it('插件移除命令串但保留两侧文字，通过插件回调发送 targetId', async () => {
-    const selected = vi.fn();
-    const { container } = render(
-      <MentionEditor
-        autoFocus={false}
-        onPaste={vi.fn()}
-        onPluginSelect={selected}
-      />,
-    );
-    const editor = container.querySelector(
-      '[contenteditable="true"]',
-    ) as HTMLElement;
-    type(editor, '前 / 后');
-    caret(editor.firstChild!, 3);
-    fireEvent.input(editor);
-    await screen.findByRole('tab', {
-      name: 'PC.Components.ChatInputCommands.plugin',
-    });
-    fireEvent.click(
-      screen.getByRole('tab', {
-        name: 'PC.Components.ChatInputCommands.plugin',
-      }),
-    );
-    fireEvent.click(await screen.findByText('搜索工具'));
-    expect(selected).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'plugin', targetId: 73 }),
-    );
-    expect(getSerializedEditorText(editor)).toBe('前  后');
-    expect(editor.querySelector('[data-mention-id]')).toBeNull();
-  });
-  it('换行后触发 slash；跨文本节点插入保留之前的 chip', async () => {
+  it('换行后 / 触发能力弹窗；已有 chip 跨文本节点保留', () => {
     const ref = createRef<MentionEditorHandle>();
     const { container } = render(
       <MentionEditor ref={ref} autoFocus={false} onPaste={vi.fn()} />,
@@ -230,11 +176,11 @@ describe('编辑器发送协议和历史', () => {
     editor.append(line);
     caret(line.lastChild!, 2);
     fireEvent.input(editor);
-    await screen.findByText('写作');
-    fireEvent.keyDown(editor, { key: 'Enter' });
-    expect(editor.querySelectorAll('[data-mention-id]')).toHaveLength(2);
+    // / 触发打开能力弹窗并清除触发串，此前插入的 chip 不受影响
+    expect(capabilityModalProps.open).toBe(true);
+    expect(editor.querySelectorAll('[data-mention-id]')).toHaveLength(1);
   });
-  it('IME 中不触发弹窗，Escape 不发送', async () => {
+  it('IME 输入中不触发弹窗，组合结束后触发；Escape 不发送', () => {
     const send = vi.fn();
     const { container } = render(
       <MentionEditor autoFocus={false} onPaste={vi.fn()} onPressEnter={send} />,
@@ -244,16 +190,71 @@ describe('编辑器发送协议和历史', () => {
     ) as HTMLElement;
     fireEvent.compositionStart(editor);
     type(editor, '/写作');
-    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(capabilityModalProps.open).not.toBe(true);
     fireEvent.compositionEnd(editor);
-    await screen.findByText('写作');
+    expect(capabilityModalProps.open).toBe(true);
     fireEvent.keyDown(editor, { key: 'Escape' });
-    expect(screen.queryByRole('listbox')).toBeNull();
     expect(send).not.toHaveBeenCalled();
   });
 });
 
 describe('列表数据一致性', () => {
+  it('打开时数据加载中：弹层保持打开并显示加载中，而非被空列表收起', async () => {
+    let resolveFetch!: (items: (typeof file)[]) => void;
+    const onClose = vi.fn();
+    render(
+      <MentionPopup
+        visible
+        position={{ left: 0 }}
+        onSelect={vi.fn()}
+        onClose={onClose}
+        onFetchMentionFiles={() =>
+          new Promise<(typeof file)[]>((r) => {
+            resolveFetch = r;
+          })
+        }
+      />,
+    );
+    // 取数未返回：展示 loading 文案，且不触发「无文件自动收起」
+    expect(
+      screen.getByText('PC.Components.ChatInputHomeMentionPopup.loading'),
+    ).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    // 刷新微任务让 onFetchMentionFiles 被调用（pending promise 创建）
+    await act(async () => {});
+    await act(async () => resolveFetch([file]));
+    await screen.findByText('报告.md');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('真实挂载序列（先不可见再打开）：首次打开不被空列表自动收起', async () => {
+    // 复现真机时序：弹层组件随编辑器常驻（visible=false 挂载），输入 @ 后才翻开。
+    // 曾因自动收起 effect 读到同 commit 不可见的状态更新（loading=false+空列表），
+    // 首次 @ 打开即被收起、第二次起才正常——表现为「必须先输过 / 才生效」
+    let resolveFetch!: (items: (typeof file)[]) => void;
+    const onClose = vi.fn();
+    const props = {
+      position: { left: 0 },
+      onSelect: vi.fn(),
+      onClose,
+      onFetchMentionFiles: () =>
+        new Promise<(typeof file)[]>((r) => {
+          resolveFetch = r;
+        }),
+    };
+    const { rerender } = render(<MentionPopup {...props} visible={false} />);
+    // 打开弹层（取数 pending）
+    rerender(<MentionPopup {...props} visible />);
+    expect(
+      screen.getByText('PC.Components.ChatInputHomeMentionPopup.loading'),
+    ).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    await act(async () => {});
+    await act(async () => resolveFetch([file]));
+    await screen.findByText('报告.md');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('文件先过滤再截断、打开时刷新且搜索不再次请求', async () => {
     const fetch = vi.fn().mockResolvedValue([
       ...Array.from({ length: 120 }, (_, i) => ({
@@ -309,39 +310,9 @@ describe('列表数据一致性', () => {
     await act(async () => resolve([file]));
     expect(screen.queryByText('报告.md')).toBeNull();
   });
-  it('技能为空仍可切换插件，并支持搜索请求', async () => {
-    vi.mocked(apiSkillListForAt).mockResolvedValue({
-      code: SUCCESS_CODE,
-      data: { records: [], total: 0 },
-    } as never);
-    const props = {
-      visible: true,
-      position: { left: 0 },
-      onSelect: vi.fn(),
-      onClose: vi.fn(),
-    };
-    const { rerender } = render(<SlashPopup {...props} />);
-    await screen.findByText(
-      'PC.Components.ChatInputHomeMentionPopup.emptyNotFound',
-    );
-    expect(props.onClose).not.toHaveBeenCalled();
-    fireEvent.click(
-      screen.getByRole('tab', {
-        name: 'PC.Components.ChatInputCommands.plugin',
-      }),
-    );
-    await screen.findByText('搜索工具');
-    rerender(<SlashPopup {...props} searchText="搜索" />);
-    await waitFor(() =>
-      expect(getList).toHaveBeenLastCalledWith(
-        'Plugin',
-        expect.objectContaining({ kw: '搜索' }),
-      ),
-    );
-  });
 });
 
-describe('键盘、分页和错误状态', () => {
+describe('键盘与错误状态', () => {
   it('Backspace 删除技能 chip 后清空 skillIds，撤销恢复，clear 同步清空', async () => {
     const ref = createRef<MentionEditorHandle>();
     const ids = vi.fn();
@@ -367,73 +338,6 @@ describe('键盘、分页和错误状态', () => {
     act(() => ref.current?.clear());
     expect(editor.textContent).toBe('');
     expect(ids).toHaveBeenLastCalledWith([]);
-  });
-  it('方向键在最后一项加载下一页并选择新一页首项', async () => {
-    vi.mocked(apiSkillListForAt).mockImplementation(
-      async (params) =>
-        ({
-          code: SUCCESS_CODE,
-          data: {
-            records:
-              params.page === 1
-                ? Array.from({ length: 12 }, (_, index) => ({
-                    ...skill,
-                    name: `技能${index}`,
-                    targetId: index,
-                  }))
-                : [{ ...skill, name: '第二页技能' }],
-            total: 13,
-          },
-        } as never),
-    );
-    const ref =
-      createRef<
-        import('@/components/ChatInputHome/MentionPopup/types').MentionPopupHandle
-      >();
-    const select = vi.fn();
-    render(
-      <SlashPopup
-        ref={ref}
-        visible
-        position={{ left: 0 }}
-        onSelect={select}
-        onClose={vi.fn()}
-      />,
-    );
-    await screen.findByText('技能0');
-    for (let i = 0; i < 12; i++) act(() => ref.current?.handleArrowDown());
-    await screen.findByText('第二页技能');
-    act(() => ref.current?.handleSelectCurrentItem());
-    expect(select).toHaveBeenCalledWith(
-      expect.objectContaining({ name: '第二页技能' }),
-    );
-  });
-  it('快速搜索忽略过期响应', async () => {
-    let finish!: (value: unknown) => void;
-    vi.mocked(apiSkillListForAt).mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          finish = (value) =>
-            resolve(value as Awaited<ReturnType<typeof apiSkillListForAt>>);
-        }),
-    );
-    const props = {
-      visible: true,
-      position: { left: 0 },
-      onSelect: vi.fn(),
-      onClose: vi.fn(),
-    };
-    const { rerender } = render(<SlashPopup {...props} searchText="旧" />);
-    await waitFor(() => expect(apiSkillListForAt).toHaveBeenCalled());
-    rerender(<SlashPopup {...props} searchText="写作" />);
-    await screen.findByText('写作');
-    await act(async () =>
-      finish({
-        code: SUCCESS_CODE,
-        data: { records: [{ ...skill, name: '旧结果' }], total: 1 },
-      }),
-    );
-    expect(screen.queryByText('旧结果')).toBeNull();
   });
   it('文件请求失败显示可恢复错误而不是空白或未处理异常', async () => {
     render(
@@ -461,12 +365,7 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
   it('输入 / 即打开能力弹窗并清除触发串，不弹光标浮层', () => {
     const onChange = vi.fn();
     const { container } = render(
-      <MentionEditor
-        autoFocus={false}
-        slashMode="capability"
-        onPaste={vi.fn()}
-        onChange={onChange}
-      />,
+      <MentionEditor autoFocus={false} onPaste={vi.fn()} onChange={onChange} />,
     );
     const editor = container.querySelector(
       '[contenteditable="true"]',
@@ -480,12 +379,7 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
 
   it('文本中间出现 / 触发时清除整个触发串，两侧文字保留', () => {
     const { container } = render(
-      <MentionEditor
-        autoFocus={false}
-        slashMode="capability"
-        onPaste={vi.fn()}
-        onChange={vi.fn()}
-      />,
+      <MentionEditor autoFocus={false} onPaste={vi.fn()} onChange={vi.fn()} />,
     );
     const editor = container.querySelector(
       '[contenteditable="true"]',
@@ -501,7 +395,6 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
     const { container } = render(
       <MentionEditor
         autoFocus={false}
-        slashMode="capability"
         onPaste={vi.fn()}
         onSkillIdsChange={ids}
         onChange={vi.fn()}
@@ -533,7 +426,6 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
     const { container } = render(
       <MentionEditor
         autoFocus={false}
-        slashMode="capability"
         onPaste={vi.fn()}
         onExpertSelect={onExpertSelect}
         onChange={vi.fn()}
@@ -566,12 +458,42 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
     );
   });
 
+  it('弹窗选中资料库：doc chip 派生 selectedDocs 按 SelectedDocDto 契约（slugId/title/pageType）', () => {
+    const onDocsChange = vi.fn();
+    const { container } = render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        onDocsChange={onDocsChange}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '/');
+    act(() =>
+      capabilityModalProps.onSelect?.({
+        key: 'knowledge:team:9',
+        resourceType: 'knowledge',
+        source: 'team',
+        rawId: 9,
+        slugId: 'hgwzjmk7m9LBCSyr',
+        name: '测试1-1',
+        pageType: 'doc',
+      }),
+    );
+    expect(editor.querySelector('[data-mention-kind="doc"]')).not.toBeNull();
+    // chat 请求契约字段：slugId + title（非 name） + pageType
+    expect(onDocsChange).toHaveBeenLastCalledWith([
+      { slugId: 'hgwzjmk7m9LBCSyr', title: '测试1-1', pageType: 'doc' },
+    ]);
+  });
+
   it('弹窗选中连接器：不入编辑器文本，走 onPluginSelect 并映射为 Mcp 组件', () => {
     const selected = vi.fn();
     const { container } = render(
       <MentionEditor
         autoFocus={false}
-        slashMode="capability"
         onPaste={vi.fn()}
         onPluginSelect={selected}
       />,
@@ -603,11 +525,7 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
 
   it('关闭弹窗：复位 open 并把焦点交还编辑器', () => {
     const { container } = render(
-      <MentionEditor
-        autoFocus={false}
-        slashMode="capability"
-        onPaste={vi.fn()}
-      />,
+      <MentionEditor autoFocus={false} onPaste={vi.fn()} />,
     );
     const editor = container.querySelector(
       '[contenteditable="true"]',
@@ -616,6 +534,43 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
     act(() => capabilityModalProps.onClose?.());
     expect(capabilityModalProps.open).toBe(false);
     expect(document.activeElement).toBe(editor);
+  });
+
+  it('默认不开放专家类型（仅隐藏入口），显式传 capabilityResourceTypes 时透传', () => {
+    const { unmount } = render(
+      <MentionEditor autoFocus={false} onPaste={vi.fn()} />,
+    );
+    // 产品策略：选择专家仅首页开放，其余入口缺省不含 expert
+    expect(capabilityModalProps.resourceTypes).not.toContain('expert');
+    expect(capabilityModalProps.resourceTypes).toEqual(
+      expect.arrayContaining(['skill', 'connector', 'knowledge']),
+    );
+    unmount();
+
+    render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        capabilityResourceTypes={['skill', 'expert']}
+      />,
+    );
+    expect(capabilityModalProps.resourceTypes).toEqual(['skill', 'expert']);
+  });
+
+  it('enableMention=false 时 / 仍可唤起能力弹窗（能力弹窗不随智能体配置门控）', () => {
+    const { container } = render(
+      <MentionEditor
+        autoFocus={false}
+        enableMention={false}
+        onPaste={vi.fn()}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '/');
+    expect(capabilityModalProps.open).toBe(true);
+    expect(getSerializedEditorText(editor)).toBe('');
   });
 });
 

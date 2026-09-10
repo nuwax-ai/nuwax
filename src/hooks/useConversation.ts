@@ -9,6 +9,7 @@ import type {
   MessageSourceType,
   UploadFileInfo,
 } from '@/types/interfaces/common';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import { history } from 'umi';
@@ -59,6 +60,9 @@ const useConversation = () => {
       sandboxId?: number;
       /** 创建成功后的跳转 URL 前缀（尾部拼接会话 id；全栈跳 app-pro 用） */
       redirectUrl?: string;
+      // 资料库已选文档（首页能力弹窗选中，随首条 chat 消息发送；
+      // 专家组件已由调用方按 id+type 去重合并进 infos，不单独透传）
+      selectedDocs?: SelectedDocInfo[];
     },
   ) => {
     const variableParams = attach?.variableParams;

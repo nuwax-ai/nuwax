@@ -1236,7 +1236,7 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
           <Input.TextArea
             rows={3}
             placeholder="说明用途、关键入参约定与返回结构"
-            maxLength={1000}
+            maxLength={10000}
             showCount
           />
         </Form.Item>

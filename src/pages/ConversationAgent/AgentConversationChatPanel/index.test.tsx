@@ -24,6 +24,13 @@ vi.mock('umi', () => ({
   useModel: (...args: unknown[]) => mockUseModel(...args),
 }));
 
+// useConversationMentionFiles → services 链（vncDesktop → userService → 常量表）
+// 在 vitest 环境不可用，统一桩掉 i18n 与文件列表接口
+vi.mock('@/services/i18nRuntime', () => ({
+  t: (key: string) => key,
+  dict: (key: string) => key,
+}));
+
 function createConversationInfoModel(overrides: Record<string, any> = {}) {
   return {
     conversationInfo: {
@@ -169,5 +176,22 @@ describe('AgentConversationChatPanel', () => {
     );
 
     expect(onConversationEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('URL 带 conversationId 时 @ 提及数据源首帧即下发（不等会话详情回填）', () => {
+    // 进入开发页：URL 已有 conversationId，但 conversationInfo 尚为 null（详情请求未返回）
+    mockUseModel.mockReturnValue(
+      createConversationInfoModel({ conversationInfo: null }),
+    );
+    mockUseLocation.mockReturnValue({
+      key: 'route-1',
+      search: '?agentId=88&conversationId=7001',
+      state: {},
+    });
+
+    render(<AgentConversationChatPanel selectedComputerId="computer-prop" />);
+
+    // 首帧即拿到 @ 文件数据源：输入 @ 不再退化为纯文本
+    expect(typeof latestUnifiedProps().onFetchMentionFiles).toBe('function');
   });
 });
