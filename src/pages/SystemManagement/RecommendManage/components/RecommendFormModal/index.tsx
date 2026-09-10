@@ -2,6 +2,7 @@ import agentImage from '@/assets/images/agent_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import { fetchChatboxCategories } from '@/services/square';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
@@ -25,7 +26,6 @@ import {
   getUsedChatboxSingleInstanceTypes,
   isChatboxFunctionTypeDisabled,
 } from '../../utils/chatboxFunctionTypeRules';
-import { fetchPublishedAgentByTargetId } from '../../utils/fetchPublishedAgentByTargetId';
 import { getSquareTargetTypeTitle } from '../../utils/squareTargetTypeLabel';
 import RecommendAddModal from '../RecommendAddModal';
 import SelectedAgentCard from './SelectedAgentCard';
@@ -85,6 +85,8 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   const [recommendIconUrl, setRecommendIconUrl] = useState<string>('');
   /** 占位提示文案 */
   const [placeholder, setPlaceholder] = useState<string>('');
+  /** 上框展示名称（对应推荐记录 label） */
+  const [label, setLabel] = useState<string>('');
   /** 对话框智能体分类（来源：系统管理-分类管理 ChatBox 分类） */
   const [category, setCategory] = useState<string>('');
   /** 对话框智能体分类下拉选项 */
@@ -148,24 +150,27 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
     setSelectedTarget(null);
     setRecommendIconUrl('');
     setPlaceholder('');
+    setLabel('');
     setCategory('');
   }, []);
 
-  /** 编辑模式：回填已选智能体（图标来自智能体，不用推荐记录的 icon） */
+  /** 编辑模式：回填已选智能体（图标来自智能体详情，不用推荐记录的 icon） */
   const hydrateEditingSelectedTarget = useCallback(
     async (record: DisplayRecommendInfo) => {
-      const agent = await fetchPublishedAgentByTargetId(
-        record.targetId,
-        record.label,
-      );
-      setSelectedTarget(
-        agent
-          ? { ...agent, name: record.label || agent.name }
-          : ({
-              targetId: record.targetId,
-              name: record.label,
-            } as SquarePublishedItemInfo),
-      );
+      try {
+        const res = await apiPublishedAgentInfo(record.targetId);
+        const data = res?.code === SUCCESS_CODE ? res.data : undefined;
+        if (data) {
+          setSelectedTarget({
+            targetId: data.agentId,
+            name: data.name,
+            icon: data.icon,
+            description: data.description,
+          } as SquarePublishedItemInfo);
+        }
+      } catch (error) {
+        console.error('fetch published agent info failed:', error);
+      }
     },
     [],
   );
@@ -203,6 +208,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       );
       setRecommendIconUrl(editingRecord.icon || '');
       setPlaceholder(editingRecord.placeholder || '');
+      setLabel(editingRecord.label || '');
       setCategory(editingRecord.category || '');
       void hydrateEditingSelectedTarget(editingRecord);
       return;
@@ -230,7 +236,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       targetId: selectedTarget.targetId,
       recType: REC_TYPE,
       functionType: functionType || '',
-      label: selectedTarget.name || '',
+      label: label.trim() || selectedTarget.name || '',
       icon: recommendIconUrl || '',
       placeholder: placeholder || '',
       category: category || '',
@@ -263,6 +269,12 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
    */
   const handlePickTarget = (item: SquarePublishedItemInfo) => {
     setSelectedTarget(item);
+    setLabel((prev) => {
+      if (prev.trim()) {
+        return prev;
+      }
+      return item.name || '';
+    });
     setPickModalOpen(false);
   };
 
@@ -336,6 +348,21 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
             onChange={(v) => {
               setFunctionType(v);
             }}
+          />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>
+            {dict('PC.Pages.SystemRecommendManage.upperBoxDisplayName')}
+          </div>
+          <Input
+            value={label}
+            placeholder={dict(
+              'PC.Pages.SystemRecommendManage.upperBoxDisplayNamePlaceholder',
+            )}
+            onChange={(e) => setLabel(e.target.value)}
+            maxLength={50}
+            showCount
+            allowClear
           />
         </div>
         <div style={{ marginBottom: 16 }}>

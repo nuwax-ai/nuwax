@@ -5310,6 +5310,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.colTargetId": "ターゲットID",
   "PC.Pages.SystemRecommendManage.colTargetType": "タイプ",
   "PC.Pages.SystemRecommendManage.colSubType": "サブタイプ",
+  "PC.Pages.SystemRecommendManage.upperBoxDisplayName": "上部に表示する名称",
+  "PC.Pages.SystemRecommendManage.upperBoxDisplayNamePlaceholder": "上部に表示する名称を入力してください",
   "PC.Pages.SystemRecommendManage.confirmDeleteContent": "削除後は元に戻せません。続行しますか？",
   "PC.Pages.SystemRecommendManage.confirmDeleteTitle": "削除の確認",
   "PC.Pages.SystemRecommendManage.editTitle": "おすすめを編集",

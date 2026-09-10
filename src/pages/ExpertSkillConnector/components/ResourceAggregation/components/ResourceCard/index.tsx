@@ -6,8 +6,11 @@
  * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮（经 onSummon 回调携带专家信息
  * 透传跳转 /home 首页）、技能卡片浮现「选择」按钮及右侧 pin 图标按钮
  * （点击逻辑暂未接入，仅展示）；
- * 连接器卡片标题下方展示 分类 + 连接状态（no_auth 无连接概念不展示），
- * hover 右上角浮现「连接/断开」按钮（点击逻辑暂未接入，仅展示）。
+ * 连接器卡片标题下方展示 分类 + 连接状态（免鉴权 no_auth 无连接概念，
+ * 状态直接展示已连接且不展示按钮；其余按 connected 展示已连接/未连接），
+ * hover 右上角浮现「连接/断开」按钮：断开经 onDisconnect 回调（DELETE 连接
+ * 后更新卡片状态）；连接经 onConnect 回调，上层按认证方式分流
+ * （oauth2 → 授权弹窗；api_key/bearer/custom → 凭据抽屉）。
  */
 
 import agentImage from '@/assets/images/agent_image.png';
@@ -42,28 +45,46 @@ interface ResourceCardProps {
   showSummon?: boolean;
   /** 召唤按钮点击回调（携带卡片条目；仅专家卡片传入） */
   onSummon?: (item: ResourceItem) => void;
+  /** 选择按钮点击回调（携带卡片条目；仅技能卡片传入） */
+  onSelect?: (item: ResourceItem) => void;
   /** 是否显示选择按钮与 pin 图标按钮（技能卡片） */
   showUse?: boolean;
   /** 是否显示底部统计行（使用用户数等） */
   showStats?: boolean;
   /** 是否按连接器卡片展示（分类 + 连接状态行、hover 连接/断开按钮） */
   showConnect?: boolean;
+  /** 断开按钮点击回调（携带卡片条目；仅连接器卡片且已连接时生效） */
+  onDisconnect?: (item: ResourceItem) => void;
+  /** 断开请求中（按钮 loading 防重复点击） */
+  disconnecting?: boolean;
+  /** 连接按钮点击回调（携带卡片条目；仅连接器卡片且未连接时生效） */
+  onConnect?: (item: ResourceItem) => void;
+  /** 连接请求中（按钮 loading 防重复点击） */
+  connecting?: boolean;
 }
 
 const ResourceCard: React.FC<ResourceCardProps> = ({
   item,
   showSummon,
   onSummon,
+  onSelect,
   showUse,
   showStats = true,
   showConnect,
+  onDisconnect,
+  disconnecting,
+  onConnect,
+  connecting,
 }) => {
   const { name, description, icon, publishUser, stats } = item;
-  /**
-   * 连接器卡片状态行：no_auth（免鉴权）无连接概念，
-   * 不展示连接状态与连接按钮（与连接器详情抽屉口径一致）
-   */
-  const showConnectState = showConnect && item.authType !== 'no_auth';
+  /** 免鉴权（no_auth）连接器：无连接概念，状态恒展示已连接 */
+  const isNoAuth = item.authType === 'no_auth';
+  /** 连接器卡片状态行（免鉴权也展示，直接点亮为已连接） */
+  const showConnectStatus = showConnect;
+  /** 连接/断开按钮：免鉴权无连接动作，不展示 */
+  const showConnectAction = showConnect && !isNoAuth;
+  /** 状态点亮口径：免鉴权恒已连接，其余按 connected */
+  const connectStatusOn = isNoAuth || !!item.connected;
   /**
    * 图标展示地址：连接器 icon 为 /api/f/ 受保护文件地址，img 直接请求
    * 不带 Authorization 会被拒（ORB 拦截 → onError 回退默认图），
@@ -86,7 +107,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
       icon={iconDisplaySrc || ''}
       defaultIcon={agentImage}
       extra={
-        showConnectState ? (
+        showConnectStatus ? (
           // 连接器卡片：分类 + 连接状态（单包装节点保证在 extra-box 内左对齐）
           <div className={cx('flex', 'items-center', styles['connect-info'])}>
             {item.category && (
@@ -97,14 +118,14 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
             <span
               className={cx(
                 styles['connect-status'],
-                item.connected
+                connectStatusOn
                   ? styles['status-connected']
                   : styles['status-disconnected'],
               )}
             >
               {/* 分类为空时，连接状态前的圆点不展示 */}
               {item.category && <span className={cx(styles['status-dot'])} />}
-              {item.connected ? '已连接' : '未连接'}
+              {connectStatusOn ? '已连接' : '未连接'}
             </span>
           </div>
         ) : undefined
@@ -134,7 +155,8 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
                     onSummon?.(item);
                     return;
                   }
-                  // TODO 技能「选择」逻辑暂未接入，按钮仅展示
+                  // 技能卡「选择」：透传技能信息并跳转（上层未传时仅展示）
+                  onSelect?.(item);
                 }}
               >
                 {showSummon
@@ -167,16 +189,22 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
               )}
             </div>
           )}
-          {showConnectState && (
+          {showConnectAction && (
             <div className={cx(styles['action-box'])}>
-              {/* 已连接 → 断开（红色）；未连接 → 连接。逻辑暂未接入，仅展示 */}
+              {/* 已连接 → 断开（DELETE 连接后更新卡片状态）；未连接 → 连接
+                  （上层按认证方式分流：oauth2 授权弹窗 / 凭据型凭据抽屉） */}
               <Button
                 type="primary"
                 size="small"
                 danger={item.connected}
+                loading={item.connected ? disconnecting : connecting}
                 onClick={(e) => {
                   e.stopPropagation();
-                  // TODO 连接/断开逻辑暂未接入，按钮仅展示
+                  if (item.connected) {
+                    onDisconnect?.(item);
+                    return;
+                  }
+                  onConnect?.(item);
                 }}
               >
                 {item.connected ? '断开' : '连接'}
