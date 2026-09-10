@@ -658,14 +658,46 @@ export const apiProjectCreate = async (data: {
   name?: string;
   programmingLanguage?: string;
   subType?: string;
-  /** 沙箱ID */
+  /** 沙箱ID（wiki：首页对话框创建全栈应用、常规项目时必传） */
   sandboxId?: number;
   /** 调试关联智能体ID（首页选中 agent 创建项目时传入） */
   devAgentId?: number;
+  /**
+   * 自定义工作目录（wiki #17）：仅个人电脑沙箱生效，非空才传；
+   * 选中目录被占用时后端报错（目录禁止跨项目复用）。
+   */
+  workspaceDir?: string;
 }): Promise<any> => {
   return request('/api/project/create', {
     method: 'POST',
-    data,
+    data: {
+      ...data,
+      workspaceDir: data.workspaceDir || undefined,
+    },
+  });
+};
+
+/**
+ * 创建常规项目（wiki 2026-09-10：常规项目 CRUD 换 /api/normal-project/*，
+ * 用于「项目管理」入口；首页对话框创建常规项目仍走 /api/project/create）。
+ * 返回体 id 字段名契约未细化，此处兼容 id / targetId 两种形态。
+ */
+export const apiNormalProjectCreate = async (data: {
+  spaceId: number;
+  name: string;
+  /** 个人电脑沙箱 ID；云电脑（默认分配）不传 */
+  sandboxId?: number;
+  /** 自定义工作目录（仅个人电脑），非空才传；被占用时后端报错 */
+  workspaceDir?: string;
+}): Promise<RequestResponse<{ id?: number; targetId?: number }>> => {
+  return request('/api/normal-project/create', {
+    method: 'POST',
+    data: {
+      spaceId: data.spaceId,
+      name: data.name,
+      sandboxId: data.sandboxId || undefined,
+      workspaceDir: data.workspaceDir || undefined,
+    },
   });
 };
 

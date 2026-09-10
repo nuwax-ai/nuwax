@@ -63,16 +63,26 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   saveOnSelect = true,
   isPersonalComputer = false,
   readonly = false,
+  cloudOnly = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [computerList, setComputerList] = useState<ComputerOption[]>([]);
+  const [rawComputerList, setRawComputerList] = useState<ComputerOption[]>([]);
   const [initialized, setInitialized] = useState(false);
   const initializedRef = useRef(false);
 
   const [agentSelectedMap, setAgentSelectedMap] = useState<
     Record<string, string>
   >({});
+
+  // 仅云端模式（如全栈应用不支持个人电脑）：渲染期过滤，列表切换即时生效
+  const computerList = useMemo(
+    () =>
+      cloudOnly
+        ? rawComputerList.filter((item) => String(item.id) === '-1')
+        : rawComputerList,
+    [rawComputerList, cloudOnly],
+  );
 
   // 获取用户电脑列表
   const fetchComputerList = useCallback(async () => {
@@ -89,7 +99,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
           description: item.description,
           raw: item,
         }));
-        setComputerList(options);
+        setRawComputerList(options);
         if (selectedMap) {
           setAgentSelectedMap(readonly ? {} : selectedMap);
         }

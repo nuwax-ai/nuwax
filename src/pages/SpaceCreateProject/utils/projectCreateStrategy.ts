@@ -1,8 +1,10 @@
 import { createAppDevInitialPayloadKey } from '@/hooks/useAppDevInitialAutoSend';
 import { apiProjectCreate } from '@/services/appDev';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentSubTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
+import { message } from 'antd';
 import { history } from 'umi';
 
 export interface ProjectCreatePayload {
@@ -14,6 +16,11 @@ export interface ProjectCreatePayload {
   modelId?: number;
   tools?: any[];
   computerId?: string;
+  /**
+   * 自定义工作目录（wiki #17）：仅个人电脑沙箱生效，非空才传；
+   * 选中目录被占用时后端报错（目录禁止跨项目复用）。
+   */
+  workspaceDir?: string;
   agentMode?: string;
   agentId?: number;
   /** 调试关联智能体ID，透传 /api/project/create */
@@ -78,41 +85,54 @@ export const createProjectAndNavigate = async ({
 
   const flowTargetType =
     payload.subType === AgentSubTypeEnum.Flow ? 'AgentFlow' : payload.type;
-  const res = await apiProjectCreate({
-    spaceId,
-    targetType: flowTargetType,
-    subType: payload.subType,
-    sandboxId: payload.computerId ? Number(payload.computerId) : undefined,
-    devAgentId: payload.devAgentId,
-  });
-  const { targetId, conversationId } = res.data;
+  try {
+    const res = await apiProjectCreate({
+      spaceId,
+      targetType: flowTargetType,
+      subType: payload.subType,
+      sandboxId: payload.computerId ? Number(payload.computerId) : undefined,
+      workspaceDir: payload.workspaceDir,
+      devAgentId: payload.devAgentId,
+    });
+    if (!res?.data?.targetId) {
+      // 业务失败（含自定义目录被占用）：展示后端错误信息并中止
+      throw new Error(
+        res?.message || dict('PC.Components.WorkspaceDir.createProjectFailed'),
+      );
+    }
+    const { targetId, conversationId } = res.data;
 
-  const routeState = {
-    message: payload.prompt,
-    files: payload.files,
-    skillIds: payload.skillIds,
-    modelId: payload.modelId,
-    infos: payload.tools,
-    selectedComputerId: payload.computerId,
-    agentMode: payload.agentMode,
-  };
+    const routeState = {
+      message: payload.prompt,
+      files: payload.files,
+      skillIds: payload.skillIds,
+      modelId: payload.modelId,
+      infos: payload.tools,
+      selectedComputerId: payload.computerId,
+      agentMode: payload.agentMode,
+    };
 
-  if (payload.type === AgentComponentTypeEnum.PageApp) {
-    setContext(createAppDevInitialPayloadKey(targetId), routeState);
+    if (payload.type === AgentComponentTypeEnum.PageApp) {
+      setContext(createAppDevInitialPayloadKey(targetId), routeState);
+    }
+
+    const url = strategy.getUrl({
+      spaceId,
+      targetId,
+      conversationId,
+      tenantConfigInfo,
+      agentId: payload.agentId,
+    });
+
+    const finalUrl =
+      payload.subType === AgentSubTypeEnum.Flow
+        ? `/space/${spaceId}/agent/${targetId}`
+        : url;
+
+    history.push(finalUrl, routeState);
+  } catch (error: any) {
+    message.error(
+      error?.message || dict('PC.Components.WorkspaceDir.createProjectFailed'),
+    );
   }
-
-  const url = strategy.getUrl({
-    spaceId,
-    targetId,
-    conversationId,
-    tenantConfigInfo,
-    agentId: payload.agentId,
-  });
-
-  const finalUrl =
-    payload.subType === AgentSubTypeEnum.Flow
-      ? `/space/${spaceId}/agent/${targetId}`
-      : url;
-
-  history.push(finalUrl, routeState);
 };

@@ -3,6 +3,8 @@ import { t } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
 import type {
   EnsurePodResponse,
+  FsChildrenResponse,
+  FsRootsResponse,
   ISkillUploadFileParams,
   IUpdateStaticFileParams,
   IUploadFilesParams,
@@ -311,21 +313,27 @@ export async function apiImportProject(
 }
 
 /**
- * 浏览个人电脑目录（首页发起会话前，按 sandboxId 定位，非会话 cId 通道）。
+ * 目录选择弹窗数据源（wiki「选择目录/弹框选目录」，2026-09-10 契约）：
+ * 按绝对路径浏览个人电脑目录，不锚定工作区、不带会话上下文。
  *
- * file-server 侧单层列目录能力已就绪（customTargetDir + relativePath + recursive=false，
- * 见 nuwa-work nuwax-file-server getFileList）；本端点为「会话创建前按 sandboxId 路由」的
- * 网关契约假定形态，dev 由 mock/computerBrowse.ts 提供走查数据，网关/后端契约对齐后
- * 仅需调整此处 URL（调用方 WorkspaceDirPickerModal 不感知）。
+ * TODO(契约缺口)：wiki 未定义多台个人电脑时网关如何路由到指定电脑的
+ * file-server（端点不带 sandboxId）；单电脑场景网关按用户解析。契约补全
+ * 后仅需在此处追加路由参数，调用方（WorkspaceDirPickerModal）不感知。
  */
-export async function apiBrowseSandboxDirectory(params: {
-  sandboxId: number | string;
-  /** 相对于根（'/'）的子路径，空串=根目录 */
-  relativePath?: string;
-}): Promise<RequestResponse<StaticFileListResponse>> {
-  const { sandboxId, relativePath = '' } = params;
-  return request(`/api/sandbox/${sandboxId}/directory`, {
+
+/** 根列表（包含根目录和用户 home），目录选择弹窗入口 */
+export async function apiBrowseFsRoots(): Promise<
+  RequestResponse<FsRootsResponse>
+> {
+  return request('/api/computer/fs/roots', { method: 'GET' });
+}
+
+/** 列出指定绝对路径下的一层子项 */
+export async function apiBrowseFsChildren(
+  path: string,
+): Promise<RequestResponse<FsChildrenResponse>> {
+  return request('/api/computer/fs/children', {
     method: 'GET',
-    params: { relativePath, recursive: false },
+    params: { path },
   });
 }

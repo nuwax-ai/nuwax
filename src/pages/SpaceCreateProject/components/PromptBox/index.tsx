@@ -102,6 +102,12 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   // 选中的云电脑 ID
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
 
+  /**
+   * 自定义工作目录（wiki #17）：选中个人电脑后展示工作目录栏（单独一行），
+   * 随创建流程透传到 /api/project/create；目录被占用时后端报错。
+   */
+  const [workspaceDir, setWorkspaceDir] = useState<string>('');
+
   // 选中的 Agent 模式（yolo/ask），随新建流程透传到目标会话页
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
 
@@ -125,9 +131,10 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
     }
   }, []);
 
-  // 切换 Tab 时重置选中的电脑和模型，防止上一个 Tab 的选择被错误带入
+  // 切换 Tab 时重置选中的电脑、工作目录和模型，防止上一个 Tab 的选择被错误带入
   useEffect(() => {
     setSelectedComputerId('');
+    setWorkspaceDir('');
     setSelectedModelId(undefined);
   }, [activeTab]);
 
@@ -190,6 +197,11 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
           modelId,
           tools: selectedComponentList,
           computerId: selectedComputerId,
+          // 仅个人电脑时带上自定义工作目录（非空才传）
+          workspaceDir:
+            selectedComputerId && selectedComputerId !== '-1'
+              ? workspaceDir || undefined
+              : undefined,
           agentMode,
         }),
       ).finally(() => setIsSubmitting(false));
@@ -198,6 +210,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
       onSubmit,
       selectedComponentList,
       selectedComputerId,
+      workspaceDir,
       agentMode,
       isSubmitting,
     ],
@@ -223,7 +236,13 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         onModelSelect={setSelectedModelId}
         isTaskAgentActive={activeTab !== AgentComponentTypeEnum.PageApp}
         selectedComputerId={selectedComputerId}
-        onComputerSelect={setSelectedComputerId}
+        onComputerSelect={(id) => {
+          setSelectedComputerId(id);
+          // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
+          if (id === '-1' && workspaceDir) setWorkspaceDir('');
+        }}
+        workspaceDir={workspaceDir}
+        onWorkspaceDirChange={setWorkspaceDir}
         agentType={matchingAgentDetail?.type}
         agentId={matchingAgentDetail?.agentId}
         showAgentModeSelector={

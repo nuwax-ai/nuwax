@@ -1,0 +1,54 @@
+@import '@/styles/token';
+
+// 表单行：标签 + 控件（名称输入框以外的行共用）
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+  margin-top: @margin;
+}
+
+.field-label {
+  flex-shrink: 0;
+  width: 64px;
+  color: @colorTextSecondary;
+  font-size: @fontSize;
+}
+
+.field-control {
+  flex: 1;
+  min-width: 0;
+}
+
+// 工作目录触发按钮（与首页 env-bar 同形态：图标 + 路径/默认文案 + 箭头）
+.dir-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 11px;
+  border: 1px solid @colorBorder;
+  border-radius: @borderRadius;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: @colorText;
+  font-size: @fontSize;
+
+  &:hover {
+    border-color: @colorPrimary;
+  }
+
+  .dir-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dir-caret {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: @colorTextQuaternary;
+  }
+}
