@@ -24,6 +24,7 @@
  */
 
 import { t } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -33,13 +34,18 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import CapabilityModal from '../CapabilityModal';
+import type { CapabilityItem } from '../CapabilityModal/types';
 import MentionPopup from '../MentionPopup';
 import type {
+  DocMentionItem,
   MentionEditorHandle,
   MentionEditorProps,
   MentionItem,
   MentionPopupHandle,
+  SlashItem,
 } from '../MentionPopup/types';
+import SlashPopup from '../SlashPopup';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -84,7 +90,19 @@ const getCaretPosition = (
     })();
   if (!range) return null;
 
-  const rect = range.getBoundingClientRect();
+  let rect = range.getBoundingClientRect();
+  // 刚插入节点上的 collapsed 光标可能出现全零矩形：退回光标所在元素矩形兜底，
+  // 避免弹窗被定位到视口左上角
+  if (rect.top === 0 && rect.left === 0 && !rect.width && !rect.height) {
+    const owner =
+      range.startContainer.nodeType === Node.TEXT_NODE
+        ? range.startContainer.parentElement
+        : (range.startContainer as HTMLElement | null);
+    const ownerRect = owner?.getBoundingClientRect();
+    if (ownerRect && (ownerRect.width || ownerRect.height)) {
+      rect = ownerRect;
+    }
+  }
   const viewportHeight =
     window.innerHeight || document.documentElement.clientHeight || 0;
 
@@ -127,7 +145,13 @@ const getCaretPosition = (
 
   return {
     top,
-    left: rect.left,
+    left: Math.max(
+      4,
+      Math.min(
+        rect.left,
+        (window.innerWidth || document.documentElement.clientWidth) - 288,
+      ),
+    ),
     finalPlacement,
     anchorY,
   };
@@ -152,7 +176,17 @@ const getTextBeforeCaret = (element: HTMLElement): string => {
   preCaretRange.selectNodeContents(element);
   preCaretRange.setEnd(range.startContainer, range.startOffset);
 
-  return preCaretRange.toString();
+  const fragment = preCaretRange.cloneContents();
+  fragment.querySelectorAll('[data-mention-id]').forEach((chip) => {
+    chip.textContent = '\uFFFC';
+  });
+  fragment
+    .querySelectorAll('br')
+    .forEach((br) => br.replaceWith(document.createTextNode('\n')));
+  fragment
+    .querySelectorAll('div,p,li')
+    .forEach((block) => block.prepend(document.createTextNode('\n')));
+  return fragment.textContent || '';
 };
 
 /**
@@ -177,6 +211,10 @@ const serializeEditorNode = (node: Node): string => {
 
   if (!(node instanceof HTMLElement)) {
     return '';
+  }
+
+  if (node.dataset?.mentionKind === 'file') {
+    return `@${node.dataset.mentionPath || ''}`;
   }
 
   if (node.dataset?.mentionName) {
@@ -205,7 +243,7 @@ const serializeEditorNode = (node: Node): string => {
  * @param element - 编辑器 DOM 元素
  * @returns 去除控制字符后的纯文本（保留换行）
  */
-const getSerializedEditorText = (element: HTMLElement): string => {
+export const getSerializedEditorText = (element: HTMLElement): string => {
   const children = Array.from(element.childNodes);
   const text = children
     .map((node, index) => {
@@ -347,32 +385,26 @@ const isCaretAfterMentionChip = (element: HTMLElement): boolean => {
  *   - searchText: @ 后面的搜索文本
  *   - atIndex: @ 符号在文本中的位置
  */
-const detectMention = (
-  text: string,
-): { hasMention: boolean; searchText: string; atIndex: number } => {
-  const lastAtIndex = text.lastIndexOf('@');
-
-  // 没有 @ 符号
-  if (lastAtIndex === -1) {
-    return { hasMention: false, searchText: '', atIndex: -1 };
-  }
-
-  // 获取 @ 后面的文本
-  const textAfterAt = text.substring(lastAtIndex + 1);
-
-  // 如果 @ 后面有空格或特殊符号，则不弹出（短横线 - 和下划线 _ 除外）
-  // 仅允许：字母、数字、中文、短横线 -、下划线 _
-  const hasSpecialChar = /[^a-zA-Z0-9\u4e00-\u9fa5\-_]/.test(textAfterAt);
-  if (hasSpecialChar) {
-    return { hasMention: false, searchText: '', atIndex: -1 };
-  }
-
-  return {
-    hasMention: true,
-    searchText: textAfterAt,
-    atIndex: lastAtIndex,
-  };
+export const detectMention = (text: string, trigger: '@' | '/' = '@') => {
+  const atIndex = text.lastIndexOf(trigger);
+  const searchText = text.slice(atIndex + 1);
+  // @ 与 / 一致：触发字符须位于行首或空白字符之后，紧跟文字不触发
+  const validPrefix = atIndex === 0 || /\s/.test(text[atIndex - 1]);
+  const invalid =
+    trigger === '@'
+      ? /[^a-zA-Z0-9\u4e00-\u9fa5\-_./]/
+      : /[^a-zA-Z0-9\u4e00-\u9fa5\-_]/;
+  return atIndex >= 0 && validPrefix && !invalid.test(searchText)
+    ? { hasMention: true, searchText, atIndex }
+    : { hasMention: false, searchText: '', atIndex: -1 };
 };
+
+const mentionKey = (item: MentionItem) =>
+  item.kind === 'file'
+    ? `file:${item.relativePath}`
+    : item.kind === 'doc'
+    ? `doc:${item.slugId}`
+    : String(item.targetId);
 
 /**
  * MentionEditor 主组件
@@ -391,6 +423,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       className,
       inlinePrefixWidth = 0,
       onMentionSelect,
+      onFetchMentionFiles,
+      onPluginSelect,
+      onExpertSelect,
+      onDocsChange,
       enableSubscription = false,
       onUnsubscribedSkillSelect,
       onSkillIdsChange,
@@ -398,6 +434,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       enableMention = true,
       // @ 弹窗展示方向：auto | up | down
       mentionPlacement = 'auto',
+      // / 触发形态：popup 跟随光标浮层 | capability 添加能力大弹窗
+      slashMode = 'popup',
       // 默认需要回显为 mention chip 的技能列表（按顺序渲染）
       defaultMentions,
       minRows = 2,
@@ -407,6 +445,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     ref,
   ) => {
     const MAX_UNDO_HISTORY = 100;
+    const [activeTrigger, setActiveTrigger] = useState<'@' | '/'>('@');
 
     // ==================== Refs ====================
     /** 编辑器 DOM 引用 */
@@ -433,6 +472,17 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     // ==================== State ====================
     /** 是否显示提及弹窗 */
     const [showMentionPopup, setShowMentionPopup] = useState<boolean>(false);
+    /** 是否显示添加能力大弹窗（slashMode=capability 时 / 触发） */
+    const [capabilityOpen, setCapabilityOpen] = useState<boolean>(false);
+    /** capabilityOpen 的同步镜像：删除触发串会经 commitEditorChange 重入检测，用于防递归 */
+    const capabilityOpenRef = useRef<boolean>(false);
+    /**
+     * 打开能力弹窗的句柄（ref 转发：openCapabilityModal 依赖 commitEditorChange，
+     * 而 commitEditorChange 依赖本组件更早声明的 runMentionDetection，用 ref 断开环）
+     */
+    const openCapabilityModalRef = useRef<(searchText: string) => void>(
+      () => {},
+    );
     /** 弹窗显示位置（向下用 top，向上用 bottom） */
     const [mentionPosition, setMentionPosition] = useState<{
       top?: number;
@@ -483,14 +533,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     /** 根据 DOM 同步 mention 选中状态（从 DOM 重建，避免与 setState 竞态） */
     const syncMentionsFromDom = useCallback(
       (pendingMention?: MentionItem) => {
-        if (!enableMention || !editorRef.current) return;
+        if (!editorRef.current) return;
 
         setSelectedMentions((prev) => {
           const prevMap = new Map(
-            prev.map((mention) => [String(mention.targetId), mention]),
+            prev.map((mention) => [mentionKey(mention), mention]),
           );
           if (pendingMention) {
-            prevMap.set(String(pendingMention.targetId), pendingMention);
+            prevMap.set(mentionKey(pendingMention), pendingMention);
           }
 
           return Array.from(
@@ -499,10 +549,24 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             const el = chip as HTMLElement;
             const mentionId = el.dataset.mentionId!;
             return (
-              prevMap.get(mentionId) ?? {
-                targetId: Number(mentionId),
-                name: el.dataset.mentionName || '',
-              }
+              prevMap.get(mentionId) ??
+              (el.dataset.mentionKind === 'file'
+                ? {
+                    kind: 'file' as const,
+                    relativePath: el.dataset.mentionPath || '',
+                    name: el.dataset.mentionName || '',
+                  }
+                : el.dataset.mentionKind === 'doc'
+                ? {
+                    kind: 'doc' as const,
+                    slugId: el.dataset.mentionSlugId || '',
+                    name: el.dataset.mentionName || '',
+                  }
+                : {
+                    kind: 'skill' as const,
+                    targetId: Number(mentionId),
+                    name: el.dataset.mentionName || '',
+                  })
             );
           });
         });
@@ -555,7 +619,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
     /** 检测 @ 并控制弹窗 */
     const runMentionDetection = useCallback(() => {
-      if (!enableMention || !editorRef.current) return;
+      if (
+        (!enableMention && !onFetchMentionFiles) ||
+        disabled ||
+        !editorRef.current
+      ) {
+        closeMentionPopup();
+        return;
+      }
 
       if (isCaretAfterMentionChip(editorRef.current)) {
         closeMentionPopup();
@@ -563,7 +634,30 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       }
 
       const textBeforeCaret = getTextBeforeCaret(editorRef.current);
-      const mentionInfo = detectMention(textBeforeCaret);
+      const fileInfo = detectMention(textBeforeCaret);
+      const slashInfo = detectMention(textBeforeCaret, '/');
+      const trigger = onFetchMentionFiles && fileInfo.hasMention ? '@' : '/';
+      const mentionInfo =
+        trigger === '@'
+          ? fileInfo
+          : enableMention
+          ? slashInfo
+          : { hasMention: false, searchText: '', atIndex: -1 };
+
+      // capability 模式：/ 命中即打开添加能力大弹窗（不弹光标浮层）
+      if (trigger === '/' && slashMode === 'capability') {
+        // 已打开时被删除触发串的 commit 重入，直接跳过
+        if (capabilityOpenRef.current) {
+          closeMentionPopup();
+          return;
+        }
+        if (mentionInfo.hasMention) {
+          openCapabilityModalRef.current(mentionInfo.searchText);
+        } else {
+          closeMentionPopup();
+        }
+        return;
+      }
 
       if (mentionInfo.hasMention) {
         const position = getCaretPosition(
@@ -593,6 +687,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             });
           }
           popupAnchorYRef.current = position.anchorY;
+          setActiveTrigger(trigger);
           setMentionSearchText(mentionInfo.searchText);
           setShowMentionPopup(true);
           mentionAtIndexRef.current = mentionInfo.atIndex;
@@ -603,8 +698,11 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     }, [
       closeMentionPopup,
       enableMention,
+      onFetchMentionFiles,
+      disabled,
       mentionPlacement,
       mentionPopupHeight,
+      slashMode,
     ]);
 
     /** 提交一次编辑变更：入栈 + 同步文本 + mention 检测 */
@@ -658,12 +756,31 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * 统一从 selectedMentions 派生，确保新增、删除、清空都能自动同步
      */
     useEffect(() => {
-      // 去重技能ID列表
+      // 去重技能ID列表（专家/资料库 chip 不计入技能）
       const nextSkillIds = Array.from(
-        new Set(selectedMentions?.map((item) => item.targetId as number)),
+        new Set(
+          selectedMentions
+            .filter((item) => (item.kind ?? 'skill') === 'skill')
+            .map((item) => item.targetId as number),
+        ),
       );
       onSkillIdsChange?.(nextSkillIds);
     }, [onSkillIdsChange, selectedMentions]);
+
+    /**
+     * 资料库文档 chip 派生：随消息以 selectedDocs({slugId,name}) 发送，
+     * 与 skillIds 同源（selectedMentions），删除/清空自动同步
+     */
+    useEffect(() => {
+      const docs = selectedMentions.filter(
+        (item): item is DocMentionItem => item.kind === 'doc',
+      );
+      onDocsChange?.(
+        Array.from(
+          new Map(docs.map((item) => [item.slugId, item])).values(),
+        ).map((item) => ({ slugId: item.slugId, name: item.name })),
+      );
+    }, [onDocsChange, selectedMentions]);
 
     // 占位符文本
     const placeholderText = useMemo(() => {
@@ -672,9 +789,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       }
       // 如果启用 @ 提及功能，则显示默认占位符文本
       if (enableMention) {
-        return t(
-          'PC.Components.ChatInputHomeMentionEditor.placeholderWithMention',
-        );
+        return t('PC.Components.ChatInputCommands.hint');
       }
       return t(
         'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
@@ -689,7 +804,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       const top = mentionPosition.top ?? 0;
       const vh =
         window.innerHeight || document.documentElement.clientHeight || 0;
-      const spaceBelow = vh - top - 24;
+      const spaceBelow =
+        mentionPosition.bottom !== undefined
+          ? vh - mentionPosition.bottom - 8
+          : vh - top - 24;
       return Math.min(400, Math.max(120, spaceBelow));
     }, [showMentionPopup, mentionPosition]);
 
@@ -698,7 +816,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * 在键盘导航、页面滚动或窗口变化时调用
      */
     const refreshMentionPosition = useCallback(() => {
-      if (!enableMention || !showMentionPopup) return;
+      if (!showMentionPopup) return;
 
       const position = getCaretPosition(
         mentionPlacement,
@@ -769,6 +887,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       if (!editorRef.current) return;
 
       isHistoryActionRef.current = true;
+      closeMentionPopup();
+      // 能力弹窗随编辑器清空一并关闭（如清空按钮/新会话复位场景）
+      capabilityOpenRef.current = false;
+      setCapabilityOpen(false);
       editorRef.current.innerHTML = '';
       resetUndoStack('');
       setSelectedMentions([]);
@@ -779,7 +901,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       queueMicrotask(() => {
         isHistoryActionRef.current = false;
       });
-    }, [onChange, resetUndoStack]);
+    }, [onChange, resetUndoStack, closeMentionPopup]);
 
     // ==================== Mention Chip 操作方法 ====================
 
@@ -789,25 +911,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      *
      * @param mentionId - 要删除的提及项 ID
      */
-    const removeMentionChip = useCallback(
-      (mentionId: string) => {
-        if (!editorRef.current) return;
-
-        // 通过 data 属性查找对应的 chip 元素
-        const mentionChip = editorRef.current.querySelector(
-          `[data-mention-id="${mentionId}"]`,
-        );
-
-        if (mentionChip) {
-          // 从 DOM 中移除
-          mentionChip.remove();
-          commitEditorChange();
-          editorRef.current.focus();
-        }
-      },
-      [commitEditorChange],
-    );
-
     /**
      * 删除指定的 mention 节点，并尽量保持光标位置稳定
      *
@@ -862,7 +965,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         const mentionSpan = document.createElement('span');
         mentionSpan.className = styles['mention-chip'];
         mentionSpan.contentEditable = 'false'; // 不可编辑
-        mentionSpan.dataset.mentionId = String(item.targetId);
+        mentionSpan.dataset.mentionId = mentionKey(item);
+        mentionSpan.dataset.mentionKind = item.kind ?? 'skill';
+        if (item.kind === 'file')
+          mentionSpan.dataset.mentionPath = item.relativePath;
+        // 资料库文档：slugId 存 dataset，供 prevMap 失效（撤销/重做）后的重建
+        if (item.kind === 'doc')
+          mentionSpan.dataset.mentionSlugId = item.slugId;
         mentionSpan.dataset.mentionName = item.name;
 
         // 创建内容容器
@@ -872,17 +981,15 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         // 创建名称显示
         const nameSpan = document.createElement('span');
         nameSpan.className = styles['mention-name'];
-        nameSpan.textContent = `@${item.name}`;
+        nameSpan.textContent = `@${
+          item.kind === 'file' ? item.relativePath : item.name
+        }`;
 
         // 创建删除按钮
         const deleteBtn = document.createElement('span');
         deleteBtn.className = styles['mention-delete'];
         deleteBtn.innerHTML = '×';
-        deleteBtn.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          removeMentionChip(String(item.targetId));
-        };
+        deleteBtn.dataset.mentionDelete = 'true';
 
         // 组装 DOM 结构
         contentSpan.appendChild(nameSpan);
@@ -891,7 +998,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
         return mentionSpan;
       },
-      [removeMentionChip],
+      [],
     );
 
     /**
@@ -899,7 +1006,12 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      */
     const notifyUnsubscribedSkillSelect = useCallback(
       (item: MentionItem) => {
-        if (enableSubscription && item.paymentRequired && !item.subscribed) {
+        if (
+          item.kind !== 'file' &&
+          enableSubscription &&
+          item.paymentRequired &&
+          !item.subscribed
+        ) {
           onUnsubscribedSkillSelect?.(item);
         }
       },
@@ -944,10 +1056,62 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       ],
     );
 
+    /**
+     * 在光标处插入 @ / 触发字符并唤起对应弹窗（+ 号菜单入口）：
+     * 触发字符需位于行首或空白后，光标前是普通文字时自动补一个空格
+     */
+    const insertTriggerText = useCallback(
+      (text: string) => {
+        const container = editorRef.current;
+        if (!container || disabled) {
+          return;
+        }
+        // 先读 selection 再 focus()：focus 会把无有效光标的 contentEditable
+        // 光标重置到容器开头，若先 focus 后读会把字符插到头部而非光标/末尾
+        const selection = window.getSelection();
+        let range: Range;
+        if (
+          selection &&
+          selection.rangeCount > 0 &&
+          container.contains(selection.anchorNode)
+        ) {
+          range = selection.getRangeAt(0).cloneRange();
+          range.collapse(true);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(container);
+          range.collapse(false);
+        }
+        container.focus();
+        const before =
+          range.startContainer.textContent?.slice(0, range.startOffset) ?? '';
+        const needSpace = before.length > 0 && !/\s$/.test(before);
+        const node = document.createTextNode(`${needSpace ? ' ' : ''}${text}`);
+        range.insertNode(node);
+        const caret = document.createRange();
+        caret.setStart(node, node.length);
+        caret.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(caret);
+        recordUndoSnapshot();
+        syncEditorStateFromDom();
+        // 刚插入节点上的 collapsed 光标，getBoundingClientRect 会返回全零矩形
+        // （selection 未刷新），弹窗会被定位到视口左上角；延后一帧待矩形生效再检测
+        requestAnimationFrame(() => runMentionDetection());
+      },
+      [
+        disabled,
+        recordUndoSnapshot,
+        runMentionDetection,
+        syncEditorStateFromDom,
+      ],
+    );
+
     // 通过 useImperativeHandle 暴露方法
     useImperativeHandle(ref, () => ({
       clear,
       handleAtIconMentionSelect,
+      insertTriggerText,
       focus: () => {
         editorRef.current?.focus();
       },
@@ -1012,6 +1176,185 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       resetUndoStack,
     ]);
 
+    // ==================== 能力弹窗（slashMode=capability 的 / 触发）====================
+
+    /**
+     * 删除光标前的 "/" 触发串（打开能力弹窗前调用）。
+     * 能力弹窗与编辑器文本解耦：触发串不留在编辑器，Esc/选中后无需二次清理，
+     * 也避免关闭弹窗后继续输入被残留的 "/" 再次触发。
+     * 定位逻辑与 handleMentionSelect 的触发串回溯保持一致。
+     */
+    const removeSlashTriggerText = useCallback(
+      (searchText: string): boolean => {
+        const editor = editorRef.current;
+        const savedRange = savedRangeRef.current;
+        if (
+          !editor ||
+          !savedRange ||
+          !editor.contains(savedRange.startContainer)
+        ) {
+          return false;
+        }
+        const range = savedRange.cloneRange();
+        let remaining = searchText.length + 1;
+        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+        const textNodes: Text[] = [];
+        while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
+        let nodeIndex = textNodes.indexOf(range.startContainer as Text);
+        let offset = range.startOffset;
+        if (nodeIndex < 0) return false;
+        while (nodeIndex >= 0) {
+          const node = textNodes[nodeIndex];
+          if (node.parentElement?.closest('[data-mention-id]')) return false;
+          if (offset >= remaining) {
+            range.setStart(node, offset - remaining);
+            remaining = 0;
+            break;
+          }
+          remaining -= offset;
+          nodeIndex -= 1;
+          offset = textNodes[nodeIndex]?.length ?? 0;
+        }
+        if (remaining || range.toString() !== `/${searchText}`) return false;
+        range.deleteContents();
+        range.collapse(true);
+        // 重存删除点光标：弹窗内选中技能时 chip 插回该位置
+        savedRangeRef.current = range.cloneRange();
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        return true;
+      },
+      [],
+    );
+
+    /** 在保存的光标位置（失效则编辑器末尾）插入技能 chip */
+    const insertMentionChipAtCaret = useCallback(
+      (item: MentionItem) => {
+        const container = editorRef.current;
+        if (!container) return;
+        const chip = createMentionChip(item);
+        const spacer = document.createTextNode(' ');
+        const savedRange = savedRangeRef.current;
+        if (savedRange && container.contains(savedRange.startContainer)) {
+          const range = savedRange.cloneRange();
+          range.collapse(true);
+          range.insertNode(chip);
+          chip.after(spacer);
+        } else {
+          container.appendChild(chip);
+          container.appendChild(spacer);
+        }
+        const selection = window.getSelection();
+        if (selection) {
+          const range = document.createRange();
+          range.setStart(spacer, spacer.length);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+        container.focus();
+        onMentionSelect?.(item);
+        notifyUnsubscribedSkillSelect(item);
+        commitEditorChange({ pendingMention: item });
+      },
+      [
+        commitEditorChange,
+        createMentionChip,
+        notifyUnsubscribedSkillSelect,
+        onMentionSelect,
+      ],
+    );
+
+    /** 打开能力弹窗：记录光标 → 删除触发串 → 同步编辑器状态 → 打开 */
+    const openCapabilityModal = useCallback(
+      (searchText: string) => {
+        const editor = editorRef.current;
+        if (!editor) return;
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+          savedTextNodeRef.current = selection.getRangeAt(0).startContainer;
+        }
+        setActiveTrigger('/');
+        setMentionSearchText('');
+        if (removeSlashTriggerText(searchText)) {
+          recordUndoSnapshot();
+          syncEditorStateFromDom();
+        }
+        capabilityOpenRef.current = true;
+        setCapabilityOpen(true);
+      },
+      [removeSlashTriggerText, recordUndoSnapshot, syncEditorStateFromDom],
+    );
+    openCapabilityModalRef.current = openCapabilityModal;
+
+    /** 能力弹窗选中分流：技能/专家/资料库 → 光标处插 chip（随消息发送）；
+     * 连接器 → selectedComponents 通道（底部组件栏） */
+    const handleCapabilitySelect = useCallback(
+      (item: CapabilityItem) => {
+        if (item.resourceType === 'skill') {
+          insertMentionChipAtCaret({
+            kind: 'skill',
+            targetId: item.targetId ?? Number(item.rawId),
+            name: item.name,
+            icon: item.icon,
+            description: item.description,
+            paymentRequired: item.paymentRequired,
+            subscribed: item.subscribed,
+          });
+          return;
+        }
+        // 专家：不进输入框（无 chip），单选通知父组件（工具栏 pill 回填，
+        // 随消息合并进 selectedComponents；再选其他专家由父组件整体替换）
+        if (item.resourceType === 'expert') {
+          onExpertSelect?.({
+            targetId: item.targetId ?? Number(item.rawId),
+            name: item.name,
+            icon: item.icon,
+            description: item.description,
+          });
+          return;
+        }
+        // 资料库=空间文档仓库：chip 化（数据经 onDocsChange 派生为 selectedDocs）
+        if (item.resourceType === 'knowledge') {
+          insertMentionChipAtCaret({
+            kind: 'doc',
+            slugId: String(item.slugId ?? ''),
+            name: item.name,
+          });
+          return;
+        }
+        onPluginSelect?.({
+          kind: 'plugin',
+          targetId: item.targetId ?? Number(item.rawId),
+          componentType: AgentComponentTypeEnum.MCP,
+          name: item.name,
+          icon: item.icon,
+          description: item.description,
+        });
+      },
+      [insertMentionChipAtCaret, onPluginSelect, onExpertSelect],
+    );
+
+    /** 能力弹窗关闭：复位状态并把焦点/光标交还编辑器 */
+    const handleCapabilityClose = useCallback(() => {
+      capabilityOpenRef.current = false;
+      setCapabilityOpen(false);
+      const container = editorRef.current;
+      const savedRange = savedRangeRef.current;
+      if (
+        container &&
+        savedRange &&
+        container.contains(savedRange.startContainer)
+      ) {
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(savedRange.cloneRange());
+      }
+      container?.focus();
+    }, []);
+
     // ==================== 核心事件处理 ====================
 
     /**
@@ -1021,101 +1364,71 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * @param item - 选中的提及项
      */
     const handleMentionSelect = useCallback(
-      (item: MentionItem) => {
-        if (!editorRef.current) return;
-
-        const selection = window.getSelection();
-        if (!selection) return;
-
-        // 使用保存的 range 和 textNode，因为点击 popup 时焦点可能已经改变
+      (item: MentionItem | SlashItem) => {
+        const editor = editorRef.current;
         const savedRange = savedRangeRef.current;
-        const savedTextNode = savedTextNodeRef.current;
-
         if (
-          savedRange &&
-          savedTextNode &&
-          savedTextNode.nodeType === Node.TEXT_NODE
-        ) {
-          // 有保存的位置信息，精确替换
-          const text = savedTextNode.textContent || '';
-          const cursorPos = savedRange.startOffset;
-
-          // 找到 @ 在当前文本节点中的位置
-          const textBeforeCursor = text.substring(0, cursorPos);
-          const localAtIndex = textBeforeCursor.lastIndexOf('@');
-
-          if (localAtIndex !== -1) {
-            // 分割文本：@ 前的文本 + mention chip + @ 后光标后的文本
-            const textBeforeAt = text.substring(0, localAtIndex);
-            const textAfterCursor = text.substring(cursorPos);
-
-            // 创建 mention chip 和文本节点
-            const mentionSpan = createMentionChip(item);
-            const beforeTextNode = document.createTextNode(textBeforeAt);
-            const afterTextNode = document.createTextNode(
-              ' ' + textAfterCursor,
-            );
-
-            // 替换原来的文本节点
-            const parent = savedTextNode.parentNode;
-            if (parent) {
-              parent.insertBefore(beforeTextNode, savedTextNode);
-              parent.insertBefore(mentionSpan, savedTextNode);
-              parent.insertBefore(afterTextNode, savedTextNode);
-              parent.removeChild(savedTextNode);
-
-              // 将光标移动到 mention 后面
-              const newRange = document.createRange();
-              newRange.setStart(afterTextNode, 1);
-              newRange.setEnd(afterTextNode, 1);
-              selection.removeAllRanges();
-              selection.addRange(newRange);
-
-              editorRef.current.focus();
-            }
+          !editor ||
+          !savedRange ||
+          !editor.contains(savedRange.startContainer)
+        )
+          return;
+        if (item.kind === 'plugin' && !onPluginSelect) return;
+        // 从保存的光标向前定位触发串，支持浏览器把文本拆成多个节点。
+        const range = savedRange.cloneRange();
+        let remaining = mentionSearchText.length + 1;
+        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+        const textNodes: Text[] = [];
+        while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
+        let nodeIndex = textNodes.indexOf(range.startContainer as Text);
+        let offset = range.startOffset;
+        if (nodeIndex < 0) return;
+        while (nodeIndex >= 0) {
+          const node = textNodes[nodeIndex];
+          if (node.parentElement?.closest('[data-mention-id]')) return;
+          if (offset >= remaining) {
+            range.setStart(node, offset - remaining);
+            remaining = 0;
+            break;
           }
-        } else {
-          // 没有保存的范围信息，使用回退方案：在编辑器末尾插入
-          const mentionSpan = createMentionChip(item);
-          const spaceNode = document.createTextNode(' ');
-
-          // 尝试删除最后输入的 @ 和搜索文本
-          const currentText = editorRef.current.innerText || '';
-          const lastAtIndex = currentText.lastIndexOf('@');
-          if (lastAtIndex !== -1) {
-            // 重建编辑器内容
-            const textBeforeAt = currentText.substring(0, lastAtIndex);
-            editorRef.current.innerHTML = '';
-            if (textBeforeAt) {
-              editorRef.current.appendChild(
-                document.createTextNode(textBeforeAt),
-              );
-            }
-          }
-
-          // 添加 mention chip 和空格
-          editorRef.current.appendChild(mentionSpan);
-          editorRef.current.appendChild(spaceNode);
-
-          // 将光标移动到末尾
-          const newRange = document.createRange();
-          newRange.setStartAfter(spaceNode);
-          newRange.setEndAfter(spaceNode);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-
-          editorRef.current.focus();
+          remaining -= offset;
+          nodeIndex -= 1;
+          offset = textNodes[nodeIndex]?.length ?? 0;
         }
-
-        onMentionSelect?.(item);
-        notifyUnsubscribedSkillSelect(item);
+        if (remaining || range.toString() !== activeTrigger + mentionSearchText)
+          return;
+        range.deleteContents();
+        const fragment = document.createDocumentFragment();
+        if (item.kind !== 'plugin')
+          fragment.appendChild(createMentionChip(item));
+        const spacer = document.createTextNode(
+          item.kind === 'plugin' ? '' : ' ',
+        );
+        fragment.appendChild(spacer);
+        range.insertNode(fragment);
+        range.setStart(spacer, spacer.length);
+        range.collapse(true);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        editor.focus();
         closeMentionPopup();
-        commitEditorChange({ pendingMention: item });
+        if (item.kind === 'plugin') {
+          onPluginSelect?.(item);
+          commitEditorChange();
+        } else {
+          onMentionSelect?.(item);
+          notifyUnsubscribedSkillSelect(item);
+          commitEditorChange({ pendingMention: item });
+        }
       },
       [
+        activeTrigger,
+        mentionSearchText,
         closeMentionPopup,
         commitEditorChange,
         onMentionSelect,
+        onPluginSelect,
         createMentionChip,
         notifyUnsubscribedSkillSelect,
       ],
@@ -1166,7 +1479,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         }
 
         // 弹窗显示时的键盘处理（仅在启用 @ 功能时生效）
-        if (enableMention && showMentionPopup) {
+        if (showMentionPopup) {
           switch (e.key) {
             case 'ArrowUp':
               e.preventDefault();
@@ -1338,131 +1651,25 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * 当点击时检查光标前是否有 @ 符号，如果有则显示 MentionPopup
      * 用于支持点击已输入的 @ 重新打开弹窗
      */
-    const handleClick = useCallback(() => {
-      if (!editorRef.current || disabled) return;
-
-      // 关闭 @ 提及功能时，点击只负责光标定位，不触发弹窗
-      if (!enableMention) {
-        closeMentionPopup();
-        return;
-      }
-
-      // 延迟执行以确保光标位置已更新
-      setTimeout(() => {
-        if (!editorRef.current) return;
-
-        // 点击到 mention chip 后方时，不重新打开弹窗
-        if (isCaretAfterMentionChip(editorRef.current)) {
+    const handleClick = useCallback(
+      (event: React.MouseEvent<HTMLDivElement>) => {
+        if (!editorRef.current || disabled) return;
+        const target = event.target as HTMLElement;
+        const chip = target.closest('[data-mention-id]') as HTMLElement | null;
+        if (target.closest('[data-mention-delete]') && chip) {
+          event.preventDefault();
+          removeMentionChipNode(chip);
           closeMentionPopup();
           return;
         }
+        runMentionDetection();
+      },
+      [disabled, removeMentionChipNode, closeMentionPopup, runMentionDetection],
+    );
 
-        const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) return;
-
-        const range = selection.getRangeAt(0);
-        const textNode = range.startContainer;
-
-        if (textNode.nodeType === Node.TEXT_NODE) {
-          const text = textNode.textContent || '';
-          const cursorPos = range.startOffset;
-          const textBeforeCursor = text.substring(0, cursorPos);
-          const lastAtIndex = textBeforeCursor.lastIndexOf('@');
-
-          if (lastAtIndex !== -1) {
-            // 检查 @ 和光标之间是否有空格
-            const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
-            const hasSpaceAfterAt = /\s/.test(textAfterAt);
-
-            if (!hasSpaceAfterAt) {
-              // 保存当前的 range 和 textNode
-              savedRangeRef.current = range.cloneRange();
-              savedTextNodeRef.current = textNode;
-
-              // 光标在 @ 后面，没有空格间隔，显示弹窗
-              const position = getCaretPosition(
-                mentionPlacement,
-                mentionPopupHeight ?? undefined,
-              );
-              if (position) {
-                const vh =
-                  window.innerHeight ||
-                  document.documentElement.clientHeight ||
-                  0;
-                if (position.finalPlacement === 'up') {
-                  setMentionPosition({
-                    left: position.left,
-                    bottom: vh - position.anchorY,
-                    top: undefined,
-                  });
-                } else {
-                  setMentionPosition({
-                    left: position.left,
-                    top: position.anchorY,
-                    bottom: undefined,
-                  });
-                }
-                popupAnchorYRef.current = position.anchorY;
-                setMentionSearchText(textAfterAt);
-                setShowMentionPopup(true);
-                mentionAtIndexRef.current = lastAtIndex;
-              }
-            } else {
-              closeMentionPopup();
-            }
-          } else {
-            closeMentionPopup();
-          }
-        } else {
-          // 如果光标不在文本节点中，尝试从整个编辑器获取光标前的文本
-          const textBeforeCaret = getTextBeforeCaret(editorRef.current!);
-          const mentionInfo = detectMention(textBeforeCaret);
-
-          if (mentionInfo.hasMention) {
-            // 保存当前的 range
-            savedRangeRef.current = range.cloneRange();
-            savedTextNodeRef.current = range.startContainer;
-
-            const position = getCaretPosition(
-              mentionPlacement,
-              mentionPopupHeight ?? undefined,
-              range,
-            );
-            if (position) {
-              const vh =
-                window.innerHeight ||
-                document.documentElement.clientHeight ||
-                0;
-              if (position.finalPlacement === 'up') {
-                setMentionPosition({
-                  left: position.left,
-                  bottom: vh - position.anchorY,
-                  top: undefined,
-                });
-              } else {
-                setMentionPosition({
-                  left: position.left,
-                  top: position.anchorY,
-                  bottom: undefined,
-                });
-              }
-              popupAnchorYRef.current = position.anchorY;
-              setMentionSearchText(mentionInfo.searchText);
-              setShowMentionPopup(true);
-              mentionAtIndexRef.current = mentionInfo.atIndex;
-            }
-          } else {
-            closeMentionPopup();
-          }
-        }
-      }, 0);
-    }, [
-      disabled,
-      enableMention,
-      mentionPlacement,
-      closeMentionPopup,
-      mentionPopupHeight,
-    ]);
+    useEffect(() => {
+      closeMentionPopup();
+    }, [onFetchMentionFiles, enableMention, disabled, closeMentionPopup]);
 
     // ==================== Effects ====================
 
@@ -1568,19 +1775,45 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
         {/* @提及技能选择弹窗 */}
         <div className={styles['mention-popup-wrapper']}>
-          <MentionPopup
-            ref={mentionPopupRef}
-            visible={showMentionPopup}
-            position={mentionPosition}
-            onSelect={handleMentionSelect}
-            enableSubscription={enableSubscription}
-            onClose={closeMentionPopup}
-            searchText={mentionSearchText}
-            maxHeight={mentionPopupMaxHeight}
-            onHeightChange={handlePopupHeightChange}
-            usageScenarios={usageScenarios}
-          />
+          {activeTrigger === '@' ? (
+            <MentionPopup
+              onFetchMentionFiles={onFetchMentionFiles}
+              ref={mentionPopupRef}
+              visible={showMentionPopup}
+              position={mentionPosition}
+              onSelect={handleMentionSelect}
+              enableSubscription={enableSubscription}
+              onClose={closeMentionPopup}
+              searchText={mentionSearchText}
+              maxHeight={mentionPopupMaxHeight}
+              onHeightChange={handlePopupHeightChange}
+              usageScenarios={usageScenarios}
+            />
+          ) : slashMode === 'popup' ? (
+            <SlashPopup
+              enablePlugins={!!onPluginSelect}
+              ref={mentionPopupRef}
+              visible={showMentionPopup}
+              position={mentionPosition}
+              onSelect={handleMentionSelect}
+              enableSubscription={enableSubscription}
+              onClose={closeMentionPopup}
+              searchText={mentionSearchText}
+              maxHeight={mentionPopupMaxHeight}
+              onHeightChange={handlePopupHeightChange}
+              usageScenarios={usageScenarios}
+            />
+          ) : null}
         </div>
+
+        {/* capability 模式：居中的添加能力大弹窗（portal 渲染，与光标浮层互斥） */}
+        {slashMode === 'capability' && (
+          <CapabilityModal
+            open={capabilityOpen}
+            onClose={handleCapabilityClose}
+            onSelect={handleCapabilitySelect}
+          />
+        )}
       </div>
     );
   },

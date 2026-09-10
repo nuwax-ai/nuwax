@@ -83,6 +83,13 @@
 
   .mention-search-input {
     width: 100%;
+    border: 0;
+    outline: none;
+    padding: @paddingXxs;
+    color: @colorText;
+    background: transparent;
+    font-size: @fontSizeSm;
+    box-sizing: border-box;
   }
 
   // 列表主体区域，同时承担滚动分页容器的职责
@@ -114,6 +121,11 @@
       cursor: pointer;
       gap: @marginSm;
 
+      // 文件项：单行紧凑，收紧内边距
+      &.mention-item-file {
+        padding: 4px @paddingSm;
+      }
+
       &:hover {
         background: @colorFillSecondary;
       }
@@ -124,10 +136,14 @@
       }
 
       .mention-item-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 32px;
         height: 32px;
         border-radius: @borderRadius;
         background: @colorFillSecondary;
+        color: @colorTextSecondary;
         font-size: 16px;
         flex-shrink: 0;
         overflow: hidden;
@@ -138,6 +154,13 @@
           object-fit: cover;
           border-radius: inherit;
         }
+      }
+
+      /* 文件项裸图标：无背景容器 */
+      .mention-file-icon {
+        flex-shrink: 0;
+        color: @colorTextSecondary;
+        font-size: 15px;
       }
 
       .mention-item-content {
@@ -154,6 +177,23 @@
         .mention-item-desc {
           font-size: @fontSizeSm;
           color: @colorTextSecondary;
+        }
+
+        /* 文件项单行布局：文件名不收缩，路径尾部省略 */
+        .mention-item-inline {
+          min-width: 0;
+          gap: 8px;
+
+          .mention-item-name {
+            flex: 0 1 auto;
+          }
+
+          .mention-item-path {
+            flex: 1;
+            min-width: 0;
+            font-size: @fontSizeSm;
+            color: @colorTextSecondary;
+          }
         }
       }
 

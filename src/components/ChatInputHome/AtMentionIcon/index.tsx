@@ -10,8 +10,12 @@ import React, {
 
 import { t } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
-import MentionPopup from '../MentionPopup';
-import type { MentionItem } from '../MentionPopup/types';
+import type {
+  MentionItem,
+  PluginCommandItem,
+  SlashItem,
+} from '../MentionPopup/types';
+import SlashPopup from '../SlashPopup';
 import styles from '../index.less';
 
 const cx = classNames.bind(styles);
@@ -21,6 +25,7 @@ export type MentionPlacement = 'auto' | 'up' | 'down';
 export interface AtMentionIconProps {
   /** 是否启用 @ 提及功能 */
   enableMention: boolean;
+  onPluginSelect?: (item: PluginCommandItem) => void;
   /** @ 弹窗展示方向 */
   mentionPlacement: MentionPlacement;
   /** 是否开启订阅功能（租户配置） */
@@ -45,6 +50,7 @@ const AtMentionIcon: React.FC<AtMentionIconProps> = ({
   mentionPlacement,
   enableSubscription = false,
   onSelectMention,
+  onPluginSelect,
   usageScenarios,
   disabled = false,
 }) => {
@@ -118,12 +124,13 @@ const AtMentionIcon: React.FC<AtMentionIconProps> = ({
    * 选择提及项：关弹窗 + 写入编辑器
    */
   const handleAtIconMentionSelect = useCallback(
-    (item: MentionItem) => {
+    (item: SlashItem) => {
       setAtIconShowMentionPopup(false);
       setHasUsedMentionIcon(false);
-      onSelectMention(item);
+      if (item.kind === 'plugin') onPluginSelect?.(item);
+      else onSelectMention(item);
     },
-    [onSelectMention],
+    [onSelectMention, onPluginSelect],
   );
 
   /**
@@ -209,9 +216,7 @@ const AtMentionIcon: React.FC<AtMentionIconProps> = ({
 
   const tooltipTitle = useMemo(
     () =>
-      hasUsedMentionIcon
-        ? ''
-        : t('PC.Components.ChatInputHomeAtMentionIcon.tryMentionSkill'),
+      hasUsedMentionIcon ? '' : t('PC.Components.ChatInputCommands.choose'),
     [hasUsedMentionIcon],
   );
 
@@ -237,15 +242,25 @@ const AtMentionIcon: React.FC<AtMentionIconProps> = ({
             styles['plus-box'],
             { [styles['upload-box-disabled']]: disabled },
           )}
+          role="button"
+          tabIndex={disabled ? -1 : 0}
+          aria-label={t('PC.Components.ChatInputCommands.search')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.currentTarget.click();
+            }
+          }}
           onClick={handleMentionIconClick}
         >
-          @
+          /
         </span>
       </Tooltip>
 
       {/* @提及技能选择弹窗 */}
-      <MentionPopup
-        visible={atIconShowMentionPopup}
+      <SlashPopup
+        enablePlugins={!!onPluginSelect}
+        visible={atIconShowMentionPopup && !disabled && enableMention}
         position={atIconMentionPosition}
         onSelect={handleAtIconMentionSelect}
         enableSubscription={enableSubscription}

@@ -43,6 +43,8 @@ describe('消息队列关闭时的发送拦截', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
     );
     expect(result.current.queue).toHaveLength(0);
   });

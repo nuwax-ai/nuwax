@@ -7,8 +7,10 @@ import {
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
+import type { FileMentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import ConditionRender from '@/components/ConditionRender';
 import ResizableSplit from '@/components/ResizableSplit';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
@@ -46,7 +48,10 @@ import { resolveGitignoreWritePlan } from '@/components/business-component/FileT
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import { apiAgentConversation } from '@/services/agentConfig';
 import { fetchContentOutcome } from '@/services/skill';
-import { apiUpdateStaticFile } from '@/services/vncDesktop';
+import {
+  apiGetStaticFileList,
+  apiUpdateStaticFile,
+} from '@/services/vncDesktop';
 
 import { jumpToPageDevelop } from '@/utils/router';
 import {
@@ -1476,7 +1481,29 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     },
   });
 
+  const fetchMentionFiles = useCallback(async (): Promise<
+    FileMentionItem[]
+  > => {
+    if (!id) return [];
+    const response = await apiGetStaticFileList(id, {
+      relativePath: '',
+      recursive: true,
+    });
+    if (response.code !== SUCCESS_CODE) throw new Error('会话文件列表加载失败');
+    return (response.data?.files ?? [])
+      .filter((file) => !file.isDir)
+      .map((file) => ({
+        kind: 'file',
+        relativePath: file.name,
+        name: file.name.split('/').pop() || file.name,
+      }));
+  }, [id]);
+
   const chatSessionProps = {
+    onFetchMentionFiles:
+      id && effectiveAgent?.type === AgentTypeEnum.TaskAgent
+        ? fetchMentionFiles
+        : undefined,
     conversationId: id,
     messageList,
     messageRenderer: conversationRendererVersion,

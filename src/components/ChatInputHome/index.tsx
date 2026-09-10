@@ -56,6 +56,7 @@ import MentionEditor from './MentionEditor';
 import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
 import ModelSelector from './ModelSelector';
 import SpaceSelector from './SpaceSelector';
+import { useSlashPlugins } from './useSlashPlugins';
 import WorkspaceDirPickerModal from './WorkspaceDirPickerModal';
 
 const cx = classNames.bind(styles);
@@ -780,6 +781,12 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
     /**
      * 将底部 @ 图标选择的提及项插入到 MentionEditor
      */
+    const { onPluginSelect, commandManualComponents } = useSlashPlugins(
+      manualComponents,
+      selectedComponentList,
+      onSelectComponent,
+    );
+
     const handleInsertAtMention = useCallback(
       (item: MentionItem) => {
         mentionEditorRef.current?.handleAtIconMentionSelect(item);
@@ -792,7 +799,12 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
      */
     const handleUnsubscribedSkillSelect = useCallback(
       (item: MentionItem) => {
-        if (!isEnableSubscription || !item.paymentRequired || item.subscribed) {
+        if (
+          item.kind === 'file' ||
+          !isEnableSubscription ||
+          !item.paymentRequired ||
+          item.subscribed
+        ) {
           return;
         }
         querySkillSubscriptionPlans(item.targetId);
@@ -858,6 +870,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                 </div>
               </ConditionRender>
               <MentionEditor
+                onPluginSelect={onPluginSelect}
                 ref={mentionEditorRef}
                 className={cx(styles.input)}
                 disabled={wholeDisabled}
@@ -944,6 +957,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
 
                     <VoiceFooter.HideWhenActive>
                       <AtMentionIcon
+                        onPluginSelect={onPluginSelect}
                         enableMention={enableMention}
                         mentionPlacement={mentionPlacement}
                         enableSubscription={isEnableSubscription}
@@ -1090,7 +1104,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
 
                     <VoiceFooter.HideWhenActive>
                       <ManualComponentItem
-                        manualComponents={manualComponents}
+                        manualComponents={commandManualComponents}
                         selectedComponentList={selectedComponentList}
                         onSelectComponent={onSelectComponent}
                       />

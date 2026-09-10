@@ -3,6 +3,7 @@ import { selectQueueGate } from '@/features/conversation/domain/runtimeSelectors
 import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { useCallback } from 'react';
 import { useModel } from 'umi';
@@ -33,6 +34,8 @@ export interface UseUnifiedChatQueueParams {
     skillIds?: number[],
     modelId?: number,
     selectedAgentMode?: AgentMode,
+    selectedDocs?: SelectedDocInfo[],
+    expertComponents?: QueuedMessage['expertComponents'],
   ) => void;
   /**
    * 队列消费下一条前的最小等待间隔（ms），默认 1200，从「流式结束（消费阻塞解除）时刻」起算。
@@ -90,6 +93,8 @@ export const useUnifiedChatQueue = ({
       skillIds?: number[],
       modelId?: number,
       selectedAgentMode?: AgentMode,
+      selectedDocs?: SelectedDocInfo[],
+      expertComponents?: QueuedMessage['expertComponents'],
     ) => {
       onSendMessage?.(
         messageInfo,
@@ -97,6 +102,8 @@ export const useUnifiedChatQueue = ({
         skillIds,
         modelId || selectedModelId,
         selectedAgentMode || agentModeRef.current,
+        selectedDocs,
+        expertComponents,
       );
     },
     [onSendMessage, selectedModelId, agentModeRef],

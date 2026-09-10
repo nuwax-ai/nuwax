@@ -3,14 +3,17 @@ import type {
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
+import type { FetchMentionFiles } from '@/components/ChatInputHome/MentionPopup/types';
 import type { ConversationSessionView } from '@/features/conversation/domain/sessionView';
 import type { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
+import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import * as React from 'react';
 
 export interface UnifiedAgentInfo {
@@ -68,6 +71,8 @@ export interface UnifiedChatSessionProps {
     skillIds?: number[],
     modelId?: number,
     selectedAgentMode?: AgentMode,
+    selectedDocs?: SelectedDocInfo[],
+    expertComponents?: AgentSelectedComponentInfo[],
   ) => void;
   onClear?: () => Promise<void>; // 刷新/清空会话的回调
   onLoadMoreMessage?: (id: number) => void; // 向上滚动到顶加载历史消息的回调
@@ -117,6 +122,7 @@ export interface UnifiedChatSessionProps {
   messageRenderer?: 'v1' | 'v2';
 
   // 功能配置开关
+  onFetchMentionFiles?: FetchMentionFiles;
   enableMention?: boolean; // 是否支持 @ 提及项目文件/技能
   placeholder?: string;
   messageViewRef?: React.RefObject<HTMLDivElement>;
