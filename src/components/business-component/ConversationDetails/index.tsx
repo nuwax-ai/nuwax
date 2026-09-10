@@ -768,7 +768,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 />
               </ConditionRender>
               {/* 左侧标题；hideTitle 时隐藏会话主题 */}
-              <ConditionRender condition={isAppSidebarMode && !chromeFlags.hideTitle}>
+              <ConditionRender
+                condition={isAppSidebarMode && !chromeFlags.hideTitle}
+              >
                 <Typography.Title
                   level={5}
                   className={cx(styles.title, 'flex-1')}

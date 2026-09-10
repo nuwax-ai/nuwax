@@ -17,3 +17,35 @@ const FULLSCREEN_WORKBENCH_PATH_PATTERNS: RegExp[] = [
 
 export const isFullscreenWorkbenchPath = (pathname: string): boolean =>
   FULLSCREEN_WORKBENCH_PATH_PATTERNS.some((pattern) => pattern.test(pathname));
+
+export interface SidebarShellLayoutPolicy {
+  variant: 'page' | 'bare';
+  suppressSecondMenu: boolean;
+  immersiveMarginTop: boolean;
+}
+
+/**
+ * 根路由壳的唯一分流策略。
+ *
+ * 单栏桌面端进入工作台详情时必须继续走 page-container；经典风格及移动端
+ * 保持历史裸全屏。把三项联动值收口成纯函数，避免路由匹配正确但 variant 又在
+ * 调用处被单独改坏，也便于覆盖「单栏 → 网页应用开发详情」这一真实回归场景。
+ */
+export const getSidebarShellLayoutPolicy = ({
+  pathname,
+  isStyle3,
+  isMobile,
+}: {
+  pathname: string;
+  isStyle3: boolean;
+  isMobile: boolean;
+}): SidebarShellLayoutPolicy => {
+  const onFullscreenWorkbench = isFullscreenWorkbenchPath(pathname);
+  const style3Desktop = isStyle3 && !isMobile;
+
+  return {
+    variant: onFullscreenWorkbench && !style3Desktop ? 'bare' : 'page',
+    suppressSecondMenu: onFullscreenWorkbench,
+    immersiveMarginTop: !onFullscreenWorkbench,
+  };
+};

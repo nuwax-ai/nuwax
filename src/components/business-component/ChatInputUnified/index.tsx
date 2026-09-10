@@ -31,6 +31,7 @@ import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { selectSessionActive } from '@/features/conversation/domain/runtimeSelectors';
+import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import {
@@ -151,7 +152,7 @@ export interface ChatInputUnifiedProps {
    * 发起会话时选择的工作目录（仅个人电脑场景）：
    * 不传 onWorkspaceDirChange 时工作目录栏不渲染
    */
-  workspaceDir?: string;
+  workspacePath?: string;
   onWorkspaceDirChange?: (dir: string) => void;
   /** 禁用个人电脑（如全栈应用等类型）：电脑选择锁定云端、工作目录栏隐藏 */
   disablePersonalComputer?: boolean;
@@ -162,6 +163,21 @@ export interface ChatInputUnifiedProps {
   /** 推荐标签 pill：选中后内联展示在输入框行首，可取消 */
   selectedTag?: { label: string };
   onClearSelectedTag?: () => void;
+  /**
+   * 首页项目上框（项目列表「+ 新建会话」透传）：输入卡底部灰底栏展示绑定项目
+   * （图标 + 名称，可删除）。存在期间工作区/沙箱由项目隐含，
+   * 隐藏工作目录栏与电脑选择器。
+   */
+  pinnedProject?: {
+    /** 项目名称 */
+    name: string;
+    /** 项目类型（UserApp=全栈 / NormalProject=常规，悬停提示用） */
+    projectType: AgentComponentTypeEnum;
+    /** 项目图标 URL（可为受保护地址，展示走 useAuthProtectedImageSrc） */
+    icon?: string;
+  };
+  /** 移除项目上框（恢复首页默认形态） */
+  onClearPinnedProject?: () => void;
   /** 会话调试悬浮按钮（会话页默认展示；首页等场景传 false 关闭） */
   showDebugFab?: boolean;
   /**
@@ -274,7 +290,7 @@ const ChatInputUnifiedImpl: React.FC<
   onToggleTaskAgent,
   selectedComputerId,
   onComputerSelect,
-  workspaceDir,
+  workspacePath,
   onWorkspaceDirChange,
   disablePersonalComputer = false,
   showSpaceSelector = false,
@@ -282,6 +298,8 @@ const ChatInputUnifiedImpl: React.FC<
   onSpaceSelect,
   selectedTag,
   onClearSelectedTag,
+  pinnedProject,
+  onClearPinnedProject,
   showDebugFab = true,
   showExpertCapability = false,
   draftKey,
@@ -363,7 +381,9 @@ const ChatInputUnifiedImpl: React.FC<
     useState<boolean>(false);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
   // 工作目录浏览弹窗（env-bar「打开电脑文件夹」入口）
-  const [workspaceDirPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
+  const [workspacePathPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
+  // 项目上框图标（可能为 /api/f/ 受保护地址，走鉴权 fetch + blob）
+  const pinnedProjectIcon = useAuthProtectedImageSrc(pinnedProject?.icon);
   // 推荐标签 pill 实测宽度：编辑器 inlinePrefixWidth 让行首文本绕开标签
   const selectedTagRef = useRef<HTMLDivElement>(null);
   const [selectedTagWidth, setSelectedTagWidth] = useState<number>(0);
@@ -1465,6 +1485,8 @@ const ChatInputUnifiedImpl: React.FC<
                     {prefix}
                     {(isTaskAgentActive ||
                       agentType === AgentTypeEnum.TaskAgent) &&
+                      // 项目上框期间沙箱由项目隐含，隐藏电脑选择器
+                      !pinnedProject &&
                       !readonly && (
                         <ComputerTypeSelector
                           value={
@@ -1480,7 +1502,7 @@ const ChatInputUnifiedImpl: React.FC<
                           onChange={(id: string) => {
                             onComputerSelect?.(id);
                             // 切回云电脑时工作目录失效，一并清空（仅个人电脑生效）
-                            if (id === '-1' && workspaceDir) {
+                            if (id === '-1' && workspacePath) {
                               onWorkspaceDirChange?.('');
                             }
                           }}
@@ -1512,14 +1534,67 @@ const ChatInputUnifiedImpl: React.FC<
                   </VoiceFooter.Right>
                 </footer>
                 {/**
+                 * 项目上框栏（项目列表「+ 新建会话」）：与工作目录栏同槽位同基样式
+                 * （workspace-dir-bar 灰底贴边栏），直接展示项目名并可移除
+                 * （清空按钮贴文案并排、hover 整行出现；项目类型不作徽标展示，
+                 * 降级为整行 title 悬停提示）；存在期间工作区由项目隐含，
+                 * 不渲染工作目录栏与电脑选择器。
+                 */}
+                {pinnedProject && onClearPinnedProject && (
+                  <div
+                    className={cx(
+                      styles['workspace-dir-bar'],
+                      styles['pinned-project-bar'],
+                    )}
+                    title={
+                      pinnedProject.projectType ===
+                      AgentComponentTypeEnum.UserApp
+                        ? t('PC.Pages.Home.pinnedProject.userAppBadge')
+                        : t('PC.Pages.Home.pinnedProject.normalProjectBadge')
+                    }
+                  >
+                    {pinnedProjectIcon.displaySrc ? (
+                      <img
+                        src={pinnedProjectIcon.displaySrc}
+                        alt=""
+                        className={cx(styles['pinned-project-icon'])}
+                      />
+                    ) : (
+                      <FolderOutlined
+                        className={cx(styles['pinned-project-icon'])}
+                      />
+                    )}
+                    <span
+                      className={cx(
+                        styles['workspace-dir-text'],
+                        styles['pinned-project-name'],
+                      )}
+                      title={pinnedProject.name}
+                    >
+                      {pinnedProject.name}
+                    </span>
+                    <Tooltip title={t('PC.Pages.Home.pinnedProject.remove')}>
+                      <button
+                        type="button"
+                        className={cx(styles['pinned-project-remove'])}
+                        aria-label={t('PC.Pages.Home.pinnedProject.remove')}
+                        onClick={onClearPinnedProject}
+                      >
+                        <CloseOutlined />
+                      </button>
+                    </Tooltip>
+                  </div>
+                )}
+                {/**
                  * 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，
                  * 仅用户自选个人电脑时展示（智能体绑定电脑 agentSandboxId 固定、
-                 * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspaceDir）。
-                 * 「默认工作目录」=不传 workspaceDir；「打开电脑文件夹」=可视化浏览弹窗。
+                 * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspacePath）。
+                 * 「默认工作目录」=不传 workspacePath；「打开电脑文件夹」=可视化浏览弹窗。
                  */}
                 {(isTaskAgentActive || agentType === AgentTypeEnum.TaskAgent) &&
                   !readonly &&
                   !fixedSelection &&
+                  !pinnedProject &&
                   !disablePersonalComputer &&
                   selectedComputerId &&
                   selectedComputerId !== '-1' &&
@@ -1530,7 +1605,7 @@ const ChatInputUnifiedImpl: React.FC<
                         menu={{
                           selectable: true,
                           selectedKeys: [
-                            workspaceDir ? 'pick-folder' : 'default',
+                            workspacePath ? 'pick-folder' : 'default',
                           ],
                           items: [
                             {
@@ -1558,11 +1633,11 @@ const ChatInputUnifiedImpl: React.FC<
                         <button
                           type="button"
                           className={cx(styles['workspace-dir-trigger'])}
-                          title={workspaceDir || undefined}
+                          title={workspacePath || undefined}
                         >
                           <FolderOutlined />
                           <span className={cx(styles['workspace-dir-text'])}>
-                            {workspaceDir ||
+                            {workspacePath ||
                               t('PC.Components.WorkspaceDir.defaultDir')}
                           </span>
                           <DownOutlined
@@ -1572,7 +1647,7 @@ const ChatInputUnifiedImpl: React.FC<
                       </Dropdown>
                       <WorkspaceDirPickerModal
                         sandboxId={selectedComputerId}
-                        open={workspaceDirPickerOpen}
+                        open={workspacePathPickerOpen}
                         onCancel={() => setWorkspaceDirPickerOpen(false)}
                         onConfirm={(dir) => {
                           setWorkspaceDirPickerOpen(false);
