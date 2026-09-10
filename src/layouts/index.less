@@ -46,6 +46,12 @@
   transition: all 0.3s ease;
   position: relative;
 
+  // 侧栏整条收起后（壳顶栏折叠/展开按钮）：左侧补出与右/下一致的边距，
+  // 保证内容卡片四周留白对称（展开态左侧贴侧栏列，margin-left 恒为 0）
+  &.xagi-layout-collapsed {
+    margin-left: @marginXs;
+  }
+
   // 风格2的适配
   &.xagi-nav-style2 {
     margin: 0;
