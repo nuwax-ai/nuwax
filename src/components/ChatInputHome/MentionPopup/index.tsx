@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PopupList from './PopupList';
 import type {
   FileMentionItem,
@@ -11,11 +11,26 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
   (props, ref) => {
     const { visible, onFetchMentionFiles, searchText = '' } = props;
     const [files, setFiles] = useState<FileMentionItem[]>([]);
-    const [loading, setLoading] = useState(false);
+    // 初始即加载中：首次打开的渲染周期里展示 loading 而非空列表
+    const [loading, setLoading] = useState(true);
+    /**
+     * loading 的同步镜像：打开弹层的那个渲染周期里，取数 effect 与自动收起
+     * effect 同 commit 执行，状态更新对后者不可见——自动收起必须读 ref 才能拿到
+     * 同步置位的「加载中」，否则弹层刚打开就被空列表逻辑收起（首次 @ 无效、
+     * 第二次起因取数已完成才正常的根因）
+     */
+    const loadingRef = useRef(true);
     const [error, setError] = useState(false);
     useEffect(() => {
-      if (!visible || !onFetchMentionFiles) return;
+      if (!visible || !onFetchMentionFiles) {
+        // 无数据源防御：避免停留在永久的加载态
+        loadingRef.current = false;
+        setLoading(false);
+        return;
+      }
       let cancelled = false;
+      // 同步置位，同 commit 内的自动收起 effect 可见
+      loadingRef.current = true;
       setFiles([]);
       setLoading(true);
       setError(false);
@@ -28,16 +43,19 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
           if (!cancelled) setError(true);
         })
         .finally(() => {
-          if (!cancelled) setLoading(false);
+          if (!cancelled) {
+            loadingRef.current = false;
+            setLoading(false);
+          }
         });
       return () => {
         cancelled = true;
       };
     }, [visible, onFetchMentionFiles]);
     // 没有可提及的文件时不弹：打开且无搜索词时列表加载完为空，直接收起
-    // （搜索态无结果保留空态提示，不打断用户输入）
+    // （搜索态无结果保留空态提示，不打断用户输入；加载中判定读 loadingRef）
     useEffect(() => {
-      if (!visible || loading || error || searchText) return;
+      if (!visible || loadingRef.current || error || searchText) return;
       if (files.length === 0) {
         props.onClose();
       }

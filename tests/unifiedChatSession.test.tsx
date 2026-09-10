@@ -46,12 +46,9 @@ vi.mock(
 );
 
 vi.mock('@/components/ChatInputHome', () => ({ default: () => null }));
-vi.mock(
-  '@/components/business-component/UnifiedChatSession/components/ChatInputHomeIndependent',
-  () => ({
-    default: () => <div data-testid="chat-input" />,
-  }),
-);
+vi.mock('@/components/business-component/ChatInputUnified', () => ({
+  default: () => <div data-testid="chat-input" />,
+}));
 vi.mock('@/components/ChatView', () => ({
   default: ({ messageInfo }: { messageInfo: MessageInfo }) => (
     <div
