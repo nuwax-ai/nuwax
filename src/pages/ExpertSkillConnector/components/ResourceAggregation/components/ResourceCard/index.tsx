@@ -7,7 +7,8 @@
  * 透传跳转 /home 首页）、技能卡片浮现「选择」按钮及右侧 pin 图标按钮
  * （点击逻辑暂未接入，仅展示）；
  * 连接器卡片标题下方展示 分类 + 连接状态（no_auth 无连接概念不展示），
- * hover 右上角浮现「连接/断开」按钮（点击逻辑暂未接入，仅展示）。
+ * hover 右上角浮现「连接/断开」按钮：已连接 → 断开（DELETE 连接后经
+ * onDisconnect 回调更新卡片连接状态）；未连接 → 连接（逻辑暂未接入，仅展示）。
  */
 
 import agentImage from '@/assets/images/agent_image.png';
@@ -50,6 +51,10 @@ interface ResourceCardProps {
   showStats?: boolean;
   /** 是否按连接器卡片展示（分类 + 连接状态行、hover 连接/断开按钮） */
   showConnect?: boolean;
+  /** 断开按钮点击回调（携带卡片条目；仅连接器卡片且已连接时生效） */
+  onDisconnect?: (item: ResourceItem) => void;
+  /** 断开请求中（按钮 loading 防重复点击） */
+  disconnecting?: boolean;
 }
 
 const ResourceCard: React.FC<ResourceCardProps> = ({
@@ -60,6 +65,8 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
   showUse,
   showStats = true,
   showConnect,
+  onDisconnect,
+  disconnecting,
 }) => {
   const { name, description, icon, publishUser, stats } = item;
   /**
@@ -173,14 +180,20 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
           )}
           {showConnectState && (
             <div className={cx(styles['action-box'])}>
-              {/* 已连接 → 断开（红色）；未连接 → 连接。逻辑暂未接入，仅展示 */}
+              {/* 已连接 → 断开（红色，DELETE 连接后更新卡片状态）；
+                  未连接 → 连接（逻辑暂未接入，仅展示） */}
               <Button
                 type="primary"
                 size="small"
                 danger={item.connected}
+                loading={item.connected && disconnecting}
                 onClick={(e) => {
                   e.stopPropagation();
-                  // TODO 连接/断开逻辑暂未接入，按钮仅展示
+                  if (!item.connected) {
+                    // TODO 未连接 → 连接逻辑暂未接入，按钮仅展示
+                    return;
+                  }
+                  onDisconnect?.(item);
                 }}
               >
                 {item.connected ? '断开' : '连接'}

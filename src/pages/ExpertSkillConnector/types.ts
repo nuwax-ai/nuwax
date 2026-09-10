@@ -54,6 +54,8 @@ export interface ResourceItem {
   publishUser?: CreatorInfo;
   /** 标签 */
   tags?: string[];
+  /** 连接器服务标识（连接器特有：断开连接按 service 匹配用户连接 id） */
+  service?: string;
   /** 连接状态（连接器特有：卡片标题下方展示已连接/未连接） */
   connected?: boolean;
   /**

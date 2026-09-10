@@ -6,10 +6,15 @@
 
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
 import { dict } from '@/services/i18nRuntime';
-import { Empty } from 'antd';
+import {
+  apiConnectorConnectionDelete,
+  apiConnectorConnectionList,
+} from '@/services/systemManage';
+import { Empty, message } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -100,7 +105,7 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   }, [isSpaceScopedTeam, displayCategories, category]);
 
   // 归一化列表数据（团队维度 tab 即空间选择，分类过滤不适用，按 spaceId 请求）
-  const { list, loading, hasMore, loadMore } = useResourceList({
+  const { list, loading, hasMore, loadMore, updateItem } = useResourceList({
     resourceType,
     source,
     category: isSpaceScopedTeam ? '' : category,
@@ -147,6 +152,57 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
       select({ skillId: item.skillId, name: item.name, icon: item.icon });
     },
     [select],
+  );
+
+  /** 连接器卡片「断开」请求中的条目 id（对应卡片按钮 loading，防重复点击） */
+  const [disconnectingIds, setDisconnectingIds] = useState<string[]>([]);
+
+  /**
+   * 连接器卡片「断开」：已连接状态下断开用户连接并就地更新卡片状态。
+   * 连接 id ≠ 连接器 id：先 GET /api/connector/connections 按 service 匹配
+   * （团队空间维度带 spaceId，系统广场不带，与连接器详情抽屉同口径），
+   * 再 DELETE /api/connector/connections/{id}；成功后本地 updateItem 置
+   * connected: false（不整页重拉，保留滚动加载位置）。
+   * 业务/网络错误由全局 errorHandler 统一提示，此处不重复弹错
+   */
+  const handleDisconnect = useCallback(
+    async (item: ResourceItem) => {
+      if (!item.service) {
+        // 数据异常兜底：缺 service 无法匹配连接 id（正常数据两个维度均有值）
+        console.warn(
+          '[ExpertSkillConnector] disconnect skipped: missing service, item =',
+          item.id,
+        );
+        return;
+      }
+      if (disconnectingIds.includes(item.id)) return;
+      setDisconnectingIds((prev) => [...prev, item.id]);
+      try {
+        const connRes = await apiConnectorConnectionList({
+          spaceId: source === 'team' ? listSpaceId : undefined,
+        });
+        const connections = Array.isArray(connRes?.data) ? connRes.data : [];
+        const matched = connections.find(
+          (conn) => (conn.providerService ?? conn.service) === item.service,
+        );
+        if (!matched) {
+          // 与连接器详情抽屉同口径：列表无匹配连接时无法寻址断开
+          message.error('连接 id 缺失，无法断开连接');
+          return;
+        }
+        const res = await apiConnectorConnectionDelete(matched.id);
+        if (res?.code === SUCCESS_CODE) {
+          updateItem(item.id, { connected: false });
+          message.success('已断开连接');
+        }
+        // 非成功码理论上会被全局拦截器 reject，不会 resolve 到这里
+      } catch {
+        // 业务/网络错误：全局 errorHandler 已提示后端报错，此处不再重复弹错
+      } finally {
+        setDisconnectingIds((prev) => prev.filter((id) => id !== item.id));
+      }
+    },
+    [disconnectingIds, source, listSpaceId, updateItem],
   );
 
   // 筛选状态同步 URL（replace 不产生历史记录）
@@ -257,6 +313,14 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   }
                   onSelect={
                     resourceType === 'skill' ? handleSelectSkill : undefined
+                  }
+                  // 连接器卡片「断开」：仅已连接状态生效，未连接的「连接」按钮保持占位
+                  onDisconnect={
+                    resourceType === 'connector' ? handleDisconnect : undefined
+                  }
+                  disconnecting={
+                    resourceType === 'connector' &&
+                    disconnectingIds.includes(item.id)
                   }
                   showUse={resourceType === 'skill'}
                   // 底部统计行仅专家卡片展示（技能本就无统计；

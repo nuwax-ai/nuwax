@@ -93,6 +93,8 @@ const mapConnectorItem = (
   idPrefix: string,
 ): ResourceItem => ({
   id: `${idPrefix}-${item.service || item.id}`,
+  // 连接器 service 标识：断开连接时按 service 匹配用户连接 id 用
+  service: item.service,
   name: item.displayName || item.service,
   description: item.description,
   icon: item.icon,
@@ -388,7 +390,22 @@ const useResourceList = ({
     loadRef.current(false);
   }, []);
 
-  return { list, loading, hasMore, loadMore };
+  /**
+   * 就地更新单条卡片（断开连接等本地状态变更；不动筛选与分页，
+   * 避免整页重拉丢失滚动加载位置）
+   */
+  const updateItem = useCallback((id: string, patch: Partial<ResourceItem>) => {
+    const apply = (item: ResourceItem) =>
+      item.id === id ? { ...item, ...patch } : item;
+    setList((prev) => prev.map(apply));
+    // 客户端筛选模式的两层缓存同步更新，避免重新筛选后旧状态复活
+    if (rawListRef.current) {
+      rawListRef.current = rawListRef.current.map(apply);
+    }
+    filteredListRef.current = filteredListRef.current.map(apply);
+  }, []);
+
+  return { list, loading, hasMore, loadMore, updateItem };
 };
 
 export default useResourceList;

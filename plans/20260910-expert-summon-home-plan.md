@@ -43,6 +43,7 @@
 
 - 2026-09-10:home 页(Home/index.tsx、ChatInputHome 组件与样式、ChatInputProps、i18n key)改动**全部撤销**——home 页由另一位同事负责开发。本计划收敛为**专家页写入侧**:召唤按钮把 `SummonedExpertInfo` 写入 `pageHandoffContext`(key `homeSummonedExpert`)并跳 `/home`;home 侧同事通过 `useSummonExpertHandoff().consume()` 接入(挂载一次性消费,详见「Home 侧接入指引」)。
 - 2026-09-10(追加):**技能「选择」接入同款透传**——`ResourceItem` 补 `skillId`(系统广场=发布项 targetId,团队空间=技能 id);新建 `src/hooks/useSelectSkillHandoff.ts`(协议类型 `SelectedSkillInfo`,key `homeSelectedSkill`,与专家透传相互独立);ResourceCard 新增可选 `onSelect` 并接通技能「选择」按钮(原 TODO 移除);聚合层仅 skill 类型接线。pin 图标按钮与连接器「连接/断开」仍为 TODO。
+- 2026-09-10(追加 2):**连接器卡片「断开」接通**(「连接」支路仍为 TODO)——`ResourceItem` 补 `service`;已连接点「断开」先 `GET /api/connector/connections` 按 service 匹配连接 id(团队空间带 spaceId、系统广场不带,与详情抽屉同口径)再 `DELETE /api/connector/connections/{id}`,成功后 `useResourceList` 新增的 `updateItem` 就地置 `connected: false`(不动筛选/分页);错误口径与抽屉一致(全局 errorHandler 提示,连接 id 缺失才主动弹错)。
 
 ## Home 侧接入指引（交接给 home 页开发同事）
 
