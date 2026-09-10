@@ -20,7 +20,7 @@ export type ResourceTypeEnum = 'expert' | 'skill' | 'connector';
 export type ResourceSourceEnum = 'system' | 'team';
 
 /** 卡片统计项图标类型 */
-export type ResourceStatType = 'user' | 'link' | 'star' | 'tool';
+export type ResourceStatType = 'user' | 'link' | 'star';
 
 /** 卡片统计项 */
 export interface ResourceStat {
@@ -38,12 +38,16 @@ export interface ResourceItem {
   description?: string;
   /** 图标（URL，为空时回退默认图） */
   icon?: string;
-  /** 分类（用于团队空间接口的客户端筛选，卡片上不展示） */
+  /** 分类（用于团队空间接口的客户端筛选；连接器卡片标题下方展示） */
   category?: string;
   /** 发布者信息（系统广场已发布数据携带，卡片标题下方展示头像与昵称） */
   publishUser?: CreatorInfo;
   /** 标签 */
   tags?: string[];
+  /** 连接状态（连接器特有：卡片标题下方展示已连接/未连接） */
+  connected?: boolean;
+  /** 认证方式（连接器特有：no_auth 无连接概念，不展示连接状态与连接按钮） */
+  authType?: string;
   /** 底部统计项 */
   stats?: ResourceStat[];
 }

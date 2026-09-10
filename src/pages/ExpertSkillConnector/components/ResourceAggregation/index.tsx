@@ -185,8 +185,11 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   item={item}
                   showSummon={resourceType === 'expert'}
                   showUse={resourceType === 'skill'}
-                  // 技能卡片不展示底部统计行（使用用户数等）
-                  showStats={resourceType !== 'skill'}
+                  // 底部统计行仅专家卡片展示（技能本就无统计；
+                  // 连接器工具数统计已下线）
+                  showStats={resourceType === 'expert'}
+                  // 连接器卡片：标题下方展示分类 + 连接状态，hover 右上角连接/断开按钮
+                  showConnect={resourceType === 'connector'}
                 />
               ))}
             </div>

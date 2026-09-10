@@ -78,7 +78,11 @@ const mapPublishedItem = (
   stats: mapPublishedStats(item.statistics),
 });
 
-/** 连接器提供方归一化 */
+/**
+ * 连接器提供方归一化
+ * 卡片不展示工具数统计（需求下线）；connected / authType 驱动
+ * 标题下方的连接状态行与 hover 右上角的 连接/断开 按钮
+ */
 const mapConnectorItem = (
   item: ConnectorProviderInfo,
   idPrefix: string,
@@ -89,10 +93,8 @@ const mapConnectorItem = (
   icon: item.icon,
   category: item.category || undefined,
   tags: item.tags,
-  stats: [
-    // 工具/动作数量
-    { type: 'tool', value: item.actionCount ?? 0 },
-  ],
+  connected: item.connected,
+  authType: item.authType,
 });
 
 /** 已发布接口响应提取（Page 分页结构） */
