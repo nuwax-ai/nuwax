@@ -1,81 +1,87 @@
-@import '@/styles/color';
+/**
+ * 资源卡片样式（容器样式复用 CardWrapper，此处只补充 footer 统计行与召唤按钮）
+ */
 @import '@/styles/token';
 
-.card {
-  display: flex;
-  flex-direction: column;
-  padding: 14px 16px;
-  border: 1px solid @WHITE14;
-  border-radius: 10px;
-  background-color: #fff;
-  cursor: default;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+.card-wrapper {
+  position: relative;
+
+  // 无统计行时收紧卡片高度（去掉 footer 行 24px + 行间距 16px）
+  &.card-compact {
+    height: 130px;
+  }
 
   &:hover {
-    border-color: @WHITE11;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 6%);
+    .action-box {
+      opacity: 1;
+      z-index: 1;
+    }
   }
 
-  .card-head {
-    gap: 10px;
+  .footer {
+    height: 24px;
+
+    .count-box {
+      gap: 16px;
+      flex: 1;
+
+      .text {
+        display: flex;
+        align-items: center;
+        font-size: @fontSizeSm;
+        color: #828894;
+        gap: 4px;
+      }
+    }
   }
 
-  .card-icon {
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    font-size: 36px;
+  // 操作按钮（召唤/立即使用/连接/断开）：hover 时卡片右上角浮现（点击逻辑暂未接入，仅展示）
+  .action-box {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    z-index: -1;
   }
 
-  .card-avatar {
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    color: #fff;
-    font-size: @fontSizeLg;
-    font-weight: 600;
-  }
-
-  .card-name {
-    font-size: @fontSize;
-    font-weight: 600;
-    color: @BLANK04;
-  }
-
-  .card-category {
-    align-self: flex-start;
-    margin-top: 8px;
-    padding: 1px 8px;
-    border-radius: 4px;
-    background-color: @WHITE08;
-    font-size: @fontSizeSm;
-    color: @GRAY05;
-  }
-
-  .card-desc {
-    margin-top: 8px;
-    min-height: 40px;
-    font-size: @fontSizeSm;
-    line-height: 20px;
-    color: @GRAY04;
-    // 两行省略
-    display: box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+  // 连接器卡片：标题下方 分类 + 连接状态行（颜色对齐连接器详情抽屉）
+  .connect-info {
+    gap: 8px;
     overflow: hidden;
-  }
 
-  .card-stats {
-    gap: 16px;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid @WHITE04;
-  }
+    .category-text {
+      color: #828894;
+      font-size: @fontSizeSm;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-  .card-stat {
-    gap: 4px;
-    font-size: @fontSizeSm;
-    color: @GRAY05;
+    .connect-status {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 4px;
+      font-size: @fontSizeSm;
+      white-space: nowrap;
+
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: currentcolor;
+      }
+
+      &.status-connected {
+        color: #52c41a;
+      }
+
+      &.status-disconnected {
+        color: #8a857c;
+      }
+    }
   }
 }

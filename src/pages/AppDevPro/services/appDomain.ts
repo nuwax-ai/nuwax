@@ -1,7 +1,6 @@
 import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
-import { UserAppDbEnvEnum } from './appDb';
 
 /** 应用域名类型 */
 export enum UserAppDomainTypeEnum {
@@ -57,25 +56,6 @@ export function normalizeUserAppPreviewUrl(domain?: string): string {
     return trimmed;
   }
   return `https://${trimmed}`;
-}
-
-/**
- * 按当前环境取平台默认预览地址（开发 / 线上）。
- *
- * @param domains 应用绑定的域名列表
- * @param env 当前环境
- * @returns 完整预览 URL，无对应域名时返回空字符串
- */
-export function getUserAppPreviewUrl(
-  domains: UserAppDomainInfo[],
-  env: UserAppDbEnvEnum,
-): string {
-  const domainType =
-    env === UserAppDbEnvEnum.Prod
-      ? UserAppDomainTypeEnum.Prod
-      : UserAppDomainTypeEnum.Dev;
-  const matched = domains.find((item) => item.domainType === domainType);
-  return normalizeUserAppPreviewUrl(matched?.domain);
 }
 
 /** 查询应用绑定的域名列表 */

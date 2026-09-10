@@ -87,13 +87,6 @@ interface Window {
         path: string,
       ) => Promise<{ success: boolean; error?: string }>;
     };
-    /** 宿主原生目录选择器：仅返回所选绝对路径，文件数据面走 file-server（customTargetDir）。 */
-    localFiles?: {
-      pickDirectory?: () => Promise<{
-        canceled: boolean;
-        paths: string[];
-      }>;
-    };
     // nuwaclaw 宿主→nuwax 入站命令通道（contextBridge 注册回调；host 触发时 cb 在 guest 上下文执行）
     events?: {
       /** 注册/注销宿主命令回调（传 null 注销）。 */
@@ -110,6 +103,11 @@ interface Window {
       setSecondMenuAvailable?: (available: boolean) => void;
       /** 同步二级菜单真实收起态给壳（壳工具栏 icon 以此为准，修 reload 后失同步）。 */
       setSecondMenuCollapsed?: (collapsed: boolean) => void;
+    };
+    // nuwaclaw 客户端宿主注入：宿主身份只读信息（host→guest，构建期注入非 IPC）
+    host?: {
+      /** 宿主产品标识：nuwaclaw（社区版）/ nuwawork（商业版，NuwaWork）。 */
+      getProduct?: () => string;
     };
   };
 }

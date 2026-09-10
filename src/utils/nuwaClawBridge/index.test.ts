@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   auth,
+  host,
   isImmersiveShell,
   isMac,
   isNuwaClaw,
@@ -78,6 +79,47 @@ describe('nuwaClawHost（统一对外接入层）', () => {
       delete (window as any).NuwaClawBridge;
       window.history.replaceState(null, '', '/home?_shell=1');
       expect(isImmersiveShell()).toBe(false);
+    });
+  });
+
+  describe('host（宿主产品身份，可选消费）', () => {
+    it('商业宿主 host.getProduct → nuwawork（聚合对象一致）', () => {
+      (window as any).NuwaClawBridge = {
+        auth: {},
+        host: { getProduct: () => 'nuwawork' },
+      };
+      expect(host.getProduct()).toBe('nuwawork');
+      expect(nuwaClawHost.host.getProduct()).toBe('nuwawork');
+    });
+    it('社区宿主 → nuwaclaw', () => {
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwaclaw' },
+      };
+      expect(host.getProduct()).toBe('nuwaclaw');
+    });
+    it('浏览器（无桥）→ null', () => {
+      delete (window as any).NuwaClawBridge;
+      expect(host.getProduct()).toBeNull();
+    });
+    it('旧宿主桥无 host 命名空间 → null（向后兼容）', () => {
+      (window as any).NuwaClawBridge = { auth: {}, native: {} };
+      expect(host.getProduct()).toBeNull();
+    });
+    it('返回非契约值 → null（不透传未知标识）', () => {
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwa-work' },
+      };
+      expect(host.getProduct()).toBeNull();
+    });
+    it('getProduct 抛错 → null（降级不抛出）', () => {
+      (window as any).NuwaClawBridge = {
+        host: {
+          getProduct: () => {
+            throw new Error('boom');
+          },
+        },
+      };
+      expect(host.getProduct()).toBeNull();
     });
   });
 

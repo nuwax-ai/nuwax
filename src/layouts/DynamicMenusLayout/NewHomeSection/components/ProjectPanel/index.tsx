@@ -1,17 +1,17 @@
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
+  apiAgentConversationDelete,
+  apiAgentConversationUpdate,
+} from '@/services/agentConfig';
+import { dict } from '@/services/i18nRuntime';
+import {
   apiUserAppDelete,
   apiUserAppUpdate,
   apiUserProjectDelete,
   apiUserProjectTabPageQuery,
   apiUserProjectUpdate,
-} from '@/pages/AppDevPro/services/appDevPro';
-import {
-  apiAgentConversationDelete,
-  apiAgentConversationUpdate,
-} from '@/services/agentConfig';
-import { dict } from '@/services/i18nRuntime';
+} from '@/services/userProjectApp';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
@@ -28,7 +28,7 @@ import {
   StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
-import { Dropdown, Input, message, Modal, Tooltip } from 'antd';
+import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import {
   forwardRef,
@@ -91,6 +91,8 @@ const ProjectPanel = forwardRef<
   const spaceId = Number(spaceIdParam) || undefined;
 
   const [projects, setProjects] = useState<ProjectItem[]>([]);
+  // 空态仅在接口返回后展示：加载中先渲染 Spin，避免一进来就闪「暂无项目」
+  const [loading, setLoading] = useState(true);
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(
     () => new Set(),
   );
@@ -147,6 +149,8 @@ const ProjectPanel = forwardRef<
         }
       } catch {
         // 忽略:保持空列表
+      } finally {
+        setLoading(false);
       }
     })();
     return () => {
@@ -490,6 +494,18 @@ const ProjectPanel = forwardRef<
       </button>
     </Tooltip>
   );
+
+  if (loading) {
+    return (
+      <div
+        className={cx(styles['project-panel'], { [styles.compact]: compact })}
+      >
+        <div className={cx(styles['project-loading'])}>
+          <Spin size="small" />
+        </div>
+      </div>
+    );
+  }
 
   if (projects.length === 0) {
     return (

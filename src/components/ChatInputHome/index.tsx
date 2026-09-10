@@ -115,6 +115,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       onComputerSelect,
       workspaceDir,
       onWorkspaceDirChange,
+      disablePersonalComputer = false,
       agentId,
       agentSandboxId,
       fixedSelection,
@@ -1213,6 +1214,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                             saveOnSelect={saveComputerOnSelect}
                             isPersonalComputer={isPersonalComputer}
                             readonly={readonly}
+                            cloudOnly={disablePersonalComputer}
                           />
                         )}
                       {allowOtherModel === DefaultSelectedEnum.Yes && (
@@ -1241,6 +1243,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                     agentType === AgentTypeEnum.TaskAgent) &&
                     !readonly &&
                     !fixedSelection &&
+                    !disablePersonalComputer &&
                     selectedComputerId &&
                     selectedComputerId !== '-1' &&
                     onWorkspaceDirChange && (
@@ -1293,8 +1296,8 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                           </button>
                         </Dropdown>
                         <WorkspaceDirPickerModal
-                          open={workspaceDirPickerOpen}
                           sandboxId={selectedComputerId}
+                          open={workspaceDirPickerOpen}
                           onCancel={() => setWorkspaceDirPickerOpen(false)}
                           onConfirm={(dir) => {
                             setWorkspaceDirPickerOpen(false);

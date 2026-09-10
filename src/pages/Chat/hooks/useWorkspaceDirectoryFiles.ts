@@ -23,10 +23,7 @@ function readStoredPath(storageKey: string): string {
   }
 }
 
-export function useWorkspaceDirectoryFiles(
-  conversationId: number | undefined,
-  active: boolean,
-) {
+export function useWorkspaceDirectoryFiles(conversationId: number | undefined) {
   const storageKey = `nuwax:workspace-files:${conversationId || ''}`;
   const [currentPath, setCurrentPath] = useState(() =>
     readStoredPath(storageKey),
@@ -44,7 +41,7 @@ export function useWorkspaceDirectoryFiles(
   }, [storageKey]);
 
   const refresh = useCallback(async () => {
-    if (!conversationId || !active) return;
+    if (!conversationId) return;
     const token = ++requestToken.current;
     setLoading(true);
     try {
@@ -79,15 +76,11 @@ export function useWorkspaceDirectoryFiles(
     } finally {
       if (requestToken.current === token) setLoading(false);
     }
-  }, [active, conversationId, currentPath]);
+  }, [conversationId, currentPath]);
 
   useEffect(() => {
-    if (!active) {
-      requestToken.current += 1;
-      return;
-    }
     void refresh();
-  }, [active, refresh]);
+  }, [refresh]);
 
   const navigate = useCallback(
     (path: string) => {

@@ -1,4 +1,3 @@
-import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
@@ -23,6 +22,7 @@ import type {
 } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { parseLogEntry } from '@/utils/devLogParser';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';
@@ -658,14 +658,48 @@ export const apiProjectCreate = async (data: {
   name?: string;
   programmingLanguage?: string;
   subType?: string;
-  /** 沙箱ID */
+  /** 沙箱ID（wiki：首页对话框创建全栈应用、常规项目时必传） */
   sandboxId?: number;
   /** 调试关联智能体ID（首页选中 agent 创建项目时传入） */
   devAgentId?: number;
+  /**
+   * 自定义工作目录（wiki #17）：仅个人电脑沙箱生效，非空才传。
+   * ⚠️ 后端尚未 ready（2026-09-10 与后端确认，sandboxId/devAgentId 已 ready）：
+   * 按「契约先行」惯例先发送，后端就绪即生效；当前多余字段应被后端忽略。
+   * 目录被占用的报错同样待后端 ready 后补错误码映射。
+   */
+  workspaceDir?: string;
 }): Promise<any> => {
   return request('/api/project/create', {
     method: 'POST',
-    data,
+    data: {
+      ...data,
+      workspaceDir: data.workspaceDir || undefined,
+    },
+  });
+};
+
+/**
+ * 创建常规项目（wiki 2026-09-10：常规项目 CRUD 换 /api/normal-project/*，
+ * 用于「项目管理」入口；首页对话框创建常规项目仍走 /api/project/create）。
+ * 返回体 id 字段名契约未细化，此处兼容 id / targetId 两种形态。
+ */
+export const apiNormalProjectCreate = async (data: {
+  spaceId: number;
+  name: string;
+  /** 个人电脑沙箱 ID；云电脑（默认分配）不传 */
+  sandboxId?: number;
+  /** 自定义工作目录（仅个人电脑），非空才传；被占用时后端报错 */
+  workspaceDir?: string;
+}): Promise<RequestResponse<{ id?: number; targetId?: number }>> => {
+  return request('/api/normal-project/create', {
+    method: 'POST',
+    data: {
+      spaceId: data.spaceId,
+      name: data.name,
+      sandboxId: data.sandboxId || undefined,
+      workspaceDir: data.workspaceDir || undefined,
+    },
   });
 };
 

@@ -26,11 +26,9 @@ html.nuwaclaw-shell {
     height: 100%;
   }
 
-  /* 工作流编辑器 v1/v3 的 fixed 返栏（.fold-header-style 锚定视口，页根
-   * padding 推不动它）——top 同步下移与内容对齐。v1/v3 共用此类，一处收口。 */
-  .nuwaclaw-shell-page .fold-header-style {
-    top: var(--nuwaclaw-shell-toolbar, 0);
-  }
+  /* 工作流编辑器 v1/v3 顶部栏（.fold-header-style）已由 fixed 改为 absolute
+   * 锚定 #container：#container 处于 inner（padding 之下）内，top:0 天然落在
+   * 工具栏下方，无需再按 fixed 语义做 top 补偿（补偿会造成双重下移）。 */
 
   /* agent-dev 全屏预览（fixed 覆盖视口；module 类被哈希，避让层无法用全局
    * 选择器命中，故 JSX 在全屏态挂此稳定全局类）：top 下移工具栏高度，

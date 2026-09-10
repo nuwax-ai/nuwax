@@ -1,5 +1,5 @@
-import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { SvgIcon } from '@/components/base';
+import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { dict } from '@/services/i18nRuntime';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { ModelConfigInfo } from '@/types/interfaces/model';
@@ -88,6 +88,8 @@ export interface PreviewTabBarProps {
   onModelChange?: (modelId: number, modelName: string) => void | Promise<void>;
   /** 当前环境的应用预览地址（传入后在操作区前展示地址栏） */
   previewUrl?: string;
+  /** 地址栏回车后跳转预览 iframe */
+  onNavigatePreview?: (url: string) => void;
   /** 刷新应用预览 iframe */
   onRefreshPreview?: () => void;
   /** 启动当前环境预览服务 */
@@ -102,6 +104,12 @@ export interface PreviewTabBarProps {
   previewRuntimeRunning?: boolean;
   /** 停止进行中 */
   previewRuntimeStopping?: boolean;
+  /** 预览容器是否已就绪 */
+  previewRuntimeReady?: boolean;
+  /**
+   * 开发环境进行中任务锁定启动 / 重启（线上环境不传或 false）
+   */
+  previewDevActionLocked?: boolean;
 }
 
 interface TabItemFaceProps {
@@ -333,6 +341,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   agentConfigInfo,
   onModelChange,
   previewUrl,
+  onNavigatePreview,
   onRefreshPreview,
   onStartPreviewRuntime,
   onRestartPreviewRuntime,
@@ -340,6 +349,8 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   previewRuntimeBusy = false,
   previewRuntimeRunning = false,
   previewRuntimeStopping = false,
+  previewRuntimeReady = true,
+  previewDevActionLocked = false,
 }) => {
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
@@ -351,6 +362,39 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   const tabGutterRef = useRef<HTMLDivElement>(null);
   /** 标签元素映射引用 */
   const tabElMapRef = useRef<Map<string, HTMLDivElement>>(new Map());
+  /** 预览地址栏草稿（聚焦编辑时不随 iframe 地址覆盖） */
+  const [addressDraft, setAddressDraft] = useState(previewUrl || '');
+  /** 地址栏是否聚焦，用于展示跳转提示 */
+  const [addressFocused, setAddressFocused] = useState(false);
+
+  /** 外部预览地址变化且未在编辑时同步到输入框 */
+  useEffect(() => {
+    if (!addressFocused) {
+      setAddressDraft(previewUrl || '');
+    }
+  }, [previewUrl, addressFocused]);
+
+  /**
+   * 回车将地址栏内容交给父级解析并跳转预览。
+   *
+   * @param event 键盘事件
+   */
+  const handleAddressKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key !== 'Enter') {
+        return;
+      }
+      event.preventDefault();
+      onNavigatePreview?.(addressDraft);
+      event.currentTarget.blur();
+    },
+    [addressDraft, onNavigatePreview],
+  );
+
+  /** 失焦后由 previewUrl 同步回填，避免与回车跳转抢状态 */
+  const handleAddressBlur = useCallback(() => {
+    setAddressFocused(false);
+  }, []);
 
   /** 拖拽传感器 */
   const tabSortSensors = useSensors(
@@ -714,57 +758,117 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
         </div>
       </div>
 
-        {/* 应用预览：启动 / 重启 / 停止 */}
-        {activeTabId === getToolTabId('preview') && onStartPreviewRuntime && (
-          <div className={cx(styles['preview-runtime-actions'])}>
-            <Tooltip title={dict('PC.Pages.AppDevPro.startService')}>
+      {/* 应用预览：启动 / 重启 / 停止 */}
+      {activeTabId === getToolTabId('preview') && onStartPreviewRuntime && (
+        <div className={cx(styles['preview-runtime-actions'])}>
+          <Tooltip
+            title={
+              previewDevActionLocked
+                ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                : dict('PC.Pages.AppDevPro.startService')
+            }
+          >
+            <span className={cx(styles['preview-runtime-btn-wrap'])}>
               <button
                 type="button"
                 className={cx(styles['preview-runtime-btn'])}
-                aria-label={dict('PC.Pages.AppDevPro.startService')}
-                disabled={previewRuntimeBusy || previewRuntimeRunning}
+                aria-label={
+                  previewDevActionLocked
+                    ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                    : dict('PC.Pages.AppDevPro.startService')
+                }
+                disabled={
+                  !previewRuntimeReady ||
+                  previewDevActionLocked ||
+                  previewRuntimeBusy ||
+                  previewRuntimeRunning
+                }
                 onClick={onStartPreviewRuntime}
               >
                 <CaretRightOutlined />
               </button>
-            </Tooltip>
-            <Tooltip title={dict('PC.Pages.AppDevPro.restartService')}>
+            </span>
+          </Tooltip>
+          <Tooltip
+            title={
+              previewDevActionLocked
+                ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                : dict('PC.Pages.AppDevPro.restartService')
+            }
+          >
+            <span className={cx(styles['preview-runtime-btn-wrap'])}>
               <button
                 type="button"
                 className={cx(styles['preview-runtime-btn'])}
-                aria-label={dict('PC.Pages.AppDevPro.restartService')}
-                disabled={previewRuntimeBusy || previewRuntimeStopping}
+                aria-label={
+                  previewDevActionLocked
+                    ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                    : dict('PC.Pages.AppDevPro.restartService')
+                }
+                disabled={
+                  !previewRuntimeReady ||
+                  previewDevActionLocked ||
+                  previewRuntimeBusy ||
+                  previewRuntimeStopping
+                }
                 onClick={onRestartPreviewRuntime}
               >
                 <RedoOutlined />
               </button>
-            </Tooltip>
-            <Tooltip title={dict('PC.Pages.AppDevPro.stopService')}>
-              <button
-                type="button"
-                className={cx(styles['preview-runtime-btn'], styles['preview-runtime-btn-stop'])}
-                aria-label={dict('PC.Pages.AppDevPro.stopService')}
-                disabled={previewRuntimeStopping}
-                onClick={onStopPreviewRuntime}
-              >
-                <PoweroffOutlined />
-              </button>
-            </Tooltip>
-          </div>
-        )}
+            </span>
+          </Tooltip>
+          <Tooltip title={dict('PC.Pages.AppDevPro.stopService')}>
+            <button
+              type="button"
+              className={cx(
+                styles['preview-runtime-btn'],
+                styles['preview-runtime-btn-stop'],
+              )}
+              aria-label={dict('PC.Pages.AppDevPro.stopService')}
+              disabled={previewRuntimeStopping}
+              onClick={onStopPreviewRuntime}
+            >
+              <PoweroffOutlined />
+            </button>
+          </Tooltip>
+        </div>
+      )}
 
-        {/* 当前应用预览地址栏 */}
-        {previewUrl !== undefined && (
+      {/* 当前应用预览地址栏 */}
+      {previewUrl !== undefined && (
+        <Tooltip
+          title={
+            addressDraft
+              ? dict('PC.Pages.AppDevPro.previewJumpHint', addressDraft)
+              : ''
+          }
+          open={addressFocused && !!addressDraft}
+          placement="bottomLeft"
+          arrow={false}
+          classNames={{ root: 'preview-address-jump-tooltip' }}
+          getPopupContainer={() => document.body}
+        >
           <div className={cx(styles['preview-address-bar'])}>
             <LockOutlined className={cx(styles['preview-address-lock'])} />
-            <span
-              className={cx(styles['preview-address-url'], {
-                [styles['preview-address-url-empty']]: !previewUrl,
-              })}
-              title={previewUrl || undefined}
-            >
-              {previewUrl || dict('PC.Pages.AppDevPro.appPreviewEmpty')}
+            <span className={cx(styles['preview-address-input-wrap'])}>
+              <input
+                className={cx(styles['preview-address-input'], {
+                  [styles['preview-address-input-empty']]: !addressDraft,
+                })}
+                value={addressDraft}
+                placeholder={dict('PC.Pages.AppDevPro.appPreviewEmpty')}
+                disabled={!previewUrl}
+                spellCheck={false}
+                autoComplete="off"
+                aria-label={dict('PC.Pages.AppDevPro.appPreview')}
+                onFocus={() => setAddressFocused(true)}
+                onBlur={handleAddressBlur}
+                onChange={(event) => setAddressDraft(event.target.value)}
+                onKeyDown={handleAddressKeyDown}
+              />
             </span>
+
+            {/* 刷新预览 */}
             <Tooltip
               title={dict('PC.Pages.AppDevEditorHeaderRight.refreshPreview')}
             >
@@ -783,22 +887,23 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
               </span>
             </Tooltip>
           </div>
-        )}
+        </Tooltip>
+      )}
 
-        {/* 更多操作菜单 */}
-        <div className={cx(styles['tab-bar-actions'])}>
-          <PreviewTabModelSelect
-            originalModelConfigList={originalModelConfigList}
-            agentConfigInfo={agentConfigInfo}
-            onModelChange={onModelChange}
-          />
-          <MoreActionsMenu
-            onRestartServer={onRestartServer}
-            onRestartAgent={onRestartAgent}
-            onExportProject={onExportProject}
-            isCloudComputer={isCloudComputer}
-          />
-        </div>
+      {/* 更多操作菜单 */}
+      <div className={cx(styles['tab-bar-actions'])}>
+        <PreviewTabModelSelect
+          originalModelConfigList={originalModelConfigList}
+          agentConfigInfo={agentConfigInfo}
+          onModelChange={onModelChange}
+        />
+        <MoreActionsMenu
+          onRestartServer={onRestartServer}
+          onRestartAgent={onRestartAgent}
+          onExportProject={onExportProject}
+          isCloudComputer={isCloudComputer}
+        />
+      </div>
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}
       <PreviewTabContextMenu

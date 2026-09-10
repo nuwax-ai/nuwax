@@ -283,8 +283,15 @@ function XProTable<
           .x-pro-table.x-pro-table-hide-toolbar .ant-pro-table-list-toolbar-container {
             display: none !important;
           }
-          .x-pro-table .ant-table-thead > tr > th:first-child,
-          .x-pro-table .ant-table-tbody > tr > td:first-child {
+          /* 首列统一 24px 左内边距。两点注意：
+             1. 勾选列（rowSelection 自动前置）排除：antd 默认居中，强制 24px 会把
+                复选框挤向右侧且表头/表体错位；
+             2. 虚拟滚动的表体单元格是 div（.ant-table-row > .ant-table-cell），
+                tr > td 选择器匹配不到，需单独补一条，否则表头 24px、表体默认内边距，
+                首列文案与表头错位 */
+          .x-pro-table .ant-table-thead > tr > th:first-child:not(.ant-table-selection-column),
+          .x-pro-table .ant-table-tbody > tr > td:first-child:not(.ant-table-selection-column),
+          .x-pro-table .ant-table-tbody-virtual .ant-table-row > .ant-table-cell:first-child:not(.ant-table-selection-column) {
             padding-left: 24px !important;
           }
           .x-pro-table .ant-pro-table-list-toolbar-container {

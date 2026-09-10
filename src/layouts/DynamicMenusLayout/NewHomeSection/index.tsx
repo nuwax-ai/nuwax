@@ -22,6 +22,7 @@ import {
 } from '@/components/business-component/ConversationContextMenu/conversationLocalFlags';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
+import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
@@ -84,7 +85,10 @@ const NewHomeSection: React.FC<{
   const [localList, setLocalList] = useState<ConversationInfo[]>(
     componentCache.list || [],
   );
-  const [loading, setLoading] = useState(false);
+  // 空态仅在接口返回后展示：无缓存数据时初始即为加载中，避免首帧闪「暂无会话」
+  const [loading, setLoading] = useState(
+    () => !(componentCache.list && componentCache.list.length > 0),
+  );
   // 会话本地标记（置顶/归档/收藏过渡方案）：菜单 toggle 后经全局事件重读，驱动排序/过滤
   const [conversationFlags, setConversationFlags] = useState(() =>
     loadConversationFlags(),
@@ -111,6 +115,8 @@ const NewHomeSection: React.FC<{
   const [taskCollapsed, setTaskCollapsed] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // 滚动条仅滚动时显示：data-is-scrolling 属性由该 hook 维护，mirrorRef 同步既有触底加载逻辑
+  const scrollShowRef = useScrollbarScrollShow(1000, scrollContainerRef);
   const listInnerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
   const pageSizeRef = useRef(30);
@@ -240,8 +246,9 @@ const NewHomeSection: React.FC<{
     if (!initializedRef.current) {
       initializedRef.current = true;
       // 单栏双分组常驻任务列表；经典布局停留在项目 tab 时延后到切换加载
+      // silent 与初始 loading 严格互补：有缓存数据才静默刷新，否则走非静默让 loading 正常收敛
       if (isSidebarNavMode || activeTab === 'conversation') {
-        loadList(true, { silent: componentCache.list !== null });
+        loadList(true, { silent: !!componentCache.list?.length });
       }
       if (componentCache.list) {
         setTimeout(() => {
@@ -643,7 +650,7 @@ const NewHomeSection: React.FC<{
 
           {/* 滚动区：项目列表 + 任务分组头 + 任务列表（原型 scroll-area 同构） */}
           <div
-            ref={scrollContainerRef}
+            ref={scrollShowRef}
             className={cx(styles['conversation-list-wrapper'])}
           >
             <div
@@ -701,7 +708,7 @@ const NewHomeSection: React.FC<{
           </div>
 
           <div
-            ref={scrollContainerRef}
+            ref={scrollShowRef}
             className={cx(styles['conversation-list-wrapper'])}
           >
             {activeTab === 'project' ? (

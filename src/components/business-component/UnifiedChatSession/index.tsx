@@ -3,10 +3,10 @@ import {
   type AgentMode,
   useAgentInterventionLayer,
 } from '@/components/business-component/AgentIntervention';
+import ConversationStatus from '@/components/business-component/ConversationStatus';
 import MessageQueuePanel from '@/components/business-component/MessageQueue';
 import { registerOpenUiActionSender } from '@/components/business-component/OpenUiArtifactView/actionRegistry';
 import { buildOpenUiResumeMessage } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
-import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
 import classNames from 'classnames';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 

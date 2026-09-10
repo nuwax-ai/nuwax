@@ -1,12 +1,17 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { applyGeneratedIcon } from '@/utils/applyGeneratedIcon';
-import { fetchGeneratedMetadata } from '@/utils/generatedMetadata';
+import {
+  fetchGeneratedMetadata,
+  type GeneratedMetadata,
+} from '@/utils/generatedMetadata';
 import { useEffect, useRef } from 'react';
 import { history, useLocation } from 'umi';
 
 interface UseInitProjectMetadataProps {
   targetType: AgentComponentTypeEnum;
   targetId: number;
+  /** 自定义生成结果写入逻辑；未传时使用通用资源更新逻辑 */
+  applyMetadata?: (meta: GeneratedMetadata) => Promise<void>;
   onSuccess?: () => void;
 }
 
@@ -16,6 +21,7 @@ interface UseInitProjectMetadataProps {
 export const useInitProjectMetadata = ({
   targetType,
   targetId,
+  applyMetadata,
   onSuccess,
 }: UseInitProjectMetadataProps) => {
   const location = useLocation();
@@ -39,7 +45,11 @@ export const useInitProjectMetadata = ({
         try {
           const meta = await fetchGeneratedMetadata(prompt);
           if (meta) {
-            await applyGeneratedIcon(targetType, targetId, meta);
+            if (applyMetadata) {
+              await applyMetadata(meta);
+            } else {
+              await applyGeneratedIcon(targetType, targetId, meta);
+            }
             onSuccess?.();
           }
         } catch (error) {
@@ -52,5 +62,5 @@ export const useInitProjectMetadata = ({
 
       initMetadata();
     }
-  }, [targetType, targetId, location.state, onSuccess]);
+  }, [targetType, targetId, location.state, applyMetadata, onSuccess]);
 };

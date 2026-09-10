@@ -31,14 +31,44 @@ export interface StaticFileListResponse {
   recursive?: boolean;
 }
 
+/**
+ * 目录选择弹窗（wiki「选择目录/弹框选目录」）：GET /api/computer/fs/roots、
+ * GET /api/computer/fs/children，按绝对路径浏览本机目录，不锚定工作区、
+ * 不带会话上下文（file-server v1.4.3 fsBrowserUtils）。
+ */
+export interface FsRootItem {
+  // 展示名（如盘符 / 根名）
+  name: string;
+  // 绝对路径
+  path: string;
+  isDir: boolean;
+}
+
+export interface FsRootsResponse {
+  roots: FsRootItem[];
+  /** 用户主目录快捷入口（绝对路径），由前端并入根列表展示 */
+  home?: string;
+}
+
+export interface FsEntryItem {
+  name: string;
+  // 子项绝对路径（file-server 直接回传，前端无需自行拼接）
+  path: string;
+  isDir: boolean;
+  isSymlink?: boolean;
+}
+
+export interface FsChildrenResponse {
+  path: string;
+  entries: FsEntryItem[];
+}
+
 // 静态文件修改参数
 export interface IUpdateStaticFileParams {
   // 会话ID
   cId: number;
   // 文件列表
   files: UpdateFileInfo[];
-  // 目标目录（缺省为会话工作区；本地目录场景传打开目录的绝对路径）
-  customTargetDir?: string;
 }
 
 // 静态文件上传参数
@@ -59,8 +89,6 @@ export interface IUploadFilesParams {
   cId: number;
   // 文件路径列表
   filePaths: string[];
-  // 目标目录（缺省为会话工作区；本地目录场景传打开目录的绝对路径）
-  customTargetDir?: string;
 }
 
 // 容器信息

@@ -52,7 +52,7 @@
 
 | # | 功能 | 接口 | 后端 | 前端 | 证据（file:line） | 备注 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 18 | 开发阶段应用 url 代理 | `/api/userapp/proxy/app/dev/{appId}/{*path}` | 已完成 | ❌ | 全仓无引用 | 应用预览走**域名直连**：`appDomain.ts:69 getUserAppPreviewUrl`（按 Dev/Prod 拼默认域名）+ `AppDevPro/index.tsx:1376` iframe。代理通道与域名直连的分工待确认（三-待确认 ④） |
+| 18 | 开发阶段应用 url 代理 | `/api/userapp/proxy/app/dev/{appId}/{*path}` | 已完成 | ❌ | 全仓无引用 | 应用预览走**域名直连**：`appDomain.ts:69`（按 Dev/Prod 拼默认域名）+ `AppDevPro/index.tsx:1376` iframe。代理通道与域名直连的分工待确认（三-待确认 ④） |
 | 19 | 发布阶段应用 url 代理 | `/api/userapp/proxy/app/prod/{appId}/{*path}` | 已完成 | ❌ | 同上 | 同上 |
 | 20 | pg 开发数据库代理 | `/api/userapp/proxy/dbx/dev/{appId}/{*path}` | 已完成 | ✅ | `src/pages/AppDevPro/services/appDb.ts:74 getUserAppDbProxyUrl`（dev/prod 两态）；消费 `src/pages/AppDevPro/components/AppDevDatabasePanel/index.tsx:32` iframe（`AppDevPro/index.tsx:1382` 渲染） |  |
 | 21 | pg 线上数据库代理 | `/api/userapp/proxy/dbx/prod/{appId}/{*path}` | 已完成 | ✅ | 同 #20（同一 helper 按 env 切换） |  |

@@ -134,7 +134,7 @@ vi.mock(
   }),
 );
 
-vi.mock('@/pages/Chat/components/ConversationStatus', () => ({
+vi.mock('@/components/business-component/ConversationStatus', () => ({
   default: () => <div data-testid="conversation-status" />,
 }));
 

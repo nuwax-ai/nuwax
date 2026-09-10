@@ -3,6 +3,8 @@ import { t } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
 import type {
   EnsurePodResponse,
+  FsChildrenResponse,
+  FsRootsResponse,
   ISkillUploadFileParams,
   IUpdateStaticFileParams,
   IUploadFilesParams,
@@ -13,13 +15,12 @@ import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { request } from 'umi';
 
-// 查询文件列表（customTargetDir：工作区之外的目录，如用户打开的本地目录）
+// 查询文件列表
 export async function apiGetStaticFileList(
   cId: number,
   options?: {
     relativePath?: string;
     recursive?: boolean;
-    customTargetDir?: string;
   },
 ): Promise<RequestResponse<StaticFileListResponse>> {
   return request('/api/computer/static/file-list', {
@@ -30,9 +31,6 @@ export async function apiGetStaticFileList(
         ? {
             relativePath: options.relativePath || '',
             recursive: options.recursive ?? false,
-            ...(options.customTargetDir
-              ? { customTargetDir: options.customTargetDir }
-              : {}),
           }
         : {}),
     },
@@ -44,7 +42,6 @@ export async function apiGetStaticFileList(
 export interface ISearchFilesParams {
   cId: number;
   kw: string;
-  customTargetDir?: string;
   relativePath?: string;
   limit?: number;
   maxVisit?: number;
@@ -62,7 +59,6 @@ export async function apiSearchFiles(
   const {
     cId,
     kw,
-    customTargetDir,
     relativePath = '',
     limit = 200,
     maxVisit = 20000,
@@ -77,7 +73,6 @@ export async function apiSearchFiles(
       limit,
       maxVisit,
       timeoutMs,
-      ...(customTargetDir ? { customTargetDir } : {}),
     },
   });
 }
@@ -122,11 +117,11 @@ export async function apiUploadFile(
   });
 }
 
-// 批量文件上传（customTargetDir：上传到工作区之外的目录）
+// 批量文件上传
 export async function apiUploadFiles(
   params: IUploadFilesParams,
 ): Promise<RequestResponse<number>> {
-  const { files, cId, filePaths, customTargetDir } = params;
+  const { files, cId, filePaths } = params;
   const formData = new FormData();
 
   // 批量上传文件：将每个文件 append 到 FormData
@@ -144,27 +139,17 @@ export async function apiUploadFiles(
     formData.append('filePaths', filePath);
   });
 
-  if (customTargetDir) {
-    formData.append('customTargetDir', customTargetDir);
-  }
-
   return request('/api/computer/static/upload-files', {
     method: 'POST',
     data: formData,
   });
 }
 
-// 下载全部文件（customTargetDir：打包下载工作区之外的目录）
-export async function apiDownloadAllFiles(
-  cId: number,
-  customTargetDir?: string,
-): Promise<void> {
+// 下载全部文件
+export async function apiDownloadAllFiles(cId: number): Promise<void> {
   try {
-    const query = customTargetDir
-      ? `cId=${cId}&customTargetDir=${encodeURIComponent(customTargetDir)}`
-      : `cId=${cId}`;
     // 获取导出文件链接地址
-    const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?${query}`;
+    const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?cId=${cId}`;
     // 通过浏览器下载文件
     exportFileViaBrowserDownload(linkUrl);
     message.success(t('PC.Pages.Chat.exportSuccess'));
@@ -188,16 +173,12 @@ const ensurePodInFlightMap = new Map<
  * @param cId 会话 ID
  * @param appStage 全栈应用环境，仅 AppDevPro 传入
  */
-const buildPodRequestParams = (
-  cId: number,
-  appStage?: ComputerPodAppStage,
-) => (appStage ? { cId, appStage } : { cId });
+const buildPodRequestParams = (cId: number, appStage?: ComputerPodAppStage) =>
+  appStage ? { cId, appStage } : { cId };
 
 /** ensure 限流/并发去重 key：同一会话的 dev/prod 互不影响 */
-const getEnsurePodCacheKey = (
-  cId: number,
-  appStage?: ComputerPodAppStage,
-) => (appStage ? `${cId}:${appStage}` : String(cId));
+const getEnsurePodCacheKey = (cId: number, appStage?: ComputerPodAppStage) =>
+  appStage ? `${cId}:${appStage}` : String(cId);
 
 /** ensure 请求被 5s 限流（通常因 VNC/终端等刚调过 ensure，容器已在运行） */
 export const isEnsurePodThrottledError = (error: unknown): boolean => {
@@ -332,21 +313,29 @@ export async function apiImportProject(
 }
 
 /**
- * 浏览个人电脑目录（首页发起会话前，按 sandboxId 定位，非会话 cId 通道）。
+ * 目录选择弹窗数据源（wiki「选择目录/弹框选目录」，2026-09-10 契约）：
+ * 按绝对路径浏览个人电脑目录，不锚定工作区、不带会话上下文。
  *
- * file-server 侧单层列目录能力已就绪（customTargetDir + relativePath + recursive=false，
- * 见 nuwa-work nuwax-file-server getFileList）；本端点为「会话创建前按 sandboxId 路由」的
- * 网关契约假定形态，dev 由 mock/computerBrowse.ts 提供走查数据，网关/后端契约对齐后
- * 仅需调整此处 URL（调用方 WorkspaceDirPickerModal 不感知）。
+ * 网关要求 sandboxId，必须指向当前选中的个人电脑。
  */
-export async function apiBrowseSandboxDirectory(params: {
-  sandboxId: number | string;
-  /** 相对于根（'/'）的子路径，空串=根目录 */
-  relativePath?: string;
-}): Promise<RequestResponse<StaticFileListResponse>> {
-  const { sandboxId, relativePath = '' } = params;
-  return request(`/api/sandbox/${sandboxId}/directory`, {
+
+/** 根列表（包含根目录和用户 home），目录选择弹窗入口 */
+export async function apiBrowseFsRoots(
+  sandboxId: string,
+): Promise<RequestResponse<FsRootsResponse>> {
+  return request('/api/computer/fs/roots', {
     method: 'GET',
-    params: { relativePath, recursive: false },
+    params: { sandboxId },
+  });
+}
+
+/** 列出指定绝对路径下的一层子项 */
+export async function apiBrowseFsChildren(
+  path: string,
+  sandboxId: string,
+): Promise<RequestResponse<FsChildrenResponse>> {
+  return request('/api/computer/fs/children', {
+    method: 'GET',
+    params: { path, sandboxId },
   });
 }

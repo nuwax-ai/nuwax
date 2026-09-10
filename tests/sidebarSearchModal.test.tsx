@@ -6,8 +6,8 @@
  * 3. ⌘B / 面板动作统一走 toggleCollapse（移动端切抽屉、桌面端折叠含持久化）。
  */
 import SidebarSearchModal from '@/layouts/DynamicMenusLayout/SidebarSearchModal';
-import { MenuEnabledEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import type { MenuItemDto } from '@/types/interfaces/menu';
+import { MenuEnabledEnum } from '@/types/menuPermission/menu-manage';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

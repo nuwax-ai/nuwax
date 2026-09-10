@@ -1,6 +1,6 @@
 /**
  * 通用资源聚合内容区
- * @description 专家/技能/连接器三个页面与"更多"聚合列表页共用的内容组件：
+ * @description 专家/技能/连接器三个页面共用的内容组件：
  * 工具栏（主tab/二级tab/搜索/更多）+ 卡片网格 + 滚动加载
  */
 
@@ -22,7 +22,6 @@ import ResourceToolbar from '../ResourceToolbar';
 import ResourceCard from './components/ResourceCard';
 import useResourceCategories from './hooks/useResourceCategories';
 import useResourceList from './hooks/useResourceList';
-import useTeamSpaceId from './hooks/useTeamSpaceId';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,28 +32,21 @@ let scrollIdSeq = 0;
 export interface ResourceAggregationProps {
   /** 资源类型 */
   resourceType: ResourceTypeEnum;
-  /**
-   * framework = 框架页（主tab/分类/关键字同步 URL，显示"更多"入口）
-   * list = "更多"聚合列表页（不读写 URL 状态，不显示"更多"入口）
-   */
-  mode?: 'framework' | 'list';
 }
 
 const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   resourceType,
-  mode = 'framework',
 }) => {
-  const syncUrl = mode === 'framework';
   const location = useLocation();
 
-  // 初始状态优先从 URL 恢复（框架页刷新/分享可还原筛选状态）
+  // 初始状态优先从 URL 恢复（刷新/分享可还原筛选状态）
   const initialParams = useMemo(() => {
-    const searchParams = new URLSearchParams(syncUrl ? location.search : '');
+    const searchParams = new URLSearchParams(location.search);
     const source = searchParams.get('source');
     return {
       source: source === 'team' ? ('team' as const) : ('system' as const),
       category: searchParams.get('category') || '',
-      keyword: syncUrl ? searchParams.get('kw') || '' : '',
+      keyword: searchParams.get('kw') || '',
     };
     // 仅挂载时读取一次
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,16 +66,40 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
 
   // 分类字典
   const categories = useResourceCategories(resourceType, source);
-  // 团队空间维度空间 ID
-  const spaceId = useTeamSpaceId();
 
-  // 归一化列表数据
+  /**
+   * 团队空间维度：二级 tab 为空间列表（无「全部」，选中空间即数据维度，
+   * category 存空间 id 字符串，专家/技能/连接器三个页面同口径）；
+   * 系统广场维度保持「全部」+ 分类
+   */
+  const isSpaceScopedTeam = source === 'team';
+  const displayCategories = isSpaceScopedTeam
+    ? categories.filter((item) => item.key !== '')
+    : categories;
+
+  /** 列表请求用的空间 ID：团队维度 = 当前选中空间 */
+  const listSpaceId = useMemo(() => {
+    if (source !== 'team') return undefined;
+    const id = Number(category);
+    return Number.isFinite(id) && id > 0 ? id : undefined;
+  }, [source, category]);
+
+  // 团队维度：空间列表到达后默认选中第一个空间
+  // （URL 恢复的分类 key 不在空间列表中时同样回落，避免列表空转）
+  useEffect(() => {
+    if (!isSpaceScopedTeam || displayCategories.length === 0) return;
+    if (!displayCategories.some((item) => item.key === category)) {
+      setCategory(displayCategories[0].key);
+    }
+  }, [isSpaceScopedTeam, displayCategories, category]);
+
+  // 归一化列表数据（团队维度 tab 即空间选择，分类过滤不适用，按 spaceId 请求）
   const { list, loading, hasMore, loadMore } = useResourceList({
     resourceType,
     source,
-    category,
+    category: isSpaceScopedTeam ? '' : category,
     keyword,
-    spaceId,
+    spaceId: listSpaceId,
     pageSize: 20,
   });
 
@@ -93,11 +109,8 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     return () => window.clearTimeout(timer);
   }, [keywordInput]);
 
-  // 筛选状态同步 URL（框架页，replace 不产生历史记录）
+  // 筛选状态同步 URL（replace 不产生历史记录）
   useEffect(() => {
-    if (!syncUrl) {
-      return;
-    }
     const searchParams = new URLSearchParams();
     if (source !== 'system') {
       searchParams.set('source', source);
@@ -116,7 +129,7 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncUrl, source, category, keyword]);
+  }, [source, category, keyword]);
 
   // 滚动容器与内容区域，用于不满屏自动补拉
   const scrollIdRef = useRef<string>(`esc-scroll-container-${++scrollIdSeq}`);
@@ -154,8 +167,8 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [checkAndAutoFill]);
 
-  // 团队空间维度等待空间 ID 加载
-  const waitingSpace = source === 'team' && !spaceId;
+  // 团队空间维度等待空间 ID 加载（选中空间默认值尚未确定）
+  const waitingSpace = source === 'team' && !listSpaceId;
   // 首屏加载（非滚动加载更多）才显示整屏 Loading
   const initialLoading = (loading || waitingSpace) && list.length === 0;
 
@@ -164,13 +177,19 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
       <ResourceToolbar
         resourceType={resourceType}
         source={source}
-        onSourceChange={setSource}
-        categories={categories}
+        onSourceChange={(next) => {
+          setSource(next);
+          // 系统广场（分类 key）与团队空间（空间 id）两套 key 命名空间不同，
+          // 切换维度后清空选中；专家/技能·团队维度会由上方 effect 重新默认选第一个空间
+          setCategory('');
+        }}
+        categories={displayCategories}
         activeCategory={category}
         onCategoryChange={setCategory}
         keyword={keywordInput}
         onKeywordChange={setKeywordInput}
-        showMore={mode === 'framework'}
+        // 连接器页不展示"更多"入口（产品要求），专家/技能页保留
+        showMore={resourceType !== 'connector'}
       />
 
       {initialLoading ? (
@@ -189,7 +208,17 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
           >
             <div className={cx(styles['list-section'])} ref={contentRef}>
               {list.map((item) => (
-                <ResourceCard key={item.id} item={item} />
+                <ResourceCard
+                  key={item.id}
+                  item={item}
+                  showSummon={resourceType === 'expert'}
+                  showUse={resourceType === 'skill'}
+                  // 底部统计行仅专家卡片展示（技能本就无统计；
+                  // 连接器工具数统计已下线）
+                  showStats={resourceType === 'expert'}
+                  // 连接器卡片：标题下方展示分类 + 连接状态，hover 右上角连接/断开按钮
+                  showConnect={resourceType === 'connector'}
+                />
               ))}
             </div>
           </InfiniteScrollDiv>

@@ -1,7 +1,7 @@
 import { ICON_MORE } from '@/constants/images.constants';
 import { Button, Dropdown, Space } from 'antd';
 import classNames from 'classnames';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import OperationBtn from '../OperationBtn';
 import type { OperationBtnProps } from '../OperationBtn/types';
 import styles from './index.less';
@@ -76,7 +76,10 @@ function TableActions<T extends object>({
   // 默认间距
   const gap = propsGap ?? (type === 'button' ? 8 : 0);
 
-  useEffect(() => {
+  // 首次测量放 useLayoutEffect（绘制前同步执行）：挂载当帧就拿到列宽，
+  // 避免先按 0 宽把按钮全部折进「更多」、下一帧再展开造成的闪动；
+  // 后续尺寸变化由 ResizeObserver 兜底（observe 时也会立即触发一次）。
+  useLayoutEffect(() => {
     if (maxWidth) {
       setContainerWidth(maxWidth);
       return;
@@ -86,21 +89,24 @@ function TableActions<T extends object>({
     if (!container) return;
 
     const updateWidth = () => {
-      const td = container.closest('td');
+      // 同时兼容普通表格（td）与虚拟滚动表格（单元格渲染为 div.ant-table-cell）；
+      // 虚拟表格下若只匹配 td 会量不到宽度（containerWidth 恒为 0），
+      // 导致所有按钮被折叠进「更多」下拉
+      const td = container.closest('td, .ant-table-cell');
       if (td) {
         const tdWidth = td.getBoundingClientRect().width;
         setContainerWidth(tdWidth - 20);
       }
     };
 
-    const timer = setTimeout(updateWidth, 0);
+    updateWidth();
+
     const observer = new ResizeObserver(updateWidth);
 
-    const td = container.closest('td');
+    const td = container.closest('td, .ant-table-cell');
     if (td) observer.observe(td);
 
     return () => {
-      clearTimeout(timer);
       observer.disconnect();
     };
   }, [maxWidth]);
@@ -115,7 +121,8 @@ function TableActions<T extends object>({
 
   const calculateVisibleCount = useCallback(() => {
     if (visibleActions.length <= 1) return visibleActions.length;
-    if (containerWidth <= 0) return 0;
+    // 未测量到宽度（极端时序 / 节点脱离文档）时不折叠，避免按钮闪进「更多」
+    if (containerWidth <= 0) return visibleActions.length;
 
     let totalWidth = 0;
     let count = 0;

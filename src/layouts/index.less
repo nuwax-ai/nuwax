@@ -27,6 +27,13 @@
   width: 0 !important;
 }
 
+// 全屏工作台页内容区（SidebarShell variant="fullscreen"）：
+// 满铺无装饰，仅保留盖住 .container 背景图层（::before，z-index:0）所需的定位层级
+.fullscreen-page-container {
+  position: relative;
+  z-index: 1;
+}
+
 .page-container {
   background: @pageContainerBg;
   border-left: 0 solid @pageContainerBorderColor;

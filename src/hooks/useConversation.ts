@@ -1,5 +1,6 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
+import { dict } from '@/services/i18nRuntime';
 import {
   AgentDetailDto,
   AgentSelectedComponentInfo,
@@ -9,6 +10,7 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import { useRequest } from 'ahooks';
+import { message } from 'antd';
 import { history } from 'umi';
 
 const useConversation = () => {
@@ -54,7 +56,14 @@ const useConversation = () => {
       attach?.selectedComputerId && attach.selectedComputerId !== '-1'
         ? attach.selectedComputerId
         : undefined;
-    const { success, data } = await runAsyncConversationCreate({
+    /**
+     * TODO(契约缺口，2026-09-10)：选个人电脑 + 自定义目录时「隐式创建常规项目 +
+     * 目录占用校验」的接口归属待后端确认。当前按假定形态实现——单次
+     * conversation/create 携带 workspaceDir，由后端隐式建项目并校验占用；
+     * 若契约改为前端两步走（先 normal-project/create 再挂会话），仅需在
+     * 此处切换（全仓唯一改动点）。
+     */
+    const res = await runAsyncConversationCreate({
       agentId,
       devMode: false,
       variables: variableParams,
@@ -66,8 +75,17 @@ const useConversation = () => {
         : {}),
     });
 
-    if (success) {
-      const id = data?.id;
+    if (!res?.success) {
+      // 创建失败（含目录被占用）时中止跳转，展示后端错误信息
+      message.error(
+        res?.message ||
+          dict('PC.Components.WorkspaceDir.createConversationFailed'),
+      );
+      return;
+    }
+
+    const id = res.data?.id;
+    if (id) {
       // 跳转会话页面
       const url = `/home/chat/${id}/${agentId}`;
       history.push(url, attach);

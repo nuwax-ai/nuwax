@@ -6,6 +6,7 @@ import {
   type ConsoleLayoutMode,
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
+import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import FileTreeGitSourcePanel, {
   useSourceControl,
   type ChangeListSection,
@@ -16,6 +17,7 @@ import type { FileTreePreviewViewProps } from '@/components/business-component/F
 import Loading from '@/components/custom/Loading';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -25,7 +27,11 @@ import {
   apiUploadFiles,
   isEnsurePodThrottledError,
 } from '@/services/vncDesktop';
-import { MessageTypeEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  MessageTypeEnum,
+  TaskStatus,
+} from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { FileNode } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
@@ -71,19 +77,24 @@ import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
 import { useUserAppRuntime } from './hooks/useUserAppRuntime';
+import { useUserAppTasksActive } from './hooks/useUserAppTasksActive';
 import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
 import { UserAppDbEnvEnum } from './services/appDb';
 import {
+  apiUserAppBuildCancel,
   apiUserAppGetById,
+  apiUserAppUpdate,
+  getUserAppAppProxyUrl,
   getUserAppTtydProxyWsUrl,
 } from './services/appDevPro';
 import {
   apiUserAppDomainList,
-  getUserAppPreviewUrl,
   type UserAppDomainInfo,
 } from './services/appDomain';
-import type { UserAppInfo } from './type';
+import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
+import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
+import { pickActiveUserAppTask } from './utils/userAppTaskStream';
 
 const cx = classNames.bind(styles);
 // const devConversationPollLogger = createLogger(
@@ -197,6 +208,8 @@ const AppDevPro: React.FC = () => {
   const podReady = podStatus === 'running';
   /** 应用预览 iframe 刷新计数 */
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
+  /** 用户在地址栏跳转后的 iframe 地址（环境切换时重置为代理根路径） */
+  const [previewIframeUrl, setPreviewIframeUrl] = useState('');
 
   // ==================== 全局状态模型 ====================
   /**
@@ -209,6 +222,7 @@ const AppDevPro: React.FC = () => {
   const {
     runQueryConversation,
     conversationInfo,
+    messageList,
     isFileTreePinned,
     setIsFileTreePinned,
     closePreviewView,
@@ -231,6 +245,13 @@ const AppDevPro: React.FC = () => {
     refreshGitListRef,
     isConversationActive,
   } = useModel('conversationInfo');
+
+  const activeInterventions = useActiveInterventionQueue(messageList);
+  /** 会话结束后仍有待回复确认卡时，继续阻止预览服务启动 */
+  const hasPendingIntervention =
+    conversationInfo?.taskStatus !== TaskStatus.FAILED &&
+    conversationInfo?.taskStatus !== TaskStatus.CANCEL &&
+    activeInterventions.length > 0;
 
   /** 文件树数据 ref，供防抖保存读取最新列表 */
   const fileTreeDataRef = useRef(fileTreeData);
@@ -388,22 +409,23 @@ const AppDevPro: React.FC = () => {
    * 开发环境进页会预启动：已成功则打开终端只保活；启动中则等待；失败再由终端 ensure。
    * 线上环境进页不预启动，打开终端时由控制台 ensure。
    */
-  const terminalExternalContainerStatus =
-    useMemo((): ConsoleExternalContainerStatus | undefined => {
-      if (!queryConversationId || finalSelectedComputerId !== '-1') {
-        return undefined;
-      }
-      if (dbEnv !== UserAppDbEnvEnum.Dev) {
-        return undefined;
-      }
-      if (podStatus === 'running') {
-        return 'running';
-      }
-      if (podStatus === 'error') {
-        return 'error';
-      }
-      return 'starting';
-    }, [dbEnv, finalSelectedComputerId, podStatus, queryConversationId]);
+  const terminalExternalContainerStatus = useMemo(():
+    | ConsoleExternalContainerStatus
+    | undefined => {
+    if (!queryConversationId || finalSelectedComputerId !== '-1') {
+      return undefined;
+    }
+    if (dbEnv !== UserAppDbEnvEnum.Dev) {
+      return undefined;
+    }
+    if (podStatus === 'running') {
+      return 'running';
+    }
+    if (podStatus === 'error') {
+      return 'error';
+    }
+    return 'starting';
+  }, [dbEnv, finalSelectedComputerId, podStatus, queryConversationId]);
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(appId, {
@@ -564,10 +586,39 @@ const AppDevPro: React.FC = () => {
     },
   });
 
+  /** Prompt 创建并进入页面后生成应用名称、描述和图标，再刷新应用详情 */
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.UserApp,
+    targetId: appId,
+    applyMetadata: async (meta) => {
+      await apiUserAppUpdate({
+        id: appId,
+        name: meta.name?.trim() || undefined,
+        description: meta.description?.trim() || undefined,
+        icon: meta.iconUrl?.trim() || undefined,
+      });
+    },
+    onSuccess: () => {
+      if (appId) {
+        runGetUserAppInfo(appId);
+      }
+    },
+  });
+
+  /** 进入页面后轮询开发启动 / 发布构建是否占用中 */
+  const {
+    devActionAllowed,
+    buildAllowed,
+    ready: tasksActiveReady,
+    tasks: activeTasks,
+    refresh: refreshTasksActive,
+  } = useUserAppTasksActive(appId);
+
   /** 发布：构建 → SSE 进度 → 提交发布申请 */
   const publishFlow = useUserAppPublish({
     appId,
     spaceId,
+    onBuildFailed: refreshTasksActive,
     onPublished: () => {
       if (appId) {
         runGetUserAppInfo(appId);
@@ -586,6 +637,37 @@ const AppDevPro: React.FC = () => {
   });
   const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
   startPreviewIfNeededRef.current = previewRuntime.startIfNeeded;
+  const attachExistingTaskRef = useRef(previewRuntime.attachExistingTask);
+  attachExistingTaskRef.current = previewRuntime.attachExistingTask;
+
+  /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
+  const previewDevActionLocked =
+    dbEnv === UserAppDbEnvEnum.Dev && !devActionAllowed;
+  /** tasks/active 中的构建任务，用于 Header 取消远程发布 */
+  const remoteBuildTask = useMemo(
+    () =>
+      activeTasks.find(
+        (item) => item.taskType === UserAppTaskTypeEnum.Build && !!item.taskId,
+      ) ?? null,
+    [activeTasks],
+  );
+  const remotePublishing = !buildAllowed || !!remoteBuildTask;
+  /** 取消远程发布成功后隐藏远程发布状态，无需等待 active 下一次轮询 */
+  const [hideRemotePublishingAfterCancel, setHideRemotePublishingAfterCancel] =
+    useState(false);
+  const [cancelRemotePublishLoading, setCancelRemotePublishLoading] =
+    useState(false);
+  /** 手动发布流程优先：过程中及结束/失败结果展示阶段不切换为「应用发布中」 */
+  const showRemotePublishing =
+    publishFlow.phase === 'idle' &&
+    (cancelRemotePublishLoading ||
+      (remotePublishing && !hideRemotePublishingAfterCancel));
+
+  useEffect(() => {
+    if (!remotePublishing) {
+      setHideRemotePublishingAfterCancel(false);
+    }
+  }, [remotePublishing]);
 
   /** 查询应用绑定的域名列表 */
   const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
@@ -1196,19 +1278,50 @@ const AppDevPro: React.FC = () => {
   }, []);
 
   /**
-   * 容器启动成功后再启动当前环境预览服务：
-   * 开发环境 /api/userapp/dev/start，线上环境 /api/userapp/prod/start。
-   * 返回的 taskId 用于在预览区内拉取启动进度，成功后再展示 iframe。
+   * 进页且容器就绪后启动当前环境预览服务。
+   * 开发环境须等 tasks/active 首包：允许则 start，不允许则接入已有任务 stream。
+   * 会话进行中或仍有待回复确认卡时仅展示预览准备态，确认完成后再启动。
+   * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
    */
   useEffect(() => {
     if (!appId || !podReady) {
       return;
     }
+    if (
+      (queryConversationId && !conversationInfo) ||
+      isConversationActive ||
+      hasPendingIntervention
+    ) {
+      return;
+    }
     if (dbEnv === UserAppDbEnvEnum.Prod && !userAppInfo) {
       return;
     }
+    if (dbEnv === UserAppDbEnvEnum.Dev) {
+      if (!tasksActiveReady) {
+        return;
+      }
+      if (!devActionAllowed) {
+        const activeTask = pickActiveUserAppTask(activeTasks);
+        if (activeTask) {
+          void attachExistingTaskRef.current(activeTask);
+        }
+        return;
+      }
+    }
     startPreviewIfNeededRef.current();
-  }, [appId, dbEnv, podReady, userAppInfo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 进页启动只跟首包 ready 走，不跟随后续 allowed 变化
+  }, [
+    appId,
+    conversationInfo,
+    dbEnv,
+    hasPendingIntervention,
+    isConversationActive,
+    podReady,
+    queryConversationId,
+    tasksActiveReady,
+    userAppInfo,
+  ]);
 
   // ==================================== git 版本控制 ====================================
 
@@ -1389,25 +1502,32 @@ const AppDevPro: React.FC = () => {
   /** 打开应用预览页签（已存在则激活），容器就绪后再按需启动服务 */
   const handleOpenAppPreview = useCallback(() => {
     previewTabs.openToolTab('preview');
-    if (podReady) {
+    if (
+      podReady &&
+      !previewDevActionLocked &&
+      !isConversationActive &&
+      !hasPendingIntervention
+    ) {
       previewRuntime.startIfNeeded();
     }
-  }, [podReady, previewRuntime, previewTabs]);
+  }, [
+    hasPendingIntervention,
+    isConversationActive,
+    podReady,
+    previewDevActionLocked,
+    previewRuntime,
+    previewTabs,
+  ]);
 
-  /** 容器就绪后才能启动 / 重启预览服务 */
+  /** 启动预览服务；可用性统一由按钮禁用状态控制 */
   const handleStartPreviewRuntime = useCallback(() => {
-    if (!podReady) {
-      return;
-    }
     void previewRuntime.start();
-  }, [podReady, previewRuntime]);
+  }, [previewRuntime]);
 
+  /** 重启预览服务；可用性统一由按钮禁用状态控制 */
   const handleRestartPreviewRuntime = useCallback(() => {
-    if (!podReady) {
-      return;
-    }
     void previewRuntime.restart();
-  }, [podReady, previewRuntime]);
+  }, [previewRuntime]);
 
   /** 停止当前环境预览服务 */
   const handleStopPreviewRuntime = useCallback(() => {
@@ -1419,6 +1539,31 @@ const AppDevPro: React.FC = () => {
       },
     );
   }, [previewRuntime]);
+
+  /** 取消 tasks/active 中的远程构建任务 */
+  const handleCancelRemotePublish = useCallback(async () => {
+    const taskId = remoteBuildTask?.taskId;
+    if (!taskId) {
+      return;
+    }
+    setCancelRemotePublishLoading(true);
+    try {
+      const result = await apiUserAppBuildCancel(taskId);
+      if (result.code && result.code !== SUCCESS_CODE) {
+        throw new Error(
+          result.message || dict('PC.Pages.AppDevPro.publishFailed'),
+        );
+      }
+      setHideRemotePublishingAfterCancel(true);
+      message.success(dict('PC.Pages.AppDevPro.publishCancelled'));
+    } catch (error) {
+      setHideRemotePublishingAfterCancel(false);
+      // 请求层会统一展示错误，避免与局部 message 重复提示
+      console.error('[AppDevPro] Cancel remote publishing failed:', error);
+    } finally {
+      setCancelRemotePublishLoading(false);
+    }
+  }, [remoteBuildTask?.taskId]);
 
   /** 刷新应用预览 iframe */
   const handleRefreshPreview = useCallback(() => {
@@ -1471,13 +1616,39 @@ const AppDevPro: React.FC = () => {
   /** 应用预览页签是否激活（Header 图标高亮） */
   const isAppPreviewOpen = previewTabs.activeTab?.toolId === 'preview';
   /** 远程桌面页签是否激活（Header 图标高亮） */
-  const isAgentDesktopOpen =
-    previewTabs.activeTab?.toolId === 'remote-desktop';
+  const isAgentDesktopOpen = previewTabs.activeTab?.toolId === 'remote-desktop';
 
-  /** 当前环境对应的应用预览地址 */
+  /** 启动成功后通过环境代理地址访问预览页 */
   const appPreviewUrl = useMemo(
-    () => getUserAppPreviewUrl(userAppDomainList, dbEnv),
-    [userAppDomainList, dbEnv],
+    () => getUserAppAppProxyUrl(appId, dbEnv),
+    [appId, dbEnv],
+  );
+
+  /** 环境或应用变化时，地址栏与 iframe 回到对应代理根路径 */
+  useEffect(() => {
+    setPreviewIframeUrl(appPreviewUrl);
+  }, [appPreviewUrl]);
+
+  /** 地址栏与 iframe 实际使用的预览地址（含用户跳转路径） */
+  const activePreviewUrl = previewIframeUrl || appPreviewUrl;
+
+  /**
+   * 地址栏回车后更新预览 iframe。
+   * 相对路径相对于当前环境代理根路径解析；目标与当前相同则强制刷新。
+   *
+   * @param input 地址栏原始输入
+   */
+  const handleNavigatePreview = useCallback(
+    (input: string) => {
+      const url = resolveUserAppPreviewNavigateUrl(input, appPreviewUrl);
+      setPreviewIframeUrl((prev) => {
+        if (prev === url) {
+          setPreviewRefreshKey((key) => key + 1);
+        }
+        return url;
+      });
+    },
+    [appPreviewUrl],
   );
 
   /** 「数据库」页签：按 Header 所选环境加载 iframe */
@@ -1490,28 +1661,31 @@ const AppDevPro: React.FC = () => {
   const appPreviewPanel = useMemo(
     () => (
       <AppDevAppPreviewPanel
-        previewUrl={appPreviewUrl}
+        previewUrl={activePreviewUrl}
         refreshKey={previewRefreshKey}
         running={previewRuntime.running}
         busy={previewRuntime.busy}
         phase={previewRuntime.phase}
         services={previewRuntime.services}
         overallProgress={previewRuntime.overallProgress}
-        errorMessage={previewRuntime.errorMessage}
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={isConversationActive}
+        isWaitingForUserConfirmation={hasPendingIntervention}
         podReady={podReady}
         onCancelTask={previewRuntime.cancelTask}
         onRetryStart={handleRestartPreviewRuntime}
         onStart={handleStartPreviewRuntime}
+        devActionLocked={previewDevActionLocked}
       />
     ),
     [
-      appPreviewUrl,
+      activePreviewUrl,
       handleRestartPreviewRuntime,
       handleStartPreviewRuntime,
+      hasPendingIntervention,
       isConversationActive,
       podReady,
+      previewDevActionLocked,
       previewRefreshKey,
       previewRuntime.busy,
       previewRuntime.cancelLoading,
@@ -1603,7 +1777,8 @@ const AppDevPro: React.FC = () => {
           }}
           /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
-          previewUrl={appPreviewUrl}
+          previewUrl={activePreviewUrl}
+          onNavigatePreview={handleNavigatePreview}
           onRefreshPreview={handleRefreshPreview}
           onStartPreviewRuntime={handleStartPreviewRuntime}
           onRestartPreviewRuntime={handleRestartPreviewRuntime}
@@ -1611,6 +1786,10 @@ const AppDevPro: React.FC = () => {
           previewRuntimeBusy={previewRuntime.busy}
           previewRuntimeRunning={previewRuntime.running}
           previewRuntimeStopping={previewRuntime.stopping}
+          previewRuntimeReady={
+            podReady && !isConversationActive && !hasPendingIntervention
+          }
+          previewDevActionLocked={previewDevActionLocked}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1700,6 +1879,9 @@ const AppDevPro: React.FC = () => {
         onConfirmUpdate={setUserAppInfo}
         onPublish={publishFlow.startPublish}
         publishing={publishFlow.publishing}
+        remotePublishing={showRemotePublishing}
+        onCancelRemotePublish={handleCancelRemotePublish}
+        cancelRemotePublishLoading={cancelRemotePublishLoading}
         isFileTreeSidebarVisible={isFileTreeIconActive}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
         isTerminalPanelOpen={isTerminalIconActive}

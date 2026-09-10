@@ -26,7 +26,7 @@ vi.mock('@/services/agentConfig', () => ({
   apiAgentConversationUpdate: vi.fn().mockResolvedValue({ success: true }),
   apiAgentConversationDelete: vi.fn().mockResolvedValue({ success: true }),
 }));
-vi.mock('@/pages/AppDevPro/services/appDevPro', async () => {
+vi.mock('@/services/userProjectApp', async () => {
   // 子会话时间取「5 分钟前」,断言走 relativeMinutes 分支
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   return {
@@ -94,9 +94,7 @@ describe('项目侧栏原型交互', () => {
 
   it('tab 接口子会话渲染:相对时间 + 点击回调携带原始会话', async () => {
     const onConversationClick = vi.fn();
-    render(
-      <ProjectPanel compact onConversationClick={onConversationClick} />,
-    );
+    render(<ProjectPanel compact onConversationClick={onConversationClick} />);
     const child = await screen.findByText('子会话一');
     // dict mock 为返回 key 本身,渲染出 relativeMinutes 即证明时间走相对格式化
     expect(
