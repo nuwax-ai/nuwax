@@ -2762,6 +2762,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.WorkspaceDir.reload": "再読み込み",
   "PC.Components.WorkspaceDir.emptyDir": "このフォルダは空です",
   "PC.Components.WorkspaceDir.homeDir": "ホーム",
+  "PC.Components.WorkspaceDir.recent": "最近の選択",
   "PC.Components.WorkspaceDir.createConversationFailed": "会話の作成に失敗しました",
   "PC.Components.WorkspaceDir.createProjectFailed":
     "プロジェクトの作成に失敗しました",

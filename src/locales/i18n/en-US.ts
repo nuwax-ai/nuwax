@@ -2836,6 +2836,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.WorkspaceDir.reload": "Reload",
   "PC.Components.WorkspaceDir.emptyDir": "This folder is empty",
   "PC.Components.WorkspaceDir.homeDir": "Home",
+  "PC.Components.WorkspaceDir.recent": "Recent",
   "PC.Components.WorkspaceDir.createConversationFailed":
     "Failed to create conversation",
   "PC.Components.WorkspaceDir.createProjectFailed": "Failed to create project",

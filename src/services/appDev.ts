@@ -663,8 +663,10 @@ export const apiProjectCreate = async (data: {
   /** 调试关联智能体ID（首页选中 agent 创建项目时传入） */
   devAgentId?: number;
   /**
-   * 自定义工作目录（wiki #17）：仅个人电脑沙箱生效，非空才传；
-   * 选中目录被占用时后端报错（目录禁止跨项目复用）。
+   * 自定义工作目录（wiki #17）：仅个人电脑沙箱生效，非空才传。
+   * ⚠️ 后端尚未 ready（2026-09-10 与后端确认，sandboxId/devAgentId 已 ready）：
+   * 按「契约先行」惯例先发送，后端就绪即生效；当前多余字段应被后端忽略。
+   * 目录被占用的报错同样待后端 ready 后补错误码映射。
    */
   workspaceDir?: string;
 }): Promise<any> => {

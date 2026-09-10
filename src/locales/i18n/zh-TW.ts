@@ -2722,6 +2722,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.WorkspaceDir.reload": "重新載入",
   "PC.Components.WorkspaceDir.emptyDir": "此資料夾為空",
   "PC.Components.WorkspaceDir.homeDir": "主目錄",
+  "PC.Components.WorkspaceDir.recent": "最近選擇",
   "PC.Components.WorkspaceDir.createConversationFailed": "會話建立失敗",
   "PC.Components.WorkspaceDir.createProjectFailed": "專案建立失敗",
   "PC.Pages.SpaceProjectManage.runtimeEnv": "執行環境",

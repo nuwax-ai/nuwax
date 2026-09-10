@@ -2834,6 +2834,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.WorkspaceDir.reload": "重新加载",
   "PC.Components.WorkspaceDir.emptyDir": "此文件夹为空",
   "PC.Components.WorkspaceDir.homeDir": "主目录",
+  "PC.Components.WorkspaceDir.recent": "最近选择",
   "PC.Components.WorkspaceDir.createConversationFailed": "会话创建失败",
   "PC.Components.WorkspaceDir.createProjectFailed": "项目创建失败",
   "PC.Pages.SpaceProjectManage.runtimeEnv": "运行环境",
