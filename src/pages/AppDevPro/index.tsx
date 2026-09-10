@@ -61,6 +61,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import AppDevProHeader from './AppDevProHeader';
 import AppDevAppPreviewPanel from './components/AppDevAppPreviewPanel';
+import AppDevDatabaseConfigPanel from './components/AppDevDatabaseConfigPanel';
 import AppDevDatabasePanel from './components/AppDevDatabasePanel';
 import AppDevPublishProgressModal from './components/AppDevPublishProgressModal';
 import AppDevRemoteDesktopPanel from './components/AppDevRemoteDesktopPanel';
@@ -1257,6 +1258,7 @@ const AppDevPro: React.FC = () => {
       if (
         WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) ||
         toolId === 'database' ||
+        toolId === 'database-config' ||
         toolId === 'remote-desktop'
       ) {
         closePreviewView();
@@ -1499,6 +1501,11 @@ const AppDevPro: React.FC = () => {
     previewTabs.openToolTab('database');
   }, [previewTabs]);
 
+  /** 打开数据库配置页签（已存在则激活） */
+  const handleOpenDatabaseConfigPanel = useCallback(() => {
+    previewTabs.openToolTab('database-config');
+  }, [previewTabs]);
+
   /** 打开应用预览页签（已存在则激活），容器就绪后再按需启动服务 */
   const handleOpenAppPreview = useCallback(() => {
     previewTabs.openToolTab('preview');
@@ -1611,8 +1618,10 @@ const AppDevPro: React.FC = () => {
     }
   }, [dbEnv, userAppInfo?.publishStatus, userAppInfo?.publishVersions]);
 
-  /** 数据库页签是否激活（Header 图标高亮） */
-  const isDatabasePanelOpen = previewTabs.activeTab?.toolId === 'database';
+  /** 数据库或数据库配置页签是否激活（Header 图标高亮） */
+  const isDatabasePanelOpen =
+    previewTabs.activeTab?.toolId === 'database' ||
+    previewTabs.activeTab?.toolId === 'database-config';
   /** 应用预览页签是否激活（Header 图标高亮） */
   const isAppPreviewOpen = previewTabs.activeTab?.toolId === 'preview';
   /** 远程桌面页签是否激活（Header 图标高亮） */
@@ -1654,6 +1663,12 @@ const AppDevPro: React.FC = () => {
   /** 「数据库」页签：按 Header 所选环境加载 iframe */
   const databasePanel = useMemo(
     () => <AppDevDatabasePanel appId={appId} env={dbEnv} />,
+    [appId, dbEnv],
+  );
+
+  /** 「数据库配置」页签：按 Header 所选环境查询账号密码 */
+  const databaseConfigPanel = useMemo(
+    () => <AppDevDatabaseConfigPanel appId={appId} env={dbEnv} />,
     [appId, dbEnv],
   );
 
@@ -1805,6 +1820,8 @@ const AppDevPro: React.FC = () => {
               previewPanel={appPreviewPanel}
               // 数据库页签
               databasePanel={databasePanel}
+              // 数据库配置页签
+              databaseConfigPanel={databaseConfigPanel}
               remoteDesktopPanel={remoteDesktopPanel}
               // 版本控制面板（Git 提交记录）
               versionPanel={versionControlPanel}
@@ -1873,7 +1890,6 @@ const AppDevPro: React.FC = () => {
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       {/* 页面顶部 Header：返回、项目信息、文件树/终端入口 */}
       <AppDevProHeader
-        className={styles['page-header']}
         userAppInfo={userAppInfo}
         spaceId={spaceId}
         onConfirmUpdate={setUserAppInfo}
@@ -1889,6 +1905,7 @@ const AppDevPro: React.FC = () => {
         onOpenSettings={() => setSettingsOpen(true)}
         isDatabasePanelOpen={isDatabasePanelOpen}
         onOpenDatabase={handleOpenDatabasePanel}
+        onOpenDatabaseConfig={handleOpenDatabaseConfigPanel}
         isAppPreviewOpen={isAppPreviewOpen}
         onOpenAppPreview={handleOpenAppPreview}
         isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}

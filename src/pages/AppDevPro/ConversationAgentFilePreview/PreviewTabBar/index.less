@@ -1,9 +1,9 @@
 @import '@/styles/token';
 
 @tab-list-scrollbar-size: 8px;
-@preview-address-bar-width: 360px;
-@preview-address-bar-min-width: 180px;
-@preview-address-bar-max-width: 420px;
+@preview-address-bar-width: 300px;
+@preview-address-bar-min-width: 200px;
+@preview-address-bar-max-width: 380px;
 
 // 标签栏 Tooltip：置于标签之上、可选中文本，避免事件穿透触发拖拽
 :global(.preview-tab-label-tooltip) {
@@ -64,7 +64,7 @@
   display: flex;
   align-items: center;
   flex: 1;
-  min-width: 0;
+  min-width: 100px;
   align-self: stretch;
 }
 

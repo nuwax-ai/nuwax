@@ -11,6 +11,7 @@ export type PreviewToolId =
   | 'subscription-setting'
   | 'subscription-stats'
   | 'database'
+  | 'database-config'
   | 'remote-desktop';
 
 /** 预览标签类型 */
@@ -63,6 +64,7 @@ const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
     'PC.Pages.ConversationAgentTabPicker.subscriptionSetting',
   'subscription-stats': 'PC.Pages.ConversationAgentTabPicker.subscriptionStats',
   database: 'PC.Pages.AppDevPro.database',
+  'database-config': 'PC.Pages.AppDevPro.databaseConfig',
   'remote-desktop': 'PC.Pages.AppDevPro.remoteDesktop',
 };
 
@@ -229,8 +231,11 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
 
   /** 重置为默认工作区页签；无常驻页签时清空 */
   const openDefaultPreviewTab = useCallback(() => {
-    const { tabs: defaultTabs, activeTabId, toolId } =
-      getDefaultWorkspaceState(workspaceToolIdsRef.current);
+    const {
+      tabs: defaultTabs,
+      activeTabId,
+      toolId,
+    } = getDefaultWorkspaceState(workspaceToolIdsRef.current);
     setTabs(defaultTabs);
     setActiveTabId(activeTabId);
     if (toolId) {
@@ -303,18 +308,19 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
   /** 切换标签 */
   const selectTab = useCallback(
     (tabId: string) => {
+      const tab = tabs.find((item) => item.id === tabId);
+      if (!tab) {
+        return;
+      }
+
       setActiveTabId(tabId);
-      setTabs((prev) => {
-        const tab = prev.find((item) => item.id === tabId);
-        if (tab?.type === 'file' && tab.fileId) {
-          onFileTabActivate?.(tab.fileId, tab.isDiff);
-        } else if (tab?.type === 'tool' && tab.toolId) {
-          onToolTabActivate?.(tab.toolId);
-        }
-        return prev;
-      });
+      if (tab.type === 'file' && tab.fileId) {
+        onFileTabActivate?.(tab.fileId, tab.isDiff);
+      } else if (tab.type === 'tool' && tab.toolId) {
+        onToolTabActivate?.(tab.toolId);
+      }
     },
-    [onFileTabActivate, onToolTabActivate],
+    [onFileTabActivate, onToolTabActivate, tabs],
   );
 
   /** 合并常驻工作区页签与非常驻页签（去重，工作区页签保持默认顺序） */
@@ -333,63 +339,48 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
   /** 关闭标签 */
   const closeTab = useCallback(
     (tabId: string) => {
-      setTabs((prev) => {
-        const target = prev.find((tab) => tab.id === tabId);
-        if (
-          !target ||
-          isPermanentWorkspaceToolTab(target, workspaceToolIdsRef.current)
-        ) {
-          return prev;
+      const target = tabs.find((tab) => tab.id === tabId);
+      if (
+        !target ||
+        isPermanentWorkspaceToolTab(target, workspaceToolIdsRef.current)
+      ) {
+        return;
+      }
+
+      const index = tabs.findIndex((tab) => tab.id === tabId);
+      const nextTabs = tabs.filter((tab) => tab.id !== tabId);
+
+      if (nextTabs.length === 0) {
+        const restored = getDefaultWorkspaceState(workspaceToolIdsRef.current);
+        setTabs(restored.tabs);
+        setActiveTabId(restored.activeTabId);
+        if (restored.toolId) {
+          onToolTabActivate?.(restored.toolId);
         }
+        return;
+      }
 
-        const index = prev.findIndex((tab) => tab.id === tabId);
-        if (index === -1) {
-          return prev;
-        }
-
-        const nextTabs = prev.filter((tab) => tab.id !== tabId);
-
-        if (nextTabs.length === 0) {
-          const restored = getDefaultWorkspaceState(
-            workspaceToolIdsRef.current,
-          );
-          setActiveTabId(restored.activeTabId);
-          if (restored.toolId) {
-            onToolTabActivate?.(restored.toolId);
-          }
-          return restored.tabs;
-        }
-
-        setActiveTabId((currentActiveId) => {
-          if (currentActiveId !== tabId) {
-            return currentActiveId;
-          }
-          const nextIndex = Math.min(index, nextTabs.length - 1);
-          const nextTab = nextTabs[nextIndex];
-          activateTab(nextTab);
-          return nextTab.id;
-        });
-
-        return nextTabs;
-      });
+      setTabs(nextTabs);
+      if (activeTabId === tabId) {
+        const nextIndex = Math.min(index, nextTabs.length - 1);
+        activateTab(nextTabs[nextIndex]);
+      }
     },
-    [activateTab, onToolTabActivate],
+    [activateTab, activeTabId, onToolTabActivate, tabs],
   );
 
   /** 关闭除指定标签外的所有非常驻页签（常驻工作区页签始终保留） */
   const closeOtherTabs = useCallback(
     (tabId: string) => {
-      setTabs((prev) => {
-        const target = prev.find((tab) => tab.id === tabId);
-        if (!target) {
-          return prev;
-        }
-        const nextTabs = mergeWithWorkspaceTabs([target]);
-        activateTab(target);
-        return nextTabs;
-      });
+      const target = tabs.find((tab) => tab.id === tabId);
+      if (!target) {
+        return;
+      }
+      const nextTabs = mergeWithWorkspaceTabs([target]);
+      setTabs(nextTabs);
+      activateTab(target);
     },
-    [activateTab, mergeWithWorkspaceTabs],
+    [activateTab, mergeWithWorkspaceTabs, tabs],
   );
 
   /** 关闭所有标签后恢复默认工作区页签 */
@@ -442,51 +433,42 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
         return fileId === deletedPath;
       };
 
-      setTabs((prev) => {
-        const removedIndices: number[] = [];
-        prev.forEach((tab, index) => {
-          if (
-            tab.type === 'file' &&
-            tab.fileId &&
-            shouldCloseFileTab(tab.fileId)
-          ) {
-            removedIndices.push(index);
-          }
-        });
-
-        if (removedIndices.length === 0) {
-          return prev;
+      const removedIndices: number[] = [];
+      tabs.forEach((tab, index) => {
+        if (
+          tab.type === 'file' &&
+          tab.fileId &&
+          shouldCloseFileTab(tab.fileId)
+        ) {
+          removedIndices.push(index);
         }
-
-        const removedIds = new Set(removedIndices.map((i) => prev[i].id));
-        const nextTabs = prev.filter((tab) => !removedIds.has(tab.id));
-
-        if (nextTabs.length === 0) {
-          const restored = getDefaultWorkspaceState(
-            workspaceToolIdsRef.current,
-          );
-          setActiveTabId(restored.activeTabId);
-          if (restored.toolId) {
-            onToolTabActivate?.(restored.toolId);
-          }
-          return restored.tabs;
-        }
-
-        setActiveTabId((currentActiveId) => {
-          if (!currentActiveId || !removedIds.has(currentActiveId)) {
-            return currentActiveId;
-          }
-          const firstRemovedIndex = removedIndices[0];
-          const nextIndex = Math.min(firstRemovedIndex, nextTabs.length - 1);
-          const nextTab = nextTabs[nextIndex];
-          activateTab(nextTab);
-          return nextTab.id;
-        });
-
-        return nextTabs;
       });
+
+      if (removedIndices.length === 0) {
+        return;
+      }
+
+      const removedIds = new Set(removedIndices.map((index) => tabs[index].id));
+      const nextTabs = tabs.filter((tab) => !removedIds.has(tab.id));
+
+      if (nextTabs.length === 0) {
+        const restored = getDefaultWorkspaceState(workspaceToolIdsRef.current);
+        setTabs(restored.tabs);
+        setActiveTabId(restored.activeTabId);
+        if (restored.toolId) {
+          onToolTabActivate?.(restored.toolId);
+        }
+        return;
+      }
+
+      setTabs(nextTabs);
+      if (activeTabId && removedIds.has(activeTabId)) {
+        const firstRemovedIndex = removedIndices[0];
+        const nextIndex = Math.min(firstRemovedIndex, nextTabs.length - 1);
+        activateTab(nextTabs[nextIndex]);
+      }
     },
-    [activateTab, onToolTabActivate],
+    [activateTab, activeTabId, onToolTabActivate, tabs],
   );
 
   /**

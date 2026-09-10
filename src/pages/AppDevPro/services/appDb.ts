@@ -9,9 +9,9 @@ export enum UserAppDbEnvEnum {
 
 export interface UserAppDbCredentialInfo {
   /** 数据库账号 */
-  username: string;
+  username: string | null;
   /** 数据库密码 */
-  password: string;
+  password: string | null;
 }
 
 /** 保存数据库账号密码参数 */
@@ -42,18 +42,18 @@ export async function apiUserAppDbCredentialGet(
 /** 保存数据库账号密码（同步重置沙箱数据库密码，下游结果返回给前端） */
 export async function apiUserAppDbCredentialSave(
   data: UserAppDbCredentialSaveParams,
-): Promise<RequestResponse<UserAppDbCredentialInfo>> {
+): Promise<RequestResponse<string>> {
   return request('/api/userapp/save-db-credential', {
     method: 'POST',
     data,
   });
 }
 
-/** 随机生成数据库账号或密码（type=username-password，仅生成返回不落库，保存另调 save-db-credential） */
+/** 随机生成数据库账号或密码（type=username 或 password，仅生成返回不落库） */
 export async function apiUserAppDbCredentialGen(
   id: number,
   type: string,
-): Promise<RequestResponse<UserAppDbCredentialInfo>> {
+): Promise<RequestResponse<string>> {
   return request(`/api/userapp/gen-db-credential/${id}`, {
     method: 'GET',
     params: {
