@@ -239,7 +239,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         onComputerSelect={(id) => {
           setSelectedComputerId(id);
           // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
-          if (id === '-1' && workspaceDir) setWorkspaceDir('');
+          if (id !== selectedComputerId) setWorkspaceDir('');
         }}
         workspaceDir={workspaceDir}
         onWorkspaceDirChange={setWorkspaceDir}

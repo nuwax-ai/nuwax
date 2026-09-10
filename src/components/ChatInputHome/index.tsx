@@ -1282,6 +1282,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                           </button>
                         </Dropdown>
                         <WorkspaceDirPickerModal
+                          sandboxId={selectedComputerId}
                           open={workspaceDirPickerOpen}
                           onCancel={() => setWorkspaceDirPickerOpen(false)}
                           onConfirm={(dir) => {

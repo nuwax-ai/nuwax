@@ -145,8 +145,11 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
           notFoundContent={<Spin size="small" />}
           onChange={(value: string) => {
             setSandboxId(value);
-            // 切回云电脑时自定义目录失效
-            if (value === CLOUD_SANDBOX_ID) setWorkspaceDir('');
+            // 目录属于所选电脑，切换到另一台电脑时必须重新选择
+            if (value !== sandboxId) {
+              setWorkspaceDir('');
+              setDirPickerOpen(false);
+            }
           }}
           options={computerOptions}
         />
@@ -197,6 +200,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
         </div>
       )}
       <WorkspaceDirPickerModal
+        sandboxId={sandboxId}
         open={dirPickerOpen}
         onCancel={() => setDirPickerOpen(false)}
         onConfirm={(dir) => {

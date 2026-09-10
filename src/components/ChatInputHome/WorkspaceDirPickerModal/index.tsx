@@ -1,9 +1,9 @@
-import { dict } from "@/services/i18nRuntime";
-import { apiBrowseFsChildren, apiBrowseFsRoots } from "@/services/vncDesktop";
+import { dict } from '@/services/i18nRuntime';
+import { apiBrowseFsChildren, apiBrowseFsRoots } from '@/services/vncDesktop';
 import {
   addRecentWorkspaceDir,
   loadRecentWorkspaceDirs,
-} from "@/utils/workspaceDirRecent";
+} from '@/utils/workspaceDirRecent';
 import {
   FileOutlined,
   FolderOutlined,
@@ -11,11 +11,11 @@ import {
   LeftOutlined,
   RedoOutlined,
   RightOutlined,
-} from "@ant-design/icons";
-import { Breadcrumb, Button, Modal, Spin } from "antd";
-import classNames from "classnames";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import styles from "./index.less";
+} from '@ant-design/icons';
+import { Breadcrumb, Button, Modal, Spin } from 'antd';
+import classNames from 'classnames';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
@@ -33,32 +33,33 @@ export interface FsDirEntry {
  * 面包屑分段：兼容 posix 与 windows 分隔符；'' → [根]；'/Users/apple' → ['/', 'Users', 'apple']
  */
 const toCrumbs = (path: string): string[] => {
-  if (!path) return ["/"];
+  if (!path) return ['/'];
   const segs = path.split(/[\\/]+/).filter(Boolean);
   const isWinDrive = /^[a-zA-Z]:$/.test(path.slice(0, 2));
-  return isWinDrive ? [path.slice(0, 2), ...segs.slice(1)] : ["/", ...segs];
+  return isWinDrive ? [path.slice(0, 2), ...segs.slice(1)] : ['/', ...segs];
 };
 
 /** 由绝对路径还原点击面包屑第 index 段时的路径；index 0 = 根视图（''） */
 const crumbPath = (path: string, index: number): string => {
-  if (index <= 0) return "";
+  if (index <= 0) return '';
   const crumbs = toCrumbs(path);
   const segs = crumbs.slice(1, index + 1);
-  const sep = /^[a-zA-Z]:$/.test(crumbs[0]) ? "\\" : "/";
-  return crumbs[0] === "/"
-    ? `/${segs.join("/")}`
+  const sep = /^[a-zA-Z]:$/.test(crumbs[0]) ? '\\' : '/';
+  return crumbs[0] === '/'
+    ? `/${segs.join('/')}`
     : [crumbs[0], ...segs].join(sep);
 };
 
 /** 上一级路径；已是顶层（'/xx' 或盘符）时回根视图（''） */
 const parentPath = (path: string): string => {
   const crumbs = toCrumbs(path);
-  if (crumbs.length <= 2) return "";
+  if (crumbs.length <= 2) return '';
   return crumbPath(path, crumbs.length - 2);
 };
 
 interface WorkspaceDirPickerModalProps {
   open: boolean;
+  sandboxId: string;
   onCancel: () => void;
   /** 「使用此文件夹」：返回所选目录的绝对路径 */
   onConfirm: (absolutePath: string) => void;
@@ -69,17 +70,20 @@ interface WorkspaceDirPickerModalProps {
   browse?: (path: string) => Promise<FsDirEntry[]>;
 }
 
-const defaultBrowse = async (path: string): Promise<FsDirEntry[]> => {
+const defaultBrowse = async (
+  path: string,
+  sandboxId: string,
+): Promise<FsDirEntry[]> => {
   if (!path) {
-    const res = await apiBrowseFsRoots();
-    if (!res?.success) throw new Error(res?.message || "load failed");
+    const res = await apiBrowseFsRoots(sandboxId);
+    if (!res?.success) throw new Error(res?.message || 'load failed');
     const list: FsDirEntry[] = (res.data?.roots ?? [])
       .filter((item) => item.isDir)
       .map((item) => ({ name: item.name, path: item.path, isDir: true }));
     const home = res.data?.home;
     if (home && !list.some((item) => item.path === home)) {
       list.push({
-        name: dict("PC.Components.WorkspaceDir.homeDir"),
+        name: dict('PC.Components.WorkspaceDir.homeDir'),
         path: home,
         isDir: true,
         isHome: true,
@@ -87,8 +91,8 @@ const defaultBrowse = async (path: string): Promise<FsDirEntry[]> => {
     }
     return list;
   }
-  const res = await apiBrowseFsChildren(path);
-  if (!res?.success) throw new Error(res?.message || "load failed");
+  const res = await apiBrowseFsChildren(path, sandboxId);
+  if (!res?.success) throw new Error(res?.message || 'load failed');
   return (res.data?.entries ?? []).map((item) => ({
     name: item.name,
     path: item.path,
@@ -104,12 +108,13 @@ const defaultBrowse = async (path: string): Promise<FsDirEntry[]> => {
  */
 const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
   open,
+  sandboxId,
   onCancel,
   onConfirm,
   browse,
 }) => {
   // 当前所在目录：'' = 根视图（尚未进入任何目录，不可确认）
-  const [currentPath, setCurrentPath] = useState<string>("");
+  const [currentPath, setCurrentPath] = useState<string>('');
   const [entries, setEntries] = useState<FsDirEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -123,11 +128,12 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
       setLoading(true);
       setError(false);
       try {
-        const fetcher = browse ?? defaultBrowse;
+        const fetcher =
+          browse ?? ((path: string) => defaultBrowse(path, sandboxId));
         const list = await fetcher(nextPath);
         if (seq !== loadSeqRef.current) return; // 竞态丢弃
         // 隐藏项不进弹窗（fs/children 会返回点开头文件，由前端决定展示）
-        setEntries(list.filter((item) => !item.name.startsWith(".")));
+        setEntries(list.filter((item) => !item.name.startsWith('.')));
       } catch {
         if (seq !== loadSeqRef.current) return;
         setError(true);
@@ -136,15 +142,15 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
         if (seq === loadSeqRef.current) setLoading(false);
       }
     },
-    [browse]
+    [browse, sandboxId],
   );
 
   // 打开时回到根视图重新加载（弹窗随开随用，每次进入都取最新目录）
   useEffect(() => {
     if (!open) return;
-    setCurrentPath("");
+    setCurrentPath('');
     setRecentDirs(loadRecentWorkspaceDirs());
-    void load("");
+    void load('');
   }, [open, load]);
 
   const enterDir = (entry: FsDirEntry) => {
@@ -185,11 +191,11 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
       destroyOnHidden
       title={
         <div className={cx(styles.header)}>
-          <FolderOutlined className={cx(styles["header-icon"])} />
-          <span className={cx(styles["header-title"])}>
-            {dict("PC.Components.WorkspaceDir.pickerTitle")}
+          <FolderOutlined className={cx(styles['header-icon'])} />
+          <span className={cx(styles['header-title'])}>
+            {dict('PC.Components.WorkspaceDir.pickerTitle')}
           </span>
-          <span className={cx(styles["header-path"])} title={currentPath}>
+          <span className={cx(styles['header-path'])} title={currentPath}>
             {currentPath}
           </span>
         </div>
@@ -203,7 +209,7 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
           disabled={!currentPath || loading}
           onClick={goUp}
         >
-          {dict("PC.Components.WorkspaceDir.parentLevel")}
+          {dict('PC.Components.WorkspaceDir.parentLevel')}
         </Button>
         <Breadcrumb
           className={cx(styles.breadcrumb)}
@@ -226,15 +232,15 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
               icon={<RedoOutlined />}
               onClick={() => void load(currentPath)}
             >
-              {dict("PC.Components.WorkspaceDir.reload")}
+              {dict('PC.Components.WorkspaceDir.reload')}
             </Button>
           </div>
         ) : (
           <>
             {showRecent && (
-              <div className={cx(styles["recent-section"])}>
-                <div className={cx(styles["recent-title"])}>
-                  {dict("PC.Components.WorkspaceDir.recent")}
+              <div className={cx(styles['recent-section'])}>
+                <div className={cx(styles['recent-title'])}>
+                  {dict('PC.Components.WorkspaceDir.recent')}
                 </div>
                 {recentDirs.map((dir) => (
                   <div
@@ -245,30 +251,30 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
                     }
                     title={dir}
                   >
-                    <span className={cx(styles["row-icon"])}>
+                    <span className={cx(styles['row-icon'])}>
                       <FolderOutlined />
                     </span>
-                    <span className={cx(styles["row-name"])}>{dir}</span>
-                    <RightOutlined className={cx(styles["row-arrow"])} />
+                    <span className={cx(styles['row-name'])}>{dir}</span>
+                    <RightOutlined className={cx(styles['row-arrow'])} />
                   </div>
                 ))}
               </div>
             )}
             {entries.length === 0 && !showRecent ? (
               <div className={cx(styles.state)}>
-                {dict("PC.Components.WorkspaceDir.emptyDir")}
+                {dict('PC.Components.WorkspaceDir.emptyDir')}
               </div>
             ) : (
               entries.map((entry) => (
                 <div
                   key={entry.path}
                   className={cx(styles.row, {
-                    [styles["row-file"]]: !entry.isDir,
+                    [styles['row-file']]: !entry.isDir,
                   })}
                   onClick={entry.isDir ? () => enterDir(entry) : undefined}
                   title={entry.path}
                 >
-                  <span className={cx(styles["row-icon"])}>
+                  <span className={cx(styles['row-icon'])}>
                     {entry.isHome ? (
                       <HomeOutlined />
                     ) : entry.isDir ? (
@@ -277,9 +283,9 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
                       <FileOutlined />
                     )}
                   </span>
-                  <span className={cx(styles["row-name"])}>{entry.name}</span>
+                  <span className={cx(styles['row-name'])}>{entry.name}</span>
                   {entry.isDir && (
-                    <RightOutlined className={cx(styles["row-arrow"])} />
+                    <RightOutlined className={cx(styles['row-arrow'])} />
                   )}
                 </div>
               ))
@@ -289,13 +295,13 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
       </div>
 
       <div className={cx(styles.footer)}>
-        <Button onClick={onCancel}>{dict("PC.Common.Global.cancel")}</Button>
+        <Button onClick={onCancel}>{dict('PC.Common.Global.cancel')}</Button>
         <Button
           type="primary"
           disabled={!currentPath || loading}
           onClick={handleConfirm}
         >
-          {dict("PC.Components.WorkspaceDir.useThisFolder")}
+          {dict('PC.Components.WorkspaceDir.useThisFolder')}
         </Button>
       </div>
     </Modal>

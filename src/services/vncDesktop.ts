@@ -316,24 +316,26 @@ export async function apiImportProject(
  * 目录选择弹窗数据源（wiki「选择目录/弹框选目录」，2026-09-10 契约）：
  * 按绝对路径浏览个人电脑目录，不锚定工作区、不带会话上下文。
  *
- * TODO(契约缺口)：wiki 未定义多台个人电脑时网关如何路由到指定电脑的
- * file-server（端点不带 sandboxId）；单电脑场景网关按用户解析。契约补全
- * 后仅需在此处追加路由参数，调用方（WorkspaceDirPickerModal）不感知。
+ * 网关要求 sandboxId，必须指向当前选中的个人电脑。
  */
 
 /** 根列表（包含根目录和用户 home），目录选择弹窗入口 */
-export async function apiBrowseFsRoots(): Promise<
-  RequestResponse<FsRootsResponse>
-> {
-  return request('/api/computer/fs/roots', { method: 'GET' });
+export async function apiBrowseFsRoots(
+  sandboxId: string,
+): Promise<RequestResponse<FsRootsResponse>> {
+  return request('/api/computer/fs/roots', {
+    method: 'GET',
+    params: { sandboxId },
+  });
 }
 
 /** 列出指定绝对路径下的一层子项 */
 export async function apiBrowseFsChildren(
   path: string,
+  sandboxId: string,
 ): Promise<RequestResponse<FsChildrenResponse>> {
   return request('/api/computer/fs/children', {
     method: 'GET',
-    params: { path },
+    params: { path, sandboxId },
   });
 }
