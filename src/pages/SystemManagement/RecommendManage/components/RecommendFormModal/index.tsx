@@ -85,6 +85,8 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   const [recommendIconUrl, setRecommendIconUrl] = useState<string>('');
   /** 占位提示文案 */
   const [placeholder, setPlaceholder] = useState<string>('');
+  /** 上框展示名称（对应推荐记录 label） */
+  const [label, setLabel] = useState<string>('');
   /** 对话框智能体分类（来源：系统管理-分类管理 ChatBox 分类） */
   const [category, setCategory] = useState<string>('');
   /** 对话框智能体分类下拉选项 */
@@ -148,6 +150,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
     setSelectedTarget(null);
     setRecommendIconUrl('');
     setPlaceholder('');
+    setLabel('');
     setCategory('');
   }, []);
 
@@ -205,6 +208,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       );
       setRecommendIconUrl(editingRecord.icon || '');
       setPlaceholder(editingRecord.placeholder || '');
+      setLabel(editingRecord.label || '');
       setCategory(editingRecord.category || '');
       void hydrateEditingSelectedTarget(editingRecord);
       return;
@@ -232,7 +236,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       targetId: selectedTarget.targetId,
       recType: REC_TYPE,
       functionType: functionType || '',
-      label: selectedTarget.name || '',
+      label: label.trim() || selectedTarget.name || '',
       icon: recommendIconUrl || '',
       placeholder: placeholder || '',
       category: category || '',
@@ -265,6 +269,12 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
    */
   const handlePickTarget = (item: SquarePublishedItemInfo) => {
     setSelectedTarget(item);
+    setLabel((prev) => {
+      if (prev.trim()) {
+        return prev;
+      }
+      return item.name || '';
+    });
     setPickModalOpen(false);
   };
 
@@ -338,6 +348,21 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
             onChange={(v) => {
               setFunctionType(v);
             }}
+          />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>
+            {dict('PC.Pages.SystemRecommendManage.upperBoxDisplayName')}
+          </div>
+          <Input
+            value={label}
+            placeholder={dict(
+              'PC.Pages.SystemRecommendManage.upperBoxDisplayNamePlaceholder',
+            )}
+            onChange={(e) => setLabel(e.target.value)}
+            maxLength={50}
+            showCount
+            allowClear
           />
         </div>
         <div style={{ marginBottom: 16 }}>

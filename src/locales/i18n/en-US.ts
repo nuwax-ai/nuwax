@@ -5986,6 +5986,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.colTargetId": "Target ID",
   "PC.Pages.SystemRecommendManage.colTargetType": "Type",
   "PC.Pages.SystemRecommendManage.colSubType": "Sub Type",
+  "PC.Pages.SystemRecommendManage.upperBoxDisplayName": "Upper box display name",
+  "PC.Pages.SystemRecommendManage.upperBoxDisplayNamePlaceholder": "Enter the upper box display name",
   "PC.Pages.SystemRecommendManage.confirmDeleteContent": "This action cannot be undone. Continue?",
   "PC.Pages.SystemRecommendManage.confirmDeleteTitle": "Confirm Delete",
   "PC.Pages.SystemRecommendManage.editTitle": "Edit Recommendation",
