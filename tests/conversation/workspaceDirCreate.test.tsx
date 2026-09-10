@@ -86,4 +86,20 @@ describe('useConversation 创建会话携带工作目录（wiki #17）', () => {
     const params = createMock.mock.calls[0][0];
     expect(params.workspaceDir).toBeUndefined();
   });
+
+  it('创建失败（如目录被占用）时中止跳转会话页', async () => {
+    createMock.mockResolvedValue({
+      code: 'BUSINESS_ERROR',
+      success: false,
+      message: '目录已被占用',
+      data: null,
+    } as never);
+    const { result } = renderHook(() => useConversation());
+    await result.current.handleCreateConversation(5, {
+      message: 'hi',
+      selectedComputerId: '4321',
+      workspaceDir: '/Users/me/project',
+    });
+    expect(historyPush).not.toHaveBeenCalled();
+  });
 });

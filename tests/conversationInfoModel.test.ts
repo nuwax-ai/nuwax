@@ -791,7 +791,8 @@ describe('conversationInfo model', () => {
 
       await setupAndFeedOpenDesktop(result, { agent: {} } as ConversationInfo);
 
-      expect(vi.mocked(apiEnsurePod)).toHaveBeenCalledWith(1001);
+      // 普通会话未设置 appStage，ensurePodWithStage 仍显式透传该可选参数。
+      expect(vi.mocked(apiEnsurePod)).toHaveBeenCalledWith(1001, undefined);
     });
 
     it('live 路径 params.sandboxId 为非云电脑时同样拦截', async () => {

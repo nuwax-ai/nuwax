@@ -5,6 +5,7 @@ import {
 import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { QueuedMessage } from './types';
 import { useMessageQueue } from './useMessageQueue';
@@ -19,6 +20,8 @@ type SendMessage = (
   skillIds?: number[],
   modelId?: number,
   selectedAgentMode?: any,
+  selectedDocs?: SelectedDocInfo[],
+  expertComponents?: QueuedMessage['expertComponents'],
 ) => void;
 
 export interface UseChatMessageQueueParams {
@@ -194,13 +197,15 @@ export const useChatMessageQueue = ({
       if (next) {
         // 发出后立刻进入「等待流结束」，堵住发送后活跃空窗导致的双发
         markAwaitingStreamEnd();
-        // 回放入队时的快照参数，避免 skillIds/modelId/agentMode 丢失
+        // 回放入队时的快照参数，避免 skillIds/modelId/agentMode/selectedDocs 丢失
         sendMessage(
           next.text,
           next.files || [],
           next.skillIds,
           next.modelId,
           next.selectedAgentMode,
+          next.selectedDocs,
+          next.expertComponents,
         );
       } else {
         consumeLockRef.current = false;
@@ -252,19 +257,31 @@ export const useChatMessageQueue = ({
       skillIds?: number[],
       modelId?: number,
       selectedAgentMode?: QueuedMessage['selectedAgentMode'],
+      selectedDocs?: SelectedDocInfo[],
+      expertComponents?: QueuedMessage['expertComponents'],
     ) => {
       if (enqueueBlocked) {
-        // 入队时一并快照 skillIds/modelId/agentMode，消费时原样回放，避免丢失（尤其 @技能）
+        // 入队时一并快照 skillIds/modelId/agentMode/selectedDocs/expertComponents，消费时原样回放，避免丢失（尤其 @技能）
         messageQueue.enqueue({
           text: messageInfo,
           files,
           skillIds,
+          selectedDocs,
+          expertComponents,
           modelId,
           selectedAgentMode,
         });
         return;
       }
-      sendMessage(messageInfo, files, skillIds, modelId, selectedAgentMode);
+      sendMessage(
+        messageInfo,
+        files,
+        skillIds,
+        modelId,
+        selectedAgentMode,
+        selectedDocs,
+        expertComponents,
+      );
     },
     [enqueueBlocked, messageQueue, sendMessage],
   );

@@ -88,6 +88,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
 
       // 模拟 m1 处理周期：会话活跃再空闲
@@ -190,6 +192,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -255,6 +259,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -298,6 +304,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
 
       // 第二个 Intervention
@@ -333,6 +341,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -360,6 +370,8 @@ describe('消息队列与 Intervention 协调', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm1',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -412,6 +424,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -452,6 +466,8 @@ describe('消息队列与 Intervention 协调', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -486,6 +502,8 @@ describe('消息队列与 Intervention 协调', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm1',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -571,6 +589,8 @@ describe('消息队列与 Intervention 协调', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm2',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,

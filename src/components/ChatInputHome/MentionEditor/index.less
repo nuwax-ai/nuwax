@@ -94,7 +94,9 @@
   background-color: @colorBgLayout;
   border-radius: @borderRadius;
   padding: 2px 4px 2px 8px;
-  margin: 0 2px;
+  // 垂直 margin 参与行盒高度：为高于普通文本的 chip 行留出上下呼吸，
+  // 避免多行 chip 换行后行间贴死（横向与紧邻文字保持小间距）
+  margin: 3px 2px;
   user-select: none;
   cursor: default;
   transition: all 0.2s;

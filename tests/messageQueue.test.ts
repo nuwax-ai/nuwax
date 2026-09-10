@@ -80,6 +80,8 @@ describe('消息队列功能', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -94,6 +96,8 @@ describe('消息队列功能', () => {
         [1],
         2,
         'ask',
+        undefined,
+        undefined,
       );
     });
 
@@ -124,6 +128,8 @@ describe('消息队列功能', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -150,6 +156,8 @@ describe('消息队列功能', () => {
         [7],
         3,
         'ask',
+        undefined,
+        undefined,
       );
     });
 
@@ -177,6 +185,8 @@ describe('消息队列功能', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm1',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -225,6 +235,8 @@ describe('消息队列功能', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm1',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -308,6 +320,8 @@ describe('消息队列功能', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -360,6 +374,8 @@ describe('消息队列功能', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm1',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -428,6 +444,8 @@ describe('消息队列功能', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -466,6 +484,8 @@ describe('消息队列功能', () => {
       expect(sendMessage).toHaveBeenCalledWith(
         'm2',
         [],
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,

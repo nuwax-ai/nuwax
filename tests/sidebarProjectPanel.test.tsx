@@ -26,7 +26,7 @@ vi.mock('@/services/agentConfig', () => ({
   apiAgentConversationUpdate: vi.fn().mockResolvedValue({ success: true }),
   apiAgentConversationDelete: vi.fn().mockResolvedValue({ success: true }),
 }));
-vi.mock('@/pages/AppDevPro/services/appDevPro', async () => {
+vi.mock('@/services/userProjectApp', async () => {
   // 子会话时间取「5 分钟前」,断言走 relativeMinutes 分支
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   return {

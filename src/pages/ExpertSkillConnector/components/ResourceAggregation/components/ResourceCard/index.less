@@ -35,7 +35,7 @@
     }
   }
 
-  // 操作按钮（召唤/立即使用）：hover 时卡片右上角浮现（点击逻辑暂未接入，仅展示）
+  // 操作按钮（召唤/立即使用/连接/断开）：hover 时卡片右上角浮现（点击逻辑暂未接入，仅展示）
   .action-box {
     position: absolute;
     top: 12px;
@@ -45,5 +45,43 @@
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
     z-index: -1;
+  }
+
+  // 连接器卡片：标题下方 分类 + 连接状态行（颜色对齐连接器详情抽屉）
+  .connect-info {
+    gap: 8px;
+    overflow: hidden;
+
+    .category-text {
+      color: #828894;
+      font-size: @fontSizeSm;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .connect-status {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 4px;
+      font-size: @fontSizeSm;
+      white-space: nowrap;
+
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: currentcolor;
+      }
+
+      &.status-connected {
+        color: #52c41a;
+      }
+
+      &.status-disconnected {
+        color: #8a857c;
+      }
+    }
   }
 }

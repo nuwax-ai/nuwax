@@ -5,8 +5,6 @@ import type {
   CreateUserAppParams,
   CreateUserProjectParams,
   ProjectLatestConversationResult,
-  UpdateUserAppParams,
-  UpdateUserProjectParams,
   UserAppDevTaskInfo,
   UserAppInfo,
   UserAppLogsQueryParams,
@@ -17,28 +15,24 @@ import type {
   UserProjectItem,
   UserProjectPageQueryParams,
   UserProjectPageResult,
-  UserProjectTabPageResult,
 } from '../type';
 import { UserAppDbEnvEnum } from './appDb';
+
+// 基础 CRUD 已下沉共享层 @/services/userProjectApp（首页侧栏项目面板等非页面层消费），
+// 此处再导出保持页面内既有引用不变
+export {
+  apiUserAppDelete,
+  apiUserAppUpdate,
+  apiUserProjectDelete,
+  apiUserProjectTabPageQuery,
+  apiUserProjectUpdate,
+} from '@/services/userProjectApp';
 
 /** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
 export async function apiUserProjectPageQuery(
   data: UserProjectPageQueryParams,
 ): Promise<RequestResponse<UserProjectPageResult>> {
   return request('/api/user-project/page-query', {
-    method: 'POST',
-    data,
-  });
-}
-
-/**
- * tab 项目分页查询（2026-09-08 新接口）：项目列表 + 每个项目下的会话列表，
- * 供首页侧栏「项目」Tab 使用。
- */
-export async function apiUserProjectTabPageQuery(
-  data: UserProjectPageQueryParams,
-): Promise<RequestResponse<UserProjectTabPageResult>> {
-  return request('/api/user-project/tab/page-query', {
     method: 'POST',
     data,
   });
@@ -60,25 +54,6 @@ export async function apiUserProjectGetById(
 ): Promise<RequestResponse<UserProjectItem>> {
   return request(`/api/user-project/get/${id}`, {
     method: 'GET',
-  });
-}
-
-/** 更新常规项目基本信息 */
-export async function apiUserProjectUpdate(
-  data: UpdateUserProjectParams,
-): Promise<RequestResponse<UserProjectItem>> {
-  return request('/api/user-project/update', {
-    method: 'POST',
-    data,
-  });
-}
-
-/** 删除常规项目 */
-export async function apiUserProjectDelete(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/user-project/delete/${id}`, {
-    method: 'POST',
   });
 }
 
@@ -116,25 +91,6 @@ export async function apiUserAppGetById(
 ): Promise<RequestResponse<UserAppInfo>> {
   return request(`/api/userapp/get/${id}`, {
     method: 'GET',
-  });
-}
-
-/** 更新基本信息（传 null 的字段不更新） */
-export async function apiUserAppUpdate(
-  data: UpdateUserAppParams,
-): Promise<RequestResponse<UserAppInfo>> {
-  return request('/api/userapp/update', {
-    method: 'POST',
-    data,
-  });
-}
-
-/** 删除应用（物理删除） */
-export async function apiUserAppDelete(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/userapp/delete/${id}`, {
-    method: 'POST',
   });
 }
 

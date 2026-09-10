@@ -17,7 +17,13 @@ interface UseAuthProtectedImageSrcResult {
 export function useAuthProtectedImageSrc(
   remoteUrl: string | undefined,
 ): UseAuthProtectedImageSrcResult {
-  const [displaySrc, setDisplaySrc] = useState<string | undefined>();
+  // 公开 URL 首帧即返回（受保护地址需异步 fetch，先 undefined 走占位/默认图），
+  // 避免公开图标也先渲染一帧默认图再切换
+  const [displaySrc, setDisplaySrc] = useState<string | undefined>(() =>
+    remoteUrl?.trim() && !isAuthProtectedFileUrl(remoteUrl)
+      ? remoteUrl
+      : undefined,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 

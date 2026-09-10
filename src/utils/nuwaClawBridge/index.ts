@@ -283,6 +283,26 @@ export const layout = {
   },
 };
 
+/**
+ * 宿主身份（host→guest 只读）：区分宿主产品——nuwaclaw（社区版）/
+ * nuwawork（商业版 NuwaWork），用于按宿主开关桌面专属能力或降级。
+ * 契约来自基座 NuwaClawBridge.host.getProduct()（preload 构建期注入，非 IPC）。
+ * 浏览器 / 旧宿主无 host 命名空间 → null，调用方回落通用逻辑（可选消费）。
+ */
+export type HostProductId = 'nuwaclaw' | 'nuwawork';
+
+export const host = {
+  /** 宿主产品标识；桥缺失 / host 命名空间缺失 / 返回非契约值 → null。 */
+  getProduct(): HostProductId | null {
+    try {
+      const product = getBridge()?.host?.getProduct?.();
+      return product === 'nuwaclaw' || product === 'nuwawork' ? product : null;
+    } catch {
+      return null;
+    }
+  },
+};
+
 /** 统一对外聚合对象（与 perfTracker 风格一致）。 */
 export const nuwaClawHost = {
   isNuwaClaw,
@@ -299,6 +319,7 @@ export const nuwaClawHost = {
   events,
   theme,
   layout,
+  host,
 };
 
 export default nuwaClawHost;

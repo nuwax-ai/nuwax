@@ -25,6 +25,7 @@ const SpaceCreateProject: React.FC = () => {
     modelId,
     tools,
     computerId,
+    workspaceDir,
     agentMode,
   }: SubmitPayload) => {
     try {
@@ -38,6 +39,7 @@ const SpaceCreateProject: React.FC = () => {
           modelId,
           tools,
           computerId,
+          workspaceDir,
           agentMode,
         },
         spaceId,
