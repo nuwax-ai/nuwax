@@ -1,7 +1,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { SyncOutlined } from '@ant-design/icons';
-import { Button, Input, message, Space, Spin } from 'antd';
+import { Button, Input, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
 import { useRequest } from 'umi';
@@ -28,6 +28,9 @@ interface DatabaseConfigFormValue {
   username: string;
   password: string;
 }
+
+/** 支持单独随机生成的数据库配置字段 */
+type DatabaseConfigGenerateType = keyof DatabaseConfigFormValue;
 
 /**
  * 将接口返回的可空字段转换为受控输入框所需的字符串。
@@ -58,7 +61,12 @@ const AppDevDatabaseConfigPanel: React.FC<AppDevDatabaseConfigPanelProps> = ({
   const [databaseConfig, setDatabaseConfig] = useState<DatabaseConfigFormValue>(
     () => normalizeDatabaseConfig(),
   );
-  const [generating, setGenerating] = useState<boolean>(false);
+  const [generating, setGenerating] = useState<
+    Record<DatabaseConfigGenerateType, boolean>
+  >({
+    username: false,
+    password: false,
+  });
   const [saving, setSaving] = useState<boolean>(false);
 
   // 查询数据库账号密码（解密返回明文，未设置返回 null
@@ -72,24 +80,33 @@ const AppDevDatabaseConfigPanel: React.FC<AppDevDatabaseConfigPanelProps> = ({
     },
   );
 
-  /** 随机生成账号密码，仅回填表单，保存后才会生效 */
-  const handleGenerate = useCallback(async () => {
-    setGenerating(true);
-    try {
-      const response = await apiUserAppDbCredentialGen(
-        appId,
-        'username-password',
-      );
-      if (response.code && response.code !== SUCCESS_CODE) {
-        throw new Error(response.message);
+  /**
+   * 随机生成指定字段，仅更新对应输入框，保存后才会生效。
+   *
+   * @param type username 生成账号；password 生成密码
+   * @returns Promise
+   */
+  const handleGenerate = useCallback(
+    async (type: DatabaseConfigGenerateType) => {
+      setGenerating((current) => ({ ...current, [type]: true }));
+      try {
+        const response = await apiUserAppDbCredentialGen(appId, type);
+        if (response.code && response.code !== SUCCESS_CODE) {
+          throw new Error(response.message);
+        }
+        const generatedValue = response.data;
+        if (generatedValue) {
+          setDatabaseConfig((current) => ({
+            ...current,
+            [type]: generatedValue,
+          }));
+        }
+      } finally {
+        setGenerating((current) => ({ ...current, [type]: false }));
       }
-      if (response.data) {
-        setDatabaseConfig(normalizeDatabaseConfig(response.data));
-      }
-    } finally {
-      setGenerating(false);
-    }
-  }, [appId]);
+    },
+    [appId],
+  );
 
   /** 保存当前环境的数据库账号密码 */
   const handleSave = useCallback(async () => {
@@ -98,18 +115,13 @@ const AppDevDatabaseConfigPanel: React.FC<AppDevDatabaseConfigPanelProps> = ({
     }
     setSaving(true);
     try {
-      const response = await apiUserAppDbCredentialSave({
+      await apiUserAppDbCredentialSave({
         id: appId,
         env,
         username: databaseConfig.username.trim(),
         password: databaseConfig.password,
       });
-      if (response.code && response.code !== SUCCESS_CODE) {
-        throw new Error(response.message);
-      }
-      if (response.data) {
-        setDatabaseConfig(normalizeDatabaseConfig(response.data));
-      }
+
       message.success(dict('PC.Pages.AppDevPro.databaseConfigSaveSuccess'));
     } finally {
       setSaving(false);
@@ -118,14 +130,21 @@ const AppDevDatabaseConfigPanel: React.FC<AppDevDatabaseConfigPanelProps> = ({
 
   if (loading) {
     return (
-      <div className={cx(styles.container, styles.center)}>
+      <div
+        className={cx(
+          styles.container,
+          'flex',
+          'content-center',
+          'items-center',
+        )}
+      >
         <Spin />
       </div>
     );
   }
 
   return (
-    <div className={cx(styles.container)}>
+    <div className={cx(styles.container, 'flex', 'content-center')}>
       <div className={cx(styles.content)}>
         <h3 className={cx(styles.title)}>
           {dict('PC.Pages.AppDevPro.databaseConfig')}
@@ -150,6 +169,16 @@ const AppDevDatabaseConfigPanel: React.FC<AppDevDatabaseConfigPanelProps> = ({
                 }))
               }
             />
+            <Button
+              icon={<SyncOutlined />}
+              loading={generating.username}
+              disabled={saving}
+              onClick={() => {
+                void handleGenerate('username');
+              }}
+            >
+              {dict('PC.Pages.AppDevPro.databaseConfigGenerateUsername')}
+            </Button>
           </div>
         </div>
 
@@ -170,23 +199,27 @@ const AppDevDatabaseConfigPanel: React.FC<AppDevDatabaseConfigPanelProps> = ({
                 }))
               }
             />
+            <Button
+              icon={<SyncOutlined />}
+              loading={generating.password}
+              disabled={saving}
+              onClick={() => {
+                void handleGenerate('password');
+              }}
+            >
+              {dict('PC.Pages.AppDevPro.databaseConfigGeneratePassword')}
+            </Button>
           </div>
         </div>
 
-        <Space className={cx(styles.actions)}>
-          <Button
-            icon={<SyncOutlined />}
-            loading={generating}
-            disabled={saving}
-            onClick={handleGenerate}
-          >
-            {dict('PC.Pages.AppDevPro.databaseConfigGenerate')}
-          </Button>
+        <div className={cx(styles.actions)}>
           <Button
             type="primary"
             loading={saving}
+            className="w-full"
             disabled={
-              generating ||
+              generating.username ||
+              generating.password ||
               !databaseConfig.username.trim() ||
               !databaseConfig.password
             }
@@ -194,7 +227,7 @@ const AppDevDatabaseConfigPanel: React.FC<AppDevDatabaseConfigPanelProps> = ({
           >
             {dict('PC.Pages.AppDevPro.databaseConfigSave')}
           </Button>
-        </Space>
+        </div>
       </div>
     </div>
   );

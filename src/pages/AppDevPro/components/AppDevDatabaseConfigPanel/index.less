@@ -9,15 +9,10 @@
   background: @colorBgContainer;
 }
 
-.center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .content {
-  width: min(640px, calc(100% - 48px));
-  margin: 40px auto;
+  width: 400px;
+  max-width: calc(100% - @margin * 2);
+  margin: @marginXl 0;
 }
 
 .title {
