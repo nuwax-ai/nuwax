@@ -6,6 +6,7 @@
 
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
 import { dict } from '@/services/i18nRuntime';
 import { Empty } from 'antd';
@@ -131,6 +132,23 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     [summon],
   );
 
+  /** 技能卡片「选择」：携带技能信息透传并跳转 /home 首页 */
+  const { select } = useSelectSkillHandoff();
+  const handleSelectSkill = useCallback(
+    (item: ResourceItem) => {
+      if (!item.skillId) {
+        // 数据异常兜底：缺技能 ID 无法透传（正常数据两个维度均有值）
+        console.warn(
+          '[ExpertSkillConnector] select skill skipped: missing skillId, item =',
+          item.id,
+        );
+        return;
+      }
+      select({ skillId: item.skillId, name: item.name, icon: item.icon });
+    },
+    [select],
+  );
+
   // 筛选状态同步 URL（replace 不产生历史记录）
   useEffect(() => {
     const searchParams = new URLSearchParams();
@@ -236,6 +254,9 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   showSummon={resourceType === 'expert'}
                   onSummon={
                     resourceType === 'expert' ? handleSummon : undefined
+                  }
+                  onSelect={
+                    resourceType === 'skill' ? handleSelectSkill : undefined
                   }
                   showUse={resourceType === 'skill'}
                   // 底部统计行仅专家卡片展示（技能本就无统计；

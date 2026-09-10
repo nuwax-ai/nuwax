@@ -73,6 +73,8 @@ const mapPublishedItem = (
   // 仅专家（前缀 agent）填：targetId 即智能体 ID，供「召唤」跳转 home 使用；
   // 技能（前缀 skill）的 targetId 是技能 ID，不能当 agentId 用
   agentId: idPrefix === 'agent' ? item.targetId : undefined,
+  // 仅技能（前缀 skill）填：targetId 即技能 ID，供「选择」透传 home 使用
+  skillId: idPrefix === 'skill' ? item.targetId : undefined,
   name: item.name,
   description: item.description,
   icon: item.icon,
@@ -183,6 +185,8 @@ const RESOURCE_ADAPTERS: Record<
         const records = (res.data as SkillInfo[] | null) || [];
         return records.map((item) => ({
           id: `space-skill-${item.id}`,
+          // 空间技能 id 即技能 ID，供「选择」透传 home 使用
+          skillId: item.id,
           name: item.name,
           description: item.description,
           icon: item.icon,

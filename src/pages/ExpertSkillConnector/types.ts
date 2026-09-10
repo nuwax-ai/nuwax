@@ -37,6 +37,11 @@ export interface ResourceItem {
    * 系统广场取发布项 targetId，团队空间取智能体 id；技能/连接器不填
    */
   agentId?: number;
+  /**
+   * 技能 ID（选择透传跳转用）：
+   * 系统广场取发布项 targetId，团队空间取技能 id；专家/连接器不填
+   */
+  skillId?: number;
   /** 名称 */
   name: string;
   /** 描述 */

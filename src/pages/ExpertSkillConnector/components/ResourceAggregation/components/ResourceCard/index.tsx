@@ -42,6 +42,8 @@ interface ResourceCardProps {
   showSummon?: boolean;
   /** 召唤按钮点击回调（携带卡片条目；仅专家卡片传入） */
   onSummon?: (item: ResourceItem) => void;
+  /** 选择按钮点击回调（携带卡片条目；仅技能卡片传入） */
+  onSelect?: (item: ResourceItem) => void;
   /** 是否显示选择按钮与 pin 图标按钮（技能卡片） */
   showUse?: boolean;
   /** 是否显示底部统计行（使用用户数等） */
@@ -54,6 +56,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
   item,
   showSummon,
   onSummon,
+  onSelect,
   showUse,
   showStats = true,
   showConnect,
@@ -134,7 +137,8 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
                     onSummon?.(item);
                     return;
                   }
-                  // TODO 技能「选择」逻辑暂未接入，按钮仅展示
+                  // 技能卡「选择」：透传技能信息并跳转（上层未传时仅展示）
+                  onSelect?.(item);
                 }}
               >
                 {showSummon
