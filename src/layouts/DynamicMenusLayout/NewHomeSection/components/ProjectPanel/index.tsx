@@ -28,8 +28,6 @@ import {
   PlusOutlined,
   PushpinFilled,
   PushpinOutlined,
-  StarFilled,
-  StarOutlined,
 } from '@ant-design/icons';
 import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -76,14 +74,15 @@ export interface ProjectItem {
 /**
  * 「项目」Tab 面板。
  *
- * **项目行:全功能**(2026-09-08 定调)——右键菜单 置顶/归档/收藏/重命名/删除,
+ * **项目行:全功能**(2026-09-08 定调)——右键菜单 置顶/归档/重命名/删除,
  * 置顶排前、归档默认隐藏+「已归档」入口,对齐任务列表会话的交互形态。
  * **项目子项(项目下的会话):不做置顶**(同日定调),仅 重命名/删除 + 状态徽标。
  *
  * 数据走 apiUserProjectTabPageQuery（2026-09-08 新接口：项目列表附带各项目会话列表）；
  * 重命名/删除已接真实接口（项目→normal-project/userapp、子项会话→agent conversation，
  * wiki 2026-09-11 v2 契约）；置顶/归档走 user-project pin/archive（同契约，回读字段
- * 就位后自动恢复），PageApp 契约未覆盖改名删除/置顶归档暂维持本地,收藏契约缺维持本地。
+ * 就位后自动恢复），PageApp 契约未覆盖改名删除/置顶归档暂维持本地；
+ * 收藏接口未 ready，按产品要求关闭入口。
  */
 export interface ProjectPanelHandle {
   toggleAll: () => void;
@@ -109,13 +108,9 @@ const ProjectPanel = forwardRef<
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(
     () => new Set(),
   );
-  // 项目级标记:置顶/归档回读自后端字段(wiki 2026-09-11 行6,字段未返回时不标记),
-  // 收藏契约缺先本地 state
+  // 项目级标记：置顶/归档回读自后端字段（字段未返回时不标记）
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => new Set());
   const [archivedIds, setArchivedIds] = useState<Set<number>>(() => new Set());
-  const [collectedIds, setCollectedIds] = useState<Set<number>>(
-    () => new Set(),
-  );
   const [showArchived, setShowArchived] = useState(false);
   // 子项重命名弹窗状态(projectId + childId 定位目标子项)
   const [renameTarget, setRenameTarget] = useState<{
@@ -249,19 +244,14 @@ const ProjectPanel = forwardRef<
     onVisibleCountChange?.(visibleProjects.length);
   }, [visibleProjects.length, onVisibleCountChange]);
 
-  // 项目标记 toggle:置顶/归档走后端(wiki 2026-09-11 行6,常规/全栈项目;
-  // PageApp 契约未覆盖暂本地),收藏契约缺维持本地。后端成功才更新标记,
+  // 项目标记 toggle：置顶/归档走项目级后端接口（常规/全栈项目；
+  // PageApp 契约未覆盖暂本地）。后端成功才更新标记，
   // 失败 toast 不动状态;toast 文案与任务会话菜单同款
   const toggleProjectFlag = (
-    kind: 'pinned' | 'archived' | 'collected',
+    kind: 'pinned' | 'archived',
     project: ProjectItem,
   ) => {
-    const setter =
-      kind === 'pinned'
-        ? setPinnedIds
-        : kind === 'archived'
-        ? setArchivedIds
-        : setCollectedIds;
+    const setter = kind === 'pinned' ? setPinnedIds : setArchivedIds;
     const applyFlag = () => {
       setter((prev) => {
         const next = new Set(prev);
@@ -273,13 +263,9 @@ const ProjectPanel = forwardRef<
         return next;
       });
     };
-    const enabled = !(
-      kind === 'pinned'
-        ? pinnedIds
-        : kind === 'archived'
-        ? archivedIds
-        : collectedIds
-    ).has(project.id);
+    const enabled = !(kind === 'pinned' ? pinnedIds : archivedIds).has(
+      project.id,
+    );
     const toastKeyMap = {
       pinned: enabled
         ? 'PC.Components.ConversationContextMenu.pinnedToast'
@@ -287,15 +273,11 @@ const ProjectPanel = forwardRef<
       archived: enabled
         ? 'PC.Components.ConversationContextMenu.archivedToast'
         : 'PC.Components.ConversationContextMenu.unarchivedToast',
-      collected: enabled
-        ? 'PC.Components.ConversationContextMenu.collectedToast'
-        : 'PC.Components.ConversationContextMenu.uncollectedToast',
     } as const;
 
     const usesRealApi =
-      (kind === 'pinned' || kind === 'archived') &&
-      (project.projectType === AgentComponentTypeEnum.NormalProject ||
-        project.projectType === AgentComponentTypeEnum.UserApp);
+      project.projectType === AgentComponentTypeEnum.NormalProject ||
+      project.projectType === AgentComponentTypeEnum.UserApp;
     if (!usesRealApi) {
       applyFlag();
       message.success(dict(toastKeyMap[kind]));
@@ -370,16 +352,11 @@ const ProjectPanel = forwardRef<
           next.delete(project.id);
           return next;
         });
-        setCollectedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(project.id);
-          return next;
-        });
       },
     });
   };
 
-  // 项目行右键菜单:置顶/归档/收藏/重命名/删除(全功能,对齐任务会话菜单结构)
+  // 项目行右键菜单:置顶/归档/重命名/删除；收藏接口未 ready，暂不展示
   const buildProjectMenu = (project: ProjectItem) => ({
     items: [
       {
@@ -400,15 +377,6 @@ const ProjectPanel = forwardRef<
             : 'PC.Components.ConversationContextMenu.archive',
         ),
       },
-      {
-        key: 'favorite',
-        icon: collectedIds.has(project.id) ? <StarFilled /> : <StarOutlined />,
-        label: dict(
-          collectedIds.has(project.id)
-            ? 'PC.Components.ConversationContextMenu.unfavorite'
-            : 'PC.Components.ConversationContextMenu.favorite',
-        ),
-      },
       { type: 'divider' as const },
       {
         key: 'rename',
@@ -427,8 +395,6 @@ const ProjectPanel = forwardRef<
         toggleProjectFlag('pinned', project);
       } else if (key === 'archive') {
         toggleProjectFlag('archived', project);
-      } else if (key === 'favorite') {
-        toggleProjectFlag('collected', project);
       } else if (key === 'rename') {
         setRenameProjectId(project.id);
         setProjectRenameName(project.name);
@@ -628,9 +594,6 @@ const ProjectPanel = forwardRef<
                 )}
                 {pinnedIds.has(project.id) && (
                   <PushpinFilled className={cx(styles['pin-icon'])} />
-                )}
-                {collectedIds.has(project.id) && (
-                  <StarFilled className={cx(styles['star-icon'])} />
                 )}
                 <span className={cx(styles.name)} title={project.name}>
                   {project.name}
