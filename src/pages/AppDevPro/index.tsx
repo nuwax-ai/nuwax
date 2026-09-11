@@ -104,6 +104,13 @@ const cx = classNames.bind(styles);
 
 /** Header 工作区：文件树预览与应用预览 / 数据库互斥，后两者不进入文件标签栏 */
 type AppDevWorkspaceView = 'files' | 'app-preview' | 'database';
+
+/** 数据库工作区常驻页签，保持引用稳定，避免 Tab 栏 effect 反复执行 */
+const DATABASE_WORKSPACE_TOOL_IDS: PreviewToolId[] = [
+  'database',
+  'database-config',
+];
+const noop = () => undefined;
 // const devConversationPollLogger = createLogger(
 //   '[ConversationAgent][DevConversationPoll]',
 // );
@@ -672,10 +679,14 @@ const AppDevPro: React.FC = () => {
   });
   const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
   startPreviewIfNeededRef.current = previewRuntime.startIfNeeded;
+  const restartPreviewRuntimeRef = useRef(previewRuntime.restart);
+  restartPreviewRuntimeRef.current = previewRuntime.restart;
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
   const attachExistingTaskRef = useRef(previewRuntime.attachExistingTask);
   attachExistingTaskRef.current = previewRuntime.attachExistingTask;
+  /** 会话进行中服务已在跑时，结束后重启预览以加载新文件 */
+  const restartPreviewAfterConversationRef = useRef(false);
 
   /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
   const previewDevActionLocked =
@@ -755,7 +766,14 @@ const AppDevPro: React.FC = () => {
 
     // 刷新 Git 源代码管理状态列表
     void refreshGitListIfEnabled();
+
+    // 会话结束前预览已在运行：等准备预览 effect 在确认卡清空后再重启
+    if (dbEnv === UserAppDbEnvEnum.Dev && previewRuntime.running) {
+      restartPreviewAfterConversationRef.current = true;
+    }
   }, [
+    dbEnv,
+    previewRuntime.running,
     queryConversationId,
     refreshFileListImmediately,
     refreshGitListIfEnabled,
@@ -1319,19 +1337,23 @@ const AppDevPro: React.FC = () => {
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
    * 开发环境须等 tasks/active 首包：允许则 start，不允许则接入已有任务 stream。
-   * 会话进行中或仍有待回复确认卡时仅展示预览准备态，确认完成后再启动。
+   * 会话进行中或仍有待回复确认卡时不启动；已有预览则会话结束后再重启。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
    */
   useEffect(() => {
+    // 没有应用时无法启动预览
     if (!appId) {
       return;
     }
+    // 线上环境用域名直接预览，不在这里自动 start
     if (dbEnv === UserAppDbEnvEnum.Prod) {
       return;
     }
+    // 容器未就绪时不启动
     if (!podReady) {
       return;
     }
+    // 会话详情未回填、会话进行中、或仍有待回复确认卡时，先不启动/重启
     if (
       (queryConversationId && !conversationInfo) ||
       isConversationActive ||
@@ -1339,9 +1361,11 @@ const AppDevPro: React.FC = () => {
     ) {
       return;
     }
+    // 等待 tasks/active 首包，避免与进行中任务抢 start
     if (!tasksActiveReady) {
       return;
     }
+    // 已有进行中任务：接入其进度流，不再新建 start
     if (!devActionAllowed) {
       const activeTask = pickActiveUserAppTask(activeTasks);
       if (activeTask) {
@@ -1349,8 +1373,15 @@ const AppDevPro: React.FC = () => {
       }
       return;
     }
+    // 新会话结束前预览已在运行：重启以加载会话改过的文件
+    if (restartPreviewAfterConversationRef.current) {
+      restartPreviewAfterConversationRef.current = false;
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      void restartPreviewRuntimeRef.current();
+      return;
+    }
+    // 尚未运行则启动；已运行则 startIfNeeded 内部会跳过
     startPreviewIfNeededRef.current();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 进页启动只跟首包 ready 走，不跟随后续 allowed 变化
   }, [
     appId,
     conversationInfo,
@@ -1910,12 +1941,12 @@ const AppDevPro: React.FC = () => {
               tabs={databaseTabs}
               activeTabId={databaseTabId}
               onTabSelect={handleDatabaseTabSelect}
-              onTabClose={() => undefined}
-              onCloseOtherTabs={() => undefined}
-              onCloseAllTabs={() => undefined}
-              onTogglePinTab={() => undefined}
-              onTabReorder={() => undefined}
-              permanentWorkspaceToolIds={['database', 'database-config']}
+              onTabClose={noop}
+              onCloseOtherTabs={noop}
+              onCloseAllTabs={noop}
+              onTogglePinTab={noop}
+              onTabReorder={noop}
+              permanentWorkspaceToolIds={DATABASE_WORKSPACE_TOOL_IDS}
               onRestartServer={() => {
                 if (queryConversationId) {
                   restartVncPod(queryConversationId, finalSelectedComputerId);

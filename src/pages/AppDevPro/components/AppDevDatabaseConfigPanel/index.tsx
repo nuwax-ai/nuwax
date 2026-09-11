@@ -21,6 +21,8 @@ export interface AppDevDatabaseConfigPanelProps {
   appId: number;
   /** 当前开发或线上环境 */
   env: UserAppDbEnvEnum;
+  /** 是否处于数据库配置页；未激活时不请求账号密码 */
+  active?: boolean;
 }
 
 /** 数据库配置表单值，接口中的 null 已统一转换为空字符串 */
@@ -57,6 +59,7 @@ const normalizeDatabaseConfig = (
 const AppDevDatabaseConfigPanel: React.FC<AppDevDatabaseConfigPanelProps> = ({
   appId,
   env,
+  active = true,
 }) => {
   const [databaseConfig, setDatabaseConfig] = useState<DatabaseConfigFormValue>(
     () => normalizeDatabaseConfig(),
@@ -69,10 +72,11 @@ const AppDevDatabaseConfigPanel: React.FC<AppDevDatabaseConfigPanelProps> = ({
   });
   const [saving, setSaving] = useState<boolean>(false);
 
-  // 查询数据库账号密码（解密返回明文，未设置返回 null
+  // 仅进入数据库配置页后查询账号密码（解密返回明文，未设置返回 null）
   const { loading } = useRequest(
-    () => apiUserAppDbCredentialGet(appId as number, env),
+    () => apiUserAppDbCredentialGet(appId, env),
     {
+      ready: active && !!appId,
       refreshDeps: [appId, env],
       onSuccess: (result: UserAppDbCredentialInfo) => {
         setDatabaseConfig(normalizeDatabaseConfig(result));

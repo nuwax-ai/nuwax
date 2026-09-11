@@ -20,7 +20,7 @@ export interface AppDevDatabaseWorkspaceProps {
 
 /**
  * 数据库工作区内容：嵌入的数据库页面与原数据库配置组件。
- * Tab 头由外层 PreviewTabBar 承载，此处只渲染对应面板，切换时不卸载 iframe。
+ * Tab 头由外层 PreviewTabBar 承载；数据库 iframe 切换时不卸载，配置面板仅在进入时挂载。
  *
  * @param props.appId 应用 ID
  * @param props.env 当前环境（开发 / 线上）
@@ -46,7 +46,9 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           [styles.hidden]: activeTab !== 'database-config',
         })}
       >
-        <AppDevDatabaseConfigPanel appId={appId} env={env} />
+        {activeTab === 'database-config' ? (
+          <AppDevDatabaseConfigPanel appId={appId} env={env} active />
+        ) : null}
       </div>
     </div>
   );

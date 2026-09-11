@@ -203,6 +203,7 @@ const PreviewHero: React.FC<{
  * AppDevPro 应用预览页签。
  * 容器未就绪显示准备中；停止后显示启动预览；启动过程展示任务日志；
  * 启动成功后先显示应用加载中，iframe 加载完成再露出页面。
+ * 已有预览时，新会话进行中仍保留当前页面。
  *
  * @param props 预览面板属性
  * @returns 应用预览面板
@@ -237,12 +238,12 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   }, [previewUrl, refreshKey]);
 
   const handleIframeLoad = useCallback(() => {
-    setIframeLoaded(true);
+    setIframeLoaded((prev) => prev || true);
   }, []);
 
   /** iframe 加载失败时收起加载遮罩，露出失败提示 */
   const handleIframeError = useCallback(() => {
-    setIframeLoaded(true);
+    setIframeLoaded((prev) => prev || true);
   }, []);
 
   /** 刷新 iframe 时重新展示加载遮罩 */
@@ -250,8 +251,9 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     setIframeLoaded(false);
   }, []);
 
+  // 已有可预览内容时，新会话进行中仍保留当前页面，不切回准备中
   if (
-    !(directPreview && previewUrl) &&
+    !canShowIframe &&
     (isGeneratingFiles || isWaitingForUserConfirmation || !podReady)
   ) {
     return (
