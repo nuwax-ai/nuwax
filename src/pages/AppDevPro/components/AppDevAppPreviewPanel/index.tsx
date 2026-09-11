@@ -1,6 +1,6 @@
 import { dict } from '@/services/i18nRuntime';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Button, Empty, Progress, Tooltip } from 'antd';
+import { Button, Empty, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -13,6 +13,7 @@ import type {
   UserAppPublishPhase,
   UserAppTaskServiceProgress,
 } from '../../type';
+import AppDevProIframe from '../AppDevProIframe';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -30,8 +31,8 @@ export interface AppDevAppPreviewPanelProps {
   phase?: UserAppPublishPhase;
   /** 启动任务各服务进度（含 SSE 日志） */
   services?: UserAppTaskServiceProgress[];
-  /** 整体进度 0-100 */
-  overallProgress?: number;
+  /** 启动失败时的接口错误文案，展示在日志区 */
+  errorMessage?: string;
   /** 取消任务 loading */
   cancelLoading?: boolean;
   /** 容器是否已就绪 */
@@ -48,6 +49,8 @@ export interface AppDevAppPreviewPanelProps {
   onStart?: () => void;
   /** 开发环境进行中任务锁定启动 / 重启 */
   devActionLocked?: boolean;
+  /** 线上环境有预览地址时可直接展示 iframe，无需先启动服务 */
+  directPreview?: boolean;
 }
 
 /**
@@ -200,6 +203,7 @@ const PreviewHero: React.FC<{
  * AppDevPro 应用预览页签。
  * 容器未就绪显示准备中；停止后显示启动预览；启动过程展示任务日志；
  * 启动成功后先显示应用加载中，iframe 加载完成再露出页面。
+ * 已有预览时，新会话进行中仍保留当前页面。
  *
  * @param props 预览面板属性
  * @returns 应用预览面板
@@ -211,7 +215,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   busy = false,
   phase = 'idle',
   services,
-  overallProgress = 0,
+  errorMessage,
   cancelLoading = false,
   podReady = false,
   isGeneratingFiles = false,
@@ -220,22 +224,45 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   onRetryStart,
   onStart,
   devActionLocked = false,
+  directPreview = false,
 }) => {
-  const logs = useMemo(() => flattenTaskLogs(services), [services]);
+  const logs = useMemo(() => {
+    const lines = flattenTaskLogs(services);
+    const errorText = errorMessage?.trim();
+    if (errorText && !lines.includes(errorText)) {
+      return [...lines, errorText];
+    }
+    return lines;
+  }, [errorMessage, services]);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const showStartProgress =
     busy || phase === 'starting' || phase === 'building';
   const showStartFailed = phase === 'failed' || phase === 'cancelled';
+  const canShowIframe = !!previewUrl && (running || directPreview);
 
   useEffect(() => {
     setIframeLoaded(false);
-  }, [previewUrl, refreshKey, running]);
+  }, [previewUrl, refreshKey]);
 
   const handleIframeLoad = useCallback(() => {
-    setIframeLoaded(true);
+    setIframeLoaded((prev) => prev || true);
   }, []);
 
-  if (isGeneratingFiles || isWaitingForUserConfirmation || !podReady) {
+  /** iframe 加载失败时收起加载遮罩，露出失败提示 */
+  const handleIframeError = useCallback(() => {
+    setIframeLoaded((prev) => prev || true);
+  }, []);
+
+  /** 刷新 iframe 时重新展示加载遮罩 */
+  const handleIframeRetry = useCallback(() => {
+    setIframeLoaded(false);
+  }, []);
+
+  // 已有可预览内容时，新会话进行中仍保留当前页面，不切回准备中
+  if (
+    !canShowIframe &&
+    (isGeneratingFiles || isWaitingForUserConfirmation || !podReady)
+  ) {
     return (
       <div className={cx(styles.container, styles.stage)}>
         <PreviewHero
@@ -302,15 +329,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
               </Tooltip>
             ) : null}
           </div>
-          {!showStartFailed ? (
-            <Progress
-              className={cx(styles.logProgress)}
-              percent={overallProgress}
-              size="small"
-              showInfo={false}
-              status="active"
-            />
-          ) : null}
           <PreviewStartLogBoard
             logs={logs}
             waitingText={dict('PC.Pages.AppDevPro.waitingLogs')}
@@ -320,17 +338,17 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  if (running && previewUrl) {
+  if (canShowIframe) {
     return (
       <div className={cx(styles.container)}>
         <div className={cx(styles.iframeWrap)}>
-          <iframe
-            key={`${previewUrl}-${refreshKey}`}
-            className={cx(styles.iframe)}
+          <AppDevProIframe
             src={previewUrl}
+            iframeKey={`${previewUrl}-${refreshKey}`}
             title={dict('PC.Pages.AppDevPro.appPreview')}
-            allow="clipboard-read; clipboard-write; fullscreen"
             onLoad={handleIframeLoad}
+            onError={handleIframeError}
+            onRetry={handleIframeRetry}
           />
           {!iframeLoaded ? (
             <div className={cx(styles.loadingOverlay)}>
@@ -342,7 +360,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  if (running && !previewUrl) {
+  if ((running || directPreview) && !previewUrl) {
     return (
       <div className={cx(styles.container)}>
         <div className={cx(styles.hero)}>

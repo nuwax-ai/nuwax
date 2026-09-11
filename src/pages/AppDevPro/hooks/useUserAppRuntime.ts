@@ -24,12 +24,12 @@ import {
   type UserAppTaskServiceProgress,
 } from '../type';
 import {
-  getOverallTaskProgress,
   getTaskTerminalStatus,
   mergeTaskServiceProgress,
 } from '../utils/userAppTaskLog';
 import {
   listenUserAppTaskStream,
+  pickUserAppRequestErrorText,
   pickUserAppTaskId,
   unwrapUserAppResponse,
 } from '../utils/userAppTaskStream';
@@ -71,7 +71,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
   const [action, setAction] = useState<UserAppRuntimeAction>('start');
   const [services, setServices] = useState<UserAppTaskServiceProgress[]>([]);
-  const [overallProgress, setOverallProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const [taskId, setTaskId] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -84,10 +83,16 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
   const taskIdRef = useRef('');
   const servicesRef = useRef<UserAppTaskServiceProgress[]>([]);
   const envRef = useRef(env);
+  const phaseRef = useRef(phase);
+  /** 各环境是否已成功启动过，切换环境时保留，避免重复 start */
+  const runningByEnvRef = useRef<Record<UserAppDbEnvEnum, boolean>>({
+    [UserAppDbEnvEnum.Dev]: false,
+    [UserAppDbEnvEnum.Prod]: false,
+  });
+  phaseRef.current = phase;
 
   const resetProgress = useCallback(() => {
     setServices([]);
-    setOverallProgress(0);
     setErrorMessage('');
     setTaskId('');
     taskIdRef.current = '';
@@ -101,6 +106,11 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     abortRef.current = null;
   }, []);
 
+  const setEnvRunning = useCallback((value: boolean) => {
+    runningByEnvRef.current[envRef.current] = value;
+    setRunning(value);
+  }, []);
+
   const applyEvent = useCallback((event: UserAppTaskLogEvent) => {
     if (typeof event.seq === 'number') {
       lastSeqRef.current = event.seq;
@@ -108,7 +118,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     setServices((prev) => {
       const next = mergeTaskServiceProgress(prev, event);
       servicesRef.current = next;
-      setOverallProgress(getOverallTaskProgress(next));
       return next;
     });
   }, []);
@@ -126,11 +135,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         getServices: () => servicesRef.current,
         failedMessage: getFailedMessage(currentAction),
         streamClosedMessage: dict('PC.Pages.AppDevPro.publishStreamClosed'),
-      }).then((status) => {
-        if (status === 'succeeded') {
-          setOverallProgress(100);
-        }
-        return status;
       });
     },
     [applyEvent],
@@ -235,8 +239,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         }
 
         setPhase('success');
-        setOverallProgress(100);
-        setRunning(true);
+        setEnvRunning(true);
         message.success(
           nextAction === 'restart'
             ? dict('PC.Pages.AppDevPro.restartSuccess')
@@ -251,10 +254,10 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           setPhase('cancelled');
           return;
         }
-        const text = error instanceof Error ? error.message : failedMessage;
+        const text = pickUserAppRequestErrorText(error, failedMessage);
         setErrorMessage(text);
         setPhase('failed');
-        setRunning(false);
+        setEnvRunning(false);
       }
     },
     [
@@ -265,6 +268,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       onReady,
       phase,
       resetProgress,
+      setEnvRunning,
       userAppInfo?.publishVersions,
     ],
   );
@@ -324,8 +328,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         if (immediate === 'succeeded') {
           if (!isBuild) {
             setPhase('success');
-            setOverallProgress(100);
-            setRunning(true);
+            setEnvRunning(true);
             onReady?.();
           } else {
             setPhase('idle');
@@ -348,9 +351,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         }
 
         setPhase('success');
-        setOverallProgress(100);
         if (!isBuild) {
-          setRunning(true);
+          setEnvRunning(true);
           onReady?.();
         }
       } catch (error) {
@@ -364,10 +366,10 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         const text = error instanceof Error ? error.message : failedMessage;
         setErrorMessage(text);
         setPhase('failed');
-        setRunning(false);
+        setEnvRunning(false);
       }
     },
-    [listenProgress, onReady, phase, resetProgress],
+    [listenProgress, onReady, phase, resetProgress, setEnvRunning],
   );
 
   /**
@@ -377,7 +379,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     if (phase === 'starting' || phase === 'building') {
       return;
     }
-    if (running) {
+    if (running || runningByEnvRef.current[envRef.current]) {
       return;
     }
     void start();
@@ -406,7 +408,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           throw new Error(res.message || dict('PC.Pages.AppDevPro.stopFailed'));
         }
       }
-      setRunning(false);
+      setEnvRunning(false);
       setPhase('idle');
       resetProgress();
       message.success(dict('PC.Pages.AppDevPro.stopSuccess'));
@@ -419,7 +421,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     } finally {
       setStopping(false);
     }
-  }, [appId, buildParams, env, resetProgress, stopStream]);
+  }, [appId, buildParams, env, resetProgress, setEnvRunning, stopStream]);
 
   // 取消当前启动 / 重启任务
   const cancelTask = useCallback(async () => {
@@ -448,6 +450,17 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     }
   }, [stopStream, taskId]);
 
+  /**
+   * 线上环境可直接用预览地址打开，不走启动接口。
+   */
+  const markReady = useCallback(() => {
+    if (phase === 'starting' || phase === 'building') {
+      return;
+    }
+    setEnvRunning(true);
+    setPhase('success');
+  }, [phase, setEnvRunning]);
+
   const closeModal = useCallback(() => {
     if (phase === 'starting' || phase === 'building') {
       return;
@@ -462,11 +475,21 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     if (envRef.current === env) {
       return;
     }
+    const prevPhase = phaseRef.current;
+    const starting = prevPhase === 'starting' || prevPhase === 'building';
+    if (starting) {
+      cancelledRef.current = true;
+      stopStream();
+      runningByEnvRef.current[envRef.current] = false;
+    }
     envRef.current = env;
-    cancelledRef.current = true;
-    stopStream();
-    setRunning(false);
+    const nextRunning = runningByEnvRef.current[env];
+    setRunning(nextRunning);
     setOpen(false);
+    if (nextRunning) {
+      setPhase('success');
+      return;
+    }
     setPhase('idle');
     resetProgress();
   }, [env, resetProgress, stopStream]);
@@ -478,7 +501,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     phase,
     action,
     services,
-    overallProgress,
     errorMessage,
     cancelLoading,
     busy,
@@ -488,6 +510,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     restart,
     stop,
     startIfNeeded,
+    markReady,
     attachExistingTask,
     cancelTask,
     closeModal,

@@ -12,6 +12,7 @@ import FileTreeGitSourcePanel, {
   type ChangeListSection,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
+import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import Loading from '@/components/custom/Loading';
@@ -41,7 +42,6 @@ import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
-// import { createLogger } from '@/utils/logger';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -61,8 +61,9 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import AppDevProHeader from './AppDevProHeader';
 import AppDevAppPreviewPanel from './components/AppDevAppPreviewPanel';
-import AppDevDatabaseConfigPanel from './components/AppDevDatabaseConfigPanel';
-import AppDevDatabasePanel from './components/AppDevDatabasePanel';
+import AppDevDatabaseWorkspace, {
+  type AppDevDatabaseWorkspaceTab,
+} from './components/AppDevDatabaseWorkspace';
 import AppDevPublishProgressModal from './components/AppDevPublishProgressModal';
 import AppDevRemoteDesktopPanel from './components/AppDevRemoteDesktopPanel';
 import AppDevSettingsModal from './components/AppDevSettingsModal';
@@ -72,9 +73,11 @@ import {
   getToolTabId,
   usePreviewTabs,
   WORKSPACE_PREVIEW_TOOL_IDS,
+  type PreviewTab,
   type PreviewToolId,
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
+import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
 import { useUserAppRuntime } from './hooks/useUserAppRuntime';
@@ -98,6 +101,16 @@ import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 import { pickActiveUserAppTask } from './utils/userAppTaskStream';
 
 const cx = classNames.bind(styles);
+
+/** Header 工作区：文件树预览与应用预览 / 数据库互斥，后两者不进入文件标签栏 */
+type AppDevWorkspaceView = 'files' | 'app-preview' | 'database';
+
+/** 数据库工作区常驻页签，保持引用稳定，避免 Tab 栏 effect 反复执行 */
+const DATABASE_WORKSPACE_TOOL_IDS: PreviewToolId[] = [
+  'database',
+  'database-config',
+];
+const noop = () => undefined;
 // const devConversationPollLogger = createLogger(
 //   '[ConversationAgent][DevConversationPoll]',
 // );
@@ -192,6 +205,17 @@ const AppDevPro: React.FC = () => {
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
   /** 文件树区域是否显示（header 图标控制，默认折叠） */
   const [canShowFileView, setCanShowFileView] = useState<boolean>(false);
+  /** 右侧工作区：文件预览 / 独立应用预览 / 独立数据库 */
+  const [workspaceView, setWorkspaceView] =
+    useState<AppDevWorkspaceView>('app-preview');
+  /** 打开数据库前的工作区，再次点击图标时还原 */
+  const workspaceViewBeforeDatabaseRef = useRef<AppDevWorkspaceView>(
+    'app-preview',
+  );
+  /** 数据库工作区当前 Tab */
+  const [databaseTabId, setDatabaseTabId] = useState(
+    () => getToolTabId('database'),
+  );
   /** 项目设置弹窗 */
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   /** 全栈应用详情 */
@@ -209,8 +233,10 @@ const AppDevPro: React.FC = () => {
   const podReady = podStatus === 'running';
   /** 应用预览 iframe 刷新计数 */
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
-  /** 用户在地址栏跳转后的 iframe 地址（环境切换时重置为代理根路径） */
+  /** 用户在地址栏跳转后的 iframe 地址（环境切换、重启服务时重置为预览根路径） */
   const [previewIframeUrl, setPreviewIframeUrl] = useState('');
+  /** 当前环境预览根地址，供启动 / 重启回调读取 */
+  const appPreviewUrlRef = useRef<string>('');
 
   // ==================== 全局状态模型 ====================
   /**
@@ -261,7 +287,9 @@ const AppDevPro: React.FC = () => {
 
   /**
    * 仅在 AppDevPro 把当前环境写入 conversationInfo，
-   * 供 ensure/restart/keepalive/stop 老接口附带 appStage；离开页面时清空，避免污染其它页面。
+   * 供 ensure/restart/keepalive/stop 老接口附带 appStage。
+   * 同时作为会话 OPEN_DESKTOP 闸门：开发环境打开桌面且不停保活，线上环境不调用。
+   * 离开页面时清空，避免污染其它页面。
    */
   useEffect(() => {
     setPodAppStage(dbEnv);
@@ -274,8 +302,14 @@ const AppDevPro: React.FC = () => {
     [setPodAppStage],
   );
 
+  const ensureDesktopConnectionRef = useRef(ensureDesktopConnection);
+  ensureDesktopConnectionRef.current = ensureDesktopConnection;
+  const refreshFileListImmediatelyRef = useRef(refreshFileListImmediately);
+  refreshFileListImmediatelyRef.current = refreshFileListImmediately;
+
   /**
    * 进入页面即启动容器并开启保活，默认开发环境 dev。
+   * 只在会话 ID 变化时执行一次；会话结束刷新文件树不得再次 ensure。
    * 容器启动成功后再拉文件树、Git status；打开终端时复用本次结果，不再重复 ensure。
    */
   useEffect(() => {
@@ -293,10 +327,10 @@ const AppDevPro: React.FC = () => {
         return;
       }
       setPodStatus('running');
-      void refreshFileListImmediately(queryConversationId);
+      void refreshFileListImmediatelyRef.current(queryConversationId);
     };
 
-    void ensureDesktopConnection(queryConversationId)
+    void ensureDesktopConnectionRef.current(queryConversationId)
       .then(afterPodReady)
       .catch((error: any) => {
         if (isEnsurePodThrottledError(error)) {
@@ -312,12 +346,7 @@ const AppDevPro: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [
-    ensureDesktopConnection,
-    queryConversationId,
-    refreshFileListImmediately,
-    setPodAppStage,
-  ]);
+  }, [queryConversationId, setPodAppStage]);
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
@@ -647,13 +676,20 @@ const AppDevPro: React.FC = () => {
     env: dbEnv,
     userAppInfo,
     onReady: () => {
+      setPreviewIframeUrl(appPreviewUrlRef.current);
       setPreviewRefreshKey((prev) => prev + 1);
     },
   });
   const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
   startPreviewIfNeededRef.current = previewRuntime.startIfNeeded;
+  const restartPreviewRuntimeRef = useRef(previewRuntime.restart);
+  restartPreviewRuntimeRef.current = previewRuntime.restart;
+  const markPreviewReadyRef = useRef(previewRuntime.markReady);
+  markPreviewReadyRef.current = previewRuntime.markReady;
   const attachExistingTaskRef = useRef(previewRuntime.attachExistingTask);
   attachExistingTaskRef.current = previewRuntime.attachExistingTask;
+  /** 会话进行中服务已在跑时，结束后重启预览以加载新文件 */
+  const restartPreviewAfterConversationRef = useRef(false);
 
   /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
   const previewDevActionLocked =
@@ -733,7 +769,14 @@ const AppDevPro: React.FC = () => {
 
     // 刷新 Git 源代码管理状态列表
     void refreshGitListIfEnabled();
+
+    // 会话结束前预览已在运行：等准备预览 effect 在确认卡清空后再重启
+    if (dbEnv === UserAppDbEnvEnum.Dev && previewRuntime.running) {
+      restartPreviewAfterConversationRef.current = true;
+    }
   }, [
+    dbEnv,
+    previewRuntime.running,
     queryConversationId,
     refreshFileListImmediately,
     refreshGitListIfEnabled,
@@ -979,6 +1022,19 @@ const AppDevPro: React.FC = () => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
 
+    // 从应用预览 / 数据库切回文件树工作区
+    if (workspaceView !== 'files') {
+      if (isTerminalExpanded) {
+        setDevConsoleCollapseSignal((n) => n + 1);
+      }
+      setWorkspaceView('files');
+      setCanShowFileView(true);
+      if (queryConversationId) {
+        handleRefreshFileList(queryConversationId);
+      }
+      return;
+    }
+
     // 如果终端全屏，则折叠终端，并打开文件树
     if (isTerminalExpanded) {
       setDevConsoleCollapseSignal((n) => n + 1);
@@ -1002,6 +1058,7 @@ const AppDevPro: React.FC = () => {
     devConsoleLayoutMode,
     handleRefreshFileList,
     queryConversationId,
+    workspaceView,
   ]);
 
   /**
@@ -1049,7 +1106,8 @@ const AppDevPro: React.FC = () => {
     devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
 
   /** 顶部入口互斥 active：同一时刻仅高亮一个 */
-  const isFileTreeIconActive = canShowFileView && !isTerminalPanelOpen;
+  const isFileTreeIconActive =
+    workspaceView === 'files' && canShowFileView && !isTerminalPanelOpen;
   const isTerminalIconActive = isTerminalPanelOpen;
 
   // ==================================== 文件视图 & 编排面板 ====================================
@@ -1124,6 +1182,7 @@ const AppDevPro: React.FC = () => {
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
         setSelectedChangeFile(null);
+        setWorkspaceView('files');
         if (fileId) {
           resetDevConsoleExpandedLayout();
           previewTabsRef.current?.openFileTab(fileId, false, {
@@ -1221,6 +1280,7 @@ const AppDevPro: React.FC = () => {
     workspaceToolIds,
     // 打开文件标签
     onFileTabActivate: async (fileId, isDiff) => {
+      setWorkspaceView('files');
       // 重置终端布局
       resetDevConsoleExpandedLayout();
       // 选中差异文件
@@ -1277,21 +1337,26 @@ const AppDevPro: React.FC = () => {
 
   previewTabsRef.current = previewTabs;
 
-  /** 进入页面时默认打开应用预览页签（可关闭，也可从 Header 再次打开） */
-  useEffect(() => {
-    previewTabsRef.current?.openToolTab('preview');
-  }, []);
-
   /**
-   * 进页且容器就绪后启动当前环境预览服务。
+   * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
    * 开发环境须等 tasks/active 首包：允许则 start，不允许则接入已有任务 stream。
-   * 会话进行中或仍有待回复确认卡时仅展示预览准备态，确认完成后再启动。
+   * 会话进行中或仍有待回复确认卡时不启动；已有预览则会话结束后再重启。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
    */
   useEffect(() => {
-    if (!appId || !podReady) {
+    // 没有应用时无法启动预览
+    if (!appId) {
       return;
     }
+    // 线上环境用域名直接预览，不在这里自动 start
+    if (dbEnv === UserAppDbEnvEnum.Prod) {
+      return;
+    }
+    // 容器未就绪时不启动
+    if (!podReady) {
+      return;
+    }
+    // 会话详情未回填、会话进行中、或仍有待回复确认卡时，先不启动/重启
     if (
       (queryConversationId && !conversationInfo) ||
       isConversationActive ||
@@ -1299,23 +1364,27 @@ const AppDevPro: React.FC = () => {
     ) {
       return;
     }
-    if (dbEnv === UserAppDbEnvEnum.Prod && !userAppInfo) {
+    // 等待 tasks/active 首包，避免与进行中任务抢 start
+    if (!tasksActiveReady) {
       return;
     }
-    if (dbEnv === UserAppDbEnvEnum.Dev) {
-      if (!tasksActiveReady) {
-        return;
+    // 已有进行中任务：接入其进度流，不再新建 start
+    if (!devActionAllowed) {
+      const activeTask = pickActiveUserAppTask(activeTasks);
+      if (activeTask) {
+        void attachExistingTaskRef.current(activeTask);
       }
-      if (!devActionAllowed) {
-        const activeTask = pickActiveUserAppTask(activeTasks);
-        if (activeTask) {
-          void attachExistingTaskRef.current(activeTask);
-        }
-        return;
-      }
+      return;
     }
+    // 新会话结束前预览已在运行：重启以加载会话改过的文件
+    if (restartPreviewAfterConversationRef.current) {
+      restartPreviewAfterConversationRef.current = false;
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      void restartPreviewRuntimeRef.current();
+      return;
+    }
+    // 尚未运行则启动；已运行则 startIfNeeded 内部会跳过
     startPreviewIfNeededRef.current();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 进页启动只跟首包 ready 走，不跟随后续 allowed 变化
   }, [
     appId,
     conversationInfo,
@@ -1325,7 +1394,6 @@ const AppDevPro: React.FC = () => {
     podReady,
     queryConversationId,
     tasksActiveReady,
-    userAppInfo,
   ]);
 
   // ==================================== git 版本控制 ====================================
@@ -1421,12 +1489,14 @@ const AppDevPro: React.FC = () => {
     callbacks: {
       // 打开更改文件（选中文件并预览，非 diff）
       openChangeFile: (fileId: string) => {
+        setWorkspaceView('files');
         previewTabs.openFileTab(fileId, false);
       },
       // 将文件路径添加到 .gitignore
       addFileToGitignore: handleAddToGitignore,
       // 选中修改文件，在右侧预览区展示 diff
       onDiffFileSelect: (fileId: string) => {
+        setWorkspaceView('files');
         previewTabs.openFileTab(fileId, true);
       },
       // 放弃更改后关闭预览 Tab
@@ -1474,6 +1544,7 @@ const AppDevPro: React.FC = () => {
    */
   const handlePreviewTabSelect = useCallback(
     (tabId: string) => {
+      setWorkspaceView('files');
       if (tabId.startsWith('diff:')) {
         const fileId = tabId.slice('diff:'.length);
         if (isGitUntrackedFile(fileId)) {
@@ -1499,19 +1570,59 @@ const AppDevPro: React.FC = () => {
     [fileView.changeFiles, gitSourceControl, isGitUntrackedFile, previewTabs],
   );
 
-  /** 打开数据库页签（已存在则激活） */
+  /**
+   * 打开独立数据库工作区；已选中时还原打开前的工作区。
+   * 从未选中切入时始终落到「数据库」页签，而不是停留在配置页。
+   */
   const handleOpenDatabasePanel = useCallback(() => {
-    previewTabs.openToolTab('database');
-  }, [previewTabs]);
+    resetDevConsoleExpandedLayout();
+    if (workspaceView === 'database') {
+      const prev = workspaceViewBeforeDatabaseRef.current;
+      setWorkspaceView(prev === 'database' ? 'app-preview' : prev);
+      return;
+    }
+    workspaceViewBeforeDatabaseRef.current = workspaceView;
+    setDatabaseTabId(getToolTabId('database'));
+    setWorkspaceView('database');
+  }, [resetDevConsoleExpandedLayout, workspaceView]);
 
-  /** 打开数据库配置页签（已存在则激活） */
-  const handleOpenDatabaseConfigPanel = useCallback(() => {
-    previewTabs.openToolTab('database-config');
-  }, [previewTabs]);
+  const databaseTabs = useMemo<PreviewTab[]>(
+    () => [
+      {
+        id: getToolTabId('database'),
+        type: 'tool',
+        toolId: 'database',
+        label: dict('PC.Pages.AppDevPro.database'),
+      },
+      {
+        id: getToolTabId('database-config'),
+        type: 'tool',
+        toolId: 'database-config',
+        label: dict('PC.Pages.AppDevPro.databaseConfig'),
+      },
+    ],
+    [],
+  );
 
-  /** 打开应用预览页签（已存在则激活），容器就绪后再按需启动服务 */
+  const handleDatabaseTabSelect = useCallback((tabId: string) => {
+    setDatabaseTabId(tabId);
+  }, []);
+
+  const databaseActiveTab: AppDevDatabaseWorkspaceTab =
+    databaseTabId === getToolTabId('database-config')
+      ? 'database-config'
+      : 'database';
+
+  /** 打开独立应用预览视图；已启动或线上环境有地址时不再重复 start */
   const handleOpenAppPreview = useCallback(() => {
-    previewTabs.openToolTab('preview');
+    resetDevConsoleExpandedLayout();
+    setWorkspaceView('app-preview');
+    if (dbEnv === UserAppDbEnvEnum.Prod) {
+      return;
+    }
+    if (previewRuntime.running) {
+      return;
+    }
     if (
       podReady &&
       !previewDevActionLocked &&
@@ -1521,21 +1632,24 @@ const AppDevPro: React.FC = () => {
       previewRuntime.startIfNeeded();
     }
   }, [
+    dbEnv,
     hasPendingIntervention,
     isConversationActive,
     podReady,
     previewDevActionLocked,
     previewRuntime,
-    previewTabs,
+    resetDevConsoleExpandedLayout,
   ]);
 
-  /** 启动预览服务；可用性统一由按钮禁用状态控制 */
+  /** 启动预览服务；回到当前环境预览根地址，不沿用地址栏手动跳转 */
   const handleStartPreviewRuntime = useCallback(() => {
+    setPreviewIframeUrl(appPreviewUrlRef.current);
     void previewRuntime.start();
   }, [previewRuntime]);
 
-  /** 重启预览服务；可用性统一由按钮禁用状态控制 */
+  /** 重启预览服务；回到当前环境预览根地址，不沿用地址栏手动跳转 */
   const handleRestartPreviewRuntime = useCallback(() => {
+    setPreviewIframeUrl(appPreviewUrlRef.current);
     void previewRuntime.restart();
   }, [previewRuntime]);
 
@@ -1599,6 +1713,7 @@ const AppDevPro: React.FC = () => {
       return;
     }
 
+    setWorkspaceView('files');
     if (previewTabs.activeTab?.toolId === 'remote-desktop') {
       previewTabs.closeTab(getToolTabId('remote-desktop'));
       return;
@@ -1627,12 +1742,10 @@ const AppDevPro: React.FC = () => {
     }
   }, [dbEnv, userAppInfo?.prodDeployed]);
 
-  /** 数据库或数据库配置页签是否激活（Header 图标高亮） */
-  const isDatabasePanelOpen =
-    previewTabs.activeTab?.toolId === 'database' ||
-    previewTabs.activeTab?.toolId === 'database-config';
-  /** 应用预览页签是否激活（Header 图标高亮） */
-  const isAppPreviewOpen = previewTabs.activeTab?.toolId === 'preview';
+  /** 数据库或数据库配置独立视图是否激活（Header 图标高亮） */
+  const isDatabasePanelOpen = workspaceView === 'database';
+  /** 应用预览独立视图是否激活（Header 图标高亮） */
+  const isAppPreviewOpen = workspaceView === 'app-preview';
   /** 远程桌面页签是否激活（Header 图标高亮） */
   const isAgentDesktopOpen = previewTabs.activeTab?.toolId === 'remote-desktop';
 
@@ -1641,6 +1754,15 @@ const AppDevPro: React.FC = () => {
     () => buildUserAppAppPreviewUrl(dbEnv, userAppDomainList),
     [dbEnv, userAppDomainList],
   );
+  appPreviewUrlRef.current = appPreviewUrl;
+
+  /** 线上环境有预览地址时直接视为可预览，不调用启动接口 */
+  useEffect(() => {
+    if (dbEnv !== UserAppDbEnvEnum.Prod || !appPreviewUrl) {
+      return;
+    }
+    markPreviewReadyRef.current();
+  }, [appPreviewUrl, dbEnv]);
 
   /** 环境或应用变化时，地址栏与 iframe 回到对应代理根路径 */
   useEffect(() => {
@@ -1669,16 +1791,16 @@ const AppDevPro: React.FC = () => {
     [appPreviewUrl],
   );
 
-  /** 「数据库」页签：按 Header 所选环境加载 iframe */
-  const databasePanel = useMemo(
-    () => <AppDevDatabasePanel appId={appId} env={dbEnv} />,
-    [appId, dbEnv],
-  );
-
-  /** 「数据库配置」页签：按 Header 所选环境查询账号密码 */
-  const databaseConfigPanel = useMemo(
-    () => <AppDevDatabaseConfigPanel appId={appId} env={dbEnv} />,
-    [appId, dbEnv],
+  /** 数据库工作区：管理 iframe + 配置 */
+  const databaseWorkspace = useMemo(
+    () => (
+      <AppDevDatabaseWorkspace
+        appId={appId}
+        env={dbEnv}
+        activeTab={databaseActiveTab}
+      />
+    ),
+    [appId, databaseActiveTab, dbEnv],
   );
 
   /** 「应用预览」页签：准备中 / 启动预览 / 启动日志 / 应用加载 / iframe */
@@ -1691,7 +1813,7 @@ const AppDevPro: React.FC = () => {
         busy={previewRuntime.busy}
         phase={previewRuntime.phase}
         services={previewRuntime.services}
-        overallProgress={previewRuntime.overallProgress}
+        errorMessage={previewRuntime.errorMessage}
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={isConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
@@ -1700,6 +1822,9 @@ const AppDevPro: React.FC = () => {
         onRetryStart={handleRestartPreviewRuntime}
         onStart={handleStartPreviewRuntime}
         devActionLocked={previewDevActionLocked}
+        directPreview={
+          dbEnv === UserAppDbEnvEnum.Prod && !!activePreviewUrl
+        }
       />
     ),
     [
@@ -1715,10 +1840,10 @@ const AppDevPro: React.FC = () => {
       previewRuntime.cancelLoading,
       previewRuntime.cancelTask,
       previewRuntime.errorMessage,
-      previewRuntime.overallProgress,
       previewRuntime.phase,
       previewRuntime.running,
       previewRuntime.services,
+      dbEnv,
     ],
   );
 
@@ -1760,121 +1885,188 @@ const AppDevPro: React.FC = () => {
 
   /**
    * 渲染右侧面板
-   * 布局：顶部 PreviewTabBar（始终）+ 内容区（文件 / 工作区工具页）+ 底部终端
+   * 文件树工作区：顶部 PreviewTabBar + 文件预览
+   * 应用预览 / 数据库：独立视图，不进入文件标签栏，占满文件树工作区尺寸
    */
-  const renderRightPanel = () => (
-    <div className={cx(styles['right-panel'])}>
-      <div className={cx(styles['right-panel-body'])}>
-        {/* 顶部标签栏 */}
-        <PreviewTabBar
-          // 标签列表
-          tabs={previewTabs.tabs}
-          // 选中标签 ID
-          activeTabId={previewTabs.activeTabId}
-          // 选中标签
-          onTabSelect={handlePreviewTabSelect}
-          // 关闭标签
-          onTabClose={previewTabs.closeTab}
-          // 关闭其他标签
-          onCloseOtherTabs={previewTabs.closeOtherTabs}
-          // 关闭所有标签
-          onCloseAllTabs={previewTabs.closeAllTabs}
-          // 切换标签固定状态
-          onTogglePinTab={previewTabs.togglePinTab}
-          // 重新排序标签
-          onTabReorder={previewTabs.reorderTabs}
-          permanentWorkspaceToolIds={workspaceToolIds}
-          /** 重启智能体电脑 */
-          onRestartServer={() => {
-            if (queryConversationId) {
-              restartVncPod(queryConversationId, finalSelectedComputerId);
-            }
-          }}
-          onRestartAgent={() => {
-            if (queryConversationId) {
-              restartAgent(queryConversationId);
-            }
-          }}
-          /** 导出项目 */
-          onExportProject={() => {
-            void fileView.tree.handleExportProject?.();
-          }}
-          /** 是否为云电脑 */
-          isCloudComputer={finalSelectedComputerId === '-1'}
-          previewUrl={activePreviewUrl}
-          onNavigatePreview={handleNavigatePreview}
-          onRefreshPreview={handleRefreshPreview}
-          onStartPreviewRuntime={handleStartPreviewRuntime}
-          onRestartPreviewRuntime={handleRestartPreviewRuntime}
-          onStopPreviewRuntime={handleStopPreviewRuntime}
-          previewRuntimeBusy={previewRuntime.busy}
-          previewRuntimeRunning={previewRuntime.running}
-          previewRuntimeStopping={previewRuntime.stopping}
-          previewRuntimeReady={
-            podReady && !isConversationActive && !hasPendingIntervention
+  const renderRightPanel = () => {
+    const isFilesWorkspace = workspaceView === 'files';
+    const moreActions = (
+      <MoreActionsMenu
+        onRestartServer={() => {
+          if (queryConversationId) {
+            restartVncPod(queryConversationId, finalSelectedComputerId);
           }
-          previewDevActionLocked={previewDevActionLocked}
-        />
-        {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
-        <div className={cx(styles['right-panel-main'])}>
-          <div className={cx(styles['right-panel-content'])}>
-            <ConversationAgentFilePreview
-              // 预览文件
-              preview={fileView.preview}
-              // 差异文件
-              diffFile={gitSourceControl.selectedDiffFile ?? undefined}
-              // 选中标签
-              activeTab={previewTabs.activeTab}
-              // 应用预览页签
-              previewPanel={appPreviewPanel}
-              // 数据库页签
-              databasePanel={databasePanel}
-              // 数据库配置页签
-              databaseConfigPanel={databaseConfigPanel}
-              remoteDesktopPanel={remoteDesktopPanel}
-              // 版本控制面板（Git 提交记录）
-              versionPanel={versionControlPanel}
-              providerClassName={fileView.className}
-              className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
+        }}
+        onRestartAgent={() => {
+          if (queryConversationId) {
+            restartAgent(queryConversationId);
+          }
+        }}
+        onExportProject={() => {
+          void fileView.tree.handleExportProject?.();
+        }}
+        isCloudComputer={finalSelectedComputerId === '-1'}
+      />
+    );
+
+    return (
+      <div className={cx(styles['right-panel'])}>
+        <div className={cx(styles['right-panel-body'])}>
+          {isFilesWorkspace ? (
+            <PreviewTabBar
+              tabs={previewTabs.tabs}
+              activeTabId={previewTabs.activeTabId}
+              onTabSelect={handlePreviewTabSelect}
+              onTabClose={previewTabs.closeTab}
+              onCloseOtherTabs={previewTabs.closeOtherTabs}
+              onCloseAllTabs={previewTabs.closeAllTabs}
+              onTogglePinTab={previewTabs.togglePinTab}
+              onTabReorder={previewTabs.reorderTabs}
+              permanentWorkspaceToolIds={workspaceToolIds}
+              onRestartServer={() => {
+                if (queryConversationId) {
+                  restartVncPod(queryConversationId, finalSelectedComputerId);
+                }
+              }}
+              onRestartAgent={() => {
+                if (queryConversationId) {
+                  restartAgent(queryConversationId);
+                }
+              }}
+              onExportProject={() => {
+                void fileView.tree.handleExportProject?.();
+              }}
+              isCloudComputer={finalSelectedComputerId === '-1'}
+            />
+          ) : workspaceView === 'database' ? (
+            <PreviewTabBar
+              tabs={databaseTabs}
+              activeTabId={databaseTabId}
+              onTabSelect={handleDatabaseTabSelect}
+              onTabClose={noop}
+              onCloseOtherTabs={noop}
+              onCloseAllTabs={noop}
+              onTogglePinTab={noop}
+              onTabReorder={noop}
+              permanentWorkspaceToolIds={DATABASE_WORKSPACE_TOOL_IDS}
+              onRestartServer={() => {
+                if (queryConversationId) {
+                  restartVncPod(queryConversationId, finalSelectedComputerId);
+                }
+              }}
+              onRestartAgent={() => {
+                if (queryConversationId) {
+                  restartAgent(queryConversationId);
+                }
+              }}
+              onExportProject={() => {
+                void fileView.tree.handleExportProject?.();
+              }}
+              isCloudComputer={finalSelectedComputerId === '-1'}
+            />
+          ) : (
+            <div className={cx(styles['tool-workspace-bar'])}>
+              {workspaceView === 'app-preview' && (
+                <PreviewChromeActions
+                  previewUrl={activePreviewUrl}
+                  onNavigatePreview={handleNavigatePreview}
+                  onRefreshPreview={handleRefreshPreview}
+                  onStartPreviewRuntime={handleStartPreviewRuntime}
+                  onRestartPreviewRuntime={handleRestartPreviewRuntime}
+                  onStopPreviewRuntime={handleStopPreviewRuntime}
+                  previewRuntimeBusy={previewRuntime.busy}
+                  previewRuntimeRunning={previewRuntime.running}
+                  previewRuntimeStopping={previewRuntime.stopping}
+                  previewRuntimeReady={
+                    podReady &&
+                    !isConversationActive &&
+                    !hasPendingIntervention
+                  }
+                  previewDevActionLocked={previewDevActionLocked}
+                />
+              )}
+              <div className={cx(styles['tool-workspace-actions'])}>
+                {moreActions}
+              </div>
+            </div>
+          )}
+          <div className={cx(styles['right-panel-main'])}>
+            <div className={cx(styles['right-panel-content'])}>
+              <div
+                className={cx(styles['workspace-pane'], {
+                  [styles['workspace-pane-hidden']]:
+                    workspaceView !== 'files',
+                })}
+              >
+                <ConversationAgentFilePreview
+                  preview={fileView.preview}
+                  diffFile={gitSourceControl.selectedDiffFile ?? undefined}
+                  activeTab={previewTabs.activeTab}
+                  remoteDesktopPanel={remoteDesktopPanel}
+                  versionPanel={versionControlPanel}
+                  providerClassName={fileView.className}
+                  className={cx(
+                    styles['file-preview-panel'],
+                    'w-full',
+                    'h-full',
+                  )}
+                />
+              </div>
+              <div
+                className={cx(styles['tool-workspace'], {
+                  [styles['workspace-pane-hidden']]:
+                    workspaceView !== 'app-preview',
+                })}
+              >
+                {appPreviewPanel}
+              </div>
+              <div
+                className={cx(styles['tool-workspace'], {
+                  [styles['workspace-pane-hidden']]:
+                    workspaceView !== 'database',
+                })}
+              >
+                {databaseWorkspace}
+              </div>
+            </div>
+
+            {/* 底部控制台 */}
+            <ConversationBottomConsole
+              conversationId={
+                finalSelectedComputerId === '-1'
+                  ? queryConversationId
+                  : undefined
+              }
+              appStage={dbEnv}
+              externalContainerStatus={terminalExternalContainerStatus}
+              visible={showDevConsole}
+              wsUrl={terminalWsUrl}
+              wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+              wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+              layoutResetSignal={devConsoleLayoutResetSignal}
+              expandSignal={devConsoleExpandSignal}
+              collapseSignal={devConsoleCollapseSignal}
+              onLayoutModeChange={setDevConsoleLayoutMode}
+              onActiveTabChange={(tab) => {
+                setDevConsoleActiveTab(tab);
+              }}
+              devLog={{
+                logs: devLogs.logs,
+                isLoading: devLogs.isLoading,
+                lastLine: devLogs.lastLine,
+              }}
+              logsExtra={
+                <DevLogActions
+                  onRefresh={devLogs.refreshLogs}
+                  onClear={devLogs.clearLogs}
+                />
+              }
             />
           </div>
-
-          {/* 底部终端、开发日志合集面板 */}
-          {/** 云端电脑传入 conversationId；进页已启动容器时打开终端只保活，失败再 ensure */}
-          <ConversationBottomConsole
-            // 在ConversationAgent中，conversationId 为 queryConversationId
-            conversationId={
-              finalSelectedComputerId === '-1' ? queryConversationId : undefined
-            }
-            appStage={dbEnv}
-            externalContainerStatus={terminalExternalContainerStatus}
-            visible={showDevConsole}
-            wsUrl={terminalWsUrl}
-            wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-            wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
-            layoutResetSignal={devConsoleLayoutResetSignal}
-            expandSignal={devConsoleExpandSignal}
-            collapseSignal={devConsoleCollapseSignal}
-            onLayoutModeChange={setDevConsoleLayoutMode}
-            onActiveTabChange={(tab) => {
-              setDevConsoleActiveTab(tab);
-            }}
-            devLog={{
-              logs: devLogs.logs,
-              isLoading: devLogs.isLoading,
-              lastLine: devLogs.lastLine,
-            }}
-            logsExtra={
-              <DevLogActions
-                onRefresh={devLogs.refreshLogs}
-                onClear={devLogs.clearLogs}
-              />
-            }
-          />
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // ==================== 加载状态 ====================
   // 会话加载中时显示全屏 Loading，避免渲染不完整的页面
@@ -1914,7 +2106,6 @@ const AppDevPro: React.FC = () => {
         onOpenSettings={() => setSettingsOpen(true)}
         isDatabasePanelOpen={isDatabasePanelOpen}
         onOpenDatabase={handleOpenDatabasePanel}
-        onOpenDatabaseConfig={handleOpenDatabaseConfigPanel}
         isAppPreviewOpen={isAppPreviewOpen}
         onOpenAppPreview={handleOpenAppPreview}
         isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
@@ -1954,8 +2145,11 @@ const AppDevPro: React.FC = () => {
               {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
               <div
                 className={cx(styles['middle-panel'], {
-                  [styles['middle-panel-visible']]: canShowFileView,
-                  [styles['middle-panel-hidden']]: !canShowFileView,
+                  [styles['middle-panel-visible']]:
+                    workspaceView === 'files' && canShowFileView,
+                  [styles['middle-panel-hidden']]: !(
+                    workspaceView === 'files' && canShowFileView
+                  ),
                 })}
               >
                 {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
@@ -2050,7 +2244,6 @@ const AppDevPro: React.FC = () => {
         phase={publishFlow.phase}
         services={publishFlow.services}
         startServices={publishFlow.startServices}
-        overallProgress={publishFlow.overallProgress}
         errorMessage={publishFlow.errorMessage}
         failedStage={publishFlow.failedStage}
         cancelLoading={publishFlow.cancelLoading}

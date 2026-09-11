@@ -92,6 +92,8 @@ export async function apiUserAppStartDev(
   return request('/api/userapp/dev/start', {
     method: 'POST',
     data,
+    // 失败由预览页展示，不走全局 message
+    skipErrorHandler: true,
   });
 }
 
@@ -136,7 +138,8 @@ export async function apiUserAppBuildCancel(
 
 /**
  * 任务进度 SSE 地址（实际拉流请用 fetchEventSource，不要走 umi request）
- * 任务进度 SSE（dev-start、dev-restart、build 共用）
+ * 任务进度 SSE（dev-start、dev-restart、build 共用）。
+ * 开发环境启动 / 重启额外包含 service_starting、service_start_ok（带 service 名）。
  * @param taskId 构建任务 ID
  * @param fromSeq 断点序号
  * @returns SSE URL
@@ -160,6 +163,8 @@ export async function apiUserAppProdStart(
   return request('/api/userapp/prod/start', {
     method: 'POST',
     data,
+    // 失败由预览页 / 部署弹窗展示，不走全局 message
+    skipErrorHandler: true,
   });
 }
 
