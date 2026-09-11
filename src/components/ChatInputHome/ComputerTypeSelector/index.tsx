@@ -21,11 +21,6 @@ import { type ComputerOption, type ComputerTypeSelectorProps } from './types';
 
 const cx = classNames.bind(styles);
 
-// [sandbox-trace] 临时排查日志（修复验证完成后整体移除）
-const trace = (event: string, payload?: Record<string, unknown>) => {
-  console.warn(`[sandbox-trace] selector:${event}`, payload ?? {});
-};
-
 /**
  * 无可用电脑选项
  */
@@ -106,13 +101,6 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
           description: item.description,
           raw: item,
         }));
-        // [sandbox-trace] 列表就绪：顺序（list[0] 是回落目标）+ per-agent 记忆表
-        trace('list-loaded', {
-          order: options.map((opt) => `${opt.id}(${opt.name})`),
-          firstId: options[0]?.id,
-          agentSelectedMap: selectedMap,
-          readonly,
-        });
         setRawComputerList(options);
         if (selectedMap) {
           setAgentSelectedMap(readonly ? {} : selectedMap);
@@ -135,35 +123,16 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       !initialized ||
       computerList.length === 0
     ) {
-      // [sandbox-trace] 自动选择未启用（early-return 原因）
-      trace('autoSelect-skip', {
-        autoSelect,
-        fixedSelection,
-        initialized,
-        listLen: computerList.length,
-      });
       return;
     }
 
-    const isValueValid =
-      value && computerList.some((opt) => String(opt.id) === String(value));
-
-    // 决策单源：strict（首页）=记忆顶替/保持现值/失效兜底；legacy=既有行为
-    const { selectedId, reason } = resolveAutoSelection({
+    // 决策单源：strict（首页）=沙箱按 agent 绑定（其记忆/云端默认）；legacy=既有行为
+    const { selectedId } = resolveAutoSelection({
       strictAgentMemory,
       agentId,
       value,
       computerList,
       agentSelectedMap,
-    });
-    // [sandbox-trace] 决策结果（memory=记忆顶替 / keep-current=保持现值 / fallback-first=回落首项）
-    trace('autoSelect-decision', {
-      agentId,
-      currentValue: value,
-      isValueValid,
-      reason,
-      selectedId,
-      strictAgentMemory,
     });
 
     // 个人电脑下线处理：如果列表中仅剩云电脑（-1），且当前状态并非云电脑，则主动同步到后端
@@ -175,12 +144,6 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       agentSelectedMap?.[String(agentId)] !== '-1' &&
       saveOnSelect
     ) {
-      // [sandbox-trace] 分支命中：仅剩云电脑，主动同步 '-1'（覆盖决策结果，保持既有行为）
-      trace('autoSelect-branch-cloud-only-sync', {
-        agentId,
-        currentValue: value,
-        memoryValue: agentSelectedMap?.[String(agentId)],
-      });
       apiSaveSelectedSandbox(agentId, '-1').catch(console.error);
       setAgentSelectedMap((prev) => ({ ...prev, [String(agentId)]: '-1' }));
       finalId = '-1';
@@ -192,24 +155,8 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
         (opt) => String(opt.id) === String(finalId),
       );
       if (option) {
-        // [sandbox-trace] 自动选择落地：onChange 写回宿主
-        trace('autoSelect-apply', {
-          from: value,
-          to: finalId,
-          agentId,
-          reason,
-        });
         onChange?.(finalId, option);
       }
-    } else {
-      // [sandbox-trace] 决策完成但无变化（含：保持当前有效选择）
-      trace('autoSelect-noop', {
-        agentId,
-        currentValue: value,
-        isValueValid,
-        decidedId: finalId,
-        reason,
-      });
     }
   }, [
     agentId,
@@ -280,24 +227,10 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     async (option: ComputerOption) => {
       // 如果选中的是当前已选中的，直接返回，不触发接口
       if (String(option.id) === String(value) || readonly) {
-        // [sandbox-trace] 手选被拦：同值点击（不写记忆/不持久化）或只读
-        trace('handleSelect-blocked', {
-          optionId: option.id,
-          currentValue: value,
-          sameValue: String(option.id) === String(value),
-          readonly,
-        });
         setOpen(false);
         return;
       }
 
-      // [sandbox-trace] 用户手选
-      trace('handleSelect', {
-        from: value,
-        to: option.id,
-        agentId,
-        willPersist: !!agentId && saveOnSelect,
-      });
       onChange?.(option.id, option);
       setOpen(false);
 
@@ -312,15 +245,8 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
         if (saveOnSelect) {
           try {
             await apiSaveSelectedSandbox(agentId, option.id);
-            // [sandbox-trace] 记忆持久化成功
-            trace('handleSelect-persisted', { agentId, sandboxId: option.id });
           } catch (error) {
             console.error('Failed to save computer selection:', error);
-            // [sandbox-trace] 记忆持久化失败
-            trace('handleSelect-persist-failed', {
-              agentId,
-              sandboxId: option.id,
-            });
             // 保存失败时可以考虑回滚本地映射，但暂时不处理
           }
         }

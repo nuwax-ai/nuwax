@@ -249,8 +249,8 @@ export interface ChatInputUnifiedProps {
   autoSelectComputer?: boolean;
   saveComputerOnSelect?: boolean;
   /**
-   * 严格记忆模式（首页）：切换智能体时沙箱当前有效选择不被清空/回落，
-   * 仅按新智能体「在列表内」的记忆顶替；默认 false 保持既有行为
+   * 严格绑定模式（首页）：沙箱选择按 agent 绑定——切换后显示该 agent 自己的
+   * 记忆（未绑定过回落云端默认），不继承上一个 agent 的选择；默认 false 保持既有行为
    */
   strictAgentMemory?: boolean;
   isPersonalComputer?: boolean;

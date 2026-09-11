@@ -67,11 +67,6 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 const EMPTY_MANUAL_COMPONENTS: AgentManualComponentInfo[] = [];
 
-// [sandbox-trace] 临时排查日志（修复验证完成后整体移除）
-const trace = (event: string, payload?: Record<string, unknown>) => {
-  console.warn(`[sandbox-trace] ${event}`, payload ?? {});
-};
-
 // 推荐位功能类型 → 项目类型 / 任务态 / 空间选择器映射已上移至
 // @/constants/recommendAgentPolicy.constants（策略单源，弹窗选择等场景复用）
 
@@ -198,15 +193,8 @@ const Home: React.FC = () => {
   const runDetail = useCallback(async (agentId: number) => {
     try {
       const { data } = await apiPublishedAgentInfo(agentId);
-      // [sandbox-trace] 切换空档终点：新详情到达，agentId/agentSandboxId props 就位
-      trace('agentDetail-loaded', {
-        agentId: data?.agentId,
-        agentSandboxId: data?.sandboxId,
-        allowPrivateSandbox: data?.allowPrivateSandbox,
-      });
       setAgentDetail(data);
     } catch {
-      trace('agentDetail-load-failed', { agentId });
       setAgentDetail(undefined);
     }
   }, []);
@@ -252,8 +240,6 @@ const Home: React.FC = () => {
     // 切换会话对象（默认/推荐/专家）：重拉智能体详情；
     // 不在此清空输入——清输入只发生在用户显式切 pill/分类时（见对应 handler），
     // 选专家仅替换上方所选智能体，已输入内容与其他已选项保持
-    // [sandbox-trace] 切换空档起点：agentDetail 置空，agentId prop 即刻为 undefined
-    trace('agentDetail-reset', { currentAgentId });
     setAgentDetail(undefined);
     if (currentAgentId) {
       runDetail(currentAgentId);
@@ -276,14 +262,8 @@ const Home: React.FC = () => {
   }, [agentDetail?.manualComponents]);
 
   useEffect(() => {
-    // [sandbox-trace] selectedRecommend 变化：仅复位模型/空间（沙箱选择不再随切换清空）
-    trace('effect-selectedRecommend-reset', {
-      selectedRecommendId: selectedRecommend?.id,
-      targetId: selectedRecommend?.targetId,
-      computerKept: true,
-    });
-    // 沙箱选择跨切换保持：清空会触发选择器任意回落（列表首项/旧 agentId 计算），
-    // 新智能体的记忆顶替由 ComputerTypeSelector strictAgentMemory 决策承接
+    // 沙箱按 agent 绑定：这里不清空（清空会触发选择器以旧 agentId 任意回落），
+    // 切换后的解析（该 agent 的记忆/云端默认）由 ComputerTypeSelector strictAgentMemory 承接
     setSelectedModelId(undefined);
     setSelectedSpaceId(undefined);
   }, [selectedRecommend]);
@@ -295,8 +275,6 @@ const Home: React.FC = () => {
     setPinnedProject(pinned);
     agentMissedPromptedRef.current = undefined;
     // 上框项目自带空间/沙箱/工作区，复位与之互斥的选择
-    // [sandbox-trace] 项目上框消费：复位 '-1'
-    trace('pinned-project-consume-reset', { projectId: pinned.projectId });
     setSelectedRecommend(undefined);
     setUserPickedCategory(null);
     setSelectedComputerId('-1');
@@ -452,13 +430,7 @@ const Home: React.FC = () => {
       setSummonedExpert(undefined);
       // 输入被清，消息级技能 chip 一并清（对齐召唤态口径）
       setSelectedSkill(undefined);
-      // 智能体随分类重选：模型/空间复位（沙箱选择保持，由选择器按新智能体记忆决策）
-      // [sandbox-trace] 切分类：沙箱保持不动
-      trace('category-change-reset', {
-        categoryKey: key,
-        currentAgentId,
-        prevComputerId: selectedComputerId,
-      });
+      // 智能体随分类重选：模型/空间复位（沙箱按 agent 绑定，由选择器解析该 agent 的记忆）
       setSelectedModelId(undefined);
       setSelectedSpaceId(undefined);
       chatInputRef.current?.clear();
@@ -475,17 +447,9 @@ const Home: React.FC = () => {
       prev?.id === item.id ? (isUserAppPinned ? prev : undefined) : item,
     );
     if (!isDeselectBlocked) {
-      // 显式切换（或非上框取消）：沙箱选择保持（新智能体记忆顶替走选择器
-      // strictAgentMemory 决策，不再清空交由回落），模型/空间复位，输入清空；
-      // 外部技能 chip 随输入一并清
-      // [sandbox-trace] 切推荐 pill：沙箱保持不动
-      trace('recommend-select-reset', {
-        fromRecommendId: selectedRecommend?.id,
-        toRecommendId: item.id,
-        toTargetAgentId: item.targetId,
-        prevComputerId: selectedComputerId,
-        computerKept: true,
-      });
+      // 显式切换（或非上框取消）：沙箱交由选择器按新智能体绑定解析
+      // （strictAgentMemory：其记忆，未绑定回落云端默认；此处不清空避免旧 agentId 回落），
+      // 模型/空间复位，输入清空；外部技能 chip 随输入一并清
       setSelectedSkill(undefined);
       setSelectedModelId(undefined);
       setSelectedSpaceId(undefined);
@@ -499,8 +463,6 @@ const Home: React.FC = () => {
 
   // 移除项目上框:恢复首页默认形态(全量推荐/默认门控/电脑复位)
   const handleClearPinnedProject = useCallback(() => {
-    // [sandbox-trace] 移除上框：复位 '-1'
-    trace('clear-pinned-project-reset');
     setPinnedProject(undefined);
     agentMissedPromptedRef.current = undefined;
     setSelectedRecommend(undefined);
@@ -573,12 +535,6 @@ const Home: React.FC = () => {
           }}
           selectedComputerId={selectedComputerId}
           onComputerSelect={(id) => {
-            // [sandbox-trace] 用户手选电脑：写入 state + 连带清工作目录
-            trace('user-select-computer', {
-              prevComputerId: selectedComputerId,
-              nextComputerId: id,
-              workspaceCleared: id !== selectedComputerId && !!workspacePath,
-            });
             setSelectedComputerId(id);
             // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
             if (id !== selectedComputerId) setWorkspaceDir('');
@@ -592,7 +548,7 @@ const Home: React.FC = () => {
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
           readonly={!agentDetail?.allowPrivateSandbox}
-          // 切换智能体/分类时沙箱选择保持：记忆顶替与回落由选择器严格决策
+          // 沙箱按 agent 绑定：切换后由选择器解析该 agent 的记忆（未绑定回落云端默认）
           strictAgentMemory
           /* / 能力弹窗是首页自身特性（选技能/连接器/专家/资料库发起会话），
              不随 agentDetail 重载/专家切换抖动 —— 不传 enableMention，
