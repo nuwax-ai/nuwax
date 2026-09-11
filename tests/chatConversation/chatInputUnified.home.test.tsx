@@ -282,14 +282,16 @@ describe('首页工具栏能力', () => {
     expect(spaceSelector.props.onSpaceSelect).toBe(onSpaceSelect);
   });
 
-  it('推荐标签 pill 展示与取消', () => {
+  it('推荐标签 pill 展示与取消（工具栏专家样式，不内联回显输入框）', () => {
     const onClearSelectedTag = vi.fn();
     renderHomeInput({
       selectedTag: { label: 'AI 教育专家' },
       onClearSelectedTag,
     });
     expect(screen.getByText('AI 教育专家')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Clear selected tag' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
+    );
     expect(onClearSelectedTag).toHaveBeenCalledTimes(1);
   });
 

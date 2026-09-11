@@ -69,7 +69,6 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -384,10 +383,6 @@ const ChatInputUnifiedImpl: React.FC<
   const [workspacePathPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
   // 项目上框图标（可能为 /api/f/ 受保护地址，走鉴权 fetch + blob）
   const pinnedProjectIcon = useAuthProtectedImageSrc(pinnedProject?.icon);
-  // 推荐标签 pill 实测宽度：编辑器 inlinePrefixWidth 让行首文本绕开标签
-  const selectedTagRef = useRef<HTMLDivElement>(null);
-  const [selectedTagWidth, setSelectedTagWidth] = useState<number>(0);
-  const selectedTagOffset = selectedTag?.label ? selectedTagWidth + 8 : 0;
 
   useImperativeHandle(forwardedRef, () => ({
     focus: () => {
@@ -397,30 +392,6 @@ const ChatInputUnifiedImpl: React.FC<
       mentionEditorRef.current?.clear?.();
     },
   }));
-
-  useLayoutEffect(() => {
-    if (!selectedTag?.label || !selectedTagRef.current) {
-      setSelectedTagWidth(0);
-      return;
-    }
-
-    const selectedTagElement = selectedTagRef.current;
-    const updateSelectedTagWidth = () => {
-      setSelectedTagWidth(selectedTagElement.offsetWidth);
-    };
-
-    updateSelectedTagWidth();
-
-    if (typeof ResizeObserver === 'undefined') {
-      const frameId = window.requestAnimationFrame(updateSelectedTagWidth);
-      return () => window.cancelAnimationFrame(frameId);
-    }
-
-    const resizeObserver = new ResizeObserver(updateSelectedTagWidth);
-    resizeObserver.observe(selectedTagElement);
-
-    return () => resizeObserver.disconnect();
-  }, [selectedTag?.label]);
 
   const [isHoveringBtn, setIsHoveringBtn] = useState<boolean>(false);
   const [delayedVisible, setDelayedVisible] = useState<boolean>(false);
@@ -1037,21 +1008,8 @@ const ChatInputUnifiedImpl: React.FC<
           <ConditionRender condition={uploadFiles?.length}>
             <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
           </ConditionRender>
-          {/* 输入行：推荐标签 pill 内联在编辑器行首，编辑器文本绕开（inlinePrefixWidth） */}
+          {/* 输入行：推荐类型选中不再内联回显输入框（改为底部工具栏专家样式 pill） */}
           <div className={cx(styles['input-line'])}>
-            <ConditionRender condition={!!selectedTag?.label}>
-              <div ref={selectedTagRef} className={cx(styles['selected-tag'])}>
-                <span className={cx(styles['tag-label'])}>
-                  {selectedTag?.label}
-                </span>
-                <button
-                  type="button"
-                  className={cx(styles['tag-close'])}
-                  aria-label="Clear selected tag"
-                  onClick={onClearSelectedTag}
-                />
-              </div>
-            </ConditionRender>
             <MentionEditor
               onPluginSelect={onPluginSelect}
               onFetchMentionFiles={onFetchMentionFiles}
@@ -1059,7 +1017,6 @@ const ChatInputUnifiedImpl: React.FC<
               className={cx(styles.input)}
               disabled={wholeDisabled}
               value={messageInfo}
-              inlinePrefixWidth={selectedTagOffset}
               onChange={setMessageInfo}
               onSkillIdsChange={setSkillIds}
               enableMention={enableMention}
@@ -1405,6 +1362,40 @@ const ChatInputUnifiedImpl: React.FC<
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
                               onClearSummonedExpert?.();
+                            }
+                          }}
+                        >
+                          <CloseOutlined />
+                        </span>
+                      </span>
+                    </VoiceFooter.HideWhenActive>
+                  )}
+
+                  {/* 推荐类型选中回执 pill（首页场景）：不再内联回显输入框行首，
+                      与专家 pill 同款样式/位置；关闭走原 onClearSelectedTag 逻辑
+                      （上层清 selectedRecommend 并清空输入） */}
+                  {!!selectedTag?.label && (
+                    <VoiceFooter.HideWhenActive>
+                      <span
+                        className={cx(
+                          'flex',
+                          'items-center',
+                          styles['expert-pill'],
+                        )}
+                      >
+                        <span className={cx(styles['expert-pill-name'])}>
+                          {selectedTag.label}
+                        </span>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={t('PC.Common.Global.delete')}
+                          className={cx(styles['expert-pill-remove'])}
+                          onClick={onClearSelectedTag}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onClearSelectedTag?.();
                             }
                           }}
                         >
