@@ -30,6 +30,12 @@ export interface RepoPageInfo {
   attachmentSize?: number;
   /** 是否启用 ACL */
   aclEnabled?: number;
+  /** 创建人 ID */
+  creatorId?: number;
+  /** 创建人昵称（能力弹窗资料卡创建人显示） */
+  creatorName?: string;
+  /** 创建人头像地址（空/加载失败由卡片回退默认头像） */
+  creatorAvatar?: string;
   /** 创建时间 */
   created?: string;
   /** 修改时间 */
