@@ -2822,6 +2822,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.startService": "Start service",
   "PC.Pages.AppDevPro.devActionBusyHint": "The app is already starting. Cancel it or wait until it finishes",
   "PC.Pages.AppDevPro.startSuccess": "Started successfully",
+  "PC.Pages.AppDevPro.serviceStarting": "Starting {0}",
+  "PC.Pages.AppDevPro.serviceStartOk": "{0} started successfully",
   "PC.Pages.AppDevPro.startingService": "Starting service...",
   "PC.Pages.AppDevPro.stopFailed": "Stop failed",
   "PC.Pages.AppDevPro.stopService": "Stop service",

@@ -145,7 +145,8 @@ export async function apiUserAppBuildCancel(
 
 /**
  * 任务进度 SSE 地址（实际拉流请用 fetchEventSource，不要走 umi request）
- * 任务进度 SSE（dev-start、dev-restart、build 共用）
+ * 任务进度 SSE（dev-start、dev-restart、build 共用）。
+ * 开发环境启动 / 重启额外包含 service_starting、service_start_ok（带 service 名）。
  * @param taskId 构建任务 ID
  * @param fromSeq 断点序号
  * @returns SSE URL
