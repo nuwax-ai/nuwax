@@ -287,7 +287,9 @@ const AppDevPro: React.FC = () => {
 
   /**
    * 仅在 AppDevPro 把当前环境写入 conversationInfo，
-   * 供 ensure/restart/keepalive/stop 老接口附带 appStage；离开页面时清空，避免污染其它页面。
+   * 供 ensure/restart/keepalive/stop 老接口附带 appStage。
+   * 同时作为会话 OPEN_DESKTOP 闸门：开发环境打开桌面且不停保活，线上环境不调用。
+   * 离开页面时清空，避免污染其它页面。
    */
   useEffect(() => {
     setPodAppStage(dbEnv);
@@ -300,8 +302,14 @@ const AppDevPro: React.FC = () => {
     [setPodAppStage],
   );
 
+  const ensureDesktopConnectionRef = useRef(ensureDesktopConnection);
+  ensureDesktopConnectionRef.current = ensureDesktopConnection;
+  const refreshFileListImmediatelyRef = useRef(refreshFileListImmediately);
+  refreshFileListImmediatelyRef.current = refreshFileListImmediately;
+
   /**
    * 进入页面即启动容器并开启保活，默认开发环境 dev。
+   * 只在会话 ID 变化时执行一次；会话结束刷新文件树不得再次 ensure。
    * 容器启动成功后再拉文件树、Git status；打开终端时复用本次结果，不再重复 ensure。
    */
   useEffect(() => {
@@ -319,10 +327,10 @@ const AppDevPro: React.FC = () => {
         return;
       }
       setPodStatus('running');
-      void refreshFileListImmediately(queryConversationId);
+      void refreshFileListImmediatelyRef.current(queryConversationId);
     };
 
-    void ensureDesktopConnection(queryConversationId)
+    void ensureDesktopConnectionRef.current(queryConversationId)
       .then(afterPodReady)
       .catch((error: any) => {
         if (isEnsurePodThrottledError(error)) {
@@ -338,12 +346,7 @@ const AppDevPro: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [
-    ensureDesktopConnection,
-    queryConversationId,
-    refreshFileListImmediately,
-    setPodAppStage,
-  ]);
+  }, [queryConversationId, setPodAppStage]);
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
@@ -1810,7 +1813,7 @@ const AppDevPro: React.FC = () => {
         busy={previewRuntime.busy}
         phase={previewRuntime.phase}
         services={previewRuntime.services}
-        overallProgress={previewRuntime.overallProgress}
+        errorMessage={previewRuntime.errorMessage}
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={isConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
@@ -1837,7 +1840,6 @@ const AppDevPro: React.FC = () => {
       previewRuntime.cancelLoading,
       previewRuntime.cancelTask,
       previewRuntime.errorMessage,
-      previewRuntime.overallProgress,
       previewRuntime.phase,
       previewRuntime.running,
       previewRuntime.services,
@@ -2242,7 +2244,6 @@ const AppDevPro: React.FC = () => {
         phase={publishFlow.phase}
         services={publishFlow.services}
         startServices={publishFlow.startServices}
-        overallProgress={publishFlow.overallProgress}
         errorMessage={publishFlow.errorMessage}
         failedStage={publishFlow.failedStage}
         cancelLoading={publishFlow.cancelLoading}

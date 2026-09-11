@@ -405,30 +405,40 @@ export type UserAppDeployFailedStage = 'build' | 'deploy' | 'apply';
 export type UserAppTaskTerminalStatus = 'succeeded' | 'failed' | 'cancelled';
 
 /**
- * 构建任务 SSE 事件名（与 event 字段一致）。
- * building / log / build_ok / build_fail 为服务级；completed / failed / cancelled 为任务终态；
- * stream_lagged 为协议事件，需带 fromSeq 重连。
+ * 任务进度 SSE 事件名（与 event 字段一致）。
+ * building / log / build_ok / build_fail 为构建服务级；
+ * service_starting / service_start_ok 仅开发环境启动 / 重启服务时出现；
+ * completed / failed / cancelled 为任务终态；stream_lagged 需带 fromSeq 重连。
  */
 export type UserAppBuildSseEventName =
   | 'building'
   | 'log'
   | 'build_ok'
   | 'build_fail'
+  | 'service_starting'
+  | 'service_start_ok'
   | 'completed'
   | 'failed'
   | 'cancelled'
   | 'stream_lagged';
 
-/** 单个服务的构建状态：building 期间穿插 log，以 build_ok / build_fail 结束 */
-export type UserAppBuildServiceStatus = 'building' | 'build_ok' | 'build_fail';
+/**
+ * 单个服务进度状态。
+ * 构建：building → build_ok / build_fail；
+ * 开发环境启动：service_starting → service_start_ok。
+ */
+export type UserAppBuildServiceStatus =
+  | 'building'
+  | 'build_ok'
+  | 'build_fail'
+  | 'service_starting'
+  | 'service_start_ok';
 
-/** 单个服务（serviceId）的构建进度 */
+/** 单个服务（serviceId）的构建 / 启动状态与日志 */
 export interface UserAppTaskServiceProgress {
-  /** 服务 ID，如 web / api */
+  /** 服务 ID，如 web / api / backend-go */
   serviceId: string;
-  /** 进度 0-100 */
-  progress: number;
-  /** 服务构建状态：building / build_ok / build_fail */
+  /** 服务状态 */
   status: UserAppBuildServiceStatus;
   /** 日志行 */
   logs: string[];

@@ -24,12 +24,12 @@ import {
   type UserAppTaskServiceProgress,
 } from '../type';
 import {
-  getOverallTaskProgress,
   getTaskTerminalStatus,
   mergeTaskServiceProgress,
 } from '../utils/userAppTaskLog';
 import {
   listenUserAppTaskStream,
+  pickUserAppRequestErrorText,
   pickUserAppTaskId,
   unwrapUserAppResponse,
 } from '../utils/userAppTaskStream';
@@ -71,7 +71,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
   const [action, setAction] = useState<UserAppRuntimeAction>('start');
   const [services, setServices] = useState<UserAppTaskServiceProgress[]>([]);
-  const [overallProgress, setOverallProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const [taskId, setTaskId] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -94,7 +93,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
 
   const resetProgress = useCallback(() => {
     setServices([]);
-    setOverallProgress(0);
     setErrorMessage('');
     setTaskId('');
     taskIdRef.current = '';
@@ -120,7 +118,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     setServices((prev) => {
       const next = mergeTaskServiceProgress(prev, event);
       servicesRef.current = next;
-      setOverallProgress(getOverallTaskProgress(next));
       return next;
     });
   }, []);
@@ -138,11 +135,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         getServices: () => servicesRef.current,
         failedMessage: getFailedMessage(currentAction),
         streamClosedMessage: dict('PC.Pages.AppDevPro.publishStreamClosed'),
-      }).then((status) => {
-        if (status === 'succeeded') {
-          setOverallProgress(100);
-        }
-        return status;
       });
     },
     [applyEvent],
@@ -247,7 +239,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         }
 
         setPhase('success');
-        setOverallProgress(100);
         setEnvRunning(true);
         message.success(
           nextAction === 'restart'
@@ -263,7 +254,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           setPhase('cancelled');
           return;
         }
-        const text = error instanceof Error ? error.message : failedMessage;
+        const text = pickUserAppRequestErrorText(error, failedMessage);
         setErrorMessage(text);
         setPhase('failed');
         setEnvRunning(false);
@@ -337,7 +328,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         if (immediate === 'succeeded') {
           if (!isBuild) {
             setPhase('success');
-            setOverallProgress(100);
             setEnvRunning(true);
             onReady?.();
           } else {
@@ -361,7 +351,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         }
 
         setPhase('success');
-        setOverallProgress(100);
         if (!isBuild) {
           setEnvRunning(true);
           onReady?.();
@@ -512,7 +501,6 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     phase,
     action,
     services,
-    overallProgress,
     errorMessage,
     cancelLoading,
     busy,
