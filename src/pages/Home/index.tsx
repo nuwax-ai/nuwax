@@ -1,3 +1,4 @@
+import agentImage from '@/assets/images/agent_image.png';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import {
   readAgentModeCache,
@@ -6,10 +7,14 @@ import {
 import ChatInputUnified, {
   type ChatInputUnifiedRef,
 } from '@/components/business-component/ChatInputUnified';
+import type { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import { getWorkspaceDirPolicy } from '@/constants/workspaceDirPolicy.constants';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import useSelectSkillHandoff, {
+  type SelectedSkillInfo,
+} from '@/hooks/useSelectSkillHandoff';
 import useSummonExpertHandoff, {
   type SummonedExpertInfo,
 } from '@/hooks/useSummonExpertHandoff';
@@ -95,6 +100,7 @@ const Home: React.FC = () => {
   const { handleCreateConversation } = useConversation();
   const chatInputRef = useRef<ChatInputUnifiedRef>(null);
   const { consume: consumeSummonedExpert } = useSummonExpertHandoff();
+  const { consume: consumeSelectedSkill } = useSelectSkillHandoff();
   const {
     selectedComponentList,
     handleSelectComponent,
@@ -129,6 +135,21 @@ const Home: React.FC = () => {
   const { displaySrc: summonedExpertIconSrc } = useAuthProtectedImageSrc(
     summonedExpert?.icon,
   );
+  // 外部带入技能（广场技能卡「选择」经 pageHandoffContext 一次性透传，
+  // 与专家召唤相互独立、互不覆盖）；复用「直接选技能」链路：转为编辑器
+  // mention chip 回填，skillIds 由编辑器 selectedMentions 自然派生
+  const [selectedSkill, setSelectedSkill] = useState<SelectedSkillInfo>();
+  const skillDefaultMentions = useMemo<MentionItem[] | undefined>(() => {
+    if (!selectedSkill) return undefined;
+    return [
+      {
+        kind: 'skill',
+        targetId: selectedSkill.skillId,
+        name: selectedSkill.name,
+        icon: selectedSkill.icon,
+      },
+    ];
+  }, [selectedSkill]);
 
   // 召唤透传消费：读取即清；if 守卫规避 StrictMode 双执行把一次性值洗掉
   useEffect(() => {
@@ -137,6 +158,15 @@ const Home: React.FC = () => {
       setSummonedExpert(payload);
       // 召唤专家优先于推荐 pill：显式清掉 pill 选中态
       setSelectedRecommend(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 技能选择透传消费：读取即清；if 守卫同上（与专家透传两份独立 key）
+  useEffect(() => {
+    const payload = consumeSelectedSkill();
+    if (payload) {
+      setSelectedSkill(payload);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -371,6 +401,8 @@ const Home: React.FC = () => {
     if (selectedRecommend || summonedExpert) {
       setSelectedRecommend(undefined);
       setSummonedExpert(undefined);
+      // 输入被清，消息级技能 chip 一并清（对齐召唤态口径）
+      setSelectedSkill(undefined);
       // 智能体随分类重选：电脑/模型/空间等 agent 相关已选项一并复位
       setSelectedComputerId('-1');
       setSelectedModelId(undefined);
@@ -383,6 +415,7 @@ const Home: React.FC = () => {
     // 推荐 pill = 显式切换会话对象，清掉召唤态（优先级让位）；
     // 电脑置 '' 交选择器按新智能体记忆自动选，模型/空间复位，输入清空
     setSummonedExpert(undefined);
+    setSelectedSkill(undefined);
     setSelectedRecommend((prev) => (prev?.id === item.id ? undefined : item));
     setSelectedComputerId('');
     setSelectedModelId(undefined);
@@ -491,16 +524,20 @@ const Home: React.FC = () => {
             agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
           }
           // 召唤专家 chip：提交时以该专家 agentId 创建会话（优先级高于推荐 pill）
+          // 召唤专家 chip（透传契约见 useSummonExpertHandoff）：icon 缺失或
+          // 受保护地址解析失败时回退默认智能体图，chip 恒有图标位
           summonedExpert={
             summonedExpert
               ? {
                   agentId: summonedExpert.agentId,
                   name: summonedExpert.name,
-                  iconSrc: summonedExpertIconSrc,
+                  iconSrc: summonedExpertIconSrc || agentImage,
                 }
               : undefined
           }
           onClearSummonedExpert={() => setSummonedExpert(undefined)}
+          // 外部带入技能：复用「直接选技能」链路，编辑器回填 mention chip
+          defaultMentions={skillDefaultMentions}
           // 能力弹窗选中专家 = 切换会话智能体：仅清上方所选的推荐智能体，
           // 输入内容与电脑/模型/空间等已选项保持；复用召唤链路
           // （chip 展示 + 提交时以专家 agentId 走会话创建）

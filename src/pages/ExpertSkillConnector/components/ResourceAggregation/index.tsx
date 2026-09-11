@@ -4,17 +4,14 @@
  * 工具栏（主tab/二级tab/搜索/更多）+ 卡片网格 + 滚动加载
  */
 
+import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useConnectorConnect from '@/hooks/useConnectorConnect';
 import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiConnectorConnectionDelete,
-  apiConnectorConnectionList,
-} from '@/services/systemManage';
-import { Empty, message } from 'antd';
+import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -30,9 +27,7 @@ import type {
   ResourceTypeEnum,
 } from '../../types';
 import ResourceToolbar from '../ResourceToolbar';
-import ConnectorConnectModal from './components/ConnectorConnectModal';
 import ResourceCard from './components/ResourceCard';
-import useConnectorConnect from './hooks/useConnectorConnect';
 import useResourceCategories from './hooks/useResourceCategories';
 import useResourceList from './hooks/useResourceList';
 import styles from './index.less';
@@ -156,65 +151,16 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     [select],
   );
 
-  /** 连接器卡片「断开」请求中的条目 id（对应卡片按钮 loading，防重复点击） */
-  const [disconnectingIds, setDisconnectingIds] = useState<string[]>([]);
-
   /**
-   * 连接器卡片「断开」：已连接状态下断开用户连接并就地更新卡片状态。
-   * 连接 id ≠ 连接器 id：先 GET /api/connector/connections 按 service 匹配
-   * （团队空间维度带 spaceId，系统广场不带，与连接器详情抽屉同口径），
-   * 再 DELETE /api/connector/connections/{id}；成功后本地 updateItem 置
-   * connected: false（不整页重拉，保留滚动加载位置）。
-   * 业务/网络错误由全局 errorHandler 统一提示，此处不重复弹错
-   */
-  const handleDisconnect = useCallback(
-    async (item: ResourceItem) => {
-      if (!item.service) {
-        // 数据异常兜底：缺 service 无法匹配连接 id（正常数据两个维度均有值）
-        console.warn(
-          '[ExpertSkillConnector] disconnect skipped: missing service, item =',
-          item.id,
-        );
-        return;
-      }
-      if (disconnectingIds.includes(item.id)) return;
-      setDisconnectingIds((prev) => [...prev, item.id]);
-      try {
-        const connRes = await apiConnectorConnectionList({
-          spaceId: source === 'team' ? listSpaceId : undefined,
-        });
-        const connections = Array.isArray(connRes?.data) ? connRes.data : [];
-        const matched = connections.find(
-          (conn) => (conn.providerService ?? conn.service) === item.service,
-        );
-        if (!matched) {
-          // 与连接器详情抽屉同口径：列表无匹配连接时无法寻址断开
-          message.error('连接 id 缺失，无法断开连接');
-          return;
-        }
-        const res = await apiConnectorConnectionDelete(matched.id);
-        if (res?.code === SUCCESS_CODE) {
-          updateItem(item.id, { connected: false });
-          message.success('已断开连接');
-        }
-        // 非成功码理论上会被全局拦截器 reject，不会 resolve 到这里
-      } catch {
-        // 业务/网络错误：全局 errorHandler 已提示后端报错，此处不再重复弹错
-      } finally {
-        setDisconnectingIds((prev) => prev.filter((id) => id !== item.id));
-      }
-    },
-    [disconnectingIds, source, listSpaceId, updateItem],
-  );
-
-  /**
-   * 连接器卡片「连接」：按认证方式分流（oauth2 → 授权弹窗；
-   * api_key/bearer/custom → 凭据抽屉），与管理侧/空间侧详情抽屉同口径；
-   * 连接成功后就地更新卡片为已连接
+   * 连接器卡片「连接/断开」：共享 hook（与能力弹窗同源）——
+   * 连接按认证方式分流（oauth2 → 授权弹窗；api_key/bearer/custom → 凭据弹窗），
+   * 断开经连接列表按 service 寻址；成功后就地更新卡片连接状态
    */
   const {
     handleConnect,
     connectingIds,
+    handleDisconnect,
+    disconnectingIds,
     connectCtx,
     closeConnectModal,
     handleConnected,

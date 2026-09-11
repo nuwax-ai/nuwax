@@ -41,6 +41,8 @@ export interface CapabilityItem {
   userCount?: number;
   /** 连接器实际连接状态；未返回时不推断。 */
   connected?: boolean;
+  /** 连接器认证方式（oauth2/api_key/bearer/custom/no_auth），连接/断开分流用 */
+  authType?: string;
   /** 资料格式；未返回时仅从文件扩展名推导。 */
   fileType?: string;
   /** 资料库文档类型（knowledge 项；随 selectedDocs 的 pageType 发送） */

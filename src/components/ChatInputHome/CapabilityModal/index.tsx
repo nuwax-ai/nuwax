@@ -16,6 +16,8 @@
  * ```
  */
 
+import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
+import useConnectorConnect from '@/hooks/useConnectorConnect';
 import { t } from '@/services/i18nRuntime';
 import {
   CloseOutlined,
@@ -175,8 +177,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
 
   /**
    * 团队空间维度：分类 pill 即空间选择——选中具体空间查该空间；
-   * "全部"（category 为空）暂为占位：等后端提供聚合参数，先回落默认空间
-   * （团队空间优先，与 ExpertSkillConnector 的 useTeamSpaceId 口径一致）
+   * 与广场页同口径无"全部"占位，默认选中首个空间（团队空间优先）
    */
   const defaultSpaceId = useMemo(() => {
     const first = categories.find((item) => item.key);
@@ -190,14 +191,54 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   );
 
   // 归一化列表数据
-  const { list, loading, error, hasMore, loadMore } = useCapabilityResources({
-    resourceType,
+  const { list, loading, error, hasMore, loadMore, updateItem } =
+    useCapabilityResources({
+      resourceType,
+      source,
+      category,
+      keyword,
+      spaceId,
+      pageSize: 20,
+    });
+
+  // 连接器「连接/断开」：与专家·技能·连接器广场页共用同一份共享 hook
+  // （oauth2 授权 / 凭据弹窗 / 断开寻址，成功后就地更新卡片 connected）
+  const {
+    handleConnect,
+    connectingIds,
+    handleDisconnect,
+    disconnectingIds,
+    connectCtx,
+    closeConnectModal,
+    handleConnected,
+  } = useConnectorConnect({
     source,
-    category,
-    keyword,
     spaceId,
-    pageSize: 20,
+    updateItem,
   });
+  const connectorBusyKeys = useMemo(
+    () => [...connectingIds, ...disconnectingIds],
+    [connectingIds, disconnectingIds],
+  );
+  // CapabilityItem → 共享 hook 契约（connector 的 rawId 即 service 标识）
+  const toConnectItem = (item: CapabilityItem) => ({
+    id: item.key,
+    service: item.rawId !== undefined ? String(item.rawId) : undefined,
+    authType: item.authType,
+    connected: item.connected,
+  });
+  const onConnectorConnect = useCallback(
+    (item: CapabilityItem) => {
+      void handleConnect(toConnectItem(item));
+    },
+    [handleConnect],
+  );
+  const onConnectorDisconnect = useCallback(
+    (item: CapabilityItem) => {
+      void handleDisconnect(toConnectItem(item));
+    },
+    [handleDisconnect],
+  );
 
   // 置顶项排在当前列表最前（保持原相对顺序的稳定分区）
   const displayList = useMemo(() => {
@@ -222,7 +263,8 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   /**
    * 切换数据源/能力类型时同步清空二级分类：跨维度的 category 语义不同
    * （system=内容分类、team=空间选择），携带旧值会先发出一次无效加载；
-   * 资料库=空间文档仓库（repo 树接口 spaceId 必传），强制团队空间源
+   * 切换类型导航时数据源自动回到系统广场（资料库=空间文档仓库，repo 树
+   * 接口 spaceId 必传，强制团队空间源）
    */
   const handleSourceChange = useCallback((next: CapabilitySourceEnum) => {
     setSource(next);
@@ -230,9 +272,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   }, []);
   const handleResourceTypeChange = useCallback((next: CapabilityTypeEnum) => {
     setResourceType(next);
-    if (next === 'knowledge') {
-      setSource('team');
-    }
+    setSource(next === 'knowledge' ? 'team' : 'system');
     setCategory('');
   }, []);
 
@@ -629,6 +669,9 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
                     onSelect={handleSelect}
                     onHover={setFocusIndex}
                     onTogglePin={handleTogglePin}
+                    onConnectorConnect={onConnectorConnect}
+                    onConnectorDisconnect={onConnectorDisconnect}
+                    connectorBusyKeys={connectorBusyKeys}
                   />
                 ))}
                 {loading && (
@@ -648,6 +691,16 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
           </div>
         </section>
       </div>
+
+      {/* 凭据型连接器连接弹窗（oauth2 走授权窗口，不经过这里） */}
+      <ConnectorConnectModal
+        open={!!connectCtx}
+        record={connectCtx?.record ?? null}
+        fields={connectCtx?.fields ?? []}
+        spaceId={source === 'team' ? spaceId : undefined}
+        onClose={closeConnectModal}
+        onConnected={handleConnected}
+      />
     </Modal>
   );
 };

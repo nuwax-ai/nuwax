@@ -10,8 +10,8 @@ import {
   readAgentModeCache,
   writeAgentModeCache,
 } from '@/components/business-component/AgentIntervention/hooks/useAgentInterventionLayer';
+import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
-import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
@@ -50,6 +50,7 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
 import { appendOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
@@ -595,6 +596,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     files?: UploadFileInfo[],
     skillIds?: number[],
     modelId?: number,
+    _agentMode?: AgentMode,
+    selectedDocs?: SelectedDocInfo[],
+    expertComponents?: AgentSelectedComponentInfo[],
   ) => {
     // 智能体信息为空
     if (!agentDetail) {
@@ -635,13 +639,26 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     // 用户自带的url参数中的沙盒ID
     const otherSandboxId = urlOtherParams?.sandboxId;
 
+    // 专家 chip 合并进组件列表：与外部受控列表按 id+type 去重（对齐会话页规则）
+    const mergedExpertComponents = (expertComponents || []).filter(
+      (expert) =>
+        !selectedComponentList.some(
+          (selected) =>
+            selected.id === expert.id && selected.type === expert.type,
+        ),
+    );
+
     // 传递的参数
     const attach = {
       message: messageInfo,
       // 附件文件列表
       files: [...otherFiles, ...otherAttachmentsFiles, ...(files || [])],
-      // 组件列表
-      infos: [...selectedComponentList, ..._selectedComponents],
+      // 组件列表（含专家合并）
+      infos: [
+        ...selectedComponentList,
+        ..._selectedComponents,
+        ...mergedExpertComponents,
+      ],
       // 默认智能体详情
       defaultAgentDetail: agentDetail,
       // 变量参数
@@ -656,6 +673,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       modelId: modelId || selectedModelId || otherModelId,
       // 智能体模式
       agentMode,
+      // 资料库已选文档（能力弹窗选中，随首条 chat 消息发送）
+      selectedDocs,
     };
 
     incrementCalledTrialCount();
@@ -768,7 +787,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 />
               </ConditionRender>
               {/* 左侧标题；hideTitle 时隐藏会话主题 */}
-              <ConditionRender condition={isAppSidebarMode && !chromeFlags.hideTitle}>
+              <ConditionRender
+                condition={isAppSidebarMode && !chromeFlags.hideTitle}
+              >
                 <Typography.Title
                   level={5}
                   className={cx(styles.title, 'flex-1')}
@@ -910,12 +931,17 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 ) : null}
               </div>
             </div>
-            <ChatInputHome
+            <ChatInputUnified
               key={`agent-details-${agentId}`}
               className={cx(styles['chat-input-container'])}
               onEnter={handleMessageSend}
               isClearInput={false}
               wholeDisabled={wholeDisabled}
+              // 详情页自管会话（无全局会话态）：传自管消息列表驱动清空按钮显隐，
+              // 不传会话活跃 props = 恒发送态（与旧版在此场景的实际表现一致）
+              messageList={messageList}
+              // 详情页不展示会话调试悬浮按钮
+              showDebugFab={false}
               manualComponents={agentDetail?.manualComponents || []}
               selectedComponentList={selectedComponentList}
               onSelectComponent={handleSelectComponent}
@@ -940,7 +966,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               readonly={
                 agentDetail?.allowPrivateSandbox === DefaultSelectedEnum.No
               }
-              /** 是否启用 @ 提及功能，默认启用 */
+              /** 技能 chip 能力（defaultMentions 回显守卫）；/ 能力弹窗不受此门控 */
               enableMention={
                 agentDetail?.type === AgentTypeEnum.TaskAgent &&
                 agentDetail?.allowAtSkill === DefaultSelectedEnum.Yes
