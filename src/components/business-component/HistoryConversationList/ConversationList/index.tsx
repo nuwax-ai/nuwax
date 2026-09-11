@@ -2,6 +2,11 @@ import ConversationContextMenu from '@/components/business-component/Conversatio
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import {
+  applyConversationFlagOverrides,
+  ConversationFlagOverride,
+  recordConversationFlagOverride,
+} from '@/utils/conversationFlagOverrides';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useSize } from 'ahooks';
 import { Space, Spin, Tooltip } from 'antd';
@@ -36,6 +41,8 @@ const ConversationList = React.forwardRef<
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useSize(containerRef);
   const [showArchived, setShowArchived] = useState(false);
+  // 标记（置顶/归档）本地覆盖：防止刷新的滞后回包把刚归档的会话复活回列表
+  const flagOverridesRef = useRef(new Map<string, ConversationFlagOverride>());
 
   // 展示列表：消费后端 pinned/archived，默认隐藏归档项、置顶项排前
   const visibleList = useMemo(() => {
@@ -82,7 +89,12 @@ const ConversationList = React.forwardRef<
         topic: keyword || undefined,
       });
 
-      const data = res.data || [];
+      // 回包落地前重放本地标记覆盖：列表读接口可能滞后于标记接口，
+      // 整体替换会短暂复活刚归档/置顶的会话（TTL 内本地写优先）
+      const data = applyConversationFlagOverrides(
+        res.data || [],
+        flagOverridesRef.current,
+      );
       if (isRefresh) {
         setList(data);
       } else {
@@ -152,15 +164,21 @@ const ConversationList = React.forwardRef<
             currentTopic={item.topic}
             pinned={item.pinned === true}
             archived={item.archived === true}
-            onFlagChanged={(kind, enabled) =>
+            onFlagChanged={(kind, enabled) => {
+              recordConversationFlagOverride(
+                flagOverridesRef.current,
+                item.id,
+                kind,
+                enabled,
+              );
               setList((prev) =>
                 prev.map((conversation) =>
                   conversation.id === item.id
                     ? { ...conversation, [kind]: enabled }
                     : conversation,
                 ),
-              )
-            }
+              );
+            }}
             onRename={onEdit ? () => onEdit(item.id, item.topic) : undefined}
             onDelete={onDelete ? () => onDelete(item.id) : undefined}
           >

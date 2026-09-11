@@ -16,6 +16,7 @@ import EmptyState from './components/EmptyState';
 import ProjectPanel, { ProjectPanelHandle } from './components/ProjectPanel';
 import SearchHeader from './components/SearchHeader';
 
+import SvgIcon from '@/components/base/SvgIcon';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
@@ -23,6 +24,11 @@ import { apiAgentConversationList } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import {
+  applyConversationFlagOverrides,
+  ConversationFlagOverride,
+  recordConversationFlagOverride,
+} from '@/utils/conversationFlagOverrides';
 import eventBus from '@/utils/eventBus';
 import styles from './index.less';
 
@@ -104,6 +110,8 @@ const NewHomeSection: React.FC<{
   const initializedRef = useRef(false);
   const pageSizeRef = useRef(30);
   const loadingRef = useRef(false);
+  // 标记（置顶/归档）本地覆盖：防止静默刷新的滞后回包把刚归档的会话复活回列表
+  const flagOverridesRef = useRef(new Map<string, ConversationFlagOverride>());
 
   const calcPageSize = useCallback(() => {
     const height = scrollContainerRef.current?.clientHeight ?? 0;
@@ -141,7 +149,12 @@ const NewHomeSection: React.FC<{
           topic: topic || undefined,
         });
 
-        const data = res.data ?? [];
+        // 回包落地前重放本地标记覆盖：列表读接口可能滞后于标记接口，
+        // 整体替换会短暂复活刚归档/置顶的会话（TTL 内本地写优先）
+        const data = applyConversationFlagOverrides(
+          res.data ?? [],
+          flagOverridesRef.current,
+        );
         if (isRefresh) {
           setLocalList(data);
         } else {
@@ -206,6 +219,12 @@ const NewHomeSection: React.FC<{
 
   const handleConversationFlagChanged = useCallback(
     (conversationId: number, kind: 'pinned' | 'archived', enabled: boolean) => {
+      recordConversationFlagOverride(
+        flagOverridesRef.current,
+        conversationId,
+        kind,
+        enabled,
+      );
       setLocalList((prev) =>
         prev.map((item) =>
           item.id === conversationId ? { ...item, [kind]: enabled } : item,
@@ -525,16 +544,7 @@ const NewHomeSection: React.FC<{
         {`${options.label} (${options.count})`}
       </span>
       <span className={cx(styles['section-tab-chev'])} aria-hidden>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        <SvgIcon name="icons-common-caret_down" style={{ fontSize: 14 }} />
       </span>
       {!options.task && (
         <button

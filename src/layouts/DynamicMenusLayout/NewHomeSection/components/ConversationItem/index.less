@@ -216,7 +216,12 @@
   outline: 2px solid @colorPrimary;
   outline-offset: -2px;
 }
-.conversation-item:focus-within .conversation-topic-row :global(.more-btn) {
+// 只认键盘焦点:行是 tabIndex=0 的 div,鼠标点击后 :focus-within 残留,
+// 会让「⋯」按钮/日期隐藏态永久停留在被点击的行上
+.conversation-item:focus-visible .conversation-topic-row :global(.more-btn),
+.conversation-item:has(:focus-visible)
+  .conversation-topic-row
+  :global(.more-btn) {
   opacity: 1;
 }
 
@@ -226,14 +231,17 @@
   box-sizing: border-box;
   padding: 8px 10px 8px 11px;
   transition: background 0.18s ease;
+
   .conversation-item-content .conversation-topic-row {
     gap: 8px;
+
     .conversation-topic {
       font-size: 14px;
       font-weight: 400;
       line-height: 20px;
       color: @navSecondMenuAdaptiveTextSecondary;
     }
+
     :global(.more-btn) {
       position: absolute;
       right: 8px;
@@ -247,17 +255,21 @@
       background: @colorBgContainer;
     }
   }
+
   &:hover,
   &.active {
     box-shadow: none;
   }
+
   &.active {
     margin: 0 -5px;
     padding-left: 16px;
     padding-right: 15px;
   }
+
   &:hover .conversation-date,
-  &:focus-within .conversation-date {
+  &:focus-visible .conversation-date,
+  &:has(:focus-visible) .conversation-date {
     visibility: hidden;
   }
   @media (hover: none) {

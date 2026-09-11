@@ -108,7 +108,8 @@
 
     .arrow {
       flex-shrink: 0;
-      font-size: 10px;
+      // 尺寸由 SvgIcon style.fontSize 传入（组件内联字号优先于此处，18px 时
+      // 项目图标 caret_down 视觉宽约 10px）；此处只管颜色与旋转
       color: @navSecondMenuAdaptiveTextTertiary;
       transition: transform 0.3s ease-in-out;
     }
@@ -234,8 +235,12 @@
   }
 }
 
+// 焦点样式只认键盘焦点(:focus-visible/:has(:focus-visible)):
+// 行是 tabIndex=0 的 div,鼠标点击(如点击收起)会残留 :focus-within,
+// 导致该行永久保持 hover 卡片态,与未点击的行两套样式
 .project .row:hover .project-more,
-.project .row:focus-within .project-more {
+.project .row:focus-visible .project-more,
+.project .row:has(:focus-visible) .project-more {
   opacity: 1;
 }
 
@@ -268,7 +273,6 @@
 
     .arrow {
       width: 18px;
-      font-size: 12px;
       margin-left: 2px;
     }
   }
@@ -287,7 +291,8 @@
   }
 
   .row:hover .name,
-  .row:focus-within .name {
+  .row:focus-visible .name,
+  .row:has(:focus-visible) .name {
     // 50px 让位绝对定位的 actions 浮层(见下方 .project-actions 覆盖)
     padding-right: 50px;
   }
@@ -310,7 +315,10 @@
 
   .child {
     margin-left: 0;
-    padding: 8px 4px;
+    // 对齐网格：左 = 父行名称列(children 缩进 10+10 后再留 11)，右 = 全局右列
+    // (父行箭头/任务列表时间右缘同为 253-10=243)；原 8px 4px 使子行文字/时间
+    // 相对父行各凸出 7px/6px，形成半步错位
+    padding: 8px 10px 8px 11px;
     border-radius: 10px;
 
     .child-name {
@@ -318,16 +326,18 @@
       line-height: 19px;
     }
 
-    &:focus-within .child-more {
+    &:focus-visible .child-more,
+    &:has(:focus-visible) .child-more {
       opacity: 1;
     }
   }
 
-  // 紧凑态 actions 浮层覆盖(原型 hover):浮层贴右侧白底,行名与子任务时间让位
+  // 紧凑态 actions 浮层覆盖：行 hover 本身已是白卡，浮层不再叠第二层白底
+  // （行名 padding-right 让位已保证不重叠），仅保留定位
   .project-actions {
     position: absolute;
     right: 30px;
-    background: @colorBgContainer;
+    background: transparent;
     border-radius: 8px;
   }
 
@@ -336,8 +346,14 @@
     background: transparent;
   }
 
+  // 子行悬停按钮浮层与时间列同缘(243)，替代隐藏前的时间不跳位
+  .child-actions {
+    right: 10px;
+  }
+
   .child:hover .child-time,
-  .child:focus-within .child-time {
+  .child:focus-visible .child-time,
+  .child:has(:focus-visible) .child-time {
     visibility: hidden;
   }
 }
@@ -382,9 +398,17 @@
     padding: 0;
     border: 0;
     border-radius: 7px;
+    // 项目图标(plus/more)尺寸由 SvgIcon style.fontSize 传入(15px，视觉宽约 11px)；
+    // 此处字号仅作用于非 SvgIcon 内容(创建中转圈 LoadingOutlined)
+    font-size: 15px;
     color: @navSecondMenuAdaptiveTextTertiary;
     background: transparent;
     cursor: pointer;
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
 
     &:hover,
     &:focus-visible {
@@ -422,10 +446,14 @@
   opacity: 1;
 }
 
+// 白底卡片浮层只在 hover 或键盘焦点时出现;鼠标点击后的焦点残留不算
+// (见上方 :focus-visible 注释)
 .project .row:hover,
-.project .row:focus-within,
+.project .row:focus-visible,
+.project .row:has(:focus-visible),
 .project .child:hover,
-.project .child:focus-within {
+.project .child:focus-visible,
+.project .child:has(:focus-visible) {
   background: color-mix(in srgb, @colorBgContainer 72%, transparent);
 
   .project-actions,

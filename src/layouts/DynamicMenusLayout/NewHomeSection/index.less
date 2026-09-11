@@ -41,11 +41,7 @@
       flex-shrink: 0;
       color: @navSecondMenuAdaptiveTextTertiary;
       transition: transform 0.2s ease;
-
-      > svg {
-        width: 12px;
-        height: 12px;
-      }
+      // 尺寸由 SvgIcon style.fontSize 传入(组件内联字号优先)，此处只管颜色与折叠旋转
     }
 
     &.section-tabs-collapsed .section-tab-chev {
@@ -68,7 +64,10 @@
     z-index: 1;
     margin-top: 0;
     padding-top: 15px;
-    background: @navSecondMenuBg;
+    // 吸顶条背景必须与侧栏可见底色一致：@navSecondMenuBg(color-bg-layout) 在
+    // antd css-var 作用域内被通用主题重声明为 #F5F5F5，比侧栏实际灰底
+    // (layout-bg-secondary=#F2F2F2)浅一档，列表顶部会显出一条浅色带
+    background: var(--xagi-layout-bg-secondary, @navSecondMenuBg);
 
     // 任务头：原 margin 6px + padding 2px 并入
     &.task-section-tabs {
@@ -250,7 +249,7 @@
   }
 
   .section-tabs:hover .section-tool,
-  .section-tabs:focus-within .section-tool {
+  .section-tabs:has(:focus-visible) .section-tool {
     opacity: 1;
   }
   @media (hover: none) {

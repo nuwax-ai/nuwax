@@ -1,4 +1,5 @@
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
+import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useConversation from '@/hooks/useConversation';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
@@ -20,14 +21,11 @@ import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   DeleteOutlined,
-  DownOutlined,
   EditOutlined,
-  EllipsisOutlined,
   ExclamationCircleFilled,
   FolderOutlined,
   InboxOutlined,
   LoadingOutlined,
-  PlusOutlined,
   PushpinFilled,
   PushpinOutlined,
 } from '@ant-design/icons';
@@ -532,7 +530,7 @@ const ProjectPanel = forwardRef<
           });
         }}
       >
-        <PlusOutlined />
+        <SvgIcon name="icons-common-plus" style={{ fontSize: 15 }} />
       </button>
     </Tooltip>
   );
@@ -601,7 +599,11 @@ const ProjectPanel = forwardRef<
           void handleCreateProjectConversation(project, child);
         }}
       >
-        {creatingChildId === child.id ? <LoadingOutlined /> : <PlusOutlined />}
+        {creatingChildId === child.id ? (
+          <LoadingOutlined />
+        ) : (
+          <SvgIcon name="icons-common-plus" style={{ fontSize: 15 }} />
+        )}
       </button>
     </Tooltip>
   );
@@ -682,11 +684,16 @@ const ProjectPanel = forwardRef<
                       aria-label={dict('PC.Components.ActionMenu.more')}
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <EllipsisOutlined />
+                      <SvgIcon
+                        name="icons-common-more"
+                        style={{ fontSize: 15 }}
+                      />
                     </button>
                   </Dropdown>
                 </div>
-                <DownOutlined
+                <SvgIcon
+                  name="icons-common-caret_down"
+                  style={{ fontSize: 18 }}
                   className={cx(styles.arrow, {
                     [styles.arrowExpanded]: expanded,
                   })}
@@ -748,7 +755,10 @@ const ProjectPanel = forwardRef<
                         className={cx(styles['child-more'])}
                         onClick={(event) => event.stopPropagation()}
                       >
-                        <EllipsisOutlined />
+                        <SvgIcon
+                          name="icons-common-more"
+                          style={{ fontSize: 15 }}
+                        />
                       </button>
                     </Dropdown>
                   </div>
