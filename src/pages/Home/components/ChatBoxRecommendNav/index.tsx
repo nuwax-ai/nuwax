@@ -11,12 +11,18 @@ interface ChatBoxRecommendNavProps {
   items: DisplayRecommendInfo[];
   selectedId?: number;
   onSelect: (item: DisplayRecommendInfo) => void;
+  /**
+   * 单项可选性判定（返回 false 置灰不可点；不传 = 全部可选）。
+   * 用于项目上框期间非同类型智能体的「展示但不可选」形态。
+   */
+  isItemSelectable?: (item: DisplayRecommendInfo) => boolean;
 }
 
 const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
   items,
   selectedId,
   onSelect,
+  isItemSelectable,
 }) => {
   const listRef = useRef<HTMLDivElement>(null);
   // pill 元素索引（id → button），供选中项定位（自动命中场景滚动到可见）
@@ -99,6 +105,8 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
       >
         {items.map((item) => {
           const active = selectedId === item.id;
+          // 上框期间非同类型智能体置灰不可选（展示不过滤）
+          const selectable = !isItemSelectable || isItemSelectable(item);
 
           return (
             <button
@@ -113,10 +121,16 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
               type="button"
               className={cx(styles['recommend-item'], {
                 [styles.active]: active,
+                [styles.disabled]: !selectable,
               })}
               title={item.label}
               aria-pressed={active}
-              onClick={() => onSelect(item)}
+              disabled={!selectable}
+              onClick={() => {
+                if (selectable) {
+                  onSelect(item);
+                }
+              }}
             >
               {item.icon && (
                 <img
