@@ -34,6 +34,7 @@ import { selectSessionActive } from '@/features/conversation/domain/runtimeSelec
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
+import { apiSystemConnectorProviderList } from '@/services/systemManage';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
@@ -48,6 +49,7 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
+import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
@@ -62,14 +64,13 @@ import {
   PaperClipOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
+import { Avatar, Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -111,6 +112,45 @@ export interface SummonedExpertChipInfo {
   name: string;
   iconSrc?: string;
 }
+
+/** 已连接连接器展示信息（工具栏头像组） */
+interface ConnectedConnectorInfo {
+  key: string;
+  name: string;
+  icon?: string;
+}
+
+/** 连接器头像底色板（与能力弹窗卡片 ICON_BACKGROUNDS 同风格 tint） */
+const CONNECTOR_AVATAR_BACKGROUNDS = [
+  'rgba(24, 144, 255, 12%)',
+  'rgba(82, 196, 26, 12%)',
+  'rgba(114, 46, 209, 12%)',
+  'rgba(250, 140, 22, 12%)',
+  'rgba(19, 194, 194, 12%)',
+  'rgba(235, 47, 150, 12%)',
+];
+
+/** 连接器头像：受保护地址经 Bearer 解析，公开 URL 直出；空/失败回退名称首字 */
+const ConnectorAvatar: React.FC<{
+  connector: ConnectedConnectorInfo;
+  index: number;
+}> = ({ connector, index }) => {
+  const { displaySrc } = useAuthProtectedImageSrc(connector.icon);
+  return (
+    <Avatar
+      src={displaySrc}
+      className={cx(styles['connector-avatar'])}
+      style={{
+        backgroundColor:
+          CONNECTOR_AVATAR_BACKGROUNDS[
+            index % CONNECTOR_AVATAR_BACKGROUNDS.length
+          ],
+      }}
+    >
+      {connector.name.charAt(0)}
+    </Avatar>
+  );
+};
 
 /**
  * ChatInputUnified 组件的 Props 类型
@@ -380,14 +420,36 @@ const ChatInputUnifiedImpl: React.FC<
   const [isStoppingConversation, setIsStoppingConversation] =
     useState<boolean>(false);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
+  // 已连接连接器（系统广场口径，与能力弹窗连接器·系统页签同源）：
+  // 工具栏头像组数据源；弹窗内连接/断开后经 onCapabilityModalClose 刷新
+  const [connectedConnectors, setConnectedConnectors] = useState<
+    ConnectedConnectorInfo[]
+  >([]);
+  const refreshConnectedConnectors = useCallback(async () => {
+    try {
+      const res = await apiSystemConnectorProviderList();
+      if (res?.code !== SUCCESS_CODE) return;
+      const list = ((res.data as ConnectorProviderInfo[] | null) || []).filter(
+        (item) => item.connected === true,
+      );
+      setConnectedConnectors(
+        list.map((item) => ({
+          key: String(item.service ?? item.id),
+          name: item.displayName || item.service || '',
+          icon: item.icon,
+        })),
+      );
+    } catch {
+      // 静默失败：头像组非关键路径，不阻断输入
+    }
+  }, []);
+  useEffect(() => {
+    refreshConnectedConnectors();
+  }, [refreshConnectedConnectors]);
   // 工作目录浏览弹窗（env-bar「打开电脑文件夹」入口）
   const [workspacePathPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
   // 项目上框图标（可能为 /api/f/ 受保护地址，走鉴权 fetch + blob）
   const pinnedProjectIcon = useAuthProtectedImageSrc(pinnedProject?.icon);
-  // 推荐标签 pill 实测宽度：编辑器 inlinePrefixWidth 让行首文本绕开标签
-  const selectedTagRef = useRef<HTMLDivElement>(null);
-  const [selectedTagWidth, setSelectedTagWidth] = useState<number>(0);
-  const selectedTagOffset = selectedTag?.label ? selectedTagWidth + 8 : 0;
 
   useImperativeHandle(forwardedRef, () => ({
     focus: () => {
@@ -397,30 +459,6 @@ const ChatInputUnifiedImpl: React.FC<
       mentionEditorRef.current?.clear?.();
     },
   }));
-
-  useLayoutEffect(() => {
-    if (!selectedTag?.label || !selectedTagRef.current) {
-      setSelectedTagWidth(0);
-      return;
-    }
-
-    const selectedTagElement = selectedTagRef.current;
-    const updateSelectedTagWidth = () => {
-      setSelectedTagWidth(selectedTagElement.offsetWidth);
-    };
-
-    updateSelectedTagWidth();
-
-    if (typeof ResizeObserver === 'undefined') {
-      const frameId = window.requestAnimationFrame(updateSelectedTagWidth);
-      return () => window.cancelAnimationFrame(frameId);
-    }
-
-    const resizeObserver = new ResizeObserver(updateSelectedTagWidth);
-    resizeObserver.observe(selectedTagElement);
-
-    return () => resizeObserver.disconnect();
-  }, [selectedTag?.label]);
 
   const [isHoveringBtn, setIsHoveringBtn] = useState<boolean>(false);
   const [delayedVisible, setDelayedVisible] = useState<boolean>(false);
@@ -1037,21 +1075,8 @@ const ChatInputUnifiedImpl: React.FC<
           <ConditionRender condition={uploadFiles?.length}>
             <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
           </ConditionRender>
-          {/* 输入行：推荐标签 pill 内联在编辑器行首，编辑器文本绕开（inlinePrefixWidth） */}
+          {/* 输入行：推荐类型选中不再内联回显输入框（改为底部工具栏专家样式 pill） */}
           <div className={cx(styles['input-line'])}>
-            <ConditionRender condition={!!selectedTag?.label}>
-              <div ref={selectedTagRef} className={cx(styles['selected-tag'])}>
-                <span className={cx(styles['tag-label'])}>
-                  {selectedTag?.label}
-                </span>
-                <button
-                  type="button"
-                  className={cx(styles['tag-close'])}
-                  aria-label="Clear selected tag"
-                  onClick={onClearSelectedTag}
-                />
-              </div>
-            </ConditionRender>
             <MentionEditor
               onPluginSelect={onPluginSelect}
               onFetchMentionFiles={onFetchMentionFiles}
@@ -1059,12 +1084,13 @@ const ChatInputUnifiedImpl: React.FC<
               className={cx(styles.input)}
               disabled={wholeDisabled}
               value={messageInfo}
-              inlinePrefixWidth={selectedTagOffset}
               onChange={setMessageInfo}
               onSkillIdsChange={setSkillIds}
               enableMention={enableMention}
               capabilityResourceTypes={capabilityResourceTypes}
               onDocsChange={handleDocsChange}
+              // 能力弹窗关闭：刷新已连接连接器（弹窗内连接/断开就绪）
+              onCapabilityModalClose={refreshConnectedConnectors}
               // 首页场景专家选中走外部（切换会话智能体）；否则走内部消息级 expertComponents
               onExpertSelect={onExpertAgentSelect ?? handleExpertSelect}
               mentionPlacement={mentionPlacement}
@@ -1301,38 +1327,6 @@ const ChatInputUnifiedImpl: React.FC<
                       </Dropdown>
                     )}
                   </VoiceFooter.HideWhenActive>
-                  {/* 已选专家回填：会话仅一个专家，展示在工具栏最右；
-                    专家不进输入框（无 chip），pill 即唯一事实源 */}
-                  {expertComponents.length > 0 && (
-                    <VoiceFooter.HideWhenActive>
-                      <span
-                        className={cx(
-                          'flex',
-                          'items-center',
-                          styles['expert-pill'],
-                        )}
-                      >
-                        <span className={cx(styles['expert-pill-name'])}>
-                          {expertComponents[0].name}
-                        </span>
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label={t('PC.Common.Global.delete')}
-                          className={cx(styles['expert-pill-remove'])}
-                          onClick={() => setExpertComponents([])}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              setExpertComponents([]);
-                            }
-                          }}
-                        >
-                          <CloseOutlined />
-                        </span>
-                      </span>
-                    </VoiceFooter.HideWhenActive>
-                  )}
                   <VoiceFooter.HideWhenActive>
                     {showTaskAgentToggle && (
                       <Tooltip
@@ -1367,16 +1361,44 @@ const ChatInputUnifiedImpl: React.FC<
                     )}
                   </VoiceFooter.HideWhenActive>
 
-                  <VoiceFooter.HideWhenActive>
-                    <ManualComponentItem
-                      manualComponents={commandManualComponents}
-                      selectedComponentList={selectedComponentList}
-                      onSelectComponent={onSelectComponent}
-                    />
-                  </VoiceFooter.HideWhenActive>
+                  {/* 专家 pill 置于左侧固定按钮尾部：必须排在 ManualComponentItem
+                      之前——其包裹层带 flex-1 会吃掉中间全部剩余空间，放在其后
+                      会被顶到右侧麦克风旁。已选专家回填（非首页场景）：会话仅一个
+                      专家，不进输入框（无 chip），pill 即唯一事实源；与首页
+                      summonedExpert 互斥不共存 */}
+                  {expertComponents.length > 0 && (
+                    <VoiceFooter.HideWhenActive>
+                      <span
+                        className={cx(
+                          'flex',
+                          'items-center',
+                          styles['expert-pill'],
+                        )}
+                      >
+                        <span className={cx(styles['expert-pill-name'])}>
+                          {expertComponents[0].name}
+                        </span>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={t('PC.Common.Global.delete')}
+                          className={cx(styles['expert-pill-remove'])}
+                          onClick={() => setExpertComponents([])}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setExpertComponents([]);
+                            }
+                          }}
+                        >
+                          <CloseOutlined />
+                        </span>
+                      </span>
+                    </VoiceFooter.HideWhenActive>
+                  )}
 
-                  {/* 召唤专家回执 chip（首页场景）：展示在工具栏左区最右侧，
-                      提交时以该专家智能体身份创建会话；可取消回落原智能体 */}
+                  {/* 召唤专家回执 chip（首页场景）：提交时以该专家智能体身份
+                      创建会话；可取消回落原智能体 */}
                   {summonedExpert && (
                     <VoiceFooter.HideWhenActive>
                       <span
@@ -1417,6 +1439,96 @@ const ChatInputUnifiedImpl: React.FC<
                       </span>
                     </VoiceFooter.HideWhenActive>
                   )}
+
+                  {/* 推荐类型选中回执 pill（首页场景）：不再内联回显输入框行首，
+                      与专家 pill 同款样式/位置；关闭走原 onClearSelectedTag 逻辑
+                      （上层清 selectedRecommend 并清空输入） */}
+                  {!!selectedTag?.label && (
+                    <VoiceFooter.HideWhenActive>
+                      <span
+                        className={cx(
+                          'flex',
+                          'items-center',
+                          styles['expert-pill'],
+                        )}
+                      >
+                        <span className={cx(styles['expert-pill-name'])}>
+                          {selectedTag.label}
+                        </span>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={t('PC.Common.Global.delete')}
+                          className={cx(styles['expert-pill-remove'])}
+                          onClick={onClearSelectedTag}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onClearSelectedTag?.();
+                            }
+                          }}
+                        >
+                          <CloseOutlined />
+                        </span>
+                      </span>
+                    </VoiceFooter.HideWhenActive>
+                  )}
+
+                  {/* 已连接连接器头像组（重叠，最多 3 个，超出尾部 +N）：
+                      点击唤起能力弹窗并定位连接器页签；数据在弹窗关闭后刷新 */}
+                  {connectedConnectors.length > 0 && (
+                    <VoiceFooter.HideWhenActive>
+                      <Tooltip
+                        title={t(
+                          'PC.Components.ChatInputHome.connectedConnectors',
+                        )}
+                      >
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={t(
+                            'PC.Components.ChatInputHome.connectedConnectors',
+                          )}
+                          className={cx(
+                            'flex',
+                            'items-center',
+                            styles['connector-group'],
+                          )}
+                          onClick={() =>
+                            mentionEditorRef.current?.openCapabilityWithType?.(
+                              'connector',
+                            )
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              mentionEditorRef.current?.openCapabilityWithType?.(
+                                'connector',
+                              );
+                            }
+                          }}
+                        >
+                          <Avatar.Group maxCount={3} size={20}>
+                            {connectedConnectors.map((connector, index) => (
+                              <ConnectorAvatar
+                                key={connector.key}
+                                connector={connector}
+                                index={index}
+                              />
+                            ))}
+                          </Avatar.Group>
+                        </span>
+                      </Tooltip>
+                    </VoiceFooter.HideWhenActive>
+                  )}
+
+                  <VoiceFooter.HideWhenActive>
+                    <ManualComponentItem
+                      manualComponents={commandManualComponents}
+                      selectedComponentList={selectedComponentList}
+                      onSelectComponent={onSelectComponent}
+                    />
+                  </VoiceFooter.HideWhenActive>
 
                   <VoiceFooter.Expand />
 

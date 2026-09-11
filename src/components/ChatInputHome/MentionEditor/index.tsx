@@ -453,6 +453,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       minRows = 2,
       maxRows = 6,
       usageScenarios,
+      // 能力弹窗关闭回调（连接/断开等弹窗内操作完成后触发，供消费方刷新派生数据）
+      onCapabilityModalClose,
     },
     ref,
   ) => {
@@ -488,6 +490,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const [capabilityOpen, setCapabilityOpen] = useState<boolean>(false);
     /** capabilityOpen 的同步镜像：删除触发串会经 commitEditorChange 重入检测，用于防递归 */
     const capabilityOpenRef = useRef<boolean>(false);
+    /**
+     * 能力弹窗初始页签（编程唤起时指定；'/' 触发沿用上次停留页签）。
+     * 配套 resetKey 强制重挂 CapabilityModal——弹窗组件常驻不卸载，
+     * useState 初始值只在挂载时生效，不重挂则换不开页签
+     */
+    const [capabilityDefaultType, setCapabilityDefaultType] =
+      useState<CapabilityTypeEnum>('skill');
+    const [capabilityResetKey, setCapabilityResetKey] = useState<number>(0);
     /**
      * 打开能力弹窗的句柄（ref 转发：openCapabilityModal 依赖 commitEditorChange，
      * 而 commitEditorChange 依赖本组件更早声明的 runMentionDetection，用 ref 断开环）
@@ -1113,6 +1123,21 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       ],
     );
 
+    /**
+     * 编程唤起能力弹窗并定位到指定类型页签（工具栏已连接连接器头像组入口）。
+     * 与 '/' 触发不同：无触发串可删、不经 commitEditorChange，直接重挂弹窗
+     * 换初始页签后打开；类型不在开放范围时由弹窗自身回落首个可用类型
+     */
+    const openCapabilityWithType = useCallback(
+      (resourceType: CapabilityTypeEnum) => {
+        setCapabilityDefaultType(resourceType);
+        setCapabilityResetKey((key) => key + 1);
+        capabilityOpenRef.current = true;
+        setCapabilityOpen(true);
+      },
+      [],
+    );
+
     // 通过 useImperativeHandle 暴露方法
     useImperativeHandle(ref, () => ({
       clear,
@@ -1121,6 +1146,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       focus: () => {
         editorRef.current?.focus();
       },
+      openCapabilityWithType,
     }));
 
     /**
@@ -1344,7 +1370,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       [insertMentionChipAtCaret, onPluginSelect, onExpertSelect],
     );
 
-    /** 能力弹窗关闭：复位状态并把焦点/光标交还编辑器 */
+    /** 能力弹窗关闭：复位状态并把焦点/光标交还编辑器；通知消费方刷新派生数据 */
     const handleCapabilityClose = useCallback(() => {
       capabilityOpenRef.current = false;
       setCapabilityOpen(false);
@@ -1360,7 +1386,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         selection?.addRange(savedRange.cloneRange());
       }
       container?.focus();
-    }, []);
+      onCapabilityModalClose?.();
+    }, [onCapabilityModalClose]);
 
     // ==================== 核心事件处理 ====================
 
@@ -1789,12 +1816,15 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           )}
         </div>
 
-        {/* 添加能力大弹窗（portal 渲染，与光标浮层互斥） */}
+        {/* 添加能力大弹窗（portal 渲染，与光标浮层互斥）；
+            resetKey 强制重挂以应用编程唤起指定的初始页签（'/' 触发沿用上次页签） */}
         <CapabilityModal
+          key={capabilityResetKey}
           open={capabilityOpen}
           onClose={handleCapabilityClose}
           onSelect={handleCapabilitySelect}
           resourceTypes={capabilityResourceTypes}
+          defaultResourceType={capabilityDefaultType}
         />
       </div>
     );

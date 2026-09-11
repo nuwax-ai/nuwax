@@ -99,7 +99,8 @@ vi.mock('@/components/ChatView', () => ({
     <div data-testid="chat-view" data-message-id={String(messageInfo.id)} />
   ),
 }));
-vi.mock('@/components/ChatInputHome', () => ({
+// ConversationDetails 已迁移到统一输入组件（保持原 testid 便于断言稳定）
+vi.mock('@/components/business-component/ChatInputUnified', () => ({
   default: () => <div data-testid="chat-input-home" />,
 }));
 vi.mock('@/components/custom/TooltipIcon', () => ({

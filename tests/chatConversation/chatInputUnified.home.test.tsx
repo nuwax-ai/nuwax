@@ -13,6 +13,7 @@ import {
   saveDraft,
 } from '@/components/business-component/ChatInputUnified/draftStorage';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -50,6 +51,7 @@ vi.mock('@/hooks/useSubscription', () => ({
 const editor = vi.hoisted(() => ({
   focus: vi.fn(),
   clear: vi.fn(),
+  openCapabilityWithType: vi.fn(),
   lastProps: {} as Record<string, any>,
 }));
 vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
@@ -62,6 +64,7 @@ vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
       React.useImperativeHandle(ref, () => ({
         focus: editor.focus,
         clear: editor.clear,
+        openCapabilityWithType: editor.openCapabilityWithType,
       }));
       return React.createElement(
         'div',
@@ -71,6 +74,12 @@ vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
     }),
   };
 });
+
+// 系统连接器列表接口桩：已连接连接器头像组数据源（缺省空数据，按用例覆写）
+const systemConnectors = vi.hoisted(() => vi.fn());
+vi.mock('@/services/systemManage', () => ({
+  apiSystemConnectorProviderList: systemConnectors,
+}));
 
 // 电脑选择器桩：捕获 props（value/cloudOnly/onChange），提供切云/切个人两个触发按钮
 const computer = vi.hoisted(() => ({ props: {} as Record<string, any> }));
@@ -134,9 +143,15 @@ vi.mock('@/components/ChatInputHome/SpaceSelector', async () => {
 vi.mock('@/components/ChatInputHome/ModelSelector', () => ({
   default: () => null,
 }));
-vi.mock('@/components/ChatInputHome/ManualComponentItem', () => ({
-  default: () => null,
-}));
+vi.mock('@/components/ChatInputHome/ManualComponentItem', async () => {
+  const React = await import('react');
+  // 渲染标记元素（真实实现的包裹层是 flex-1 弹簧）：专家 pill 必须排在其之前，
+  // 否则会被弹簧顶到右侧麦克风旁（左区尾部语义的防回退锚点）
+  return {
+    default: () =>
+      React.createElement('div', { 'data-testid': 'manual-component' }),
+  };
+});
 vi.mock('@/components/ChatUploadFile', () => ({ default: () => null }));
 vi.mock('@/components/base/SvgIcon', () => ({
   default: () => null,
@@ -275,15 +290,49 @@ describe('首页工具栏能力', () => {
     expect(spaceSelector.props.onSpaceSelect).toBe(onSpaceSelect);
   });
 
-  it('推荐标签 pill 展示与取消', () => {
+  it('推荐标签 pill 展示与取消（工具栏专家样式，不内联回显输入框）', () => {
     const onClearSelectedTag = vi.fn();
     renderHomeInput({
       selectedTag: { label: 'AI 教育专家' },
       onClearSelectedTag,
     });
     expect(screen.getByText('AI 教育专家')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Clear selected tag' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
+    );
     expect(onClearSelectedTag).toHaveBeenCalledTimes(1);
+  });
+
+  it('已连接连接器头像组：最多 3 个 + 尾部 +N，点击唤起弹窗连接器页签', async () => {
+    systemConnectors.mockResolvedValue({
+      code: '0000',
+      data: [
+        { id: 1, service: 'github', displayName: 'GitHub', connected: true },
+        { id: 2, service: 'slack', displayName: 'Slack', connected: true },
+        { id: 3, service: 'notion', displayName: 'Notion', connected: true },
+        { id: 4, service: 'figma', displayName: 'Figma', connected: true },
+        { id: 5, service: 'jira', displayName: 'Jira', connected: true },
+        // 未连接的不进头像组
+        { id: 6, service: 'linear', displayName: 'Linear', connected: false },
+      ],
+    });
+    renderHomeInput();
+    // 5 个已连接 → 3 个头像 + 「+2」尾巴
+    await waitFor(() => expect(screen.getByText('+2')).toBeInTheDocument());
+    expect(document.querySelectorAll('.ant-avatar').length).toBe(4);
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'PC.Components.ChatInputHome.connectedConnectors',
+      }),
+    );
+    expect(editor.openCapabilityWithType).toHaveBeenCalledWith('connector');
+  });
+
+  it('无已连接连接器时不渲染头像组', async () => {
+    systemConnectors.mockResolvedValue({ code: '0000', data: [] });
+    renderHomeInput();
+    await waitFor(() => expect(systemConnectors).toHaveBeenCalled());
+    expect(document.querySelector('.connector-group')).toBeNull();
   });
 
   it('showDebugFab 默认渲染，首页场景传 false 关闭', () => {
@@ -338,6 +387,40 @@ describe('能力弹窗开放范围（专家仅首页开放）', () => {
     const external = vi.fn();
     renderHomeInput({ onExpertAgentSelect: external });
     expect(editor.lastProps.onExpertSelect).toBe(external);
+  });
+
+  it('内部专家选中渲染 pill 在工具栏左区尾部（Expand 之前）且可取消', async () => {
+    const { container } = renderHomeInput();
+    await act(async () => {
+      editor.lastProps.onExpertSelect({
+        targetId: 66,
+        name: '智慧校园助手',
+        icon: 'x',
+        description: 'd',
+      });
+    });
+    const pill = container.querySelector('.expert-pill');
+    expect(pill).toBeTruthy();
+    expect(pill?.textContent).toContain('智慧校园助手');
+    // 位置防回退：pill 必须在 ManualComponentItem（真实包裹层为 flex-1 弹簧，
+    // 占满中部剩余空间）之前，即工具栏左区尾部；否则会被弹簧顶到右侧麦克风旁
+    const manual = screen.getByTestId('manual-component');
+    const expand = screen.getByTestId('voice-expand');
+    const right = screen.getByTestId('voice-right');
+    expect(pill!.compareDocumentPosition(manual)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(pill!.compareDocumentPosition(expand)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(pill!.compareDocumentPosition(right)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    // 取消：清空内部 expertComponents
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
+    );
+    expect(container.querySelector('.expert-pill')).toBeNull();
   });
 });
 

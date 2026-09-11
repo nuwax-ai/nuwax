@@ -3,7 +3,7 @@
  * @description
  * - 系统广场维度：GET /api/published/category/list，按能力类型匹配根节点
  *   （Agent/Skill/Plugin/Knowledge），取 children 作为二级分类，首位固定"全部"；
- * - 团队空间维度：GET /api/space/list，首位固定"全部" + 空间列表（团队空间优先）。
+ * - 团队空间维度：GET /api/space/list，首位固定"全部" + 空间列表（个人空间优先）。
  *   "全部"暂为占位：等后端聚合参数，数据先回落默认空间（由上层换算）；
  * - 接口未就绪/失败时降级：系统广场仅"全部"、团队空间为空列表（由上层保持加载态）。
  */
@@ -28,12 +28,12 @@ const ALL_CATEGORY: CapabilityCategoryInfo = {
   label: dict('PC.Components.CapabilityModal.tabAll'),
 };
 
-/** 空间排序：团队空间优先，作为团队空间维度的默认选中 */
-const sortSpacesTeamFirst = (list: SpaceInfo[]): SpaceInfo[] =>
+/** 空间排序：个人空间优先（type=Personal 判定），作为团队空间维度的默认选中 */
+const sortSpacesPersonalFirst = (list: SpaceInfo[]): SpaceInfo[] =>
   [...list].sort((a, b) => {
-    const aTeam = a.type === SpaceTypeEnum.Team ? 0 : 1;
-    const bTeam = b.type === SpaceTypeEnum.Team ? 0 : 1;
-    return aTeam - bTeam;
+    const aPersonal = a.type === SpaceTypeEnum.Personal ? 0 : 1;
+    const bPersonal = b.type === SpaceTypeEnum.Personal ? 0 : 1;
+    return aPersonal - bPersonal;
   });
 
 const useCapabilityCategories = (
@@ -57,8 +57,14 @@ const useCapabilityCategories = (
         }
         const list = (res?.data as SquareCategoryInfo[] | undefined) || [];
         const rootType = CAPABILITY_TYPE_TO_CATEGORY_TYPE[resourceType];
+        // 与广场页同口径：connector 按根节点 key=Connector 匹配
+        // （与新建/编辑连接器抽屉同源），其余按根节点 type 匹配
         const children =
-          list.find((item) => item.type === rootType)?.children || [];
+          list.find((item) =>
+            resourceType === 'connector'
+              ? item.key === 'Connector'
+              : item.type === rootType,
+          )?.children || [];
         setCategories([
           ALL_CATEGORY,
           ...children.map((item) => ({ key: item.key, label: item.label })),
@@ -78,14 +84,17 @@ const useCapabilityCategories = (
           return;
         }
         const list = (res?.data as SpaceInfo[] | undefined) || [];
-        setCategories([
-          // 首位固定"全部"：暂为占位（数据回落默认空间），等后端聚合参数
-          ALL_CATEGORY,
-          ...sortSpacesTeamFirst(list).map((item) => ({
-            key: String(item.id),
-            label: item.name,
-          })),
-        ]);
+        // 个人空间排最前（type=Personal 判定）；专家/技能维度首位另加"全部"
+        // 页签（上层经 spaceIds 聚合全部空间的已发布条目）
+        const spacePills = sortSpacesPersonalFirst(list).map((item) => ({
+          key: String(item.id),
+          label: item.name,
+        }));
+        setCategories(
+          resourceType === 'expert' || resourceType === 'skill'
+            ? [ALL_CATEGORY, ...spacePills]
+            : spacePills,
+        );
       } catch {
         // 失败降级：空列表，上层保持加载态
       }

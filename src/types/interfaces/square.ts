@@ -25,6 +25,8 @@ export interface SquarePublishedListParams {
   kw?: string;
   // 空间ID（可选）需要通过空间过滤时有用
   spaceId?: number;
+  // 空间ID列表（可选）按多个空间聚合查询（如能力弹窗专家·团队空间「全部」页签）
+  spaceIds?: number[];
   // 只返回空间的组件
   justReturnSpaceData?: boolean;
   // 空间ID列表（可选）,查询用户有权限的空间,限制访问空间,比如工作流查询全部知识库,要限制用户有权限的空间下的知识库
@@ -85,6 +87,8 @@ export interface SquarePublishedItemInfo {
   paymentRequired: boolean;
   // 是否已订阅
   subscribed: boolean;
+  // 是否官方内容（卡片「官方」标识）
+  official?: boolean;
   // 价格
   price?: number;
   /** 计价周期，与工具定价配置一致：ONE_TIME / SECOND / MILLION_TOKEN 等 */

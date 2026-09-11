@@ -41,6 +41,8 @@ export interface CapabilityItem {
   userCount?: number;
   /** 连接器实际连接状态；未返回时不推断。 */
   connected?: boolean;
+  /** 连接器认证方式（oauth2/api_key/bearer/custom/no_auth），连接/断开分流用 */
+  authType?: string;
   /** 资料格式；未返回时仅从文件扩展名推导。 */
   fileType?: string;
   /** 资料库文档类型（knowledge 项；随 selectedDocs 的 pageType 发送） */
@@ -49,6 +51,18 @@ export interface CapabilityItem {
   paymentRequired?: boolean;
   /** 是否已订阅（系统广场条目） */
   subscribed?: boolean;
+  /** 官方标识（已发布智能体；卡片展示「官方」徽标） */
+  official?: boolean;
+  /** 创建人/发布者名称（技能/专家=发布者昵称/用户名，资料库=页面创建人；卡片名称旁展示） */
+  publisherName?: string;
+  /** 创建人/发布者头像地址（为空或加载失败回退默认头像） */
+  publisherAvatar?: string;
+  /** 会话次数（专家维度统计，与广场卡同款） */
+  convCount?: number;
+  /** 收藏次数（专家维度统计） */
+  collectCount?: number;
+  /** 当前用户是否已收藏（专家维度；星标切换） */
+  collect?: boolean;
 }
 
 /** 二级分类 pill（system 维度为内容分类，team 维度为空间） */

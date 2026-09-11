@@ -2,7 +2,7 @@
  * 添加能力弹窗
  * @description 技能/连接器/专家/资料库 四类能力 × 系统广场/团队空间 双数据源的
  * 能力选择弹窗：左侧类型导航 + 数据源 tab + 搜索 + 二级分类 pill +
- * 两列卡片网格（滚动加载 / 键盘导航 / 置顶）。
+ * 两列卡片网格（滚动加载 / 键盘导航 / 钉住标记）。
  * 数据层参考 pages/ExpertSkillConnector 的适配器方案在本组件内独立实现，
  * 不直接依赖 pages 层代码。
  *
@@ -16,7 +16,15 @@
  * ```
  */
 
+import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useConnectorConnect from '@/hooks/useConnectorConnect';
+import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { t } from '@/services/i18nRuntime';
+import {
+  apiPublishedSkillCollect,
+  apiPublishedSkillUnCollect,
+} from '@/services/square';
 import {
   CloseOutlined,
   FileTextOutlined,
@@ -29,7 +37,6 @@ import classNames from 'classnames';
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -52,7 +59,7 @@ const GRID_COLUMNS = 2;
 /** 搜索防抖时长 */
 const SEARCH_DEBOUNCE = 400;
 
-/** 置顶持久化 localStorage key（按 key 粒度存：能力类型+数据源+原始标识） */
+/** 钉住持久化 localStorage key（按 key 粒度存：能力类型+数据源+原始标识） */
 const PINNED_STORAGE_KEY = 'CAPABILITY_MODAL_PINNED_KEYS';
 
 /** 左侧能力类型导航配置（图标使用带色板的 tinted 容器渲染） */
@@ -167,16 +174,15 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   // 键盘聚焦项序号
   const [focusIndex, setFocusIndex] = useState<number>(0);
 
-  // 置顶（localStorage 持久化）
+  // 钉住标记（localStorage 持久化，仅高亮不排序）
   const [pinnedKeys, setPinnedKeys] = useState<string[]>(loadPinnedKeys);
 
-  // 分类字典（system：内容分类；team：首位"全部" + 空间列表，团队空间优先）
+  // 分类字典（system：内容分类；team：空间列表，个人空间优先）
   const categories = useCapabilityCategories(resourceType, source);
 
   /**
-   * 团队空间维度：分类 pill 即空间选择——选中具体空间查该空间；
-   * "全部"（category 为空）暂为占位：等后端提供聚合参数，先回落默认空间
-   * （团队空间优先，与 ExpertSkillConnector 的 useTeamSpaceId 口径一致）
+   * 团队空间维度：分类 pill 即空间选择——专家维度首位为"全部"（经 spaceIds
+   * 聚合全部空间的已发布智能体），其余类型选中具体空间查该空间（个人空间优先）
    */
   const defaultSpaceId = useMemo(() => {
     const first = categories.find((item) => item.key);
@@ -184,31 +190,121 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     return Number.isFinite(id) && id > 0 ? id : undefined;
   }, [categories]);
 
-  const spaceId = useMemo(
-    () => (source === 'team' ? Number(category) || defaultSpaceId : undefined),
-    [source, category, defaultSpaceId],
+  // 团队维度全部空间 ID（专家"全部"页签的聚合查询参数）
+  const teamSpaceIds = useMemo(
+    () =>
+      categories
+        .map((item) => Number(item.key))
+        .filter((id) => Number.isFinite(id) && id > 0),
+    [categories],
   );
 
-  // 归一化列表数据
-  const { list, loading, error, hasMore, loadMore } = useCapabilityResources({
-    resourceType,
-    source,
-    category,
-    keyword,
-    spaceId,
-    pageSize: 20,
-  });
-
-  // 置顶项排在当前列表最前（保持原相对顺序的稳定分区）
-  const displayList = useMemo(() => {
-    if (pinnedKeys.length === 0) {
-      return list;
+  // 专家/技能·团队维度：空间选择统一经 spaceIds 承载（"全部"=全部空间，具体空间=单元素）
+  const publishedSpaceIds = useMemo(() => {
+    if (
+      source !== 'team' ||
+      (resourceType !== 'expert' && resourceType !== 'skill')
+    ) {
+      return undefined;
     }
-    const pinnedSet = new Set(pinnedKeys);
-    const pinned = list.filter((item) => pinnedSet.has(item.key));
-    const rest = list.filter((item) => !pinnedSet.has(item.key));
-    return [...pinned, ...rest];
-  }, [list, pinnedKeys]);
+    if (!teamSpaceIds.length) return undefined;
+    return category ? [Number(category)] : teamSpaceIds;
+  }, [source, resourceType, category, teamSpaceIds]);
+
+  const spaceId = useMemo(() => {
+    if (source !== 'team') return undefined;
+    // 专家/技能维度"全部"页签不回落单空间（由 spaceIds 聚合）；具体空间照常取分类
+    if (resourceType === 'expert' || resourceType === 'skill') {
+      return category ? Number(category) : undefined;
+    }
+    return Number(category) || defaultSpaceId;
+  }, [source, resourceType, category, defaultSpaceId]);
+
+  // 归一化列表数据
+  const { list, loading, error, hasMore, loadMore, updateItem } =
+    useCapabilityResources({
+      resourceType,
+      source,
+      category,
+      keyword,
+      spaceId,
+      spaceIds: publishedSpaceIds,
+      pageSize: 20,
+    });
+
+  // 连接器「连接/断开」：与专家·技能·连接器广场页共用同一份共享 hook
+  // （oauth2 授权 / 凭据弹窗 / 断开寻址，成功后就地更新卡片 connected）
+  const {
+    handleConnect,
+    connectingIds,
+    handleDisconnect,
+    disconnectingIds,
+    connectCtx,
+    closeConnectModal,
+    handleConnected,
+  } = useConnectorConnect({
+    source,
+    spaceId,
+    updateItem,
+  });
+  const connectorBusyKeys = useMemo(
+    () => [...connectingIds, ...disconnectingIds],
+    [connectingIds, disconnectingIds],
+  );
+  // CapabilityItem → 共享 hook 契约（connector 的 rawId 即 service 标识）
+  const toConnectItem = (item: CapabilityItem) => ({
+    id: item.key,
+    service: item.rawId !== undefined ? String(item.rawId) : undefined,
+    authType: item.authType,
+    connected: item.connected,
+  });
+  const onConnectorConnect = useCallback(
+    (item: CapabilityItem) => {
+      void handleConnect(toConnectItem(item));
+    },
+    [handleConnect],
+  );
+  const onConnectorDisconnect = useCallback(
+    (item: CapabilityItem) => {
+      void handleDisconnect(toConnectItem(item));
+    },
+    [handleDisconnect],
+  );
+
+  /**
+   * 收藏/取消收藏（与广场卡同链路）：按类型分流——专家走智能体收藏、
+   * 技能走已发布技能收藏（均按 targetId），成功后就地更新 collect 与收藏数
+   */
+  const onToggleCollect = useCallback(
+    (item: CapabilityItem) => {
+      if (item.targetId === undefined) return;
+      const collect = !!item.collect;
+      const request =
+        item.resourceType === 'skill'
+          ? collect
+            ? apiPublishedSkillUnCollect(item.targetId)
+            : apiPublishedSkillCollect(item.targetId)
+          : collect
+          ? apiUnCollectAgent(item.targetId)
+          : apiCollectAgent(item.targetId);
+      void request.then((res) => {
+        if (res?.code === SUCCESS_CODE) {
+          updateItem(item.key, {
+            collect: !collect,
+            collectCount: Math.max(
+              0,
+              (item.collectCount || 0) + (collect ? -1 : 1),
+            ),
+          });
+        }
+      });
+    },
+    [updateItem],
+  );
+
+  // 钉住仅作状态标记（按钮高亮/图标填充），不调整列表排序——
+  // 不再置顶前插，保持接口返回顺序
+  const displayList = list;
 
   // 搜索防抖
   useEffect(() => {
@@ -222,7 +318,8 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   /**
    * 切换数据源/能力类型时同步清空二级分类：跨维度的 category 语义不同
    * （system=内容分类、team=空间选择），携带旧值会先发出一次无效加载；
-   * 资料库=空间文档仓库（repo 树接口 spaceId 必传），强制团队空间源
+   * 切换类型导航时数据源自动回到系统广场（资料库=空间文档仓库，repo 树
+   * 接口 spaceId 必传，强制团队空间源）
    */
   const handleSourceChange = useCallback((next: CapabilitySourceEnum) => {
     setSource(next);
@@ -230,9 +327,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   }, []);
   const handleResourceTypeChange = useCallback((next: CapabilityTypeEnum) => {
     setResourceType(next);
-    if (next === 'knowledge') {
-      setSource('team');
-    }
+    setSource(next === 'knowledge' ? 'team' : 'system');
     setCategory('');
   }, []);
 
@@ -291,38 +386,6 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
       ?.scrollIntoView?.({ block: 'nearest' });
   }, [focusIndex, displayList]);
 
-  /**
-   * 滚动锚定：置顶项会随后续页加载插入列表头部，导致视口内容被整体推挤。
-   * loadMore 前记录视口首卡的 key 与位置，数据更新后补偿 scrollTop 差值；
-   * 纯尾部追加时首卡位置不变、差值为 0，不会产生多余滚动。
-   */
-  const scrollAnchorRef = useRef<{ key: string; top: number } | null>(null);
-  const captureScrollAnchor = () => {
-    const el = listRef.current;
-    if (!el) {
-      return;
-    }
-    const firstCard = el.querySelector<HTMLElement>('[data-capability-key]');
-    scrollAnchorRef.current = firstCard
-      ? { key: firstCard.dataset.capabilityKey || '', top: firstCard.offsetTop }
-      : null;
-  };
-  useLayoutEffect(() => {
-    const anchor = scrollAnchorRef.current;
-    if (!anchor?.key) {
-      scrollAnchorRef.current = null;
-      return;
-    }
-    const el = listRef.current;
-    const card = el?.querySelector<HTMLElement>(
-      `[data-capability-key="${CSS.escape(anchor.key)}"]`,
-    );
-    if (el && card) {
-      el.scrollTop += card.offsetTop - anchor.top;
-    }
-    scrollAnchorRef.current = null;
-  }, [displayList]);
-
   const handleSelect = useCallback(
     (item: CapabilityItem) => {
       onSelect(item);
@@ -341,7 +404,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
       try {
         localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(next));
       } catch {
-        // 持久化失败不影响当次会话内置顶
+        // 持久化失败不影响当次会话内钉住
       }
       return next;
     });
@@ -394,7 +457,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     }
   };
 
-  /** 滚动触底加载下一页（先锚定视口，防置顶项前插造成跳动） */
+  /** 滚动触底加载下一页（尾部追加，不改既有内容位置） */
   const handleListScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     if (
@@ -402,7 +465,6 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
       !loading &&
       hasMore
     ) {
-      captureScrollAnchor();
       loadMore();
     }
   };
@@ -414,13 +476,14 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
       return;
     }
     if (el.scrollHeight <= el.clientHeight) {
-      captureScrollAnchor();
       loadMore();
     }
   }, [displayList, loading, hasMore, loadMore]);
 
-  // 团队空间维度等待空间字典/空间 ID 就绪
-  const waitingSpace = source === 'team' && !spaceId;
+  // 团队空间维度等待空间字典/空间 ID 就绪；专家/技能"全部"页签由 spaceIds
+  // 聚合查询（无单空间 ID），凭 spaceIds 判定就绪，否则空结果会卡在加载态
+  const waitingSpace =
+    source === 'team' && !spaceId && !publishedSpaceIds?.length;
   const initialLoading = (loading || waitingSpace) && displayList.length === 0;
 
   return (
@@ -629,6 +692,10 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
                     onSelect={handleSelect}
                     onHover={setFocusIndex}
                     onTogglePin={handleTogglePin}
+                    onConnectorConnect={onConnectorConnect}
+                    onConnectorDisconnect={onConnectorDisconnect}
+                    connectorBusyKeys={connectorBusyKeys}
+                    onToggleCollect={onToggleCollect}
                   />
                 ))}
                 {loading && (
@@ -648,6 +715,16 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
           </div>
         </section>
       </div>
+
+      {/* 凭据型连接器连接弹窗（oauth2 走授权窗口，不经过这里） */}
+      <ConnectorConnectModal
+        open={!!connectCtx}
+        record={connectCtx?.record ?? null}
+        fields={connectCtx?.fields ?? []}
+        spaceId={source === 'team' ? spaceId : undefined}
+        onClose={closeConnectModal}
+        onConnected={handleConnected}
+      />
     </Modal>
   );
 };

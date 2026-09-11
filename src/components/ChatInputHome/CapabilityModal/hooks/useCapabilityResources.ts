@@ -1,15 +1,15 @@
 /**
  * 添加能力弹窗归一化数据层
  * @description 参考 pages/ExpertSkillConnector/useResourceList 的双适配器模式独立实现：
- * - 服务端分页维度（系统广场已发布技能/专家/资料库、团队空间连接器）透传分页参数；
- * - 全量数组维度（系统广场连接器、团队空间技能/专家/资料库）首次全量拉取后
+ * - 专家：系统广场/团队空间均走已发布智能体接口（团队维度经 spaceIds 聚合，
+ *   "全部"页签=全部空间），服务端分页；
+ * - 服务端分页维度（系统广场已发布技能、团队空间连接器）透传分页参数；
+ * - 全量数组维度（系统广场连接器、团队空间技能/资料库）首次全量拉取后
  *   内存筛选切片，模拟滚动加载；
  * 对外统一提供 { list, loading, error, hasMore, loadMore } 语义。
  */
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { apiAgentConfigList } from '@/services/agentConfig';
-import { apiSkillList } from '@/services/library';
 import { apiRepoSpaceTree } from '@/services/repo';
 import {
   apiPublishedAgentList,
@@ -19,8 +19,8 @@ import {
   apiConnectorProviderPageList,
   apiSystemConnectorProviderList,
 } from '@/services/systemManage';
-import type { AgentConfigInfo } from '@/types/interfaces/agent';
-import type { SkillInfo } from '@/types/interfaces/library';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { RepoPageTreeNode } from '@/types/interfaces/repo';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
@@ -39,6 +39,8 @@ interface ServerFetchParams {
   category: string;
   keyword: string;
   spaceId?: number;
+  /** 团队空间专家维度：空间聚合查询（"全部"页签=全部空间，具体空间=单元素） */
+  spaceIds?: number[];
 }
 
 /** 服务端分页适配器 */
@@ -67,10 +69,11 @@ type ResourceAdapter = ServerAdapter | ClientAdapter;
 const mapPublishedItem = (
   item: SquarePublishedItemInfo & { tags?: string[]; fileType?: string },
   resourceType: CapabilityTypeEnum,
+  source: CapabilitySourceEnum = 'system',
 ): CapabilityItem => ({
-  key: `${resourceType}:system:${item.id}`,
+  key: `${resourceType}:${source}:${item.id}`,
   resourceType,
-  source: 'system',
+  source,
   rawId: item.id,
   targetId: item.targetId,
   name: item.name,
@@ -78,6 +81,13 @@ const mapPublishedItem = (
   icon: item.icon,
   category: item.category || undefined,
   userCount: item.statistics?.userCount,
+  convCount: item.statistics?.convCount,
+  collectCount: item.statistics?.collectCount,
+  collect: item.collect,
+  official: item.official,
+  // 发布者信息（与广场卡同口径：昵称优先，回退用户名）
+  publisherName: item.publishUser?.nickName || item.publishUser?.userName,
+  publisherAvatar: item.publishUser?.avatar,
   tags: item.tags,
   fileType: item.fileType,
   paymentRequired: item.paymentRequired,
@@ -99,20 +109,8 @@ const mapConnectorItem = (
   category: item.category || undefined,
   tags: item.tags,
   connected: item.connected,
-});
-
-/** 团队空间条目（空间内专家/技能组件）归一化 */
-const mapSpaceItem = (
-  base: { id: number; name: string; description: string; icon: string },
-  resourceType: CapabilityTypeEnum,
-): CapabilityItem => ({
-  key: `${resourceType}:team:${base.id}`,
-  resourceType,
-  source: 'team',
-  rawId: base.id,
-  name: base.name,
-  description: base.description || undefined,
-  icon: base.icon,
+  // 认证方式（连接/断开分流：oauth2 授权 / 凭据表单 / no_auth 免连接），与广场页同口径
+  authType: item.authType,
 });
 
 /**
@@ -133,6 +131,9 @@ const flattenRepoTree = (nodes: RepoPageTreeNode[]): CapabilityItem[] => {
           slugId: page.slugId,
           name: page.title,
           pageType: page.pageType,
+          // 创建人（repo 树平铺字段），复用发布者通道与其他卡同款展示
+          publisherName: page.creatorName,
+          publisherAvatar: page.creatorAvatar,
           // 源文件扩展名清洗为资料格式（如 ".md" / "md" → MD）
           fileType: page.sourceExt?.replace(/^\./, '')?.toUpperCase(),
         });
@@ -151,13 +152,14 @@ const extractPublishedPage = (
   res: RequestResponse<unknown>,
   page: number,
   idPrefix: CapabilityTypeEnum,
+  source: CapabilitySourceEnum = 'system',
 ): { items: CapabilityItem[]; hasMore: boolean } => {
   const data = res.data as Page<SquarePublishedItemInfo> | null;
   const records = data?.records || [];
   const current = data?.current || page;
   const pages = data?.pages || 1;
   return {
-    items: records.map((item) => mapPublishedItem(item, idPrefix)),
+    items: records.map((item) => mapPublishedItem(item, idPrefix, source)),
     hasMore: current < pages,
   };
 };
@@ -169,23 +171,15 @@ const publishedServerAdapter = (
     pageSize: number;
     category: string;
     kw?: string;
+    spaceIds?: number[];
   }) => Promise<RequestResponse<unknown>>,
   resourceType: CapabilityTypeEnum,
+  source: CapabilitySourceEnum = 'system',
 ): ServerAdapter => ({
   mode: 'server',
-  fetchPage: ({ page, pageSize, category, keyword }) =>
-    fetch({ page, pageSize, category, kw: keyword || undefined }),
-  extract: (res, page) => extractPublishedPage(res, page, resourceType),
-});
-
-/** 团队空间通用全量适配器（技能/专家/资料库） */
-const teamClientAdapter = (
-  fetchAll: (spaceId: number) => Promise<RequestResponse<unknown>>,
-  extractRecords: (res: RequestResponse<unknown>) => CapabilityItem[],
-): ClientAdapter => ({
-  mode: 'client',
-  fetchAll: ({ spaceId }) => fetchAll(spaceId as number),
-  extractAll: extractRecords,
+  fetchPage: ({ page, pageSize, category, keyword, spaceIds }) =>
+    fetch({ page, pageSize, category, kw: keyword || undefined, spaceIds }),
+  extract: (res, page) => extractPublishedPage(res, page, resourceType, source),
 });
 
 /**
@@ -196,36 +190,73 @@ const ADAPTERS: Record<
   Record<CapabilitySourceEnum, ResourceAdapter>
 > = {
   expert: {
-    // 系统广场：已发布智能体（POST /api/published/agent/list）
+    // 系统广场：已发布智能体（POST /api/published/agent/list），
+    // 与广场页 /square?cate_type=Agent 默认口径一致：targetType=Agent +
+    // targetSubType=ChatBot（含对话型/通用型，排除网页应用），不带 official
     system: publishedServerAdapter(
-      (data) => apiPublishedAgentList(data),
+      (data) =>
+        apiPublishedAgentList({
+          ...data,
+          targetType: AgentComponentTypeEnum.Agent,
+          targetSubType: 'ChatBot',
+        }),
       'expert',
     ),
-    // 团队空间：空间内智能体配置（全量数组）
-    team: teamClientAdapter(
-      (spaceId) => apiAgentConfigList(spaceId),
-      (res) => {
-        const records = (res.data as AgentConfigInfo[] | null) || [];
-        return records.map((item) => mapSpaceItem(item, 'expert'));
+    // 团队空间：同为已发布智能体接口，与空间广场
+    // /space/:id/space-square?activeKey=Agent 同口径——category=Agent +
+    // justReturnSpaceData 只查空间已发布内容；具体空间页签传单 spaceId，
+    // "全部"页签经 spaceIds 聚合全部空间
+    team: publishedServerAdapter(
+      (data) => {
+        const single =
+          data.spaceIds?.length === 1 ? data.spaceIds[0] : undefined;
+        return apiPublishedAgentList({
+          page: data.page,
+          pageSize: data.pageSize,
+          kw: data.kw,
+          category: SquareAgentTypeEnum.Agent,
+          justReturnSpaceData: true,
+          ...(single
+            ? { spaceId: single }
+            : data.spaceIds?.length
+            ? { spaceIds: data.spaceIds }
+            : {}),
+        });
       },
+      'expert',
+      'team',
     ),
   },
   skill: {
-    // 系统广场：已发布技能（POST /api/published/skill/list）
+    // 系统广场：已发布技能（POST /api/published/skill/list），
+    // 与广场页 /square?cate_type=Skill 默认口径一致（category 内容分类透传）
     system: publishedServerAdapter(
       (data) => apiPublishedSkillList(data),
       'skill',
     ),
-    // 团队空间：空间内技能（全量数组）
-    team: teamClientAdapter(
-      (spaceId) => apiSkillList({ spaceId }),
-      (res) => {
-        const records = (res.data as SkillInfo[] | null) || [];
-        return records.map((item) => ({
-          ...mapSpaceItem(item, 'skill'),
-          category: item.category || undefined,
-        }));
+    // 团队空间：同为已发布技能接口，与空间广场
+    // /space/:id/space-square?activeKey=Skill 同口径——category=Skill +
+    // justReturnSpaceData；具体空间=单 spaceId，"全部"页签经 spaceIds 聚合
+    // （后端该参数当前返回空数据为已知状态，契约保持 spaceIds 直传）
+    team: publishedServerAdapter(
+      (data) => {
+        const single =
+          data.spaceIds?.length === 1 ? data.spaceIds[0] : undefined;
+        return apiPublishedSkillList({
+          page: data.page,
+          pageSize: data.pageSize,
+          kw: data.kw,
+          category: SquareAgentTypeEnum.Skill,
+          justReturnSpaceData: true,
+          ...(single
+            ? { spaceId: single }
+            : data.spaceIds?.length
+            ? { spaceIds: data.spaceIds }
+            : {}),
+        });
       },
+      'skill',
+      'team',
     ),
   },
   connector: {
@@ -290,12 +321,14 @@ export interface UseCapabilityResourcesParams {
   resourceType: CapabilityTypeEnum;
   /** 数据源（系统广场/团队空间） */
   source: CapabilitySourceEnum;
-  /** 二级分类 key：system 维度为内容分类（空串=全部）；team 维度为空间 ID 串（空串="全部"占位，回落上层默认空间） */
+  /** 二级分类 key：system 维度为内容分类（空串=全部）；team 维度为空间 ID 串（空串="全部"页签，专家维度聚合全部空间） */
   category: string;
   /** 搜索关键字（已防抖） */
   keyword: string;
-  /** 团队空间维度的空间 ID（system 源不依赖） */
+  /** 团队空间维度的空间 ID（system 源不依赖；专家团队维度由 spaceIds 承载） */
   spaceId?: number;
+  /** 团队空间专家维度：空间聚合查询（"全部"=全部空间 ID；具体空间=单元素） */
+  spaceIds?: number[];
   /** 每页数量 */
   pageSize?: number;
 }
@@ -309,6 +342,7 @@ const useCapabilityResources = ({
   category,
   keyword,
   spaceId,
+  spaceIds,
   pageSize = 20,
 }: UseCapabilityResourcesParams) => {
   const [list, setList] = useState<CapabilityItem[]>([]);
@@ -332,8 +366,9 @@ const useCapabilityResources = ({
       if (!reset && loadingRef.current) {
         return;
       }
-      // 团队空间维度依赖空间 ID（空间字典加载中 / 未选择空间）
-      if (source === 'team' && !spaceId) {
+      // 团队空间维度依赖空间 ID（空间字典加载中 / 未选择空间）；
+      // 专家团队维度的"全部"页签只有 spaceIds（无单空间 ID），凭其放行
+      if (source === 'team' && !spaceId && !spaceIds?.length) {
         return;
       }
       const adapter = ADAPTERS[resourceType][source];
@@ -351,6 +386,7 @@ const useCapabilityResources = ({
             category: source === 'system' ? category : '',
             keyword,
             spaceId,
+            spaceIds,
           });
           // 过期响应丢弃（筛选条件已变化）
           if (requestIdRef.current !== requestId) {
@@ -414,7 +450,7 @@ const useCapabilityResources = ({
         }
       }
     },
-    [resourceType, source, category, keyword, spaceId, pageSize],
+    [resourceType, source, category, keyword, spaceId, spaceIds, pageSize],
   );
 
   const loadRef = useRef(load);
@@ -429,7 +465,7 @@ const useCapabilityResources = ({
     setHasMore(true);
     loadRef.current(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resourceType, source, category, keyword, spaceId]);
+  }, [resourceType, source, category, keyword, spaceId, spaceIds]);
 
   // 滚动触底加载下一页
   const loadMore = useCallback(() => {
@@ -439,7 +475,24 @@ const useCapabilityResources = ({
     loadRef.current(false);
   }, []);
 
-  return { list, loading, error, hasMore, loadMore };
+  /**
+   * 就地更新单条能力（连接器连接/断开成功后使用，与广场页 useResourceList
+   * 同款能力）：同步更新已加载列表与全量缓存，避免整页重拉丢滚动位置、
+   * 或滚动翻页时缓存旧状态复活
+   */
+  const updateItem = useCallback(
+    (key: string, patch: Partial<CapabilityItem>) => {
+      const apply = (item: CapabilityItem) =>
+        item.key === key ? { ...item, ...patch } : item;
+      setList((prev) => prev.map(apply));
+      if (rawListRef.current) {
+        rawListRef.current = rawListRef.current.map(apply);
+      }
+    },
+    [],
+  );
+
+  return { list, loading, error, hasMore, loadMore, updateItem };
 };
 
 export default useCapabilityResources;
