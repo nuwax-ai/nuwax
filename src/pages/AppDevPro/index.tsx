@@ -15,6 +15,7 @@ import FileTreeGitSourcePanel, {
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import Loading from '@/components/custom/Loading';
+import PublishComponentModal from '@/components/PublishComponentModal';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
@@ -86,7 +87,6 @@ import {
   apiUserAppBuildCancel,
   apiUserAppGetById,
   apiUserAppUpdate,
-  getUserAppAppProxyUrl,
   getUserAppTtydProxyWsUrl,
 } from './services/appDevPro';
 import {
@@ -95,6 +95,7 @@ import {
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
+import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 import { pickActiveUserAppTask } from './utils/userAppTaskStream';
 
 const cx = classNames.bind(styles);
@@ -615,14 +616,28 @@ const AppDevPro: React.FC = () => {
     refresh: refreshTasksActive,
   } = useUserAppTasksActive(appId);
 
-  /** 发布：构建 → SSE 进度 → 提交发布申请 */
+  /** 查询应用绑定的域名列表 */
+  const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
+    useRequest(apiUserAppDomainList, {
+      manual: true,
+      onSuccess: (result: RequestResponse<UserAppDomainInfo[]>) => {
+        if (result?.code === SUCCESS_CODE) {
+          setUserAppDomainList(result.data || []);
+        }
+      },
+    });
+
+  /** 发布前：选择分类与发布空间 */
+  const [openPublishModal, setOpenPublishModal] = useState<boolean>(false);
+  /** 部署：构建 → SSE 进度 → 生产部署，成功后再打开发布弹窗 */
   const publishFlow = useUserAppPublish({
     appId,
-    spaceId,
     onBuildFailed: refreshTasksActive,
-    onPublished: () => {
+    onDeployed: () => {
+      setOpenPublishModal(true);
       if (appId) {
         runGetUserAppInfo(appId);
+        runGetUserAppDomainList(appId);
       }
     },
   });
@@ -669,17 +684,6 @@ const AppDevPro: React.FC = () => {
       setHideRemotePublishingAfterCancel(false);
     }
   }, [remotePublishing]);
-
-  /** 查询应用绑定的域名列表 */
-  const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
-    useRequest(apiUserAppDomainList, {
-      manual: true,
-      onSuccess: (result: RequestResponse<UserAppDomainInfo[]>) => {
-        if (result?.code === SUCCESS_CODE) {
-          setUserAppDomainList(result.data || []);
-        }
-      },
-    });
 
   /** 将加载状态同步到全局 model，供其他组件感知 */
   useEffect(() => {
@@ -1572,6 +1576,15 @@ const AppDevPro: React.FC = () => {
     }
   }, [remoteBuildTask?.taskId]);
 
+  /** 点击部署：先构建并生产部署，成功后再选择分类发布到市场 */
+  const handleOpenPublish = useCallback(() => {
+    if (!appId) {
+      message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
+      return;
+    }
+    void publishFlow.startPublish();
+  }, [appId, publishFlow]);
+
   /** 刷新应用预览 iframe */
   const handleRefreshPreview = useCallback(() => {
     setPreviewRefreshKey((prev) => prev + 1);
@@ -1627,10 +1640,10 @@ const AppDevPro: React.FC = () => {
   /** 远程桌面页签是否激活（Header 图标高亮） */
   const isAgentDesktopOpen = previewTabs.activeTab?.toolId === 'remote-desktop';
 
-  /** 启动成功后通过环境代理地址访问预览页 */
+  /** 启动成功后：当前环境域名 + /api/userapp/proxy/app/{env}/{appId}/ */
   const appPreviewUrl = useMemo(
-    () => getUserAppAppProxyUrl(appId, dbEnv),
-    [appId, dbEnv],
+    () => buildUserAppAppPreviewUrl(appId, dbEnv, userAppDomainList),
+    [appId, dbEnv, userAppDomainList],
   );
 
   /** 环境或应用变化时，地址栏与 iframe 回到对应代理根路径 */
@@ -1893,7 +1906,7 @@ const AppDevPro: React.FC = () => {
         userAppInfo={userAppInfo}
         spaceId={spaceId}
         onConfirmUpdate={setUserAppInfo}
-        onPublish={publishFlow.startPublish}
+        onPublish={handleOpenPublish}
         publishing={publishFlow.publishing}
         remotePublishing={showRemotePublishing}
         onCancelRemotePublish={handleCancelRemotePublish}
@@ -2019,13 +2032,31 @@ const AppDevPro: React.FC = () => {
         }}
       />
 
-      {/* 发布进度：构建日志 + 提交申请 */}
+      {/* 部署成功后：选择分类与发布空间，发布到市场 */}
+      <PublishComponentModal
+        mode={AgentComponentTypeEnum.UserApp}
+        targetId={appId || 0}
+        open={openPublishModal}
+        spaceId={spaceId}
+        onCancel={() => setOpenPublishModal(false)}
+        onConfirm={() => {
+          setOpenPublishModal(false);
+          publishFlow.completeApply();
+          if (appId) {
+            runGetUserAppInfo(appId);
+          }
+        }}
+      />
+
+      {/* 部署进度：构建日志 + 生产部署 */}
       <AppDevPublishProgressModal
         open={publishFlow.open}
         phase={publishFlow.phase}
         services={publishFlow.services}
+        startServices={publishFlow.startServices}
         overallProgress={publishFlow.overallProgress}
         errorMessage={publishFlow.errorMessage}
+        failedStage={publishFlow.failedStage}
         cancelLoading={publishFlow.cancelLoading}
         onCancelTask={publishFlow.cancelTask}
         onClose={publishFlow.closeModal}

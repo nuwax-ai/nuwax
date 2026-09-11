@@ -9,26 +9,26 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import React from 'react';
 import { Outlet, useLocation, useModel } from 'umi';
-import { isFullscreenWorkbenchPath } from './fullscreenWorkbenchPaths';
-import SidebarShell, { type SidebarShellVariant } from './SidebarShell';
+import { getSidebarShellLayoutPolicy } from './fullscreenWorkbenchPaths';
+import SidebarShell from './SidebarShell';
 
 const Layout: React.FC = () => {
   const location = useLocation();
   const { effectiveNavigationStyle } = useUnifiedTheme();
   const { isMobile } = useModel('layout');
 
-  const onFullscreenWorkbench = isFullscreenWorkbenchPath(location.pathname);
-  const style3Desktop =
-    effectiveNavigationStyle === ThemeNavigationStyleType.STYLE3 && !isMobile;
-  const variant: SidebarShellVariant =
-    onFullscreenWorkbench && !style3Desktop ? 'bare' : 'page';
+  const shellPolicy = getSidebarShellLayoutPolicy({
+    pathname: location.pathname,
+    isStyle3: effectiveNavigationStyle === ThemeNavigationStyleType.STYLE3,
+    isMobile,
+  });
 
   return (
     <SidebarShell
-      variant={variant}
-      suppressSecondMenu={onFullscreenWorkbench}
+      variant={shellPolicy.variant}
+      suppressSecondMenu={shellPolicy.suppressSecondMenu}
       // 工作台页沉浸避让由路由层 immersiveShellAvoid 承担，page-container 不叠加
-      immersiveMarginTop={!onFullscreenWorkbench}
+      immersiveMarginTop={shellPolicy.immersiveMarginTop}
     >
       <Outlet />
     </SidebarShell>

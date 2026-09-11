@@ -197,17 +197,34 @@ class UnifiedThemeService {
 
   /**
    * 标准化租户配置格式
+   * 兼容两代租户模板字段：管理端「主题配置」现保存新版字段
+   * （primaryColor/backgroundId/layoutStyle(light|dark)/navigationStyle(布局类型)），
+   * 旧版为 selectedThemeColor/selectedBackgroundId/navigationStyleId/
+   * navigationStyle(深浅色)。旧字段优先、缺失侧回落新字段——否则新版模板会把
+   * 导航风格误兜底成默认 style3（单栏）、主题色/背景误回平台默认（用户层配置
+   * 落空走租户兜底的场景，如 4010 清理后/新浏览器首次进入）。
    */
   private normalizeTenantConfig(config: any): UnifiedThemeData {
     const defaults = this.getDefaultConfiguration();
+    const hasV2TemplateFields = typeof config?.layoutStyle === 'string';
     return {
-      primaryColor: config.selectedThemeColor || defaults.primaryColor,
-      antdTheme: config.antdTheme || defaults.antdTheme,
-      navigationStyle: config.navigationStyleId || defaults.navigationStyle,
-      layoutStyle: config.navigationStyle || defaults.layoutStyle,
-      backgroundId: config.selectedBackgroundId || defaults.backgroundId,
-      language: config.language || defaults.language,
-      timestamp: config.timestamp || Date.now(),
+      primaryColor:
+        config?.selectedThemeColor ||
+        config?.primaryColor ||
+        defaults.primaryColor,
+      antdTheme: config?.antdTheme || defaults.antdTheme,
+      navigationStyle:
+        config?.navigationStyleId ||
+        (hasV2TemplateFields ? config?.navigationStyle : undefined) ||
+        defaults.navigationStyle,
+      layoutStyle:
+        config?.layoutStyle || config?.navigationStyle || defaults.layoutStyle,
+      backgroundId:
+        config?.selectedBackgroundId ||
+        config?.backgroundId ||
+        defaults.backgroundId,
+      language: config?.language || defaults.language,
+      timestamp: config?.timestamp || Date.now(),
       source: 'tenant',
     };
   }
@@ -473,8 +490,8 @@ class UnifiedThemeService {
         this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE1
           ? 'compact'
           : this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE3
-            ? 'sidebar'
-            : 'expanded',
+          ? 'sidebar'
+          : 'expanded',
       );
       this.updateBodyClasses();
     } catch (error) {
@@ -649,9 +666,20 @@ class UnifiedThemeService {
   }
 
   /**
-   * 清除用户主题配置
+   * 清除用户主题配置。
+   * 登录页初始化可选择保护用户已显式切换过的主题：认证闪断会短暂挂载登录页，
+   * 此时不能再次删除 4010 清理链刚保住的导航风格。显式退出会先整体清空
+   * localStorage，因而没有 HAS_USER_SWITCH_THEME 标记，仍按原语义清理。
    */
-  clearUserThemeConfig(): void {
+  clearUserThemeConfig(
+    options: { preserveExplicitChoice?: boolean } = {},
+  ): void {
+    if (
+      options.preserveExplicitChoice &&
+      localStorage.getItem(STORAGE_KEYS.HAS_USER_SWITCH_THEME)
+    ) {
+      return;
+    }
     this.clearThemeFlag = true;
     localStorage.removeItem(STORAGE_KEYS.USER_THEME_CONFIG);
     localStorage.removeItem(STORAGE_KEYS.GLOBAL_SETTINGS);

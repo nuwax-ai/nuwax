@@ -1,30 +1,32 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import {
   apiUserAppDelete,
-  apiUserAppLatestConversation,
   apiUserAppUpdate,
   apiUserProjectDelete,
-  apiUserProjectLatestConversation,
-  apiUserProjectPageQuery,
+  apiUserProjectTabPageQuery,
   apiUserProjectUpdate,
 } from '@/pages/AppDevPro/services/appDevPro';
-import type { UserProjectItem } from '@/pages/AppDevPro/type';
+import type { UserProjectTabItem } from '@/pages/AppDevPro/type';
 import { dict } from '@/services/i18nRuntime';
+import { apiDownloadAllFiles } from '@/services/vncDesktop';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   DeleteOutlined,
   DownOutlined,
   EditOutlined,
+  ExportOutlined,
   FolderOpenOutlined,
   MoreOutlined,
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, Empty, Input, Modal, Spin } from 'antd';
+import { Button, Dropdown, Empty, Input, message, Modal, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { history, useParams } from 'umi';
+import { useParams } from 'umi';
 import CreateUserApp from '../AppDevPro/components/CreateUserApp';
 import CreateNormalProjectModal from './components/CreateNormalProjectModal';
 import styles from './index.less';
@@ -32,32 +34,65 @@ import {
   openProject,
   PROJECT_MANAGE_TYPES,
   PROJECT_TAB_LABEL_KEYS,
+  PROJECT_TAB_TYPES,
   projectTypeBadgeClass,
   type ProjectTabKey,
 } from './type';
 
+/** 项目管理列表行（tab/page-query 实测契约：主键 projectId，附项目下会话列表） */
+type ProjectListItem = Omit<UserProjectTabItem, 'projectId'> & {
+  id: number;
+};
+
 /**
- * 项目管理：个人/团队空间下的三类项目列表（常规项目/网页应用/全栈应用）。
- * 数据走 apiUserProjectPageQuery；
- * 常规项目/全栈应用的重命名、删除走真实接口（user-project / userapp 契约），
- * 打开项目时取当前用户最新会话直达续聊；PageApp 契约未覆盖改名删除，不挂菜单。
- * 新建入口仅常规项目/全栈应用（2026-09-10 去除网页应用）；存量 PageApp
- * 项目仍照常列表/打开。菜单入口为 menuModel 的 project_manage 占位项。
+ * 行归一：tab/page-query 实测契约（2026-09-10）主键为 projectId（无 id
+ * 字段），全页统一以 id 消费；打开/改名/删除/导出均依赖此步。
+ */
+const normalizeProjectRow = (row: UserProjectTabItem): ProjectListItem => {
+  const { projectId, ...rest } = row;
+  return { ...rest, id: projectId };
+};
+
+/**
+ * 行最新会话解析：tab 行的 conversationId 实测恒为 null（后端未维护绑定），
+ * 项目下会话在 conversations[] 里，取 modified 最新一条作为「最新会话」
+ * （含 id/agentId，打开与导出共用）。
+ */
+const resolveRowLatestConversation = (
+  item: ProjectListItem,
+): ConversationInfo | undefined => {
+  const list = item.conversations || [];
+  if (!list.length) return undefined;
+  return [...list].sort((a, b) =>
+    (b.modified || '').localeCompare(a.modified || ''),
+  )[0];
+};
+
+/**
+ * 项目管理：个人/团队空间下的项目列表（常规项目/网页应用/全栈应用三类合并查询）。
+ * 数据走 tab/page-query（实测行主键 projectId、自带最新会话 id 与项目下会话）；
+ * 常规项目/全栈应用的重命名、删除、导出走真实接口（user-project / userapp /
+ * download-all-files 契约，操作清单对齐 wiki「全栈应用任务及接口清单」）；
+ * 打开项目按类型分发落点（常规项目对齐单栏「项目」分组跳 home/chat 会话详情）；
+ * PageApp 契约未覆盖改名删除，不挂菜单。新建入口与类型 tab 均去除网页应用
+ * （2026-09-10）；「全部」仍合并查询三类，存量 PageApp 项目照常列表/打开。
+ * 菜单入口为 menuModel 的 project_manage 占位项。
  */
 const SpaceProjectManage: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
+  const { pin } = useHomePinnedProjectHandoff();
 
   const [activeTab, setActiveTab] = useState<ProjectTabKey>('all');
   const [keyword, setKeyword] = useState('');
-  const [list, setList] = useState<UserProjectItem[]>([]);
+  const [list, setList] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   // 新建弹窗态
   const [openCreateNormal, setOpenCreateNormal] = useState(false);
   const [openCreateUserApp, setOpenCreateUserApp] = useState(false);
   // 重命名弹窗态
-  const [renameTarget, setRenameTarget] = useState<UserProjectItem>();
+  const [renameTarget, setRenameTarget] = useState<ProjectListItem>();
   const [renameName, setRenameName] = useState('');
 
   const queryProjects = useCallback(async () => {
@@ -77,7 +112,7 @@ const SpaceProjectManage: React.FC = () => {
         // 全部：三类并行拉取后按更新时间合并排序
         const results = await Promise.all(
           PROJECT_MANAGE_TYPES.map((type) =>
-            apiUserProjectPageQuery(buildBody(type)).catch(() => null),
+            apiUserProjectTabPageQuery(buildBody(type)).catch(() => null),
           ),
         );
         const merged = results
@@ -86,16 +121,17 @@ const SpaceProjectManage: React.FC = () => {
               ? res.data.records
               : [],
           )
-          .sort((a: UserProjectItem, b: UserProjectItem) =>
+          .map(normalizeProjectRow)
+          .sort((a: ProjectListItem, b: ProjectListItem) =>
             (b.modified || '').localeCompare(a.modified || ''),
           );
         setList(merged);
       } else {
-        const res = await apiUserProjectPageQuery(
+        const res = await apiUserProjectTabPageQuery(
           buildBody(activeTab as AgentComponentTypeEnum),
         );
         if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
-          setList(res.data.records);
+          setList(res.data.records.map(normalizeProjectRow));
         } else {
           setList([]);
         }
@@ -110,7 +146,7 @@ const SpaceProjectManage: React.FC = () => {
   }, [queryProjects]);
 
   const tabs = useMemo(
-    () => ['all', ...PROJECT_MANAGE_TYPES] as ProjectTabKey[],
+    () => ['all', ...PROJECT_TAB_TYPES] as ProjectTabKey[],
     [],
   );
 
@@ -134,32 +170,58 @@ const SpaceProjectManage: React.FC = () => {
   };
 
   /**
-   * 打开项目：PageApp 直达网页 IDE；其余先取当前用户最新会话再进全栈 IDE，
-   * 取不到（含接口失败/尚无会话）不阻塞进入，由 IDE 内自行建立。
+   * 打开项目（落点与单栏「项目」分组会话点击同源）：
+   * - PageApp → 网页 IDE；
+   * - 常规项目 → home/chat 会话详情（会话/智能体 id 取自行 conversations[]）；
+   *   无会话时上框到 /home，发送即建会话绑定项目，落地即会话详情；
+   * - 全栈应用 → 全栈 IDE 携最新会话 id 直达续聊（conversationId 参数与
+   *   单栏全栈会话点击对齐）。
    */
   const handleOpenProject = useCallback(
-    async (item: Pick<UserProjectItem, 'id' | 'projectType'>) => {
+    (item: ProjectListItem) => {
       if (item.projectType === AgentComponentTypeEnum.PageApp) {
         openProject(spaceId, item);
         return;
       }
-      const fetchLatest =
-        item.projectType === AgentComponentTypeEnum.UserApp
-          ? apiUserAppLatestConversation
-          : apiUserProjectLatestConversation;
-      let conversationId: number | undefined;
-      try {
-        const res = await fetchLatest(item.id);
-        if (res?.code === SUCCESS_CODE) {
-          conversationId = res.data?.conversationId ?? res.data?.id;
+      const latest = resolveRowLatestConversation(item);
+      const conversationId = latest?.id ?? item.conversationId ?? undefined;
+      if (item.projectType === AgentComponentTypeEnum.NormalProject) {
+        const agentId = latest?.agentId;
+        if (conversationId && agentId) {
+          openProject(spaceId, item, conversationId, agentId);
+          return;
         }
-      } catch {
-        // 最新会话获取失败不阻塞进入项目
+        pin({
+          projectId: item.id,
+          spaceId,
+          projectType: item.projectType,
+          name: item.name,
+          icon: item.icon,
+          sandboxId: item.sandboxId,
+        });
+        return;
       }
       openProject(spaceId, item, conversationId);
     },
-    [spaceId],
+    [spaceId, pin],
   );
+
+  /**
+   * 导出项目（wiki #30：download-all-files 适用全栈/常规项目）。
+   * 导出以会话为锚（cId），用行最新会话（resolveRowLatestConversation）；
+   * 无会话提示先进入项目。
+   */
+  const handleExportProject = useCallback((item: ProjectListItem) => {
+    const latest = resolveRowLatestConversation(item);
+    const conversationId = latest?.id ?? item.conversationId ?? undefined;
+    if (!conversationId) {
+      message.warning(
+        dict('PC.Pages.SpaceProjectManage.exportRequiresConversation'),
+      );
+      return;
+    }
+    void apiDownloadAllFiles(conversationId);
+  }, []);
 
   const handleRenameSubmit = async () => {
     const name = renameName.trim();
@@ -180,7 +242,7 @@ const SpaceProjectManage: React.FC = () => {
     setRenameTarget(undefined);
   };
 
-  const openDeleteConfirm = (item: UserProjectItem) => {
+  const openDeleteConfirm = (item: ProjectListItem) => {
     Modal.confirm({
       title: dict('PC.Common.Global.deleteConfirmTitle'),
       content: dict('PC.Common.Global.deleteConfirmContent'),
@@ -199,12 +261,17 @@ const SpaceProjectManage: React.FC = () => {
     });
   };
 
-  const buildCardMenu = (item: UserProjectItem) => ({
+  const buildCardMenu = (item: ProjectListItem) => ({
     items: [
       {
         key: 'rename',
         icon: <EditOutlined />,
         label: dict('PC.Components.ConversationContextMenu.rename'),
+      },
+      {
+        key: 'export',
+        icon: <ExportOutlined />,
+        label: dict('PC.Common.Global.export'),
       },
       { type: 'divider' as const },
       {
@@ -218,6 +285,8 @@ const SpaceProjectManage: React.FC = () => {
       if (key === 'rename') {
         setRenameTarget(item);
         setRenameName(item.name);
+      } else if (key === 'export') {
+        handleExportProject(item);
       } else if (key === 'delete') {
         openDeleteConfirm(item);
       }
@@ -286,7 +355,7 @@ const SpaceProjectManage: React.FC = () => {
                 <div
                   key={`${item.projectType}-${item.id}`}
                   className={styles.card}
-                  onClick={() => void handleOpenProject(item)}
+                  onClick={() => handleOpenProject(item)}
                 >
                   <div className={styles['card-icon']}>
                     {item.icon ? (
@@ -326,7 +395,7 @@ const SpaceProjectManage: React.FC = () => {
                     </div>
                     <div
                       className={styles['card-desc']}
-                      title={item.description}
+                      title={item.description || undefined}
                     >
                       {item.description ||
                         dict('PC.Pages.SpaceProjectManage.noDescription')}
@@ -342,24 +411,47 @@ const SpaceProjectManage: React.FC = () => {
         </Spin>
       </div>
 
-      {/* 新建：常规项目（名称直达统一创建接口，成功即进 IDE） */}
+      {/* 新建：常规项目（名称直达统一创建接口；创建返回首个会话+智能体 id
+          时直达 home/chat 详情，实测常态未返回则上框到 /home，发送即建会话） */}
       <CreateNormalProjectModal
         spaceId={spaceId}
         open={openCreateNormal}
         onCancel={() => setOpenCreateNormal(false)}
-        onConfirm={(targetId) => {
+        onConfirm={(project) => {
           setOpenCreateNormal(false);
-          history.push(`/space/${spaceId}/app-pro?appId=${targetId}`);
+          if (project.conversationId && project.agentId) {
+            openProject(
+              spaceId,
+              {
+                id: project.id,
+                projectType: AgentComponentTypeEnum.NormalProject,
+              },
+              project.conversationId,
+              project.agentId,
+            );
+            return;
+          }
+          pin({
+            projectId: project.id,
+            spaceId,
+            projectType: AgentComponentTypeEnum.NormalProject,
+            name: project.name,
+            sandboxId: project.sandboxId,
+          });
         }}
       />
-      {/* 新建：全栈应用（复用 AppDevPro 创建弹窗，成功即进 IDE） */}
+      {/* 新建：全栈应用（复用 AppDevPro 创建弹窗，成功即进 IDE 续聊创建返回的首个会话） */}
       <CreateUserApp
         spaceId={spaceId}
         mode={CreateUpdateModeEnum.Create}
         open={openCreateUserApp}
         onCancel={() => setOpenCreateUserApp(false)}
         onConfirmCreate={(result) => {
-          history.push(`/space/${spaceId}/app-pro?appId=${result.id}`);
+          openProject(
+            spaceId,
+            { id: result.id, projectType: AgentComponentTypeEnum.UserApp },
+            result.conversationId,
+          );
         }}
       />
       {/* 重命名（常规项目/全栈应用，走真实接口） */}

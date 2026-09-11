@@ -243,7 +243,7 @@ describe('工作目录栏（首页我的电脑场景）', () => {
     const onComputerSelect = vi.fn();
     const onWorkspaceDirChange = vi.fn();
     renderHomeInput({
-      workspaceDir: '/Users/demo/project',
+      workspacePath: '/Users/demo/project',
       onComputerSelect,
       onWorkspaceDirChange,
     });

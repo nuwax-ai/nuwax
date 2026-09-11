@@ -16,13 +16,25 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/** 创建成功回调载荷：id 必返；其余为契约先行字段（缺省由调用方降级） */
+export interface CreatedNormalProject {
+  id: number;
+  name: string;
+  /** 个人电脑沙箱（仅自选个人电脑时有值） */
+  sandboxId?: number;
+  /** 创建即建的首个会话 id */
+  conversationId?: number;
+  /** 首个会话归属智能体 id */
+  agentId?: number;
+}
+
 interface CreateNormalProjectModalProps {
   /** 空间 ID */
   spaceId: number;
   open: boolean;
   onCancel: () => void;
-  /** 创建成功回调（参数为项目 id） */
-  onConfirm: (targetId: number) => void;
+  /** 创建成功回调（载荷含创建返回的会话/智能体 id，缺省触发调用方降级） */
+  onConfirm: (project: CreatedNormalProject) => void;
 }
 
 /**
@@ -47,7 +59,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
   >([]);
   const [computerLoading, setComputerLoading] = useState(false);
   // 自定义工作目录（仅个人电脑时可选）
-  const [workspaceDir, setWorkspaceDir] = useState('');
+  const [workspacePath, setWorkspaceDir] = useState('');
   const [dirPickerOpen, setDirPickerOpen] = useState(false);
 
   const isPersonal = sandboxId !== CLOUD_SANDBOX_ID;
@@ -90,13 +102,20 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
         spaceId,
         name: trimmed,
         sandboxId: isPersonal ? Number(sandboxId) : undefined,
-        workspaceDir: isPersonal ? workspaceDir || undefined : undefined,
+        workspacePath: isPersonal ? workspacePath || undefined : undefined,
       });
-      // 返回体 id 字段名契约未细化，兼容 id / targetId 两种形态
+      // 返回体 id 字段名契约未细化，兼容 id / targetId 两种形态；
+      // conversationId/agentId 为创建即建的首个会话及其智能体（契约先行）
       const newId = res?.data?.id ?? res?.data?.targetId;
       if (res?.code === SUCCESS_CODE && newId) {
         message.success(dict('PC.Pages.SpaceProjectManage.createSuccess'));
-        onConfirm(newId);
+        onConfirm({
+          id: newId,
+          name: trimmed,
+          sandboxId: isPersonal ? Number(sandboxId) : undefined,
+          conversationId: res?.data?.conversationId,
+          agentId: res?.data?.agentId,
+        });
       } else {
         message.error(
           res?.message || dict('PC.Pages.SpaceProjectManage.createFailed'),
@@ -163,7 +182,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
             trigger={['click']}
             menu={{
               selectable: true,
-              selectedKeys: [workspaceDir ? 'pick-folder' : 'default'],
+              selectedKeys: [workspacePath ? 'pick-folder' : 'default'],
               items: [
                 {
                   key: 'default',
@@ -188,11 +207,11 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
             <button
               type="button"
               className={cx(styles['field-control'], styles['dir-trigger'])}
-              title={workspaceDir || undefined}
+              title={workspacePath || undefined}
             >
               <FolderOutlined />
               <span className={cx(styles['dir-text'])}>
-                {workspaceDir || dict('PC.Components.WorkspaceDir.defaultDir')}
+                {workspacePath || dict('PC.Components.WorkspaceDir.defaultDir')}
               </span>
               <DownOutlined className={cx(styles['dir-caret'])} />
             </button>

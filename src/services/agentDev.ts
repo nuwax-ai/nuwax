@@ -79,15 +79,19 @@ export async function apiCollectAgent(
 
 // 查询用户最近使用过的智能体列表
 export async function apiUserUsedAgentList(
-  params: ListParams,
+  params: ListParams & { type?: string },
 ): Promise<RequestResponse<AgentInfo[]>> {
-  const { size, pageIndex, keyword } = params;
+  const { size, pageIndex, keyword, type } = params;
   const searchParams = new URLSearchParams();
   if (pageIndex !== undefined) {
     searchParams.set('pageIndex', String(pageIndex));
   }
   if (keyword) {
     searchParams.set('kw', keyword);
+  }
+  // 智能体类型过滤(如 PageApp,用于女娲应用页最近使用)
+  if (type) {
+    searchParams.set('type', type);
   }
   const query = searchParams.toString();
 

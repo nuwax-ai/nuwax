@@ -52,6 +52,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   onCancel,
   onConfirm,
   onBeforePublishFn,
+  onSubmitPublish,
 }) => {
   const [form] = Form.useForm();
   // 标题
@@ -207,6 +208,12 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         _classifyList = skillInfoList;
         setTitle(dict('PC.Components.PublishComponentModal.skill'));
         break;
+      case AgentComponentTypeEnum.UserApp:
+        _classifyList = pageAppInfoList;
+        setTitle(
+          currentTitle ?? dict('PC.Components.PublishComponentModal.userApp'),
+        );
+        break;
     }
     // 分类选择列表 - 数据类型转换
     const list = _classifyList?.map((item: SquareAgentInfo) => ({
@@ -228,6 +235,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     pluginInfoList,
     workflowInfoList,
     skillInfoList,
+    pageAppInfoList,
   ]);
 
   // 智能体、插件、工作流等 - 提交发布申请
@@ -279,12 +287,25 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       await onBeforePublishFn();
     }
 
-    run({
+    const applyPayload = {
       ...values,
       targetType: mode,
       targetId,
       items: filterPublishItemList,
-    });
+    };
+
+    // 全栈应用等：先把分类、发布空间交给调用方，由其构建后再提交申请
+    if (onSubmitPublish) {
+      await onSubmitPublish({
+        remark: values.remark,
+        category: values.category,
+        items: filterPublishItemList,
+      });
+      onConfirm();
+      return;
+    }
+
+    run(applyPayload);
   };
 
   const handlerConfirm = () => {

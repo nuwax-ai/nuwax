@@ -668,13 +668,13 @@ export const apiProjectCreate = async (data: {
    * 按「契约先行」惯例先发送，后端就绪即生效；当前多余字段应被后端忽略。
    * 目录被占用的报错同样待后端 ready 后补错误码映射。
    */
-  workspaceDir?: string;
+  workspacePath?: string;
 }): Promise<any> => {
   return request('/api/project/create', {
     method: 'POST',
     data: {
       ...data,
-      workspaceDir: data.workspaceDir || undefined,
+      workspacePath: data.workspacePath || undefined,
     },
   });
 };
@@ -682,7 +682,9 @@ export const apiProjectCreate = async (data: {
 /**
  * 创建常规项目（wiki 2026-09-10：常规项目 CRUD 换 /api/normal-project/*，
  * 用于「项目管理」入口；首页对话框创建常规项目仍走 /api/project/create）。
- * 返回体 id 字段名契约未细化，此处兼容 id / targetId 两种形态。
+ * 返回体字段名契约未细化，此处兼容 id / targetId 两种形态；
+ * 创建即建首个会话，conversationId 一并返回（契约先行，缺省时不拼跳转参数）；
+ * agentId 同为防御式透传（常规项目跳 home/chat 详情的路由参数）。
  */
 export const apiNormalProjectCreate = async (data: {
   spaceId: number;
@@ -690,15 +692,22 @@ export const apiNormalProjectCreate = async (data: {
   /** 个人电脑沙箱 ID；云电脑（默认分配）不传 */
   sandboxId?: number;
   /** 自定义工作目录（仅个人电脑），非空才传；被占用时后端报错 */
-  workspaceDir?: string;
-}): Promise<RequestResponse<{ id?: number; targetId?: number }>> => {
+  workspacePath?: string;
+}): Promise<
+  RequestResponse<{
+    id?: number;
+    targetId?: number;
+    conversationId?: number;
+    agentId?: number;
+  }>
+> => {
   return request('/api/normal-project/create', {
     method: 'POST',
     data: {
       spaceId: data.spaceId,
       name: data.name,
       sandboxId: data.sandboxId || undefined,
-      workspaceDir: data.workspaceDir || undefined,
+      workspacePath: data.workspacePath || undefined,
     },
   });
 };
