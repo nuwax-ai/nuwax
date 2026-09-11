@@ -248,6 +248,11 @@ export interface ChatInputUnifiedProps {
   maskText?: string;
   autoSelectComputer?: boolean;
   saveComputerOnSelect?: boolean;
+  /**
+   * 严格记忆模式（首页）：切换智能体时沙箱当前有效选择不被清空/回落，
+   * 仅按新智能体「在列表内」的记忆顶替；默认 false 保持既有行为
+   */
+  strictAgentMemory?: boolean;
   isPersonalComputer?: boolean;
   allowOtherModel?: DefaultSelectedEnum;
   selectedModelId?: number;
@@ -354,6 +359,7 @@ const ChatInputUnifiedImpl: React.FC<
   maskText,
   autoSelectComputer,
   saveComputerOnSelect,
+  strictAgentMemory,
   isPersonalComputer,
   readonly,
   enableMention = true,
@@ -1624,6 +1630,7 @@ const ChatInputUnifiedImpl: React.FC<
                           unavailable={isSandboxUnavailable}
                           autoSelect={autoSelectComputer}
                           saveOnSelect={saveComputerOnSelect}
+                          strictAgentMemory={strictAgentMemory}
                           isPersonalComputer={isPersonalComputer}
                           readonly={readonly}
                           cloudOnly={disablePersonalComputer}

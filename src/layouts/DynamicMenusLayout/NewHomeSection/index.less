@@ -80,10 +80,11 @@
     position: relative;
   }
 
-  // 单栏项目列表：padding 7/7/16/15（右侧 7px 与稳定滚动轨道补偿对齐）。
+  // 单栏项目列表：padding 7/15/16/15（右侧 15px 与顶部导航菜单项右缘对齐，
+  // 均止于 x=245；原右 7px 使列表比导航宽出 8px）。
   // 原文件尾曾二次声明同名规则覆盖此处的 0 15px 16px，现按实际生效值并入，级联结果不变
   .project-list-section {
-    padding: 7px 7px 16px 15px;
+    padding: 7px 15px 16px;
   }
 
   // ===== 经典布局（style1/2）tab 切换：维持改版前形态，仅任务/项目两项 =====
@@ -180,8 +181,9 @@
       display: flex;
       flex-direction: column;
       gap: @listItemGap;
-      // 右侧 8px 由稳定滚动轨道占用，补偿后列表正文仍保持原来的 230px 宽度。
-      padding: 7px 7px 16px 15px;
+      // 右侧 15px 与顶部导航菜单项右缘对齐（x=245，原 7px 使行比导航宽 8px）；
+      // 稳定滚动轨道在 wrapper 右缘 252-260，不再压行
+      padding: 7px 15px 16px;
       margin-right: @listMarginRight;
 
       // 加载更多提示与无更多提示

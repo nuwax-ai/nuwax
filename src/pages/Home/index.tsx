@@ -276,13 +276,14 @@ const Home: React.FC = () => {
   }, [agentDetail?.manualComponents]);
 
   useEffect(() => {
-    // [sandbox-trace] selectedRecommend 变化 effect：沙箱被置 '' 或 '-1'
+    // [sandbox-trace] selectedRecommend 变化：仅复位模型/空间（沙箱选择不再随切换清空）
     trace('effect-selectedRecommend-reset', {
       selectedRecommendId: selectedRecommend?.id,
       targetId: selectedRecommend?.targetId,
-      nextComputerId: selectedRecommend ? '' : '-1',
+      computerKept: true,
     });
-    setSelectedComputerId(selectedRecommend ? '' : '-1');
+    // 沙箱选择跨切换保持：清空会触发选择器任意回落（列表首项/旧 agentId 计算），
+    // 新智能体的记忆顶替由 ComputerTypeSelector strictAgentMemory 决策承接
     setSelectedModelId(undefined);
     setSelectedSpaceId(undefined);
   }, [selectedRecommend]);
@@ -451,14 +452,13 @@ const Home: React.FC = () => {
       setSummonedExpert(undefined);
       // 输入被清，消息级技能 chip 一并清（对齐召唤态口径）
       setSelectedSkill(undefined);
-      // 智能体随分类重选：电脑/模型/空间等 agent 相关已选项一并复位
-      // [sandbox-trace] 切分类复位：置 '-1'
+      // 智能体随分类重选：模型/空间复位（沙箱选择保持，由选择器按新智能体记忆决策）
+      // [sandbox-trace] 切分类：沙箱保持不动
       trace('category-change-reset', {
         categoryKey: key,
         currentAgentId,
         prevComputerId: selectedComputerId,
       });
-      setSelectedComputerId('-1');
       setSelectedModelId(undefined);
       setSelectedSpaceId(undefined);
       chatInputRef.current?.clear();
@@ -475,17 +475,18 @@ const Home: React.FC = () => {
       prev?.id === item.id ? (isUserAppPinned ? prev : undefined) : item,
     );
     if (!isDeselectBlocked) {
-      // 显式切换（或非上框取消）：电脑置 '' 交选择器按新智能体记忆自动选，
-      // 模型/空间复位，输入清空；外部技能 chip 随输入一并清
-      // [sandbox-trace] 切推荐 pill：置 ''（用户手选云电脑在此被清）
+      // 显式切换（或非上框取消）：沙箱选择保持（新智能体记忆顶替走选择器
+      // strictAgentMemory 决策，不再清空交由回落），模型/空间复位，输入清空；
+      // 外部技能 chip 随输入一并清
+      // [sandbox-trace] 切推荐 pill：沙箱保持不动
       trace('recommend-select-reset', {
         fromRecommendId: selectedRecommend?.id,
         toRecommendId: item.id,
         toTargetAgentId: item.targetId,
         prevComputerId: selectedComputerId,
+        computerKept: true,
       });
       setSelectedSkill(undefined);
-      setSelectedComputerId('');
       setSelectedModelId(undefined);
       setSelectedSpaceId(undefined);
       chatInputRef.current?.clear();
@@ -591,6 +592,8 @@ const Home: React.FC = () => {
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
           readonly={!agentDetail?.allowPrivateSandbox}
+          // 切换智能体/分类时沙箱选择保持：记忆顶替与回落由选择器严格决策
+          strictAgentMemory
           /* / 能力弹窗是首页自身特性（选技能/连接器/专家/资料库发起会话），
              不随 agentDetail 重载/专家切换抖动 —— 不传 enableMention，
              维持组件默认恒开（首页无 onFetchMentionFiles，@ 仍是纯文本） */

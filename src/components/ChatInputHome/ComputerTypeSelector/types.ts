@@ -34,6 +34,12 @@ export interface ComputerTypeSelectorProps {
   unavailable?: boolean;
   /** 是否自动触发选择逻辑（默认：true） */
   autoSelect?: boolean;
+  /**
+   * 严格记忆模式（首页）：切换智能体时当前有效选择不再被清空/回落，
+   * 仅当新智能体存在「在当前列表内」的记忆时顶替；默认 false 保持既有行为。
+   * 决策逻辑见 resolveAutoSelection.ts。
+   */
+  strictAgentMemory?: boolean;
   /** 是否在选中时自动保存到后端（默认：true） */
   saveOnSelect?: boolean;
   /** 是否为个人电脑（用于区分不可用状态提示） */
