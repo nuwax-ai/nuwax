@@ -1,6 +1,7 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiNormalProjectDelete,
   apiNormalProjectGetById,
@@ -10,12 +11,10 @@ import {
   apiUserAppUpdate,
   apiUserProjectTabPageQuery,
 } from '@/services/userProjectApp';
-import { dict } from '@/services/i18nRuntime';
 import { apiDownloadAllFiles } from '@/services/vncDesktop';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import {
   DeleteOutlined,
   DownOutlined,
@@ -27,11 +26,18 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import { Button, Dropdown, Empty, Input, message, Modal, Spin } from 'antd';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useParams } from 'umi';
 import CreateUserApp from '../AppDevPro/components/CreateUserApp';
 import CreateNormalProjectModal from './components/CreateNormalProjectModal';
 import styles from './index.less';
+import { normalizeProjectRows, type ProjectListItem } from './projectRows';
 import {
   openProject,
   PROJECT_MANAGE_TYPES,
@@ -40,20 +46,6 @@ import {
   projectTypeBadgeClass,
   type ProjectTabKey,
 } from './type';
-
-/** 项目管理列表行（tab/page-query 实测契约：主键 projectId，附项目下会话列表） */
-type ProjectListItem = Omit<UserProjectTabItem, 'projectId'> & {
-  id: number;
-};
-
-/**
- * 行归一：tab/page-query 实测契约（2026-09-10）主键为 projectId（无 id
- * 字段），全页统一以 id 消费；打开/改名/删除/导出均依赖此步。
- */
-const normalizeProjectRow = (row: UserProjectTabItem): ProjectListItem => {
-  const { projectId, ...rest } = row;
-  return { ...rest, id: projectId };
-};
 
 /**
  * 行最新会话解析：tab 行的 conversationId 实测恒为 null（后端未维护绑定），
@@ -117,23 +109,26 @@ const SpaceProjectManage: React.FC = () => {
             apiUserProjectTabPageQuery(buildBody(type)).catch(() => null),
           ),
         );
-        const merged = results
-          .flatMap((res) =>
-            res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)
-              ? res.data.records
-              : [],
-          )
-          .map(normalizeProjectRow)
-          .sort((a: ProjectListItem, b: ProjectListItem) =>
-            (b.modified || '').localeCompare(a.modified || ''),
-          );
-        setList(merged);
+        const records = results.flatMap((res) =>
+          res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)
+            ? res.data.records
+            : [],
+        );
+        // 当前后端会忽略 queryFilter.projectType，三次响应可能完全相同；
+        // 按「类型 + projectId」去重，兼容后端后续恢复服务端过滤。
+        setList(normalizeProjectRows(records));
       } else {
         const res = await apiUserProjectTabPageQuery(
           buildBody(activeTab as AgentComponentTypeEnum),
         );
         if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
-          setList(res.data.records.map(normalizeProjectRow));
+          // 后端未按 projectType 过滤时，由前端保证 tab 只展示目标类型。
+          setList(
+            normalizeProjectRows(
+              res.data.records,
+              activeTab as AgentComponentTypeEnum,
+            ),
+          );
         } else {
           setList([]);
         }

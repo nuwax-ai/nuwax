@@ -2,14 +2,19 @@ import ProjectPanel, {
   ProjectPanelHandle,
 } from '@/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel';
 import {
+  apiUserProjectArchive,
+  apiUserProjectPin,
+} from '@/services/userProjectApp';
+import {
   act,
   fireEvent,
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import { createRef } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock(
   '@/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel/index.less',
@@ -61,15 +66,20 @@ vi.mock('@/services/userProjectApp', async () => {
         ],
       },
     }),
-    // 项目改名/删除/置顶/归档(wiki 2026-09-11 新契约)测试内未被触发,补 stub 防 undefined
-    apiNormalProjectUpdate: vi.fn(),
-    apiNormalProjectDelete: vi.fn(),
-    apiUserProjectPin: vi.fn(),
-    apiUserProjectArchive: vi.fn(),
+    apiNormalProjectUpdate: vi.fn().mockResolvedValue({ code: '0000' }),
+    apiNormalProjectDelete: vi.fn().mockResolvedValue({ code: '0000' }),
+    apiUserAppUpdate: vi.fn().mockResolvedValue({ code: '0000' }),
+    apiUserAppDelete: vi.fn().mockResolvedValue({ code: '0000' }),
+    apiUserProjectPin: vi.fn().mockResolvedValue({ code: '0000' }),
+    apiUserProjectArchive: vi.fn().mockResolvedValue({ code: '0000' }),
   };
 });
 
 describe('项目侧栏原型交互', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('混合展开状态批量展开，再批量收起；键盘独立切换项目', async () => {
     const ref = createRef<ProjectPanelHandle>();
     render(<ProjectPanel ref={ref} compact />);
@@ -116,5 +126,67 @@ describe('项目侧栏原型交互', () => {
     expect(onConversationClick).toHaveBeenCalledWith(
       expect.objectContaining({ id: 11, topic: '子会话一' }),
     );
+  });
+
+  it('常规/全栈项目置顶和归档：接口成功后才更新列表状态', async () => {
+    render(<ProjectPanel compact />);
+    const normalProject = await screen.findByRole('button', {
+      name: /项目乙/,
+    });
+    fireEvent.click(
+      within(normalProject).getByRole('button', {
+        name: 'PC.Components.ActionMenu.more',
+      }),
+    );
+    fireEvent.click(
+      await screen.findByText('PC.Components.ConversationContextMenu.pin'),
+    );
+    await waitFor(() => expect(apiUserProjectPin).toHaveBeenCalledWith(2));
+    await waitFor(() =>
+      expect(normalProject.querySelector('.pin-icon')).toBeInTheDocument(),
+    );
+
+    const userAppProject = screen.getByRole('button', { name: /项目甲/ });
+    fireEvent.click(
+      within(userAppProject).getByRole('button', {
+        name: 'PC.Components.ActionMenu.more',
+      }),
+    );
+    await screen.findAllByText('PC.Components.ConversationContextMenu.archive');
+    fireEvent.click(
+      screen
+        .getAllByText('PC.Components.ConversationContextMenu.archive')
+        .at(-1)!,
+    );
+    await waitFor(() => expect(apiUserProjectArchive).toHaveBeenCalledWith(1));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: /项目甲/ }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByText(
+        'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedProjects (1)',
+      ),
+    ).toBeVisible();
+  });
+
+  it('置顶接口失败时不改变本地状态', async () => {
+    vi.mocked(apiUserProjectPin).mockResolvedValueOnce({
+      code: '1001',
+    } as never);
+    render(<ProjectPanel compact />);
+    const normalProject = await screen.findByRole('button', {
+      name: /项目乙/,
+    });
+    const more = within(normalProject).getByRole('button', {
+      name: 'PC.Components.ActionMenu.more',
+    });
+    fireEvent.click(more);
+    fireEvent.click(
+      await screen.findByText('PC.Components.ConversationContextMenu.pin'),
+    );
+    await waitFor(() => expect(apiUserProjectPin).toHaveBeenCalledWith(2));
+    expect(normalProject.querySelector('.pin-icon')).not.toBeInTheDocument();
   });
 });
