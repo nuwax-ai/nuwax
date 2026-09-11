@@ -10,7 +10,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
-import { clearStoragePreservingThemePrefs } from '@/utils/authStorageCleanup';
+import { clearStoragePreservingUserPrefs } from '@/utils/authStorageCleanup';
 import { isConversationMockPage } from '@/utils/isConversationMockPage';
 import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { redirectToLogin } from '@/utils/router';
@@ -162,9 +162,9 @@ const errorHandler = (error: any, opts: any) => {
           if (isConversationMockPage()) {
             return;
           }
-          // 会话闪断清理须保留主题偏好：整体 clear 会毁掉用户主题配置
-          // （含导航风格显式选择），登录弹回后租户兜底会把单栏/经典打回默认
-          clearStoragePreservingThemePrefs();
+          // 会话闪断清理须保留用户显式偏好：整体 clear 会毁掉主题配置
+          // （含导航风格显式选择）与语言偏好（显式选过的语言）
+          clearStoragePreservingUserPrefs();
           // nuwaclaw 客户端：联动清除宿主持久化 token（无桥/失败自动忽略）
           void nuwaClawHost.auth.clear();
           clearLoginStatusCache();

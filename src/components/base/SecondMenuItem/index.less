@@ -2,7 +2,10 @@
 @import '@/styles/token';
 
 .row {
-  padding: @paddingXs;
+  padding: var(--xagi-nav-second-row-padding, @paddingXs);
+  // 单栏（style3）二级列通过容器上的 --xagi-nav-second-* 变量同步一级列规格；
+  // 经典布局不设变量走默认值，行为与原版一致
+  min-height: var(--xagi-nav-second-row-height, auto);
   cursor: default;
   color: @navSecondMenuTextSecondary;
 
@@ -18,16 +21,19 @@
     :global {
       .ant-typography {
         margin-left: @marginXs;
-        font-size: @fontSizeLg;
+        font-size: var(--xagi-nav-second-main-font-size, @fontSizeLg);
         line-height: @fontHeightLg;
       }
     }
   }
 
   &.active {
-    background-color: @navSecondItemActiveBg;
+    background-color: var(
+      --xagi-nav-second-row-active-bg,
+      @navSecondItemActiveBg
+    );
     color: @colorPrimary;
-    border-radius: @borderRadius;
+    border-radius: var(--xagi-nav-second-row-radius, @borderRadius);
     box-shadow: @boxShadowTertiary;
 
     :global {
@@ -42,9 +48,12 @@
   }
 
   &:hover {
-    background-color: @navSecondItemActiveBg;
-    border-radius: @borderRadius;
-    box-shadow: @boxShadowTertiary;
+    background-color: var(
+      --xagi-nav-second-row-hover-bg,
+      @navSecondItemActiveBg
+    );
+    border-radius: var(--xagi-nav-second-row-radius, @borderRadius);
+    box-shadow: var(--xagi-nav-second-row-hover-shadow, @boxShadowTertiary);
     color: @colorTextSecondary;
 
     :global {
@@ -67,14 +76,14 @@
   }
 
   .icon-box {
-    font-size: 20px;
+    font-size: var(--xagi-nav-second-icon-size, 20px);
     border-radius: @borderRadiusSm;
     overflow: hidden;
     flex-shrink: 0;
 
     .icon-image {
-      width: 20px;
-      height: 20px;
+      width: var(--xagi-nav-second-icon-size, 20px);
+      height: var(--xagi-nav-second-icon-size, 20px);
     }
   }
 

@@ -7,12 +7,12 @@
  * 5. 展开时最多展示 3 条会话,点击条目触发跳转回调;
  * 6. 会话条目状态徽标:执行中绿点 / 失败红叹号 + 悬停「⋯」菜单入口;
  * 7. 超过 3 条经「查看更多 (N)」展开全部,再点「收起」回 3 条;
- * 8. 已归档会话(本地标记)不在分组条目中展示。
+ * 8. 已归档会话(服务端字段)不在分组条目中展示。
  */
 import RecentAgentItem from '@/layouts/DynamicMenusLayout/NewHomeSection/components/RecentAgentItem';
 import { TaskStatus } from '@/types/enums/agent';
 import type { AgentInfo } from '@/types/interfaces/agent';
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -42,6 +42,7 @@ vi.mock('@/components/business-component/ConversationContextMenu', () => ({
 }));
 
 afterEach(() => {
+  cleanup();
   vi.restoreAllMocks();
 });
 
@@ -58,22 +59,18 @@ const baseAgent: AgentInfo = {
   agentType: 'ChatBot',
 };
 
-const conv = (id: number, taskStatus: TaskStatus, topic = `topic-${id}`) => ({
-  id,
-  topic,
-  taskStatus,
-});
+const conv = (
+  id: number,
+  taskStatus: TaskStatus,
+  topic = `topic-${id}`,
+  flags: { pinned?: boolean; archived?: boolean } = {},
+) => ({ id, topic, taskStatus, ...flags });
 
 const renderGroup = (
   conversationList: AgentInfo['conversationList'],
   options?: {
     isActive?: boolean;
     onConversationClick?: (conversationId: number | string) => void;
-    conversationFlags?: {
-      pinned: number[];
-      archived: number[];
-      collected: number[];
-    };
   },
 ) =>
   render(
@@ -82,7 +79,6 @@ const renderGroup = (
       isActive={options?.isActive ?? false}
       onClick={() => {}}
       onConversationClick={options?.onConversationClick ?? (() => {})}
-      conversationFlags={options?.conversationFlags}
     />,
   );
 
@@ -180,10 +176,11 @@ describe('RecentAgentItem 分组展开', () => {
     expect(screen.getByText(viewMoreText)).toBeInTheDocument();
   });
 
-  it('已归档会话(本地标记)不在分组条目中展示', () => {
-    renderGroup([conv(1, TaskStatus.EXECUTING), conv(2, TaskStatus.COMPLETE)], {
-      conversationFlags: { pinned: [], archived: [1], collected: [] },
-    });
+  it('已归档会话(服务端字段)不在分组条目中展示', () => {
+    renderGroup([
+      conv(1, TaskStatus.EXECUTING, 'topic-1', { archived: true }),
+      conv(2, TaskStatus.COMPLETE),
+    ]);
     // topic-1 已归档被过滤,仅剩组头副标题一处;条目只展示 topic-2
     expect(screen.getAllByText('topic-1').length).toBe(1);
     expect(screen.getByText('topic-2')).toBeInTheDocument();

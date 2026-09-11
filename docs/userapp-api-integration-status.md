@@ -1,5 +1,7 @@
 # 全栈应用任务及接口清单 · 前端接入同步状态
 
+> **⚠️ 契约版本提示（2026-09-11）**：飞书 wiki 已重构为 v2「全栈应用开发接口清单」（44 行新结构,常规项目 CRUD 换 `/api/normal-project/*` 族、新增 pin/archive、conversation 族迁移），本文 32 行契约已过时待重同步。当日已落地（feat-dong.0930 未提交）：常规项目 update/delete/get/conversation 切 normal-project 族（SpaceProjectManage+ProjectPanel）、项目 pin/archive 后端化（ProjectPanel,行级回读字段契约先行）、打开常规项目缺会话兜底链（conversation→get→上框）；服务函数集中在 `src/services/userProjectApp.ts`。
+
 > **源文档**：[飞书 wiki「全栈应用任务及接口清单」](https://xspaceagi.feishu.cn/wiki/IGqqw91uWiIXFTkigruclnSFnHb)（后端同学维护，wiki 内「状态」列为**后端交付状态**，2026-09-08 全部标已完成） **契约版本**：2026-09-08 16:31 CSV 导出版（ego-browser「菜单 → 表格 → 下载为 CSV」路线，全量 32 行契约） **前端核查基线**：2026-09-08 · feat-2026.9.30 系分支快照（核查期间工作区 HEAD 在 feat-2026.9.30 / test(e2a2aa8b0) / feat-dong.0930 间被并行会话切换，行号以当日代码为准） **同步规则**：后端 wiki 更新 → 重导 CSV 对照更新本文；前端接线/下线 → 更新对应行状态与证据。**全部 ✅ 后才在标题加 ✅**（沿用 8 月任务板惯例）。
 
 **状态图例**

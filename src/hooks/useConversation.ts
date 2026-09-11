@@ -28,7 +28,8 @@ const useConversation = () => {
   const handleCreateConversation = async (
     agentId: number,
     attach?: {
-      message: string;
+      /** 首条消息（项目直建会话等场景可不带，目标页无 message 即不自动发送） */
+      message?: string;
       files?: UploadFileInfo[];
       infos?: AgentSelectedComponentInfo[];
       selectedComputerId?: string;

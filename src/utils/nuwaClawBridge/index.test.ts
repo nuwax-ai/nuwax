@@ -216,19 +216,23 @@ describe('nuwaClawHost（统一对外接入层）', () => {
       expect(root.style.getPropertyValue('--nuwaclaw-shell-top')).toBe(
         `${shellAvoid.TOP}px`,
       );
+      // mac 独立全屏页不做顶部退让（红绿灯/图标簇不占内容区页头位置）
       expect(root.style.getPropertyValue('--nuwaclaw-shell-toolbar')).toBe(
-        `${shellAvoid.TOOLBAR}px`,
+        '0px',
       );
       expect(root.style.getPropertyValue('--nuwaclaw-shell-right')).toBe(
         `${shellAvoid.RIGHT}px`,
       );
     });
 
-    it('沉浸态（Windows 主窗口）→ 追加 nuwaclaw-shell-frameless', () => {
+    it('沉浸态（Windows 主窗口）→ 追加 nuwaclaw-shell-frameless 且工具栏避让保留', () => {
       vi.stubGlobal('navigator', { platform: 'Win32' });
       (window as any).NuwaClawBridge = { auth: {} };
       syncShellAvoidanceCss();
       expect(root.classList.contains('nuwaclaw-shell-frameless')).toBe(true);
+      expect(root.style.getPropertyValue('--nuwaclaw-shell-toolbar')).toBe(
+        `${shellAvoid.TOOLBAR}px`,
+      );
     });
 
     it('非沉浸（无桥浏览器）→ 此前写入的类与变量全部清理（规则天然失效）', () => {
@@ -245,13 +249,15 @@ describe('nuwaClawHost（统一对外接入层）', () => {
     });
 
     it('幂等：连续调用两次状态不叠加、值不变', () => {
-      vi.stubGlobal('navigator', { platform: 'MacIntel' });
+      vi.stubGlobal('navigator', { platform: 'Win32' });
       (window as any).NuwaClawBridge = { auth: {} };
       syncShellAvoidanceCss();
       syncShellAvoidanceCss();
-      expect(root.className.includes('nuwaclaw-shell nuwaclaw-shell')).toBe(
-        false,
-      );
+      // 类名按 token 精确统计（小写子串比较会被 nuwaclaw-shell-frameless 误判）
+      const shellClassCount = root.className
+        .split(/\s+/)
+        .filter((c) => c === 'nuwaclaw-shell').length;
+      expect(shellClassCount).toBe(1);
       expect(root.style.getPropertyValue('--nuwaclaw-shell-toolbar')).toBe(
         `${shellAvoid.TOOLBAR}px`,
       );

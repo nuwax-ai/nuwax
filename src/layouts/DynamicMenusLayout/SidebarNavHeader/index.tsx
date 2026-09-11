@@ -40,8 +40,9 @@ const SearchSvg: React.FC = () => (
 /**
  * 原型同款折叠面板图标（SVG 自需求原型移植）。
  * flip=true 时镜像（分隔线/箭头朝右），用于侧栏折叠后的展开态。
+ * 导出供 SidebarNavLayout 折叠态展开按钮复用（与收起按钮同款图标）。
  */
-const PanelToggleSvg: React.FC<{ flip?: boolean }> = ({ flip }) => (
+export const PanelToggleSvg: React.FC<{ flip?: boolean }> = ({ flip }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"

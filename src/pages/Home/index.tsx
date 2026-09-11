@@ -9,10 +9,10 @@ import ChatInputUnified, {
 } from '@/components/business-component/ChatInputUnified';
 import type { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import {
-  filterSelectableAgents,
   findDefaultAgent,
   findTypeFallbackAgent,
   getProjectTypeByFunctionType,
+  isAgentSelectable,
   isTaskAgentFunctionType,
   showSpaceSelectorForFunctionType,
 } from '@/constants/recommendAgentPolicy.constants';
@@ -262,7 +262,8 @@ const Home: React.FC = () => {
   }, [agentDetail?.manualComponents]);
 
   useEffect(() => {
-    setSelectedComputerId(selectedRecommend ? '' : '-1');
+    // 沙箱按 agent 绑定：这里不清空（清空会触发选择器以旧 agentId 任意回落），
+    // 切换后的解析（该 agent 的记忆/云端默认）由 ComputerTypeSelector strictAgentMemory 承接
     setSelectedModelId(undefined);
     setSelectedSpaceId(undefined);
   }, [selectedRecommend]);
@@ -296,6 +297,13 @@ const Home: React.FC = () => {
       findTypeFallbackAgent(recommendNavList, pinnedProject?.projectType);
     if (hit) {
       setSelectedRecommend(hit);
+      // 同步切到命中项所在分类（受控 Segmented 直接置 key；不复用
+      // handleCategoryChange——其含清空/清输入副作用）。category 为空时
+      // pill 归第一个分类且该分类必非空，autoCategoryKey 天然正确无需设置
+      // （显式设置反而引入分类数据未到的竞态）
+      if (hit.category) {
+        setUserPickedCategory(hit.category);
+      }
       return;
     }
     if (agentMissedPromptedRef.current !== pinnedProject?.projectId) {
@@ -381,26 +389,22 @@ const Home: React.FC = () => {
     )
   );
 
-  // 上框期间只保留同类型智能体（策略单源过滤；无上框 = 全量）
-  const visibleRecommendList = useMemo(
-    () => filterSelectableAgents(recommendNavList, pinnedProject),
-    [recommendNavList, pinnedProject],
-  );
-
   // 内容分类列表(对话任务/项目开发/AI教育等):pill 来自已发布分类接口的
   // ChatBox 分类,推荐按 category(分类 key)归入对应 pill;
-  // 存量未配置分类的推荐归入第一个 pill,避免内容丢失
+  // 存量未配置分类的推荐归入第一个 pill,避免内容丢失。
+  // 上框期间不再过滤隐藏(2026-09-11 定调):全部 pill 展示,
+  // 非同类型由 ChatBoxRecommendNav 按 isItemSelectable 置灰不可选
   const categoryNavList = useMemo<HomeCategoryDef[]>(() => {
     if (chatboxCategories.length === 0) return [];
     const firstKey = chatboxCategories[0].key;
     return chatboxCategories.map((category) => ({
       key: category.key,
       label: category.label,
-      items: visibleRecommendList.filter(
+      items: recommendNavList.filter(
         (item) => (item.category || firstKey) === category.key,
       ),
     }));
-  }, [chatboxCategories, visibleRecommendList]);
+  }, [chatboxCategories, recommendNavList]);
 
   // 默认分类 = 第一个有内容的分类(数据到达时 Segmented 才首挂,值直接就位,
   // 避免挂载后回落引发滑块从起始分类滑过来的无意义动画);用户手动点过则优先
@@ -426,8 +430,7 @@ const Home: React.FC = () => {
       setSummonedExpert(undefined);
       // 输入被清，消息级技能 chip 一并清（对齐召唤态口径）
       setSelectedSkill(undefined);
-      // 智能体随分类重选：电脑/模型/空间等 agent 相关已选项一并复位
-      setSelectedComputerId('-1');
+      // 智能体随分类重选：模型/空间复位（沙箱按 agent 绑定，由选择器解析该 agent 的记忆）
       setSelectedModelId(undefined);
       setSelectedSpaceId(undefined);
       chatInputRef.current?.clear();
@@ -444,10 +447,10 @@ const Home: React.FC = () => {
       prev?.id === item.id ? (isUserAppPinned ? prev : undefined) : item,
     );
     if (!isDeselectBlocked) {
-      // 显式切换（或非上框取消）：电脑置 '' 交选择器按新智能体记忆自动选，
+      // 显式切换（或非上框取消）：沙箱交由选择器按新智能体绑定解析
+      // （strictAgentMemory：其记忆，未绑定回落云端默认；此处不清空避免旧 agentId 回落），
       // 模型/空间复位，输入清空；外部技能 chip 随输入一并清
       setSelectedSkill(undefined);
-      setSelectedComputerId('');
       setSelectedModelId(undefined);
       setSelectedSpaceId(undefined);
       chatInputRef.current?.clear();
@@ -498,6 +501,12 @@ const Home: React.FC = () => {
           items={activeCategoryItems}
           selectedId={selectedRecommend?.id}
           onSelect={handleRecommendSelect}
+          // 上框期间非同类型智能体置灰不可选（全部展示不过滤）
+          isItemSelectable={
+            pinnedProject
+              ? (item) => isAgentSelectable(item, pinnedProject)
+              : undefined
+          }
         />
         <ChatInputUnified
           ref={chatInputRef}
@@ -539,6 +548,8 @@ const Home: React.FC = () => {
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
           readonly={!agentDetail?.allowPrivateSandbox}
+          // 沙箱按 agent 绑定：切换后由选择器解析该 agent 的记忆（未绑定回落云端默认）
+          strictAgentMemory
           /* / 能力弹窗是首页自身特性（选技能/连接器/专家/资料库发起会话），
              不随 agentDetail 重载/专家切换抖动 —— 不传 enableMention，
              维持组件默认恒开（首页无 onFetchMentionFiles，@ 仍是纯文本） */

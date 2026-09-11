@@ -1,0 +1,35 @@
+/**
+ * 单栏列表行/导航项统一交互态 Mixin（2026-09-11 高亮统一）
+ *
+ * 语义（与二级列选中态对齐全栏一致）：
+ * - hover  = 灰底轻提示（@navRowHoverBg，无阴影）
+ * - 选中   = 容器白卡 + 三级阴影（@navRowSelectedBg，重确认）；主文字主题色由各组件
+ *   自行落 color: @colorPrimary（各组件「主文字」元素不同：导航行是整行、会话行是标题）
+ *
+ * 注意：纯属性 mixin、不带类名选择器——mixin 会被 css-modules 文件引入，
+ * 类名会被哈希（同 scrollbar.less 的属性选择器教训），仅 & 相对结构两种上下文通用。
+ * 圆角/内边距等几何多为走查对齐值，由各组件自理，不在本 mixin 收编。
+ *
+ * 使用方式：
+ * .your-row {
+ *   .nav-row-hover();     // 生成 &:hover 灰底
+ *   &.active {
+ *     .nav-row-selected(); // 白卡 + 阴影
+ *     color: @colorPrimary;
+ *   }
+ * }
+ */
+@import '@/styles/token.less';
+
+// hover 态：灰底、无阴影
+.nav-row-hover() {
+  &:hover {
+    background-color: @navRowHoverBg;
+  }
+}
+
+// 选中态：容器白卡 + 三级阴影
+.nav-row-selected() {
+  background-color: @navRowSelectedBg;
+  box-shadow: @boxShadowTertiary;
+}

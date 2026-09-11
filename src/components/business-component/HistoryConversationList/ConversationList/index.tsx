@@ -1,11 +1,12 @@
 import ConversationContextMenu from '@/components/business-component/ConversationContextMenu';
-import {
-  CONVERSATION_FLAGS_EVENT,
-  loadConversationFlags,
-} from '@/components/business-component/ConversationContextMenu/conversationLocalFlags';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import {
+  applyConversationFlagOverrides,
+  ConversationFlagOverride,
+  recordConversationFlagOverride,
+} from '@/utils/conversationFlagOverrides';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useSize } from 'ahooks';
 import { Space, Spin, Tooltip } from 'antd';
@@ -39,42 +40,24 @@ const ConversationList = React.forwardRef<
   const [hasMore, setHasMore] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useSize(containerRef);
-  // 会话本地标记（置顶/归档/收藏过渡方案）：菜单 toggle 后经全局事件重读，驱动排序/过滤
-  const [conversationFlags, setConversationFlags] = useState(() =>
-    loadConversationFlags(),
-  );
   const [showArchived, setShowArchived] = useState(false);
-  useEffect(() => {
-    const refreshFlags = () => setConversationFlags(loadConversationFlags());
-    window.addEventListener(CONVERSATION_FLAGS_EVENT, refreshFlags);
-    window.addEventListener('conversation-deleted', refreshFlags);
-    return () => {
-      window.removeEventListener(CONVERSATION_FLAGS_EVENT, refreshFlags);
-      window.removeEventListener('conversation-deleted', refreshFlags);
-    };
-  }, []);
+  // 标记（置顶/归档）本地覆盖：防止刷新的滞后回包把刚归档的会话复活回列表
+  const flagOverridesRef = useRef(new Map<string, ConversationFlagOverride>());
 
-  // 展示列表：默认隐藏归档项、置顶项排前（稳定排序）；「已归档」视图只看归档项
+  // 展示列表：消费后端 pinned/archived，默认隐藏归档项、置顶项排前
   const visibleList = useMemo(() => {
-    const archivedSet = new Set(conversationFlags.archived);
     const filtered = showArchived
-      ? list.filter((item) => archivedSet.has(Number(item.id)))
-      : list.filter((item) => !archivedSet.has(Number(item.id)));
+      ? list.filter((item) => item.archived === true)
+      : list.filter((item) => item.archived !== true);
     if (showArchived) return filtered;
-    const pinnedSet = new Set(conversationFlags.pinned);
     return [...filtered].sort(
-      (a, b) =>
-        Number(pinnedSet.has(Number(b.id))) -
-        Number(pinnedSet.has(Number(a.id))),
+      (a, b) => Number(b.pinned === true) - Number(a.pinned === true),
     );
-  }, [list, conversationFlags, showArchived]);
+  }, [list, showArchived]);
 
   const archivedCount = useMemo(
-    () =>
-      list.filter((item) =>
-        conversationFlags.archived.includes(Number(item.id)),
-      ).length,
-    [list, conversationFlags],
+    () => list.filter((item) => item.archived === true).length,
+    [list],
   );
 
   // 计算每页条数
@@ -100,12 +83,18 @@ const ConversationList = React.forwardRef<
     try {
       const res = await apiAgentConversationList({
         agentId,
+        includeArchived: true,
         lastId,
         limit: isRefresh ? pageSize : 20,
         topic: keyword || undefined,
       });
 
-      const data = res.data || [];
+      // 回包落地前重放本地标记覆盖：列表读接口可能滞后于标记接口，
+      // 整体替换会短暂复活刚归档/置顶的会话（TTL 内本地写优先）
+      const data = applyConversationFlagOverrides(
+        res.data || [],
+        flagOverridesRef.current,
+      );
       if (isRefresh) {
         setList(data);
       } else {
@@ -173,9 +162,23 @@ const ConversationList = React.forwardRef<
             key={item.id}
             conversationId={item.id}
             currentTopic={item.topic}
-            pinned={conversationFlags.pinned.includes(Number(item.id))}
-            archived={conversationFlags.archived.includes(Number(item.id))}
-            collected={conversationFlags.collected.includes(Number(item.id))}
+            pinned={item.pinned === true}
+            archived={item.archived === true}
+            onFlagChanged={(kind, enabled) => {
+              recordConversationFlagOverride(
+                flagOverridesRef.current,
+                item.id,
+                kind,
+                enabled,
+              );
+              setList((prev) =>
+                prev.map((conversation) =>
+                  conversation.id === item.id
+                    ? { ...conversation, [kind]: enabled }
+                    : conversation,
+                ),
+              );
+            }}
             onRename={onEdit ? () => onEdit(item.id, item.topic) : undefined}
             onDelete={onDelete ? () => onDelete(item.id) : undefined}
           >
@@ -245,7 +248,7 @@ const ConversationList = React.forwardRef<
             <Spin size="small" />
           </div>
         )}
-        {/* 已归档入口：存在归档项或处于已归档视图时显示（本地标记过渡方案） */}
+        {/* 已归档入口：列表由 includeArchived=true 回读服务端归档状态 */}
         {!loading && (archivedCount > 0 || showArchived) && (
           <div
             className={styles['archived-entry']}

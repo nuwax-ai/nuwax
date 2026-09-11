@@ -16,10 +16,7 @@ import EmptyState from './components/EmptyState';
 import ProjectPanel, { ProjectPanelHandle } from './components/ProjectPanel';
 import SearchHeader from './components/SearchHeader';
 
-import {
-  CONVERSATION_FLAGS_EVENT,
-  loadConversationFlags,
-} from '@/components/business-component/ConversationContextMenu/conversationLocalFlags';
+import SvgIcon from '@/components/base/SvgIcon';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
@@ -27,6 +24,11 @@ import { apiAgentConversationList } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import {
+  applyConversationFlagOverrides,
+  ConversationFlagOverride,
+  recordConversationFlagOverride,
+} from '@/utils/conversationFlagOverrides';
 import eventBus from '@/utils/eventBus';
 import styles from './index.less';
 
@@ -89,20 +91,7 @@ const NewHomeSection: React.FC<{
   const [loading, setLoading] = useState(
     () => !(componentCache.list && componentCache.list.length > 0),
   );
-  // 会话本地标记（置顶/归档/收藏过渡方案）：菜单 toggle 后经全局事件重读，驱动排序/过滤
-  const [conversationFlags, setConversationFlags] = useState(() =>
-    loadConversationFlags(),
-  );
   const [showArchived, setShowArchived] = useState(false);
-  useEffect(() => {
-    const refreshFlags = () => setConversationFlags(loadConversationFlags());
-    window.addEventListener(CONVERSATION_FLAGS_EVENT, refreshFlags);
-    window.addEventListener('conversation-deleted', refreshFlags);
-    return () => {
-      window.removeEventListener(CONVERSATION_FLAGS_EVENT, refreshFlags);
-      window.removeEventListener('conversation-deleted', refreshFlags);
-    };
-  }, []);
   const [hasMore, setHasMore] = useState(
     componentCache.list ? componentCache.hasMore : true,
   );
@@ -121,6 +110,8 @@ const NewHomeSection: React.FC<{
   const initializedRef = useRef(false);
   const pageSizeRef = useRef(30);
   const loadingRef = useRef(false);
+  // 标记（置顶/归档）本地覆盖：防止静默刷新的滞后回包把刚归档的会话复活回列表
+  const flagOverridesRef = useRef(new Map<string, ConversationFlagOverride>());
 
   const calcPageSize = useCallback(() => {
     const height = scrollContainerRef.current?.clientHeight ?? 0;
@@ -152,12 +143,18 @@ const NewHomeSection: React.FC<{
       try {
         const res = await apiAgentConversationList({
           agentId: null,
+          includeArchived: true,
           lastId,
           limit: pageSize,
           topic: topic || undefined,
         });
 
-        const data = res.data ?? [];
+        // 回包落地前重放本地标记覆盖：列表读接口可能滞后于标记接口，
+        // 整体替换会短暂复活刚归档/置顶的会话（TTL 内本地写优先）
+        const data = applyConversationFlagOverrides(
+          res.data ?? [],
+          flagOverridesRef.current,
+        );
         if (isRefresh) {
           setLocalList(data);
         } else {
@@ -203,28 +200,38 @@ const NewHomeSection: React.FC<{
     onChatFinished: handleConversationChatFinished,
   });
 
-  // 任务列表：默认隐藏归档项、置顶项排前（稳定排序保持原相对顺序）；
+  // 任务列表：消费后端 pinned/archived，默认隐藏归档项、置顶项排前；
   // 「已归档」视图只看归档项
   const visibleConversationList = useMemo(() => {
-    const archivedSet = new Set(conversationFlags.archived);
     const filtered = showArchived
-      ? localList.filter((item) => archivedSet.has(Number(item.id)))
-      : localList.filter((item) => !archivedSet.has(Number(item.id)));
+      ? localList.filter((item) => item.archived === true)
+      : localList.filter((item) => item.archived !== true);
     if (showArchived) return filtered;
-    const pinnedSet = new Set(conversationFlags.pinned);
     return [...filtered].sort(
-      (a, b) =>
-        Number(pinnedSet.has(Number(b.id))) -
-        Number(pinnedSet.has(Number(a.id))),
+      (a, b) => Number(b.pinned === true) - Number(a.pinned === true),
     );
-  }, [localList, conversationFlags, showArchived]);
+  }, [localList, showArchived]);
 
   const archivedCount = useMemo(
-    () =>
-      localList.filter((item) =>
-        conversationFlags.archived.includes(Number(item.id)),
-      ).length,
-    [localList, conversationFlags],
+    () => localList.filter((item) => item.archived === true).length,
+    [localList],
+  );
+
+  const handleConversationFlagChanged = useCallback(
+    (conversationId: number, kind: 'pinned' | 'archived', enabled: boolean) => {
+      recordConversationFlagOverride(
+        flagOverridesRef.current,
+        conversationId,
+        kind,
+        enabled,
+      );
+      setLocalList((prev) =>
+        prev.map((item) =>
+          item.id === conversationId ? { ...item, [kind]: enabled } : item,
+        ),
+      );
+    },
+    [],
   );
 
   const stateRef = useRef({
@@ -537,16 +544,7 @@ const NewHomeSection: React.FC<{
         {`${options.label} (${options.count})`}
       </span>
       <span className={cx(styles['section-tab-chev'])} aria-hidden>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        <SvgIcon name="icons-common-caret_down" style={{ fontSize: 14 }} />
       </span>
       {!options.task && (
         <button
@@ -595,9 +593,11 @@ const NewHomeSection: React.FC<{
             item={item}
             isActive={chatId === item.id?.toString()}
             onClick={() => handleConversationClick(item)}
-            pinned={conversationFlags.pinned.includes(Number(item.id))}
-            collected={conversationFlags.collected.includes(Number(item.id))}
-            archived={conversationFlags.archived.includes(Number(item.id))}
+            pinned={item.pinned === true}
+            archived={item.archived === true}
+            onFlagChanged={(kind, enabled) =>
+              handleConversationFlagChanged(item.id, kind, enabled)
+            }
           />
         ))}
 
@@ -607,7 +607,7 @@ const NewHomeSection: React.FC<{
           </div>
         )}
 
-        {/* 已归档入口:存在归档项或处于已归档视图时显示(本地标记过渡方案) */}
+        {/* 已归档入口：列表由 includeArchived=true 回读服务端归档状态 */}
         {!loading && (archivedCount > 0 || showArchived) && (
           <div
             className={cx(styles['archived-entry'])}

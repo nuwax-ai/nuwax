@@ -1,4 +1,5 @@
 @import '@/styles/token.less';
+@import '@/styles/nav-item-state.less';
 
 .sidebar-nav-header {
   flex-shrink: 0;
@@ -42,7 +43,7 @@
     transition: all 0.2s ease;
 
     &:hover {
-      background-color: @colorFillSecondary;
+      background-color: @navRowHoverBg;
       color: @navSecondMenuAdaptiveText;
     }
 
@@ -73,9 +74,8 @@
     transition: background-color 0.2s ease;
     user-select: none;
 
-    &:hover {
-      background-color: @colorFillSecondary;
-    }
+    // hover 灰底轻提示（单栏统一交互态，见 nav-item-state.less）
+    .nav-row-hover();
   }
 
   .new-task-row {
@@ -116,8 +116,16 @@
     margin-top: 2px;
   }
 
+  // 选中态与二级列对齐：容器白卡 + 阴影 + 主题色文字（原灰底+字重覆盖已废弃——
+  // @fontWeightStrong=400 比基础 500 还细，且灰底与 hover 无法区分）
   .nav-item-active {
-    background-color: @colorFillSecondary;
-    font-weight: @fontWeightStrong;
+    .nav-row-selected();
+
+    color: @colorPrimary;
+
+    .action-icon,
+    .nav-item-icon {
+      color: @colorPrimary;
+    }
   }
 }

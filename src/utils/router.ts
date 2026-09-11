@@ -4,16 +4,16 @@ import { history } from 'umi';
 
 /**
  * 桌面端（nuwaclaw 主窗口）走独立新窗口打开的路由清单。
- * 这些全屏页（fixed 头部/画布类布局）无法内嵌避让沉浸式工具栏，改由
- * native.openWindow 开独立窗口承载（带系统标题栏零遮挡）。浏览器端不受影响。
- * 新增同类页面在此追加正则即可。
+ *
+ * 2026-09-11 清空：工作台页（工作流/网页应用/设计器/智能体编排/智能体详情/
+ * 我的电脑）已全部改为**主窗口内页内承载**（fullscreenWorkbenchPaths：侧栏
+ * 常驻 + immersiveShellAvoid 顶部避让）。此前经 jumpTo 的入口会走
+ * openWindow 的 same-window 整页导航（webview 级跳转），侧栏随之整页重载
+ * ——即「进入/退出详情整体重新渲染」问题的根因。清空后 jumpTo 一律回落
+ * history.push（SPA 页内导航，侧栏实例跨跳转存活）。
+ * 若后续有页面确需独立窗口，在此追加正则并确认其布局兼容独立窗口形态。
  */
-const SHELL_NEW_WINDOW_ROUTES: RegExp[] = [
-  /^\/agent\/\d+/, // 智能体详情
-  /^\/space\/\d+\/workflow\//, // 工作流编辑器
-  /^\/space\/\d+\/app-dev(-design)?\//, // 网页应用开发/设计器
-  /^\/my-computer-manage/, // 我的电脑
-];
+const SHELL_NEW_WINDOW_ROUTES: RegExp[] = [];
 
 /** 桌面主窗口下该路由是否应新开独立窗口（独立窗口内自身不再分流）。 */
 function shouldOpenInShellWindow(url: string): boolean {
