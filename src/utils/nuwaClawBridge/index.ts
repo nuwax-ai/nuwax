@@ -188,6 +188,25 @@ export const auth = {
       /* 宿主缺失或调用失败均忽略——不阻塞 nuwax 自身的登出/重定向 */
     }
   },
+  /**
+   * 企业登录：切换客户端后端域名并重新初始化（写壳侧业务域名配置 + 停本地
+   * 服务 + webview 重载到新域登录页）。仅壳内有效；浏览器端返回未处理。
+   */
+  async configureServerHost(
+    host: string,
+  ): Promise<{ success: boolean; serverHost?: string; error?: string }> {
+    try {
+      return (
+        (await getBridge()?.auth?.configureServerHost?.(host)) ?? {
+          success: false,
+          error: 'bridge unavailable',
+        }
+      );
+    } catch (e) {
+      console.warn('[nuwaClawHost] configure server host failed', e);
+      return { success: false, error: String(e) };
+    }
+  },
 };
 
 /**
@@ -296,6 +315,21 @@ export const layout = {
 };
 
 /**
+ * 语言同步（guest→host）：把 nuwax 当前语言推给 nuwaclaw 壳，壳的 UI 文案与
+ * 主进程语言跟随切换。浏览器无桥 no-op。
+ */
+export const i18n = {
+  /** 推送当前语言（如 en-US / zh-CN；fire-and-forget，失败静默）。 */
+  syncLang(lang: string): void {
+    try {
+      getBridge()?.i18n?.syncLang?.(lang);
+    } catch {
+      /* 宿主缺失或调用失败均忽略 */
+    }
+  },
+};
+
+/**
  * 宿主身份（host→guest 只读）：区分宿主产品——nuwaclaw（社区版）/
  * nuwax（商业版 Nuwax；2026-09 改名前为 nuwawork，保留以兼容存量宿主），
  * 用于按宿主开关桌面专属能力或降级。
@@ -309,7 +343,9 @@ export const host = {
   getProduct(): HostProductId | null {
     try {
       const product = getBridge()?.host?.getProduct?.();
-      return product === 'nuwaclaw' || product === 'nuwawork' || product === 'nuwax'
+      return product === 'nuwaclaw' ||
+        product === 'nuwawork' ||
+        product === 'nuwax'
         ? product
         : null;
     } catch {
@@ -334,6 +370,7 @@ export const nuwaClawHost = {
   events,
   theme,
   layout,
+  i18n,
   host,
 };
 

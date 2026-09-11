@@ -11,6 +11,7 @@ import {
 } from '@/constants/i18n.constants';
 import type { I18nKeyPattern, SystemLangMap } from '@/types/interfaces/i18n';
 import { syncLocaleSystems } from '@/utils/localeSync';
+import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { apiI18nQuery } from './i18n';
 
 let currentLang = DEFAULT_I18N_LANG;
@@ -116,6 +117,10 @@ export const setCurrentLang = (lang?: string | null): void => {
   safeSetItem(I18N_STORAGE_KEYS.ACTIVE_LANG, inputLang);
 
   syncLocaleSystems(resolvedLang);
+
+  // nuwaclaw 客户端：语言变化同步给宿主壳（壳 UI 文案/主进程语言跟随）。
+  // 浏览器环境无桥自动忽略；initI18n 恢复语言时的首次推送也走这里。
+  nuwaClawHost.i18n.syncLang(inputLang);
 };
 
 const buildZhValueToKeyMap = (map: SystemLangMap): void => {
