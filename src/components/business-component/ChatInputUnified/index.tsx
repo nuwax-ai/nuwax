@@ -1301,38 +1301,6 @@ const ChatInputUnifiedImpl: React.FC<
                       </Dropdown>
                     )}
                   </VoiceFooter.HideWhenActive>
-                  {/* 已选专家回填：会话仅一个专家，展示在工具栏最右；
-                    专家不进输入框（无 chip），pill 即唯一事实源 */}
-                  {expertComponents.length > 0 && (
-                    <VoiceFooter.HideWhenActive>
-                      <span
-                        className={cx(
-                          'flex',
-                          'items-center',
-                          styles['expert-pill'],
-                        )}
-                      >
-                        <span className={cx(styles['expert-pill-name'])}>
-                          {expertComponents[0].name}
-                        </span>
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label={t('PC.Common.Global.delete')}
-                          className={cx(styles['expert-pill-remove'])}
-                          onClick={() => setExpertComponents([])}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              setExpertComponents([]);
-                            }
-                          }}
-                        >
-                          <CloseOutlined />
-                        </span>
-                      </span>
-                    </VoiceFooter.HideWhenActive>
-                  )}
                   <VoiceFooter.HideWhenActive>
                     {showTaskAgentToggle && (
                       <Tooltip
@@ -1367,16 +1335,44 @@ const ChatInputUnifiedImpl: React.FC<
                     )}
                   </VoiceFooter.HideWhenActive>
 
-                  <VoiceFooter.HideWhenActive>
-                    <ManualComponentItem
-                      manualComponents={commandManualComponents}
-                      selectedComponentList={selectedComponentList}
-                      onSelectComponent={onSelectComponent}
-                    />
-                  </VoiceFooter.HideWhenActive>
+                  {/* 专家 pill 置于左侧固定按钮尾部：必须排在 ManualComponentItem
+                      之前——其包裹层带 flex-1 会吃掉中间全部剩余空间，放在其后
+                      会被顶到右侧麦克风旁。已选专家回填（非首页场景）：会话仅一个
+                      专家，不进输入框（无 chip），pill 即唯一事实源；与首页
+                      summonedExpert 互斥不共存 */}
+                  {expertComponents.length > 0 && (
+                    <VoiceFooter.HideWhenActive>
+                      <span
+                        className={cx(
+                          'flex',
+                          'items-center',
+                          styles['expert-pill'],
+                        )}
+                      >
+                        <span className={cx(styles['expert-pill-name'])}>
+                          {expertComponents[0].name}
+                        </span>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={t('PC.Common.Global.delete')}
+                          className={cx(styles['expert-pill-remove'])}
+                          onClick={() => setExpertComponents([])}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setExpertComponents([]);
+                            }
+                          }}
+                        >
+                          <CloseOutlined />
+                        </span>
+                      </span>
+                    </VoiceFooter.HideWhenActive>
+                  )}
 
-                  {/* 召唤专家回执 chip（首页场景）：展示在工具栏左区最右侧，
-                      提交时以该专家智能体身份创建会话；可取消回落原智能体 */}
+                  {/* 召唤专家回执 chip（首页场景）：提交时以该专家智能体身份
+                      创建会话；可取消回落原智能体 */}
                   {summonedExpert && (
                     <VoiceFooter.HideWhenActive>
                       <span
@@ -1417,6 +1413,14 @@ const ChatInputUnifiedImpl: React.FC<
                       </span>
                     </VoiceFooter.HideWhenActive>
                   )}
+
+                  <VoiceFooter.HideWhenActive>
+                    <ManualComponentItem
+                      manualComponents={commandManualComponents}
+                      selectedComponentList={selectedComponentList}
+                      onSelectComponent={onSelectComponent}
+                    />
+                  </VoiceFooter.HideWhenActive>
 
                   <VoiceFooter.Expand />
 

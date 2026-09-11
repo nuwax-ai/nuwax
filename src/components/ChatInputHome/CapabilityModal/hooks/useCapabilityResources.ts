@@ -19,6 +19,7 @@ import {
   apiConnectorProviderPageList,
   apiSystemConnectorProviderList,
 } from '@/services/systemManage';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { SkillInfo } from '@/types/interfaces/library';
 import type { RepoPageTreeNode } from '@/types/interfaces/repo';
@@ -99,6 +100,8 @@ const mapConnectorItem = (
   category: item.category || undefined,
   tags: item.tags,
   connected: item.connected,
+  // 认证方式（连接/断开分流：oauth2 授权 / 凭据表单 / no_auth 免连接），与广场页同口径
+  authType: item.authType,
 });
 
 /** 团队空间条目（空间内专家/技能组件）归一化 */
@@ -197,8 +200,15 @@ const ADAPTERS: Record<
 > = {
   expert: {
     // 系统广场：已发布智能体（POST /api/published/agent/list）
+    // 与广场页同口径：仅官方 ChatBot 智能体（targetType=Agent 排除网页应用）
     system: publishedServerAdapter(
-      (data) => apiPublishedAgentList(data),
+      (data) =>
+        apiPublishedAgentList({
+          ...data,
+          targetType: AgentComponentTypeEnum.Agent,
+          targetSubType: 'ChatBot',
+          official: true,
+        }),
       'expert',
     ),
     // 团队空间：空间内智能体配置（全量数组）
@@ -439,7 +449,24 @@ const useCapabilityResources = ({
     loadRef.current(false);
   }, []);
 
-  return { list, loading, error, hasMore, loadMore };
+  /**
+   * 就地更新单条能力（连接器连接/断开成功后使用，与广场页 useResourceList
+   * 同款能力）：同步更新已加载列表与全量缓存，避免整页重拉丢滚动位置、
+   * 或滚动翻页时缓存旧状态复活
+   */
+  const updateItem = useCallback(
+    (key: string, patch: Partial<CapabilityItem>) => {
+      const apply = (item: CapabilityItem) =>
+        item.key === key ? { ...item, ...patch } : item;
+      setList((prev) => prev.map(apply));
+      if (rawListRef.current) {
+        rawListRef.current = rawListRef.current.map(apply);
+      }
+    },
+    [],
+  );
+
+  return { list, loading, error, hasMore, loadMore, updateItem };
 };
 
 export default useCapabilityResources;

@@ -42,9 +42,9 @@ export interface AppDevProHeaderProps {
   spaceId?: number;
   /** 更新应用成功 */
   onConfirmUpdate?: (info: UserAppInfo) => void;
-  /** 点击发布 */
+  /** 点击部署 */
   onPublish?: () => void;
-  /** 发布进行中（构建 / 提交申请） */
+  /** 部署进行中（构建 / 生产部署） */
   publishing?: boolean;
   /** 进行中的远程构建任务：按钮展示应用发布中，点击取消 */
   remotePublishing?: boolean;
@@ -360,7 +360,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
             />
           </ConditionRender>
 
-          {/* 发布按钮：远程构建中可点击取消，本地发布仅展示 loading */}
+          {/* 部署按钮：远程构建中可点击取消，本地部署仅展示 loading */}
           <Tooltip
             title={
               remotePublishing
@@ -378,7 +378,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
               >
                 {remotePublishing
                   ? dict('PC.Pages.AppDevPro.appPublishing')
-                  : dict('PC.Pages.AgentEdit.publish')}
+                  : dict('PC.Pages.AppDevPro.deploy')}
               </Button>
             </span>
           </Tooltip>

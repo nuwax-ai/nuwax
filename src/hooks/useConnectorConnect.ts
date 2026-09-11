@@ -1,15 +1,16 @@
 /**
- * 连接器卡片「连接」流程 Hook
- * @description 专家·技能·连接器页连接器卡片「连接」按钮的处理逻辑，
+ * 连接器卡片「连接/断开」流程 Hook（共享层）
+ * @description 由专家·技能·连接器广场页与能力弹窗（CapabilityModal）共用，
  * 与管理侧/空间侧连接器详情抽屉（ConnectorProviderDetailDrawer）同口径：
  * - oauth2 → 授权弹窗：GET /api/connector/oauth/authorize 拿授权地址后
  *   window.open 新窗口打开（IdP 授权页带 X-Frame-Options 拒绝 iframe 嵌入），
  *   500ms 轮询弹窗 closed 后回查详情，已连接则就地更新卡片状态
  *   （用户在授权页取消则保持未连接，不提示）
  * - api_key / bearer / custom → 凭据弹窗 ConnectorConnectModal（表单与提交
- *   POST /api/connector/connections/api-key 同空间侧/管理侧凭据抽屉口径，
- *   原抽屉保持不变，本页按需求用弹窗交互）：先拉详情接口取凭证字段定义
- *   再打开弹窗
+ *   POST /api/connector/connections/api-key 同空间侧/管理侧凭据抽屉口径）：
+ *   先拉详情接口取凭证字段定义再打开弹窗
+ * - 断开：连接 id ≠ 连接器 id，先 GET /api/connector/connections 按 service
+ *   匹配出连接对象，再 DELETE /api/connector/connections/{id}
  * 团队空间维度带 spaceId、系统广场不带（与详情抽屉 connectSpaceId 一致；
  * 系统广场由后端按管理员/用户上下文处理）。
  * 业务/网络错误由全局 errorHandler 统一提示，此处不重复弹错。
@@ -17,6 +18,8 @@
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
+  apiConnectorConnectionDelete,
+  apiConnectorConnectionList,
   apiConnectorOauthAuthorize,
   apiSystemConnectorProviderDetail,
 } from '@/services/systemManage';
@@ -26,7 +29,43 @@ import type {
 } from '@/types/interfaces/systemManage';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ResourceItem, ResourceSourceEnum } from '../../../types';
+
+/**
+ * 可发起连接的卡片条目（结构化最小契约）：
+ * 广场页 ResourceItem 与能力弹窗 CapabilityItem 均满足
+ */
+export interface ConnectorConnectItem {
+  /** 条目唯一标识（广场页 item.id / 弹窗 item.key） */
+  id: string;
+  /** 连接器服务标识（连接/断开寻址用） */
+  service?: string;
+  /** 认证方式：oauth2 / api_key / bearer / custom / no_auth */
+  authType?: string;
+  /** 当前连接状态 */
+  connected?: boolean;
+}
+
+/** 数据源：团队空间维度连接/断开带 spaceId，系统广场不带 */
+export type ConnectorConnectSource = 'system' | 'team';
+
+/** 凭据弹窗打开上下文（ConnectorConnectModal 渲染所需） */
+interface ConnectorConnectContext {
+  /** 发起连接的卡片条目（连接成功后就地更新该条状态） */
+  item: ConnectorConnectItem;
+  /** 详情接口返回的 provider（凭据弹窗顶部名称展示 + 凭证字段来源） */
+  record: ConnectorProviderInfo | null;
+  /** 凭证字段定义 */
+  fields: ConnectorAuthConfigField[];
+}
+
+export interface UseConnectorConnectParams {
+  /** 数据源（团队空间带 spaceId 发起连接，系统广场不带） */
+  source: ConnectorConnectSource;
+  /** 团队空间维度的空间 ID（system 源不依赖） */
+  spaceId?: number;
+  /** 就地更新卡片连接状态（连接/断开成功后调用，不整页重拉） */
+  updateItem: (id: string, patch: { connected?: boolean }) => void;
+}
 
 /**
  * 凭据抽屉的凭证字段定义（与详情抽屉 connectFields 同口径）：
@@ -71,27 +110,9 @@ const getConnectFields = (
   return [];
 };
 
-/** 凭据弹窗打开上下文（ConnectorConnectModal 渲染所需） */
-interface ConnectorConnectContext {
-  /** 发起连接的卡片条目（连接成功后就地更新该条状态） */
-  item: ResourceItem;
-  /** 详情接口返回的 provider（凭据弹窗顶部名称展示 + 凭证字段来源） */
-  record: ConnectorProviderInfo | null;
-  /** 凭证字段定义 */
-  fields: ConnectorAuthConfigField[];
-}
-
-export interface UseConnectorConnectParams {
-  /** 数据源（团队空间带 spaceId 发起连接，系统广场不带） */
-  source: ResourceSourceEnum;
-  /** 团队空间维度的空间 ID（system 源不依赖） */
-  spaceId?: number;
-  /** 就地更新卡片连接状态（useResourceList.updateItem） */
-  updateItem: (id: string, patch: Partial<ResourceItem>) => void;
-}
-
 /**
- * 连接器「连接」读写封装：按认证方式分流两条连接链路
+ * 连接器「连接/断开」读写封装：按认证方式分流两条连接链路，
+ * 断开经连接列表按 service 寻址（连接 id ≠ 连接器 id）
  */
 const useConnectorConnect = ({
   source,
@@ -104,6 +125,8 @@ const useConnectorConnect = ({
   );
   /** 「连接」请求中的条目 id（对应卡片按钮 loading，防重复点击） */
   const [connectingIds, setConnectingIds] = useState<string[]>([]);
+  /** 「断开」请求中的条目 id（对应卡片按钮 loading，防重复点击） */
+  const [disconnectingIds, setDisconnectingIds] = useState<string[]>([]);
 
   /**
    * 发起连接的卡片条目 id 缓存：凭据弹窗 onConnected 回调时弹窗已先 onClose
@@ -150,7 +173,7 @@ const useConnectorConnect = ({
 
   /** oauth2 授权弹窗流程（与详情抽屉 handleOauthAuthorize 同口径） */
   const openOauthAuthorize = useCallback(
-    async (item: ResourceItem) => {
+    async (item: ConnectorConnectItem) => {
       const service = item.service as string;
       // 已有授权弹窗在打开：聚焦既有弹窗即可，不重复发起
       if (oauthWinRef.current && !oauthWinRef.current.closed) {
@@ -203,7 +226,7 @@ const useConnectorConnect = ({
    * oauth2 → 授权弹窗；api_key/bearer/custom → 拉详情取凭证字段后开凭据弹窗
    */
   const handleConnect = useCallback(
-    async (item: ResourceItem) => {
+    async (item: ConnectorConnectItem) => {
       if (!item.service) {
         // 数据异常兜底：缺 service 无法发起连接（正常数据两个维度均有值）
         console.warn(
@@ -251,9 +274,59 @@ const useConnectorConnect = ({
     }
   }, [updateItem]);
 
+  /**
+   * 连接器卡片「断开」：已连接状态下断开用户连接并就地更新卡片状态。
+   * 连接 id ≠ 连接器 id：先 GET /api/connector/connections 按 service 匹配
+   * （团队空间维度带 spaceId，系统广场不带，与连接器详情抽屉同口径），
+   * 再 DELETE /api/connector/connections/{id}；成功后本地 updateItem 置
+   * connected: false（不整页重拉，保留滚动加载位置）。
+   * 业务/网络错误由全局 errorHandler 统一提示，此处不重复弹错
+   */
+  const handleDisconnect = useCallback(
+    async (item: ConnectorConnectItem) => {
+      if (!item.service) {
+        // 数据异常兜底：缺 service 无法匹配连接 id（正常数据两个维度均有值）
+        console.warn(
+          '[useConnectorConnect] disconnect skipped: missing service, item =',
+          item.id,
+        );
+        return;
+      }
+      if (disconnectingIds.includes(item.id)) return;
+      setDisconnectingIds((prev) => [...prev, item.id]);
+      try {
+        const connRes = await apiConnectorConnectionList({
+          spaceId: source === 'team' ? spaceId : undefined,
+        });
+        const connections = Array.isArray(connRes?.data) ? connRes.data : [];
+        const matched = connections.find(
+          (conn) => (conn.providerService ?? conn.service) === item.service,
+        );
+        if (!matched) {
+          // 与连接器详情抽屉同口径：列表无匹配连接时无法寻址断开
+          message.error('连接 id 缺失，无法断开连接');
+          return;
+        }
+        const res = await apiConnectorConnectionDelete(matched.id);
+        if (res?.code === SUCCESS_CODE) {
+          updateItem(item.id, { connected: false });
+          message.success('已断开连接');
+        }
+        // 非成功码理论上会被全局拦截器 reject，不会 resolve 到这里
+      } catch {
+        // 业务/网络错误：全局 errorHandler 已提示后端报错，此处不再重复弹错
+      } finally {
+        setDisconnectingIds((prev) => prev.filter((id) => id !== item.id));
+      }
+    },
+    [disconnectingIds, source, spaceId, updateItem],
+  );
+
   return {
     handleConnect,
     connectingIds,
+    handleDisconnect,
+    disconnectingIds,
     connectCtx,
     closeConnectModal,
     handleConnected,

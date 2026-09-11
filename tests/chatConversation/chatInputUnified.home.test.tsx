@@ -13,6 +13,7 @@ import {
   saveDraft,
 } from '@/components/business-component/ChatInputUnified/draftStorage';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -134,9 +135,15 @@ vi.mock('@/components/ChatInputHome/SpaceSelector', async () => {
 vi.mock('@/components/ChatInputHome/ModelSelector', () => ({
   default: () => null,
 }));
-vi.mock('@/components/ChatInputHome/ManualComponentItem', () => ({
-  default: () => null,
-}));
+vi.mock('@/components/ChatInputHome/ManualComponentItem', async () => {
+  const React = await import('react');
+  // 渲染标记元素（真实实现的包裹层是 flex-1 弹簧）：专家 pill 必须排在其之前，
+  // 否则会被弹簧顶到右侧麦克风旁（左区尾部语义的防回退锚点）
+  return {
+    default: () =>
+      React.createElement('div', { 'data-testid': 'manual-component' }),
+  };
+});
 vi.mock('@/components/ChatUploadFile', () => ({ default: () => null }));
 vi.mock('@/components/base/SvgIcon', () => ({
   default: () => null,
@@ -338,6 +345,40 @@ describe('能力弹窗开放范围（专家仅首页开放）', () => {
     const external = vi.fn();
     renderHomeInput({ onExpertAgentSelect: external });
     expect(editor.lastProps.onExpertSelect).toBe(external);
+  });
+
+  it('内部专家选中渲染 pill 在工具栏左区尾部（Expand 之前）且可取消', async () => {
+    const { container } = renderHomeInput();
+    await act(async () => {
+      editor.lastProps.onExpertSelect({
+        targetId: 66,
+        name: '智慧校园助手',
+        icon: 'x',
+        description: 'd',
+      });
+    });
+    const pill = container.querySelector('.expert-pill');
+    expect(pill).toBeTruthy();
+    expect(pill?.textContent).toContain('智慧校园助手');
+    // 位置防回退：pill 必须在 ManualComponentItem（真实包裹层为 flex-1 弹簧，
+    // 占满中部剩余空间）之前，即工具栏左区尾部；否则会被弹簧顶到右侧麦克风旁
+    const manual = screen.getByTestId('manual-component');
+    const expand = screen.getByTestId('voice-expand');
+    const right = screen.getByTestId('voice-right');
+    expect(pill!.compareDocumentPosition(manual)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(pill!.compareDocumentPosition(expand)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(pill!.compareDocumentPosition(right)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    // 取消：清空内部 expertComponents
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
+    );
+    expect(container.querySelector('.expert-pill')).toBeNull();
   });
 });
 

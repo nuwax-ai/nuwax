@@ -57,8 +57,14 @@ const useCapabilityCategories = (
         }
         const list = (res?.data as SquareCategoryInfo[] | undefined) || [];
         const rootType = CAPABILITY_TYPE_TO_CATEGORY_TYPE[resourceType];
+        // 与广场页同口径：connector 按根节点 key=Connector 匹配
+        // （与新建/编辑连接器抽屉同源），其余按根节点 type 匹配
         const children =
-          list.find((item) => item.type === rootType)?.children || [];
+          list.find((item) =>
+            resourceType === 'connector'
+              ? item.key === 'Connector'
+              : item.type === rootType,
+          )?.children || [];
         setCategories([
           ALL_CATEGORY,
           ...children.map((item) => ({ key: item.key, label: item.label })),
@@ -78,14 +84,14 @@ const useCapabilityCategories = (
           return;
         }
         const list = (res?.data as SpaceInfo[] | undefined) || [];
-        setCategories([
-          // 首位固定"全部"：暂为占位（数据回落默认空间），等后端聚合参数
-          ALL_CATEGORY,
-          ...sortSpacesTeamFirst(list).map((item) => ({
+        // 与广场页同口径：团队维度仅空间列表，无"全部"占位；
+        // 默认选中首个空间（团队空间优先）由上层处理
+        setCategories(
+          sortSpacesTeamFirst(list).map((item) => ({
             key: String(item.id),
             label: item.name,
           })),
-        ]);
+        );
       } catch {
         // 失败降级：空列表，上层保持加载态
       }

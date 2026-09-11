@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 /**
  * 生成页面间透传上下文 key
@@ -20,6 +20,14 @@ export const createPageHandoffKey = (
 export default () => {
   const [contextMap, setContextMap] = useState<Record<string, unknown>>({});
 
+  // 活数据镜像：umi useModel 首帧返回 dispatcher.data 旧快照（Executor 要到
+  // effect 阶段才发布新数据），消费方挂载 effect 里拿到的 getContext 闭包可能
+  // 停留在写入前的渲染——读闭包会漏掉同批次写入，而 clearContext 的函数式
+  // 更新又会误清刚写入的载荷（表现为透传偶发丢失）。读取一律走 ref，与渲染
+  // 批次解耦：model hook 每次执行（渲染阶段）同步 ref，必然早于消费方 effect。
+  const contextMapRef = useRef(contextMap);
+  contextMapRef.current = contextMap;
+
   /**
    * 写入页面间透传上下文
    * @param key 上下文唯一 key
@@ -38,15 +46,12 @@ export default () => {
    * @param key 上下文唯一 key
    * @returns 业务上下文数据
    */
-  const getContext = useCallback(
-    <T>(key?: string): T | undefined => {
-      if (!key) {
-        return undefined;
-      }
-      return contextMap[key] as T | undefined;
-    },
-    [contextMap],
-  );
+  const getContext = useCallback(<T>(key?: string): T | undefined => {
+    if (!key) {
+      return undefined;
+    }
+    return contextMapRef.current[key] as T | undefined;
+  }, []);
 
   /**
    * 清理页面间透传上下文

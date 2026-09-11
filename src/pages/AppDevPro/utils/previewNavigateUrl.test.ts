@@ -1,3 +1,4 @@
+/** @vitest-environment node */
 import { describe, expect, it } from 'vitest';
 import { resolveUserAppPreviewNavigateUrl } from './previewNavigateUrl';
 
@@ -28,5 +29,12 @@ describe('resolveUserAppPreviewNavigateUrl', () => {
   it('已是代理地址时不重复拼接', () => {
     const current = '/api/userapp/proxy/app/dev/12/home';
     expect(resolveUserAppPreviewNavigateUrl(current, base)).toBe(current);
+  });
+
+  it('域名预览根路径下相对路径正确拼接', () => {
+    const domainBase = 'https://dev.example.com/api/userapp/proxy/app/dev/12/';
+    expect(resolveUserAppPreviewNavigateUrl('/home', domainBase)).toBe(
+      'https://dev.example.com/api/userapp/proxy/app/dev/12/home',
+    );
   });
 });

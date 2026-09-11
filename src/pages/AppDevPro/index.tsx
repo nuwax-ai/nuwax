@@ -87,7 +87,6 @@ import {
   apiUserAppBuildCancel,
   apiUserAppGetById,
   apiUserAppUpdate,
-  getUserAppAppProxyUrl,
   getUserAppTtydProxyWsUrl,
 } from './services/appDevPro';
 import {
@@ -96,6 +95,7 @@ import {
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
+import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 import { pickActiveUserAppTask } from './utils/userAppTaskStream';
 
 const cx = classNames.bind(styles);
@@ -616,14 +616,28 @@ const AppDevPro: React.FC = () => {
     refresh: refreshTasksActive,
   } = useUserAppTasksActive(appId);
 
-  /** 发布：构建 → SSE 进度 → 提交发布申请 */
+  /** 查询应用绑定的域名列表 */
+  const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
+    useRequest(apiUserAppDomainList, {
+      manual: true,
+      onSuccess: (result: RequestResponse<UserAppDomainInfo[]>) => {
+        if (result?.code === SUCCESS_CODE) {
+          setUserAppDomainList(result.data || []);
+        }
+      },
+    });
+
+  /** 发布前：选择分类与发布空间 */
+  const [openPublishModal, setOpenPublishModal] = useState<boolean>(false);
+  /** 部署：构建 → SSE 进度 → 生产部署，成功后再打开发布弹窗 */
   const publishFlow = useUserAppPublish({
     appId,
-    spaceId,
     onBuildFailed: refreshTasksActive,
-    onPublished: () => {
+    onDeployed: () => {
+      setOpenPublishModal(true);
       if (appId) {
         runGetUserAppInfo(appId);
+        runGetUserAppDomainList(appId);
       }
     },
   });
@@ -659,8 +673,6 @@ const AppDevPro: React.FC = () => {
     useState(false);
   const [cancelRemotePublishLoading, setCancelRemotePublishLoading] =
     useState(false);
-  /** 发布前：选择分类与发布空间 */
-  const [openPublishModal, setOpenPublishModal] = useState<boolean>(false);
   /** 手动发布流程优先：过程中及结束/失败结果展示阶段不切换为「应用发布中」 */
   const showRemotePublishing =
     publishFlow.phase === 'idle' &&
@@ -672,17 +684,6 @@ const AppDevPro: React.FC = () => {
       setHideRemotePublishingAfterCancel(false);
     }
   }, [remotePublishing]);
-
-  /** 查询应用绑定的域名列表 */
-  const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
-    useRequest(apiUserAppDomainList, {
-      manual: true,
-      onSuccess: (result: RequestResponse<UserAppDomainInfo[]>) => {
-        if (result?.code === SUCCESS_CODE) {
-          setUserAppDomainList(result.data || []);
-        }
-      },
-    });
 
   /** 将加载状态同步到全局 model，供其他组件感知 */
   useEffect(() => {
@@ -1575,17 +1576,13 @@ const AppDevPro: React.FC = () => {
     }
   }, [remoteBuildTask?.taskId]);
 
-  /** 点击发布：先选择分类与发布空间，确定后再走构建与申请 */
+  /** 点击部署：先构建并生产部署，成功后再选择分类发布到市场 */
   const handleOpenPublish = useCallback(() => {
     if (!appId) {
       message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
       return;
     }
-    if (publishFlow.publishing) {
-      publishFlow.startPublish();
-      return;
-    }
-    setOpenPublishModal(true);
+    void publishFlow.startPublish();
   }, [appId, publishFlow]);
 
   /** 刷新应用预览 iframe */
@@ -1643,10 +1640,10 @@ const AppDevPro: React.FC = () => {
   /** 远程桌面页签是否激活（Header 图标高亮） */
   const isAgentDesktopOpen = previewTabs.activeTab?.toolId === 'remote-desktop';
 
-  /** 启动成功后通过环境代理地址访问预览页 */
+  /** 启动成功后：当前环境域名 + /api/userapp/proxy/app/{env}/{appId}/ */
   const appPreviewUrl = useMemo(
-    () => getUserAppAppProxyUrl(appId, dbEnv),
-    [appId, dbEnv],
+    () => buildUserAppAppPreviewUrl(appId, dbEnv, userAppDomainList),
+    [appId, dbEnv, userAppDomainList],
   );
 
   /** 环境或应用变化时，地址栏与 iframe 回到对应代理根路径 */
@@ -2035,27 +2032,31 @@ const AppDevPro: React.FC = () => {
         }}
       />
 
-      {/* 发布前：选择分类与发布空间（与智能体编排一致） */}
+      {/* 部署成功后：选择分类与发布空间，发布到市场 */}
       <PublishComponentModal
         mode={AgentComponentTypeEnum.UserApp}
         targetId={appId || 0}
         open={openPublishModal}
         spaceId={spaceId}
         onCancel={() => setOpenPublishModal(false)}
-        onConfirm={() => setOpenPublishModal(false)}
-        onSubmitPublish={(payload) => {
+        onConfirm={() => {
           setOpenPublishModal(false);
-          void publishFlow.startPublish(payload);
+          publishFlow.completeApply();
+          if (appId) {
+            runGetUserAppInfo(appId);
+          }
         }}
       />
 
-      {/* 发布进度：构建日志 + 提交申请 */}
+      {/* 部署进度：构建日志 + 生产部署 */}
       <AppDevPublishProgressModal
         open={publishFlow.open}
         phase={publishFlow.phase}
         services={publishFlow.services}
+        startServices={publishFlow.startServices}
         overallProgress={publishFlow.overallProgress}
         errorMessage={publishFlow.errorMessage}
+        failedStage={publishFlow.failedStage}
         cancelLoading={publishFlow.cancelLoading}
         onCancelTask={publishFlow.cancelTask}
         onClose={publishFlow.closeModal}

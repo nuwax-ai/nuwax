@@ -231,27 +231,6 @@ export const getUserAppVncProxyUrl = (appId: number): string => {
 };
 
 /**
- * 应用预览代理地址（iframe）
- * 开发环境：/api/userapp/proxy/app/dev/{appId}/
- * 线上环境：/api/userapp/proxy/app/prod/{appId}/
- *
- * @param appId 应用 ID
- * @param env 当前环境（开发 / 线上）
- * @returns 可嵌入 iframe 的地址；缺少 appId 时返回空字符串
- */
-export const getUserAppAppProxyUrl = (
-  appId: number,
-  env: UserAppDbEnvEnum,
-): string => {
-  if (!appId) {
-    return '';
-  }
-  const path = `/api/userapp/proxy/app/${env}/${appId}/`;
-  const baseUrl = process.env.BASE_URL || '';
-  return `${baseUrl}${path}`;
-};
-
-/**
  * 全栈应用终端 ttyd 代理 WebSocket 地址
  * 开发环境：/api/userapp/proxy/ttyd/dev/{appId}/
  * 线上环境：/api/userapp/proxy/ttyd/prod/{appId}/

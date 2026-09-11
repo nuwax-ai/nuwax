@@ -1,5 +1,6 @@
 /** 四类能力卡片：技能置顶、连接状态、专家标签及紧凑资料行。 */
 import SvgIcon from '@/components/base/SvgIcon';
+import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { t } from '@/services/i18nRuntime';
 import { PushpinFilled, PushpinOutlined } from '@ant-design/icons';
 import { Button, Card, Switch, Tooltip } from 'antd';
@@ -30,6 +31,12 @@ export interface CapabilityCardProps {
   onSelect: (item: CapabilityItem) => void;
   onHover: (index: number) => void;
   onTogglePin: (item: CapabilityItem) => void;
+  /** 连接器「连接」发起（共享 useConnectorConnect 分流：oauth2 授权 / 凭据弹窗） */
+  onConnectorConnect?: (item: CapabilityItem) => void;
+  /** 连接器「断开」 */
+  onConnectorDisconnect?: (item: CapabilityItem) => void;
+  /** 连接/断开请求中的条目 key（按钮 loading 防重复） */
+  connectorBusyKeys?: string[];
 }
 
 const CapabilityCard: React.FC<CapabilityCardProps> = ({
@@ -40,6 +47,9 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
   onSelect,
   onHover,
   onTogglePin,
+  onConnectorConnect,
+  onConnectorDisconnect,
+  connectorBusyKeys,
 }) => {
   const { name, description, icon, category, resourceType } = item;
   const pinLabel = t(
@@ -54,12 +64,12 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
     name.match(/\.(pdf|xlsx?|docx?|md|csv|txt|pptx?)$/i)?.[1]?.toUpperCase();
   // 图标地址加载失败（连接器 logo 常见 404/防盗链）时回退为名称首字
   const [iconFailed, setIconFailed] = React.useState(false);
-  // 连接器开关为纯视觉假开关：仅本地切换，不调连接接口（连接逻辑接入前的占位交互）
-  const [switchOn, setSwitchOn] = React.useState(item.connected === true);
-  const effectiveIcon = iconFailed ? undefined : icon;
+  // 连接器 icon 常为 /api/f/ 受保护地址，直接 img 会被 ORB 拦截，走 Bearer 解析
+  const { displaySrc: protectedIconSrc } = useAuthProtectedImageSrc(icon);
+  const effectiveIcon = iconFailed ? undefined : protectedIconSrc;
   const iconContent = !effectiveIcon ? (
     name.charAt(0)
-  ) : /^(?:https?:\/\/|\/|data:)/.test(effectiveIcon) ? (
+  ) : /^(?:https?:\/\/|\/|blob:|data:)/.test(effectiveIcon) ? (
     <img src={effectiveIcon} alt="" onError={() => setIconFailed(true)} />
   ) : /^icons?-/.test(effectiveIcon) ? (
     <SvgIcon name={effectiveIcon} style={{ fontSize: 22 }} />
@@ -124,19 +134,22 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
                 {category && (
                   <span className={styles['card-category']}>{category}</span>
                 )}
-                {isConnector && item.connected !== undefined && (
-                  <span
-                    className={cx(styles['connection-status'], {
-                      [styles.connected]: item.connected,
-                    })}
-                  >
-                    {t(
-                      item.connected
-                        ? 'PC.Components.CapabilityModal.connected'
-                        : 'PC.Components.CapabilityModal.disconnected',
-                    )}
-                  </span>
-                )}
+                {isConnector &&
+                  (item.authType === 'no_auth' ||
+                    item.connected !== undefined) && (
+                    <span
+                      className={cx(styles['connection-status'], {
+                        [styles.connected]:
+                          item.authType === 'no_auth' || item.connected,
+                      })}
+                    >
+                      {t(
+                        item.authType === 'no_auth' || item.connected
+                          ? 'PC.Components.CapabilityModal.connected'
+                          : 'PC.Components.CapabilityModal.disconnected',
+                      )}
+                    </span>
+                  )}
               </div>
             </div>
             {(resourceType === 'skill' || resourceType === 'expert') &&
@@ -172,14 +185,23 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
                 </Button>
               </Tooltip>
             )}
-            {isConnector && (
+            {/* 连接器连接/断开开关：选中态绑真实 connected，切换走共享
+                useConnectorConnect 分流（oauth2 授权 / 凭据型弹窗 / 断开寻址），
+                成功后上层就地更新 connected 驱动开关回弹；免鉴权不渲染开关 */}
+            {isConnector && item.authType !== 'no_auth' && (
               <Switch
                 className={styles['card-switch']}
-                checked={switchOn}
+                size="small"
+                checked={item.connected === true}
+                loading={connectorBusyKeys?.includes(item.key)}
                 aria-label={name}
                 onClick={(_, event) => {
                   event.stopPropagation();
-                  setSwitchOn((on) => !on);
+                  if (item.connected) {
+                    onConnectorDisconnect?.(item);
+                  } else {
+                    onConnectorConnect?.(item);
+                  }
                 }}
               />
             )}
