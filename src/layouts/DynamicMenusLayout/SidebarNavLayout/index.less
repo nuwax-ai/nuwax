@@ -154,6 +154,9 @@
     position: relative;
     background: @navSecondMenuBg;
     border-radius: 0;
+    // 右侧与内容卡（page-container）留出间距：内容卡左缘恒 margin-left:0
+    // （贴会话列设计），二级列展开时的空隙由本列右边距承担
+    margin-right: @marginXs;
     transition: width 0.3s ease-in-out, background-color 0.3s ease;
 
     // 与 .nav-menus-scroll 同名复用：本列不在 .nav-menus 内，需自带尺寸链
