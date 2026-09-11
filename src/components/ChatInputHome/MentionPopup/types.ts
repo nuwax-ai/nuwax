@@ -296,13 +296,15 @@ export interface MentionEditorProps {
   maxRows?: number;
   /** 可用值:PageApp,TaskAgent */
   usageScenarios?: AgentTypeEnum[];
+  /** 能力弹窗关闭回调（连接/断开等弹窗内操作完成后触发，供消费方刷新派生数据） */
+  onCapabilityModalClose?: () => void;
 }
 
 /**
  * MentionEditor 组件 Ref Handle 类型
  *
  * @description
- * 通过 ref 暴露给父组件的方法
+ * 通过 useImperativeHandle 暴露给父组件的方法
  * 用于父组件控制编辑器
  */
 export interface MentionEditorHandle {
@@ -317,4 +319,9 @@ export interface MentionEditorHandle {
    * 光标前非空白时自动补空格以满足触发白名单
    */
   insertTriggerText: (text: string) => void;
+  /**
+   * 编程唤起能力弹窗并定位到指定类型页签（工具栏已连接连接器头像组入口）。
+   * 指定类型不在 capabilityResourceTypes 开放范围时回落首个可用类型
+   */
+  openCapabilityWithType?: (resourceType: CapabilityTypeEnum) => void;
 }

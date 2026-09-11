@@ -2,21 +2,19 @@ import agentImage from '@/assets/images/agent_image.png';
 import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import CustomPopover from '@/components/CustomPopover';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
-import type { CustomPopoverItem } from '@/types/interfaces/common';
 import {
   CodeOutlined,
-  DatabaseOutlined,
   FormOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
 import { Button, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { history } from 'umi';
 import CreateUserApp from '../components/CreateUserApp';
+import DatabaseGlyph from '../components/DatabaseGlyph';
 import { UserAppDbEnvEnum } from '../services/appDb';
 import type { UserAppInfo } from '../type';
 import styles from './index.less';
@@ -64,10 +62,8 @@ export interface AppDevProHeaderProps {
   onOpenSettings?: () => void;
   /** 数据库页签是否处于激活状态 */
   isDatabasePanelOpen?: boolean;
-  /** 打开数据库页签 */
+  /** 打开 / 关闭数据库工作区（再次点击还原打开前状态） */
   onOpenDatabase?: () => void;
-  /** 打开数据库配置页签 */
-  onOpenDatabaseConfig?: () => void;
   /** 是否显示远程桌面入口（仅开发环境） */
   isShowDesktop?: boolean;
   /** 远程桌面是否已打开 */
@@ -105,7 +101,6 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   onOpenSettings,
   isDatabasePanelOpen = false,
   onOpenDatabase,
-  onOpenDatabaseConfig,
   isShowDesktop = false,
   isAgentDesktopOpen = false,
   onOpenDesktopPanel,
@@ -142,28 +137,6 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
     }
     onPublish?.();
   }, [onCancelRemotePublish, onPublish, remotePublishing]);
-
-  /** 数据库图标下拉操作 */
-  const databaseActions = useMemo<CustomPopoverItem[]>(
-    () => [
-      {
-        key: 'database-config',
-        label: dict('PC.Pages.AppDevPro.databaseConfig'),
-        icon: <SettingOutlined />,
-      },
-    ],
-    [],
-  );
-
-  /** 打开所选数据库功能 */
-  const handleDatabaseAction = useCallback(
-    (item: CustomPopoverItem) => {
-      if (item.key === 'database-config') {
-        onOpenDatabaseConfig?.();
-      }
-    },
-    [onOpenDatabaseConfig],
-  );
 
   const showUnpublishedTag =
     !!userAppInfo &&
@@ -277,18 +250,16 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
             onClick={onOpenSettings}
           />
 
-          {/* 数据库页签及数据库配置入口 */}
-          <CustomPopover list={databaseActions} onClick={handleDatabaseAction}>
-            <TooltipIcon
-              title={dict('PC.Pages.AppDevPro.database')}
-              ariaLabel={dict('PC.Pages.AppDevPro.database')}
-              className={cx(styles['panel-btn'], {
-                [styles.active]: isDatabasePanelOpen,
-              })}
-              icon={<DatabaseOutlined style={{ fontSize: 16 }} />}
-              onClick={onOpenDatabase}
-            />
-          </CustomPopover>
+          {/* 数据库工作区：管理页 + 配置页 */}
+          <TooltipIcon
+            title={dict('PC.Pages.AppDevPro.database')}
+            ariaLabel={dict('PC.Pages.AppDevPro.database')}
+            className={cx(styles['panel-btn'], {
+              [styles.active]: isDatabasePanelOpen,
+            })}
+            icon={<DatabaseGlyph size={16} />}
+            onClick={onOpenDatabase}
+          />
 
           {/* 文件树侧边栏按钮 */}
           <TooltipIcon
