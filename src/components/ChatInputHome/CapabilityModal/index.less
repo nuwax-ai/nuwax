@@ -593,8 +593,9 @@
   color: @capability-muted;
   font-size: 12px;
   line-height: 20px;
-  // 两行截断：display 必须写 -webkit-box（只写 box 会被浏览器判无效导致截断失效）
-  display: box;
+  // 两行截断：display 必须写 -webkit-box（只写 box 会被浏览器判无效导致截断失效；
+  // 该值已在 .stylelintrc.js 的 value-no-vendor-prefix ignoreValues 豁免，防 --fix 剥前缀）
+  display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
