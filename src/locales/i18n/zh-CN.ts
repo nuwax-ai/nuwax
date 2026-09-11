@@ -221,6 +221,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ChatInputHome.pastedImageFileName": "粘贴图片-{0}-{1}.png",
   "PC.Components.ChatInputHome.pastedFileName": "粘贴文件-{0}-{1}",
   "PC.Components.ChatInputHome.dropFilesHint": "释放以上传文件",
+  "PC.Components.ChatInputHome.connectedConnectors": "已连接的连接器",
   "PC.Components.ChatInputHome.stoppingConversation": "正在停止会话...",
   "PC.Components.ChatInputHome.stoppingTask": "正在停止任务...",
   "PC.Components.ChatInputHome.switchToNormalMode": "切换到普通模式",

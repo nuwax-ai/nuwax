@@ -34,6 +34,7 @@ import { selectSessionActive } from '@/features/conversation/domain/runtimeSelec
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
+import { apiSystemConnectorProviderList } from '@/services/systemManage';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
@@ -48,6 +49,7 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
+import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
@@ -62,7 +64,7 @@ import {
   PaperClipOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
+import { Avatar, Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
   forwardRef,
@@ -110,6 +112,45 @@ export interface SummonedExpertChipInfo {
   name: string;
   iconSrc?: string;
 }
+
+/** 已连接连接器展示信息（工具栏头像组） */
+interface ConnectedConnectorInfo {
+  key: string;
+  name: string;
+  icon?: string;
+}
+
+/** 连接器头像底色板（与能力弹窗卡片 ICON_BACKGROUNDS 同风格 tint） */
+const CONNECTOR_AVATAR_BACKGROUNDS = [
+  'rgba(24, 144, 255, 12%)',
+  'rgba(82, 196, 26, 12%)',
+  'rgba(114, 46, 209, 12%)',
+  'rgba(250, 140, 22, 12%)',
+  'rgba(19, 194, 194, 12%)',
+  'rgba(235, 47, 150, 12%)',
+];
+
+/** 连接器头像：受保护地址经 Bearer 解析，公开 URL 直出；空/失败回退名称首字 */
+const ConnectorAvatar: React.FC<{
+  connector: ConnectedConnectorInfo;
+  index: number;
+}> = ({ connector, index }) => {
+  const { displaySrc } = useAuthProtectedImageSrc(connector.icon);
+  return (
+    <Avatar
+      src={displaySrc}
+      className={cx(styles['connector-avatar'])}
+      style={{
+        backgroundColor:
+          CONNECTOR_AVATAR_BACKGROUNDS[
+            index % CONNECTOR_AVATAR_BACKGROUNDS.length
+          ],
+      }}
+    >
+      {connector.name.charAt(0)}
+    </Avatar>
+  );
+};
 
 /**
  * ChatInputUnified 组件的 Props 类型
@@ -379,6 +420,32 @@ const ChatInputUnifiedImpl: React.FC<
   const [isStoppingConversation, setIsStoppingConversation] =
     useState<boolean>(false);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
+  // 已连接连接器（系统广场口径，与能力弹窗连接器·系统页签同源）：
+  // 工具栏头像组数据源；弹窗内连接/断开后经 onCapabilityModalClose 刷新
+  const [connectedConnectors, setConnectedConnectors] = useState<
+    ConnectedConnectorInfo[]
+  >([]);
+  const refreshConnectedConnectors = useCallback(async () => {
+    try {
+      const res = await apiSystemConnectorProviderList();
+      if (res?.code !== SUCCESS_CODE) return;
+      const list = ((res.data as ConnectorProviderInfo[] | null) || []).filter(
+        (item) => item.connected === true,
+      );
+      setConnectedConnectors(
+        list.map((item) => ({
+          key: String(item.service ?? item.id),
+          name: item.displayName || item.service || '',
+          icon: item.icon,
+        })),
+      );
+    } catch {
+      // 静默失败：头像组非关键路径，不阻断输入
+    }
+  }, []);
+  useEffect(() => {
+    refreshConnectedConnectors();
+  }, [refreshConnectedConnectors]);
   // 工作目录浏览弹窗（env-bar「打开电脑文件夹」入口）
   const [workspacePathPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
   // 项目上框图标（可能为 /api/f/ 受保护地址，走鉴权 fetch + blob）
@@ -1022,6 +1089,8 @@ const ChatInputUnifiedImpl: React.FC<
               enableMention={enableMention}
               capabilityResourceTypes={capabilityResourceTypes}
               onDocsChange={handleDocsChange}
+              // 能力弹窗关闭：刷新已连接连接器（弹窗内连接/断开就绪）
+              onCapabilityModalClose={refreshConnectedConnectors}
               // 首页场景专家选中走外部（切换会话智能体）；否则走内部消息级 expertComponents
               onExpertSelect={onExpertAgentSelect ?? handleExpertSelect}
               mentionPlacement={mentionPlacement}
@@ -1402,6 +1471,54 @@ const ChatInputUnifiedImpl: React.FC<
                           <CloseOutlined />
                         </span>
                       </span>
+                    </VoiceFooter.HideWhenActive>
+                  )}
+
+                  {/* 已连接连接器头像组（重叠，最多 3 个，超出尾部 +N）：
+                      点击唤起能力弹窗并定位连接器页签；数据在弹窗关闭后刷新 */}
+                  {connectedConnectors.length > 0 && (
+                    <VoiceFooter.HideWhenActive>
+                      <Tooltip
+                        title={t(
+                          'PC.Components.ChatInputHome.connectedConnectors',
+                        )}
+                      >
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={t(
+                            'PC.Components.ChatInputHome.connectedConnectors',
+                          )}
+                          className={cx(
+                            'flex',
+                            'items-center',
+                            styles['connector-group'],
+                          )}
+                          onClick={() =>
+                            mentionEditorRef.current?.openCapabilityWithType?.(
+                              'connector',
+                            )
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              mentionEditorRef.current?.openCapabilityWithType?.(
+                                'connector',
+                              );
+                            }
+                          }}
+                        >
+                          <Avatar.Group maxCount={3} size={20}>
+                            {connectedConnectors.map((connector, index) => (
+                              <ConnectorAvatar
+                                key={connector.key}
+                                connector={connector}
+                                index={index}
+                              />
+                            ))}
+                          </Avatar.Group>
+                        </span>
+                      </Tooltip>
                     </VoiceFooter.HideWhenActive>
                   )}
 

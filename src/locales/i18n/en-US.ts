@@ -221,6 +221,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ChatInputHome.pastedImageFileName": "Pasted Image-{0}-{1}.png",
   "PC.Components.ChatInputHome.pastedFileName": "Pasted File-{0}-{1}",
   "PC.Components.ChatInputHome.dropFilesHint": "Release to upload files",
+  "PC.Components.ChatInputHome.connectedConnectors": "Connected connectors",
   "PC.Components.ChatInputHome.stoppingConversation": "Stopping conversation...",
   "PC.Components.ChatInputHome.stoppingTask": "Stopping task...",
   "PC.Components.ChatInputHome.switchToNormalMode": "Switch to normal mode",
