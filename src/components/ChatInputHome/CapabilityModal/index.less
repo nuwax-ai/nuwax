@@ -328,25 +328,34 @@
 }
 
 // 卡片基于 antd Card：背景/边框/圆角走主题 token，这里只接管布局与交互态
+// 悬停/键盘聚焦态对齐广场卡：主色描边 + 分层阴影抬升，0.3s 过渡
 .card {
   position: relative;
   min-width: 0;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 
   &:hover,
   &.card-focused {
-    border-color: @colorBorder;
-    box-shadow: 0 4px 14px @colorFill;
+    border-color: color-mix(in srgb, @colorPrimary 55%, transparent);
+    box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
+      0 4px 16px -2px rgba(12, 12, 13, 6%), 0 8px 24px -2px rgba(0, 0, 0, 4%);
   }
 }
 
 // 类名双写提权：antd 基础样式经 :where 降权后与本类同为 0-2-0，
-// cssinjs 运行时注入在后会反超默认 24px 内边距，双写保证覆盖恒定生效
+// cssinjs 运行时注入在后会反超默认 24px 内边距，双写保证覆盖恒定生效。
+// 根节点 flex 列 + body flex:1：body 撑满卡片（同行网格卡等高），
+// 统计行 margin-top:auto 才能把内容推到卡片底部（两行描述时底部留白一致）。
+// 注意 basis 必须为 auto：写 flex:1（basis 0%）会把卡片固有高度塌缩到
+// .card-expert 的 min-height(150px)，网格行高随之钉死、长内容溢出卡片
 .card.card {
+  display: flex;
+  flex-direction: column;
+
   :global(.ant-card-body) {
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: 10px;
     min-width: 0;
@@ -360,6 +369,8 @@
   gap: 10px;
   min-width: 0;
   min-height: 40px;
+  // 三段式布局①header 固定内容高
+  flex: 0 0 auto;
 }
 
 .card-icon,
@@ -417,6 +428,142 @@
   white-space: nowrap;
 }
 
+/* 发布者（技能/专家卡名称下方）：小头像 + 人物名，与广场卡 AuthorInfo 同款信息；
+   头像空/加载失败回退默认头像（avatar.png），名称超长省略 */
+.card-author {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+
+  img {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+}
+
+.card-author-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 标识徽标（官方）：tint 底 + 同色描边。
+   付费/已订阅走 antd Tag 蓝色（见 .card-paid-tag），不走本徽标体系 */
+.card-badge {
+  flex-shrink: 0;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-weight: 400;
+  line-height: 18px;
+
+  &.card-badge-official {
+    border: 1px solid color-mix(in srgb, @gold 45%, transparent);
+    color: @gold;
+    background: color-mix(in srgb, @gold 10%, transparent);
+  }
+}
+
+/* 付费 Tag：antd Tag 自带 margin-inline-end，容器已有 gap，归零防双间距 */
+.card-paid-tag {
+  margin-inline-end: 0;
+}
+
+/* 技能/专家操作簇：标题行右端，钉住按钮在选择/聘请按钮右侧同簇对齐；
+   悬停/键盘聚焦时浮现（常驻占位避免标题宽度跳动） */
+.card-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: -2px;
+}
+
+.card-hire {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.card:hover .card-hire,
+.card-focused .card-hire {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 专家统计行（与广场卡同款信息）：用户数/会话数/收藏数常驻；
+   右端付费/已订阅标识常驻，收藏星标悬停/键盘聚焦时浮现 */
+.card-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  // 三段式布局③footer 固定内容高
+  flex: 0 0 auto;
+
+  .card-stats-counts {
+    gap: 12px;
+  }
+
+  .card-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: @capability-faint;
+    font-size: 11px;
+    line-height: 16px;
+    white-space: nowrap;
+
+    .anticon,
+    svg {
+      font-size: 12px;
+    }
+  }
+
+  .card-stats-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-collect {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: @borderRadius;
+    color: @capability-faint;
+    cursor: pointer;
+    // 收藏星标仅悬停/键盘聚焦时浮现（占位保留，避免浮现时挤压付费标识）
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out,
+      color @motionDurationMid @motionEaseOut,
+      background-color @motionDurationMid @motionEaseOut;
+
+    &:hover {
+      color: @gold;
+      background: color-mix(in srgb, @gold 12%, transparent);
+    }
+
+    &.card-collect-active {
+      color: @gold;
+    }
+  }
+}
+
+.card:hover .card-collect,
+.card-focused .card-collect {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .connection-status {
   display: inline-flex;
   align-items: center;
@@ -439,10 +586,15 @@
 
 .card-desc {
   overflow: hidden;
+  // 三段式布局②content（描述）弹性填充：min-height:0 解除内容最小高约束，
+  // 由 flex-grow 撑开剩余空间把 footer 推到卡片底部；无描述时常驻空块
+  // 保持中段存在（卡片由 .card-expert min-height 兜底撑开）
+  min-height: 0;
+  flex: 1 1 auto;
   color: @capability-muted;
   font-size: 12px;
   line-height: 20px;
-  // display 必须是 -webkit-box，写成 box 会被浏览器判无效导致截断失效
+  // 两行截断：display 必须写 -webkit-box（只写 box 会被浏览器判无效导致截断失效）
   display: box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -450,8 +602,9 @@
   word-break: break-word;
 }
 
+// 专家卡：无 min-height——卡片高度由内容/网格行撑开（min-height 会干预
+// 网格轨道取值，曾致两行描述卡溢出），无描述时中段空块+flex 布局兜住布局
 .card-expert {
-  min-height: 150px;
   box-sizing: border-box;
 }
 
@@ -459,7 +612,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: auto;
+  margin-top: 4px;
   padding-top: 2px;
 }
 
@@ -471,32 +624,6 @@
   color: @capability-secondary;
   font-size: 12px;
   line-height: 17px;
-}
-
-// 双写提权：padding/底色/圆角等需压过 antd Button 默认形态（:where 降权后特异性打平）
-.card-action.card-action {
-  flex-shrink: 0;
-  height: auto;
-  padding: 6px 14px;
-  border-radius: 9px;
-  background: @capability-fill;
-  color: @capability-secondary;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 16px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-
-  // antd v5 样式经 :where 降权，text 按钮 hover 底色可能被本类覆盖，这里显式兜底保证有反馈
-  &:hover {
-    background: @colorFill;
-    color: @capability-text;
-  }
-
-  &:active {
-    background: @colorFillSecondary;
-    color: @capability-text;
-  }
 }
 
 .card-pin.card-pin {
@@ -566,9 +693,19 @@
     padding-bottom: 0;
   }
 
-  .card-action {
+  // 创建人与其他卡同款（小头像+名称），行内弱化为次级信息
+  .card-author {
+    color: @capability-muted;
+    font-size: 11px;
+    line-height: 18px;
+  }
+
+  // 选择按钮与其他卡同款主按钮：行内右端对齐，
+  // 取消头部簇的上偏移与顶对齐（横排行垂直居中）
+  .card-head-actions {
+    align-self: center;
+    margin-top: 0;
     margin-left: auto;
-    color: @capability-text;
   }
 }
 

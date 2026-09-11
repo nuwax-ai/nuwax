@@ -1,9 +1,20 @@
-/** 四类能力卡片：技能置顶、连接状态、专家标签及紧凑资料行。 */
+/** 四类能力卡片：技能钉住、连接状态、专家标签/统计/收藏、创建人及紧凑资料行。 */
+import defaultAvatar from '@/assets/images/avatar.png';
 import SvgIcon from '@/components/base/SvgIcon';
+import {
+  ICON_MESSAGE,
+  ICON_STAR,
+  ICON_STAR_FILL,
+  ICON_USER,
+} from '@/constants/images.constants';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { t } from '@/services/i18nRuntime';
-import { PushpinFilled, PushpinOutlined } from '@ant-design/icons';
-import { Button, Card, Switch, Tooltip } from 'antd';
+import {
+  CheckOutlined,
+  PushpinFilled,
+  PushpinOutlined,
+} from '@ant-design/icons';
+import { Button, Card, Switch, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -37,6 +48,8 @@ export interface CapabilityCardProps {
   onConnectorDisconnect?: (item: CapabilityItem) => void;
   /** 连接/断开请求中的条目 key（按钮 loading 防重复） */
   connectorBusyKeys?: string[];
+  /** 专家收藏/取消收藏（与广场卡同链路：targetId 调智能体收藏接口） */
+  onToggleCollect?: (item: CapabilityItem) => void;
 }
 
 const CapabilityCard: React.FC<CapabilityCardProps> = ({
@@ -50,6 +63,7 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
   onConnectorConnect,
   onConnectorDisconnect,
   connectorBusyKeys,
+  onToggleCollect,
 }) => {
   const { name, description, icon, category, resourceType } = item;
   const pinLabel = t(
@@ -82,8 +96,37 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
       : 'PC.Components.CapabilityModal.select',
   );
   // 操作按钮按聚焦态（鼠标悬停或键盘聚焦）条件渲染：不渲染即不占位，标题可拉通整行
-  const showActions = focused;
   const showPin = focused || pinned;
+  // 创建人/发布者（技能/专家/资料库）：小头像 + 人物名，与广场卡 AuthorInfo 同款信息；
+  // 头像空/加载失败回退默认头像（avatar.png），名称超长省略
+  const authorInfo = item.publisherName ? (
+    <span className={styles['card-author']} title={item.publisherName}>
+      <img
+        src={item.publisherAvatar || defaultAvatar}
+        alt=""
+        onError={(event) => {
+          event.currentTarget.onerror = null;
+          event.currentTarget.src = defaultAvatar;
+        }}
+      />
+      <span className={styles['card-author-name']}>{item.publisherName}</span>
+    </span>
+  ) : null;
+  // 选择按钮（技能/专家/资料库同款）：主按钮 + 对勾图标，悬停/键盘聚焦时浮现
+  const selectButton = (
+    <Button
+      type="primary"
+      size="small"
+      icon={<CheckOutlined />}
+      className={styles['card-hire']}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(item);
+      }}
+    >
+      {selectLabel}
+    </Button>
+  );
   return (
     <Card
       id={`capability-option-${index}`}
@@ -95,6 +138,7 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
       })}
       onClick={() => onSelect(item)}
       onMouseMove={() => onHover(index)}
+      onMouseLeave={() => onHover(-1)}
     >
       {isKnowledge ? (
         <>
@@ -102,17 +146,9 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
             {name}
           </span>
           {fileType && <span className={styles['file-type']}>{fileType}</span>}
-          <Button
-            type="text"
-            size="small"
-            className={styles['card-action']}
-            onClick={(event) => {
-              event.stopPropagation();
-              onSelect(item);
-            }}
-          >
-            {selectLabel}
-          </Button>
+          {authorInfo}
+          {/* 选择按钮与其他卡片同款（主按钮 + 对勾图标，悬停/聚焦浮现） */}
+          <div className={styles['card-head-actions']}>{selectButton}</div>
         </>
       ) : (
         <>
@@ -131,7 +167,23 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
                 {name}
               </span>
               <div className={styles['card-meta']}>
-                {category && (
+                {/* 官方标识（已发布智能体） */}
+                {resourceType === 'expert' && item.official && (
+                  <span
+                    className={cx(
+                      styles['card-badge'],
+                      styles['card-badge-official'],
+                    )}
+                  >
+                    {t('PC.Components.CapabilityModal.official')}
+                  </span>
+                )}
+                {/* 创建人/发布者（技能/专家）：同款小头像 + 人物名 */}
+                {(resourceType === 'skill' || resourceType === 'expert') &&
+                  authorInfo}
+                {/* 分类：仅连接器展示（技能/专家该行由「头像+人物名」取代，
+                    不再叠加分类文案） */}
+                {category && resourceType === 'connector' && (
                   <span className={styles['card-category']}>{category}</span>
                 )}
                 {isConnector &&
@@ -152,41 +204,8 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
                   )}
               </div>
             </div>
-            {(resourceType === 'skill' || resourceType === 'expert') &&
-              showActions && (
-                <Button
-                  type="text"
-                  size="small"
-                  className={styles['card-action']}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onSelect(item);
-                  }}
-                >
-                  {selectLabel}
-                </Button>
-              )}
-            {resourceType === 'skill' && showPin && (
-              <Tooltip title={pinLabel}>
-                <Button
-                  type="text"
-                  size="small"
-                  aria-label={pinLabel}
-                  aria-pressed={pinned}
-                  className={cx(styles['card-pin'], {
-                    [styles['card-pin-active']]: pinned,
-                  })}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onTogglePin(item);
-                  }}
-                >
-                  {pinned ? <PushpinFilled /> : <PushpinOutlined />}
-                </Button>
-              </Tooltip>
-            )}
             {/* 连接器连接/断开开关：选中态绑真实 connected，切换走共享
-                useConnectorConnect 分流（oauth2 授权 / 凭据型弹窗 / 断开寻址），
+                useConnectorConnect 分流（oauth2 授权 / 凭据型 / 断开寻址），
                 成功后上层就地更新 connected 驱动开关回弹；免鉴权不渲染开关 */}
             {isConnector && item.authType !== 'no_auth' && (
               <Switch
@@ -205,19 +224,111 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
                 }}
               />
             )}
+            {/* 技能/专家操作簇：与标题同行右端，悬停/键盘聚焦时浮现
+                （常驻占位，避免浮现时标题宽度跳动）；技能的钉住按钮
+                位于选择按钮右侧同簇对齐 */}
+            {(resourceType === 'skill' || resourceType === 'expert') && (
+              <div className={styles['card-head-actions']}>
+                {selectButton}
+                {resourceType === 'skill' && showPin && (
+                  <Tooltip title={pinLabel}>
+                    <Button
+                      type="text"
+                      size="small"
+                      aria-label={pinLabel}
+                      aria-pressed={pinned}
+                      className={cx(styles['card-pin'], {
+                        [styles['card-pin-active']]: pinned,
+                      })}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onTogglePin(item);
+                      }}
+                    >
+                      {pinned ? <PushpinFilled /> : <PushpinOutlined />}
+                    </Button>
+                  </Tooltip>
+                )}
+              </div>
+            )}
           </div>
-          {description && (
+          {/* 描述：专家/技能卡常驻（无描述保留空块撑住中段，footer 落底一致）；
+              其余类型有内容才渲染 */}
+          {(resourceType === 'expert' ||
+            resourceType === 'skill' ||
+            !!description) && (
             <div className={styles['card-desc']} title={description}>
               {description}
             </div>
           )}
-          {resourceType === 'expert' && !!item.tags?.length && (
-            <div className={styles['card-tags']}>
-              {item.tags.map((tag) => (
-                <span key={tag} className={styles['card-tag']}>
-                  {tag}
+          {/* 统计行（与广场卡同款）：专家=用户/会话/收藏数，技能仅收藏数
+              （广场技能卡同口径隐藏用户/会话数）；右端付费/已订阅标识常驻，
+              收藏星标悬停/键盘聚焦时浮现 */}
+          {(resourceType === 'expert' || resourceType === 'skill') && (
+            <div className={styles['card-stats']}>
+              <div
+                className={cx(
+                  'flex',
+                  'items-center',
+                  styles['card-stats-counts'],
+                )}
+              >
+                {resourceType === 'expert' && (
+                  <>
+                    <span className={styles['card-stat']}>
+                      <ICON_USER />
+                      <span>{item.userCount || 0}</span>
+                    </span>
+                    <span className={styles['card-stat']}>
+                      <ICON_MESSAGE />
+                      <span>{item.convCount || 0}</span>
+                    </span>
+                  </>
+                )}
+                <span className={styles['card-stat']}>
+                  {item.collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
+                  <span>{item.collectCount || 0}</span>
                 </span>
-              ))}
+              </div>
+              <div className={styles['card-stats-actions']}>
+                {onToggleCollect && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t(
+                      item.collect
+                        ? 'PC.Components.CapabilityModal.uncollect'
+                        : 'PC.Components.CapabilityModal.collect',
+                    )}
+                    className={cx(styles['card-collect'], {
+                      [styles['card-collect-active']]: item.collect,
+                    })}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleCollect(item);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onToggleCollect(item);
+                      }
+                    }}
+                  >
+                    {item.collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
+                  </span>
+                )}
+                {/* 付费标识：antd Tag 蓝色（需付费时展示「付费/已订阅」，与广场卡同文案） */}
+                {item.paymentRequired && (
+                  <Tag color="blue" className={styles['card-paid-tag']}>
+                    {t(
+                      item.subscribed
+                        ? 'PC.Pages.Square.SingleAgent.subscribed'
+                        : 'PC.Pages.Square.SingleAgent.paid',
+                    )}
+                  </Tag>
+                )}
+              </div>
             </div>
           )}
         </>
