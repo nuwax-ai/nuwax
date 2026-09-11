@@ -3,6 +3,7 @@ import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { getUserAppVncProxyUrl } from '../../services/appDevPro';
+import AppDevProIframe from '../AppDevProIframe';
 import styles from '../AppDevDatabasePanel/index.less';
 
 const cx = classNames.bind(styles);
@@ -43,12 +44,9 @@ const AppDevRemoteDesktopPanel: React.FC<AppDevRemoteDesktopPanelProps> = ({
 
   return (
     <div className={cx(styles.container)}>
-      <iframe
-        key={iframeSrc}
-        className={cx(styles.iframe)}
+      <AppDevProIframe
         src={iframeSrc}
         title={dict('PC.Pages.AppDevPro.remoteDesktop')}
-        allow="clipboard-read; clipboard-write; fullscreen"
       />
     </div>
   );

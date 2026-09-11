@@ -13,6 +13,7 @@ import type {
   UserAppPublishPhase,
   UserAppTaskServiceProgress,
 } from '../../type';
+import AppDevProIframe from '../AppDevProIframe';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -48,6 +49,8 @@ export interface AppDevAppPreviewPanelProps {
   onStart?: () => void;
   /** 开发环境进行中任务锁定启动 / 重启 */
   devActionLocked?: boolean;
+  /** 线上环境有预览地址时可直接展示 iframe，无需先启动服务 */
+  directPreview?: boolean;
 }
 
 /**
@@ -220,22 +223,37 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   onRetryStart,
   onStart,
   devActionLocked = false,
+  directPreview = false,
 }) => {
   const logs = useMemo(() => flattenTaskLogs(services), [services]);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const showStartProgress =
     busy || phase === 'starting' || phase === 'building';
   const showStartFailed = phase === 'failed' || phase === 'cancelled';
+  const canShowIframe = !!previewUrl && (running || directPreview);
 
   useEffect(() => {
     setIframeLoaded(false);
-  }, [previewUrl, refreshKey, running]);
+  }, [previewUrl, refreshKey]);
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoaded(true);
   }, []);
 
-  if (isGeneratingFiles || isWaitingForUserConfirmation || !podReady) {
+  /** iframe 加载失败时收起加载遮罩，露出失败提示 */
+  const handleIframeError = useCallback(() => {
+    setIframeLoaded(true);
+  }, []);
+
+  /** 刷新 iframe 时重新展示加载遮罩 */
+  const handleIframeRetry = useCallback(() => {
+    setIframeLoaded(false);
+  }, []);
+
+  if (
+    !(directPreview && previewUrl) &&
+    (isGeneratingFiles || isWaitingForUserConfirmation || !podReady)
+  ) {
     return (
       <div className={cx(styles.container, styles.stage)}>
         <PreviewHero
@@ -320,17 +338,17 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  if (running && previewUrl) {
+  if (canShowIframe) {
     return (
       <div className={cx(styles.container)}>
         <div className={cx(styles.iframeWrap)}>
-          <iframe
-            key={`${previewUrl}-${refreshKey}`}
-            className={cx(styles.iframe)}
+          <AppDevProIframe
             src={previewUrl}
+            iframeKey={`${previewUrl}-${refreshKey}`}
             title={dict('PC.Pages.AppDevPro.appPreview')}
-            allow="clipboard-read; clipboard-write; fullscreen"
             onLoad={handleIframeLoad}
+            onError={handleIframeError}
+            onRetry={handleIframeRetry}
           />
           {!iframeLoaded ? (
             <div className={cx(styles.loadingOverlay)}>
@@ -342,7 +360,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  if (running && !previewUrl) {
+  if ((running || directPreview) && !previewUrl) {
     return (
       <div className={cx(styles.container)}>
         <div className={cx(styles.hero)}>
