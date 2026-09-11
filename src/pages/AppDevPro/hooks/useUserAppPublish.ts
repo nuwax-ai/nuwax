@@ -1,16 +1,13 @@
 import { dict } from '@/services/i18nRuntime';
-import { apiPublishApply } from '@/services/publish';
-import {
-  AgentComponentTypeEnum,
-  AllowCopyEnum,
-  OnlyTemplateEnum,
-} from '@/types/enums/agent';
-import { PluginPublishScopeEnum } from '@/types/enums/plugin';
-import type { PublishItem } from '@/types/interfaces/publish';
 import { message } from 'antd';
 import { useCallback, useRef, useState } from 'react';
-import { apiUserAppBuild, apiUserAppBuildCancel } from '../services/appDevPro';
+import {
+  apiUserAppBuild,
+  apiUserAppBuildCancel,
+  apiUserAppProdStart,
+} from '../services/appDevPro';
 import type {
+  UserAppDeployFailedStage,
   UserAppDevTaskInfo,
   UserAppPublishPhase,
   UserAppTaskLogEvent,
@@ -18,9 +15,11 @@ import type {
   UserAppTaskTerminalStatus,
 } from '../type';
 import {
+  USER_APP_BUILD_SSE_EVENT,
   getOverallTaskProgress,
   getTaskTerminalStatus,
   mergeTaskServiceProgress,
+  normalizeTaskStatus,
 } from '../utils/userAppTaskLog';
 import {
   listenUserAppTaskStream,
@@ -28,41 +27,36 @@ import {
   unwrapUserAppResponse,
 } from '../utils/userAppTaskStream';
 
-/** 发布弹窗确认后带回的申请参数（分类、发布空间等） */
-export interface UserAppPublishApplyPayload {
-  remark?: string;
-  category?: string;
-  items?: PublishItem[];
-}
-
 export interface UseUserAppPublishOptions {
   /** 应用 ID */
   appId?: number;
-  /** 当前空间 ID，提交发布申请时写入发布项 */
-  spaceId?: number;
   /** SSE 检测到构建失败后恢复 active 任务轮询 */
   onBuildFailed?: () => void;
-  /** 发布申请提交成功后刷新详情 */
-  onPublished?: () => void;
+  /** 构建并部署成功后，打开发布到市场弹窗 */
+  onDeployed?: () => void;
 }
 
 /**
- * AppDevPro 发布：构建 → SSE 进度 → 提交发布申请。
+ * AppDevPro 部署：构建 → SSE 进度 → 生产部署；成功后再由页面打开发布弹窗。
  *
  * @param options.appId 应用 ID
- * @param options.spaceId 空间 ID
  * @param options.onBuildFailed 构建失败回调
- * @param options.onPublished 发布成功回调
- * @returns 发布状态与操作
+ * @param options.onDeployed 部署成功回调
+ * @returns 部署状态与操作
  */
 export function useUserAppPublish(options: UseUserAppPublishOptions) {
-  const { appId, spaceId, onBuildFailed, onPublished } = options;
+  const { appId, onBuildFailed, onDeployed } = options;
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
   const [services, setServices] = useState<UserAppTaskServiceProgress[]>([]);
+  const [startServices, setStartServices] = useState<
+    UserAppTaskServiceProgress[]
+  >([]);
   const [overallProgress, setOverallProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
+  const [failedStage, setFailedStage] =
+    useState<UserAppDeployFailedStage | null>(null);
   const [taskId, setTaskId] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
 
@@ -72,18 +66,27 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const lastSeqRef = useRef<number | undefined>(undefined);
   const taskIdRef = useRef('');
   const servicesRef = useRef<UserAppTaskServiceProgress[]>([]);
-  const applyPayloadRef = useRef<UserAppPublishApplyPayload | null>(null);
+  const startServicesRef = useRef<UserAppTaskServiceProgress[]>([]);
+  const streamStageRef = useRef<'build' | 'start'>('build');
+  const releaseIdRef = useRef('');
+  const buildSucceededRef = useRef(false);
 
   const resetProgress = useCallback(() => {
     setServices([]);
+    setStartServices([]);
     setOverallProgress(0);
     setErrorMessage('');
+    setFailedStage(null);
     setTaskId('');
     taskIdRef.current = '';
     lastSeqRef.current = undefined;
     terminalRef.current = null;
     cancelledRef.current = false;
     servicesRef.current = [];
+    startServicesRef.current = [];
+    streamStageRef.current = 'build';
+    releaseIdRef.current = '';
+    buildSucceededRef.current = false;
   }, []);
 
   const stopStream = useCallback(() => {
@@ -95,6 +98,23 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     if (typeof event.seq === 'number') {
       lastSeqRef.current = event.seq;
     }
+    if (
+      normalizeTaskStatus(event.type) === USER_APP_BUILD_SSE_EVENT.COMPLETED
+    ) {
+      const releaseId = event.release_id;
+      if (typeof releaseId === 'string' && releaseId.trim()) {
+        releaseIdRef.current = releaseId.trim();
+      }
+    }
+    if (streamStageRef.current === 'start') {
+      setStartServices((prev) => {
+        const next = mergeTaskServiceProgress(prev, event);
+        startServicesRef.current = next;
+        setOverallProgress(getOverallTaskProgress(next));
+        return next;
+      });
+      return;
+    }
     setServices((prev) => {
       const next = mergeTaskServiceProgress(prev, event);
       servicesRef.current = next;
@@ -104,12 +124,13 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, []);
 
   /**
-   * 监听构建任务 SSE，直到任务成功 / 失败 / 取消。
+   * 监听任务 SSE，直到成功 / 失败 / 取消。
    *
    * @param currentTaskId 任务 ID
+   * @param failedMessage 失败文案
    */
   const listenBuildProgress = useCallback(
-    (currentTaskId: string) => {
+    (currentTaskId: string, failedMessage?: string) => {
       const controller = new AbortController();
       abortRef.current = controller;
       return listenUserAppTaskStream({
@@ -118,8 +139,12 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         abortController: controller,
         isCancelled: () => cancelledRef.current,
         onEvent: applyEvent,
-        getServices: () => servicesRef.current,
-        failedMessage: dict('PC.Pages.AppDevPro.publishFailed'),
+        getServices: () =>
+          streamStageRef.current === 'start'
+            ? startServicesRef.current
+            : servicesRef.current,
+        failedMessage:
+          failedMessage || dict('PC.Pages.AppDevPro.buildStatusFailed'),
         streamClosedMessage: dict('PC.Pages.AppDevPro.publishStreamClosed'),
       }).then((status) => {
         if (status === 'succeeded') {
@@ -133,145 +158,177 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   );
 
   /**
-   * 构建成功后提交发布申请。
+   * 构建成功后启动生产服务，并监听启动任务 SSE。
    */
-  const submitPublishApply = useCallback(async () => {
+  const submitProdStart = useCallback(async () => {
     if (!appId) {
       throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
     }
-    setPhase('applying');
-    setOverallProgress(98);
-    const payload = applyPayloadRef.current;
-    const items =
-      payload?.items && payload.items.length > 0
-        ? payload.items
-        : [
-            {
-              scope: PluginPublishScopeEnum.Space,
-              spaceId: spaceId || undefined,
-              allowCopy: AllowCopyEnum.No,
-              onlyTemplate: OnlyTemplateEnum.No,
-            },
-          ];
-    const result = await apiPublishApply({
-      targetType: AgentComponentTypeEnum.UserApp,
-      targetId: appId,
-      remark: payload?.remark,
-      category: payload?.category,
-      items,
-    });
-    unwrapUserAppResponse(
-      result,
-      dict('PC.Components.PublishComponentModal.publishSubmitted'),
-    );
-    setPhase('success');
-    setOverallProgress(100);
-    message.success(
-      dict('PC.Components.PublishComponentModal.publishSubmitted'),
-    );
-    onPublished?.();
-  }, [appId, onPublished, spaceId]);
+    setPhase('deploying');
+    stopStream();
+    lastSeqRef.current = undefined;
+    streamStageRef.current = 'start';
+    startServicesRef.current = [];
+    setStartServices([]);
+    setOverallProgress(0);
+
+    const task = unwrapUserAppResponse(
+      await apiUserAppProdStart({
+        appId,
+        releaseId: releaseIdRef.current || undefined,
+      }),
+      dict('PC.Pages.AppDevPro.startFailed'),
+    ) as UserAppDevTaskInfo;
+
+    const currentTaskId = pickUserAppTaskId(task);
+    if (currentTaskId) {
+      setTaskId(currentTaskId);
+      taskIdRef.current = currentTaskId;
+    }
+
+    if (cancelledRef.current) {
+      if (currentTaskId) {
+        await apiUserAppBuildCancel(currentTaskId);
+      }
+      setPhase('cancelled');
+      return;
+    }
+
+    const immediate = getTaskTerminalStatus(task.status);
+    if (immediate === 'failed') {
+      throw new Error(task.error || dict('PC.Pages.AppDevPro.startFailed'));
+    }
+    if (immediate === 'cancelled') {
+      setPhase('cancelled');
+      return;
+    }
+
+    if (currentTaskId && immediate !== 'succeeded') {
+      const streamResult = await listenBuildProgress(
+        currentTaskId,
+        dict('PC.Pages.AppDevPro.startFailed'),
+      );
+      if (streamResult === 'cancelled' || cancelledRef.current) {
+        setPhase('cancelled');
+        return;
+      }
+      if (streamResult === 'failed') {
+        throw new Error(dict('PC.Pages.AppDevPro.startFailed'));
+      }
+    }
+  }, [appId, listenBuildProgress, stopStream]);
 
   /**
-   * 点击发布：创建构建任务，监听进度，成功后提交发布申请。
-   * @param payload 发布弹窗选择的分类与发布空间；缺省时回退到当前空间
+   * 点击部署：创建构建任务，监听进度，成功后调用生产部署。
    */
-  const startPublish = useCallback(
-    async (payload?: UserAppPublishApplyPayload) => {
-      if (!appId) {
-        message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
-        return;
-      }
-      if (
-        phase === 'starting' ||
-        phase === 'building' ||
-        phase === 'applying'
-      ) {
-        setOpen(true);
-        return;
-      }
-
-      applyPayloadRef.current = payload ?? null;
-      resetProgress();
+  const startPublish = useCallback(async () => {
+    if (!appId) {
+      message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
+      return;
+    }
+    if (
+      phase === 'starting' ||
+      phase === 'building' ||
+      phase === 'deploying' ||
+      phase === 'applying'
+    ) {
       setOpen(true);
-      setPhase('starting');
+      return;
+    }
 
-      try {
-        const task = unwrapUserAppResponse(
-          await apiUserAppBuild({ appId }),
-          dict('PC.Pages.AppDevPro.publishFailed'),
-        ) as UserAppDevTaskInfo;
+    resetProgress();
+    setOpen(true);
+    setPhase('starting');
 
-        const currentTaskId = pickUserAppTaskId(task);
-        if (!currentTaskId) {
-          throw new Error(dict('PC.Pages.AppDevPro.publishFailed'));
-        }
-        setTaskId(currentTaskId);
-        taskIdRef.current = currentTaskId;
+    try {
+      const task = unwrapUserAppResponse(
+        await apiUserAppBuild({ appId }),
+        dict('PC.Pages.AppDevPro.buildStatusFailed'),
+      ) as UserAppDevTaskInfo;
 
-        if (cancelledRef.current) {
-          await apiUserAppBuildCancel(currentTaskId);
+      const currentTaskId = pickUserAppTaskId(task);
+      if (!currentTaskId) {
+        throw new Error(dict('PC.Pages.AppDevPro.buildStatusFailed'));
+      }
+      setTaskId(currentTaskId);
+      taskIdRef.current = currentTaskId;
+
+      if (cancelledRef.current) {
+        await apiUserAppBuildCancel(currentTaskId);
+        setPhase('cancelled');
+        return;
+      }
+
+      const immediate = getTaskTerminalStatus(task.status);
+      if (immediate === 'failed') {
+        throw new Error(
+          task.error || dict('PC.Pages.AppDevPro.buildStatusFailed'),
+        );
+      }
+      if (immediate === 'cancelled') {
+        setPhase('cancelled');
+        return;
+      }
+
+      if (immediate !== 'succeeded') {
+        setPhase('building');
+        const streamResult = await listenBuildProgress(currentTaskId);
+        if (streamResult === 'cancelled' || cancelledRef.current) {
           setPhase('cancelled');
           return;
         }
-
-        const immediate = getTaskTerminalStatus(task.status);
-        if (immediate === 'failed') {
-          throw new Error(
-            task.error || dict('PC.Pages.AppDevPro.publishFailed'),
-          );
-        }
-        if (immediate === 'cancelled') {
-          setPhase('cancelled');
-          return;
-        }
-
-        if (immediate !== 'succeeded') {
-          setPhase('building');
-          const streamResult = await listenBuildProgress(currentTaskId);
-          if (streamResult === 'cancelled' || cancelledRef.current) {
-            setPhase('cancelled');
-            return;
-          }
-          if (streamResult === 'failed') {
-            throw new Error(dict('PC.Pages.AppDevPro.publishFailed'));
-          }
-        }
-
-        if (cancelledRef.current) {
-          setPhase('cancelled');
-          return;
-        }
-
-        await submitPublishApply();
-      } catch (error) {
-        if (
-          cancelledRef.current ||
-          (error instanceof Error && error.name === 'AbortError')
-        ) {
-          setPhase('cancelled');
-          return;
-        }
-        const text =
-          error instanceof Error
-            ? error.message
-            : dict('PC.Pages.AppDevPro.publishFailed');
-        setErrorMessage(text);
-        setPhase('failed');
-        if (taskIdRef.current) {
-          onBuildFailed?.();
+        if (streamResult === 'failed') {
+          throw new Error(dict('PC.Pages.AppDevPro.buildStatusFailed'));
         }
       }
-    },
-    [
-      appId,
-      listenBuildProgress,
-      onBuildFailed,
-      phase,
-      resetProgress,
-      submitPublishApply,
-    ],
-  );
+
+      if (cancelledRef.current) {
+        setPhase('cancelled');
+        return;
+      }
+
+      buildSucceededRef.current = true;
+      await submitProdStart();
+
+      if (cancelledRef.current) {
+        setPhase('cancelled');
+        return;
+      }
+
+      setPhase('applying');
+      onDeployed?.();
+    } catch (error) {
+      if (
+        cancelledRef.current ||
+        (error instanceof Error && error.name === 'AbortError')
+      ) {
+        setPhase('cancelled');
+        return;
+      }
+      const stage: UserAppDeployFailedStage = buildSucceededRef.current
+        ? 'deploy'
+        : 'build';
+      const fallback =
+        stage === 'deploy'
+          ? dict('PC.Pages.AppDevPro.startFailed')
+          : dict('PC.Pages.AppDevPro.buildStatusFailed');
+      const text = error instanceof Error ? error.message : fallback;
+      setFailedStage(stage);
+      setErrorMessage(text);
+      setPhase('failed');
+      if (stage === 'build' && taskIdRef.current) {
+        onBuildFailed?.();
+      }
+    }
+  }, [
+    appId,
+    listenBuildProgress,
+    onBuildFailed,
+    onDeployed,
+    phase,
+    resetProgress,
+    submitProdStart,
+  ]);
 
   /**
    * 取消当前构建任务。
@@ -294,18 +351,24 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       setOpen(false);
       message.success(dict('PC.Pages.AppDevPro.publishCancelled'));
     } catch (error) {
-      // 请求层会统一展示错误，避免与局部 message 重复提示
-      console.error('[AppDevPro] Cancel publishing failed:', error);
+      console.error('[AppDevPro] Cancel deploying failed:', error);
     } finally {
       setCancelLoading(false);
     }
   }, [stopStream, taskId]);
 
   /**
+   * 发布到市场成功。
+   */
+  const completeApply = useCallback(() => {
+    setPhase('success');
+  }, []);
+
+  /**
    * 关闭进度弹窗（进行中需先取消）。
    */
   const closeModal = useCallback(() => {
-    if (phase === 'starting' || phase === 'building' || phase === 'applying') {
+    if (phase === 'starting' || phase === 'building' || phase === 'deploying') {
       return;
     }
     setOpen(false);
@@ -315,7 +378,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, [phase, resetProgress, stopStream]);
 
   const publishing =
-    phase === 'starting' || phase === 'building' || phase === 'applying';
+    phase === 'starting' || phase === 'building' || phase === 'deploying';
 
   return {
     open,
@@ -323,11 +386,14 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     services,
     overallProgress,
     errorMessage,
+    failedStage,
     taskId,
     cancelLoading,
     publishing,
     startPublish,
+    completeApply,
     cancelTask,
     closeModal,
+    startServices,
   };
 }

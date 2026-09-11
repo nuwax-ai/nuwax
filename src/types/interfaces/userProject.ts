@@ -385,15 +385,19 @@ export interface UserAppLogsQueryResult {
 /** 运行时操作：启动 / 重启 / 停止 */
 export type UserAppRuntimeAction = 'start' | 'restart' | 'stop';
 
-/** 发布 / 启动任务流程阶段 */
+/** 发布 / 启动 / 部署任务流程阶段 */
 export type UserAppPublishPhase =
   | 'idle'
   | 'starting'
   | 'building'
+  | 'deploying'
   | 'applying'
   | 'success'
   | 'failed'
   | 'cancelled';
+
+/** 进度弹窗失败发生在构建、启动还是发布 */
+export type UserAppDeployFailedStage = 'build' | 'deploy' | 'apply';
 
 /** 任务终态 */
 export type UserAppTaskTerminalStatus = 'succeeded' | 'failed' | 'cancelled';

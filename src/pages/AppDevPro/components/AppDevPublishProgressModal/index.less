@@ -29,14 +29,33 @@
   color: @colorError;
 }
 
+.stepLogs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stepLogsTitle {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  color: @colorText;
+}
+
 .serviceList {
   background: transparent;
 
-  :global(.ant-collapse-item) {
+  // bordered={false} 时 antd 会去掉最后一项的 border-bottom，这里显式补回
+  &:global(.ant-collapse-borderless) > :global(.ant-collapse-item) {
     margin-bottom: 8px;
     border: @lineWidth solid @colorBorderSecondary;
     border-radius: @borderRadius;
     overflow: hidden;
+
+    &:last-child {
+      margin-bottom: 0;
+      border-bottom: @lineWidth solid @colorBorderSecondary;
+    }
   }
 
   :global(.ant-collapse-header) {
