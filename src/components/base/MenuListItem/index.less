@@ -2,7 +2,10 @@
 @import '@/styles/token';
 
 .row {
-  padding: @paddingXs;
+  padding: var(--xagi-nav-second-row-padding, @paddingXs);
+  // 单栏（style3）二级列通过容器上的 --xagi-nav-second-* 变量同步一级列规格；
+  // 经典布局不设变量走默认值，行为与原版一致
+  min-height: var(--xagi-nav-second-row-height, auto);
   cursor: default;
   color: @navSecondMenuTextSecondary;
 
@@ -11,7 +14,7 @@
 
     .name {
       color: @navSecondMenuTextSecondary;
-      font-size: @fontSize;
+      font-size: var(--xagi-nav-second-leaf-font-size, @fontSize);
       line-height: @fontHeightLg;
       white-space: nowrap;
     }
@@ -24,9 +27,9 @@
   }
 
   &.active {
-    background-color: @colorBgContainer;
+    background-color: var(--xagi-nav-second-row-active-bg, @colorBgContainer);
     color: @colorPrimary;
-    border-radius: @borderRadius;
+    border-radius: var(--xagi-nav-second-row-radius, @borderRadius);
     box-shadow: @boxShadowTertiary;
 
     .name {
@@ -35,9 +38,9 @@
   }
 
   &:hover {
-    background-color: @colorBgContainer;
-    border-radius: @borderRadius;
-    box-shadow: @boxShadowTertiary;
+    background-color: var(--xagi-nav-second-row-hover-bg, @colorBgContainer);
+    border-radius: var(--xagi-nav-second-row-radius, @borderRadius);
+    box-shadow: var(--xagi-nav-second-row-hover-shadow, @boxShadowTertiary);
     color: @colorTextSecondary;
 
     .name {
@@ -51,14 +54,14 @@
   }
 
   .icon-box {
-    font-size: 20px;
+    font-size: var(--xagi-nav-second-icon-size, 20px);
     border-radius: @borderRadiusSm;
     overflow: hidden;
     flex-shrink: 0;
 
     .icon-image {
-      width: 20px;
-      height: 20px;
+      width: var(--xagi-nav-second-icon-size, 20px);
+      height: var(--xagi-nav-second-icon-size, 20px);
     }
   }
 

@@ -34,6 +34,12 @@ export interface ComputerTypeSelectorProps {
   unavailable?: boolean;
   /** 是否自动触发选择逻辑（默认：true） */
   autoSelect?: boolean;
+  /**
+   * 严格绑定模式（首页）：沙箱选择按 agent 绑定——切到某 agent 显示其自己的记忆，
+   * 未绑定过回落云端默认，不继承上一个 agent 的选择；默认 false 保持既有行为。
+   * 决策逻辑见 resolveAutoSelection.ts。
+   */
+  strictAgentMemory?: boolean;
   /** 是否在选中时自动保存到后端（默认：true） */
   saveOnSelect?: boolean;
   /** 是否为个人电脑（用于区分不可用状态提示） */

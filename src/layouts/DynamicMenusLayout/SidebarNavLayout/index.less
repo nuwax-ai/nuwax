@@ -62,7 +62,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 12px 14px 14px;
+      padding: @paddingSm 14px 14px;
       margin-right: 0;
 
       .sidebar-user-row {
@@ -74,7 +74,7 @@
     .footer-actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: @marginXxs;
       flex-shrink: 0;
     }
 
@@ -82,8 +82,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 24px;
-      height: 24px;
+      width: @controlHeightSm;
+      height: @controlHeightSm;
       border-radius: @borderRadius;
       cursor: pointer;
       color: @navSecondMenuAdaptiveTextSecondary;
@@ -91,7 +91,7 @@
       transition: all 0.2s ease;
 
       &:hover {
-        background-color: @colorFillSecondary;
+        background-color: @navRowHoverBg;
         color: @navSecondMenuAdaptiveText;
       }
 
@@ -119,7 +119,7 @@
       }
 
       &:hover {
-        background-color: @colorFillSecondary;
+        background-color: @navRowHoverBg;
       }
 
       .sidebar-user-name {
@@ -154,7 +154,24 @@
     position: relative;
     background: @navSecondMenuBg;
     border-radius: 0;
+    // 右侧与内容卡（page-container）留出间距：内容卡左缘恒 margin-left:0
+    // （贴会话列设计），二级列展开时的空隙由本列右边距承担
+    margin-right: @marginXs;
     transition: width 0.3s ease-in-out, background-color 0.3s ease;
+
+    // 二级菜单项同步一级列规格（33px 项高/11px 圆角/13.5px 字号/16px 图标），
+    // 交互态并入全栏统一语义（hover 灰无阴影、选中容器白卡）。
+    // 本容器仅 style3 单栏挂载，变量随 DOM 继承给 DynamicSecondMenu/SpaceSection 的
+    // base 行组件；经典布局的二级菜单不在此容器内，base 组件走各自默认值不受影响
+    --xagi-nav-second-row-height: 33px;
+    --xagi-nav-second-row-padding: 0 var(--xagi-padding-xs);
+    --xagi-nav-second-row-radius: 11px;
+    --xagi-nav-second-main-font-size: 13.5px;
+    --xagi-nav-second-leaf-font-size: 13.5px;
+    --xagi-nav-second-icon-size: 16px;
+    --xagi-nav-second-row-hover-bg: var(--xagi-nav-row-hover-bg);
+    --xagi-nav-second-row-hover-shadow: none;
+    --xagi-nav-second-row-active-bg: var(--xagi-nav-row-selected-bg);
 
     // 与 .nav-menus-scroll 同名复用：本列不在 .nav-menus 内，需自带尺寸链
     .nav-menus-scroll {
@@ -188,7 +205,7 @@
     }
 
     &:hover {
-      background-color: @colorFillSecondary;
+      background-color: @navRowHoverBg;
       color: @navSecondMenuAdaptiveText;
     }
   }

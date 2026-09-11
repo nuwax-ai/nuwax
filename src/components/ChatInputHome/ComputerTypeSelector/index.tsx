@@ -16,6 +16,7 @@ import React, {
   useState,
 } from 'react';
 import styles from './index.less';
+import { resolveAutoSelection } from './resolveAutoSelection';
 import { type ComputerOption, type ComputerTypeSelectorProps } from './types';
 
 const cx = classNames.bind(styles);
@@ -64,6 +65,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   isPersonalComputer = false,
   readonly = false,
   cloudOnly = false,
+  strictAgentMemory = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -120,28 +122,21 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       fixedSelection ||
       !initialized ||
       computerList.length === 0
-    )
-      return;
-
-    // 检查当前 value 是否在列表中有效
-    const isValueValid =
-      value && computerList.some((opt) => String(opt.id) === String(value));
-
-    let selectedId: string | null = null;
-
-    // 1. 如果有agentId，检查是否有已保存的选择
-    if (
-      agentId &&
-      agentSelectedMap &&
-      Object.keys(agentSelectedMap).length > 0
     ) {
-      const savedSelection = agentSelectedMap[String(agentId)];
-      if (savedSelection) {
-        selectedId = savedSelection;
-      }
+      return;
     }
 
+    // 决策单源：strict（首页）=沙箱按 agent 绑定（其记忆/云端默认）；legacy=既有行为
+    const { selectedId } = resolveAutoSelection({
+      strictAgentMemory,
+      agentId,
+      value,
+      computerList,
+      agentSelectedMap,
+    });
+
     // 个人电脑下线处理：如果列表中仅剩云电脑（-1），且当前状态并非云电脑，则主动同步到后端
+    let finalId = selectedId;
     if (
       agentId &&
       computerList.length === 1 &&
@@ -151,21 +146,16 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     ) {
       apiSaveSelectedSandbox(agentId, '-1').catch(console.error);
       setAgentSelectedMap((prev) => ({ ...prev, [String(agentId)]: '-1' }));
-      selectedId = '-1';
-    }
-
-    // 2. 如果没有已保存的选择，且当前值无效，默认选中列表中的第一个
-    if (!selectedId && !isValueValid && computerList.length > 0) {
-      selectedId = computerList[0].id;
+      finalId = '-1';
     }
 
     // 如果确定了选择且与当前值不同，触发onChange
-    if (selectedId && selectedId !== value) {
+    if (finalId && finalId !== value) {
       const option = computerList.find(
-        (opt) => String(opt.id) === String(selectedId),
+        (opt) => String(opt.id) === String(finalId),
       );
       if (option) {
-        onChange?.(selectedId, option);
+        onChange?.(finalId, option);
       }
     }
   }, [
@@ -177,6 +167,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     onChange,
     fixedSelection,
     autoSelect,
+    strictAgentMemory,
   ]);
 
   // 挂载时加载数据

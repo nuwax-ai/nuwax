@@ -31,7 +31,7 @@
     .tab {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: @marginXxs;
       padding: 2px @marginSm;
       border: none;
       background: transparent;
@@ -41,12 +41,12 @@
       color: @navSecondMenuAdaptiveTextSecondary;
 
       &:hover {
-        background-color: @colorFillSecondary;
+        background-color: @navRowHoverBg;
       }
     }
 
     .tabActive {
-      background-color: @colorFillSecondary;
+      background-color: @navRowHoverBg;
       color: @navSecondMenuAdaptiveText;
       font-weight: @fontWeightStrong;
     }
@@ -61,7 +61,7 @@
   .sectionTitle {
     font-size: @fontSizeSm;
     color: @navSecondMenuAdaptiveTextTertiary;
-    padding: @paddingXs @paddingXs 4px;
+    padding: @paddingXs @paddingXs @paddingXxs;
   }
 
   .row {
@@ -79,7 +79,7 @@
   }
 
   .rowActive {
-    background-color: @colorFillSecondary;
+    background-color: @navRowHoverBg;
   }
 
   .rowIcon {

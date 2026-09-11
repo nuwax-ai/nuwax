@@ -63,6 +63,9 @@ export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
   '--xagi-nav-item-active-bg': '#F2F3F6',
   '--xagi-nav-item-selected-bg': '#F2F3F6',
   '--xagi-nav-second-item-active-bg': '#EEF0F3',
+  // 单栏列表行 hover/选中（token @navRowHoverBg/@navRowSelectedBg）刻意不在此覆盖：
+  // hover 回落 color-fill-secondary（叠侧栏 #F2F2F2 ≈ #E4E4E4；#F0F1F5 过浅走查不可辨），
+  // 选中回落容器色 #EEEFF2（见上方 --xagi-color-bg-container），与白卡族同源
 };
 
 /** nuwaclaw 专属覆盖的 CSS 变量集（亮色布局实色；主色单独处理，见 sync） */
