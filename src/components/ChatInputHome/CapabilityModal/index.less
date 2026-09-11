@@ -585,7 +585,6 @@
 }
 
 .card-desc {
-  overflow: hidden;
   // 三段式布局②content（描述）弹性填充：min-height:0 解除内容最小高约束，
   // 由 flex-grow 撑开剩余空间把 footer 推到卡片底部；无描述时常驻空块
   // 保持中段存在（卡片由 .card-expert min-height 兜底撑开）
@@ -596,10 +595,12 @@
   line-height: 20px;
   // 两行截断：display 必须写 -webkit-box（只写 box 会被浏览器判无效导致截断失效）
   display: box;
+  display: box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   word-break: break-word;
+  overflow: hidden;
 }
 
 // 专家卡：无 min-height——卡片高度由内容/网格行撑开（min-height 会干预
