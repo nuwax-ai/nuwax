@@ -1519,6 +1519,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.collapseSessions": "收起",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation": "添加对话",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable": "项目添加对话暂未接入，当前无法创建。",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationNoAgent": "未找到可用的智能体，无法创建会话。",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.toggleAllProjects": "展开/收起所有项目",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "失败",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder": "搜索",

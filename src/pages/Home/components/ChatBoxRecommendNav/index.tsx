@@ -19,6 +19,8 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
   onSelect,
 }) => {
   const listRef = useRef<HTMLDivElement>(null);
+  // pill 元素索引（id → button），供选中项定位（自动命中场景滚动到可见）
+  const itemRefsRef = useRef<Map<number, HTMLButtonElement>>(new Map());
   const [edges, setEdges] = useState({ left: false, right: false });
   const updateEdges = useCallback(() => {
     const list = listRef.current;
@@ -29,17 +31,35 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
     });
   }, []);
   const itemKey = items.map((item) => item.id).join(',');
+  const lastItemKeyRef = useRef<string>('');
 
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    list.scrollLeft = 0;
+    const itemsChanged = lastItemKeyRef.current !== itemKey;
+    if (itemsChanged) {
+      lastItemKeyRef.current = itemKey;
+      list.scrollLeft = 0;
+      // 列表重建（切分类/上框命中换列表）后把选中 pill 滚动到居中可见——
+      // 必须在 reset 之后执行否则被吞；手动算居中（scrollIntoView 会带动页面纵向滚动）
+      const selectedEl =
+        selectedId !== undefined
+          ? itemRefsRef.current.get(selectedId)
+          : undefined;
+      if (selectedEl) {
+        list.scrollLeft = Math.max(
+          0,
+          selectedEl.offsetLeft -
+            (list.clientWidth - selectedEl.offsetWidth) / 2,
+        );
+      }
+    }
     updateEdges();
     const observer = new ResizeObserver(updateEdges);
     observer.observe(list);
     Array.from(list.children).forEach((child) => observer.observe(child));
     return () => observer.disconnect();
-  }, [itemKey, updateEdges]);
+  }, [itemKey, selectedId, updateEdges]);
 
   const scroll = (direction: number) => {
     const list = listRef.current;
@@ -83,6 +103,13 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
           return (
             <button
               key={item.id}
+              ref={(el) => {
+                if (el) {
+                  itemRefsRef.current.set(item.id, el);
+                } else {
+                  itemRefsRef.current.delete(item.id);
+                }
+              }}
               type="button"
               className={cx(styles['recommend-item'], {
                 [styles.active]: active,

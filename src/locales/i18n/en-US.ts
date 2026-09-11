@@ -1521,6 +1521,8 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.collapseSessions": "Collapse",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation": "Add conversation",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable": "Adding a project conversation is not available yet.",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationNoAgent":
+    "No available agent found to create the conversation.",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.toggleAllProjects": "Expand/collapse all projects",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "Failed",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder": "Search",

@@ -282,6 +282,13 @@ const Home: React.FC = () => {
     setSelectedSpaceId(undefined);
   }, [contextMap, consumePinnedProject]);
 
+  // 上框期间只保留同类型智能体（策略单源过滤；无上框 = 全量）。
+  // 置于命中 effect 之前（其依赖数组立即求值，前向引用会触发 TDZ）
+  const visibleRecommendList = useMemo(
+    () => filterSelectableAgents(recommendNavList, pinnedProject),
+    [recommendNavList, pinnedProject],
+  );
+
   // 上框默认命中：全栈优先按项目 devAgentId 精确命中推荐位（列表晚到时同样生效）；
   // devAgentId 契约未 ready 或未命中时，按类型兜底唯一同类型推荐自动选中
   // （等价替用户手点）；0 个/多个同类型无法定位 → toast 提示手动选择
@@ -290,19 +297,27 @@ const Home: React.FC = () => {
     pinnedProject?.projectType === AgentComponentTypeEnum.UserApp;
   useEffect(() => {
     if (!isUserAppPinned || selectedRecommend) return;
-    if (!recommendNavList.length) return; // 推荐列表未就绪不做未命中判定
+    if (!visibleRecommendList.length) return; // 推荐列表未就绪不做未命中判定
+    // 在上框可见列表（已按项目类型过滤）上命中，防止命中项不进分类 pills 不可见
     const hit =
-      findDefaultAgent(recommendNavList, pinnedProject) ??
-      findTypeFallbackAgent(recommendNavList, pinnedProject?.projectType);
+      findDefaultAgent(visibleRecommendList, pinnedProject) ??
+      findTypeFallbackAgent(visibleRecommendList, pinnedProject?.projectType);
     if (hit) {
       setSelectedRecommend(hit);
+      // 同步切到命中项所在分类（受控 Segmented 直接置 key；不复用
+      // handleCategoryChange——其含清空/清输入副作用）。category 为空时
+      // pill 归第一个分类且该分类必非空，autoCategoryKey 天然正确无需设置
+      // （显式设置反而引入分类数据未到的竞态）
+      if (hit.category) {
+        setUserPickedCategory(hit.category);
+      }
       return;
     }
     if (agentMissedPromptedRef.current !== pinnedProject?.projectId) {
       agentMissedPromptedRef.current = pinnedProject?.projectId;
       message.warning(dict('PC.Pages.Home.pinnedProject.agentMissed'));
     }
-  }, [isUserAppPinned, pinnedProject, recommendNavList, selectedRecommend]);
+  }, [isUserAppPinned, pinnedProject, visibleRecommendList, selectedRecommend]);
 
   const handleEnter = async (
     inputMessage: string,
@@ -379,12 +394,6 @@ const Home: React.FC = () => {
       tenantConfigInfo?.defaultTaskAgentId &&
       tenantConfigInfo.defaultTaskAgentId > 0
     )
-  );
-
-  // 上框期间只保留同类型智能体（策略单源过滤；无上框 = 全量）
-  const visibleRecommendList = useMemo(
-    () => filterSelectableAgents(recommendNavList, pinnedProject),
-    [recommendNavList, pinnedProject],
   );
 
   // 内容分类列表(对话任务/项目开发/AI教育等):pill 来自已发布分类接口的
