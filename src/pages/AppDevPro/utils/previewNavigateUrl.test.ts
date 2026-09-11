@@ -32,9 +32,9 @@ describe('resolveUserAppPreviewNavigateUrl', () => {
   });
 
   it('域名预览根路径下相对路径正确拼接', () => {
-    const domainBase = 'https://dev.example.com/api/userapp/proxy/app/dev/12/';
+    const domainBase = 'https://dev.example.com';
     expect(resolveUserAppPreviewNavigateUrl('/home', domainBase)).toBe(
-      'https://dev.example.com/api/userapp/proxy/app/dev/12/home',
+      'https://dev.example.com/home',
     );
   });
 });

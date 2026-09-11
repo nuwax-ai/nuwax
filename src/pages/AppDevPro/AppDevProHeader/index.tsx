@@ -170,10 +170,8 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
     userAppInfo.publishStatus !== PublishStatusEnum.Published &&
     !(userAppInfo.publishVersions?.length > 0);
 
-  /** 已发布才展示开发 / 线上环境切换 */
-  const showEnvSwitch =
-    userAppInfo?.publishStatus === PublishStatusEnum.Published ||
-    (userAppInfo?.publishVersions?.length ?? 0) > 0;
+  /** 已部署到生产环境才展示开发 / 线上环境切换 */
+  const showEnvSwitch = userAppInfo?.prodDeployed === true;
 
   const handleSelectDevEnv = useCallback(() => {
     onEnvChange?.(UserAppDbEnvEnum.Dev);
@@ -241,7 +239,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
           )}
         </div>
 
-        {/* 环境切换：仅已发布应用展示 */}
+        {/* 环境切换：仅已部署应用展示 */}
         <ConditionRender condition={showEnvSwitch}>
           <div
             className={cx(
