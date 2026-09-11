@@ -8,10 +8,22 @@ import { ZH_CN } from '@/locales/i18n/zh-CN';
 import { ZH_HK } from '@/locales/i18n/zh-HK';
 import { ZH_TW } from '@/locales/i18n/zh-TW';
 
-export const DEFAULT_I18N_LANG = 'en-us';
+/**
+ * 产品默认语言：简体中文。
+ * 语义=无持久化用户选择时的默认值，**优先于系统/浏览器语言**（不再跟随 navigator.language）；
+ * 用户在登录页语言开关或设置页显式选择后，以持久化的选择为准。
+ */
+export const DEFAULT_I18N_LANG = 'zh-cn';
 
 export const I18N_STORAGE_KEYS = {
   ACTIVE_LANG: 'umi_locale',
+  /**
+   * 用户显式选择语言的标记（登录页语言开关 / 设置页语言面板 / 登录后平台账号语种）。
+   * 仅 ACTIVE_LANG 无法区分「用户选过」与「旧默认值被持久化」——历史版本每次
+   * 解析默认值都会写 ACTIVE_LANG，导致老 profile 的 en-us 残留被误当成用户选择，
+   * 新的默认语言（简体中文）无法对它们生效。本标记补齐这个区分。
+   */
+  USER_SET: 'umi_locale_user_set',
 } as const;
 
 // I18N_MAP_CACHE_TTL removed as caching is disabled

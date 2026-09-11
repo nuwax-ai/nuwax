@@ -15,7 +15,7 @@ import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { apiI18nQuery } from './i18n';
 
 let currentLang = DEFAULT_I18N_LANG;
-let langMap: SystemLangMap = { ...MIN_EN_I18N_MAP };
+let langMap: SystemLangMap = { ...MIN_ZH_I18N_MAP };
 let zhBaseMap: SystemLangMap = { ...MIN_ZH_I18N_MAP };
 let zhValueToKeyMap: Record<string, string> = {};
 let initialized = false;
@@ -71,11 +71,19 @@ const safeSetItem = (key: string, value: string): void => {
   }
 };
 
-const getBrowserLang = (): string => {
-  if (typeof navigator === 'undefined') {
-    return DEFAULT_I18N_LANG;
-  }
-  return normalizeLang(navigator.language);
+/**
+ * 解析「无持久化用户选择」时的默认语言：一律产品默认（简体中文），
+ * 不跟随 navigator.language（用户要求：默认优先简体中文）。
+ */
+const getDefaultLang = (): string => DEFAULT_I18N_LANG;
+
+/** 用户是否显式选择过语言（登录页开关/设置页/平台账号语种）。 */
+const readLangUserSet = (): boolean =>
+  safeGetItem(I18N_STORAGE_KEYS.USER_SET) === '1';
+
+/** 标记用户已显式选择语言（此后 ACTIVE_LANG 缓存视为权威）。 */
+export const markLangUserSet = (): void => {
+  safeSetItem(I18N_STORAGE_KEYS.USER_SET, '1');
 };
 
 const formatText = (template: string, values: (string | number)[]): string => {
@@ -109,7 +117,7 @@ export const getCurrentLang = (): string => currentLang;
 export const getCurrentLangMap = (): SystemLangMap => ({ ...langMap });
 
 export const setCurrentLang = (lang?: string | null): void => {
-  const inputLang = lang || getBrowserLang();
+  const inputLang = lang || getDefaultLang();
   const resolvedLang = normalizeLang(inputLang);
   currentLang = resolvedLang;
 
@@ -143,9 +151,9 @@ export const fetchAndApplyLangMap = async (
     const result = await apiI18nQuery(lang, side);
     const parsedMap = parseLangMapResult(result);
     if (!parsedMap) {
-      // 请求失败（或数据异常），统一启用本地英语兜底
-      langMap = { ...MIN_EN_I18N_MAP };
-      setCurrentLang('en-us');
+      // 请求失败（或数据异常），回落到产品默认语言（简体中文）本地词典
+      langMap = { ...MIN_ZH_I18N_MAP };
+      setCurrentLang(DEFAULT_I18N_LANG);
       return false;
     }
 
@@ -158,9 +166,9 @@ export const fetchAndApplyLangMap = async (
 
     return true;
   } catch {
-    // 捕获异常：统一应用本地英语兜底
-    langMap = { ...MIN_EN_I18N_MAP };
-    setCurrentLang('en-us');
+    // 捕获异常：回落到产品默认语言（简体中文）本地词典
+    langMap = { ...MIN_ZH_I18N_MAP };
+    setCurrentLang(DEFAULT_I18N_LANG);
     return false;
   }
 };
@@ -187,6 +195,9 @@ export const syncLangFromUserInfo = async (user?: {
 }): Promise<void> => {
   if (!user?.lang) return;
   const targetLang = normalizeLang(user.lang);
+
+  // 平台账号语种=用户自己的设置，视为显式选择（此后默认语言不再覆盖它）
+  markLangUserSet();
 
   // 如果用户信息中的语种与当前运行时语种不一致，且系统已初始化，则重新拉取字典包以保证完整性
   if (targetLang !== currentLang && initialized) {
@@ -281,14 +292,20 @@ export const initI18n = async (force: boolean = false): Promise<void> => {
   if (initialized && !force) return;
 
   const cachedLang = readLangFromCache();
-  const resolvedLang = normalizeLang(cachedLang || getBrowserLang());
+  // 有用户显式选择 → 以缓存为准；否则一律产品默认（简体中文）。
+  // 老 profile 的 ACTIVE_LANG 可能只是历史默认值残留（未置 USER_SET 标记），
+  // 这里会归位到新的默认语言；显式选过英文的用户不受影响。
+  const resolvedLang = normalizeLang(
+    (readLangUserSet() && cachedLang) || getDefaultLang(),
+  );
   setCurrentLang(resolvedLang);
 
   // 初始先用本地语种填充，随后会被接口数据覆盖
   langMap = { ...getLocalDefaultMapByLang(resolvedLang) };
 
-  // 首屏仅发起一次不带参数的请求，作为查询模式，由后端自动识别
-  await fetchAndApplyLangMap();
+  // 显式传 resolvedLang：不带参数时后端按 Accept-Language 自动识别，
+  // 会在非中文系统上返回与本地语种状态不一致的词典（默认简体中文要求下必须显式指定）
+  await fetchAndApplyLangMap(resolvedLang);
 
   // 统一构建中文反向翻译字典
   if (isZhLang(getCurrentLang())) {

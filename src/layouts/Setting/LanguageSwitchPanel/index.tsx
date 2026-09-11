@@ -1,5 +1,9 @@
 import { apiI18nLangList } from '@/services/i18n';
-import { dict, fetchAndApplyLangMap } from '@/services/i18nRuntime';
+import {
+  dict,
+  fetchAndApplyLangMap,
+  markLangUserSet,
+} from '@/services/i18nRuntime';
 import { UserService } from '@/services/userService';
 import { I18nLangDto } from '@/types/interfaces/i18n';
 import { CheckOutlined } from '@ant-design/icons';
@@ -68,6 +72,8 @@ const LanguageSwitchPanel: React.FC = () => {
       onOk: async () => {
         setSaving(true);
         try {
+          // 用户显式选择：置标记，此后以缓存语种为准（不再被产品默认覆盖）
+          markLangUserSet();
           // 调用 i18n/query 接口（通过 fetchAndApplyLangMap）更新本地运行时字典并应用
           // 该接口携带 lang 参数时，后端会同步更新用户偏好语种
           const applied = await fetchAndApplyLangMap(selectedLang, 'PC');

@@ -1,5 +1,9 @@
 import { apiI18nLangList } from '@/services/i18n';
-import { dict, fetchAndApplyLangMap } from '@/services/i18nRuntime';
+import {
+  dict,
+  fetchAndApplyLangMap,
+  markLangUserSet,
+} from '@/services/i18nRuntime';
 import { I18nLangDto } from '@/types/interfaces/i18n';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
 import { CheckOutlined, GlobalOutlined } from '@ant-design/icons';
@@ -46,6 +50,8 @@ const LoginLangSwitcher: React.FC = () => {
     setLoading(true);
     const hide = message.loading(dict('PC.Common.Global.processing'), 0);
     try {
+      // 用户显式选择：置标记，此后以缓存语种为准（不再被产品默认覆盖）
+      markLangUserSet();
       const applied = await fetchAndApplyLangMap(key, 'PC');
       if (applied) {
         // 切换成功后刷新页面
