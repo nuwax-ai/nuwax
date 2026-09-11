@@ -669,9 +669,7 @@ const ProjectPanel = forwardRef<
                 {pinnedIds.has(project.id) && (
                   <PushpinFilled className={cx(styles['pin-icon'])} />
                 )}
-                <span className={cx(styles.name)} title={project.name}>
-                  {project.name}
-                </span>
+                <span className={cx(styles.name)}>{project.name}</span>
                 <div className={styles['project-actions']}>
                   {renderAddConversationButton(project)}
                   <Dropdown
@@ -734,9 +732,7 @@ const ProjectPanel = forwardRef<
                       aria-label={failedText}
                     />
                   )}
-                  <span className={cx(styles['child-name'])} title={child.name}>
-                    {child.name}
-                  </span>
+                  <span className={cx(styles['child-name'])}>{child.name}</span>
                   {child.modified && (
                     <span className={cx(styles['child-time'])}>
                       {formatRelativeTime(child.modified)}
