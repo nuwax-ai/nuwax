@@ -2,18 +2,20 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import {
+  apiNormalProjectDelete,
+  apiNormalProjectGetById,
+  apiNormalProjectLatestConversation,
+  apiNormalProjectUpdate,
   apiUserAppDelete,
   apiUserAppUpdate,
-  apiUserProjectDelete,
   apiUserProjectTabPageQuery,
-  apiUserProjectUpdate,
-} from '@/pages/AppDevPro/services/appDevPro';
-import type { UserProjectTabItem } from '@/pages/AppDevPro/type';
+} from '@/services/userProjectApp';
 import { dict } from '@/services/i18nRuntime';
 import { apiDownloadAllFiles } from '@/services/vncDesktop';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import {
   DeleteOutlined,
   DownOutlined,
@@ -25,7 +27,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import { Button, Dropdown, Empty, Input, message, Modal, Spin } from 'antd';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'umi';
 import CreateUserApp from '../AppDevPro/components/CreateUserApp';
 import CreateNormalProjectModal from './components/CreateNormalProjectModal';
@@ -71,8 +73,8 @@ const resolveRowLatestConversation = (
 /**
  * 项目管理：个人/团队空间下的项目列表（常规项目/网页应用/全栈应用三类合并查询）。
  * 数据走 tab/page-query（实测行主键 projectId、自带最新会话 id 与项目下会话）；
- * 常规项目/全栈应用的重命名、删除、导出走真实接口（user-project / userapp /
- * download-all-files 契约，操作清单对齐 wiki「全栈应用任务及接口清单」）；
+ * 常规项目/全栈应用的重命名、删除、导出走真实接口（normal-project / userapp /
+ * download-all-files 契约，操作清单对齐 wiki「全栈应用开发接口清单」v2 2026-09-11）；
  * 打开项目按类型分发落点（常规项目对齐单栏「项目」分组跳 home/chat 会话详情）；
  * PageApp 契约未覆盖改名删除，不挂菜单。新建入口与类型 tab 均去除网页应用
  * （2026-09-10）；「全部」仍合并查询三类，存量 PageApp 项目照常列表/打开。
@@ -169,11 +171,16 @@ const SpaceProjectManage: React.FC = () => {
     }
   };
 
+  /** 打开项目防重复点击（常规项目缺会话走接口兜底期间,忽略重复点击） */
+  const openingProjectRef = useRef(false);
+
   /**
    * 打开项目（落点与单栏「项目」分组会话点击同源）：
    * - PageApp → 网页 IDE；
    * - 常规项目 → home/chat 会话详情（会话/智能体 id 取自行 conversations[]）；
-   *   无会话时上框到 /home，发送即建会话绑定项目，落地即会话详情；
+   *   行内无会话时按 wiki 2026-09-11 行5 兜底：先调 normal-project/conversation
+   *   取最新会话,仍无则 normal-project/get 防御式取（响应契约未细化,宽松读取）,
+   *   终回退上框 /home（发送即建会话绑定项目,落地即会话详情）；
    * - 全栈应用 → 全栈 IDE 携最新会话 id 直达续聊（conversationId 参数与
    *   单栏全栈会话点击对齐）。
    */
@@ -191,14 +198,43 @@ const SpaceProjectManage: React.FC = () => {
           openProject(spaceId, item, conversationId, agentId);
           return;
         }
-        pin({
-          projectId: item.id,
-          spaceId,
-          projectType: item.projectType,
-          name: item.name,
-          icon: item.icon,
-          sandboxId: item.sandboxId,
-        });
+        if (openingProjectRef.current) return;
+        openingProjectRef.current = true;
+        void (async () => {
+          try {
+            const conv = await apiNormalProjectLatestConversation(
+              item.id,
+            ).catch(() => null);
+            const convData =
+              conv?.code === SUCCESS_CODE ? conv.data ?? null : null;
+            const convCid = convData?.conversationId ?? convData?.id;
+            const convAid = convData?.agentId;
+            if (convCid && convAid) {
+              openProject(spaceId, item, convCid, convAid);
+              return;
+            }
+            const got = await apiNormalProjectGetById(item.id).catch(
+              () => null,
+            );
+            const rowData = got?.code === SUCCESS_CODE ? got.data : null;
+            const rowCid = rowData?.conversationId ?? undefined;
+            const rowAid = (rowData as { agentId?: number } | null)?.agentId;
+            if (rowCid && rowAid) {
+              openProject(spaceId, item, rowCid, rowAid);
+              return;
+            }
+            pin({
+              projectId: item.id,
+              spaceId,
+              projectType: item.projectType,
+              name: item.name,
+              icon: item.icon,
+              sandboxId: item.sandboxId,
+            });
+          } finally {
+            openingProjectRef.current = false;
+          }
+        })();
         return;
       }
       openProject(spaceId, item, conversationId);
@@ -227,10 +263,11 @@ const SpaceProjectManage: React.FC = () => {
     const name = renameName.trim();
     if (!name || !renameTarget) return;
     const { id, projectType } = renameTarget;
+    // wiki 2026-09-11 行4：常规项目 CRUD 切 normal-project 族（全栈应用不变）
     const res =
       projectType === AgentComponentTypeEnum.UserApp
         ? await apiUserAppUpdate({ id, name })
-        : await apiUserProjectUpdate({ id, name });
+        : await apiNormalProjectUpdate({ id, name });
     if (res?.code !== SUCCESS_CODE) return;
     setList((prev) =>
       prev.map((item) =>
@@ -250,10 +287,11 @@ const SpaceProjectManage: React.FC = () => {
       okText: dict('PC.Common.Global.delete'),
       cancelText: dict('PC.Common.Global.cancel'),
       onOk: async () => {
+        // wiki 2026-09-11 行4：常规项目 CRUD 切 normal-project 族（全栈应用不变）
         const res =
           item.projectType === AgentComponentTypeEnum.UserApp
             ? await apiUserAppDelete(item.id)
-            : await apiUserProjectDelete(item.id);
+            : await apiNormalProjectDelete(item.id);
         if (res?.code === SUCCESS_CODE) {
           void queryProjects();
         }

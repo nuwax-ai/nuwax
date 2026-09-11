@@ -7,11 +7,13 @@ import {
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import {
+  apiNormalProjectDelete,
+  apiNormalProjectUpdate,
   apiUserAppDelete,
   apiUserAppUpdate,
-  apiUserProjectDelete,
+  apiUserProjectArchive,
+  apiUserProjectPin,
   apiUserProjectTabPageQuery,
-  apiUserProjectUpdate,
 } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
@@ -79,8 +81,9 @@ export interface ProjectItem {
  * **项目子项(项目下的会话):不做置顶**(同日定调),仅 重命名/删除 + 状态徽标。
  *
  * 数据走 apiUserProjectTabPageQuery（2026-09-08 新接口：项目列表附带各项目会话列表）；
- * 重命名/删除已接真实接口（项目→user-project/userapp、子项会话→agent conversation），
- * PageApp 契约未覆盖改名删除、置顶/归档/收藏后端接口开发中，仍维持本地标记。
+ * 重命名/删除已接真实接口（项目→normal-project/userapp、子项会话→agent conversation，
+ * wiki 2026-09-11 v2 契约）；置顶/归档走 user-project pin/archive（同契约，回读字段
+ * 就位后自动恢复），PageApp 契约未覆盖改名删除/置顶归档暂维持本地,收藏契约缺维持本地。
  */
 export interface ProjectPanelHandle {
   toggleAll: () => void;
@@ -106,7 +109,8 @@ const ProjectPanel = forwardRef<
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(
     () => new Set(),
   );
-  // 项目级标记(置顶/归档/收藏后端接口开发中,先本地 state)
+  // 项目级标记:置顶/归档回读自后端字段(wiki 2026-09-11 行6,字段未返回时不标记),
+  // 收藏契约缺先本地 state
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => new Set());
   const [archivedIds, setArchivedIds] = useState<Set<number>>(() => new Set());
   const [collectedIds, setCollectedIds] = useState<Set<number>>(
@@ -138,8 +142,9 @@ const ProjectPanel = forwardRef<
         });
         if (cancelled) return;
         if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
+          const records = res.data.records;
           setProjects(
-            res.data.records.map((item) => ({
+            records.map((item) => ({
               id: item.projectId,
               name: item.name,
               projectType: item.projectType,
@@ -159,6 +164,21 @@ const ProjectPanel = forwardRef<
                 conversation,
               })),
             })),
+          );
+          // 置顶/归档回读恢复(wiki 2026-09-11 行6 契约先行:字段未返回时不标记)
+          setPinnedIds(
+            new Set(
+              records
+                .filter((item) => item.pinned === true)
+                .map((item) => item.projectId),
+            ),
+          );
+          setArchivedIds(
+            new Set(
+              records
+                .filter((item) => item.archived === true)
+                .map((item) => item.projectId),
+            ),
           );
         }
       } catch {
@@ -229,7 +249,9 @@ const ProjectPanel = forwardRef<
     onVisibleCountChange?.(visibleProjects.length);
   }, [visibleProjects.length, onVisibleCountChange]);
 
-  // 项目标记 toggle:toast 反馈(与任务会话菜单同款文案)
+  // 项目标记 toggle:置顶/归档走后端(wiki 2026-09-11 行6,常规/全栈项目;
+  // PageApp 契约未覆盖暂本地),收藏契约缺维持本地。后端成功才更新标记,
+  // 失败 toast 不动状态;toast 文案与任务会话菜单同款
   const toggleProjectFlag = (
     kind: 'pinned' | 'archived' | 'collected',
     project: ProjectItem,
@@ -240,15 +262,17 @@ const ProjectPanel = forwardRef<
         : kind === 'archived'
         ? setArchivedIds
         : setCollectedIds;
-    setter((prev) => {
-      const next = new Set(prev);
-      if (next.has(project.id)) {
-        next.delete(project.id);
-      } else {
-        next.add(project.id);
-      }
-      return next;
-    });
+    const applyFlag = () => {
+      setter((prev) => {
+        const next = new Set(prev);
+        if (next.has(project.id)) {
+          next.delete(project.id);
+        } else {
+          next.add(project.id);
+        }
+        return next;
+      });
+    };
     const enabled = !(
       kind === 'pinned'
         ? pinnedIds
@@ -267,7 +291,27 @@ const ProjectPanel = forwardRef<
         ? 'PC.Components.ConversationContextMenu.collectedToast'
         : 'PC.Components.ConversationContextMenu.uncollectedToast',
     } as const;
-    message.success(dict(toastKeyMap[kind]));
+
+    const usesRealApi =
+      (kind === 'pinned' || kind === 'archived') &&
+      (project.projectType === AgentComponentTypeEnum.NormalProject ||
+        project.projectType === AgentComponentTypeEnum.UserApp);
+    if (!usesRealApi) {
+      applyFlag();
+      message.success(dict(toastKeyMap[kind]));
+      return;
+    }
+    void (async () => {
+      const request =
+        kind === 'pinned' ? apiUserProjectPin : apiUserProjectArchive;
+      const res = await request(project.id).catch(() => null);
+      if (res?.code !== SUCCESS_CODE) {
+        message.error(dict('PC.Common.Global.operationFailed'));
+        return;
+      }
+      applyFlag();
+      message.success(dict(toastKeyMap[kind]));
+    })();
   };
 
   // 项目重命名:常规项目/全栈应用走真实接口,PageApp 契约未覆盖暂维持本地改名
@@ -283,7 +327,7 @@ const ProjectPanel = forwardRef<
       const res =
         target.projectType === AgentComponentTypeEnum.UserApp
           ? await apiUserAppUpdate({ id: target.id, name: trimmed })
-          : await apiUserProjectUpdate({ id: target.id, name: trimmed });
+          : await apiNormalProjectUpdate({ id: target.id, name: trimmed });
       if (res?.code !== SUCCESS_CODE) return;
     }
     setProjects((prev) =>
@@ -312,7 +356,7 @@ const ProjectPanel = forwardRef<
           const res =
             project.projectType === AgentComponentTypeEnum.UserApp
               ? await apiUserAppDelete(project.id)
-              : await apiUserProjectDelete(project.id);
+              : await apiNormalProjectDelete(project.id);
           if (res?.code !== SUCCESS_CODE) return;
         }
         setProjects((prev) => prev.filter((item) => item.id !== project.id));

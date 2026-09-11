@@ -59,6 +59,12 @@ export default () => {
     }
 
     setContextMap((prev) => {
+      // 清理不存在的 key 必须保持原引用。Home 会在 effect 中消费一次性上下文，
+      // 空消费若仍返回新对象，会让 contextMap 与 consumeContext 身份持续变化，
+      // 从而反复触发该 effect，最终报 Maximum update depth exceeded。
+      if (!Object.prototype.hasOwnProperty.call(prev, key)) {
+        return prev;
+      }
       const next = { ...prev };
       delete next[key];
       return next;

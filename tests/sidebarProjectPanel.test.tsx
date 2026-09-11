@@ -16,7 +16,14 @@ vi.mock(
   () => ({ default: new Proxy({}, { get: (_, key) => String(key) }) }),
 );
 
-vi.mock('umi', () => ({ useParams: () => ({}) }));
+// useModel 供 useHomePinnedProjectHandoff(pageHandoffContext)消费
+vi.mock('umi', () => ({
+  useParams: () => ({}),
+  useModel: () => ({
+    setContext: vi.fn(),
+    consumeContext: () => undefined,
+  }),
+}));
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
   getCurrentLang: () => 'zh-CN',
@@ -54,6 +61,11 @@ vi.mock('@/services/userProjectApp', async () => {
         ],
       },
     }),
+    // 项目改名/删除/置顶/归档(wiki 2026-09-11 新契约)测试内未被触发,补 stub 防 undefined
+    apiNormalProjectUpdate: vi.fn(),
+    apiNormalProjectDelete: vi.fn(),
+    apiUserProjectPin: vi.fn(),
+    apiUserProjectArchive: vi.fn(),
   };
 });
 

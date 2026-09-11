@@ -107,6 +107,13 @@ export interface UserProjectTabItem {
   devAgentId?: number;
   /** 项目下的会话列表（tab 接口附带返回） */
   conversations?: ConversationInfo[];
+  /**
+   * 项目置顶标记（wiki 2026-09-11 契约先行：后端 pin/archive 接口已就位，
+   * 列表回读字段名未细化，字段未返回时为 undefined，消费侧按 === true 判断）
+   */
+  pinned?: boolean;
+  /** 项目归档标记（同上，契约先行防御式） */
+  archived?: boolean;
   /** 更新时间 */
   modified: string;
   /** 创建时间 */
