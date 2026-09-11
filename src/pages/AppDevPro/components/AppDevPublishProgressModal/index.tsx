@@ -27,8 +27,6 @@ export interface AppDevPublishProgressModalProps {
   services: UserAppTaskServiceProgress[];
   /** 启动服务步骤的进度与日志 */
   startServices?: UserAppTaskServiceProgress[];
-  /** 整体进度 0-100（兼容入参，弹窗不再展示进度条） */
-  overallProgress?: number;
   /** 失败信息 */
   errorMessage?: string;
   /** 失败发生在构建还是部署，避免部署失败被显示成构建失败 */
@@ -97,7 +95,7 @@ const getStepsStatus = (
 };
 
 const getServiceTagColor = (status: string): string => {
-  if (status === 'build_ok') {
+  if (status === 'build_ok' || status === 'service_start_ok') {
     return 'success';
   }
   if (status === 'build_fail') {
@@ -108,16 +106,24 @@ const getServiceTagColor = (status: string): string => {
 
 /**
  * 将服务状态映射为展示文案。
- * 构建阶段：building / build_ok / build_fail；启动服务阶段沿用同一组事件，文案改为启动中 / 成功 / 失败。
+ * 构建：building / build_ok / build_fail；
+ * 开发环境启动：service_starting / service_start_ok（线上不会出现）。
+ * 启动步骤若仍收到 build_* 事件，文案改为启动中 / 成功 / 失败。
  *
  * @param status 服务状态
- * @param phase 当前流程阶段
+ * @param kind 构建或启动步骤
  * @returns 展示文案
  */
 const getServiceStatusLabel = (
   status: string,
   kind: 'build' | 'start',
 ): string => {
+  if (status === 'service_start_ok') {
+    return dict('PC.Pages.AppDevPro.startSuccess');
+  }
+  if (status === 'service_starting') {
+    return dict('PC.Pages.AppDevPro.deploying');
+  }
   if (status === 'build_ok') {
     return kind === 'start'
       ? dict('PC.Pages.AppDevPro.startSuccess')

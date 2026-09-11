@@ -16,7 +16,6 @@ import type {
 } from '../type';
 import {
   USER_APP_BUILD_SSE_EVENT,
-  getOverallTaskProgress,
   getTaskTerminalStatus,
   mergeTaskServiceProgress,
   normalizeTaskStatus,
@@ -53,7 +52,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const [startServices, setStartServices] = useState<
     UserAppTaskServiceProgress[]
   >([]);
-  const [overallProgress, setOverallProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const [failedStage, setFailedStage] =
     useState<UserAppDeployFailedStage | null>(null);
@@ -74,7 +72,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const resetProgress = useCallback(() => {
     setServices([]);
     setStartServices([]);
-    setOverallProgress(0);
     setErrorMessage('');
     setFailedStage(null);
     setTaskId('');
@@ -110,7 +107,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       setStartServices((prev) => {
         const next = mergeTaskServiceProgress(prev, event);
         startServicesRef.current = next;
-        setOverallProgress(getOverallTaskProgress(next));
         return next;
       });
       return;
@@ -118,7 +114,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     setServices((prev) => {
       const next = mergeTaskServiceProgress(prev, event);
       servicesRef.current = next;
-      setOverallProgress(getOverallTaskProgress(next));
       return next;
     });
   }, []);
@@ -147,9 +142,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
           failedMessage || dict('PC.Pages.AppDevPro.buildStatusFailed'),
         streamClosedMessage: dict('PC.Pages.AppDevPro.publishStreamClosed'),
       }).then((status) => {
-        if (status === 'succeeded') {
-          setOverallProgress(100);
-        }
         terminalRef.current = status;
         return status;
       });
@@ -170,7 +162,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     streamStageRef.current = 'start';
     startServicesRef.current = [];
     setStartServices([]);
-    setOverallProgress(0);
 
     const task = unwrapUserAppResponse(
       await apiUserAppProdStart({
@@ -384,7 +375,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     open,
     phase,
     services,
-    overallProgress,
     errorMessage,
     failedStage,
     taskId,

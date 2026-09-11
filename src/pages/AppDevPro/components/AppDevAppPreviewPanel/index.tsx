@@ -1,6 +1,6 @@
 import { dict } from '@/services/i18nRuntime';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Button, Empty, Progress, Tooltip } from 'antd';
+import { Button, Empty, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -31,8 +31,6 @@ export interface AppDevAppPreviewPanelProps {
   phase?: UserAppPublishPhase;
   /** 启动任务各服务进度（含 SSE 日志） */
   services?: UserAppTaskServiceProgress[];
-  /** 整体进度 0-100 */
-  overallProgress?: number;
   /** 取消任务 loading */
   cancelLoading?: boolean;
   /** 容器是否已就绪 */
@@ -215,7 +213,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   busy = false,
   phase = 'idle',
   services,
-  overallProgress = 0,
   cancelLoading = false,
   podReady = false,
   isGeneratingFiles = false,
@@ -322,15 +319,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
               </Tooltip>
             ) : null}
           </div>
-          {!showStartFailed ? (
-            <Progress
-              className={cx(styles.logProgress)}
-              percent={overallProgress}
-              size="small"
-              showInfo={false}
-              status="active"
-            />
-          ) : null}
           <PreviewStartLogBoard
             logs={logs}
             waitingText={dict('PC.Pages.AppDevPro.waitingLogs')}

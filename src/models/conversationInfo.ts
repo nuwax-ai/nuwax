@@ -460,31 +460,42 @@ export default () => {
       },
     });
 
-  // 打开远程桌面视图
-  const openDesktopView = useCallback(async (cId: number) => {
-    // 停止保活
-    stopKeepalivePodPolling();
-
-    // 如果智能体配置的远程桌面不隐藏，则打开远程桌面视图
-    if (
-      conversationInfoRef.current?.agent?.hideDesktop !== HideDesktopEnum.Yes
-    ) {
-      // 打开预览视图或远程桌面视图时修改状态值
-      openPreviewChangeState('desktop');
-    }
-    try {
-      // 启动容器
-      const { code, data } = await ensurePodWithStage(cId);
-      if (code === SUCCESS_CODE) {
-        // 设置远程桌面容器信息
-        setVncContainerInfo(data?.container_info);
-        // 启动保活, 60秒保活一次
-        runKeepalivePodPolling(cId);
+  /**
+   * 打开远程桌面视图
+   * @param cId 会话 ID
+   * @param options.stopKeepalive 打开前是否停止现有保活，默认 true。
+   *   AppDevPro 进页已启动保活，传 false 避免会话事件打断轮询。
+   *   其它页面不传该参数，行为与原先一致。
+   */
+  const openDesktopView = useCallback(
+    async (cId: number, options?: { stopKeepalive?: boolean }) => {
+      // 默认停止保活；AppDevPro 开发环境传 false，沿用进页已开的轮询
+      if (options?.stopKeepalive !== false) {
+        stopKeepalivePodPolling();
       }
-    } catch (error) {
-      console.error('Failed to open remote desktop view', error);
-    }
-  }, []);
+
+      // 如果智能体配置的远程桌面不隐藏，则打开远程桌面视图
+      if (
+        conversationInfoRef.current?.agent?.hideDesktop !== HideDesktopEnum.Yes
+      ) {
+        // 打开预览视图或远程桌面视图时修改状态值
+        openPreviewChangeState('desktop');
+      }
+      try {
+        // 启动容器
+        const { code, data } = await ensurePodWithStage(cId);
+        if (code === SUCCESS_CODE) {
+          // 设置远程桌面容器信息
+          setVncContainerInfo(data?.container_info);
+          // 启动保活, 60秒保活一次
+          runKeepalivePodPolling(cId);
+        }
+      } catch (error) {
+        console.error('Failed to open remote desktop view', error);
+      }
+    },
+    [],
+  );
 
   /**
    * 仅 ensurePod + 恢复 keepalive（不做视图切换），供 VncPreview 重连前调用。
@@ -522,8 +533,11 @@ export default () => {
     async (cId: number, sandboxId: string) => {
       // 如果当前不是智能体电脑视图，并且用户选择是云端电脑（sandboxId === '-1'），则打开远程桌面视图
       if (viewMode !== 'desktop' && sandboxId === '-1') {
-        // 切换到智能体电脑 tab
-        openDesktopView(cId);
+        // 切换到智能体电脑 tab。
+        // AppDevPro 已通过 setPodAppStage 标记环境：打开桌面时不停进页保活。
+        openDesktopView(cId, {
+          stopKeepalive: !podAppStageRef.current,
+        });
       }
 
       // 客户端电脑时，只重启容器，是否打开远程桌面视图由hideDesktop决定
@@ -1300,8 +1314,16 @@ export default () => {
               '-1',
           ) === '-1'
         ) {
-          // 打开远程桌面
-          openDesktopView(params.conversationId);
+          const appStage = podAppStageRef.current;
+          // AppDevPro 仅开发环境响应 OPEN_DESKTOP：进页已 ensure + 保活，
+          // 会话事件只需复用容器，且不得 stopKeepalive。
+          // 线上环境走预览域名，不再拉桌面。
+          // 其它页面未设置 appStage，保持原逻辑（打开桌面并停止旧保活）。
+          if (appStage !== 'prod') {
+            openDesktopView(params.conversationId, {
+              stopKeepalive: !appStage,
+            });
+          }
         }
 
         // 通用型任务处理(刷新文件树)
@@ -2245,7 +2267,8 @@ export default () => {
     // 重启智能体电脑
     restartVncPod,
     /**
-     * 仅 AppDevPro 设置：computer/pod 老接口附带 appStage。
+     * 仅 AppDevPro 设置：computer/pod 老接口附带 appStage，
+     * 并决定 OPEN_DESKTOP 是否打开桌面、是否停止保活。
      * 离开页面时需清空，避免污染会话智能体等页面。
      */
     setPodAppStage,
