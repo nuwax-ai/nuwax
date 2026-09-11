@@ -22,6 +22,7 @@ import {
 } from '../utils/userAppTaskLog';
 import {
   listenUserAppTaskStream,
+  pickUserAppRequestErrorText,
   pickUserAppTaskId,
   unwrapUserAppResponse,
 } from '../utils/userAppTaskStream';
@@ -303,7 +304,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         stage === 'deploy'
           ? dict('PC.Pages.AppDevPro.startFailed')
           : dict('PC.Pages.AppDevPro.buildStatusFailed');
-      const text = error instanceof Error ? error.message : fallback;
+      const text = pickUserAppRequestErrorText(error, fallback);
       setFailedStage(stage);
       setErrorMessage(text);
       setPhase('failed');

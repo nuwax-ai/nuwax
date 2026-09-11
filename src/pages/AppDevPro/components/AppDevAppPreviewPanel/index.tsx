@@ -31,6 +31,8 @@ export interface AppDevAppPreviewPanelProps {
   phase?: UserAppPublishPhase;
   /** 启动任务各服务进度（含 SSE 日志） */
   services?: UserAppTaskServiceProgress[];
+  /** 启动失败时的接口错误文案，展示在日志区 */
+  errorMessage?: string;
   /** 取消任务 loading */
   cancelLoading?: boolean;
   /** 容器是否已就绪 */
@@ -213,6 +215,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   busy = false,
   phase = 'idle',
   services,
+  errorMessage,
   cancelLoading = false,
   podReady = false,
   isGeneratingFiles = false,
@@ -223,7 +226,14 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   devActionLocked = false,
   directPreview = false,
 }) => {
-  const logs = useMemo(() => flattenTaskLogs(services), [services]);
+  const logs = useMemo(() => {
+    const lines = flattenTaskLogs(services);
+    const errorText = errorMessage?.trim();
+    if (errorText && !lines.includes(errorText)) {
+      return [...lines, errorText];
+    }
+    return lines;
+  }, [errorMessage, services]);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const showStartProgress =
     busy || phase === 'starting' || phase === 'building';
