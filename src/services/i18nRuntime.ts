@@ -192,9 +192,9 @@ export const fetchAndApplyLangMap = async (
 export const syncLangFromUserInfo = async (user?: {
   lang?: string | null;
 }): Promise<void> => {
-  // 账号侧语种含旧默认 en-us 残留（历史版本默认英文写入、从未被用户选择），
-  // 无显式标记时不视为用户设置，忽略以维持产品默认中文——否则每次进入都会
-  // 把默认语言顶回英文并写脏标记（判定与取舍见 i18nLangPolicy）
+  // 账号侧语种仅在「本地无显式选择」时可补位：本地选过（登录页/设置页）不覆盖，
+  // 且账号侧的旧默认 en-us 残留（历史版本默认英文写入、从未被用户选择）一律忽略
+  // ——否则每次进入都会把用户的选择顶掉（判定与取舍见 i18nLangPolicy）
   if (
     !shouldSyncAccountLang(user?.lang, safeGetItem(I18N_STORAGE_KEYS.USER_SET))
   ) {
@@ -202,7 +202,7 @@ export const syncLangFromUserInfo = async (user?: {
   }
   const targetLang = normalizeLang(user?.lang);
 
-  // 平台账号语种=用户自己的设置，视为显式选择（此后默认语言不再覆盖它）
+  // 补位成功的账号语种视为用户在其它端的设置，标记为显式选择（此后不再被覆盖）
   markLangUserSet();
 
   // 如果用户信息中的语种与当前运行时语种不一致，且系统已初始化，则重新拉取字典包以保证完整性

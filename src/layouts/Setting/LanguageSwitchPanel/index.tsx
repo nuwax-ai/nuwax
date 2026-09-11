@@ -1,4 +1,4 @@
-import { apiI18nLangList } from '@/services/i18n';
+import { apiI18nLangList, saveUserLang } from '@/services/i18n';
 import { normalizeLang } from '@/services/i18nLangPolicy';
 import {
   dict,
@@ -63,13 +63,6 @@ const LanguageSwitchPanel: React.FC = () => {
   const handleSave = () => {
     if (!selectedLang) return;
 
-    // 判断当前选中的语言是否已经是默认语言
-    const target = languages.find((item) => item.lang === selectedLang);
-    if (target?.isDefault === 1) {
-      message.info(dict('PC.Pages.Setting.alreadyDefault'));
-      return;
-    }
-
     Modal.confirm({
       title: dict('PC.Pages.Setting.confirmTitle'),
       content: dict('PC.Pages.Setting.confirmContent'),
@@ -79,12 +72,18 @@ const LanguageSwitchPanel: React.FC = () => {
       onOk: async () => {
         setSaving(true);
         try {
-          // 用户显式选择：置标记，此后以缓存语种为准（不再被产品默认覆盖）
+          // 用户显式选择：置标记，此后以缓存语种为准（不再被产品默认/账号侧语种覆盖）
           markLangUserSet();
-          // 调用 i18n/query 接口（通过 fetchAndApplyLangMap）更新本地运行时字典并应用
-          // 该接口携带 lang 参数时，后端会同步更新用户偏好语种
+          // 更新本地运行时字典并应用
           const applied = await fetchAndApplyLangMap(selectedLang, 'PC');
           if (applied) {
+            // 持久化到账号（user/update）：i18n/query 只查词典不写用户偏好，
+            // 不持久化则刷新后账号侧旧语种（如残留 en-US）会与本地选择打架
+            try {
+              await saveUserLang(selectedLang);
+            } catch {
+              // 后端持久化失败不阻断本地切换（本地显式选择已生效）
+            }
             // 清除本地用户信息缓存，确保刷新后从服务端获取最新的语种配置
             UserService.clearUserInfo();
             message.success(dict('PC.Pages.Setting.saveSuccess'));

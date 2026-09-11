@@ -34,20 +34,22 @@ export const resolveEntryLang = (
 
 /**
  * 账号侧语种（后端 user.lang / 本地 USER_INFO 缓存）是否应同步到本地：
- * - en-us 是历史版本的默认语言，存量账号的 en-us 从未被用户选过——无显式标记时
- *   视为旧默认残留，忽略（否则每次进入都会把默认中文顶回英文并写脏标记）；
- * - 其余语种（ja-JP/zh-TW 等）不可能是旧默认，均视为用户真实设置，照常同步。
- * 已知代价：真选英文的用户在新设备首登会被当残留回落中文，需重选一次。
+ * - 本地已有显式选择（'2'，登录页开关/设置面板写入）→ 一律不覆盖——本地选择优先，
+ *   否则账号侧的陈旧语种会在每次进入时顶掉用户刚选的语言（如后端残留 en-US
+ *   顶掉已选的简体中文，2026-09-11「设置改中文刷新变英文」回归）；
+ * - 无本地选择时账号语种可补位，但 en-us 是历史版本的默认语言，存量账号的
+ *   en-us 从未被用户选过——视为旧默认残留，忽略；
+ * - 其余语种（ja-JP/zh-TW 等）不可能是旧默认，视为用户真实设置，照常同步。
+ * 已知代价：真选英文的用户在新设备首登会被当残留回落中文，需重选一次；
+ * 一台设备上的显式选择也不会被其它端的后改语种传播更新（本地为准）。
  */
 export const shouldSyncAccountLang = (
   userLang: string | null | undefined,
   rawMarker: string | null,
 ): boolean => {
   if (!userLang) return false;
-  if (
-    normalizeLang(userLang) === LEGACY_DEFAULT_I18N_LANG &&
-    !isUserSetExplicit(rawMarker)
-  ) {
+  if (isUserSetExplicit(rawMarker)) return false;
+  if (normalizeLang(userLang) === LEGACY_DEFAULT_I18N_LANG) {
     return false;
   }
   return true;

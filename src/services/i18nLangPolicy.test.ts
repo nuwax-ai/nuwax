@@ -78,13 +78,16 @@ describe('shouldSyncAccountLang', () => {
     expect(shouldSyncAccountLang('en-us', '1')).toBe(false);
   });
 
-  it('en-us 且有显式标记：真实选择，同步', () => {
-    expect(shouldSyncAccountLang('en-US', '2')).toBe(true);
+  it('有显式标记：本地选择优先，账号侧一律不覆盖（含后端残留 en-US 顶掉已选中文的场景）', () => {
+    expect(shouldSyncAccountLang('en-US', '2')).toBe(false);
+    expect(shouldSyncAccountLang('ja-JP', '2')).toBe(false);
+    expect(shouldSyncAccountLang('zh-CN', '2')).toBe(false);
   });
 
-  it('非 en-us 语种不可能是旧默认：照常同步', () => {
+  it('无显式标记且非 en-us：照常同步（其它端设置的语种补位）', () => {
     expect(shouldSyncAccountLang('ja-JP', null)).toBe(true);
     expect(shouldSyncAccountLang('zh-TW', null)).toBe(true);
     expect(shouldSyncAccountLang('zh-CN', null)).toBe(true);
+    expect(shouldSyncAccountLang('ja-JP', '1')).toBe(true);
   });
 });
