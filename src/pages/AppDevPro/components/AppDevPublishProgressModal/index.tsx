@@ -25,7 +25,7 @@ export interface AppDevPublishProgressModalProps {
   phase: UserAppPublishPhase;
   /** 构建步骤的服务进度与日志 */
   services: UserAppTaskServiceProgress[];
-  /** 启动服务步骤的进度与日志 */
+  /** 部署服务步骤的进度与日志 */
   startServices?: UserAppTaskServiceProgress[];
   /** 失败信息 */
   errorMessage?: string;
