@@ -1,22 +1,22 @@
 @import '@/styles/token';
 
-// 头部：图标 + 标题 + 当前路径（右侧省略）
+// 头部：图标 + 标题 + 当前路径（右侧省略）——原型「选择工作目录」fspicker
 .header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
-  padding-right: @padding;
+  padding-right: 40px; // 给右上角关闭钮留位
 }
 
 .header-icon {
   color: @colorPrimary;
-  font-size: 16px;
+  font-size: 20px;
 }
 
 .header-title {
   flex-shrink: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: @fontWeightStrong;
 }
 
@@ -27,47 +27,102 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: right;
-  font-size: @fontSizeSm;
+  font-size: 14px;
   color: @colorTextTertiary;
 }
 
-// 工具栏：上一级 + 面包屑
+// 工具栏：上一级胶囊钮 + 灰底面包屑容器
 .toolbar {
   display: flex;
   align-items: center;
-  gap: @marginSm;
-  padding-bottom: @paddingSm;
-  border-bottom: 1px solid @colorBorderSecondary;
+  gap: 12px;
+  margin-top: 4px;
+  padding-bottom: 14px;
 }
 
-.breadcrumb {
+.up-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: @colorFillQuaternary;
+  color: @colorText;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.12s ease;
+
+  &:hover:not(:disabled) {
+    background: @colorFillTertiary;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+.breadcrumb-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex: 1;
   min-width: 0;
-  overflow-x: auto;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: @borderRadiusLg;
+  background: @colorFillQuaternary;
+  overflow: hidden;
   white-space: nowrap;
-  font-size: @fontSizeSm;
+}
 
-  :global(.ant-breadcrumb-link) {
-    cursor: pointer;
+.crumb-item {
+  flex-shrink: 0;
+  color: @colorTextSecondary;
+  cursor: pointer;
+  font-size: 14px;
+
+  &:hover {
+    color: @colorPrimary;
   }
+
+  &.crumb-current {
+    color: @colorText;
+    font-weight: @fontWeightStrong;
+    cursor: default;
+
+    &:hover {
+      color: @colorText;
+    }
+  }
+}
+
+.crumb-sep {
+  flex-shrink: 0;
+  color: @colorTextQuaternary;
+  font-size: 13px;
 }
 
 // 列表主体
 .body {
   max-height: 46vh;
-  min-height: 160px;
+  min-height: 200px;
   overflow-y: auto;
-  padding: @paddingXs 0;
+  padding: 6px 0;
+  border-top: 1px solid @colorBorderSecondary;
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 9px 14px;
-  border-radius: @borderRadius;
+  gap: 14px;
+  padding: 13px 16px;
+  border-radius: @borderRadiusLg;
   cursor: pointer;
-  font-size: @fontSize;
+  font-size: 14px;
   color: @colorText;
   transition: background-color 0.12s ease;
 
@@ -81,7 +136,7 @@
     justify-content: center;
     width: 22px;
     flex-shrink: 0;
-    font-size: 16px;
+    font-size: 18px;
     color: @colorPrimary;
   }
 
@@ -119,14 +174,14 @@
 
 // 最近选择区（根视图顶部快速重选）
 .recent-section {
-  padding-bottom: @paddingXs;
-  margin-bottom: @marginXxs;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
   border-bottom: 1px solid @colorBorderSecondary;
 
   .recent-title {
-    padding: 0 14px @paddingXxs;
+    padding: 4px 16px 6px;
     color: @colorTextTertiary;
-    font-size: @fontSizeSm;
+    font-size: 13px;
   }
 }
 
@@ -136,17 +191,24 @@
   align-items: center;
   justify-content: center;
   gap: @marginXs;
-  min-height: 160px;
+  min-height: 200px;
   color: @colorTextTertiary;
   font-size: @fontSizeSm;
 }
 
-// 底部操作区
+// 底部操作区：大按钮右对齐
 .footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: @marginSm;
-  padding-top: @paddingSm;
+  gap: 12px;
+  padding-top: 16px;
   border-top: 1px solid @colorBorderSecondary;
+
+  :global(.ant-btn) {
+    height: 40px;
+    padding: 0 24px;
+    border-radius: @borderRadiusLg;
+    font-size: 15px;
+  }
 }

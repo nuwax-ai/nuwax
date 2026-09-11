@@ -31,7 +31,7 @@ import DynamicSecondMenu from '../DynamicSecondMenu';
 // 复用原有组件
 import SvgIcon from '@/components/base/SvgIcon';
 import { resolveSidebarCollapsePolicy } from '../sidebarCollapsePolicy';
-import SidebarNavHeader from '../SidebarNavHeader';
+import SidebarNavHeader, { PanelToggleSvg } from '../SidebarNavHeader';
 import SidebarSearchModal from '../SidebarSearchModal';
 import User from '../User';
 import UserAvatar from '../User/UserAvatar';
@@ -74,16 +74,16 @@ const SECOND_MENU_SECTION_TABS = new Set([
 ]);
 /** 二级菜单列宽度（原型窄列形态，非原二级导航的 240） */
 const SECOND_COLUMN_WIDTH = 200;
-/** 折叠态展开按钮（主站页形态）：原位复刻收起按钮形态（SidebarNavHeader header-bar 内 34×34
- *  圆角钮、距侧栏右缘 15px），收起后浮于页面内容上层，与原收起按钮同位。
- *  left = 侧栏宽 260 − 顶栏右内边距 15 − 按钮宽 34；
+/** 折叠态展开按钮（主站页形态）：贴屏幕最左侧、与收起按钮同一水平线，
+ *  样式/大小/图标与 SidebarNavHeader 的收起按钮完全一致（34×34 图标钮 +
+ *  PanelToggleSvg 面板图标）。left: 0 贴死左缘；
  *  top = 侧栏 padding-top 15 + header-bar 顶 padding 5 + 36px 内容行居中偏移 1。
  *  全屏工作台页宿主不用此形态：页面自带头部（返回/标题/状态标签）占据左上角，
  *  原位会压住头部内容，改走 less 的左缘把手变体 sidebar-expand-btn-edge。
- *  定位数值在 TSX 内联注入（引用宽度常量，避免与 less 双源漂移）。 */
+ *  定位数值在 TSX 内联注入（避免与 less 双源漂移）。 */
 const EXPAND_BTN_SIZE = 34;
 const EXPAND_BTN_STYLE: React.CSSProperties = {
-  left: NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - 15 - EXPAND_BTN_SIZE,
+  left: 0,
   top: 15 + 5 + 1,
   width: EXPAND_BTN_SIZE,
   height: EXPAND_BTN_SIZE,
@@ -915,7 +915,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             style={suppressSecondMenu ? undefined : EXPAND_BTN_STYLE}
             onClick={toggleCollapse}
           >
-            <SvgIcon name="icons-common-caret_left" rotate={180} />
+            {/* 与收起按钮同款面板图标（flip=展开方向镜像） */}
+            <PanelToggleSvg flip />
           </div>
         </Tooltip>
       )}

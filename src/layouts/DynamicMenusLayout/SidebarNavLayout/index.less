@@ -168,19 +168,16 @@
     }
   }
 
-  // 折叠态悬浮展开按钮：原位复刻收起按钮形态（34×34 圆角方块，对齐顶栏
-  // header-action-btn），收起后浮于页面内容上层；几何定位（left/top/宽高）
-  // 由 TSX 按侧栏宽度常量内联注入，此处仅承载视觉样式
+  // 折叠态展开按钮：样式/大小与 SidebarNavHeader 的收起按钮（header-action-btn）
+  // 完全一致——34×34 圆角图标钮，默认无底色描边，hover 同款填充；几何定位
+  // （left/top/宽高）由 TSX 内联注入，此处仅承载视觉样式
   .sidebar-expand-btn {
     position: absolute;
     z-index: 40;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--xagi-layout-bg-container, rgba(255, 255, 255, 90%));
-    border: @lineWidth solid var(--xagi-layout-border-primary);
     border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 8%);
     cursor: pointer;
     color: @navSecondMenuAdaptiveTextSecondary;
     transition: all 0.2s ease;
@@ -197,7 +194,7 @@
   }
 
   // 折叠态展开按钮·全屏工作台页宿主变体：左缘居中半胶囊把手。该页组自带
-  // 页面头部（返回/标题/状态标签占左上角），原位复刻位会压住头部内容，退回
+  // 页面头部（返回/标题/状态标签占左上角），悬浮钮会压住头部内容，退回
   // 贴边把手形态；几何覆盖上方基类（本变体不接 TSX 内联定位）
   .sidebar-expand-btn-edge {
     left: 0;
@@ -205,9 +202,7 @@
     transform: translateY(-50%);
     width: 16px;
     height: 56px;
-    border-left: none;
     border-radius: 0 @borderRadiusSm @borderRadiusSm 0;
-    box-shadow: none;
     opacity: 0.55;
 
     :global(svg) {

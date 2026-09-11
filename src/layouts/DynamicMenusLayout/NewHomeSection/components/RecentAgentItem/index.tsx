@@ -3,11 +3,7 @@ import ConversationContextMenu from '@/components/business-component/Conversatio
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { AgentInfo } from '@/types/interfaces/agent';
-import {
-  ExclamationCircleFilled,
-  PushpinFilled,
-  StarFilled,
-} from '@ant-design/icons';
+import { ExclamationCircleFilled, PushpinFilled } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { formatModifiedTime, getExecutingConversationCount } from '../../utils';
@@ -18,19 +14,11 @@ const cx = classNames.bind(styles);
 /** 分组展开时默认展示的最近会话条数,超出经「查看更多」展开 */
 const PREVIEW_SESSION_COUNT = 3;
 
-/** 会话本地标记(置顶/归档/收藏过渡方案),驱动子条目图标与归档过滤 */
-export interface RecentConversationFlags {
-  pinned: number[];
-  archived: number[];
-  collected: number[];
-}
-
 interface RecentAgentItemProps {
   item: AgentInfo;
   isActive: boolean;
   onClick: () => void;
   onConversationClick: (conversationId: number | string) => void;
-  conversationFlags?: RecentConversationFlags;
 }
 
 /**
@@ -42,7 +30,7 @@ interface RecentAgentItemProps {
  * 展开条件(满足任一):1) 有执行中的会话;2) 智能体被选中(当前路由);
  * 3) 用户点击组头。用户手动收起优先于自动展开。
  *
- * 会话子条目:执行中绿点 / 失败红叹号状态徽标,置顶/收藏图标,
+ * 会话子条目:执行中绿点 / 失败红叹号状态徽标、服务端置顶状态，
  * 悬停「⋯」与右键菜单(复用 ConversationContextMenu),超过 3 条经「查看更多」展开。
  */
 const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
@@ -50,7 +38,6 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
   isActive,
   onClick,
   onConversationClick,
-  conversationFlags,
 }) => {
   // undefined = 未手动干预,跟随自动展开规则
   const [manualState, setManualState] = useState<'open' | 'collapsed'>();
@@ -58,14 +45,9 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
   const [showAllSessions, setShowAllSessions] = useState(false);
 
   const conversationList = item.conversationList ?? [];
-  const archivedSet = new Set((conversationFlags?.archived ?? []).map(Number));
-  const pinnedSet = new Set((conversationFlags?.pinned ?? []).map(Number));
-  const collectedSet = new Set(
-    (conversationFlags?.collected ?? []).map(Number),
-  );
   // 已归档会话不在「最近」分组展示(与会话记录 Tab 一致)
   const visibleConversations = conversationList.filter(
-    (conversation) => !archivedSet.has(Number(conversation.id)),
+    (conversation) => conversation.archived !== true,
   );
   const executingCount = getExecutingConversationCount(conversationList);
   const expanded =
@@ -142,8 +124,8 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
                 key={conversation.id}
                 conversationId={conversationId}
                 currentTopic={conversation.topic ?? ''}
-                pinned={pinnedSet.has(conversationId)}
-                collected={collectedSet.has(conversationId)}
+                pinned={conversation.pinned === true}
+                archived={conversation.archived === true}
                 showMoreButton
               >
                 {(moreButton) => (
@@ -167,7 +149,7 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
                         )}
                       />
                     )}
-                    {pinnedSet.has(conversationId) && (
+                    {conversation.pinned === true && (
                       <PushpinFilled className={cx(styles['pin-icon'])} />
                     )}
                     <span
@@ -177,9 +159,6 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
                       {conversation.topic ||
                         dict('PC.Utils.ChatUtils.newConversation')}
                     </span>
-                    {collectedSet.has(conversationId) && (
-                      <StarFilled className={cx(styles['star-icon'])} />
-                    )}
                     {moreButton}
                     {conversation.modified && (
                       <span className={cx(styles['session-time'])}>

@@ -57,15 +57,6 @@ export async function apiUserProjectGetById(
   });
 }
 
-/** 常规项目：获取当前用户最新会话（进项目详情无会话 id 时调用） */
-export async function apiUserProjectLatestConversation(
-  id: number,
-): Promise<RequestResponse<ProjectLatestConversationResult>> {
-  return request(`/api/user-project/conversation/${id}`, {
-    method: 'GET',
-  });
-}
-
 /** 全栈应用：获取当前用户最新会话（进项目详情无会话 id 时调用） */
 export async function apiUserAppLatestConversation(
   id: number,

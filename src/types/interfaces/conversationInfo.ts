@@ -347,6 +347,10 @@ export interface ConversationInfo {
   topicUpdated: number;
   // 会话摘要，当开启长期记忆时，会对每次会话进行总结
   summary: string;
+  /** 服务端会话置顶状态 */
+  pinned?: boolean;
+  /** 服务端会话归档状态 */
+  archived?: boolean;
   modified: string;
   created: string;
   variables?: Record<string, string | number> | null;
@@ -474,6 +478,8 @@ export interface ConversationInfo {
 // 查询用户历史会话输入参数
 export interface ConversationListParams {
   agentId: number | null;
+  /** 是否包含已归档会话；缺省时服务层按 false 处理 */
+  includeArchived?: boolean;
   // 上一次查询结果的会话ID
   lastId?: number | null;
   // 返回会话数量

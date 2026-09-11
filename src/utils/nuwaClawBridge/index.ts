@@ -137,7 +137,13 @@ export function syncShellAvoidanceCss(): void {
   const vars: Array<[string, string | null]> = immersive
     ? [
         ['--nuwaclaw-shell-top', `${shellAvoid.TOP}px`],
-        ['--nuwaclaw-shell-toolbar', `${shellAvoid.TOOLBAR}px`],
+        // 独立全屏页（layout:false 路由）顶部退让：mac 不做——红绿灯悬浮于左上、
+        // 图标簇只占左侧 300px，页头（返回/标题/tabs）自 x≈260 起，无需让位；
+        // Win/Linux 保留——自绘菜单栏横跨到内容区（x 至 ~400），不避让会压住页头。
+        [
+          '--nuwaclaw-shell-toolbar',
+          isMac() ? '0px' : `${shellAvoid.TOOLBAR}px`,
+        ],
         ['--nuwaclaw-shell-right', `${shellAvoid.RIGHT}px`],
       ]
     : [
@@ -291,18 +297,21 @@ export const layout = {
 
 /**
  * 宿主身份（host→guest 只读）：区分宿主产品——nuwaclaw（社区版）/
- * nuwawork（商业版 NuwaWork），用于按宿主开关桌面专属能力或降级。
+ * nuwax（商业版 Nuwax；2026-09 改名前为 nuwawork，保留以兼容存量宿主），
+ * 用于按宿主开关桌面专属能力或降级。
  * 契约来自基座 NuwaClawBridge.host.getProduct()（preload 构建期注入，非 IPC）。
  * 浏览器 / 旧宿主无 host 命名空间 → null，调用方回落通用逻辑（可选消费）。
  */
-export type HostProductId = 'nuwaclaw' | 'nuwawork';
+export type HostProductId = 'nuwaclaw' | 'nuwawork' | 'nuwax';
 
 export const host = {
   /** 宿主产品标识；桥缺失 / host 命名空间缺失 / 返回非契约值 → null。 */
   getProduct(): HostProductId | null {
     try {
       const product = getBridge()?.host?.getProduct?.();
-      return product === 'nuwaclaw' || product === 'nuwawork' ? product : null;
+      return product === 'nuwaclaw' || product === 'nuwawork' || product === 'nuwax'
+        ? product
+        : null;
     } catch {
       return null;
     }

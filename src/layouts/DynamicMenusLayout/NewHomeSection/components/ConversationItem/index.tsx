@@ -2,7 +2,7 @@ import ConversationContextMenu from '@/components/business-component/Conversatio
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { PushpinFilled, StarFilled } from '@ant-design/icons';
+import { PushpinFilled } from '@ant-design/icons';
 import { Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -16,12 +16,11 @@ interface ConversationItemProps {
   item: ConversationInfo;
   isActive: boolean;
   onClick: () => void;
-  /** 本地标记（过渡方案）：置顶，影响列表排序与本项图标 */
+  /** 服务端置顶状态，影响列表排序与本项图标 */
   pinned?: boolean;
-  /** 本地标记：收藏，仅图标展示 */
-  collected?: boolean;
-  /** 本地标记：归档（已归档视图内展示，供菜单「取消归档」） */
+  /** 服务端归档状态（已归档视图内展示，供菜单「取消归档」） */
   archived?: boolean;
+  onFlagChanged?: (kind: 'pinned' | 'archived', enabled: boolean) => void;
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({
@@ -30,8 +29,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   isActive,
   onClick,
   pinned = false,
-  collected = false,
   archived = false,
+  onFlagChanged,
 }) => {
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
@@ -47,7 +46,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       }
       pinned={pinned}
       archived={archived}
-      collected={collected}
+      onFlagChanged={onFlagChanged}
       showMoreButton
     >
       {(moreButton) => (
@@ -79,7 +78,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                   item.agent?.name ||
                   dict('PC.Constants.Menus.newChat')}
               </Typography.Text>
-              {collected && <StarFilled className={cx(styles['star-icon'])} />}
               {item.taskStatus === TaskStatus.EXECUTING && (
                 <span className={cx(styles['status-tag'])}>
                   {executingText}
