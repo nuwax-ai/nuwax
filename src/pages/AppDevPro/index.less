@@ -144,6 +144,57 @@
     min-height: 0;
   }
 
+  .tool-workspace-bar {
+    display: flex;
+    align-items: center;
+    height: 49px;
+    min-height: 49px;
+    padding: 0 @paddingXs;
+    border-bottom: @lineWidth solid @colorSplit;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  .tool-workspace-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    color: @colorText;
+  }
+
+  .tool-workspace-actions {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: auto;
+    gap: @marginXs;
+  }
+
+  .tool-workspace {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: @colorBgContainer;
+  }
+
+  .workspace-pane {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .workspace-pane-hidden {
+    display: none !important;
+  }
+
   .empty-state {
     display: flex;
     flex-direction: column;

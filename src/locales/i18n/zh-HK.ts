@@ -2658,6 +2658,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevPro.previewPreparingHint": "項目文件生成後將自動啟動預覽",
   "PC.Pages.AppDevPro.previewAppLoading": "應用加載中",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "請稍候，界面即將呈現",
+  "PC.Pages.AppDevPro.iframeLoadFailed": "頁面加載失敗，請刷新後重試",
   "PC.Pages.AppDevPro.previewJumpHint": "按 Enter 跳轉到: {0}",
   "PC.Pages.AppDevPro.previewStartHint": "服務已停止，啟動後即可預覽應用",
   "PC.Pages.AppDevPro.previewStartRetry": "重新啟動",

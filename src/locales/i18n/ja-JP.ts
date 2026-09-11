@@ -2678,6 +2678,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.previewPreparingHint": "プロジェクトファイル生成後にプレビューを自動起動します",
   "PC.Pages.AppDevPro.previewAppLoading": "アプリを読み込み中",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "しばらくお待ちください。まもなく画面が表示されます",
+  "PC.Pages.AppDevPro.iframeLoadFailed": "ページの読み込みに失敗しました。更新して再試行してください。",
   "PC.Pages.AppDevPro.previewJumpHint": "Enter で移動: {0}",
   "PC.Pages.AppDevPro.previewStartHint": "サービスは停止しています。起動するとアプリをプレビューできます",
   "PC.Pages.AppDevPro.previewStartRetry": "再起動",

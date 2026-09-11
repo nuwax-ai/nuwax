@@ -3,6 +3,7 @@ import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { getUserAppDbProxyUrl, UserAppDbEnvEnum } from '../../services/appDb';
+import AppDevProIframe from '../AppDevProIframe';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -47,12 +48,9 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
 
   return (
     <div className={cx(styles.container)}>
-      <iframe
-        key={iframeSrc}
-        className={cx(styles.iframe)}
+      <AppDevProIframe
         src={iframeSrc}
         title={dict('PC.Pages.AppDevPro.database')}
-        allow="clipboard-read; clipboard-write; fullscreen"
       />
     </div>
   );
