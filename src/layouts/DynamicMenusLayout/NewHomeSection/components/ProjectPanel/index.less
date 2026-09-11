@@ -1,4 +1,5 @@
 @import '@/styles/token.less';
+@import '@/styles/nav-item-state.less';
 
 .project-panel {
   display: flex;
@@ -69,10 +70,6 @@
     cursor: pointer;
     user-select: none;
 
-    &:hover {
-      background-color: @colorFillQuaternary;
-    }
-
     &.expanded .name {
       color: @navSecondMenuAdaptiveText;
       font-weight: @fontWeightStrong;
@@ -129,9 +126,9 @@
     border-radius: @borderRadiusSm;
     cursor: pointer;
 
+    // hover 背景统一走文件尾 .project .child:hover 的 @navRowHoverBg（原灰底声明
+    // 与后置 color-mix 规则同优先级、恒被覆盖，已删）；此处只保留⋯按钮显隐
     &:hover {
-      background-color: @colorFillQuaternary;
-
       .child-more {
         opacity: 1;
       }
@@ -217,12 +214,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: @controlHeightSm;
+  height: @controlHeightSm;
   flex-shrink: 0;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: @borderRadiusOuter;
   background: transparent;
   color: @navSecondMenuAdaptiveTextTertiary;
   cursor: pointer;
@@ -245,7 +242,7 @@
 }
 
 .project .row:focus-visible {
-  outline: 2px solid @colorPrimary;
+  outline: @lineWidthBold solid @colorPrimary;
   outline-offset: -2px;
 }
 
@@ -256,14 +253,14 @@
   .row {
     position: relative;
     gap: 2px;
-    padding: 8px 10px;
+    padding: @paddingXs 10px;
     border-radius: 15px;
     min-height: 36px;
     box-sizing: border-box;
     transition: background 0.18s ease;
 
     .name {
-      font-size: 14px;
+      font-size: @fontSize;
       font-weight: 400;
     }
 
@@ -281,7 +278,7 @@
     flex-shrink: 0;
     font-size: 15px;
     color: @navSecondMenuAdaptiveTextTertiary;
-    margin-right: 4px;
+    margin-right: @marginXxs;
   }
 
   .project-more {
@@ -338,7 +335,7 @@
     position: absolute;
     right: 30px;
     background: transparent;
-    border-radius: 8px;
+    border-radius: @borderRadius;
   }
 
   .project-actions .project-more {
@@ -364,7 +361,7 @@
   }
 
   .compact .row .name {
-    padding-right: 24px;
+    padding-right: @paddingLg;
   }
 }
 
@@ -393,8 +390,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: @controlHeightSm;
+    height: @controlHeightSm;
     padding: 0;
     border: 0;
     border-radius: 7px;
@@ -417,7 +414,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid @colorPrimary;
+      outline: @lineWidthBold solid @colorPrimary;
       outline-offset: -2px;
     }
   }
@@ -438,7 +435,7 @@
   transform: translateY(-50%);
   padding: 1px;
   background: @colorBgContainer;
-  border-radius: 8px;
+  border-radius: @borderRadius;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 12%);
 }
 
@@ -448,13 +445,15 @@
 
 // 白底卡片浮层只在 hover 或键盘焦点时出现;鼠标点击后的焦点残留不算
 // (见上方 :focus-visible 注释)
+// hover 灰底轻提示（单栏统一交互态，见 nav-item-state.less）：原 72% 半透明白卡
+// 与会话行白卡/一级列灰底三种皮并存，收敛到 @navRowHoverBg
 .project .row:hover,
 .project .row:focus-visible,
 .project .row:has(:focus-visible),
 .project .child:hover,
 .project .child:focus-visible,
 .project .child:has(:focus-visible) {
-  background: color-mix(in srgb, @colorBgContainer 72%, transparent);
+  background-color: @navRowHoverBg;
 
   .project-actions,
   .child-actions {

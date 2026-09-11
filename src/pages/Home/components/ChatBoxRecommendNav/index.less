@@ -10,10 +10,10 @@
 .recommend-list {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: @margin;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 4px;
+  padding: @paddingXxs;
 
   &::-webkit-scrollbar {
     display: none;
@@ -72,7 +72,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid @colorPrimary;
+    outline: @lineWidthBold solid @colorPrimary;
     outline-offset: 2px;
   }
 }
@@ -91,7 +91,7 @@
   align-items: center;
   gap: @marginXs;
   max-width: 220px;
-  height: 32px;
+  height: @controlHeight;
   padding: 0 @paddingSm;
   border: @lineWidth @lineType @colorBorderSecondary;
   border-radius: 999px;
@@ -105,7 +105,7 @@
 
   &:hover {
     color: @colorText;
-    background: @colorFillTertiary;
+    background: @navRowHoverBg;
   }
 
   &.active {

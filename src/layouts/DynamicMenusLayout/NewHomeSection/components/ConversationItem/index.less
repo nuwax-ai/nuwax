@@ -1,4 +1,5 @@
 @import '@/styles/token.less';
+@import '@/styles/nav-item-state.less';
 
 @statusTagFontSize: 11px; // 运行中标签专用字号
 @statusTagPadding: 0 6px; // 运行中标签内边距
@@ -18,6 +19,9 @@
   cursor: pointer;
   transition: all 0.2s ease;
   color: @navSecondMenuAdaptiveTextSecondary;
+
+  // hover 灰底轻提示（单栏统一交互态，见 nav-item-state.less）
+  .nav-row-hover();
 
   // 头像部分
   .avatar-container {
@@ -89,7 +93,7 @@
       }
 
       .star-icon {
-        color: #faad14;
+        color: @colorWarning;
       }
 
       // 「⋯」菜单兜底按钮：hover 显示；触屏（hover: none）常显
@@ -143,9 +147,6 @@
   }
 
   &:hover {
-    background-color: @colorBgContainer;
-    box-shadow: @boxShadowTertiary;
-
     // hover 会话项时显示「⋯」菜单兜底按钮
     .conversation-topic-row :global(.more-btn) {
       opacity: 1;
@@ -175,8 +176,8 @@
   }
 
   &.active {
-    background-color: @colorBgContainer;
-    box-shadow: @boxShadowTertiary;
+    // 选中白卡（单栏统一交互态）；主题色只落标题，日期/智能体名保持次级色
+    .nav-row-selected();
 
     .conversation-item-content {
       .conversation-topic-row {
@@ -213,7 +214,7 @@
 }
 
 .conversation-item:focus-visible {
-  outline: 2px solid @colorPrimary;
+  outline: @lineWidthBold solid @colorPrimary;
   outline-offset: -2px;
 }
 // 只认键盘焦点:行是 tabIndex=0 的 div,鼠标点击后 :focus-within 残留,
@@ -233,10 +234,10 @@
   transition: background 0.18s ease;
 
   .conversation-item-content .conversation-topic-row {
-    gap: 8px;
+    gap: @paddingXs;
 
     .conversation-topic {
-      font-size: 14px;
+      font-size: @fontSize;
       font-weight: 400;
       line-height: 20px;
       color: @navSecondMenuAdaptiveTextSecondary;
@@ -246,24 +247,22 @@
       position: absolute;
       right: 8px;
       z-index: 1;
-      width: 24px;
-      height: 24px;
+      width: @controlHeightSm;
+      height: @controlHeightSm;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 6px;
+      border-radius: @borderRadiusOuter;
       background: @colorBgContainer;
     }
   }
 
-  &:hover,
-  &.active {
-    box-shadow: none;
-  }
-
+  // hover/选中态直接继承基础规则（hover 灰底无阴影、active 白卡+阴影）：
+  // 原先的 box-shadow:none 覆盖已删——统一交互态后 compact 选中恢复阴影，
+  // 上方 active 的负 margin 外扩正好给阴影留出空间
   &.active {
     margin: 0 -5px;
-    padding-left: 16px;
+    padding-left: @padding;
     padding-right: 15px;
   }
 
@@ -274,7 +273,7 @@
   }
   @media (hover: none) {
     .conversation-date {
-      margin-right: 24px;
+      margin-right: @marginLg;
     }
   }
 }

@@ -18,7 +18,7 @@
   .section-tabs {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: @marginXxs;
     flex-shrink: 0;
     margin-top: 15px;
     padding: 0 15px 8px;
@@ -213,7 +213,7 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background-color: @colorFillQuaternary;
+          background-color: @navRowHoverBg;
           color: @navSecondMenuAdaptiveTextSecondary;
         }
       }
@@ -222,7 +222,7 @@
 
   // 分组头交互样式：hover/focus 显隐与键盘焦点态
   .section-tabs:focus-visible {
-    outline: 2px solid @colorPrimary;
+    outline: @lineWidthBold solid @colorPrimary;
     outline-offset: -2px;
   }
 
@@ -233,7 +233,7 @@
     padding: 2px;
     margin-left: auto;
     border: none;
-    border-radius: 6px;
+    border-radius: @borderRadiusOuter;
     background: transparent;
     color: @navSecondMenuAdaptiveTextTertiary;
     cursor: pointer;
@@ -242,7 +242,7 @@
 
     &:hover {
       color: @colorPrimary;
-      background: @colorFillTertiary;
+      background: @navRowHoverBg;
     }
 
     &:disabled {
