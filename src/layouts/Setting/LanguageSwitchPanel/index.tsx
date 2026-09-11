@@ -1,7 +1,9 @@
 import { apiI18nLangList } from '@/services/i18n';
+import { normalizeLang } from '@/services/i18nLangPolicy';
 import {
   dict,
   fetchAndApplyLangMap,
+  getCurrentLang,
   markLangUserSet,
 } from '@/services/i18nRuntime';
 import { UserService } from '@/services/userService';
@@ -37,10 +39,15 @@ const LanguageSwitchPanel: React.FC = () => {
           const enabledLangs = res.data.filter((item) => item.status === 1);
           setLanguages(enabledLangs);
 
-          // 默认选中后端返回的默认语言
-          const defaultLang = res.data.find((item) => item.isDefault === 1);
-          if (defaultLang) {
-            setSelectedLang(defaultLang.lang);
+          // 初值优先当前运行语言（后端 isDefault 是租户默认，未必是用户当前语种）
+          const currentLangItem = enabledLangs.find(
+            (item) =>
+              normalizeLang(item.lang) === normalizeLang(getCurrentLang()),
+          );
+          const initialLang =
+            currentLangItem ?? res.data.find((item) => item.isDefault === 1);
+          if (initialLang) {
+            setSelectedLang(initialLang.lang);
           }
         }
       } catch (error) {

@@ -2,6 +2,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   DEFAULT_I18N_LANG,
   I18N_KEY_REGEX,
+  I18N_LANG_USER_SET_MARKER,
   I18N_STORAGE_KEYS,
   MIN_EN_I18N_MAP,
   MIN_JA_I18N_MAP,
@@ -13,6 +14,11 @@ import type { I18nKeyPattern, SystemLangMap } from '@/types/interfaces/i18n';
 import { syncLocaleSystems } from '@/utils/localeSync';
 import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { apiI18nQuery } from './i18n';
+import {
+  normalizeLang,
+  resolveEntryLang,
+  shouldSyncAccountLang,
+} from './i18nLangPolicy';
 
 let currentLang = DEFAULT_I18N_LANG;
 let langMap: SystemLangMap = { ...MIN_ZH_I18N_MAP };
@@ -22,9 +28,6 @@ let initialized = false;
 const warnedLegacyKeys = new Set<string>();
 const warnedInvalidKeys = new Set<string>();
 const warnedMissingKeys = new Set<string>();
-
-const normalizeLang = (lang?: string | null) =>
-  (lang || DEFAULT_I18N_LANG).toLowerCase();
 
 const isZhLang = (lang?: string | null): boolean =>
   normalizeLang(lang).startsWith('zh');
@@ -77,13 +80,9 @@ const safeSetItem = (key: string, value: string): void => {
  */
 const getDefaultLang = (): string => DEFAULT_I18N_LANG;
 
-/** 用户是否显式选择过语言（登录页开关/设置页/平台账号语种）。 */
-const readLangUserSet = (): boolean =>
-  safeGetItem(I18N_STORAGE_KEYS.USER_SET) === '1';
-
-/** 标记用户已显式选择语言（此后 ACTIVE_LANG 缓存视为权威）。 */
+/** 标记用户已显式选择语言（此后 ACTIVE_LANG 缓存视为权威；只写当前标记版本）。 */
 export const markLangUserSet = (): void => {
-  safeSetItem(I18N_STORAGE_KEYS.USER_SET, '1');
+  safeSetItem(I18N_STORAGE_KEYS.USER_SET, I18N_LANG_USER_SET_MARKER);
 };
 
 const formatText = (template: string, values: (string | number)[]): string => {
@@ -193,8 +192,15 @@ export const fetchAndApplyLangMap = async (
 export const syncLangFromUserInfo = async (user?: {
   lang?: string | null;
 }): Promise<void> => {
-  if (!user?.lang) return;
-  const targetLang = normalizeLang(user.lang);
+  // 账号侧语种含旧默认 en-us 残留（历史版本默认英文写入、从未被用户选择），
+  // 无显式标记时不视为用户设置，忽略以维持产品默认中文——否则每次进入都会
+  // 把默认语言顶回英文并写脏标记（判定与取舍见 i18nLangPolicy）
+  if (
+    !shouldSyncAccountLang(user?.lang, safeGetItem(I18N_STORAGE_KEYS.USER_SET))
+  ) {
+    return;
+  }
+  const targetLang = normalizeLang(user?.lang);
 
   // 平台账号语种=用户自己的设置，视为显式选择（此后默认语言不再覆盖它）
   markLangUserSet();
@@ -292,11 +298,13 @@ export const initI18n = async (force: boolean = false): Promise<void> => {
   if (initialized && !force) return;
 
   const cachedLang = readLangFromCache();
-  // 有用户显式选择 → 以缓存为准；否则一律产品默认（简体中文）。
-  // 老 profile 的 ACTIVE_LANG 可能只是历史默认值残留（未置 USER_SET 标记），
+  // 有用户显式选择（当前标记版本）→ 以缓存为准；否则一律产品默认（简体中文）。
+  // 老 profile 的 ACTIVE_LANG 可能只是历史默认值残留（无标记或旧标记 '1'），
   // 这里会归位到新的默认语言；显式选过英文的用户不受影响。
-  const resolvedLang = normalizeLang(
-    (readLangUserSet() && cachedLang) || getDefaultLang(),
+  const resolvedLang = resolveEntryLang(
+    safeGetItem(I18N_STORAGE_KEYS.USER_SET),
+    cachedLang,
+    DEFAULT_I18N_LANG,
   );
   setCurrentLang(resolvedLang);
 
