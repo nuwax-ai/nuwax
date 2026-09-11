@@ -226,6 +226,8 @@ export interface UserAppInfo {
   sandboxId: number;
   /** 发布状态 */
   publishStatus: PublishStatusEnum;
+  /** 是否已部署到生产环境；为 true 才可切换线上环境 */
+  prodDeployed?: boolean;
   /** 发布版本记录 */
   publishVersions: PublishVersionDto[];
   /** 开发环境数据库账号 */

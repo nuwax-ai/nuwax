@@ -33,7 +33,6 @@ import {
   MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
-import { PublishStatusEnum } from '@/types/enums/common';
 import { FileNode } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import { RequestResponse } from '@/types/interfaces/request';
@@ -1620,16 +1619,13 @@ const AppDevPro: React.FC = () => {
   );
 
   /**
-   * 未发布时不能停留在线上环境。
+   * 未部署到生产环境时不能停留在线上环境。
    */
   useEffect(() => {
-    const published =
-      userAppInfo?.publishStatus === PublishStatusEnum.Published ||
-      (userAppInfo?.publishVersions?.length ?? 0) > 0;
-    if (!published && dbEnv === UserAppDbEnvEnum.Prod) {
+    if (userAppInfo?.prodDeployed !== true && dbEnv === UserAppDbEnvEnum.Prod) {
       setDbEnv(UserAppDbEnvEnum.Dev);
     }
-  }, [dbEnv, userAppInfo?.publishStatus, userAppInfo?.publishVersions]);
+  }, [dbEnv, userAppInfo?.prodDeployed]);
 
   /** 数据库或数据库配置页签是否激活（Header 图标高亮） */
   const isDatabasePanelOpen =
@@ -1640,10 +1636,10 @@ const AppDevPro: React.FC = () => {
   /** 远程桌面页签是否激活（Header 图标高亮） */
   const isAgentDesktopOpen = previewTabs.activeTab?.toolId === 'remote-desktop';
 
-  /** 启动成功后：当前环境域名 + /api/userapp/proxy/app/{env}/{appId}/ */
+  /** 启动成功后：使用当前环境对应的开发或线上域名 */
   const appPreviewUrl = useMemo(
-    () => buildUserAppAppPreviewUrl(appId, dbEnv, userAppDomainList),
-    [appId, dbEnv, userAppDomainList],
+    () => buildUserAppAppPreviewUrl(dbEnv, userAppDomainList),
+    [dbEnv, userAppDomainList],
   );
 
   /** 环境或应用变化时，地址栏与 iframe 回到对应代理根路径 */
