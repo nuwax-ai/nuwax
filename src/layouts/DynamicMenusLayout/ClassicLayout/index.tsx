@@ -11,20 +11,11 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { initNuwaClawHostEvents } from '@/services/nuwaClawHostEvents';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import {
-  isImmersiveShell,
-  nuwaClawHost,
-  shellAvoid,
-} from '@/utils/nuwaClawBridge';
+import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
 import { jumpTo } from '@/utils/router';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { history, useModel } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 import DynamicTabs from '../DynamicTabs';
@@ -43,9 +34,16 @@ import {
 } from '@/constants/menus.constants';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import NewHomeSection from '../NewHomeSection';
+import {
+  resolveCurrentTitle,
+  resolveIsShowTitle,
+  resolveSecondaryBackgroundColor,
+  resolveSecondMenuVisibility,
+} from '../secondMenuPolicy';
 import SpaceSection from '../SpaceSection';
 import SquareSection from '../SquareSection';
 import { useMenuNavigation } from '../useMenuNavigation';
+import { useSecondMenuShellSync } from '../useSecondMenuShellSync';
 import { handleOpenUrl } from '../utils';
 import styles from './index.less';
 
@@ -82,32 +80,47 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
   // 桌面端锁定 style3 时不会挂载本布局；仍统一读 effective 值保持口径一致
   const { effectiveNavigationStyle: navigationStyle, layoutStyle } =
     useUnifiedTheme();
-  const {
-    isSecondMenuCollapsed,
-    setIsSecondMenuCollapsed,
-    setOpenMessage,
-  } = useModel('layout');
+  const { isSecondMenuCollapsed, setIsSecondMenuCollapsed, setOpenMessage } =
+    useModel('layout');
 
   // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
   const { firstLevelMenus, otherMenus } = useModel('menuModel');
 
   const { refreshUserInfo } = useModel('userInfo');
 
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
   // 导航状态机（activeTab 路径同步/一级菜单点击等，与单栏布局共用单源实现）
-  const { activeTab, setActiveTab, isClickNewConversation, isClickMenu, handleTabClick } =
-    useMenuNavigation();
+  const {
+    activeTab,
+    setActiveTab,
+    isClickNewConversation,
+    isClickMenu,
+    handleTabClick,
+    handlerClick,
+  } = useMenuNavigation();
+
+  // 新建任务（壳层 ⌘N 宿主命令用）：与单栏布局同款，租户配置未就绪时兜底回首页
+  const handleNewTask = () => {
+    if (tenantConfigInfo) {
+      handlerClick();
+    } else {
+      history.push('/home');
+    }
+  };
 
   useEffect(() => {
     // 强制刷新获取用户信息
     refreshUserInfo();
   }, []);
 
-  // nuwaclaw 桌面端：注册宿主命令监听（工具栏「收起二级菜单」等经此通道下发）
+  // nuwaclaw 桌面端：注册宿主命令监听（工具栏「收起二级菜单」、壳层 ⌘N 新建任务经此通道下发）
   useEffect(() => {
     return initNuwaClawHostEvents({
       setSecondMenuCollapsed: setIsSecondMenuCollapsed,
+      createNewTask: handleNewTask,
     });
-  }, [setIsSecondMenuCollapsed]);
+  }, [setIsSecondMenuCollapsed, handleNewTask]);
 
   /**
    * 用户区域操作
@@ -154,69 +167,42 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
   );
 
   /**
-   * 获取当前一级菜单的标题
+   * 获取当前一级菜单的标题（策略单源 secondMenuPolicy：dict 注入避开 umi 传递依赖）
    */
-  const currentTitle = useMemo(() => {
-    if (isClickNewConversation) {
-      return dict('PC.Layouts.DynamicMenusLayout.newConversation');
-    }
-    // if (activeTab === 'my_computer' || activeTab === 'documents') {
-    //   return dict('PC.Layouts.DynamicMenusLayout.home');
-    // }
-    if (activeTab === 'more_page') {
-      return dict('PC.Layouts.DynamicMenusLayout.more');
-    }
-    const current = firstLevelMenus.find(
-      (m: MenuItemDto) => m.code === activeTab,
-    );
-    return current?.name;
-  }, [activeTab, firstLevelMenus, isClickNewConversation]);
+  const currentTitle = useMemo(
+    () =>
+      resolveCurrentTitle({
+        activeTab,
+        isClickNewConversation,
+        firstLevelMenus,
+        dict,
+      }),
+    [activeTab, isClickNewConversation, firstLevelMenus],
+  );
 
   /**
-   * 当前一级菜单是否需要展示二级菜单栏
-   * 无子菜单（children 为 null 或空数组）且非 Section 类菜单时隐藏
+   * 当前一级菜单是否需要展示二级菜单栏（策略单源：Section 域常显，其余看 children）。
+   * Section 集合含 homepage——经典布局选中主页时二级列即会话列表（NewHomeSection）。
    */
-  const shouldShowSecondMenu = useMemo(() => {
-    if (!activeTab) return false;
+  const shouldShowSecondMenu = useMemo(
+    () =>
+      resolveSecondMenuVisibility({
+        activeTab,
+        sectionTabs: SECOND_MENU_SECTION_TABS,
+        firstLevelMenus,
+        otherMenus,
+      }),
+    [activeTab, firstLevelMenus, otherMenus],
+  );
 
-    if (SECOND_MENU_SECTION_TABS.has(activeTab)) {
-      return true;
-    }
-
-    const currentMenu =
-      firstLevelMenus.find((m: MenuItemDto) => m.code === activeTab) ||
-      otherMenus.find((m: MenuItemDto) => m.code === activeTab);
-
-    if (!currentMenu) {
-      return false;
-    }
-
-    return !!currentMenu.children?.length;
-  }, [activeTab, firstLevelMenus, otherMenus]);
-
-  // 桌面端：把「当前页是否有二级菜单」同步给 nuwaclaw 壳，工具栏据此显隐收起按钮
-  //（无二级菜单的页面按钮无意义）。布局卸载（如 /Login 等无布局页）时推 false。
-  // 浏览器端接入层 no-op。路由切换间 cleanup→mount 的瞬时 false 会被新值立即覆盖。
-  useEffect(() => {
-    nuwaClawHost.layout.setSecondMenuAvailable(shouldShowSecondMenu);
-    return () => nuwaClawHost.layout.setSecondMenuAvailable(false);
-  }, [shouldShowSecondMenu]);
-
-  // 桌面端：把二级菜单真实收起态同步给壳（壳工具栏 icon 以此为准）。
-  // webview reload 后壳本地态不重置、且 reload 瞬间的 toggle 命令可能丢失——
-  // 推送真实值可校正失同步（toggle 后本 effect 也会随状态变化即时回推）。
-  useEffect(() => {
-    nuwaClawHost.layout.setSecondMenuCollapsed(isSecondMenuCollapsed);
-  }, [isSecondMenuCollapsed]);
+  // 桌面端：二级菜单列可用/收起态 ↔ nuwaclaw 壳同步（双布局单源 hook，
+  // 浏览器端接入层 no-op）
+  useSecondMenuShellSync(shouldShowSecondMenu, isSecondMenuCollapsed);
 
   /**
-   * 是否显示标题
+   * 是否显示标题（策略单源：工作空间有自己的标题组件）
    */
-  const isShowTitle = useMemo(() => {
-    // 工作空间不显示标题（因为有自己的标题组件）
-    // 支持静态菜单的 'space' 和 动态菜单的 'workspace'
-    return activeTab !== 'space' && activeTab !== 'workspace';
-  }, [activeTab]);
+  const isShowTitle = useMemo(() => resolveIsShowTitle(activeTab), [activeTab]);
 
   /**
    * 计算一级导航宽度
@@ -241,16 +227,17 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
   }, [isMobile, token.colorBgContainer]);
 
   /**
-   * 二级导航背景
+   * 二级导航背景（策略单源；经典挂载于 style1/style2，style2 半透明白分支在此真实生效）
    */
-  const secondaryBackgroundColor = useMemo(() => {
-    if (isMobile) {
-      return token.colorBgContainer;
-    }
-    return navigationStyle === 'style2'
-      ? 'var(--xagi-layout-bg-container, rgba(255, 255, 255, 0.95))'
-      : 'transparent';
-  }, [isMobile, navigationStyle, token.colorBgContainer]);
+  const secondaryBackgroundColor = useMemo(
+    () =>
+      resolveSecondaryBackgroundColor({
+        isMobile,
+        navigationStyle,
+        colorBgContainer: token.colorBgContainer,
+      }),
+    [isMobile, navigationStyle, token.colorBgContainer],
+  );
 
   /**
    * 导航容器样式类名

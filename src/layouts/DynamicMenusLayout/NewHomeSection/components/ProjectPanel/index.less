@@ -493,3 +493,16 @@
     transition: none;
   }
 }
+
+// 选中态：当前路由会话命中项目子会话时白卡（单栏统一交互态，见 nav-item-state.less），
+// 标题落主题色（对齐任务列表选中口径：只染标题，时间/图标保持次级色）。
+// 置于文件尾以源序压过同特异级的 hover 灰底规则——选中行再 hover/聚焦仍保持白卡。
+// 单栏(compact)不沿用任务列表选中行的负 margin 外扩：子行本就随树缩进、
+// ⋯ 锚点 absolute right:10px 不随盒宽变，无阴影挤压也无图标跳动，无需补偿
+.project .child.child-active {
+  .nav-row-selected();
+
+  .child-name {
+    color: @colorPrimaryText;
+  }
+}

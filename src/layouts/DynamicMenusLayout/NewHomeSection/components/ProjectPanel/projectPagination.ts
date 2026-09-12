@@ -68,3 +68,21 @@ export function hasMoreProjects(loadedCount: number, total: number): boolean {
 export function remainingProjects(loadedCount: number, total: number): number {
   return Math.max(0, total - loadedCount);
 }
+
+/**
+ * 按路由会话 id 反查所属项目 id（未命中返回 null）。
+ * 会话条目（ConversationInfo）不带项目归属字段，只能基于已加载的项目数据反查；
+ * 调用方传可见列表（visibleProjects），归档项目天然不命中。
+ */
+export function findProjectIdByConversation(
+  projects: ProjectItem[],
+  conversationId?: string,
+): number | null {
+  if (!conversationId) return null;
+  const found = projects.find((project) =>
+    (project.children ?? []).some(
+      (child) => String(child.id) === conversationId,
+    ),
+  );
+  return found?.id ?? null;
+}

@@ -49,6 +49,15 @@ vi.mock('@/components/business-component/ExpertSummonCard/index.less', () => ({
 vi.mock('@/components/business-component/SkillListView/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
+vi.mock('@/components/business-component/ExpertSummonModal/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+vi.mock(
+  '@/components/business-component/ConnectorDeviceAuthModal/index.less',
+  () => ({
+    default: new Proxy({}, { get: (_, key) => String(key) }),
+  }),
+);
 
 // 专家维度列表已接入 ExpertListView,其自带 less 同样 mock
 vi.mock('@/components/business-component/ExpertListView/index.less', () => ({

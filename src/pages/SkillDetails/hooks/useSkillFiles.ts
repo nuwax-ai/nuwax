@@ -289,10 +289,11 @@ export const useSkillFiles = ({
     try {
       setLoadingExportProject(true);
       const linkUrl = `${process.env.BASE_URL}/api/skill/export/${skillId}`;
-      exportFileViaBrowserDownload(linkUrl);
-      message.success(t('PC.Pages.SkillDetails.exportSuccess'));
+      const saved = await exportFileViaBrowserDownload(linkUrl);
+      if (saved) message.success(t('PC.Pages.SkillDetails.exportSuccess'));
     } catch (error) {
       console.error('Failed to export project:', error);
+      message.error(error instanceof Error ? error.message : t('PC.Utils.ExportImport.exportFailed'));
     } finally {
       setLoadingExportProject(false);
     }

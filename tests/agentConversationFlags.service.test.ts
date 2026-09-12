@@ -29,12 +29,12 @@ describe('会话置顶、归档接口契约', () => {
     );
   });
 
-  it('列表透传 includeArchived', async () => {
+  it('列表透传 archivedFilter', async () => {
     await apiAgentConversationList({
       agentId: null,
       lastId: null,
       limit: 30,
-      includeArchived: true,
+      archivedFilter: 'all',
     });
     expect(request).toHaveBeenLastCalledWith('/api/agent/conversation/list', {
       method: 'POST',
@@ -42,12 +42,12 @@ describe('会话置顶、归档接口契约', () => {
         agentId: null,
         lastId: null,
         limit: 30,
-        includeArchived: true,
+        archivedFilter: 'all',
       },
     });
   });
 
-  it('旧列表调用缺省不返回已归档会话', async () => {
+  it('旧列表调用缺省按 exclude 兜底（不含已归档）', async () => {
     await apiAgentConversationList({
       agentId: null,
       lastId: null,
@@ -59,7 +59,7 @@ describe('会话置顶、归档接口契约', () => {
         agentId: null,
         lastId: null,
         limit: 30,
-        includeArchived: false,
+        archivedFilter: 'exclude',
       },
     });
   });

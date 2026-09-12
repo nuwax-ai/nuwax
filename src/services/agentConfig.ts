@@ -395,8 +395,9 @@ export async function apiAgentConversationList(
 ): Promise<RequestResponse<ConversationInfo[]>> {
   return request('/api/agent/conversation/list', {
     method: 'POST',
-    // 旧调用点默认只查未归档；需要「已归档」入口的列表显式传 true。
-    data: { ...data, includeArchived: data.includeArchived ?? false },
+    // 归档过滤（all/exclude/only）。旧调用点缺省按 exclude 兜底，
+    // 保持「默认不含已归档」的历史行为；需要归档视图的列表显式传 all/only。
+    data: { ...data, archivedFilter: data.archivedFilter ?? 'exclude' },
   });
 }
 

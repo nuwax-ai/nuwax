@@ -482,8 +482,8 @@ export interface ConversationInfo {
 // 查询用户历史会话输入参数
 export interface ConversationListParams {
   agentId: number | null;
-  /** 是否包含已归档会话；缺省时服务层按 false 处理 */
-  includeArchived?: boolean;
+  /** 归档过滤：all=全部（后端默认）；exclude=排除归档；only=仅归档。服务层缺省按 exclude 兜底（兼容旧调用点） */
+  archivedFilter?: 'all' | 'exclude' | 'only';
   // 上一次查询结果的会话ID
   lastId?: number | null;
   // 返回会话数量

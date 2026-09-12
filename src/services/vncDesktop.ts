@@ -151,10 +151,11 @@ export async function apiDownloadAllFiles(cId: number): Promise<void> {
     // 获取导出文件链接地址
     const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?cId=${cId}`;
     // 通过浏览器下载文件
-    exportFileViaBrowserDownload(linkUrl);
-    message.success(t('PC.Pages.Chat.exportSuccess'));
+    const saved = await exportFileViaBrowserDownload(linkUrl);
+    if (saved) message.success(t('PC.Pages.Chat.exportSuccess'));
   } catch (error) {
     console.error('Failed to export project:', error);
+      message.error(error instanceof Error ? error.message : t('PC.Utils.ExportImport.exportFailed'));
   }
 }
 

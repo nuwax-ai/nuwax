@@ -2,6 +2,7 @@
  * 资料库（空间文档仓库 Repo）服务
  */
 import type {
+  RepoPageSearchItem,
   RepoPageTreeNode,
   RepoPortalPageInfo,
 } from '@/types/interfaces/repo';
@@ -19,6 +20,24 @@ export async function apiRepoSpaceTree(
 ): Promise<RequestResponse<RepoPageTreeNode[]>> {
   return request(`/api/repo/spaces/${spaceId}/tree`, {
     method: 'GET',
+  });
+}
+
+/**
+ * 资料库全库搜索（GET /api/repo/search）
+ *
+ * - ES 关键字搜索；不传 spaceId 即跨全部空间
+ * - 分页参数为 from（偏移量）+ size
+ */
+export async function apiRepoSearch(params: {
+  spaceId?: number;
+  keyword: string;
+  from: number;
+  size: number;
+}): Promise<RequestResponse<RepoPageSearchItem[]>> {
+  return request('/api/repo/search', {
+    method: 'GET',
+    params,
   });
 }
 
