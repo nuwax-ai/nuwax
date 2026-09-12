@@ -11,6 +11,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useConnectorConnect from '@/hooks/useConnectorConnect';
 import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
+import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import { apiConnectorConnectionToggleStatus } from '@/services/systemManage';
 import { Empty, message } from 'antd';
@@ -161,6 +162,66 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
       select({ skillId: item.skillId, name: item.name, icon: item.icon });
     },
     [select],
+  );
+
+  /**
+   * 收藏/取消收藏请求中的卡片 id（请求飞行中拦截重复点击——收藏图标
+   * 为无 loading 态的裸图标区，与广场卡片一致；用 ref 存储保持回调
+   * 引用稳定，不触发卡片列表整体重渲染）
+   */
+  const collectingRef = useRef<Set<string>>(new Set());
+
+  /**
+   * 专家卡片「收藏/取消收藏」（系统广场/团队空间两维度通用，与广场智能体
+   * 卡片同口径）：POST /api/user/agent/collect|unCollect/{agentId}，
+   * 成功后就地更新卡片 collected 与统计行收藏数（±1），不整页重拉
+   */
+  const handleToggleCollect = useCallback(
+    async (item: ResourceItem) => {
+      if (!item.agentId) {
+        // 数据异常兜底：缺智能体 ID 无法收藏（正常数据两个维度均有值）
+        console.warn(
+          '[ExpertSkillConnector] toggle collect skipped: missing agentId, item =',
+          item.id,
+        );
+        return;
+      }
+      if (collectingRef.current.has(item.id)) return;
+      collectingRef.current.add(item.id);
+      try {
+        const nextCollected = !item.collected;
+        const res = nextCollected
+          ? await apiCollectAgent(item.agentId)
+          : await apiUnCollectAgent(item.agentId);
+        if (res?.code === SUCCESS_CODE) {
+          // 统计行收藏数同步 ±1（无统计或无收藏项时保持原样）
+          const collectStatIndex = (item.stats || []).findIndex(
+            (stat) => stat.type === 'star',
+          );
+          const nextStats =
+            collectStatIndex >= 0
+              ? item.stats?.map((stat, idx) =>
+                  idx === collectStatIndex
+                    ? {
+                        ...stat,
+                        value:
+                          Number(stat.value || 0) + (nextCollected ? 1 : -1),
+                      }
+                    : stat,
+                )
+              : item.stats;
+          updateItem(item.id, {
+            collected: nextCollected,
+            stats: nextStats,
+          });
+        } else {
+          message.error(res?.message || '操作失败，请稍后重试');
+        }
+      } finally {
+        collectingRef.current.delete(item.id);
+      }
+    },
+    [updateItem],
   );
 
   /**
@@ -326,6 +387,11 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   showSummon={resourceType === 'expert'}
                   onSummon={
                     resourceType === 'expert' ? handleSummon : undefined
+                  }
+                  // 专家卡片：hover 浮现的收藏图标（两维度通用，位置/样式
+                  // 与广场智能体卡片同款），点击收藏/取消收藏后就地更新
+                  onToggleCollect={
+                    resourceType === 'expert' ? handleToggleCollect : undefined
                   }
                   onSelect={
                     resourceType === 'skill' ? handleSelectSkill : undefined

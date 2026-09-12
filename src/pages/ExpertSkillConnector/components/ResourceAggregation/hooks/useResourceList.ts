@@ -3,12 +3,11 @@
  * @description 屏蔽各资源类型/数据源接口的分页差异（服务端分页 vs 全量数组），
  * 对外统一提供 { list, loading, hasMore, loadMore } 语义：
  * - 服务端分页接口（已发布智能体/技能、官方/空间连接器）直接透传分页参数
- * - 全量数组接口（空间智能体/技能、已连接的连接器）首次全量拉取后内存切片，
+ * - 全量数组接口（空间技能、已连接的连接器）首次全量拉取后内存切片，
  *   模拟滚动加载
  */
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { apiAgentConfigList } from '@/services/agentConfig';
 import { apiSkillList } from '@/services/library';
 import {
   apiPublishedAgentList,
@@ -16,7 +15,7 @@ import {
 } from '@/services/square';
 import { apiConnectorProviderPageList } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { AgentConfigInfo } from '@/types/interfaces/agent';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { SkillInfo } from '@/types/interfaces/library';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
@@ -78,16 +77,22 @@ const mapPublishedItem = (
   idPrefix: string,
 ): ResourceItem => ({
   id: `${idPrefix}-${item.id}`,
-  // 仅专家（前缀 agent）填：targetId 即智能体 ID，供「召唤」跳转 home 使用；
-  // 技能（前缀 skill）的 targetId 是技能 ID，不能当 agentId 用
-  agentId: idPrefix === 'agent' ? item.targetId : undefined,
+  // 仅专家（前缀 agent / space-agent）填：targetId 即智能体 ID，
+  // 供「召唤」跳转与收藏寻址使用；技能（前缀 skill）的 targetId
+  // 是技能 ID，不能当 agentId 用
+  agentId:
+    idPrefix === 'agent' || idPrefix === 'space-agent'
+      ? item.targetId
+      : undefined,
   // 仅技能（前缀 skill）填：targetId 即技能 ID，供「选择」透传 home 使用
-  skillId: idPrefix === 'skill' ? item.targetId : undefined,
+  skillId: idPrefix.startsWith('skill') ? item.targetId : undefined,
   name: item.name,
   description: item.description,
   icon: item.icon,
   category: item.category || undefined,
   publishUser: item.publishUser,
+  // 当前用户是否已收藏（列表接口返回 collect；专家卡片收藏按钮选中态）
+  collected: !!item.collect,
   stats: mapPublishedStats(item.statistics),
 });
 
@@ -184,25 +189,22 @@ const RESOURCE_ADAPTERS: Record<
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'agent'),
     },
-    // 团队空间-空间内智能体（全量数组）
+    // 团队空间-空间内已发布智能体（POST /api/published/agent/list 服务端分页）：
+    // 与空间广场 /space/:id/space-square?activeKey=Agent 同口径——
+    // category=Agent（tab 维度）+ justReturnSpaceData 只查空间已发布内容；
+    // 二级 tab 即空间选择（必选中具体空间），category 内容分类不适用不传
     team: {
-      mode: 'client',
-      fetchAll: ({ spaceId }) => apiAgentConfigList(spaceId as number),
-      extractAll: (res) => {
-        const records = (res.data as AgentConfigInfo[] | null) || [];
-        return records.map((item) => ({
-          id: `space-agent-${item.id}`,
-          // 空间智能体 id 即智能体 ID，供「召唤」跳转 home 使用
-          agentId: item.id,
-          name: item.name,
-          description: item.description,
-          icon: item.icon,
-          // 创建人以发布者行展示（与系统广场卡片同款：头像+昵称）
-          publishUser: item.creator,
-          // 统计行与系统广场卡片同款（用户人数/会话次数/收藏次数），取 agentStatistics
-          stats: mapPublishedStats(item.agentStatistics),
-        }));
-      },
+      mode: 'server',
+      fetchPage: ({ page, pageSize, keyword, spaceId }) =>
+        apiPublishedAgentList({
+          page,
+          pageSize,
+          kw: keyword || undefined,
+          category: SquareAgentTypeEnum.Agent,
+          justReturnSpaceData: true,
+          spaceId,
+        }),
+      extract: (res, page) => extractPublishedPage(res, page, 'space-agent'),
     },
   },
   skill: {

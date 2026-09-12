@@ -79,6 +79,11 @@ export interface ResourceItem {
    */
   pinned?: boolean;
   /**
+   * 当前用户是否已收藏（专家特有：hover 右上角收藏图标按钮的选中态，
+   * 数据源取列表接口返回的 collect；收藏/取消收藏成功后就地更新）
+   */
+  collected?: boolean;
+  /**
    * 认证方式（连接器特有：no_auth 免鉴权无连接概念，卡片状态恒展示已连接、
    * 不展示 连接/断开 按钮；oauth2/api_key/bearer/custom 按连接状态展示）
    */

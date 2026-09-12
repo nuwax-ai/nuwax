@@ -3,8 +3,11 @@
  * @description 专家/技能/连接器通用的聚合卡片，容器复用 CardWrapper，
  * 与广场（Square/SingleAgent）卡片样式保持一致：
  * 图标 + 标题 + 发布者（头像/昵称）+ 两行描述 + 底部统计行；
- * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮（经 onSummon 回调携带专家信息
- * 透传跳转 /home 首页）、技能卡片浮现「选择」按钮及右侧 pin 图标按钮
+ * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮（经 onSummon 回调
+ * 携带专家信息透传跳转 /home 首页）、右下角浮现收藏图标（位置参考
+ * 广场智能体卡片的 star-box，经 onToggleCollect 回调切换收藏/取消收藏，
+ * 已收藏金色实心星/未收藏空心星，统计行收藏数图标随之联动）、
+ * 技能卡片浮现「选择」按钮及右侧 pin 图标按钮
  * （点击逻辑暂未接入，仅展示）；
  * 连接器卡片标题下方展示 分类 + 连接状态（按 connected 展示已连接/未连接）；
  * 已连接卡片右上角常驻「启用开关」（checked 绑 connectionEnabled，切换经
@@ -21,6 +24,7 @@ import CardWrapper from '@/components/business-component/CardWrapper';
 import {
   ICON_MESSAGE,
   ICON_STAR,
+  ICON_STAR_FILL,
   ICON_USER,
 } from '@/constants/images.constants';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
@@ -47,6 +51,8 @@ interface ResourceCardProps {
   showSummon?: boolean;
   /** 召唤按钮点击回调（携带卡片条目；仅专家卡片传入） */
   onSummon?: (item: ResourceItem) => void;
+  /** 收藏图标点击回调（携带卡片条目；仅专家卡片传入，收藏/取消收藏） */
+  onToggleCollect?: (item: ResourceItem) => void;
   /** 选择按钮点击回调（携带卡片条目；仅技能卡片传入） */
   onSelect?: (item: ResourceItem) => void;
   /** 是否显示选择按钮与 pin 图标按钮（技能卡片） */
@@ -73,6 +79,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
   item,
   showSummon,
   onSummon,
+  onToggleCollect,
   onSelect,
   showUse,
   showStats = true,
@@ -152,7 +159,12 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
               <div className={cx('flex', 'items-center', styles['count-box'])}>
                 {(stats || []).map((stat) => (
                   <span key={stat.type} className={cx(styles.text)}>
-                    {STAT_ICON_MAP[stat.type]}
+                    {/* 专家卡片收藏数图标跟随收藏态切实心星（与广场卡片一致） */}
+                    {stat.type === 'star' && item.collected ? (
+                      <ICON_STAR_FILL />
+                    ) : (
+                      STAT_ICON_MAP[stat.type]
+                    )}
                     <span>{stat.value}</span>
                   </span>
                 ))}
@@ -203,6 +215,30 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
                 />
               )}
             </div>
+          )}
+          {showSummon && (
+            // 专家卡片：右下角收藏图标（位置参考广场智能体卡片——其 hover
+            // 底部浮现行的最右侧即 star-box；此处独立悬浮于卡片右下角，
+            // hover 卡片时浮现，点击收藏/取消收藏，已收藏金色实心星）
+            <span
+              className={cx(styles['star-box'], styles['hover-reveal-btn'])}
+              aria-label={dict(
+                item.collected
+                  ? 'PC.Pages.HomeDrag.cancelCollect'
+                  : 'PC.Pages.HomeDrag.collect',
+              )}
+              title={dict(
+                item.collected
+                  ? 'PC.Pages.HomeDrag.cancelCollect'
+                  : 'PC.Pages.HomeDrag.collect',
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleCollect?.(item);
+              }}
+            >
+              {item.collected ? <ICON_STAR_FILL /> : <ICON_STAR />}
+            </span>
           )}
           {showConnectAction && (
             <div
