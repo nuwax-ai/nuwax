@@ -1,9 +1,10 @@
 import { dict } from '@/services/i18nRuntime';
-import type {
-  UserAppBuildServiceStatus,
-  UserAppTaskLogEvent,
-  UserAppTaskServiceProgress,
-  UserAppTaskTerminalStatus,
+import {
+  UserAppTaskStatusEnum,
+  type UserAppBuildServiceStatus,
+  type UserAppTaskLogEvent,
+  type UserAppTaskServiceProgress,
+  type UserAppTaskTerminalStatus,
 } from '../type';
 
 /** SSE 事件名，与协议 event 字段一致 */
@@ -78,29 +79,24 @@ export const resolveBuildServiceStatus = (
 };
 
 /**
- * 将服务状态或任务事件解析为任务终态。
- * build_ok / completed → 成功；build_fail / failed → 失败；cancelled → 取消。
+ * 将任务行 status 解析为终态。
+ * 只认 UserAppTaskStatusEnum：completed / failed / cancelled。
+ * pending、running 以及 SSE 服务态（build_ok 等）不是任务终态。
  *
- * @param status 服务状态或事件名
+ * @param status 任务状态
  * @returns 终态或 null
  */
 export const getTaskTerminalStatus = (
-  status?: string,
+  status?: UserAppTaskStatusEnum | string,
 ): UserAppTaskTerminalStatus | null => {
   const value = normalizeTaskStatus(status);
-  if (
-    value === USER_APP_BUILD_SSE_EVENT.BUILD_OK ||
-    value === USER_APP_BUILD_SSE_EVENT.COMPLETED
-  ) {
+  if (value === UserAppTaskStatusEnum.Completed) {
     return 'succeeded';
   }
-  if (
-    value === USER_APP_BUILD_SSE_EVENT.BUILD_FAIL ||
-    value === USER_APP_BUILD_SSE_EVENT.FAILED
-  ) {
+  if (value === UserAppTaskStatusEnum.Failed) {
     return 'failed';
   }
-  if (value === USER_APP_BUILD_SSE_EVENT.CANCELLED) {
+  if (value === UserAppTaskStatusEnum.Cancelled) {
     return 'cancelled';
   }
   return null;
