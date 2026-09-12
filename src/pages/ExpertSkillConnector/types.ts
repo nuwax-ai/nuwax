@@ -84,6 +84,14 @@ export interface ResourceItem {
    */
   collected?: boolean;
   /**
+   * 是否需要付费（专家特有：列表接口返回 paymentRequired；订阅功能开启时
+   * 卡片右下角展示「付费/已订阅」角标，未订阅点「召唤」或角标跳转智能体
+   * 详情页——详情页自动弹订阅套餐弹窗）
+   */
+  paymentRequired?: boolean;
+  /** 是否已订阅（专家特有：付费角标展示「已订阅」，召唤不再拦截） */
+  subscribed?: boolean;
+  /**
    * 认证方式（连接器特有：no_auth 免鉴权无连接概念，卡片状态恒展示已连接、
    * 不展示 连接/断开 按钮；oauth2/api_key/bearer/custom 按连接状态展示）
    */

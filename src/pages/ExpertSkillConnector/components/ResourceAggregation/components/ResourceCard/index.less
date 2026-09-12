@@ -78,14 +78,21 @@
     }
   }
 
-  // 专家卡片：右下角收藏图标（位置对齐广场智能体卡片底部浮现行的
-  // star-box：right 16px / bottom 12px，32x32 点击区；已收藏展示金色
-  // 实心星，实心星为 svg 固定填充色。浮现复用 .hover-reveal-btn 的
-  // opacity 控制——hover 当前卡片时展示、离开隐藏不响应点击）
-  .star-box {
+  // 专家卡片右下角操作区（绝对定位：right 16px / bottom 12px）：
+  // 收藏图标 + 付费角标同行右对齐——付费 Tag 最右、收藏图标在其左侧
+  // （相邻排布对齐广场智能体卡片 action-box 内 star 与 extra 的顺序）
+  .corner-box {
     position: absolute;
     right: 16px;
     bottom: 12px;
+    display: flex;
+    align-items: center;
+  }
+
+  // 专家卡片：收藏图标（容器内行内排布，32x32 点击区；已收藏展示金色
+  // 实心星，实心星为 svg 固定填充色。浮现复用 .hover-reveal-btn 的
+  // opacity 控制——hover 当前卡片时展示、离开隐藏不响应点击）
+  .star-box {
     display: flex;
     align-items: center;
     justify-content: center;

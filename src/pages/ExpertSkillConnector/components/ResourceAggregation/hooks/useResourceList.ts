@@ -93,6 +93,10 @@ const mapPublishedItem = (
   publishUser: item.publishUser,
   // 当前用户是否已收藏（列表接口返回 collect；专家卡片收藏按钮选中态）
   collected: !!item.collect,
+  // 付费订阅（专家卡片：订阅功能开启时展示「付费/已订阅」角标，未订阅
+  // 点「召唤」或角标跳转智能体详情页弹订阅套餐；技能/连接器卡片不消费）
+  paymentRequired: !!item.paymentRequired,
+  subscribed: !!item.subscribed,
   stats: mapPublishedStats(item.statistics),
 });
 

@@ -15,6 +15,7 @@ import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import { apiConnectorConnectionToggleStatus } from '@/services/systemManage';
+import { jumpTo } from '@/utils/router';
 import { Empty, message } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -24,7 +25,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, useLocation } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 import type {
   ResourceItem,
   ResourceSourceEnum,
@@ -50,6 +51,7 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   resourceType,
 }) => {
   const location = useLocation();
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 初始状态优先从 URL 恢复（刷新/分享可还原筛选状态）
   const initialParams = useMemo(() => {
@@ -131,6 +133,25 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     return () => window.clearTimeout(timer);
   }, [keywordInput]);
 
+  // 是否开启订阅功能（与广场同口径：租户配置 enableSubscription）
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  /**
+   * 付费专家跳转智能体详情页（与空间广场卡片同口径）：详情页检测到
+   * 需付费且未订阅时会自动弹订阅套餐弹窗，本页不本地拦截
+   */
+  const handlePaymentJump = useCallback((item: ResourceItem) => {
+    if (!item.agentId) {
+      // 数据异常兜底：缺智能体 ID 无法跳转（正常数据两个维度均有值）
+      console.warn(
+        '[ExpertSkillConnector] payment jump skipped: missing agentId, item =',
+        item.id,
+      );
+      return;
+    }
+    jumpTo(`/agent/${item.agentId}`);
+  }, []);
+
   /** 专家卡片「召唤」：携带专家信息透传并跳转 /home 首页 */
   const { summon } = useSummonExpertHandoff();
   const handleSummon = useCallback(
@@ -143,9 +164,15 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
         );
         return;
       }
+      // 订阅功能开启且需付费未订阅（与空间广场卡片同口径）：不本地弹窗，
+      // 跳转智能体详情页由其自动弹订阅套餐弹窗
+      if (isEnableSubscription && item.paymentRequired && !item.subscribed) {
+        handlePaymentJump(item);
+        return;
+      }
       summon({ agentId: item.agentId, name: item.name, icon: item.icon });
     },
-    [summon],
+    [summon, isEnableSubscription, handlePaymentJump],
   );
 
   /** 技能卡片「选择」：携带技能信息透传并跳转 /home 首页 */
@@ -397,6 +424,10 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   onToggleCollect={
                     resourceType === 'expert' ? handleToggleCollect : undefined
                   }
+                  // 付费角标点击：跳转智能体详情页（未订阅时详情页自动弹订阅套餐弹窗）
+                  onPaymentClick={
+                    resourceType === 'expert' ? handlePaymentJump : undefined
+                  }
                   onSelect={
                     resourceType === 'skill' ? handleSelectSkill : undefined
                   }
@@ -430,6 +461,10 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   // 底部统计行仅专家卡片展示（技能本就无统计；
                   // 连接器工具数统计已下线）
                   showStats={resourceType === 'expert'}
+                  // 付费角标仅专家卡片且订阅功能开启时展示
+                  showPayment={
+                    resourceType === 'expert' && isEnableSubscription
+                  }
                   // 连接器卡片：标题下方展示分类 + 连接状态，hover 右上角连接/断开按钮
                   showConnect={resourceType === 'connector'}
                 />

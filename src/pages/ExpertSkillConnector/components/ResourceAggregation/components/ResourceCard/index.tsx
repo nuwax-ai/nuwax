@@ -30,7 +30,7 @@ import {
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { dict } from '@/services/i18nRuntime';
 import { PushpinOutlined } from '@ant-design/icons';
-import { Button, Switch } from 'antd';
+import { Button, Switch, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { ResourceItem, ResourceStatType } from '../../../../types';
@@ -59,6 +59,16 @@ interface ResourceCardProps {
   showUse?: boolean;
   /** 是否显示底部统计行（使用用户数等） */
   showStats?: boolean;
+  /**
+   * 是否展示付费角标（仅专家卡片且租户开启订阅功能时传入）：
+   * paymentRequired 的卡片右下角展示「付费/已订阅」Tag
+   */
+  showPayment?: boolean;
+  /**
+   * 付费角标点击回调（携带卡片条目；仅专家卡片传入）：跳转智能体详情页，
+   * 未订阅的付费智能体由详情页自动弹订阅套餐弹窗（与空间广场卡片同口径）
+   */
+  onPaymentClick?: (item: ResourceItem) => void;
   /** 是否按连接器卡片展示（分类 + 连接状态行、hover 连接/断开按钮） */
   showConnect?: boolean;
   /** 断开按钮点击回调（携带卡片条目；仅连接器卡片且已连接时生效） */
@@ -83,6 +93,8 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
   onSelect,
   showUse,
   showStats = true,
+  showPayment,
+  onPaymentClick,
   showConnect,
   onDisconnect,
   disconnecting,
@@ -217,28 +229,50 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
             </div>
           )}
           {showSummon && (
-            // 专家卡片：右下角收藏图标（位置参考广场智能体卡片——其 hover
-            // 底部浮现行的最右侧即 star-box；此处独立悬浮于卡片右下角，
-            // hover 卡片时浮现，点击收藏/取消收藏，已收藏金色实心星）
-            <span
-              className={cx(styles['star-box'], styles['hover-reveal-btn'])}
-              aria-label={dict(
-                item.collected
-                  ? 'PC.Pages.HomeDrag.cancelCollect'
-                  : 'PC.Pages.HomeDrag.collect',
+            // 专家卡片右下角：收藏图标 + 付费角标同行右对齐（付费 Tag
+            // 最右、收藏图标在其左侧，与广场智能体卡片 action-box 内
+            // star 与 extra 的相邻排布一致）；收藏图标 hover 卡片时浮现，
+            // 付费角标常驻
+            <div className={cx(styles['corner-box'])}>
+              <span
+                className={cx(styles['star-box'], styles['hover-reveal-btn'])}
+                aria-label={dict(
+                  item.collected
+                    ? 'PC.Pages.HomeDrag.cancelCollect'
+                    : 'PC.Pages.HomeDrag.collect',
+                )}
+                title={dict(
+                  item.collected
+                    ? 'PC.Pages.HomeDrag.cancelCollect'
+                    : 'PC.Pages.HomeDrag.collect',
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleCollect?.(item);
+                }}
+              >
+                {item.collected ? <ICON_STAR_FILL /> : <ICON_STAR />}
+              </span>
+              {/* 付费角标（与广场智能体卡片同款）：需付费卡片展示
+                  「付费/已订阅」，点击跳转智能体详情页（未订阅时详情页
+                  自动弹订阅套餐弹窗，与空间广场卡片同口径） */}
+              {showPayment && item.paymentRequired && (
+                <Tag
+                  color={item.subscribed ? 'success' : 'processing'}
+                  style={{ marginRight: 0, flexShrink: 0, cursor: 'pointer' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPaymentClick?.(item);
+                  }}
+                >
+                  {dict(
+                    item.subscribed
+                      ? 'PC.Pages.Square.SingleAgent.subscribed'
+                      : 'PC.Pages.Square.SingleAgent.paid',
+                  )}
+                </Tag>
               )}
-              title={dict(
-                item.collected
-                  ? 'PC.Pages.HomeDrag.cancelCollect'
-                  : 'PC.Pages.HomeDrag.collect',
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleCollect?.(item);
-              }}
-            >
-              {item.collected ? <ICON_STAR_FILL /> : <ICON_STAR />}
-            </span>
+            </div>
           )}
           {showConnectAction && (
             <div
