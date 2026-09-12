@@ -437,22 +437,6 @@ const SidebarSearchModal: React.FC = () => {
             {sub ? ` · ${sub}` : ''}
           </span>
         </span>
-        {item.source && (
-          <span
-            className={cx(
-              styles.rowSource,
-              item.source === 'official'
-                ? styles.sourceOfficial
-                : styles.sourceTeam,
-            )}
-          >
-            {dict(
-              `${I18N_PREFIX}.${
-                item.source === 'official' ? 'sourceOfficial' : 'sourceTeam'
-              }`,
-            )}
-          </span>
-        )}
       </div>
     );
   };
@@ -575,7 +559,11 @@ const SidebarSearchModal: React.FC = () => {
             )}
             {activeTab === 'connector' && (
               // 连接器无选中语义（纯连接管理）：连接/断开/凭据/扫码授权组件内闭环
-              <ConnectorListView type="search" variant="list" keyword={keyword} />
+              <ConnectorListView
+                type="search"
+                variant="list"
+                keyword={keyword}
+              />
             )}
           </div>
         ) : (
