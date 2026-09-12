@@ -3,16 +3,19 @@
  * @description 单栏顶栏「搜索」icon / ⌘K 打开。六个资源分类 tab
  * （任务/项目/专家&专家团/技能/连接器/资料库，数据源见 ./sources.ts）：
  * 任务/资料库无关键词时展示「最近访问」（有就展示），其余分类展示列表第一页；
- * 关键词 500ms 防抖走各分类接口搜索（专家/技能/连接器双源合并带来源标记）。
+ * 关键词 500ms 防抖走各分类接口搜索（专家/连接器双源合并带来源标记）。
+ * 技能 tab 复用 SkillListView 搜索场景（type=search，数据/分页/付费拦截组件内闭环）。
+ * 样式对齐原型 gsearch（file-preview sk=837cc）：700 宽面板/药丸 tab/色块图标双行行。
  * 支持 ↑/↓ 选择、Enter 确认、Esc 关闭、⌘B 切换侧边栏。
  */
 import SvgIcon from '@/components/base/SvgIcon';
+import SkillListView from '@/components/business-component/SkillListView';
+import type { SkillListItem } from '@/components/business-component/SkillListView/types';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
 import { dict } from '@/services/i18nRuntime';
-import type { InputRef } from 'antd';
-import { Input, Modal, Spin } from 'antd';
+import { Modal, Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -25,7 +28,12 @@ import { history, useModel } from 'umi';
 import { useSidebarCollapse } from '../useSidebarCollapse';
 import { findMenuByCode, handleOpenUrl, resolveMenuPath } from '../utils';
 import styles from './index.less';
-import type { SearchFetchParams, SearchResultItem, SearchTab } from './sources';
+import type {
+  SearchFetchParams,
+  SearchResultItem,
+  SearchRowKind,
+  SearchTab,
+} from './sources';
 import { fetchRecentRepos, fetchRecentTasks, SEARCH_FETCHERS } from './sources';
 
 const cx = classNames.bind(styles);
@@ -34,15 +42,15 @@ const RECENT_LIMIT = 8;
 const SEARCH_LIMIT = 20;
 const SEARCH_DEBOUNCE_MS = 500;
 
+const I18N_PREFIX = 'PC.Layouts.DynamicMenusLayout.SidebarSearchModal';
+
 /**
  * 资料库菜单 code（后端菜单管理下发）
  * repo-web 深链尚未接入主线，资料库文档跳转须走该菜单的应用内 iframe 形态
  */
 const REPO_MENU_CODE = 'ziliaoku';
 
-const I18N_PREFIX = 'PC.Layouts.DynamicMenusLayout.SidebarSearchModal';
-
-/** tab 定义（key + i18n 后缀，顺序即展示顺序） */
+/** tab 定义（key + i18n 后缀，顺序即展示顺序；技能 tab 由 SkillListView 自渲染） */
 const TABS: Array<[SearchTab, string]> = [
   ['task', 'tabTask'],
   ['project', 'tabProject'],
@@ -52,26 +60,34 @@ const TABS: Array<[SearchTab, string]> = [
   ['repo', 'tabRepo'],
 ];
 
-/** 各分类行的兜底图标（无真实图标/受保护图加载失败时） */
-const TAB_FALLBACK_ICONS: Record<SearchTab, string> = {
+/** 各分类行兜底图标（无真实图标/受保护图加载失败时） */
+const TAB_FALLBACK_ICONS: Record<SearchRowKind, string> = {
   task: 'icons-nav-history-conversation',
   project: 'icons-nav-cube',
   expert: 'icons-nav-robot',
-  skill: 'icons-nav-skill',
   connector: 'icons-nav-connector',
   repo: 'icons-nav-knowledge',
 };
 
-/** 行图标：真实图标优先（受保护地址走鉴权 blob），缺失回退分类兜底图标 */
-const RowIcon: React.FC<{ tab: SearchTab; icon?: string }> = ({
-  tab,
+/** 行副标题的分类前缀（「类型 · 描述/时间」格式） */
+const KIND_I18N_KEYS: Record<SearchRowKind, string> = {
+  task: 'tabTask',
+  project: 'tabProject',
+  expert: 'kindExpert',
+  connector: 'kindConnector',
+  repo: 'kindRepo',
+};
+
+/** 行图标：真实图标优先（受保护地址走鉴权 blob），缺失回退分类色块+兜底图标 */
+const RowIcon: React.FC<{ kind: SearchRowKind; icon?: string }> = ({
+  kind,
   icon,
 }) => {
   const { displaySrc } = useAuthProtectedImageSrc(icon);
   if (displaySrc) {
     return <img className={cx(styles.rowImg)} src={displaySrc} alt="" />;
   }
-  return <SvgIcon name={TAB_FALLBACK_ICONS[tab]} />;
+  return <SvgIcon name={TAB_FALLBACK_ICONS[kind]} style={{ fontSize: 21 }} />;
 };
 
 const SidebarSearchModal: React.FC = () => {
@@ -81,7 +97,7 @@ const SidebarSearchModal: React.FC = () => {
   const { summon } = useSummonExpertHandoff();
   const { select } = useSelectSkillHandoff();
   const { toggleCollapse } = useSidebarCollapse();
-  const inputRef = useRef<InputRef>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const [keyword, setKeyword] = useState('');
   const [activeTab, setActiveTab] = useState<SearchTab>('task');
@@ -117,9 +133,9 @@ const SidebarSearchModal: React.FC = () => {
     return Number.isFinite(num) ? num : undefined;
   }, [getSpaceId]);
 
-  /** 拉取指定分类列表（缓存命中直接回显） */
+  /** 拉取指定分类列表（缓存命中直接回显；技能 tab 由 SkillListView 自取不经过此路径） */
   const runFetch = useCallback(
-    async (tab: SearchTab, kw: string) => {
+    async (tab: SearchRowKind, kw: string) => {
       const cacheKey = `${tab}|${kw}`;
       const cached = cacheRef.current.get(cacheKey);
       if (cached) {
@@ -166,9 +182,10 @@ const SidebarSearchModal: React.FC = () => {
   }, [openSearchModal]);
 
   // 关键词搜索（500ms 防抖）与分类切换的列表加载；
-  // 任务/资料库无关键词走「最近访问」不拉列表，其余分类无关键词拉第一页
+  // 任务/资料库无关键词走「最近访问」不拉列表，其余分类无关键词拉第一页；
+  // 技能 tab 由 SkillListView 自取（keyword 受控传入，组件内防抖）
   useEffect(() => {
-    if (!openSearchModal) return;
+    if (!openSearchModal || activeTab === 'skill') return;
     if (!keyword) {
       if (activeTab !== 'task' && activeTab !== 'repo') {
         runFetch(activeTab, '');
@@ -249,13 +266,14 @@ const SidebarSearchModal: React.FC = () => {
     [firstLevelMenus],
   );
 
-  /** 结果点击分发（键盘 Enter 同路径） */
+  /** 结果点击分发（键盘 Enter 同路径；技能 tab 由 SkillListView onSelect 自分发） */
   const activateItem = useCallback(
     (item: SearchResultItem) => {
-      // TODO 专家/技能/连接器点击待复用「会话框快捷呼能力」CapabilityModal 交互联动
+      // TODO 专家/连接器点击待复用「会话框快捷呼能力」CapabilityModal 交互联动
       //  （src/components/ChatInputHome/CapabilityModal，组件另一同学开发中，就绪后替换）：
-      //  行点击改为打开该弹窗并落对应维度（defaultResourceType + resourceTypes 收敛三类），
-      //  onSelect 按弹窗场景分派；以下 summon/select/跳页 为临时行为
+      //  行点击改为打开该弹窗并落对应维度（defaultResourceType + resourceTypes 收敛），
+      //  onSelect 按弹窗场景分派；以下 summon/跳页 为临时行为。
+      //  技能已接入（SkillListView type=search，见 renderBody）。
       switch (item.kind) {
         case 'task':
           goConversation(item.conversation);
@@ -271,13 +289,6 @@ const SidebarSearchModal: React.FC = () => {
             summon({ agentId: item.agentId, name: item.name, icon: item.icon });
           }
           break;
-        case 'skill':
-          closeModal();
-          // 复用技能页「选择」：写入透传上下文回 /home 挂技能 chip
-          if (item.skillId !== undefined) {
-            select({ skillId: item.skillId, name: item.name, icon: item.icon });
-          }
-          break;
         case 'connector':
           closeModal();
           history.push('/expert-skill-connector/connector');
@@ -288,11 +299,25 @@ const SidebarSearchModal: React.FC = () => {
           break;
       }
     },
-    [closeModal, goConversation, summon, select, openRepoDoc],
+    [closeModal, goConversation, summon, openRepoDoc],
+  );
+
+  /** 技能选中（SkillListView 回调，付费拦截通过后才触发）：复用「选择」回 /home 挂 chip */
+  const handleSkillSelect = useCallback(
+    (item: SkillListItem) => {
+      closeModal();
+      select({
+        skillId: item.targetId ?? item.rawId,
+        name: item.name,
+        icon: item.icon,
+      });
+    },
+    [closeModal, select],
   );
 
   // 无关键词时：任务/资料库展示最近访问，其余分类展示列表第一页
   const displayList = useMemo(() => {
+    if (activeTab === 'skill') return [];
     if (keyword) return view.items;
     if (activeTab === 'task') return recentTasks;
     if (activeTab === 'repo') return recentRepos;
@@ -300,18 +325,13 @@ const SidebarSearchModal: React.FC = () => {
   }, [keyword, activeTab, view.items, recentTasks, recentRepos]);
 
   const loading = useMemo(() => {
+    if (activeTab === 'skill') return false;
     if (keyword) return view.loading;
     if (activeTab === 'repo') return recentRepoLoading;
     if (activeTab === 'task') return false;
     return view.loading;
   }, [keyword, activeTab, view.loading, recentRepoLoading]);
 
-  // 区块标题：有关键词=搜索结果；任务/资料库无关键词=最近访问；其余不展示
-  const sectionTitle = keyword
-    ? dict(`${I18N_PREFIX}.sectionResult`)
-    : activeTab === 'task' || activeTab === 'repo'
-    ? dict(`${I18N_PREFIX}.sectionRecent`)
-    : '';
   // 「最近访问」空不占位（有就展示）
   const hideRecentSection =
     !keyword &&
@@ -359,6 +379,8 @@ const SidebarSearchModal: React.FC = () => {
     const idx = displayList.findIndex((entry) => entry.id === item.id);
     // 项目无子会话置灰不可点
     const disabled = item.kind === 'project' && !item.projectConversation;
+    // 副标题「类型 · 描述/时间」
+    const sub = item.description || item.meta;
     return (
       <div
         key={item.id}
@@ -370,14 +392,15 @@ const SidebarSearchModal: React.FC = () => {
         onMouseEnter={() => !disabled && setSelectedIdx(idx)}
         aria-disabled={disabled || undefined}
       >
-        <span className={cx(styles.rowIcon)}>
-          <RowIcon tab={item.kind} icon={item.icon} />
+        <span className={cx(styles.tile, styles[`tile-${item.kind}`])}>
+          <RowIcon kind={item.kind} icon={item.icon} />
         </span>
         <span className={cx(styles.rowMain)}>
           <span className={cx(styles.rowLabel)}>{item.name}</span>
-          {item.description && (
-            <span className={cx(styles.rowDesc)}>{item.description}</span>
-          )}
+          <span className={cx(styles.rowSub)}>
+            {dict(`${I18N_PREFIX}.${KIND_I18N_KEYS[item.kind]}`)}
+            {sub ? ` · ${sub}` : ''}
+          </span>
         </span>
         {item.source && (
           <span
@@ -395,12 +418,24 @@ const SidebarSearchModal: React.FC = () => {
             )}
           </span>
         )}
-        {item.meta && <span className={cx(styles.rowTime)}>{item.meta}</span>}
       </div>
     );
   };
 
   const renderBody = () => {
+    // 技能 tab：SkillListView 搜索场景（数据/分页/付费拦截组件内闭环）
+    if (activeTab === 'skill') {
+      return (
+        <div className={cx(styles['skill-wrap'])}>
+          <SkillListView
+            type="search"
+            variant="list"
+            keyword={keyword}
+            onSelect={handleSkillSelect}
+          />
+        </div>
+      );
+    }
     if (hideRecentSection) return null;
     if (loading) {
       return (
@@ -424,22 +459,52 @@ const SidebarSearchModal: React.FC = () => {
       onCancel={closeModal}
       footer={null}
       closable={false}
-      width={640}
-      style={{ top: 80 }}
-      styles={{ body: { padding: 0 } }}
+      width={700}
+      style={{ top: '12vh' }}
+      styles={{
+        content: { padding: 0, borderRadius: 16, overflow: 'hidden' },
+        body: { padding: 0 },
+      }}
       destroyOnClose
     >
       <div className={cx(styles.container)}>
-        <div className={cx(styles['input-wrap'])}>
-          <Input
+        <div className={cx(styles.head)}>
+          <svg
+            className={cx(styles.headIcon)}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
             ref={inputRef}
+            className={cx(styles.input)}
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={handleInputKeyDown}
             placeholder={dict(`${I18N_PREFIX}.placeholder`)}
-            allowClear
-            bordered={false}
+            autoComplete="off"
           />
+          <button
+            type="button"
+            className={cx(styles.closeBtn)}
+            onClick={closeModal}
+            aria-label={dict(`${I18N_PREFIX}.close`)}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
         </div>
 
         <div className={cx(styles.tabs)}>
@@ -457,12 +522,7 @@ const SidebarSearchModal: React.FC = () => {
           ))}
         </div>
 
-        <div className={cx(styles.body)}>
-          {sectionTitle && !hideRecentSection && (
-            <div className={cx(styles.sectionTitle)}>{sectionTitle}</div>
-          )}
-          {renderBody()}
-        </div>
+        <div className={cx(styles.body)}>{renderBody()}</div>
       </div>
     </Modal>
   );

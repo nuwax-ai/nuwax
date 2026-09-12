@@ -25,6 +25,15 @@ const apiSpaceList = vi.hoisted(() => vi.fn());
 vi.mock('@/components/ChatInputHome/CapabilityModal/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
+vi.mock('@/components/business-component/ExpertSummonModal/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+vi.mock(
+  '@/components/business-component/ConnectorDeviceAuthModal/index.less',
+  () => ({
+    default: new Proxy({}, { get: (_, key) => String(key) }),
+  }),
+);
 
 // 资料卡类型图标（FileTypeIcon）自带 less 也需 mock,否则 styles 为
 // undefined 渲染崩溃（vitest 不走 less 编译管线）

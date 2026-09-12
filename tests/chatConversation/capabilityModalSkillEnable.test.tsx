@@ -32,6 +32,15 @@ vi.mock('@/components/ChatInputHome/CapabilityModal/index.less', () => ({
 vi.mock('@/components/business-component/SkillListView/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
+vi.mock('@/components/business-component/ExpertSummonModal/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+vi.mock(
+  '@/components/business-component/ConnectorDeviceAuthModal/index.less',
+  () => ({
+    default: new Proxy({}, { get: (_, key) => String(key) }),
+  }),
+);
 
 vi.mock('umi', () => ({
   useModel: () => ({ tenantConfigInfo: { enableSubscription: 1 } }),

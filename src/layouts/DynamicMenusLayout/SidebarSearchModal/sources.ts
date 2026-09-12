@@ -12,12 +12,8 @@ import {
   apiAgentConfigList,
   apiAgentConversationList,
 } from '@/services/agentConfig';
-import { apiSkillList } from '@/services/library';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
-import {
-  apiPublishedAgentList,
-  apiPublishedSkillList,
-} from '@/services/square';
+import { apiPublishedAgentList } from '@/services/square';
 import {
   apiConnectorProviderPageList,
   apiSystemConnectorProviderList,
@@ -26,7 +22,6 @@ import { apiUserProjectTabPageQuery } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import type { SkillInfo } from '@/types/interfaces/library';
 import type {
   RepoPageSearchItem,
   RepoPortalPageInfo,
@@ -46,12 +41,15 @@ export type SearchTab =
   | 'connector'
   | 'repo';
 
+/** 弹窗自渲染行的分类（技能 tab 由 SkillListView 自渲染，不在其中） */
+export type SearchRowKind = Exclude<SearchTab, 'skill'>;
+
 /** 双源分类（专家/技能/连接器）的来源标记 */
 export type SearchItemSource = 'official' | 'team';
 
 /** 统一搜索结果条目（kind 决定行渲染与点击分发） */
 export interface SearchResultItem {
-  kind: SearchTab;
+  kind: SearchRowKind;
   /** 行唯一 key（渲染 + 键盘导航） */
   id: string;
   /** 主标题 */
@@ -70,8 +68,6 @@ export interface SearchResultItem {
   projectConversation?: ConversationInfo;
   /** 专家：智能体 ID（召唤透传用） */
   agentId?: number;
-  /** 技能：技能 ID（选择透传用） */
-  skillId?: number;
   /** 资料库：文档短链标识（深链 /repo/doc/{slugId} 用） */
   slugId?: string;
 }
@@ -163,30 +159,6 @@ export const mapSpaceExpertItem = (
   source: 'team',
   // 空间智能体 id 即智能体 ID，召唤透传用（与专家页口径一致）
   agentId: item.id,
-});
-
-export const mapPublishedSkillItem = (
-  item: SquarePublishedItemInfo,
-): SearchResultItem => ({
-  kind: 'skill',
-  id: `skill-official-${item.id}`,
-  name: item.name,
-  description: item.description || undefined,
-  icon: item.icon || undefined,
-  source: 'official',
-  // 发布项 targetId 即技能 ID，选择透传用（与技能页口径一致）
-  skillId: item.targetId,
-});
-
-export const mapSpaceSkillItem = (item: SkillInfo): SearchResultItem => ({
-  kind: 'skill',
-  id: `skill-team-${item.id}`,
-  name: item.name,
-  description: item.description || undefined,
-  icon: item.icon || undefined,
-  source: 'team',
-  // 空间技能 id 即技能 ID，选择透传用（与技能页口径一致）
-  skillId: item.id,
 });
 
 export const mapConnectorItem = (
@@ -298,32 +270,6 @@ export async function fetchExpertList({
   return [...items, ...(teamItems ?? [])];
 }
 
-/** 技能：系统广场官方发布 + 团队空间技能（全量本地过滤）双源合并 */
-export async function fetchSkillList({
-  keyword,
-  limit,
-  spaceId,
-}: SearchFetchParams): Promise<SearchResultItem[]> {
-  const [systemRes, teamRes] = await Promise.all([
-    safe(
-      apiPublishedSkillList({
-        page: 1,
-        pageSize: limit,
-        category: '',
-        kw: keyword || undefined,
-      }),
-      null,
-    ),
-    spaceId ? safe(apiSkillList({ spaceId }), null) : null,
-  ]);
-  const items = (unwrap(systemRes)?.records ?? []).map(mapPublishedSkillItem);
-  const teamItems = (teamRes ? unwrap(teamRes) : [])
-    ?.filter((item) => matchKeyword(keyword, item.name, item.description))
-    .slice(0, limit)
-    .map(mapSpaceSkillItem);
-  return [...items, ...(teamItems ?? [])];
-}
-
 /** 连接器：系统连接器（全量本地过滤）+ 空间连接器（keyword 服务端搜）双源合并 */
 export async function fetchConnectorList({
   keyword,
@@ -380,15 +326,14 @@ export async function fetchRecentRepos(
   return (data ?? []).filter((item) => item.slugId).map(mapRepoRecentItem);
 }
 
-/** 分类 → 取数器（组件层统一调度） */
+/** 分类 → 取数器（组件层统一调度；技能 tab 由 SkillListView 自取不在其中） */
 export const SEARCH_FETCHERS: Record<
-  SearchTab,
+  SearchRowKind,
   (params: SearchFetchParams) => Promise<SearchResultItem[]>
 > = {
   task: fetchTaskList,
   project: fetchProjectList,
   expert: fetchExpertList,
-  skill: fetchSkillList,
   connector: fetchConnectorList,
   repo: fetchRepoList,
 };

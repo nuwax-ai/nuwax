@@ -15,10 +15,6 @@ vi.mock('@/services/agentConfig', () => ({
   apiAgentConfigList: vi.fn(),
 }));
 
-vi.mock('@/services/library', () => ({
-  apiSkillList: vi.fn(),
-}));
-
 vi.mock('@/services/repo', () => ({
   apiRepoSearch: vi.fn(),
   apiRepoRecentlyAccessedPages: vi.fn(),
@@ -26,7 +22,6 @@ vi.mock('@/services/repo', () => ({
 
 vi.mock('@/services/square', () => ({
   apiPublishedAgentList: vi.fn(),
-  apiPublishedSkillList: vi.fn(),
 }));
 
 vi.mock('@/services/systemManage', () => ({
@@ -42,12 +37,8 @@ import {
   apiAgentConfigList,
   apiAgentConversationList,
 } from '@/services/agentConfig';
-import { apiSkillList } from '@/services/library';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
-import {
-  apiPublishedAgentList,
-  apiPublishedSkillList,
-} from '@/services/square';
+import { apiPublishedAgentList } from '@/services/square';
 import {
   apiConnectorProviderPageList,
   apiSystemConnectorProviderList,
@@ -60,7 +51,6 @@ import {
   fetchRecentRepos,
   fetchRecentTasks,
   fetchRepoList,
-  fetchSkillList,
   mapProjectItem,
   matchKeyword,
   stripHtml,
@@ -69,11 +59,9 @@ import {
 const mocked = {
   apiAgentConversationList: vi.mocked(apiAgentConversationList),
   apiAgentConfigList: vi.mocked(apiAgentConfigList),
-  apiSkillList: vi.mocked(apiSkillList),
   apiRepoSearch: vi.mocked(apiRepoSearch),
   apiRepoRecentlyAccessedPages: vi.mocked(apiRepoRecentlyAccessedPages),
   apiPublishedAgentList: vi.mocked(apiPublishedAgentList),
-  apiPublishedSkillList: vi.mocked(apiPublishedSkillList),
   apiConnectorProviderPageList: vi.mocked(apiConnectorProviderPageList),
   apiSystemConnectorProviderList: vi.mocked(apiSystemConnectorProviderList),
   apiUserProjectTabPageQuery: vi.mocked(apiUserProjectTabPageQuery),
@@ -221,24 +209,6 @@ describe('fetchExpertList 双源合并', () => {
       spaceId: 52,
     });
     expect(items.map((item) => item.source)).toEqual(['team']);
-  });
-});
-
-describe('fetchSkillList 双源合并', () => {
-  it('广场技能 + 空间技能（本地过滤）合并', async () => {
-    mocked.apiPublishedSkillList.mockResolvedValue(
-      ok({
-        records: [{ id: 2, targetId: 300, name: '官方技能', description: '' }],
-      }) as never,
-    );
-    mocked.apiSkillList.mockResolvedValue(
-      ok([{ id: 301, name: '空间技能', description: '' }]) as never,
-    );
-    const items = await fetchSkillList({ keyword: '', limit: 20, spaceId: 52 });
-    expect(items.map((item) => [item.source, item.skillId])).toEqual([
-      ['official', 300],
-      ['team', 301],
-    ]);
   });
 });
 
