@@ -564,6 +564,9 @@ const ProjectPanel = forwardRef<
     try {
       await handleCreateConversation(agentId, {
         projectId: project.id,
+        // 绑定项目时后端必填（2026-09-12 实测缺省报「项目类型不能为空」）
+        projectType:
+          project.projectType ?? AgentComponentTypeEnum.NormalProject,
         devAgentId: project.devAgentId ?? agentId,
         sandboxId: project.sandboxId ?? undefined,
         redirectUrl:
