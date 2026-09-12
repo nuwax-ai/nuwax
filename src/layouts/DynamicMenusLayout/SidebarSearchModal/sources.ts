@@ -1,21 +1,16 @@
 /**
  * 搜索弹窗分类数据适配层
  * @description 六个分类 tab 的列表/搜索/最近访问数据源：
- * - 任务/项目/连接器/资料库为弹窗自渲染行，统一走分页取数（SearchPageResult）：
- *   任务=lastId 会话游标、项目=页码、资料库=from 偏移（均触底续拉），
- *   连接器=双源合并单页（hasMore 恒 false）
- * - 技能/专家 tab 由 SkillListView/ExpertListView 搜索场景自取
- *   （数据/分页/付费拦截组件内闭环）
+ * - 任务/项目/资料库为弹窗自渲染行，统一走分页取数（SearchPageResult）：
+ *   任务=lastId 会话游标、项目=页码、资料库=from 偏移（均触底续拉）
+ * - 技能/专家/连接器 tab 由 SkillListView/ExpertListView/ConnectorListView
+ *   搜索场景自取（数据/分页/付费拦截/连接流程组件内闭环）
  * - 各接口取值口径与 ExpertSkillConnector 页面适配器保持一致
  */
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
-import {
-  apiConnectorProviderPageList,
-  apiSystemConnectorProviderList,
-} from '@/services/systemManage';
 import { apiUserProjectTabPageQuery } from '@/services/userProjectApp';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type {
@@ -23,7 +18,6 @@ import type {
   RepoPortalPageInfo,
 } from '@/types/interfaces/repo';
 import type { RequestResponse } from '@/types/interfaces/request';
-import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import { formatModifiedTime } from '../NewHomeSection/utils';
 
@@ -36,11 +30,8 @@ export type SearchTab =
   | 'connector'
   | 'repo';
 
-/** 弹窗自渲染行的分类（技能/专家 tab 由对应列表组件自渲染，不在其中） */
-export type SearchRowKind = Exclude<SearchTab, 'skill' | 'expert'>;
-
-/** 双源分类（连接器）的来源标记 */
-export type SearchItemSource = 'official' | 'team';
+/** 弹窗自渲染行的分类（技能/专家/连接器 tab 由对应列表组件自渲染，不在其中） */
+export type SearchRowKind = Exclude<SearchTab, 'skill' | 'expert' | 'connector'>;
 
 /** 统一搜索结果条目（kind 决定行渲染与点击分发） */
 export interface SearchResultItem {
@@ -49,14 +40,12 @@ export interface SearchResultItem {
   id: string;
   /** 主标题 */
   name: string;
-  /** 次要说明（连接器描述、资料库命中摘要） */
+  /** 次要说明（资料库命中摘要） */
   description?: string;
   /** 图标 URL（可能为 /api/f/ 受保护地址，展示走 useAuthProtectedImageSrc） */
   icon?: string;
   /** 右侧 meta 文本（任务/项目=更新时间，资料库=编辑时间） */
   meta?: string;
-  /** 来源标记（双源分类使用） */
-  source?: SearchItemSource;
   /** 任务：会话详情（点击走 devTargetType 分发） */
   conversation?: ConversationInfo;
   /** 项目：项目下最新一条会话（无则置灰不可点） */
@@ -65,7 +54,7 @@ export interface SearchResultItem {
   slugId?: string;
 }
 
-/** 分页游标：任务=会话 id，项目=页码，资料库=偏移量（连接器单页无游标） */
+/** 分页游标：任务=会话 id，项目=页码，资料库=偏移量 */
 export interface SearchPageCursor {
   /** 任务：最后一条会话 ID（conversation/list 的 lastId 游标） */
   lastId?: number;
@@ -78,7 +67,7 @@ export interface SearchPageCursor {
 /** 分页拉取结果 */
 export interface SearchPageResult {
   items: SearchResultItem[];
-  /** 是否还有下一页（连接器单页恒 false） */
+  /** 是否还有下一页 */
   hasMore: boolean;
   /** 下一页游标（触底加载时透传回取数器） */
   cursor: SearchPageCursor;
@@ -95,15 +84,6 @@ export interface SearchPageParams {
   spaceId?: number;
 }
 
-/** 单源失败不拖垮整 tab（双源并发合并用） */
-const safe = async <T>(task: Promise<T>, fallback: T): Promise<T> => {
-  try {
-    return await task;
-  } catch {
-    return fallback;
-  }
-};
-
 /** 响应信封解包（code 非成功返回 null） */
 const unwrap = <T>(res: RequestResponse<T> | null): T | null =>
   res?.code === SUCCESS_CODE ? res.data : null;
@@ -111,16 +91,6 @@ const unwrap = <T>(res: RequestResponse<T> | null): T | null =>
 /** 剥离搜索摘要里的高亮标签等 HTML 片段（行内纯文本展示） */
 export const stripHtml = (input?: string): string | undefined =>
   input?.replace(/<[^>]*>/g, '').trim() || undefined;
-
-/** 关键字本地过滤（名称/描述包含，大小写不敏感；与连接器页内存过滤同口径） */
-export const matchKeyword = (
-  keyword: string,
-  ...fields: Array<string | undefined>
-): boolean => {
-  const kw = keyword.trim().toLowerCase();
-  if (!kw) return true;
-  return fields.some((field) => field?.toLowerCase().includes(kw));
-};
 
 /* ---------------- 各分类行映射（导出供单测） ---------------- */
 
@@ -149,19 +119,6 @@ export const mapProjectItem = (item: UserProjectTabItem): SearchResultItem => {
     projectConversation: latest ?? item.conversations?.[0],
   };
 };
-
-export const mapConnectorItem = (
-  item: ConnectorProviderInfo,
-  source: SearchItemSource,
-  idPrefix: string,
-): SearchResultItem => ({
-  kind: 'connector',
-  id: `connector-${idPrefix}-${item.service || item.id}`,
-  name: item.displayName || item.service,
-  description: item.description || undefined,
-  icon: item.icon || undefined,
-  source,
-});
 
 export const mapRepoSearchItem = (
   item: RepoPageSearchItem,
@@ -234,48 +191,6 @@ export async function fetchProjectPage({
   };
 }
 
-/** 连接器：系统连接器（全量本地过滤）+ 空间连接器（keyword 服务端搜）双源合并单页 */
-export async function fetchConnectorPage({
-  keyword,
-  size,
-  cursor,
-  spaceId,
-}: SearchPageParams): Promise<SearchPageResult> {
-  const [systemRes, teamRes] = await Promise.all([
-    safe(apiSystemConnectorProviderList(), null),
-    spaceId
-      ? safe(
-          apiConnectorProviderPageList({
-            spaceId,
-            pageNum: 1,
-            pageSize: size,
-            // 与空间连接器页保持一致的空间维度查询参数
-            scope: 'space',
-            status: 'all',
-            connected: 'all',
-            keyword: keyword || undefined,
-          }),
-          null,
-        )
-      : null,
-  ]);
-  const systemItems = (unwrap(systemRes) ?? [])
-    .filter((item) =>
-      matchKeyword(keyword, item.displayName, item.service, item.description),
-    )
-    .slice(0, size)
-    .map((item) => mapConnectorItem(item, 'official', 'system'));
-  const teamItems = (teamRes ? unwrap(teamRes)?.records : [])?.map((item) =>
-    mapConnectorItem(item, 'team', 'space'),
-  );
-  // 双源异构（系统源无分页游标）：合并结果一次性给出，hasMore 恒 false
-  return {
-    items: [...systemItems, ...(teamItems ?? [])],
-    hasMore: false,
-    cursor: { ...cursor },
-  };
-}
-
 /** 资料库：无关键词 = 门户「最近访问」，有关键词 = ES 全库搜索（from 偏移分页） */
 export async function fetchRepoPage({
   keyword,
@@ -310,6 +225,5 @@ export const SEARCH_FETCHERS: Record<
 > = {
   task: fetchTaskPage,
   project: fetchProjectPage,
-  connector: fetchConnectorPage,
   repo: fetchRepoPage,
 };

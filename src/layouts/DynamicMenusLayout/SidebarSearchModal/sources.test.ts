@@ -23,11 +23,6 @@ vi.mock('@/services/square', () => ({
   apiPublishedAgentList: vi.fn(),
 }));
 
-vi.mock('@/services/systemManage', () => ({
-  apiConnectorProviderPageList: vi.fn(),
-  apiSystemConnectorProviderList: vi.fn(),
-}));
-
 vi.mock('@/services/userProjectApp', () => ({
   apiUserProjectTabPageQuery: vi.fn(),
 }));
@@ -35,18 +30,12 @@ vi.mock('@/services/userProjectApp', () => ({
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
 import { apiPublishedAgentList } from '@/services/square';
-import {
-  apiConnectorProviderPageList,
-  apiSystemConnectorProviderList,
-} from '@/services/systemManage';
 import { apiUserProjectTabPageQuery } from '@/services/userProjectApp';
 import {
-  fetchConnectorPage,
   fetchProjectPage,
   fetchRepoPage,
   fetchTaskPage,
   mapProjectItem,
-  matchKeyword,
   stripHtml,
 } from './sources';
 
@@ -55,8 +44,6 @@ const mocked = {
   apiRepoSearch: vi.mocked(apiRepoSearch),
   apiRepoRecentlyAccessedPages: vi.mocked(apiRepoRecentlyAccessedPages),
   apiPublishedAgentList: vi.mocked(apiPublishedAgentList),
-  apiConnectorProviderPageList: vi.mocked(apiConnectorProviderPageList),
-  apiSystemConnectorProviderList: vi.mocked(apiSystemConnectorProviderList),
   apiUserProjectTabPageQuery: vi.mocked(apiUserProjectTabPageQuery),
 };
 void mocked;
@@ -75,22 +62,6 @@ describe('stripHtml', () => {
   it('空值返回 undefined', () => {
     expect(stripHtml(undefined)).toBeUndefined();
     expect(stripHtml('   ')).toBeUndefined();
-  });
-});
-
-describe('matchKeyword', () => {
-  it('空关键字恒真', () => {
-    expect(matchKeyword('', undefined)).toBe(true);
-    expect(matchKeyword('  ', 'abc')).toBe(true);
-  });
-
-  it('名称/描述包含即命中（大小写不敏感）', () => {
-    expect(matchKeyword('OSS', 'Aliyun OSS', undefined)).toBe(true);
-    expect(matchKeyword('存储', undefined, '对象存储服务')).toBe(true);
-  });
-
-  it('字段全不包含则不命中', () => {
-    expect(matchKeyword('k8s', 'Aliyun OSS', '对象存储')).toBe(false);
   });
 });
 
@@ -230,48 +201,6 @@ describe('fetchProjectPage（页码分页）', () => {
     );
     const res = await fetchProjectPage({ keyword: '', size: 20, cursor: {} });
     expect(res.hasMore).toBe(true);
-  });
-});
-
-describe('fetchConnectorPage 双源合并单页', () => {
-  it('系统连接器本地过滤 + 空间连接器分页结果合并；hasMore 恒 false', async () => {
-    mocked.apiSystemConnectorProviderList.mockResolvedValue(
-      ok([
-        {
-          id: 1,
-          service: 'aliyun_oss',
-          displayName: 'Aliyun OSS',
-          description: '',
-        },
-        { id: 2, service: 'aws_s3', displayName: 'AWS S3', description: '' },
-      ]) as never,
-    );
-    mocked.apiConnectorProviderPageList.mockResolvedValue(
-      ok({
-        records: [{ id: 9, service: 'space_conn', displayName: '空间连接器' }],
-      }) as never,
-    );
-    const res = await fetchConnectorPage({
-      keyword: 'oss',
-      size: 20,
-      cursor: {},
-      spaceId: 52,
-    });
-    expect(res.items.map((item) => item.name)).toEqual([
-      'Aliyun OSS',
-      '空间连接器',
-    ]);
-    expect(res.hasMore).toBe(false);
-    expect(mocked.apiConnectorProviderPageList).toHaveBeenCalledWith(
-      expect.objectContaining({ spaceId: 52, keyword: 'oss', scope: 'space' }),
-    );
-  });
-
-  it('无 spaceId 时跳过空间源', async () => {
-    mocked.apiSystemConnectorProviderList.mockResolvedValue(ok([]) as never);
-    const res = await fetchConnectorPage({ keyword: '', size: 20, cursor: {} });
-    expect(mocked.apiConnectorProviderPageList).not.toHaveBeenCalled();
-    expect(res.items).toEqual([]);
   });
 });
 

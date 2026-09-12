@@ -3,12 +3,14 @@
  * @description 单栏顶栏「搜索」icon / ⌘K 打开。六个资源分类 tab
  * （任务/项目/专家&专家团/技能/连接器/资料库，数据源见 ./sources.ts）：
  * 任务/资料库无关键词时展示「最近访问」（有就展示），其余分类展示列表第一页；
- * 关键词 500ms 防抖走各分类接口搜索（专家/连接器双源合并带来源标记）。
- * 技能 tab 复用 SkillListView 搜索场景（type=search，数据/分页/付费拦截组件内闭环）。
+ * 关键词 500ms 防抖走各分类接口搜索。
+ * 技能/专家/连接器 tab 复用对应 ListView 搜索场景（type=search，列表数据与
+ * 付费拦截/连接流程组件内闭环，宿主只传关键词与选中回调）。
  * 样式对齐原型 gsearch（file-preview sk=837cc）：700 宽面板/药丸 tab/色块图标双行行。
  * 支持 ↑/↓ 选择、Enter 确认、Esc 关闭、⌘B 切换侧边栏。
  */
 import SvgIcon from '@/components/base/SvgIcon';
+import ConnectorListView from '@/components/business-component/ConnectorListView';
 import ExpertListView from '@/components/business-component/ExpertListView';
 import type { ExpertListItem } from '@/components/business-component/ExpertListView/types';
 import SkillListView from '@/components/business-component/SkillListView';
@@ -65,7 +67,6 @@ const TABS: Array<[SearchTab, string]> = [
 const TAB_FALLBACK_ICONS: Record<SearchRowKind, string> = {
   task: 'icons-nav-history-conversation',
   project: 'icons-nav-cube',
-  connector: 'icons-nav-connector',
   repo: 'icons-nav-knowledge',
 };
 
@@ -73,9 +74,12 @@ const TAB_FALLBACK_ICONS: Record<SearchRowKind, string> = {
 const KIND_I18N_KEYS: Record<SearchRowKind, string> = {
   task: 'tabTask',
   project: 'tabProject',
-  connector: 'kindConnector',
   repo: 'kindRepo',
 };
+
+/** 列表组件自渲染的 tab（技能/专家/连接器，取数/分页/连接流程组件内闭环） */
+const isCompTab = (tab: SearchTab) =>
+  tab === 'skill' || tab === 'expert' || tab === 'connector';
 
 /** 行图标：真实图标优先（受保护地址走鉴权 blob），缺失回退分类色块+兜底图标 */
 const RowIcon: React.FC<{ kind: SearchRowKind; icon?: string }> = ({
@@ -100,7 +104,7 @@ const SidebarSearchModal: React.FC = () => {
 
   const [keyword, setKeyword] = useState('');
   const [activeTab, setActiveTab] = useState<SearchTab>('task');
-  // 分页视图：当前自渲染 tab 的列表（任务/项目/连接器/资料库统一走分页取数）
+  // 分页视图：当前自渲染 tab 的列表（任务/项目/资料库统一走分页取数）
   const [view, setView] = useState<{
     items: SearchResultItem[];
     hasMore: boolean;
@@ -230,10 +234,10 @@ const SidebarSearchModal: React.FC = () => {
   }, [openSearchModal]);
 
   // 关键词搜索（500ms 防抖）与分类切换的首屏加载（缓存命中直接回显）；
-  // 任务/项目/连接器/资料库统一分页取数——任务/资料库无关键词的首屏即「最近」数据；
-  // 技能/专家 tab 由对应列表组件自取（keyword 受控传入，组件内防抖）
+  // 任务/项目/资料库统一分页取数——任务/资料库无关键词的首屏即「最近」数据；
+  // 技能/专家/连接器 tab 由对应列表组件自取（keyword 受控传入，组件内防抖）
   useEffect(() => {
-    if (!openSearchModal || activeTab === 'skill' || activeTab === 'expert') {
+    if (!openSearchModal || isCompTab(activeTab)) {
       return;
     }
     if (!keyword) {
@@ -295,12 +299,9 @@ const SidebarSearchModal: React.FC = () => {
     [firstLevelMenus],
   );
 
-  /** 结果点击分发（键盘 Enter 同路径；技能 tab 由 SkillListView onSelect 自分发） */
+  /** 结果点击分发（键盘 Enter 同路径；技能/专家/连接器由列表组件自分发） */
   const activateItem = useCallback(
     (item: SearchResultItem) => {
-      // TODO 连接器待接入抽好的独立列表组件（同技能/专家套路：
-      //  <XxxListView type="search" variant="list" keyword onSelect/>，见 renderBody，
-      //  组件就绪后替换 SEARCH_FETCHERS.connector 单页取数与本跳页临时行为）。
       switch (item.kind) {
         case 'task':
           goConversation(item.conversation);
@@ -309,20 +310,19 @@ const SidebarSearchModal: React.FC = () => {
           // 项目无子会话置灰不可点
           goConversation(item.projectConversation);
           break;
-        case 'connector':
-          closeModal();
-          history.push('/expert-skill-connector/connector');
-          break;
         case 'repo':
           closeModal();
           openRepoDoc(item.slugId);
           break;
       }
     },
-    [closeModal, goConversation, summon, openRepoDoc],
+    [closeModal, goConversation, openRepoDoc],
   );
 
   /** 专家选中（ExpertListView 回调，付费拦截通过后才触发）：复用「召唤」回 /home 建会话 */
+  // TODO 召唤/选择链路后续收敛复用 CapabilityModal
+  // （src/components/ChatInputHome/CapabilityModal/，能力选择弹窗已内聚
+  //  技能/专家/连接器三维度列表，待其消费侧定稿后统一）
   const handleExpertSelect = useCallback(
     (item: ExpertListItem) => {
       closeModal();
@@ -350,12 +350,12 @@ const SidebarSearchModal: React.FC = () => {
 
   // 无关键词时：任务/资料库展示最近访问，其余分类展示列表第一页
   const displayList = useMemo(() => {
-    if (activeTab === 'skill' || activeTab === 'expert') return [];
+    if (isCompTab(activeTab)) return [];
     return view.items;
   }, [activeTab, view.items]);
 
   const loading = useMemo(() => {
-    if (activeTab === 'skill' || activeTab === 'expert') return false;
+    if (isCompTab(activeTab)) return false;
     return view.loading;
   }, [activeTab, view.loading]);
 
@@ -457,7 +457,7 @@ const SidebarSearchModal: React.FC = () => {
     );
   };
 
-  // 弹窗自渲染列表（任务/项目/连接器/资料库；技能/专家由列表组件自渲染）
+  // 弹窗自渲染列表（任务/项目/资料库；技能/专家/连接器由列表组件自渲染）
   const renderBody = () => {
     if (hideRecentSection) return null;
     if (loading) {
@@ -554,23 +554,28 @@ const SidebarSearchModal: React.FC = () => {
           ))}
         </div>
 
-        {activeTab === 'skill' || activeTab === 'expert' ? (
+        {isCompTab(activeTab) ? (
           // 列表组件自带滚动容器：包装层只限高不滚动，空态随内容收缩不出滚动条
           <div className={cx(styles['comp-wrap'])}>
-            {activeTab === 'skill' ? (
+            {activeTab === 'skill' && (
               <SkillListView
                 type="search"
                 variant="list"
                 keyword={keyword}
                 onSelect={handleSkillSelect}
               />
-            ) : (
+            )}
+            {activeTab === 'expert' && (
               <ExpertListView
                 type="search"
                 variant="list"
                 keyword={keyword}
                 onSelect={handleExpertSelect}
               />
+            )}
+            {activeTab === 'connector' && (
+              // 连接器无选中语义（纯连接管理）：连接/断开/凭据/扫码授权组件内闭环
+              <ConnectorListView type="search" variant="list" keyword={keyword} />
             )}
           </div>
         ) : (
