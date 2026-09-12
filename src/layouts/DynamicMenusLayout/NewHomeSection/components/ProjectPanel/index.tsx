@@ -41,6 +41,7 @@ import {
 } from 'react';
 import { useParams } from 'umi';
 import { formatRelativeTime } from '../../utils';
+import styles from './index.less';
 import {
   appendProjectsPage,
   hasMoreProjects,
@@ -49,7 +50,6 @@ import {
   remainingProjects,
   toProjectItem,
 } from './projectPagination';
-import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
@@ -121,7 +121,6 @@ const ProjectPanel = forwardRef<
   // 项目级标记：置顶/归档回读自后端字段（字段未返回时不标记）
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => new Set());
   const [archivedIds, setArchivedIds] = useState<Set<number>>(() => new Set());
-  const [showArchived, setShowArchived] = useState(false);
   // 子项重命名弹窗状态(projectId + childId 定位目标子项)
   const [renameTarget, setRenameTarget] = useState<{
     projectId: number;
@@ -222,15 +221,13 @@ const ProjectPanel = forwardRef<
     });
   };
 
-  // 项目可见列表:默认隐藏归档、置顶排前(稳定排序保持原相对顺序);已归档视图只看归档项
+  // 项目可见列表:隐藏归档项（侧栏不设归档查看入口）、置顶排前(稳定排序保持原相对顺序)
   const visibleProjects = useMemo(() => {
-    const filtered = showArchived
-      ? projects.filter((item) => archivedIds.has(item.id))
-      : projects.filter((item) => !archivedIds.has(item.id));
+    const filtered = projects.filter((item) => !archivedIds.has(item.id));
     return [...filtered].sort(
       (a, b) => Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id)),
     );
-  }, [projects, archivedIds, showArchived, pinnedIds]);
+  }, [projects, archivedIds, pinnedIds]);
 
   useImperativeHandle(
     ref,
@@ -249,11 +246,6 @@ const ProjectPanel = forwardRef<
         }),
     }),
     [visibleProjects],
-  );
-
-  const archivedProjectCount = useMemo(
-    () => projects.filter((item) => archivedIds.has(item.id)).length,
-    [projects, archivedIds],
   );
 
   useEffect(() => {
@@ -705,29 +697,16 @@ const ProjectPanel = forwardRef<
           </div>
         );
       })}
-      {/* 查看更多:项目层分页追加(已归档视图是加载全集的过滤展示,不重复出现) */}
-      {!showArchived && hasMore && (
+      {/* 查看更多:项目层分页追加 */}
+      {hasMore && (
         <div className={cx(styles['load-more-entry'])} onClick={handleLoadMore}>
           {loadingMore ? (
             <LoadingOutlined />
           ) : (
-            `${dict('PC.Components.AgentConversation.viewMore')} (${remainingCount})`
+            `${dict(
+              'PC.Components.AgentConversation.viewMore',
+            )} (${remainingCount})`
           )}
-        </div>
-      )}
-      {/* 已归档项目入口:存在归档项或处于已归档视图时显示(mock 阶段本地标记) */}
-      {(archivedProjectCount > 0 || showArchived) && (
-        <div
-          className={cx(styles['archived-entry'])}
-          onClick={() => setShowArchived(!showArchived)}
-        >
-          {showArchived
-            ? dict(
-                'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToProjects',
-              )
-            : `${dict(
-                'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedProjects',
-              )} (${archivedProjectCount})`}
         </div>
       )}
       <Modal
