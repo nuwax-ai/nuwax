@@ -2745,6 +2745,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.serviceStartOk": "{0} の起動に成功しました",
   "PC.Pages.AppDevPro.startingService": "サービスを起動しています...",
   "PC.Pages.AppDevPro.stopFailed": "停止に失敗しました",
+  "PC.Pages.AppDevPro.previewStopping": "サービスを停止しています…",
+  "PC.Pages.AppDevPro.previewStoppingHint": "停止が完了すると、再度プレビューを起動できます",
   "PC.Pages.AppDevPro.stopService": "サービスを停止",
   "PC.Pages.AppDevPro.stopSuccess": "サービスを停止しました",
   "PC.Pages.AppDevPro.waitingLogs": "タスクログを待っています...",

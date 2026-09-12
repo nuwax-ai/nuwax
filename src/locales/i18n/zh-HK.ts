@@ -2725,6 +2725,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevPro.serviceStartOk": "{0} 啟動成功",
   "PC.Pages.AppDevPro.startingService": "正在啟動服務...",
   "PC.Pages.AppDevPro.stopFailed": "停止失敗",
+  "PC.Pages.AppDevPro.previewStopping": "正在停止服務…",
+  "PC.Pages.AppDevPro.previewStoppingHint": "請稍候，停止完成後可再次啟動預覽",
   "PC.Pages.AppDevPro.stopService": "停止服務",
   "PC.Pages.AppDevPro.stopSuccess": "已停止服務",
   "PC.Pages.AppDevPro.waitingLogs": "等待任務日誌...",

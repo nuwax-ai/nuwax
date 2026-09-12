@@ -57,6 +57,8 @@ export interface AppDevAppPreviewPanelProps {
   allowStoppedHero?: boolean;
   /** 线上环境有预览地址时可直接展示 iframe，无需先启动服务 */
   directPreview?: boolean;
+  /** 正在调用停止接口，避免 iframe 被关掉后露出空白 */
+  stopping?: boolean;
 }
 
 /**
@@ -207,7 +209,7 @@ const PreviewHero: React.FC<{
 
 /**
  * AppDevPro 应用预览页签。
- * 容器未就绪显示准备中；停止后显示启动预览；启动过程展示任务日志；
+ * 容器未就绪显示准备中；停止中显示加载动画；停止后显示启动预览；启动过程展示任务日志；
  * 启动成功后先显示应用加载中，iframe 加载完成再露出页面。
  * 已有预览时，新会话进行中仍保留当前页面。
  *
@@ -232,6 +234,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   devActionLocked = false,
   allowStoppedHero = false,
   directPreview = false,
+  stopping = false,
 }) => {
   const logs = useMemo(() => {
     const lines = flattenTaskLogs(services);
@@ -266,6 +269,18 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   const handleIframeRetry = useCallback(() => {
     setLoadedInstanceKey('');
   }, []);
+
+  if (stopping) {
+    return (
+      <div className={cx(styles.container, styles.stage)}>
+        <PreviewHero
+          spinning
+          title={dict('PC.Pages.AppDevPro.previewStopping')}
+          hint={dict('PC.Pages.AppDevPro.previewStoppingHint')}
+        />
+      </div>
+    );
+  }
 
   // 已有可预览内容时，新会话进行中仍保留当前页面，不切回准备中
   if (

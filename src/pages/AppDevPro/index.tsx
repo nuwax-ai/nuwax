@@ -98,8 +98,6 @@ import {
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
-import { pickActiveUserAppTask } from './utils/userAppTaskStream';
-
 const cx = classNames.bind(styles);
 
 /** Header 工作区：文件树预览与应用预览 / 数据库互斥，后两者不进入文件标签栏 */
@@ -232,9 +230,9 @@ const AppDevPro: React.FC = () => {
   >('idle');
   const podReady = podStatus === 'running';
   /** 应用预览 iframe 刷新计数 */
-  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
+  const [previewRefreshKey, setPreviewRefreshKey] = useState<number>(0);
   /** 用户在地址栏跳转后的 iframe 地址（环境切换、重启服务时重置为预览根路径） */
-  const [previewIframeUrl, setPreviewIframeUrl] = useState('');
+  const [previewIframeUrl, setPreviewIframeUrl] = useState<string>('');
   /** 当前环境预览根地址，供启动 / 重启回调读取 */
   const appPreviewUrlRef = useRef<string>('');
 
@@ -704,8 +702,6 @@ const AppDevPro: React.FC = () => {
   restartPreviewRuntimeRef.current = previewRuntime.restart;
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
-  const attachExistingTaskRef = useRef(previewRuntime.attachExistingTask);
-  attachExistingTaskRef.current = previewRuntime.attachExistingTask;
   /** 会话进行中服务已在跑时，结束后重启预览以加载新文件 */
   const restartPreviewAfterConversationRef = useRef(false);
 
@@ -1362,7 +1358,7 @@ const AppDevPro: React.FC = () => {
 
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
-   * 开发环境须等 tasks/active 首包：允许则 start，不允许则接入已有任务 stream。
+   * 开发环境须等 tasks/active 首包：允许则 start；不允许（服务已在跑）且已有预览域名则直接 iframe，不再 start / stream。
    * 允许 start 时还须文件树已有数据，避免空项目拉起预览。
    * 会话进行中或仍有待回复确认卡时不启动；已有预览则会话结束后再重启。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
@@ -1396,12 +1392,13 @@ const AppDevPro: React.FC = () => {
     if (previewUserStoppedRef.current) {
       return;
     }
-    // 已有进行中任务：接入其进度流，不再新建 start
+    // 服务已在跑（不允许再 start）：有预览域名就直接 iframe，不必再挂 stream
     if (!devActionAllowed) {
-      const activeTask = pickActiveUserAppTask(activeTasks);
-      if (activeTask) {
-        void attachExistingTaskRef.current(activeTask);
+      if (!appPreviewUrlRef.current) {
+        return;
       }
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      markPreviewReadyRef.current();
       setPreviewEnterSettled(true);
       return;
     }
@@ -1430,6 +1427,7 @@ const AppDevPro: React.FC = () => {
     podReady,
     queryConversationId,
     tasksActiveReady,
+    userAppDomainList,
   ]);
 
   // ==================================== git 版本控制 ====================================
@@ -1861,6 +1859,7 @@ const AppDevPro: React.FC = () => {
         onStart={handleStartPreviewRuntime}
         devActionLocked={previewDevActionLocked}
         allowStoppedHero={previewUserStopped || previewEnterSettled}
+        stopping={previewRuntime.stopping}
         directPreview={
           dbEnv === UserAppDbEnvEnum.Prod && !!activePreviewUrl
         }
@@ -1882,6 +1881,7 @@ const AppDevPro: React.FC = () => {
       previewRuntime.phase,
       previewRuntime.running,
       previewRuntime.services,
+      previewRuntime.stopping,
       dbEnv,
       previewEnterSettled,
       previewUserStopped,
