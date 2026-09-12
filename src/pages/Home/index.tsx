@@ -286,10 +286,18 @@ const Home: React.FC = () => {
   // 上框默认命中：全栈优先按项目 devAgentId 精确命中推荐位（列表晚到时同样生效）；
   // devAgentId 契约未 ready 或未命中时，按类型兜底唯一同类型推荐自动选中
   // （等价替用户手点）；0 个/多个同类型无法定位 → toast 提示手动选择
-  // （同一项目只提示一次）；常规项目不默认命中（用户手选，发送不拦截由后端兜默认）
+  // （同一项目只提示一次）；常规项目不挑智能体（2026-09-12 定调：不存在命中
+  // 问题）——上框不带任何选中，旧选中一并清掉，发送不拦截由后端兜默认；
+  // 推荐列表置灰（isAgentSelectable 的不可用判定）不受影响照常生效
   const isUserAppPinned =
     pinnedProject?.projectType === AgentComponentTypeEnum.UserApp;
   useEffect(() => {
+    // 常规项目上框：清旧选中后即止（清后本 effect 重跑为同值 no-op，不循环）。
+    // 无上框时（pinnedProject 为空）不进此分支——否则会清掉用户平时手选的推荐项
+    if (pinnedProject && !isUserAppPinned) {
+      if (selectedRecommend) setSelectedRecommend(undefined);
+      return;
+    }
     if (!isUserAppPinned || selectedRecommend) return;
     if (!recommendNavList.length) return; // 推荐列表未就绪不做未命中判定
     const hit =
