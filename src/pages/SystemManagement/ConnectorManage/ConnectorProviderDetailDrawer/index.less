@@ -119,22 +119,17 @@
 
 /* ---------- 扫码连接（设备码）弹窗 ---------- */
 
-/* 深色标题栏上的标题与关闭文案（深色 header 由 Modal styles 内联控制） */
-.deviceTitle {
-  color: #fff;
-  font-weight: 600;
-}
-
-.deviceCloseText {
-  color: rgba(255, 255, 255, 85%);
-}
-
 /* 弹窗正文：二维码 / 提示 / 核对码纵向居中 */
 .deviceBody {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+}
+
+/* 底部通栏「重新获取二维码」主按钮（与新增工具弹窗的保存按钮同款排布） */
+.deviceRefreshBtn {
+  margin-top: 4px;
 }
 
 /* 二维码区：刷新中 Spin 占位，固定最小高度防弹窗高度跳动 */
@@ -145,7 +140,7 @@
   min-height: 248px;
 }
 
-/* 二维码内容缺失的占位文案 */
+/* 二维码图片缺失的占位文案 */
 .deviceQrEmpty {
   font-size: 13px;
   color: #bfbfbf;

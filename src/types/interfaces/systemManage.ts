@@ -1334,10 +1334,12 @@ export interface ConnectorOauthAuthorizeResult {
 export interface ConnectorOauthDeviceAuthorizeResult {
   /** 轮询凭证（poll 接口原样回传；重新获取二维码后旧 state 作废） */
   state: string;
-  /** 二维码内容（App 扫码打开的完整地址；为 data:image / 图片链接时前端直接展示） */
-  qrCode?: string;
-  /** 二维码图片地址（qrCode 的候选字段，二者取一） */
-  qrCodeUrl?: string;
+  /**
+   * 二维码图片地址（相对地址，形如 /api/connector/oauth/device/qr?state=xxx，
+   * 响应为图片流；前端 img 加载时需拼 BASE_URL 指向后端——dev 环境
+   * dev server 自身无 /api 路由，线上同域部署 BASE_URL 为空即同源直连）
+   */
+  qrUrl?: string;
   /** 核对码（App 授权页展示、用户与弹窗核对防钓鱼，如 KJHS-ASRA） */
   userCode?: string;
   /** 核对码候选字段（字段名以后端返回为准） */

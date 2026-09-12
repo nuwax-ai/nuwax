@@ -32,7 +32,6 @@ import {
   message,
   Modal,
   Popconfirm,
-  QRCode,
   Space,
   Spin,
   Table,
@@ -890,12 +889,18 @@ const ConnectorProviderDetailDrawer: React.FC<
   ];
 
   // ---------------- 扫码连接弹窗展示派生值 ----------------
-  /** 二维码内容：qrCode / qrCodeUrl 二者取一（字段名以后端返回为准） */
-  const deviceQrContent = deviceAuth?.qrCode || deviceAuth?.qrCodeUrl || '';
-  /** 二维码是否为可直接展示的图片（data URI / 图片链接），否则按内容编码 */
-  const deviceQrIsImage =
-    /^data:image\//i.test(deviceQrContent) ||
-    /\.(png|jpe?g|svg|webp)([?#]|$)/i.test(deviceQrContent);
+  /**
+   * 二维码图片地址：后端返回相对路径（/api/connector/oauth/device/qr?state=xxx），
+   * img 为浏览器原生加载、不经 request 拦截器，需拼 BASE_URL 指向后端
+   * （dev server 自身无 /api 路由直接加载会 404；线上同域部署 BASE_URL
+   * 为空即同源直连）；dev 下页面与后端跨域，需后端放行该图片接口的
+   * 跨域资源加载。该接口凭 state 访问、无需 Bearer
+   */
+  const deviceQrContent = deviceAuth?.qrUrl
+    ? /^https?:\/\//i.test(deviceAuth.qrUrl)
+      ? deviceAuth.qrUrl
+      : `${process.env.BASE_URL || ''}${deviceAuth.qrUrl}`
+    : '';
   /** 核对码（候选字段回退，对齐编辑抽屉 pickString 的容错习惯） */
   const deviceUserCode =
     deviceAuth?.userCode || deviceAuth?.verificationCode || '';
@@ -1072,7 +1077,8 @@ const ConnectorProviderDetailDrawer: React.FC<
       {/* 扫码连接（设备码 oauth2_device）弹窗：authorize 拿二维码后展开，
           展示核对码 + 倒计时；倒计时结束 / 点「重新获取二维码」重新调
           authorize（旧 state 作废），轮询到 authorized / already_completed
-          即连接成功自动关闭 */}
+          即连接成功自动关闭。外观与项目弹窗统一：默认标题栏 + 右上角
+          关闭图标，footer=null、底部通栏主按钮（同新增工具弹窗） */}
       <Modal
         open={deviceAuthOpen}
         width={420}
@@ -1080,50 +1086,27 @@ const ConnectorProviderDetailDrawer: React.FC<
         destroyOnHidden
         maskClosable={false}
         keyboard={false}
-        title={<span className={styles.deviceTitle}>扫码连接 • {service}</span>}
-        closeIcon={<span className={styles.deviceCloseText}>关闭</span>}
+        title={`扫码连接 · ${service}`}
         onCancel={closeDeviceAuth}
-        styles={{
-          // 深色标题栏（设计稿）：content 去 padding 并裁圆角，
-          // header / body / footer 各自留白，标题栏才能通栏铺满
-          content: { padding: 0, overflow: 'hidden' },
-          header: {
-            margin: 0,
-            padding: '14px 20px',
-            background: '#1f1f1f',
-          },
-          body: { padding: '24px 20px 4px' },
-          footer: { padding: '12px 20px 20px' },
-        }}
-        footer={
-          <Button
-            block
-            loading={deviceAuthLoading}
-            onClick={() => void fetchDeviceAuthorize()}
-          >
-            重新获取二维码
-          </Button>
-        }
+        footer={null}
       >
         <div className={styles.deviceBody}>
           <div className={styles.deviceQrWrap}>
             {deviceAuthLoading ? (
               <Spin size="large" />
             ) : !deviceQrContent ? (
-              <span className={styles.deviceQrEmpty}>二维码内容缺失</span>
-            ) : deviceQrIsImage ? (
+              <span className={styles.deviceQrEmpty}>二维码图片缺失</span>
+            ) : (
               <img
                 src={deviceQrContent}
                 alt="扫码连接二维码"
                 width={240}
                 height={240}
               />
-            ) : (
-              <QRCode size={240} value={deviceQrContent} />
             )}
           </div>
           <div className={styles.deviceHint}>
-            请用 App 扫描下方二维码，在手机上确认授权
+            请用 App 扫描上方二维码，在手机上确认授权
           </div>
           <div className={styles.deviceMeta}>
             {deviceUserCode ? (
@@ -1138,6 +1121,17 @@ const ConnectorProviderDetailDrawer: React.FC<
               {deviceCountdownText}
             </span>
           </div>
+          {/* 重新获取二维码：底部通栏主按钮（与项目弹窗底部的
+              「保存工具」等提交按钮同款排布） */}
+          <Button
+            type="primary"
+            block
+            className={styles.deviceRefreshBtn}
+            loading={deviceAuthLoading}
+            onClick={() => void fetchDeviceAuthorize()}
+          >
+            重新获取二维码
+          </Button>
         </div>
       </Modal>
     </Drawer>
