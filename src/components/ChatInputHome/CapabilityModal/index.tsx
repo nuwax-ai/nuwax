@@ -21,7 +21,7 @@
 import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
 import ConnectorDeviceAuthModal from '@/components/business-component/ConnectorDeviceAuthModal';
 import type { ExpertSummonCardInfo } from '@/components/business-component/ExpertSummonCard';
-import ExpertSummonCard from '@/components/business-component/ExpertSummonCard';
+import ExpertSummonModal from '@/components/business-component/ExpertSummonModal';
 import type {
   SkillListItem,
   SkillListSourceType,
@@ -1004,34 +1004,28 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
 
       {/* 专家付费:统一专家卡弹窗（内联套餐区,详情复核/订阅下单在卡内
           自闭环；召唤放行走 handleExpertCardSummon 的选中链路）——
-          宽度随内容自适应,不再与能力弹窗对齐 */}
+          包装与专家&专家团页共享（ExpertSummonModal） */}
       {isEnableSubscription && (
-        <Modal
+        <ExpertSummonModal
           open={!!expertPaymentItem}
-          onCancel={() => setExpertPaymentItem(null)}
-          footer={null}
-          width="fit-content"
-          centered
-          destroyOnHidden
-          className={cx(styles['expert-summon-modal'])}
-        >
-          {expertPaymentItem && (
-            <ExpertSummonCard
-              expert={{
-                targetId: (expertPaymentItem.targetId ??
-                  expertPaymentItem.rawId) as number,
-                name: expertPaymentItem.name,
-                icon: expertPaymentItem.icon,
-                description: expertPaymentItem.description,
-                userCount: expertPaymentItem.userCount,
-                // 拦截时已按详情复核确认付费未订阅
-                paymentRequired: true,
-                subscribed: false,
-              }}
-              onSummon={handleExpertCardSummon}
-            />
-          )}
-        </Modal>
+          expert={
+            expertPaymentItem
+              ? {
+                  targetId: (expertPaymentItem.targetId ??
+                    expertPaymentItem.rawId) as number,
+                  name: expertPaymentItem.name,
+                  icon: expertPaymentItem.icon,
+                  description: expertPaymentItem.description,
+                  userCount: expertPaymentItem.userCount,
+                  // 拦截时已按详情复核确认付费未订阅
+                  paymentRequired: true,
+                  subscribed: false,
+                }
+              : null
+          }
+          onClose={() => setExpertPaymentItem(null)}
+          onSummon={handleExpertCardSummon}
+        />
       )}
 
       {/* 连接器「连接」扫码弹窗（认证方式 oauth2_device，与广场页/连接器

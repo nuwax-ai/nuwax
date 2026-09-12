@@ -67,8 +67,9 @@ interface ResourceCardProps {
    */
   showPayment?: boolean;
   /**
-   * 付费角标点击回调（携带卡片条目；仅专家卡片传入）：跳转智能体详情页，
-   * 未订阅的付费智能体由详情页自动弹订阅套餐弹窗（与空间广场卡片同口径）
+   * 付费角标点击回调（携带卡片条目；仅专家卡片传入）：未订阅的付费专家
+   * 先弹统一专家卡（与添加能力弹窗「聘请」同口径，详情复核后卡内订阅+
+   * 召唤自闭环）；已订阅跳转智能体详情页
    */
   onPaymentClick?: (item: ResourceItem) => void;
   /** 是否按连接器卡片展示（分类 + 连接状态行、hover 连接/断开按钮） */
@@ -264,8 +265,8 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
                 </span>
               )}
               {/* 付费角标（专家/技能卡片同款）：需付费卡片展示「付费/已订阅」；
-                  专家角标点击跳转智能体详情页（未订阅时详情页自动弹订阅套餐
-                  弹窗，与空间广场卡片同口径）；技能角标点击逻辑暂未接入仅展示 */}
+                  专家角标点击先弹统一专家卡（与添加能力弹窗「聘请」同口径；
+                  已订阅跳转智能体详情页）；技能角标点击逻辑暂未接入仅展示 */}
               {showPayment && item.paymentRequired && (
                 <Tag
                   color={item.subscribed ? 'success' : 'processing'}

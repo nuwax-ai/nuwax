@@ -7,6 +7,8 @@
 import ConditionRender from '@/components/ConditionRender';
 import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
 import ConnectorDeviceAuthModal from '@/components/business-component/ConnectorDeviceAuthModal';
+import type { ExpertSummonCardInfo } from '@/components/business-component/ExpertSummonCard';
+import ExpertSummonModal from '@/components/business-component/ExpertSummonModal';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
@@ -15,7 +17,11 @@ import useConnectorConnect from '@/hooks/useConnectorConnect';
 import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
 import useSubscription from '@/hooks/useSubscription';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
-import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
+import {
+  apiCollectAgent,
+  apiPublishedAgentInfo,
+  apiUnCollectAgent,
+} from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedSkillEnable,
@@ -146,26 +152,53 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   /**
-   * 付费专家跳转智能体详情页（与空间广场卡片同口径）：详情页检测到
-   * 需付费且未订阅时会自动弹订阅套餐弹窗，本页不本地拦截
+   * 付费专家统一专家卡弹窗条目（未订阅的付费专家点「召唤」/「付费」角标
+   * 且详情复核确认后才置值弹卡；null 即关闭）
    */
-  const handlePaymentJump = useCallback((item: ResourceItem) => {
-    if (!item.agentId) {
-      // 数据异常兜底：缺智能体 ID 无法跳转（正常数据两个维度均有值）
-      console.warn(
-        '[ExpertSkillConnector] payment jump skipped: missing agentId, item =',
-        item.id,
-      );
-      return;
-    }
-    jumpTo(`/agent/${item.agentId}`);
-  }, []);
+  const [expertPaymentItem, setExpertPaymentItem] =
+    useState<ResourceItem | null>(null);
+
+  /**
+   * 付费专家拦截（与添加能力弹窗「聘请」同口径）：列表接口的
+   * paymentRequired/subscribed 可能滞后（如已订阅免费套餐），先按详情接口
+   * （/agent/:id）复核——确认「付费且未订阅」才弹统一专家卡（卡内订阅+
+   * 召唤自闭环），否则回写卡片角标状态后放行 proceed；详情异常时保守
+   * 按列表口径弹卡
+   */
+  const interceptPaidExpert = useCallback(
+    (item: ResourceItem, proceed: () => void) => {
+      const { agentId } = item;
+      if (!agentId) {
+        // 数据异常兜底：缺智能体 ID 无法复核（正常数据两个维度均有值）
+        console.warn(
+          '[ExpertSkillConnector] payment intercept skipped: missing agentId, item =',
+          item.id,
+        );
+        return;
+      }
+      const openExpertCard = () => setExpertPaymentItem(item);
+      void apiPublishedAgentInfo(agentId)
+        .then((res) => {
+          const detail = res?.code === SUCCESS_CODE ? res.data : undefined;
+          if (!detail || (detail.paymentRequired && !detail.subscribed)) {
+            openExpertCard();
+          } else {
+            // 回写角标状态（详情口径为权威）后放行
+            updateItem(item.id, { subscribed: !!detail.subscribed });
+            proceed();
+          }
+        })
+        .catch(openExpertCard);
+    },
+    [updateItem],
+  );
 
   /** 专家卡片「召唤」：携带专家信息透传并跳转 /home 首页 */
   const { summon } = useSummonExpertHandoff();
   const handleSummon = useCallback(
     (item: ResourceItem) => {
-      if (!item.agentId) {
+      const { agentId, name, icon } = item;
+      if (!agentId) {
         // 数据异常兜底：缺智能体 ID 无法召唤（正常数据两个维度均有值）
         console.warn(
           '[ExpertSkillConnector] summon skipped: missing agentId, item =',
@@ -173,15 +206,64 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
         );
         return;
       }
-      // 订阅功能开启且需付费未订阅（与空间广场卡片同口径）：不本地弹窗，
-      // 跳转智能体详情页由其自动弹订阅套餐弹窗
+      // 订阅功能开启且需付费未订阅（与添加能力弹窗「聘请」同口径）：先按
+      // 详情复核，确认付费未订阅则弹统一专家卡（卡内订阅后召唤自闭环），
+      // 复核出已订阅则回写角标直接放行召唤
       if (isEnableSubscription && item.paymentRequired && !item.subscribed) {
-        handlePaymentJump(item);
+        interceptPaidExpert(item, () => summon({ agentId, name, icon }));
         return;
       }
-      summon({ agentId: item.agentId, name: item.name, icon: item.icon });
+      summon({ agentId, name, icon });
     },
-    [summon, isEnableSubscription, handlePaymentJump],
+    [summon, isEnableSubscription, interceptPaidExpert],
+  );
+
+  /**
+   * 专家卡片「付费」角标点击：已订阅保持跳转智能体详情页；付费未订阅
+   * （与添加能力弹窗「聘请」同口径）先按详情复核——确认后弹统一专家卡，
+   * 复核出已订阅则回写角标仍跳详情页
+   */
+  const handlePaymentClick = useCallback(
+    (item: ResourceItem) => {
+      const { agentId } = item;
+      if (!agentId) {
+        // 数据异常兜底：缺智能体 ID 无法跳转（正常数据两个维度均有值）
+        console.warn(
+          '[ExpertSkillConnector] payment click skipped: missing agentId, item =',
+          item.id,
+        );
+        return;
+      }
+      const jumpDetail = () => jumpTo(`/agent/${agentId}`);
+      if (item.subscribed) {
+        jumpDetail();
+        return;
+      }
+      interceptPaidExpert(item, jumpDetail);
+    },
+    [interceptPaidExpert],
+  );
+
+  /**
+   * 统一专家卡弹窗内召唤放行：卡内完成订阅（subscribed=true）时就地更新
+   * 卡片「已订阅」角标，再按「召唤」既有口径透传跳 /home 首页
+   */
+  const handleExpertCardSummon = useCallback(
+    (_expert: ExpertSummonCardInfo, subscribed?: boolean) => {
+      const item = expertPaymentItem;
+      if (!item) {
+        return;
+      }
+      setExpertPaymentItem(null);
+      if (subscribed) {
+        updateItem(item.id, { subscribed: true });
+      }
+      const { agentId, name, icon } = item;
+      if (agentId) {
+        summon({ agentId, name, icon });
+      }
+    },
+    [expertPaymentItem, updateItem, summon],
   );
 
   /** 技能卡片「立即使用」：携带技能信息透传并跳转 /home 首页 */
@@ -503,9 +585,10 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   onToggleCollect={
                     resourceType === 'expert' ? handleToggleCollect : undefined
                   }
-                  // 付费角标点击：跳转智能体详情页（未订阅时详情页自动弹订阅套餐弹窗）
+                  // 付费角标点击：先弹统一专家卡（与添加能力弹窗「聘请」
+                  // 同口径，详情复核后卡内订阅+召唤自闭环；已订阅跳详情页）
                   onPaymentClick={
-                    resourceType === 'expert' ? handlePaymentJump : undefined
+                    resourceType === 'expert' ? handlePaymentClick : undefined
                   }
                   onSelect={
                     resourceType === 'skill' ? handleSelectSkill : undefined
@@ -608,6 +691,36 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
             }
             onClose={() => setPaySkillOpen(false)}
             onSubscribe={createSubscriptionOrder}
+          />
+        </ConditionRender>
+      )}
+
+      {/* 专家付费统一专家卡弹窗（专家维度，与添加能力弹窗「聘请」同款）：
+          未订阅的付费专家点「召唤」或「付费」角标且详情复核确认后弹出，
+          卡内订阅+召唤自闭环；放行后就地更新角标并透传跳 /home */}
+      {resourceType === 'expert' && (
+        <ConditionRender condition={isEnableSubscription}>
+          <ExpertSummonModal
+            open={!!expertPaymentItem}
+            expert={
+              expertPaymentItem
+                ? {
+                    targetId: expertPaymentItem.agentId as number,
+                    name: expertPaymentItem.name,
+                    icon: expertPaymentItem.icon,
+                    description: expertPaymentItem.description,
+                    // 使用次数取统计行 user 项（无值卡内不展示）
+                    userCount: expertPaymentItem.stats?.find(
+                      (stat) => stat.type === 'user',
+                    )?.value as number | undefined,
+                    // 拦截时已按详情复核确认付费未订阅
+                    paymentRequired: true,
+                    subscribed: false,
+                  }
+                : null
+            }
+            onClose={() => setExpertPaymentItem(null)}
+            onSummon={handleExpertCardSummon}
           />
         </ConditionRender>
       )}
