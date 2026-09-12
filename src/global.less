@@ -194,3 +194,94 @@ body {
   border-left-width: 1px !important;
   margin-left: 4px !important;
 }
+
+// ============================================
+// 会话快捷导航（ConversationQuickNav）：
+// 内容区左缘缩略导航条。样式走全局类而非 css-modules——
+// 该组件的 index.less 在 dev 环境曾被构建管道静默丢弃（哈希类未挂到 DOM），
+// 迁全局类规避；后端/构建侧查明后可再迁回模块样式。
+// ============================================
+.conversation-quick-nav {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  max-height: 60vh;
+  padding: 6px 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// 等宽细线形态：常态浅灰、当前视口所在块深色。
+// 视觉线由 ::before 绘制（2px、随按钮宽度），按钮本体高 10px 作为鼠标热区；
+// hover 变长由组件的波浪逻辑直改按钮宽度驱动（此处只管变色）
+.conversation-quick-nav-line {
+  position: relative;
+  flex-shrink: 0;
+  width: 20px;
+  height: 10px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    width: 100%;
+    height: 2px;
+    border-radius: 1px;
+    background-color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.18));
+    transition:
+      width 0.15s ease,
+      background-color 0.2s ease;
+  }
+
+  &:hover::before {
+    background-color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
+  }
+
+  &.active::before {
+    background-color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+  }
+}
+
+// 悬停卡片（挂 Tooltip color="white" 的浮层内，白底黑字）：标题粗体一行 + 正文多行截断
+.conversation-quick-nav-preview {
+  max-width: 320px;
+}
+
+.conversation-quick-nav-preview-title {
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.88);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.conversation-quick-nav-preview-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  /* stylelint-disable-next-line value-no-vendor-prefix */
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 22px;
+  color: rgba(0, 0, 0, 0.65);
+  word-break: break-all;
+}

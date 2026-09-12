@@ -657,14 +657,16 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       }
       // 根据层级计算缩进
       // 如果没有上级（level === 0），indent 不变
-      // 如果有上级（level > 0 且 level < 4），indent = level * 16 + 10
+      // 如果有上级（level > 0 且 level < 4），indent = level * 16 + 8
       // 如果层级为第4级及以上（level >= 4），不缩进，使用第3级的缩进值
+      // 基准 8（2026-09-12 原型对齐）：子行文字 = 容器 10 + 缩进 24 + 行 padding 10
+      // = 44px，与主行文字（容器 10 + 行 10 + 图标 16 + 间距 8 = 44px）对齐
       const indent =
         level === 0
           ? 0
           : level >= 4
-          ? 3 * 16 + 10 // 第3级的缩进值：58
-          : level * 16 + 11;
+          ? 3 * 16 + 8 // 第3级的缩进值：56
+          : level * 16 + 8;
 
       // 个人空间时，不显示"成员与设置"(编码：member_setting) , 普通用户也不显示"成员与设置"
       if (

@@ -11,7 +11,9 @@
 
   .name {
     color: @navSecondMenuTextSecondary;
-    font-size: @fontSize !important;
+    // 字号走容器注入（单栏 13.5px 与主栏菜单一致）；!important 保留用于
+    // 压过 antd Typography 默认字号，经典布局无注入回落 @fontSize
+    font-size: var(--xagi-nav-second-main-font-size, @fontSize) !important;
     white-space: nowrap;
   }
 
@@ -34,7 +36,9 @@
     );
     color: @colorPrimary;
     border-radius: var(--xagi-nav-second-row-radius, @borderRadius);
-    box-shadow: @boxShadowTertiary;
+    // 选中阴影走变量：单栏白底列注入 none（原型 tm-item.on 平 pill），
+    // 经典布局不设变量保持白卡阴影
+    box-shadow: var(--xagi-nav-second-row-active-shadow, @boxShadowTertiary);
     // 字重仅选中加粗（2026-09-12 单栏需求）：单栏二级列容器注入 500，
     // 经典布局不设变量回落 normal（与原行为一致）
     font-weight: var(--xagi-nav-second-row-active-font-weight, normal);
@@ -48,6 +52,15 @@
 
     .icon-dropdown {
       color: @colorTextSecondary;
+    }
+
+    // 选中项 hover 保持选中底色不被通用 hover 灰底顶掉（原型 .on 恒持浅紫）；
+    // (0,3,0) 特异性压过下方 .row:hover
+    &:hover {
+      background-color: var(
+        --xagi-nav-second-row-active-bg,
+        @navSecondItemActiveBg
+      );
     }
   }
 

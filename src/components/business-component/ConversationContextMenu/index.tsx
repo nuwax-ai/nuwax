@@ -1,3 +1,4 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiAgentConversationArchive,
@@ -6,12 +7,14 @@ import {
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
+import { toggleFavoriteConversation } from '@/utils/conversationFavorites';
 import {
   DeleteOutlined,
   EditOutlined,
   InboxOutlined,
-  MoreOutlined,
   PushpinOutlined,
+  StarFilled,
+  StarOutlined,
 } from '@ant-design/icons';
 import { Dropdown, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
@@ -31,8 +34,12 @@ interface ConversationContextMenuProps {
   pinned?: boolean;
   /** 服务端归档状态 */
   archived?: boolean;
+  /** 收藏状态（本地存储，后端收藏接口未上线） */
+  collected?: boolean;
   /** 服务端置顶/归档成功后同步调用方列表 */
   onFlagChanged?: (kind: 'pinned' | 'archived', enabled: boolean) => void;
+  /** 收藏切换成功后同步调用方列表 */
+  onCollectedChanged?: (collected: boolean) => void;
   /** 自定义重命名入口（缺省时组件内置 Modal + API + 全局事件） */
   onRename?: () => void;
   /** 自定义删除入口（缺省时组件内置确认框 + API + 全局事件） */
@@ -46,9 +53,10 @@ interface ConversationContextMenuProps {
 }
 
 /**
- * 会话列表右键菜单：置顶 / 归档 / 重命名 / 删除。
+ * 会话列表右键菜单：置顶 / 归档 / 收藏 / 重命名 / 删除。
  * - 置顶/归档调用会话级后端接口，成功后同步调用方列表；
- * - 收藏接口未 ready，按产品要求暂不展示入口；
+ * - 收藏接口未 ready，暂走本地存储（utils/conversationFavorites），
+ *   历史会话页「已收藏」视图按本地收藏 id 过滤；
  * - 重命名与删除接现有接口（apiAgentConversationUpdate / Delete），成功后派发
  *   conversation-updated / conversation-deleted 全局事件供侧栏列表同步。
  */
@@ -58,7 +66,9 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   currentTopic = '',
   pinned = false,
   archived = false,
+  collected = false,
   onFlagChanged,
+  onCollectedChanged,
   onRename,
   onDelete,
   onDeleted,
@@ -116,6 +126,19 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
     message.success(t(toastKeyMap[kind]));
   };
 
+  // 收藏 toggle：后端接口未上线，本地存储直接生效（乐观更新）
+  const handleToggleCollect = () => {
+    const next = toggleFavoriteConversation(conversationId);
+    onCollectedChanged?.(next);
+    message.success(
+      t(
+        next
+          ? 'PC.Components.ConversationContextMenu.collectedToast'
+          : 'PC.Components.ConversationContextMenu.uncollectedToast',
+      ),
+    );
+  };
+
   const menuProps = useMemo(
     () => ({
       items: [
@@ -132,6 +155,13 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
           label: archived
             ? t('PC.Components.ConversationContextMenu.unarchive')
             : t('PC.Components.ConversationContextMenu.archive'),
+        },
+        {
+          key: 'collect',
+          icon: collected ? <StarFilled /> : <StarOutlined />,
+          label: collected
+            ? t('PC.Components.ConversationContextMenu.unfavorite')
+            : t('PC.Components.ConversationContextMenu.favorite'),
         },
         { type: 'divider' as const },
         {
@@ -151,6 +181,8 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
           void handleToggleFlag('pinned');
         } else if (key === 'archive') {
           void handleToggleFlag('archived');
+        } else if (key === 'collect') {
+          handleToggleCollect();
         } else if (key === 'rename') {
           if (onRename) {
             onRename();
@@ -168,7 +200,16 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pinned, archived, currentTopic, onRename, onDelete, onFlagChanged],
+    [
+      pinned,
+      archived,
+      collected,
+      currentTopic,
+      onRename,
+      onDelete,
+      onFlagChanged,
+      onCollectedChanged,
+    ],
   );
 
   const handleRenameSubmit = async () => {
@@ -197,7 +238,9 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   const moreButton = showMoreButton ? (
     <Dropdown menu={menuProps} trigger={['click']}>
       <span className={cx('more-btn')} onClick={(e) => e.stopPropagation()}>
-        <MoreOutlined />
+        {/* 与项目面板行图标族统一（icons-common-more，2026-09-12 需求）；
+            SvgIcon 内联字号优先于 CSS，须显式 15px 与项目子行 ⋯ 同款 */}
+        <SvgIcon name="icons-common-more" style={{ fontSize: 15 }} />
       </span>
     </Dropdown>
   ) : null;

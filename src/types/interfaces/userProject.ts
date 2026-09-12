@@ -58,7 +58,7 @@ export interface UserProjectItem {
   publishStatus: PublishStatusEnum;
   /** 项目绑定的最新会话 ID（实测行附带，无会话为 null） */
   conversationId?: number | null;
-  /** 沙箱ID（实测行附带） */
+  /** 沙箱ID（实测行附带；云端项目为哨兵 -1，勿按 truthiness 判断是否个人电脑） */
   sandboxId?: number;
   /** 更新时间 */
   modified: string;
@@ -91,7 +91,7 @@ export interface UserProjectTabItem {
   description?: string | null;
   /** 项目图标 */
   icon?: string | null;
-  /** 沙箱ID */
+  /** 沙箱ID（云端项目为哨兵 -1，勿按 truthiness 判断是否个人电脑） */
   sandboxId?: number;
   /** 沙箱类型（Cloud 等） */
   sandboxType?: string;
@@ -145,7 +145,7 @@ export interface PinnedProjectInfo {
   name: string;
   /** 项目图标（上框展示，可能为 null） */
   icon?: string | null;
-  /** 项目沙箱 ID（会话创建优先携带） */
+  /** 项目沙箱 ID（会话创建优先携带；云端项目为哨兵 -1，勿按 truthiness 判断是否个人电脑） */
   sandboxId?: number;
   /** 项目绑定的调试智能体 ID（全栈默认命中用；契约先行，缺失走手选降级） */
   devAgentId?: number;

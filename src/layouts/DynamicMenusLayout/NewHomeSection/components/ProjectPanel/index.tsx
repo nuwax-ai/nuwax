@@ -24,6 +24,7 @@ import {
   ExclamationCircleFilled,
   FolderOutlined,
   InboxOutlined,
+  LoadingOutlined,
   PushpinFilled,
   PushpinOutlined,
 } from '@ant-design/icons';
@@ -31,14 +32,24 @@ import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { useParams } from 'umi';
 import { formatRelativeTime } from '../../utils';
 import styles from './index.less';
+import {
+  appendProjectsPage,
+  hasMoreProjects,
+  mergeFlagIds,
+  PROJECT_PAGE_SIZE,
+  remainingProjects,
+  toProjectItem,
+} from './projectPagination';
 
 const cx = classNames.bind(styles);
 
@@ -77,6 +88,7 @@ export interface ProjectItem {
  * **项目子项(项目下的会话):不做置顶**(同日定调),仅 重命名/删除 + 状态徽标。
  *
  * 数据走 apiUserProjectTabPageQuery（2026-09-08 新接口：项目列表附带各项目会话列表）；
+ * 项目层分页（2026-09-12）：首屏 20 条 +「查看更多」按页追加、按 projectId 去重合并；
  * 重命名/删除已接真实接口（项目→normal-project/userapp、子项会话→agent conversation，
  * wiki 2026-09-11 v2 契约）；置顶/归档走 user-project pin/archive（同契约，回读字段
  * 就位后自动恢复），PageApp 契约未覆盖改名删除/置顶归档暂维持本地；
@@ -109,7 +121,6 @@ const ProjectPanel = forwardRef<
   // 项目级标记：置顶/归档回读自后端字段（字段未返回时不标记）
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => new Set());
   const [archivedIds, setArchivedIds] = useState<Set<number>>(() => new Set());
-  const [showArchived, setShowArchived] = useState(false);
   // 子项重命名弹窗状态(projectId + childId 定位目标子项)
   const [renameTarget, setRenameTarget] = useState<{
     projectId: number;
@@ -119,71 +130,77 @@ const ProjectPanel = forwardRef<
   // 项目重命名弹窗状态
   const [renameProjectId, setRenameProjectId] = useState<number>();
   const [projectRenameName, setProjectRenameName] = useState('');
+  // 分页：首屏 PROJECT_PAGE_SIZE 条，「查看更多」按页追加（tab 接口 current/pageSize/total 契约）
+  const [total, setTotal] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const pageRef = useRef(1);
+  const spaceIdRef = useRef(spaceId);
 
-  // 拉取当前空间的项目列表(tab 接口附带各项目会话列表,失败保持空列表由空态兜底)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  // 拉取指定页项目列表(page=1 整体替换,后续页追加合并;失败保持现状由空态兜底)
+  const fetchPage = useCallback(
+    async (page: number, options: { append: boolean }) => {
+      const requestSpaceId = spaceIdRef.current;
+      if (options.append) setLoadingMore(true);
       try {
         const res = await apiUserProjectTabPageQuery({
-          queryFilter: { spaceId },
-          current: 1,
-          pageSize: 100,
+          queryFilter: { spaceId: requestSpaceId },
+          current: page,
+          pageSize: PROJECT_PAGE_SIZE,
           orders: [],
           filters: [],
           columns: [],
         });
-        if (cancelled) return;
+        // 空间已切换:丢弃过期响应
+        if (requestSpaceId !== spaceIdRef.current) return;
         if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
           const records = res.data.records;
-          setProjects(
-            records.map((item) => ({
-              id: item.projectId,
-              name: item.name,
-              projectType: item.projectType,
-              spaceId: item.spaceId,
-              icon: item.icon,
-              sandboxId: item.sandboxId,
-              devAgentId: item.devAgentId,
-              children: (item.conversations ?? []).map((conversation) => ({
-                id: conversation.id,
-                // 空主题回退与任务列表 ConversationItem 同口径
-                name:
-                  conversation.topic ||
-                  conversation.agent?.name ||
-                  dict('PC.Constants.Menus.newChat'),
-                modified: conversation.modified,
-                taskStatus: conversation.taskStatus,
-                conversation,
-              })),
-            })),
+          const fallback = dict('PC.Constants.Menus.newChat');
+          const mapped = records.map((item) => toProjectItem(item, fallback));
+          setProjects((previous) =>
+            options.append ? appendProjectsPage(previous, mapped) : mapped,
           );
-          // 置顶/归档回读恢复(wiki 2026-09-11 行6 契约先行:字段未返回时不标记)
-          setPinnedIds(
+          // 置顶/归档回读恢复(wiki 2026-09-11 行6 契约先行:字段未返回时不标记;
+          // 追加页只并入新标记,不回退已加载页)
+          const pageFlagIds = (flag: 'pinned' | 'archived') =>
             new Set(
               records
-                .filter((item) => item.pinned === true)
+                .filter((item) => item[flag] === true)
                 .map((item) => item.projectId),
-            ),
+            );
+          setPinnedIds((previous) =>
+            options.append
+              ? mergeFlagIds(previous, pageFlagIds('pinned'))
+              : pageFlagIds('pinned'),
           );
-          setArchivedIds(
-            new Set(
-              records
-                .filter((item) => item.archived === true)
-                .map((item) => item.projectId),
-            ),
+          setArchivedIds((previous) =>
+            options.append
+              ? mergeFlagIds(previous, pageFlagIds('archived'))
+              : pageFlagIds('archived'),
           );
+          pageRef.current = page;
+          setTotal(res.data.total ?? 0);
         }
       } catch {
-        // 忽略:保持空列表
+        // 忽略:保持现有列表
       } finally {
-        setLoading(false);
+        if (options.append) setLoadingMore(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [spaceId]);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    spaceIdRef.current = spaceId;
+    pageRef.current = 1;
+    void fetchPage(1, { append: false }).finally(() => setLoading(false));
+  }, [spaceId, fetchPage]);
+
+  const hasMore = hasMoreProjects(projects.length, total);
+  const remainingCount = remainingProjects(projects.length, total);
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    void fetchPage(pageRef.current + 1, { append: true });
+  };
 
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
@@ -204,15 +221,13 @@ const ProjectPanel = forwardRef<
     });
   };
 
-  // 项目可见列表:默认隐藏归档、置顶排前(稳定排序保持原相对顺序);已归档视图只看归档项
+  // 项目可见列表:隐藏归档项（侧栏不设归档查看入口）、置顶排前(稳定排序保持原相对顺序)
   const visibleProjects = useMemo(() => {
-    const filtered = showArchived
-      ? projects.filter((item) => archivedIds.has(item.id))
-      : projects.filter((item) => !archivedIds.has(item.id));
+    const filtered = projects.filter((item) => !archivedIds.has(item.id));
     return [...filtered].sort(
       (a, b) => Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id)),
     );
-  }, [projects, archivedIds, showArchived, pinnedIds]);
+  }, [projects, archivedIds, pinnedIds]);
 
   useImperativeHandle(
     ref,
@@ -231,11 +246,6 @@ const ProjectPanel = forwardRef<
         }),
     }),
     [visibleProjects],
-  );
-
-  const archivedProjectCount = useMemo(
-    () => projects.filter((item) => archivedIds.has(item.id)).length,
-    [projects, archivedIds],
   );
 
   useEffect(() => {
@@ -687,19 +697,16 @@ const ProjectPanel = forwardRef<
           </div>
         );
       })}
-      {/* 已归档项目入口:存在归档项或处于已归档视图时显示(mock 阶段本地标记) */}
-      {(archivedProjectCount > 0 || showArchived) && (
-        <div
-          className={cx(styles['archived-entry'])}
-          onClick={() => setShowArchived(!showArchived)}
-        >
-          {showArchived
-            ? dict(
-                'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToProjects',
-              )
-            : `${dict(
-                'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedProjects',
-              )} (${archivedProjectCount})`}
+      {/* 查看更多:项目层分页追加 */}
+      {hasMore && (
+        <div className={cx(styles['load-more-entry'])} onClick={handleLoadMore}>
+          {loadingMore ? (
+            <LoadingOutlined />
+          ) : (
+            `${dict(
+              'PC.Components.AgentConversation.viewMore',
+            )} (${remainingCount})`
+          )}
         </div>
       )}
       <Modal

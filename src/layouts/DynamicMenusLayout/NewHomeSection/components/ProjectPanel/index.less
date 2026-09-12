@@ -8,8 +8,8 @@
   padding: @paddingXxs @paddingXs;
 }
 
-// 已归档项目入口(对齐任务列表 archived-entry 形态)
-.archived-entry {
+// 查看更多入口(项目分页追加)
+.load-more-entry {
   padding: @paddingXs @paddingSm;
   text-align: center;
   font-size: @fontSizeSm;
@@ -219,17 +219,28 @@
   flex-shrink: 0;
   padding: 0;
   border: 0;
-  border-radius: @borderRadiusOuter;
+  border-radius: 7px;
   background: transparent;
   color: @navSecondMenuAdaptiveTextTertiary;
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.16s ease, background 0.16s ease;
 
-  &:hover {
-    background: @colorFillTertiary;
-    color: @colorPrimary;
-  }
+  // hover 底色走 .project-actions button 共享规则（浅品牌色底）；
+  // 图标色对齐项目子行 ⋯（深色，非品牌红），见下方特异性覆盖规则
+}
+
+// 见上：特异性须压过 compact 的恒定透明底（.compact .project-actions .project-more，
+// 同特异级但源码靠后）与共享 hover 的品牌红图标色，故挂 .project 前缀提权；
+// 图标色同项目子行 ⋯ 的 hover（@navSecondMenuAdaptiveText）
+.project .project-actions .project-more:hover {
+  background: @colorPrimaryBg;
+  color: @navSecondMenuAdaptiveText;
+}
+
+// 「+ 新建会话」同 ⋯ 统一：hover 图标深色（浅品牌色底走共享规则）
+.project .project-actions .add-conversation:hover {
+  color: @navSecondMenuAdaptiveText;
 }
 
 // 焦点样式只认键盘焦点(:focus-visible/:has(:focus-visible)):
@@ -434,9 +445,9 @@
   top: 50%;
   transform: translateY(-50%);
   padding: 1px;
-  background: @colorBgContainer;
   border-radius: @borderRadius;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 12%);
+  // 白底+投影已去除（2026-09-12 走查定调）：行 hover 灰底上只留 ⋯ 图标本体，
+  // 不再浮白色小卡片
 }
 
 .project .child .child-actions .child-more {

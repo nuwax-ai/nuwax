@@ -6,6 +6,15 @@
   // 二级菜单列滚动条走统一方案：默认透明、hover 容器才显示滑块
   .scrollbar-auto-hide();
 
+  // 单栏（style3）二级列：滚动容器右缘外扩进 .second-column 的右 padding 带
+  // （-10px 出 + 10px padding 回补，内容宽不变），滚动条贴列右缘、与行内容
+  // 脱开不再叠压（2026-09-12 走查需求）。scope 到 style3 body 标记，classic
+  // 布局/HoverMenu/SpaceSquare 等其他消费方不受影响
+  :global(.xagi-nav-style3) & {
+    margin-right: -10px;
+    padding-right: 10px;
+  }
+
   .collection-title {
     margin-top: @margin;
     padding: @paddingXs;
