@@ -59,6 +59,11 @@ const SECOND_MENU_SECTION_TABS = new Set([
 ]);
 /** 二级菜单列宽度（原型窄列形态，非原二级导航的 240） */
 const SECOND_COLUMN_WIDTH = 200;
+/**
+ * 二级列滚动体宽扣算：两侧 10px 内缩 ×2 + 右描边 1px，与 .second-column 的
+ * padding（原型 tm-side 10px）联动——改 CSS 须同步改这里，否则行 pill 左右不对称
+ */
+const SECOND_COLUMN_SCROLL_BODY_INSET = 21;
 /** 折叠态展开按钮（主站页形态）：贴屏幕最左侧、与收起按钮同一水平线，
  *  样式/大小/图标与 SidebarNavHeader 的收起按钮完全一致（34×34 图标钮 +
  *  PanelToggleSvg 面板图标）。left: 0 贴死左缘；
@@ -403,10 +408,11 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             ) : (
               <HoverScrollbar
                 className={cx('w-full', 'h-full')}
-                // 滚动体宽 = 列宽 − 两侧 10px 内缩 − 右描边 1px，与 .second-column
-                // 的 padding（原型 tm-side 10px）联动；曾按 token.padding*2(32px)
-                // 扣宽，容器内缩改 10px 后右侧多出 11px 空隙致行 pill 左右不对称
-                bodyWidth={SECOND_COLUMN_WIDTH - 21}
+                // 扣算口径与联动说明见 SECOND_COLUMN_SCROLL_BODY_INSET 定义处；
+                // 曾按 token.padding*2(32px) 扣宽，容器内缩改 10px 后右侧多出 11px 空隙
+                bodyWidth={
+                  SECOND_COLUMN_WIDTH - SECOND_COLUMN_SCROLL_BODY_INSET
+                }
                 // 滚动条贴列右缘（2026-09-12 需求）：外扩进右 padding 带，不叠压行内容
                 scrollbarEdge
                 style={{

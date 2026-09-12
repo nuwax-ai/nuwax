@@ -435,6 +435,17 @@ function setupMarkdownCodeCopy(scope) {
 }
 
 /**
+ * 表格卡 banner 片段（「表格」标签 + 复制按钮）：renderer.table（管道表格）与
+ * enhanceMarkdownTables（裸 HTML 表格兜底）共用，改卡片结构只改这一处
+ */
+function buildTableCardBannerHtml() {
+    return '<div class="md-code-block-banner">'
+        + '<span class="md-code-block-language">表格</span>'
+        + '<span class="md-copy-btn" role="button" tabindex="0">复制</span>'
+        + '</div>';
+}
+
+/**
  * 裸 HTML 表格兜底：marked 只对管道表格调用 renderer.table，
  * 文档内嵌的 <table> 原样透传——既没有复制按钮也没有溢出包裹，
  * 宽表格会撑破 .markdown-body 触发整页横向滚动，左移后首列文字被裁。
@@ -448,11 +459,7 @@ function enhanceMarkdownTables(scope) {
         }
         var card = document.createElement('div');
         card.className = 'md-code-block md-table-block';
-        card.innerHTML = '<div class="md-code-block-banner">'
-            + '<span class="md-code-block-language">表格</span>'
-            + '<span class="md-copy-btn" role="button" tabindex="0">复制</span>'
-            + '</div>'
-            + '<div class="md-table-content"></div>';
+        card.innerHTML = buildTableCardBannerHtml() + '<div class="md-table-content"></div>';
         table.parentNode.insertBefore(card, table);
         card.querySelector('.md-table-content').appendChild(table);
     });
@@ -530,10 +537,7 @@ async function renderMarkdown(url, container) {
             // marked v11 旧签名为 table(header, body)，均为已渲染的 thead/tbody HTML
             table: function (header, body) {
                 return '<div class="md-code-block md-table-block">'
-                    + '<div class="md-code-block-banner">'
-                    + '<span class="md-code-block-language">表格</span>'
-                    + '<span class="md-copy-btn" role="button" tabindex="0">复制</span>'
-                    + '</div>'
+                    + buildTableCardBannerHtml()
                     + '<div class="md-table-content"><table><thead>' + header + '</thead><tbody>' + (body || '') + '</tbody></table></div>'
                     + '</div>';
             },

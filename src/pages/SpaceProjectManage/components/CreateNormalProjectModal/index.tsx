@@ -97,13 +97,14 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
       return;
     }
     setConfirmLoading(true);
+    // 云端传哨兵 -1（后端必填校验「沙箱ID不能为空」，-1=云端默认分配，
+    // 与全栈创建 CreateUserApp 同一口径）
+    const numericSandboxId = Number(sandboxId);
     try {
       const res = await apiNormalProjectCreate({
         spaceId,
         name: trimmed,
-        // 云端传哨兵 -1（后端必填校验「沙箱ID不能为空」，-1=云端默认分配，
-        // 与全栈创建 CreateUserApp 同一口径）
-        sandboxId: Number(sandboxId),
+        sandboxId: numericSandboxId,
         workspacePath: isPersonal ? workspacePath || undefined : undefined,
       });
       // 返回体 id 字段名契约未细化，兼容 id / targetId 两种形态；
@@ -114,7 +115,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
         onConfirm({
           id: newId,
           name: trimmed,
-          sandboxId: Number(sandboxId),
+          sandboxId: numericSandboxId,
           conversationId: res?.data?.conversationId,
           agentId: res?.data?.agentId,
         });
