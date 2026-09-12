@@ -1,0 +1,138 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.dev-log-panel {
+  height: 100%;
+  overflow: hidden;
+  background: #f5f5dc;
+
+  .log-list {
+    height: 100%;
+    overflow-y: auto;
+    padding: 8px;
+
+    .log-group {
+      display: flex;
+      flex-direction: row;
+      margin-bottom: 4px;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 4px;
+
+      &:hover {
+        background: rgba(139, 69, 19, 10%);
+      }
+
+      .log-group-header {
+        padding: 4px 8px;
+        transition: all 0.2s ease;
+
+        .group-header-left {
+          display: flex;
+          align-items: center;
+
+          .group-timestamp {
+            display: inline-block;
+            min-width: 132px;
+            font-size: @fontSizeSm;
+            color: #8b4513;
+            font-family: @fontFamilyCode;
+          }
+        }
+      }
+
+      .log-group-content {
+        flex: 1;
+        padding: 0;
+        background: transparent;
+
+        .log-content-block {
+          background: transparent;
+          border: none;
+          border-radius: 0;
+
+          .log-text {
+            margin: 0;
+            padding: 4px 8px;
+            font-family: @fontFamilyCode;
+            font-size: @fontSizeSm;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #8b4513;
+            background: transparent;
+
+            .log-line {
+              &.log-line-error {
+                color: #d32f2f;
+              }
+
+              &.log-line-warn {
+                color: #d46b08;
+              }
+
+              &.log-line-info {
+                color: #1890ff;
+              }
+
+              &.log-line-normal {
+                color: #8b4513;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .empty-logs {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: @colorTextTertiary;
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      color: @colorTextTertiary;
+    }
+
+    p {
+      margin: 0 0 16px;
+      font-size: @fontSize;
+    }
+  }
+
+  .loading-logs {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: @colorTextTertiary;
+
+    .loading-spinner {
+      font-size: 32px;
+      margin-bottom: 16px;
+      color: @colorPrimary;
+      animation: dev-log-spin 1s linear infinite;
+    }
+
+    p {
+      margin: 0;
+      font-size: @fontSize;
+      color: @colorTextSecondary;
+    }
+  }
+}
+
+@keyframes dev-log-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,5 +1,4 @@
 import {
-  ConversationBottomConsole,
   DevLogActions,
   GitVersionRecordPanel,
   type ConsoleExternalContainerStatus,
@@ -61,6 +60,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import AppDevProHeader from './AppDevProHeader';
 import AppDevAppPreviewPanel from './components/AppDevAppPreviewPanel';
+import AppDevBottomConsole from './components/AppDevBottomConsole';
 import AppDevDatabaseWorkspace, {
   type AppDevDatabaseWorkspaceTab,
 } from './components/AppDevDatabaseWorkspace';
@@ -425,13 +425,17 @@ const AppDevPro: React.FC = () => {
   }, [selectedComputerId, conversationInfo, history.action, location.state]);
 
   /**
-   * 终端 WebSocket 地址：按 Header 当前环境走 userapp ttyd 代理
+   * 开发 / 线上终端各自走独立 ttyd 代理，底部控制台常驻两路连接。
    * 开发环境 /api/userapp/proxy/ttyd/dev/{appId}
    * 线上环境 /api/userapp/proxy/ttyd/prod/{appId}
    */
-  const terminalWsUrl = useMemo(
-    () => getUserAppTtydProxyWsUrl(appId, dbEnv),
-    [appId, dbEnv],
+  const terminalDevWsUrl = useMemo(
+    () => getUserAppTtydProxyWsUrl(appId, UserAppDbEnvEnum.Dev),
+    [appId],
+  );
+  const terminalProdWsUrl = useMemo(
+    () => getUserAppTtydProxyWsUrl(appId, UserAppDbEnvEnum.Prod),
+    [appId],
   );
 
   /**
@@ -691,11 +695,7 @@ const AppDevPro: React.FC = () => {
       await cancelUnfinishedBuild();
     }
     resumeTasksActive();
-  }, [
-    cancelUnfinishedBuild,
-    publishFlow,
-    resumeTasksActive,
-  ]);
+  }, [cancelUnfinishedBuild, publishFlow, resumeTasksActive]);
 
   /** 弹窗内取消任务后恢复 tasks/active 轮询 */
   const handleCancelDeployTask = useCallback(async () => {
@@ -2111,16 +2111,18 @@ const AppDevPro: React.FC = () => {
             </div>
 
             {/* 底部控制台 */}
-            <ConversationBottomConsole
+            <AppDevBottomConsole
               conversationId={
                 finalSelectedComputerId === '-1'
                   ? queryConversationId
                   : undefined
               }
+              env={dbEnv}
               appStage={dbEnv}
               externalContainerStatus={terminalExternalContainerStatus}
               visible={showDevConsole}
-              wsUrl={terminalWsUrl}
+              devWsUrl={terminalDevWsUrl}
+              prodWsUrl={terminalProdWsUrl}
               wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
               wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
               layoutResetSignal={devConsoleLayoutResetSignal}

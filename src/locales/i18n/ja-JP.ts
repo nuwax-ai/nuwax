@@ -2713,6 +2713,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.defaultService": "ビルド",
   "PC.Pages.AppDevPro.devEnv": "開発環境",
   "PC.Pages.AppDevPro.onlineEnv": "オンライン環境",
+  "PC.Pages.AppDevPro.tabTerminalDev": "ターミナル（開発環境）",
+  "PC.Pages.AppDevPro.tabTerminalProd": "ターミナル（オンライン環境）",
   "PC.Pages.AppDevPro.prodNeedPublish": "オンライン環境の起動には公開済みバージョンが必要です",
   "PC.Pages.AppDevPro.publishApplyStep": "公開申請を送信",
   "PC.Pages.AppDevPro.publishApplying": "公開申請を送信しています...",

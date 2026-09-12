@@ -2693,6 +2693,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevPro.defaultService": "構建",
   "PC.Pages.AppDevPro.devEnv": "開發環境",
   "PC.Pages.AppDevPro.onlineEnv": "綫上環境",
+  "PC.Pages.AppDevPro.tabTerminalDev": "終端（開發環境）",
+  "PC.Pages.AppDevPro.tabTerminalProd": "終端（綫上環境）",
   "PC.Pages.AppDevPro.prodNeedPublish": "綫上環境啟動需要先完成發布",
   "PC.Pages.AppDevPro.publishApplyStep": "提交發布申請",
   "PC.Pages.AppDevPro.publishApplying": "正在提交發布申請...",
