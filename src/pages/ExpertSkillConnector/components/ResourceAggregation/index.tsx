@@ -7,11 +7,13 @@
 import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useConnectorConnect from '@/hooks/useConnectorConnect';
 import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
 import { dict } from '@/services/i18nRuntime';
-import { Empty } from 'antd';
+import { apiConnectorConnectionToggleStatus } from '@/services/systemManage';
+import { Empty, message } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -52,7 +54,12 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     const searchParams = new URLSearchParams(location.search);
     const source = searchParams.get('source');
     return {
-      source: source === 'team' ? ('team' as const) : ('system' as const),
+      source:
+        source === 'team'
+          ? ('team' as const)
+          : source === 'connected'
+          ? ('connected' as const)
+          : ('system' as const),
       category: searchParams.get('category') || '',
       keyword: searchParams.get('kw') || '',
     };
@@ -76,16 +83,20 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   const categories = useResourceCategories(resourceType, source);
 
   /**
-   * 团队空间维度：二级 tab 为空间列表（无「全部」，选中空间即数据维度，
-   * category 存空间 id 字符串，专家/技能/连接器三个页面同口径）；
+   * 团队空间维度：专家/技能的二级 tab 为空间列表（无「全部」，选中空间即
+   * 数据维度，category 存空间 id 字符串）；连接器团队维度保留首位「全部」
+   * 页签（scope=space 聚合全部空间，选中具体空间才按该空间查询）；
    * 系统广场维度保持「全部」+ 分类
    */
-  const isSpaceScopedTeam = source === 'team';
+  const isSpaceScopedTeam = source === 'team' && resourceType !== 'connector';
   const displayCategories = isSpaceScopedTeam
     ? categories.filter((item) => item.key !== '')
     : categories;
 
-  /** 列表请求用的空间 ID：团队维度 = 当前选中空间 */
+  /**
+   * 列表请求用的空间 ID：团队维度 = 当前选中空间
+   * （连接器「全部」页签 category 为空串 → undefined，走 scope 聚合）
+   */
   const listSpaceId = useMemo(() => {
     if (source !== 'team') return undefined;
     const id = Number(category);
@@ -93,13 +104,14 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   }, [source, category]);
 
   // 团队维度：空间列表到达后默认选中第一个空间
-  // （URL 恢复的分类 key 不在空间列表中时同样回落，避免列表空转）
+  // （URL 恢复的分类 key 不在空间列表中时同样回落，避免列表空转；
+  // 连接器维度「全部」在首位，初始空串即命中，不会触发回落）
   useEffect(() => {
-    if (!isSpaceScopedTeam || displayCategories.length === 0) return;
+    if (source !== 'team' || displayCategories.length === 0) return;
     if (!displayCategories.some((item) => item.key === category)) {
       setCategory(displayCategories[0].key);
     }
-  }, [isSpaceScopedTeam, displayCategories, category]);
+  }, [source, displayCategories, category]);
 
   // 归一化列表数据（团队维度 tab 即空间选择，分类过滤不适用，按 spaceId 请求）
   const { list, loading, hasMore, loadMore, updateItem } = useResourceList({
@@ -165,10 +177,47 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     closeConnectModal,
     handleConnected,
   } = useConnectorConnect({
-    source,
+    // "已连接的"维度无空间上下文，连接/断开按系统口径（不带 spaceId）
+    source: source === 'team' ? 'team' : 'system',
     spaceId: listSpaceId,
     updateItem,
   });
+
+  /** 启用开关切换请求中的卡片 id（Switch loading 防重复点击） */
+  const [togglingIds, setTogglingIds] = useState<string[]>([]);
+
+  /**
+   * 连接器卡片「启用开关」：POST /api/connector/connections/{连接器id}/status
+   * （连接器 id 为提供方主键，非连接 id）；成功后就地更新
+   * connectionEnabled 驱动开关回弹，不动筛选与分页（避免整页重拉）
+   */
+  const handleToggleEnabled = useCallback(
+    async (item: ResourceItem, enabled: boolean) => {
+      if (!item.connectorId) {
+        // 数据异常兜底：缺连接器 id 无法寻址（正常数据两个维度均有值）
+        console.warn(
+          '[ExpertSkillConnector] toggle enabled skipped: missing connectorId, item =',
+          item.id,
+        );
+        return;
+      }
+      setTogglingIds((prev) => [...prev, item.id]);
+      try {
+        const res = await apiConnectorConnectionToggleStatus(
+          item.connectorId,
+          enabled,
+        );
+        if (res?.code === SUCCESS_CODE) {
+          updateItem(item.id, { connectionEnabled: enabled });
+        } else {
+          message.error(res?.message || '切换启用状态失败');
+        }
+      } finally {
+        setTogglingIds((prev) => prev.filter((id) => id !== item.id));
+      }
+    },
+    [updateItem],
+  );
 
   // 筛选状态同步 URL（replace 不产生历史记录）
   useEffect(() => {
@@ -228,8 +277,9 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [checkAndAutoFill]);
 
-  // 团队空间维度等待空间 ID 加载（选中空间默认值尚未确定）
-  const waitingSpace = source === 'team' && !listSpaceId;
+  // 团队空间维度等待空间 ID 加载（选中空间默认值尚未确定）；
+  // 连接器维度「全部」页签无 spaceId 也可请求（scope 聚合），不等待
+  const waitingSpace = isSpaceScopedTeam && !listSpaceId;
   // 首屏加载（非滚动加载更多）才显示整屏 Loading
   const initialLoading = (loading || waitingSpace) && list.length === 0;
 
@@ -240,8 +290,9 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
         source={source}
         onSourceChange={(next) => {
           setSource(next);
-          // 系统广场（分类 key）与团队空间（空间 id）两套 key 命名空间不同，
-          // 切换维度后清空选中；专家/技能·团队维度会由上方 effect 重新默认选第一个空间
+          // 系统广场（分类 key）、团队空间（空间 id）、已连接的（分类 key）
+          // 各维度 key 命名空间不同，切换后清空选中回到"全部"；
+          // 专家/技能·团队维度会由上方 effect 重新默认选第一个空间
           setCategory('');
         }}
         categories={displayCategories}
@@ -294,6 +345,16 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   connecting={
                     resourceType === 'connector' &&
                     connectingIds.includes(item.id)
+                  }
+                  // 连接器卡片「启用开关」：仅已连接状态生效（右上角常驻开关）
+                  onToggleEnabled={
+                    resourceType === 'connector'
+                      ? handleToggleEnabled
+                      : undefined
+                  }
+                  toggling={
+                    resourceType === 'connector' &&
+                    togglingIds.includes(item.id)
                   }
                   showUse={resourceType === 'skill'}
                   // 底部统计行仅专家卡片展示（技能本就无统计；

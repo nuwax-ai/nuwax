@@ -16,8 +16,8 @@ import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 /** 资源类型：专家&专家团 / 技能 / 连接器 */
 export type ResourceTypeEnum = 'expert' | 'skill' | 'connector';
 
-/** 数据源：系统广场 / 团队空间 */
-export type ResourceSourceEnum = 'system' | 'team';
+/** 数据源：系统广场 / 团队空间 / 已连接的（连接器页专属，当前用户已连接的连接器） */
+export type ResourceSourceEnum = 'system' | 'team' | 'connected';
 
 /** 卡片统计项图标类型 */
 export type ResourceStatType = 'user' | 'link' | 'star';
@@ -58,6 +58,21 @@ export interface ResourceItem {
   service?: string;
   /** 连接状态（连接器特有：卡片标题下方展示已连接/未连接） */
   connected?: boolean;
+  /**
+   * 连接器主键 id（连接器特有：切换连接启用状态接口以连接器 id 寻址，
+   * POST /api/connector/connections/{连接器id}/status）
+   */
+  connectorId?: number;
+  /**
+   * 所属空间 ID（连接器特有：团队空间维度列表响应每条自带——含"全部"
+   * 页签聚合口径，免鉴权直连建连时透传；系统广场响应无该字段）
+   */
+  spaceId?: number;
+  /**
+   * 连接启用状态（连接器特有：已连接卡片右上角常驻开关的选中态；
+   * 已开启 connectionEnabled: true 展示打开的开关，切换成功后就地更新）
+   */
+  connectionEnabled?: boolean;
   /**
    * 常驻状态（技能特有：pin 按钮 hover 提示常驻/取消常驻）；
    * pin/取消 pin 接口未定，数据源暂缺，默认按未常驻展示

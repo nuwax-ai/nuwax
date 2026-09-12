@@ -6,11 +6,13 @@
  * 专家&专家团卡片 hover 时右上角浮现「召唤」按钮（经 onSummon 回调携带专家信息
  * 透传跳转 /home 首页）、技能卡片浮现「选择」按钮及右侧 pin 图标按钮
  * （点击逻辑暂未接入，仅展示）；
- * 连接器卡片标题下方展示 分类 + 连接状态（免鉴权 no_auth 无连接概念，
- * 状态直接展示已连接且不展示按钮；其余按 connected 展示已连接/未连接），
- * hover 右上角浮现「连接/断开」按钮：断开经 onDisconnect 回调（DELETE 连接
- * 后更新卡片状态）；连接经 onConnect 回调，上层按认证方式分流
- * （oauth2 → 授权弹窗；api_key/bearer/custom → 凭据抽屉）。
+ * 连接器卡片标题下方展示 分类 + 连接状态（按 connected 展示已连接/未连接）；
+ * 已连接卡片右上角常驻「启用开关」（checked 绑 connectionEnabled，切换经
+ * onToggleEnabled 调启用状态接口），hover 时开关左侧浮现「断开」按钮
+ * （经 onDisconnect 回调，DELETE 连接后更新卡片状态）；未连接卡片 hover
+ * 右上角浮现「连接」按钮，经 onConnect 回调，上层按认证方式分流
+ * （oauth2 → 授权弹窗；api_key/bearer/custom → 凭据抽屉；
+ * no_auth 免鉴权直接建连）——免鉴权与非免鉴权卡片交互口径一致。
  */
 
 import agentImage from '@/assets/images/agent_image.png';
@@ -24,7 +26,7 @@ import {
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { dict } from '@/services/i18nRuntime';
 import { PushpinOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
+import { Button, Switch } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { ResourceItem, ResourceStatType } from '../../../../types';
@@ -61,6 +63,10 @@ interface ResourceCardProps {
   onConnect?: (item: ResourceItem) => void;
   /** 连接请求中（按钮 loading 防重复点击） */
   connecting?: boolean;
+  /** 启用开关切换回调（携带卡片条目与目标开关状态；仅连接器卡片且已连接时生效） */
+  onToggleEnabled?: (item: ResourceItem, enabled: boolean) => void;
+  /** 启用开关请求中（Switch loading 防重复点击） */
+  toggling?: boolean;
 }
 
 const ResourceCard: React.FC<ResourceCardProps> = ({
@@ -75,16 +81,25 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
   disconnecting,
   onConnect,
   connecting,
+  onToggleEnabled,
+  toggling,
 }) => {
   const { name, description, icon, publishUser, stats } = item;
-  /** 免鉴权（no_auth）连接器：无连接概念，状态恒展示已连接 */
-  const isNoAuth = item.authType === 'no_auth';
-  /** 连接器卡片状态行（免鉴权也展示，直接点亮为已连接） */
+  /** 连接器卡片状态行（分类 + 已连接/未连接） */
   const showConnectStatus = showConnect;
-  /** 连接/断开按钮：免鉴权无连接动作，不展示 */
-  const showConnectAction = showConnect && !isNoAuth;
-  /** 状态点亮口径：免鉴权恒已连接，其余按 connected */
-  const connectStatusOn = isNoAuth || !!item.connected;
+  /**
+   * 连接/断开/开关：免鉴权（no_auth）同样参与——未连接 hover 浮现连接
+   * 按钮（上层直接 POST api-key 仅传 providerService 建连，无凭据弹窗），
+   * 已连接与非免鉴权同口径（常驻启用开关 + hover 断开）
+   */
+  const showConnectAction = showConnect;
+  /**
+   * 已连接卡片：右上角常驻启用开关（替代原 hover 浮现的断开按钮位置），
+   * hover 时开关左侧浮现断开按钮；未连接卡片保持 hover 浮现连接按钮不变
+   */
+  const showEnabledSwitch = showConnectAction && !!item.connected;
+  /** 状态点亮口径：按 connected（免鉴权连接后同样点亮） */
+  const connectStatusOn = !!item.connected;
   /**
    * 图标展示地址：连接器 icon 为 /api/f/ 受保护文件地址，img 直接请求
    * 不带 Authorization 会被拒（ORB 拦截 → onError 回退默认图），
@@ -190,25 +205,58 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
             </div>
           )}
           {showConnectAction && (
-            <div className={cx(styles['action-box'])}>
-              {/* 已连接 → 断开（DELETE 连接后更新卡片状态）；未连接 → 连接
-                  （上层按认证方式分流：oauth2 授权弹窗 / 凭据型凭据抽屉） */}
-              <Button
-                type="primary"
-                size="small"
-                danger={item.connected}
-                loading={item.connected ? disconnecting : connecting}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (item.connected) {
-                    onDisconnect?.(item);
-                    return;
-                  }
-                  onConnect?.(item);
-                }}
-              >
-                {item.connected ? '断开' : '连接'}
-              </Button>
+            <div
+              className={cx(styles['action-box'], {
+                // 已连接：开关常驻右上角（容器不随 hover 隐现）
+                [styles['action-box-pinned']]: showEnabledSwitch,
+              })}
+            >
+              {showEnabledSwitch ? (
+                <>
+                  {/* 断开：hover 当前卡片时浮现于开关左侧，hover 离开隐藏
+                      （DELETE 连接后更新卡片状态） */}
+                  <Button
+                    type="primary"
+                    size="small"
+                    danger
+                    className={cx(styles['hover-reveal-btn'])}
+                    loading={disconnecting}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDisconnect?.(item);
+                    }}
+                  >
+                    断开
+                  </Button>
+                  {/* 启用开关：checked 绑 connectionEnabled（已开启展示打开状态），
+                      切换经 onToggleEnabled 调启用状态接口后就地更新回弹
+                      （用法同能力弹窗连接器卡片） */}
+                  <Switch
+                    size="small"
+                    checked={item.connectionEnabled === true}
+                    loading={toggling}
+                    aria-label={name}
+                    onClick={(_, event) => {
+                      event.stopPropagation();
+                      onToggleEnabled?.(item, !item.connectionEnabled);
+                    }}
+                  />
+                </>
+              ) : (
+                /* 未连接：hover 浮现「连接」按钮（上层按认证方式分流：
+                   oauth2 授权弹窗 / 凭据型凭据抽屉），交互与样式保持不变 */
+                <Button
+                  type="primary"
+                  size="small"
+                  loading={connecting}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onConnect?.(item);
+                  }}
+                >
+                  连接
+                </Button>
+              )}
             </div>
           )}
         </>

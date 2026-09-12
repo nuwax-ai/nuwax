@@ -1,7 +1,8 @@
 /**
  * 资源二级分类字典 hook
  * @description
- * - 系统广场维度（source=system）：调用 /api/published/category/list，
+ * - 系统广场维度（source=system，"已连接的"维度同）：调用
+ *   /api/published/category/list，
  *   按资源类型匹配根节点（expert/skill 按 type，connector 按 key=Connector），
  *   取其 children 作为分类字典；
  * - 团队空间维度（source=team）：调用 /api/space/list，将空间列表映射为分类字典；
@@ -76,13 +77,16 @@ const useResourceCategories = (
     [],
   );
 
-  // 不同数据源走不同接口；任一接口失败时静默降级（仅保留"全部"）
+  // 不同数据源走不同接口；任一接口失败时静默降级（仅保留"全部"）；
+  // "已连接的"维度与系统广场共用内容分类，缓存键归一化避免重复请求
   const fetcher =
     source === 'team' ? fetchTeamCategories : fetchSystemCategories;
 
   useRequest(fetcher, {
     refreshDeps: [resourceType, source],
-    cacheKey: `esc-categories-${resourceType}-${source}`,
+    cacheKey: `esc-categories-${resourceType}-${
+      source === 'team' ? 'team' : 'system'
+    }`,
     // umi 的 useRequest 默认注入 formatResult: result => result?.data，
     // 而 fetcher 已在内部解包并返回归一化数组（无 data 字段），会被误取成 undefined，
     // 这里显式透传，保证 onSuccess 拿到 fetcher 的原始返回值

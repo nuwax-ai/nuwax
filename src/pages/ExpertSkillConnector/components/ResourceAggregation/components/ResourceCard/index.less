@@ -16,6 +16,11 @@
       opacity: 1;
       z-index: 1;
     }
+
+    .hover-reveal-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
   }
 
   .footer {
@@ -35,7 +40,7 @@
     }
   }
 
-  // 操作按钮（召唤/选择/连接/断开）：hover 时卡片右上角浮现（点击逻辑暂未接入，仅展示）
+  // 操作按钮（召唤/选择/连接/断开/启用开关）：hover 时卡片右上角浮现
   .action-box {
     position: absolute;
     top: 12px;
@@ -46,6 +51,21 @@
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
     z-index: -1;
+  }
+
+  // 已连接卡片：右上角常驻启用开关，容器不随 hover 隐现
+  // （断开按钮经 .hover-reveal-btn 单独控制浮现）
+  .action-box-pinned {
+    opacity: 1;
+    z-index: 1;
+  }
+
+  // 启用开关左侧的断开按钮：仅 hover 当前卡片时浮现；
+  // 隐藏时不响应点击（按钮占位常驻，避免开关位置跳动、也避免挡住标题交互）
+  .hover-reveal-btn {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
   }
 
   // 技能卡片：选择按钮右侧 pin 图标按钮（hover 图标转主题色；

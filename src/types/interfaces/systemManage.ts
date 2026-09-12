@@ -1072,6 +1072,8 @@ export interface ConnectorProviderInfo {
   sortOrder?: number;
   /** 是否已连接 */
   connected?: boolean;
+  /** 当前用户该连接的启用状态（已连接卡片右上角的开关状态） */
+  connectionEnabled?: boolean;
   /** 工具/动作数量（对应"工具数"列） */
   actionCount?: number;
   /** 更新时间 */
@@ -1186,7 +1188,7 @@ export interface ConnectorProviderPageParams {
   pageNum?: number;
   /** 页大小（调试弹窗一次拉全量，固定传 2000） */
   pageSize?: number;
-  /** 数据范围：space = 空间维度（空间连接器页） */
+  /** 数据范围：space = 空间维度（空间连接器页）；official = 官方连接器目录（广场维度） */
   scope?: string;
   /** 启用状态筛选：all / enabled / disabled */
   status?: string;
@@ -1194,6 +1196,8 @@ export interface ConnectorProviderPageParams {
   connected?: string;
   /** 关键字（名称 / service / 分类 / 标签） */
   keyword?: string;
+  /** 分类名称（scope=official 时点击具体分类传入，如 通讯工具；空 = 全部） */
+  category?: string;
 }
 
 /**
@@ -1332,8 +1336,11 @@ export interface CreateConnectorConnectionParams {
   providerService: string;
   /** 连接名称（可选，未填由后端默认使用连接器名称） */
   name?: string;
-  /** 凭证键值对（键为 authConfig.fields[].name，如 clientId / apiKey / token） */
-  fields: Record<string, string>;
+  /**
+   * 凭证键值对（键为 authConfig.fields[].name，如 clientId / apiKey / token）；
+   * 免鉴权（no_auth）无凭证概念，仅传 providerService 直接建连
+   */
+  fields?: Record<string, string>;
 }
 
 /**
