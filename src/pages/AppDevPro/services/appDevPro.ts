@@ -92,6 +92,8 @@ export async function apiUserAppStartDev(
   return request('/api/userapp/dev/start', {
     method: 'POST',
     data,
+    // 失败由预览页展示，不走全局 message
+    skipErrorHandler: true,
   });
 }
 
@@ -161,6 +163,8 @@ export async function apiUserAppProdStart(
   return request('/api/userapp/prod/start', {
     method: 'POST',
     data,
+    // 失败由预览页 / 部署弹窗展示，不走全局 message
+    skipErrorHandler: true,
   });
 }
 

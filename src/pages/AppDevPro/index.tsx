@@ -1813,6 +1813,7 @@ const AppDevPro: React.FC = () => {
         busy={previewRuntime.busy}
         phase={previewRuntime.phase}
         services={previewRuntime.services}
+        errorMessage={previewRuntime.errorMessage}
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={isConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}

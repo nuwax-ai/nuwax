@@ -29,6 +29,7 @@ import {
 } from '../utils/userAppTaskLog';
 import {
   listenUserAppTaskStream,
+  pickUserAppRequestErrorText,
   pickUserAppTaskId,
   unwrapUserAppResponse,
 } from '../utils/userAppTaskStream';
@@ -253,7 +254,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           setPhase('cancelled');
           return;
         }
-        const text = error instanceof Error ? error.message : failedMessage;
+        const text = pickUserAppRequestErrorText(error, failedMessage);
         setErrorMessage(text);
         setPhase('failed');
         setEnvRunning(false);

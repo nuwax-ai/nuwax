@@ -64,6 +64,42 @@ export const unwrapUserAppResponse = <T>(
 };
 
 /**
+ * 从请求异常中取出可展示文案。
+ * skipErrorHandler 后可能是 Error、业务体或 axios 响应。
+ *
+ * @param error 捕获到的异常
+ * @param fallback 兜底文案
+ * @returns 错误文案
+ */
+export const pickUserAppRequestErrorText = (
+  error: unknown,
+  fallback: string,
+): string => {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  if (error && typeof error === 'object') {
+    const record = error as {
+      info?: { message?: string };
+      message?: string;
+      response?: { data?: { message?: string } };
+    };
+    const fromInfo = record.info?.message?.trim();
+    if (fromInfo) {
+      return fromInfo;
+    }
+    const fromBody = record.response?.data?.message?.trim();
+    if (fromBody) {
+      return fromBody;
+    }
+    if (typeof record.message === 'string' && record.message.trim()) {
+      return record.message;
+    }
+  }
+  return fallback;
+};
+
+/**
  * 从启动 / 构建接口结果中取出 taskId。
  *
  * @param data 任务行或 taskId 字符串
