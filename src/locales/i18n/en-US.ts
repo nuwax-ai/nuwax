@@ -6306,6 +6306,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.ExpertSkillConnector.menuConnector': 'Connectors',
   'PC.Pages.ExpertSkillConnector.mainTabSystem': 'System Square',
   'PC.Pages.ExpertSkillConnector.mainTabTeam': 'Team Space',
+  'PC.Pages.ExpertSkillConnector.mainTabConnected': 'Connected',
   'PC.Pages.ExpertSkillConnector.tabAll': 'All',
   'PC.Pages.ExpertSkillConnector.searchPlaceholder': 'Search by name or description...',
   'PC.Pages.ExpertSkillConnector.more': 'More',

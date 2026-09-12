@@ -6301,6 +6301,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.ExpertSkillConnector.menuConnector': '连接器',
   'PC.Pages.ExpertSkillConnector.mainTabSystem': '系统广场',
   'PC.Pages.ExpertSkillConnector.mainTabTeam': '团队空间',
+  'PC.Pages.ExpertSkillConnector.mainTabConnected': '已连接的',
   'PC.Pages.ExpertSkillConnector.tabAll': '全部',
   'PC.Pages.ExpertSkillConnector.searchPlaceholder': '搜索名称或描述...',
   'PC.Pages.ExpertSkillConnector.more': '更多',

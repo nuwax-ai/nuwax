@@ -6180,6 +6180,7 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.ExpertSkillConnector.menuConnector': 'コネクタ',
   'PC.Pages.ExpertSkillConnector.mainTabSystem': 'システム広場',
   'PC.Pages.ExpertSkillConnector.mainTabTeam': 'チームスペース',
+  'PC.Pages.ExpertSkillConnector.mainTabConnected': '接続済み',
   'PC.Pages.ExpertSkillConnector.tabAll': 'すべて',
   'PC.Pages.ExpertSkillConnector.searchPlaceholder': '名前または説明で検索...',
   'PC.Pages.ExpertSkillConnector.more': 'もっと見る',

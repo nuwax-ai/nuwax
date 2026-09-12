@@ -1006,13 +1006,14 @@ export interface ResourceStatDTO {
  * 字段对齐 /api/system/connector/providers 真实 schema
  * ────────────────────────────────────────────── */
 
-/** 鉴权方式枚举（''=全部 用于筛选项） */
+/** 鉴权方式枚举（''=全部 用于筛选项；oauth2_device = 扫描授权（设备码），表单与 oauth2 同构） */
 export type ConnectorAuthType =
   | ''
   | 'no_auth'
   | 'api_key'
   | 'bearer'
   | 'oauth2'
+  | 'oauth2_device'
   | 'custom';
 
 /**
@@ -1072,6 +1073,8 @@ export interface ConnectorProviderInfo {
   sortOrder?: number;
   /** 是否已连接 */
   connected?: boolean;
+  /** 当前用户该连接的启用状态（已连接卡片右上角的开关状态） */
+  connectionEnabled?: boolean;
   /** 工具/动作数量（对应"工具数"列） */
   actionCount?: number;
   /** 更新时间 */
@@ -1186,7 +1189,7 @@ export interface ConnectorProviderPageParams {
   pageNum?: number;
   /** 页大小（调试弹窗一次拉全量，固定传 2000） */
   pageSize?: number;
-  /** 数据范围：space = 空间维度（空间连接器页） */
+  /** 数据范围：space = 空间维度（空间连接器页）；official = 官方连接器目录（广场维度） */
   scope?: string;
   /** 启用状态筛选：all / enabled / disabled */
   status?: string;
@@ -1194,6 +1197,8 @@ export interface ConnectorProviderPageParams {
   connected?: string;
   /** 关键字（名称 / service / 分类 / 标签） */
   keyword?: string;
+  /** 分类名称（scope=official 时点击具体分类传入，如 通讯工具；空 = 全部） */
+  category?: string;
 }
 
 /**
@@ -1322,6 +1327,41 @@ export interface ConnectorOauthAuthorizeResult {
 }
 
 /**
+ * 设备码授权发起结果（GET /api/connector/oauth/device/authorize）
+ * 扫描授权（设备码）的「去连接」调用，返回轮询凭证 / 二维码 / 核对码，
+ * 前端弹窗展示并轮询授权结果
+ */
+export interface ConnectorOauthDeviceAuthorizeResult {
+  /** 轮询凭证（poll 接口原样回传；重新获取二维码后旧 state 作废） */
+  state: string;
+  /**
+   * 二维码图片地址（相对地址，形如 /api/connector/oauth/device/qr?state=xxx，
+   * 响应为图片流；前端 img 加载时需拼 BASE_URL 指向后端——dev 环境
+   * dev server 自身无 /api 路由，线上同域部署 BASE_URL 为空即同源直连）
+   */
+  qrUrl?: string;
+  /** 核对码（App 授权页展示、用户与弹窗核对防钓鱼，如 KJHS-ASRA） */
+  userCode?: string;
+  /** 核对码候选字段（字段名以后端返回为准） */
+  verificationCode?: string;
+  /** 二维码有效期（秒），弹窗倒计时展示，到 0 重新获取二维码 */
+  expiresIn?: number;
+  /** 建议轮询间隔（秒） */
+  interval?: number;
+}
+
+/**
+ * 设备码授权轮询结果（POST /api/connector/oauth/device/poll）
+ */
+export interface ConnectorOauthDevicePollResult {
+  /**
+   * 授权状态：authorized = 授权成功连接已建立；already_completed = 此前已完成；
+   * 其余（如 pending）视为待授权，前端按 interval 继续轮询
+   */
+  status?: string;
+}
+
+/**
  * 建立连接入参（POST /api/connector/connections/api-key）
  * 自定义 / API Key / Bearer 认证统一走该接口，凭证键值对放 fields
  */
@@ -1332,8 +1372,11 @@ export interface CreateConnectorConnectionParams {
   providerService: string;
   /** 连接名称（可选，未填由后端默认使用连接器名称） */
   name?: string;
-  /** 凭证键值对（键为 authConfig.fields[].name，如 clientId / apiKey / token） */
-  fields: Record<string, string>;
+  /**
+   * 凭证键值对（键为 authConfig.fields[].name，如 clientId / apiKey / token）；
+   * 免鉴权（no_auth）无凭证概念，仅传 providerService 直接建连
+   */
+  fields?: Record<string, string>;
 }
 
 /**

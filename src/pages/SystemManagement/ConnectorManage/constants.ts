@@ -16,6 +16,7 @@ export const AUTH_TYPE_OPTIONS: Array<{ label: string; value: string }> = [
   { label: 'Api Key', value: 'api_key' },
   { label: 'Bearer', value: 'bearer' },
   { label: 'Outh 2.0', value: 'oauth2' },
+  { label: '扫描授权（设备码）', value: 'oauth2_device' },
   { label: '自定义', value: 'custom' },
 ];
 
@@ -25,6 +26,7 @@ export const AUTH_TYPE_LABEL_MAP: Record<string, string> = {
   api_key: 'Api Key',
   bearer: 'Bearer',
   oauth2: 'Outh 2.0',
+  oauth2_device: '扫描授权（设备码）',
   custom: '自定义',
 };
 
@@ -35,6 +37,7 @@ export const AUTH_TYPE_COLOR_MAP: Record<string, string> = {
   api_key: 'gold',
   bearer: 'geekblue',
   oauth2: 'purple',
+  oauth2_device: 'magenta',
   custom: 'cyan',
 };
 
