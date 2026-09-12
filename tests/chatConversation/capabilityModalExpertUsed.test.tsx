@@ -25,6 +25,19 @@ vi.mock('@/components/ChatInputHome/CapabilityModal/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
 
+// 连接器扫码连接弹窗挂在 CapabilityModal 内,less 同样 mock,
+// 否则 styles undefined 渲染崩溃
+vi.mock(
+  '@/components/business-component/ConnectorDeviceAuthModal/index.less',
+  () => ({
+    default: new Proxy({}, { get: (_, key) => String(key) }),
+  }),
+);
+
+vi.mock('@/components/business-component/ExpertListView/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+
 vi.mock('umi', () => ({
   useModel: () => ({ tenantConfigInfo: { enableSubscription: 1 } }),
 }));
@@ -171,9 +184,7 @@ describe('能力弹窗·专家「最近召唤」页签（复用最近使用接�
     // 进入聚合视图：展示最近使用条目（key 按聚合态 used 标识）
     fireEvent.click(tab);
     const card = await waitFor(() => {
-      const el = document.querySelector(
-        '[data-capability-key="expert:used:41"]',
-      );
+      const el = document.querySelector('[data-expert-key="expert:used:41"]');
       expect(el).toBeTruthy();
       return el!;
     });

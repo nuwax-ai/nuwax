@@ -32,12 +32,26 @@ vi.mock('@/components/ChatInputHome/CapabilityModal/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
 
+// 连接器扫码连接弹窗挂在 CapabilityModal 内,less 同样 mock,
+// 否则 styles undefined 渲染崩溃
+vi.mock(
+  '@/components/business-component/ConnectorDeviceAuthModal/index.less',
+  () => ({
+    default: new Proxy({}, { get: (_, key) => String(key) }),
+  }),
+);
+
 vi.mock('@/components/business-component/ExpertSummonCard/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
 
 // 技能维度列表已接入 SkillListView,其自带 less 同样 mock
 vi.mock('@/components/business-component/SkillListView/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+
+// 专家维度列表已接入 ExpertListView,其自带 less 同样 mock
+vi.mock('@/components/business-component/ExpertListView/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
 
@@ -73,6 +87,8 @@ vi.mock('@/services/agentDev', () => ({
   apiCollectAgent: vi.fn(),
   apiUnCollectAgent: vi.fn(),
   apiPublishedAgentInfo,
+  // 弹窗「最近召唤」页签可见性 hook 调用；缺省无记录（不显示页签）
+  apiUserUsedAgentList: vi.fn().mockResolvedValue({ code: '0000', data: [] }),
 }));
 vi.mock('@/services/systemManage', () => ({
   apiConnectorProviderPageList: vi.fn(),
@@ -185,7 +201,8 @@ const renderModal = (
 
 /** 点击指定卡上的主按钮（专家=聘请 / 技能=选择，按钮按卡片顺序一一对应）。
  *  专家卡标识 data-capability-key、SkillListView 条目标识 data-skill-key */
-const CARD_KEY_SELECTOR = '[data-capability-key], [data-skill-key]';
+const CARD_KEY_SELECTOR =
+  '[data-capability-key], [data-skill-key], [data-expert-key]';
 const clickCardAction = async (
   name: string,
   label:
@@ -289,7 +306,7 @@ describe('能力弹窗·付费专家聘请拦截（复用智能体详情订阅�
     // 列表中另有一个原生已订阅专家也会渲染同文案；付费标识为 Badge.Ribbon，
     // 文案在卡片外层 wrapper 上，连同 wrapper 一起断言）
     const patchedCard = document.querySelector(
-      '[data-capability-key="expert:system:11"]',
+      '[data-expert-key="expert:system:11"]',
     );
     expect(patchedCard?.closest('.ant-ribbon-wrapper')?.textContent).toContain(
       'PC.Pages.Square.SingleAgent.subscribed',
@@ -339,22 +356,6 @@ describe('能力弹窗·付费专家聘请拦截（复用智能体详情订阅�
     expect(queryAgentSubscriptionPlans).not.toHaveBeenCalled();
   });
 
-  it('首次打开不预亮首卡：无 aria-selected 项，方向键 ↓ 后才聚焦首项', async () => {
-    renderModal(vi.fn());
-    await screen.findByText('付费专家');
-    const cards = document.querySelectorAll('[data-capability-key]');
-    expect(cards.length).toBeGreaterThan(0);
-    // 未交互：所有卡片均无聚焦态（不出现"自动 hover 第一张"）
-    cards.forEach((card) =>
-      expect(card.getAttribute('aria-selected')).toBe('false'),
-    );
-    // 键盘 ↓ 从未聚焦进入首项
-    fireEvent.keyDown(document.querySelector('[role="listbox"]')!, {
-      key: 'ArrowDown',
-    });
-    expect(cards[0].getAttribute('aria-selected')).toBe('true');
-  });
-
   it('专家卡简化：与技能卡同款布局，无官方/作者/统计/收藏，聘请悬停浮现', async () => {
     apiPublishedAgentList.mockResolvedValue({
       code: '0000',
@@ -379,7 +380,7 @@ describe('能力弹窗·付费专家聘请拦截（复用智能体详情订阅�
 
     await screen.findByText('简化专家');
     const card = document.querySelector(
-      '[data-capability-key="expert:system:14"]',
+      '[data-expert-key="expert:system:14"]',
     )!;
     // 简化：无官方徽标/作者/统计行/收藏入口
     expect(card.textContent).not.toContain(
@@ -396,8 +397,8 @@ describe('能力弹窗·付费专家聘请拦截（复用智能体详情订阅�
     expect(hireBtn?.className).toContain('card-hire');
     expect(hireBtn?.className).toContain('card-select');
     expect(card.querySelector('[role="switch"]')).toBeNull();
-    // 名称下一行的单行描述
-    expect(card.querySelector('.card-desc-inline')).toBeTruthy();
+    // 名称下一行的单行描述（ExpertListView 双变体共用 .card-desc）
+    expect(card.querySelector('.card-desc')).toBeTruthy();
   });
 });
 

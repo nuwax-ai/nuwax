@@ -209,12 +209,11 @@ const AppDevPro: React.FC = () => {
   const [workspaceView, setWorkspaceView] =
     useState<AppDevWorkspaceView>('app-preview');
   /** 打开数据库前的工作区，再次点击图标时还原 */
-  const workspaceViewBeforeDatabaseRef = useRef<AppDevWorkspaceView>(
-    'app-preview',
-  );
+  const workspaceViewBeforeDatabaseRef =
+    useRef<AppDevWorkspaceView>('app-preview');
   /** 数据库工作区当前 Tab */
-  const [databaseTabId, setDatabaseTabId] = useState(
-    () => getToolTabId('database'),
+  const [databaseTabId, setDatabaseTabId] = useState(() =>
+    getToolTabId('database'),
   );
   /** 项目设置弹窗 */
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
@@ -330,7 +329,8 @@ const AppDevPro: React.FC = () => {
       void refreshFileListImmediatelyRef.current(queryConversationId);
     };
 
-    void ensureDesktopConnectionRef.current(queryConversationId)
+    void ensureDesktopConnectionRef
+      .current(queryConversationId)
       .then(afterPodReady)
       .catch((error: any) => {
         if (isEnsurePodThrottledError(error)) {
@@ -1379,11 +1379,7 @@ const AppDevPro: React.FC = () => {
       return;
     }
     // 会话详情未回填、会话进行中、或仍有待回复确认卡时，先不启动/重启
-    if (
-      !conversationReady ||
-      isConversationActive ||
-      hasPendingIntervention
-    ) {
+    if (!conversationReady || isConversationActive || hasPendingIntervention) {
       return;
     }
     // 等待 tasks/active 首包，避免与进行中任务抢 start
@@ -1848,10 +1844,7 @@ const AppDevPro: React.FC = () => {
   /** 数据库工作区：管理 iframe + 配置 */
   const databaseWorkspace = useMemo(
     () => (
-      <AppDevDatabaseWorkspace
-        appId={appId}
-        activeTab={databaseActiveTab}
-      />
+      <AppDevDatabaseWorkspace appId={appId} activeTab={databaseActiveTab} />
     ),
     [appId, databaseActiveTab],
   );
@@ -1877,9 +1870,7 @@ const AppDevPro: React.FC = () => {
         devActionLocked={previewDevActionLocked}
         allowStoppedHero={previewUserStopped || previewEnterSettled}
         stopping={previewRuntime.stopping}
-        directPreview={
-          dbEnv === UserAppDbEnvEnum.Prod && !!activePreviewUrl
-        }
+        directPreview={dbEnv === UserAppDbEnvEnum.Prod && !!activePreviewUrl}
       />
     ),
     [
@@ -2036,9 +2027,7 @@ const AppDevPro: React.FC = () => {
                   previewRuntimeRunning={previewRuntime.running}
                   previewRuntimeStopping={previewRuntime.stopping}
                   previewRuntimeReady={
-                    podReady &&
-                    !isConversationActive &&
-                    !hasPendingIntervention
+                    podReady && !isConversationActive && !hasPendingIntervention
                   }
                   previewDevActionLocked={previewDevActionLocked}
                 />
@@ -2052,8 +2041,7 @@ const AppDevPro: React.FC = () => {
             <div className={cx(styles['right-panel-content'])}>
               <div
                 className={cx(styles['workspace-pane'], {
-                  [styles['workspace-pane-hidden']]:
-                    workspaceView !== 'files',
+                  [styles['workspace-pane-hidden']]: workspaceView !== 'files',
                 })}
               >
                 <ConversationAgentFilePreview

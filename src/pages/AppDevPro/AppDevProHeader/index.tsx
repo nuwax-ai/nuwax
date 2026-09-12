@@ -4,11 +4,7 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
-import {
-  CodeOutlined,
-  FormOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
+import { CodeOutlined, FormOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';

@@ -20,16 +20,17 @@
 
 import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
 import ConnectorDeviceAuthModal from '@/components/business-component/ConnectorDeviceAuthModal';
-import type { ExpertSummonCardInfo } from '@/components/business-component/ExpertSummonCard';
-import ExpertSummonModal from '@/components/business-component/ExpertSummonModal';
+import type {
+  ExpertListItem,
+  ExpertListSourceType,
+} from '@/components/business-component/ExpertListView';
+import ExpertListView from '@/components/business-component/ExpertListView';
 import type {
   SkillListItem,
   SkillListSourceType,
 } from '@/components/business-component/SkillListView';
 import SkillListView from '@/components/business-component/SkillListView';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useConnectorConnect from '@/hooks/useConnectorConnect';
-import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { t } from '@/services/i18nRuntime';
 import {
   CloseOutlined,
@@ -47,7 +48,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel } from 'umi';
 import CapabilityCard from './CapabilityCard';
 import useAgentUsedList from './hooks/useAgentUsedList';
 import useCapabilityCategories from './hooks/useCapabilityCategories';
@@ -185,8 +185,10 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   const [recentView, setRecentView] = useState<boolean>(
     initialResourceType === 'knowledge',
   );
-  // 技能维度（SkillListView 内聚列表/开关/付费拦截），非技能走弹窗自实现
+  // 技能/专家维度（SkillListView / ExpertListView 内聚列表与付费拦截），
+  // 其余维度走弹窗自实现
   const isSkill = resourceType === 'skill';
+  const isExpert = resourceType === 'expert';
 
   // 分类字典（system：内容分类；team：空间列表，个人空间优先）
   const categories = useCapabilityCategories(resourceType, source);
@@ -262,13 +264,11 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   const showEnabledTab =
     resourceType === 'skill' && enabledLoaded && enabledList.length > 0;
 
-  // 专家「最近召唤」列表：专家维度激活时拉取（复用最近使用接口），
-  // 与「我启用的」同构的聚合视图数据源
-  const {
-    list: usedList,
-    loading: usedLoading,
-    loaded: usedLoaded,
-  } = useAgentUsedList(open && resourceType === 'expert');
+  // 专家「最近召唤」列表：专家维度激活时拉取——接入 ExpertListView 后仅
+  // 承担「最近召唤」页签可见性判定与清空回落（列表渲染由组件自理）
+  const { list: usedList, loaded: usedLoaded } = useAgentUsedList(
+    open && resourceType === 'expert',
+  );
   /** 「最近召唤」页签仅专家维度且有记录时展示（首拉完成前不显示，防空闪） */
   const showUsedTab =
     resourceType === 'expert' && usedLoaded && usedList.length > 0;
@@ -327,12 +327,8 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     [handleDisconnect],
   );
 
-  // 付费专家聘请拦截（租户订阅开关；技能拦截已内聚 SkillListView）
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
-  // 待订阅的付费专家（统一专家卡弹窗持有；卡内套餐/复核/下单自闭环）
-  const [expertPaymentItem, setExpertPaymentItem] =
-    useState<CapabilityItem | null>(null);
+  // 技能/专家维度列表分别接入 SkillListView / ExpertListView（付费拦截等
+  // 均内聚），弹窗不再持有订阅/付费相关状态
 
   /** 技能列表场景（SkillListView）：「我启用的」聚合或当前数据源 */
   const skillListType: SkillListSourceType = enabledView ? 'enabled' : source;
@@ -367,34 +363,56 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     reloadEnabledList();
   }, [reloadEnabledList]);
 
+  /** 专家列表场景（ExpertListView）：「最近召唤」聚合或当前数据源 */
+  const expertListType: ExpertListSourceType = usedView ? 'used' : source;
+
   /**
-   * 列表数据分流（非技能维度）：聚合视图（资料库「最近访问」/专家「最近
-   * 召唤」）= 全量数组按关键字客户端过滤（无分页）；否则为系统广场/团队
-   * 空间的服务端分页列表。技能维度由 SkillListView 自理（此处恒为空数组）。
+   * 专家选中（ExpertListView 付费拦截通过后回调，含统一专家卡内召唤
+   * 放行）：映射回弹窗选中契约，按 closeOnSelect 收口
+   */
+  const handleExpertSelect = useCallback(
+    (expertItem: ExpertListItem) => {
+      onSelect({
+        key: expertItem.key,
+        resourceType: 'expert',
+        source: expertListType as CapabilityItemSourceEnum,
+        rawId: expertItem.rawId,
+        targetId: expertItem.targetId,
+        name: expertItem.name,
+        description: expertItem.description,
+        icon: expertItem.icon,
+        paymentRequired: expertItem.paymentRequired,
+        subscribed: expertItem.subscribed,
+        userCount: expertItem.userCount,
+      });
+      if (closeOnSelect) {
+        onClose();
+      }
+    },
+    [expertListType, onSelect, onClose, closeOnSelect],
+  );
+
+  /**
+   * 列表数据分流（非技能/专家维度）：资料库「最近访问」= 全量数组按关键字
+   * 客户端过滤（无分页）；否则为系统广场/团队空间的服务端分页列表。
+   * 技能/专家维度由 SkillListView / ExpertListView 自理（此处恒为空数组）。
    */
   const displayList = useMemo(() => {
-    if (isSkill) {
+    if (isSkill || isExpert) {
       return EMPTY_LIST;
     }
-    // 资料库「最近访问」与其他聚合视图互斥（切换维度即复位）
-    if (recentView) {
-      const kw = keyword.trim().toLowerCase();
-      if (!kw) return recentList;
-      return recentList.filter(
-        (item) =>
-          item.name?.toLowerCase().includes(kw) ||
-          item.description?.toLowerCase().includes(kw),
-      );
+    // 资料库「最近访问」聚合视图；其余（连接器/资料库空间树）走分页列表
+    if (!recentView) {
+      return list;
     }
-    if (!usedView) return list;
     const kw = keyword.trim().toLowerCase();
-    if (!kw) return usedList;
-    return usedList.filter(
+    if (!kw) return recentList;
+    return recentList.filter(
       (item) =>
         item.name?.toLowerCase().includes(kw) ||
         item.description?.toLowerCase().includes(kw),
     );
-  }, [isSkill, recentView, recentList, usedView, list, usedList, keyword]);
+  }, [isSkill, isExpert, recentView, list, recentList, keyword]);
 
   // 搜索防抖
   useEffect(() => {
@@ -514,74 +532,16 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   }, [focusIndex, displayList]);
 
   /**
-   * 付费未订阅专家聘请：先按详情口径复核再决定拦截——列表接口的
-   * paymentRequired/subscribed 可能滞后（如用户已订阅免费套餐，详情接口
-   * subscribed=true），以详情接口（/agent/:id）为准：确认「付费且未订阅」
-   * 才弹统一专家卡，否则回写卡片状态直接放行；详情异常时保守按列表口径拦截
+   * 连接器/资料库选中（无付费拦截，技能/专家拦截已内聚对应列表组件）
    */
   const handleSelect = useCallback(
     (item: CapabilityItem) => {
-      const isPaidPending =
-        item.resourceType === 'expert' &&
-        !!item.paymentRequired &&
-        !item.subscribed &&
-        item.targetId !== undefined;
-      if (isEnableSubscription && isPaidPending) {
-        const targetId = item.targetId as number;
-        const openExpertCard = () => setExpertPaymentItem(item);
-        const proceedSelect = (subscribed?: boolean) => {
-          if (subscribed !== undefined) {
-            updateItem(item.key, { subscribed });
-            onSelect({ ...item, subscribed });
-          } else {
-            onSelect(item);
-          }
-          if (closeOnSelect) {
-            onClose();
-          }
-        };
-        void apiPublishedAgentInfo(targetId)
-          .then((res) => {
-            const detail = res?.code === SUCCESS_CODE ? res.data : undefined;
-            if (!detail || (detail.paymentRequired && !detail.subscribed)) {
-              openExpertCard();
-            } else {
-              proceedSelect(detail.subscribed);
-            }
-          })
-          .catch(() => openExpertCard());
-        return;
-      }
       onSelect(item);
       if (closeOnSelect) {
         onClose();
       }
     },
-    [isEnableSubscription, updateItem, onSelect, onClose, closeOnSelect],
-  );
-
-  /**
-   * 专家卡弹窗内召唤放行：复用付费拦截后的选中链路——复核出已订阅时回写
-   * 卡片 subscribed 并随选中带出，再按 closeOnSelect 收口关闭
-   */
-  const handleExpertCardSummon = useCallback(
-    (_info: ExpertSummonCardInfo, subscribed?: boolean) => {
-      const item = expertPaymentItem;
-      if (!item) {
-        return;
-      }
-      setExpertPaymentItem(null);
-      if (subscribed) {
-        updateItem(item.key, { subscribed: true });
-        onSelect({ ...item, subscribed: true });
-      } else {
-        onSelect(item);
-      }
-      if (closeOnSelect) {
-        onClose();
-      }
-    },
-    [expertPaymentItem, updateItem, onSelect, onClose, closeOnSelect],
+    [onSelect, onClose, closeOnSelect],
   );
 
   /** 键盘导航：↑↓ 按行移动（步长=列数）、←→ 逐项移动、Enter 选中、Esc 关闭 */
@@ -644,16 +604,11 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     }
   };
 
-  // 视图层加载态/翻页标记（非技能维度；技能由 SkillListView 自理）：
-  // 聚合视图（最近访问/最近召唤）无分页（全量数组），滚动加载与自动补拉
-  // 仅在系统广场/团队空间分页视图生效
-  const aggregateView = usedView;
-  const viewLoading = recentView
-    ? recentLoading
-    : usedView
-    ? usedLoading
-    : loading;
-  const viewHasMore = aggregateView || recentView ? false : hasMore;
+  // 视图层加载态/翻页标记（非技能/专家维度,列表由 SkillListView /
+  // ExpertListView 自理）：资料库「最近访问」为全量数组无分页,滚动加载
+  // 与自动补拉仅在连接器/资料库空间树的分页视图生效
+  const viewLoading = recentView ? recentLoading : loading;
+  const viewHasMore = recentView ? false : hasMore;
 
   /** 滚动触底加载下一页（尾部追加，不改既有内容位置） */
   const handleListScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -678,22 +633,13 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     }
   }, [displayList, viewLoading, viewHasMore, loadMore]);
 
-  // 团队空间维度等待空间字典/空间 ID 就绪；专家"全部"页签由 spaceIds
-  // 聚合查询（无单空间 ID），凭 spaceIds 判定就绪，否则空结果会卡在加载态；
-  // 聚合视图凭首拉完成判定（失败也会置 loaded，空态不卡加载）
+  // 团队空间维度等待空间字典/空间 ID 就绪,否则空结果会卡在加载态;
+  // 资料库「最近访问」聚合视图凭首拉完成判定（失败也会置 loaded,空态不卡加载）
   const waitingSpace =
-    !aggregateView &&
-    !recentView &&
-    source === 'team' &&
-    !spaceId &&
-    !publishedSpaceIds?.length;
+    !recentView && source === 'team' && !spaceId && !publishedSpaceIds?.length;
   const initialLoading =
     displayList.length === 0 &&
-    (recentView
-      ? !recentLoaded || recentLoading
-      : usedView
-      ? !usedLoaded || usedLoading
-      : loading || waitingSpace);
+    (recentView ? !recentLoaded || recentLoading : loading || waitingSpace);
 
   return (
     <Modal
@@ -860,7 +806,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
           {/* 分类 pill 行：聚合视图（最近召唤/我启用的）跨系统/团队，分类不
               适用（隐藏整行）；资料库「最近访问」视图空间 pill 照常展示，
               「最近访问」pill 置于最前 */}
-          {!aggregateView && !enabledView && (
+          {!usedView && !enabledView && (
             <div className={styles.toolbar}>
               <div className={styles.categories}>
                 {resourceType === 'knowledge' && showRecentTab && (
@@ -896,12 +842,12 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
             </div>
           )}
 
-          {/* 技能维度：列表整体交给 SkillListView（接口/分页/启用开关/付费
-              拦截内聚，选中经 handleSkillSelect 回弹窗契约）；聚合视图顶部
-              补留白对齐其他维度 */}
+          {/* 技能/专家维度：列表整体交给 SkillListView / ExpertListView
+              （接口/分页/开关/付费拦截内聚，选中经 handle*Select 回弹窗契约）；
+              聚合视图顶部补留白对齐其他维度 */}
           {isSkill ? (
             <SkillListView
-              className={cx(styles['skill-list'], {
+              className={cx(styles['embed-list'], {
                 [styles['list-enabled']]: enabledView,
               })}
               type={skillListType}
@@ -911,6 +857,18 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
               spaceIds={publishedSpaceIds}
               onSelect={handleSkillSelect}
               onEnabledChange={handleSkillEnabledChange}
+            />
+          ) : isExpert ? (
+            <ExpertListView
+              className={cx(styles['embed-list'], {
+                [styles['list-enabled']]: usedView,
+              })}
+              type={expertListType}
+              keyword={keyword}
+              category={category}
+              spaceId={spaceId}
+              spaceIds={publishedSpaceIds}
+              onSelect={handleExpertSelect}
             />
           ) : (
             /* 滚动容器常驻（三态在容器内切换）：避免加载完成时 Spin/网格互换 DOM 造成整屏闪跳 */
@@ -923,8 +881,6 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
               }
               className={cx('flex-1', styles.list, {
                 [styles['list-knowledge']]: resourceType === 'knowledge',
-                // 聚合视图（最近召唤）无分类 pill 行，列表顶部补留白
-                [styles['list-enabled']]: aggregateView,
               })}
               onScroll={handleListScroll}
             >
@@ -950,7 +906,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
                 >
                   <Empty
                     description={t(
-                      !aggregateView && error
+                      !recentView && error
                         ? 'PC.Components.CapabilityModal.loadFailed'
                         : 'PC.Common.Global.emptyData',
                     )}
@@ -1000,33 +956,8 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
         onConnected={handleConnected}
       />
 
-      {/* 技能付费订阅弹窗已随 SkillListView 内聚,弹窗内不再持有 */}
-
-      {/* 专家付费:统一专家卡弹窗（内联套餐区,详情复核/订阅下单在卡内
-          自闭环；召唤放行走 handleExpertCardSummon 的选中链路）——
-          包装与专家&专家团页共享（ExpertSummonModal） */}
-      {isEnableSubscription && (
-        <ExpertSummonModal
-          open={!!expertPaymentItem}
-          expert={
-            expertPaymentItem
-              ? {
-                  targetId: (expertPaymentItem.targetId ??
-                    expertPaymentItem.rawId) as number,
-                  name: expertPaymentItem.name,
-                  icon: expertPaymentItem.icon,
-                  description: expertPaymentItem.description,
-                  userCount: expertPaymentItem.userCount,
-                  // 拦截时已按详情复核确认付费未订阅
-                  paymentRequired: true,
-                  subscribed: false,
-                }
-              : null
-          }
-          onClose={() => setExpertPaymentItem(null)}
-          onSummon={handleExpertCardSummon}
-        />
-      )}
+      {/* 技能/专家的付费订阅弹窗已随 SkillListView / ExpertListView 内聚,
+          弹窗内不再持有 */}
 
       {/* 连接器「连接」扫码弹窗（认证方式 oauth2_device，与广场页/连接器
           详情抽屉同款）：授权成功后就地更新卡片为已连接 */}
