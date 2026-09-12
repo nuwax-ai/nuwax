@@ -1,5 +1,45 @@
-.container {
+.view {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+// 视图分类 tab（全部 / 已收藏 / 已归档），与 SpaceProjectManage 页签同款
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 12px;
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ant-color-text-secondary);
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: var(--ant-color-text);
+    background: var(--ant-color-fill-secondary);
+  }
+}
+
+.tab-active {
+  color: var(--ant-color-primary);
+  background: var(--ant-color-primary-bg);
+  font-weight: 600;
+}
+
+.container {
+  flex: 1;
+  min-height: 0;
   overflow: hidden; /* 默认隐藏，配合全局 .scroll-container 在 hover 时显示 */
   transition: overflow 0.3s;
 
@@ -178,28 +218,4 @@
   padding: 12px 0;
   color: var(--ant-color-text-description);
   font-size: 12px;
-}
-
-// 列表底部视图入口（已收藏 / 已归档共用样式）
-.archived-entry {
-  text-align: center;
-  padding: 8px 12px;
-  color: var(--ant-color-text-description);
-  font-size: 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: var(--ant-color-fill-quaternary);
-    color: var(--ant-color-text-secondary);
-  }
-}
-
-// 列表底部视图入口容器（已收藏 / 已归档）
-.list-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }

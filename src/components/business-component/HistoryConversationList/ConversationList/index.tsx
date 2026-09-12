@@ -186,12 +186,18 @@ const ConversationList = React.forwardRef<
   // 视图分类 tab：全部 / 已收藏（本地）/ 已归档（服务端）
   const viewTabs: Array<{ key: ListViewMode; label: string }> = [
     { key: 'all', label: t('PC.Common.Global.all') },
-    { key: 'collected', label: t('PC.Components.HistoryConversationList.collectedTab') },
-    { key: 'archived', label: t('PC.Components.HistoryConversationList.archivedTab') },
+    {
+      key: 'collected',
+      label: t('PC.Components.HistoryConversationList.collectedTab'),
+    },
+    {
+      key: 'archived',
+      label: t('PC.Components.HistoryConversationList.archivedTab'),
+    },
   ];
 
   return (
-    <>
+    <div className={styles.view}>
       <div className={styles.tabs}>
         {viewTabs.map((tab) => (
           <button
@@ -213,119 +219,123 @@ const ConversationList = React.forwardRef<
         className={cx(styles.container, 'scroll-container')}
       >
         <div className={styles['list-content']}>
-        {visibleList.map((item) => (
-          <ConversationContextMenu
-            key={item.id}
-            conversationId={item.id}
-            currentTopic={item.topic}
-            pinned={item.pinned === true}
-            archived={item.archived === true}
-            collected={favoriteIds.has(Number(item.id))}
-            onFlagChanged={(kind, enabled) => {
-              recordConversationFlagOverride(
-                flagOverridesRef.current,
-                item.id,
-                kind,
-                enabled,
-              );
-              setList((prev) =>
-                prev.map((conversation) =>
-                  conversation.id === item.id
-                    ? { ...conversation, [kind]: enabled }
-                    : conversation,
-                ),
-              );
-            }}
-            onRename={onEdit ? () => onEdit(item.id, item.topic) : undefined}
-            onDelete={onDelete ? () => onDelete(item.id) : undefined}
-          >
-            <div
-              className={styles['list-item']}
-              onClick={() => onItemClick?.(item.id, item.agentId)}
+          {visibleList.map((item) => (
+            <ConversationContextMenu
+              key={item.id}
+              conversationId={item.id}
+              currentTopic={item.topic}
+              pinned={item.pinned === true}
+              archived={item.archived === true}
+              collected={favoriteIds.has(Number(item.id))}
+              onFlagChanged={(kind, enabled) => {
+                recordConversationFlagOverride(
+                  flagOverridesRef.current,
+                  item.id,
+                  kind,
+                  enabled,
+                );
+                setList((prev) =>
+                  prev.map((conversation) =>
+                    conversation.id === item.id
+                      ? { ...conversation, [kind]: enabled }
+                      : conversation,
+                  ),
+                );
+              }}
+              onRename={onEdit ? () => onEdit(item.id, item.topic) : undefined}
+              onDelete={onDelete ? () => onDelete(item.id) : undefined}
             >
-              <div className={styles['item-header']}>
-                <div className={styles['topic-wrapper']}>
-                  <span className={styles.topic}>{item.topic}</span>
-                  <Tooltip
-                    title={t(
-                      'PC.Components.HistoryConversationList.editTitleTooltip',
-                    )}
-                    mouseEnterDelay={0.5}
-                  >
-                    <EditOutlined
-                      className={styles['edit-icon']}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit?.(item.id, item.topic);
-                      }}
-                    />
-                  </Tooltip>
-                </div>
-                <div className={styles['right-area']}>
-                  <span className={styles.date}>
-                    {dayjs(item.modified).format(
-                      t('PC.Components.HistoryConversationList.dateTimeFormat'),
-                    )}
-                  </span>
-                  <Space className={styles.actions} size={12}>
+              <div
+                className={styles['list-item']}
+                onClick={() => onItemClick?.(item.id, item.agentId)}
+              >
+                <div className={styles['item-header']}>
+                  <div className={styles['topic-wrapper']}>
+                    <span className={styles.topic}>{item.topic}</span>
                     <Tooltip
                       title={t(
-                        'PC.Components.HistoryConversationList.deleteTooltip',
+                        'PC.Components.HistoryConversationList.editTitleTooltip',
                       )}
                       mouseEnterDelay={0.5}
                     >
-                      <DeleteOutlined
-                        className={cx(styles['action-icon'], styles.delete)}
+                      <EditOutlined
+                        className={styles['edit-icon']}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onDelete?.(item.id);
+                          onEdit?.(item.id, item.topic);
                         }}
                       />
                     </Tooltip>
-                  </Space>
+                  </div>
+                  <div className={styles['right-area']}>
+                    <span className={styles.date}>
+                      {dayjs(item.modified).format(
+                        t(
+                          'PC.Components.HistoryConversationList.dateTimeFormat',
+                        ),
+                      )}
+                    </span>
+                    <Space className={styles.actions} size={12}>
+                      <Tooltip
+                        title={t(
+                          'PC.Components.HistoryConversationList.deleteTooltip',
+                        )}
+                        mouseEnterDelay={0.5}
+                      >
+                        <DeleteOutlined
+                          className={cx(styles['action-icon'], styles.delete)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete?.(item.id);
+                          }}
+                        />
+                      </Tooltip>
+                    </Space>
+                  </div>
                 </div>
-              </div>
-              <div className={styles['summary-wrapper']}>
-                <div className={styles.summary}>
-                  {item.summary ||
-                    t('PC.Components.HistoryConversationList.summaryEmpty')}
-                </div>
-                <div className={styles['tag-wrapper']}>
-                  <div className={styles['agent-tag-bottom']}>
-                    {item.agent?.name ||
-                      t('PC.Components.HistoryConversationList.agentFallback')}
+                <div className={styles['summary-wrapper']}>
+                  <div className={styles.summary}>
+                    {item.summary ||
+                      t('PC.Components.HistoryConversationList.summaryEmpty')}
+                  </div>
+                  <div className={styles['tag-wrapper']}>
+                    <div className={styles['agent-tag-bottom']}>
+                      {item.agent?.name ||
+                        t(
+                          'PC.Components.HistoryConversationList.agentFallback',
+                        )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </ConversationContextMenu>
-        ))}
-        {loading && (
-          <div className={styles.loading}>
-            <Spin size="small" />
-          </div>
-        )}
-        {/* 收藏/归档视图空态提示（收藏走本地存储，归档由 includeArchived=true 回读服务端状态） */}
-        {!loading &&
-          viewMode !== 'all' &&
-          visibleList.length === 0 &&
-          list.length > 0 && (
-            <div className={styles.nomore}>
-              {t(
-                viewMode === 'collected'
-                  ? 'PC.Components.HistoryConversationList.collectedEmpty'
-                  : 'PC.Components.HistoryConversationList.archivedEmpty',
-              )}
+            </ConversationContextMenu>
+          ))}
+          {loading && (
+            <div className={styles.loading}>
+              <Spin size="small" />
             </div>
           )}
-        {!hasMore && list?.length > 8 && (
-          <div className={styles.nomore}>
-            {t('PC.Components.HistoryConversationList.noMoreData')}
-          </div>
-        )}
+          {/* 收藏/归档视图空态提示（收藏走本地存储，归档由 includeArchived=true 回读服务端状态） */}
+          {!loading &&
+            viewMode !== 'all' &&
+            visibleList.length === 0 &&
+            list.length > 0 && (
+              <div className={styles.nomore}>
+                {t(
+                  viewMode === 'collected'
+                    ? 'PC.Components.HistoryConversationList.collectedEmpty'
+                    : 'PC.Components.HistoryConversationList.archivedEmpty',
+                )}
+              </div>
+            )}
+          {!hasMore && list?.length > 8 && (
+            <div className={styles.nomore}>
+              {t('PC.Components.HistoryConversationList.noMoreData')}
+            </div>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 });
 
