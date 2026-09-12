@@ -1,7 +1,6 @@
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import useConversation from '@/hooks/useConversation';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import {
   apiAgentConversationDelete,
@@ -25,7 +24,6 @@ import {
   ExclamationCircleFilled,
   FolderOutlined,
   InboxOutlined,
-  LoadingOutlined,
   PushpinFilled,
   PushpinOutlined,
 } from '@ant-design/icons';
@@ -101,7 +99,6 @@ const ProjectPanel = forwardRef<
   const { spaceId: spaceIdParam } = useParams() as { spaceId?: string };
   const spaceId = Number(spaceIdParam) || undefined;
   const { pin } = useHomePinnedProjectHandoff();
-  const { handleCreateConversation } = useConversation();
 
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   // 空态仅在接口返回后展示：加载中先渲染 Spin，避免一进来就闪「暂无项目」
@@ -535,79 +532,6 @@ const ProjectPanel = forwardRef<
     </Tooltip>
   );
 
-  // 「+ 新建会话」（会话子行）：直接创建会话挂到项目下（带 projectId/devAgentId），
-  // 不走首页上框；智能体沿用该会话行使用的 agent（最贴近「接着这个会话再开一个」）；
-  // 全栈项目建完跳 app-pro IDE、常规项目跳会话详情（由 handleCreateConversation 内建规则）
-  const [creatingChildId, setCreatingChildId] = useState<number | null>(null);
-  const handleCreateProjectConversation = async (
-    project: ProjectItem,
-    child: ProjectChildItem,
-  ) => {
-    if (project.projectType === AgentComponentTypeEnum.PageApp) {
-      message.info(
-        dict(
-          'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable',
-        ),
-      );
-      return;
-    }
-    const agentId = child.conversation?.agentId ?? project.devAgentId;
-    if (!agentId) {
-      message.warning(
-        dict(
-          'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationNoAgent',
-        ),
-      );
-      return;
-    }
-    setCreatingChildId(child.id);
-    try {
-      await handleCreateConversation(agentId, {
-        projectId: project.id,
-        devAgentId: project.devAgentId ?? agentId,
-        sandboxId: project.sandboxId ?? undefined,
-        redirectUrl:
-          project.projectType === AgentComponentTypeEnum.UserApp &&
-          project.spaceId
-            ? `/space/${project.spaceId}/app-pro?appId=${project.id}&conversationId=`
-            : undefined,
-      });
-    } finally {
-      setCreatingChildId(null);
-    }
-  };
-
-  // 「+ 新建会话」（会话子行按钮）：创建中转圈防连点
-  const renderChildAddButton = (
-    project: ProjectItem,
-    child: ProjectChildItem,
-  ) => (
-    <Tooltip
-      title={dict(
-        'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation',
-      )}
-    >
-      <button
-        type="button"
-        className={styles['add-conversation']}
-        aria-label={dict(
-          'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation',
-        )}
-        disabled={creatingChildId === child.id}
-        onClick={(event) => {
-          event.stopPropagation();
-          void handleCreateProjectConversation(project, child);
-        }}
-      >
-        {creatingChildId === child.id ? (
-          <LoadingOutlined />
-        ) : (
-          <SvgIcon name="icons-common-plus" style={{ fontSize: 15 }} />
-        )}
-      </button>
-    </Tooltip>
-  );
-
   if (loading) {
     return (
       <div
@@ -739,7 +663,6 @@ const ProjectPanel = forwardRef<
                     </span>
                   )}
                   <div className={styles['child-actions']}>
-                    {renderChildAddButton(project, child)}
                     {/* 子任务悬停操作浮层 */}
                     <Dropdown
                       menu={buildChildMenu(project.id, child)}

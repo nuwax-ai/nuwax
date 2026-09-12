@@ -144,6 +144,8 @@
   }
 
   // 二级菜单列：选中「有子菜单/Section」的导航项时在会话列右侧并列展开（原二级菜单保留）
+  // 形态参考经典风格 2（2026-09-12 需求）贴边满铺；配色按原型：辅助列 #fafafa +
+  // 右边框 #f0f0f3 与内容区分隔（单栏锁定纯色浅底，浅色字面量安全）
   .second-column {
     display: flex;
     flex-direction: column;
@@ -152,11 +154,10 @@
     box-sizing: border-box;
     overflow: hidden;
     position: relative;
-    background: @navSecondMenuBg;
+    background: #fafafa;
+    border-right: 1px solid #f0f0f3;
     border-radius: 0;
-    // 右侧与内容卡（page-container）留出间距：内容卡左缘恒 margin-left:0
-    // （贴会话列设计），二级列展开时的空隙由本列右边距承担
-    margin-right: @marginXs;
+    margin-right: 0;
     transition: width 0.3s ease-in-out, background-color 0.3s ease;
 
     // 二级菜单项同步一级列规格（33px 项高/11px 圆角/13.5px 字号/16px 图标），
@@ -172,6 +173,8 @@
     --xagi-nav-second-row-hover-bg: var(--xagi-nav-row-hover-bg);
     --xagi-nav-second-row-hover-shadow: none;
     --xagi-nav-second-row-active-bg: var(--xagi-nav-row-selected-bg);
+    // 选中项字重加粗 500（2026-09-12 需求）：仅单栏注入，base 组件默认 normal
+    --xagi-nav-second-row-active-font-weight: 500;
 
     // 与 .nav-menus-scroll 同名复用：本列不在 .nav-menus 内，需自带尺寸链
     .nav-menus-scroll {

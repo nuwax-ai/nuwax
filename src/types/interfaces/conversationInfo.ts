@@ -230,12 +230,16 @@ export interface ConversationCreateParams {
   /**
    * 关联项目 ID（首页项目上框：已有项目下直接新建会话时携带，
    * 后端按此把会话绑定到项目，不再隐式建项目）。
-   * 契约先行（2026-09-10 后端未 ready，前端照发）。
    */
   projectId?: number;
   /**
+   * 关联项目类型（UserApp=全栈 / NormalProject=常规）。
+   * 携带 projectId 时后端必填（2026-09-12 实测缺省报「项目类型不能为空」）。
+   */
+  projectType?: AgentComponentTypeEnum;
+  /**
    * 项目绑定的调试智能体 ID（全栈项目上框时携带，值为当前选中的
-   * 全栈类智能体）。契约先行（2026-09-10 后端未 ready，前端照发）。
+   * 全栈类智能体）。
    */
   devAgentId?: number;
 }

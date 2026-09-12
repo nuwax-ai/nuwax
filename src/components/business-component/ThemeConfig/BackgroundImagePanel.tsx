@@ -21,6 +21,8 @@ interface BackgroundImagePanelProps {
   customBackgroundImages?: BackgroundImage[];
   /** 文件上传处理函数 */
   onUpload?: (file: File) => void;
+  /** 禁用背景选择（单栏风格锁定纯色背景，2026-09-12 需求）：置灰不可点 + 提示 */
+  disabled?: boolean;
 }
 
 const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
@@ -30,9 +32,17 @@ const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
   enableCustomUpload = true,
   customBackgroundImages = [],
   onUpload,
+  disabled = false,
 }) => {
+  // 处理背景切换（禁用时兜底拦截，正常态由置灰样式先行挡住点击）
+  const handleSelect = (backgroundId: string) => {
+    if (disabled) return;
+    onBackgroundChange(backgroundId);
+  };
+
   // 处理文件上传
   const handleUpload = (file: File) => {
+    if (disabled) return;
     if (onUpload) {
       onUpload(file);
     } else {
@@ -43,10 +53,19 @@ const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
   };
 
   return (
-    <div className={cx(styles.backgroundImagePanel)}>
+    <div
+      className={cx(styles.backgroundImagePanel, { [styles.disabled]: disabled })}
+    >
       <h3 className={cx(styles.panelTitle)}>
         {t('PC.Components.ThemeConfigBackgroundImagePanel.panelTitle')}
       </h3>
+
+      {/* 单栏锁定纯色背景时的置灰说明 */}
+      {disabled && (
+        <div className={cx(styles.lockedHint)}>
+          {t('PC.Components.ThemeConfigBackgroundImagePanel.lockedHint')}
+        </div>
+      )}
 
       {/* 系统自带背景图片 */}
       <div className={cx(styles.systemBackgroundsSection)}>
@@ -63,7 +82,7 @@ const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
                 className={cx(styles.backgroundOption, {
                   [styles.active]: currentBackground === bg.id,
                 })}
-                onClick={() => onBackgroundChange(bg.id)}
+                onClick={() => handleSelect(bg.id)}
                 title={bg.name}
               >
                 <div
@@ -129,7 +148,7 @@ const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
                 className={cx(styles.backgroundOption, {
                   [styles.active]: currentBackground === bg.id,
                 })}
-                onClick={() => onBackgroundChange(bg.id)}
+                onClick={() => handleSelect(bg.id)}
                 title={bg.name}
               >
                 <div
