@@ -2,9 +2,9 @@
  * nuwaclaw 宿主命令响应层（host→guest 入站通道的 nuwax 侧消费端）。
  *
  * 与 nuwaClawTheme 同范式：独立模块、仅桌面端生效、浏览器端 no-op。
- * nuwaclaw 工具栏等触发的命令经 webviewPerfBridge 转发到 nuwax，本模块注册
- * 回调并按命令类型分发到对应业务能力（当前：toggle-second-menu → layout model
- * 的 setIsSecondMenuCollapsed）。
+ * nuwaclaw 工具栏 / 壳层快捷键触发的命令经 webviewPerfBridge 转发到 nuwax，本模块
+ * 注册回调并按命令类型分发到对应业务能力（toggle-second-menu → layout model 的
+ * setIsSecondMenuCollapsed；new-task → 新建任务）。
  *
  * 设计：handlers 由调用方（DynamicMenusLayout）从 useModel('layout') 取得后传入，
  * 本模块不直接依赖 umi model，保持纯函数可测性。注册的回调固定为 handleHostCommand，
@@ -16,6 +16,8 @@ import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 export interface NuwaClawHostEventHandlers {
   /** 应用二级菜单收起态（layout model 的 setIsSecondMenuCollapsed）。 */
   setSecondMenuCollapsed: (collapsed: boolean) => void;
+  /** 新建任务（与侧栏「新建任务」同一处理函数；壳层 ⌘N/Ctrl+N 接管下发）。 */
+  createNewTask: () => void;
 }
 
 /** 最近一次注入的 handlers（handleHostCommand 闭包读取，保证读到最新）。 */
@@ -27,6 +29,9 @@ function handleHostCommand(payload: HostCommand): void {
   switch (payload.type) {
     case 'toggle-second-menu':
       currentHandlers?.setSecondMenuCollapsed(!!payload.collapsed);
+      break;
+    case 'new-task':
+      currentHandlers?.createNewTask();
       break;
     default:
       console.warn(

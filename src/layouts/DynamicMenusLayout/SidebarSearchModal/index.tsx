@@ -252,6 +252,10 @@ const SidebarSearchModal: React.FC = () => {
   /** 结果点击分发（键盘 Enter 同路径） */
   const activateItem = useCallback(
     (item: SearchResultItem) => {
+      // TODO 专家/技能/连接器点击待复用「会话框快捷呼能力」CapabilityModal 交互联动
+      //  （src/components/ChatInputHome/CapabilityModal，组件另一同学开发中，就绪后替换）：
+      //  行点击改为打开该弹窗并落对应维度（defaultResourceType + resourceTypes 收敛三类），
+      //  onSelect 按弹窗场景分派；以下 summon/select/跳页 为临时行为
       switch (item.kind) {
         case 'task':
           goConversation(item.conversation);
