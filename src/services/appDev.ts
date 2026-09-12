@@ -689,7 +689,7 @@ export const apiProjectCreate = async (data: {
 export const apiNormalProjectCreate = async (data: {
   spaceId: number;
   name: string;
-  /** 个人电脑沙箱 ID；云电脑（默认分配）不传 */
+  /** 沙箱 ID 必传：-1=云电脑（后端默认分配），其他为个人电脑沙箱 */
   sandboxId?: number;
   /** 自定义工作目录（仅个人电脑），非空才传；被占用时后端报错 */
   workspacePath?: string;
@@ -706,7 +706,7 @@ export const apiNormalProjectCreate = async (data: {
     data: {
       spaceId: data.spaceId,
       name: data.name,
-      sandboxId: data.sandboxId || undefined,
+      sandboxId: data.sandboxId ?? undefined,
       workspacePath: data.workspacePath || undefined,
     },
   });
