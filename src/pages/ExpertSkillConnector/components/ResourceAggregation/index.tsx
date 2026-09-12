@@ -5,6 +5,7 @@
  */
 
 import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
+import ConnectorDeviceAuthModal from '@/components/business-component/ConnectorDeviceAuthModal';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -237,6 +238,9 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     connectCtx,
     closeConnectModal,
     handleConnected,
+    deviceCtx,
+    closeDeviceAuthModal,
+    handleDeviceConnected,
   } = useConnectorConnect({
     // "已连接的"维度无空间上下文，连接/断开按系统口径（不带 spaceId）
     source: source === 'team' ? 'team' : 'system',
@@ -450,6 +454,19 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
           spaceId={source === 'team' ? listSpaceId : undefined}
           onClose={closeConnectModal}
           onConnected={handleConnected}
+        />
+      )}
+
+      {/* 连接器「连接」扫码弹窗（认证方式 oauth2_device，与连接器详情抽屉
+          同款）：弹窗内部自动 authorize 拿二维码并轮询授权结果，授权成功
+          后就地更新卡片为已连接（成功提示弹窗内完成） */}
+      {resourceType === 'connector' && (
+        <ConnectorDeviceAuthModal
+          open={deviceCtx !== null}
+          service={deviceCtx?.item.service || ''}
+          spaceId={source === 'team' ? listSpaceId : undefined}
+          onClose={closeDeviceAuthModal}
+          onConnected={handleDeviceConnected}
         />
       )}
     </div>
