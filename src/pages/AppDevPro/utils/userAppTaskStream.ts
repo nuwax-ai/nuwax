@@ -12,9 +12,9 @@ import {
 } from '../type';
 import {
   getEventTerminalStatus,
-  getTaskTerminalStatus,
   isStreamLaggedEvent,
   parseUserAppTaskLogEvent,
+  USER_APP_BUILD_SSE_EVENT,
 } from './userAppTaskLog';
 
 export interface ListenUserAppTaskStreamOptions {
@@ -201,7 +201,7 @@ export const listenUserAppTaskStream = (
       // 单个 service 的 build_ok / service_start_ok 只是部分成功，
       // 任务最终成功只能由 event=completed 在 onmessage 里结束。
       if (
-        list.some((item) => getTaskTerminalStatus(item.status) === 'failed')
+        list.some((item) => item.status === USER_APP_BUILD_SSE_EVENT.BUILD_FAIL)
       ) {
         finish('failed', new Error(failedMessage));
         return;
