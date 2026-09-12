@@ -70,7 +70,8 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const releaseIdRef = useRef('');
   const buildSucceededRef = useRef(false);
 
-  const resetProgress = useCallback(() => {
+  /** 清空当前发布任务现场（构建/部署日志、错误、taskId、SSE 序号） */
+  const resetTaskState = useCallback(() => {
     setServices([]);
     setStartServices([]);
     setErrorMessage('');
@@ -228,7 +229,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       return;
     }
 
-    resetProgress();
+    resetTaskState();
     setOpen(true);
     setPhase('starting');
 
@@ -318,7 +319,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     onBuildFailed,
     onDeployed,
     phase,
-    resetProgress,
+    resetTaskState,
     submitProdStart,
   ]);
 
@@ -365,9 +366,9 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     }
     setOpen(false);
     setPhase('idle');
-    resetProgress();
+    resetTaskState();
     stopStream();
-  }, [phase, resetProgress, stopStream]);
+  }, [phase, resetTaskState, stopStream]);
 
   const publishing =
     phase === 'starting' || phase === 'building' || phase === 'deploying';

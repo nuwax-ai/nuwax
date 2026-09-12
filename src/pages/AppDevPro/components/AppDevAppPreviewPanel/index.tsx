@@ -234,28 +234,30 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     }
     return lines;
   }, [errorMessage, services]);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
+  /**
+   * 用地址 + 刷新计数标记当前预览实例。
+   * 换地址时当帧就判定未加载，避免 effect 晚一拍时空白 iframe 先露出来。
+   */
+  const previewInstanceKey = `${previewUrl ?? ''}::${refreshKey}`;
+  const [loadedInstanceKey, setLoadedInstanceKey] = useState('');
+  const iframeLoaded = loadedInstanceKey === previewInstanceKey;
   const showStartProgress =
     busy || phase === 'starting' || phase === 'building';
   const showStartFailed = phase === 'failed' || phase === 'cancelled';
   const canShowIframe = !!previewUrl && (running || directPreview);
 
-  useEffect(() => {
-    setIframeLoaded(false);
-  }, [previewUrl, refreshKey]);
-
   const handleIframeLoad = useCallback(() => {
-    setIframeLoaded((prev) => prev || true);
-  }, []);
+    setLoadedInstanceKey(previewInstanceKey);
+  }, [previewInstanceKey]);
 
   /** iframe 加载失败时收起加载遮罩，露出失败提示 */
   const handleIframeError = useCallback(() => {
-    setIframeLoaded((prev) => prev || true);
-  }, []);
+    setLoadedInstanceKey(previewInstanceKey);
+  }, [previewInstanceKey]);
 
   /** 刷新 iframe 时重新展示加载遮罩 */
   const handleIframeRetry = useCallback(() => {
-    setIframeLoaded(false);
+    setLoadedInstanceKey('');
   }, []);
 
   // 已有可预览内容时，新会话进行中仍保留当前页面，不切回准备中

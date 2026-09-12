@@ -16,17 +16,17 @@ const TASKS_ACTIVE_POLL_INTERVAL = 5000;
  */
 export function useUserAppTasksActive(appId?: number) {
   /** 开发环境是否允许启动 / 重启；首包前默认允许，避免误锁 */
-  const [devActionAllowed, setDevActionAllowed] = useState(true);
+  const [devActionAllowed, setDevActionAllowed] = useState<boolean>(true);
   /** 是否允许发起构建 */
-  const [buildAllowed, setBuildAllowed] = useState(true);
+  const [buildAllowed, setBuildAllowed] = useState<boolean>(true);
   /** 是否已完成至少一次查询，供进页启动等待，避免用默认 true 误启动 */
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState<boolean>(false);
   /** 进行中任务，供进页接入已有 stream */
   const [tasks, setTasks] = useState<UserAppTasksActiveResult['tasks']>([]);
   /** 两侧都允许且无进行中任务后停止轮询 */
-  const [polling, setPolling] = useState(true);
+  const [polling, setPolling] = useState<boolean>(true);
   /** 手动恢复轮询版本号，确保 useRequest 使用最新 pollingInterval 重新执行 */
-  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [refreshVersion, setRefreshVersion] = useState<number>(0);
 
   useEffect(() => {
     setDevActionAllowed(true);

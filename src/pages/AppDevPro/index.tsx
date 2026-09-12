@@ -1337,9 +1337,15 @@ const AppDevPro: React.FC = () => {
 
   previewTabsRef.current = previewTabs;
 
+  /** 文件树已有节点，才允许自动 start（空项目不拉预览） */
+  const hasFileTreeData = (fileTreeData?.length ?? 0) > 0;
+  /** 无会话，或会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
+  const conversationReady = !queryConversationId || !!conversationInfo;
+
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
    * 开发环境须等 tasks/active 首包：允许则 start，不允许则接入已有任务 stream。
+   * 允许 start 时还须文件树已有数据，避免空项目拉起预览。
    * 会话进行中或仍有待回复确认卡时不启动；已有预览则会话结束后再重启。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
    */
@@ -1358,7 +1364,7 @@ const AppDevPro: React.FC = () => {
     }
     // 会话详情未回填、会话进行中、或仍有待回复确认卡时，先不启动/重启
     if (
-      (queryConversationId && !conversationInfo) ||
+      !conversationReady ||
       isConversationActive ||
       hasPendingIntervention
     ) {
@@ -1376,6 +1382,10 @@ const AppDevPro: React.FC = () => {
       }
       return;
     }
+    // 可以 start，但文件树还没数据时不启动（等文件列表回来后再走本 effect）
+    if (!hasFileTreeData) {
+      return;
+    }
     // 新会话结束前预览已在运行：重启以加载会话改过的文件
     if (restartPreviewAfterConversationRef.current) {
       restartPreviewAfterConversationRef.current = false;
@@ -1387,8 +1397,9 @@ const AppDevPro: React.FC = () => {
     startPreviewIfNeededRef.current();
   }, [
     appId,
-    conversationInfo,
+    conversationReady,
     dbEnv,
+    hasFileTreeData,
     hasPendingIntervention,
     isConversationActive,
     podReady,

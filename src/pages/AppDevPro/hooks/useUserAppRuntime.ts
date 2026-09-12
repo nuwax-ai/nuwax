@@ -91,7 +91,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
   });
   phaseRef.current = phase;
 
-  const resetProgress = useCallback(() => {
+  /** 清空当前任务现场（服务日志、错误、taskId、SSE 序号），不改 phase / running */
+  const resetTaskState = useCallback(() => {
     setServices([]);
     setErrorMessage('');
     setTaskId('');
@@ -124,6 +125,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
 
   const listenProgress = useCallback(
     (currentTaskId: string, currentAction: UserAppRuntimeAction) => {
+      // 先关掉上一条，避免进页 effect 重入时两条 SSE 并存
+      abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
       return listenUserAppTaskStream({
@@ -175,7 +178,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         return;
       }
 
-      resetProgress();
+      resetTaskState();
       setAction(nextAction);
       setPhase('starting');
 
@@ -267,7 +270,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       listenProgress,
       onReady,
       phase,
-      resetProgress,
+      resetTaskState,
       setEnvRunning,
       userAppInfo?.publishVersions,
     ],
@@ -294,13 +297,15 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       if (!currentTaskId) {
         return;
       }
-      if (
-        taskIdRef.current === currentTaskId &&
-        (phase === 'starting' || phase === 'building')
-      ) {
+      // 用 ref 判重：进页 effect 可能在 setPhase 提交前再次调用，
+      // 闭包里的 phase 仍是 idle，不能当作「尚未接入」。
+      if (taskIdRef.current === currentTaskId) {
         return;
       }
-      if (phase === 'starting' || phase === 'building') {
+      if (
+        phaseRef.current === 'starting' ||
+        phaseRef.current === 'building'
+      ) {
         return;
       }
 
@@ -309,11 +314,12 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       const isBuild = task.taskType === UserAppTaskTypeEnum.Build;
       const failedMessage = getFailedMessage(nextAction);
 
-      resetProgress();
+      resetTaskState();
       cancelledRef.current = false;
       setAction(nextAction);
       setTaskId(currentTaskId);
       taskIdRef.current = currentTaskId;
+      phaseRef.current = 'starting';
       setPhase('starting');
 
       try {
@@ -336,6 +342,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           return;
         }
 
+        phaseRef.current = 'building';
         setPhase('building');
         const streamResult = await listenProgress(currentTaskId, nextAction);
         if (streamResult === 'cancelled' || cancelledRef.current) {
@@ -369,7 +376,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         setEnvRunning(false);
       }
     },
-    [listenProgress, onReady, phase, resetProgress, setEnvRunning],
+    [listenProgress, onReady, resetTaskState, setEnvRunning],
   );
 
   /**
@@ -410,7 +417,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       }
       setEnvRunning(false);
       setPhase('idle');
-      resetProgress();
+      resetTaskState();
       message.success(dict('PC.Pages.AppDevPro.stopSuccess'));
     } catch (error) {
       const text =
@@ -421,7 +428,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     } finally {
       setStopping(false);
     }
-  }, [appId, buildParams, env, resetProgress, setEnvRunning, stopStream]);
+  }, [appId, buildParams, env, resetTaskState, setEnvRunning, stopStream]);
 
   // 取消当前启动 / 重启任务
   const cancelTask = useCallback(async () => {
@@ -467,9 +474,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     }
     setOpen(false);
     setPhase('idle');
-    resetProgress();
+    resetTaskState();
     stopStream();
-  }, [phase, resetProgress, stopStream]);
+  }, [phase, resetTaskState, stopStream]);
 
   useEffect(() => {
     if (envRef.current === env) {
@@ -491,8 +498,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       return;
     }
     setPhase('idle');
-    resetProgress();
-  }, [env, resetProgress, stopStream]);
+    resetTaskState();
+  }, [env, resetTaskState, stopStream]);
 
   const busy = phase === 'starting' || phase === 'building';
 
