@@ -13,6 +13,17 @@ export type CapabilityTypeEnum = 'skill' | 'connector' | 'expert' | 'knowledge';
 /** 数据源：系统广场 / 团队空间 */
 export type CapabilitySourceEnum = 'system' | 'team';
 
+/**
+ * 条目级数据源：enabled 为「我启用的」页签聚合态、used 为专家「最近召唤」
+ * 页签聚合态、recent 为资料库「最近访问」页签聚合态
+ * （仅作条目标识，不参与数据源切换/适配器寻址）
+ */
+export type CapabilityItemSourceEnum =
+  | CapabilitySourceEnum
+  | 'enabled'
+  | 'used'
+  | 'recent';
+
 /** 归一化后的能力卡片数据（展示 + 选中回传） */
 export interface CapabilityItem {
   /** 唯一标识（能力类型+数据源+原始标识，用于 React key、选中回传与置顶持久化） */
@@ -20,7 +31,7 @@ export interface CapabilityItem {
   /** 能力类型 */
   resourceType: CapabilityTypeEnum;
   /** 数据源 */
-  source: CapabilitySourceEnum;
+  source: CapabilityItemSourceEnum;
   /** 原始标识：连接器为 service，资料库为页面 id，其余为数字 ID */
   rawId: number | string;
   /** 资料库页面短链标识（会话 selectedDocs 寻址用） */
@@ -51,6 +62,10 @@ export interface CapabilityItem {
   paymentRequired?: boolean;
   /** 是否已订阅（系统广场条目） */
   subscribed?: boolean;
+  /** 是否已启用（技能维度；卡片右侧启用开关的状态） */
+  enabled?: boolean;
+  /** 最近使用时间（专家「最近召唤」/资料库「最近访问」维度，ISO 时间串；卡片相对时间胶囊展示） */
+  usedTime?: string;
   /** 官方标识（已发布智能体；卡片展示「官方」徽标） */
   official?: boolean;
   /** 创建人/发布者名称（技能/专家=发布者昵称/用户名，资料库=页面创建人；卡片名称旁展示） */

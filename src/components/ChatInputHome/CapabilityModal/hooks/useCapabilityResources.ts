@@ -3,18 +3,15 @@
  * @description 参考 pages/ExpertSkillConnector/useResourceList 的双适配器模式独立实现：
  * - 专家：系统广场/团队空间均走已发布智能体接口（团队维度经 spaceIds 聚合，
  *   "全部"页签=全部空间），服务端分页；
- * - 服务端分页维度（系统广场已发布技能、团队空间连接器）透传分页参数；
- * - 全量数组维度（系统广场连接器、团队空间技能/资料库）首次全量拉取后
- *   内存筛选切片，模拟滚动加载；
+ * - 连接器：系统广场全量数组、团队空间服务端分页；
+ * - 资料库：repo 页面树全量拉取后先序平铺（客户端切片）；
+ * - 技能维度已接入 SkillListView（自带数据层），此处不注册适配器；
  * 对外统一提供 { list, loading, error, hasMore, loadMore } 语义。
  */
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiRepoSpaceTree } from '@/services/repo';
-import {
-  apiPublishedAgentList,
-  apiPublishedSkillList,
-} from '@/services/square';
+import { apiPublishedAgentList } from '@/services/square';
 import {
   apiConnectorProviderPageList,
   apiSystemConnectorProviderList,
@@ -28,6 +25,7 @@ import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   CapabilityItem,
+  CapabilityItemSourceEnum,
   CapabilitySourceEnum,
   CapabilityTypeEnum,
 } from '../types';
@@ -66,10 +64,10 @@ interface ClientAdapter {
 type ResourceAdapter = ServerAdapter | ClientAdapter;
 
 /** 系统广场已发布条目（专家/技能/资料库）归一化（保留 targetId 供挂载能力使用） */
-const mapPublishedItem = (
+export const mapPublishedItem = (
   item: SquarePublishedItemInfo & { tags?: string[]; fileType?: string },
   resourceType: CapabilityTypeEnum,
-  source: CapabilitySourceEnum = 'system',
+  source: CapabilityItemSourceEnum = 'system',
 ): CapabilityItem => ({
   key: `${resourceType}:${source}:${item.id}`,
   resourceType,
@@ -92,6 +90,7 @@ const mapPublishedItem = (
   fileType: item.fileType,
   paymentRequired: item.paymentRequired,
   subscribed: item.subscribed,
+  enabled: item.enabled,
 });
 
 /** 连接器提供方归一化（系统广场/团队空间结构一致） */
@@ -114,8 +113,19 @@ const mapConnectorItem = (
 });
 
 /**
+ * 资料卡文档类型归一化：优先源文件扩展名 sourceExt（清洗前导点），
+ * 无 sourceExt 回落接口 pageType；统一大写供 Tag 展示（PDF/DOC/MD）
+ */
+export const normalizeDocType = (
+  sourceExt?: string,
+  pageType?: string,
+): string | undefined =>
+  (sourceExt?.replace(/^\./, '') || pageType)?.toUpperCase();
+
+/**
  * 资料库页面树先序平铺：目录与页面同构（每个节点都是可选文档），
  * 按树的先序顺序展开为列表，保留资料库的目录分组视觉顺序。
+ * 时间胶囊仅「最近访问」条目展示（useRecentRepoPages），空间树不带时间。
  */
 const flattenRepoTree = (nodes: RepoPageTreeNode[]): CapabilityItem[] => {
   const items: CapabilityItem[] = [];
@@ -134,8 +144,8 @@ const flattenRepoTree = (nodes: RepoPageTreeNode[]): CapabilityItem[] => {
           // 创建人（repo 树平铺字段），复用发布者通道与其他卡同款展示
           publisherName: page.creatorName,
           publisherAvatar: page.creatorAvatar,
-          // 源文件扩展名清洗为资料格式（如 ".md" / "md" → MD）
-          fileType: page.sourceExt?.replace(/^\./, '')?.toUpperCase(),
+          // 文档类型：源文件扩展名优先，无则回落接口 pageType
+          fileType: normalizeDocType(page.sourceExt, page.pageType),
         });
       }
       if (node.children?.length) {
@@ -183,11 +193,12 @@ const publishedServerAdapter = (
 });
 
 /**
- * 能力类型 × 数据源 的接口适配器矩阵
+ * 能力类型 × 数据源 的接口适配器矩阵。
+ * 技能维度已接入 SkillListView（自带四场景数据层），此处不再注册 skill
+ * 适配器——hook 对未注册的类型保持空态（不加载）。
  */
-const ADAPTERS: Record<
-  CapabilityTypeEnum,
-  Record<CapabilitySourceEnum, ResourceAdapter>
+const ADAPTERS: Partial<
+  Record<CapabilityTypeEnum, Record<CapabilitySourceEnum, ResourceAdapter>>
 > = {
   expert: {
     // 系统广场：已发布智能体（POST /api/published/agent/list），
@@ -224,38 +235,6 @@ const ADAPTERS: Record<
         });
       },
       'expert',
-      'team',
-    ),
-  },
-  skill: {
-    // 系统广场：已发布技能（POST /api/published/skill/list），
-    // 与广场页 /square?cate_type=Skill 默认口径一致（category 内容分类透传）
-    system: publishedServerAdapter(
-      (data) => apiPublishedSkillList(data),
-      'skill',
-    ),
-    // 团队空间：同为已发布技能接口，与空间广场
-    // /space/:id/space-square?activeKey=Skill 同口径——category=Skill +
-    // justReturnSpaceData；具体空间=单 spaceId，"全部"页签经 spaceIds 聚合
-    // （后端该参数当前返回空数据为已知状态，契约保持 spaceIds 直传）
-    team: publishedServerAdapter(
-      (data) => {
-        const single =
-          data.spaceIds?.length === 1 ? data.spaceIds[0] : undefined;
-        return apiPublishedSkillList({
-          page: data.page,
-          pageSize: data.pageSize,
-          kw: data.kw,
-          category: SquareAgentTypeEnum.Skill,
-          justReturnSpaceData: true,
-          ...(single
-            ? { spaceId: single }
-            : data.spaceIds?.length
-            ? { spaceIds: data.spaceIds }
-            : {}),
-        });
-      },
-      'skill',
       'team',
     ),
   },
@@ -371,7 +350,11 @@ const useCapabilityResources = ({
       if (source === 'team' && !spaceId && !spaceIds?.length) {
         return;
       }
-      const adapter = ADAPTERS[resourceType][source];
+      // 未注册适配器的类型（技能已接入 SkillListView）保持空态,不发起加载
+      const adapter = ADAPTERS[resourceType]?.[source];
+      if (!adapter) {
+        return;
+      }
       const requestId = ++requestIdRef.current;
       const nextPage = reset ? 1 : pageRef.current + 1;
       loadingRef.current = true;

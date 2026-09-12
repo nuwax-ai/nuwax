@@ -1,20 +1,20 @@
-/** 四类能力卡片：技能钉住、连接状态、专家标签/统计/收藏、创建人及紧凑资料行。 */
-import defaultAvatar from '@/assets/images/avatar.png';
+/**
+ * 能力弹窗卡片（技能维度已接入 SkillListView，此处为其余三类；
+ * 选中一律走「选择/聘请」按钮，卡片主体点击不触发选中）：
+ * - 专家·简化样式：圆角方图标 + 名称/单行描述 + 右上相对时间（最近召唤）+
+ *   悬停浮现的「聘请」按钮；
+ * - 连接器：分类/连接状态 + 悬停浮现的「选择」按钮 + 连接开关；
+ * - 资料库：横向资料卡（类型专属文件图标 + 名称 + 右端相对时间/格式 Tag +
+ *   悬停浮现的「选择」按钮）。
+ * 付费/已订阅标识统一走 antd Badge.Ribbon 左上角小号角标（专家）。
+ */
+import FileTypeIcon from '@/components/base/FileTypeIcon';
 import SvgIcon from '@/components/base/SvgIcon';
-import {
-  ICON_MESSAGE,
-  ICON_STAR,
-  ICON_STAR_FILL,
-  ICON_USER,
-} from '@/constants/images.constants';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { t } from '@/services/i18nRuntime';
-import {
-  CheckOutlined,
-  PushpinFilled,
-  PushpinOutlined,
-} from '@ant-design/icons';
-import { Button, Card, Switch, Tag, Tooltip } from 'antd';
+import { formatTimeAgo } from '@/utils/common';
+import { FileOutlined } from '@ant-design/icons';
+import { Badge, Button, Card, Switch, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -34,43 +34,62 @@ const ICON_BACKGROUNDS = [
   'rgba(235, 47, 150, 12%)',
 ];
 
+/**
+ * 资料卡文件格式 → 图标色板：底色为色相半透明 tint、前景为对应预设色，
+ * 与 ICON_BACKGROUNDS 同一色阶口径（亮/暗主题均可读），未识别格式回落蓝色。
+ */
+const KNOWLEDGE_FILE_THEMES: Record<string, { bg: string; color: string }> = {
+  PDF: { bg: 'rgba(245, 34, 45, 12%)', color: '#f5222d' },
+  DOC: { bg: 'rgba(24, 144, 255, 12%)', color: '#1890ff' },
+  DOCX: { bg: 'rgba(24, 144, 255, 12%)', color: '#1890ff' },
+  XLS: { bg: 'rgba(82, 196, 26, 12%)', color: '#52c41a' },
+  XLSX: { bg: 'rgba(82, 196, 26, 12%)', color: '#52c41a' },
+  CSV: { bg: 'rgba(82, 196, 26, 12%)', color: '#52c41a' },
+  PPT: { bg: 'rgba(250, 140, 22, 12%)', color: '#fa8c16' },
+  PPTX: { bg: 'rgba(250, 140, 22, 12%)', color: '#fa8c16' },
+  HTML: { bg: 'rgba(250, 84, 28, 12%)', color: '#fa541c' },
+  MD: { bg: 'rgba(114, 46, 209, 12%)', color: '#722ed1' },
+  TXT: { bg: 'rgba(19, 194, 194, 12%)', color: '#13c2c2' },
+};
+const KNOWLEDGE_FILE_THEME_DEFAULT = {
+  bg: 'rgba(24, 144, 255, 12%)',
+  color: '#1890ff',
+};
+
+/**
+ * 可识别为专属文件图标的扩展名（与基础组件 FileTypeIcon 的映射面对齐：
+ * 文档/表格/演示/文本/压缩/媒体），命中则渲染类型专属图标，
+ * 未命中回落默认 tinted 盒 + FileOutlined。
+ */
+const TYPED_FILE_EXT_REGEX =
+  /\.(pdf|docx?|xlsx?|csv|pptx?|md|markdown|txt|log|json|xml|zip|rar|7z|tar|gz|mp4|avi|mov|mp3|wav|flac)$/i;
+
 export interface CapabilityCardProps {
   item: CapabilityItem;
   index: number;
   focused: boolean;
-  pinned: boolean;
   onSelect: (item: CapabilityItem) => void;
   onHover: (index: number) => void;
-  onTogglePin: (item: CapabilityItem) => void;
   /** 连接器「连接」发起（共享 useConnectorConnect 分流：oauth2 授权 / 凭据弹窗） */
   onConnectorConnect?: (item: CapabilityItem) => void;
   /** 连接器「断开」 */
   onConnectorDisconnect?: (item: CapabilityItem) => void;
   /** 连接/断开请求中的条目 key（按钮 loading 防重复） */
   connectorBusyKeys?: string[];
-  /** 专家收藏/取消收藏（与广场卡同链路：targetId 调智能体收藏接口） */
-  onToggleCollect?: (item: CapabilityItem) => void;
 }
 
 const CapabilityCard: React.FC<CapabilityCardProps> = ({
   item,
   index,
   focused,
-  pinned,
   onSelect,
   onHover,
-  onTogglePin,
   onConnectorConnect,
   onConnectorDisconnect,
   connectorBusyKeys,
-  onToggleCollect,
 }) => {
   const { name, description, icon, category, resourceType } = item;
-  const pinLabel = t(
-    pinned
-      ? 'PC.Components.CapabilityModal.unpin'
-      : 'PC.Components.CapabilityModal.pin',
-  );
+  const isExpert = resourceType === 'expert';
   const isKnowledge = resourceType === 'knowledge';
   const isConnector = resourceType === 'connector';
   const fileType =
@@ -91,34 +110,33 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
     effectiveIcon
   );
   const selectLabel = t(
-    resourceType === 'expert'
+    isExpert
       ? 'PC.Components.CapabilityModal.hire'
       : 'PC.Components.CapabilityModal.select',
   );
-  // 操作按钮按聚焦态（鼠标悬停或键盘聚焦）条件渲染：不渲染即不占位，标题可拉通整行
-  const showPin = focused || pinned;
-  // 创建人/发布者（技能/专家/资料库）：小头像 + 人物名，与广场卡 AuthorInfo 同款信息；
-  // 头像空/加载失败回退默认头像（avatar.png），名称超长省略
-  const authorInfo = item.publisherName ? (
-    <span className={styles['card-author']} title={item.publisherName}>
-      <img
-        src={item.publisherAvatar || defaultAvatar}
-        alt=""
-        onError={(event) => {
-          event.currentTarget.onerror = null;
-          event.currentTarget.src = defaultAvatar;
-        }}
-      />
-      <span className={styles['card-author-name']}>{item.publisherName}</span>
-    </span>
+  // 资料卡文件格式色板（tinted 底 + 同色相描边图标，未识别格式回落蓝色）
+  const knowledgeFileTheme =
+    KNOWLEDGE_FILE_THEMES[fileType ?? ''] ?? KNOWLEDGE_FILE_THEME_DEFAULT;
+  // 资料卡类型图标：页面标题常不带扩展名，用「名称.格式」伪文件名让
+  // FileTypeIcon 按扩展匹配专属图标（doc/表格/演示/pdf/媒体/文本/压缩）；
+  // 未命中扩展回落默认 tinted 盒 + FileOutlined
+  const knowledgeFileName =
+    fileType && !name.includes('.')
+      ? `${name}.${fileType.toLowerCase()}`
+      : name;
+  const knowledgeTypedIcon = TYPED_FILE_EXT_REGEX.test(knowledgeFileName) ? (
+    <FileTypeIcon
+      fileName={knowledgeFileName}
+      size={18}
+      className={styles['card-file-icon']}
+    />
   ) : null;
-  // 选择按钮（技能/专家/资料库同款）：主按钮 + 对勾图标，悬停/键盘聚焦时浮现
+  // 选择/聘请按钮：三类卡片统一的选中入口（方形圆角 tint 底轻量按钮，悬停/
+  // 键盘聚焦时浮现，复用 .card-hire 显隐）——卡片主体点击不触发选中
   const selectButton = (
     <Button
-      type="primary"
       size="small"
-      icon={<CheckOutlined />}
-      className={styles['card-hire']}
+      className={cx(styles['card-hire'], styles['card-select'])}
       onClick={(event) => {
         event.stopPropagation();
         onSelect(item);
@@ -127,7 +145,7 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
       {selectLabel}
     </Button>
   );
-  return (
+  const card = (
     <Card
       id={`capability-option-${index}`}
       data-capability-key={item.key}
@@ -136,21 +154,34 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
       className={cx(styles.card, styles[`card-${resourceType}`], {
         [styles['card-focused']]: focused,
       })}
-      onClick={() => onSelect(item)}
       onMouseMove={() => onHover(index)}
       onMouseLeave={() => onHover(-1)}
     >
       {isKnowledge ? (
+        // 资料卡·横向布局：类型专属文件图标（未识别回落 tinted 盒默认图标）
+        // + 名称 + 右端相对时间/格式 Tag + 悬停浮现的「选择」按钮
         <>
+          {knowledgeTypedIcon ? (
+            knowledgeTypedIcon
+          ) : (
+            <span className={styles['card-icon']} style={knowledgeFileTheme}>
+              <FileOutlined />
+            </span>
+          )}
           <span className={styles['card-name']} title={name}>
             {name}
           </span>
-          {fileType && <span className={styles['file-type']}>{fileType}</span>}
-          {authorInfo}
-          {/* 选择按钮与其他卡片同款（主按钮 + 对勾图标，悬停/聚焦浮现） */}
+          <div className={styles['card-knowledge-tags']}>
+            {!!item.usedTime && (
+              <span className={styles['card-time-pill']} title={item.usedTime}>
+                {formatTimeAgo(item.usedTime)}
+              </span>
+            )}
+            {fileType && <Tag className={styles['file-type']}>{fileType}</Tag>}
+          </div>
           <div className={styles['card-head-actions']}>{selectButton}</div>
         </>
-      ) : (
+      ) : isConnector ? (
         <>
           <div className={styles['card-head']}>
             <span
@@ -167,173 +198,112 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
                 {name}
               </span>
               <div className={styles['card-meta']}>
-                {/* 官方标识（已发布智能体） */}
-                {resourceType === 'expert' && item.official && (
-                  <span
-                    className={cx(
-                      styles['card-badge'],
-                      styles['card-badge-official'],
-                    )}
-                  >
-                    {t('PC.Components.CapabilityModal.official')}
-                  </span>
-                )}
-                {/* 创建人/发布者（技能/专家）：同款小头像 + 人物名 */}
-                {(resourceType === 'skill' || resourceType === 'expert') &&
-                  authorInfo}
-                {/* 分类：仅连接器展示（技能/专家该行由「头像+人物名」取代，
-                    不再叠加分类文案） */}
-                {category && resourceType === 'connector' && (
+                {category && (
                   <span className={styles['card-category']}>{category}</span>
                 )}
-                {isConnector &&
-                  (item.authType === 'no_auth' ||
-                    item.connected !== undefined) && (
-                    <span
-                      className={cx(styles['connection-status'], {
-                        [styles.connected]:
-                          item.authType === 'no_auth' || item.connected,
-                      })}
-                    >
-                      {t(
-                        item.authType === 'no_auth' || item.connected
-                          ? 'PC.Components.CapabilityModal.connected'
-                          : 'PC.Components.CapabilityModal.disconnected',
-                      )}
-                    </span>
-                  )}
-              </div>
-            </div>
-            {/* 连接器连接/断开开关：选中态绑真实 connected，切换走共享
-                useConnectorConnect 分流（oauth2 授权 / 凭据型 / 断开寻址），
-                成功后上层就地更新 connected 驱动开关回弹；免鉴权不渲染开关 */}
-            {isConnector && item.authType !== 'no_auth' && (
-              <Switch
-                className={styles['card-switch']}
-                size="small"
-                checked={item.connected === true}
-                loading={connectorBusyKeys?.includes(item.key)}
-                aria-label={name}
-                onClick={(_, event) => {
-                  event.stopPropagation();
-                  if (item.connected) {
-                    onConnectorDisconnect?.(item);
-                  } else {
-                    onConnectorConnect?.(item);
-                  }
-                }}
-              />
-            )}
-            {/* 技能/专家操作簇：与标题同行右端，悬停/键盘聚焦时浮现
-                （常驻占位，避免浮现时标题宽度跳动）；技能的钉住按钮
-                位于选择按钮右侧同簇对齐 */}
-            {(resourceType === 'skill' || resourceType === 'expert') && (
-              <div className={styles['card-head-actions']}>
-                {selectButton}
-                {resourceType === 'skill' && showPin && (
-                  <Tooltip title={pinLabel}>
-                    <Button
-                      type="text"
-                      size="small"
-                      aria-label={pinLabel}
-                      aria-pressed={pinned}
-                      className={cx(styles['card-pin'], {
-                        [styles['card-pin-active']]: pinned,
-                      })}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onTogglePin(item);
-                      }}
-                    >
-                      {pinned ? <PushpinFilled /> : <PushpinOutlined />}
-                    </Button>
-                  </Tooltip>
+                {item.connected !== undefined && (
+                  <span
+                    className={cx(styles['connection-status'], {
+                      [styles.connected]:
+                        item.authType === 'no_auth' || item.connected,
+                    })}
+                  >
+                    {t(
+                      item.authType === 'no_auth' || item.connected
+                        ? 'PC.Components.CapabilityModal.connected'
+                        : 'PC.Components.CapabilityModal.disconnected',
+                    )}
+                  </span>
                 )}
               </div>
-            )}
+            </div>
+            {/* 操作簇：「选择」悬停浮现（唯一选中入口）+ 连接/断开开关。
+                开关选中态绑真实 connected，切换走共享 useConnectorConnect
+                分流（oauth2 授权 / 凭据型 / 断开寻址），成功后上层就地更新
+                connected 驱动开关回弹；免鉴权不渲染开关 */}
+            <div className={styles['card-head-actions']}>
+              {selectButton}
+              {item.authType !== 'no_auth' && (
+                <Switch
+                  className={styles['card-switch']}
+                  size="small"
+                  checked={item.connected === true}
+                  loading={connectorBusyKeys?.includes(item.key)}
+                  aria-label={name}
+                  onClick={(_, event) => {
+                    event.stopPropagation();
+                    if (item.connected) {
+                      onConnectorDisconnect?.(item);
+                    } else {
+                      onConnectorConnect?.(item);
+                    }
+                  }}
+                />
+              )}
+            </div>
           </div>
-          {/* 描述：专家/技能卡常驻（无描述保留空块撑住中段，footer 落底一致）；
-              其余类型有内容才渲染 */}
-          {(resourceType === 'expert' ||
-            resourceType === 'skill' ||
-            !!description) && (
+          {!!description && (
             <div className={styles['card-desc']} title={description}>
               {description}
             </div>
           )}
-          {/* 统计行（与广场卡同款）：专家=用户/会话/收藏数，技能仅收藏数
-              （广场技能卡同口径隐藏用户/会话数）；右端付费/已订阅标识常驻，
-              收藏星标悬停/键盘聚焦时浮现 */}
-          {(resourceType === 'expert' || resourceType === 'skill') && (
-            <div className={styles['card-stats']}>
-              <div
-                className={cx(
-                  'flex',
-                  'items-center',
-                  styles['card-stats-counts'],
-                )}
-              >
-                {resourceType === 'expert' && (
-                  <>
-                    <span className={styles['card-stat']}>
-                      <ICON_USER />
-                      <span>{item.userCount || 0}</span>
-                    </span>
-                    <span className={styles['card-stat']}>
-                      <ICON_MESSAGE />
-                      <span>{item.convCount || 0}</span>
-                    </span>
-                  </>
-                )}
-                <span className={styles['card-stat']}>
-                  {item.collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
-                  <span>{item.collectCount || 0}</span>
-                </span>
-              </div>
-              <div className={styles['card-stats-actions']}>
-                {onToggleCollect && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    aria-label={t(
-                      item.collect
-                        ? 'PC.Components.CapabilityModal.uncollect'
-                        : 'PC.Components.CapabilityModal.collect',
-                    )}
-                    className={cx(styles['card-collect'], {
-                      [styles['card-collect-active']]: item.collect,
-                    })}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onToggleCollect(item);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        onToggleCollect(item);
-                      }
-                    }}
-                  >
-                    {item.collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
-                  </span>
-                )}
-                {/* 付费标识：antd Tag 蓝色（需付费时展示「付费/已订阅」，与广场卡同文案） */}
-                {item.paymentRequired && (
-                  <Tag color="blue" className={styles['card-paid-tag']}>
-                    {t(
-                      item.subscribed
-                        ? 'PC.Pages.Square.SingleAgent.subscribed'
-                        : 'PC.Pages.Square.SingleAgent.paid',
-                    )}
-                  </Tag>
-                )}
+        </>
+      ) : (
+        // 专家卡·简化样式：圆角方图标 + 名称/单行描述 + 右上相对时间
+        // （「最近召唤」页签条目）+ 悬停浮现的「聘请」按钮
+        <>
+          <div className={styles['card-head']}>
+            <span
+              className={styles['card-icon']}
+              style={{
+                backgroundColor:
+                  ICON_BACKGROUNDS[index % ICON_BACKGROUNDS.length],
+              }}
+            >
+              {iconContent}
+            </span>
+            <div className={styles['card-heading']}>
+              <span className={styles['card-name']} title={name}>
+                {name}
+              </span>
+              <div className={styles['card-desc-inline']} title={description}>
+                {description}
               </div>
             </div>
-          )}
+            <div className={styles['card-head-actions']}>
+              {/* 最近召唤时间：卡片右上角相对时间（「最近召唤」页签条目才有） */}
+              {isExpert && item.usedTime && (
+                <span
+                  className={styles['card-used-time']}
+                  title={item.usedTime}
+                >
+                  {formatTimeAgo(item.usedTime)}
+                </span>
+              )}
+              {selectButton}
+            </div>
+          </div>
         </>
       )}
     </Card>
   );
+  // 付费标识走 antd Badge.Ribbon（antd 官方的卡片角标形态，placement=start
+  // 即左上角）；无付费标识的卡不包 wrapper，直接返回
+  if (isExpert && item.paymentRequired) {
+    return (
+      <Badge.Ribbon
+        placement="start"
+        className={styles['card-paid-ribbon']}
+        text={t(
+          item.subscribed
+            ? 'PC.Pages.Square.SingleAgent.subscribed'
+            : 'PC.Pages.Square.SingleAgent.paid',
+        )}
+      >
+        {card}
+      </Badge.Ribbon>
+    );
+  }
+  return card;
 };
 export default React.memo(CapabilityCard);

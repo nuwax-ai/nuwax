@@ -1,7 +1,10 @@
 /**
  * 资料库（空间文档仓库 Repo）服务
  */
-import type { RepoPageTreeNode } from '@/types/interfaces/repo';
+import type {
+  RepoPageTreeNode,
+  RepoPortalPageInfo,
+} from '@/types/interfaces/repo';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -16,5 +19,20 @@ export async function apiRepoSpaceTree(
 ): Promise<RequestResponse<RepoPageTreeNode[]>> {
   return request(`/api/repo/spaces/${spaceId}/tree`, {
     method: 'GET',
+  });
+}
+
+/**
+ * 查询门户最近访问页面（GET /api/repo/pages/recently-accessed）
+ *
+ * - 访问记录 ∪ 我编辑过，跨全部空间，含空间位置列，按最新时间倒序
+ * - from/size 分页参数；弹窗场景单次全量取回后内存筛选
+ */
+export async function apiRepoRecentlyAccessedPages(
+  params: { from?: number; size?: number } = {},
+): Promise<RequestResponse<RepoPortalPageInfo[]>> {
+  return request('/api/repo/pages/recently-accessed', {
+    method: 'GET',
+    params,
   });
 }
