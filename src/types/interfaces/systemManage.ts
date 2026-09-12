@@ -1006,13 +1006,14 @@ export interface ResourceStatDTO {
  * 字段对齐 /api/system/connector/providers 真实 schema
  * ────────────────────────────────────────────── */
 
-/** 鉴权方式枚举（''=全部 用于筛选项） */
+/** 鉴权方式枚举（''=全部 用于筛选项；oauth2_device = 扫描授权（设备码），表单与 oauth2 同构） */
 export type ConnectorAuthType =
   | ''
   | 'no_auth'
   | 'api_key'
   | 'bearer'
   | 'oauth2'
+  | 'oauth2_device'
   | 'custom';
 
 /**
