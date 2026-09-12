@@ -4,13 +4,16 @@
  * 工具栏（主tab/二级tab/搜索/更多）+ 卡片网格 + 滚动加载
  */
 
+import ConditionRender from '@/components/ConditionRender';
 import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
 import ConnectorDeviceAuthModal from '@/components/business-component/ConnectorDeviceAuthModal';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useConnectorConnect from '@/hooks/useConnectorConnect';
 import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
+import useSubscription from '@/hooks/useSubscription';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
@@ -177,6 +180,21 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
 
   /** 技能卡片「选择」：携带技能信息透传并跳转 /home 首页 */
   const { select } = useSelectSkillHandoff();
+
+  // ---------------- 技能付费订阅（对齐广场技能卡片 / 会话页弹窗） ----------------
+  /** 技能订阅套餐弹窗开关 */
+  const [paySkillOpen, setPaySkillOpen] = useState<boolean>(false);
+
+  // 技能订阅（套餐列表 + 我的订阅 + 下单，与广场技能卡片同源 hook）
+  const {
+    createSubscriptionOrder,
+    querySkillSubscriptionPlans,
+    loadingTargetPricing,
+    targetSubscriptionPlans,
+    mySubscriptionInfo,
+    loadingMySubscription,
+  } = useSubscription();
+
   const handleSelectSkill = useCallback(
     (item: ResourceItem) => {
       if (!item.skillId) {
@@ -187,9 +205,16 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
         );
         return;
       }
+      // 订阅功能开启且需付费未订阅（与广场技能卡片同口径）：拦截选择，
+      // 查询该技能订阅套餐与「我的订阅」后改弹订阅套餐弹窗
+      if (isEnableSubscription && item.paymentRequired && !item.subscribed) {
+        querySkillSubscriptionPlans(item.skillId);
+        setPaySkillOpen(true);
+        return;
+      }
       select({ skillId: item.skillId, name: item.name, icon: item.icon });
     },
-    [select],
+    [select, isEnableSubscription, querySkillSubscriptionPlans],
   );
 
   /**
@@ -461,9 +486,11 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                   // 底部统计行仅专家卡片展示（技能本就无统计；
                   // 连接器工具数统计已下线）
                   showStats={resourceType === 'expert'}
-                  // 付费角标仅专家卡片且订阅功能开启时展示
+                  // 付费角标：专家卡片（右下角「付费/已订阅」Tag）与技能卡片
+                  // （左上角「付费」Ribbon）均在订阅功能开启时展示
                   showPayment={
-                    resourceType === 'expert' && isEnableSubscription
+                    (resourceType === 'expert' || resourceType === 'skill') &&
+                    isEnableSubscription
                   }
                   // 连接器卡片：标题下方展示分类 + 连接状态，hover 右上角连接/断开按钮
                   showConnect={resourceType === 'connector'}
@@ -503,6 +530,26 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
           onClose={closeDeviceAuthModal}
           onConnected={handleDeviceConnected}
         />
+      )}
+
+      {/* 技能付费订阅套餐弹窗（技能维度，与广场技能卡片同款）：未订阅的
+          付费技能点「选择」时弹出，订阅下单走统一支付流程 */}
+      {resourceType === 'skill' && (
+        <ConditionRender condition={isEnableSubscription}>
+          <PaymentSubscriptionModal
+            open={paySkillOpen}
+            targetType="Skill"
+            loading={loadingTargetPricing || loadingMySubscription}
+            // 套餐列表
+            plans={targetSubscriptionPlans}
+            // 当前订阅信息
+            currentSubscribedInfo={
+              mySubscriptionInfo?.currentSubscription ?? null
+            }
+            onClose={() => setPaySkillOpen(false)}
+            onSubscribe={createSubscriptionOrder}
+          />
+        </ConditionRender>
       )}
     </div>
   );

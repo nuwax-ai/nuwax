@@ -8,7 +8,8 @@
  * 广场智能体卡片的 star-box，经 onToggleCollect 回调切换收藏/取消收藏，
  * 已收藏金色实心星/未收藏空心星，统计行收藏数图标随之联动）、
  * 技能卡片浮现「选择」按钮及右侧 pin 图标按钮
- * （点击逻辑暂未接入，仅展示）；
+ * （点击逻辑暂未接入，仅展示），需付费的技能卡片左上角悬挂
+ * 「付费」Ribbon 角标（点击逻辑暂未接入，仅展示）；
  * 连接器卡片标题下方展示 分类 + 连接状态（按 connected 展示已连接/未连接）；
  * 已连接卡片右上角常驻「启用开关」（checked 绑 connectionEnabled，切换经
  * onToggleEnabled 调启用状态接口），hover 时开关左侧浮现「断开」按钮
@@ -30,7 +31,7 @@ import {
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { dict } from '@/services/i18nRuntime';
 import { PushpinOutlined } from '@ant-design/icons';
-import { Button, Switch, Tag } from 'antd';
+import { Badge, Button, Switch, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { ResourceItem, ResourceStatType } from '../../../../types';
@@ -60,8 +61,8 @@ interface ResourceCardProps {
   /** 是否显示底部统计行（使用用户数等） */
   showStats?: boolean;
   /**
-   * 是否展示付费角标（仅专家卡片且租户开启订阅功能时传入）：
-   * paymentRequired 的卡片右下角展示「付费/已订阅」Tag
+   * 是否展示付费角标（订阅功能开启时传入，专家/技能卡片消费）：
+   * 专家卡片右下角展示「付费/已订阅」Tag；技能卡片左上角展示「付费」Ribbon
    */
   showPayment?: boolean;
   /**
@@ -126,7 +127,14 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
    */
   const { displaySrc: iconDisplaySrc } = useAuthProtectedImageSrc(icon);
 
-  return (
+  /**
+   * 技能卡片付费角标（badge ant-ribbon，悬挂卡片左上角）：需付费且订阅
+   * 功能开启时展示「付费」文案；点击逻辑暂未接入，仅展示
+   */
+  const showSkillPaymentRibbon =
+    showUse && showPayment && !!item.paymentRequired;
+
+  const cardNode = (
     <CardWrapper
       className={cx(styles['card-wrapper'], {
         // 无统计行的紧凑卡片（技能/连接器页）
@@ -333,6 +341,20 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
       }
     />
   );
+
+  // 技能卡片需付费时用 Ribbon 包裹卡片（角标悬挂卡片左上角；
+  // 与专家卡片的右下角「付费/已订阅」Tag 区分，二者互不共存）
+  if (showSkillPaymentRibbon) {
+    return (
+      <Badge.Ribbon
+        text={dict('PC.Pages.Square.SingleAgent.paid')}
+        placement="start"
+      >
+        {cardNode}
+      </Badge.Ribbon>
+    );
+  }
+  return cardNode;
 };
 
 export default React.memo(ResourceCard);
