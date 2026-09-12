@@ -2,8 +2,15 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { useRequest } from 'ahooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiUserAppTasksActive } from '../services/appDevPro';
-import { UserAppTaskTypeEnum, type UserAppTasksActiveResult } from '../type';
+import {
+  apiUserAppBuildCancel,
+  apiUserAppTasksActive,
+} from '../services/appDevPro';
+import {
+  UserAppTaskStatusEnum,
+  UserAppTaskTypeEnum,
+  type UserAppTasksActiveResult,
+} from '../type';
 
 const TASKS_ACTIVE_POLL_INTERVAL = 5000;
 
@@ -17,7 +24,7 @@ const isDevStartTask = (taskType?: string) =>
  * 当开发启动与构建都已允许、且没有进行中任务时停止轮询。
  *
  * @param appId 应用 ID
- * @returns 开发操作 / 构建是否允许、进行中任务，以及是否已拿到首次结果
+ * @returns 开发操作 / 构建是否允许、进行中任务、暂停/恢复轮询，以及是否已拿到首次结果
  */
 export function useUserAppTasksActive(appId?: number) {
   /** 开发环境是否允许启动 / 重启；首包前默认允许，避免误锁 */
@@ -33,7 +40,9 @@ export function useUserAppTasksActive(appId?: number) {
   /** 手动恢复轮询版本号，确保 useRequest 使用最新 pollingInterval 重新执行 */
   const [refreshVersion, setRefreshVersion] = useState<number>(0);
   /** 本地已停止：在服务端 active 追上之前保持允许 start */
-  const holdDevIdleRef = useRef(false);
+  const holdDevIdleRef = useRef<boolean>(false);
+  /** 部署弹窗打开时暂停轮询，避免 onSuccess 又把 polling 打开 */
+  const pausedRef = useRef<boolean>(false);
 
   useEffect(() => {
     setDevActionAllowed(true);
@@ -42,6 +51,7 @@ export function useUserAppTasksActive(appId?: number) {
     setTasks([]);
     setPolling(true);
     holdDevIdleRef.current = false;
+    pausedRef.current = false;
   }, [appId]);
 
   useRequest(() => apiUserAppTasksActive(appId as number), {
@@ -57,6 +67,14 @@ export function useUserAppTasksActive(appId?: number) {
         const hasDevStartTask = nextTasks.some((item) =>
           isDevStartTask(item.taskType),
         );
+        if (pausedRef.current) {
+          setDevActionAllowed(nextDevAllowed);
+          setBuildAllowed(nextBuildAllowed);
+          setTasks(nextTasks);
+          setPolling(false);
+          setReady(true);
+          return;
+        }
         if (
           holdDevIdleRef.current &&
           (!nextDevAllowed || hasDevStartTask)
@@ -89,8 +107,54 @@ export function useUserAppTasksActive(appId?: number) {
     if (!appId) {
       return;
     }
+    pausedRef.current = false;
     setPolling(true);
     setRefreshVersion((version) => version + 1);
+  }, [appId]);
+
+  /** 部署弹窗打开：停掉 tasks/active 轮询 */
+  const pause = useCallback(() => {
+    pausedRef.current = true;
+    setPolling(false);
+  }, []);
+
+  /** 部署弹窗关闭：恢复轮询 */
+  const resume = useCallback(() => {
+    if (!appId) {
+      return;
+    }
+    pausedRef.current = false;
+    setPolling(true);
+    setRefreshVersion((version) => version + 1);
+  }, [appId]);
+
+  /**
+   * 查一次 active，取消未结束的 build 任务（非 completed / cancelled）。
+   * 部署构建或部署服务失败后关弹窗时调用。
+   */
+  const cancelUnfinishedBuild = useCallback(async () => {
+    if (!appId) {
+      return;
+    }
+    try {
+      const result = await apiUserAppTasksActive(appId);
+      if (result?.code !== SUCCESS_CODE) {
+        return;
+      }
+      const leftover = (result.data?.tasks || []).find(
+        (item) =>
+          item.taskType === UserAppTaskTypeEnum.Build &&
+          !!item.taskId &&
+          item.status !== UserAppTaskStatusEnum.Completed &&
+          item.status !== UserAppTaskStatusEnum.Cancelled,
+      );
+      if (!leftover?.taskId) {
+        return;
+      }
+      await apiUserAppBuildCancel(leftover.taskId);
+    } catch (error) {
+      console.error('[AppDevPro] Cancel unfinished build failed:', error);
+    }
   }, [appId]);
 
   /**
@@ -109,6 +173,9 @@ export function useUserAppTasksActive(appId?: number) {
     ready,
     tasks,
     refresh,
+    pause,
+    resume,
+    cancelUnfinishedBuild,
     markDevStartIdle,
   };
 }

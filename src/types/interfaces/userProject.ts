@@ -24,6 +24,20 @@ export enum UserAppTaskTypeEnum {
   Build = 'build',
 }
 
+/** 应用任务状态，对应后端 UserAppTaskStatus */
+export enum UserAppTaskStatusEnum {
+  /** 已受理未开始 */
+  Pending = 'pending',
+  /** 编译 / 启停执行中 */
+  Running = 'running',
+  /** 成功（终态） */
+  Completed = 'completed',
+  /** 失败（终态），看 error 字段 */
+  Failed = 'failed',
+  /** 被取消（终态） */
+  Cancelled = 'cancelled',
+}
+
 /** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
 export type UserProjectPageQueryParams = TablePageRequest<
   Partial<{
@@ -297,7 +311,7 @@ export interface UserAppDevTaskInfo {
   /** 任务ID */
   taskId: string;
   /** 任务状态 */
-  status: string;
+  status: UserAppTaskStatusEnum;
   /** 错误信息 */
   error: string;
   /** 沙箱服务 ID */

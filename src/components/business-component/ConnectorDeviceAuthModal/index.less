@@ -1,0 +1,58 @@
+/* 扫码连接（设备码 oauth2_device）弹窗（连接器详情抽屉 / 广场页卡片连接共用） */
+
+/* 弹窗正文：二维码 / 提示 / 核对码纵向居中 */
+.deviceBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 底部通栏「重新获取二维码」主按钮（与新增工具弹窗的保存按钮同款排布） */
+.deviceRefreshBtn {
+  margin-top: 4px;
+}
+
+/* 二维码区：刷新中 Spin 占位，固定最小高度防弹窗高度跳动 */
+.deviceQrWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 248px;
+}
+
+/* 二维码图片缺失的占位文案 */
+.deviceQrEmpty {
+  font-size: 13px;
+  color: #bfbfbf;
+}
+
+/* 提示文案 */
+.deviceHint {
+  font-size: 13px;
+  color: #8a857c;
+}
+
+/* 核对码 + 剩余时间一行展示（· 分隔） */
+.deviceMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #595959;
+}
+
+.deviceMetaDivider {
+  color: #bfbfbf;
+}
+
+/* 核对码 / 倒计时数字强调（倒计时等宽数字防每秒跳动） */
+.deviceCode,
+.deviceCountdown {
+  font-weight: 600;
+  color: #262626;
+}
+
+.deviceCountdown {
+  font-variant-numeric: tabular-nums;
+}

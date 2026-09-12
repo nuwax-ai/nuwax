@@ -1,0 +1,277 @@
+/**
+ * 统一专家组件：竖版专家卡（头部 + 描述 + 内联订阅套餐区）。
+ * 颜色走 token.less 主题变量，随亮/暗主题自动切换。
+ */
+@import '@/styles/token';
+
+@expert-text: @colorText;
+@expert-secondary: @colorTextSecondary;
+@expert-muted: @colorTextTertiary;
+@expert-faint: @colorTextQuaternary;
+@expert-fill: @colorFillSecondary;
+@expert-border: @colorBorderSecondary;
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  // 宽度随套餐张数自适应：由套餐行（N×230 + 间距,上限 4 张）驱动，
+  // 加两侧 36 内边距（满行 4 张 = 1028px）；长描述在该宽度内收口换行
+  width: fit-content;
+  min-width: 420px;
+  max-width: 1028px;
+  // 弹窗四边间距 36px
+  padding: 36px;
+  border-radius: 16px;
+  background: @colorBgContainer;
+  color: @expert-text;
+  overflow: hidden;
+}
+
+// 头部：头像 + （名称/召唤按钮） + 右上使用次数——使用次数入 flex 流，
+// 名称列 flex:1 + min-width:0 按剩余宽度省略,不再与次数重叠;
+// 右侧预留 20px 避开弹窗关闭按钮（卡片内边距 36 + 20 > 关闭钮占位 44px）
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-right: 20px;
+}
+
+// 头像：与右侧两行（名称行 30 + 间距 8 + 大号按钮 40）等高的固定正方形
+// （顶部齐名称、底部齐按钮），避免拉伸被压扁
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  height: 78px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  // tint 底仅在无图/图挂时兜底（首字回退态可见）
+  background: color-mix(in srgb, @colorPrimary 12%, transparent);
+  color: @colorPrimary;
+  font-size: 32px;
+  font-weight: 600;
+
+  // 图片撑满整个头像框（无内边距），裁剪填满圆角
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.head-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  min-width: 0; // 名称列按剩余宽度收缩,超长省略
+}
+
+.name {
+  max-width: 100%;
+  overflow: hidden;
+  color: @expert-text;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 30px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 使用次数：flex 流内右上角（不压缩换行），与名称顶部对齐；
+// 名称按剩余宽度省略,两者永不重叠
+.usage {
+  flex-shrink: 0;
+  margin-top: 4px;
+  color: @expert-faint;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+// 召唤按钮渐变层：参考 antd 渐变按钮示例的叠层手法（渐变悬浮于主色之上，
+// hover 褪去回主色底，文字经 span 相对定位压在渐变层上方），渐变色取
+// 主题主色系（主色 → 主色混 @purple），随亮/暗主题变量切换。
+// 双写提权压过 antd cssinjs 注入顺序
+.summon-btn.summon-btn:global(.ant-btn-primary:not(.ant-btn-dangerous)) {
+  > :global(span) {
+    position: relative;
+  }
+
+  &::before {
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, @colorPrimary 45%, @purple),
+      @colorPrimary
+    );
+    opacity: 1;
+    transition: all 0.3s;
+    content: '';
+  }
+
+  &:hover::before {
+    opacity: 0;
+  }
+}
+
+// 描述：黑色小字号
+.desc {
+  color: @expert-text;
+  font-size: 12px;
+  line-height: 20px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-word;
+  overflow: hidden;
+}
+
+// 内联订阅套餐区（付费专家）：上分割线分区,整体卡白底;灰色底只属于套餐卡。
+// margin-top:auto——卡片被拉伸(弹窗最小高)时钉在底部,内容自然高度时回落为 0
+.plans {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid @expert-border;
+  transition: box-shadow 0.3s ease-in-out;
+
+  // 召唤被拦截时高亮提示（主色描边呼吸一次）
+  &.plans-highlight {
+    box-shadow: 0 0 0 2px color-mix(in srgb, @colorPrimary 45%, transparent);
+  }
+}
+
+// 标题行：主标题占满剩余空间（放不下省略），试用次数小字同行右对齐贴行尾
+.plans-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.plans-title-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: @expert-text;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plans-title-helper {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: @expert-faint;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.plans-loading,
+.plans-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+// 套餐卡排布：每张固定 230px、flex 换行——容器 fit-content 宽度随张数自适应
+// （N 张一行并排,超过 4 张在 4×230+3×12=956px 处换行,行内左对齐等宽不拉伸）
+.plans-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.plan-card {
+  flex: 0 0 230px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  box-sizing: border-box;
+  padding: 14px 12px;
+  border-radius: 10px;
+  background: @colorBgLayout;
+  text-align: left;
+}
+
+.plan-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: @expert-text;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 3px;
+
+  .price-symbol {
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .price-main {
+    color: @expert-text;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 26px;
+  }
+
+  .price-unit {
+    color: @expert-faint;
+    font-size: 11px;
+  }
+}
+
+// 原价：随内容自适应（无原价不占位,卡高由网格行拉通对齐）
+.plan-original {
+  color: @expert-faint;
+  font-size: 11px;
+  line-height: 16px;
+  text-decoration: line-through;
+}
+
+.plan-btn {
+  width: 100%;
+  margin: 4px 0 6px;
+}
+
+// 当前套餐：弱化为描边态；升级档金色强调（与弹窗口径一致）
+.plan-btn-current {
+  box-shadow: none;
+}
+
+.plan-btn-upgrade {
+  background: @gold;
+}
+
+// 可调用次数/积分说明：与描述文字同款（12 号正文色）
+.plan-row {
+  color: @expert-text;
+  font-size: 12px;
+  line-height: 20px;
+}

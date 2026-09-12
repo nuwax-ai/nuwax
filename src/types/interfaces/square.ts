@@ -87,6 +87,8 @@ export interface SquarePublishedItemInfo {
   paymentRequired: boolean;
   // 是否已订阅
   subscribed: boolean;
+  // 是否已启用（技能维度；能力弹窗技能卡开关状态）
+  enabled?: boolean;
   // 是否官方内容（卡片「官方」标识）
   official?: boolean;
   // 价格

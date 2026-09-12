@@ -75,10 +75,11 @@ vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
   };
 });
 
-// 系统连接器列表接口桩：已连接连接器头像组数据源（缺省空数据，按用例覆写）
-const systemConnectors = vi.hoisted(() => vi.fn());
+// 连接器提供方分页接口桩：已连接连接器头像组数据源
+// （connected=true 服务端过滤，缺省空数据，按用例覆写）
+const connectorPage = vi.hoisted(() => vi.fn());
 vi.mock('@/services/systemManage', () => ({
-  apiSystemConnectorProviderList: systemConnectors,
+  apiConnectorProviderPageList: connectorPage,
 }));
 
 // 电脑选择器桩：捕获 props（value/cloudOnly/onChange），提供切云/切个人两个触发按钮
@@ -304,22 +305,29 @@ describe('首页工具栏能力', () => {
   });
 
   it('已连接连接器头像组：最多 3 个 + 尾部 +N，点击唤起弹窗连接器页签', async () => {
-    systemConnectors.mockResolvedValue({
+    connectorPage.mockResolvedValue({
       code: '0000',
-      data: [
-        { id: 1, service: 'github', displayName: 'GitHub', connected: true },
-        { id: 2, service: 'slack', displayName: 'Slack', connected: true },
-        { id: 3, service: 'notion', displayName: 'Notion', connected: true },
-        { id: 4, service: 'figma', displayName: 'Figma', connected: true },
-        { id: 5, service: 'jira', displayName: 'Jira', connected: true },
-        // 未连接的不进头像组
-        { id: 6, service: 'linear', displayName: 'Linear', connected: false },
-      ],
+      data: {
+        records: [
+          { id: 1, service: 'github', displayName: 'GitHub' },
+          { id: 2, service: 'slack', displayName: 'Slack' },
+          { id: 3, service: 'notion', displayName: 'Notion' },
+          { id: 4, service: 'figma', displayName: 'Figma' },
+          { id: 5, service: 'jira', displayName: 'Jira' },
+        ],
+        pageNum: 1,
+      },
     });
     renderHomeInput();
-    // 5 个已连接 → 3 个头像 + 「+2」尾巴
+    // 服务端 connected=true 过滤返回 5 个 → 3 个头像 + 「+2」尾巴
     await waitFor(() => expect(screen.getByText('+2')).toBeInTheDocument());
     expect(document.querySelectorAll('.ant-avatar').length).toBe(4);
+    // 拉取参数：已连接过滤 + 一次取全量（不带 scope）
+    expect(connectorPage).toHaveBeenCalledWith({
+      connected: 'true',
+      pageNum: 1,
+      pageSize: 9999,
+    });
     fireEvent.click(
       screen.getByRole('button', {
         name: 'PC.Components.ChatInputHome.connectedConnectors',
@@ -329,9 +337,12 @@ describe('首页工具栏能力', () => {
   });
 
   it('无已连接连接器时不渲染头像组', async () => {
-    systemConnectors.mockResolvedValue({ code: '0000', data: [] });
+    connectorPage.mockResolvedValue({
+      code: '0000',
+      data: { records: [], pageNum: 1 },
+    });
     renderHomeInput();
-    await waitFor(() => expect(systemConnectors).toHaveBeenCalled());
+    await waitFor(() => expect(connectorPage).toHaveBeenCalled());
     expect(document.querySelector('.connector-group')).toBeNull();
   });
 

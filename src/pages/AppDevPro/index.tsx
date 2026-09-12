@@ -209,12 +209,11 @@ const AppDevPro: React.FC = () => {
   const [workspaceView, setWorkspaceView] =
     useState<AppDevWorkspaceView>('app-preview');
   /** 打开数据库前的工作区，再次点击图标时还原 */
-  const workspaceViewBeforeDatabaseRef = useRef<AppDevWorkspaceView>(
-    'app-preview',
-  );
+  const workspaceViewBeforeDatabaseRef =
+    useRef<AppDevWorkspaceView>('app-preview');
   /** 数据库工作区当前 Tab */
-  const [databaseTabId, setDatabaseTabId] = useState(
-    () => getToolTabId('database'),
+  const [databaseTabId, setDatabaseTabId] = useState(() =>
+    getToolTabId('database'),
   );
   /** 项目设置弹窗 */
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
@@ -330,7 +329,8 @@ const AppDevPro: React.FC = () => {
       void refreshFileListImmediatelyRef.current(queryConversationId);
     };
 
-    void ensureDesktopConnectionRef.current(queryConversationId)
+    void ensureDesktopConnectionRef
+      .current(queryConversationId)
       .then(afterPodReady)
       .catch((error: any) => {
         if (isEnsurePodThrottledError(error)) {
@@ -641,7 +641,9 @@ const AppDevPro: React.FC = () => {
     buildAllowed,
     ready: tasksActiveReady,
     tasks: activeTasks,
-    refresh: refreshTasksActive,
+    pause: pauseTasksActive,
+    resume: resumeTasksActive,
+    cancelUnfinishedBuild,
     markDevStartIdle,
   } = useUserAppTasksActive(appId);
 
@@ -661,15 +663,45 @@ const AppDevPro: React.FC = () => {
   /** 部署：构建 → SSE 进度 → 生产部署，成功后再打开发布弹窗 */
   const publishFlow = useUserAppPublish({
     appId,
-    onBuildFailed: refreshTasksActive,
     onDeployed: () => {
       setOpenPublishModal(true);
-      if (appId) {
-        runGetUserAppInfo(appId);
-        runGetUserAppDomainList(appId);
-      }
     },
+    onProjectInfo: setUserAppInfo,
+    onDomainList: setUserAppDomainList,
   });
+
+  /** 部署弹窗打开时停掉 tasks/active；关闭后由 close / cancel 恢复 */
+  useEffect(() => {
+    if (!publishFlow.open) {
+      return;
+    }
+    pauseTasksActive();
+  }, [pauseTasksActive, publishFlow.open]);
+
+  /**
+   * 关闭部署弹窗：构建或部署服务失败时，按 active 里未结束的 build 任务取消，再恢复轮询。
+   */
+  const handleCloseDeployProgress = useCallback(async () => {
+    const shouldCancelLeftover =
+      publishFlow.phase === 'failed' &&
+      (publishFlow.failedStage === 'build' ||
+        publishFlow.failedStage === 'deploy');
+    publishFlow.closeModal();
+    if (shouldCancelLeftover) {
+      await cancelUnfinishedBuild();
+    }
+    resumeTasksActive();
+  }, [
+    cancelUnfinishedBuild,
+    publishFlow,
+    resumeTasksActive,
+  ]);
+
+  /** 弹窗内取消任务后恢复 tasks/active 轮询 */
+  const handleCancelDeployTask = useCallback(async () => {
+    await publishFlow.cancelTask();
+    resumeTasksActive();
+  }, [publishFlow, resumeTasksActive]);
 
   /** 用户点停止后不再自动 start；刷新后为 false */
   const previewUserStoppedRef = useRef(false);
@@ -1381,11 +1413,7 @@ const AppDevPro: React.FC = () => {
       return;
     }
     // 会话详情未回填、会话进行中、或仍有待回复确认卡时，先不启动/重启
-    if (
-      !conversationReady ||
-      isConversationActive ||
-      hasPendingIntervention
-    ) {
+    if (!conversationReady || isConversationActive || hasPendingIntervention) {
       return;
     }
     // 等待 tasks/active 首包，避免与进行中任务抢 start
@@ -1850,10 +1878,7 @@ const AppDevPro: React.FC = () => {
   /** 数据库工作区：管理 iframe + 配置 */
   const databaseWorkspace = useMemo(
     () => (
-      <AppDevDatabaseWorkspace
-        appId={appId}
-        activeTab={databaseActiveTab}
-      />
+      <AppDevDatabaseWorkspace appId={appId} activeTab={databaseActiveTab} />
     ),
     [appId, databaseActiveTab],
   );
@@ -1879,9 +1904,7 @@ const AppDevPro: React.FC = () => {
         devActionLocked={previewDevActionLocked}
         allowStoppedHero={previewUserStopped || previewEnterSettled}
         stopping={previewRuntime.stopping}
-        directPreview={
-          dbEnv === UserAppDbEnvEnum.Prod && !!activePreviewUrl
-        }
+        directPreview={dbEnv === UserAppDbEnvEnum.Prod && !!activePreviewUrl}
       />
     ),
     [
@@ -2038,9 +2061,7 @@ const AppDevPro: React.FC = () => {
                   previewRuntimeRunning={previewRuntime.running}
                   previewRuntimeStopping={previewRuntime.stopping}
                   previewRuntimeReady={
-                    podReady &&
-                    !isConversationActive &&
-                    !hasPendingIntervention
+                    podReady && !isConversationActive && !hasPendingIntervention
                   }
                   previewDevActionLocked={previewDevActionLocked}
                 />
@@ -2054,8 +2075,7 @@ const AppDevPro: React.FC = () => {
             <div className={cx(styles['right-panel-content'])}>
               <div
                 className={cx(styles['workspace-pane'], {
-                  [styles['workspace-pane-hidden']]:
-                    workspaceView !== 'files',
+                  [styles['workspace-pane-hidden']]: workspaceView !== 'files',
                 })}
               >
                 <ConversationAgentFilePreview
@@ -2155,6 +2175,7 @@ const AppDevPro: React.FC = () => {
         spaceId={spaceId}
         onConfirmUpdate={setUserAppInfo}
         onPublish={handleOpenPublish}
+        onOpenMarketPublish={() => setOpenPublishModal(true)}
         publishing={publishFlow.publishing}
         remotePublishing={showRemotePublishing}
         onCancelRemotePublish={handleCancelRemotePublish}
@@ -2308,11 +2329,9 @@ const AppDevPro: React.FC = () => {
         errorMessage={publishFlow.errorMessage}
         failedStage={publishFlow.failedStage}
         cancelLoading={publishFlow.cancelLoading}
-        onCancelTask={publishFlow.cancelTask}
-        onClose={publishFlow.closeModal}
-        showReopenPublish={
-          publishFlow.phase === 'applying' && !openPublishModal
-        }
+        onCancelTask={handleCancelDeployTask}
+        onClose={handleCloseDeployProgress}
+        showReopenPublish={publishFlow.phase === 'applying'}
         onReopenPublish={() => setOpenPublishModal(true)}
       />
     </div>

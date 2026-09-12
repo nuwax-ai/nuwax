@@ -1,0 +1,15 @@
+// 统一专家卡弹窗：宽度随内容自适应(fit-content)；内容区去内边距由卡片
+// 自带分区，圆角 16px，视口内收窄防溢出（双写提权压过 antd Modal
+// 默认 content 样式，自 CapabilityModal 迁移）
+.expert-summon-modal.expert-summon-modal {
+  max-width: calc(100vw - 24px);
+  padding-bottom: 0;
+
+  :global(.ant-modal-content) {
+    padding: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+  }
+}

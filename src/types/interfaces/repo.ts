@@ -50,6 +50,38 @@ export interface RepoPageTreeNode {
   children?: RepoPageTreeNode[];
 }
 
+/** 门户最近访问页面条目（GET /api/repo/pages/recently-accessed 响应元素） */
+export interface RepoPortalPageInfo {
+  /** 页面主键 */
+  id: number;
+  /** 对外短链标识（会话 selectedDocs 寻址用） */
+  slugId?: string;
+  /** 页面标题 */
+  title?: string;
+  /** 页面类型 */
+  pageType?: string;
+  /** 源文件扩展名（推导资料格式用，如 md / pdf） */
+  sourceExt?: string;
+  /** 所在空间 ID */
+  spaceId?: number;
+  /** 所属人 ID */
+  ownerId?: number;
+  /** 所属人名称 */
+  ownerName?: string;
+  /** 当前用户是否创建人 */
+  creator?: boolean;
+  /** 位置类型 */
+  locationType?: string;
+  /** 所在空间名称（位置列展示） */
+  spaceName?: string;
+  /** 最近访问/编辑时间（卡片相对时间展示） */
+  time?: string;
+  /** 内容大小 */
+  contentSize?: number;
+  /** 附件大小 */
+  attachmentSize?: number;
+}
+
 /** 会话选中的资料库文档（selectedDocs 元素，传给 /api/agent/conversation/chat） */
 export interface SelectedDocInfo {
   /** 选择的资料库文档 ID（页面短链标识） */
