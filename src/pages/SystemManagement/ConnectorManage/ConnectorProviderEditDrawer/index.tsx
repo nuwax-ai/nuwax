@@ -4,6 +4,7 @@ import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import ConnectorAuthConfigSection, {
   type ConnectorProviderSubmitValues,
   type InjectionLocation,
+  isOauthLikeAuthType,
   toConnectorOauthConfigParams,
   toConnectorProviderPayload,
 } from '@/pages/SystemManagement/ConnectorManage/components/ConnectorAuthConfigSection';
@@ -155,9 +156,10 @@ const toFormValues = (
       : [{ field: '', location: 'header', targetName: '' }];
   }
 
-  // OAuth 2.0：模式回填顶层 oauthAppMode；App 配置回填非密文项
-  // （clientSecret 加密落库不回显；platform 的 App 配置若后端未随详情返回则留空）
-  if (authType === 'oauth2') {
+  // OAuth 2.0 同族（含扫描授权 oauth2_device）：模式回填顶层 oauthAppMode；
+  // App 配置回填非密文项（clientSecret 加密落库不回显；platform 的 App
+  // 配置若后端未随详情返回则留空）
+  if (isOauthLikeAuthType(authType)) {
     values.oauthAppMode = source?.oauthAppMode === 'byo' ? 'byo' : 'platform';
     values.oauthClientId = pickString(authConfig, ['clientId']);
     values.oauthAuthUrl = pickString(authConfig, ['authUrl']);
@@ -241,11 +243,12 @@ const ConnectorProviderEditDrawer: React.FC<
     // service 创建后不可改，提交值以列表行/详情的 service 为准
     const payload = toConnectorProviderPayload({ ...values, service });
     /**
-     * App 配置保存时机：认证方式为 oauth2 即保存（管理侧 / 空间侧一致，
-     * 与新增连接器一致）—— clientId / 授权端点 / 令牌端点 / scopes 的修改
-     * 不能因未重填 CLIENT SECRET 而丢失（secret 留空时后端保持已存密钥）
+     * App 配置保存时机：认证方式为 oauth2 同族（含扫描授权 oauth2_device）
+     * 即保存（管理侧 / 空间侧一致，与新增连接器一致）—— clientId / 授权端点 /
+     * 令牌端点 / scopes 的修改不能因未重填 CLIENT SECRET 而丢失
+     * （secret 留空时后端保持已存密钥）
      */
-    const shouldSaveOauthConfig = values.authType === 'oauth2';
+    const shouldSaveOauthConfig = isOauthLikeAuthType(values.authType);
 
     try {
       setSubmitting(true);
@@ -361,9 +364,10 @@ const ConnectorProviderEditDrawer: React.FC<
       } catch {
         // 详情拉取失败时继续沿用列表行回填值
       }
-      // provider.authType = oauth2：再拉平台 App 配置回填认证配置表单
+      // provider.authType 为 oauth2 同族（含扫描授权 oauth2_device）：
+      // 再拉平台 App 配置回填认证配置表单
       // （放在详情回填之后，避免 setFieldsValue 相互覆盖）
-      if (applied.authType === 'oauth2') {
+      if (isOauthLikeAuthType(applied.authType)) {
         await applyOauthConfig(record.service);
       }
     })();

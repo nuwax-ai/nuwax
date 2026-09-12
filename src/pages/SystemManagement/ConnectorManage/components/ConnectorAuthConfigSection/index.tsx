@@ -27,8 +27,10 @@ import styles from './index.less';
  * - api_key：凭证字段名 + 注入位置（header 时含请求头名称）+ 值前缀
  * - custom：凭证字段 + 注入规则两组动态行（行可增删；凭证字段
  *   至少一行填了字段名，提交时列表级校验拦截）
- * - oauth2：OAUTH APP 模式二选一；platform 展示平台 App 配置（Client ID /
- *   Secret / 授权端点 / 令牌端点必填，scopes / 回调地址），byo 仅提示
+ * - oauth2 / oauth2_device（扫描授权（设备码））：表单结构一致——
+ *   OAUTH APP 模式二选一；platform 展示平台 App 配置（Client ID /
+ *   Secret / 授权端点 / 令牌端点必填，scopes / 回调地址），byo 仅提示；
+ *   区别仅 platform 模式的 placeholder（device_code 以飞书设备码流程为例）
  *
  * 表单字段直接挂在所属抽屉的 form 上（name 与两处抽屉的表单值类型
  * ConnectorAuthFormValues 对齐），本组件不维护自身状态。
@@ -128,6 +130,31 @@ const OAUTH_APP_MODE_OPTIONS = [
   },
 ] as const;
 
+/**
+ * oauth2 同族认证方式（oauth2 / oauth2_device 扫描授权（设备码））：
+ * 表单结构、提交口径（顶层 oauthAppMode + 不传 authConfig、authType 原值
+ * oauth2_device 提交）、platform 模式平台 App 配置接口链路完全共用，
+ * 仅 platform 模式 placeholder 不同
+ */
+export const isOauthLikeAuthType = (authType?: string): boolean =>
+  authType === 'oauth2' || authType === 'oauth2_device';
+
+/** oauth2 - platform 模式 App 配置 placeholder 集 */
+const OAUTH_PLATFORM_PLACEHOLDERS = {
+  clientId: '在 IdP 注册的 Client ID',
+  authUrl: 'https://idp.example.com/oauth',
+  tokenUrl: 'https://idp.example.com/oauth',
+  scopes: '如 read:user repo',
+};
+
+/** 扫描授权（设备码）- platform 模式 placeholder 集（以飞书设备码流程为例） */
+const OAUTH_DEVICE_PLACEHOLDERS = {
+  clientId: '飞书开放平台的 App ID，如 cli_xxx',
+  authUrl: 'https://accounts.feishu.cn/oauth/v1/device_authorization',
+  tokenUrl: 'https://open.feishu.cn/open-apis/authen/v2/oauth/token',
+  scopes: '如 offline_access contact:user.base:readonly',
+};
+
 /** OAuth 2.0 固定回调地址（展示用，请到 IdP 登记） */
 const OAUTH_CALLBACK_URL =
   'https://testagent.xspaceagi.com/api/connector/oauth/callback';
@@ -137,8 +164,8 @@ const OAUTH_CALLBACK_URL =
  * - no_auth / bearer：固定约定，无配置项，传空对象
  * - api_key：keyName + injectTo（header 时含 headerName）+ prefix（没填不传）
  * - custom：fields 凭证字段 + inject 注入规则两组动态行（完全没填的行不提交）
- * - oauth2：不走本函数 —— 提交接口不传 authConfig，App 模式提交为顶层
- *   oauthAppMode（byo / platform）；platform 的 App 配置另调
+ * - oauth2 / oauth2_device：不走本函数 —— 提交接口不传 authConfig，App 模式
+ *   提交为顶层 oauthAppMode（byo / platform）；platform 的 App 配置另调
  *   POST /api/system/connector/oauth-config
  */
 const buildAuthConfig = (
@@ -194,7 +221,7 @@ const buildAuthConfig = (
 export const toConnectorProviderPayload = (
   values: ConnectorProviderSubmitValues,
 ): CreateConnectorProviderParams => {
-  const isOauth2 = values.authType === 'oauth2';
+  const isOauth2 = isOauthLikeAuthType(values.authType);
   return {
     service: values.service.trim(),
     displayName: values.displayName?.trim() ?? '',
@@ -252,6 +279,14 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
     | InjectionLocation
     | undefined;
   const oauthAppMode = Form.useWatch('oauthAppMode', form);
+  /**
+   * platform 模式 App 配置 placeholder：oauth2 通用 IdP 口径，
+   * 扫描授权（设备码）按飞书设备码流程示例
+   */
+  const platformPlaceholders =
+    authType === 'oauth2_device'
+      ? OAUTH_DEVICE_PLACEHOLDERS
+      : OAUTH_PLATFORM_PLACEHOLDERS;
 
   return (
     <div className={styles.authSection}>
@@ -399,7 +434,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
             header:名称 或 query:名称）。
           </div>
         </>
-      ) : authType === 'oauth2' ? (
+      ) : isOauthLikeAuthType(authType) ? (
         <>
           <Form.Item name="oauthAppMode" label="OAUTH APP 模式（二选一）">
             <Select options={[...OAUTH_APP_MODE_OPTIONS]} />
@@ -421,7 +456,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                     rules={[{ required: true, message: '请输入 Client ID' }]}
                   >
                     <Input
-                      placeholder="在 IdP 注册的 Client ID"
+                      placeholder={platformPlaceholders.clientId}
                       maxLength={100}
                       showCount
                       allowClear
@@ -459,7 +494,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                     rules={[{ required: true, message: '请输入授权端点' }]}
                   >
                     <Input
-                      placeholder="https://idp.example.com/oauth"
+                      placeholder={platformPlaceholders.authUrl}
                       maxLength={100}
                       showCount
                       allowClear
@@ -473,7 +508,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                     rules={[{ required: true, message: '请输入令牌端点' }]}
                   >
                     <Input
-                      placeholder="https://idp.example.com/oauth"
+                      placeholder={platformPlaceholders.tokenUrl}
                       maxLength={100}
                       showCount
                       allowClear
@@ -486,7 +521,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                 label="SCOPES（空格或逗号分隔，可选）"
               >
                 <Input
-                  placeholder="如 read:user repo"
+                  placeholder={platformPlaceholders.scopes}
                   maxLength={100}
                   showCount
                   allowClear

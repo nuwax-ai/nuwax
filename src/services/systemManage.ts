@@ -18,6 +18,8 @@ import type {
   ConnectorImportDiff,
   ConnectorOauthAuthorizeResult,
   ConnectorOauthConfigInfo,
+  ConnectorOauthDeviceAuthorizeResult,
+  ConnectorOauthDevicePollResult,
   ConnectorProviderDetail,
   ConnectorProviderInfo,
   ConnectorProviderListParams,
@@ -627,6 +629,47 @@ export async function apiConnectorOauthAuthorize(params: {
 }
 
 /**
+ * 发起设备码授权（GET /api/connector/oauth/device/authorize?service=&spaceId=）
+ *
+ * - 扫描授权（设备码，认证方式 oauth2_device）的「去连接」按钮调用，
+ *   spaceId 语义与 /api/connector/oauth/authorize 一致：空间侧传当前空间，
+ *   管理侧不传（后端按管理员上下文处理）
+ * - 返回轮询凭证 state、二维码内容、核对码与有效期 expiresIn；
+ *   前端弹窗展示二维码并按 expiresIn 倒计时，倒计时结束或点
+ *   「重新获取二维码」重新调本接口（旧 state 作废）
+ */
+export async function apiConnectorOauthDeviceAuthorize(params: {
+  service: string;
+  spaceId?: number | string;
+}): Promise<RequestResponse<ConnectorOauthDeviceAuthorizeResult>> {
+  const { service, spaceId } = params;
+  return request('/api/connector/oauth/device/authorize', {
+    method: 'GET',
+    params: {
+      service,
+      spaceId: Number.isFinite(Number(spaceId)) ? Number(spaceId) : undefined,
+    },
+  });
+}
+
+/**
+ * 轮询设备码授权结果（POST /api/connector/oauth/device/poll）
+ *
+ * - body 原样回传 authorize 返回的 state 与轮询间隔 interval（秒）
+ * - 响应 data.status：authorized / already_completed 表示连接成功，
+ *   其余（如 pending）视为待授权，前端按 interval 继续轮询
+ */
+export async function apiConnectorOauthDevicePoll(data: {
+  state: string;
+  interval: number;
+}): Promise<RequestResponse<ConnectorOauthDevicePollResult>> {
+  return request('/api/connector/oauth/device/poll', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
  * 建立连接（POST /api/connector/connections/api-key）
  *
  * - 自定义 / API Key / Bearer 认证统一走该接口：凭证按
@@ -681,6 +724,26 @@ export async function apiConnectorConnectionDelete(
 ): Promise<RequestResponse<null>> {
   return request(`/api/connector/connections/${id}`, {
     method: 'DELETE',
+  });
+}
+
+/**
+ * 切换连接器连接的启用状态（POST /api/connector/connections/{连接器id}/status?enabled=）
+ *
+ * - 连接器 id 为提供方主键（GET /api/connector/providers 列表响应的 id，
+ *   非连接 id——连接 id 仅用于 DELETE 断开寻址）
+ * - enabled 为目标状态：true 开启 / false 关闭
+ * - 成功后由调用方就地更新卡片 connectionEnabled 驱动开关回弹
+ *
+ * 用于专家·技能·连接器页已连接卡片的右上角启用开关。
+ */
+export async function apiConnectorConnectionToggleStatus(
+  connectorId: number,
+  enabled: boolean,
+): Promise<RequestResponse<null>> {
+  return request(`/api/connector/connections/${connectorId}/status`, {
+    method: 'POST',
+    params: { enabled: String(enabled) },
   });
 }
 

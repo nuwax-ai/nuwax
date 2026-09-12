@@ -6,12 +6,6 @@
   gap: 16px;
 }
 
-.overall {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .phaseText {
   display: flex;
   align-items: center;
@@ -35,7 +29,51 @@
   gap: 8px;
 }
 
+.reopenPublish {
+  align-self: flex-start;
+}
+
+.accessBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: @colorFillTertiary;
+  border-radius: @borderRadius;
+}
+
+.accessHint {
+  font-size: 13px;
+  line-height: 20px;
+  color: @colorTextSecondary;
+}
+
+.accessRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.accessUrl {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: @colorPrimary;
+  font-size: 13px;
+  line-height: 22px;
+}
+
+.accessCopy {
+  flex-shrink: 0;
+}
+
 .stepLogsTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   font-weight: 500;
   line-height: 20px;
@@ -99,11 +137,4 @@
   line-height: 18px;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.emptyLogs {
-  padding: 16px 0;
-  color: @colorTextTertiary;
-  font-size: 13px;
-  text-align: center;
 }

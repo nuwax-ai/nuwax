@@ -220,6 +220,20 @@ export async function apiUserAppTasksActive(
   });
 }
 
+/** 版本是否可生产部署（releaseId 为空查最新版本就绪状态；前端轮询至 true 即可调 prod-start） */
+export async function apiUserAppProdDeployable(
+  data: UserAppStartDevParams,
+): Promise<RequestResponse<boolean>> {
+  const { appId, releaseId } = data;
+  return request('/api/userapp/prod/deployable', {
+    method: 'GET',
+    params: {
+      appId,
+      releaseId,
+    },
+  });
+}
+
 // ================================ 应用预览代理地址 ================================
 
 /**

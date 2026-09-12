@@ -181,8 +181,9 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   const categories = useCapabilityCategories(resourceType, source);
 
   /**
-   * 团队空间维度：分类 pill 即空间选择——专家维度首位为"全部"（经 spaceIds
-   * 聚合全部空间的已发布智能体），其余类型选中具体空间查该空间（个人空间优先）
+   * 团队空间维度：分类 pill 即空间选择——专家/技能维度首位为"全部"（经
+   * spaceIds 聚合全部空间的已发布条目）、连接器维度首位同为"全部"（经
+   * scope=space 聚合），其余类型选中具体空间查该空间（个人空间优先）
    */
   const defaultSpaceId = useMemo(() => {
     const first = categories.find((item) => item.key);
@@ -213,8 +214,13 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
 
   const spaceId = useMemo(() => {
     if (source !== 'team') return undefined;
-    // 专家/技能维度"全部"页签不回落单空间（由 spaceIds 聚合）；具体空间照常取分类
-    if (resourceType === 'expert' || resourceType === 'skill') {
+    // 专家/技能/连接器维度"全部"页签不回落单空间（专家/技能由 spaceIds
+    // 聚合、连接器由 scope=space 聚合）；具体空间照常取分类
+    if (
+      resourceType === 'expert' ||
+      resourceType === 'skill' ||
+      resourceType === 'connector'
+    ) {
       return category ? Number(category) : undefined;
     }
     return Number(category) || defaultSpaceId;

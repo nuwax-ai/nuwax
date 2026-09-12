@@ -3,8 +3,9 @@
  * @description
  * - 系统广场维度：GET /api/published/category/list，按能力类型匹配根节点
  *   （Agent/Skill/Plugin/Knowledge），取 children 作为二级分类，首位固定"全部"；
- * - 团队空间维度：GET /api/space/list，首位固定"全部" + 空间列表（个人空间优先）。
- *   "全部"暂为占位：等后端聚合参数，数据先回落默认空间（由上层换算）；
+ * - 团队空间维度：GET /api/space/list，专家/技能/连接器首位固定"全部" +
+ *   空间列表（个人空间优先）；专家/技能"全部"经 spaceIds 聚合、连接器
+ *   "全部"经 scope=space 聚合，资料库仅空间列表；
  * - 接口未就绪/失败时降级：系统广场仅"全部"、团队空间为空列表（由上层保持加载态）。
  */
 
@@ -85,13 +86,16 @@ const useCapabilityCategories = (
         }
         const list = (res?.data as SpaceInfo[] | undefined) || [];
         // 个人空间排最前（type=Personal 判定）；专家/技能维度首位另加"全部"
-        // 页签（上层经 spaceIds 聚合全部空间的已发布条目）
+        // 页签（上层经 spaceIds 聚合全部空间的已发布条目）；连接器维度首位
+        // 同加"全部"（经 scope=space 聚合全部空间的连接器）
         const spacePills = sortSpacesPersonalFirst(list).map((item) => ({
           key: String(item.id),
           label: item.name,
         }));
         setCategories(
-          resourceType === 'expert' || resourceType === 'skill'
+          resourceType === 'expert' ||
+            resourceType === 'skill' ||
+            resourceType === 'connector'
             ? [ALL_CATEGORY, ...spacePills]
             : spacePills,
         );
