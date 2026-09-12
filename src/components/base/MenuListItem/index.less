@@ -30,13 +30,21 @@
     background-color: var(--xagi-nav-second-row-active-bg, @colorBgContainer);
     color: @colorPrimary;
     border-radius: var(--xagi-nav-second-row-radius, @borderRadius);
-    box-shadow: @boxShadowTertiary;
+    // 选中阴影走变量：单栏白底列注入 none（原型 tm-item.on 平 pill），
+    // 经典布局不设变量保持白卡阴影
+    box-shadow: var(--xagi-nav-second-row-active-shadow, @boxShadowTertiary);
     // 字重仅选中加粗（2026-09-12 单栏需求）：单栏二级列容器注入 500，
     // 经典布局不设变量回落 normal（与原行为一致）
     font-weight: var(--xagi-nav-second-row-active-font-weight, normal);
 
     .name {
       color: @colorPrimary;
+    }
+
+    // 选中项 hover 保持选中底色不被通用 hover 灰底顶掉（原型 .on 恒持浅紫）；
+    // (0,3,0) 特异性压过下方 .row:hover
+    &:hover {
+      background-color: var(--xagi-nav-second-row-active-bg, @colorBgContainer);
     }
   }
 

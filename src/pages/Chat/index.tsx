@@ -35,6 +35,7 @@ import {
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { MessageSourceType } from '@/types/interfaces/common';
 import type {
+  ConversationInfo,
   RoleInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
@@ -47,7 +48,10 @@ import {
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
-import { apiAgentConversation } from '@/services/agentConfig';
+import {
+  apiAgentConversation,
+  apiAgentConversationList,
+} from '@/services/agentConfig';
 import { fetchContentOutcome } from '@/services/skill';
 import {
   apiGetStaticFileList,
@@ -103,6 +107,13 @@ export interface ChatCoreProps {
    * 变更信号的宿主（如 SkillDetailsConversation）显式传 false 保持原行为。
    */
   fileTreeSelfManaged?: boolean;
+  /**
+   * 是否启用项目型会话直开兜底跳转（默认 false）。
+   * 仅独立 /home/chat 路由页传 true：全栈（UserApp）等项目会话在此页只有
+   * 空壳，按侧栏同款分发规则 replace 到对应 IDE。EditAgent 预览等内嵌宿主
+   * 必须保持 false，避免被踢出宿主页。
+   */
+  enableDevTargetRedirect?: boolean;
   renderTitle?: (props: {
     effectiveAgent: any;
     isAppSidebarMode: boolean;
@@ -123,6 +134,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   showClearContext = true,
   defaultFileTreeVisible = false,
   fileTreeSelfManaged = true,
+  enableDevTargetRedirect = false,
   renderTitle,
   renderHeaderRight,
 }) => {
@@ -441,6 +453,88 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       },
     };
   }, [conversationInfo]);
+
+  // =============== 项目型会话直开兜底跳转 ===============
+  // 全栈（UserApp）/网页应用（PageApp）/智能体开发（Agent）会话各有 IDE 宿主，
+  // 历史记录/收藏夹等旧链直开 /home/chat 时应回到对应 IDE。分两段：
+  // ①详情正常返回时（普通/常规会话都带 devTarget* 字段），非项目型不动，
+  //   项目型按侧栏同款分发规则（NewHomeSection.handleConversationClick）replace；
+  // ②UserApp 会话详情端点直接 404（Conversation not found）——空壳页正是它
+  //   ——详情迟迟不出时用会话列表反查一次（列表端点带 devTarget*），命中即跳。
+  // id 门槛先行：模型加载期可能残留上一会话数据，仅当前路由会话可触发。
+  // 仅独立路由页启用（enableDevTargetRedirect，内嵌宿主默认 false 不受影响）。
+  const redirectDevTargetConversation = useCallback(
+    (
+      info: Pick<
+        ConversationInfo,
+        'id' | 'devTargetType' | 'devTargetId' | 'devSpaceId'
+      >,
+    ) => {
+      const { devTargetType, devTargetId, devSpaceId } = info;
+      if (!devTargetType || !devTargetId || !devSpaceId) return;
+      if (devTargetType === 'Agent') {
+        history.replace(
+          `/space/${devSpaceId}/agent-dev?agentId=${devTargetId}&conversationId=${info.id}`,
+        );
+      } else if (devTargetType === 'PageApp') {
+        history.replace(`/space/${devSpaceId}/app-dev/${devTargetId}`);
+      } else if (devTargetType === 'UserApp') {
+        history.replace(
+          `/space/${devSpaceId}/app-pro?appId=${devTargetId}&conversationId=${info.id}`,
+        );
+      }
+    },
+    [],
+  );
+
+  // ① 详情已出：仅项目型（Agent/PageApp/UserApp）才跳，普通会话不动
+  useEffect(() => {
+    if (!enableDevTargetRedirect) return;
+    const info = conversationInfo;
+    if (!info || info.id !== id) return;
+    redirectDevTargetConversation(info);
+  }, [
+    conversationInfo,
+    id,
+    enableDevTargetRedirect,
+    redirectDevTargetConversation,
+  ]);
+
+  // ② 详情超时兜底：2.5s 仍无本会话数据（UserApp 详情 404 等）→ 列表反查一次。
+  //    正常会话在窗口内加载成功即取消定时器，不产生额外请求
+  const devTargetLookupFiredRef = useRef(false);
+  useEffect(() => {
+    if (!enableDevTargetRedirect) return;
+    devTargetLookupFiredRef.current = false;
+    if (conversationInfo?.id === id) return;
+    const conversationId = id;
+    const timer = setTimeout(() => {
+      if (devTargetLookupFiredRef.current) return;
+      devTargetLookupFiredRef.current = true;
+      void apiAgentConversationList({
+        agentId: null,
+        includeArchived: true,
+        limit: 50,
+      })
+        .then((res) => {
+          const hit = (res?.data || []).find(
+            (item) => item.id === conversationId,
+          );
+          if (hit) {
+            redirectDevTargetConversation(hit);
+          }
+        })
+        .catch(() => {
+          // 反查失败维持现状（与详情 404 的空壳表现一致，不额外打扰）
+        });
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [
+    conversationInfo?.id,
+    id,
+    enableDevTargetRedirect,
+    redirectDevTargetConversation,
+  ]);
 
   // =============== 会话 icon 缺失时，补拉会话 icon ===============
 
@@ -1728,6 +1822,8 @@ const ChatPage: React.FC = () => {
       showSidebar={true}
       showPayment={true}
       enableResizable={true}
+      // 独立路由页启用项目型会话直开兜底跳转（内嵌宿主不传，默认 false）
+      enableDevTargetRedirect
     />
   );
 };

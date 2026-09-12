@@ -20,6 +20,13 @@ vi.mock(
   '@/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel/index.less',
   () => ({ default: new Proxy({}, { get: (_, key) => String(key) }) }),
 );
+// ⋯ 图标已换 SvgIcon（icons-common-more）：其 less 导入在测试环境为 undefined，
+// 按组件边界 mock 成同构 span（aria-label 与真实渲染对齐）
+vi.mock('@/components/base/SvgIcon', () => ({
+  default: ({ name }: { name: string }) => (
+    <span role="img" aria-label={name} />
+  ),
+}));
 
 // useModel 供 useHomePinnedProjectHandoff(pageHandoffContext)消费
 vi.mock('umi', () => ({
@@ -164,11 +171,12 @@ describe('项目侧栏原型交互', () => {
         screen.queryByRole('button', { name: /项目甲/ }),
       ).not.toBeInTheDocument(),
     );
+    // 归档项目不再提供侧栏查看入口（归档查看收敛到历史会话页）
     expect(
-      screen.getByText(
+      screen.queryByText(
         'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedProjects (1)',
       ),
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
   });
 
   it('置顶接口失败时不改变本地状态', async () => {

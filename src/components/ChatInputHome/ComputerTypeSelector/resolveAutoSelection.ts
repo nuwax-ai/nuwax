@@ -1,7 +1,5 @@
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import type { ComputerOption } from './types';
-
-/** 云电脑哨兵值（平台默认沙箱） */
-const CLOUD_SANDBOX_ID = '-1';
 
 /**
  * 自动选择决策结果

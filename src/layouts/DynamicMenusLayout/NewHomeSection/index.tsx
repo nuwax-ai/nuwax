@@ -91,7 +91,6 @@ const NewHomeSection: React.FC<{
   const [loading, setLoading] = useState(
     () => !(componentCache.list && componentCache.list.length > 0),
   );
-  const [showArchived, setShowArchived] = useState(false);
   const [hasMore, setHasMore] = useState(
     componentCache.list ? componentCache.hasMore : true,
   );
@@ -143,7 +142,8 @@ const NewHomeSection: React.FC<{
       try {
         const res = await apiAgentConversationList({
           agentId: null,
-          includeArchived: true,
+          // 归档会话不在侧栏展示（查看入口在历史会话页），无需带回
+          includeArchived: false,
           lastId,
           limit: pageSize,
           topic: topic || undefined,
@@ -200,22 +200,13 @@ const NewHomeSection: React.FC<{
     onChatFinished: handleConversationChatFinished,
   });
 
-  // 任务列表：消费后端 pinned/archived，默认隐藏归档项、置顶项排前；
-  // 「已归档」视图只看归档项
+  // 任务列表：消费后端 pinned，隐藏归档项（侧栏不设归档查看入口）、置顶项排前
   const visibleConversationList = useMemo(() => {
-    const filtered = showArchived
-      ? localList.filter((item) => item.archived === true)
-      : localList.filter((item) => item.archived !== true);
-    if (showArchived) return filtered;
-    return [...filtered].sort(
+    const nonArchived = localList.filter((item) => item.archived !== true);
+    return [...nonArchived].sort(
       (a, b) => Number(b.pinned === true) - Number(a.pinned === true),
     );
-  }, [localList, showArchived]);
-
-  const archivedCount = useMemo(
-    () => localList.filter((item) => item.archived === true).length,
-    [localList],
-  );
+  }, [localList]);
 
   const handleConversationFlagChanged = useCallback(
     (conversationId: number, kind: 'pinned' | 'archived', enabled: boolean) => {
@@ -604,22 +595,6 @@ const NewHomeSection: React.FC<{
         {loading && (
           <div className={cx(styles['load-more'])}>
             <Spin size="small" />
-          </div>
-        )}
-
-        {/* 已归档入口：列表由 includeArchived=true 回读服务端归档状态 */}
-        {!loading && (archivedCount > 0 || showArchived) && (
-          <div
-            className={cx(styles['archived-entry'])}
-            onClick={() => setShowArchived(!showArchived)}
-          >
-            {showArchived
-              ? dict(
-                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations',
-                )
-              : `${dict(
-                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations',
-                )} (${archivedCount})`}
           </div>
         )}
       </div>
