@@ -59,7 +59,8 @@
 
   // 行通用：15px 外边距 + 12px 内容缩进，对齐原型 27px 图标基线
   // 配色/字重按 2026-09-12 原型：默认文字 #4b4a53 / normal；hover 白透底 +
-  // 文字 #1c1b20 + 图标品牌色；选中见 .nav-item-active。单栏已锁定纯色浅底
+  // 文字 #1c1b20（图标保持次级灰，2026-09-12 定调：hover 不高亮图标）；
+  // 选中见 .nav-item-active（图标品牌色）。单栏已锁定纯色浅底
   // 背景，浅色字面量安全
   .action-row,
   .nav-item {
@@ -80,11 +81,6 @@
     &:hover {
       background: rgba(255, 255, 255, 0.72);
       color: #1c1b20;
-
-      .action-icon,
-      .nav-item-icon {
-        color: @colorPrimary;
-      }
     }
   }
 
@@ -99,7 +95,7 @@
     justify-content: center;
     width: 16px;
     flex-shrink: 0;
-    // 原型 --icon：默认次级灰，hover/选中由外层提亮为品牌色
+    // 原型 --icon：默认次级灰，仅选中态提亮为品牌色（hover 不高亮，2026-09-12 定调）
     color: #94939e;
     font-size: 16px;
   }
