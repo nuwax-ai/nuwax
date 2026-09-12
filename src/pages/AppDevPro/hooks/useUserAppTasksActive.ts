@@ -1,11 +1,16 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { useRequest } from 'ahooks';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiUserAppTasksActive } from '../services/appDevPro';
-import type { UserAppTasksActiveResult } from '../type';
+import { UserAppTaskTypeEnum, type UserAppTasksActiveResult } from '../type';
 
 const TASKS_ACTIVE_POLL_INTERVAL = 5000;
+
+/** 是否为开发启动 / 重启任务 */
+const isDevStartTask = (taskType?: string) =>
+  taskType === UserAppTaskTypeEnum.DevStart ||
+  taskType === UserAppTaskTypeEnum.DevRestart;
 
 /**
  * 进入页面后轮询进行中任务与操作可用性。
@@ -27,6 +32,8 @@ export function useUserAppTasksActive(appId?: number) {
   const [polling, setPolling] = useState<boolean>(true);
   /** 手动恢复轮询版本号，确保 useRequest 使用最新 pollingInterval 重新执行 */
   const [refreshVersion, setRefreshVersion] = useState<number>(0);
+  /** 本地已停止：在服务端 active 追上之前保持允许 start */
+  const holdDevIdleRef = useRef(false);
 
   useEffect(() => {
     setDevActionAllowed(true);
@@ -34,6 +41,7 @@ export function useUserAppTasksActive(appId?: number) {
     setReady(false);
     setTasks([]);
     setPolling(true);
+    holdDevIdleRef.current = false;
   }, [appId]);
 
   useRequest(() => apiUserAppTasksActive(appId as number), {
@@ -45,15 +53,28 @@ export function useUserAppTasksActive(appId?: number) {
       if (result?.code === SUCCESS_CODE && result.data) {
         const nextDevAllowed = result.data.devActionAllowed !== false;
         const nextBuildAllowed = result.data.buildAllowed !== false;
-        setDevActionAllowed(nextDevAllowed);
-        setBuildAllowed(nextBuildAllowed);
         const nextTasks = result.data.tasks || [];
-        setTasks(nextTasks);
-        // 两侧都允许且没有进行中任务时才停轮询，避免 build 任务进行中按钮状态卡住
-        if (nextDevAllowed && nextBuildAllowed && nextTasks.length === 0) {
-          setPolling(false);
-        } else {
+        const hasDevStartTask = nextTasks.some((item) =>
+          isDevStartTask(item.taskType),
+        );
+        if (
+          holdDevIdleRef.current &&
+          (!nextDevAllowed || hasDevStartTask)
+        ) {
+          setDevActionAllowed(true);
+          setBuildAllowed(nextBuildAllowed);
+          setTasks(nextTasks.filter((item) => !isDevStartTask(item.taskType)));
           setPolling(true);
+        } else {
+          holdDevIdleRef.current = false;
+          setDevActionAllowed(nextDevAllowed);
+          setBuildAllowed(nextBuildAllowed);
+          setTasks(nextTasks);
+          if (nextDevAllowed && nextBuildAllowed && nextTasks.length === 0) {
+            setPolling(false);
+          } else {
+            setPolling(true);
+          }
         }
       }
       setReady(true);
@@ -72,11 +93,22 @@ export function useUserAppTasksActive(appId?: number) {
     setRefreshVersion((version) => version + 1);
   }, [appId]);
 
+  /**
+   * 停止成功后立刻允许再 start。
+   * 随后 active 若仍报占用，先忽略，直到服务端也变成空闲。
+   */
+  const markDevStartIdle = useCallback(() => {
+    holdDevIdleRef.current = true;
+    setDevActionAllowed(true);
+    setTasks((prev) => prev.filter((item) => !isDevStartTask(item.taskType)));
+  }, []);
+
   return {
     devActionAllowed,
     buildAllowed,
     ready,
     tasks,
     refresh,
+    markDevStartIdle,
   };
 }

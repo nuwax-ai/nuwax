@@ -43,6 +43,8 @@ export interface UseUserAppRuntimeOptions {
   userAppInfo?: UserAppInfo | null;
   /** 启动或重启成功后刷新预览 */
   onReady?: () => void;
+  /** 停止成功，立刻切到「服务已停止」 */
+  onStopped?: () => void;
 }
 
 const getFailedMessage = (action: UserAppRuntimeAction): string => {
@@ -62,10 +64,13 @@ const getFailedMessage = (action: UserAppRuntimeAction): string => {
  * @param options.env 当前环境
  * @param options.userAppInfo 应用详情
  * @param options.onReady 启动完成回调
+ * @param options.onStopped 停止成功回调
  * @returns 运行时状态与操作
  */
 export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
-  const { appId, env, userAppInfo, onReady } = options;
+  const { appId, env, userAppInfo, onReady, onStopped } = options;
+  const onStoppedRef = useRef(onStopped);
+  onStoppedRef.current = onStopped;
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
@@ -416,8 +421,10 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         }
       }
       setEnvRunning(false);
+      phaseRef.current = 'idle';
       setPhase('idle');
       resetTaskState();
+      onStoppedRef.current?.();
       message.success(dict('PC.Pages.AppDevPro.stopSuccess'));
     } catch (error) {
       const text =

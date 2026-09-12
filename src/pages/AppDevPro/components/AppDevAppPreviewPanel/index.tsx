@@ -49,6 +49,12 @@ export interface AppDevAppPreviewPanelProps {
   onStart?: () => void;
   /** 开发环境进行中任务锁定启动 / 重启 */
   devActionLocked?: boolean;
+  /**
+   * 是否允许展示「服务已停止」。
+   * 进页未决定 start/attach 前为 false，避免刷新先闪停止再自动 start。
+   * 用户点停止后为 true。
+   */
+  allowStoppedHero?: boolean;
   /** 线上环境有预览地址时可直接展示 iframe，无需先启动服务 */
   directPreview?: boolean;
 }
@@ -224,6 +230,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   onRetryStart,
   onStart,
   devActionLocked = false,
+  allowStoppedHero = false,
   directPreview = false,
 }) => {
   const logs = useMemo(() => {
@@ -371,6 +378,18 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
             description={dict('PC.Pages.AppDevPro.appPreviewEmpty')}
           />
         </div>
+      </div>
+    );
+  }
+
+  if (!allowStoppedHero) {
+    return (
+      <div className={cx(styles.container, styles.stage)}>
+        <PreviewHero
+          spinning
+          title={dict('PC.Pages.AppDevPro.previewPreparing')}
+          hint={dict('PC.Pages.AppDevPro.previewPreparingHint')}
+        />
       </div>
     );
   }

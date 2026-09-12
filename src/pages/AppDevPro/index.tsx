@@ -642,6 +642,7 @@ const AppDevPro: React.FC = () => {
     ready: tasksActiveReady,
     tasks: activeTasks,
     refresh: refreshTasksActive,
+    markDevStartIdle,
   } = useUserAppTasksActive(appId);
 
   /** 查询应用绑定的域名列表 */
@@ -670,6 +671,18 @@ const AppDevPro: React.FC = () => {
     },
   });
 
+  /** 用户点停止后不再自动 start；刷新后为 false */
+  const previewUserStoppedRef = useRef(false);
+  const [previewUserStopped, setPreviewUserStopped] = useState(false);
+  /** 进页已执行 start 或 attach，未完成前不画「服务已停止」 */
+  const [previewEnterSettled, setPreviewEnterSettled] = useState(false);
+
+  useEffect(() => {
+    previewUserStoppedRef.current = false;
+    setPreviewUserStopped(false);
+    setPreviewEnterSettled(false);
+  }, [appId]);
+
   /** 应用预览：按环境启动 / 重启 / 停止，启动过程走任务 SSE */
   const previewRuntime = useUserAppRuntime({
     appId,
@@ -678,6 +691,11 @@ const AppDevPro: React.FC = () => {
     onReady: () => {
       setPreviewIframeUrl(appPreviewUrlRef.current);
       setPreviewRefreshKey((prev) => prev + 1);
+    },
+    onStopped: () => {
+      previewUserStoppedRef.current = true;
+      setPreviewUserStopped(true);
+      markDevStartIdle();
     },
   });
   const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
@@ -1374,12 +1392,17 @@ const AppDevPro: React.FC = () => {
     if (!tasksActiveReady) {
       return;
     }
+    // 用户刚停止：只展示停止态，不自动 start / attach
+    if (previewUserStoppedRef.current) {
+      return;
+    }
     // 已有进行中任务：接入其进度流，不再新建 start
     if (!devActionAllowed) {
       const activeTask = pickActiveUserAppTask(activeTasks);
       if (activeTask) {
         void attachExistingTaskRef.current(activeTask);
       }
+      setPreviewEnterSettled(true);
       return;
     }
     // 可以 start，但文件树还没数据时不启动（等文件列表回来后再走本 effect）
@@ -1391,10 +1414,12 @@ const AppDevPro: React.FC = () => {
       restartPreviewAfterConversationRef.current = false;
       setPreviewIframeUrl(appPreviewUrlRef.current);
       void restartPreviewRuntimeRef.current();
+      setPreviewEnterSettled(true);
       return;
     }
     // 尚未运行则启动；已运行则 startIfNeeded 内部会跳过
     startPreviewIfNeededRef.current();
+    setPreviewEnterSettled(true);
   }, [
     appId,
     conversationReady,
@@ -1654,6 +1679,8 @@ const AppDevPro: React.FC = () => {
 
   /** 启动预览服务；回到当前环境预览根地址，不沿用地址栏手动跳转 */
   const handleStartPreviewRuntime = useCallback(() => {
+    previewUserStoppedRef.current = false;
+    setPreviewUserStopped(false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
     void previewRuntime.start();
   }, [previewRuntime]);
@@ -1833,6 +1860,7 @@ const AppDevPro: React.FC = () => {
         onRetryStart={handleRestartPreviewRuntime}
         onStart={handleStartPreviewRuntime}
         devActionLocked={previewDevActionLocked}
+        allowStoppedHero={previewUserStopped || previewEnterSettled}
         directPreview={
           dbEnv === UserAppDbEnvEnum.Prod && !!activePreviewUrl
         }
@@ -1855,6 +1883,8 @@ const AppDevPro: React.FC = () => {
       previewRuntime.running,
       previewRuntime.services,
       dbEnv,
+      previewEnterSettled,
+      previewUserStopped,
     ],
   );
 
