@@ -179,7 +179,8 @@
     position: absolute;
     top: 3px;
     bottom: 3px;
-    left: 0;
+    // 对齐左上 14px 图标列的宽度中心（行左起 7px）：组体已左进 12px，故 -5.5px
+    left: -5.5px;
     width: 1px;
     background: var(--v2-color-border, rgba(5, 5, 5, 8%));
   }
@@ -337,7 +338,7 @@ a.tool-detail-resource {
 
 .tool-detail-text {
   min-width: 0;
-  max-height: 80px;
+  max-height: 200px;
   margin: 0;
   padding: 7px 9px;
   overflow: auto;
@@ -407,6 +408,8 @@ a.tool-detail-resource {
   border-top: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
 
   pre {
+    // 与终端入/出参（.tool-detail-text）同一限高，diff 过长时块内自滚，不撑满整个详情区
+    max-height: 200px;
     margin: 0;
     padding: 5px 8px;
     overflow: auto;
