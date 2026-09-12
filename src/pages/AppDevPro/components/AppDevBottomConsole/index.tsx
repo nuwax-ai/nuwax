@@ -107,9 +107,18 @@ export interface AppDevBottomConsoleProps {
    * - running：进页已启动成功，打开开发终端只保活并连接，不再 ensure
    * - starting：进页正在启动，打开开发终端等待页面结果
    * - error：进页启动失败，打开开发终端再 ensure
-   * 线上终端始终由本组件 ensure。
+   * 线上终端由页面 ensure 时传入，复用页面启动结果。
    */
   externalContainerStatus?: ConsoleExternalContainerStatus;
+  /**
+   * 页面层线上环境容器状态。
+   * 传入后打开线上终端优先复用页面 ensure，避免折叠时预连、展开时再等页面结果。
+   */
+  prodExternalContainerStatus?: ConsoleExternalContainerStatus;
+  /** 当前可见终端环境变化（折叠或日志 Tab 时为 null） */
+  onActiveTerminalEnvChange?: (env: UserAppDbEnvEnum | null) => void;
+  /** 线上环境容器失败后，由页面强制重试 ensure */
+  onRetryProdContainer?: () => void;
   /**
    * 容器启动成功后是否开启保活轮询 @default true
    * 网页应用开发只需要确保/重启服务，不需要轮询保活接口。
@@ -167,6 +176,9 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
   conversationId,
   appStage,
   externalContainerStatus,
+  prodExternalContainerStatus,
+  onActiveTerminalEnvChange,
+  onRetryProdContainer,
   enableKeepalivePolling = true,
   wsSubprotocols,
   wireProtocol,
@@ -396,6 +408,8 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
   /** 用 ref 持有页面层容器状态，避免 attach 闭包读到过期值 */
   const externalContainerStatusRef = useRef(externalContainerStatus);
   externalContainerStatusRef.current = externalContainerStatus;
+  const prodExternalContainerStatusRef = useRef(prodExternalContainerStatus);
+  prodExternalContainerStatusRef.current = prodExternalContainerStatus;
 
   /**
    * 打开终端时接入容器：
@@ -413,11 +427,11 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
       return;
     }
 
-    // 进页预启动只覆盖开发环境；线上终端始终由本组件 ensure
+    // 开发环境复用进页预启动；线上环境复用页面 ensure（未传则由终端自己 ensure）
     const external =
-      activeEnsureStageRef.current === UserAppDbEnvEnum.Dev
-        ? externalContainerStatusRef.current
-        : undefined;
+      activeEnsureStageRef.current === UserAppDbEnvEnum.Prod
+        ? prodExternalContainerStatusRef.current
+        : externalContainerStatusRef.current;
     const status = containerStatusRef.current;
 
     if (external === 'running') {
@@ -437,7 +451,15 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
       return;
     }
 
-    // 页面未接管或启动失败：running 说明终端侧已经拉起过，不再重复 ensure
+    // 页面 ensure 已失败：只展示重试，不再自动连打
+    if (external === 'error') {
+      if (status !== 'error') {
+        setContainerStatus('error');
+      }
+      return;
+    }
+
+    // 页面未接管：running 说明终端侧已经拉起过，不再重复 ensure
     if (status === 'running') {
       return;
     }
@@ -463,7 +485,12 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
       return;
     }
     attachOrStartContainer();
-  }, [attachOrStartContainer, conversationId, externalContainerStatus]);
+  }, [
+    attachOrStartContainer,
+    conversationId,
+    externalContainerStatus,
+    prodExternalContainerStatus,
+  ]);
 
   /**
    * 切换开发/线上终端后，当前容器状态作废。
@@ -733,6 +760,22 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
     onActiveTabChange?.(toTabGroup(activeTab));
   }, [activeTab, onActiveTabChange]);
 
+  const onActiveTerminalEnvChangeRef = useRef(onActiveTerminalEnvChange);
+  onActiveTerminalEnvChangeRef.current = onActiveTerminalEnvChange;
+
+  /** 展开且位于终端 Tab 时，通知页面按环境 ensure 容器（不跟回调引用走，避免父级重渲染连打） */
+  useEffect(() => {
+    if (layoutMode === 'collapsed' || activeTab === 'logs') {
+      onActiveTerminalEnvChangeRef.current?.(null);
+      return;
+    }
+    onActiveTerminalEnvChangeRef.current?.(
+      activeTab === 'terminal-prod'
+        ? UserAppDbEnvEnum.Prod
+        : UserAppDbEnvEnum.Dev,
+    );
+  }, [activeTab, layoutMode]);
+
   /** 全屏展开 / 恢复默认高度 */
   const handleToggleExpand = () => {
     setLayoutMode((prev) => (prev === 'expanded' ? 'default' : 'expanded'));
@@ -749,6 +792,9 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
    * 容器已停而前端状态未更新时，必须先拉起服务才能连终端。
    * apiEnsurePod 对已在运行的容器是幂等的，重复调用开销可接受。
    */
+  const onRetryProdContainerRef = useRef(onRetryProdContainer);
+  onRetryProdContainerRef.current = onRetryProdContainer;
+
   const handleReconnectTerminal = useCallback(async () => {
     const targetEnv =
       activeTabRef.current === 'terminal-prod'
@@ -756,6 +802,14 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
         : UserAppDbEnvEnum.Dev;
     const targetWsUrl = getTerminalWsUrl(targetEnv);
     if (!targetWsUrl || isTerminalReconnecting) {
+      return;
+    }
+
+    // 线上环境由页面统一 ensure，避免终端自己再打一轮导致状态来回跳
+    if (targetEnv === UserAppDbEnvEnum.Prod && onRetryProdContainerRef.current) {
+      setShowTerminalReconnect(false);
+      setContainerStatus('starting');
+      onRetryProdContainerRef.current();
       return;
     }
 
