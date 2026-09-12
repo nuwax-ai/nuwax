@@ -1401,6 +1401,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.sourceOfficial": "官方",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.sourceTeam": "團隊",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.empty": "無匹配結果",
+  "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.close": "關閉",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabSession": "會話",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask": "任務",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search": "搜索",

@@ -1401,6 +1401,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.sourceOfficial": "公式",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.sourceTeam": "チーム",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.empty": "該当なし",
+  "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.close": "閉じる",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabSession": "チャット",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask": "タスク",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search": "検索",

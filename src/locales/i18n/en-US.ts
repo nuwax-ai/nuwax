@@ -1544,6 +1544,7 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.sourceOfficial": "Official",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.sourceTeam": "Team",
   "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.empty": "No results",
+  "PC.Layouts.DynamicMenusLayout.SidebarSearchModal.close": "Close",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabSession": "Chats",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask": "Tasks",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search": "Search",
