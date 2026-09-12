@@ -58,10 +58,8 @@
   }
 
   // 行通用：15px 外边距 + 12px 内容缩进，对齐原型 27px 图标基线
-  // 配色/字重按 2026-09-12 原型：默认文字 #4b4a53 / normal；hover 白透底 +
-  // 文字 #1c1b20（图标保持次级灰，2026-09-12 定调：hover 不高亮图标）；
-  // 选中见 .nav-item-active（图标品牌色）。单栏已锁定纯色浅底
-  // 背景，浅色字面量安全
+  // 默认文字 #4b4a53 / normal；图标保持次级灰（2026-09-12 定调：hover 不高亮
+  // 图标）；选中见 .nav-item-active（图标品牌色）
   .action-row,
   .nav-item {
     display: flex;
@@ -79,8 +77,10 @@
     user-select: none;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.72);
-      color: #1c1b20;
+      // 单栏四类行（菜单/项目/项目会话/任务会话）hover 一律同效：与项目行/
+      // 会话行同款灰底（Phase 1 统一交互态）。原型的白透底只适配其灰底画布，
+      // 且与项目/会话行的灰底并存两套皮，2026-09-12 定调统一灰底
+      background-color: @navRowHoverBg;
     }
   }
 
