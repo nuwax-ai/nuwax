@@ -12,12 +12,15 @@ import {
   apiConnectorConnectionDelete,
   apiConnectorConnectionList,
   apiConnectorOauthAuthorize,
+  apiConnectorOauthDeviceAuthorize,
+  apiConnectorOauthDevicePoll,
   apiSystemConnectorActionDelete,
   apiSystemConnectorActionToggleStatus,
   apiSystemConnectorProviderDetail,
 } from '@/services/systemManage';
 import type {
   ConnectorAuthConfigField,
+  ConnectorOauthDeviceAuthorizeResult,
   ConnectorProviderAction,
   ConnectorProviderDetail,
   ConnectorProviderInfo,
@@ -27,7 +30,9 @@ import {
   Drawer,
   Empty,
   message,
+  Modal,
   Popconfirm,
+  QRCode,
   Space,
   Spin,
   Table,
@@ -55,8 +60,10 @@ import styles from './index.less';
  * 抽屉内容：
  *   1. 顶部概览（认证方式 / BASE URL / 通用代理 / 连接状态）：
  *      连接状态取代原抽屉的「归属」展示，免鉴权（no_auth）整项不展示；
- *      未连接时在状态后展示「去连接」（oauth2 →「去授权」，管理侧 /
- *      空间侧均展示，管理侧连接接口不传 spaceId）；已连接时状态后
+ *      未连接时在状态后展示「去连接」（oauth2 →「去授权」，
+ *      oauth2_device →「去连接」弹扫码连接弹窗，其余认证方式 →
+ *      「去连接」凭据抽屉；管理侧 / 空间侧均展示，管理侧连接接口
+ *      不传 spaceId）；已连接时状态后
  *      展示「断开连接」（Popconfirm 二次确认后
  *      DELETE /api/connector/connections/{id}，id 为连接列表接口按
  *      service 匹配出的连接 id）
@@ -73,6 +80,12 @@ import styles from './index.less';
  * 「去授权」（oauth2）：GET /api/connector/oauth/authorize 拿授权地址后
  * window.open 新窗口打开（IdP 授权页带 X-Frame-Options 拒绝 iframe 嵌入），
  * 轮询弹窗 closed 后刷新详情（connected 变 true 按钮自动消失）。
+ *
+ * 「扫码连接」（oauth2_device）：GET /api/connector/oauth/device/authorize
+ * 拿二维码 / 核对码后弹窗展示并按 expiresIn 倒计时；弹窗展开期间轮询
+ * POST /api/connector/oauth/device/poll（body 回传 state + interval），
+ * 响应 status 为 authorized / already_completed 即连接成功自动关弹窗；
+ * 倒计时结束或点「重新获取二维码」重新调 authorize（旧 state 作废）。
  */
 
 /**
@@ -173,6 +186,49 @@ const ConnectorProviderDetailDrawer: React.FC<
   /** 授权弹窗关闭轮询定时器（抽屉关闭 / 组件卸载时清理） */
   const oauthPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ---------------- 扫码连接（设备码 oauth2_device） ----------------
+  /** 扫码连接弹窗开关（authorize 成功拿到二维码后置 true） */
+  const [deviceAuthOpen, setDeviceAuthOpen] = useState<boolean>(false);
+  /** authorize 结果（state / 二维码 / 核对码 / 有效期；重新获取后整体替换） */
+  const [deviceAuth, setDeviceAuth] =
+    useState<ConnectorOauthDeviceAuthorizeResult | null>(null);
+  /** authorize 请求中（「去连接」按钮与「重新获取二维码」loading，兼防重入） */
+  const [deviceAuthLoading, setDeviceAuthLoading] = useState<boolean>(false);
+  /** 二维码剩余有效秒数（每秒递减，到 0 自动重新获取二维码） */
+  const [deviceCountdown, setDeviceCountdown] = useState<number>(0);
+  /**
+   * 扫码连接代数标记：重新获取二维码 / 关闭弹窗时 +1，
+   * 在飞请求的响应凭代数比对自行作废（请求本身无法取消）
+   */
+  const deviceGenRef = useRef<number>(0);
+  /** 授权结果轮询定时器（链式 setTimeout：上一次落地后再排下一次防叠加） */
+  const devicePollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 倒计时定时器（每秒递减，到 0 清除并触发重新获取二维码） */
+  const deviceCountdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
+
+  /** 停止扫码连接轮询与倒计时（关弹窗 / 重新获取二维码 / 抽屉关闭或切换 service） */
+  const stopDeviceTimers = useCallback(() => {
+    deviceGenRef.current += 1;
+    if (devicePollTimerRef.current) {
+      clearTimeout(devicePollTimerRef.current);
+      devicePollTimerRef.current = null;
+    }
+    if (deviceCountdownTimerRef.current) {
+      clearInterval(deviceCountdownTimerRef.current);
+      deviceCountdownTimerRef.current = null;
+    }
+  }, []);
+
+  /** 关闭扫码连接弹窗：停止轮询与倒计时并清空本地状态 */
+  const closeDeviceAuth = useCallback(() => {
+    stopDeviceTimers();
+    setDeviceAuthOpen(false);
+    setDeviceAuth(null);
+    setDeviceCountdown(0);
+  }, [stopDeviceTimers]);
+
   /** 抽屉宽度：内容含工具表格（scroll.x 900），取大屏宽度并限幅 */
   const drawerWidth = useMemo(() => {
     if (typeof window === 'undefined') return 1080;
@@ -265,6 +321,8 @@ const ConnectorProviderDetailDrawer: React.FC<
     if (open && service) {
       setDetail(null);
       setConnectionId(null);
+      // service 切换：旧连接器的扫码连接弹窗作废（轮询 / 倒计时一并停止）
+      closeDeviceAuth();
       fetchDetail();
       return;
     }
@@ -276,23 +334,25 @@ const ConnectorProviderDetailDrawer: React.FC<
       setEditingAction(null);
       setDebugModalOpen(false);
       setDebuggingAction(null);
+      closeDeviceAuth();
       if (oauthPollRef.current) {
         clearInterval(oauthPollRef.current);
         oauthPollRef.current = null;
       }
       oauthWinRef.current = null;
     }
-  }, [open, service, fetchDetail]);
+  }, [open, service, fetchDetail, closeDeviceAuth]);
 
-  // 组件卸载时清理授权弹窗轮询定时器（防止泄漏与卸载后更新 state）
+  // 组件卸载时清理授权弹窗 / 扫码连接的轮询定时器（防止泄漏与卸载后更新 state）
   useEffect(() => {
     return () => {
       if (oauthPollRef.current) {
         clearInterval(oauthPollRef.current);
         oauthPollRef.current = null;
       }
+      stopDeviceTimers();
     };
-  }, []);
+  }, [stopDeviceTimers]);
 
   /**
    * 切换单个工具的启用状态
@@ -488,6 +548,120 @@ const ConnectorProviderDetailDrawer: React.FC<
   }, [service, connectSpaceId, fetchDetail, onConnectionChanged]);
 
   /**
+   * 启动二维码倒计时（每秒递减）：
+   * 到 0 清除定时器并触发重新获取二维码（onEnd）
+   */
+  const startDeviceCountdown = (seconds: number, onEnd: () => void) => {
+    if (deviceCountdownTimerRef.current) {
+      clearInterval(deviceCountdownTimerRef.current);
+      deviceCountdownTimerRef.current = null;
+    }
+    let remain = Math.max(0, Math.floor(seconds));
+    setDeviceCountdown(remain);
+    if (remain <= 0) {
+      onEnd();
+      return;
+    }
+    deviceCountdownTimerRef.current = setInterval(() => {
+      remain -= 1;
+      if (remain <= 0) {
+        setDeviceCountdown(0);
+        if (deviceCountdownTimerRef.current) {
+          clearInterval(deviceCountdownTimerRef.current);
+          deviceCountdownTimerRef.current = null;
+        }
+        onEnd();
+      } else {
+        setDeviceCountdown(remain);
+      }
+    }, 1000);
+  };
+
+  /**
+   * 启动授权结果轮询（弹窗展开后调用）：
+   * POST /api/connector/oauth/device/poll（body 回传 state + interval），
+   * 链式 setTimeout —— 上一次请求落地后再排下一次，响应慢（长轮询）也不叠加；
+   * 响应 data.status 为 authorized / already_completed 即连接成功：
+   * 关弹窗、刷新详情（connected 变 true、按钮消失）并通知列表刷新连接状态；
+   * 其余状态（如 pending）按 interval 秒继续轮询
+   */
+  const startDevicePoll = (stateValue: string, intervalSeconds: number) => {
+    const gen = deviceGenRef.current;
+    const pollOnce = async () => {
+      try {
+        const response = await apiConnectorOauthDevicePoll({
+          state: stateValue,
+          interval: intervalSeconds,
+        });
+        // 已重新获取二维码 / 已关弹窗：丢弃过期的轮询响应
+        if (deviceGenRef.current !== gen) return;
+        const status = response?.data?.status ?? '';
+        if (status === 'authorized' || status === 'already_completed') {
+          closeDeviceAuth();
+          message.success('连接成功');
+          void fetchDetail();
+          onConnectionChanged?.();
+          return;
+        }
+        // 其余状态（待授权）：按间隔继续轮询
+      } catch {
+        // 网络 / 业务异常不中断轮询（授权可能稍后完成，倒计时兜底刷新）
+        if (deviceGenRef.current !== gen) return;
+      }
+      if (deviceGenRef.current !== gen) return;
+      devicePollTimerRef.current = setTimeout(
+        () => void pollOnce(),
+        intervalSeconds * 1000,
+      );
+    };
+    void pollOnce();
+  };
+
+  /**
+   * 发起 / 重新获取扫码连接（认证方式 oauth2_device，「去连接」按钮、
+   * 「重新获取二维码」按钮与倒计时结束共用）：
+   * GET /api/connector/oauth/device/authorize?service=&spaceId= 拿二维码，
+   * 成功后展开弹窗并按响应启动倒计时与授权结果轮询；
+   * 重新获取失败时沿用旧二维码继续轮询（旧轮询在成功替换前不作废）
+   */
+  const fetchDeviceAuthorize = async () => {
+    if (!service) {
+      message.error('连接器 service 缺失，无法发起扫码连接');
+      return;
+    }
+    // 防重入：请求飞行中（含倒计时到 0 自动触发）直接忽略
+    if (deviceAuthLoading) return;
+    try {
+      setDeviceAuthLoading(true);
+      const response = await apiConnectorOauthDeviceAuthorize({
+        service,
+        spaceId: connectSpaceId,
+      });
+      if (response?.code !== SUCCESS_CODE || !response.data?.state) {
+        message.error(response?.message || '获取扫码连接二维码失败');
+        return;
+      }
+      const data = response.data;
+      // 作废旧二维码的轮询与倒计时（gen + 1 后旧轮询链自行失效）
+      stopDeviceTimers();
+      setDeviceAuth(data);
+      setDeviceAuthOpen(true);
+      const intervalSeconds =
+        data.interval && data.interval > 0 ? data.interval : 5;
+      startDeviceCountdown(
+        data.expiresIn && data.expiresIn > 0 ? data.expiresIn : 300,
+        // 倒计时结束：自动重新获取二维码（loading 守卫防重入）
+        () => void fetchDeviceAuthorize(),
+      );
+      startDevicePoll(data.state, intervalSeconds);
+    } catch {
+      // 业务 / 网络错误：全局 errorHandler 已提示，刷新失败沿用旧二维码
+    } finally {
+      setDeviceAuthLoading(false);
+    }
+  };
+
+  /**
    * 「去连接」抽屉的凭证字段定义（优先详情接口）：
    * - 自定义认证：authConfig.fields 数组直接驱动（如 clientId / apiKey）
    * - API Key 认证：authConfig 无 fields，按 keyName 生成单个凭证字段
@@ -543,6 +717,7 @@ const ConnectorProviderDetailDrawer: React.FC<
   /**
    * 概览「连接状态」后的连接按钮（管理侧 / 空间侧均展示）：
    * - oauth2 →「去授权」（抽屉内部打开授权窗口并监听关闭）
+   * - oauth2_device →「去连接」（调设备码 authorize 接口，弹扫码连接弹窗）
    * - api_key/bearer/custom →「去连接」（打开凭据抽屉）
    * - no_auth（免鉴权）→ 连接状态整项不展示，无按钮
    */
@@ -556,6 +731,11 @@ const ConnectorProviderDetailDrawer: React.FC<
   const handleConnectClick = () => {
     if (authTypeValue === 'oauth2') {
       void handleOauthAuthorize();
+      return;
+    }
+    // 扫描授权（设备码）：authorize 拿二维码 → 弹窗展示 + 轮询授权结果
+    if (authTypeValue === 'oauth2_device') {
+      void fetchDeviceAuthorize();
       return;
     }
     // 携带 record/detail/refresh：凭据抽屉用 authConfig.fields 渲染表单，
@@ -709,6 +889,21 @@ const ConnectorProviderDetailDrawer: React.FC<
     },
   ];
 
+  // ---------------- 扫码连接弹窗展示派生值 ----------------
+  /** 二维码内容：qrCode / qrCodeUrl 二者取一（字段名以后端返回为准） */
+  const deviceQrContent = deviceAuth?.qrCode || deviceAuth?.qrCodeUrl || '';
+  /** 二维码是否为可直接展示的图片（data URI / 图片链接），否则按内容编码 */
+  const deviceQrIsImage =
+    /^data:image\//i.test(deviceQrContent) ||
+    /\.(png|jpe?g|svg|webp)([?#]|$)/i.test(deviceQrContent);
+  /** 核对码（候选字段回退，对齐编辑抽屉 pickString 的容错习惯） */
+  const deviceUserCode =
+    deviceAuth?.userCode || deviceAuth?.verificationCode || '';
+  /** 剩余时间 mm:ss（如 8:16） */
+  const deviceCountdownText = `${Math.floor(deviceCountdown / 60)}:${String(
+    deviceCountdown % 60,
+  ).padStart(2, '0')}`;
+
   return (
     <Drawer
       className={styles.drawer}
@@ -789,7 +984,7 @@ const ConnectorProviderDetailDrawer: React.FC<
                             type="primary"
                             size="small"
                             className={styles.goConnectBtn}
-                            loading={oauthOpening}
+                            loading={oauthOpening || deviceAuthLoading}
                             onClick={handleConnectClick}
                           >
                             {connectButtonText}
@@ -873,6 +1068,78 @@ const ConnectorProviderDetailDrawer: React.FC<
           onConnectionChanged?.();
         }}
       />
+
+      {/* 扫码连接（设备码 oauth2_device）弹窗：authorize 拿二维码后展开，
+          展示核对码 + 倒计时；倒计时结束 / 点「重新获取二维码」重新调
+          authorize（旧 state 作废），轮询到 authorized / already_completed
+          即连接成功自动关闭 */}
+      <Modal
+        open={deviceAuthOpen}
+        width={420}
+        centered
+        destroyOnHidden
+        maskClosable={false}
+        keyboard={false}
+        title={<span className={styles.deviceTitle}>扫码连接 • {service}</span>}
+        closeIcon={<span className={styles.deviceCloseText}>关闭</span>}
+        onCancel={closeDeviceAuth}
+        styles={{
+          // 深色标题栏（设计稿）：content 去 padding 并裁圆角，
+          // header / body / footer 各自留白，标题栏才能通栏铺满
+          content: { padding: 0, overflow: 'hidden' },
+          header: {
+            margin: 0,
+            padding: '14px 20px',
+            background: '#1f1f1f',
+          },
+          body: { padding: '24px 20px 4px' },
+          footer: { padding: '12px 20px 20px' },
+        }}
+        footer={
+          <Button
+            block
+            loading={deviceAuthLoading}
+            onClick={() => void fetchDeviceAuthorize()}
+          >
+            重新获取二维码
+          </Button>
+        }
+      >
+        <div className={styles.deviceBody}>
+          <div className={styles.deviceQrWrap}>
+            {deviceAuthLoading ? (
+              <Spin size="large" />
+            ) : !deviceQrContent ? (
+              <span className={styles.deviceQrEmpty}>二维码内容缺失</span>
+            ) : deviceQrIsImage ? (
+              <img
+                src={deviceQrContent}
+                alt="扫码连接二维码"
+                width={240}
+                height={240}
+              />
+            ) : (
+              <QRCode size={240} value={deviceQrContent} />
+            )}
+          </div>
+          <div className={styles.deviceHint}>
+            请用 App 扫描下方二维码，在手机上确认授权
+          </div>
+          <div className={styles.deviceMeta}>
+            {deviceUserCode ? (
+              <>
+                核对码{' '}
+                <span className={styles.deviceCode}>{deviceUserCode}</span>
+                <span className={styles.deviceMetaDivider}>·</span>
+              </>
+            ) : null}
+            剩余{' '}
+            <span className={styles.deviceCountdown}>
+              {deviceCountdownText}
+            </span>
+          </div>
+        </div>
+      </Modal>
     </Drawer>
   );
 };

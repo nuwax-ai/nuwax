@@ -1327,6 +1327,39 @@ export interface ConnectorOauthAuthorizeResult {
 }
 
 /**
+ * 设备码授权发起结果（GET /api/connector/oauth/device/authorize）
+ * 扫描授权（设备码）的「去连接」调用，返回轮询凭证 / 二维码 / 核对码，
+ * 前端弹窗展示并轮询授权结果
+ */
+export interface ConnectorOauthDeviceAuthorizeResult {
+  /** 轮询凭证（poll 接口原样回传；重新获取二维码后旧 state 作废） */
+  state: string;
+  /** 二维码内容（App 扫码打开的完整地址；为 data:image / 图片链接时前端直接展示） */
+  qrCode?: string;
+  /** 二维码图片地址（qrCode 的候选字段，二者取一） */
+  qrCodeUrl?: string;
+  /** 核对码（App 授权页展示、用户与弹窗核对防钓鱼，如 KJHS-ASRA） */
+  userCode?: string;
+  /** 核对码候选字段（字段名以后端返回为准） */
+  verificationCode?: string;
+  /** 二维码有效期（秒），弹窗倒计时展示，到 0 重新获取二维码 */
+  expiresIn?: number;
+  /** 建议轮询间隔（秒） */
+  interval?: number;
+}
+
+/**
+ * 设备码授权轮询结果（POST /api/connector/oauth/device/poll）
+ */
+export interface ConnectorOauthDevicePollResult {
+  /**
+   * 授权状态：authorized = 授权成功连接已建立；already_completed = 此前已完成；
+   * 其余（如 pending）视为待授权，前端按 interval 继续轮询
+   */
+  status?: string;
+}
+
+/**
  * 建立连接入参（POST /api/connector/connections/api-key）
  * 自定义 / API Key / Bearer 认证统一走该接口，凭证键值对放 fields
  */
