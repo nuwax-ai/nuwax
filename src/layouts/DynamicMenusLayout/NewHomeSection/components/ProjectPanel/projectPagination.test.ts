@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  AgentComponentTypeEnum,
-  TaskStatus,
-} from '@/types/enums/agent';
+import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import {
   appendProjectsPage,
+  findProjectIdByConversation,
   hasMoreProjects,
   mergeFlagIds,
   PROJECT_PAGE_SIZE,
@@ -36,7 +34,7 @@ const buildConversation = (
     modified: '2026-09-12 10:30:00',
     agent: { name: '智能体甲' },
     ...overrides,
-  }) as unknown as ConversationInfo;
+  } as unknown as ConversationInfo);
 
 describe('toProjectItem', () => {
   it('映射 tab 记录行字段并透传子项会话', () => {
@@ -80,9 +78,7 @@ describe('toProjectItem', () => {
     );
     const withoutAgent = toProjectItem(
       buildRecord({
-        conversations: [
-          buildConversation({ topic: '', agent: undefined }),
-        ],
+        conversations: [buildConversation({ topic: '', agent: undefined })],
       }),
       '新会话',
     );
@@ -122,9 +118,9 @@ describe('appendProjectsPage', () => {
 
 describe('mergeFlagIds', () => {
   it('并集合并不丢失既有标记', () => {
-    expect(
-      mergeFlagIds(new Set([1, 2]), new Set([2, 3])),
-    ).toEqual(new Set([1, 2, 3]));
+    expect(mergeFlagIds(new Set([1, 2]), new Set([2, 3]))).toEqual(
+      new Set([1, 2, 3]),
+    );
   });
 });
 
@@ -140,5 +136,44 @@ describe('hasMoreProjects / remainingProjects', () => {
     expect(remainingProjects(20, 35)).toBe(15);
     expect(remainingProjects(35, 35)).toBe(0);
     expect(remainingProjects(40, 35)).toBe(0);
+  });
+});
+
+describe('findProjectIdByConversation', () => {
+  const projects = [
+    toProjectItem(
+      buildRecord({
+        projectId: 1,
+        conversations: [buildConversation({ id: 11 })],
+      }),
+      '新会话',
+    ),
+    toProjectItem(
+      buildRecord({
+        projectId: 2,
+        conversations: [
+          buildConversation({ id: 21 }),
+          buildConversation({ id: 22 }),
+        ],
+      }),
+      '新会话',
+    ),
+    toProjectItem(buildRecord({ projectId: 3 }), '新会话'),
+  ];
+
+  it('命中子会话返回所属项目 id（数字 id 与路由字符串比对）', () => {
+    expect(findProjectIdByConversation(projects, '11')).toBe(1);
+    expect(findProjectIdByConversation(projects, '21')).toBe(2);
+    expect(findProjectIdByConversation(projects, '22')).toBe(2);
+  });
+
+  it('未命中（独立任务/无子会话项目）返回 null', () => {
+    expect(findProjectIdByConversation(projects, '99')).toBeNull();
+    expect(findProjectIdByConversation(projects, undefined)).toBeNull();
+    expect(findProjectIdByConversation(projects, '')).toBeNull();
+  });
+
+  it('空项目列表返回 null', () => {
+    expect(findProjectIdByConversation([], '11')).toBeNull();
   });
 });

@@ -96,6 +96,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   renderMessageItem,
   renderEmptyState,
   messageRenderer,
+  onOpenToolResource,
   enableMention = true,
   onFetchMentionFiles,
   placeholder,
@@ -383,6 +384,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
         loadingMore={loadingMore}
         renderMessageItem={renderMessageItem}
         messageRenderer={messageRenderer}
+        onOpenToolResource={onOpenToolResource}
         effectiveRoleInfo={effectiveRoleInfo}
         messageBottomMode={messageBottomMode}
         showDebug={showDebug}

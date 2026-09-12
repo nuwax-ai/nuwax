@@ -15,6 +15,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const handoffMap = vi.hoisted(() => ({} as Record<string, unknown>));
 
 vi.mock('umi', () => ({
+  // Home 消费 effect 依赖 location.key（同路由 push 重新消费），测试固定一个 key
+  useLocation: () => ({ key: 'test-home-key' }),
   useModel: (name: string) => {
     if (name === 'pageHandoffContext') {
       return {

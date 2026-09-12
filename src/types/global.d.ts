@@ -21,15 +21,20 @@ declare namespace Global {
 
 /**
  * nuwaclaw 宿主下发给 nuwax 的命令协议（跨 webview host→guest 通道）。
- * 由 nuwaclaw 工具栏触发，经 webviewPerfBridge 转发，nuwax 侧 nuwaClawHostEvents 响应。
- * 新增命令类型在此扩展 type 联合。
+ * 由 nuwaclaw 工具栏 / 壳层快捷键触发，经 webviewPerfBridge 转发，
+ * nuwax 侧 nuwaClawHostEvents 响应。新增命令类型在此扩展联合成员。
  */
-interface HostCommand {
+type HostCommand =
   /** 收起/展开二级菜单 */
-  type: 'toggle-second-menu';
-  /** true=收起，false=展开 */
-  collapsed: boolean;
-}
+  | {
+      type: 'toggle-second-menu';
+      /** true=收起，false=展开 */
+      collapsed: boolean;
+    }
+  /** 新建任务（壳层接管 ⌘N/Ctrl+N：浏览器保留键页面收不到，壳 before-input-event 拦截后下发） */
+  | {
+      type: 'new-task';
+    };
 
 /**
  * nuwax → nuwaclaw 壳的主题同步协议（guest→host 通道）。

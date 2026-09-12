@@ -179,7 +179,8 @@
     position: absolute;
     top: 3px;
     bottom: 3px;
-    left: 0;
+    // 对齐左上 14px 图标列的宽度中心（行左起 7px）：组体已左进 12px，故 -5.5px
+    left: -5.5px;
     width: 1px;
     background: var(--v2-color-border, rgba(5, 5, 5, 8%));
   }
@@ -211,6 +212,21 @@
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// 折叠行内的文件链接组：徽标 + 可点文件名逐个排列，超宽整组截断
+.node-file-links {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+
+  .tool-file-link {
+    flex-shrink: 0;
+  }
 }
 
 .node-meta {
@@ -324,6 +340,76 @@ a.tool-detail-resource {
   text-underline-offset: 2px;
 }
 
+// ---- V2 工具详情文件路径链接：徽标 + 可点文件名 + 目录弱化 ----
+.tool-file-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  appearance: none;
+  margin: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  border-radius: 3px;
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: 2px;
+  }
+}
+
+// 可点变体（button / 带 handler 的行内 span）：hover 才出现下划线，颜色恒为普通文本色
+.tool-file-link.is-clickable {
+  cursor: pointer;
+
+  &:hover .tool-file-name {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
+.tool-file-badge {
+  flex-shrink: 0;
+  padding: 0 4px;
+  border-radius: 3px;
+  font: 600 10px/16px Menlo, Monaco, Consolas, monospace;
+}
+
+.tool-file-name {
+  flex-shrink: 0;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+}
+
+.tool-file-dir {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 非会话沙箱路径回落：普通文本色原样完整展示（不可点、不高亮）
+.tool-file-plain {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 卡片头部的 .tool-file-header > span 弱化色优先级更高，显式压回普通文本色
+.tool-file-header .tool-file-plain {
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+}
+
 .tool-detail-command {
   display: grid;
   grid-template-columns: 12px minmax(0, 1fr);
@@ -337,7 +423,7 @@ a.tool-detail-resource {
 
 .tool-detail-text {
   min-width: 0;
-  max-height: 80px;
+  max-height: 200px;
   margin: 0;
   padding: 7px 9px;
   overflow: auto;
@@ -407,6 +493,8 @@ a.tool-detail-resource {
   border-top: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
 
   pre {
+    // 与终端入/出参（.tool-detail-text）同一限高，diff 过长时块内自滚，不撑满整个详情区
+    max-height: 200px;
     margin: 0;
     padding: 5px 8px;
     overflow: auto;

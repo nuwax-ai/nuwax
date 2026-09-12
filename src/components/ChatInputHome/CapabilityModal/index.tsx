@@ -18,8 +18,8 @@
  * ```
  */
 
-import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
-import ConnectorDeviceAuthModal from '@/components/business-component/ConnectorDeviceAuthModal';
+import type { ConnectorListSourceType } from '@/components/business-component/ConnectorListView';
+import ConnectorListView from '@/components/business-component/ConnectorListView';
 import type {
   ExpertListItem,
   ExpertListSourceType,
@@ -30,7 +30,6 @@ import type {
   SkillListSourceType,
 } from '@/components/business-component/SkillListView';
 import SkillListView from '@/components/business-component/SkillListView';
-import useConnectorConnect from '@/hooks/useConnectorConnect';
 import { t } from '@/services/i18nRuntime';
 import {
   CloseOutlined,
@@ -52,6 +51,7 @@ import CapabilityCard from './CapabilityCard';
 import useAgentUsedList from './hooks/useAgentUsedList';
 import useCapabilityCategories from './hooks/useCapabilityCategories';
 import useCapabilityResources from './hooks/useCapabilityResources';
+import useConnectedConnectors from './hooks/useConnectedConnectors';
 import useRecentRepoPages from './hooks/useRecentRepoPages';
 import useSkillEnabledList from './hooks/useSkillEnabledList';
 import styles from './index.less';
@@ -179,6 +179,9 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   const [enabledView, setEnabledView] = useState<boolean>(false);
   // 专家「最近召唤」聚合视图：true 时列表切到 used/list 全量数据，复位同上
   const [usedView, setUsedView] = useState<boolean>(false);
+  // 连接器「已连接」聚合视图：true 时列表切到 connected=true 全量数据，
+  // 复位同上（断开最后一项后由回落 effect 自动退出）
+  const [connectedView, setConnectedView] = useState<boolean>(false);
   // 资料库「最近访问」聚合视图：true 时列表切到 recently-accessed 全量数据
   // （跨全部空间，空间 pill 照常展示，「最近访问」pill 置于最前）；离开资料库
   // 维度或记录清空时复位（初始即资料库维度时默认进入）
@@ -189,6 +192,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   // 其余维度走弹窗自实现
   const isSkill = resourceType === 'skill';
   const isExpert = resourceType === 'expert';
+  const isConnector = resourceType === 'connector';
 
   // 分类字典（system：内容分类；team：空间列表，个人空间优先）
   const categories = useCapabilityCategories(resourceType, source);
@@ -241,16 +245,15 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   }, [source, resourceType, category, defaultSpaceId, recentView]);
 
   // 归一化列表数据
-  const { list, loading, error, hasMore, loadMore, updateItem } =
-    useCapabilityResources({
-      resourceType,
-      source,
-      category,
-      keyword,
-      spaceId,
-      spaceIds: publishedSpaceIds,
-      pageSize: 20,
-    });
+  const { list, loading, error, hasMore, loadMore } = useCapabilityResources({
+    resourceType,
+    source,
+    category,
+    keyword,
+    spaceId,
+    spaceIds: publishedSpaceIds,
+    pageSize: 20,
+  });
 
   // 技能「我启用的」列表：技能维度激活时拉取——接入 SkillListView 后仅承担
   // 「我启用的」页签可见性判定与清空回落（列表渲染由组件自理），组件内开关
@@ -284,48 +287,27 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   const showRecentTab =
     resourceType === 'knowledge' && recentLoaded && recentList.length > 0;
 
-  // 连接器「连接/断开」：与专家·技能·连接器广场页共用同一份共享 hook
-  // （oauth2 授权 / 扫码连接（设备码）/ 凭据弹窗 / 断开寻址，
-  // 成功后就地更新卡片 connected）
+  // 连接器「已连接」列表：连接器维度激活时拉取（connected=true 全量，
+  // 与 /expert-skill-connector 连接器页同口径），承担「已连接」页签可见性
+  // 判定与聚合视图数据；连接/断开成功后经包装 updateItem 触发 reload 同步
   const {
-    handleConnect,
-    connectingIds,
-    handleDisconnect,
-    disconnectingIds,
-    connectCtx,
-    closeConnectModal,
-    handleConnected,
-    deviceCtx,
-    closeDeviceAuthModal,
-    handleDeviceConnected,
-  } = useConnectorConnect({
-    source,
-    spaceId,
-    updateItem,
-  });
-  const connectorBusyKeys = useMemo(
-    () => [...connectingIds, ...disconnectingIds],
-    [connectingIds, disconnectingIds],
-  );
-  // CapabilityItem → 共享 hook 契约（connector 的 rawId 即 service 标识）
-  const toConnectItem = (item: CapabilityItem) => ({
-    id: item.key,
-    service: item.rawId !== undefined ? String(item.rawId) : undefined,
-    authType: item.authType,
-    connected: item.connected,
-  });
-  const onConnectorConnect = useCallback(
-    (item: CapabilityItem) => {
-      void handleConnect(toConnectItem(item));
-    },
-    [handleConnect],
-  );
-  const onConnectorDisconnect = useCallback(
-    (item: CapabilityItem) => {
-      void handleDisconnect(toConnectItem(item));
-    },
-    [handleDisconnect],
-  );
+    list: connectedList,
+    loaded: connectedLoaded,
+    reload: reloadConnectedList,
+  } = useConnectedConnectors(open && resourceType === 'connector');
+  /** 「已连接」页签仅连接器维度且有已连接项时展示（首拉完成前不显示，防空闪） */
+  const showConnectedTab =
+    resourceType === 'connector' && connectedLoaded && connectedList.length > 0;
+
+  /** 连接器列表场景（ConnectorListView）：「已连接」聚合或当前数据源 */
+  const connectorListType: ConnectorListSourceType = connectedView
+    ? 'connected'
+    : source;
+
+  /** 连接器连接态变更（组件内闭环）：重拉「已连接」列表同步页签可见性与回落 */
+  const handleConnectorConnectedChange = useCallback(() => {
+    reloadConnectedList();
+  }, [reloadConnectedList]);
 
   // 技能/专家维度列表分别接入 SkillListView / ExpertListView（付费拦截等
   // 均内聚），弹窗不再持有订阅/付费相关状态
@@ -393,15 +375,15 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   );
 
   /**
-   * 列表数据分流（非技能/专家维度）：资料库「最近访问」= 全量数组按关键字
-   * 客户端过滤（无分页）；否则为系统广场/团队空间的服务端分页列表。
-   * 技能/专家维度由 SkillListView / ExpertListView 自理（此处恒为空数组）。
+   * 列表数据分流（资料库维度）：「最近访问」聚合视图 = 全量数组按关键字
+   * 客户端过滤（无分页）；否则为空间树的服务端分页列表。技能/专家/连接器
+   * 维度由 SkillListView / ExpertListView / ConnectorListView 自理
+   * （此处恒为空数组）。
    */
   const displayList = useMemo(() => {
-    if (isSkill || isExpert) {
+    if (isSkill || isExpert || isConnector) {
       return EMPTY_LIST;
     }
-    // 资料库「最近访问」聚合视图；其余（连接器/资料库空间树）走分页列表
     if (!recentView) {
       return list;
     }
@@ -412,7 +394,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
         item.name?.toLowerCase().includes(kw) ||
         item.description?.toLowerCase().includes(kw),
     );
-  }, [isSkill, isExpert, recentView, list, recentList, keyword]);
+  }, [isSkill, isExpert, isConnector, recentView, list, recentList, keyword]);
 
   // 搜索防抖
   useEffect(() => {
@@ -434,6 +416,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   const handleSourceChange = useCallback((next: CapabilitySourceEnum) => {
     setEnabledView(false);
     setUsedView(false);
+    setConnectedView(false);
     setRecentView(false);
     setSource(next);
     setCategory('');
@@ -441,6 +424,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   const handleResourceTypeChange = useCallback((next: CapabilityTypeEnum) => {
     setEnabledView(false);
     setUsedView(false);
+    setConnectedView(false);
     setRecentView(next === 'knowledge');
     setResourceType(next);
     setSource(next === 'knowledge' ? 'team' : 'system');
@@ -450,14 +434,19 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   // team 维度兜底：分类不在字典中（含初始空值）时选中首位"全部"；
   // 资料库「最近访问」视图期间跳过（保持 category 为空，repo 树接口不触发）
   useEffect(() => {
-    if (source === 'team' && categories.length > 0 && !recentView) {
+    if (
+      source === 'team' &&
+      categories.length > 0 &&
+      !recentView &&
+      !connectedView
+    ) {
       setCategory((current) =>
         categories.some((item) => item.key === current)
           ? current
           : categories[0].key,
       );
     }
-  }, [source, categories, recentView]);
+  }, [source, categories, recentView, connectedView]);
 
   // 筛选条件变化时复位为未聚焦（切换页签/搜索后不预亮首卡）
   useEffect(() => {
@@ -469,11 +458,13 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     keyword,
     enabledView,
     usedView,
+    connectedView,
     recentView,
   ]);
 
   // 聚合列表清空后对应页签隐藏：当前停留在该视图时自动回落系统广场
-  // （「我启用的」取消启用最后一项；「最近召唤」无移除操作，防御性兜底）
+  // （「我启用的」取消启用最后一项；「最近召唤」无移除操作，防御性兜底；
+  // 「已连接」断开最后一项）
   useEffect(() => {
     if (enabledView && enabledLoaded && enabledList.length === 0) {
       setEnabledView(false);
@@ -484,6 +475,11 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
       setUsedView(false);
     }
   }, [usedView, usedLoaded, usedList.length]);
+  useEffect(() => {
+    if (connectedView && connectedLoaded && connectedList.length === 0) {
+      setConnectedView(false);
+    }
+  }, [connectedView, connectedLoaded, connectedList.length]);
   // 资料库「最近访问」清空时回落首空间 pill（复位 recentView 后由上方
   // team 维度兜底 effect 接管选中）
   useEffect(() => {
@@ -604,9 +600,9 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     }
   };
 
-  // 视图层加载态/翻页标记（非技能/专家维度,列表由 SkillListView /
-  // ExpertListView 自理）：资料库「最近访问」为全量数组无分页,滚动加载
-  // 与自动补拉仅在连接器/资料库空间树的分页视图生效
+  // 视图层加载态/翻页标记（资料库维度；技能/专家/连接器由 SkillListView /
+  // ExpertListView / ConnectorListView 自理）：「最近访问」为全量数组无分页,
+  // 滚动加载与自动补拉仅在资料库空间树的分页视图生效
   const viewLoading = recentView ? recentLoading : loading;
   const viewHasMore = recentView ? false : hasMore;
 
@@ -634,7 +630,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   }, [displayList, viewLoading, viewHasMore, loadMore]);
 
   // 团队空间维度等待空间字典/空间 ID 就绪,否则空结果会卡在加载态;
-  // 资料库「最近访问」聚合视图凭首拉完成判定（失败也会置 loaded,空态不卡加载）
+  // 「最近访问」聚合视图凭首拉完成判定（失败也会置 loaded,空态不卡加载）
   const waitingSpace =
     !recentView && source === 'team' && !spaceId && !publishedSpaceIds?.length;
   const initialLoading =
@@ -717,10 +713,18 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
             ) : (
               // 数据源 tab 走 antd Tabs（指示线/键盘语义内置）；聚合页签
               // 仅对应维度且有数据时展示，均置于最前——专家「最近召唤」、
-              // 技能「我启用的」
+              // 技能「我启用的」、连接器「已连接」
               <Tabs
                 className={styles.tabs}
-                activeKey={usedView ? 'used' : enabledView ? 'enabled' : source}
+                activeKey={
+                  usedView
+                    ? 'used'
+                    : enabledView
+                    ? 'enabled'
+                    : connectedView
+                    ? 'connected'
+                    : source
+                }
                 onChange={(key) => {
                   if (key === 'used') {
                     setUsedView(true);
@@ -728,6 +732,10 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
                   }
                   if (key === 'enabled') {
                     setEnabledView(true);
+                    return;
+                  }
+                  if (key === 'connected') {
+                    setConnectedView(true);
                     return;
                   }
                   handleSourceChange(key as CapabilitySourceEnum);
@@ -747,6 +755,16 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
                           key: 'enabled',
                           label: t(
                             'PC.Components.CapabilityModal.mainTabEnabled',
+                          ),
+                        },
+                      ]
+                    : []),
+                  ...(showConnectedTab
+                    ? [
+                        {
+                          key: 'connected',
+                          label: t(
+                            'PC.Components.CapabilityModal.mainTabConnected',
                           ),
                         },
                       ]
@@ -803,10 +821,10 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
             </div>
           </header>
 
-          {/* 分类 pill 行：聚合视图（最近召唤/我启用的）跨系统/团队，分类不
-              适用（隐藏整行）；资料库「最近访问」视图空间 pill 照常展示，
+          {/* 分类 pill 行：聚合视图（最近召唤/我启用的/已连接）跨系统/团队，
+              分类不适用（隐藏整行）；资料库「最近访问」视图空间 pill 照常展示，
               「最近访问」pill 置于最前 */}
-          {!usedView && !enabledView && (
+          {!usedView && !enabledView && !connectedView && (
             <div className={styles.toolbar}>
               <div className={styles.categories}>
                 {resourceType === 'knowledge' && showRecentTab && (
@@ -842,8 +860,8 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
             </div>
           )}
 
-          {/* 技能/专家维度：列表整体交给 SkillListView / ExpertListView
-              （接口/分页/开关/付费拦截内聚，选中经 handle*Select 回弹窗契约）；
+          {/* 技能/专家/连接器维度：列表整体交给 SkillListView / ExpertListView /
+              ConnectorListView（接口/分页/开关/付费拦截/连接流程内聚）；
               聚合视图顶部补留白对齐其他维度 */}
           {isSkill ? (
             <SkillListView
@@ -870,6 +888,17 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
               spaceIds={publishedSpaceIds}
               onSelect={handleExpertSelect}
             />
+          ) : isConnector ? (
+            <ConnectorListView
+              className={cx(styles['embed-list'], {
+                [styles['list-enabled']]: connectedView,
+              })}
+              type={connectorListType}
+              keyword={keyword}
+              category={category}
+              spaceId={spaceId}
+              onConnectedChange={handleConnectorConnectedChange}
+            />
           ) : (
             /* 滚动容器常驻（三态在容器内切换）：避免加载完成时 Spin/网格互换 DOM 造成整屏闪跳 */
             <div
@@ -881,6 +910,8 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
               }
               className={cx('flex-1', styles.list, {
                 [styles['list-knowledge']]: resourceType === 'knowledge',
+                // 聚合视图（已连接）无分类 pill 行，列表顶部补留白
+                [styles['list-enabled']]: connectedView,
               })}
               onScroll={handleListScroll}
             >
@@ -922,9 +953,6 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
                       focused={index === focusIndex}
                       onSelect={handleSelect}
                       onHover={setFocusIndex}
-                      onConnectorConnect={onConnectorConnect}
-                      onConnectorDisconnect={onConnectorDisconnect}
-                      connectorBusyKeys={connectorBusyKeys}
                     />
                   ))}
                   {viewLoading && (
@@ -946,28 +974,9 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
         </section>
       </div>
 
-      {/* 凭据型连接器连接弹窗（oauth2 走授权窗口，不经过这里） */}
-      <ConnectorConnectModal
-        open={!!connectCtx}
-        record={connectCtx?.record ?? null}
-        fields={connectCtx?.fields ?? []}
-        spaceId={source === 'team' ? spaceId : undefined}
-        onClose={closeConnectModal}
-        onConnected={handleConnected}
-      />
-
-      {/* 技能/专家的付费订阅弹窗已随 SkillListView / ExpertListView 内聚,
+      {/* 技能/专家的付费订阅弹窗、连接器的凭据/扫码连接弹窗均已随
+          SkillListView / ExpertListView / ConnectorListView 内聚,
           弹窗内不再持有 */}
-
-      {/* 连接器「连接」扫码弹窗（认证方式 oauth2_device，与广场页/连接器
-          详情抽屉同款）：授权成功后就地更新卡片为已连接 */}
-      <ConnectorDeviceAuthModal
-        open={deviceCtx !== null}
-        service={deviceCtx?.item.service || ''}
-        spaceId={source === 'team' ? spaceId : undefined}
-        onClose={closeDeviceAuthModal}
-        onConnected={handleDeviceConnected}
-      />
     </Modal>
   );
 };

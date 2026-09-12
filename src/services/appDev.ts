@@ -475,8 +475,8 @@ export async function exportProject(projectId: string): Promise<void> {
       )}`;
 
     // 通过浏览器下载文件
-    exportFileViaBrowserDownload(linkUrl);
-    message.success(t('PC.Pages.AppDevIndex.exportSuccess'));
+    const saved = await exportFileViaBrowserDownload(linkUrl);
+    if (saved) message.success(t('PC.Pages.AppDevIndex.exportSuccess'));
   } catch (error) {
     // 改进错误处理，兼容不同的错误格式
     const errorMessage =

@@ -1,7 +1,8 @@
 /**
  * 女娲应用页面(一级菜单入口)
- * @description 应用分发页:最近使用(used/list 接口,点击续上次会话)+ 全部应用(分类标签 + 已发布网页应用列表,点击进应用详情 /agent/:id);
- * 「更多」跳广场-网页应用
+ * @description 应用分发页:最近使用(used/list 接口,点击续上次会话)+ 应用列表区
+ * (主tab:系统应用=分类标签+已发布网页应用 POST 列表 / 团队空间=空间分类+GET 列表,
+ * 点击进应用详情 /agent/:id);「更多」跳广场-网页应用
  */
 import agentImage from '@/assets/images/agent_image.png';
 import Loading from '@/components/custom/Loading';
@@ -9,8 +10,10 @@ import { apiUserUsedAgentList } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedAgentList,
+  apiPublishedAgentListBySpace,
   apiPublishedCategoryList,
 } from '@/services/square';
+import { apiSpaceList } from '@/services/workspace';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import type { Page } from '@/types/interfaces/request';
@@ -18,7 +21,8 @@ import type {
   SquareCategoryInfo,
   SquarePublishedItemInfo,
 } from '@/types/interfaces/square';
-import { Empty, Input } from 'antd';
+import type { SpaceInfo } from '@/types/interfaces/workspace';
+import { Empty, Input, Segmented } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
@@ -42,16 +46,29 @@ interface CategoryTabInfo {
 /** 固定首位的「全部」分类 key(空串即不限分类) */
 const ALL_CATEGORY_KEY = '';
 
+/** 应用列表区主 tab:系统应用 / 团队空间 */
+type AppSourceEnum = 'system' | 'team';
+
 const NuwaApps: React.FC = () => {
-  // 激活分类 key(空串=全部)
+  // 应用列表区主 tab(默认系统应用)
+  const [activeSource, setActiveSource] = useState<AppSourceEnum>('system');
+  // 激活分类 key(空串=全部,系统应用 tab 用)
   const [activeCategory, setActiveCategory] =
     useState<string>(ALL_CATEGORY_KEY);
-  // 搜索关键词
+  // 激活空间 key(团队空间 tab 用,空间列表就绪后默认选首个空间)
+  const [activeSpace, setActiveSpace] = useState<string>('');
+  // 搜索关键词(两 tab 通用)
   const [keyword, setKeyword] = useState<string>('');
   // 分类标签(全部 + PageApp 根节点 children)
   const [categories, setCategories] = useState<CategoryTabInfo[]>([]);
-  // 应用列表
+  // 空间分类标签(团队空间 tab,接口空间列表映射)
+  const [spaces, setSpaces] = useState<CategoryTabInfo[]>([]);
+  // 应用列表(系统应用 tab)
   const [appList, setAppList] = useState<SquarePublishedItemInfo[]>([]);
+  // 应用列表(团队空间 tab)
+  const [spaceAppList, setSpaceAppList] = useState<SquarePublishedItemInfo[]>(
+    [],
+  );
   // 最近使用列表
   const [recentList, setRecentList] = useState<AgentInfo[]>([]);
 
@@ -83,7 +100,28 @@ const NuwaApps: React.FC = () => {
     onError: () => setCategories([]),
   });
 
-  // 应用列表:已发布智能体列表(网页应用),分类/关键词变化时重新查询
+  // 空间分类标签:用户空间列表(GET /api/space/list)映射为 {key: 空间id, label: 空间名};
+  // 失败时降级为空列表(团队空间 tab 展示空态)
+  const { loading: spacesLoading } = useRequest(apiSpaceList, {
+    onSuccess: (result: SpaceInfo[]) => {
+      const list = result || [];
+      setSpaces(
+        list
+          .filter((item) => Boolean(item?.id))
+          .map((item) => ({ key: String(item.id), label: item.name || '' })),
+      );
+    },
+    onError: () => setSpaces([]),
+  });
+
+  // 团队空间 tab:空间列表就绪后默认选中首个空间(用户切换后 activeSpace 有值不再覆盖)
+  useEffect(() => {
+    if (spaces.length > 0 && !activeSpace) {
+      setActiveSpace(spaces[0].key);
+    }
+  }, [spaces, activeSpace]);
+
+  // 应用列表(系统应用 tab):已发布智能体列表(网页应用),分类/关键词变化时重新查询
   const { run: runAppList, loading: appListLoading } = useRequest(
     (query: { category: string; kw: string }) =>
       apiPublishedAgentList({
@@ -104,9 +142,37 @@ const NuwaApps: React.FC = () => {
     },
   );
 
+  // 应用列表(团队空间 tab):GET /api/published/agent/list?spaceId=xx,
+  // 仅 spaceId + 分页参数(不带 kw/targetType/targetSubType),切换空间时重新查询
+  const { run: runSpaceAppList, loading: spaceAppListLoading } = useRequest(
+    (query: { spaceId: number }) =>
+      apiPublishedAgentListBySpace({
+        spaceId: query.spaceId,
+        page: 1,
+        pageSize: APP_LIST_PAGE_SIZE,
+      }),
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: (result: Page<SquarePublishedItemInfo>) => {
+        setSpaceAppList(result?.records || []);
+      },
+      onError: () => setSpaceAppList([]),
+    },
+  );
+
+  // 激活 tab 内的筛选条件变化时查询对应列表(切回 tab 时按保留的筛选重新拉取)
   useEffect(() => {
+    if (activeSource !== 'system') return;
     runAppList({ category: activeCategory, kw: keyword });
-  }, [activeCategory, keyword, runAppList]);
+  }, [activeSource, activeCategory, keyword, runAppList]);
+
+  useEffect(() => {
+    if (activeSource !== 'team') return;
+    const spaceId = Number(activeSpace);
+    if (!Number.isFinite(spaceId) || spaceId <= 0) return;
+    runSpaceAppList({ spaceId });
+  }, [activeSource, activeSpace, runSpaceAppList]);
 
   // 跳转广场-网页应用
   const handleGoSquare = () => {
@@ -121,6 +187,23 @@ const NuwaApps: React.FC = () => {
     }
     history.push(`/agent/${app.agentId}`);
   };
+
+  // 当前 tab 的展示列表与加载态(团队空间 tab 需等空间列表与默认空间就绪;
+  // 空间列表为空时不再等待,走空态)
+  const isTeamSource = activeSource === 'team';
+  const displayList = isTeamSource ? spaceAppList : appList;
+  const listLoading = isTeamSource
+    ? spacesLoading ||
+      (spaces.length > 0 && !activeSpace) ||
+      spaceAppListLoading
+    : appListLoading;
+  // 当前 tab 的二级筛选 pill(系统应用=「全部」+PageApp 分类;团队空间=空间分类)
+  const categoryTabs = isTeamSource
+    ? spaces
+    : [
+        { key: ALL_CATEGORY_KEY, label: dict('PC.Pages.NuwaApps.all') },
+        ...categories,
+      ];
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -179,33 +262,55 @@ const NuwaApps: React.FC = () => {
           </section>
         )}
 
-        {/* 全部应用:分类标签 + 应用卡片网格 */}
+        {/* 应用列表区:主tab(系统应用/团队空间,Segmented 样式对齐专家&专家团页)+ 二级筛选 pill + 应用卡片网格 */}
         <section className={cx('flex', 'flex-col')}>
-          <h4 className={cx(styles['section-title'])}>
-            {dict('PC.Pages.NuwaApps.allApps')}
-          </h4>
-          <div className={cx(styles.tabs)}>
-            {[
-              { key: ALL_CATEGORY_KEY, label: dict('PC.Pages.NuwaApps.all') },
-              ...categories,
-            ].map((tab) => (
-              <span
-                key={tab.key || 'all'}
-                className={cx(styles.tab, {
-                  [styles.active]: activeCategory === tab.key,
-                })}
-                onClick={() => setActiveCategory(tab.key)}
-              >
-                {tab.label}
-              </span>
-            ))}
-          </div>
+          <Segmented
+            className={cx(styles['source-segmented'])}
+            options={[
+              {
+                label: dict('PC.Pages.NuwaApps.systemApps'),
+                value: 'system',
+              },
+              {
+                label: dict('PC.Pages.NuwaApps.teamSpace'),
+                value: 'team',
+              },
+            ]}
+            value={activeSource}
+            onChange={(value) => setActiveSource(value as AppSourceEnum)}
+          />
 
-          {appListLoading ? (
+          {/* 二级筛选 pill:系统应用=分类(全部 + PageApp 分类)/ 团队空间=空间分类(切换空间筛选应用);
+              样式对齐专家&专家团页分类 pill;列表为空时隐藏整行 */}
+          {categoryTabs.length > 0 && (
+            <div
+              className={cx('flex', 'items-center', styles['category-tabs'])}
+            >
+              {categoryTabs.map((tab) => (
+                <div
+                  key={tab.key || 'all'}
+                  className={cx(styles['category-tab'], {
+                    [styles['category-tab-active']]: isTeamSource
+                      ? activeSpace === tab.key
+                      : activeCategory === tab.key,
+                  })}
+                  onClick={() =>
+                    isTeamSource
+                      ? setActiveSpace(tab.key)
+                      : setActiveCategory(tab.key)
+                  }
+                >
+                  {tab.label}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {listLoading ? (
             <Loading className={cx(styles['min-height-300'])} />
-          ) : appList.length > 0 ? (
+          ) : displayList.length > 0 ? (
             <div className={cx(styles['app-list'])}>
-              {appList.map((item) => (
+              {displayList.map((item) => (
                 <AppCard
                   key={item.id}
                   publishedItemInfo={item}

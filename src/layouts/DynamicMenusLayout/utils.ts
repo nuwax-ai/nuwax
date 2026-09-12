@@ -38,6 +38,21 @@ export const resolveMenuPath = (menu: MenuItemDto): MenuItemDto => {
   };
 };
 
+/** 按菜单 code 递归查找菜单节点（含子级） */
+export const findMenuByCode = (
+  menus: MenuItemDto[],
+  code: string,
+): MenuItemDto | undefined => {
+  for (const menu of menus) {
+    if (menu.code === code) return menu;
+    const found = menu.children
+      ? findMenuByCode(menu.children, code)
+      : undefined;
+    if (found) return found;
+  }
+  return undefined;
+};
+
 /** 是否为 http(s) 菜单路径（含 %siteUrl% 解析后） */
 export const isHttpMenuPath = (path: string): boolean => {
   if (!path) return false;

@@ -1,4 +1,4 @@
-import { Image } from 'antd';
+import { Image, message } from 'antd';
 import React, {
   CSSProperties,
   memo,
@@ -46,7 +46,9 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
       (e: React.MouseEvent) => {
         if (src && nuwaClawHost.isNuwaClaw()) {
           e.preventDefault();
-          void nuwaClawHost.native.saveImage(src);
+          void nuwaClawHost.native.saveImage(src).then((result) => {
+            if (!result.success && result.error) message.error(result.error);
+          });
         }
       },
       [src],

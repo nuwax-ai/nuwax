@@ -34,6 +34,8 @@ interface ServerFetchParams {
   category: string;
   keyword: string;
   spaceId?: number;
+  /** 团队维度「全部」页签的聚合参数：全部空间 ID（具体空间页签用 spaceId） */
+  spaceIds?: number[];
 }
 
 /** 服务端分页适配器（响应原始结构由 extract 内部自行收窄） */
@@ -205,18 +207,26 @@ const RESOURCE_ADAPTERS: Record<
     // 团队空间-空间内已发布智能体（POST /api/published/agent/list 服务端分页）：
     // 与空间广场 /space/:id/space-square?activeKey=Agent 同口径——
     // category=Agent（tab 维度）+ justReturnSpaceData 只查空间已发布内容；
-    // 二级 tab 即空间选择（必选中具体空间），category 内容分类不适用不传；
+    // 二级 tab 即空间选择（首位「全部」页签经 spaceIds 聚合全部空间，与
+    // 能力弹窗同口径——单元素回退 spaceId；具体空间传 spaceId）；
     // 与系统广场同口径仅展示官方智能体（official: true）
     team: {
       mode: 'server',
-      fetchPage: ({ page, pageSize, keyword, spaceId }) =>
+      fetchPage: ({ page, pageSize, keyword, spaceId, spaceIds }) =>
         apiPublishedAgentList({
           page,
           pageSize,
           kw: keyword || undefined,
           category: SquareAgentTypeEnum.Agent,
           justReturnSpaceData: true,
-          spaceId,
+          // 「全部」页签 spaceIds 聚合（单元素回退 spaceId），具体空间 spaceId
+          ...(spaceIds?.length
+            ? spaceIds.length === 1
+              ? { spaceId: spaceIds[0] }
+              : { spaceIds }
+            : spaceId
+            ? { spaceId }
+            : {}),
           // 仅展示官方智能体（与系统广场维度同口径）
           official: true,
         }),
@@ -238,18 +248,26 @@ const RESOURCE_ADAPTERS: Record<
     },
     // 团队空间-空间内已发布技能（POST /api/published/skill/list 服务端分页）：
     // 与专家-团队空间同口径——category=Skill（tab 维度）+ justReturnSpaceData
-    // 只查空间已发布内容；二级 tab 即空间选择（必选中具体空间），
+    // 只查空间已发布内容；二级 tab 即空间选择（首位「全部」页签经 spaceIds
+    // 聚合全部空间，单元素回退 spaceId；具体空间传 spaceId），
     // 内容分类不适用不传
     team: {
       mode: 'server',
-      fetchPage: ({ page, pageSize, keyword, spaceId }) =>
+      fetchPage: ({ page, pageSize, keyword, spaceId, spaceIds }) =>
         apiPublishedSkillList({
           page,
           pageSize,
           kw: keyword || undefined,
           category: SquareAgentTypeEnum.Skill,
           justReturnSpaceData: true,
-          spaceId,
+          // 「全部」页签 spaceIds 聚合（单元素回退 spaceId），具体空间 spaceId
+          ...(spaceIds?.length
+            ? spaceIds.length === 1
+              ? { spaceId: spaceIds[0] }
+              : { spaceIds }
+            : spaceId
+            ? { spaceId }
+            : {}),
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'space-skill'),
     },
@@ -340,6 +358,11 @@ export interface UseResourceListParams {
   keyword: string;
   /** 团队空间维度使用的空间 ID（system 源不依赖） */
   spaceId?: number;
+  /**
+   * 团队空间维度「全部」页签的聚合参数：全部空间 ID
+   * （与 spaceId 互斥——「全部」传 spaceIds，具体空间传 spaceId）
+   */
+  spaceIds?: number[];
   /** 每页数量 */
   pageSize?: number;
 }
@@ -353,6 +376,7 @@ const useResourceList = ({
   category,
   keyword,
   spaceId,
+  spaceIds,
   pageSize = 20,
 }: UseResourceListParams) => {
   const [list, setList] = useState<ResourceItem[]>([]);
@@ -375,9 +399,15 @@ const useResourceList = ({
       if (loadingRef.current) {
         return;
       }
-      // 团队空间维度依赖 spaceId；连接器例外——"全部"页签经 scope=space
+      // 团队空间维度依赖空间寻址：专家/技能需 spaceId（具体空间）或
+      // spaceIds（「全部」聚合）其一；连接器例外——"全部"页签经 scope=space
       // 聚合全部空间（不带 spaceId 也要发请求），具体空间页签才带 spaceId
-      if (source === 'team' && !spaceId && resourceType !== 'connector') {
+      if (
+        source === 'team' &&
+        resourceType !== 'connector' &&
+        !spaceId &&
+        !(spaceIds && spaceIds.length > 0)
+      ) {
         return;
       }
       const adapter = RESOURCE_ADAPTERS[resourceType][source];
@@ -397,6 +427,7 @@ const useResourceList = ({
             category,
             keyword,
             spaceId,
+            spaceIds,
           });
           // 过期响应丢弃（筛选条件已变化）
           if (requestIdRef.current !== requestId) {
@@ -454,7 +485,7 @@ const useResourceList = ({
         }
       }
     },
-    [resourceType, source, category, keyword, spaceId, pageSize],
+    [resourceType, source, category, keyword, spaceId, spaceIds, pageSize],
   );
 
   const loadRef = useRef(load);
@@ -469,7 +500,7 @@ const useResourceList = ({
     setHasMore(true);
     loadRef.current(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resourceType, source, category, keyword, spaceId]);
+  }, [resourceType, source, category, keyword, spaceId, spaceIds]);
 
   // 滚动触底加载下一页
   const loadMore = useCallback(() => {

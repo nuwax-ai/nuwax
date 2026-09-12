@@ -3,6 +3,7 @@ import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import { ConversationRendererV2Lazy } from '@/features/conversation/LazyConversationRendererV2';
+import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import * as React from 'react';
@@ -72,6 +73,8 @@ export interface ChatContentAreaProps {
    * renderMessageItem 自定义入口恒走原逻辑，不受本参数影响。
    */
   messageRenderer?: 'v1' | 'v2';
+  /** V2 工具详情资源点击（文件路径/URL），透传给 ConversationRendererV2 */
+  onOpenToolResource?: (resource: ConversationToolResource) => void;
 }
 
 export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
@@ -102,6 +105,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
   showTaskExecutingWait,
   renderEmptyState,
   messageRenderer = 'v1',
+  onOpenToolResource,
 }) => {
   const renderedMessageList = React.useMemo(() => {
     if (!messageList || messageList.length <= 1) {
@@ -191,6 +195,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
                     messageBottomMode={messageBottomMode}
                     showDebug={showDebug}
                     showStatusDesc={agentInfo?.type !== AgentTypeEnum.TaskAgent}
+                    onOpenToolResource={onOpenToolResource}
                   />
                 ) : (
                   renderV1MessageList()

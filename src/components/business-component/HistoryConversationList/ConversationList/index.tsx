@@ -115,7 +115,13 @@ const ConversationList = React.forwardRef<
     try {
       const res = await apiAgentConversationList({
         agentId,
-        includeArchived: true,
+        // 归档过滤按视图走服务端：全部=exclude，收藏=含归档全量，已归档=only
+        archivedFilter:
+          viewMode === 'archived'
+            ? 'only'
+            : viewMode === 'collected'
+            ? 'all'
+            : 'exclude',
         lastId,
         limit: isRefresh ? pageSize : 20,
         topic: keyword || undefined,
@@ -128,7 +134,18 @@ const ConversationList = React.forwardRef<
         flagOverridesRef.current,
       );
       if (isRefresh) {
-        setList(data);
+        setList((prev) => {
+          if (viewMode !== 'archived') return data;
+          // 已归档视图兜底：后端归档过滤未上线时回包是未过滤流，
+          // 保留此前其它视图已加载到的归档项，避免切视图后首屏丢失
+          const prevArchived = prev.filter((item) => item.archived === true);
+          const seen = new Set<string | number>();
+          return [...data, ...prevArchived].filter((item) => {
+            if (seen.has(item.id)) return false;
+            seen.add(item.id);
+            return true;
+          });
+        });
       } else {
         setList((prev) => [...prev, ...data]);
       }
@@ -165,6 +182,23 @@ const ConversationList = React.forwardRef<
     setHasMore(true);
     loadData(true);
   }, [keyword, agentId]);
+
+  // 视图切换重置整流重拉：归档/收藏视图走各自 archivedFilter 的服务端过滤
+  // （挂载时的首拉由上方 keyword effect 负责，这里跳过首渲染避免重复请求）
+  const viewModeInitializedRef = useRef(false);
+  useEffect(() => {
+    if (!viewModeInitializedRef.current) {
+      viewModeInitializedRef.current = true;
+      return;
+    }
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+    setList([]);
+    setHasMore(true);
+    loadData(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode]);
 
   // 滚动监听
   useEffect(() => {
@@ -315,7 +349,7 @@ const ConversationList = React.forwardRef<
               <Spin size="small" />
             </div>
           )}
-          {/* 收藏/归档视图空态提示（收藏走本地存储，归档由 includeArchived=true 回读服务端状态） */}
+          {/* 收藏/归档视图空态提示（收藏走本地存储，归档由 archivedFilter=all 回读服务端状态） */}
           {!loading &&
             viewMode !== 'all' &&
             visibleList.length === 0 &&

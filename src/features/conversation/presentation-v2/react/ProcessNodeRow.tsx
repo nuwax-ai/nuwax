@@ -37,6 +37,7 @@ import type {
   ConversationToolActionKind,
   ConversationToolResource,
 } from '../types';
+import FileResourceLink from './FileResourceLink';
 import styles from './index.less';
 import ToolNodeDetail from './ToolNodeDetail';
 
@@ -179,6 +180,8 @@ export interface ToolNodePresentation {
   target: string;
   meta: string;
   isCreate: boolean;
+  /** 文件类动作涉及的沙箱路径列表（读取/编辑；其余动作为空） */
+  files: string[];
 }
 
 export const getToolNodePresentation = (
@@ -217,6 +220,14 @@ export const getToolNodePresentation = (
     target,
     meta,
     isCreate: detail.isCreate,
+    files:
+      kind === 'file-read'
+        ? detail.filePath
+          ? [detail.filePath]
+          : []
+        : kind === 'file-edit'
+        ? detail.diffs.map((diff) => diff.path)
+        : [],
   };
 };
 
@@ -334,7 +345,27 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
         aria-hidden="true"
       />
       <span className={cx(styles['node-title'])}>{title}</span>
-      <span className={cx(styles['node-summary'])}>{summaryText}</span>
+      {toolPresentation && toolPresentation.files.length > 0 ? (
+        <>
+          {toolPresentation.files.length > 1 && (
+            <span className={cx(styles['node-summary'])}>
+              {toolPresentation.target}
+            </span>
+          )}
+          <span className={cx(styles['node-file-links'])}>
+            {toolPresentation.files.map((filePath) => (
+              <FileResourceLink
+                key={filePath}
+                target={filePath}
+                inline
+                onOpenResource={onOpenResource}
+              />
+            ))}
+          </span>
+        </>
+      ) : (
+        <span className={cx(styles['node-summary'])}>{summaryText}</span>
+      )}
       {toolPresentation?.meta && (
         <span className={cx(styles['node-meta'])}>{toolPresentation.meta}</span>
       )}

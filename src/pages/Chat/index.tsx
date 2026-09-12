@@ -22,6 +22,7 @@ import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
+import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { t } from '@/services/i18nRuntime';
 import {
@@ -90,6 +91,7 @@ import {
   workspaceNodeId,
   workspaceRelativePath,
 } from './utils/fileDataSource';
+import { resolveSandboxFileOpen } from './utils/sandboxPath';
 
 const cx = classNames.bind(styles);
 export interface ChatCoreProps {
@@ -513,7 +515,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       devTargetLookupFiredRef.current = true;
       void apiAgentConversationList({
         agentId: null,
-        includeArchived: true,
+        // 全量找会话（含已归档）做 devTarget 兜底跳转
+        archivedFilter: 'all',
         limit: 50,
       })
         .then((res) => {
@@ -798,6 +801,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
   const isGitStatusRefreshDisabled = !hasValidMessageList;
 
+  /** V2 工具详情点击打开的文件（相对路径）；用于选中失败时精确归因提示 */
+  const toolResourceSelectRef = useRef('');
+
   const workspaceTaskSelectedFileId = taskAgentSelectedFileId
     ? workspaceNodeId(workspaceRelativePath(taskAgentSelectedFileId))
     : '';
@@ -919,7 +925,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       hasValidMessageList &&
       isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl),
     enableVersionControl: effectiveAgent?.enableVersionControl,
-    onSelectedFileMissing: () => {
+    onSelectedFileMissing: (fileId?: string) => {
+      // V2 工具详情点击打开的文件在文件树中找不到：按定调提示用户即可
+      // （hook 回传的 id 带 workspace: 前缀，归一后再与点击目标比对）
+      const relativeFileId = workspaceRelativePath(fileId || '');
+      if (relativeFileId && toolResourceSelectRef.current === relativeFileId) {
+        toolResourceSelectRef.current = '';
+        antdMessage.error(t('PC.Pages.Chat.toolFileOpenMissing'));
+      }
       setTaskAgentSelectedFileId('');
     },
     /** 文件树选中文件时，关闭 Git 版本记录面板 */
@@ -1523,6 +1536,38 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       }));
   }, [id]);
 
+  /**
+   * V2 工具详情资源点击：文件 → 打开预览面板（与 FINAL_RESULT task-result
+   * 文件自动打开同链路：开面板 + 设选中 + 触发器）；URL → 新窗口。
+   * 路径不属于当前会话/无法解析时按定调直接 toast 提示，不做其他兜底。
+   */
+  const handleOpenToolResource = (resource: ConversationToolResource) => {
+    if (resource.kind === 'url') {
+      window.open(resource.target, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (resource.kind !== 'file') {
+      return;
+    }
+    const currentId = id?.toString() || '';
+    const decision = resolveSandboxFileOpen(resource.target, currentId);
+    if (decision.type === 'reject') {
+      antdMessage.error(
+        t(
+          decision.reason === 'not-in-conversation'
+            ? 'PC.Pages.Chat.toolFileOpenNotInConversation'
+            : 'PC.Pages.Chat.toolFileOpenUnsupportedPath',
+        ),
+      );
+      return;
+    }
+    openPreviewView(currentId);
+    // 记录本次点击目标：文件树拉取完成后仍找不到时由 onSelectedFileMissing 提示
+    toolResourceSelectRef.current = decision.relativePath;
+    setTaskAgentSelectedFileId(decision.relativePath);
+    setTaskAgentSelectTrigger(Date.now());
+  };
+
   const chatSessionProps = {
     onFetchMentionFiles:
       id && effectiveAgent?.type === AgentTypeEnum.TaskAgent
@@ -1531,6 +1576,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     conversationId: id,
     messageList,
     messageRenderer: conversationRendererVersion,
+    onOpenToolResource: handleOpenToolResource,
     roleInfo,
     isLoading: loadingConversation,
     loadingMore,

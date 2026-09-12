@@ -1,5 +1,6 @@
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { normalizeV2ToolDetail } from '@/features/conversation/presentation-v2/toolDetail';
+import { isConversationSandboxPath } from '@/features/conversation/presentation-v2/toolFilePresentation';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -15,6 +16,7 @@ import type {
   ConversationProcessNode,
   ConversationToolResource,
 } from '../types';
+import FileResourceLink from './FileResourceLink';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -45,6 +47,24 @@ const ResourceLink: React.FC<{
   line?: number;
   onOpenResource?: (resource: ConversationToolResource) => void;
 }> = ({ kind, target, line, onOpenResource }) => {
+  if (kind === 'file') {
+    // 卡片头部：仅会话沙箱路径做「徽标+文件名」可点样式；
+    // 其余（如 /home/user/Desktop/x.md）完整地址普通文本色展示、不可点
+    if (!isConversationSandboxPath(target)) {
+      return (
+        <span className={cx(styles['tool-file-plain'])} title={target}>
+          {target}
+        </span>
+      );
+    }
+    return (
+      <FileResourceLink
+        target={target}
+        line={line}
+        onOpenResource={onOpenResource}
+      />
+    );
+  }
   if (onOpenResource) {
     return (
       <button

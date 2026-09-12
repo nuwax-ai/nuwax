@@ -29,7 +29,7 @@ describe('nuwaClawHostEvents · 宿主命令响应（host→guest 通道消费�
 
   it('toggle-second-menu 命令 → 按.payload.collapsed 调用 setSecondMenuCollapsed', () => {
     const setSecondMenuCollapsed = vi.fn();
-    initNuwaClawHostEvents({ setSecondMenuCollapsed });
+    initNuwaClawHostEvents({ setSecondMenuCollapsed, createNewTask: vi.fn() });
     expect(registeredHandler).toBeTruthy();
 
     registeredHandler!({ type: 'toggle-second-menu', collapsed: true });
@@ -39,10 +39,18 @@ describe('nuwaClawHostEvents · 宿主命令响应（host→guest 通道消费�
     expect(setSecondMenuCollapsed).toHaveBeenLastCalledWith(false);
   });
 
+  it('new-task 命令 → 调用 createNewTask（壳层 ⌘N 接管下发）', () => {
+    const createNewTask = vi.fn();
+    initNuwaClawHostEvents({ setSecondMenuCollapsed: vi.fn(), createNewTask });
+
+    registeredHandler!({ type: 'new-task' });
+    expect(createNewTask).toHaveBeenCalledTimes(1);
+  });
+
   it('未知命令类型 → 不调用 setSecondMenuCollapsed（仅 console.warn）', () => {
     const setSecondMenuCollapsed = vi.fn();
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    initNuwaClawHostEvents({ setSecondMenuCollapsed });
+    initNuwaClawHostEvents({ setSecondMenuCollapsed, createNewTask: vi.fn() });
 
     registeredHandler!({ type: 'unknown-cmd' } as any);
     expect(setSecondMenuCollapsed).not.toHaveBeenCalled();
@@ -52,7 +60,7 @@ describe('nuwaClawHostEvents · 宿主命令响应（host→guest 通道消费�
 
   it('非法 payload（null / 非对象）→ 静默忽略，不抛错', () => {
     const setSecondMenuCollapsed = vi.fn();
-    initNuwaClawHostEvents({ setSecondMenuCollapsed });
+    initNuwaClawHostEvents({ setSecondMenuCollapsed, createNewTask: vi.fn() });
 
     expect(() => registeredHandler!(null as any)).not.toThrow();
     expect(() => registeredHandler!(undefined as any)).not.toThrow();
@@ -64,6 +72,7 @@ describe('nuwaClawHostEvents · 宿主命令响应（host→guest 通道消费�
       .onHostCommand;
     const dispose = initNuwaClawHostEvents({
       setSecondMenuCollapsed: vi.fn(),
+      createNewTask: vi.fn(),
     });
 
     dispose();
@@ -73,7 +82,10 @@ describe('nuwaClawHostEvents · 宿主命令响应（host→guest 通道消费�
   it('浏览器无桥（onHostCommand 缺失）→ init 仍返回 dispose 且不抛错', () => {
     delete (window as any).NuwaClawBridge;
     expect(() =>
-      initNuwaClawHostEvents({ setSecondMenuCollapsed: vi.fn() }),
+      initNuwaClawHostEvents({
+        setSecondMenuCollapsed: vi.fn(),
+        createNewTask: vi.fn(),
+      }),
     ).not.toThrow();
   });
 });

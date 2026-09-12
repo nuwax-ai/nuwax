@@ -102,42 +102,41 @@
     }
   }
 
-  // ===================== 分类标签 =====================
-  .tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
+  // ===================== 主tab(系统应用/团队空间) =====================
+  // Segmented 轨道去灰:对齐专家&专家团页观感(tab 行无背景)。
+  // 双类名提升优先级压过 ant-segmented 默认轨道灰;选中项白卡滑块与
+  // 红字高亮保留(红字来自全局主题 itemSelectedColor)
+  .source-segmented.source-segmented {
+    background: transparent;
+  }
+
+  // ===================== 二级分类/空间筛选 pill =====================
+  // 样式对齐专家·技能·连接器页 ResourceToolbar 的 category-tab(圆角胶囊)
+  .category-tabs {
+    gap: 8px;
+    margin-top: 14px;
     margin-bottom: 16px;
-    border-bottom: 1px solid @GRAY17;
+    flex-wrap: wrap;
+  }
 
-    .tab {
-      position: relative;
-      padding: 4px 0 12px;
-      font-size: 14px;
-      color: @GRAY11;
-      cursor: pointer;
+  .category-tab {
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: @fontSizeSm;
+    color: @GRAY05;
+    cursor: pointer;
+    transition: all 0.2s ease;
 
-      &:hover {
-        color: @BLUE01;
-      }
-
-      &.active {
-        color: @BLUE01;
-        font-weight: @fontWeightStrong;
-
-        // 激活态蓝色下划线
-        &::after {
-          content: '';
-          position: absolute;
-          left: 0;
-          right: 0;
-          bottom: -1px;
-          height: 2px;
-          border-radius: 1px;
-          background-color: @BLUE01;
-        }
-      }
+    &:hover {
+      color: @BLANK04;
+      background-color: @WHITE04;
     }
+  }
+
+  .category-tab-active {
+    color: @BLANK04;
+    background-color: @WHITE08;
+    font-weight: 500;
   }
 
   // ===================== 应用卡片网格 =====================
