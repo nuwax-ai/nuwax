@@ -44,8 +44,6 @@ const DEPLOYABLE_POLL_TIMEOUT_MS = 10 * 60 * 1000;
 export interface UseUserAppPublishOptions {
   /** 应用 ID */
   appId?: number;
-  /** SSE 检测到构建失败后恢复 active 任务轮询 */
-  onBuildFailed?: () => void;
   /** 构建并部署成功后，打开发布到市场弹窗 */
   onDeployed?: () => void;
   /** 部署成功后回写应用详情（prodDeployed 等） */
@@ -58,15 +56,13 @@ export interface UseUserAppPublishOptions {
  * AppDevPro 部署：构建 → SSE → 轮询可部署 → 生产 start；成功后再由页面打开发布弹窗。
  *
  * @param options.appId 应用 ID
- * @param options.onBuildFailed 构建失败回调
  * @param options.onDeployed 部署成功回调
  * @param options.onProjectInfo 回写应用详情
  * @param options.onDomainList 回写域名列表
  * @returns 部署状态与操作
  */
 export function useUserAppPublish(options: UseUserAppPublishOptions) {
-  const { appId, onBuildFailed, onDeployed, onProjectInfo, onDomainList } =
-    options;
+  const { appId, onDeployed, onProjectInfo, onDomainList } = options;
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
@@ -429,15 +425,11 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       setFailedStage(stage);
       setErrorMessage(text);
       setPhase('failed');
-      if (stage === 'build' && taskIdRef.current) {
-        onBuildFailed?.();
-      }
     }
   }, [
     appId,
     listenBuildProgress,
     refreshAfterDeploy,
-    onBuildFailed,
     onDeployed,
     phase,
     resetTaskState,

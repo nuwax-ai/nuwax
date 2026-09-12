@@ -49,6 +49,23 @@ export async function apiPublishedAgentList(
   });
 }
 
+/**
+ * 女娲应用-团队空间维度已发布应用列表接口（GET 口径）
+ * @description 与 POST 列表接口同路径、改 query 传参：仅 spaceId 按空间
+ * 筛选 + 分页参数（不带 kw/targetType/targetSubType）
+ */
+export async function apiPublishedAgentListBySpace(
+  params: Pick<SquarePublishedListParams, 'page' | 'pageSize'> & {
+    /** 空间筛选：仅查该空间内已发布的应用 */
+    spaceId: number;
+  },
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
+  return request('/api/published/agent/list', {
+    method: 'GET',
+    params,
+  });
+}
+
 // 广场-智能体与插件分类
 export async function apiPublishedCategoryList(): Promise<
   RequestResponse<SquareCategoryInfo[]>
