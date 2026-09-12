@@ -664,11 +664,9 @@ const AppDevPro: React.FC = () => {
     onBuildFailed: refreshTasksActive,
     onDeployed: () => {
       setOpenPublishModal(true);
-      if (appId) {
-        runGetUserAppInfo(appId);
-        runGetUserAppDomainList(appId);
-      }
     },
+    onProjectInfo: setUserAppInfo,
+    onDomainList: setUserAppDomainList,
   });
 
   /** 用户点停止后不再自动 start；刷新后为 false */
@@ -2155,6 +2153,7 @@ const AppDevPro: React.FC = () => {
         spaceId={spaceId}
         onConfirmUpdate={setUserAppInfo}
         onPublish={handleOpenPublish}
+        onOpenMarketPublish={() => setOpenPublishModal(true)}
         publishing={publishFlow.publishing}
         remotePublishing={showRemotePublishing}
         onCancelRemotePublish={handleCancelRemotePublish}

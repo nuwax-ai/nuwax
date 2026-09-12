@@ -2813,6 +2813,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.publishStreamClosed": "Build task connection closed",
   "PC.Pages.AppDevPro.publishSuccess": "Publish request submitted",
   "PC.Pages.AppDevPro.publishTitle": "Publish app",
+  "PC.Pages.AppDevPro.publishToMarket": "Publish",
   "PC.Pages.AppDevPro.remoteDesktop": "Remote desktop",
   "PC.Pages.AppDevPro.remoteDesktopDesc": "View the development remote desktop",
   "PC.Pages.AppDevPro.remoteDesktopEmpty": "No remote desktop URL available",

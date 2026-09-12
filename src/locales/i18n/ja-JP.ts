@@ -2744,6 +2744,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.publishStreamClosed": "ビルドタスクの接続が切断されました",
   "PC.Pages.AppDevPro.publishSuccess": "公開申請を送信しました",
   "PC.Pages.AppDevPro.publishTitle": "アプリを公開",
+  "PC.Pages.AppDevPro.publishToMarket": "公開",
   "PC.Pages.AppDevPro.remoteDesktop": "リモートデスクトップ",
   "PC.Pages.AppDevPro.remoteDesktopDesc": "開発環境のリモートデスクトップを表示します",
   "PC.Pages.AppDevPro.remoteDesktopEmpty": "リモートデスクトップのアクセス先がありません",

@@ -2813,6 +2813,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.publishStreamClosed": "构建任务连接已断开",
   "PC.Pages.AppDevPro.publishSuccess": "发布申请已提交",
   "PC.Pages.AppDevPro.publishTitle": "发布应用",
+  "PC.Pages.AppDevPro.publishToMarket": "发布",
   "PC.Pages.AppDevPro.remoteDesktop": "远程桌面",
   "PC.Pages.AppDevPro.remoteDesktopDesc": "查看开发环境远程桌面",
   "PC.Pages.AppDevPro.remoteDesktopEmpty": "暂无远程桌面地址",

@@ -2724,6 +2724,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevPro.publishStreamClosed": "構建任務連接已斷開",
   "PC.Pages.AppDevPro.publishSuccess": "發布申請已提交",
   "PC.Pages.AppDevPro.publishTitle": "發布應用",
+  "PC.Pages.AppDevPro.publishToMarket": "發布",
   "PC.Pages.AppDevPro.remoteDesktop": "遠程桌面",
   "PC.Pages.AppDevPro.remoteDesktopDesc": "查看開發環境遠程桌面",
   "PC.Pages.AppDevPro.remoteDesktopEmpty": "暫無遠程桌面地址",
