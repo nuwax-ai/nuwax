@@ -2302,6 +2302,7 @@ const AppDevPro: React.FC = () => {
       <AppDevPublishProgressModal
         open={publishFlow.open}
         phase={publishFlow.phase}
+        prodAccessUrl={publishFlow.prodAccessUrl}
         services={publishFlow.services}
         startServices={publishFlow.startServices}
         errorMessage={publishFlow.errorMessage}
@@ -2309,6 +2310,10 @@ const AppDevPro: React.FC = () => {
         cancelLoading={publishFlow.cancelLoading}
         onCancelTask={publishFlow.cancelTask}
         onClose={publishFlow.closeModal}
+        showReopenPublish={
+          publishFlow.phase === 'applying' && !openPublishModal
+        }
+        onReopenPublish={() => setOpenPublishModal(true)}
       />
     </div>
   );

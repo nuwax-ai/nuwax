@@ -251,9 +251,9 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   const previewInstanceKey = `${previewUrl ?? ''}::${refreshKey}`;
   const [loadedInstanceKey, setLoadedInstanceKey] = useState('');
   const iframeLoaded = loadedInstanceKey === previewInstanceKey;
-  const showStartProgress =
-    busy || phase === 'starting' || phase === 'building';
-  const showStartFailed = phase === 'failed' || phase === 'cancelled';
+  /** 启动任务进行中：展示日志区与取消，不是进度条 */
+  const isStarting = busy || phase === 'starting' || phase === 'building';
+  const startFailed = phase === 'failed' || phase === 'cancelled';
   const canShowIframe = !!previewUrl && (running || directPreview);
 
   const handleIframeLoad = useCallback(() => {
@@ -308,8 +308,8 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  if (showStartProgress || showStartFailed) {
-    const headText = showStartFailed
+  if (isStarting || startFailed) {
+    const headText = startFailed
       ? phase === 'cancelled'
         ? dict('PC.Pages.AppDevPro.startCancelled')
         : dict('PC.Pages.AppDevPro.startFailed')
@@ -319,9 +319,9 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
       <div className={cx(styles.container, styles.stage)}>
         <div className={cx(styles.logBoard)}>
           <div className={cx(styles.logHead)}>
-            {!showStartFailed ? <LoadingOutlined /> : null}
+            {!startFailed ? <LoadingOutlined /> : null}
             <span className={cx(styles.logHeadText)}>{headText}</span>
-            {showStartProgress && onCancelTask ? (
+            {isStarting && onCancelTask ? (
               <Button
                 size="small"
                 loading={cancelLoading}
@@ -330,7 +330,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
                 {dict('PC.Pages.AppDevPro.cancelTask')}
               </Button>
             ) : null}
-            {showStartFailed && onRetryStart ? (
+            {startFailed && onRetryStart ? (
               <Tooltip
                 title={
                   devActionLocked
