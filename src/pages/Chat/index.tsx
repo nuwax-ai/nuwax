@@ -513,7 +513,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       devTargetLookupFiredRef.current = true;
       void apiAgentConversationList({
         agentId: null,
-        includeArchived: true,
+        // 全量找会话（含已归档）做 devTarget 兜底跳转
+        archivedFilter: 'all',
         limit: 50,
       })
         .then((res) => {
