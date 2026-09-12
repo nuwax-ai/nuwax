@@ -13,7 +13,7 @@ import {
   apiAgentConversationList,
 } from '@/services/agentConfig';
 import { apiSkillList } from '@/services/library';
-import { apiRepoRecentlyAccessed, apiRepoSearch } from '@/services/repo';
+import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
 import {
   apiPublishedAgentList,
   apiPublishedSkillList,
@@ -29,7 +29,7 @@ import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { SkillInfo } from '@/types/interfaces/library';
 import type {
   RepoPageSearchItem,
-  RepoRecentlyAccessedItem,
+  RepoPortalPageInfo,
 } from '@/types/interfaces/repo';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
@@ -214,12 +214,12 @@ export const mapRepoSearchItem = (
 });
 
 export const mapRepoRecentItem = (
-  item: RepoRecentlyAccessedItem,
+  item: RepoPortalPageInfo,
 ): SearchResultItem => ({
   kind: 'repo',
   id: `repo-recent-${item.slugId}`,
   name: item.title || '--',
-  meta: formatModifiedTime(item.editedAt),
+  meta: formatModifiedTime(item.time),
   slugId: item.slugId,
 });
 
@@ -373,7 +373,9 @@ export async function fetchRepoList({
 export async function fetchRecentRepos(
   limit: number,
 ): Promise<SearchResultItem[]> {
-  const data = unwrap(await apiRepoRecentlyAccessed(0, limit));
+  const data = unwrap(
+    await apiRepoRecentlyAccessedPages({ from: 0, size: limit }),
+  );
   // 无 slugId 的行无法深链，直接过滤
   return (data ?? []).filter((item) => item.slugId).map(mapRepoRecentItem);
 }

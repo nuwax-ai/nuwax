@@ -107,15 +107,3 @@ export interface RepoPageSearchItem {
   /** 编辑时间 */
   editedAt?: string;
 }
-
-/** 资料库最近访问项（GET /api/repo/pages/recently-accessed，仅声明前端消费字段） */
-export interface RepoRecentlyAccessedItem {
-  /** 对外短链标识（深链 /repo/doc/{slugId} 寻址用） */
-  slugId?: string;
-  /** 页面标题 */
-  title?: string;
-  /** 编辑时间 */
-  editedAt?: string;
-  /** 所属空间 ID */
-  spaceId?: number;
-}

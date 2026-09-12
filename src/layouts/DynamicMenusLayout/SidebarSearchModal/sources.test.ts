@@ -21,7 +21,7 @@ vi.mock('@/services/library', () => ({
 
 vi.mock('@/services/repo', () => ({
   apiRepoSearch: vi.fn(),
-  apiRepoRecentlyAccessed: vi.fn(),
+  apiRepoRecentlyAccessedPages: vi.fn(),
 }));
 
 vi.mock('@/services/square', () => ({
@@ -43,7 +43,7 @@ import {
   apiAgentConversationList,
 } from '@/services/agentConfig';
 import { apiSkillList } from '@/services/library';
-import { apiRepoRecentlyAccessed, apiRepoSearch } from '@/services/repo';
+import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
 import {
   apiPublishedAgentList,
   apiPublishedSkillList,
@@ -71,7 +71,7 @@ const mocked = {
   apiAgentConfigList: vi.mocked(apiAgentConfigList),
   apiSkillList: vi.mocked(apiSkillList),
   apiRepoSearch: vi.mocked(apiRepoSearch),
-  apiRepoRecentlyAccessed: vi.mocked(apiRepoRecentlyAccessed),
+  apiRepoRecentlyAccessedPages: vi.mocked(apiRepoRecentlyAccessedPages),
   apiPublishedAgentList: vi.mocked(apiPublishedAgentList),
   apiPublishedSkillList: vi.mocked(apiPublishedSkillList),
   apiConnectorProviderPageList: vi.mocked(apiConnectorProviderPageList),
@@ -326,11 +326,17 @@ describe('fetchRepoList / fetchRecentRepos', () => {
   });
 
   it('最近访问：无 slugId 的行被过滤', async () => {
-    mocked.apiRepoRecentlyAccessed.mockResolvedValue(
-      ok([{ slugId: 'a', title: '有链接' }, { title: '无链接' }]) as never,
+    mocked.apiRepoRecentlyAccessedPages.mockResolvedValue(
+      ok([
+        { slugId: 'a', title: '有链接', time: '2026-09-12T10:00:00Z' },
+        { title: '无链接' },
+      ]) as never,
     );
     const items = await fetchRecentRepos(8);
-    expect(mocked.apiRepoRecentlyAccessed).toHaveBeenCalledWith(0, 8);
+    expect(mocked.apiRepoRecentlyAccessedPages).toHaveBeenCalledWith({
+      from: 0,
+      size: 8,
+    });
     expect(items.map((item) => item.slugId)).toEqual(['a']);
   });
 });
