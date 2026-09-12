@@ -68,8 +68,8 @@
     display: flex;
     align-items: center;
     gap: @marginSm;
-    height: 36px;
-    padding: 0 @paddingSm;
+    min-height: 36px;
+    padding: 3px @paddingSm;
     border-radius: @borderRadius;
     cursor: pointer;
     color: @navSecondMenuAdaptiveText;
@@ -82,6 +82,12 @@
     background-color: @navRowHoverBg;
   }
 
+  // 项目无子会话等不可点条目
+  .rowDisabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
   .rowIcon {
     display: flex;
     align-items: center;
@@ -92,12 +98,54 @@
     font-size: 15px;
   }
 
-  .rowLabel {
+  // 资源真实图标（专家/技能/连接器/项目/资料库）
+  .rowImg {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    object-fit: cover;
+  }
+
+  .rowMain {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .rowLabel {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  // 次要说明（描述/命中摘要），单行截断
+  .rowDesc {
+    font-size: @fontSizeSm;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // 双源来源标记（官方/团队）
+  .rowSource {
+    flex-shrink: 0;
+    font-size: @fontSizeSm;
+    line-height: 1;
+    padding: 2px @marginXs;
+    border-radius: @borderRadiusSm;
+  }
+
+  .sourceOfficial {
+    color: @colorPrimary;
+    background: @colorPrimaryBg;
+  }
+
+  .sourceTeam {
+    color: @navSecondMenuAdaptiveTextTertiary;
+    background: @navRowHoverBg;
   }
 
   .rowTime {

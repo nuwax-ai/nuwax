@@ -1,7 +1,11 @@
 /**
  * 资料库（空间文档仓库 Repo）服务
  */
-import type { RepoPageTreeNode } from '@/types/interfaces/repo';
+import type {
+  RepoPageSearchItem,
+  RepoPageTreeNode,
+  RepoRecentlyAccessedItem,
+} from '@/types/interfaces/repo';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -16,5 +20,38 @@ export async function apiRepoSpaceTree(
 ): Promise<RequestResponse<RepoPageTreeNode[]>> {
   return request(`/api/repo/spaces/${spaceId}/tree`, {
     method: 'GET',
+  });
+}
+
+/**
+ * 资料库全库搜索（GET /api/repo/search）
+ *
+ * - ES 关键字搜索；不传 spaceId 即跨全部空间
+ * - 分页参数为 from（偏移量）+ size
+ */
+export async function apiRepoSearch(params: {
+  spaceId?: number;
+  keyword: string;
+  from: number;
+  size: number;
+}): Promise<RequestResponse<RepoPageSearchItem[]>> {
+  return request('/api/repo/search', {
+    method: 'GET',
+    params,
+  });
+}
+
+/**
+ * 资料库最近访问列表（GET /api/repo/pages/recently-accessed）
+ *
+ * - 门户「最近访问」数据源，from（偏移量）+ size 分页
+ */
+export async function apiRepoRecentlyAccessed(
+  from: number,
+  size: number,
+): Promise<RequestResponse<RepoRecentlyAccessedItem[]>> {
+  return request('/api/repo/pages/recently-accessed', {
+    method: 'GET',
+    params: { from, size },
   });
 }

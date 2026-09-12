@@ -59,3 +59,31 @@ export interface SelectedDocInfo {
   /** 选择的资料库文档类型 */
   pageType?: string;
 }
+
+/** 资料库搜索命中项（GET /api/repo/search，对齐子仓 RepoPageSearchVO，仅声明前端消费字段） */
+export interface RepoPageSearchItem {
+  /** 页面主键 */
+  pageId?: number;
+  /** 所属空间 ID */
+  spaceId?: number;
+  /** 对外短链标识（深链 /repo/doc/{slugId} 寻址用） */
+  slugId?: string;
+  /** 页面标题 */
+  title?: string;
+  /** 命中摘要（可能含高亮标签，展示前剥离 HTML） */
+  snippet?: string;
+  /** 编辑时间 */
+  editedAt?: string;
+}
+
+/** 资料库最近访问项（GET /api/repo/pages/recently-accessed，仅声明前端消费字段） */
+export interface RepoRecentlyAccessedItem {
+  /** 对外短链标识（深链 /repo/doc/{slugId} 寻址用） */
+  slugId?: string;
+  /** 页面标题 */
+  title?: string;
+  /** 编辑时间 */
+  editedAt?: string;
+  /** 所属空间 ID */
+  spaceId?: number;
+}
