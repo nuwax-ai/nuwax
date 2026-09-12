@@ -14,7 +14,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 10px;
+  // 右内边距 11px：让行尾「⋯」与项目面板会话子行的 ⋯ 右缘对齐
+  //（子行 .child-actions 内缩 11px；2026-09-12 需求）
+  padding: 11px 11px 11px 10px;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -96,9 +98,11 @@
         color: @colorWarning;
       }
 
-      // 「⋯」菜单兜底按钮：hover 显示；触屏（hover: none）常显
+      // 「⋯」菜单兜底按钮：hover 显示；触屏（hover: none）常显。
+      // 字号 15px 对齐项目子行 ⋯（SvgIcon icons-common-more 同款视觉大小）
       :global(.more-btn) {
         flex-shrink: 0;
+        font-size: 15px;
         opacity: 0;
         transition: opacity 0.2s ease;
       }
@@ -230,7 +234,8 @@
   position: relative;
   min-height: 36px;
   box-sizing: border-box;
-  padding: 8px 10px 8px 11px;
+  // 右内边距 11px：⋯ 右缘与项目子行对齐（同上）
+  padding: 8px 11px 8px 11px;
   transition: background 0.18s ease;
 
   .conversation-item-content .conversation-topic-row {
@@ -245,7 +250,8 @@
 
     :global(.more-btn) {
       position: absolute;
-      right: 8px;
+      // 右锚 11px：⋯ 右缘与项目面板会话子行的 ⋯ 对齐（2026-09-12 需求）
+      right: 11px;
       z-index: 1;
       width: @controlHeightSm;
       height: @controlHeightSm;
@@ -264,6 +270,11 @@
     margin: 0 -5px;
     padding-left: @padding;
     padding-right: 15px;
+
+    // 白卡负 margin 向右外扩 5px：⋯ 右锚点同步 +5px，选中时图标视口位置不跳
+    .conversation-item-content .conversation-topic-row :global(.more-btn) {
+      right: 16px;
+    }
   }
 
   &:hover .conversation-date,

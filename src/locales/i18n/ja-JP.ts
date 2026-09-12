@@ -906,6 +906,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ThemeConfigBackgroundImagePanel.customSectionTitle": "カスタム背景画像",
   "PC.Components.ThemeConfigBackgroundImagePanel.emptyAvailable": "利用可能な背景画像がありません",
   "PC.Components.ThemeConfigBackgroundImagePanel.panelTitle": "背景画像",
+  "PC.Components.ThemeConfigBackgroundImagePanel.lockedHint": "シングルカラムスタイルでは単色背景のみ使用できます。クラシックスタイルに切り替えると変更できます",
   "PC.Components.ThemeConfigBackgroundImagePanel.systemSectionTitle": "システムの背景画像",
   "PC.Components.ThemeConfigBackgroundImagePanel.uploadImage": "画像をアップロードする",
   "PC.Components.ThemeConfigNavigationStylePanel.colorSectionTitle": "ライト/ダーク",

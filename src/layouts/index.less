@@ -52,8 +52,10 @@
     margin-left: @marginXs;
   }
 
-  // 风格2的适配
-  &.xagi-nav-style2 {
+  // 风格2的适配（2026-09-12 需求：单栏 style3 的 page-container 同样参考风格 2——
+  // 贴边满铺、无圆角无阴影，展开态左侧描边作二级列与内容区分隔）
+  &.xagi-nav-style2,
+  &.xagi-nav-style3 {
     margin: 0;
     border-radius: 0;
     box-shadow: none;

@@ -26,6 +26,12 @@ import {
 import { migrateLegacyNavigationStyleToStyle3 } from './navStyleMigration';
 
 /**
+ * 单栏（style3）锁定的背景：背景列表第一个纯色（无图）背景（2026-09-12 需求，
+ * 单栏风格下背景不可修改，见 updateData 内的不变量收敛）。
+ */
+const singleColumnBackgroundId = backgroundConfigs.find((bg) => !bg.url)?.id;
+
+/**
  * 统一主题配置接口
  */
 export interface UnifiedThemeData {
@@ -74,21 +80,33 @@ class UnifiedThemeService {
    * 优先级：用户设置 > 租户信息设置 > 默认配置
    */
   private loadConfiguration(): UnifiedThemeData {
+    let data: UnifiedThemeData;
     // 1. 尝试加载用户设置（最高优先级）
     const userConfig = this.loadUserSettings();
     if (userConfig) {
-      return { ...userConfig, source: 'user' };
+      data = { ...userConfig, source: 'user' };
+    } else {
+      // 2. 尝试加载租户信息设置
+      const tenantConfig = this.loadTenantSettings();
+      if (tenantConfig) {
+        data = { ...tenantConfig, source: 'tenant' };
+      } else {
+        // 3. 使用默认配置
+        data = { ...this.getDefaultConfiguration(), source: 'default' };
+      }
     }
 
-    // 2. 尝试加载租户信息设置
-    const tenantConfig = this.loadTenantSettings();
-    if (tenantConfig) {
-      return { ...tenantConfig, source: 'tenant' };
+    // 单栏（style3）锁定纯色背景（2026-09-12 需求）：历史「单栏 + 图片背景」
+    // 状态在加载时归一（不回写存储，仅收敛生效态），与 updateNavigationStyle
+    // 的切入收敛同源
+    if (
+      data.navigationStyle === ThemeNavigationStyleType.STYLE3 &&
+      singleColumnBackgroundId &&
+      data.backgroundId !== singleColumnBackgroundId
+    ) {
+      data.backgroundId = singleColumnBackgroundId;
     }
-
-    // 3. 使用默认配置
-    const defaultConfig = this.getDefaultConfiguration();
-    return { ...defaultConfig, source: 'default' };
+    return data;
   }
 
   /**
@@ -296,6 +314,20 @@ class UnifiedThemeService {
     style: ThemeNavigationStyleType,
     options: UpdateOptions = {},
   ): Promise<void> {
+    // 单栏（style3）锁定纯色背景（2026-09-12 需求：只能第一个纯色、不允许修改）：
+    // 切入单栏时把背景一并收敛，随后的背景写入由设置面板置灰拦在 UI 层。
+    // 不在 updateData 里做全局不变量——租户管理页的背景预览共用本服务，
+    // 管理员运行态为单栏时会被误强转
+    if (
+      style === ThemeNavigationStyleType.STYLE3 &&
+      this.currentData.backgroundId !== singleColumnBackgroundId
+    ) {
+      await this.updateData(
+        { navigationStyle: style, backgroundId: singleColumnBackgroundId! },
+        options,
+      );
+      return;
+    }
     await this.updateData({ navigationStyle: style }, options);
   }
 

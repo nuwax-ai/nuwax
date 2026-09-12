@@ -1040,6 +1040,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ThemeConfigBackgroundImagePanel.customSectionTitle": "Custom Background Images",
   "PC.Components.ThemeConfigBackgroundImagePanel.emptyAvailable": "No available background image",
   "PC.Components.ThemeConfigBackgroundImagePanel.panelTitle": "Background Image",
+  "PC.Components.ThemeConfigBackgroundImagePanel.lockedHint": "Only the solid background is available in single-column style. Switch to a classic style to change it.",
   "PC.Components.ThemeConfigBackgroundImagePanel.systemSectionTitle": "System Background Images",
   "PC.Components.ThemeConfigBackgroundImagePanel.uploadImage": "Upload Image",
   "PC.Components.ThemeConfigNavigationStylePanel.colorSectionTitle": "Light/Dark",
@@ -1522,8 +1523,6 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.collapseSessions": "Collapse",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation": "Add conversation",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable": "Adding a project conversation is not available yet.",
-  "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationNoAgent":
-    "No available agent found to create the conversation.",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.toggleAllProjects": "Expand/collapse all projects",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "Failed",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder": "Search",

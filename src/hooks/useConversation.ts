@@ -1,6 +1,7 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   AgentDetailDto,
   AgentSelectedComponentInfo,
@@ -55,6 +56,11 @@ const useConversation = () => {
        * 携带 projectId/devAgentId/sandboxId（契约先行，2026-09-10 后端未 ready）。
        */
       projectId?: number;
+      /**
+       * 上框/直建项目的类型（UserApp=全栈 / NormalProject=常规）。
+       * 后端按 projectId 绑定项目时必填（2026-09-12 实测），缺省报「项目类型不能为空」。
+       */
+      projectType?: AgentComponentTypeEnum;
       /** 项目绑定的调试智能体 ID（全栈项目上框携带） */
       devAgentId?: number;
       /** 项目沙箱（上框项目自带，优先于个人电脑选择） */
@@ -88,6 +94,9 @@ const useConversation = () => {
       ...(attach?.projectId
         ? {
             projectId: attach.projectId,
+            // 项目类型为绑定项目时后端必填，调用方缺失时按常规项目兜底
+            projectType:
+              attach.projectType ?? AgentComponentTypeEnum.NormalProject,
             ...(attach.devAgentId ? { devAgentId: attach.devAgentId } : {}),
             ...(attach.sandboxId ? { sandboxId: attach.sandboxId } : {}),
           }
