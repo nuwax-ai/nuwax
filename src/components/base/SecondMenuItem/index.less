@@ -35,10 +35,14 @@
     color: @colorPrimary;
     border-radius: var(--xagi-nav-second-row-radius, @borderRadius);
     box-shadow: @boxShadowTertiary;
+    // 字重仅选中加粗（2026-09-12 单栏需求）：单栏二级列容器注入 500，
+    // 经典布局不设变量回落 normal（与原行为一致）
+    font-weight: var(--xagi-nav-second-row-active-font-weight, normal);
 
     :global {
       .ant-typography {
         color: @colorPrimary;
+        font-weight: var(--xagi-nav-second-row-active-font-weight, normal);
       }
     }
 

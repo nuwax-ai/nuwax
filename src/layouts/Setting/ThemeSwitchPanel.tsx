@@ -12,7 +12,11 @@
 import BackgroundImagePanel from '@/components/business-component/ThemeConfig/BackgroundImagePanel';
 import NavigationStylePanel from '@/components/business-component/ThemeConfig/NavigationStylePanel';
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
-import { backgroundConfigs, STORAGE_KEYS } from '@/constants/theme.constants';
+import {
+  backgroundConfigs,
+  STORAGE_KEYS,
+  THEME_BACKGROUND_CONFIGS,
+} from '@/constants/theme.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -21,7 +25,7 @@ import {
 } from '@/services/nuwaClawTheme';
 import unifiedThemeService from '@/services/unifiedThemeService';
 import { BackgroundImage } from '@/types/background';
-import { ThemeLayoutColorStyle } from '@/types/enums/theme';
+import { ThemeLayoutColorStyle, ThemeNavigationStyleType } from '@/types/enums/theme';
 import { TenantThemeConfig } from '@/types/tenant';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -29,6 +33,15 @@ import React, { useCallback, useMemo } from 'react';
 import styles from './ThemeSwitchPanel.less';
 
 const cx = classNames.bind(styles);
+
+/**
+ * 单栏（style3）锁定的背景：背景列表第一个纯色（无图）背景。
+ * 单栏风格下背景不可修改（2026-09-12 需求；服务层 updateData 同款不变量兜底），
+ * 仅切入单栏时若背景不同给出一次性联动提示。
+ */
+const singleColumnDefaultBackground = THEME_BACKGROUND_CONFIGS.find(
+  (bg) => !bg.url,
+);
 
 interface ThemeSwitchPanelProps {
   /** 租户主题配置 */
@@ -100,6 +113,13 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
 
   // 处理背景图变更
   const handleBackgroundChange = async (backgroundId: string) => {
+    // 单栏风格锁定纯色背景（2026-09-12 需求）：背景面板已置灰，此处兜底拦截
+    if (navigationStyle === ThemeNavigationStyleType.STYLE3) {
+      message.info(
+        dict('PC.Components.ThemeConfigBackgroundImagePanel.lockedHint'),
+      );
+      return;
+    }
     try {
       // updateBackground 方法内部会自动处理布局风格联动
       await updateBackground(backgroundId);
@@ -129,9 +149,28 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
 
   // 处理导航风格变更
   const handleNavigationStyleChange = async (styleId: string) => {
+    // 切入单栏前先记下当前背景：服务层不变量会把单栏背景收敛到纯色（2026-09-12
+    // 需求：单栏只能第一个纯色背景、不允许修改），此处仅负责补一条联动提示
+    const previousBackgroundId =
+      styleId === ThemeNavigationStyleType.STYLE3
+        ? unifiedThemeService.getCurrentData().backgroundId
+        : undefined;
     try {
       await updateNavigationStyle(styleId as any);
       setHasUserSwitchThemeFlag();
+      if (
+        previousBackgroundId &&
+        singleColumnDefaultBackground &&
+        previousBackgroundId !== singleColumnDefaultBackground.id
+      ) {
+        message.info(
+          dict(
+            'PC.Layouts.Setting.ThemeSwitchPanel.autoSwitchBackground',
+            singleColumnDefaultBackground.name,
+            dict('PC.Layouts.Setting.ThemeSwitchPanel.light'),
+          ),
+        );
+      }
     } catch (error) {
       console.error('Failed to update navigation style:', error);
       message.error(
@@ -144,6 +183,11 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   const handleNavigationThemeToggle = async () => {
     try {
       await toggleNavigationTheme();
+      // 单栏锁定纯色背景（2026-09-12 需求）：跳过「深浅色不匹配自动换背景」
+      // 联动，背景恒为纯色（服务层不变量同样兜底）
+      if (navigationStyle === ThemeNavigationStyleType.STYLE3) {
+        return;
+      }
       const themeData = unifiedThemeService.getCurrentData();
       // 检查当前背景是否与新的导航栏深浅色匹配
       const currentBackgroundLayoutStyle = getLayoutStyleByBackgroundId(
@@ -224,6 +268,8 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
               currentBackground={backgroundId}
               onBackgroundChange={handleBackgroundChange}
               enableCustomUpload={false}
+              // 单栏风格锁定纯色背景（2026-09-12 需求）：面板置灰不可选
+              disabled={navigationStyle === ThemeNavigationStyleType.STYLE3}
             />
           </div>
         </div>

@@ -58,6 +58,9 @@
   }
 
   // 行通用：15px 外边距 + 12px 内容缩进，对齐原型 27px 图标基线
+  // 配色/字重按 2026-09-12 原型：默认文字 #4b4a53 / normal；hover 白透底 +
+  // 文字 #1c1b20 + 图标品牌色；选中见 .nav-item-active。单栏已锁定纯色浅底
+  // 背景，浅色字面量安全
   .action-row,
   .nav-item {
     display: flex;
@@ -67,15 +70,22 @@
     padding: 7px 12px;
     border-radius: 11px;
     cursor: pointer;
-    color: @navSecondMenuAdaptiveText;
+    color: #4b4a53;
     font-size: 13.5px;
-    font-weight: 500;
+    font-weight: normal;
     line-height: normal;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.16s ease, color 0.16s ease;
     user-select: none;
 
-    // hover 灰底轻提示（单栏统一交互态，见 nav-item-state.less）
-    .nav-row-hover();
+    &:hover {
+      background: rgba(255, 255, 255, 0.72);
+      color: #1c1b20;
+
+      .action-icon,
+      .nav-item-icon {
+        color: @colorPrimary;
+      }
+    }
   }
 
   .new-task-row {
@@ -89,7 +99,8 @@
     justify-content: center;
     width: 16px;
     flex-shrink: 0;
-    color: @navSecondMenuAdaptiveTextSecondary;
+    // 原型 --icon：默认次级灰，hover/选中由外层提亮为品牌色
+    color: #94939e;
     font-size: 16px;
   }
 
@@ -116,12 +127,14 @@
     margin-top: 2px;
   }
 
-  // 选中态与二级列对齐：容器白卡 + 阴影 + 主题色文字（原灰底+字重覆盖已废弃——
-  // @fontWeightStrong=400 比基础 500 还细，且灰底与 hover 无法区分）
+  // 选中态（2026-09-12 原型 qm-item.active）：容器白卡 + 阴影、文字近黑
+  // #141416、图标品牌色（--icon-active）；字重按需求定调 500（原型 600），
+  // 默认态 normal
   .nav-item-active {
     .nav-row-selected();
 
-    color: @colorPrimary;
+    font-weight: 500;
+    color: #141416;
 
     .action-icon,
     .nav-item-icon {

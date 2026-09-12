@@ -16,6 +16,7 @@ vi.mock('@/services/i18nRuntime', () => ({
 }));
 
 import { STORAGE_KEYS } from '@/constants/theme.constants';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { unifiedThemeService } from './unifiedThemeService';
 
 /** 预置迁移 guard，避免 loadUserSettings 的一次性迁移干扰用例 */
@@ -108,6 +109,110 @@ describe('normalizeTenantConfig（租户兜底字段兼容）', () => {
     const data = unifiedThemeService.getCurrentData();
     expect(data.source).toBe('user');
     expect(data.navigationStyle).toBe('style1');
+  });
+});
+
+describe('单栏（style3）锁定纯色背景（2026-09-12 需求）', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    seedMigrationGuard();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('写入路径：切入 style3 时背景随导航风格一并收敛纯色并落库', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.USER_THEME_CONFIG,
+      JSON.stringify({
+        selectedThemeColor: '#5147ff',
+        selectedBackgroundId: 'bg-variant-1',
+        navigationStyleId: 'style1',
+        navigationStyle: 'light',
+        antdTheme: 'light',
+        timestamp: Date.now(),
+      }),
+    );
+    unifiedThemeService.reloadConfiguration(false);
+
+    await unifiedThemeService.updateNavigationStyle(
+      ThemeNavigationStyleType.STYLE3,
+    );
+
+    expect(unifiedThemeService.getCurrentData().backgroundId).toBe('bg-solid');
+    // 收敛后的值随保存链落库
+    expect(
+      JSON.parse(
+        localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG) || '{}',
+      ).selectedBackgroundId,
+    ).toBe('bg-solid');
+  });
+
+  it('写入路径：经典风格下背景可自由切换，不受不变量影响', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.USER_THEME_CONFIG,
+      JSON.stringify({
+        selectedBackgroundId: 'bg-variant-1',
+        navigationStyleId: 'style1',
+        navigationStyle: 'light',
+        timestamp: Date.now(),
+      }),
+    );
+    unifiedThemeService.reloadConfiguration(false);
+
+    await unifiedThemeService.updateBackground('bg-variant-3');
+
+    expect(unifiedThemeService.getCurrentData().backgroundId).toBe(
+      'bg-variant-3',
+    );
+  });
+
+  it('加载路径：租户模板 style3 + 图片背景，加载即收敛纯色且来源保持租户', () => {
+    seedTenantTemplate({
+      primaryColor: '#5147ff',
+      backgroundId: 'bg-variant-5',
+      layoutStyle: 'light',
+      navigationStyle: 'style3',
+    });
+
+    unifiedThemeService.reloadConfiguration(false);
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.navigationStyle).toBe('style3');
+    expect(data.backgroundId).toBe('bg-solid');
+    expect(data.source).toBe('tenant');
+  });
+
+  it('迁移路径：存量 style1 + 图片背景迁移到 style3 后，加载即收敛纯色', () => {
+    // 本用例需要真实触发一次性迁移，先撤掉 beforeEach 预置的 guard
+    localStorage.removeItem('xagi-nav-style-migrated-style3');
+    localStorage.setItem(
+      STORAGE_KEYS.USER_THEME_CONFIG,
+      JSON.stringify({
+        selectedThemeColor: '#5147ff',
+        selectedBackgroundId: 'bg-variant-7',
+        navigationStyleId: 'style1',
+        navigationStyle: 'dark',
+        antdTheme: 'light',
+        timestamp: Date.now(),
+      }),
+    );
+
+    unifiedThemeService.reloadConfiguration(false);
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.navigationStyle).toBe('style3');
+    expect(data.backgroundId).toBe('bg-solid');
+  });
+
+  it('默认配置：style3 默认态下空背景收敛为纯色（面板高亮第一个选项）', () => {
+    unifiedThemeService.reloadConfiguration(false);
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.navigationStyle).toBe('style3');
+    expect(data.backgroundId).toBe('bg-solid');
+    expect(data.source).toBe('default');
   });
 });
 

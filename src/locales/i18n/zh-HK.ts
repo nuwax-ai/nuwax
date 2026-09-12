@@ -906,6 +906,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.ThemeConfigBackgroundImagePanel.customSectionTitle": "自定義背景圖片",
   "PC.Components.ThemeConfigBackgroundImagePanel.emptyAvailable": "暫無可用背景圖",
   "PC.Components.ThemeConfigBackgroundImagePanel.panelTitle": "背景圖片",
+  "PC.Components.ThemeConfigBackgroundImagePanel.lockedHint": "單欄風格下僅支援純色背景，切換為經典風格後可修改",
   "PC.Components.ThemeConfigBackgroundImagePanel.systemSectionTitle": "系統自帶背景圖片",
   "PC.Components.ThemeConfigBackgroundImagePanel.uploadImage": "上傳圖片",
   "PC.Components.ThemeConfigNavigationStylePanel.colorSectionTitle": "深淺色",
