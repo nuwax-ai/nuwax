@@ -851,7 +851,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           style={{
             width: SECOND_COLUMN_WIDTH,
             paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
-            backgroundColor: secondaryBackgroundColor,
+            // 底色交给 less（原型 #fafafa，2026-09-12）：此处原内联 transparent
+            // 会盖掉 less 背景，移除后单栏二级列按原型配色渲染
           }}
         >
           <div className={cx(styles['nav-menus-scroll'])}>

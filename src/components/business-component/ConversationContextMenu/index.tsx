@@ -1,3 +1,4 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiAgentConversationArchive,
@@ -10,7 +11,6 @@ import {
   DeleteOutlined,
   EditOutlined,
   InboxOutlined,
-  MoreOutlined,
   PushpinOutlined,
 } from '@ant-design/icons';
 import { Dropdown, Input, message, Modal } from 'antd';
@@ -197,7 +197,9 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   const moreButton = showMoreButton ? (
     <Dropdown menu={menuProps} trigger={['click']}>
       <span className={cx('more-btn')} onClick={(e) => e.stopPropagation()}>
-        <MoreOutlined />
+        {/* 与项目面板行图标族统一（icons-common-more，2026-09-12 需求）；
+            SvgIcon 内联字号优先于 CSS，须显式 15px 与项目子行 ⋯ 同款 */}
+        <SvgIcon name="icons-common-more" style={{ fontSize: 15 }} />
       </span>
     </Dropdown>
   ) : null;
