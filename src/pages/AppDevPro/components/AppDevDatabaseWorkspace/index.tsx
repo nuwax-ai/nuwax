@@ -1,5 +1,6 @@
 import classNames from 'classnames';
 import React from 'react';
+import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import { UserAppDbEnvEnum } from '../../services/appDb';
 import AppDevDatabaseConfigPanel from '../AppDevDatabaseConfigPanel';
 import AppDevDatabasePanel from '../AppDevDatabasePanel';
@@ -18,6 +19,10 @@ export interface AppDevDatabaseWorkspaceProps {
   appId: number;
   /** 当前 Tab */
   activeTab: AppDevDatabaseWorkspaceTab;
+  /** 线上环境容器状态，进入线上数据库管理页前须先就绪 */
+  prodContainerStatus?: UserAppEnvPodStatus;
+  /** 重试启动线上环境容器 */
+  onRetryProdContainer?: () => void;
 }
 
 /**
@@ -31,6 +36,8 @@ export interface AppDevDatabaseWorkspaceProps {
 const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
   appId,
   activeTab,
+  prodContainerStatus,
+  onRetryProdContainer,
 }) => {
   return (
     <div className={cx(styles.workspace)}>
@@ -46,7 +53,12 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           [styles.hidden]: activeTab !== 'database-prod',
         })}
       >
-        <AppDevDatabasePanel appId={appId} env={UserAppDbEnvEnum.Prod} />
+        <AppDevDatabasePanel
+          appId={appId}
+          env={UserAppDbEnvEnum.Prod}
+          containerStatus={prodContainerStatus}
+          onRetryContainer={onRetryProdContainer}
+        />
       </div>
       <div
         className={cx(styles.pane, {

@@ -79,6 +79,7 @@ import {
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
+import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
 import { useUserAppRuntime } from './hooks/useUserAppRuntime';
 import { useUserAppTasksActive } from './hooks/useUserAppTasksActive';
@@ -460,6 +461,34 @@ const AppDevPro: React.FC = () => {
     }
     return 'starting';
   }, [dbEnv, finalSelectedComputerId, podStatus, queryConversationId]);
+
+  /**
+   * 线上环境容器：打开线上数据库或线上终端时再 ensure，
+   * 未发布时 Header 没有环境切换，这两个入口自己负责拉起容器。
+   */
+  const prodConversationId =
+    finalSelectedComputerId === '-1' ? queryConversationId : undefined;
+  const prodPod = useUserAppEnvPod(prodConversationId, UserAppDbEnvEnum.Prod);
+  const prodPodEnsureRef = useRef(prodPod.ensure);
+  prodPodEnsureRef.current = prodPod.ensure;
+
+  const prodExternalContainerStatus = useMemo(():
+    | ConsoleExternalContainerStatus
+    | undefined => {
+    if (!prodConversationId) {
+      return undefined;
+    }
+    if (prodPod.status === 'running') {
+      return 'running';
+    }
+    if (prodPod.status === 'starting') {
+      return 'starting';
+    }
+    if (prodPod.status === 'error') {
+      return 'error';
+    }
+    return undefined;
+  }, [prodConversationId, prodPod.status]);
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(appId, {
@@ -1684,6 +1713,9 @@ const AppDevPro: React.FC = () => {
 
   const handleDatabaseTabSelect = useCallback((tabId: string) => {
     setDatabaseTabId(tabId);
+    if (tabId === getToolTabId('database-prod')) {
+      void prodPodEnsureRef.current();
+    }
   }, []);
 
   const databaseActiveTab: AppDevDatabaseWorkspaceTab =
@@ -1694,6 +1726,14 @@ const AppDevPro: React.FC = () => {
       : databaseTabId === getToolTabId('database-config-prod')
       ? 'database-config-prod'
       : 'database';
+
+  /** 进入线上环境数据库管理页时，若容器未就绪则先启动 */
+  useEffect(() => {
+    if (workspaceView !== 'database' || databaseActiveTab !== 'database-prod') {
+      return;
+    }
+    void prodPodEnsureRef.current();
+  }, [databaseActiveTab, workspaceView]);
 
   /** 打开独立应用预览视图；已启动或线上环境有地址时不再重复 start */
   const handleOpenAppPreview = useCallback(() => {
@@ -1878,9 +1918,21 @@ const AppDevPro: React.FC = () => {
   /** 数据库工作区：管理 iframe + 配置 */
   const databaseWorkspace = useMemo(
     () => (
-      <AppDevDatabaseWorkspace appId={appId} activeTab={databaseActiveTab} />
+      <AppDevDatabaseWorkspace
+        appId={appId}
+        activeTab={databaseActiveTab}
+        prodContainerStatus={prodConversationId ? prodPod.status : undefined}
+        onRetryProdContainer={() => {
+          void prodPodEnsureRef.current(true);
+        }}
+      />
     ),
-    [appId, databaseActiveTab],
+    [
+      appId,
+      databaseActiveTab,
+      prodConversationId,
+      prodPod.status,
+    ],
   );
 
   /** 「应用预览」页签：准备中 / 启动预览 / 启动日志 / 应用加载 / iframe */
@@ -2120,6 +2172,15 @@ const AppDevPro: React.FC = () => {
               env={dbEnv}
               appStage={dbEnv}
               externalContainerStatus={terminalExternalContainerStatus}
+              prodExternalContainerStatus={prodExternalContainerStatus}
+              onActiveTerminalEnvChange={(terminalEnv) => {
+                if (terminalEnv === UserAppDbEnvEnum.Prod) {
+                  void prodPodEnsureRef.current();
+                }
+              }}
+              onRetryProdContainer={() => {
+                void prodPodEnsureRef.current(true);
+              }}
               visible={showDevConsole}
               devWsUrl={terminalDevWsUrl}
               prodWsUrl={terminalProdWsUrl}
