@@ -427,10 +427,32 @@
 
   // 列表样式对齐会话区渲染(ds-markdown):12px 垂直间距 / 24px 缩进 /
   // 行间距 4px / 灰色 marker(neutral-450),显式写死不依赖 CSS 加载顺序
+  // 恢复被 global.less 全局 ul/li list-style:none 干掉的列表标记，
+  // 三级符号口径对齐会话区 .markdown-container（disc/circle/square、有序 decimal）
+  ul {
+    list-style: disc;
+
+    ul {
+      list-style: circle;
+
+      ul {
+        list-style: square;
+      }
+    }
+  }
+
+  ol {
+    list-style: decimal;
+  }
+
   ul,
   ol {
     margin: 12px 0;
     padding-left: 24px;
+
+    li {
+      list-style: unset;
+    }
   }
 
   li:not(:first-child) {
@@ -446,24 +468,24 @@
     margin-top: 4px;
   }
 
+  // 表格对齐会话区 .markdown-table 口径：内容自适应宽（不强制铺满）、
+  // 恒左对齐（!important 压过 remark-gfm 按源标记生成的行内 text-align）、
+  // 无斑马纹/表头灰底；超宽由 .md-table-content 卡片内横向滚动
   table {
     border-collapse: collapse;
-    width: 100%;
+    width: max-content;
+    min-width: 240px;
     margin-bottom: 16px;
 
     th,
     td {
       padding: 6px 13px;
-      border: 1px solid #dfe2e5;
+      border: 1px solid #d9d9d9;
+      text-align: left !important;
     }
 
     th {
       font-weight: 600;
-      background-color: #f6f8fa;
-    }
-
-    tr:nth-child(2n) {
-      background-color: #f6f8fa;
     }
   }
 

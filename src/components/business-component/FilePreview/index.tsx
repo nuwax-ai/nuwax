@@ -25,6 +25,7 @@ import React, {
 } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import styles from './index.less';
@@ -51,9 +52,14 @@ import { init as pptxInit } from 'pptx-preview';
 
 /** 文件预览 Markdown：GFM + KaTeX（静态全文，不走流式打字机） */
 const FILE_PREVIEW_REMARK_PLUGINS = [remarkGfm, remarkMath];
-const FILE_PREVIEW_REHYPE_PLUGINS = [
+// rehype-raw：渲染 md 内嵌行内 HTML（如 <sub>/<sup>），对齐会话区/静态页行为
+// （react-markdown 默认丢弃 raw HTML，文档里的 H<sub>2</sub>O 会原样露出标签）
+const FILE_PREVIEW_REHYPE_PLUGINS: Parameters<
+  typeof ReactMarkdown
+>[0]['rehypePlugins'] = [
+  rehypeRaw,
   [rehypeKatex, { throwOnError: false, strict: 'ignore' }],
-] as const;
+];
 
 /** 递归提取 ReactMarkdown pre>code 子树里的纯文本（code 的 children 可能是字符串数组） */
 const extractMarkdownCodeText = (node: React.ReactNode): string => {
