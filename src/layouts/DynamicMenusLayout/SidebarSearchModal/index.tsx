@@ -31,16 +31,15 @@ import { useSidebarCollapse } from '../useSidebarCollapse';
 import { findMenuByCode, handleOpenUrl, resolveMenuPath } from '../utils';
 import styles from './index.less';
 import type {
-  SearchFetchParams,
+  SearchPageCursor,
   SearchResultItem,
   SearchRowKind,
   SearchTab,
 } from './sources';
-import { fetchRecentRepos, fetchRecentTasks, SEARCH_FETCHERS } from './sources';
+import { SEARCH_FETCHERS } from './sources';
 
 const cx = classNames.bind(styles);
 
-const RECENT_LIMIT = 8;
 const SEARCH_LIMIT = 20;
 const SEARCH_DEBOUNCE_MS = 500;
 
@@ -101,23 +100,31 @@ const SidebarSearchModal: React.FC = () => {
 
   const [keyword, setKeyword] = useState('');
   const [activeTab, setActiveTab] = useState<SearchTab>('task');
-  // 任务「最近访问」（打开弹窗即拉）
-  const [recentTasks, setRecentTasks] = useState<SearchResultItem[]>([]);
-  // 资料库「最近访问」（首次切到资料库 tab 时拉）
-  const [recentRepos, setRecentRepos] = useState<SearchResultItem[]>([]);
-  const [recentRepoLoading, setRecentRepoLoading] = useState(false);
-  // 关键词搜索结果 / 无关键词分类列表（带 loading）
+  // 分页视图：当前自渲染 tab 的列表（任务/项目/连接器/资料库统一走分页取数）
   const [view, setView] = useState<{
     items: SearchResultItem[];
+    hasMore: boolean;
+    cursor: SearchPageCursor;
     loading: boolean;
-  }>({ items: [], loading: false });
+    loadingMore: boolean;
+  }>({
+    items: [],
+    hasMore: false,
+    cursor: {},
+    loading: false,
+    loadingMore: false,
+  });
   const [selectedIdx, setSelectedIdx] = useState(0);
 
-  // 结果缓存（key: `${tab}|${keyword}`；弹窗每次打开清空保证数据新鲜）
-  const cacheRef = useRef(new Map<string, SearchResultItem[]>());
+  // 分页结果缓存（key: `${tab}|${keyword}`，含续拉游标；弹窗每次打开清空保证数据新鲜）
+  const cacheRef = useRef(
+    new Map<
+      string,
+      { items: SearchResultItem[]; hasMore: boolean; cursor: SearchPageCursor }
+    >(),
+  );
   // 请求序号（过期响应丢弃）
   const seqRef = useRef(0);
-  const repoRecentLoadedRef = useRef(false);
 
   /** 关弹窗 */
   const closeModal = useCallback(
@@ -133,92 +140,103 @@ const SidebarSearchModal: React.FC = () => {
     return Number.isFinite(num) ? num : undefined;
   }, [getSpaceId]);
 
-  /** 拉取指定分类列表（缓存命中直接回显；技能 tab 由 SkillListView 自取不经过此路径） */
-  const runFetch = useCallback(
-    async (tab: SearchRowKind, kw: string) => {
+  /**
+   * 分页拉取：append=false 拉首页（命中缓存直接回显），append=true 触底续拉
+   * （游标由上一次 SearchPageResult.cursor 透传，结果追加进当前列表）
+   */
+  const loadPage = useCallback(
+    async (
+      tab: SearchRowKind,
+      kw: string,
+      cursor: SearchPageCursor,
+      append: boolean,
+    ) => {
       const cacheKey = `${tab}|${kw}`;
-      const cached = cacheRef.current.get(cacheKey);
-      if (cached) {
-        setView({ items: cached, loading: false });
-        return;
+      if (!append) {
+        const cached = cacheRef.current.get(cacheKey);
+        if (cached) {
+          setView({ ...cached, loading: false, loadingMore: false });
+          return;
+        }
       }
       const seq = ++seqRef.current;
-      setView({ items: [], loading: true });
-      const params: SearchFetchParams = {
-        keyword: kw,
-        limit: SEARCH_LIMIT,
-        spaceId: resolveSpaceId(),
-      };
+      if (append) {
+        setView((prev) => ({ ...prev, loadingMore: true }));
+      } else {
+        setView({
+          items: [],
+          hasMore: false,
+          cursor: {},
+          loading: true,
+          loadingMore: false,
+        });
+      }
       try {
-        const items = await SEARCH_FETCHERS[tab](params);
+        const res = await SEARCH_FETCHERS[tab]({
+          keyword: kw,
+          size: SEARCH_LIMIT,
+          cursor,
+          spaceId: resolveSpaceId(),
+        });
         if (seqRef.current !== seq) return;
-        cacheRef.current.set(cacheKey, items);
-        setView({ items, loading: false });
+        setView((prev) => {
+          const merged = {
+            items: append ? [...prev.items, ...res.items] : res.items,
+            hasMore: res.hasMore,
+            cursor: res.cursor,
+            loading: false,
+            loadingMore: false,
+          };
+          cacheRef.current.set(cacheKey, {
+            items: merged.items,
+            hasMore: merged.hasMore,
+            cursor: merged.cursor,
+          });
+          return merged;
+        });
       } catch {
         if (seqRef.current !== seq) return;
-        setView({ items: [], loading: false });
+        setView((prev) => ({ ...prev, loading: false, loadingMore: false }));
       }
     },
     [resolveSpaceId],
   );
 
-  /** 打开时重置并拉取任务「最近访问」 */
+  /** 打开时重置（首屏数据由下方分类加载 effect 统一拉取） */
   useEffect(() => {
     if (!openSearchModal) return;
     setKeyword('');
     setActiveTab('task');
     setSelectedIdx(0);
-    setView({ items: [], loading: false });
-    setRecentTasks([]);
-    setRecentRepos([]);
-    setRecentRepoLoading(false);
-    repoRecentLoadedRef.current = false;
+    setView({
+      items: [],
+      hasMore: false,
+      cursor: {},
+      loading: false,
+      loadingMore: false,
+    });
     cacheRef.current.clear();
     seqRef.current += 1;
-    fetchRecentTasks(RECENT_LIMIT)
-      .then(setRecentTasks)
-      .catch(() => setRecentTasks([]));
     setTimeout(() => inputRef.current?.focus(), 120);
   }, [openSearchModal]);
 
-  // 关键词搜索（500ms 防抖）与分类切换的列表加载；
-  // 任务/资料库无关键词走「最近访问」不拉列表，其余分类无关键词拉第一页；
+  // 关键词搜索（500ms 防抖）与分类切换的首屏加载（缓存命中直接回显）；
+  // 任务/项目/连接器/资料库统一分页取数——任务/资料库无关键词的首屏即「最近」数据；
   // 技能/专家 tab 由对应列表组件自取（keyword 受控传入，组件内防抖）
   useEffect(() => {
     if (!openSearchModal || activeTab === 'skill' || activeTab === 'expert') {
       return;
     }
     if (!keyword) {
-      if (activeTab !== 'task' && activeTab !== 'repo') {
-        runFetch(activeTab, '');
-      } else {
-        setView({ items: [], loading: false });
-      }
+      loadPage(activeTab, '', {}, false);
       return;
     }
     const timer = setTimeout(
-      () => runFetch(activeTab, keyword),
+      () => loadPage(activeTab, keyword, {}, false),
       SEARCH_DEBOUNCE_MS,
     );
     return () => clearTimeout(timer);
-  }, [keyword, activeTab, openSearchModal, runFetch]);
-
-  // 资料库「最近访问」：首次切到资料库 tab 时拉取（有就展示，没有不占位）
-  useEffect(() => {
-    if (
-      !openSearchModal ||
-      activeTab !== 'repo' ||
-      repoRecentLoadedRef.current
-    ) {
-      return;
-    }
-    repoRecentLoadedRef.current = true;
-    setRecentRepoLoading(true);
-    fetchRecentRepos(RECENT_LIMIT)
-      .then(setRecentRepos)
-      .catch(() => setRecentRepos([]))
-      .finally(() => setRecentRepoLoading(false));
-  }, [openSearchModal, activeTab]);
+  }, [keyword, activeTab, openSearchModal, loadPage]);
 
   /** 任务/项目会话跳转（对齐 NewHomeSection 会话点击的分发逻辑） */
   const goConversation = useCallback(
@@ -271,8 +289,9 @@ const SidebarSearchModal: React.FC = () => {
   /** 结果点击分发（键盘 Enter 同路径；技能 tab 由 SkillListView onSelect 自分发） */
   const activateItem = useCallback(
     (item: SearchResultItem) => {
-      // TODO 连接器点击待复用「会话框快捷呼能力」组件交互联动（组件就绪后替换）；
-      //  技能/专家已接入（SkillListView/ExpertListView type=search，见 renderBody）。
+      // TODO 连接器待接入抽好的独立列表组件（同技能/专家套路：
+      //  <XxxListView type="search" variant="list" keyword onSelect/>，见 renderBody，
+      //  组件就绪后替换 SEARCH_FETCHERS.connector 单页取数与本跳页临时行为）。
       switch (item.kind) {
         case 'task':
           goConversation(item.conversation);
@@ -323,19 +342,13 @@ const SidebarSearchModal: React.FC = () => {
   // 无关键词时：任务/资料库展示最近访问，其余分类展示列表第一页
   const displayList = useMemo(() => {
     if (activeTab === 'skill' || activeTab === 'expert') return [];
-    if (keyword) return view.items;
-    if (activeTab === 'task') return recentTasks;
-    if (activeTab === 'repo') return recentRepos;
     return view.items;
-  }, [keyword, activeTab, view.items, recentTasks, recentRepos]);
+  }, [activeTab, view.items]);
 
   const loading = useMemo(() => {
     if (activeTab === 'skill' || activeTab === 'expert') return false;
-    if (keyword) return view.loading;
-    if (activeTab === 'repo') return recentRepoLoading;
-    if (activeTab === 'task') return false;
     return view.loading;
-  }, [keyword, activeTab, view.loading, recentRepoLoading]);
+  }, [activeTab, view.loading]);
 
   // 「最近访问」空不占位（有就展示）
   const hideRecentSection =
@@ -345,6 +358,14 @@ const SidebarSearchModal: React.FC = () => {
     displayList.length === 0;
 
   useEffect(() => setSelectedIdx(0), [keyword, activeTab]);
+
+  /** 列表触底：加载下一页（组件 tab 内部自滚动，不经过此处） */
+  const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (view.loading || view.loadingMore || !view.hasMore) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight > 48) return;
+    loadPage(activeTab as SearchRowKind, keyword, view.cursor, true);
+  };
 
   /** 输入框键盘：↑/↓ 选择、Enter 确认 */
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
@@ -438,7 +459,16 @@ const SidebarSearchModal: React.FC = () => {
       );
     }
     if (displayList.length) {
-      return displayList.map(renderItemRow);
+      return (
+        <>
+          {displayList.map(renderItemRow)}
+          {view.loadingMore && (
+            <div className={cx(styles.empty)}>
+              <Spin size="small" />
+            </div>
+          )}
+        </>
+      );
     }
     // 无关键词的任务/资料库空态已由 hideRecentSection 隐藏；其余展示空文案
     return (
@@ -535,7 +565,9 @@ const SidebarSearchModal: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className={cx(styles.body)}>{renderBody()}</div>
+          <div className={cx(styles.body)} onScroll={handleBodyScroll}>
+            {renderBody()}
+          </div>
         )}
       </div>
     </Modal>

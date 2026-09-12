@@ -1,6 +1,6 @@
 /**
  * 搜索弹窗数据适配层单测
- * @description 纯函数（映射/过滤/摘要剥离）与各分类取数的合并、降级、过滤口径。
+ * @description 纯函数（映射/过滤/摘要剥离）与各分类分页取数的合并、降级、过滤、游标口径。
  * service 层与 i18nRuntime 全部 mock（vitest 不能 import umi 模块，含传递依赖）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,6 +19,10 @@ vi.mock('@/services/repo', () => ({
   apiRepoRecentlyAccessedPages: vi.fn(),
 }));
 
+vi.mock('@/services/square', () => ({
+  apiPublishedAgentList: vi.fn(),
+}));
+
 vi.mock('@/services/systemManage', () => ({
   apiConnectorProviderPageList: vi.fn(),
   apiSystemConnectorProviderList: vi.fn(),
@@ -30,17 +34,17 @@ vi.mock('@/services/userProjectApp', () => ({
 
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
+import { apiPublishedAgentList } from '@/services/square';
 import {
   apiConnectorProviderPageList,
   apiSystemConnectorProviderList,
 } from '@/services/systemManage';
 import { apiUserProjectTabPageQuery } from '@/services/userProjectApp';
 import {
-  fetchConnectorList,
-  fetchProjectList,
-  fetchRecentRepos,
-  fetchRecentTasks,
-  fetchRepoList,
+  fetchConnectorPage,
+  fetchProjectPage,
+  fetchRepoPage,
+  fetchTaskPage,
   mapProjectItem,
   matchKeyword,
   stripHtml,
@@ -50,10 +54,12 @@ const mocked = {
   apiAgentConversationList: vi.mocked(apiAgentConversationList),
   apiRepoSearch: vi.mocked(apiRepoSearch),
   apiRepoRecentlyAccessedPages: vi.mocked(apiRepoRecentlyAccessedPages),
+  apiPublishedAgentList: vi.mocked(apiPublishedAgentList),
   apiConnectorProviderPageList: vi.mocked(apiConnectorProviderPageList),
   apiSystemConnectorProviderList: vi.mocked(apiSystemConnectorProviderList),
   apiUserProjectTabPageQuery: vi.mocked(apiUserProjectTabPageQuery),
 };
+void mocked;
 
 const ok = <T>(data: T) => Promise.resolve({ code: '0000', data } as never);
 
@@ -120,24 +126,45 @@ describe('mapProjectItem', () => {
   });
 });
 
-describe('fetchRecentTasks / fetchTaskList（经 SEARCH_FETCHERS 不在此重复）', () => {
-  it('最近任务：不带 topic，映射会话行', async () => {
+describe('fetchTaskPage（lastId 游标分页）', () => {
+  it('首页：不带 lastId/topic，游标指向最后一条会话', async () => {
     mocked.apiAgentConversationList.mockResolvedValue(
-      ok([{ id: 1, topic: '会话一' }]) as never,
+      ok([
+        { id: 1, topic: '会话一' },
+        { id: 2, topic: '会话二' },
+      ]) as never,
     );
-    const items = await fetchRecentTasks(8);
+    const res = await fetchTaskPage({ keyword: '', size: 20, cursor: {} });
     expect(mocked.apiAgentConversationList).toHaveBeenCalledWith({
       agentId: null,
       lastId: null,
-      limit: 8,
+      limit: 20,
+      topic: undefined,
     });
-    expect(items).toHaveLength(1);
-    expect(items[0]).toMatchObject({
-      kind: 'task',
-      id: 'task-1',
-      name: '会话一',
-      conversation: { id: 1, topic: '会话一' },
+    expect(res.items.map((item) => item.id)).toEqual(['task-1', 'task-2']);
+    expect(res.hasMore).toBe(false);
+    expect(res.cursor).toEqual({ lastId: 2 });
+  });
+
+  it('续拉：透传 lastId 游标 + topic 关键字；满页 hasMore=true', async () => {
+    mocked.apiAgentConversationList.mockResolvedValue(
+      ok(
+        Array.from({ length: 20 }, (_, i) => ({ id: i + 10, topic: `t${i}` })),
+      ) as never,
+    );
+    const res = await fetchTaskPage({
+      keyword: 't',
+      size: 20,
+      cursor: { lastId: 9 },
     });
+    expect(mocked.apiAgentConversationList).toHaveBeenCalledWith({
+      agentId: null,
+      lastId: 9,
+      limit: 20,
+      topic: 't',
+    });
+    expect(res.hasMore).toBe(true);
+    expect(res.cursor).toEqual({ lastId: 29 });
   });
 
   it('信封 code 非成功返回空数组', async () => {
@@ -145,12 +172,69 @@ describe('fetchRecentTasks / fetchTaskList（经 SEARCH_FETCHERS 不在此重复
       code: '9999',
       data: null,
     } as never);
-    await expect(fetchRecentTasks(8)).resolves.toEqual([]);
+    const res = await fetchTaskPage({ keyword: '', size: 8, cursor: {} });
+    expect(res.items).toEqual([]);
+    expect(res.hasMore).toBe(false);
   });
 });
 
-describe('fetchConnectorList 双源合并', () => {
-  it('系统连接器本地过滤 + 空间连接器分页结果合并', async () => {
+describe('fetchProjectPage（页码分页）', () => {
+  it('首页 current=1 + queryFilter.name；pages 回读时按页码判定 hasMore', async () => {
+    mocked.apiUserProjectTabPageQuery.mockResolvedValue(
+      ok({
+        records: [{ projectId: 7, name: 'P', modified: '', created: '' }],
+        pages: 3,
+      }) as never,
+    );
+    const res = await fetchProjectPage({
+      keyword: 'P',
+      size: 20,
+      cursor: {},
+      spaceId: 52,
+    });
+    expect(mocked.apiUserProjectTabPageQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryFilter: { spaceId: 52, name: 'P' },
+        current: 1,
+        pageSize: 20,
+      }),
+    );
+    expect(res.items[0]).toMatchObject({ kind: 'project', id: 'project-7' });
+    expect(res.hasMore).toBe(true);
+    expect(res.cursor).toEqual({ page: 2 });
+  });
+
+  it('末页（current=pages）hasMore=false', async () => {
+    mocked.apiUserProjectTabPageQuery.mockResolvedValue(
+      ok({ records: [], pages: 2 }) as never,
+    );
+    const res = await fetchProjectPage({
+      keyword: '',
+      size: 20,
+      cursor: { page: 2 },
+    });
+    expect(res.hasMore).toBe(false);
+    expect(res.cursor).toEqual({ page: 3 });
+  });
+
+  it('未回读 pages 时退「满页视为还有」', async () => {
+    mocked.apiUserProjectTabPageQuery.mockResolvedValue(
+      ok({
+        records: Array.from({ length: 20 }, (_, i) => ({
+          projectId: i,
+          name: 'p',
+          modified: '',
+          created: '',
+        })),
+      }) as never,
+    );
+    const res = await fetchProjectPage({ keyword: '', size: 20, cursor: {} });
+    expect(res.hasMore).toBe(true);
+  });
+});
+
+describe('fetchConnectorPage 双源合并单页', () => {
+  it('系统连接器本地过滤 + 空间连接器分页结果合并；hasMore 恒 false', async () => {
     mocked.apiSystemConnectorProviderList.mockResolvedValue(
       ok([
         {
@@ -167,47 +251,32 @@ describe('fetchConnectorList 双源合并', () => {
         records: [{ id: 9, service: 'space_conn', displayName: '空间连接器' }],
       }) as never,
     );
-    const items = await fetchConnectorList({
+    const res = await fetchConnectorPage({
       keyword: 'oss',
-      limit: 20,
+      size: 20,
+      cursor: {},
       spaceId: 52,
     });
-    expect(items.map((item) => item.name)).toEqual([
+    expect(res.items.map((item) => item.name)).toEqual([
       'Aliyun OSS',
       '空间连接器',
     ]);
-    // 空间源服务端搜参数透传
+    expect(res.hasMore).toBe(false);
     expect(mocked.apiConnectorProviderPageList).toHaveBeenCalledWith(
       expect.objectContaining({ spaceId: 52, keyword: 'oss', scope: 'space' }),
     );
   });
-});
 
-describe('fetchProjectList', () => {
-  it('queryFilter 携带 spaceId 与 name 模糊参数', async () => {
-    mocked.apiUserProjectTabPageQuery.mockResolvedValue(
-      ok({
-        records: [{ projectId: 7, name: 'P', modified: '', created: '' }],
-      }) as never,
-    );
-    const items = await fetchProjectList({
-      keyword: 'P',
-      limit: 20,
-      spaceId: 52,
-    });
-    expect(mocked.apiUserProjectTabPageQuery).toHaveBeenCalledWith(
-      expect.objectContaining({
-        queryFilter: { spaceId: 52, name: 'P' },
-        current: 1,
-        pageSize: 20,
-      }),
-    );
-    expect(items[0]).toMatchObject({ kind: 'project', id: 'project-7' });
+  it('无 spaceId 时跳过空间源', async () => {
+    mocked.apiSystemConnectorProviderList.mockResolvedValue(ok([]) as never);
+    const res = await fetchConnectorPage({ keyword: '', size: 20, cursor: {} });
+    expect(mocked.apiConnectorProviderPageList).not.toHaveBeenCalled();
+    expect(res.items).toEqual([]);
   });
 });
 
-describe('fetchRepoList / fetchRecentRepos', () => {
-  it('搜索：剥离摘要 HTML 并映射 slugId', async () => {
+describe('fetchRepoPage（from 偏移分页）', () => {
+  it('搜索：ES 接口 + 剥离摘要 HTML + 游标推进', async () => {
     mocked.apiRepoSearch.mockResolvedValue(
       ok([
         {
@@ -218,18 +287,24 @@ describe('fetchRepoList / fetchRecentRepos', () => {
         },
       ]) as never,
     );
-    const items = await fetchRepoList({ keyword: '文档', limit: 20 });
+    const res = await fetchRepoPage({
+      keyword: '文档',
+      size: 20,
+      cursor: { from: 20 },
+    });
     expect(mocked.apiRepoSearch).toHaveBeenCalledWith({
       keyword: '文档',
-      from: 0,
+      from: 20,
       size: 20,
     });
-    expect(items[0]).toMatchObject({
+    expect(res.items[0]).toMatchObject({
       kind: 'repo',
       id: 'repo-search-abc',
       slugId: 'abc',
       description: '高亮片段',
     });
+    expect(res.cursor).toEqual({ from: 40 });
+    expect(res.hasMore).toBe(false);
   });
 
   it('最近访问：无 slugId 的行被过滤', async () => {
@@ -239,11 +314,26 @@ describe('fetchRepoList / fetchRecentRepos', () => {
         { title: '无链接' },
       ]) as never,
     );
-    const items = await fetchRecentRepos(8);
+    const res = await fetchRepoPage({ keyword: '', size: 8, cursor: {} });
     expect(mocked.apiRepoRecentlyAccessedPages).toHaveBeenCalledWith({
       from: 0,
       size: 8,
     });
-    expect(items.map((item) => item.slugId)).toEqual(['a']);
+    expect(res.items.map((item) => item.slugId)).toEqual(['a']);
+    expect(res.hasMore).toBe(false);
+  });
+
+  it('满页返回 hasMore=true（续拉游标推进）', async () => {
+    mocked.apiRepoRecentlyAccessedPages.mockResolvedValue(
+      ok(
+        Array.from({ length: 8 }, (_, i) => ({
+          slugId: `s${i}`,
+          title: `t${i}`,
+        })),
+      ) as never,
+    );
+    const res = await fetchRepoPage({ keyword: '', size: 8, cursor: {} });
+    expect(res.hasMore).toBe(true);
+    expect(res.cursor).toEqual({ from: 8 });
   });
 });

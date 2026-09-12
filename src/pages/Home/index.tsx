@@ -56,7 +56,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel } from 'umi';
+import { useLocation, useModel } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
 import HomeCategoryTabs, {
@@ -80,6 +80,9 @@ const Home: React.FC = () => {
   const chatInputRef = useRef<ChatInputUnifiedRef>(null);
   const { consume: consumeSummonedExpert } = useSummonExpertHandoff();
   const { consume: consumeSelectedSkill } = useSelectSkillHandoff();
+  // 导航键：同路由 push（如侧栏搜索弹窗在 /home 内发起召唤/选择）也会生成新 key，
+  // 供下方消费 effect 依赖触发重读（handoff 写入方不重挂 Home）
+  const location = useLocation();
   const {
     selectedComponentList,
     handleSelectComponent,
@@ -134,7 +137,9 @@ const Home: React.FC = () => {
     ];
   }, [selectedSkill]);
 
-  // 召唤透传消费：读取即清；if 守卫规避 StrictMode 双执行把一次性值洗掉
+  // 召唤透传消费：读取即清；if 守卫规避 StrictMode 双执行把一次性值洗掉。
+  // 依赖 location.key：侧栏搜索弹窗在 /home 内发起召唤时 push 同路由不重挂，
+  // 凭新导航键重读透传值（一次性值已清，重复执行为 no-op）
   useEffect(() => {
     const payload = consumeSummonedExpert();
     if (payload) {
@@ -143,16 +148,16 @@ const Home: React.FC = () => {
       setSelectedRecommend(undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.key]);
 
-  // 技能选择透传消费：读取即清；if 守卫同上（与专家透传两份独立 key）
+  // 技能选择透传消费：读取即清；if 守卫同上（与专家透传两份独立 key），依赖同上
   useEffect(() => {
     const payload = consumeSelectedSkill();
     if (payload) {
       setSelectedSkill(payload);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.key]);
 
   const defaultAgentId =
     isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
