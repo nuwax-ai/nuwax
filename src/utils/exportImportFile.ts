@@ -1,3 +1,4 @@
+import { saveWithDesktopHost } from './downloadCompletion';
 import { apiTemplateExport } from '@/services/agentDev';
 import { apiExportExcel } from '@/services/dataTable';
 import { dict } from '@/services/i18nRuntime';
@@ -178,11 +179,13 @@ export const exportConfigFile = async (
  * @param fileName 文件名称
  * fileProxyUrl 拼上 BASE_URL 后需与页面同源，download 才生效
  */
-export const exportFileViaBrowserDownload = (
+export const exportFileViaBrowserDownload = async (
   linkUrl: string,
   fileName?: string,
 ) => {
-  // 创建一个 a 标签
+  const saved = await saveWithDesktopHost(linkUrl, fileName || 'export.zip');
+  if (saved !== undefined) return saved;
+  // 浏览器只能确认触发，不能据此提示文件保存成功。
   const link = document.createElement('a');
   // 设置链接地址
   link.href = linkUrl;
@@ -198,6 +201,7 @@ export const exportFileViaBrowserDownload = (
   document.body.removeChild(link);
   // 释放 URL 对象
   window.URL.revokeObjectURL(linkUrl);
+  return false;
 };
 
 /**
