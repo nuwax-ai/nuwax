@@ -5,6 +5,7 @@ import type {
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
 import type { FetchMentionFiles } from '@/components/ChatInputHome/MentionPopup/types';
 import type { ConversationSessionView } from '@/features/conversation/domain/sessionView';
+import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import type { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
@@ -120,6 +121,11 @@ export interface UnifiedChatSessionProps {
    * 轮次工作轨迹渲染器。renderMessageItem 恒优先走原逻辑。
    */
   messageRenderer?: 'v1' | 'v2';
+  /**
+   * V2 工具详情资源点击（文件路径/URL）；仅 messageRenderer='v2' 时生效。
+   * 未提供时 V2 详情内文件路径仅展示不可点。
+   */
+  onOpenToolResource?: (resource: ConversationToolResource) => void;
 
   // 功能配置开关
   onFetchMentionFiles?: FetchMentionFiles;
