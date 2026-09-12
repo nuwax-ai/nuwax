@@ -6,6 +6,9 @@
  *   window.open 新窗口打开（IdP 授权页带 X-Frame-Options 拒绝 iframe 嵌入），
  *   500ms 轮询弹窗 closed 后回查详情，已连接则就地更新卡片状态
  *   （用户在授权页取消则保持未连接，不提示）
+ * - oauth2_device → 扫码连接弹窗 ConnectorDeviceAuthModal（与连接器详情
+ *   抽屉同款）：弹窗内部自动 authorize 拿二维码并轮询授权结果，成功回调
+ *   就地更新卡片状态（使用方渲染弹窗，透传 deviceCtx）
  * - api_key / bearer / custom → 凭据弹窗 ConnectorConnectModal（表单与提交
  *   POST /api/connector/connections/api-key 同空间侧/管理侧凭据抽屉口径）：
  *   先拉详情接口取凭证字段定义再打开弹窗
@@ -66,6 +69,12 @@ interface ConnectorConnectContext {
   record: ConnectorProviderInfo | null;
   /** 凭证字段定义 */
   fields: ConnectorAuthConfigField[];
+}
+
+/** 扫码连接（设备码 oauth2_device）弹窗打开上下文（null = 关闭） */
+interface DeviceAuthContext {
+  /** 发起连接的卡片条目（授权成功后就地更新该条状态） */
+  item: ConnectorConnectItem;
 }
 
 export interface UseConnectorConnectParams {
@@ -133,6 +142,8 @@ const useConnectorConnect = ({
   const [connectCtx, setConnectCtx] = useState<ConnectorConnectContext | null>(
     null,
   );
+  /** 扫码连接（设备码 oauth2_device）弹窗打开上下文（null = 关闭） */
+  const [deviceCtx, setDeviceCtx] = useState<DeviceAuthContext | null>(null);
   /** 「连接」请求中的条目 id（对应卡片按钮 loading，防重复点击） */
   const [connectingIds, setConnectingIds] = useState<string[]>([]);
   /** 「断开」请求中的条目 id（对应卡片按钮 loading，防重复点击） */
@@ -233,7 +244,8 @@ const useConnectorConnect = ({
 
   /**
    * 连接器卡片「连接」入口：按认证方式分流——
-   * oauth2 → 授权弹窗；api_key/bearer/custom → 拉详情取凭证字段后开凭据弹窗；
+   * oauth2 → 授权弹窗；oauth2_device → 扫码连接弹窗（授权成功回调就地更新）；
+   * api_key/bearer/custom → 拉详情取凭证字段后开凭据弹窗；
    * no_auth（免鉴权）→ 直接建连（POST api-key 仅传 providerService，无凭证）
    */
   const handleConnect = useCallback(
@@ -273,6 +285,13 @@ const useConnectorConnect = ({
         await openOauthAuthorize(item);
         return;
       }
+      if (item.authType === 'oauth2_device') {
+        // 扫描授权（设备码）：开扫码连接弹窗（ConnectorDeviceAuthModal），
+        // 弹窗内部自动 authorize 拿二维码并轮询授权结果，成功后经
+        // handleDeviceConnected 就地更新卡片为已连接（成功提示弹窗内完成）
+        setDeviceCtx({ item });
+        return;
+      }
       setConnectingIds((prev) => [...prev, item.id]);
       try {
         // 拉详情取权威 provider（凭证字段定义在 authConfig.fields 里）
@@ -304,6 +323,21 @@ const useConnectorConnect = ({
       updateItem(itemId, { connected: true });
     }
   }, [updateItem]);
+
+  /** 扫码连接（设备码）弹窗关闭（授权成功 / 手动取消均会关闭） */
+  const closeDeviceAuthModal = useCallback(() => setDeviceCtx(null), []);
+
+  /**
+   * 扫码连接（设备码）授权成功回调：就地更新卡片为已连接
+   * （成功提示由 ConnectorDeviceAuthModal 内部完成，不重复提示；
+   * 组件触发本回调前已先 onClose，两者同批执行 deviceCtx 仍可读）
+   */
+  const handleDeviceConnected = useCallback(() => {
+    const itemId = deviceCtx?.item.id;
+    if (itemId) {
+      updateItem(itemId, { connected: true });
+    }
+  }, [deviceCtx, updateItem]);
 
   /**
    * 连接器卡片「断开」：已连接状态下断开用户连接并就地更新卡片状态。
@@ -361,6 +395,10 @@ const useConnectorConnect = ({
     connectCtx,
     closeConnectModal,
     handleConnected,
+    /** 扫码连接（设备码 oauth2_device）弹窗打开上下文（渲染 ConnectorDeviceAuthModal 用） */
+    deviceCtx,
+    closeDeviceAuthModal,
+    handleDeviceConnected,
   };
 };
 

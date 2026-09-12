@@ -16,8 +16,11 @@ import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 /** 资源类型：专家&专家团 / 技能 / 连接器 */
 export type ResourceTypeEnum = 'expert' | 'skill' | 'connector';
 
-/** 数据源：系统广场 / 团队空间 / 已连接的（连接器页专属，当前用户已连接的连接器） */
-export type ResourceSourceEnum = 'system' | 'team' | 'connected';
+/**
+ * 数据源：系统广场 / 团队空间 / 已连接的（连接器页专属，当前用户已连接的连接器）/
+ * 我启用的（技能页专属，当前用户启用的技能）
+ */
+export type ResourceSourceEnum = 'system' | 'team' | 'connected' | 'enabled';
 
 /** 卡片统计项图标类型 */
 export type ResourceStatType = 'user' | 'link' | 'star';
@@ -74,15 +77,29 @@ export interface ResourceItem {
    */
   connectionEnabled?: boolean;
   /**
-   * 常驻状态（技能特有：pin 按钮 hover 提示常驻/取消常驻）；
-   * pin/取消 pin 接口未定，数据源暂缺，默认按未常驻展示
+   * 技能启用状态（技能特有：卡片右上角常驻启用开关的选中态；
+   * 开启 POST /api/published/skill/enable/{skillId}、关闭
+   * POST /api/published/skill/unEnable/{skillId}，成功后就地更新；
+   * 未付费开启时与「立即使用」同口径——先弹订阅套餐弹窗，开关回弹）
    */
-  pinned?: boolean;
+  skillEnabled?: boolean;
   /**
    * 当前用户是否已收藏（专家特有：hover 右下角收藏图标按钮的选中态，
    * 数据源取列表接口返回的 collect；收藏/取消收藏成功后就地更新）
    */
   collected?: boolean;
+  /**
+   * 是否需要付费（专家/技能卡片：列表接口返回 paymentRequired；订阅功能
+   * 开启时专家卡片右下角展示「付费/已订阅」角标——未订阅点「召唤」或角标
+   * 先弹统一专家卡（与添加能力弹窗「聘请」同口径）；技能卡片左上角悬挂
+   * 「付费」Ribbon，未订阅点「选择」弹订阅套餐弹窗）
+   */
+  paymentRequired?: boolean;
+  /**
+   * 是否已订阅（专家/技能卡片：专家付费角标展示「已订阅」召唤不再拦截；
+   * 技能「选择」不再拦截）
+   */
+  subscribed?: boolean;
   /**
    * 认证方式（连接器特有：no_auth 免鉴权无连接概念，卡片状态恒展示已连接、
    * 不展示 连接/断开 按钮；oauth2/api_key/bearer/custom 按连接状态展示）

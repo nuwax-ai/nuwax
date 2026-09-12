@@ -19,6 +19,7 @@
  */
 
 import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
+import ConnectorDeviceAuthModal from '@/components/business-component/ConnectorDeviceAuthModal';
 import type {
   ExpertListItem,
   ExpertListSourceType,
@@ -284,7 +285,8 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     resourceType === 'knowledge' && recentLoaded && recentList.length > 0;
 
   // 连接器「连接/断开」：与专家·技能·连接器广场页共用同一份共享 hook
-  // （oauth2 授权 / 凭据弹窗 / 断开寻址，成功后就地更新卡片 connected）
+  // （oauth2 授权 / 扫码连接（设备码）/ 凭据弹窗 / 断开寻址，
+  // 成功后就地更新卡片 connected）
   const {
     handleConnect,
     connectingIds,
@@ -293,6 +295,9 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     connectCtx,
     closeConnectModal,
     handleConnected,
+    deviceCtx,
+    closeDeviceAuthModal,
+    handleDeviceConnected,
   } = useConnectorConnect({
     source,
     spaceId,
@@ -953,6 +958,16 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
 
       {/* 技能/专家的付费订阅弹窗已随 SkillListView / ExpertListView 内聚,
           弹窗内不再持有 */}
+
+      {/* 连接器「连接」扫码弹窗（认证方式 oauth2_device，与广场页/连接器
+          详情抽屉同款）：授权成功后就地更新卡片为已连接 */}
+      <ConnectorDeviceAuthModal
+        open={deviceCtx !== null}
+        service={deviceCtx?.item.service || ''}
+        spaceId={source === 'team' ? spaceId : undefined}
+        onClose={closeDeviceAuthModal}
+        onConnected={handleDeviceConnected}
+      />
     </Modal>
   );
 };

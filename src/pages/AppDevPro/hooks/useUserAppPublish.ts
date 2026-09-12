@@ -1,27 +1,30 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import { useCallback, useRef, useState } from 'react';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UserAppDbEnvEnum } from '../services/appDb';
-import {
-  apiUserAppDomainList,
-  normalizeUserAppPreviewUrl,
-} from '../services/appDomain';
 import {
   apiUserAppBuild,
   apiUserAppBuildCancel,
+  apiUserAppGetById,
   apiUserAppProdDeployable,
   apiUserAppProdStart,
 } from '../services/appDevPro';
-import { pickUserAppEnvDomain } from '../utils/userAppPreviewUrl';
+import {
+  apiUserAppDomainList,
+  normalizeUserAppPreviewUrl,
+  type UserAppDomainInfo,
+} from '../services/appDomain';
 import type {
   UserAppDeployFailedStage,
   UserAppDevTaskInfo,
+  UserAppInfo,
   UserAppPublishPhase,
   UserAppTaskLogEvent,
   UserAppTaskServiceProgress,
   UserAppTaskTerminalStatus,
 } from '../type';
+import { pickUserAppEnvDomain } from '../utils/userAppPreviewUrl';
 import {
   USER_APP_BUILD_SSE_EVENT,
   getTaskTerminalStatus,
@@ -45,6 +48,10 @@ export interface UseUserAppPublishOptions {
   onBuildFailed?: () => void;
   /** 构建并部署成功后，打开发布到市场弹窗 */
   onDeployed?: () => void;
+  /** 部署成功后回写应用详情（prodDeployed 等） */
+  onProjectInfo?: (info: UserAppInfo) => void;
+  /** 部署成功后回写域名列表 */
+  onDomainList?: (list: UserAppDomainInfo[]) => void;
 }
 
 /**
@@ -53,10 +60,13 @@ export interface UseUserAppPublishOptions {
  * @param options.appId 应用 ID
  * @param options.onBuildFailed 构建失败回调
  * @param options.onDeployed 部署成功回调
+ * @param options.onProjectInfo 回写应用详情
+ * @param options.onDomainList 回写域名列表
  * @returns 部署状态与操作
  */
 export function useUserAppPublish(options: UseUserAppPublishOptions) {
-  const { appId, onBuildFailed, onDeployed } = options;
+  const { appId, onBuildFailed, onDeployed, onProjectInfo, onDomainList } =
+    options;
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
@@ -205,24 +215,45 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, [appId]);
 
   /**
-   * 部署成功后拉域名列表，取 domainType=Prod 作为访问地址。
-   * 失败只记日志，不改 phase，避免打断发布到市场。
+   * 部署成功后并行刷新应用详情与域名列表。
+   * 只回写页面状态、拼 Prod 访问地址；失败不改 phase，不打断发布到市场。
    */
-  const loadProdAccessUrl = useCallback(async () => {
+  const refreshAfterDeploy = useCallback(async () => {
     if (!appId) {
       return;
     }
-    try {
-      const result = await apiUserAppDomainList(appId);
-      if (result?.code !== SUCCESS_CODE) {
-        return;
+    const [appResult, domainResult] = await Promise.allSettled([
+      apiUserAppGetById(appId),
+      apiUserAppDomainList(appId),
+    ]);
+
+    if (appResult.status === 'fulfilled') {
+      const result = appResult.value;
+      if (result?.code === SUCCESS_CODE && result.data) {
+        onProjectInfo?.(result.data);
       }
-      const domain = pickUserAppEnvDomain(UserAppDbEnvEnum.Prod, result.data);
-      setProdAccessUrl(normalizeUserAppPreviewUrl(domain));
-    } catch (error) {
-      console.error('[AppDevPro] Load prod domain failed:', error);
+    } else {
+      console.error(
+        '[AppDevPro] Refresh project after deploy failed:',
+        appResult.reason,
+      );
     }
-  }, [appId]);
+
+    if (domainResult.status === 'fulfilled') {
+      const result = domainResult.value;
+      if (result?.code === SUCCESS_CODE) {
+        const list = result.data || [];
+        onDomainList?.(list);
+        const domain = pickUserAppEnvDomain(UserAppDbEnvEnum.Prod, list);
+        setProdAccessUrl(normalizeUserAppPreviewUrl(domain));
+      }
+    } else {
+      console.error(
+        '[AppDevPro] Refresh domain list after deploy failed:',
+        domainResult.reason,
+      );
+    }
+  }, [appId, onDomainList, onProjectInfo]);
 
   /**
    * 构建成功后启动生产服务，并监听启动任务 SSE。
@@ -374,7 +405,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
 
       setPhase('applying');
       onDeployed?.();
-      void loadProdAccessUrl();
+      void refreshAfterDeploy();
     } catch (error) {
       if (
         cancelledRef.current ||
@@ -405,7 +436,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, [
     appId,
     listenBuildProgress,
-    loadProdAccessUrl,
+    refreshAfterDeploy,
     onBuildFailed,
     onDeployed,
     phase,

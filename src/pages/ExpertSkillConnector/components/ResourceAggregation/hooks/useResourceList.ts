@@ -3,20 +3,19 @@
  * @description 屏蔽各资源类型/数据源接口的分页差异（服务端分页 vs 全量数组），
  * 对外统一提供 { list, loading, hasMore, loadMore } 语义：
  * - 服务端分页接口（已发布智能体/技能、官方/空间连接器）直接透传分页参数
- * - 全量数组接口（空间技能、已连接的连接器）首次全量拉取后内存切片，
+ * - 全量数组接口（已连接的连接器、我启用的技能）首次全量拉取后内存切片，
  *   模拟滚动加载
  */
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { apiSkillList } from '@/services/library';
 import {
   apiPublishedAgentList,
+  apiPublishedSkillEnableList,
   apiPublishedSkillList,
 } from '@/services/square';
 import { apiConnectorProviderPageList } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
-import type { SkillInfo } from '@/types/interfaces/library';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
@@ -84,8 +83,14 @@ const mapPublishedItem = (
     idPrefix === 'agent' || idPrefix === 'space-agent'
       ? item.targetId
       : undefined,
-  // 仅技能（前缀 skill）填：targetId 即技能 ID，供「选择」透传 home 使用
-  skillId: idPrefix.startsWith('skill') ? item.targetId : undefined,
+  // 仅技能（前缀 skill / space-skill / enabled-skill）填：targetId 即技能
+  // ID，供「立即使用」透传 home 使用
+  skillId:
+    idPrefix === 'skill' ||
+    idPrefix === 'space-skill' ||
+    idPrefix === 'enabled-skill'
+      ? item.targetId
+      : undefined,
   name: item.name,
   description: item.description,
   icon: item.icon,
@@ -93,6 +98,14 @@ const mapPublishedItem = (
   publishUser: item.publishUser,
   // 当前用户是否已收藏（列表接口返回 collect；专家卡片收藏按钮选中态）
   collected: !!item.collect,
+  // 技能启用状态（卡片右上角启用开关选中态；SquarePublishedItemInfo 暂未
+  // 声明该字段，防御性读取列表接口返回的 enabled，缺省按未启用展示）
+  skillEnabled: !!(item as { enabled?: boolean }).enabled,
+  // 付费订阅（专家卡片：订阅功能开启时展示「付费/已订阅」角标，未订阅
+  // 点「召唤」或角标跳转智能体详情页弹订阅套餐；技能卡片：左上角「付费」
+  // Ribbon 角标，未订阅点「选择」弹订阅套餐弹窗；连接器卡片不消费）
+  paymentRequired: !!item.paymentRequired,
+  subscribed: !!item.subscribed,
   stats: mapPublishedStats(item.statistics),
 });
 
@@ -192,7 +205,8 @@ const RESOURCE_ADAPTERS: Record<
     // 团队空间-空间内已发布智能体（POST /api/published/agent/list 服务端分页）：
     // 与空间广场 /space/:id/space-square?activeKey=Agent 同口径——
     // category=Agent（tab 维度）+ justReturnSpaceData 只查空间已发布内容；
-    // 二级 tab 即空间选择（必选中具体空间），category 内容分类不适用不传
+    // 二级 tab 即空间选择（必选中具体空间），category 内容分类不适用不传；
+    // 与系统广场同口径仅展示官方智能体（official: true）
     team: {
       mode: 'server',
       fetchPage: ({ page, pageSize, keyword, spaceId }) =>
@@ -203,6 +217,8 @@ const RESOURCE_ADAPTERS: Record<
           category: SquareAgentTypeEnum.Agent,
           justReturnSpaceData: true,
           spaceId,
+          // 仅展示官方智能体（与系统广场维度同口径）
+          official: true,
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'space-agent'),
     },
@@ -220,31 +236,37 @@ const RESOURCE_ADAPTERS: Record<
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'skill'),
     },
-    // 团队空间-空间内技能（全量数组）
+    // 团队空间-空间内已发布技能（POST /api/published/skill/list 服务端分页）：
+    // 与专家-团队空间同口径——category=Skill（tab 维度）+ justReturnSpaceData
+    // 只查空间已发布内容；二级 tab 即空间选择（必选中具体空间），
+    // 内容分类不适用不传
     team: {
+      mode: 'server',
+      fetchPage: ({ page, pageSize, keyword, spaceId }) =>
+        apiPublishedSkillList({
+          page,
+          pageSize,
+          kw: keyword || undefined,
+          category: SquareAgentTypeEnum.Skill,
+          justReturnSpaceData: true,
+          spaceId,
+        }),
+      extract: (res, page) => extractPublishedPage(res, page, 'space-skill'),
+    },
+    // 我启用的-当前用户启用的技能（POST /api/published/skill/enable/list
+    // 不传参一次性全量返回）：本地按二级分类（与系统广场同源）与关键字
+    // 筛选后内存切片模拟滚动加载；关闭开关后就地更新卡片状态不整页重拉
+    // （刷新后自然移出该维度）
+    enabled: {
       mode: 'client',
-      fetchAll: ({ spaceId }) => apiSkillList({ spaceId }),
+      fetchAll: async () => apiPublishedSkillEnableList(),
       extractAll: (res) => {
-        const records = (res.data as SkillInfo[] | null) || [];
-        return records.map((item) => ({
-          id: `space-skill-${item.id}`,
-          // 空间技能 id 即技能 ID，供「选择」透传 home 使用
-          skillId: item.id,
-          name: item.name,
-          description: item.description,
-          icon: item.icon,
-          category: item.category || undefined,
-          // 创建人映射为发布者行展示（与系统广场技能卡片同款；
-          // SkillInfo 无头像/昵称，头像走默认头像兜底）
-          publishUser: item.creatorName
-            ? {
-                userId: item.creatorId ?? 0,
-                userName: item.creatorName,
-                nickName: item.creatorName,
-                avatar: '',
-              }
-            : undefined,
-        }));
+        const data = res.data;
+        // 不带分页参数时后端可能直接回数组、也可能仍套 records 分页壳，两者兼容
+        const records = Array.isArray(data)
+          ? (data as SquarePublishedItemInfo[])
+          : (data as Page<SquarePublishedItemInfo> | null)?.records ?? [];
+        return records.map((item) => mapPublishedItem(item, 'enabled-skill'));
       },
     },
   },
