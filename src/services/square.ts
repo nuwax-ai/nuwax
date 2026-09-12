@@ -38,6 +38,8 @@ export async function apiPublishedKnowledgeList(
 }
 
 // 广场-已发布智能体列表接口
+// （专家&专家团-团队空间维度同用本接口：category=Agent +
+// justReturnSpaceData + spaceId 查空间内已发布智能体）
 export async function apiPublishedAgentList(
   data: SquarePublishedListParams,
 ): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
@@ -120,6 +122,34 @@ export async function apiPublishedSkillList(
   data: SquarePublishedListParams,
 ): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
   return request('/api/published/skill/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 广场-启用技能接口（能力弹窗技能卡开关，skillId 为技能本体 ID）
+export async function apiPublishedSkillEnable(
+  skillId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/published/skill/enable/${skillId}`, {
+    method: 'POST',
+  });
+}
+
+// 广场-取消启用技能接口
+export async function apiPublishedSkillUnEnable(
+  skillId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/published/skill/unEnable/${skillId}`, {
+    method: 'POST',
+  });
+}
+
+// 广场-已启用的技能列表接口（返回全量数组，非分页）
+export async function apiPublishedSkillEnableList(
+  data: Partial<SquarePublishedListParams> = {},
+): Promise<RequestResponse<SquarePublishedItemInfo[]>> {
+  return request('/api/published/skill/enable/list', {
     method: 'POST',
     data,
   });

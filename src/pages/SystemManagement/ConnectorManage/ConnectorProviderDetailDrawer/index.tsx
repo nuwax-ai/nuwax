@@ -1,3 +1,4 @@
+import ConnectorDeviceAuthModal from '@/components/business-component/ConnectorDeviceAuthModal';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import ConnectorConnectDrawer from '@/pages/SpaceResource/Connector/components/ConnectorConnectDrawer';
@@ -55,8 +56,10 @@ import styles from './index.less';
  * 抽屉内容：
  *   1. 顶部概览（认证方式 / BASE URL / 通用代理 / 连接状态）：
  *      连接状态取代原抽屉的「归属」展示，免鉴权（no_auth）整项不展示；
- *      未连接时在状态后展示「去连接」（oauth2 →「去授权」，管理侧 /
- *      空间侧均展示，管理侧连接接口不传 spaceId）；已连接时状态后
+ *      未连接时在状态后展示「去连接」（oauth2 →「去授权」，
+ *      oauth2_device →「去连接」弹扫码连接弹窗，其余认证方式 →
+ *      「去连接」凭据抽屉；管理侧 / 空间侧均展示，管理侧连接接口
+ *      不传 spaceId）；已连接时状态后
  *      展示「断开连接」（Popconfirm 二次确认后
  *      DELETE /api/connector/connections/{id}，id 为连接列表接口按
  *      service 匹配出的连接 id）
@@ -73,6 +76,10 @@ import styles from './index.less';
  * 「去授权」（oauth2）：GET /api/connector/oauth/authorize 拿授权地址后
  * window.open 新窗口打开（IdP 授权页带 X-Frame-Options 拒绝 iframe 嵌入），
  * 轮询弹窗 closed 后刷新详情（connected 变 true 按钮自动消失）。
+ *
+ * 「扫码连接」（oauth2_device）：开共享组件 ConnectorDeviceAuthModal
+ * （专家·技能·连接器广场页卡片连接同款），弹窗内部自动 authorize 拿
+ * 二维码并轮询授权结果，成功后刷新详情（connected 变 true、按钮消失）。
  */
 
 /**
@@ -173,6 +180,13 @@ const ConnectorProviderDetailDrawer: React.FC<
   /** 授权弹窗关闭轮询定时器（抽屉关闭 / 组件卸载时清理） */
   const oauthPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ---------------- 扫码连接（设备码 oauth2_device） ----------------
+  /** 扫码连接弹窗开关（共享组件 ConnectorDeviceAuthModal 内部管理请求/轮询） */
+  const [deviceAuthOpen, setDeviceAuthOpen] = useState<boolean>(false);
+
+  /** 关闭扫码连接弹窗（轮询与倒计时清理由弹窗组件内部自理） */
+  const closeDeviceAuth = useCallback(() => setDeviceAuthOpen(false), []);
+
   /** 抽屉宽度：内容含工具表格（scroll.x 900），取大屏宽度并限幅 */
   const drawerWidth = useMemo(() => {
     if (typeof window === 'undefined') return 1080;
@@ -265,6 +279,8 @@ const ConnectorProviderDetailDrawer: React.FC<
     if (open && service) {
       setDetail(null);
       setConnectionId(null);
+      // service 切换：旧连接器的扫码连接弹窗作废（轮询 / 倒计时一并停止）
+      closeDeviceAuth();
       fetchDetail();
       return;
     }
@@ -276,15 +292,17 @@ const ConnectorProviderDetailDrawer: React.FC<
       setEditingAction(null);
       setDebugModalOpen(false);
       setDebuggingAction(null);
+      closeDeviceAuth();
       if (oauthPollRef.current) {
         clearInterval(oauthPollRef.current);
         oauthPollRef.current = null;
       }
       oauthWinRef.current = null;
     }
-  }, [open, service, fetchDetail]);
+  }, [open, service, fetchDetail, closeDeviceAuth]);
 
-  // 组件卸载时清理授权弹窗轮询定时器（防止泄漏与卸载后更新 state）
+  // 组件卸载时清理授权弹窗轮询定时器（防止泄漏与卸载后更新 state；
+  // 扫码连接弹窗的轮询清理由其组件内部自理）
   useEffect(() => {
     return () => {
       if (oauthPollRef.current) {
@@ -543,6 +561,7 @@ const ConnectorProviderDetailDrawer: React.FC<
   /**
    * 概览「连接状态」后的连接按钮（管理侧 / 空间侧均展示）：
    * - oauth2 →「去授权」（抽屉内部打开授权窗口并监听关闭）
+   * - oauth2_device →「去连接」（调设备码 authorize 接口，弹扫码连接弹窗）
    * - api_key/bearer/custom →「去连接」（打开凭据抽屉）
    * - no_auth（免鉴权）→ 连接状态整项不展示，无按钮
    */
@@ -556,6 +575,11 @@ const ConnectorProviderDetailDrawer: React.FC<
   const handleConnectClick = () => {
     if (authTypeValue === 'oauth2') {
       void handleOauthAuthorize();
+      return;
+    }
+    // 扫描授权（设备码）：开扫码连接弹窗（展开后自动获取二维码并轮询授权结果）
+    if (authTypeValue === 'oauth2_device') {
+      setDeviceAuthOpen(true);
       return;
     }
     // 携带 record/detail/refresh：凭据抽屉用 authConfig.fields 渲染表单，
@@ -870,6 +894,20 @@ const ConnectorProviderDetailDrawer: React.FC<
         onConnected={() => {
           connectCtx?.refresh();
           fetchDetail();
+          onConnectionChanged?.();
+        }}
+      />
+
+      {/* 扫码连接（设备码 oauth2_device）弹窗（共享组件，广场页卡片连接
+          同款）：展开后自动 authorize 拿二维码并轮询授权结果，成功后
+          刷新详情（connected 变 true、按钮消失）并通知列表刷新连接状态 */}
+      <ConnectorDeviceAuthModal
+        open={deviceAuthOpen}
+        service={service}
+        spaceId={connectSpaceId}
+        onClose={closeDeviceAuth}
+        onConnected={() => {
+          void fetchDetail();
           onConnectionChanged?.();
         }}
       />

@@ -310,6 +310,8 @@ const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
   'subscription-stats': <BarChartOutlined style={{ fontSize: 14 }} />,
   database: <DatabaseGlyph size={14} />,
   'database-config': <SettingOutlined style={{ fontSize: 14 }} />,
+  'database-prod': <DatabaseGlyph size={14} />,
+  'database-config-prod': <SettingOutlined style={{ fontSize: 14 }} />,
   'remote-desktop': (
     <SvgIcon name="icons-nav-computer-star" style={{ fontSize: 14 }} />
   ),

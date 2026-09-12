@@ -41,18 +41,17 @@ export interface ListenUserAppTaskStreamOptions {
  *
  * @param result 接口结果
  * @param fallbackMessage 失败文案
- * @returns 业务数据
+ * 业务 code 成功即通过；data 为空时返回 undefined（如 prod/start 成功但无任务行）。
+ *
+ * @returns 业务数据；成功但无 data 时为 undefined
  */
 export const unwrapUserAppResponse = <T>(
   result: RequestResponse<T> | T | undefined,
   fallbackMessage: string,
-): T => {
+): T | undefined => {
   if (result && typeof result === 'object' && 'code' in (result as object)) {
     const res = result as RequestResponse<T>;
     if (res.code !== SUCCESS_CODE) {
-      throw new Error(res.message || fallbackMessage);
-    }
-    if (res.data === undefined || res.data === null) {
       throw new Error(res.message || fallbackMessage);
     }
     return res.data;
@@ -199,13 +198,8 @@ export const listenUserAppTaskStream = (
 
     const inferClosedStatus = () => {
       const list = getServices();
-      if (
-        list.length > 0 &&
-        list.every((item) => getTaskTerminalStatus(item.status) === 'succeeded')
-      ) {
-        finish('succeeded');
-        return;
-      }
+      // 单个 service 的 build_ok / service_start_ok 只是部分成功，
+      // 任务最终成功只能由 event=completed 在 onmessage 里结束。
       if (
         list.some((item) => getTaskTerminalStatus(item.status) === 'failed')
       ) {

@@ -1,14 +1,25 @@
 import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import { useCallback, useRef, useState } from 'react';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { UserAppDbEnvEnum } from '../services/appDb';
+import {
+  apiUserAppDomainList,
+  normalizeUserAppPreviewUrl,
+  type UserAppDomainInfo,
+} from '../services/appDomain';
 import {
   apiUserAppBuild,
   apiUserAppBuildCancel,
+  apiUserAppGetById,
+  apiUserAppProdDeployable,
   apiUserAppProdStart,
 } from '../services/appDevPro';
+import { pickUserAppEnvDomain } from '../utils/userAppPreviewUrl';
 import type {
   UserAppDeployFailedStage,
   UserAppDevTaskInfo,
+  UserAppInfo,
   UserAppPublishPhase,
   UserAppTaskLogEvent,
   UserAppTaskServiceProgress,
@@ -27,6 +38,9 @@ import {
   unwrapUserAppResponse,
 } from '../utils/userAppTaskStream';
 
+const DEPLOYABLE_POLL_INTERVAL_MS = 2000;
+const DEPLOYABLE_POLL_TIMEOUT_MS = 10 * 60 * 1000;
+
 export interface UseUserAppPublishOptions {
   /** 应用 ID */
   appId?: number;
@@ -34,18 +48,25 @@ export interface UseUserAppPublishOptions {
   onBuildFailed?: () => void;
   /** 构建并部署成功后，打开发布到市场弹窗 */
   onDeployed?: () => void;
+  /** 部署成功后回写应用详情（prodDeployed 等） */
+  onProjectInfo?: (info: UserAppInfo) => void;
+  /** 部署成功后回写域名列表 */
+  onDomainList?: (list: UserAppDomainInfo[]) => void;
 }
 
 /**
- * AppDevPro 部署：构建 → SSE 进度 → 生产部署；成功后再由页面打开发布弹窗。
+ * AppDevPro 部署：构建 → SSE → 轮询可部署 → 生产 start；成功后再由页面打开发布弹窗。
  *
  * @param options.appId 应用 ID
  * @param options.onBuildFailed 构建失败回调
  * @param options.onDeployed 部署成功回调
+ * @param options.onProjectInfo 回写应用详情
+ * @param options.onDomainList 回写域名列表
  * @returns 部署状态与操作
  */
 export function useUserAppPublish(options: UseUserAppPublishOptions) {
-  const { appId, onBuildFailed, onDeployed } = options;
+  const { appId, onBuildFailed, onDeployed, onProjectInfo, onDomainList } =
+    options;
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
@@ -58,6 +79,8 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     useState<UserAppDeployFailedStage | null>(null);
   const [taskId, setTaskId] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+  /** 部署成功后异步拿到的线上 Prod 域名，不阻塞发布 */
+  const [prodAccessUrl, setProdAccessUrl] = useState('');
 
   const abortRef = useRef<AbortController | null>(null);
   const cancelledRef = useRef(false);
@@ -69,13 +92,16 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const streamStageRef = useRef<'build' | 'start'>('build');
   const releaseIdRef = useRef('');
   const buildSucceededRef = useRef(false);
+  const checkPassedRef = useRef(false);
 
-  const resetProgress = useCallback(() => {
+  /** 清空当前发布任务现场（构建/部署日志、错误、taskId、SSE 序号） */
+  const resetTaskState = useCallback(() => {
     setServices([]);
     setStartServices([]);
     setErrorMessage('');
     setFailedStage(null);
     setTaskId('');
+    setProdAccessUrl('');
     taskIdRef.current = '';
     lastSeqRef.current = undefined;
     terminalRef.current = null;
@@ -85,6 +111,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     streamStageRef.current = 'build';
     releaseIdRef.current = '';
     buildSucceededRef.current = false;
+    checkPassedRef.current = false;
   }, []);
 
   const stopStream = useCallback(() => {
@@ -151,6 +178,81 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   );
 
   /**
+   * SSE 拿到 releaseId 后轮询是否可生产部署，data 为 true 才继续 start。
+   */
+  const waitUntilProdDeployable = useCallback(async () => {
+    if (!appId) {
+      throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
+    }
+    setPhase('checkingDeployable');
+    const startedAt = Date.now();
+    while (!cancelledRef.current) {
+      try {
+        const result = await apiUserAppProdDeployable({
+          appId,
+          releaseId: releaseIdRef.current || undefined,
+        });
+        const ok =
+          result &&
+          typeof result === 'object' &&
+          'data' in result &&
+          (!('code' in result) || result.code === SUCCESS_CODE) &&
+          result.data === true;
+        if (ok) {
+          checkPassedRef.current = true;
+          return;
+        }
+      } catch {
+        // 检测接口失败时继续轮询，直到超时或取消
+      }
+      if (Date.now() - startedAt >= DEPLOYABLE_POLL_TIMEOUT_MS) {
+        throw new Error(dict('PC.Pages.AppDevPro.checkDeployableTimeout'));
+      }
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, DEPLOYABLE_POLL_INTERVAL_MS);
+      });
+    }
+  }, [appId]);
+
+  /**
+   * 部署成功后并行刷新应用详情与域名列表。
+   * 只回写页面状态、拼 Prod 访问地址；失败不改 phase，不打断发布到市场。
+   */
+  const refreshAfterDeploy = useCallback(async () => {
+    if (!appId) {
+      return;
+    }
+    const [appResult, domainResult] = await Promise.allSettled([
+      apiUserAppGetById(appId),
+      apiUserAppDomainList(appId),
+    ]);
+
+    if (appResult.status === 'fulfilled') {
+      const result = appResult.value;
+      if (result?.code === SUCCESS_CODE && result.data) {
+        onProjectInfo?.(result.data);
+      }
+    } else {
+      console.error('[AppDevPro] Refresh project after deploy failed:', appResult.reason);
+    }
+
+    if (domainResult.status === 'fulfilled') {
+      const result = domainResult.value;
+      if (result?.code === SUCCESS_CODE) {
+        const list = result.data || [];
+        onDomainList?.(list);
+        const domain = pickUserAppEnvDomain(UserAppDbEnvEnum.Prod, list);
+        setProdAccessUrl(normalizeUserAppPreviewUrl(domain));
+      }
+    } else {
+      console.error(
+        '[AppDevPro] Refresh domain list after deploy failed:',
+        domainResult.reason,
+      );
+    }
+  }, [appId, onDomainList, onProjectInfo]);
+
+  /**
    * 构建成功后启动生产服务，并监听启动任务 SSE。
    */
   const submitProdStart = useCallback(async () => {
@@ -170,7 +272,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         releaseId: releaseIdRef.current || undefined,
       }),
       dict('PC.Pages.AppDevPro.startFailed'),
-    ) as UserAppDevTaskInfo;
+    ) as UserAppDevTaskInfo | undefined;
 
     const currentTaskId = pickUserAppTaskId(task);
     if (currentTaskId) {
@@ -186,9 +288,9 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       return;
     }
 
-    const immediate = getTaskTerminalStatus(task.status);
+    const immediate = getTaskTerminalStatus(task?.status);
     if (immediate === 'failed') {
-      throw new Error(task.error || dict('PC.Pages.AppDevPro.startFailed'));
+      throw new Error(task?.error || dict('PC.Pages.AppDevPro.startFailed'));
     }
     if (immediate === 'cancelled') {
       setPhase('cancelled');
@@ -221,6 +323,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     if (
       phase === 'starting' ||
       phase === 'building' ||
+      phase === 'checkingDeployable' ||
       phase === 'deploying' ||
       phase === 'applying'
     ) {
@@ -228,7 +331,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       return;
     }
 
-    resetProgress();
+    resetTaskState();
     setOpen(true);
     setPhase('starting');
 
@@ -279,7 +382,17 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         return;
       }
 
+      if (!releaseIdRef.current) {
+        throw new Error(dict('PC.Pages.AppDevPro.buildMissingReleaseId'));
+      }
+
       buildSucceededRef.current = true;
+      await waitUntilProdDeployable();
+      if (cancelledRef.current) {
+        setPhase('cancelled');
+        return;
+      }
+
       await submitProdStart();
 
       if (cancelledRef.current) {
@@ -289,6 +402,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
 
       setPhase('applying');
       onDeployed?.();
+      void refreshAfterDeploy();
     } catch (error) {
       if (
         cancelledRef.current ||
@@ -297,12 +411,16 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         setPhase('cancelled');
         return;
       }
-      const stage: UserAppDeployFailedStage = buildSucceededRef.current
-        ? 'deploy'
-        : 'build';
+      const stage: UserAppDeployFailedStage = !buildSucceededRef.current
+        ? 'build'
+        : !checkPassedRef.current
+        ? 'check'
+        : 'deploy';
       const fallback =
         stage === 'deploy'
           ? dict('PC.Pages.AppDevPro.startFailed')
+          : stage === 'check'
+          ? dict('PC.Pages.AppDevPro.checkDeployableFailed')
           : dict('PC.Pages.AppDevPro.buildStatusFailed');
       const text = pickUserAppRequestErrorText(error, fallback);
       setFailedStage(stage);
@@ -315,11 +433,13 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, [
     appId,
     listenBuildProgress,
+    refreshAfterDeploy,
     onBuildFailed,
     onDeployed,
     phase,
-    resetProgress,
+    resetTaskState,
     submitProdStart,
+    waitUntilProdDeployable,
   ]);
 
   /**
@@ -360,17 +480,25 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
    * 关闭进度弹窗（进行中需先取消）。
    */
   const closeModal = useCallback(() => {
-    if (phase === 'starting' || phase === 'building' || phase === 'deploying') {
+    if (
+      phase === 'starting' ||
+      phase === 'building' ||
+      phase === 'checkingDeployable' ||
+      phase === 'deploying'
+    ) {
       return;
     }
     setOpen(false);
     setPhase('idle');
-    resetProgress();
+    resetTaskState();
     stopStream();
-  }, [phase, resetProgress, stopStream]);
+  }, [phase, resetTaskState, stopStream]);
 
   const publishing =
-    phase === 'starting' || phase === 'building' || phase === 'deploying';
+    phase === 'starting' ||
+    phase === 'building' ||
+    phase === 'checkingDeployable' ||
+    phase === 'deploying';
 
   return {
     open,
@@ -386,5 +514,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     cancelTask,
     closeModal,
     startServices,
+    prodAccessUrl,
   };
 }

@@ -10,6 +10,26 @@ const cx = classNames.bind(styles);
 /** 嵌入页允许剪贴板与全屏，与 sandbox 配合使用 */
 const IFRAME_ALLOW = 'clipboard-read; clipboard-write; fullscreen';
 
+/**
+ * 浏览器给带 src 的 iframe 常先对 about:blank 打一次 load。
+ * 这次不能当成应用就绪，否则会先收遮罩露出白页。
+ *
+ * @param frame iframe 元素
+ * @returns 是否为空文档 load
+ */
+const isBlankIframeLoad = (frame: HTMLIFrameElement | null): boolean => {
+  if (!frame) {
+    return false;
+  }
+  try {
+    const href = frame.contentWindow?.location?.href;
+    return !href || href === 'about:blank';
+  } catch {
+    // 跨域读不了 location：能走到 load 视为真正页面
+    return false;
+  }
+};
+
 export interface AppDevProIframeProps {
   /** 嵌入地址 */
   src: string;
@@ -45,6 +65,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
 }) => {
   const [loadError, setLoadError] = useState(false);
   const [reloadNonce, setReloadNonce] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const instanceId = `${src}::${String(iframeKey ?? '')}::${reloadNonce}`;
   const settledInstanceRef = useRef('');
   const onLoadRef = useRef(onLoad);
@@ -65,6 +86,9 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
 
   const handleLoad = useCallback(() => {
     if (settledInstanceRef.current === instanceId) {
+      return;
+    }
+    if (isBlankIframeLoad(iframeRef.current)) {
       return;
     }
     settledInstanceRef.current = instanceId;
@@ -91,6 +115,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
   return (
     <div className={cx(styles.wrap, className)}>
       <iframe
+        ref={iframeRef}
         key={instanceId}
         className={cx(styles.iframe)}
         src={src}

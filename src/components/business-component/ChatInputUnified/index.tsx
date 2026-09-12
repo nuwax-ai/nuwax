@@ -34,7 +34,7 @@ import { selectSessionActive } from '@/features/conversation/domain/runtimeSelec
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
-import { apiSystemConnectorProviderList } from '@/services/systemManage';
+import { apiConnectorProviderPageList } from '@/services/systemManage';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
@@ -426,18 +426,21 @@ const ChatInputUnifiedImpl: React.FC<
   const [isStoppingConversation, setIsStoppingConversation] =
     useState<boolean>(false);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
-  // 已连接连接器（系统广场口径，与能力弹窗连接器·系统页签同源）：
+  // 已连接连接器（服务端过滤，与能力弹窗连接器页签同域）：
   // 工具栏头像组数据源；弹窗内连接/断开后经 onCapabilityModalClose 刷新
   const [connectedConnectors, setConnectedConnectors] = useState<
     ConnectedConnectorInfo[]
   >([]);
   const refreshConnectedConnectors = useCallback(async () => {
     try {
-      const res = await apiSystemConnectorProviderList();
+      // 服务端过滤已连接：connected=true，一次拉全量
+      const res = await apiConnectorProviderPageList({
+        connected: 'true',
+        pageNum: 1,
+        pageSize: 9999,
+      });
       if (res?.code !== SUCCESS_CODE) return;
-      const list = ((res.data as ConnectorProviderInfo[] | null) || []).filter(
-        (item) => item.connected === true,
-      );
+      const list = (res.data?.records as ConnectorProviderInfo[] | null) || [];
       setConnectedConnectors(
         list.map((item) => ({
           key: String(item.service ?? item.id),

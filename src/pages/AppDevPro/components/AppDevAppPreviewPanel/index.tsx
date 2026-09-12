@@ -49,8 +49,16 @@ export interface AppDevAppPreviewPanelProps {
   onStart?: () => void;
   /** 开发环境进行中任务锁定启动 / 重启 */
   devActionLocked?: boolean;
+  /**
+   * 是否允许展示「服务已停止」。
+   * 进页未决定 start/attach 前为 false，避免刷新先闪停止再自动 start。
+   * 用户点停止后为 true。
+   */
+  allowStoppedHero?: boolean;
   /** 线上环境有预览地址时可直接展示 iframe，无需先启动服务 */
   directPreview?: boolean;
+  /** 正在调用停止接口，避免 iframe 被关掉后露出空白 */
+  stopping?: boolean;
 }
 
 /**
@@ -201,7 +209,7 @@ const PreviewHero: React.FC<{
 
 /**
  * AppDevPro 应用预览页签。
- * 容器未就绪显示准备中；停止后显示启动预览；启动过程展示任务日志；
+ * 容器未就绪显示准备中；停止中显示加载动画；停止后显示启动预览；启动过程展示任务日志；
  * 启动成功后先显示应用加载中，iframe 加载完成再露出页面。
  * 已有预览时，新会话进行中仍保留当前页面。
  *
@@ -224,7 +232,9 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   onRetryStart,
   onStart,
   devActionLocked = false,
+  allowStoppedHero = false,
   directPreview = false,
+  stopping = false,
 }) => {
   const logs = useMemo(() => {
     const lines = flattenTaskLogs(services);
@@ -234,29 +244,43 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     }
     return lines;
   }, [errorMessage, services]);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
-  const showStartProgress =
-    busy || phase === 'starting' || phase === 'building';
-  const showStartFailed = phase === 'failed' || phase === 'cancelled';
+  /**
+   * 用地址 + 刷新计数标记当前预览实例。
+   * 换地址时当帧就判定未加载，避免 effect 晚一拍时空白 iframe 先露出来。
+   */
+  const previewInstanceKey = `${previewUrl ?? ''}::${refreshKey}`;
+  const [loadedInstanceKey, setLoadedInstanceKey] = useState('');
+  const iframeLoaded = loadedInstanceKey === previewInstanceKey;
+  /** 启动任务进行中：展示日志区与取消，不是进度条 */
+  const isStarting = busy || phase === 'starting' || phase === 'building';
+  const startFailed = phase === 'failed' || phase === 'cancelled';
   const canShowIframe = !!previewUrl && (running || directPreview);
 
-  useEffect(() => {
-    setIframeLoaded(false);
-  }, [previewUrl, refreshKey]);
-
   const handleIframeLoad = useCallback(() => {
-    setIframeLoaded((prev) => prev || true);
-  }, []);
+    setLoadedInstanceKey(previewInstanceKey);
+  }, [previewInstanceKey]);
 
   /** iframe 加载失败时收起加载遮罩，露出失败提示 */
   const handleIframeError = useCallback(() => {
-    setIframeLoaded((prev) => prev || true);
-  }, []);
+    setLoadedInstanceKey(previewInstanceKey);
+  }, [previewInstanceKey]);
 
   /** 刷新 iframe 时重新展示加载遮罩 */
   const handleIframeRetry = useCallback(() => {
-    setIframeLoaded(false);
+    setLoadedInstanceKey('');
   }, []);
+
+  if (stopping) {
+    return (
+      <div className={cx(styles.container, styles.stage)}>
+        <PreviewHero
+          spinning
+          title={dict('PC.Pages.AppDevPro.previewStopping')}
+          hint={dict('PC.Pages.AppDevPro.previewStoppingHint')}
+        />
+      </div>
+    );
+  }
 
   // 已有可预览内容时，新会话进行中仍保留当前页面，不切回准备中
   if (
@@ -284,8 +308,8 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  if (showStartProgress || showStartFailed) {
-    const headText = showStartFailed
+  if (isStarting || startFailed) {
+    const headText = startFailed
       ? phase === 'cancelled'
         ? dict('PC.Pages.AppDevPro.startCancelled')
         : dict('PC.Pages.AppDevPro.startFailed')
@@ -295,9 +319,9 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
       <div className={cx(styles.container, styles.stage)}>
         <div className={cx(styles.logBoard)}>
           <div className={cx(styles.logHead)}>
-            {!showStartFailed ? <LoadingOutlined /> : null}
+            {!startFailed ? <LoadingOutlined /> : null}
             <span className={cx(styles.logHeadText)}>{headText}</span>
-            {showStartProgress && onCancelTask ? (
+            {isStarting && onCancelTask ? (
               <Button
                 size="small"
                 loading={cancelLoading}
@@ -306,7 +330,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
                 {dict('PC.Pages.AppDevPro.cancelTask')}
               </Button>
             ) : null}
-            {showStartFailed && onRetryStart ? (
+            {startFailed && onRetryStart ? (
               <Tooltip
                 title={
                   devActionLocked
@@ -369,6 +393,18 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
             description={dict('PC.Pages.AppDevPro.appPreviewEmpty')}
           />
         </div>
+      </div>
+    );
+  }
+
+  if (!allowStoppedHero) {
+    return (
+      <div className={cx(styles.container, styles.stage)}>
+        <PreviewHero
+          spinning
+          title={dict('PC.Pages.AppDevPro.previewPreparing')}
+          hint={dict('PC.Pages.AppDevPro.previewPreparingHint')}
+        />
       </div>
     );
   }

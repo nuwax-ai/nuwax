@@ -1,0 +1,250 @@
+/**
+ * 独立技能列表组件：双布局变体（grid 两栏卡片 / list 单栏横排行）。
+ * 颜色走 token.less 主题变量，随亮/暗主题自动切换。
+ */
+@import '@/styles/token';
+
+@skill-text: @colorText;
+@skill-secondary: @colorTextSecondary;
+@skill-muted: @colorTextTertiary;
+@skill-faint: @colorTextQuaternary;
+@skill-fill: @colorFillSecondary;
+@skill-border: @colorBorderSecondary;
+
+// ---- 滚动容器（组件根）：grid 两栏网格 / list 单列行 ----
+.root {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-color: @colorTextQuaternary transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: @colorTextQuaternary;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+.root-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.root-list {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 8px;
+}
+
+// 首次加载/空态占满可视高度（保持滚动容器尺寸稳定）
+.state {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+.state-loading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+// 付费 Ribbon 包裹的条目：wrapper 拉通网格行高，与无角标条目等高
+:global(.ant-ribbon-wrapper) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  > * {
+    flex: 1;
+  }
+}
+
+// 付费/已订阅 Ribbon 角标：小号（与能力弹窗同口径；双写提权压过 cssinjs）
+.paid-ribbon.paid-ribbon {
+  height: 18px;
+  padding-inline: 7px;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+// ---- grid 变体卡片（两栏，与能力弹窗简化技能卡同款） ----
+.card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid @skill-border;
+  border-radius: 8px;
+  background: @colorBgContainer;
+  cursor: pointer;
+  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+
+  &:hover {
+    border-color: color-mix(in srgb, @colorPrimary 55%, transparent);
+    box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
+      0 4px 16px -2px rgba(12, 12, 13, 6%), 0 8px 24px -2px rgba(0, 0, 0, 4%);
+  }
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+// 圆形 tinted 图标（grid 40 / list 28）
+.card-icon,
+.list-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  color: @skill-secondary;
+  font-weight: 600;
+
+  img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
+}
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+}
+
+.card-heading {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.card-name {
+  overflow: hidden;
+  color: @skill-text;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-desc {
+  overflow: hidden;
+  color: @skill-muted;
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 操作簇：悬停浮现「选择」（不占位）+ 常驻启用开关
+.card-actions,
+.list-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+// 悬停浮现按钮：未悬停不渲染入流、不占布局空间
+.card-hire {
+  display: none;
+}
+
+.card:hover .card-hire,
+.list-row:hover .card-hire {
+  display: inline-block;
+}
+
+// 方形圆角 tint 底「选择」按钮（双写提权压过 antd cssinjs）
+.card-select.card-select {
+  border-color: transparent;
+  background: @skill-fill;
+  color: @skill-text;
+
+  &:hover,
+  &:focus-visible {
+    border-color: transparent;
+    background: color-mix(in srgb, @colorPrimary 14%, transparent);
+    color: @colorPrimary;
+  }
+}
+
+// 启用开关：小号形态（双写提权压过 antd Switch 默认）
+.card-switch.card-switch {
+  min-width: 36px;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+
+  &:global(.ant-switch-checked) {
+    background: @colorPrimary;
+  }
+
+  :global(.ant-switch-handle) {
+    top: 2px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &:global(.ant-switch-checked) :global(.ant-switch-handle) {
+    inset-inline-start: calc(100% - 18px);
+  }
+}
+
+// ---- list 变体行（单栏横排紧凑行）：无边线，悬停方形圆角灰底；
+// 名称/描述复用 grid 的 .card-heading/.card-name/.card-desc 上下两行 ----
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+
+  &:hover {
+    background: @skill-fill;
+  }
+}
+
+.list-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+
+  img {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.list-actions {
+  margin-left: auto;
+}

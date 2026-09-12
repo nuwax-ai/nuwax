@@ -1,6 +1,7 @@
 /**
  * 资源聚合页顶部工具栏
- * @description 主 tab（系统广场/团队空间）+ 二级分类 tab + 搜索 + "更多"入口
+ * @description 主 tab（系统广场/团队空间，连接器页另有"已连接的"）+
+ *   二级分类 tab + 搜索 + "更多"入口
  */
 
 import { dict } from '@/services/i18nRuntime';
@@ -60,6 +61,24 @@ const ResourceToolbar: React.FC<ResourceToolbarProps> = ({
       label: dict('PC.Pages.ExpertSkillConnector.mainTabTeam'),
       value: 'team',
     },
+    // "我启用的"仅技能页展示（当前用户启用的技能维度），位于团队空间右侧
+    ...(resourceType === 'skill'
+      ? [
+          {
+            label: dict('PC.Pages.ExpertSkillConnector.mainTabEnabled'),
+            value: 'enabled',
+          },
+        ]
+      : []),
+    // "已连接的"仅连接器页展示（当前用户已连接的连接器维度）
+    ...(resourceType === 'connector'
+      ? [
+          {
+            label: dict('PC.Pages.ExpertSkillConnector.mainTabConnected'),
+            value: 'connected',
+          },
+        ]
+      : []),
   ];
 
   // "更多"跳转：专家/技能跳对应广场分类页（连接器页不展示"更多"入口）

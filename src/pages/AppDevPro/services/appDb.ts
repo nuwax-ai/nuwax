@@ -64,8 +64,8 @@ export async function apiUserAppDbCredentialGen(
 
 /**
  * 数据库管理页代理地址（iframe）
- * 开发环境：/api/userapp/proxy/dbx/dev/{appId}
- * 线上环境：/api/userapp/proxy/dbx/prod/{appId}
+ * 开发环境：/api/userapp/proxy/dbx/dev/{appId}/
+ * 线上环境：/api/userapp/proxy/dbx/prod/{appId}/
  *
  * @param appId 应用 ID
  * @param env 环境
@@ -75,7 +75,7 @@ export const getUserAppDbProxyUrl = (
   appId: number,
   env: UserAppDbEnvEnum,
 ): string => {
-  const path = `/api/userapp/proxy/dbx/${env}/${appId}`;
+  const path = `/api/userapp/proxy/dbx/${env}/${appId}/`;
   const baseUrl = process.env.BASE_URL || '';
   return `${baseUrl}${path}`;
 };

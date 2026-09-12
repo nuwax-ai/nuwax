@@ -4,7 +4,7 @@
 import type {
   RepoPageSearchItem,
   RepoPageTreeNode,
-  RepoRecentlyAccessedItem,
+  RepoPortalPageInfo,
 } from '@/types/interfaces/repo';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -42,16 +42,16 @@ export async function apiRepoSearch(params: {
 }
 
 /**
- * 资料库最近访问列表（GET /api/repo/pages/recently-accessed）
+ * 查询门户最近访问页面（GET /api/repo/pages/recently-accessed）
  *
- * - 门户「最近访问」数据源，from（偏移量）+ size 分页
+ * - 访问记录 ∪ 我编辑过，跨全部空间，含空间位置列，按最新时间倒序
+ * - from/size 分页参数；弹窗场景单次全量取回后内存筛选
  */
-export async function apiRepoRecentlyAccessed(
-  from: number,
-  size: number,
-): Promise<RequestResponse<RepoRecentlyAccessedItem[]>> {
+export async function apiRepoRecentlyAccessedPages(
+  params: { from?: number; size?: number } = {},
+): Promise<RequestResponse<RepoPortalPageInfo[]>> {
   return request('/api/repo/pages/recently-accessed', {
     method: 'GET',
-    params: { from, size },
+    params,
   });
 }

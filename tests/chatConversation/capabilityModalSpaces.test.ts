@@ -129,7 +129,6 @@ describe('能力弹窗专家数据源（/api/published/agent/list，对齐广场
   const ALL_SPACE_IDS = [1, 2];
   const SINGLE_SPACE_IDS = [2];
   const SKILL_ALL_SPACE_IDS = [1, 2];
-  const SKILL_SINGLE_SPACE_IDS = [2];
 
   it('团队·"全部"页签：category=Agent + justReturnSpaceData + spaceIds 聚合，条目 source=team', async () => {
     apiPublishedAgentList.mockResolvedValue(
@@ -229,8 +228,7 @@ describe('能力弹窗专家数据源（/api/published/agent/list，对齐广场
     expect(params.justReturnSpaceData).toBeUndefined();
   });
 
-  it('技能·团队维度：与空间广场 activeKey=Skill 同口径（category=Skill + justReturnSpaceData），全部页签经 spaceIds 聚合', async () => {
-    apiPublishedSkillList.mockResolvedValue(page([]));
+  it('技能维度：已接入 SkillListView,弹窗数据层不注册适配器（不发起请求）', async () => {
     renderHook(() =>
       useCapabilityResources({
         resourceType: 'skill',
@@ -240,31 +238,11 @@ describe('能力弹窗专家数据源（/api/published/agent/list，对齐广场
         spaceIds: SKILL_ALL_SPACE_IDS,
       }),
     );
-    await waitFor(() => expect(apiPublishedSkillList).toHaveBeenCalled());
-    expect(apiPublishedSkillList).toHaveBeenCalledWith(
-      expect.objectContaining({
-        category: 'Skill',
-        justReturnSpaceData: true,
-        spaceIds: [1, 2],
-      }),
-    );
-  });
-
-  it('技能·具体空间页签：单空间走 spaceId 口径', async () => {
-    apiPublishedSkillList.mockResolvedValue(page([]));
-    renderHook(() =>
-      useCapabilityResources({
-        resourceType: 'skill',
-        source: 'team',
-        category: '2',
-        keyword: '',
-        spaceIds: SKILL_SINGLE_SPACE_IDS,
-      }),
-    );
-    await waitFor(() => expect(apiPublishedSkillList).toHaveBeenCalled());
-    const params = apiPublishedSkillList.mock.calls[0][0];
-    expect(params).toEqual(expect.objectContaining({ spaceId: 2 }));
-    expect(params.spaceIds).toBeUndefined();
+    // 未注册适配器 → 保持空态,不发任何请求
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(apiPublishedSkillList).not.toHaveBeenCalled();
   });
 });
 

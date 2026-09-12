@@ -42,6 +42,8 @@ export interface AppDevProHeaderProps {
   onConfirmUpdate?: (info: UserAppInfo) => void;
   /** 点击部署 */
   onPublish?: () => void;
+  /** 点击发布：直接打开发布到广场 / 空间弹窗 */
+  onOpenMarketPublish?: () => void;
   /** 部署进行中（构建 / 生产部署） */
   publishing?: boolean;
   /** 进行中的远程构建任务：按钮展示应用发布中，点击取消 */
@@ -90,6 +92,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   spaceId,
   onConfirmUpdate,
   onPublish,
+  onOpenMarketPublish,
   publishing = false,
   remotePublishing = false,
   onCancelRemotePublish,
@@ -143,8 +146,9 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
     userAppInfo.publishStatus !== PublishStatusEnum.Published &&
     !(userAppInfo.publishVersions?.length > 0);
 
-  /** 已部署到生产环境才展示开发 / 线上环境切换 */
+  /** 已部署到生产环境才展示开发 / 线上环境切换，以及发布按钮 */
   const showEnvSwitch = userAppInfo?.prodDeployed === true;
+  const showMarketPublish = userAppInfo?.prodDeployed === true;
 
   const handleSelectDevEnv = useCallback(() => {
     onEnvChange?.(UserAppDbEnvEnum.Dev);
@@ -351,6 +355,13 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
               </Button>
             </span>
           </Tooltip>
+
+          {/* 发布：仅已部署到生产环境后可发布到广场 / 空间 */}
+          <ConditionRender condition={showMarketPublish}>
+            <Button onClick={onOpenMarketPublish}>
+              {dict('PC.Pages.AppDevPro.publishToMarket')}
+            </Button>
+          </ConditionRender>
         </div>
       </header>
 

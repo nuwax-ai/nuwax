@@ -16,6 +16,11 @@
       opacity: 1;
       z-index: 1;
     }
+
+    .hover-reveal-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
   }
 
   .footer {
@@ -35,7 +40,7 @@
     }
   }
 
-  // 操作按钮（召唤/选择/连接/断开）：hover 时卡片右上角浮现（点击逻辑暂未接入，仅展示）
+  // 操作按钮（召唤/选择/连接/断开/启用开关）：hover 时卡片右上角浮现
   .action-box {
     position: absolute;
     top: 12px;
@@ -48,14 +53,43 @@
     z-index: -1;
   }
 
-  // 技能卡片：选择按钮右侧 pin 图标按钮（hover 图标转主题色；
-  // pin/取消 pin 接口未定，点击逻辑暂未接入，仅展示）
-  .pin-btn {
-    color: @colorTextSecondary;
+  // 已连接卡片：右上角常驻启用开关，容器不随 hover 隐现
+  // （断开按钮经 .hover-reveal-btn 单独控制浮现）
+  .action-box-pinned {
+    opacity: 1;
+    z-index: 1;
+  }
 
-    &:hover {
-      color: @colorPrimary;
-    }
+  // 启用开关左侧的断开按钮：仅 hover 当前卡片时浮现；
+  // 隐藏时不响应点击（按钮占位常驻，避免开关位置跳动、也避免挡住标题交互）
+  .hover-reveal-btn {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  // 专家/技能卡片右下角操作区（绝对定位：right 16px / bottom 12px）：
+  // 专家卡片为 收藏图标 + 付费角标同行右对齐——付费 Tag 最右、收藏图标
+  // 在其左侧（相邻排布对齐广场智能体卡片 action-box 内 star 与 extra 的
+  // 顺序）；技能卡片仅付费 Tag（与专家卡片付费角标同款）
+  .corner-box {
+    position: absolute;
+    right: 16px;
+    bottom: 12px;
+    display: flex;
+    align-items: center;
+  }
+
+  // 专家卡片：收藏图标（容器内行内排布，32x32 点击区；已收藏展示金色
+  // 实心星，实心星为 svg 固定填充色。浮现复用 .hover-reveal-btn 的
+  // opacity 控制——hover 当前卡片时展示、离开隐藏不响应点击）
+  .star-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
   }
 
   // 连接器卡片：标题下方 分类 + 连接状态行（颜色对齐连接器详情抽屉）
