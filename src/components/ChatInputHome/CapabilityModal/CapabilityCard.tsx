@@ -1,12 +1,9 @@
 /**
- * 能力弹窗卡片（技能维度已接入 SkillListView，此处为其余三类；
- * 选中一律走「选择/聘请」按钮，卡片主体点击不触发选中）：
- * - 专家·简化样式：圆角方图标 + 名称/单行描述 + 右上相对时间（最近召唤）+
- *   悬停浮现的「聘请」按钮；
+ * 能力弹窗卡片（技能/专家维度已接入 SkillListView / ExpertListView，
+ * 此处为连接器/资料库两类；选中一律走「选择」按钮，卡片主体点击不触发选中）：
  * - 连接器：分类/连接状态 + 悬停浮现的「选择」按钮 + 连接开关；
  * - 资料库：横向资料卡（类型专属文件图标 + 名称 + 右端相对时间/格式 Tag +
  *   悬停浮现的「选择」按钮）。
- * 付费/已订阅标识统一走 antd Badge.Ribbon 左上角小号角标（专家）。
  */
 import FileTypeIcon from '@/components/base/FileTypeIcon';
 import SvgIcon from '@/components/base/SvgIcon';
@@ -14,7 +11,7 @@ import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { t } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';
 import { FileOutlined } from '@ant-design/icons';
-import { Badge, Button, Card, Switch, Tag } from 'antd';
+import { Button, Card, Switch, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -89,9 +86,7 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
   connectorBusyKeys,
 }) => {
   const { name, description, icon, category, resourceType } = item;
-  const isExpert = resourceType === 'expert';
   const isKnowledge = resourceType === 'knowledge';
-  const isConnector = resourceType === 'connector';
   const fileType =
     item.fileType ||
     name.match(/\.(pdf|xlsx?|docx?|md|csv|txt|pptx?)$/i)?.[1]?.toUpperCase();
@@ -109,11 +104,7 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
   ) : (
     effectiveIcon
   );
-  const selectLabel = t(
-    isExpert
-      ? 'PC.Components.CapabilityModal.hire'
-      : 'PC.Components.CapabilityModal.select',
-  );
+
   // 资料卡文件格式色板（tinted 底 + 同色相描边图标，未识别格式回落蓝色）
   const knowledgeFileTheme =
     KNOWLEDGE_FILE_THEMES[fileType ?? ''] ?? KNOWLEDGE_FILE_THEME_DEFAULT;
@@ -142,10 +133,10 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
         onSelect(item);
       }}
     >
-      {selectLabel}
+      {t('PC.Components.CapabilityModal.select')}
     </Button>
   );
-  const card = (
+  return (
     <Card
       id={`capability-option-${index}`}
       data-capability-key={item.key}
@@ -181,7 +172,8 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
           </div>
           <div className={styles['card-head-actions']}>{selectButton}</div>
         </>
-      ) : isConnector ? (
+      ) : (
+        // 连接器卡：图标 + 名称/分类/连接状态 + 悬停「选择」+ 连接开关
         <>
           <div className={styles['card-head']}>
             <span
@@ -248,62 +240,8 @@ const CapabilityCard: React.FC<CapabilityCardProps> = ({
             </div>
           )}
         </>
-      ) : (
-        // 专家卡·简化样式：圆角方图标 + 名称/单行描述 + 右上相对时间
-        // （「最近召唤」页签条目）+ 悬停浮现的「聘请」按钮
-        <>
-          <div className={styles['card-head']}>
-            <span
-              className={styles['card-icon']}
-              style={{
-                backgroundColor:
-                  ICON_BACKGROUNDS[index % ICON_BACKGROUNDS.length],
-              }}
-            >
-              {iconContent}
-            </span>
-            <div className={styles['card-heading']}>
-              <span className={styles['card-name']} title={name}>
-                {name}
-              </span>
-              <div className={styles['card-desc-inline']} title={description}>
-                {description}
-              </div>
-            </div>
-            <div className={styles['card-head-actions']}>
-              {/* 最近召唤时间：卡片右上角相对时间（「最近召唤」页签条目才有） */}
-              {isExpert && item.usedTime && (
-                <span
-                  className={styles['card-used-time']}
-                  title={item.usedTime}
-                >
-                  {formatTimeAgo(item.usedTime)}
-                </span>
-              )}
-              {selectButton}
-            </div>
-          </div>
-        </>
       )}
     </Card>
   );
-  // 付费标识走 antd Badge.Ribbon（antd 官方的卡片角标形态，placement=start
-  // 即左上角）；无付费标识的卡不包 wrapper，直接返回
-  if (isExpert && item.paymentRequired) {
-    return (
-      <Badge.Ribbon
-        placement="start"
-        className={styles['card-paid-ribbon']}
-        text={t(
-          item.subscribed
-            ? 'PC.Pages.Square.SingleAgent.subscribed'
-            : 'PC.Pages.Square.SingleAgent.paid',
-        )}
-      >
-        {card}
-      </Badge.Ribbon>
-    );
-  }
-  return card;
 };
 export default React.memo(CapabilityCard);

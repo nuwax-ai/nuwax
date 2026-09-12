@@ -119,113 +119,26 @@ describe('能力弹窗团队空间维度排序（个人空间优先）', () => {
   });
 });
 
-describe('能力弹窗专家数据源（/api/published/agent/list，对齐广场两参考页）', () => {
-  const page = (records: unknown[], pages = 1) => ({
-    code: '0000',
-    data: { records, current: 1, pages, total: records.length },
-  });
-  // 稳定引用：spaceIds 数组内联会在每次 render 产生新引用，触发 hook
-  // 重置 effect 无限循环（生产侧由 index.tsx useMemo 保证稳定）
-  const ALL_SPACE_IDS = [1, 2];
-  const SINGLE_SPACE_IDS = [2];
-  const SKILL_ALL_SPACE_IDS = [1, 2];
+describe('能力弹窗专家/技能数据源（已接入独立列表组件）', () => {
+  // 稳定引用：spaceIds 内联数组每次 render 产生新引用，触发 hook 重置
+  // effect 无限循环（生产侧由 index.tsx useMemo 保证稳定）
+  const TEAM_SPACE_IDS = [1, 2];
 
-  it('团队·"全部"页签：category=Agent + justReturnSpaceData + spaceIds 聚合，条目 source=team', async () => {
-    apiPublishedAgentList.mockResolvedValue(
-      page([
-        {
-          id: 11,
-          targetId: 2503,
-          name: '智慧校园助手',
-          description: 'd',
-          icon: 'i',
-          paymentRequired: true,
-          subscribed: false,
-          official: true,
-          collect: true,
-          publishUser: {
-            userId: 9,
-            userName: 'user1788748511',
-            nickName: '',
-            avatar: 'https://example.com/a.png',
-          },
-          statistics: { userCount: 5, convCount: 16, collectCount: 1 },
-        },
-      ]),
-    );
-    const { result } = renderHook(() =>
+  it('专家维度：已接入 ExpertListView,弹窗数据层不注册适配器（不发起请求）', async () => {
+    renderHook(() =>
       useCapabilityResources({
         resourceType: 'expert',
         source: 'team',
         category: '',
         keyword: '',
-        spaceIds: ALL_SPACE_IDS,
+        spaceIds: TEAM_SPACE_IDS,
       }),
     );
-    await waitFor(() => expect(result.current.list.length).toBe(1));
-    // 空间广场口径（/space/:id/space-square?activeKey=Agent）
-    expect(apiPublishedAgentList).toHaveBeenCalledWith(
-      expect.objectContaining({
-        category: 'Agent',
-        justReturnSpaceData: true,
-        spaceIds: [1, 2],
-      }),
-    );
-    const item = result.current.list[0];
-    expect(item.source).toBe('team');
-    expect(item.key).toBe('expert:team:11');
-    expect(item.targetId).toBe(2503);
-    expect(item.paymentRequired).toBe(true);
-    // 广场卡同款信息：官方/收藏态/统计（用户数/会话数/收藏数）
-    expect(item.official).toBe(true);
-    expect(item.collect).toBe(true);
-    expect(item.userCount).toBe(5);
-    expect(item.convCount).toBe(16);
-    expect(item.collectCount).toBe(1);
-    // 发布者（卡片名称下方「头像+人物名」）：昵称优先，空昵称回退用户名
-    expect(item.publisherName).toBe('user1788748511');
-    expect(item.publisherAvatar).toBe('https://example.com/a.png');
-  });
-
-  it('团队·具体空间页签：单空间走 spaceId 口径（spaceIds 不下发），kw 透传', async () => {
-    apiPublishedAgentList.mockResolvedValue(page([]));
-    renderHook(() =>
-      useCapabilityResources({
-        resourceType: 'expert',
-        source: 'team',
-        category: '2',
-        keyword: '智慧',
-        spaceIds: SINGLE_SPACE_IDS,
-      }),
-    );
-    await waitFor(() => expect(apiPublishedAgentList).toHaveBeenCalled());
-    const params = apiPublishedAgentList.mock.calls[0][0];
-    expect(params).toEqual(
-      expect.objectContaining({ spaceId: 2, kw: '智慧', category: 'Agent' }),
-    );
-    expect(params.spaceIds).toBeUndefined();
-  });
-
-  it('系统广场：与 /square?cate_type=Agent 默认口径一致（targetType/targetSubType，不带 official）', async () => {
-    apiPublishedAgentList.mockResolvedValue(page([]));
-    renderHook(() =>
-      useCapabilityResources({
-        resourceType: 'expert',
-        source: 'system',
-        category: '',
-        keyword: '',
-      }),
-    );
-    await waitFor(() => expect(apiPublishedAgentList).toHaveBeenCalled());
-    const params = apiPublishedAgentList.mock.calls[0][0];
-    expect(params).toEqual(
-      expect.objectContaining({
-        targetType: 'Agent',
-        targetSubType: 'ChatBot',
-      }),
-    );
-    expect(params.official).toBeUndefined();
-    expect(params.justReturnSpaceData).toBeUndefined();
+    // 未注册适配器 → 保持空态,不发任何请求
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(apiPublishedAgentList).not.toHaveBeenCalled();
   });
 
   it('技能维度：已接入 SkillListView,弹窗数据层不注册适配器（不发起请求）', async () => {
@@ -235,10 +148,9 @@ describe('能力弹窗专家数据源（/api/published/agent/list，对齐广场
         source: 'team',
         category: '',
         keyword: '',
-        spaceIds: SKILL_ALL_SPACE_IDS,
+        spaceIds: TEAM_SPACE_IDS,
       }),
     );
-    // 未注册适配器 → 保持空态,不发任何请求
     await new Promise((resolve) => {
       setTimeout(resolve, 50);
     });

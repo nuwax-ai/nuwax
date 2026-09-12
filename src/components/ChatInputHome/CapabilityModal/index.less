@@ -260,28 +260,6 @@
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-
-  // 付费角标（Badge.Ribbon）包裹的卡片：wrapper 拉通网格行高，卡片撑满 wrapper，
-  // 与无角标卡保持等高
-  :global(.ant-ribbon-wrapper) {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-
-    > :global(.ant-card) {
-      flex: 1;
-    }
-  }
-}
-
-/* 付费/已订阅 Ribbon 角标：小号形态（antd 默认 14px 字号/22px 高偏大，
-   压到 10px 字号/18px 高与紧凑卡片匹配；双写提权压过 antd cssinjs） */
-.card-paid-ribbon.card-paid-ribbon {
-  height: 18px;
-  padding-inline: 7px;
-  font-size: 10px;
-  font-weight: 400;
-  line-height: 16px;
 }
 
 // 资料库列表：横向资料卡较宽，右内边距收敛与其他列表对齐
@@ -327,9 +305,7 @@
 // 类名双写提权：antd 基础样式经 :where 降权后与本类同为 0-2-0，
 // cssinjs 运行时注入在后会反超默认 24px 内边距，双写保证覆盖恒定生效。
 // 根节点 flex 列 + body flex:1：body 撑满卡片（同行网格卡等高），
-// 统计行 margin-top:auto 才能把内容推到卡片底部（两行描述时底部留白一致）。
-// 注意 basis 必须为 auto：写 flex:1（basis 0%）会把卡片固有高度塌缩到
-// .card-expert 的 min-height(150px)，网格行高随之钉死、长内容溢出卡片
+// 注意 basis 必须为 auto：写 flex:1（basis 0%）会把卡片固有高度塌缩
 .card.card {
   display: flex;
   flex-direction: column;
@@ -431,16 +407,6 @@
   display: inline-block;
 }
 
-/* 最近召唤时间（专家卡「最近召唤」页签条目）：标题行右端弱化相对时间，
-   悬停浮现的「聘请」按钮位于其右侧 */
-.card-used-time {
-  flex-shrink: 0;
-  color: @capability-faint;
-  font-size: 11px;
-  line-height: 18px;
-  white-space: nowrap;
-}
-
 /* 技能/专家卡「选择/聘请」按钮（简化样式）：方形圆角（antd Button 默认形态），
    仅收敛为 tint 底；悬停/键盘聚焦时经 .card-hire 浮现，区别于资料库的主按钮 */
 .card-select.card-select {
@@ -493,29 +459,6 @@
   overflow: hidden;
 }
 
-/* 专家卡单行描述（简化样式）：名称下一行，一行截断 */
-.card-desc-inline {
-  overflow: hidden;
-  color: @capability-muted;
-  font-size: 12px;
-  line-height: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 专家卡（简化样式）：圆角方图标 + 名称/单行描述 + 右上相对时间 +
-   悬停浮现的「聘请」，操作簇随两行标题垂直居中 */
-.card-expert {
-  .card-head-actions {
-    align-self: center;
-    margin-top: 0;
-  }
-
-  :global(.ant-card-body) {
-    justify-content: center;
-  }
-}
-
 /* 资料格式 Tag（antd Tag）：收敛自带尾间距，胶囊圆角与次级色与其余标签统一
    （双写提权压过 antd Tag 默认形态） */
 .file-type.file-type {
@@ -544,9 +487,10 @@
   flex: 0 0 auto;
 }
 
-// SkillListView（技能维度列表）容器：对齐弹窗自实现列表的内边距;
-// 「我启用的」聚合视图无分类 pill 行,顶部补留白（.list-enabled 叠加）
-.skill-list {
+// 列表组件（SkillListView / ExpertListView）内嵌容器：通用组件根不带
+// padding,间距由使用方决定——此处对齐弹窗自实现列表的内边距;
+// 聚合视图（我启用的/最近召唤）无分类 pill 行,顶部补留白（.list-enabled 叠加）
+.embed-list {
   padding: 0 24px 14px 20px;
 
   &.list-enabled {
@@ -648,22 +592,6 @@
   font-size: 12px;
   line-height: 17px;
   white-space: nowrap;
-}
-
-// 专家付费:统一专家卡弹窗——宽度随内容自适应(fit-content),不再与能力
-// 弹窗对齐;内容区去内边距由卡片自带分区,圆角 16px,视口内收窄防溢出
-// (双写提权压过 antd Modal 默认 content 样式)
-.expert-summon-modal.expert-summon-modal {
-  max-width: calc(100vw - 24px);
-  padding-bottom: 0;
-
-  :global(.ant-modal-content) {
-    padding: 0;
-    border-radius: 16px;
-    overflow: hidden;
-    background: transparent;
-    box-shadow: none;
-  }
 }
 
 @media (max-width: 760px) {
