@@ -1,4 +1,5 @@
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
+import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import {
@@ -7,40 +8,48 @@ import {
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import {
+  apiNormalProjectDelete,
+  apiNormalProjectUpdate,
   apiUserAppDelete,
   apiUserAppUpdate,
-  apiUserProjectDelete,
+  apiUserProjectArchive,
+  apiUserProjectPin,
   apiUserProjectTabPageQuery,
-  apiUserProjectUpdate,
 } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   DeleteOutlined,
-  DownOutlined,
   EditOutlined,
-  EllipsisOutlined,
   ExclamationCircleFilled,
   FolderOutlined,
   InboxOutlined,
-  PlusOutlined,
+  LoadingOutlined,
   PushpinFilled,
   PushpinOutlined,
-  StarFilled,
-  StarOutlined,
 } from '@ant-design/icons';
 import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { useParams } from 'umi';
 import { formatRelativeTime } from '../../utils';
 import styles from './index.less';
+import {
+  appendProjectsPage,
+  hasMoreProjects,
+  mergeFlagIds,
+  PROJECT_PAGE_SIZE,
+  remainingProjects,
+  toProjectItem,
+} from './projectPagination';
 
 const cx = classNames.bind(styles);
 
@@ -74,13 +83,16 @@ export interface ProjectItem {
 /**
  * 「项目」Tab 面板。
  *
- * **项目行:全功能**(2026-09-08 定调)——右键菜单 置顶/归档/收藏/重命名/删除,
+ * **项目行:全功能**(2026-09-08 定调)——右键菜单 置顶/归档/重命名/删除,
  * 置顶排前、归档默认隐藏+「已归档」入口,对齐任务列表会话的交互形态。
  * **项目子项(项目下的会话):不做置顶**(同日定调),仅 重命名/删除 + 状态徽标。
  *
  * 数据走 apiUserProjectTabPageQuery（2026-09-08 新接口：项目列表附带各项目会话列表）；
- * 重命名/删除已接真实接口（项目→user-project/userapp、子项会话→agent conversation），
- * PageApp 契约未覆盖改名删除、置顶/归档/收藏后端接口开发中，仍维持本地标记。
+ * 项目层分页（2026-09-12）：首屏 20 条 +「查看更多」按页追加、按 projectId 去重合并；
+ * 重命名/删除已接真实接口（项目→normal-project/userapp、子项会话→agent conversation，
+ * wiki 2026-09-11 v2 契约）；置顶/归档走 user-project pin/archive（同契约，回读字段
+ * 就位后自动恢复），PageApp 契约未覆盖改名删除/置顶归档暂维持本地；
+ * 收藏接口未 ready，按产品要求关闭入口。
  */
 export interface ProjectPanelHandle {
   toggleAll: () => void;
@@ -106,13 +118,9 @@ const ProjectPanel = forwardRef<
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(
     () => new Set(),
   );
-  // 项目级标记(置顶/归档/收藏后端接口开发中,先本地 state)
+  // 项目级标记：置顶/归档回读自后端字段（字段未返回时不标记）
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => new Set());
   const [archivedIds, setArchivedIds] = useState<Set<number>>(() => new Set());
-  const [collectedIds, setCollectedIds] = useState<Set<number>>(
-    () => new Set(),
-  );
-  const [showArchived, setShowArchived] = useState(false);
   // 子项重命名弹窗状态(projectId + childId 定位目标子项)
   const [renameTarget, setRenameTarget] = useState<{
     projectId: number;
@@ -122,55 +130,77 @@ const ProjectPanel = forwardRef<
   // 项目重命名弹窗状态
   const [renameProjectId, setRenameProjectId] = useState<number>();
   const [projectRenameName, setProjectRenameName] = useState('');
+  // 分页：首屏 PROJECT_PAGE_SIZE 条，「查看更多」按页追加（tab 接口 current/pageSize/total 契约）
+  const [total, setTotal] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const pageRef = useRef(1);
+  const spaceIdRef = useRef(spaceId);
 
-  // 拉取当前空间的项目列表(tab 接口附带各项目会话列表,失败保持空列表由空态兜底)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  // 拉取指定页项目列表(page=1 整体替换,后续页追加合并;失败保持现状由空态兜底)
+  const fetchPage = useCallback(
+    async (page: number, options: { append: boolean }) => {
+      const requestSpaceId = spaceIdRef.current;
+      if (options.append) setLoadingMore(true);
       try {
         const res = await apiUserProjectTabPageQuery({
-          queryFilter: { spaceId },
-          current: 1,
-          pageSize: 100,
+          queryFilter: { spaceId: requestSpaceId },
+          current: page,
+          pageSize: PROJECT_PAGE_SIZE,
           orders: [],
           filters: [],
           columns: [],
         });
-        if (cancelled) return;
+        // 空间已切换:丢弃过期响应
+        if (requestSpaceId !== spaceIdRef.current) return;
         if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
-          setProjects(
-            res.data.records.map((item) => ({
-              id: item.projectId,
-              name: item.name,
-              projectType: item.projectType,
-              spaceId: item.spaceId,
-              icon: item.icon,
-              sandboxId: item.sandboxId,
-              devAgentId: item.devAgentId,
-              children: (item.conversations ?? []).map((conversation) => ({
-                id: conversation.id,
-                // 空主题回退与任务列表 ConversationItem 同口径
-                name:
-                  conversation.topic ||
-                  conversation.agent?.name ||
-                  dict('PC.Constants.Menus.newChat'),
-                modified: conversation.modified,
-                taskStatus: conversation.taskStatus,
-                conversation,
-              })),
-            })),
+          const records = res.data.records;
+          const fallback = dict('PC.Constants.Menus.newChat');
+          const mapped = records.map((item) => toProjectItem(item, fallback));
+          setProjects((previous) =>
+            options.append ? appendProjectsPage(previous, mapped) : mapped,
           );
+          // 置顶/归档回读恢复(wiki 2026-09-11 行6 契约先行:字段未返回时不标记;
+          // 追加页只并入新标记,不回退已加载页)
+          const pageFlagIds = (flag: 'pinned' | 'archived') =>
+            new Set(
+              records
+                .filter((item) => item[flag] === true)
+                .map((item) => item.projectId),
+            );
+          setPinnedIds((previous) =>
+            options.append
+              ? mergeFlagIds(previous, pageFlagIds('pinned'))
+              : pageFlagIds('pinned'),
+          );
+          setArchivedIds((previous) =>
+            options.append
+              ? mergeFlagIds(previous, pageFlagIds('archived'))
+              : pageFlagIds('archived'),
+          );
+          pageRef.current = page;
+          setTotal(res.data.total ?? 0);
         }
       } catch {
-        // 忽略:保持空列表
+        // 忽略:保持现有列表
       } finally {
-        setLoading(false);
+        if (options.append) setLoadingMore(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [spaceId]);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    spaceIdRef.current = spaceId;
+    pageRef.current = 1;
+    void fetchPage(1, { append: false }).finally(() => setLoading(false));
+  }, [spaceId, fetchPage]);
+
+  const hasMore = hasMoreProjects(projects.length, total);
+  const remainingCount = remainingProjects(projects.length, total);
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    void fetchPage(pageRef.current + 1, { append: true });
+  };
 
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
@@ -191,15 +221,13 @@ const ProjectPanel = forwardRef<
     });
   };
 
-  // 项目可见列表:默认隐藏归档、置顶排前(稳定排序保持原相对顺序);已归档视图只看归档项
+  // 项目可见列表:隐藏归档项（侧栏不设归档查看入口）、置顶排前(稳定排序保持原相对顺序)
   const visibleProjects = useMemo(() => {
-    const filtered = showArchived
-      ? projects.filter((item) => archivedIds.has(item.id))
-      : projects.filter((item) => !archivedIds.has(item.id));
+    const filtered = projects.filter((item) => !archivedIds.has(item.id));
     return [...filtered].sort(
       (a, b) => Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id)),
     );
-  }, [projects, archivedIds, showArchived, pinnedIds]);
+  }, [projects, archivedIds, pinnedIds]);
 
   useImperativeHandle(
     ref,
@@ -220,42 +248,32 @@ const ProjectPanel = forwardRef<
     [visibleProjects],
   );
 
-  const archivedProjectCount = useMemo(
-    () => projects.filter((item) => archivedIds.has(item.id)).length,
-    [projects, archivedIds],
-  );
-
   useEffect(() => {
     onVisibleCountChange?.(visibleProjects.length);
   }, [visibleProjects.length, onVisibleCountChange]);
 
-  // 项目标记 toggle:toast 反馈(与任务会话菜单同款文案)
+  // 项目标记 toggle：置顶/归档走项目级后端接口（常规/全栈项目；
+  // PageApp 契约未覆盖暂本地）。后端成功才更新标记，
+  // 失败 toast 不动状态;toast 文案与任务会话菜单同款
   const toggleProjectFlag = (
-    kind: 'pinned' | 'archived' | 'collected',
+    kind: 'pinned' | 'archived',
     project: ProjectItem,
   ) => {
-    const setter =
-      kind === 'pinned'
-        ? setPinnedIds
-        : kind === 'archived'
-        ? setArchivedIds
-        : setCollectedIds;
-    setter((prev) => {
-      const next = new Set(prev);
-      if (next.has(project.id)) {
-        next.delete(project.id);
-      } else {
-        next.add(project.id);
-      }
-      return next;
-    });
-    const enabled = !(
-      kind === 'pinned'
-        ? pinnedIds
-        : kind === 'archived'
-        ? archivedIds
-        : collectedIds
-    ).has(project.id);
+    const setter = kind === 'pinned' ? setPinnedIds : setArchivedIds;
+    const applyFlag = () => {
+      setter((prev) => {
+        const next = new Set(prev);
+        if (next.has(project.id)) {
+          next.delete(project.id);
+        } else {
+          next.add(project.id);
+        }
+        return next;
+      });
+    };
+    const enabled = !(kind === 'pinned' ? pinnedIds : archivedIds).has(
+      project.id,
+    );
     const toastKeyMap = {
       pinned: enabled
         ? 'PC.Components.ConversationContextMenu.pinnedToast'
@@ -263,11 +281,27 @@ const ProjectPanel = forwardRef<
       archived: enabled
         ? 'PC.Components.ConversationContextMenu.archivedToast'
         : 'PC.Components.ConversationContextMenu.unarchivedToast',
-      collected: enabled
-        ? 'PC.Components.ConversationContextMenu.collectedToast'
-        : 'PC.Components.ConversationContextMenu.uncollectedToast',
     } as const;
-    message.success(dict(toastKeyMap[kind]));
+
+    const usesRealApi =
+      project.projectType === AgentComponentTypeEnum.NormalProject ||
+      project.projectType === AgentComponentTypeEnum.UserApp;
+    if (!usesRealApi) {
+      applyFlag();
+      message.success(dict(toastKeyMap[kind]));
+      return;
+    }
+    void (async () => {
+      const request =
+        kind === 'pinned' ? apiUserProjectPin : apiUserProjectArchive;
+      const res = await request(project.id).catch(() => null);
+      if (res?.code !== SUCCESS_CODE) {
+        message.error(dict('PC.Common.Global.operationFailed'));
+        return;
+      }
+      applyFlag();
+      message.success(dict(toastKeyMap[kind]));
+    })();
   };
 
   // 项目重命名:常规项目/全栈应用走真实接口,PageApp 契约未覆盖暂维持本地改名
@@ -283,7 +317,7 @@ const ProjectPanel = forwardRef<
       const res =
         target.projectType === AgentComponentTypeEnum.UserApp
           ? await apiUserAppUpdate({ id: target.id, name: trimmed })
-          : await apiUserProjectUpdate({ id: target.id, name: trimmed });
+          : await apiNormalProjectUpdate({ id: target.id, name: trimmed });
       if (res?.code !== SUCCESS_CODE) return;
     }
     setProjects((prev) =>
@@ -312,7 +346,7 @@ const ProjectPanel = forwardRef<
           const res =
             project.projectType === AgentComponentTypeEnum.UserApp
               ? await apiUserAppDelete(project.id)
-              : await apiUserProjectDelete(project.id);
+              : await apiNormalProjectDelete(project.id);
           if (res?.code !== SUCCESS_CODE) return;
         }
         setProjects((prev) => prev.filter((item) => item.id !== project.id));
@@ -326,16 +360,11 @@ const ProjectPanel = forwardRef<
           next.delete(project.id);
           return next;
         });
-        setCollectedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(project.id);
-          return next;
-        });
       },
     });
   };
 
-  // 项目行右键菜单:置顶/归档/收藏/重命名/删除(全功能,对齐任务会话菜单结构)
+  // 项目行右键菜单:置顶/归档/重命名/删除；收藏接口未 ready，暂不展示
   const buildProjectMenu = (project: ProjectItem) => ({
     items: [
       {
@@ -356,15 +385,6 @@ const ProjectPanel = forwardRef<
             : 'PC.Components.ConversationContextMenu.archive',
         ),
       },
-      {
-        key: 'favorite',
-        icon: collectedIds.has(project.id) ? <StarFilled /> : <StarOutlined />,
-        label: dict(
-          collectedIds.has(project.id)
-            ? 'PC.Components.ConversationContextMenu.unfavorite'
-            : 'PC.Components.ConversationContextMenu.favorite',
-        ),
-      },
       { type: 'divider' as const },
       {
         key: 'rename',
@@ -383,8 +403,6 @@ const ProjectPanel = forwardRef<
         toggleProjectFlag('pinned', project);
       } else if (key === 'archive') {
         toggleProjectFlag('archived', project);
-      } else if (key === 'favorite') {
-        toggleProjectFlag('collected', project);
       } else if (key === 'rename') {
         setRenameProjectId(project.id);
         setProjectRenameName(project.name);
@@ -483,8 +501,8 @@ const ProjectPanel = forwardRef<
     },
   });
 
-  // 「+ 新建会话」：常规/全栈项目 → 跳 /home 首页项目上框（同类型智能体约束 +
-  // 直接建会话绑定项目）；PageApp 契约未覆盖维持提示；无类型按常规项目兜底
+  // 「+ 新建会话」（项目行）：常规/全栈项目 → 跳 /home 首页项目上框（同类型智能体
+  // 约束 + 建会话绑定项目）；PageApp 契约未覆盖维持提示；无类型按常规项目兜底
   const renderAddConversationButton = (project: ProjectItem) => (
     <Tooltip
       title={dict(
@@ -519,7 +537,7 @@ const ProjectPanel = forwardRef<
           });
         }}
       >
-        <PlusOutlined />
+        <SvgIcon name="icons-common-plus" style={{ fontSize: 15 }} />
       </button>
     </Tooltip>
   );
@@ -585,12 +603,7 @@ const ProjectPanel = forwardRef<
                 {pinnedIds.has(project.id) && (
                   <PushpinFilled className={cx(styles['pin-icon'])} />
                 )}
-                {collectedIds.has(project.id) && (
-                  <StarFilled className={cx(styles['star-icon'])} />
-                )}
-                <span className={cx(styles.name)} title={project.name}>
-                  {project.name}
-                </span>
+                <span className={cx(styles.name)}>{project.name}</span>
                 <div className={styles['project-actions']}>
                   {renderAddConversationButton(project)}
                   <Dropdown
@@ -603,11 +616,16 @@ const ProjectPanel = forwardRef<
                       aria-label={dict('PC.Components.ActionMenu.more')}
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <EllipsisOutlined />
+                      <SvgIcon
+                        name="icons-common-more"
+                        style={{ fontSize: 15 }}
+                      />
                     </button>
                   </Dropdown>
                 </div>
-                <DownOutlined
+                <SvgIcon
+                  name="icons-common-caret_down"
+                  style={{ fontSize: 18 }}
                   className={cx(styles.arrow, {
                     [styles.arrowExpanded]: expanded,
                   })}
@@ -648,16 +666,13 @@ const ProjectPanel = forwardRef<
                       aria-label={failedText}
                     />
                   )}
-                  <span className={cx(styles['child-name'])} title={child.name}>
-                    {child.name}
-                  </span>
+                  <span className={cx(styles['child-name'])}>{child.name}</span>
                   {child.modified && (
                     <span className={cx(styles['child-time'])}>
                       {formatRelativeTime(child.modified)}
                     </span>
                   )}
                   <div className={styles['child-actions']}>
-                    {renderAddConversationButton(project)}
                     {/* 子任务悬停操作浮层 */}
                     <Dropdown
                       menu={buildChildMenu(project.id, child)}
@@ -669,7 +684,10 @@ const ProjectPanel = forwardRef<
                         className={cx(styles['child-more'])}
                         onClick={(event) => event.stopPropagation()}
                       >
-                        <EllipsisOutlined />
+                        <SvgIcon
+                          name="icons-common-more"
+                          style={{ fontSize: 15 }}
+                        />
                       </button>
                     </Dropdown>
                   </div>
@@ -679,19 +697,16 @@ const ProjectPanel = forwardRef<
           </div>
         );
       })}
-      {/* 已归档项目入口:存在归档项或处于已归档视图时显示(mock 阶段本地标记) */}
-      {(archivedProjectCount > 0 || showArchived) && (
-        <div
-          className={cx(styles['archived-entry'])}
-          onClick={() => setShowArchived(!showArchived)}
-        >
-          {showArchived
-            ? dict(
-                'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToProjects',
-              )
-            : `${dict(
-                'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedProjects',
-              )} (${archivedProjectCount})`}
+      {/* 查看更多:项目层分页追加 */}
+      {hasMore && (
+        <div className={cx(styles['load-more-entry'])} onClick={handleLoadMore}>
+          {loadingMore ? (
+            <LoadingOutlined />
+          ) : (
+            `${dict(
+              'PC.Components.AgentConversation.viewMore',
+            )} (${remainingCount})`
+          )}
         </div>
       )}
       <Modal

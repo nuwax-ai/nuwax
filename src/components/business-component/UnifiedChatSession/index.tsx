@@ -29,6 +29,7 @@ import type {
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
+import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
 import ChatContentArea from './components/ChatContentArea';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
 import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
@@ -391,6 +392,12 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
         handleMessageSend={handleMessageSend}
         showTaskExecutingWait={showTaskExecutingWait}
         renderEmptyState={renderEmptyState}
+      />
+
+      {/* 会话快捷导航：内容区左缘缩略导航条（session-container 为定位上下文） */}
+      <ConversationQuickNav
+        scrollContainerRef={messageViewRef}
+        messageList={messageList ?? []}
       />
 
       {/* 会话执行状态栏 */}

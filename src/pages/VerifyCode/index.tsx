@@ -11,6 +11,7 @@ import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { getNumbersOnly, isWeakNumber } from '@/utils/common';
+import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { LeftOutlined } from '@ant-design/icons';
 import { Button, Input, InputRef } from 'antd';
 import classNames from 'classnames';
@@ -71,6 +72,8 @@ const VerifyCode: React.FC = () => {
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phone);
+      // nuwaclaw 客户端：登录后持久化 token 到宿主（重启免登/登录联动）；无桥自动跳过
+      await nuwaClawHost.auth.persistToken(token);
       try {
         const latestUserInfo = await UserService.refreshUserInfo();
         await syncLangFromUserInfo(latestUserInfo);

@@ -1,6 +1,7 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
+import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
 import {
   CopyToSpaceComponent,
   PagePreviewIframe,
@@ -71,7 +72,6 @@ import React, {
 import { history, useLocation, useModel, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
-import RendererLineToggle from './RendererLineToggle';
 
 const cx = classNames.bind(styles);
 const SKIP_DETAIL_QUERY_ON_POP_BACK_KEY =
@@ -147,6 +147,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
+  // 会话快捷导航的滚动容器引用（消息内容区）
+  const chatContentRef = useRef<HTMLDivElement>(null);
 
   // 页面复制弹窗状态
   const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
@@ -844,9 +846,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 />
               )}
 
-              {/*渲染线调试切换（V2 双线重构）：基线 V1，按会话显式切 V2*/}
-              <RendererLineToggle conversationId={conversationId} />
-
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
                 !!agentDetail?.pageHomeIndex && (
@@ -877,6 +876,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
           <div className={cx(styles['chat-section'])}>
             <div
               className={cx(styles['chat-wrapper-content'], 'scroll-container')}
+              ref={chatContentRef}
             >
               <div className={cx(styles['chat-wrapper'], 'flex-1')}>
                 {/* 新对话设置 */}
@@ -931,6 +931,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 ) : null}
               </div>
             </div>
+
+            {/* 会话快捷导航：内容区左缘缩略导航条（chat-section 为定位上下文） */}
+            <ConversationQuickNav
+              scrollContainerRef={chatContentRef}
+              messageList={messageList}
+            />
+
             <ChatInputUnified
               key={`agent-details-${agentId}`}
               className={cx(styles['chat-input-container'])}

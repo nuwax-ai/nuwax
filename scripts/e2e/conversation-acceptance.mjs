@@ -76,11 +76,18 @@ const expect = (condition, message) => {
 };
 
 // ---------- 页面探针（与手测轮一致的方法） ----------
+/**
+ * 消息行计数选择器（2026-09-12 更新）：
+ * 改版后助手侧消息为 answer-block 命名（class 不含 message、不带 data-message-id），
+ * 用户侧为 user-message-wrapper + 外层 data-message-id 容器（会各计一次，无碍增量断言）；
+ * 保留 message-item/chat-message 兼容 TaskAgent 与预览 Tab 渲染路径。
+ */
+const MESSAGE_SEL =
+  '[class*="user-message-wrapper"], [class*="answer-block"], [class*="message-item"], [class*="chat-message"], [data-message-id]';
+
 /** 消息行计数（DOM 探针） */
 const countMessages = async () =>
-  js(
-    String.raw`document.querySelectorAll('[class*="message-item"], [class*="chat-message"], [data-message-id]').length`,
-  );
+  js(`document.querySelectorAll(${JSON.stringify(MESSAGE_SEL)}).length`);
 
 /** 线归属决定性探针：消费 onSendMessage 的组件 props 源码含 session.send = 新线 */
 const probeLine = async () =>
@@ -116,8 +123,8 @@ const waitForStreamSettled = async (timeoutSec = 40) => {
   let stableSince = 0;
   while (Date.now() < deadline) {
     await wait(2);
-    const state = await js(String.raw`(() => ({
-      count: document.querySelectorAll('[class*="message-item"], [class*="chat-message"], [data-message-id]').length,
+    const state = await js(`(() => ({
+      count: document.querySelectorAll(${JSON.stringify(MESSAGE_SEL)}).length,
       executing: document.body.textContent.includes('正在执行'),
     }))()`);
     if (state.count === lastCount && !state.executing) {
@@ -135,15 +142,19 @@ const waitForStreamSettled = async (timeoutSec = 40) => {
 const task = await useOrCreateTaskSpace(TASK_SPACE);
 cliLog(`task space: ${task.id} | base: ${APP_BASE}`);
 
-// E2E-01 登录态与首页可用
-await scenario('E2E-01 登录态加载（home 最近使用可见）', async () => {
+// E2E-01 登录态与首页可用（2026-09-12：改版后两布局首页均渲染 NewHomeSection，旧「最近使用」文案断言废弃）
+await scenario('E2E-01 登录态加载（home NewHomeSection 可见）', async () => {
   await openOrReuseTab(APP_BASE + '/home', { wait: true, timeout: 40 });
   await wait(4);
   const state = await js(String.raw`(() => ({
-    hasRecent: document.body.textContent.includes('最近使用'),
-    editorEnv: !!document.querySelector('[class*="conversation"], [class*="chat"]'),
+    hasNewHome: !!document.querySelector('[class*="new-home-section"]'),
+    hasEditor: !!document.querySelector('[class*="mention-editor"]'),
+    onLogin: location.pathname.includes('login'),
   }))()`);
-  expect(state.hasRecent, 'home 未出现「最近使用」——登录态可能失效');
+  expect(
+    state.hasNewHome && state.hasEditor && !state.onLogin,
+    `home 未渲染 NewHomeSection/输入框——登录态可能失效：${JSON.stringify(state)}`,
+  );
 });
 
 // E2E-02 legacy 线发送全流程
@@ -156,12 +167,17 @@ await scenario('E2E-02 legacy 线：乐观追加 + 流式回复 + 收尾干净',
   await sendMessage(`${MSG_PREFIX}${stamp} legacy线 请回复收到`);
   await wait(2);
   const immediate = await countMessages();
+  // 用户消息应立即乐观上屏；助手占位不保证即时渲染，改为收尾后校验
   expect(
-    immediate >= before + 2,
-    `乐观追加失败：before=${before} immediate=${immediate}`,
+    immediate >= before + 1,
+    `乐观追加失败（用户消息未立即上屏）：before=${before} immediate=${immediate}`,
   );
   const settled = await waitForStreamSettled();
   expect(settled.count >= immediate, '收尾后消息数不应回退');
+  expect(
+    settled.count >= before + 2,
+    `流式回复未上屏：before=${before} settled=${settled.count}`,
+  );
   expect(!settled.executing, '收尾后不应残留「正在执行」');
 });
 
@@ -177,10 +193,14 @@ await scenario('E2E-03 runtime 线：探针 RUNTIME + 发送流式 + 收尾干�
   await wait(2);
   const immediate = await countMessages();
   expect(
-    immediate >= before + 2,
-    `runtime 乐观追加失败：before=${before} immediate=${immediate}`,
+    immediate >= before + 1,
+    `runtime 乐观追加失败（用户消息未立即上屏）：before=${before} immediate=${immediate}`,
   );
   const settled = await waitForStreamSettled();
+  expect(
+    settled.count >= before + 2,
+    `runtime 流式回复未上屏：before=${before} settled=${settled.count}`,
+  );
   expect(!settled.executing, 'runtime 收尾后不应残留「正在执行」');
   // 流后仍是新线（覆盖顺序稳定）
   expect((await probeLine()) === 'RUNTIME', '流后线归属漂移');
@@ -253,10 +273,14 @@ await scenario('E2E-08 预览 Tab（隔离入口 runtime 线）：探针 + 发�
   await wait(3);
   const immediate = await countMessages();
   expect(
-    immediate >= before + 2,
-    `预览 Tab 乐观追加失败：before=${before} immediate=${immediate}`,
+    immediate >= before + 1,
+    `预览 Tab 乐观追加失败（用户消息未立即上屏）：before=${before} immediate=${immediate}`,
   );
   const settled = await waitForStreamSettled(60);
+  expect(
+    settled.count >= before + 2,
+    `预览 Tab 流式回复未上屏：before=${before} settled=${settled.count}`,
+  );
   expect(!settled.executing, '预览 Tab 收尾后不应残留执行中');
   expect((await probeLine()) === 'RUNTIME', '预览 Tab 流后线归属漂移');
 });

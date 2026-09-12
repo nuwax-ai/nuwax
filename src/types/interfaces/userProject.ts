@@ -58,7 +58,7 @@ export interface UserProjectItem {
   publishStatus: PublishStatusEnum;
   /** 项目绑定的最新会话 ID（实测行附带，无会话为 null） */
   conversationId?: number | null;
-  /** 沙箱ID（实测行附带） */
+  /** 沙箱ID（实测行附带；云端项目为哨兵 -1，勿按 truthiness 判断是否个人电脑） */
   sandboxId?: number;
   /** 更新时间 */
   modified: string;
@@ -91,7 +91,7 @@ export interface UserProjectTabItem {
   description?: string | null;
   /** 项目图标 */
   icon?: string | null;
-  /** 沙箱ID */
+  /** 沙箱ID（云端项目为哨兵 -1，勿按 truthiness 判断是否个人电脑） */
   sandboxId?: number;
   /** 沙箱类型（Cloud 等） */
   sandboxType?: string;
@@ -107,6 +107,13 @@ export interface UserProjectTabItem {
   devAgentId?: number;
   /** 项目下的会话列表（tab 接口附带返回） */
   conversations?: ConversationInfo[];
+  /**
+   * 项目置顶标记（wiki 2026-09-11 契约先行：后端 pin/archive 接口已就位，
+   * 列表回读字段名未细化，字段未返回时为 undefined，消费侧按 === true 判断）
+   */
+  pinned?: boolean;
+  /** 项目归档标记（同上，契约先行防御式） */
+  archived?: boolean;
   /** 更新时间 */
   modified: string;
   /** 创建时间 */
@@ -138,7 +145,7 @@ export interface PinnedProjectInfo {
   name: string;
   /** 项目图标（上框展示，可能为 null） */
   icon?: string | null;
-  /** 项目沙箱 ID（会话创建优先携带） */
+  /** 项目沙箱 ID（会话创建优先携带；云端项目为哨兵 -1，勿按 truthiness 判断是否个人电脑） */
   sandboxId?: number;
   /** 项目绑定的调试智能体 ID（全栈默认命中用；契约先行，缺失走手选降级） */
   devAgentId?: number;
@@ -392,43 +399,54 @@ export type UserAppPublishPhase =
   | 'idle'
   | 'starting'
   | 'building'
+  | 'checkingDeployable'
   | 'deploying'
   | 'applying'
   | 'success'
   | 'failed'
   | 'cancelled';
 
-/** 进度弹窗失败发生在构建、启动还是发布 */
-export type UserAppDeployFailedStage = 'build' | 'deploy' | 'apply';
+/** 进度弹窗失败发生在构建、检测可部署、启动还是发布 */
+export type UserAppDeployFailedStage = 'build' | 'check' | 'deploy' | 'apply';
 
 /** 任务终态 */
 export type UserAppTaskTerminalStatus = 'succeeded' | 'failed' | 'cancelled';
 
 /**
- * 构建任务 SSE 事件名（与 event 字段一致）。
- * building / log / build_ok / build_fail 为服务级；completed / failed / cancelled 为任务终态；
- * stream_lagged 为协议事件，需带 fromSeq 重连。
+ * 任务进度 SSE 事件名（与 event 字段一致）。
+ * building / log / build_ok / build_fail 为构建服务级；
+ * service_starting / service_start_ok 仅开发环境启动 / 重启服务时出现；
+ * completed / failed / cancelled 为任务终态；stream_lagged 需带 fromSeq 重连。
  */
 export type UserAppBuildSseEventName =
   | 'building'
   | 'log'
   | 'build_ok'
   | 'build_fail'
+  | 'service_starting'
+  | 'service_start_ok'
   | 'completed'
   | 'failed'
   | 'cancelled'
   | 'stream_lagged';
 
-/** 单个服务的构建状态：building 期间穿插 log，以 build_ok / build_fail 结束 */
-export type UserAppBuildServiceStatus = 'building' | 'build_ok' | 'build_fail';
+/**
+ * 单个服务进度状态。
+ * 构建：building → build_ok / build_fail；
+ * 开发环境启动：service_starting → service_start_ok。
+ */
+export type UserAppBuildServiceStatus =
+  | 'building'
+  | 'build_ok'
+  | 'build_fail'
+  | 'service_starting'
+  | 'service_start_ok';
 
-/** 单个服务（serviceId）的构建进度 */
+/** 单个服务（serviceId）的构建 / 启动状态与日志 */
 export interface UserAppTaskServiceProgress {
-  /** 服务 ID，如 web / api */
+  /** 服务 ID，如 web / api / backend-go */
   serviceId: string;
-  /** 进度 0-100 */
-  progress: number;
-  /** 服务构建状态：building / build_ok / build_fail */
+  /** 服务状态 */
   status: UserAppBuildServiceStatus;
   /** 日志行 */
   logs: string[];

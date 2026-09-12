@@ -1,4 +1,5 @@
 @import '@/styles/token.less';
+@import '@/styles/nav-item-state.less';
 
 .sidebar-nav-header {
   flex-shrink: 0;
@@ -42,7 +43,7 @@
     transition: all 0.2s ease;
 
     &:hover {
-      background-color: @colorFillSecondary;
+      background-color: @navRowHoverBg;
       color: @navSecondMenuAdaptiveText;
     }
 
@@ -57,6 +58,8 @@
   }
 
   // 行通用：15px 外边距 + 12px 内容缩进，对齐原型 27px 图标基线
+  // 默认文字 #4b4a53 / normal；图标保持次级灰（2026-09-12 定调：hover 不高亮
+  // 图标）；选中见 .nav-item-active（图标品牌色）
   .action-row,
   .nav-item {
     display: flex;
@@ -66,15 +69,18 @@
     padding: 7px 12px;
     border-radius: 11px;
     cursor: pointer;
-    color: @navSecondMenuAdaptiveText;
+    color: #4b4a53;
     font-size: 13.5px;
-    font-weight: 500;
+    font-weight: normal;
     line-height: normal;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.16s ease, color 0.16s ease;
     user-select: none;
 
     &:hover {
-      background-color: @colorFillSecondary;
+      // 单栏四类行（菜单/项目/项目会话/任务会话）hover 一律同效：与项目行/
+      // 会话行同款灰底（Phase 1 统一交互态）。原型的白透底只适配其灰底画布，
+      // 且与项目/会话行的灰底并存两套皮，2026-09-12 定调统一灰底
+      background-color: @navRowHoverBg;
     }
   }
 
@@ -89,7 +95,8 @@
     justify-content: center;
     width: 16px;
     flex-shrink: 0;
-    color: @navSecondMenuAdaptiveTextSecondary;
+    // 原型 --icon：默认次级灰，仅选中态提亮为品牌色（hover 不高亮，2026-09-12 定调）
+    color: #94939e;
     font-size: 16px;
   }
 
@@ -116,8 +123,24 @@
     margin-top: 2px;
   }
 
+  // 选中态（2026-09-12 原型 qm-item.active）：容器白卡、文字近黑
+  // #141416、图标品牌色（--icon-active）；字重按需求定调 500（原型 600），
+  // 默认态 normal
   .nav-item-active {
-    background-color: @colorFillSecondary;
-    font-weight: @fontWeightStrong;
+    .nav-row-selected();
+
+    // 单栏（style3）选中底不加阴影（2026-09-12 需求）：平 pill 观感；
+    // 经典布局走 mixin 默认保持白卡阴影
+    :global(.xagi-nav-style3) & {
+      box-shadow: none;
+    }
+
+    font-weight: 500;
+    color: #141416;
+
+    .action-icon,
+    .nav-item-icon {
+      color: @colorPrimary;
+    }
   }
 }

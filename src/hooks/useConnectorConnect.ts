@@ -9,6 +9,9 @@
  * - api_key / bearer / custom → 凭据弹窗 ConnectorConnectModal（表单与提交
  *   POST /api/connector/connections/api-key 同空间侧/管理侧凭据抽屉口径）：
  *   先拉详情接口取凭证字段定义再打开弹窗
+ * - no_auth（免鉴权）→ 无凭证概念，直接 POST /api/connector/connections/api-key
+ *   建连（无凭证字段；spaceId 取卡片响应自带的所属空间，团队空间维度
+ *   （含"全部"页签）透传、系统广场无该字段仅 providerService；不发凭据弹窗）
  * - 断开：连接 id ≠ 连接器 id，先 GET /api/connector/connections 按 service
  *   匹配出连接对象，再 DELETE /api/connector/connections/{id}
  * 团队空间维度带 spaceId、系统广场不带（与详情抽屉 connectSpaceId 一致；
@@ -18,6 +21,7 @@
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
+  apiConnectorConnectionCreate,
   apiConnectorConnectionDelete,
   apiConnectorConnectionList,
   apiConnectorOauthAuthorize,
@@ -43,6 +47,12 @@ export interface ConnectorConnectItem {
   authType?: string;
   /** 当前连接状态 */
   connected?: boolean;
+  /**
+   * 所属空间 ID（团队空间维度列表响应每条自带；系统广场/已连接的响应无该
+   * 字段）——免鉴权直连建连时透传（"全部"页签下无法从选中空间推断，
+   * 以卡片数据为准）
+   */
+  spaceId?: number;
 }
 
 /** 数据源：团队空间维度连接/断开带 spaceId，系统广场不带 */
@@ -223,7 +233,8 @@ const useConnectorConnect = ({
 
   /**
    * 连接器卡片「连接」入口：按认证方式分流——
-   * oauth2 → 授权弹窗；api_key/bearer/custom → 拉详情取凭证字段后开凭据弹窗
+   * oauth2 → 授权弹窗；api_key/bearer/custom → 拉详情取凭证字段后开凭据弹窗；
+   * no_auth（免鉴权）→ 直接建连（POST api-key 仅传 providerService，无凭证）
    */
   const handleConnect = useCallback(
     async (item: ConnectorConnectItem) => {
@@ -235,9 +246,29 @@ const useConnectorConnect = ({
         );
         return;
       }
-      // 免鉴权无连接动作（卡片本就不渲染按钮，此处防御兜底）
-      if (item.authType === 'no_auth' || item.connected) return;
+      if (item.connected) return;
       if (connectingIds.includes(item.id)) return;
+      if (item.authType === 'no_auth') {
+        // 免鉴权：无凭证概念，直接建连（无凭证字段；spaceId 取卡片响应
+        // 自带的所属空间——团队空间维度（含"全部"页签）每条都有，系统
+        // 广场无该字段仅传 providerService），成功后就地更新卡片为已连接
+        setConnectingIds((prev) => [...prev, item.id]);
+        try {
+          const res = await apiConnectorConnectionCreate({
+            providerService: item.service,
+            spaceId: item.spaceId,
+          });
+          if (res?.code === SUCCESS_CODE) {
+            updateItem(item.id, { connected: true });
+            message.success('连接成功');
+          }
+        } catch {
+          // 业务/网络错误：全局 errorHandler 已提示后端报错，此处不再重复弹错
+        } finally {
+          setConnectingIds((prev) => prev.filter((id) => id !== item.id));
+        }
+        return;
+      }
       if (item.authType === 'oauth2') {
         await openOauthAuthorize(item);
         return;
@@ -257,7 +288,7 @@ const useConnectorConnect = ({
         setConnectingIds((prev) => prev.filter((id) => id !== item.id));
       }
     },
-    [connectingIds, openOauthAuthorize, fetchProvider],
+    [connectingIds, openOauthAuthorize, fetchProvider, updateItem],
   );
 
   /** 凭据弹窗关闭（连接成功 / 手动取消均会关闭） */

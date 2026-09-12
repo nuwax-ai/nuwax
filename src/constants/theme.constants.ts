@@ -264,16 +264,17 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
   },
 };
 
-// style3（单栏模式）：layout 变量与 style1 同源（单栏导航尺寸走组件内常量，
-// page-container 沿 style1 分支 = 单栏改造上线时的线上表现）
+// style3（单栏模式）：layout 变量与 style1 同源（单栏导航尺寸走组件内常量）；
+// navigation（page-container 形态）参考风格 2（2026-09-12 需求）——贴边满铺、
+// 无圆角、展开态左侧描边（与 layouts/index.less 的类规则同口径）
 // 注：字面量内自引用 STYLE_CONFIGS 会触发 TDZ，故在字面量之后克隆写入
 STYLE_CONFIGS['light-style3'] = {
   layout: { ...STYLE_CONFIGS['light-style1'].layout },
-  navigation: { ...STYLE_CONFIGS['light-style1'].navigation },
+  navigation: { ...STYLE_CONFIGS['light-style2'].navigation },
 };
 STYLE_CONFIGS['dark-style3'] = {
   layout: { ...STYLE_CONFIGS['dark-style1'].layout },
-  navigation: { ...STYLE_CONFIGS['dark-style1'].navigation },
+  navigation: { ...STYLE_CONFIGS['dark-style2'].navigation },
 };
 
 /**

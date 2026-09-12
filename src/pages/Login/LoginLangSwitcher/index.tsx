@@ -1,5 +1,11 @@
 import { apiI18nLangList } from '@/services/i18n';
-import { dict, fetchAndApplyLangMap } from '@/services/i18nRuntime';
+import { normalizeLang } from '@/services/i18nLangPolicy';
+import {
+  dict,
+  fetchAndApplyLangMap,
+  getCurrentLang,
+  markLangUserSet,
+} from '@/services/i18nRuntime';
 import { I18nLangDto } from '@/types/interfaces/i18n';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
 import { CheckOutlined, GlobalOutlined } from '@ant-design/icons';
@@ -27,10 +33,16 @@ const LoginLangSwitcher: React.FC = () => {
           const enabledLangs = res.data.filter((item) => item.status === 1);
           setLanguages(enabledLangs);
 
-          // 默认选中后端返回的默认语言
-          const defaultLang = enabledLangs.find((item) => item.isDefault === 1);
-          if (defaultLang) {
-            setSelectedLang(defaultLang.lang);
+          // 初值优先当前运行语言（后端 isDefault 是租户默认，未必是用户当前语种）
+          const currentLangItem = enabledLangs.find(
+            (item) =>
+              normalizeLang(item.lang) === normalizeLang(getCurrentLang()),
+          );
+          const initialLang =
+            currentLangItem ??
+            enabledLangs.find((item) => item.isDefault === 1);
+          if (initialLang) {
+            setSelectedLang(initialLang.lang);
           }
         }
       } catch (error) {
@@ -46,6 +58,8 @@ const LoginLangSwitcher: React.FC = () => {
     setLoading(true);
     const hide = message.loading(dict('PC.Common.Global.processing'), 0);
     try {
+      // 用户显式选择：置标记，此后以缓存语种为准（不再被产品默认覆盖）
+      markLangUserSet();
       const applied = await fetchAndApplyLangMap(key, 'PC');
       if (applied) {
         // 切换成功后刷新页面

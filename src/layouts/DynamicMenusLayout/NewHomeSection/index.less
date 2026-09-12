@@ -18,10 +18,10 @@
   .section-tabs {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: @marginXxs;
     flex-shrink: 0;
     margin-top: 15px;
-    padding: 0 15px 8px;
+    padding: 0 15px 8px 24px;
     cursor: pointer;
     user-select: none;
 
@@ -41,11 +41,7 @@
       flex-shrink: 0;
       color: @navSecondMenuAdaptiveTextTertiary;
       transition: transform 0.2s ease;
-
-      > svg {
-        width: 12px;
-        height: 12px;
-      }
+      // 尺寸由 SvgIcon style.fontSize 传入(组件内联字号优先)，此处只管颜色与折叠旋转
     }
 
     &.section-tabs-collapsed .section-tab-chev {
@@ -57,7 +53,7 @@
   // （原型 .tabs.task-tabs 带 30px 缩进，按需求定调改为平级不缩进）
   .task-section-tabs {
     margin-top: 6px;
-    padding: 2px 15px 8px;
+    padding: 2px 15px 8px 24px;
   }
 
   // 吸顶分组头：滚动到对应区域时该区分组头把上一区分组头顶出、自动替换钉在滚动区顶部
@@ -68,7 +64,10 @@
     z-index: 1;
     margin-top: 0;
     padding-top: 15px;
-    background: @navSecondMenuBg;
+    // 吸顶条背景必须与侧栏可见底色一致：@navSecondMenuBg(color-bg-layout) 在
+    // antd css-var 作用域内被通用主题重声明为 #F5F5F5，比侧栏实际灰底
+    // (layout-bg-secondary=#F2F2F2)浅一档，列表顶部会显出一条浅色带
+    background: var(--xagi-layout-bg-secondary, @navSecondMenuBg);
 
     // 任务头：原 margin 6px + padding 2px 并入
     &.task-section-tabs {
@@ -81,10 +80,11 @@
     position: relative;
   }
 
-  // 单栏项目列表：padding 7/7/16/15（右侧 7px 与稳定滚动轨道补偿对齐）。
+  // 单栏项目列表：padding 7/15/16/15（右侧 15px 与顶部导航菜单项右缘对齐，
+  // 均止于 x=245；原右 7px 使列表比导航宽出 8px）。
   // 原文件尾曾二次声明同名规则覆盖此处的 0 15px 16px，现按实际生效值并入，级联结果不变
   .project-list-section {
-    padding: 7px 7px 16px 15px;
+    padding: 7px 15px 16px;
   }
 
   // ===== 经典布局（style1/2）tab 切换：维持改版前形态，仅任务/项目两项 =====
@@ -181,8 +181,9 @@
       display: flex;
       flex-direction: column;
       gap: @listItemGap;
-      // 右侧 8px 由稳定滚动轨道占用，补偿后列表正文仍保持原来的 230px 宽度。
-      padding: 7px 7px 16px 15px;
+      // 右侧 15px 与顶部导航菜单项右缘对齐（x=245，原 7px 使行比导航宽 8px）；
+      // 稳定滚动轨道在 wrapper 右缘 252-260，不再压行
+      padding: 7px 15px 16px;
       margin-right: @listMarginRight;
 
       // 加载更多提示与无更多提示
@@ -199,29 +200,12 @@
           }
         }
       }
-
-      // 已归档会话入口（本地标记过渡方案）
-      .archived-entry {
-        padding: @paddingXs @paddingSm;
-        text-align: center;
-        font-size: @fontSizeSm;
-        color: @navSecondMenuAdaptiveTextTertiary;
-        border-radius: @borderRadiusSm;
-        cursor: pointer;
-        user-select: none;
-        transition: all 0.2s ease;
-
-        &:hover {
-          background-color: @colorFillQuaternary;
-          color: @navSecondMenuAdaptiveTextSecondary;
-        }
-      }
     }
   }
 
   // 分组头交互样式：hover/focus 显隐与键盘焦点态
   .section-tabs:focus-visible {
-    outline: 2px solid @colorPrimary;
+    outline: @lineWidthBold solid @colorPrimary;
     outline-offset: -2px;
   }
 
@@ -232,7 +216,7 @@
     padding: 2px;
     margin-left: auto;
     border: none;
-    border-radius: 6px;
+    border-radius: @borderRadiusOuter;
     background: transparent;
     color: @navSecondMenuAdaptiveTextTertiary;
     cursor: pointer;
@@ -241,7 +225,7 @@
 
     &:hover {
       color: @colorPrimary;
-      background: @colorFillTertiary;
+      background: @navRowHoverBg;
     }
 
     &:disabled {
@@ -250,7 +234,7 @@
   }
 
   .section-tabs:hover .section-tool,
-  .section-tabs:focus-within .section-tool {
+  .section-tabs:has(:focus-visible) .section-tool {
     opacity: 1;
   }
   @media (hover: none) {

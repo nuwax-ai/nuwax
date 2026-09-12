@@ -3,7 +3,8 @@
  * @description 参考 pages/ExpertSkillConnector/useResourceList 的双适配器模式独立实现：
  * - 专家：系统广场/团队空间均走已发布智能体接口（团队维度经 spaceIds 聚合，
  *   "全部"页签=全部空间），服务端分页；
- * - 连接器：系统广场全量数组、团队空间服务端分页；
+ * - 连接器：官方目录/空间维度均走 GET /api/connector/providers 服务端分页
+ *   （scope=official / scope=space 聚合，具体空间传 spaceId）；
  * - 资料库：repo 页面树全量拉取后先序平铺（客户端切片）；
  * - 技能维度已接入 SkillListView（自带数据层），此处不注册适配器；
  * 对外统一提供 { list, loading, error, hasMore, loadMore } 语义。
@@ -12,10 +13,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiRepoSpaceTree } from '@/services/repo';
 import { apiPublishedAgentList } from '@/services/square';
-import {
-  apiConnectorProviderPageList,
-  apiSystemConnectorProviderList,
-} from '@/services/systemManage';
+import { apiConnectorProviderPageList } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { RepoPageTreeNode } from '@/types/interfaces/repo';
@@ -121,6 +119,29 @@ export const normalizeDocType = (
   pageType?: string,
 ): string | undefined =>
   (sourceExt?.replace(/^\./, '') || pageType)?.toUpperCase();
+
+/**
+ * 连接器接口响应提取（GET /api/connector/providers 分页结构，
+ * 官方目录 / 空间维度共用，仅归一化 source 标记不同）
+ */
+const extractConnectorPage = (
+  res: RequestResponse<unknown>,
+  page: number,
+  pageSize: number,
+  source: CapabilitySourceEnum,
+): { items: CapabilityItem[]; hasMore: boolean } => {
+  const data = res.data as {
+    records?: ConnectorProviderInfo[] | null;
+    pageNum?: number;
+  } | null;
+  const records = data?.records || [];
+  const current = data?.pageNum || page;
+  return {
+    items: records.map((item) => mapConnectorItem(item, source)),
+    // 该接口无总页数字段，按"本页取满"判断是否还有下一页
+    hasMore: current === page && records.length >= pageSize,
+  };
+};
 
 /**
  * 资料库页面树先序平铺：目录与页面同构（每个节点都是可选文档），
@@ -239,42 +260,37 @@ const ADAPTERS: Partial<
     ),
   },
   connector: {
-    // 系统广场：系统连接器（全量数组）
+    // 系统广场：官方连接器目录（GET /api/connector/providers?scope=official
+    // 服务端分页），点击具体分类追加 category 参数
     system: {
-      mode: 'client',
-      fetchAll: () => apiSystemConnectorProviderList(),
-      extractAll: (res) => {
-        const records = (res.data as ConnectorProviderInfo[] | null) || [];
-        return records.map((item) => mapConnectorItem(item, 'system'));
-      },
+      mode: 'server',
+      fetchPage: ({ page, pageSize, category, keyword }) =>
+        apiConnectorProviderPageList({
+          pageNum: page,
+          pageSize,
+          // 官方连接器目录维度
+          scope: 'official',
+          // 分类 key 即分类名称（如 通讯工具）；空串 = 全部，不传
+          category: category || undefined,
+          keyword: keyword || undefined,
+        }),
+      extract: (res, page, pageSize) =>
+        extractConnectorPage(res, page, pageSize, 'system'),
     },
-    // 团队空间：空间连接器（GET /api/connector/providers 服务端分页）
+    // 团队空间：空间连接器（GET /api/connector/providers 服务端分页）：
+    // "全部"页签 = scope=space 聚合全部空间（不带 spaceId）；
+    // 具体空间 = 仅传 spaceId；两种口径均不带 status/connected 筛选
     team: {
       mode: 'server',
       fetchPage: ({ page, pageSize, keyword, spaceId }) =>
         apiConnectorProviderPageList({
-          spaceId,
           pageNum: page,
           pageSize,
-          // 与空间连接器页保持一致的空间维度查询参数
-          scope: 'space',
-          status: 'all',
-          connected: 'all',
+          ...(spaceId ? { spaceId } : { scope: 'space' }),
           keyword: keyword || undefined,
         }),
-      extract: (res, page, pageSize) => {
-        const data = res.data as {
-          records?: ConnectorProviderInfo[] | null;
-          pageNum?: number;
-        } | null;
-        const records = data?.records || [];
-        const current = data?.pageNum || page;
-        return {
-          items: records.map((item) => mapConnectorItem(item, 'team')),
-          // 该接口无总页数字段，按"本页取满"判断是否还有下一页
-          hasMore: current === page && records.length >= pageSize,
-        };
-      },
+      extract: (res, page, pageSize) =>
+        extractConnectorPage(res, page, pageSize, 'team'),
     },
   },
   knowledge: {
@@ -346,8 +362,14 @@ const useCapabilityResources = ({
         return;
       }
       // 团队空间维度依赖空间 ID（空间字典加载中 / 未选择空间）；
-      // 专家团队维度的"全部"页签只有 spaceIds（无单空间 ID），凭其放行
-      if (source === 'team' && !spaceId && !spaceIds?.length) {
+      // 专家团队维度的"全部"页签只有 spaceIds（无单空间 ID），凭其放行；
+      // 连接器团队维度"全部"页签经 scope=space 聚合（无 spaceId 也放行）
+      if (
+        source === 'team' &&
+        !spaceId &&
+        !spaceIds?.length &&
+        resourceType !== 'connector'
+      ) {
         return;
       }
       // 未注册适配器的类型（技能已接入 SkillListView）保持空态,不发起加载

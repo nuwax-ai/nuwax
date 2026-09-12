@@ -56,6 +56,10 @@ export interface AgentRecentConversationInfo {
   id: number | string;
   topic?: string | null;
   taskStatus?: TaskStatus;
+  /** 会话级服务端置顶状态 */
+  pinned?: boolean;
+  /** 会话级服务端归档状态 */
+  archived?: boolean;
   /** 会话更新时间(接口当前未返回,后端补字段后自动展示) */
   modified?: string;
 }

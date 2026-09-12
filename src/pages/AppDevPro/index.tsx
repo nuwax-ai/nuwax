@@ -98,12 +98,19 @@ import {
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
-import { pickActiveUserAppTask } from './utils/userAppTaskStream';
-
 const cx = classNames.bind(styles);
 
 /** Header 工作区：文件树预览与应用预览 / 数据库互斥，后两者不进入文件标签栏 */
 type AppDevWorkspaceView = 'files' | 'app-preview' | 'database';
+
+/** 数据库工作区常驻页签，保持引用稳定，避免 Tab 栏 effect 反复执行 */
+const DATABASE_WORKSPACE_TOOL_IDS: PreviewToolId[] = [
+  'database',
+  'database-config',
+  'database-prod',
+  'database-config-prod',
+];
+const noop = () => undefined;
 // const devConversationPollLogger = createLogger(
 //   '[ConversationAgent][DevConversationPoll]',
 // );
@@ -225,9 +232,9 @@ const AppDevPro: React.FC = () => {
   >('idle');
   const podReady = podStatus === 'running';
   /** 应用预览 iframe 刷新计数 */
-  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
+  const [previewRefreshKey, setPreviewRefreshKey] = useState<number>(0);
   /** 用户在地址栏跳转后的 iframe 地址（环境切换、重启服务时重置为预览根路径） */
-  const [previewIframeUrl, setPreviewIframeUrl] = useState('');
+  const [previewIframeUrl, setPreviewIframeUrl] = useState<string>('');
   /** 当前环境预览根地址，供启动 / 重启回调读取 */
   const appPreviewUrlRef = useRef<string>('');
 
@@ -280,7 +287,9 @@ const AppDevPro: React.FC = () => {
 
   /**
    * 仅在 AppDevPro 把当前环境写入 conversationInfo，
-   * 供 ensure/restart/keepalive/stop 老接口附带 appStage；离开页面时清空，避免污染其它页面。
+   * 供 ensure/restart/keepalive/stop 老接口附带 appStage。
+   * 同时作为会话 OPEN_DESKTOP 闸门：开发环境打开桌面且不停保活，线上环境不调用。
+   * 离开页面时清空，避免污染其它页面。
    */
   useEffect(() => {
     setPodAppStage(dbEnv);
@@ -293,8 +302,14 @@ const AppDevPro: React.FC = () => {
     [setPodAppStage],
   );
 
+  const ensureDesktopConnectionRef = useRef(ensureDesktopConnection);
+  ensureDesktopConnectionRef.current = ensureDesktopConnection;
+  const refreshFileListImmediatelyRef = useRef(refreshFileListImmediately);
+  refreshFileListImmediatelyRef.current = refreshFileListImmediately;
+
   /**
    * 进入页面即启动容器并开启保活，默认开发环境 dev。
+   * 只在会话 ID 变化时执行一次；会话结束刷新文件树不得再次 ensure。
    * 容器启动成功后再拉文件树、Git status；打开终端时复用本次结果，不再重复 ensure。
    */
   useEffect(() => {
@@ -312,10 +327,10 @@ const AppDevPro: React.FC = () => {
         return;
       }
       setPodStatus('running');
-      void refreshFileListImmediately(queryConversationId);
+      void refreshFileListImmediatelyRef.current(queryConversationId);
     };
 
-    void ensureDesktopConnection(queryConversationId)
+    void ensureDesktopConnectionRef.current(queryConversationId)
       .then(afterPodReady)
       .catch((error: any) => {
         if (isEnsurePodThrottledError(error)) {
@@ -331,12 +346,7 @@ const AppDevPro: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [
-    ensureDesktopConnection,
-    queryConversationId,
-    refreshFileListImmediately,
-    setPodAppStage,
-  ]);
+  }, [queryConversationId, setPodAppStage]);
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
@@ -632,6 +642,7 @@ const AppDevPro: React.FC = () => {
     ready: tasksActiveReady,
     tasks: activeTasks,
     refresh: refreshTasksActive,
+    markDevStartIdle,
   } = useUserAppTasksActive(appId);
 
   /** 查询应用绑定的域名列表 */
@@ -660,6 +671,18 @@ const AppDevPro: React.FC = () => {
     },
   });
 
+  /** 用户点停止后不再自动 start；刷新后为 false */
+  const previewUserStoppedRef = useRef(false);
+  const [previewUserStopped, setPreviewUserStopped] = useState(false);
+  /** 进页已执行 start 或 attach，未完成前不画「服务已停止」 */
+  const [previewEnterSettled, setPreviewEnterSettled] = useState(false);
+
+  useEffect(() => {
+    previewUserStoppedRef.current = false;
+    setPreviewUserStopped(false);
+    setPreviewEnterSettled(false);
+  }, [appId]);
+
   /** 应用预览：按环境启动 / 重启 / 停止，启动过程走任务 SSE */
   const previewRuntime = useUserAppRuntime({
     appId,
@@ -669,13 +692,20 @@ const AppDevPro: React.FC = () => {
       setPreviewIframeUrl(appPreviewUrlRef.current);
       setPreviewRefreshKey((prev) => prev + 1);
     },
+    onStopped: () => {
+      previewUserStoppedRef.current = true;
+      setPreviewUserStopped(true);
+      markDevStartIdle();
+    },
   });
   const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
   startPreviewIfNeededRef.current = previewRuntime.startIfNeeded;
+  const restartPreviewRuntimeRef = useRef(previewRuntime.restart);
+  restartPreviewRuntimeRef.current = previewRuntime.restart;
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
-  const attachExistingTaskRef = useRef(previewRuntime.attachExistingTask);
-  attachExistingTaskRef.current = previewRuntime.attachExistingTask;
+  /** 会话进行中服务已在跑时，结束后重启预览以加载新文件 */
+  const restartPreviewAfterConversationRef = useRef(false);
 
   /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
   const previewDevActionLocked =
@@ -755,7 +785,14 @@ const AppDevPro: React.FC = () => {
 
     // 刷新 Git 源代码管理状态列表
     void refreshGitListIfEnabled();
+
+    // 会话结束前预览已在运行：等准备预览 effect 在确认卡清空后再重启
+    if (dbEnv === UserAppDbEnvEnum.Dev && previewRuntime.running) {
+      restartPreviewAfterConversationRef.current = true;
+    }
   }, [
+    dbEnv,
+    previewRuntime.running,
     queryConversationId,
     refreshFileListImmediately,
     refreshGitListIfEnabled,
@@ -1301,6 +1338,8 @@ const AppDevPro: React.FC = () => {
         WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) ||
         toolId === 'database' ||
         toolId === 'database-config' ||
+        toolId === 'database-prod' ||
+        toolId === 'database-config-prod' ||
         toolId === 'remote-desktop'
       ) {
         closePreviewView();
@@ -1316,50 +1355,83 @@ const AppDevPro: React.FC = () => {
 
   previewTabsRef.current = previewTabs;
 
+  /** 文件树已有节点，才允许自动 start（空项目不拉预览） */
+  const hasFileTreeData = (fileTreeData?.length ?? 0) > 0;
+  /** 无会话，或会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
+  const conversationReady = !queryConversationId || !!conversationInfo;
+
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
-   * 开发环境须等 tasks/active 首包：允许则 start，不允许则接入已有任务 stream。
-   * 会话进行中或仍有待回复确认卡时仅展示预览准备态，确认完成后再启动。
+   * 开发环境须等 tasks/active 首包：允许则 start；不允许（服务已在跑）且已有预览域名则直接 iframe，不再 start / stream。
+   * 允许 start 时还须文件树已有数据，避免空项目拉起预览。
+   * 会话进行中或仍有待回复确认卡时不启动；已有预览则会话结束后再重启。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
    */
   useEffect(() => {
+    // 没有应用时无法启动预览
     if (!appId) {
       return;
     }
+    // 线上环境用域名直接预览，不在这里自动 start
     if (dbEnv === UserAppDbEnvEnum.Prod) {
       return;
     }
+    // 容器未就绪时不启动
     if (!podReady) {
       return;
     }
+    // 会话详情未回填、会话进行中、或仍有待回复确认卡时，先不启动/重启
     if (
-      (queryConversationId && !conversationInfo) ||
+      !conversationReady ||
       isConversationActive ||
       hasPendingIntervention
     ) {
       return;
     }
+    // 等待 tasks/active 首包，避免与进行中任务抢 start
     if (!tasksActiveReady) {
       return;
     }
-    if (!devActionAllowed) {
-      const activeTask = pickActiveUserAppTask(activeTasks);
-      if (activeTask) {
-        void attachExistingTaskRef.current(activeTask);
-      }
+    // 用户刚停止：只展示停止态，不自动 start / attach
+    if (previewUserStoppedRef.current) {
       return;
     }
+    // 服务已在跑（不允许再 start）：有预览域名就直接 iframe，不必再挂 stream
+    if (!devActionAllowed) {
+      if (!appPreviewUrlRef.current) {
+        return;
+      }
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      markPreviewReadyRef.current();
+      setPreviewEnterSettled(true);
+      return;
+    }
+    // 可以 start，但文件树还没数据时不启动（等文件列表回来后再走本 effect）
+    if (!hasFileTreeData) {
+      return;
+    }
+    // 新会话结束前预览已在运行：重启以加载会话改过的文件
+    if (restartPreviewAfterConversationRef.current) {
+      restartPreviewAfterConversationRef.current = false;
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      void restartPreviewRuntimeRef.current();
+      setPreviewEnterSettled(true);
+      return;
+    }
+    // 尚未运行则启动；已运行则 startIfNeeded 内部会跳过
     startPreviewIfNeededRef.current();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 进页启动只跟首包 ready 走，不跟随后续 allowed 变化
+    setPreviewEnterSettled(true);
   }, [
     appId,
-    conversationInfo,
+    conversationReady,
     dbEnv,
+    hasFileTreeData,
     hasPendingIntervention,
     isConversationActive,
     podReady,
     queryConversationId,
     tasksActiveReady,
+    userAppDomainList,
   ]);
 
   // ==================================== git 版本控制 ====================================
@@ -1558,13 +1630,25 @@ const AppDevPro: React.FC = () => {
         id: getToolTabId('database'),
         type: 'tool',
         toolId: 'database',
-        label: dict('PC.Pages.AppDevPro.database'),
+        label: dict('PC.Pages.AppDevPro.databaseDev'),
       },
       {
         id: getToolTabId('database-config'),
         type: 'tool',
         toolId: 'database-config',
-        label: dict('PC.Pages.AppDevPro.databaseConfig'),
+        label: dict('PC.Pages.AppDevPro.databaseDevConfig'),
+      },
+      {
+        id: getToolTabId('database-prod'),
+        type: 'tool',
+        toolId: 'database-prod',
+        label: dict('PC.Pages.AppDevPro.databaseProd'),
+      },
+      {
+        id: getToolTabId('database-config-prod'),
+        type: 'tool',
+        toolId: 'database-config-prod',
+        label: dict('PC.Pages.AppDevPro.databaseProdConfig'),
       },
     ],
     [],
@@ -1577,6 +1661,10 @@ const AppDevPro: React.FC = () => {
   const databaseActiveTab: AppDevDatabaseWorkspaceTab =
     databaseTabId === getToolTabId('database-config')
       ? 'database-config'
+      : databaseTabId === getToolTabId('database-prod')
+      ? 'database-prod'
+      : databaseTabId === getToolTabId('database-config-prod')
+      ? 'database-config-prod'
       : 'database';
 
   /** 打开独立应用预览视图；已启动或线上环境有地址时不再重复 start */
@@ -1609,6 +1697,8 @@ const AppDevPro: React.FC = () => {
 
   /** 启动预览服务；回到当前环境预览根地址，不沿用地址栏手动跳转 */
   const handleStartPreviewRuntime = useCallback(() => {
+    previewUserStoppedRef.current = false;
+    setPreviewUserStopped(false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
     void previewRuntime.start();
   }, [previewRuntime]);
@@ -1762,11 +1852,10 @@ const AppDevPro: React.FC = () => {
     () => (
       <AppDevDatabaseWorkspace
         appId={appId}
-        env={dbEnv}
         activeTab={databaseActiveTab}
       />
     ),
-    [appId, databaseActiveTab, dbEnv],
+    [appId, databaseActiveTab],
   );
 
   /** 「应用预览」页签：准备中 / 启动预览 / 启动日志 / 应用加载 / iframe */
@@ -1779,7 +1868,7 @@ const AppDevPro: React.FC = () => {
         busy={previewRuntime.busy}
         phase={previewRuntime.phase}
         services={previewRuntime.services}
-        overallProgress={previewRuntime.overallProgress}
+        errorMessage={previewRuntime.errorMessage}
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={isConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
@@ -1788,6 +1877,8 @@ const AppDevPro: React.FC = () => {
         onRetryStart={handleRestartPreviewRuntime}
         onStart={handleStartPreviewRuntime}
         devActionLocked={previewDevActionLocked}
+        allowStoppedHero={previewUserStopped || previewEnterSettled}
+        stopping={previewRuntime.stopping}
         directPreview={
           dbEnv === UserAppDbEnvEnum.Prod && !!activePreviewUrl
         }
@@ -1806,11 +1897,13 @@ const AppDevPro: React.FC = () => {
       previewRuntime.cancelLoading,
       previewRuntime.cancelTask,
       previewRuntime.errorMessage,
-      previewRuntime.overallProgress,
       previewRuntime.phase,
       previewRuntime.running,
       previewRuntime.services,
+      previewRuntime.stopping,
       dbEnv,
+      previewEnterSettled,
+      previewUserStopped,
     ],
   );
 
@@ -1910,12 +2003,12 @@ const AppDevPro: React.FC = () => {
               tabs={databaseTabs}
               activeTabId={databaseTabId}
               onTabSelect={handleDatabaseTabSelect}
-              onTabClose={() => undefined}
-              onCloseOtherTabs={() => undefined}
-              onCloseAllTabs={() => undefined}
-              onTogglePinTab={() => undefined}
-              onTabReorder={() => undefined}
-              permanentWorkspaceToolIds={['database', 'database-config']}
+              onTabClose={noop}
+              onCloseOtherTabs={noop}
+              onCloseAllTabs={noop}
+              onTogglePinTab={noop}
+              onTabReorder={noop}
+              permanentWorkspaceToolIds={DATABASE_WORKSPACE_TOOL_IDS}
               onRestartServer={() => {
                 if (queryConversationId) {
                   restartVncPod(queryConversationId, finalSelectedComputerId);
@@ -2209,14 +2302,18 @@ const AppDevPro: React.FC = () => {
       <AppDevPublishProgressModal
         open={publishFlow.open}
         phase={publishFlow.phase}
+        prodAccessUrl={publishFlow.prodAccessUrl}
         services={publishFlow.services}
         startServices={publishFlow.startServices}
-        overallProgress={publishFlow.overallProgress}
         errorMessage={publishFlow.errorMessage}
         failedStage={publishFlow.failedStage}
         cancelLoading={publishFlow.cancelLoading}
         onCancelTask={publishFlow.cancelTask}
         onClose={publishFlow.closeModal}
+        showReopenPublish={
+          publishFlow.phase === 'applying' && !openPublishModal
+        }
+        onReopenPublish={() => setOpenPublishModal(true)}
       />
     </div>
   );

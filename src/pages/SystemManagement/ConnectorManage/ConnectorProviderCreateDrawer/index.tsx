@@ -3,6 +3,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import ConnectorAuthConfigSection, {
   type ConnectorProviderSubmitValues,
+  isOauthLikeAuthType,
   toConnectorOauthConfigParams,
   toConnectorProviderPayload,
 } from '@/pages/SystemManagement/ConnectorManage/components/ConnectorAuthConfigSection';
@@ -174,8 +175,9 @@ const ConnectorProviderCreateDrawer: React.FC<
     }
 
     const payload = toConnectorProviderPayload(values);
+    // oauth2 同族（含扫描授权 oauth2_device）+ platform：创建成功后追加保存平台 App 配置
     const isOauth2Platform =
-      values.authType === 'oauth2' && values.oauthAppMode !== 'byo';
+      isOauthLikeAuthType(values.authType) && values.oauthAppMode !== 'byo';
 
     try {
       setSubmitting(true);

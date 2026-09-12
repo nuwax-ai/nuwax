@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type {
   UserAppBuildServiceStatus,
   UserAppTaskLogEvent,
@@ -11,6 +12,10 @@ export const USER_APP_BUILD_SSE_EVENT = {
   LOG: 'log',
   BUILD_OK: 'build_ok',
   BUILD_FAIL: 'build_fail',
+  /** 开发环境启动服务中，仅 dev-start / dev-restart */
+  SERVICE_STARTING: 'service_starting',
+  /** 开发环境单个服务启动成功，仅 dev-start / dev-restart */
+  SERVICE_START_OK: 'service_start_ok',
   COMPLETED: 'completed',
   FAILED: 'failed',
   CANCELLED: 'cancelled',
@@ -42,8 +47,10 @@ export const isStreamLaggedEvent = (type?: string): boolean =>
   normalizeTaskStatus(type) === USER_APP_BUILD_SSE_EVENT.STREAM_LAGGED;
 
 /**
- * 将 SSE event 映射为服务构建状态。
- * building → 构建中；log 不改状态；build_ok / build_fail 为该服务终态。
+ * 将 SSE event 映射为服务状态。
+ * building / build_ok / build_fail 为构建；
+ * service_starting / service_start_ok 为开发环境启动（线上不会出现）。
+ * log 不改状态。
  *
  * @param eventType SSE event 名
  * @returns 服务状态；非服务级事件返回 null
@@ -60,6 +67,12 @@ export const resolveBuildServiceStatus = (
   }
   if (type === USER_APP_BUILD_SSE_EVENT.BUILD_FAIL) {
     return 'build_fail';
+  }
+  if (type === USER_APP_BUILD_SSE_EVENT.SERVICE_STARTING) {
+    return 'service_starting';
+  }
+  if (type === USER_APP_BUILD_SSE_EVENT.SERVICE_START_OK) {
+    return 'service_start_ok';
   }
   return null;
 };
@@ -172,7 +185,8 @@ export const parseUserAppTaskLogEvent = (
 
 /**
  * 从事件中提取可展示日志。
- * log 用 line；build_fail 用 error。
+ * log 用 line；build_fail 用 error；
+ * 开发环境 service_starting / service_start_ok 生成本地文案。
  *
  * @param event 任务日志事件
  * @returns 日志文本
@@ -186,13 +200,25 @@ export const getTaskLogText = (event: UserAppTaskLogEvent): string => {
   if (type === USER_APP_BUILD_SSE_EVENT.BUILD_FAIL && event.error?.trim()) {
     return event.error;
   }
+  const serviceName = String(event.serviceId || event.service || '').trim();
+  if (type === USER_APP_BUILD_SSE_EVENT.SERVICE_STARTING) {
+    return serviceName
+      ? dict('PC.Pages.AppDevPro.serviceStarting', serviceName)
+      : dict('PC.Pages.AppDevPro.startingService');
+  }
+  if (type === USER_APP_BUILD_SSE_EVENT.SERVICE_START_OK) {
+    return serviceName
+      ? dict('PC.Pages.AppDevPro.serviceStartOk', serviceName)
+      : dict('PC.Pages.AppDevPro.startSuccess');
+  }
   return '';
 };
 
 /**
  * 从事件解析任务终态。
  * completed → 成功；failed → 失败；cancelled → 取消。
- * building / log / build_ok / build_fail / stream_lagged 不是任务终态。
+ * building / log / build_ok / build_fail / service_starting / service_start_ok /
+ * stream_lagged 不是任务终态。
  *
  * @param event 任务日志事件
  * @param sseEvent SSE event 名
@@ -223,7 +249,7 @@ const appendLog = (logs: string[], line?: string): string[] => {
 };
 
 /**
- * 任务失败时，仍在 building 的服务记为 build_fail。
+ * 任务失败时，仍在进行中的服务记为失败。
  *
  * @param prev 现有服务列表
  * @param error 失败原因
@@ -234,7 +260,10 @@ const markBuildingServicesFailed = (
   error?: string,
 ): UserAppTaskServiceProgress[] =>
   prev.map((item) => {
-    if (item.status !== USER_APP_BUILD_SSE_EVENT.BUILDING) {
+    if (
+      item.status !== USER_APP_BUILD_SSE_EVENT.BUILDING &&
+      item.status !== USER_APP_BUILD_SSE_EVENT.SERVICE_STARTING
+    ) {
       return item;
     }
     return {
@@ -245,7 +274,7 @@ const markBuildingServicesFailed = (
   });
 
 /**
- * 任务成功时，仍在 building 的服务记为 build_ok（例如 stream_lagged 丢了 build_ok）。
+ * 任务成功时，补齐仍在进行中的服务终态。
  *
  * @param prev 现有服务列表
  * @returns 更新后的列表
@@ -253,19 +282,26 @@ const markBuildingServicesFailed = (
 const markBuildingServicesSucceeded = (
   prev: UserAppTaskServiceProgress[],
 ): UserAppTaskServiceProgress[] =>
-  prev.map((item) =>
-    item.status === USER_APP_BUILD_SSE_EVENT.BUILDING
-      ? {
-          ...item,
-          status: USER_APP_BUILD_SSE_EVENT.BUILD_OK,
-          progress: 100,
-        }
-      : item,
-  );
+  prev.map((item) => {
+    if (item.status === USER_APP_BUILD_SSE_EVENT.BUILDING) {
+      return {
+        ...item,
+        status: USER_APP_BUILD_SSE_EVENT.BUILD_OK,
+      };
+    }
+    if (item.status === USER_APP_BUILD_SSE_EVENT.SERVICE_STARTING) {
+      return {
+        ...item,
+        status: USER_APP_BUILD_SSE_EVENT.SERVICE_START_OK,
+      };
+    }
+    return item;
+  });
 
 /**
  * 将 SSE 事件合并进服务进度列表。
- * building 开始构建；log 按行追加；build_ok / build_fail 结束该服务；
+ * building 开始构建；log 按行追加；build_ok / build_fail 结束该服务构建；
+ * service_starting / service_start_ok 为开发环境启动服务（线上不会出现）；
  * completed / failed / cancelled / stream_lagged 为任务级，不新建服务。
  *
  * @param prev 现有服务列表
@@ -310,7 +346,6 @@ export const mergeTaskServiceProgress = (
       ? prev[index]
       : {
           serviceId,
-          progress: 0,
           status: nextStatus || USER_APP_BUILD_SSE_EVENT.BUILDING,
           logs: [],
         };
@@ -319,10 +354,6 @@ export const mergeTaskServiceProgress = (
   const next: UserAppTaskServiceProgress = {
     ...current,
     logs: appendLog(current.logs, logText),
-    progress:
-      resolvedStatus === USER_APP_BUILD_SSE_EVENT.BUILD_OK
-        ? 100
-        : current.progress,
     status: resolvedStatus,
   };
 
@@ -332,20 +363,4 @@ export const mergeTaskServiceProgress = (
   const result = [...prev];
   result[index] = next;
   return result;
-};
-
-/**
- * 计算整体进度。
- *
- * @param services 服务进度
- * @returns 0-100
- */
-export const getOverallTaskProgress = (
-  services: UserAppTaskServiceProgress[],
-): number => {
-  if (!services.length) {
-    return 0;
-  }
-  const total = services.reduce((sum, item) => sum + item.progress, 0);
-  return Math.round(total / services.length);
 };

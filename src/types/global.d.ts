@@ -75,6 +75,10 @@ interface Window {
       getToken?: () => Promise<string | null>;
       persistToken?: (token: string) => Promise<boolean>;
       clear?: () => Promise<boolean>;
+      /** 企业登录：切换客户端后端域名并重新初始化（仅壳内有效） */
+      configureServerHost?: (
+        host: string,
+      ) => Promise<{ success: boolean; serverHost?: string; error?: string }>;
     };
     // nuwaclaw 客户端宿主注入：原生能力（右键另存图片、新开独立窗口等）
     native?: {
@@ -103,6 +107,11 @@ interface Window {
       setSecondMenuAvailable?: (available: boolean) => void;
       /** 同步二级菜单真实收起态给壳（壳工具栏 icon 以此为准，修 reload 后失同步）。 */
       setSecondMenuCollapsed?: (collapsed: boolean) => void;
+    };
+    // nuwax→nuwaclaw 壳语言同步通道（壳 UI 文案/主进程语言跟随 webview 多语言设置）
+    i18n?: {
+      /** 推送当前语言（如 en-US / zh-CN；fire-and-forget，失败静默）。 */
+      syncLang?: (lang: string) => void;
     };
     // nuwaclaw 客户端宿主注入：宿主身份只读信息（host→guest，构建期注入非 IPC）
     host?: {

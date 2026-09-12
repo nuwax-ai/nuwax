@@ -310,6 +310,8 @@ const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
   'subscription-stats': <BarChartOutlined style={{ fontSize: 14 }} />,
   database: <DatabaseGlyph size={14} />,
   'database-config': <SettingOutlined style={{ fontSize: 14 }} />,
+  'database-prod': <DatabaseGlyph size={14} />,
+  'database-config-prod': <SettingOutlined style={{ fontSize: 14 }} />,
   'remote-desktop': (
     <SvgIcon name="icons-nav-computer-star" style={{ fontSize: 14 }} />
   ),
@@ -502,7 +504,8 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
 
     /** 更新标签栏轨道宽度 */
     const updateTrackWidth = () => {
-      setTrackScrollWidth(trackEl.scrollWidth - 2); // 此处 -2 为了防止计算宽度不够精确导致内容未撑满的情况下出现滚动条
+      const next = Math.max(0, trackEl.scrollWidth - 2);
+      setTrackScrollWidth((prev) => (prev === next ? prev : next));
     };
 
     updateTrackWidth();

@@ -62,7 +62,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 12px 14px 14px;
+      padding: @paddingSm 14px 14px;
       margin-right: 0;
 
       .sidebar-user-row {
@@ -74,7 +74,7 @@
     .footer-actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: @marginXxs;
       flex-shrink: 0;
     }
 
@@ -82,8 +82,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 24px;
-      height: 24px;
+      width: @controlHeightSm;
+      height: @controlHeightSm;
       border-radius: @borderRadius;
       cursor: pointer;
       color: @navSecondMenuAdaptiveTextSecondary;
@@ -91,7 +91,7 @@
       transition: all 0.2s ease;
 
       &:hover {
-        background-color: @colorFillSecondary;
+        background-color: @navRowHoverBg;
         color: @navSecondMenuAdaptiveText;
       }
 
@@ -119,7 +119,7 @@
       }
 
       &:hover {
-        background-color: @colorFillSecondary;
+        background-color: @navRowHoverBg;
       }
 
       .sidebar-user-name {
@@ -144,17 +144,46 @@
   }
 
   // 二级菜单列：选中「有子菜单/Section」的导航项时在会话列右侧并列展开（原二级菜单保留）
+  // 形态参考经典风格 2（2026-09-12 需求）贴边满铺；配色按原型：辅助列 #fafafa +
+  // 右边框 #f0f0f3 与内容区分隔（单栏锁定纯色浅底，浅色字面量安全）
   .second-column {
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding-top: @padding;
+    // 左右 10px 内缩（2026-09-12 原型 tm-side）：行 pill 不满铺贴边，图标起点
+    // 20px；主栏行为 15px 内缩同语义
+    padding: @padding 10px 0;
     box-sizing: border-box;
     overflow: hidden;
     position: relative;
-    background: @navSecondMenuBg;
+    background: #fafafa;
+    border-right: 1px solid #f0f0f3;
     border-radius: 0;
+    margin-right: 0;
     transition: width 0.3s ease-in-out, background-color 0.3s ease;
+
+    // 二级菜单项同步一级列规格（33px 项高/11px 圆角/13.5px 字号/16px 图标），
+    // 交互态按 2026-09-12 原型 tm-item 落皮：本列白底不适配「白卡+阴影」（白卡
+    // 不可见），改 hover 灰 pill 无阴影 + 选中浅紫 #f1effb pill 无阴影（文字
+    // 主题色/字重由 base 组件自带）。
+    // 本容器仅 style3 单栏挂载，变量随 DOM 继承给 DynamicSecondMenu/SpaceSection 的
+    // base 行组件；经典布局的二级菜单不在此容器内，base 组件走各自默认值不受影响
+    --xagi-nav-second-row-height: 33px;
+    // 水平 10px（原型 tm-item 8px 10px 的水平值）：容器 10 + 行 10 = 图标起点 20px
+    --xagi-nav-second-row-padding: 0 10px;
+    --xagi-nav-second-row-radius: 11px;
+    --xagi-nav-second-main-font-size: 13.5px;
+    --xagi-nav-second-leaf-font-size: 13.5px;
+    --xagi-nav-second-icon-size: 16px;
+    // hover 中性浅灰 #f6f5f9（原型 tm-item:hover），与选中浅紫 #f1effb 明确区分。
+    // 勿引用 var(--xagi-nav-row-hover-bg)：该 CSS 变量全仓无定义点（仅 less 变量
+    // 带 fallback 引用），无 fallback 的引用会断链致 hover 落到白底
+    --xagi-nav-second-row-hover-bg: #f6f5f9;
+    --xagi-nav-second-row-hover-shadow: none;
+    --xagi-nav-second-row-active-bg: #f1effb;
+    --xagi-nav-second-row-active-shadow: none;
+    // 选中项字重加粗 500（2026-09-12 需求）：仅单栏注入，base 组件默认 normal
+    --xagi-nav-second-row-active-font-weight: 500;
 
     // 与 .nav-menus-scroll 同名复用：本列不在 .nav-menus 内，需自带尺寸链
     .nav-menus-scroll {
@@ -168,19 +197,16 @@
     }
   }
 
-  // 折叠态悬浮展开按钮：原位复刻收起按钮形态（34×34 圆角方块，对齐顶栏
-  // header-action-btn），收起后浮于页面内容上层；几何定位（left/top/宽高）
-  // 由 TSX 按侧栏宽度常量内联注入，此处仅承载视觉样式
+  // 折叠态展开按钮：样式/大小与 SidebarNavHeader 的收起按钮（header-action-btn）
+  // 完全一致——34×34 圆角图标钮，默认无底色描边，hover 同款填充；几何定位
+  // （left/top/宽高）由 TSX 内联注入，此处仅承载视觉样式
   .sidebar-expand-btn {
     position: absolute;
     z-index: 40;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--xagi-layout-bg-container, rgba(255, 255, 255, 90%));
-    border: @lineWidth solid var(--xagi-layout-border-primary);
     border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 8%);
     cursor: pointer;
     color: @navSecondMenuAdaptiveTextSecondary;
     transition: all 0.2s ease;
@@ -191,13 +217,13 @@
     }
 
     &:hover {
-      background-color: @colorFillSecondary;
+      background-color: @navRowHoverBg;
       color: @navSecondMenuAdaptiveText;
     }
   }
 
   // 折叠态展开按钮·全屏工作台页宿主变体：左缘居中半胶囊把手。该页组自带
-  // 页面头部（返回/标题/状态标签占左上角），原位复刻位会压住头部内容，退回
+  // 页面头部（返回/标题/状态标签占左上角），悬浮钮会压住头部内容，退回
   // 贴边把手形态；几何覆盖上方基类（本变体不接 TSX 内联定位）
   .sidebar-expand-btn-edge {
     left: 0;
@@ -205,9 +231,7 @@
     transform: translateY(-50%);
     width: 16px;
     height: 56px;
-    border-left: none;
     border-radius: 0 @borderRadiusSm @borderRadiusSm 0;
-    box-shadow: none;
     opacity: 0.55;
 
     :global(svg) {

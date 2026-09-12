@@ -38,6 +38,8 @@ export async function apiPublishedKnowledgeList(
 }
 
 // 广场-已发布智能体列表接口
+// （专家&专家团-团队空间维度同用本接口：category=Agent +
+// justReturnSpaceData + spaceId 查空间内已发布智能体）
 export async function apiPublishedAgentList(
   data: SquarePublishedListParams,
 ): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {

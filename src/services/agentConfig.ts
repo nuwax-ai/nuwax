@@ -395,7 +395,30 @@ export async function apiAgentConversationList(
 ): Promise<RequestResponse<ConversationInfo[]>> {
   return request('/api/agent/conversation/list', {
     method: 'POST',
-    data,
+    // 旧调用点默认只查未归档；需要「已归档」入口的列表显式传 true。
+    data: { ...data, includeArchived: data.includeArchived ?? false },
+  });
+}
+
+/** 会话置顶/取消置顶（pinned 必传；裸请求后端会默认设为 true） */
+export async function apiAgentConversationPin(
+  conversationId: number,
+  pinned: boolean,
+): Promise<RequestResponse<ConversationInfo>> {
+  return request(`/api/agent/conversation/pin/${conversationId}`, {
+    method: 'POST',
+    params: { pinned },
+  });
+}
+
+/** 会话归档/取消归档（archived 必传；裸请求后端会默认设为 true） */
+export async function apiAgentConversationArchive(
+  conversationId: number,
+  archived: boolean,
+): Promise<RequestResponse<ConversationInfo>> {
+  return request(`/api/agent/conversation/archive/${conversationId}`, {
+    method: 'POST',
+    params: { archived },
   });
 }
 

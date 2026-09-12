@@ -8,11 +8,10 @@ import {
   FileOutlined,
   FolderOutlined,
   HomeOutlined,
-  LeftOutlined,
   RedoOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import { Breadcrumb, Button, Modal, Spin } from 'antd';
+import { Button, Modal, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
@@ -178,6 +177,11 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
   };
 
   const crumbs = toCrumbs(currentPath);
+  // 展示段去掉根段（原型形态：Users/xx/yy，根由「上一级」回退）
+  const displayCrumbs = crumbs.slice(1).map((name, index) => ({
+    name,
+    crumbIndex: index + 1,
+  }));
   // 仅根视图展示最近选择（进入目录后让位给子项列表）
   const showRecent =
     !currentPath && !loading && !error && recentDirs.length > 0;
@@ -196,28 +200,40 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
             {dict('PC.Components.WorkspaceDir.pickerTitle')}
           </span>
           <span className={cx(styles['header-path'])} title={currentPath}>
-            {currentPath}
+            {currentPath.replace(/^\//, '')}
           </span>
         </div>
       }
-      styles={{ body: { paddingTop: 12 } }}
+      styles={{
+        content: { borderRadius: 16 },
+        body: { paddingTop: 8 },
+      }}
     >
       <div className={cx(styles.toolbar)}>
-        <Button
-          size="small"
-          icon={<LeftOutlined />}
+        <button
+          type="button"
+          className={cx(styles['up-button'])}
           disabled={!currentPath || loading}
           onClick={goUp}
         >
+          <RightOutlined />
           {dict('PC.Components.WorkspaceDir.parentLevel')}
-        </Button>
-        <Breadcrumb
-          className={cx(styles.breadcrumb)}
-          items={crumbs.map((name, index) => ({
-            title: name,
-            onClick: () => navigateTo(index),
-          }))}
-        />
+        </button>
+        <div className={cx(styles['breadcrumb-box'])}>
+          {displayCrumbs.map(({ name, crumbIndex }, index) => (
+            <React.Fragment key={crumbIndex}>
+              {index > 0 && <span className={cx(styles['crumb-sep'])}>/</span>}
+              <span
+                className={cx(styles['crumb-item'], {
+                  [styles['crumb-current']]: crumbIndex === crumbs.length - 1,
+                })}
+                onClick={() => navigateTo(crumbIndex)}
+              >
+                {name}
+              </span>
+            </React.Fragment>
+          ))}
+        </div>
       </div>
 
       <div className={cx(styles.body)}>

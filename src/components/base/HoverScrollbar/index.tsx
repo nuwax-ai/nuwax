@@ -25,6 +25,10 @@ export interface HoverScrollbarProps {
   // gutterWidth?: number;
   /** 内容区 */
   children?: React.ReactNode;
+  /** 滚动条贴宿主右缘（2026-09-12 二级菜单需求）：content 右缘外扩进宿主
+   * padding 带（-10px），滚动条落在列右缘与行内容脱开，细圆角滑块呈浮层观感；
+   * 默认关（ClassicLayout/HoverMenu 维持原位） */
+  scrollbarEdge?: boolean;
 }
 
 const toCssSize = (value?: number | string): string | undefined => {
@@ -39,6 +43,7 @@ const HoverScrollbar: React.FC<HoverScrollbarProps> = ({
   maxHeight,
   bodyWidth,
   children,
+  scrollbarEdge = false,
 }) => {
   const mergedStyle: React.CSSProperties = useMemo(
     () => ({
@@ -56,7 +61,9 @@ const HoverScrollbar: React.FC<HoverScrollbarProps> = ({
 
   return (
     <div
-      className={classNames(styles.container, className)}
+      className={classNames(styles.container, className, {
+        [styles.edge]: scrollbarEdge,
+      })}
       style={mergedStyle}
     >
       <div className={styles.content}>

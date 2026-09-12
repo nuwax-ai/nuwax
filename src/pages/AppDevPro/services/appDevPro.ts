@@ -57,15 +57,6 @@ export async function apiUserProjectGetById(
   });
 }
 
-/** 常规项目：获取当前用户最新会话（进项目详情无会话 id 时调用） */
-export async function apiUserProjectLatestConversation(
-  id: number,
-): Promise<RequestResponse<ProjectLatestConversationResult>> {
-  return request(`/api/user-project/conversation/${id}`, {
-    method: 'GET',
-  });
-}
-
 /** 全栈应用：获取当前用户最新会话（进项目详情无会话 id 时调用） */
 export async function apiUserAppLatestConversation(
   id: number,
@@ -101,6 +92,8 @@ export async function apiUserAppStartDev(
   return request('/api/userapp/dev/start', {
     method: 'POST',
     data,
+    // 失败由预览页展示，不走全局 message
+    skipErrorHandler: true,
   });
 }
 
@@ -145,7 +138,8 @@ export async function apiUserAppBuildCancel(
 
 /**
  * 任务进度 SSE 地址（实际拉流请用 fetchEventSource，不要走 umi request）
- * 任务进度 SSE（dev-start、dev-restart、build 共用）
+ * 任务进度 SSE（dev-start、dev-restart、build 共用）。
+ * 开发环境启动 / 重启额外包含 service_starting、service_start_ok（带 service 名）。
  * @param taskId 构建任务 ID
  * @param fromSeq 断点序号
  * @returns SSE URL
@@ -169,6 +163,8 @@ export async function apiUserAppProdStart(
   return request('/api/userapp/prod/start', {
     method: 'POST',
     data,
+    // 失败由预览页 / 部署弹窗展示，不走全局 message
+    skipErrorHandler: true,
   });
 }
 
@@ -220,6 +216,20 @@ export async function apiUserAppTasksActive(
     method: 'GET',
     params: {
       appId,
+    },
+  });
+}
+
+/** 版本是否可生产部署（releaseId 为空查最新版本就绪状态；前端轮询至 true 即可调 prod-start） */
+export async function apiUserAppProdDeployable(
+  data: UserAppStartDevParams,
+): Promise<RequestResponse<boolean>> {
+  const { appId, releaseId } = data;
+  return request('/api/userapp/prod/deployable', {
+    method: 'GET',
+    params: {
+      appId,
+      releaseId,
     },
   });
 }
