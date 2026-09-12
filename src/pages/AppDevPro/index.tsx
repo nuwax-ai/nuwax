@@ -1,5 +1,4 @@
 import {
-  DevLogActions,
   GitVersionRecordPanel,
   type ConsoleExternalContainerStatus,
   type ConsoleLayoutMode,
@@ -61,6 +60,7 @@ import AgentConversationChatPanel from './AgentConversationChatPanel';
 import AppDevProHeader from './AppDevProHeader';
 import AppDevAppPreviewPanel from './components/AppDevAppPreviewPanel';
 import AppDevBottomConsole from './components/AppDevBottomConsole';
+import DevLogActions from './components/AppDevBottomConsole/DevLogActions';
 import AppDevDatabaseWorkspace, {
   type AppDevDatabaseWorkspaceTab,
 } from './components/AppDevDatabaseWorkspace';
