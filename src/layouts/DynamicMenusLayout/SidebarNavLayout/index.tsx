@@ -19,12 +19,7 @@ import { jumpTo } from '@/utils/router';
 import { EllipsisOutlined } from '@ant-design/icons';
 import { theme, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { history, useModel } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 // 复用原有组件
@@ -44,8 +39,8 @@ import {
 import NewHomeSection from '../NewHomeSection';
 import SpaceSection from '../SpaceSection';
 import SquareSection from '../SquareSection';
-import { useSidebarCollapse } from '../useSidebarCollapse';
 import { useMenuNavigation } from '../useMenuNavigation';
+import { useSidebarCollapse } from '../useSidebarCollapse';
 import { handleOpenUrl } from '../utils';
 import styles from './index.less';
 
@@ -408,7 +403,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             ) : (
               <HoverScrollbar
                 className={cx('w-full', 'h-full')}
-                bodyWidth={SECOND_COLUMN_WIDTH - token.padding * 2}
+                // 滚动体宽 = 列宽 − 两侧 10px 内缩 − 右描边 1px，与 .second-column
+                // 的 padding（原型 tm-side 10px）联动；曾按 token.padding*2(32px)
+                // 扣宽，容器内缩改 10px 后右侧多出 11px 空隙致行 pill 左右不对称
+                bodyWidth={SECOND_COLUMN_WIDTH - 21}
+                // 滚动条贴列右缘（2026-09-12 需求）：外扩进右 padding 带，不叠压行内容
+                scrollbarEdge
                 style={{
                   padding: `${token.paddingSM}px 0`,
                 }}
@@ -421,7 +421,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                 >
                   {/* 标题（选中导航项名称） */}
                   <ConditionRender condition={isShowTitle && currentTitle}>
-                    <div style={{ padding: '0 12px 12px' }}>
+                    {/* 水平 10px 与行内容（容器 10 + 行 padding 10 = 20px）对齐 */}
+                    <div style={{ padding: '0 10px 12px' }}>
                       <Typography.Title
                         level={5}
                         style={{ marginBottom: 0 }}
