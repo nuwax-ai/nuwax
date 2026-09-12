@@ -15,7 +15,10 @@ import type {
   UserAppPublishPhase,
   UserAppTaskServiceProgress,
 } from '../../type';
-import { DEFAULT_TASK_SERVICE_ID } from '../../utils/userAppTaskLog';
+import {
+  DEFAULT_TASK_SERVICE_ID,
+  USER_APP_BUILD_SSE_EVENT,
+} from '../../utils/userAppTaskLog';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -43,10 +46,10 @@ export interface AppDevPublishProgressModalProps {
   onClose: () => void;
   /**
    * 重新打开发布到市场弹窗。
-   * 仅在发布申请未提交、且发布弹窗已关闭时传入。
+   * 仅在发布申请未提交时传入。
    */
   onReopenPublish?: () => void;
-  /** 是否展示「继续发布到市场」；已发布或发布弹窗已打开时为 false */
+  /** 是否展示「继续发布到广场」；已发布后为 false */
   showReopenPublish?: boolean;
   /** 弹窗标题 */
   title?: string;
@@ -316,6 +319,8 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     phase === 'deploying';
   /** 构建服务折叠面板展开项，新服务到来时自动展开 */
   const [buildActiveKeys, setBuildActiveKeys] = useState<string[]>([]);
+  /** 已因构建成功自动收起过的面板，避免再次收起用户手动展开的项 */
+  const autoCollapsedBuildKeysRef = useRef<Set<string>>(new Set());
   /** 部署服务折叠面板展开项 */
   const [startActiveKeys, setStartActiveKeys] = useState<string[]>([]);
 
@@ -479,11 +484,26 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
       ? { kind: 'error', text: failText }
       : { kind: 'finish', text: dict('PC.Pages.AppDevPro.publishSuccess') };
 
-  /** 新构建服务出现时展开对应面板，不收起用户已展开的项 */
+  /**
+   * 构建中：新服务自动展开。
+   * 某服务 build_ok 后只收起它自己，不影响其他面板；用户再点开不再自动收起。
+   */
   useEffect(() => {
     setBuildActiveKeys((prev) => {
       const next = new Set(prev);
-      services.forEach((item) => next.add(`build:${item.serviceId}`));
+      services.forEach((item) => {
+        const key = `build:${item.serviceId}`;
+        if (item.status === USER_APP_BUILD_SSE_EVENT.BUILD_OK) {
+          if (!autoCollapsedBuildKeysRef.current.has(key)) {
+            autoCollapsedBuildKeysRef.current.add(key);
+            next.delete(key);
+          }
+          return;
+        }
+        if (!autoCollapsedBuildKeysRef.current.has(key)) {
+          next.add(key);
+        }
+      });
       return Array.from(next);
     });
   }, [services]);
@@ -628,6 +648,9 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
           <div className={cx(styles.stepLogs)}>
             <div className={cx(styles.stepLogsTitle)}>
               {dict('PC.Pages.AppDevPro.publishToMarketStep')}
+              <span className={cx(styles.stepLogsTitleNote)}>
+                {dict('PC.Pages.AppDevPro.publishToSquareNote')}
+              </span>
             </div>
             <StepStatusLine kind={marketStatus.kind} text={marketStatus.text} />
             {showReopenPublish && onReopenPublish ? (

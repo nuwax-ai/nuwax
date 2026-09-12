@@ -641,7 +641,9 @@ const AppDevPro: React.FC = () => {
     buildAllowed,
     ready: tasksActiveReady,
     tasks: activeTasks,
-    refresh: refreshTasksActive,
+    pause: pauseTasksActive,
+    resume: resumeTasksActive,
+    cancelUnfinishedBuild,
     markDevStartIdle,
   } = useUserAppTasksActive(appId);
 
@@ -661,13 +663,45 @@ const AppDevPro: React.FC = () => {
   /** 部署：构建 → SSE 进度 → 生产部署，成功后再打开发布弹窗 */
   const publishFlow = useUserAppPublish({
     appId,
-    onBuildFailed: refreshTasksActive,
     onDeployed: () => {
       setOpenPublishModal(true);
     },
     onProjectInfo: setUserAppInfo,
     onDomainList: setUserAppDomainList,
   });
+
+  /** 部署弹窗打开时停掉 tasks/active；关闭后由 close / cancel 恢复 */
+  useEffect(() => {
+    if (!publishFlow.open) {
+      return;
+    }
+    pauseTasksActive();
+  }, [pauseTasksActive, publishFlow.open]);
+
+  /**
+   * 关闭部署弹窗：构建或部署服务失败时，按 active 里未结束的 build 任务取消，再恢复轮询。
+   */
+  const handleCloseDeployProgress = useCallback(async () => {
+    const shouldCancelLeftover =
+      publishFlow.phase === 'failed' &&
+      (publishFlow.failedStage === 'build' ||
+        publishFlow.failedStage === 'deploy');
+    publishFlow.closeModal();
+    if (shouldCancelLeftover) {
+      await cancelUnfinishedBuild();
+    }
+    resumeTasksActive();
+  }, [
+    cancelUnfinishedBuild,
+    publishFlow,
+    resumeTasksActive,
+  ]);
+
+  /** 弹窗内取消任务后恢复 tasks/active 轮询 */
+  const handleCancelDeployTask = useCallback(async () => {
+    await publishFlow.cancelTask();
+    resumeTasksActive();
+  }, [publishFlow, resumeTasksActive]);
 
   /** 用户点停止后不再自动 start；刷新后为 false */
   const previewUserStoppedRef = useRef(false);
@@ -2295,11 +2329,9 @@ const AppDevPro: React.FC = () => {
         errorMessage={publishFlow.errorMessage}
         failedStage={publishFlow.failedStage}
         cancelLoading={publishFlow.cancelLoading}
-        onCancelTask={publishFlow.cancelTask}
-        onClose={publishFlow.closeModal}
-        showReopenPublish={
-          publishFlow.phase === 'applying' && !openPublishModal
-        }
+        onCancelTask={handleCancelDeployTask}
+        onClose={handleCloseDeployProgress}
+        showReopenPublish={publishFlow.phase === 'applying'}
         onReopenPublish={() => setOpenPublishModal(true)}
       />
     </div>
