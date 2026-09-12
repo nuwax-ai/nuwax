@@ -6,29 +6,36 @@
   min-width: 0;
   margin: 0 auto 9px;
 }
+
 .recommend-list {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: @margin;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 4px;
+  padding: @paddingXxs;
+
   &::-webkit-scrollbar {
     display: none;
   }
+
   .recommend-item:first-child {
     margin-left: auto;
   }
+
   .recommend-item:last-child {
     margin-right: auto;
   }
 }
+
 .has-left .recommend-list {
   mask-image: linear-gradient(90deg, transparent 38px, #000 58px);
 }
+
 .has-right .recommend-list {
   mask-image: linear-gradient(270deg, transparent 38px, #000 58px);
 }
+
 .has-left.has-right .recommend-list {
   mask-image: linear-gradient(
     90deg,
@@ -38,6 +45,7 @@
     transparent calc(100% - 38px)
   );
 }
+
 .arrow {
   position: absolute;
   top: 50%;
@@ -52,22 +60,27 @@
   background: @colorBgContainer;
   color: @colorTextSecondary;
   cursor: pointer;
+
   &:disabled {
     visibility: hidden;
     pointer-events: none;
   }
+
   &:hover {
     color: @colorPrimary;
     border-color: @colorPrimaryBorder;
   }
+
   &:focus-visible {
-    outline: 2px solid @colorPrimary;
+    outline: @lineWidthBold solid @colorPrimary;
     outline-offset: 2px;
   }
 }
+
 .arrow-left {
   left: 0;
 }
+
 .arrow-right {
   right: 0;
 }
@@ -78,7 +91,7 @@
   align-items: center;
   gap: @marginXs;
   max-width: 220px;
-  height: 32px;
+  height: @controlHeight;
   padding: 0 @paddingSm;
   border: @lineWidth @lineType @colorBorderSecondary;
   border-radius: 999px;
@@ -92,13 +105,29 @@
 
   &:hover {
     color: @colorText;
-    background: @colorFillTertiary;
+    background: @navRowHoverBg;
   }
 
   &.active {
     color: @colorPrimary;
     border-color: @colorPrimaryBorder;
     background: @colorPrimaryBg;
+  }
+
+  // 上框期间非同类型智能体：展示但不可选（置灰）
+  &.disabled {
+    color: @colorTextQuaternary;
+    cursor: not-allowed;
+
+    .icon {
+      filter: grayscale(1);
+      opacity: 0.5;
+    }
+
+    &:hover {
+      color: @colorTextQuaternary;
+      background: @colorBgContainer;
+    }
   }
 }
 

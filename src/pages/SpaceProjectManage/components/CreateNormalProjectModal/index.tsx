@@ -20,7 +20,7 @@ const cx = classNames.bind(styles);
 export interface CreatedNormalProject {
   id: number;
   name: string;
-  /** 个人电脑沙箱（仅自选个人电脑时有值） */
+  /** 运行环境沙箱 ID；-1=云电脑（后端默认分配），其他为个人电脑沙箱 */
   sandboxId?: number;
   /** 创建即建的首个会话 id */
   conversationId?: number;
@@ -97,11 +97,14 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
       return;
     }
     setConfirmLoading(true);
+    // 云端传哨兵 -1（后端必填校验「沙箱ID不能为空」，-1=云端默认分配，
+    // 与全栈创建 CreateUserApp 同一口径）
+    const numericSandboxId = Number(sandboxId);
     try {
       const res = await apiNormalProjectCreate({
         spaceId,
         name: trimmed,
-        sandboxId: isPersonal ? Number(sandboxId) : undefined,
+        sandboxId: numericSandboxId,
         workspacePath: isPersonal ? workspacePath || undefined : undefined,
       });
       // 返回体 id 字段名契约未细化，兼容 id / targetId 两种形态；
@@ -112,7 +115,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
         onConfirm({
           id: newId,
           name: trimmed,
-          sandboxId: isPersonal ? Number(sandboxId) : undefined,
+          sandboxId: numericSandboxId,
           conversationId: res?.data?.conversationId,
           agentId: res?.data?.agentId,
         });

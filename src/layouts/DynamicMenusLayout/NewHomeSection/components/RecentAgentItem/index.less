@@ -150,11 +150,24 @@
       line-height: 18px;
     }
 
-    // 「⋯」菜单兜底按钮:默认隐藏,hover 行时显示;触屏常显
+    // 「⋯」菜单兜底按钮:默认隐藏,hover 行时显示;触屏常显。
+    // 视觉与项目子行 ⋯ 统一（2026-09-12）：24px、7px 圆角、静默透明、
+    // hover 浅品牌色底。:global 字面量声明（组件 styles 映射在当前 dev 运行时不可靠）
     :global(.more-btn) {
       flex-shrink: 0;
+      width: @controlHeightSm;
+      height: @controlHeightSm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 7px;
       opacity: 0;
       transition: opacity 0.2s ease;
+
+      &:hover {
+        background: @colorPrimaryBg;
+        color: rgba(0, 0, 0, 88%);
+      }
     }
 
     @media (hover: none) {

@@ -1,4 +1,5 @@
 @import '@/styles/token.less';
+@import '@/styles/nav-item-state.less';
 
 .project-panel {
   display: flex;
@@ -7,8 +8,8 @@
   padding: @paddingXxs @paddingXs;
 }
 
-// 已归档项目入口(对齐任务列表 archived-entry 形态)
-.archived-entry {
+// 查看更多入口(项目分页追加)
+.load-more-entry {
   padding: @paddingXs @paddingSm;
   text-align: center;
   font-size: @fontSizeSm;
@@ -53,16 +54,11 @@
 }
 
 .project {
-  // 项目行置顶图钉/收藏星标(全功能菜单标记,2026-09-08)
-  .pin-icon,
-  .star-icon {
+  // 项目行置顶图钉
+  .pin-icon {
     flex-shrink: 0;
     font-size: 11px;
     color: @colorPrimary;
-  }
-
-  .star-icon {
-    color: @colorWarning;
   }
 
   .row {
@@ -73,10 +69,6 @@
     border-radius: @borderRadius;
     cursor: pointer;
     user-select: none;
-
-    &:hover {
-      background-color: @colorFillQuaternary;
-    }
 
     &.expanded .name {
       color: @navSecondMenuAdaptiveText;
@@ -113,7 +105,8 @@
 
     .arrow {
       flex-shrink: 0;
-      font-size: 10px;
+      // 尺寸由 SvgIcon style.fontSize 传入（组件内联字号优先于此处，18px 时
+      // 项目图标 caret_down 视觉宽约 10px）；此处只管颜色与旋转
       color: @navSecondMenuAdaptiveTextTertiary;
       transition: transform 0.3s ease-in-out;
     }
@@ -133,9 +126,9 @@
     border-radius: @borderRadiusSm;
     cursor: pointer;
 
+    // hover 背景统一走文件尾 .project .child:hover 的 @navRowHoverBg（原灰底声明
+    // 与后置 color-mix 规则同优先级、恒被覆盖，已删）；此处只保留⋯按钮显隐
     &:hover {
-      background-color: @colorFillQuaternary;
-
       .child-more {
         opacity: 1;
       }
@@ -221,31 +214,46 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: @controlHeightSm;
+  height: @controlHeightSm;
   flex-shrink: 0;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: 7px;
   background: transparent;
   color: @navSecondMenuAdaptiveTextTertiary;
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.16s ease, background 0.16s ease;
 
-  &:hover {
-    background: @colorFillTertiary;
-    color: @colorPrimary;
-  }
+  // hover 底色走 .project-actions button 共享规则（浅品牌色底）；
+  // 图标色对齐项目子行 ⋯（深色，非品牌红），见下方特异性覆盖规则
 }
 
+// 见上：特异性须压过 compact 的恒定透明底（.compact .project-actions .project-more，
+// 同特异级但源码靠后）与共享 hover 的品牌红图标色，故挂 .project 前缀提权；
+// 图标色同项目子行 ⋯ 的 hover（@navSecondMenuAdaptiveText）
+.project .project-actions .project-more:hover {
+  background: @colorPrimaryBg;
+  color: @navSecondMenuAdaptiveText;
+}
+
+// 「+ 新建会话」同 ⋯ 统一：hover 图标深色（浅品牌色底走共享规则）
+.project .project-actions .add-conversation:hover {
+  color: @navSecondMenuAdaptiveText;
+}
+
+// 焦点样式只认键盘焦点(:focus-visible/:has(:focus-visible)):
+// 行是 tabIndex=0 的 div,鼠标点击(如点击收起)会残留 :focus-within,
+// 导致该行永久保持 hover 卡片态,与未点击的行两套样式
 .project .row:hover .project-more,
-.project .row:focus-within .project-more {
+.project .row:focus-visible .project-more,
+.project .row:has(:focus-visible) .project-more {
   opacity: 1;
 }
 
 .project .row:focus-visible {
-  outline: 2px solid @colorPrimary;
+  outline: @lineWidthBold solid @colorPrimary;
   outline-offset: -2px;
 }
 
@@ -256,14 +264,14 @@
   .row {
     position: relative;
     gap: 2px;
-    padding: 8px 10px;
+    padding: @paddingXs 10px;
     border-radius: 15px;
     min-height: 36px;
     box-sizing: border-box;
     transition: background 0.18s ease;
 
     .name {
-      font-size: 14px;
+      font-size: @fontSize;
       font-weight: 400;
     }
 
@@ -273,7 +281,6 @@
 
     .arrow {
       width: 18px;
-      font-size: 12px;
       margin-left: 2px;
     }
   }
@@ -282,7 +289,7 @@
     flex-shrink: 0;
     font-size: 15px;
     color: @navSecondMenuAdaptiveTextTertiary;
-    margin-right: 4px;
+    margin-right: @marginXxs;
   }
 
   .project-more {
@@ -292,7 +299,8 @@
   }
 
   .row:hover .name,
-  .row:focus-within .name {
+  .row:focus-visible .name,
+  .row:has(:focus-visible) .name {
     // 50px 让位绝对定位的 actions 浮层(见下方 .project-actions 覆盖)
     padding-right: 50px;
   }
@@ -315,7 +323,10 @@
 
   .child {
     margin-left: 0;
-    padding: 8px 4px;
+    // 对齐网格：左 = 父行名称列(children 缩进 10+10 后再留 11)，右 = 全局右列
+    // (父行箭头/任务列表时间右缘同为 253-10=243)；原 8px 4px 使子行文字/时间
+    // 相对父行各凸出 7px/6px，形成半步错位
+    padding: 8px 10px 8px 11px;
     border-radius: 10px;
 
     .child-name {
@@ -323,17 +334,19 @@
       line-height: 19px;
     }
 
-    &:focus-within .child-more {
+    &:focus-visible .child-more,
+    &:has(:focus-visible) .child-more {
       opacity: 1;
     }
   }
 
-  // 紧凑态 actions 浮层覆盖(原型 hover):浮层贴右侧白底,行名与子任务时间让位
+  // 紧凑态 actions 浮层覆盖：行 hover 本身已是白卡，浮层不再叠第二层白底
+  // （行名 padding-right 让位已保证不重叠），仅保留定位
   .project-actions {
     position: absolute;
     right: 30px;
-    background: @colorBgContainer;
-    border-radius: 8px;
+    background: transparent;
+    border-radius: @borderRadius;
   }
 
   .project-actions .project-more {
@@ -341,8 +354,14 @@
     background: transparent;
   }
 
+  // 子行悬停按钮浮层与时间列同缘(243)，替代隐藏前的时间不跳位
+  .child-actions {
+    right: 10px;
+  }
+
   .child:hover .child-time,
-  .child:focus-within .child-time {
+  .child:focus-visible .child-time,
+  .child:has(:focus-visible) .child-time {
     visibility: hidden;
   }
 }
@@ -353,7 +372,7 @@
   }
 
   .compact .row .name {
-    padding-right: 24px;
+    padding-right: @paddingLg;
   }
 }
 
@@ -382,14 +401,22 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: @controlHeightSm;
+    height: @controlHeightSm;
     padding: 0;
     border: 0;
     border-radius: 7px;
+    // 项目图标(plus/more)尺寸由 SvgIcon style.fontSize 传入(15px，视觉宽约 11px)；
+    // 此处字号仅作用于非 SvgIcon 内容(创建中转圈 LoadingOutlined)
+    font-size: 15px;
     color: @navSecondMenuAdaptiveTextTertiary;
     background: transparent;
     cursor: pointer;
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
 
     &:hover,
     &:focus-visible {
@@ -398,7 +425,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid @colorPrimary;
+      outline: @lineWidthBold solid @colorPrimary;
       outline-offset: -2px;
     }
   }
@@ -418,20 +445,26 @@
   top: 50%;
   transform: translateY(-50%);
   padding: 1px;
-  background: @colorBgContainer;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 12%);
+  border-radius: @borderRadius;
+  // 白底+投影已去除（2026-09-12 走查定调）：行 hover 灰底上只留 ⋯ 图标本体，
+  // 不再浮白色小卡片
 }
 
 .project .child .child-actions .child-more {
   opacity: 1;
 }
 
+// 白底卡片浮层只在 hover 或键盘焦点时出现;鼠标点击后的焦点残留不算
+// (见上方 :focus-visible 注释)
+// hover 灰底轻提示（单栏统一交互态，见 nav-item-state.less）：原 72% 半透明白卡
+// 与会话行白卡/一级列灰底三种皮并存，收敛到 @navRowHoverBg
 .project .row:hover,
-.project .row:focus-within,
+.project .row:focus-visible,
+.project .row:has(:focus-visible),
 .project .child:hover,
-.project .child:focus-within {
-  background: color-mix(in srgb, @colorBgContainer 72%, transparent);
+.project .child:focus-visible,
+.project .child:has(:focus-visible) {
+  background-color: @navRowHoverBg;
 
   .project-actions,
   .child-actions {

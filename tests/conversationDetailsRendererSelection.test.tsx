@@ -1,13 +1,13 @@
 /**
  * ConversationDetails 渲染线选择合同测试（V2 双线重构·调试接入）：
  * - 本页基线恒 V1（不接全局偏好链——全局默认 v2 也不改变本页观感）；
- * - 会话覆盖（session override）显式切 V2；清除后回 V1；
- * - 头部 RendererLineToggle 交互：Segmented 写会话覆盖，「恢复默认」清除。
+ * - 会话覆盖（session override）显式切 V2；清除后回 V1。
+ * （头部 RendererLineToggle 已于 2026-09-12 需求去除——调试统一走会话框
+ *  悬浮按钮的「会话显示」设置；示例页 examples/MockChat* 自带切换不受影响）
  */
 import ConversationDetails from '@/components/business-component/ConversationDetails';
 import type { AgentDetailDto } from '@/types/interfaces/agent';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -204,34 +204,5 @@ describe('ConversationDetails 渲染线选择（默认恒 V1，按会话显式�
       ).toBeInTheDocument();
     });
     expect(screen.queryByTestId('chat-view')).toBeNull();
-  });
-
-  it('头部调试按钮：切到 V2 写会话覆盖；「恢复默认」清除后回 V1', async () => {
-    const user = userEvent.setup();
-    render(<ConversationDetails agentId={1} />);
-    await waitFor(() => {
-      expect(screen.getAllByTestId('chat-view')).toHaveLength(1);
-    });
-
-    // 打开 Popover，点「V2 工作轨迹」
-    await user.click(screen.getByTestId('conversation-details-renderer-entry'));
-    await user.click(
-      screen.getByText('PC.Components.ConversationDetails.rendererLineV2'),
-    );
-    await waitFor(() => {
-      expect(
-        screen.getByTestId('conversation-renderer-v2'),
-      ).toBeInTheDocument();
-    });
-    expect(screen.queryByTestId('chat-view')).toBeNull();
-
-    // 「恢复默认（经典）」清除覆盖 → 回 V1
-    await user.click(
-      screen.getByText('PC.Components.ConversationDetails.rendererLineReset'),
-    );
-    await waitFor(() => {
-      expect(screen.getAllByTestId('chat-view')).toHaveLength(1);
-    });
-    expect(screen.queryByTestId('conversation-renderer-v2')).toBeNull();
   });
 });

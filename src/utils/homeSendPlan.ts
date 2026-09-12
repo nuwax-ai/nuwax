@@ -70,6 +70,8 @@ export interface HomeConversationAttach {
   agentMode?: AgentMode;
   /** 上框项目：直接建会话绑定项目，不走隐式建项目 */
   projectId?: number;
+  /** 上框项目类型（UserApp=全栈 / NormalProject=常规），绑定项目时后端必填 */
+  projectType?: AgentComponentTypeEnum;
   /** 上框项目为全栈时携带（= 当前选中的全栈类智能体） */
   devAgentId?: number;
   /** 上框项目沙箱（优先于个人电脑选择） */
@@ -154,6 +156,7 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
         agentMode,
         selectedDocs,
         projectId: pinnedProject.projectId,
+        projectType: pinnedProject.projectType,
         ...(pinnedProject.sandboxId
           ? { sandboxId: pinnedProject.sandboxId }
           : {}),

@@ -1,4 +1,5 @@
 @import '@/styles/token.less';
+@import '@/styles/nav-item-state.less';
 
 @statusTagFontSize: 11px; // 运行中标签专用字号
 @statusTagPadding: 0 6px; // 运行中标签内边距
@@ -13,11 +14,16 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 10px;
+  // 右内边距 11px：让行尾「⋯」与项目面板会话子行的 ⋯ 右缘对齐
+  //（子行 .child-actions 内缩 11px；2026-09-12 需求）
+  padding: 11px 11px 11px 10px;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
   color: @navSecondMenuAdaptiveTextSecondary;
+
+  // hover 灰底轻提示（单栏统一交互态，见 nav-item-state.less）
+  .nav-row-hover();
 
   // 头像部分
   .avatar-container {
@@ -89,12 +95,14 @@
       }
 
       .star-icon {
-        color: #faad14;
+        color: @colorWarning;
       }
 
-      // 「⋯」菜单兜底按钮：hover 显示；触屏（hover: none）常显
+      // 「⋯」菜单兜底按钮：hover 显示；触屏（hover: none）常显。
+      // 字号 15px 对齐项目子行 ⋯（SvgIcon icons-common-more 同款视觉大小）
       :global(.more-btn) {
         flex-shrink: 0;
+        font-size: 15px;
         opacity: 0;
         transition: opacity 0.2s ease;
       }
@@ -143,9 +151,6 @@
   }
 
   &:hover {
-    background-color: @colorBgContainer;
-    box-shadow: @boxShadowTertiary;
-
     // hover 会话项时显示「⋯」菜单兜底按钮
     .conversation-topic-row :global(.more-btn) {
       opacity: 1;
@@ -175,8 +180,8 @@
   }
 
   &.active {
-    background-color: @colorBgContainer;
-    box-shadow: @boxShadowTertiary;
+    // 选中白卡（单栏统一交互态）；主题色只落标题，日期/智能体名保持次级色
+    .nav-row-selected();
 
     .conversation-item-content {
       .conversation-topic-row {
@@ -213,10 +218,15 @@
 }
 
 .conversation-item:focus-visible {
-  outline: 2px solid @colorPrimary;
+  outline: @lineWidthBold solid @colorPrimary;
   outline-offset: -2px;
 }
-.conversation-item:focus-within .conversation-topic-row :global(.more-btn) {
+// 只认键盘焦点:行是 tabIndex=0 的 div,鼠标点击后 :focus-within 残留,
+// 会让「⋯」按钮/日期隐藏态永久停留在被点击的行上
+.conversation-item:focus-visible .conversation-topic-row :global(.more-btn),
+.conversation-item:has(:focus-visible)
+  .conversation-topic-row
+  :global(.more-btn) {
   opacity: 1;
 }
 
@@ -224,45 +234,64 @@
   position: relative;
   min-height: 36px;
   box-sizing: border-box;
-  padding: 8px 10px 8px 11px;
+  // 右内边距 11px：⋯ 右缘与项目子行对齐（同上）
+  padding: 8px 11px;
   transition: background 0.18s ease;
+
   .conversation-item-content .conversation-topic-row {
-    gap: 8px;
+    gap: @paddingXs;
+
     .conversation-topic {
-      font-size: 14px;
+      font-size: @fontSize;
       font-weight: 400;
       line-height: 20px;
       color: @navSecondMenuAdaptiveTextSecondary;
     }
+
     :global(.more-btn) {
       position: absolute;
-      right: 8px;
+      // 右锚 11px：⋯ 右缘与项目面板会话子行的 ⋯ 对齐（2026-09-12 需求）
+      right: 11px;
       z-index: 1;
-      width: 24px;
-      height: 24px;
+      // 视觉与项目子行 ⋯ 统一（2026-09-12）：24px、7px 圆角、静默透明、
+      // hover 浅品牌色底。此处用 :global 字面量声明——组件自带 index.less 的
+      // styles 映射在当前 dev 运行时为空（MFSU 缓存分裂），字面量规则才可靠生效
+      width: @controlHeightSm;
+      height: @controlHeightSm;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 6px;
-      background: @colorBgContainer;
+      border-radius: 7px;
+
+      &:hover {
+        background: @colorPrimaryBg;
+        color: rgba(0, 0, 0, 88%);
+      }
     }
   }
-  &:hover,
-  &.active {
-    box-shadow: none;
-  }
+
+  // hover/选中态直接继承基础规则（hover 灰底无阴影、active 白卡+阴影）：
+  // 原先的 box-shadow:none 覆盖已删——统一交互态后 compact 选中恢复阴影，
+  // 上方 active 的负 margin 外扩正好给阴影留出空间
   &.active {
     margin: 0 -5px;
-    padding-left: 16px;
+    padding-left: @padding;
     padding-right: 15px;
+
+    // 白卡负 margin 向右外扩 5px：⋯ 右锚点同步 +5px，选中时图标视口位置不跳
+    .conversation-item-content .conversation-topic-row :global(.more-btn) {
+      right: 16px;
+    }
   }
+
   &:hover .conversation-date,
-  &:focus-within .conversation-date {
+  &:focus-visible .conversation-date,
+  &:has(:focus-visible) .conversation-date {
     visibility: hidden;
   }
   @media (hover: none) {
     .conversation-date {
-      margin-right: 24px;
+      margin-right: @marginLg;
     }
   }
 }

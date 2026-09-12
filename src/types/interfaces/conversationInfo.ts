@@ -230,12 +230,16 @@ export interface ConversationCreateParams {
   /**
    * 关联项目 ID（首页项目上框：已有项目下直接新建会话时携带，
    * 后端按此把会话绑定到项目，不再隐式建项目）。
-   * 契约先行（2026-09-10 后端未 ready，前端照发）。
    */
   projectId?: number;
   /**
+   * 关联项目类型（UserApp=全栈 / NormalProject=常规）。
+   * 携带 projectId 时后端必填（2026-09-12 实测缺省报「项目类型不能为空」）。
+   */
+  projectType?: AgentComponentTypeEnum;
+  /**
    * 项目绑定的调试智能体 ID（全栈项目上框时携带，值为当前选中的
-   * 全栈类智能体）。契约先行（2026-09-10 后端未 ready，前端照发）。
+   * 全栈类智能体）。
    */
   devAgentId?: number;
 }
@@ -347,6 +351,10 @@ export interface ConversationInfo {
   topicUpdated: number;
   // 会话摘要，当开启长期记忆时，会对每次会话进行总结
   summary: string;
+  /** 服务端会话置顶状态 */
+  pinned?: boolean;
+  /** 服务端会话归档状态 */
+  archived?: boolean;
   modified: string;
   created: string;
   variables?: Record<string, string | number> | null;
@@ -474,6 +482,8 @@ export interface ConversationInfo {
 // 查询用户历史会话输入参数
 export interface ConversationListParams {
   agentId: number | null;
+  /** 是否包含已归档会话；缺省时服务层按 false 处理 */
+  includeArchived?: boolean;
   // 上一次查询结果的会话ID
   lastId?: number | null;
   // 返回会话数量

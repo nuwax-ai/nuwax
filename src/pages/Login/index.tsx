@@ -14,7 +14,7 @@ import {
   isWeakNumber,
   validatePassword,
 } from '@/utils/common';
-import { nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { isNuwaClaw, nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
@@ -110,6 +110,55 @@ const Login: React.FC = () => {
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
+
+  // ---- 企业登录（仅 nuwaclaw/nuwax 壳内可见）：切换客户端后端域名并重新初始化 ----
+  const [enterpriseOpen, setEnterpriseOpen] = useState<boolean>(false);
+  const [enterpriseDomain, setEnterpriseDomain] = useState<string>('');
+  const [enterpriseSwitching, setEnterpriseSwitching] =
+    useState<boolean>(false);
+  const [enterpriseError, setEnterpriseError] = useState<string>('');
+
+  /** 目标域连通性预检（no-cors 不读响应体，可达即 resolve；防切到死域后 webview 卡死） */
+  const probeDomainReachable = async (origin: string): Promise<boolean> => {
+    try {
+      await fetch(`${origin}/api/tenant/config`, {
+        mode: 'no-cors',
+        signal: AbortSignal.timeout(5000),
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleEnterpriseConfirm = async () => {
+    const domain = enterpriseDomain.trim().replace(/\/+$/, '');
+    if (!domain) {
+      setEnterpriseError(dict('PC.Pages.Login.enterpriseDomainRequired'));
+      return;
+    }
+    const origin = /^https?:\/\//i.test(domain) ? domain : `https://${domain}`;
+    setEnterpriseSwitching(true);
+    setEnterpriseError('');
+    try {
+      const reachable = await probeDomainReachable(origin);
+      if (!reachable) {
+        setEnterpriseError(dict('PC.Pages.Login.enterpriseDomainUnreachable'));
+        return;
+      }
+      const res = await nuwaClawHost.auth.configureServerHost(origin);
+      if (!res.success) {
+        setEnterpriseError(
+          dict('PC.Pages.Login.enterpriseSwitchFailed', res.error ?? ''),
+        );
+        return;
+      }
+      // 成功：壳将停服务并重载 webview 到新域（本页随重载销毁，无需再操作）
+      setEnterpriseOpen(false);
+    } finally {
+      setEnterpriseSwitching(false);
+    }
+  };
 
   const redirectAfterCaptchaCallback = (
     responseRedirectUrl?: string | null,
@@ -723,6 +772,57 @@ const Login: React.FC = () => {
                   </div>
                 </Form.Item>
               </Form>
+
+              {/* 企业登录：仅壳内可见——切换客户端后端域名并重新初始化
+                  （壳停服务 + webview 重载到新域登录页） */}
+              {isNuwaClaw() && (
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0, height: 'auto' }}
+                  onClick={() => {
+                    setEnterpriseError('');
+                    setEnterpriseOpen(true);
+                  }}
+                >
+                  {dict('PC.Pages.Login.enterpriseLogin')}
+                </Button>
+              )}
+
+              <Modal
+                title={dict('PC.Pages.Login.enterpriseLoginTitle')}
+                open={enterpriseOpen}
+                onCancel={() => {
+                  if (!enterpriseSwitching) setEnterpriseOpen(false);
+                }}
+                onOk={handleEnterpriseConfirm}
+                okText={dict('PC.Pages.Login.enterpriseSwitchConfirm')}
+                confirmLoading={enterpriseSwitching}
+                okButtonProps={{ disabled: !enterpriseDomain.trim() }}
+                destroyOnClose
+              >
+                <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>
+                  {dict('PC.Pages.Login.enterpriseLoginHint')}
+                </div>
+                <Input
+                  value={enterpriseDomain}
+                  onChange={(e) => {
+                    setEnterpriseDomain(e.target.value);
+                    setEnterpriseError('');
+                  }}
+                  onPressEnter={handleEnterpriseConfirm}
+                  disabled={enterpriseSwitching}
+                  placeholder={dict(
+                    'PC.Pages.Login.enterpriseDomainPlaceholder',
+                  )}
+                  allowClear
+                />
+                {enterpriseError && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: '#ff4d4f' }}>
+                    {enterpriseError}
+                  </div>
+                )}
+              </Modal>
 
               <div
                 style={{
