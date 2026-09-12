@@ -71,7 +71,6 @@ import React, {
 import { history, useLocation, useModel, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
-import RendererLineToggle from './RendererLineToggle';
 
 const cx = classNames.bind(styles);
 const SKIP_DETAIL_QUERY_ON_POP_BACK_KEY =
@@ -843,9 +842,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                   }}
                 />
               )}
-
-              {/*渲染线调试切换（V2 双线重构）：基线 V1，按会话显式切 V2*/}
-              <RendererLineToggle conversationId={conversationId} />
 
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
