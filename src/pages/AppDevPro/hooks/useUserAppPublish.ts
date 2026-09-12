@@ -1,13 +1,8 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import { useCallback, useRef, useState } from 'react';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UserAppDbEnvEnum } from '../services/appDb';
-import {
-  apiUserAppDomainList,
-  normalizeUserAppPreviewUrl,
-  type UserAppDomainInfo,
-} from '../services/appDomain';
 import {
   apiUserAppBuild,
   apiUserAppBuildCancel,
@@ -15,7 +10,11 @@ import {
   apiUserAppProdDeployable,
   apiUserAppProdStart,
 } from '../services/appDevPro';
-import { pickUserAppEnvDomain } from '../utils/userAppPreviewUrl';
+import {
+  apiUserAppDomainList,
+  normalizeUserAppPreviewUrl,
+  type UserAppDomainInfo,
+} from '../services/appDomain';
 import type {
   UserAppDeployFailedStage,
   UserAppDevTaskInfo,
@@ -25,6 +24,7 @@ import type {
   UserAppTaskServiceProgress,
   UserAppTaskTerminalStatus,
 } from '../type';
+import { pickUserAppEnvDomain } from '../utils/userAppPreviewUrl';
 import {
   USER_APP_BUILD_SSE_EVENT,
   getTaskTerminalStatus,
@@ -233,7 +233,10 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         onProjectInfo?.(result.data);
       }
     } else {
-      console.error('[AppDevPro] Refresh project after deploy failed:', appResult.reason);
+      console.error(
+        '[AppDevPro] Refresh project after deploy failed:',
+        appResult.reason,
+      );
     }
 
     if (domainResult.status === 'fulfilled') {

@@ -205,7 +205,8 @@ const RESOURCE_ADAPTERS: Record<
     // 团队空间-空间内已发布智能体（POST /api/published/agent/list 服务端分页）：
     // 与空间广场 /space/:id/space-square?activeKey=Agent 同口径——
     // category=Agent（tab 维度）+ justReturnSpaceData 只查空间已发布内容；
-    // 二级 tab 即空间选择（必选中具体空间），category 内容分类不适用不传
+    // 二级 tab 即空间选择（必选中具体空间），category 内容分类不适用不传；
+    // 与系统广场同口径仅展示官方智能体（official: true）
     team: {
       mode: 'server',
       fetchPage: ({ page, pageSize, keyword, spaceId }) =>
@@ -216,6 +217,8 @@ const RESOURCE_ADAPTERS: Record<
           category: SquareAgentTypeEnum.Agent,
           justReturnSpaceData: true,
           spaceId,
+          // 仅展示官方智能体（与系统广场维度同口径）
+          official: true,
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'space-agent'),
     },

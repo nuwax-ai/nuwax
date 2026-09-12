@@ -12,12 +12,9 @@
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiRepoSpaceTree } from '@/services/repo';
-import { apiPublishedAgentList } from '@/services/square';
 import { apiConnectorProviderPageList } from '@/services/systemManage';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { RepoPageTreeNode } from '@/types/interfaces/repo';
-import type { Page, RequestResponse } from '@/types/interfaces/request';
+import type { RequestResponse } from '@/types/interfaces/request';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -178,87 +175,14 @@ const flattenRepoTree = (nodes: RepoPageTreeNode[]): CapabilityItem[] => {
   return items;
 };
 
-/** 已发布接口（Page 分页结构）响应提取 */
-const extractPublishedPage = (
-  res: RequestResponse<unknown>,
-  page: number,
-  idPrefix: CapabilityTypeEnum,
-  source: CapabilitySourceEnum = 'system',
-): { items: CapabilityItem[]; hasMore: boolean } => {
-  const data = res.data as Page<SquarePublishedItemInfo> | null;
-  const records = data?.records || [];
-  const current = data?.current || page;
-  const pages = data?.pages || 1;
-  return {
-    items: records.map((item) => mapPublishedItem(item, idPrefix, source)),
-    hasMore: current < pages,
-  };
-};
-
-/** 系统广场已发布维度（服务端分页：page/pageSize/category/kw）通用适配器 */
-const publishedServerAdapter = (
-  fetch: (data: {
-    page: number;
-    pageSize: number;
-    category: string;
-    kw?: string;
-    spaceIds?: number[];
-  }) => Promise<RequestResponse<unknown>>,
-  resourceType: CapabilityTypeEnum,
-  source: CapabilitySourceEnum = 'system',
-): ServerAdapter => ({
-  mode: 'server',
-  fetchPage: ({ page, pageSize, category, keyword, spaceIds }) =>
-    fetch({ page, pageSize, category, kw: keyword || undefined, spaceIds }),
-  extract: (res, page) => extractPublishedPage(res, page, resourceType, source),
-});
-
 /**
  * 能力类型 × 数据源 的接口适配器矩阵。
- * 技能维度已接入 SkillListView（自带四场景数据层），此处不再注册 skill
- * 适配器——hook 对未注册的类型保持空态（不加载）。
+ * 技能/专家维度已分别接入 SkillListView / ExpertListView（各自带数据层），
+ * 此处仅保留连接器/资料库；hook 对未注册的类型保持空态（不加载）。
  */
 const ADAPTERS: Partial<
   Record<CapabilityTypeEnum, Record<CapabilitySourceEnum, ResourceAdapter>>
 > = {
-  expert: {
-    // 系统广场：已发布智能体（POST /api/published/agent/list），
-    // 与广场页 /square?cate_type=Agent 默认口径一致：targetType=Agent +
-    // targetSubType=ChatBot（含对话型/通用型，排除网页应用），不带 official
-    system: publishedServerAdapter(
-      (data) =>
-        apiPublishedAgentList({
-          ...data,
-          targetType: AgentComponentTypeEnum.Agent,
-          targetSubType: 'ChatBot',
-        }),
-      'expert',
-    ),
-    // 团队空间：同为已发布智能体接口，与空间广场
-    // /space/:id/space-square?activeKey=Agent 同口径——category=Agent +
-    // justReturnSpaceData 只查空间已发布内容；具体空间页签传单 spaceId，
-    // "全部"页签经 spaceIds 聚合全部空间
-    team: publishedServerAdapter(
-      (data) => {
-        const single =
-          data.spaceIds?.length === 1 ? data.spaceIds[0] : undefined;
-        return apiPublishedAgentList({
-          page: data.page,
-          pageSize: data.pageSize,
-          kw: data.kw,
-          category: SquareAgentTypeEnum.Agent,
-          justReturnSpaceData: true,
-          ...(single
-            ? { spaceId: single }
-            : data.spaceIds?.length
-            ? { spaceIds: data.spaceIds }
-            : {}),
-        });
-      },
-      'expert',
-      'team',
-    ),
-  },
   connector: {
     // 系统广场：官方连接器目录（GET /api/connector/providers?scope=official
     // 服务端分页），点击具体分类追加 category 参数
