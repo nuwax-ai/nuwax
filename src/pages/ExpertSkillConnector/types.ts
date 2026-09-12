@@ -79,7 +79,7 @@ export interface ResourceItem {
    */
   pinned?: boolean;
   /**
-   * 当前用户是否已收藏（专家特有：hover 右上角收藏图标按钮的选中态，
+   * 当前用户是否已收藏（专家特有：hover 右下角收藏图标按钮的选中态，
    * 数据源取列表接口返回的 collect；收藏/取消收藏成功后就地更新）
    */
   collected?: boolean;
