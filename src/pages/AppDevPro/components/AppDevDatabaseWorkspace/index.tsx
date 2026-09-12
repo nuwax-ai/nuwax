@@ -21,7 +21,7 @@ export interface AppDevDatabaseWorkspaceProps {
 }
 
 /**
- * 数据库工作区：开发 / 在线各一套管理页与配置。
+ * 数据库工作区：开发 / 线上各一套管理页与配置。
  * Tab 头由外层 PreviewTabBar 承载；两个 iframe 切换时不卸载，配置面板仅在进入时挂载。
  *
  * @param props.appId 应用 ID
