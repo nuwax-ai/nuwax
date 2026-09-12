@@ -547,6 +547,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.genCustomPlugin.table": "テーブル",
   "PC.Components.HistoryConversation.title": "歴史の会話",
   "PC.Components.HistoryConversationList.agentFallback": "エージェント",
+  "PC.Components.HistoryConversationList.collectedConversations": "収藏済み",
   "PC.Components.HistoryConversationList.dateTimeFormat": "YYYY-MM-DD HH:mm:ss",
   "PC.Components.HistoryConversationList.deleteModalContent": "この会話は完全に削除され、復元することはできません。削除してもよろしいですか?",
   "PC.Components.HistoryConversationList.deleteModalTitle": "会話を完全に削除する",

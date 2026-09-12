@@ -43,13 +43,14 @@ const openMenu = () => {
 describe('会话菜单服务端标记', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   afterEach(() => {
     cleanup();
   });
 
-  it('置顶成功后回传服务端状态，且不展示收藏', async () => {
+  it('置顶成功后回传服务端状态', async () => {
     const onFlagChanged = vi.fn();
     render(
       <ConversationContextMenu
@@ -61,9 +62,6 @@ describe('会话菜单服务端标记', () => {
       </ConversationContextMenu>,
     );
     openMenu();
-    expect(
-      screen.queryByText('PC.Components.ConversationContextMenu.favorite'),
-    ).not.toBeInTheDocument();
     fireEvent.click(
       await screen.findByText('PC.Components.ConversationContextMenu.pin'),
     );
@@ -72,6 +70,57 @@ describe('会话菜单服务端标记', () => {
       expect(apiAgentConversationPin).toHaveBeenCalledWith(42, true),
     );
     expect(onFlagChanged).toHaveBeenCalledWith('pinned', true);
+  });
+
+  it('收藏走本地存储：toggle 后写 localStorage 并回传状态', async () => {
+    const onCollectedChanged = vi.fn();
+    render(
+      <ConversationContextMenu
+        conversationId={42}
+        showMoreButton
+        onCollectedChanged={onCollectedChanged}
+      >
+        {(moreButton) => <div>{moreButton}会话</div>}
+      </ConversationContextMenu>,
+    );
+    openMenu();
+    expect(
+      screen.getByText('PC.Components.ConversationContextMenu.favorite'),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByText('PC.Components.ConversationContextMenu.favorite'),
+    );
+
+    await waitFor(() => expect(onCollectedChanged).toHaveBeenCalledWith(true));
+    expect(
+      JSON.parse(localStorage.getItem('conversation_favorite_ids')!),
+    ).toEqual([42]);
+  });
+
+  it('已收藏状态展示取消收藏项，取消后回传 false', async () => {
+    const onCollectedChanged = vi.fn();
+    localStorage.setItem('conversation_favorite_ids', JSON.stringify([42]));
+    render(
+      <ConversationContextMenu
+        conversationId={42}
+        collected
+        showMoreButton
+        onCollectedChanged={onCollectedChanged}
+      >
+        {(moreButton) => <div>{moreButton}会话</div>}
+      </ConversationContextMenu>,
+    );
+    openMenu();
+    fireEvent.click(
+      await screen.findByText(
+        'PC.Components.ConversationContextMenu.unfavorite',
+      ),
+    );
+
+    await waitFor(() => expect(onCollectedChanged).toHaveBeenCalledWith(false));
+    expect(
+      JSON.parse(localStorage.getItem('conversation_favorite_ids')!),
+    ).toEqual([]);
   });
 
   it('归档失败时不回传状态', async () => {

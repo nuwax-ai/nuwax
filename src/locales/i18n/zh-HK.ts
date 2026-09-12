@@ -547,6 +547,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.genCustomPlugin.table": "表格",
   "PC.Components.HistoryConversation.title": "歷史會話",
   "PC.Components.HistoryConversationList.agentFallback": "智能體",
+  "PC.Components.HistoryConversationList.collectedConversations": "已收藏",
   "PC.Components.HistoryConversationList.dateTimeFormat": "YYYY年MM月DD日 HH:mm:ss",
   "PC.Components.HistoryConversationList.deleteModalContent": "本條會話數據將被永久刪除，不可恢復及撤銷。確定要刪除嗎？",
   "PC.Components.HistoryConversationList.deleteModalTitle": "永久刪除會話",

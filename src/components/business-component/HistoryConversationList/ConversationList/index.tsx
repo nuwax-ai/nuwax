@@ -3,6 +3,11 @@ import { apiAgentConversationList } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
+  CONVERSATION_FAVORITES_EVENT,
+  loadFavoriteConversationIds,
+  removeFavoriteConversation,
+} from '@/utils/conversationFavorites';
+import {
   applyConversationFlagOverrides,
   ConversationFlagOverride,
   recordConversationFlagOverride,
@@ -16,6 +21,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/** 列表视图：全部（默认，隐藏归档）/ 已收藏（本地）/ 已归档（服务端） */
+type ListViewMode = 'all' | 'collected' | 'archived';
 
 interface ConversationListProps {
   agentId?: number | null;
@@ -40,25 +48,49 @@ const ConversationList = React.forwardRef<
   const [hasMore, setHasMore] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useSize(containerRef);
-  const [showArchived, setShowArchived] = useState(false);
+  const [viewMode, setViewMode] = useState<ListViewMode>('all');
+  // 收藏为本地存储（后端接口未上线）：菜单 toggle / 其他列表变更后经全局事件重读
+  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(
+    () => new Set(loadFavoriteConversationIds()),
+  );
   // 标记（置顶/归档）本地覆盖：防止刷新的滞后回包把刚归档的会话复活回列表
   const flagOverridesRef = useRef(new Map<string, ConversationFlagOverride>());
 
-  // 展示列表：消费后端 pinned/archived，默认隐藏归档项、置顶项排前
+  useEffect(() => {
+    const refreshFavorites = () =>
+      setFavoriteIds(new Set(loadFavoriteConversationIds()));
+    window.addEventListener(CONVERSATION_FAVORITES_EVENT, refreshFavorites);
+    // 会话删除后清理收藏残留（其他列表页删除的也一并生效）
+    const handleDeleted = (event: Event) => {
+      const id = (event as CustomEvent<{ id?: number }>).detail?.id;
+      if (typeof id === 'number') {
+        removeFavoriteConversation(id);
+      }
+    };
+    window.addEventListener('conversation-deleted', handleDeleted);
+    return () => {
+      window.removeEventListener(
+        CONVERSATION_FAVORITES_EVENT,
+        refreshFavorites,
+      );
+      window.removeEventListener('conversation-deleted', handleDeleted);
+    };
+  }, []);
+
+  // 展示列表：全部视图隐藏归档项、置顶项排前；收藏/归档视图按各自口径过滤
   const visibleList = useMemo(() => {
-    const filtered = showArchived
-      ? list.filter((item) => item.archived === true)
-      : list.filter((item) => item.archived !== true);
-    if (showArchived) return filtered;
-    return [...filtered].sort(
+    if (viewMode === 'archived') {
+      return list.filter((item) => item.archived === true);
+    }
+    if (viewMode === 'collected') {
+      // 收藏是跨归档的个人视图：已归档但收藏过的也保留
+      return list.filter((item) => favoriteIds.has(Number(item.id)));
+    }
+    const nonArchived = list.filter((item) => item.archived !== true);
+    return [...nonArchived].sort(
       (a, b) => Number(b.pinned === true) - Number(a.pinned === true),
     );
-  }, [list, showArchived]);
-
-  const archivedCount = useMemo(
-    () => list.filter((item) => item.archived === true).length,
-    [list],
-  );
+  }, [list, viewMode, favoriteIds]);
 
   // 计算每页条数
   const calculatePageSize = () => {
@@ -151,12 +183,36 @@ const ConversationList = React.forwardRef<
     return () => container.removeEventListener('scroll', handleScroll);
   }, [loading, hasMore, list]);
 
+  // 视图分类 tab：全部 / 已收藏（本地）/ 已归档（服务端）
+  const viewTabs: Array<{ key: ListViewMode; label: string }> = [
+    { key: 'all', label: t('PC.Common.Global.all') },
+    { key: 'collected', label: t('PC.Components.HistoryConversationList.collectedTab') },
+    { key: 'archived', label: t('PC.Components.HistoryConversationList.archivedTab') },
+  ];
+
   return (
-    <div
-      ref={containerRef}
-      className={cx(styles.container, 'scroll-container')}
-    >
-      <div className={styles['list-content']}>
+    <>
+      <div className={styles.tabs}>
+        {viewTabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={
+              viewMode === tab.key
+                ? `${styles['tab']} ${styles['tab-active']}`
+                : styles.tab
+            }
+            onClick={() => setViewMode(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div
+        ref={containerRef}
+        className={cx(styles.container, 'scroll-container')}
+      >
+        <div className={styles['list-content']}>
         {visibleList.map((item) => (
           <ConversationContextMenu
             key={item.id}
@@ -164,6 +220,7 @@ const ConversationList = React.forwardRef<
             currentTopic={item.topic}
             pinned={item.pinned === true}
             archived={item.archived === true}
+            collected={favoriteIds.has(Number(item.id))}
             onFlagChanged={(kind, enabled) => {
               recordConversationFlagOverride(
                 flagOverridesRef.current,
@@ -248,28 +305,27 @@ const ConversationList = React.forwardRef<
             <Spin size="small" />
           </div>
         )}
-        {/* 已归档入口：列表由 includeArchived=true 回读服务端归档状态 */}
-        {!loading && (archivedCount > 0 || showArchived) && (
-          <div
-            className={styles['archived-entry']}
-            onClick={() => setShowArchived(!showArchived)}
-          >
-            {showArchived
-              ? t(
-                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations',
-                )
-              : `${t(
-                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations',
-                )} (${archivedCount})`}
-          </div>
-        )}
+        {/* 收藏/归档视图空态提示（收藏走本地存储，归档由 includeArchived=true 回读服务端状态） */}
+        {!loading &&
+          viewMode !== 'all' &&
+          visibleList.length === 0 &&
+          list.length > 0 && (
+            <div className={styles.nomore}>
+              {t(
+                viewMode === 'collected'
+                  ? 'PC.Components.HistoryConversationList.collectedEmpty'
+                  : 'PC.Components.HistoryConversationList.archivedEmpty',
+              )}
+            </div>
+          )}
         {!hasMore && list?.length > 8 && (
           <div className={styles.nomore}>
             {t('PC.Components.HistoryConversationList.noMoreData')}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 });
 

@@ -675,6 +675,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.FormListItem.variableType": "Variable Type",
   "PC.Components.HistoryConversation.title": "History Conversations",
   "PC.Components.HistoryConversationList.agentFallback": "Agent",
+  "PC.Components.HistoryConversationList.collectedConversations": "Collected",
   "PC.Components.HistoryConversationList.dateTimeFormat": "YYYY-MM-DD HH:mm:ss",
   "PC.Components.HistoryConversationList.deleteModalContent": "This conversation will be permanently deleted and cannot be recovered. Are you sure you want to delete it?",
   "PC.Components.HistoryConversationList.deleteModalTitle": "Delete conversation permanently",

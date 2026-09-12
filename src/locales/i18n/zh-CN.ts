@@ -680,6 +680,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.FormListItem.variableType": "变量类型",
   "PC.Components.HistoryConversation.title": "历史会话",
   "PC.Components.HistoryConversationList.agentFallback": "智能体",
+  "PC.Components.HistoryConversationList.collectedConversations": "已收藏",
   "PC.Components.HistoryConversationList.dateTimeFormat": "YYYY年MM月DD日 HH:mm:ss",
   "PC.Components.HistoryConversationList.deleteModalContent": "本条会话数据将被永久删除，不可恢复及撤销。确定要删除吗？",
   "PC.Components.HistoryConversationList.deleteModalTitle": "永久删除会话",
