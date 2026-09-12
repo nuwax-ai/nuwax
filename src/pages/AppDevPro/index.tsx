@@ -1846,15 +1846,24 @@ const AppDevPro: React.FC = () => {
     previewTabs.openToolTab('remote-desktop');
   }, [appId, previewTabs]);
 
-  /** 切换环境：离开开发环境时关闭远程桌面页签 */
+  /**
+   * 切换环境：线上环境没有文件树，隐藏图标与中间栏；
+   * 若当前在文件树工作区，改为展示线上环境应用预览。
+   */
   const handleEnvChange = useCallback(
     (nextEnv: UserAppDbEnvEnum) => {
       setDbEnv(nextEnv);
-      if (nextEnv !== UserAppDbEnvEnum.Dev) {
-        previewTabs.closeTab(getToolTabId('remote-desktop'));
+      if (nextEnv === UserAppDbEnvEnum.Dev) {
+        return;
+      }
+      previewTabs.closeTab(getToolTabId('remote-desktop'));
+      setCanShowFileView(false);
+      if (workspaceView === 'files') {
+        resetDevConsoleExpandedLayout();
+        setWorkspaceView('app-preview');
       }
     },
-    [previewTabs],
+    [previewTabs, resetDevConsoleExpandedLayout, workspaceView],
   );
 
   /**
