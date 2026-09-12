@@ -349,6 +349,11 @@
   }
 }
 
+/* 连接器卡圆形图标（与技能卡同款简化布局） */
+.card-icon-round {
+  border-radius: 50%;
+}
+
 .card-heading {
   display: flex;
   flex: 1;
@@ -364,23 +369,6 @@
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: 18px;
-  color: @capability-muted;
-  font-size: 11px;
-  line-height: 18px;
-}
-
-.card-category {
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -422,41 +410,14 @@
   }
 }
 
-.connection-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: @capability-faint;
-  white-space: nowrap;
-
-  &::before {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentcolor;
-    content: '';
-  }
-
-  &.connected {
-    color: @colorSuccess;
-  }
-}
-
-/* 连接器卡描述（头图下方）：两行截断，弹性填充把卡片撑到等高 */
-.card-desc {
-  min-height: 0;
-  flex: 1 1 auto;
+/* 连接器卡单行描述（与技能卡同款简化布局）：名称下一行，一行截断 */
+.card-desc-inline {
+  overflow: hidden;
   color: @capability-muted;
   font-size: 12px;
-  line-height: 20px;
-  // 两行截断：display 必须写 -webkit-box（只写 box 会被浏览器判无效导致截断失效；
-  // 该值已在 .stylelintrc.js 的 value-no-vendor-prefix ignoreValues 豁免，防 --fix 剥前缀）
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  word-break: break-word;
-  overflow: hidden;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 资料格式 Tag（antd Tag）：收敛自带尾间距，胶囊圆角与次级色与其余标签统一
@@ -562,8 +523,20 @@
   }
 }
 
-/* 连接器卡操作簇：「选择」按钮（悬停浮现）+ 连接开关，随标题区垂直居中 */
+/* 连接器卡（与技能卡同款简化布局）：连接状态槽（状态标 + hover「断开」
+   覆盖）+ 常驻连接开关，操作簇随两行标题垂直居中。
+   总高钉死 70px（= 技能卡 14 padding + 40 内容 + 2 边框），消除
+   antd Card 内边距/行高漂移导致的高度不一致 */
+.card-connector.card-connector {
+  box-sizing: border-box;
+  height: 70px;
+}
+
 .card-connector {
+  .card-head {
+    align-items: center;
+  }
+
   .card-head-actions {
     align-self: center;
     margin-top: 0;
@@ -572,6 +545,61 @@
       margin-top: 0;
     }
   }
+
+  :global(.ant-card-body) {
+    justify-content: center;
+  }
+}
+
+/* 连接状态槽：常驻状态标定宽占位，「断开」按钮绝对定位等宽覆盖
+   （hover 出现时盖住状态标,不挤开开关）；未连接时无按钮、仅状态标 */
+.connect-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 58px;
+  height: 24px;
+}
+
+/* 连接状态标：弱化灰 + 前置圆点；已连接绿色 */
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: @capability-faint;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+
+  &::before {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentcolor;
+    content: '';
+  }
+
+  &.connected {
+    color: @colorSuccess;
+  }
+}
+
+/* 断开按钮：默认隐藏，hover 卡片时铺满状态槽盖住状态标；
+   双写提权压过 antd Button 默认形态 */
+.card-disconnect.card-disconnect {
+  position: absolute;
+  inset: 0;
+  display: none;
+  width: 100%;
+  height: 24px;
+  padding-inline: 0;
+  font-size: 12px;
+}
+
+.card-connector:hover .card-disconnect {
+  display: inline-block;
 }
 
 /* 资料卡右端胶囊簇：相对时间（fill 底）+ 格式（描边底），行内右端对齐 */
