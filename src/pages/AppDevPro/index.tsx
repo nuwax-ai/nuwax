@@ -107,6 +107,8 @@ type AppDevWorkspaceView = 'files' | 'app-preview' | 'database';
 const DATABASE_WORKSPACE_TOOL_IDS: PreviewToolId[] = [
   'database',
   'database-config',
+  'database-prod',
+  'database-config-prod',
 ];
 const noop = () => undefined;
 // const devConversationPollLogger = createLogger(
@@ -1336,6 +1338,8 @@ const AppDevPro: React.FC = () => {
         WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) ||
         toolId === 'database' ||
         toolId === 'database-config' ||
+        toolId === 'database-prod' ||
+        toolId === 'database-config-prod' ||
         toolId === 'remote-desktop'
       ) {
         closePreviewView();
@@ -1626,13 +1630,25 @@ const AppDevPro: React.FC = () => {
         id: getToolTabId('database'),
         type: 'tool',
         toolId: 'database',
-        label: dict('PC.Pages.AppDevPro.database'),
+        label: dict('PC.Pages.AppDevPro.databaseDev'),
       },
       {
         id: getToolTabId('database-config'),
         type: 'tool',
         toolId: 'database-config',
-        label: dict('PC.Pages.AppDevPro.databaseConfig'),
+        label: dict('PC.Pages.AppDevPro.databaseDevConfig'),
+      },
+      {
+        id: getToolTabId('database-prod'),
+        type: 'tool',
+        toolId: 'database-prod',
+        label: dict('PC.Pages.AppDevPro.databaseProd'),
+      },
+      {
+        id: getToolTabId('database-config-prod'),
+        type: 'tool',
+        toolId: 'database-config-prod',
+        label: dict('PC.Pages.AppDevPro.databaseProdConfig'),
       },
     ],
     [],
@@ -1645,6 +1661,10 @@ const AppDevPro: React.FC = () => {
   const databaseActiveTab: AppDevDatabaseWorkspaceTab =
     databaseTabId === getToolTabId('database-config')
       ? 'database-config'
+      : databaseTabId === getToolTabId('database-prod')
+      ? 'database-prod'
+      : databaseTabId === getToolTabId('database-config-prod')
+      ? 'database-config-prod'
       : 'database';
 
   /** 打开独立应用预览视图；已启动或线上环境有地址时不再重复 start */
@@ -1832,11 +1852,10 @@ const AppDevPro: React.FC = () => {
     () => (
       <AppDevDatabaseWorkspace
         appId={appId}
-        env={dbEnv}
         activeTab={databaseActiveTab}
       />
     ),
-    [appId, databaseActiveTab, dbEnv],
+    [appId, databaseActiveTab],
   );
 
   /** 「应用预览」页签：准备中 / 启动预览 / 启动日志 / 应用加载 / iframe */
