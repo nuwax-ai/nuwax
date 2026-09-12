@@ -180,8 +180,17 @@ const SidebarSearchModal: React.FC = () => {
         });
         if (seqRef.current !== seq) return;
         setView((prev) => {
+          const raw = append ? [...prev.items, ...res.items] : res.items;
+          // 会话按修改时间序返回，lastId 游标续拉的回包可能与已有行边界重复：
+          // 按行 id 去重，避免 React 重复 key（对齐侧栏 useHomeSectionData 去重口径）
+          const seen = new Set<string>();
+          const items = raw.filter((item) => {
+            if (seen.has(item.id)) return false;
+            seen.add(item.id);
+            return true;
+          });
           const merged = {
-            items: append ? [...prev.items, ...res.items] : res.items,
+            items,
             hasMore: res.hasMore,
             cursor: res.cursor,
             loading: false,
