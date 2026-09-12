@@ -434,6 +434,30 @@ function setupMarkdownCodeCopy(scope) {
     });
 }
 
+/**
+ * 裸 HTML 表格兜底：marked 只对管道表格调用 renderer.table，
+ * 文档内嵌的 <table> 原样透传——既没有复制按钮也没有溢出包裹，
+ * 宽表格会撑破 .markdown-body 触发整页横向滚动，左移后首列文字被裁。
+ * 渲染后把未包卡的表格统一套上 md-table-block 外壳，与管道表格同款。
+ */
+function enhanceMarkdownTables(scope) {
+    var tables = scope.querySelectorAll('table');
+    tables.forEach(function (table) {
+        if (table.closest('.md-table-block')) {
+            return;
+        }
+        var card = document.createElement('div');
+        card.className = 'md-code-block md-table-block';
+        card.innerHTML = '<div class="md-code-block-banner">'
+            + '<span class="md-code-block-language">表格</span>'
+            + '<span class="md-copy-btn" role="button" tabindex="0">复制</span>'
+            + '</div>'
+            + '<div class="md-table-content"></div>';
+        table.parentNode.insertBefore(card, table);
+        card.querySelector('.md-table-content').appendChild(table);
+    });
+}
+
 async function renderMarkdown(url, container) {
     // Load marked.js for markdown rendering (Local)
     await loadScript('/libs/js-preview/marked.min.js');
@@ -467,8 +491,16 @@ async function renderMarkdown(url, container) {
             code: function (code, infostring) {
                 const lang = String(infostring || '').trim().split(/\s+/)[0];
                 if (!lang) {
-                    // 无语言围栏保持 GitHub 风格裸 pre
-                    return '<pre><code>' + escapeHtmlText(code) + '</code></pre>';
+                    // 无语言围栏同样包卡片，仅省略语言标签（复制按钮可用）
+                    return '<div class="md-code-block">'
+                        + '<div class="md-code-block-banner">'
+                        + '<span class="md-code-block-language"></span>'
+                        + '<span class="md-copy-btn" role="button" tabindex="0">复制</span>'
+                        + '</div>'
+                        + '<pre class="md-code-block-content"><code>'
+                        + escapeHtmlText(code)
+                        + '</code></pre>'
+                        + '</div>';
                 }
 
                 let highlighted = '';
@@ -515,6 +547,8 @@ async function renderMarkdown(url, container) {
     const markdownBody = document.createElement('div');
     markdownBody.className = 'markdown-body';
     markdownBody.innerHTML = html;
+    // 裸 HTML 表格包卡（复制 + 溢出包裹），需在复制事件绑定前就位
+    enhanceMarkdownTables(markdownBody);
     container.appendChild(markdownBody);
     setupMarkdownCodeCopy(markdownBody);
 }
