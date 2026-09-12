@@ -102,19 +102,27 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   const categories = useResourceCategories(resourceType, source);
 
   /**
-   * 团队空间维度：专家/技能的二级 tab 为空间列表（无「全部」，选中空间即
-   * 数据维度，category 存空间 id 字符串）；连接器团队维度保留首位「全部」
-   * 页签（scope=space 聚合全部空间，选中具体空间才按该空间查询）；
+   * 团队空间维度：二级 tab 为空间列表，首位「全部」页签默认选中——专家/
+   * 技能经 spaceIds 聚合全部空间（与能力弹窗同口径），连接器经 scope=space
+   * 聚合；选中具体空间按该空间查询（category 存空间 id 字符串）；
    * 系统广场维度保持「全部」+ 分类
    */
-  const isSpaceScopedTeam = source === 'team' && resourceType !== 'connector';
-  const displayCategories = isSpaceScopedTeam
-    ? categories.filter((item) => item.key !== '')
-    : categories;
 
   /**
-   * 列表请求用的空间 ID：团队维度 = 当前选中空间
-   * （连接器「全部」页签 category 为空串 → undefined，走 scope 聚合）
+   * 团队维度「全部」页签的聚合查询参数：全部空间 ID 列表（与 pill 展示
+   * 同源；连接器走 scope=space 不消费，系统广场维度不依赖）
+   */
+  const teamSpaceIds = useMemo(() => {
+    if (source !== 'team' || resourceType === 'connector') return undefined;
+    return categories
+      .map((item) => Number(item.key))
+      .filter((id) => Number.isFinite(id) && id > 0);
+  }, [source, resourceType, categories]);
+
+  /**
+   * 列表请求用的空间 ID：团队维度选中具体空间时 = 该空间
+   * （「全部」页签 category 为空串 → undefined，专家/技能改由 spaceIds 承载，
+   * 连接器走 scope 聚合）
    */
   const listSpaceId = useMemo(() => {
     if (source !== 'team') return undefined;
@@ -122,23 +130,25 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     return Number.isFinite(id) && id > 0 ? id : undefined;
   }, [source, category]);
 
-  // 团队维度：空间列表到达后默认选中第一个空间
-  // （URL 恢复的分类 key 不在空间列表中时同样回落，避免列表空转；
-  // 连接器维度「全部」在首位，初始空串即命中，不会触发回落）
+  // 团队维度：URL 恢复的空间 key 不在空间列表中时回落「全部」
+  // （「全部」pill 固定首位，初始空串即默认选中，正常不会触发回落）
   useEffect(() => {
-    if (source !== 'team' || displayCategories.length === 0) return;
-    if (!displayCategories.some((item) => item.key === category)) {
-      setCategory(displayCategories[0].key);
+    if (source !== 'team' || categories.length === 0) return;
+    if (!categories.some((item) => item.key === category)) {
+      setCategory(categories[0].key);
     }
-  }, [source, displayCategories, category]);
+  }, [source, categories, category]);
 
-  // 归一化列表数据（团队维度 tab 即空间选择，分类过滤不适用，按 spaceId 请求）
+  // 归一化列表数据（团队维度 tab 即空间选择，内容分类不适用：专家/技能
+  // 按 spaceId/spaceIds 请求，连接器按 spaceId/scope 请求）
   const { list, loading, hasMore, loadMore, updateItem } = useResourceList({
     resourceType,
     source,
-    category: isSpaceScopedTeam ? '' : category,
+    category: source === 'team' ? '' : category,
     keyword,
     spaceId: listSpaceId,
+    // 「全部」页签：spaceIds 携带全部空间（具体空间页签不传）
+    spaceIds: source === 'team' && !category ? teamSpaceIds : undefined,
     pageSize: 20,
   });
 
@@ -530,9 +540,14 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [checkAndAutoFill]);
 
-  // 团队空间维度等待空间 ID 加载（选中空间默认值尚未确定）；
+  // 团队空间维度等待空间数据就绪（专家/技能「全部」页签需 spaceIds 聚合、
+  // 具体空间页签需 spaceId，二者皆无说明空间列表尚未加载）；
   // 连接器维度「全部」页签无 spaceId 也可请求（scope 聚合），不等待
-  const waitingSpace = isSpaceScopedTeam && !listSpaceId;
+  const waitingSpace =
+    source === 'team' &&
+    resourceType !== 'connector' &&
+    !listSpaceId &&
+    !(teamSpaceIds && teamSpaceIds.length > 0);
   // 首屏加载（非滚动加载更多）才显示整屏 Loading
   const initialLoading = (loading || waitingSpace) && list.length === 0;
 
@@ -544,11 +559,11 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
         onSourceChange={(next) => {
           setSource(next);
           // 系统广场（分类 key）、团队空间（空间 id）、已连接的（分类 key）
-          // 各维度 key 命名空间不同，切换后清空选中回到"全部"；
-          // 专家/技能·团队维度会由上方 effect 重新默认选第一个空间
+          // 各维度 key 命名空间不同，切换后清空选中回到"全部"
+          // （各维度首位均为「全部」pill，空串即命中）
           setCategory('');
         }}
-        categories={displayCategories}
+        categories={categories}
         activeCategory={category}
         onCategoryChange={setCategory}
         keyword={keywordInput}
