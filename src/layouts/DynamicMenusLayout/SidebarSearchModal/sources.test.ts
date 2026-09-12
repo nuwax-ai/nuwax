@@ -12,16 +12,11 @@ vi.mock('@/services/i18nRuntime', () => ({
 
 vi.mock('@/services/agentConfig', () => ({
   apiAgentConversationList: vi.fn(),
-  apiAgentConfigList: vi.fn(),
 }));
 
 vi.mock('@/services/repo', () => ({
   apiRepoSearch: vi.fn(),
   apiRepoRecentlyAccessedPages: vi.fn(),
-}));
-
-vi.mock('@/services/square', () => ({
-  apiPublishedAgentList: vi.fn(),
 }));
 
 vi.mock('@/services/systemManage', () => ({
@@ -33,12 +28,8 @@ vi.mock('@/services/userProjectApp', () => ({
   apiUserProjectTabPageQuery: vi.fn(),
 }));
 
-import {
-  apiAgentConfigList,
-  apiAgentConversationList,
-} from '@/services/agentConfig';
+import { apiAgentConversationList } from '@/services/agentConfig';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
-import { apiPublishedAgentList } from '@/services/square';
 import {
   apiConnectorProviderPageList,
   apiSystemConnectorProviderList,
@@ -46,7 +37,6 @@ import {
 import { apiUserProjectTabPageQuery } from '@/services/userProjectApp';
 import {
   fetchConnectorList,
-  fetchExpertList,
   fetchProjectList,
   fetchRecentRepos,
   fetchRecentTasks,
@@ -58,10 +48,8 @@ import {
 
 const mocked = {
   apiAgentConversationList: vi.mocked(apiAgentConversationList),
-  apiAgentConfigList: vi.mocked(apiAgentConfigList),
   apiRepoSearch: vi.mocked(apiRepoSearch),
   apiRepoRecentlyAccessedPages: vi.mocked(apiRepoRecentlyAccessedPages),
-  apiPublishedAgentList: vi.mocked(apiPublishedAgentList),
   apiConnectorProviderPageList: vi.mocked(apiConnectorProviderPageList),
   apiSystemConnectorProviderList: vi.mocked(apiSystemConnectorProviderList),
   apiUserProjectTabPageQuery: vi.mocked(apiUserProjectTabPageQuery),
@@ -158,57 +146,6 @@ describe('fetchRecentTasks / fetchTaskList（经 SEARCH_FETCHERS 不在此重复
       data: null,
     } as never);
     await expect(fetchRecentTasks(8)).resolves.toEqual([]);
-  });
-});
-
-describe('fetchExpertList 双源合并', () => {
-  it('系统广场 + 团队空间合并，来源标记正确', async () => {
-    mocked.apiPublishedAgentList.mockResolvedValue(
-      ok({
-        records: [
-          { id: 1, targetId: 100, name: '官方专家', description: '', icon: '' },
-        ],
-      }) as never,
-    );
-    mocked.apiAgentConfigList.mockResolvedValue(
-      ok([
-        { id: 200, name: '空间专家A', description: '描述A' },
-        { id: 201, name: '无关', description: '' },
-      ]) as never,
-    );
-    const items = await fetchExpertList({
-      keyword: '专家',
-      limit: 20,
-      spaceId: 52,
-    });
-    expect(items.map((item) => [item.source, item.agentId])).toEqual([
-      ['official', 100],
-      ['team', 200],
-    ]);
-    // 团队空间源按关键字本地过滤掉了「无关」
-    expect(items).toHaveLength(2);
-  });
-
-  it('无 spaceId 时跳过团队空间源', async () => {
-    mocked.apiPublishedAgentList.mockResolvedValue(
-      ok({ records: [] }) as never,
-    );
-    const items = await fetchExpertList({ keyword: '', limit: 20 });
-    expect(mocked.apiAgentConfigList).not.toHaveBeenCalled();
-    expect(items).toEqual([]);
-  });
-
-  it('单源失败不拖垮整 tab', async () => {
-    mocked.apiPublishedAgentList.mockRejectedValue(new Error('down'));
-    mocked.apiAgentConfigList.mockResolvedValue(
-      ok([{ id: 200, name: '空间专家A', description: '' }]) as never,
-    );
-    const items = await fetchExpertList({
-      keyword: '',
-      limit: 20,
-      spaceId: 52,
-    });
-    expect(items.map((item) => item.source)).toEqual(['team']);
   });
 });
 

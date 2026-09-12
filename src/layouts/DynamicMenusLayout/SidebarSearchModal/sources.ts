@@ -8,26 +8,19 @@
  */
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import {
-  apiAgentConfigList,
-  apiAgentConversationList,
-} from '@/services/agentConfig';
+import { apiAgentConversationList } from '@/services/agentConfig';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
-import { apiPublishedAgentList } from '@/services/square';
 import {
   apiConnectorProviderPageList,
   apiSystemConnectorProviderList,
 } from '@/services/systemManage';
 import { apiUserProjectTabPageQuery } from '@/services/userProjectApp';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type {
   RepoPageSearchItem,
   RepoPortalPageInfo,
 } from '@/types/interfaces/repo';
 import type { RequestResponse } from '@/types/interfaces/request';
-import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import { formatModifiedTime } from '../NewHomeSection/utils';
@@ -41,8 +34,8 @@ export type SearchTab =
   | 'connector'
   | 'repo';
 
-/** 弹窗自渲染行的分类（技能 tab 由 SkillListView 自渲染，不在其中） */
-export type SearchRowKind = Exclude<SearchTab, 'skill'>;
+/** 弹窗自渲染行的分类（技能/专家 tab 由对应列表组件自渲染，不在其中） */
+export type SearchRowKind = Exclude<SearchTab, 'skill' | 'expert'>;
 
 /** 双源分类（专家/技能/连接器）的来源标记 */
 export type SearchItemSource = 'official' | 'team';
@@ -66,8 +59,6 @@ export interface SearchResultItem {
   conversation?: ConversationInfo;
   /** 项目：项目下最新一条会话（无则置灰不可点） */
   projectConversation?: ConversationInfo;
-  /** 专家：智能体 ID（召唤透传用） */
-  agentId?: number;
   /** 资料库：文档短链标识（深链 /repo/doc/{slugId} 用） */
   slugId?: string;
 }
@@ -134,32 +125,6 @@ export const mapProjectItem = (item: UserProjectTabItem): SearchResultItem => {
     projectConversation: latest ?? item.conversations?.[0],
   };
 };
-
-export const mapPublishedExpertItem = (
-  item: SquarePublishedItemInfo,
-): SearchResultItem => ({
-  kind: 'expert',
-  id: `expert-official-${item.id}`,
-  name: item.name,
-  description: item.description || undefined,
-  icon: item.icon || undefined,
-  source: 'official',
-  // 发布项 targetId 即智能体 ID，召唤透传用（与专家页口径一致）
-  agentId: item.targetId,
-});
-
-export const mapSpaceExpertItem = (
-  item: AgentConfigInfo,
-): SearchResultItem => ({
-  kind: 'expert',
-  id: `expert-team-${item.id}`,
-  name: item.name,
-  description: item.description || undefined,
-  icon: item.icon || undefined,
-  source: 'team',
-  // 空间智能体 id 即智能体 ID，召唤透传用（与专家页口径一致）
-  agentId: item.id,
-});
 
 export const mapConnectorItem = (
   item: ConnectorProviderInfo,
@@ -239,37 +204,6 @@ export async function fetchProjectList({
   return unwrap(res)?.records?.map(mapProjectItem) ?? [];
 }
 
-/** 专家&专家团：系统广场官方发布 + 团队空间智能体（全量本地过滤）双源合并 */
-export async function fetchExpertList({
-  keyword,
-  limit,
-  spaceId,
-}: SearchFetchParams): Promise<SearchResultItem[]> {
-  const [systemRes, teamRes] = await Promise.all([
-    safe(
-      apiPublishedAgentList({
-        page: 1,
-        pageSize: limit,
-        category: '',
-        kw: keyword || undefined,
-        // 查询智能体需设置目标子类型：ChatBot 含对话型与通用型，排除网页应用
-        targetType: AgentComponentTypeEnum.Agent,
-        targetSubType: 'ChatBot',
-        // 仅官方发布智能体
-        official: true,
-      }),
-      null,
-    ),
-    spaceId ? safe(apiAgentConfigList(spaceId), null) : null,
-  ]);
-  const items = (unwrap(systemRes)?.records ?? []).map(mapPublishedExpertItem);
-  const teamItems = (teamRes ? unwrap(teamRes) : [])
-    ?.filter((item) => matchKeyword(keyword, item.name, item.description))
-    .slice(0, limit)
-    .map(mapSpaceExpertItem);
-  return [...items, ...(teamItems ?? [])];
-}
-
 /** 连接器：系统连接器（全量本地过滤）+ 空间连接器（keyword 服务端搜）双源合并 */
 export async function fetchConnectorList({
   keyword,
@@ -333,7 +267,6 @@ export const SEARCH_FETCHERS: Record<
 > = {
   task: fetchTaskList,
   project: fetchProjectList,
-  expert: fetchExpertList,
   connector: fetchConnectorList,
   repo: fetchRepoList,
 };
