@@ -1,7 +1,7 @@
 /**
  * 资源二级分类字典 hook
  * @description
- * - 系统广场维度（source=system，"已连接的"维度同）：调用
+ * - 系统广场维度（source=system，"已连接的"/"我启用的"维度同）：调用
  *   /api/published/category/list，
  *   按资源类型匹配根节点（expert/skill 按 type，connector 按 key=Connector），
  *   取其 children 作为分类字典；

@@ -68,19 +68,10 @@
     transition: opacity 0.3s ease-in-out;
   }
 
-  // 技能卡片：选择按钮右侧 pin 图标按钮（hover 图标转主题色；
-  // pin/取消 pin 接口未定，点击逻辑暂未接入，仅展示）
-  .pin-btn {
-    color: @colorTextSecondary;
-
-    &:hover {
-      color: @colorPrimary;
-    }
-  }
-
-  // 专家卡片右下角操作区（绝对定位：right 16px / bottom 12px）：
-  // 收藏图标 + 付费角标同行右对齐——付费 Tag 最右、收藏图标在其左侧
-  // （相邻排布对齐广场智能体卡片 action-box 内 star 与 extra 的顺序）
+  // 专家/技能卡片右下角操作区（绝对定位：right 16px / bottom 12px）：
+  // 专家卡片为 收藏图标 + 付费角标同行右对齐——付费 Tag 最右、收藏图标
+  // 在其左侧（相邻排布对齐广场智能体卡片 action-box 内 star 与 extra 的
+  // 顺序）；技能卡片仅付费 Tag（与专家卡片付费角标同款）
   .corner-box {
     position: absolute;
     right: 16px;

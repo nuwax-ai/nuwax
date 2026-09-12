@@ -16,8 +16,11 @@ import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 /** 资源类型：专家&专家团 / 技能 / 连接器 */
 export type ResourceTypeEnum = 'expert' | 'skill' | 'connector';
 
-/** 数据源：系统广场 / 团队空间 / 已连接的（连接器页专属，当前用户已连接的连接器） */
-export type ResourceSourceEnum = 'system' | 'team' | 'connected';
+/**
+ * 数据源：系统广场 / 团队空间 / 已连接的（连接器页专属，当前用户已连接的连接器）/
+ * 我启用的（技能页专属，当前用户启用的技能）
+ */
+export type ResourceSourceEnum = 'system' | 'team' | 'connected' | 'enabled';
 
 /** 卡片统计项图标类型 */
 export type ResourceStatType = 'user' | 'link' | 'star';
@@ -74,10 +77,12 @@ export interface ResourceItem {
    */
   connectionEnabled?: boolean;
   /**
-   * 常驻状态（技能特有：pin 按钮 hover 提示常驻/取消常驻）；
-   * pin/取消 pin 接口未定，数据源暂缺，默认按未常驻展示
+   * 技能启用状态（技能特有：卡片右上角常驻启用开关的选中态；
+   * 开启 POST /api/published/skill/enable/{skillId}、关闭
+   * POST /api/published/skill/unEnable/{skillId}，成功后就地更新；
+   * 未付费开启时与「立即使用」同口径——先弹订阅套餐弹窗，开关回弹）
    */
-  pinned?: boolean;
+  skillEnabled?: boolean;
   /**
    * 当前用户是否已收藏（专家特有：hover 右下角收藏图标按钮的选中态，
    * 数据源取列表接口返回的 collect；收藏/取消收藏成功后就地更新）

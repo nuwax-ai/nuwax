@@ -3,12 +3,14 @@
  * @description 屏蔽各资源类型/数据源接口的分页差异（服务端分页 vs 全量数组），
  * 对外统一提供 { list, loading, hasMore, loadMore } 语义：
  * - 服务端分页接口（已发布智能体/技能、官方/空间连接器）直接透传分页参数
- * - 全量数组接口（已连接的连接器）首次全量拉取后内存切片，模拟滚动加载
+ * - 全量数组接口（已连接的连接器、我启用的技能）首次全量拉取后内存切片，
+ *   模拟滚动加载
  */
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiPublishedAgentList,
+  apiPublishedSkillEnableList,
   apiPublishedSkillList,
 } from '@/services/square';
 import { apiConnectorProviderPageList } from '@/services/systemManage';
@@ -81,10 +83,12 @@ const mapPublishedItem = (
     idPrefix === 'agent' || idPrefix === 'space-agent'
       ? item.targetId
       : undefined,
-  // 仅技能（前缀 skill / space-skill）填：targetId 即技能 ID，供「选择」
-  // 透传 home 使用
+  // 仅技能（前缀 skill / space-skill / enabled-skill）填：targetId 即技能
+  // ID，供「立即使用」透传 home 使用
   skillId:
-    idPrefix === 'skill' || idPrefix === 'space-skill'
+    idPrefix === 'skill' ||
+    idPrefix === 'space-skill' ||
+    idPrefix === 'enabled-skill'
       ? item.targetId
       : undefined,
   name: item.name,
@@ -94,6 +98,9 @@ const mapPublishedItem = (
   publishUser: item.publishUser,
   // 当前用户是否已收藏（列表接口返回 collect；专家卡片收藏按钮选中态）
   collected: !!item.collect,
+  // 技能启用状态（卡片右上角启用开关选中态；SquarePublishedItemInfo 暂未
+  // 声明该字段，防御性读取列表接口返回的 enabled，缺省按未启用展示）
+  skillEnabled: !!(item as { enabled?: boolean }).enabled,
   // 付费订阅（专家卡片：订阅功能开启时展示「付费/已订阅」角标，未订阅
   // 点「召唤」或角标跳转智能体详情页弹订阅套餐；技能卡片：左上角「付费」
   // Ribbon 角标，未订阅点「选择」弹订阅套餐弹窗；连接器卡片不消费）
@@ -242,6 +249,22 @@ const RESOURCE_ADAPTERS: Record<
           spaceId,
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'space-skill'),
+    },
+    // 我启用的-当前用户启用的技能（POST /api/published/skill/enable/list
+    // 不传参一次性全量返回）：本地按二级分类（与系统广场同源）与关键字
+    // 筛选后内存切片模拟滚动加载；关闭开关后就地更新卡片状态不整页重拉
+    // （刷新后自然移出该维度）
+    enabled: {
+      mode: 'client',
+      fetchAll: async () => apiPublishedSkillEnableList(),
+      extractAll: (res) => {
+        const data = res.data;
+        // 不带分页参数时后端可能直接回数组、也可能仍套 records 分页壳，两者兼容
+        const records = Array.isArray(data)
+          ? (data as SquarePublishedItemInfo[])
+          : (data as Page<SquarePublishedItemInfo> | null)?.records ?? [];
+        return records.map((item) => mapPublishedItem(item, 'enabled-skill'));
+      },
     },
   },
   connector: {

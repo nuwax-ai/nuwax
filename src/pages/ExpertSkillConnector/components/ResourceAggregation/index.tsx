@@ -17,6 +17,10 @@ import useSubscription from '@/hooks/useSubscription';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
+import {
+  apiPublishedSkillEnable,
+  apiPublishedSkillUnEnable,
+} from '@/services/square';
 import { apiConnectorConnectionToggleStatus } from '@/services/systemManage';
 import { jumpTo } from '@/utils/router';
 import { Empty, message } from 'antd';
@@ -66,6 +70,8 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
           ? ('team' as const)
           : source === 'connected'
           ? ('connected' as const)
+          : source === 'enabled'
+          ? ('enabled' as const)
           : ('system' as const),
       category: searchParams.get('category') || '',
       keyword: searchParams.get('kw') || '',
@@ -178,7 +184,7 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     [summon, isEnableSubscription, handlePaymentJump],
   );
 
-  /** 技能卡片「选择」：携带技能信息透传并跳转 /home 首页 */
+  /** 技能卡片「立即使用」：携带技能信息透传并跳转 /home 首页 */
   const { select } = useSelectSkillHandoff();
 
   // ---------------- 技能付费订阅（对齐广场技能卡片 / 会话页弹窗） ----------------
@@ -336,6 +342,54 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     [updateItem],
   );
 
+  /** 技能启用开关切换请求中的卡片 id（Switch loading 防重复点击） */
+  const [skillTogglingIds, setSkillTogglingIds] = useState<string[]>([]);
+
+  /**
+   * 技能卡片「启用开关」：POST /api/published/skill/enable|unEnable/{skillId}
+   * （开启/关闭双接口，按技能 ID 寻址）；成功后就地更新 skillEnabled 驱动
+   * 开关回弹，不动筛选与分页（与连接器启用开关同口径；「我启用的」维度
+   * 关闭后卡片就地展示未启用态，刷新后自然移出该维度）。
+   * 开启时若需付费未订阅（与「立即使用」同口径）：不调启用接口（开关
+   * 回弹），先弹订阅套餐弹窗，订阅完成后用户再开启
+   */
+  const handleToggleSkillEnabled = useCallback(
+    async (item: ResourceItem, enabled: boolean) => {
+      if (!item.skillId) {
+        // 数据异常兜底：缺技能 ID 无法寻址（正常数据两个维度均有值）
+        console.warn(
+          '[ExpertSkillConnector] toggle skill enabled skipped: missing skillId, item =',
+          item.id,
+        );
+        return;
+      }
+      if (
+        enabled &&
+        isEnableSubscription &&
+        item.paymentRequired &&
+        !item.subscribed
+      ) {
+        querySkillSubscriptionPlans(item.skillId);
+        setPaySkillOpen(true);
+        return;
+      }
+      setSkillTogglingIds((prev) => [...prev, item.id]);
+      try {
+        const res = enabled
+          ? await apiPublishedSkillEnable(item.skillId)
+          : await apiPublishedSkillUnEnable(item.skillId);
+        if (res?.code === SUCCESS_CODE) {
+          updateItem(item.id, { skillEnabled: enabled });
+        } else {
+          message.error(res?.message || '切换启用状态失败');
+        }
+      } finally {
+        setSkillTogglingIds((prev) => prev.filter((id) => id !== item.id));
+      }
+    },
+    [updateItem, isEnableSubscription, querySkillSubscriptionPlans],
+  );
+
   // 筛选状态同步 URL（replace 不产生历史记录）
   useEffect(() => {
     const searchParams = new URLSearchParams();
@@ -472,15 +526,21 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                     resourceType === 'connector' &&
                     connectingIds.includes(item.id)
                   }
-                  // 连接器卡片「启用开关」：仅已连接状态生效（右上角常驻开关）
+                  // 「启用开关」：连接器卡片调连接启用状态接口（仅已连接
+                  // 状态生效）；技能卡片调技能启用/取消启用接口
+                  // （enable/{skillId}、unEnable/{skillId}）
                   onToggleEnabled={
                     resourceType === 'connector'
                       ? handleToggleEnabled
+                      : resourceType === 'skill'
+                      ? handleToggleSkillEnabled
                       : undefined
                   }
                   toggling={
-                    resourceType === 'connector' &&
-                    togglingIds.includes(item.id)
+                    resourceType === 'connector'
+                      ? togglingIds.includes(item.id)
+                      : resourceType === 'skill' &&
+                        skillTogglingIds.includes(item.id)
                   }
                   showUse={resourceType === 'skill'}
                   // 底部统计行仅专家卡片展示（技能本就无统计；
