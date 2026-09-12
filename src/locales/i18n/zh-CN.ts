@@ -2779,6 +2779,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.defaultService": "构建",
   "PC.Pages.AppDevPro.devEnv": "开发环境",
   "PC.Pages.AppDevPro.onlineEnv": "线上环境",
+  "PC.Pages.AppDevPro.tabTerminalDev": "终端（开发环境）",
+  "PC.Pages.AppDevPro.tabTerminalProd": "终端（线上环境）",
   "PC.Pages.AppDevPro.prodNeedPublish": "线上环境启动需要先完成发布",
   "PC.Pages.AppDevPro.publishApplyStep": "提交发布申请",
   "PC.Pages.AppDevPro.publishApplying": "正在提交发布申请...",

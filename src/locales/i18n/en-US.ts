@@ -2779,6 +2779,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.defaultService": "Build",
   "PC.Pages.AppDevPro.devEnv": "Development",
   "PC.Pages.AppDevPro.onlineEnv": "Online",
+  "PC.Pages.AppDevPro.tabTerminalDev": "Terminal (Development)",
+  "PC.Pages.AppDevPro.tabTerminalProd": "Terminal (Online)",
   "PC.Pages.AppDevPro.prodNeedPublish": "Start in the online environment requires a published version",
   "PC.Pages.AppDevPro.publishApplyStep": "Submit publish request",
   "PC.Pages.AppDevPro.publishApplying": "Submitting publish request...",
