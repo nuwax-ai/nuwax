@@ -1,6 +1,7 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
+import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
 import {
   CopyToSpaceComponent,
   PagePreviewIframe,
@@ -146,6 +147,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
+  // 会话快捷导航的滚动容器引用（消息内容区）
+  const chatContentRef = useRef<HTMLDivElement>(null);
 
   // 页面复制弹窗状态
   const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
@@ -873,6 +876,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
           <div className={cx(styles['chat-section'])}>
             <div
               className={cx(styles['chat-wrapper-content'], 'scroll-container')}
+              ref={chatContentRef}
             >
               <div className={cx(styles['chat-wrapper'], 'flex-1')}>
                 {/* 新对话设置 */}
@@ -927,6 +931,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 ) : null}
               </div>
             </div>
+
+            {/* 会话快捷导航：内容区左缘缩略导航条（chat-section 为定位上下文） */}
+            <ConversationQuickNav
+              scrollContainerRef={chatContentRef}
+              messageList={messageList}
+            />
+
             <ChatInputUnified
               key={`agent-details-${agentId}`}
               className={cx(styles['chat-input-container'])}

@@ -123,11 +123,17 @@
     margin-top: 2px;
   }
 
-  // 选中态（2026-09-12 原型 qm-item.active）：容器白卡 + 阴影、文字近黑
+  // 选中态（2026-09-12 原型 qm-item.active）：容器白卡、文字近黑
   // #141416、图标品牌色（--icon-active）；字重按需求定调 500（原型 600），
   // 默认态 normal
   .nav-item-active {
     .nav-row-selected();
+
+    // 单栏（style3）选中底不加阴影（2026-09-12 需求）：平 pill 观感；
+    // 经典布局走 mixin 默认保持白卡阴影
+    :global(.xagi-nav-style3) & {
+      box-shadow: none;
+    }
 
     font-weight: 500;
     color: #141416;
