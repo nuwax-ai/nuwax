@@ -23,10 +23,9 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
-import { history, useLocation, useModel, useParams } from 'umi';
+import { history, useModel } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 // 复用原有组件
 import SvgIcon from '@/components/base/SvgIcon';
@@ -36,27 +35,18 @@ import SidebarSearchModal from '../SidebarSearchModal';
 import User from '../User';
 import UserAvatar from '../User/UserAvatar';
 // 复用原有样式
-import { PATH_URL } from '@/constants/home.constants';
 import {
   MENU_CODE_DOCUMENTS,
   MENU_CODE_MORE_PAGE,
   MENU_CODE_MY_COMPUTER,
   MENU_CODE_NOTIFICATION,
-  OTHER_MENU_CODES,
 } from '@/constants/menus.constants';
-import useConversation from '@/hooks/useConversation';
 import NewHomeSection from '../NewHomeSection';
 import SpaceSection from '../SpaceSection';
 import SquareSection from '../SquareSection';
 import { useSidebarCollapse } from '../useSidebarCollapse';
-import {
-  handleOpenUrl,
-  isHttpMenuPath,
-  isOpenIframePath,
-  navigateOpenIframePath,
-  normalizeMenuPathname,
-  removePathUrlFromLocalStorage,
-} from '../utils';
+import { useMenuNavigation } from '../useMenuNavigation';
+import { handleOpenUrl } from '../utils';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -106,8 +96,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   isMobile = false,
   suppressSecondMenu = false,
 }) => {
-  const location = useLocation();
-  const params = useParams();
   const { token } = theme.useToken();
   const { effectiveNavigationStyle, layoutStyle } = useUnifiedTheme();
   const {
@@ -115,41 +103,27 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     setIsSecondMenuCollapsed,
     setOpenMessage,
     setOpenAdmin,
-    handleCloseMobileMenu,
   } = useModel('layout');
 
   // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
-  const { firstLevelMenus, otherMenus, hasPathUnderFirstLevelMenu } =
-    useModel('menuModel');
+  const { firstLevelMenus, otherMenus } = useModel('menuModel');
 
   const { refreshUserInfo, userInfo } = useModel('userInfo');
 
-  // 工作空间下的最近编辑和开发收藏
-  const { runEdit } = useModel('devCollectAgent');
-
-  // 当前激活的一级菜单 code
-  const [activeTab, setActiveTab] = useState<string>('');
-
-  // 是否点击了新对话菜单，特殊处理，用于显示title时使用
-  const [isClickNewConversation, setIsClickNewConversation] =
-    useState<boolean>(false);
-
-  // 创建智能体会话
-  const { handleCreateConversation } = useConversation();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 折叠态展开按钮（原位复刻收起按钮位置，侧栏收起后顶栏不可点）
   const { toggleCollapse } = useSidebarCollapse();
 
-  // 是否点击菜单
-  const isClickMenu = useRef<boolean>(false);
-
-  const handlerClick = async () => {
-    if (tenantConfigInfo) {
-      // 创建智能体会话
-      await handleCreateConversation(tenantConfigInfo.defaultAgentId);
-    }
-  };
+  // 导航状态机（activeTab 路径同步/一级菜单点击等，与经典布局共用单源实现）
+  const {
+    activeTab,
+    setActiveTab,
+    isClickNewConversation,
+    isClickMenu,
+    handlerClick,
+    handleTabClick,
+  } = useMenuNavigation();
 
   // 新建任务入口（侧栏顶部操作区）：租户配置未就绪时兜底回首页
   const handleNewTask = () => {
@@ -159,176 +133,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       history.push('/home');
     }
   };
-
-  /**
-   * 递归检查菜单是否匹配当前路径
-   */
-  const isMenuMatch = (menu: MenuItemDto, pathname: string): boolean => {
-    const normalizedPathname = normalizeMenuPathname(pathname);
-
-    // 检查当前菜单路径
-    if (menu.path) {
-      // 移除查询参数（? 及后面的部分），因为 pathname 不包含查询参数
-      const menuPathWithoutQuery = menu.path.split('?')[0];
-
-      // 首页特殊处理 homepage 是动态菜单的编码，/home 是前端路由
-      if (menuPathWithoutQuery === '/homepage' || menuPathWithoutQuery === '') {
-        if (normalizedPathname === '/home' || normalizedPathname === '')
-          return true;
-      }
-      // 工作空间特殊处理，menu.path为/space 是工作空间的编码，pathname为/space/:spaceId/develop 是前端路由
-      else if (menuPathWithoutQuery === '/space') {
-        return normalizedPathname.startsWith(menuPathWithoutQuery);
-      } else {
-        // 通用处理：取第一个斜杠后的路径段进行匹配
-        // 例如 pathname 为 /system/demo，menuPathWithoutQuery 为 /system/menu/xxx
-        // 则都取第一个非空段 system 进行比较
-        const getFirstSegment = (p: string) =>
-          p.split('?')[0].split('/').filter(Boolean)[0] || '';
-
-        const pathFirstSegment = getFirstSegment(normalizedPathname);
-        const menuFirstSegment = getFirstSegment(menuPathWithoutQuery);
-
-        if (menuFirstSegment && menuFirstSegment === pathFirstSegment) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  };
-
-  /**
-   * 检查路径是否匹配（用于子菜单的精确匹配）
-   * @param menuPath 菜单路径
-   * @param pathname 当前路径
-   * @returns 是否匹配
-   */
-  const isPathMatch = useCallback(
-    (menuPath: string, pathname: string): boolean => {
-      if (!menuPath) return false;
-
-      const normalizedPathname = normalizeMenuPathname(pathname);
-
-      // 移除查询参数
-      const menuPathWithoutQuery = menuPath.split('?')[0];
-
-      // 精确匹配
-      if (normalizedPathname === menuPathWithoutQuery) {
-        return true;
-      }
-
-      // 前缀匹配（例如 /system/menu 匹配 /system/menu/xxx）
-      if (normalizedPathname.startsWith(menuPathWithoutQuery + '/')) {
-        return true;
-      }
-
-      // 处理动态路径（例如 /space/:spaceId/develop）
-      if (menuPathWithoutQuery.includes(':')) {
-        // 将动态路径转换为正则表达式
-        const pattern = menuPathWithoutQuery.replace(/:(\w+)/g, '[^/]+');
-        const regex = new RegExp(`^${pattern}(/.*)?$`);
-        return regex.test(normalizedPathname);
-      }
-
-      return false;
-    },
-    [],
-  );
-
-  /**
-   * 递归根据 code 查找菜单，并返回其第一级菜单的 code
-   * @param menuCode 需要匹配的菜单 code（可能是任意层级）
-   * @returns 匹配菜单所属的第一级菜单 code，未找到返回 null
-   */
-  const findFirstLevelCodeByMenuCode = useCallback(
-    (menuCode: string): string | null => {
-      if (!menuCode || !firstLevelMenus?.length) return null;
-
-      /**
-       * 深度优先遍历查找匹配的菜单
-       * @param menus 当前遍历的菜单列表
-       * @param firstLevelCode 当前遍历所在的一级菜单 code
-       */
-      const dfs = (
-        menus: MenuItemDto[],
-        firstLevelCode: string,
-      ): string | null => {
-        for (const menu of menus) {
-          // 命中任意层级的菜单，返回对应的一级菜单 code
-          if (menu.code === menuCode) {
-            return firstLevelCode;
-          }
-
-          if (menu.children?.length) {
-            const found = dfs(menu.children, firstLevelCode);
-            if (found) {
-              return found;
-            }
-          }
-        }
-        return null;
-      };
-
-      // 遍历所有一级菜单，从每个一级菜单开始向下递归查找
-      for (const topMenu of firstLevelMenus) {
-        const result = dfs(topMenu.children || [], topMenu.code);
-        // 也要判断一级菜单本身是否就是要找的 code
-        if (topMenu.code === menuCode) {
-          return topMenu.code;
-        }
-        if (result) {
-          return result;
-        }
-      }
-
-      return null;
-    },
-    [firstLevelMenus],
-  );
-
-  /**
-   * 递归查找匹配路径的菜单，并返回其第一级父菜单的 code
-   * @param menus 菜单列表
-   * @param pathname 当前路径
-   * @param firstLevelCode 第一级菜单的 code（用于递归时传递）
-   * @returns 匹配菜单的第一级父菜单的 code，如果未找到则返回 null
-   */
-  const findFirstLevelCodeByPath = useCallback(
-    (
-      menus: MenuItemDto[],
-      pathname: string,
-      firstLevelCode?: string,
-    ): string | null => {
-      for (const menu of menus) {
-        // 如果是第一级菜单，记录其 code
-        const currentFirstLevelCode = firstLevelCode || menu.code;
-
-        // 检查当前菜单是否匹配（一级菜单使用 isMenuMatch，子菜单使用 isPathMatch）
-        const isMatch = firstLevelCode
-          ? isPathMatch(menu.path || '', pathname)
-          : isMenuMatch(menu, pathname);
-
-        if (isMatch) {
-          return currentFirstLevelCode || null;
-        }
-
-        // 如果有子菜单，递归查找
-        if (menu.children && menu.children.length > 0) {
-          const foundCode = findFirstLevelCodeByPath(
-            menu.children,
-            pathname,
-            currentFirstLevelCode,
-          );
-          if (foundCode) {
-            return foundCode;
-          }
-        }
-      }
-      return null;
-    },
-    [isMenuMatch, isPathMatch],
-  );
 
   useEffect(() => {
     // 强制刷新获取用户信息
@@ -341,263 +145,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       setSecondMenuCollapsed: setIsSecondMenuCollapsed,
     });
   }, [setIsSecondMenuCollapsed]);
-
-  // 新对话菜单特殊处理
-  const handleNewConversation = useCallback(() => {
-    // 找到新对话菜单在同级别菜单中的位置，然后设置 activeTab 为下一个菜单
-    const currentIndex = firstLevelMenus.findIndex(
-      (m: MenuItemDto) => m.code === 'new_conversation',
-    );
-    if (currentIndex !== -1 && currentIndex < firstLevelMenus.length - 1) {
-      // 如果存在下一个菜单，设置为下一个菜单
-      const nextMenu = firstLevelMenus[currentIndex + 1];
-      setActiveTab(nextMenu.code as string);
-    }
-  }, [firstLevelMenus]);
-
-  // 刷新的时候触发，如果点击了一级菜单，则不触发
-  // 根据路径匹配当前激活的一级菜单
-  useEffect(() => {
-    /**
-     * 这里特殊处理，如果路径是/agent/xxx，则设置为首页
-     * 场景：从工作空间-空间广场，点击智能体，跳转至智能体详情页，此时路径为/agent/xxx，但是需要显示为首页，不然二级菜单点击会因为无法匹配动态路径而报错
-     */
-    const pathname = normalizeMenuPathname(location.pathname);
-
-    if (pathname.startsWith('/agent/') && params?.agentId) {
-      setActiveTab('homepage');
-      return;
-    }
-
-    // 广场特殊处理，如果路径是/square?cate_type=Agent，则设置为广场
-    if (
-      pathname.startsWith('/square') &&
-      location.search.includes('cate_type=')
-    ) {
-      setActiveTab('system_square');
-      return;
-    }
-
-    // 更多页面特殊处理，如果路径是/more-page，则设置为更多页面
-    if (pathname.startsWith('/more-page')) {
-      setActiveTab('more_page');
-      return;
-    }
-
-    // 多语言内容特殊处理，如果路径是/system/config/lang-content/:lang，则设置一级菜单选中系统管理
-    // 积分流水查询特殊处理，如果路径是/system/subscription-credits/credit-records，则设置一级菜单选中系统管理
-    if (
-      pathname.startsWith('/system/config/lang-content') ||
-      pathname.startsWith('/system/subscription-credits/credit-records')
-    ) {
-      setActiveTab('system_manage');
-      return;
-    }
-
-    // 如果点击了一级菜单，并且没有悬浮菜单，则不触发刷新
-    // if (isClickMenu.current && !showHoverMenu) {
-    if (isClickMenu.current) {
-      isClickMenu.current = false;
-      return;
-    }
-
-    if (!firstLevelMenus.length) return;
-
-    // 查找匹配当前路径的菜单
-    const matchedMenu = firstLevelMenus.find((menu: MenuItemDto) =>
-      isMenuMatch(menu, pathname),
-    );
-
-    if (matchedMenu && matchedMenu.code !== 'new_conversation') {
-      setActiveTab(matchedMenu.code);
-    }
-    // 根路径如果是新对话菜单,新对话菜单不显示
-    else if (pathname === '' || pathname === '/') {
-      if (firstLevelMenus[0].code !== 'new_conversation') {
-        setActiveTab(firstLevelMenus[0].code);
-      } else {
-        // 新对话菜单特殊处理
-        handleNewConversation();
-      }
-    }
-    // 首页
-    else if (pathname === '/home') {
-      // 默认选中首页
-      setActiveTab('homepage');
-    } else {
-      // 获取菜单码
-      const menuCode = params?.menuCode || location.state?.menuCode;
-      // 根据菜单码或路径获取第一级菜单的 code
-      let firstLevelCode = null;
-      // 如果菜单码存在，则根据菜单码获取第一级菜单的 code
-      if (menuCode) {
-        firstLevelCode = findFirstLevelCodeByMenuCode(menuCode);
-      } else {
-        // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
-        firstLevelCode = findFirstLevelCodeByPath(firstLevelMenus, pathname);
-      }
-
-      // 存在第一级菜单 of the code 且不是新对话菜单，则设置为第一级菜单的 code
-      if (firstLevelCode && firstLevelCode !== 'new_conversation') {
-        setActiveTab(firstLevelCode);
-      } else if (OTHER_MENU_CODES.includes(menuCode || '')) {
-        // 其它需要单独分离的菜单（如我的电脑、更多页面）直接设置为当前 code
-        setActiveTab(menuCode as string);
-      }
-      // 新对话菜单特殊处理：如果第一级菜单的 code 是 new_conversation，则设置为 new_conversation
-      else if (firstLevelCode === 'new_conversation') {
-        handleNewConversation();
-      } else {
-        // 如果第一级菜单没有匹配到，则获取除新对话菜单外的第一个菜单
-        const filteredNewConversationFirstLevelMenus = firstLevelMenus.filter(
-          (menu: MenuItemDto) => menu.code !== 'new_conversation',
-        );
-        setActiveTab(filteredNewConversationFirstLevelMenus[0]?.code || '');
-      }
-    }
-  }, [location.pathname, params, firstLevelMenus, handleNewConversation]);
-
-  const handleRefreshEditAndCollect = useCallback(() => {
-    // 最近编辑
-    runEdit({
-      size: 5,
-    });
-  }, []);
-
-  /**
-   * 递归查找第一个有 path 的子菜单
-   * 如果第一个子菜单没有 path 但有 children，继续递归查找
-   */
-  const findFirstChildWithPath = useCallback(
-    (menu: MenuItemDto): MenuItemDto | null => {
-      // 如果当前菜单有 path，直接返回
-      if (menu.path) {
-        return menu;
-      }
-
-      // 如果没有子菜单，返回 null
-      if (!menu.children?.length) {
-        return null;
-      }
-
-      // 获取第一个子菜单
-      const firstChild = menu.children[0];
-
-      // 递归查找第一个子菜单的 path
-      return findFirstChildWithPath(firstChild);
-    },
-    [],
-  );
-
-  /**
-   * 点击一级菜单
-   */
-  const handleTabClick = useCallback(
-    (menu: MenuItemDto) => {
-      // 是否点击了一级菜单
-      isClickMenu.current = true;
-      // 关闭移动端菜单
-      handleCloseMobileMenu();
-
-      // 新对话,特殊处理，因为新对话时，不能选中新对话的菜单，需要跳转到下一个菜单
-      if (menu.code === 'new_conversation') {
-        // 如果用户匹配了路径，则处理路径，否则按照原逻辑创建智能体会话
-        if (menu.path) {
-          if (isHttpMenuPath(menu.path)) {
-            handleOpenUrl(menu);
-          } else {
-            history.push(menu.path);
-          }
-        } else {
-          handlerClick();
-
-          setIsClickNewConversation(true);
-
-          // 新对话菜单特殊处理
-          handleNewConversation();
-        }
-        return;
-      }
-
-      // 设置当前激活的菜单
-      setActiveTab(menu.code || '');
-      // http 或 %siteUrl% 开头的路径，直接打开
-      if (menu.path && isHttpMenuPath(menu.path)) {
-        handleOpenUrl(menu);
-        return;
-      }
-
-      // 点击其他菜单，则设置为 false
-      setIsClickNewConversation(false);
-
-      if (menu.code === 'workspace') {
-        handleRefreshEditAndCollect();
-
-        // 防止系统设置中工作空间没有设置路径，导致跳转失败
-        const url = menu.path || '/space';
-        history.push(url, { _t: Date.now(), menuCode: menu.code });
-        return;
-      }
-
-      try {
-        // 从缓存中获取当前路径，如果存在且匹配当前菜单，则直接跳转
-        const pathUrl = localStorage.getItem(PATH_URL);
-        if (pathUrl && menu.code) {
-          const pathUrlObj = JSON.parse(pathUrl);
-          const pathUrlValue = pathUrlObj[menu.code];
-
-          // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
-          const hasPath = hasPathUnderFirstLevelMenu(menu.code, pathUrlValue);
-          if (hasPath) {
-            if (pathUrlValue && !pathUrlValue.includes(':')) {
-              if (isOpenIframePath(pathUrlValue)) {
-                navigateOpenIframePath(pathUrlValue, { menuCode: menu.code });
-              } else {
-                history.push(pathUrlValue, {
-                  _t: Date.now(),
-                  menuCode: menu.code,
-                });
-              }
-              return;
-            }
-          } else {
-            // 缓存路径已不在当前菜单树中，清除无效的 workspace 记录
-            removePathUrlFromLocalStorage(menu.code);
-          }
-        }
-      } catch {}
-
-      if (menu.path) {
-        if (isOpenIframePath(menu.path)) {
-          navigateOpenIframePath(menu.path, { menuCode: menu.code });
-        } else {
-          history.push(menu.path, { _t: Date.now(), menuCode: menu.code });
-        }
-      } else if (menu.children?.length) {
-        // 递归查找第一个有 path 的子菜单
-        const firstPathMenu = findFirstChildWithPath(menu);
-        if (firstPathMenu) {
-          // http 或 %siteUrl% 开头的路径，直接打开
-          if (firstPathMenu.path && isHttpMenuPath(firstPathMenu.path)) {
-            handleOpenUrl(firstPathMenu);
-            return;
-          }
-          // 其他路径，跳转路由
-          history.push(firstPathMenu.path, {
-            _t: Date.now(),
-            menuCode: firstPathMenu.code,
-          });
-        }
-      }
-    },
-    [
-      handleCloseMobileMenu,
-      findFirstChildWithPath,
-      handleRefreshEditAndCollect,
-      handlerClick,
-      handleNewConversation,
-    ],
-  );
 
   /**
    * 用户区域操作

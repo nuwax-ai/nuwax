@@ -23,7 +23,7 @@ export interface UseChatFinishedWhenListExecutingOptions {
 /**
  * 会话列表侧栏：存在执行中任务时订阅 ChatFinished，任务结束后刷新列表项状态
  *
- * 用于 HomeSection、OpenApp BaseTemplate 等展示历史会话列表的场景，
+ * 用于 NewHomeSection、OpenApp BaseTemplate 等展示历史会话列表的场景，
  * 与 subscribeChatFinishedTaskSync（单会话 taskStatus 同步）互补。
  */
 export function useChatFinishedWhenListExecuting({
