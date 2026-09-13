@@ -59,15 +59,17 @@ describe('常规项目与项目标记接口契约', () => {
     });
   });
 
-  it('项目收藏/取消收藏为双路径接口且无参数（2026-09-13 契约）', async () => {
-    await apiUserProjectCollect(32);
+  it('项目收藏/取消收藏为双路径接口且必传 projectType（2026-09-13 契约）', async () => {
+    await apiUserProjectCollect(32, 'NormalProject');
     expect(request).toHaveBeenLastCalledWith('/api/user-project/collect/32', {
       method: 'POST',
+      params: { projectType: 'NormalProject' },
     });
 
-    await apiUserProjectUnCollect(32);
+    await apiUserProjectUnCollect(32, 'UserApp');
     expect(request).toHaveBeenLastCalledWith('/api/user-project/unCollect/32', {
       method: 'POST',
+      params: { projectType: 'UserApp' },
     });
   });
 });

@@ -392,9 +392,10 @@ const ProjectPanel = forwardRef<
         return;
       }
       void (async () => {
+        // projectType 为后端必传 query 参数（项目归属校验，同 conversation/create 口径）
         const res = await (enabled
-          ? apiUserProjectCollect(project.id)
-          : apiUserProjectUnCollect(project.id)
+          ? apiUserProjectCollect(project.id, project.projectType as string)
+          : apiUserProjectUnCollect(project.id, project.projectType as string)
         ).catch(() => null);
         if (res?.code !== SUCCESS_CODE) {
           message.error(dict('PC.Common.Global.operationFailed'));

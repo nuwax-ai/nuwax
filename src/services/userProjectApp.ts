@@ -130,20 +130,25 @@ export async function apiUserProjectArchive(
   });
 }
 
-/** 项目收藏（2026-09-13 契约：与 pin/archive 不同，collect/unCollect 为双路径，无参数） */
+/** 项目收藏（2026-09-13 契约：与 pin/archive 不同，collect/unCollect 为双路径；
+ * projectType 为必传 query 参数，同 conversation/create 的绑定校验口径） */
 export async function apiUserProjectCollect(
   id: number,
+  projectType: string,
 ): Promise<RequestResponse<null>> {
   return request(`/api/user-project/collect/${id}`, {
     method: 'POST',
+    params: { projectType },
   });
 }
 
-/** 项目取消收藏（同上，双路径独立接口） */
+/** 项目取消收藏（同上，双路径独立接口，projectType 必传） */
 export async function apiUserProjectUnCollect(
   id: number,
+  projectType: string,
 ): Promise<RequestResponse<null>> {
   return request(`/api/user-project/unCollect/${id}`, {
     method: 'POST',
+    params: { projectType },
   });
 }
