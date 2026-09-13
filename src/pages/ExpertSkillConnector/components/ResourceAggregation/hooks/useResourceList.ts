@@ -209,7 +209,8 @@ const RESOURCE_ADAPTERS: Record<
     // category=Agent（tab 维度）+ justReturnSpaceData 只查空间已发布内容；
     // 二级 tab 即空间选择（首位「全部」页签经 spaceIds 聚合全部空间，与
     // 能力弹窗同口径——单元素回退 spaceId；具体空间传 spaceId）；
-    // 与系统广场同口径仅展示官方智能体（official: true）
+    // 不传 official：空间维度返回全部已发布智能体（含非官方），
+    // 与系统广场维度（仅官方）刻意区分
     team: {
       mode: 'server',
       fetchPage: ({ page, pageSize, keyword, spaceId, spaceIds }) =>
@@ -227,14 +228,13 @@ const RESOURCE_ADAPTERS: Record<
             : spaceId
             ? { spaceId }
             : {}),
-          // 仅展示官方智能体（与系统广场维度同口径）
-          official: true,
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'space-agent'),
     },
   },
   skill: {
-    // 系统广场-已发布技能（服务端分页）
+    // 系统广场-已发布技能（服务端分页）；仅展示官方技能（official: true，
+    // 与专家-系统广场同口径）
     system: {
       mode: 'server',
       fetchPage: ({ page, pageSize, category, keyword }) =>
@@ -243,6 +243,7 @@ const RESOURCE_ADAPTERS: Record<
           pageSize,
           category,
           kw: keyword || undefined,
+          official: true,
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'skill'),
     },
