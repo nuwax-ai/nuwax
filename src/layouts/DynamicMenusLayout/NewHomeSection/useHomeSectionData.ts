@@ -70,6 +70,11 @@ export interface HomeSectionDataShell {
     kind: 'pinned' | 'archived',
     enabled: boolean,
   ) => void;
+  /** 收藏标记成功后同步本地列表（collect/unCollect 双路径接口，2026-09-13） */
+  handleConversationCollectedChanged: (
+    conversationId: number,
+    collected: boolean,
+  ) => void;
   /** 项目分组可见数（分组头计数用） */
   projectCount: number;
   handleProjectCountChange: (count: number) => void;
@@ -244,6 +249,18 @@ export function useHomeSectionData(options: {
       setLocalList((prev) =>
         prev.map((item) =>
           item.id === conversationId ? { ...item, [kind]: enabled } : item,
+        ),
+      );
+    },
+    [],
+  );
+
+  // 收藏标记同步：不影响任务列表可见性/排序，无回包复活问题，不进 TTL 覆盖体系
+  const handleConversationCollectedChanged = useCallback(
+    (conversationId: number, collected: boolean) => {
+      setLocalList((prev) =>
+        prev.map((item) =>
+          item.id === conversationId ? { ...item, collected } : item,
         ),
       );
     },
@@ -476,6 +493,7 @@ export function useHomeSectionData(options: {
     resetSearchAndRefresh,
     handleConversationClick,
     handleConversationFlagChanged,
+    handleConversationCollectedChanged,
     projectCount,
     handleProjectCountChange,
     activeProjectChildId,

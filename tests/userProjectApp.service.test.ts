@@ -4,7 +4,9 @@ import {
   apiNormalProjectLatestConversation,
   apiNormalProjectUpdate,
   apiUserProjectArchive,
+  apiUserProjectCollect,
   apiUserProjectPin,
+  apiUserProjectUnCollect,
 } from '@/services/userProjectApp';
 import { request } from 'umi';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -53,6 +55,18 @@ describe('常规项目与项目标记接口契约', () => {
 
     await apiUserProjectArchive(32);
     expect(request).toHaveBeenLastCalledWith('/api/user-project/archive/32', {
+      method: 'POST',
+    });
+  });
+
+  it('项目收藏/取消收藏为双路径接口且无参数（2026-09-13 契约）', async () => {
+    await apiUserProjectCollect(32);
+    expect(request).toHaveBeenLastCalledWith('/api/user-project/collect/32', {
+      method: 'POST',
+    });
+
+    await apiUserProjectUnCollect(32);
+    expect(request).toHaveBeenLastCalledWith('/api/user-project/unCollect/32', {
       method: 'POST',
     });
   });

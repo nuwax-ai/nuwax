@@ -126,6 +126,7 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
                 currentTopic={conversation.topic ?? ''}
                 pinned={conversation.pinned === true}
                 archived={conversation.archived === true}
+                collected={conversation.collected === true}
                 showMoreButton
               >
                 {(moreButton) => (

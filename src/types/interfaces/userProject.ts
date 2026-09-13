@@ -47,6 +47,8 @@ export type UserProjectPageQueryParams = TablePageRequest<
     projectType: AgentComponentTypeEnum;
     // 项目名称（模糊匹配）
     name: string;
+    // 收藏过滤：all=全部（后端默认）；only=仅收藏（2026-09-13 契约先行，UI 暂未消费）
+    collectedFilter: 'all' | 'only';
   }>
 >;
 
@@ -128,6 +130,8 @@ export interface UserProjectTabItem {
   pinned?: boolean;
   /** 项目归档标记（同上，契约先行防御式） */
   archived?: boolean;
+  /** 项目收藏标记（2026-09-13 collect/unCollect 接口上线，列表回读打标） */
+  collected?: boolean;
   /** 更新时间 */
   modified: string;
   /** 创建时间 */

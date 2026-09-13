@@ -13,8 +13,10 @@ import {
   apiUserAppDelete,
   apiUserAppUpdate,
   apiUserProjectArchive,
+  apiUserProjectCollect,
   apiUserProjectPin,
   apiUserProjectTabPageQuery,
+  apiUserProjectUnCollect,
 } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
@@ -27,6 +29,8 @@ import {
   LoadingOutlined,
   PushpinFilled,
   PushpinOutlined,
+  StarFilled,
+  StarOutlined,
 } from '@ant-design/icons';
 import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -91,9 +95,8 @@ export interface ProjectItem {
  * 数据走 apiUserProjectTabPageQuery（2026-09-08 新接口：项目列表附带各项目会话列表）；
  * 项目层分页（2026-09-12）：首屏 20 条 +「查看更多」按页追加、按 projectId 去重合并；
  * 重命名/删除已接真实接口（项目→normal-project/userapp、子项会话→agent conversation，
- * wiki 2026-09-11 v2 契约）；置顶/归档走 user-project pin/archive（同契约，回读字段
- * 就位后自动恢复），PageApp 契约未覆盖改名删除/置顶归档暂维持本地；
- * 收藏接口未 ready，按产品要求关闭入口。
+ * wiki 2026-09-11 v2 契约）；置顶/归档/收藏走 user-project pin/archive/collect
+ * （同契约，回读字段就位后自动恢复），PageApp 契约未覆盖改名删除/置顶归档暂维持本地。
  */
 export interface ProjectPanelHandle {
   toggleAll: () => void;
@@ -133,9 +136,12 @@ const ProjectPanel = forwardRef<
     const [collapsedIds, setCollapsedIds] = useState<Set<number>>(
       () => new Set(),
     );
-    // 项目级标记：置顶/归档回读自后端字段（字段未返回时不标记）
+    // 项目级标记：置顶/归档/收藏回读自后端字段（字段未返回时不标记）
     const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => new Set());
     const [archivedIds, setArchivedIds] = useState<Set<number>>(
+      () => new Set(),
+    );
+    const [collectedIds, setCollectedIds] = useState<Set<number>>(
       () => new Set(),
     );
     // 子项重命名弹窗状态(projectId + childId 定位目标子项)
@@ -176,9 +182,9 @@ const ProjectPanel = forwardRef<
             setProjects((previous) =>
               options.append ? appendProjectsPage(previous, mapped) : mapped,
             );
-            // 置顶/归档回读恢复(wiki 2026-09-11 行6 契约先行:字段未返回时不标记;
+            // 置顶/归档/收藏回读恢复(wiki 2026-09-11 行6 契约先行:字段未返回时不标记;
             // 追加页只并入新标记,不回退已加载页)
-            const pageFlagIds = (flag: 'pinned' | 'archived') =>
+            const pageFlagIds = (flag: 'pinned' | 'archived' | 'collected') =>
               new Set(
                 records
                   .filter((item) => item[flag] === true)
@@ -193,6 +199,11 @@ const ProjectPanel = forwardRef<
               options.append
                 ? mergeFlagIds(previous, pageFlagIds('archived'))
                 : pageFlagIds('archived'),
+            );
+            setCollectedIds((previous) =>
+              options.append
+                ? mergeFlagIds(previous, pageFlagIds('collected'))
+                : pageFlagIds('collected'),
             );
             pageRef.current = page;
             setTotal(res.data.total ?? 0);
@@ -349,6 +360,57 @@ const ProjectPanel = forwardRef<
       })();
     };
 
+    // 项目收藏 toggle：与 pin/archive 不同，collect/unCollect 为双路径接口，
+    // 按当前状态选择（2026-09-13 上线）。PageApp 同 pin/archive 口径暂本地。
+    // 后端成功才更新标记，失败 toast 不动状态;toast 文案与任务会话菜单同款
+    const toggleProjectCollected = (project: ProjectItem) => {
+      const enabled = !collectedIds.has(project.id);
+      const applyCollected = () => {
+        setCollectedIds((prev) => {
+          const next = new Set(prev);
+          if (next.has(project.id)) {
+            next.delete(project.id);
+          } else {
+            next.add(project.id);
+          }
+          return next;
+        });
+      };
+
+      const usesRealApi =
+        project.projectType === AgentComponentTypeEnum.NormalProject ||
+        project.projectType === AgentComponentTypeEnum.UserApp;
+      if (!usesRealApi) {
+        applyCollected();
+        message.success(
+          dict(
+            enabled
+              ? 'PC.Components.ConversationContextMenu.collectedToast'
+              : 'PC.Components.ConversationContextMenu.uncollectedToast',
+          ),
+        );
+        return;
+      }
+      void (async () => {
+        const res = await (enabled
+          ? apiUserProjectCollect(project.id)
+          : apiUserProjectUnCollect(project.id)
+        ).catch(() => null);
+        if (res?.code !== SUCCESS_CODE) {
+          message.error(dict('PC.Common.Global.operationFailed'));
+          return;
+        }
+        applyCollected();
+        message.success(
+          dict(
+            enabled
+              ? 'PC.Components.ConversationContextMenu.collectedToast'
+              : 'PC.Components.ConversationContextMenu.uncollectedToast',
+          ),
+        );
+      })();
+    };
+
     // 项目重命名:常规项目/全栈应用走真实接口,PageApp 契约未覆盖暂维持本地改名
     const handleProjectRenameSubmit = async () => {
       const trimmed = projectRenameName.trim();
@@ -405,11 +467,16 @@ const ProjectPanel = forwardRef<
             next.delete(project.id);
             return next;
           });
+          setCollectedIds((prev) => {
+            const next = new Set(prev);
+            next.delete(project.id);
+            return next;
+          });
         },
       });
     };
 
-    // 项目行右键菜单:置顶/归档/重命名/删除；收藏接口未 ready，暂不展示
+    // 项目行右键菜单:置顶/归档/收藏/重命名/删除
     const buildProjectMenu = (project: ProjectItem) => ({
       items: [
         {
@@ -430,6 +497,19 @@ const ProjectPanel = forwardRef<
               : 'PC.Components.ConversationContextMenu.archive',
           ),
         },
+        {
+          key: 'collect',
+          icon: collectedIds.has(project.id) ? (
+            <StarFilled />
+          ) : (
+            <StarOutlined />
+          ),
+          label: dict(
+            collectedIds.has(project.id)
+              ? 'PC.Components.ConversationContextMenu.unfavorite'
+              : 'PC.Components.ConversationContextMenu.favorite',
+          ),
+        },
         { type: 'divider' as const },
         {
           key: 'rename',
@@ -448,6 +528,8 @@ const ProjectPanel = forwardRef<
           toggleProjectFlag('pinned', project);
         } else if (key === 'archive') {
           toggleProjectFlag('archived', project);
+        } else if (key === 'collect') {
+          toggleProjectCollected(project);
         } else if (key === 'rename') {
           setRenameProjectId(project.id);
           setProjectRenameName(project.name);

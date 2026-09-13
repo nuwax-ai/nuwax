@@ -129,3 +129,21 @@ export async function apiUserProjectArchive(
     method: 'POST',
   });
 }
+
+/** 项目收藏（2026-09-13 契约：与 pin/archive 不同，collect/unCollect 为双路径，无参数） */
+export async function apiUserProjectCollect(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user-project/collect/${id}`, {
+    method: 'POST',
+  });
+}
+
+/** 项目取消收藏（同上，双路径独立接口） */
+export async function apiUserProjectUnCollect(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user-project/unCollect/${id}`, {
+    method: 'POST',
+  });
+}

@@ -60,6 +60,8 @@ export interface AgentRecentConversationInfo {
   pinned?: boolean;
   /** 会话级服务端归档状态 */
   archived?: boolean;
+  /** 会话级服务端收藏状态（2026-09-13 collect/unCollect 上线，列表回读打标） */
+  collected?: boolean;
   /** 会话更新时间(接口当前未返回,后端补字段后自动展示) */
   modified?: string;
 }

@@ -1,87 +1,65 @@
-import {
-  CONVERSATION_FAVORITES_EVENT,
-  isFavoriteConversation,
-  loadFavoriteConversationIds,
-  removeFavoriteConversation,
-  toggleFavoriteConversation,
-} from '@/utils/conversationFavorites';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { apiAgentConversationCollect } from '@/services/agentConfig';
+import { migrateLocalConversationFavorites } from '@/utils/conversationFavorites';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// 迁移模块 import 服务层（传递依赖 umi），vitest 环境须 mock
+vi.mock('@/services/agentConfig', () => ({
+  apiAgentConversationCollect: vi.fn().mockResolvedValue({ code: '0000' }),
+}));
 
 const KEY = 'conversation_favorite_ids';
 const LEGACY_KEY = 'conversation_local_flags';
+const MIGRATED_KEY = 'conversation_favorite_migrated';
 
-describe('会话收藏本地存储', () => {
+describe('会话收藏本地数据一次性迁移（2026-09-13 后端化收尾）', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     localStorage.clear();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  it('无本地数据时不发请求，仅写迁移标记', async () => {
+    await migrateLocalConversationFavorites();
+    expect(apiAgentConversationCollect).not.toHaveBeenCalled();
+    expect(localStorage.getItem(MIGRATED_KEY)).toBe('1');
   });
 
-  it('空存储时读取为空数组', () => {
-    expect(loadFavoriteConversationIds()).toEqual([]);
-    expect(isFavoriteConversation(1)).toBe(false);
+  it('本地收藏逐个上报 collect，完成后清键并写标记', async () => {
+    localStorage.setItem(KEY, JSON.stringify([8, 9, 8]));
+    await migrateLocalConversationFavorites();
+    expect(apiAgentConversationCollect).toHaveBeenCalledTimes(2);
+    expect(apiAgentConversationCollect).toHaveBeenCalledWith(8);
+    expect(apiAgentConversationCollect).toHaveBeenCalledWith(9);
+    expect(localStorage.getItem(KEY)).toBeNull();
+    expect(localStorage.getItem(MIGRATED_KEY)).toBe('1');
   });
 
-  it('toggle 写入存储并派发全局事件', () => {
-    const handler = vi.fn();
-    window.addEventListener(CONVERSATION_FAVORITES_EVENT, handler);
-    try {
-      expect(toggleFavoriteConversation(7)).toBe(true);
-      expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual([7]);
-      expect(handler).toHaveBeenCalledTimes(1);
-
-      expect(toggleFavoriteConversation(7)).toBe(false);
-      expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual([]);
-      expect(handler).toHaveBeenCalledTimes(2);
-    } finally {
-      window.removeEventListener(CONVERSATION_FAVORITES_EVENT, handler);
-    }
-  });
-
-  it('显式传入目标状态生效，且 id 去重', () => {
-    toggleFavoriteConversation(3, true);
-    toggleFavoriteConversation(3, true);
-    expect(loadFavoriteConversationIds()).toEqual([3]);
-    toggleFavoriteConversation(3, false);
-    expect(loadFavoriteConversationIds()).toEqual([]);
-  });
-
-  it('删除会话时清理收藏残留', () => {
-    toggleFavoriteConversation(5);
-    toggleFavoriteConversation(6);
-    removeFavoriteConversation(5);
-    expect(loadFavoriteConversationIds()).toEqual([6]);
-  });
-
-  it('首读迁移旧方案 collected 数据并落入新键', () => {
+  it('旧方案 conversation_local_flags.v1 的 collected 数据同样上报', async () => {
     localStorage.setItem(
       LEGACY_KEY,
-      JSON.stringify({
-        version: 1,
-        pinned: [1],
-        archived: [2],
-        collected: [8, 8, 9],
-      }),
+      JSON.stringify({ version: 1, collected: [5] }),
     );
-    expect(loadFavoriteConversationIds()).toEqual([8, 9]);
-    // 迁移后新键生效，旧键不再参与读取
-    expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual([8, 9]);
-    removeFavoriteConversation(8);
-    expect(loadFavoriteConversationIds()).toEqual([9]);
+    await migrateLocalConversationFavorites();
+    expect(apiAgentConversationCollect).toHaveBeenCalledWith(5);
+    expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
+    expect(localStorage.getItem(MIGRATED_KEY)).toBe('1');
   });
 
-  it('旧键版本不符时不迁移', () => {
-    localStorage.setItem(
-      LEGACY_KEY,
-      JSON.stringify({ version: 2, collected: [8] }),
-    );
-    expect(loadFavoriteConversationIds()).toEqual([]);
+  it('单个上报失败容错跳过，仍清键写标记（幂等收尾）', async () => {
+    localStorage.setItem(KEY, JSON.stringify([1, 2]));
+    vi.mocked(apiAgentConversationCollect)
+      .mockResolvedValueOnce({ code: '1001' } as never)
+      .mockRejectedValueOnce(new Error('network') as never);
+    await migrateLocalConversationFavorites();
+    expect(apiAgentConversationCollect).toHaveBeenCalledTimes(2);
+    expect(localStorage.getItem(KEY)).toBeNull();
+    expect(localStorage.getItem(MIGRATED_KEY)).toBe('1');
   });
 
-  it('存储内容损坏时读取为空且不抛错', () => {
-    localStorage.setItem(KEY, 'not-json');
-    expect(loadFavoriteConversationIds()).toEqual([]);
+  it('迁移标记存在时直接返回（幂等防重入）', async () => {
+    localStorage.setItem(MIGRATED_KEY, '1');
+    localStorage.setItem(KEY, JSON.stringify([8]));
+    await migrateLocalConversationFavorites();
+    expect(apiAgentConversationCollect).not.toHaveBeenCalled();
+    expect(localStorage.getItem(KEY)).toBe('[8]');
   });
 });
