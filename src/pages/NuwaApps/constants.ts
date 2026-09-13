@@ -7,7 +7,7 @@ export const SQUARE_PAGE_APP_PATH = '/square?cate_type=PageApp';
 /** 列表每页数量(与广场一致) */
 export const APP_LIST_PAGE_SIZE = 48;
 
-/** 最近使用列表拉取条数(接口路径参数,暂写死 200) */
+/** 最近使用列表拉取条数(recentlyUsed/list 请求体参数,暂写死 200) */
 export const RECENT_USED_SIZE = 200;
 
 /** 应用列表滚动容器 id(无限滚动加载挂载目标) */

@@ -1,21 +1,19 @@
 /**
  * 女娲应用页面(一级菜单入口)
- * @description 应用分发页:最近使用(used/list 接口,点击续上次会话)+ 应用列表区
+ * @description 应用分发页:最近使用(POST recentlyUsed/list 接口,点击进应用详情)+ 应用列表区
  * (主tab:系统应用/团队空间两维度共用 POST app/list,scope 区分,
  * 两 tab 均滚动触底分页追加;点击进应用详情 /agent/:id);「更多」跳广场-网页应用
  */
 import agentImage from '@/assets/images/agent_image.png';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
-import { apiUserUsedAgentList } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedAppList,
+  apiPublishedAppRecentlyUsedList,
   apiPublishedCategoryList,
 } from '@/services/square';
 import { apiSpaceList } from '@/services/workspace';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { AgentInfo } from '@/types/interfaces/agent';
 import type { Page } from '@/types/interfaces/request';
 import type {
   SquareCategoryInfo,
@@ -57,10 +55,11 @@ interface AppListQuery {
   kw: string;
 }
 
-/** 团队空间列表分页查询参数(runSpaceAppList 入参;「全部」不传 spaceId) */
+/** 团队空间列表分页查询参数(runSpaceAppList 入参;「全部」不传 spaceId,kw 搜索关键词) */
 interface SpaceAppListQuery {
   page: number;
   spaceId?: number;
+  kw: string;
 }
 
 const NuwaApps: React.FC = () => {
@@ -84,17 +83,13 @@ const NuwaApps: React.FC = () => {
     [],
   );
   // 最近使用列表
-  const [recentList, setRecentList] = useState<AgentInfo[]>([]);
+  const [recentList, setRecentList] = useState<SquarePublishedItemInfo[]>([]);
 
-  // 最近使用:GET /api/user/agent/used/list/{size},type=PageApp 过滤网页应用
+  // 最近使用:POST /api/published/app/recentlyUsed/list(全量数组,按最近使用排序)
   useRequest(
-    () =>
-      apiUserUsedAgentList({
-        size: RECENT_USED_SIZE,
-        type: AgentComponentTypeEnum.PageApp,
-      }),
+    () => apiPublishedAppRecentlyUsedList({ size: RECENT_USED_SIZE }),
     {
-      onSuccess: (result: AgentInfo[]) => {
+      onSuccess: (result: SquarePublishedItemInfo[]) => {
         setRecentList(result || []);
       },
       onError: () => setRecentList([]),
@@ -190,15 +185,17 @@ const NuwaApps: React.FC = () => {
 
   // 应用列表(团队空间 tab):POST /api/published/app/list,scope=space +
   // justReturnSpaceData=true 查空间已发布应用;「全部」不传 spaceId,
-  // 选中具体空间追加 spaceId;切换时重置回第一页,滚动触底按页码 +1 追加
+  // 选中具体空间追加 spaceId;kw 与系统应用 tab 同为服务端搜索;
+  // 切换时重置回第一页,滚动触底按页码 +1 追加
   const { run: runSpaceAppList, loading: spaceAppListLoading } = useRequest(
-    (query: { page: number; spaceId?: number }) =>
+    (query: { page: number; spaceId?: number; kw: string }) =>
       apiPublishedAppList({
         scope: 'space',
         justReturnSpaceData: true,
         spaceId: query.spaceId,
         page: query.page,
         pageSize: APP_LIST_PAGE_SIZE,
+        kw: query.kw || undefined,
       }),
     {
       manual: true,
@@ -242,12 +239,17 @@ const NuwaApps: React.FC = () => {
     runAppList({ page: 1, category: activeCategory, kw: keyword });
   }, [activeSource, activeCategory, keyword, runAppList]);
 
-  // 团队空间:「全部」不传 spaceId 查全部空间,具体空间传 id;切换时重置回第一页
+  // 团队空间:「全部」不传 spaceId 查全部空间,具体空间传 id;搜索词与系统应用
+  // tab 同口径参与查询;空间或关键词变化时重置回第一页
   useEffect(() => {
     if (activeSource !== 'team') return;
     const spaceId = Number(activeSpace);
-    runSpaceAppList({ page: 1, spaceId: spaceId > 0 ? spaceId : undefined });
-  }, [activeSource, activeSpace, runSpaceAppList]);
+    runSpaceAppList({
+      page: 1,
+      spaceId: spaceId > 0 ? spaceId : undefined,
+      kw: keyword,
+    });
+  }, [activeSource, activeSpace, keyword, runSpaceAppList]);
 
   // 滚动触底加载下一页(系统应用):沿用当前筛选,页码 +1 追加
   const loadMoreApps = () => {
@@ -259,13 +261,14 @@ const NuwaApps: React.FC = () => {
     });
   };
 
-  // 滚动触底加载下一页(团队空间):沿用当前空间(「全部」不传 spaceId),页码 +1 追加
+  // 滚动触底加载下一页(团队空间):沿用当前空间与搜索词(「全部」不传 spaceId),页码 +1 追加
   const loadMoreSpaceApps = () => {
     if (spaceAppListLoading || !spaceAppHasMore) return;
     const spaceId = Number(activeSpace);
     runSpaceAppList({
       page: spaceAppPageRef.current + 1,
       spaceId: spaceId > 0 ? spaceId : undefined,
+      kw: keyword,
     });
   };
 
@@ -274,13 +277,9 @@ const NuwaApps: React.FC = () => {
     history.push(SQUARE_PAGE_APP_PATH);
   };
 
-  // 最近使用点击:有最后一次会话则续会话,否则进应用详情
-  const handleRecentClick = (app: AgentInfo) => {
-    if (app.lastConversationId) {
-      history.push(`/home/chat/${app.lastConversationId}/${app.agentId}`);
-      return;
-    }
-    history.push(`/agent/${app.agentId}`);
+  // 最近使用点击:进应用详情(新接口条目为发布对象,无会话字段,不再续上次会话)
+  const handleRecentClick = (app: SquarePublishedItemInfo) => {
+    history.push(`/agent/${app.targetId}`);
   };
 
   // 当前 tab 的展示列表与加载态:仅首屏(第一页且列表为空)显示整屏 Loading,
