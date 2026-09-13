@@ -2,11 +2,7 @@ import ConversationContextMenu from '@/components/business-component/Conversatio
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import {
-  CONVERSATION_FAVORITES_EVENT,
-  loadFavoriteConversationIds,
-  removeFavoriteConversation,
-} from '@/utils/conversationFavorites';
+import { migrateLocalConversationFavorites } from '@/utils/conversationFavorites';
 import {
   applyConversationFlagOverrides,
   ConversationFlagOverride,
@@ -22,7 +18,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-/** 列表视图：全部（默认，隐藏归档）/ 已收藏（本地）/ 已归档（服务端） */
+/** 列表视图：全部（默认，隐藏归档）/ 已收藏（服务端）/ 已归档（服务端） */
 type ListViewMode = 'all' | 'collected' | 'archived';
 
 interface ConversationListProps {
@@ -49,33 +45,12 @@ const ConversationList = React.forwardRef<
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useSize(containerRef);
   const [viewMode, setViewMode] = useState<ListViewMode>('all');
-  // 收藏为本地存储（后端接口未上线）：菜单 toggle / 其他列表变更后经全局事件重读
-  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(
-    () => new Set(loadFavoriteConversationIds()),
-  );
+  // 旧 localStorage 收藏一次性迁移上报后端（幂等标记防重入，2026-09-13 收藏后端化）
+  useEffect(() => {
+    void migrateLocalConversationFavorites();
+  }, []);
   // 标记（置顶/归档）本地覆盖：防止刷新的滞后回包把刚归档的会话复活回列表
   const flagOverridesRef = useRef(new Map<string, ConversationFlagOverride>());
-
-  useEffect(() => {
-    const refreshFavorites = () =>
-      setFavoriteIds(new Set(loadFavoriteConversationIds()));
-    window.addEventListener(CONVERSATION_FAVORITES_EVENT, refreshFavorites);
-    // 会话删除后清理收藏残留（其他列表页删除的也一并生效）
-    const handleDeleted = (event: Event) => {
-      const id = (event as CustomEvent<{ id?: number }>).detail?.id;
-      if (typeof id === 'number') {
-        removeFavoriteConversation(id);
-      }
-    };
-    window.addEventListener('conversation-deleted', handleDeleted);
-    return () => {
-      window.removeEventListener(
-        CONVERSATION_FAVORITES_EVENT,
-        refreshFavorites,
-      );
-      window.removeEventListener('conversation-deleted', handleDeleted);
-    };
-  }, []);
 
   // 展示列表：全部视图隐藏归档项、置顶项排前；收藏/归档视图按各自口径过滤
   const visibleList = useMemo(() => {
@@ -83,14 +58,16 @@ const ConversationList = React.forwardRef<
       return list.filter((item) => item.archived === true);
     }
     if (viewMode === 'collected') {
-      // 收藏是跨归档的个人视图：已归档但收藏过的也保留
-      return list.filter((item) => favoriteIds.has(Number(item.id)));
+      // 收藏是跨归档的个人视图：已归档但收藏过的也保留。
+      // 服务端 collectedFilter=only 已过滤，这里按回包打标再滤一遍兜底
+      // （后端过滤未生效时不至于错显全部，2026-09-13）
+      return list.filter((item) => item.collected === true);
     }
     const nonArchived = list.filter((item) => item.archived !== true);
     return [...nonArchived].sort(
       (a, b) => Number(b.pinned === true) - Number(a.pinned === true),
     );
-  }, [list, viewMode, favoriteIds]);
+  }, [list, viewMode]);
 
   // 计算每页条数
   const calculatePageSize = () => {
@@ -122,6 +99,9 @@ const ConversationList = React.forwardRef<
             : viewMode === 'collected'
             ? 'all'
             : 'exclude',
+        // 收藏过滤走服务端（2026-09-13 上线）：已收藏视图只拉收藏项；
+        // collectedFilter 缺省=all，其余视图不传
+        collectedFilter: viewMode === 'collected' ? 'only' : undefined,
         lastId,
         limit: isRefresh ? pageSize : 20,
         topic: keyword || undefined,
@@ -217,7 +197,7 @@ const ConversationList = React.forwardRef<
     return () => container.removeEventListener('scroll', handleScroll);
   }, [loading, hasMore, list]);
 
-  // 视图分类 tab：全部 / 已收藏（本地）/ 已归档（服务端）
+  // 视图分类 tab：全部 / 已收藏（服务端）/ 已归档（服务端）
   const viewTabs: Array<{ key: ListViewMode; label: string }> = [
     { key: 'all', label: t('PC.Common.Global.all') },
     {
@@ -260,7 +240,7 @@ const ConversationList = React.forwardRef<
               currentTopic={item.topic}
               pinned={item.pinned === true}
               archived={item.archived === true}
-              collected={favoriteIds.has(Number(item.id))}
+              collected={item.collected === true}
               onFlagChanged={(kind, enabled) => {
                 recordConversationFlagOverride(
                   flagOverridesRef.current,
@@ -272,6 +252,16 @@ const ConversationList = React.forwardRef<
                   prev.map((conversation) =>
                     conversation.id === item.id
                       ? { ...conversation, [kind]: enabled }
+                      : conversation,
+                  ),
+                );
+              }}
+              onCollectedChanged={(collected) => {
+                // 收藏视图内取消收藏后，该行随 visibleList 过滤自动消失
+                setList((prev) =>
+                  prev.map((conversation) =>
+                    conversation.id === item.id
+                      ? { ...conversation, collected }
                       : conversation,
                   ),
                 );
@@ -349,7 +339,7 @@ const ConversationList = React.forwardRef<
               <Spin size="small" />
             </div>
           )}
-          {/* 收藏/归档视图空态提示（收藏走本地存储，归档由 archivedFilter=all 回读服务端状态） */}
+          {/* 收藏/归档视图空态提示（均走服务端过滤 + 回包打标兜底） */}
           {!loading &&
             viewMode !== 'all' &&
             visibleList.length === 0 &&

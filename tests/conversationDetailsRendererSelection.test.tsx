@@ -155,11 +155,11 @@ vi.mock('@/hooks/useSubscription', () => ({
   }),
 }));
 vi.mock('@/utils/router', () => ({ jumpToPageDevelop: vi.fn() }));
-vi.mock('@/utils/nuwaClawBridge', () => ({
+vi.mock('@/utils/hostBridge', () => ({
   needsTopRightAvoid: vi.fn(() => false),
   shellAvoid: vi.fn(),
-  isNuwaClaw: vi.fn(() => false),
-  nuwaClawHost: { theme: { syncTheme: vi.fn() } },
+  hasHostBridge: vi.fn(() => false),
+  hostBridge: { theme: { syncTheme: vi.fn() } },
 }));
 vi.mock('@/features/conversation/presentation-v2/react', () => ({
   ConversationRendererV2: () => <div data-testid="conversation-renderer-v2" />,

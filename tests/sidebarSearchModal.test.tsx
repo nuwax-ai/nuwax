@@ -56,7 +56,7 @@ vi.mock('@/layouts/DynamicMenusLayout/useSidebarCollapse', () => ({
   }),
 }));
 
-vi.mock('@/utils/nuwaClawBridge', () => ({
+vi.mock('@/utils/hostBridge', () => ({
   isMac: () => false,
   isImmersiveShell: () => false,
 }));

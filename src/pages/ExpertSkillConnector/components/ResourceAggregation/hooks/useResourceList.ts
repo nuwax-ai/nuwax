@@ -209,7 +209,8 @@ const RESOURCE_ADAPTERS: Record<
     // category=Agent（tab 维度）+ justReturnSpaceData 只查空间已发布内容；
     // 二级 tab 即空间选择（首位「全部」页签经 spaceIds 聚合全部空间，与
     // 能力弹窗同口径——单元素回退 spaceId；具体空间传 spaceId）；
-    // 与系统广场同口径仅展示官方智能体（official: true）
+    // 不传 official：空间维度返回全部已发布智能体（含非官方），
+    // 与系统广场维度（仅官方）刻意区分
     team: {
       mode: 'server',
       fetchPage: ({ page, pageSize, keyword, spaceId, spaceIds }) =>
@@ -227,14 +228,13 @@ const RESOURCE_ADAPTERS: Record<
             : spaceId
             ? { spaceId }
             : {}),
-          // 仅展示官方智能体（与系统广场维度同口径）
-          official: true,
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'space-agent'),
     },
   },
   skill: {
-    // 系统广场-已发布技能（服务端分页）
+    // 系统广场-已发布技能（服务端分页）；仅展示官方技能（official: true，
+    // 与专家-系统广场同口径）
     system: {
       mode: 'server',
       fetchPage: ({ page, pageSize, category, keyword }) =>
@@ -243,6 +243,7 @@ const RESOURCE_ADAPTERS: Record<
           pageSize,
           category,
           kw: keyword || undefined,
+          official: true,
         }),
       extract: (res, page) => extractPublishedPage(res, page, 'skill'),
     },
@@ -307,15 +308,16 @@ const RESOURCE_ADAPTERS: Record<
         extractConnectorPage(res, page, pageSize, 'system-conn'),
     },
     // 团队空间-空间连接器（服务端分页）：
-    // "全部"页签 = scope=space 聚合全部空间（不带 spaceId）；
-    // 具体空间 = 仅传 spaceId；两种口径均不带 status/connected 筛选
+    // 两种口径均带 scope=space——"全部"页签聚合全部空间（不带 spaceId）；
+    // 具体空间 = scope=space + spaceId；均不带 status/connected 筛选
     team: {
       mode: 'server',
       fetchPage: ({ page, pageSize, keyword, spaceId }) =>
         apiConnectorProviderPageList({
           pageNum: page,
           pageSize,
-          ...(spaceId ? { spaceId } : { scope: 'space' }),
+          scope: 'space',
+          ...(spaceId ? { spaceId } : {}),
           keyword: keyword || undefined,
         }),
       extract: (res, page, pageSize) =>
@@ -342,6 +344,29 @@ const RESOURCE_ADAPTERS: Record<
           : (data as { records?: ConnectorProviderInfo[] | null } | null)
               ?.records ?? [];
         return records.map((item) => mapConnectorItem(item, 'connected-conn'));
+      },
+    },
+    // 我启用的-当前用户启用开关已打开的连接器（connectionEnabled=true
+    // 服务端过滤，一次性全量返回）；keyword/category 走接口参数，
+    // 本地跳过双重筛选（与"已连接的"同口径）
+    enabled: {
+      mode: 'client',
+      serverKeyword: true,
+      serverCategory: true,
+      fetchAll: ({ keyword, category }) =>
+        apiConnectorProviderPageList({
+          connectionEnabled: 'true',
+          category: category || undefined,
+          keyword: keyword || undefined,
+        }),
+      extractAll: (res) => {
+        const data = res.data;
+        // 同"已连接的"：数组/分页壳两兼容
+        const records = Array.isArray(data)
+          ? (data as ConnectorProviderInfo[])
+          : (data as { records?: ConnectorProviderInfo[] | null } | null)
+              ?.records ?? [];
+        return records.map((item) => mapConnectorItem(item, 'enabled-conn'));
       },
     },
   },
@@ -525,7 +550,21 @@ const useResourceList = ({
     filteredListRef.current = filteredListRef.current.map(apply);
   }, []);
 
-  return { list, loading, hasMore, loadMore, updateItem };
+  /**
+   * 整区刷新：重置分页与缓存后重拉第一页（与筛选条件变化触发的
+   * 重置同流程）。供"我启用的"维度关闭技能开关成功后调用——
+   * 取消启用的技能需移出该维度列表，就地更新做不到
+   */
+  const reload = useCallback(() => {
+    pageRef.current = 0;
+    rawListRef.current = null;
+    filteredListRef.current = [];
+    setList([]);
+    setHasMore(true);
+    loadRef.current(true);
+  }, []);
+
+  return { list, loading, hasMore, loadMore, updateItem, reload };
 };
 
 export default useResourceList;

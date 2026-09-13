@@ -2,6 +2,7 @@ import agentImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import { APPLICATION_MORE_ACTION_DETAIL } from '@/constants/space.constants';
+import useStyle3WorkbenchHost from '@/hooks/useStyle3WorkbenchHost';
 import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum } from '@/types/enums/common';
 import {
@@ -13,7 +14,7 @@ import type {
   AgentHeaderProps,
   AgentHeaderTabKey,
 } from '@/types/interfaces/agentConfig';
-import { immersiveHeaderCompact } from '@/utils/nuwaClawBridge';
+import { immersiveHeaderCompact } from '@/utils/hostBridge';
 import { FormOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Segmented, Tag } from 'antd';
 import classNames from 'classnames';
@@ -47,6 +48,9 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   onTabChange,
 }) => {
   const { spaceId } = useParams();
+  // 单栏宿主下返回走真实浏览器历史（配合 workbenchHistoryBase 栈底兜底）；
+  // 经典风格全屏形态保留固定回智能体开发列表的既有行为
+  const style3WorkbenchHost = useStyle3WorkbenchHost();
 
   // 发布按钮是否禁用
   const disabledBtn = useMemo(() => {
@@ -157,7 +161,11 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           name="icons-nav-backward"
           className={cx(styles['icon-backward'])}
           onClick={() => {
-            history.push(`/space/${spaceId}/develop`);
+            if (style3WorkbenchHost) {
+              history.back();
+            } else {
+              history.push(`/space/${spaceId}/develop`);
+            }
           }}
         />
       </ConditionRender>

@@ -4,6 +4,7 @@ import {
   apiSystemConnectorProviderDetail,
 } from '@/services/systemManage';
 import type {
+  ConnectorActionInputArg,
   ConnectorProviderAction,
   ConnectorRuntimeExecuteResult,
 } from '@/types/interfaces/systemManage';
@@ -32,20 +33,57 @@ export interface ConnectorActionDebugModalProps {
 }
 
 /**
- * 按工具的 inputArgs 生成输入参数 JSON 模板
- * 顶层参数各生成一个空字符串占位（设计稿展示形态），供用户直接填值
+ * 参数定义列表 → 示例对象（自递归；无 subArgs 的 Object 收敛为空对象）：
+ * 按参数 dataType 给类型正确的零值占位（数字 0、布尔 false、数组一个
+ * 示例元素），Object / Array_Object 的 subArgs 递归展开为结构骨架，
+ * 用户改值时不用再纠类型（删引号/换字面量），嵌套参数直接填叶子值
+ */
+const argsToObject = (
+  args?: ConnectorActionInputArg[] | null,
+): Record<string, unknown> => {
+  const obj: Record<string, unknown> = {};
+  (args ?? []).forEach((arg) => {
+    if (!arg?.name) return;
+    switch (arg.dataType) {
+      case 'Integer':
+      case 'Number':
+        obj[arg.name] = 0;
+        break;
+      case 'Boolean':
+        obj[arg.name] = false;
+        break;
+      case 'Object':
+        obj[arg.name] = argsToObject(arg.subArgs);
+        break;
+      case 'Array_String':
+      case 'Array_File':
+        obj[arg.name] = [''];
+        break;
+      case 'Array_Integer':
+      case 'Array_Number':
+        obj[arg.name] = [0];
+        break;
+      case 'Array_Boolean':
+        obj[arg.name] = [false];
+        break;
+      // subArgs 描述数组元素 object 的字段结构 → 生成一个示例元素
+      case 'Array_Object':
+        obj[arg.name] = [argsToObject(arg.subArgs)];
+        break;
+      default:
+        obj[arg.name] = '';
+        break;
+    }
+  });
+  return obj;
+};
+
+/**
+ * 按工具的 inputArgs 生成输入参数 JSON 模板（见 argsToObject 的占位规则）
  */
 const toArgsTemplate = (
   action: ConnectorProviderAction | null | undefined,
-): string => {
-  const template: Record<string, string> = {};
-  (action?.inputArgs ?? []).forEach((arg) => {
-    if (arg?.name) {
-      template[arg.name] = '';
-    }
-  });
-  return JSON.stringify(template, null, 2);
-};
+): string => JSON.stringify(argsToObject(action?.inputArgs), null, 2);
 
 /**
  * 工具调试弹窗

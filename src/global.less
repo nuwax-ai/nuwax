@@ -1,7 +1,7 @@
 @import 'styles/color.less';
 @import 'styles/custom.less';
 @import 'styles/components.less';
-@import 'styles/nuwaclawShell.less';
+@import 'styles/immersiveShell.less';
 
 html {
   width: 100%;
@@ -242,18 +242,16 @@ body {
     width: 100%;
     height: 2px;
     border-radius: 1px;
-    background-color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.18));
-    transition:
-      width 0.15s ease,
-      background-color 0.2s ease;
+    background-color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 18%));
+    transition: width 0.15s ease, background-color 0.2s ease;
   }
 
   &:hover::before {
-    background-color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
+    background-color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 45%));
   }
 
   &.active::before {
-    background-color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+    background-color: var(--ant-color-text, rgba(0, 0, 0, 88%));
   }
 }
 
@@ -267,7 +265,7 @@ body {
   font-size: 14px;
   line-height: 22px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: rgba(0, 0, 0, 88%);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -282,6 +280,6 @@ body {
   margin-top: 4px;
   font-size: 13px;
   line-height: 22px;
-  color: rgba(0, 0, 0, 0.65);
+  color: rgba(0, 0, 0, 65%);
   word-break: break-all;
 }

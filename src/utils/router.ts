@@ -1,5 +1,5 @@
 import { isWeakNumber } from '@/utils/common';
-import { isImmersiveShell, nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { hostBridge, isImmersiveShell } from '@/utils/hostBridge';
 import { history } from 'umi';
 
 /**
@@ -26,7 +26,7 @@ function shouldOpenInShellWindow(url: string): boolean {
  * 时回落页内导航，保证点击永远有响应。
  */
 function openShellWindowOrNavigate(url: string): void {
-  void nuwaClawHost.native.openWindow(url).then((res) => {
+  void hostBridge.native.openWindow(url).then((res) => {
     if (!res.success) history.push(url);
   });
 }

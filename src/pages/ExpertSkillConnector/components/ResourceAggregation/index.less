@@ -7,19 +7,15 @@
 
   .list-section {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    // 卡片宽度随内容区宽度动态伸缩：列数由容器宽度自动决定
+    // （卡片基准宽约 310px——1920 窗口一排 5 张、2560 一排 7 张，更窄逐级减少；
+    // 最小值取 300 而非 310：1920 内容区 1604px 放 5 张需 1614px，按 310 会
+    // 掉到 4 列，300 才能稳定排出 5 列且卡片实际渲染约 308px）
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
     padding-bottom: 16px;
 
     // 确保内容从顶部开始排列，避免不均匀的间距分布
     align-content: start;
-  }
-}
-
-@media (min-width: 1440px) {
-  .container {
-    .list-section {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
   }
 }

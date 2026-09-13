@@ -355,6 +355,8 @@ export interface ConversationInfo {
   pinned?: boolean;
   /** 服务端会话归档状态 */
   archived?: boolean;
+  /** 服务端会话收藏状态（2026-09-13 collect/unCollect 接口上线，列表回读打标） */
+  collected?: boolean;
   modified: string;
   created: string;
   variables?: Record<string, string | number> | null;
@@ -484,6 +486,8 @@ export interface ConversationListParams {
   agentId: number | null;
   /** 归档过滤：all=全部（后端默认）；exclude=排除归档；only=仅归档。服务层缺省按 exclude 兜底（兼容旧调用点） */
   archivedFilter?: 'all' | 'exclude' | 'only';
+  /** 收藏过滤：all=全部（后端默认，缺省不传）；only=仅收藏（2026-09-13 后端上线） */
+  collectedFilter?: 'all' | 'only';
   // 上一次查询结果的会话ID
   lastId?: number | null;
   // 返回会话数量

@@ -3,10 +3,11 @@ import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
 import { PAGE_DEVELOP_PUBLISH_TYPE_LIST } from '@/constants/pageDev.constants';
+import useStyle3WorkbenchHost from '@/hooks/useStyle3WorkbenchHost';
 import { dict } from '@/services/i18nRuntime';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import { ProjectDetailData } from '@/types/interfaces/appDev';
-import { immersiveHeaderCompact } from '@/utils/nuwaClawBridge';
+import { immersiveHeaderCompact } from '@/utils/hostBridge';
 import { jumpBack } from '@/utils/router';
 import {
   CheckCircleFilled,
@@ -17,6 +18,7 @@ import { Avatar, Button, Popover, Space, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
+import { history } from 'umi';
 import { type PreviewRef } from '../Preview';
 import styles from './index.less';
 
@@ -111,7 +113,21 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   }, [projectInfo?.versionInfo]);
 
   // 处理返回按钮点击
+  // 单栏宿主下最终离页走真实浏览器历史（配合 workbenchHistoryBase 栈底兜底）；
+  // 经典风格全屏形态保留 jumpBack 回页面开发列表的既有行为（含原 from 参数差异）。
+  // iframe 内部回退 flush 两种形态都保留。
+  const style3WorkbenchHost = useStyle3WorkbenchHost();
   const handleBackClick = () => {
+    const leaveWorkbench = (fromAppdev: boolean) => {
+      if (style3WorkbenchHost) {
+        history.back();
+      } else {
+        jumpBack(
+          `/space/${spaceId}/page-develop`,
+          fromAppdev ? { from: 'appdev' } : undefined,
+        );
+      }
+    };
     // 先处理 iframe 内部的回退
     if (previewRef?.current) {
       try {
@@ -122,7 +138,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           // 给一点时间让 iframe 内部回退完成
           setTimeout(() => {
             // 然后父容器回退1步
-            jumpBack(`/space/${spaceId}/page-develop`);
+            leaveWorkbench(false);
           }, 100);
           return;
         }
@@ -133,7 +149,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
     }
 
     // 默认情况下，父容器回退1步
-    jumpBack(`/space/${spaceId}/page-develop`, { from: 'appdev' });
+    leaveWorkbench(true);
   };
 
   return (

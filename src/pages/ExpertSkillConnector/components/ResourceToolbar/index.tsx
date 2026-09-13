@@ -61,21 +61,22 @@ const ResourceToolbar: React.FC<ResourceToolbarProps> = ({
       label: dict('PC.Pages.ExpertSkillConnector.mainTabTeam'),
       value: 'team',
     },
-    // "我启用的"仅技能页展示（当前用户启用的技能维度），位于团队空间右侧
-    ...(resourceType === 'skill'
-      ? [
-          {
-            label: dict('PC.Pages.ExpertSkillConnector.mainTabEnabled'),
-            value: 'enabled',
-          },
-        ]
-      : []),
     // "已连接的"仅连接器页展示（当前用户已连接的连接器维度）
     ...(resourceType === 'connector'
       ? [
           {
             label: dict('PC.Pages.ExpertSkillConnector.mainTabConnected'),
             value: 'connected',
+          },
+        ]
+      : []),
+    // "我启用的"——技能页（当前用户启用的技能，位于团队空间右侧）与
+    // 连接器页（当前用户启用开关打开的连接器，位于"已连接的"右侧）展示
+    ...(resourceType === 'skill' || resourceType === 'connector'
+      ? [
+          {
+            label: dict('PC.Pages.ExpertSkillConnector.mainTabEnabled'),
+            value: 'enabled',
           },
         ]
       : []),

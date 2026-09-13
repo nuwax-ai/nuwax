@@ -76,7 +76,10 @@ describe('normalizeTenantConfig（租户兜底字段兼容）', () => {
     const data = unifiedThemeService.getCurrentData();
 
     expect(data.navigationStyle).toBe('style2');
-    expect(data.layoutStyle).toBe('style1');
+    // 旧版 navigationStyle 的 style1/style2（深浅色旧语义）不在 layoutStyle
+    // 合法值域（light/dark）内，收敛为默认浅色——渲染语义不变（非 dark 恒按
+    // light 出变量），body 布局类/灰白主题让位判定恢复合法
+    expect(data.layoutStyle).toBe('light');
     expect(data.primaryColor).toBe('#7221d1');
     expect(data.backgroundId).toBe('bg-variant-1');
   });
@@ -143,9 +146,8 @@ describe('单栏（style3）锁定纯色背景（2026-09-12 需求）', () => {
     expect(unifiedThemeService.getCurrentData().backgroundId).toBe('bg-solid');
     // 收敛后的值随保存链落库
     expect(
-      JSON.parse(
-        localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG) || '{}',
-      ).selectedBackgroundId,
+      JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG) || '{}')
+        .selectedBackgroundId,
     ).toBe('bg-solid');
   });
 
@@ -213,6 +215,82 @@ describe('单栏（style3）锁定纯色背景（2026-09-12 需求）', () => {
     expect(data.navigationStyle).toBe('style3');
     expect(data.backgroundId).toBe('bg-solid');
     expect(data.source).toBe('default');
+  });
+});
+
+describe('layoutStyle 值域收敛（2026-09-13 单栏 bg-solid 失效根因修复）', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    seedMigrationGuard();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('用户层旧字段脏值（布局类型误写进深浅色字段）不进 layoutStyle，收敛默认浅色', () => {
+    localStorage.setItem(
+      STORAGE_KEYS.USER_THEME_CONFIG,
+      JSON.stringify({
+        selectedThemeColor: '#5147ff',
+        selectedBackgroundId: 'bg-solid',
+        navigationStyleId: 'style3',
+        navigationStyle: 'style3', // 脏：布局类型被误写进深浅色旧字段
+        antdTheme: 'light',
+        timestamp: Date.now(),
+      }),
+    );
+
+    unifiedThemeService.reloadConfiguration(false);
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.source).toBe('user');
+    expect(data.navigationStyle).toBe('style3');
+    expect(data.layoutStyle).toBe('light');
+    expect(data.backgroundId).toBe('bg-solid');
+  });
+
+  it('用户层脏值收敛后再保存，旧字段被干净值覆写（脏值自持链切断）', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.USER_THEME_CONFIG,
+      JSON.stringify({
+        selectedThemeColor: '#5147ff',
+        selectedBackgroundId: 'bg-solid',
+        navigationStyleId: 'style3',
+        navigationStyle: 'style3',
+        antdTheme: 'light',
+        timestamp: Date.now(),
+      }),
+    );
+    unifiedThemeService.reloadConfiguration(false);
+
+    await unifiedThemeService.updatePrimaryColor('#52c41a');
+
+    const stored = JSON.parse(
+      localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG) || '{}',
+    );
+    expect(stored.navigationStyle).toBe('light');
+  });
+
+  it('租户模板 layoutStyle 脏值同样收敛，不回写存储', () => {
+    seedTenantTemplate({
+      primaryColor: '#5147ff',
+      backgroundId: 'bg-solid',
+      layoutStyle: 'style3',
+      navigationStyle: 'style3',
+    });
+
+    unifiedThemeService.reloadConfiguration(false);
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.source).toBe('tenant');
+    expect(data.navigationStyle).toBe('style3');
+    expect(data.layoutStyle).toBe('light');
+    // 租户配置是后端下发缓存，只收敛内存不回写
+    const tenantConfig = JSON.parse(
+      localStorage.getItem(STORAGE_KEYS.TENANT_CONFIG_INFO) || '{}',
+    );
+    expect(JSON.parse(tenantConfig.templateConfig).layoutStyle).toBe('style3');
   });
 });
 

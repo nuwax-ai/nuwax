@@ -5,7 +5,7 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum } from '@/types/enums/common';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
-import { immersiveHeaderCompact } from '@/utils/nuwaClawBridge';
+import { immersiveHeaderCompact } from '@/utils/hostBridge';
 import { CodeOutlined, FormOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';

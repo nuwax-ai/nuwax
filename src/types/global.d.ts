@@ -22,7 +22,7 @@ declare namespace Global {
 /**
  * nuwaclaw 宿主下发给 nuwax 的命令协议（跨 webview host→guest 通道）。
  * 由 nuwaclaw 工具栏 / 壳层快捷键触发，经 webviewPerfBridge 转发，
- * nuwax 侧 nuwaClawHostEvents 响应。新增命令类型在此扩展联合成员。
+ * nuwax 侧 hostBridgeEvents 响应。新增命令类型在此扩展联合成员。
  */
 type HostCommand =
   /** 收起/展开二级菜单 */
@@ -38,7 +38,7 @@ type HostCommand =
 
 /**
  * nuwax → nuwaclaw 壳的主题同步协议（guest→host 通道）。
- * 女娲主题生效/让位时由 nuwaClawTheme 推送，壳侧据此给自己的 antd tokens /
+ * 女娲主题生效/让位时由 brandTheme 推送，壳侧据此给自己的 antd tokens /
  * CSS 变量叠加米白调色板，实现「原生侧（设置弹窗等）与 nuwax 统一效果」。
  * 让位时 active=false，壳回落自身 light/dark 主题。
  */

@@ -23,12 +23,23 @@ const ExpertSkillConnector: React.FC = () => {
     [location.pathname],
   );
 
+  /**
+   * 导航重复点击的刷新令牌：主菜单（DynamicSecondMenu）与页内分类菜单
+   * 点击都会带 _t: Date.now() 重新 push——重复点击当前项时路径不变但
+   * state 变化，借此驱动下方内容区 remount 实现整区刷新（重拉数据、
+   * 重置筛选与滚动）；跨类型点击本身换路径，_t 一并参与 key 无副作用
+   */
+  const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
+
   return (
     <div className={cx(styles.container, 'flex', 'h-full')}>
       <CategorySidebar activeKey={resourceType} />
       <div className={cx(styles['content-wrapper'])}>
-        {/* key 保证资源类型切换时聚合内容区状态重置 */}
-        <ResourceAggregation key={resourceType} resourceType={resourceType} />
+        {/* key 保证资源类型切换或导航重复点击时聚合内容区状态重置并刷新 */}
+        <ResourceAggregation
+          key={`${resourceType}-${refreshToken}`}
+          resourceType={resourceType}
+        />
       </div>
     </div>
   );

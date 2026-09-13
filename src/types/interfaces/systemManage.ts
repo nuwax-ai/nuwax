@@ -1195,6 +1195,8 @@ export interface ConnectorProviderPageParams {
   status?: string;
   /** 连接状态筛选：all / true / false */
   connected?: string;
+  /** 连接启用状态筛选：all / true / false（连接器页"我启用的"维度用） */
+  connectionEnabled?: string;
   /** 关键字（名称 / service / 分类 / 标签） */
   keyword?: string;
   /** 分类名称（scope=official 时点击具体分类传入，如 通讯工具；空 = 全部） */

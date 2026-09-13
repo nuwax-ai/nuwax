@@ -16,10 +16,13 @@ function getBridge(): NuwaClawBridgeLike | undefined {
 }
 
 /**
- * 是否运行在 nuwaclaw 桌面客户端中（宿主桥已注入）。
- * 用于「仅桌面端生效」的特性门控（如专属主题、原生右键菜单）。
+ * 是否运行在 nuwax 平台桌面宿主中（宿主桥已注入，社区/商业均真）。
+ * ⚠️ 仅用于环境/桥能力探测（如 perf 打点可用性）；**桌面适配（沉浸退让、
+ * 单栏锁定、原生右键另存、企业登录入口等）一律用 isDesktopHost() /
+ * isImmersiveShell()**——产品规则（2026-09-13）：社区宿主（NuwaClaw 客户端）
+ * 与浏览器同形态，这些逻辑仅商业宿主启用。
  */
-export function isNuwaClaw(): boolean {
+export function hasHostBridge(): boolean {
   return !!getBridge();
 }
 
@@ -52,12 +55,25 @@ export function isShellWindow(): boolean {
 }
 
 /**
- * 是否为 nuwaclaw 主窗口的沉浸式形态（桌面端且非独立窗口）。
+ * 是否运行在承载桌面适配的宿主中——**仅商业版 Nuwax 客户端**。
+ * 产品规则（2026-09-13）：社区宿主（NuwaClaw 客户端，getProduct()='nuwaclaw'）
+ * 与浏览器同形态——不做沉浸退让、不做任何客户端特殊适配；这些逻辑仅商业
+ * 宿主（'nuwax'；存量宿主历史值 'nuwawork'）启用。旧宿主无 host 命名空间
+ * 时视为无桌面适配（回落浏览器行为）。
+ */
+export function isDesktopHost(): boolean {
+  const p = getBridge()?.host?.getProduct?.();
+  return p === 'nuwax' || p === 'nuwawork';
+}
+
+/**
+ * 是否为商业宿主主窗口的沉浸式形态（商业桌面端且非独立窗口）。
  * 菜单避让/隐藏 logo 等沉浸式专属门控一律用本判定；桌面独立窗口返回 false，
- * 恢复浏览器式布局（系统标题栏已承担顶部空间，无需避让）。
+ * 恢复浏览器式布局（系统标题栏已承担顶部空间，无需避让）；社区宿主与
+ * 浏览器恒为 false（见 isDesktopHost 产品规则）。
  */
 export function isImmersiveShell(): boolean {
-  return isNuwaClaw() && !isShellWindow();
+  return isDesktopHost() && !isShellWindow();
 }
 
 /**
@@ -120,36 +136,36 @@ export function immersiveHeaderCompact():
 /**
  * 把沉浸式避让状态落到 documentElement（html 类 + CSS 变量）——避让样式集中化的
  * 唯一状态源。数值唯一来源仍是上方 shellAvoid；消费端
- * （styles/nuwaclawShell.less、wrappers/immersiveShellAvoid 挂的 .nuwaclaw-shell-page）
+ * （styles/immersiveShell.less、wrappers/immersiveShellAvoid 挂的 .immersive-shell-page）
  * 只读变量，不再逐页内联避让尺寸。
  * 幂等：沉浸态补齐类与变量；非沉浸（浏览器/独立窗口）全部移除，下游规则天然失效。
- * --nuwaclaw-shell-right 沉浸态恒写，是否生效由 nuwaclaw-shell-frameless 类门控。
+ * --immersive-shell-right 沉浸态恒写，是否生效由 immersive-shell-frameless 类门控。
  */
 export function syncShellAvoidanceCss(): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   const immersive = isImmersiveShell();
-  root.classList.toggle('nuwaclaw-shell', immersive);
+  root.classList.toggle('immersive-shell', immersive);
   root.classList.toggle(
-    'nuwaclaw-shell-frameless',
+    'immersive-shell-frameless',
     immersive && isWinLinuxShell(),
   );
   const vars: Array<[string, string | null]> = immersive
     ? [
-        ['--nuwaclaw-shell-top', `${shellAvoid.TOP}px`],
+        ['--immersive-shell-top', `${shellAvoid.TOP}px`],
         // 独立全屏页（layout:false 路由）顶部退让：mac 不做——红绿灯悬浮于左上、
         // 图标簇只占左侧 300px，页头（返回/标题/tabs）自 x≈260 起，无需让位；
         // Win/Linux 保留——自绘菜单栏横跨到内容区（x 至 ~400），不避让会压住页头。
         [
-          '--nuwaclaw-shell-toolbar',
+          '--immersive-shell-toolbar',
           isMac() ? '0px' : `${shellAvoid.TOOLBAR}px`,
         ],
-        ['--nuwaclaw-shell-right', `${shellAvoid.RIGHT}px`],
+        ['--immersive-shell-right', `${shellAvoid.RIGHT}px`],
       ]
     : [
-        ['--nuwaclaw-shell-top', null],
-        ['--nuwaclaw-shell-toolbar', null],
-        ['--nuwaclaw-shell-right', null],
+        ['--immersive-shell-top', null],
+        ['--immersive-shell-toolbar', null],
+        ['--immersive-shell-right', null],
       ];
   for (const [name, value] of vars) {
     if (value === null) root.style.removeProperty(name);
@@ -167,7 +183,7 @@ export const auth = {
     try {
       return (await getBridge()?.auth?.getToken?.()) ?? null;
     } catch (e) {
-      console.warn('[nuwaClawHost] restore token from host failed', e);
+      console.warn('[hostBridge] restore token from host failed', e);
       return null;
     }
   },
@@ -176,7 +192,7 @@ export const auth = {
     try {
       return (await getBridge()?.auth?.persistToken?.(token)) ?? false;
     } catch (e) {
-      console.warn('[nuwaClawHost] persist token to host failed', e);
+      console.warn('[hostBridge] persist token to host failed', e);
       return false;
     }
   },
@@ -203,7 +219,7 @@ export const auth = {
         }
       );
     } catch (e) {
-      console.warn('[nuwaClawHost] configure server host failed', e);
+      console.warn('[hostBridge] configure server host failed', e);
       return { success: false, error: String(e) };
     }
   },
@@ -214,7 +230,7 @@ export const auth = {
  */
 export const native = {
   /**
-   * 右键另存图片到本地。是否真正拦截右键由调用方据 isNuwaClaw() 同步判断——
+   * 右键另存图片到本地。是否真正拦截右键由调用方据 hasHostBridge() 同步判断——
    * preventDefault 必须在事件回调内同步执行，不能等异步结果。
    */
   async saveImage(
@@ -259,7 +275,7 @@ export const native = {
 export const events = {
   /**
    * 注册宿主命令处理器。传 null 注销。返回是否注册成功（无桥/无能力则 false）。
-   * 由 nuwaClawHostEvents 在桌面端启动时调用一次。
+   * 由 hostBridgeEvents 在桌面端启动时调用一次。
    */
   onHostCommand(cb: ((payload: HostCommand) => void) | null): boolean {
     try {
@@ -268,7 +284,7 @@ export const events = {
       handler(cb);
       return true;
     } catch (e) {
-      console.warn('[nuwaClawHost] register onHostCommand failed', e);
+      console.warn('[hostBridge] register onHostCommand failed', e);
       return false;
     }
   },
@@ -355,8 +371,9 @@ export const host = {
 };
 
 /** 统一对外聚合对象（与 perfTracker 风格一致）。 */
-export const nuwaClawHost = {
-  isNuwaClaw,
+export const hostBridge = {
+  hasHostBridge,
+  isDesktopHost,
   isShellWindow,
   isImmersiveShell,
   isMac,
@@ -374,4 +391,4 @@ export const nuwaClawHost = {
   host,
 };
 
-export default nuwaClawHost;
+export default hostBridge;
