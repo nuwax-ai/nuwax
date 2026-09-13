@@ -27,6 +27,11 @@ import type { MenuItemDto } from './types/interfaces/menu';
 import { getAntdLocale } from './utils/i18nAdapters';
 import { isConversationMockPage } from './utils/isConversationMockPage';
 import { nuwaClawHost, syncShellAvoidanceCss } from './utils/nuwaClawBridge';
+// 工作台页历史栈兜底：模块副作用须在 umi router history 创建前执行（仍在
+// import 求值期内，早于 runtime render）。必须排在 i18nRuntime 之后——它会经
+// unifiedThemeService → theme.constants 提前拉起 i18nRuntime 的循环依赖链，
+// 置顶会让 home.constants 在 dict 就绪前求值而炸（dict is not a function）。
+import '@/layouts/workbenchHistoryBase';
 /**
  * 全局初始状态类型
  */
@@ -269,8 +274,8 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
           data.navigationStyle === 'style1'
             ? 'compact'
             : data.navigationStyle === 'style3'
-              ? 'sidebar'
-              : 'expanded',
+            ? 'sidebar'
+            : 'expanded',
         );
 
         unifiedThemeService.updateData(data, {

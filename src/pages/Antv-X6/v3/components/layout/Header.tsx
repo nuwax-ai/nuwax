@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import useStyle3WorkbenchHost from '@/hooks/useStyle3WorkbenchHost';
 import { SaveStatusEnum } from '@/models/workflowV3';
 import { useIsAgentFlow } from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import { getImg } from '@/pages/Antv-X6/v3/utils/workflowV3';
@@ -23,7 +24,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Popover, Select, Tag, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
-import { useModel, useParams } from 'umi';
+import { history, useModel, useParams } from 'umi';
 interface HeaderProp {
   // 是否隐藏返回箭头
   hideBack?: boolean;
@@ -82,6 +83,9 @@ const Header: React.FC<HeaderProp> = ({
 }) => {
   const isAgentFlow = useIsAgentFlow();
   const { spaceId } = useParams();
+  // 单栏宿主下返回走真实浏览器历史（配合 workbenchHistoryBase 栈底兜底）；
+  // 经典风格全屏形态保留 jumpBack 回工作流列表的既有行为
+  const style3WorkbenchHost = useStyle3WorkbenchHost();
   const { saveStatus, saveError, lastSaveTime } = useModel('workflowV3');
   const {
     name,
@@ -235,6 +239,8 @@ const Header: React.FC<HeaderProp> = ({
             onClick={() => {
               if (onBack) {
                 onBack();
+              } else if (style3WorkbenchHost) {
+                history.back();
               } else {
                 jumpBack(`/space/${spaceId}/library`);
               }
