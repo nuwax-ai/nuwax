@@ -13,8 +13,6 @@ import type {
   UserAppStartDevParams,
   UserAppTasksActiveResult,
   UserProjectItem,
-  UserProjectPageQueryParams,
-  UserProjectPageResult,
 } from '../type';
 import { UserAppDbEnvEnum } from './appDb';
 
@@ -27,16 +25,6 @@ export {
   apiUserProjectTabPageQuery,
   apiUserProjectUpdate,
 } from '@/services/userProjectApp';
-
-/** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
-export async function apiUserProjectPageQuery(
-  data: UserProjectPageQueryParams,
-): Promise<RequestResponse<UserProjectPageResult>> {
-  return request('/api/user-project/page-query', {
-    method: 'POST',
-    data,
-  });
-}
 
 /** 创建常规项目（管理端入口；首页对话框创建仍走 /api/project/create） */
 export async function apiUserProjectCreate(
