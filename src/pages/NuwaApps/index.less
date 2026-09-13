@@ -106,11 +106,11 @@
   }
 
   // ===================== 主tab(系统应用/团队空间) =====================
-  // Segmented 轨道去灰:对齐专家&专家团页观感(tab 行无背景)。
-  // 双类名提升优先级压过 ant-segmented 默认轨道灰;选中项白卡滑块与
-  // 红字高亮保留(红字来自全局主题 itemSelectedColor)
+  // Segmented 收窄为内容宽:本页 Segmented 处于 flex 列容器中,默认
+  // align-items:stretch 会把它横向拉满整行;专家页同行是 flex 行容器
+  // 无此问题,这里收窄回内容宽(inline-block 观感)保持两页一致
   .source-segmented.source-segmented {
-    background: transparent;
+    width: fit-content;
   }
 
   // ===================== 二级分类/空间筛选 pill =====================
