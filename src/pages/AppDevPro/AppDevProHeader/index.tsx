@@ -261,24 +261,26 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
             onClick={onOpenDatabase}
           />
 
-          {/* 文件树侧边栏按钮 */}
-          <TooltipIcon
-            title={
-              isFileTreeSidebarVisible
-                ? dict('PC.Components.FilePathHeader.collapseFileTree')
-                : dict('PC.Components.FilePathHeader.expandFileTree')
-            }
-            className={cx(styles['panel-btn'], {
-              [styles.active]: isFileTreeSidebarVisible,
-            })}
-            icon={
-              <SvgIcon
-                name="icons-common-file_preview"
-                style={{ fontSize: 16 }}
-              />
-            }
-            onClick={onToggleFileTreeSidebar}
-          />
+          {/* 文件树：仅开发环境。线上环境无沙箱文件树，入口一并隐藏 */}
+          <ConditionRender condition={env === UserAppDbEnvEnum.Dev}>
+            <TooltipIcon
+              title={
+                isFileTreeSidebarVisible
+                  ? dict('PC.Components.FilePathHeader.collapseFileTree')
+                  : dict('PC.Components.FilePathHeader.expandFileTree')
+              }
+              className={cx(styles['panel-btn'], {
+                [styles.active]: isFileTreeSidebarVisible,
+              })}
+              icon={
+                <SvgIcon
+                  name="icons-common-file_preview"
+                  style={{ fontSize: 16 }}
+                />
+              }
+              onClick={onToggleFileTreeSidebar}
+            />
+          </ConditionRender>
 
           {/* 终端按钮（再次点击收起，active 态由父组件互斥控制） */}
           <TooltipIcon

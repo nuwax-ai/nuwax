@@ -1,7 +1,9 @@
 import { dict } from '@/services/i18nRuntime';
-import { Empty } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
+import { Button, Empty, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import { getUserAppDbProxyUrl, UserAppDbEnvEnum } from '../../services/appDb';
 import AppDevProIframe from '../AppDevProIframe';
 import styles from './index.less';
@@ -13,6 +15,13 @@ export interface AppDevDatabasePanelProps {
   appId?: number;
   /** 当前环境，由 Header 中间切换控制 */
   env: UserAppDbEnvEnum;
+  /**
+   * 线上环境容器状态。未传时直接加载 iframe（开发环境进页已预启动）。
+   * 线上环境须 running 后才嵌入管理页。
+   */
+  containerStatus?: UserAppEnvPodStatus;
+  /** 线上环境容器启动失败时重试 */
+  onRetryContainer?: () => void;
 }
 
 /**
@@ -25,6 +34,8 @@ export interface AppDevDatabasePanelProps {
 const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
   appId,
   env,
+  containerStatus,
+  onRetryContainer,
 }) => {
   const iframeSrc = useMemo(() => {
     if (!appId) {
@@ -32,6 +43,38 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
     }
     return getUserAppDbProxyUrl(appId, env);
   }, [appId, env]);
+
+  const waitingContainer =
+    env === UserAppDbEnvEnum.Prod &&
+    containerStatus !== undefined &&
+    containerStatus !== 'running';
+
+  if (waitingContainer) {
+    const isError = containerStatus === 'error';
+    return (
+      <div className={cx(styles.container)}>
+        <div className={cx(styles.empty)}>
+          {isError ? (
+            <div className={cx(styles['container-hint'])}>
+              <span>{dict('PC.Pages.AppDevPro.prodContainerFailed')}</span>
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
+                onClick={onRetryContainer}
+              >
+                {dict('PC.Pages.AppDevPro.prodContainerRetry')}
+              </Button>
+            </div>
+          ) : (
+            <div className={cx(styles['container-hint'])}>
+              <Spin />
+              <span>{dict('PC.Pages.AppDevPro.prodContainerStarting')}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (!iframeSrc) {
     return (
