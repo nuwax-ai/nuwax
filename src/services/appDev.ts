@@ -687,11 +687,17 @@ export const apiProjectCreate = async (data: {
  * agentId 同为防御式透传（常规项目跳 home/chat 详情的路由参数）。
  */
 export const apiNormalProjectCreate = async (data: {
-  spaceId: number;
-  name: string;
-  /** 沙箱 ID 必传：-1=云电脑（后端默认分配），其他为个人电脑沙箱 */
+  /** 空间 ID */
+  spaceId?: number;
+  /** 项目名称 */
+  name?: string;
+  /** 项目描述 */
+  description?: string;
+  /** 项目图标 */
+  icon?: string;
+  /** 沙箱 ID，-1 表示云端沙箱 */
   sandboxId?: number;
-  /** 自定义工作目录（仅个人电脑），非空才传；被占用时后端报错 */
+  /** 工作空间目录 */
   workspacePath?: string;
 }): Promise<
   RequestResponse<{
@@ -706,6 +712,8 @@ export const apiNormalProjectCreate = async (data: {
     data: {
       spaceId: data.spaceId,
       name: data.name,
+      description: data.description || undefined,
+      icon: data.icon || undefined,
       sandboxId: data.sandboxId ?? undefined,
       workspacePath: data.workspacePath || undefined,
     },
