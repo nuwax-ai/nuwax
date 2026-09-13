@@ -1,5 +1,5 @@
 import { t } from '@/services/i18nRuntime';
-import { isNuwaClaw } from '@/utils/nuwaClawBridge';
+import { isDesktopHost } from '@/utils/nuwaClawBridge';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './NavigationStylePanel.less';
@@ -56,9 +56,9 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
   currentNavigationStyle = 'style3',
   availableStyles,
 }) => {
-  // 桌面端（nuwaclaw webview）锁定单栏布局：沉浸式折叠/壳同步机制只按单栏维护，
-  // 风格切换整节隐藏，仅保留导航深浅色切换
-  const isNavStyleLocked = isNuwaClaw();
+  // 商业桌面端（Nuwax 客户端 webview）锁定单栏布局：沉浸式折叠/壳同步机制只按单栏维护，
+  // 风格切换整节隐藏，仅保留导航深浅色切换；社区宿主（NuwaClaw）与浏览器同形态不锁定
+  const isNavStyleLocked = isDesktopHost();
 
   // 导航栏风格配置（渲染期取词 + 按可选集合过滤）
   const navigationStyles: NavigationStyle[] = ALL_NAVIGATION_STYLE_KEYS.map(

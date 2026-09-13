@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   auth,
   host,
+  isDesktopHost,
   isImmersiveShell,
   isMac,
   isNuwaClaw,
@@ -32,6 +33,13 @@ describe('nuwaClawHost（统一对外接入层）', () => {
     warnSpy.mockClear();
   });
 
+  /** 桌面适配用例的商业宿主桥（产品规则 2026-09-13：沉浸避让等仅商业宿主启用） */
+  const commercialBridge = () => ({
+    auth: {},
+    native: {},
+    host: { getProduct: () => 'nuwax' },
+  });
+
   describe('isNuwaClaw', () => {
     it('桥存在 → true（聚合对象与具名导出一致）', () => {
       (window as any).NuwaClawBridge = { auth: {}, native: {} };
@@ -55,19 +63,28 @@ describe('nuwaClawHost（统一对外接入层）', () => {
       window.sessionStorage.clear();
     });
     it('URL 带 _shell=1 → 独立窗口；桌面端下沉浸式判定为 false（恢复浏览器式布局）', () => {
-      (window as any).NuwaClawBridge = { auth: {}, native: {} };
+      (window as any).NuwaClawBridge = commercialBridge();
       window.history.replaceState(null, '', '/agent/123?_shell=1');
       expect(isShellWindow()).toBe(true);
       expect(isImmersiveShell()).toBe(false);
     });
-    it('无 _shell 标记 + 有桥 → 沉浸式主窗口', () => {
-      (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    it('无 _shell 标记 + 商业宿主 → 沉浸式主窗口', () => {
+      (window as any).NuwaClawBridge = commercialBridge();
       window.history.replaceState(null, '', '/home');
       expect(isShellWindow()).toBe(false);
       expect(isImmersiveShell()).toBe(true);
     });
+    it('社区宿主（getProduct=nuwaclaw）→ 非沉浸，与浏览器同形态（2026-09-13 产品规则）', () => {
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwaclaw' },
+      };
+      window.history.replaceState(null, '', '/home');
+      expect(isNuwaClaw()).toBe(true);
+      expect(isDesktopHost()).toBe(false);
+      expect(isImmersiveShell()).toBe(false);
+    });
     it('粘滞：曾带 _shell=1 的窗口 SPA 路由到无标记路径仍为独立窗口', () => {
-      (window as any).NuwaClawBridge = { auth: {}, native: {} };
+      (window as any).NuwaClawBridge = commercialBridge();
       window.history.replaceState(null, '', '/agent/123?_shell=1');
       expect(isShellWindow()).toBe(true);
       // 模拟 SPA 路由/登录重定向重写 URL 丢掉 query
@@ -160,12 +177,20 @@ describe('nuwaClawHost（统一对外接入层）', () => {
       expect(needsTopRightAvoid()).toBe(false);
       expect(nuwaClawHost.isMac()).toBe(true);
     });
-    it('Windows 壳 → 需要右上避让（自绘三键贴角）', () => {
+    it('Windows 商业宿主 → 需要右上避让（自绘三键贴角）', () => {
       vi.stubGlobal('navigator', { platform: 'Win32' });
-      (window as any).NuwaClawBridge = { auth: {} };
+      (window as any).NuwaClawBridge = commercialBridge();
       expect(isMac()).toBe(false);
       expect(isWinLinuxShell()).toBe(true);
       expect(needsTopRightAvoid()).toBe(true);
+    });
+    it('Windows 社区宿主 → 无需避让（与浏览器同形态）', () => {
+      vi.stubGlobal('navigator', { platform: 'Win32' });
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwaclaw' },
+      };
+      expect(isWinLinuxShell()).toBe(false);
+      expect(needsTopRightAvoid()).toBe(false);
     });
     it('Windows 浏览器（无桥）→ 不需要避让', () => {
       vi.stubGlobal('navigator', { platform: 'Win32' });
@@ -174,7 +199,7 @@ describe('nuwaClawHost（统一对外接入层）', () => {
     });
     it('独立窗口（_shell=1）→ 无需右上避让（系统标题栏承担顶部）', () => {
       vi.stubGlobal('navigator', { platform: 'Win32' });
-      (window as any).NuwaClawBridge = { auth: {} };
+      (window as any).NuwaClawBridge = commercialBridge();
       const originalHref = window.location.href;
       window.history.replaceState(null, '', '/agent/123?_shell=1');
       expect(needsTopRightAvoid()).toBe(false);
@@ -209,7 +234,7 @@ describe('nuwaClawHost（统一对外接入层）', () => {
 
     it('沉浸态（mac 主窗口）→ 类与三变量就位，值来自 shellAvoid；mac 无 frameless', () => {
       vi.stubGlobal('navigator', { platform: 'MacIntel' });
-      (window as any).NuwaClawBridge = { auth: {} };
+      (window as any).NuwaClawBridge = commercialBridge();
       syncShellAvoidanceCss();
       expect(root.classList.contains('nuwaclaw-shell')).toBe(true);
       expect(root.classList.contains('nuwaclaw-shell-frameless')).toBe(false);
@@ -227,7 +252,7 @@ describe('nuwaClawHost（统一对外接入层）', () => {
 
     it('沉浸态（Windows 主窗口）→ 追加 nuwaclaw-shell-frameless 且工具栏避让保留', () => {
       vi.stubGlobal('navigator', { platform: 'Win32' });
-      (window as any).NuwaClawBridge = { auth: {} };
+      (window as any).NuwaClawBridge = commercialBridge();
       syncShellAvoidanceCss();
       expect(root.classList.contains('nuwaclaw-shell-frameless')).toBe(true);
       expect(root.style.getPropertyValue('--nuwaclaw-shell-toolbar')).toBe(
@@ -235,9 +260,22 @@ describe('nuwaClawHost（统一对外接入层）', () => {
       );
     });
 
+    it('社区宿主 → 非沉浸，不铺类与变量（与浏览器同形态）', () => {
+      vi.stubGlobal('navigator', { platform: 'Win32' });
+      (window as any).NuwaClawBridge = {
+        host: { getProduct: () => 'nuwaclaw' },
+      };
+      syncShellAvoidanceCss();
+      expect(root.classList.contains('nuwaclaw-shell')).toBe(false);
+      expect(root.classList.contains('nuwaclaw-shell-frameless')).toBe(false);
+      vars.forEach((name) =>
+        expect(root.style.getPropertyValue(name)).toBe(''),
+      );
+    });
+
     it('非沉浸（无桥浏览器）→ 此前写入的类与变量全部清理（规则天然失效）', () => {
       vi.stubGlobal('navigator', { platform: 'MacIntel' });
-      (window as any).NuwaClawBridge = { auth: {} };
+      (window as any).NuwaClawBridge = commercialBridge();
       syncShellAvoidanceCss();
       delete (window as any).NuwaClawBridge;
       syncShellAvoidanceCss();
@@ -250,7 +288,7 @@ describe('nuwaClawHost（统一对外接入层）', () => {
 
     it('幂等：连续调用两次状态不叠加、值不变', () => {
       vi.stubGlobal('navigator', { platform: 'Win32' });
-      (window as any).NuwaClawBridge = { auth: {} };
+      (window as any).NuwaClawBridge = commercialBridge();
       syncShellAvoidanceCss();
       syncShellAvoidanceCss();
       // 类名按 token 精确统计（小写子串比较会被 nuwaclaw-shell-frameless 误判）

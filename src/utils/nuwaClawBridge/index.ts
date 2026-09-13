@@ -16,8 +16,11 @@ function getBridge(): NuwaClawBridgeLike | undefined {
 }
 
 /**
- * 是否运行在 nuwaclaw 桌面客户端中（宿主桥已注入）。
- * 用于「仅桌面端生效」的特性门控（如专属主题、原生右键菜单）。
+ * 是否运行在 nuwax 平台桌面宿主中（宿主桥已注入，社区/商业均真）。
+ * ⚠️ 仅用于环境/桥能力探测（如 perf 打点可用性）；**桌面适配（沉浸退让、
+ * 单栏锁定、原生右键另存、企业登录入口等）一律用 isDesktopHost() /
+ * isImmersiveShell()**——产品规则（2026-09-13）：社区宿主（NuwaClaw 客户端）
+ * 与浏览器同形态，这些逻辑仅商业宿主启用。
  */
 export function isNuwaClaw(): boolean {
   return !!getBridge();
@@ -52,12 +55,25 @@ export function isShellWindow(): boolean {
 }
 
 /**
- * 是否为 nuwaclaw 主窗口的沉浸式形态（桌面端且非独立窗口）。
+ * 是否运行在承载桌面适配的宿主中——**仅商业版 Nuwax 客户端**。
+ * 产品规则（2026-09-13）：社区宿主（NuwaClaw 客户端，getProduct()='nuwaclaw'）
+ * 与浏览器同形态——不做沉浸退让、不做任何客户端特殊适配；这些逻辑仅商业
+ * 宿主（'nuwax'；存量宿主历史值 'nuwawork'）启用。旧宿主无 host 命名空间
+ * 时视为无桌面适配（回落浏览器行为）。
+ */
+export function isDesktopHost(): boolean {
+  const p = getBridge()?.host?.getProduct?.();
+  return p === 'nuwax' || p === 'nuwawork';
+}
+
+/**
+ * 是否为商业宿主主窗口的沉浸式形态（商业桌面端且非独立窗口）。
  * 菜单避让/隐藏 logo 等沉浸式专属门控一律用本判定；桌面独立窗口返回 false，
- * 恢复浏览器式布局（系统标题栏已承担顶部空间，无需避让）。
+ * 恢复浏览器式布局（系统标题栏已承担顶部空间，无需避让）；社区宿主与
+ * 浏览器恒为 false（见 isDesktopHost 产品规则）。
  */
 export function isImmersiveShell(): boolean {
-  return isNuwaClaw() && !isShellWindow();
+  return isDesktopHost() && !isShellWindow();
 }
 
 /**
@@ -357,6 +373,7 @@ export const host = {
 /** 统一对外聚合对象（与 perfTracker 风格一致）。 */
 export const nuwaClawHost = {
   isNuwaClaw,
+  isDesktopHost,
   isShellWindow,
   isImmersiveShell,
   isMac,

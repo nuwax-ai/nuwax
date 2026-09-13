@@ -15,7 +15,7 @@ import {
   ThemeLayoutColorStyle,
   ThemeNavigationStyleType,
 } from '@/types/enums/theme';
-import { isNuwaClaw } from '@/utils/nuwaClawBridge';
+import { isDesktopHost } from '@/utils/nuwaClawBridge';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
 
@@ -112,9 +112,9 @@ export const useUnifiedTheme = (): UseUnifiedThemeReturn => {
     };
   }, []);
 
-  // 桌面端锁定单栏：布局分发、壳 class 等渲染决策统一读 effective 值
-  // （须先于各 toggle/衍生计算声明）
-  const isNavigationStyleLocked = isNuwaClaw();
+  // 商业桌面端锁定单栏：布局分发、壳 class 等渲染决策统一读 effective 值
+  // （须先于各 toggle/衍生计算声明）；社区宿主（NuwaClaw）与浏览器同形态不锁定
+  const isNavigationStyleLocked = isDesktopHost();
   const effectiveNavigationStyle = isNavigationStyleLocked
     ? ThemeNavigationStyleType.STYLE3
     : data.navigationStyle;

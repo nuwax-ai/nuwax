@@ -41,10 +41,10 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
       // 这里可以扩展错误处理逻辑
     }, []);
 
-    // nuwaclaw 客户端：右键另存图片（仅桌面宿主拦截；浏览器端保持默认行为）
+    // 商业桌面端（Nuwax 客户端）：右键另存图片（仅商业宿主拦截；社区宿主/浏览器保持默认行为）
     const handleContextMenu = useCallback(
       (e: React.MouseEvent) => {
-        if (src && nuwaClawHost.isNuwaClaw()) {
+        if (src && nuwaClawHost.isDesktopHost()) {
           e.preventDefault();
           void nuwaClawHost.native.saveImage(src).then((result) => {
             if (!result.success && result.error) message.error(result.error);

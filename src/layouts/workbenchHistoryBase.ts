@@ -8,7 +8,7 @@
  */
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import { isNuwaClaw } from '@/utils/nuwaClawBridge';
+import { isDesktopHost } from '@/utils/nuwaClawBridge';
 import { shouldSeedWorkbenchHistoryBase } from './fullscreenWorkbenchPaths';
 
 /** 栈底兜底目标：主界面 */
@@ -16,8 +16,8 @@ export const WORKBENCH_HISTORY_BASE_URL = '/home';
 
 /** 启动期（router history 创建前）的实际导航风格是否为单栏 */
 const isStyle3AtBoot = (): boolean => {
-  // 桌面端（nuwaclaw webview）锁定单栏，直接认定
-  if (isNuwaClaw()) return true;
+  // 商业桌面端（Nuwax webview）锁定单栏，直接认定；社区宿主走 localStorage 链
+  if (isDesktopHost()) return true;
   try {
     // 服务构造时已同步解析完 localStorage 优先级链（用户 > 租户 > 默认）
     return (
