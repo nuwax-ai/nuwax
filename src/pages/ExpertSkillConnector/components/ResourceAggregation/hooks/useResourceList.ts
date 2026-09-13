@@ -526,7 +526,21 @@ const useResourceList = ({
     filteredListRef.current = filteredListRef.current.map(apply);
   }, []);
 
-  return { list, loading, hasMore, loadMore, updateItem };
+  /**
+   * 整区刷新：重置分页与缓存后重拉第一页（与筛选条件变化触发的
+   * 重置同流程）。供"我启用的"维度关闭技能开关成功后调用——
+   * 取消启用的技能需移出该维度列表，就地更新做不到
+   */
+  const reload = useCallback(() => {
+    pageRef.current = 0;
+    rawListRef.current = null;
+    filteredListRef.current = [];
+    setList([]);
+    setHasMore(true);
+    loadRef.current(true);
+  }, []);
+
+  return { list, loading, hasMore, loadMore, updateItem, reload };
 };
 
 export default useResourceList;

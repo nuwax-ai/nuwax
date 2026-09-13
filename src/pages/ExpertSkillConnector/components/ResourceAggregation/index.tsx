@@ -141,16 +141,17 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
 
   // 归一化列表数据（团队维度 tab 即空间选择，内容分类不适用：专家/技能
   // 按 spaceId/spaceIds 请求，连接器按 spaceId/scope 请求）
-  const { list, loading, hasMore, loadMore, updateItem } = useResourceList({
-    resourceType,
-    source,
-    category: source === 'team' ? '' : category,
-    keyword,
-    spaceId: listSpaceId,
-    // 「全部」页签：spaceIds 携带全部空间（具体空间页签不传）
-    spaceIds: source === 'team' && !category ? teamSpaceIds : undefined,
-    pageSize: 20,
-  });
+  const { list, loading, hasMore, loadMore, updateItem, reload } =
+    useResourceList({
+      resourceType,
+      source,
+      category: source === 'team' ? '' : category,
+      keyword,
+      spaceId: listSpaceId,
+      // 「全部」页签：spaceIds 携带全部空间（具体空间页签不传）
+      spaceIds: source === 'team' && !category ? teamSpaceIds : undefined,
+      pageSize: 20,
+    });
 
   // 搜索防抖 400ms
   useEffect(() => {
@@ -440,8 +441,9 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   /**
    * 技能卡片「启用开关」：POST /api/published/skill/enable|unEnable/{skillId}
    * （开启/关闭双接口，按技能 ID 寻址）；成功后就地更新 skillEnabled 驱动
-   * 开关回弹，不动筛选与分页（与连接器启用开关同口径；「我启用的」维度
-   * 关闭后卡片就地展示未启用态，刷新后自然移出该维度）。
+   * 开关回弹，不动筛选与分页（与连接器启用开关同口径）。
+   * 例外——「我启用的」维度关闭开关：接口成功后整区重拉（reload），
+   * 取消启用的技能即时移出该维度列表；其余维度维持就地更新。
    * 开启时若需付费未订阅（与「立即使用」同口径）：不调启用接口（开关
    * 回弹），先弹订阅套餐弹窗，订阅完成后用户再开启
    */
@@ -471,7 +473,12 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
           ? await apiPublishedSkillEnable(item.skillId)
           : await apiPublishedSkillUnEnable(item.skillId);
         if (res?.code === SUCCESS_CODE) {
-          updateItem(item.id, { skillEnabled: enabled });
+          // 「我启用的」维度关闭开关:整区重拉让取消启用的技能移出列表
+          if (source === 'enabled' && !enabled) {
+            reload();
+          } else {
+            updateItem(item.id, { skillEnabled: enabled });
+          }
         } else {
           message.error(res?.message || '切换启用状态失败');
         }
@@ -479,7 +486,13 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
         setSkillTogglingIds((prev) => prev.filter((id) => id !== item.id));
       }
     },
-    [updateItem, isEnableSubscription, querySkillSubscriptionPlans],
+    [
+      updateItem,
+      reload,
+      source,
+      isEnableSubscription,
+      querySkillSubscriptionPlans,
+    ],
   );
 
   // 筛选状态同步 URL（replace 不产生历史记录）
