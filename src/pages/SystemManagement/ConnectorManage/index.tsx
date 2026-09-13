@@ -524,6 +524,8 @@ const ConnectorManage: React.FC = () => {
       ),
       fieldProps: {
         options: AUTH_TYPE_OPTIONS.filter((v) => v.value !== ''),
+        // 弹层挂在 body 下，借此 class 反查所属 dropdown 放宽宽度（见下方 style 标签）
+        popupClassName: 'connector-auth-type-dropdown',
       },
       render: (_, record) => (
         <Tag color={AUTH_TYPE_COLOR_MAP[record.authType] ?? 'default'}>
@@ -674,11 +676,17 @@ const ConnectorManage: React.FC = () => {
         </Space>
       }
     >
-      {/* 连接器名称筛选下拉加宽：弹层（.ant-popover）挂在 body 下，无法用页面祖先选择器；
-          借输入框上的 class 反查所属 popover，放宽弹层内层宽度到 250px（完整展示 placeholder） */}
+      {/* 筛选弹层加宽：弹层（.ant-popover / .ant-select-dropdown）挂在 body 下，
+          无法用页面祖先选择器；借输入框/下拉上的 class 反查所属弹层放宽宽度：
+          1. 连接器名称筛选 popover 内层 250px（完整展示 placeholder）
+          2. 认证方式下拉 160px !important（覆盖内联 min-width 级别的窄触发宽度，
+             完整放下「扫描授权（设备码）」等长选项，不换行不省略，与空间侧同款） */}
       <style>{`
         .ant-popover:has(.connector-name-filter-input) .ant-popover-inner {
           width: 250px;
+        }
+        .connector-auth-type-dropdown.ant-select-dropdown {
+          width: 160px !important;
         }
       `}</style>
       <DndContext
