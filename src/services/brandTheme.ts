@@ -14,9 +14,9 @@
  * - 任意端显式选了「纯色」背景且布局为浅色 → 灰白布局生效
  *   （灰白外观跟随背景维度，主色只影响点缀色）；
  * - 切图片背景 / 深色布局 → 覆盖自动让位（随时可切回）。
- * antd 运行时主色由 app.tsx applyThemeConfig 据 isNuwaClawDefaultThemeActive()
+ * antd 运行时主色由 app.tsx applyThemeConfig 据 isDefaultBrandThemeActive()
  * 条件传入（默认态强制品牌蓝，显式定制后跟随用户主色）；CSS 变量覆盖由
- * syncNuwaClawCssOverride 维护。
+ * syncBrandThemeCssOverride 维护。
  */
 import {
   DEFAULT_THEME_CONFIG,
@@ -24,16 +24,16 @@ import {
 } from '@/constants/theme.constants';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
-import { isNuwaClaw, nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
 
 /** 平台出厂默认背景（租户/用户均未配置时的登录回声落点，与 #5147ff 同批） */
 export const PLATFORM_DEFAULT_BACKGROUND_ID = 'bg-variant-8';
 
 /** nuwaclaw 专属品牌主色（现代专业开发工具风品牌蓝） */
-export const NUWACLAW_PRIMARY = '#2563EB';
+export const BRAND_PRIMARY = '#2563EB';
 
 /** 女娲主题绑定的背景选项 id（theme.constants 注册的「纯色」背景，无图浅色） */
-export const NUWACLAW_BACKGROUND_ID = 'bg-solid';
+export const BRAND_BACKGROUND_ID = 'bg-solid';
 
 /**
  * nuwaclaw 桌面专属亮色布局变量覆盖
@@ -41,7 +41,7 @@ export const NUWACLAW_BACKGROUND_ID = 'bg-solid';
  * 以 rgb(243,244,246)（#F3F4F6）为基色 + 白卡片层次 + 实色菜单背景（替代半透明叠图）。
  * 仅桌面端且当前亮色时生效；切 dark 走通用 dark-style1。
  */
-export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
+export const BRAND_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
   '--xagi-layout-bg-primary': '#F3F4F6', // 主内容区（用户指定基色 rgb(243,244,246)，中性冷灰）
   '--xagi-layout-bg-secondary': '#F2F2F2', // 侧栏/次面板（原型同款中性浅灰，2026-09-04 对齐）
   // --xagi-layout-bg-container 不覆盖：page-container 背景与其他主题一致
@@ -69,8 +69,8 @@ export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
 };
 
 /** nuwaclaw 专属覆盖的 CSS 变量集（亮色布局实色；主色单独处理，见 sync） */
-const NUWACLAW_CSS_VARS: Record<string, string> = {
-  ...NUWACLAW_LIGHT_STYLE_OVERRIDE,
+const BRAND_CSS_VARS: Record<string, string> = {
+  ...BRAND_LIGHT_STYLE_OVERRIDE,
 };
 
 /**
@@ -174,11 +174,11 @@ function hasExplicitThemeConfig(): boolean {
  * 灰白布局跟随背景维度而非主色：否则「选纯色不换主色只得白底」「蓝主色下
  * 换背景图被强制吞回 none」两类切换失效（用户实测踩中，2026-08-31 修复）。
  */
-export function isNuwaClawThemeActive(): boolean {
+export function isBrandThemeActive(): boolean {
   if (!hasExplicitThemeConfig()) return true;
   const data = unifiedThemeService.getCurrentData();
   return (
-    data.backgroundId === NUWACLAW_BACKGROUND_ID &&
+    data.backgroundId === BRAND_BACKGROUND_ID &&
     data.layoutStyle === ThemeLayoutColorStyle.LIGHT
   );
 }
@@ -188,37 +188,36 @@ export function isNuwaClawThemeActive(): boolean {
  * 平台默认/租户回声，生效主色需按品牌蓝展示——app.tsx 的 antd token 与
  * ThemeSwitchPanel 色板高亮用。显式定制后主色完全跟随用户选择，不再强制。
  */
-export function isNuwaClawDefaultThemeActive(): boolean {
+export function isDefaultBrandThemeActive(): boolean {
   return !hasExplicitThemeConfig();
 }
 
-/** 桌面端禁用背景图的变量名（单独处理，不并入 NUWACLAW_CSS_VARS 的移除集） */
+/** 桌面端禁用背景图的变量名（单独处理，不并入 BRAND_CSS_VARS 的移除集） */
 const BG_IMAGE_VAR = '--xagi-background-image';
 
 /** 桌面主题生效时给 html 铺的灰底（style1 主内容是带边距的浮动圆角面板，缝隙会露出 html 白底） */
-const NUWACLAW_HTML_BG =
-  NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-layout-bg-secondary'];
+const BRAND_HTML_BG = BRAND_LIGHT_STYLE_OVERRIDE['--xagi-layout-bg-secondary'];
 
 /**
  * 组装推送给 nuwaclaw 壳的主题状态（guest→host 通道）。
  * 壳侧据此给自己的 antd tokens / CSS 变量叠加同套调色板，让设置弹窗等原生 UI
- * 与 nuwax 统一。色值全部引用 NUWACLAW_LIGHT_STYLE_OVERRIDE，单一来源不另立色板；
+ * 与 nuwax 统一。色值全部引用 BRAND_LIGHT_STYLE_OVERRIDE，单一来源不另立色板；
  * 主色与 webview 生效值同源（默认态品牌蓝，显式定制后跟随用户主色）。
  */
 function buildShellThemePayload(active: boolean): ShellThemePayload {
   if (!active) return { active: false };
   return {
     active: true,
-    primary: isNuwaClawDefaultThemeActive()
-      ? NUWACLAW_PRIMARY
+    primary: isDefaultBrandThemeActive()
+      ? BRAND_PRIMARY
       : unifiedThemeService.getCurrentData().primaryColor,
-    bgContent: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-layout-bg-primary'],
-    bgMenu: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-color-bg-container'],
-    bgElevated: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-nav-item-active-bg'],
-    border: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-layout-border-primary'],
+    bgContent: BRAND_LIGHT_STYLE_OVERRIDE['--xagi-layout-bg-primary'],
+    bgMenu: BRAND_LIGHT_STYLE_OVERRIDE['--xagi-color-bg-container'],
+    bgElevated: BRAND_LIGHT_STYLE_OVERRIDE['--xagi-nav-item-active-bg'],
+    border: BRAND_LIGHT_STYLE_OVERRIDE['--xagi-layout-border-primary'],
     borderSecondary:
-      NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-layout-border-secondary'],
-    bgItemHover: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-nav-item-hover-bg'],
+      BRAND_LIGHT_STYLE_OVERRIDE['--xagi-layout-border-secondary'],
+    bgItemHover: BRAND_LIGHT_STYLE_OVERRIDE['--xagi-nav-item-hover-bg'],
   };
 }
 
@@ -229,36 +228,36 @@ function buildShellThemePayload(active: boolean): ShellThemePayload {
  * 新语义下让位必因 backgroundId≠bg-solid（applyToDOM 随后已写 url(...)）或深色
  * 布局，此时残留的 'none' 只可能来自本覆盖层，按值判定自洽。
  */
-function syncNuwaClawCssOverride(): void {
+function syncBrandThemeCssOverride(): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   // 生效判定已内含「浅色布局」约束（灰白变量仅浅色下有意义），无需再叠加 antdTheme 判断
-  const shouldApply = isNuwaClawThemeActive();
-  Object.keys(NUWACLAW_CSS_VARS).forEach((key) => {
-    if (shouldApply) root.style.setProperty(key, NUWACLAW_CSS_VARS[key]);
+  const shouldApply = isBrandThemeActive();
+  Object.keys(BRAND_CSS_VARS).forEach((key) => {
+    if (shouldApply) root.style.setProperty(key, BRAND_CSS_VARS[key]);
     else root.style.removeProperty(key);
   });
   // 主色仅在「默认女娲主题」（未显式定制）时由本层兜底为品牌蓝——配置层主色
   // 可能仍是平台默认/租户回声色；显式定制后 --xagi-color-primary 完全交给
   // unifiedThemeService.applyToDOM 按用户主色维护（其恒写入该变量，本层不越权）。
-  if (shouldApply && isNuwaClawDefaultThemeActive()) {
-    root.style.setProperty('--xagi-color-primary', NUWACLAW_PRIMARY);
+  if (shouldApply && isDefaultBrandThemeActive()) {
+    root.style.setProperty('--xagi-color-primary', BRAND_PRIMARY);
   }
   // 桌面端不用背景图（灰白纯色）；html 铺灰底兜住面板缝隙/滚动区。
   // 让位时仅回收自己设的 'none' 与灰底，不动用户图（灰底清空回落 global.less 的 #fff）
   if (shouldApply) {
     root.style.setProperty(BG_IMAGE_VAR, 'none');
-    root.style.backgroundColor = NUWACLAW_HTML_BG;
+    root.style.backgroundColor = BRAND_HTML_BG;
   } else {
     root.style.backgroundColor = '';
     if (root.style.getPropertyValue(BG_IMAGE_VAR) === 'none') {
       root.style.removeProperty(BG_IMAGE_VAR);
     }
   }
-  // 同步主题状态给壳（fire-and-forget，仅桌面端——浏览器无宿主，通道虽可选链
-  // no-op，仍显式门控避免语义漂移）：壳的原生 UI（设置弹窗等）跟随统一/回落
-  if (isNuwaClaw()) {
-    nuwaClawHost.theme.syncTheme(buildShellThemePayload(shouldApply));
+  // 同步主题状态给壳（fire-and-forget，仅商业桌面端——浏览器/社区宿主无此通道，
+  // 虽可选链 no-op 仍显式门控避免语义漂移）：壳的原生 UI（设置弹窗等）跟随统一/回落
+  if (isDesktopHost()) {
+    hostBridge.theme.syncTheme(buildShellThemePayload(shouldApply));
   }
 }
 
@@ -269,17 +268,17 @@ function syncNuwaClawCssOverride(): void {
  * - 默认写入（女娲蓝 + 纯色）全端生效：开箱即女娲主题，浏览器与客户端观感一致
  *   （2026-09-04 起浏览器同步，此前浏览器默认态刻意保持平台观感）。
  */
-export function initNuwaClawTheme(): () => void {
+export function initBrandTheme(): () => void {
   // 全端默认切换到女娲主题：用户/租户均未显式定制主题时，把「女娲蓝 + 纯色背景」
   // 写入正式主题配置（走服务统一的存储/DOM 应用链路，主题切换面板因此自然高亮
   // 女娲蓝与纯色两项）。用户此后切任何主题都构成显式配置，此写入不再重复。
   if (!hasExplicitThemeConfig()) {
     unifiedThemeService.updateData({
-      primaryColor: NUWACLAW_PRIMARY,
-      backgroundId: NUWACLAW_BACKGROUND_ID,
+      primaryColor: BRAND_PRIMARY,
+      backgroundId: BRAND_BACKGROUND_ID,
     });
   }
-  syncNuwaClawCssOverride();
-  unifiedThemeService.addListener(syncNuwaClawCssOverride);
-  return () => unifiedThemeService.removeListener(syncNuwaClawCssOverride);
+  syncBrandThemeCssOverride();
+  unifiedThemeService.addListener(syncBrandThemeCssOverride);
+  return () => unifiedThemeService.removeListener(syncBrandThemeCssOverride);
 }

@@ -1,7 +1,6 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
-import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
 import {
   CopyToSpaceComponent,
   PagePreviewIframe,
@@ -12,6 +11,7 @@ import {
   writeAgentModeCache,
 } from '@/components/business-component/AgentIntervention/hooks/useAgentInterventionLayer';
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
+import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
@@ -53,7 +53,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { appendOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';

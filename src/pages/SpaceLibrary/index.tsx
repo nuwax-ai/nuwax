@@ -41,7 +41,7 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import {
   buildWorkflowRoute,
   jumpTo,

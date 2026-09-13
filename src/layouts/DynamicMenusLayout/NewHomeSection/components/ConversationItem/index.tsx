@@ -20,7 +20,10 @@ interface ConversationItemProps {
   pinned?: boolean;
   /** 服务端归档状态（已归档视图内展示，供菜单「取消归档」） */
   archived?: boolean;
+  /** 服务端收藏状态（菜单「收藏/取消收藏」按此选择接口路径与文案） */
+  collected?: boolean;
   onFlagChanged?: (kind: 'pinned' | 'archived', enabled: boolean) => void;
+  onCollectedChanged?: (collected: boolean) => void;
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({
@@ -30,7 +33,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   onClick,
   pinned = false,
   archived = false,
+  collected = false,
   onFlagChanged,
+  onCollectedChanged,
 }) => {
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
@@ -46,7 +51,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       }
       pinned={pinned}
       archived={archived}
+      collected={collected}
       onFlagChanged={onFlagChanged}
+      onCollectedChanged={onCollectedChanged}
       showMoreButton
     >
       {(moreButton) => (

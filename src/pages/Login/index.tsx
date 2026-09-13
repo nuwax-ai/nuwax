@@ -14,7 +14,7 @@ import {
   isWeakNumber,
   validatePassword,
 } from '@/utils/common';
-import { isNuwaClaw, nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
@@ -146,7 +146,7 @@ const Login: React.FC = () => {
         setEnterpriseError(dict('PC.Pages.Login.enterpriseDomainUnreachable'));
         return;
       }
-      const res = await nuwaClawHost.auth.configureServerHost(origin);
+      const res = await hostBridge.auth.configureServerHost(origin);
       if (!res.success) {
         setEnterpriseError(
           dict('PC.Pages.Login.enterpriseSwitchFailed', res.error ?? ''),
@@ -190,7 +190,7 @@ const Login: React.FC = () => {
         const { expireDate, token, redirect: responseRedirectUrl } = result;
         localStorage.setItem(ACCESS_TOKEN, token);
         // nuwaclaw 客户端：登录后持久化 token 到宿主（重启免登）；无桥自动跳过
-        await nuwaClawHost.auth.persistToken(token);
+        await hostBridge.auth.persistToken(token);
         localStorage.setItem(EXPIRE_DATE, expireDate);
         localStorage.setItem(PHONE, params[0].phoneOrEmail);
         try {
@@ -773,9 +773,9 @@ const Login: React.FC = () => {
                 </Form.Item>
               </Form>
 
-              {/* 企业登录：仅壳内可见——切换客户端后端域名并重新初始化
-                  （壳停服务 + webview 重载到新域登录页） */}
-              {isNuwaClaw() && (
+              {/* 企业登录：仅商业桌面宿主可见——切换客户端后端域名并重新初始化
+                  （壳停服务 + webview 重载到新域登录页）；社区宿主与浏览器同形态不展示 */}
+              {isDesktopHost() && (
                 <Button
                   type="link"
                   size="small"

@@ -8,10 +8,10 @@ import HoverScrollbar from '@/components/base/HoverScrollbar';
 import ConditionRender from '@/components/ConditionRender';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { initHostBridgeEvents } from '@/services/hostBridgeEvents';
 import { dict } from '@/services/i18nRuntime';
-import { initNuwaClawHostEvents } from '@/services/nuwaClawHostEvents';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell, shellAvoid } from '@/utils/hostBridge';
 import { jumpTo } from '@/utils/router';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
@@ -51,9 +51,7 @@ const cx = classNames.bind(styles);
 /** 桌面端沉浸式：顶部下移避让 nuwaclaw 工具栏（macOS 红绿灯在其左；Win/Linux 左侧自绘按钮组）。
  *  仅一级/二级菜单列使用。注意：走 @/layouts 的主内容区（page-container）不加避让——
  *  列表页内容会被整体压低（曾误伤）；layout:false 全屏页不做内嵌避让，走新开窗口打开。
- *  尺寸单一来源在 nuwaClawBridge 的 shellAvoid.TOP（与右上角三键避让同源管理），
- *  NUWA_CLAW_PADDING_TOP 保留为兼容导出别名（外部导入点仍引用此名）。 */
-export const NUWA_CLAW_PADDING_TOP = shellAvoid.TOP;
+ *  尺寸单一来源在 hostBridge 的 shellAvoid.TOP（与右上角三键避让同源管理）。 */
 /** 使用自定义 Section 的一级菜单，始终展示二级菜单栏 */
 const SECOND_MENU_SECTION_TABS = new Set([
   'homepage',
@@ -116,7 +114,7 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
 
   // nuwaclaw 桌面端：注册宿主命令监听（工具栏「收起二级菜单」、壳层 ⌘N 新建任务经此通道下发）
   useEffect(() => {
-    return initNuwaClawHostEvents({
+    return initHostBridgeEvents({
       setSecondMenuCollapsed: setIsSecondMenuCollapsed,
       createNewTask: handleNewTask,
     });

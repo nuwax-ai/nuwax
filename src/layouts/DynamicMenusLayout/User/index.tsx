@@ -3,7 +3,7 @@ import { USER_AVATAR_LIST } from '@/constants/menus.constants';
 import { apiLogout } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import { UserAvatarEnum } from '@/types/enums/menus';
-import { nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { hostBridge } from '@/utils/hostBridge';
 import { redirectToLogin } from '@/utils/router';
 import { Popover } from 'antd';
 import { TooltipPlacement } from 'antd/es/tooltip';
@@ -51,7 +51,7 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
     onSuccess: () => {
       localStorage.clear();
       // nuwaclaw 客户端：联动清除宿主持久化 token（无桥/失败自动忽略）
-      void nuwaClawHost.auth.clear();
+      void hostBridge.auth.clear();
       // 清除菜单信息
       clearMenuInfo();
 

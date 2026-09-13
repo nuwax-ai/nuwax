@@ -72,11 +72,11 @@ import {
   syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
-import { conversationErrorTerminalLogger } from '@/utils/logger';
 import {
   perfTracker,
   type MessagePerfLifecycle,
-} from '@/utils/nuwaClawBridge/perfTracker';
+} from '@/utils/hostBridge/perfTracker';
+import { conversationErrorTerminalLogger } from '@/utils/logger';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';

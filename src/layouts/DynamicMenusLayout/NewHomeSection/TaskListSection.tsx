@@ -30,6 +30,8 @@ interface TaskListSectionProps {
     kind: 'pinned' | 'archived',
     enabled: boolean,
   ) => void;
+  /** 收藏切换成功后同步调用方列表（collected 为后端回读打标） */
+  onCollectedChanged: (conversationId: number, collected: boolean) => void;
 }
 
 const TaskListSection: React.FC<TaskListSectionProps> = ({
@@ -41,6 +43,7 @@ const TaskListSection: React.FC<TaskListSectionProps> = ({
   activeProjectChildId,
   onConversationClick,
   onFlagChanged,
+  onCollectedChanged,
 }) => (
   <>
     {!loading && list.length === 0 && <EmptyState keyword={keyword} />}
@@ -59,8 +62,12 @@ const TaskListSection: React.FC<TaskListSectionProps> = ({
           onClick={() => onConversationClick(item)}
           pinned={item.pinned === true}
           archived={item.archived === true}
+          collected={item.collected === true}
           onFlagChanged={(kind, enabled) =>
             onFlagChanged(item.id, kind, enabled)
+          }
+          onCollectedChanged={(collected) =>
+            onCollectedChanged(item.id, collected)
           }
         />
       ))}
