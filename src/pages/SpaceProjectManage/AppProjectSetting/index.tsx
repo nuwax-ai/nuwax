@@ -9,7 +9,7 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { isValidDomain, normalizeDomain } from '@/utils/common';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import {
   EyeInvisibleOutlined,
   EyeOutlined,
