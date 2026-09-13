@@ -252,8 +252,12 @@ const NuwaApps: React.FC = () => {
                     <p className={cx('text-ellipsis', styles['recent-name'])}>
                       {app.name}
                     </p>
-                    <p className={cx(styles['recent-desc'])}>
-                      {dict('PC.Pages.NuwaApps.appTag')}
+                    {/* 标题下展示应用描述,超长单行省略 */}
+                    <p
+                      className={cx('text-ellipsis', styles['recent-desc'])}
+                      title={app.description}
+                    >
+                      {app.description}
                     </p>
                   </div>
                 </div>

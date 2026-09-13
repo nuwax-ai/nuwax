@@ -51,8 +51,11 @@
   // ===================== 最近使用 =====================
   .recent-list {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 12px;
+    // 卡宽上限 230px:列数随容器宽度自适应,卡片在 210~230px 区间伸缩;
+    // 间距放大到 16px 收敛行尾留白(12px 时 1920 窗口右侧空 ~120px,
+    // 16px 在 1600/2560 窗口基本填满整行)
+    grid-template-columns: repeat(auto-fill, minmax(210px, 230px));
+    gap: 16px;
     margin-bottom: 24px;
 
     .recent-item {
@@ -142,34 +145,11 @@
   // ===================== 应用卡片网格 =====================
   .app-list {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    // 与专家·技能·连接器页完全同写法(minmax(300px, 1fr) 流式网格):
+    // 1920 窗口一排 5 张,列数随容器宽度自适应(本页无左侧分类栏、内容区
+    // 略宽,卡片 1fr 拉伸后比专家页稍宽属正常)
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
     align-content: start;
-  }
-
-  @media (max-width: 1600px) {
-    .app-list {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 1200px) {
-    .app-list {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .recent-list {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 768px) {
-    .recent-list {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .app-list {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
   }
 }
