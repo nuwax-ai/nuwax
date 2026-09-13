@@ -405,7 +405,10 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   /**
    * 连接器卡片「启用开关」：POST /api/connector/connections/{连接器id}/status
    * （连接器 id 为提供方主键，非连接 id）；成功后就地更新
-   * connectionEnabled 驱动开关回弹，不动筛选与分页（避免整页重拉）
+   * connectionEnabled 驱动开关回弹，不动筛选与分页（避免整页重拉）。
+   * 例外——「我启用的」维度关闭开关：接口成功后整区重拉（reload），
+   * 关闭启用的连接器即时移出该维度列表；其余维度维持就地更新
+   * （与技能「我启用的」关闭开关同口径）
    */
   const handleToggleEnabled = useCallback(
     async (item: ResourceItem, enabled: boolean) => {
@@ -424,7 +427,12 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
           enabled,
         );
         if (res?.code === SUCCESS_CODE) {
-          updateItem(item.id, { connectionEnabled: enabled });
+          // 「我启用的」维度关闭开关:整区重拉让连接器移出列表
+          if (source === 'enabled' && !enabled) {
+            reload();
+          } else {
+            updateItem(item.id, { connectionEnabled: enabled });
+          }
         } else {
           message.error(res?.message || '切换启用状态失败');
         }
@@ -432,7 +440,7 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
         setTogglingIds((prev) => prev.filter((id) => id !== item.id));
       }
     },
-    [updateItem],
+    [updateItem, reload, source],
   );
 
   /** 技能启用开关切换请求中的卡片 id（Switch loading 防重复点击） */

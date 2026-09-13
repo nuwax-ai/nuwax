@@ -345,6 +345,29 @@ const RESOURCE_ADAPTERS: Record<
         return records.map((item) => mapConnectorItem(item, 'connected-conn'));
       },
     },
+    // 我启用的-当前用户启用开关已打开的连接器（connectionEnabled=true
+    // 服务端过滤，一次性全量返回）；keyword/category 走接口参数，
+    // 本地跳过双重筛选（与"已连接的"同口径）
+    enabled: {
+      mode: 'client',
+      serverKeyword: true,
+      serverCategory: true,
+      fetchAll: ({ keyword, category }) =>
+        apiConnectorProviderPageList({
+          connectionEnabled: 'true',
+          category: category || undefined,
+          keyword: keyword || undefined,
+        }),
+      extractAll: (res) => {
+        const data = res.data;
+        // 同"已连接的"：数组/分页壳两兼容
+        const records = Array.isArray(data)
+          ? (data as ConnectorProviderInfo[])
+          : (data as { records?: ConnectorProviderInfo[] | null } | null)
+              ?.records ?? [];
+        return records.map((item) => mapConnectorItem(item, 'enabled-conn'));
+      },
+    },
   },
 };
 
