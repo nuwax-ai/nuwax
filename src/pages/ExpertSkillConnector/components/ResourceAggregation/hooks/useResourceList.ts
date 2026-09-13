@@ -308,15 +308,16 @@ const RESOURCE_ADAPTERS: Record<
         extractConnectorPage(res, page, pageSize, 'system-conn'),
     },
     // 团队空间-空间连接器（服务端分页）：
-    // "全部"页签 = scope=space 聚合全部空间（不带 spaceId）；
-    // 具体空间 = 仅传 spaceId；两种口径均不带 status/connected 筛选
+    // 两种口径均带 scope=space——"全部"页签聚合全部空间（不带 spaceId）；
+    // 具体空间 = scope=space + spaceId；均不带 status/connected 筛选
     team: {
       mode: 'server',
       fetchPage: ({ page, pageSize, keyword, spaceId }) =>
         apiConnectorProviderPageList({
           pageNum: page,
           pageSize,
-          ...(spaceId ? { spaceId } : { scope: 'space' }),
+          scope: 'space',
+          ...(spaceId ? { spaceId } : {}),
           keyword: keyword || undefined,
         }),
       extract: (res, page, pageSize) =>
