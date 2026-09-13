@@ -158,7 +158,7 @@ vi.mock('@/utils/ant-custom', () => ({
   modalConfirm: vi.fn(),
 }));
 
-vi.mock('@/utils/nuwaClawBridge/perfTracker', () => ({
+vi.mock('@/utils/hostBridge/perfTracker', () => ({
   perfTracker: {
     createLifecycle: () => ({
       onSendClick: vi.fn(),

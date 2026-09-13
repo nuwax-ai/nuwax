@@ -1,5 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
-import { isImmersiveShell } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell } from '@/utils/hostBridge';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';

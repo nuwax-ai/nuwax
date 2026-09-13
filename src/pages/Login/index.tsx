@@ -14,7 +14,7 @@ import {
   isWeakNumber,
   validatePassword,
 } from '@/utils/common';
-import { isDesktopHost, nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
@@ -146,7 +146,7 @@ const Login: React.FC = () => {
         setEnterpriseError(dict('PC.Pages.Login.enterpriseDomainUnreachable'));
         return;
       }
-      const res = await nuwaClawHost.auth.configureServerHost(origin);
+      const res = await hostBridge.auth.configureServerHost(origin);
       if (!res.success) {
         setEnterpriseError(
           dict('PC.Pages.Login.enterpriseSwitchFailed', res.error ?? ''),
@@ -190,7 +190,7 @@ const Login: React.FC = () => {
         const { expireDate, token, redirect: responseRedirectUrl } = result;
         localStorage.setItem(ACCESS_TOKEN, token);
         // nuwaclaw 客户端：登录后持久化 token 到宿主（重启免登）；无桥自动跳过
-        await nuwaClawHost.auth.persistToken(token);
+        await hostBridge.auth.persistToken(token);
         localStorage.setItem(EXPIRE_DATE, expireDate);
         localStorage.setItem(PHONE, params[0].phoneOrEmail);
         try {

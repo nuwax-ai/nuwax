@@ -4,7 +4,7 @@
  * 折叠态在原收起按钮位置显示悬浮展开按钮（见 DynamicMenusLayout）。
  * 偏好持久化沿用原 CollapseButton 的 sessionStorage key，老用户偏好兼容。
  */
-import { isImmersiveShell } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell } from '@/utils/hostBridge';
 import { useCallback, useEffect } from 'react';
 import { useModel, useSearchParams } from 'umi';
 

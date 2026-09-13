@@ -37,7 +37,7 @@ import {
 import { modalConfirm } from '@/utils/ant-custom';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { exportConfigFile } from '@/utils/exportImportFile';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { jumpToAgent } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message, Upload } from 'antd';

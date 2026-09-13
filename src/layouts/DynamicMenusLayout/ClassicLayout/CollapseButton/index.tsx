@@ -3,7 +3,7 @@ import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import { isImmersiveShell } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell } from '@/utils/hostBridge';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';

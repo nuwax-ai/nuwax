@@ -18,14 +18,17 @@ import {
   THEME_BACKGROUND_CONFIGS,
 } from '@/constants/theme.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
-import { dict } from '@/services/i18nRuntime';
 import {
-  isNuwaClawDefaultThemeActive,
-  NUWACLAW_PRIMARY,
-} from '@/services/nuwaClawTheme';
+  BRAND_PRIMARY,
+  isDefaultBrandThemeActive,
+} from '@/services/brandTheme';
+import { dict } from '@/services/i18nRuntime';
 import unifiedThemeService from '@/services/unifiedThemeService';
 import { BackgroundImage } from '@/types/background';
-import { ThemeLayoutColorStyle, ThemeNavigationStyleType } from '@/types/enums/theme';
+import {
+  ThemeLayoutColorStyle,
+  ThemeNavigationStyleType,
+} from '@/types/enums/theme';
 import { TenantThemeConfig } from '@/types/tenant';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -245,7 +248,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
               // 「生效主色」才能正确高亮「女娲蓝」选项；显式定制后主色跟随
               // 用户选择（灰白 solid 布局已改挂背景维度，不再反向绑架主色）
               currentColor={
-                isNuwaClawDefaultThemeActive() ? NUWACLAW_PRIMARY : primaryColor
+                isDefaultBrandThemeActive() ? BRAND_PRIMARY : primaryColor
               }
               onColorChange={handleColorChange}
               extraColors={extraColors} // 显示从租户配置获取的额外颜色

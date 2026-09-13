@@ -35,7 +35,7 @@ const singleColumnBackgroundId = backgroundConfigs.find((bg) => !bg.url)?.id;
  * layoutStyle（导航深浅色）值域收敛：仅认 light/dark，其余值（两代字段语义
  * 过渡期布局类型 style1/2/3 被误写进深浅色字段等脏值）一律视为缺失回落默认。
  * 非法值进内存会让 body 布局类（xagi-layout-*）、灰白主题让位判定
- * （isNuwaClawThemeActive）等全面失配（2026-09-13 单栏 bg-solid 失效根因）。
+ * （isBrandThemeActive）等全面失配（2026-09-13 单栏 bg-solid 失效根因）。
  */
 function normalizeLayoutStyleValue(
   value: unknown,
