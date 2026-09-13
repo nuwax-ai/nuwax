@@ -14,7 +14,7 @@ import {
   isWeakNumber,
   validatePassword,
 } from '@/utils/common';
-import { isNuwaClaw, nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { isDesktopHost, nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
@@ -773,9 +773,9 @@ const Login: React.FC = () => {
                 </Form.Item>
               </Form>
 
-              {/* 企业登录：仅壳内可见——切换客户端后端域名并重新初始化
-                  （壳停服务 + webview 重载到新域登录页） */}
-              {isNuwaClaw() && (
+              {/* 企业登录：仅商业桌面宿主可见——切换客户端后端域名并重新初始化
+                  （壳停服务 + webview 重载到新域登录页）；社区宿主与浏览器同形态不展示 */}
+              {isDesktopHost() && (
                 <Button
                   type="link"
                   size="small"

@@ -129,6 +129,7 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     (window as any).NuwaClawBridge = {
       auth: {},
       native: {},
+      host: { getProduct: () => 'nuwax' },
       theme: { syncTheme },
     };
     expect(isNuwaClawThemeActive()).toBe(true);
@@ -178,6 +179,7 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     (window as any).NuwaClawBridge = {
       auth: {},
       native: {},
+      host: { getProduct: () => 'nuwax' },
       theme: { syncTheme },
     };
     localStorage.setItem(
@@ -206,7 +208,11 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
   });
 
   it('nuwaclaw + 显式选图片背景（任意主色）→ 让位：不吞 applyToDOM 刚写入的背景图 url', () => {
-    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    (window as any).NuwaClawBridge = {
+      auth: {},
+      native: {},
+      host: { getProduct: () => 'nuwax' },
+    };
     localStorage.setItem(
       STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
       JSON.stringify({ selectedBackgroundId: 'bg-variant-1' }),
@@ -230,7 +236,11 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
   });
 
   it('nuwaclaw + 用户显式选「女娲蓝」+ 纯色背景 + 浅色 → 生效（注册进主题切换维度的正式选项）', () => {
-    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    (window as any).NuwaClawBridge = {
+      auth: {},
+      native: {},
+      host: { getProduct: () => 'nuwax' },
+    };
     localStorage.setItem(
       STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
       JSON.stringify({ selectedThemeColor: NUWACLAW_PRIMARY }),
@@ -251,7 +261,11 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
   });
 
   it('nuwaclaw + 纯色背景但切深色布局 → 让位；GLOBAL_SETTINGS 仅语言不构成显式定制', () => {
-    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    (window as any).NuwaClawBridge = {
+      auth: {},
+      native: {},
+      host: { getProduct: () => 'nuwax' },
+    };
     localStorage.setItem(
       STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
       JSON.stringify({ selectedThemeColor: NUWACLAW_PRIMARY }),
@@ -278,6 +292,7 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     (window as any).NuwaClawBridge = {
       auth: {},
       native: {},
+      host: { getProduct: () => 'nuwax' },
       theme: { syncTheme },
     };
     const template = {
@@ -305,7 +320,11 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
   });
 
   it('nuwaclaw + 用户层偏离租户默认（真定制）→ 让位', () => {
-    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    (window as any).NuwaClawBridge = {
+      auth: {},
+      native: {},
+      host: { getProduct: () => 'nuwax' },
+    };
     localStorage.setItem(
       STORAGE_KEYS_MOCK.TENANT_CONFIG_INFO,
       JSON.stringify({
@@ -331,7 +350,11 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
   });
 
   it('nuwaclaw + 回声色大小写差异（#5147FF vs #5147ff）→ 仍视为全等回声，生效', () => {
-    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    (window as any).NuwaClawBridge = {
+      auth: {},
+      native: {},
+      host: { getProduct: () => 'nuwax' },
+    };
     localStorage.setItem(
       STORAGE_KEYS_MOCK.TENANT_CONFIG_INFO,
       JSON.stringify({
@@ -346,7 +369,11 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
   });
 
   it('nuwax + 租户配置损坏（templateConfig 非法 JSON）→ 回声基准回落平台出厂默认，出厂值不算显式', () => {
-    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    (window as any).NuwaClawBridge = {
+      auth: {},
+      native: {},
+      host: { getProduct: () => 'nuwax' },
+    };
     localStorage.setItem(
       STORAGE_KEYS_MOCK.TENANT_CONFIG_INFO,
       JSON.stringify({ templateConfig: '{broken json' }),
@@ -361,7 +388,11 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
   });
 
   it('nuwaclaw + 仅租户 themeConfig.default*（无 templateConfig）→ 仍作为默认值参与回声比对', () => {
-    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    (window as any).NuwaClawBridge = {
+      auth: {},
+      native: {},
+      host: { getProduct: () => 'nuwax' },
+    };
     localStorage.setItem(
       STORAGE_KEYS_MOCK.TENANT_CONFIG_INFO,
       JSON.stringify({

@@ -24,7 +24,7 @@ import {
 } from '@/constants/theme.constants';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
-import { isNuwaClaw, nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { isDesktopHost, nuwaClawHost } from '@/utils/nuwaClawBridge';
 
 /** 平台出厂默认背景（租户/用户均未配置时的登录回声落点，与 #5147ff 同批） */
 export const PLATFORM_DEFAULT_BACKGROUND_ID = 'bg-variant-8';
@@ -255,9 +255,9 @@ function syncNuwaClawCssOverride(): void {
       root.style.removeProperty(BG_IMAGE_VAR);
     }
   }
-  // 同步主题状态给壳（fire-and-forget，仅桌面端——浏览器无宿主，通道虽可选链
-  // no-op，仍显式门控避免语义漂移）：壳的原生 UI（设置弹窗等）跟随统一/回落
-  if (isNuwaClaw()) {
+  // 同步主题状态给壳（fire-and-forget，仅商业桌面端——浏览器/社区宿主无此通道，
+  // 虽可选链 no-op 仍显式门控避免语义漂移）：壳的原生 UI（设置弹窗等）跟随统一/回落
+  if (isDesktopHost()) {
     nuwaClawHost.theme.syncTheme(buildShellThemePayload(shouldApply));
   }
 }

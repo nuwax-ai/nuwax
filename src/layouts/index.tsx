@@ -7,10 +7,14 @@
  */
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import React from 'react';
-import { Outlet, useLocation, useModel } from 'umi';
-import { getSidebarShellLayoutPolicy } from './fullscreenWorkbenchPaths';
+import React, { useEffect } from 'react';
+import { history, Outlet, useLocation, useModel } from 'umi';
+import {
+  getSidebarShellLayoutPolicy,
+  shouldSeedWorkbenchHistoryBase,
+} from './fullscreenWorkbenchPaths';
 import SidebarShell from './SidebarShell';
+import { WORKBENCH_HISTORY_BASE_URL } from './workbenchHistoryBase';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -22,6 +26,21 @@ const Layout: React.FC = () => {
     isStyle3: effectiveNavigationStyle === ThemeNavigationStyleType.STYLE3,
     isMobile,
   });
+
+  // 单栏工作台页历史栈补网：启动后才变成栈首的路径（/login redirect、直开
+  // /home/chat 被 Chat 页 replace 成工作台页）boot 种子覆盖不到，这里按最终
+  // 生效形态补一条 /home 栈底，保证 back 有路可退。经典风格 bare 形态不触发
+  //（variant 非 page），行为不变；垫栈后 length 变 2，本 effect 自然自限。
+  useEffect(() => {
+    if (shellPolicy.variant !== 'page') return;
+    if (
+      !shouldSeedWorkbenchHistoryBase(location.pathname, window.history.length)
+    )
+      return;
+    const { pathname, search, hash } = location;
+    history.replace(WORKBENCH_HISTORY_BASE_URL);
+    history.push(pathname + search + hash);
+  }, [shellPolicy.variant, location]);
 
   return (
     <SidebarShell
