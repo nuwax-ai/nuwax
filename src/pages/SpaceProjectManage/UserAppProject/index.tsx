@@ -11,7 +11,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import { history, useParams, useRequest } from 'umi';
 import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
 import ProjectCard from '../components/ProjectCard';
 import { apiUserProjectPageQuery } from '../services';
@@ -87,11 +87,7 @@ const UserAppProject: React.FC = () => {
 
   const handleOpenProject = useCallback(
     (item: UserProjectItem) => {
-      openProject(
-        spaceId,
-        { id: item.id, projectType: AgentComponentTypeEnum.UserApp },
-        item.conversationId ?? undefined,
-      );
+      history.push(`/space/${spaceId}/app-project-setting/${item.id}`);
     },
     [spaceId],
   );
