@@ -9,3 +9,6 @@ export const APP_LIST_PAGE_SIZE = 48;
 
 /** 最近使用列表拉取条数(接口路径参数,暂写死 200) */
 export const RECENT_USED_SIZE = 200;
+
+/** 应用列表滚动容器 id(无限滚动加载挂载目标) */
+export const APP_SCROLL_CONTAINER_ID = 'nuwa-apps-scroll-container';
