@@ -1,4 +1,3 @@
-import CopyIconButton from '@/components/base/CopyIconButton';
 import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -8,9 +7,26 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
-import { PlusOutlined } from '@ant-design/icons';
-import { Button, Empty, Input, message, Modal, Radio, Select, Tag } from 'antd';
+import { copyTextToClipboard } from '@/utils/clipboard';
+import { isValidDomain, normalizeDomain } from '@/utils/common';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
+import {
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
+import {
+  Button,
+  Empty,
+  Form,
+  Input,
+  message,
+  Modal,
+  Radio,
+  Select,
+  Spin,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
@@ -20,7 +36,14 @@ import {
   apiUserAppDomainList,
   UserAppDomainTypeEnum,
   type UserAppDomainInfo,
-} from '../services';
+} from '../../AppDevPro/services/appDomain';
+import {
+  apiThirdAppOauth2CredentialRegenerate,
+  apiThirdAppOauth2SecretGet,
+  apiThirdAppOauth2SettingGet,
+  type ThirdAppOauth2CredentialInfo,
+  type ThirdAppOauth2Info,
+} from '../services/thirdAppOauth2';
 import { openProject } from '../type';
 import ConversationPanel from './components/ConversationPanel';
 import styles from './index.less';
@@ -30,8 +53,6 @@ const cx = classNames.bind(styles);
 type SettingTabKey = 'plan' | 'asset' | 'setting';
 
 const CNAME_TARGET = 'cname.nuwax.com';
-const DOMAIN_REGEX =
-  /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
 
 /** 从分页结果中取出 records */
 const pickRecords = (
@@ -48,13 +69,21 @@ const pickRecords = (
   return [];
 };
 
-/** 将域名补成可展示的 https 地址 */
-const toHttpsUrl = (domain?: string) => {
-  const value = domain?.trim() || '';
-  if (!value) {
-    return '';
+/** 解开 request 包装，兼容直接返回 data 的情况 */
+const pickResponseData = <T,>(
+  result?: RequestResponse<T> | T,
+): T | undefined => {
+  if (result === undefined || result === null) {
+    return undefined;
   }
-  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  if (typeof result === 'object' && result !== null && 'code' in result) {
+    const wrapped = result as RequestResponse<T>;
+    if (wrapped.code && wrapped.code !== SUCCESS_CODE) {
+      return undefined;
+    }
+    return wrapped.data;
+  }
+  return result as T;
 };
 
 /**
@@ -78,6 +107,12 @@ const AppProjectSetting: React.FC = () => {
   const [managePort, setManagePort] = useState('');
   const [bindOpen, setBindOpen] = useState(false);
   const [bindDomain, setBindDomain] = useState('');
+  const [oauthInfo, setOauthInfo] = useState<ThirdAppOauth2Info>();
+  const [clientSecret, setClientSecret] = useState('');
+  const [secretVisible, setSecretVisible] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const [homepageUrl, setHomepageUrl] = useState('');
+  const [redirectUri, setRedirectUri] = useState('');
 
   const { run, loading } = useRequest(
     () =>
@@ -111,7 +146,7 @@ const AppProjectSetting: React.FC = () => {
     },
   );
 
-  const { run: runDomainList, loading: domainLoading } = useRequest(
+  const { run: runDomainList } = useRequest(
     apiUserAppDomainList,
     {
       manual: true,
@@ -144,6 +179,79 @@ const AppProjectSetting: React.FC = () => {
     },
   );
 
+  const { run: runUnbindDomain } = useRequest(apiUserAppDomainDelete, {
+    manual: true,
+    onSuccess: () => {
+      message.success(dict('PC.Pages.AppProjectSetting.unbindSuccess'));
+      runDomainList(appId);
+    },
+  });
+
+  const { run: runRegenerate, loading: regenerateLoading } = useRequest(
+    () => apiThirdAppOauth2CredentialRegenerate(String(appId)),
+    {
+      manual: true,
+      onSuccess: (
+        result: RequestResponse<ThirdAppOauth2CredentialInfo> | ThirdAppOauth2CredentialInfo,
+      ) => {
+        const credential = pickResponseData(result);
+        if (!credential?.clientId) {
+          return;
+        }
+        setOauthInfo((prev) => ({
+          projectId: prev?.projectId ?? appId,
+          clientId: credential.clientId,
+          hasClientSecret: true,
+          homepageUrl: prev?.homepageUrl ?? homepageUrl,
+          redirectUri: prev?.redirectUri ?? redirectUri,
+          scopes: prev?.scopes ?? [],
+          enabled: prev?.enabled ?? true,
+        }));
+        setClientSecret(credential.clientSecret || '');
+        setSecretVisible(true);
+        message.success(dict('PC.Pages.AppProjectSetting.regenerateSuccess'));
+      },
+    },
+  );
+
+  /**
+   * 进入设置 Tab 后拉 OAuth2 配置；已生成 Secret 再取明文。
+   */
+  const loadOauthSetting = useCallback(async () => {
+    if (!appId) {
+      return;
+    }
+    setOauthLoading(true);
+    setSecretVisible(false);
+    try {
+      const settingRes = await apiThirdAppOauth2SettingGet(String(appId));
+      const info = pickResponseData(settingRes);
+      setOauthInfo(info);
+      setHomepageUrl(info?.homepageUrl || '');
+      setRedirectUri(info?.redirectUri || '');
+      if (!info?.hasClientSecret) {
+        setClientSecret('');
+        return;
+      }
+      try {
+        const secretRes = await apiThirdAppOauth2SecretGet(String(appId));
+        const secret = pickResponseData(secretRes);
+        setClientSecret(typeof secret === 'string' ? secret : '');
+      } catch (error) {
+        console.error('Failed to load oauth secret:', error);
+        setClientSecret('');
+      }
+    } catch (error) {
+      console.error('Failed to load oauth setting:', error);
+      setOauthInfo(undefined);
+      setClientSecret('');
+      setHomepageUrl('');
+      setRedirectUri('');
+    } finally {
+      setOauthLoading(false);
+    }
+  }, [appId]);
+
   useEffect(() => {
     if (!spaceId || !appId) {
       return;
@@ -151,6 +259,13 @@ const AppProjectSetting: React.FC = () => {
     run();
     runDomainList(appId);
   }, [appId, spaceId]);
+
+  useEffect(() => {
+    if (activeTab !== 'setting' || !appId) {
+      return;
+    }
+    void loadOauthSetting();
+  }, [activeTab, appId, loadOauthSetting]);
 
   const customDomains = useMemo(
     () =>
@@ -160,21 +275,6 @@ const AppProjectSetting: React.FC = () => {
     [domains],
   );
 
-  const previewDomain = useMemo(() => {
-    const custom = customDomains[0]?.domain;
-    const prod = domains.find(
-      (item) => item.domainType === UserAppDomainTypeEnum.Prod,
-    )?.domain;
-    const dev = domains.find(
-      (item) => item.domainType === UserAppDomainTypeEnum.Dev,
-    )?.domain;
-    return custom || prod || dev || '';
-  }, [customDomains, domains]);
-
-  const homeUrl = toHttpsUrl(previewDomain);
-  const callbackUrl = homeUrl
-    ? `${homeUrl.replace(/\/$/, '')}/oauth/callback`
-    : '';
   const emptyValue = dict('PC.Pages.AppProjectSetting.emptyValue');
 
   const handleBack = useCallback(() => {
@@ -199,14 +299,31 @@ const AppProjectSetting: React.FC = () => {
     });
   }, [appId, spaceId]);
 
+  const bindDomainValue = useMemo(
+    () => normalizeDomain(bindDomain),
+    [bindDomain],
+  );
+  const bindDomainError = useMemo(() => {
+    if (!bindDomain.trim()) {
+      return '';
+    }
+    if (!isValidDomain(bindDomain)) {
+      return dict('PC.Pages.AppProjectSetting.invalidDomain');
+    }
+    return '';
+  }, [bindDomain, bindDomainValue]);
+
   const handleBindDomain = useCallback(() => {
-    const domain = bindDomain.trim();
-    if (!DOMAIN_REGEX.test(domain)) {
-      message.warning(dict('PC.Pages.AppProjectSetting.invalidDomain'));
+    if (!bindDomain.trim() || bindDomainError || !bindDomainValue) {
       return;
     }
-    runBindDomain({ appId, domain });
-  }, [appId, bindDomain, runBindDomain]);
+    runBindDomain({ appId, domain: bindDomainValue });
+  }, [appId, bindDomain, bindDomainError, bindDomainValue, runBindDomain]);
+
+  const handleCloseBindModal = useCallback(() => {
+    setBindOpen(false);
+    setBindDomain('');
+  }, []);
 
   const handleUnbindDomain = useCallback(
     (item: UserAppDomainInfo) => {
@@ -219,21 +336,25 @@ const AppProjectSetting: React.FC = () => {
         okButtonProps: { danger: true },
         okText: dict('PC.Common.Global.delete'),
         cancelText: dict('PC.Common.Global.cancel'),
-        onOk: async () => {
-          const res = await apiUserAppDomainDelete(item.id);
-          if (res?.code === SUCCESS_CODE) {
-            message.success(dict('PC.Pages.AppProjectSetting.unbindSuccess'));
-            runDomainList(appId);
-          }
-        },
+        onOk: () => runUnbindDomain(item.id),
       });
     },
-    [appId, runDomainList],
+    [runUnbindDomain],
   );
 
+  /** 重新生成 Client ID / Secret，并回显明文 */
   const handleRegenerate = useCallback(() => {
-    message.info(dict('PC.Pages.AppProjectSetting.regenerateUnavailable'));
-  }, []);
+    if (!appId) {
+      return;
+    }
+    Modal.confirm({
+      title: dict('PC.Pages.AppProjectSetting.regenerateConfirmTitle'),
+      content: dict('PC.Pages.AppProjectSetting.regenerateHint'),
+      okText: dict('PC.Pages.AppProjectSetting.regenerate'),
+      cancelText: dict('PC.Common.Global.cancel'),
+      onOk: () => runRegenerate(),
+    });
+  }, [appId, runRegenerate]);
 
   /** 保存设置：发布配置接口未就绪，先回写本地并提示 */
   const handleSaveSettings = useCallback(() => {
@@ -250,15 +371,83 @@ const AppProjectSetting: React.FC = () => {
     message.success(dict('PC.Pages.AppProjectSetting.restoreSuccess'));
   }, []);
 
-  const renderField = (label: string, value: string, secret?: boolean) => (
+  /**
+   * 主页 / 回调地址：有值回填 Input，无值显示空输入框。
+   *
+   * @param label 字段名
+   * @param value 输入值
+   * @param onChange 变更回调
+   * @param placeholder 空态占位
+   * @returns 字段行
+   */
+  const renderUrlField = (
+    label: string,
+    value: string,
+    onChange: (next: string) => void,
+    placeholder: string,
+  ) => (
     <div className={cx(styles.field)}>
       <span className={cx(styles['field-label'])}>{label}</span>
-      <span className={cx(styles['field-value'], 'text-ellipsis')}>
-        {value ? (secret ? '••••••••••••••••••••' : value) : emptyValue}
-      </span>
-      {value ? <CopyIconButton text={value} /> : null}
+      <Input
+        className={cx(styles['field-input'])}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        suffix={
+          value ? (
+            <span
+              className={cx(styles['field-icon'])}
+              onClick={() => void copyTextToClipboard(value, undefined, true)}
+            >
+              <SvgIcon name="icons-chat-copy" style={{ fontSize: 12 }} />
+            </span>
+          ) : undefined
+        }
+      />
     </div>
   );
+
+  /**
+   * 认证信息行：文案后紧跟显隐 / 复制图标。
+   *
+   * @param label 字段名
+   * @param value 原始值
+   * @param secret 是否按密钥遮罩
+   * @returns 字段行
+   */
+  const renderField = (label: string, value: string, secret?: boolean) => {
+    const display = !value
+      ? emptyValue
+      : secret && !secretVisible
+      ? '••••••••••••••••••••'
+      : value;
+    return (
+      <div className={cx(styles.field)}>
+        <span className={cx(styles['field-label'])}>{label}</span>
+        <div className={cx(styles['field-content'])}>
+          <span className={cx(styles['field-value'], 'text-ellipsis')}>
+            {display}
+          </span>
+          {secret && value ? (
+            <span
+              className={cx(styles['field-icon'])}
+              onClick={() => setSecretVisible((visible) => !visible)}
+            >
+              {secretVisible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+            </span>
+          ) : null}
+          {value ? (
+            <span
+              className={cx(styles['field-icon'])}
+              onClick={() => void copyTextToClipboard(value, undefined, true)}
+            >
+              <SvgIcon name="icons-chat-copy" style={{ fontSize: 12 }} />
+            </span>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
 
   const renderSetting = () => (
     <div className={cx(styles['setting-stack'])}>
@@ -269,28 +458,41 @@ const AppProjectSetting: React.FC = () => {
         <p className={cx(styles['card-desc'])}>
           {dict('PC.Pages.AppProjectSetting.oauthDesc')}
         </p>
-        {renderField(dict('PC.Pages.AppProjectSetting.clientId'), '')}
-        {renderField(dict('PC.Pages.AppProjectSetting.clientSecret'), '', true)}
-        {renderField(dict('PC.Pages.AppProjectSetting.homeUrl'), homeUrl)}
-        {renderField(
-          dict('PC.Pages.AppProjectSetting.callbackUrl'),
-          callbackUrl,
-        )}
-        <Radio
-          checked={false}
-          className={cx(styles['regen-radio'])}
-          onClick={(event) => {
-            event.preventDefault();
-            handleRegenerate();
-          }}
-        >
-          <span className={cx(styles['regen-title'])}>
+        <Spin spinning={oauthLoading}>
+          {renderField(
+            dict('PC.Pages.AppProjectSetting.clientId'),
+            oauthInfo?.clientId || '',
+          )}
+          {renderField(
+            dict('PC.Pages.AppProjectSetting.clientSecret'),
+            clientSecret,
+            true,
+          )}
+          {renderUrlField(
+            dict('PC.Pages.AppProjectSetting.homeUrl'),
+            homepageUrl,
+            setHomepageUrl,
+            dict('PC.Pages.AppProjectSetting.homeUrlPlaceholder'),
+          )}
+          {renderUrlField(
+            dict('PC.Pages.AppProjectSetting.callbackUrl'),
+            redirectUri,
+            setRedirectUri,
+            dict('PC.Pages.AppProjectSetting.callbackUrlPlaceholder'),
+          )}
+        </Spin>
+        <div className={cx(styles['regen-row'])}>
+          <Button
+            icon={<ReloadOutlined />}
+            loading={regenerateLoading}
+            onClick={handleRegenerate}
+          >
             {dict('PC.Pages.AppProjectSetting.regenerate')}
-          </span>
+          </Button>
           <span className={cx(styles['regen-hint'])}>
             {dict('PC.Pages.AppProjectSetting.regenerateHint')}
           </span>
-        </Radio>
+        </div>
       </section>
 
       <section className={cx(styles.card)}>
@@ -305,14 +507,19 @@ const AppProjectSetting: React.FC = () => {
             <div key={item.id} className={cx(styles['domain-row'])}>
               <div className={cx(styles['domain-left'])}>
                 <span className={cx(styles['domain-name'])}>{item.domain}</span>
-                <Tag color="success">
-                  {dict('PC.Pages.AppProjectSetting.domainBound')}
-                </Tag>
               </div>
               <div className={cx(styles['domain-right'])}>
                 <span className={cx(styles['domain-cname'])}>
                   {dict('PC.Pages.AppProjectSetting.cnameLabel')} {CNAME_TARGET}
                 </span>
+                <Button
+                  size="small"
+                  onClick={() =>
+                    void copyTextToClipboard(CNAME_TARGET, undefined, true)
+                  }
+                >
+                  {dict('PC.Pages.AppProjectSetting.copyCname')}
+                </Button>
                 <Button
                   type="link"
                   danger
@@ -326,10 +533,8 @@ const AppProjectSetting: React.FC = () => {
           ))}
         </div>
         <Button
-          type="link"
           icon={<PlusOutlined />}
           className={cx(styles['bind-btn'])}
-          loading={domainLoading}
           onClick={() => setBindOpen(true)}
         >
           {dict('PC.Pages.AppProjectSetting.bindDomain')}
@@ -536,19 +741,25 @@ const AppProjectSetting: React.FC = () => {
         title={dict('PC.Pages.AppProjectSetting.bindDomain')}
         open={bindOpen}
         onOk={() => void handleBindDomain()}
-        onCancel={() => setBindOpen(false)}
+        onCancel={handleCloseBindModal}
         confirmLoading={bindLoading}
-        okButtonProps={{ disabled: !bindDomain.trim() }}
+        okButtonProps={{ disabled: !bindDomain.trim() || !!bindDomainError }}
         okText={dict('PC.Common.Global.confirm')}
         cancelText={dict('PC.Common.Global.cancel')}
         destroyOnHidden
       >
-        <Input
-          value={bindDomain}
-          onChange={(event) => setBindDomain(event.target.value)}
-          onPressEnter={() => void handleBindDomain()}
-          placeholder={dict('PC.Pages.AppProjectSetting.domainPlaceholder')}
-        />
+        <Form.Item
+          validateStatus={bindDomainError ? 'error' : undefined}
+          help={bindDomainError || undefined}
+        >
+          <Input
+            value={bindDomain}
+            status={bindDomainError ? 'error' : undefined}
+            onChange={(event) => setBindDomain(event.target.value)}
+            onPressEnter={() => void handleBindDomain()}
+            placeholder={dict('PC.Pages.AppProjectSetting.domainPlaceholder')}
+          />
+        </Form.Item>
       </Modal>
     </div>
   );
