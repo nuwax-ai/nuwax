@@ -58,10 +58,10 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({ activeKey }) => {
   }, [getSecondLevelMenus]);
 
   const handleMenuClick = (item: CategoryMenuItem) => {
-    if (item.code === activeKey) {
-      return;
-    }
-    history.push(item.path);
+    // 与主菜单（DynamicSecondMenu）同口径：每次点击都带新 _t 重新 push。
+    // 跨类型点击换路径正常跳转；重复点击当前项时路径不变但 _t 变化，
+    // 框架页据此 remount 内容区实现刷新（重拉数据、重置筛选与滚动）
+    history.push(item.path, { _t: Date.now() });
   };
 
   return (

@@ -18,7 +18,7 @@ export type ResourceTypeEnum = 'expert' | 'skill' | 'connector';
 
 /**
  * 数据源：系统广场 / 团队空间 / 已连接的（连接器页专属，当前用户已连接的连接器）/
- * 我启用的（技能页专属，当前用户启用的技能）
+ * 我启用的（技能页=当前用户启用的技能；连接器页=当前用户启用开关打开的连接器）
  */
 export type ResourceSourceEnum = 'system' | 'team' | 'connected' | 'enabled';
 

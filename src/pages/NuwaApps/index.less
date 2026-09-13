@@ -51,8 +51,11 @@
   // ===================== 最近使用 =====================
   .recent-list {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 12px;
+    // 卡宽上限 230px:列数随容器宽度自适应,卡片在 210~230px 区间伸缩;
+    // 间距放大到 16px 收敛行尾留白(12px 时 1920 窗口右侧空 ~120px,
+    // 16px 在 1600/2560 窗口基本填满整行)
+    grid-template-columns: repeat(auto-fill, minmax(210px, 230px));
+    gap: 16px;
     margin-bottom: 24px;
 
     .recent-item {
@@ -103,11 +106,11 @@
   }
 
   // ===================== 主tab(系统应用/团队空间) =====================
-  // Segmented 轨道去灰:对齐专家&专家团页观感(tab 行无背景)。
-  // 双类名提升优先级压过 ant-segmented 默认轨道灰;选中项白卡滑块与
-  // 红字高亮保留(红字来自全局主题 itemSelectedColor)
+  // Segmented 收窄为内容宽:本页 Segmented 处于 flex 列容器中,默认
+  // align-items:stretch 会把它横向拉满整行;专家页同行是 flex 行容器
+  // 无此问题,这里收窄回内容宽(inline-block 观感)保持两页一致
   .source-segmented.source-segmented {
-    background: transparent;
+    width: fit-content;
   }
 
   // ===================== 二级分类/空间筛选 pill =====================
@@ -142,34 +145,11 @@
   // ===================== 应用卡片网格 =====================
   .app-list {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    // 与专家·技能·连接器页完全同写法(minmax(300px, 1fr) 流式网格):
+    // 1920 窗口一排 5 张,列数随容器宽度自适应(本页无左侧分类栏、内容区
+    // 略宽,卡片 1fr 拉伸后比专家页稍宽属正常)
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
     align-content: start;
-  }
-
-  @media (max-width: 1600px) {
-    .app-list {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 1200px) {
-    .app-list {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .recent-list {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 768px) {
-    .recent-list {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .app-list {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
   }
 }

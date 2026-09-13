@@ -1,21 +1,19 @@
 /**
  * 女娲应用页面(一级菜单入口)
- * @description 应用分发页:最近使用(used/list 接口,点击续上次会话)+ 应用列表区
- * (主tab:系统应用=分类标签+已发布网页应用 POST 列表 / 团队空间=空间分类+GET 列表,
- * 点击进应用详情 /agent/:id);「更多」跳广场-网页应用
+ * @description 应用分发页:最近使用(POST recentlyUsed/list 接口,点击进应用详情)+ 应用列表区
+ * (主tab:系统应用/团队空间两维度共用 POST app/list,scope 区分,
+ * 两 tab 均滚动触底分页追加;点击进应用详情 /agent/:id);「更多」跳广场-网页应用
  */
 import agentImage from '@/assets/images/agent_image.png';
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
-import { apiUserUsedAgentList } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import {
-  apiPublishedAgentList,
-  apiPublishedAgentListBySpace,
+  apiPublishedAppList,
+  apiPublishedAppRecentlyUsedList,
   apiPublishedCategoryList,
 } from '@/services/square';
 import { apiSpaceList } from '@/services/workspace';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { AgentInfo } from '@/types/interfaces/agent';
 import type { Page } from '@/types/interfaces/request';
 import type {
   SquareCategoryInfo,
@@ -24,11 +22,12 @@ import type {
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { Empty, Input, Segmented } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { history, useRequest } from 'umi';
 import AppCard from './components/AppCard';
 import {
   APP_LIST_PAGE_SIZE,
+  APP_SCROLL_CONTAINER_ID,
   PAGE_APP_CATEGORY_ROOT_KEY,
   RECENT_USED_SIZE,
   SQUARE_PAGE_APP_PATH,
@@ -49,13 +48,27 @@ const ALL_CATEGORY_KEY = '';
 /** 应用列表区主 tab:系统应用 / 团队空间 */
 type AppSourceEnum = 'system' | 'team';
 
+/** 系统应用列表分页查询参数(runAppList 入参) */
+interface AppListQuery {
+  page: number;
+  category: string;
+  kw: string;
+}
+
+/** 团队空间列表分页查询参数(runSpaceAppList 入参;「全部」不传 spaceId,kw 搜索关键词) */
+interface SpaceAppListQuery {
+  page: number;
+  spaceId?: number;
+  kw: string;
+}
+
 const NuwaApps: React.FC = () => {
   // 应用列表区主 tab(默认系统应用)
   const [activeSource, setActiveSource] = useState<AppSourceEnum>('system');
   // 激活分类 key(空串=全部,系统应用 tab 用)
   const [activeCategory, setActiveCategory] =
     useState<string>(ALL_CATEGORY_KEY);
-  // 激活空间 key(团队空间 tab 用,空间列表就绪后默认选首个空间)
+  // 激活空间 key(团队空间 tab 用,空串=「全部」不限空间,其余为空间 id)
   const [activeSpace, setActiveSpace] = useState<string>('');
   // 搜索关键词(两 tab 通用)
   const [keyword, setKeyword] = useState<string>('');
@@ -70,17 +83,13 @@ const NuwaApps: React.FC = () => {
     [],
   );
   // 最近使用列表
-  const [recentList, setRecentList] = useState<AgentInfo[]>([]);
+  const [recentList, setRecentList] = useState<SquarePublishedItemInfo[]>([]);
 
-  // 最近使用:GET /api/user/agent/used/list/{size},type=PageApp 过滤网页应用
+  // 最近使用:POST /api/published/app/recentlyUsed/list(全量数组,按最近使用排序)
   useRequest(
-    () =>
-      apiUserUsedAgentList({
-        size: RECENT_USED_SIZE,
-        type: AgentComponentTypeEnum.PageApp,
-      }),
+    () => apiPublishedAppRecentlyUsedList({ size: RECENT_USED_SIZE }),
     {
-      onSuccess: (result: AgentInfo[]) => {
+      onSuccess: (result: SquarePublishedItemInfo[]) => {
         setRecentList(result || []);
       },
       onError: () => setRecentList([]),
@@ -101,7 +110,7 @@ const NuwaApps: React.FC = () => {
   });
 
   // 空间分类标签:用户空间列表(GET /api/space/list)映射为 {key: 空间id, label: 空间名};
-  // 失败时降级为空列表(团队空间 tab 展示空态)
+  // 失败时降级为空列表(团队空间 tab 仅剩「全部」pill,仍可查全部空间应用)
   const { loading: spacesLoading } = useRequest(apiSpaceList, {
     onSuccess: (result: SpaceInfo[]) => {
       const list = result || [];
@@ -114,96 +123,179 @@ const NuwaApps: React.FC = () => {
     onError: () => setSpaces([]),
   });
 
-  // 团队空间 tab:空间列表就绪后默认选中首个空间(用户切换后 activeSpace 有值不再覆盖)
-  useEffect(() => {
-    if (spaces.length > 0 && !activeSpace) {
-      setActiveSpace(spaces[0].key);
-    }
-  }, [spaces, activeSpace]);
+  // 应用列表分页(系统应用 tab):当前页码与已加载数 ref,滚动触底加载下一页
+  const appPageRef = useRef(1);
+  const appLoadedRef = useRef(0);
+  const [appHasMore, setAppHasMore] = useState(false);
+  // 应用列表分页(团队空间 tab)同上
+  const spaceAppPageRef = useRef(1);
+  const spaceAppLoadedRef = useRef(0);
+  const [spaceAppHasMore, setSpaceAppHasMore] = useState(false);
 
-  // 应用列表(系统应用 tab):已发布智能体列表(网页应用),分类/关键词变化时重新查询
+  // 应用列表(系统应用 tab):POST /api/published/app/list,scope=system +
+  // official=true 查官方系统应用;分类/关键词变化时重置回第一页,
+  // 滚动触底按页码 +1 追加(与专家·技能·连接器页滚动加载同口径)
   const { run: runAppList, loading: appListLoading } = useRequest(
-    (query: { category: string; kw: string }) =>
-      apiPublishedAgentList({
-        page: 1,
+    (query: { page: number; category: string; kw: string }) =>
+      apiPublishedAppList({
+        scope: 'system',
+        official: true,
+        page: query.page,
         pageSize: APP_LIST_PAGE_SIZE,
-        category: query.category,
-        kw: query.kw,
-        targetType: AgentComponentTypeEnum.Agent,
-        targetSubType: AgentComponentTypeEnum.PageApp,
+        category: query.category || undefined,
+        kw: query.kw || undefined,
       }),
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (result: Page<SquarePublishedItemInfo>) => {
-        setAppList(result?.records || []);
+      onSuccess: (
+        result: Page<SquarePublishedItemInfo>,
+        [query]: [AppListQuery],
+      ) => {
+        const records = result?.records || [];
+        setAppList((prev) =>
+          query.page === 1 ? records : [...prev, ...records],
+        );
+        appPageRef.current = query.page;
+        appLoadedRef.current =
+          query.page === 1
+            ? records.length
+            : appLoadedRef.current + records.length;
+        // 优先按总页数判断是否还有下一页,回包缺 pages 时按已加载/总数兜底
+        const pages = result?.pages;
+        const total = result?.total;
+        setAppHasMore(
+          records.length > 0 &&
+            (pages && pages > 0
+              ? query.page < pages
+              : total === null ||
+                total === undefined ||
+                appLoadedRef.current < total),
+        );
       },
-      onError: () => setAppList([]),
+      onError: (_e: unknown, [query]: [AppListQuery]) => {
+        // 仅第一页失败清空列表;翻页失败保留已加载内容(可再次触底重试)
+        if (query.page === 1) {
+          setAppList([]);
+        }
+        setAppHasMore(false);
+      },
     },
   );
 
-  // 应用列表(团队空间 tab):GET /api/published/agent/list?spaceId=xx,
-  // 仅 spaceId + 分页参数(不带 kw/targetType/targetSubType),切换空间时重新查询
+  // 应用列表(团队空间 tab):POST /api/published/app/list,scope=space +
+  // justReturnSpaceData=true 查空间已发布应用;「全部」不传 spaceId,
+  // 选中具体空间追加 spaceId;kw 与系统应用 tab 同为服务端搜索;
+  // 切换时重置回第一页,滚动触底按页码 +1 追加
   const { run: runSpaceAppList, loading: spaceAppListLoading } = useRequest(
-    (query: { spaceId: number }) =>
-      apiPublishedAgentListBySpace({
+    (query: { page: number; spaceId?: number; kw: string }) =>
+      apiPublishedAppList({
+        scope: 'space',
+        justReturnSpaceData: true,
         spaceId: query.spaceId,
-        page: 1,
+        page: query.page,
         pageSize: APP_LIST_PAGE_SIZE,
+        kw: query.kw || undefined,
       }),
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (result: Page<SquarePublishedItemInfo>) => {
-        setSpaceAppList(result?.records || []);
+      onSuccess: (
+        result: Page<SquarePublishedItemInfo>,
+        [query]: [SpaceAppListQuery],
+      ) => {
+        const records = result?.records || [];
+        setSpaceAppList((prev) =>
+          query.page === 1 ? records : [...prev, ...records],
+        );
+        spaceAppPageRef.current = query.page;
+        spaceAppLoadedRef.current =
+          query.page === 1
+            ? records.length
+            : spaceAppLoadedRef.current + records.length;
+        const pages = result?.pages;
+        const total = result?.total;
+        setSpaceAppHasMore(
+          records.length > 0 &&
+            (pages && pages > 0
+              ? query.page < pages
+              : total === null ||
+                total === undefined ||
+                spaceAppLoadedRef.current < total),
+        );
       },
-      onError: () => setSpaceAppList([]),
+      onError: (_e: unknown, [query]: [SpaceAppListQuery]) => {
+        if (query.page === 1) {
+          setSpaceAppList([]);
+        }
+        setSpaceAppHasMore(false);
+      },
     },
   );
 
-  // 激活 tab 内的筛选条件变化时查询对应列表(切回 tab 时按保留的筛选重新拉取)
+  // 激活 tab 内的筛选条件变化时重置回第一页查询(切回 tab 时按保留的筛选重新拉取)
   useEffect(() => {
     if (activeSource !== 'system') return;
-    runAppList({ category: activeCategory, kw: keyword });
+    runAppList({ page: 1, category: activeCategory, kw: keyword });
   }, [activeSource, activeCategory, keyword, runAppList]);
 
+  // 团队空间:「全部」不传 spaceId 查全部空间,具体空间传 id;搜索词与系统应用
+  // tab 同口径参与查询;空间或关键词变化时重置回第一页
   useEffect(() => {
     if (activeSource !== 'team') return;
     const spaceId = Number(activeSpace);
-    if (!Number.isFinite(spaceId) || spaceId <= 0) return;
-    runSpaceAppList({ spaceId });
-  }, [activeSource, activeSpace, runSpaceAppList]);
+    runSpaceAppList({
+      page: 1,
+      spaceId: spaceId > 0 ? spaceId : undefined,
+      kw: keyword,
+    });
+  }, [activeSource, activeSpace, keyword, runSpaceAppList]);
+
+  // 滚动触底加载下一页(系统应用):沿用当前筛选,页码 +1 追加
+  const loadMoreApps = () => {
+    if (appListLoading || !appHasMore) return;
+    runAppList({
+      page: appPageRef.current + 1,
+      category: activeCategory,
+      kw: keyword,
+    });
+  };
+
+  // 滚动触底加载下一页(团队空间):沿用当前空间与搜索词(「全部」不传 spaceId),页码 +1 追加
+  const loadMoreSpaceApps = () => {
+    if (spaceAppListLoading || !spaceAppHasMore) return;
+    const spaceId = Number(activeSpace);
+    runSpaceAppList({
+      page: spaceAppPageRef.current + 1,
+      spaceId: spaceId > 0 ? spaceId : undefined,
+      kw: keyword,
+    });
+  };
 
   // 跳转广场-网页应用
   const handleGoSquare = () => {
     history.push(SQUARE_PAGE_APP_PATH);
   };
 
-  // 最近使用点击:有最后一次会话则续会话,否则进应用详情
-  const handleRecentClick = (app: AgentInfo) => {
-    if (app.lastConversationId) {
-      history.push(`/home/chat/${app.lastConversationId}/${app.agentId}`);
-      return;
-    }
-    history.push(`/agent/${app.agentId}`);
+  // 最近使用点击:进应用详情(新接口条目为发布对象,无会话字段,不再续上次会话)
+  const handleRecentClick = (app: SquarePublishedItemInfo) => {
+    history.push(`/agent/${app.targetId}`);
   };
 
-  // 当前 tab 的展示列表与加载态(团队空间 tab 需等空间列表与默认空间就绪;
-  // 空间列表为空时不再等待,走空态)
+  // 当前 tab 的展示列表与加载态:仅首屏(第一页且列表为空)显示整屏 Loading,
+  // 滚动加载下一页由 InfiniteScrollDiv 自带底部 loader 展示;
+  // 团队空间 tab 需等空间列表与默认空间就绪(空间列表为空时不再等待,走空态)
   const isTeamSource = activeSource === 'team';
   const displayList = isTeamSource ? spaceAppList : appList;
   const listLoading = isTeamSource
-    ? spacesLoading ||
-      (spaces.length > 0 && !activeSpace) ||
-      spaceAppListLoading
-    : appListLoading;
-  // 当前 tab 的二级筛选 pill(系统应用=「全部」+PageApp 分类;团队空间=空间分类)
-  const categoryTabs = isTeamSource
-    ? spaces
-    : [
-        { key: ALL_CATEGORY_KEY, label: dict('PC.Pages.NuwaApps.all') },
-        ...categories,
-      ];
+    ? (spacesLoading || spaceAppListLoading) && spaceAppList.length === 0
+    : appListLoading && appList.length === 0;
+  // 当前 tab 的二级筛选 pill:首位固定「全部」(系统应用=不限 PageApp 分类;
+  // 团队空间=不限空间、不传 spaceId),后接分类/空间列表
+  const categoryTabs = [
+    { key: ALL_CATEGORY_KEY, label: dict('PC.Pages.NuwaApps.all') },
+    ...(isTeamSource ? spaces : categories),
+  ];
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -224,7 +316,10 @@ const NuwaApps: React.FC = () => {
         </div>
       </header>
 
-      <div className={cx('flex-1', 'min-h-0', 'scroll-container-hide')}>
+      <div
+        id={APP_SCROLL_CONTAINER_ID}
+        className={cx('flex-1', 'min-h-0', 'scroll-container-hide')}
+      >
         {/* 最近使用:接口数据,无数据时整节隐藏 */}
         {recentList.length > 0 && (
           <section>
@@ -252,8 +347,12 @@ const NuwaApps: React.FC = () => {
                     <p className={cx('text-ellipsis', styles['recent-name'])}>
                       {app.name}
                     </p>
-                    <p className={cx(styles['recent-desc'])}>
-                      {dict('PC.Pages.NuwaApps.appTag')}
+                    {/* 标题下展示应用描述,超长单行省略 */}
+                    <p
+                      className={cx('text-ellipsis', styles['recent-desc'])}
+                      title={app.description}
+                    >
+                      {app.description}
                     </p>
                   </div>
                 </div>
@@ -280,8 +379,8 @@ const NuwaApps: React.FC = () => {
             onChange={(value) => setActiveSource(value as AppSourceEnum)}
           />
 
-          {/* 二级筛选 pill:系统应用=分类(全部 + PageApp 分类)/ 团队空间=空间分类(切换空间筛选应用);
-              样式对齐专家&专家团页分类 pill;列表为空时隐藏整行 */}
+          {/* 二级筛选 pill:首位固定「全部」——系统应用=全部 PageApp 分类,
+              团队空间=全部空间(不传 spaceId);样式对齐专家&专家团页分类 pill */}
           {categoryTabs.length > 0 && (
             <div
               className={cx('flex', 'items-center', styles['category-tabs'])}
@@ -309,15 +408,22 @@ const NuwaApps: React.FC = () => {
           {listLoading ? (
             <Loading className={cx(styles['min-height-300'])} />
           ) : displayList.length > 0 ? (
-            <div className={cx(styles['app-list'])}>
-              {displayList.map((item) => (
-                <AppCard
-                  key={item.id}
-                  publishedItemInfo={item}
-                  onClick={() => history.push(`/agent/${item.targetId}`)}
-                />
-              ))}
-            </div>
+            <InfiniteScrollDiv
+              scrollableTarget={APP_SCROLL_CONTAINER_ID}
+              list={displayList}
+              hasMore={isTeamSource ? spaceAppHasMore : appHasMore}
+              onScroll={isTeamSource ? loadMoreSpaceApps : loadMoreApps}
+            >
+              <div className={cx(styles['app-list'])}>
+                {displayList.map((item) => (
+                  <AppCard
+                    key={item.id}
+                    publishedItemInfo={item}
+                    onClick={() => history.push(`/agent/${item.targetId}`)}
+                  />
+                ))}
+              </div>
+            </InfiniteScrollDiv>
           ) : (
             <div
               className={cx(

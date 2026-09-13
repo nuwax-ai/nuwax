@@ -50,19 +50,48 @@ export async function apiPublishedAgentList(
 }
 
 /**
- * 女娲应用-团队空间维度已发布应用列表接口（GET 口径）
- * @description 与 POST 列表接口同路径、改 query 传参：仅 spaceId 按空间
- * 筛选 + 分页参数（不带 kw/targetType/targetSubType）
+ * 女娲应用-应用列表接口（系统应用/团队空间两维度共用）
+ * @description POST /api/published/app/list——
+ * 系统应用：scope=system + official=true 查官方应用（category/kw 可选筛选）；
+ * 团队空间：scope=space + justReturnSpaceData=true 查空间已发布应用，
+ * 选中具体空间追加 spaceId
  */
-export async function apiPublishedAgentListBySpace(
-  params: Pick<SquarePublishedListParams, 'page' | 'pageSize'> & {
-    /** 空间筛选：仅查该空间内已发布的应用 */
-    spaceId: number;
-  },
-): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
-  return request('/api/published/agent/list', {
-    method: 'GET',
-    params,
+export async function apiPublishedAppList(data: {
+  /** 数据范围：system = 系统应用 / space = 团队空间维度 */
+  scope: 'system' | 'space';
+  /** 仅官方内容（系统应用维度传） */
+  official?: boolean;
+  /** 只返回空间的组件（团队空间维度传） */
+  justReturnSpaceData?: boolean;
+  /** 空间 ID（团队空间维度选中具体空间时传） */
+  spaceId?: number;
+  /** 页码，从 1 开始 */
+  page: number;
+  /** 每页数量 */
+  pageSize: number;
+  /** 分类名称（空=全部不传） */
+  category?: string;
+  /** 关键字搜索（空不传） */
+  kw?: string;
+}): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
+  return request('/api/published/app/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 女娲应用-最近使用列表接口
+ * @description POST /api/published/app/recentlyUsed/list——
+ * 全量数组（同 skill 域 recentlyUsed/list 先例，无分页），按最近使用排序返回
+ */
+export async function apiPublishedAppRecentlyUsedList(data: {
+  /** 拉取条数上限 */
+  size?: number;
+}): Promise<RequestResponse<SquarePublishedItemInfo[]>> {
+  return request('/api/published/app/recentlyUsed/list', {
+    method: 'POST',
+    data,
   });
 }
 

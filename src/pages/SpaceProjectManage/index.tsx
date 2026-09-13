@@ -70,7 +70,6 @@ const resolveRowLatestConversation = (
  * 打开项目按类型分发落点（常规项目对齐单栏「项目」分组跳 home/chat 会话详情）；
  * PageApp 契约未覆盖改名删除，不挂菜单。新建入口与类型 tab 均去除网页应用
  * （2026-09-10）；「全部」仍合并查询三类，存量 PageApp 项目照常列表/打开。
- * 菜单入口为 menuModel 的 project_manage 占位项。
  */
 const SpaceProjectManage: React.FC = () => {
   const params = useParams();
