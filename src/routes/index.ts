@@ -63,6 +63,21 @@ const routes = [
         path: '/space/:spaceId/project-manage',
         component: '@/pages/SpaceProjectManage',
       },
+      // 常规项目
+      {
+        path: '/space/:spaceId/normal-project',
+        component: '@/pages/SpaceProjectManage/NormalProject',
+      },
+      // 全栈应用
+      {
+        path: '/space/:spaceId/userapp-project',
+        component: '@/pages/SpaceProjectManage/UserAppProject',
+      },
+      // 第三方应用接入
+      {
+        path: '/space/:spaceId/third-app-integration',
+        component: '@/pages/SpaceProjectManage/ThirdAppIntegration',
+      },
       // 全屏工作台页组：单栏模式（style3）下与主站同用 page-container 容器、
       // 侧栏常驻并抑制二级菜单列（由 layouts/index.tsx 依 fullscreenWorkbenchPaths
       // 判定，侧栏实例跨跳转存活）；经典风格/移动端经 SidebarShell bare 形态
