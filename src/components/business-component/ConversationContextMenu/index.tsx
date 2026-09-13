@@ -2,12 +2,13 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiAgentConversationArchive,
+  apiAgentConversationCollect,
   apiAgentConversationDelete,
   apiAgentConversationPin,
+  apiAgentConversationUnCollect,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
-import { toggleFavoriteConversation } from '@/utils/conversationFavorites';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -34,7 +35,7 @@ interface ConversationContextMenuProps {
   pinned?: boolean;
   /** 服务端归档状态 */
   archived?: boolean;
-  /** 收藏状态（本地存储，后端收藏接口未上线） */
+  /** 服务端收藏状态（2026-09-13 collect/unCollect 接口上线） */
   collected?: boolean;
   /** 服务端置顶/归档成功后同步调用方列表 */
   onFlagChanged?: (kind: 'pinned' | 'archived', enabled: boolean) => void;
@@ -54,9 +55,8 @@ interface ConversationContextMenuProps {
 
 /**
  * 会话列表右键菜单：置顶 / 归档 / 收藏 / 重命名 / 删除。
- * - 置顶/归档调用会话级后端接口，成功后同步调用方列表；
- * - 收藏接口未 ready，暂走本地存储（utils/conversationFavorites），
- *   历史会话页「已收藏」视图按本地收藏 id 过滤；
+ * - 置顶/归档/收藏均调用会话级后端接口，成功后同步调用方列表（非乐观）；
+ * - 收藏为 collect/unCollect 双路径，按当前状态选择（2026-09-13 上线）；
  * - 重命名与删除接现有接口（apiAgentConversationUpdate / Delete），成功后派发
  *   conversation-updated / conversation-deleted 全局事件供侧栏列表同步。
  */
@@ -126,9 +126,18 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
     message.success(t(toastKeyMap[kind]));
   };
 
-  // 收藏 toggle：后端接口未上线，本地存储直接生效（乐观更新）
-  const handleToggleCollect = () => {
-    const next = toggleFavoriteConversation(conversationId);
+  // 收藏 toggle：后端 collect/unCollect 双路径（按当前状态选择），成功后才
+  // 更新调用方列表，失败不做乐观变更（与置顶/归档同模式）
+  const handleToggleCollect = async (): Promise<void> => {
+    const request = collected
+      ? apiAgentConversationUnCollect(conversationId)
+      : apiAgentConversationCollect(conversationId);
+    const res = await request.catch(() => null);
+    if (res?.code !== SUCCESS_CODE) {
+      message.error(t('PC.Common.Global.operationFailed'));
+      return;
+    }
+    const next = !collected;
     onCollectedChanged?.(next);
     message.success(
       t(
@@ -182,7 +191,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
         } else if (key === 'archive') {
           void handleToggleFlag('archived');
         } else if (key === 'collect') {
-          handleToggleCollect();
+          void handleToggleCollect();
         } else if (key === 'rename') {
           if (onRename) {
             onRename();

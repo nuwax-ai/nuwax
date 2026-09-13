@@ -1,95 +1,75 @@
 /**
- * 会话收藏本地存储（过渡方案）：
- * 会话收藏后端接口未上线（swagger 中 ConversationDto 仅有 pinned/archived），
- * 先以 localStorage 按会话 id 持久化；历史页「已收藏」视图据此过滤。
- * 后端收藏字段/接口就绪后，读侧切列表字段、写侧切接口并移除本模块。
- *
- * 变更后派发全局事件 `conversation-favorites-changed`，供消费方（历史页列表）刷新。
+ * 会话收藏本地数据一次性迁移（过渡方案收尾）：
+ * 2026-09-12~13 期间收藏走 localStorage（后端接口未上线），后端
+ * collect/unCollect 上线后读侧已切列表回包 collected 打标、写侧切接口。
+ * 本模块仅负责把本地已收藏的会话 id 逐个上报后端（collect 幂等，已收藏
+ * 再报无副作用），成功后清键并写迁移标记防重入；单个失败容错跳过，
+ * 未写标记前下次进入历史会话页会重试。
  */
+
+import { apiAgentConversationCollect } from '@/services/agentConfig';
 
 const STORAGE_KEY = 'conversation_favorite_ids';
 
 /** 旧「置顶/归档/收藏本地化」方案的存储键：收藏数据迁入新键后即弃用 */
 const LEGACY_FLAGS_KEY = 'conversation_local_flags';
 
-export const CONVERSATION_FAVORITES_EVENT = 'conversation-favorites-changed';
+/** 迁移完成标记：存在则不再上报/清键（幂等防重入） */
+const MIGRATED_KEY = 'conversation_favorite_migrated';
 
 const normalizeIds = (value: unknown): number[] =>
   Array.isArray(value)
     ? value.filter((id): id is number => typeof id === 'number')
     : [];
 
-/** 读取收藏 id（去重、稳定升序）；首读顺带迁移旧方案 collected 数据 */
+const dedupe = (ids: number[]): number[] => Array.from(new Set(ids));
+
+/** 读取本地收藏 id（含旧方案 conversation_local_flags.v1 的 collected 数组） */
 const loadIds = (): number[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return migrateLegacyIds();
-    return dedupe(normalizeIds(JSON.parse(raw)));
-  } catch {
-    return [];
-  }
-};
-
-/** 旧方案 conversation_local_flags.v1 的 collected 数组搬入新键 */
-const migrateLegacyIds = (): number[] => {
-  try {
+    if (raw) return dedupe(normalizeIds(JSON.parse(raw)));
     const legacyRaw = localStorage.getItem(LEGACY_FLAGS_KEY);
     if (!legacyRaw) return [];
     const legacy = JSON.parse(legacyRaw);
     if (legacy?.version !== 1) return [];
-    const ids = dedupe(normalizeIds(legacy.collected));
-    if (ids.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-    }
-    return ids;
+    return dedupe(normalizeIds(legacy.collected));
   } catch {
     return [];
   }
 };
 
-const dedupe = (ids: number[]): number[] => Array.from(new Set(ids));
-
-const saveIds = (ids: number[]): void => {
+const clearKeys = (): void => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dedupe(ids)));
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LEGACY_FLAGS_KEY);
+    localStorage.setItem(MIGRATED_KEY, '1');
   } catch {
-    // ignore：localStorage 不可用时降级为仅本次会话内生效
+    // ignore：localStorage 不可用时放弃标记，副作用只是下次重复尝试上报
   }
 };
 
-const notifyChanged = (conversationId: number): void => {
-  window.dispatchEvent(
-    new CustomEvent(CONVERSATION_FAVORITES_EVENT, {
-      detail: { id: conversationId },
-    }),
-  );
+const isMigrated = (): boolean => {
+  try {
+    return localStorage.getItem(MIGRATED_KEY) === '1';
+  } catch {
+    return true;
+  }
 };
 
-/** 全量读取收藏 id（列表层过滤用） */
-export const loadFavoriteConversationIds = (): number[] => loadIds();
-
-/** 某会话是否已收藏 */
-export const isFavoriteConversation = (conversationId: number): boolean =>
-  loadIds().includes(conversationId);
-
-/** 切换收藏，返回切换后的状态 */
-export const toggleFavoriteConversation = (
-  conversationId: number,
-  collected?: boolean,
-): boolean => {
+/**
+ * 本地收藏一次性迁移上报后端（历史会话页挂载时调用）：
+ * - 已迁移（标记存在）或无本地数据：直接写标记收尾；
+ * - 有数据：逐个调 collect（幂等），单个失败跳过不阻塞；
+ * - 全部尝试完后清旧键并写标记；仍在途的失败项下次进入重试。
+ */
+export const migrateLocalConversationFavorites = async (): Promise<void> => {
+  if (isMigrated()) return;
   const ids = loadIds();
-  const next = collected ?? !ids.includes(conversationId);
-  saveIds(
-    next ? [...ids, conversationId] : ids.filter((id) => id !== conversationId),
-  );
-  notifyChanged(conversationId);
-  return next;
-};
-
-/** 会话删除后清理收藏残留 */
-export const removeFavoriteConversation = (conversationId: number): void => {
-  const ids = loadIds();
-  if (!ids.includes(conversationId)) return;
-  saveIds(ids.filter((id) => id !== conversationId));
-  notifyChanged(conversationId);
+  if (ids.length === 0) {
+    clearKeys();
+    return;
+  }
+  await Promise.allSettled(ids.map((id) => apiAgentConversationCollect(id)));
+  clearKeys();
 };

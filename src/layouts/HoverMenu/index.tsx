@@ -4,7 +4,7 @@ import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { MenuItemDto } from '@/types/interfaces/menu';
-import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell, shellAvoid } from '@/utils/hostBridge';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';

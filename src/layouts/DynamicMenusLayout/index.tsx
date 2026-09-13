@@ -19,9 +19,6 @@ export interface DynamicMenusLayoutProps {
   suppressSecondMenu?: boolean;
 }
 
-// 历史兼容导出（外部引用点已清零，保留别名以防遗漏）
-export { NUWA_CLAW_PADDING_TOP } from './SidebarNavLayout';
-
 const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = (props) => {
   const { effectiveNavigationStyle } = useUnifiedTheme();
 

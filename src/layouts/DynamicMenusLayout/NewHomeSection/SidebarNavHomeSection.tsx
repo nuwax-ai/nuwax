@@ -154,6 +154,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
             activeProjectChildId={shell.activeProjectChildId}
             onConversationClick={shell.handleConversationClick}
             onFlagChanged={shell.handleConversationFlagChanged}
+            onCollectedChanged={shell.handleConversationCollectedChanged}
           />
         )}
       </div>

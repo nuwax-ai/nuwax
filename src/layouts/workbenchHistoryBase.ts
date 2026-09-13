@@ -8,7 +8,7 @@
  */
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import { isDesktopHost } from '@/utils/nuwaClawBridge';
+import { isDesktopHost } from '@/utils/hostBridge';
 import { shouldSeedWorkbenchHistoryBase } from './fullscreenWorkbenchPaths';
 
 /** 栈底兜底目标：主界面 */

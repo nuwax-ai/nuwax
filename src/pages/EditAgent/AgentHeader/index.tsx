@@ -14,7 +14,7 @@ import type {
   AgentHeaderProps,
   AgentHeaderTabKey,
 } from '@/types/interfaces/agentConfig';
-import { immersiveHeaderCompact } from '@/utils/nuwaClawBridge';
+import { immersiveHeaderCompact } from '@/utils/hostBridge';
 import { FormOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Segmented, Tag } from 'antd';
 import classNames from 'classnames';

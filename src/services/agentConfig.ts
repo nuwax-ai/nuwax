@@ -423,6 +423,24 @@ export async function apiAgentConversationArchive(
   });
 }
 
+/** 会话收藏（2026-09-13 契约：与 pin/archive 不同，collect/unCollect 为双路径，无参数） */
+export async function apiAgentConversationCollect(
+  conversationId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/agent/conversation/collect/${conversationId}`, {
+    method: 'POST',
+  });
+}
+
+/** 会话取消收藏（同上，双路径独立接口） */
+export async function apiAgentConversationUnCollect(
+  conversationId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/agent/conversation/unCollect/${conversationId}`, {
+    method: 'POST',
+  });
+}
+
 // 删除会话
 export async function apiAgentConversationDelete(
   conversationId: number,

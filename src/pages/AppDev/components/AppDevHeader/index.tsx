@@ -7,7 +7,7 @@ import useStyle3WorkbenchHost from '@/hooks/useStyle3WorkbenchHost';
 import { dict } from '@/services/i18nRuntime';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import { ProjectDetailData } from '@/types/interfaces/appDev';
-import { immersiveHeaderCompact } from '@/utils/nuwaClawBridge';
+import { immersiveHeaderCompact } from '@/utils/hostBridge';
 import { jumpBack } from '@/utils/router';
 import {
   CheckCircleFilled,

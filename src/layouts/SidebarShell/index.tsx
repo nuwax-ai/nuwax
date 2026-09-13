@@ -18,7 +18,7 @@ import {
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import { isImmersiveShell, isMac, shellAvoid } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell, isMac, shellAvoid } from '@/utils/hostBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';

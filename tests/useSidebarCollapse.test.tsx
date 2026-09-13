@@ -30,7 +30,7 @@ vi.mock('umi', () => ({
   useSearchParams: () => [searchParams],
 }));
 
-vi.mock('@/utils/nuwaClawBridge', () => ({
+vi.mock('@/utils/hostBridge', () => ({
   isImmersiveShell: () => false,
 }));
 

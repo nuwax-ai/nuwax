@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 
 import { IMAGE_FALLBACK } from '@/constants/images.constants';
-import { nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { hostBridge } from '@/utils/hostBridge';
 import stylesInner from './index.less';
 
 /**
@@ -44,9 +44,9 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
     // 商业桌面端（Nuwax 客户端）：右键另存图片（仅商业宿主拦截；社区宿主/浏览器保持默认行为）
     const handleContextMenu = useCallback(
       (e: React.MouseEvent) => {
-        if (src && nuwaClawHost.isDesktopHost()) {
+        if (src && hostBridge.isDesktopHost()) {
           e.preventDefault();
-          void nuwaClawHost.native.saveImage(src).then((result) => {
+          void hostBridge.native.saveImage(src).then((result) => {
             if (!result.success && result.error) message.error(result.error);
           });
         }

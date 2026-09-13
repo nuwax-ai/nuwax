@@ -10,11 +10,11 @@
 
 推论：nuwax 的世界只有两种形态——**浏览器式**（浏览器 + 社区宿主 + 旧宿主）与**商业桌面式**（商业宿主主窗口）。所有「桌面适配」的判定必须且只能落在这两态上。
 
-## 二、判定原语（`src/utils/nuwaClawBridge/index.ts`，唯一收口）
+## 二、判定原语（`src/utils/hostBridge/index.ts`，唯一收口）
 
 | 原语 | 定义 | 合法用途 |
 | --- | --- | --- |
-| `isNuwaClaw()` | 桥存在（社区/商业均真） | **仅环境/桥能力探测**（如 perf 可用性）；❌ 禁止做特性门控 |
+| `hasHostBridge()` | 桥存在（社区/商业均真） | **仅环境/桥能力探测**（如 perf 可用性）；❌ 禁止做特性门控 |
 | `host.getProduct()` | 宿主身份：`'nuwaclaw'`（社区）/ `'nuwax'`（商业）/ `'nuwawork'`（存量商业历史值）/ `null`（无桥或旧宿主无 host 命名空间） | 产品身份区分（先例：downloadCompletion） |
 | `isDesktopHost()` | `getProduct() ∈ {nuwax, nuwawork}` | **桌面适配唯一合法门控**（本规则核心） |
 | `isShellWindow()` | URL 带 `_shell=1`（sessionStorage 粘滞） | 独立窗口识别（仅商业宿主会开这种窗口） |
@@ -32,9 +32,9 @@
 | 单栏导航锁定 | `isDesktopHost()` | 不锁，双栏可切 | 锁定单栏 | `NavigationStylePanel` / `useUnifiedTheme` / `workbenchHistoryBase` |
 | 右键另存图片 | `isDesktopHost()` + `native.saveImage` | 浏览器默认菜单 | 拦截并另存 | `OptimizedImage` |
 | 企业登录入口 | `isDesktopHost()` + `auth.configureServerHost` | 不展示 | 展示（切域重载） | `pages/Login` |
-| 主题推壳 | `isDesktopHost()` + `theme.syncTheme` | no-op | 壳原生 UI 跟随调色板 | `services/nuwaClawTheme` |
+| 主题推壳 | `isDesktopHost()` + `theme.syncTheme` | no-op | 壳原生 UI 跟随调色板 | `services/brandTheme` |
 | 下载/另存走宿主 | `getProduct() === 'nuwax'`（**严格**，存量 nuwawork 也跳过） | 浏览器下载路径 | 宿主保存 | `utils/downloadCompletion` |
-| 宿主命令（toggle-second-menu / new-task） | `events.onHostCommand` 注册成功与否 | 注册失败 no-op | 壳工具栏/⌘N 下发 | `services/nuwaClawHostEvents` |
+| 宿主命令（toggle-second-menu / new-task） | `events.onHostCommand` 注册成功与否 | 注册失败 no-op | 壳工具栏/⌘N 下发 | `services/hostBridgeEvents` |
 | 二级菜单折叠同步 | `layout.setSecondMenu*` | no-op | 壳按钮态与 web 折叠态互同步 | `useSecondMenuShellSync` |
 | 独立窗口分流 | `native.openWindow`（`SHELL_NEW_WINDOW_ROUTES` 当前**为空**） | `history.push` 页内导航 | 同左（全屏页已改主窗口内承载） | `utils/router.ts` |
 | token 免登/登出联动 | `auth.*` | no-op（社区宿主每次重启重登） | 域级 token 双向同步 | `auth` 命名空间 |
@@ -45,13 +45,13 @@
 
 ## 四、桥能力契约（`src/types/global.d.ts`）
 
-新增宿主能力三步：**global.d.ts 补类型 → `nuwaClawBridge/index.ts` 封装（`?.` 守卫 + 失败降级）→ 业务方调用**。宿主侧实现落在基座仓（nuwax-ai/nuwa-electron-shell）：社区线 `community/main`（getProduct='nuwaclaw'，@01189cf0 起）与商业线 main 按产品各自实现命名空间；web 侧永远假设能力可能缺失。
+新增宿主能力三步：**global.d.ts 补类型 → `hostBridge/index.ts` 封装（`?.` 守卫 + 失败降级）→ 业务方调用**。宿主侧实现落在基座仓（nuwax-ai/nuwa-electron-shell）：社区线 `community/main`（getProduct='nuwaclaw'，@01189cf0 起）与商业线 main 按产品各自实现命名空间；web 侧永远假设能力可能缺失。
 
 ## 五、维护规则（给后续 nuwax 改动立规矩）
 
-1. **新桌面适配一律用 `isDesktopHost()` / `isImmersiveShell()`**，用 `isNuwaClaw()` 做门控视为 bug（其文档注释已立纪律）。
+1. **新桌面适配一律用 `isDesktopHost()` / `isImmersiveShell()`**，用 `hasHostBridge()` 做门控视为 bug（其文档注释已立纪律）。
 2. `shellAvoid` 数值与商业壳顶行几何成对改——单侧改动必然错位。
-3. 测试纪律：桌面适配用例的桥 mock 必须带 `host.getProduct`（见 `nuwaClawBridge/index.test.ts` 的 `commercialBridge()` 助手），并配社区宿主反例（getProduct='nuwaclaw' → 行为与浏览器一致）。
+3. 测试纪律：桌面适配用例的桥 mock 必须带 `host.getProduct`（见 `hostBridge/index.test.ts` 的 `commercialBridge()` 助手），并配社区宿主反例（getProduct='nuwaclaw' → 行为与浏览器一致）。
 4. 产品身份消费优先 `isDesktopHost()`，不要散点比较 getProduct 字符串（downloadCompletion 的严格 `==='nuwax'` 是历史先例，新增勿仿）。
 
 ## 六、遗留决策点

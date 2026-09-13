@@ -1,5 +1,5 @@
 import { t } from '@/services/i18nRuntime';
-import { isDesktopHost } from '@/utils/nuwaClawBridge';
+import { isDesktopHost } from '@/utils/hostBridge';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './NavigationStylePanel.less';

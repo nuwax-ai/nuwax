@@ -7,7 +7,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { isImmersiveShell, isMac } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell, isMac } from '@/utils/hostBridge';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';

@@ -15,7 +15,7 @@ import {
   ThemeLayoutColorStyle,
   ThemeNavigationStyleType,
 } from '@/types/enums/theme';
-import { isDesktopHost } from '@/utils/nuwaClawBridge';
+import { isDesktopHost } from '@/utils/hostBridge';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
 

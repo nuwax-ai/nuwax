@@ -8,6 +8,11 @@ import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import { APP_NAME, APP_VERSION } from './constants/version';
 import useEventPolling from './hooks/useEventPolling';
+import {
+  BRAND_PRIMARY,
+  initBrandTheme,
+  isDefaultBrandThemeActive,
+} from './services/brandTheme';
 import { request as requestCommon } from './services/common';
 import {
   dict,
@@ -16,17 +21,12 @@ import {
   syncLangFromUserInfo,
 } from './services/i18nRuntime';
 import { apiQueryMenus } from './services/menuService';
-import {
-  initNuwaClawTheme,
-  isNuwaClawDefaultThemeActive,
-  NUWACLAW_PRIMARY,
-} from './services/nuwaClawTheme';
 import { unifiedThemeService } from './services/unifiedThemeService';
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
+import { hostBridge, syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
 import { isConversationMockPage } from './utils/isConversationMockPage';
-import { nuwaClawHost, syncShellAvoidanceCss } from './utils/nuwaClawBridge';
 // 工作台页历史栈兜底：模块副作用须在 umi router history 创建前执行（仍在
 // import 求值期内，早于 runtime render）。必须排在 i18nRuntime 之后——它会经
 // unifiedThemeService → theme.constants 提前拉起 i18nRuntime 的循环依赖链，
@@ -50,7 +50,7 @@ export async function getInitialState(): Promise<InitialStateType> {
 
     // nuwaclaw 客户端：启动时从宿主恢复 ACCESS_TOKEN（重启免登）。
     // 浏览器环境无桥自动跳过；须在 UserService.getUserInfo 之前执行，确保首个鉴权请求带 token。
-    const token = await nuwaClawHost.auth.getToken();
+    const token = await hostBridge.auth.getToken();
     if (token) localStorage.setItem(ACCESS_TOKEN, token);
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
@@ -226,10 +226,10 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         const data = unifiedThemeService.getCurrentData();
         const darkMode = data.antdTheme === 'dark';
         // nuwaclaw 桌面专属默认主色：仅桌面端且用户未显式定制主题时强制品牌蓝
-        // （见 nuwaClawTheme）；显式定制后主色跟随用户选择——灰白 solid 布局已
-        // 改挂背景维度（isNuwaClawThemeActive），不再反向绑架 antd 主色
-        const effectivePrimary = isNuwaClawDefaultThemeActive()
-          ? NUWACLAW_PRIMARY
+        // （见 brandTheme）；显式定制后主色跟随用户选择——灰白 solid 布局已
+        // 改挂背景维度（isBrandThemeActive），不再反向绑架 antd 主色
+        const effectivePrimary = isDefaultBrandThemeActive()
+          ? BRAND_PRIMARY
           : data.primaryColor;
 
         const algorithm = darkMode
@@ -320,7 +320,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   // 首帧前还会再同步一次（幂等），这里覆盖未被该 wrapper 包裹的路由。
   useEffect(() => {
     syncShellAvoidanceCss();
-    return initNuwaClawTheme();
+    return initBrandTheme();
   }, []);
 
   return (

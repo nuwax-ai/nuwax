@@ -10,15 +10,15 @@
  */
 import { useEffect } from 'react';
 
-import { nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { hostBridge } from '@/utils/hostBridge';
 
 export function useSecondMenuShellSync(available: boolean, collapsed: boolean) {
   useEffect(() => {
-    nuwaClawHost.layout.setSecondMenuAvailable(available);
-    return () => nuwaClawHost.layout.setSecondMenuAvailable(false);
+    hostBridge.layout.setSecondMenuAvailable(available);
+    return () => hostBridge.layout.setSecondMenuAvailable(false);
   }, [available]);
 
   useEffect(() => {
-    nuwaClawHost.layout.setSecondMenuCollapsed(collapsed);
+    hostBridge.layout.setSecondMenuCollapsed(collapsed);
   }, [collapsed]);
 }
