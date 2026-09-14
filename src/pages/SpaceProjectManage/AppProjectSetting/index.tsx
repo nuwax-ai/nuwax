@@ -8,7 +8,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message, Modal, Radio, Select, Tag } from 'antd';
 import classNames from 'classnames';
