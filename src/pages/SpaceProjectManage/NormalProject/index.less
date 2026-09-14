@@ -1,15 +1,14 @@
-@import '@/styles/color';
 @import '@/styles/token';
 
 .container {
-  padding: 16px 16px 16px 24px;
+  padding: @padding @padding @padding @paddingLg;
 
   .title {
-    line-height: 32px;
+    line-height: @controlHeight;
     font-size: @fontSizeLg;
-    font-weight: 600;
-    color: @BLANK04;
-    margin-right: 20px;
+    font-weight: @fontWeightStrong;
+    color: @colorText;
+    margin-right: @marginMd;
   }
 
   .header-area {
@@ -17,14 +16,14 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 5px;
+    gap: @marginSm;
+    margin-bottom: @marginXxs;
 
     .header-left {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: @marginSm;
       flex: 1;
       min-width: 0;
     }
@@ -32,7 +31,7 @@
     .header-right {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: @marginSm;
       flex-wrap: wrap;
     }
   }
@@ -40,9 +39,9 @@
   .main-container {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
+    gap: @padding;
     align-content: start;
-    margin-top: 10px;
+    margin-top: @marginSm;
   }
 
   @media (max-width: 640px) {
@@ -61,7 +60,7 @@
 
         .title {
           width: 100%;
-          margin-bottom: 4px;
+          margin-bottom: @marginXxs;
           margin-right: 0;
         }
       }

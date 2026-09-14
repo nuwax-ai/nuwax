@@ -140,7 +140,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   const showUnpublishedTag =
     !!userAppInfo &&
     userAppInfo.publishStatus !== PublishStatusEnum.Published &&
-    !(userAppInfo.publishVersions?.length > 0);
+    !userAppInfo.buildVersions?.length;
 
   /** 已部署到生产环境才展示开发 / 线上环境切换，以及发布按钮 */
   const showEnvSwitch = userAppInfo?.prodDeployed === true;

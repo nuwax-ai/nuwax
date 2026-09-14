@@ -115,7 +115,7 @@ const mapPublishedItem = (
  * 连接器提供方归一化
  * 卡片不展示工具数统计（需求下线）；connected / authType 驱动
  * 标题下方的连接状态行与 hover 右上角的 连接/断开 按钮；
- * connectorId / connectionEnabled 驱动已连接卡片右上角的启用开关
+ * connectionId / connectionEnabled 驱动已连接卡片右上角的启用开关
  */
 const mapConnectorItem = (
   item: ConnectorProviderInfo,
@@ -124,8 +124,9 @@ const mapConnectorItem = (
   id: `${idPrefix}-${item.service || item.id}`,
   // 连接器 service 标识：断开连接时按 service 匹配用户连接 id 用
   service: item.service,
-  // 连接器主键 id：切换连接启用状态接口（POST .../connections/{连接器id}/status）寻址用
-  connectorId: item.id,
+  // 连接 id：切换连接启用状态接口（POST .../connections/{连接id}/status）
+  // 寻址用，取列表接口响应的 connectionId（已连接时有值，非提供方主键 id）
+  connectionId: item.connectionId,
   // 所属空间 ID：团队空间维度列表响应每条自带（"全部"页签聚合时也逐条携带），
   // 免鉴权直连建连透传用；系统广场响应无该字段
   spaceId: item.spaceId,

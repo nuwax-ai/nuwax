@@ -3,20 +3,48 @@
 .project-manage {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.manage-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.manage-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: @padding;
+  overflow: auto;
+  padding-right: @paddingXs;
+}
+
+@media (max-width: 960px) {
+  .manage-body {
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .manage-main {
+    overflow: visible;
+    padding-right: 0;
+  }
 }
 
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: @marginSm;
 }
 
 .tabs {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: @marginXxs;
   flex: 1;
   min-width: 0;
 }
@@ -24,12 +52,12 @@
 .tab {
   border: none;
   background: transparent;
-  padding: 6px 14px;
+  padding: @paddingXxs @padding;
   border-radius: @borderRadius;
   cursor: pointer;
   font-size: @fontSize;
   color: @colorTextSecondary;
-  transition: all 0.2s ease;
+  transition: all @motionDurationFast @motionEaseOut;
 
   &:hover {
     color: @colorText;
@@ -51,18 +79,18 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+  gap: @padding;
 }
 
 .card {
   display: flex;
-  gap: 12px;
-  padding: 16px;
+  gap: @marginSm;
+  padding: @padding;
   border-radius: @borderRadius;
   background: @colorBgContainer;
   border: 1px solid @colorBorderSecondary;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all @motionDurationFast @motionEaseOut;
 
   &:hover {
     box-shadow: @boxShadowTertiary;
@@ -71,8 +99,8 @@
 }
 
 .card-icon {
-  width: 40px;
-  height: 40px;
+  width: @controlHeightLg;
+  height: @controlHeightLg;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -80,7 +108,7 @@
   border-radius: @borderRadius;
   background: @colorFillSecondary;
   color: @colorTextSecondary;
-  font-size: 20px;
+  font-size: @fontSizeXl;
   overflow: hidden;
 
   img {
@@ -95,20 +123,20 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: @marginXxs;
 }
 
 .card-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: @marginXs;
 }
 
 .card-more {
   flex-shrink: 0;
   border: none;
   background: transparent;
-  padding: 2px 4px;
+  padding: @paddingXxs;
   border-radius: @borderRadius;
   color: @colorTextTertiary;
   cursor: pointer;
@@ -133,9 +161,9 @@
 .badge {
   flex-shrink: 0;
   font-size: @fontSizeSm;
-  line-height: 18px;
-  padding: 0 8px;
-  border-radius: 9px;
+  line-height: @fontHeightSm;
+  padding: 0 @paddingXs;
+  border-radius: @borderRadius;
 }
 
 // 类型徽标配色：常规=蓝 / 网页=紫 / 全栈=绿

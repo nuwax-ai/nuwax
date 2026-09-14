@@ -1,9 +1,12 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { RequestResponse, TablePageRequest } from '@/types/interfaces/request';
-import { UserProjectPageResult } from '@/types/interfaces/userProject';
+import {
+  UserProjectConversationInfo,
+  UserProjectPageResult,
+} from '@/types/interfaces/userProject';
 import { request } from 'umi';
 
-/** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
+/** 用户项目（包括常规项目、全栈应用、网页应用）分页查询请求参数 */
 export type UserProjectPageQueryParams = TablePageRequest<
   Partial<{
     spaceId: number;
@@ -22,5 +25,18 @@ export async function apiUserProjectPageQuery(
   return request('/api/user-project/page-query', {
     method: 'POST',
     data,
+  });
+}
+
+/** 查询项目会话列表（返回所有用户在该项目的会话，附带会话所属用户名） */
+export async function apiUserProjectConversations(
+  projectId: number,
+  projectType: AgentComponentTypeEnum,
+): Promise<RequestResponse<UserProjectConversationInfo[]>> {
+  return request(`/api/user-project/conversations/${projectId}`, {
+    method: 'GET',
+    params: {
+      projectType,
+    },
   });
 }

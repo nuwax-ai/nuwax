@@ -4,10 +4,26 @@
  * 页面层原路径再导出保持既有引用不变，新消费方请直接从本模块引入。
  */
 
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, TaskStatus, TaskTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import type { AgentDetailDto } from '@/types/interfaces/agent';
+import type {
+  ConversationInfo,
+  MessageInfo,
+} from '@/types/interfaces/conversationInfo';
 import { TablePageRequest } from '@/types/interfaces/request';
+
+/** 应用沙箱类型 */
+export enum UserAppSandboxTypeEnum {
+  Cloud = 'Cloud',
+  Personal = 'Personal',
+}
+
+/** 发布部署目标 */
+export enum UserAppDeployTypeEnum {
+  Platform = 'platform',
+  Private = 'private',
+}
 
 export enum UserAppStageEnum {
   Dev = 'dev',
@@ -138,6 +154,68 @@ export interface UserProjectTabItem {
   created: string;
 }
 
+/**
+ * 项目会话列表项（/api/user-project/conversations/{projectId}）。
+ */
+export interface UserProjectConversationInfo {
+  /** 会话 ID */
+  id: number;
+  tenantId: number;
+  userId: number;
+  /** 会话 UUID */
+  uid: string;
+  /** 智能体 ID */
+  agentId: number;
+  /** 会话主题 */
+  topic: string;
+  /** 会话摘要，开启长期记忆时会对每次会话进行总结 */
+  summary: string;
+  /** 会话图标 */
+  icon?: string;
+  /** 用户填写的会话变量内容 */
+  variables?: Record<string, string | number> | null;
+  modified: string;
+  created: string;
+  /** 已发布过的 agent 才有此信息 */
+  agent?: AgentDetailDto;
+  /** 会话消息列表，会话列表查询时不会返回 */
+  messageList?: MessageInfo[];
+  // 任务类型 可用值:Chat,TempChat,TASK,TaskCenter (会话、临时会话、任务、任务中心)
+  type: TaskTypeEnum;
+  taskId?: string;
+  // 任务状态，只针对 EXECUTING（执行中）做展示,可用值:CREATE,EXECUTING,CANCEL,COMPLETE,FAILED
+  taskStatus: TaskStatus;
+  taskCron?: string;
+  taskCronDesc?: string;
+  // 开发模式
+  devMode: boolean;
+  /** 会话主题是否更新 */
+  topicUpdated?: number;
+  sandboxServerId?: string;
+  sandboxSessionId?: string;
+  /** 开发项目所在的空间 ID */
+  devSpaceId?: number;
+  /** 开发目标类型，如 Agent, PageApp, Skill, Plugin */
+  devTargetType?: string;
+  /** 开发模式目标 ID */
+  devTargetId?: string;
+  /** 文件访问路径（file server/主容器视角；空=老数据走兼容逻辑） */
+  fileWorkspacePath?: string;
+  /** agent 执行路径（执行容器内视角；空=老数据走兼容逻辑） */
+  agentWorkspacePath?: string;
+  /** 置顶标记 */
+  pinned?: boolean;
+  /** 归档标记 */
+  archived?: boolean;
+  /** 当前用户收藏标记 */
+  collected?: boolean;
+  /** 已分享的 URI，比对上了则不需要认证 */
+  sharedUris?: string[];
+  extra?: Record<string, unknown>;
+  /** 会话所属用户名 */
+  userName?: string;
+}
+
 /** tab 项目分页查询结果（mybatis-plus IPage 风格） */
 export interface UserProjectTabPageResult {
   records: UserProjectTabItem[];
@@ -217,8 +295,8 @@ export interface CreateUserAppParams {
   devAgentId?: number;
 }
 
-/** 发布版本记录 */
-export interface PublishVersionDto {
+/** 构建版本记录 */
+export interface BuildVersionDto {
   /** 版本号 */
   version: string;
   /** Git 提交哈希 */
@@ -229,7 +307,7 @@ export interface PublishVersionDto {
   packageUrl: string;
 }
 
-/** 全栈应用详情（创建接口返回；id 即 app_id） */
+/** 全栈应用详情（创建 / get 接口返回；id 即 app_id） */
 export interface UserAppInfo {
   /** 应用ID（项目主键 id，即 app_id） */
   id: number;
@@ -249,12 +327,26 @@ export interface UserAppInfo {
   coverImg: string;
   /** 沙箱ID */
   sandboxId: number;
-  /** 发布状态 */
-  publishStatus: PublishStatusEnum;
+  /** 沙箱类型 */
+  sandboxType?: UserAppSandboxTypeEnum;
+  /** 发布部署目标：platform 平台部署 / private 私服部署 */
+  deployType?: UserAppDeployTypeEnum;
+  /** 部署目标服务器ID */
+  deployServerId?: number;
+  /** 资料库协作目录ID */
+  repoSlugId?: string;
+  /** 项目计划多维表格ID */
+  planSlugId?: string;
+  /** 开发关联智能体ID */
+  devAgentId?: number;
   /** 是否已部署到生产环境；为 true 才可切换线上环境 */
   prodDeployed?: boolean;
-  /** 发布版本记录 */
-  publishVersions: PublishVersionDto[];
+  /** 当前生产部署的版本号 */
+  prodReleaseId?: string;
+  /** 发布状态 */
+  publishStatus: PublishStatusEnum;
+  /** 构建版本记录 */
+  buildVersions?: BuildVersionDto[];
   /** 开发环境数据库账号 */
   devDbUsername: string;
   /** 开发环境数据库密码是否已设置 */
@@ -268,8 +360,8 @@ export interface UserAppInfo {
   /** 创建时间 */
   created: string;
   /**
-   * 首个会话 ID：仅创建接口响应携带（创建即建会话，随跳转直达续聊；
-   * 详情等其余接口不返回，契约先行，缺省时跳转不拼该参数）。
+   * 开发智能体关联的会话 ID（不落库，传输用）：
+   * 创建接口响应携带；详情等其余接口可不返回。
    */
   conversationId?: number;
 }
