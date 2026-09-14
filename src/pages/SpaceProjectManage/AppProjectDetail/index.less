@@ -8,7 +8,6 @@
 .header {
   display: flex;
   align-items: center;
-  gap: @padding;
   flex-shrink: 0;
   height: calc(@controlHeightLg + @padding);
   padding: 0 @paddingLg;
@@ -17,9 +16,8 @@
 }
 
 .back {
-  padding: @paddingXxs @paddingXs;
   color: @colorTextSecondary;
-  cursor: pointer;
+  margin-right: @marginXs;
 }
 
 .project-name {
@@ -36,6 +34,22 @@
   align-items: stretch;
   height: 100%;
   margin-left: @marginXs;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.panel-toggle {
+  color: @colorTextSecondary;
+
+  &:hover,
+  &.active {
+    color: @colorPrimary;
+  }
 }
 
 .tab {
@@ -219,12 +233,48 @@
 }
 
 .domain-cname {
-  color: @colorTextTertiary;
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXxs;
   font-size: @fontSizeSm;
+  line-height: @controlHeightSm;
+  white-space: nowrap;
+}
+
+.domain-cname-label {
+  color: @colorTextTertiary;
+}
+
+.domain-cname-value {
+  color: #4b4a53;
+}
+
+.copy-cname-btn:global(.ant-btn) {
+  color: #4b4a53;
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
 }
 
 .bind-btn {
   margin-top: @marginXs;
+}
+
+.action-btn {
+  &:global(.ant-btn) {
+    color: #4b4a53;
+    font-size: @fontSize;
+    font-weight: @fontWeightStrong;
+
+    .anticon {
+      color: inherit;
+    }
+
+    &:hover,
+    &:focus {
+      color: #4b4a53;
+    }
+  }
 }
 
 .deploy-options {
@@ -272,6 +322,10 @@
   line-height: @fontHeight;
 }
 
+.set-deploy-btn {
+  margin-top: @margin;
+}
+
 @media (max-width: 960px) {
   .body {
     flex-direction: column;
@@ -285,8 +339,13 @@
   }
 
   .tabs {
+    order: 3;
     width: 100%;
     height: @controlHeightLg;
+  }
+
+  .header-actions {
+    order: 2;
   }
 
   .domain-row {

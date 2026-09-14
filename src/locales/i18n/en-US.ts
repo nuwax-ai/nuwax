@@ -6369,6 +6369,13 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "Created successfully",
   "PC.Pages.SpaceProjectManage.createFailed": "Creation failed, please try again later",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "No conversation yet. Open the project before exporting.",
+  // 常规项目详情页
+  "PC.Pages.NormalProjectDetail.tabPlan": "Plan",
+  "PC.Pages.NormalProjectDetail.tabAsset": "Assets",
+  "PC.Pages.NormalProjectDetail.comingSoon": "Coming soon",
+  "PC.Pages.NormalProjectDetail.untitled": "Untitled project",
+  "PC.Pages.NormalProjectDetail.hideConversationPanel": "Hide related tasks",
+  "PC.Pages.NormalProjectDetail.showConversationPanel": "Show related tasks",
   // 全栈应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "Plan",
@@ -6414,9 +6421,12 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectDetail.appPortPlaceholder": "e.g. 8080",
   "PC.Pages.AppProjectDetail.managePort": "Manage port",
   "PC.Pages.AppProjectDetail.managePortPlaceholder": "e.g. 8081",
+  "PC.Pages.AppProjectDetail.privateHintHttp": "The app port is for public access. The manage port is for platform deploy and health checks. Make sure the server is reachable and both ports are open. HTTP sends data in plaintext and should only be used on a trusted intranet.",
   "PC.Pages.AppProjectDetail.privateHint": "The app port is for public access. The manage port is for platform deploy and health checks. Make sure the server is reachable and both ports are open. For HTTPS, install a valid certificate on the app port. The platform does not manage certificates.",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "Related tasks",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "Hide related tasks",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "Show related tasks",
   "PC.Pages.AppProjectDetail.newConversation": "New task",
   "PC.Pages.AppProjectDetail.emptyConversation": "No conversations yet",
   "PC.Pages.AppProjectDetail.mine": "Mine",
@@ -6439,6 +6449,10 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectDetail.invalidPort": "Enter a port between 1 and 65535",
   "PC.Pages.AppProjectDetail.healthOnline": "Online",
   "PC.Pages.AppProjectDetail.healthOffline": "Offline",
+  "PC.Pages.AppProjectDetail.setDeployServer": "Set deploy server",
+  "PC.Pages.AppProjectDetail.selectPrivateServerTitle": "Select a private server",
+  "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "Select a private server",
+  "PC.Pages.AppProjectDetail.emptyPrivateServer": "No private servers yet. Add one first.",
   'PC.Components.ExpertSummonCard.summon': 'Summon',
   'PC.Components.ExpertSummonCard.usageTimes': '{0} uses',
   'PC.Components.ExpertSummonCard.subscribeFirst': 'Subscribe to a plan before summoning',

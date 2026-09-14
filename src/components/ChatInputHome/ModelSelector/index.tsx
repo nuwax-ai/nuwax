@@ -309,7 +309,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   );
 
   // 渲染 tab 内单个模型项:
-  // 系统 tab 展示 tag / 倍率;个人 tab 保留编辑/删除;团队 tab 名称前缀团队名
+  // 系统 tab 展示 tag / 倍率;个人 tab 保留编辑/删除;团队 tab 按空间名分组展示
   const renderModelItem = useCallback(
     (model: ModelOptionDto, tab: ModelTabKey) => {
       const isSelected = model.id === selectedModelId;
@@ -324,11 +324,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         >
           <div className={cx(styles['item-content'])}>
             <div className={cx(styles['item-title-row'])}>
-              {tab === 'team' && model.spaceName && (
-                <span className={cx(styles['item-team-prefix'])}>
-                  {model.spaceName}.
-                </span>
-              )}
               <span className={cx(styles['item-name'])}>{model.name}</span>
               {showMeta && model.tag && (
                 <Tag
@@ -397,6 +392,44 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     },
     [renderModelItem],
   );
+
+  // 团队 tab:按空间名称聚合分组(组顺序与组内顺序均保持接口返回顺序)
+  const groupedTeamModels = useMemo(() => {
+    const groups: { spaceName: string; models: ModelOptionDto[] }[] = [];
+    teamModels.forEach((model) => {
+      const spaceName = model.spaceName || '';
+      const existing = groups.find((g) => g.spaceName === spaceName);
+      if (existing) {
+        existing.models.push(model);
+      } else {
+        groups.push({ spaceName, models: [model] });
+      }
+    });
+    return groups;
+  }, [teamModels]);
+
+  // 渲染团队 tab:组标题(空间名)+ 组内模型项;缺失空间名的模型归入无标题组
+  const renderTeamPane = useCallback(() => {
+    if (teamModels.length === 0) {
+      return (
+        <div className={cx(styles['model-list'], styles['list-empty'])}>
+          {dict('PC.Components.ModelSelector.noModels')}
+        </div>
+      );
+    }
+    return (
+      <div className={cx(styles['model-list'])}>
+        {groupedTeamModels.map((group, groupIndex) => (
+          <div key={group.spaceName || `team-group-${groupIndex}`}>
+            {group.spaceName && (
+              <div className={cx(styles['group-title'])}>{group.spaceName}</div>
+            )}
+            {group.models.map((model) => renderModelItem(model, 'team'))}
+          </div>
+        ))}
+      </div>
+    );
+  }, [teamModels, groupedTeamModels, renderModelItem]);
 
   // Segmented 分段选项(样式对齐专家&技能&连接器页主 tab)
   const segmentedOptions = useMemo(
@@ -540,7 +573,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                   onChange={(value) => setActiveTab(value as ModelTabKey)}
                   className={cx(styles['model-tabs'])}
                 />
-                {renderTabPane(activeTabModels, activeTab)}
+                {activeTab === 'team'
+                  ? renderTeamPane()
+                  : renderTabPane(activeTabModels, activeTab)}
               </>
             )}
             {!isExternalList && (

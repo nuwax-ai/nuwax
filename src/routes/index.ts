@@ -68,6 +68,11 @@ const routes = [
         path: '/space/:spaceId/normal-project',
         component: '@/pages/SpaceProjectManage/NormalProject',
       },
+      // 常规项目详情
+      {
+        path: '/space/:spaceId/normal-project-detail/:projectId',
+        component: '@/pages/SpaceProjectManage/NormalProjectDetail',
+      },
       // 全栈应用
       {
         path: '/space/:spaceId/userapp-project',

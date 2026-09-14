@@ -6243,6 +6243,13 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "作成しました",
   "PC.Pages.SpaceProjectManage.createFailed": "作成に失敗しました。しばらくしてから再試行してください",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "まだ会話がありません。プロジェクトに入ってから書き出してください。",
+  // 通常プロジェクト詳細ページ
+  "PC.Pages.NormalProjectDetail.tabPlan": "計画",
+  "PC.Pages.NormalProjectDetail.tabAsset": "資産",
+  "PC.Pages.NormalProjectDetail.comingSoon": "近日公開",
+  "PC.Pages.NormalProjectDetail.untitled": "名称未設定プロジェクト",
+  "PC.Pages.NormalProjectDetail.hideConversationPanel": "関連タスクを隠す",
+  "PC.Pages.NormalProjectDetail.showConversationPanel": "関連タスクを表示",
   // 全栈应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "計画",
@@ -6288,9 +6295,12 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectDetail.appPortPlaceholder": "例: 8080",
   "PC.Pages.AppProjectDetail.managePort": "管理ポート",
   "PC.Pages.AppProjectDetail.managePortPlaceholder": "例: 8081",
+  "PC.Pages.AppProjectDetail.privateHintHttp": "アプリポートは外部公開用、管理ポートはデプロイとヘルスチェック用です。サーバーへ到達できることと、セキュリティグループで両ポートを開放してください。HTTP は平文通信のため、信頼できるイントラネットでのみ使用してください。",
   "PC.Pages.AppProjectDetail.privateHint": "アプリポートは外部公開用、管理ポートはデプロイとヘルスチェック用です。サーバーへ到達できることと、セキュリティグループで両ポートを開放してください。HTTPS の場合はサーバー側で証明書を用意しアプリポートで待受してください。証明書はプラットフォームでは管理しません。",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "関連タスク",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "関連タスクを隠す",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "関連タスクを表示",
   "PC.Pages.AppProjectDetail.newConversation": "新規タスク",
   "PC.Pages.AppProjectDetail.emptyConversation": "セッションはまだありません",
   "PC.Pages.AppProjectDetail.mine": "自分",
@@ -6313,6 +6323,10 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectDetail.invalidPort": "1〜65535 のポートを入力してください",
   "PC.Pages.AppProjectDetail.healthOnline": "オンライン",
   "PC.Pages.AppProjectDetail.healthOffline": "オフライン",
+  "PC.Pages.AppProjectDetail.setDeployServer": "デプロイサーバーを設定",
+  "PC.Pages.AppProjectDetail.selectPrivateServerTitle": "プライベートサーバーを選択",
+  "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "プライベートサーバーを選択してください",
+  "PC.Pages.AppProjectDetail.emptyPrivateServer": "プライベートサーバーがありません。先に追加してください",
   'PC.Components.ExpertSummonCard.summon': '召喚',
   'PC.Components.ExpertSummonCard.usageTimes': '{0}回使用',
   'PC.Components.ExpertSummonCard.subscribeFirst': 'プランを購読してから召喚してください',

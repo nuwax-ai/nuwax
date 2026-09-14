@@ -6364,6 +6364,13 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "创建成功",
   "PC.Pages.SpaceProjectManage.createFailed": "创建失败，请稍后重试",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "项目暂无会话，请进入项目后再导出",
+  // 常规项目详情页
+  "PC.Pages.NormalProjectDetail.tabPlan": "计划",
+  "PC.Pages.NormalProjectDetail.tabAsset": "资产",
+  "PC.Pages.NormalProjectDetail.comingSoon": "功能即将开放",
+  "PC.Pages.NormalProjectDetail.untitled": "未命名项目",
+  "PC.Pages.NormalProjectDetail.hideConversationPanel": "隐藏相关任务",
+  "PC.Pages.NormalProjectDetail.showConversationPanel": "显示相关任务",
   // 全栈应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "计划",
@@ -6409,9 +6416,12 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppProjectDetail.appPortPlaceholder": "例如 8080",
   "PC.Pages.AppProjectDetail.managePort": "管理端口",
   "PC.Pages.AppProjectDetail.managePortPlaceholder": "例如 8081",
+  "PC.Pages.AppProjectDetail.privateHintHttp": "应用端口用于对外提供访问，管理端口用于平台下发部署与健康检查。请确保服务器可被平台访问，并已在安全组放通上述端口。选择 HTTP 时数据为明文传输，建议仅在可信内网使用。",
   "PC.Pages.AppProjectDetail.privateHint": "应用端口用于对外提供访问，管理端口用于平台下发部署与健康检查。请确保服务器可被平台访问，并已在安全组放通上述端口。选择 HTTPS 时，需在服务器上部署有效证书并监听应用端口，平台不代管证书。",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "相关任务",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "隐藏相关任务",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "显示相关任务",
   "PC.Pages.AppProjectDetail.newConversation": "新建任务",
   "PC.Pages.AppProjectDetail.emptyConversation": "暂无会话",
   "PC.Pages.AppProjectDetail.mine": "我的",
@@ -6434,6 +6444,10 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppProjectDetail.invalidPort": "请输入 1-65535 之间的端口",
   "PC.Pages.AppProjectDetail.healthOnline": "在线",
   "PC.Pages.AppProjectDetail.healthOffline": "离线",
+  "PC.Pages.AppProjectDetail.setDeployServer": "设置部署服务器",
+  "PC.Pages.AppProjectDetail.selectPrivateServerTitle": "选择私有服务器",
+  "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "请选择一台私有服务器",
+  "PC.Pages.AppProjectDetail.emptyPrivateServer": "暂无私有服务器，请先添加",
   'PC.Components.ExpertSummonCard.summon': '召唤专家',
   'PC.Components.ExpertSummonCard.usageTimes': '{0}次使用',
   'PC.Components.ExpertSummonCard.subscribeFirst': '请先订阅套餐后再召唤',

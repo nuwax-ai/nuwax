@@ -403,9 +403,14 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
       >
         {dict('PC.Pages.AppProjectDetail.addPrivateServer')}
       </Button>
-      <p className={cx(styles.hint)}>
-        {dict('PC.Pages.AppProjectDetail.privateHint')}
-      </p>
+      <div className={cx(styles.hint)}>
+        <p>
+          http: {dict('PC.Pages.AppProjectDetail.privateHintHttp')}
+        </p>
+        <p>
+          https: {dict('PC.Pages.AppProjectDetail.privateHint')}
+        </p>
+      </div>
     </Spin>
   );
 };
