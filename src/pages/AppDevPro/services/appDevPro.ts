@@ -20,6 +20,7 @@ import { UserAppDbEnvEnum } from './appDb';
 // 此处再导出保持页面内既有引用不变
 export {
   apiUserAppDelete,
+  apiUserAppGetById,
   apiUserAppUpdate,
   apiUserProjectDelete,
   apiUserProjectTabPageQuery,
@@ -61,15 +62,6 @@ export async function apiUserAppCreate(
   return request('/api/userapp/create', {
     method: 'POST',
     data,
-  });
-}
-
-/** 按应用ID查询（主键 id 即 app_id） */
-export async function apiUserAppGetById(
-  id: number,
-): Promise<RequestResponse<UserAppInfo>> {
-  return request(`/api/userapp/get/${id}`, {
-    method: 'GET',
   });
 }
 

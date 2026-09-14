@@ -151,7 +151,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
   const buildParams = useCallback((): UserAppStartDevParams => {
     const params: UserAppStartDevParams = { appId };
     if (env === UserAppDbEnvEnum.Prod) {
-      const versions = userAppInfo?.publishVersions || [];
+      const versions = userAppInfo?.buildVersions || [];
       const latest =
         versions.find((item) => item.latest) || versions[0] || undefined;
       if (latest?.version) {
@@ -159,7 +159,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       }
     }
     return params;
-  }, [appId, env, userAppInfo?.publishVersions]);
+  }, [appId, env, userAppInfo?.buildVersions]);
 
   /**
    * 执行启动或重启：调环境对应接口，有 taskId 则拉 SSE。
@@ -173,7 +173,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         return;
       }
       if (env === UserAppDbEnvEnum.Prod) {
-        const versions = userAppInfo?.publishVersions || [];
+        const versions = userAppInfo?.buildVersions || [];
         if (!versions.length) {
           message.warning(dict('PC.Pages.AppDevPro.prodNeedPublish'));
           return;
@@ -277,7 +277,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       phase,
       resetTaskState,
       setEnvRunning,
-      userAppInfo?.publishVersions,
+      userAppInfo?.buildVersions,
     ],
   );
 

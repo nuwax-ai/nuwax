@@ -175,7 +175,7 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
       ) => {
         const key = submittingKeyRef.current;
         message.success(
-          dict('PC.Pages.AppProjectSetting.addPrivateServerSuccess'),
+          dict('PC.Pages.AppProjectDetail.addPrivateServerSuccess'),
         );
         setDrafts((prev) => prev.filter((item) => item.key !== key));
         submittingKeyRef.current = undefined;
@@ -270,14 +270,14 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
     (row: ServerRow) => {
       const host = row.value.host.trim();
       if (!host) {
-        message.warning(dict('PC.Pages.AppProjectSetting.invalidServerIp'));
+        message.warning(dict('PC.Pages.AppProjectDetail.invalidServerIp'));
         return;
       }
       if (
         !isValidPort(row.value.appPort) ||
         !isValidPort(row.value.agentPort)
       ) {
-        message.warning(dict('PC.Pages.AppProjectSetting.invalidPort'));
+        message.warning(dict('PC.Pages.AppProjectDetail.invalidPort'));
         return;
       }
       submittingKeyRef.current = row.key;
@@ -302,9 +302,9 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
       }
       const saved = row.saved;
       Modal.confirm({
-        title: dict('PC.Pages.AppProjectSetting.deletePrivateServerTitle'),
+        title: dict('PC.Pages.AppProjectDetail.deletePrivateServerTitle'),
         content: dict(
-          'PC.Pages.AppProjectSetting.deletePrivateServerContent',
+          'PC.Pages.AppProjectDetail.deletePrivateServerContent',
           getServerLabel(saved),
         ),
         okButtonProps: { danger: true },
@@ -335,8 +335,8 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
         className={cx(styles.health, status ? styles.online : styles.offline)}
       >
         {status
-          ? dict('PC.Pages.AppProjectSetting.healthOnline')
-          : dict('PC.Pages.AppProjectSetting.healthOffline')}
+          ? dict('PC.Pages.AppProjectDetail.healthOnline')
+          : dict('PC.Pages.AppProjectDetail.healthOffline')}
       </span>
     );
   };
@@ -347,16 +347,16 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
         <div className={cx(styles.header)}>
           <div className={cx(styles['header-fields'])}>
             <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectSetting.protocol')}
+              {dict('PC.Pages.AppProjectDetail.protocol')}
             </span>
             <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectSetting.serverIp')}
+              {dict('PC.Pages.AppProjectDetail.serverIp')}
             </span>
             <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectSetting.appPort')}
+              {dict('PC.Pages.AppProjectDetail.appPort')}
             </span>
             <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectSetting.managePort')}
+              {dict('PC.Pages.AppProjectDetail.managePort')}
             </span>
           </div>
           <span className={cx(styles.actions)} />
@@ -381,7 +381,7 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
                   loading={submittingKey === row.key}
                   onClick={() => handleSubmitAdd(row)}
                 >
-                  {dict('PC.Pages.AppProjectSetting.addServerRow')}
+                  {dict('PC.Pages.AppProjectDetail.addServerRow')}
                 </Button>
               )}
               <Button
@@ -401,10 +401,10 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
         className={cx(styles.add)}
         onClick={handleOpenAdd}
       >
-        {dict('PC.Pages.AppProjectSetting.addPrivateServer')}
+        {dict('PC.Pages.AppProjectDetail.addPrivateServer')}
       </Button>
       <p className={cx(styles.hint)}>
-        {dict('PC.Pages.AppProjectSetting.privateHint')}
+        {dict('PC.Pages.AppProjectDetail.privateHint')}
       </p>
     </Spin>
   );

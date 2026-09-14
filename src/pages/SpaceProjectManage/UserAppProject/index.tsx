@@ -87,7 +87,7 @@ const UserAppProject: React.FC = () => {
 
   const handleOpenProject = useCallback(
     (item: UserProjectItem) => {
-      history.push(`/space/${spaceId}/app-project-setting/${item.id}`);
+      history.push(`/space/${spaceId}/app-project-detail/${item.id}`);
     },
     [spaceId],
   );

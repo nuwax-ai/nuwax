@@ -39,7 +39,7 @@ const formatCardTime = (timeStr?: string): string => {
   }
   const clock = time.format('HH:mm');
   if (time.isSame(dayjs(), 'day')) {
-    return `${dict('PC.Pages.AppProjectSetting.today')} ${clock}`;
+    return `${dict('PC.Pages.AppProjectDetail.today')} ${clock}`;
   }
   if (time.isSame(dayjs().subtract(1, 'day'), 'day')) {
     return `${dict('PC.Utils.Common.yesterday')} ${clock}`;
@@ -59,7 +59,7 @@ const getConversationOwner = (
   const currentUser = UserService.getUserInfoFromStorage() as UserInfo | null;
   const isMine = currentUser?.id != null && item.userId === currentUser.id;
   if (isMine) {
-    return { name: dict('PC.Pages.AppProjectSetting.mine'), isMine: true };
+    return { name: dict('PC.Pages.AppProjectDetail.mine'), isMine: true };
   }
   return { name: item.userName || '', isMine: false };
 };
@@ -97,7 +97,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
         <div className={cx(styles['sidebar-empty'])}>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={dict('PC.Pages.AppProjectSetting.emptyConversation')}
+            description={dict('PC.Pages.AppProjectDetail.emptyConversation')}
           />
         </div>
       );
@@ -154,7 +154,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
     <aside className={cx(styles.sidebar)}>
       <div className={cx(styles['sidebar-header'])}>
         <h4 className={cx(styles['sidebar-title'])}>
-          {dict('PC.Pages.AppProjectSetting.conversationTitle')}
+          {dict('PC.Pages.AppProjectDetail.conversationTitle')}
         </h4>
         <Button
           type="link"
@@ -163,7 +163,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
           icon={<PlusOutlined />}
           onClick={onCreate}
         >
-          {dict('PC.Pages.AppProjectSetting.newConversation')}
+          {dict('PC.Pages.AppProjectDetail.newConversation')}
         </Button>
       </div>
       {renderList()}
