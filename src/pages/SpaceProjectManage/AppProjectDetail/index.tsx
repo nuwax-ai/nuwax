@@ -661,7 +661,7 @@ const AppProjectDetail: React.FC = () => {
     const display = !value
       ? emptyValue
       : secret && !secretVisible
-      ? '••••••••••••••••••••'
+      ? '•'.repeat(value.length)
       : value;
     return (
       <div className={cx(styles.field)}>

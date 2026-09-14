@@ -10,7 +10,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import { history, useParams, useRequest } from 'umi';
 import ProjectCard from '../components/ProjectCard';
 import { apiUserProjectPageQuery } from '../services';
 import { apiThirdAppOauth2Update } from '../services/thirdAppOauth2';
@@ -142,6 +142,20 @@ const ThirdAppIntegration: React.FC = () => {
     runQuery(keyword);
   }, [keyword, runQuery]);
 
+  /** 打开三方应用详情 */
+  const handleOpenProject = useCallback(
+    (item: UserProjectItem) => {
+      history.push(`/space/${spaceId}/third-app-detail/${item.id}`, {
+        appInfo: {
+          name: item.name,
+          description: item.description,
+          icon: item.icon,
+        },
+      });
+    },
+    [spaceId],
+  );
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <div
@@ -189,6 +203,7 @@ const ThirdAppIntegration: React.FC = () => {
             <ProjectCard
               key={item.id}
               item={item}
+              onClick={handleOpenProject}
               onRename={handleRename}
               onDelete={handleDelete}
             />
