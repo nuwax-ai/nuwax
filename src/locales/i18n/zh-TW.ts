@@ -4346,6 +4346,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.NuwaApps.teamSpace": "團隊空間",
   "PC.Pages.NuwaApps.all": "全部",
   "PC.Pages.NuwaApps.appTag": "應用",
+  "PC.Pages.NuwaApps.expand": "展開",
+  "PC.Pages.NuwaApps.collapse": "收起",
   "PC.Pages.Square.Square.plugin": "套件",
   "PC.Pages.Square.Square.search": "搜尋",
   "PC.Pages.Square.Square.selectCategory": "請選擇分類",
