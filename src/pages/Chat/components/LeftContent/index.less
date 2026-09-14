@@ -58,6 +58,9 @@
     .chat-section {
       width: 100%;
       height: 100%;
+      box-sizing: border-box;
+      // 与右侧面板各留 8px，让拖拽分隔条落在间隔正中
+      padding-right: 8px;
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -155,7 +158,8 @@
       // position: sticky;
       position: relative;
       height: 100%;
-      padding-left: 16px;
+      // 与聊天区各留 8px，让拖拽分隔条落在间隔正中
+      padding-left: 8px;
       padding-bottom: 20px;
       margin: 0;
       box-sizing: border-box;
