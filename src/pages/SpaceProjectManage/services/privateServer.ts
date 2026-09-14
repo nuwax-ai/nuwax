@@ -123,9 +123,12 @@ export interface SetDeployTargetParams {
 }
 
 /**
- * 设置部署服务器（platform=平台沙箱；private=私服）
- * @param id 私服 ID
- * @returns true 在线，false 离线
+ * 设置部署服务器（platform=平台托管；private=私服）。
+ * 平台部署不传 deployServerId。
+ *
+ * @param data.appId 应用 ID
+ * @param data.deployType 部署类型
+ * @param data.deployServerId 私服 ID，仅 private 时传入
  */
 export async function apiPrivateServerSetDeployTarget(
   data: SetDeployTargetParams,

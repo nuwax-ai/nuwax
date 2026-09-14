@@ -6283,6 +6283,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppProjectDetail.appPortPlaceholder": "例如 8080",
   "PC.Pages.AppProjectDetail.managePort": "管理連接埠",
   "PC.Pages.AppProjectDetail.managePortPlaceholder": "例如 8081",
+  "PC.Pages.AppProjectDetail.privateHintHttp": "應用連接埠用於對外提供存取，管理連接埠用於平台下發部署與健康檢查。請確保伺服器可被平台存取，並已在安全組放通上述連接埠。選擇 HTTP 時資料為明文傳輸，建議僅在可信內網使用。",
   "PC.Pages.AppProjectDetail.privateHint": "應用連接埠用於對外提供存取，管理連接埠用於平台下發部署與健康檢查。請確保伺服器可被平台存取，並已在安全組放通上述連接埠。選擇 HTTPS 時，需在伺服器上部署有效憑證並監聽應用連接埠，平台不代管憑證。",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "相關任務",
@@ -6308,6 +6309,10 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppProjectDetail.invalidPort": "請輸入 1-65535 之間的連接埠",
   "PC.Pages.AppProjectDetail.healthOnline": "在線",
   "PC.Pages.AppProjectDetail.healthOffline": "離線",
+  "PC.Pages.AppProjectDetail.setDeployServer": "設定部署伺服器",
+  "PC.Pages.AppProjectDetail.selectPrivateServerTitle": "選擇私有伺服器",
+  "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "請選擇一台私有伺服器",
+  "PC.Pages.AppProjectDetail.emptyPrivateServer": "暫無私有伺服器，請先新增",
   'PC.Components.ExpertSummonCard.summon': '召喚專家',
   'PC.Components.ExpertSummonCard.usageTimes': '{0}次使用',
   'PC.Components.ExpertSummonCard.subscribeFirst': '請先訂閱套餐後再召喚',
