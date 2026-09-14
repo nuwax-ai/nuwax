@@ -123,7 +123,6 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
               size="small"
               style={{ width: 32, height: 20 }}
             />
-            {/* <Skeleton.Button active size="small" style={{ width: 32, height: 20 }} /> */}
           </div>
         </div>
       </div>

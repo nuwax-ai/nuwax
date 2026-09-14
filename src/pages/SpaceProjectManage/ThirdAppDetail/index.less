@@ -1,0 +1,193 @@
+@import '@/styles/token';
+
+.page {
+  min-height: 0;
+  background: @colorBgLayout;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: @marginXs;
+  height: calc(@controlHeightLg + @padding);
+  padding: 0 @paddingLg;
+  background: @colorBgContainer;
+  border-bottom: 1px solid @colorSplit;
+}
+
+.back {
+  color: @colorTextSecondary;
+}
+
+.project-name {
+  margin: 0;
+  max-width: 240px;
+  color: @colorText;
+  font-size: @fontSizeLg;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeightLg;
+}
+
+.tabs {
+  display: flex;
+  height: 100%;
+  margin-left: @marginXs;
+
+  :global(.ant-tabs-nav) {
+    height: 100%;
+    margin: 0;
+
+    &::before {
+      border-bottom: none;
+    }
+  }
+
+  :global(.ant-tabs-tab) {
+    padding: 0 @paddingSm;
+    color: @colorTextSecondary;
+    font-size: @fontSize;
+  }
+
+  :global(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn) {
+    color: @colorPrimary;
+    font-weight: @fontWeightStrong;
+    text-shadow: none;
+  }
+
+  :global(.ant-tabs-ink-bar) {
+    height: @lineWidthBold;
+    background: @colorPrimary;
+    border-radius: @borderRadiusXs;
+  }
+}
+
+.main {
+  min-height: 0;
+  padding: @paddingMd @paddingLg @paddingLg;
+  background: @colorBgContainer;
+}
+
+.card {
+  max-width: 880px;
+  padding: @paddingMd @paddingLg;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  background: @colorBgContainer;
+}
+
+.card-title {
+  margin: 0 0 @marginXs;
+  color: @colorText;
+  font-size: @fontSizeLg;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeightLg;
+}
+
+.card-desc {
+  margin: 0 0 @margin;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+  min-height: 36px;
+  margin-bottom: @marginXs;
+}
+
+.field-label {
+  flex-shrink: 0;
+  width: 120px;
+  color: @colorTextSecondary;
+  font-size: @fontSize;
+}
+
+.field-content {
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXs;
+  min-width: 0;
+  max-width: calc(100% - 132px);
+  padding: @paddingXxs @paddingXs;
+  background: @colorFillTertiary;
+  border-radius: @borderRadius;
+}
+
+.field-value {
+  min-width: 0;
+  color: @colorText;
+  font-size: @fontSize;
+  line-height: @fontHeight;
+}
+
+.field-input {
+  flex: 1;
+  min-width: 0;
+  max-width: 520px;
+}
+
+.field-icon {
+  flex-shrink: 0;
+  color: @colorTextTertiary;
+  font-size: @fontSize;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    color: @colorText;
+  }
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: @marginSm;
+  margin-top: @marginSm;
+}
+
+.regenerate-btn:global(.ant-btn) {
+  color: #4b4a53;
+
+  &:hover,
+  &:focus {
+    color: #4b4a53;
+  }
+}
+
+.regenerate-hint {
+  min-width: 0;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
+}
+
+@media (max-width: 960px) {
+  .header {
+    height: auto;
+    padding-top: @paddingXs;
+    flex-wrap: wrap;
+  }
+
+  .tabs {
+    order: 3;
+    width: 100%;
+    height: @controlHeightLg;
+  }
+
+  .field {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .field-label,
+  .field-content,
+  .field-input {
+    width: 100%;
+    max-width: none;
+  }
+}

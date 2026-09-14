@@ -676,11 +676,6 @@ const ChatInputUnifiedImpl: React.FC<
     [],
   );
 
-  const handleChange: UploadProps['onChange'] = (info) => {
-    const { fileList } = info;
-    setUploadFiles(handleUploadFileList(fileList));
-  };
-
   const handleDelFile = (uid: string) => {
     setUploadFiles((uploadFiles) =>
       uploadFiles.filter((item) => item.uid !== uid),
@@ -800,6 +795,21 @@ const ChatInputUnifiedImpl: React.FC<
       }
     },
     [applyServerUploadResult, getDefaultFileName, token, wholeDisabled],
+  );
+
+  /**
+   * + 菜单附件上传：beforeUpload 接管式——antd Upload 仅作文件选择器
+   * （return false 阻止其内置 XHR），文件统一走 uploadFilesToServer。
+   * 不能改回 action 上传：Upload 挂在 Dropdown 菜单项内，点菜单项弹层
+   * 即关闭，内置上传的成功回调在已关闭的弹层里找不到文件列表会静默
+   * 丢弃 done 状态，导致附件上传成功后永远 loading。
+   */
+  const handleBeforeUpload: UploadProps['beforeUpload'] = useCallback(
+    (file: Parameters<NonNullable<UploadProps['beforeUpload']>>[0]) => {
+      uploadFilesToServer([file]);
+      return false;
+    },
+    [uploadFilesToServer],
   );
 
   const handlePaste = useCallback(
@@ -1054,14 +1064,15 @@ const ChatInputUnifiedImpl: React.FC<
     onSelectComponent,
   );
 
-  // / 能力弹窗开放范围：默认不含专家（仅首页经 showExpertCapability 开放）
-  const capabilityResourceTypes = useMemo<CapabilityTypeEnum[]>(
-    () =>
-      showExpertCapability
-        ? [...DEFAULT_CAPABILITY_RESOURCE_TYPES, 'expert']
-        : DEFAULT_CAPABILITY_RESOURCE_TYPES,
-    [showExpertCapability],
-  );
+  // 能力弹窗开放范围：默认不含专家（仅首页经 showExpertCapability 开放）；
+  // 智能体 allowAtSkill 非 1（enableMention=false）时收敛技能维度
+  // （/ 技能弹层与能力弹窗技能入口一并屏蔽）
+  const capabilityResourceTypes = useMemo<CapabilityTypeEnum[]>(() => {
+    const types: CapabilityTypeEnum[] = showExpertCapability
+      ? [...DEFAULT_CAPABILITY_RESOURCE_TYPES, 'expert']
+      : [...DEFAULT_CAPABILITY_RESOURCE_TYPES];
+    return enableMention ? types : types.filter((type) => type !== 'skill');
+  }, [showExpertCapability, enableMention]);
 
   /** 资料库文档 chip 派生（编辑器内容变化自动同步，替代此前的单选追加） */
   const handleDocsChange = useCallback((docs: SelectedDocInfo[]) => {
@@ -1317,17 +1328,9 @@ const ChatInputUnifiedImpl: React.FC<
                             key: 'attachment',
                             label: (
                               <Upload
-                                action={UPLOAD_FILE_ACTION}
                                 disabled={wholeDisabled}
-                                onChange={handleChange}
+                                beforeUpload={handleBeforeUpload}
                                 multiple={true}
-                                fileList={uploadFiles}
-                                headers={{
-                                  Authorization: token ? `Bearer ${token}` : '',
-                                }}
-                                data={{
-                                  type: 'tmp',
-                                }}
                                 showUploadList={false}
                               >
                                 <span
@@ -1367,28 +1370,36 @@ const ChatInputUnifiedImpl: React.FC<
                             onClick: () =>
                               mentionEditorRef.current?.insertTriggerText('@'),
                           },
-                          {
-                            key: 'slash-capability',
-                            disabled: wholeDisabled,
-                            label: (
-                              <span
-                                className={cx(
-                                  'flex',
-                                  'items-center',
-                                  styles['plus-menu-label'],
-                                )}
-                              >
-                                <span className={styles['trigger-pill']}>
-                                  /
-                                </span>
-                                {t(
-                                  'PC.Components.ChatInputHome.slashCapability',
-                                )}
-                              </span>
-                            ),
-                            onClick: () =>
-                              mentionEditorRef.current?.insertTriggerText('/'),
-                          },
+                          // 「/ 能力」项：智能体 allowAtSkill 非 1 时隐藏
+                          //（/ 技能弹层同步屏蔽）
+                          ...(enableMention
+                            ? [
+                                {
+                                  key: 'slash-capability',
+                                  disabled: wholeDisabled,
+                                  label: (
+                                    <span
+                                      className={cx(
+                                        'flex',
+                                        'items-center',
+                                        styles['plus-menu-label'],
+                                      )}
+                                    >
+                                      <span className={styles['trigger-pill']}>
+                                        /
+                                      </span>
+                                      {t(
+                                        'PC.Components.ChatInputHome.slashCapability',
+                                      )}
+                                    </span>
+                                  ),
+                                  onClick: () =>
+                                    mentionEditorRef.current?.insertTriggerText(
+                                      '/',
+                                    ),
+                                },
+                              ]
+                            : []),
                           {
                             key: 'connector',
                             disabled: wholeDisabled,

@@ -83,6 +83,11 @@ const routes = [
         path: '/space/:spaceId/third-app-integration',
         component: '@/pages/SpaceProjectManage/ThirdAppIntegration',
       },
+      // 三方应用详情
+      {
+        path: '/space/:spaceId/third-app-detail/:projectId',
+        component: '@/pages/SpaceProjectManage/ThirdAppDetail',
+      },
       // 应用项目详情
       {
         path: '/space/:spaceId/app-project-detail/:appId',

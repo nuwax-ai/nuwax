@@ -39,6 +39,7 @@ const embedLists = vi.hoisted(() => ({
   props: {
     expert: {} as Record<string, any>,
     knowledge: {} as Record<string, any>,
+    skill: {} as Record<string, any>,
   },
   expertCards: [
     { key: 'expert:used:1', name: '专家一' },
@@ -47,6 +48,10 @@ const embedLists = vi.hoisted(() => ({
   knowledgeCards: [
     { key: 'knowledge:recent:1', name: '文档一' },
     { key: 'knowledge:recent:2', name: '文档二' },
+  ],
+  skillCards: [
+    { key: 'skill:convenient:1', name: '技能一' },
+    { key: 'skill:convenient:2', name: '技能二' },
   ],
 }));
 vi.mock('@/components/business-component/ExpertListView', async () => {
@@ -107,6 +112,35 @@ vi.mock('@/components/business-component/KnowledgeListView', async () => {
     },
   };
 });
+vi.mock('@/components/business-component/SkillListView', async () => {
+  const React = await import('react');
+  return {
+    default: (props: Record<string, any>) => {
+      Object.assign(embedLists.props.skill, props);
+      return React.createElement(
+        'div',
+        { 'data-testid': 'at-skill-list' },
+        embedLists.skillCards.map((card) =>
+          React.createElement(
+            'div',
+            {
+              key: card.key,
+              'data-skill-key': card.key,
+              onClick: () =>
+                props.onSelect({
+                  key: card.key,
+                  rawId: 1,
+                  targetId: 1,
+                  name: card.name,
+                }),
+            },
+            card.name,
+          ),
+        ),
+      );
+    },
+  };
+});
 
 const FOCUS_CLASS = 'at-popup-card-focus';
 const file = {
@@ -119,6 +153,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   embedLists.props.expert = {};
   embedLists.props.knowledge = {};
+  embedLists.props.skill = {};
   vi.stubGlobal(
     'ResizeObserver',
     class {
@@ -144,6 +179,7 @@ const renderPopup = (
       onSelectFile={vi.fn()}
       onSelectDoc={vi.fn()}
       onSelectExpert={vi.fn()}
+      onSelectSkill={vi.fn()}
       onMore={vi.fn()}
       onClose={vi.fn()}
       {...rest}
@@ -199,6 +235,68 @@ describe('AtResourcePopup·双模式 tab 结构', () => {
     expect(
       screen.getByText('PC.Components.AtResourcePopup.more'),
     ).toBeInTheDocument();
+  });
+
+  it('home 且专家未开放（expertAvailable=false）：收敛为纯资料库，无切换器无专家列表', async () => {
+    renderPopup({ mode: 'home', expertAvailable: false });
+    await waitFor(() =>
+      expect(screen.getByTestId('at-knowledge-list')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('at-expert-list')).toBeNull();
+    expect(
+      screen.queryByText('PC.Components.AtResourcePopup.tabExpert'),
+    ).toBeNull();
+    // 资料库 tab 仍有「更多」入口
+    expect(
+      screen.getByText('PC.Components.AtResourcePopup.more'),
+    ).toBeInTheDocument();
+  });
+
+  it('slash：技能便捷视图单列表——无切换器，有「更多」，键盘 Enter 选中', async () => {
+    const onSelectSkill = vi.fn();
+    const onMore = vi.fn();
+    const ref = createRef<AtResourcePopupHandle>();
+    render(
+      <AtResourcePopup
+        ref={ref}
+        mode="slash"
+        visible
+        position={{ left: 0, top: 0 }}
+        searchText="写作"
+        onSelectFile={vi.fn()}
+        onSelectDoc={vi.fn()}
+        onSelectExpert={vi.fn()}
+        onSelectSkill={onSelectSkill}
+        onMore={onMore}
+        onClose={vi.fn()}
+      />,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('at-skill-list')).toBeInTheDocument(),
+    );
+    expect(embedLists.props.skill).toMatchObject({
+      type: 'convenient',
+      variant: 'list',
+      keyword: '写作',
+    });
+    // 单 tab：切换器隐藏，其他列表不渲染
+    expect(
+      screen.queryByText('PC.Components.AtResourcePopup.tabSkill'),
+    ).toBeNull();
+    expect(screen.queryByTestId('at-expert-list')).toBeNull();
+    // 更多入口：回调携带 skill
+    fireEvent.click(screen.getByText('PC.Components.AtResourcePopup.more'));
+    expect(onMore).toHaveBeenCalledWith('skill');
+    // 键盘：默认高亮首项 + Enter 选中
+    await waitFor(() =>
+      expect(focusedCard()?.getAttribute('data-skill-key')).toBe(
+        'skill:convenient:1',
+      ),
+    );
+    act(() => ref.current?.handleSelectCurrentItem());
+    expect(onSelectSkill).toHaveBeenLastCalledWith(
+      expect.objectContaining({ name: '技能一' }),
+    );
   });
 });
 
