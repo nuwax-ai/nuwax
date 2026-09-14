@@ -40,6 +40,7 @@ import {
 } from '@ant-design/icons';
 import {
   Button,
+  ColorPicker,
   Form,
   FormProps,
   Input,
@@ -50,6 +51,7 @@ import {
   Select,
   Space,
 } from 'antd';
+import { Color } from 'antd/es/color-picker';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
@@ -98,6 +100,23 @@ const hasReasoningCapabilityType = (
   types: ModelCapabilityTypeEnum[] | null,
 ): boolean => (types ?? []).includes(ModelCapabilityTypeEnum.Reasoning);
 
+/** 标签颜色预设色板（ColorPicker presets；另支持自定义取色，取值统一收敛为 hex） */
+const TAG_COLOR_PRESETS = [
+  {
+    label: dict('PC.Pages.SpaceLibrary.CreateModel.tagColorPresets'),
+    colors: [
+      '#1668DC',
+      '#13C2C2',
+      '#52C41A',
+      '#FAAD14',
+      '#FA8C16',
+      '#FF4D4F',
+      '#EB2F96',
+      '#722ED1',
+    ],
+  },
+];
+
 /** 新建模型时写入表单的默认值（打开创建弹窗并通过 effect 应用；编辑由 runQuery 覆盖） */
 const CREATE_MODEL_DEFAULT_VALUES = {
   networkType: ModelNetworkTypeEnum.Internet,
@@ -123,6 +142,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
   spaceId,
   open,
   action = apiModelSave,
+  showTagFields = false,
   onCancel,
   onConfirm,
 }) => {
@@ -181,7 +201,14 @@ const CreateModel: React.FC<CreateModelProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: ModelConfigInfo) => {
-      form.setFieldsValue(result);
+      // 标签/标签颜色/倍率接口可能返回 null,统一归一为 undefined,
+      // 避免 ColorPicker/Input 受控值异常(未开启 showTagFields 时无表单项,无副作用)
+      form.setFieldsValue({
+        ...result,
+        tag: result?.tag ?? undefined,
+        tagColor: result?.tagColor ?? undefined,
+        cost: result?.cost ?? undefined,
+      });
       setModelTypes(result?.types as ModelCapabilityTypeEnum[] | null);
     },
   });
@@ -737,6 +764,53 @@ const CreateModel: React.FC<CreateModelProps> = ({
             )}
           />
         </Form.Item>
+        {/* 标签/标签颜色/倍率:仅系统-公共模型管理维度维护(showTagFields 门控,空间侧不涉及) */}
+        <ConditionRender condition={showTagFields}>
+          <div className={cx('flex', styles['gap-16'])}>
+            <Form.Item
+              className={cx('flex-1')}
+              name="tag"
+              label={dict('PC.Pages.SpaceLibrary.CreateModel.tag')}
+            >
+              <Input
+                maxLength={100}
+                placeholder={dict(
+                  'PC.Pages.SpaceLibrary.CreateModel.tagPlaceholder',
+                )}
+              />
+            </Form.Item>
+            <Form.Item
+              className={cx('flex-1')}
+              name="tagColor"
+              label={dict('PC.Pages.SpaceLibrary.CreateModel.tagColor')}
+              // ColorPicker onChange 携带 Color 实例,入表单收敛为 hex 字符串;
+              // allowClear 清除时归一 undefined(后端存 null)
+              getValueFromEvent={(color: Color | null | undefined) =>
+                color ? color.toHexString() : undefined
+              }
+            >
+              <ColorPicker
+                format="hex"
+                allowClear
+                disabledAlpha
+                showText
+                presets={TAG_COLOR_PRESETS}
+              />
+            </Form.Item>
+            <Form.Item
+              className={cx('flex-1')}
+              name="cost"
+              label={dict('PC.Pages.SpaceLibrary.CreateModel.cost')}
+            >
+              <Input
+                maxLength={100}
+                placeholder={dict(
+                  'PC.Pages.SpaceLibrary.CreateModel.costPlaceholder',
+                )}
+              />
+            </Form.Item>
+          </div>
+        </ConditionRender>
         <div className={cx('flex', styles['gap-16'])}>
           {/* 开启推理：仅当模型类型含「深度思考」时展示 */}
           {hasReasoningCapabilityType(modelTypes) && (

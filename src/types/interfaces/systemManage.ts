@@ -236,6 +236,12 @@ export interface ModelConfigDto {
   enabled?: ModelComponentStatusEnum;
   /** 可用范围 */
   usageScenarios?: ModelUsageScenarioEnum[];
+  /** 模型标签（仅系统-公共模型管理维度维护，可能为 null） */
+  tag?: string;
+  /** 模型标签颜色（hex，可能为 null） */
+  tagColor?: string;
+  /** 模型倍率（仅系统-公共模型管理维度维护，可能为 null） */
+  cost?: string;
   /** 定价信息（对象或展示文案） */
   pricing?: ResourcePricingConfigInfo | string;
 }
