@@ -196,22 +196,6 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
           {titleLeftSlot}
           <span>{t('PC.Components.HistoryConversationList.pageTitle')}</span>
         </div>
-        <div
-          className={`${styles['search-input']} ${
-            isMobile ? styles['search-input-mobile'] : ''
-          }`}
-        >
-          <Input
-            prefix={<SearchOutlined style={{ color: '#999', fontSize: 16 }} />}
-            placeholder={t(
-              'PC.Components.HistoryConversationList.searchPlaceholder',
-            )}
-            value={keyword}
-            onChange={onStartSearch}
-            className={styles['search-input-field']}
-            allowClear
-          />
-        </div>
         {enableProjectTab && (
           <div className={styles['source-tabs']}>
             {/* 一级数据源切换：antd Segmented，样式对齐女娲应用页 source-segmented */}
@@ -232,6 +216,22 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
             />
           </div>
         )}
+        <div
+          className={`${styles['search-input']} ${
+            isMobile ? styles['search-input-mobile'] : ''
+          }`}
+        >
+          <Input
+            prefix={<SearchOutlined style={{ color: '#999', fontSize: 16 }} />}
+            placeholder={t(
+              'PC.Components.HistoryConversationList.searchPlaceholder',
+            )}
+            value={keyword}
+            onChange={onStartSearch}
+            className={styles['search-input-field']}
+            allowClear
+          />
+        </div>
         <div className={styles['list-wrapper']}>
           {!enableProjectTab || sourceTab === 'task' ? (
             <ConversationList
