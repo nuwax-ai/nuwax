@@ -6277,10 +6277,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppProjectSetting.unbindConfirmTitle": "解除域名綁定",
   "PC.Pages.AppProjectSetting.unbindConfirmContent": "確定要解除 {0} 的綁定嗎？",
   "PC.Pages.AppProjectSetting.invalidDomain": "請輸入正確的域名",
-  // 底部操作
-  "PC.Pages.AppProjectSetting.saveSettings": "儲存設定",
-  "PC.Pages.AppProjectSetting.restoreDefaults": "恢復預設",
-  "PC.Pages.AppProjectSetting.restoreSuccess": "已恢復預設設定",
   'PC.Components.ExpertSummonCard.summon': '召喚專家',
   'PC.Components.ExpertSummonCard.usageTimes': '{0}次使用',
   'PC.Components.ExpertSummonCard.subscribeFirst': '請先訂閱套餐後再召喚',

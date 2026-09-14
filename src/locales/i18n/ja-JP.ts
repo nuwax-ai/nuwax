@@ -6282,10 +6282,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectSetting.unbindConfirmTitle": "ドメイン連携を解除",
   "PC.Pages.AppProjectSetting.unbindConfirmContent": "{0} の連携を解除しますか？",
   "PC.Pages.AppProjectSetting.invalidDomain": "正しいドメインを入力してください",
-  // 底部操作
-  "PC.Pages.AppProjectSetting.saveSettings": "設定を保存",
-  "PC.Pages.AppProjectSetting.restoreDefaults": "デフォルトに戻す",
-  "PC.Pages.AppProjectSetting.restoreSuccess": "デフォルト設定に戻しました",
   'PC.Components.ExpertSummonCard.summon': '召喚',
   'PC.Components.ExpertSummonCard.usageTimes': '{0}回使用',
   'PC.Components.ExpertSummonCard.subscribeFirst': 'プランを購読してから召喚してください',

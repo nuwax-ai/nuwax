@@ -6403,10 +6403,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppProjectSetting.unbindConfirmTitle": "解除域名绑定",
   "PC.Pages.AppProjectSetting.unbindConfirmContent": "确定要解除 {0} 的绑定吗？",
   "PC.Pages.AppProjectSetting.invalidDomain": "请输入正确的域名",
-  // 底部操作
-  "PC.Pages.AppProjectSetting.saveSettings": "保存设置",
-  "PC.Pages.AppProjectSetting.restoreDefaults": "恢复默认",
-  "PC.Pages.AppProjectSetting.restoreSuccess": "已恢复默认设置",
   'PC.Components.ExpertSummonCard.summon': '召唤专家',
   'PC.Components.ExpertSummonCard.usageTimes': '{0}次使用',
   'PC.Components.ExpertSummonCard.subscribeFirst': '请先订阅套餐后再召唤',

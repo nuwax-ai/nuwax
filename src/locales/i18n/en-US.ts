@@ -6408,10 +6408,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectSetting.unbindConfirmTitle": "Unbind domain",
   "PC.Pages.AppProjectSetting.unbindConfirmContent": "Unbind {0}?",
   "PC.Pages.AppProjectSetting.invalidDomain": "Enter a valid domain",
-  // 底部操作
-  "PC.Pages.AppProjectSetting.saveSettings": "Save settings",
-  "PC.Pages.AppProjectSetting.restoreDefaults": "Restore defaults",
-  "PC.Pages.AppProjectSetting.restoreSuccess": "Defaults restored",
   'PC.Components.ExpertSummonCard.summon': 'Summon',
   'PC.Components.ExpertSummonCard.usageTimes': '{0} uses',
   'PC.Components.ExpertSummonCard.subscribeFirst': 'Subscribe to a plan before summoning',

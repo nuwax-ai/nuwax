@@ -356,21 +356,6 @@ const AppProjectSetting: React.FC = () => {
     });
   }, [appId, runRegenerate]);
 
-  /** 保存设置：发布配置接口未就绪，先回写本地并提示 */
-  const handleSaveSettings = useCallback(() => {
-    message.success(dict('PC.Common.Global.saveSuccess'));
-  }, []);
-
-  /** 恢复默认：平台服务，清空私有服务器表单 */
-  const handleRestoreDefaults = useCallback(() => {
-    setDeployMode('platform');
-    setProtocol('https');
-    setServerIp('');
-    setAppPort('');
-    setManagePort('');
-    message.success(dict('PC.Pages.AppProjectSetting.restoreSuccess'));
-  }, []);
-
   /**
    * 主页 / 回调地址：有值回填 Input，无值显示空输入框。
    *
@@ -718,16 +703,6 @@ const AppProjectSetting: React.FC = () => {
             >
               {activeTab === 'setting' ? renderSetting() : renderComingSoon()}
             </div>
-            {activeTab === 'setting' ? (
-              <footer className={cx(styles['action-bar'])}>
-                <Button type="primary" onClick={handleSaveSettings}>
-                  {dict('PC.Pages.AppProjectSetting.saveSettings')}
-                </Button>
-                <Button onClick={handleRestoreDefaults}>
-                  {dict('PC.Pages.AppProjectSetting.restoreDefaults')}
-                </Button>
-              </footer>
-            ) : null}
           </div>
           <ConversationPanel
             conversations={project.conversations || []}
