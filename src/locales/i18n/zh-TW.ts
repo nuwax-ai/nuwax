@@ -6363,6 +6363,7 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.CapabilityModal.subtitle': 'CAPABILITIES',
   'PC.Components.CapabilityModal.menuSkill': '技能',
   'PC.Components.CapabilityModal.menuConnector': '連接器',
+  'PC.Components.AtResourcePopup.tabSkill': '技能',
   'PC.Components.AtResourcePopup.tabExpert': '專家',
   'PC.Components.AtResourcePopup.tabKnowledge': '資料庫',
   'PC.Components.AtResourcePopup.tabFile': '上下文檔案',

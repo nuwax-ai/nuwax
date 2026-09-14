@@ -28,7 +28,6 @@ import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
-  DefaultSelectedEnum,
   HideDesktopEnum,
   MessageTypeEnum,
   TaskStatus,
@@ -1702,7 +1701,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     readonly: !effectiveAgent?.allowPrivateSandbox,
     enableMention:
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-      effectiveAgent?.allowAtSkill === DefaultSelectedEnum.Yes,
+      // allowAtSkill 兼容数字/字符串 1（后端两种形态都可能返回）
+      Number(effectiveAgent?.allowAtSkill) === 1,
     showAnnouncement: true,
     mentionPlacement: 'up',
     messageViewRef,

@@ -18,6 +18,7 @@
 
 import ExpertListView from '@/components/business-component/ExpertListView';
 import KnowledgeListView from '@/components/business-component/KnowledgeListView';
+import SkillListView from '@/components/business-component/SkillListView';
 import { t } from '@/services/i18nRuntime';
 import { ExportOutlined, FileTextOutlined } from '@ant-design/icons';
 import { Button, Segmented, Spin } from 'antd';
@@ -42,26 +43,28 @@ import type {
 
 const cx = classNames.bind(styles);
 
-/** 键盘导航卡片代理选择器：专家行/资料行（列表组件内聚）+ 文件行（本组件渲染） */
+/** 键盘导航卡片代理选择器：专家行/资料行/技能行（列表组件内聚）+ 文件行（本组件渲染） */
 const CARD_SELECTOR =
-  '[data-expert-key], [data-knowledge-key], [data-at-file-key]';
+  '[data-expert-key], [data-knowledge-key], [data-at-file-key], [data-skill-key]';
 
-/** 键盘聚焦高亮全局类（专家/资料行卡片样式内聚在列表组件无法经 props 传入，经 DOM 类注入） */
+/** 键盘聚焦高亮全局类（列表行卡片样式内聚在列表组件无法经 props 传入，经 DOM 类注入） */
 const CARD_FOCUS_CLASS = 'at-popup-card-focus';
 
 /** 文件列表截断上限（先过滤再截断，确保大列表后部文件仍可搜索到——沿用旧口径） */
 const FILE_LIST_LIMIT = 100;
 
-/** 模式 → tab 组成（顺序即展示顺序与 ←→ 切换顺序） */
+/** 模式 → tab 组成（顺序即展示顺序与 ←→ 切换顺序；slash 单 tab 无切换器） */
 const MODE_TABS: Record<AtPopupMode, AtPopupTab[]> = {
   home: ['expert', 'knowledge'],
   session: ['file', 'knowledge'],
+  slash: ['skill'],
 };
 
 const TAB_LABEL_KEY: Record<AtPopupTab, string> = {
   expert: 'PC.Components.AtResourcePopup.tabExpert',
   knowledge: 'PC.Components.AtResourcePopup.tabKnowledge',
   file: 'PC.Components.AtResourcePopup.tabFile',
+  skill: 'PC.Components.AtResourcePopup.tabSkill',
 };
 
 /**
@@ -188,6 +191,7 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
     const {
       visible,
       mode,
+      expertAvailable = true,
       position,
       maxHeight,
       searchText = '',
@@ -195,6 +199,7 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
       onSelectFile,
       onSelectDoc,
       onSelectExpert,
+      onSelectSkill,
       onMore,
       onHeightChange,
     } = props;
@@ -210,13 +215,18 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
     }, [onFetchMentionFiles]);
 
     const tabs = useMemo(() => {
-      // 会话页文件不可用时收敛为纯资料库——无切换必要,不渲染
-      // 「上下文文件」tab（Segmented 单项时整体隐藏）
+      // home 模式下专家未开放（与能力弹窗同源策略）时收敛为纯资料库——
+      // 智能体详情页等场景 @ 不能唤起专家；session 文件不可用收敛同理
+      if (mode === 'home' && !expertAvailable) {
+        return MODE_TABS.home.filter((tab) => tab !== 'expert');
+      }
+      // 会话页文件不可用（无记录且无搜索词判定）时收敛为纯资料库——
+      // 无切换必要,不渲染「上下文文件」tab（Segmented 单项时整体隐藏）
       if (mode === 'session' && fileAvailable === false) {
         return MODE_TABS.session.filter((tab) => tab !== 'file');
       }
       return MODE_TABS[mode];
-    }, [mode, fileAvailable]);
+    }, [mode, expertAvailable, fileAvailable]);
     const [activeTab, setActiveTab] = useState<AtPopupTab>(tabs[0]);
     // tabs 收敛/模式变化时回落首项（activeTab 可能已被移除）
     useEffect(() => {
@@ -411,6 +421,15 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
               className={cx(styles['embed-list'])}
             />
           )}
+          {activeTab === 'skill' && (
+            <SkillListView
+              type="convenient"
+              variant="list"
+              keyword={searchText}
+              onSelect={onSelectSkill}
+              className={cx(styles['embed-list'])}
+            />
+          )}
           {/* 文件面板常驻挂载：取数/可用性上报不随 tab 收敛停止
               （会话中生成新文件后重开弹层可实时恢复文件 tab），
               仅展示跟随 activeTab；home 模式无文件源不参与 */}
@@ -425,7 +444,7 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
             />
           )}
         </div>
-        {/* 更多入口：仅专家/资料库 tab（能力大弹窗无文件维度），
+        {/* 更多入口：专家/资料库/技能 tab（能力大弹窗无文件维度），
             定位对应维度打开（专家仅首页开放范围）；block 按钮宽度由
             wrap 的 content 区约束（100%+水平 margin 会溢出弹层） */}
         {activeTab !== 'file' && (
@@ -433,6 +452,7 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
             <Button
               block
               className={cx(styles.more)}
+              data-at-more
               onClick={() => onMore(activeTab)}
             >
               <ExportOutlined className={cx(styles['more-icon'])} />
