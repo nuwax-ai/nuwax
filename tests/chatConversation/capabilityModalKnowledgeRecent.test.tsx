@@ -2,8 +2,9 @@
  * 能力弹窗·资料库「最近访问」页签契约（门户最近访问接口 recently-accessed）：
  * - 无最近访问记录：不显示「最近访问」pill，默认回落首空间（repo 树接口加载）；
  * - 有记录：pill 置于空间 pill 最前且默认选中，聚合视图不触发 repo 树接口；
- * - 资料卡为横向新样式：文件格式 tinted 图标 + 名称 + 右端相对时间/格式胶囊；
- *   卡片主体点击不选中，「选择」按钮（悬停浮现）按 slugId/pageType 选中回传；
+ * - 资料卡为横向新样式：资料库同款线性文件图标（40px 与技能卡口径
+ *   一致）+ 名称 + 右端相对时间胶囊（悬停「选择」按钮覆盖其上）；
+ *   整行点击或「选择」按钮（悬停浮现）按 slugId/pageType 选中回传；
  * - 点击空间 pill 退出聚合视图，切回该空间 repo 树列表。
  * 渲染整组件：services/umi/useSubscription/子弹窗全部 mock（vitest 不可用 umi request）；
  * utils/common 不 mock——formatTimeAgo 真实执行，i18n dict mock 为 key 回显。
@@ -25,6 +26,11 @@ const apiSpaceList = vi.hoisted(() => vi.fn());
 vi.mock('@/components/ChatInputHome/CapabilityModal/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
+
+// 资料库维度列表已接入 KnowledgeListView,其自带 less 同样 mock
+vi.mock('@/components/business-component/KnowledgeListView/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
 vi.mock('@/components/business-component/ExpertSummonModal/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
@@ -43,12 +49,6 @@ vi.mock(
     default: new Proxy({}, { get: (_, key) => String(key) }),
   }),
 );
-
-// 资料卡类型图标（FileTypeIcon）自带 less 也需 mock,否则 styles 为
-// undefined 渲染崩溃（vitest 不走 less 编译管线）
-vi.mock('@/components/base/FileTypeIcon/index.less', () => ({
-  default: new Proxy({}, { get: (_, key) => String(key) }),
-}));
 
 vi.mock('umi', () => ({
   useModel: () => ({ tenantConfigInfo: { enableSubscription: 1 } }),
@@ -199,33 +199,36 @@ describe('能力弹窗·资料库「最近访问」页签（门户最近访问�
     // 聚合视图卡片：key 按聚合态 recent 标识，横向卡（相对时间胶囊 + 格式胶囊）
     const card = await waitFor(() => {
       const el = document.querySelector(
-        '[data-capability-key="knowledge:recent:71"]',
+        '[data-knowledge-key="knowledge:recent:71"]',
       );
       expect(el).toBeTruthy();
       return el!;
     });
     expect(card.textContent).toContain('产品需求说明书');
-    expect(card.textContent).toContain('PDF');
     expect(card.textContent).toContain('PC.Utils.Common.hoursAgo');
-    // 选择按钮：挂 .card-hire 悬停浮现类（按钮为唯一选中入口）
+    // 图标：pdf 专属红（对齐 nuwax-repo-web 资料库）；类型文本不再展示
+    expect(
+      card.querySelector<HTMLElement>('[class*="file-icon"]')?.style.color,
+    ).toBe('rgb(245, 63, 63)');
+    expect(card.textContent).not.toContain('PDF');
+    // 选择按钮：挂 .card-hire 悬停浮现类（与整行点击为等价选中入口）
     const selectBtn = Array.from(card.querySelectorAll('button')).find(
       (btn) => btn.textContent === 'PC.Components.CapabilityModal.select',
     );
     expect(selectBtn).toBeTruthy();
-    expect(selectBtn?.className).toContain('card-hire');
+    expect(selectBtn?.className).toContain('select-btn');
 
-    // 卡片主体点击不触发选中，「选择」按钮按 slugId/pageType/rawId 选中回传
+    // 整行点击触发选中，「选择」按钮为等价入口（stopPropagation 不双触发）
     fireEvent.click(card);
-    expect(onSelect).not.toHaveBeenCalled();
-    fireEvent.click(selectBtn!);
-    await waitFor(() => expect(onSelect).toHaveBeenCalled());
+    await waitFor(() => expect(onSelect).toHaveBeenCalledTimes(1));
     expect(onSelect.mock.calls[0][0]).toMatchObject({
       resourceType: 'knowledge',
-      source: 'recent',
       rawId: 71,
       slugId: 'doc-a',
       pageType: 'doc',
     });
+    fireEvent.click(selectBtn!);
+    await waitFor(() => expect(onSelect).toHaveBeenCalledTimes(2));
   });
 
   it('点击空间 pill 退出聚合视图，切回该空间 repo 树列表', async () => {
@@ -249,7 +252,7 @@ describe('能力弹窗·资料库「最近访问」页签（门户最近访问�
     await screen.findByText('空间文档');
     expect(apiRepoSpaceTree).toHaveBeenCalledWith(1);
     expect(
-      document.querySelector('[data-capability-key="knowledge:recent:71"]'),
+      document.querySelector('[data-knowledge-key="knowledge:recent:71"]'),
     ).toBeNull();
     // 「最近访问」pill 仍保留在最前（未被销毁），选中态让位空间 pill
     const pill = screen.getByText(

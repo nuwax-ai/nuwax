@@ -1,5 +1,6 @@
 import { request } from "umi";
 import { RequestResponse } from "@/types/interfaces/request";
+import { UserAppDeployTypeEnum } from "@/types/interfaces/userProject";
 
 /** 登记私有部署服务器参数 */
 export interface PrivateServerCreateParams {
@@ -106,5 +107,31 @@ export async function apiPrivateServerHealthCheck(
   return request('/api/userapp/private-server/health-check', {
     method: 'POST',
     data: { id },
+  });
+}
+
+// 参数接口
+export interface SetDeployTargetParams {
+  // 应用 ID
+  appId?: number;
+
+  // 部署类型
+  deployType?: UserAppDeployTypeEnum;
+
+  // 部署服务器 ID
+  deployServerId?: number;
+}
+
+/**
+ * 设置部署服务器（platform=平台沙箱；private=私服）
+ * @param id 私服 ID
+ * @returns true 在线，false 离线
+ */
+export async function apiPrivateServerSetDeployTarget(
+  data: SetDeployTargetParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/userapp/deploy-target', {
+    method: 'POST',
+    data,
   });
 }

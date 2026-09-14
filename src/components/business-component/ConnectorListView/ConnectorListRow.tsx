@@ -22,8 +22,10 @@ const ConnectorListRow: React.FC<ConnectorCardBaseProps> = ({
   onToggleConnect,
   onDisconnect,
   busyKeys,
+  disconnectBusyKeys,
 }) => {
   const busy = busyKeys?.includes(item.key);
+  const disconnectBusy = disconnectBusyKeys?.includes(item.key);
   return (
     <div data-connector-key={item.key} className={cx(styles['list-row'])}>
       <ConnectorIcon
@@ -60,7 +62,7 @@ const ConnectorListRow: React.FC<ConnectorCardBaseProps> = ({
               size="small"
               danger
               className={cx(styles['disconnect-btn'])}
-              loading={busy}
+              loading={disconnectBusy}
               aria-label={t('PC.Components.CapabilityModal.disconnect')}
               onClick={(event) => {
                 event.stopPropagation();
@@ -74,7 +76,8 @@ const ConnectorListRow: React.FC<ConnectorCardBaseProps> = ({
         <Switch
           className={cx(styles['card-switch'])}
           size="small"
-          checked={item.connected === true}
+          // 开关=连接启用态:已连接且启用(缺省视为启用)才为 on;未连接/已停用为 off
+          checked={item.connected === true && item.connectionEnabled !== false}
           loading={busy}
           aria-label={item.name}
           onClick={(_, event) => {

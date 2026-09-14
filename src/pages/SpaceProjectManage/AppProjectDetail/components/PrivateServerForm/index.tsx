@@ -65,11 +65,11 @@ const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
           options={[
             {
               value: 'http',
-              label: dict('PC.Pages.AppProjectSetting.protocolHttp'),
+              label: dict('PC.Pages.AppProjectDetail.protocolHttp'),
             },
             {
               value: 'https',
-              label: dict('PC.Pages.AppProjectSetting.protocolHttps'),
+              label: dict('PC.Pages.AppProjectDetail.protocolHttps'),
             },
           ]}
         />
@@ -79,7 +79,7 @@ const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
           value={value.host}
           disabled={disabled}
           onChange={(event) => patch({ host: event.target.value })}
-          placeholder={dict('PC.Pages.AppProjectSetting.serverIpPlaceholder')}
+          placeholder={dict('PC.Pages.AppProjectDetail.serverIpPlaceholder')}
         />
       </div>
       <div className={cx(styles.field)}>
@@ -87,7 +87,7 @@ const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
           value={value.appPort}
           disabled={disabled}
           onChange={(event) => patch({ appPort: event.target.value })}
-          placeholder={dict('PC.Pages.AppProjectSetting.appPortPlaceholder')}
+          placeholder={dict('PC.Pages.AppProjectDetail.appPortPlaceholder')}
         />
       </div>
       <div className={cx(styles.field)}>
@@ -95,7 +95,7 @@ const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
           value={value.agentPort}
           disabled={disabled}
           onChange={(event) => patch({ agentPort: event.target.value })}
-          placeholder={dict('PC.Pages.AppProjectSetting.managePortPlaceholder')}
+          placeholder={dict('PC.Pages.AppProjectDetail.managePortPlaceholder')}
         />
       </div>
     </div>

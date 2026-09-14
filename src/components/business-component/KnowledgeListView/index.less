@@ -1,0 +1,175 @@
+/**
+ * 独立资料库列表组件：横向资料行（grid 两列 / list 单列）。
+ * 颜色走 token.less 主题变量，随亮/暗主题自动切换。
+ * 组件根不带内边距——间距由使用方经 className 决定。
+ */
+@import '@/styles/token';
+
+@know-text: @colorText;
+@know-secondary: @colorTextSecondary;
+@know-muted: @colorTextTertiary;
+@know-faint: @colorTextQuaternary;
+@know-fill: @colorFillSecondary;
+@know-border: @colorBorderSecondary;
+
+// ---- 滚动容器（组件根）：grid 两列 / list 单列（横排资料行紧凑行距） ----
+.root {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  // 列间距与其他维度网格一致(12px);行距为资料行紧凑口径(8px)
+  column-gap: 12px;
+  row-gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-color: @colorTextQuaternary transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: @colorTextQuaternary;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+.root-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.root-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+// 首次加载/空态占满可视高度（保持滚动容器尺寸稳定）
+.state {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+.state-loading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+// ---- 横向资料行 ----
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  // 稳定行高：40px 图标（与技能卡口径一致）+ 上下 8px 内边距
+  min-height: 56px;
+  padding: 8px 14px;
+  border: 1px solid @know-border;
+  border-radius: 8px;
+  background: @colorBgContainer;
+  // 悬停效果与技能卡同款（主色描边 + 三层阴影）;整行可点选,
+  // 同技能卡补 cursor:pointer
+  cursor: pointer;
+  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  overflow: hidden;
+
+  &:hover {
+    border-color: color-mix(in srgb, @colorPrimary 55%, transparent);
+    box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
+      0 4px 16px -2px rgba(12, 12, 13, 6%), 0 8px 24px -2px rgba(0, 0, 0, 4%);
+  }
+}
+
+// 资料库同款线性文件图标（RepoFileIcon）：40px 圆形 tinted 底与
+// 技能/专家/连接器网格卡图标口径一致,行内垂直居中不可压缩
+.file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.name {
+  flex: 0 1 auto;
+  overflow: hidden;
+  color: @know-text;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 右端相对时间胶囊（仅 recent 视图）,右端对齐;悬停时整体淡出让位
+// 「选择」按钮（保留占位,名称截断位置不回弹,按钮底色下不再透出胶囊）
+.time-pill {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: @know-fill;
+  color: @know-secondary;
+  font-size: 12px;
+  line-height: 17px;
+  white-space: nowrap;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.row:hover .time-pill {
+  opacity: 0;
+}
+
+// 悬停「选择」按钮覆盖层：绝对定位铺在行右端（不占布局空间,行高恒定）,
+// 左缘渐变蒙层（底色与行背景一致）确保按钮覆盖住下方时间胶囊。圆角
+// 与行的 padding-box 内弧同心（8px 圆角 - 1px 边框 = 7px）,方形直角
+// 白底会盖住悬停主色描边的圆角段
+.actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding-right: 14px;
+  padding-left: 32px;
+  background: linear-gradient(to right, transparent, @colorBgContainer 32px);
+  border-radius: 7px;
+  pointer-events: none;
+}
+
+/* 「选择」按钮：悬停浮现（未悬停不渲染入流不占布局空间）；
+   方形圆角 tint 底轻量按钮 */
+.select-btn.select-btn {
+  display: none;
+  pointer-events: auto;
+  border-color: transparent;
+  background: @know-fill;
+  color: @know-text;
+
+  &:hover,
+  &:focus-visible {
+    border-color: transparent;
+    background: color-mix(in srgb, @colorPrimary 14%, transparent);
+    color: @colorPrimary;
+  }
+}
+
+.row:hover .select-btn {
+  display: inline-block;
+}

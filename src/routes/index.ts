@@ -78,10 +78,10 @@ const routes = [
         path: '/space/:spaceId/third-app-integration',
         component: '@/pages/SpaceProjectManage/ThirdAppIntegration',
       },
-      // 应用项目设置
+      // 应用项目详情
       {
-        path: '/space/:spaceId/app-project-setting/:appId',
-        component: '@/pages/SpaceProjectManage/AppProjectSetting',
+        path: '/space/:spaceId/app-project-detail/:appId',
+        component: '@/pages/SpaceProjectManage/AppProjectDetail',
       },
       // 全屏工作台页组：单栏模式（style3）下与主站同用 page-container 容器、
       // 侧栏常驻并抑制二级菜单列（由 layouts/index.tsx 依 fullscreenWorkbenchPaths

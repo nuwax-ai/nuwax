@@ -77,6 +77,13 @@
     border-inline-end: none;
     background: transparent;
   }
+
+  // Tab 停靠菜单项的键盘聚焦态：主色内缩描边对齐全弹窗停靠控件
+  //（双写提权压过 antd 的 accessibilityFocus 描边与 outline 重置）
+  &.menu :global(.ant-menu-item:focus-visible) {
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
+  }
 }
 
 .menu-icon {
@@ -90,18 +97,15 @@
   color: inherit;
 }
 
-.sidebar-hints {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 12px 10px 0;
-  white-space: nowrap;
-  font-size: 11px;
-  line-height: 16px;
-  color: @capability-faint;
+// SVG 字符串图标承载 span（./icons 单源图标经 dangerouslySetInnerHTML
+// 注入）：透传 svg 进入 menu-icon 弹性容器居中，消除行内基线空隙
+.menu-raw-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  line-height: 0;
 
-  i {
-    font-style: normal;
+  svg {
+    display: block;
   }
 }
 
@@ -180,6 +184,15 @@
   &:hover {
     color: @capability-text;
   }
+
+  // Tab 停靠聚焦态：主色图标 + 主色内缩描边，与全弹窗停靠控件统一
+  //（双写提权压过 antd Button 自带 focus-visible 描边）
+  &.close-btn:focus-visible,
+  &.search-btn:focus-visible {
+    color: @capability-accent;
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
+  }
 }
 
 .search-input {
@@ -226,6 +239,13 @@
     background: @capability-fill;
   }
 
+  // Tab/方向键聚焦态：主色内缩描边——内描边不会被外层滚动容器
+  //（.categories overflow-x:auto）裁断（与 antd Tabs 的内缩聚焦描边同语言）
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
+  }
+
   &.category-pill-active {
     background: @capability-fill;
     color: @capability-accent;
@@ -233,222 +253,45 @@
   }
 }
 
-.list {
-  display: grid;
-  flex: 1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
-  gap: 12px;
-  min-height: 0;
-  padding: 0 24px 14px 20px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  // 滚动条出现/消失时保留沟槽，避免内容横向抖动
-  scrollbar-gutter: stable;
-  scrollbar-color: @colorTextQuaternary transparent;
-  scrollbar-width: thin;
-
-  &::-webkit-scrollbar {
-    width: 5px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    border-radius: 4px;
-    background: @colorTextQuaternary;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-}
-
-// 资料库列表：横向资料卡较宽，右内边距收敛与其他列表对齐
-.list-knowledge {
-  padding-right: 20px;
-}
-
-// 聚合视图（最近召唤/我启用的）隐藏了分类 pill 行（toolbar），列表顶部补回
-// 留白，避免卡片贴住 header 下边框
+// 聚合视图（最近召唤/我启用的/已连接/最近访问）隐藏了分类 pill 行（toolbar），
+// 列表顶部补回留白，避免卡片贴住 header 下边框
 .list-enabled {
   padding-top: 12px;
 }
 
-.list-loading {
-  grid-column: 1 / -1;
-  padding: 8px 0;
-  color: @capability-muted;
-  font-size: 12px;
-}
-
-// 首次加载/空态：占满整行并撑起可视高度，保持滚动容器尺寸稳定（防三态切换闪跳）
-.list-state {
-  grid-column: 1 / -1;
-  min-height: 320px;
-}
-
-// 卡片基于 antd Card：背景/边框/圆角走主题 token，这里只接管布局与交互态
-// 悬停/键盘聚焦态对齐广场卡：主色描边 + 分层阴影抬升，0.3s 过渡
-.card {
-  position: relative;
-  min-width: 0;
-  cursor: pointer;
-  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-
-  &:hover,
-  &.card-focused {
-    border-color: color-mix(in srgb, @colorPrimary 55%, transparent);
-    box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
-      0 4px 16px -2px rgba(12, 12, 13, 6%), 0 8px 24px -2px rgba(0, 0, 0, 4%);
-  }
+// 内嵌列表（Skill/Expert/Connector/KnowledgeListView）键盘聚焦态：
+// 主色描边 + 分层阴影（卡片属内聚组件、样式不可经 props 传入，聚焦类
+// 由弹窗键盘导航经 DOM 注入，故用全局类）
+:global(.capability-embed-card-focus) {
+  border-color: color-mix(in srgb, @colorPrimary 55%, transparent);
+  box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
+    0 4px 16px -2px rgba(12, 12, 13, 6%), 0 8px 24px -2px rgba(0, 0, 0, 4%);
 }
 
 // 类名双写提权：antd 基础样式经 :where 降权后与本类同为 0-2-0，
 // cssinjs 运行时注入在后会反超默认 24px 内边距，双写保证覆盖恒定生效。
 // 根节点 flex 列 + body flex:1：body 撑满卡片（同行网格卡等高），
 // 注意 basis 必须为 auto：写 flex:1（basis 0%）会把卡片固有高度塌缩
-.card.card {
-  display: flex;
-  flex-direction: column;
-
-  :global(.ant-card-body) {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 0;
-    padding: 14px;
-  }
-}
-
-.card-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-width: 0;
-  min-height: 40px;
-  // 三段式布局①header 固定内容高
-  flex: 0 0 auto;
-}
-
-.card-icon,
-.card-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  border-radius: 10px;
-  color: @capability-secondary;
-  font-size: 20px;
-
-  img {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
-  }
-}
 
 /* 连接器卡圆形图标（与技能卡同款简化布局） */
-.card-icon-round {
-  border-radius: 50%;
-}
 
-.card-heading {
+// 内嵌列表（四维度列表组件）外层停靠容器：承载 Tab 轮询
+// 列表分组落点（子列表根 flex:1 填充），聚焦描边与全弹窗停靠控件统一
+.embed-list-wrap {
   display: flex;
   flex: 1;
-  flex-direction: column;
-  gap: 1px;
   min-width: 0;
-  padding-top: 1px;
-}
+  min-height: 0;
 
-.card-name {
-  overflow: hidden;
-  color: @capability-text;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 技能/专家操作簇：标题行右端（「选择/聘请」悬停浮现、不占位；技能启用
-   开关常驻） */
-.card-head-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  align-self: flex-start;
-  margin-top: -2px;
-}
-
-/* 悬停/键盘聚焦浮现的按钮（选择/聘请）：未悬停不渲染入流、不占任何布局
-   空间（标题占满整行），悬停/聚焦时出现（标题让位收窄） */
-.card-hire {
-  display: none;
-}
-
-.card:hover .card-hire,
-.card-focused .card-hire {
-  display: inline-block;
-}
-
-/* 技能/专家卡「选择/聘请」按钮（简化样式）：方形圆角（antd Button 默认形态），
-   仅收敛为 tint 底；悬停/键盘聚焦时经 .card-hire 浮现，区别于资料库的主按钮 */
-.card-select.card-select {
-  border-color: transparent;
-  background: @capability-fill;
-  color: @capability-text;
-
-  &:hover,
+  // Tab 停靠聚焦态：主色内缩描边（容器贴弹窗边缘，外描边会被
+  // .ant-modal-content 的 overflow:hidden 裁断）
   &:focus-visible {
-    border-color: transparent;
-    background: color-mix(in srgb, @colorPrimary 14%, transparent);
-    color: @capability-accent;
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
   }
 }
 
-/* 连接器卡单行描述（与技能卡同款简化布局）：名称下一行，一行截断 */
-.card-desc-inline {
-  overflow: hidden;
-  color: @capability-muted;
-  font-size: 12px;
-  line-height: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 资料格式 Tag（antd Tag）：收敛自带尾间距，胶囊圆角与次级色与其余标签统一
-   （双写提权压过 antd Tag 默认形态） */
-.file-type.file-type {
-  margin-inline-end: 0;
-  padding-inline: 10px;
-  border-radius: 20px;
-  background: transparent;
-  color: @capability-secondary;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-/* 资料卡类型专属文件图标（FileTypeIcon 匹配 doc/表格/演示/pdf/媒体等）：
-   行内垂直居中,flex: 0 0 auto 不可压缩（悬停按钮入流挤占空间时保持原尺寸） */
-.card-file-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-// antd Image 根节点(.ant-image)默认 inline-block,双写提权确保 flex 居中
-// 不被 cssinjs 运行时样式反超
-.card-file-icon.card-file-icon:global(.ant-image) {
-  display: inline-flex;
-  flex: 0 0 auto;
-}
-
-// 列表组件（SkillListView / ExpertListView）内嵌容器：通用组件根不带
+// 列表组件（四维度列表组件）内嵌容器：通用组件根不带
 // padding,间距由使用方决定——此处对齐弹窗自实现列表的内边距;
 // 聚合视图（我启用的/最近召唤）无分类 pill 行,顶部补留白（.list-enabled 叠加）
 .embed-list {
@@ -460,96 +303,14 @@
 }
 
 // 双写提权：尺寸与选中底色需压过 antd Switch 默认形态（:where 降权后特异性打平）
-.card-switch.card-switch {
-  min-width: 36px;
-  width: 36px;
-  height: 20px;
-  flex-shrink: 0;
-  margin-top: 2px;
-  // 未选中底色交由 antd Switch 主题 token 控制（随亮/暗主题切换）
-  &:global(.ant-switch-checked) {
-    background: @capability-accent;
-  }
-
-  :global(.ant-switch-handle) {
-    top: 2px;
-    width: 16px;
-    height: 16px;
-  }
-
-  &:global(.ant-switch-checked) :global(.ant-switch-handle) {
-    inset-inline-start: calc(100% - 18px);
-  }
-}
 
 // 资料库横向资料卡：文件格式 tinted 图标 + 名称 + 右端相对时间/格式胶囊
 // （双写提权：12px 14px 内边距 + row 布局压过 antd Card 默认形态）
-.card-knowledge.card-knowledge {
-  :global(.ant-card-body) {
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    // 稳定最小行高：悬停「选择」按钮（24px）入流不撑高行,卡片 hover 前后尺寸一致
-    min-height: 54px;
-    padding: 12px 14px;
-  }
-}
-
-.card-knowledge {
-  .card-name {
-    flex: 0 1 auto;
-  }
-
-  // 「选择」按钮（悬停浮现）随横排行垂直居中，胶囊簇已右推无需再占 auto 边距
-  .card-head-actions {
-    align-self: center;
-    margin-top: 0;
-  }
-
-  // 类型图标整体随行垂直居中；内部 img 去 inline 基线空隙（png 图标
-  // 因基线偏移看起来不居中的根因），display:block 后按盒模型精确居中
-  .card-file-icon {
-    align-self: center;
-
-    :global(img) {
-      display: block;
-    }
-  }
-
-  // 默认 tinted 图标盒同样不压缩、随行居中
-  .card-icon {
-    flex: 0 0 auto;
-    align-self: center;
-  }
-}
 
 /* 连接器卡（与技能卡同款简化布局）：连接状态槽（状态标 + hover「断开」
    覆盖）+ 常驻连接开关，操作簇随两行标题垂直居中。
    总高钉死 70px（= 技能卡 14 padding + 40 内容 + 2 边框），消除
    antd Card 内边距/行高漂移导致的高度不一致 */
-.card-connector.card-connector {
-  box-sizing: border-box;
-  height: 70px;
-}
-
-.card-connector {
-  .card-head {
-    align-items: center;
-  }
-
-  .card-head-actions {
-    align-self: center;
-    margin-top: 0;
-
-    .card-switch {
-      margin-top: 0;
-    }
-  }
-
-  :global(.ant-card-body) {
-    justify-content: center;
-  }
-}
 
 /* 连接状态槽：常驻状态标定宽占位，「断开」按钮绝对定位等宽覆盖
    （hover 出现时盖住状态标,不挤开开关）；未连接时无按钮、仅状态标 */
@@ -563,78 +324,10 @@
   height: 24px;
 }
 
-/* 连接状态标：弱化灰 + 前置圆点；已连接绿色 */
-.connection-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: @capability-faint;
-  font-size: 12px;
-  line-height: 18px;
-  white-space: nowrap;
-
-  &::before {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentcolor;
-    content: '';
-  }
-
-  &.connected {
-    color: @colorSuccess;
-  }
-}
-
-/* 断开按钮：默认隐藏，hover 卡片时铺满状态槽盖住状态标；
-   双写提权压过 antd Button 默认形态 */
-.card-disconnect.card-disconnect {
-  position: absolute;
-  inset: 0;
-  display: none;
-  width: 100%;
-  height: 24px;
-  padding-inline: 0;
-  font-size: 12px;
-}
-
-.card-connector:hover .card-disconnect {
-  display: inline-block;
-}
-
-/* 资料卡右端胶囊簇：相对时间（fill 底）+ 格式（描边底），行内右端对齐 */
-.card-knowledge-tags {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-/* 最近访问相对时间胶囊（「最近访问」页签条目才有 usedTime） */
-.card-time-pill {
-  padding: 2px 10px;
-  border-radius: 20px;
-  background: @capability-fill;
-  color: @capability-secondary;
-  font-size: 12px;
-  line-height: 17px;
-  white-space: nowrap;
-}
-
 @media (max-width: 760px) {
   .sidebar {
     width: 160px;
     padding-inline: 8px;
-  }
-
-  .sidebar-hints {
-    flex-wrap: wrap;
-    white-space: normal;
-  }
-
-  .list {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -654,10 +347,6 @@
 
   .header,
   .toolbar {
-    padding-inline: 12px;
-  }
-
-  .list {
     padding-inline: 12px;
   }
 

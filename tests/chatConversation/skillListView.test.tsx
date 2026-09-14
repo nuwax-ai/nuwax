@@ -125,7 +125,7 @@ const switchOf = (key: string) =>
     ?.querySelector<HTMLButtonElement>('[role="switch"]') ?? null;
 
 describe('SkillListView·场景接口参数契约', () => {
-  it('system：category 内容分类 + kw 透传（防抖后）', async () => {
+  it('system：category 内容分类 + kw 透传（防抖后）+ 仅官方', async () => {
     apiPublishedSkillList.mockResolvedValue(pageOf([], 1, 1));
     renderView({ type: 'system', category: '翻译', keyword: '翻译技能' });
 
@@ -136,6 +136,7 @@ describe('SkillListView·场景接口参数契约', () => {
         pageSize: 20,
         category: '翻译',
         kw: '翻译技能',
+        official: true,
       }),
     );
   });
@@ -268,6 +269,79 @@ describe('SkillListView·分页与开关闭环', () => {
         'true',
       ),
     );
+    expect(onEnabledChange).toHaveBeenCalledWith(
+      expect.objectContaining({ targetId: 201, enabled: true }),
+      true,
+    );
+  });
+
+  it('启用开关走付费门：付费未订阅复核仍待订阅 → 弹套餐不 enable；复核已订阅 → 放行 enable', async () => {
+    apiPublishedSkillList.mockResolvedValue(
+      pageOf(
+        [
+          skill({
+            id: 21,
+            targetId: 201,
+            name: '付费待启用技能',
+            paymentRequired: true,
+            subscribed: false,
+          }),
+        ],
+        1,
+        1,
+      ),
+    );
+    const onEnabledChange = vi.fn();
+    // 复核口径：仍待订阅（命中弹套餐拦截）
+    apiPublishedSkillDetail.mockResolvedValue({
+      code: '0000',
+      data: { paymentRequired: true, subscribed: false },
+    });
+    renderView({ type: 'system', onEnabledChange });
+
+    await screen.findByText('付费待启用技能');
+    // 开启开关 → 先按详情复核
+    fireEvent.click(switchOf('skill:system:21')!);
+    await waitFor(() =>
+      expect(apiPublishedSkillDetail).toHaveBeenCalledWith(201),
+    );
+    // 复核仍待订阅：弹套餐弹窗,不发 enable、不回写开关
+    await waitFor(() => expect(paymentModal.props.open).toBe(true));
+    expect(apiPublishedSkillEnable).not.toHaveBeenCalled();
+    expect(onEnabledChange).not.toHaveBeenCalled();
+    expect(switchOf('skill:system:21')?.getAttribute('aria-checked')).toBe(
+      'false',
+    );
+
+    // 复核已订阅（如已领免费套餐）→ 放行 enable
+    cleanup();
+    vi.clearAllMocks();
+    apiPublishedSkillList.mockResolvedValue(
+      pageOf(
+        [
+          skill({
+            id: 21,
+            targetId: 201,
+            name: '付费待启用技能',
+            paymentRequired: true,
+            subscribed: false,
+          }),
+        ],
+        1,
+        1,
+      ),
+    );
+    apiPublishedSkillDetail.mockResolvedValue({
+      code: '0000',
+      data: { paymentRequired: true, subscribed: true },
+    });
+    renderView({ type: 'system', onEnabledChange });
+    await screen.findByText('付费待启用技能');
+    fireEvent.click(switchOf('skill:system:21')!);
+    await waitFor(() =>
+      expect(apiPublishedSkillEnable).toHaveBeenCalledWith(201),
+    );
+    expect(paymentModal.props.open).toBeFalsy();
     expect(onEnabledChange).toHaveBeenCalledWith(
       expect.objectContaining({ targetId: 201, enabled: true }),
       true,

@@ -60,36 +60,6 @@ const SkillListView: React.FC<SkillListViewProps> = ({
     waitingSpaces,
   } = useSkillList({ type, keyword, category, spaceId, spaceIds, pageSize });
 
-  // ---- 启用开关（内聚闭环）----
-  const [enablingKeys, setEnablingKeys] = useState<string[]>([]);
-  /** 启用/取消启用：成功后就地回写开关；「我启用的」聚合视图需整体重拉
-   * 同步条目增减（取消最后一项后由外部凭 onEnabledChange/自身数据决定回落），
-   * 其余视图以就地补丁为准，避免整页重拉丢滚动位置 */
-  const handleToggleEnable = useCallback(
-    (item: SkillListItem) => {
-      if (item.targetId === undefined) return;
-      const enabling = !item.enabled;
-      setEnablingKeys((prev) => [...prev, item.key]);
-      const request = enabling
-        ? apiPublishedSkillEnable(item.targetId)
-        : apiPublishedSkillUnEnable(item.targetId);
-      void request
-        .then((res) => {
-          if (res?.code === SUCCESS_CODE) {
-            updateItem(item.key, { enabled: enabling });
-            onEnabledChange?.({ ...item, enabled: enabling }, enabling);
-            if (type === 'enabled') {
-              reload();
-            }
-          }
-        })
-        .finally(() => {
-          setEnablingKeys((prev) => prev.filter((key) => key !== item.key));
-        });
-    },
-    [updateItem, onEnabledChange, reload, type],
-  );
-
   // ---- 付费拦截门（选择前置，内聚；通过才触发 onSelect）----
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
@@ -105,18 +75,19 @@ const SkillListView: React.FC<SkillListViewProps> = ({
   const [paymentItem, setPaymentItem] = useState<SkillListItem | null>(null);
 
   /**
-   * 选择前置门：免费/已订阅/租户未开启订阅直通；付费未订阅先按详情复核
-   * （列表状态可能滞后，如已领免费套餐），复核已订阅回写后就地放行并随
-   * 选中带出 subscribed；仍待订阅/复核异常则弹套餐弹窗，不触发回调。
+   * 付费前置门（选择/启用共用）：免费/已订阅/租户未开启订阅直通放行；
+   * 付费未订阅先按详情复核（列表状态可能滞后，如已领免费套餐），复核
+   * 已订阅回写后就地放行并带出 subscribed；仍待订阅/复核异常则弹套餐
+   * 弹窗，不执行 onPass。
    */
-  const handleSelect = useCallback(
-    (item: SkillListItem) => {
+  const runPaymentGate = useCallback(
+    (item: SkillListItem, onPass: (subscribed?: boolean) => void) => {
       const paidPending =
         !!item.paymentRequired &&
         !item.subscribed &&
         item.targetId !== undefined;
       if (!isEnableSubscription || !paidPending) {
-        onSelect(item);
+        onPass();
         return;
       }
       const targetId = item.targetId as number;
@@ -132,11 +103,63 @@ const SkillListView: React.FC<SkillListViewProps> = ({
             return;
           }
           updateItem(item.key, { subscribed: !!detail.subscribed });
-          onSelect({ ...item, subscribed: !!detail.subscribed });
+          onPass(!!detail.subscribed);
         })
         .catch(() => openPayment());
     },
-    [isEnableSubscription, querySkillSubscriptionPlans, updateItem, onSelect],
+    [isEnableSubscription, querySkillSubscriptionPlans, updateItem],
+  );
+
+  /**
+   * 选择：经付费门放行后触发 onSelect（复核出的 subscribed 随选中带出，
+   * 下游插 chip 后的订阅拦截以它为准，防止二次误弹）
+   */
+  const handleSelect = useCallback(
+    (item: SkillListItem) => {
+      runPaymentGate(item, (subscribed) => {
+        onSelect(subscribed !== undefined ? { ...item, subscribed } : item);
+      });
+    },
+    [runPaymentGate, onSelect],
+  );
+
+  // ---- 启用开关（内聚闭环,开启与选择同走付费门）----
+  const [enablingKeys, setEnablingKeys] = useState<string[]>([]);
+  /**
+   * 启用/取消启用：开启经付费门（付费未订阅复核/弹套餐,放行才发 enable）；
+   * 取消启用不走门直接发 unEnable。成功后就地回写开关；「我启用的」聚合
+   * 视图需整体重拉同步条目增减，其余视图以就地补丁为准（不丢滚动位置）
+   */
+  const handleToggleEnable = useCallback(
+    (item: SkillListItem) => {
+      if (item.targetId === undefined) return;
+      const enabling = !item.enabled;
+      setEnablingKeys((prev) => [...prev, item.key]);
+      const doToggle = () => {
+        const request = enabling
+          ? apiPublishedSkillEnable(item.targetId as number)
+          : apiPublishedSkillUnEnable(item.targetId as number);
+        void request
+          .then((res) => {
+            if (res?.code === SUCCESS_CODE) {
+              updateItem(item.key, { enabled: enabling });
+              onEnabledChange?.({ ...item, enabled: enabling }, enabling);
+              if (type === 'enabled') {
+                reload();
+              }
+            }
+          })
+          .finally(() => {
+            setEnablingKeys((prev) => prev.filter((key) => key !== item.key));
+          });
+      };
+      if (enabling) {
+        runPaymentGate(item, () => doToggle());
+        return;
+      }
+      doToggle();
+    },
+    [updateItem, onEnabledChange, reload, type, runPaymentGate],
   );
 
   // ---- 滚动分页与首屏补拉（滚动容器为组件根节点）----

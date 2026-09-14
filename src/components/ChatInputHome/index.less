@@ -67,6 +67,19 @@
     min-width: 0;
   }
 
+  /* 行首回执 pill 行（专家/召唤专家/首页项目类型）：内联占据输入框最前面，
+     编辑器文本经 inlinePrefixWidth 缩进到 pill 之后；pill 本体复用 expert-pill 样式 */
+  .input-prefix-pills {
+    position: absolute;
+    top: 4px;
+    left: @paddingSm;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    max-width: calc(100% - @paddingSm * 2);
+  }
+
   .selected-tag {
     position: absolute;
     top: 4px;
@@ -550,43 +563,135 @@
   }
 }
 
-/* + 号聚合菜单（附件 / @ 上下文 / / 能力）：白色卡片 + 图标列 + 文案 */
+/* + 号聚合菜单（附件 / @ 上下文 / / 能力 / 连接器 / 开关组）：白色卡片 + 图标列 + 文案，
+   整体比常规下拉大一档（menu 宽度 / 行高 / 图标胶囊 / 字号） */
 .plus-menu-overlay {
   :global(.ant-dropdown-menu) {
-    min-width: 208px;
-    padding: 6px;
-    border-radius: 12px;
+    min-width: 264px;
+    padding: 8px;
+    border-radius: 14px;
   }
 
   :global(.ant-dropdown-menu-item) {
-    padding: 8px 10px;
-    border-radius: 8px;
+    padding: 13px 14px;
+    border-radius: 10px;
+  }
+
+  :global(.ant-dropdown-menu-item-divider) {
+    margin: 8px 6px;
   }
 }
 
 .plus-menu-label {
-  gap: 10px;
+  flex: 1;
+  gap: 12px;
   color: @colorText;
-  font-size: 13px;
+  font-size: 14px;
 }
 
-/* 图标胶囊：附件 / @ / / 三个入口统一 16×16 灰底圆角容器 */
+/* 连接器行右侧展开箭头 */
+.plus-menu-arrow {
+  margin-left: auto;
+  color: @colorTextTertiary;
+  font-size: 11px;
+}
+
+/* 开关行（产物版本管理 / 变更自动提交 / 审批模式）：点整行切换并阻止菜单收起，
+   Switch 纯展示（pointer-events:none）靠右，交互统一由行承接避免双重触发 */
+.plus-menu-switch-row {
+  gap: 12px;
+  width: 100%;
+  cursor: pointer;
+
+  :global(.ant-switch) {
+    pointer-events: none;
+  }
+}
+
+/* 图标胶囊：附件 / @ / / 等入口统一 20×20 灰底圆角容器（随弹层放大一档） */
 .trigger-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-  border-radius: 4px;
+  border-radius: 5px;
   background: @colorFillSecondary;
   color: @colorTextSecondary;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1;
 }
 
-/* 已选专家回填 pill（工具栏最右）：会话仅一个专家，随消息以 selectedComponents 发送 */
+/* 审批模式回执 pill（+ 号旁，mode=ask 时显示）：
+   图标槽默认盾牌，hover 时切换为关闭 x（CSS 显隐，点击 x 切回自动） */
+.approval-pill {
+  gap: 6px;
+  height: 28px;
+  padding: @paddingXxs 10px;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 999px;
+  box-sizing: border-box;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  line-height: 1;
+  flex-shrink: 0;
+
+  &.disabled {
+    opacity: 0.5;
+
+    .approval-pill-close {
+      cursor: not-allowed;
+    }
+  }
+
+  .approval-pill-icon-slot {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .approval-pill-icon,
+  .approval-pill-close {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .approval-pill-icon {
+    color: @colorPrimary;
+    font-size: 13px;
+  }
+
+  .approval-pill-close {
+    color: @colorTextTertiary;
+    font-size: 11px;
+    cursor: pointer;
+    visibility: hidden;
+
+    &:hover {
+      color: @colorText;
+    }
+  }
+
+  // hover（非禁用）时盾牌 → 关闭 x
+  &:hover:not(.disabled) {
+    .approval-pill-icon {
+      visibility: hidden;
+    }
+
+    .approval-pill-close {
+      visibility: visible;
+    }
+  }
+}
+
+/* 回执 pill 本体（输入框行首：已选专家/召唤专家/推荐类型）：
+   会话仅一个专家，随消息以 selectedComponents 发送 */
 .expert-pill {
   gap: 4px;
   max-width: 180px;
@@ -634,7 +739,18 @@
 .connector-group {
   flex-shrink: 0;
   padding: 0 2px;
+  border-radius: 999px;
   cursor: pointer;
+
+  &:hover {
+    background: @colorFillSecondary;
+  }
+
+  // 键盘聚焦态（Tab 停靠）：主色内缩描边，与能力弹窗停靠控件同语言
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
+  }
 }
 
 .connector-avatar {

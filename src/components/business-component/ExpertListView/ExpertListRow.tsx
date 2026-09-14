@@ -1,7 +1,7 @@
 /**
  * list 变体行：单栏横排紧凑行——圆角方小图标 + 名称/描述上下两行 +
- * 右上相对时间 + 右端悬停「聘请」。无边线，悬停方形圆角灰底。
- * 与 grid 变体功能一致（选中/付费角标），仅布局不同。
+ * 右端相对时间（悬停淡出让位）+ 右端覆盖层悬停「聘请」。无边线，悬停
+ * 方形圆角灰底。与 grid 变体功能一致（选中/付费角标），仅布局不同。
  */
 import { t } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';
@@ -45,6 +45,7 @@ const ExpertListRow: React.FC<ExpertCardBaseProps> = ({
         </div>
       </div>
       {item.usedTime && (
+        /* 悬停淡出让位「聘请」（保留占位，名称/描述截断位置不回弹） */
         <span className={cx(styles['card-used-time'])} title={item.usedTime}>
           {formatTimeAgo(item.usedTime)}
         </span>
