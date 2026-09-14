@@ -40,6 +40,7 @@ import {
   apiThirdAppOauth2CredentialRegenerate,
   apiThirdAppOauth2SecretGet,
   apiThirdAppOauth2SettingGet,
+  apiThirdAppOauth2SettingSave,
   type ThirdAppOauth2CredentialInfo,
   type ThirdAppOauth2Info,
 } from '../services/thirdAppOauth2';
@@ -49,14 +50,14 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-/** 设置页顶部 Tab：计划 / 资产 / 设置 */
+/** 详情页顶部 Tab：计划 / 资产 / 设置 */
 type SettingTabKey = 'plan' | 'asset' | 'setting';
 
 /** 自定义域名 CNAME 指向的平台域名 */
 const CNAME_TARGET = 'cname.nuwax.com';
 
 /**
- * 将应用详情的 deployType 映射为设置页部署单选值。
+ * 将应用详情的 deployType 映射为详情页部署单选值。
  * 非 private 一律视为平台部署，避免接口大小写或空值导致状态丢失。
  *
  * @param deployType 应用详情 deployType
@@ -92,9 +93,9 @@ const pickResponseData = <T,>(
 };
 
 /**
- * 全栈应用设置页。
+ * 全栈应用详情页。
  *
- * 布局：顶栏返回 + 应用名 + 计划/资产/设置 Tab；主体左侧为设置内容，
+ * 布局：顶栏返回 + 应用名 + 计划/资产/设置 Tab；主体左侧为详情内容，
  * 右侧为相关任务（ConversationPanel）。
  *
  * 数据：
@@ -103,11 +104,11 @@ const pickResponseData = <T,>(
  * - 选私服时再拉私有服务器列表（进页若已是私服也会拉一次）。
  *
  * 计划 / 资产 Tab 暂为占位。路由参数 spaceId、appId 来自
- * `/space/:spaceId/app-project-setting/:appId`。
+ * `/space/:spaceId/app-project-detail/:appId`。
  *
- * @returns 全栈应用设置页
+ * @returns 全栈应用详情页
  */
-const AppProjectSetting: React.FC = () => {
+const AppProjectDetail: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const appId = Number(params.appId);
@@ -181,7 +182,7 @@ const AppProjectSetting: React.FC = () => {
     {
       manual: true,
       onSuccess: () => {
-        message.success(dict('PC.Pages.AppProjectSetting.bindSuccess'));
+        message.success(dict('PC.Pages.AppProjectDetail.bindSuccess'));
         setBindOpen(false);
         setBindDomain('');
         runDomainList(appId);
@@ -230,7 +231,7 @@ const AppProjectSetting: React.FC = () => {
   const { run: runUnbindDomain } = useRequest(apiUserAppDomainDelete, {
     manual: true,
     onSuccess: () => {
-      message.success(dict('PC.Pages.AppProjectSetting.unbindSuccess'));
+      message.success(dict('PC.Pages.AppProjectDetail.unbindSuccess'));
       runDomainList(appId);
     },
   });
@@ -260,7 +261,26 @@ const AppProjectSetting: React.FC = () => {
         }));
         setClientSecret(credential.clientSecret || '');
         setSecretVisible(true);
-        message.success(dict('PC.Pages.AppProjectSetting.regenerateSuccess'));
+        message.success(dict('PC.Pages.AppProjectDetail.regenerateSuccess'));
+      },
+    },
+  );
+
+  /** 保存 OAuth2 主页地址与回调地址 */
+  const { run: runSaveOauthSetting, loading: saveOauthLoading } = useRequest(
+    apiThirdAppOauth2SettingSave,
+    {
+      manual: true,
+      onSuccess: (
+        result: ThirdAppOauth2Info | RequestResponse<ThirdAppOauth2Info>,
+      ) => {
+        const info = pickResponseData(result);
+        if (info) {
+          setOauthInfo(info);
+          setHomepageUrl(info.homepageUrl || '');
+          setRedirectUri(info.redirectUri || '');
+        }
+        message.success(dict('PC.Common.Global.saveSuccess'));
       },
     },
   );
@@ -352,7 +372,7 @@ const AppProjectSetting: React.FC = () => {
     [domains],
   );
 
-  const emptyValue = dict('PC.Pages.AppProjectSetting.emptyValue');
+  const emptyValue = dict('PC.Pages.AppProjectDetail.emptyValue');
 
   /** 返回全栈应用列表 */
   const handleBack = useCallback(() => {
@@ -394,7 +414,7 @@ const AppProjectSetting: React.FC = () => {
       return '';
     }
     if (!isValidDomain(bindDomain)) {
-      return dict('PC.Pages.AppProjectSetting.invalidDomain');
+      return dict('PC.Pages.AppProjectDetail.invalidDomain');
     }
     return '';
   }, [bindDomain, bindDomainValue]);
@@ -421,9 +441,9 @@ const AppProjectSetting: React.FC = () => {
   const handleUnbindDomain = useCallback(
     (item: UserAppDomainInfo) => {
       Modal.confirm({
-        title: dict('PC.Pages.AppProjectSetting.unbindConfirmTitle'),
+        title: dict('PC.Pages.AppProjectDetail.unbindConfirmTitle'),
         content: dict(
-          'PC.Pages.AppProjectSetting.unbindConfirmContent',
+          'PC.Pages.AppProjectDetail.unbindConfirmContent',
           item.domain,
         ),
         okButtonProps: { danger: true },
@@ -443,13 +463,27 @@ const AppProjectSetting: React.FC = () => {
       return;
     }
     Modal.confirm({
-      title: dict('PC.Pages.AppProjectSetting.regenerateConfirmTitle'),
-      content: dict('PC.Pages.AppProjectSetting.regenerateHint'),
-      okText: dict('PC.Pages.AppProjectSetting.regenerate'),
+      title: dict('PC.Pages.AppProjectDetail.regenerateConfirmTitle'),
+      content: dict('PC.Pages.AppProjectDetail.regenerateHint'),
+      okText: dict('PC.Pages.AppProjectDetail.regenerate'),
       cancelText: dict('PC.Common.Global.cancel'),
       onOk: () => runRegenerate(),
     });
   }, [appId, runRegenerate]);
+
+  /**
+   * 保存主页地址与回调地址；空字符串按接口约定视为不修改。
+   */
+  const handleSaveOauthSetting = useCallback(() => {
+    if (!appId) {
+      return;
+    }
+    runSaveOauthSetting({
+      projectId: appId,
+      homepageUrl: homepageUrl.trim() || undefined,
+      redirectUri: redirectUri.trim() || undefined,
+    });
+  }, [appId, homepageUrl, redirectUri, runSaveOauthSetting]);
 
   /**
    * 主页 / 回调地址：有值回填 Input，无值显示空输入框。
@@ -538,54 +572,61 @@ const AppProjectSetting: React.FC = () => {
     <div className={cx(styles['setting-stack'])}>
       <section className={cx(styles.card)}>
         <h3 className={cx(styles['card-title'])}>
-          {dict('PC.Pages.AppProjectSetting.oauthTitle')}
+          {dict('PC.Pages.AppProjectDetail.oauthTitle')}
         </h3>
         <p className={cx(styles['card-desc'])}>
-          {dict('PC.Pages.AppProjectSetting.oauthDesc')}
+          {dict('PC.Pages.AppProjectDetail.oauthDesc')}
         </p>
         <Spin spinning={oauthLoading}>
           {renderField(
-            dict('PC.Pages.AppProjectSetting.clientId'),
+            dict('PC.Pages.AppProjectDetail.clientId'),
             oauthInfo?.clientId || '',
           )}
           {renderField(
-            dict('PC.Pages.AppProjectSetting.clientSecret'),
+            dict('PC.Pages.AppProjectDetail.clientSecret'),
             clientSecret,
             true,
           )}
           {renderUrlField(
-            dict('PC.Pages.AppProjectSetting.homeUrl'),
+            dict('PC.Pages.AppProjectDetail.homeUrl'),
             homepageUrl,
             setHomepageUrl,
-            dict('PC.Pages.AppProjectSetting.homeUrlPlaceholder'),
+            dict('PC.Pages.AppProjectDetail.homeUrlPlaceholder'),
           )}
           {renderUrlField(
-            dict('PC.Pages.AppProjectSetting.callbackUrl'),
+            dict('PC.Pages.AppProjectDetail.callbackUrl'),
             redirectUri,
             setRedirectUri,
-            dict('PC.Pages.AppProjectSetting.callbackUrlPlaceholder'),
+            dict('PC.Pages.AppProjectDetail.callbackUrlPlaceholder'),
           )}
+          <div className={cx(styles['regen-row'])}>
+            <Button
+              type="primary"
+              loading={saveOauthLoading}
+              onClick={handleSaveOauthSetting}
+            >
+              {dict('PC.Common.Global.save')}
+            </Button>
+            <Button
+              icon={<ReloadOutlined />}
+              loading={regenerateLoading}
+              onClick={handleRegenerate}
+            >
+              {dict('PC.Pages.AppProjectDetail.regenerate')}
+            </Button>
+            <span className={cx(styles['regen-hint'])}>
+              {dict('PC.Pages.AppProjectDetail.regenerateHint')}
+            </span>
+          </div>
         </Spin>
-        <div className={cx(styles['regen-row'])}>
-          <Button
-            icon={<ReloadOutlined />}
-            loading={regenerateLoading}
-            onClick={handleRegenerate}
-          >
-            {dict('PC.Pages.AppProjectSetting.regenerate')}
-          </Button>
-          <span className={cx(styles['regen-hint'])}>
-            {dict('PC.Pages.AppProjectSetting.regenerateHint')}
-          </span>
-        </div>
       </section>
 
       <section className={cx(styles.card)}>
         <h3 className={cx(styles['card-title'])}>
-          {dict('PC.Pages.AppProjectSetting.domainTitle')}
+          {dict('PC.Pages.AppProjectDetail.domainTitle')}
         </h3>
         <p className={cx(styles['card-desc'])}>
-          {dict('PC.Pages.AppProjectSetting.domainDesc', CNAME_TARGET)}
+          {dict('PC.Pages.AppProjectDetail.domainDesc', CNAME_TARGET)}
         </p>
         <div className={cx(styles['domain-list'])}>
           {customDomains.map((item) => (
@@ -595,7 +636,7 @@ const AppProjectSetting: React.FC = () => {
               </div>
               <div className={cx(styles['domain-right'])}>
                 <span className={cx(styles['domain-cname'])}>
-                  {dict('PC.Pages.AppProjectSetting.cnameLabel')} {CNAME_TARGET}
+                  {dict('PC.Pages.AppProjectDetail.cnameLabel')} {CNAME_TARGET}
                 </span>
                 <Button
                   size="small"
@@ -603,7 +644,7 @@ const AppProjectSetting: React.FC = () => {
                     void copyTextToClipboard(CNAME_TARGET, undefined, true)
                   }
                 >
-                  {dict('PC.Pages.AppProjectSetting.copyCname')}
+                  {dict('PC.Pages.AppProjectDetail.copyCname')}
                 </Button>
                 <Button
                   type="link"
@@ -622,16 +663,16 @@ const AppProjectSetting: React.FC = () => {
           className={cx(styles['bind-btn'])}
           onClick={() => setBindOpen(true)}
         >
-          {dict('PC.Pages.AppProjectSetting.bindDomain')}
+          {dict('PC.Pages.AppProjectDetail.bindDomain')}
         </Button>
       </section>
 
       <section className={cx(styles.card)}>
         <h3 className={cx(styles['card-title'])}>
-          {dict('PC.Pages.AppProjectSetting.deployTitle')}
+          {dict('PC.Pages.AppProjectDetail.deployTitle')}
         </h3>
         <p className={cx(styles['card-desc'])}>
-          {dict('PC.Pages.AppProjectSetting.deployDesc')}
+          {dict('PC.Pages.AppProjectDetail.deployDesc')}
         </p>
         <Radio.Group
           className={cx(styles['deploy-options'])}
@@ -648,10 +689,10 @@ const AppProjectSetting: React.FC = () => {
             <Radio value={UserAppDeployTypeEnum.Platform} />
             <div className={cx(styles['deploy-card-body'])}>
               <span className={cx(styles['deploy-title'])}>
-                {dict('PC.Pages.AppProjectSetting.platformService')}
+                {dict('PC.Pages.AppProjectDetail.platformService')}
               </span>
               <span className={cx(styles['deploy-hint'])}>
-                {dict('PC.Pages.AppProjectSetting.platformServiceDesc')}
+                {dict('PC.Pages.AppProjectDetail.platformServiceDesc')}
               </span>
             </div>
           </div>
@@ -666,17 +707,17 @@ const AppProjectSetting: React.FC = () => {
             <Radio value={UserAppDeployTypeEnum.Private} />
             <div className={cx(styles['deploy-card-body'])}>
               <span className={cx(styles['deploy-title'])}>
-                {dict('PC.Pages.AppProjectSetting.privateServer')}
+                {dict('PC.Pages.AppProjectDetail.privateServer')}
               </span>
               <span className={cx(styles['deploy-hint'])}>
-                {dict('PC.Pages.AppProjectSetting.privateServerDesc')}
+                {dict('PC.Pages.AppProjectDetail.privateServerDesc')}
               </span>
             </div>
           </div>
         </Radio.Group>
         {deployMode === UserAppDeployTypeEnum.Platform ? (
           <p className={cx(styles['deploy-footer'])}>
-            {dict('PC.Pages.AppProjectSetting.platformHint')}
+            {dict('PC.Pages.AppProjectDetail.platformHint')}
           </p>
         ) : (
           <PrivateServerPanel
@@ -696,7 +737,7 @@ const AppProjectSetting: React.FC = () => {
    */
   const renderComingSoon = () => (
     <div className={cx('flex', 'items-center', 'content-center', 'h-full')}>
-      <Empty description={dict('PC.Pages.AppProjectSetting.comingSoon')} />
+      <Empty description={dict('PC.Pages.AppProjectDetail.comingSoon')} />
     </div>
   );
 
@@ -714,14 +755,14 @@ const AppProjectSetting: React.FC = () => {
           onClick={handleBack}
         />
         <h3 className={cx(styles['project-name'], 'text-ellipsis')}>
-          {projectName || dict('PC.Pages.AppProjectSetting.untitled')}
+          {projectName || dict('PC.Pages.AppProjectDetail.untitled')}
         </h3>
         <div className={cx(styles.tabs)}>
           {(
             [
-              ['plan', 'PC.Pages.AppProjectSetting.tabPlan'],
-              ['asset', 'PC.Pages.AppProjectSetting.tabAsset'],
-              ['setting', 'PC.Pages.AppProjectSetting.tabSetting'],
+              ['plan', 'PC.Pages.AppProjectDetail.tabPlan'],
+              ['asset', 'PC.Pages.AppProjectDetail.tabAsset'],
+              ['setting', 'PC.Pages.AppProjectDetail.tabSetting'],
             ] as const
           ).map(([key, labelKey]) => (
             <button
@@ -761,7 +802,7 @@ const AppProjectSetting: React.FC = () => {
       )}
 
       <Modal
-        title={dict('PC.Pages.AppProjectSetting.bindDomain')}
+        title={dict('PC.Pages.AppProjectDetail.bindDomain')}
         open={bindOpen}
         onOk={() => void handleBindDomain()}
         onCancel={handleCloseBindModal}
@@ -780,7 +821,7 @@ const AppProjectSetting: React.FC = () => {
             status={bindDomainError ? 'error' : undefined}
             onChange={(event) => setBindDomain(event.target.value)}
             onPressEnter={() => void handleBindDomain()}
-            placeholder={dict('PC.Pages.AppProjectSetting.domainPlaceholder')}
+            placeholder={dict('PC.Pages.AppProjectDetail.domainPlaceholder')}
           />
         </Form.Item>
       </Modal>
@@ -788,4 +829,4 @@ const AppProjectSetting: React.FC = () => {
   );
 };
 
-export default AppProjectSetting;
+export default AppProjectDetail;
