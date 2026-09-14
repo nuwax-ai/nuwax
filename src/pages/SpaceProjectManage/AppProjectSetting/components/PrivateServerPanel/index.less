@@ -1,36 +1,35 @@
-@import '@/styles/color';
 @import '@/styles/token';
 
 .header,
 .row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: @marginSm;
 }
 
 .header {
-  margin-top: 16px;
+  margin-top: @margin;
 }
 
 .header-fields {
   display: grid;
   grid-template-columns: 88px minmax(0, 1.4fr) 1fr 1fr;
-  gap: 12px;
+  gap: @marginSm;
   flex: 1;
   min-width: 0;
 }
 
 .header-cell {
   color: @colorTextSecondary;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: @fontSizeSm;
+  line-height: @fontHeightSm;
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
+  gap: @marginSm;
+  margin-top: @marginXs;
 }
 
 .health {
@@ -38,8 +37,8 @@
   align-items: center;
   justify-content: center;
   min-width: 44px;
-  font-size: 13px;
-  line-height: 22px;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
 }
 
 .online {
@@ -56,13 +55,13 @@
   justify-content: center;
   flex-shrink: 0;
   width: 82px;
-  height: 32px;
-  gap: 8px;
+  height: @controlHeight;
+  gap: @marginXs;
 }
 
 .delete {
   flex-shrink: 0;
-  min-width: 24px;
+  min-width: @controlHeightSm;
   padding-inline: 0;
 }
 
@@ -71,14 +70,14 @@
 }
 
 .add {
-  margin-top: 8px;
+  margin-top: @marginXs;
 }
 
 .hint {
-  margin: 12px 0 0;
+  margin: @marginSm 0 0;
   color: @colorTextTertiary;
-  font-size: 13px;
-  line-height: 22px;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
 }
 
 @media (max-width: 960px) {

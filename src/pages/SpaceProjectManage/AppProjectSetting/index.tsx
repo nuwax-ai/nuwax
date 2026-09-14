@@ -2,11 +2,9 @@ import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiUserProjectTabPageQuery } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
-import type { UserProjectTabItem } from '@/types/interfaces/userProject';
+import type { UserProjectConversationInfo } from '@/types/interfaces/userProject';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { isValidDomain, normalizeDomain } from '@/utils/common';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
@@ -27,6 +25,8 @@ import {
   UserAppDomainTypeEnum,
   type UserAppDomainInfo,
 } from '../../AppDevPro/services/appDomain';
+import ConversationPanel from '../components/ConversationPanel';
+import { apiUserProjectConversations } from '../services';
 import {
   apiPrivateServerList,
   type PrivateServerInfo,
@@ -39,7 +39,6 @@ import {
   type ThirdAppOauth2Info,
 } from '../services/thirdAppOauth2';
 import { openProject } from '../type';
-import ConversationPanel from './components/ConversationPanel';
 import PrivateServerPanel from './components/PrivateServerPanel';
 import styles from './index.less';
 
@@ -48,21 +47,6 @@ const cx = classNames.bind(styles);
 type SettingTabKey = 'plan' | 'asset' | 'setting';
 
 const CNAME_TARGET = 'cname.nuwax.com';
-
-/** 从分页结果中取出 records */
-const pickRecords = (
-  result?: RequestResponse<{ records?: UserProjectTabItem[] }> & {
-    records?: UserProjectTabItem[];
-  },
-): UserProjectTabItem[] => {
-  if (Array.isArray(result?.records)) {
-    return result.records;
-  }
-  if (Array.isArray(result?.data?.records)) {
-    return result.data.records;
-  }
-  return [];
-};
 
 /** 解开 request 包装，兼容直接返回 data 的情况 */
 const pickResponseData = <T,>(
@@ -83,7 +67,7 @@ const pickResponseData = <T,>(
 
 /**
  * 全栈应用设置页：顶部返回 + 计划 / 资产 / 设置，
- * 详情走 tab/page-query，右侧展示项目会话列表。
+ * 进入设置 Tab 拉项目会话列表，右侧展示任务。
  */
 const AppProjectSetting: React.FC = () => {
   const params = useParams();
@@ -91,7 +75,10 @@ const AppProjectSetting: React.FC = () => {
   const appId = Number(params.appId);
 
   const [activeTab, setActiveTab] = useState<SettingTabKey>('setting');
-  const [project, setProject] = useState<UserProjectTabItem>();
+  const [conversations, setConversations] = useState<
+    UserProjectConversationInfo[]
+  >([]);
+  const [projectName, setProjectName] = useState('');
   const [domains, setDomains] = useState<UserAppDomainInfo[]>([]);
   const [deployMode, setDeployMode] = useState<'platform' | 'private'>(
     'platform',
@@ -106,34 +93,25 @@ const AppProjectSetting: React.FC = () => {
   const [redirectUri, setRedirectUri] = useState('');
   const [privateServers, setPrivateServers] = useState<PrivateServerInfo[]>([]);
 
-  const { run, loading } = useRequest(
-    () =>
-      apiUserProjectTabPageQuery({
-        queryFilter: {
-          spaceId,
-          projectType: AgentComponentTypeEnum.UserApp,
-        },
-        current: 1,
-        pageSize: 100,
-        orders: [],
-        filters: [],
-        columns: [],
-      }),
+  const { run: runConversations, loading } = useRequest(
+    () => apiUserProjectConversations(appId, AgentComponentTypeEnum.UserApp),
     {
       manual: true,
       onSuccess: (
-        result: RequestResponse<{ records?: UserProjectTabItem[] }> & {
-          records?: UserProjectTabItem[];
-        },
+        result:
+          | UserProjectConversationInfo[]
+          | RequestResponse<UserProjectConversationInfo[]>,
       ) => {
-        const records = pickRecords(result);
-        const current = records.find(
-          (item) => Number(item.projectId) === appId,
-        );
-        setProject(current);
+        const list = Array.isArray(result) ? result : pickResponseData(result);
+        const records = Array.isArray(list) ? list : [];
+        setConversations(records);
+        const name = records.find((item) => item.agent?.name)?.agent?.name;
+        if (name) {
+          setProjectName(name);
+        }
       },
       onError: () => {
-        setProject(undefined);
+        setConversations([]);
       },
     },
   );
@@ -261,7 +239,6 @@ const AppProjectSetting: React.FC = () => {
     if (!spaceId || !appId) {
       return;
     }
-    run();
     runDomainList(appId);
   }, [appId, spaceId]);
 
@@ -270,7 +247,8 @@ const AppProjectSetting: React.FC = () => {
       return;
     }
     void loadOauthSetting();
-  }, [activeTab, appId, loadOauthSetting]);
+    runConversations();
+  }, [activeTab, appId, loadOauthSetting, runConversations]);
 
   /** 切换发布位置；选私有服务器时再拉私服列表 */
   const handleSelectDeployMode = useCallback(
@@ -298,7 +276,7 @@ const AppProjectSetting: React.FC = () => {
   }, [spaceId]);
 
   const handleOpenConversation = useCallback(
-    (item: ConversationInfo) => {
+    (item: UserProjectConversationInfo) => {
       openProject(
         spaceId,
         { id: appId, projectType: AgentComponentTypeEnum.UserApp },
@@ -621,7 +599,7 @@ const AppProjectSetting: React.FC = () => {
           onClick={handleBack}
         />
         <h3 className={cx(styles['project-name'], 'text-ellipsis')}>
-          {project?.name || dict('PC.Pages.AppProjectSetting.untitled')}
+          {projectName || dict('PC.Pages.AppProjectSetting.untitled')}
         </h3>
         <div className={cx(styles.tabs)}>
           {(
@@ -643,12 +621,8 @@ const AppProjectSetting: React.FC = () => {
         </div>
       </header>
 
-      {loading ? (
+      {loading && conversations.length === 0 && !projectName ? (
         <Loading />
-      ) : !project ? (
-        <div className={cx('flex', 'items-center', 'content-center', 'h-full')}>
-          <Empty description={dict('PC.Pages.AppProjectSetting.notFound')} />
-        </div>
       ) : (
         <div className={cx(styles.body, 'flex-1')}>
           <div className={cx(styles.main, 'flex-1', 'flex', 'flex-col')}>
@@ -663,7 +637,8 @@ const AppProjectSetting: React.FC = () => {
             </div>
           </div>
           <ConversationPanel
-            conversations={project.conversations || []}
+            conversations={conversations}
+            loading={loading}
             onSelect={handleOpenConversation}
             onCreate={handleCreateConversation}
           />

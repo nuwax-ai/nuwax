@@ -6276,6 +6276,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppProjectSetting.conversationTitle": "相關任務",
   "PC.Pages.AppProjectSetting.newConversation": "新建任務",
   "PC.Pages.AppProjectSetting.emptyConversation": "暫無會話",
+  "PC.Pages.AppProjectSetting.mine": "我的",
   "PC.Pages.AppProjectSetting.today": "今天",
   // 空态与提示
   "PC.Pages.AppProjectSetting.notFound": "找不到該專案",

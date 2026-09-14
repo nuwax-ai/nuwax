@@ -1,10 +1,9 @@
-@import '@/styles/color';
 @import '@/styles/token';
 
 .sidebar {
   flex-shrink: 0;
   width: 320px;
-  padding: 20px 16px 24px;
+  padding: @paddingMd @padding @paddingLg;
   background: @colorBgContainer;
   border-left: 1px solid @colorSplit;
   overflow: auto;
@@ -14,85 +13,96 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: @marginSm;
 }
 
 .sidebar-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 22px;
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeight;
   color: @colorText;
 }
 
 .create-btn {
   padding-inline: 0;
-  height: 22px;
-  font-size: 13px;
+  height: @fontHeight;
+  font-size: @fontSizeSm;
 }
 
 .conversation-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: @marginSm;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .conversation-item {
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: @paddingSm @padding;
+  border-radius: @borderRadiusLg;
   border: 1px solid @colorBorderSecondary;
   background: @colorBgContainer;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color @motionDurationFast @motionEaseOut,
+    box-shadow @motionDurationFast @motionEaseOut;
 
   &:hover {
     border-color: @colorPrimaryBorder;
-    box-shadow: 0 4px 12px rgba(12, 12, 13, 6%);
+    box-shadow: @boxShadowTertiary;
   }
 }
 
 .conversation-top {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: @marginSm;
 }
 
 .conversation-name {
   flex: 1;
   min-width: 0;
   color: @colorText;
-  font-size: 14px;
+  font-size: @fontSize;
   font-weight: 500;
-  line-height: 22px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: @fontHeight;
 }
 
-.avatar {
+.owner {
   flex-shrink: 0;
-  background: @colorFillSecondary;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 @paddingXs;
+  height: @fontHeight;
+  line-height: @fontHeight;
+  border-radius: @borderRadiusLg;
+  font-size: @fontSizeSm;
+  color: @colorPrimary;
+  background: @colorPrimaryBg;
+}
+
+.owner-other {
   color: @colorTextSecondary;
-  font-size: 12px;
-  font-weight: 600;
+  background: @colorFillTertiary;
 }
 
 .conversation-meta {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 8px;
+  gap: @marginXxs;
+  margin-top: @marginXs;
   color: @colorTextTertiary;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: @fontSizeSm;
+  line-height: @fontHeightSm;
 }
 
 .sidebar-empty {
   padding-top: 48px;
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 960px) {

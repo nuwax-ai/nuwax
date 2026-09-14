@@ -4,9 +4,13 @@
  * 页面层原路径再导出保持既有引用不变，新消费方请直接从本模块引入。
  */
 
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, TaskStatus, TaskTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import type { AgentDetailDto } from '@/types/interfaces/agent';
+import type {
+  ConversationInfo,
+  MessageInfo,
+} from '@/types/interfaces/conversationInfo';
 import { TablePageRequest } from '@/types/interfaces/request';
 
 export enum UserAppStageEnum {
@@ -136,6 +140,68 @@ export interface UserProjectTabItem {
   modified: string;
   /** 创建时间 */
   created: string;
+}
+
+/**
+ * 项目会话列表项（/api/user-project/conversations/{projectId}）。
+ */
+export interface UserProjectConversationInfo {
+  /** 会话 ID */
+  id: number;
+  tenantId: number;
+  userId: number;
+  /** 会话 UUID */
+  uid: string;
+  /** 智能体 ID */
+  agentId: number;
+  /** 会话主题 */
+  topic: string;
+  /** 会话摘要，开启长期记忆时会对每次会话进行总结 */
+  summary: string;
+  /** 会话图标 */
+  icon?: string;
+  /** 用户填写的会话变量内容 */
+  variables?: Record<string, string | number> | null;
+  modified: string;
+  created: string;
+  /** 已发布过的 agent 才有此信息 */
+  agent?: AgentDetailDto;
+  /** 会话消息列表，会话列表查询时不会返回 */
+  messageList?: MessageInfo[];
+  // 任务类型 可用值:Chat,TempChat,TASK,TaskCenter (会话、临时会话、任务、任务中心)
+  type: TaskTypeEnum;
+  taskId?: string;
+  // 任务状态，只针对 EXECUTING（执行中）做展示,可用值:CREATE,EXECUTING,CANCEL,COMPLETE,FAILED
+  taskStatus: TaskStatus;
+  taskCron?: string;
+  taskCronDesc?: string;
+  // 开发模式
+  devMode: boolean;
+  /** 会话主题是否更新 */
+  topicUpdated?: number;
+  sandboxServerId?: string;
+  sandboxSessionId?: string;
+  /** 开发项目所在的空间 ID */
+  devSpaceId?: number;
+  /** 开发目标类型，如 Agent, PageApp, Skill, Plugin */
+  devTargetType?: string;
+  /** 开发模式目标 ID */
+  devTargetId?: string;
+  /** 文件访问路径（file server/主容器视角；空=老数据走兼容逻辑） */
+  fileWorkspacePath?: string;
+  /** agent 执行路径（执行容器内视角；空=老数据走兼容逻辑） */
+  agentWorkspacePath?: string;
+  /** 置顶标记 */
+  pinned?: boolean;
+  /** 归档标记 */
+  archived?: boolean;
+  /** 当前用户收藏标记 */
+  collected?: boolean;
+  /** 已分享的 URI，比对上了则不需要认证 */
+  sharedUris?: string[];
+  extra?: Record<string, unknown>;
+  /** 会话所属用户名 */
+  userName?: string;
 }
 
 /** tab 项目分页查询结果（mybatis-plus IPage 风格） */

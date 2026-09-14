@@ -6274,6 +6274,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectSetting.conversationTitle": "関連タスク",
   "PC.Pages.AppProjectSetting.newConversation": "新規タスク",
   "PC.Pages.AppProjectSetting.emptyConversation": "セッションはまだありません",
+  "PC.Pages.AppProjectSetting.mine": "自分",
   "PC.Pages.AppProjectSetting.today": "今日",
   // 空态与提示
   "PC.Pages.AppProjectSetting.notFound": "プロジェクトが見つかりません",

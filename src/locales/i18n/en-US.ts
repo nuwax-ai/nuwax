@@ -6400,6 +6400,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectSetting.conversationTitle": "Related tasks",
   "PC.Pages.AppProjectSetting.newConversation": "New task",
   "PC.Pages.AppProjectSetting.emptyConversation": "No conversations yet",
+  "PC.Pages.AppProjectSetting.mine": "Mine",
   "PC.Pages.AppProjectSetting.today": "Today",
   // 空态与提示
   "PC.Pages.AppProjectSetting.notFound": "Project not found",
