@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import ExternalFilePreview from '@/components/business-component/ExternalFilePreview';
 import FileTreePreviewPanel, {
   type FileTreePreviewPanelProps,
 } from '@/components/business-component/FileTreePreviewPanel';
@@ -20,6 +21,13 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/** 工作区外沙箱文件的独立预览目标（非空时右侧面板切换为独立预览） */
+export interface ExternalFilePreviewTarget {
+  cId: number;
+  targetDir: string;
+  relativePath: string;
+}
+
 interface LeftContentProps {
   isFileTreeVisible: boolean;
   effectiveAgent: any;
@@ -27,6 +35,7 @@ interface LeftContentProps {
   headerProps: any;
   chatSessionProps: any;
   fileSidebarProps: FileTreePreviewPanelProps;
+  externalFilePreview?: ExternalFilePreviewTarget | null;
 }
 
 // 内容区域
@@ -37,6 +46,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
   headerProps,
   chatSessionProps,
   fileSidebarProps,
+  externalFilePreview,
 }) => {
   // 拖拽分栏默认宽度（持久化偏好，仅作 ResizableSplit 初始值）
   const [chatPanelWidth] = useState<number>(loadChatPanelWidthPercent);
@@ -262,13 +272,22 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   'overflow-hide',
                 )}
               >
-                <FileTreePreviewPanel
-                  {...fileSidebarProps}
-                  className={cx(
-                    styles['file-tree-container'],
-                    fileSidebarProps.className,
-                  )}
-                />
+                {externalFilePreview ? (
+                  <ExternalFilePreview
+                    className={cx(styles['file-tree-container'])}
+                    cId={externalFilePreview.cId}
+                    targetDir={externalFilePreview.targetDir}
+                    relativePath={externalFilePreview.relativePath}
+                  />
+                ) : (
+                  <FileTreePreviewPanel
+                    {...fileSidebarProps}
+                    className={cx(
+                      styles['file-tree-container'],
+                      fileSidebarProps.className,
+                    )}
+                  />
+                )}
               </div>
             ) : null
           }

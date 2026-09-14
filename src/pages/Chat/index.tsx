@@ -801,6 +801,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   /** V2 工具详情点击打开的文件（相对路径）；用于选中失败时精确归因提示 */
   const toolResourceSelectRef = useRef('');
 
+  /**
+   * V2 工具详情点击打开的工作区外沙箱文件（桌面等）：
+   * 右侧面板临时切换为独立预览，不依赖工作区文件树。
+   */
+  const [externalPreviewFile, setExternalPreviewFile] = useState<{
+    cId: number;
+    targetDir: string;
+    relativePath: string;
+  } | null>(null);
+
   const workspaceTaskSelectedFileId = taskAgentSelectedFileId
     ? workspaceNodeId(workspaceRelativePath(taskAgentSelectedFileId))
     : '';
@@ -1256,6 +1266,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTerminalConsoleLayoutMode('default');
     setTerminalConsoleExpandSignal(0);
     setTerminalConsoleCollapseSignal(0);
+    setExternalPreviewFile(null);
     prevTaskAgentCollapseTriggerRef.current = undefined;
   }, [id]);
 
@@ -1528,7 +1539,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   /**
    * V2 工具详情资源点击：文件 → 打开预览面板（与 FINAL_RESULT task-result
    * 文件自动打开同链路：开面板 + 设选中 + 触发器）；URL → 新窗口。
-   * 路径不属于当前会话/无法解析时按定调直接 toast 提示，不做其他兜底。
+   * 工作区外沙箱文件（桌面等）→ 独立预览面板（customTargetDir 锚定家目录，
+   * 云端会话放开为后端契约）。路径不属于当前会话/无法解析时按定调直接 toast
+   * 提示，不做其他兜底。
    */
   const handleOpenToolResource = (resource: ConversationToolResource) => {
     if (resource.kind === 'url') {
@@ -1551,6 +1564,18 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       return;
     }
     openPreviewView(currentId);
+    if (decision.type === 'open-external') {
+      // 清工作区自动选中，右侧面板切换为独立预览
+      toolResourceSelectRef.current = '';
+      setTaskAgentSelectedFileId('');
+      setExternalPreviewFile({
+        cId: Number(currentId),
+        targetDir: decision.targetDir,
+        relativePath: decision.relativePath,
+      });
+      return;
+    }
+    setExternalPreviewFile(null);
     // 记录本次点击目标：文件树拉取完成后仍找不到时由 onSelectedFileMissing 提示
     toolResourceSelectRef.current = decision.relativePath;
     setTaskAgentSelectedFileId(decision.relativePath);
@@ -1699,6 +1724,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   headerProps={headerProps}
                   chatSessionProps={chatSessionProps}
                   fileSidebarProps={fileSidebarProps}
+                  externalFilePreview={externalPreviewFile}
                 />
               )
             }
@@ -1761,6 +1787,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   headerProps={headerProps}
                   chatSessionProps={chatSessionProps}
                   fileSidebarProps={fileSidebarProps}
+                  externalFilePreview={externalPreviewFile}
                 />
               </div>
             )}
