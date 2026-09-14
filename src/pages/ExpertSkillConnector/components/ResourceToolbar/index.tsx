@@ -70,9 +70,9 @@ const ResourceToolbar: React.FC<ResourceToolbarProps> = ({
           },
         ]
       : []),
-    // "我启用的"——技能页（当前用户启用的技能，位于团队空间右侧）与
-    // 连接器页（当前用户启用开关打开的连接器，位于"已连接的"右侧）展示
-    ...(resourceType === 'skill' || resourceType === 'connector'
+    // "我启用的"仅技能页展示（当前用户启用的技能，位于团队空间右侧）；
+    // 连接器页不展示（产品要求隐藏）
+    ...(resourceType === 'skill'
       ? [
           {
             label: dict('PC.Pages.ExpertSkillConnector.mainTabEnabled'),
