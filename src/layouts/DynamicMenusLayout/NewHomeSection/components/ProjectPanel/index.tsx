@@ -353,7 +353,13 @@ const ProjectPanel = forwardRef<
       void (async () => {
         const request =
           kind === 'pinned' ? apiUserProjectPin : apiUserProjectArchive;
-        const res = await request(project.id).catch(() => null);
+        // pinned/archived + projectType query 均为后端必传（归属校验），
+        // usesRealApi 分支已保证 projectType 为 NormalProject/UserApp
+        const res = await request(
+          project.id,
+          enabled,
+          project.projectType as string,
+        ).catch(() => null);
         if (res?.code !== SUCCESS_CODE) {
           message.error(dict('PC.Common.Global.operationFailed'));
           return;
