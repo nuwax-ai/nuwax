@@ -6413,6 +6413,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateHint": "应用端口用于对外提供访问，管理端口用于平台下发部署与健康检查。请确保服务器可被平台访问，并已在安全组放通上述端口。选择 HTTPS 时，需在服务器上部署有效证书并监听应用端口，平台不代管证书。",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "相关任务",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "隐藏相关任务",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "显示相关任务",
   "PC.Pages.AppProjectDetail.newConversation": "新建任务",
   "PC.Pages.AppProjectDetail.emptyConversation": "暂无会话",
   "PC.Pages.AppProjectDetail.mine": "我的",

@@ -6294,6 +6294,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateHint": "應用連接埠用於對外提供存取，管理連接埠用於平台下發部署與健康檢查。請確保伺服器可被平台存取，並已在安全組放通上述連接埠。選擇 HTTPS 時，需在伺服器上部署有效憑證並監聽應用連接埠，平台不代管憑證。",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "相關任務",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "隱藏相關任務",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "顯示相關任務",
   "PC.Pages.AppProjectDetail.newConversation": "新建任務",
   "PC.Pages.AppProjectDetail.emptyConversation": "暫無會話",
   "PC.Pages.AppProjectDetail.mine": "我的",

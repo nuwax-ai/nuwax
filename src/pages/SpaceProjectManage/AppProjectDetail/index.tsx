@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiUserAppGetById } from '@/services/userProjectApp';
@@ -121,24 +122,26 @@ const AppProjectDetail: React.FC = () => {
   const [conversations, setConversations] = useState<
     UserProjectConversationInfo[]
   >([]);
-  const [projectName, setProjectName] = useState('');
+  const [projectName, setProjectName] = useState<string>('');
   const [domains, setDomains] = useState<UserAppDomainInfo[]>([]);
   const [deployMode, setDeployMode] = useState<UserAppDeployTypeEnum>(
     UserAppDeployTypeEnum.Platform,
   );
-  const [bindOpen, setBindOpen] = useState(false);
-  const [bindDomain, setBindDomain] = useState('');
+  const [bindOpen, setBindOpen] = useState<boolean>(false);
+  const [bindDomain, setBindDomain] = useState<string>('');
   const [oauthInfo, setOauthInfo] = useState<ThirdAppOauth2Info>();
-  const [clientSecret, setClientSecret] = useState('');
-  const [secretVisible, setSecretVisible] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string>('');
+  const [secretVisible, setSecretVisible] = useState<boolean>(false);
   const [oauthLoading, setOauthLoading] = useState(false);
-  const [homepageUrl, setHomepageUrl] = useState('');
-  const [redirectUri, setRedirectUri] = useState('');
+  const [homepageUrl, setHomepageUrl] = useState<string>('');
+  const [redirectUri, setRedirectUri] = useState<string>  ('');
   const [privateServers, setPrivateServers] = useState<PrivateServerInfo[]>([]);
   const [deployServerId, setDeployServerId] = useState<number>();
-  const [deployTargetOpen, setDeployTargetOpen] = useState(false);
+  const [deployTargetOpen, setDeployTargetOpen] = useState<boolean>(false);
   const [selectedDeployServerId, setSelectedDeployServerId] =
     useState<number>();
+  const [conversationPanelVisible, setConversationPanelVisible] =
+    useState<boolean>(true);
 
   /** 项目下全部用户会话，供右侧任务列表展示 */
   const { run: runConversations, loading } = useRequest(
@@ -405,6 +408,11 @@ const AppProjectDetail: React.FC = () => {
   const handleBack = useCallback(() => {
     history.push(`/space/${spaceId}/userapp-project`);
   }, [spaceId]);
+
+  /** 切换右侧相关任务列表显隐 */
+  const handleToggleConversationPanel = useCallback(() => {
+    setConversationPanelVisible((visible) => !visible);
+  }, []);
 
   /**
    * 打开右侧任务对应的全栈 IDE 会话。
@@ -872,6 +880,22 @@ const AppProjectDetail: React.FC = () => {
             </button>
           ))}
         </div>
+        <div className={cx(styles['header-actions'])}>
+          <TooltipIcon
+            title={
+              conversationPanelVisible
+                ? dict('PC.Pages.AppProjectDetail.hideConversationPanel')
+                : dict('PC.Pages.AppProjectDetail.showConversationPanel')
+            }
+            className={cx(styles['panel-toggle'], {
+              [styles.active]: conversationPanelVisible,
+            })}
+            icon={
+              <SvgIcon name="icons-nav-sidebar" style={{ fontSize: 16 }} />
+            }
+            onClick={handleToggleConversationPanel}
+          />
+        </div>
       </header>
 
       {appLoading && !projectName ? (
@@ -889,12 +913,14 @@ const AppProjectDetail: React.FC = () => {
               {activeTab === 'setting' ? renderSetting() : renderComingSoon()}
             </div>
           </div>
-          <ConversationPanel
-            conversations={conversations}
-            loading={loading}
-            onSelect={handleOpenConversation}
-            onCreate={handleCreateConversation}
-          />
+          {conversationPanelVisible ? (
+            <ConversationPanel
+              conversations={conversations}
+              loading={loading}
+              onSelect={handleOpenConversation}
+              onCreate={handleCreateConversation}
+            />
+          ) : null}
         </div>
       )}
 
