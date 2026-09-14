@@ -86,6 +86,7 @@
 
 // ---- grid 变体卡片（两栏，与能力弹窗简化专家卡同款） ----
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -95,6 +96,7 @@
   background: @colorBgContainer;
   cursor: pointer;
   transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  overflow: hidden;
 
   &:hover {
     border-color: color-mix(in srgb, @colorPrimary 55%, transparent);
@@ -162,31 +164,62 @@
   white-space: nowrap;
 }
 
-// 操作簇：悬停浮现「聘请」（不占位）；最近召唤时间为常驻弱化相对时间
-.card-actions,
-.list-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
+// 最近召唤时间：常驻弱化相对时间,悬停整体淡出让位「聘请」
+// （保留占位,名称/描述截断位置不回弹）
 .card-used-time {
   flex-shrink: 0;
   color: @expert-faint;
   font-size: 11px;
   line-height: 18px;
   white-space: nowrap;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.card:hover .card-used-time,
+.list-row:hover .card-used-time {
+  opacity: 0;
 }
 
 // 悬停浮现按钮：未悬停不渲染入流、不占布局空间
 .card-hire {
   display: none;
+  pointer-events: auto;
 }
 
 .card:hover .card-hire,
 .list-row:hover .card-hire {
   display: inline-block;
+}
+
+/* 「聘请」按钮覆盖层：绝对定位铺在卡/行右端（悬停盖住时间区域,不占
+   布局空间）；渐变蒙层仅悬停时出现（未悬停的行右端不残留色块）,grid
+   卡片底色与容器一致、list 行悬停底色为 fill,各自对齐 */
+.card-actions,
+.list-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 32px;
+  pointer-events: none;
+}
+
+.card-actions {
+  padding-right: 14px;
+}
+
+.list-actions {
+  padding-right: 12px;
+}
+
+.card:hover .card-actions {
+  background: linear-gradient(to right, transparent, @colorBgContainer 32px);
+}
+
+.list-row:hover .list-actions {
+  background: linear-gradient(to right, transparent, @expert-fill 32px);
 }
 
 // 方形圆角 tint 底「聘请」按钮（双写提权压过 antd cssinjs）
@@ -206,6 +239,7 @@
 // ---- list 变体行（单栏横排紧凑行）：无边线，悬停方形圆角灰底；
 // 名称/描述复用 .card-heading/.card-name/.card-desc 上下两行 ----
 .list-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -214,6 +248,7 @@
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s ease-in-out;
+  overflow: hidden;
 
   &:hover {
     background: @expert-fill;
@@ -229,10 +264,6 @@
     width: 20px;
     height: 20px;
   }
-}
-
-.list-actions {
-  margin-left: auto;
 }
 
 // ---- 付费统一专家卡弹窗：宽度随内容自适应,内容区去内边距由卡片自带

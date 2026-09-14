@@ -3,6 +3,10 @@
  * @description 技能/连接器/专家/资料库 四类能力 × 系统广场/团队空间 双数据源的
  * 能力选择弹窗：左侧类型导航 + 数据源 tab（技能另有「我启用的」页签）+ 搜索 +
  * 二级分类 pill（资料库另有「最近访问」页签置于空间 pill 最前）+ 列表区。
+ * 键盘导航：Tab 在弹窗内按停靠点轮询（左侧导航 → 数据源页签 → 搜索 →
+ * 关闭 → 分类 pill → 列表容器），各区方向键区内切换（分类 pill ←→、
+ * 列表 ↑↓←→ 逐项 + Enter 触发选择/开启，仅列表区聚焦时生效），Esc 关闭；
+ * 打开时默认聚焦弹窗根（无描边，同享列表方向键）。
  * 技能维度列表整体复用 SkillListView（接口/分页/启用开关/付费拦截内聚）；
  * 其余维度为弹窗内两列卡片网格（滚动加载 / 键盘导航）。
  * 数据层参考 pages/ExpertSkillConnector 的适配器方案在本组件内独立实现，
@@ -26,6 +30,11 @@ import type {
 } from '@/components/business-component/ExpertListView';
 import ExpertListView from '@/components/business-component/ExpertListView';
 import type {
+  KnowledgeListItem,
+  KnowledgeListSourceType,
+} from '@/components/business-component/KnowledgeListView';
+import KnowledgeListView from '@/components/business-component/KnowledgeListView';
+import type {
   SkillListItem,
   SkillListSourceType,
 } from '@/components/business-component/SkillListView';
@@ -38,7 +47,7 @@ import {
   SearchOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Input, InputRef, Menu, Modal, Spin, Tabs } from 'antd';
+import { Button, Input, InputRef, Menu, Modal, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -47,10 +56,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import CapabilityCard from './CapabilityCard';
 import useAgentUsedList from './hooks/useAgentUsedList';
 import useCapabilityCategories from './hooks/useCapabilityCategories';
-import useCapabilityResources from './hooks/useCapabilityResources';
 import useConnectedConnectors from './hooks/useConnectedConnectors';
 import useRecentRepoPages from './hooks/useRecentRepoPages';
 import useSkillEnabledList from './hooks/useSkillEnabledList';
@@ -64,14 +71,18 @@ import type {
 
 const cx = classNames.bind(styles);
 
-/** 卡片网格列数（键盘 ↑↓ 按行移动的步长） */
-const GRID_COLUMNS = 2;
+/**
+ * 内嵌列表卡片根节点选择器：SkillListView / ExpertListView /
+ * ConnectorListView 的卡片均以 data-*-key 标识，弹窗键盘导航经 DOM 代理
+ */
+const EMBED_CARD_SELECTOR =
+  '[data-skill-key], [data-expert-key], [data-connector-key], [data-knowledge-key]';
+
+/** 内嵌列表键盘聚焦态全局类（卡片样式内聚在各列表组件，经 DOM 类注入） */
+const EMBED_FOCUS_CLASS = 'capability-embed-card-focus';
 
 /** 搜索防抖时长 */
 const SEARCH_DEBOUNCE = 400;
-
-/** 技能维度占位空列表（列表由 SkillListView 自理，displayList 恒空） */
-const EMPTY_LIST: CapabilityItem[] = [];
 
 /** 左侧能力类型导航配置（图标使用带色板的 tinted 容器渲染） */
 const RESOURCE_MENUS: {
@@ -125,6 +136,12 @@ export interface CapabilityModalProps {
   onSelect: (item: CapabilityItem) => void;
   /** 初始能力类型，默认技能；不在 resourceTypes 允许范围内时回落首个可用类型 */
   defaultResourceType?: CapabilityTypeEnum;
+  /**
+   * 初始是否进入连接器「已连接」聚合页签，默认 false（数据源页签）；
+   * 仅连接器维度生效（其余维度传入无效）。会话工具栏已连接连接器
+   * 头像组入口专用——其余入口（'/' 触发等）一律落默认数据源页签
+   */
+  defaultConnectedView?: boolean;
   /** 选中后是否自动关闭，默认 true */
   closeOnSelect?: boolean;
   /** 开放的能力类型列表，缺省全部；用于按入口收敛可选范围（如专家仅首页开放） */
@@ -136,6 +153,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   onClose,
   onSelect,
   defaultResourceType = 'skill',
+  defaultConnectedView = false,
   closeOnSelect = true,
   resourceTypes,
 }) => {
@@ -180,8 +198,11 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   // 专家「最近召唤」聚合视图：true 时列表切到 used/list 全量数据，复位同上
   const [usedView, setUsedView] = useState<boolean>(false);
   // 连接器「已连接」聚合视图：true 时列表切到 connected=true 全量数据，
-  // 复位同上（断开最后一项后由回落 effect 自动退出）
-  const [connectedView, setConnectedView] = useState<boolean>(false);
+  // 复位同上（断开最后一项后由回落 effect 自动退出）；仅头像组入口经
+  // defaultConnectedView 显式指定时初始进入，其余入口落默认数据源页签
+  const [connectedView, setConnectedView] = useState<boolean>(
+    defaultConnectedView && initialResourceType === 'connector',
+  );
   // 资料库「最近访问」聚合视图：true 时列表切到 recently-accessed 全量数据
   // （跨全部空间，空间 pill 照常展示，「最近访问」pill 置于最前）；离开资料库
   // 维度或记录清空时复位（初始即资料库维度时默认进入）
@@ -193,6 +214,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   const isSkill = resourceType === 'skill';
   const isExpert = resourceType === 'expert';
   const isConnector = resourceType === 'connector';
+  const isKnowledge = resourceType === 'knowledge';
 
   // 分类字典（system：内容分类；team：空间列表，个人空间优先）
   const categories = useCapabilityCategories(resourceType, source);
@@ -244,17 +266,6 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     return Number(category) || defaultSpaceId;
   }, [source, resourceType, category, defaultSpaceId, recentView]);
 
-  // 归一化列表数据
-  const { list, loading, error, hasMore, loadMore } = useCapabilityResources({
-    resourceType,
-    source,
-    category,
-    keyword,
-    spaceId,
-    spaceIds: publishedSpaceIds,
-    pageSize: 20,
-  });
-
   // 技能「我启用的」列表：技能维度激活时拉取——接入 SkillListView 后仅承担
   // 「我启用的」页签可见性判定与清空回落（列表渲染由组件自理），组件内开关
   // 变更经 onEnabledChange 通知此处 reload 同步
@@ -278,11 +289,9 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
 
   // 资料库「最近访问」列表：资料库维度激活时拉取（门户最近访问接口，
   // 访问记录 ∪ 我编辑过，跨全部空间），同为聚合视图数据源
-  const {
-    list: recentList,
-    loading: recentLoading,
-    loaded: recentLoaded,
-  } = useRecentRepoPages(open && resourceType === 'knowledge');
+  const { list: recentList, loaded: recentLoaded } = useRecentRepoPages(
+    open && resourceType === 'knowledge',
+  );
   /** 「最近访问」pill 仅资料库维度且有记录时展示（首拉完成前不显示，防空闪） */
   const showRecentTab =
     resourceType === 'knowledge' && recentLoaded && recentList.length > 0;
@@ -303,6 +312,11 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   const connectorListType: ConnectorListSourceType = connectedView
     ? 'connected'
     : source;
+
+  /** 资料库列表场景（KnowledgeListView）：「最近访问」聚合或指定空间树 */
+  const knowledgeListType: KnowledgeListSourceType = recentView
+    ? 'recent'
+    : 'space';
 
   /** 连接器连接态变更（组件内闭环）：重拉「已连接」列表同步页签可见性与回落 */
   const handleConnectorConnectedChange = useCallback(() => {
@@ -373,28 +387,6 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     },
     [expertListType, onSelect, onClose, closeOnSelect],
   );
-
-  /**
-   * 列表数据分流（资料库维度）：「最近访问」聚合视图 = 全量数组按关键字
-   * 客户端过滤（无分页）；否则为空间树的服务端分页列表。技能/专家/连接器
-   * 维度由 SkillListView / ExpertListView / ConnectorListView 自理
-   * （此处恒为空数组）。
-   */
-  const displayList = useMemo(() => {
-    if (isSkill || isExpert || isConnector) {
-      return EMPTY_LIST;
-    }
-    if (!recentView) {
-      return list;
-    }
-    const kw = keyword.trim().toLowerCase();
-    if (!kw) return recentList;
-    return recentList.filter(
-      (item) =>
-        item.name?.toLowerCase().includes(kw) ||
-        item.description?.toLowerCase().includes(kw),
-    );
-  }, [isSkill, isExpert, isConnector, recentView, list, recentList, keyword]);
 
   // 搜索防抖
   useEffect(() => {
@@ -488,15 +480,125 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     }
   }, [recentView, recentLoaded, recentList.length]);
 
-  // 列表长度变化时收敛聚焦序号（避免越界）
-  useEffect(() => {
-    setFocusIndex((index) =>
-      Math.min(index, Math.max(0, displayList.length - 1)),
-    );
-  }, [displayList.length]);
-
-  // 弹窗打开时聚焦弹窗根节点，保证键盘事件可达（Esc/方向键/回车）
+  // 弹窗内容根节点：键盘事件挂载点（onKeyDown），列表停靠点见
+  // [data-capability-list] 容器
   const rootRef = useRef<HTMLDivElement | null>(null);
+
+  /** 内嵌列表卡片集合（四维度列表组件，DOM 顺序即列表顺序） */
+  const getEmbedCards = () =>
+    Array.from(
+      rootRef.current?.querySelectorAll<HTMLElement>(EMBED_CARD_SELECTOR) ?? [],
+    );
+
+  // 内嵌卡片数量变化时收敛聚焦序号（避免越界；effects 后于 DOM 提交执行）
+  useEffect(() => {
+    const count = getEmbedCards().length;
+    setFocusIndex((index) => Math.min(index, Math.max(0, count - 1)));
+  });
+
+  /**
+   * Tab 轮询停靠点（focus trap）：焦点按「左侧类型导航 → 数据源页签 →
+   * 搜索 → 关闭 → 分类 pill → 列表」在弹窗内循环（与视觉阅读顺序一致），
+   * Shift 反向；不可用分组（资料库无数据源页签、聚合视图无分类 pill）自动
+   * 跳过。Tab 只换区不操作，停靠时焦点落在各分组当前选中项，区内切换交给
+   * 各分组自身方向键（antd Menu/Tabs 内置，分类 pill 由本组件接管 ←→）；
+   * 列表停靠点为列表容器（与 aria-activedescendant 配对供读屏感知聚焦项），
+   * ↑↓/Enter 走列表键盘导航。
+   */
+  const getFocusStops = (): {
+    region: string | null;
+    target: HTMLElement | null;
+  }[] => {
+    const root = rootRef.current;
+    if (!root) {
+      return [];
+    }
+    const pillsRow = root.querySelector('[data-capability-pills]');
+    return [
+      {
+        // 左侧类型导航：当前选中项（异常时回落首项）
+        region: '[role="menu"]',
+        target:
+          root.querySelector<HTMLElement>('.ant-menu-item-selected') ??
+          root.querySelector<HTMLElement>('[role="menuitem"]'),
+      },
+      {
+        // 数据源页签：当前激活 tab（资料库维度无页签行）
+        region: '[role="tablist"]',
+        target:
+          resourceType === 'knowledge'
+            ? null
+            : root.querySelector<HTMLElement>(
+                '[role="tab"][aria-selected="true"]',
+              ) ?? root.querySelector<HTMLElement>('[role="tab"]'),
+      },
+      {
+        // 搜索：展开态定位内层 input（antd Input 的 data-* 落在包装层），
+        // 收起态属性在按钮自身（属性选择器直接命中，非后代组合器）
+        region: '[data-capability-search]',
+        target: root.querySelector<HTMLElement>(
+          '[data-capability-search] input, button[data-capability-search]',
+        ),
+      },
+      {
+        region: '[data-capability-close]',
+        target: root.querySelector<HTMLElement>('[data-capability-close]'),
+      },
+      {
+        // 分类 pill：当前选中 pill（聚合视图/无分类时无目标即跳过分组）
+        region: '[data-capability-pills]',
+        target:
+          pillsRow?.querySelector<HTMLElement>(
+            `.${styles['category-pill-active']}`,
+          ) ??
+          pillsRow?.querySelector<HTMLElement>(`.${styles['category-pill']}`) ??
+          null,
+      },
+      {
+        // 列表：停靠列表容器（资料库网格 / 内嵌列表外层停靠容器）
+        region: null,
+        target:
+          root.querySelector<HTMLElement>('[data-capability-list]') ?? root,
+      },
+    ];
+  };
+
+  /**
+   * Tab 轮询步进：定位当前分区后移到上/下一停靠点，焦点不出弹窗。
+   * Tab 只换区不操作——区内切换一律交给各分组自身方向键
+   * （左侧导航 ↑↓ / 数据源页签与分类 pill ←→ / 列表容器 ↑↓←→，
+   * 列表导航仅在焦点位于列表容器时生效）
+   */
+  const moveFocusStop = (backward: boolean) => {
+    const stops = getFocusStops().filter((stop) => stop.target);
+    if (!stops.length) {
+      return;
+    }
+    const active = document.activeElement;
+    const inRoot =
+      !!active &&
+      active !== document.body &&
+      !!rootRef.current?.contains(active);
+    // 当前分区 = activeElement 落入某停靠 region；列表分区 region 为空作
+    // 兜底（root 内未命中其余分区的焦点一律按列表区处理，含初始根聚焦）
+    let index = stops.findIndex(
+      (stop) =>
+        !!inRoot &&
+        (stop.region
+          ? !!active?.closest(stop.region)
+          : stop.target === active || !!stop.target?.contains(active)),
+    );
+    if (index < 0) {
+      index = stops.findIndex((stop) => !stop.region);
+    }
+    const next = backward
+      ? (index - 1 + stops.length) % stops.length
+      : (index + 1) % stops.length;
+    stops[next].target?.focus();
+  };
+
+  // 弹窗打开时聚焦弹窗根节点：outline:none 无描边（避免开屏即显聚焦框），
+  // 根节点同属列表区（方向键/回车即时可用），并保证键盘事件可达（Tab/Esc）
   useEffect(() => {
     if (open) {
       const timer = window.setTimeout(() => rootRef.current?.focus(), 0);
@@ -515,24 +617,48 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
 
   // 键盘聚焦项滚动跟随：仅键盘导航时滚动（鼠标 hover 同样会改 focusIndex，
   // 若跟随滚动会在加载新页/悬停底部卡片时把滚动条拽走）
-  const listRef = useRef<HTMLDivElement | null>(null);
   const keyboardNavRef = useRef<boolean>(false);
   useEffect(() => {
     if (!keyboardNavRef.current) {
       return;
     }
     keyboardNavRef.current = false;
-    listRef.current
-      ?.querySelector('[aria-selected="true"]')
-      ?.scrollIntoView?.({ block: 'nearest' });
-  }, [focusIndex, displayList]);
+    getEmbedCards()[focusIndex]?.scrollIntoView?.({ block: 'nearest' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusIndex]);
+
+  // 内嵌列表键盘聚焦高亮：focusIndex 命中卡片时注入全局聚焦类（卡片样式
+  // 内聚在各列表组件、无法经 props 传入，DOM 类切换为最小侵入方案；列表
+  // 重渲染时 React 会整体重写 className，残留高亮随之自动失效）
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) {
+      return;
+    }
+    root
+      .querySelectorAll(`.${EMBED_FOCUS_CLASS}`)
+      .forEach((el) => el.classList.remove(EMBED_FOCUS_CLASS));
+    if (focusIndex >= 0) {
+      getEmbedCards()[focusIndex]?.classList.add(EMBED_FOCUS_CLASS);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusIndex]);
 
   /**
-   * 连接器/资料库选中（无付费拦截，技能/专家拦截已内聚对应列表组件）
+   * 资料选中（KnowledgeListView 直调,无付费拦截）：映射回弹窗选中契约
+   * （slugId/pageType 随行带出供 chip 插入链路），按 closeOnSelect 收口
    */
-  const handleSelect = useCallback(
-    (item: CapabilityItem) => {
-      onSelect(item);
+  const handleKnowledgeSelect = useCallback(
+    (doc: KnowledgeListItem) => {
+      onSelect({
+        key: doc.key,
+        resourceType: 'knowledge',
+        source: 'team',
+        rawId: doc.rawId,
+        slugId: doc.slugId,
+        name: doc.name,
+        pageType: doc.pageType,
+      });
       if (closeOnSelect) {
         onClose();
       }
@@ -540,9 +666,27 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     [onSelect, onClose, closeOnSelect],
   );
 
-  /** 键盘导航：↑↓ 按行移动（步长=列数）、←→ 逐项移动、Enter 选中、Esc 关闭 */
+  /**
+   * 键盘导航：Tab 弹窗内停靠点轮询（focus trap）只换区，区内切换交各分组
+   * 自身方向键；列表 ↑↓←→ 逐项切换（↓/→ 下一项、↑/← 上一项）+ Home/End
+   * 首末项 + Enter 触发卡片主操作（技能/专家选中、连接器开启开关），仅在
+   * 焦点位于列表区（列表容器或弹窗根）时生效；Esc 任意位置统一关闭。
+   * 技能/专家/连接器维度列表经 DOM 卡片代理，保留组件内付费拦截语义
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) {
+      return;
+    }
+    // Tab：焦点在弹窗内轮询（Shift 反向；带修饰键的组合保留浏览器原生行为）
+    if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      moveFocusStop(e.shiftKey);
+      return;
+    }
+    // Esc：任意焦点位置（含输入框/菜单/页签）统一关闭弹窗
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
       return;
     }
     const inInput = e.target instanceof HTMLInputElement;
@@ -550,93 +694,119 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     if (inInput && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
       return;
     }
-    // antd Tabs/Menu 自带方向键/回车导航：焦点落在其上时交还组件自身处理，
-    // 避免与列表键盘导航双触发（Esc 仍统一走弹窗关闭）
+    // 分类 pill 行：←→ 循环切换、Home/End 首末项（移动即激活，
+    // 与 antd Tabs 方向键行为一致）
     if (
-      e.key !== 'Escape' &&
+      e.key === 'ArrowLeft' ||
+      e.key === 'ArrowRight' ||
+      e.key === 'Home' ||
+      e.key === 'End'
+    ) {
+      const pillRow =
+        e.target instanceof Element
+          ? e.target.closest('[data-capability-pills]')
+          : null;
+      if (pillRow) {
+        const pills = Array.from(
+          pillRow.querySelectorAll<HTMLButtonElement>(
+            `.${styles['category-pill']}`,
+          ),
+        );
+        const current = pills.findIndex(
+          (pill) => pill === document.activeElement,
+        );
+        let next: HTMLButtonElement | undefined;
+        if (e.key === 'Home') {
+          next = pills[0];
+        } else if (e.key === 'End') {
+          next = pills[pills.length - 1];
+        } else if (current >= 0 && pills.length > 1) {
+          const offset = e.key === 'ArrowRight' ? 1 : -1;
+          next = pills[(current + offset + pills.length) % pills.length];
+        }
+        if (next && next !== document.activeElement) {
+          next.focus();
+          next.click();
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+    }
+    // antd Tabs/Menu 自带方向键/回车导航：焦点落在其上时交还组件自身处理，
+    // 避免与列表键盘导航双触发
+    if (
       e.target instanceof Element &&
       e.target.closest('[role="tab"], [role="menuitem"]')
     ) {
       return;
     }
-    // 新增按钮保留原生 Enter/Space 激活语义，避免误选列表中的卡片。
+    // 按钮保留原生 Enter/Space 激活语义，避免误选列表中的卡片。
     if (
       e.target instanceof HTMLButtonElement &&
       (e.key === 'Enter' || e.key === ' ')
     )
       return;
-    const columns = listRef.current
-      ? getComputedStyle(listRef.current).gridTemplateColumns.split(' ').length
-      : GRID_COLUMNS;
-    const last = Math.max(0, displayList.length - 1);
-    // -1（未聚焦）起步：↓/→ 进入首项，↑/← 保持未聚焦，Enter 无选中项即空操作
-    const actions: Record<string, (() => void) | undefined> = {
-      ArrowDown: () =>
-        setFocusIndex((i) => (i < 0 ? 0 : Math.min(i + columns, last))),
-      ArrowUp: () =>
-        setFocusIndex((i) => (i < 0 ? -1 : Math.max(i - columns, 0))),
-      ArrowRight: () =>
-        setFocusIndex((i) => (i < 0 ? 0 : Math.min(i + 1, last))),
-      ArrowLeft: () => setFocusIndex((i) => (i < 0 ? -1 : Math.max(i - 1, 0))),
-      Home: () => setFocusIndex(0),
-      End: () => setFocusIndex(last),
-      Enter: () => {
-        const item = displayList[focusIndex];
-        if (item) {
-          handleSelect(item);
-        }
-      },
-      Escape: () => onClose(),
-    };
-    const action = actions[e.key];
-    if (action) {
-      e.preventDefault();
-      e.stopPropagation();
-      // 方向键/Home/End 属于键盘导航，聚焦项需要滚动跟随
-      if (e.key !== 'Enter' && e.key !== 'Escape') {
-        keyboardNavRef.current = true;
-      }
-      action();
-    }
-  };
-
-  // 视图层加载态/翻页标记（资料库维度；技能/专家/连接器由 SkillListView /
-  // ExpertListView / ConnectorListView 自理）：「最近访问」为全量数组无分页,
-  // 滚动加载与自动补拉仅在资料库空间树的分页视图生效
-  const viewLoading = recentView ? recentLoading : loading;
-  const viewHasMore = recentView ? false : hasMore;
-
-  /** 滚动触底加载下一页（尾部追加，不改既有内容位置） */
-  const handleListScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    if (
-      el.scrollHeight - el.scrollTop - el.clientHeight < 48 &&
-      !viewLoading &&
-      viewHasMore
-    ) {
-      loadMore();
-    }
-  };
-
-  // 列表未填满容器且还有数据时自动补拉（首屏数据不足一屏的场景）
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el || viewLoading || !viewHasMore || displayList.length === 0) {
+    // 列表键盘导航仅在焦点位于列表区（列表容器或弹窗根）时生效——其余
+    // 分组的方向键只服务自身分组（分类 pill 上 ↑↓ 不联动列表）；弹窗根
+    // 为开屏默认聚焦点（无描边），同享列表方向键
+    const inListRegion =
+      e.target === rootRef.current ||
+      (e.target instanceof Element &&
+        !!e.target.closest('[data-capability-list]'));
+    if (!inListRegion) {
       return;
     }
-    if (el.scrollHeight <= el.clientHeight) {
-      loadMore();
+    // 四维度：列表内聚在 SkillListView / ExpertListView / ConnectorListView /
+    // KnowledgeListView，键盘导航经 DOM 卡片序号代理 + 聚焦类高亮；
+    // Enter 触发卡片主操作（技能/专家选中；连接器=卡内连接开关；
+    // 资料=悬停「选择」按钮,卡片主体无 click）
+    {
+      const cards = getEmbedCards();
+      const last = cards.length - 1;
+      if (last >= 0) {
+        // 逐项切换：↓/→ 下一项、↑/← 上一项（-1 未聚焦起步：↓/→ 进首项）
+        const actions: Record<string, (() => void) | undefined> = {
+          ArrowDown: () =>
+            setFocusIndex((i) => (i < 0 ? 0 : Math.min(i + 1, last))),
+          ArrowUp: () =>
+            setFocusIndex((i) => (i < 0 ? -1 : Math.max(i - 1, 0))),
+          ArrowRight: () =>
+            setFocusIndex((i) => (i < 0 ? 0 : Math.min(i + 1, last))),
+          ArrowLeft: () =>
+            setFocusIndex((i) => (i < 0 ? -1 : Math.max(i - 1, 0))),
+          Home: () => setFocusIndex(0),
+          End: () => setFocusIndex(last),
+          Enter: () => {
+            const card = cards[focusIndex];
+            if (!card) {
+              return;
+            }
+            if (isConnector) {
+              card.querySelector<HTMLElement>('[role="switch"]')?.click();
+              return;
+            }
+            if (isKnowledge) {
+              // 资料卡仅「选择」按钮可选中（卡片主体无 click）
+              card.querySelector<HTMLElement>('button')?.click();
+              return;
+            }
+            card.click();
+          },
+        };
+        const action = actions[e.key];
+        if (action) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.key !== 'Enter') {
+            keyboardNavRef.current = true;
+          }
+          action();
+        }
+      }
+      return;
     }
-  }, [displayList, viewLoading, viewHasMore, loadMore]);
-
-  // 团队空间维度等待空间字典/空间 ID 就绪,否则空结果会卡在加载态;
-  // 「最近访问」聚合视图凭首拉完成判定（失败也会置 loaded,空态不卡加载）
-  const waitingSpace =
-    !recentView && source === 'team' && !spaceId && !publishedSpaceIds?.length;
-  const initialLoading =
-    displayList.length === 0 &&
-    (recentView ? !recentLoaded || recentLoading : loading || waitingSpace);
-
+  };
   return (
     <Modal
       open={open}
@@ -657,7 +827,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
         className={cx('flex', styles.root)}
         onKeyDown={handleKeyDown}
       >
-        {/* 左侧：标题 + 能力类型导航 + 快捷键提示 */}
+        {/* 左侧：标题 + 能力类型导航 */}
         <aside className={cx('flex', 'flex-col', styles.sidebar)}>
           <div className={cx(styles['sidebar-header'])}>
             <div className={cx(styles['sidebar-title'])}>
@@ -692,13 +862,6 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
               ),
             }))}
           />
-          <div className={cx('flex', 'items-center', styles['sidebar-hints'])}>
-            <span>{t('PC.Components.CapabilityModal.hintNav')}</span>
-            <i>·</i>
-            <span>{t('PC.Components.CapabilityModal.hintSelect')}</span>
-            <i>·</i>
-            <span>{t('PC.Components.CapabilityModal.hintClose')}</span>
-          </div>
         </aside>
 
         {/* 右侧：数据源 tab + 搜索（最上方右侧）+ 分类 pill + 卡片网格 */}
@@ -706,8 +869,12 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
           <header className={styles.header}>
             {resourceType === 'knowledge' ? (
               // 资料库=空间文档仓库，仅团队空间维度（repo 树接口 spaceId 必传），
-              // 无数据源切换，仅展示静态标题
-              <button type="button" className={styles['header-title']}>
+              // 无数据源切换，仅展示静态标题（纯展示不参与 Tab 轮询）
+              <button
+                type="button"
+                tabIndex={-1}
+                className={styles['header-title']}
+              >
                 {t('PC.Components.CapabilityModal.menuKnowledge')}
               </button>
             ) : (
@@ -780,11 +947,12 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
                 ]}
               />
             )}
-            {/* 右侧操作簇：搜索（常驻最上方右侧）+ 关闭 */}
+            {/* 右侧操作簇：搜索（常驻最上方右侧）+ 关闭；data-* 供 Tab 轮询定位 */}
             <div className={styles['header-actions']}>
               {searchOpen ? (
                 <Input
                   ref={searchInputRef}
+                  data-capability-search
                   className={styles['search-input']}
                   allowClear
                   size="small"
@@ -802,6 +970,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
                 <Button
                   type="text"
                   size="small"
+                  data-capability-search
                   className={styles['search-btn']}
                   aria-label={t(
                     'PC.Components.CapabilityModal.searchPlaceholder',
@@ -813,6 +982,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
               <Button
                 type="text"
                 size="small"
+                data-capability-close
                 className={styles['close-btn']}
                 aria-label={t('PC.Components.CapabilityModal.close')}
                 onClick={onClose}
@@ -826,11 +996,15 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
               「最近访问」pill 置于最前 */}
           {!usedView && !enabledView && !connectedView && (
             <div className={styles.toolbar}>
-              <div className={styles.categories}>
+              {/* 分类 pill 行：roving tabindex（仅选中项可 Tab 停靠，←→ 组内
+                  切换），data-* 供 Tab 轮询定位（aria-pressed 开关语义，
+                  不用 tablist/tab 角色避免与数据源页签区域判定混淆） */}
+              <div className={styles.categories} data-capability-pills>
                 {resourceType === 'knowledge' && showRecentTab && (
                   <button
                     type="button"
                     aria-pressed={recentView}
+                    tabIndex={recentView ? 0 : -1}
                     className={cx(styles['category-pill'], {
                       [styles['category-pill-active']]: recentView,
                     })}
@@ -844,6 +1018,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
                     key={item.key}
                     type="button"
                     aria-pressed={item.key === category && !recentView}
+                    tabIndex={item.key === category && !recentView ? 0 : -1}
                     className={cx(styles['category-pill'], {
                       [styles['category-pill-active']]:
                         item.key === category && !recentView,
@@ -860,117 +1035,63 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
             </div>
           )}
 
-          {/* 技能/专家/连接器维度：列表整体交给 SkillListView / ExpertListView /
-              ConnectorListView（接口/分页/开关/付费拦截/连接流程内聚）；
-              聚合视图顶部补留白对齐其他维度 */}
-          {isSkill ? (
-            <SkillListView
-              className={cx(styles['embed-list'], {
-                [styles['list-enabled']]: enabledView,
-              })}
-              type={skillListType}
-              keyword={keyword}
-              category={category}
-              spaceId={spaceId}
-              spaceIds={publishedSpaceIds}
-              onSelect={handleSkillSelect}
-              onEnabledChange={handleSkillEnabledChange}
-            />
-          ) : isExpert ? (
-            <ExpertListView
-              className={cx(styles['embed-list'], {
-                [styles['list-enabled']]: usedView,
-              })}
-              type={expertListType}
-              keyword={keyword}
-              category={category}
-              spaceId={spaceId}
-              spaceIds={publishedSpaceIds}
-              onSelect={handleExpertSelect}
-            />
-          ) : isConnector ? (
-            <ConnectorListView
-              className={cx(styles['embed-list'], {
-                [styles['list-enabled']]: connectedView,
-              })}
-              type={connectorListType}
-              keyword={keyword}
-              category={category}
-              spaceId={spaceId}
-              onConnectedChange={handleConnectorConnectedChange}
-            />
-          ) : (
-            /* 滚动容器常驻（三态在容器内切换）：避免加载完成时 Spin/网格互换 DOM 造成整屏闪跳 */
-            <div
-              ref={listRef}
-              role="listbox"
-              // 未聚焦（-1）时不指向任何项，避免读屏误报首卡
-              aria-activedescendant={
-                focusIndex >= 0 ? `capability-option-${focusIndex}` : undefined
-              }
-              className={cx('flex-1', styles.list, {
-                [styles['list-knowledge']]: resourceType === 'knowledge',
-                // 聚合视图（已连接）无分类 pill 行，列表顶部补留白
-                [styles['list-enabled']]: connectedView,
-              })}
-              onScroll={handleListScroll}
-            >
-              {initialLoading ? (
-                <div
-                  className={cx(
-                    'flex',
-                    'items-center',
-                    'content-center',
-                    styles['list-state'],
-                  )}
-                >
-                  <Spin size="large" />
-                </div>
-              ) : displayList.length === 0 ? (
-                <div
-                  className={cx(
-                    'flex',
-                    'items-center',
-                    'content-center',
-                    styles['list-state'],
-                  )}
-                >
-                  <Empty
-                    description={t(
-                      !recentView && error
-                        ? 'PC.Components.CapabilityModal.loadFailed'
-                        : 'PC.Common.Global.emptyData',
-                    )}
-                  />
-                </div>
-              ) : (
-                <>
-                  {displayList.map((item, index) => (
-                    <CapabilityCard
-                      key={item.key}
-                      item={item}
-                      index={index}
-                      focused={index === focusIndex}
-                      onSelect={handleSelect}
-                      onHover={setFocusIndex}
-                    />
-                  ))}
-                  {viewLoading && (
-                    <div
-                      className={cx(
-                        'flex',
-                        'items-center',
-                        'content-center',
-                        styles['list-loading'],
-                      )}
-                    >
-                      {t('PC.Components.CapabilityModal.loading')}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
+          {/* 四维度：列表整体交给 SkillListView / ExpertListView /
+              ConnectorListView / KnowledgeListView（接口/分页/开关/付费
+              拦截/连接流程内聚），外包停靠容器承载 Tab 轮询列表分组落点
+              （子列表 flex:1 填充）；聚合视图顶部补留白对齐其他维度 */}
+          <div
+            className={styles['embed-list-wrap']}
+            data-capability-list
+            tabIndex={-1}
+          >
+            {isSkill ? (
+              <SkillListView
+                className={cx(styles['embed-list'], {
+                  [styles['list-enabled']]: enabledView,
+                })}
+                type={skillListType}
+                keyword={keyword}
+                category={category}
+                spaceId={spaceId}
+                spaceIds={publishedSpaceIds}
+                onSelect={handleSkillSelect}
+                onEnabledChange={handleSkillEnabledChange}
+              />
+            ) : isExpert ? (
+              <ExpertListView
+                className={cx(styles['embed-list'], {
+                  [styles['list-enabled']]: usedView,
+                })}
+                type={expertListType}
+                keyword={keyword}
+                category={category}
+                spaceId={spaceId}
+                spaceIds={publishedSpaceIds}
+                onSelect={handleExpertSelect}
+              />
+            ) : isConnector ? (
+              <ConnectorListView
+                className={cx(styles['embed-list'], {
+                  [styles['list-enabled']]: connectedView,
+                })}
+                type={connectorListType}
+                keyword={keyword}
+                category={category}
+                spaceId={spaceId}
+                onConnectedChange={handleConnectorConnectedChange}
+              />
+            ) : (
+              <KnowledgeListView
+                className={cx(styles['embed-list'], {
+                  [styles['list-enabled']]: recentView,
+                })}
+                type={knowledgeListType}
+                keyword={keyword}
+                spaceId={spaceId}
+                onSelect={handleKnowledgeSelect}
+              />
+            )}
+          </div>
         </section>
       </div>
 

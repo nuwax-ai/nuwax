@@ -37,8 +37,11 @@ vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
 }));
 
+const apiConnectorConnectionToggleStatus = vi.hoisted(() => vi.fn());
+
 vi.mock('@/services/systemManage', () => ({
   apiConnectorProviderPageList,
+  apiConnectorConnectionToggleStatus,
 }));
 
 // 共享 hook mock：捕获组件传入的 updateItem（测试内模拟连接/断开成功回写）
@@ -240,8 +243,124 @@ describe('ConnectorListView·分页与连接流程', () => {
       ).toBe('true'),
     );
     expect(onConnectedChange).toHaveBeenCalledWith(
-      expect.objectContaining({ rawId: 'weather', connected: true }),
+      expect.objectContaining({
+        rawId: 'weather',
+        connected: true,
+        connectionEnabled: true,
+      }),
       true,
+    );
+  });
+
+  it('已启用关开关：仅停用（启停接口）,不执行断开', async () => {
+    apiConnectorProviderPageList.mockResolvedValue(
+      pageOf([
+        provider({
+          id: 9,
+          service: 'weather',
+          displayName: '天气',
+          connected: true,
+          connectionEnabled: true,
+        }),
+      ]),
+    );
+    apiConnectorConnectionToggleStatus.mockResolvedValue({
+      code: '0000',
+      data: null,
+    });
+    renderView({ type: 'system' });
+
+    await screen.findByText('天气');
+    expect(
+      switchOf('connector:system:weather')?.getAttribute('aria-checked'),
+    ).toBe('true');
+
+    // 关开关 → 启停接口(提供方主键 id 寻址, enabled=false),就地回弹
+    fireEvent.click(switchOf('connector:system:weather')!);
+    await waitFor(() =>
+      expect(apiConnectorConnectionToggleStatus).toHaveBeenCalledWith(9, false),
+    );
+    await waitFor(() =>
+      expect(
+        switchOf('connector:system:weather')?.getAttribute('aria-checked'),
+      ).toBe('false'),
+    );
+    // 状态标仍为「已连接」（停用不断开）
+    expect(
+      document.querySelector('[data-connector-key="connector:system:weather"]')
+        ?.textContent,
+    ).toContain('PC.Components.CapabilityModal.connected');
+  });
+
+  it('启停与断开的 loading 分离：关开关（停用）期间断开按钮不进 loading', async () => {
+    let resolveToggle: (v: { code: string; data: null }) => void = () => {};
+    apiConnectorProviderPageList.mockResolvedValue(
+      pageOf([
+        provider({
+          id: 9,
+          service: 'weather',
+          displayName: '天气',
+          connected: true,
+          connectionEnabled: true,
+        }),
+      ]),
+    );
+    apiConnectorConnectionToggleStatus.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveToggle = resolve;
+        }),
+    );
+    renderView({ type: 'system' });
+    await screen.findByText('天气');
+
+    // 关开关（停用）:请求挂起期间,开关 loading,断开按钮不 loading
+    fireEvent.click(switchOf('connector:system:weather')!);
+    const card = document.querySelector(
+      '[data-connector-key="connector:system:weather"]',
+    )!;
+    const disconnectBtn = card.querySelector('button[aria-label]')!;
+    // 断开按钮无 antd loading 态(loading 类不存在)
+    expect(disconnectBtn.className).not.toContain('ant-btn-loading');
+    resolveToggle({ code: '0000', data: null });
+    await waitFor(() =>
+      expect(
+        switchOf('connector:system:weather')?.getAttribute('aria-checked'),
+      ).toBe('false'),
+    );
+  });
+
+  it('已连接未启用开开关：启用（启停接口 enabled=true）', async () => {
+    apiConnectorProviderPageList.mockResolvedValue(
+      pageOf([
+        provider({
+          id: 9,
+          service: 'weather',
+          displayName: '天气',
+          connected: true,
+          connectionEnabled: false,
+        }),
+      ]),
+    );
+    apiConnectorConnectionToggleStatus.mockResolvedValue({
+      code: '0000',
+      data: null,
+    });
+    renderView({ type: 'system' });
+
+    await screen.findByText('天气');
+    expect(
+      switchOf('connector:system:weather')?.getAttribute('aria-checked'),
+    ).toBe('false');
+
+    fireEvent.click(switchOf('connector:system:weather')!);
+    await waitFor(() =>
+      expect(apiConnectorConnectionToggleStatus).toHaveBeenCalledWith(9, true),
+    );
+    await waitFor(() =>
+      expect(
+        switchOf('connector:system:weather')?.getAttribute('aria-checked'),
+      ).toBe('true'),
     );
   });
 });

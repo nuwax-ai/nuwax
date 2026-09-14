@@ -1506,6 +1506,8 @@ const ChatInputUnifiedImpl: React.FC<
                           onClick={() =>
                             mentionEditorRef.current?.openCapabilityWithType?.(
                               'connector',
+                              // 头像组入口专用：初始进入「已连接」聚合页签
+                              { connectedView: true },
                             )
                           }
                           onKeyDown={(e) => {
@@ -1513,6 +1515,7 @@ const ChatInputUnifiedImpl: React.FC<
                               e.preventDefault();
                               mentionEditorRef.current?.openCapabilityWithType?.(
                                 'connector',
+                                { connectedView: true },
                               );
                             }
                           }}

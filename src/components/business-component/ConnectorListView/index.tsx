@@ -19,11 +19,19 @@
  */
 import ConnectorConnectModal from '@/components/business-component/ConnectorConnectModal';
 import ConnectorDeviceAuthModal from '@/components/business-component/ConnectorDeviceAuthModal';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useConnectorConnect from '@/hooks/useConnectorConnect';
 import { t } from '@/services/i18nRuntime';
+import { apiConnectorConnectionToggleStatus } from '@/services/systemManage';
 import { Empty, Spin } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import ConnectorGridCard from './ConnectorGridCard';
 import ConnectorListRow from './ConnectorListRow';
 import useConnectorList from './hooks/useConnectorList';
@@ -50,9 +58,10 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
     pageSize,
   });
 
-  // ---- 连接/断开（共享 hook,oauth2/扫码/凭据/断开寻址分流）----
+  // ---- 连接/断开/启停（共享 hook + 启用状态接口）----
   // team 视图带 spaceId 发起；connected/search/system 视图按系统口径不带。
-  // listRef 镜像最新列表：连接态变更时就地回写 + 通知宿主（同步「已连接」页签）
+  // listRef 镜像最新列表：连接态变更时就地回写（连接即启用、断开即停用）
+  // + 通知宿主（同步「已连接」页签）
   const listRef = useRef<ConnectorListItem[]>(list);
   listRef.current = list;
   const connectSource = type === 'team' ? 'team' : 'system';
@@ -71,25 +80,71 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
     source: connectSource,
     spaceId: connectSource === 'team' ? spaceId : undefined,
     updateItem: (key, patch) => {
-      updateItem(key, patch);
+      // 连接成功 → 连接即启用；断开 → 一并停用（开关回落）
+      const merged =
+        patch.connected === undefined
+          ? patch
+          : { ...patch, connectionEnabled: patch.connected };
+      updateItem(key, merged);
       if (patch.connected !== undefined) {
         const item = listRef.current.find((entry) => entry.key === key);
         if (item) {
-          onConnectedChange?.(
-            { ...item, connected: patch.connected },
-            patch.connected,
-          );
+          onConnectedChange?.({ ...item, ...merged }, patch.connected);
         }
       }
     },
   });
-  const busyKeys = [...connectingIds, ...disconnectingIds];
+  // 启停请求中的条目 key（开关 loading 防重复）
+  const [togglingKeys, setTogglingKeys] = useState<string[]>([]);
+  // 开关 loading：连接中 + 启停中（不含断开——断开是独立按钮独立 loading）
+  const switchBusyKeys = useMemo(
+    () => [...connectingIds, ...togglingKeys],
+    [connectingIds, togglingKeys],
+  );
+  // 断开按钮 loading：仅断开中（启停不应带亮断开按钮）
+  const disconnectBusyKeys = disconnectingIds;
 
-  /** 开关切换：未连接→连接（按 authType 分流）；已连接→断开 */
+  /** 切换连接启用状态（连接器提供方主键 id 寻址），成功后就地回写开关 */
+  const toggleConnectionEnabled = useCallback(
+    async (item: ConnectorListItem, enabled: boolean) => {
+      if (item.connectorId === undefined) {
+        return;
+      }
+      setTogglingKeys((prev) => [...prev, item.key]);
+      try {
+        const res = await apiConnectorConnectionToggleStatus(
+          item.connectorId,
+          enabled,
+        );
+        if (res?.code === SUCCESS_CODE) {
+          updateItem(item.key, { connectionEnabled: enabled });
+        }
+      } finally {
+        setTogglingKeys((prev) => prev.filter((key) => key !== item.key));
+      }
+    },
+    [updateItem],
+  );
+
+  /**
+   * 启用开关切换：
+   * - 未连接/未启用 → 发起连接（连接即启用，按 authType 分流
+   *   oauth2 授权窗 / 扫码 / 凭据弹窗）；
+   * - 已连接 → 切换连接启用状态（POST .../connections/{id}/status），
+   *   关闭开关仅停用、**不执行断开**——断开是独立的 hover 按钮。
+   */
   const handleToggleConnect = useCallback(
     (item: ConnectorListItem) => {
-      if (item.connected) {
-        void handleDisconnect({
+      const enabled =
+        item.connected === true && item.connectionEnabled !== false;
+      if (!enabled) {
+        if (item.connected) {
+          // 已连接未启用 → 启用
+          void toggleConnectionEnabled(item, true);
+          return;
+        }
+        // 未连接 → 连接并启用（连接成功经 updateItem 回写启用态）
+        void handleConnect({
           id: item.key,
           service: item.rawId !== undefined ? String(item.rawId) : undefined,
           authType: item.authType,
@@ -97,17 +152,13 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
         });
         return;
       }
-      void handleConnect({
-        id: item.key,
-        service: item.rawId !== undefined ? String(item.rawId) : undefined,
-        authType: item.authType,
-        connected: item.connected,
-      });
+      // 已启用 → 仅停用（不断开）
+      void toggleConnectionEnabled(item, false);
     },
-    [handleConnect, handleDisconnect],
+    [handleConnect, toggleConnectionEnabled],
   );
 
-  /** 「断开」按钮：已连接态直接断开 */
+  /** 「断开」按钮：已连接态直接断开（独立于开关的停用语义） */
   const handleDisconnectClick = useCallback(
     (item: ConnectorListItem) => {
       void handleDisconnect({
@@ -148,7 +199,10 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
   const cardProps = {
     onToggleConnect: handleToggleConnect,
     onDisconnect: handleDisconnectClick,
-    busyKeys,
+    // 开关 loading（连接+启停）与断开按钮 loading（仅断开）分离,
+    // 启停时不再带亮断开按钮
+    busyKeys: switchBusyKeys,
+    disconnectBusyKeys,
   };
 
   return (

@@ -12,7 +12,6 @@ import { apiPublishedSkillEnableList } from '@/services/square';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CapabilityItem } from '../types';
-import { mapPublishedItem } from './useCapabilityResources';
 
 /**
  * 「我启用的」页签条目归一化：source 标记为 enabled（区别于 system/team 列表 key）。
@@ -21,7 +20,16 @@ import { mapPublishedItem } from './useCapabilityResources';
  * 按字段渲染会把启用中的开关错显示为未启用）
  */
 const mapEnabledItem = (item: SquarePublishedItemInfo): CapabilityItem => ({
-  ...mapPublishedItem(item, 'skill', 'enabled'),
+  key: `skill:enabled:${item.id}`,
+  resourceType: 'skill',
+  source: 'enabled',
+  rawId: item.id,
+  targetId: item.targetId,
+  name: item.name,
+  description: item.description,
+  icon: item.icon,
+  paymentRequired: item.paymentRequired,
+  subscribed: item.subscribed,
   enabled: true,
 });
 

@@ -634,7 +634,18 @@
 .connector-group {
   flex-shrink: 0;
   padding: 0 2px;
+  border-radius: 999px;
   cursor: pointer;
+
+  &:hover {
+    background: @colorFillSecondary;
+  }
+
+  // 键盘聚焦态（Tab 停靠）：主色内缩描边，与能力弹窗停靠控件同语言
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, @colorPrimary 55%, transparent);
+    outline-offset: -2px;
+  }
 }
 
 .connector-avatar {

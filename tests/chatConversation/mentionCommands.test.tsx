@@ -37,6 +37,8 @@ const capabilityModalProps = vi.hoisted(
       onSelect?: (item: unknown) => void;
       onClose?: () => void;
       resourceTypes?: string[];
+      defaultResourceType?: string;
+      defaultConnectedView?: boolean;
     }),
 );
 vi.mock('@/components/ChatInputHome/CapabilityModal', () => ({
@@ -376,6 +378,43 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
     expect(onChange).toHaveBeenLastCalledWith('');
     expect(screen.queryByRole('listbox')).toBeNull();
   });
+
+  it(
+    '每次打开回到默认状态：头像组定位连接器·已连接后，' /
+      ' 再开回落 skill 默认页签',
+    () => {
+      const ref = createRef<MentionEditorHandle>();
+      const { container } = render(
+        <MentionEditor
+          ref={ref}
+          autoFocus={false}
+          onPaste={vi.fn()}
+          onChange={vi.fn()}
+        />,
+      );
+      // 头像组编程唤起：连接器维度 + 「已连接」聚合页签
+      act(() => {
+        ref.current?.openCapabilityWithType?.('connector', {
+          connectedView: true,
+        });
+      });
+      expect(capabilityModalProps.open).toBe(true);
+      expect(capabilityModalProps.defaultResourceType).toBe('connector');
+      expect(capabilityModalProps.defaultConnectedView).toBe(true);
+
+      // 关闭后以 '/' 触发再开：回到最初默认状态（skill + 默认数据源页签）
+      act(() => {
+        capabilityModalProps.onClose?.();
+      });
+      const editor = container.querySelector(
+        '[contenteditable="true"]',
+      ) as HTMLElement;
+      type(editor, '/');
+      expect(capabilityModalProps.open).toBe(true);
+      expect(capabilityModalProps.defaultResourceType).toBe('skill');
+      expect(capabilityModalProps.defaultConnectedView).toBe(false);
+    },
+  );
 
   it('文本中间出现 / 触发时清除整个触发串，两侧文字保留', () => {
     const { container } = render(

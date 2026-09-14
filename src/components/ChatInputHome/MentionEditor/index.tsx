@@ -491,12 +491,16 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     /** capabilityOpen 的同步镜像：删除触发串会经 commitEditorChange 重入检测，用于防递归 */
     const capabilityOpenRef = useRef<boolean>(false);
     /**
-     * 能力弹窗初始页签（编程唤起时指定；'/' 触发沿用上次停留页签）。
+     * 能力弹窗初始页签（仅头像组编程唤起时指定；'/' 触发回落默认 skill）。
      * 配套 resetKey 强制重挂 CapabilityModal——弹窗组件常驻不卸载，
-     * useState 初始值只在挂载时生效，不重挂则换不开页签
+     * useState 初始值只在挂载时生效，不重挂则换不开页签；两种打开
+     * 方式都重挂，保证每次打开回到最初默认状态（页签/搜索/聚合视图复位）
      */
     const [capabilityDefaultType, setCapabilityDefaultType] =
       useState<CapabilityTypeEnum>('skill');
+    /** 编程唤起时是否初始进入连接器「已连接」聚合页签（仅头像组入口传 true） */
+    const [capabilityInitialConnected, setCapabilityInitialConnected] =
+      useState<boolean>(false);
     const [capabilityResetKey, setCapabilityResetKey] = useState<number>(0);
     /**
      * 打开能力弹窗的句柄（ref 转发：openCapabilityModal 依赖 commitEditorChange，
@@ -1126,11 +1130,17 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     /**
      * 编程唤起能力弹窗并定位到指定类型页签（工具栏已连接连接器头像组入口）。
      * 与 '/' 触发不同：无触发串可删、不经 commitEditorChange，直接重挂弹窗
-     * 换初始页签后打开；类型不在开放范围时由弹窗自身回落首个可用类型
+     * 换初始页签后打开；类型不在开放范围时由弹窗自身回落首个可用类型。
+     * opts.connectedView=true 时连接器维度初始进入「已连接」聚合页签，
+     * 仅头像组入口使用——其余编程唤起一律落默认数据源页签
      */
     const openCapabilityWithType = useCallback(
-      (resourceType: CapabilityTypeEnum) => {
+      (
+        resourceType: CapabilityTypeEnum,
+        opts?: { connectedView?: boolean },
+      ) => {
         setCapabilityDefaultType(resourceType);
+        setCapabilityInitialConnected(opts?.connectedView ?? false);
         setCapabilityResetKey((key) => key + 1);
         capabilityOpenRef.current = true;
         setCapabilityOpen(true);
@@ -1298,7 +1308,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       ],
     );
 
-    /** 打开能力弹窗：记录光标 → 删除触发串 → 同步编辑器状态 → 打开 */
+    /** 打开能力弹窗：记录光标 → 删除触发串 → 同步编辑器状态 → 重置默认状态 → 打开 */
     const openCapabilityModal = useCallback(
       (searchText: string) => {
         const editor = editorRef.current;
@@ -1314,6 +1324,11 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           recordUndoSnapshot();
           syncEditorStateFromDom();
         }
+        // 每次打开回到最初默认状态：重挂弹窗使页签/搜索/聚合视图全量复位
+        //（连接器·已连接初始页签仅头像组入口经 openCapabilityWithType 指定）
+        setCapabilityDefaultType('skill');
+        setCapabilityInitialConnected(false);
+        setCapabilityResetKey((key) => key + 1);
         capabilityOpenRef.current = true;
         setCapabilityOpen(true);
       },
@@ -1817,7 +1832,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         </div>
 
         {/* 添加能力大弹窗（portal 渲染，与光标浮层互斥）；
-            resetKey 强制重挂以应用编程唤起指定的初始页签（'/' 触发沿用上次页签） */}
+            resetKey 强制重挂——每次打开回到默认状态或编程唤起指定的初始页签 */}
         <CapabilityModal
           key={capabilityResetKey}
           open={capabilityOpen}
@@ -1825,6 +1840,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           onSelect={handleCapabilitySelect}
           resourceTypes={capabilityResourceTypes}
           defaultResourceType={capabilityDefaultType}
+          defaultConnectedView={capabilityInitialConnected}
         />
       </div>
     );

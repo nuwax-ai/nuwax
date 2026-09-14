@@ -58,17 +58,15 @@ const ExpertGridCard: React.FC<ExpertCardBaseProps> = ({
             {item.description}
           </div>
         </div>
+        {/* 最近召唤时间：卡片右上角相对时间（used 视图条目才有），
+            悬停淡出让位「聘请」（保留占位，名称/描述截断位置不回弹） */}
+        {item.usedTime && (
+          <span className={cx(styles['card-used-time'])} title={item.usedTime}>
+            {formatTimeAgo(item.usedTime)}
+          </span>
+        )}
+        {/* 悬停浮现（右端覆盖层，盖住时间区域，不占布局空间） */}
         <div className={cx(styles['card-actions'])}>
-          {/* 最近召唤时间：卡片右上角相对时间（used 视图条目才有） */}
-          {item.usedTime && (
-            <span
-              className={cx(styles['card-used-time'])}
-              title={item.usedTime}
-            >
-              {formatTimeAgo(item.usedTime)}
-            </span>
-          )}
-          {/* 悬停/键盘聚焦浮现（不占位），方形圆角 tint 底 */}
           <Button
             size="small"
             className={cx(styles['card-hire'], styles['card-select'])}

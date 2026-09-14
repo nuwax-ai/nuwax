@@ -333,7 +333,10 @@ describe('首页工具栏能力', () => {
         name: 'PC.Components.ChatInputHome.connectedConnectors',
       }),
     );
-    expect(editor.openCapabilityWithType).toHaveBeenCalledWith('connector');
+    // 头像组入口专用：连接器维度 + 初始进入「已连接」聚合页签
+    expect(editor.openCapabilityWithType).toHaveBeenCalledWith('connector', {
+      connectedView: true,
+    });
   });
 
   it('无已连接连接器时不渲染头像组', async () => {
