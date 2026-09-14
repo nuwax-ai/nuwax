@@ -13,6 +13,7 @@ export enum DisplayRecommendFunctionTypeEnum {
 export enum DisplayRecommendTargetTypeEnum {
   Agent = 'Agent',
   PageApp = 'PageApp',
+  UserApp = 'UserApp',
   Skill = 'Skill',
   Plugin = 'Plugin',
   Workflow = 'Workflow',
@@ -37,6 +38,7 @@ export interface DisplayRecommendInfo {
 export interface DisplayRecommendGroup {
   Agent?: DisplayRecommendInfo[];
   PageApp?: DisplayRecommendInfo[];
+  UserApp?: DisplayRecommendInfo[];
   Skill?: DisplayRecommendInfo[];
   Plugin?: DisplayRecommendInfo[];
   Workflow?: DisplayRecommendInfo[];

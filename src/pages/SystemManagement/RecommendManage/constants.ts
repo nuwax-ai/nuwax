@@ -29,6 +29,7 @@ export const OFFICIAL_RECOMMEND_CONFIG: RecommendPageConfig = {
   targetTypes: [
     DisplayRecommendTargetTypeEnum.Agent,
     DisplayRecommendTargetTypeEnum.PageApp,
+    DisplayRecommendTargetTypeEnum.UserApp,
     DisplayRecommendTargetTypeEnum.Skill,
     DisplayRecommendTargetTypeEnum.Plugin,
     DisplayRecommendTargetTypeEnum.Workflow,

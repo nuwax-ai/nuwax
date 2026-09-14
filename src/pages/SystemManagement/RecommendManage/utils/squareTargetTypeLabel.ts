@@ -10,6 +10,7 @@ const SQUARE_TARGET_TYPE_TITLE_KEY: Record<
 > = {
   [DisplayRecommendTargetTypeEnum.Agent]: 'PC.Pages.Square.Square.agent',
   [DisplayRecommendTargetTypeEnum.PageApp]: 'PC.Pages.Square.Square.pageApp',
+  [DisplayRecommendTargetTypeEnum.UserApp]: 'PC.Pages.Square.Square.userApp',
   [DisplayRecommendTargetTypeEnum.Skill]: 'PC.Pages.Square.Square.skill',
   [DisplayRecommendTargetTypeEnum.Plugin]: 'PC.Pages.Square.Square.plugin',
   [DisplayRecommendTargetTypeEnum.Workflow]: 'PC.Pages.Square.Square.workflow',
