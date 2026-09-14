@@ -173,7 +173,7 @@ describe('V2 类型化工具详情', () => {
       },
     } as any);
 
-  it('文件读取展示路径/行范围/正文，并通过宿主回调打开资源', () => {
+  it('文件读取展示路径/行范围/正文（跳转关闭：纯展示不可点）', () => {
     const onOpenResource = vi.fn();
     render(
       <ToolNodeDetail
@@ -196,16 +196,17 @@ describe('V2 类型化工具详情', () => {
     expect(detail).toHaveTextContent('index.tsx');
     expect(detail).toHaveTextContent('/home/user/1562087/src/');
     expect(detail).toHaveTextContent('export default App;');
-    fireEvent.click(
-      screen
-        .getAllByRole('button')
-        .find((button) => button.textContent?.includes('index.tsx'))!,
-    );
-    expect(onOpenResource).toHaveBeenCalledWith({
-      kind: 'file',
-      target: '/home/user/1562087/src/index.tsx',
-      line: 4,
-    });
+    // 2026-09-14 商讨定调跳转关闭：徽标+文件名为纯展示 span，无点击态
+    const link = document.querySelector(
+      '.tool-file-link',
+    ) as HTMLElement | null;
+    if (!link) {
+      throw new Error('头部未渲染 .tool-file-link');
+    }
+    expect(link.tagName).toBe('SPAN');
+    expect(link.className).not.toContain('is-clickable');
+    fireEvent.click(link);
+    expect(onOpenResource).not.toHaveBeenCalled();
   });
 
   it('非会话沙箱路径按原样完整展示且不可点', () => {
@@ -352,7 +353,7 @@ describe('V2 折叠行文件链接（FileResourceLink inline 变体）', () => {
     return { onToggle, onOpenResource, ...view };
   };
 
-  it('读取了文件：行内渲染徽标+文件名链接，点击打开文件但不触发行展开', () => {
+  it('读取了文件：行内渲染徽标+文件名（跳转关闭：无点击态，点击作为行内文本随行展开）', () => {
     const { onToggle, onOpenResource } = renderRow({
       kind: 'read',
       input: { file_path: '/home/user/1562087/src/index.tsx' },
@@ -369,22 +370,20 @@ describe('V2 折叠行文件链接（FileResourceLink inline 变体）', () => {
     expect(link).toHaveTextContent('index.tsx');
     // inline 变体是 span（外层行本身是 button，不嵌套交互元素）
     expect(link.tagName).toBe('SPAN');
+    // 跳转关闭：不渲染可点变体类（无手型/hover 下划线来源）
+    expect(link.className).not.toContain('is-clickable');
 
+    // 点击文件名即普通文本：不触发打开，冒泡随行展开
     fireEvent.click(link);
-    expect(onOpenResource).toHaveBeenCalledWith({
-      kind: 'file',
-      target: '/home/user/1562087/src/index.tsx',
-      line: undefined,
-    });
-    // stopPropagation：行展开不被触发
-    expect(onToggle).not.toHaveBeenCalled();
-
-    // 点行其他区域仍正常展开
-    fireEvent.click(screen.getByRole('button'));
+    expect(onOpenResource).not.toHaveBeenCalled();
     expect(onToggle).toHaveBeenCalledTimes(1);
+
+    // 点行其他区域同样展开
+    fireEvent.click(screen.getByRole('button'));
+    expect(onToggle).toHaveBeenCalledTimes(2);
   });
 
-  it('编辑多个文件：计数 + 逐个文件链接', () => {
+  it('编辑多个文件：计数 + 逐个文件展示（不可点）', () => {
     const { onOpenResource } = renderRow({
       kind: 'edit',
       input: { file_path: '/home/user/1562087/a.ts' },
@@ -410,15 +409,12 @@ describe('V2 折叠行文件链接（FileResourceLink inline 变体）', () => {
     expect(document.body.textContent).toContain('toolTargetFiles');
     expect(document.body.textContent).toContain('+2 -1');
 
+    // 跳转关闭：点击不触发宿主回调
     fireEvent.click(links[1] as HTMLElement);
-    expect(onOpenResource).toHaveBeenCalledWith({
-      kind: 'file',
-      target: '/home/user/1562087/b.md',
-      line: undefined,
-    });
+    expect(onOpenResource).not.toHaveBeenCalled();
   });
 
-  it('非会话沙箱路径：行内仍渲染徽标链接可点（能否打开由宿主判定），卡片内普通文本完整展示', () => {
+  it('非会话沙箱路径：行内仍渲染徽标+文件名（纯展示），卡片内普通文本完整展示', () => {
     const { onOpenResource } = renderRow({
       kind: 'read',
       input: { file_path: '/home/user/Desktop/a.md' },
@@ -431,15 +427,12 @@ describe('V2 折叠行文件链接（FileResourceLink inline 变体）', () => {
       throw new Error('行内未渲染 .tool-file-link');
     }
     expect(link).toHaveTextContent('a.md');
+    expect(link.className).not.toContain('is-clickable');
     fireEvent.click(link);
-    // 行内不拦截非沙箱路径：照常回调，由宿主 handler 决定打开或提示
-    expect(onOpenResource).toHaveBeenCalledWith({
-      kind: 'file',
-      target: '/home/user/Desktop/a.md',
-      line: undefined,
-    });
+    // 跳转关闭：不回调宿主
+    expect(onOpenResource).not.toHaveBeenCalled();
 
-    // 卡片头部同一路径则回落普通文本完整展示、不可点
+    // 卡片头部同一路径则回落普通文本完整展示
     render(
       <ToolNodeDetail
         node={rowNode({

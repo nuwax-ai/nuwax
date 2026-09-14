@@ -74,20 +74,15 @@ describe('splitFilePath', () => {
 });
 
 describe('getFileTypeInfo', () => {
+  // 2026-09-14 商讨定调：跳转关闭 + 徽标统一中性灰，语言社区配色已移除，仅保留类型缩写
   it('常见扩展名命中映射', () => {
-    expect(getFileTypeInfo('type.ts')).toEqual({ label: 'TS', bg: '#3178c6' });
+    expect(getFileTypeInfo('type.ts')).toEqual({ label: 'TS' });
     expect(getFileTypeInfo('readme.md').label).toBe('MD');
     expect(getFileTypeInfo('index.tsx').label).toBe('TSX');
   });
 
-  it('浅底色徽标带深色文字', () => {
-    expect(getFileTypeInfo('app.js').color).toBe('#1f2328');
-  });
-
-  it('未知扩展名给中性灰底 + 大写缩写', () => {
-    const info = getFileTypeInfo('demo/data.xyz');
-    expect(info.bg).toBe('#8a8f98');
-    expect(info.label).toBe('XYZ');
+  it('未知扩展名给大写缩写', () => {
+    expect(getFileTypeInfo('demo/data.xyz').label).toBe('XYZ');
   });
 
   it('无扩展名归为 FILE', () => {
