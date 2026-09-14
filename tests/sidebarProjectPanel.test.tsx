@@ -148,7 +148,9 @@ describe('项目侧栏原型交互', () => {
     fireEvent.click(
       await screen.findByText('PC.Components.ConversationContextMenu.pin'),
     );
-    await waitFor(() => expect(apiUserProjectPin).toHaveBeenCalledWith(2));
+    await waitFor(() =>
+      expect(apiUserProjectPin).toHaveBeenCalledWith(2, true, 'NormalProject'),
+    );
     await waitFor(() =>
       expect(normalProject.querySelector('.pin-icon')).toBeInTheDocument(),
     );
@@ -165,7 +167,9 @@ describe('项目侧栏原型交互', () => {
         .getAllByText('PC.Components.ConversationContextMenu.archive')
         .at(-1)!,
     );
-    await waitFor(() => expect(apiUserProjectArchive).toHaveBeenCalledWith(1));
+    await waitFor(() =>
+      expect(apiUserProjectArchive).toHaveBeenCalledWith(1, true, 'UserApp'),
+    );
     await waitFor(() =>
       expect(
         screen.queryByRole('button', { name: /项目甲/ }),
@@ -194,7 +198,9 @@ describe('项目侧栏原型交互', () => {
     fireEvent.click(
       await screen.findByText('PC.Components.ConversationContextMenu.pin'),
     );
-    await waitFor(() => expect(apiUserProjectPin).toHaveBeenCalledWith(2));
+    await waitFor(() =>
+      expect(apiUserProjectPin).toHaveBeenCalledWith(2, true, 'NormalProject'),
+    );
     expect(normalProject.querySelector('.pin-icon')).not.toBeInTheDocument();
   });
 });

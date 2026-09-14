@@ -10,6 +10,8 @@ interface Props {
   defaultLeftWidth?: number;
   /** 重置触发器，当值变化时重置为 defaultLeftWidth */
   resetTrigger?: string | number | boolean;
+  /** 拖拽结束回调，参数为最终左侧宽度百分比 */
+  onResizeEnd?: (leftPercent: number) => void;
   /** 分隔线颜色 */
   dividerColor?: string;
   /** 分隔线悬停颜色 */
@@ -29,6 +31,7 @@ const ResizableSplit: React.FC<Props> = ({
   minRightWidth = 350,
   defaultLeftWidth = 50, // 默认左侧占比50%
   resetTrigger,
+  onResizeEnd,
   dividerColor = '#e0e0e0',
   dividerHoverColor = '#bbb',
   dividerDraggingColor = '#1890ff',
@@ -334,6 +337,9 @@ const ResizableSplit: React.FC<Props> = ({
 
         // 用户手动拖动后，清除固定宽度，恢复百分比模式
         fixedLeftWidthRef.current = null;
+
+        // 通知外部最终宽度（用于持久化等）
+        onResizeEnd?.(clampedWidth);
       }
     },
     [
@@ -342,6 +348,7 @@ const ResizableSplit: React.FC<Props> = ({
       minRightWidth,
       handleGlobalMouseMove,
       handleGlobalMouseUp,
+      onResizeEnd,
     ],
   );
 

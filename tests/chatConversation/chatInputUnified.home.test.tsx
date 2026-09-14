@@ -1,7 +1,7 @@
 /**
  * ChatInputUnified 首页场景测试：
  * 统一输入框在 /home（无会话）场景下的能力开关与行为——
- * 工作目录栏渲染条件、cloudOnly 透传、切云清目录、空间选择器、推荐标签 pill、
+ * 工作目录栏渲染条件、cloudOnly 透传、切云清目录、空间选择器、推荐标签 pill（行首内联）、
  * ref 清空/聚焦、'home' 草稿作用域、召唤专家 chip、调试 FAB 开关。
  * 桩法对齐 mentionCommands.test.tsx：services/umi 一律 mock，子组件以捕获 props 的桩替代。
  */
@@ -82,6 +82,17 @@ vi.mock('@/services/systemManage', () => ({
   apiConnectorProviderPageList: connectorPage,
 }));
 
+// 会话框配置接口桩：未配置（data null）+ 写入成功，按用例覆写
+const userConfig = vi.hoisted(() => ({
+  get: vi.fn().mockResolvedValue({ data: null }),
+  set: vi.fn().mockResolvedValue({ code: '0000' }),
+}));
+vi.mock('@/services/userConfig', () => ({
+  apiUserConfigGet: (key: string) => userConfig.get(key),
+  apiUserConfigSet: (data: any) => userConfig.set(data),
+  chatboxConfigKey: (agentId: number | string) => `chatbox.config.${agentId}`,
+}));
+
 // 电脑选择器桩：捕获 props（value/cloudOnly/onChange），提供切云/切个人两个触发按钮
 const computer = vi.hoisted(() => ({ props: {} as Record<string, any> }));
 vi.mock('@/components/ChatInputHome/ComputerTypeSelector', async () => {
@@ -146,8 +157,7 @@ vi.mock('@/components/ChatInputHome/ModelSelector', () => ({
 }));
 vi.mock('@/components/ChatInputHome/ManualComponentItem', async () => {
   const React = await import('react');
-  // 渲染标记元素（真实实现的包裹层是 flex-1 弹簧）：专家 pill 必须排在其之前，
-  // 否则会被弹簧顶到右侧麦克风旁（左区尾部语义的防回退锚点）
+  // 渲染标记元素（工具栏槽位桩，供定位断言用）
   return {
     default: () =>
       React.createElement('div', { 'data-testid': 'manual-component' }),
@@ -291,13 +301,21 @@ describe('首页工具栏能力', () => {
     expect(spaceSelector.props.onSpaceSelect).toBe(onSpaceSelect);
   });
 
-  it('推荐标签 pill 展示与取消（工具栏专家样式，不内联回显输入框）', () => {
+  it('推荐标签 pill 行首内联展示与取消（输入框最前面，文本缩进其后）', () => {
     const onClearSelectedTag = vi.fn();
-    renderHomeInput({
+    const { container } = renderHomeInput({
       selectedTag: { label: 'AI 教育专家' },
       onClearSelectedTag,
     });
     expect(screen.getByText('AI 教育专家')).toBeInTheDocument();
+    // 位置：输入框最前面——pill 在编辑器之前（行首内联）
+    const pill = container.querySelector('.expert-pill');
+    expect(pill).toBeTruthy();
+    expect(
+      pill!.compareDocumentPosition(screen.getByTestId('mention-editor')),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // 文本缩进到 pill 之后（jsdom 无布局：0 实测宽 + 8 间距兜底）
+    expect(editor.lastProps.inlinePrefixWidth).toBeGreaterThan(0);
     fireEvent.click(
       screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
     );
@@ -333,7 +351,10 @@ describe('首页工具栏能力', () => {
         name: 'PC.Components.ChatInputHome.connectedConnectors',
       }),
     );
-    expect(editor.openCapabilityWithType).toHaveBeenCalledWith('connector');
+    // 头像组入口专用：连接器维度 + 初始进入「已连接」聚合页签
+    expect(editor.openCapabilityWithType).toHaveBeenCalledWith('connector', {
+      connectedView: true,
+    });
   });
 
   it('无已连接连接器时不渲染头像组', async () => {
@@ -355,13 +376,19 @@ describe('首页工具栏能力', () => {
     expect(screen.queryByTestId('debug-fab')).not.toBeInTheDocument();
   });
 
-  it('召唤专家 chip 展示名称并可取消', () => {
+  it('召唤专家 chip 行首内联展示名称并可取消', () => {
     const onClearSummonedExpert = vi.fn();
-    renderHomeInput({
+    const { container } = renderHomeInput({
       summonedExpert: { agentId: 8, name: '张三教授' },
       onClearSummonedExpert,
     });
     expect(screen.getByText('张三教授')).toBeInTheDocument();
+    // 位置：输入框最前面——chip 在编辑器之前（行首内联）
+    const pill = container.querySelector('.expert-pill');
+    expect(pill).toBeTruthy();
+    expect(
+      pill!.compareDocumentPosition(screen.getByTestId('mention-editor')),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     fireEvent.click(
       screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
     );
@@ -400,7 +427,7 @@ describe('能力弹窗开放范围（专家仅首页开放）', () => {
     expect(editor.lastProps.onExpertSelect).toBe(external);
   });
 
-  it('内部专家选中渲染 pill 在工具栏左区尾部（Expand 之前）且可取消', async () => {
+  it('内部专家选中渲染 pill 在输入框最前面（编辑器之前）且可取消', async () => {
     const { container } = renderHomeInput();
     await act(async () => {
       editor.lastProps.onExpertSelect({
@@ -413,25 +440,17 @@ describe('能力弹窗开放范围（专家仅首页开放）', () => {
     const pill = container.querySelector('.expert-pill');
     expect(pill).toBeTruthy();
     expect(pill?.textContent).toContain('智慧校园助手');
-    // 位置防回退：pill 必须在 ManualComponentItem（真实包裹层为 flex-1 弹簧，
-    // 占满中部剩余空间）之前，即工具栏左区尾部；否则会被弹簧顶到右侧麦克风旁
-    const manual = screen.getByTestId('manual-component');
-    const expand = screen.getByTestId('voice-expand');
-    const right = screen.getByTestId('voice-right');
-    expect(pill!.compareDocumentPosition(manual)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    expect(pill!.compareDocumentPosition(expand)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    expect(pill!.compareDocumentPosition(right)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    // 取消：清空内部 expertComponents
+    // 位置防回退：pill 内联在输入框最前面（编辑器之前），文本缩进其后
+    expect(
+      pill!.compareDocumentPosition(screen.getByTestId('mention-editor')),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(editor.lastProps.inlinePrefixWidth).toBeGreaterThan(0);
+    // 取消：清空内部 expertComponents，行首占位同步复位
     fireEvent.click(
       screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
     );
     expect(container.querySelector('.expert-pill')).toBeNull();
+    expect(editor.lastProps.inlinePrefixWidth).toBe(0);
   });
 });
 

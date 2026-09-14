@@ -26,17 +26,21 @@ import type { ConnectorListItem, ConnectorListSourceType } from '../types';
 /** 关键字防抖时长 */
 const KEYWORD_DEBOUNCE = 300;
 
-/** 接口条目归一化（service 即连接/断开寻址标识） */
+/** 接口条目归一化（service 即连接/断开寻址标识；id 为提供方主键，
+ * 供连接启用状态接口寻址） */
 const mapItem = (
   item: ConnectorProviderInfo,
   source: ConnectorListSourceType,
 ): ConnectorListItem => ({
   key: `connector:${source}:${item.service || item.id}`,
   rawId: item.service || item.id,
+  connectorId: item.id,
   name: item.displayName || item.service,
   description: item.description,
   icon: item.icon,
   connected: item.connected,
+  connectionEnabled: (item as { connectionEnabled?: boolean })
+    .connectionEnabled,
   authType: item.authType,
 });
 

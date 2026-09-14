@@ -816,6 +816,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   trialCount?: number;
   // 是否允许用户在对话框中选择模式， 1 允许，其他不允许
   allowChooseMode?: DefaultSelectedEnum;
+  // 是否开启版本控制， 1 允许，其他不允许；作为会话框配置未配置过时的默认值
+  enableVersionControl?: DefaultSelectedEnum;
 }
 
 // 日志查询过滤条件
@@ -968,6 +970,14 @@ export interface ModelOptionDto {
   enabled: number;
   accessControl: number;
   usageScenarios: string[];
+  /** 模型标签(仅系统公共模型维度维护,接口可能不返回) */
+  tag?: string;
+  /** 模型标签颜色(hex,如 #1668DC;接口可能不返回) */
+  tagColor?: string;
+  /** 模型倍率(仅系统公共模型维度维护,接口可能不返回) */
+  cost?: string;
+  /** 所属空间名称(团队模型展示"空间名.模型名"前缀,接口可能不返回) */
+  spaceName?: string;
 }
 
 // 日志查询响应-工作空间

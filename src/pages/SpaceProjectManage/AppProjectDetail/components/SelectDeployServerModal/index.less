@@ -1,0 +1,50 @@
+@import '@/styles/token';
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: @marginXs;
+  width: 100%;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: @marginXs;
+  width: 100%;
+  margin-inline-end: 0;
+  padding: @paddingSm @padding;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  cursor: pointer;
+  background: @colorBgContainer;
+  transition: border-color @motionDurationFast @motionEaseOut;
+
+  :global(.ant-radio-wrapper) {
+    margin-inline-end: 0;
+    align-self: flex-start;
+    padding-top: @borderRadiusXs;
+  }
+
+  &.active {
+    border-color: @colorPrimary;
+  }
+}
+
+.body {
+  min-width: 0;
+}
+
+.name {
+  display: block;
+  color: @colorText;
+  font-size: @fontSize;
+  line-height: @fontHeight;
+}
+
+.meta {
+  display: block;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeightSm;
+}

@@ -123,8 +123,8 @@ vi.mock('@/components/business-component/ChatInputUnified', () => ({
         <span data-testid="whole-disabled">
           {String(!!props.wholeDisabled)}
         </span>
-        <span data-testid="show-agent-mode">
-          {String(!!props.showAgentModeSelector)}
+        <span data-testid="agent-evc">
+          {String(props.agentEnableVersionControl ?? '')}
         </span>
       </div>
     );
@@ -145,7 +145,6 @@ vi.mock('@/components/business-component/AgentIntervention', () => ({
       agentModeInputProps: {
         agentMode: 'yolo',
         onAgentModeChange: vi.fn(),
-        showAgentModeSelector: false,
       },
     };
   },
@@ -420,14 +419,14 @@ describe('UnifiedChatSession 行为', () => {
     );
   });
 
-  it('allowChooseMode=Yes 时展示 Agent 模式选择器', () => {
+  it('enableVersionControl 透传给输入框作为版本管理默认值', () => {
     render(
       <UnifiedChatSession
-        agentInfo={{ allowChooseMode: DefaultSelectedEnum.Yes }}
+        agentInfo={{ enableVersionControl: DefaultSelectedEnum.Yes }}
         messageList={[]}
       />,
     );
-    expect(screen.getByTestId('show-agent-mode')).toHaveTextContent('true');
+    expect(screen.getByTestId('agent-evc')).toHaveTextContent('1');
   });
 
   it('TaskAgent 且有消息时渲染 ConversationStatus', () => {

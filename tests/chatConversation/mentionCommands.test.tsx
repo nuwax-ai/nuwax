@@ -37,6 +37,8 @@ const capabilityModalProps = vi.hoisted(
       onSelect?: (item: unknown) => void;
       onClose?: () => void;
       resourceTypes?: string[];
+      defaultResourceType?: string;
+      defaultConnectedView?: boolean;
     }),
 );
 vi.mock('@/components/ChatInputHome/CapabilityModal', () => ({
@@ -195,6 +197,76 @@ describe('编辑器发送协议和历史', () => {
     expect(capabilityModalProps.open).toBe(true);
     fireEvent.keyDown(editor, { key: 'Escape' });
     expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe('外部技能回填（defaultMentions）', () => {
+  // jsdom 未实现 innerText（回显 effect 的空态判定依赖），以 textContent 近似
+  beforeAll(() => {
+    Object.defineProperty(HTMLElement.prototype, 'innerText', {
+      get(this: HTMLElement) {
+        return this.textContent;
+      },
+      configurable: true,
+    });
+  });
+
+  it('纯 chip 态二次带入整组替换；混入用户输入后不再覆盖', async () => {
+    const onChange = vi.fn();
+    const utils = render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        onChange={onChange}
+        defaultMentions={[{ kind: 'skill', name: '写作', targetId: 42 }]}
+      />,
+    );
+    const editor = utils.container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    // 首次带入：空编辑器回填 chip
+    await waitFor(() =>
+      expect(
+        editor
+          .querySelector('[data-mention-id]')
+          ?.getAttribute('data-mention-name'),
+      ).toBe('写作'),
+    );
+
+    // 第二次带入（停留首页再次全局搜索/技能页选择）：纯 chip 态整组替换
+    utils.rerender(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        onChange={onChange}
+        defaultMentions={[{ kind: 'skill', name: '搜索', targetId: 73 }]}
+      />,
+    );
+    await waitFor(() => {
+      const chips = editor.querySelectorAll('[data-mention-id]');
+      expect(chips).toHaveLength(1);
+      expect(chips[0].getAttribute('data-mention-name')).toBe('搜索');
+    });
+
+    // 用户手动输入后：再次带入不覆盖（保护输入内容）
+    editor.appendChild(document.createTextNode('补充指令'));
+    fireEvent.input(editor);
+    utils.rerender(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        onChange={onChange}
+        defaultMentions={[{ kind: 'skill', name: '翻译', targetId: 9 }]}
+      />,
+    );
+    await act(async () => {});
+    expect(editor.querySelectorAll('[data-mention-id]')).toHaveLength(1);
+    expect(
+      editor
+        .querySelector('[data-mention-id]')
+        ?.getAttribute('data-mention-name'),
+    ).toBe('搜索');
+    expect(editor.textContent).toContain('补充指令');
   });
 });
 
@@ -377,6 +449,43 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
+  it(
+    '每次打开回到默认状态：头像组定位连接器·已连接后，' +
+      ' 再开回落 skill 默认页签',
+    () => {
+      const ref = createRef<MentionEditorHandle>();
+      const { container } = render(
+        <MentionEditor
+          ref={ref}
+          autoFocus={false}
+          onPaste={vi.fn()}
+          onChange={vi.fn()}
+        />,
+      );
+      // 头像组编程唤起：连接器维度 + 「已连接」聚合页签
+      act(() => {
+        ref.current?.openCapabilityWithType?.('connector', {
+          connectedView: true,
+        });
+      });
+      expect(capabilityModalProps.open).toBe(true);
+      expect(capabilityModalProps.defaultResourceType).toBe('connector');
+      expect(capabilityModalProps.defaultConnectedView).toBe(true);
+
+      // 关闭后以 '/' 触发再开：回到最初默认状态（skill + 默认数据源页签）
+      act(() => {
+        capabilityModalProps.onClose?.();
+      });
+      const editor = container.querySelector(
+        '[contenteditable="true"]',
+      ) as HTMLElement;
+      type(editor, '/');
+      expect(capabilityModalProps.open).toBe(true);
+      expect(capabilityModalProps.defaultResourceType).toBe('skill');
+      expect(capabilityModalProps.defaultConnectedView).toBe(false);
+    },
+  );
+
   it('文本中间出现 / 触发时清除整个触发串，两侧文字保留', () => {
     const { container } = render(
       <MentionEditor autoFocus={false} onPaste={vi.fn()} onChange={vi.fn()} />,
@@ -456,6 +565,54 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
     expect(onExpertSelect).toHaveBeenLastCalledWith(
       expect.objectContaining({ targetId: 7, name: '专家甲' }),
     );
+  });
+
+  it('弹窗打开期间失焦不清光标：选专家关闭后光标保持原输入位置（不回行首）', async () => {
+    const { container } = render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        onExpertSelect={vi.fn()}
+        onChange={vi.fn()}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    // 已有内容、行尾键入 / 唤起弹窗（触发串被清除，文本保留）
+    type(editor, '帮我写周报 /');
+    expect(capabilityModalProps.open).toBe(true);
+    expect(getSerializedEditorText(editor)).toBe('帮我写周报 ');
+    // 模拟真实弹窗夺焦：选区离开编辑器 + 编辑器失焦（handleBlur 200ms 延迟收口）
+    window.getSelection()?.removeAllRanges();
+    fireEvent.blur(editor);
+    await act(async () => {
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 250);
+      });
+    });
+    act(() => {
+      capabilityModalProps.onSelect?.({
+        key: 'expert:system:1',
+        resourceType: 'expert',
+        source: 'system',
+        rawId: 1,
+        targetId: 66,
+        name: '智慧校园助手',
+        icon: '',
+        description: '',
+      });
+      capabilityModalProps.onClose?.();
+    });
+    // 光标恢复到触发串删除点（行尾），而非被重置到编辑器开头
+    const selection = window.getSelection();
+    expect(selection?.rangeCount).toBe(1);
+    const range = selection!.getRangeAt(0);
+    expect(range.collapsed).toBe(true);
+    const textNode = editor.firstChild as Text;
+    expect(textNode?.nodeType).toBe(Node.TEXT_NODE);
+    expect(range.startContainer).toBe(textNode);
+    expect(range.startOffset).toBe(textNode.length);
   });
 
   it('弹窗选中资料库：doc chip 派生 selectedDocs 按 SelectedDocDto 契约（slugId/title/pageType）', () => {

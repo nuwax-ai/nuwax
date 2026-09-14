@@ -150,9 +150,12 @@ const ProjectPanel = forwardRef<
       childId: number;
     }>();
     const [renameName, setRenameName] = useState('');
+    // 重命名提交中（Modal confirmLoading，防慢接口下重复提交）
+    const [renaming, setRenaming] = useState(false);
     // 项目重命名弹窗状态
     const [renameProjectId, setRenameProjectId] = useState<number>();
     const [projectRenameName, setProjectRenameName] = useState('');
+    const [projectRenaming, setProjectRenaming] = useState(false);
     // 分页：首屏 PROJECT_PAGE_SIZE 条，「查看更多」按页追加（tab 接口 current/pageSize/total 契约）
     const [total, setTotal] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -350,7 +353,13 @@ const ProjectPanel = forwardRef<
       void (async () => {
         const request =
           kind === 'pinned' ? apiUserProjectPin : apiUserProjectArchive;
-        const res = await request(project.id).catch(() => null);
+        // pinned/archived + projectType query 均为后端必传（归属校验），
+        // usesRealApi 分支已保证 projectType 为 NormalProject/UserApp
+        const res = await request(
+          project.id,
+          enabled,
+          project.projectType as string,
+        ).catch(() => null);
         if (res?.code !== SUCCESS_CODE) {
           message.error(dict('PC.Common.Global.operationFailed'));
           return;
@@ -414,28 +423,34 @@ const ProjectPanel = forwardRef<
 
     // 项目重命名:常规项目/全栈应用走真实接口,PageApp 契约未覆盖暂维持本地改名
     const handleProjectRenameSubmit = async () => {
+      if (projectRenaming) return;
       const trimmed = projectRenameName.trim();
       if (!trimmed || !renameProjectId) return;
       const target = projects.find((project) => project.id === renameProjectId);
       if (!target) return;
-      if (
-        target.projectType === AgentComponentTypeEnum.NormalProject ||
-        target.projectType === AgentComponentTypeEnum.UserApp
-      ) {
-        const res =
+      setProjectRenaming(true);
+      try {
+        if (
+          target.projectType === AgentComponentTypeEnum.NormalProject ||
           target.projectType === AgentComponentTypeEnum.UserApp
-            ? await apiUserAppUpdate({ id: target.id, name: trimmed })
-            : await apiNormalProjectUpdate({ id: target.id, name: trimmed });
-        if (res?.code !== SUCCESS_CODE) return;
+        ) {
+          const res =
+            target.projectType === AgentComponentTypeEnum.UserApp
+              ? await apiUserAppUpdate({ id: target.id, name: trimmed })
+              : await apiNormalProjectUpdate({ id: target.id, name: trimmed });
+          if (res?.code !== SUCCESS_CODE) return;
+        }
+        setProjects((prev) =>
+          prev.map((project) =>
+            project.id !== renameProjectId
+              ? project
+              : { ...project, name: trimmed },
+          ),
+        );
+        setRenameProjectId(undefined);
+      } finally {
+        setProjectRenaming(false);
       }
-      setProjects((prev) =>
-        prev.map((project) =>
-          project.id !== renameProjectId
-            ? project
-            : { ...project, name: trimmed },
-        ),
-      );
-      setRenameProjectId(undefined);
     };
 
     // 项目删除:常规项目/全栈应用走真实接口,PageApp 契约未覆盖暂维持本地移除
@@ -542,33 +557,39 @@ const ProjectPanel = forwardRef<
 
     // 子项重命名:走会话改名真实接口,成功后派发 conversation-updated 供任务列表同步
     const handleChildRenameSubmit = async () => {
+      if (renaming) return;
       const trimmed = renameName.trim();
       if (!trimmed || !renameTarget) return;
-      const res = await apiAgentConversationUpdate({
-        id: renameTarget.childId,
-        topic: trimmed,
-      });
-      if (res?.success) {
-        window.dispatchEvent(
-          new CustomEvent('conversation-updated', {
-            detail: { id: renameTarget.childId, topic: trimmed },
-          }),
-        );
-        setProjects((prev) =>
-          prev.map((project) =>
-            project.id !== renameTarget.projectId
-              ? project
-              : {
-                  ...project,
-                  children: project.children?.map((child) =>
-                    child.id === renameTarget.childId
-                      ? { ...child, name: trimmed }
-                      : child,
-                  ),
-                },
-          ),
-        );
-        setRenameTarget(undefined);
+      setRenaming(true);
+      try {
+        const res = await apiAgentConversationUpdate({
+          id: renameTarget.childId,
+          topic: trimmed,
+        });
+        if (res?.success) {
+          window.dispatchEvent(
+            new CustomEvent('conversation-updated', {
+              detail: { id: renameTarget.childId, topic: trimmed },
+            }),
+          );
+          setProjects((prev) =>
+            prev.map((project) =>
+              project.id !== renameTarget.projectId
+                ? project
+                : {
+                    ...project,
+                    children: project.children?.map((child) =>
+                      child.id === renameTarget.childId
+                        ? { ...child, name: trimmed }
+                        : child,
+                    ),
+                  },
+            ),
+          );
+          setRenameTarget(undefined);
+        }
+      } finally {
+        setRenaming(false);
       }
     };
 
@@ -857,6 +878,7 @@ const ProjectPanel = forwardRef<
           open={renameTarget !== undefined}
           onOk={handleChildRenameSubmit}
           onCancel={() => setRenameTarget(undefined)}
+          confirmLoading={renaming}
           okButtonProps={{ disabled: !renameName.trim() }}
           okText={dict('PC.Common.Global.confirm')}
           cancelText={dict('PC.Common.Global.cancel')}
@@ -874,6 +896,7 @@ const ProjectPanel = forwardRef<
           open={renameProjectId !== undefined}
           onOk={handleProjectRenameSubmit}
           onCancel={() => setRenameProjectId(undefined)}
+          confirmLoading={projectRenaming}
           okButtonProps={{ disabled: !projectRenameName.trim() }}
           okText={dict('PC.Common.Global.confirm')}
           cancelText={dict('PC.Common.Global.cancel')}

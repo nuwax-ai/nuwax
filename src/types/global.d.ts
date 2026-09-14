@@ -95,6 +95,8 @@ interface Window {
       openWindow?: (
         path: string,
       ) => Promise<{ success: boolean; error?: string }>;
+      /** 打开宿主壳「客户端设置」弹窗（设置 UI 由壳 renderer 承载；旧版宿主无此能力）。 */
+      openClientSettings?: () => Promise<{ success: boolean; error?: string }>;
     };
     // nuwaclaw 宿主→nuwax 入站命令通道（contextBridge 注册回调；host 触发时 cb 在 guest 上下文执行）
     events?: {
@@ -120,7 +122,7 @@ interface Window {
     };
     // nuwaclaw 客户端宿主注入：宿主身份只读信息（host→guest，构建期注入非 IPC）
     host?: {
-      /** 宿主产品标识：nuwaclaw（社区版）/ nuwawork（商业版，NuwaWork）。 */
+      /** 宿主产品标识：nuwaclaw（社区版）/ nuwax（商业版；存量宿主历史值 nuwawork）。 */
       getProduct?: () => string;
     };
   };

@@ -8,6 +8,7 @@
  */
 
 import {
+  resolveEffectiveNavigationStyle,
   UnifiedThemeData,
   unifiedThemeService,
 } from '@/services/unifiedThemeService';
@@ -113,11 +114,13 @@ export const useUnifiedTheme = (): UseUnifiedThemeReturn => {
   }, []);
 
   // 商业桌面端锁定单栏：布局分发、壳 class 等渲染决策统一读 effective 值
-  // （须先于各 toggle/衍生计算声明）；社区宿主（NuwaClaw）与浏览器同形态不锁定
+  // （须先于各 toggle/衍生计算声明）；社区宿主（NuwaClaw）与浏览器同形态不锁定。
+  // 收敛规则单源在 unifiedThemeService.resolveEffectiveNavigationStyle（背景/
+  // DOM 落地层同用一份），此处仅保留锁标记供切换 UI 隐藏
   const isNavigationStyleLocked = isDesktopHost();
-  const effectiveNavigationStyle = isNavigationStyleLocked
-    ? ThemeNavigationStyleType.STYLE3
-    : data.navigationStyle;
+  const effectiveNavigationStyle = resolveEffectiveNavigationStyle(
+    data.navigationStyle,
+  );
 
   // 创建更新方法（带loading状态）
   const createUpdateMethod = useCallback(

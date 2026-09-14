@@ -87,6 +87,23 @@
     padding: 7px 15px 16px;
   }
 
+  // 单栏（style3）主栏外内缩 15→10（2026-09-14，与 SidebarNavHeader 同批）：
+  // 分组头文字左缘 24→19、列表行外缘 15→10，整列相对关系原样平移；经典布局
+  // （.tabs 双 tab 线）不在此作用域，维持 15px 栅格
+  :global(.xagi-nav-style3) & {
+    .section-tabs,
+    .task-section-tabs {
+      padding-right: 10px;
+      padding-left: 19px;
+    }
+
+    .project-list-section,
+    .conversation-list {
+      padding-right: 10px;
+      padding-left: 10px;
+    }
+  }
+
   // ===== 经典布局（style1/2）tab 切换：维持改版前形态，仅任务/项目两项 =====
   .tabs {
     display: flex;

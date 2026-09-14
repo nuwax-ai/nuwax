@@ -1,5 +1,5 @@
 import { apiAgentConversationCollect } from '@/services/agentConfig';
-import { migrateLocalConversationFavorites } from '@/utils/conversationFavorites';
+import { migrateLocalConversationFavorites } from '@/services/conversationFavoriteMigration';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // 迁移模块 import 服务层（传递依赖 umi），vitest 环境须 mock

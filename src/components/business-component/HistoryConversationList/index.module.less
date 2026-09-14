@@ -31,7 +31,8 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 24px 0;
+    // 四周留白：内容区不贴边（bug 2351「边距没了」；与 tsx 内联兜底同值）
+    padding: 24px 24px 0;
     box-sizing: border-box;
 
     .title {

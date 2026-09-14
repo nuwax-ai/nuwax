@@ -266,6 +266,22 @@ export const native = {
       };
     }
   },
+  /**
+   * 打开宿主壳「客户端设置」弹窗（设置 UI 由壳 renderer 承载，经主进程转发打开）。
+   * 仅新版商业宿主支持；浏览器 / 旧版宿主返回 {success:false}，调用方降级处理。
+   */
+  async openClientSettings(): Promise<{ success: boolean; error?: string }> {
+    const open = getBridge()?.native?.openClientSettings;
+    if (!open) return { success: false };
+    try {
+      return await open();
+    } catch (e) {
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : String(e),
+      };
+    }
+  },
 };
 
 /**

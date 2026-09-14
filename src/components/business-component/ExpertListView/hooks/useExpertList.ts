@@ -4,8 +4,8 @@
  * - used    GET /user/agent/used/list/{size} { type: 'Agent' } 全量数组，
  *           keyword 客户端过滤，条目带最近使用时间；
  * - system  POST /published/agent/list { page, pageSize, category, kw?,
- *           targetType: 'Agent', targetSubType: 'ChatBot' }（专家口径，
- *           排除网页应用，与广场一致）；
+ *           targetType: 'Agent', targetSubType: 'ChatBot', official: true }
+ *           （专家口径排除网页应用；仅官方，与 expert-skill-connector 页同口径）；
  * - team    同接口 + justReturnSpaceData + category='Agent'，
  *           spaceId（具体空间）/ spaceIds（全部聚合，外部传入或自拉兜底）；
  * - search  同接口固定 spaceId=-1（组件内写死，不走外部 spaceId）。
@@ -86,7 +86,14 @@ const buildParams = (
     targetSubType: 'ChatBot' as const,
   };
   if (type === 'system') {
-    return { page, pageSize, category: category || '', kw, ...expertScope };
+    return {
+      page,
+      pageSize,
+      category: category || '',
+      kw,
+      official: true,
+      ...expertScope,
+    };
   }
   if (type === 'team') {
     return {

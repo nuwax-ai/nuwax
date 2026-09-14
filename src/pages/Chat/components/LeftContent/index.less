@@ -54,20 +54,17 @@
     flex: 1;
     display: flex;
     position: relative;
-    gap: 20px;
 
     .chat-section {
       width: 100%;
-      flex: 1;
+      height: 100%;
+      box-sizing: border-box;
+      // 与右侧面板各留 8px，让拖拽分隔条落在间隔正中
+      padding-right: 8px;
       display: flex;
       flex-direction: column;
       min-height: 0;
       overflow: hidden;
-
-      &.file-tree-visible {
-        flex: none;
-        width: 40%;
-      }
 
       .chat-wrapper-content {
         overflow: auto;
@@ -155,19 +152,21 @@
       }
     }
 
-    /* 文件树侧边栏样式 */
+    /* 文件树侧边栏样式（宽度由 ResizableSplit 右侧 pane 控制） */
     .file-tree-sidebar {
       flex: 1;
       // position: sticky;
       position: relative;
       height: 100%;
+      // 与聊天区各留 8px，让拖拽分隔条落在间隔正中
+      padding-left: 8px;
       padding-bottom: 20px;
       margin: 0;
       box-sizing: border-box;
       flex-shrink: 0;
       visibility: visible;
       opacity: 1;
-      transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
+      transition: opacity 0.3s ease-in-out;
 
       .file-tree-container {
         border-radius: 16px;

@@ -5,6 +5,13 @@
   flex-shrink: 0;
   padding: 0 15px;
 
+  // 单栏（style3）主栏外内缩 15→10（2026-09-14）：左缘内容整体收紧，与二级列
+  // tm-side 10px 内缩同语义；行内 12px 缩进不动（图标基线 27→22）。经典布局
+  // 共用本组件，保持 15px 栅格不波及
+  :global(.xagi-nav-style3) & {
+    padding: 0 10px;
+  }
+
   // 顶栏：原型 15px 栅格内再缩进 10px，操作区贴右侧 15px 基线
   .header-bar {
     display: flex;

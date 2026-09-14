@@ -21,6 +21,11 @@ export async function apiGetStaticFileList(
   options?: {
     relativePath?: string;
     recursive?: boolean;
+    /**
+     * 目标根目录（沙箱内绝对目录，可跳出会话工作区）。
+     * 网关侧仅个人电脑会话放行；云端会话放开为后端契约，未放开前接口会拒绝。
+     */
+    customTargetDir?: string;
   },
 ): Promise<RequestResponse<StaticFileListResponse>> {
   return request('/api/computer/static/file-list', {
@@ -31,6 +36,9 @@ export async function apiGetStaticFileList(
         ? {
             relativePath: options.relativePath || '',
             recursive: options.recursive ?? false,
+            ...(options.customTargetDir
+              ? { customTargetDir: options.customTargetDir }
+              : {}),
           }
         : {}),
     },
@@ -155,7 +163,11 @@ export async function apiDownloadAllFiles(cId: number): Promise<void> {
     if (saved) message.success(t('PC.Pages.Chat.exportSuccess'));
   } catch (error) {
     console.error('Failed to export project:', error);
-      message.error(error instanceof Error ? error.message : t('PC.Utils.ExportImport.exportFailed'));
+    message.error(
+      error instanceof Error
+        ? error.message
+        : t('PC.Utils.ExportImport.exportFailed'),
+    );
   }
 }
 

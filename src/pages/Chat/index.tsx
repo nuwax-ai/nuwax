@@ -1,4 +1,3 @@
-import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import {
   ConversationBottomConsole,
   CopyToSpaceComponent,
@@ -24,6 +23,7 @@ import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
+import AgentDetailModal from '@/pages/Chat/components/AgentDetailModal';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
@@ -166,9 +166,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   );
   const [form] = Form.useForm();
 
-  const [isSidebarVisible, setIsSidebarVisible] =
-    useState<boolean>(showSidebar);
-  const sidebarRef = useRef<AgentSidebarRef>(null);
+  // 智能体详情悬浮弹窗（取代原 AgentSidebar 互斥侧栏，与右侧面板共存）
+  const [isAgentDetailModalOpen, setIsAgentDetailModalOpen] =
+    useState<boolean>(false);
 
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
@@ -382,7 +382,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isFileTreeVisible,
     viewMode,
     id,
-    sidebarRef,
     openPreviewView,
     closePreviewView: handleClosePreviewView,
     openDesktopView,
@@ -755,12 +754,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
   }, [id, defaultFileTreeVisible, openPreviewView, setIsFileTreePinned]);
 
-  // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
+  // 互斥面板控制器：管理 PagePreview、ShowArea 的互斥展示（AgentSidebar 已改为悬浮弹窗）
   useExclusivePanels({
     pagePreviewData,
     hidePagePreview,
-    isSidebarVisible,
-    sidebarRef,
     showType,
     setShowType,
   });
@@ -803,6 +800,25 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   /** V2 工具详情点击打开的文件（相对路径）；用于选中失败时精确归因提示 */
   const toolResourceSelectRef = useRef('');
+
+  /**
+   * V2 工具详情点击打开的工作区外沙箱文件（桌面等）：
+   * 右侧面板临时切换为独立预览，不依赖工作区文件树。
+   */
+  const [externalPreviewFile, setExternalPreviewFile] = useState<{
+    cId: number;
+    targetDir: string;
+    relativePath: string;
+  } | null>(null);
+
+  /**
+   * 退出工作区外文件独立预览：该面板整块顶替文件树面板（文件树/终端/云电脑
+   * 都不可见），故任何回到工作区面板的动作都要先清它，否则右侧停在独立预览、
+   * 用户无法切回文件树预览。
+   */
+  const exitExternalPreview = useCallback(() => {
+    setExternalPreviewFile(null);
+  }, []);
 
   const workspaceTaskSelectedFileId = taskAgentSelectedFileId
     ? workspaceNodeId(workspaceRelativePath(taskAgentSelectedFileId))
@@ -1004,6 +1020,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
    * 打开文件预览：与终端全屏、智能体电脑互斥
    */
   const handleFileTreeVisibleClick = useCallback(() => {
+    // 独立预览占位时，「文件预览」入口 = 回到工作区文件树预览（不收起面板）：
+    // 入口高亮态下若仅切换显隐，用户会一直停在独立预览里出不来
+    if (externalPreviewFile) {
+      setExternalPreviewFile(null);
+      if (!isFileTreeVisible) {
+        openPreviewView(id);
+      }
+      return;
+    }
+
     const hasSelectedPreviewFile = Boolean(
       fileView.tree.selectedFileId || taskAgentSelectedFileId,
     );
@@ -1059,18 +1085,20 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     effectiveAgent?.type,
     effectiveAgent?.enableVersionControl,
     openPreviewView,
+    externalPreviewFile,
     id,
   ]);
 
   /** 打开 / 收起底部终端全屏（与文件预览、智能体电脑互斥） */
   const handleOpenTerminalPanel = useCallback(() => {
+    // 终端挂在文件树面板内，先退出独立预览，否则点终端看不到终端
+    exitExternalPreview();
     if (isTerminalPanelOpen) {
       setTerminalConsoleCollapseSignal((n) => n + 1);
       setTerminalConsoleLayoutMode('collapsed');
       return;
     }
 
-    sidebarRef.current?.close();
     setHasTerminalConsoleRendered(true);
     setTerminalConsoleVisible(true);
     setTerminalConsoleCollapseSignal(0);
@@ -1083,10 +1111,19 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
 
     setTerminalConsoleExpandSignal((n) => n + 1);
-  }, [isTerminalPanelOpen, isFileTreeVisible, viewMode, id, openPreviewView]);
+  }, [
+    isTerminalPanelOpen,
+    isFileTreeVisible,
+    viewMode,
+    id,
+    openPreviewView,
+    exitExternalPreview,
+  ]);
 
   /** 打开 / 切换智能体电脑（与文件预览、终端全屏互斥） */
   const handleOpenDesktopViewClick = useCallback(() => {
+    // 云电脑渲染在文件树面板的预览区，先退出独立预览，否则点电脑看不到桌面
+    exitExternalPreview();
     if (isTerminalPanelOpen) {
       setTerminalConsoleCollapseSignal((n) => n + 1);
     }
@@ -1094,9 +1131,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTerminalConsoleCollapseSignal(0);
     setTerminalConsoleExpandSignal(0);
     setTerminalConsoleLayoutMode('collapsed');
-    sidebarRef.current?.close();
     handleOpenDesktopView();
-  }, [isTerminalPanelOpen, handleOpenDesktopView]);
+  }, [isTerminalPanelOpen, handleOpenDesktopView, exitExternalPreview]);
 
   useEffect(
     () => () => {
@@ -1239,6 +1275,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
     prevTaskAgentCollapseTriggerRef.current = taskAgentSelectTrigger;
 
+    // 触发链路选中工作区文件（TaskResult / markdown 链接 / 自动预览）时，
+    // 工作区文件预览优先，退出独立预览
+    exitExternalPreview();
     closeVersionPanelForFilePreviewRef.current();
 
     if (!hasTerminalConsoleRendered || !terminalConsoleVisible) {
@@ -1251,6 +1290,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     taskAgentSelectTrigger,
     hasTerminalConsoleRendered,
     terminalConsoleVisible,
+    exitExternalPreview,
   ]);
 
   // 切换会话时，重置 Git 版本记录面板和终端状态
@@ -1261,6 +1301,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTerminalConsoleLayoutMode('default');
     setTerminalConsoleExpandSignal(0);
     setTerminalConsoleCollapseSignal(0);
+    setExternalPreviewFile(null);
     prevTaskAgentCollapseTriggerRef.current = undefined;
   }, [id]);
 
@@ -1425,32 +1466,27 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 设置最小宽度
   useEffect(() => {
+    // 单栏风格（style3）：侧边面板固定、滚动区域收敛在 page-container 内，
+    // 不再拓宽 html（否则窗口窄于阈值时出现窗口级全局滚动条）
+    if (document.body.classList.contains('xagi-nav-style3')) {
+      document.documentElement.style.minWidth = 'unset';
+      return;
+    }
     // 移动端不设置最小宽度
     if (isMobile && !isFileTreeVisible) {
       document.documentElement.style.minWidth = 'unset';
       return;
     }
-    // 设置最小宽度-扩展页面/文件树
+    // 设置最小宽度-扩展页面/文件树（智能体详情已改为悬浮弹窗，不再有侧栏占位档位）
     if (pagePreviewData || isFileTreeVisible) {
       document.documentElement.style.minWidth = '1660px';
     } else {
-      // 设置最小宽度-调试详情
-      if (showSidebar && isSidebarVisible) {
-        document.documentElement.style.minWidth = '1540px';
-      } else {
-        document.documentElement.style.minWidth = '1200px';
-      }
+      document.documentElement.style.minWidth = '1200px';
     }
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [
-    pagePreviewData,
-    isFileTreeVisible,
-    showSidebar,
-    isSidebarVisible,
-    isMobile,
-  ]);
+  }, [pagePreviewData, isFileTreeVisible, isMobile]);
 
   // 聊天会话头部相关 props
   const headerProps = {
@@ -1468,9 +1504,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setConversationInfo,
     isEnableSubscription,
     setOpenPaymentModal,
-    isSidebarVisible,
-    sidebarRef,
-    hidePagePreview,
+    isAgentDetailModalOpen,
+    handleOpenAgentDetail: () => setIsAgentDetailModalOpen(true),
     closePreviewView: handleClosePreviewView,
     handleOpenPreview,
     isShowFilePanel,
@@ -1539,7 +1574,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   /**
    * V2 工具详情资源点击：文件 → 打开预览面板（与 FINAL_RESULT task-result
    * 文件自动打开同链路：开面板 + 设选中 + 触发器）；URL → 新窗口。
-   * 路径不属于当前会话/无法解析时按定调直接 toast 提示，不做其他兜底。
+   * 工作区外沙箱文件（桌面等）→ 独立预览面板（customTargetDir 锚定家目录，
+   * 云端会话放开为后端契约）。路径不属于当前会话/无法解析时按定调直接 toast
+   * 提示，不做其他兜底。
    */
   const handleOpenToolResource = (resource: ConversationToolResource) => {
     if (resource.kind === 'url') {
@@ -1562,6 +1599,18 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       return;
     }
     openPreviewView(currentId);
+    if (decision.type === 'open-external') {
+      // 清工作区自动选中，右侧面板切换为独立预览
+      toolResourceSelectRef.current = '';
+      setTaskAgentSelectedFileId('');
+      setExternalPreviewFile({
+        cId: Number(currentId),
+        targetDir: decision.targetDir,
+        relativePath: decision.relativePath,
+      });
+      return;
+    }
+    exitExternalPreview();
     // 记录本次点击目标：文件树拉取完成后仍找不到时由 onSelectedFileMissing 提示
     toolResourceSelectRef.current = decision.relativePath;
     setTaskAgentSelectedFileId(decision.relativePath);
@@ -1623,6 +1672,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       hideDesktop: effectiveAgent?.hideDesktop,
       expandPageArea: effectiveAgent?.expandPageArea,
       allowChooseMode: effectiveAgent?.allowChooseMode,
+      enableVersionControl: effectiveAgent?.enableVersionControl,
     },
     onSendMessage: handleMessageSend,
     onClear: showClearContext && !chromeFlags.hideNew ? handleClear : undefined,
@@ -1710,6 +1760,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   headerProps={headerProps}
                   chatSessionProps={chatSessionProps}
                   fileSidebarProps={fileSidebarProps}
+                  externalFilePreview={externalPreviewFile}
+                  onExternalFilePreviewBack={exitExternalPreview}
                 />
               )
             }
@@ -1772,6 +1824,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   headerProps={headerProps}
                   chatSessionProps={chatSessionProps}
                   fileSidebarProps={fileSidebarProps}
+                  externalFilePreview={externalPreviewFile}
+                  onExternalFilePreviewBack={exitExternalPreview}
                 />
               </div>
             )}
@@ -1809,22 +1863,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           </div>
         )}
       </div>
-      {/* 非应用智能体模式下，显示智能体详情侧边栏 */}
-      <ConditionRender
-        condition={showSidebar && !isAppSidebarMode && !isFileTreeVisible}
-      >
-        {/* AgentSidebar - 只在文件树隐藏时显示 */}
-        <AgentSidebar
-          ref={sidebarRef}
-          className={cx(
-            styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
-          )}
-          agentId={agentId}
-          loading={loadingConversation}
-          agentDetail={effectiveAgent}
-          onVisibleChange={setIsSidebarVisible}
-        />
-      </ConditionRender>
+      {/* 智能体详情悬浮弹窗：与文件树/终端/云电脑面板共存，不再互斥 */}
+      <AgentDetailModal
+        open={isAgentDetailModalOpen}
+        onClose={() => setIsAgentDetailModalOpen(false)}
+        agentId={agentId}
+        loading={loadingConversation}
+        agentDetail={effectiveAgent}
+      />
       {/*展示台区域*/}
       <ShowArea />
 

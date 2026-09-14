@@ -70,6 +70,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     backgroundId,
     navigationStyle,
     isNavigationDark,
+    isNavigationStyleLocked,
     extraColors,
     updatePrimaryColor,
     updateBackground,
@@ -265,16 +266,20 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
             />
           </div>
 
-          <div className={cx(styles.configItem)}>
-            <BackgroundImagePanel
-              backgroundImages={backgroundImages}
-              currentBackground={backgroundId}
-              onBackgroundChange={handleBackgroundChange}
-              enableCustomUpload={false}
-              // 单栏风格锁定纯色背景（2026-09-12 需求）：面板置灰不可选
-              disabled={navigationStyle === ThemeNavigationStyleType.STYLE3}
-            />
-          </div>
+          {/* 背景选项：桌面客户端不展示（2026-09-14 需求——客户端锁单栏纯色
+              背景，无可选性）；浏览器保持原交互（单栏风格下置灰锁定） */}
+          {!isNavigationStyleLocked && (
+            <div className={cx(styles.configItem)}>
+              <BackgroundImagePanel
+                backgroundImages={backgroundImages}
+                currentBackground={backgroundId}
+                onBackgroundChange={handleBackgroundChange}
+                enableCustomUpload={false}
+                // 单栏风格锁定纯色背景（2026-09-12 需求）：面板置灰不可选
+                disabled={navigationStyle === ThemeNavigationStyleType.STYLE3}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

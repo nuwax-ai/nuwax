@@ -8,6 +8,13 @@ html {
   height: 100%;
   min-width: 1200px; //TODO 这个要和UI 确认
   background-color: #fff;
+
+  // 单栏风格（style3）：侧边面板固定、滚动区域收敛在 page-container，
+  // 不再强制全局最小宽（否则窗口有效宽度窄于 1200px 时，任何页面都会出现
+  // 窗口级常驻横向滚动条）
+  &[data-nav-style='sidebar'] {
+    min-width: 0;
+  }
 }
 
 #root {
@@ -202,14 +209,19 @@ body {
 // 迁全局类规避；后端/构建侧查明后可再迁回模块样式。
 // ============================================
 .conversation-quick-nav {
-  position: absolute;
-  left: 0;
-  top: 50%;
+  // fixed 视口坐标定位（top/left 由组件按滚动容器几何计算，仅保留垂直居中平移）：
+  // 原 absolute 贴 session-container 左缘时，外层多层 overflow:hidden 祖先会在
+  // 容器左缘处双裁剪（负偏移不可见不可点），无法进入内容区左缘留白；
+  // fixed 不受祖先裁剪影响，可统一左移。祖先出现 transform/filter 时会退化为
+  // 相对该祖先定位（挂载约定见组件 JSDoc）
+  position: fixed;
   transform: translateY(-50%);
   z-index: 12;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  // overflow-y 会使横向溢出也被裁剪；预留波浪峰值宽度，避免 scaleX 只在 DOM 中生效
+  width: 24px;
   gap: 2px;
   max-height: 60vh;
   padding: 6px 0;
@@ -222,28 +234,30 @@ body {
 }
 
 // 等宽细线形态：常态浅灰、当前视口所在块深色。
-// 视觉线由 ::before 绘制（2px、随按钮宽度），按钮本体高 10px 作为鼠标热区；
-// hover 变长由组件的波浪逻辑直改按钮宽度驱动（此处只管变色）
+// 视觉线由 ::before 绘制（2px、随按钮宽度），按钮本体高 8px，行距 10px；
+// hover 变长由组件的波浪逻辑直改按钮 transform: scaleX 驱动（不触发布局），
+// 因此 transform-origin 固定左缘、向右伸展；此处只管变色
 .conversation-quick-nav-line {
   position: relative;
   flex-shrink: 0;
-  width: 20px;
-  height: 10px;
+  width: 12px;
+  height: 8px;
   padding: 0;
   border: none;
   background: transparent;
   cursor: pointer;
+  transform-origin: left center;
 
   &::before {
     content: '';
     position: absolute;
     left: 0;
-    top: 4px;
+    top: 3px;
     width: 100%;
     height: 2px;
     border-radius: 1px;
     background-color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 18%));
-    transition: width 0.15s ease, background-color 0.2s ease;
+    transition: background-color 0.2s ease;
   }
 
   &:hover::before {
@@ -255,31 +269,34 @@ body {
   }
 }
 
-// 悬停卡片（挂 Tooltip color="white" 的浮层内，白底黑字）：标题粗体一行 + 正文多行截断
+// 悬停卡片（挂 Tooltip color="white" 的浮层内，白底黑字）：标题最多两行、正文最多三行
 .conversation-quick-nav-preview {
-  max-width: 320px;
+  max-width: 300px;
 }
 
 .conversation-quick-nav-preview-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  /* stylelint-disable-next-line value-no-vendor-prefix */
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   font-size: 14px;
-  line-height: 22px;
+  line-height: 20px;
   font-weight: 600;
   color: rgba(0, 0, 0, 88%);
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .conversation-quick-nav-preview-body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   /* stylelint-disable-next-line value-no-vendor-prefix */
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
   margin-top: 4px;
   font-size: 13px;
-  line-height: 22px;
+  line-height: 20px;
   color: rgba(0, 0, 0, 65%);
   word-break: break-all;
 }

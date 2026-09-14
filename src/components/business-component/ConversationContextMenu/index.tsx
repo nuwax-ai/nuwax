@@ -222,6 +222,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   );
 
   const handleRenameSubmit = async () => {
+    if (submitting) return;
     const trimmed = renameTopic.trim();
     if (!trimmed) return;
     setSubmitting(true);

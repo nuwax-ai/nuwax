@@ -23,6 +23,7 @@ import {
   ThemeLayoutColorStyle,
   ThemeNavigationStyleType,
 } from '@/types/enums/theme';
+import { isDesktopHost } from '@/utils/hostBridge';
 import { migrateLegacyNavigationStyleToStyle3 } from './navStyleMigration';
 
 /**
@@ -30,6 +31,19 @@ import { migrateLegacyNavigationStyleToStyle3 } from './navStyleMigration';
  * 单栏风格下背景不可修改，见 updateData 内的不变量收敛）。
  */
 const singleColumnBackgroundId = backgroundConfigs.find((bg) => !bg.url)?.id;
+
+/**
+ * 生效导航风格：桌面端（商业宿主）锁定单栏 style3，其余环境随存储配置。
+ * 与 useUnifiedTheme.effectiveNavigationStyle 同一规则的单源实现——React 布局
+ * 分发（hook 层）与背景/DOM 落地（本服务）必须同源，否则出现「单栏布局 +
+ * 存储风格的壁纸/属性」错位（2026-09-14 商业客户端实证：存储 style1 + 渐变
+ * 壁纸在锁单栏的客户端里原样渲染，单栏纯色背景失守）。
+ */
+export function resolveEffectiveNavigationStyle(
+  navigationStyle: ThemeNavigationStyleType,
+): ThemeNavigationStyleType {
+  return isDesktopHost() ? ThemeNavigationStyleType.STYLE3 : navigationStyle;
+}
 
 /**
  * layoutStyle（导航深浅色）值域收敛：仅认 light/dark，其余值（两代字段语义
@@ -113,9 +127,11 @@ class UnifiedThemeService {
 
     // 单栏（style3）锁定纯色背景（2026-09-12 需求）：历史「单栏 + 图片背景」
     // 状态在加载时归一（不回写存储，仅收敛生效态），与 updateNavigationStyle
-    // 的切入收敛同源
+    // 的切入收敛同源。判据用生效风格（resolveEffectiveNavigationStyle）：
+    // 桌面端锁定单栏时，存储 style1/2 的渐变壁纸同样收敛为纯色
     if (
-      data.navigationStyle === ThemeNavigationStyleType.STYLE3 &&
+      resolveEffectiveNavigationStyle(data.navigationStyle) ===
+        ThemeNavigationStyleType.STYLE3 &&
       singleColumnBackgroundId &&
       data.backgroundId !== singleColumnBackgroundId
     ) {
@@ -406,12 +422,26 @@ class UnifiedThemeService {
     } = options;
 
     // 更新内存中的数据
-    this.currentData = {
+    const next: UnifiedThemeData = {
       ...this.currentData,
       ...(updates || {}),
       timestamp: Date.now(),
       source: 'user', // 用户操作都标记为用户来源
     };
+    // 桌面端生效单栏（resolveEffectiveNavigationStyle 单源）：任何写入路径都不得
+    // 把图片背景带回生效态——加载收敛之后到达的登录/租户回声（tenantConfigInfo
+    // 把模板并进 updateData）会把渐变壁纸写回，2026-09-14 客户端实证（浏览器手动
+    // 切换正常、客户端仍渐变的差异根因）。浏览器端不收敛：租户管理页背景预览
+    // 共用本服务，管理员误强转顾虑照旧（2026-09-12 注释）。
+    if (
+      isDesktopHost() &&
+      resolveEffectiveNavigationStyle(next.navigationStyle) ===
+        ThemeNavigationStyleType.STYLE3 &&
+      singleColumnBackgroundId
+    ) {
+      next.backgroundId = singleColumnBackgroundId;
+    }
+    this.currentData = next;
 
     // 保存到存储
     if (saveToStorage) {
@@ -508,9 +538,14 @@ class UnifiedThemeService {
         this.currentData.layoutStyle === ThemeLayoutColorStyle.DARK
           ? 'dark'
           : 'light';
+      // 生效导航风格（桌面端锁定单栏）：CSS 变量/data 属性/body 类与 React
+      // 布局分发同源（resolveEffectiveNavigationStyle），避免「单栏布局挂着
+      // 存储风格的壁纸与属性」错位
+      const navigationStyleKey = resolveEffectiveNavigationStyle(
+        this.currentData.navigationStyle,
+      );
       // 枚举值与组合键后缀同名（style1/style2/style3），直接透传；
       // style3（单栏）的变量组克隆自 style1，缺失时走下方兜底
-      const navigationStyleKey = this.currentData.navigationStyle;
       const styleConfigKey = `${layoutStyleKey}-${navigationStyleKey}`;
 
       const styleConfig = STYLE_CONFIGS[styleConfigKey];
@@ -525,9 +560,10 @@ class UnifiedThemeService {
           root.style.setProperty(property, value);
         });
       } else {
-        // 设置导航栏宽度（兜底）
+        // 设置导航栏宽度（兜底）；style3 layout 变量与 style1 同源，同宽
         const navWidth =
-          this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE1
+          navigationStyleKey === ThemeNavigationStyleType.STYLE1 ||
+          navigationStyleKey === ThemeNavigationStyleType.STYLE3
             ? `${FIRST_MENU_WIDTH}px`
             : `${FIRST_MENU_WIDTH_STYLE2}px`;
         root.style.setProperty('--xagi-nav-first-menu-width', navWidth);
@@ -538,13 +574,13 @@ class UnifiedThemeService {
       root.setAttribute('data-nav-theme', this.currentData.layoutStyle);
       root.setAttribute(
         'data-nav-style',
-        this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE1
+        navigationStyleKey === ThemeNavigationStyleType.STYLE1
           ? 'compact'
-          : this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE3
+          : navigationStyleKey === ThemeNavigationStyleType.STYLE3
           ? 'sidebar'
           : 'expanded',
       );
-      this.updateBodyClasses();
+      this.updateBodyClasses(navigationStyleKey);
     } catch (error) {
       console.error('Failed to apply theme data to DOM:', error);
     }
@@ -552,8 +588,13 @@ class UnifiedThemeService {
 
   /**
    * 更新body元素的样式类名
+   * @param effectiveNavigationStyle 生效导航风格（桌面端锁定单栏，见
+   * resolveEffectiveNavigationStyle）——body 布局类须与实际渲染形态一致，
+   * 单栏专属样式（xagi-nav-style3 选择器，如底部栏内缩）依赖此前提
    */
-  private updateBodyClasses(): void {
+  private updateBodyClasses(
+    effectiveNavigationStyle: ThemeNavigationStyleType,
+  ): void {
     // 移除所有相关的类名
     document.body.classList.remove(
       'xagi-layout-light',
@@ -565,7 +606,7 @@ class UnifiedThemeService {
 
     // 添加当前样式对应的类名
     document.body.classList.add(`xagi-layout-${this.currentData.layoutStyle}`);
-    document.body.classList.add(`xagi-nav-${this.currentData.navigationStyle}`);
+    document.body.classList.add(`xagi-nav-${effectiveNavigationStyle}`);
   }
 
   /**
@@ -763,5 +804,4 @@ export const {
   getExtraColors,
   clearUserThemeConfig,
 } = unifiedThemeService;
-
 export default unifiedThemeService;

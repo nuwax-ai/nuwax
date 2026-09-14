@@ -21,7 +21,10 @@ import {
   syncLangFromUserInfo,
 } from './services/i18nRuntime';
 import { apiQueryMenus } from './services/menuService';
-import { unifiedThemeService } from './services/unifiedThemeService';
+import {
+  resolveEffectiveNavigationStyle,
+  unifiedThemeService,
+} from './services/unifiedThemeService';
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { hostBridge, syncShellAvoidanceCss } from './utils/hostBridge';
@@ -269,11 +272,16 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
           'data-nav-theme',
           data.layoutStyle,
         );
+        // 生效导航风格（桌面端锁定单栏）：与 unifiedThemeService.applyToDOM
+        // 同源，避免单栏布局挂存储风格的 data-nav-style（sidebar 专属豁免失配）
+        const effectiveNavigationStyle = resolveEffectiveNavigationStyle(
+          data.navigationStyle,
+        );
         document.documentElement.setAttribute(
           'data-nav-style',
-          data.navigationStyle === 'style1'
+          effectiveNavigationStyle === 'style1'
             ? 'compact'
-            : data.navigationStyle === 'style3'
+            : effectiveNavigationStyle === 'style3'
             ? 'sidebar'
             : 'expanded',
         );

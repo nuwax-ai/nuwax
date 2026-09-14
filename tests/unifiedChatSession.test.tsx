@@ -79,7 +79,6 @@ vi.mock('@/components/business-component/AgentIntervention', () => ({
     agentModeInputProps: {
       agentMode: 'yolo',
       onAgentModeChange: vi.fn(),
-      showAgentModeSelector: false,
     },
   }),
 }));

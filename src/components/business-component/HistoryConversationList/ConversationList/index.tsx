@@ -2,7 +2,7 @@ import ConversationContextMenu from '@/components/business-component/Conversatio
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { migrateLocalConversationFavorites } from '@/utils/conversationFavorites';
+import { migrateLocalConversationFavorites } from '@/services/conversationFavoriteMigration';
 import {
   applyConversationFlagOverrides,
   ConversationFlagOverride,

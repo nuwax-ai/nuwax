@@ -166,6 +166,38 @@ describe('hostBridge（统一对外接入层）', () => {
     });
   });
 
+  describe('native.openClientSettings（打开壳客户端设置弹窗）', () => {
+    it('桥返回 success → 透传', async () => {
+      const openClientSettings = vi.fn().mockResolvedValue({ success: true });
+      (window as any).NuwaClawBridge = { native: { openClientSettings } };
+      await expect(native.openClientSettings()).resolves.toEqual({
+        success: true,
+      });
+      expect(openClientSettings).toHaveBeenCalledWith();
+    });
+    it('无桥 / 旧版宿主未实现 → {success:false}（调用方降级）', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(native.openClientSettings()).resolves.toEqual({
+        success: false,
+      });
+      (window as any).NuwaClawBridge = { native: {} };
+      await expect(native.openClientSettings()).resolves.toEqual({
+        success: false,
+      });
+    });
+    it('桥抛错 → 降级 {success:false} 且带 error', async () => {
+      (window as any).NuwaClawBridge = {
+        native: {
+          openClientSettings: vi.fn().mockRejectedValue(new Error('boom')),
+        },
+      };
+      await expect(native.openClientSettings()).resolves.toEqual({
+        success: false,
+        error: 'boom',
+      });
+    });
+  });
+
   describe('平台判定与避让（isMac / needsTopRightAvoid / shellAvoid）', () => {
     afterEach(() => {
       vi.unstubAllGlobals();
