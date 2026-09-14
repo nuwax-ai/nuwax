@@ -1079,6 +1079,8 @@ export interface ConnectorProviderInfo {
   sortOrder?: number;
   /** 是否已连接 */
   connected?: boolean;
+  /** 当前用户连接 id（已连接时有值；连接启用/停用接口 connections/{id}/status 寻址用） */
+  connectionId?: number;
   /** 当前用户该连接的启用状态（已连接卡片右上角的开关状态） */
   connectionEnabled?: boolean;
   /** 工具/动作数量（对应"工具数"列） */
