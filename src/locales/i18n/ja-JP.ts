@@ -6334,6 +6334,7 @@ export const JA_JP: SystemLangMap = {
   'PC.Components.CapabilityModal.subtitle': 'CAPABILITIES',
   'PC.Components.CapabilityModal.menuSkill': 'スキル',
   'PC.Components.CapabilityModal.menuConnector': 'コネクタ',
+  'PC.Components.AtResourcePopup.tabSkill': 'スキル',
   'PC.Components.AtResourcePopup.tabExpert': '専門家',
   'PC.Components.AtResourcePopup.tabKnowledge': '資料ライブラリ',
   'PC.Components.AtResourcePopup.tabFile': 'コンテキストファイル',

@@ -226,6 +226,26 @@ describe('+ 号弹层结构', () => {
     );
     expect(editor.openCapabilityWithType).toHaveBeenCalledWith('connector');
   });
+
+  it('enableMention=false（allowAtSkill 非 1）：隐藏「/ 能力」入口并从能力弹窗开放范围滤除技能', () => {
+    renderInput({ enableMention: false });
+    // 能力弹窗资源类型：技能被收敛（连接器等其余维度保留）
+    expect(editor.lastProps.capabilityResourceTypes).not.toContain('skill');
+    expect(editor.lastProps.capabilityResourceTypes).toEqual(
+      expect.arrayContaining(['connector', 'knowledge']),
+    );
+    openPlusMenu();
+    // + 号菜单不再有「/ 能力」项，其余入口保留
+    expect(
+      screen.queryByText('PC.Components.ChatInputHome.slashCapability'),
+    ).toBeNull();
+    expect(
+      screen.getByText('PC.Components.ChatInputHome.attachFile'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('PC.Components.ChatInputHome.plusMenuConnector'),
+    ).toBeInTheDocument();
+  });
 });
 
 describe('开关持久化（chatbox.config.{agentId} 全量写入）', () => {

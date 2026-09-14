@@ -6455,6 +6455,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.CapabilityModal.subtitle': 'CAPABILITIES',
   'PC.Components.CapabilityModal.menuSkill': '技能',
   'PC.Components.CapabilityModal.menuConnector': '连接器',
+  'PC.Components.AtResourcePopup.tabSkill': '技能',
   'PC.Components.AtResourcePopup.tabExpert': '专家',
   'PC.Components.AtResourcePopup.tabKnowledge': '资料库',
   'PC.Components.AtResourcePopup.tabFile': '上下文文件',

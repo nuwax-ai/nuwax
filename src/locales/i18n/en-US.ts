@@ -6460,6 +6460,7 @@ export const EN_US: SystemLangMap = {
   'PC.Components.CapabilityModal.subtitle': 'CAPABILITIES',
   'PC.Components.CapabilityModal.menuSkill': 'Skills',
   'PC.Components.CapabilityModal.menuConnector': 'Connectors',
+  'PC.Components.AtResourcePopup.tabSkill': 'Skills',
   'PC.Components.AtResourcePopup.tabExpert': 'Experts',
   'PC.Components.AtResourcePopup.tabKnowledge': 'Knowledge',
   'PC.Components.AtResourcePopup.tabFile': 'Context Files',
