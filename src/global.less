@@ -210,8 +210,9 @@ body {
 // ============================================
 .conversation-quick-nav {
   position: absolute;
-  // 负偏移让线条压过内容区左缘一点（经 session-container overflow:hidden 实测不裁剪）
-  left: -6px;
+  // 🔴不能负偏移左移：session-container 的 overflow:hidden 对绘制与命中双裁剪，
+  // 线条超出容器左缘的部分直接不可见不可点；left:0 即贴死内容区分界线（最左形态）
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
   z-index: 12;
@@ -236,7 +237,7 @@ body {
 .conversation-quick-nav-line {
   position: relative;
   flex-shrink: 0;
-  width: 5px;
+  width: 10px;
   height: 10px;
   padding: 0;
   border: none;

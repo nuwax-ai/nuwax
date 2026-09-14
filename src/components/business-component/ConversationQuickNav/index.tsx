@@ -1,11 +1,14 @@
 import { t } from '@/services/i18nRuntime';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { Tooltip } from 'antd';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  buildQuickNavBlocks,
-  QuickNavBlock,
-} from './blocks';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { buildQuickNavBlocks, QuickNavBlock } from './blocks';
 
 /**
  * 会话快捷导航（可复用组件）：会话内容区左缘的缩略导航条，一问一答一块。
@@ -31,10 +34,15 @@ const MIN_CONTAINER_WIDTH = 600;
 /** scroll-spy 视口判定线：容器顶部往下 35% 处 */
 const ACTIVE_THRESHOLD_RATIO = 0.35;
 
-/** 波浪：悬停点线条峰值宽度增量（px）与衰减半径（px） */
+/**
+ * 波浪：悬停点线条峰值宽度增量（px）与衰减半径（px）。
+ * 增量保持绝对值 8px（不随线宽同比缩）：线宽减半后若同比减增量，
+ * 4px 拉伸在细线上不可感知，波浪观感等于消失
+ */
 const WAVE_MAX_EXTRA = 8;
 const WAVE_SIGMA = 16;
-const LINE_BASE_WIDTH = 20;
+/** 线条基础宽度（与 global.less 中 .conversation-quick-nav-line 的 width 一致） */
+const LINE_BASE_WIDTH = 10;
 
 interface ConversationQuickNavProps {
   scrollContainerRef: React.RefObject<HTMLDivElement>;
@@ -57,39 +65,62 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
   const navRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef<Array<HTMLButtonElement | null>>([]);
   const waveRafRef = useRef(0);
+  /** 波浪帧使用的最新鼠标纵位（rAF 期间移动不丢帧） */
+  const waveYRef = useRef(0);
+  /** 线条纵向中心缓存：波浪帧内零布局读取，手势进入/导航滚动/块数变化时重建 */
+  const centersRef = useRef<Array<number | null> | null>(null);
+  /** 锚点 id → 相对内容顶部偏移缓存：与滚动无关，仅内容布局变化时重建 */
+  const anchorTopsRef = useRef<Map<string, number> | null>(null);
 
-  /** 波浪效果：以鼠标纵轴为中心按高斯衰减拉长附近线条（直改 DOM，避开逐帧重渲染） */
-  const applyWave = useCallback((clientY: number) => {
-    if (waveRafRef.current) return;
-    waveRafRef.current = window.requestAnimationFrame(() => {
-      waveRafRef.current = 0;
-      const els = linesRef.current;
-      // 先批量读（一次回流），再批量写
-      const centers = els.map((el) => {
-        if (!el) return null;
-        const r = el.getBoundingClientRect();
-        return r.top + r.height / 2;
-      });
-      els.forEach((el, i) => {
-        if (!el) return;
-        const center = centers[i];
-        const distance = center === null ? Infinity : Math.abs(center - clientY);
-        const extra =
-          WAVE_MAX_EXTRA *
-          Math.exp(-(distance * distance) / (2 * WAVE_SIGMA * WAVE_SIGMA));
-        el.style.width = `${LINE_BASE_WIDTH + extra}px`;
-      });
+  const readCenters = useCallback(() => {
+    centersRef.current = linesRef.current.map((el) => {
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      return rect.top + rect.height / 2;
     });
   }, []);
+
+  /**
+   * 波浪效果：以鼠标纵轴为中心按高斯衰减拉长附近线条。
+   * 帧内只做缓存读取 + transform 写入（scaleX 不触发布局），
+   * 避免与滚动测量互相争抢主线程造成卡顿。
+   */
+  const applyWave = useCallback(
+    (clientY: number) => {
+      waveYRef.current = clientY;
+      if (waveRafRef.current) return;
+      waveRafRef.current = window.requestAnimationFrame(() => {
+        waveRafRef.current = 0;
+        if (!centersRef.current) readCenters();
+        const centers = centersRef.current;
+        if (!centers) return;
+        const y = waveYRef.current;
+        linesRef.current.forEach((el, i) => {
+          if (!el) return;
+          const center = centers[i];
+          const distance = center === null ? Infinity : Math.abs(center - y);
+          const extra =
+            WAVE_MAX_EXTRA *
+            Math.exp(-(distance * distance) / (2 * WAVE_SIGMA * WAVE_SIGMA));
+          el.style.transform =
+            extra <= 0.1
+              ? ''
+              : `scaleX(${(LINE_BASE_WIDTH + extra) / LINE_BASE_WIDTH})`;
+        });
+      });
+    },
+    [readCenters],
+  );
 
   const resetWave = useCallback(() => {
     if (waveRafRef.current) {
       window.cancelAnimationFrame(waveRafRef.current);
       waveRafRef.current = 0;
     }
+    centersRef.current = null;
     linesRef.current.forEach((el) => {
       if (el) {
-        el.style.width = '';
+        el.style.transform = '';
       }
     });
   }, []);
@@ -118,22 +149,29 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       return;
     }
 
-    // 一趟收集所有锚点 id → 相对容器顶部的偏移（只读批量取 rect，一帧一次回流）
-    const topById = new Map<string, number>();
-    const containerTop = container.getBoundingClientRect().top;
-    const collect = (selector: string, pickIds: (el: Element) => string[]) => {
-      container.querySelectorAll(selector).forEach((el) => {
-        const top =
-          el.getBoundingClientRect().top - containerTop + scrollTop;
-        pickIds(el).forEach((id) => topById.set(id, top));
-      });
-    };
-    collect('[data-server-message-id]', (el) => [
-      el.getAttribute('data-server-message-id') || '',
-    ]);
-    collect('[data-server-message-ids]', (el) =>
-      (el.getAttribute('data-server-message-ids') || '').split(/\s+/),
-    );
+    // 锚点偏移与滚动无关（相对内容顶部），只在内容布局变化时重建；
+    // 滚动帧复用缓存，避免每帧对全量消息 DOM 做 rect 读取造成滚动卡顿
+    if (!anchorTopsRef.current) {
+      const topById = new Map<string, number>();
+      const containerTop = container.getBoundingClientRect().top;
+      const collect = (
+        selector: string,
+        pickIds: (el: Element) => string[],
+      ) => {
+        container.querySelectorAll(selector).forEach((el) => {
+          const top = el.getBoundingClientRect().top - containerTop + scrollTop;
+          pickIds(el).forEach((id) => topById.set(id, top));
+        });
+      };
+      collect('[data-server-message-id]', (el) => [
+        el.getAttribute('data-server-message-id') || '',
+      ]);
+      collect('[data-server-message-ids]', (el) =>
+        (el.getAttribute('data-server-message-ids') || '').split(/\s+/),
+      );
+      anchorTopsRef.current = topById;
+    }
+    const topById = anchorTopsRef.current;
 
     const threshold = scrollTop + clientHeight * ACTIVE_THRESHOLD_RATIO;
     let nextActive = -1;
@@ -158,6 +196,12 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
     });
   }, [measure]);
 
+  // 消息列表变化（新会话/流式追加）→ 锚点与线条几何缓存全部失效
+  useEffect(() => {
+    anchorTopsRef.current = null;
+    centersRef.current = null;
+  }, [blocks]);
+
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -171,9 +215,12 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       };
     }
 
-    // 内容高度变化（流式追加/Markdown 渲染/历史加载）不经容器盒尺寸反映，
-    // 补观察首个子节点（chat-wrapper）保证 scroll-spy 缓存不漂移
-    const observer = new ResizeObserver(() => scheduleMeasure());
+    // 内容高度变化（流式追加/Markdown 渲染/历史加载）使锚点偏移缓存失效，
+    // 并补观察首个子节点（chat-wrapper），保证 scroll-spy 缓存不漂移
+    const observer = new ResizeObserver(() => {
+      anchorTopsRef.current = null;
+      scheduleMeasure();
+    });
     observer.observe(container);
     if (container.firstElementChild) {
       observer.observe(container.firstElementChild);
@@ -232,8 +279,13 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       data-testid="conversation-quick-nav"
       aria-label={t('PC.Components.ConversationQuickNav.tooltip')}
       style={centerTop !== null ? { top: centerTop } : undefined}
+      onMouseEnter={readCenters}
       onMouseMove={(e) => applyWave(e.clientY)}
       onMouseLeave={resetWave}
+      onScroll={() => {
+        // 导航自身内部滚动后线条视口位置变化，中心缓存失效
+        centersRef.current = null;
+      }}
     >
       {blocks.map((block, index) => (
         <Tooltip
