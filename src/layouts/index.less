@@ -70,4 +70,12 @@
       border-radius: 0;
     }
   }
+
+  // 单栏风格（style3）：侧边面板（一级+二级菜单）固定，滚动区域统一收敛到
+  // page-container。本身 100% 高、内部自滚的页面不受影响；内容溢出的页面
+  // 兜底在 page-container 内滚动，不再被裁剪（覆盖 overflow-hide 工具类）。
+  &.xagi-nav-style3 {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
 }

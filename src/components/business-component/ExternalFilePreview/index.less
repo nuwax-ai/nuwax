@@ -1,0 +1,67 @@
+// 工作区外沙箱文件独立预览面板：头部完整路径 + 正文按类型渲染
+@import '@/styles/color';
+@import '@/styles/token';
+
+.external-file-preview {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg-container, #fff);
+}
+
+.external-file-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 8px 0 16px;
+  border-bottom: 1px solid var(--color-border-tertiary, #f0f0f0);
+  color: var(--color-text, rgba(0, 0, 0, 88%));
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 40px;
+}
+
+.external-file-header-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 返回工作区文件树的显式出口（独立预览整块顶替文件树面板，须留退路）
+.external-file-back {
+  flex-shrink: 0;
+  margin-left: -6px;
+
+  &:hover {
+    color: @colorPrimary;
+  }
+}
+
+.external-file-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.external-file-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+}
+
+.external-file-failed-text {
+  max-width: 320px;
+  color: var(--color-text-tertiary, rgba(0, 0, 0, 45%));
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+}

@@ -21,6 +21,10 @@ export {
   type DevLogActionsProps,
 } from './ConversationBottomConsole/DevLogActions';
 export { default as CopyToSpaceComponent } from './CopyToSpaceComponent';
+export {
+  default as ExternalFilePreview,
+  type ExternalFilePreviewProps,
+} from './ExternalFilePreview';
 export { default as FilePreview } from './FilePreview';
 export {
   default as FileTreeGitSourcePanel,

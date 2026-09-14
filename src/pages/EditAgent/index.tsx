@@ -1072,6 +1072,12 @@ const EditAgent: React.FC = () => {
     /**
      * 设置最小宽度
      */
+    // 单栏风格（style3）：滚动区域收敛在 page-container 内，
+    // 不再拓宽 html（否则窗口窄于阈值时出现窗口级全局滚动条）
+    if (document.body.classList.contains('xagi-nav-style3')) {
+      document.documentElement.style.minWidth = 'unset';
+      return;
+    }
     // 通用型智能体才会存在文件树，当文件树可见、扩展页面可见时，设置最小宽度为1750px
     if (isFileTreeVisible || pagePreviewData) {
       document.documentElement.style.minWidth = '1750px';

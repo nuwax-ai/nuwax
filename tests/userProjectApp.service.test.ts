@@ -47,15 +47,23 @@ describe('常规项目与项目标记接口契约', () => {
     );
   });
 
-  it('项目置顶与归档走 user-project toggle 接口', async () => {
-    await apiUserProjectPin(32);
+  it('项目置顶与归档走 user-project toggle 接口且必传目标态与 projectType', async () => {
+    await apiUserProjectPin(32, true, 'NormalProject');
     expect(request).toHaveBeenLastCalledWith('/api/user-project/pin/32', {
       method: 'POST',
+      params: { pinned: true, projectType: 'NormalProject' },
     });
 
-    await apiUserProjectArchive(32);
+    await apiUserProjectPin(32, false, 'NormalProject');
+    expect(request).toHaveBeenLastCalledWith('/api/user-project/pin/32', {
+      method: 'POST',
+      params: { pinned: false, projectType: 'NormalProject' },
+    });
+
+    await apiUserProjectArchive(32, true, 'UserApp');
     expect(request).toHaveBeenLastCalledWith('/api/user-project/archive/32', {
       method: 'POST',
+      params: { archived: true, projectType: 'UserApp' },
     });
   });
 
