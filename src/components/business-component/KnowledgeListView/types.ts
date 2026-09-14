@@ -41,7 +41,7 @@ export interface KnowledgeListViewProps {
   keyword?: string;
   /** space 场景必传：repo 树接口 spaceId 必传；未传时挂起不加载 */
   spaceId?: number;
-  /** 选中回调：资料无付费拦截，直调（悬停「选择」按钮为唯一选中入口） */
+  /** 选中回调：资料无付费拦截，直调（整行点击即选中；grid 变体另有悬停「选择」按钮，list 不渲染） */
   onSelect: (item: KnowledgeListItem) => void;
   /** 每页数量，默认 20（树平铺后客户端切片步长） */
   pageSize?: number;

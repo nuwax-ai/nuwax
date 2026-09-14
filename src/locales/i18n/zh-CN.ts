@@ -6371,6 +6371,13 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "创建成功",
   "PC.Pages.SpaceProjectManage.createFailed": "创建失败，请稍后重试",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "项目暂无会话，请进入项目后再导出",
+  // 常规项目详情页
+  "PC.Pages.NormalProjectDetail.tabPlan": "计划",
+  "PC.Pages.NormalProjectDetail.tabAsset": "资产",
+  "PC.Pages.NormalProjectDetail.comingSoon": "功能即将开放",
+  "PC.Pages.NormalProjectDetail.untitled": "未命名项目",
+  "PC.Pages.NormalProjectDetail.hideConversationPanel": "隐藏相关任务",
+  "PC.Pages.NormalProjectDetail.showConversationPanel": "显示相关任务",
   // 全栈应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "计划",
@@ -6420,6 +6427,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateHint": "应用端口用于对外提供访问，管理端口用于平台下发部署与健康检查。请确保服务器可被平台访问，并已在安全组放通上述端口。选择 HTTPS 时，需在服务器上部署有效证书并监听应用端口，平台不代管证书。",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "相关任务",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "隐藏相关任务",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "显示相关任务",
   "PC.Pages.AppProjectDetail.newConversation": "新建任务",
   "PC.Pages.AppProjectDetail.emptyConversation": "暂无会话",
   "PC.Pages.AppProjectDetail.mine": "我的",
@@ -6453,6 +6462,10 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.CapabilityModal.subtitle': 'CAPABILITIES',
   'PC.Components.CapabilityModal.menuSkill': '技能',
   'PC.Components.CapabilityModal.menuConnector': '连接器',
+  'PC.Components.AtResourcePopup.tabExpert': '专家',
+  'PC.Components.AtResourcePopup.tabKnowledge': '资料库',
+  'PC.Components.AtResourcePopup.tabFile': '上下文文件',
+  'PC.Components.AtResourcePopup.more': '更多',
   'PC.Components.CapabilityModal.menuExpert': '专家',
   'PC.Components.CapabilityModal.menuKnowledge': '资料库',
   'PC.Components.CapabilityModal.mainTabConnected': '已连接的',

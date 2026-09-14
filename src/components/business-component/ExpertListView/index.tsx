@@ -1,7 +1,7 @@
 /**
  * ExpertListView — 独立专家列表组件（数据内聚 + 双布局变体）
- * @description 只做「专家列表」：按 type 四场景拉数（最近召唤/系统广场/
- * 团队空间/搜索场景，接口参数矩阵见 useExpertList）、滚动分页、
+ * @description 只做「专家列表」：按 type 五场景拉数（最近召唤/系统广场/
+ * 团队空间/搜索场景/便捷视图，接口参数矩阵见 useExpertList）、滚动分页、
  * 付费拦截门（选择前置）。tab/搜索框/分类 pill 等宿主 UI 不在组件内；
  * 选中经 onSelect 回调由外部走业务，付费统一专家卡弹窗
  * （ExpertSummonCard，含 Modal 壳）内聚。

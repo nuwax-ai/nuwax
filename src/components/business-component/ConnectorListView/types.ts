@@ -8,8 +8,11 @@ export interface ConnectorListItem {
   key: string;
   /** service 标识（连接/断开寻址） */
   rawId: number | string;
-  /** 提供方主键 id（切换连接启用状态接口 POST .../connections/{id}/status 寻址用） */
-  connectorId?: number;
+  /**
+   * 连接 id：切换连接启用状态接口（POST .../connections/{连接id}/status）
+   * 寻址用，取列表接口响应的 connectionId（已连接时有值，非提供方主键 id）
+   */
+  connectionId?: number;
   /** 名称 */
   name: string;
   /** 描述 */

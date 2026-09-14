@@ -1,10 +1,11 @@
 /**
  * list 变体行：单栏横排紧凑行——圆形小图标 + 名称/描述上下两行 +
- * 右端悬停「选择」+ 常驻启用开关。无边线，悬停方形圆角灰底。
- * 与 grid 变体功能一致（选中/开关/付费角标），仅布局不同。
+ * 右端常驻启用开关。无边线，悬停方形圆角灰底；整行点击即选中（list
+ * 紧凑场景不渲染悬停「选择」按钮，仅保留功能性开关）。与 grid 变体
+ * 功能一致（选中/开关/付费角标），仅布局不同。
  */
 import { t } from '@/services/i18nRuntime';
-import { Badge, Button, Switch } from 'antd';
+import { Badge, Switch } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -46,16 +47,6 @@ const SkillListRow: React.FC<SkillCardBaseProps> = ({
         </div>
       </div>
       <div className={cx(styles['list-actions'])}>
-        <Button
-          size="small"
-          className={cx(styles['card-hire'], styles['card-select'])}
-          onClick={(event) => {
-            event.stopPropagation();
-            onSelect(item);
-          }}
-        >
-          {t('PC.Components.CapabilityModal.select')}
-        </Button>
         <Switch
           className={cx(styles['card-switch'])}
           size="small"

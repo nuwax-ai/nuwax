@@ -6250,6 +6250,13 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "作成しました",
   "PC.Pages.SpaceProjectManage.createFailed": "作成に失敗しました。しばらくしてから再試行してください",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "まだ会話がありません。プロジェクトに入ってから書き出してください。",
+  // 通常プロジェクト詳細ページ
+  "PC.Pages.NormalProjectDetail.tabPlan": "計画",
+  "PC.Pages.NormalProjectDetail.tabAsset": "資産",
+  "PC.Pages.NormalProjectDetail.comingSoon": "近日公開",
+  "PC.Pages.NormalProjectDetail.untitled": "名称未設定プロジェクト",
+  "PC.Pages.NormalProjectDetail.hideConversationPanel": "関連タスクを隠す",
+  "PC.Pages.NormalProjectDetail.showConversationPanel": "関連タスクを表示",
   // 全栈应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "計画",
@@ -6299,6 +6306,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateHint": "アプリポートは外部公開用、管理ポートはデプロイとヘルスチェック用です。サーバーへ到達できることと、セキュリティグループで両ポートを開放してください。HTTPS の場合はサーバー側で証明書を用意しアプリポートで待受してください。証明書はプラットフォームでは管理しません。",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "関連タスク",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "関連タスクを隠す",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "関連タスクを表示",
   "PC.Pages.AppProjectDetail.newConversation": "新規タスク",
   "PC.Pages.AppProjectDetail.emptyConversation": "セッションはまだありません",
   "PC.Pages.AppProjectDetail.mine": "自分",
@@ -6332,6 +6341,10 @@ export const JA_JP: SystemLangMap = {
   'PC.Components.CapabilityModal.subtitle': 'CAPABILITIES',
   'PC.Components.CapabilityModal.menuSkill': 'スキル',
   'PC.Components.CapabilityModal.menuConnector': 'コネクタ',
+  'PC.Components.AtResourcePopup.tabExpert': '専門家',
+  'PC.Components.AtResourcePopup.tabKnowledge': '資料ライブラリ',
+  'PC.Components.AtResourcePopup.tabFile': 'コンテキストファイル',
+  'PC.Components.AtResourcePopup.more': 'その他',
   'PC.Components.CapabilityModal.menuExpert': '専門家',
   'PC.Components.CapabilityModal.menuKnowledge': '資料ライブラリ',
   'PC.Components.CapabilityModal.mainTabConnected': '接続済み',

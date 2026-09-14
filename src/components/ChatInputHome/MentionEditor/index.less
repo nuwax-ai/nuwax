@@ -90,6 +90,9 @@
 .mention-chip {
   display: inline-flex;
   align-items: center;
+  // 行内垂直对齐：chip 与文本/相邻 chip 按中线对齐（inline-flex 默认
+  // 基线对齐在内容高度不同的 chip 间会错位）
+  vertical-align: middle;
   text-indent: 0;
   background-color: @colorBgLayout;
   border-radius: @borderRadius;

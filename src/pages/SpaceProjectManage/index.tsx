@@ -209,9 +209,7 @@ const SpaceProjectManage: React.FC = () => {
           merged.push(item);
         });
       });
-      merged.sort((a, b) =>
-        (b.modified || '').localeCompare(a.modified || ''),
-      );
+      merged.sort((a, b) => (b.modified || '').localeCompare(a.modified || ''));
       conversationProjectRef.current = projectMap;
       setConversations(merged);
       setConversationLoading(false);
@@ -292,7 +290,7 @@ const SpaceProjectManage: React.FC = () => {
             );
             const rowData = got?.code === SUCCESS_CODE ? got.data : null;
             const rowCid = rowData?.conversationId ?? undefined;
-            const rowAid = (rowData as { agentId?: number } | null)?.agentId;
+            const rowAid = rowData?.devAgentId ?? undefined;
             if (rowCid && rowAid) {
               openProject(spaceId, item, rowCid, rowAid);
               return;
@@ -574,9 +572,7 @@ const SpaceProjectManage: React.FC = () => {
                             dict('PC.Pages.SpaceProjectManage.noDescription')}
                         </div>
                         <div className={styles['card-time']}>
-                          {(item.modified || '')
-                            .slice(0, 16)
-                            .replace('T', ' ')}
+                          {(item.modified || '').slice(0, 16).replace('T', ' ')}
                         </div>
                       </div>
                     </div>

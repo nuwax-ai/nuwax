@@ -6376,6 +6376,13 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "Created successfully",
   "PC.Pages.SpaceProjectManage.createFailed": "Creation failed, please try again later",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "No conversation yet. Open the project before exporting.",
+  // 常规项目详情页
+  "PC.Pages.NormalProjectDetail.tabPlan": "Plan",
+  "PC.Pages.NormalProjectDetail.tabAsset": "Assets",
+  "PC.Pages.NormalProjectDetail.comingSoon": "Coming soon",
+  "PC.Pages.NormalProjectDetail.untitled": "Untitled project",
+  "PC.Pages.NormalProjectDetail.hideConversationPanel": "Hide related tasks",
+  "PC.Pages.NormalProjectDetail.showConversationPanel": "Show related tasks",
   // 全栈应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "Plan",
@@ -6425,6 +6432,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateHint": "The app port is for public access. The manage port is for platform deploy and health checks. Make sure the server is reachable and both ports are open. For HTTPS, install a valid certificate on the app port. The platform does not manage certificates.",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "Related tasks",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "Hide related tasks",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "Show related tasks",
   "PC.Pages.AppProjectDetail.newConversation": "New task",
   "PC.Pages.AppProjectDetail.emptyConversation": "No conversations yet",
   "PC.Pages.AppProjectDetail.mine": "Mine",
@@ -6458,6 +6467,10 @@ export const EN_US: SystemLangMap = {
   'PC.Components.CapabilityModal.subtitle': 'CAPABILITIES',
   'PC.Components.CapabilityModal.menuSkill': 'Skills',
   'PC.Components.CapabilityModal.menuConnector': 'Connectors',
+  'PC.Components.AtResourcePopup.tabExpert': 'Experts',
+  'PC.Components.AtResourcePopup.tabKnowledge': 'Knowledge',
+  'PC.Components.AtResourcePopup.tabFile': 'Context Files',
+  'PC.Components.AtResourcePopup.more': 'More',
   'PC.Components.CapabilityModal.menuExpert': 'Experts',
   'PC.Components.CapabilityModal.menuKnowledge': 'Knowledge',
   'PC.Components.CapabilityModal.mainTabConnected': 'Connected',

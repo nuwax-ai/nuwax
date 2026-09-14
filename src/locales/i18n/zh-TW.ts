@@ -6252,6 +6252,13 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "創建成功",
   "PC.Pages.SpaceProjectManage.createFailed": "創建失敗，請稍後重試",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "項目暫無會話，請進入項目後再導出",
+  // 常規項目詳情頁
+  "PC.Pages.NormalProjectDetail.tabPlan": "計畫",
+  "PC.Pages.NormalProjectDetail.tabAsset": "資產",
+  "PC.Pages.NormalProjectDetail.comingSoon": "功能即將開放",
+  "PC.Pages.NormalProjectDetail.untitled": "未命名專案",
+  "PC.Pages.NormalProjectDetail.hideConversationPanel": "隱藏相關任務",
+  "PC.Pages.NormalProjectDetail.showConversationPanel": "顯示相關任務",
   // 全栈应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "計畫",
@@ -6301,6 +6308,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateHint": "應用連接埠用於對外提供存取，管理連接埠用於平台下發部署與健康檢查。請確保伺服器可被平台存取，並已在安全組放通上述連接埠。選擇 HTTPS 時，需在伺服器上部署有效憑證並監聽應用連接埠，平台不代管憑證。",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "相關任務",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "隱藏相關任務",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "顯示相關任務",
   "PC.Pages.AppProjectDetail.newConversation": "新建任務",
   "PC.Pages.AppProjectDetail.emptyConversation": "暫無會話",
   "PC.Pages.AppProjectDetail.mine": "我的",
@@ -6334,6 +6343,10 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.CapabilityModal.subtitle': 'CAPABILITIES',
   'PC.Components.CapabilityModal.menuSkill': '技能',
   'PC.Components.CapabilityModal.menuConnector': '連接器',
+  'PC.Components.AtResourcePopup.tabExpert': '專家',
+  'PC.Components.AtResourcePopup.tabKnowledge': '資料庫',
+  'PC.Components.AtResourcePopup.tabFile': '上下文檔案',
+  'PC.Components.AtResourcePopup.more': '更多',
   'PC.Components.CapabilityModal.menuExpert': '專家',
   'PC.Components.CapabilityModal.menuKnowledge': '資料庫',
   'PC.Components.CapabilityModal.mainTabConnected': '已連接的',

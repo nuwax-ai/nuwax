@@ -23,7 +23,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useConnectorConnect from '@/hooks/useConnectorConnect';
 import { t } from '@/services/i18nRuntime';
 import { apiConnectorConnectionToggleStatus } from '@/services/systemManage';
-import { Empty, Spin } from 'antd';
+import { Empty, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -50,18 +50,21 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
   pageSize = 20,
   className,
 }) => {
-  const { list, loading, hasMore, loadMore, updateItem } = useConnectorList({
-    type,
-    keyword,
-    category,
-    spaceId,
-    pageSize,
-  });
+  const { list, loading, hasMore, loadMore, reload, updateItem } =
+    useConnectorList({
+      type,
+      keyword,
+      category,
+      spaceId,
+      pageSize,
+    });
 
   // ---- 连接/断开/启停（共享 hook + 启用状态接口）----
   // team 视图带 spaceId 发起；connected/search/system 视图按系统口径不带。
   // listRef 镜像最新列表：连接态变更时就地回写（连接即启用、断开即停用）
-  // + 通知宿主（同步「已连接」页签）
+  // + 通知宿主（同步「已连接」页签）。「已连接」视图下连接/断开改变集合
+  // 成员——就地回写会让断开的条目以未连接态残留在列表，故整区重拉
+  // （无分页全量接口，不丢滚动加载位置）；其余视图维持就地回写
   const listRef = useRef<ConnectorListItem[]>(list);
   listRef.current = list;
   const connectSource = type === 'team' ? 'team' : 'system';
@@ -91,6 +94,10 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
         if (item) {
           onConnectedChange?.({ ...item, ...merged }, patch.connected);
         }
+        // 「已连接」视图：断开的条目需移出列表，整区重拉同步集合
+        if (type === 'connected') {
+          reload();
+        }
       }
     },
   });
@@ -104,20 +111,31 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
   // 断开按钮 loading：仅断开中（启停不应带亮断开按钮）
   const disconnectBusyKeys = disconnectingIds;
 
-  /** 切换连接启用状态（连接器提供方主键 id 寻址），成功后就地回写开关 */
+  /**
+   * 切换连接启用状态（POST .../connections/{连接id}/status，连接 id 取
+   * 列表接口响应的 connectionId，非提供方主键——与 /expert-skill-connector
+   * 连接器页同口径）；成功后就地回写开关
+   */
   const toggleConnectionEnabled = useCallback(
     async (item: ConnectorListItem, enabled: boolean) => {
-      if (item.connectorId === undefined) {
+      if (!item.connectionId) {
+        // 数据异常兜底：缺连接 id 无法寻址（开关仅已连接卡片展示，正常已有值）
+        console.warn(
+          '[ConnectorListView] toggle enabled skipped: missing connectionId, item =',
+          item.key,
+        );
         return;
       }
       setTogglingKeys((prev) => [...prev, item.key]);
       try {
         const res = await apiConnectorConnectionToggleStatus(
-          item.connectorId,
+          item.connectionId,
           enabled,
         );
         if (res?.code === SUCCESS_CODE) {
           updateItem(item.key, { connectionEnabled: enabled });
+        } else {
+          message.error(res?.message || t('PC.Common.Global.operationFailed'));
         }
       } finally {
         setTogglingKeys((prev) => prev.filter((key) => key !== item.key));

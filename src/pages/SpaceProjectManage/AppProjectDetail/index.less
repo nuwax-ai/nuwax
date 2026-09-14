@@ -8,8 +8,8 @@
 .header {
   display: flex;
   align-items: center;
-  gap: @padding;
   flex-shrink: 0;
+  gap: @marginXs;
   height: calc(@controlHeightLg + @padding);
   padding: 0 @paddingLg;
   background: @colorBgContainer;
@@ -17,9 +17,7 @@
 }
 
 .back {
-  padding: @paddingXxs @paddingXs;
   color: @colorTextSecondary;
-  cursor: pointer;
 }
 
 .project-name {
@@ -33,35 +31,54 @@
 
 .tabs {
   display: flex;
-  align-items: stretch;
   height: 100%;
   margin-left: @marginXs;
+
+  :global(.ant-tabs-nav) {
+    height: 100%;
+    margin: 0;
+
+    &::before {
+      border-bottom: none;
+    }
+  }
+
+  :global(.ant-tabs-tab) {
+    padding: 0 @paddingSm;
+    color: @colorTextSecondary;
+    font-size: @fontSize;
+  }
+
+  :global(.ant-tabs-tab + .ant-tabs-tab) {
+    margin: 0;
+  }
+
+  :global(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn) {
+    color: @colorPrimary;
+    font-weight: @fontWeightStrong;
+    text-shadow: none;
+  }
+
+  :global(.ant-tabs-ink-bar) {
+    height: @lineWidthBold;
+    background: @colorPrimary;
+    border-radius: @borderRadiusXs;
+  }
 }
 
-.tab {
-  position: relative;
-  height: 100%;
-  padding: 0 @padding;
-  border: none;
-  background: transparent;
+.header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.panel-toggle {
   color: @colorTextSecondary;
-  font-size: @fontSize;
-  cursor: pointer;
 
+  &:hover,
   &.active {
-    color: @colorText;
-    font-weight: @fontWeightStrong;
-
-    &::after {
-      content: '';
-      position: absolute;
-      left: @padding;
-      right: @padding;
-      bottom: 0;
-      height: @lineWidthBold;
-      background: @colorPrimary;
-      border-radius: @borderRadiusXs;
-    }
+    color: @colorPrimary;
   }
 }
 
@@ -219,12 +236,48 @@
 }
 
 .domain-cname {
-  color: @colorTextTertiary;
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXxs;
   font-size: @fontSizeSm;
+  line-height: @controlHeightSm;
+  white-space: nowrap;
+}
+
+.domain-cname-label {
+  color: @colorTextTertiary;
+}
+
+.domain-cname-value {
+  color: #4b4a53;
+}
+
+.copy-cname-btn:global(.ant-btn) {
+  color: #4b4a53;
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
 }
 
 .bind-btn {
   margin-top: @marginXs;
+}
+
+.action-btn {
+  &:global(.ant-btn) {
+    color: #4b4a53;
+    font-size: @fontSize;
+    font-weight: @fontWeightStrong;
+
+    .anticon {
+      color: inherit;
+    }
+
+    &:hover,
+    &:focus {
+      color: #4b4a53;
+    }
+  }
 }
 
 .deploy-options {
@@ -289,8 +342,13 @@
   }
 
   .tabs {
+    order: 3;
     width: 100%;
     height: @controlHeightLg;
+  }
+
+  .header-actions {
+    order: 2;
   }
 
   .domain-row {

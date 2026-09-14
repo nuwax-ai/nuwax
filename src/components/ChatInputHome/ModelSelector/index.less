@@ -143,6 +143,15 @@
     padding: 16px 0;
   }
 
+  // 团队 tab 的分组标题(空间名),视觉对齐旧版 Menu 分组标题
+  .group-title {
+    color: @colorTextQuaternary;
+    font-size: @fontSizeSm;
+    font-weight: 500;
+    line-height: 20px;
+    padding: 6px 6px 2px;
+  }
+
   // 模型项内元素(external 分组下拉与 tab 列表共用)
   .item-content {
     display: flex;
@@ -154,16 +163,6 @@
       display: flex;
       align-items: center;
       min-width: 0;
-
-      // 团队 tab 的"团队名."前缀
-      .item-team-prefix {
-        flex-shrink: 0;
-        color: @colorTextQuaternary;
-        font-size: @fontSizeSm;
-        font-weight: 400;
-        line-height: 28px;
-        white-space: nowrap;
-      }
 
       .item-name {
         color: @colorTextSecondary;

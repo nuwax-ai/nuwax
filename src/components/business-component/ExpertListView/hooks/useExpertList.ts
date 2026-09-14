@@ -1,6 +1,6 @@
 /**
  * 专家列表数据层（ExpertListView 内聚）
- * @description 四种视图的接口适配（与设计矩阵一致）：
+ * @description 五种视图的接口适配（与设计矩阵一致）：
  * - used    GET /user/agent/used/list/{size} { type: 'Agent' } 全量数组，
  *           keyword 客户端过滤，条目带最近使用时间；
  * - system  POST /published/agent/list { page, pageSize, category, kw?,
@@ -8,7 +8,10 @@
  *           （专家口径排除网页应用；仅官方，与 expert-skill-connector 页同口径）；
  * - team    同接口 + justReturnSpaceData + category='Agent'，
  *           spaceId（具体空间）/ spaceIds（全部聚合，外部传入或自拉兜底）；
- * - search  同接口固定 spaceId=-1（组件内写死，不走外部 spaceId）。
+ * - search  同接口固定 spaceId=-1（组件内写死，不走外部 spaceId）；
+ * - convenient 便捷视图：两路单次并行拉取（最近召唤 size=100 + 系统广场
+ *           pageSize=100 同 system 口径），按 targetId 去重（最近召唤条目
+ *           优先保留）且最近召唤整体置于最前，无加载更多。
  * 统一提供 { list, loading, error, hasMore, loadMore, updateItem }；
  * 服务端分页沿用 requestId 竞态丢弃 + 触底追加，首屏补拉由组件层驱动。
  */
@@ -31,6 +34,9 @@ import type { ExpertListItem, ExpertListSourceType } from '../types';
 
 /** 关键字防抖时长 */
 const KEYWORD_DEBOUNCE = 300;
+
+/** 便捷视图单路拉取上限（最近召唤 size 与系统广场 pageSize 共用） */
+const CONVENIENT_LIMIT = 100;
 
 /** 系统广场/团队/搜索视图条目归一化（已发布智能体） */
 const mapPublishedItem = (
@@ -85,7 +91,8 @@ const buildParams = (
     targetType: AgentComponentTypeEnum.Agent,
     targetSubType: 'ChatBot' as const,
   };
-  if (type === 'system') {
+  if (type === 'system' || type === 'convenient') {
+    // 便捷视图与系统广场同构参数（调用处固定 page=1、pageSize=100 单次拉齐）
     return {
       page,
       pageSize,
@@ -220,6 +227,64 @@ const useExpertList = ({
                   item.description?.toLowerCase().includes(kw),
               )
             : all;
+          more = false;
+        } else if (type === 'convenient') {
+          // 便捷视图：最近召唤 + 系统广场前 100 条单次并行拉取（同 system
+          // 口径）；最近召唤 keyword 客户端过滤，广场 kw/category 服务端过滤；
+          // 按 targetId 去重（最近召唤条目优先保留、整体置于最前，广场条目
+          // targetId 缺失无法判重则保留），单次拉齐无加载更多
+          const [usedRes, squareRes] = await Promise.all([
+            apiUserUsedAgentList({
+              size: CONVENIENT_LIMIT,
+              type: 'Agent',
+            }),
+            apiPublishedAgentList(
+              buildParams(
+                type,
+                1,
+                CONVENIENT_LIMIT,
+                debouncedKeyword,
+                category,
+              ),
+            ),
+          ]);
+          if (requestIdRef.current !== requestId) {
+            return;
+          }
+          if (
+            usedRes?.code !== SUCCESS_CODE ||
+            squareRes?.code !== SUCCESS_CODE
+          ) {
+            throw new Error('convenient expert list failed');
+          }
+          const kw = debouncedKeyword.trim().toLowerCase();
+          const usedItems = ((usedRes.data as AgentInfo[]) || [])
+            .map(mapUsedItem)
+            // 便捷视图紧凑行时间降噪：剥离最近使用时间（仅 used 视图展示）
+            .map((item) => ({ ...item, usedTime: undefined }))
+            .filter(
+              (item) =>
+                !kw ||
+                item.name?.toLowerCase().includes(kw) ||
+                item.description?.toLowerCase().includes(kw),
+            );
+          const usedTargetIds = new Set(
+            usedItems
+              .map((item) => item.targetId)
+              .filter((id): id is number => id !== undefined),
+          );
+          const squareItems = (
+            (squareRes.data as Page<SquarePublishedItemInfo> | null)?.records ||
+            []
+          ).map((item) => mapPublishedItem(item, type));
+          items = [
+            ...usedItems,
+            ...squareItems.filter(
+              (item) =>
+                item.targetId === undefined ||
+                !usedTargetIds.has(item.targetId),
+            ),
+          ];
           more = false;
         } else {
           const res = await apiPublishedAgentList(

@@ -8,7 +8,7 @@
 
 **内聚（组件内自闭环）：**
 
-- 四场景接口调用与参数组装（见下表）、关键字 300ms 防抖、分页竞态丢弃、触底追加、首屏补拉、加载/空态；
+- 五场景接口调用与参数组装（见下表）、关键字 300ms 防抖、分页竞态丢弃、触底追加、首屏补拉、加载/空态；
 - 启用/取消启用：`skillEnable / skillUnEnable`（按 `targetId` 寻址）、开关 loading 防重复、就地回写；「我启用的」视图成功后整体重拉同步增减；
 - 付费拦截门：选择前先判定（免费/已订阅/租户未开启订阅直通；付费未订阅先按 `GET /published/skill/:id` 复核，复核已订阅回写放行并带 `subscribed: true`，仍待订阅则弹出内聚的 Skill 套餐订阅弹窗， **不触发 onSelect**，订阅完成支付回流后重选即放行）。
 
@@ -22,15 +22,15 @@
 
 | 属性 | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
-| `type` | `'enabled' \| 'system' \| 'team' \| 'search'` | 必填 | 数据场景（与 `keyword` 正交，任意场景都可带搜索） |
+| `type` | `'enabled' \| 'system' \| 'team' \| 'search' \| 'convenient'` | 必填 | 数据场景（与 `keyword` 正交，任意场景都可带搜索） |
 | `variant` | `'grid' \| 'list'` | `'grid'` | 布局变体 |
 | `keyword` | `string` | — | 搜索关键字（受控传入，组件内防抖） |
-| `category` | `string` | — | 系统广场内容分类（仅 `system` 生效，空=全部） |
+| `category` | `string` | — | 系统广场内容分类（`system`/`convenient` 生效，空=全部） |
 | `spaceId` | `number` | — | 团队空间·具体空间 ID |
 | `spaceIds` | `number[]` | — | 团队空间「全部」聚合的空间 ID 列表；需要聚合而未传时组件自拉空间列表兜底 |
 | `onSelect` | `(item: SkillListItem) => void` | 必填 | 选中回调（付费拦截通过后才触发） |
 | `onEnabledChange` | `(item, enabled) => void` | — | 启用/取消启用成功通知 |
-| `pageSize` | `number` | `20` | 服务端分页每页数量 |
+| `pageSize` | `number` | `20` | 服务端分页每页数量（convenient 视图固定 100 不受影响） |
 | `className` | `string` | — | 根容器（滚动容器）类名 |
 
 > 组件根节点即滚动容器（`flex: 1; overflow-y: auto`），宿主需提供确定高度的父容器（如 flex 列布局）。
@@ -43,6 +43,7 @@
 | `team` | 同上 | `{ page, pageSize, kw?, category: 'Skill', justReturnSpaceData: true }` + `spaceId` 或 `spaceIds`（都未传则组件自拉空间列表聚合） |
 | `enabled` | `POST /api/published/skill/enable/list` | 空 body 全量数组；`keyword` 客户端过滤；条目一律 `enabled: true` |
 | `search` | `POST /api/published/skill/list` | `{ page, pageSize, category: '', kw?, spaceId: -1 }`（spaceId 组件内写死） |
+| `convenient` | 两路并行：`POST /api/published/skill/enable/list` + `POST /api/published/skill/list` | 启用：空 body 全量数组，客户端截前 100 条；广场：`{ page: 1, pageSize: 100, category, kw?, official: true }`；按 `targetId` 去重（启用条目优先保留），启用的整体置于最前；单次拉齐无加载更多 |
 
 ## 使用案例
 
@@ -96,13 +97,29 @@ const [keyword, setKeyword] = useState('');
 />
 ```
 
-### 5. 单栏列表变体（紧凑行）
+### 5. 便捷视图（我启用的 + 系统广场前 100 条合并）
+
+```tsx
+<SkillListView
+  type="convenient"
+  keyword={keyword}
+  category={activeCategory}
+  onSelect={onSelect}
+/>
+// 我启用的条目（去重后）置于最前，其后拼接系统广场条目；开关变更后
+// 整体重拉同步「启用的」分组；keyword 对启用的客户端过滤、对广场走
+// kw 服务端过滤；无加载更多
+```
+
+### 6. 单栏列表变体（紧凑行）
 
 ```tsx
 <SkillListView type="system" variant="list" onSelect={onSelect} />
+// list 行整行点击即选中，不渲染悬停「选择」按钮（仅 grid 卡有）；
+// 右端常驻启用开关保留
 ```
 
-### 6. onSelect 语义（付费拦截）
+### 7. onSelect 语义（付费拦截）
 
 ```tsx
 // 回调仅在以下情况触发，可直接信任：
