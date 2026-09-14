@@ -80,8 +80,8 @@ const SECOND_COLUMN_SCROLL_BODY_INSET = 21;
  *  定位数值在 TSX 内联注入（避免与 less 双源漂移）。 */
 const EXPAND_BTN_SIZE = 34;
 const EXPAND_BTN_STYLE: React.CSSProperties = {
-  left: 0,
-  top: 15 + 5 + 1,
+  left: -5,
+  top: 8 + 5 + 2,
   width: EXPAND_BTN_SIZE,
   height: EXPAND_BTN_SIZE,
 };

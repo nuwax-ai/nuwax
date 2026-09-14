@@ -208,6 +208,80 @@ describe('能力弹窗·连接器「已连接」页签（工具栏已连接头�
     ).toBeNull();
   });
 
+  it('已连接页签断开最后一项：重拉已连接数据为空后自动退回系统广场页签', async () => {
+    const apiConnectorConnectionListMock = vi.mocked(
+      await import('@/services/systemManage'),
+    ).apiConnectorConnectionList;
+    const apiConnectorConnectionDeleteMock = vi.mocked(
+      await import('@/services/systemManage'),
+    ).apiConnectorConnectionDelete;
+    // 断开寻址链路：连接列表按 service 匹配 → DELETE 连接 id
+    apiConnectorConnectionListMock.mockResolvedValue({
+      code: '0000',
+      displayCode: '',
+      message: '',
+      debugInfo: {},
+      success: true,
+      tid: '',
+      data: [{ id: 77, providerService: 'github' }],
+    });
+    // connected=true 口径的数据由「是否已断开」驱动（页签判定与列表两条
+    // 链路各自拉取，子组件 effect 先于父 hook，按调用次数切数据会串台）：
+    // 断开成功后重拉均为空 → 页签隐藏 + 回落系统广场
+    let disconnected = false;
+    apiConnectorConnectionDeleteMock.mockImplementation(async () => {
+      disconnected = true;
+      return {
+        code: '0000',
+        displayCode: '',
+        message: '',
+        debugInfo: {},
+        success: true,
+        tid: '',
+        data: null,
+      };
+    });
+    apiConnectorProviderPageList.mockImplementation((params: unknown) => {
+      const query = params as { connected?: string };
+      if (query?.connected === 'true') {
+        return Promise.resolve(
+          disconnected
+            ? { code: '0000', data: { records: [] } }
+            : { code: '0000', data: { records: [connectedRecord] } },
+        );
+      }
+      return Promise.resolve({
+        code: '0000',
+        data: { records: [systemRecord], pageNum: 1 },
+      });
+    });
+    renderConnectorModal(true);
+    expect(await screen.findByText('GitHub 连接器')).toBeTruthy();
+    const card = document.querySelector(
+      '[data-connector-key="connector:connected:github"]',
+    );
+    expect(card).toBeTruthy();
+
+    // hover「断开」按钮（已连接卡片渲染）：DELETE 连接 id 成功
+    fireEvent.click(card!.querySelector('button[aria-label]')!);
+    await waitFor(() =>
+      expect(apiConnectorConnectionDeleteMock).toHaveBeenCalledWith(77),
+    );
+
+    // 已连接数据重拉为空 → 回落 effect 退出聚合视图，切回系统广场列表
+    expect(await screen.findByText('飞书连接器')).toBeTruthy();
+    await waitFor(() => {
+      const systemTab = screen.getByRole('tab', {
+        name: 'PC.Components.CapabilityModal.mainTabSystem',
+      });
+      expect(systemTab.getAttribute('aria-selected')).toBe('true');
+    });
+    // 「已连接」页签随空列表隐藏
+    expect(
+      screen.queryByText('PC.Components.CapabilityModal.mainTabConnected'),
+    ).toBeNull();
+  });
+
   it('点击「系统广场」页签退出聚合视图，切回 scope=official 列表', async () => {
     renderConnectorModal(true);
     await screen.findByText('GitHub 连接器');

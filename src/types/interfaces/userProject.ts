@@ -4,7 +4,11 @@
  * 页面层原路径再导出保持既有引用不变，新消费方请直接从本模块引入。
  */
 
-import { AgentComponentTypeEnum, TaskStatus, TaskTypeEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  TaskStatus,
+  TaskTypeEnum,
+} from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import type { AgentDetailDto } from '@/types/interfaces/agent';
 import type {
@@ -63,7 +67,9 @@ export type UserProjectPageQueryParams = TablePageRequest<
     projectType: AgentComponentTypeEnum;
     // 项目名称（模糊匹配）
     name: string;
-    // 收藏过滤：all=全部（后端默认）；only=仅收藏（2026-09-13 契约先行，UI 暂未消费）
+    // 收藏过滤：all=全部（后端默认）；only=仅收藏。2026-09-14 两接口统一：
+    // tab 接口废弃，统一接口（page-query）已支持本参数（历史会话页「项目」tab 消费）；
+    // 归档维度仍无对应参数，消费侧按回包打标前端过滤
     collectedFilter: 'all' | 'only';
   }>
 >;
@@ -98,6 +104,56 @@ export interface UserProjectItem {
   created: string;
 }
 
+/** 常规项目详情（/api/normal-project/get/{id} 返回） */
+export interface UserNormalProjectInfo {
+  /** 商户ID */
+  tenantId: number;
+  /** 空间ID */
+  spaceId: number;
+  /** 创建人用户ID */
+  creatorId: number;
+  /** 项目名称 */
+  name: string;
+  /** 项目描述 */
+  description: string;
+  /** 项目图标 */
+  icon: string;
+  /** 项目类型 */
+  projectType: AgentComponentTypeEnum;
+  /** 项目ID */
+  projectId: number;
+  /** 沙箱ID */
+  sandboxId: number;
+  /** 沙箱类型 */
+  sandboxType: UserAppSandboxTypeEnum;
+  /** 开发关联智能体ID；常规项目为空 */
+  devAgentId?: number | null;
+  /** 资料库目录ID */
+  repoSlugId: string;
+  /** 项目计划表ID */
+  planSlugId: string;
+  /** OAuth2 Client ID；仅三方应用有值 */
+  oauthClientId?: string | null;
+  /** 应用主页地址 */
+  homepageUrl?: string | null;
+  /** OAuth2 回调地址 */
+  redirectUri?: string | null;
+  /** OAuth2 接入是否启用 */
+  oauthEnabled?: boolean;
+  /** 置顶标记 */
+  pinned: boolean;
+  /** 归档标记 */
+  archived: boolean;
+  /** 当前用户收藏标记 */
+  collected: boolean;
+  /** 更新时间 */
+  modified: string;
+  /** 创建时间 */
+  created: string;
+  /** 开发智能体关联的会话ID（不落库，仅传输） */
+  conversationId?: number | null;
+}
+
 /** 用户项目分页查询结果（mybatis-plus IPage 风格） */
 export interface UserProjectPageResult {
   records: UserProjectItem[];
@@ -107,8 +163,11 @@ export interface UserProjectPageResult {
 }
 
 /**
- * tab 项目条目：/api/user-project/tab/page-query 记录行（2026-09-08 新接口，实测契约）。
+ * tab 项目条目：项目列表查询接口的记录行（2026-09-08 tab 接口实测契约）。
  * 与 UserProjectItem 的差异：主键字段为 projectId、无 publishStatus、附带项目下会话列表。
+ * 2026-09-14 两接口统一后行结构不变（projectId 主键 + 打标字段），仅
+ * conversations 不再随列表回包（统一接口不附带，展开项目时经
+ * /api/user-project/conversations/{projectId} 懒加载填充），类型上保持可选兼容两种来源。
  */
 export interface UserProjectTabItem {
   /** 项目ID（UserApp/NormalProject 即 app_id） */
@@ -137,7 +196,7 @@ export interface UserProjectTabItem {
    * 首页走「提示手动选择」降级路径）。
    */
   devAgentId?: number;
-  /** 项目下的会话列表（tab 接口附带返回） */
+  /** 项目下的会话列表（tab 接口随列表附带；统一接口不回包，展开时懒加载填充） */
   conversations?: ConversationInfo[];
   /**
    * 项目置顶标记（wiki 2026-09-11 契约先行：后端 pin/archive 接口已就位，

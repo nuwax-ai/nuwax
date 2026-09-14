@@ -757,6 +757,10 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         let content: string;
         if (typeof src === 'string') {
           const response = await fetch(src);
+          // 非 2xx（文件不存在/网关拒绝）时响应体是错误报文，走失败态而非当文档渲染
+          if (!response.ok) {
+            throw new Error(`Load file failed: ${response.status}`);
+          }
           content = await response.text();
         } else if (src instanceof File || src instanceof Blob) {
           content = await src.text();

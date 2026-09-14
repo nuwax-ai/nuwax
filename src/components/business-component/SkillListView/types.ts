@@ -30,9 +30,18 @@ export interface SkillListItem {
  * - system   系统广场：published/skill/list 服务端分页（category 内容分类）；
  * - team     团队空间：同接口 justReturnSpaceData，spaceId=具体空间 /
  *            spaceIds=全部空间聚合（空间字典由外部拉取传入）；
- * - search   搜索场景：同接口固定 spaceId=-1（组件内写死，不对外暴露）。
+ * - search   搜索场景：同接口固定 spaceId=-1（组件内写死，不对外暴露）；
+ * - convenient 便捷视图：我启用的 + 系统广场前 100 条单次并行拉取，按
+ *            targetId 去重（启用条目优先保留）且启用的整体置于最前；
+ *            keyword 对启用的客户端过滤、对广场走 kw 服务端过滤，
+ *            category 透传广场接口；单次拉齐，无加载更多。
  */
-export type SkillListSourceType = 'enabled' | 'system' | 'team' | 'search';
+export type SkillListSourceType =
+  | 'enabled'
+  | 'system'
+  | 'team'
+  | 'search'
+  | 'convenient';
 
 /** 布局变体：grid=两栏卡片（默认）/ list=单栏横排行 */
 export type SkillListVariant = 'grid' | 'list';
@@ -44,7 +53,7 @@ export interface SkillListViewProps {
   variant?: SkillListVariant;
   /** 搜索关键字（受控；任意场景可传，组件内 300ms 防抖） */
   keyword?: string;
-  /** 系统广场内容分类（仅 type=system 生效，空/不传=全部） */
+  /** 系统广场内容分类（仅 type=system/convenient 生效，空/不传=全部） */
   category?: string;
   /** 团队空间：具体空间 ID */
   spaceId?: number;
@@ -60,7 +69,7 @@ export interface SkillListViewProps {
   onSelect: (item: SkillListItem) => void;
   /** 启用/取消启用成功通知（开关请求与状态回写内部闭环） */
   onEnabledChange?: (item: SkillListItem, enabled: boolean) => void;
-  /** 每页数量，默认 20 */
+  /** 每页数量，默认 20（便捷视图固定 100 不受影响） */
   pageSize?: number;
   /** 根容器（滚动容器）类名 */
   className?: string;

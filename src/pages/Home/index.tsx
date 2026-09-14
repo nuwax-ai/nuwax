@@ -529,6 +529,8 @@ const Home: React.FC = () => {
           showDebugFab={false}
           // 选择专家仅首页开放（其余入口能力弹窗隐藏专家导航）
           showExpertCapability
+          // 首页 @：弹「专家（便捷视图）+ 资料库（最近访问）」资源弹层
+          atHomePanel
           placeholder={selectedRecommend?.placeholder || undefined}
           manualComponents={
             agentDetail?.manualComponents || EMPTY_MANUAL_COMPONENTS

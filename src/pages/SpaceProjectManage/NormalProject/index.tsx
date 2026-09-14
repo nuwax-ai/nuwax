@@ -4,8 +4,6 @@ import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiNormalProjectDelete,
-  apiNormalProjectGetById,
-  apiNormalProjectLatestConversation,
   apiNormalProjectUpdate,
 } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -15,8 +13,8 @@ import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import React, { useCallback, useEffect, useState } from 'react';
+import { history, useParams, useRequest } from 'umi';
 import CreateNormalProjectModal from '../components/CreateNormalProjectModal';
 import ProjectCard from '../components/ProjectCard';
 import { apiUserProjectPageQuery } from '../services';
@@ -49,7 +47,6 @@ const NormalProject: React.FC = () => {
   const [openCreate, setOpenCreate] = useState(false);
   const [renameTarget, setRenameTarget] = useState<UserProjectItem>();
   const [renameName, setRenameName] = useState('');
-  const openingProjectRef = useRef(false);
 
   const { run, loading } = useRequest(
     (name?: string) =>
@@ -95,47 +92,9 @@ const NormalProject: React.FC = () => {
 
   const handleOpenProject = useCallback(
     (item: UserProjectItem) => {
-      if (openingProjectRef.current) {
-        return;
-      }
-      // const conversationId = item.conversationId ?? undefined;
-      // openingProjectRef.current = true;
-      // void (async () => {
-      //   try {
-      //     const conv = await apiNormalProjectLatestConversation(item.id).catch(
-      //       () => null,
-      //     );
-      //     const convData =
-      //       conv?.code === SUCCESS_CODE ? conv.data ?? null : null;
-      //     const convCid =
-      //       convData?.conversationId ?? convData?.id ?? conversationId;
-      //     const convAid = convData?.agentId;
-      //     if (convCid && convAid) {
-      //       openProject(spaceId, item, convCid, convAid);
-      //       return;
-      //     }
-      //     const got = await apiNormalProjectGetById(item.id).catch(() => null);
-      //     const rowData = got?.code === SUCCESS_CODE ? got.data : null;
-      //     const rowCid = rowData?.conversationId ?? conversationId;
-      //     const rowAid = (rowData as { agentId?: number } | null)?.agentId;
-      //     if (rowCid && rowAid) {
-      //       openProject(spaceId, item, rowCid, rowAid);
-      //       return;
-      //     }
-      //     pin({
-      //       projectId: item.id,
-      //       spaceId,
-      //       projectType: AgentComponentTypeEnum.NormalProject,
-      //       name: item.name,
-      //       icon: item.icon,
-      //       sandboxId: item.sandboxId,
-      //     });
-      //   } finally {
-      //     openingProjectRef.current = false;
-      //   }
-      // })();
+      history.push(`/space/${spaceId}/normal-project-detail/${item.id}`);
     },
-    [pin, spaceId],
+    [spaceId],
   );
 
   const handleRenameSubmit = async () => {

@@ -1,0 +1,123 @@
+@import '@/styles/token';
+
+.page {
+  min-height: 0;
+  background: @colorBgLayout;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: @marginXs;
+  height: calc(@controlHeightLg + @padding);
+  padding: 0 @paddingLg;
+  background: @colorBgContainer;
+  border-bottom: 1px solid @colorSplit;
+}
+
+.back {
+  color: @colorTextSecondary;
+}
+
+.project-name {
+  margin: 0;
+  max-width: 240px;
+  color: @colorText;
+  font-size: @fontSizeLg;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeightLg;
+}
+
+.tabs {
+  display: flex;
+  height: 100%;
+  margin-left: @marginXs;
+
+  :global(.ant-tabs-nav) {
+    height: 100%;
+    margin: 0;
+
+    &::before {
+      border-bottom: none;
+    }
+  }
+
+  :global(.ant-tabs-tab) {
+    padding: 0 @paddingSm;
+    color: @colorTextSecondary;
+    font-size: @fontSize;
+  }
+
+  :global(.ant-tabs-tab + .ant-tabs-tab) {
+    margin: 0;
+  }
+
+  :global(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn) {
+    color: @colorPrimary;
+    font-weight: @fontWeightStrong;
+    text-shadow: none;
+  }
+
+  :global(.ant-tabs-ink-bar) {
+    height: @lineWidthBold;
+    background: @colorPrimary;
+    border-radius: @borderRadiusXs;
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.panel-toggle {
+  color: @colorTextSecondary;
+
+  &:hover,
+  &.active {
+    color: @colorPrimary;
+  }
+}
+
+.body {
+  display: flex;
+  min-height: 0;
+  background: @colorBgContainer;
+}
+
+.main {
+  min-width: 0;
+  min-height: 0;
+  background: @colorBgContainer;
+}
+
+.main-scroll {
+  min-height: 0;
+  padding: @paddingMd @paddingLg @paddingLg;
+}
+
+@media (max-width: 960px) {
+  .body {
+    flex-direction: column;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: @paddingXs;
+    padding-bottom: 0;
+  }
+
+  .tabs {
+    order: 3;
+    width: 100%;
+    height: @controlHeightLg;
+  }
+
+  .header-actions {
+    order: 2;
+  }
+}

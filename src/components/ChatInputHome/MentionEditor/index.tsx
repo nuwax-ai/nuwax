@@ -23,6 +23,8 @@
  * ```
  */
 
+import type { ExpertListItem } from '@/components/business-component/ExpertListView';
+import type { KnowledgeListItem } from '@/components/business-component/KnowledgeListView';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import classNames from 'classnames';
@@ -34,19 +36,22 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import AtResourcePopup from '../AtResourcePopup';
+import type {
+  AtPopupTab,
+  AtResourcePopupHandle,
+} from '../AtResourcePopup/types';
 import CapabilityModal from '../CapabilityModal';
 import { CAPABILITY_MENU_ICON_SVGS } from '../CapabilityModal/icons';
 import type {
   CapabilityItem,
   CapabilityTypeEnum,
 } from '../CapabilityModal/types';
-import MentionPopup from '../MentionPopup';
 import type {
   DocMentionItem,
   MentionEditorHandle,
   MentionEditorProps,
   MentionItem,
-  MentionPopupHandle,
 } from '../MentionPopup/types';
 import styles from './index.less';
 
@@ -162,7 +167,7 @@ const getCaretPosition = (
       4,
       Math.min(
         rect.left,
-        (window.innerWidth || document.documentElement.clientWidth) - 288,
+        (window.innerWidth || document.documentElement.clientWidth) - 328,
       ),
     ),
     finalPlacement,
@@ -447,13 +452,15 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       enableMention = true,
       // / 能力弹窗开放的能力类型（缺省不含专家，产品策略：专家仅首页开放）
       capabilityResourceTypes = DEFAULT_CAPABILITY_RESOURCE_TYPES,
+      // @ 弹层首页模式：tabs = 专家（便捷视图）+ 资料库（最近访问）；
+      // 会话页（有 onFetchMentionFiles）默认 tabs = 上下文文件 + 资料库
+      atHomePanel = false,
       // @ 弹窗展示方向：auto | up | down
       mentionPlacement = 'auto',
       // 默认需要回显为 mention chip 的技能列表（按顺序渲染）
       defaultMentions,
       minRows = 2,
       maxRows = 6,
-      usageScenarios,
       // 能力弹窗关闭回调（连接/断开等弹窗内操作完成后触发，供消费方刷新派生数据）
       onCapabilityModalClose,
     },
@@ -473,8 +480,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const isHistoryActionRef = useRef(false);
     /** 最近一次由编辑器主动同步给外部的文本 */
     const lastEmittedValueRef = useRef<string | undefined>(undefined);
-    /** MentionPopup 组件引用，用于调用其方法 */
-    const mentionPopupRef = useRef<MentionPopupHandle>(null);
+    /** AtResourcePopup 组件引用，用于调用其方法（句柄签名同旧 MentionPopupHandle） */
+    const mentionPopupRef = useRef<AtResourcePopupHandle>(null);
     /** 是否正在进行中文输入（IME 输入法） */
     const isComposingRef = useRef<boolean>(false);
     /** 当前 @ 符号在文本中的位置索引 */
@@ -487,6 +494,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     // ==================== State ====================
     /** 是否显示提及弹窗 */
     const [showMentionPopup, setShowMentionPopup] = useState<boolean>(false);
+    /** showMentionPopup 的同步镜像：开合边沿判定（重挂键递增）读 ref */
+    const showMentionPopupRef = useRef<boolean>(false);
+    /** @ 弹层重挂键：每次唤起回到最初状态（默认 tab/重新判定/聚焦复位） */
+    const [atPopupResetKey, setAtPopupResetKey] = useState<number>(0);
     /** 是否显示添加能力大弹窗（/ 触发） */
     const [capabilityOpen, setCapabilityOpen] = useState<boolean>(false);
     /** capabilityOpen 的同步镜像：删除触发串会经 commitEditorChange 重入检测，用于防递归 */
@@ -504,14 +515,24 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     /** 编程唤起时是否初始进入连接器「已连接」聚合页签（仅头像组入口传 true） */
     const [capabilityInitialConnected, setCapabilityInitialConnected] =
       useState<boolean>(false);
+    /** @ 弹层专家 tab「更多」打开时是否初始进入专家「最近召唤」聚合页签 */
+    const [capabilityInitialUsed, setCapabilityInitialUsed] =
+      useState<boolean>(false);
     const [capabilityResetKey, setCapabilityResetKey] = useState<number>(0);
     /**
      * 打开能力弹窗的句柄（ref 转发：openCapabilityModal 依赖 commitEditorChange，
      * 而 commitEditorChange 依赖本组件更早声明的 runMentionDetection，用 ref 断开环）
      */
-    const openCapabilityModalRef = useRef<(searchText: string) => void>(
-      () => {},
-    );
+    const openCapabilityModalRef = useRef<
+      (
+        searchText: string,
+        opts?: {
+          trigger?: '/' | '@';
+          defaultType?: CapabilityTypeEnum;
+          initialUsedView?: boolean;
+        },
+      ) => void
+    >(() => {});
     /** 弹窗显示位置（向下用 top，向上用 bottom） */
     const [mentionPosition, setMentionPosition] = useState<{
       top?: number;
@@ -637,7 +658,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       [onChange, syncMentionsFromDom],
     );
 
-    /** 关闭提及弹窗并重置相关状态 */
+    /** 关闭提及弹窗并重置相关状态；关闭边沿递增重挂键（下次 @ 唤起回到最初状态） */
     const closeMentionPopup = useCallback(() => {
       setShowMentionPopup(false);
       setMentionSearchText('');
@@ -645,6 +666,12 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       savedRangeRef.current = null;
       savedTextNodeRef.current = null;
       popupAnchorYRef.current = null;
+      // 已开→关的边沿才重挂（检测失败的频繁关闭不触发；与 CapabilityModal
+      // 的 resetKey 同模式）：重开后 activeTab/文件判定/聚焦全部回到初始
+      if (showMentionPopupRef.current) {
+        showMentionPopupRef.current = false;
+        setAtPopupResetKey((key) => key + 1);
+      }
     }, []);
 
     /** 检测 @ 并控制弹窗 */
@@ -662,8 +689,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       const textBeforeCaret = getTextBeforeCaret(editorRef.current);
       const fileInfo = detectMention(textBeforeCaret);
       const slashInfo = detectMention(textBeforeCaret, '/');
-      // @ 文件提及需数据源；/ 能力弹窗随时可唤起（不随 enableMention/智能体配置门控）
-      const trigger = onFetchMentionFiles && fileInfo.hasMention ? '@' : '/';
+      // @ 弹层需数据源或首页模式（首页=专家+资料库，会话页=上下文文件+
+      // 资料库）；/ 能力弹窗随时可唤起（不随 enableMention/智能体配置门控）
+      const trigger =
+        (onFetchMentionFiles || atHomePanel) && fileInfo.hasMention ? '@' : '/';
       const mentionInfo = trigger === '@' ? fileInfo : slashInfo;
 
       // / 命中即打开添加能力大弹窗（不弹光标浮层）
@@ -711,6 +740,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           popupAnchorYRef.current = position.anchorY;
           setActiveTrigger(trigger);
           setMentionSearchText(mentionInfo.searchText);
+          showMentionPopupRef.current = true;
           setShowMentionPopup(true);
           mentionAtIndexRef.current = mentionInfo.atIndex;
         }
@@ -720,6 +750,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     }, [
       closeMentionPopup,
       onFetchMentionFiles,
+      atHomePanel,
       disabled,
       mentionPlacement,
       mentionPopupHeight,
@@ -818,6 +849,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
     /**
      * 弹窗最大高度：不超过视口内从弹窗 top 到底部的空间，避免弹窗撑出页面滚动条导致左右闪动
+     * （AtResourcePopup 内容含 tab + 列表 + 更多入口，上限较旧文件弹层放宽至 560）
      */
     const mentionPopupMaxHeight = useMemo(() => {
       if (!showMentionPopup || !mentionPosition) return undefined;
@@ -828,7 +860,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         mentionPosition.bottom !== undefined
           ? vh - mentionPosition.bottom - 8
           : vh - top - 24;
-      return Math.min(400, Math.max(120, spaceBelow));
+      return Math.min(560, Math.max(120, spaceBelow));
     }, [showMentionPopup, mentionPosition]);
 
     /**
@@ -1001,14 +1033,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         const contentSpan = document.createElement('span');
         contentSpan.className = styles['mention-content'];
 
-        // 能力 chip（技能/资料库）左侧图标：与能力弹窗左侧类型导航同源
-        //（CAPABILITY_MENU_ICON_SVGS 单源），图标替代 @ 前缀回显；
-        // 文件 chip 保持 @路径 文本形态
+        // 能力 chip（技能/资料库/上下文文件）左侧图标：与能力弹窗左侧
+        // 类型导航同源（CAPABILITY_MENU_ICON_SVGS 单源），三种 chip 统一
+        // 图标形态对齐（文件原 @前缀文本形态无图标，高度/基线与其他 chip 不齐）
         const capabilityIconSvg =
           item.kind === 'doc'
             ? CAPABILITY_MENU_ICON_SVGS.knowledge
             : item.kind === 'file'
-            ? undefined
+            ? CAPABILITY_MENU_ICON_SVGS.file
             : CAPABILITY_MENU_ICON_SVGS.skill;
         if (capabilityIconSvg) {
           const iconSpan = document.createElement('span');
@@ -1017,12 +1049,12 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           contentSpan.appendChild(iconSpan);
         }
 
-        // 创建名称显示
+        // 名称：图标化 chip 展示名称（文件展示相对路径——同名文件靠
+        // 路径辨识，信息量大于纯文件名）
         const nameSpan = document.createElement('span');
         nameSpan.className = styles['mention-name'];
-        nameSpan.textContent = capabilityIconSvg
-          ? item.name
-          : `@${item.kind === 'file' ? item.relativePath : item.name}`;
+        nameSpan.textContent =
+          item.kind === 'file' ? item.relativePath : item.name;
 
         // 创建删除按钮
         const deleteBtn = document.createElement('span');
@@ -1172,6 +1204,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         }
         setCapabilityDefaultType(resourceType);
         setCapabilityInitialConnected(opts?.connectedView ?? false);
+        setCapabilityInitialUsed(false);
         setCapabilityResetKey((key) => key + 1);
         capabilityOpenRef.current = true;
         setCapabilityOpen(true);
@@ -1273,8 +1306,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * 也避免关闭弹窗后继续输入被残留的 "/" 再次触发。
      * 定位逻辑与 handleMentionSelect 的触发串回溯保持一致。
      */
-    const removeSlashTriggerText = useCallback(
-      (searchText: string): boolean => {
+    /**
+     * 从保存的光标向前回溯定位触发串（trigger + 搜索文本，跨文本节点回溯，
+     * 不穿越 chip），校验命中后返回克隆好的待删 Range（未删除）。供删除
+     * 触发串（能力弹窗 / @ 弹层更多与专家选中）和 @ 弹层选中插 chip 共用
+     */
+    const locateTriggerRange = useCallback(
+      (trigger: string, searchText: string): Range | null => {
         const editor = editorRef.current;
         const savedRange = savedRangeRef.current;
         if (
@@ -1282,7 +1320,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           !savedRange ||
           !editor.contains(savedRange.startContainer)
         ) {
-          return false;
+          return null;
         }
         const range = savedRange.cloneRange();
         let remaining = searchText.length + 1;
@@ -1291,10 +1329,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
         let nodeIndex = textNodes.indexOf(range.startContainer as Text);
         let offset = range.startOffset;
-        if (nodeIndex < 0) return false;
+        if (nodeIndex < 0) return null;
         while (nodeIndex >= 0) {
           const node = textNodes[nodeIndex];
-          if (node.parentElement?.closest('[data-mention-id]')) return false;
+          if (node.parentElement?.closest('[data-mention-id]')) return null;
           if (offset >= remaining) {
             range.setStart(node, offset - remaining);
             remaining = 0;
@@ -1304,7 +1342,21 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           nodeIndex -= 1;
           offset = textNodes[nodeIndex]?.length ?? 0;
         }
-        if (remaining || range.toString() !== `/${searchText}`) return false;
+        if (remaining || range.toString() !== `${trigger}${searchText}`)
+          return null;
+        return range;
+      },
+      [],
+    );
+
+    /**
+     * 删除光标前的触发串（'/' 或 '@' + 搜索文本）。
+     * 能力弹窗与 @ 资源弹层（更多入口/专家选中）共用
+     */
+    const removeTriggerText = useCallback(
+      (trigger: '/' | '@', searchText: string): boolean => {
+        const range = locateTriggerRange(trigger, searchText);
+        if (!range) return false;
         range.deleteContents();
         range.collapse(true);
         // 重存删除点光标：弹窗内选中技能时 chip 插回该位置
@@ -1314,7 +1366,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         selection?.addRange(range);
         return true;
       },
-      [],
+      [locateTriggerRange],
     );
 
     /** 在保存的光标位置（失效则编辑器末尾）插入技能 chip */
@@ -1355,9 +1407,21 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       ],
     );
 
-    /** 打开能力弹窗：记录光标 → 删除触发串 → 同步编辑器状态 → 重置默认状态 → 打开 */
+    /**
+     * 打开能力弹窗：记录光标 → 删除触发串 → 同步编辑器状态 → 重置默认状态 → 打开。
+     * trigger 默认 '/'（/ 触发）；@ 资源弹层「更多」入口经 trigger='@' 删 @ 触发串，
+     * defaultType 指定初始维度（专家仅首页开放范围，越界由弹窗回落首个可用类型）
+     */
     const openCapabilityModal = useCallback(
-      (searchText: string) => {
+      (
+        searchText: string,
+        opts?: {
+          trigger?: '/' | '@';
+          defaultType?: CapabilityTypeEnum;
+          /** 初始进入专家「最近召唤」聚合页签（@ 弹层专家 tab「更多」专用） */
+          initialUsedView?: boolean;
+        },
+      ) => {
         const editor = editorRef.current;
         if (!editor) return;
         const selection = window.getSelection();
@@ -1367,19 +1431,21 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         }
         setActiveTrigger('/');
         setMentionSearchText('');
-        if (removeSlashTriggerText(searchText)) {
+        if (removeTriggerText(opts?.trigger ?? '/', searchText)) {
           recordUndoSnapshot();
           syncEditorStateFromDom();
         }
         // 每次打开回到最初默认状态：重挂弹窗使页签/搜索/聚合视图全量复位
-        //（连接器·已连接初始页签仅头像组入口经 openCapabilityWithType 指定）
-        setCapabilityDefaultType('skill');
+        //（连接器·已连接初始页签仅头像组入口经 openCapabilityWithType 指定；
+        //  专家·最近召唤初始页签仅 @ 弹层专家 tab「更多」入口指定）
+        setCapabilityDefaultType(opts?.defaultType ?? 'skill');
         setCapabilityInitialConnected(false);
+        setCapabilityInitialUsed(opts?.initialUsedView ?? false);
         setCapabilityResetKey((key) => key + 1);
         capabilityOpenRef.current = true;
         setCapabilityOpen(true);
       },
-      [removeSlashTriggerText, recordUndoSnapshot, syncEditorStateFromDom],
+      [removeTriggerText, recordUndoSnapshot, syncEditorStateFromDom],
     );
     openCapabilityModalRef.current = openCapabilityModal;
 
@@ -1462,36 +1528,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const handleMentionSelect = useCallback(
       (item: MentionItem) => {
         const editor = editorRef.current;
-        const savedRange = savedRangeRef.current;
-        if (
-          !editor ||
-          !savedRange ||
-          !editor.contains(savedRange.startContainer)
-        )
-          return;
-        // 从保存的光标向前定位触发串，支持浏览器把文本拆成多个节点。
-        const range = savedRange.cloneRange();
-        let remaining = mentionSearchText.length + 1;
-        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
-        const textNodes: Text[] = [];
-        while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
-        let nodeIndex = textNodes.indexOf(range.startContainer as Text);
-        let offset = range.startOffset;
-        if (nodeIndex < 0) return;
-        while (nodeIndex >= 0) {
-          const node = textNodes[nodeIndex];
-          if (node.parentElement?.closest('[data-mention-id]')) return;
-          if (offset >= remaining) {
-            range.setStart(node, offset - remaining);
-            remaining = 0;
-            break;
-          }
-          remaining -= offset;
-          nodeIndex -= 1;
-          offset = textNodes[nodeIndex]?.length ?? 0;
-        }
-        if (remaining || range.toString() !== activeTrigger + mentionSearchText)
-          return;
+        // 从保存的光标向前定位触发串（支持浏览器把文本拆成多个节点）
+        const range = locateTriggerRange(activeTrigger, mentionSearchText);
+        if (!editor || !range) return;
         range.deleteContents();
         const fragment = document.createDocumentFragment();
         fragment.appendChild(createMentionChip(item));
@@ -1512,12 +1551,79 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       [
         activeTrigger,
         mentionSearchText,
+        locateTriggerRange,
         closeMentionPopup,
         commitEditorChange,
         onMentionSelect,
         createMentionChip,
         notifyUnsubscribedSkillSelect,
       ],
+    );
+
+    /**
+     * @ 弹层·专家选中（首页便捷视图）：删 @ 触发串后单选通知父组件
+     * （不插 chip；首页经 onExpertAgentSelect 切换会话智能体，付费拦截
+     * 已内聚在 ExpertListView 的选择前置门）
+     */
+    const handleAtExpertSelect = useCallback(
+      (item: ExpertListItem) => {
+        removeTriggerText('@', mentionSearchText);
+        onExpertSelect?.({
+          targetId: item.targetId ?? Number(item.rawId),
+          name: item.name,
+          icon: item.icon,
+          description: item.description,
+        });
+        closeMentionPopup();
+        commitEditorChange();
+      },
+      [
+        removeTriggerText,
+        mentionSearchText,
+        onExpertSelect,
+        closeMentionPopup,
+        commitEditorChange,
+      ],
+    );
+
+    /**
+     * @ 弹层·资料选中：映射 doc chip 走统一选中链路
+     * （删触发串 + 插 chip + 派生 selectedDocs）
+     */
+    const handleAtDocSelect = useCallback(
+      (item: KnowledgeListItem) => {
+        handleMentionSelect({
+          kind: 'doc',
+          slugId: String(item.slugId ?? ''),
+          name: item.name,
+          pageType: item.pageType,
+        });
+      },
+      [handleMentionSelect],
+    );
+
+    /**
+     * @ 弹层·「更多」：删 @ 触发串并关闭弹层，经能力大弹窗定位对应
+     * 维度打开（专家仅首页开放范围，越界由弹窗回落首个可用类型）；
+     * 专家 tab 初始落「最近召唤」聚合页签（与 @ 弹层便捷视图口径衔接，
+     * 无召唤记录时由弹窗清空回落 effect 退回数据源页签）
+     */
+    const handleAtPopupMore = useCallback(
+      (tab: AtPopupTab) => {
+        const defaultType: CapabilityTypeEnum =
+          tab === 'expert'
+            ? 'expert'
+            : tab === 'knowledge'
+            ? 'knowledge'
+            : 'skill';
+        closeMentionPopup();
+        openCapabilityModalRef.current(mentionSearchText, {
+          trigger: '@',
+          defaultType,
+          initialUsedView: tab === 'expert',
+        });
+      },
+      [closeMentionPopup, mentionSearchText],
     );
 
     /**
@@ -1567,6 +1673,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         // 弹窗显示时的键盘处理（仅在启用 @ 功能时生效）
         if (showMentionPopup) {
           switch (e.key) {
+            // @ 弹层打开期间 Tab 焦点保持在编辑器（实时搜索的输入源，
+            // 单停靠点即循环），不跳出弹窗到页面其他元素；带修饰键的
+            // 组合（Ctrl/Cmd+Tab 等）保留原生行为
+            case 'Tab':
+              if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+              }
+              return;
             case 'ArrowUp':
               e.preventDefault();
               mentionPopupRef.current?.handleArrowUp();
@@ -1863,21 +1977,26 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           suppressContentEditableWarning
         />
 
-        {/* @提及文件选择弹窗（/ 触发走下方能力大弹窗） */}
+        {/* @ 资源弹层（首页=专家+资料库 / 会话页=上下文文件+资料库；
+            / 触发走下方能力大弹窗）；resetKey 强制重挂——每次 @ 唤起
+            回到最初状态（默认 tab/文件重新判定/键盘聚焦复位） */}
         <div className={styles['mention-popup-wrapper']}>
           {activeTrigger === '@' && (
-            <MentionPopup
-              onFetchMentionFiles={onFetchMentionFiles}
+            <AtResourcePopup
+              key={atPopupResetKey}
               ref={mentionPopupRef}
               visible={showMentionPopup}
+              mode={atHomePanel ? 'home' : 'session'}
               position={mentionPosition}
-              onSelect={handleMentionSelect}
-              enableSubscription={enableSubscription}
-              onClose={closeMentionPopup}
-              searchText={mentionSearchText}
               maxHeight={mentionPopupMaxHeight}
+              searchText={mentionSearchText}
+              onFetchMentionFiles={onFetchMentionFiles}
+              onSelectFile={handleMentionSelect}
+              onSelectDoc={handleAtDocSelect}
+              onSelectExpert={handleAtExpertSelect}
+              onMore={handleAtPopupMore}
+              onClose={closeMentionPopup}
               onHeightChange={handlePopupHeightChange}
-              usageScenarios={usageScenarios}
             />
           )}
         </div>
@@ -1892,6 +2011,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           resourceTypes={capabilityResourceTypes}
           defaultResourceType={capabilityDefaultType}
           defaultConnectedView={capabilityInitialConnected}
+          defaultUsedView={capabilityInitialUsed}
         />
       </div>
     );

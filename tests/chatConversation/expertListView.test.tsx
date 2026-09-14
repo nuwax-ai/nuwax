@@ -1,9 +1,11 @@
 /**
  * 独立专家列表组件 ExpertListView 契约：
- * - 四场景接口参数：system(targetType=Agent+ChatBot+category+kw)、
+ * - 五场景接口参数：system(targetType=Agent+ChatBot+category+kw)、
  *   team(spaceId/spaceIds、未传自拉空间聚合、category=Agent+justReturnSpaceData)、
  *   search(固定 spaceId=-1)、used(used/list {type:'Agent'} 全量 + keyword
- *   客户端过滤、条目带 usedTime、targetId=agentId)；
+ *   客户端过滤、条目带 usedTime、targetId=agentId)、
+ *   convenient(两路并行:used size=100 + 广场单页 pageSize=100,按 targetId
+ *   去重 used 优先保留且整体置最前,单次拉齐无加载更多)；
  * - 服务端分页触底追加；
  * - 付费拦截门：免费直通；付费未订阅先详情复核,仍待订阅弹统一专家卡
  *   (内聚 Modal+ExpertSummonCard)不触发 onSelect,卡内召唤放行带 subscribed;
@@ -203,6 +205,122 @@ describe('ExpertListView·场景接口参数契约', () => {
     await waitFor(() => {
       expect(screen.queryByText('召唤专家')).toBeNull();
     });
+  });
+});
+
+describe('ExpertListView·便捷视图（convenient）', () => {
+  it('接口契约：两路并行拉取（used size=100 + 广场单页 100），触底不追加', async () => {
+    apiUserUsedAgentList.mockResolvedValue({ code: '0000', data: [] });
+    apiPublishedAgentList.mockResolvedValue(pageOf([], 1, 1));
+    const { container } = renderView({
+      type: 'convenient',
+      category: '写作',
+      keyword: '架构',
+    });
+
+    await waitFor(() =>
+      expect(apiPublishedAgentList).toHaveBeenCalledWith({
+        page: 1,
+        pageSize: 100,
+        category: '写作',
+        kw: '架构',
+        official: true,
+        targetType: 'Agent',
+        targetSubType: 'ChatBot',
+      }),
+    );
+    expect(apiUserUsedAgentList).toHaveBeenCalledWith({
+      size: 100,
+      type: 'Agent',
+    });
+    expect(apiSpaceList).not.toHaveBeenCalled();
+
+    // 单次拉齐：触底滚动不再发请求
+    const scroller = container.firstElementChild as HTMLElement;
+    Object.defineProperty(scroller, 'scrollHeight', { value: 500 });
+    Object.defineProperty(scroller, 'clientHeight', { value: 480 });
+    fireEvent.scroll(scroller);
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(apiPublishedAgentList).toHaveBeenCalledTimes(1);
+    expect(apiUserUsedAgentList).toHaveBeenCalledTimes(1);
+  });
+
+  it('去重与排序：广场与最近召唤重复的条目丢弃，最近召唤置于最前', async () => {
+    apiUserUsedAgentList.mockResolvedValue({
+      code: '0000',
+      data: [
+        {
+          id: 41,
+          agentId: 401,
+          name: '最近召唤专家',
+          description: '最近召唤',
+          icon: '',
+          modified: new Date(Date.now() - 5 * 3_600_000).toISOString(),
+          agentType: 'ChatBot',
+        },
+      ],
+    });
+    apiPublishedAgentList.mockResolvedValue(
+      pageOf(
+        [
+          agent({ id: 11, targetId: 401, name: '广场重复专家' }),
+          agent({ id: 12, targetId: 102, name: '广场新专家' }),
+        ],
+        1,
+        1,
+      ),
+    );
+    renderView({ type: 'convenient' });
+
+    const usedCard = await waitFor(() => {
+      const el = document.querySelector('[data-expert-key="expert:used:41"]');
+      expect(el).toBeTruthy();
+      return el as HTMLElement;
+    });
+    // 广场与 used 的 targetId=401 重复 → 丢弃，仅保留 used 条目
+    expect(screen.queryByText('广场重复专家')).toBeNull();
+    const squareCard = document.querySelector(
+      '[data-expert-key="expert:convenient:12"]',
+    );
+    expect(squareCard).toBeTruthy();
+    // 最近召唤条目排在广场条目之前
+    expect(
+      usedCard.compareDocumentPosition(squareCard as Node) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('keyword 过滤：最近召唤客户端过滤 + 广场 kw 透传', async () => {
+    apiUserUsedAgentList.mockResolvedValue({
+      code: '0000',
+      data: [
+        {
+          id: 41,
+          agentId: 401,
+          name: '召唤专家',
+          description: '最近召唤',
+          icon: '',
+          modified: new Date().toISOString(),
+          agentType: 'ChatBot',
+        },
+      ],
+    });
+    apiPublishedAgentList.mockResolvedValue(pageOf([], 1, 1));
+    renderView({ type: 'convenient' });
+    expect(await screen.findByText('召唤专家')).toBeInTheDocument();
+
+    cleanup();
+    apiUserUsedAgentList.mockClear();
+    apiPublishedAgentList.mockClear();
+    renderView({ type: 'convenient', keyword: '不存在的关键字' });
+    await waitFor(() => {
+      expect(screen.queryByText('召唤专家')).toBeNull();
+    });
+    expect(apiPublishedAgentList).toHaveBeenCalledWith(
+      expect.objectContaining({ kw: '不存在的关键字' }),
+    );
   });
 });
 

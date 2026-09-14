@@ -1,8 +1,8 @@
 /**
  * SkillListView — 独立技能列表组件（数据内聚 + 双布局变体）
- * @description 只做「技能列表」：按 type 四场景拉数（我启用的/系统广场/
- * 团队空间/搜索场景，接口参数矩阵见 useSkillList）、滚动分页、启用开关
- * 闭环、付费拦截门（选择前先复核，已付费才触发 onSelect）。
+ * @description 只做「技能列表」：按 type 五场景拉数（我启用的/系统广场/
+ * 团队空间/搜索场景/便捷视图，接口参数矩阵见 useSkillList）、滚动分页、
+ * 启用开关闭环、付费拦截门（选择前先复核，已付费才触发 onSelect）。
  * tab/搜索框/分类 pill 等宿主 UI 不在组件内；选择经 onSelect 回调由外部
  * 走业务，付费订阅套餐弹窗（Skill 口径）内聚。
  *
@@ -127,8 +127,9 @@ const SkillListView: React.FC<SkillListViewProps> = ({
   const [enablingKeys, setEnablingKeys] = useState<string[]>([]);
   /**
    * 启用/取消启用：开启经付费门（付费未订阅复核/弹套餐,放行才发 enable）；
-   * 取消启用不走门直接发 unEnable。成功后就地回写开关；「我启用的」聚合
-   * 视图需整体重拉同步条目增减，其余视图以就地补丁为准（不丢滚动位置）
+   * 取消启用不走门直接发 unEnable。成功后就地回写开关；「我启用的」与便捷
+   * 视图需整体重拉同步条目增减（便捷视图下开关变更会改变「启用的」分组
+   * 成员与置前排序），其余视图以就地补丁为准（不丢滚动位置）
    */
   const handleToggleEnable = useCallback(
     (item: SkillListItem) => {
@@ -144,7 +145,7 @@ const SkillListView: React.FC<SkillListViewProps> = ({
             if (res?.code === SUCCESS_CODE) {
               updateItem(item.key, { enabled: enabling });
               onEnabledChange?.({ ...item, enabled: enabling }, enabling);
-              if (type === 'enabled') {
+              if (type === 'enabled' || type === 'convenient') {
                 reload();
               }
             }

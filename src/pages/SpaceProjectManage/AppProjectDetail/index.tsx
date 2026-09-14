@@ -20,7 +20,18 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Form, Input, message, Modal, Radio, Spin } from 'antd';
+import type { TabsProps } from 'antd';
+import {
+  Button,
+  Empty,
+  Form,
+  Input,
+  message,
+  Modal,
+  Radio,
+  Spin,
+  Tabs,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
@@ -134,7 +145,7 @@ const AppProjectDetail: React.FC = () => {
   const [secretVisible, setSecretVisible] = useState<boolean>(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [homepageUrl, setHomepageUrl] = useState<string>('');
-  const [redirectUri, setRedirectUri] = useState<string>  ('');
+  const [redirectUri, setRedirectUri] = useState<string>('');
   const [privateServers, setPrivateServers] = useState<PrivateServerInfo[]>([]);
   const [deployServerId, setDeployServerId] = useState<number>();
   const [deployTargetOpen, setDeployTargetOpen] = useState<boolean>(false);
@@ -158,9 +169,7 @@ const AppProjectDetail: React.FC = () => {
         setConversations(records);
         setProjectName(
           (prev) =>
-            prev ||
-            records.find((item) => item.agent?.name)?.agent?.name ||
-            '',
+            prev || records.find((item) => item.agent?.name)?.agent?.name || '',
         );
       },
       onError: () => {
@@ -401,6 +410,33 @@ const AppProjectDetail: React.FC = () => {
       ),
     [domains],
   );
+
+  /** 顶部 Tab 仅负责切换状态，内容由页面主体区域统一渲染 */
+  const tabItems = useMemo<TabsProps['items']>(
+    () => [
+      {
+        key: 'plan',
+        label: dict('PC.Pages.AppProjectDetail.tabPlan'),
+        children: null,
+      },
+      {
+        key: 'asset',
+        label: dict('PC.Pages.AppProjectDetail.tabAsset'),
+        children: null,
+      },
+      {
+        key: 'setting',
+        label: dict('PC.Pages.AppProjectDetail.tabSetting'),
+        children: null,
+      },
+    ],
+    [],
+  );
+
+  /** 切换顶部 Tab */
+  const handleTabChange = useCallback((key: string) => {
+    setActiveTab(key as SettingTabKey);
+  }, []);
 
   const emptyValue = dict('PC.Pages.AppProjectDetail.emptyValue');
 
@@ -861,32 +897,21 @@ const AppProjectDetail: React.FC = () => {
           paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
         }}
       >
-        <SvgIcon
-          name="icons-nav-backward"
+        <Button
+          type="text"
           className={cx(styles.back)}
           onClick={handleBack}
+          icon={<SvgIcon className={cx('flex')} name="icons-nav-backward" />}
         />
         <h3 className={cx(styles['project-name'], 'text-ellipsis')}>
           {projectName || dict('PC.Pages.AppProjectDetail.untitled')}
         </h3>
-        <div className={cx(styles.tabs)}>
-          {(
-            [
-              ['plan', 'PC.Pages.AppProjectDetail.tabPlan'],
-              ['asset', 'PC.Pages.AppProjectDetail.tabAsset'],
-              ['setting', 'PC.Pages.AppProjectDetail.tabSetting'],
-            ] as const
-          ).map(([key, labelKey]) => (
-            <button
-              key={key}
-              type="button"
-              className={cx(styles.tab, { [styles.active]: activeTab === key })}
-              onClick={() => setActiveTab(key)}
-            >
-              {dict(labelKey)}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          className={cx(styles.tabs)}
+          activeKey={activeTab}
+          items={tabItems}
+          onChange={handleTabChange}
+        />
         <div className={cx(styles['header-actions'])}>
           <TooltipIcon
             title={
@@ -897,9 +922,7 @@ const AppProjectDetail: React.FC = () => {
             className={cx(styles['panel-toggle'], {
               [styles.active]: conversationPanelVisible,
             })}
-            icon={
-              <SvgIcon name="icons-nav-sidebar" style={{ fontSize: 16 }} />
-            }
+            icon={<SvgIcon name="icons-nav-sidebar" style={{ fontSize: 16 }} />}
             onClick={handleToggleConversationPanel}
           />
         </div>
