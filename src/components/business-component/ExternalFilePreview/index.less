@@ -1,4 +1,7 @@
 // 工作区外沙箱文件独立预览面板：头部完整路径 + 正文按类型渲染
+@import '@/styles/color';
+@import '@/styles/token';
+
 .external-file-preview {
   display: flex;
   flex-direction: column;
@@ -27,6 +30,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// 返回工作区文件树的显式出口（独立预览整块顶替文件树面板，须留退路）
+.external-file-back {
+  flex-shrink: 0;
+  margin-left: -6px;
+
+  &:hover {
+    color: @colorPrimary;
+  }
 }
 
 .external-file-body {

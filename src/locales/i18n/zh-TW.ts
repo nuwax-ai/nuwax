@@ -2764,6 +2764,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.Chat.toolFileOpenNotInConversation": "開啟檔案失敗：該檔案不屬於當前會話",
   "PC.Pages.Chat.toolFileOpenUnsupportedPath": "開啟檔案失敗：暫不支援開啟該路徑",
   "PC.Pages.Chat.externalFilePreviewFailed": "檔案預覽載入失敗，檔案不存在或暫不支援存取該位置",
+  "PC.Pages.Chat.externalFilePreviewBack": "返回檔案樹預覽",
   "PC.Pages.Chat.createConversationFailed": "建立會話失敗",
   "PC.Pages.Chat.deleteSuccess": "刪除成功",
   "PC.Pages.Chat.expandNavigation": "展開導航",

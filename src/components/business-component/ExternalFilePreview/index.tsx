@@ -1,5 +1,7 @@
 import CopyIconButton from '@/components/base/CopyIconButton';
+import SvgIcon from '@/components/base/SvgIcon';
 import FilePreview from '@/components/business-component/FilePreview';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
 import { apiGetStaticFileList } from '@/services/vncDesktop';
@@ -17,6 +19,8 @@ export interface ExternalFilePreviewProps {
   targetDir: string;
   /** 相对 targetDir 的文件路径（如 Desktop/a.md） */
   relativePath: string;
+  /** 返回工作区文件树预览（缺省时不渲染返回入口） */
+  onBack?: () => void;
   className?: string;
 }
 
@@ -26,11 +30,14 @@ export interface ExternalFilePreviewProps {
  * 交 FilePreview 按类型渲染。
  * 注意：网关当前仅个人电脑会话放行 customTargetDir，云端会话放开为后端契约，
  * 未放开或文件不存在（含隐藏文件，file-server 列目录不回隐藏项）时呈现失败态。
+ * 本面板整块顶替文件树面板（文件树/终端/云电脑均不可见），故须由 onBack
+ * 给出一条回到工作区文件树的显式出口。
  */
 const ExternalFilePreview: React.FC<ExternalFilePreviewProps> = ({
   cId,
   targetDir,
   relativePath,
+  onBack,
   className,
 }) => {
   const [loading, setLoading] = useState(false);
@@ -77,6 +84,19 @@ const ExternalFilePreview: React.FC<ExternalFilePreviewProps> = ({
   return (
     <div className={cx(styles['external-file-preview'], className)}>
       <div className={cx(styles['external-file-header'])}>
+        {onBack && (
+          <TooltipIcon
+            title={t('PC.Pages.Chat.externalFilePreviewBack')}
+            className={cx(styles['external-file-back'])}
+            onClick={onBack}
+            icon={
+              <SvgIcon
+                name="icons-common-caret_left"
+                style={{ fontSize: 15 }}
+              />
+            }
+          />
+        )}
         <span
           className={cx(styles['external-file-header-path'])}
           title={absolutePath}

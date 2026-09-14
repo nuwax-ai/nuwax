@@ -811,6 +811,15 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     relativePath: string;
   } | null>(null);
 
+  /**
+   * 退出工作区外文件独立预览：该面板整块顶替文件树面板（文件树/终端/云电脑
+   * 都不可见），故任何回到工作区面板的动作都要先清它，否则右侧停在独立预览、
+   * 用户无法切回文件树预览。
+   */
+  const exitExternalPreview = useCallback(() => {
+    setExternalPreviewFile(null);
+  }, []);
+
   const workspaceTaskSelectedFileId = taskAgentSelectedFileId
     ? workspaceNodeId(workspaceRelativePath(taskAgentSelectedFileId))
     : '';
@@ -1011,6 +1020,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
    * 打开文件预览：与终端全屏、智能体电脑互斥
    */
   const handleFileTreeVisibleClick = useCallback(() => {
+    // 独立预览占位时，「文件预览」入口 = 回到工作区文件树预览（不收起面板）：
+    // 入口高亮态下若仅切换显隐，用户会一直停在独立预览里出不来
+    if (externalPreviewFile) {
+      setExternalPreviewFile(null);
+      if (!isFileTreeVisible) {
+        openPreviewView(id);
+      }
+      return;
+    }
+
     const hasSelectedPreviewFile = Boolean(
       fileView.tree.selectedFileId || taskAgentSelectedFileId,
     );
@@ -1066,11 +1085,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     effectiveAgent?.type,
     effectiveAgent?.enableVersionControl,
     openPreviewView,
+    externalPreviewFile,
     id,
   ]);
 
   /** 打开 / 收起底部终端全屏（与文件预览、智能体电脑互斥） */
   const handleOpenTerminalPanel = useCallback(() => {
+    // 终端挂在文件树面板内，先退出独立预览，否则点终端看不到终端
+    exitExternalPreview();
     if (isTerminalPanelOpen) {
       setTerminalConsoleCollapseSignal((n) => n + 1);
       setTerminalConsoleLayoutMode('collapsed');
@@ -1089,10 +1111,19 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
 
     setTerminalConsoleExpandSignal((n) => n + 1);
-  }, [isTerminalPanelOpen, isFileTreeVisible, viewMode, id, openPreviewView]);
+  }, [
+    isTerminalPanelOpen,
+    isFileTreeVisible,
+    viewMode,
+    id,
+    openPreviewView,
+    exitExternalPreview,
+  ]);
 
   /** 打开 / 切换智能体电脑（与文件预览、终端全屏互斥） */
   const handleOpenDesktopViewClick = useCallback(() => {
+    // 云电脑渲染在文件树面板的预览区，先退出独立预览，否则点电脑看不到桌面
+    exitExternalPreview();
     if (isTerminalPanelOpen) {
       setTerminalConsoleCollapseSignal((n) => n + 1);
     }
@@ -1101,7 +1132,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTerminalConsoleExpandSignal(0);
     setTerminalConsoleLayoutMode('collapsed');
     handleOpenDesktopView();
-  }, [isTerminalPanelOpen, handleOpenDesktopView]);
+  }, [isTerminalPanelOpen, handleOpenDesktopView, exitExternalPreview]);
 
   useEffect(
     () => () => {
@@ -1244,6 +1275,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
     prevTaskAgentCollapseTriggerRef.current = taskAgentSelectTrigger;
 
+    // 触发链路选中工作区文件（TaskResult / markdown 链接 / 自动预览）时，
+    // 工作区文件预览优先，退出独立预览
+    exitExternalPreview();
     closeVersionPanelForFilePreviewRef.current();
 
     if (!hasTerminalConsoleRendered || !terminalConsoleVisible) {
@@ -1256,6 +1290,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     taskAgentSelectTrigger,
     hasTerminalConsoleRendered,
     terminalConsoleVisible,
+    exitExternalPreview,
   ]);
 
   // 切换会话时，重置 Git 版本记录面板和终端状态
@@ -1575,7 +1610,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       });
       return;
     }
-    setExternalPreviewFile(null);
+    exitExternalPreview();
     // 记录本次点击目标：文件树拉取完成后仍找不到时由 onSelectedFileMissing 提示
     toolResourceSelectRef.current = decision.relativePath;
     setTaskAgentSelectedFileId(decision.relativePath);
@@ -1725,6 +1760,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   chatSessionProps={chatSessionProps}
                   fileSidebarProps={fileSidebarProps}
                   externalFilePreview={externalPreviewFile}
+                  onExternalFilePreviewBack={exitExternalPreview}
                 />
               )
             }
@@ -1788,6 +1824,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   chatSessionProps={chatSessionProps}
                   fileSidebarProps={fileSidebarProps}
                   externalFilePreview={externalPreviewFile}
+                  onExternalFilePreviewBack={exitExternalPreview}
                 />
               </div>
             )}

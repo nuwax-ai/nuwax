@@ -14,6 +14,7 @@ import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
 } from '@/types/enums/agent';
+import { AgentTypeEnum } from '@/types/enums/space';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -29,6 +30,7 @@ const {
   mockInitSelectedComponentList,
   conversationInfoState,
   agentDetailState,
+  modelOverrides,
 } = vi.hoisted(() => ({
   mockUseModel: vi.fn(),
   mockUseParams: vi.fn(),
@@ -44,6 +46,10 @@ const {
   },
   agentDetailState: {
     current: null as any,
+  },
+  /** 每个用例可按需覆盖 conversationInfo model 字段（如文件树可见、任务结果选中文件） */
+  modelOverrides: {
+    current: {} as Record<string, unknown>,
   },
 }));
 
@@ -371,6 +377,7 @@ describe('ChatCore / ChatPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     conversationInfoState.current = null;
+    modelOverrides.current = {};
     agentDetailState.current = { name: 'DetailAgent', agentId: 200 };
     mockUseParams.mockReturnValue({ id: '100', agentId: '200' });
     mockUseLocation.mockReturnValue({
@@ -389,7 +396,7 @@ describe('ChatCore / ChatPage', () => {
 
     mockUseModel.mockImplementation((name: string) => {
       if (name === 'conversationInfo') {
-        return buildConversationInfoModel();
+        return buildConversationInfoModel(modelOverrides.current);
       }
       if (name === 'chat') {
         return {
@@ -664,6 +671,108 @@ describe('ChatCore / ChatPage', () => {
 
     await waitFor(() => {
       expect(mockInitSelectedComponentList).toHaveBeenCalledWith(manuals);
+    });
+  });
+
+  /**
+   * 工作区外文件独立预览（V2 工具详情里的 /home/user/Desktop/*）：该面板整块
+   * 顶替文件树面板，文件树/终端/云电脑同时不可见，故必须留退路——否则用户停在
+   * 独立预览里，再也回不到工作区文件树预览。
+   */
+  describe('工作区外文件独立预览的退出链路', () => {
+    const lastLeftProps = () => mockLeftContent.mock.calls.at(-1)?.[0] as any;
+
+    /** 渲染 ChatCore（文件树可见）并打开一个工作区外沙箱文件 */
+    const renderWithExternalPreview = async () => {
+      conversationInfoState.current = {
+        id: 100,
+        agent: { name: 'ConvAgent', type: AgentTypeEnum.TaskAgent },
+        messageList: [],
+      };
+      modelOverrides.current = { isFileTreeVisible: true };
+      const utils = render(<ChatCore id={100} agentId={200} />);
+      await waitFor(() => {
+        expect(screen.getByTestId('left-content')).toBeInTheDocument();
+      });
+
+      act(() => {
+        lastLeftProps().chatSessionProps.onOpenToolResource({
+          kind: 'file',
+          target: '/home/user/Desktop/note.md',
+          name: 'note.md',
+        });
+      });
+      await waitFor(() => {
+        expect(lastLeftProps().externalFilePreview).toEqual({
+          cId: 100,
+          targetDir: '/home/user',
+          relativePath: 'Desktop/note.md',
+        });
+      });
+      return utils;
+    };
+
+    it('点击文件预览入口，面板从独立预览回到文件树', async () => {
+      await renderWithExternalPreview();
+
+      act(() => {
+        lastLeftProps().headerProps.handleFileTreeVisible();
+      });
+
+      await waitFor(() => {
+        expect(lastLeftProps().externalFilePreview).toBeNull();
+      });
+    });
+
+    it('点击终端入口退出独立预览（终端挂在文件树面板内）', async () => {
+      await renderWithExternalPreview();
+
+      act(() => {
+        lastLeftProps().headerProps.handleOpenTerminalPanel();
+      });
+
+      await waitFor(() => {
+        expect(lastLeftProps().externalFilePreview).toBeNull();
+      });
+    });
+
+    it('点击智能体电脑入口退出独立预览（云电脑渲染在面板预览区）', async () => {
+      await renderWithExternalPreview();
+
+      act(() => {
+        lastLeftProps().headerProps.handleOpenDesktopView();
+      });
+
+      await waitFor(() => {
+        expect(lastLeftProps().externalFilePreview).toBeNull();
+      });
+    });
+
+    it('独立预览头部的返回入口可退出预览', async () => {
+      await renderWithExternalPreview();
+
+      act(() => {
+        lastLeftProps().onExternalFilePreviewBack();
+      });
+
+      await waitFor(() => {
+        expect(lastLeftProps().externalFilePreview).toBeNull();
+      });
+    });
+
+    it('触发链路选中工作区文件（TaskResult / markdown 链接）时退出独立预览', async () => {
+      const utils = await renderWithExternalPreview();
+
+      modelOverrides.current = {
+        isFileTreeVisible: true,
+        taskAgentSelectedFileId: 'src/a.md',
+        taskAgentSelectTrigger: 7,
+      };
+      utils.rerender(<ChatCore id={100} agentId={200} />);
+
+      await waitFor(() => {
+        expect(lastLeftProps().externalFilePreview).toBeNull();
+      });
     });
   });
 });

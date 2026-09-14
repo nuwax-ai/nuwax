@@ -2803,6 +2803,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Chat.toolFileOpenNotInConversation": "ファイルを開けませんでした：このファイルは現在の会話に属していません",
   "PC.Pages.Chat.toolFileOpenUnsupportedPath": "ファイルを開けませんでした：このパスはまだ開けません",
   "PC.Pages.Chat.externalFilePreviewFailed": "ファイルプレビューの読み込みに失敗しました。ファイルが存在しないか、この位置にはまだアクセスできません",
+  "PC.Pages.Chat.externalFilePreviewBack": "ファイルツリーのプレビューに戻る",
   "PC.Pages.Chat.createConversationFailed": "会話の作成に失敗しました",
   "PC.Pages.Chat.deleteSuccess": "正常に削除されました",
   "PC.Pages.Chat.editConversationInfo": "会話情報を編集",

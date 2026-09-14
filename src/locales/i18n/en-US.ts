@@ -2870,6 +2870,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Chat.toolFileOpenNotInConversation": "Failed to open file: this file does not belong to the current conversation",
   "PC.Pages.Chat.toolFileOpenUnsupportedPath": "Failed to open file: this path cannot be opened yet",
   "PC.Pages.Chat.externalFilePreviewFailed": "Failed to load the file preview. The file does not exist or is not accessible yet",
+  "PC.Pages.Chat.externalFilePreviewBack": "Back to file tree preview",
   "PC.Pages.Chat.createConversationFailed": "Failed to create conversation",
   "PC.Pages.Chat.deleteSuccess": "Deleted successfully",
   "PC.Pages.Chat.expandNavigation": "Expand navigation",

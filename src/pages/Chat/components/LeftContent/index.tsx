@@ -36,6 +36,8 @@ interface LeftContentProps {
   chatSessionProps: any;
   fileSidebarProps: FileTreePreviewPanelProps;
   externalFilePreview?: ExternalFilePreviewTarget | null;
+  /** 退出工作区外文件独立预览，右侧面板回落工作区文件树 */
+  onExternalFilePreviewBack?: () => void;
 }
 
 // 内容区域
@@ -47,6 +49,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
   chatSessionProps,
   fileSidebarProps,
   externalFilePreview,
+  onExternalFilePreviewBack,
 }) => {
   // 拖拽分栏默认宽度（持久化偏好，仅作 ResizableSplit 初始值）
   const [chatPanelWidth] = useState<number>(loadChatPanelWidthPercent);
@@ -278,6 +281,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
                     cId={externalFilePreview.cId}
                     targetDir={externalFilePreview.targetDir}
                     relativePath={externalFilePreview.relativePath}
+                    onBack={onExternalFilePreviewBack}
                   />
                 ) : (
                   <FileTreePreviewPanel
