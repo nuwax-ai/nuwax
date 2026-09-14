@@ -1,4 +1,4 @@
-// nuwa-sdlc-kit v1.2.0 · engine file — 托管件，upgrade 会覆盖手工修改
+// nuwa-sdlc-kit v1.3.0 · engine file — 托管件，upgrade 会覆盖手工修改
 // Deploy 闸门（SDLC Stage 4）：发布/破坏性 Bash 命令按 .sdlc.json deployGate 分带拦截。
 //   { "deployGate": { "patterns": [{ "re": "...", "mode": "ask|block|allow" }, ...] } }
 // mode 语义：ask（默认）= 需 <ENVPREFIX>_APPROVE_DEPLOY=1 人工批准后放行；
@@ -27,7 +27,8 @@ process.stdin.on('end', () => {
   let ev;
   try { ev = JSON.parse(raw); } catch { process.exit(0); }
   if ((ev.tool_name ?? '') !== 'Bash') process.exit(0);
-  const cwd = ev.cwd || process.cwd();
+  // ZCode 事件可能不带 cwd：模板变量 ${ZCODE_PROJECT_DIR} 会以环境变量注入（Claude 同理），作兜底
+  const cwd = ev.cwd || process.env.ZCODE_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || process.cwd();
   const cfg = loadCfg(cwd);
   const prefix = cfg.envPrefix ?? 'SDLC';
   const command = String(ev.tool_input?.command ?? '');

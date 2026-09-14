@@ -1,4 +1,4 @@
-// nuwa-sdlc-kit v1.2.0 · engine file — 托管件，upgrade 会覆盖手工修改
+// nuwa-sdlc-kit v1.3.0 · engine file — 托管件，upgrade 会覆盖手工修改
 // PreToolUse 秘钥守护。策略读目标仓根 .sdlc.json（可缺省）：
 //   { "protectedWrite": ["docs/x.md"], "secrets": { "extraPatterns": [] }, "buildNoiseExempt": ["dist"] }
 // 协议：stdin 事件 JSON；exit 0 放行 / exit 2 阻断（stderr 给 Claude）。
@@ -17,7 +17,8 @@ process.stdin.on('end', () => {
 
   const tool = ev.tool_name ?? '';
   const ti = ev.tool_input ?? {};
-  const cwd = ev.cwd || process.cwd();
+  // ZCode 事件可能不带 cwd：模板变量 ${ZCODE_PROJECT_DIR} 会以环境变量注入（Claude 同理），作兜底
+  const cwd = ev.cwd || process.env.ZCODE_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || process.cwd();
   const cfg = loadCfg(cwd);
   const reason = msg => { console.error(msg); process.exit(2); };
 

@@ -1,4 +1,4 @@
-// nuwa-sdlc-kit v1.2.0 · engine file — 托管件，upgrade 会覆盖手工修改
+// nuwa-sdlc-kit v1.3.0 · engine file — 托管件，upgrade 会覆盖手工修改
 // SDLC Stage-3 计划门禁：源码区（.sdlc.json srcPaths 正则）会话首改追问一次；
 // plans/specs 类工件目录有在途改动即放行；marker 记账同会话只问一次；
 // <ENVPREFIX>_SKIP_PLAN_GATE=1 停用（envPrefix 读 .sdlc.json，默认 SDLC）。
@@ -18,7 +18,8 @@ process.stdin.on('end', () => {
   try { ev = JSON.parse(raw); } catch { process.exit(0); }
 
   const tool = ev.tool_name ?? '';
-  const cwd = ev.cwd || process.cwd();
+  // ZCode 事件可能不带 cwd：模板变量 ${ZCODE_PROJECT_DIR} 会以环境变量注入（Claude 同理），作兜底
+  const cwd = ev.cwd || process.env.ZCODE_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || process.cwd();
   const cfg = loadCfg(cwd);
   const prefix = cfg.envPrefix ?? 'SDLC';
   if (process.env[`${prefix}_SKIP_PLAN_GATE`] === '1') process.exit(0);
