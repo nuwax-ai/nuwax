@@ -1,6 +1,9 @@
+import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
+import ExpertSummonModal from '@/components/business-component/ExpertSummonModal';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import useAgentPaymentIntercept from '@/hooks/useAgentPaymentIntercept';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
 import { dict } from '@/services/i18nRuntime';
 import { apiPublishOffShelf } from '@/services/publish';
@@ -75,6 +78,34 @@ const SpaceSection: React.FC = () => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   // 是否开启订阅功能
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  /**
+   * 复核/订阅确认后就地回写列表角标的订阅状态(按 targetId,详情口径为权威),
+   * 供付费智能体拦截 hook 使用
+   */
+  const markAgentSubscribed = useCallback(
+    (targetId: number, subscribed = true) => {
+      setSquareComponentList((prev) =>
+        prev.map((it) =>
+          it.targetId === targetId ? { ...it, subscribed } : it,
+        ),
+      );
+    },
+    [setSquareComponentList],
+  );
+
+  // 付费智能体点击拦截(与专家&专家团页付费专家同口径):
+  // 未订阅的付费智能体点卡片先按详情复核,确认后弹统一专家卡原地订阅/付费,
+  // 不再直接跳详情页;订阅放行后继续原跳转
+  const {
+    paymentItem: agentPaymentItem,
+    closePaymentModal,
+    interceptAgentClick,
+    handleSummonFromCard,
+  } = useAgentPaymentIntercept({
+    enabled: isEnableSubscription,
+    onSubscribed: markAgentSubscribed,
+  });
 
   // 空间广场-分类（根据enabledSandbox动态获取）
   const spaceSquareSegmentedList =
@@ -296,6 +327,16 @@ const SpaceSection: React.FC = () => {
     return squareComponentList.map((item, index) => {
       if (type === SquareAgentTypeEnum.Agent) {
         const title = getTitle(item);
+        // 付费未订阅的智能体先原地拦截弹统一专家卡订阅/付费
+        const handleAgentCardClick = () =>
+          interceptAgentClick(item, () =>
+            handleClick(
+              item.targetId,
+              item.targetType,
+              'space',
+              item?.ext?.conversationId,
+            ),
+          );
         return (
           <SingleAgent
             key={index}
@@ -303,22 +344,8 @@ const SpaceSection: React.FC = () => {
             publishedItemInfo={item}
             extra={getExtra(dict('PC.Pages.SpaceSquare.agent'), item, type)}
             onToggleCollectSuccess={handleToggleCollectSuccess}
-            onClick={() =>
-              handleClick(
-                item.targetId,
-                item.targetType,
-                'space',
-                item?.ext?.conversationId,
-              )
-            }
-            onStartUse={() =>
-              handleClick(
-                item.targetId,
-                item.targetType,
-                'space',
-                item?.ext?.conversationId,
-              )
-            }
+            onClick={handleAgentCardClick}
+            onStartUse={handleAgentCardClick}
           />
         );
       } else if (type === SquareAgentTypeEnum.Template) {
@@ -456,6 +483,32 @@ const SpaceSection: React.FC = () => {
           <Empty description={dict('PC.Common.Global.emptyData')} />
         </div>
       )}
+
+      {/* 付费智能体统一专家卡弹窗(与专家&专家团页、广场同款):未订阅的
+          付费智能体点卡片且详情复核确认后弹出,卡内订阅+召唤自闭环;放行后
+          就地更新角标并继续原跳转 */}
+      <ConditionRender condition={isEnableSubscription}>
+        <ExpertSummonModal
+          open={!!agentPaymentItem}
+          expert={
+            agentPaymentItem
+              ? {
+                  targetId: agentPaymentItem.targetId,
+                  name: agentPaymentItem.name,
+                  icon: agentPaymentItem.icon,
+                  description: agentPaymentItem.description,
+                  // 使用人数取统计信息(无值卡内不展示)
+                  userCount: agentPaymentItem.statistics?.userCount,
+                  // 拦截时已按详情复核确认付费未订阅
+                  paymentRequired: true,
+                  subscribed: false,
+                }
+              : null
+          }
+          onClose={closePaymentModal}
+          onSummon={handleSummonFromCard}
+        />
+      </ConditionRender>
     </div>
   );
 };
