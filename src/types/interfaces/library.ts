@@ -130,6 +130,8 @@ export interface CreateModelProps {
   action?: (data: ModelSaveParams) => Promise<any>;
   onCancel: () => void;
   onConfirm: (info: ModelSaveParams) => void;
+  /** 是否展示标签/标签颜色/倍率管理字段(仅系统-公共模型管理开启,空间侧模型不涉及) */
+  showTagFields?: boolean;
 }
 
 // 内网模型组件

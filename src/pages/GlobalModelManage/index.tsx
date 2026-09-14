@@ -35,7 +35,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, message, Switch } from 'antd';
+import { Button, message, Switch, Tag } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
 import ModalitiesTagsCell from '../MorePage/ModelPermissions/ModalitiesTagsCell';
@@ -296,6 +296,30 @@ const GlobalModelManage: React.FC = () => {
       },
     },
     {
+      // 标签列:有 tag 才展示彩色 Tag(颜色取 tagColor,未配置时用 Tag 默认色);不支持筛选
+      title: dict('PC.Pages.GlobalModelManage.columnTag'),
+      dataIndex: 'tag',
+      width: 100,
+      hideInSearch: true,
+      render: (_, record: ModelConfigDto) =>
+        record.tag ? (
+          <Tag color={record.tagColor || undefined} style={{ marginRight: 0 }}>
+            {record.tag}
+          </Tag>
+        ) : (
+          '-'
+        ),
+    },
+    {
+      // 倍率列(cost,自由文本);不支持筛选
+      title: dict('PC.Pages.GlobalModelManage.columnCost'),
+      dataIndex: 'cost',
+      width: 90,
+      align: 'center',
+      hideInSearch: true,
+      render: (_, record: ModelConfigDto) => record.cost ?? '-',
+    },
+    {
       title: dict('PC.Pages.GlobalModelManage.columnModelId'),
       dataIndex: 'model',
       hideInSearch: true,
@@ -478,6 +502,8 @@ const GlobalModelManage: React.FC = () => {
           mode={
             modelId ? CreateUpdateModeEnum.Update : CreateUpdateModeEnum.Create
           }
+          // 本页维护标签/标签颜色/倍率(空间侧复用本组件时不展示)
+          showTagFields
           open={visible}
           onCancel={() => setVisible(false)}
           onConfirm={() => {
