@@ -36,13 +36,12 @@ const ACTIVE_THRESHOLD_RATIO = 0.35;
 
 /**
  * 波浪：悬停点线条峰值宽度增量（px）与衰减半径（px）。
- * 增量保持绝对值 8px（不随线宽同比缩）：线宽减半后若同比减增量，
- * 4px 拉伸在细线上不可感知，波浪观感等于消失
+ * 参考图：常态 15px、峰值 30px、相邻约 20px，隔一条回到常态。
  */
-const WAVE_MAX_EXTRA = 8;
-const WAVE_SIGMA = 16;
+const WAVE_MAX_EXTRA = 15;
+const WAVE_SIGMA = 7;
 /** 线条基础宽度（与 global.less 中 .conversation-quick-nav-line 的 width 一致） */
-const LINE_BASE_WIDTH = 10;
+const LINE_BASE_WIDTH = 15;
 
 interface ConversationQuickNavProps {
   scrollContainerRef: React.RefObject<HTMLDivElement>;
@@ -56,6 +55,7 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
   const blocks = useMemo(() => buildQuickNavBlocks(messageList), [messageList]);
   const [visible, setVisible] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   /**
    * 相对定位上下文（session-container）的垂直居中点：
    * 以消息滚动容器（不含顶部标题区）的几何计算，rAF/ResizeObserver 时随动
@@ -64,10 +64,9 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
   const rafRef = useRef(0);
   const navRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef<Array<HTMLButtonElement | null>>([]);
-  const waveRafRef = useRef(0);
-  /** 波浪帧使用的最新鼠标纵位（rAF 期间移动不丢帧） */
-  const waveYRef = useRef(0);
-  /** 线条纵向中心缓存：波浪帧内零布局读取，手势进入/导航滚动/块数变化时重建 */
+  const peakIndexRef = useRef<number | null>(null);
+  const previewTimerRef = useRef<number | null>(null);
+  /** 线条纵向中心缓存：波浪内零布局读取，手势进入/导航滚动/块数变化时重建 */
   const centersRef = useRef<Array<number | null> | null>(null);
   /** 锚点 id → 相对内容顶部偏移缓存：与滚动无关，仅内容布局变化时重建 */
   const anchorTopsRef = useRef<Map<string, number> | null>(null);
@@ -80,50 +79,85 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
     });
   }, []);
 
+  const schedulePreview = useCallback((index: number | null) => {
+    if (peakIndexRef.current === index) return;
+    peakIndexRef.current = index;
+    if (previewTimerRef.current !== null) {
+      window.clearTimeout(previewTimerRef.current);
+      previewTimerRef.current = null;
+    }
+    // 波峰换线时先收起旧卡片，避免旧内容还指向已经缩短的线。
+    setPreviewIndex(null);
+    if (index !== null) {
+      previewTimerRef.current = window.setTimeout(() => {
+        previewTimerRef.current = null;
+        setPreviewIndex(index);
+      }, 400);
+    }
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (previewTimerRef.current !== null) {
+        window.clearTimeout(previewTimerRef.current);
+      }
+    },
+    [],
+  );
+
   /**
    * 波浪效果：以鼠标纵轴为中心按高斯衰减拉长附近线条。
-   * 帧内只做缓存读取 + transform 写入（scaleX 不触发布局），
-   * 避免与滚动测量互相争抢主线程造成卡顿。
+   * 🔴不能走 requestAnimationFrame 节流：内嵌 webview 可见时也会把 rAF 压到
+   * 极低频（实测 <1fps），rAF 驱动的波浪会整体失效；mousemove 事件本身不被
+   * 节流，处理器只做缓存读取 + transform 写入（零布局），同步执行即可
    */
   const applyWave = useCallback(
-    (clientY: number) => {
-      waveYRef.current = clientY;
-      if (waveRafRef.current) return;
-      waveRafRef.current = window.requestAnimationFrame(() => {
-        waveRafRef.current = 0;
-        if (!centersRef.current) readCenters();
-        const centers = centersRef.current;
-        if (!centers) return;
-        const y = waveYRef.current;
-        linesRef.current.forEach((el, i) => {
-          if (!el) return;
-          const center = centers[i];
-          const distance = center === null ? Infinity : Math.abs(center - y);
-          const extra =
-            WAVE_MAX_EXTRA *
-            Math.exp(-(distance * distance) / (2 * WAVE_SIGMA * WAVE_SIGMA));
-          el.style.transform =
-            extra <= 0.1
-              ? ''
-              : `scaleX(${(LINE_BASE_WIDTH + extra) / LINE_BASE_WIDTH})`;
+    (clientY: number, hoveredIndex?: number) => {
+      if (!centersRef.current) readCenters();
+      const centers = centersRef.current;
+      if (!centers) return;
+      // 命中线条时以该线中心为波峰；空隙中仍跟随鼠标连续移动。
+      // Tooltip 会单独接管按钮的 enter，不能只依赖外层容器的 enter 坐标。
+      const waveY =
+        hoveredIndex === undefined ? clientY : centers[hoveredIndex] ?? clientY;
+      let peakIndex = hoveredIndex ?? -1;
+      if (peakIndex < 0 || centers[peakIndex] === null) {
+        let nearestDistance = Infinity;
+        centers.forEach((center, index) => {
+          if (center === null) return;
+          const distance = Math.abs(center - clientY);
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            peakIndex = index;
+          }
         });
+      }
+      schedulePreview(peakIndex < 0 ? null : peakIndex);
+      linesRef.current.forEach((el, i) => {
+        if (!el) return;
+        const center = centers[i];
+        const distance = center === null ? Infinity : Math.abs(center - waveY);
+        const extra =
+          WAVE_MAX_EXTRA *
+          Math.exp(-(distance * distance) / (2 * WAVE_SIGMA * WAVE_SIGMA));
+        el.style.transform =
+          extra <= 0.1
+            ? ''
+            : `scaleX(${(LINE_BASE_WIDTH + extra) / LINE_BASE_WIDTH})`;
       });
     },
-    [readCenters],
+    [readCenters, schedulePreview],
   );
 
   const resetWave = useCallback(() => {
-    if (waveRafRef.current) {
-      window.cancelAnimationFrame(waveRafRef.current);
-      waveRafRef.current = 0;
-    }
+    schedulePreview(null);
     centersRef.current = null;
     linesRef.current.forEach((el) => {
       if (el) {
         el.style.transform = '';
       }
     });
-  }, []);
+  }, [schedulePreview]);
 
   /** 单次测量：门控判定 + 垂直居中点 + 按锚点实测位置判定当前视口所在块 */
   const measure = useCallback(() => {
@@ -225,11 +259,26 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
     if (container.firstElementChild) {
       observer.observe(container.firstElementChild);
     }
+    // 消息列表异步到达时容器自身盒高不变（空容器→有内容不改变容器盒尺寸），
+    // ResizeObserver 不会触发，首屏测量停留在空数据态会导致导航条永不出现；
+    // 补 childList 监听兜底，内容到达/替换时重新测量并补观察新的首子节点
+    let mutation: MutationObserver | null = null;
+    if (typeof MutationObserver !== 'undefined') {
+      mutation = new MutationObserver(() => {
+        anchorTopsRef.current = null;
+        if (container.firstElementChild) {
+          observer.observe(container.firstElementChild);
+        }
+        scheduleMeasure();
+      });
+      mutation.observe(container, { childList: true, subtree: true });
+    }
     container.addEventListener('scroll', scheduleMeasure, { passive: true });
 
     scheduleMeasure();
     return () => {
       observer.disconnect();
+      mutation?.disconnect();
       container.removeEventListener('scroll', scheduleMeasure);
       if (rafRef.current) {
         window.cancelAnimationFrame(rafRef.current);
@@ -279,8 +328,15 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       data-testid="conversation-quick-nav"
       aria-label={t('PC.Components.ConversationQuickNav.tooltip')}
       style={centerTop !== null ? { top: centerTop } : undefined}
-      onMouseEnter={readCenters}
-      onMouseMove={(e) => applyWave(e.clientY)}
+      onMouseEnter={(e) => {
+        readCenters();
+        const index = linesRef.current.indexOf(e.target as HTMLButtonElement);
+        applyWave(e.clientY, index < 0 ? undefined : index);
+      }}
+      onMouseMove={(e) => {
+        const index = linesRef.current.indexOf(e.target as HTMLButtonElement);
+        applyWave(e.clientY, index < 0 ? undefined : index);
+      }}
       onMouseLeave={resetWave}
       onScroll={() => {
         // 导航自身内部滚动后线条视口位置变化，中心缓存失效
@@ -292,7 +348,9 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
           key={block.key}
           color="white"
           placement="right"
-          mouseEnterDelay={0.4}
+          open={previewIndex === index}
+          transitionName=""
+          destroyOnHidden
           title={
             <div className="conversation-quick-nav-preview">
               {block.title && (
@@ -316,6 +374,7 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
             className={`conversation-quick-nav-line${
               index === activeIndex ? ' active' : ''
             }`}
+            onMouseEnter={(e) => applyWave(e.clientY, index)}
             onClick={() => jumpToBlock(block)}
             data-testid="conversation-quick-nav-line"
           />

@@ -219,6 +219,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  // overflow-y 会使横向溢出也被裁剪；预留波浪峰值宽度，避免 scaleX 只在 DOM 中生效
+  width: 30px;
   gap: 2px;
   max-height: 60vh;
   padding: 6px 0;
@@ -231,14 +233,14 @@ body {
 }
 
 // 等宽细线形态：常态浅灰、当前视口所在块深色。
-// 视觉线由 ::before 绘制（2px、随按钮宽度），按钮本体高 10px 作为鼠标热区；
+// 视觉线由 ::before 绘制（2px、随按钮宽度），按钮本体高 8px，行距 10px；
 // hover 变长由组件的波浪逻辑直改按钮 transform: scaleX 驱动（不触发布局），
 // 因此 transform-origin 固定左缘、向右伸展；此处只管变色
 .conversation-quick-nav-line {
   position: relative;
   flex-shrink: 0;
-  width: 10px;
-  height: 10px;
+  width: 15px;
+  height: 8px;
   padding: 0;
   border: none;
   background: transparent;
@@ -249,7 +251,7 @@ body {
     content: '';
     position: absolute;
     left: 0;
-    top: 4px;
+    top: 3px;
     width: 100%;
     height: 2px;
     border-radius: 1px;
@@ -266,31 +268,34 @@ body {
   }
 }
 
-// 悬停卡片（挂 Tooltip color="white" 的浮层内，白底黑字）：标题粗体一行 + 正文多行截断
+// 悬停卡片（挂 Tooltip color="white" 的浮层内，白底黑字）：标题最多两行、正文最多三行
 .conversation-quick-nav-preview {
-  max-width: 320px;
+  max-width: 300px;
 }
 
 .conversation-quick-nav-preview-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  /* stylelint-disable-next-line value-no-vendor-prefix */
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   font-size: 14px;
-  line-height: 22px;
+  line-height: 20px;
   font-weight: 600;
   color: rgba(0, 0, 0, 88%);
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .conversation-quick-nav-preview-body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   /* stylelint-disable-next-line value-no-vendor-prefix */
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
   margin-top: 4px;
   font-size: 13px;
-  line-height: 22px;
+  line-height: 20px;
   color: rgba(0, 0, 0, 65%);
   word-break: break-all;
 }
