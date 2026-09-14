@@ -6245,6 +6245,13 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "創建成功",
   "PC.Pages.SpaceProjectManage.createFailed": "創建失敗，請稍後重試",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "項目暫無會話，請進入項目後再導出",
+  // 常規項目詳情頁
+  "PC.Pages.NormalProjectDetail.tabPlan": "計畫",
+  "PC.Pages.NormalProjectDetail.tabAsset": "資產",
+  "PC.Pages.NormalProjectDetail.comingSoon": "功能即將開放",
+  "PC.Pages.NormalProjectDetail.untitled": "未命名專案",
+  "PC.Pages.NormalProjectDetail.hideConversationPanel": "隱藏相關任務",
+  "PC.Pages.NormalProjectDetail.showConversationPanel": "顯示相關任務",
   // 全栈应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "計畫",

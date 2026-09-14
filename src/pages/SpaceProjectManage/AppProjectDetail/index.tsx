@@ -861,10 +861,11 @@ const AppProjectDetail: React.FC = () => {
           paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
         }}
       >
-        <SvgIcon
-          name="icons-nav-backward"
+        <Button
+          type="text"
           className={cx(styles.back)}
           onClick={handleBack}
+          icon={<SvgIcon className={cx('flex')} name="icons-nav-backward" />}
         />
         <h3 className={cx(styles['project-name'], 'text-ellipsis')}>
           {projectName || dict('PC.Pages.AppProjectDetail.untitled')}

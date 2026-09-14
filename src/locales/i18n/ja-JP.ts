@@ -6243,6 +6243,13 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "作成しました",
   "PC.Pages.SpaceProjectManage.createFailed": "作成に失敗しました。しばらくしてから再試行してください",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "まだ会話がありません。プロジェクトに入ってから書き出してください。",
+  // 通常プロジェクト詳細ページ
+  "PC.Pages.NormalProjectDetail.tabPlan": "計画",
+  "PC.Pages.NormalProjectDetail.tabAsset": "資産",
+  "PC.Pages.NormalProjectDetail.comingSoon": "近日公開",
+  "PC.Pages.NormalProjectDetail.untitled": "名称未設定プロジェクト",
+  "PC.Pages.NormalProjectDetail.hideConversationPanel": "関連タスクを隠す",
+  "PC.Pages.NormalProjectDetail.showConversationPanel": "関連タスクを表示",
   // 全栈应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "計画",

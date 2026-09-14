@@ -6369,6 +6369,13 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "Created successfully",
   "PC.Pages.SpaceProjectManage.createFailed": "Creation failed, please try again later",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "No conversation yet. Open the project before exporting.",
+  // 常规项目详情页
+  "PC.Pages.NormalProjectDetail.tabPlan": "Plan",
+  "PC.Pages.NormalProjectDetail.tabAsset": "Assets",
+  "PC.Pages.NormalProjectDetail.comingSoon": "Coming soon",
+  "PC.Pages.NormalProjectDetail.untitled": "Untitled project",
+  "PC.Pages.NormalProjectDetail.hideConversationPanel": "Hide related tasks",
+  "PC.Pages.NormalProjectDetail.showConversationPanel": "Show related tasks",
   // 全栈应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "Plan",

@@ -11,6 +11,7 @@ import type {
   UpdateUserAppParams,
   UpdateUserProjectParams,
   UserAppInfo,
+  UserNormalProjectInfo,
   UserProjectItem,
   UserProjectPageQueryParams,
   UserProjectTabPageResult,
@@ -83,7 +84,7 @@ export async function apiUserAppGetById(
  */
 export async function apiNormalProjectUpdate(
   data: UpdateUserProjectParams,
-): Promise<RequestResponse<UserProjectItem>> {
+): Promise<RequestResponse<UserNormalProjectInfo>> {
   return request('/api/normal-project/update', {
     method: 'POST',
     data,
@@ -99,10 +100,10 @@ export async function apiNormalProjectDelete(
   });
 }
 
-/** 按ID查询常规项目（wiki 2026-09-11 新契约；响应结构未细化，防御式消费） */
+/** 按ID查询常规项目详情 */
 export async function apiNormalProjectGetById(
   id: number,
-): Promise<RequestResponse<UserProjectItem>> {
+): Promise<RequestResponse<UserNormalProjectInfo>> {
   return request(`/api/normal-project/get/${id}`, {
     method: 'GET',
   });
