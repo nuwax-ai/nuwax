@@ -84,8 +84,10 @@ export type SandboxFileOpenDecision =
 
 /**
  * 会话内点击文件路径的打开判定：
- * - 当前会话工作区内 → open；
- * - 沙箱家目录下其他位置（数字段不匹配或非数字段）→ open-external；
+ * - 当前会话工作区内（数字段匹配）→ open；
+ * - 数字段不匹配（其他会话的沙箱路径）→ 拒绝 not-in-conversation
+ *   （有意安全门：防跨会话越权，sandboxPath.test.ts 有锚定，勿按注释放开）；
+ * - 沙箱家目录下非会话段路径（open-external 锚）→ open-external；
  * - 家目录之外/无法解析 → 拒绝（由调用方映射提示词条）。
  */
 export function resolveSandboxFileOpen(
