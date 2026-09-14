@@ -51,10 +51,10 @@ const PROJECT_STRATEGIES: Partial<
     getUrl: ({ spaceId, targetId, conversationId }) =>
       `/space/${spaceId}/app-pro?appId=${targetId}&conversationId=${conversationId}`,
   },
-  // todo： 根据实际需求，修改跳转路径
   [AgentComponentTypeEnum.NormalProject]: {
-    getUrl: ({ spaceId, targetId, conversationId }) =>
-      `/space/${spaceId}/app-pro?appId=${targetId}&conversationId=${conversationId}`,
+    // 常规项目会话落会话页（与 openProject 双 id 分支同口径），不走全栈 IDE
+    getUrl: ({ conversationId, agentId }) =>
+      `/home/chat/${conversationId}/${agentId}`,
   },
   [AgentComponentTypeEnum.PageApp]: {
     getUrl: ({ spaceId, targetId }) => `/space/${spaceId}/app-dev/${targetId}`,
