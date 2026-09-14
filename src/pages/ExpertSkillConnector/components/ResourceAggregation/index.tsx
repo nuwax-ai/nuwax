@@ -76,7 +76,8 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
           ? ('team' as const)
           : source === 'connected'
           ? ('connected' as const)
-          : source === 'enabled'
+          : // "我启用的"仅技能页有对应 tab，连接器页已隐藏（残留 URL 回落系统广场）
+          source === 'enabled' && resourceType === 'skill'
           ? ('enabled' as const)
           : ('system' as const),
       category: searchParams.get('category') || '',
@@ -403,19 +404,19 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
   const [togglingIds, setTogglingIds] = useState<string[]>([]);
 
   /**
-   * 连接器卡片「启用开关」：POST /api/connector/connections/{连接器id}/status
-   * （连接器 id 为提供方主键，非连接 id）；成功后就地更新
-   * connectionEnabled 驱动开关回弹，不动筛选与分页（避免整页重拉）。
+   * 连接器卡片「启用开关」：POST /api/connector/connections/{连接id}/status
+   * （连接 id 取列表接口响应的 connectionId，非提供方主键）；成功后就地
+   * 更新 connectionEnabled 驱动开关回弹，不动筛选与分页（避免整页重拉）。
    * 例外——「我启用的」维度关闭开关：接口成功后整区重拉（reload），
    * 关闭启用的连接器即时移出该维度列表；其余维度维持就地更新
    * （与技能「我启用的」关闭开关同口径）
    */
   const handleToggleEnabled = useCallback(
     async (item: ResourceItem, enabled: boolean) => {
-      if (!item.connectorId) {
-        // 数据异常兜底：缺连接器 id 无法寻址（正常数据两个维度均有值）
+      if (!item.connectionId) {
+        // 数据异常兜底：缺连接 id 无法寻址（开关仅已连接卡片展示，正常已有值）
         console.warn(
-          '[ExpertSkillConnector] toggle enabled skipped: missing connectorId, item =',
+          '[ExpertSkillConnector] toggle enabled skipped: missing connectionId, item =',
           item.id,
         );
         return;
@@ -423,7 +424,7 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
       setTogglingIds((prev) => [...prev, item.id]);
       try {
         const res = await apiConnectorConnectionToggleStatus(
-          item.connectorId,
+          item.connectionId,
           enabled,
         );
         if (res?.code === SUCCESS_CODE) {

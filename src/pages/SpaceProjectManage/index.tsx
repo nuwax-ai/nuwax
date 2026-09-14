@@ -15,6 +15,8 @@ import { apiDownloadAllFiles } from '@/services/vncDesktop';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import type { RequestResponse } from '@/types/interfaces/request';
+import type { UserProjectConversationInfo } from '@/types/interfaces/userProject';
 import {
   DeleteOutlined,
   DownOutlined,
@@ -35,9 +37,11 @@ import React, {
 } from 'react';
 import { useParams } from 'umi';
 import CreateUserApp from '../AppDevPro/components/CreateUserApp';
+import ConversationPanel from './components/ConversationPanel';
 import CreateNormalProjectModal from './components/CreateNormalProjectModal';
 import styles from './index.less';
 import { normalizeProjectRows, type ProjectListItem } from './projectRows';
+import { apiUserProjectConversations } from './services';
 import {
   openProject,
   PROJECT_MANAGE_TYPES,
@@ -46,6 +50,25 @@ import {
   projectTypeBadgeClass,
   type ProjectTabKey,
 } from './type';
+
+/** 兼容 umi request 已解包 data 与完整 Response 两种形态 */
+const unwrapConversationList = (
+  result?:
+    | UserProjectConversationInfo[]
+    | RequestResponse<UserProjectConversationInfo[]>
+    | null,
+): UserProjectConversationInfo[] => {
+  if (!result) {
+    return [];
+  }
+  if (Array.isArray(result)) {
+    return result;
+  }
+  if (result.code && result.code !== SUCCESS_CODE) {
+    return [];
+  }
+  return Array.isArray(result.data) ? result.data : [];
+};
 
 /**
  * 行最新会话解析：tab 行的 conversationId 实测恒为 null（后端未维护绑定），
@@ -65,6 +88,7 @@ const resolveRowLatestConversation = (
 /**
  * 项目管理：个人/团队空间下的项目列表（常规项目/网页应用/全栈应用三类合并查询）。
  * 数据走 tab/page-query（实测行主键 projectId、自带最新会话 id 与项目下会话）；
+ * 右侧「相关任务」走 apiUserProjectConversations，按当前列表内项目合并展示；
  * 常规项目/全栈应用的重命名、删除、导出走真实接口（normal-project / userapp /
  * download-all-files 契约，操作清单对齐 wiki「全栈应用开发接口清单」v2 2026-09-11）；
  * 打开项目按类型分发落点（常规项目对齐单栏「项目」分组跳 home/chat 会话详情）；
@@ -80,6 +104,13 @@ const SpaceProjectManage: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [list, setList] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [conversations, setConversations] = useState<
+    UserProjectConversationInfo[]
+  >([]);
+  const [conversationLoading, setConversationLoading] = useState(false);
+  const conversationProjectRef = useRef<Map<number, ProjectListItem>>(
+    new Map(),
+  );
 
   // 新建弹窗态
   const [openCreateNormal, setOpenCreateNormal] = useState(false);
@@ -140,6 +171,55 @@ const SpaceProjectManage: React.FC = () => {
   useEffect(() => {
     void queryProjects();
   }, [queryProjects]);
+
+  /**
+   * 当前列表内每个项目并行拉会话，合并后按更新时间倒序展示到右侧。
+   */
+  useEffect(() => {
+    let cancelled = false;
+    if (!list.length) {
+      conversationProjectRef.current = new Map();
+      setConversations([]);
+      setConversationLoading(false);
+      return;
+    }
+    setConversationLoading(true);
+    void (async () => {
+      const results = await Promise.all(
+        list.map((project) =>
+          apiUserProjectConversations(project.id, project.projectType)
+            .then((res) => ({
+              project,
+              records: unwrapConversationList(res),
+            }))
+            .catch(() => ({
+              project,
+              records: [] as UserProjectConversationInfo[],
+            })),
+        ),
+      );
+      if (cancelled) {
+        return;
+      }
+      const projectMap = new Map<number, ProjectListItem>();
+      const merged: UserProjectConversationInfo[] = [];
+      results.forEach(({ project, records }) => {
+        records.forEach((item) => {
+          projectMap.set(item.id, project);
+          merged.push(item);
+        });
+      });
+      merged.sort((a, b) =>
+        (b.modified || '').localeCompare(a.modified || ''),
+      );
+      conversationProjectRef.current = projectMap;
+      setConversations(merged);
+      setConversationLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [list]);
 
   const tabs = useMemo(
     () => ['all', ...PROJECT_TAB_TYPES] as ProjectTabKey[],
@@ -237,6 +317,54 @@ const SpaceProjectManage: React.FC = () => {
   );
 
   /**
+   * 打开右侧任务：按会话所属项目类型分发（常规项目需会话 + 智能体 id）。
+   *
+   * @param item 会话
+   */
+  const handleSelectConversation = useCallback(
+    (item: UserProjectConversationInfo) => {
+      const project = conversationProjectRef.current.get(item.id);
+      if (!project) {
+        return;
+      }
+      if (project.projectType === AgentComponentTypeEnum.NormalProject) {
+        openProject(spaceId, project, item.id, item.agentId);
+        return;
+      }
+      openProject(spaceId, project, item.id);
+    },
+    [spaceId],
+  );
+
+  /**
+   * 新建任务：优先打开列表中最近更新的全栈/常规项目以创建新会话；
+   * 没有可打开的项目时走新建全栈应用。
+   */
+  const handleCreateConversation = useCallback(() => {
+    const target = list.find(
+      (item) =>
+        item.projectType === AgentComponentTypeEnum.UserApp ||
+        item.projectType === AgentComponentTypeEnum.NormalProject,
+    );
+    if (!target) {
+      setOpenCreateUserApp(true);
+      return;
+    }
+    if (target.projectType === AgentComponentTypeEnum.NormalProject) {
+      pin({
+        projectId: target.id,
+        spaceId,
+        projectType: target.projectType,
+        name: target.name,
+        icon: target.icon,
+        sandboxId: target.sandboxId,
+      });
+      return;
+    }
+    openProject(spaceId, target);
+  }, [list, pin, spaceId]);
+
+  /**
    * 导出项目（wiki #30：download-all-files 适用全栈/常规项目）。
    * 导出以会话为锚（cId），用行最新会话（resolveRowLatestConversation）；
    * 无会话提示先进入项目。
@@ -326,121 +454,144 @@ const SpaceProjectManage: React.FC = () => {
   });
 
   return (
-    <WorkspaceLayout title={dict('PC.Pages.SpaceProjectManage.menuTitle')}>
+    <WorkspaceLayout
+      title={dict('PC.Pages.SpaceProjectManage.menuTitle')}
+      hideScroll
+    >
       <div className={styles['project-manage']}>
-        <div className={styles.toolbar}>
-          <div className={styles.tabs}>
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                className={
-                  tab === activeTab
-                    ? `${styles.tab} ${styles['tab-active']}`
-                    : styles.tab
-                }
-                onClick={() => setActiveTab(tab)}
+        <div className={styles['manage-body']}>
+          <div className={styles['manage-main']}>
+            <div className={styles.toolbar}>
+              <div className={styles.tabs}>
+                {tabs.map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    className={
+                      tab === activeTab
+                        ? `${styles.tab} ${styles['tab-active']}`
+                        : styles.tab
+                    }
+                    onClick={() => setActiveTab(tab)}
+                  >
+                    {dict(PROJECT_TAB_LABEL_KEYS[tab])}
+                  </button>
+                ))}
+              </div>
+              <Input
+                className={styles.search}
+                allowClear
+                prefix={<SearchOutlined />}
+                placeholder={dict(
+                  'PC.Pages.SpaceProjectManage.searchPlaceholder',
+                )}
+                onChange={(e) => setKeyword(e.target.value)}
+              />
+              <Dropdown
+                trigger={['click']}
+                menu={{
+                  items: createMenuItems,
+                  onClick: ({ key }) => handleCreateMenuClick(key),
+                }}
               >
-                {dict(PROJECT_TAB_LABEL_KEYS[tab])}
-              </button>
-            ))}
-          </div>
-          <Input
-            className={styles.search}
-            allowClear
-            prefix={<SearchOutlined />}
-            placeholder={dict('PC.Pages.SpaceProjectManage.searchPlaceholder')}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
-          <Dropdown
-            trigger={['click']}
-            menu={{
-              items: createMenuItems,
-              onClick: ({ key }) => handleCreateMenuClick(key),
-            }}
-          >
-            <Button type="primary" icon={<PlusOutlined />}>
-              {dict('PC.Pages.SpaceProjectManage.createButton')}
-              <DownOutlined />
-            </Button>
-          </Dropdown>
-        </div>
-
-        <Spin spinning={loading}>
-          {list.length === 0 && !loading ? (
-            <Empty
-              className={styles.empty}
-              description={dict('PC.Pages.SpaceProjectManage.emptyText')}
-            >
-              <Button
-                type="primary"
-                ghost
-                icon={<FolderOpenOutlined />}
-                onClick={() => setOpenCreateUserApp(true)}
-              >
-                {dict('PC.Pages.SpaceProjectManage.createButton')}
-              </Button>
-            </Empty>
-          ) : (
-            <div className={styles.grid}>
-              {list.map((item) => (
-                <div
-                  key={`${item.projectType}-${item.id}`}
-                  className={styles.card}
-                  onClick={() => handleOpenProject(item)}
-                >
-                  <div className={styles['card-icon']}>
-                    {item.icon ? (
-                      <img src={item.icon} alt="" />
-                    ) : (
-                      <FolderOpenOutlined />
-                    )}
-                  </div>
-                  <div className={styles['card-body']}>
-                    <div className={styles['card-title-row']}>
-                      <span className={styles['card-title']} title={item.name}>
-                        {item.name}
-                      </span>
-                      <span
-                        className={`${styles.badge} ${
-                          styles[projectTypeBadgeClass(item.projectType)]
-                        }`}
-                      >
-                        {dict(PROJECT_TAB_LABEL_KEYS[item.projectType])}
-                      </span>
-                      {/* 契约只覆盖常规项目/全栈应用的改名删除，PageApp 不挂菜单 */}
-                      {item.projectType !== AgentComponentTypeEnum.PageApp && (
-                        <Dropdown
-                          trigger={['click']}
-                          menu={buildCardMenu(item)}
-                        >
-                          <button
-                            type="button"
-                            className={styles['card-more']}
-                            aria-label={dict('PC.Components.ActionMenu.more')}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <MoreOutlined />
-                          </button>
-                        </Dropdown>
-                      )}
-                    </div>
-                    <div
-                      className={styles['card-desc']}
-                      title={item.description || undefined}
-                    >
-                      {item.description ||
-                        dict('PC.Pages.SpaceProjectManage.noDescription')}
-                    </div>
-                    <div className={styles['card-time']}>
-                      {(item.modified || '').slice(0, 16).replace('T', ' ')}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                <Button type="primary" icon={<PlusOutlined />}>
+                  {dict('PC.Pages.SpaceProjectManage.createButton')}
+                  <DownOutlined />
+                </Button>
+              </Dropdown>
             </div>
-          )}
-        </Spin>
+
+            <Spin spinning={loading}>
+              {list.length === 0 && !loading ? (
+                <Empty
+                  className={styles.empty}
+                  description={dict('PC.Pages.SpaceProjectManage.emptyText')}
+                >
+                  <Button
+                    type="primary"
+                    ghost
+                    icon={<FolderOpenOutlined />}
+                    onClick={() => setOpenCreateUserApp(true)}
+                  >
+                    {dict('PC.Pages.SpaceProjectManage.createButton')}
+                  </Button>
+                </Empty>
+              ) : (
+                <div className={styles.grid}>
+                  {list.map((item) => (
+                    <div
+                      key={`${item.projectType}-${item.id}`}
+                      className={styles.card}
+                      onClick={() => handleOpenProject(item)}
+                    >
+                      <div className={styles['card-icon']}>
+                        {item.icon ? (
+                          <img src={item.icon} alt="" />
+                        ) : (
+                          <FolderOpenOutlined />
+                        )}
+                      </div>
+                      <div className={styles['card-body']}>
+                        <div className={styles['card-title-row']}>
+                          <span
+                            className={styles['card-title']}
+                            title={item.name}
+                          >
+                            {item.name}
+                          </span>
+                          <span
+                            className={`${styles.badge} ${
+                              styles[projectTypeBadgeClass(item.projectType)]
+                            }`}
+                          >
+                            {dict(PROJECT_TAB_LABEL_KEYS[item.projectType])}
+                          </span>
+                          {/* 契约只覆盖常规项目/全栈应用的改名删除，PageApp 不挂菜单 */}
+                          {item.projectType !==
+                            AgentComponentTypeEnum.PageApp && (
+                            <Dropdown
+                              trigger={['click']}
+                              menu={buildCardMenu(item)}
+                            >
+                              <button
+                                type="button"
+                                className={styles['card-more']}
+                                aria-label={dict(
+                                  'PC.Components.ActionMenu.more',
+                                )}
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <MoreOutlined />
+                              </button>
+                            </Dropdown>
+                          )}
+                        </div>
+                        <div
+                          className={styles['card-desc']}
+                          title={item.description || undefined}
+                        >
+                          {item.description ||
+                            dict('PC.Pages.SpaceProjectManage.noDescription')}
+                        </div>
+                        <div className={styles['card-time']}>
+                          {(item.modified || '')
+                            .slice(0, 16)
+                            .replace('T', ' ')}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Spin>
+          </div>
+          <ConversationPanel
+            conversations={conversations}
+            loading={conversationLoading}
+            onSelect={handleSelectConversation}
+            onCreate={handleCreateConversation}
+          />
+        </div>
       </div>
 
       {/* 新建：常规项目（名称直达统一创建接口；创建返回首个会话+智能体 id

@@ -1,8 +1,9 @@
 /**
  * 女娲应用页面(一级菜单入口)
  * @description 应用分发页:最近使用(POST recentlyUsed/list 接口,点击进应用详情)+ 应用列表区
- * (主tab:系统应用/团队空间两维度共用 POST app/list,scope 区分,
- * 两 tab 均滚动触底分页追加;点击进应用详情 /agent/:id);「更多」跳广场-网页应用
+ * (主tab:系统应用/团队空间两维度共用 POST app/list,系统应用 scope=Tenant(本租户内)、
+ * 团队空间 scope=Space,再经 official / justReturnSpaceData 区分,两 tab 均滚动触底分页追加;
+ * 点击进应用详情 /agent/:id);「更多」跳广场-网页应用
  */
 import agentImage from '@/assets/images/agent_image.png';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
@@ -20,6 +21,7 @@ import type {
   SquarePublishedItemInfo,
 } from '@/types/interfaces/square';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
+import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import { Empty, Input, Segmented } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -27,8 +29,11 @@ import { history, useRequest } from 'umi';
 import AppCard from './components/AppCard';
 import {
   APP_LIST_PAGE_SIZE,
+  APP_LIST_TARGET_SUBTYPES,
+  APP_LIST_TARGET_TYPES,
   APP_SCROLL_CONTAINER_ID,
   PAGE_APP_CATEGORY_ROOT_KEY,
+  RECENT_COLLAPSED_MAX_ROWS,
   RECENT_USED_SIZE,
   SQUARE_PAGE_APP_PATH,
 } from './constants';
@@ -84,6 +89,39 @@ const NuwaApps: React.FC = () => {
   );
   // 最近使用列表
   const [recentList, setRecentList] = useState<SquarePublishedItemInfo[]>([]);
+  // 最近使用展开态(收起时最多展示两排,展开看全部)
+  const [recentExpanded, setRecentExpanded] = useState(false);
+  // 最近使用网格实时列数(ResizeObserver 按容器宽度测量,0=尚未测得)
+  const [recentColumns, setRecentColumns] = useState(0);
+  const recentGridRef = useRef<HTMLDivElement | null>(null);
+
+  // 最近使用网格列数:直接实测第一行的卡片数(网格行优先自动排布,首行必满)
+  // ——逐个比较卡片与首卡的 offsetTop,相等者即同排。不按 minmax/gap 公式
+  // 推算(spec 规定 auto-fill 按轨道 max 宽计列数,公式易偏)也不受侧栏
+  // 宽度/滚动条等布局变数影响。
+  // 依赖 hasRecent:网格随「最近使用」条件渲染,首帧数据未到时不存在,
+  // 需等其挂载后再取 ref 挂观察器(否则列数恒为 0,两排裁剪不生效)
+  const hasRecent = recentList.length > 0;
+  useEffect(() => {
+    if (!hasRecent) return;
+    const el = recentGridRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const measureColumns = () => {
+      const children = el.children;
+      if (children.length === 0) return;
+      const baseTop = (children[0] as HTMLElement).offsetTop;
+      let columns = 0;
+      for (let i = 0; i < children.length; i++) {
+        if ((children[i] as HTMLElement).offsetTop !== baseTop) break;
+        columns++;
+      }
+      setRecentColumns(Math.max(1, columns));
+    };
+    measureColumns();
+    const observer = new ResizeObserver(measureColumns);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasRecent]);
 
   // 最近使用:POST /api/published/app/recentlyUsed/list(全量数组,按最近使用排序)
   useRequest(
@@ -132,13 +170,15 @@ const NuwaApps: React.FC = () => {
   const spaceAppLoadedRef = useRef(0);
   const [spaceAppHasMore, setSpaceAppHasMore] = useState(false);
 
-  // 应用列表(系统应用 tab):POST /api/published/app/list,scope=system +
+  // 应用列表(系统应用 tab):POST /api/published/app/list,scope=Tenant(本租户内)+
   // official=true 查官方系统应用;分类/关键词变化时重置回第一页,
   // 滚动触底按页码 +1 追加(与专家·技能·连接器页滚动加载同口径)
   const { run: runAppList, loading: appListLoading } = useRequest(
     (query: { page: number; category: string; kw: string }) =>
       apiPublishedAppList({
-        scope: 'system',
+        scope: 'Tenant',
+        targetTypes: APP_LIST_TARGET_TYPES,
+        targetSubTypes: APP_LIST_TARGET_SUBTYPES,
         official: true,
         page: query.page,
         pageSize: APP_LIST_PAGE_SIZE,
@@ -183,14 +223,16 @@ const NuwaApps: React.FC = () => {
     },
   );
 
-  // 应用列表(团队空间 tab):POST /api/published/app/list,scope=space +
+  // 应用列表(团队空间 tab):POST /api/published/app/list,scope=Space(团队空间)+
   // justReturnSpaceData=true 查空间已发布应用;「全部」不传 spaceId,
   // 选中具体空间追加 spaceId;kw 与系统应用 tab 同为服务端搜索;
   // 切换时重置回第一页,滚动触底按页码 +1 追加
   const { run: runSpaceAppList, loading: spaceAppListLoading } = useRequest(
     (query: { page: number; spaceId?: number; kw: string }) =>
       apiPublishedAppList({
-        scope: 'space',
+        scope: 'Space',
+        targetTypes: APP_LIST_TARGET_TYPES,
+        targetSubTypes: APP_LIST_TARGET_SUBTYPES,
         justReturnSpaceData: true,
         spaceId: query.spaceId,
         page: query.page,
@@ -297,22 +339,34 @@ const NuwaApps: React.FC = () => {
     ...(isTeamSource ? spaces : categories),
   ];
 
+  // 最近使用折叠:收起时最多两排(列数×2);列数未测得前不裁剪,避免首帧闪隐;
+  // 未超两排或已展开时展示全部
+  const recentTwoRowLimit =
+    recentColumns > 0
+      ? recentColumns * RECENT_COLLAPSED_MAX_ROWS
+      : recentList.length;
+  const recentOverflow = recentList.length > recentTwoRowLimit;
+  const visibleRecentList =
+    recentExpanded || !recentOverflow
+      ? recentList
+      : recentList.slice(0, recentTwoRowLimit);
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       {/* 头部:标题 + 搜索 + 更多 */}
       <header className={cx('flex', 'items-center', styles.header)}>
         <h3 className={cx(styles.title)}>{dict('PC.Pages.NuwaApps.title')}</h3>
         <div className={cx('flex', 'items-center', styles['header-actions'])}>
-          {/* 「更多」入口:样式与排布对齐专家·技能·连接器页工具栏(更多在搜索框左侧) */}
-          <a className={cx(styles['more-btn'])} onClick={handleGoSquare}>
-            {dict('PC.Pages.NuwaApps.more')}
-          </a>
           <Input.Search
             className={cx(styles['search-input'])}
             allowClear
             placeholder={dict('PC.Pages.NuwaApps.searchPlaceholder')}
             onSearch={(value) => setKeyword(value || '')}
           />
+          {/* 「更多」入口:样式对齐专家·技能·连接器页工具栏 more-btn,排布在搜索框右侧 */}
+          <a className={cx(styles['more-btn'])} onClick={handleGoSquare}>
+            {dict('PC.Pages.NuwaApps.more')}
+          </a>
         </div>
       </header>
 
@@ -320,43 +374,59 @@ const NuwaApps: React.FC = () => {
         id={APP_SCROLL_CONTAINER_ID}
         className={cx('flex-1', 'min-h-0', 'scroll-container-hide')}
       >
-        {/* 最近使用:接口数据,无数据时整节隐藏 */}
+        {/* 最近使用:接口数据,无数据时整节隐藏;超过两排时收起展示并提供展开/收起 */}
         {recentList.length > 0 && (
           <section>
             <h4 className={cx(styles['section-title'])}>
               {dict('PC.Pages.NuwaApps.recentlyUsed')}
             </h4>
-            <div className={cx(styles['recent-list'])}>
-              {recentList.map((app) => (
-                <div
-                  key={app.id}
-                  className={cx(styles['recent-item'])}
-                  onClick={() => handleRecentClick(app)}
-                >
-                  <span className={cx(styles['recent-icon'])}>
-                    <img
-                      src={app.icon || agentImage}
-                      alt={app.name}
-                      onError={(event) => {
-                        event.currentTarget.onerror = null;
-                        event.currentTarget.src = agentImage;
-                      }}
-                    />
-                  </span>
-                  <div className={cx('flex-1', 'overflow-hide')}>
-                    <p className={cx('text-ellipsis', styles['recent-name'])}>
-                      {app.name}
-                    </p>
-                    {/* 标题下展示应用描述,超长单行省略 */}
-                    <p
-                      className={cx('text-ellipsis', styles['recent-desc'])}
-                      title={app.description}
-                    >
-                      {app.description}
-                    </p>
+            <div className={cx(styles['recent-body'])}>
+              <div className={cx(styles['recent-list'])} ref={recentGridRef}>
+                {visibleRecentList.map((app) => (
+                  <div
+                    key={app.id}
+                    className={cx(styles['recent-item'])}
+                    onClick={() => handleRecentClick(app)}
+                  >
+                    <span className={cx(styles['recent-icon'])}>
+                      <img
+                        src={app.icon || agentImage}
+                        alt={app.name}
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = agentImage;
+                        }}
+                      />
+                    </span>
+                    <div className={cx('flex-1', 'overflow-hide')}>
+                      <p className={cx('text-ellipsis', styles['recent-name'])}>
+                        {app.name}
+                      </p>
+                      {/* 标题下展示应用描述,超长单行省略 */}
+                      <p
+                        className={cx('text-ellipsis', styles['recent-desc'])}
+                        title={app.description}
+                      >
+                        {app.description}
+                      </p>
+                    </div>
                   </div>
+                ))}
+              </div>
+              {/* 超过两排:展开看全部/收起回到最多两排(开关靠右) */}
+              {recentOverflow && (
+                <div className={cx('flex', 'content-end')}>
+                  <a
+                    className={cx(styles['recent-toggle'])}
+                    onClick={() => setRecentExpanded((prev) => !prev)}
+                  >
+                    {recentExpanded
+                      ? dict('PC.Pages.NuwaApps.collapse')
+                      : dict('PC.Pages.NuwaApps.expand')}
+                    {recentExpanded ? <UpOutlined /> : <DownOutlined />}
+                  </a>
                 </div>
-              ))}
+              )}
             </div>
           </section>
         )}

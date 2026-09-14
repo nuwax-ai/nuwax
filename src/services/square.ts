@@ -49,31 +49,71 @@ export async function apiPublishedAgentList(
   });
 }
 
+// 女娲应用-应用列表接口参数
+export interface PublishedAppListParams {
+  /*目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill,Model,PageApp,Mcp,UserApp,NormalProject,Conversation */
+  targetType?: string;
+
+  /*子类型,可用值:Multi,Single,WorkflowChat,ChatBot,TaskAgent,Agent,PageApp,UserApp */
+  targetSubType?: string;
+
+  /*目标类型集合（2026.9月版本添加）,如 [Agent, UserApp] */
+  targetTypes?: string[];
+
+  /*子类型集合（2026.9月版本添加）,如 [PageApp, UserApp] */
+  targetSubTypes?: string[];
+
+  /*搜索范围：System-系统广场；Space-团队空间（2026.9月版本添加）,可用值:Square,System,Space */
+  searchScope?: string;
+
+  /*范围（2026.9月版本添加）,可用值:Tenant-本租户内,Space-团队空间 */
+  scope?: string;
+
+  /*智能体类型 */
+  agentTypes?: Record<string, unknown>[];
+
+  /*页码 */
+  page?: number;
+
+  /*上一页最后一条数据的时间戳，与page二选一 */
+  lastTimestamp?: number;
+
+  /*每页数量 */
+  pageSize?: number;
+
+  /*分类名称 */
+  category?: string;
+
+  /*关键字搜索 */
+  kw?: string;
+
+  /*空间ID（可选）需要通过空间过滤时有用 */
+  spaceId?: number;
+
+  /*只返回空间的组件 */
+  justReturnSpaceData?: boolean;
+
+  /*访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容 */
+  accessControl?: number;
+
+  /*是否只返回官方标识的内容 */
+  official?: boolean;
+
+  /*适用场景筛选参数，如 [TaskAgent, PageApp] */
+  usageScenarios?: Record<string, unknown>[];
+}
+
 /**
  * 女娲应用-应用列表接口（系统应用/团队空间两维度共用）
- * @description POST /api/published/app/list——
- * 系统应用：scope=system + official=true 查官方应用（category/kw 可选筛选）；
- * 团队空间：scope=space + justReturnSpaceData=true 查空间已发布应用，
+ * @description POST /api/published/app/list——两维度均携带
+ * targetTypes=[Agent, UserApp] + targetSubTypes=[PageApp, UserApp] 过滤；
+ * 系统应用：scope=Tenant（本租户内）+ official=true 查官方应用（category/kw 可选筛选）；
+ * 团队空间：scope=Space + justReturnSpaceData=true 查空间已发布应用，
  * 选中具体空间追加 spaceId
  */
-export async function apiPublishedAppList(data: {
-  /** 数据范围：system = 系统应用 / space = 团队空间维度 */
-  scope: 'system' | 'space';
-  /** 仅官方内容（系统应用维度传） */
-  official?: boolean;
-  /** 只返回空间的组件（团队空间维度传） */
-  justReturnSpaceData?: boolean;
-  /** 空间 ID（团队空间维度选中具体空间时传） */
-  spaceId?: number;
-  /** 页码，从 1 开始 */
-  page: number;
-  /** 每页数量 */
-  pageSize: number;
-  /** 分类名称（空=全部不传） */
-  category?: string;
-  /** 关键字搜索（空不传） */
-  kw?: string;
-}): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
+export async function apiPublishedAppList(
+  data: PublishedAppListParams,
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
   return request('/api/published/app/list', {
     method: 'POST',
     data,

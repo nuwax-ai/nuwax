@@ -62,10 +62,11 @@ export interface ResourceItem {
   /** 连接状态（连接器特有：卡片标题下方展示已连接/未连接） */
   connected?: boolean;
   /**
-   * 连接器主键 id（连接器特有：切换连接启用状态接口以连接器 id 寻址，
-   * POST /api/connector/connections/{连接器id}/status）
+   * 连接器连接 id（连接器特有：切换连接启用状态接口以连接 id 寻址，
+   * POST /api/connector/connections/{连接id}/status，取列表接口响应的
+   * connectionId——非提供方主键 id，已连接时有值）
    */
-  connectorId?: number;
+  connectionId?: number;
   /**
    * 所属空间 ID（连接器特有：团队空间维度列表响应每条自带——含"全部"
    * 页签聚合口径，免鉴权直连建连时透传；系统广场响应无该字段）

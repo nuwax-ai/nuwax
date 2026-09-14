@@ -728,20 +728,20 @@ export async function apiConnectorConnectionDelete(
 }
 
 /**
- * 切换连接器连接的启用状态（POST /api/connector/connections/{连接器id}/status?enabled=）
+ * 切换连接器连接的启用状态（POST /api/connector/connections/{连接id}/status?enabled=）
  *
- * - 连接器 id 为提供方主键（GET /api/connector/providers 列表响应的 id，
- *   非连接 id——连接 id 仅用于 DELETE 断开寻址）
+ * - id 为连接 id，取列表接口（GET /api/connector/providers）响应元素的
+ *   connectionId（已连接时有值，非提供方主键 id）
  * - enabled 为目标状态：true 开启 / false 关闭
  * - 成功后由调用方就地更新卡片 connectionEnabled 驱动开关回弹
  *
  * 用于专家·技能·连接器页已连接卡片的右上角启用开关。
  */
 export async function apiConnectorConnectionToggleStatus(
-  connectorId: number,
+  connectionId: number,
   enabled: boolean,
 ): Promise<RequestResponse<null>> {
-  return request(`/api/connector/connections/${connectorId}/status`, {
+  return request(`/api/connector/connections/${connectionId}/status`, {
     method: 'POST',
     params: { enabled: String(enabled) },
   });

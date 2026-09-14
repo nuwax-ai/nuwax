@@ -40,6 +40,25 @@ function isValidEmail(email: string) {
   return reg.test(email);
 }
 
+const DOMAIN_REGEX =
+  /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+
+/** 去掉协议、路径和查询参数，只保留主机名 */
+function normalizeDomain(raw: string) {
+  let value = raw.trim().toLowerCase();
+  value = value.replace(/^https?:\/\//, '');
+  const [host] = value.split(/[/?#]/);
+  return host.replace(/\.$/, '');
+}
+
+/** 校验域名格式是否合法 */
+function isValidDomain(domain: string) {
+  if (!domain || typeof domain !== 'string') {
+    return false;
+  }
+  return DOMAIN_REGEX.test(normalizeDomain(domain));
+}
+
 // 校验数据库表名是否合法
 // 1. 表名必须以字母开头，后面可以跟字母、数字或下划线。
 function validateTableName(tableName: string) {
@@ -308,12 +327,14 @@ export {
   isHttp,
   isMarkdownFile,
   isNumber,
+  isValidDomain,
   isValidEmail,
   isValidJSON,
   isValidPhone,
   isWeakNumber,
   mergeObject,
   noop,
+  normalizeDomain,
   parseJSON,
   parsePageAppProjectId,
   validatePassword,

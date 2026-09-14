@@ -1,21 +1,34 @@
 @import '@/styles/token';
 
+// 卡片高度下调:底部统计行已下线,较 CardWrapper 默认 170px 收掉
+// 统计行高 24px + 其上方间距 16px(双类名提升优先级,覆盖 .container 的
+// 同名单类规则,写法同本页 source-segmented)
+.app-card.app-card {
+  height: 130px;
+}
+
 .app-card {
-  .footer {
-    height: 24px;
-    gap: 16px;
+  // 标题行:应用名称(超长省略,hover 全文)+ 会话数(眼睛图标 + 紧凑数值)靠右
+  .title-row {
+    gap: 8px;
 
-    .count-box {
-      gap: 16px;
+    // 应用名称(EllipsisTooltip 渲染的 div):排版复刻 CardWrapper 字符串
+    // 标题分支的 .title 样式(其作用域覆盖不到自定义标题节点)
+    .title {
       flex: 1;
+      min-width: 0;
+      color: var(--color-font-primary, #15171f);
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+      line-height: 20px;
+    }
 
-      .text {
-        display: flex;
-        align-items: center;
-        font-size: @fontSizeSm;
-        color: #828894;
-        gap: 4px;
-      }
+    .conv-count {
+      flex-shrink: 0;
+      gap: 4px;
+      font-size: @fontSizeSm;
+      color: #828894;
+      line-height: 20px;
     }
   }
 }

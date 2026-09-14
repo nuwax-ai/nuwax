@@ -1,5 +1,6 @@
 import { t } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils/clipboard';
+import { isValidDomain } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, Input, message, Modal, Space, Spin } from 'antd';
 import classNames from 'classnames';
@@ -14,10 +15,6 @@ import {
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-/** 自定义域名格式校验：主机名分段 + 顶级域名 */
-const DOMAIN_REGEX =
-  /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
 
 /** 设置弹窗所需的应用字段（不含域名，域名由独立列表传入） */
 export interface AppDevSettingsProjectInfo {
@@ -170,7 +167,7 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
       message.warning(t('PC.Pages.AppDevSettingsModal.pleaseEnterDomain'));
       return;
     }
-    if (!DOMAIN_REGEX.test(domain)) {
+    if (!isValidDomain(domain)) {
       message.warning(t('PC.Pages.AppDevSettingsModal.invalidDomainFormat'));
       return;
     }

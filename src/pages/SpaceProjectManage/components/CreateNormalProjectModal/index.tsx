@@ -1,15 +1,24 @@
+import agentImage from '@/assets/images/agent_image.png';
+import GuardedFormModal, {
+  GuardedFormModalForm,
+} from '@/components/business-component/GuardedFormModal';
 import WorkspaceDirPickerModal from '@/components/ChatInputHome/WorkspaceDirPickerModal';
+import OverrideTextArea from '@/components/OverrideTextArea';
+import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { apiNormalProjectCreate } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetUserSelectableSandboxList } from '@/services/systemManage';
+import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import {
   DownOutlined,
   FolderOpenOutlined,
   FolderOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, Input, message, Modal, Select, Spin } from 'antd';
+import { Dropdown, Form, Input, message, Select, Spin } from 'antd';
+import type { FormProps } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
@@ -37,12 +46,15 @@ interface CreateNormalProjectModalProps {
   onConfirm: (project: CreatedNormalProject) => void;
 }
 
+interface CreateNormalProjectFormValues {
+  name: string;
+  description?: string;
+  sandboxId: string;
+}
+
 /**
- * 新建常规项目弹窗：名称 + 运行环境（云电脑/个人电脑）+ 工作目录。
- * 走常规项目专用接口 /api/normal-project/create（2026-09-10 契约，
- * 替代原 project/create 管理端入口）。选个人电脑时可指定工作目录
- * （默认工作目录=不传），目录被占用时创建报错；目录能力策略统一见
- * workspaceDirPolicy.constants（常规项目=个人电脑+自定义目录均开启）。
+ * 新建常规项目弹窗：布局对齐创建智能体（名称 / 描述 / 图标），
+ * 另含运行环境与工作目录。走 /api/normal-project/create。
  */
 const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
   spaceId,
@@ -50,25 +62,32 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
   onCancel,
   onConfirm,
 }) => {
-  const [name, setName] = useState('');
-  const [confirmLoading, setConfirmLoading] = useState(false);
-  // 运行环境：'-1'=云电脑（默认分配目录），其他为个人电脑沙箱 ID
-  const [sandboxId, setSandboxId] = useState<string>(CLOUD_SANDBOX_ID);
+  const [form] = Form.useForm<CreateNormalProjectFormValues>();
+  const [imageUrl, setImageUrl] = useState('');
+  const [loading, setLoading] = useState(false);
   const [computerOptions, setComputerOptions] = useState<
     { label: string; value: string }[]
   >([]);
   const [computerLoading, setComputerLoading] = useState(false);
-  // 自定义工作目录（仅个人电脑时可选）
   const [workspacePath, setWorkspaceDir] = useState('');
   const [dirPickerOpen, setDirPickerOpen] = useState(false);
 
+  const sandboxId = Form.useWatch('sandboxId', form) || CLOUD_SANDBOX_ID;
   const isPersonal = sandboxId !== CLOUD_SANDBOX_ID;
 
-  useEffect(() => {
-    if (!open) return;
-    setName('');
-    setSandboxId(CLOUD_SANDBOX_ID);
+  const resetForm = () => {
+    setImageUrl('');
     setWorkspaceDir('');
+    setDirPickerOpen(false);
+    form.resetFields();
+    form.setFieldsValue({ sandboxId: CLOUD_SANDBOX_ID });
+  };
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    resetForm();
     setComputerLoading(true);
     apiGetUserSelectableSandboxList()
       .then((res) => {
@@ -77,7 +96,6 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
             label: item.name,
             value: String(item.sandboxId),
           }));
-          // 兜底：列表未返回云电脑固定项时本地补一个
           if (!options.some((item) => item.value === CLOUD_SANDBOX_ID)) {
             options.unshift({
               label: dict('PC.Pages.SpaceProjectManage.cloudComputer'),
@@ -90,31 +108,34 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
       .finally(() => setComputerLoading(false));
   }, [open]);
 
-  const handleConfirm = async () => {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      message.warning(dict('PC.Pages.SpaceProjectManage.nameRequired'));
-      return;
-    }
-    setConfirmLoading(true);
-    // 云端传哨兵 -1（后端必填校验「沙箱ID不能为空」，-1=云端默认分配，
-    // 与全栈创建 CreateUserApp 同一口径）
-    const numericSandboxId = Number(sandboxId);
+  const onFinish: FormProps<CreateNormalProjectFormValues>['onFinish'] = async (
+    values,
+  ) => {
+    setLoading(true);
+    const numericSandboxId = Number(values.sandboxId);
     try {
+      const { icon, description } = await resolveCreateIcon({
+        imageUrl,
+        name: values.name,
+        description: values.description,
+      });
       const res = await apiNormalProjectCreate({
         spaceId,
-        name: trimmed,
+        name: values.name.trim(),
+        description: description?.trim() || undefined,
+        icon: icon || undefined,
         sandboxId: numericSandboxId,
-        workspacePath: isPersonal ? workspacePath || undefined : undefined,
+        workspacePath:
+          values.sandboxId !== CLOUD_SANDBOX_ID
+            ? workspacePath || undefined
+            : undefined,
       });
-      // 返回体 id 字段名契约未细化，兼容 id / targetId 两种形态；
-      // conversationId/agentId 为创建即建的首个会话及其智能体（契约先行）
       const newId = res?.data?.id ?? res?.data?.targetId;
       if (res?.code === SUCCESS_CODE && newId) {
         message.success(dict('PC.Pages.SpaceProjectManage.createSuccess'));
         onConfirm({
           id: newId,
-          name: trimmed,
+          name: values.name.trim(),
           sandboxId: numericSandboxId,
           conversationId: res?.data?.conversationId,
           agentId: res?.data?.agentId,
@@ -125,102 +146,140 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
         );
       }
     } finally {
-      setConfirmLoading(false);
+      setLoading(false);
     }
   };
 
+  const handleSubmit = () => {
+    form.submit();
+  };
+
+  const handleCancel = () => {
+    onCancel();
+    resetForm();
+  };
+
   return (
-    <Modal
-      open={open}
+    <GuardedFormModal
+      form={form}
       title={dict('PC.Pages.SpaceProjectManage.createNormalProject')}
-      onCancel={onCancel}
-      footer={[
-        <Button key="cancel" onClick={onCancel}>
-          {dict('PC.Common.Global.cancel')}
-        </Button>,
-        <Button
-          key="confirm"
-          type="primary"
-          loading={confirmLoading}
-          onClick={handleConfirm}
-        >
-          {dict('PC.Common.Global.confirm')}
-        </Button>,
-      ]}
-      destroyOnClose
+      open={open}
+      loading={loading}
+      onCancel={handleCancel}
+      onConfirm={handleSubmit}
     >
-      <Input
-        value={name}
-        maxLength={30}
-        placeholder={dict('PC.Pages.SpaceProjectManage.namePlaceholder')}
-        onChange={(e) => setName(e.target.value)}
-        onPressEnter={handleConfirm}
-      />
-      <div className={cx(styles['field-row'])}>
-        <span className={cx(styles['field-label'])}>
-          {dict('PC.Pages.SpaceProjectManage.runtimeEnv')}
-        </span>
-        <Select
-          className={cx(styles['field-control'])}
-          value={sandboxId}
-          loading={computerLoading}
-          notFoundContent={<Spin size="small" />}
-          onChange={(value: string) => {
-            setSandboxId(value);
-            // 目录属于所选电脑，切换到另一台电脑时必须重新选择
-            if (value !== sandboxId) {
+      <GuardedFormModalForm
+        form={form}
+        requiredMark={customizeRequiredMark}
+        layout="vertical"
+        initialValues={{ sandboxId: CLOUD_SANDBOX_ID }}
+        onFinish={onFinish}
+        autoComplete="off"
+      >
+        <Form.Item
+          name="name"
+          label={dict('PC.Pages.SpaceProjectManage.nameLabel')}
+          validateTrigger="onBlur"
+          rules={[
+            {
+              required: true,
+              message: dict('PC.Pages.SpaceProjectManage.nameRequired'),
+            },
+            {
+              validator(_, value) {
+                if (!value || value?.length <= 50) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(
+                  new Error(dict('PC.Pages.SpaceProjectManage.nameMaxLength')),
+                );
+              },
+            },
+          ]}
+        >
+          <Input
+            placeholder={dict('PC.Pages.SpaceProjectManage.namePlaceholder')}
+            showCount
+            maxLength={50}
+          />
+        </Form.Item>
+        <OverrideTextArea
+          name="description"
+          label={dict('PC.Pages.SpaceProjectManage.descriptionLabel')}
+          placeholder={dict(
+            'PC.Pages.SpaceProjectManage.descriptionPlaceholder',
+          )}
+          maxLength={10000}
+        />
+        <Form.Item
+          name="sandboxId"
+          label={dict('PC.Pages.SpaceProjectManage.runtimeEnv')}
+        >
+          <Select
+            loading={computerLoading}
+            notFoundContent={<Spin size="small" />}
+            onChange={() => {
               setWorkspaceDir('');
               setDirPickerOpen(false);
-            }
-          }}
-          options={computerOptions}
-        />
-      </div>
-      {isPersonal && (
-        <div className={cx(styles['field-row'])}>
-          <span className={cx(styles['field-label'])}>
-            {dict('PC.Components.WorkspaceDir.pick')}
-          </span>
-          <Dropdown
-            trigger={['click']}
-            menu={{
-              selectable: true,
-              selectedKeys: [workspacePath ? 'pick-folder' : 'default'],
-              items: [
-                {
-                  key: 'default',
-                  icon: <FolderOutlined />,
-                  label: dict('PC.Components.WorkspaceDir.defaultDir'),
-                },
-                {
-                  key: 'pick-folder',
-                  icon: <FolderOpenOutlined />,
-                  label: dict('PC.Components.WorkspaceDir.openComputerFolder'),
-                },
-              ],
-              onClick: ({ key }: { key: string }) => {
-                if (key === 'pick-folder') {
-                  setDirPickerOpen(true);
-                } else {
-                  setWorkspaceDir('');
-                }
-              },
             }}
-          >
-            <button
-              type="button"
-              className={cx(styles['field-control'], styles['dir-trigger'])}
-              title={workspacePath || undefined}
+            options={computerOptions}
+          />
+        </Form.Item>
+        {isPersonal ? (
+          <Form.Item label={dict('PC.Components.WorkspaceDir.pick')}>
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                selectable: true,
+                selectedKeys: [workspacePath ? 'pick-folder' : 'default'],
+                items: [
+                  {
+                    key: 'default',
+                    icon: <FolderOutlined />,
+                    label: dict('PC.Components.WorkspaceDir.defaultDir'),
+                  },
+                  {
+                    key: 'pick-folder',
+                    icon: <FolderOpenOutlined />,
+                    label: dict('PC.Components.WorkspaceDir.openComputerFolder'),
+                  },
+                ],
+                onClick: ({ key }: { key: string }) => {
+                  if (key === 'pick-folder') {
+                    setDirPickerOpen(true);
+                  } else {
+                    setWorkspaceDir('');
+                  }
+                },
+              }}
             >
-              <FolderOutlined />
-              <span className={cx(styles['dir-text'])}>
-                {workspacePath || dict('PC.Components.WorkspaceDir.defaultDir')}
-              </span>
-              <DownOutlined className={cx(styles['dir-caret'])} />
-            </button>
-          </Dropdown>
-        </div>
-      )}
+              <button
+                type="button"
+                className={cx(styles['dir-trigger'])}
+                title={workspacePath || undefined}
+              >
+                <FolderOutlined />
+                <span className={cx(styles['dir-text'])}>
+                  {workspacePath ||
+                    dict('PC.Components.WorkspaceDir.defaultDir')}
+                </span>
+                <DownOutlined className={cx(styles['dir-caret'])} />
+              </button>
+            </Dropdown>
+          </Form.Item>
+        ) : null}
+        <Form.Item
+          name="icon"
+          label={dict('PC.Pages.SpaceProjectManage.iconLabel')}
+        >
+          <UploadAvatar
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            defaultImage={agentImage as string}
+            svgIconName="icons-workspace-agent"
+          />
+        </Form.Item>
+      </GuardedFormModalForm>
       <WorkspaceDirPickerModal
         sandboxId={sandboxId}
         open={dirPickerOpen}
@@ -230,7 +289,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
           setWorkspaceDir(dir);
         }}
       />
-    </Modal>
+    </GuardedFormModal>
   );
 };
 

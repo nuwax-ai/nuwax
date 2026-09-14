@@ -68,6 +68,15 @@ export async function apiUserAppDelete(
   });
 }
 
+/** 按应用ID查询（主键 id 即 app_id） */
+export async function apiUserAppGetById(
+  id: number,
+): Promise<RequestResponse<UserAppInfo>> {
+  return request(`/api/userapp/get/${id}`, {
+    method: 'GET',
+  });
+}
+
 /**
  * 更新常规项目基本信息（wiki 2026-09-11：常规项目 CRUD 换 /api/normal-project/*，
  * 管理端/侧栏的改名走本接口；入参语义与 user-project/update 一致）
