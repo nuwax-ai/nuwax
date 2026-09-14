@@ -1,4 +1,3 @@
-@import '@/styles/color';
 @import '@/styles/token';
 
 .page {
@@ -9,16 +8,16 @@
 .header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: @padding;
   flex-shrink: 0;
-  height: 56px;
-  padding: 0 24px;
+  height: calc(@controlHeightLg + @padding);
+  padding: 0 @paddingLg;
   background: @colorBgContainer;
   border-bottom: 1px solid @colorSplit;
 }
 
 .back {
-  padding: 4px 8px;
+  padding: @paddingXxs @paddingXs;
   color: @colorTextSecondary;
   cursor: pointer;
 }
@@ -26,9 +25,9 @@
 .project-name {
   margin: 0;
   max-width: 240px;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  font-size: @fontSizeLg;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeightLg;
   color: @colorText;
 }
 
@@ -36,32 +35,32 @@
   display: flex;
   align-items: stretch;
   height: 100%;
-  margin-left: 8px;
+  margin-left: @marginXs;
 }
 
 .tab {
   position: relative;
   height: 100%;
-  padding: 0 16px;
+  padding: 0 @padding;
   border: none;
   background: transparent;
   color: @colorTextSecondary;
-  font-size: 14px;
+  font-size: @fontSize;
   cursor: pointer;
 
   &.active {
     color: @colorText;
-    font-weight: 600;
+    font-weight: @fontWeightStrong;
 
     &::after {
       content: '';
       position: absolute;
-      left: 16px;
-      right: 16px;
+      left: @padding;
+      right: @padding;
       bottom: 0;
-      height: 2px;
+      height: @lineWidthBold;
       background: @colorPrimary;
-      border-radius: 1px;
+      border-radius: @borderRadiusXs;
     }
   }
 }
@@ -69,6 +68,7 @@
 .body {
   display: flex;
   min-height: 0;
+  background: @colorBgContainer;
 }
 
 .main {
@@ -79,79 +79,69 @@
 
 .main-scroll {
   min-height: 0;
-  padding: 20px 24px 24px;
-}
-
-.action-bar {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 24px;
-  background: @colorBgContainer;
-  border-top: 1px solid @colorSplit;
+  padding: @paddingMd @paddingLg @paddingLg;
 }
 
 .setting-stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: @padding;
   max-width: 880px;
 }
 
 .card {
-  padding: 20px 24px;
-  border-radius: 12px;
+  padding: @paddingMd @paddingLg;
+  border-radius: @borderRadiusLg;
   background: @colorBgContainer;
   border: 1px solid @colorBorderSecondary;
 }
 
 .card-title {
-  margin: 0 0 8px;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  margin: 0 0 @marginXs;
+  font-size: @fontSizeLg;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeightLg;
   color: @colorText;
 }
 
 .card-desc {
-  margin: 0 0 16px;
+  margin: 0 0 @margin;
   color: @colorTextTertiary;
-  font-size: 13px;
-  line-height: 22px;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
 }
 
 .field {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: @marginSm;
   min-height: 36px;
-  margin-bottom: 8px;
+  margin-bottom: @marginXs;
 }
 
 .field-label {
   flex-shrink: 0;
   width: 120px;
   color: @colorTextSecondary;
-  font-size: 14px;
+  font-size: @fontSize;
 }
 
 .field-content {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: @marginXs;
   min-width: 0;
   max-width: calc(100% - 132px);
-  padding: 4px 10px;
+  padding: @paddingXxs @paddingXs;
   background: @colorFillTertiary;
-  border-radius: 8px;
+  border-radius: @borderRadius;
 }
 
 .field-value {
   min-width: 0;
   color: @colorText;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: @fontSize;
+  line-height: @fontHeight;
 }
 
 .field-input {
@@ -163,7 +153,7 @@
 .field-icon {
   flex-shrink: 0;
   color: @colorTextTertiary;
-  font-size: 14px;
+  font-size: @fontSize;
   line-height: 1;
   cursor: pointer;
 
@@ -176,71 +166,71 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
+  gap: @marginSm;
+  margin-top: @marginSm;
 }
 
 .regen-hint {
   min-width: 0;
   color: @colorTextTertiary;
-  font-size: 13px;
-  line-height: 22px;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
 }
 
 .deploy-title {
   display: block;
   color: @colorText;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: @fontSize;
+  line-height: @fontHeight;
 }
 
 .deploy-hint {
   display: block;
   color: @colorTextTertiary;
-  font-size: 12px;
-  line-height: 20px;
+  font-size: @fontSizeSm;
+  line-height: @fontHeightSm;
 }
 
 .domain-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: @marginSm;
 }
 
 .domain-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  min-height: 32px;
+  gap: @padding;
+  min-height: @controlHeight;
 }
 
 .domain-left,
 .domain-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: @marginXs;
   min-width: 0;
 }
 
 .domain-name {
   color: @colorText;
-  font-size: 14px;
+  font-size: @fontSize;
 }
 
 .domain-cname {
   color: @colorTextTertiary;
-  font-size: 13px;
+  font-size: @fontSizeSm;
 }
 
 .bind-btn {
-  margin-top: 8px;
+  margin-top: @marginXs;
 }
 
 .deploy-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: @marginSm;
   width: 100%;
 
   :global(.ant-radio-wrapper) {
@@ -251,19 +241,19 @@
 .deploy-card {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: @marginXs;
   min-width: 0;
-  padding: 14px 16px;
+  padding: @paddingSm @padding;
   border: 1px solid @colorBorderSecondary;
-  border-radius: 12px;
+  border-radius: @borderRadiusLg;
   cursor: pointer;
   background: @colorBgContainer;
-  transition: border-color 0.2s ease;
+  transition: border-color @motionDurationFast @motionEaseOut;
 
   :global(.ant-radio-wrapper) {
     margin-inline-end: 0;
     align-self: flex-start;
-    padding-top: 2px;
+    padding-top: @borderRadiusXs;
   }
 
   &.active {
@@ -275,31 +265,11 @@
   min-width: 0;
 }
 
-.deploy-fields {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1.4fr) 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.deploy-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.deploy-field-label {
-  color: @colorTextSecondary;
-  font-size: 13px;
-  line-height: 20px;
-}
-
 .deploy-footer {
-  margin: 12px 0 0;
+  margin: @marginSm 0 0;
   color: @colorTextTertiary;
-  font-size: 13px;
-  line-height: 22px;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
 }
 
 @media (max-width: 960px) {
@@ -310,13 +280,13 @@
   .header {
     flex-wrap: wrap;
     height: auto;
-    padding-top: 8px;
+    padding-top: @paddingXs;
     padding-bottom: 0;
   }
 
   .tabs {
     width: 100%;
-    height: 40px;
+    height: @controlHeightLg;
   }
 
   .domain-row {
@@ -324,8 +294,7 @@
     align-items: flex-start;
   }
 
-  .deploy-options,
-  .deploy-fields {
+  .deploy-options {
     grid-template-columns: 1fr;
   }
 }

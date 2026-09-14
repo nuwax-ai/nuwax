@@ -236,6 +236,12 @@ export interface ModelConfigDto {
   enabled?: ModelComponentStatusEnum;
   /** 可用范围 */
   usageScenarios?: ModelUsageScenarioEnum[];
+  /** 模型标签（仅系统-公共模型管理维度维护，可能为 null） */
+  tag?: string;
+  /** 模型标签颜色（hex，可能为 null） */
+  tagColor?: string;
+  /** 模型倍率（仅系统-公共模型管理维度维护，可能为 null） */
+  cost?: string;
   /** 定价信息（对象或展示文案） */
   pricing?: ResourcePricingConfigInfo | string;
 }
@@ -1073,6 +1079,8 @@ export interface ConnectorProviderInfo {
   sortOrder?: number;
   /** 是否已连接 */
   connected?: boolean;
+  /** 当前用户连接 id（已连接时有值；连接启用/停用接口 connections/{id}/status 寻址用） */
+  connectionId?: number;
   /** 当前用户该连接的启用状态（已连接卡片右上角的开关状态） */
   connectionEnabled?: boolean;
   /** 工具/动作数量（对应"工具数"列） */

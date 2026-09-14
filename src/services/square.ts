@@ -57,8 +57,17 @@ export interface PublishedAppListParams {
   /*子类型,可用值:Multi,Single,WorkflowChat,ChatBot,TaskAgent,Agent,PageApp,UserApp */
   targetSubType?: string;
 
+  /*目标类型集合（2026.9月版本添加）,如 [Agent, UserApp] */
+  targetTypes?: string[];
+
+  /*子类型集合（2026.9月版本添加）,如 [PageApp, UserApp] */
+  targetSubTypes?: string[];
+
   /*搜索范围：System-系统广场；Space-团队空间（2026.9月版本添加）,可用值:Square,System,Space */
   searchScope?: string;
+
+  /*范围（2026.9月版本添加）,可用值:Tenant-本租户内,Space-团队空间 */
+  scope?: string;
 
   /*智能体类型 */
   agentTypes?: Record<string, unknown>[];
@@ -96,12 +105,15 @@ export interface PublishedAppListParams {
 
 /**
  * 女娲应用-应用列表接口（系统应用/团队空间两维度共用）
- * @description POST /api/published/app/list——
- * 系统应用：scope=system + official=true 查官方应用（category/kw 可选筛选）；
- * 团队空间：scope=space + justReturnSpaceData=true 查空间已发布应用，
+ * @description POST /api/published/app/list——两维度均携带
+ * targetTypes=[Agent, UserApp] + targetSubTypes=[PageApp, UserApp] 过滤；
+ * 系统应用：scope=Tenant（本租户内）+ official=true 查官方应用（category/kw 可选筛选）；
+ * 团队空间：scope=Space + justReturnSpaceData=true 查空间已发布应用，
  * 选中具体空间追加 spaceId
  */
-export async function apiPublishedAppList(data: PublishedAppListParams): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
+export async function apiPublishedAppList(
+  data: PublishedAppListParams,
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
   return request('/api/published/app/list', {
     method: 'POST',
     data,

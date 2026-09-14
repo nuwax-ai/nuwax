@@ -1,0 +1,91 @@
+@import '@/styles/token';
+
+.header,
+.row {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+}
+
+.header {
+  margin-top: @margin;
+}
+
+.header-fields {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1.4fr) 1fr 1fr;
+  gap: @marginSm;
+  flex: 1;
+  min-width: 0;
+}
+
+.header-cell {
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeightSm;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: @marginSm;
+  margin-top: @marginXs;
+}
+
+.health {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
+}
+
+.online {
+  color: @colorSuccess;
+}
+
+.offline {
+  color: @colorTextTertiary;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 82px;
+  height: @controlHeight;
+  gap: @marginXs;
+}
+
+.delete {
+  flex-shrink: 0;
+  min-width: @controlHeightSm;
+  padding-inline: 0;
+}
+
+.confirm {
+  flex-shrink: 0;
+}
+
+.add {
+  margin-top: @marginXs;
+}
+
+.hint {
+  margin: @marginSm 0 0;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
+}
+
+@media (max-width: 960px) {
+  .header-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    width: 100%;
+  }
+}
