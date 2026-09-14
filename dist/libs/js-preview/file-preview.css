@@ -357,6 +357,12 @@ body {
     text-align: left;
 }
 
+/* 会话区 .markdown-table th/td:first-child 同款 6px：首列左内边距收窄，不与 App 内预览脱节 */
+.markdown-preview .markdown-body table th:first-child,
+.markdown-preview .markdown-body table td:first-child {
+    padding-left: 6px;
+}
+
 .markdown-preview .markdown-body table th {
     font-weight: 600;
 }
