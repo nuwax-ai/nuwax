@@ -484,6 +484,14 @@
       text-align: left !important;
     }
 
+    // 首列左内边距对齐会话区 .markdown-table th/td:first-child 的 6px：
+    // 本容器带 .ds-markdown 类，其 th/td:first-child { padding-left: 0 }
+    // 特异度(0,2,1)高于上面的 .markdownPreview table td(0,1,2)，不补则首列文字贴边框
+    th:first-child,
+    td:first-child {
+      padding-left: 6px;
+    }
+
     th {
       font-weight: 600;
     }
