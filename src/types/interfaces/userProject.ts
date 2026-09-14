@@ -13,6 +13,18 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { TablePageRequest } from '@/types/interfaces/request';
 
+/** 应用沙箱类型 */
+export enum UserAppSandboxTypeEnum {
+  Cloud = 'Cloud',
+  Personal = 'Personal',
+}
+
+/** 发布部署目标 */
+export enum UserAppDeployTypeEnum {
+  Platform = 'platform',
+  Private = 'private',
+}
+
 export enum UserAppStageEnum {
   Dev = 'dev',
   Prod = 'prod',
@@ -283,8 +295,8 @@ export interface CreateUserAppParams {
   devAgentId?: number;
 }
 
-/** 发布版本记录 */
-export interface PublishVersionDto {
+/** 构建版本记录 */
+export interface BuildVersionDto {
   /** 版本号 */
   version: string;
   /** Git 提交哈希 */
@@ -295,7 +307,7 @@ export interface PublishVersionDto {
   packageUrl: string;
 }
 
-/** 全栈应用详情（创建接口返回；id 即 app_id） */
+/** 全栈应用详情（创建 / get 接口返回；id 即 app_id） */
 export interface UserAppInfo {
   /** 应用ID（项目主键 id，即 app_id） */
   id: number;
@@ -315,12 +327,26 @@ export interface UserAppInfo {
   coverImg: string;
   /** 沙箱ID */
   sandboxId: number;
-  /** 发布状态 */
-  publishStatus: PublishStatusEnum;
+  /** 沙箱类型 */
+  sandboxType?: UserAppSandboxTypeEnum;
+  /** 发布部署目标：platform 平台部署 / private 私服部署 */
+  deployType?: UserAppDeployTypeEnum;
+  /** 部署目标服务器ID */
+  deployServerId?: number;
+  /** 资料库协作目录ID */
+  repoSlugId?: string;
+  /** 项目计划多维表格ID */
+  planSlugId?: string;
+  /** 开发关联智能体ID */
+  devAgentId?: number;
   /** 是否已部署到生产环境；为 true 才可切换线上环境 */
   prodDeployed?: boolean;
-  /** 发布版本记录 */
-  publishVersions: PublishVersionDto[];
+  /** 当前生产部署的版本号 */
+  prodReleaseId?: string;
+  /** 发布状态 */
+  publishStatus: PublishStatusEnum;
+  /** 构建版本记录 */
+  buildVersions?: BuildVersionDto[];
   /** 开发环境数据库账号 */
   devDbUsername: string;
   /** 开发环境数据库密码是否已设置 */
@@ -334,8 +360,8 @@ export interface UserAppInfo {
   /** 创建时间 */
   created: string;
   /**
-   * 首个会话 ID：仅创建接口响应携带（创建即建会话，随跳转直达续聊；
-   * 详情等其余接口不返回，契约先行，缺省时跳转不拼该参数）。
+   * 开发智能体关联的会话 ID（不落库，传输用）：
+   * 创建接口响应携带；详情等其余接口可不返回。
    */
   conversationId?: number;
 }

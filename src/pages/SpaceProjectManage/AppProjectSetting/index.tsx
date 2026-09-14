@@ -2,9 +2,14 @@ import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
+import { apiUserAppGetById } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
-import type { UserProjectConversationInfo } from '@/types/interfaces/userProject';
+import {
+  UserAppDeployTypeEnum,
+  type UserAppInfo,
+  type UserProjectConversationInfo,
+} from '@/types/interfaces/userProject';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { isValidDomain, normalizeDomain } from '@/utils/common';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
@@ -44,11 +49,32 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/** 设置页顶部 Tab：计划 / 资产 / 设置 */
 type SettingTabKey = 'plan' | 'asset' | 'setting';
 
+/** 自定义域名 CNAME 指向的平台域名 */
 const CNAME_TARGET = 'cname.nuwax.com';
 
-/** 解开 request 包装，兼容直接返回 data 的情况 */
+/**
+ * 将应用详情的 deployType 映射为设置页部署单选值。
+ * 非 private 一律视为平台部署，避免接口大小写或空值导致状态丢失。
+ *
+ * @param deployType 应用详情 deployType
+ * @returns 平台部署或私服部署
+ */
+const resolveDeployMode = (
+  deployType?: UserAppDeployTypeEnum | string,
+): UserAppDeployTypeEnum =>
+  String(deployType || '').toLowerCase() === UserAppDeployTypeEnum.Private
+    ? UserAppDeployTypeEnum.Private
+    : UserAppDeployTypeEnum.Platform;
+
+/**
+ * 解开 umi request / useRequest 包装，兼容完整 Response 与已解包 data。
+ *
+ * @param result 接口原始返回
+ * @returns 业务 data；失败或无法识别时为 undefined
+ */
 const pickResponseData = <T,>(
   result?: RequestResponse<T> | T,
 ): T | undefined => {
@@ -66,8 +92,20 @@ const pickResponseData = <T,>(
 };
 
 /**
- * 全栈应用设置页：顶部返回 + 计划 / 资产 / 设置，
- * 进入设置 Tab 拉项目会话列表，右侧展示任务。
+ * 全栈应用设置页。
+ *
+ * 布局：顶栏返回 + 应用名 + 计划/资产/设置 Tab；主体左侧为设置内容，
+ * 右侧为相关任务（ConversationPanel）。
+ *
+ * 数据：
+ * - 进页拉 apiUserAppGetById，用 name 填标题、用 deployType 回填平台/私服；
+ * - 设置 Tab 拉 OAuth2、自定义域名、项目会话列表；
+ * - 选私服时再拉私有服务器列表（进页若已是私服也会拉一次）。
+ *
+ * 计划 / 资产 Tab 暂为占位。路由参数 spaceId、appId 来自
+ * `/space/:spaceId/app-project-setting/:appId`。
+ *
+ * @returns 全栈应用设置页
  */
 const AppProjectSetting: React.FC = () => {
   const params = useParams();
@@ -80,8 +118,8 @@ const AppProjectSetting: React.FC = () => {
   >([]);
   const [projectName, setProjectName] = useState('');
   const [domains, setDomains] = useState<UserAppDomainInfo[]>([]);
-  const [deployMode, setDeployMode] = useState<'platform' | 'private'>(
-    'platform',
+  const [deployMode, setDeployMode] = useState<UserAppDeployTypeEnum>(
+    UserAppDeployTypeEnum.Platform,
   );
   const [bindOpen, setBindOpen] = useState(false);
   const [bindDomain, setBindDomain] = useState('');
@@ -93,6 +131,7 @@ const AppProjectSetting: React.FC = () => {
   const [redirectUri, setRedirectUri] = useState('');
   const [privateServers, setPrivateServers] = useState<PrivateServerInfo[]>([]);
 
+  /** 项目下全部用户会话，供右侧任务列表展示 */
   const { run: runConversations, loading } = useRequest(
     () => apiUserProjectConversations(appId, AgentComponentTypeEnum.UserApp),
     {
@@ -105,10 +144,12 @@ const AppProjectSetting: React.FC = () => {
         const list = Array.isArray(result) ? result : pickResponseData(result);
         const records = Array.isArray(list) ? list : [];
         setConversations(records);
-        const name = records.find((item) => item.agent?.name)?.agent?.name;
-        if (name) {
-          setProjectName(name);
-        }
+        setProjectName(
+          (prev) =>
+            prev ||
+            records.find((item) => item.agent?.name)?.agent?.name ||
+            '',
+        );
       },
       onError: () => {
         setConversations([]);
@@ -116,6 +157,7 @@ const AppProjectSetting: React.FC = () => {
     },
   );
 
+  /** 应用已绑定的自定义域名列表 */
   const { run: runDomainList } = useRequest(apiUserAppDomainList, {
     manual: true,
     onSuccess: (
@@ -133,6 +175,7 @@ const AppProjectSetting: React.FC = () => {
     },
   });
 
+  /** 绑定自定义域名，成功后刷新列表 */
   const { run: runBindDomain, loading: bindLoading } = useRequest(
     apiUserAppDomainCreate,
     {
@@ -146,6 +189,7 @@ const AppProjectSetting: React.FC = () => {
     },
   );
 
+  /** 私有服务器列表：仅在选中私服部署时请求，避免进页就打接口 */
   const { run: runPrivateServerList, loading: privateServerLoading } =
     useRequest(apiPrivateServerList, {
       manual: true,
@@ -160,6 +204,29 @@ const AppProjectSetting: React.FC = () => {
       },
     });
 
+  /** 应用详情：回填名称与部署方式；私服部署时顺带拉服务器列表 */
+  const { run: runGetUserApp, loading: appLoading } = useRequest(
+    () => apiUserAppGetById(appId),
+    {
+      manual: true,
+      onSuccess: (result: UserAppInfo | RequestResponse<UserAppInfo>) => {
+        const info = pickResponseData(result);
+        if (!info?.id) {
+          return;
+        }
+        if (info.name) {
+          setProjectName(info.name);
+        }
+        const mode = resolveDeployMode(info.deployType);
+        setDeployMode(mode);
+        if (mode === UserAppDeployTypeEnum.Private) {
+          runPrivateServerList();
+        }
+      },
+    },
+  );
+
+  /** 解绑自定义域名 */
   const { run: runUnbindDomain } = useRequest(apiUserAppDomainDelete, {
     manual: true,
     onSuccess: () => {
@@ -168,6 +235,7 @@ const AppProjectSetting: React.FC = () => {
     },
   });
 
+  /** 重新生成 OAuth2 Client ID / Secret */
   const { run: runRegenerate, loading: regenerateLoading } = useRequest(
     () => apiThirdAppOauth2CredentialRegenerate(String(appId)),
     {
@@ -235,6 +303,15 @@ const AppProjectSetting: React.FC = () => {
     }
   }, [appId]);
 
+  // 进页拉应用详情，与当前 Tab 无关
+  useEffect(() => {
+    if (!appId) {
+      return;
+    }
+    runGetUserApp();
+  }, [appId, runGetUserApp]);
+
+  // 域名列表与设置 Tab 共用，进页即拉，绑定/解绑后可复用
   useEffect(() => {
     if (!spaceId || !appId) {
       return;
@@ -242,6 +319,7 @@ const AppProjectSetting: React.FC = () => {
     runDomainList(appId);
   }, [appId, spaceId]);
 
+  // 切到设置 Tab 时拉 OAuth2 与相关任务，避免计划/资产 Tab 空跑接口
   useEffect(() => {
     if (activeTab !== 'setting' || !appId) {
       return;
@@ -250,17 +328,22 @@ const AppProjectSetting: React.FC = () => {
     runConversations();
   }, [activeTab, appId, loadOauthSetting, runConversations]);
 
-  /** 切换发布位置；选私有服务器时再拉私服列表 */
+  /**
+   * 切换发布位置；选私有服务器时再拉私服列表。
+   *
+   * @param mode 平台部署或私服部署
+   */
   const handleSelectDeployMode = useCallback(
-    (mode: 'platform' | 'private') => {
+    (mode: UserAppDeployTypeEnum) => {
       setDeployMode(mode);
-      if (mode === 'private') {
+      if (mode === UserAppDeployTypeEnum.Private) {
         runPrivateServerList();
       }
     },
     [runPrivateServerList],
   );
 
+  /** 仅展示用户绑定的自定义域名，过滤平台默认域名 */
   const customDomains = useMemo(
     () =>
       domains.filter(
@@ -271,10 +354,16 @@ const AppProjectSetting: React.FC = () => {
 
   const emptyValue = dict('PC.Pages.AppProjectSetting.emptyValue');
 
+  /** 返回全栈应用列表 */
   const handleBack = useCallback(() => {
     history.push(`/space/${spaceId}/userapp-project`);
   }, [spaceId]);
 
+  /**
+   * 打开右侧任务对应的全栈 IDE 会话。
+   *
+   * @param item 会话
+   */
   const handleOpenConversation = useCallback(
     (item: UserProjectConversationInfo) => {
       openProject(
@@ -286,6 +375,7 @@ const AppProjectSetting: React.FC = () => {
     [appId, spaceId],
   );
 
+  /** 新建任务：进入全栈 IDE，由 IDE 内创建会话 */
   const handleCreateConversation = useCallback(() => {
     openProject(spaceId, {
       id: appId,
@@ -293,10 +383,12 @@ const AppProjectSetting: React.FC = () => {
     });
   }, [appId, spaceId]);
 
+  /** 绑定弹窗中的规范化域名 */
   const bindDomainValue = useMemo(
     () => normalizeDomain(bindDomain),
     [bindDomain],
   );
+  /** 域名格式校验文案；空输入不报错，交给按钮 disabled */
   const bindDomainError = useMemo(() => {
     if (!bindDomain.trim()) {
       return '';
@@ -307,6 +399,7 @@ const AppProjectSetting: React.FC = () => {
     return '';
   }, [bindDomain, bindDomainValue]);
 
+  /** 提交绑定自定义域名 */
   const handleBindDomain = useCallback(() => {
     if (!bindDomain.trim() || bindDomainError || !bindDomainValue) {
       return;
@@ -314,11 +407,17 @@ const AppProjectSetting: React.FC = () => {
     runBindDomain({ appId, domain: bindDomainValue });
   }, [appId, bindDomain, bindDomainError, bindDomainValue, runBindDomain]);
 
+  /** 关闭绑定弹窗并清空输入 */
   const handleCloseBindModal = useCallback(() => {
     setBindOpen(false);
     setBindDomain('');
   }, []);
 
+  /**
+   * 解绑自定义域名，二次确认后调删除接口。
+   *
+   * @param item 已绑定域名
+   */
   const handleUnbindDomain = useCallback(
     (item: UserAppDomainInfo) => {
       Modal.confirm({
@@ -336,7 +435,9 @@ const AppProjectSetting: React.FC = () => {
     [runUnbindDomain],
   );
 
-  /** 重新生成 Client ID / Secret，并回显明文 */
+  /**
+   * 重新生成 Client ID / Secret，二次确认后请求并回显明文。
+   */
   const handleRegenerate = useCallback(() => {
     if (!appId) {
       return;
@@ -428,6 +529,11 @@ const AppProjectSetting: React.FC = () => {
     );
   };
 
+  /**
+   * 设置 Tab：OAuth2、自定义域名、发布部署位置。
+   *
+   * @returns 设置内容
+   */
   const renderSetting = () => (
     <div className={cx(styles['setting-stack'])}>
       <section className={cx(styles.card)}>
@@ -533,11 +639,13 @@ const AppProjectSetting: React.FC = () => {
         >
           <div
             className={cx(styles['deploy-card'], {
-              [styles.active]: deployMode === 'platform',
+              [styles.active]: deployMode === UserAppDeployTypeEnum.Platform,
             })}
-            onClick={() => handleSelectDeployMode('platform')}
+            onClick={() =>
+              handleSelectDeployMode(UserAppDeployTypeEnum.Platform)
+            }
           >
-            <Radio value="platform" />
+            <Radio value={UserAppDeployTypeEnum.Platform} />
             <div className={cx(styles['deploy-card-body'])}>
               <span className={cx(styles['deploy-title'])}>
                 {dict('PC.Pages.AppProjectSetting.platformService')}
@@ -549,11 +657,13 @@ const AppProjectSetting: React.FC = () => {
           </div>
           <div
             className={cx(styles['deploy-card'], {
-              [styles.active]: deployMode === 'private',
+              [styles.active]: deployMode === UserAppDeployTypeEnum.Private,
             })}
-            onClick={() => handleSelectDeployMode('private')}
+            onClick={() =>
+              handleSelectDeployMode(UserAppDeployTypeEnum.Private)
+            }
           >
-            <Radio value="private" />
+            <Radio value={UserAppDeployTypeEnum.Private} />
             <div className={cx(styles['deploy-card-body'])}>
               <span className={cx(styles['deploy-title'])}>
                 {dict('PC.Pages.AppProjectSetting.privateServer')}
@@ -564,7 +674,7 @@ const AppProjectSetting: React.FC = () => {
             </div>
           </div>
         </Radio.Group>
-        {deployMode === 'platform' ? (
+        {deployMode === UserAppDeployTypeEnum.Platform ? (
           <p className={cx(styles['deploy-footer'])}>
             {dict('PC.Pages.AppProjectSetting.platformHint')}
           </p>
@@ -579,6 +689,11 @@ const AppProjectSetting: React.FC = () => {
     </div>
   );
 
+  /**
+   * 计划 / 资产 Tab 占位。
+   *
+   * @returns 空态
+   */
   const renderComingSoon = () => (
     <div className={cx('flex', 'items-center', 'content-center', 'h-full')}>
       <Empty description={dict('PC.Pages.AppProjectSetting.comingSoon')} />
@@ -621,7 +736,7 @@ const AppProjectSetting: React.FC = () => {
         </div>
       </header>
 
-      {loading && conversations.length === 0 && !projectName ? (
+      {appLoading && !projectName ? (
         <Loading />
       ) : (
         <div className={cx(styles.body, 'flex-1')}>
