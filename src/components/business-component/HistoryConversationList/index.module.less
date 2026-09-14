@@ -80,6 +80,19 @@
       }
     }
 
+    // 一级数据源切换（任务 / 项目）：antd Segmented，样式对齐女娲应用页 source-segmented
+    .source-tabs {
+      width: 100%;
+      max-width: 800px;
+      margin: -8px auto 12px; // 上提抵掉搜索框下边距，与列表内 pill 行距观感一致
+      flex-shrink: 0;
+    }
+
+    // Segmented 收窄为内容宽（antd 默认 stretch 会拉满整行，女娲应用页同款写法）
+    .source-segmented.source-segmented {
+      width: fit-content;
+    }
+
     .list-wrapper {
       flex: 1;
       width: 100%;

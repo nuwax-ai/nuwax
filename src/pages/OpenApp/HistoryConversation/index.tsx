@@ -32,6 +32,7 @@ const HistoryConversation: React.FC = () => {
       agentId={agentId}
       onClickLink={handleLink}
       isAppSidebarMode={true}
+      enableProjectTab={false}
       titleLeftSlot={
         <ConditionRender
           condition={
