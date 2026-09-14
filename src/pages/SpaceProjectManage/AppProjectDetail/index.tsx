@@ -34,7 +34,9 @@ import ConversationPanel from '../components/ConversationPanel';
 import { apiUserProjectConversations } from '../services';
 import {
   apiPrivateServerList,
+  apiPrivateServerSetDeployTarget,
   type PrivateServerInfo,
+  type SetDeployTargetParams,
 } from '../services/privateServer';
 import {
   apiThirdAppOauth2CredentialRegenerate,
@@ -46,6 +48,7 @@ import {
 } from '../services/thirdAppOauth2';
 import { openProject } from '../type';
 import PrivateServerPanel from './components/PrivateServerPanel';
+import SelectDeployServerModal from './components/SelectDeployServerModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -101,7 +104,8 @@ const pickResponseData = <T,>(
  * 数据：
  * - 进页拉 apiUserAppGetById，用 name 填标题、用 deployType 回填平台/私服；
  * - 设置 Tab 拉 OAuth2、自定义域名、项目会话列表；
- * - 选私服时再拉私有服务器列表（进页若已是私服也会拉一次）。
+ * - 选私服时再拉私有服务器列表（进页若已是私服也会拉一次）；
+ * - 「设置部署服务器」：平台直接保存；私服弹窗单选后保存。
  *
  * 计划 / 资产 Tab 暂为占位。路由参数 spaceId、appId 来自
  * `/space/:spaceId/app-project-detail/:appId`。
@@ -131,6 +135,10 @@ const AppProjectDetail: React.FC = () => {
   const [homepageUrl, setHomepageUrl] = useState('');
   const [redirectUri, setRedirectUri] = useState('');
   const [privateServers, setPrivateServers] = useState<PrivateServerInfo[]>([]);
+  const [deployServerId, setDeployServerId] = useState<number>();
+  const [deployTargetOpen, setDeployTargetOpen] = useState(false);
+  const [selectedDeployServerId, setSelectedDeployServerId] =
+    useState<number>();
 
   /** 项目下全部用户会话，供右侧任务列表展示 */
   const { run: runConversations, loading } = useRequest(
@@ -220,6 +228,7 @@ const AppProjectDetail: React.FC = () => {
         }
         const mode = resolveDeployMode(info.deployType);
         setDeployMode(mode);
+        setDeployServerId(info.deployServerId);
         if (mode === UserAppDeployTypeEnum.Private) {
           runPrivateServerList();
         }
@@ -262,6 +271,24 @@ const AppProjectDetail: React.FC = () => {
         setClientSecret(credential.clientSecret || '');
         setSecretVisible(true);
         message.success(dict('PC.Pages.AppProjectDetail.regenerateSuccess'));
+      },
+    },
+  );
+
+  /** 保存发布部署目标：平台不传 deployServerId，私服必须带选中的服务器 ID */
+  const { run: runSetDeployTarget, loading: setDeployLoading } = useRequest(
+    apiPrivateServerSetDeployTarget,
+    {
+      manual: true,
+      onSuccess: (_result: unknown, params: SetDeployTargetParams[]) => {
+        const payload = params[0];
+        if (payload?.deployType === UserAppDeployTypeEnum.Private) {
+          setDeployServerId(payload.deployServerId);
+        } else {
+          setDeployServerId(undefined);
+        }
+        setDeployTargetOpen(false);
+        message.success(dict('PC.Common.Global.saveSuccess'));
       },
     },
   );
@@ -484,6 +511,63 @@ const AppProjectDetail: React.FC = () => {
       redirectUri: redirectUri.trim() || undefined,
     });
   }, [appId, homepageUrl, redirectUri, runSaveOauthSetting]);
+
+  /**
+   * 设置部署服务器。
+   * 平台服务直接保存；私有服务器打开单选弹窗，必须选中一台后再保存。
+   */
+  const handleSetDeployServer = useCallback(() => {
+    if (!appId) {
+      return;
+    }
+    if (deployMode === UserAppDeployTypeEnum.Platform) {
+      runSetDeployTarget({
+        appId,
+        deployType: UserAppDeployTypeEnum.Platform,
+      });
+      return;
+    }
+    setSelectedDeployServerId(deployServerId);
+    setDeployTargetOpen(true);
+    if (!privateServers.length) {
+      runPrivateServerList();
+    }
+  }, [
+    appId,
+    deployMode,
+    deployServerId,
+    privateServers.length,
+    runPrivateServerList,
+    runSetDeployTarget,
+  ]);
+
+  /** 关闭选择私服弹窗 */
+  const handleCloseDeployTargetModal = useCallback(() => {
+    setDeployTargetOpen(false);
+  }, []);
+
+  /**
+   * 保存私服部署目标；未选中时拦截。
+   */
+  const handleSavePrivateDeployTarget = useCallback(() => {
+    if (!appId) {
+      return;
+    }
+    if (
+      !selectedDeployServerId ||
+      !privateServers.some((item) => item.id === selectedDeployServerId)
+    ) {
+      message.warning(
+        dict('PC.Pages.AppProjectDetail.selectPrivateServerRequired'),
+      );
+      return;
+    }
+    runSetDeployTarget({
+      appId,
+      deployType: UserAppDeployTypeEnum.Private,
+      deployServerId: selectedDeployServerId,
+    });
+  }, [appId, privateServers, runSetDeployTarget, selectedDeployServerId]);
 
   /**
    * 主页 / 回调地址：有值回填 Input，无值显示空输入框。
@@ -731,6 +815,14 @@ const AppProjectDetail: React.FC = () => {
             onRefresh={runPrivateServerList}
           />
         )}
+        <Button
+          type="primary"
+          className={cx(styles['set-deploy-btn'])}
+          loading={setDeployLoading && !deployTargetOpen}
+          onClick={handleSetDeployServer}
+        >
+          {dict('PC.Pages.AppProjectDetail.setDeployServer')}
+        </Button>
       </section>
     </div>
   );
@@ -805,6 +897,17 @@ const AppProjectDetail: React.FC = () => {
           />
         </div>
       )}
+
+      <SelectDeployServerModal
+        open={deployTargetOpen}
+        servers={privateServers}
+        selectedId={selectedDeployServerId}
+        loading={privateServerLoading}
+        confirmLoading={setDeployLoading}
+        onSelect={setSelectedDeployServerId}
+        onSave={handleSavePrivateDeployTarget}
+        onCancel={handleCloseDeployTargetModal}
+      />
 
       <Modal
         title={dict('PC.Pages.AppProjectDetail.bindDomain')}
