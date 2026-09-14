@@ -205,6 +205,14 @@
   display: inline-block;
 }
 
+// hover 出现断开按钮时直接隐藏状态标:断开 loading 中 antd 按钮内容
+// 收缩为 spinner,仅靠按钮覆盖会透出底部「已连接」文字;
+// 仅对带断开按钮（已连接）的槽生效,未连接项 hover 时状态标照常展示
+.card:hover .connect-slot:has(.disconnect-btn) .connection-status,
+.list-row:hover .connect-slot:has(.disconnect-btn) .connection-status {
+  visibility: hidden;
+}
+
 // 启用开关：小号形态（双写提权压过 antd Switch 默认）
 .card-switch.card-switch {
   min-width: 36px;

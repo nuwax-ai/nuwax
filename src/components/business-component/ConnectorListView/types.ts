@@ -8,14 +8,18 @@ export interface ConnectorListItem {
   key: string;
   /** service 标识（连接/断开寻址） */
   rawId: number | string;
+  /** 提供方主键 id（切换连接启用状态接口 POST .../connections/{id}/status 寻址用） */
+  connectorId?: number;
   /** 名称 */
   name: string;
   /** 描述 */
   description?: string;
   /** 图标（URL / SvgIcon 名称，空回退名称首字） */
   icon?: string;
-  /** 连接状态（开关状态 + 已连接/未连接状态标） */
+  /** 连接状态（已连接/未连接状态标 + 断开按钮渲染） */
   connected?: boolean;
+  /** 连接启用状态（开关选中态；已连接但未启用时开关为关） */
+  connectionEnabled?: boolean;
   /** 认证方式（oauth2/api_key/bearer/custom/no_auth，连接/断开分流用） */
   authType?: string;
 }

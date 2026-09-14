@@ -599,9 +599,7 @@ const Home: React.FC = () => {
           }
           agentMode={agentMode}
           onAgentModeChange={handleAgentModeChange}
-          showAgentModeSelector={
-            agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
-          }
+          agentEnableVersionControl={agentDetail?.enableVersionControl}
           // 召唤专家 chip：提交时以该专家 agentId 创建会话（优先级高于推荐 pill）
           // 召唤专家 chip（透传契约见 useSummonExpertHandoff）：icon 缺失或
           // 受保护地址解析失败时回退默认智能体图，chip 恒有图标位

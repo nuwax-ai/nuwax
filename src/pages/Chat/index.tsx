@@ -1672,6 +1672,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       hideDesktop: effectiveAgent?.hideDesktop,
       expandPageArea: effectiveAgent?.expandPageArea,
       allowChooseMode: effectiveAgent?.allowChooseMode,
+      enableVersionControl: effectiveAgent?.enableVersionControl,
     },
     onSendMessage: handleMessageSend,
     onClear: showClearContext && !chromeFlags.hideNew ? handleClear : undefined,

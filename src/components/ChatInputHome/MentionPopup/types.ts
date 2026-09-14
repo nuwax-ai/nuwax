@@ -321,7 +321,12 @@ export interface MentionEditorHandle {
   insertTriggerText: (text: string) => void;
   /**
    * 编程唤起能力弹窗并定位到指定类型页签（工具栏已连接连接器头像组入口）。
-   * 指定类型不在 capabilityResourceTypes 开放范围时回落首个可用类型
+   * 指定类型不在 capabilityResourceTypes 开放范围时回落首个可用类型；
+   * opts.connectedView=true 时连接器维度初始进入「已连接」聚合页签
+   * （仅头像组入口传入，其余入口默认数据源页签）
    */
-  openCapabilityWithType?: (resourceType: CapabilityTypeEnum) => void;
+  openCapabilityWithType?: (
+    resourceType: CapabilityTypeEnum,
+    opts?: { connectedView?: boolean },
+  ) => void;
 }

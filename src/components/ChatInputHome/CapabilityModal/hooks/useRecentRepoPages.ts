@@ -12,7 +12,13 @@ import { apiRepoRecentlyAccessedPages } from '@/services/repo';
 import type { RepoPortalPageInfo } from '@/types/interfaces/repo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CapabilityItem } from '../types';
-import { normalizeDocType } from './useCapabilityResources';
+
+/** 文档类型归一化：sourceExt 优先、pageType 回落，统一大写 */
+const normalizeDocType = (
+  sourceExt?: string,
+  pageType?: string,
+): string | undefined =>
+  (sourceExt?.replace(/^\./, '') || pageType)?.toUpperCase();
 
 /** 「最近访问」条目归一化：time 即最近访问/编辑时间（仅本视图卡片展示相对时间胶囊） */
 const mapRecentItem = (item: RepoPortalPageInfo): CapabilityItem => ({

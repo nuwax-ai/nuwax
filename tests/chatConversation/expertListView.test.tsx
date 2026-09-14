@@ -109,7 +109,7 @@ const renderView = ({ onSelect, ...rest }: Partial<ExpertListViewProps>) =>
   );
 
 describe('ExpertListView·场景接口参数契约', () => {
-  it('system：专家口径 targetType=Agent + ChatBot + category + kw', async () => {
+  it('system：专家口径 targetType=Agent + ChatBot + official + category + kw', async () => {
     apiPublishedAgentList.mockResolvedValue(pageOf([], 1, 1));
     renderView({ type: 'system', category: '写作', keyword: '架构' });
 
@@ -121,6 +121,7 @@ describe('ExpertListView·场景接口参数契约', () => {
         kw: '架构',
         targetType: 'Agent',
         targetSubType: 'ChatBot',
+        official: true,
       }),
     );
   });

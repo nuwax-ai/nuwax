@@ -28,8 +28,10 @@ export interface ConnectorCardBaseProps {
   index: number;
   onToggleConnect: (item: ConnectorListItem) => void;
   onDisconnect: (item: ConnectorListItem) => void;
-  /** 连接/断开请求中的条目 key（开关/按钮 loading 防重复） */
+  /** 开关 loading 条目 key（连接中 + 启停中） */
   busyKeys?: string[];
+  /** 断开按钮 loading 条目 key（仅断开中——启停不应带亮断开按钮） */
+  disconnectBusyKeys?: string[];
 }
 
 /** 连接状态槽：常驻「已连接/未连接」标（圆点+文字）；已连接 hover 时
@@ -75,8 +77,10 @@ const ConnectorGridCard: React.FC<ConnectorCardBaseProps> = ({
   onToggleConnect,
   onDisconnect,
   busyKeys,
+  disconnectBusyKeys,
 }) => {
   const busy = busyKeys?.includes(item.key);
+  const disconnectBusy = disconnectBusyKeys?.includes(item.key);
   return (
     <div data-connector-key={item.key} className={cx(styles.card)}>
       <div className={cx(styles['card-head'])}>
@@ -99,11 +103,18 @@ const ConnectorGridCard: React.FC<ConnectorCardBaseProps> = ({
           </div>
         </div>
         <div className={cx(styles['card-actions'])}>
-          <ConnectSlot item={item} busy={!!busy} onDisconnect={onDisconnect} />
+          <ConnectSlot
+            item={item}
+            busy={!!disconnectBusy}
+            onDisconnect={onDisconnect}
+          />
           <Switch
             className={cx(styles['card-switch'])}
             size="small"
-            checked={item.connected === true}
+            // 开关=连接启用态:已连接且启用(缺省视为启用)才为 on;未连接/已停用为 off
+            checked={
+              item.connected === true && item.connectionEnabled !== false
+            }
             loading={busy}
             aria-label={item.name}
             onClick={(_, event) => {

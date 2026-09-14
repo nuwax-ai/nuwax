@@ -1,7 +1,8 @@
 /**
  * 技能列表数据层（SkillListView 内聚）
  * @description 四种视图的接口适配（与设计矩阵一致）：
- * - system  POST /published/skill/list { page, pageSize, category, kw? }
+ * - system  POST /published/skill/list { page, pageSize, category, kw?,
+ *           official: true }（仅官方，与 expert-skill-connector 页同口径）
  * - team    同接口 + justReturnSpaceData + category='Skill'，
  *           spaceId（具体空间）/ spaceIds（全部聚合，外部传入）
  * - enabled POST /published/skill/enable/list {} 全量数组，keyword 客户端过滤，
@@ -69,7 +70,7 @@ const buildParams = (
 ): SquarePublishedListParams => {
   const kw = keyword.trim() || undefined;
   if (type === 'system') {
-    return { page, pageSize, category: category || '', kw };
+    return { page, pageSize, category: category || '', kw, official: true };
   }
   if (type === 'team') {
     return {
