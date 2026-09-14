@@ -422,12 +422,26 @@ class UnifiedThemeService {
     } = options;
 
     // 更新内存中的数据
-    this.currentData = {
+    const next: UnifiedThemeData = {
       ...this.currentData,
       ...(updates || {}),
       timestamp: Date.now(),
       source: 'user', // 用户操作都标记为用户来源
     };
+    // 桌面端生效单栏（resolveEffectiveNavigationStyle 单源）：任何写入路径都不得
+    // 把图片背景带回生效态——加载收敛之后到达的登录/租户回声（tenantConfigInfo
+    // 把模板并进 updateData）会把渐变壁纸写回，2026-09-14 客户端实证（浏览器手动
+    // 切换正常、客户端仍渐变的差异根因）。浏览器端不收敛：租户管理页背景预览
+    // 共用本服务，管理员误强转顾虑照旧（2026-09-12 注释）。
+    if (
+      isDesktopHost() &&
+      resolveEffectiveNavigationStyle(next.navigationStyle) ===
+        ThemeNavigationStyleType.STYLE3 &&
+      singleColumnBackgroundId
+    ) {
+      next.backgroundId = singleColumnBackgroundId;
+    }
+    this.currentData = next;
 
     // 保存到存储
     if (saveToStorage) {

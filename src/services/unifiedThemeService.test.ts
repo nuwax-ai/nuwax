@@ -421,4 +421,28 @@ describe('桌面端锁单栏：生效态收敛（2026-09-14 客户端渐变背�
     expect(data.navigationStyle).toBe('style1');
     expect(data.backgroundId).toBe('bg-variant-1');
   });
+
+  it('桌面宿主：写入路径（租户回声 updateData 带 style1+渐变）同样收敛纯色', async () => {
+    seedCommercialBridge();
+    seedStyle1Wallpaper(1700000000005);
+    unifiedThemeService.reloadConfiguration(false);
+
+    // 模拟 tenantConfigInfo 登录回声：模板并进 updateData（加载收敛之后到达）
+    await unifiedThemeService.updateData(
+      {
+        navigationStyle: 'style1',
+        backgroundId: 'bg-variant-8',
+      } as any,
+      { immediate: true, emitEvent: false },
+    );
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.navigationStyle).toBe('style1');
+    expect(data.backgroundId).toBe('bg-solid');
+    expect(
+      document.documentElement.style.getPropertyValue(
+        '--xagi-background-image',
+      ),
+    ).toBe('none');
+  });
 });
