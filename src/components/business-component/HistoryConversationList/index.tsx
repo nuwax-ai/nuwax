@@ -170,7 +170,12 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
       >
         <CloseOutlined />
       </div>
-      <div className={styles['main-content']}>
+      <div
+        className={styles['main-content']}
+        // 页面四周留白内联兜底：dev HMR 场景下本文件样式映射偶发漂移，
+        // 内联保证标题/搜索框/列表不贴内容区边缘（bug 2351「边距没了」）
+        style={{ padding: '24px 24px 0' }}
+      >
         <div
           className={`${styles.title} flex items-center gap-4 ${
             isMobile ? styles['title-mobile'] : ''
