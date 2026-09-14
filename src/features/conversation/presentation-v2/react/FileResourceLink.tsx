@@ -11,7 +11,9 @@ export interface FileResourceLinkProps {
    * 行内嵌套变体（ProcessNodeRow 折叠行内使用）：不展示目录段，保持行紧凑
    * （完整路径见 title）。
    * 2026-09-14 商讨定调：文件路径跳转功能关闭——纯展示（灰徽标 + 普通色
-   * 文件名，无下划线/手型/点击），恢复跳转时需重新接回 onOpenResource。
+   * 文件名，无下划线/手型/点击）。未来可能按「个人电脑」场景重新打开
+   * （网关 customTargetDir 仅个人电脑会话放行、云端待后端契约）；恢复时
+   * 重新接回 onOpenResource 与可点样式即可（git 历史可回溯 4c52fa9ac）。
    */
   inline?: boolean;
 }
