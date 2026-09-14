@@ -971,11 +971,19 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               readonly={
                 agentDetail?.allowPrivateSandbox === DefaultSelectedEnum.No
               }
-              /** 技能 chip 能力（defaultMentions 回显守卫）；/ 能力弹窗不受此门控 */
+              /**
+               * 技能 chip 能力（defaultMentions 回显守卫）+ / 技能弹层门控：
+               * allowAtSkill 兼容数字/字符串 1（后端两种形态都可能返回）
+               */
               enableMention={
                 agentDetail?.type === AgentTypeEnum.TaskAgent &&
-                agentDetail?.allowAtSkill === DefaultSelectedEnum.Yes
+                Number(agentDetail?.allowAtSkill) === 1
               }
+              /**
+               * 智能体首页式 @：无会话上下文，@ 唤起资源弹层；本页未开放
+               * 专家（无 showExpertCapability）→ 收敛为纯资料库列表
+               */
+              atHomePanel
               allowOtherModel={agentDetail?.allowOtherModel}
               selectedModelId={selectedModelId}
               onModelSelect={setSelectedModelId}

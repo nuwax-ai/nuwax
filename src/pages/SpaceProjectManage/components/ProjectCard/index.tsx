@@ -83,7 +83,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       content={item.description || ''}
       icon={item.icon}
       defaultIcon={agentImage}
-      onClick={() => onClick?.(item)}
+      onClick={onClick ? () => onClick(item) : undefined}
       extra={
         <>
           <span className={cx('text-ellipsis', 'flex-1')}>
