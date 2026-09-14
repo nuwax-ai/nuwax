@@ -1,12 +1,20 @@
 /**
- * 首页召唤专家透传消费测试（/expert-skill-connector 专家卡「召唤」→ /home 回显）：
- * 接入契约见 useSummonExpertHandoff——pageHandoffContext 内存一次性中转，
- * Home 挂载 consume 即清，chip 回显专家并以专家 agentId 作为会话对象。
+ * 首页透传消费测试：项目上框手选 Agent，以及专家卡「召唤」→ /home 回显。
+ * pageHandoffContext 内存一次性中转，Home 挂载 consume 即清。
  * 桩法对齐 chatInputUnified.home.test.tsx：umi / services / 子组件一律 mock，
  * ChatInputUnified 以捕获 props 的桩替代，断言透传收敛到 summonedExpert prop。
  */
 import Home from '@/pages/Home';
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { apiDisplayRecommendList } from '@/services/displayRecommend';
+import { fetchChatboxCategories } from '@/services/square';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // 透传上下文底层数据（与真实 pageHandoffContext model 同构：读清一次性）；
@@ -96,8 +104,9 @@ vi.mock('@/assets/images/agent_image.png', () => ({
   default: 'agent-image-png',
 }));
 
+const handleCreateConversation = vi.hoisted(() => vi.fn());
 vi.mock('@/hooks/useConversation', () => ({
-  default: () => ({ handleCreateConversation: vi.fn() }),
+  default: () => ({ handleCreateConversation }),
 }));
 
 vi.mock('@/hooks/useSelectedComponent', () => ({
@@ -117,7 +126,17 @@ vi.mock(
 );
 
 vi.mock('@/pages/Home/components/ChatBoxRecommendNav', () => ({
-  default: () => null,
+  default: ({ items, onSelect, isItemSelectable }: any) =>
+    items.map((item: any) => (
+      <button
+        key={item.id}
+        type="button"
+        disabled={isItemSelectable && !isItemSelectable(item)}
+        onClick={() => onSelect(item)}
+      >
+        {item.label}
+      </button>
+    )),
 }));
 
 vi.mock('@/pages/Home/components/HomeCategoryTabs', () => ({
@@ -129,7 +148,7 @@ const input = vi.hoisted(() => ({ props: {} as Record<string, any> }));
 vi.mock('@/components/business-component/ChatInputUnified', async () => {
   const React = await import('react');
   return {
-    default: React.forwardRef((props: any) => {
+    default: React.forwardRef((props: any, _ref) => {
       input.props = props;
       return React.createElement(
         'div',
@@ -147,7 +166,63 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-describe('首页召唤专家透传消费（专家页召唤 → /home 回显）', () => {
+describe('首页项目上框与专家透传消费', () => {
+  it('常规项目上框允许手选常规项目 Agent，选中后保持并用于创建会话', async () => {
+    handoffMap.homePinnedProject = {
+      projectId: 18,
+      projectType: 'NormalProject',
+      name: '项目 A',
+    };
+    vi.mocked(apiDisplayRecommendList).mockResolvedValueOnce({
+      data: {
+        recChatBoxNav: {
+          Agent: [
+            { id: 1, targetId: 71, label: '普通对话', functionType: 'Chat' },
+            {
+              id: 2,
+              targetId: 72,
+              label: '项目 Agent',
+              functionType: 'NormalProjectDev',
+            },
+            {
+              id: 3,
+              targetId: 73,
+              label: '另一个项目 Agent',
+              functionType: 'NormalProjectDev',
+            },
+          ],
+        },
+      },
+    } as any);
+    vi.mocked(fetchChatboxCategories).mockResolvedValueOnce([
+      { key: 'projects', label: '项目开发' },
+    ] as any);
+
+    render(<Home />);
+    await screen.findByRole('button', { name: '项目 Agent' });
+    expect(screen.getByRole('button', { name: '普通对话' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: '另一个项目 Agent' }),
+    ).toBeEnabled();
+    expect(input.props.selectedTag).toBeUndefined();
+    fireEvent.click(screen.getByRole('button', { name: '项目 Agent' }));
+    await waitFor(() =>
+      expect(input.props.selectedTag?.label).toBe('项目 Agent'),
+    );
+    await act(async () => {
+      await input.props.onEnter('新任务');
+    });
+    expect(input.props.pinnedProject?.name).toBe('项目 A');
+    expect(handleCreateConversation).toHaveBeenCalledWith(
+      72,
+      expect.objectContaining({
+        projectId: 18,
+        projectType: 'NormalProject',
+        message: '新任务',
+      }),
+    );
+  });
+
   it('挂载消费 handoff：chip 回显专家并以专家 agentId 作会话对象，读取即清', async () => {
     handoffMap.homeSummonedExpert = {
       agentId: 8,
