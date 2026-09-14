@@ -5,11 +5,15 @@ import {
 import { t } from '@/services/i18nRuntime';
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useDebounceFn } from 'ahooks';
-import { Input, message, Modal } from 'antd';
+import { Input, message, Modal, Segmented } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import ConversationList, { ConversationListRef } from './ConversationList';
+import ProjectList, { ProjectListRef } from './ProjectList';
 import styles from './index.module.less';
+
+/** 一级数据源 tab：任务（会话，默认）/ 项目（项目 + 项目会话） */
+type SourceTab = 'task' | 'project';
 
 // 历史会话页面组件Props
 export interface HistoryConversationListProps {
@@ -19,6 +23,8 @@ export interface HistoryConversationListProps {
   isAppSidebarMode?: boolean;
   /** 标题左侧插槽 */
   titleLeftSlot?: React.ReactNode;
+  /** 展示「任务/项目」一级切换（默认 true；应用侧栏模式无项目概念传 false） */
+  enableProjectTab?: boolean;
 }
 
 /**
@@ -30,6 +36,7 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
   onClickLink,
   isAppSidebarMode = false,
   titleLeftSlot,
+  enableProjectTab = true,
 }) => {
   const { runHistory } = useModel('conversationHistory');
   const location = useLocation();
@@ -41,7 +48,12 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [currentDeleteId, setCurrentDeleteId] = useState<number | null>(null);
+  const [sourceTab, setSourceTab] = useState<SourceTab>('task');
   const listRef = useRef<ConversationListRef>(null);
+  const projectListRef = useRef<ProjectListRef>(null);
+  // 重命名/删除 Modal 对活动列表生效：按一级 tab 路由到对应列表的 ref
+  const activeList = () =>
+    sourceTab === 'task' ? listRef.current : projectListRef.current;
 
   const { isMobile } = useModel('layout');
 
@@ -61,7 +73,7 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
     if (state?._t) {
       setKeyword('');
       setActiveKeyword('');
-      listRef.current?.refresh();
+      activeList()?.refresh();
     }
   }, [location.state]);
 
@@ -102,7 +114,7 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
       });
 
       if (res.success) {
-        listRef.current?.refresh();
+        activeList()?.refresh();
         // 应用智能体模式下，查询当前智能体的8条会话记录，否则查询所有智能体的5条会话记录
         const limit = isAppSidebarMode ? 8 : 5;
         runHistory({
@@ -141,7 +153,7 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
       const res = await apiAgentConversationDelete(currentDeleteId);
 
       if (res.success) {
-        listRef.current?.removeItem(currentDeleteId);
+        activeList()?.removeItem(currentDeleteId);
         // 应用智能体模式下，查询当前智能体的8条会话记录，否则查询所有智能体的5条会话记录
         const limit = isAppSidebarMode ? 8 : 5;
         runHistory({
@@ -184,6 +196,26 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
           {titleLeftSlot}
           <span>{t('PC.Components.HistoryConversationList.pageTitle')}</span>
         </div>
+        {enableProjectTab && (
+          <div className={styles['source-tabs']}>
+            {/* 一级数据源切换：antd Segmented，样式对齐女娲应用页 source-segmented */}
+            <Segmented
+              className={styles['source-segmented']}
+              options={[
+                {
+                  label: t('PC.Components.HistoryConversationList.taskTab'),
+                  value: 'task',
+                },
+                {
+                  label: t('PC.Components.HistoryConversationList.projectTab'),
+                  value: 'project',
+                },
+              ]}
+              value={sourceTab}
+              onChange={(value) => setSourceTab(value as SourceTab)}
+            />
+          </div>
+        )}
         <div
           className={`${styles['search-input']} ${
             isMobile ? styles['search-input-mobile'] : ''
@@ -201,14 +233,23 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
           />
         </div>
         <div className={styles['list-wrapper']}>
-          <ConversationList
-            ref={listRef}
-            agentId={agentId}
-            keyword={activeKeyword}
-            onItemClick={onClickLink}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          {!enableProjectTab || sourceTab === 'task' ? (
+            <ConversationList
+              ref={listRef}
+              agentId={agentId}
+              keyword={activeKeyword}
+              onItemClick={onClickLink}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <ProjectList
+              ref={projectListRef}
+              keyword={activeKeyword}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
         </div>
       </div>
 
