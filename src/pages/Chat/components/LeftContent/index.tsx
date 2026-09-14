@@ -140,7 +140,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   [styles['active']]: headerProps.isAgentDetailModalOpen,
                 })}
                 icon={
-                  <SvgIcon name="icons-nav-sidebar" style={{ fontSize: 16 }} />
+                  <SvgIcon name="icons-common-book" style={{ fontSize: 16 }} />
                 }
                 onClick={headerProps.handleOpenAgentDetail}
               />
