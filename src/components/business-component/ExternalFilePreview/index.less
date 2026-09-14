@@ -9,13 +9,22 @@
 }
 
 .external-file-header {
-  overflow: hidden;
-  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 8px 0 16px;
   border-bottom: 1px solid var(--color-border-tertiary, #f0f0f0);
   color: var(--color-text, rgba(0, 0, 0, 88%));
   font-size: 13px;
   font-weight: 500;
   line-height: 40px;
+}
+
+.external-file-header-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -1,3 +1,4 @@
+import CopyIconButton from '@/components/base/CopyIconButton';
 import FilePreview from '@/components/business-component/FilePreview';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
@@ -70,13 +71,19 @@ const ExternalFilePreview: React.FC<ExternalFilePreviewProps> = ({
     void load();
   }, [load]);
 
+  // 沙箱内绝对路径（头部完整展示 + 一键复制）
+  const absolutePath = `/${targetDir}/${relativePath}`.replace(/\/{2,}/g, '/');
+
   return (
     <div className={cx(styles['external-file-preview'], className)}>
-      <div
-        className={cx(styles['external-file-header'])}
-        title={`/${targetDir}/${relativePath}`.replace(/\/{2,}/g, '/')}
-      >
-        {relativePath.split('/').pop() || relativePath}
+      <div className={cx(styles['external-file-header'])}>
+        <span
+          className={cx(styles['external-file-header-path'])}
+          title={absolutePath}
+        >
+          {absolutePath}
+        </span>
+        <CopyIconButton text={absolutePath} buttonSize="small" />
       </div>
       <div className={cx(styles['external-file-body'])}>
         {loading ? (
