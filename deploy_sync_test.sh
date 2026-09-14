@@ -73,7 +73,8 @@ run_test_gate() {
     return 0
   fi
   echo "---- 质量门未全绿，核对失败套件是否全部在存量挂清单内 ----" >&2
-  failed="$(grep 'FAIL' "$log_file" | grep -oE 'tests/[^ ]+\.test\.(ts|tsx)' | sort -u || true)"
+  # 只认 vitest 规范的行首 FAIL 行；用例名含 FAILED 字样的 stdout/stderr 行不得误报
+  failed="$(grep -E '^[[:space:]]*FAIL[[:space:]]+tests/' "$log_file" | grep -oE 'tests/[^ ]+\.test\.(ts|tsx)' | sort -u || true)"
   rm -f "$log_file"
   [ -n "$failed" ] || return 1
   while IFS= read -r f; do
