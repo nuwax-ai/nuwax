@@ -327,7 +327,98 @@ describe('clearUserThemeConfig（登录页主题保护）', () => {
 
     unifiedThemeService.clearUserThemeConfig({ preserveExplicitChoice: true });
 
-    expect(localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG)).toBeNull();
     expect(localStorage.getItem(STORAGE_KEYS.GLOBAL_SETTINGS)).toBeNull();
+  });
+});
+
+describe('桌面端锁单栏：生效态收敛（2026-09-14 客户端渐变背景修复）', () => {
+  const originalBridge = (window as any).NuwaClawBridge;
+
+  /** 商业宿主桥（isDesktopHost 判定依据，getProduct=nuwax） */
+  const seedCommercialBridge = () => {
+    (window as any).NuwaClawBridge = {
+      host: { getProduct: () => 'nuwax' },
+    };
+  };
+
+  /** 存储偏好：经典风格1 + 渐变壁纸（客户端 webview localStorage 实证形态） */
+  const seedStyle1Wallpaper = (timestamp: number) => {
+    localStorage.setItem(
+      STORAGE_KEYS.USER_THEME_CONFIG,
+      JSON.stringify({
+        selectedThemeColor: '#5147ff',
+        selectedBackgroundId: 'bg-variant-1',
+        navigationStyleId: 'style1',
+        navigationStyle: 'light',
+        antdTheme: 'light',
+        timestamp,
+      }),
+    );
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    seedMigrationGuard();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    if (originalBridge === undefined) delete (window as any).NuwaClawBridge;
+    else (window as any).NuwaClawBridge = originalBridge;
+  });
+
+  it('桌面宿主：存储 style1 + 渐变壁纸，加载即收敛单栏纯色（存储不回写）', () => {
+    seedCommercialBridge();
+    seedStyle1Wallpaper(1700000000001);
+
+    unifiedThemeService.reloadConfiguration(false);
+
+    const data = unifiedThemeService.getCurrentData();
+    // 存储值保持用户/租户原样，只收敛生效态
+    expect(data.navigationStyle).toBe('style1');
+    expect(data.backgroundId).toBe('bg-solid');
+    expect(
+      JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG) || '{}')
+        .selectedBackgroundId,
+    ).toBe('bg-variant-1');
+  });
+
+  it('桌面宿主：data-nav-style 与 body 布局类按生效单栏落地（与 React 布局分发同源）', () => {
+    seedCommercialBridge();
+    seedStyle1Wallpaper(1700000000002);
+
+    unifiedThemeService.reloadConfiguration(false);
+
+    expect(document.documentElement.getAttribute('data-nav-style')).toBe(
+      'sidebar',
+    );
+    expect(document.body.classList.contains('xagi-nav-style3')).toBe(true);
+    expect(document.body.classList.contains('xagi-nav-style1')).toBe(false);
+  });
+
+  it('浏览器（无桥）：同份存储保持 style1 + 渐变壁纸，行为不变', () => {
+    seedStyle1Wallpaper(1700000000003);
+
+    unifiedThemeService.reloadConfiguration(false);
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.navigationStyle).toBe('style1');
+    expect(data.backgroundId).toBe('bg-variant-1');
+    expect(document.documentElement.getAttribute('data-nav-style')).toBe(
+      'compact',
+    );
+  });
+
+  it('社区宿主（nuwaclaw）与浏览器同形态，不收敛背景', () => {
+    (window as any).NuwaClawBridge = {
+      host: { getProduct: () => 'nuwaclaw' },
+    };
+    seedStyle1Wallpaper(1700000000004);
+
+    unifiedThemeService.reloadConfiguration(false);
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.navigationStyle).toBe('style1');
+    expect(data.backgroundId).toBe('bg-variant-1');
   });
 });
