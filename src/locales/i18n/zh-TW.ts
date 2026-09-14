@@ -6256,6 +6256,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ThirdAppIntegration.title": "三方應用接入",
   "PC.Pages.ThirdAppIntegration.createButton": "建立三方應用",
   "PC.Pages.ThirdAppIntegration.createTitle": "建立三方應用",
+  "PC.Pages.ThirdAppIntegration.editTitle": "編輯三方應用",
   // 三方應用詳情
   "PC.Pages.ThirdAppDetail.tabSetting": "設定",
   "PC.Pages.ThirdAppDetail.untitled": "未命名應用",

@@ -11,10 +11,12 @@ import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
-import ProjectCard from '../components/ProjectCard';
 import { apiUserProjectPageQuery } from '../services';
-import { apiThirdAppOauth2Update } from '../services/thirdAppOauth2';
-import CreateThirdAppModal from './components/CreateThirdAppModal';
+import CreateThirdAppModal from './CreateThirdAppModal';
+import EditThirdAppModal, {
+  type EditedThirdAppInfo,
+} from './EditThirdAppModal';
+import ThirdAppCard from './components/ThirdAppCard';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -32,7 +34,7 @@ const normalizeProjectRow = (
  * 第三方应用接入列表。
  *
  * 页面结构复用全栈应用列表，分页查询固定传 projectType=ThirdApp；
- * 创建和重命名使用第三方应用 OAuth2 接口。
+ * 创建和编辑使用第三方应用 OAuth2 接口。
  *
  * @returns 第三方应用列表页面
  */
@@ -43,8 +45,7 @@ const ThirdAppIntegration: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [list, setList] = useState<UserProjectItem[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
-  const [renameTarget, setRenameTarget] = useState<UserProjectItem>();
-  const [renameName, setRenameName] = useState('');
+  const [editTarget, setEditTarget] = useState<UserProjectItem>();
 
   /** 查询第三方应用列表 */
   const { run: runQuery, loading } = useRequest(
@@ -90,32 +91,28 @@ const ThirdAppIntegration: React.FC = () => {
     runQuery(keyword);
   }, [keyword, runQuery, spaceId]);
 
-  /** 打开重命名弹窗 */
-  const handleRename = useCallback((item: UserProjectItem) => {
-    setRenameTarget(item);
-    setRenameName(item.name);
+  /** 打开编辑弹窗 */
+  const handleEdit = useCallback((item: UserProjectItem) => {
+    setEditTarget(item);
   }, []);
 
-  /** 保存第三方应用名称 */
-  const handleRenameSubmit = useCallback(async () => {
-    const name = renameName.trim();
-    if (!name || !renameTarget) {
-      return;
-    }
-    const response = await apiThirdAppOauth2Update({
-      projectId: renameTarget.id,
-      name,
-    });
-    if (response?.code !== SUCCESS_CODE) {
-      return;
-    }
-    setList((previous) =>
-      previous.map((item) =>
-        item.id === renameTarget.id ? { ...item, name } : item,
-      ),
-    );
-    setRenameTarget(undefined);
-  }, [renameName, renameTarget]);
+  /** 编辑成功后同步更新卡片信息 */
+  const handleEdited = useCallback(
+    (appId: number, editedInfo: EditedThirdAppInfo) => {
+      setList((previous) =>
+        previous.map((item) =>
+          item.id === appId ? { ...item, ...editedInfo } : item,
+        ),
+      );
+      setEditTarget(undefined);
+    },
+    [],
+  );
+
+  /** 关闭编辑弹窗 */
+  const handleEditCancel = useCallback(() => {
+    setEditTarget(undefined);
+  }, []);
 
   /** 删除第三方应用前二次确认 */
   const handleDelete = useCallback((item: UserProjectItem) => {
@@ -200,11 +197,11 @@ const ThirdAppIntegration: React.FC = () => {
           )}
         >
           {list.map((item) => (
-            <ProjectCard
+            <ThirdAppCard
               key={item.id}
               item={item}
               onClick={handleOpenProject}
-              onRename={handleRename}
+              onEdit={handleEdit}
               onDelete={handleDelete}
             />
           ))}
@@ -222,23 +219,11 @@ const ThirdAppIntegration: React.FC = () => {
         onCreated={handleCreated}
       />
 
-      <Modal
-        title={dict('PC.Components.HistoryConversationList.renameModalTitle')}
-        open={renameTarget !== undefined}
-        onOk={() => void handleRenameSubmit()}
-        onCancel={() => setRenameTarget(undefined)}
-        okButtonProps={{ disabled: !renameName.trim() }}
-        okText={dict('PC.Common.Global.confirm')}
-        cancelText={dict('PC.Common.Global.cancel')}
-        destroyOnHidden
-      >
-        <Input
-          value={renameName}
-          onChange={(event) => setRenameName(event.target.value)}
-          onPressEnter={() => void handleRenameSubmit()}
-          maxLength={128}
-        />
-      </Modal>
+      <EditThirdAppModal
+        app={editTarget}
+        onCancel={handleEditCancel}
+        onEdited={handleEdited}
+      />
     </div>
   );
 };

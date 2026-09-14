@@ -6254,6 +6254,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ThirdAppIntegration.title": "サードパーティアプリ連携",
   "PC.Pages.ThirdAppIntegration.createButton": "サードパーティアプリを作成",
   "PC.Pages.ThirdAppIntegration.createTitle": "サードパーティアプリを作成",
+  "PC.Pages.ThirdAppIntegration.editTitle": "サードパーティアプリを編集",
   // サードパーティアプリ詳細
   "PC.Pages.ThirdAppDetail.tabSetting": "設定",
   "PC.Pages.ThirdAppDetail.untitled": "名称未設定アプリ",

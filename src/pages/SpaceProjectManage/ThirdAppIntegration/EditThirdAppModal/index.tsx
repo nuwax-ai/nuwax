@@ -5,64 +5,88 @@ import GuardedFormModal, {
 import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
+import type { UserProjectItem } from '@/types/interfaces/userProject';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { Form, Input, message } from 'antd';
-import React, { useCallback, useState } from 'react';
-import { apiThirdAppOauth2CredentialCreate } from '../../../services/thirdAppOauth2';
+import React, { useCallback, useEffect, useState } from 'react';
+import { apiThirdAppOauth2Update } from '../../services/thirdAppOauth2';
 
-export interface CreateThirdAppModalProps {
-  /** 所属空间 ID */
-  spaceId: number;
-  /** 是否打开 */
-  open: boolean;
-  /** 关闭弹窗 */
-  onCancel: () => void;
-  /** 创建成功 */
-  onCreated: () => void;
-}
-
-interface CreateThirdAppFormValues {
+/** 编辑三方应用表单数据 */
+interface EditThirdAppFormValues {
   /** 应用名称 */
   name: string;
   /** 应用描述 */
   description?: string;
 }
 
+/** 编辑三方应用后返回的基础信息 */
+export interface EditedThirdAppInfo {
+  /** 应用名称 */
+  name: string;
+  /** 应用描述 */
+  description: string;
+  /** 应用图标 */
+  icon: string;
+}
+
+/** 编辑三方应用弹窗属性 */
+export interface EditThirdAppModalProps {
+  /** 当前编辑的应用；为空时关闭弹窗 */
+  app?: UserProjectItem;
+  /** 关闭弹窗 */
+  onCancel: () => void;
+  /** 编辑成功 */
+  onEdited: (appId: number, info: EditedThirdAppInfo) => void;
+}
+
 /**
- * 创建第三方应用弹窗：填写名称、描述和图标，创建后自动生成 OAuth2 凭证。
+ * 编辑三方应用弹窗。
  *
- * @param props.spaceId 所属空间 ID
- * @param props.open 是否打开
- * @param props.onCancel 关闭回调
- * @param props.onCreated 创建成功回调
- * @returns 第三方应用创建弹窗
+ * 表单字段与创建三方应用一致，可编辑名称、描述和图标。
+ *
+ * @param props 弹窗属性
+ * @returns 三方应用编辑弹窗
  */
-const CreateThirdAppModal: React.FC<CreateThirdAppModalProps> = ({
-  spaceId,
-  open,
+const EditThirdAppModal: React.FC<EditThirdAppModalProps> = ({
+  app,
   onCancel,
-  onCreated,
+  onEdited,
 }) => {
-  const [form] = Form.useForm<CreateThirdAppFormValues>();
+  const [form] = Form.useForm<EditThirdAppFormValues>();
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
-  /** 重置表单和上传图标 */
+  /** 打开弹窗时回填当前应用信息 */
+  useEffect(() => {
+    if (!app) {
+      return;
+    }
+    form.setFieldsValue({
+      name: app.name,
+      description: app.description || '',
+    });
+    setImageUrl(app.icon || '');
+  }, [app, form]);
+
+  /** 清空编辑中的临时数据 */
   const resetForm = useCallback(() => {
     form.resetFields();
     setImageUrl('');
   }, [form]);
 
-  /** 关闭并清理临时表单数据 */
+  /** 关闭弹窗 */
   const handleCancel = useCallback(() => {
     resetForm();
     onCancel();
   }, [onCancel, resetForm]);
 
-  /** 提交创建请求 */
+  /** 提交三方应用基础信息 */
   const handleFinish = useCallback(
-    async (values: CreateThirdAppFormValues) => {
+    async (values: EditThirdAppFormValues) => {
+      if (!app) {
+        return;
+      }
       setLoading(true);
       try {
         const resolved = await resolveCreateIcon({
@@ -70,30 +94,33 @@ const CreateThirdAppModal: React.FC<CreateThirdAppModalProps> = ({
           name: values.name,
           description: values.description,
         });
-        const response = await apiThirdAppOauth2CredentialCreate({
-          spaceId,
+        const editedInfo: EditedThirdAppInfo = {
           name: values.name.trim(),
-          description: resolved.description?.trim() || undefined,
-          icon: resolved.icon || undefined,
+          description: resolved.description?.trim() || '',
+          icon: resolved.icon || '',
+        };
+        const response = await apiThirdAppOauth2Update({
+          projectId: app.id,
+          ...editedInfo,
         });
         if (response?.code !== SUCCESS_CODE) {
           return;
         }
         resetForm();
-        message.success(dict('PC.Pages.SpaceProjectManage.createSuccess'));
-        onCreated();
+        message.success(dict('PC.Common.Global.saveSuccess'));
+        onEdited(app.id, editedInfo);
       } finally {
         setLoading(false);
       }
     },
-    [imageUrl, onCreated, resetForm, spaceId],
+    [app, imageUrl, onEdited, resetForm],
   );
 
   return (
     <GuardedFormModal
       form={form}
-      title={dict('PC.Pages.ThirdAppIntegration.createTitle')}
-      open={open}
+      title={dict('PC.Pages.ThirdAppIntegration.editTitle')}
+      open={!!app}
       loading={loading}
       onCancel={handleCancel}
       onConfirm={() => form.submit()}
@@ -147,4 +174,4 @@ const CreateThirdAppModal: React.FC<CreateThirdAppModalProps> = ({
   );
 };
 
-export default CreateThirdAppModal;
+export default EditThirdAppModal;

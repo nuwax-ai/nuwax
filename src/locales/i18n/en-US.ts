@@ -6380,6 +6380,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ThirdAppIntegration.title": "Third-party app integration",
   "PC.Pages.ThirdAppIntegration.createButton": "Create third-party app",
   "PC.Pages.ThirdAppIntegration.createTitle": "Create third-party app",
+  "PC.Pages.ThirdAppIntegration.editTitle": "Edit third-party app",
   // Third-party app details
   "PC.Pages.ThirdAppDetail.tabSetting": "Settings",
   "PC.Pages.ThirdAppDetail.untitled": "Untitled app",
