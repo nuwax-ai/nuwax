@@ -35,6 +35,7 @@ import React, {
   useState,
 } from 'react';
 import CapabilityModal from '../CapabilityModal';
+import { CAPABILITY_MENU_ICON_SVGS } from '../CapabilityModal/icons';
 import type {
   CapabilityItem,
   CapabilityTypeEnum,
@@ -490,6 +491,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const [capabilityOpen, setCapabilityOpen] = useState<boolean>(false);
     /** capabilityOpen 的同步镜像：删除触发串会经 commitEditorChange 重入检测，用于防递归 */
     const capabilityOpenRef = useRef<boolean>(false);
+    /** 上一次回显消费的 defaultMentions 引用：区分「待回显的新值」与「已回显的旧值」 */
+    const lastDefaultMentionsRef = useRef<MentionItem[] | undefined>(undefined);
     /**
      * 能力弹窗初始页签（仅头像组编程唤起时指定；'/' 触发回落默认 skill）。
      * 配套 resetKey 强制重挂 CapabilityModal——弹窗组件常驻不卸载，
@@ -998,12 +1001,28 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         const contentSpan = document.createElement('span');
         contentSpan.className = styles['mention-content'];
 
+        // 能力 chip（技能/资料库）左侧图标：与能力弹窗左侧类型导航同源
+        //（CAPABILITY_MENU_ICON_SVGS 单源），图标替代 @ 前缀回显；
+        // 文件 chip 保持 @路径 文本形态
+        const capabilityIconSvg =
+          item.kind === 'doc'
+            ? CAPABILITY_MENU_ICON_SVGS.knowledge
+            : item.kind === 'file'
+            ? undefined
+            : CAPABILITY_MENU_ICON_SVGS.skill;
+        if (capabilityIconSvg) {
+          const iconSpan = document.createElement('span');
+          iconSpan.className = styles['mention-icon'];
+          iconSpan.innerHTML = capabilityIconSvg;
+          contentSpan.appendChild(iconSpan);
+        }
+
         // 创建名称显示
         const nameSpan = document.createElement('span');
         nameSpan.className = styles['mention-name'];
-        nameSpan.textContent = `@${
-          item.kind === 'file' ? item.relativePath : item.name
-        }`;
+        nameSpan.textContent = capabilityIconSvg
+          ? item.name
+          : `@${item.kind === 'file' ? item.relativePath : item.name}`;
 
         // 创建删除按钮
         const deleteBtn = document.createElement('span');
@@ -1139,6 +1158,18 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         resourceType: CapabilityTypeEnum,
         opts?: { connectedView?: boolean },
       ) => {
+        // 与 '/' 触发同款记录光标：关闭弹窗时依此恢复（选连接器不动文本，
+        // 但焦点/光标保持语义一致）；编辑器未持有有效选区时跳过
+        const editor = editorRef.current;
+        const selection = window.getSelection();
+        if (
+          editor &&
+          selection &&
+          selection.rangeCount > 0 &&
+          editor.contains(selection.anchorNode)
+        ) {
+          savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+        }
         setCapabilityDefaultType(resourceType);
         setCapabilityInitialConnected(opts?.connectedView ?? false);
         setCapabilityResetKey((key) => key + 1);
@@ -1167,10 +1198,26 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       if (!editorRef.current) return;
       if (!enableMention) return;
       if (!defaultMentions || defaultMentions.length === 0) return;
-      // 如果已经有内容（用户手动输入或之前回显过），不重复回显
-      if (editorRef.current.innerText.trim()) return;
-
       const container = editorRef.current;
+      // 已有内容时仅当内容仍是「上一次回显的纯 chip 态」才整组替换为新技能
+      // （外部再次带入技能：全局搜索/技能页第二次「选择」替换首个 chip）；
+      // 混入用户手动输入则不覆盖——纯 chip 态 = 子节点仅 chip 元素与空白文本
+      if (container.innerText.trim()) {
+        const isPureChips =
+          container.childNodes.length > 0 &&
+          Array.from(container.childNodes).every(
+            (node) =>
+              (node.nodeType === Node.TEXT_NODE &&
+                !(node.textContent || '').trim()) ||
+              (node.nodeType === Node.ELEMENT_NODE &&
+                (node as HTMLElement).hasAttribute('data-mention-id')),
+          );
+        if (!isPureChips) return;
+        // 同一引用重放（effect 依赖抖动）不重挂，避免重置撤销栈与光标
+        if (lastDefaultMentionsRef.current === defaultMentions) return;
+      }
+      lastDefaultMentionsRef.current = defaultMentions;
+
       container.innerHTML = '';
 
       defaultMentions.forEach((mention) => {
@@ -1674,6 +1721,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      */
     const handleBlur = useCallback(() => {
       setTimeout(() => {
+        // 能力弹窗打开期间的失焦是焦点被弹窗夺走：savedRange 是关闭时
+        // 恢复光标的唯一依据，closeMentionPopup 会顺带清空它（如选专家
+        // 切换后光标会被重置到编辑器开头）；@ 浮层与能力弹窗互斥，跳过无漏关
+        if (capabilityOpenRef.current) return;
         // 检查当前焦点是否在弹窗内
         if (
           !document.activeElement?.closest(

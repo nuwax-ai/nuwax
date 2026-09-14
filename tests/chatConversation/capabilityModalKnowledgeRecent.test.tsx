@@ -4,7 +4,7 @@
  * - 有记录：pill 置于空间 pill 最前且默认选中，聚合视图不触发 repo 树接口；
  * - 资料卡为横向新样式：资料库同款线性文件图标（40px 与技能卡口径
  *   一致）+ 名称 + 右端相对时间胶囊（悬停「选择」按钮覆盖其上）；
- *   卡片主体点击不选中，「选择」按钮（悬停浮现）按 slugId/pageType 选中回传；
+ *   整行点击或「选择」按钮（悬停浮现）按 slugId/pageType 选中回传；
  * - 点击空间 pill 退出聚合视图，切回该空间 repo 树列表。
  * 渲染整组件：services/umi/useSubscription/子弹窗全部 mock（vitest 不可用 umi request）；
  * utils/common 不 mock——formatTimeAgo 真实执行，i18n dict mock 为 key 回显。
@@ -211,24 +211,24 @@ describe('能力弹窗·资料库「最近访问」页签（门户最近访问�
       card.querySelector<HTMLElement>('[class*="file-icon"]')?.style.color,
     ).toBe('rgb(245, 63, 63)');
     expect(card.textContent).not.toContain('PDF');
-    // 选择按钮：挂 .card-hire 悬停浮现类（按钮为唯一选中入口）
+    // 选择按钮：挂 .card-hire 悬停浮现类（与整行点击为等价选中入口）
     const selectBtn = Array.from(card.querySelectorAll('button')).find(
       (btn) => btn.textContent === 'PC.Components.CapabilityModal.select',
     );
     expect(selectBtn).toBeTruthy();
     expect(selectBtn?.className).toContain('select-btn');
 
-    // 卡片主体点击不触发选中，「选择」按钮按 slugId/pageType/rawId 选中回传
+    // 整行点击触发选中，「选择」按钮为等价入口（stopPropagation 不双触发）
     fireEvent.click(card);
-    expect(onSelect).not.toHaveBeenCalled();
-    fireEvent.click(selectBtn!);
-    await waitFor(() => expect(onSelect).toHaveBeenCalled());
+    await waitFor(() => expect(onSelect).toHaveBeenCalledTimes(1));
     expect(onSelect.mock.calls[0][0]).toMatchObject({
       resourceType: 'knowledge',
       rawId: 71,
       slugId: 'doc-a',
       pageType: 'doc',
     });
+    fireEvent.click(selectBtn!);
+    await waitFor(() => expect(onSelect).toHaveBeenCalledTimes(2));
   });
 
   it('点击空间 pill 退出聚合视图，切回该空间 repo 树列表', async () => {

@@ -959,9 +959,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               agentId={agentId}
               agentSandboxId={agentDetail?.sandboxId}
               hasPermission={agentDetail?.hasPermission}
-              showAgentModeSelector={
-                agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
-              }
+              agentEnableVersionControl={agentDetail?.enableVersionControl}
               agentMode={agentMode}
               onAgentModeChange={handleAgentModeChange}
               maskText={t(

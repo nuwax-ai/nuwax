@@ -96,7 +96,6 @@
   background: @colorBgContainer;
   cursor: pointer;
   transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-  overflow: hidden;
 
   &:hover {
     border-color: color-mix(in srgb, @colorPrimary 55%, transparent);
@@ -193,7 +192,9 @@
 
 /* 「聘请」按钮覆盖层：绝对定位铺在卡/行右端（悬停盖住时间区域,不占
    布局空间）；渐变蒙层仅悬停时出现（未悬停的行右端不残留色块）,grid
-   卡片底色与容器一致、list 行悬停底色为 fill,各自对齐 */
+   卡片底色与容器一致、list 行悬停底色为 fill,各自对齐。圆角与所在
+   卡/行的 padding-box 内弧同心（8px 圆角-grid 1px 边框=7px / list
+   无边框=8px），方形直角白底会盖住悬停主色描边的圆角段 */
 .card-actions,
 .list-actions {
   position: absolute;
@@ -208,10 +209,12 @@
 
 .card-actions {
   padding-right: 14px;
+  border-radius: 7px;
 }
 
 .list-actions {
   padding-right: 12px;
+  border-radius: 8px;
 }
 
 .card:hover .card-actions {
@@ -248,7 +251,6 @@
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s ease-in-out;
-  overflow: hidden;
 
   &:hover {
     background: @expert-fill;

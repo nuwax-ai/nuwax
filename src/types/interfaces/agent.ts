@@ -816,6 +816,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   trialCount?: number;
   // 是否允许用户在对话框中选择模式， 1 允许，其他不允许
   allowChooseMode?: DefaultSelectedEnum;
+  // 是否开启版本控制， 1 允许，其他不允许；作为会话框配置未配置过时的默认值
+  enableVersionControl?: DefaultSelectedEnum;
 }
 
 // 日志查询过滤条件

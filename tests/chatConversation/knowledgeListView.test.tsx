@@ -7,8 +7,8 @@
  * - keyword 客户端过滤（名称/描述）+ 内存切片分页（触底追加）；
  * - 图标：RepoFileIcon 复刻 nuwax-repo-web 资料库线性图标（pageType/
  *   扩展名 → 类型专属图形与配色），不再展示 fileType 文本 Tag；
- * - 选中：悬停「选择」按钮为唯一入口（覆盖时间胶囊区域），卡片主体
- *   点击不触发；
+ * - 选中：整行点击与悬停「选择」按钮均为入口（按钮 stopPropagation
+ *   防止冒泡双触发）；
  * - 双变体：grid 两列 / list 单列横排资料行。
  * services 全部 mock（vitest 不可用 umi request）；
  * utils/common 不 mock——formatTimeAgo 真实执行，i18n dict mock 为 key 回显。
@@ -183,7 +183,7 @@ describe('KnowledgeListView·recent 场景（最近访问）', () => {
 });
 
 describe('KnowledgeListView·选中与双变体', () => {
-  it('悬停「选择」按钮为唯一选中入口,回传 slugId/pageType/rawId', async () => {
+  it('整行点击与「选择」按钮均可选中,回传 slugId/pageType/rawId', async () => {
     apiRepoSpaceTree.mockResolvedValue({
       code: '0000',
       data: [
@@ -194,13 +194,10 @@ describe('KnowledgeListView·选中与双变体', () => {
     renderView({ spaceId: 1, onSelect });
     await screen.findByText('使用手册');
 
-    // 卡片主体点击不触发
+    // 整行点击触发选中
     fireEvent.click(
       document.querySelector('[data-knowledge-key="knowledge:space:7"]')!,
     );
-    expect(onSelect).not.toHaveBeenCalled();
-
-    fireEvent.click(selectBtnOf('knowledge:space:7')!);
     await waitFor(() => expect(onSelect).toHaveBeenCalledTimes(1));
     expect(onSelect.mock.calls[0][0]).toMatchObject({
       rawId: 7,
@@ -208,6 +205,10 @@ describe('KnowledgeListView·选中与双变体', () => {
       name: '使用手册',
       fileType: 'MD',
     });
+
+    // 「选择」按钮为等价入口（stopPropagation 不冒泡双触发）
+    fireEvent.click(selectBtnOf('knowledge:space:7')!);
+    await waitFor(() => expect(onSelect).toHaveBeenCalledTimes(2));
   });
 
   it('list 变体：单列资料行,渲染一致', async () => {

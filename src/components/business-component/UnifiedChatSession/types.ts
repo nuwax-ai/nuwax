@@ -31,6 +31,8 @@ export interface UnifiedAgentInfo {
   expandPageArea?: number;
   /** 是否允许用户在对话框中选择 Agent 模式（1 允许，其他不允许） */
   allowChooseMode?: DefaultSelectedEnum | number;
+  /** 是否开启版本控制（1 开启），作为会话框配置未配置过时的默认值 */
+  enableVersionControl?: DefaultSelectedEnum | number;
 }
 
 export interface UnifiedChatSessionProps {

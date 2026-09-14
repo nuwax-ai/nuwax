@@ -42,7 +42,6 @@ import SkillListView from '@/components/business-component/SkillListView';
 import { t } from '@/services/i18nRuntime';
 import {
   CloseOutlined,
-  FileTextOutlined,
   LinkOutlined,
   SearchOutlined,
   TeamOutlined,
@@ -61,6 +60,7 @@ import useCapabilityCategories from './hooks/useCapabilityCategories';
 import useConnectedConnectors from './hooks/useConnectedConnectors';
 import useRecentRepoPages from './hooks/useRecentRepoPages';
 import useSkillEnabledList from './hooks/useSkillEnabledList';
+import { CAPABILITY_MENU_ICON_SVGS } from './icons';
 import styles from './index.less';
 import type {
   CapabilityItem,
@@ -84,7 +84,11 @@ const EMBED_FOCUS_CLASS = 'capability-embed-card-focus';
 /** 搜索防抖时长 */
 const SEARCH_DEBOUNCE = 400;
 
-/** 左侧能力类型导航配置（图标使用带色板的 tinted 容器渲染） */
+/**
+ * 左侧能力类型导航配置（图标使用带色板的 tinted 容器渲染）。
+ * 技能/资料库图标取 ./icons 的 SVG 字符串单源——与会话输入框
+ * 提及 chip（MentionEditor createMentionChip）共用，两处视觉一致
+ */
 const RESOURCE_MENUS: {
   type: CapabilityTypeEnum;
   labelKey: string;
@@ -94,20 +98,10 @@ const RESOURCE_MENUS: {
     type: 'skill',
     labelKey: 'PC.Components.CapabilityModal.menuSkill',
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="m15 7 5-5 2 2-5 5M14 10l-4 4M8 13l3 3-5 5a2.1 2.1 0 0 1-3-3l5-5Z" />
-        <path d="M9.5 8.5a4.5 4.5 0 0 0-5.7-6.1l2.7 2.7-1.4 1.4-2.7-2.7a4.5 4.5 0 0 0 6.1 5.7l6 6a4.5 4.5 0 0 0 5.7 6.1l-2.7-2.7 1.4-1.4 2.7 2.7a4.5 4.5 0 0 0-6.1-5.7l-6-6Z" />
-      </svg>
+      <span
+        className={styles['menu-raw-icon']}
+        dangerouslySetInnerHTML={{ __html: CAPABILITY_MENU_ICON_SVGS.skill }}
+      />
     ),
   },
   {
@@ -123,7 +117,14 @@ const RESOURCE_MENUS: {
   {
     type: 'knowledge',
     labelKey: 'PC.Components.CapabilityModal.menuKnowledge',
-    icon: <FileTextOutlined />,
+    icon: (
+      <span
+        className={styles['menu-raw-icon']}
+        dangerouslySetInnerHTML={{
+          __html: CAPABILITY_MENU_ICON_SVGS.knowledge,
+        }}
+      />
+    ),
   },
 ];
 
@@ -214,7 +215,6 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   const isSkill = resourceType === 'skill';
   const isExpert = resourceType === 'expert';
   const isConnector = resourceType === 'connector';
-  const isKnowledge = resourceType === 'knowledge';
 
   // 分类字典（system：内容分类；team：空间列表，个人空间优先）
   const categories = useCapabilityCategories(resourceType, source);
@@ -759,8 +759,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
     }
     // 四维度：列表内聚在 SkillListView / ExpertListView / ConnectorListView /
     // KnowledgeListView，键盘导航经 DOM 卡片序号代理 + 聚焦类高亮；
-    // Enter 触发卡片主操作（技能/专家选中；连接器=卡内连接开关；
-    // 资料=悬停「选择」按钮,卡片主体无 click）
+    // Enter 触发卡片主操作（技能/专家/资料=整卡点击选中；连接器=卡内连接开关）
     {
       const cards = getEmbedCards();
       const last = cards.length - 1;
@@ -784,11 +783,6 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
             }
             if (isConnector) {
               card.querySelector<HTMLElement>('[role="switch"]')?.click();
-              return;
-            }
-            if (isKnowledge) {
-              // 资料卡仅「选择」按钮可选中（卡片主体无 click）
-              card.querySelector<HTMLElement>('button')?.click();
               return;
             }
             card.click();

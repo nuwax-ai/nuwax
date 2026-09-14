@@ -115,6 +115,21 @@
     align-items: center;
     gap: 2px;
 
+    // 能力 chip（技能/资料库）左侧图标：svg 由命令式 DOM 注入，
+    // 尺寸在图标原始 width/height 上收敛到 chip 字号（CSS 覆盖属性值）
+    .mention-icon {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+      color: @colorTextSecondary;
+
+      svg {
+        display: block;
+        width: 14px;
+        height: 14px;
+      }
+    }
+
     .mention-name {
       font-size: @fontSizeSm;
       color: @colorTextSecondary;

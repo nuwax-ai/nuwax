@@ -17,7 +17,6 @@ import {
 } from '@/features/conversation/react/ConversationSessionProvider';
 import { useConversationStreamResume } from '@/features/conversation/react/useConversationStreamResume';
 import { dict } from '@/services/i18nRuntime';
-import { DefaultSelectedEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -337,12 +336,6 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
    */
   const shouldShowSessionSuggest = session.shouldShowSuggest;
 
-  /** Agent 模式选择器：由智能体 allowChooseMode 配置控制 */
-  const showAgentModeSelector = useMemo(
-    () => agentInfo?.allowChooseMode === DefaultSelectedEnum.Yes,
-    [agentInfo?.allowChooseMode],
-  );
-
   const respondOpenUiAction = useMemo(
     () => (artifact: OpenUiActionArtifact, action: OpenUiAction) => {
       messageQueue.rawSend(buildOpenUiResumeMessage(artifact, action));
@@ -473,7 +466,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
           }
           isPersonalComputer={!!agentInfo?.sandboxId}
           {...interventionLayer.agentModeInputProps}
-          showAgentModeSelector={showAgentModeSelector}
+          agentEnableVersionControl={agentInfo?.enableVersionControl}
           onFetchMentionFiles={onFetchMentionFiles}
           enableMention={enableMention}
           placeholder={placeholder}

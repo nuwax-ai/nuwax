@@ -97,6 +97,18 @@
   color: inherit;
 }
 
+// SVG 字符串图标承载 span（./icons 单源图标经 dangerouslySetInnerHTML
+// 注入）：透传 svg 进入 menu-icon 弹性容器居中，消除行内基线空隙
+.menu-raw-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  line-height: 0;
+
+  svg {
+    display: block;
+  }
+}
+
 .main {
   display: flex;
   flex: 1;

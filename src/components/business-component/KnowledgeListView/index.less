@@ -79,8 +79,9 @@
   border: 1px solid @know-border;
   border-radius: 8px;
   background: @colorBgContainer;
-  // 悬停效果与技能卡同款（主色描边 + 三层阴影）;卡片主体不可点,
-  // 不加技能卡的 cursor:pointer
+  // 悬停效果与技能卡同款（主色描边 + 三层阴影）;整行可点选,
+  // 同技能卡补 cursor:pointer
+  cursor: pointer;
   transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
   overflow: hidden;
 
@@ -135,7 +136,9 @@
 }
 
 // 悬停「选择」按钮覆盖层：绝对定位铺在行右端（不占布局空间,行高恒定）,
-// 左缘渐变蒙层（底色与行背景一致）确保按钮覆盖住下方时间胶囊
+// 左缘渐变蒙层（底色与行背景一致）确保按钮覆盖住下方时间胶囊。圆角
+// 与行的 padding-box 内弧同心（8px 圆角 - 1px 边框 = 7px）,方形直角
+// 白底会盖住悬停主色描边的圆角段
 .actions {
   position: absolute;
   top: 0;
@@ -146,6 +149,7 @@
   padding-right: 14px;
   padding-left: 32px;
   background: linear-gradient(to right, transparent, @colorBgContainer 32px);
+  border-radius: 7px;
   pointer-events: none;
 }
 

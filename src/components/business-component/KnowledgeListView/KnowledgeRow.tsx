@@ -3,7 +3,8 @@
  * 图标（RepoFileIcon：pageType/扩展名 → 类型专属图形与配色，与
  * nuwax-repo-web 资料库一致，未识别回落默认文档图标）+ 名称 + 右端
  * 相对时间胶囊（仅 recent 视图）+ 悬停浮现的「选择」按钮（绝对定位
- * 覆盖时间胶囊区域，唯一选中入口，卡片主体点击不触发选中）。
+ * 覆盖时间胶囊区域）。整行点击与「选择」按钮均为选中入口（按钮
+ * stopPropagation 防止冒泡双触发）。
  */
 import { t } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';
@@ -24,7 +25,11 @@ export interface KnowledgeRowProps {
 const KnowledgeRow: React.FC<KnowledgeRowProps> = ({ item, onSelect }) => {
   const { name } = item;
   return (
-    <div data-knowledge-key={item.key} className={cx(styles.row)}>
+    <div
+      data-knowledge-key={item.key}
+      className={cx(styles.row)}
+      onClick={() => onSelect(item)}
+    >
       <RepoFileIcon
         fileType={item.fileType}
         pageType={item.pageType}
@@ -40,7 +45,8 @@ const KnowledgeRow: React.FC<KnowledgeRowProps> = ({ item, onSelect }) => {
         </span>
       )}
       <div className={cx(styles.actions)}>
-        {/* 悬停浮现的「选择」按钮（覆盖时间胶囊，不占布局空间） */}
+        {/* 悬停浮现的「选择」按钮（覆盖时间胶囊，不占布局空间；与整行
+            点击等价，stopPropagation 防止冒泡双触发） */}
         <Button
           size="small"
           className={cx(styles['select-btn'])}

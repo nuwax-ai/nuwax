@@ -1,6 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { PLAN_MODE_ENABLED } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import {
   ChatInputVoiceFooter,
@@ -32,6 +31,7 @@ import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { selectSessionActive } from '@/features/conversation/domain/runtimeSelectors';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
+import { useChatboxAgentConfig } from '@/hooks/useChatboxAgentConfig';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { apiConnectorProviderPageList } from '@/services/systemManage';
@@ -54,23 +54,36 @@ import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
-  CheckOutlined,
+  BranchesOutlined,
   CloseOutlined,
   DesktopOutlined,
   DownOutlined,
   FolderOpenOutlined,
   FolderOutlined,
+  HistoryOutlined,
+  LinkOutlined,
   LoadingOutlined,
   PaperClipOutlined,
   PlusOutlined,
+  RightOutlined,
+  SafetyOutlined,
 } from '@ant-design/icons';
-import { Avatar, Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
+import {
+  Avatar,
+  Dropdown,
+  message,
+  Switch,
+  Tooltip,
+  Upload,
+  UploadProps,
+} from 'antd';
 import classNames from 'classnames';
 import React, {
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -83,25 +96,6 @@ import { clearDraft, loadDraft, saveDraft } from './draftStorage';
 const cx = classNames.bind(styles);
 
 const VoiceFooter = ChatInputVoiceFooter;
-
-const AGENT_MODE_OPTIONS: AgentMode[] = PLAN_MODE_ENABLED
-  ? ['yolo', 'ask', 'plan']
-  : ['yolo', 'ask'];
-
-const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
-  yolo: {
-    label: 'PC.Components.ChatInputHome.agentModeAuto',
-    desc: 'PC.Components.ChatInputHome.agentModeAutoDesc',
-  },
-  ask: {
-    label: 'PC.Components.ChatInputHome.agentModeApproval',
-    desc: 'PC.Components.ChatInputHome.agentModeApprovalDesc',
-  },
-  plan: {
-    label: 'PC.Components.ChatInputHome.agentModePlan',
-    desc: 'PC.Components.ChatInputHome.agentModePlanDesc',
-  },
-};
 
 /**
  * 召唤专家 chip 展示信息（首页场景：以该专家智能体身份创建会话；
@@ -260,7 +254,8 @@ export interface ChatInputUnifiedProps {
   agentType?: string;
   agentMode?: AgentMode;
   onAgentModeChange?: (mode: AgentMode) => void;
-  showAgentModeSelector?: boolean;
+  /** agent 侧版本管理开关，作为会话框配置（chatbox.config）未配置过时的默认值 */
+  agentEnableVersionControl?: DefaultSelectedEnum;
   placeholder?: string;
   defaultMentions?: MentionItem[];
   tabsSlot?: React.ReactNode;
@@ -376,7 +371,7 @@ const ChatInputUnifiedImpl: React.FC<
   voiceInputMock = false,
   agentMode = 'yolo',
   onAgentModeChange,
-  showAgentModeSelector = false,
+  agentEnableVersionControl,
   usageScenarios,
 
   // 原 useModel('conversationInfo') 数据
@@ -405,6 +400,22 @@ const ChatInputUnifiedImpl: React.FC<
     mySubscriptionInfo,
     loadingMySubscription,
   } = useSubscription();
+
+  // + 号弹层内审批/版本管理/自动提交开关：服务端 chatbox.config.{agentId} 持久化，
+  // mode 的单一真源仍在宿主（agentMode 受控 props），此处只做回填同步与写入
+  const {
+    enableVersionControl: versionControlEnabled,
+    autoCommit: autoCommitEnabled,
+    setMode: setChatboxMode,
+    setEnableVersionControl,
+    setAutoCommit,
+  } = useChatboxAgentConfig({
+    agentId,
+    defaultEnableVersionControl:
+      agentEnableVersionControl === DefaultSelectedEnum.Yes ? 1 : 0,
+    agentMode,
+    onAgentModeChange,
+  });
 
   const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
@@ -459,6 +470,45 @@ const ChatInputUnifiedImpl: React.FC<
   const [workspacePathPickerOpen, setWorkspaceDirPickerOpen] = useState(false);
   // 项目上框图标（可能为 /api/f/ 受保护地址，走鉴权 fetch + blob）
   const pinnedProjectIcon = useAuthProtectedImageSrc(pinnedProject?.icon);
+
+  // 行首回执 pill 行（专家/召唤专家/首页项目类型）实测宽度：
+  // 编辑器 inlinePrefixWidth 让输入文本缩进到 pill 之后（仅首行缩进）
+  const inputPrefixPillRowRef = useRef<HTMLDivElement>(null);
+  const [inputPrefixPillRowWidth, setInputPrefixPillRowWidth] =
+    useState<number>(0);
+  // 任一回执 pill 存在即启用行首占位（三者业务上互斥，防御性共存则横向排列）
+  const hasInputPrefixPill = !!(
+    expertComponents.length > 0 ||
+    summonedExpert ||
+    selectedTag?.label
+  );
+  const inputPrefixPillOffset = hasInputPrefixPill
+    ? inputPrefixPillRowWidth + 8
+    : 0;
+
+  useLayoutEffect(() => {
+    if (!hasInputPrefixPill || !inputPrefixPillRowRef.current) {
+      setInputPrefixPillRowWidth(0);
+      return;
+    }
+
+    const pillRowElement = inputPrefixPillRowRef.current;
+    const updatePillRowWidth = () => {
+      setInputPrefixPillRowWidth(pillRowElement.offsetWidth);
+    };
+
+    updatePillRowWidth();
+
+    if (typeof ResizeObserver === 'undefined') {
+      const frameId = window.requestAnimationFrame(updatePillRowWidth);
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    const resizeObserver = new ResizeObserver(updatePillRowWidth);
+    resizeObserver.observe(pillRowElement);
+
+    return () => resizeObserver.disconnect();
+  }, [hasInputPrefixPill]);
 
   useImperativeHandle(forwardedRef, () => ({
     focus: () => {
@@ -1084,8 +1134,118 @@ const ChatInputUnifiedImpl: React.FC<
           <ConditionRender condition={uploadFiles?.length}>
             <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
           </ConditionRender>
-          {/* 输入行：推荐类型选中不再内联回显输入框（改为底部工具栏专家样式 pill） */}
+          {/* 输入行：专家/首页项目类型回执 pill 内联在输入框最前面，
+              编辑器文本经 inlinePrefixWidth 缩进到 pill 之后 */}
           <div className={cx(styles['input-line'])}>
+            {hasInputPrefixPill && (
+              <div
+                ref={inputPrefixPillRowRef}
+                className={cx(styles['input-prefix-pills'])}
+              >
+                {/* 已选专家回填（会话场景）：会话仅一个专家，pill 即唯一事实源；
+                    与首页 summonedExpert 互斥不共存 */}
+                {expertComponents.length > 0 && (
+                  <span
+                    className={cx(
+                      'flex',
+                      'items-center',
+                      styles['expert-pill'],
+                    )}
+                  >
+                    <span className={cx(styles['expert-pill-name'])}>
+                      {expertComponents[0].name}
+                    </span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t('PC.Common.Global.delete')}
+                      className={cx(styles['expert-pill-remove'])}
+                      onClick={() => setExpertComponents([])}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setExpertComponents([]);
+                        }
+                      }}
+                    >
+                      <CloseOutlined />
+                    </span>
+                  </span>
+                )}
+
+                {/* 召唤专家回执 chip（首页场景）：提交时以该专家智能体身份
+                    创建会话；可取消回落原智能体 */}
+                {summonedExpert && (
+                  <span
+                    className={cx(
+                      'flex',
+                      'items-center',
+                      styles['expert-pill'],
+                    )}
+                  >
+                    {summonedExpert.iconSrc && (
+                      <img
+                        src={summonedExpert.iconSrc}
+                        alt=""
+                        className={cx(styles['expert-pill-icon'])}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <span className={cx(styles['expert-pill-name'])}>
+                      {summonedExpert.name}
+                    </span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t('PC.Common.Global.delete')}
+                      className={cx(styles['expert-pill-remove'])}
+                      onClick={onClearSummonedExpert}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onClearSummonedExpert?.();
+                        }
+                      }}
+                    >
+                      <CloseOutlined />
+                    </span>
+                  </span>
+                )}
+
+                {/* 推荐类型选中回执 pill（首页场景）：关闭走原 onClearSelectedTag
+                    逻辑（上层清 selectedRecommend 并清空输入） */}
+                {!!selectedTag?.label && (
+                  <span
+                    className={cx(
+                      'flex',
+                      'items-center',
+                      styles['expert-pill'],
+                    )}
+                  >
+                    <span className={cx(styles['expert-pill-name'])}>
+                      {selectedTag.label}
+                    </span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t('PC.Common.Global.delete')}
+                      className={cx(styles['expert-pill-remove'])}
+                      onClick={onClearSelectedTag}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onClearSelectedTag?.();
+                        }
+                      }}
+                    >
+                      <CloseOutlined />
+                    </span>
+                  </span>
+                )}
+              </div>
+            )}
             <MentionEditor
               onPluginSelect={onPluginSelect}
               onFetchMentionFiles={onFetchMentionFiles}
@@ -1093,6 +1253,8 @@ const ChatInputUnifiedImpl: React.FC<
               className={cx(styles.input)}
               disabled={wholeDisabled}
               value={messageInfo}
+              // 行首回执 pill 占位：输入文本缩进到 pill 之后
+              inlinePrefixWidth={inputPrefixPillOffset}
               onChange={setMessageInfo}
               onSkillIdsChange={setSkillIds}
               enableMention={enableMention}
@@ -1219,6 +1381,175 @@ const ChatInputUnifiedImpl: React.FC<
                             onClick: () =>
                               mentionEditorRef.current?.insertTriggerText('/'),
                           },
+                          {
+                            key: 'connector',
+                            disabled: wholeDisabled,
+                            label: (
+                              <span
+                                className={cx(
+                                  'flex',
+                                  'items-center',
+                                  styles['plus-menu-label'],
+                                )}
+                              >
+                                <span className={styles['trigger-pill']}>
+                                  <LinkOutlined />
+                                </span>
+                                {t(
+                                  'PC.Components.ChatInputHome.plusMenuConnector',
+                                )}
+                                <RightOutlined
+                                  className={cx(styles['plus-menu-arrow'])}
+                                />
+                              </span>
+                            ),
+                            onClick: () =>
+                              mentionEditorRef.current?.openCapabilityWithType?.(
+                                'connector',
+                              ),
+                          },
+                          { type: 'divider', key: 'plus-menu-divider' },
+                          {
+                            // 开关行：点击整行切换并阻止菜单收起
+                            // （Switch 设为 pointer-events:none 纯展示，交互统一由行承接）
+                            key: 'version-control',
+                            label: (
+                              <div
+                                className={cx(
+                                  'flex',
+                                  'items-center',
+                                  'justify-between',
+                                  styles['plus-menu-switch-row'],
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!wholeDisabled && !isSessionActive) {
+                                    setEnableVersionControl(
+                                      !versionControlEnabled,
+                                    );
+                                  }
+                                }}
+                              >
+                                <span
+                                  className={cx(
+                                    'flex',
+                                    'items-center',
+                                    styles['plus-menu-label'],
+                                  )}
+                                >
+                                  <span className={styles['trigger-pill']}>
+                                    <HistoryOutlined />
+                                  </span>
+                                  {t(
+                                    'PC.Components.ChatInputHome.versionControlSwitch',
+                                  )}
+                                </span>
+                                <Switch
+                                  checked={versionControlEnabled === 1}
+                                  disabled={wholeDisabled || isSessionActive}
+                                  aria-label={t(
+                                    'PC.Components.ChatInputHome.versionControlSwitch',
+                                  )}
+                                />
+                              </div>
+                            ),
+                          },
+                          // 变更自动提交行仅在产物版本管理开启时出现
+                          ...(versionControlEnabled === 1
+                            ? [
+                                {
+                                  key: 'auto-commit',
+                                  label: (
+                                    <div
+                                      className={cx(
+                                        'flex',
+                                        'items-center',
+                                        'justify-between',
+                                        styles['plus-menu-switch-row'],
+                                      )}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (
+                                          !wholeDisabled &&
+                                          !isSessionActive
+                                        ) {
+                                          setAutoCommit(!autoCommitEnabled);
+                                        }
+                                      }}
+                                    >
+                                      <span
+                                        className={cx(
+                                          'flex',
+                                          'items-center',
+                                          styles['plus-menu-label'],
+                                        )}
+                                      >
+                                        <span
+                                          className={styles['trigger-pill']}
+                                        >
+                                          <BranchesOutlined />
+                                        </span>
+                                        {t(
+                                          'PC.Components.ChatInputHome.autoCommitSwitch',
+                                        )}
+                                      </span>
+                                      <Switch
+                                        checked={autoCommitEnabled === 1}
+                                        disabled={
+                                          wholeDisabled || isSessionActive
+                                        }
+                                        aria-label={t(
+                                          'PC.Components.ChatInputHome.autoCommitSwitch',
+                                        )}
+                                      />
+                                    </div>
+                                  ),
+                                },
+                              ]
+                            : []),
+                          {
+                            key: 'approval-mode',
+                            label: (
+                              <div
+                                className={cx(
+                                  'flex',
+                                  'items-center',
+                                  'justify-between',
+                                  styles['plus-menu-switch-row'],
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!wholeDisabled && !isSessionActive) {
+                                    setChatboxMode(
+                                      agentMode === 'ask' ? 'yolo' : 'ask',
+                                    );
+                                  }
+                                }}
+                              >
+                                <span
+                                  className={cx(
+                                    'flex',
+                                    'items-center',
+                                    styles['plus-menu-label'],
+                                  )}
+                                >
+                                  <span className={styles['trigger-pill']}>
+                                    <SafetyOutlined />
+                                  </span>
+                                  {t(
+                                    'PC.Components.ChatInputHome.approvalModeSwitch',
+                                  )}
+                                </span>
+                                <Switch
+                                  checked={agentMode === 'ask'}
+                                  disabled={wholeDisabled || isSessionActive}
+                                  aria-label={t(
+                                    'PC.Components.ChatInputHome.approvalModeSwitch',
+                                  )}
+                                />
+                              </div>
+                            ),
+                          },
                         ],
                       }}
                     >
@@ -1278,62 +1609,51 @@ const ChatInputUnifiedImpl: React.FC<
                     </ConditionRender>
                   )}
 
+                  {/* 审批模式回执 pill：开启审批时显示在 + 号旁，x 关闭即切回自动 */}
                   <VoiceFooter.HideWhenActive>
-                    {showAgentModeSelector && (
-                      <Dropdown
-                        menu={{
-                          selectedKeys: [agentMode],
-                          items: AGENT_MODE_OPTIONS.map((mode) => ({
-                            key: mode,
-                            label: (
-                              <div
-                                className={cx(
-                                  styles['agent-mode-dropdown-item'],
-                                )}
-                              >
-                                <div className={cx(styles['item-content'])}>
-                                  <span className={cx(styles['item-name'])}>
-                                    {t(AGENT_MODE_I18N[mode].label)}
-                                  </span>
-                                  <span className={cx(styles['item-desc'])}>
-                                    {t(AGENT_MODE_I18N[mode].desc)}
-                                  </span>
-                                </div>
-                                {agentMode === mode && (
-                                  <CheckOutlined
-                                    className={cx(styles['agent-mode-check'])}
-                                  />
-                                )}
-                              </div>
-                            ),
-                            onClick: () => onAgentModeChange?.(mode),
-                          })),
-                        }}
-                        trigger={['click']}
-                        placement="topLeft"
-                        disabled={wholeDisabled || isSessionActive}
-                        overlayClassName="agent-mode-dropdown-overlay"
+                    {agentMode === 'ask' && (
+                      <Tooltip
+                        title={t(
+                          'PC.Components.ChatInputHome.agentModeApprovalDesc',
+                        )}
                       >
-                        <Tooltip
-                          title={t('PC.Components.ChatInputHome.agentMode')}
+                        <span
+                          className={cx(
+                            'flex',
+                            'items-center',
+                            styles['approval-pill'],
+                            {
+                              [styles.disabled]:
+                                wholeDisabled || isSessionActive,
+                            },
+                          )}
                         >
-                          <span className={cx(styles['agent-mode-select'])}>
-                            <span
-                              className={cx(
-                                styles['agent-mode-trigger'],
-                                styles[`agent-mode-option-${agentMode}`],
-                              )}
-                            >
-                              <span>{t(AGENT_MODE_I18N[agentMode].label)}</span>
-                              <SvgIcon
-                                name="icons-common-caret_down"
-                                style={{ fontSize: '14px' }}
-                                className={cx(styles['agent-mode-arrow'])}
-                              />
-                            </span>
+                          {/* 图标槽：默认盾牌，hover 时切换为关闭 x（CSS 显隐切换） */}
+                          <span
+                            className={cx(
+                              'flex',
+                              'items-center',
+                              'justify-center',
+                              styles['approval-pill-icon-slot'],
+                            )}
+                          >
+                            <SafetyOutlined
+                              className={cx(styles['approval-pill-icon'])}
+                            />
+                            <CloseOutlined
+                              className={cx(styles['approval-pill-close'])}
+                              onClick={() => {
+                                if (!wholeDisabled && !isSessionActive) {
+                                  setChatboxMode('yolo');
+                                }
+                              }}
+                            />
                           </span>
-                        </Tooltip>
-                      </Dropdown>
+                          <span>
+                            {t('PC.Components.ChatInputHome.agentModeApproval')}
+                          </span>
+                        </span>
+                      </Tooltip>
                     )}
                   </VoiceFooter.HideWhenActive>
                   <VoiceFooter.HideWhenActive>
@@ -1370,118 +1690,8 @@ const ChatInputUnifiedImpl: React.FC<
                     )}
                   </VoiceFooter.HideWhenActive>
 
-                  {/* 专家 pill 置于左侧固定按钮尾部：必须排在 ManualComponentItem
-                      之前——其包裹层带 flex-1 会吃掉中间全部剩余空间，放在其后
-                      会被顶到右侧麦克风旁。已选专家回填（非首页场景）：会话仅一个
-                      专家，不进输入框（无 chip），pill 即唯一事实源；与首页
-                      summonedExpert 互斥不共存 */}
-                  {expertComponents.length > 0 && (
-                    <VoiceFooter.HideWhenActive>
-                      <span
-                        className={cx(
-                          'flex',
-                          'items-center',
-                          styles['expert-pill'],
-                        )}
-                      >
-                        <span className={cx(styles['expert-pill-name'])}>
-                          {expertComponents[0].name}
-                        </span>
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label={t('PC.Common.Global.delete')}
-                          className={cx(styles['expert-pill-remove'])}
-                          onClick={() => setExpertComponents([])}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              setExpertComponents([]);
-                            }
-                          }}
-                        >
-                          <CloseOutlined />
-                        </span>
-                      </span>
-                    </VoiceFooter.HideWhenActive>
-                  )}
-
-                  {/* 召唤专家回执 chip（首页场景）：提交时以该专家智能体身份
-                      创建会话；可取消回落原智能体 */}
-                  {summonedExpert && (
-                    <VoiceFooter.HideWhenActive>
-                      <span
-                        className={cx(
-                          'flex',
-                          'items-center',
-                          styles['expert-pill'],
-                        )}
-                      >
-                        {summonedExpert.iconSrc && (
-                          <img
-                            src={summonedExpert.iconSrc}
-                            alt=""
-                            className={cx(styles['expert-pill-icon'])}
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        )}
-                        <span className={cx(styles['expert-pill-name'])}>
-                          {summonedExpert.name}
-                        </span>
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label={t('PC.Common.Global.delete')}
-                          className={cx(styles['expert-pill-remove'])}
-                          onClick={onClearSummonedExpert}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              onClearSummonedExpert?.();
-                            }
-                          }}
-                        >
-                          <CloseOutlined />
-                        </span>
-                      </span>
-                    </VoiceFooter.HideWhenActive>
-                  )}
-
-                  {/* 推荐类型选中回执 pill（首页场景）：不再内联回显输入框行首，
-                      与专家 pill 同款样式/位置；关闭走原 onClearSelectedTag 逻辑
-                      （上层清 selectedRecommend 并清空输入） */}
-                  {!!selectedTag?.label && (
-                    <VoiceFooter.HideWhenActive>
-                      <span
-                        className={cx(
-                          'flex',
-                          'items-center',
-                          styles['expert-pill'],
-                        )}
-                      >
-                        <span className={cx(styles['expert-pill-name'])}>
-                          {selectedTag.label}
-                        </span>
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label={t('PC.Common.Global.delete')}
-                          className={cx(styles['expert-pill-remove'])}
-                          onClick={onClearSelectedTag}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              onClearSelectedTag?.();
-                            }
-                          }}
-                        >
-                          <CloseOutlined />
-                        </span>
-                      </span>
-                    </VoiceFooter.HideWhenActive>
-                  )}
+                  {/* 专家/召唤专家/推荐类型回执 pill 已上框：内联至输入框最前面
+                      （input-line 行首），不再占位工具栏 */}
 
                   {/* 已连接连接器头像组（重叠，最多 3 个，超出尾部 +N）：
                       点击唤起能力弹窗并定位连接器页签；数据在弹窗关闭后刷新 */}
