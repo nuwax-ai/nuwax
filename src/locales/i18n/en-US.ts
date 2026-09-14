@@ -4610,6 +4610,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.NuwaApps.teamSpace": "Team Space",
   "PC.Pages.NuwaApps.all": "All",
   "PC.Pages.NuwaApps.appTag": "App",
+  "PC.Pages.NuwaApps.expand": "Expand",
+  "PC.Pages.NuwaApps.collapse": "Collapse",
   "PC.Pages.Square.Square.plugin": "Plugin",
   "PC.Pages.Square.Square.search": "Search",
   "PC.Pages.Square.Square.selectCategory": "Select category",

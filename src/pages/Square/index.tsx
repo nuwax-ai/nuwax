@@ -1,4 +1,5 @@
 import squareBannerImage from '@/assets/images/square_banner_image2.png';
+import ExpertSummonModal from '@/components/business-component/ExpertSummonModal';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ButtonToggle from '@/components/ButtonToggle';
 import ConditionRender from '@/components/ConditionRender';
@@ -6,6 +7,7 @@ import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import PageCard from '@/components/PageCard';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
+import useAgentPaymentIntercept from '@/hooks/useAgentPaymentIntercept';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
 import useSubscription from '@/hooks/useSubscription';
 import { dict } from '@/services/i18nRuntime';
@@ -128,6 +130,35 @@ const Square: React.FC = () => {
     handleClick,
     handleToggleCollectSuccess,
   } = useSpaceSquare();
+
+  /**
+   * 复核/订阅确认后就地回写列表角标的订阅状态(按 targetId,详情口径为权威),
+   * 供付费智能体拦截 hook 使用
+   */
+  const markAgentSubscribed = useCallback(
+    (targetId: number, subscribed = true) => {
+      setSquareComponentList((prev) =>
+        prev.map((it) =>
+          it.targetId === targetId ? { ...it, subscribed } : it,
+        ),
+      );
+    },
+    [setSquareComponentList],
+  );
+
+  // 付费智能体点击拦截(与专家&专家团页付费专家同口径):
+  // 未订阅的付费智能体点卡片先按详情复核,确认后弹统一专家卡原地订阅/付费,
+  // 不再直接跳详情页;订阅放行后继续原跳转
+  const {
+    paymentItem: agentPaymentItem,
+    closePaymentModal,
+    interceptAgentClick,
+    handleSummonFromCard,
+  } = useAgentPaymentIntercept({
+    enabled: isEnableSubscription,
+    onSubscribed: markAgentSubscribed,
+  });
+
   // 获取租户配置信息
 
   const handleClickSkill = (item: SquarePublishedItemInfo) => {
@@ -570,28 +601,24 @@ const Square: React.FC = () => {
                     categoryTypeRef.current === SquareAgentTypeEnum.Agent ||
                     categoryTypeRef.current === SquareAgentTypeEnum.PageApp
                   ) {
+                    // 付费未订阅的智能体先原地拦截弹统一专家卡订阅/付费
+                    const handleAgentCardClick = () =>
+                      interceptAgentClick(item, () =>
+                        handleClick(
+                          item.targetId,
+                          item.targetType,
+                          'square',
+                          item.ext?.conversationId,
+                        ),
+                      );
                     return (
                       <SingleAgent
                         key={index}
                         extra={paymentExtra}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
-                        onClick={() =>
-                          handleClick(
-                            item.targetId,
-                            item.targetType,
-                            'square',
-                            item.ext?.conversationId,
-                          )
-                        }
-                        onStartUse={() =>
-                          handleClick(
-                            item.targetId,
-                            item.targetType,
-                            'square',
-                            item.ext?.conversationId,
-                          )
-                        }
+                        onClick={handleAgentCardClick}
+                        onStartUse={handleAgentCardClick}
                       />
                     );
                   } else if (
@@ -704,6 +731,32 @@ const Square: React.FC = () => {
             }
             onClose={() => setOpenPaymentModal(false)}
             onSubscribe={createSubscriptionOrder}
+          />
+        </ConditionRender>
+
+        {/* 付费智能体统一专家卡弹窗(与专家&专家团页同款):未订阅的付费
+            智能体点卡片且详情复核确认后弹出,卡内订阅+召唤自闭环;放行后
+            就地更新角标并继续原跳转 */}
+        <ConditionRender condition={isEnableSubscription}>
+          <ExpertSummonModal
+            open={!!agentPaymentItem}
+            expert={
+              agentPaymentItem
+                ? {
+                    targetId: agentPaymentItem.targetId,
+                    name: agentPaymentItem.name,
+                    icon: agentPaymentItem.icon,
+                    description: agentPaymentItem.description,
+                    // 使用人数取统计信息(无值卡内不展示)
+                    userCount: agentPaymentItem.statistics?.userCount,
+                    // 拦截时已按详情复核确认付费未订阅
+                    paymentRequired: true,
+                    subscribed: false,
+                  }
+                : null
+            }
+            onClose={closePaymentModal}
+            onSummon={handleSummonFromCard}
           />
         </ConditionRender>
       </div>

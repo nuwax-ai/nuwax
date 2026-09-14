@@ -76,7 +76,8 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
           ? ('team' as const)
           : source === 'connected'
           ? ('connected' as const)
-          : source === 'enabled'
+          : // "我启用的"仅技能页有对应 tab，连接器页已隐藏（残留 URL 回落系统广场）
+          source === 'enabled' && resourceType === 'skill'
           ? ('enabled' as const)
           : ('system' as const),
       category: searchParams.get('category') || '',
