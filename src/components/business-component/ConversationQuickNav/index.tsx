@@ -17,10 +17,14 @@ import { buildQuickNavBlocks, QuickNavBlock } from './blocks';
  *   <ConversationQuickNav scrollContainerRef={滚动容器Ref} messageList={消息列表} />
  *
  * 挂载要求：
- * - 必须放在「覆盖会话区域、position: relative」的祖先容器内（导航条 absolute
- *   贴该容器左缘，垂直居中点按滚动容器实际几何动态计算，不含标题区）；
+ * - 必须放在「覆盖会话区域、position: relative」的祖先容器内（作为水平定位
+ *   基准：导航条 left=该容器左缘再左移 NAV_LEFT_INSET，垂直居中点按滚动容器
+ *   实际几何动态计算，不含标题区）；
  * - scrollContainerRef 指向消息滚动容器（overflow: auto）；
- * - messageList 为该会话的 MessageInfo[]（消息需含服务端 id、role、文本）。
+ * - messageList 为该会话的 MessageInfo[]（消息需含服务端 id、role、文本）；
+ * - 导航条 position:fixed 按视口坐标定位（左右多层 overflow 祖先会裁剪负偏移，
+ *   fixed 不受影响）；挂载点到视口之间不得出现带 transform/filter 的祖先
+ *   （会使 fixed 退化为相对该祖先定位）。
  *
  * 行为：块数 ≥4 且内容可滚动（scrollHeight ≥ 1.5×clientHeight）且容器宽 ≥600px
  * 时才显示；点击平滑定位到对应轮次；鼠标滑过时线条波浪式变长；样式在
@@ -36,12 +40,17 @@ const ACTIVE_THRESHOLD_RATIO = 0.35;
 
 /**
  * 波浪：悬停点线条峰值宽度增量（px）与衰减半径（px）。
- * 参考图：常态 15px、峰值 30px、相邻约 20px，隔一条回到常态。
+ * 用户调参（2026-09-14）：整体缩小一档——常态 12px、峰值 24px、相邻约 16px。
  */
-const WAVE_MAX_EXTRA = 15;
+const WAVE_MAX_EXTRA = 12;
 const WAVE_SIGMA = 7;
 /** 线条基础宽度（与 global.less 中 .conversation-quick-nav-line 的 width 一致） */
-const LINE_BASE_WIDTH = 15;
+const LINE_BASE_WIDTH = 12;
+/**
+ * 左移量（px）：导航条 fixed 定位，left=定位上下文左缘再左移该值，
+ * 进入内容区左缘留白（session-container 外层 main-content-box 的 20px 内边距）
+ */
+const NAV_LEFT_INSET = 10;
 
 interface ConversationQuickNavProps {
   scrollContainerRef: React.RefObject<HTMLDivElement>;
@@ -57,10 +66,12 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
   const [activeIndex, setActiveIndex] = useState(-1);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   /**
-   * 相对定位上下文（session-container）的垂直居中点：
+   * 垂直居中点（视口坐标，fixed 定位）：
    * 以消息滚动容器（不含顶部标题区）的几何计算，rAF/ResizeObserver 时随动
    */
   const [centerTop, setCenterTop] = useState<number | null>(null);
+  /** 左缘（视口坐标）= 定位上下文左缘 - NAV_LEFT_INSET */
+  const [navLeft, setNavLeft] = useState<number | null>(null);
   const rafRef = useRef(0);
   const navRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef<Array<HTMLButtonElement | null>>([]);
@@ -164,14 +175,15 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
     const container = scrollContainerRef.current;
     if (!container) return;
     const { scrollHeight, clientHeight, clientWidth, scrollTop } = container;
-    // 垂直居中参考=滚动容器（消息区）自身，标题区等 session 内其它部分不参与
+    // 垂直居中参考=滚动容器（消息区）自身，标题区等 session 内其它部分不参与；
+    // 导航条 fixed 按视口坐标定位，水平锚=定位上下文（offsetParent）左缘再左移
     const sessionEl = container.offsetParent;
     if (sessionEl) {
-      const top =
-        container.getBoundingClientRect().top -
-        sessionEl.getBoundingClientRect().top +
-        clientHeight / 2;
+      const containerRect = container.getBoundingClientRect();
+      const top = containerRect.top + clientHeight / 2;
       setCenterTop((prev) => (prev === top ? prev : top));
+      const left = sessionEl.getBoundingClientRect().left - NAV_LEFT_INSET;
+      setNavLeft((prev) => (prev === left ? prev : left));
     }
     const nextVisible =
       blocks.length >= MIN_BLOCK_COUNT &&
@@ -287,6 +299,21 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
     };
   }, [scrollContainerRef, scheduleMeasure]);
 
+  // fixed 视口坐标随窗口尺寸/整页滚动保持贴合：内容区位移但尺寸不变时
+  // （如宿主页重排）ResizeObserver 不触发，须靠窗口级事件兜底
+  useEffect(() => {
+    const onWinScroll = () => scheduleMeasure();
+    window.addEventListener('resize', scheduleMeasure, { passive: true });
+    window.addEventListener('scroll', onWinScroll, {
+      passive: true,
+      capture: true,
+    });
+    return () => {
+      window.removeEventListener('resize', scheduleMeasure);
+      window.removeEventListener('scroll', onWinScroll, { capture: true });
+    };
+  }, [scheduleMeasure]);
+
   const jumpToBlock = useCallback(
     (block: QuickNavBlock) => {
       const container = scrollContainerRef.current;
@@ -327,7 +354,11 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       className="conversation-quick-nav"
       data-testid="conversation-quick-nav"
       aria-label={t('PC.Components.ConversationQuickNav.tooltip')}
-      style={centerTop !== null ? { top: centerTop } : undefined}
+      style={
+        centerTop !== null && navLeft !== null
+          ? { top: centerTop, left: navLeft }
+          : undefined
+      }
       onMouseEnter={(e) => {
         readCenters();
         const index = linesRef.current.indexOf(e.target as HTMLButtonElement);

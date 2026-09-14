@@ -146,9 +146,9 @@ const mockLineRects = (lines: HTMLElement[]) => {
       y: top,
       left: 0,
       top,
-      right: 15,
+      right: 12,
       bottom: top + 8,
-      width: 15,
+      width: 12,
       height: 8,
     } as DOMRect);
   });
@@ -225,7 +225,29 @@ describe('ConversationQuickNav 组件', () => {
     );
   });
 
-  it('鼠标进入即形成参考图的 15→20→30px 波浪，离开后复位（不依赖 rAF）', () => {
+  it('fixed 定位：左缘=定位上下文左缘左移 10px、顶=滚动容器视口垂直中心', () => {
+    const container = buildContainer();
+    const sessionEl = document.createElement('div');
+    vi.spyOn(sessionEl, 'getBoundingClientRect').mockReturnValue({
+      left: 300,
+    } as DOMRect);
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      left: 300,
+      top: 100,
+    } as DOMRect);
+    Object.defineProperty(container, 'offsetParent', {
+      value: sessionEl,
+      configurable: true,
+    });
+
+    renderNav(container, longMessageList());
+    const nav = screen.getByTestId('conversation-quick-nav');
+    // top = 容器视口顶 100 + clientHeight 800 / 2；left = 定位上下文 300 - 10
+    expect(nav.style.top).toBe('500px');
+    expect(nav.style.left).toBe('290px');
+  });
+
+  it('鼠标进入即形成 12→16→24px 波浪，离开后复位（不依赖 rAF）', () => {
     const container = buildContainer();
     renderNav(container, longMessageList());
     const nav = screen.getByTestId('conversation-quick-nav');
