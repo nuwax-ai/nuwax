@@ -67,7 +67,9 @@ export type UserProjectPageQueryParams = TablePageRequest<
     projectType: AgentComponentTypeEnum;
     // 项目名称（模糊匹配）
     name: string;
-    // 收藏过滤：all=全部（后端默认）；only=仅收藏（2026-09-13 契约先行，UI 暂未消费）
+    // 收藏过滤：all=全部（后端默认）；only=仅收藏。2026-09-14 两接口统一：
+    // tab 接口废弃，统一接口（page-query）已支持本参数（历史会话页「项目」tab 消费）；
+    // 归档维度仍无对应参数，消费侧按回包打标前端过滤
     collectedFilter: 'all' | 'only';
   }>
 >;
@@ -161,8 +163,11 @@ export interface UserProjectPageResult {
 }
 
 /**
- * tab 项目条目：/api/user-project/tab/page-query 记录行（2026-09-08 新接口，实测契约）。
+ * tab 项目条目：项目列表查询接口的记录行（2026-09-08 tab 接口实测契约）。
  * 与 UserProjectItem 的差异：主键字段为 projectId、无 publishStatus、附带项目下会话列表。
+ * 2026-09-14 两接口统一后行结构不变（projectId 主键 + 打标字段），仅
+ * conversations 不再随列表回包（统一接口不附带，展开项目时经
+ * /api/user-project/conversations/{projectId} 懒加载填充），类型上保持可选兼容两种来源。
  */
 export interface UserProjectTabItem {
   /** 项目ID（UserApp/NormalProject 即 app_id） */
@@ -191,7 +196,7 @@ export interface UserProjectTabItem {
    * 首页走「提示手动选择」降级路径）。
    */
   devAgentId?: number;
-  /** 项目下的会话列表（tab 接口附带返回） */
+  /** 项目下的会话列表（tab 接口随列表附带；统一接口不回包，展开时懒加载填充） */
   conversations?: ConversationInfo[];
   /**
    * 项目置顶标记（wiki 2026-09-11 契约先行：后端 pin/archive 接口已就位，

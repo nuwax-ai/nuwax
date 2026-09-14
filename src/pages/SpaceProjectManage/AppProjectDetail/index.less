@@ -9,6 +9,7 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  gap: @marginXs;
   height: calc(@controlHeightLg + @padding);
   padding: 0 @paddingLg;
   background: @colorBgContainer;
@@ -17,7 +18,6 @@
 
 .back {
   color: @colorTextSecondary;
-  margin-right: @marginXs;
 }
 
 .project-name {
@@ -31,9 +31,39 @@
 
 .tabs {
   display: flex;
-  align-items: stretch;
   height: 100%;
   margin-left: @marginXs;
+
+  :global(.ant-tabs-nav) {
+    height: 100%;
+    margin: 0;
+
+    &::before {
+      border-bottom: none;
+    }
+  }
+
+  :global(.ant-tabs-tab) {
+    padding: 0 @paddingSm;
+    color: @colorTextSecondary;
+    font-size: @fontSize;
+  }
+
+  :global(.ant-tabs-tab + .ant-tabs-tab) {
+    margin: 0;
+  }
+
+  :global(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn) {
+    color: @colorPrimary;
+    font-weight: @fontWeightStrong;
+    text-shadow: none;
+  }
+
+  :global(.ant-tabs-ink-bar) {
+    height: @lineWidthBold;
+    background: @colorPrimary;
+    border-radius: @borderRadiusXs;
+  }
 }
 
 .header-actions {
@@ -49,33 +79,6 @@
   &:hover,
   &.active {
     color: @colorPrimary;
-  }
-}
-
-.tab {
-  position: relative;
-  height: 100%;
-  padding: 0 @padding;
-  border: none;
-  background: transparent;
-  color: @colorTextSecondary;
-  font-size: @fontSize;
-  cursor: pointer;
-
-  &.active {
-    color: @colorText;
-    font-weight: @fontWeightStrong;
-
-    &::after {
-      content: '';
-      position: absolute;
-      left: @padding;
-      right: @padding;
-      bottom: 0;
-      height: @lineWidthBold;
-      background: @colorPrimary;
-      border-radius: @borderRadiusXs;
-    }
   }
 }
 

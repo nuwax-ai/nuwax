@@ -1,0 +1,242 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+// 视图分类 tab（全部 / 已收藏 / 已归档）：圆角胶囊 pill，
+// 样式对齐女娲应用页（NuwaApps）二级筛选 category-tab，与任务 tab（ConversationList）同款
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 12px;
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  padding: 3px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: @fontSizeSm;
+  color: @GRAY05;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: @BLANK04;
+    background-color: @WHITE04;
+  }
+}
+
+.tab-active {
+  color: @BLANK04;
+  background-color: @WHITE08;
+  font-weight: 500;
+}
+
+.container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden; /* 默认隐藏，配合全局 .scroll-container 在 hover 时显示 */
+  transition: overflow 0.3s;
+
+  .list-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+}
+
+.project-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-item {
+  min-height: 56px;
+  padding: 15px;
+  background: var(--ant-color-bg-container);
+  border-radius: 10px;
+  cursor: pointer;
+  // 只过渡背景色：all 会把 hover 期任何意外布局差值做成动画（列表抖动放大器）
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    background: #f7f7f7;
+
+    .right-area {
+      .date {
+        opacity: 0;
+      }
+
+      .more-btn {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+  }
+
+  .project-icon {
+    font-size: 16px;
+    color: rgba(0, 0, 0, 45%);
+    flex-shrink: 0;
+  }
+
+  .pin-icon {
+    font-size: 12px;
+    color: var(--ant-color-primary);
+    flex-shrink: 0;
+  }
+
+  .name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 90%);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .type-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 45%);
+    background-color: rgba(0, 0, 0, 4%);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .right-area {
+    // 固定高度 + 按钮绝对定位：hover 日期↔⋯ 换位零布局变化（防列表抖动）
+    position: relative;
+    flex-shrink: 0;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .date {
+      font-size: 12px;
+      color: rgba(0, 0, 0, 45%);
+      transition: opacity 0.2s;
+    }
+
+    .more-btn {
+      position: absolute;
+      // 让出右侧箭头位（arrow 18px + gap 8px），叠在日期区域原位显隐
+      right: 26px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      color: rgba(0, 0, 0, 45%);
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none; // 隐态不拦截点击（避免盖住行点击热区）
+      transition: opacity 0.2s, color 0.2s, background-color 0.2s;
+
+      &:hover {
+        color: var(--ant-color-primary);
+        background-color: rgba(0, 0, 0, 5%);
+      }
+    }
+
+    .arrow {
+      flex-shrink: 0;
+      color: rgba(0, 0, 0, 45%);
+      transition: transform 0.2s;
+    }
+
+    .arrow-expanded {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.children {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 23px; // 与项目行图标列对齐（15px 内边距 + 16px 图标 - 8px 间隙折算）
+}
+
+.child {
+  min-height: 44px;
+  padding: 10px 15px;
+  background: var(--ant-color-bg-container);
+  border-radius: 8px;
+  cursor: pointer;
+  // 只过渡背景色（同项目行，防 hover 布局差值被动画放大）
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  &:hover {
+    background: #f7f7f7;
+
+    .child-meta .date {
+      opacity: 0;
+    }
+  }
+
+  .child-topic {
+    flex: 1;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 85%);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .child-meta {
+    flex-shrink: 0;
+    // 固定高度：日期(17px)与 ⋯ 按钮(28px) 换位不改变行高（防抖动）
+    height: 28px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .date {
+      font-size: 12px;
+      color: rgba(0, 0, 0, 45%);
+      transition: opacity 0.2s;
+    }
+  }
+}
+
+.child-empty {
+  cursor: default;
+  font-size: 12px;
+  color: var(--ant-color-text-description);
+  justify-content: flex-start;
+}
+
+.loading,
+.nomore {
+  text-align: center;
+  padding: 12px 0;
+  color: var(--ant-color-text-description);
+  font-size: 12px;
+}

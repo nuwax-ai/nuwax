@@ -12,9 +12,10 @@ import type {
   UserProjectConversationInfo,
 } from '@/types/interfaces/userProject';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
-import { Button, Empty } from 'antd';
+import type { TabsProps } from 'antd';
+import { Button, Empty, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
 import ConversationPanel from '../components/ConversationPanel';
 import { apiUserProjectConversations } from '../services';
@@ -70,6 +71,23 @@ const NormalProjectDetail: React.FC = () => {
   >([]);
   const [conversationPanelVisible, setConversationPanelVisible] =
     useState(true);
+
+  /** 顶部 Tab 仅负责切换状态，内容由页面主体区域统一渲染 */
+  const tabItems = useMemo<TabsProps['items']>(
+    () => [
+      {
+        key: 'plan',
+        label: dict('PC.Pages.NormalProjectDetail.tabPlan'),
+        children: null,
+      },
+      {
+        key: 'asset',
+        label: dict('PC.Pages.NormalProjectDetail.tabAsset'),
+        children: null,
+      },
+    ],
+    [],
+  );
 
   /** 获取常规项目详情并回填标题 */
   const { run: runGetProject, loading: projectLoading } = useRequest(
@@ -132,6 +150,11 @@ const NormalProjectDetail: React.FC = () => {
     setConversationPanelVisible((visible) => !visible);
   }, []);
 
+  /** 切换顶部 Tab */
+  const handleTabChange = useCallback((key: string) => {
+    setActiveTab(key as DetailTabKey);
+  }, []);
+
   /** 打开右侧任务对应的常规项目会话 */
   const handleOpenConversation = useCallback(
     (item: UserProjectConversationInfo) => {
@@ -184,23 +207,12 @@ const NormalProjectDetail: React.FC = () => {
         <h3 className={cx(styles['project-name'], 'text-ellipsis')}>
           {projectName || dict('PC.Pages.NormalProjectDetail.untitled')}
         </h3>
-        <div className={cx(styles.tabs)}>
-          {(
-            [
-              ['plan', 'PC.Pages.NormalProjectDetail.tabPlan'],
-              ['asset', 'PC.Pages.NormalProjectDetail.tabAsset'],
-            ] as const
-          ).map(([key, labelKey]) => (
-            <button
-              key={key}
-              type="button"
-              className={cx(styles.tab, { [styles.active]: activeTab === key })}
-              onClick={() => setActiveTab(key)}
-            >
-              {dict(labelKey)}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          className={cx(styles.tabs)}
+          activeKey={activeTab}
+          items={tabItems}
+          onChange={handleTabChange}
+        />
         <div className={cx(styles['header-actions'])}>
           <TooltipIcon
             title={

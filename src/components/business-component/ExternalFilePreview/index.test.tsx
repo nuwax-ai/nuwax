@@ -1,11 +1,14 @@
 /**
  * 工作区外沙箱文件独立预览面板单测：
- * 1. 头部展示沙箱绝对路径（targetDir + relativePath 拼接归一）；
- * 2. 传入 onBack 时渲染返回入口，点击回退（本面板整块顶替文件树面板，
+ * 1. 直连静态代理地址契约锚定：
+ *    /api/computer/static/{cId}/{fileName}?t=…&customTargetDir={文件所在父目录绝对路径}
+ *    （customTargetDir=父目录而非家目录锚，URL 段只带末段文件名，t 防缓存）；
+ * 2. 头部展示沙箱内绝对路径（targetDir + relativePath 拼接归一）；
+ * 3. 传入 onBack 时渲染返回入口，点击回退（本面板整块顶替文件树面板，
  *    文件树/终端/云电脑同时不可见，必须留一条回工作区的退路）；
- * 3. 未传 onBack 时不渲染返回入口（向后兼容，交由调用方决定是否提供）。
+ * 4. 未传 onBack 时不渲染返回入口（向后兼容，交由调用方决定是否提供）。
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/services/i18nRuntime', () => ({
@@ -16,12 +19,10 @@ vi.mock('./index.less', () => ({
   default: new Proxy({}, { get: () => 'cls' }),
 }));
 
-vi.mock('@/services/vncDesktop', () => ({
-  apiGetStaticFileList: vi.fn(),
-}));
-
 vi.mock('@/components/business-component/FilePreview', () => ({
-  default: () => <div data-testid="file-preview" />,
+  default: ({ src }: { src: string }) => (
+    <div data-testid="file-preview" data-src={src} />
+  ),
 }));
 
 vi.mock('@/components/base/CopyIconButton', () => ({
@@ -39,14 +40,10 @@ vi.mock('@/components/custom/TooltipIcon', () => ({
   ),
 }));
 
-import { apiGetStaticFileList } from '@/services/vncDesktop';
 import ExternalFilePreview from './index';
-
-const fileListMock = vi.mocked(apiGetStaticFileList);
 
 afterEach(() => {
   vi.restoreAllMocks();
-  fileListMock.mockReset();
 });
 
 const renderPreview = (
@@ -62,41 +59,45 @@ const renderPreview = (
   );
 
 describe('ExternalFilePreview', () => {
-  it('头部展示沙箱内绝对路径', async () => {
-    fileListMock.mockResolvedValue({ code: 0, data: { files: [] } } as any);
-
+  it('直连静态代理地址：customTargetDir=文件父目录，URL 段只带文件名', () => {
     renderPreview();
 
-    await waitFor(() => {
-      expect(
-        screen.getByText('/home/user/Desktop/note.md'),
-      ).toBeInTheDocument();
-    });
+    expect(screen.getByTestId('file-preview').dataset.src).toMatch(
+      /^\/api\/computer\/static\/100\/note\.md\?t=\d+&customTargetDir=%2Fhome%2Fuser%2FDesktop$/,
+    );
   });
 
-  it('传入 onBack 时渲染返回入口，点击回调一次', async () => {
-    fileListMock.mockResolvedValue({ code: 0, data: { files: [] } } as any);
+  it('多级目录：父目录拼完整相对目录段', () => {
+    renderPreview({ relativePath: 'Desktop/sub/报告 v2.md' });
+
+    expect(screen.getByTestId('file-preview').dataset.src).toMatch(
+      /^\/api\/computer\/static\/100\/%E6%8A%A5%E5%91%8A%20v2\.md\?t=\d+&customTargetDir=%2Fhome%2Fuser%2FDesktop%2Fsub$/,
+    );
+  });
+
+  it('头部展示沙箱内绝对路径', () => {
+    renderPreview();
+
+    expect(screen.getByText('/home/user/Desktop/note.md')).toBeInTheDocument();
+  });
+
+  it('传入 onBack 时渲染返回入口，点击回调一次', () => {
     const onBack = vi.fn();
 
     renderPreview({ onBack });
 
-    const back = await screen.findByLabelText(
-      'PC.Pages.Chat.externalFilePreviewBack',
+    fireEvent.click(
+      screen.getByLabelText('PC.Pages.Chat.externalFilePreviewBack'),
     );
-    fireEvent.click(back);
 
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it('未传 onBack 时不渲染返回入口', async () => {
-    fileListMock.mockResolvedValue({ code: 0, data: { files: [] } } as any);
-
+  it('未传 onBack 时不渲染返回入口', () => {
     renderPreview();
 
-    await waitFor(() => {
-      expect(
-        screen.queryByLabelText('PC.Pages.Chat.externalFilePreviewBack'),
-      ).toBeNull();
-    });
+    expect(
+      screen.queryByLabelText('PC.Pages.Chat.externalFilePreviewBack'),
+    ).toBeNull();
   });
 });
