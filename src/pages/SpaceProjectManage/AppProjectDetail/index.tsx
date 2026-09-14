@@ -674,6 +674,8 @@ const AppProjectDetail: React.FC = () => {
         <p className={cx(styles['card-desc'])}>
           {dict('PC.Pages.AppProjectDetail.deployDesc')}
         </p>
+
+        {/* 平台服务或者私有服务器部署选择区域 */}
         <Radio.Group
           className={cx(styles['deploy-options'])}
           value={deployMode}
@@ -715,11 +717,14 @@ const AppProjectDetail: React.FC = () => {
             </div>
           </div>
         </Radio.Group>
+
+        {/* 平台服务部署提示 */}
         {deployMode === UserAppDeployTypeEnum.Platform ? (
           <p className={cx(styles['deploy-footer'])}>
             {dict('PC.Pages.AppProjectDetail.platformHint')}
           </p>
         ) : (
+          // 私有服务器部署区域，私有服务器列表
           <PrivateServerPanel
             servers={privateServers}
             loading={privateServerLoading}
