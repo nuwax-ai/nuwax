@@ -8,6 +8,13 @@ html {
   height: 100%;
   min-width: 1200px; //TODO 这个要和UI 确认
   background-color: #fff;
+
+  // 单栏风格（style3）：侧边面板固定、滚动区域收敛在 page-container，
+  // 不再强制全局最小宽（否则窗口有效宽度窄于 1200px 时，任何页面都会出现
+  // 窗口级常驻横向滚动条）
+  &[data-nav-style='sidebar'] {
+    min-width: 0;
+  }
 }
 
 #root {
@@ -203,7 +210,8 @@ body {
 // ============================================
 .conversation-quick-nav {
   position: absolute;
-  left: 0;
+  // 负偏移让线条压过内容区左缘一点（经 session-container overflow:hidden 实测不裁剪）
+  left: -6px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 12;
@@ -223,16 +231,18 @@ body {
 
 // 等宽细线形态：常态浅灰、当前视口所在块深色。
 // 视觉线由 ::before 绘制（2px、随按钮宽度），按钮本体高 10px 作为鼠标热区；
-// hover 变长由组件的波浪逻辑直改按钮宽度驱动（此处只管变色）
+// hover 变长由组件的波浪逻辑直改按钮 transform: scaleX 驱动（不触发布局），
+// 因此 transform-origin 固定左缘、向右伸展；此处只管变色
 .conversation-quick-nav-line {
   position: relative;
   flex-shrink: 0;
-  width: 20px;
+  width: 5px;
   height: 10px;
   padding: 0;
   border: none;
   background: transparent;
   cursor: pointer;
+  transform-origin: left center;
 
   &::before {
     content: '';
@@ -243,7 +253,7 @@ body {
     height: 2px;
     border-radius: 1px;
     background-color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 18%));
-    transition: width 0.15s ease, background-color 0.2s ease;
+    transition: background-color 0.2s ease;
   }
 
   &:hover::before {
