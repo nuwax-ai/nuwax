@@ -40,6 +40,7 @@ import {
   apiThirdAppOauth2CredentialRegenerate,
   apiThirdAppOauth2SecretGet,
   apiThirdAppOauth2SettingGet,
+  apiThirdAppOauth2SettingSave,
   type ThirdAppOauth2CredentialInfo,
   type ThirdAppOauth2Info,
 } from '../services/thirdAppOauth2';
@@ -265,6 +266,25 @@ const AppProjectSetting: React.FC = () => {
     },
   );
 
+  /** 保存 OAuth2 主页地址与回调地址 */
+  const { run: runSaveOauthSetting, loading: saveOauthLoading } = useRequest(
+    apiThirdAppOauth2SettingSave,
+    {
+      manual: true,
+      onSuccess: (
+        result: ThirdAppOauth2Info | RequestResponse<ThirdAppOauth2Info>,
+      ) => {
+        const info = pickResponseData(result);
+        if (info) {
+          setOauthInfo(info);
+          setHomepageUrl(info.homepageUrl || '');
+          setRedirectUri(info.redirectUri || '');
+        }
+        message.success(dict('PC.Common.Global.saveSuccess'));
+      },
+    },
+  );
+
   /**
    * 进入设置 Tab 后拉 OAuth2 配置；已生成 Secret 再取明文。
    */
@@ -452,6 +472,20 @@ const AppProjectSetting: React.FC = () => {
   }, [appId, runRegenerate]);
 
   /**
+   * 保存主页地址与回调地址；空字符串按接口约定视为不修改。
+   */
+  const handleSaveOauthSetting = useCallback(() => {
+    if (!appId) {
+      return;
+    }
+    runSaveOauthSetting({
+      projectId: appId,
+      homepageUrl: homepageUrl.trim() || undefined,
+      redirectUri: redirectUri.trim() || undefined,
+    });
+  }, [appId, homepageUrl, redirectUri, runSaveOauthSetting]);
+
+  /**
    * 主页 / 回调地址：有值回填 Input，无值显示空输入框。
    *
    * @param label 字段名
@@ -565,19 +599,26 @@ const AppProjectSetting: React.FC = () => {
             setRedirectUri,
             dict('PC.Pages.AppProjectSetting.callbackUrlPlaceholder'),
           )}
+          <div className={cx(styles['regen-row'])}>
+            <Button
+              type="primary"
+              loading={saveOauthLoading}
+              onClick={handleSaveOauthSetting}
+            >
+              {dict('PC.Common.Global.save')}
+            </Button>
+            <Button
+              icon={<ReloadOutlined />}
+              loading={regenerateLoading}
+              onClick={handleRegenerate}
+            >
+              {dict('PC.Pages.AppProjectSetting.regenerate')}
+            </Button>
+            <span className={cx(styles['regen-hint'])}>
+              {dict('PC.Pages.AppProjectSetting.regenerateHint')}
+            </span>
+          </div>
         </Spin>
-        <div className={cx(styles['regen-row'])}>
-          <Button
-            icon={<ReloadOutlined />}
-            loading={regenerateLoading}
-            onClick={handleRegenerate}
-          >
-            {dict('PC.Pages.AppProjectSetting.regenerate')}
-          </Button>
-          <span className={cx(styles['regen-hint'])}>
-            {dict('PC.Pages.AppProjectSetting.regenerateHint')}
-          </span>
-        </div>
       </section>
 
       <section className={cx(styles.card)}>
