@@ -4336,6 +4336,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.Square.Square.defaultAgentNotConfigured": "站點預設通用型智慧體未設定",
   "PC.Pages.Square.Square.onlyOfficial": "僅檢視官方{0}",
   "PC.Pages.Square.Square.pageApp": "網頁應用",
+  "PC.Pages.Square.Square.userApp": "全棧應用",
   // 女媧應用頁
   "PC.Pages.NuwaApps.title": "女媧應用",
   "PC.Pages.NuwaApps.searchPlaceholder": "搜尋應用",

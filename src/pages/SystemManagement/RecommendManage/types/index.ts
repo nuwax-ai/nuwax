@@ -16,6 +16,7 @@ export enum DisplayRecTypeEnum {
 export enum DisplayRecommendTargetTypeEnum {
   Agent = 'Agent',
   PageApp = 'PageApp',
+  UserApp = 'UserApp',
   Skill = 'Skill',
   Plugin = 'Plugin',
   Workflow = 'Workflow',
@@ -106,7 +107,7 @@ export interface DisplayRecommendListParams {
   /*推荐类型：Home、Official、ChatBoxNav */
   recType: DisplayRecTypeEnum;
 
-  /*目标类型：Agent、PageApp、Skill、Plugin、Workflow */
+  /*目标类型：Agent、PageApp、UserApp、Skill、Plugin、Workflow */
   targetType?: DisplayRecommendTargetTypeEnum;
 
   /*分类 */

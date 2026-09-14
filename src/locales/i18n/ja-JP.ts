@@ -4321,6 +4321,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Square.Square.defaultAgentNotConfigured": "サイトのデフォルトの汎用エージェントが構成されていません",
   "PC.Pages.Square.Square.onlyOfficial": "公式{0}のみ",
   "PC.Pages.Square.Square.pageApp": "ウェブアプリ",
+  "PC.Pages.Square.Square.userApp": "フルスタックアプリ",
   // 女媧アプリページ
   "PC.Pages.NuwaApps.title": "女媧アプリ",
   "PC.Pages.NuwaApps.searchPlaceholder": "アプリを検索",

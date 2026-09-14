@@ -1,5 +1,6 @@
 import {
   apiPublishedAgentList,
+  apiPublishedAppList,
   apiPublishedPluginList,
   apiPublishedSkillList,
   apiPublishedWorkflowList,
@@ -52,6 +53,17 @@ export const PUBLISHED_TARGET_SOURCE_MAP: Record<
       kw,
       targetType: AgentComponentTypeEnum.Agent,
       targetSubType: 'PageApp',
+    }),
+  },
+  [DisplayRecommendTargetTypeEnum.UserApp]: {
+    fetchApi: apiPublishedAppList,
+    buildParams: (page, pageSize, kw) => ({
+      page,
+      pageSize,
+      category: '',
+      kw,
+      targetType: AgentComponentTypeEnum.UserApp,
+      targetSubType: 'UserApp',
     }),
   },
   [DisplayRecommendTargetTypeEnum.Skill]: {
