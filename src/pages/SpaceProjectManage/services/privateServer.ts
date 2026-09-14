@@ -95,7 +95,11 @@ export async function apiPrivateServerGet(
   });
 }
 
-/** 健康检查（指定私服，仅检查地址是否可达） */
+/**
+ * 健康检查（指定私服，仅检查地址是否可达）
+ * @param id 私服 ID
+ * @returns true 在线，false 离线
+ */
 export async function apiPrivateServerHealthCheck(
   id: number,
 ): Promise<RequestResponse<boolean>> {

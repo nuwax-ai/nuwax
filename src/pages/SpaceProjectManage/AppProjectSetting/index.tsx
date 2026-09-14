@@ -16,17 +16,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import {
-  Button,
-  Empty,
-  Form,
-  Input,
-  message,
-  Modal,
-  Radio,
-  Select,
-  Spin,
-} from 'antd';
+import { Button, Empty, Form, Input, message, Modal, Radio, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
@@ -38,6 +28,10 @@ import {
   type UserAppDomainInfo,
 } from '../../AppDevPro/services/appDomain';
 import {
+  apiPrivateServerList,
+  type PrivateServerInfo,
+} from '../services/privateServer';
+import {
   apiThirdAppOauth2CredentialRegenerate,
   apiThirdAppOauth2SecretGet,
   apiThirdAppOauth2SettingGet,
@@ -46,6 +40,7 @@ import {
 } from '../services/thirdAppOauth2';
 import { openProject } from '../type';
 import ConversationPanel from './components/ConversationPanel';
+import PrivateServerPanel from './components/PrivateServerPanel';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -101,10 +96,6 @@ const AppProjectSetting: React.FC = () => {
   const [deployMode, setDeployMode] = useState<'platform' | 'private'>(
     'platform',
   );
-  const [protocol, setProtocol] = useState<'http' | 'https'>('https');
-  const [serverIp, setServerIp] = useState('');
-  const [appPort, setAppPort] = useState('');
-  const [managePort, setManagePort] = useState('');
   const [bindOpen, setBindOpen] = useState(false);
   const [bindDomain, setBindDomain] = useState('');
   const [oauthInfo, setOauthInfo] = useState<ThirdAppOauth2Info>();
@@ -113,6 +104,7 @@ const AppProjectSetting: React.FC = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [homepageUrl, setHomepageUrl] = useState('');
   const [redirectUri, setRedirectUri] = useState('');
+  const [privateServers, setPrivateServers] = useState<PrivateServerInfo[]>([]);
 
   const { run, loading } = useRequest(
     () =>
@@ -146,25 +138,22 @@ const AppProjectSetting: React.FC = () => {
     },
   );
 
-  const { run: runDomainList } = useRequest(
-    apiUserAppDomainList,
-    {
-      manual: true,
-      onSuccess: (
-        result: UserAppDomainInfo[] | { data?: UserAppDomainInfo[] },
-      ) => {
-        const list = Array.isArray(result)
-          ? result
-          : Array.isArray((result as { data?: UserAppDomainInfo[] })?.data)
-          ? (result as { data: UserAppDomainInfo[] }).data
-          : [];
-        setDomains(list);
-      },
-      onError: () => {
-        setDomains([]);
-      },
+  const { run: runDomainList } = useRequest(apiUserAppDomainList, {
+    manual: true,
+    onSuccess: (
+      result: UserAppDomainInfo[] | { data?: UserAppDomainInfo[] },
+    ) => {
+      const list = Array.isArray(result)
+        ? result
+        : Array.isArray((result as { data?: UserAppDomainInfo[] })?.data)
+        ? (result as { data: UserAppDomainInfo[] }).data
+        : [];
+      setDomains(list);
     },
-  );
+    onError: () => {
+      setDomains([]);
+    },
+  });
 
   const { run: runBindDomain, loading: bindLoading } = useRequest(
     apiUserAppDomainCreate,
@@ -179,6 +168,20 @@ const AppProjectSetting: React.FC = () => {
     },
   );
 
+  const { run: runPrivateServerList, loading: privateServerLoading } =
+    useRequest(apiPrivateServerList, {
+      manual: true,
+      onSuccess: (
+        result: PrivateServerInfo[] | RequestResponse<PrivateServerInfo[]>,
+      ) => {
+        const list = Array.isArray(result) ? result : pickResponseData(result);
+        setPrivateServers(Array.isArray(list) ? list : []);
+      },
+      onError: () => {
+        setPrivateServers([]);
+      },
+    });
+
   const { run: runUnbindDomain } = useRequest(apiUserAppDomainDelete, {
     manual: true,
     onSuccess: () => {
@@ -192,7 +195,9 @@ const AppProjectSetting: React.FC = () => {
     {
       manual: true,
       onSuccess: (
-        result: RequestResponse<ThirdAppOauth2CredentialInfo> | ThirdAppOauth2CredentialInfo,
+        result:
+          | RequestResponse<ThirdAppOauth2CredentialInfo>
+          | ThirdAppOauth2CredentialInfo,
       ) => {
         const credential = pickResponseData(result);
         if (!credential?.clientId) {
@@ -266,6 +271,17 @@ const AppProjectSetting: React.FC = () => {
     }
     void loadOauthSetting();
   }, [activeTab, appId, loadOauthSetting]);
+
+  /** 切换发布位置；选私有服务器时再拉私服列表 */
+  const handleSelectDeployMode = useCallback(
+    (mode: 'platform' | 'private') => {
+      setDeployMode(mode);
+      if (mode === 'private') {
+        runPrivateServerList();
+      }
+    },
+    [runPrivateServerList],
+  );
 
   const customDomains = useMemo(
     () =>
@@ -536,13 +552,12 @@ const AppProjectSetting: React.FC = () => {
         <Radio.Group
           className={cx(styles['deploy-options'])}
           value={deployMode}
-          onChange={(event) => setDeployMode(event.target.value)}
         >
           <div
             className={cx(styles['deploy-card'], {
               [styles.active]: deployMode === 'platform',
             })}
-            onClick={() => setDeployMode('platform')}
+            onClick={() => handleSelectDeployMode('platform')}
           >
             <Radio value="platform" />
             <div className={cx(styles['deploy-card-body'])}>
@@ -558,7 +573,7 @@ const AppProjectSetting: React.FC = () => {
             className={cx(styles['deploy-card'], {
               [styles.active]: deployMode === 'private',
             })}
-            onClick={() => setDeployMode('private')}
+            onClick={() => handleSelectDeployMode('private')}
           >
             <Radio value="private" />
             <div className={cx(styles['deploy-card-body'])}>
@@ -576,68 +591,11 @@ const AppProjectSetting: React.FC = () => {
             {dict('PC.Pages.AppProjectSetting.platformHint')}
           </p>
         ) : (
-          <>
-            <div className={cx(styles['deploy-fields'])}>
-              <div className={cx(styles['deploy-field'])}>
-                <label className={cx(styles['deploy-field-label'])}>
-                  {dict('PC.Pages.AppProjectSetting.protocol')}
-                </label>
-                <Select
-                  value={protocol}
-                  onChange={setProtocol}
-                  options={[
-                    {
-                      value: 'http',
-                      label: dict('PC.Pages.AppProjectSetting.protocolHttp'),
-                    },
-                    {
-                      value: 'https',
-                      label: dict('PC.Pages.AppProjectSetting.protocolHttps'),
-                    },
-                  ]}
-                />
-              </div>
-              <div className={cx(styles['deploy-field'])}>
-                <label className={cx(styles['deploy-field-label'])}>
-                  {dict('PC.Pages.AppProjectSetting.serverIp')}
-                </label>
-                <Input
-                  value={serverIp}
-                  onChange={(event) => setServerIp(event.target.value)}
-                  placeholder={dict(
-                    'PC.Pages.AppProjectSetting.serverIpPlaceholder',
-                  )}
-                />
-              </div>
-              <div className={cx(styles['deploy-field'])}>
-                <label className={cx(styles['deploy-field-label'])}>
-                  {dict('PC.Pages.AppProjectSetting.appPort')}
-                </label>
-                <Input
-                  value={appPort}
-                  onChange={(event) => setAppPort(event.target.value)}
-                  placeholder={dict(
-                    'PC.Pages.AppProjectSetting.appPortPlaceholder',
-                  )}
-                />
-              </div>
-              <div className={cx(styles['deploy-field'])}>
-                <label className={cx(styles['deploy-field-label'])}>
-                  {dict('PC.Pages.AppProjectSetting.managePort')}
-                </label>
-                <Input
-                  value={managePort}
-                  onChange={(event) => setManagePort(event.target.value)}
-                  placeholder={dict(
-                    'PC.Pages.AppProjectSetting.managePortPlaceholder',
-                  )}
-                />
-              </div>
-            </div>
-            <p className={cx(styles['deploy-footer'])}>
-              {dict('PC.Pages.AppProjectSetting.privateHint')}
-            </p>
-          </>
+          <PrivateServerPanel
+            servers={privateServers}
+            loading={privateServerLoading}
+            onRefresh={runPrivateServerList}
+          />
         )}
       </section>
     </div>

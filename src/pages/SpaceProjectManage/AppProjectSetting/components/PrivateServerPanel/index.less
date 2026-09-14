@@ -1,0 +1,92 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header,
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header {
+  margin-top: 16px;
+}
+
+.header-fields {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1.4fr) 1fr 1fr;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.header-cell {
+  color: @colorTextSecondary;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.health {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  font-size: 13px;
+  line-height: 22px;
+}
+
+.online {
+  color: @colorSuccess;
+}
+
+.offline {
+  color: @colorTextTertiary;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 82px;
+  height: 32px;
+  gap: 8px;
+}
+
+.delete {
+  flex-shrink: 0;
+  min-width: 24px;
+  padding-inline: 0;
+}
+
+.confirm {
+  flex-shrink: 0;
+}
+
+.add {
+  margin-top: 8px;
+}
+
+.hint {
+  margin: 12px 0 0;
+  color: @colorTextTertiary;
+  font-size: 13px;
+  line-height: 22px;
+}
+
+@media (max-width: 960px) {
+  .header-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    width: 100%;
+  }
+}

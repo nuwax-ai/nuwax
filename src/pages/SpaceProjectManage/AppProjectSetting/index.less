@@ -265,26 +265,6 @@
   min-width: 0;
 }
 
-.deploy-fields {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1.4fr) 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.deploy-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.deploy-field-label {
-  color: @colorTextSecondary;
-  font-size: 13px;
-  line-height: 20px;
-}
-
 .deploy-footer {
   margin: 12px 0 0;
   color: @colorTextTertiary;
@@ -314,8 +294,7 @@
     align-items: flex-start;
   }
 
-  .deploy-options,
-  .deploy-fields {
+  .deploy-options {
     grid-template-columns: 1fr;
   }
 }
