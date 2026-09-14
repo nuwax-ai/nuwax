@@ -26,15 +26,16 @@ import type { ConnectorListItem, ConnectorListSourceType } from '../types';
 /** 关键字防抖时长 */
 const KEYWORD_DEBOUNCE = 300;
 
-/** 接口条目归一化（service 即连接/断开寻址标识；id 为提供方主键，
- * 供连接启用状态接口寻址） */
+/** 接口条目归一化（service 即连接/断开寻址标识；connectionId 为连接 id，
+ * 供切换连接启用状态接口 POST .../connections/{连接id}/status 寻址，
+ * 与 /expert-skill-connector 连接器页同口径——非提供方主键 id） */
 const mapItem = (
   item: ConnectorProviderInfo,
   source: ConnectorListSourceType,
 ): ConnectorListItem => ({
   key: `connector:${source}:${item.service || item.id}`,
   rawId: item.service || item.id,
-  connectorId: item.id,
+  connectionId: item.connectionId,
   name: item.displayName || item.service,
   description: item.description,
   icon: item.icon,

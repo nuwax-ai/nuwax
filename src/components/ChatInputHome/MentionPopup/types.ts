@@ -1,5 +1,7 @@
 /**
- * MentionPopup 和 MentionEditor 组件类型定义
+ * Mention 提及链路类型契约（MentionEditor / AtResourcePopup / 消费方共用）。
+ * 原 @ 文件弹窗组件（MentionPopup/PopupList）已由 ChatInputHome/AtResourcePopup
+ * 替代（首页=专家+资料库 / 会话页=上下文文件+资料库），本文件仅保留类型。
  */
 
 import type { CapabilityTypeEnum } from '@/components/ChatInputHome/CapabilityModal/types';
@@ -278,6 +280,12 @@ export interface MentionEditorProps {
    * 专家选中链路 onExpertSelect/expertComponents 保持可用）
    */
   capabilityResourceTypes?: CapabilityTypeEnum[];
+  /**
+   * @ 弹层首页模式：tabs = 专家（便捷视图）+ 资料库（最近访问）；
+   * 缺省 false 时按数据源回落会话页模式（上下文文件 + 资料库，
+   * 需 onFetchMentionFiles；两者皆无则 @ 保持纯文本）
+   */
+  atHomePanel?: boolean;
   /** MentionPopup 弹窗的展示方向：auto | up | down，默认 auto */
   mentionPlacement?: 'auto' | 'up' | 'down';
   /** 用于回显的默认提及项列表（需同时传入 value 文本） */

@@ -8,7 +8,7 @@
 
 **内聚（组件内自闭环）：**
 
-- 四场景接口调用与参数组装（见下表）、关键字 300ms 防抖、分页竞态丢弃、触底追加、首屏补拉、加载/空态；
+- 五场景接口调用与参数组装（见下表）、关键字 300ms 防抖、分页竞态丢弃、触底追加、首屏补拉、加载/空态；
 - 付费拦截门：选择前先判定（免费/已订阅/租户未开启订阅直通；付费未订阅先按 `GET /agent/:id` 复核，复核已订阅回写放行并带 `subscribed: true`，仍待订阅则弹出内聚的统一专家卡弹窗 `ExpertSummonCard`（含 Modal 壳，卡内自拉套餐/订阅下单），**不触发 onSelect**——卡内「召唤专家」复核放行后才回调（带 `subscribed: true`）；
 - 「最近召唤」条目的相对时间展示（`formatTimeAgo`）。
 
@@ -22,14 +22,14 @@
 
 | 属性 | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
-| `type` | `'used' \| 'system' \| 'team' \| 'search'` | 必填 | 数据场景（与 `keyword` 正交，任意场景都可带搜索） |
+| `type` | `'used' \| 'system' \| 'team' \| 'search' \| 'convenient'` | 必填 | 数据场景（与 `keyword` 正交，任意场景都可带搜索） |
 | `variant` | `'grid' \| 'list'` | `'grid'` | 布局变体 |
 | `keyword` | `string` | — | 搜索关键字（受控传入，组件内防抖） |
-| `category` | `string` | — | 系统广场内容分类（仅 `system` 生效，空=全部） |
+| `category` | `string` | — | 系统广场内容分类（`system`/`convenient` 生效，空=全部） |
 | `spaceId` | `number` | — | 团队空间·具体空间 ID |
 | `spaceIds` | `number[]` | — | 团队空间「全部」聚合的空间 ID 列表；需要聚合而未传时组件自拉空间列表兜底 |
 | `onSelect` | `(item: ExpertListItem) => void` | 必填 | 选中回调（付费拦截通过后才触发） |
-| `pageSize` | `number` | `20` | 服务端分页每页数量（used 视图即拉取条数） |
+| `pageSize` | `number` | `20` | 服务端分页每页数量（used 视图即拉取条数；convenient 视图固定 100 不受影响） |
 | `className` | `string` | — | 根容器（滚动容器）类名 |
 
 > 组件根节点即滚动容器（`flex: 1; overflow-y: auto`），自身不带内边距—— 间距由使用方经 `className` 决定；宿主需提供确定高度的父容器。
@@ -42,6 +42,7 @@
 | `system` | `POST /api/published/agent/list` | `{ page, pageSize, category, kw?, targetType: 'Agent', targetSubType: 'ChatBot' }`（专家口径，排除网页应用） |
 | `team` | 同上 | `{ ..., category: 'Agent', justReturnSpaceData: true }` + `spaceId` 或 `spaceIds`（都未传则组件自拉空间列表聚合） |
 | `search` | 同上 | `{ page, pageSize, category: '', kw?, spaceId: -1 }`（spaceId 组件内写死） |
+| `convenient` | 两路并行：`GET /api/user/agent/used/list/100` + `POST /api/published/agent/list` | used：`{ size: 100, type: 'Agent' }`；广场：`{ page: 1, pageSize: 100, category, kw?, official: true, targetType: 'Agent', targetSubType: 'ChatBot' }`；按 `targetId` 去重（used 条目优先保留），最近召唤整体置于最前；单次拉齐无加载更多 |
 
 ## 使用案例
 
@@ -82,13 +83,28 @@
 <ExpertListView type="search" keyword={keyword} onSelect={onSelect} />
 ```
 
-### 5. 单栏列表变体（紧凑行，无边线 + 悬停灰底）
+### 5. 便捷视图（最近召唤 + 系统广场前 100 条合并）
+
+```tsx
+<ExpertListView
+  type="convenient"
+  keyword={keyword}
+  category={activeCategory}
+  onSelect={onSelect}
+/>
+// 最近召唤条目（带 usedTime）去重后置于最前，其后拼接系统广场条目；
+// keyword 对最近召唤客户端过滤、对广场走 kw 服务端过滤；无加载更多
+```
+
+### 6. 单栏列表变体（紧凑行，无边线 + 悬停灰底）
 
 ```tsx
 <ExpertListView type="system" variant="list" onSelect={onSelect} />
+// list 行整行点击即选中，不渲染悬停「聘请」按钮（仅 grid 卡有）；
+// 最近召唤时间常显（grid 卡悬停淡出让位按钮的行为不适用）
 ```
 
-### 6. onSelect 语义（付费拦截）
+### 7. onSelect 语义（付费拦截）
 
 ```tsx
 // 回调仅在以下情况触发，可直接信任：

@@ -162,7 +162,8 @@
   white-space: nowrap;
 }
 
-// 操作簇：悬停浮现「选择」（不占位）+ 常驻启用开关
+// 操作簇：grid 卡悬停浮现「选择」（不占位）+ 常驻启用开关；
+// list 行不渲染悬停「选择」（整行可点），操作簇仅剩常驻开关
 .card-actions,
 .list-actions {
   display: flex;
@@ -171,13 +172,12 @@
   flex-shrink: 0;
 }
 
-// 悬停浮现按钮：未悬停不渲染入流、不占布局空间
+// 悬停浮现按钮（仅 grid 卡）：未悬停不渲染入流、不占布局空间
 .card-hire {
   display: none;
 }
 
-.card:hover .card-hire,
-.list-row:hover .card-hire {
+.card:hover .card-hire {
   display: inline-block;
 }
 

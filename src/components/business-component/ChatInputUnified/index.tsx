@@ -220,6 +220,12 @@ export interface ChatInputUnifiedProps {
    */
   showExpertCapability?: boolean;
   /**
+   * @ 弹层首页模式：@ 触发「专家（便捷视图）+ 资料库（最近访问）」弹层
+   * （与 showExpertCapability 同为首页场景开放；缺省按数据源回落会话页
+   * 模式：上下文文件 + 资料库）
+   */
+  atHomePanel?: boolean;
+  /**
    * 草稿缓存作用域 key：默认按当前会话 id 持久化；
    * 首页等无会话场景传固定 key（如 'home'）即可启用草稿
    */
@@ -342,6 +348,7 @@ const ChatInputUnifiedImpl: React.FC<
   onClearPinnedProject,
   showDebugFab = true,
   showExpertCapability = false,
+  atHomePanel = false,
   draftKey,
   summonedExpert,
   onClearSummonedExpert,
@@ -1259,6 +1266,7 @@ const ChatInputUnifiedImpl: React.FC<
               onSkillIdsChange={setSkillIds}
               enableMention={enableMention}
               capabilityResourceTypes={capabilityResourceTypes}
+              atHomePanel={atHomePanel}
               onDocsChange={handleDocsChange}
               // 能力弹窗关闭：刷新已连接连接器（弹窗内连接/断开就绪）
               onCapabilityModalClose={refreshConnectedConnectors}

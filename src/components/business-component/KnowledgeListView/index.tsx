@@ -89,7 +89,12 @@ const KnowledgeListView: React.FC<KnowledgeListViewProps> = ({
       ) : (
         <>
           {list.map((item) => (
-            <KnowledgeRow key={item.key} item={item} onSelect={onSelect} />
+            <KnowledgeRow
+              key={item.key}
+              item={item}
+              variant={variant}
+              onSelect={onSelect}
+            />
           ))}
           {loading && (
             <div className={cx(styles['state-loading'])}>

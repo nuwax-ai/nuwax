@@ -1,6 +1,6 @@
 /**
  * 技能列表数据层（SkillListView 内聚）
- * @description 四种视图的接口适配（与设计矩阵一致）：
+ * @description 五种视图的接口适配（与设计矩阵一致）：
  * - system  POST /published/skill/list { page, pageSize, category, kw?,
  *           official: true }（仅官方，与 expert-skill-connector 页同口径）
  * - team    同接口 + justReturnSpaceData + category='Skill'，
@@ -8,6 +8,9 @@
  * - enabled POST /published/skill/enable/list {} 全量数组，keyword 客户端过滤，
  *           条目一律 enabled=true（专门接口语义，不看条目级字段）
  * - search  POST /published/skill/list { page, pageSize, kw?, spaceId: -1 }
+ * - convenient 便捷视图：两路单次并行拉取（我启用的 + 系统广场
+ *           pageSize=100 同 system 口径），按 targetId 去重（启用条目
+ *           优先保留）且启用的整体置于最前，无加载更多。
  * 统一提供 { list, loading, error, hasMore, loadMore, reload, updateItem }；
  * 服务端分页沿用 requestId 竞态丢弃 + 触底追加，首屏补拉由组件层驱动。
  */
@@ -30,6 +33,9 @@ import type { SkillListItem, SkillListSourceType } from '../types';
 
 /** 关键字防抖时长 */
 const KEYWORD_DEBOUNCE = 300;
+
+/** 便捷视图单路拉取上限（启用列表客户端截断与系统广场 pageSize 共用） */
+const CONVENIENT_LIMIT = 100;
 
 /** 接口条目归一化（targetId 供选中/启用/付费复核寻址） */
 const mapItem = (
@@ -69,7 +75,8 @@ const buildParams = (
   spaceIds?: number[],
 ): SquarePublishedListParams => {
   const kw = keyword.trim() || undefined;
-  if (type === 'system') {
+  if (type === 'system' || type === 'convenient') {
+    // 便捷视图与系统广场同构参数（调用处固定 page=1、pageSize=100 单次拉齐）
     return { page, pageSize, category: category || '', kw, official: true };
   }
   if (type === 'team') {
@@ -199,6 +206,63 @@ const useSkillList = ({
                   item.description?.toLowerCase().includes(kw),
               )
             : all;
+          more = false;
+        } else if (type === 'convenient') {
+          // 便捷视图：我启用的 + 系统广场前 100 条单次并行拉取（同 system
+          // 口径）；启用的 keyword 客户端过滤，广场 kw/category 服务端过滤；
+          // 按 targetId 去重（启用条目优先保留、整体置于最前，广场条目
+          // targetId 缺失无法判重则保留），单次拉齐无加载更多
+          const [enabledRes, squareRes] = await Promise.all([
+            apiPublishedSkillEnableList(),
+            apiPublishedSkillList(
+              buildParams(
+                type,
+                1,
+                CONVENIENT_LIMIT,
+                debouncedKeyword,
+                category,
+              ),
+            ),
+          ]);
+          if (requestIdRef.current !== requestId) {
+            return;
+          }
+          if (
+            enabledRes?.code !== SUCCESS_CODE ||
+            squareRes?.code !== SUCCESS_CODE
+          ) {
+            throw new Error('convenient skill list failed');
+          }
+          const kw = debouncedKeyword.trim().toLowerCase();
+          // 启用接口无分页参数，客户端截断前 100 条后再按关键字过滤
+          const enabledItems = (
+            (enabledRes.data as SquarePublishedItemInfo[]) || []
+          )
+            .slice(0, CONVENIENT_LIMIT)
+            .map((item) => mapItem(item, 'enabled'))
+            .filter(
+              (item) =>
+                !kw ||
+                item.name?.toLowerCase().includes(kw) ||
+                item.description?.toLowerCase().includes(kw),
+            );
+          const enabledTargetIds = new Set(
+            enabledItems
+              .map((item) => item.targetId)
+              .filter((id): id is number => id !== undefined),
+          );
+          const squareItems = (
+            (squareRes.data as Page<SquarePublishedItemInfo> | null)?.records ||
+            []
+          ).map((item) => mapItem(item, type));
+          items = [
+            ...enabledItems,
+            ...squareItems.filter(
+              (item) =>
+                item.targetId === undefined ||
+                !enabledTargetIds.has(item.targetId),
+            ),
+          ];
           more = false;
         } else {
           const res = await apiPublishedSkillList(

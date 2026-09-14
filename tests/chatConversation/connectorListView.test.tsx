@@ -252,11 +252,80 @@ describe('ConnectorListView·分页与连接流程', () => {
     );
   });
 
+  it('connected 视图断开：整区重拉,断开的条目移出「已连接」列表', async () => {
+    // 首拉两条已连接；断开 weather 后重拉仅剩 map
+    apiConnectorProviderPageList
+      .mockResolvedValueOnce({
+        code: '0000',
+        data: [
+          provider({
+            service: 'weather',
+            displayName: '天气',
+            connected: true,
+          }),
+          provider({ service: 'map', displayName: '地图', connected: true }),
+        ],
+      })
+      .mockResolvedValueOnce({
+        code: '0000',
+        data: [
+          provider({ service: 'map', displayName: '地图', connected: true }),
+        ],
+      });
+    const onConnectedChange = vi.fn();
+    renderView({ type: 'connected', onConnectedChange });
+
+    expect(await screen.findByText('天气')).toBeInTheDocument();
+    expect(screen.getByText('地图')).toBeInTheDocument();
+
+    // 模拟共享 hook 断开成功回调（组件包装的 updateItem）
+    connectorConnectState.updateItem?.('connector:connected:weather', {
+      connected: false,
+    });
+    // 断开 → 按 connected=true 口径整区重拉,weather 移出列表
+    await waitFor(() =>
+      expect(apiConnectorProviderPageList).toHaveBeenCalledTimes(2),
+    );
+    expect(apiConnectorProviderPageList).toHaveBeenLastCalledWith({
+      connected: 'true',
+    });
+    await waitFor(() => expect(screen.queryByText('天气')).toBeNull());
+    expect(screen.getByText('地图')).toBeInTheDocument();
+    expect(onConnectedChange).toHaveBeenCalledWith(
+      expect.objectContaining({ rawId: 'weather', connected: false }),
+      false,
+    );
+  });
+
+  it('system 视图断开：就地回写不重拉列表（不丢滚动位置）', async () => {
+    apiConnectorProviderPageList.mockResolvedValue(
+      pageOf([
+        provider({ service: 'weather', displayName: '天气', connected: true }),
+      ]),
+    );
+    renderView({ type: 'system' });
+    await screen.findByText('天气');
+
+    connectorConnectState.updateItem?.('connector:system:weather', {
+      connected: false,
+    });
+    await waitFor(() =>
+      expect(
+        switchOf('connector:system:weather')?.getAttribute('aria-checked'),
+      ).toBe('false'),
+    );
+    // 就地回写：列表接口不重拉,条目保留（状态标回落未连接）
+    expect(apiConnectorProviderPageList).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('天气')).toBeInTheDocument();
+  });
+
   it('已启用关开关：仅停用（启停接口）,不执行断开', async () => {
     apiConnectorProviderPageList.mockResolvedValue(
       pageOf([
         provider({
           id: 9,
+          // 连接 id（已连接时列表响应自带,启停接口寻址用,非提供方主键 id）
+          connectionId: 91,
           service: 'weather',
           displayName: '天气',
           connected: true,
@@ -275,10 +344,13 @@ describe('ConnectorListView·分页与连接流程', () => {
       switchOf('connector:system:weather')?.getAttribute('aria-checked'),
     ).toBe('true');
 
-    // 关开关 → 启停接口(提供方主键 id 寻址, enabled=false),就地回弹
+    // 关开关 → 启停接口(连接 id 寻址, enabled=false),就地回弹
     fireEvent.click(switchOf('connector:system:weather')!);
     await waitFor(() =>
-      expect(apiConnectorConnectionToggleStatus).toHaveBeenCalledWith(9, false),
+      expect(apiConnectorConnectionToggleStatus).toHaveBeenCalledWith(
+        91,
+        false,
+      ),
     );
     await waitFor(() =>
       expect(
@@ -298,6 +370,7 @@ describe('ConnectorListView·分页与连接流程', () => {
       pageOf([
         provider({
           id: 9,
+          connectionId: 91,
           service: 'weather',
           displayName: '天气',
           connected: true,
@@ -335,6 +408,7 @@ describe('ConnectorListView·分页与连接流程', () => {
       pageOf([
         provider({
           id: 9,
+          connectionId: 91,
           service: 'weather',
           displayName: '天气',
           connected: true,
@@ -355,7 +429,7 @@ describe('ConnectorListView·分页与连接流程', () => {
 
     fireEvent.click(switchOf('connector:system:weather')!);
     await waitFor(() =>
-      expect(apiConnectorConnectionToggleStatus).toHaveBeenCalledWith(9, true),
+      expect(apiConnectorConnectionToggleStatus).toHaveBeenCalledWith(91, true),
     );
     await waitFor(() =>
       expect(

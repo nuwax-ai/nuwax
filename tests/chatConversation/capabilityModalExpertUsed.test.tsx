@@ -217,4 +217,39 @@ describe('能力弹窗·专家「最近召唤」页签（复用最近使用接�
       targetId: 401,
     });
   });
+
+  it('defaultUsedView：显式指定时初始落「最近召唤」聚合页签（@ 弹层专家 tab「更多」入口）', async () => {
+    apiUserUsedAgentList.mockResolvedValue({
+      code: '0000',
+      data: [
+        {
+          id: 41,
+          agentId: 401,
+          name: '召唤专家',
+          description: '最近召唤过的专家',
+          icon: '',
+          modified: hoursAgo(5),
+          agentType: 'ChatBot',
+          spaceId: 1,
+          userId: 1,
+        },
+      ],
+    });
+    render(
+      <CapabilityModal
+        open
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
+        defaultResourceType="expert"
+        defaultUsedView
+      />,
+    );
+    // 未点击任何 tab 即直接渲染聚合视图条目（默认视图为系统广场）
+    const card = await waitFor(() => {
+      const el = document.querySelector('[data-expert-key="expert:used:41"]');
+      expect(el).toBeTruthy();
+      return el!;
+    });
+    expect(card.textContent).toContain('召唤专家');
+  });
 });
