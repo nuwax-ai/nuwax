@@ -965,6 +965,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.UserMenu.profile": "個人中心",
   "PC.Components.UserOperate.documents": "文件中心",
   "PC.Components.UserOperate.myComputer": "我的電腦",
+  "PC.Components.UserOperate.clientSettings": "設定",
   "PC.Components.UserOperate.noUnreadMessage": "暫無未讀訊息",
   "PC.Components.UserOperate.unreadMessageCount": "{0} 條未讀訊息",
   "PC.Components.useVariableTree.skills": "技能",

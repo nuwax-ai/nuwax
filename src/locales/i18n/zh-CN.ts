@@ -1080,6 +1080,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.UserMenu.profile": "个人中心",
   "PC.Components.UserOperate.documents": "文档中心",
   "PC.Components.UserOperate.myComputer": "我的电脑",
+  "PC.Components.UserOperate.clientSettings": "设置",
   "PC.Components.UserOperate.noUnreadMessage": "暂无未读消息",
   "PC.Components.UserOperate.unreadMessageCount": "{0} 条未读消息",
   "PC.Components.VariableList.description": "用于保存用户个人信息，让智能体记住用户的特征，使回复更加个性化。",

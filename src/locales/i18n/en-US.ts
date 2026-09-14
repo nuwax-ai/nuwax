@@ -1073,6 +1073,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.UserMenu.profile": "Profile",
   "PC.Components.UserOperate.documents": "Documents",
   "PC.Components.UserOperate.myComputer": "My Computer",
+  "PC.Components.UserOperate.clientSettings": "Settings",
   "PC.Components.UserOperate.noUnreadMessage": "No unread message",
   "PC.Components.UserOperate.unreadMessageCount": "{0} unread messages",
   "PC.Components.VariableList.description": "Used to save user personal information, allowing the agent to remember user characteristics and make responses more personalized.",

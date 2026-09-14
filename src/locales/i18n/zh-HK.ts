@@ -947,6 +947,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.UserMenu.profile": "個人中心",
   "PC.Components.UserOperate.documents": "文檔中心",
   "PC.Components.UserOperate.myComputer": "我的電腦",
+  "PC.Components.UserOperate.clientSettings": "設置",
   "PC.Components.UserOperate.noUnreadMessage": "暫無未讀消息",
   "PC.Components.UserOperate.unreadMessageCount": "{0} 條未讀消息",
   "PC.Components.useVariableTree.skills": "技能",

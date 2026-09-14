@@ -947,6 +947,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.UserMenu.profile": "プロフィール",
   "PC.Components.UserOperate.documents": "書類",
   "PC.Components.UserOperate.myComputer": "私のコンピュータ",
+  "PC.Components.UserOperate.clientSettings": "設定",
   "PC.Components.UserOperate.noUnreadMessage": "未読メッセージはありません",
   "PC.Components.UserOperate.unreadMessageCount": "{0} 件の未読メッセージ",
   "PC.Components.useVariableTree.skills": "スキル",
