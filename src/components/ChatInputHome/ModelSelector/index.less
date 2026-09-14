@@ -121,17 +121,49 @@
     }
   }
 
-  .menu-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 200px;
+  // 三 tab 弹层(agentId 模式):Segmented 分段控件,样式对齐专家&技能&连接器页主 tab
+  // 宽度跟随列表区(.list-item 定宽),保持与旧版分组下拉一致的弹层宽度
+  .model-tabs {
+    box-sizing: border-box;
+    margin: 0 0 4px;
+    padding: 0 4px;
+  }
 
-    .item-content {
+  .model-list {
+    max-height: 240px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 2px 6px 6px;
+  }
+
+  .list-empty {
+    color: @colorTextQuaternary;
+    font-size: @fontSizeSm;
+    text-align: center;
+    padding: 16px 0;
+  }
+
+  // 模型项内元素(external 分组下拉与 tab 列表共用)
+  .item-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+
+    .item-title-row {
       display: flex;
-      flex-direction: column;
-      flex: 1;
+      align-items: center;
       min-width: 0;
+
+      // 团队 tab 的"团队名."前缀
+      .item-team-prefix {
+        flex-shrink: 0;
+        color: @colorTextQuaternary;
+        font-size: @fontSizeSm;
+        font-weight: 400;
+        line-height: 28px;
+        white-space: nowrap;
+      }
 
       .item-name {
         color: @colorTextSecondary;
@@ -143,47 +175,92 @@
         white-space: nowrap;
       }
 
-      .item-desc {
+      .item-tag {
+        flex-shrink: 0;
+        margin: 0 0 0 @marginXxs;
+        padding: 0 4px;
         font-size: 11px;
-        color: @colorTextQuaternary;
-        // margin-top: 0px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        line-height: 16px;
       }
     }
 
-    .item-actions {
-      display: none;
-      align-items: center;
-      gap: @marginXxs;
-      margin-left: @marginXxs;
+    .item-desc {
+      width: 100%;
+      font-size: 11px;
+      color: @colorTextQuaternary;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
 
-      .action-icon {
-        padding: @paddingXs;
-        border-radius: @borderRadius;
-        font-size: @fontSizeSm;
-        color: @colorTextQuaternary;
-        cursor: pointer;
-        transition: all @motionDurationMid;
+  // 系统模型的倍率,浅灰右对齐
+  .item-cost {
+    flex-shrink: 0;
+    margin-left: @marginXs;
+    color: @colorTextQuaternary;
+    font-size: @fontSizeSm;
+  }
 
-        &:hover {
-          color: @colorPrimary;
-          background: @colorFillTertiary;
-        }
+  .item-actions {
+    display: none;
+    align-items: center;
+    gap: @marginXxs;
+    margin-left: @marginXxs;
+
+    .action-icon {
+      padding: @paddingXs;
+      border-radius: @borderRadius;
+      font-size: @fontSizeSm;
+      color: @colorTextQuaternary;
+      cursor: pointer;
+      transition: all @motionDurationMid;
+
+      &:hover {
+        color: @colorPrimary;
+        background: @colorFillTertiary;
       }
     }
+  }
+
+  .item-check {
+    margin-left: @marginSm;
+    color: @colorPrimary;
+    font-size: @fontSizeSm;
+  }
+
+  // external 模式:Menu 分组内的项
+  .menu-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 200px;
 
     &:hover {
       .item-actions {
         display: flex;
       }
     }
+  }
 
-    .item-check {
-      margin-left: @marginSm;
-      color: @colorPrimary;
-      font-size: @fontSizeSm;
+  // tab 模式:脱离 Menu 的自绘列表项;定宽对齐旧版弹层(menu-item 200px + menu 两侧 padding)
+  .list-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 224px;
+    box-sizing: border-box;
+    padding: 4px 6px;
+    border-radius: @borderRadius;
+    cursor: pointer;
+    transition: background-color @motionDurationMid;
+
+    &:hover {
+      background: @colorFillTertiary;
+
+      .item-actions {
+        display: flex;
+      }
     }
   }
 }

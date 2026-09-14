@@ -4,7 +4,11 @@ import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiAgentConversationModelOptions } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
-import { apiModelDelete } from '@/services/modelConfig';
+import {
+  apiModelDelete,
+  apiModelListPersonal,
+  apiModelListTeam,
+} from '@/services/modelConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { SpaceTypeEnum } from '@/types/enums/space';
 import { ModelOptionDto } from '@/types/interfaces/agent';
@@ -16,20 +20,35 @@ import {
   EditOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, message, Typography } from 'antd';
+import {
+  Button,
+  Dropdown,
+  MenuProps,
+  message,
+  Segmented,
+  Tag,
+  Typography,
+} from 'antd';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import { ModelSelectorProps } from './types';
 
 const cx = classNames.bind(styles);
+
+/** 模型弹层 tab:系统(公共)/ 个人 / 团队 */
+type ModelTabKey = 'system' | 'personal' | 'team';
+
+/**
+ * 判断是否系统(公共)模型,沿用旧分组规则:
+ * scope 为 Tenant 或未归属任何空间(spaceId === -1)时视为系统模型
+ */
+const isSystemModel = (model: ModelOptionDto) => {
+  if (model.scope === 'Tenant') return true;
+  if (model.scope === 'Space') return false;
+  return model.spaceId === -1;
+};
 
 /**
  * 智能体模型选择器组件
@@ -47,9 +66,16 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   const { spaceList } = useModel('spaceModel');
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [modelList, setModelList] = useState<ModelOptionDto[]>([]);
   const [initialized, setInitialized] = useState(false);
-  const initializedRef = useRef(false);
+
+  // 外部注入列表(external 模式专用,渲染保持旧版分组下拉)
+  const [modelList, setModelList] = useState<ModelOptionDto[]>([]);
+
+  // 三 tab 数据(agentId 模式):系统 / 个人 / 团队
+  const [systemModels, setSystemModels] = useState<ModelOptionDto[]>([]);
+  const [personalModels, setPersonalModels] = useState<ModelOptionDto[]>([]);
+  const [teamModels, setTeamModels] = useState<ModelOptionDto[]>([]);
+  const [activeTab, setActiveTab] = useState<ModelTabKey>('system');
 
   // 弹窗控制
   const [openModel, setOpenModel] = useState(false);
@@ -57,71 +83,117 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   const [editingSpaceId, setEditingSpaceId] = useState<number>();
   const [shouldResetSelection, setShouldResetSelection] = useState(false);
 
-  // 获取模型选项列表
-  const fetchModelOptions = useCallback(
-    async (id: number, force = false) => {
-      if (initializedRef.current && !force) return;
-
-      setLoading(true);
-      try {
-        const res = await apiAgentConversationModelOptions(id);
-        if (res.code === SUCCESS_CODE && res.data) {
-          // 根据智能体类型过滤模型
-          const filteredData = res.data.filter((model: ModelOptionDto) => {
-            // 如果没有智能体类型，或者模型没有使用场景限制，则显示
-            if (
-              !agentType ||
-              !model.usageScenarios ||
-              model.usageScenarios.length === 0
-            ) {
-              return true;
-            }
-            // 否则，只有当前智能体类型在模型的可用场景中时才显示
-            return model.usageScenarios.includes(agentType);
-          });
-
-          setModelList(filteredData);
-          setInitialized(true);
-          initializedRef.current = true;
+  // 按智能体类型过滤模型(可用场景限制)
+  const filterByAgentType = useCallback(
+    (models: ModelOptionDto[]) =>
+      models.filter((model) => {
+        // 如果没有智能体类型，或者模型没有使用场景限制，则显示
+        if (
+          !agentType ||
+          !model.usageScenarios ||
+          model.usageScenarios.length === 0
+        ) {
+          return true;
         }
-      } catch (error) {
-        console.error('Failed to get agent model list:', error);
-      } finally {
-        setLoading(false);
-      }
-    },
+        // 否则，只有当前智能体类型在模型的可用场景中时才显示
+        return model.usageScenarios.includes(agentType);
+      }),
     [agentType],
   );
 
-  // 监听 agentId 的变化，当 agentId 改变时，重新加载数据并重置 initialized 状态与模型列表
+  // 获取系统 tab 模型:按智能体查询可用模型,仅保留系统(公共)部分
+  const fetchSystemModels = useCallback(
+    async (id: number) => {
+      try {
+        const res = await apiAgentConversationModelOptions(id);
+        if (res.code === SUCCESS_CODE && res.data) {
+          setSystemModels(filterByAgentType(res.data.filter(isSystemModel)));
+        }
+      } catch (error) {
+        console.error('Failed to get agent model list:', error);
+      }
+    },
+    [filterByAgentType],
+  );
+
+  // 获取个人 tab 模型
+  const fetchPersonalModels = useCallback(async () => {
+    try {
+      const res = await apiModelListPersonal();
+      if (res.code === SUCCESS_CODE && res.data) {
+        setPersonalModels(filterByAgentType(res.data));
+      }
+    } catch (error) {
+      console.error('Failed to get personal model list:', error);
+    }
+  }, [filterByAgentType]);
+
+  // 获取团队 tab 模型
+  const fetchTeamModels = useCallback(async () => {
+    try {
+      const res = await apiModelListTeam();
+      if (res.code === SUCCESS_CODE && res.data) {
+        setTeamModels(filterByAgentType(res.data));
+      }
+    } catch (error) {
+      console.error('Failed to get team model list:', error);
+    }
+  }, [filterByAgentType]);
+
+  // 并行拉取三个 tab 的模型列表(增删改模型后也会调用刷新)
+  const fetchAllModelLists = useCallback(
+    async (id: number) => {
+      setLoading(true);
+      try {
+        await Promise.all([
+          fetchSystemModels(id),
+          fetchPersonalModels(),
+          fetchTeamModels(),
+        ]);
+      } finally {
+        setLoading(false);
+        setInitialized(true);
+      }
+    },
+    [fetchSystemModels, fetchPersonalModels, fetchTeamModels],
+  );
+
+  // 监听 agentId 的变化，当 agentId 改变时，重新加载数据并重置初始化状态与模型列表
   useEffect(() => {
     if (isExternalList) return;
     if (agentId) {
       setInitialized(false);
-      initializedRef.current = false;
-      setModelList([]);
-      fetchModelOptions(agentId, true);
+      setSystemModels([]);
+      setPersonalModels([]);
+      setTeamModels([]);
+      fetchAllModelLists(agentId);
     }
-  }, [agentId, fetchModelOptions, isExternalList]);
+  }, [agentId, fetchAllModelLists, isExternalList]);
 
   // 外部预加载模型列表：直接使用传入数据，跳过接口拉取
   useEffect(() => {
     if (!isExternalList) return;
     setModelList(externalModelList);
     setInitialized(true);
-    initializedRef.current = true;
   }, [isExternalList, externalModelList]);
+
+  // 三 tab 数据合集(agentId 模式);external 模式沿用注入列表
+  const allModels = useMemo(
+    () => [...systemModels, ...personalModels, ...teamModels],
+    [systemModels, personalModels, teamModels],
+  );
+  const lookupList = isExternalList ? modelList : allModels;
 
   // 监听数据加载完成，自动应用默认选择
   useEffect(() => {
-    if (!initialized || modelList.length === 0) return;
+    if (!initialized || lookupList.length === 0) return;
 
     // 如果当前没有选中的模型 ID，或者选中的 ID 不在列表中
     // 或者是因为新增/编辑/删除后强制要求重置选择
-    const isSelectedInList = modelList.some((m) => m.id === selectedModelId);
+    const isSelectedInList = lookupList.some((m) => m.id === selectedModelId);
 
     if (!selectedModelId || !isSelectedInList || shouldResetSelection) {
-      onModelSelect?.(modelList[0].id);
+      onModelSelect?.(lookupList[0].id);
       // 重置标记位
       if (shouldResetSelection) {
         setShouldResetSelection(false);
@@ -129,7 +201,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     }
   }, [
     initialized,
-    modelList,
+    lookupList,
     selectedModelId,
     onModelSelect,
     shouldResetSelection,
@@ -138,12 +210,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   // 当前选中的模型信息
   const selectedModel = useMemo(() => {
     if (selectedModelId) {
-      const found = modelList.find((m) => m.id === selectedModelId);
+      const found = lookupList.find((m) => m.id === selectedModelId);
       if (found) return found;
     }
-    if (modelList.length > 0) return modelList[0];
+    if (lookupList.length > 0) return lookupList[0];
     return null;
-  }, [selectedModelId, modelList]);
+  }, [selectedModelId, lookupList]);
 
   // 处理模型选择
   const handleSelect = useCallback(
@@ -164,9 +236,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     if (agentId) {
       // 标记为需要重置选中项为第一个
       setShouldResetSelection(true);
-      fetchModelOptions(agentId, true);
+      fetchAllModelLists(agentId);
     }
-  }, [agentId, fetchModelOptions]);
+  }, [agentId, fetchAllModelLists]);
 
   // 从空间列表中获取个人空间 ID
   const personalSpaceId = useMemo(() => {
@@ -183,15 +255,15 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     setOpen(false); // 关闭下拉菜单
   }, [personalSpaceId]);
 
-  // 处理编辑模型
+  // 处理编辑模型(仅个人 tab 模型)
   const handleEditModel = useCallback((model: ModelOptionDto) => {
     setEditingModelId(model.id);
     setEditingSpaceId(model.spaceId);
     setOpenModel(true);
-    setOpen(false); // 关闭下拉菜单
+    setOpen(false);
   }, []);
 
-  // 处理删除模型
+  // 处理删除模型(仅个人 tab 模型)
   const handleDeleteModel = useCallback(
     (model: ModelOptionDto) => {
       modalConfirm(
@@ -207,7 +279,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               if (agentId) {
                 // 标记为需要重置选中项为第一个
                 setShouldResetSelection(true);
-                fetchModelOptions(agentId, true);
+                fetchAllModelLists(agentId);
               }
             }
           } catch (error) {
@@ -216,9 +288,140 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         },
       );
     },
-    [agentId, fetchModelOptions],
+    [agentId, fetchAllModelLists],
   );
 
+  // 打开弹层时自动定位到选中模型所在的 tab
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      setOpen(nextOpen);
+      if (nextOpen && !isExternalList) {
+        if (personalModels.some((m) => m.id === selectedModelId)) {
+          setActiveTab('personal');
+        } else if (teamModels.some((m) => m.id === selectedModelId)) {
+          setActiveTab('team');
+        } else {
+          setActiveTab('system');
+        }
+      }
+    },
+    [isExternalList, personalModels, teamModels, selectedModelId],
+  );
+
+  // 渲染 tab 内单个模型项:
+  // 系统 tab 展示 tag / 倍率;个人 tab 保留编辑/删除;团队 tab 名称前缀团队名
+  const renderModelItem = useCallback(
+    (model: ModelOptionDto, tab: ModelTabKey) => {
+      const isSelected = model.id === selectedModelId;
+      const showMeta = tab === 'system';
+      return (
+        <div
+          key={model.id}
+          className={cx(styles['list-item'], {
+            [styles['item-selected']]: isSelected,
+          })}
+          onClick={() => handleSelect(model)}
+        >
+          <div className={cx(styles['item-content'])}>
+            <div className={cx(styles['item-title-row'])}>
+              {tab === 'team' && model.spaceName && (
+                <span className={cx(styles['item-team-prefix'])}>
+                  {model.spaceName}.
+                </span>
+              )}
+              <span className={cx(styles['item-name'])}>{model.name}</span>
+              {showMeta && model.tag && (
+                <Tag
+                  color={model.tagColor || undefined}
+                  className={cx(styles['item-tag'])}
+                >
+                  {model.tag}
+                </Tag>
+              )}
+            </div>
+            {model.description && (
+              <Typography.Text
+                className={cx(styles['item-desc'])}
+                ellipsis={{ tooltip: model.description }}
+              >
+                {model.description}
+              </Typography.Text>
+            )}
+          </div>
+          {showMeta &&
+            model.cost !== null &&
+            model.cost !== undefined &&
+            model.cost !== '' && (
+              <span className={cx(styles['item-cost'])}>{model.cost}</span>
+            )}
+          {tab === 'personal' && (
+            <div className={cx(styles['item-actions'])}>
+              <EditOutlined
+                className={cx(styles['action-icon'])}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditModel(model);
+                }}
+              />
+              <DeleteOutlined
+                className={cx(styles['action-icon'])}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteModel(model);
+                }}
+              />
+            </div>
+          )}
+          {isSelected && <CheckOutlined className={cx(styles['item-check'])} />}
+        </div>
+      );
+    },
+    [selectedModelId, handleSelect, handleEditModel, handleDeleteModel],
+  );
+
+  // 渲染 tab 内容(空列表时给出占位文案)
+  const renderTabPane = useCallback(
+    (models: ModelOptionDto[], tab: ModelTabKey) => {
+      if (models.length === 0) {
+        return (
+          <div className={cx(styles['model-list'], styles['list-empty'])}>
+            {dict('PC.Components.ModelSelector.noModels')}
+          </div>
+        );
+      }
+      return (
+        <div className={cx(styles['model-list'])}>
+          {models.map((model) => renderModelItem(model, tab))}
+        </div>
+      );
+    },
+    [renderModelItem],
+  );
+
+  // Segmented 分段选项(样式对齐专家&技能&连接器页主 tab)
+  const segmentedOptions = useMemo(
+    () => [
+      {
+        label: dict('PC.Components.ModelSelector.tabSystem'),
+        value: 'system',
+      },
+      {
+        label: dict('PC.Components.ModelSelector.tabPersonal'),
+        value: 'personal',
+      },
+      { label: dict('PC.Components.ModelSelector.tabTeam'), value: 'team' },
+    ],
+    [],
+  );
+
+  // 当前 tab 对应的模型列表
+  const activeTabModels = useMemo(() => {
+    if (activeTab === 'personal') return personalModels;
+    if (activeTab === 'team') return teamModels;
+    return systemModels;
+  }, [activeTab, systemModels, personalModels, teamModels]);
+
+  // external 模式:调用方注入列表,维持旧版分组下拉(无 tab、无增删改)
   const menuItems: MenuProps['items'] = useMemo(() => {
     if (modelList.length === 0 && initialized) {
       return [
@@ -238,7 +441,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
     const renderMenuItem = (model: ModelOptionDto) => {
       const isSelected = model.id === selectedModelId;
-      const isSpaceModel = !isExternalList && model.spaceId !== -1;
       return {
         key: model.id,
         label: (
@@ -246,29 +448,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             <div className={cx(styles['item-content'])}>
               <span className={cx(styles['item-name'])}>{model.name}</span>
               {model.description && (
-                <span className={cx(styles['item-desc'])}>
+                <Typography.Text
+                  className={cx(styles['item-desc'])}
+                  ellipsis={{ tooltip: model.description }}
+                >
                   {model.description}
-                </span>
+                </Typography.Text>
               )}
             </div>
-            {isSpaceModel && (
-              <div className={cx(styles['item-actions'])}>
-                <EditOutlined
-                  className={cx(styles['action-icon'])}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditModel(model);
-                  }}
-                />
-                <DeleteOutlined
-                  className={cx(styles['action-icon'])}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteModel(model);
-                  }}
-                />
-              </div>
-            )}
             {isSelected && (
               <CheckOutlined className={cx(styles['item-check'])} />
             )}
@@ -316,19 +503,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     }
 
     return items.length > 0 ? items : modelList.map(renderMenuItem);
-  }, [
-    modelList,
-    initialized,
-    selectedModelId,
-    isExternalList,
-    handleSelect,
-    handleEditModel,
-    handleDeleteModel,
-  ]);
+  }, [modelList, initialized, selectedModelId, handleSelect]);
 
   if (
     (!isExternalList && !agentId) ||
-    (modelList.length === 0 && initialized)
+    (lookupList.length === 0 && initialized)
   ) {
     return null;
   }
@@ -342,17 +521,28 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
       })}
     >
       <Dropdown
-        menu={{
-          items: menuItems,
-        }}
+        menu={isExternalList ? { items: menuItems } : undefined}
         trigger={['click']}
         placement="topLeft"
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         overlayClassName={styles['model-menu']}
         popupRender={(menu) => (
           <div className={styles['model-dropdown-container']}>
-            {menu}
+            {isExternalList ? (
+              menu
+            ) : (
+              <>
+                <Segmented
+                  block
+                  options={segmentedOptions}
+                  value={activeTab}
+                  onChange={(value) => setActiveTab(value as ModelTabKey)}
+                  className={cx(styles['model-tabs'])}
+                />
+                {renderTabPane(activeTabModels, activeTab)}
+              </>
+            )}
             {!isExternalList && (
               <div className={styles['add-button-wrap']}>
                 <Button
@@ -361,7 +551,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                   icon={<PlusOutlined />}
                   onClick={handleAddModel}
                 >
-                  {dict('PC.Components.ModelSelector.addModel')}
+                  {dict('PC.Components.ModelSelector.addPersonalModel')}
                 </Button>
               </div>
             )}
