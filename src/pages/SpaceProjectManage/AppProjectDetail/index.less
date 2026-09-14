@@ -38,6 +38,22 @@
   margin-left: @marginXs;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.panel-toggle {
+  color: @colorTextSecondary;
+
+  &:hover,
+  &.active {
+    color: @colorPrimary;
+  }
+}
+
 .tab {
   position: relative;
   height: 100%;
@@ -289,8 +305,13 @@
   }
 
   .tabs {
+    order: 3;
     width: 100%;
     height: @controlHeightLg;
+  }
+
+  .header-actions {
+    order: 2;
   }
 
   .domain-row {

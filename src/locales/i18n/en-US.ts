@@ -6418,6 +6418,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateHint": "The app port is for public access. The manage port is for platform deploy and health checks. Make sure the server is reachable and both ports are open. For HTTPS, install a valid certificate on the app port. The platform does not manage certificates.",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "Related tasks",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "Hide related tasks",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "Show related tasks",
   "PC.Pages.AppProjectDetail.newConversation": "New task",
   "PC.Pages.AppProjectDetail.emptyConversation": "No conversations yet",
   "PC.Pages.AppProjectDetail.mine": "Mine",
