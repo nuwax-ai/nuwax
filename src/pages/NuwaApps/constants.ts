@@ -16,13 +16,7 @@ export const APP_LIST_TARGET_SUBTYPES: string[] = ['PageApp', 'UserApp'];
 /** 最近使用列表拉取条数(recentlyUsed/list 请求体参数,暂写死 200) */
 export const RECENT_USED_SIZE = 200;
 
-/** 最近使用网格单列最小宽 px(与 index.less 的 recent-list minmax 下限同步修改) */
-export const RECENT_GRID_MIN_COLUMN = 210;
-
-/** 最近使用网格列间距 px(与 index.less 的 recent-list gap 同步修改) */
-export const RECENT_GRID_GAP = 16;
-
-/** 最近使用收起时最多展示的行数(超出走展开/收起) */
+/** 最近使用收起时最多展示的行数(超出走展开/收起;列数按首行卡片实测) */
 export const RECENT_COLLAPSED_MAX_ROWS = 2;
 
 /** 应用列表滚动容器 id(无限滚动加载挂载目标) */

@@ -34,8 +34,6 @@ import {
   APP_SCROLL_CONTAINER_ID,
   PAGE_APP_CATEGORY_ROOT_KEY,
   RECENT_COLLAPSED_MAX_ROWS,
-  RECENT_GRID_GAP,
-  RECENT_GRID_MIN_COLUMN,
   RECENT_USED_SIZE,
   SQUARE_PAGE_APP_PATH,
 } from './constants';
@@ -97,9 +95,10 @@ const NuwaApps: React.FC = () => {
   const [recentColumns, setRecentColumns] = useState(0);
   const recentGridRef = useRef<HTMLDivElement | null>(null);
 
-  // 最近使用网格列数:auto-fill minmax(210px,230px) + gap 16 的列数公式
-  // floor((容器宽+间距)/(列宽下限+间距));列宽/间距与 index.less 的
-  // recent-list 保持同步(常量集中定义在 constants.ts)。
+  // 最近使用网格列数:直接实测第一行的卡片数(网格行优先自动排布,首行必满)
+  // ——逐个比较卡片与首卡的 offsetTop,相等者即同排。不按 minmax/gap 公式
+  // 推算(spec 规定 auto-fill 按轨道 max 宽计列数,公式易偏)也不受侧栏
+  // 宽度/滚动条等布局变数影响。
   // 依赖 hasRecent:网格随「最近使用」条件渲染,首帧数据未到时不存在,
   // 需等其挂载后再取 ref 挂观察器(否则列数恒为 0,两排裁剪不生效)
   const hasRecent = recentList.length > 0;
@@ -107,19 +106,19 @@ const NuwaApps: React.FC = () => {
     if (!hasRecent) return;
     const el = recentGridRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    const updateColumns = () => {
-      setRecentColumns(
-        Math.max(
-          1,
-          Math.floor(
-            (el.clientWidth + RECENT_GRID_GAP) /
-              (RECENT_GRID_MIN_COLUMN + RECENT_GRID_GAP),
-          ),
-        ),
-      );
+    const measureColumns = () => {
+      const children = el.children;
+      if (children.length === 0) return;
+      const baseTop = (children[0] as HTMLElement).offsetTop;
+      let columns = 0;
+      for (let i = 0; i < children.length; i++) {
+        if ((children[i] as HTMLElement).offsetTop !== baseTop) break;
+        columns++;
+      }
+      setRecentColumns(Math.max(1, columns));
     };
-    updateColumns();
-    const observer = new ResizeObserver(updateColumns);
+    measureColumns();
+    const observer = new ResizeObserver(measureColumns);
     observer.observe(el);
     return () => observer.disconnect();
   }, [hasRecent]);
