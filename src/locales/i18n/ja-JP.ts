@@ -6292,6 +6292,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateHint": "アプリポートは外部公開用、管理ポートはデプロイとヘルスチェック用です。サーバーへ到達できることと、セキュリティグループで両ポートを開放してください。HTTPS の場合はサーバー側で証明書を用意しアプリポートで待受してください。証明書はプラットフォームでは管理しません。",
   // 相关任务
   "PC.Pages.AppProjectDetail.conversationTitle": "関連タスク",
+  "PC.Pages.AppProjectDetail.hideConversationPanel": "関連タスクを隠す",
+  "PC.Pages.AppProjectDetail.showConversationPanel": "関連タスクを表示",
   "PC.Pages.AppProjectDetail.newConversation": "新規タスク",
   "PC.Pages.AppProjectDetail.emptyConversation": "セッションはまだありません",
   "PC.Pages.AppProjectDetail.mine": "自分",
