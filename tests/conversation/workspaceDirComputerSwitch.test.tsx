@@ -7,6 +7,9 @@ vi.mock(
   '@/pages/SpaceProjectManage/components/CreateNormalProjectModal/index.less',
   () => ({ default: {} }),
 );
+// 组件链经 @/components/base barrel 触达 AgentType/McpInstallType，两者 styles 在模块加载期即被解引用，须一并 mock
+vi.mock('@/components/base/AgentType/index.less', () => ({ default: {} }));
+vi.mock('@/components/base/McpInstallType/index.less', () => ({ default: {} }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
 vi.mock('@/services/appDev', () => ({
   apiNormalProjectCreate: vi
