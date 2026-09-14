@@ -1,9 +1,12 @@
 /**
  * 独立技能列表组件 SkillListView 契约：
- * - 四场景接口参数：system(category+kw)、team(spaceId/spaceIds、未传自拉
+ * - 五场景接口参数：system(category+kw)、team(spaceId/spaceIds、未传自拉
  *   空间聚合、category=Skill+justReturnSpaceData)、search(固定 spaceId=-1)、
- *   enabled(空 body 全量 + keyword 客户端过滤、条目一律 enabled)；
- * - 服务端分页触底追加；启用/取消启用闭环(targetId 寻址、就地回写+重拉)；
+ *   enabled(空 body 全量 + keyword 客户端过滤、条目一律 enabled)、
+ *   convenient(启用空参全量 + 广场单页 100 并行拉取、targetId 去重且
+ *   启用的置前、keyword 启用客户端过滤/广场 kw 透传、单次拉齐)；
+ * - 服务端分页触底追加；启用/取消启用闭环(targetId 寻址、就地回写+重拉，
+ *   enabled/convenient 视图开关变更后整体重拉同步分组)；
  * - 付费拦截门：免费直通；付费未订阅先详情复核,仍待订阅弹套餐弹窗不触发
  *   onSelect,复核已订阅回写后放行并带 subscribed;租户未开启订阅直通；
  * - 双变体：grid 两栏卡 / list 单栏行,渲染与功能一致。
@@ -225,6 +228,120 @@ describe('SkillListView·场景接口参数契约', () => {
       expect(screen.queryByText('翻译技能')).toBeNull();
       expect(screen.getByText('写作技能')).toBeInTheDocument();
     });
+  });
+});
+
+describe('SkillListView·便捷视图（convenient）', () => {
+  it('接口契约：两路并行拉取（启用空参 + 广场单页 100），触底不追加', async () => {
+    apiPublishedSkillEnableList.mockResolvedValue({ code: '0000', data: [] });
+    apiPublishedSkillList.mockResolvedValue(pageOf([], 1, 1));
+    const { container } = renderView({
+      type: 'convenient',
+      category: '翻译',
+      keyword: '架构',
+    });
+
+    await waitFor(() =>
+      expect(apiPublishedSkillList).toHaveBeenCalledWith({
+        page: 1,
+        pageSize: 100,
+        category: '翻译',
+        kw: '架构',
+        official: true,
+      }),
+    );
+    expect(apiPublishedSkillEnableList).toHaveBeenCalledWith();
+    expect(apiSpaceList).not.toHaveBeenCalled();
+
+    // 单次拉齐：触底滚动不再发请求
+    const scroller = container.firstElementChild as HTMLElement;
+    Object.defineProperty(scroller, 'scrollHeight', { value: 500 });
+    Object.defineProperty(scroller, 'clientHeight', { value: 480 });
+    fireEvent.scroll(scroller);
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(apiPublishedSkillList).toHaveBeenCalledTimes(1);
+    expect(apiPublishedSkillEnableList).toHaveBeenCalledTimes(1);
+  });
+
+  it('去重与排序：广场与启用的重复条目丢弃，启用的置于最前', async () => {
+    apiPublishedSkillEnableList.mockResolvedValue({
+      code: '0000',
+      data: [skill({ id: 21, targetId: 201, name: '启用技能' })],
+    });
+    apiPublishedSkillList.mockResolvedValue(
+      pageOf(
+        [
+          skill({ id: 11, targetId: 201, name: '广场重复技能' }),
+          skill({ id: 12, targetId: 202, name: '广场新技能' }),
+        ],
+        1,
+        1,
+      ),
+    );
+    renderView({ type: 'convenient' });
+
+    const enabledCard = await waitFor(() => {
+      const el = document.querySelector('[data-skill-key="skill:enabled:21"]');
+      expect(el).toBeTruthy();
+      return el as HTMLElement;
+    });
+    // 广场与启用的 targetId=201 重复 → 丢弃，仅保留启用条目
+    expect(screen.queryByText('广场重复技能')).toBeNull();
+    const squareCard = document.querySelector(
+      '[data-skill-key="skill:convenient:12"]',
+    );
+    expect(squareCard).toBeTruthy();
+    // 启用条目排在广场条目之前
+    expect(
+      enabledCard.compareDocumentPosition(squareCard as Node) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('keyword 过滤：启用的客户端过滤 + 广场 kw 透传', async () => {
+    apiPublishedSkillEnableList.mockResolvedValue({
+      code: '0000',
+      data: [skill({ id: 21, targetId: 201, name: '启用技能' })],
+    });
+    apiPublishedSkillList.mockResolvedValue(pageOf([], 1, 1));
+    renderView({ type: 'convenient' });
+    expect(await screen.findByText('启用技能')).toBeInTheDocument();
+
+    cleanup();
+    apiPublishedSkillEnableList.mockClear();
+    apiPublishedSkillList.mockClear();
+    renderView({ type: 'convenient', keyword: '不存在的关键字' });
+    await waitFor(() => {
+      expect(screen.queryByText('启用技能')).toBeNull();
+    });
+    expect(apiPublishedSkillList).toHaveBeenCalledWith(
+      expect.objectContaining({ kw: '不存在的关键字' }),
+    );
+  });
+
+  it('开关变更后重拉：取消启用成功 → 两路接口整体重拉同步分组', async () => {
+    apiPublishedSkillEnableList.mockResolvedValue({
+      code: '0000',
+      data: [skill({ id: 21, targetId: 201, name: '启用技能', enabled: true })],
+    });
+    apiPublishedSkillList.mockResolvedValue(pageOf([], 1, 1));
+    renderView({ type: 'convenient' });
+
+    await screen.findByText('启用技能');
+    expect(apiPublishedSkillEnableList).toHaveBeenCalledTimes(1);
+    expect(apiPublishedSkillList).toHaveBeenCalledTimes(1);
+
+    // 拉到的即已启用 → 点击即取消启用（不走付费门），成功后就地回写 + 重拉
+    fireEvent.click(switchOf('skill:enabled:21')!);
+    await waitFor(() =>
+      expect(apiPublishedSkillUnEnable).toHaveBeenCalledWith(201),
+    );
+    await waitFor(() =>
+      expect(apiPublishedSkillEnableList).toHaveBeenCalledTimes(2),
+    );
+    await waitFor(() => expect(apiPublishedSkillList).toHaveBeenCalledTimes(2));
   });
 });
 

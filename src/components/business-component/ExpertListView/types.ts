@@ -34,9 +34,18 @@ export interface ExpertListItem {
  *           targetSubType=ChatBot 专家口径，category 内容分类）；
  * - team    团队空间：同接口 + justReturnSpaceData + category='Agent'，
  *           spaceId=具体空间 / spaceIds=全部空间聚合（未传组件自拉兜底）；
- * - search  搜索场景：同接口固定 spaceId=-1（组件内写死，不对外暴露）。
+ * - search  搜索场景：同接口固定 spaceId=-1（组件内写死，不对外暴露）；
+ * - convenient 便捷视图：最近召唤 + 系统广场前 100 条单次并行拉取，按
+ *           targetId 去重（最近召唤条目优先保留）且最近召唤整体置于
+ *           最前；keyword 对最近召唤客户端过滤、对广场走 kw 服务端过滤，
+ *           category 透传广场接口；单次拉齐，无加载更多。
  */
-export type ExpertListSourceType = 'used' | 'system' | 'team' | 'search';
+export type ExpertListSourceType =
+  | 'used'
+  | 'system'
+  | 'team'
+  | 'search'
+  | 'convenient';
 
 /** 布局变体：grid=两栏卡片（默认）/ list=单栏横排行 */
 export type ExpertListVariant = 'grid' | 'list';
@@ -48,7 +57,7 @@ export interface ExpertListViewProps {
   variant?: ExpertListVariant;
   /** 搜索关键字（受控；任意场景可传，组件内 300ms 防抖） */
   keyword?: string;
-  /** 系统广场内容分类（仅 type=system 生效，空/不传=全部） */
+  /** 系统广场内容分类（system/convenient 生效，空/不传=全部） */
   category?: string;
   /** 团队空间：具体空间 ID */
   spaceId?: number;
@@ -59,7 +68,7 @@ export interface ExpertListViewProps {
    * 内召唤放行），复核/召唤确认的已订阅随条目回传（下游免二次拦截）
    */
   onSelect: (item: ExpertListItem) => void;
-  /** 每页数量，默认 20（used 视图即拉取条数） */
+  /** 每页数量，默认 20（used 视图即拉取条数；convenient 视图固定 100 不受影响） */
   pageSize?: number;
   /** 根容器（滚动容器）类名 */
   className?: string;

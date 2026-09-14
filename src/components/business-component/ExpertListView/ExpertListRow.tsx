@@ -1,11 +1,11 @@
 /**
  * list 变体行：单栏横排紧凑行——圆角方小图标 + 名称/描述上下两行 +
- * 右端相对时间（悬停淡出让位）+ 右端覆盖层悬停「聘请」。无边线，悬停
- * 方形圆角灰底。与 grid 变体功能一致（选中/付费角标），仅布局不同。
+ * 右端相对时间。无边线，悬停方形圆角灰底；整行点击即选中（list 紧凑
+ * 场景不渲染悬停操作按钮，选中/付费角标与 grid 变体一致）。
  */
 import { t } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';
-import { Badge, Button } from 'antd';
+import { Badge } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import {
@@ -45,23 +45,10 @@ const ExpertListRow: React.FC<ExpertCardBaseProps> = ({
         </div>
       </div>
       {item.usedTime && (
-        /* 悬停淡出让位「聘请」（保留占位，名称/描述截断位置不回弹） */
         <span className={cx(styles['card-used-time'])} title={item.usedTime}>
           {formatTimeAgo(item.usedTime)}
         </span>
       )}
-      <div className={cx(styles['list-actions'])}>
-        <Button
-          size="small"
-          className={cx(styles['card-hire'], styles['card-select'])}
-          onClick={(event) => {
-            event.stopPropagation();
-            onSelect(item);
-          }}
-        >
-          {t('PC.Components.CapabilityModal.hire')}
-        </Button>
-      </div>
     </div>
   );
   if (item.paymentRequired) {

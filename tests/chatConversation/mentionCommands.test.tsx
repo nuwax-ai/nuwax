@@ -2,11 +2,12 @@ import {
   loadDraft,
   saveDraft,
 } from '@/components/business-component/ChatInputUnified/draftStorage';
+import AtResourcePopup from '@/components/ChatInputHome/AtResourcePopup';
+import type { AtResourcePopupProps } from '@/components/ChatInputHome/AtResourcePopup/types';
 import MentionEditor, {
   detectMention,
   getSerializedEditorText,
 } from '@/components/ChatInputHome/MentionEditor';
-import MentionPopup from '@/components/ChatInputHome/MentionPopup';
 import type { MentionEditorHandle } from '@/components/ChatInputHome/MentionPopup/types';
 import { useSlashPlugins } from '@/components/ChatInputHome/useSlashPlugins';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -21,14 +22,52 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { createRef } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 vi.mock('@/components/ChatInputHome/MentionEditor/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
-vi.mock('@/components/ChatInputHome/MentionPopup/index.less', () => ({
+vi.mock('@/components/ChatInputHome/AtResourcePopup/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
+// 内嵌列表组件（ExpertListView/KnowledgeListView）引用 services 与 umi，
+// vitest 环境不可用；桩捕获 props 供用例驱动选中/断言透传
+const embedLists = vi.hoisted(
+  () =>
+    ({
+      expert: {} as Record<string, any>,
+      knowledge: {} as Record<string, any>,
+    } as {
+      expert: Record<string, any>;
+      knowledge: Record<string, any>;
+    }),
+);
+vi.mock('@/components/business-component/ExpertListView', async () => {
+  const React = await import('react');
+  return {
+    default: (props: Record<string, unknown>) => {
+      Object.assign(embedLists.expert, props);
+      return React.createElement('div', { 'data-testid': 'at-expert-list' });
+    },
+  };
+});
+vi.mock('@/components/business-component/KnowledgeListView', async () => {
+  const React = await import('react');
+  return {
+    default: (props: Record<string, unknown>) => {
+      Object.assign(embedLists.knowledge, props);
+      return React.createElement('div', { 'data-testid': 'at-knowledge-list' });
+    },
+  };
+});
 // CapabilityModal 引用 services（umi request），vitest 环境不可用；用桩捕获 props 驱动选中/关闭
 const capabilityModalProps = vi.hoisted(
   () =>
@@ -39,6 +78,7 @@ const capabilityModalProps = vi.hoisted(
       resourceTypes?: string[];
       defaultResourceType?: string;
       defaultConnectedView?: boolean;
+      defaultUsedView?: boolean;
     }),
 );
 vi.mock('@/components/ChatInputHome/CapabilityModal', () => ({
@@ -79,6 +119,8 @@ function type(editor: HTMLElement, text: string) {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  embedLists.expert = {};
+  embedLists.knowledge = {};
   vi.stubGlobal(
     'ResizeObserver',
     class {
@@ -270,61 +312,78 @@ describe('外部技能回填（defaultMentions）', () => {
   });
 });
 
-describe('列表数据一致性', () => {
-  it('打开时数据加载中：弹层保持打开并显示加载中，而非被空列表收起', async () => {
+describe('列表数据一致性（@ 弹层·上下文文件 tab）', () => {
+  const renderPopup = (props: Partial<AtResourcePopupProps>) => {
+    // Partial 覆盖缺省必填项后整体断言收口（测试助手惯用法）
+    const merged = {
+      mode: 'session',
+      position: { left: 0 },
+      onSelectFile: vi.fn(),
+      onSelectDoc: vi.fn(),
+      onSelectExpert: vi.fn(),
+      onMore: vi.fn(),
+      onClose: vi.fn(),
+      ...props,
+    } as AtResourcePopupProps;
+    return render(<AtResourcePopup {...merged} />);
+  };
+
+  it('打开时数据加载中：弹层保持打开并显示加载中，而非被空列表切走', async () => {
     let resolveFetch!: (items: (typeof file)[]) => void;
-    const onClose = vi.fn();
-    render(
-      <MentionPopup
-        visible
-        position={{ left: 0 }}
-        onSelect={vi.fn()}
-        onClose={onClose}
-        onFetchMentionFiles={() =>
-          new Promise<(typeof file)[]>((r) => {
-            resolveFetch = r;
-          })
-        }
-      />,
-    );
-    // 取数未返回：展示 loading 文案，且不触发「无文件自动收起」
+    renderPopup({
+      visible: true,
+      onFetchMentionFiles: () =>
+        new Promise<(typeof file)[]>((r) => {
+          resolveFetch = r;
+        }),
+    });
+    // 取数未返回：展示 loading 态，且不触发「空文件切资料库 tab」
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.queryByText('报告.md')).toBeNull();
+    // 判定期间不显示切换器（打开即判定，文件 tab 不先闪现）
     expect(
-      screen.getByText('PC.Components.ChatInputHomeMentionPopup.loading'),
-    ).toBeInTheDocument();
-    expect(onClose).not.toHaveBeenCalled();
+      screen.queryByText('PC.Components.AtResourcePopup.tabFile'),
+    ).toBeNull();
     // 刷新微任务让 onFetchMentionFiles 被调用（pending promise 创建）
     await act(async () => {});
     await act(async () => resolveFetch([file]));
     await screen.findByText('报告.md');
-    expect(onClose).not.toHaveBeenCalled();
+    // 文件非空：停留在文件 tab，未渲染资料库列表
+    expect(screen.queryByTestId('at-knowledge-list')).toBeNull();
   });
 
-  it('真实挂载序列（先不可见再打开）：首次打开不被空列表自动收起', async () => {
+  it('真实挂载序列（先不可见再打开）：首次打开不被空列表判定抢先切走', async () => {
     // 复现真机时序：弹层组件随编辑器常驻（visible=false 挂载），输入 @ 后才翻开。
-    // 曾因自动收起 effect 读到同 commit 不可见的状态更新（loading=false+空列表），
-    // 首次 @ 打开即被收起、第二次起才正常——表现为「必须先输过 / 才生效」
+    // 曾因空判定 effect 读到同 commit 不可见的状态更新（loading=false+空列表），
+    // 首次 @ 打开即被切走、第二次起才正常——表现为「必须先输过 / 才生效」
     let resolveFetch!: (items: (typeof file)[]) => void;
-    const onClose = vi.fn();
     const props = {
-      position: { left: 0 },
-      onSelect: vi.fn(),
-      onClose,
       onFetchMentionFiles: () =>
         new Promise<(typeof file)[]>((r) => {
           resolveFetch = r;
         }),
     };
-    const { rerender } = render(<MentionPopup {...props} visible={false} />);
+    const { rerender } = renderPopup({ ...props, visible: false });
     // 打开弹层（取数 pending）
-    rerender(<MentionPopup {...props} visible />);
-    expect(
-      screen.getByText('PC.Components.ChatInputHomeMentionPopup.loading'),
-    ).toBeInTheDocument();
-    expect(onClose).not.toHaveBeenCalled();
+    rerender(
+      <AtResourcePopup
+        mode="session"
+        position={{ left: 0 }}
+        visible
+        onSelectFile={vi.fn()}
+        onSelectDoc={vi.fn()}
+        onSelectExpert={vi.fn()}
+        onMore={vi.fn()}
+        onClose={vi.fn()}
+        {...props}
+      />,
+    );
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.queryByTestId('at-knowledge-list')).toBeNull();
     await act(async () => {});
     await act(async () => resolveFetch([file]));
     await screen.findByText('报告.md');
-    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('at-knowledge-list')).toBeNull();
   });
 
   it('文件先过滤再截断、打开时刷新且搜索不再次请求', async () => {
@@ -337,21 +396,57 @@ describe('列表数据一致性', () => {
       file,
     ]);
     const props = {
-      visible: true,
-      position: { left: 0, top: 0 },
-      onSelect: vi.fn(),
-      onClose: vi.fn(),
       onFetchMentionFiles: fetch,
     };
-    const { rerender } = render(<MentionPopup {...props} />);
+    const { rerender } = renderPopup({ ...props, visible: true });
+    const popupRoot = () => document.querySelector('[data-at-popup]');
     await waitFor(() =>
-      expect(screen.getAllByRole('option')).toHaveLength(100),
+      expect(popupRoot()?.querySelectorAll('[data-at-file-key]')).toHaveLength(
+        100,
+      ),
     );
-    rerender(<MentionPopup {...props} searchText="报告" />);
+    rerender(
+      <AtResourcePopup
+        mode="session"
+        position={{ left: 0 }}
+        visible
+        searchText="报告"
+        onSelectFile={vi.fn()}
+        onSelectDoc={vi.fn()}
+        onSelectExpert={vi.fn()}
+        onMore={vi.fn()}
+        onClose={vi.fn()}
+        {...props}
+      />,
+    );
     await screen.findByText('报告.md');
     expect(fetch).toHaveBeenCalledTimes(1);
-    rerender(<MentionPopup {...props} visible={false} />);
-    rerender(<MentionPopup {...props} />);
+    rerender(
+      <AtResourcePopup
+        mode="session"
+        position={{ left: 0 }}
+        onSelectFile={vi.fn()}
+        onSelectDoc={vi.fn()}
+        onSelectExpert={vi.fn()}
+        onMore={vi.fn()}
+        onClose={vi.fn()}
+        {...props}
+        visible={false}
+      />,
+    );
+    rerender(
+      <AtResourcePopup
+        mode="session"
+        position={{ left: 0 }}
+        visible
+        onSelectFile={vi.fn()}
+        onSelectDoc={vi.fn()}
+        onSelectExpert={vi.fn()}
+        onMore={vi.fn()}
+        onClose={vi.fn()}
+        {...props}
+      />,
+    );
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
   });
   it('切换文件数据源时忽略旧会话的迟到响应', async () => {
@@ -360,19 +455,23 @@ describe('列表数据一致性', () => {
       new Promise<(typeof file)[]>((r) => {
         resolve = r;
       });
-    const props = {
-      visible: true,
+    const base = {
+      mode: 'session' as const,
       position: { left: 0 },
-      onSelect: vi.fn(),
+      visible: true,
+      onSelectFile: vi.fn(),
+      onSelectDoc: vi.fn(),
+      onSelectExpert: vi.fn(),
+      onMore: vi.fn(),
       onClose: vi.fn(),
     };
     const { rerender } = render(
-      <MentionPopup {...props} onFetchMentionFiles={oldFetch} />,
+      <AtResourcePopup {...base} onFetchMentionFiles={oldFetch} />,
     );
     await act(async () => {});
     rerender(
-      <MentionPopup
-        {...props}
+      <AtResourcePopup
+        {...base}
         onFetchMentionFiles={async () => [
           { ...file, name: '新会话', relativePath: 'new' },
         ]}
@@ -381,6 +480,59 @@ describe('列表数据一致性', () => {
     await screen.findByText('新会话');
     await act(async () => resolve([file]));
     expect(screen.queryByText('报告.md')).toBeNull();
+  });
+  it('文件为空且无搜索词时收敛为纯资料库：文件 tab 移除、无切换器', async () => {
+    renderPopup({
+      visible: true,
+      onFetchMentionFiles: async () => [],
+    });
+    await act(async () => {});
+    // 资料库列表直接展示（唯一内容）
+    await waitFor(() =>
+      expect(screen.getByTestId('at-knowledge-list')).toBeInTheDocument(),
+    );
+    // 文件 tab 已收敛：切换器整体隐藏（单 tab 无切换必要）
+    expect(
+      screen.queryByText('PC.Components.AtResourcePopup.tabFile'),
+    ).toBeNull();
+    expect(
+      screen.queryByText('PC.Components.AtResourcePopup.tabKnowledge'),
+    ).toBeNull();
+    expect(screen.queryByText('报告.md')).toBeNull();
+  });
+
+  it('文件可用性实时校正：先空收敛纯资料库，生成文件后重开恢复文件 tab', async () => {
+    let empty = true;
+    const fetcher = vi.fn(async () => (empty ? [] : [{ ...file }]));
+    const base = {
+      mode: 'session' as const,
+      position: { left: 0 },
+      onSelectFile: vi.fn(),
+      onSelectDoc: vi.fn(),
+      onSelectExpert: vi.fn(),
+      onMore: vi.fn(),
+      onClose: vi.fn(),
+      onFetchMentionFiles: fetcher,
+    };
+    const { rerender } = render(<AtResourcePopup {...base} visible />);
+    // 首开：无文件 → 收敛纯资料库（无切换器）
+    await waitFor(() =>
+      expect(screen.getByTestId('at-knowledge-list')).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByText('PC.Components.AtResourcePopup.tabFile'),
+    ).toBeNull();
+
+    // 模拟会话中生成文件后关闭再打开（FilePanel 常驻挂载,重拉校正）
+    empty = false;
+    rerender(<AtResourcePopup {...base} visible={false} />);
+    rerender(<AtResourcePopup {...base} visible />);
+    // 文件 tab 恢复（切换器重现）,切过去可见新文件
+    const fileTab = await screen.findByText(
+      'PC.Components.AtResourcePopup.tabFile',
+    );
+    fireEvent.click(fileTab);
+    await screen.findByText('报告.md');
   });
 });
 
@@ -413,10 +565,14 @@ describe('键盘与错误状态', () => {
   });
   it('文件请求失败显示可恢复错误而不是空白或未处理异常', async () => {
     render(
-      <MentionPopup
+      <AtResourcePopup
+        mode="session"
         visible
         position={{ left: 0 }}
-        onSelect={vi.fn()}
+        onSelectFile={vi.fn()}
+        onSelectDoc={vi.fn()}
+        onSelectExpert={vi.fn()}
+        onMore={vi.fn()}
         onClose={vi.fn()}
         onFetchMentionFiles={async () => {
           throw new Error('network');
@@ -728,6 +884,199 @@ describe('capability 模式（会话输入框 / 唤起添加能力弹窗）', ()
     type(editor, '/');
     expect(capabilityModalProps.open).toBe(true);
     expect(getSerializedEditorText(editor)).toBe('');
+  });
+});
+
+describe('@ 弹层·首页模式（专家+资料库）', () => {
+  beforeEach(() => {
+    capabilityModalProps.open = false;
+    capabilityModalProps.onSelect = undefined;
+    capabilityModalProps.onClose = undefined;
+  });
+
+  it('首页 @ 唤起资源弹层：默认专家 tab（便捷视图 list 变体），关键字实时透传', async () => {
+    const { container } = render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        atHomePanel
+        onChange={vi.fn()}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '@架构');
+    await waitFor(() =>
+      expect(screen.getByTestId('at-expert-list')).toBeInTheDocument(),
+    );
+    expect(embedLists.expert).toMatchObject({
+      type: 'convenient',
+      variant: 'list',
+      keyword: '架构',
+    });
+    // 首页模式无文件 tab：资料库列表初始不渲染
+    expect(screen.queryByTestId('at-knowledge-list')).toBeNull();
+    expect(screen.queryByText('报告.md')).toBeNull();
+  });
+
+  it('专家选中：删 @ 触发串并单选通知 onExpertSelect，不插 chip', async () => {
+    const onExpertSelect = vi.fn();
+    const { container } = render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        atHomePanel
+        onExpertSelect={onExpertSelect}
+        onChange={vi.fn()}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '@');
+    await waitFor(() =>
+      expect(screen.getByTestId('at-expert-list')).toBeInTheDocument(),
+    );
+    act(() =>
+      embedLists.expert.onSelect?.({
+        key: 'expert:used:1',
+        rawId: 1,
+        targetId: 7,
+        name: '专家甲',
+        icon: '',
+        description: '专家描述',
+      }),
+    );
+    expect(getSerializedEditorText(editor)).toBe('');
+    expect(onExpertSelect).toHaveBeenCalledTimes(1);
+    expect(onExpertSelect).toHaveBeenLastCalledWith(
+      expect.objectContaining({ targetId: 7, name: '专家甲' }),
+    );
+    expect(editor.querySelector('[data-mention-id]')).toBeNull();
+  });
+
+  it('切资料库 tab 选中文档：doc chip 插入并按契约派生 selectedDocs', async () => {
+    const onDocsChange = vi.fn();
+    const { container } = render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        atHomePanel
+        onDocsChange={onDocsChange}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '@');
+    await waitFor(() =>
+      expect(screen.getByTestId('at-expert-list')).toBeInTheDocument(),
+    );
+    // 切到资料库 tab（Segmented 项）
+    fireEvent.click(
+      screen.getByText('PC.Components.AtResourcePopup.tabKnowledge'),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('at-knowledge-list')).toBeInTheDocument(),
+    );
+    expect(embedLists.knowledge).toMatchObject({
+      type: 'recent',
+      variant: 'list',
+    });
+    act(() =>
+      embedLists.knowledge.onSelect?.({
+        key: 'knowledge:recent:9',
+        rawId: 9,
+        slugId: 'hgwzjmk7m9LBCSyr',
+        name: '测试1-1',
+        pageType: 'doc',
+      }),
+    );
+    expect(editor.querySelector('[data-mention-kind="doc"]')).not.toBeNull();
+    expect(onDocsChange).toHaveBeenLastCalledWith([
+      { slugId: 'hgwzjmk7m9LBCSyr', title: '测试1-1', pageType: 'doc' },
+    ]);
+  });
+
+  it('更多入口：删 @ 触发串并按当前 tab 定位打开能力弹窗，专家 tab 初始落「最近召唤」', async () => {
+    const { container } = render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        atHomePanel
+        onChange={vi.fn()}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '@');
+    await waitFor(() =>
+      expect(screen.getByTestId('at-expert-list')).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByText('PC.Components.AtResourcePopup.more'));
+    expect(capabilityModalProps.open).toBe(true);
+    // 专家 tab → 能力弹窗定位专家维度（首页开放范围）+ 初始「最近召唤」页签
+    expect(capabilityModalProps.defaultResourceType).toBe('expert');
+    expect(capabilityModalProps.defaultUsedView).toBe(true);
+    expect(getSerializedEditorText(editor)).toBe('');
+  });
+
+  it('每次 @ 唤起回到最初状态：上次停留的资料库 tab 不保留，回默认专家 tab', async () => {
+    const { container } = render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        atHomePanel
+        onChange={vi.fn()}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '@');
+    await waitFor(() =>
+      expect(screen.getByTestId('at-expert-list')).toBeInTheDocument(),
+    );
+    // 停留到资料库 tab 后关闭
+    fireEvent.click(
+      screen.getByText('PC.Components.AtResourcePopup.tabKnowledge'),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('at-knowledge-list')).toBeInTheDocument(),
+    );
+    fireEvent.keyDown(editor, { key: 'Escape' });
+    // 再次 @ 唤起：回到默认专家 tab（重挂重置,不保留上次停留）
+    type(editor, '@');
+    await waitFor(() =>
+      expect(screen.getByTestId('at-expert-list')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('at-knowledge-list')).toBeNull();
+  });
+
+  it('弹层打开期间 Tab 不跳出弹窗：默认行为被拦截，焦点保持在编辑器（循环停靠点）', async () => {
+    const { container } = render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        atHomePanel
+        onChange={vi.fn()}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '@');
+    await waitFor(() =>
+      expect(screen.getByTestId('at-expert-list')).toBeInTheDocument(),
+    );
+    // fireEvent 返回 false = preventDefault 已被调用（焦点不会移出编辑器）
+    expect(fireEvent.keyDown(editor, { key: 'Tab' })).toBe(false);
+    expect(fireEvent.keyDown(editor, { key: 'Tab', shiftKey: true })).toBe(
+      false,
+    );
+    expect(document.activeElement).toBe(editor);
   });
 });
 

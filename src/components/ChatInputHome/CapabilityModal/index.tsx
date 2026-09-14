@@ -143,6 +143,12 @@ export interface CapabilityModalProps {
    * 头像组入口专用——其余入口（'/' 触发等）一律落默认数据源页签
    */
   defaultConnectedView?: boolean;
+  /**
+   * 初始是否进入专家「最近召唤」聚合页签，默认 false（数据源页签）；
+   * 仅专家维度生效（其余维度传入无效）。@ 资源弹层专家 tab「更多」
+   * 入口专用——无召唤记录时由清空回落 effect 自动退回数据源页签
+   */
+  defaultUsedView?: boolean;
   /** 选中后是否自动关闭，默认 true */
   closeOnSelect?: boolean;
   /** 开放的能力类型列表，缺省全部；用于按入口收敛可选范围（如专家仅首页开放） */
@@ -155,6 +161,7 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   onSelect,
   defaultResourceType = 'skill',
   defaultConnectedView = false,
+  defaultUsedView = false,
   closeOnSelect = true,
   resourceTypes,
 }) => {
@@ -196,8 +203,12 @@ const CapabilityModal: React.FC<CapabilityModalProps> = ({
   // 技能「我启用的」聚合视图：true 时列表切到 enable/list 全量数据
   // （系统广场/团队空间筛选全部失效，仅保留关键字），切回数据源 tab 时复位
   const [enabledView, setEnabledView] = useState<boolean>(false);
-  // 专家「最近召唤」聚合视图：true 时列表切到 used/list 全量数据，复位同上
-  const [usedView, setUsedView] = useState<boolean>(false);
+  // 专家「最近召唤」聚合视图：true 时列表切到 used/list 全量数据，复位
+  // 同上；仅 @ 弹层专家 tab「更多」入口经 defaultUsedView 显式指定时
+  // 初始进入（无记录时由清空回落 effect 自动退回数据源页签）
+  const [usedView, setUsedView] = useState<boolean>(
+    defaultUsedView && initialResourceType === 'expert',
+  );
   // 连接器「已连接」聚合视图：true 时列表切到 connected=true 全量数据，
   // 复位同上（断开最后一项后由回落 effect 自动退出）；仅头像组入口经
   // defaultConnectedView 显式指定时初始进入，其余入口落默认数据源页签

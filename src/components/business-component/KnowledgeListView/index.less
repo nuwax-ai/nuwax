@@ -92,6 +92,18 @@
   }
 }
 
+// list 变体行：无边框（border 透明占位防行高抖动）+ 悬停灰底,
+// 与专家/技能 list 紧凑行口径一致
+.row[data-variant='list'] {
+  border-color: transparent;
+
+  &:hover {
+    border-color: transparent;
+    box-shadow: none;
+    background: @know-fill;
+  }
+}
+
 // 资料库同款线性文件图标（RepoFileIcon）：40px 圆形 tinted 底与
 // 技能/专家/连接器网格卡图标口径一致,行内垂直居中不可压缩
 .file-icon {
@@ -116,8 +128,9 @@
   white-space: nowrap;
 }
 
-// 右端相对时间胶囊（仅 recent 视图）,右端对齐;悬停时整体淡出让位
-// 「选择」按钮（保留占位,名称截断位置不回弹,按钮底色下不再透出胶囊）
+// 变体分化经行根 data-variant 标记：时间胶囊淡出与「选择」按钮浮现仅
+// grid（data-variant='grid'）——list 无悬停按钮,时间常显。root-grid/
+// root-list 仅控制列数,不参与行内行为
 .time-pill {
   flex-shrink: 0;
   margin-left: auto;
@@ -131,7 +144,7 @@
   transition: opacity 0.15s ease-in-out;
 }
 
-.row:hover .time-pill {
+.row[data-variant='grid']:hover .time-pill {
   opacity: 0;
 }
 
@@ -170,6 +183,6 @@
   }
 }
 
-.row:hover .select-btn {
+.row[data-variant='grid']:hover .select-btn {
   display: inline-block;
 }
