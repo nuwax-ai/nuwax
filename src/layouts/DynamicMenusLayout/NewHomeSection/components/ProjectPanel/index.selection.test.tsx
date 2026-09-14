@@ -23,11 +23,13 @@ import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 // vi.hoisted：mock 工厂随静态 import 提前执行，引用的 spy 必须先于 import 初始化
 const {
   pageQueryMock,
+  conversationsMock,
   conversationUpdateMock,
   conversationDeleteMock,
   pinMock,
 } = vi.hoisted(() => ({
   pageQueryMock: vi.fn(),
+  conversationsMock: vi.fn(),
   conversationUpdateMock: vi.fn(),
   conversationDeleteMock: vi.fn(),
   pinMock: vi.fn(),
@@ -38,11 +40,14 @@ vi.mock('umi', () => ({
 }));
 
 vi.mock('@/services/userProjectApp', () => ({
-  apiUserProjectTabPageQuery: pageQueryMock,
+  apiUserProjectPageQuery: pageQueryMock,
+  apiUserProjectConversations: conversationsMock,
   apiUserProjectPin: vi.fn(),
   apiUserProjectArchive: vi.fn(),
-  apiUserProjectDelete: vi.fn(),
-  apiUserProjectUpdate: vi.fn(),
+  apiUserProjectCollect: vi.fn(),
+  apiUserProjectUnCollect: vi.fn(),
+  apiNormalProjectDelete: vi.fn(),
+  apiNormalProjectUpdate: vi.fn(),
   apiUserAppDelete: vi.fn(),
   apiUserAppUpdate: vi.fn(),
 }));
@@ -92,24 +97,38 @@ const buildRecord = (
   ...overrides,
 });
 
+/** 统一接口不随列表回包 conversations：records 只带项目行，子会话由
+ * conversationsMock 按 projectId 回（懒加载链路） */
 const defaultRecords = (): UserProjectTabItem[] => [
   buildRecord({
     projectId: 1,
     name: '项目一',
-    conversations: [buildConversation(11), buildConversation(12)],
   }),
   buildRecord({
     projectId: 2,
     name: '项目二',
-    conversations: [buildConversation(21)],
   }),
 ];
 
-const respondPage = (records: UserProjectTabItem[]) => {
+const defaultConversations = (): Record<number, ConversationInfo[]> => ({
+  1: [buildConversation(11), buildConversation(12)],
+  2: [buildConversation(21)],
+});
+
+const respondPage = (
+  records: UserProjectTabItem[],
+  conversations: Record<number, ConversationInfo[]> = {},
+) => {
   pageQueryMock.mockResolvedValue({
     code: SUCCESS_CODE,
     data: { records, total: records.length },
   });
+  conversationsMock.mockImplementation((projectId: number) =>
+    Promise.resolve({
+      code: SUCCESS_CODE,
+      data: conversations[projectId] ?? [],
+    }),
+  );
 };
 
 /** 取项目行的子会话容器（hidden 属性驱动折叠态） */
@@ -141,13 +160,14 @@ async function actFlush(
 describe('ProjectPanel 选中关系', () => {
   beforeEach(() => {
     pageQueryMock.mockReset();
+    conversationsMock.mockReset();
     conversationUpdateMock.mockReset();
     conversationDeleteMock.mockReset();
     pinMock.mockReset();
   });
 
   it('命中项目子会话：折叠态自动展开 + 子行高亮（child-active/aria-current）', async () => {
-    respondPage(defaultRecords());
+    respondPage(defaultRecords(), defaultConversations());
     const { rerender } = render(
       <ProjectPanel compact activeConversationId={undefined} />,
     );
@@ -175,7 +195,7 @@ describe('ProjectPanel 选中关系', () => {
   });
 
   it('自动展开只触发一次：命中后手动折叠不被强制弹回', async () => {
-    respondPage(defaultRecords());
+    respondPage(defaultRecords(), defaultConversations());
     const { rerender } = render(
       <ProjectPanel compact activeConversationId={'11'} />,
     );
@@ -196,7 +216,7 @@ describe('ProjectPanel 选中关系', () => {
   });
 
   it('反查上报契约：命中传会话 id，未命中/无路由传 null', async () => {
-    respondPage(defaultRecords());
+    respondPage(defaultRecords(), defaultConversations());
     const onResolved = vi.fn();
 
     const { rerender } = render(
@@ -230,7 +250,6 @@ describe('ProjectPanel 选中关系', () => {
         projectId: 1,
         name: '已归档项目',
         archived: true,
-        conversations: [buildConversation(11)],
       }),
     ]);
     const onResolved = vi.fn();

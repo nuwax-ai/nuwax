@@ -11,7 +11,10 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
-import { apiUserProjectTabPageQuery } from '@/services/userProjectApp';
+import {
+  apiUserProjectConversations,
+  apiUserProjectPageQuery,
+} from '@/services/userProjectApp';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type {
   RepoPageSearchItem,
@@ -31,7 +34,10 @@ export type SearchTab =
   | 'repo';
 
 /** 弹窗自渲染行的分类（技能/专家/连接器 tab 由对应列表组件自渲染，不在其中） */
-export type SearchRowKind = Exclude<SearchTab, 'skill' | 'expert' | 'connector'>;
+export type SearchRowKind = Exclude<
+  SearchTab,
+  'skill' | 'expert' | 'connector'
+>;
 
 /** 统一搜索结果条目（kind 决定行渲染与点击分发） */
 export interface SearchResultItem {
@@ -165,7 +171,9 @@ export async function fetchTaskPage({
   };
 }
 
-/** 项目：tab/page-query 页码分页（name 模糊匹配契约已实证生效） */
+/** 项目：page-query 页码分页（name 模糊匹配契约已实证生效）+ 当页项目并行
+ * 补拉子会话（统一接口不随列表回包 conversations，projectConversation
+ * 依赖它决定项目行可点性与跳转目标；个别项目失败置空行置灰，不拖垮整页） */
 export async function fetchProjectPage({
   keyword,
   size,
@@ -173,7 +181,7 @@ export async function fetchProjectPage({
   spaceId,
 }: SearchPageParams): Promise<SearchPageResult> {
   const current = cursor.page ?? 1;
-  const res = await apiUserProjectTabPageQuery({
+  const res = await apiUserProjectPageQuery({
     queryFilter: { spaceId, name: keyword || undefined },
     current,
     pageSize: size,
@@ -182,7 +190,21 @@ export async function fetchProjectPage({
     columns: [],
   });
   const page = unwrap(res);
-  const items = page?.records?.map(mapProjectItem) ?? [];
+  const records = page?.records ?? [];
+  const withConversations = await Promise.all(
+    records.map((record) =>
+      Promise.resolve(
+        apiUserProjectConversations(record.projectId, record.projectType),
+      )
+        .then((convRes) => ({
+          ...record,
+          conversations:
+            convRes?.code === SUCCESS_CODE ? convRes.data ?? [] : [],
+        }))
+        .catch(() => ({ ...record, conversations: [] as ConversationInfo[] })),
+    ),
+  );
+  const items = withConversations.map(mapProjectItem);
   return {
     items,
     // 后端回读 pages 用页码判定；未回读时退「满页视为还有」

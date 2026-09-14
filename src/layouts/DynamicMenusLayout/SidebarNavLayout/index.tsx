@@ -439,8 +439,11 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                 >
                   {/* 标题（选中导航项名称） */}
                   <ConditionRender condition={isShowTitle && currentTitle}>
-                    {/* 水平 10px 与行内容（容器 10 + 行 padding 10 = 20px）对齐 */}
-                    <div style={{ padding: '0 10px 12px' }}>
+                    {/* 水平 10px 与行内容（容器 10 + 行 padding 10 = 20px）对齐；
+                        垂直上提 9px 与顶栏 logo/搜索/内容区标题同一中线：列 padding
+                        (@padding 16) + 滚动容器 paddingSM 12 把标题行顶到 28px，
+                        24px 行高中点落在 40px，需回到 19px 顶（中点 31px 对齐线） */}
+                    <div style={{ margin: '-9px 0 0', padding: '0 10px 12px' }}>
                       <Typography.Title
                         level={5}
                         style={{ marginBottom: 0 }}

@@ -24,13 +24,17 @@ vi.mock('@/services/square', () => ({
 }));
 
 vi.mock('@/services/userProjectApp', () => ({
-  apiUserProjectTabPageQuery: vi.fn(),
+  apiUserProjectPageQuery: vi.fn(),
+  apiUserProjectConversations: vi.fn(),
 }));
 
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { apiRepoRecentlyAccessedPages, apiRepoSearch } from '@/services/repo';
 import { apiPublishedAgentList } from '@/services/square';
-import { apiUserProjectTabPageQuery } from '@/services/userProjectApp';
+import {
+  apiUserProjectConversations,
+  apiUserProjectPageQuery,
+} from '@/services/userProjectApp';
 import {
   fetchProjectPage,
   fetchRepoPage,
@@ -44,7 +48,8 @@ const mocked = {
   apiRepoSearch: vi.mocked(apiRepoSearch),
   apiRepoRecentlyAccessedPages: vi.mocked(apiRepoRecentlyAccessedPages),
   apiPublishedAgentList: vi.mocked(apiPublishedAgentList),
-  apiUserProjectTabPageQuery: vi.mocked(apiUserProjectTabPageQuery),
+  apiUserProjectPageQuery: vi.mocked(apiUserProjectPageQuery),
+  apiUserProjectConversations: vi.mocked(apiUserProjectConversations),
 };
 void mocked;
 
@@ -149,13 +154,16 @@ describe('fetchTaskPage（lastId 游标分页）', () => {
   });
 });
 
-describe('fetchProjectPage（页码分页）', () => {
+describe('fetchProjectPage（页码分页 + 当页补拉子会话）', () => {
   it('首页 current=1 + queryFilter.name；pages 回读时按页码判定 hasMore', async () => {
-    mocked.apiUserProjectTabPageQuery.mockResolvedValue(
+    mocked.apiUserProjectPageQuery.mockResolvedValue(
       ok({
         records: [{ projectId: 7, name: 'P', modified: '', created: '' }],
         pages: 3,
       }) as never,
+    );
+    mocked.apiUserProjectConversations.mockImplementation(
+      () => ok([{ id: 70 }]) as never,
     );
     const res = await fetchProjectPage({
       keyword: 'P',
@@ -163,20 +171,23 @@ describe('fetchProjectPage（页码分页）', () => {
       cursor: {},
       spaceId: 52,
     });
-    expect(mocked.apiUserProjectTabPageQuery).toHaveBeenCalledWith(
+    expect(mocked.apiUserProjectPageQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         queryFilter: { spaceId: 52, name: 'P' },
         current: 1,
         pageSize: 20,
       }),
     );
+    expect(mocked.apiUserProjectConversations).toHaveBeenCalledTimes(1);
     expect(res.items[0]).toMatchObject({ kind: 'project', id: 'project-7' });
+    // 子会话补拉回填 → 项目行可点（projectConversation 就位）
+    expect(res.items[0].projectConversation).toEqual({ id: 70 });
     expect(res.hasMore).toBe(true);
     expect(res.cursor).toEqual({ page: 2 });
   });
 
   it('末页（current=pages）hasMore=false', async () => {
-    mocked.apiUserProjectTabPageQuery.mockResolvedValue(
+    mocked.apiUserProjectPageQuery.mockResolvedValue(
       ok({ records: [], pages: 2 }) as never,
     );
     const res = await fetchProjectPage({
@@ -188,8 +199,8 @@ describe('fetchProjectPage（页码分页）', () => {
     expect(res.cursor).toEqual({ page: 3 });
   });
 
-  it('未回读 pages 时退「满页视为还有」', async () => {
-    mocked.apiUserProjectTabPageQuery.mockResolvedValue(
+  it('未回读 pages 时退「满页视为还有」；子会话补拉失败置空不拖垮整页', async () => {
+    mocked.apiUserProjectPageQuery.mockResolvedValue(
       ok({
         records: Array.from({ length: 20 }, (_, i) => ({
           projectId: i,
@@ -199,8 +210,13 @@ describe('fetchProjectPage（页码分页）', () => {
         })),
       }) as never,
     );
+    mocked.apiUserProjectConversations.mockRejectedValue(
+      new Error('boom') as never,
+    );
     const res = await fetchProjectPage({ keyword: '', size: 20, cursor: {} });
     expect(res.hasMore).toBe(true);
+    // 补拉失败 → conversations 置空 → projectConversation undefined（行置灰）
+    expect(res.items[0].projectConversation).toBeUndefined();
   });
 });
 

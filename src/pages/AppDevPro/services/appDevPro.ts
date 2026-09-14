@@ -23,7 +23,6 @@ export {
   apiUserAppGetById,
   apiUserAppUpdate,
   apiUserProjectDelete,
-  apiUserProjectTabPageQuery,
   apiUserProjectUpdate,
 } from '@/services/userProjectApp';
 

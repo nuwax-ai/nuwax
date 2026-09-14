@@ -9,12 +9,11 @@ import {
   apiNormalProjectUpdate,
   apiUserAppDelete,
   apiUserAppUpdate,
-  apiUserProjectTabPageQuery,
+  apiUserProjectPageQuery,
 } from '@/services/userProjectApp';
 import { apiDownloadAllFiles } from '@/services/vncDesktop';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserProjectConversationInfo } from '@/types/interfaces/userProject';
 import {
@@ -71,23 +70,24 @@ const unwrapConversationList = (
 };
 
 /**
- * 行最新会话解析：tab 行的 conversationId 实测恒为 null（后端未维护绑定），
- * 项目下会话在 conversations[] 里，取 modified 最新一条作为「最新会话」
- * （含 id/agentId，打开与导出共用）。
+ * 行最新会话解析：统一列表接口不回包 conversations，取右侧任务链路已拉到的
+ * 项目会话（conversationsByProjectRef），按 modified 最新一条作为「最新会话」
+ * （含 id/agentId，打开与导出共用；tab 接口时代 conversationId 实测恒 null
+ * 不再依赖，未就绪返回 undefined 由调用方兜底链处理）。
  */
 const resolveRowLatestConversation = (
-  item: ProjectListItem,
-): ConversationInfo | undefined => {
-  const list = item.conversations || [];
-  if (!list.length) return undefined;
-  return [...list].sort((a, b) =>
+  conversations?: UserProjectConversationInfo[],
+): UserProjectConversationInfo | undefined => {
+  if (!conversations?.length) return undefined;
+  return [...conversations].sort((a, b) =>
     (b.modified || '').localeCompare(a.modified || ''),
   )[0];
 };
 
 /**
  * 项目管理：个人/团队空间下的项目列表（常规项目/网页应用/全栈应用三类合并查询）。
- * 数据走 tab/page-query（实测行主键 projectId、自带最新会话 id 与项目下会话）；
+ * 数据走统一接口 page-query（2026-09-14 两接口统一：回包含归档项目、不附带
+ * 项目会话，行级 conversations 由右侧任务链路拉取后经 ref 回填供打开/导出取用）；
  * 右侧「相关任务」走 apiUserProjectConversations，按当前列表内项目合并展示；
  * 常规项目/全栈应用的重命名、删除、导出走真实接口（normal-project / userapp /
  * download-all-files 契约，操作清单对齐 wiki「全栈应用开发接口清单」v2 2026-09-11）；
@@ -111,6 +111,10 @@ const SpaceProjectManage: React.FC = () => {
   const conversationProjectRef = useRef<Map<number, ProjectListItem>>(
     new Map(),
   );
+  // 项目 → 已拉取会话列表（行最新会话取用；与右侧任务同源，避免列表行再发请求）
+  const conversationsByProjectRef = useRef<
+    Map<number, UserProjectConversationInfo[]>
+  >(new Map());
 
   // 新建弹窗态
   const [openCreateNormal, setOpenCreateNormal] = useState(false);
@@ -136,7 +140,7 @@ const SpaceProjectManage: React.FC = () => {
         // 全部：三类并行拉取后按更新时间合并排序
         const results = await Promise.all(
           PROJECT_MANAGE_TYPES.map((type) =>
-            apiUserProjectTabPageQuery(buildBody(type)).catch(() => null),
+            apiUserProjectPageQuery(buildBody(type)).catch(() => null),
           ),
         );
         const records = results.flatMap((res) =>
@@ -148,7 +152,7 @@ const SpaceProjectManage: React.FC = () => {
         // 按「类型 + projectId」去重，兼容后端后续恢复服务端过滤。
         setList(normalizeProjectRows(records));
       } else {
-        const res = await apiUserProjectTabPageQuery(
+        const res = await apiUserProjectPageQuery(
           buildBody(activeTab as AgentComponentTypeEnum),
         );
         if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
@@ -179,6 +183,7 @@ const SpaceProjectManage: React.FC = () => {
     let cancelled = false;
     if (!list.length) {
       conversationProjectRef.current = new Map();
+      conversationsByProjectRef.current = new Map();
       setConversations([]);
       setConversationLoading(false);
       return;
@@ -202,8 +207,10 @@ const SpaceProjectManage: React.FC = () => {
         return;
       }
       const projectMap = new Map<number, ProjectListItem>();
+      const conversationMap = new Map<number, UserProjectConversationInfo[]>();
       const merged: UserProjectConversationInfo[] = [];
       results.forEach(({ project, records }) => {
+        conversationMap.set(project.id, records);
         records.forEach((item) => {
           projectMap.set(item.id, project);
           merged.push(item);
@@ -211,6 +218,7 @@ const SpaceProjectManage: React.FC = () => {
       });
       merged.sort((a, b) => (b.modified || '').localeCompare(a.modified || ''));
       conversationProjectRef.current = projectMap;
+      conversationsByProjectRef.current = conversationMap;
       setConversations(merged);
       setConversationLoading(false);
     })();
@@ -262,7 +270,9 @@ const SpaceProjectManage: React.FC = () => {
         openProject(spaceId, item);
         return;
       }
-      const latest = resolveRowLatestConversation(item);
+      const latest = resolveRowLatestConversation(
+        conversationsByProjectRef.current.get(item.id),
+      );
       const conversationId = latest?.id ?? item.conversationId ?? undefined;
       if (item.projectType === AgentComponentTypeEnum.NormalProject) {
         const agentId = latest?.agentId;
@@ -368,7 +378,9 @@ const SpaceProjectManage: React.FC = () => {
    * 无会话提示先进入项目。
    */
   const handleExportProject = useCallback((item: ProjectListItem) => {
-    const latest = resolveRowLatestConversation(item);
+    const latest = resolveRowLatestConversation(
+      conversationsByProjectRef.current.get(item.id),
+    );
     const conversationId = latest?.id ?? item.conversationId ?? undefined;
     if (!conversationId) {
       message.warning(
