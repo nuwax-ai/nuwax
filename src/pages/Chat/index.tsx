@@ -1420,6 +1420,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 设置最小宽度
   useEffect(() => {
+    // 单栏风格（style3）：侧边面板固定、滚动区域收敛在 page-container 内，
+    // 不再拓宽 html（否则窗口窄于阈值时出现窗口级全局滚动条）
+    if (document.body.classList.contains('xagi-nav-style3')) {
+      document.documentElement.style.minWidth = 'unset';
+      return;
+    }
     // 移动端不设置最小宽度
     if (isMobile && !isFileTreeVisible) {
       document.documentElement.style.minWidth = 'unset';
