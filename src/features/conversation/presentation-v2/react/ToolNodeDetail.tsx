@@ -48,8 +48,9 @@ const ResourceLink: React.FC<{
   onOpenResource?: (resource: ConversationToolResource) => void;
 }> = ({ kind, target, line, onOpenResource }) => {
   if (kind === 'file') {
-    // 卡片头部：仅会话沙箱路径做「徽标+文件名」可点样式；
-    // 其余（如 /home/user/Desktop/x.md）完整地址普通文本色展示、不可点
+    // 卡片头部：会话沙箱路径做「徽标+文件名」展示，其余（如
+    // /home/user/Desktop/x.md）完整地址普通文本色展示。
+    // 2026-09-14 商讨定调：跳转功能关闭，文件路径一律纯展示不可点（URL 仍可点）
     if (!isConversationSandboxPath(target)) {
       return (
         <span className={cx(styles['tool-file-plain'])} title={target}>
@@ -57,13 +58,7 @@ const ResourceLink: React.FC<{
         </span>
       );
     }
-    return (
-      <FileResourceLink
-        target={target}
-        line={line}
-        onOpenResource={onOpenResource}
-      />
-    );
+    return <FileResourceLink target={target} />;
   }
   if (onOpenResource) {
     return (

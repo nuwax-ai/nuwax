@@ -1,14 +1,18 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
 .view {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-// 视图分类 tab（全部 / 已收藏 / 已归档），与 SpaceProjectManage 页签同款
+// 视图分类 tab（全部 / 已收藏 / 已归档）：圆角胶囊 pill，
+// 样式对齐女娲应用页（NuwaApps）二级筛选 category-tab
 .tabs {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   flex-shrink: 0;
   width: 100%;
   max-width: 800px;
@@ -18,23 +22,23 @@
 .tab {
   border: none;
   background: transparent;
-  padding: 6px 14px;
-  border-radius: 6px;
+  padding: 3px 12px;
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 14px;
-  color: var(--ant-color-text-secondary);
+  font-size: @fontSizeSm;
+  color: @GRAY05;
   transition: all 0.2s ease;
 
   &:hover {
-    color: var(--ant-color-text);
-    background: var(--ant-color-fill-secondary);
+    color: @BLANK04;
+    background-color: @WHITE04;
   }
 }
 
 .tab-active {
-  color: var(--ant-color-primary);
-  background: var(--ant-color-primary-bg);
-  font-weight: 600;
+  color: @BLANK04;
+  background-color: @WHITE08;
+  font-weight: 500;
 }
 
 .container {
