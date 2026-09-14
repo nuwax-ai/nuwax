@@ -8,11 +8,11 @@ import {
   QUICK_NAV_BODY_MAX_LENGTH,
   QUICK_NAV_TITLE_MAX_LENGTH,
 } from '@/components/business-component/ConversationQuickNav/blocks';
-import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import ConversationQuickNav from '@/components/business-component/ConversationQuickNav/index';
 import { AssistantRoleEnum } from '@/types/enums/agent';
+import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import ConversationQuickNav from '@/components/business-component/ConversationQuickNav/index';
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
@@ -25,7 +25,7 @@ const msg = (
   id?: number,
   think?: string,
 ): MessageInfo =>
-  ({ role, text, id, think, index: id ?? 0 }) as unknown as MessageInfo;
+  ({ role, text, id, think, index: id ?? 0 } as unknown as MessageInfo);
 
 const USER = AssistantRoleEnum.USER;
 const ASSISTANT = AssistantRoleEnum.ASSISTANT;
@@ -138,6 +138,22 @@ const longMessageList = (): MessageInfo[] =>
     msg(i % 2 === 1 ? USER : ASSISTANT, `消息内容 ${i}`, i),
   );
 
+const mockLineRects = (lines: HTMLElement[]) => {
+  lines.forEach((line, index) => {
+    const top = index * 10;
+    vi.spyOn(line, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: top,
+      left: 0,
+      top,
+      right: 15,
+      bottom: top + 8,
+      width: 15,
+      height: 8,
+    } as DOMRect);
+  });
+};
+
 describe('ConversationQuickNav 组件', () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -204,7 +220,39 @@ describe('ConversationQuickNav 组件', () => {
     const container = buildContainer();
     renderNav(container, longMessageList());
     expect(screen.getByTestId('conversation-quick-nav')).toBeInTheDocument();
-    expect(screen.getAllByTestId('conversation-quick-nav-line')).toHaveLength(5);
+    expect(screen.getAllByTestId('conversation-quick-nav-line')).toHaveLength(
+      5,
+    );
+  });
+
+  it('鼠标进入即形成参考图的 15→20→30px 波浪，离开后复位（不依赖 rAF）', () => {
+    const container = buildContainer();
+    renderNav(container, longMessageList());
+    const nav = screen.getByTestId('conversation-quick-nav');
+    const lines = screen.getAllByTestId('conversation-quick-nav-line');
+    mockLineRects(lines);
+    const raf = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', raf);
+
+    fireEvent.mouseEnter(nav, { clientY: 4 });
+    expect(lines[0].style.transform).toBe('scaleX(2)');
+    const neighborScale = Number(
+      lines[1].style.transform.match(/scaleX\(([^)]+)\)/)?.[1],
+    );
+    expect(neighborScale).toBeGreaterThan(1.3);
+    expect(neighborScale).toBeLessThan(1.4);
+    const distantScale = Number(
+      lines[2].style.transform.match(/scaleX\(([^)]+)\)/)?.[1],
+    );
+    expect(distantScale).toBeLessThan(1.05);
+    expect(raf).not.toHaveBeenCalled();
+
+    fireEvent.mouseMove(lines[2], { clientY: 24 });
+    expect(lines[2].style.transform).toBe('scaleX(2)');
+    expect(lines[0].style.transform).not.toBe('scaleX(2)');
+
+    fireEvent.mouseLeave(nav);
+    expect(lines[0].style.transform).toBe('');
   });
 
   it('容器滚到底时点亮最后一块', () => {
@@ -216,6 +264,41 @@ describe('ConversationQuickNav 组件', () => {
     renderNav(container, longMessageList());
     const lines = screen.getAllByTestId('conversation-quick-nav-line');
     expect(lines[lines.length - 1].className).toContain('active');
+  });
+
+  it('悬停当前黑色线条时，该线条必须成为波峰', () => {
+    const container = buildContainer();
+    Object.defineProperty(container, 'scrollTop', {
+      value: 1600,
+      configurable: true,
+    });
+    renderNav(container, longMessageList());
+    const lines = screen.getAllByTestId('conversation-quick-nav-line');
+    mockLineRects(lines);
+    const activeLine = lines[lines.length - 1];
+    expect(activeLine.className).toContain('active');
+
+    fireEvent.mouseEnter(activeLine, { clientY: 0 });
+    expect(activeLine.style.transform).toBe('scaleX(2)');
+    expect(lines[0].style.transform).not.toBe('scaleX(2)');
+
+    fireEvent.mouseMove(activeLine, { clientY: 0 });
+    expect(activeLine.style.transform).toBe('scaleX(2)');
+    expect(lines[0].style.transform).not.toBe('scaleX(2)');
+  });
+
+  it('切换波峰时预览只对应新的最长线条', async () => {
+    const container = buildContainer();
+    renderNav(container, longMessageList());
+    const lines = screen.getAllByTestId('conversation-quick-nav-line');
+    mockLineRects(lines);
+
+    fireEvent.mouseEnter(lines[4], { clientY: 44 });
+    expect(await screen.findByText('消息内容 9')).toBeInTheDocument();
+    fireEvent.mouseMove(lines[1], { clientY: 14 });
+    expect(lines[1].style.transform).toBe('scaleX(2)');
+    expect(screen.queryByText('消息内容 9')).not.toBeInTheDocument();
+    expect(await screen.findByText('消息内容 3')).toBeInTheDocument();
   });
 
   it('点击导航行在容器内滚动定位到目标块', () => {

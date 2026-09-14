@@ -1,8 +1,7 @@
-import { AgentSidebarRef } from '@/components/AgentSidebar';
 import { AllowCopyEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { MessageInfo } from '@/types/interfaces/conversationInfo';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 
 interface UseChatViewModeProps {
   effectiveAgent: any;
@@ -10,7 +9,6 @@ interface UseChatViewModeProps {
   isFileTreeVisible: boolean;
   viewMode: string;
   id: number;
-  sidebarRef: React.RefObject<AgentSidebarRef>;
   openPreviewView: (id: number) => void;
   closePreviewView: () => void;
   openDesktopView: (id: number) => void;
@@ -22,7 +20,6 @@ export const useChatViewMode = ({
   isFileTreeVisible,
   viewMode,
   id,
-  sidebarRef,
   openPreviewView,
   closePreviewView,
   openDesktopView,
@@ -46,8 +43,7 @@ export const useChatViewMode = ({
    */
   const handleFileTreeVisible = () => {
     if (!isFileTreeVisible) {
-      // 文件树当前未显示：关闭 AgentSidebar，打开预览视图
-      sidebarRef.current?.close();
+      // 文件树当前未显示：打开预览视图
       openPreviewView(id);
       return;
     }
@@ -67,8 +63,7 @@ export const useChatViewMode = ({
    */
   const handleOpenDesktopView = () => {
     if (!isFileTreeVisible) {
-      // 文件树当前未显示：关闭 AgentSidebar，打开智能体电脑视图
-      sidebarRef.current?.close();
+      // 文件树当前未显示：打开智能体电脑视图
       openDesktopView(id);
       return;
     }

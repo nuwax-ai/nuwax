@@ -121,21 +121,28 @@ export async function apiNormalProjectLatestConversation(
   });
 }
 
-/** 项目置顶/取消置顶（wiki 2026-09-11 新契约，同一路径幂等切换） */
+/** 项目置顶/取消置顶（swagger User project/pin：pinned + projectType query 均必传，
+ * 后端做项目归属校验，缺省报 Required request parameter） */
 export async function apiUserProjectPin(
   id: number,
+  pinned: boolean,
+  projectType: string,
 ): Promise<RequestResponse<null>> {
   return request(`/api/user-project/pin/${id}`, {
     method: 'POST',
+    params: { pinned, projectType },
   });
 }
 
-/** 项目归档/取消归档（wiki 2026-09-11 新契约，同一路径幂等切换） */
+/** 项目归档/取消归档（archived + projectType query 必传，同 pin 口径） */
 export async function apiUserProjectArchive(
   id: number,
+  archived: boolean,
+  projectType: string,
 ): Promise<RequestResponse<null>> {
   return request(`/api/user-project/archive/${id}`, {
     method: 'POST',
+    params: { archived, projectType },
   });
 }
 

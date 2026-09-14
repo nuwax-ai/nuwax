@@ -10,9 +10,14 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { initHostBridgeEvents } from '@/services/hostBridgeEvents';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { isImmersiveShell, shellAvoid } from '@/utils/hostBridge';
+import {
+  hostBridge,
+  isDesktopHost,
+  isImmersiveShell,
+  shellAvoid,
+} from '@/utils/hostBridge';
 import { jumpTo } from '@/utils/router';
-import { EllipsisOutlined } from '@ant-design/icons';
+import { EllipsisOutlined, SettingOutlined } from '@ant-design/icons';
 import { theme, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
@@ -204,6 +209,13 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     [setOpenMessage],
   );
 
+  // 客户端设置入口（仅 Nuwax 客户端渲染；浏览器/社区宿主无此按钮）：
+  // 打开壳的「客户端配置」弹窗——壳顶行设置按钮在 nuwax 宿主下已移除，入口迁至本处。
+  const showClientSettings = isDesktopHost();
+  const handleOpenClientSettings = useCallback(() => {
+    void hostBridge.native.openClientSettings();
+  }, []);
+
   /**
    * 获取当前一级菜单的标题（策略单源 secondMenuPolicy：dict 注入避开 umi 传递依赖）
    */
@@ -339,7 +351,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           <NewHomeSection style={overrideContainerStyle} />
         </div>
 
-        {/* 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右：消息/设备/更多/文档，走接口） */}
+        {/* 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右：消息/设备/更多/文档，走接口）+
+            最右「客户端设置」（仅 Nuwax 客户端渲染，打开壳设置弹窗） */}
         <div className={cx(styles['sidebar-footer'])}>
           <User placement="rightTop">
             <div
@@ -373,6 +386,19 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                 </div>
               </Tooltip>
             ))}
+            {showClientSettings && (
+              <Tooltip
+                title={dict('PC.Components.UserOperate.clientSettings')}
+                arrow={false}
+              >
+                <div
+                  className={cx(styles['footer-action-btn'])}
+                  onClick={handleOpenClientSettings}
+                >
+                  <SettingOutlined />
+                </div>
+              </Tooltip>
+            )}
           </div>
         </div>
       </div>

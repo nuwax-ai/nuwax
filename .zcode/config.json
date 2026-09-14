@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "enabled": true,
+    "events": {
+      "PreToolUse": [
+        {
+          "matcher": "Read|Edit|Write|Bash",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"${ZCODE_PROJECT_DIR}/.claude/hooks/guard-paths.mjs\""
+            }
+          ]
+        },
+        {
+          "matcher": "Edit|Write",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"${ZCODE_PROJECT_DIR}/.claude/hooks/plan-gate.mjs\""
+            }
+          ]
+        },
+        {
+          "matcher": "Bash",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"${ZCODE_PROJECT_DIR}/.claude/hooks/deploy-gate.mjs\""
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

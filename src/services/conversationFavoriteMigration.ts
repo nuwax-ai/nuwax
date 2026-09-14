@@ -5,6 +5,10 @@
  * 本模块仅负责把本地已收藏的会话 id 逐个上报后端（collect 幂等，已收藏
  * 再报无副作用），成功后清键并写迁移标记防重入；单个失败容错跳过，
  * 未写标记前下次进入历史会话页会重试。
+ *
+ * 归置说明：原在 src/utils/conversationFavorites.ts，因依赖 services 层
+ * 触发 utils-not-to-services 分层红线（lint:arch），且内容本质是服务编排
+ * 而非通用工具，2026-09-14 平移至 services 层并更名。
  */
 
 import { apiAgentConversationCollect } from '@/services/agentConfig';

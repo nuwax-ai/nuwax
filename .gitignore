@@ -35,7 +35,10 @@ package-lock.json
 !.claude/hooks/
 !.claude/settings.json
 !.claude/skills/
+!.claude/commands/
 !.claude/agents/
+.zcode/*
+!.zcode/config.json
 .cursor
 .cursorrules
 .DS_Store
