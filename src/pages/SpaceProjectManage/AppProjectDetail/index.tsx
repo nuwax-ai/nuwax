@@ -701,6 +701,7 @@ const AppProjectDetail: React.FC = () => {
             </Button>
             <Button
               icon={<ReloadOutlined />}
+              className={cx(styles['action-btn'])}
               loading={regenerateLoading}
               onClick={handleRegenerate}
             >
@@ -728,10 +729,16 @@ const AppProjectDetail: React.FC = () => {
               </div>
               <div className={cx(styles['domain-right'])}>
                 <span className={cx(styles['domain-cname'])}>
-                  {dict('PC.Pages.AppProjectDetail.cnameLabel')} {CNAME_TARGET}
+                  <span className={cx(styles['domain-cname-label'])}>
+                    {dict('PC.Pages.AppProjectDetail.cnameLabel')}
+                  </span>
+                  <span className={cx(styles['domain-cname-value'])}>
+                    {CNAME_TARGET}
+                  </span>
                 </span>
                 <Button
                   size="small"
+                  className={cx(styles['copy-cname-btn'])}
                   onClick={() =>
                     void copyTextToClipboard(CNAME_TARGET, undefined, true)
                   }
@@ -752,7 +759,7 @@ const AppProjectDetail: React.FC = () => {
         </div>
         <Button
           icon={<PlusOutlined />}
-          className={cx(styles['bind-btn'])}
+          className={cx(styles['bind-btn'], styles['action-btn'])}
           onClick={() => setBindOpen(true)}
         >
           {dict('PC.Pages.AppProjectDetail.bindDomain')}

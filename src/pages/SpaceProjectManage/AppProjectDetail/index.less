@@ -235,12 +235,48 @@
 }
 
 .domain-cname {
-  color: @colorTextTertiary;
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXxs;
   font-size: @fontSizeSm;
+  line-height: @controlHeightSm;
+  white-space: nowrap;
+}
+
+.domain-cname-label {
+  color: @colorTextTertiary;
+}
+
+.domain-cname-value {
+  color: #4b4a53;
+}
+
+.copy-cname-btn:global(.ant-btn) {
+  color: #4b4a53;
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
 }
 
 .bind-btn {
   margin-top: @marginXs;
+}
+
+.action-btn {
+  &:global(.ant-btn) {
+    color: #4b4a53;
+    font-size: @fontSize;
+    font-weight: @fontWeightStrong;
+
+    .anticon {
+      color: inherit;
+    }
+
+    &:hover,
+    &:focus {
+      color: #4b4a53;
+    }
+  }
 }
 
 .deploy-options {
