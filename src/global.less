@@ -209,18 +209,19 @@ body {
 // 迁全局类规避；后端/构建侧查明后可再迁回模块样式。
 // ============================================
 .conversation-quick-nav {
-  position: absolute;
-  // 🔴不能负偏移左移：session-container 的 overflow:hidden 对绘制与命中双裁剪，
-  // 线条超出容器左缘的部分直接不可见不可点；left:0 即贴死内容区分界线（最左形态）
-  left: 0;
-  top: 50%;
+  // fixed 视口坐标定位（top/left 由组件按滚动容器几何计算，仅保留垂直居中平移）：
+  // 原 absolute 贴 session-container 左缘时，外层多层 overflow:hidden 祖先会在
+  // 容器左缘处双裁剪（负偏移不可见不可点），无法进入内容区左缘留白；
+  // fixed 不受祖先裁剪影响，可统一左移。祖先出现 transform/filter 时会退化为
+  // 相对该祖先定位（挂载约定见组件 JSDoc）
+  position: fixed;
   transform: translateY(-50%);
   z-index: 12;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   // overflow-y 会使横向溢出也被裁剪；预留波浪峰值宽度，避免 scaleX 只在 DOM 中生效
-  width: 30px;
+  width: 24px;
   gap: 2px;
   max-height: 60vh;
   padding: 6px 0;
@@ -239,7 +240,7 @@ body {
 .conversation-quick-nav-line {
   position: relative;
   flex-shrink: 0;
-  width: 15px;
+  width: 12px;
   height: 8px;
   padding: 0;
   border: none;
