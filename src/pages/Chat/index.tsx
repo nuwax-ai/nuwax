@@ -1,4 +1,3 @@
-import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import {
   ConversationBottomConsole,
   CopyToSpaceComponent,
@@ -24,6 +23,7 @@ import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
+import AgentDetailModal from '@/pages/Chat/components/AgentDetailModal';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
@@ -166,9 +166,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   );
   const [form] = Form.useForm();
 
-  const [isSidebarVisible, setIsSidebarVisible] =
-    useState<boolean>(showSidebar);
-  const sidebarRef = useRef<AgentSidebarRef>(null);
+  // 智能体详情悬浮弹窗（取代原 AgentSidebar 互斥侧栏，与右侧面板共存）
+  const [isAgentDetailModalOpen, setIsAgentDetailModalOpen] =
+    useState<boolean>(false);
 
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
@@ -382,7 +382,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isFileTreeVisible,
     viewMode,
     id,
-    sidebarRef,
     openPreviewView,
     closePreviewView: handleClosePreviewView,
     openDesktopView,
@@ -755,12 +754,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
   }, [id, defaultFileTreeVisible, openPreviewView, setIsFileTreePinned]);
 
-  // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
+  // 互斥面板控制器：管理 PagePreview、ShowArea 的互斥展示（AgentSidebar 已改为悬浮弹窗）
   useExclusivePanels({
     pagePreviewData,
     hidePagePreview,
-    isSidebarVisible,
-    sidebarRef,
     showType,
     setShowType,
   });
@@ -1070,7 +1067,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       return;
     }
 
-    sidebarRef.current?.close();
     setHasTerminalConsoleRendered(true);
     setTerminalConsoleVisible(true);
     setTerminalConsoleCollapseSignal(0);
@@ -1094,7 +1090,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTerminalConsoleCollapseSignal(0);
     setTerminalConsoleExpandSignal(0);
     setTerminalConsoleLayoutMode('collapsed');
-    sidebarRef.current?.close();
     handleOpenDesktopView();
   }, [isTerminalPanelOpen, handleOpenDesktopView]);
 
@@ -1430,27 +1425,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       document.documentElement.style.minWidth = 'unset';
       return;
     }
-    // 设置最小宽度-扩展页面/文件树
+    // 设置最小宽度-扩展页面/文件树（智能体详情已改为悬浮弹窗，不再有侧栏占位档位）
     if (pagePreviewData || isFileTreeVisible) {
       document.documentElement.style.minWidth = '1660px';
     } else {
-      // 设置最小宽度-调试详情
-      if (showSidebar && isSidebarVisible) {
-        document.documentElement.style.minWidth = '1540px';
-      } else {
-        document.documentElement.style.minWidth = '1200px';
-      }
+      document.documentElement.style.minWidth = '1200px';
     }
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [
-    pagePreviewData,
-    isFileTreeVisible,
-    showSidebar,
-    isSidebarVisible,
-    isMobile,
-  ]);
+  }, [pagePreviewData, isFileTreeVisible, isMobile]);
 
   // 聊天会话头部相关 props
   const headerProps = {
@@ -1468,9 +1452,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setConversationInfo,
     isEnableSubscription,
     setOpenPaymentModal,
-    isSidebarVisible,
-    sidebarRef,
-    hidePagePreview,
+    isAgentDetailModalOpen,
+    handleOpenAgentDetail: () => setIsAgentDetailModalOpen(true),
     closePreviewView: handleClosePreviewView,
     handleOpenPreview,
     isShowFilePanel,
@@ -1809,22 +1792,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           </div>
         )}
       </div>
-      {/* 非应用智能体模式下，显示智能体详情侧边栏 */}
-      <ConditionRender
-        condition={showSidebar && !isAppSidebarMode && !isFileTreeVisible}
-      >
-        {/* AgentSidebar - 只在文件树隐藏时显示 */}
-        <AgentSidebar
-          ref={sidebarRef}
-          className={cx(
-            styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
-          )}
-          agentId={agentId}
-          loading={loadingConversation}
-          agentDetail={effectiveAgent}
-          onVisibleChange={setIsSidebarVisible}
-        />
-      </ConditionRender>
+      {/* 智能体详情悬浮弹窗：与文件树/终端/云电脑面板共存，不再互斥 */}
+      <AgentDetailModal
+        open={isAgentDetailModalOpen}
+        onClose={() => setIsAgentDetailModalOpen(false)}
+        agentId={agentId}
+        loading={loadingConversation}
+        agentDetail={effectiveAgent}
+      />
       {/*展示台区域*/}
       <ShowArea />
 

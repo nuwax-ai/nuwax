@@ -6,7 +6,7 @@
  * - loadingConversation / loadingAsync 展示 Loading
  * - 加载完成后渲染 LeftContent，并下发 effectiveAgent
  * - effectiveAgent：优先 conversationInfo.agent
- * - showSidebar=false 不渲染 AgentSidebar
+ * - showSidebar=false 不下发智能体详情入口；弹窗默认关闭，入口回调可打开
  * - enableResizable 控制 ResizableSplit
  * - new_chat 时默认选中 DefaultSelected=Yes 的 manualComponents
  */
@@ -24,7 +24,7 @@ const {
   mockHistory,
   mockRunAsync,
   mockLeftContent,
-  mockAgentSidebar,
+  mockAgentDetailModal,
   mockResizableSplit,
   mockInitSelectedComponentList,
   conversationInfoState,
@@ -36,7 +36,7 @@ const {
   mockHistory: { replace: vi.fn(), push: vi.fn(), action: 'POP', location: {} },
   mockRunAsync: vi.fn(),
   mockLeftContent: vi.fn(),
-  mockAgentSidebar: vi.fn(),
+  mockAgentDetailModal: vi.fn(),
   mockResizableSplit: vi.fn(),
   mockInitSelectedComponentList: vi.fn(),
   conversationInfoState: {
@@ -86,10 +86,11 @@ vi.mock('./components/ShowArea', () => ({
   default: () => <div data-testid="show-area" />,
 }));
 
-vi.mock('@/components/AgentSidebar', () => ({
+vi.mock('@/pages/Chat/components/AgentDetailModal', () => ({
   default: (props: any) => {
-    mockAgentSidebar(props);
-    return <div data-testid="agent-sidebar" />;
+    mockAgentDetailModal(props);
+    // open 受控：关闭时不渲染（与 antd Modal 行为一致）
+    return props.open ? <div data-testid="agent-detail-modal" /> : null;
   },
 }));
 
@@ -524,7 +525,7 @@ describe('ChatCore / ChatPage', () => {
     });
   });
 
-  it('showSidebar=false 时不渲染 AgentSidebar', async () => {
+  it('showSidebar=false 时不下发智能体详情入口且弹窗不可见', async () => {
     conversationInfoState.current = {
       id: 100,
       agent: { name: 'ConvAgent' },
@@ -536,10 +537,13 @@ describe('ChatCore / ChatPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('left-content')).toBeInTheDocument();
     });
-    expect(screen.queryByTestId('agent-sidebar')).toBeNull();
+    expect(screen.queryByTestId('agent-detail-modal')).toBeNull();
+    const lastCall =
+      mockLeftContent.mock.calls[mockLeftContent.mock.calls.length - 1];
+    expect(lastCall[0].headerProps.showSidebar).toBe(false);
   });
 
-  it('showSidebar=true 时渲染 AgentSidebar', async () => {
+  it('showSidebar=true 时弹窗默认关闭，入口回调可打开', async () => {
     conversationInfoState.current = {
       id: 100,
       agent: { name: 'ConvAgent' },
@@ -549,8 +553,21 @@ describe('ChatCore / ChatPage', () => {
     render(<ChatCore id={100} agentId={200} showSidebar />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('agent-sidebar')).toBeInTheDocument();
+      expect(screen.getByTestId('left-content')).toBeInTheDocument();
     });
+    // 默认关闭
+    expect(screen.queryByTestId('agent-detail-modal')).toBeNull();
+
+    // LeftContent 收到入口回调，调用后弹窗打开
+    const lastCall =
+      mockLeftContent.mock.calls[mockLeftContent.mock.calls.length - 1];
+    expect(typeof lastCall[0].headerProps.handleOpenAgentDetail).toBe(
+      'function',
+    );
+    act(() => {
+      lastCall[0].headerProps.handleOpenAgentDetail();
+    });
+    expect(screen.getByTestId('agent-detail-modal')).toBeInTheDocument();
   });
 
   it('enableResizable=true 使用 ResizableSplit', async () => {

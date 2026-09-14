@@ -5,12 +5,17 @@ import FileTreePreviewPanel, {
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import ResizableSplit from '@/components/ResizableSplit';
 import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
+import {
+  loadChatPanelWidthPercent,
+  saveChatPanelWidthPercent,
+} from '@/utils/chatPanelWidthPreference';
 import { CodeOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,6 +38,15 @@ const LeftContent: React.FC<LeftContentProps> = ({
   chatSessionProps,
   fileSidebarProps,
 }) => {
+  // 拖拽分栏默认宽度（持久化偏好，仅作 ResizableSplit 初始值）
+  const [chatPanelWidth] = useState<number>(loadChatPanelWidthPercent);
+
+  // 右侧面板（文件树/终端/云电脑）渲染条件：通用型智能体 + 面板可见 + 未隐藏
+  const showFileTreePanel =
+    effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
+    isFileTreeVisible &&
+    !headerProps.hideTree;
+
   return (
     <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
       {/* 页面顶部: 标题区域 */}
@@ -118,32 +132,19 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 />
               )}
 
-            {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
-            {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
-            {headerProps.showSidebar &&
-              !isAppSidebarMode &&
-              !headerProps.isSidebarVisible && (
-                <TooltipIcon
-                  title={t('PC.Pages.Chat.viewAgentDetails')}
-                  className={cx(styles['icon-box'])}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-sidebar"
-                      style={{ fontSize: 16 }}
-                    />
-                  }
-                  onClick={() => {
-                    headerProps.hidePagePreview();
-                    // 先关闭文件树
-                    headerProps.closePreviewView();
-                    // 然后打开 AgentSidebar
-                    // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
-                    setTimeout(() => {
-                      headerProps.sidebarRef.current?.open();
-                    }, 100);
-                  }}
-                />
-              )}
+            {/* 这里放「查看智能体详情」入口：点击弹出悬浮弹窗，与右侧面板共存不再互斥 */}
+            {headerProps.showSidebar && !isAppSidebarMode && (
+              <TooltipIcon
+                title={t('PC.Pages.Chat.viewAgentDetails')}
+                className={cx(styles['icon-box'], {
+                  [styles['active']]: headerProps.isAgentDetailModalOpen,
+                })}
+                icon={
+                  <SvgIcon name="icons-nav-sidebar" style={{ fontSize: 16 }} />
+                }
+                onClick={headerProps.handleOpenAgentDetail}
+              />
+            )}
 
             {/*打开预览页面*/}
             {!!effectiveAgent?.expandPageArea &&
@@ -158,7 +159,6 @@ const LeftContent: React.FC<LeftContentProps> = ({
                     />
                   }
                   onClick={() => {
-                    headerProps.sidebarRef.current?.close();
                     headerProps.closePreviewView(); // 关闭文件树
                     headerProps.handleOpenPreview(effectiveAgent);
                   }}
@@ -234,43 +234,45 @@ const LeftContent: React.FC<LeftContentProps> = ({
         </div>
       </header>
 
-      {/* 页面主体: 内容区域 */}
+      {/* 页面主体: 内容区域（聊天区 vs 右侧面板可拖拽调宽，宽度持久化） */}
       <div className={cx(styles['main-content-box'])}>
-        {/* 聊天内容区域 */}
-        <div
-          className={cx(styles['chat-section'], {
-            [styles['file-tree-visible']]: isFileTreeVisible,
-          })}
-        >
-          <UnifiedChatSession
-            {...chatSessionProps}
-            showClearIcon={
-              effectiveAgent?.deviceAgent !== 1 && !headerProps.hideNew
-            }
-          />
-        </div>
-
-        {/* 通用型(TaskAgent)智能体专用文件树区域；hideTree 时不展示 */}
-        {effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-          isFileTreeVisible &&
-          !headerProps.hideTree && (
-            <div
-              className={cx(
-                styles['file-tree-sidebar'],
-                'flex',
-                'w-full',
-                'overflow-hide',
-              )}
-            >
-              <FileTreePreviewPanel
-                {...fileSidebarProps}
-                className={cx(
-                  styles['file-tree-container'],
-                  fileSidebarProps.className,
-                )}
+        <ResizableSplit
+          className={cx('flex-1')}
+          minLeftWidth={430}
+          minRightWidth={420}
+          defaultLeftWidth={chatPanelWidth}
+          onResizeEnd={saveChatPanelWidthPercent}
+          left={
+            <div className={cx(styles['chat-section'])}>
+              <UnifiedChatSession
+                {...chatSessionProps}
+                showClearIcon={
+                  effectiveAgent?.deviceAgent !== 1 && !headerProps.hideNew
+                }
               />
             </div>
-          )}
+          }
+          right={
+            showFileTreePanel ? (
+              <div
+                className={cx(
+                  styles['file-tree-sidebar'],
+                  'flex',
+                  'w-full',
+                  'overflow-hide',
+                )}
+              >
+                <FileTreePreviewPanel
+                  {...fileSidebarProps}
+                  className={cx(
+                    styles['file-tree-container'],
+                    fileSidebarProps.className,
+                  )}
+                />
+              </div>
+            ) : null
+          }
+        />
       </div>
     </div>
   );
