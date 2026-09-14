@@ -6369,6 +6369,10 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "Created successfully",
   "PC.Pages.SpaceProjectManage.createFailed": "Creation failed, please try again later",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "No conversation yet. Open the project before exporting.",
+  // Third-party app integration
+  "PC.Pages.ThirdAppIntegration.title": "Third-party app integration",
+  "PC.Pages.ThirdAppIntegration.createButton": "Create third-party app",
+  "PC.Pages.ThirdAppIntegration.createTitle": "Create third-party app",
   // 常规项目详情页
   "PC.Pages.NormalProjectDetail.tabPlan": "Plan",
   "PC.Pages.NormalProjectDetail.tabAsset": "Assets",

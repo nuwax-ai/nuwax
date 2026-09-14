@@ -6,19 +6,21 @@ import {
 } from '@/types/interfaces/userProject';
 import { request } from 'umi';
 
-/** 用户项目（包括常规项目、全栈应用、网页应用）分页查询请求参数 */
+/** 用户项目（包括常规项目、全栈应用、网页应用、第三方应用）分页查询请求参数 */
 export type UserProjectPageQueryParams = TablePageRequest<
   Partial<{
     spaceId: number;
     creatorId: number;
-    // 项目类型：NormalProject/UserApp/PageApp,可用值:Agent,Plugin,Skill,PageApp,UserApp,NormalProject,Workflow,Knowledge,Table,Model,Mcp
+    /* 项目类型,可用值:Agent,Plugin,Skill,PageApp,UserApp,NormalProject,Connector,ThirdApp,Workflow,Knowledge,Table,Model,Mcp */
     projectType: AgentComponentTypeEnum;
     // 项目名称（模糊匹配）
     name: string;
+    /*收藏过滤：all=全部（默认）；only=仅含收藏。值大小写不敏感 */
+    collectedFilter?: string;
   }>
 >;
 
-/** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
+/** 用户项目（包括常规项目、全栈应用、网页应用、第三方应用）分页查询 */
 export async function apiUserProjectPageQuery(
   data: UserProjectPageQueryParams,
 ): Promise<RequestResponse<UserProjectPageResult>> {

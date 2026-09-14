@@ -6238,6 +6238,10 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "創建成功",
   "PC.Pages.SpaceProjectManage.createFailed": "創建失敗，請稍後重試",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "項目暫無會話，請進入項目後再導出",
+  // 三方應用接入
+  "PC.Pages.ThirdAppIntegration.title": "三方應用接入",
+  "PC.Pages.ThirdAppIntegration.createButton": "建立三方應用",
+  "PC.Pages.ThirdAppIntegration.createTitle": "建立三方應用",
   // 常規項目詳情頁
   "PC.Pages.NormalProjectDetail.tabPlan": "計劃",
   "PC.Pages.NormalProjectDetail.tabAsset": "資產",

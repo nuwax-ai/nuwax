@@ -6364,6 +6364,10 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "创建成功",
   "PC.Pages.SpaceProjectManage.createFailed": "创建失败，请稍后重试",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "项目暂无会话，请进入项目后再导出",
+  // 三方应用接入
+  "PC.Pages.ThirdAppIntegration.title": "三方应用接入",
+  "PC.Pages.ThirdAppIntegration.createButton": "创建三方应用",
+  "PC.Pages.ThirdAppIntegration.createTitle": "创建三方应用",
   // 常规项目详情页
   "PC.Pages.NormalProjectDetail.tabPlan": "计划",
   "PC.Pages.NormalProjectDetail.tabAsset": "资产",

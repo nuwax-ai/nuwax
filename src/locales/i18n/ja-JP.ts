@@ -6243,6 +6243,10 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createSuccess": "作成しました",
   "PC.Pages.SpaceProjectManage.createFailed": "作成に失敗しました。しばらくしてから再試行してください",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "まだ会話がありません。プロジェクトに入ってから書き出してください。",
+  // サードパーティアプリ連携
+  "PC.Pages.ThirdAppIntegration.title": "サードパーティアプリ連携",
+  "PC.Pages.ThirdAppIntegration.createButton": "サードパーティアプリを作成",
+  "PC.Pages.ThirdAppIntegration.createTitle": "サードパーティアプリを作成",
   // 通常プロジェクト詳細ページ
   "PC.Pages.NormalProjectDetail.tabPlan": "計画",
   "PC.Pages.NormalProjectDetail.tabAsset": "資産",
