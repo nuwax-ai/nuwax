@@ -4368,6 +4368,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.NuwaApps.appTag": "應用",
   "PC.Pages.NuwaApps.expand": "展開",
   "PC.Pages.NuwaApps.collapse": "收起",
+  "PC.Pages.UserApp.emptyDomain": "暫無網域資料",
+  "PC.Pages.UserApp.loadFailed": "網域資訊載入失敗",
   "PC.Pages.Square.Square.plugin": "套件",
   "PC.Pages.Square.Square.search": "搜尋",
   "PC.Pages.Square.Square.selectCategory": "請選擇分類",

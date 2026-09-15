@@ -4353,6 +4353,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.NuwaApps.appTag": "アプリ",
   "PC.Pages.NuwaApps.expand": "展開",
   "PC.Pages.NuwaApps.collapse": "折りたたむ",
+  "PC.Pages.UserApp.emptyDomain": "ドメインデータがありません",
+  "PC.Pages.UserApp.loadFailed": "ドメイン情報の読み込みに失敗しました",
   "PC.Pages.Square.Square.plugin": "プラグイン",
   "PC.Pages.Square.Square.search": "検索",
   "PC.Pages.Square.Square.selectCategory": "カテゴリを選択してください",
