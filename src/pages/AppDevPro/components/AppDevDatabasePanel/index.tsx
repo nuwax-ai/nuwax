@@ -22,6 +22,8 @@ export interface AppDevDatabasePanelProps {
   containerStatus?: UserAppEnvPodStatus;
   /** 线上环境容器启动失败时重试 */
   onRetryContainer?: () => void;
+  /** 容器重启成功后重挂 iframe */
+  iframeKey?: number;
 }
 
 /**
@@ -36,6 +38,7 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
   env,
   containerStatus,
   onRetryContainer,
+  iframeKey = 0,
 }) => {
   const iframeSrc = useMemo(() => {
     if (!appId) {
@@ -75,6 +78,7 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
     <div className={cx(styles.container)}>
       <AppDevProIframe
         src={iframeSrc}
+        iframeKey={iframeKey}
         title={dict('PC.Pages.AppDevPro.database')}
       />
     </div>

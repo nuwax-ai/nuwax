@@ -23,6 +23,8 @@ export interface AppDevDatabaseWorkspaceProps {
   prodContainerStatus?: UserAppEnvPodStatus;
   /** 重试启动当前环境容器 */
   onRetryContainer?: () => void;
+  /** 容器重启成功后重挂 iframe */
+  iframeKey?: number;
 }
 
 /**
@@ -41,6 +43,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
   devContainerStatus,
   prodContainerStatus,
   onRetryContainer,
+  iframeKey = 0,
 }) => {
   return (
     <div className={cx(styles.workspace)}>
@@ -54,6 +57,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           appId={appId}
           env={UserAppDbEnvEnum.Dev}
           containerStatus={devContainerStatus}
+          iframeKey={iframeKey}
           onRetryContainer={
             env === UserAppDbEnvEnum.Dev ? onRetryContainer : undefined
           }
@@ -69,6 +73,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           appId={appId}
           env={UserAppDbEnvEnum.Prod}
           containerStatus={prodContainerStatus}
+          iframeKey={iframeKey}
           onRetryContainer={
             env === UserAppDbEnvEnum.Prod ? onRetryContainer : undefined
           }

@@ -205,6 +205,8 @@ const AppDevPro: React.FC = () => {
   /** 右侧工作区：文件预览 / 独立应用预览 / 独立数据库 */
   const [workspaceView, setWorkspaceView] =
     useState<AppDevWorkspaceView>('app-preview');
+  const workspaceViewRef = useRef<AppDevWorkspaceView>(workspaceView);
+  workspaceViewRef.current = workspaceView;
   /** 打开数据库前的工作区，再次点击图标时还原 */
   const workspaceViewBeforeDatabaseRef =
     useRef<AppDevWorkspaceView>('app-preview');
@@ -224,6 +226,8 @@ const AppDevPro: React.FC = () => {
   const [dbEnv, setDbEnv] = useState<UserAppDbEnvEnum>(UserAppDbEnvEnum.Dev);
   /** 应用预览 iframe 刷新计数 */
   const [previewRefreshKey, setPreviewRefreshKey] = useState<number>(0);
+  /** 容器重启成功后强制重挂数据库 iframe */
+  const [databaseIframeKey, setDatabaseIframeKey] = useState<number>(0);
   /** 用户在地址栏跳转后的 iframe 地址（环境切换、重启服务时重置为预览根路径） */
   const [previewIframeUrl, setPreviewIframeUrl] = useState<string>('');
   /** 当前环境预览根地址，供启动 / 重启回调读取 */
@@ -759,8 +763,12 @@ const AppDevPro: React.FC = () => {
   });
   const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
   startPreviewIfNeededRef.current = previewRuntime.startIfNeeded;
+  const startPreviewRuntimeRef = useRef(previewRuntime.start);
+  startPreviewRuntimeRef.current = previewRuntime.start;
   const restartPreviewRuntimeRef = useRef(previewRuntime.restart);
   restartPreviewRuntimeRef.current = previewRuntime.restart;
+  const previewRunningRef = useRef(previewRuntime.running);
+  previewRunningRef.current = previewRuntime.running;
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
   /** 会话进行中服务已在跑时，结束后重启预览以加载新文件 */
@@ -1776,6 +1784,38 @@ const AppDevPro: React.FC = () => {
     );
   }, [previewRuntime]);
 
+  /**
+   * 容器启动失败后重试：成功后按当前工作区自动接入。
+   * 数据库页重挂管理 iframe；应用预览页重新启动预览（线上环境直接刷新 iframe）。
+   */
+  const handleRetryContainer = useCallback(async () => {
+    const ready = await ensureEnvPodRef.current(dbEnv, true);
+    if (!ready) {
+      return;
+    }
+    const view = workspaceViewRef.current;
+    if (view === 'database') {
+      setDatabaseIframeKey((key) => key + 1);
+      return;
+    }
+    if (view !== 'app-preview') {
+      return;
+    }
+    previewUserStoppedRef.current = false;
+    setPreviewUserStopped(false);
+    setPreviewIframeUrl(appPreviewUrlRef.current);
+    if (dbEnv === UserAppDbEnvEnum.Prod) {
+      setPreviewRefreshKey((key) => key + 1);
+      markPreviewReadyRef.current();
+      return;
+    }
+    if (previewRunningRef.current) {
+      void restartPreviewRuntimeRef.current();
+      return;
+    }
+    void startPreviewRuntimeRef.current();
+  }, [dbEnv]);
+
   /** 取消 tasks/active 中的远程构建任务 */
   const handleCancelRemotePublish = useCallback(async () => {
     const taskId = remoteBuildTask?.taskId;
@@ -1951,16 +1991,19 @@ const AppDevPro: React.FC = () => {
         env={dbEnv}
         devContainerStatus={envPodConversationId ? podStatus : undefined}
         prodContainerStatus={envPodConversationId ? prodPod.status : undefined}
+        iframeKey={databaseIframeKey}
         onRetryContainer={() => {
-          void ensureEnvPodRef.current(dbEnv, true);
+          void handleRetryContainer();
         }}
       />
     ),
     [
       appId,
       databaseActiveTab,
+      databaseIframeKey,
       dbEnv,
       envPodConversationId,
+      handleRetryContainer,
       podStatus,
       prodPod.status,
     ],
@@ -1994,7 +2037,7 @@ const AppDevPro: React.FC = () => {
         onRetryStart={handleRestartPreviewRuntime}
         onStart={handleStartPreviewRuntime}
         onRetryContainer={() => {
-          void ensureEnvPodRef.current(dbEnv, true);
+          void handleRetryContainer();
         }}
         devActionLocked={previewDevActionLocked}
         allowStoppedHero={previewUserStopped || previewEnterSettled}
@@ -2005,6 +2048,7 @@ const AppDevPro: React.FC = () => {
     [
       activePreviewUrl,
       handleRestartPreviewRuntime,
+      handleRetryContainer,
       handleStartPreviewRuntime,
       hasPendingIntervention,
       isConversationActive,
