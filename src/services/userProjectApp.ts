@@ -23,9 +23,10 @@ import { request } from 'umi';
 /**
  * 用户项目分页查询（2026-09-14 两接口统一后的唯一列表接口，tab/page-query 已下线）：
  * 与原 tab 接口同款行结构（projectId 主键 + pinned/archived/collected 打标），
- * 差异两点：① 回包包含已归档项目（「已归档」视图数据源，归档维度仍无服务端
- * 过滤参数，消费侧按回包打标前端过滤）；② 不附带 conversations。
- * queryFilter 支持 collectedFilter（all=默认 / only=仅收藏）。
+ * 差异：不附带 conversations，展开项目时懒加载 conversations 接口补齐。
+ * queryFilter 支持 collectedFilter（all=默认 / only=仅收藏）与
+ * archivedFilter（不传=剔除归档行【2026-09-15 testagent 实测】/ only=仅归档 /
+ * all=含归档）。
  */
 export async function apiUserProjectPageQuery(
   data: UserProjectPageQueryParams,
