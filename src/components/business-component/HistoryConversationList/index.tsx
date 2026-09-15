@@ -154,6 +154,11 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
 
       if (res.success) {
         activeList()?.removeItem(currentDeleteId);
+        window.dispatchEvent(
+          new CustomEvent('conversation-deleted', {
+            detail: { id: currentDeleteId },
+          }),
+        );
         // 应用智能体模式下，查询当前智能体的8条会话记录，否则查询所有智能体的5条会话记录
         const limit = isAppSidebarMode ? 8 : 5;
         runHistory({

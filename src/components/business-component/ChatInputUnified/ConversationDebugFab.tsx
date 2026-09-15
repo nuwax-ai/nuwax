@@ -11,6 +11,7 @@ import { BugOutlined, CheckOutlined } from '@ant-design/icons';
 import { Popover, Tooltip, theme } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
+import ConversationCacheDebugPanel from './ConversationCacheDebugPanel';
 import ConversationDisplaySettings from './ConversationDisplaySettings';
 
 const cx = classNames.bind(styles);
@@ -50,10 +51,14 @@ const ConversationDebugFab: React.FC<ConversationDebugFabProps> = ({
   const [open, setOpen] = useState(false);
   const { token } = theme.useToken();
   const { density, setDensity } = useConversationDensity();
+  const showCacheDebug = process.env.NODE_ENV !== 'production';
 
   const content = useMemo(
     () => (
-      <div style={{ width: 300 }} data-testid="conversation-debug-panel">
+      <div
+        style={{ width: showCacheDebug ? 420 : 300 }}
+        data-testid="conversation-debug-panel"
+      >
         <div style={{ marginBottom: 12 }}>
           <div
             style={{
@@ -122,9 +127,14 @@ const ConversationDebugFab: React.FC<ConversationDebugFabProps> = ({
           </div>
           <ConversationDisplaySettings conversationId={conversationId} />
         </div>
+        {showCacheDebug && (
+          <div style={{ marginTop: 12 }}>
+            <ConversationCacheDebugPanel />
+          </div>
+        )}
       </div>
     ),
-    [density, conversationId, token, setDensity],
+    [density, conversationId, token, setDensity, showCacheDebug],
   );
 
   return (

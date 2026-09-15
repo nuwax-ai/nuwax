@@ -625,11 +625,7 @@ const ChatInputUnifiedImpl: React.FC<
       // 已发送内容不再是草稿：无论 isClearInput 与否都清除（isClearInput=false
       // 时输入保留供失败重试，但草稿已消费，卸载兜底不再回写旧内容）
       draftConsumedRef.current = true;
-      const scope =
-        draftKey ??
-        (ownConversationIdRef.current !== null
-          ? String(ownConversationIdRef.current)
-          : null);
+      const scope = draftScope;
       if (scope) {
         clearDraft(scope);
       }

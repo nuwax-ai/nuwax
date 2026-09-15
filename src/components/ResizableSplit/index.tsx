@@ -6,6 +6,8 @@ import styles from './index.module.less';
 interface Props {
   left?: React.ReactNode;
   right?: React.ReactNode;
+  /** 保持右侧子树挂载，但从布局中隐藏（用于 iframe / 终端实例保活） */
+  rightHidden?: boolean;
   minLeftWidth?: number;
   minRightWidth?: number;
   defaultLeftWidth?: number;
@@ -26,6 +28,7 @@ interface Props {
 const ResizableSplit: React.FC<Props> = ({
   left,
   right,
+  rightHidden = false,
   minLeftWidth = 350,
   minRightWidth = 350,
   defaultLeftWidth = 50, // 默认左侧占比50%
@@ -210,7 +213,8 @@ const ResizableSplit: React.FC<Props> = ({
 
   // 检查是否有内容
   const hasLeftContent = !!left;
-  const hasRightContent = !!right;
+  const shouldRenderRight = !!right;
+  const hasRightContent = shouldRenderRight && !rightHidden;
 
   // 如果只有一侧有内容，则不需要分隔线
   const showDivider = hasLeftContent && hasRightContent;
@@ -444,11 +448,12 @@ const ResizableSplit: React.FC<Props> = ({
         </Draggable>
       )}
 
-      {hasRightContent && (
+      {shouldRenderRight && (
         <div
           className={styles.right}
           style={{
             width: `${100 - actualLeftPercent}%`,
+            display: rightHidden ? 'none' : undefined,
             // 初始化完成前使用 CSS 过渡，避免抖动
             transition: isInitialized ? 'none' : 'width 0ms',
             // 拖拽时禁用滚动，避免滚动条闪烁

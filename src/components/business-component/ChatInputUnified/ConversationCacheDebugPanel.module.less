@@ -1,0 +1,191 @@
+.panel {
+  --cache-accent: #ff6b35;
+  --cache-ink: #17212b;
+
+  width: 420px;
+  color: var(--cache-ink);
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+}
+
+.masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 12px;
+  margin: -4px -4px 10px;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 12%), transparent 48%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(23, 33, 43, 4%) 0,
+      rgba(23, 33, 43, 4%) 1px,
+      transparent 1px,
+      transparent 12px
+    );
+  border: 1px solid rgba(23, 33, 43, 10%);
+  border-radius: 8px;
+}
+
+.eyebrow {
+  margin-bottom: 3px;
+  color: var(--cache-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.capacity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(23, 33, 43, 65%);
+  font-size: 11px;
+}
+
+.capacityInput {
+  width: 58px;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.metric {
+  padding: 7px 8px;
+  background: rgba(23, 33, 43, 4%);
+  border-left: 2px solid rgba(23, 33, 43, 20%);
+}
+
+.metricValue {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.metricLabel {
+  display: block;
+  margin-top: 1px;
+  color: rgba(23, 33, 43, 55%);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.list {
+  display: flex;
+  max-height: 310px;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.entry {
+  position: relative;
+  padding: 8px 9px 8px 12px;
+  background: #fff;
+  border: 1px solid rgba(23, 33, 43, 10%);
+  border-radius: 7px;
+}
+
+.entryActive {
+  border-color: rgba(255, 107, 53, 50%);
+  box-shadow: inset 3px 0 0 var(--cache-accent);
+}
+
+.entryTop,
+.entryMeta,
+.resourceRow {
+  display: flex;
+  align-items: center;
+}
+
+.entryTop {
+  gap: 7px;
+}
+
+.key {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.state {
+  padding: 1px 5px;
+  color: rgba(23, 33, 43, 70%);
+  font-size: 9px;
+  background: rgba(23, 33, 43, 6%);
+  border-radius: 999px;
+}
+
+.entryMeta {
+  gap: 10px;
+  margin-top: 6px;
+  color: rgba(23, 33, 43, 55%);
+  font-size: 9px;
+}
+
+.resourceRow {
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.resource {
+  padding: 1px 5px;
+  color: rgba(23, 33, 43, 58%);
+  font-size: 9px;
+  background: rgba(23, 33, 43, 4%);
+  border: 1px solid rgba(23, 33, 43, 7%);
+  border-radius: 3px;
+}
+
+.resourceOn {
+  color: #8a3b18;
+  background: rgba(255, 107, 53, 9%);
+  border-color: rgba(255, 107, 53, 20%);
+}
+
+.empty {
+  padding: 24px 12px;
+  color: rgba(23, 33, 43, 45%);
+  font-size: 11px;
+  text-align: center;
+  border: 1px dashed rgba(23, 33, 43, 16%);
+  border-radius: 8px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 9px;
+  margin-top: 9px;
+  color: rgba(23, 33, 43, 50%);
+  font-size: 9px;
+  border-top: 1px solid rgba(23, 33, 43, 8%);
+}
+
+.invalidate {
+  padding: 2px 5px;
+  color: rgba(23, 33, 43, 55%);
+  font: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+
+  &:hover {
+    color: #d4380d;
+  }
+}
