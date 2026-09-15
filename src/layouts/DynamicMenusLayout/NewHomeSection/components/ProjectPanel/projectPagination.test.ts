@@ -87,9 +87,9 @@ describe('toProjectItem', () => {
     expect(withoutAgent.children?.[0].name).toBe('新会话');
   });
 
-  it('conversations 缺失时子项为空数组', () => {
+  it('conversations 缺失时 children 为 undefined（统一接口未回包，待懒加载补齐）', () => {
     const item = toProjectItem(buildRecord(), '新会话');
-    expect(item.children).toEqual([]);
+    expect(item.children).toBeUndefined();
   });
 });
 

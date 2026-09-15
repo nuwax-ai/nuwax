@@ -1,17 +1,20 @@
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiUserAppDelete, apiUserAppUpdate } from '@/services/userProjectApp';
+import { apiUserAppDelete } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
-import type { UserProjectItem } from '@/types/interfaces/userProject';
+import type {
+  UserAppInfo,
+  UserProjectItem,
+} from '@/types/interfaces/userProject';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
-import { history, useParams, useRequest } from 'umi';
+import { history, useLocation, useParams, useRequest } from 'umi';
 import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
 import ProjectCard from '../components/ProjectCard';
 import { apiUserProjectPageQuery } from '../services';
@@ -35,13 +38,15 @@ const normalizeProjectRow = (
  */
 const UserAppProject: React.FC = () => {
   const params = useParams();
+  const location = useLocation();
   const spaceId = Number(params.spaceId);
+  const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
 
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState<string>('');
   const [list, setList] = useState<UserProjectItem[]>([]);
-  const [openCreate, setOpenCreate] = useState(false);
-  const [renameTarget, setRenameTarget] = useState<UserProjectItem>();
-  const [renameName, setRenameName] = useState('');
+  const [hasLoaded, setHasLoaded] = useState<boolean>(false);
+  const [openCreate, setOpenCreate] = useState<boolean>(false);
+  const [editTarget, setEditTarget] = useState<UserProjectItem>();
 
   const { run, loading } = useRequest(
     (name?: string) =>
@@ -71,19 +76,22 @@ const UserAppProject: React.FC = () => {
           ? result.data.records
           : [];
         setList(records.map(normalizeProjectRow).filter((item) => item.id));
+        setHasLoaded(true);
       },
       onError: () => {
         setList([]);
+        setHasLoaded(true);
       },
     },
   );
 
+  /** 搜索、空间变化或重复点击菜单时，从第一页重新加载 */
   useEffect(() => {
     if (!spaceId) {
       return;
     }
     run(keyword);
-  }, [keyword, spaceId]);
+  }, [keyword, refreshToken, run, spaceId]);
 
   const handleOpenProject = useCallback(
     (item: UserProjectItem) => {
@@ -92,42 +100,45 @@ const UserAppProject: React.FC = () => {
     [spaceId],
   );
 
-  const handleRenameSubmit = async () => {
-    const name = renameName.trim();
-    if (!name || !renameTarget) {
-      return;
-    }
-    const res = await apiUserAppUpdate({ id: renameTarget.id, name });
-    if (res?.code !== SUCCESS_CODE) {
-      return;
-    }
-    setList((prev) =>
-      prev.map((item) =>
-        item.id === renameTarget.id ? { ...item, name } : item,
-      ),
-    );
-    setRenameTarget(undefined);
-  };
+  const openDeleteConfirm = useCallback(
+    (item: UserProjectItem) => {
+      Modal.confirm({
+        title: dict('PC.Common.Global.deleteConfirmTitle'),
+        content: dict('PC.Common.Global.deleteConfirmContent'),
+        okButtonProps: { danger: true },
+        okText: dict('PC.Common.Global.delete'),
+        cancelText: dict('PC.Common.Global.cancel'),
+        onOk: async () => {
+          const res = await apiUserAppDelete(item.id);
+          if (res?.code === SUCCESS_CODE) {
+            run(keyword);
+          }
+        },
+      });
+    },
+    [keyword, run],
+  );
 
-  const openDeleteConfirm = useCallback((item: UserProjectItem) => {
-    Modal.confirm({
-      title: dict('PC.Common.Global.deleteConfirmTitle'),
-      content: dict('PC.Common.Global.deleteConfirmContent'),
-      okButtonProps: { danger: true },
-      okText: dict('PC.Common.Global.delete'),
-      cancelText: dict('PC.Common.Global.cancel'),
-      onOk: async () => {
-        const res = await apiUserAppDelete(item.id);
-        if (res?.code === SUCCESS_CODE) {
-          setList((prev) => prev.filter((row) => row.id !== item.id));
-        }
-      },
-    });
+  /** 打开全栈项目编辑弹窗 */
+  const handleEdit = useCallback((item: UserProjectItem) => {
+    setEditTarget(item);
   }, []);
 
-  const handleRename = useCallback((item: UserProjectItem) => {
-    setRenameTarget(item);
-    setRenameName(item.name);
+  /** 编辑成功后同步更新卡片 */
+  const handleEdited = useCallback((info: UserAppInfo) => {
+    setList((previous) =>
+      previous.map((item) =>
+        item.id === info.id
+          ? {
+              ...item,
+              name: info.name,
+              description: info.description,
+              icon: info.icon,
+            }
+          : item,
+      ),
+    );
+    setEditTarget(undefined);
   }, []);
 
   return (
@@ -163,7 +174,7 @@ const UserAppProject: React.FC = () => {
         </div>
       </div>
 
-      {loading ? (
+      {loading || !hasLoaded ? (
         <Loading />
       ) : list.length > 0 ? (
         <div
@@ -178,7 +189,7 @@ const UserAppProject: React.FC = () => {
               key={item.id}
               item={item}
               onClick={handleOpenProject}
-              onRename={handleRename}
+              onEdit={handleEdit}
               onDelete={openDeleteConfirm}
             />
           ))}
@@ -204,23 +215,13 @@ const UserAppProject: React.FC = () => {
         }}
       />
 
-      <Modal
-        title={dict('PC.Components.HistoryConversationList.renameModalTitle')}
-        open={renameTarget !== undefined}
-        onOk={() => void handleRenameSubmit()}
-        onCancel={() => setRenameTarget(undefined)}
-        okButtonProps={{ disabled: !renameName.trim() }}
-        okText={dict('PC.Common.Global.confirm')}
-        cancelText={dict('PC.Common.Global.cancel')}
-        destroyOnHidden
-      >
-        <Input
-          value={renameName}
-          onChange={(event) => setRenameName(event.target.value)}
-          onPressEnter={() => void handleRenameSubmit()}
-          maxLength={50}
-        />
-      </Modal>
+      <CreateUserApp
+        mode={CreateUpdateModeEnum.Update}
+        userAppInfo={editTarget as UserAppInfo | undefined}
+        open={editTarget !== undefined}
+        onCancel={() => setEditTarget(undefined)}
+        onConfirmUpdate={handleEdited}
+      />
     </div>
   );
 };

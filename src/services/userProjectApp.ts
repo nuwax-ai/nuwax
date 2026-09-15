@@ -21,25 +21,8 @@ import type {
 import { request } from 'umi';
 
 /**
- * tab 项目分页查询（2026-09-08 上线）：项目列表 + 每个项目下的会话列表。
- * ⚠️ 2026-09-14 后端契约统一：本接口已废弃（swagger 删除线），由
- * apiUserProjectPageQuery 取代——统一接口含归档项目、支持 collectedFilter，
- * 但不附带 conversations（需经 apiUserProjectConversations 懒加载）；
- * 存量消费方（首页 ProjectPanel / SidebarSearchModal / SpaceProjectManage）
- * 依赖其「未归档 + 自带子会话」语义，后端下线前维持不动。
- */
-export async function apiUserProjectTabPageQuery(
-  data: UserProjectPageQueryParams,
-): Promise<RequestResponse<UserProjectTabPageResult>> {
-  return request('/api/user-project/tab/page-query', {
-    method: 'POST',
-    data,
-  });
-}
-
-/**
- * 用户项目分页查询（2026-09-14 两接口统一后的唯一列表接口）：
- * 与废弃的 tab 接口同款行结构（projectId 主键 + pinned/archived/collected 打标），
+ * 用户项目分页查询（2026-09-14 两接口统一后的唯一列表接口，tab/page-query 已下线）：
+ * 与原 tab 接口同款行结构（projectId 主键 + pinned/archived/collected 打标），
  * 差异两点：① 回包包含已归档项目（「已归档」视图数据源，归档维度仍无服务端
  * 过滤参数，消费侧按回包打标前端过滤）；② 不附带 conversations。
  * queryFilter 支持 collectedFilter（all=默认 / only=仅收藏）。

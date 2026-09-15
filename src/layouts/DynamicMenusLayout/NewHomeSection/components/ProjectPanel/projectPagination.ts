@@ -1,12 +1,37 @@
+import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import type { ProjectChildItem, ProjectItem } from './index';
 
-/** 项目列表分页大小（tab 接口 current/pageSize/total 契约，首页 20 条 + 查看更多追加） */
+/** 项目列表分页大小（统一接口 current/pageSize/total 契约，首页 20 条 + 查看更多追加） */
 export const PROJECT_PAGE_SIZE = 20;
 
 /**
- * tab 接口记录行 → 面板项目项。
+ * 会话列表 → 面板子项。undefined 透传（未加载）与空数组（已加载无会话）
+ * 是两种状态，懒加载以 children === undefined 判断是否补拉。
  * fallbackConversationName 为子项空主题兜底文案（调用方传 dict 结果，保持本模块纯函数可测）。
+ */
+export function toProjectChildren(
+  conversations: ConversationInfo[] | undefined,
+  fallbackConversationName: string,
+): ProjectChildItem[] | undefined {
+  return conversations?.map(
+    (conversation): ProjectChildItem => ({
+      id: conversation.id,
+      // 空主题回退与任务列表 ConversationItem 同口径
+      name:
+        conversation.topic ||
+        conversation.agent?.name ||
+        fallbackConversationName,
+      modified: conversation.modified,
+      taskStatus: conversation.taskStatus,
+      conversation,
+    }),
+  );
+}
+
+/**
+ * 列表记录行 → 面板项目项。统一接口不回 conversations（tab 接口已下线），
+ * children 初始 undefined，由组件层懒加载 apiUserProjectConversations 补齐。
  */
 export function toProjectItem(
   record: UserProjectTabItem,
@@ -20,19 +45,7 @@ export function toProjectItem(
     icon: record.icon,
     sandboxId: record.sandboxId,
     devAgentId: record.devAgentId,
-    children: (record.conversations ?? []).map(
-      (conversation): ProjectChildItem => ({
-        id: conversation.id,
-        // 空主题回退与任务列表 ConversationItem 同口径
-        name:
-          conversation.topic ||
-          conversation.agent?.name ||
-          fallbackConversationName,
-        modified: conversation.modified,
-        taskStatus: conversation.taskStatus,
-        conversation,
-      }),
-    ),
+    children: toProjectChildren(record.conversations, fallbackConversationName),
   };
 }
 

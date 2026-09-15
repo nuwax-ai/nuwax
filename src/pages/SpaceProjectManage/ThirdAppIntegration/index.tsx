@@ -1,7 +1,6 @@
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiUserProjectDelete } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserProjectItem } from '@/types/interfaces/userProject';
@@ -10,12 +9,15 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams, useRequest } from 'umi';
-import ProjectCard from '../components/ProjectCard';
+import { history, useLocation, useParams, useRequest } from 'umi';
 import { apiUserProjectPageQuery } from '../services';
-import { apiThirdAppOauth2Update } from '../services/thirdAppOauth2';
-import CreateThirdAppModal from './components/CreateThirdAppModal';
+import CreateThirdAppModal from './CreateThirdAppModal';
+import EditThirdAppModal, {
+  type EditedThirdAppInfo,
+} from './EditThirdAppModal';
+import ThirdAppCard from './ThirdAppCard';
 import styles from './index.less';
+import { apiThirdAppOauth2Delete } from '../services/thirdAppOauth2';
 
 const cx = classNames.bind(styles);
 
@@ -32,19 +34,21 @@ const normalizeProjectRow = (
  * 第三方应用接入列表。
  *
  * 页面结构复用全栈应用列表，分页查询固定传 projectType=ThirdApp；
- * 创建和重命名使用第三方应用 OAuth2 接口。
+ * 创建和编辑使用第三方应用 OAuth2 接口。
  *
  * @returns 第三方应用列表页面
  */
 const ThirdAppIntegration: React.FC = () => {
   const params = useParams();
+  const location = useLocation();
   const spaceId = Number(params.spaceId);
+  const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
 
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState<string>('');
   const [list, setList] = useState<UserProjectItem[]>([]);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [renameTarget, setRenameTarget] = useState<UserProjectItem>();
-  const [renameName, setRenameName] = useState('');
+  const [hasLoaded, setHasLoaded] = useState<boolean>(false);
+  const [createOpen, setCreateOpen] = useState<boolean>(false);
+  const [editTarget, setEditTarget] = useState<UserProjectItem>();
 
   /** 查询第三方应用列表 */
   const { run: runQuery, loading } = useRequest(
@@ -75,72 +79,79 @@ const ThirdAppIntegration: React.FC = () => {
           ? result.data.records
           : [];
         setList(records.map(normalizeProjectRow).filter((item) => item.id));
+        setHasLoaded(true);
       },
       onError: () => {
         setList([]);
+        setHasLoaded(true);
       },
     },
   );
 
-  /** 空间或搜索词变化时刷新列表 */
+  /** 搜索、空间变化或重复点击菜单时，从第一页重新加载 */
   useEffect(() => {
     if (!spaceId) {
       return;
     }
     runQuery(keyword);
-  }, [keyword, runQuery, spaceId]);
+  }, [keyword, refreshToken, runQuery, spaceId]);
 
-  /** 打开重命名弹窗 */
-  const handleRename = useCallback((item: UserProjectItem) => {
-    setRenameTarget(item);
-    setRenameName(item.name);
+  /** 打开编辑弹窗 */
+  const handleEdit = useCallback((item: UserProjectItem) => {
+    setEditTarget(item);
   }, []);
 
-  /** 保存第三方应用名称 */
-  const handleRenameSubmit = useCallback(async () => {
-    const name = renameName.trim();
-    if (!name || !renameTarget) {
-      return;
-    }
-    const response = await apiThirdAppOauth2Update({
-      projectId: renameTarget.id,
-      name,
-    });
-    if (response?.code !== SUCCESS_CODE) {
-      return;
-    }
-    setList((previous) =>
-      previous.map((item) =>
-        item.id === renameTarget.id ? { ...item, name } : item,
-      ),
-    );
-    setRenameTarget(undefined);
-  }, [renameName, renameTarget]);
+  /** 编辑成功后同步更新卡片信息 */
+  const handleEdited = useCallback(
+    (appId: number, editedInfo: EditedThirdAppInfo) => {
+      setList((previous) =>
+        previous.map((item) =>
+          item.id === appId ? { ...item, ...editedInfo } : item,
+        ),
+      );
+      setEditTarget(undefined);
+    },
+    [],
+  );
+
+  /** 关闭编辑弹窗 */
+  const handleEditCancel = useCallback(() => {
+    setEditTarget(undefined);
+  }, []);
 
   /** 删除第三方应用前二次确认 */
-  const handleDelete = useCallback((item: UserProjectItem) => {
-    Modal.confirm({
-      title: dict('PC.Common.Global.deleteConfirmTitle'),
-      content: dict('PC.Common.Global.deleteConfirmContent'),
-      okButtonProps: { danger: true },
-      okText: dict('PC.Common.Global.delete'),
-      cancelText: dict('PC.Common.Global.cancel'),
-      onOk: async () => {
-        const response = await apiUserProjectDelete(item.id);
-        if (response?.code === SUCCESS_CODE) {
-          setList((previous) =>
-            previous.filter((record) => record.id !== item.id),
-          );
-        }
-      },
-    });
-  }, []);
+  const handleDelete = useCallback(
+    (item: UserProjectItem) => {
+      Modal.confirm({
+        title: dict('PC.Common.Global.deleteConfirmTitle'),
+        content: dict('PC.Common.Global.deleteConfirmContent'),
+        okButtonProps: { danger: true },
+        okText: dict('PC.Common.Global.delete'),
+        cancelText: dict('PC.Common.Global.cancel'),
+        onOk: async () => {
+          const response = await apiThirdAppOauth2Delete(item.id);
+          if (response?.code === SUCCESS_CODE) {
+            runQuery(keyword);
+          }
+        },
+      });
+    },
+    [keyword, runQuery],
+  );
 
   /** 创建完成后关闭弹窗并刷新列表 */
   const handleCreated = useCallback(() => {
     setCreateOpen(false);
     runQuery(keyword);
   }, [keyword, runQuery]);
+
+  /** 打开三方应用详情 */
+  const handleOpenProject = useCallback(
+    (item: UserProjectItem) => {
+      history.push(`/space/${spaceId}/third-app-detail/${item.id}`);
+    },
+    [spaceId],
+  );
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -175,7 +186,7 @@ const ThirdAppIntegration: React.FC = () => {
         </div>
       </div>
 
-      {loading ? (
+      {loading || !hasLoaded ? (
         <Loading />
       ) : list.length > 0 ? (
         <div
@@ -186,10 +197,11 @@ const ThirdAppIntegration: React.FC = () => {
           )}
         >
           {list.map((item) => (
-            <ProjectCard
+            <ThirdAppCard
               key={item.id}
               item={item}
-              onRename={handleRename}
+              onClick={handleOpenProject}
+              onEdit={handleEdit}
               onDelete={handleDelete}
             />
           ))}
@@ -207,23 +219,11 @@ const ThirdAppIntegration: React.FC = () => {
         onCreated={handleCreated}
       />
 
-      <Modal
-        title={dict('PC.Components.HistoryConversationList.renameModalTitle')}
-        open={renameTarget !== undefined}
-        onOk={() => void handleRenameSubmit()}
-        onCancel={() => setRenameTarget(undefined)}
-        okButtonProps={{ disabled: !renameName.trim() }}
-        okText={dict('PC.Common.Global.confirm')}
-        cancelText={dict('PC.Common.Global.cancel')}
-        destroyOnHidden
-      >
-        <Input
-          value={renameName}
-          onChange={(event) => setRenameName(event.target.value)}
-          onPressEnter={() => void handleRenameSubmit()}
-          maxLength={128}
-        />
-      </Modal>
+      <EditThirdAppModal
+        app={editTarget}
+        onCancel={handleEditCancel}
+        onEdited={handleEdited}
+      />
     </div>
   );
 };

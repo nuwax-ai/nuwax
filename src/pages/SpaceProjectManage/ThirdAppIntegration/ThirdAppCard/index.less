@@ -1,0 +1,88 @@
+@import '@/styles/token';
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+  min-width: 0;
+  height: 76px;
+  padding: @paddingSm @paddingSm @paddingSm @padding;
+  overflow: hidden;
+  background: @colorBgContainer;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: @colorPrimaryBorder;
+    outline: none;
+
+    .more {
+      color: @colorTextSecondary;
+      opacity: 1;
+    }
+  }
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  color: @colorText;
+  font-size: 20px;
+  background: @colorFillQuaternary;
+  border-radius: @borderRadiusLg;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.content {
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  margin: 0;
+  color: @colorText;
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  line-height: @fontHeight;
+}
+
+.description {
+  margin: @marginXxs 0 0;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @fontHeightSm;
+}
+
+.more:global(.ant-btn) {
+  flex: 0 0 auto;
+  width: @controlHeightSm;
+  height: @controlHeightSm;
+  padding: 0;
+  color: @colorTextTertiary;
+  opacity: 0.7;
+
+  &:hover,
+  &:focus {
+    color: @colorText;
+    background: @colorFillTertiary;
+  }
+}
+
+@media (hover: none) {
+  .more:global(.ant-btn) {
+    opacity: 1;
+  }
+}
