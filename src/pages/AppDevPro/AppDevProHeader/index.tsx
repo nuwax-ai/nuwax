@@ -142,8 +142,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
     userAppInfo.publishStatus !== PublishStatusEnum.Published &&
     !userAppInfo.buildVersions?.length;
 
-  /** 已部署到生产环境才展示开发 / 线上环境切换，以及发布按钮 */
-  const showEnvSwitch = userAppInfo?.prodDeployed === true;
+  /** 已部署到生产环境后才可发布到广场 / 空间 */
   const showMarketPublish = userAppInfo?.prodDeployed === true;
 
   const handleSelectDevEnv = useCallback(() => {
@@ -212,43 +211,43 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
           )}
         </div>
 
-        {/* 环境切换：仅已部署应用展示 */}
-        <ConditionRender condition={showEnvSwitch}>
+        {/* 环境切换：开发 / 线上始终展示，图标入口仍按当前环境显隐 */}
+        <div
+          className={cx(
+            'flex',
+            'items-center',
+            'content-center',
+            styles['env-switch'],
+          )}
+        >
           <div
-            className={cx(
-              'flex',
-              'items-center',
-              'content-center',
-              styles['env-switch'],
-            )}
+            className={cx('cursor-pointer', styles['env-item'], {
+              [styles.active]: env === UserAppDbEnvEnum.Dev,
+            })}
+            onClick={handleSelectDevEnv}
           >
-            <div
-              className={cx('cursor-pointer', styles['env-item'], {
-                [styles.active]: env === UserAppDbEnvEnum.Dev,
-              })}
-              onClick={handleSelectDevEnv}
-            >
-              {dict('PC.Pages.AppDevPro.devEnv')}
-            </div>
-            <div
-              className={cx('cursor-pointer', styles['env-item'], {
-                [styles.active]: env === UserAppDbEnvEnum.Prod,
-              })}
-              onClick={handleSelectProdEnv}
-            >
-              {dict('PC.Pages.AppDevPro.onlineEnv')}
-            </div>
+            {dict('PC.Pages.AppDevPro.devEnv')}
           </div>
-        </ConditionRender>
+          <div
+            className={cx('cursor-pointer', styles['env-item'], {
+              [styles.active]: env === UserAppDbEnvEnum.Prod,
+            })}
+            onClick={handleSelectProdEnv}
+          >
+            {dict('PC.Pages.AppDevPro.onlineEnv')}
+          </div>
+        </div>
 
         <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-          {/* 项目设置：始终显示 */}
-          <TooltipIcon
-            title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
-            className={cx(styles['panel-btn'])}
-            icon={<SettingOutlined style={{ fontSize: 16 }} />}
-            onClick={onOpenSettings}
-          />
+          {/* 项目设置：仅线上环境显示 */}
+          <ConditionRender condition={env === UserAppDbEnvEnum.Prod}>
+            <TooltipIcon
+              title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
+              className={cx(styles['panel-btn'])}
+              icon={<SettingOutlined style={{ fontSize: 16 }} />}
+              onClick={onOpenSettings}
+            />
+          </ConditionRender>
 
           {/* 数据库工作区：管理页 + 配置页 */}
           <TooltipIcon

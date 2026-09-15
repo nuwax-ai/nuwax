@@ -36,6 +36,8 @@ import {
   RECENT_COLLAPSED_MAX_ROWS,
   RECENT_USED_SIZE,
   SQUARE_PAGE_APP_PATH,
+  USER_APP_PATH_PREFIX,
+  USER_APP_TARGET_SUBTYPE,
 } from './constants';
 import styles from './index.less';
 
@@ -319,9 +321,15 @@ const NuwaApps: React.FC = () => {
     history.push(SQUARE_PAGE_APP_PATH);
   };
 
-  // 最近使用点击:进应用详情(新接口条目为发布对象,无会话字段,不再续上次会话)
-  const handleRecentClick = (app: SquarePublishedItemInfo) => {
-    history.push(`/agent/${app.targetId}`);
+  // 应用点击统一分流:全栈应用(targetSubType=UserApp)跳全栈应用页
+  // /userApp/:appId;其余应用进应用详情 /agent/:targetId(新接口条目为
+  // 发布对象,无会话字段,不再续上次会话)
+  const handleAppClick = (app: SquarePublishedItemInfo) => {
+    if (app.targetSubType === USER_APP_TARGET_SUBTYPE) {
+      history.push(`${USER_APP_PATH_PREFIX}/${app.targetId}`);
+    } else {
+      history.push(`/agent/${app.targetId}`);
+    }
   };
 
   // 当前 tab 的展示列表与加载态:仅首屏(第一页且列表为空)显示整屏 Loading,
@@ -386,7 +394,7 @@ const NuwaApps: React.FC = () => {
                   <div
                     key={app.id}
                     className={cx(styles['recent-item'])}
-                    onClick={() => handleRecentClick(app)}
+                    onClick={() => handleAppClick(app)}
                   >
                     <span className={cx(styles['recent-icon'])}>
                       <img
@@ -489,7 +497,7 @@ const NuwaApps: React.FC = () => {
                   <AppCard
                     key={item.id}
                     publishedItemInfo={item}
-                    onClick={() => history.push(`/agent/${item.targetId}`)}
+                    onClick={() => handleAppClick(item)}
                   />
                 ))}
               </div>

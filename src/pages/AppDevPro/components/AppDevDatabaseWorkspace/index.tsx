@@ -8,56 +8,75 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-export type AppDevDatabaseWorkspaceTab =
-  | 'database'
-  | 'database-config'
-  | 'database-prod'
-  | 'database-config-prod';
+export type AppDevDatabaseWorkspaceTab = 'database' | 'database-config';
 
 export interface AppDevDatabaseWorkspaceProps {
   /** 应用 ID */
   appId: number;
   /** 当前 Tab */
   activeTab: AppDevDatabaseWorkspaceTab;
-  /** 线上环境容器状态，进入线上数据库管理页前须先就绪 */
+  /** Header 当前环境 */
+  env: UserAppDbEnvEnum;
+  /** 开发环境容器状态 */
+  devContainerStatus?: UserAppEnvPodStatus;
+  /** 线上环境容器状态 */
   prodContainerStatus?: UserAppEnvPodStatus;
-  /** 重试启动线上环境容器 */
-  onRetryProdContainer?: () => void;
+  /** 重试启动当前环境容器 */
+  onRetryContainer?: () => void;
+  /** 容器重启成功后重挂 iframe */
+  iframeKey?: number;
 }
 
 /**
- * 数据库工作区：开发 / 线上各一套管理页与配置。
- * Tab 头由外层 PreviewTabBar 承载；两个 iframe 切换时不卸载，配置面板仅在进入时挂载。
+ * 数据库工作区：开发 / 线上各保留一套管理页，切换环境时不卸载。
+ * 已启动成功的环境直接回显；未启动或失败的环境由页面重新 ensure。
  *
  * @param props.appId 应用 ID
  * @param props.activeTab 当前激活的数据库 Tab
+ * @param props.env Header 当前环境
  * @returns 数据库工作区内容
  */
 const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
   appId,
   activeTab,
+  env,
+  devContainerStatus,
   prodContainerStatus,
-  onRetryProdContainer,
+  onRetryContainer,
+  iframeKey = 0,
 }) => {
   return (
     <div className={cx(styles.workspace)}>
       <div
         className={cx(styles.pane, {
-          [styles.hidden]: activeTab !== 'database',
+          [styles.hidden]:
+            activeTab !== 'database' || env !== UserAppDbEnvEnum.Dev,
         })}
       >
-        <AppDevDatabasePanel appId={appId} env={UserAppDbEnvEnum.Dev} />
+        <AppDevDatabasePanel
+          appId={appId}
+          env={UserAppDbEnvEnum.Dev}
+          containerStatus={devContainerStatus}
+          iframeKey={iframeKey}
+          onRetryContainer={
+            env === UserAppDbEnvEnum.Dev ? onRetryContainer : undefined
+          }
+        />
       </div>
       <div
         className={cx(styles.pane, {
-          [styles.hidden]: activeTab !== 'database-prod',
+          [styles.hidden]:
+            activeTab !== 'database' || env !== UserAppDbEnvEnum.Prod,
         })}
       >
         <AppDevDatabasePanel
           appId={appId}
           env={UserAppDbEnvEnum.Prod}
           containerStatus={prodContainerStatus}
-          onRetryContainer={onRetryProdContainer}
+          iframeKey={iframeKey}
+          onRetryContainer={
+            env === UserAppDbEnvEnum.Prod ? onRetryContainer : undefined
+          }
         />
       </div>
       <div
@@ -66,24 +85,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
         })}
       >
         {activeTab === 'database-config' ? (
-          <AppDevDatabaseConfigPanel
-            appId={appId}
-            env={UserAppDbEnvEnum.Dev}
-            active
-          />
-        ) : null}
-      </div>
-      <div
-        className={cx(styles.pane, {
-          [styles.hidden]: activeTab !== 'database-config-prod',
-        })}
-      >
-        {activeTab === 'database-config-prod' ? (
-          <AppDevDatabaseConfigPanel
-            appId={appId}
-            env={UserAppDbEnvEnum.Prod}
-            active
-          />
+          <AppDevDatabaseConfigPanel key={env} appId={appId} env={env} active />
         ) : null}
       </div>
     </div>

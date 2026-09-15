@@ -1,6 +1,12 @@
 /** 已发布分类接口中,网页应用分类树的根节点 key */
 export const PAGE_APP_CATEGORY_ROOT_KEY = 'PageApp';
 
+/** 全栈应用子类型标识:回包 targetSubType 为该值时,点击卡片跳全栈应用页 */
+export const USER_APP_TARGET_SUBTYPE = 'UserApp';
+
+/** 全栈应用详情路由前缀(拼 targetId 跳转 /userApp/:appId) */
+export const USER_APP_PATH_PREFIX = '/userApp';
+
 /** 广场-网页应用地址(「更多」入口跳转) */
 export const SQUARE_PAGE_APP_PATH = '/square?cate_type=PageApp';
 

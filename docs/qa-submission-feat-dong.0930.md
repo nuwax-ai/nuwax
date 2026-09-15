@@ -64,7 +64,7 @@
 
 ## 三、已知遗留（前端，不阻塞提测主流程）
 
-1. 任务列表 ⋯ 菜单（ConversationContextMenu）仍为 antd 默认样式，待产品定夺；单栏高亮统一 Phase 2（base/SecondMenuItem、MenuListItem、ConversationContextMenu 接入新语义 token）未做
+1. ~~任务列表 ⋯ 菜单（ConversationContextMenu）仍为 antd 默认样式~~：✅ 已修复（2026-09-15）——菜单项 hover 态接入 `@colorPrimaryBg` 语义 token，danger 项（删除）保留原生红色不受影响；单栏高亮统一 Phase 2（base/SecondMenuItem、MenuListItem 两个组件）仍未做，范围只覆盖本组件
 2. ConversationRendererV2 词条 zh-TW / zh-HK / ja-JP 整组缺失（66 条，已立项）
 3. P1「报错后不能发消息」：四根因已定位（快照轮询三层吞错 / 未决干预卡不清算 / EXECUTING 清算口径不一致 / 登录过期僵尸轮询），修复约 1 天，另行排期
 4. E2E 会话验收脚本过时——**已收口（2026-09-12）**：首轮 4/8 失败定性为脚本断言/选择器过时（非产品回归，证据链见「E2E 实测记录」），修脚本后复测 **8/8 全绿**；`scripts/e2e/conversation-acceptance.mjs` 改动在工作区，待随本提测单一起走查提交

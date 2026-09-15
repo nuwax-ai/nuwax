@@ -13,7 +13,7 @@ import type {
 } from '@/types/interfaces/userProject';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import type { TabsProps } from 'antd';
-import { Button, Empty, Tabs } from 'antd';
+import { Button, Result, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
@@ -71,6 +71,7 @@ const NormalProjectDetail: React.FC = () => {
   >([]);
   const [conversationPanelVisible, setConversationPanelVisible] =
     useState(true);
+  const [iframeLoadFailed, setIframeLoadFailed] = useState(false);
 
   /** 顶部 Tab 仅负责切换状态，内容由页面主体区域统一渲染 */
   const tabItems = useMemo<TabsProps['items']>(
@@ -183,12 +184,68 @@ const NormalProjectDetail: React.FC = () => {
     });
   }, [pin, projectId, projectInfo, projectName, spaceId]);
 
-  /** 计划 / 资产 Tab 占位内容 */
-  const renderComingSoon = () => (
-    <div className={cx('flex', 'items-center', 'content-center', 'h-full')}>
-      <Empty description={dict('PC.Pages.NormalProjectDetail.comingSoon')} />
-    </div>
-  );
+  /** 当前计划或资产 Tab 对应的仓库页面地址 */
+  const repositoryPageUrl = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    // 仓库页面会读取父窗口的嵌入配置，必须与父页面保持同源。
+    const domain = window.location.origin;
+    if (activeTab === 'plan' && projectInfo?.planSlugId) {
+      return `${domain}/repo/doc/${encodeURIComponent(
+        projectInfo.planSlugId,
+      )}?just_show_content=true&hide_sheet=true`;
+    }
+    if (activeTab === 'asset' && projectInfo?.repoSlugId) {
+      return `${domain}/repo/folder/${encodeURIComponent(
+        projectInfo.repoSlugId,
+      )}`;
+    }
+    return '';
+  }, [activeTab, projectInfo?.planSlugId, projectInfo?.repoSlugId]);
+
+  /** iframe 地址变化时清除上一个页面的失败状态 */
+  useEffect(() => {
+    setIframeLoadFailed(false);
+  }, [repositoryPageUrl]);
+
+  /** 重新挂载 iframe，触发页面再次加载 */
+  const handleReloadIframe = useCallback(() => {
+    setIframeLoadFailed(false);
+  }, []);
+
+  /** 渲染计划或资产仓库页面 */
+  const renderRepositoryPage = () => {
+    if (iframeLoadFailed || !repositoryPageUrl) {
+      return (
+        <Result
+          className={cx(styles['repository-error'])}
+          status="error"
+          title={dict('PC.Pages.NormalProjectDetail.repositoryLoadFailed')}
+          extra={
+            repositoryPageUrl ? (
+              <Button type="primary" onClick={handleReloadIframe}>
+                {dict('PC.Common.Global.refresh')}
+              </Button>
+            ) : null
+          }
+        />
+      );
+    }
+    return (
+      <iframe
+        className={cx(styles['repository-iframe'])}
+        src={repositoryPageUrl}
+        onError={() => setIframeLoadFailed(true)}
+        title={
+          activeTab === 'plan'
+            ? dict('PC.Pages.NormalProjectDetail.tabPlan')
+            : dict('PC.Pages.NormalProjectDetail.tabAsset')
+        }
+      />
+    );
+  };
 
   return (
     <div className={cx(styles.page, 'h-full', 'flex', 'flex-col')}>
@@ -237,11 +294,12 @@ const NormalProjectDetail: React.FC = () => {
             <div
               className={cx(
                 styles['main-scroll'],
+                styles['repository-content'],
                 'flex-1',
                 'scroll-container-hide',
               )}
             >
-              {renderComingSoon()}
+              {renderRepositoryPage()}
             </div>
           </main>
           {conversationPanelVisible ? (

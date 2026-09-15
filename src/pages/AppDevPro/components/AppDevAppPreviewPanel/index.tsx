@@ -1,5 +1,5 @@
 import { dict } from '@/services/i18nRuntime';
-import { LoadingOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Button, Empty, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -9,11 +9,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import type {
   UserAppPublishPhase,
   UserAppTaskServiceProgress,
 } from '../../type';
 import AppDevProIframe from '../AppDevProIframe';
+import AppDevServiceStartStatus from '../AppDevStatusHero';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -37,6 +39,8 @@ export interface AppDevAppPreviewPanelProps {
   cancelLoading?: boolean;
   /** 容器是否已就绪 */
   podReady?: boolean;
+  /** 当前环境容器启动状态；传入后优先展示容器启动过程 */
+  containerStatus?: UserAppEnvPodStatus;
   /** 会话是否仍在生成项目文件 */
   isGeneratingFiles?: boolean;
   /** 会话结束后是否仍在等待用户确认 */
@@ -47,6 +51,8 @@ export interface AppDevAppPreviewPanelProps {
   onRetryStart?: () => void;
   /** 停止后重新启动预览（dev/start 或 prod/start） */
   onStart?: () => void;
+  /** 容器启动失败后重新启动 */
+  onRetryContainer?: () => void;
   /** 开发环境进行中任务锁定启动 / 重启 */
   devActionLocked?: boolean;
   /**
@@ -55,7 +61,9 @@ export interface AppDevAppPreviewPanelProps {
    * 用户点停止后为 true。
    */
   allowStoppedHero?: boolean;
-  /** 线上环境有预览地址时可直接展示 iframe，无需先启动服务 */
+  /**
+   * 线上环境预览：容器就绪后直接展示 iframe，不走开发环境的「预览准备中」。
+   */
   directPreview?: boolean;
   /** 正在调用停止接口，避免 iframe 被关掉后露出空白 */
   stopping?: boolean;
@@ -193,15 +201,22 @@ const PreviewHero: React.FC<{
   title?: string;
   hint?: string;
   spinning?: boolean;
+  error?: boolean;
   action?: React.ReactNode;
-}> = ({ title, hint, spinning = false, action }) => (
+}> = ({ title, hint, spinning = false, error = false, action }) => (
   <div className={cx(styles.hero)}>
     {spinning ? (
       <LoadingOutlined style={{ fontSize: 22 }} />
+    ) : error ? (
+      <CloseCircleOutlined className={cx(styles.errorIcon)} />
     ) : (
       <div className={cx(styles.mark)} aria-hidden />
     )}
-    {title ? <p className={cx(styles.title)}>{title}</p> : null}
+    {title ? (
+      <p className={cx(styles.title, { [styles.errorTitle]: error })}>
+        {title}
+      </p>
+    ) : null}
     {hint ? <p className={cx(styles.hint)}>{hint}</p> : null}
     {action}
   </div>
@@ -209,9 +224,9 @@ const PreviewHero: React.FC<{
 
 /**
  * AppDevPro 应用预览页签。
- * 容器未就绪显示准备中；停止中显示加载动画；停止后显示启动预览；启动过程展示任务日志；
- * 启动成功后先显示应用加载中，iframe 加载完成再露出页面。
- * 已有预览时，新会话进行中仍保留当前页面。
+ * 开发环境：容器启动 → 预览准备中 → 启动服务 → iframe。
+ * 线上环境：容器启动 → 直接 iframe，不展示预览准备中。
+ * 容器启动失败时展示失败与重试；启动成功后再进入后续预览。
  *
  * @param props 预览面板属性
  * @returns 应用预览面板
@@ -226,11 +241,13 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   errorMessage,
   cancelLoading = false,
   podReady = false,
+  containerStatus,
   isGeneratingFiles = false,
   isWaitingForUserConfirmation = false,
   onCancelTask,
   onRetryStart,
   onStart,
+  onRetryContainer,
   devActionLocked = false,
   allowStoppedHero = false,
   directPreview = false,
@@ -269,6 +286,51 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   const handleIframeRetry = useCallback(() => {
     setLoadedInstanceKey('');
   }, []);
+
+  if (containerStatus && containerStatus !== 'running') {
+    return (
+      <AppDevServiceStartStatus
+        failed={containerStatus === 'error'}
+        onRetry={onRetryContainer}
+      />
+    );
+  }
+
+  /** 线上环境容器就绪后直接预览，不展示开发环境的准备中 / 启动日志 */
+  if (directPreview) {
+    if (previewUrl) {
+      return (
+        <div className={cx(styles.container)}>
+          <div className={cx(styles.iframeWrap)}>
+            <AppDevProIframe
+              src={previewUrl}
+              iframeKey={`${previewUrl}-${refreshKey}`}
+              title={dict('PC.Pages.AppDevPro.appPreview')}
+              onLoad={handleIframeLoad}
+              onError={handleIframeError}
+              onRetry={handleIframeRetry}
+            />
+            {!iframeLoaded ? (
+              <div className={cx(styles.loadingOverlay)}>
+                <PreviewIframeLoading />
+              </div>
+            ) : null}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={cx(styles.container)}>
+        <div className={cx(styles.hero)}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={dict('PC.Pages.AppDevPro.appPreviewEmpty')}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (stopping) {
     return (

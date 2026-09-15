@@ -19,3 +19,45 @@
     color: rgba(0, 0, 0, 88%);
   }
 }
+
+// 菜单项 hover/focus 态对齐触发按钮的品牌色底（与 .more-btn:hover 同一 token），
+// 修复 antd 默认灰色 hover 与触发按钮观感不统一；danger 项（删除）保留原生红色
+// 危险语义不被覆盖。overlayClassName 限定作用域，不影响全站其他 Dropdown。
+//
+// 三个坑（均已踩过，勿改回）：
+// 1. rc-menu 的高亮态实际由 JS 切换 -active class 驱动（非纯 CSS :hover），
+//    键盘方向键导航与鼠标悬停共用该 class，`&:hover, &-active` 会被 less
+//    编译成非法选择器 `:not(...)-active`，导致整条规则被浏览器丢弃——两个
+//    选择器必须分开写。
+// 2. 外层包一层 `.context-menu-overlay { :global { ... } }` 时，css-loader
+//    不会给这个仅包裹 :global 块、自身无直接声明的 wrapper class 导出 hash
+//    映射，`cx('context-menu-overlay')` 会静默降级返回原始字符串，与 CSS
+//    里实际生成的 hash 选择器完全对不上、规则永远不生效。
+// 3. 改用 `:global(.context-menu-overlay) { ... }` 函数式写法只把这一层
+//    标记为 global，内层嵌套的 `.ant-dropdown-menu-item` 等 antd 原生类名
+//    不会继承这个 global 语境，又被当成 local 重新 hash 了一遍——同样匹配
+//    不上真实 DOM。正确写法：把整段都放进 `:global { ... }` 块里，让外层
+//    wrapper 和内层 antd 原生类名统一保持原始字符串；index.tsx 对应用裸
+//    字符串 `overlayClassName="context-menu-overlay"`（不套 cx()）。
+// 4. 选择器改对之后仍不生效：antd 5 CSS-in-JS 用 `:where(...)` 包裹自己的
+//    hash 类名前缀，`:where()` 本身 specificity 恒为 0，但其后拼接的
+//    `.ant-dropdown .ant-dropdown-menu .ant-dropdown-menu-item-active`
+//    仍贡献 3 个 class，与我们 `.context-menu-overlay .xxx-active:not(.xxx)`
+//    （同样 3 个 class）打平——同分时后插入的 `<style>` 赢，antd 的
+//    cssinjs 标签插入更晚，覆盖了我们。用 DOM 上真实存在的 `.ant-dropdown`
+//    类名把选择器再垫高一级（4 个 class），稳定胜出，不必上 !important。
+:global {
+  .ant-dropdown.context-menu-overlay {
+    .ant-dropdown-menu-item:not(.ant-dropdown-menu-item-danger) {
+      border-radius: @borderRadiusSm;
+
+      &:hover {
+        background: @colorPrimaryBg;
+      }
+    }
+
+    .ant-dropdown-menu-item-active:not(.ant-dropdown-menu-item-danger) {
+      background: @colorPrimaryBg;
+    }
+  }
+}

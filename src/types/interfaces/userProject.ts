@@ -68,9 +68,12 @@ export type UserProjectPageQueryParams = TablePageRequest<
     // 项目名称（模糊匹配）
     name: string;
     // 收藏过滤：all=全部（后端默认）；only=仅收藏。2026-09-14 两接口统一：
-    // tab 接口废弃，统一接口（page-query）已支持本参数（历史会话页「项目」tab 消费）；
-    // 归档维度仍无对应参数，消费侧按回包打标前端过滤
+    // tab 接口废弃，统一接口（page-query）已支持本参数（历史会话页「项目」tab 消费）
     collectedFilter: 'all' | 'only';
+    // 归档过滤：默认不传=剔除归档项目（testagent 2026-09-15 实测，默认回包不含
+    // 归档行）；only=仅归档；all=含归档。历史会话页「已归档」视图传 only，
+    // 消费侧仍按回包 archived 打标过滤兜底
+    archivedFilter: 'all' | 'only';
   }>
 >;
 
@@ -425,6 +428,34 @@ export interface UserAppInfo {
   conversationId?: number;
 }
 
+/** 应用域名类型(全栈应用 domain/list 回包) */
+export enum UserAppDomainTypeEnum {
+  /** 开发环境默认域名 */
+  Dev = 'Dev',
+  /** 生产环境默认域名 */
+  Prod = 'Prod',
+  /** 用户自定义域名 */
+  Custom = 'Custom',
+}
+
+/** 全栈应用绑定的域名(domain/list 回包行) */
+export interface UserAppDomainInfo {
+  /** 记录 ID */
+  id: number;
+  /** 商户 ID */
+  tenantId: number;
+  /** 应用 ID */
+  appId: number;
+  /** 域名 */
+  domain: string;
+  /** 域名类型 */
+  domainType: UserAppDomainTypeEnum;
+  /** 创建时间 */
+  created: string;
+  /** 更新时间 */
+  modified: string;
+}
+
 /** 更新全栈应用参数 */
 export interface UpdateUserAppParams {
   /*应用ID */
@@ -570,13 +601,12 @@ export type UserAppPublishPhase =
   | 'building'
   | 'checkingDeployable'
   | 'deploying'
-  | 'applying'
   | 'success'
   | 'failed'
   | 'cancelled';
 
-/** 进度弹窗失败发生在构建、检测可部署、启动还是发布 */
-export type UserAppDeployFailedStage = 'build' | 'check' | 'deploy' | 'apply';
+/** 进度弹窗失败发生在构建、检测可部署还是启动 */
+export type UserAppDeployFailedStage = 'build' | 'check' | 'deploy';
 
 /** 任务终态 */
 export type UserAppTaskTerminalStatus = 'succeeded' | 'failed' | 'cancelled';

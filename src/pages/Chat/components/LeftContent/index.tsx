@@ -17,6 +17,7 @@ import {
 import { CodeOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import ConversationInstanceCacheSlot from '../ConversationInstanceCacheSlot';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -29,6 +30,7 @@ export interface ExternalFilePreviewTarget {
 }
 
 interface LeftContentProps {
+  pageCacheKey: string;
   isFileTreeVisible: boolean;
   effectiveAgent: any;
   isAppSidebarMode: boolean;
@@ -42,6 +44,7 @@ interface LeftContentProps {
 
 // 内容区域
 const LeftContent: React.FC<LeftContentProps> = ({
+  pageCacheKey,
   isFileTreeVisible,
   effectiveAgent,
   isAppSidebarMode,
@@ -265,8 +268,15 @@ const LeftContent: React.FC<LeftContentProps> = ({
               />
             </div>
           }
+          rightHidden={!showFileTreePanel}
           right={
-            showFileTreePanel ? (
+            <ConversationInstanceCacheSlot
+              activeKey={pageCacheKey}
+              active={showFileTreePanel}
+              retain={showFileTreePanel}
+              exclusive={fileSidebarProps.viewMode === 'desktop'}
+              testId="conversation-workspace-cache"
+            >
               <div
                 className={cx(
                   styles['file-tree-sidebar'],
@@ -293,7 +303,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   />
                 )}
               </div>
-            ) : null
+            </ConversationInstanceCacheSlot>
           }
         />
       </div>

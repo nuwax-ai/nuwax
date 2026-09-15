@@ -1,3 +1,4 @@
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
@@ -5,7 +6,10 @@ import { dict } from '@/services/i18nRuntime';
 import { apiNormalProjectDelete } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
-import type { UserProjectItem } from '@/types/interfaces/userProject';
+import type {
+  UserProjectItem,
+  UserProjectPageResult,
+} from '@/types/interfaces/userProject';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
@@ -22,6 +26,8 @@ import { openProject } from '../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const PAGE_SIZE = 48;
+const SCROLL_CONTAINER_ID = 'normal-project-scroll';
 
 /** page-query 行可能用 projectId 作主键，统一成 id */
 const normalizeProjectRow = (
@@ -47,19 +53,21 @@ const NormalProject: React.FC = () => {
   const [keyword, setKeyword] = useState<string>('');
   const [list, setList] = useState<UserProjectItem[]>([]);
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
   const [openCreate, setOpenCreate] = useState<boolean>(false);
   const [editTarget, setEditTarget] = useState<UserProjectItem>();
 
   const { run, loading } = useRequest(
-    (name?: string) =>
+    (name?: string, pageIndex: number = 1) =>
       apiUserProjectPageQuery({
         queryFilter: {
           spaceId,
           projectType: AgentComponentTypeEnum.NormalProject,
           name: name?.trim() || undefined,
         },
-        current: 1,
-        pageSize: 50,
+        current: pageIndex,
+        pageSize: PAGE_SIZE,
         orders: [],
         filters: [],
         columns: [],
@@ -68,20 +76,38 @@ const NormalProject: React.FC = () => {
       manual: true,
       debounceInterval: 300,
       onSuccess: (
-        result: RequestResponse<{ records?: UserProjectItem[] }> & {
-          records?: UserProjectItem[];
-        },
+        result: UserProjectPageResult,
+        params: [name?: string, pageIndex?: number],
       ) => {
-        const records = Array.isArray(result?.records)
-          ? result.records
-          : Array.isArray(result?.data?.records)
-          ? result.data.records
+        const pageResult = result;
+        if (!pageResult) {
+          setList([]);
+          setHasMore(false);
+          setHasLoaded(true);
+          return;
+        }
+        const current = pageResult.current || params[1] || 1;
+        const size = pageResult.size || PAGE_SIZE;
+        const records = Array.isArray(pageResult.records)
+          ? pageResult.records
+              .map(normalizeProjectRow)
+              .filter((item) => item.id)
           : [];
-        setList(records.map(normalizeProjectRow).filter((item) => item.id));
+        setList((previous) =>
+          current === 1 ? records : [...previous, ...records],
+        );
+        setPage(current);
+        setHasMore(current * size < (pageResult.total || 0));
         setHasLoaded(true);
       },
-      onError: () => {
-        setList([]);
+      onError: (
+        _error: unknown,
+        params: [name?: string, pageIndex?: number],
+      ) => {
+        if ((params[1] || 1) === 1) {
+          setList([]);
+          setHasMore(false);
+        }
         setHasLoaded(true);
       },
     },
@@ -92,8 +118,16 @@ const NormalProject: React.FC = () => {
     if (!spaceId) {
       return;
     }
-    run(keyword);
+    run(keyword, 1);
   }, [keyword, refreshToken, run, spaceId]);
+
+  /** 滚动到底部后加载下一页 */
+  const handleLoadMore = useCallback(() => {
+    if (loading || !hasMore) {
+      return;
+    }
+    run(keyword, page + 1);
+  }, [hasMore, keyword, loading, page, run]);
 
   const handleOpenProject = useCallback(
     (item: UserProjectItem) => {
@@ -113,7 +147,7 @@ const NormalProject: React.FC = () => {
         onOk: async () => {
           const res = await apiNormalProjectDelete(item.id);
           if (res?.code === SUCCESS_CODE) {
-            run(keyword);
+            run(keyword, 1);
           }
         },
       });
@@ -172,25 +206,32 @@ const NormalProject: React.FC = () => {
         </div>
       </div>
 
-      {loading || !hasLoaded ? (
+      {!hasLoaded ? (
         <Loading />
       ) : list.length > 0 ? (
         <div
-          className={cx(
-            styles['main-container'],
-            'flex-1',
-            'scroll-container-hide',
-          )}
+          id={SCROLL_CONTAINER_ID}
+          className={cx('flex-1', 'scroll-container-hide')}
         >
-          {list.map((item) => (
-            <ProjectCard
-              key={item.id}
-              item={item}
-              onClick={handleOpenProject}
-              onEdit={handleEdit}
-              onDelete={openDeleteConfirm}
-            />
-          ))}
+          <InfiniteScrollDiv
+            scrollableTarget={SCROLL_CONTAINER_ID}
+            list={list}
+            hasMore={hasMore}
+            showLoader={loading}
+            onScroll={handleLoadMore}
+          >
+            <div className={cx(styles['main-container'])}>
+              {list.map((item) => (
+                <ProjectCard
+                  key={item.id}
+                  item={item}
+                  onClick={handleOpenProject}
+                  onEdit={handleEdit}
+                  onDelete={openDeleteConfirm}
+                />
+              ))}
+            </div>
+          </InfiniteScrollDiv>
         </div>
       ) : (
         <div className={cx('flex', 'items-center', 'content-center', 'h-full')}>

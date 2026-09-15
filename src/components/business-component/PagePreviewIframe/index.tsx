@@ -61,6 +61,8 @@ interface PagePreviewIframeProps {
   titleStyle?: React.CSSProperties;
   /** 标题文本自定义类名 */
   titleClassName?: string;
+  /** 标题栏左侧文案;不传时沿用 iframe 文档标题(既有行为) */
+  title?: string;
   /** 是否显示复制按钮 */
   showCopyButton?: boolean;
   /** 是否允许复制（用于条件渲染） */
@@ -91,6 +93,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   className,
   titleStyle,
   titleClassName,
+  title,
   showCopyButton = false,
   allowCopy = false,
   onCopyClick,
@@ -594,7 +597,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         <div className={cx(styles['page-preview-header'])}>
           <h3 className="text-ellipsis">
             <span className={titleClassName} style={titleStyle}>
-              {previewPageTitle}
+              {title ?? previewPageTitle}
             </span>
           </h3>
           <div style={{ display: 'flex', gap: '12px' }}>

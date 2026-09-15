@@ -44,25 +44,23 @@ const DEPLOYABLE_POLL_TIMEOUT_MS = 10 * 60 * 1000;
 export interface UseUserAppPublishOptions {
   /** 应用 ID */
   appId?: number;
-  /** 构建并部署成功后，打开发布到市场弹窗 */
-  onDeployed?: () => void;
-  /** 部署成功后回写应用详情（prodDeployed 等） */
+  /** 部署成功后回写应用详情（prodDeployed 等，供 Header 显示发布按钮） */
   onProjectInfo?: (info: UserAppInfo) => void;
   /** 部署成功后回写域名列表 */
   onDomainList?: (list: UserAppDomainInfo[]) => void;
 }
 
 /**
- * AppDevPro 部署：构建 → SSE → 轮询可部署 → 生产 start；成功后再由页面打开发布弹窗。
+ * AppDevPro 部署：构建 → SSE → 轮询可部署 → 生产 start。
+ * 发布到市场由 Header 发布按钮单独触发，不走本流程。
  *
  * @param options.appId 应用 ID
- * @param options.onDeployed 部署成功回调
  * @param options.onProjectInfo 回写应用详情
  * @param options.onDomainList 回写域名列表
  * @returns 部署状态与操作
  */
 export function useUserAppPublish(options: UseUserAppPublishOptions) {
-  const { appId, onDeployed, onProjectInfo, onDomainList } = options;
+  const { appId, onProjectInfo, onDomainList } = options;
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
@@ -75,7 +73,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     useState<UserAppDeployFailedStage | null>(null);
   const [taskId, setTaskId] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
-  /** 部署成功后异步拿到的线上 Prod 域名，不阻塞发布 */
+  /** 部署成功后异步拿到的线上 Prod 域名 */
   const [prodAccessUrl, setProdAccessUrl] = useState('');
 
   const abortRef = useRef<AbortController | null>(null);
@@ -212,7 +210,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
 
   /**
    * 部署成功后并行刷新应用详情与域名列表。
-   * 只回写页面状态、拼 Prod 访问地址；失败不改 phase，不打断发布到市场。
+   * 只回写页面状态、拼 Prod 访问地址；失败不改 phase。
    */
   const refreshAfterDeploy = useCallback(async () => {
     if (!appId) {
@@ -323,8 +321,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       phase === 'starting' ||
       phase === 'building' ||
       phase === 'checkingDeployable' ||
-      phase === 'deploying' ||
-      phase === 'applying'
+      phase === 'deploying'
     ) {
       setOpen(true);
       return;
@@ -399,8 +396,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         return;
       }
 
-      setPhase('applying');
-      onDeployed?.();
+      setPhase('success');
       void refreshAfterDeploy();
     } catch (error) {
       if (
@@ -430,7 +426,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     appId,
     listenBuildProgress,
     refreshAfterDeploy,
-    onDeployed,
     phase,
     resetTaskState,
     submitProdStart,
@@ -463,13 +458,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       setCancelLoading(false);
     }
   }, [stopStream, taskId]);
-
-  /**
-   * 发布到市场成功。
-   */
-  const completeApply = useCallback(() => {
-    setPhase('success');
-  }, []);
 
   /**
    * 关闭进度弹窗（进行中需先取消）。
@@ -505,7 +493,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     cancelLoading,
     publishing,
     startPublish,
-    completeApply,
     cancelTask,
     closeModal,
     startServices,

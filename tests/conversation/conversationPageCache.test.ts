@@ -1,0 +1,203 @@
+import {
+  DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
+  EMPTY_DRAFT_SUMMARY,
+  EMPTY_RESOURCE_STATE,
+  selectConversationPageCacheEvictionKey,
+  type ConversationPageCacheEntry,
+} from '@/features/conversation/domain/conversationPageCache';
+import { conversationPageCacheManager } from '@/features/conversation/runtime/conversationPageCacheManager';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const entry = (
+  key: string,
+  lastAccessAt: number,
+): ConversationPageCacheEntry => ({
+  key,
+  surface: 'chat',
+  conversationId: key,
+  view: 'closed',
+  lifecycle: 'cached',
+  createdAt: lastAccessAt,
+  lastAccessAt,
+  revision: 1,
+  draft: { ...EMPTY_DRAFT_SUMMARY },
+  resources: { ...EMPTY_RESOURCE_STATE },
+});
+
+describe('conversationPageCache', () => {
+  afterEach(() => {
+    conversationPageCacheManager.invalidateAll('test-cleanup');
+    conversationPageCacheManager.setCapacity(
+      DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
+    );
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('LRU 不淘汰当前实例', () => {
+    const entries = [entry('old-active', 1), entry('next-old', 2)];
+    expect(selectConversationPageCacheEvictionKey(entries, 'old-active')).toBe(
+      'next-old',
+    );
+  });
+
+  it(`默认最多保留 ${DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY} 个条目并用新的淘汰最旧条目`, () => {
+    vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(1)
+      .mockReturnValueOnce(2)
+      .mockReturnValueOnce(3)
+      .mockReturnValueOnce(4)
+      .mockReturnValueOnce(5)
+      .mockReturnValueOnce(6);
+    for (let id = 1; id <= 6; id += 1) {
+      conversationPageCacheManager.activate({
+        surface: 'chat',
+        conversationId: id,
+      });
+    }
+    const snapshot = conversationPageCacheManager.getSnapshot();
+    expect(snapshot.entries).toHaveLength(
+      DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
+    );
+    expect(snapshot.entries.map((item) => item.key)).not.toContain('chat:1');
+    expect(snapshot.activeKey).toBe('chat:6');
+  });
+
+  it('运行时调整容量后立即按 LRU 收敛', () => {
+    for (let id = 1; id <= 5; id += 1) {
+      conversationPageCacheManager.activate({
+        surface: 'chat',
+        conversationId: id,
+      });
+    }
+    conversationPageCacheManager.setCapacity(2);
+    const snapshot = conversationPageCacheManager.getSnapshot();
+    expect(snapshot.capacity).toBe(2);
+    expect(snapshot.entries).toHaveLength(2);
+    expect(snapshot.activeKey).toBe('chat:5');
+  });
+
+  it('容量为 1 时激活新页面会淘汰旧 active，始终不突破硬上限', () => {
+    conversationPageCacheManager.setCapacity(1);
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 1,
+    });
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 2,
+    });
+
+    expect(conversationPageCacheManager.getSnapshot().entries).toHaveLength(1);
+    expect(conversationPageCacheManager.getSnapshot().activeKey).toBe('chat:2');
+  });
+
+  it('容量已满时后台草稿只持久化，不挤掉当前页面实例', () => {
+    conversationPageCacheManager.setCapacity(1);
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 1,
+    });
+    conversationPageCacheManager.saveDraft('agent:2', {
+      version: 1,
+      text: 'background draft',
+    });
+
+    expect(conversationPageCacheManager.getSnapshot().entries).toHaveLength(1);
+    expect(conversationPageCacheManager.getSnapshot().activeKey).toBe('chat:1');
+    expect(conversationPageCacheManager.loadDraft('agent:2')?.text).toBe(
+      'background draft',
+    );
+  });
+
+  it('面板更新持久化，LRU 失效不删除意图', () => {
+    const current = conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 101,
+    });
+    conversationPageCacheManager.update(current.key, { view: 'terminal' });
+    conversationPageCacheManager.invalidate(current.key, 'lru');
+    const restored = conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 101,
+    });
+    expect(restored.view).toBe('terminal');
+  });
+
+  it('草稿快照只暴露长度，不暴露正文', () => {
+    const current = conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 102,
+    });
+    conversationPageCacheManager.saveDraft(current.key, {
+      version: 1,
+      text: '不能出现在调试面板里的正文',
+      skillIds: [1, 2],
+    });
+    const snapshotText = JSON.stringify(
+      conversationPageCacheManager.getSnapshot(),
+    );
+    expect(snapshotText).not.toContain('不能出现在调试面板里的正文');
+    expect(
+      conversationPageCacheManager.getSnapshot().entries[0].draft,
+    ).toMatchObject({
+      hasContent: true,
+      textLength: 13,
+      skillCount: 2,
+    });
+  });
+
+  it('尚未激活页面时保存草稿也由统一 manager 创建受限条目', () => {
+    conversationPageCacheManager.saveDraft('agent:202', {
+      version: 1,
+      text: 'agent surface draft',
+      skillIds: [9],
+    });
+
+    expect(conversationPageCacheManager.getSnapshot().entries[0]).toMatchObject(
+      {
+        key: 'agent:202',
+        surface: 'agent',
+        conversationId: '202',
+        lifecycle: 'cached',
+        draft: { hasContent: true, textLength: 19, skillCount: 1 },
+      },
+    );
+  });
+
+  it('删除会话统一清除各路由面的实例、面板意图和草稿', () => {
+    const chatEntry = conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 103,
+    });
+    conversationPageCacheManager.update(chatEntry.key, { view: 'terminal' });
+    conversationPageCacheManager.saveDraft(chatEntry.key, {
+      version: 1,
+      text: 'chat draft',
+    });
+    const agentEntry = conversationPageCacheManager.activate({
+      surface: 'agent',
+      conversationId: 103,
+    });
+    conversationPageCacheManager.update(agentEntry.key, {
+      view: 'pagePreview',
+    });
+    conversationPageCacheManager.saveDraft(agentEntry.key, {
+      version: 1,
+      text: 'agent draft',
+    });
+
+    window.dispatchEvent(
+      new CustomEvent('conversation-deleted', { detail: { id: 103 } }),
+    );
+
+    expect(conversationPageCacheManager.getSnapshot().entries).toHaveLength(0);
+    expect(localStorage.getItem('chat_draft:chat:103')).toBeNull();
+    expect(localStorage.getItem('chat_draft:agent:103')).toBeNull();
+    const restored = conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 103,
+    });
+    expect(restored.view).toBe('closed');
+  });
+});
