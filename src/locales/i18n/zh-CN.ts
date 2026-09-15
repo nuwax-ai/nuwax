@@ -6395,7 +6395,7 @@ export const ZH_CN: SystemLangMap = {
   // 常规项目详情页
   "PC.Pages.NormalProjectDetail.tabPlan": "计划",
   "PC.Pages.NormalProjectDetail.tabAsset": "资产",
-  "PC.Pages.NormalProjectDetail.comingSoon": "功能即将开放",
+  "PC.Pages.NormalProjectDetail.repositoryLoadFailed": "页面加载失败，请刷新后重试",
   "PC.Pages.NormalProjectDetail.untitled": "未命名项目",
   "PC.Pages.NormalProjectDetail.hideConversationPanel": "隐藏相关任务",
   "PC.Pages.NormalProjectDetail.showConversationPanel": "显示相关任务",
@@ -6404,7 +6404,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppProjectDetail.tabPlan": "计划",
   "PC.Pages.AppProjectDetail.tabAsset": "资产",
   "PC.Pages.AppProjectDetail.tabSetting": "设置",
-  "PC.Pages.AppProjectDetail.comingSoon": "功能即将开放",
+  "PC.Pages.AppProjectDetail.repositoryLoadFailed": "页面加载失败，请刷新后重试",
   // OAuth2 认证
   "PC.Pages.AppProjectDetail.oauthTitle": "OAuth2 认证信息",
   "PC.Pages.AppProjectDetail.oauthDesc": "平台已为该项目自动生成 OAuth2 凭证，可用于第三方登录与接口鉴权。Client Secret 属于敏感信息，请勿写入前端或提交到公开仓库。",
