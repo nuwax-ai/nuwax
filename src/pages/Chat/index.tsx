@@ -169,10 +169,20 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const defaultAgentDetail = stateToUse?.defaultAgentDetail;
   // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
   const firstVariableParams = stateToUse?.variableParams;
-  // 模型ID
-  const [selectedModelId, setSelectedModelId] = useState<number>(
+  // 模型ID(undefined=尚未选择,由 ModelSelector 按列表自动落回)
+  const [selectedModelId, setSelectedModelId] = useState<number | undefined>(
     stateToUse?.modelId,
   );
+  // 模型选择按智能体隔离:切换智能体时清空当前选中,交由 ModelSelector
+  // 按新智能体的可用列表自动落回(列表首位即该智能体最近使用的模型);
+  // 否则上一智能体手选的模型会"串"到下一智能体的对话框(若同在其列表中)。
+  // 首挂载不清(保留 locationState 透传的初值),同智能体切任务也不受影响
+  const prevAgentIdRef = useRef(agentId);
+  useEffect(() => {
+    if (prevAgentIdRef.current === agentId) return;
+    prevAgentIdRef.current = agentId;
+    setSelectedModelId(undefined);
+  }, [agentId]);
   const [form] = Form.useForm();
 
   // 智能体详情悬浮弹窗（取代原 AgentSidebar 互斥侧栏，与右侧面板共存）
@@ -573,6 +583,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   useEffect(() => {
     if (
       !conversationInfo?.id ||
+      // 无名会话不做 icon 补齐（bug2382）：空 topic 的 update 会经共享 runUpdateTopic
+      // 的 onSuccess 置 needUpdateTopicRef=false，抢先毒化首条消息的自动命名；
+      // 自动命名成功后本 effect 会以新名字重评估，icon 链路不受损
+      !conversationInfo.topic ||
       conversationInfo.topicUpdated !== 1 ||
       conversationInfo.icon !== null ||
       conversationIconUpdateRef.current === conversationInfo.id

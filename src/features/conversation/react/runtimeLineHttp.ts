@@ -79,8 +79,11 @@ export function createRuntimeLineEffectsAdapter(deps: {
 }): ConversationEffectsAdapter {
   const resources = deps.resources ?? {};
   const setConversationInfo = deps.setConversationInfo;
-  /** 「仅更新一次主题」标记（跨 render ref 由闭包持有——绑定层单实例） */
-  let needUpdateTopic = true;
+  /**
+   * 「每个会话仅更新一次主题」标记。绑定层实例会跨会话复用，
+   * 不能用单个 boolean，否则命名首个会话后会永久拦截后续会话。
+   */
+  const topicUpdateConversationIds = new Set<number>();
 
   return {
     dispatch(effect) {
@@ -127,10 +130,10 @@ export function createRuntimeLineEffectsAdapter(deps: {
           resources.confirmStop?.(effect.conversationId);
           return;
         case 'topic.update': {
-          if (!needUpdateTopic) {
+          if (topicUpdateConversationIds.has(effect.conversationId)) {
             return;
           }
-          needUpdateTopic = false;
+          topicUpdateConversationIds.add(effect.conversationId);
           void apiAgentConversationUpdate({
             id: effect.conversationId,
             firstMessage: effect.firstMessage,
@@ -163,7 +166,7 @@ export function createRuntimeLineEffectsAdapter(deps: {
             })
             .catch((error) => {
               console.error('Failed to update session theme:', error);
-              needUpdateTopic = true;
+              topicUpdateConversationIds.delete(effect.conversationId);
             });
           return;
         }

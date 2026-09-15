@@ -218,7 +218,7 @@ const AddMember: React.FC<AddMemberProps> = ({
       onConfirm={handlerSubmit}
     >
       <div style={{ display: 'flex', gap: 20 }}>
-        <div className={cx(styles['add-member-left-column'], 'flex-1')}>
+        <div className={cx(styles['add-member-left-column'], 'flex-1', 'overflow-hide')}>
           <Input
             ref={searchInputRef}
             placeholder={dict(
@@ -253,14 +253,17 @@ const AddMember: React.FC<AddMemberProps> = ({
             value={leftCheckedMembers}
           >
             {leftColumnMembers.map((m) => (
-              <Checkbox key={m.id} value={m.id} className={'flex mb-12'}>
-                <Avatar src={m.avatar || personalImage} /> {m.userName}
+              <Checkbox key={m.id} value={m.id} className={'flex mb-12 overflow-hide'}>
+                <div className="flex items-center gap-4 overflow-hide">
+                  <Avatar src={m.avatar || personalImage} />
+                  <span className="text-ellipsis">{m.userName}</span>
+                </div>
               </Checkbox>
             ))}
           </Checkbox.Group>
         </div>
 
-        <div className={'flex-1'}>
+        <div className={cx('flex-1', 'overflow-hide')}>
           <h3 style={{ marginBottom: 15 }}>
             {dict('PC.Pages.TeamSetting.AddMember.selectedMembers').replace(
               '{0}',

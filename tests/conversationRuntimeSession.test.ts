@@ -430,6 +430,109 @@ describe('conversationRuntimeSession R6 收口', () => {
     expect(params.agentMode).toBe('yolo');
     expect(params.skillIds).toEqual([3, 5]);
   });
+
+  // ── topic.update（bug2382：会话名自动更新）──
+  // 旧实现挂在 FINAL 分支且要求 FINAL 为首事件，正常流式必为 false，
+  // /api/agent/conversation/update 永不触发；现为对齐旧线的「首事件即更名」。
+  const topicUpdateDispatches = (dispatched: unknown[]) =>
+    dispatched.filter((e) => (e as { type: string }).type === 'topic.update');
+  const currentInfo = { id: 1001, topicUpdated: 0 } as never;
+
+  it('topic.update：连接首个事件即分发（MESSAGE 打头，非 FINAL）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: '帮我起个名字',
+      currentInfo,
+    });
+    const callbacks = mockOpenLive.mock.calls[0][1];
+
+    callbacks.onMessage(messageEvent('正在思考'));
+    callbacks.onMessage(messageEvent(' 答案'));
+    callbacks.onClose();
+
+    expect(topicUpdateDispatches(dispatched)).toEqual([
+      {
+        type: 'topic.update',
+        conversationId: 1001,
+        firstMessage: '帮我起个名字',
+        currentInfo,
+      },
+    ]);
+  });
+
+  it('topic.update：单连接只分发一次（多事件不重复）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: 'x',
+      currentInfo,
+    });
+    const callbacks = mockOpenLive.mock.calls[0][1];
+
+    callbacks.onMessage(messageEvent('a'));
+    callbacks.onMessage(messageEvent('b'));
+    callbacks.onMessage(messageEvent('c'));
+
+    expect(topicUpdateDispatches(dispatched)).toHaveLength(1);
+  });
+
+  it('topic.update：已命名会话（topicUpdated===1 且有名字）不分发', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: 'x',
+      currentInfo: { id: 1001, topicUpdated: 1, topic: '已有名字' } as never,
+    });
+    const callbacks = mockOpenLive.mock.calls[0][1];
+    callbacks.onMessage(messageEvent('a'));
+    expect(topicUpdateDispatches(dispatched)).toEqual([]);
+  });
+
+  it('topic.update：预置无名会话（topicUpdated===1 且空 topic）仍分发（bug2382 回归：/api/project/create 预建会话形态）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: '第一句话',
+      currentInfo: { id: 1001, topicUpdated: 1, topic: '' } as never,
+    });
+    const callbacks = mockOpenLive.mock.calls[0][1];
+    callbacks.onMessage(messageEvent('a'));
+    expect(topicUpdateDispatches(dispatched)).toHaveLength(1);
+    expect(topicUpdateDispatches(dispatched)[0]).toMatchObject({
+      type: 'topic.update',
+      firstMessage: '第一句话',
+    });
+  });
+
+  it('topic.update：隔离入口（isSync=false）不分发', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: 'x',
+      currentInfo,
+      topicGate: { isSync: false },
+    });
+    const callbacks = mockOpenLive.mock.calls[0][1];
+    callbacks.onMessage(messageEvent('a'));
+    expect(topicUpdateDispatches(dispatched)).toEqual([]);
+  });
+
+  it('topic.update：无快照（currentInfo 缺失）不分发，且不阻断后续事件投影', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: 'x' });
+    const callbacks = mockOpenLive.mock.calls[0][1];
+    callbacks.onMessage(messageEvent('a'));
+    expect(topicUpdateDispatches(dispatched)).toEqual([]);
+    // 事件投影不受影响（占位消息收到文本）
+    expect(session.store.getSnapshot()[1].text).toBe('a');
+  });
 });
 
 describe('conversationRuntimeSession 关键业务场景（T03/T04/T06）', () => {
