@@ -14,7 +14,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
-import { history, useParams, useRequest } from 'umi';
+import { history, useLocation, useParams, useRequest } from 'umi';
 import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
 import ProjectCard from '../components/ProjectCard';
 import { apiUserProjectPageQuery } from '../services';
@@ -38,7 +38,9 @@ const normalizeProjectRow = (
  */
 const UserAppProject: React.FC = () => {
   const params = useParams();
+  const location = useLocation();
   const spaceId = Number(params.spaceId);
+  const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
 
   const [keyword, setKeyword] = useState('');
   const [list, setList] = useState<UserProjectItem[]>([]);
@@ -80,12 +82,13 @@ const UserAppProject: React.FC = () => {
     },
   );
 
+  /** 搜索、空间变化或重复点击菜单时，从第一页重新加载 */
   useEffect(() => {
     if (!spaceId) {
       return;
     }
     run(keyword);
-  }, [keyword, spaceId]);
+  }, [keyword, refreshToken, run, spaceId]);
 
   const handleOpenProject = useCallback(
     (item: UserProjectItem) => {
@@ -94,21 +97,24 @@ const UserAppProject: React.FC = () => {
     [spaceId],
   );
 
-  const openDeleteConfirm = useCallback((item: UserProjectItem) => {
-    Modal.confirm({
-      title: dict('PC.Common.Global.deleteConfirmTitle'),
-      content: dict('PC.Common.Global.deleteConfirmContent'),
-      okButtonProps: { danger: true },
-      okText: dict('PC.Common.Global.delete'),
-      cancelText: dict('PC.Common.Global.cancel'),
-      onOk: async () => {
-        const res = await apiUserAppDelete(item.id);
-        if (res?.code === SUCCESS_CODE) {
-          setList((prev) => prev.filter((row) => row.id !== item.id));
-        }
-      },
-    });
-  }, []);
+  const openDeleteConfirm = useCallback(
+    (item: UserProjectItem) => {
+      Modal.confirm({
+        title: dict('PC.Common.Global.deleteConfirmTitle'),
+        content: dict('PC.Common.Global.deleteConfirmContent'),
+        okButtonProps: { danger: true },
+        okText: dict('PC.Common.Global.delete'),
+        cancelText: dict('PC.Common.Global.cancel'),
+        onOk: async () => {
+          const res = await apiUserAppDelete(item.id);
+          if (res?.code === SUCCESS_CODE) {
+            run(keyword);
+          }
+        },
+      });
+    },
+    [keyword, run],
+  );
 
   /** 打开全栈项目编辑弹窗 */
   const handleEdit = useCallback((item: UserProjectItem) => {

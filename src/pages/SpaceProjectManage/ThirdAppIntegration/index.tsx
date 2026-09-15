@@ -10,7 +10,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
-import { history, useParams, useRequest } from 'umi';
+import { history, useLocation, useParams, useRequest } from 'umi';
 import { apiUserProjectPageQuery } from '../services';
 import CreateThirdAppModal from './CreateThirdAppModal';
 import EditThirdAppModal, {
@@ -40,7 +40,9 @@ const normalizeProjectRow = (
  */
 const ThirdAppIntegration: React.FC = () => {
   const params = useParams();
+  const location = useLocation();
   const spaceId = Number(params.spaceId);
+  const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
 
   const [keyword, setKeyword] = useState('');
   const [list, setList] = useState<UserProjectItem[]>([]);
@@ -83,13 +85,13 @@ const ThirdAppIntegration: React.FC = () => {
     },
   );
 
-  /** 空间或搜索词变化时刷新列表 */
+  /** 搜索、空间变化或重复点击菜单时，从第一页重新加载 */
   useEffect(() => {
     if (!spaceId) {
       return;
     }
     runQuery(keyword);
-  }, [keyword, runQuery, spaceId]);
+  }, [keyword, refreshToken, runQuery, spaceId]);
 
   /** 打开编辑弹窗 */
   const handleEdit = useCallback((item: UserProjectItem) => {
@@ -115,23 +117,24 @@ const ThirdAppIntegration: React.FC = () => {
   }, []);
 
   /** 删除第三方应用前二次确认 */
-  const handleDelete = useCallback((item: UserProjectItem) => {
-    Modal.confirm({
-      title: dict('PC.Common.Global.deleteConfirmTitle'),
-      content: dict('PC.Common.Global.deleteConfirmContent'),
-      okButtonProps: { danger: true },
-      okText: dict('PC.Common.Global.delete'),
-      cancelText: dict('PC.Common.Global.cancel'),
-      onOk: async () => {
-        const response = await apiUserProjectDelete(item.id);
-        if (response?.code === SUCCESS_CODE) {
-          setList((previous) =>
-            previous.filter((record) => record.id !== item.id),
-          );
-        }
-      },
-    });
-  }, []);
+  const handleDelete = useCallback(
+    (item: UserProjectItem) => {
+      Modal.confirm({
+        title: dict('PC.Common.Global.deleteConfirmTitle'),
+        content: dict('PC.Common.Global.deleteConfirmContent'),
+        okButtonProps: { danger: true },
+        okText: dict('PC.Common.Global.delete'),
+        cancelText: dict('PC.Common.Global.cancel'),
+        onOk: async () => {
+          const response = await apiUserProjectDelete(item.id);
+          if (response?.code === SUCCESS_CODE) {
+            runQuery(keyword);
+          }
+        },
+      });
+    },
+    [keyword, runQuery],
+  );
 
   /** 创建完成后关闭弹窗并刷新列表 */
   const handleCreated = useCallback(() => {
