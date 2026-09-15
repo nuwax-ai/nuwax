@@ -115,7 +115,7 @@ const pickResponseData = <T,>(
  *
  * 数据：
  * - 进页拉 apiUserAppGetById，用 name 填标题、用 deployType 回填平台/私服；
- * - 设置 Tab 拉 OAuth2、自定义域名、项目会话列表；
+ * - 进页拉项目会话列表，设置 Tab 再拉 OAuth2 与自定义域名；
  * - 选私服时再拉私有服务器列表（进页若已是私服也会拉一次）；
  * - 「设置部署服务器」：平台直接保存；私服弹窗单选后保存。
  *
@@ -365,30 +365,23 @@ const AppProjectDetail: React.FC = () => {
     }
   }, [appId]);
 
-  // 进页拉应用详情，与当前 Tab 无关
+  // 进页拉应用详情与当前应用的会话列表，与当前 Tab 无关
   useEffect(() => {
     if (!appId) {
       return;
     }
     runGetUserApp();
-  }, [appId, runGetUserApp]);
+    runConversations();
+  }, [appId, runConversations, runGetUserApp]);
 
-  // 域名列表与设置 Tab 共用，进页即拉，绑定/解绑后可复用
-  useEffect(() => {
-    if (!spaceId || !appId) {
-      return;
-    }
-    runDomainList(appId);
-  }, [appId, spaceId]);
-
-  // 切到设置 Tab 时拉 OAuth2 与相关任务，避免计划/资产 Tab 空跑接口
+  // 切到设置 Tab 时再拉 OAuth2 与域名列表，避免进页空跑设置接口
   useEffect(() => {
     if (activeTab !== 'setting' || !appId) {
       return;
     }
     void loadOauthSetting();
-    runConversations();
-  }, [activeTab, appId, loadOauthSetting, runConversations]);
+    runDomainList(appId);
+  }, [activeTab, appId, loadOauthSetting, runDomainList]);
 
   /**
    * 切换发布位置；选私有服务器时再拉私服列表。
