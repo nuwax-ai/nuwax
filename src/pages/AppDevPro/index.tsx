@@ -1,8 +1,4 @@
-import {
-  GitVersionRecordPanel,
-  type ConsoleExternalContainerStatus,
-  type ConsoleLayoutMode,
-} from '@/components/business-component';
+import { GitVersionRecordPanel } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import FileTreeGitSourcePanel, {
@@ -25,7 +21,6 @@ import {
   apiImportProject,
   apiUpdateStaticFile,
   apiUploadFiles,
-  isEnsurePodThrottledError,
 } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
@@ -59,7 +54,10 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import AppDevProHeader from './AppDevProHeader';
 import AppDevAppPreviewPanel from './components/AppDevAppPreviewPanel';
-import AppDevBottomConsole from './components/AppDevBottomConsole';
+import AppDevBottomConsole, {
+  type ConsoleExternalContainerStatus,
+  type ConsoleLayoutMode,
+} from './components/AppDevBottomConsole';
 import DevLogActions from './components/AppDevBottomConsole/DevLogActions';
 import AppDevDatabaseWorkspace, {
   type AppDevDatabaseWorkspaceTab,
@@ -108,8 +106,6 @@ type AppDevWorkspaceView = 'files' | 'app-preview' | 'database';
 const DATABASE_WORKSPACE_TOOL_IDS: PreviewToolId[] = [
   'database',
   'database-config',
-  'database-prod',
-  'database-config-prod',
 ];
 const noop = () => undefined;
 // const devConversationPollLogger = createLogger(
@@ -226,11 +222,6 @@ const AppDevPro: React.FC = () => {
   >([]);
   /** 当前环境：开发 / 线上，Header 中间切换 */
   const [dbEnv, setDbEnv] = useState<UserAppDbEnvEnum>(UserAppDbEnvEnum.Dev);
-  /** 进页容器状态：成功后才拉文件树 / git status，打开终端时复用该结果 */
-  const [podStatus, setPodStatus] = useState<
-    'idle' | 'starting' | 'running' | 'error'
-  >('idle');
-  const podReady = podStatus === 'running';
   /** 应用预览 iframe 刷新计数 */
   const [previewRefreshKey, setPreviewRefreshKey] = useState<number>(0);
   /** 用户在地址栏跳转后的 iframe 地址（环境切换、重启服务时重置为预览根路径） */
@@ -268,7 +259,6 @@ const AppDevPro: React.FC = () => {
     restartVncPod,
     setPodAppStage,
     restartAgent,
-    ensureDesktopConnection,
     refreshGitListRef,
     isConversationActive,
   } = useModel('conversationInfo');
@@ -302,52 +292,8 @@ const AppDevPro: React.FC = () => {
     [setPodAppStage],
   );
 
-  const ensureDesktopConnectionRef = useRef(ensureDesktopConnection);
-  ensureDesktopConnectionRef.current = ensureDesktopConnection;
   const refreshFileListImmediatelyRef = useRef(refreshFileListImmediately);
   refreshFileListImmediatelyRef.current = refreshFileListImmediately;
-
-  /**
-   * 进入页面即启动容器并开启保活，默认开发环境 dev。
-   * 只在会话 ID 变化时执行一次；会话结束刷新文件树不得再次 ensure。
-   * 容器启动成功后再拉文件树、Git status；打开终端时复用本次结果，不再重复 ensure。
-   */
-  useEffect(() => {
-    if (!queryConversationId) {
-      setPodStatus('idle');
-      return;
-    }
-
-    setPodStatus('starting');
-    setPodAppStage(UserAppDbEnvEnum.Dev);
-
-    let cancelled = false;
-    const afterPodReady = () => {
-      if (cancelled) {
-        return;
-      }
-      setPodStatus('running');
-      void refreshFileListImmediatelyRef.current(queryConversationId);
-    };
-
-    void ensureDesktopConnectionRef
-      .current(queryConversationId)
-      .then(afterPodReady)
-      .catch((error: any) => {
-        if (isEnsurePodThrottledError(error)) {
-          afterPodReady();
-          return;
-        }
-        if (!cancelled) {
-          setPodStatus('error');
-          console.error('[AppDevPro] ensure pod on enter failed:', error);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [queryConversationId, setPodAppStage]);
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
@@ -425,8 +371,36 @@ const AppDevPro: React.FC = () => {
     return getEffectiveSandboxId();
   }, [selectedComputerId, conversationInfo, history.action, location.state]);
 
+  /** 开发、线上容器分别维护状态与保活，同环境由终端和数据库共同复用 */
+  const envPodConversationId =
+    finalSelectedComputerId === '-1' ? queryConversationId : undefined;
+  const devPod = useUserAppEnvPod(envPodConversationId, UserAppDbEnvEnum.Dev);
+  const prodPod = useUserAppEnvPod(envPodConversationId, UserAppDbEnvEnum.Prod);
+  const podStatus = devPod.status;
+  const podReady = podStatus === 'running';
+
   /**
-   * 开发 / 线上终端各自走独立 ttyd 代理，底部控制台常驻两路连接。
+   * 进入页面即启动并保活开发环境容器。
+   * 容器就绪后再加载文件树；后续终端和数据库直接复用该状态。
+   */
+  useEffect(() => {
+    if (!envPodConversationId) {
+      return;
+    }
+    let cancelled = false;
+    void devPod.ensure(true).then((ready) => {
+      if (!cancelled && ready) {
+        void refreshFileListImmediatelyRef.current(envPodConversationId);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [devPod.ensure, envPodConversationId]);
+
+  /**
+   * 单一终端入口按 Header 环境选择对应 ttyd 代理。
+   * 内部保留开发 / 线上两个 xterm 缓冲区，但仅连接当前环境：
    * 开发环境 /api/userapp/proxy/ttyd/dev/{appId}
    * 线上环境 /api/userapp/proxy/ttyd/prod/{appId}
    */
@@ -450,32 +424,26 @@ const AppDevPro: React.FC = () => {
     if (!queryConversationId || finalSelectedComputerId !== '-1') {
       return undefined;
     }
-    if (dbEnv !== UserAppDbEnvEnum.Dev) {
-      return undefined;
-    }
     if (podStatus === 'running') {
       return 'running';
     }
     if (podStatus === 'error') {
       return 'error';
     }
-    return 'starting';
-  }, [dbEnv, finalSelectedComputerId, podStatus, queryConversationId]);
+    if (podStatus === 'starting') {
+      return 'starting';
+    }
+    return 'idle';
+  }, [finalSelectedComputerId, podStatus, queryConversationId]);
 
   /**
    * 线上环境容器：打开线上数据库或线上终端时再 ensure，
    * 未发布时 Header 没有环境切换，这两个入口自己负责拉起容器。
    */
-  const prodConversationId =
-    finalSelectedComputerId === '-1' ? queryConversationId : undefined;
-  const prodPod = useUserAppEnvPod(prodConversationId, UserAppDbEnvEnum.Prod);
-  const prodPodEnsureRef = useRef(prodPod.ensure);
-  prodPodEnsureRef.current = prodPod.ensure;
-
   const prodExternalContainerStatus = useMemo(():
     | ConsoleExternalContainerStatus
     | undefined => {
-    if (!prodConversationId) {
+    if (!envPodConversationId) {
       return undefined;
     }
     if (prodPod.status === 'running') {
@@ -487,8 +455,25 @@ const AppDevPro: React.FC = () => {
     if (prodPod.status === 'error') {
       return 'error';
     }
-    return undefined;
-  }, [prodConversationId, prodPod.status]);
+    return 'idle';
+  }, [envPodConversationId, prodPod.status]);
+
+  /**
+   * 按环境接入容器。开发和线上状态彼此隔离，同一环境由终端与数据库共享。
+   *
+   * @param targetEnv 目标环境
+   * @param force 是否在失败后主动重试
+   * @returns 容器是否就绪
+   */
+  const ensureEnvPod = useCallback(
+    (targetEnv: UserAppDbEnvEnum, force = false): Promise<boolean> =>
+      targetEnv === UserAppDbEnvEnum.Prod
+        ? prodPod.ensure(force)
+        : devPod.ensure(force),
+    [devPod.ensure, prodPod.ensure],
+  );
+  const ensureEnvPodRef = useRef(ensureEnvPod);
+  ensureEnvPodRef.current = ensureEnvPod;
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(appId, {
@@ -1399,8 +1384,6 @@ const AppDevPro: React.FC = () => {
         WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) ||
         toolId === 'database' ||
         toolId === 'database-config' ||
-        toolId === 'database-prod' ||
-        toolId === 'database-config-prod' ||
         toolId === 'remote-desktop'
       ) {
         closePreviewView();
@@ -1687,25 +1670,13 @@ const AppDevPro: React.FC = () => {
         id: getToolTabId('database'),
         type: 'tool',
         toolId: 'database',
-        label: dict('PC.Pages.AppDevPro.databaseDev'),
+        label: dict('PC.Pages.AppDevPro.database'),
       },
       {
         id: getToolTabId('database-config'),
         type: 'tool',
         toolId: 'database-config',
-        label: dict('PC.Pages.AppDevPro.databaseDevConfig'),
-      },
-      {
-        id: getToolTabId('database-prod'),
-        type: 'tool',
-        toolId: 'database-prod',
-        label: dict('PC.Pages.AppDevPro.databaseProd'),
-      },
-      {
-        id: getToolTabId('database-config-prod'),
-        type: 'tool',
-        toolId: 'database-config-prod',
-        label: dict('PC.Pages.AppDevPro.databaseProdConfig'),
+        label: dict('PC.Pages.AppDevPro.databaseConfig'),
       },
     ],
     [],
@@ -1713,27 +1684,23 @@ const AppDevPro: React.FC = () => {
 
   const handleDatabaseTabSelect = useCallback((tabId: string) => {
     setDatabaseTabId(tabId);
-    if (tabId === getToolTabId('database-prod')) {
-      void prodPodEnsureRef.current();
-    }
   }, []);
 
   const databaseActiveTab: AppDevDatabaseWorkspaceTab =
     databaseTabId === getToolTabId('database-config')
       ? 'database-config'
-      : databaseTabId === getToolTabId('database-prod')
-      ? 'database-prod'
-      : databaseTabId === getToolTabId('database-config-prod')
-      ? 'database-config-prod'
       : 'database';
 
-  /** 进入线上环境数据库管理页时，若容器未就绪则先启动 */
+  /** 数据库打开或切换环境时，复用当前环境的容器启动与保活状态 */
   useEffect(() => {
-    if (workspaceView !== 'database' || databaseActiveTab !== 'database-prod') {
+    if (workspaceView !== 'database') {
       return;
     }
-    void prodPodEnsureRef.current();
-  }, [databaseActiveTab, workspaceView]);
+    const status = dbEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus;
+    if (status !== 'running') {
+      void ensureEnvPodRef.current(dbEnv, status === 'error');
+    }
+  }, [dbEnv, podStatus, prodPod.status, workspaceView]);
 
   /** 打开独立应用预览视图；已启动或线上环境有地址时不再重复 start */
   const handleOpenAppPreview = useCallback(() => {
@@ -1849,10 +1816,16 @@ const AppDevPro: React.FC = () => {
   /**
    * 切换环境：线上环境没有文件树，隐藏图标与中间栏；
    * 若当前在文件树工作区，改为展示线上环境应用预览。
+   * 已部署且存在线上预览域名时，按需启动线上容器，就绪后直接预览。
    */
   const handleEnvChange = useCallback(
     (nextEnv: UserAppDbEnvEnum) => {
       setDbEnv(nextEnv);
+      const nextStatus =
+        nextEnv === UserAppDbEnvEnum.Prod ? prodPod.status : devPod.status;
+      if (nextStatus !== 'running') {
+        void ensureEnvPodRef.current(nextEnv, nextStatus === 'error');
+      }
       if (nextEnv === UserAppDbEnvEnum.Dev) {
         return;
       }
@@ -1863,17 +1836,14 @@ const AppDevPro: React.FC = () => {
         setWorkspaceView('app-preview');
       }
     },
-    [previewTabs, resetDevConsoleExpandedLayout, workspaceView],
+    [
+      devPod.status,
+      previewTabs,
+      prodPod.status,
+      resetDevConsoleExpandedLayout,
+      workspaceView,
+    ],
   );
-
-  /**
-   * 未部署到生产环境时不能停留在线上环境。
-   */
-  useEffect(() => {
-    if (userAppInfo?.prodDeployed !== true && dbEnv === UserAppDbEnvEnum.Prod) {
-      setDbEnv(UserAppDbEnvEnum.Dev);
-    }
-  }, [dbEnv, userAppInfo?.prodDeployed]);
 
   /** 数据库或数据库配置独立视图是否激活（Header 图标高亮） */
   const isDatabasePanelOpen = workspaceView === 'database';
@@ -1888,14 +1858,34 @@ const AppDevPro: React.FC = () => {
     [dbEnv, userAppDomainList],
   );
   appPreviewUrlRef.current = appPreviewUrl;
+  const prodPreviewUrl = useMemo(
+    () => buildUserAppAppPreviewUrl(UserAppDbEnvEnum.Prod, userAppDomainList),
+    [userAppDomainList],
+  );
+  /** 已部署且有线上域名时，容器就绪后直接预览 */
+  const canDirectProdPreview =
+    dbEnv === UserAppDbEnvEnum.Prod &&
+    userAppInfo?.prodDeployed === true &&
+    !!prodPreviewUrl;
 
-  /** 线上环境有预览地址时直接视为可预览，不调用启动接口 */
+  /** 进入线上应用预览：未启动则先 ensure，失败展示启动失败，成功后直接 iframe */
   useEffect(() => {
-    if (dbEnv !== UserAppDbEnvEnum.Prod || !appPreviewUrl) {
+    if (!canDirectProdPreview || !envPodConversationId) {
+      return;
+    }
+    if (prodPod.status !== 'idle') {
+      return;
+    }
+    void ensureEnvPodRef.current(UserAppDbEnvEnum.Prod);
+  }, [canDirectProdPreview, envPodConversationId, prodPod.status]);
+
+  /** 线上环境有预览地址且容器就绪时直接视为可预览，不调用启动接口 */
+  useEffect(() => {
+    if (!canDirectProdPreview || prodPod.status !== 'running') {
       return;
     }
     markPreviewReadyRef.current();
-  }, [appPreviewUrl, dbEnv]);
+  }, [canDirectProdPreview, prodPod.status]);
 
   /** 环境或应用变化时，地址栏与 iframe 回到对应代理根路径 */
   useEffect(() => {
@@ -1930,16 +1920,25 @@ const AppDevPro: React.FC = () => {
       <AppDevDatabaseWorkspace
         appId={appId}
         activeTab={databaseActiveTab}
-        prodContainerStatus={prodConversationId ? prodPod.status : undefined}
-        onRetryProdContainer={() => {
-          void prodPodEnsureRef.current(true);
+        env={dbEnv}
+        containerStatus={
+          envPodConversationId
+            ? dbEnv === UserAppDbEnvEnum.Prod
+              ? prodPod.status
+              : podStatus
+            : undefined
+        }
+        onRetryContainer={() => {
+          void ensureEnvPodRef.current(dbEnv, true);
         }}
       />
     ),
     [
       appId,
       databaseActiveTab,
-      prodConversationId,
+      dbEnv,
+      envPodConversationId,
+      podStatus,
       prodPod.status,
     ],
   );
@@ -1959,13 +1958,25 @@ const AppDevPro: React.FC = () => {
         isGeneratingFiles={isConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
         podReady={podReady}
+        containerStatus={
+          envPodConversationId
+            ? dbEnv === UserAppDbEnvEnum.Prod
+              ? canDirectProdPreview
+                ? prodPod.status
+                : undefined
+              : devPod.status
+            : undefined
+        }
         onCancelTask={previewRuntime.cancelTask}
         onRetryStart={handleRestartPreviewRuntime}
         onStart={handleStartPreviewRuntime}
+        onRetryContainer={() => {
+          void ensureEnvPodRef.current(dbEnv, true);
+        }}
         devActionLocked={previewDevActionLocked}
         allowStoppedHero={previewUserStopped || previewEnterSettled}
         stopping={previewRuntime.stopping}
-        directPreview={dbEnv === UserAppDbEnvEnum.Prod && !!activePreviewUrl}
+        directPreview={dbEnv === UserAppDbEnvEnum.Prod}
       />
     ),
     [
@@ -1986,8 +1997,13 @@ const AppDevPro: React.FC = () => {
       previewRuntime.services,
       previewRuntime.stopping,
       dbEnv,
+      canDirectProdPreview,
+      devPod.status,
+      envPodConversationId,
       previewEnterSettled,
       previewUserStopped,
+      prodPod.status,
+      userAppInfo?.prodDeployed,
     ],
   );
 
@@ -2034,7 +2050,8 @@ const AppDevPro: React.FC = () => {
    */
   const renderRightPanel = () => {
     const isFilesWorkspace = workspaceView === 'files';
-    const moreActions = (
+    const isProdEnv = dbEnv === UserAppDbEnvEnum.Prod;
+    const moreActions = isProdEnv ? null : (
       <MoreActionsMenu
         onRestartServer={() => {
           if (queryConversationId) {
@@ -2067,6 +2084,7 @@ const AppDevPro: React.FC = () => {
               onTogglePinTab={previewTabs.togglePinTab}
               onTabReorder={previewTabs.reorderTabs}
               permanentWorkspaceToolIds={workspaceToolIds}
+              showMoreActions={!isProdEnv}
               onRestartServer={() => {
                 if (queryConversationId) {
                   restartVncPod(queryConversationId, finalSelectedComputerId);
@@ -2093,6 +2111,7 @@ const AppDevPro: React.FC = () => {
               onTogglePinTab={noop}
               onTabReorder={noop}
               permanentWorkspaceToolIds={DATABASE_WORKSPACE_TOOL_IDS}
+              showMoreActions={!isProdEnv}
               onRestartServer={() => {
                 if (queryConversationId) {
                   restartVncPod(queryConversationId, finalSelectedComputerId);
@@ -2127,9 +2146,11 @@ const AppDevPro: React.FC = () => {
                   previewDevActionLocked={previewDevActionLocked}
                 />
               )}
-              <div className={cx(styles['tool-workspace-actions'])}>
-                {moreActions}
-              </div>
+              {moreActions ? (
+                <div className={cx(styles['tool-workspace-actions'])}>
+                  {moreActions}
+                </div>
+              ) : null}
             </div>
           )}
           <div className={cx(styles['right-panel-main'])}>
@@ -2183,13 +2204,23 @@ const AppDevPro: React.FC = () => {
               externalContainerStatus={terminalExternalContainerStatus}
               prodExternalContainerStatus={prodExternalContainerStatus}
               onActiveTerminalEnvChange={(terminalEnv) => {
-                if (terminalEnv === UserAppDbEnvEnum.Prod) {
-                  void prodPodEnsureRef.current();
+                if (terminalEnv) {
+                  const status =
+                    terminalEnv === UserAppDbEnvEnum.Prod
+                      ? prodPod.status
+                      : podStatus;
+                  if (status !== 'running') {
+                    void ensureEnvPodRef.current(
+                      terminalEnv,
+                      status === 'error',
+                    );
+                  }
                 }
               }}
-              onRetryProdContainer={() => {
-                void prodPodEnsureRef.current(true);
+              onRetryContainer={(terminalEnv) => {
+                void ensureEnvPodRef.current(terminalEnv, true);
               }}
+              enableKeepalivePolling={false}
               visible={showDevConsole}
               devWsUrl={terminalDevWsUrl}
               prodWsUrl={terminalProdWsUrl}

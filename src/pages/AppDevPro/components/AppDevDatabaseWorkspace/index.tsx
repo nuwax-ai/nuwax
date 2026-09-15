@@ -8,36 +8,36 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-export type AppDevDatabaseWorkspaceTab =
-  | 'database'
-  | 'database-config'
-  | 'database-prod'
-  | 'database-config-prod';
+export type AppDevDatabaseWorkspaceTab = 'database' | 'database-config';
 
 export interface AppDevDatabaseWorkspaceProps {
   /** 应用 ID */
   appId: number;
   /** 当前 Tab */
   activeTab: AppDevDatabaseWorkspaceTab;
-  /** 线上环境容器状态，进入线上数据库管理页前须先就绪 */
-  prodContainerStatus?: UserAppEnvPodStatus;
-  /** 重试启动线上环境容器 */
-  onRetryProdContainer?: () => void;
+  /** Header 当前环境 */
+  env: UserAppDbEnvEnum;
+  /** 当前环境容器状态，进入数据库管理页前须先就绪 */
+  containerStatus?: UserAppEnvPodStatus;
+  /** 重试启动当前环境容器 */
+  onRetryContainer?: () => void;
 }
 
 /**
- * 数据库工作区：开发 / 线上各一套管理页与配置。
- * Tab 头由外层 PreviewTabBar 承载；两个 iframe 切换时不卸载，配置面板仅在进入时挂载。
+ * 数据库工作区：数据库与数据库设置各保留一个入口，内容跟随 Header 环境。
+ * Tab 头由外层 PreviewTabBar 承载，配置面板仅在进入时挂载。
  *
  * @param props.appId 应用 ID
  * @param props.activeTab 当前激活的数据库 Tab
+ * @param props.env Header 当前环境
  * @returns 数据库工作区内容
  */
 const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
   appId,
   activeTab,
-  prodContainerStatus,
-  onRetryProdContainer,
+  env,
+  containerStatus,
+  onRetryContainer,
 }) => {
   return (
     <div className={cx(styles.workspace)}>
@@ -46,18 +46,12 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           [styles.hidden]: activeTab !== 'database',
         })}
       >
-        <AppDevDatabasePanel appId={appId} env={UserAppDbEnvEnum.Dev} />
-      </div>
-      <div
-        className={cx(styles.pane, {
-          [styles.hidden]: activeTab !== 'database-prod',
-        })}
-      >
         <AppDevDatabasePanel
+          key={env}
           appId={appId}
-          env={UserAppDbEnvEnum.Prod}
-          containerStatus={prodContainerStatus}
-          onRetryContainer={onRetryProdContainer}
+          env={env}
+          containerStatus={containerStatus}
+          onRetryContainer={onRetryContainer}
         />
       </div>
       <div
@@ -66,24 +60,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
         })}
       >
         {activeTab === 'database-config' ? (
-          <AppDevDatabaseConfigPanel
-            appId={appId}
-            env={UserAppDbEnvEnum.Dev}
-            active
-          />
-        ) : null}
-      </div>
-      <div
-        className={cx(styles.pane, {
-          [styles.hidden]: activeTab !== 'database-config-prod',
-        })}
-      >
-        {activeTab === 'database-config-prod' ? (
-          <AppDevDatabaseConfigPanel
-            appId={appId}
-            env={UserAppDbEnvEnum.Prod}
-            active
-          />
+          <AppDevDatabaseConfigPanel key={env} appId={appId} env={env} active />
         ) : null}
       </div>
     </div>

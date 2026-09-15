@@ -45,9 +45,7 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
   }, [appId, env]);
 
   const waitingContainer =
-    env === UserAppDbEnvEnum.Prod &&
-    containerStatus !== undefined &&
-    containerStatus !== 'running';
+    containerStatus !== undefined && containerStatus !== 'running';
 
   if (waitingContainer) {
     const isError = containerStatus === 'error';
@@ -56,19 +54,29 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
         <div className={cx(styles.empty)}>
           {isError ? (
             <div className={cx(styles['container-hint'])}>
-              <span>{dict('PC.Pages.AppDevPro.prodContainerFailed')}</span>
+              <span>
+                {dict(
+                  'PC.Components.ConversationBottomConsole.containerStartError',
+                )}
+              </span>
               <Button
                 type="primary"
                 icon={<ReloadOutlined />}
                 onClick={onRetryContainer}
               >
-                {dict('PC.Pages.AppDevPro.prodContainerRetry')}
+                {dict(
+                  'PC.Components.ConversationBottomConsole.retryStartContainer',
+                )}
               </Button>
             </div>
           ) : (
             <div className={cx(styles['container-hint'])}>
               <Spin />
-              <span>{dict('PC.Pages.AppDevPro.prodContainerStarting')}</span>
+              <span>
+                {dict(
+                  'PC.Components.ConversationBottomConsole.containerStarting',
+                )}
+              </span>
             </div>
           )}
         </div>
