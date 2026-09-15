@@ -26,7 +26,7 @@ const cx = classNames.bind(styles);
 export interface AppDevPublishProgressModalProps {
   /** 是否显示 */
   open: boolean;
-  /** 当前阶段：构建 / 检测可部署 / 部署服务 / 发布到市场 */
+  /** 当前阶段：构建 / 检测可部署 / 部署服务 */
   phase: UserAppPublishPhase;
   /** 构建步骤的服务进度与日志 */
   services: UserAppTaskServiceProgress[];
@@ -44,16 +44,9 @@ export interface AppDevPublishProgressModalProps {
   onCancelTask?: () => void;
   /** 关闭弹窗 */
   onClose: () => void;
-  /**
-   * 重新打开发布到市场弹窗。
-   * 仅在发布申请未提交时传入。
-   */
-  onReopenPublish?: () => void;
-  /** 是否展示「继续发布到广场」；已发布后为 false */
-  showReopenPublish?: boolean;
   /** 弹窗标题 */
   title?: string;
-  /** 是否展示顶部四步进度条 */
+  /** 是否展示顶部三步进度条 */
   showSteps?: boolean;
   /** 创建构建任务中的文案 */
   startingText?: string;
@@ -73,7 +66,7 @@ export interface AppDevPublishProgressModalProps {
 
 /**
  * 顶部 Steps 的当前下标。
- * 0 构建打包 → 1 检测可部署 → 2 部署服务 → 3 发布到市场。
+ * 0 构建打包 → 1 检测可部署 → 2 部署服务。
  *
  * @param phase 当前阶段
  * @param failedStage 失败落点，失败时停在对应步骤
@@ -83,11 +76,8 @@ const getStepIndex = (
   phase: UserAppPublishPhase,
   failedStage?: UserAppDeployFailedStage | null,
 ): number => {
-  if (phase === 'applying' || phase === 'success') {
-    return 3;
-  }
-  if (phase === 'failed' && failedStage === 'apply') {
-    return 3;
+  if (phase === 'success') {
+    return 2;
   }
   if (
     phase === 'deploying' ||
@@ -276,7 +266,7 @@ const ServiceLogBlock: React.FC<{
 
 /**
  * 部署进度弹窗。
- * 顶部四步只表示进度；各步骤的检测状态与结果（成功 / 失败 / 日志）放在对应步骤下方，
+ * 顶部三步只表示进度；各步骤的检测状态与结果（成功 / 失败 / 日志）放在对应步骤下方，
  * 不再在步骤条下单独挂一条总状态。
  *
  * @param props 弹窗属性
@@ -293,8 +283,6 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   cancelLoading = false,
   onCancelTask,
   onClose,
-  onReopenPublish,
-  showReopenPublish = false,
   title,
   showSteps = true,
   startingText,
@@ -385,14 +373,12 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     phase === 'deploying' ||
     (phase === 'failed' &&
       (failedStage === 'check' || failedStage === 'deploy')) ||
-    phase === 'applying' ||
     phase === 'success';
   /** 部署服务：进入 start 或已有日志时展示 */
   const showStartSection =
     startServices.length > 0 ||
     phase === 'deploying' ||
     (phase === 'failed' && failedStage === 'deploy') ||
-    phase === 'applying' ||
     phase === 'success';
   /** 构建打包：有日志、正在构建，或后续步骤已出现时都保留 */
   const showBuildSection =
@@ -402,19 +388,12 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     (phase === 'failed' && failedStage === 'build') ||
     phase === 'cancelled' ||
     showCheckSection;
-  /** 发布到市场：进入申请或该步失败时展示 */
-  const showMarketSection =
-    phase === 'applying' ||
-    phase === 'success' ||
-    (phase === 'failed' && failedStage === 'apply');
 
   /** 按失败落点选默认文案，接口错误优先 */
   const failText =
     errorMessage ||
     failedText ||
-    (failedStage === 'apply'
-      ? dict('PC.Pages.AppDevPro.publishFailed')
-      : failedStage === 'deploy'
+    (failedStage === 'deploy'
       ? dict('PC.Pages.AppDevPro.startFailed')
       : failedStage === 'check'
       ? dict('PC.Pages.AppDevPro.checkDeployableFailed')
@@ -442,7 +421,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
 
   /**
    * 检测可部署：轮询中 / 本步失败 / 本步取消。
-   * 已进入部署或发布则视为检测通过。
+   * 已进入部署则视为检测通过。
    */
   const checkStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
     phase === 'checkingDeployable'
@@ -455,14 +434,14 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
 
   /**
    * 部署服务：prod/start 进行中 / 本步失败 / 本步取消。
-   * 进入发布到市场后视为部署成功。
+   * 部署成功后视为本步完成。
    */
   const startStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
     phase === 'deploying'
       ? { kind: 'process', text: dict('PC.Pages.AppDevPro.deploying') }
       : phase === 'failed' && failedStage === 'deploy'
       ? { kind: 'error', text: failText }
-      : phase === 'cancelled' && showStartSection && !showMarketSection
+      : phase === 'cancelled' && showStartSection
       ? { kind: 'error', text: cancelText }
       : {
           kind: 'finish',
@@ -472,17 +451,6 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   /** 部署成功且已异步拿到 Prod 域名时展示访问地址 */
   const displayAccessUrl =
     startStatus.kind === 'finish' ? prodAccessUrl : '';
-
-  /** 发布到市场：申请弹窗打开中 / 本步失败 / 已提交 */
-  const marketStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
-    phase === 'applying'
-      ? {
-          kind: 'process',
-          text: dict('PC.Pages.AppDevPro.publishToMarketHint'),
-        }
-      : phase === 'failed' && failedStage === 'apply'
-      ? { kind: 'error', text: failText }
-      : { kind: 'finish', text: dict('PC.Pages.AppDevPro.publishSuccess') };
 
   /**
    * 构建中：新服务自动展开。
@@ -583,7 +551,6 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
               { title: dict('PC.Pages.AppDevPro.publishBuildStep') },
               { title: dict('PC.Pages.AppDevPro.checkDeployableStep') },
               { title: dict('PC.Pages.AppDevPro.deployStep') },
-              { title: dict('PC.Pages.AppDevPro.publishToMarketStep') },
             ]}
           />
         )}
@@ -639,29 +606,6 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
                 items={startCollapseItems}
                 className={cx(styles.serviceList)}
               />
-            ) : null}
-          </div>
-        )}
-
-        {/* 发布到市场：申请中 / 已提交 / 失败 */}
-        {showMarketSection && (
-          <div className={cx(styles.stepLogs)}>
-            <div className={cx(styles.stepLogsTitle)}>
-              {dict('PC.Pages.AppDevPro.publishToMarketStep')}
-              <span className={cx(styles.stepLogsTitleNote)}>
-                {dict('PC.Pages.AppDevPro.publishToSquareNote')}
-              </span>
-            </div>
-            <StepStatusLine kind={marketStatus.kind} text={marketStatus.text} />
-            {showReopenPublish && onReopenPublish ? (
-              <Button
-                type="primary"
-                size="small"
-                className={cx(styles.reopenPublish)}
-                onClick={onReopenPublish}
-              >
-                {dict('PC.Pages.AppDevPro.reopenPublishToMarket')}
-              </Button>
             ) : null}
           </div>
         )}

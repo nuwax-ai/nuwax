@@ -421,8 +421,11 @@ const useResourceList = ({
 
   const load = useCallback(
     async (reset: boolean) => {
-      // 防重入：上一次请求仍在途中时忽略新的触发
-      if (loadingRef.current) {
+      // 防重入：仅拦截追加加载（loadMore 双触发）。重置加载（tab/筛选条件
+      // 变化）必须放行——放行后 ++requestId 会使在途旧请求的响应因过期被
+      // 丢弃；若此处一并拦截，新条件的请求发不出去、requestId 不前进，
+      // 旧 tab 在途响应反而被判定为最新，数据会串到切换后的 tab 上
+      if (loadingRef.current && !reset) {
         return;
       }
       // 团队空间维度依赖空间寻址：专家/技能需 spaceId（具体空间）或

@@ -193,14 +193,14 @@ const NormalProjectDetail: React.FC = () => {
     // 仓库页面会读取父窗口的嵌入配置，必须与父页面保持同源。
     const domain = window.location.origin;
     if (activeTab === 'plan' && projectInfo?.planSlugId) {
-      return `${domain}/repo/folder/${encodeURIComponent(
+      return `${domain}/repo/doc/${encodeURIComponent(
         projectInfo.planSlugId,
-      )}`;
+      )}?just_show_content=true&hide_sheet=true`;
     }
     if (activeTab === 'asset' && projectInfo?.repoSlugId) {
-      return `${domain}/repo/doc/${encodeURIComponent(
+      return `${domain}/repo/folder/${encodeURIComponent(
         projectInfo.repoSlugId,
-      )}?just_show_content=true&hide_sheet=true`;
+      )}`;
     }
     return '';
   }, [activeTab, projectInfo?.planSlugId, projectInfo?.repoSlugId]);

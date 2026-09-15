@@ -119,7 +119,7 @@ const pickResponseData = <T,>(
  * - 选私服时再拉私有服务器列表（进页若已是私服也会拉一次）；
  * - 「设置部署服务器」：平台直接保存；私服弹窗单选后保存。
  *
- * 计划 / 资产 Tab 分别通过 iframe 展示项目计划目录与资料库文档。
+ * 计划 / 资产 Tab 分别通过 iframe 展示计划文档与资产目录。
  * 路由参数 spaceId、appId 来自 `/space/:spaceId/app-project-detail/:appId`。
  *
  * @returns 全栈应用详情页
@@ -883,14 +883,14 @@ const AppProjectDetail: React.FC = () => {
     // 仓库页面会读取父窗口的嵌入配置，必须与父页面保持同源。
     const domain = window.location.origin;
     if (activeTab === 'plan' && projectInfo?.planSlugId) {
-      return `${domain}/repo/folder/${encodeURIComponent(
+      return `${domain}/repo/doc/${encodeURIComponent(
         projectInfo.planSlugId,
-      )}`;
+      )}?just_show_content=true&hide_sheet=true`;
     }
     if (activeTab === 'asset' && projectInfo?.repoSlugId) {
-      return `${domain}/repo/doc/${encodeURIComponent(
+      return `${domain}/repo/folder/${encodeURIComponent(
         projectInfo.repoSlugId,
-      )}?just_show_content=true&hide_sheet=true`;
+      )}`;
     }
     return '';
   }, [activeTab, projectInfo?.planSlugId, projectInfo?.repoSlugId]);

@@ -1,34 +1,13 @@
 import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
+import type { UserAppDomainInfo } from '@/types/interfaces/userProject';
 import { request } from 'umi';
 
-/** 应用域名类型 */
-export enum UserAppDomainTypeEnum {
-  /** 开发环境默认域名 */
-  Dev = 'Dev',
-  /** 生产环境默认域名 */
-  Prod = 'Prod',
-  /** 用户自定义域名 */
-  Custom = 'Custom',
-}
-
-/** 应用绑定的域名 */
-export interface UserAppDomainInfo {
-  /** 记录 ID */
-  id: number;
-  /** 商户 ID */
-  tenantId: number;
-  /** 应用 ID */
-  appId: number;
-  /** 域名 */
-  domain: string;
-  /** 域名类型 */
-  domainType: UserAppDomainTypeEnum;
-  /** 创建时间 */
-  created: string;
-  /** 更新时间 */
-  modified: string;
-}
+// 域名类型枚举、回包结构与域名列表接口已下沉共享层
+// (types/userProject + services/userProjectApp,全栈应用页等消费方复用);
+// 此处再导出保持页面层既有引用路径不变
+export { UserAppDomainTypeEnum } from '@/types/interfaces/userProject';
+export type { UserAppDomainInfo };
 
 /** 绑定自有域名参数 */
 export interface UserAppDomainCreateParams {
@@ -58,17 +37,8 @@ export function normalizeUserAppPreviewUrl(domain?: string): string {
   return `https://${trimmed}`;
 }
 
-/** 查询应用绑定的域名列表 */
-export async function apiUserAppDomainList(
-  appId: number,
-): Promise<RequestResponse<UserAppDomainInfo[]>> {
-  return request('/api/userapp/domain/list', {
-    method: 'GET',
-    params: {
-      appId,
-    },
-  });
-}
+/** 查询应用绑定的域名列表(已下沉 services/userProjectApp,此处再导出) */
+export { apiUserAppDomainList } from '@/services/userProjectApp';
 
 /** 绑定自有域名 */
 export async function apiUserAppDomainCreate(
