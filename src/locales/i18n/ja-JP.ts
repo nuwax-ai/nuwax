@@ -660,7 +660,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.MentionList.noMatch": "一致するものが見つかりませんでした",
   "PC.Components.MenuListItem.cancelCollect": "気に入らない",
   "PC.Components.ModelBox.search": "検索",
-  "PC.Components.ModelSelector.addPersonalModel": "個人モデル",
+  "PC.Components.ModelSelector.addPersonalModel": "カスタムモデルを設定",
   "PC.Components.ModelSelector.loading": "読み込み中...",
   "PC.Components.ModelSelector.loadingModels": "モデルをロード中...",
   "PC.Components.ModelSelector.noAvailableModels": "利用可能なモデルはありません",

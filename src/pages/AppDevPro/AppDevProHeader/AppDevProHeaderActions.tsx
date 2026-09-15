@@ -101,6 +101,8 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
     onPublish?.();
   }, [onCancelRemotePublish, onPublish, remotePublishing]);
 
+  /** 部署与发布只在开发环境操作 */
+  const isDevEnv = env === UserAppDbEnvEnum.Dev;
   /** 已部署到生产环境后才可发布到广场 / 空间 */
   const showMarketPublish = userAppInfo?.prodDeployed === true;
 
@@ -235,31 +237,33 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
           />
         </ConditionRender>
 
-        {/* 部署按钮：远程构建中可点击取消，本地部署仅展示 loading */}
-        <Tooltip
-          title={
-            remotePublishing
-              ? dict('PC.Pages.AppDevPro.clickToCancelPublish')
-              : undefined
-          }
-        >
-          <span>
-            <Button
-              type="primary"
-              onClick={handlePublishClick}
-              loading={
-                remotePublishing ? cancelRemotePublishLoading : publishing
-              }
-            >
-              {remotePublishing
-                ? dict('PC.Pages.AppDevPro.appPublishing')
-                : dict('PC.Pages.AppDevPro.deploy')}
-            </Button>
-          </span>
-        </Tooltip>
+        {/* 部署按钮：仅开发环境。远程构建中可点击取消，本地部署仅展示 loading */}
+        <ConditionRender condition={isDevEnv}>
+          <Tooltip
+            title={
+              remotePublishing
+                ? dict('PC.Pages.AppDevPro.clickToCancelPublish')
+                : undefined
+            }
+          >
+            <span>
+              <Button
+                type="primary"
+                onClick={handlePublishClick}
+                loading={
+                  remotePublishing ? cancelRemotePublishLoading : publishing
+                }
+              >
+                {remotePublishing
+                  ? dict('PC.Pages.AppDevPro.appPublishing')
+                  : dict('PC.Pages.AppDevPro.deploy')}
+              </Button>
+            </span>
+          </Tooltip>
+        </ConditionRender>
 
-        {/* 发布：仅已部署到生产环境后可发布到广场 / 空间 */}
-        <ConditionRender condition={showMarketPublish}>
+        {/* 发布：仅开发环境，且已部署到生产环境后可发布到广场 / 空间 */}
+        <ConditionRender condition={isDevEnv && showMarketPublish}>
           <Button onClick={onOpenMarketPublish}>
             {dict('PC.Pages.AppDevPro.publishToMarket')}
           </Button>

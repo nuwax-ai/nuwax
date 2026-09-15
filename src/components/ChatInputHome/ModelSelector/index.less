@@ -71,10 +71,21 @@
 }
 
 .model-dropdown-container {
+  display: flex;
+  flex-direction: column;
   background-color: @colorBgElevated;
   border-radius: @borderRadius;
   box-shadow: @boxShadowSecondary;
   padding: 4px 0 0;
+
+  // 三 tab 模式:弹层定高 368px、定宽(列表项 274px + 列表区左右
+  // padding 6px×2 = 286px)——各 tab 高度一致,空数据 tab 也不收缩
+  // 变窄;external 分组下拉不受影响
+  &.tab-mode {
+    box-sizing: border-box;
+    height: 368px;
+    width: 286px;
+  }
 
   :global {
     .ant-dropdown-menu {
@@ -84,6 +95,7 @@
   }
 
   .add-button-wrap {
+    flex-shrink: 0;
     padding: 4px;
     border-top: 1px solid @colorBorderSecondary;
   }
@@ -124,32 +136,28 @@
   // 三 tab 弹层(agentId 模式):Segmented 分段控件,样式对齐专家&技能&连接器页主 tab
   // 宽度跟随列表区(.list-item 定宽),保持与旧版分组下拉一致的弹层宽度
   .model-tabs {
+    flex-shrink: 0;
     box-sizing: border-box;
     margin: 0 0 4px;
     padding: 0 4px;
   }
 
+  // 列表区弹性填充定高弹层的剩余空间:tab 间/空数据高度一致,超出滚动
   .model-list {
-    max-height: 240px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 2px 6px 6px;
   }
 
+  // 空态文案在定高列表区(弹层弹性填充区)垂直居中
   .list-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: @colorTextQuaternary;
     font-size: @fontSizeSm;
-    text-align: center;
-    padding: 16px 0;
-  }
-
-  // 团队 tab 的分组标题(空间名),视觉对齐旧版 Menu 分组标题
-  .group-title {
-    color: @colorTextQuaternary;
-    font-size: @fontSizeSm;
-    font-weight: 500;
-    line-height: 20px;
-    padding: 6px 6px 2px;
   }
 
   // 模型项内元素(external 分组下拉与 tab 列表共用)
@@ -180,6 +188,21 @@
         padding: 0 4px;
         font-size: 11px;
         line-height: 16px;
+        // 目标最多展示约 8 个汉字:1em/汉字 + 左右 padding 4px×2,
+        // 实测汉字渲染宽略超 1em,取 10em(8em 时仅容纳 6 个汉字)
+        max-width: 10em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      // 团队 tab 的空间名 tag:覆盖 item-tag 的左间距,吸附名称行
+      // 最右端(行末勾选 icon 之前);置于 .item-tag 之后保证覆盖生效。
+      // 文案用三级灰(比 antd Tag 默认文案浅、比描述行的四级灰深,
+      // 保证在 tag 底色上可读)
+      .item-space-tag {
+        margin-left: auto;
+        color: @colorTextTertiary;
       }
     }
 
@@ -255,11 +278,22 @@
     cursor: pointer;
     transition: background-color @motionDurationMid;
 
+    // 个人 tab 的编辑/删除按钮:常驻占位 + opacity 显隐(覆盖基础
+    // display:none→flex 切换)——hover 时按钮突然占宽会挤压名称区,
+    // 造成列表项抖动;占位恒定后布局稳定
+    .item-actions {
+      display: flex;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity @motionDurationMid;
+    }
+
     &:hover {
       background: @colorFillTertiary;
 
       .item-actions {
-        display: flex;
+        opacity: 1;
+        pointer-events: auto;
       }
     }
   }
