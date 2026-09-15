@@ -1,11 +1,11 @@
 import { dict } from '@/services/i18nRuntime';
-import { ReloadOutlined } from '@ant-design/icons';
-import { Button, Empty, Spin } from 'antd';
+import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import { getUserAppDbProxyUrl, UserAppDbEnvEnum } from '../../services/appDb';
 import AppDevProIframe from '../AppDevProIframe';
+import AppDevServiceStartStatus from '../AppDevStatusHero';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -22,6 +22,8 @@ export interface AppDevDatabasePanelProps {
   containerStatus?: UserAppEnvPodStatus;
   /** 线上环境容器启动失败时重试 */
   onRetryContainer?: () => void;
+  /** 容器重启成功后重挂 iframe */
+  iframeKey?: number;
 }
 
 /**
@@ -36,6 +38,7 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
   env,
   containerStatus,
   onRetryContainer,
+  iframeKey = 0,
 }) => {
   const iframeSrc = useMemo(() => {
     if (!appId) {
@@ -48,38 +51,12 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
     containerStatus !== undefined && containerStatus !== 'running';
 
   if (waitingContainer) {
-    const isError = containerStatus === 'error';
     return (
       <div className={cx(styles.container)}>
-        <div className={cx(styles.empty)}>
-          {isError ? (
-            <div className={cx(styles['container-hint'])}>
-              <span>
-                {dict(
-                  'PC.Components.ConversationBottomConsole.containerStartError',
-                )}
-              </span>
-              <Button
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={onRetryContainer}
-              >
-                {dict(
-                  'PC.Components.ConversationBottomConsole.retryStartContainer',
-                )}
-              </Button>
-            </div>
-          ) : (
-            <div className={cx(styles['container-hint'])}>
-              <Spin />
-              <span>
-                {dict(
-                  'PC.Components.ConversationBottomConsole.containerStarting',
-                )}
-              </span>
-            </div>
-          )}
-        </div>
+        <AppDevServiceStartStatus
+          failed={containerStatus === 'error'}
+          onRetry={onRetryContainer}
+        />
       </div>
     );
   }
@@ -101,6 +78,7 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
     <div className={cx(styles.container)}>
       <AppDevProIframe
         src={iframeSrc}
+        iframeKey={iframeKey}
         title={dict('PC.Pages.AppDevPro.database')}
       />
     </div>

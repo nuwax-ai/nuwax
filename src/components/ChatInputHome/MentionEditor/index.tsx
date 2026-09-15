@@ -1289,9 +1289,37 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       [],
     );
 
+    /**
+     * 以编程方式整体设置编辑器纯文本（会话草稿恢复/切换会话）。
+     * 不走外部 value 同步通道：聚焦守卫会拦截聚焦态下的 value 同步，
+     * 切换会话时编辑器常处于聚焦态（autoFocus 默认开），草稿会落在
+     * state 里但输入框不显示；此处 DOM 直达并同步撤销栈/mention/空态，
+     * onChange 回传让受控 value 与编辑器内容保持一致
+     */
+    const setEditorText = useCallback(
+      (text: string) => {
+        if (!editorRef.current) return;
+        isHistoryActionRef.current = true;
+        closeMentionPopup();
+        editorRef.current.textContent = text;
+        resetUndoStack(editorRef.current.innerHTML);
+        syncMentionsFromDom();
+        setIsEditorEmpty(!text.trim());
+        lastEmittedValueRef.current = text;
+        onChange?.(text);
+        // 恢复/切换后光标落在内容末尾：回到会话即可继续输入（对齐飞书/微信）
+        placeCaretAtEnd(editorRef.current);
+        queueMicrotask(() => {
+          isHistoryActionRef.current = false;
+        });
+      },
+      [onChange, resetUndoStack, closeMentionPopup, syncMentionsFromDom],
+    );
+
     // 通过 useImperativeHandle 暴露方法
     useImperativeHandle(ref, () => ({
       clear,
+      setEditorText,
       handleAtIconMentionSelect,
       insertTriggerText,
       focus: () => {

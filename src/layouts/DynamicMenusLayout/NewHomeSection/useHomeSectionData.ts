@@ -81,6 +81,8 @@ export interface HomeSectionDataShell {
   /** 当前会话命中项目子会话 id（未命中 null）：任务列表选中互斥用 */
   activeProjectChildId: string | null;
   setActiveProjectChildId: React.Dispatch<React.SetStateAction<string | null>>;
+  /** 当前路由会话在项目/任务列表命中行（单栏导航菜单高亮据此让位） */
+  conversationRowActive: boolean;
 }
 
 export function useHomeSectionData(options: {
@@ -91,9 +93,10 @@ export function useHomeSectionData(options: {
   const { id: chatIdParam } = useParams();
   const location = useLocation();
   // 当前路由会话 id：会话详情路径识别与提取收敛在侧栏选中策略单源
+  // （含 /space/app-pro?conversationId 全栈 IDE 会话面板，项目子会话点击即跳该路由）
   const chatId =
     chatIdParam ??
-    extractConversationIdFromPath(location.pathname) ??
+    extractConversationIdFromPath(location.pathname, location.search) ??
     undefined;
 
   const { handleCloseMobileMenu } = useModel('layout');
@@ -477,6 +480,14 @@ export function useHomeSectionData(options: {
     string | null
   >(null);
 
+  // 会话行命中判定（项目子行或任务行任一）：侧栏导航菜单高亮据此让位——
+  // 2026-09-15 用户定调优先级「先命中项目/任务中会话，然后才是导航菜单」
+  // （/space/app-pro 项目会话不再误亮「工作空间」；未命中时导航菜单照常兜底）
+  const conversationRowActive =
+    chatId !== undefined &&
+    (activeProjectChildId === chatId ||
+      visibleConversationList.some((item) => String(item.id) === chatId));
+
   return {
     scrollContainerRef,
     scrollShowRef,
@@ -498,5 +509,6 @@ export function useHomeSectionData(options: {
     handleProjectCountChange,
     activeProjectChildId,
     setActiveProjectChildId,
+    conversationRowActive,
   };
 }

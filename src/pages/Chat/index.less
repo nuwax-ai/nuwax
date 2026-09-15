@@ -23,8 +23,20 @@
 }
 
 .chat-root {
+  position: relative;
   display: flex;
   height: 100%;
+}
+
+.chat-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, @colorBgContainer 78%, transparent);
+  backdrop-filter: blur(2px);
 }
 
 .main-area {

@@ -1,5 +1,6 @@
 /node_modules
 /.env.local
+/scripts/deploy_sync_test.env
 /.umirc.local.ts
 /config/config.local.ts
 /src/.umi

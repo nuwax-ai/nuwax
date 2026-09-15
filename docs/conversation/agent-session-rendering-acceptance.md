@@ -280,7 +280,7 @@
 | 全量 vitest 有 3 个基线既有失败（replaceMathBracket ×2、Event 用例） | 基线问题，与本分支无关 | `nuwax-test-baseline-quirks` |
 | 真实链路无终端专属卡 | 后端协议未接入 | 计划文档「后端确认清单」① |
 | 登录后 mock 页文案变英文 | 账号语言偏好被 `syncLangFromUserInfo` 同步 | §0 步骤 4；e2e 已钉死 zh-CN |
-| md 预览标题字号/引用块/分割线/段落间距未对齐 | ux-m1 仅对齐代码块/表格/列表三块 | `mobile-parity-checklist.md` §J |
+| ~~md 预览标题字号/引用块/分割线/段落间距未对齐~~ | ✅ 已修复（2026-09-15）：h1/h2/blockquote 实测对齐会话区 ds-markdown 渲染值；分割线/段落原本已一致，未改动 | `FilePreview/index.less` |
 
 > runtime 轨此前的桥接死循环与终态 text 覆盖问题**已修复**，详见 [fixes/runtime-bridge-loop-and-terminal-text-overwrite-fix.md](./fixes/runtime-bridge-loop-and-terminal-text-overwrite-fix.md)。
 

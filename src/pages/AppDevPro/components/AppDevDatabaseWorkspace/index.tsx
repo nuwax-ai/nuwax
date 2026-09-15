@@ -17,15 +17,19 @@ export interface AppDevDatabaseWorkspaceProps {
   activeTab: AppDevDatabaseWorkspaceTab;
   /** Header 当前环境 */
   env: UserAppDbEnvEnum;
-  /** 当前环境容器状态，进入数据库管理页前须先就绪 */
-  containerStatus?: UserAppEnvPodStatus;
+  /** 开发环境容器状态 */
+  devContainerStatus?: UserAppEnvPodStatus;
+  /** 线上环境容器状态 */
+  prodContainerStatus?: UserAppEnvPodStatus;
   /** 重试启动当前环境容器 */
   onRetryContainer?: () => void;
+  /** 容器重启成功后重挂 iframe */
+  iframeKey?: number;
 }
 
 /**
- * 数据库工作区：数据库与数据库设置各保留一个入口，内容跟随 Header 环境。
- * Tab 头由外层 PreviewTabBar 承载，配置面板仅在进入时挂载。
+ * 数据库工作区：开发 / 线上各保留一套管理页，切换环境时不卸载。
+ * 已启动成功的环境直接回显；未启动或失败的环境由页面重新 ensure。
  *
  * @param props.appId 应用 ID
  * @param props.activeTab 当前激活的数据库 Tab
@@ -36,22 +40,43 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
   appId,
   activeTab,
   env,
-  containerStatus,
+  devContainerStatus,
+  prodContainerStatus,
   onRetryContainer,
+  iframeKey = 0,
 }) => {
   return (
     <div className={cx(styles.workspace)}>
       <div
         className={cx(styles.pane, {
-          [styles.hidden]: activeTab !== 'database',
+          [styles.hidden]:
+            activeTab !== 'database' || env !== UserAppDbEnvEnum.Dev,
         })}
       >
         <AppDevDatabasePanel
-          key={env}
           appId={appId}
-          env={env}
-          containerStatus={containerStatus}
-          onRetryContainer={onRetryContainer}
+          env={UserAppDbEnvEnum.Dev}
+          containerStatus={devContainerStatus}
+          iframeKey={iframeKey}
+          onRetryContainer={
+            env === UserAppDbEnvEnum.Dev ? onRetryContainer : undefined
+          }
+        />
+      </div>
+      <div
+        className={cx(styles.pane, {
+          [styles.hidden]:
+            activeTab !== 'database' || env !== UserAppDbEnvEnum.Prod,
+        })}
+      >
+        <AppDevDatabasePanel
+          appId={appId}
+          env={UserAppDbEnvEnum.Prod}
+          containerStatus={prodContainerStatus}
+          iframeKey={iframeKey}
+          onRetryContainer={
+            env === UserAppDbEnvEnum.Prod ? onRetryContainer : undefined
+          }
         />
       </div>
       <div

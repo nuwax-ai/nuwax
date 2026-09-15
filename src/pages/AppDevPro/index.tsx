@@ -205,6 +205,8 @@ const AppDevPro: React.FC = () => {
   /** 右侧工作区：文件预览 / 独立应用预览 / 独立数据库 */
   const [workspaceView, setWorkspaceView] =
     useState<AppDevWorkspaceView>('app-preview');
+  const workspaceViewRef = useRef<AppDevWorkspaceView>(workspaceView);
+  workspaceViewRef.current = workspaceView;
   /** 打开数据库前的工作区，再次点击图标时还原 */
   const workspaceViewBeforeDatabaseRef =
     useRef<AppDevWorkspaceView>('app-preview');
@@ -224,6 +226,8 @@ const AppDevPro: React.FC = () => {
   const [dbEnv, setDbEnv] = useState<UserAppDbEnvEnum>(UserAppDbEnvEnum.Dev);
   /** 应用预览 iframe 刷新计数 */
   const [previewRefreshKey, setPreviewRefreshKey] = useState<number>(0);
+  /** 容器重启成功后强制重挂数据库 iframe */
+  const [databaseIframeKey, setDatabaseIframeKey] = useState<number>(0);
   /** 用户在地址栏跳转后的 iframe 地址（环境切换、重启服务时重置为预览根路径） */
   const [previewIframeUrl, setPreviewIframeUrl] = useState<string>('');
   /** 当前环境预览根地址，供启动 / 重启回调读取 */
@@ -378,6 +382,9 @@ const AppDevPro: React.FC = () => {
   const prodPod = useUserAppEnvPod(envPodConversationId, UserAppDbEnvEnum.Prod);
   const podStatus = devPod.status;
   const podReady = podStatus === 'running';
+  /** 当前 Header 环境的容器是否启动失败，失败时预览「停止应用」不可点 */
+  const previewContainerFailed =
+    (dbEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus) === 'error';
 
   /**
    * 进入页面即启动并保活开发环境容器。
@@ -414,9 +421,8 @@ const AppDevPro: React.FC = () => {
   );
 
   /**
-   * 告诉底部终端如何复用进页启动结果。
-   * 开发环境进页会预启动：已成功则打开终端只保活；启动中则等待；失败再由终端 ensure。
-   * 线上环境进页不预启动，打开终端时由控制台 ensure。
+   * 告诉底部终端如何复用页面层容器状态（开发 / 线上同一套规则）。
+   * 已成功则打开终端只连接；启动中则等待；未启动或失败则由页面先拉起。
    */
   const terminalExternalContainerStatus = useMemo(():
     | ConsoleExternalContainerStatus
@@ -437,8 +443,8 @@ const AppDevPro: React.FC = () => {
   }, [finalSelectedComputerId, podStatus, queryConversationId]);
 
   /**
-   * 线上环境容器：打开线上数据库或线上终端时再 ensure，
-   * 未发布时 Header 没有环境切换，这两个入口自己负责拉起容器。
+   * 线上环境容器状态，与开发环境同一套规则交给终端复用。
+   * 切到线上或打开线上终端时再拉起，不在进页时预启动。
    */
   const prodExternalContainerStatus = useMemo(():
     | ConsoleExternalContainerStatus
@@ -474,6 +480,20 @@ const AppDevPro: React.FC = () => {
   );
   const ensureEnvPodRef = useRef(ensureEnvPod);
   ensureEnvPodRef.current = ensureEnvPod;
+
+  /**
+   * 打开终端等入口：已启动则直接复用；启动中等待；未启动或失败则先拉起。
+   *
+   * @param targetEnv 目标环境
+   */
+  const startEnvPodIfNeeded = useCallback((targetEnv: UserAppDbEnvEnum) => {
+    const status =
+      targetEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus;
+    if (status === 'running' || status === 'starting') {
+      return;
+    }
+    void ensureEnvPodRef.current(targetEnv, status === 'error');
+  }, [podStatus, prodPod.status]);
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(appId, {
@@ -676,14 +696,11 @@ const AppDevPro: React.FC = () => {
       },
     });
 
-  /** 发布前：选择分类与发布空间 */
+  /** Header 发布：选择分类与发布空间 */
   const [openPublishModal, setOpenPublishModal] = useState<boolean>(false);
-  /** 部署：构建 → SSE 进度 → 生产部署，成功后再打开发布弹窗 */
+  /** 部署：构建 → SSE 进度 → 生产部署；发布到市场由 Header 发布按钮触发 */
   const publishFlow = useUserAppPublish({
     appId,
-    onDeployed: () => {
-      setOpenPublishModal(true);
-    },
     onProjectInfo: setUserAppInfo,
     onDomainList: setUserAppDomainList,
   });
@@ -746,8 +763,12 @@ const AppDevPro: React.FC = () => {
   });
   const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
   startPreviewIfNeededRef.current = previewRuntime.startIfNeeded;
+  const startPreviewRuntimeRef = useRef(previewRuntime.start);
+  startPreviewRuntimeRef.current = previewRuntime.start;
   const restartPreviewRuntimeRef = useRef(previewRuntime.restart);
   restartPreviewRuntimeRef.current = previewRuntime.restart;
+  const previewRunningRef = useRef(previewRuntime.running);
+  previewRunningRef.current = previewRuntime.running;
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
   /** 会话进行中服务已在跑时，结束后重启预览以加载新文件 */
@@ -1149,6 +1170,9 @@ const AppDevPro: React.FC = () => {
       return;
     }
 
+    // 先按当前环境接入容器：已启动稍后直接连；未启动或失败则先拉起
+    startEnvPodIfNeeded(dbEnv);
+
     setSelectedChangeFile(null);
     if (queryConversationId) {
       void openPreviewView(queryConversationId);
@@ -1157,10 +1181,12 @@ const AppDevPro: React.FC = () => {
     setDevConsoleCollapseSignal(0);
     setDevConsoleExpandSignal((n) => n + 1);
   }, [
+    dbEnv,
     devConsoleActiveTab,
     devConsoleLayoutMode,
     openPreviewView,
     queryConversationId,
+    startEnvPodIfNeeded,
   ]);
 
   /** 是否打开终端面板 */
@@ -1691,15 +1717,18 @@ const AppDevPro: React.FC = () => {
       ? 'database-config'
       : 'database';
 
-  /** 数据库打开或切换环境时，复用当前环境的容器启动与保活状态 */
+  /** 数据库打开或切换环境时，复用当前环境的容器启动与保活状态。
+   * 仅 idle 时自动 ensure；已 running 直接展示，error 由切换环境或用户点重试触发。
+   */
   useEffect(() => {
     if (workspaceView !== 'database') {
       return;
     }
     const status = dbEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus;
-    if (status !== 'running') {
-      void ensureEnvPodRef.current(dbEnv, status === 'error');
+    if (status !== 'idle') {
+      return;
     }
+    void ensureEnvPodRef.current(dbEnv);
   }, [dbEnv, podStatus, prodPod.status, workspaceView]);
 
   /** 打开独立应用预览视图；已启动或线上环境有地址时不再重复 start */
@@ -1755,6 +1784,38 @@ const AppDevPro: React.FC = () => {
     );
   }, [previewRuntime]);
 
+  /**
+   * 容器启动失败后重试：成功后按当前工作区自动接入。
+   * 数据库页重挂管理 iframe；应用预览页重新启动预览（线上环境直接刷新 iframe）。
+   */
+  const handleRetryContainer = useCallback(async () => {
+    const ready = await ensureEnvPodRef.current(dbEnv, true);
+    if (!ready) {
+      return;
+    }
+    const view = workspaceViewRef.current;
+    if (view === 'database') {
+      setDatabaseIframeKey((key) => key + 1);
+      return;
+    }
+    if (view !== 'app-preview') {
+      return;
+    }
+    previewUserStoppedRef.current = false;
+    setPreviewUserStopped(false);
+    setPreviewIframeUrl(appPreviewUrlRef.current);
+    if (dbEnv === UserAppDbEnvEnum.Prod) {
+      setPreviewRefreshKey((key) => key + 1);
+      markPreviewReadyRef.current();
+      return;
+    }
+    if (previewRunningRef.current) {
+      void restartPreviewRuntimeRef.current();
+      return;
+    }
+    void startPreviewRuntimeRef.current();
+  }, [dbEnv]);
+
   /** 取消 tasks/active 中的远程构建任务 */
   const handleCancelRemotePublish = useCallback(async () => {
     const taskId = remoteBuildTask?.taskId;
@@ -1780,7 +1841,7 @@ const AppDevPro: React.FC = () => {
     }
   }, [remoteBuildTask?.taskId]);
 
-  /** 点击部署：先构建并生产部署，成功后再选择分类发布到市场 */
+  /** 点击部署：构建并生产部署 */
   const handleOpenPublish = useCallback(() => {
     if (!appId) {
       message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
@@ -1814,33 +1875,40 @@ const AppDevPro: React.FC = () => {
   }, [appId, previewTabs]);
 
   /**
-   * 切换环境：线上环境没有文件树，隐藏图标与中间栏；
-   * 若当前在文件树工作区，改为展示线上环境应用预览。
-   * 已部署且存在线上预览域名时，按需启动线上容器，就绪后直接预览。
+   * 切换环境：线上环境没有文件树，隐藏图标与中间栏。
+   * 未部署且不在数据库工作区时进入数据库；已部署才进入应用预览。
+   * 当前已是数据库或数据库配置时保持页签，配置页随环境重新请求。
+   * 目标环境已启动成功则直接展示；未启动或上次失败则重新拉起。
    */
   const handleEnvChange = useCallback(
     (nextEnv: UserAppDbEnvEnum) => {
       setDbEnv(nextEnv);
-      const nextStatus =
-        nextEnv === UserAppDbEnvEnum.Prod ? prodPod.status : devPod.status;
-      if (nextStatus !== 'running') {
-        void ensureEnvPodRef.current(nextEnv, nextStatus === 'error');
-      }
+      // 开发 / 线上同一套：已启动直接复用，未启动或失败则先拉起
+      startEnvPodIfNeeded(nextEnv);
       if (nextEnv === UserAppDbEnvEnum.Dev) {
+        setSettingsOpen(false);
         return;
       }
       previewTabs.closeTab(getToolTabId('remote-desktop'));
       setCanShowFileView(false);
-      if (workspaceView === 'files') {
-        resetDevConsoleExpandedLayout();
-        setWorkspaceView('app-preview');
+      resetDevConsoleExpandedLayout();
+      // 已在数据库 / 数据库配置时保持当前页签，配置页随环境重新请求
+      if (workspaceView === 'database') {
+        return;
       }
+      if (userAppInfo?.prodDeployed === true) {
+        setWorkspaceView('app-preview');
+        return;
+      }
+      workspaceViewBeforeDatabaseRef.current = workspaceView;
+      setDatabaseTabId(getToolTabId('database'));
+      setWorkspaceView('database');
     },
     [
-      devPod.status,
       previewTabs,
-      prodPod.status,
       resetDevConsoleExpandedLayout,
+      startEnvPodIfNeeded,
+      userAppInfo?.prodDeployed,
       workspaceView,
     ],
   );
@@ -1868,7 +1936,7 @@ const AppDevPro: React.FC = () => {
     userAppInfo?.prodDeployed === true &&
     !!prodPreviewUrl;
 
-  /** 进入线上应用预览：未启动则先 ensure，失败展示启动失败，成功后直接 iframe */
+  /** 进入线上应用预览：未启动则先拉起，已启动直接 iframe，失败可点终端或重试再拉起 */
   useEffect(() => {
     if (!canDirectProdPreview || !envPodConversationId) {
       return;
@@ -1921,23 +1989,21 @@ const AppDevPro: React.FC = () => {
         appId={appId}
         activeTab={databaseActiveTab}
         env={dbEnv}
-        containerStatus={
-          envPodConversationId
-            ? dbEnv === UserAppDbEnvEnum.Prod
-              ? prodPod.status
-              : podStatus
-            : undefined
-        }
+        devContainerStatus={envPodConversationId ? podStatus : undefined}
+        prodContainerStatus={envPodConversationId ? prodPod.status : undefined}
+        iframeKey={databaseIframeKey}
         onRetryContainer={() => {
-          void ensureEnvPodRef.current(dbEnv, true);
+          void handleRetryContainer();
         }}
       />
     ),
     [
       appId,
       databaseActiveTab,
+      databaseIframeKey,
       dbEnv,
       envPodConversationId,
+      handleRetryContainer,
       podStatus,
       prodPod.status,
     ],
@@ -1971,7 +2037,7 @@ const AppDevPro: React.FC = () => {
         onRetryStart={handleRestartPreviewRuntime}
         onStart={handleStartPreviewRuntime}
         onRetryContainer={() => {
-          void ensureEnvPodRef.current(dbEnv, true);
+          void handleRetryContainer();
         }}
         devActionLocked={previewDevActionLocked}
         allowStoppedHero={previewUserStopped || previewEnterSettled}
@@ -1982,6 +2048,7 @@ const AppDevPro: React.FC = () => {
     [
       activePreviewUrl,
       handleRestartPreviewRuntime,
+      handleRetryContainer,
       handleStartPreviewRuntime,
       hasPendingIntervention,
       isConversationActive,
@@ -2143,6 +2210,7 @@ const AppDevPro: React.FC = () => {
                   previewRuntimeReady={
                     podReady && !isConversationActive && !hasPendingIntervention
                   }
+                  previewContainerFailed={previewContainerFailed}
                   previewDevActionLocked={previewDevActionLocked}
                 />
               )}
@@ -2204,18 +2272,10 @@ const AppDevPro: React.FC = () => {
               externalContainerStatus={terminalExternalContainerStatus}
               prodExternalContainerStatus={prodExternalContainerStatus}
               onActiveTerminalEnvChange={(terminalEnv) => {
-                if (terminalEnv) {
-                  const status =
-                    terminalEnv === UserAppDbEnvEnum.Prod
-                      ? prodPod.status
-                      : podStatus;
-                  if (status !== 'running') {
-                    void ensureEnvPodRef.current(
-                      terminalEnv,
-                      status === 'error',
-                    );
-                  }
+                if (!terminalEnv) {
+                  return;
                 }
+                startEnvPodIfNeeded(terminalEnv);
               }}
               onRetryContainer={(terminalEnv) => {
                 void ensureEnvPodRef.current(terminalEnv, true);
@@ -2406,7 +2466,7 @@ const AppDevPro: React.FC = () => {
         }}
       />
 
-      {/* 部署成功后：选择分类与发布空间，发布到市场 */}
+      {/* Header 发布：选择分类与发布空间，发布到市场 */}
       <PublishComponentModal
         mode={AgentComponentTypeEnum.UserApp}
         targetId={appId || 0}
@@ -2415,7 +2475,6 @@ const AppDevPro: React.FC = () => {
         onCancel={() => setOpenPublishModal(false)}
         onConfirm={() => {
           setOpenPublishModal(false);
-          publishFlow.completeApply();
           if (appId) {
             runGetUserAppInfo(appId);
           }
@@ -2434,8 +2493,6 @@ const AppDevPro: React.FC = () => {
         cancelLoading={publishFlow.cancelLoading}
         onCancelTask={handleCancelDeployTask}
         onClose={handleCloseDeployProgress}
-        showReopenPublish={publishFlow.phase === 'applying'}
-        onReopenPublish={() => setOpenPublishModal(true)}
       />
     </div>
   );

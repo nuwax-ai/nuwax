@@ -26,7 +26,10 @@ export function useUserAppEnvPod(
   const [status, setStatus] = useState<UserAppEnvPodStatus>('idle');
   const statusRef = useRef(status);
   statusRef.current = status;
-  const inFlightRef = useRef(false);
+  /** 进行中的 ensure，并发调用共用同一结果，避免第二次直接当失败 */
+  const inflightPromiseRef = useRef<Promise<boolean> | null>(null);
+  /** 会话 / 环境切换后忽略过期 ensure 回写 */
+  const generationRef = useRef(0);
   const envRef = useRef(env);
   envRef.current = env;
 
@@ -41,58 +44,80 @@ export function useUserAppEnvPod(
   );
 
   useEffect(() => {
-    inFlightRef.current = false;
+    generationRef.current += 1;
+    inflightPromiseRef.current = null;
     statusRef.current = 'idle';
     setStatus('idle');
     stopKeepalive();
     return () => {
       stopKeepalive();
     };
-  }, [conversationId, env, stopKeepalive]);
+    // 仅会话 / 环境变化时重置；stopKeepalive 引用变化不得清掉失败态
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, env]);
 
   /**
    * 接入指定环境容器。
-   * 失败后不会自动再打；传入 force 才重试（用户点重试按钮）。
+   * 已 running 直接成功；启动中则等待同一次请求；
+   * 失败后不会自动再打，传入 force 才重试（打开终端 / 用户点重试）。
    */
   const ensure = useCallback(
     async (force = false): Promise<boolean> => {
-      if (!conversationId || inFlightRef.current) {
-        return statusRef.current === 'running';
+      if (!conversationId) {
+        return false;
       }
       if (statusRef.current === 'running') {
         return true;
+      }
+      if (inflightPromiseRef.current) {
+        return inflightPromiseRef.current;
       }
       if (!force && statusRef.current === 'error') {
         return false;
       }
 
-      inFlightRef.current = true;
-      statusRef.current = 'starting';
-      setStatus('starting');
+      const generation = generationRef.current;
+      const request = (async (): Promise<boolean> => {
+        statusRef.current = 'starting';
+        setStatus('starting');
+        try {
+          const { code } = await apiEnsurePod(conversationId, env);
+          if (generation !== generationRef.current) {
+            return false;
+          }
+          if (code === SUCCESS_CODE) {
+            statusRef.current = 'running';
+            setStatus('running');
+            runKeepalive(conversationId);
+            return true;
+          }
+          statusRef.current = 'error';
+          setStatus('error');
+          return false;
+        } catch (error) {
+          if (generation !== generationRef.current) {
+            return false;
+          }
+          if (isEnsurePodThrottledError(error)) {
+            statusRef.current = 'running';
+            setStatus('running');
+            runKeepalive(conversationId);
+            return true;
+          }
+          console.error('[useUserAppEnvPod] ensurePod failed:', error);
+          statusRef.current = 'error';
+          setStatus('error');
+          return false;
+        }
+      })();
+
+      inflightPromiseRef.current = request;
       try {
-        const { code } = await apiEnsurePod(conversationId, env);
-        if (code === SUCCESS_CODE) {
-          statusRef.current = 'running';
-          setStatus('running');
-          runKeepalive(conversationId);
-          return true;
-        }
-        statusRef.current = 'error';
-        setStatus('error');
-        return false;
-      } catch (error) {
-        if (isEnsurePodThrottledError(error)) {
-          statusRef.current = 'running';
-          setStatus('running');
-          runKeepalive(conversationId);
-          return true;
-        }
-        console.error('[useUserAppEnvPod] ensurePod failed:', error);
-        statusRef.current = 'error';
-        setStatus('error');
-        return false;
+        return await request;
       } finally {
-        inFlightRef.current = false;
+        if (inflightPromiseRef.current === request) {
+          inflightPromiseRef.current = null;
+        }
       }
     },
     [conversationId, env, runKeepalive],

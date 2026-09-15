@@ -29,6 +29,7 @@ vi.mock('@/components/ChatInputHome/index.less', () => ({
 
 vi.mock('umi', () => ({
   useModel: () => ({ tenantConfigInfo: { enableSubscription: 0 } }),
+  useLocation: () => ({ pathname: '/home', search: '' }),
 }));
 
 vi.mock('@/services/i18nRuntime', () => ({
@@ -65,6 +66,8 @@ vi.mock('@/components/ChatInputHome/MentionEditor', async () => {
         focus: editor.focus,
         clear: editor.clear,
         openCapabilityWithType: editor.openCapabilityWithType,
+        // 真实契约：整体设置文本并经 onChange 回传（草稿恢复/切换会话走此通道）
+        setEditorText: (text: string) => props.onChange?.(text),
       }));
       return React.createElement(
         'div',
@@ -475,5 +478,59 @@ describe('首页草稿（draftKey=home）', () => {
     // 已发送内容不再是草稿
     expect(loadDraft('home')).toBeNull();
     expect(localStorage.getItem(HOME_DRAFT_KEY)).toBeNull();
+  });
+});
+
+describe('切换会话（同实例换草稿作用域）', () => {
+  const baseProps = {
+    onEnter: vi.fn(),
+    isTaskAgentActive: true,
+    selectedComputerId: '555',
+    onComputerSelect: vi.fn(),
+    onWorkspaceDirChange: vi.fn(),
+  };
+
+  it('切到新作用域时新草稿无条件接管，旧会话内容不落入新桶', async () => {
+    saveDraft('chat:101', { version: 1, text: '会话A草稿' });
+    saveDraft('chat:202', { version: 1, text: '会话B草稿' });
+    const { rerender } = render(
+      <ChatInputUnified {...baseProps} draftKey="chat:101" />,
+    );
+    // 首挂恢复 A 草稿
+    expect(screen.getByTestId('mention-editor').textContent).toContain(
+      '会话A草稿',
+    );
+    // 用户在 A 追加输入后切到会话 B（同实例换作用域）
+    act(() => {
+      editor.lastProps.onChange('会话A草稿+追加');
+    });
+    await act(async () => {
+      rerender(<ChatInputUnified {...baseProps} draftKey="chat:202" />);
+    });
+    expect(screen.getByTestId('mention-editor').textContent).toContain(
+      '会话B草稿',
+    );
+    // 节流落盘后：B 桶= B 草稿（未被 A 的内容污染），A 桶= A 的最新输入
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1100);
+      });
+    });
+    expect(loadDraft('chat:202')?.text).toBe('会话B草稿');
+    expect(loadDraft('chat:101')?.text).toBe('会话A草稿+追加');
+  });
+
+  it('新作用域无草稿时切换即清空输入（不留旧会话内容）', async () => {
+    saveDraft('chat:101', { version: 1, text: '会话A草稿' });
+    const { rerender } = render(
+      <ChatInputUnified {...baseProps} draftKey="chat:101" />,
+    );
+    expect(screen.getByTestId('mention-editor').textContent).toContain(
+      '会话A草稿',
+    );
+    await act(async () => {
+      rerender(<ChatInputUnified {...baseProps} draftKey="chat:202" />);
+    });
+    expect(screen.getByTestId('mention-editor').textContent).toBe('');
   });
 });
