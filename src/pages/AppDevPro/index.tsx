@@ -1,5 +1,4 @@
 import { GitVersionRecordPanel } from '@/components/business-component';
-import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import FileTreeGitSourcePanel, {
   useSourceControl,
@@ -22,11 +21,7 @@ import {
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import {
-  AgentComponentTypeEnum,
-  MessageTypeEnum,
-  TaskStatus,
-} from '@/types/enums/agent';
+import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import { RequestResponse } from '@/types/interfaces/request';
@@ -80,6 +75,10 @@ import {
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
+import {
+  useInitialConversationAutoSend,
+  type AppDevProInitialConversationState,
+} from './hooks/useInitialConversationAutoSend';
 import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
 import { useUserAppRuntime } from './hooks/useUserAppRuntime';
@@ -261,7 +260,6 @@ const AppDevPro: React.FC = () => {
     setTaskAgentSelectedFileId,
     setIsLoadingOtherInterface,
     onMessageSend,
-    runAsync,
     resetInit,
     restartVncPod,
     setPodAppStage,
@@ -514,67 +512,14 @@ const AppDevPro: React.FC = () => {
 
   // ==================== 副作用 (Effects) ====================
 
-  /**
-   * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
-   */
-  useEffect(() => {
-    // 优先使用路由参数中指定的 conversationId
-    const id = queryConversationId;
-
-    // 如果 id 存在，则自动触发消息发送
-    if (id) {
-      const state = (location.state || history.location.state) as any;
-      if (
-        state &&
-        (state.message?.trim() || state.files?.length || state.skillIds?.length)
-      ) {
-        const asyncFun = async () => {
-          let data = null;
-          try {
-            const { data: _data } = await runAsync(id);
-            data = _data;
-          } catch (error) {
-            console.error(
-              'Failed to query conversation before auto-send',
-              error,
-            );
-          }
-
-          // 会话消息列表
-          const list = data?.messageList || [];
-          const len = list?.length || 0;
-          // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
-          const isCanMessage =
-            !len ||
-            (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
-
-          if (isCanMessage) {
-            // 确定沙箱 ID
-            const effectiveSandboxId = String(getEffectiveSandboxId(data));
-            onMessageSend({
-              id,
-              messageInfo: state.message || '',
-              files: state.files,
-              infos: state.infos || [],
-              sandboxId: effectiveSandboxId,
-              debug: true,
-              isSync: false,
-              skillIds: state.skillIds,
-              modelId: state.modelId,
-              agentMode: (state.agentMode as AgentMode) || 'yolo',
-              data,
-            });
-          }
-        };
-        asyncFun();
-      }
-    }
-  }, [
-    location.state,
-    history.location.state,
-    selectedComputerId,
-    queryConversationId,
-  ]);
+  useInitialConversationAutoSend({
+    conversationId: queryConversationId,
+    routeState: (location.state || history.location.state) as
+      | AppDevProInitialConversationState
+      | undefined,
+    getEffectiveSandboxId,
+    onMessageSend,
+  });
 
   /** URL 中的 appId 变化时同步到本地状态 */
   useEffect(() => {

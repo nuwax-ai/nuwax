@@ -1,7 +1,9 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import useConversationMentionFiles from '@/hooks/useConversationMentionFiles';
+import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { TaskStatus } from '@/types/enums/agent';
+import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
@@ -91,6 +93,40 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     runAsync,
   } = useModel('conversationInfo');
 
+  // 会话输入框已选择组件。此前面板未接选中态：工具 chips 永不点亮、
+  // 首页上框带过来的工具选中态丢失、发送恒带全量 manualComponents（禅道 bug2352）
+  const {
+    selectedComponentList,
+    setSelectedComponentList,
+    handleSelectComponent,
+    initSelectedComponentList,
+  } = useSelectedComponent();
+
+  // 选中态初始化（按 location.key 一次性应用，对齐 Chat 页语义）：
+  // - 首页携 state 透传（messageSourceType 非 new_chat）→ 恢复用户在首页选的工具；
+  // - 直进页面 → 按智能体 manualComponents 的默认选中初始化。
+  // 不能像 Chat 页那样随 manualComponents 引用重放：AppDevPro 详情 5s 轮询会
+  // 反复刷新 manualComponents 引用，重放会把用户正在挑选的选中态重置。
+  const selectionInitKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const key = location.key || '';
+    if (!key || selectionInitKeyRef.current === key) {
+      return;
+    }
+    const state = location.state as
+      | { messageSourceType?: string; infos?: AgentSelectedComponentInfo[] }
+      | undefined;
+    if (state?.messageSourceType && state.messageSourceType !== 'new_chat') {
+      selectionInitKeyRef.current = key;
+      setSelectedComponentList(state.infos || []);
+      return;
+    }
+    if (manualComponents.length > 0) {
+      selectionInitKeyRef.current = key;
+      initSelectedComponentList(manualComponents);
+    }
+  }, [location.key, location.state, manualComponents]);
+
   // 监听 isConversationActive 从 true → false，触发会话结束回调
   useEffect(() => {
     if (prevIsActiveRef.current && !isConversationActive) {
@@ -153,7 +189,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
               id,
               messageInfo,
               files,
-              infos: manualComponents,
+              infos: selectedComponentList,
               sandboxId: selectedComputerId,
               debug: true,
               isSync: false,
@@ -165,6 +201,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         }}
         onLoadMoreMessage={handleLoadMoreMessage}
         manualComponents={manualComponents}
+        selectedComponentList={selectedComponentList}
+        onSelectComponent={handleSelectComponent}
         selectedComputerId={selectedComputerId}
         onComputerSelect={(id) => {
           onChangeSelectedComputerId?.(id);
