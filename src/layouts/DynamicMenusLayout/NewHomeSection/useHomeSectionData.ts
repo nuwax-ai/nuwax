@@ -160,6 +160,10 @@ export function useHomeSectionData(options: {
           lastId,
           limit: pageSize,
           topic: topic || undefined,
+          // 项目会话由侧栏「项目」分组承接（projectFilter 2026-09-14 后端上线，
+          // 与历史会话页任务 tab 同口径）：任务列表排除防双显。搜索弹窗/Chat
+          // devTarget 反查仍走各自全量口径，不受影响
+          projectFilter: 'exclude',
         });
 
         // 回包落地前重放本地标记覆盖：列表读接口可能滞后于标记接口，

@@ -161,6 +161,9 @@ export async function fetchTaskPage({
       lastId: cursor.lastId ?? null,
       limit: size,
       topic: keyword || undefined,
+      // 任务/项目分类区分（projectFilter 2026-09-14 后端上线）：任务 tab 排除
+      // 项目会话，项目会话由「项目」tab 的 page-query+子会话补拉承接
+      projectFilter: 'exclude',
     }),
   );
   const items = (data ?? []).map(mapConversationItem);

@@ -116,6 +116,8 @@ describe('fetchTaskPage（lastId 游标分页）', () => {
       lastId: null,
       limit: 20,
       topic: undefined,
+      // 任务/项目分类区分：任务 tab 排除项目会话（项目 tab 承接）
+      projectFilter: 'exclude',
     });
     expect(res.items.map((item) => item.id)).toEqual(['task-1', 'task-2']);
     expect(res.hasMore).toBe(false);
@@ -138,6 +140,7 @@ describe('fetchTaskPage（lastId 游标分页）', () => {
       lastId: 9,
       limit: 20,
       topic: 't',
+      projectFilter: 'exclude',
     });
     expect(res.hasMore).toBe(true);
     expect(res.cursor).toEqual({ lastId: 29 });
