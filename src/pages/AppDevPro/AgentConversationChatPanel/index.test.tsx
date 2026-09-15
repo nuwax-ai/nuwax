@@ -1,6 +1,6 @@
-import AgentConversationChatPanel from '@/pages/ConversationAgent/AgentConversationChatPanel';
+import AgentConversationChatPanel from '@/pages/AppDevPro/AgentConversationChatPanel';
 import { TaskStatus } from '@/types/enums/agent';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockUnifiedChatSession, mockUseModel, mockUseLocation, mockHistory } =
@@ -46,7 +46,16 @@ function createConversationInfoModel(overrides: Record<string, any> = {}) {
     chatSuggestList: ['next'],
     loadingConversation: false,
     onMessageSend: vi.fn(),
-    manualComponents: [{ id: 'component-1' }],
+    manualComponents: [
+      {
+        id: 1,
+        name: 'Plugin',
+        icon: '',
+        description: '',
+        type: 'Plugin',
+        defaultSelected: 1,
+      },
+    ],
     isMoreMessage: true,
     loadingMore: false,
     handleLoadMoreMessage: vi.fn(),
@@ -116,11 +125,17 @@ describe('AgentConversationChatPanel', () => {
     });
   });
 
-  it('发送消息时带上电脑、组件、模型和调试会话参数', () => {
+  it('发送消息时带上电脑、已选组件、模型和调试会话参数', async () => {
     const model = createConversationInfoModel();
     mockUseModel.mockReturnValue(model);
 
     render(<AgentConversationChatPanel selectedComputerId="computer-prop" />);
+    await waitFor(() => {
+      expect(latestUnifiedProps().selectedComponentList).toEqual([
+        { id: 1, type: 'Plugin' },
+      ]);
+    });
+
     latestUnifiedProps().onSendMessage(
       'fix it',
       [{ name: 'a.ts' }],
@@ -133,13 +148,41 @@ describe('AgentConversationChatPanel', () => {
       id: 7001,
       messageInfo: 'fix it',
       files: [{ name: 'a.ts' }],
-      infos: [{ id: 'component-1' }],
+      infos: [{ id: 1, type: 'Plugin' }],
       sandboxId: 'computer-prop',
       debug: true,
       isSync: false,
       skillIds: [11],
       modelId: 456,
       agentMode: 'ask',
+    });
+  });
+
+  it('从首页透传已选组件，并允许用户在面板内取消选中', async () => {
+    const model = createConversationInfoModel();
+    mockUseModel.mockReturnValue(model);
+    mockUseLocation.mockReturnValue({
+      key: 'route-from-home',
+      state: {
+        messageSourceType: 'home',
+        infos: [{ id: 2, type: 'Workflow' }],
+      },
+      search: '?conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel selectedComputerId="computer-prop" />);
+
+    await waitFor(() => {
+      expect(latestUnifiedProps().selectedComponentList).toEqual([
+        { id: 2, type: 'Workflow' },
+      ]);
+    });
+
+    act(() => {
+      latestUnifiedProps().onSelectComponent({ id: 2, type: 'Workflow' });
+    });
+    await waitFor(() => {
+      expect(latestUnifiedProps().selectedComponentList).toEqual([]);
     });
   });
 

@@ -162,6 +162,9 @@ describe('runtimeLine effects adapter', () => {
     await vi.waitFor(() => {
       expect(console.error).toHaveBeenCalled();
     });
+    mockTopicApi.mockResolvedValueOnce({
+      data: { topic: '重试成功', topicUpdated: 1 },
+    });
     adapter.dispatch({
       type: 'topic.update',
       conversationId: 1001,
@@ -170,6 +173,32 @@ describe('runtimeLine effects adapter', () => {
     });
     expect(mockTopicApi).toHaveBeenCalledTimes(2); // 门禁已回滚
     errorSpy.mockRestore();
+  });
+
+  it('topic.update：切换会话后按会话 id 独立去重', async () => {
+    mockTopicApi.mockResolvedValue({
+      data: { topic: '新主题', topicUpdated: 1 },
+    });
+    const adapter = createAdapter();
+
+    adapter.dispatch({
+      type: 'topic.update',
+      conversationId: 1001,
+      firstMessage: '会话一',
+      currentInfo: { id: 1001, agentId: 9, topicUpdated: 0 } as never,
+    });
+    adapter.dispatch({
+      type: 'topic.update',
+      conversationId: 1002,
+      firstMessage: '会话二',
+      currentInfo: { id: 1002, agentId: 9, topicUpdated: 0 } as never,
+    });
+
+    expect(mockTopicApi).toHaveBeenCalledTimes(2);
+    expect(mockTopicApi).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ id: 1002, firstMessage: '会话二' }),
+    );
   });
 
   it('conflict.confirmStop：交给资源执行', () => {

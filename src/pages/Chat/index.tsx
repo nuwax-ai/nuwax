@@ -583,6 +583,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   useEffect(() => {
     if (
       !conversationInfo?.id ||
+      // 无名会话不做 icon 补齐（bug2382）：空 topic 的 update 会经共享 runUpdateTopic
+      // 的 onSuccess 置 needUpdateTopicRef=false，抢先毒化首条消息的自动命名；
+      // 自动命名成功后本 effect 会以新名字重评估，icon 链路不受损
+      !conversationInfo.topic ||
       conversationInfo.topicUpdated !== 1 ||
       conversationInfo.icon !== null ||
       conversationIconUpdateRef.current === conversationInfo.id
