@@ -1,25 +1,26 @@
 # nuwax 前端(nuwax-frontend)
 
-React 18 + TypeScript + umi max;中文交流与注释。桌面端 nuwaclaw 经 webview 复用本仓库。
+React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-lock.yaml`,脚本 npm/pnpm 均可跑)。桌面端 nuwax-client/nuwaclaw 经 webview 复用本仓库。
 
 ## 常用命令
 
 - 开发:`npm run dev`(max dev);构建:`build:prod` / `build:dev`
-- 全量测试:`npm run test`(vitest)
-- 会话合同网:`npm run test:conversation`(秒级);会话 E2E:`npm run e2e:conversation`(需 dev server + ego-browser 登录态);组合 `verify:conversation`
+- 全量测试:`npx vitest run`(裸 `npm run test` 是 watch 模式)
+- 会话合同网:`npm run test:conversation`(秒级);会话 E2E:`e2e:conversation`(需 dev server + ego-browser 登录态)、`e2e:mock-chat`(mock 场景走查);组合 `verify:conversation`
+- 分层依赖检查:`npm run lint:arch`(depcruise;存量豁免基线 `.dependency-cruiser-known-violations.json`)
 - 提交:husky 钩子自动 prettier;commit message 走 conventional(`type(scope): subject`,verify-commit 校验);`standard-version` 发版
-- 同步测试部署:`bash scripts/deploy_sync_test.sh` —— 个人分支→版本分支(feat-2026.9.30,origin)→dev→test 级联合并+质量门+构建,推 gitlab/test 内网测试环境;配置 `scripts/deploy_sync_test.env`(模板 `env.example`,FEATURE/VERSION 必填无默认,缺失时交互提示);`DRY_RUN=1` 演练、`INIT_ONLY=1` 只配置
+- 同步测试部署:`bash scripts/deploy_sync_test.sh` —— 个人分支 → 版本分支(如 feat-2026.9.30,origin)→dev→test 级联合并+质量门+构建,推 gitlab/test 内网测试环境;配置 `scripts/deploy_sync_test.env`(模板 `scripts/deploy_sync_test.env.example`,`FEATURE_BRANCH`/`VERSION_BRANCH` 必填无默认,缺失时交互提示);`DRY_RUN=1` 演练、`INIT_ONLY=1` 只配置
 
 ## 核心业务入口
 
 - **会话**:`src/pages/Chat/**` —— 五入口复用 UnifiedChatSession(Chat / ConversationAgent 会话面板 / EditAgent 预览调试 / 插件 / 技能);双轨 legacy/runtime,flag `?conversationRuntime=1`(默认 legacy)
-- **智能体平台**:EditAgent(编排 + AgentFlow)、ConversationAgent、AppDev Web IDE、SpacePluginTool
+- **智能体平台**:EditAgent(编排 + AgentFlow)、ConversationAgent、AppDev/AppDevPro(Web IDE)、SpacePluginTool(插件)
 - **目录速查**:`pages/` · `components/`(base / business-component) · `hooks/` · `services/` · `models/` · `utils/` · `features/conversation/`(会话新线)
 
 ## 质量门与硬约束
 
 - 会话路径(`models/conversation*`、`features/conversation/**`、`UnifiedChatSession`、`MessageQueue`、`AgentIntervention`、`pages/Chat`)改动:`test:conversation` 必跑全绿;合入前过 E2E;CI(`.github/workflows/conversation-tests.yml`)自动守门
-- tsc 全库 415 预存错误,**不作门**(改动路径零新增即可);vitest 不能 import umi 模块(含传递依赖,测试需 mock)
+- tsc 全库有预存错误基线,**不作门**(改动路径零新增即可);vitest 不能 import umi 模块(含传递依赖,测试需 mock)
 - 分层依赖禁令、命名、I18n 规范见 [docs/engineering-conventions.md](./docs/engineering-conventions.md);会话模块页面层只消费 `features/conversation/react/*`
 
 ## 关键文档
@@ -32,7 +33,7 @@ React 18 + TypeScript + umi max;中文交流与注释。桌面端 nuwaclaw 经 w
 
 ## AI SDLC 规则层
 
-- 需求→规格→计划链：skills `requirement-analysis` → `plans/*-intent.md`、`grill-with-docs` → `specs/<slug>.md` → Plan mode 产物 `plans/*-plan.md`（模板在 `templates/`）。
+- 需求 → 规格 → 计划链：skills `requirement-analysis` → `plans/*-intent.md`、`grill-with-docs` → `specs/<slug>.md` → Plan mode 产物 `plans/*-plan.md`（模板在 `templates/`）。
 - 源码首改会被 `.claude/hooks/plan-gate.mjs` 追问一次计划工件（同会话只问一次；`NUWACLAW_SKIP_PLAN_GATE=1` 停用）；秘钥由 `.claude/hooks/guard-paths.mjs` 拦截（`.env*`/证书/credential 类拒读写，example 豁免）。
 - 大量代码合并主干分支前（提测/发版/特性分支大批量合入）走 skills `pre-commit-quality-review`（slash command `/quality-review` 可直接点名）三问自查整个待合并批次——功能逻辑内聚 / 代码分层 / 可维护性，带证据给结论、质量门测试绿了再合并；日常小 commit 可跳过。
 - PR 评审对照根目录 `REVIEW.md` 五遍清单（nit≤5；writer 不自批）。
