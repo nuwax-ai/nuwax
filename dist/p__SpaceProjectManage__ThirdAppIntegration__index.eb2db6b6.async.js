@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[3141],{245814:function(a,t,n){n.r(t);var e=n(275271),r=n(552676),u=function(){return(0,r.jsx)("div",{children:"ThirdAppIntegration"})};t.default=u}}]);
