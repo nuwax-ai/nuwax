@@ -40,7 +40,8 @@ export interface UseChatConversationProps {
   messageViewRef: React.RefObject<HTMLDivElement>;
   incrementCalledTrialCount: () => void;
   selectedComponentList: any[];
-  selectedModelId: number;
+  /** 选中模型 ID(undefined=尚未选择,由 ModelSelector 自动落回后才有值) */
+  selectedModelId?: number;
 }
 
 export const useChatConversation = ({
