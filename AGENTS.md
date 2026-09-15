@@ -8,6 +8,7 @@ React 18 + TypeScript + umi max;中文交流与注释。桌面端 nuwaclaw 经 w
 - 全量测试:`npm run test`(vitest)
 - 会话合同网:`npm run test:conversation`(秒级);会话 E2E:`npm run e2e:conversation`(需 dev server + ego-browser 登录态);组合 `verify:conversation`
 - 提交:husky 钩子自动 prettier;commit message 走 conventional(`type(scope): subject`,verify-commit 校验);`standard-version` 发版
+- 同步测试部署:`bash scripts/deploy_sync_test.sh` —— 个人分支→版本分支(feat-2026.9.30,origin)→dev→test 级联合并+质量门+构建,推 gitlab/test 内网测试环境;配置 `scripts/deploy_sync_test.env`(模板 `env.example`,FEATURE/VERSION 必填无默认,缺失时交互提示);`DRY_RUN=1` 演练、`INIT_ONLY=1` 只配置
 
 ## 核心业务入口
 
