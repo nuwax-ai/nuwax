@@ -42,11 +42,12 @@ type ModelTabKey = 'system' | 'personal' | 'team';
 
 /**
  * 判断是否系统(公共)模型,沿用旧分组规则:
- * scope 为 Tenant 或未归属任何空间(spaceId === -1)时视为系统模型
+ * scope 为 Tenant 或未归属任何空间(spaceId === -1)时视为系统模型;
+ * Space(空间)/Team(团队)域模型不属于公共维度,过滤出系统 tab
  */
 const isSystemModel = (model: ModelOptionDto) => {
   if (model.scope === 'Tenant') return true;
-  if (model.scope === 'Space') return false;
+  if (model.scope === 'Space' || model.scope === 'Team') return false;
   return model.spaceId === -1;
 };
 
@@ -76,6 +77,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   const [personalModels, setPersonalModels] = useState<ModelOptionDto[]>([]);
   const [teamModels, setTeamModels] = useState<ModelOptionDto[]>([]);
   const [activeTab, setActiveTab] = useState<ModelTabKey>('system');
+
+  // options 接口原始回包首项 id(后端按"该智能体最近使用的模型"排首):
+  // 首项可能是 Space/Team 域模型,会被 isSystemModel 过滤出系统 tab,
+  // 自动落回时优先在三 tab 合集中找它,实现跨 tab 恢复最近使用的模型
+  const [preferredModelId, setPreferredModelId] = useState<number>();
 
   // 弹窗控制
   const [openModel, setOpenModel] = useState(false);
@@ -107,6 +113,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
       try {
         const res = await apiAgentConversationModelOptions(id);
         if (res.code === SUCCESS_CODE && res.data) {
+          // 回包按"最近使用"排序,先记录原始首项再过滤(首项可能非系统域)
+          setPreferredModelId(res.data[0]?.id);
           setSystemModels(filterByAgentType(res.data.filter(isSystemModel)));
         }
       } catch (error) {
@@ -166,6 +174,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
       setSystemModels([]);
       setPersonalModels([]);
       setTeamModels([]);
+      setPreferredModelId(undefined);
       fetchAllModelLists(agentId);
     }
   }, [agentId, fetchAllModelLists, isExternalList]);
@@ -193,7 +202,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     const isSelectedInList = lookupList.some((m) => m.id === selectedModelId);
 
     if (!selectedModelId || !isSelectedInList || shouldResetSelection) {
-      onModelSelect?.(lookupList[0].id);
+      // 优先落回 options 回包首项(该智能体最近使用的模型,可能位于
+      // 个人/团队 tab);不在合集(如被智能体类型过滤)时落回系统首个
+      const preferred =
+        lookupList.find((m) => m.id === preferredModelId) || lookupList[0];
+      onModelSelect?.(preferred.id);
       // 重置标记位
       if (shouldResetSelection) {
         setShouldResetSelection(false);
@@ -205,6 +218,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     selectedModelId,
     onModelSelect,
     shouldResetSelection,
+    preferredModelId,
   ]);
 
   // 当前选中的模型信息
@@ -310,7 +324,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
   // 渲染 tab 内单个模型项:
   // 系统 tab 展示 tag / 倍率(勾选 icon 排倍率之前);个人 tab 保留编辑/删除;
-  // 团队 tab 按空间名分组展示
+  // 团队 tab 不分组平铺,空间名作为 tag 展示在名称行最右侧
   const renderModelItem = useCallback(
     (model: ModelOptionDto, tab: ModelTabKey) => {
       const isSelected = model.id === selectedModelId;
@@ -347,6 +361,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                   className={cx(styles['item-tag'])}
                 >
                   {model.tag}
+                </Tag>
+              )}
+              {/* 团队 tab:空间名 tag 吸附名称行最右端(勾选 icon 之前) */}
+              {tab === 'team' && model.spaceName && (
+                <Tag
+                  className={cx(styles['item-tag'], styles['item-space-tag'])}
+                >
+                  {model.spaceName}
                 </Tag>
               )}
             </div>
@@ -406,44 +428,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     },
     [renderModelItem],
   );
-
-  // 团队 tab:按空间名称聚合分组(组顺序与组内顺序均保持接口返回顺序)
-  const groupedTeamModels = useMemo(() => {
-    const groups: { spaceName: string; models: ModelOptionDto[] }[] = [];
-    teamModels.forEach((model) => {
-      const spaceName = model.spaceName || '';
-      const existing = groups.find((g) => g.spaceName === spaceName);
-      if (existing) {
-        existing.models.push(model);
-      } else {
-        groups.push({ spaceName, models: [model] });
-      }
-    });
-    return groups;
-  }, [teamModels]);
-
-  // 渲染团队 tab:组标题(空间名)+ 组内模型项;缺失空间名的模型归入无标题组
-  const renderTeamPane = useCallback(() => {
-    if (teamModels.length === 0) {
-      return (
-        <div className={cx(styles['model-list'], styles['list-empty'])}>
-          {dict('PC.Components.ModelSelector.noModels')}
-        </div>
-      );
-    }
-    return (
-      <div className={cx(styles['model-list'])}>
-        {groupedTeamModels.map((group, groupIndex) => (
-          <div key={group.spaceName || `team-group-${groupIndex}`}>
-            {group.spaceName && (
-              <div className={cx(styles['group-title'])}>{group.spaceName}</div>
-            )}
-            {group.models.map((model) => renderModelItem(model, 'team'))}
-          </div>
-        ))}
-      </div>
-    );
-  }, [teamModels, groupedTeamModels, renderModelItem]);
 
   // Segmented 分段选项(样式对齐专家&技能&连接器页主 tab)
   const segmentedOptions = useMemo(
@@ -592,9 +576,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                   onChange={(value) => setActiveTab(value as ModelTabKey)}
                   className={cx(styles['model-tabs'])}
                 />
-                {activeTab === 'team'
-                  ? renderTeamPane()
-                  : renderTabPane(activeTabModels, activeTab)}
+                {renderTabPane(activeTabModels, activeTab)}
               </>
             )}
             {!isExternalList && (
