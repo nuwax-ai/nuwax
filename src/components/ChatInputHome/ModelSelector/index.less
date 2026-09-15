@@ -71,10 +71,21 @@
 }
 
 .model-dropdown-container {
+  display: flex;
+  flex-direction: column;
   background-color: @colorBgElevated;
   border-radius: @borderRadius;
   box-shadow: @boxShadowSecondary;
   padding: 4px 0 0;
+
+  // 三 tab 模式:弹层定高 368px、定宽(列表项 274px + 列表区左右
+  // padding 6px×2 = 286px)——各 tab 高度一致,空数据 tab 也不收缩
+  // 变窄;external 分组下拉不受影响
+  &.tab-mode {
+    box-sizing: border-box;
+    height: 368px;
+    width: 286px;
+  }
 
   :global {
     .ant-dropdown-menu {
@@ -84,6 +95,7 @@
   }
 
   .add-button-wrap {
+    flex-shrink: 0;
     padding: 4px;
     border-top: 1px solid @colorBorderSecondary;
   }
@@ -124,23 +136,28 @@
   // 三 tab 弹层(agentId 模式):Segmented 分段控件,样式对齐专家&技能&连接器页主 tab
   // 宽度跟随列表区(.list-item 定宽),保持与旧版分组下拉一致的弹层宽度
   .model-tabs {
+    flex-shrink: 0;
     box-sizing: border-box;
     margin: 0 0 4px;
     padding: 0 4px;
   }
 
+  // 列表区弹性填充定高弹层的剩余空间:tab 间/空数据高度一致,超出滚动
   .model-list {
-    max-height: 240px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 2px 6px 6px;
   }
 
+  // 空态文案在定高列表区(弹层弹性填充区)垂直居中
   .list-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: @colorTextQuaternary;
     font-size: @fontSizeSm;
-    text-align: center;
-    padding: 16px 0;
   }
 
   // 模型项内元素(external 分组下拉与 tab 列表共用)

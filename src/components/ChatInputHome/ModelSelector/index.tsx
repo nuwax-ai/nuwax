@@ -43,11 +43,11 @@ type ModelTabKey = 'system' | 'personal' | 'team';
 /**
  * 判断是否系统(公共)模型,沿用旧分组规则:
  * scope 为 Tenant 或未归属任何空间(spaceId === -1)时视为系统模型;
- * Space(空间)/Team(团队)域模型不属于公共维度,过滤出系统 tab
+ * Space(空间)域模型(个人/团队)不属于公共维度,过滤出系统 tab
  */
 const isSystemModel = (model: ModelOptionDto) => {
   if (model.scope === 'Tenant') return true;
-  if (model.scope === 'Space' || model.scope === 'Team') return false;
+  if (model.scope === 'Space') return false;
   return model.spaceId === -1;
 };
 
@@ -79,8 +79,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   const [activeTab, setActiveTab] = useState<ModelTabKey>('system');
 
   // options 接口原始回包首项 id(后端按"该智能体最近使用的模型"排首):
-  // 首项可能是 Space/Team 域模型,会被 isSystemModel 过滤出系统 tab,
-  // 自动落回时优先在三 tab 合集中找它,实现跨 tab 恢复最近使用的模型
+  // 首项可能是 Space 域模型(个人/团队),会被 isSystemModel 过滤出
+  // 系统 tab,自动落回时优先在三 tab 合集中找它,实现跨 tab 恢复
   const [preferredModelId, setPreferredModelId] = useState<number>();
 
   // 弹窗控制
@@ -107,9 +107,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     [agentType],
   );
 
-  // 获取系统 tab 模型:按智能体查询可用模型,仅保留系统(公共)部分
+  // 获取系统 tab 模型:按智能体查询可用模型,仅保留系统(公共)部分;
+  // 回包涵盖系统/个人/团队三个维度,其 id 集是"该智能体可用模型"的
+  // 权威口径,返回给调用方供个人/团队 tab 过滤
   const fetchSystemModels = useCallback(
-    async (id: number) => {
+    async (id: number): Promise<Set<number> | undefined> => {
       try {
         const res = await apiAgentConversationModelOptions(id);
         if (res.code === SUCCESS_CODE && res.data) {
@@ -117,46 +119,63 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           setPreferredModelId(res.data[0]?.id);
           setSystemModels(filterByAgentType(res.data.filter(isSystemModel)));
         }
+        return new Set(res.data?.map((model) => model.id));
       } catch (error) {
         console.error('Failed to get agent model list:', error);
+        // 拉取失败返回 undefined:个人/团队退化为不过滤(维持可用性)
+        return undefined;
       }
     },
     [filterByAgentType],
   );
 
-  // 获取个人 tab 模型
-  const fetchPersonalModels = useCallback(async () => {
-    try {
-      const res = await apiModelListPersonal();
-      if (res.code === SUCCESS_CODE && res.data) {
-        setPersonalModels(filterByAgentType(res.data));
+  // 获取个人 tab 模型:按 options 回包 id 集过滤(独立接口无智能体
+  // 上下文,需剔除当前智能体不可用的模型),再叠加智能体类型过滤
+  const fetchPersonalModels = useCallback(
+    async (availableIds?: Set<number>) => {
+      try {
+        const res = await apiModelListPersonal();
+        if (res.code === SUCCESS_CODE && res.data) {
+          const models = availableIds
+            ? res.data.filter((model) => availableIds.has(model.id))
+            : res.data;
+          setPersonalModels(filterByAgentType(models));
+        }
+      } catch (error) {
+        console.error('Failed to get personal model list:', error);
       }
-    } catch (error) {
-      console.error('Failed to get personal model list:', error);
-    }
-  }, [filterByAgentType]);
+    },
+    [filterByAgentType],
+  );
 
-  // 获取团队 tab 模型
-  const fetchTeamModels = useCallback(async () => {
-    try {
-      const res = await apiModelListTeam();
-      if (res.code === SUCCESS_CODE && res.data) {
-        setTeamModels(filterByAgentType(res.data));
+  // 获取团队 tab 模型:过滤规则同个人 tab
+  const fetchTeamModels = useCallback(
+    async (availableIds?: Set<number>) => {
+      try {
+        const res = await apiModelListTeam();
+        if (res.code === SUCCESS_CODE && res.data) {
+          const models = availableIds
+            ? res.data.filter((model) => availableIds.has(model.id))
+            : res.data;
+          setTeamModels(filterByAgentType(models));
+        }
+      } catch (error) {
+        console.error('Failed to get team model list:', error);
       }
-    } catch (error) {
-      console.error('Failed to get team model list:', error);
-    }
-  }, [filterByAgentType]);
+    },
+    [filterByAgentType],
+  );
 
-  // 并行拉取三个 tab 的模型列表(增删改模型后也会调用刷新)
+  // 拉取三个 tab 的模型列表(增删改模型后也会调用刷新)。options 是
+  // 权威口径须先到,个人/团队回包按其 id 集过滤,二者之间保持并行
   const fetchAllModelLists = useCallback(
     async (id: number) => {
       setLoading(true);
       try {
+        const availableIds = await fetchSystemModels(id);
         await Promise.all([
-          fetchSystemModels(id),
-          fetchPersonalModels(),
-          fetchTeamModels(),
+          fetchPersonalModels(availableIds),
+          fetchTeamModels(availableIds),
         ]);
       } finally {
         setLoading(false);
@@ -564,7 +583,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         onOpenChange={handleOpenChange}
         overlayClassName={styles['model-menu']}
         popupRender={(menu) => (
-          <div className={styles['model-dropdown-container']}>
+          <div
+            className={cx(
+              styles['model-dropdown-container'],
+              // 三 tab 模式弹层定高;external 分组下拉保持自适应
+              !isExternalList && styles['tab-mode'],
+            )}
+          >
             {isExternalList ? (
               menu
             ) : (
@@ -583,7 +608,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               <div className={styles['add-button-wrap']}>
                 <Button
                   block
-                  type="dashed"
+                  type="text"
                   icon={<PlusOutlined />}
                   onClick={handleAddModel}
                 >
