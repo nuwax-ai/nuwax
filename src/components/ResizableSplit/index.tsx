@@ -13,8 +13,6 @@ interface Props {
   resetTrigger?: string | number | boolean;
   /** 拖拽结束回调，参数为最终左侧宽度百分比 */
   onResizeEnd?: (leftPercent: number) => void;
-  /** 分隔线颜色 */
-  dividerColor?: string;
   /** 分隔线悬停颜色 */
   dividerHoverColor?: string;
   /** 分隔线拖拽时颜色 */
@@ -33,7 +31,6 @@ const ResizableSplit: React.FC<Props> = ({
   defaultLeftWidth = 50, // 默认左侧占比50%
   resetTrigger,
   onResizeEnd,
-  dividerColor = '#e0e0e0',
   // hover / 拖拽用中性深灰而非主题主色：主色在部分主题下是红色，
   // 落在分隔条上像错误态；这里要的是「可拖动」的中性反馈
   dividerHoverColor = '#8c8c8c',
@@ -261,9 +258,33 @@ const ResizableSplit: React.FC<Props> = ({
     [containerWidth, minLeftWidth, minRightWidth],
   );
 
+  // 短高亮段与气泡共用鼠标 Y：直写分隔线上的 --hint-y 变量，不走 state，避免悬停/拖拽期间高频重渲；
+  // 上下各留 24px（高亮段半高 20px + 余量），防止贴边时被容器 overflow:hidden 裁剪
+  const updateHintY = useCallback((clientY: number) => {
+    const divider = dividerRef.current;
+    if (!divider) return;
+    const rect = divider.getBoundingClientRect();
+    const y = Math.min(
+      Math.max(clientY - rect.top, 24),
+      Math.max(rect.height - 24, 24),
+    );
+    divider.style.setProperty('--hint-y', `${y}px`);
+  }, []);
+
+  // 悬停时气泡跟随鼠标
+  const handleDividerMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      updateHintY(e.clientY);
+    },
+    [updateHintY],
+  );
+
   // 全局鼠标移动处理（防止进入 iframe 时拖拽中断）
   const handleGlobalMouseMove = useCallback(
     (e: MouseEvent) => {
+      // 拖拽中线不再变色，气泡保持可见并跟随鼠标
+      updateHintY(e.clientY);
+
       if (!containerRef.current || containerWidth === 0) return;
 
       const containerRect = containerRef.current.getBoundingClientRect();
@@ -291,7 +312,7 @@ const ResizableSplit: React.FC<Props> = ({
         fixedLeftWidthRef.current = null;
       }
     },
-    [containerWidth, minLeftWidth, minRightWidth],
+    [containerWidth, minLeftWidth, minRightWidth, updateHintY],
   );
 
   // 全局鼠标松开处理
@@ -404,15 +425,17 @@ const ResizableSplit: React.FC<Props> = ({
             className={`${styles.divider} ${disabled ? styles.disabled : ''} ${
               isDragging ? styles.dragging : ''
             }`}
+            onMouseMove={handleDividerMouseMove}
             style={
               {
-                '--divider-color': dividerColor,
                 '--divider-hover-color': dividerHoverColor,
                 '--divider-dragging-color': dividerDraggingColor,
                 opacity: dividerVisible ? 1 : 0,
               } as React.CSSProperties
             }
           >
+            {/* hover/拖拽时跟随鼠标的短高亮段：分隔条变色反馈的「变短」版 */}
+            <span className={styles.resizeGrip} />
             {/* hover 提示气泡：自绘而非 antd Tooltip，避免其 ref 包装层与 Draggable 的 nodeRef 冲突 */}
             <span className={styles.resizeHint}>
               {t('PC.Components.ResizableSplit.resize')}

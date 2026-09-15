@@ -34,11 +34,10 @@
     top: 0;
     width: 1px;
     height: 100%;
-    background-color: var(--divider-color, #e0e0e0);
     cursor: col-resize;
-    // 本体保持 1px 不撑开布局，用 box-shadow 模拟加粗，避免 hover 时左右面板跳变
-    // opacity 过渡是挂载时的淡入（值由组件 inline 下发），故一并写在这里
-    transition: opacity 0.4s ease-in-out, background-color 0.2s, box-shadow 0.2s;
+    // 无常驻基线：静止时完全不可见，hover/拖拽反馈 = 跟随鼠标的短高亮段（.resizeGrip）+ 气泡；
+    // opacity 过渡是挂载时的淡入（值由组件 inline 下发）
+    transition: opacity 0.4s ease-in-out;
     z-index: 10;
     // 注意：不要在这里写 transform，react-draggable 会以 inline style 下发
     // transform: translate(Xpx, 0px)，优先级更高，写了也不会生效
@@ -55,22 +54,8 @@
       cursor: col-resize;
     }
 
-    &:hover {
-      background-color: var(--divider-hover-color, #8c8c8c);
-      // 视觉上加粗到 2px（向右描边），不占布局空间
-      box-shadow: 1px 0 0 0 var(--divider-hover-color, #8c8c8c);
-    }
-
-    &.dragging {
-      background-color: var(--divider-dragging-color, #595959);
-      box-shadow: 1px 0 0 0 var(--divider-dragging-color, #595959);
-      transition: none; // 拖拽时禁用过渡
-    }
-
     &.disabled {
       cursor: not-allowed;
-      background-color: #f2f2f2;
-      box-shadow: none;
 
       &::after {
         cursor: not-allowed;
@@ -78,12 +63,47 @@
     }
   }
 
-  // hover 时浮出的「调整宽度」提示气泡（antd Tooltip 会与 Draggable 的 nodeRef 冲突，故自绘）
+  // hover/拖拽时跟随鼠标的短高亮段：分隔条变色反馈的「变短」版（top 由 --hint-y 驱动）
+  .resizeGrip {
+    position: absolute;
+    top: var(--hint-y, 50%);
+    left: 0;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 40px;
+    background-color: var(--divider-hover-color, #8c8c8c);
+    // 视觉上加粗到 2px（向右描边），不占布局空间
+    box-shadow: 1px 0 0 0 var(--divider-hover-color, #8c8c8c);
+    opacity: 0;
+    transition: opacity 0.2s, background-color 0.2s, box-shadow 0.2s;
+    pointer-events: none;
+    z-index: 11;
+  }
+
+  // 悬停与拖拽中均显示（拖拽热区外鼠标事件走全局监听，:hover 会丢，故用 .dragging 兜底）
+  .divider:hover .resizeGrip,
+  .divider.dragging .resizeGrip {
+    opacity: 1;
+  }
+
+  .divider.dragging .resizeGrip {
+    background-color: var(--divider-dragging-color, #595959);
+    box-shadow: 1px 0 0 0 var(--divider-dragging-color, #595959);
+    transition: none; // 拖拽时禁用过渡
+  }
+
+  .divider.disabled .resizeGrip {
+    opacity: 0;
+    transition: none;
+  }
+
+  // hover/拖拽时浮出的「调整宽度」提示气泡，贴分隔线右侧、与高亮段同以 --hint-y 对齐；
+  // antd Tooltip 会与 Draggable 的 nodeRef 冲突，故自绘
   .resizeHint {
     position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    left: 12px;
+    top: var(--hint-y, 50%);
+    transform: translateY(-50%);
     padding: 3px 8px;
     border-radius: @borderRadiusSm;
     background-color: @colorBgSpotlight;
@@ -98,12 +118,12 @@
     z-index: 11;
   }
 
-  .divider:hover .resizeHint {
+  // 悬停与拖拽中均显示（拖拽热区外鼠标事件走全局监听，:hover 会丢，故用 .dragging 兜底）
+  .divider:hover .resizeHint,
+  .divider.dragging .resizeHint {
     opacity: 1;
   }
 
-  // 拖拽中隐藏气泡，只留高对比竖线
-  .divider.dragging .resizeHint,
   .divider.disabled .resizeHint {
     opacity: 0;
     transition: none;
