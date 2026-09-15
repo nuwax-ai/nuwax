@@ -10,6 +10,12 @@ export interface FileTreeProps {
   /** 文件树数据加载状态 */
   fileTreeDataLoading?: boolean;
 
+  /** 已完成懒加载的文件夹 ID */
+  loadedFolderIds?: Set<string>;
+
+  /** 缓存恢复时补拉仍处于展开状态的目录 */
+  onLoadDirectory?: (path: string) => void | Promise<void>;
+
   /** 通用型智能体会话中点击选中的文件ID */
   taskAgentSelectedFileId?: string;
 

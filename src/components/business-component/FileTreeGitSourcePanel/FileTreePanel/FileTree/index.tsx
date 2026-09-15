@@ -17,6 +17,7 @@ import React, {
 } from 'react';
 import styles from './index.less';
 import type { FileTreeProps, FileTreeRef } from './types';
+import { collectUnloadedExpandedFolders } from './utils';
 
 const cx = classNames.bind(styles);
 
@@ -29,6 +30,8 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     {
       files,
       fileTreeDataLoading,
+      loadedFolderIds,
+      onLoadDirectory,
       taskAgentSelectedFileId,
       selectedFileId,
       selectedFolderId = '',
@@ -48,6 +51,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     // 重命名值
     const [renameValue, setRenameValue] = useState<string>('');
     const renameInputRef = useRef<InputRef>(null);
+    const restoredDirectoryRequestsRef = useRef(new Set<string>());
     // 已展开的文件夹ID集合
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
       () =>
@@ -67,6 +71,33 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       [],
     );
 
+    useEffect(() => {
+      if (!loadedFolderIds || !onLoadDirectory) {
+        return;
+      }
+
+      loadedFolderIds.forEach((folderId) => {
+        restoredDirectoryRequestsRef.current.delete(folderId);
+      });
+      [...restoredDirectoryRequestsRef.current].forEach((folderId) => {
+        if (!expandedFolders.has(folderId)) {
+          restoredDirectoryRequestsRef.current.delete(folderId);
+        }
+      });
+
+      collectUnloadedExpandedFolders(
+        files || [],
+        expandedFolders,
+        loadedFolderIds,
+      ).forEach(({ id, path }) => {
+        if (restoredDirectoryRequestsRef.current.has(id)) {
+          return;
+        }
+        restoredDirectoryRequestsRef.current.add(id);
+        void onLoadDirectory(path);
+      });
+    }, [expandedFolders, files, loadedFolderIds, onLoadDirectory]);
+
     /**
      * 切换文件夹展开状态，用于展开/折叠回调
      * 当展开文件夹时，如果文件夹下有文件且当前没有选中任何文件，则自动选中第一个文件
@@ -81,6 +112,10 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
             newExpanded.delete(folderId);
           } else {
             newExpanded.add(folderId);
+            if (loadedFolderIds && onLoadDirectory) {
+              // 点击展开会由 onFileSelect 发起加载，避免恢复 effect 重复请求同一目录。
+              restoredDirectoryRequestsRef.current.add(folderId);
+            }
             // 当文件夹展开时，检查是否需要自动选中第一个文件
             // 只有当当前没有选中任何文件时，才自动选中
             if (!selectedFileId) {
@@ -108,7 +143,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
           return newExpanded;
         });
       },
-      [files, selectedFileId, onFileSelect],
+      [files, loadedFolderIds, onFileSelect, onLoadDirectory, selectedFileId],
     );
 
     /**

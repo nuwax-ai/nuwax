@@ -6,6 +6,7 @@ import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   WORKSPACE_SOURCE_ID,
+  mergeDirectoryLevelFiles,
   resolveDirectoryLevelFiles,
   workspaceNodeId,
 } from '../utils/fileDataSource';
@@ -15,84 +16,141 @@ export interface WorkspaceStaticFile extends StaticFileInfo {
   relativePath: string;
 }
 
-function readStoredPath(storageKey: string): string {
-  try {
-    return sessionStorage.getItem(storageKey) || '';
-  } catch {
-    return '';
-  }
-}
-
 export function useWorkspaceDirectoryFiles(conversationId: number | undefined) {
-  const storageKey = `nuwax:workspace-files:${conversationId || ''}`;
-  const [currentPath, setCurrentPath] = useState(() =>
-    readStoredPath(storageKey),
-  );
+  const [currentPath, setCurrentPath] = useState('');
   const [files, setFiles] = useState<WorkspaceStaticFile[]>([]);
+  const [loadedDirectoryPaths, setLoadedDirectoryPaths] = useState<Set<string>>(
+    new Set(),
+  );
   const [loading, setLoading] = useState(false);
-  const requestToken = useRef(0);
+  const directoryRequestTokensRef = useRef(new Map<string, number>());
+  const activeRequestCountRef = useRef(0);
+  const conversationIdRef = useRef(conversationId);
 
-  // 切换会话（ChatCore 不随会话 id 重挂载）时重读该会话保存的路径，
-  // 避免上一会话的 currentPath/条目泄漏到下一会话
+  // 树形懒加载始终从根目录开始；切换会话时清空上一会话的节点缓存。
   useEffect(() => {
-    requestToken.current += 1;
-    setCurrentPath(readStoredPath(storageKey));
+    conversationIdRef.current = conversationId;
+    directoryRequestTokensRef.current.clear();
+    activeRequestCountRef.current = 0;
+    setCurrentPath('');
     setFiles([]);
-  }, [storageKey]);
+    setLoadedDirectoryPaths(new Set());
+    setLoading(false);
+  }, [conversationId]);
 
-  const refresh = useCallback(async () => {
-    if (!conversationId) return;
-    const token = ++requestToken.current;
-    setLoading(true);
-    try {
-      const result = await apiGetStaticFileList(conversationId, {
-        relativePath: currentPath,
-        recursive: false,
-      });
-      if (requestToken.current !== token) return;
-      if (result.code !== SUCCESS_CODE) {
-        setFiles([]);
-        return;
-      }
-      setFiles(
-        resolveDirectoryLevelFiles(
+  const loadDirectory = useCallback(
+    async (path: string) => {
+      if (!conversationId) return;
+      const requestPath = path.replace(/^\/+|\/+$/g, '');
+      const token =
+        (directoryRequestTokensRef.current.get(requestPath) || 0) + 1;
+      directoryRequestTokensRef.current.set(requestPath, token);
+      activeRequestCountRef.current += 1;
+      setLoading(true);
+      try {
+        const result = await apiGetStaticFileList(conversationId, {
+          relativePath: requestPath,
+          recursive: false,
+        });
+        if (
+          conversationIdRef.current !== conversationId ||
+          directoryRequestTokensRef.current.get(requestPath) !== token
+        ) {
+          return;
+        }
+        if (result.code !== SUCCESS_CODE) {
+          return;
+        }
+        const directoryFiles = resolveDirectoryLevelFiles(
           result.data?.files || [],
           result.data?.recursive,
-          currentPath,
+          requestPath,
         ).map((file) => ({
           ...file,
           fileId: workspaceNodeId(file.name),
           dataSourceId: WORKSPACE_SOURCE_ID,
           relativePath: file.name,
-        })),
-      );
-    } catch (error) {
-      if (requestToken.current === token) setFiles([]);
-      message.error(
-        error instanceof Error && error.message
-          ? error.message
-          : dict('PC.Components.LocalFiles.workspaceListFailed'),
-      );
-    } finally {
-      if (requestToken.current === token) setLoading(false);
-    }
-  }, [conversationId, currentPath]);
+        }));
+        setFiles((loadedFiles) =>
+          mergeDirectoryLevelFiles(loadedFiles, directoryFiles, requestPath),
+        );
+        setLoadedDirectoryPaths((loadedPaths) => {
+          const directDirectoryPaths = new Set(
+            directoryFiles
+              .filter((file) => file.isDir)
+              .map((file) => file.name.replace(/^\/+|\/+$/g, '')),
+          );
+          const next = new Set(
+            [...loadedPaths].filter((loadedPath) => {
+              if (
+                requestPath &&
+                loadedPath !== requestPath &&
+                !loadedPath.startsWith(`${requestPath}/`)
+              ) {
+                return true;
+              }
+              const relativePath = requestPath
+                ? loadedPath.slice(requestPath.length).replace(/^\/+/, '')
+                : loadedPath;
+              if (!relativePath) {
+                return true;
+              }
+              const directChildName = relativePath.split('/')[0];
+              const directChildPath = requestPath
+                ? `${requestPath}/${directChildName}`
+                : directChildName;
+              return directDirectoryPaths.has(directChildPath);
+            }),
+          );
+          next.add(requestPath);
+          return next;
+        });
+      } catch (error) {
+        if (conversationIdRef.current === conversationId) {
+          message.error(
+            error instanceof Error && error.message
+              ? error.message
+              : dict('PC.Components.LocalFiles.workspaceListFailed'),
+          );
+        }
+      } finally {
+        if (conversationIdRef.current === conversationId) {
+          activeRequestCountRef.current = Math.max(
+            0,
+            activeRequestCountRef.current - 1,
+          );
+          setLoading(activeRequestCountRef.current > 0);
+        }
+      }
+    },
+    [conversationId],
+  );
+
+  const refresh = useCallback(
+    async (path: string = currentPath) => loadDirectory(path),
+    [currentPath, loadDirectory],
+  );
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void loadDirectory('');
+  }, [conversationId, loadDirectory]);
 
   const navigate = useCallback(
     (path: string) => {
-      setCurrentPath(path);
-      try {
-        sessionStorage.setItem(storageKey, path);
-      } catch {
-        /* storage unavailable */
-      }
+      const normalizedPath = path.replace(/^\/+|\/+$/g, '');
+      setCurrentPath(normalizedPath);
+      void loadDirectory(normalizedPath);
     },
-    [storageKey],
+    [loadDirectory],
   );
 
-  return { files, loading, currentPath, navigate, refresh };
+  return {
+    files,
+    loading,
+    currentPath,
+    loadedDirectoryPaths,
+    navigate,
+    loadDirectory,
+    refresh,
+  };
 }

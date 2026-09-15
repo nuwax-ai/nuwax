@@ -10,13 +10,14 @@
  * - enableResizable 控制 ResizableSplit
  * - new_chat 时默认选中 DefaultSelected=Yes 的 manualComponents
  */
+import { conversationPageCacheManager } from '@/features/conversation/react/useConversationPageCache';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockUseModel,
@@ -86,6 +87,10 @@ vi.mock('./components/LeftContent', () => ({
       />
     );
   },
+}));
+
+vi.mock('./components/ConversationInstanceCacheSlot', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock('./components/ShowArea', () => ({
@@ -375,6 +380,8 @@ const buildConversationInfoModel = (
 
 describe('ChatCore / ChatPage', () => {
   beforeEach(() => {
+    conversationPageCacheManager.invalidateAll('test-setup');
+    localStorage.clear();
     vi.clearAllMocks();
     conversationInfoState.current = null;
     modelOverrides.current = {};
@@ -429,6 +436,11 @@ describe('ChatCore / ChatPage', () => {
       }
       return {};
     });
+  });
+
+  afterEach(() => {
+    conversationPageCacheManager.invalidateAll('test-cleanup');
+    localStorage.clear();
   });
 
   it('ChatPage：将路由 params 转为数字传给 ChatCore，并渲染主区域', async () => {
@@ -605,6 +617,70 @@ describe('ChatCore / ChatPage', () => {
       expect(screen.getByTestId('left-content')).toBeInTheDocument();
     });
     expect(screen.queryByTestId('resizable-split')).toBeNull();
+  });
+
+  it('A→B→A 时按会话恢复各自工作区视图', async () => {
+    const openPreviewView = vi.fn();
+    modelOverrides.current = { openPreviewView };
+    conversationInfoState.current = {
+      id: 100,
+      agent: { name: 'ConvAgent', id: 200 },
+      messageList: [],
+    };
+    const view = render(<ChatCore id={100} agentId={200} />);
+
+    await waitFor(() => {
+      expect(conversationPageCacheManager.getSnapshot().activeKey).toBe(
+        'chat:100',
+      );
+    });
+    act(() => {
+      const props = mockLeftContent.mock.calls.at(-1)?.[0];
+      props.headerProps.handleFileTreeVisible();
+    });
+    expect(conversationPageCacheManager.getEntry('chat:100')?.view).toBe(
+      'filePreview',
+    );
+
+    conversationInfoState.current = {
+      id: 101,
+      agent: { name: 'OtherAgent', id: 200 },
+      messageList: [],
+    };
+    mockRunAsync.mockResolvedValue({
+      data: {
+        id: 101,
+        messageList: [],
+        agent: { name: 'OtherAgent', id: 200 },
+      },
+    });
+    view.rerender(<ChatCore id={101} agentId={200} />);
+    await waitFor(() => {
+      expect(conversationPageCacheManager.getSnapshot().activeKey).toBe(
+        'chat:101',
+      );
+    });
+
+    conversationInfoState.current = {
+      id: 100,
+      agent: { name: 'ConvAgent', id: 200 },
+      messageList: [],
+    };
+    mockRunAsync.mockResolvedValue({
+      data: {
+        id: 100,
+        messageList: [],
+        agent: { name: 'ConvAgent', id: 200 },
+      },
+    });
+    view.rerender(<ChatCore id={100} agentId={200} />);
+
+    await waitFor(() => {
+      expect(openPreviewView).toHaveBeenCalledWith(100);
+    });
+    expect(conversationPageCacheManager.getEntry('chat:100')?.view).toBe(
+      'filePreview',
+    );
   });
 
   it('new_chat 时用 manualComponents 初始化默认选中组件', async () => {

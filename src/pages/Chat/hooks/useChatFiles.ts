@@ -21,7 +21,7 @@ import { useMemo, useRef, type MutableRefObject } from 'react';
 interface UseChatFilesProps {
   id?: number;
   fileTreeData: StaticFileInfo[] | null;
-  handleRefreshFileList: (id: number) => Promise<void>;
+  handleRefreshFileList: (id: number, path?: string) => Promise<void>;
   /** 单文件实时保存成功后的回调（如刷新 Git 状态），通过 ref 注入以避免循环依赖 */
   onSaveFileContentSuccessRef?: MutableRefObject<(() => void) | undefined>;
   /** 文件树写操作成功后的回调（如刷新 Git 状态），通过 ref 注入以避免循环依赖 */
@@ -147,7 +147,13 @@ export const useChatFiles = ({
             const { code } = await apiUpdateStaticFile(newSkillInfo);
             if (code === SUCCESS_CODE) {
               // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
-              await handleRefreshFileList(id!);
+              const deletedPath = updatedFilesList[0]?.name || fileNode.path;
+              const parentPath = deletedPath
+                .replace(/^\/+|\/+$/g, '')
+                .split('/')
+                .slice(0, -1)
+                .join('/');
+              await handleRefreshFileList(id!, parentPath);
               notifyFileMutationSuccess();
               message.success(t('PC.Pages.Chat.deleteSuccess'));
               resolve(true);

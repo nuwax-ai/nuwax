@@ -24,6 +24,11 @@ export interface AppDevDatabasePanelProps {
   onRetryContainer?: () => void;
   /** 容器重启成功后重挂 iframe */
   iframeKey?: number;
+  /**
+   * 当前页签是否可见。不可见时不挂 iframe，避免父级 display:none
+   * 时提前加载，数据库页（尤其是线上环境）出现空白。
+   */
+  active?: boolean;
 }
 
 /**
@@ -39,6 +44,7 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
   containerStatus,
   onRetryContainer,
   iframeKey = 0,
+  active = true,
 }) => {
   const iframeSrc = useMemo(() => {
     if (!appId) {
@@ -49,6 +55,10 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
 
   const waitingContainer =
     containerStatus !== undefined && containerStatus !== 'running';
+
+  if (!active) {
+    return <div className={cx(styles.container)} />;
+  }
 
   if (waitingContainer) {
     return (

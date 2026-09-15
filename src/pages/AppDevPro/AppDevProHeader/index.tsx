@@ -68,6 +68,8 @@ export interface AppDevProHeaderProps {
   isAgentDesktopOpen?: boolean;
   /** 打开 / 关闭远程桌面 */
   onOpenDesktopPanel?: () => void;
+  /** 是否显示应用预览入口（线上环境未部署时无可预览地址） */
+  isShowAppPreview?: boolean;
   /** 应用预览页签是否处于激活状态 */
   isAppPreviewOpen?: boolean;
   /** 打开应用预览页签 */
@@ -103,6 +105,7 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   isShowDesktop = false,
   isAgentDesktopOpen = false,
   onOpenDesktopPanel,
+  isShowAppPreview = true,
   isAppPreviewOpen = false,
   onOpenAppPreview,
   env = UserAppDbEnvEnum.Dev,
@@ -292,18 +295,20 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
             onClick={onOpenTerminalPanel}
           />
 
-          {/* 应用预览页签 */}
-          <TooltipIcon
-            title={dict('PC.Pages.AppDevPro.appPreview')}
-            ariaLabel={dict('PC.Pages.AppDevPro.appPreview')}
-            className={cx(styles['panel-btn'], {
-              [styles.active]: isAppPreviewOpen,
-            })}
-            icon={
-              <SvgIcon name="icons-common-preview" style={{ fontSize: 16 }} />
-            }
-            onClick={onOpenAppPreview}
-          />
+          {/* 应用预览页签：线上环境未部署时无预览地址，入口隐藏 */}
+          <ConditionRender condition={isShowAppPreview}>
+            <TooltipIcon
+              title={dict('PC.Pages.AppDevPro.appPreview')}
+              ariaLabel={dict('PC.Pages.AppDevPro.appPreview')}
+              className={cx(styles['panel-btn'], {
+                [styles.active]: isAppPreviewOpen,
+              })}
+              icon={
+                <SvgIcon name="icons-common-preview" style={{ fontSize: 16 }} />
+              }
+              onClick={onOpenAppPreview}
+            />
+          </ConditionRender>
 
           {/* 远程桌面：仅开发环境显示，交互对齐 ConversationAgent */}
           <ConditionRender condition={isShowDesktop}>

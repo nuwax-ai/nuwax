@@ -15,6 +15,45 @@ export function parentDirectory(relativePath: string): string {
 }
 
 /**
+ * 将异步加载到的某一层目录合并进已加载列表。
+ * 只替换该目录的直接子项，保留父级、兄弟目录及已经加载的更深层节点。
+ */
+export function mergeDirectoryLevelFiles<T extends { name: string }>(
+  loadedFiles: T[],
+  directoryFiles: T[],
+  directoryPath: string,
+): T[] {
+  const normalizedDirectoryPath = directoryPath.replace(/^\/+|\/+$/g, '');
+  const incomingNames = new Set(
+    directoryFiles.map((file) => file.name.replace(/^\/+|\/+$/g, '')),
+  );
+  const removedChildPaths = loadedFiles
+    .map((file) => file.name.replace(/^\/+|\/+$/g, ''))
+    .filter(
+      (name) =>
+        parentDirectory(name) === normalizedDirectoryPath &&
+        !incomingNames.has(name),
+    );
+  const retainedFiles = loadedFiles.filter((file) => {
+    const name = file.name.replace(/^\/+|\/+$/g, '');
+    if (parentDirectory(name) === normalizedDirectoryPath) {
+      return false;
+    }
+    return !removedChildPaths.some(
+      (removedPath) =>
+        name === removedPath || name.startsWith(`${removedPath}/`),
+    );
+  });
+  const mergedFiles = new Map<string, T>();
+
+  [...retainedFiles, ...directoryFiles].forEach((file) => {
+    mergedFiles.set(file.name.replace(/^\/+/, ''), file);
+  });
+
+  return Array.from(mergedFiles.values());
+}
+
+/**
  * 从全量递归扁平列表裁出 relativePath 所指目录的一层内容：
  * 直接子文件直取；递归列表不含非空目录自身条目（仅空目录有 isDir 条目），
  * 从更深路径前缀合成目录条目。

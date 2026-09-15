@@ -833,6 +833,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.RecommendList.pagePathConfigError": "ページパス設定エラー",
   "PC.Components.RecommendList.pagePathParamError": "ページパスパラメータ設定エラー",
   "PC.Components.RecommendList.pagePreview": "ページのプレビュー",
+  "PC.Components.ResizableSplit.resize": "幅を調整",
   "PC.Components.RunOver.called": "{0} が呼び出されました",
   "PC.Components.RunOver.calling": "電話をかける",
   "PC.Components.RunOver.runComplete": "実行完了",

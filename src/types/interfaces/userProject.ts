@@ -68,9 +68,12 @@ export type UserProjectPageQueryParams = TablePageRequest<
     // 项目名称（模糊匹配）
     name: string;
     // 收藏过滤：all=全部（后端默认）；only=仅收藏。2026-09-14 两接口统一：
-    // tab 接口废弃，统一接口（page-query）已支持本参数（历史会话页「项目」tab 消费）；
-    // 归档维度仍无对应参数，消费侧按回包打标前端过滤
+    // tab 接口废弃，统一接口（page-query）已支持本参数（历史会话页「项目」tab 消费）
     collectedFilter: 'all' | 'only';
+    // 归档过滤：默认不传=剔除归档项目（testagent 2026-09-15 实测，默认回包不含
+    // 归档行）；only=仅归档；all=含归档。历史会话页「已归档」视图传 only，
+    // 消费侧仍按回包 archived 打标过滤兜底
+    archivedFilter: 'all' | 'only';
   }>
 >;
 

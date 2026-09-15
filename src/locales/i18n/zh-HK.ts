@@ -833,6 +833,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.RecommendList.pagePathConfigError": "頁面路徑配置錯誤",
   "PC.Components.RecommendList.pagePathParamError": "頁面路徑參數配置錯誤",
   "PC.Components.RecommendList.pagePreview": "頁面預覽",
+  "PC.Components.ResizableSplit.resize": "調整寬度",
   "PC.Components.RunOver.called": "已調用 {0}",
   "PC.Components.RunOver.calling": "正在調用",
   "PC.Components.RunOver.runComplete": "運行完畢",

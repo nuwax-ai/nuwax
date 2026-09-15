@@ -22,6 +22,11 @@ import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
+import {
+  conversationPageCacheManager,
+  createConversationPageCacheKey,
+  type ConversationWorkspaceView,
+} from '@/features/conversation/react/useConversationPageCache';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import AgentDetailModal from '@/pages/Chat/components/AgentDetailModal';
 import { t } from '@/services/i18nRuntime';
@@ -75,6 +80,7 @@ import React, {
   useState,
 } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
+import ConversationInstanceCacheSlot from './components/ConversationInstanceCacheSlot';
 import LeftContent from './components/LeftContent';
 import ShowArea from './components/ShowArea';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
@@ -139,6 +145,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   renderTitle,
   renderHeaderRight,
 }) => {
+  const pageCacheKey = useMemo(
+    () => createConversationPageCacheKey('chat', id),
+    [id],
+  );
   const location = useLocation();
   const chromeFlags = useOpenAppChromeFlags();
   const { handleAutoPreviewLastFile } = useAutoPreviewFile();
@@ -176,6 +186,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 异步查询会话加载状态
   const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
+  const hasRenderedChatRef = useRef(false);
 
   // 开放应用智能体会话聊天页面相关状态
   const workspaceDirectoryFiles = useWorkspaceDirectoryFiles(id);
@@ -364,11 +375,24 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     'terminal' | 'logs'
   >('terminal');
 
+  const rememberWorkspaceView = useCallback(
+    (view: ConversationWorkspaceView) => {
+      conversationPageCacheManager.update(pageCacheKey, { view });
+    },
+    [pageCacheKey],
+  );
+
+  const handleHidePagePreview = useCallback(() => {
+    hidePagePreview();
+    rememberWorkspaceView('closed');
+  }, [hidePagePreview, rememberWorkspaceView]);
+
   /** 关闭文件树时同步折叠终端，避免再次打开文件树时终端以展开状态恢复 */
   const handleClosePreviewView = useCallback(() => {
     setTerminalConsoleVisible(false);
     closePreviewView();
-  }, [closePreviewView]);
+    rememberWorkspaceView('closed');
+  }, [closePreviewView, rememberWorkspaceView]);
 
   const {
     isShowFilePanel,
@@ -568,22 +592,32 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     });
   }, [conversationInfo, runUpdateTopic]);
 
-  // 打开扩展页面
-  const handleOpenPreview = (agent: any) => {
-    // 判断是否默认展示页面首页
-    if (agent && agent?.expandPageArea && agent?.pageHomeIndex) {
-      // 自动触发预览
-      showPagePreview({
-        name: t('PC.Pages.Chat.pagePreview'),
-        uri: process.env.BASE_URL + agent?.pageHomeIndex,
-        params: {},
-        executeId: '',
-      });
-    } else {
-      // 关闭页面预览
-      showPagePreview(null);
-    }
-  };
+  // 打开扩展页面；自动初始化可跳过持久化，用户操作与会话事件默认记录。
+  const handleOpenPreview = useCallback(
+    (agent: any, persist = true) => {
+      if (agent && agent?.expandPageArea && agent?.pageHomeIndex) {
+        showPagePreview({
+          name: t('PC.Pages.Chat.pagePreview'),
+          uri: process.env.BASE_URL + agent?.pageHomeIndex,
+          params: {},
+          executeId: '',
+        });
+        if (persist) {
+          conversationPageCacheManager.update(pageCacheKey, {
+            view: 'pagePreview',
+          });
+        }
+      } else {
+        showPagePreview(null);
+        if (persist) {
+          conversationPageCacheManager.update(pageCacheKey, {
+            view: 'closed',
+          });
+        }
+      }
+    },
+    [pageCacheKey, showPagePreview],
+  );
 
   useEffect(() => {
     // 只有当会话信息是属于当前会话，或者默认详情属于当前智能体时，数据才是有效的，过滤掉切换会话时残留的旧数据
@@ -608,8 +642,25 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
     // 设置应用智能体详情
     handleSetAppAgentDetail(targetAgent);
-    handleOpenPreview(targetAgent);
-  }, [agentId, id, defaultAgentDetail, conversationInfo?.agent]);
+    const preferredView =
+      conversationPageCacheManager.getPanelPreference(pageCacheKey);
+    if (!defaultFileTreeVisible && preferredView === undefined) {
+      handleOpenPreview(targetAgent, true);
+    } else if (!defaultFileTreeVisible && preferredView === 'pagePreview') {
+      handleOpenPreview(targetAgent, false);
+    } else {
+      showPagePreview(null);
+    }
+  }, [
+    agentId,
+    id,
+    pageCacheKey,
+    defaultFileTreeVisible,
+    defaultAgentDetail,
+    conversationInfo?.agent,
+    handleOpenPreview,
+    showPagePreview,
+  ]);
 
   useEffect(() => {
     if (id) {
@@ -746,13 +797,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     };
   }, [id]);
 
-  useEffect(() => {
-    if (id && defaultFileTreeVisible) {
-      openPreviewView(id);
-      setIsFileTreePinned(true);
-    }
-  }, [id, defaultFileTreeVisible, openPreviewView, setIsFileTreePinned]);
-
   // 互斥面板控制器：管理 PagePreview、ShowArea 的互斥展示（AgentSidebar 已改为悬浮弹窗）
   useExclusivePanels({
     pagePreviewData,
@@ -778,7 +822,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   } = useChatFiles({
     id,
     fileTreeData: workspaceDirectoryFiles.files,
-    handleRefreshFileList: async () => workspaceDirectoryFiles.refresh(),
+    handleRefreshFileList: async (_id, path) =>
+      workspaceDirectoryFiles.refresh(path),
     onFileMutationSuccessRef: refreshGitListRef,
   });
 
@@ -1026,6 +1071,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       if (!isFileTreeVisible) {
         openPreviewView(id);
       }
+      rememberWorkspaceView('filePreview');
       return;
     }
 
@@ -1050,6 +1096,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       ) {
         void fileView.refreshGitList();
       }
+      rememberWorkspaceView('filePreview');
       return;
     }
 
@@ -1057,6 +1104,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     const switchingToPreview = isFileTreeVisible && viewMode !== 'preview';
 
     handleFileTreeVisible();
+    rememberWorkspaceView(
+      openingFileTree || switchingToPreview ? 'filePreview' : 'closed',
+    );
 
     if (openingFileTree || switchingToPreview) {
       setTerminalConsoleVisible(false);
@@ -1086,6 +1136,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     openPreviewView,
     externalPreviewFile,
     id,
+    rememberWorkspaceView,
   ]);
 
   /** 打开 / 收起底部终端全屏（与文件预览、智能体电脑互斥） */
@@ -1095,6 +1146,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     if (isTerminalPanelOpen) {
       setTerminalConsoleCollapseSignal((n) => n + 1);
       setTerminalConsoleLayoutMode('collapsed');
+      rememberWorkspaceView('closed');
       return;
     }
 
@@ -1110,6 +1162,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
 
     setTerminalConsoleExpandSignal((n) => n + 1);
+    rememberWorkspaceView('terminal');
   }, [
     isTerminalPanelOpen,
     isFileTreeVisible,
@@ -1117,6 +1170,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     id,
     openPreviewView,
     exitExternalPreview,
+    rememberWorkspaceView,
   ]);
 
   /** 打开 / 切换智能体电脑（与文件预览、终端全屏互斥） */
@@ -1131,7 +1185,21 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTerminalConsoleExpandSignal(0);
     setTerminalConsoleLayoutMode('collapsed');
     handleOpenDesktopView();
-  }, [isTerminalPanelOpen, handleOpenDesktopView, exitExternalPreview]);
+    const nextView =
+      isFileTreeVisible && viewMode === 'desktop' ? 'closed' : 'desktop';
+    rememberWorkspaceView(nextView);
+    if (nextView === 'desktop') {
+      conversationPageCacheManager.setSharedVncOwner(id);
+    }
+  }, [
+    isTerminalPanelOpen,
+    isFileTreeVisible,
+    viewMode,
+    handleOpenDesktopView,
+    exitExternalPreview,
+    rememberWorkspaceView,
+    id,
+  ]);
 
   useEffect(
     () => () => {
@@ -1304,6 +1372,92 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     prevTaskAgentCollapseTriggerRef.current = undefined;
   }, [id]);
 
+  const pendingWorkspaceRestoreRef = useRef<{
+    key: string;
+    view: 'desktop' | 'pagePreview';
+  } | null>(null);
+  const workspaceRestoreActionsRef = useRef({
+    openPreviewView,
+    openDesktopView: handleOpenDesktopView,
+    openPagePreview: handleOpenPreview,
+    setIsFileTreePinned,
+  });
+  workspaceRestoreActionsRef.current = {
+    openPreviewView,
+    openDesktopView: handleOpenDesktopView,
+    openPagePreview: handleOpenPreview,
+    setIsFileTreePinned,
+  };
+
+  // 每个缓存 key 只激活一次；回调通过 ref 取最新值，避免 model 回调引用变化触发恢复循环。
+  useEffect(() => {
+    const entry = conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: id,
+      agentId,
+    });
+    const targetView = defaultFileTreeVisible ? 'filePreview' : entry.view;
+
+    if (defaultFileTreeVisible && entry.view !== 'filePreview') {
+      rememberWorkspaceView('filePreview');
+    }
+    pendingWorkspaceRestoreRef.current = null;
+    if (targetView === 'filePreview') {
+      workspaceRestoreActionsRef.current.openPreviewView(id);
+      workspaceRestoreActionsRef.current.setIsFileTreePinned(true);
+      return;
+    }
+    if (targetView === 'terminal') {
+      setHasTerminalConsoleRendered(true);
+      setTerminalConsoleVisible(true);
+      setTerminalConsoleLayoutMode('expanded');
+      setTerminalConsoleActiveTab('terminal');
+      setTerminalConsoleExpandSignal((value) => value + 1);
+      workspaceRestoreActionsRef.current.openPreviewView(id);
+      return;
+    }
+    if (targetView === 'desktop' || targetView === 'pagePreview') {
+      pendingWorkspaceRestoreRef.current = {
+        key: pageCacheKey,
+        view: targetView,
+      };
+    }
+  }, [pageCacheKey, agentId, defaultFileTreeVisible, rememberWorkspaceView]);
+
+  // desktop/pagePreview 依赖异步到达的 agent/沙箱信息，仅消费当前 key 的待恢复任务一次。
+  useEffect(() => {
+    const pending = pendingWorkspaceRestoreRef.current;
+    if (!pending || pending.key !== pageCacheKey || !effectiveAgent) return;
+
+    pendingWorkspaceRestoreRef.current = null;
+    if (pending.view === 'desktop') {
+      if (finalSelectedId === '-1') {
+        conversationPageCacheManager.setSharedVncOwner(id);
+        workspaceRestoreActionsRef.current.openDesktopView();
+      } else {
+        rememberWorkspaceView('closed');
+      }
+      return;
+    }
+    workspaceRestoreActionsRef.current.openPagePreview(effectiveAgent, false);
+  }, [pageCacheKey, effectiveAgent, finalSelectedId, rememberWorkspaceView]);
+
+  useEffect(() => {
+    conversationPageCacheManager.updateResources(pageCacheKey, {
+      terminalMounted: hasTerminalConsoleRendered,
+      terminalConnected: hasTerminalConsoleRendered && terminalConsoleVisible,
+      pageIframeMounted: Boolean(pagePreviewData),
+      desktopVisible: isFileTreeVisible && viewMode === 'desktop',
+    });
+  }, [
+    pageCacheKey,
+    hasTerminalConsoleRendered,
+    terminalConsoleVisible,
+    pagePreviewData,
+    isFileTreeVisible,
+    viewMode,
+  ]);
+
   // 切换视图时，关闭 Git 版本记录面板
   useEffect(() => {
     if (viewMode === 'desktop') {
@@ -1312,9 +1466,21 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   }, [viewMode]);
 
   // 文件树 props
+  const loadedWorkspaceFolderIds = useMemo(
+    () =>
+      new Set(
+        [...workspaceDirectoryFiles.loadedDirectoryPaths]
+          .filter(Boolean)
+          .map(workspaceNodeId),
+      ),
+    [workspaceDirectoryFiles.loadedDirectoryPaths],
+  );
+
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
+      loadedFolderIds: loadedWorkspaceFolderIds,
+      onLoadDirectory: workspaceDirectoryFiles.loadDirectory,
       handleFileSelect: async (
         fileId: string,
         options?: { selectFolder?: boolean },
@@ -1330,6 +1496,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }),
     [
       fileView.tree,
+      loadedWorkspaceFolderIds,
+      workspaceDirectoryFiles.loadDirectory,
       setTaskAgentSelectedFileId,
       gitSourceControl.setSelectedChangeFile,
       collapseTerminalConsole,
@@ -1719,9 +1887,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     ...(runtimeLine?.conversationProps ?? {}),
   };
 
-  // 仅首屏/切会话（loadingAsync）使用整页 Loading。
-  // 不要把 loadingConversation 算进来：流式恢复若误走 runAsync，会反复卸载聊天区导致闪动。
-  if (clearLoading || loadingAsync) {
+  const isBlockingLoading = clearLoading || loadingAsync;
+  if (!isBlockingLoading) hasRenderedChatRef.current = true;
+
+  // 首次进入尚无可展示内容时使用整页 Loading；之后切会话改用覆盖层，避免卸载缓存实例。
+  // 不要把 loadingConversation 算进来：流式恢复若误走 runAsync，会反复遮挡执行中内容。
+  if (isBlockingLoading && !hasRenderedChatRef.current) {
     return (
       <div className={cx(styles['chat-loading-container'])}>
         <LoadingOutlined />
@@ -1731,12 +1902,59 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 是否展开视图
   const isExpandedView = !!(pagePreviewData || isFileTreeVisible);
+  const isPagePreviewVisible = Boolean(pagePreviewData && !isFileTreeVisible);
+  const pagePreviewContent = pagePreviewData ? (
+    <>
+      <PagePreviewIframe
+        pagePreviewData={pagePreviewData}
+        showHeader={true}
+        onClose={handleHidePagePreview}
+        showCloseButton={!effectiveAgent?.hideChatArea}
+        titleClassName={cx(styles['title-style'])}
+        showCopyButton={showCopyButton}
+        allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
+        onCopyClick={() => setOpenCopyModal(true)}
+        copyButtonText={t('PC.Pages.Chat.copyTemplate')}
+        copyButtonClassName={styles['copy-btn']}
+      />
+      {showCopyButton && effectiveAgent && pagePreviewData.uri && (
+        <CopyToSpaceComponent
+          spaceId={effectiveAgent.spaceId}
+          mode={AgentComponentTypeEnum.Page}
+          componentId={parsePageAppProjectId(pagePreviewData.uri)}
+          title={''}
+          open={openCopyModal}
+          isTemplate={true}
+          onSuccess={(_: any, targetSpaceId: number) => {
+            setOpenCopyModal(false);
+            jumpToPageDevelop(targetSpaceId);
+          }}
+          onCancel={() => setOpenCopyModal(false)}
+        />
+      )}
+    </>
+  ) : null;
+  const pagePreviewCache = (
+    <ConversationInstanceCacheSlot
+      activeKey={pageCacheKey}
+      active={isPagePreviewVisible}
+      retain={Boolean(pagePreviewData)}
+      testId="conversation-page-preview-cache"
+    >
+      {pagePreviewContent}
+    </ConversationInstanceCacheSlot>
+  );
 
   return (
     <div
       className={cx(styles['chat-root'])}
       data-nuwaclaw-perf-scope="chat-root"
     >
+      {isBlockingLoading && (
+        <div className={cx(styles['chat-loading-overlay'])}>
+          <LoadingOutlined />
+        </div>
+      )}
       {/* 智能体聊天和预览页面 */}
       <div
         className={cx(styles['main-area'], {
@@ -1754,6 +1972,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             left={
               effectiveAgent?.hideChatArea ? null : (
                 <LeftContent
+                  pageCacheKey={pageCacheKey}
                   isFileTreeVisible={isFileTreeVisible}
                   effectiveAgent={effectiveAgent}
                   isAppSidebarMode={isAppSidebarMode}
@@ -1765,43 +1984,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                 />
               )
             }
-            right={
-              pagePreviewData &&
-              !isFileTreeVisible && (
-                <>
-                  <PagePreviewIframe
-                    pagePreviewData={pagePreviewData}
-                    showHeader={true}
-                    onClose={hidePagePreview}
-                    showCloseButton={!effectiveAgent?.hideChatArea}
-                    titleClassName={cx(styles['title-style'])}
-                    // 复制模板按钮相关 props
-                    showCopyButton={showCopyButton}
-                    allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
-                    onCopyClick={() => setOpenCopyModal(true)}
-                    copyButtonText={t('PC.Pages.Chat.copyTemplate')}
-                    copyButtonClassName={styles['copy-btn']}
-                  />
-                  {/* 复制模板弹窗 */}
-                  {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
-                    <CopyToSpaceComponent
-                      spaceId={effectiveAgent!.spaceId}
-                      mode={AgentComponentTypeEnum.Page}
-                      componentId={parsePageAppProjectId(pagePreviewData?.uri)}
-                      title={''}
-                      open={openCopyModal}
-                      isTemplate={true}
-                      onSuccess={(_: any, targetSpaceId: number) => {
-                        setOpenCopyModal(false);
-                        // 跳转
-                        jumpToPageDevelop(targetSpaceId);
-                      }}
-                      onCancel={() => setOpenCopyModal(false)}
-                    />
-                  )}
-                </>
-              )
-            }
+            rightHidden={!isPagePreviewVisible}
+            right={pagePreviewCache}
           />
         ) : (
           <div
@@ -1818,6 +2002,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                 }}
               >
                 <LeftContent
+                  pageCacheKey={pageCacheKey}
                   isFileTreeVisible={isFileTreeVisible}
                   effectiveAgent={effectiveAgent}
                   isAppSidebarMode={isAppSidebarMode}
@@ -1829,37 +2014,15 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                 />
               </div>
             )}
-            {pagePreviewData && !isFileTreeVisible && (
-              <div style={{ flex: '1', minWidth: 0 }}>
-                <PagePreviewIframe
-                  pagePreviewData={pagePreviewData}
-                  showHeader={true}
-                  onClose={hidePagePreview}
-                  showCloseButton={!effectiveAgent?.hideChatArea}
-                  titleClassName={cx(styles['title-style'])}
-                  showCopyButton={showCopyButton}
-                  allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
-                  onCopyClick={() => setOpenCopyModal(true)}
-                  copyButtonText={t('PC.Pages.Chat.copyTemplate')}
-                  copyButtonClassName={styles['copy-btn']}
-                />
-                {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
-                  <CopyToSpaceComponent
-                    spaceId={effectiveAgent!.spaceId}
-                    mode={AgentComponentTypeEnum.Page}
-                    componentId={parsePageAppProjectId(pagePreviewData?.uri)}
-                    title={''}
-                    open={openCopyModal}
-                    isTemplate={true}
-                    onSuccess={(_: any, targetSpaceId: number) => {
-                      setOpenCopyModal(false);
-                      jumpToPageDevelop(targetSpaceId);
-                    }}
-                    onCancel={() => setOpenCopyModal(false)}
-                  />
-                )}
-              </div>
-            )}
+            <div
+              style={{
+                display: isPagePreviewVisible ? 'block' : 'none',
+                flex: '1',
+                minWidth: 0,
+              }}
+            >
+              {pagePreviewCache}
+            </div>
           </div>
         )}
       </div>

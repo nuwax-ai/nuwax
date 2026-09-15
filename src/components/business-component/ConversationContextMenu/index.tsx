@@ -246,7 +246,11 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   };
 
   const moreButton = showMoreButton ? (
-    <Dropdown menu={menuProps} trigger={['click']}>
+    <Dropdown
+      menu={menuProps}
+      trigger={['click']}
+      overlayClassName="context-menu-overlay"
+    >
       <span className={cx('more-btn')} onClick={(e) => e.stopPropagation()}>
         {/* 与项目面板行图标族统一（icons-common-more，2026-09-12 需求）；
             SvgIcon 内联字号优先于 CSS，须显式 15px 与项目子行 ⋯ 同款 */}
@@ -260,7 +264,11 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
 
   return (
     <>
-      <Dropdown menu={menuProps} trigger={['contextMenu']}>
+      <Dropdown
+        menu={menuProps}
+        trigger={['contextMenu']}
+        overlayClassName="context-menu-overlay"
+      >
         {triggerNode}
       </Dropdown>
       <Modal

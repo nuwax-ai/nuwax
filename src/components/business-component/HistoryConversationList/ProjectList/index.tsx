@@ -70,9 +70,10 @@ export interface ProjectListRef {
 /**
  * 历史会话页「项目」tab 列表：项目行（默认收起，点击展开子会话）+
  * 组内会话行。三视图（全部/已收藏/已归档）只按项目层级过滤；
- * 已收藏走服务端 collectedFilter=only，已归档按回包打标前端过滤。
- * 数据走统一接口 user-project/page-query（2026-09-14 两接口统一：回包
- * 含归档项目、不再附带子会话，展开项目时懒加载 conversations 接口补齐）。
+ * 已收藏走服务端 collectedFilter=only，已归档走服务端 archivedFilter=only，
+ * 回包打标过滤仅兜底。
+ * 数据走统一接口 user-project/page-query（2026-09-14 两接口统一：
+ * 不再附带子会话，展开项目时懒加载 conversations 接口补齐）。
  */
 const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
   ({ keyword = '', onEdit, onDelete }, ref) => {
@@ -126,8 +127,16 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
           const res = await apiUserProjectPageQuery({
             queryFilter: {
               name: keyword || undefined,
-              // 收藏过滤走服务端；归档维度后端无参数（2026-09-14 swagger），前端按回包打标过滤
+              // 收藏/归档过滤均走服务端，口径与任务 tab 一致（testagent
+              // 2026-09-15 实测 archivedFilter 不传=剔除归档行）：
+              // 已收藏传 all——收藏是跨归档的个人视图，归档的收藏项仍可见
               collectedFilter: viewMode === 'collected' ? 'only' : undefined,
+              archivedFilter:
+                viewMode === 'archived'
+                  ? 'only'
+                  : viewMode === 'collected'
+                  ? 'all'
+                  : undefined,
             },
             current: page,
             pageSize: PROJECT_PAGE_SIZE,
