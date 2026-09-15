@@ -785,7 +785,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.MentionList.noMatch": "No matches found",
   "PC.Components.MenuListItem.cancelCollect": "Unfavorite",
   "PC.Components.ModelBox.search": "Search",
-  "PC.Components.ModelSelector.addPersonalModel": "Personal Model",
+  "PC.Components.ModelSelector.addPersonalModel": "Configure Custom Models",
   "PC.Components.ModelSelector.loading": "Loading...",
   "PC.Components.ModelSelector.loadingModels": "Loading models...",
   "PC.Components.ModelSelector.noAvailableModels": "No available models",

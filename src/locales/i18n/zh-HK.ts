@@ -660,7 +660,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.MentionList.noMatch": "未找到匹配項",
   "PC.Components.MenuListItem.cancelCollect": "取消收藏",
   "PC.Components.ModelBox.search": "搜索",
-  "PC.Components.ModelSelector.addPersonalModel": "個人模型",
+  "PC.Components.ModelSelector.addPersonalModel": "配置自訂模型",
   "PC.Components.ModelSelector.loading": "加載中...",
   "PC.Components.ModelSelector.loadingModels": "加載模型中...",
   "PC.Components.ModelSelector.noAvailableModels": "暫無可用自有模型",
