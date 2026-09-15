@@ -15,6 +15,7 @@ import type {
   UserAppTaskServiceProgress,
 } from '../../type';
 import AppDevProIframe from '../AppDevProIframe';
+import AppDevServiceStartStatus from '../AppDevStatusHero';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -287,31 +288,11 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   }, []);
 
   if (containerStatus && containerStatus !== 'running') {
-    const containerFailed = containerStatus === 'error';
     return (
-      <div className={cx(styles.container, styles.stage)}>
-        <PreviewHero
-          spinning={!containerFailed}
-          error={containerFailed}
-          title={dict(
-            containerFailed
-              ? 'PC.Pages.AppDevPro.containerStartFailed'
-              : 'PC.Pages.AppDevPro.containerStarting',
-          )}
-          hint={dict(
-            containerFailed
-              ? 'PC.Pages.AppDevPro.containerStartFailedHint'
-              : 'PC.Pages.AppDevPro.containerStartingHint',
-          )}
-          action={
-            containerFailed && onRetryContainer ? (
-              <Button type="primary" onClick={onRetryContainer}>
-                {dict('PC.Pages.AppDevPro.containerStartRetry')}
-              </Button>
-            ) : null
-          }
-        />
-      </div>
+      <AppDevServiceStartStatus
+        failed={containerStatus === 'error'}
+        onRetry={onRetryContainer}
+      />
     );
   }
 

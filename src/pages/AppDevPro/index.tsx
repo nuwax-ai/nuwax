@@ -1691,15 +1691,18 @@ const AppDevPro: React.FC = () => {
       ? 'database-config'
       : 'database';
 
-  /** 数据库打开或切换环境时，复用当前环境的容器启动与保活状态 */
+  /** 数据库打开或切换环境时，复用当前环境的容器启动与保活状态。
+   * 仅 idle 时自动 ensure；已 running 直接展示，error 由切换环境或用户点重试触发。
+   */
   useEffect(() => {
     if (workspaceView !== 'database') {
       return;
     }
     const status = dbEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus;
-    if (status !== 'running') {
-      void ensureEnvPodRef.current(dbEnv, status === 'error');
+    if (status !== 'idle') {
+      return;
     }
+    void ensureEnvPodRef.current(dbEnv);
   }, [dbEnv, podStatus, prodPod.status, workspaceView]);
 
   /** 打开独立应用预览视图；已启动或线上环境有地址时不再重复 start */
@@ -1814,16 +1817,18 @@ const AppDevPro: React.FC = () => {
   }, [appId, previewTabs]);
 
   /**
-   * 切换环境：线上环境没有文件树，隐藏图标与中间栏；
-   * 若当前在文件树工作区，改为展示线上环境应用预览。
-   * 已部署且存在线上预览域名时，按需启动线上容器，就绪后直接预览。
+   * 切换环境：线上环境没有文件树，隐藏图标与中间栏。
+   * 未部署且不在数据库工作区时进入数据库；已部署才进入应用预览。
+   * 当前已是数据库或数据库配置时保持页签，配置页随环境重新请求。
+   * 目标环境已启动成功则直接展示；未启动或上次失败则重新 ensure。
    */
   const handleEnvChange = useCallback(
     (nextEnv: UserAppDbEnvEnum) => {
       setDbEnv(nextEnv);
       const nextStatus =
         nextEnv === UserAppDbEnvEnum.Prod ? prodPod.status : devPod.status;
-      if (nextStatus !== 'running') {
+      // 已启动成功则直接复用；未启动或上次失败则重新 ensure
+      if (nextStatus !== 'running' && nextStatus !== 'starting') {
         void ensureEnvPodRef.current(nextEnv, nextStatus === 'error');
       }
       if (nextEnv === UserAppDbEnvEnum.Dev) {
@@ -1831,16 +1836,25 @@ const AppDevPro: React.FC = () => {
       }
       previewTabs.closeTab(getToolTabId('remote-desktop'));
       setCanShowFileView(false);
-      if (workspaceView === 'files') {
-        resetDevConsoleExpandedLayout();
-        setWorkspaceView('app-preview');
+      resetDevConsoleExpandedLayout();
+      // 已在数据库 / 数据库配置时保持当前页签，配置页随环境重新请求
+      if (workspaceView === 'database') {
+        return;
       }
+      if (userAppInfo?.prodDeployed === true) {
+        setWorkspaceView('app-preview');
+        return;
+      }
+      workspaceViewBeforeDatabaseRef.current = workspaceView;
+      setDatabaseTabId(getToolTabId('database'));
+      setWorkspaceView('database');
     },
     [
       devPod.status,
       previewTabs,
       prodPod.status,
       resetDevConsoleExpandedLayout,
+      userAppInfo?.prodDeployed,
       workspaceView,
     ],
   );
@@ -1921,13 +1935,8 @@ const AppDevPro: React.FC = () => {
         appId={appId}
         activeTab={databaseActiveTab}
         env={dbEnv}
-        containerStatus={
-          envPodConversationId
-            ? dbEnv === UserAppDbEnvEnum.Prod
-              ? prodPod.status
-              : podStatus
-            : undefined
-        }
+        devContainerStatus={envPodConversationId ? podStatus : undefined}
+        prodContainerStatus={envPodConversationId ? prodPod.status : undefined}
         onRetryContainer={() => {
           void ensureEnvPodRef.current(dbEnv, true);
         }}
@@ -2204,17 +2213,15 @@ const AppDevPro: React.FC = () => {
               externalContainerStatus={terminalExternalContainerStatus}
               prodExternalContainerStatus={prodExternalContainerStatus}
               onActiveTerminalEnvChange={(terminalEnv) => {
-                if (terminalEnv) {
-                  const status =
-                    terminalEnv === UserAppDbEnvEnum.Prod
-                      ? prodPod.status
-                      : podStatus;
-                  if (status !== 'running') {
-                    void ensureEnvPodRef.current(
-                      terminalEnv,
-                      status === 'error',
-                    );
-                  }
+                if (!terminalEnv) {
+                  return;
+                }
+                const status =
+                  terminalEnv === UserAppDbEnvEnum.Prod
+                    ? prodPod.status
+                    : podStatus;
+                if (status === 'idle') {
+                  void ensureEnvPodRef.current(terminalEnv);
                 }
               }}
               onRetryContainer={(terminalEnv) => {

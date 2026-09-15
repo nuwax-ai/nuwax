@@ -48,7 +48,9 @@ export function useUserAppEnvPod(
     return () => {
       stopKeepalive();
     };
-  }, [conversationId, env, stopKeepalive]);
+    // 仅会话 / 环境变化时重置；stopKeepalive 引用变化不得清掉失败态
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, env]);
 
   /**
    * 接入指定环境容器。

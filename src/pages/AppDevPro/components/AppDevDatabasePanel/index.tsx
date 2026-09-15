@@ -1,11 +1,11 @@
 import { dict } from '@/services/i18nRuntime';
-import { ReloadOutlined } from '@ant-design/icons';
-import { Button, Empty, Spin } from 'antd';
+import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import { getUserAppDbProxyUrl, UserAppDbEnvEnum } from '../../services/appDb';
 import AppDevProIframe from '../AppDevProIframe';
+import AppDevServiceStartStatus from '../AppDevStatusHero';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -48,38 +48,12 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
     containerStatus !== undefined && containerStatus !== 'running';
 
   if (waitingContainer) {
-    const isError = containerStatus === 'error';
     return (
       <div className={cx(styles.container)}>
-        <div className={cx(styles.empty)}>
-          {isError ? (
-            <div className={cx(styles['container-hint'])}>
-              <span>
-                {dict(
-                  'PC.Components.ConversationBottomConsole.containerStartError',
-                )}
-              </span>
-              <Button
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={onRetryContainer}
-              >
-                {dict(
-                  'PC.Components.ConversationBottomConsole.retryStartContainer',
-                )}
-              </Button>
-            </div>
-          ) : (
-            <div className={cx(styles['container-hint'])}>
-              <Spin />
-              <span>
-                {dict(
-                  'PC.Components.ConversationBottomConsole.containerStarting',
-                )}
-              </span>
-            </div>
-          )}
-        </div>
+        <AppDevServiceStartStatus
+          failed={containerStatus === 'error'}
+          onRetry={onRetryContainer}
+        />
       </div>
     );
   }
