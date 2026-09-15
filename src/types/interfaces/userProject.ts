@@ -598,13 +598,12 @@ export type UserAppPublishPhase =
   | 'building'
   | 'checkingDeployable'
   | 'deploying'
-  | 'applying'
   | 'success'
   | 'failed'
   | 'cancelled';
 
-/** 进度弹窗失败发生在构建、检测可部署、启动还是发布 */
-export type UserAppDeployFailedStage = 'build' | 'check' | 'deploy' | 'apply';
+/** 进度弹窗失败发生在构建、检测可部署还是启动 */
+export type UserAppDeployFailedStage = 'build' | 'check' | 'deploy';
 
 /** 任务终态 */
 export type UserAppTaskTerminalStatus = 'succeeded' | 'failed' | 'cancelled';

@@ -676,14 +676,11 @@ const AppDevPro: React.FC = () => {
       },
     });
 
-  /** 发布前：选择分类与发布空间 */
+  /** Header 发布：选择分类与发布空间 */
   const [openPublishModal, setOpenPublishModal] = useState<boolean>(false);
-  /** 部署：构建 → SSE 进度 → 生产部署，成功后再打开发布弹窗 */
+  /** 部署：构建 → SSE 进度 → 生产部署；发布到市场由 Header 发布按钮触发 */
   const publishFlow = useUserAppPublish({
     appId,
-    onDeployed: () => {
-      setOpenPublishModal(true);
-    },
     onProjectInfo: setUserAppInfo,
     onDomainList: setUserAppDomainList,
   });
@@ -1783,7 +1780,7 @@ const AppDevPro: React.FC = () => {
     }
   }, [remoteBuildTask?.taskId]);
 
-  /** 点击部署：先构建并生产部署，成功后再选择分类发布到市场 */
+  /** 点击部署：构建并生产部署 */
   const handleOpenPublish = useCallback(() => {
     if (!appId) {
       message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
@@ -2413,7 +2410,7 @@ const AppDevPro: React.FC = () => {
         }}
       />
 
-      {/* 部署成功后：选择分类与发布空间，发布到市场 */}
+      {/* Header 发布：选择分类与发布空间，发布到市场 */}
       <PublishComponentModal
         mode={AgentComponentTypeEnum.UserApp}
         targetId={appId || 0}
@@ -2422,7 +2419,6 @@ const AppDevPro: React.FC = () => {
         onCancel={() => setOpenPublishModal(false)}
         onConfirm={() => {
           setOpenPublishModal(false);
-          publishFlow.completeApply();
           if (appId) {
             runGetUserAppInfo(appId);
           }
@@ -2441,8 +2437,6 @@ const AppDevPro: React.FC = () => {
         cancelLoading={publishFlow.cancelLoading}
         onCancelTask={handleCancelDeployTask}
         onClose={handleCloseDeployProgress}
-        showReopenPublish={publishFlow.phase === 'applying'}
-        onReopenPublish={() => setOpenPublishModal(true)}
       />
     </div>
   );

@@ -103,6 +103,8 @@ export async function apiUserAppBuild(
   return request('/api/userapp/build', {
     method: 'POST',
     data,
+    // 失败由部署弹窗展示，不走全局 message
+    skipErrorHandler: true,
   });
 }
 
