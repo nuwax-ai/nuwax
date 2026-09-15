@@ -4636,6 +4636,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.NuwaApps.appTag": "应用",
   "PC.Pages.NuwaApps.expand": "展开",
   "PC.Pages.NuwaApps.collapse": "收起",
+  "PC.Pages.UserApp.emptyDomain": "暂无域名数据",
+  "PC.Pages.UserApp.loadFailed": "域名信息加载失败",
   "PC.Pages.Square.Square.plugin": "插件",
   "PC.Pages.Square.Square.search": "搜索",
   "PC.Pages.Square.Square.selectCategory": "请选择分类",

@@ -4638,6 +4638,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.NuwaApps.appTag": "App",
   "PC.Pages.NuwaApps.expand": "Expand",
   "PC.Pages.NuwaApps.collapse": "Collapse",
+  "PC.Pages.UserApp.emptyDomain": "No domain data",
+  "PC.Pages.UserApp.loadFailed": "Failed to load domain info",
   "PC.Pages.Square.Square.plugin": "Plugin",
   "PC.Pages.Square.Square.search": "Search",
   "PC.Pages.Square.Square.selectCategory": "Select category",
