@@ -1,7 +1,6 @@
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiUserProjectDelete } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserProjectItem } from '@/types/interfaces/userProject';
@@ -16,8 +15,9 @@ import CreateThirdAppModal from './CreateThirdAppModal';
 import EditThirdAppModal, {
   type EditedThirdAppInfo,
 } from './EditThirdAppModal';
-import ThirdAppCard from './components/ThirdAppCard';
+import ThirdAppCard from './ThirdAppCard';
 import styles from './index.less';
+import { apiThirdAppOauth2Delete } from '../services/thirdAppOauth2';
 
 const cx = classNames.bind(styles);
 
@@ -129,7 +129,7 @@ const ThirdAppIntegration: React.FC = () => {
         okText: dict('PC.Common.Global.delete'),
         cancelText: dict('PC.Common.Global.cancel'),
         onOk: async () => {
-          const response = await apiUserProjectDelete(item.id);
+          const response = await apiThirdAppOauth2Delete(item.id);
           if (response?.code === SUCCESS_CODE) {
             runQuery(keyword);
           }
@@ -148,13 +148,7 @@ const ThirdAppIntegration: React.FC = () => {
   /** 打开三方应用详情 */
   const handleOpenProject = useCallback(
     (item: UserProjectItem) => {
-      history.push(`/space/${spaceId}/third-app-detail/${item.id}`, {
-        appInfo: {
-          name: item.name,
-          description: item.description,
-          icon: item.icon,
-        },
-      });
+      history.push(`/space/${spaceId}/third-app-detail/${item.id}`);
     },
     [spaceId],
   );

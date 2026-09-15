@@ -6260,7 +6260,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ThirdAppIntegration.editTitle": "編輯三方應用",
   // 三方應用詳情
   "PC.Pages.ThirdAppDetail.tabSetting": "設定",
-  "PC.Pages.ThirdAppDetail.untitled": "未命名應用",
   "PC.Pages.ThirdAppDetail.emptyValue": "—",
   "PC.Pages.ThirdAppDetail.oauthTitle": "OAuth2 認證資訊",
   "PC.Pages.ThirdAppDetail.oauthDesc": "平台已為該專案自動產生 OAuth2 憑證，可用於第三方登入與介面鑑權。Client Secret 屬於敏感資訊，請勿寫入前端或提交到公開倉庫。",

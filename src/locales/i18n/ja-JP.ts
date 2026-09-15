@@ -6258,7 +6258,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ThirdAppIntegration.editTitle": "サードパーティアプリを編集",
   // サードパーティアプリ詳細
   "PC.Pages.ThirdAppDetail.tabSetting": "設定",
-  "PC.Pages.ThirdAppDetail.untitled": "名称未設定アプリ",
   "PC.Pages.ThirdAppDetail.emptyValue": "—",
   "PC.Pages.ThirdAppDetail.oauthTitle": "OAuth2 認証情報",
   "PC.Pages.ThirdAppDetail.oauthDesc": "このプロジェクト用の OAuth2 認証情報が自動生成されています。第三者ログインと API 認証に利用できます。Client Secret は機密情報です。フロントエンドや公開リポジトリに書かないでください。",

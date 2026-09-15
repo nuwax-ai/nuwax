@@ -13,27 +13,19 @@ import type { TabsProps } from 'antd';
 import { Button, Input, message, Modal, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { history, useLocation, useParams, useRequest } from 'umi';
+import { history, useParams, useRequest } from 'umi';
 import {
   apiThirdAppOauth2CredentialRegenerate,
+  apiThirdAppOauth2InfoGet,
   apiThirdAppOauth2SecretGet,
-  apiThirdAppOauth2SettingGet,
   apiThirdAppOauth2SettingSave,
+  type ThirdAppOauth2AppInfo,
   type ThirdAppOauth2CredentialInfo,
   type ThirdAppOauth2Info,
 } from '../services/thirdAppOauth2';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-/** 三方应用列表传入的基础信息 */
-interface ThirdAppDetailLocationState {
-  appInfo?: {
-    name?: string;
-    description?: string;
-    icon?: string;
-  };
-}
 
 /**
  * 解开 umi request / useRequest 包装，兼容完整响应与已解包 data。
@@ -66,16 +58,10 @@ const pickResponseData = <T,>(
  */
 const ThirdAppDetail: React.FC = () => {
   const params = useParams();
-  const location = useLocation();
   const spaceId = Number(params.spaceId);
   const projectId = Number(params.projectId);
-  const locationState = location.state as ThirdAppDetailLocationState | null;
 
-  const [appInfo] = useState(() => ({
-    name: locationState?.appInfo?.name || '',
-    description: locationState?.appInfo?.description || '',
-    icon: locationState?.appInfo?.icon || '',
-  }));
+  const [appInfo, setAppInfo] = useState<ThirdAppOauth2AppInfo>();
   const [oauthInfo, setOauthInfo] = useState<ThirdAppOauth2Info>();
   const [clientSecret, setClientSecret] = useState('');
   const [secretVisible, setSecretVisible] = useState(false);
@@ -144,18 +130,17 @@ const ThirdAppDetail: React.FC = () => {
     },
   );
 
-  /** 查询 OAuth2 配置，并在已生成密钥时查询 Client Secret 明文 */
-  const loadOauthSetting = useCallback(async () => {
+  /** 查询应用完整信息，并在已生成密钥时查询 Client Secret 明文 */
+  const loadAppInfo = useCallback(async () => {
     if (!projectId) {
       return;
     }
     setOauthLoading(true);
     setSecretVisible(false);
     try {
-      const settingResponse = await apiThirdAppOauth2SettingGet(
-        String(projectId),
-      );
-      const info = pickResponseData(settingResponse);
+      const infoResponse = await apiThirdAppOauth2InfoGet(String(projectId));
+      const info = pickResponseData(infoResponse);
+      setAppInfo(info);
       setOauthInfo(info);
       setHomepageUrl(info?.homepageUrl || '');
       setRedirectUri(info?.redirectUri || '');
@@ -169,7 +154,8 @@ const ThirdAppDetail: React.FC = () => {
       const secret = pickResponseData(secretResponse);
       setClientSecret(typeof secret === 'string' ? secret : '');
     } catch (error) {
-      console.error('Failed to load third app OAuth2 setting:', error);
+      console.error('Failed to load third app OAuth2 info:', error);
+      setAppInfo(undefined);
       setOauthInfo(undefined);
       setClientSecret('');
       setHomepageUrl('');
@@ -179,13 +165,13 @@ const ThirdAppDetail: React.FC = () => {
     }
   }, [projectId]);
 
-  /** 进入页面时仅加载 OAuth2 认证信息 */
+  /** 进入页面时按项目 ID 加载应用及 OAuth2 认证信息 */
   useEffect(() => {
     if (!spaceId || !projectId) {
       return;
     }
-    void loadOauthSetting();
-  }, [loadOauthSetting, projectId, spaceId]);
+    void loadAppInfo();
+  }, [loadAppInfo, projectId, spaceId]);
 
   /** 返回三方应用列表 */
   const handleBack = useCallback(() => {
@@ -311,7 +297,7 @@ const ThirdAppDetail: React.FC = () => {
           icon={<SvgIcon className={cx('flex')} name="icons-nav-backward" />}
         />
         <h3 className={cx(styles['project-name'], 'text-ellipsis')}>
-          {appInfo.name || dict('PC.Pages.ThirdAppDetail.untitled')}
+          {appInfo?.name}
         </h3>
         <Tabs
           className={cx(styles.tabs)}

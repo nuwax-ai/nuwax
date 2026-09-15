@@ -6384,7 +6384,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ThirdAppIntegration.editTitle": "Edit third-party app",
   // Third-party app details
   "PC.Pages.ThirdAppDetail.tabSetting": "Settings",
-  "PC.Pages.ThirdAppDetail.untitled": "Untitled app",
   "PC.Pages.ThirdAppDetail.emptyValue": "—",
   "PC.Pages.ThirdAppDetail.oauthTitle": "OAuth2 credentials",
   "PC.Pages.ThirdAppDetail.oauthDesc": "The platform generated OAuth2 credentials for this project. They can be used for third-party sign-in and API auth. Keep the Client Secret private and never commit it to a public repo.",

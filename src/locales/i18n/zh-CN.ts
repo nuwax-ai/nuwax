@@ -6379,7 +6379,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.ThirdAppIntegration.editTitle": "编辑三方应用",
   // 三方应用详情
   "PC.Pages.ThirdAppDetail.tabSetting": "设置",
-  "PC.Pages.ThirdAppDetail.untitled": "未命名应用",
   "PC.Pages.ThirdAppDetail.emptyValue": "—",
   "PC.Pages.ThirdAppDetail.oauthTitle": "OAuth2 认证信息",
   "PC.Pages.ThirdAppDetail.oauthDesc": "平台已为该项目自动生成 OAuth2 凭证，可用于第三方登录与接口鉴权。Client Secret 属于敏感信息，请勿写入前端或提交到公开仓库。",
