@@ -14,6 +14,7 @@ import {
   hostBridge,
   isDesktopHost,
   isImmersiveShell,
+  isMac,
   shellAvoid,
 } from '@/utils/hostBridge';
 import { jumpTo } from '@/utils/router';
@@ -319,6 +320,25 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
   return (
     <div className={navigationClassName}>
+      {isImmersiveShell() && (
+        <div
+          data-nuwax-titlebar-drag="true"
+          aria-hidden
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: isMac()
+              ? primarySidebarCollapsed
+                ? '100vw'
+                : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH +
+                  (secondMenuVisible ? SECOND_COLUMN_WIDTH : 0)
+              : '100vw',
+            height: isMac() ? shellAvoid.TOP : shellAvoid.CONTENT_TOP,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
       {/* 会话侧栏列（常驻）：顶栏(Logo+搜索+折叠) + 新建任务 + 导航行(接口) +
           会话列表(三tab) + 底部栏(用户+消息/设备/更多) */}
       <div

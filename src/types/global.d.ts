@@ -61,6 +61,13 @@ interface ShellThemePayload {
   bgItemHover?: string;
 }
 
+interface TitlebarDragRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 // 扩展全局作用域（本文件为全局脚本，顶层声明直接合并到全局类型，
 // 故 interface Window 不需要 declare global 包裹）
 interface Window {
@@ -114,6 +121,8 @@ interface Window {
       setSecondMenuAvailable?: (available: boolean) => void;
       /** 同步二级菜单真实收起态给壳（壳工具栏 icon 以此为准，修 reload 后失同步）。 */
       setSecondMenuCollapsed?: (collapsed: boolean) => void;
+      /** 上报 webview 顶部明确空白区；主窗口拖拽层由壳渲染。 */
+      setTitlebarDragRegions?: (regions: TitlebarDragRegion[]) => void;
     };
     // nuwax→nuwaclaw 壳语言同步通道（壳 UI 文案/主进程语言跟随 webview 多语言设置）
     i18n?: {

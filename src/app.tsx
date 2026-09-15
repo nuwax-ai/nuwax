@@ -26,6 +26,7 @@ import {
   unifiedThemeService,
 } from './services/unifiedThemeService';
 import { UserService } from './services/userService';
+import { initTitlebarDragRegionSync } from './services/titlebarDragRegionSync';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { hostBridge, syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
@@ -328,7 +329,12 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   // 首帧前还会再同步一次（幂等），这里覆盖未被该 wrapper 包裹的路由。
   useEffect(() => {
     syncShellAvoidanceCss();
-    return initBrandTheme();
+    const disposeTheme = initBrandTheme();
+    const disposeTitlebarRegions = initTitlebarDragRegionSync();
+    return () => {
+      disposeTheme();
+      disposeTitlebarRegions();
+    };
   }, []);
 
   return (
