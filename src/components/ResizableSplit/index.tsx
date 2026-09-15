@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Draggable, { DraggableData, DraggableEvent } from 'react-draggable';
 import styles from './index.module.less';
@@ -33,8 +34,10 @@ const ResizableSplit: React.FC<Props> = ({
   resetTrigger,
   onResizeEnd,
   dividerColor = '#e0e0e0',
-  dividerHoverColor = '#bbb',
-  dividerDraggingColor = '#1890ff',
+  // hover / 拖拽用中性深灰而非主题主色：主色在部分主题下是红色，
+  // 落在分隔条上像错误态；这里要的是「可拖动」的中性反馈
+  dividerHoverColor = '#8c8c8c',
+  dividerDraggingColor = '#595959',
   style,
   className,
 }) => {
@@ -407,10 +410,14 @@ const ResizableSplit: React.FC<Props> = ({
                 '--divider-hover-color': dividerHoverColor,
                 '--divider-dragging-color': dividerDraggingColor,
                 opacity: dividerVisible ? 1 : 0,
-                transition: 'opacity 0.4s ease-in-out',
               } as React.CSSProperties
             }
-          />
+          >
+            {/* hover 提示气泡：自绘而非 antd Tooltip，避免其 ref 包装层与 Draggable 的 nodeRef 冲突 */}
+            <span className={styles.resizeHint}>
+              {t('PC.Components.ResizableSplit.resize')}
+            </span>
+          </div>
         </Draggable>
       )}
 

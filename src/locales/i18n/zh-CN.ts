@@ -967,6 +967,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.RecommendList.pagePathConfigError": "页面路径配置错误",
   "PC.Components.RecommendList.pagePathParamError": "页面路径参数配置错误",
   "PC.Components.RecommendList.pagePreview": "页面预览",
+  "PC.Components.ResizableSplit.resize": "调整宽度",
   "PC.Components.RunOver.called": "已调用 {0}",
   "PC.Components.RunOver.calling": "正在调用",
   "PC.Components.RunOver.runComplete": "运行完毕",
