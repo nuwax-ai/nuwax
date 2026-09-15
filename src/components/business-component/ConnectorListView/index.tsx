@@ -22,7 +22,10 @@ import ConnectorDeviceAuthModal from '@/components/business-component/ConnectorD
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useConnectorConnect from '@/hooks/useConnectorConnect';
 import { t } from '@/services/i18nRuntime';
-import { apiConnectorConnectionToggleStatus } from '@/services/systemManage';
+import {
+  apiConnectorConnectionList,
+  apiConnectorConnectionToggleStatus,
+} from '@/services/systemManage';
 import { Empty, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -115,26 +118,48 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
   /**
    * 切换连接启用状态（POST .../connections/{连接id}/status，连接 id 取
    * 列表接口响应的 connectionId，非提供方主键——与 /expert-skill-connector
-   * 连接器页同口径）；成功后就地回写开关
+   * 连接器页同口径）；成功后就地回写开关。连接成功后就地回写不经过列表
+   * 接口，新连接 id 缺失时按 service 查连接列表兜底寻址（与断开流程同
+   * 口径），并在成功后补写 connectionId 避免后续重复兜底查询
    */
   const toggleConnectionEnabled = useCallback(
     async (item: ConnectorListItem, enabled: boolean) => {
-      if (!item.connectionId) {
-        // 数据异常兜底：缺连接 id 无法寻址（开关仅已连接卡片展示，正常已有值）
+      let connectionId = item.connectionId;
+      if (!connectionId && item.rawId !== undefined) {
+        // 刚连接成功、尚未重拉列表的条目：新连接 id 未随就地回写带上，
+        // 按 service 匹配连接列表兜底寻址
+        try {
+          const connRes = await apiConnectorConnectionList({
+            spaceId: connectSource === 'team' ? spaceId : undefined,
+          });
+          const connections = Array.isArray(connRes?.data) ? connRes.data : [];
+          const service = String(item.rawId);
+          connectionId = connections.find(
+            (conn) => (conn.providerService ?? conn.service) === service,
+          )?.id;
+        } catch {
+          // 兜底查询失败落入下方统一提示
+        }
+      }
+      if (!connectionId) {
         console.warn(
           '[ConnectorListView] toggle enabled skipped: missing connectionId, item =',
           item.key,
         );
+        message.error('连接 id 缺失，无法切换连接状态');
         return;
       }
       setTogglingKeys((prev) => [...prev, item.key]);
       try {
         const res = await apiConnectorConnectionToggleStatus(
-          item.connectionId,
+          connectionId,
           enabled,
         );
         if (res?.code === SUCCESS_CODE) {
-          updateItem(item.key, { connectionEnabled: enabled });
+          updateItem(item.key, {
+            connectionEnabled: enabled,
+            ...(item.connectionId ? null : { connectionId }),
+          });
         } else {
           message.error(res?.message || t('PC.Common.Global.operationFailed'));
         }
@@ -142,7 +167,7 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
         setTogglingKeys((prev) => prev.filter((key) => key !== item.key));
       }
     },
-    [updateItem],
+    [connectSource, spaceId, updateItem],
   );
 
   /**

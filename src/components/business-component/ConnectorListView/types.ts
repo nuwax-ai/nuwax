@@ -33,8 +33,8 @@ export interface ConnectorListItem {
  *   （兼容裸数组/records 双壳），keyword 客户端过滤；
  * - system     系统广场：官方连接器目录（scope=official）服务端分页，
  *   category 内容分类；
- * - team       团队空间：具体空间传 spaceId；「全部」走 scope=space
- *   服务端聚合（无需外部传空间列表）；
+ * - team       团队空间：恒带 scope=space；「全部」不带 spaceId 聚合
+ *   全部空间（无需外部传空间列表），具体空间再叠 spaceId 收窄；
  * - search     搜索场景：仅关键字 + 分页（不带 scope/spaceId）。
  */
 export type ConnectorListSourceType =
@@ -55,7 +55,7 @@ export interface ConnectorListViewProps {
   keyword?: string;
   /** 系统广场内容分类（仅 type=system 生效，空/不传=全部） */
   category?: string;
-  /** 团队空间：具体空间 ID（不传=scope=space 聚合全部空间） */
+  /** 团队空间：具体空间 ID（scope=space 恒传，不传 spaceId=聚合全部空间） */
   spaceId?: number;
   /**
    * 连接/断开成功通知（开关请求、状态回写、凭据/扫码授权子弹窗全部

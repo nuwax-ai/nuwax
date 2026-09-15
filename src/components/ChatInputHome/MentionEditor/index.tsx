@@ -426,6 +426,15 @@ const mentionKey = (item: MentionItem) =>
     : String(item.targetId);
 
 /**
+ * 焦点/点击是否落在 antd Modal 门层：内嵌列表（专家/技能）内聚的付费
+ * 套餐弹窗、统一专家卡弹窗 portal 渲染在 body，不在弹层 wrapper DOM 内，
+ * 但弹层是它们的宿主——失焦/外点关闭会连锁卸载这些弹窗（表现为套餐
+ * 弹窗刚弹出就被关闭），Modal 层期间一律放行不关闭弹层
+ */
+const isInAntModalLayer = (node: Node | null): boolean =>
+  !!node && node instanceof Element && !!node.closest('.ant-modal-wrap');
+
+/**
  * MentionEditor 主组件
  * 使用 forwardRef 暴露组件方法给父组件
  */
@@ -1962,12 +1971,15 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         // 切换后光标会被重置到编辑器开头）；@ 浮层与能力弹窗互斥，跳过无漏关
         if (capabilityOpenRef.current) return;
         // 焦点归属判定：编辑器自身（点击切换器后 onTabSwitch 会把焦点
-        // 拉回编辑器——编辑器是 wrapper 的兄弟不在其内，须单独放行）
-        // 或弹窗内元素均视为仍在弹层上下文，不关闭
+        // 拉回编辑器——编辑器是 wrapper 的兄弟不在其内，须单独放行）、
+        // 弹窗内元素、antd Modal 门层（内嵌列表付费弹窗夺焦，弹层是其
+        // 宿主不能关——见 isInAntModalLayer 注释）均视为仍在弹层上下文，
+        // 不关闭
         const active = document.activeElement;
         const inPopupContext =
           active === editorRef.current ||
-          !!active?.closest(`.${styles['mention-popup-wrapper']}`);
+          !!active?.closest(`.${styles['mention-popup-wrapper']}`) ||
+          isInAntModalLayer(active);
         if (!inPopupContext) {
           closeMentionPopup();
         }
@@ -2044,13 +2056,15 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     }, [autoFocus]);
 
     /**
-     * 点击外部区域关闭弹窗
+     * 点击外部区域关闭弹窗（付费套餐/专家卡等 antd Modal 门层放行——
+     * 弹层是这些弹窗的宿主，关闭会连锁卸载弹窗本体）
      */
     useEffect(() => {
       const handleClickOutside = (e: MouseEvent) => {
         if (
           showMentionPopup &&
           !editorRef.current?.contains(e.target as Node) &&
+          !isInAntModalLayer(e.target as Node | null) &&
           !(e.target as HTMLElement)?.closest(
             `.${styles['mention-popup-wrapper']}`,
           )

@@ -2,11 +2,13 @@
  * list 变体行：单栏横排紧凑行——圆角方小图标 + 名称/描述上下两行 +
  * 右端相对时间。无边线，悬停方形圆角灰底；整行点击即选中（list 紧凑
  * 场景不渲染悬停操作按钮，选中/付费角标与 grid 变体一致）。
- * simple 模式：无背景圆形图标 + 标题单行，不渲染描述与时间。
+ * simple 模式：无背景圆形图标 + 标题单行，不渲染描述与时间；付费标识
+ * 经行尾内联小 Tag 展示（左上角 Ribbon 会被弹层滚动容器裁切且压住图标，
+ * 同 AppDev CombinedMentionSelector 口径）。
  */
 import { t } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';
-import { Badge } from 'antd';
+import { Badge, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import {
@@ -55,9 +57,21 @@ const ExpertListRow: React.FC<ExpertCardBaseProps & { simple?: boolean }> = ({
           {formatTimeAgo(item.usedTime)}
         </span>
       )}
+      {simple && item.paymentRequired && (
+        <Tag
+          className={cx(styles['paid-tag'])}
+          color={item.subscribed ? 'success' : 'processing'}
+        >
+          {t(
+            item.subscribed
+              ? 'PC.Pages.Square.SingleAgent.subscribed'
+              : 'PC.Pages.Square.SingleAgent.paid',
+          )}
+        </Tag>
+      )}
     </div>
   );
-  if (item.paymentRequired) {
+  if (item.paymentRequired && !simple) {
     return (
       <Badge.Ribbon
         placement="start"
