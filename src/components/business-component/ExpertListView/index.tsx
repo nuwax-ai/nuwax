@@ -41,6 +41,7 @@ const ExpertListView: React.FC<ExpertListViewProps> = ({
   spaceIds,
   onSelect,
   pageSize = 20,
+  simple = false,
   className,
 }) => {
   const { list, loading, hasMore, loadMore, updateItem, waitingSpaces } =
@@ -159,6 +160,7 @@ const ExpertListView: React.FC<ExpertListViewProps> = ({
                 key={item.key}
                 item={item}
                 index={index}
+                simple={simple}
                 {...cardProps}
               />
             ),

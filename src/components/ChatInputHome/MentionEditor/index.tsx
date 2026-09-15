@@ -168,7 +168,7 @@ const getCaretPosition = (
       4,
       Math.min(
         rect.left,
-        (window.innerWidth || document.documentElement.clientWidth) - 328,
+        (window.innerWidth || document.documentElement.clientWidth) - 388,
       ),
     ),
     finalPlacement,
@@ -491,6 +491,12 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const savedRangeRef = useRef<Range | null>(null);
     /** 保存的文本节点，用于在选择提及时操作 DOM */
     const savedTextNodeRef = useRef<Node | null>(null);
+    /**
+     * 编辑器内最近一次有效光标（selectionchange 持续跟踪）：+ 号菜单
+     * 夺焦后 selection 不在编辑器，插入触发字符时恢复到用户之前的
+     * 光标位置（而非行尾兜底推断）
+     */
+    const lastCaretRef = useRef<Range | null>(null);
 
     // ==================== State ====================
     /** 是否显示提及弹窗 */
@@ -816,6 +822,28 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       );
       onSkillIdsChange?.(nextSkillIds);
     }, [onSkillIdsChange, selectedMentions]);
+
+    /**
+     * 持续跟踪编辑器内光标（selectionchange）：+ 号菜单等夺焦后
+     * selection 离开编辑器，插入触发字符时经 lastCaretRef 恢复到
+     * 用户之前的光标位置
+     */
+    useEffect(() => {
+      const trackCaret = () => {
+        const selection = document.getSelection();
+        const editor = editorRef.current;
+        if (
+          editor &&
+          selection &&
+          selection.rangeCount > 0 &&
+          editor.contains(selection.anchorNode)
+        ) {
+          lastCaretRef.current = selection.getRangeAt(0).cloneRange();
+        }
+      };
+      document.addEventListener('selectionchange', trackCaret);
+      return () => document.removeEventListener('selectionchange', trackCaret);
+    }, []);
 
     /**
      * 资料库文档 chip 派生：随消息以 selectedDocs({slugId,title,pageType}) 发送
@@ -1148,45 +1176,59 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           range = selection.getRangeAt(0).cloneRange();
           range.collapse(true);
         } else {
-          // 无有效光标（+ 号菜单夺焦后 selection 不在编辑器）：定位到
-          // 真实内容行尾——沿最后子链深入：块级节点（多行内容被 Chrome
-          // 包进 div）须进其内部，容器级末尾插入会渲染为新的一行；
-          // 尾部 chip（不可编辑 inline）/ BR 保持其后（同行/新行光标位）
+          // 无有效光标（+ 号菜单夺焦后 selection 不在编辑器）
           range = document.createRange();
-          let host: Node = container;
-          let placed = false;
-          while (host) {
-            const last = host.lastChild;
-            if (!last) {
-              range.setStart(host, 0);
-              placed = true;
-              break;
-            }
-            if (last.nodeType === Node.TEXT_NODE) {
-              range.setStart(last, last.textContent?.length ?? 0);
-              placed = true;
-              break;
-            }
-            if (last instanceof HTMLElement) {
-              const isChip = last.contentEditable === 'false';
-              const isBr = last.tagName === 'BR';
-              if (isChip || isBr) {
-                range.setStart(host, host.childNodes.length);
+          const lastCaret = lastCaretRef.current;
+          if (lastCaret && container.contains(lastCaret.startContainer)) {
+            // 恢复到菜单夺焦前用户的光标位置（selectionchange 持续跟踪）
+            range = lastCaret.cloneRange();
+            range.collapse(true);
+          } else if (!getSerializedEditorText(container).trim()) {
+            // 实质为空（Chrome 空 contenteditable 常残留 <br> 占位）：
+            // 直接插到容器最前——落到尾部 BR 之后会渲染出新的一行
+            range.setStart(container, 0);
+            range.collapse(true);
+          } else {
+            // 无光标记录且有实质内容：定位到真实内容行尾——沿最后子链
+            // 深入：块级节点（多行内容被 Chrome 包进 div）须进其内部，
+            // 容器级末尾插入会渲染为新的一行；尾部 chip（不可编辑
+            // inline）保持其后（同行）；尾部 BR 保持其后（用户换行后
+            // 的光标行）
+            let host: Node = container;
+            let placed = false;
+            while (host) {
+              const last = host.lastChild;
+              if (!last) {
+                range.setStart(host, 0);
                 placed = true;
                 break;
               }
-              host = last;
-              continue;
+              if (last.nodeType === Node.TEXT_NODE) {
+                range.setStart(last, last.textContent?.length ?? 0);
+                placed = true;
+                break;
+              }
+              if (last instanceof HTMLElement) {
+                const isChip = last.contentEditable === 'false';
+                const isBr = last.tagName === 'BR';
+                if (isChip || isBr) {
+                  range.setStart(host, host.childNodes.length);
+                  placed = true;
+                  break;
+                }
+                host = last;
+                continue;
+              }
+              range.setStart(host, host.childNodes.length);
+              placed = true;
+              break;
             }
-            range.setStart(host, host.childNodes.length);
-            placed = true;
-            break;
+            if (!placed) {
+              range.selectNodeContents(container);
+              range.collapse(false);
+            }
+            range.collapse(true);
           }
-          if (!placed) {
-            range.selectNodeContents(container);
-            range.collapse(false);
-          }
-          range.collapse(true);
         }
         container.focus();
         const before =
@@ -1657,6 +1699,23 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     );
 
     /**
+     * 焦点/光标交还编辑器（恢复至保存的光标位）：弹层内交互（如点击
+     * 切换器）会把焦点夺走，不交还则编辑器收不到 ↑↓ 键盘导航、继续
+     * 输入的落点也不对
+     */
+    const restoreEditorFocus = useCallback(() => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      editor.focus();
+      const saved = savedRangeRef.current;
+      if (saved && editor.contains(saved.startContainer)) {
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(saved.cloneRange());
+      }
+    }, []);
+
+    /**
      * @// 弹层·「更多」：删触发串并关闭弹层，经能力大弹窗定位对应
      * 维度打开（专家仅首页开放范围，越界由弹窗回落首个可用类型）；
      * 专家 tab 初始落「最近召唤」聚合页签（与 @ 弹层便捷视图口径衔接，
@@ -1902,12 +1961,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         // 恢复光标的唯一依据，closeMentionPopup 会顺带清空它（如选专家
         // 切换后光标会被重置到编辑器开头）；@ 浮层与能力弹窗互斥，跳过无漏关
         if (capabilityOpenRef.current) return;
-        // 检查当前焦点是否在弹窗内
-        if (
-          !document.activeElement?.closest(
-            `.${styles['mention-popup-wrapper']}`,
-          )
-        ) {
+        // 焦点归属判定：编辑器自身（点击切换器后 onTabSwitch 会把焦点
+        // 拉回编辑器——编辑器是 wrapper 的兄弟不在其内，须单独放行）
+        // 或弹窗内元素均视为仍在弹层上下文，不关闭
+        const active = document.activeElement;
+        const inPopupContext =
+          active === editorRef.current ||
+          !!active?.closest(`.${styles['mention-popup-wrapper']}`);
+        if (!inPopupContext) {
           closeMentionPopup();
         }
       }, 200);
@@ -2084,6 +2145,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
               onSelectExpert={handleAtExpertSelect}
               onSelectSkill={handleAtSkillSelect}
               onMore={handleAtPopupMore}
+              onTabSwitch={restoreEditorFocus}
               onClose={closeMentionPopup}
               onHeightChange={handlePopupHeightChange}
             />

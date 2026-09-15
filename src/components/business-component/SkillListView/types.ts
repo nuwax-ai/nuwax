@@ -71,6 +71,11 @@ export interface SkillListViewProps {
   onEnabledChange?: (item: SkillListItem, enabled: boolean) => void;
   /** 每页数量，默认 20（便捷视图固定 100 不受影响） */
   pageSize?: number;
+  /**
+   * 简单模式（仅 variant=list 生效）：单行紧凑行——无背景圆形图标 +
+   * 标题，不渲染描述与启用开关；grid 变体传入忽略。默认 false
+   */
+  simple?: boolean;
   /** 根容器（滚动容器）类名 */
   className?: string;
 }
