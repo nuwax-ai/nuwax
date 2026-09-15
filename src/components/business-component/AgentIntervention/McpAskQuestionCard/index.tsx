@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -79,6 +80,36 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   const description = input.description || ui.description;
   // 长描述默认 2 行截断，展开后看全文
   const [descExpanded, setDescExpanded] = useState(false);
+  // 描述真实溢出 2 行才显示「展开全文」，短文案不渲染按钮
+  const [descOverflow, setDescOverflow] = useState(false);
+  const descTextRef = useRef<HTMLSpanElement>(null);
+
+  const measureDescOverflow = useCallback(() => {
+    const el = descTextRef.current;
+    if (!el) {
+      return;
+    }
+    // line-clamp 折叠态：scrollHeight=全文高、clientHeight=2 行高；恰好两行则相等
+    setDescOverflow(el.scrollHeight > el.clientHeight);
+  }, []);
+
+  useLayoutEffect(() => {
+    // 展开态 scrollHeight===clientHeight 恒成立，测了会把按钮收掉；展开时保留按钮用于收起
+    if (descExpanded) {
+      return;
+    }
+    measureDescOverflow();
+  }, [description, descExpanded, measureDescOverflow]);
+
+  useEffect(() => {
+    const el = descTextRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const observer = new ResizeObserver(() => measureDescOverflow());
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measureDescOverflow]);
 
   useEffect(() => {
     setCurrentStep(0);
@@ -313,6 +344,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
           {description ? (
             <div className={styles.descWrap}>
               <Text
+                ref={descTextRef}
                 type="secondary"
                 className={classNames(styles.desc, {
                   [styles['desc-expanded']]: descExpanded,
@@ -320,15 +352,17 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
               >
                 {description}
               </Text>
-              <button
-                type="button"
-                className={styles.descToggle}
-                onClick={() => setDescExpanded((prev) => !prev)}
-              >
-                {descExpanded
-                  ? t('PC.Components.McpAskQuestionCard.collapseDesc')
-                  : t('PC.Components.McpAskQuestionCard.expandDesc')}
-              </button>
+              {descExpanded || descOverflow ? (
+                <button
+                  type="button"
+                  className={styles.descToggle}
+                  onClick={() => setDescExpanded((prev) => !prev)}
+                >
+                  {descExpanded
+                    ? t('PC.Components.McpAskQuestionCard.collapseDesc')
+                    : t('PC.Components.McpAskQuestionCard.expandDesc')}
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
