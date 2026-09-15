@@ -488,6 +488,8 @@ export interface ConversationListParams {
   archivedFilter?: 'all' | 'exclude' | 'only';
   /** 收藏过滤：all=全部（后端默认，缺省不传）；only=仅收藏（2026-09-13 后端上线） */
   collectedFilter?: 'all' | 'only';
+  /** 项目会话过滤（常规项目/全栈应用，2026-09-14 后端上线，值大小写不敏感）：all=全部（默认，缺省不传）；exclude=排除项目会话；only=仅项目会话 */
+  projectFilter?: 'all' | 'exclude' | 'only';
   // 上一次查询结果的会话ID
   lastId?: number | null;
   // 返回会话数量
