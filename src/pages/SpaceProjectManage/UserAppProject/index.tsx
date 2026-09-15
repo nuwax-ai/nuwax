@@ -42,9 +42,10 @@ const UserAppProject: React.FC = () => {
   const spaceId = Number(params.spaceId);
   const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
 
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState<string>('');
   const [list, setList] = useState<UserProjectItem[]>([]);
-  const [openCreate, setOpenCreate] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState<boolean>(false);
+  const [openCreate, setOpenCreate] = useState<boolean>(false);
   const [editTarget, setEditTarget] = useState<UserProjectItem>();
 
   const { run, loading } = useRequest(
@@ -75,9 +76,11 @@ const UserAppProject: React.FC = () => {
           ? result.data.records
           : [];
         setList(records.map(normalizeProjectRow).filter((item) => item.id));
+        setHasLoaded(true);
       },
       onError: () => {
         setList([]);
+        setHasLoaded(true);
       },
     },
   );
@@ -171,7 +174,7 @@ const UserAppProject: React.FC = () => {
         </div>
       </div>
 
-      {loading ? (
+      {loading || !hasLoaded ? (
         <Loading />
       ) : list.length > 0 ? (
         <div

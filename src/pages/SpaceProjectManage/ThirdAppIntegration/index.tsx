@@ -44,9 +44,10 @@ const ThirdAppIntegration: React.FC = () => {
   const spaceId = Number(params.spaceId);
   const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
 
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState<string>('');
   const [list, setList] = useState<UserProjectItem[]>([]);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState<boolean>(false);
+  const [createOpen, setCreateOpen] = useState<boolean>(false);
   const [editTarget, setEditTarget] = useState<UserProjectItem>();
 
   /** 查询第三方应用列表 */
@@ -78,9 +79,11 @@ const ThirdAppIntegration: React.FC = () => {
           ? result.data.records
           : [];
         setList(records.map(normalizeProjectRow).filter((item) => item.id));
+        setHasLoaded(true);
       },
       onError: () => {
         setList([]);
+        setHasLoaded(true);
       },
     },
   );
@@ -189,7 +192,7 @@ const ThirdAppIntegration: React.FC = () => {
         </div>
       </div>
 
-      {loading ? (
+      {loading || !hasLoaded ? (
         <Loading />
       ) : list.length > 0 ? (
         <div
