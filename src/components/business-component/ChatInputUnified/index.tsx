@@ -88,10 +88,15 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel } from 'umi';
+import { useLocation, useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import ConversationDebugFab from './ConversationDebugFab';
-import { clearDraft, loadDraft, saveDraft } from './draftStorage';
+import {
+  clearDraft,
+  loadDraft,
+  resolveDraftSurface,
+  saveDraft,
+} from './draftStorage';
 
 const cx = classNames.bind(styles);
 
@@ -593,9 +598,15 @@ const ChatInputUnifiedImpl: React.FC<
   const ownConversationIdRef = useRef(ownConversationId);
   ownConversationIdRef.current = ownConversationId;
 
-  // 草稿作用域：默认按会话 id；首页等无会话场景由 draftKey 指定（如 'home'）
+  // 草稿作用域：会话页面地址 × 会话 id（2026-09-15 定调「结合会话页面地址」）——
+  // 同一会话在不同路由面（/home/chat 会话页、/agent 智能体面板、/space 全栈 IDE）
+  // 各自独立草稿互不串扰；首页等无会话场景由 draftKey 指定（如 'home'）
+  const location = useLocation();
   const draftScope =
-    draftKey ?? (ownConversationId !== null ? String(ownConversationId) : null);
+    draftKey ??
+    (ownConversationId !== null
+      ? `${resolveDraftSurface(location.pathname)}:${ownConversationId}`
+      : null);
   // 发送后草稿已消费：卸载兜底跳过回写（isClearInput=false 时输入仍在，
   // 不把已发送内容重新落成草稿）；后续再次编辑会复位该标记
   const draftConsumedRef = useRef(false);
@@ -961,20 +972,41 @@ const ChatInputUnifiedImpl: React.FC<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ===== 输入草稿缓存（按草稿作用域持久化，切回/刷新后恢复） =====
+  // ===== 输入草稿缓存（按「会话页面地址 × 会话 id」持久化，切回/刷新后恢复） =====
   // 最新输入镜像：卸载兜底落盘用（节流定时器可能尚未触发）
   const draftStateRef = useRef({ text: messageInfo, skillIds });
   draftStateRef.current = { text: messageInfo, skillIds };
+  // 状态文本当前归属的作用域：仅恢复 effect 建立新作用域时更新——节流落盘前
+  // 校验，防「作用域已切换、文本仍旧会话」的过渡渲染把旧内容写进新桶
+  const draftStateScopeRef = useRef<string | null>(null);
+  // 上一个作用域标记：区分「首挂恢复」（输入为空才回填，不覆盖队列编辑回填）
+  // 与「同实例切换会话」（旧内容属于旧会话，无条件切到新草稿）
+  const lastDraftScopeRef = useRef<string | null>(null);
   const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 恢复：进入会话时输入为空才回填草稿，不覆盖已开始的输入（含队列编辑回填内容）
+  // 恢复：进入会话回填草稿。切换会话（同一实例换了作用域）时旧内容不属于新
+  // 会话，无条件由新草稿接管（空草稿=清空输入，防旧会话内容落入新桶）。
+  // 编辑器聚焦态下外部 value 通道会被 MentionEditor 聚焦守卫拦截，DOM 直达
+  // 走 setEditorText（onChange 回传保持受控 value 一致）
   useEffect(() => {
     if (!draftScope) return;
+    if (lastDraftScopeRef.current === draftScope) return;
+    const isScopeSwitch = lastDraftScopeRef.current !== null;
+    lastDraftScopeRef.current = draftScope;
+    // 作用域建立（含无草稿场景：此后输入的文本即归属本作用域）
+    draftStateScopeRef.current = draftScope;
     const draft = loadDraft(draftScope);
-    if (!draft) return;
-    setMessageInfo((prev) => (prev ? prev : draft.text));
-    if (draft.skillIds?.length) {
-      setSkillIds((prev) => (prev.length ? prev : draft.skillIds!));
+    const text = draft?.text ?? '';
+    if (isScopeSwitch) {
+      setSkillIds(draft?.skillIds ?? []);
+      setMessageInfo(text);
+      mentionEditorRef.current?.setEditorText?.(text);
+      return;
+    }
+    // 首挂：输入为空才回填草稿，不覆盖已开始的输入（含队列编辑回填内容）
+    if (!draftStateRef.current.text && text) {
+      setSkillIds((prev) => (prev.length ? prev : draft?.skillIds ?? []));
+      mentionEditorRef.current?.setEditorText?.(text);
     }
   }, [draftScope]);
 
@@ -987,6 +1019,8 @@ const ChatInputUnifiedImpl: React.FC<
     draftConsumedRef.current = false;
     draftSaveTimerRef.current = setTimeout(() => {
       draftSaveTimerRef.current = null;
+      // 过渡渲染余波：文本仍属旧作用域时不落盘（恢复 effect 接管后会再触发）
+      if (draftStateScopeRef.current !== draftScope) return;
       saveDraft(draftScope, {
         version: 1,
         text: draftStateRef.current.text,
@@ -1007,11 +1041,13 @@ const ChatInputUnifiedImpl: React.FC<
     const scope = draftScope;
     return () => {
       if (draftConsumedRef.current) return;
-      saveDraft(scope, {
-        version: 1,
-        text: draftStateRef.current.text,
-        skillIds: draftStateRef.current.skillIds,
-      });
+      const { text, skillIds } = draftStateRef.current;
+      // 卸载兜底只补写、不删除：teardown 阶段镜像可能已被次生效应清空
+      // （过渡期 model 复位/二次 teardown 等），空值落盘会误删已持久化的
+      // 草稿（2026-09-15 实测切会话 100% 复现丢失）；用户真正清空输入由
+      // 1s 节流的空值落盘负责删键
+      if (!text.trim() && !skillIds?.length) return;
+      saveDraft(scope, { version: 1, text, skillIds });
     };
   }, [draftScope]);
 

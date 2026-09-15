@@ -318,6 +318,13 @@ export interface MentionEditorProps {
 export interface MentionEditorHandle {
   /** 清空编辑器内容 */
   clear: () => void;
+  /**
+   * 以编程方式整体设置编辑器纯文本（会话草稿恢复/切换会话场景），光标落在
+   * 内容末尾便于继续输入。与外部 value 同步通道不同：无视「编辑器聚焦」守卫
+   * 直达 DOM——切换会话时编辑器常处于聚焦态，value 通道会被聚焦守卫拦截，
+   * 造成草稿在 state 里但输入框不显示
+   */
+  setEditorText: (text: string) => void;
   /** 以编程方式插入提及项（追加到编辑器末尾） */
   handleAtIconMentionSelect: (item: MentionItem) => void;
   /** 获取焦点 */

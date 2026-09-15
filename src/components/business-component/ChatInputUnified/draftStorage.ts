@@ -1,9 +1,29 @@
 /**
- * 输入框草稿缓存：按会话 id 持久化到 localStorage，
+ * 输入框草稿缓存：按「会话页面地址 × 会话 id」持久化到 localStorage，
  * 离开会话再回来（或刷新）时恢复未发送的输入内容（对齐飞书/微信体验）。
  * 存储形态对齐 MessageQueue/queueStorage.ts：TTL 过期丢弃、
  * localStorage 不可用/解析失败静默降级、空草稿删除存储键。
  */
+
+/** 会话详情路由：/home/chat/:id/:agentId */
+const CHAT_PATH = /^\/home\/chat(?:\/|$)/;
+/** 智能体详情路由（会话面板承载会话）：/agent/* */
+const AGENT_PATH = /^\/agent(?:\/|$)/;
+/** 工作空间域路由（app-pro 等全栈 IDE 会话面板）：/space/:spaceId/* */
+const SPACE_PATH = /^\/space(?:\/|$)/;
+
+/**
+ * 会话草稿作用面：结合会话页面地址分桶（2026-09-15 定调「以会话框组件为标准
+ * 接入 + 结合会话页面地址」）。同一会话在不同路由面（/home/chat 会话页、
+ * /agent 智能体面板、/space 全栈 IDE）各自独立草稿互不串扰；其余承载面
+ * （插件/技能/EditAgent 预览等）落 'page' 兜底桶。
+ */
+export const resolveDraftSurface = (pathname: string): string => {
+  if (CHAT_PATH.test(pathname)) return 'chat';
+  if (AGENT_PATH.test(pathname)) return 'agent';
+  if (SPACE_PATH.test(pathname)) return 'apppro';
+  return 'page';
+};
 
 export interface ChatDraftData {
   version: 1;
