@@ -34,6 +34,8 @@ export interface PreviewChromeActionsProps {
   previewRuntimeStopping?: boolean;
   /** 预览容器是否已就绪 */
   previewRuntimeReady?: boolean;
+  /** 当前环境容器启动失败，停止应用不可点 */
+  previewContainerFailed?: boolean;
   /** 开发环境进行中任务锁定启动 / 重启 */
   previewDevActionLocked?: boolean;
 }
@@ -56,6 +58,7 @@ const PreviewChromeActions: React.FC<PreviewChromeActionsProps> = ({
   previewRuntimeRunning = false,
   previewRuntimeStopping = false,
   previewRuntimeReady = true,
+  previewContainerFailed = false,
   previewDevActionLocked = false,
 }) => {
   const [addressDraft, setAddressDraft] = useState(previewUrl || '');
@@ -140,18 +143,20 @@ const PreviewChromeActions: React.FC<PreviewChromeActionsProps> = ({
             </span>
           </Tooltip>
           <Tooltip title={dict('PC.Pages.AppDevPro.stopService')}>
-            <button
-              type="button"
-              className={cx(
-                styles['preview-runtime-btn'],
-                styles['preview-runtime-btn-stop'],
-              )}
-              aria-label={dict('PC.Pages.AppDevPro.stopService')}
-              disabled={previewRuntimeStopping}
-              onClick={onStopPreviewRuntime}
-            >
-              <PoweroffOutlined />
-            </button>
+            <span className={cx(styles['preview-runtime-btn-wrap'])}>
+              <button
+                type="button"
+                className={cx(
+                  styles['preview-runtime-btn'],
+                  styles['preview-runtime-btn-stop'],
+                )}
+                aria-label={dict('PC.Pages.AppDevPro.stopService')}
+                disabled={previewRuntimeStopping || previewContainerFailed}
+                onClick={onStopPreviewRuntime}
+              >
+                <PoweroffOutlined />
+              </button>
+            </span>
           </Tooltip>
         </div>
       )}

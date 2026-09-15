@@ -12,6 +12,7 @@ import type {
   ProjectLatestConversationResult,
   UpdateUserAppParams,
   UpdateUserProjectParams,
+  UserAppDomainInfo,
   UserAppInfo,
   UserNormalProjectInfo,
   UserProjectItem,
@@ -97,6 +98,18 @@ export async function apiUserAppGetById(
 ): Promise<RequestResponse<UserAppInfo>> {
   return request(`/api/userapp/get/${id}`, {
     method: 'GET',
+  });
+}
+
+/** 查询全栈应用绑定的域名列表(应用详情页 iframe 取生产域名) */
+export async function apiUserAppDomainList(
+  appId: number,
+): Promise<RequestResponse<UserAppDomainInfo[]>> {
+  return request('/api/userapp/domain/list', {
+    method: 'GET',
+    params: {
+      appId,
+    },
   });
 }
 

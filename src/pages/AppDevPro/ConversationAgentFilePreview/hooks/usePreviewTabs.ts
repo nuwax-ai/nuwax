@@ -12,8 +12,6 @@ export type PreviewToolId =
   | 'subscription-stats'
   | 'database'
   | 'database-config'
-  | 'database-prod'
-  | 'database-config-prod'
   | 'remote-desktop';
 
 /** 预览标签类型 */
@@ -65,10 +63,8 @@ const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
   'subscription-setting':
     'PC.Pages.ConversationAgentTabPicker.subscriptionSetting',
   'subscription-stats': 'PC.Pages.ConversationAgentTabPicker.subscriptionStats',
-  database: 'PC.Pages.AppDevPro.databaseDev',
-  'database-config': 'PC.Pages.AppDevPro.databaseDevConfig',
-  'database-prod': 'PC.Pages.AppDevPro.databaseProd',
-  'database-config-prod': 'PC.Pages.AppDevPro.databaseProdConfig',
+  database: 'PC.Pages.AppDevPro.database',
+  'database-config': 'PC.Pages.AppDevPro.databaseConfig',
   'remote-desktop': 'PC.Pages.AppDevPro.remoteDesktop',
 };
 

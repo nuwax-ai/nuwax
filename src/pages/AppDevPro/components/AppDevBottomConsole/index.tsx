@@ -45,7 +45,10 @@ export type { TerminalAppearanceMode } from './terminalTheme';
 
 const cx = classNames.bind(styles);
 
-/** 底部控制台内部 Tab：开发终端 / 线上终端 / 日志 */
+/**
+ * 底部控制台内部状态。
+ * 两个终端键仅用于区分环境缓冲区，界面统一展示为一个“终端”入口。
+ */
 export type AppDevConsoleTab = 'terminal-dev' | 'terminal-prod' | 'logs';
 
 /** 对外仍按「终端 / 日志」两组回传，避免页面其它逻辑改动 */
@@ -58,7 +61,11 @@ export type ConsoleLayoutMode = 'default' | 'expanded' | 'collapsed';
  * 页面层容器状态。
  * 未传时打开终端仍由本组件 ensure；传入后打开终端优先复用进页启动结果。
  */
-export type ConsoleExternalContainerStatus = 'starting' | 'running' | 'error';
+export type ConsoleExternalContainerStatus =
+  | 'idle'
+  | 'starting'
+  | 'running'
+  | 'error';
 
 /** 按 Header 环境落到对应终端 Tab */
 const tabFromEnv = (env: UserAppDbEnvEnum): AppDevConsoleTab =>
@@ -103,11 +110,11 @@ export interface AppDevBottomConsoleProps {
    */
   appStage?: ComputerPodAppStage;
   /**
-   * 页面层容器状态（仅开发环境预启动）。
-   * - running：进页已启动成功，打开开发终端只保活并连接，不再 ensure
-   * - starting：进页正在启动，打开开发终端等待页面结果
-   * - error：进页启动失败，打开开发终端再 ensure
-   * 线上终端由页面 ensure 时传入，复用页面启动结果。
+   * 页面层容器状态。
+   * - running：已启动成功，打开终端只连接
+   * - starting：正在启动，打开终端等待结果
+   * - idle / error：打开终端由页面先拉起（失败会强制重试）
+   * 开发、线上都走这套规则。
    */
   externalContainerStatus?: ConsoleExternalContainerStatus;
   /**
@@ -117,8 +124,8 @@ export interface AppDevBottomConsoleProps {
   prodExternalContainerStatus?: ConsoleExternalContainerStatus;
   /** 当前可见终端环境变化（折叠或日志 Tab 时为 null） */
   onActiveTerminalEnvChange?: (env: UserAppDbEnvEnum | null) => void;
-  /** 线上环境容器失败后，由页面强制重试 ensure */
-  onRetryProdContainer?: () => void;
+  /** 当前环境容器失败后，由页面统一强制重试 ensure */
+  onRetryContainer?: (env: UserAppDbEnvEnum) => void;
   /**
    * 容器启动成功后是否开启保活轮询 @default true
    * 网页应用开发只需要确保/重启服务，不需要轮询保活接口。
@@ -178,7 +185,7 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
   externalContainerStatus,
   prodExternalContainerStatus,
   onActiveTerminalEnvChange,
-  onRetryProdContainer,
+  onRetryContainer,
   enableKeepalivePolling = true,
   wsSubprotocols,
   wireProtocol,
@@ -199,7 +206,7 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
   logsExtra,
   className,
 }) => {
-  /** 当前激活的 Tab（开发终端 / 线上终端 / 日志） */
+  /** 当前激活的内部面板（界面仅展示“终端 / 日志”） */
   const [activeTab, setActiveTab] = useState<AppDevConsoleTab>(
     showLogsTab && defaultActiveTab === 'logs' ? 'logs' : tabFromEnv(env),
   );
@@ -235,6 +242,11 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
   const ensurePodOnDisconnectTimerRef = useRef<number | null>(null);
   /** ensure 进行中，避免 handleFirstExpand 重复触发 */
   const ensureInFlightRef = useRef<boolean>(false);
+  /**
+   * 用户刚打开终端，等待当前环境（开发 / 线上）容器拉起。
+   * 避免页面仍是失败态时，终端立刻画出「重启服务」。
+   */
+  const pendingOpenRef = useRef(false);
 
   /** 是否需要先启动服务再连接终端（由 conversationId 决定） */
   const requiresServiceStart = Boolean(conversationId);
@@ -412,10 +424,11 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
   prodExternalContainerStatusRef.current = prodExternalContainerStatus;
 
   /**
-   * 打开终端时接入容器：
+   * 打开终端时接入当前环境容器（开发 / 线上同一套）：
    * - 页面层已 running：不再 ensure，只保活后连接
    * - 页面层正在 starting：等待页面结果
-   * - 页面层失败或未接管：由终端 ensure 成功后再连接
+   * - 页面层 idle / 刚打开时的 error：先展示启动中，由页面拉起容器
+   * - 页面层再次失败：展示重试
    */
   const attachOrStartContainer = useCallback(() => {
     // 折叠时不 ensure / 不拉起新连接，等展开或点击终端图标再接入
@@ -427,12 +440,16 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
       return;
     }
 
-    // 开发环境复用进页预启动；线上环境复用页面 ensure（未传则由终端自己 ensure）
+    // 开发 / 线上都复用页面 ensure；未传入时才由终端自己拉起
     const external =
       activeEnsureStageRef.current === UserAppDbEnvEnum.Prod
         ? prodExternalContainerStatusRef.current
         : externalContainerStatusRef.current;
     const status = containerStatusRef.current;
+
+    if (external === 'running' || external === 'starting') {
+      pendingOpenRef.current = false;
+    }
 
     if (external === 'running') {
       if (status !== 'running') {
@@ -451,8 +468,22 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
       return;
     }
 
-    // 页面 ensure 已失败：只展示重试，不再自动连打
+    // 页面尚未启动：先展示启动中，由页面打开终端时 ensure。
+    if (external === 'idle') {
+      if (status !== 'starting') {
+        setContainerStatus('starting');
+      }
+      return;
+    }
+
+    // 刚打开终端时沿用页面失败态：先进入启动中等页面重试，不要立刻展示重启按钮。
     if (external === 'error') {
+      if (pendingOpenRef.current || status === 'idle') {
+        if (status !== 'starting') {
+          setContainerStatus('starting');
+        }
+        return;
+      }
       if (status !== 'error') {
         setContainerStatus('error');
       }
@@ -470,15 +501,16 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
     });
   }, [conversationId, enableKeepalivePolling, startContainer]);
 
-  /** 用户首次展开终端面板时，触发容器接入 / 终端直接连接 */
+  /** 用户展开终端面板时，触发当前环境容器接入 / 直接连接 */
   const handleFirstExpand = useCallback(() => {
     terminalActivatedRef.current = true;
+    pendingOpenRef.current = true;
     attachOrStartContainer();
   }, [attachOrStartContainer]);
 
   /**
    * 进页容器状态变化后，若用户已打开终端，按最新结果接入：
-   * 启动成功则只保活；启动失败则由终端 ensure。
+   * 启动成功则连接；启动中继续等待；再次失败则展示重试。
    */
   useEffect(() => {
     if (!conversationId || !terminalActivatedRef.current) {
@@ -512,6 +544,7 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
     setContainerStatus('idle');
     containerStatusRef.current = 'idle';
     setShowTerminalReconnect(false);
+    pendingOpenRef.current = true;
     // 折叠时只记住新环境，不 ensure、不连 WS；展开后再接入
     if (terminalActivatedRef.current && layoutModeRef.current !== 'collapsed') {
       attachOrStartContainer();
@@ -634,15 +667,32 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
     prevVisibleRef.current = visible;
   }, [defaultActiveTab, env, showLogsTab, visible]);
 
-  /** Header 环境切换时，若当前在终端 Tab 则展示对应环境终端 */
+  /**
+   * Header 环境切换时切换终端缓冲区。
+   * 先断开旧环境并清除旧容器状态，再切换到新环境，避免新终端复用旧环境
+   * 的 running 状态提前连接。两个常驻 xterm 实例不卸载，各自保留屏幕及回滚日志。
+   */
   const prevEnvRef = useRef(env);
   useEffect(() => {
-    if (prevEnvRef.current === env) {
+    const previousEnv = prevEnvRef.current;
+    if (previousEnv === env) {
       return;
     }
     prevEnvRef.current = env;
-    setActiveTab((prev) => (prev === 'logs' ? prev : tabFromEnv(env)));
-  }, [env]);
+    if (activeTabRef.current === 'logs') {
+      return;
+    }
+
+    getTerminalRef(previousEnv).current?.disconnect();
+    ensureInFlightRef.current = false;
+    if (enableKeepalivePolling) {
+      stopKeepaliveRef.current();
+    }
+    setContainerStatus('idle');
+    containerStatusRef.current = 'idle';
+    setShowTerminalReconnect(false);
+    setActiveTab(tabFromEnv(env));
+  }, [enableKeepalivePolling, env]);
 
   /** 切换终端深浅色主题（受控模式下仅触发回调） */
   const handleToggleTerminalAppearance = useCallback(() => {
@@ -792,8 +842,8 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
    * 容器已停而前端状态未更新时，必须先拉起服务才能连终端。
    * apiEnsurePod 对已在运行的容器是幂等的，重复调用开销可接受。
    */
-  const onRetryProdContainerRef = useRef(onRetryProdContainer);
-  onRetryProdContainerRef.current = onRetryProdContainer;
+  const onRetryContainerRef = useRef(onRetryContainer);
+  onRetryContainerRef.current = onRetryContainer;
 
   const handleReconnectTerminal = useCallback(async () => {
     const targetEnv =
@@ -805,11 +855,11 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
       return;
     }
 
-    // 线上环境由页面统一 ensure，避免终端自己再打一轮导致状态来回跳
-    if (targetEnv === UserAppDbEnvEnum.Prod && onRetryProdContainerRef.current) {
+    // 页面统一 ensure，终端和数据库共享当前环境的启动及保活状态。
+    if (onRetryContainerRef.current) {
       setShowTerminalReconnect(false);
       setContainerStatus('starting');
-      onRetryProdContainerRef.current();
+      onRetryContainerRef.current(targetEnv);
       return;
     }
 
@@ -1116,26 +1166,17 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
         className,
       )}
     >
-      {/* 头部：左侧 Tab 切换 + 右侧操作按钮 */}
+      {/* 头部：终端入口已合并，具体环境跟随页面 Header */}
       <div className={cx(styles['console-header'])}>
         <div className={cx(styles['console-tabs'])}>
           <span
             className={cx(styles['console-tab'], {
               [styles.active]:
-                activeTab === 'terminal-dev' && layoutMode !== 'collapsed',
+                activeTab !== 'logs' && layoutMode !== 'collapsed',
             })}
-            onClick={() => handleTabClick('terminal-dev')}
+            onClick={() => handleTabClick(tabFromEnv(env))}
           >
-            {dict('PC.Pages.AppDevPro.tabTerminalDev')}
-          </span>
-          <span
-            className={cx(styles['console-tab'], {
-              [styles.active]:
-                activeTab === 'terminal-prod' && layoutMode !== 'collapsed',
-            })}
-            onClick={() => handleTabClick('terminal-prod')}
-          >
-            {dict('PC.Pages.AppDevPro.tabTerminalProd')}
+            {dict('PC.Components.ConversationBottomConsole.tabTerminal')}
           </span>
           {showLogsTab && (
             <span

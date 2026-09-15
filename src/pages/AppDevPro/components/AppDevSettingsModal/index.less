@@ -97,10 +97,23 @@
     }
   }
 
-  .unbindBtn {
+  .domainActions {
+    display: flex;
+    align-items: center;
     flex-shrink: 0;
+    gap: 4px;
     margin-left: auto;
+  }
+
+  .domainActionBtn {
+    flex-shrink: 0;
     color: @colorTextSecondary;
+
+    &:global(.ant-btn) {
+      height: 28px;
+      padding-inline: 12px;
+      font-size: 13px;
+    }
   }
 
   .domainName {

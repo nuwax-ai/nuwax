@@ -143,7 +143,7 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
   }, [open]);
 
   /**
-   * 复制平台分配的开发 / 生产域名。
+   * 复制域名到剪贴板。
    *
    * @param domain 待复制的域名
    */
@@ -258,13 +258,22 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
             {customDomains.map((domain) => (
               <div key={domain.id} className={cx(styles.domainItem)}>
                 <span className={cx(styles.domainName)}>{domain.domain}</span>
-                <Button
-                  type="text"
-                  className={cx(styles.unbindBtn)}
-                  onClick={() => handleUnbindDomain(domain)}
-                >
-                  {t('PC.Pages.AppDevSettingsModal.unbind')}
-                </Button>
+                <div className={cx(styles.domainActions)}>
+                  <Button
+                    type="text"
+                    className={cx(styles.domainActionBtn)}
+                    onClick={() => handleCopyDomain(domain.domain)}
+                  >
+                    {t('PC.Common.Global.copy')}
+                  </Button>
+                  <Button
+                    type="text"
+                    className={cx(styles.domainActionBtn)}
+                    onClick={() => handleUnbindDomain(domain)}
+                  >
+                    {t('PC.Pages.AppDevSettingsModal.unbind')}
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

@@ -1,0 +1,73 @@
+@import '@/styles/token';
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background-color: @colorBgLayout;
+  background-image: radial-gradient(
+    @colorBorderSecondary 0.7px,
+    transparent 0.7px
+  );
+  background-size: 14px 14px;
+}
+
+.hero {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.mark {
+  width: 44px;
+  height: 32px;
+  margin-bottom: 4px;
+  border: 1.5px solid @colorTextQuaternary;
+  border-radius: 8px;
+  position: relative;
+  opacity: 0.85;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 8px;
+    height: 2px;
+    border-radius: 1px;
+    background: @colorTextQuaternary;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+  color: @colorTextSecondary;
+}
+
+.errorIcon {
+  font-size: 24px;
+  color: @colorError;
+}
+
+.errorTitle {
+  color: @colorError;
+}
+
+.hint {
+  margin: 0;
+  max-width: 360px;
+  font-size: 12px;
+  line-height: 20px;
+  color: @colorTextTertiary;
+}
