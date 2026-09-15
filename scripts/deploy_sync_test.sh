@@ -259,8 +259,20 @@ run git pull --no-verify gitlab "$TEST_BRANCH"
 run git pull --no-verify origin "$TEST_BRANCH"
 if ! run git merge "$DEV_BRANCH" -X ours --no-verify \
   -m "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（冲突以本地 ${TEST_BRANCH} 为准）"; then
-  git merge --abort 2>/dev/null || true
-  die "合并 ${DEV_BRANCH} 进 ${TEST_BRANCH} 冲突：已回滚。请手动在 ${TEST_BRANCH} 上解决冲突提交后，再重跑本脚本"
+  # dist/ 构建产物文件名带内容哈希，test 与 dev 两侧必然各异，-X ours 解不了
+  # rename/rename 冲突；dist 随后本步骤会全量重建，故冲突仅在 dist/ 内时
+  # 直接清空 dist 提交合并即可，源码冲突才回滚交人工。
+  all_conflicts=$(git diff --name-only --diff-filter=U)
+  non_dist_conflicts=$(git diff --name-only --diff-filter=U -- . ':(exclude)dist')
+  if [ -n "$all_conflicts" ] && [ -z "$non_dist_conflicts" ]; then
+    log "merge 冲突全部位于 dist/ 构建产物，按全量重建处理（清空 dist 后提交合并）"
+    git rm -rf -q dist
+    run git commit --no-verify \
+      -m "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（dist 产物冲突按全量重建处理）"
+  else
+    git merge --abort 2>/dev/null || true
+    die "合并 ${DEV_BRANCH} 进 ${TEST_BRANCH} 冲突：已回滚。请手动在 ${TEST_BRANCH} 上解决冲突提交后，再重跑本脚本"
+  fi
 fi
 run npm run build:prod:m gitlab
 run git add -f dist
