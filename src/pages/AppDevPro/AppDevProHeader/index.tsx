@@ -239,13 +239,15 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
         </div>
 
         <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-          {/* 项目设置：始终显示 */}
-          <TooltipIcon
-            title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
-            className={cx(styles['panel-btn'])}
-            icon={<SettingOutlined style={{ fontSize: 16 }} />}
-            onClick={onOpenSettings}
-          />
+          {/* 项目设置：仅线上环境显示 */}
+          <ConditionRender condition={env === UserAppDbEnvEnum.Prod}>
+            <TooltipIcon
+              title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
+              className={cx(styles['panel-btn'])}
+              icon={<SettingOutlined style={{ fontSize: 16 }} />}
+              onClick={onOpenSettings}
+            />
+          </ConditionRender>
 
           {/* 数据库工作区：管理页 + 配置页 */}
           <TooltipIcon

@@ -110,11 +110,11 @@ export interface AppDevBottomConsoleProps {
    */
   appStage?: ComputerPodAppStage;
   /**
-   * 页面层容器状态（仅开发环境预启动）。
-   * - running：进页已启动成功，打开开发终端只保活并连接，不再 ensure
-   * - starting：进页正在启动，打开开发终端等待页面结果
-   * - error：进页启动失败，打开开发终端再 ensure
-   * 线上终端由页面 ensure 时传入，复用页面启动结果。
+   * 页面层容器状态。
+   * - running：已启动成功，打开终端只连接
+   * - starting：正在启动，打开终端等待结果
+   * - idle / error：打开终端由页面先拉起（失败会强制重试）
+   * 开发、线上都走这套规则。
    */
   externalContainerStatus?: ConsoleExternalContainerStatus;
   /**
@@ -242,6 +242,11 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
   const ensurePodOnDisconnectTimerRef = useRef<number | null>(null);
   /** ensure 进行中，避免 handleFirstExpand 重复触发 */
   const ensureInFlightRef = useRef<boolean>(false);
+  /**
+   * 用户刚打开终端，等待当前环境（开发 / 线上）容器拉起。
+   * 避免页面仍是失败态时，终端立刻画出「重启服务」。
+   */
+  const pendingOpenRef = useRef(false);
 
   /** 是否需要先启动服务再连接终端（由 conversationId 决定） */
   const requiresServiceStart = Boolean(conversationId);
@@ -419,10 +424,11 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
   prodExternalContainerStatusRef.current = prodExternalContainerStatus;
 
   /**
-   * 打开终端时接入容器：
+   * 打开终端时接入当前环境容器（开发 / 线上同一套）：
    * - 页面层已 running：不再 ensure，只保活后连接
    * - 页面层正在 starting：等待页面结果
-   * - 页面层失败或未接管：由终端 ensure 成功后再连接
+   * - 页面层 idle / 刚打开时的 error：先展示启动中，由页面拉起容器
+   * - 页面层再次失败：展示重试
    */
   const attachOrStartContainer = useCallback(() => {
     // 折叠时不 ensure / 不拉起新连接，等展开或点击终端图标再接入
@@ -434,12 +440,16 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
       return;
     }
 
-    // 开发环境复用进页预启动；线上环境复用页面 ensure（未传则由终端自己 ensure）
+    // 开发 / 线上都复用页面 ensure；未传入时才由终端自己拉起
     const external =
       activeEnsureStageRef.current === UserAppDbEnvEnum.Prod
         ? prodExternalContainerStatusRef.current
         : externalContainerStatusRef.current;
     const status = containerStatusRef.current;
+
+    if (external === 'running' || external === 'starting') {
+      pendingOpenRef.current = false;
+    }
 
     if (external === 'running') {
       if (status !== 'running') {
@@ -458,13 +468,22 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
       return;
     }
 
-    // 页面统一管理容器生命周期；idle 时等待页面触发 ensure。
+    // 页面尚未启动：先展示启动中，由页面打开终端时 ensure。
     if (external === 'idle') {
+      if (status !== 'starting') {
+        setContainerStatus('starting');
+      }
       return;
     }
 
-    // 页面 ensure 已失败：只展示重试，不再自动连打
+    // 刚打开终端时沿用页面失败态：先进入启动中等页面重试，不要立刻展示重启按钮。
     if (external === 'error') {
+      if (pendingOpenRef.current || status === 'idle') {
+        if (status !== 'starting') {
+          setContainerStatus('starting');
+        }
+        return;
+      }
       if (status !== 'error') {
         setContainerStatus('error');
       }
@@ -482,15 +501,16 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
     });
   }, [conversationId, enableKeepalivePolling, startContainer]);
 
-  /** 用户首次展开终端面板时，触发容器接入 / 终端直接连接 */
+  /** 用户展开终端面板时，触发当前环境容器接入 / 直接连接 */
   const handleFirstExpand = useCallback(() => {
     terminalActivatedRef.current = true;
+    pendingOpenRef.current = true;
     attachOrStartContainer();
   }, [attachOrStartContainer]);
 
   /**
    * 进页容器状态变化后，若用户已打开终端，按最新结果接入：
-   * 启动成功则只保活；启动失败则由终端 ensure。
+   * 启动成功则连接；启动中继续等待；再次失败则展示重试。
    */
   useEffect(() => {
     if (!conversationId || !terminalActivatedRef.current) {
@@ -524,6 +544,7 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
     setContainerStatus('idle');
     containerStatusRef.current = 'idle';
     setShowTerminalReconnect(false);
+    pendingOpenRef.current = true;
     // 折叠时只记住新环境，不 ensure、不连 WS；展开后再接入
     if (terminalActivatedRef.current && layoutModeRef.current !== 'collapsed') {
       attachOrStartContainer();
