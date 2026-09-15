@@ -336,28 +336,30 @@
   }
 
   // Markdown 样式（仅用于 Markdown 内容）
+  // h1/h2 字号、行高、间距、blockquote 全套均实测对齐会话区 ds-markdown 渲染
+  // （同一份测试 md 两端截图逐属性核对，2026-09-15）；h3-h6 未实测，维持原状
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    margin-top: 24px;
-    margin-bottom: 16px;
+    margin-top: 18.288px;
+    margin-bottom: 13.716px;
     font-weight: 600;
     line-height: 1.25;
   }
 
   h1 {
-    font-size: 2em;
+    font-size: 20px;
+    line-height: 30px;
     border-bottom: 1px solid #eaecef;
-    padding-bottom: 0.3em;
+    padding-bottom: 6px;
   }
 
   h2 {
-    font-size: 1.5em;
-    border-bottom: 1px solid #eaecef;
-    padding-bottom: 0.3em;
+    font-size: 18px;
+    line-height: 27px;
   }
 
   p {
@@ -418,11 +420,13 @@
     }
   }
 
+  // 引用块实测对齐会话区（细左边框+深灰、不变文字色、零外边距，
+  // 而非 GitHub 经典风格的粗浅边框+灰字+右边距+底边距）
   blockquote {
-    padding: 0 1em;
-    color: #6a737d;
-    border-left: 0.25em solid #dfe2e5;
-    margin: 0 0 16px;
+    padding: 0 0 0 18.288px;
+    color: inherit;
+    border-left: 2px solid #a3a3a3;
+    margin: 0;
   }
 
   // 列表样式对齐会话区渲染(ds-markdown):12px 垂直间距 / 24px 缩进 /
