@@ -78,7 +78,8 @@
         font-size: @fontSizeSm;
         color: @colorTextSecondary;
         line-height: 1.5;
-        display: box;
+        // 须带 -webkit- 前缀：裸 box 是废弃语法，现代 Chromium 不认，连带 line-clamp 失效
+        display: -webkit-box;
         -webkit-box-orient: vertical;
         // 默认 2 行截断，展开后完整显示
         -webkit-line-clamp: 2;
