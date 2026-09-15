@@ -23,8 +23,15 @@ const NewHomeSection: React.FC<{
   /** 经典布局（style1/2）：渲染顶部搜索框 + 新建会话入口 + 任务/项目 tab 切换；
    * 单栏（style3）不传：SidebarNavHeader 提供头部，列表区为「项目/任务」双分组折叠形态（原型同款） */
   showSearchHeader?: boolean;
-}> = ({ style, showSearchHeader = false }) => {
+  /** 会话行命中变化上报（项目子行/任务行 ↔ 当前路由会话）：单栏壳层据此让
+   * 导航菜单高亮让位；经典布局不消费 */
+  onConversationRowActiveChange?: (active: boolean) => void;
+}> = ({ style, showSearchHeader = false, onConversationRowActiveChange }) => {
   const shell = useHomeSectionData({ isSidebarNavMode: !showSearchHeader });
+
+  React.useEffect(() => {
+    onConversationRowActiveChange?.(shell.conversationRowActive);
+  }, [shell.conversationRowActive, onConversationRowActiveChange]);
 
   return (
     <div style={style} className={cx(styles['new-home-section'])}>
