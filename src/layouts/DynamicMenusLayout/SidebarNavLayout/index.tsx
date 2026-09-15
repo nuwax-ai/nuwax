@@ -20,7 +20,7 @@ import { jumpTo } from '@/utils/router';
 import { EllipsisOutlined, SettingOutlined } from '@ant-design/icons';
 import { theme, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 // 复用原有组件
@@ -134,13 +134,21 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
   const location = useLocation();
 
-  // 导航行高亮决策走策略单源（sidebarSelectionPolicy）：会话详情路由下抑制
-  // homepage 兜底高亮，选中关系收敛到会话列表行（2026-09-12 定调）。
-  // activeTab 本体保持 homepage——单栏会话列表常驻、二级列判定不受影响；
-  // 经典布局 renderSecondMenu 依赖 homepage 渲染会话列表，抑制只在单栏消费
+  // 导航行高亮决策走策略单源（sidebarSelectionPolicy）：
+  // - 会话详情路由下抑制 homepage 兜底高亮，选中关系收敛到会话列表行（2026-09-12 定调）；
+  // - 会话行命中（项目子行/任务行）时导航整体让位（2026-09-15 定调：先命中
+  //   项目/任务中会话，然后才是导航菜单——/space/app-pro 项目会话不亮「工作空间」）。
+  // activeTab 本体保持不变——单栏会话列表常驻、二级列判定不受影响；
+  // 经典布局 renderSecondMenu 依赖 activeTab 渲染会话列表，抑制只在单栏消费
+  const [conversationRowActive, setConversationRowActive] = useState(false);
   const navHighlightTab = useMemo(
-    () => resolveNavHighlightTab(activeTab, location.pathname),
-    [activeTab, location.pathname],
+    () =>
+      resolveNavHighlightTab(
+        activeTab,
+        location.pathname,
+        conversationRowActive,
+      ),
+    [activeTab, location.pathname, conversationRowActive],
   );
 
   // 新建任务入口（侧栏顶部操作区）：租户配置未就绪时兜底回首页
@@ -348,7 +356,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           onNewTask={handleNewTask}
         />
         <div className={cx(styles['nav-menus-scroll'])}>
-          <NewHomeSection style={overrideContainerStyle} />
+          <NewHomeSection
+            style={overrideContainerStyle}
+            onConversationRowActiveChange={setConversationRowActive}
+          />
         </div>
 
         {/* 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右：消息/设备/更多/文档，走接口）+

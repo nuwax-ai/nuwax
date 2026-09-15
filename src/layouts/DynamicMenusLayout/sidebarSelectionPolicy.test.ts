@@ -34,6 +34,28 @@ describe('extractConversationIdFromPath', () => {
     expect(extractConversationIdFromPath('/home')).toBeNull();
     expect(extractConversationIdFromPath('/space/1')).toBeNull();
   });
+
+  it('工作空间域路由取查询参数 conversationId（/space/app-pro 项目会话）', () => {
+    expect(
+      extractConversationIdFromPath(
+        '/space/752/app-pro',
+        '?appId=29&conversationId=1562236',
+      ),
+    ).toBe('1562236');
+    expect(
+      extractConversationIdFromPath('/space/752', '?conversationId=42'),
+    ).toBe('42');
+  });
+
+  it('工作空间域路由无 conversationId 参数返回 null', () => {
+    expect(
+      extractConversationIdFromPath('/space/752/app-pro', '?appId=29'),
+    ).toBeNull();
+    expect(
+      extractConversationIdFromPath('/space/752/app-pro', '?conversationId='),
+    ).toBeNull();
+    expect(extractConversationIdFromPath('/space/752/app-pro')).toBeNull();
+  });
 });
 
 describe('resolveNavHighlightTab', () => {
@@ -51,6 +73,22 @@ describe('resolveNavHighlightTab', () => {
       'system_manage',
     );
     expect(resolveNavHighlightTab('', '/home/chat/1/2')).toBe('');
+  });
+
+  it('会话行命中时导航高亮整体让位（任意激活码，2026-09-15 定调优先级）', () => {
+    expect(
+      resolveNavHighlightTab('workspace', '/space/752/app-pro', true),
+    ).toBe('');
+    expect(resolveNavHighlightTab('homepage', '/home/chat/1/2', true)).toBe('');
+  });
+
+  it('会话行未命中时导航菜单照常兜底（workspace 透传）', () => {
+    expect(
+      resolveNavHighlightTab('workspace', '/space/752/app-pro', false),
+    ).toBe('workspace');
+    expect(resolveNavHighlightTab('workspace', '/space/752/app-pro')).toBe(
+      'workspace',
+    );
   });
 });
 

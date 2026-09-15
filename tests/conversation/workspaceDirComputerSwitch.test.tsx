@@ -11,6 +11,22 @@ vi.mock(
 vi.mock('@/components/base/AgentType/index.less', () => ({ default: {} }));
 vi.mock('@/components/base/McpInstallType/index.less', () => ({ default: {} }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
+vi.mock('@/components/OverrideTextArea', () => ({ default: () => null }));
+vi.mock('@/components/UploadAvatar', () => ({ default: () => null }));
+vi.mock('@/components/business-component/GuardedFormModal', async () => {
+  const actualAntd = await vi.importActual<typeof import('antd')>('antd');
+  return {
+    default: ({ children, onConfirm }: any) => (
+      <div>
+        {children}
+        <button type="button" onClick={onConfirm}>
+          PC.Common.Global.confirm
+        </button>
+      </div>
+    ),
+    GuardedFormModalForm: actualAntd.Form,
+  };
+});
 vi.mock('@/services/appDev', () => ({
   apiNormalProjectCreate: vi
     .fn()
@@ -35,48 +51,52 @@ vi.mock('@/components/ChatInputHome/WorkspaceDirPickerModal', () => ({
       </button>
     ) : null,
 }));
-vi.mock('antd', () => ({
-  Modal: ({ children, footer }: any) => (
-    <div>
-      {children}
-      {footer}
-    </div>
-  ),
-  Button: ({ children, onClick }: any) => (
-    <button type="button" onClick={onClick}>
-      {children}
-    </button>
-  ),
-  Input: ({ value, onChange }: any) => (
-    <input aria-label="name" value={value} onChange={onChange} />
-  ),
-  Select: ({ value, onChange, options }: any) => (
-    <select
-      aria-label="computer"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      {options.map((o: any) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  ),
-  Dropdown: ({ children, menu }: any) => (
-    <div>
-      {children}
-      <button
-        type="button"
-        onClick={() => menu.onClick({ key: 'pick-folder' })}
-      >
-        open picker
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+  return {
+    Form: actual.Form,
+    Modal: ({ children, footer }: any) => (
+      <div>
+        {children}
+        {footer}
+      </div>
+    ),
+    Button: ({ children, onClick }: any) => (
+      <button type="button" onClick={onClick}>
+        {children}
       </button>
-    </div>
-  ),
-  Spin: () => null,
-  message: { warning: vi.fn(), success: vi.fn(), error: vi.fn() },
-}));
+    ),
+    Input: ({ value, onChange }: any) => (
+      <input aria-label="name" value={value} onChange={onChange} />
+    ),
+    Select: ({ value, onChange, options }: any) => (
+      <select
+        aria-label="computer"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {options.map((o: any) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    ),
+    Dropdown: ({ children, menu }: any) => (
+      <div>
+        {children}
+        <button
+          type="button"
+          onClick={() => menu.onClick({ key: 'pick-folder' })}
+        >
+          open picker
+        </button>
+      </div>
+    ),
+    Spin: () => null,
+    message: { warning: vi.fn(), success: vi.fn(), error: vi.fn() },
+  };
+});
 describe('创建项目切换个人电脑', () => {
   it('选过 A 的目录后切换 B，提交 B 时不携带 A 的路径', async () => {
     render(

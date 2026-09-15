@@ -80,6 +80,7 @@ export const transformFlatListToTree = (
     const isExternalDataSource = Boolean(
       file.dataSourceId && file.relativePath,
     );
+    const nodePath = isExternalDataSource ? file.relativePath : file.name;
     const node: FileNode = {
       id: isExternalDataSource ? file.fileId : file.name,
       name: fileName,
@@ -104,24 +105,28 @@ export const transformFlatListToTree = (
       relativePath: file?.relativePath,
     };
 
-    const mapKey = isExternalDataSource ? file.fileId : file.name;
-    map.set(mapKey, node);
+    map.set(nodePath, node);
 
     // 如果文件在子目录中，确保创建所有必要的父文件夹节点
-    if (!isExternalDataSource && pathParts.length > 1) {
+    if (pathParts.length > 1) {
       for (let i = pathParts.length - 2; i >= 0; i--) {
         const parentPath = pathParts.slice(0, i + 1).join('/');
         const parentName = pathParts[i];
 
         if (!map.has(parentPath)) {
+          const externalIdPrefix = isExternalDataSource
+            ? String(file.fileId).slice(0, -String(file.relativePath).length)
+            : '';
           const parentNode: FileNode = {
-            id: parentPath,
+            id: `${externalIdPrefix}${parentPath}`,
             name: parentName,
             type: 'folder',
             path: parentPath,
             children: [],
             parentPath: i > 0 ? pathParts.slice(0, i).join('/') : null,
             lastModified: Date.now(),
+            dataSourceId: file?.dataSourceId,
+            relativePath: isExternalDataSource ? parentPath : undefined,
           };
           map.set(parentPath, parentNode);
         }
@@ -138,7 +143,7 @@ export const transformFlatListToTree = (
       ) {
         parentNode.children?.push(node);
       }
-    } else if (!node.parentPath || node.dataSourceId) {
+    } else if (!node.parentPath) {
       if (!root.find((item: FileNode) => item.id === node.id)) {
         root.push(node);
       }

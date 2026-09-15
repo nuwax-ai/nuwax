@@ -4,9 +4,10 @@ import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 /**
  * 历史会话页「项目」tab 的行过滤 / 分页追拉纯函数（口径与任务 tab 一致）：
  * - 全部：隐藏归档项目，置顶项目稳定排前
- * - 已收藏：服务端 collectedFilter=only 已过滤，回包打标再滤一遍兜底
- * - 已归档：统一接口（2026-09-14）回包含归档项目但无 archivedFilter 参数
- *   （swagger 实证），按回包打标前端过滤；后端补参数后可切服务端
+ * - 已收藏：服务端 collectedFilter=only + archivedFilter=all（收藏跨归档，
+ *   与任务 tab 同口径），回包打标再滤一遍兜底
+ * - 已归档：服务端 archivedFilter=only 已过滤（2026-09-15 testagent 实测
+ *   后端支持本参数，且不传时默认剔除归档行），回包打标再滤一遍兜底
  */
 export type ProjectViewMode = 'all' | 'collected' | 'archived';
 

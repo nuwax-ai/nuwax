@@ -22,28 +22,51 @@ const CONVERSATION_DETAIL_PATH = /^\/home\/chat(?:\/|$)/;
 /** 会话详情路径中的会话 id 段 */
 const CONVERSATION_ID_SEGMENT = /^\/home\/chat\/([^/]+)/;
 
+/** 工作空间域路由前缀：/space/:spaceId/*（app-pro 等全栈 IDE 面板承载项目会话） */
+const WORKSPACE_PATH_PREFIX = /^\/space(?:\/|$)/;
+
 /** 是否会话详情路由（pathname 不含查询参数，前缀匹配） */
 export const isConversationDetailPath = (pathname: string): boolean =>
   CONVERSATION_DETAIL_PATH.test(pathname);
 
-/** 从路径提取当前会话 id；非会话详情路由返回 null */
+/**
+ * 从路由提取当前会话 id；无法识别返回 null。
+ * 两类承载路由：
+ * - /home/chat/:id/:agentId —— 会话 id 取路径段
+ * - /space/:spaceId/app-pro?conversationId=… —— 全栈 IDE 会话面板，id 取查询参数
+ *   （项目子会话点击即跳此路由，2026-09-15 侧栏选中补全）
+ */
 export const extractConversationIdFromPath = (
   pathname: string,
-): string | null =>
-  isConversationDetailPath(pathname)
-    ? pathname.match(CONVERSATION_ID_SEGMENT)?.[1] ?? null
-    : null;
+  search = '',
+): string | null => {
+  if (isConversationDetailPath(pathname)) {
+    return pathname.match(CONVERSATION_ID_SEGMENT)?.[1] ?? null;
+  }
+  if (WORKSPACE_PATH_PREFIX.test(pathname)) {
+    // 空值参数不算会话 id（'' 会穿过 ?? 链被当成有效 chatId）
+    const id = new URLSearchParams(search).get('conversationId');
+    return id ? id : null;
+  }
+  return null;
+};
 
 /**
  * 单栏导航行高亮决策。
- * 会话详情路由下抑制 homepage 兜底高亮（useMenuNavigation 匹配不到一级菜单时
- * 兜底选中第一个菜单=homepage，与会话行形成双白卡，2026-09-12 定调收敛）；
+ * - 会话详情路由下抑制 homepage 兜底高亮（useMenuNavigation 匹配不到一级菜单时
+ *   兜底选中第一个菜单=homepage，与会话行形成双白卡，2026-09-12 定调收敛）；
+ * - 会话行命中时导航整体让位（2026-09-15 用户定调优先级：先命中项目/任务列表中
+ *   的会话，然后才是导航菜单——/space/app-pro 项目会话不该亮「工作空间」）。
  * 其余激活码原样返回。
  */
 export const resolveNavHighlightTab = (
   activeTab: string,
   pathname: string,
+  conversationRowActive = false,
 ): string => {
+  if (conversationRowActive) {
+    return '';
+  }
   if (activeTab === 'homepage' && isConversationDetailPath(pathname)) {
     return '';
   }

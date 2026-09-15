@@ -24,6 +24,7 @@ vi.mock('@/components/ChatInputHome/index.less', () => ({
 
 vi.mock('umi', () => ({
   useModel: () => ({ tenantConfigInfo: { enableSubscription: 0 } }),
+  useLocation: () => ({ pathname: '/home', search: '' }),
 }));
 
 vi.mock('@/services/i18nRuntime', () => ({
