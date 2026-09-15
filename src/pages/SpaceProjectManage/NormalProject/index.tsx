@@ -2,10 +2,7 @@ import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiNormalProjectDelete,
-  apiNormalProjectUpdate,
-} from '@/services/userProjectApp';
+import { apiNormalProjectDelete } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserProjectItem } from '@/types/interfaces/userProject';
@@ -16,6 +13,9 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
 import CreateNormalProjectModal from '../components/CreateNormalProjectModal';
+import EditNormalProjectModal, {
+  type EditedNormalProjectInfo,
+} from '../components/EditNormalProjectModal';
 import ProjectCard from '../components/ProjectCard';
 import { apiUserProjectPageQuery } from '../services';
 import { openProject } from '../type';
@@ -45,8 +45,7 @@ const NormalProject: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [list, setList] = useState<UserProjectItem[]>([]);
   const [openCreate, setOpenCreate] = useState(false);
-  const [renameTarget, setRenameTarget] = useState<UserProjectItem>();
-  const [renameName, setRenameName] = useState('');
+  const [editTarget, setEditTarget] = useState<UserProjectItem>();
 
   const { run, loading } = useRequest(
     (name?: string) =>
@@ -97,23 +96,6 @@ const NormalProject: React.FC = () => {
     [spaceId],
   );
 
-  const handleRenameSubmit = async () => {
-    const name = renameName.trim();
-    if (!name || !renameTarget) {
-      return;
-    }
-    const res = await apiNormalProjectUpdate({ id: renameTarget.id, name });
-    if (res?.code !== SUCCESS_CODE) {
-      return;
-    }
-    setList((prev) =>
-      prev.map((item) =>
-        item.id === renameTarget.id ? { ...item, name } : item,
-      ),
-    );
-    setRenameTarget(undefined);
-  };
-
   const openDeleteConfirm = useCallback((item: UserProjectItem) => {
     Modal.confirm({
       title: dict('PC.Common.Global.deleteConfirmTitle'),
@@ -130,10 +112,23 @@ const NormalProject: React.FC = () => {
     });
   }, []);
 
-  const handleRename = useCallback((item: UserProjectItem) => {
-    setRenameTarget(item);
-    setRenameName(item.name);
+  /** 打开常规项目编辑弹窗 */
+  const handleEdit = useCallback((item: UserProjectItem) => {
+    setEditTarget(item);
   }, []);
+
+  /** 编辑成功后同步更新卡片 */
+  const handleEdited = useCallback(
+    (projectId: number, editedInfo: EditedNormalProjectInfo) => {
+      setList((previous) =>
+        previous.map((item) =>
+          item.id === projectId ? { ...item, ...editedInfo } : item,
+        ),
+      );
+      setEditTarget(undefined);
+    },
+    [],
+  );
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -183,7 +178,7 @@ const NormalProject: React.FC = () => {
               key={item.id}
               item={item}
               onClick={handleOpenProject}
-              onRename={handleRename}
+              onEdit={handleEdit}
               onDelete={openDeleteConfirm}
             />
           ))}
@@ -222,23 +217,11 @@ const NormalProject: React.FC = () => {
         }}
       />
 
-      <Modal
-        title={dict('PC.Components.HistoryConversationList.renameModalTitle')}
-        open={renameTarget !== undefined}
-        onOk={() => void handleRenameSubmit()}
-        onCancel={() => setRenameTarget(undefined)}
-        okButtonProps={{ disabled: !renameName.trim() }}
-        okText={dict('PC.Common.Global.confirm')}
-        cancelText={dict('PC.Common.Global.cancel')}
-        destroyOnHidden
-      >
-        <Input
-          value={renameName}
-          onChange={(event) => setRenameName(event.target.value)}
-          onPressEnter={() => void handleRenameSubmit()}
-          maxLength={50}
-        />
-      </Modal>
+      <EditNormalProjectModal
+        project={editTarget}
+        onCancel={() => setEditTarget(undefined)}
+        onEdited={handleEdited}
+      />
     </div>
   );
 };

@@ -6361,6 +6361,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createButton": "New Project",
   "PC.Pages.SpaceProjectManage.createNormalProject": "Normal Project",
   "PC.Pages.SpaceProjectManage.createNormalProjectBtn": "Create Normal Project",
+  "PC.Pages.SpaceProjectManage.editNormalProject": "Edit Normal Project",
   "PC.Pages.SpaceProjectManage.createPageApp": "Web App",
   "PC.Pages.SpaceProjectManage.createUserApp": "Full-stack App",
   "PC.Pages.SpaceProjectManage.createUserAppBtn": "Create Full-stack App",

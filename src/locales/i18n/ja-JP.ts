@@ -6235,6 +6235,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createButton": "新規プロジェクト",
   "PC.Pages.SpaceProjectManage.createNormalProject": "通常プロジェクト",
   "PC.Pages.SpaceProjectManage.createNormalProjectBtn": "通常プロジェクトを作成",
+  "PC.Pages.SpaceProjectManage.editNormalProject": "通常プロジェクトを編集",
   "PC.Pages.SpaceProjectManage.createPageApp": "Webアプリ",
   "PC.Pages.SpaceProjectManage.createUserApp": "フルスタックアプリ",
   "PC.Pages.SpaceProjectManage.createUserAppBtn": "フルスタックアプリを作成",

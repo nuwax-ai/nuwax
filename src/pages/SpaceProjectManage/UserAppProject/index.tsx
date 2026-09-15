@@ -1,11 +1,14 @@
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiUserAppDelete, apiUserAppUpdate } from '@/services/userProjectApp';
+import { apiUserAppDelete } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
-import type { UserProjectItem } from '@/types/interfaces/userProject';
+import type {
+  UserAppInfo,
+  UserProjectItem,
+} from '@/types/interfaces/userProject';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
@@ -40,8 +43,7 @@ const UserAppProject: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [list, setList] = useState<UserProjectItem[]>([]);
   const [openCreate, setOpenCreate] = useState(false);
-  const [renameTarget, setRenameTarget] = useState<UserProjectItem>();
-  const [renameName, setRenameName] = useState('');
+  const [editTarget, setEditTarget] = useState<UserProjectItem>();
 
   const { run, loading } = useRequest(
     (name?: string) =>
@@ -92,23 +94,6 @@ const UserAppProject: React.FC = () => {
     [spaceId],
   );
 
-  const handleRenameSubmit = async () => {
-    const name = renameName.trim();
-    if (!name || !renameTarget) {
-      return;
-    }
-    const res = await apiUserAppUpdate({ id: renameTarget.id, name });
-    if (res?.code !== SUCCESS_CODE) {
-      return;
-    }
-    setList((prev) =>
-      prev.map((item) =>
-        item.id === renameTarget.id ? { ...item, name } : item,
-      ),
-    );
-    setRenameTarget(undefined);
-  };
-
   const openDeleteConfirm = useCallback((item: UserProjectItem) => {
     Modal.confirm({
       title: dict('PC.Common.Global.deleteConfirmTitle'),
@@ -125,9 +110,26 @@ const UserAppProject: React.FC = () => {
     });
   }, []);
 
-  const handleRename = useCallback((item: UserProjectItem) => {
-    setRenameTarget(item);
-    setRenameName(item.name);
+  /** 打开全栈项目编辑弹窗 */
+  const handleEdit = useCallback((item: UserProjectItem) => {
+    setEditTarget(item);
+  }, []);
+
+  /** 编辑成功后同步更新卡片 */
+  const handleEdited = useCallback((info: UserAppInfo) => {
+    setList((previous) =>
+      previous.map((item) =>
+        item.id === info.id
+          ? {
+              ...item,
+              name: info.name,
+              description: info.description,
+              icon: info.icon,
+            }
+          : item,
+      ),
+    );
+    setEditTarget(undefined);
   }, []);
 
   return (
@@ -178,7 +180,7 @@ const UserAppProject: React.FC = () => {
               key={item.id}
               item={item}
               onClick={handleOpenProject}
-              onRename={handleRename}
+              onEdit={handleEdit}
               onDelete={openDeleteConfirm}
             />
           ))}
@@ -204,23 +206,13 @@ const UserAppProject: React.FC = () => {
         }}
       />
 
-      <Modal
-        title={dict('PC.Components.HistoryConversationList.renameModalTitle')}
-        open={renameTarget !== undefined}
-        onOk={() => void handleRenameSubmit()}
-        onCancel={() => setRenameTarget(undefined)}
-        okButtonProps={{ disabled: !renameName.trim() }}
-        okText={dict('PC.Common.Global.confirm')}
-        cancelText={dict('PC.Common.Global.cancel')}
-        destroyOnHidden
-      >
-        <Input
-          value={renameName}
-          onChange={(event) => setRenameName(event.target.value)}
-          onPressEnter={() => void handleRenameSubmit()}
-          maxLength={50}
-        />
-      </Modal>
+      <CreateUserApp
+        mode={CreateUpdateModeEnum.Update}
+        userAppInfo={editTarget as UserAppInfo | undefined}
+        open={editTarget !== undefined}
+        onCancel={() => setEditTarget(undefined)}
+        onConfirmUpdate={handleEdited}
+      />
     </div>
   );
 };

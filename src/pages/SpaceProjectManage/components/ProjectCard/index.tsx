@@ -17,7 +17,7 @@ const cx = classNames.bind(styles);
 
 /** 项目卡片更多操作 */
 enum ProjectCardActionEnum {
-  Rename = 'rename',
+  Edit = 'edit',
   Delete = 'delete',
 }
 
@@ -26,8 +26,8 @@ export interface ProjectCardProps {
   item: UserProjectItem;
   /** 点击卡片 */
   onClick?: (item: UserProjectItem) => void;
-  /** 重命名 */
-  onRename?: (item: UserProjectItem) => void;
+  /** 编辑 */
+  onEdit?: (item: UserProjectItem) => void;
   /** 删除 */
   onDelete?: (item: UserProjectItem) => void;
 }
@@ -37,22 +37,22 @@ export interface ProjectCardProps {
  *
  * @param props.item 项目数据
  * @param props.onClick 点击卡片
- * @param props.onRename 重命名
+ * @param props.onEdit 编辑
  * @param props.onDelete 删除
  * @returns 项目卡片
  */
 const ProjectCard: React.FC<ProjectCardProps> = ({
   item,
   onClick,
-  onRename,
+  onEdit,
   onDelete,
 }) => {
   const actionList = useMemo<CustomPopoverItem[]>(
     () => [
       {
-        type: ProjectCardActionEnum.Rename,
+        type: ProjectCardActionEnum.Edit,
         icon: <EditOutlined />,
-        label: dict('PC.Components.ConversationContextMenu.rename'),
+        label: dict('PC.Common.Global.edit'),
       },
       {
         type: ProjectCardActionEnum.Delete,
@@ -66,13 +66,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
   const handleClickMore = useCallback(
     (action: CustomPopoverItem) => {
-      if (action.type === ProjectCardActionEnum.Rename) {
-        onRename?.(item);
+      if (action.type === ProjectCardActionEnum.Edit) {
+        onEdit?.(item);
       } else if (action.type === ProjectCardActionEnum.Delete) {
         onDelete?.(item);
       }
     },
-    [item, onDelete, onRename],
+    [item, onDelete, onEdit],
   );
 
   return (

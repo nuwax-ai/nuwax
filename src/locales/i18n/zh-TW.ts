@@ -6237,6 +6237,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createButton": "新建項目",
   "PC.Pages.SpaceProjectManage.createNormalProject": "常規項目",
   "PC.Pages.SpaceProjectManage.createNormalProjectBtn": "建立常規專案",
+  "PC.Pages.SpaceProjectManage.editNormalProject": "編輯常規專案",
   "PC.Pages.SpaceProjectManage.createPageApp": "網頁應用",
   "PC.Pages.SpaceProjectManage.createUserApp": "全棧應用",
   "PC.Pages.SpaceProjectManage.createUserAppBtn": "建立全棧應用",
