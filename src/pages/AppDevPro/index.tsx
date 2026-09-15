@@ -1917,6 +1917,9 @@ const AppDevPro: React.FC = () => {
   const isDatabasePanelOpen = workspaceView === 'database';
   /** 应用预览独立视图是否激活（Header 图标高亮） */
   const isAppPreviewOpen = workspaceView === 'app-preview';
+  /** 线上环境未部署时没有可预览的应用，隐藏应用预览入口 */
+  const isShowAppPreview =
+    dbEnv === UserAppDbEnvEnum.Dev || userAppInfo?.prodDeployed === true;
   /** 远程桌面页签是否激活（Header 图标高亮） */
   const isAgentDesktopOpen = previewTabs.activeTab?.toolId === 'remote-desktop';
 
@@ -1989,6 +1992,7 @@ const AppDevPro: React.FC = () => {
         appId={appId}
         activeTab={databaseActiveTab}
         env={dbEnv}
+        visible={workspaceView === 'database'}
         devContainerStatus={envPodConversationId ? podStatus : undefined}
         prodContainerStatus={envPodConversationId ? prodPod.status : undefined}
         iframeKey={databaseIframeKey}
@@ -2006,6 +2010,7 @@ const AppDevPro: React.FC = () => {
       handleRetryContainer,
       podStatus,
       prodPod.status,
+      workspaceView,
     ],
   );
 
@@ -2350,6 +2355,7 @@ const AppDevPro: React.FC = () => {
         onOpenSettings={() => setSettingsOpen(true)}
         isDatabasePanelOpen={isDatabasePanelOpen}
         onOpenDatabase={handleOpenDatabasePanel}
+        isShowAppPreview={isShowAppPreview}
         isAppPreviewOpen={isAppPreviewOpen}
         onOpenAppPreview={handleOpenAppPreview}
         isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
