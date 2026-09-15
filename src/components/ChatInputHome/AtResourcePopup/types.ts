@@ -53,6 +53,12 @@ export interface AtResourcePopupProps {
   onSelectSkill: (item: SkillListItem) => void;
   /** 「更多」入口（仅专家/资料库 tab 展示）：打开能力大弹窗定位对应维度 */
   onMore: (tab: AtPopupTab) => void;
+  /**
+   * 切换 tab 后回调：宿主把焦点/光标交还编辑器——点击切换器会把
+   * 焦点落入其内部 radio（mousedown 拦不住 label 聚焦），不交还则
+   * ↑↓ 键盘导航失效
+   */
+  onTabSwitch?: () => void;
   /** 关闭回调（Esc / 空数据场景由编辑器侧触发） */
   onClose: () => void;
   /** 弹层内容高度变化回调（外部重新定位，向上展开时底边贴光标） */

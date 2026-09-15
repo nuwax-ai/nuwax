@@ -6361,6 +6361,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createButton": "New Project",
   "PC.Pages.SpaceProjectManage.createNormalProject": "Normal Project",
   "PC.Pages.SpaceProjectManage.createNormalProjectBtn": "Create Normal Project",
+  "PC.Pages.SpaceProjectManage.editNormalProject": "Edit Normal Project",
   "PC.Pages.SpaceProjectManage.createPageApp": "Web App",
   "PC.Pages.SpaceProjectManage.createUserApp": "Full-stack App",
   "PC.Pages.SpaceProjectManage.createUserAppBtn": "Create Full-stack App",
@@ -6383,7 +6384,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ThirdAppIntegration.editTitle": "Edit third-party app",
   // Third-party app details
   "PC.Pages.ThirdAppDetail.tabSetting": "Settings",
-  "PC.Pages.ThirdAppDetail.untitled": "Untitled app",
   "PC.Pages.ThirdAppDetail.emptyValue": "—",
   "PC.Pages.ThirdAppDetail.oauthTitle": "OAuth2 credentials",
   "PC.Pages.ThirdAppDetail.oauthDesc": "The platform generated OAuth2 credentials for this project. They can be used for third-party sign-in and API auth. Keep the Client Secret private and never commit it to a public repo.",
@@ -6400,7 +6400,7 @@ export const EN_US: SystemLangMap = {
   // 常规项目详情页
   "PC.Pages.NormalProjectDetail.tabPlan": "Plan",
   "PC.Pages.NormalProjectDetail.tabAsset": "Assets",
-  "PC.Pages.NormalProjectDetail.comingSoon": "Coming soon",
+  "PC.Pages.NormalProjectDetail.repositoryLoadFailed": "Page failed to load. Refresh and try again.",
   "PC.Pages.NormalProjectDetail.untitled": "Untitled project",
   "PC.Pages.NormalProjectDetail.hideConversationPanel": "Hide related tasks",
   "PC.Pages.NormalProjectDetail.showConversationPanel": "Show related tasks",
@@ -6409,7 +6409,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectDetail.tabPlan": "Plan",
   "PC.Pages.AppProjectDetail.tabAsset": "Assets",
   "PC.Pages.AppProjectDetail.tabSetting": "Settings",
-  "PC.Pages.AppProjectDetail.comingSoon": "Coming soon",
+  "PC.Pages.AppProjectDetail.repositoryLoadFailed": "Page failed to load. Refresh and try again.",
   // OAuth2 认证
   "PC.Pages.AppProjectDetail.oauthTitle": "OAuth2 credentials",
   "PC.Pages.AppProjectDetail.oauthDesc": "The platform generated OAuth2 credentials for this project. They can be used for third-party sign-in and API auth. Keep the Client Secret private and never commit it to a public repo.",

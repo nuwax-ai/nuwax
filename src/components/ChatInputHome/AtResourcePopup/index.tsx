@@ -201,6 +201,7 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
       onSelectExpert,
       onSelectSkill,
       onMore,
+      onTabSwitch,
       onHeightChange,
     } = props;
 
@@ -365,7 +366,12 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
       <div
         ref={rootRef}
         data-at-popup
-        className={cx(styles.popup)}
+        className={cx(
+          styles.popup,
+          // 文件 tab 无「更多」：更多区高度让给列表区（CSS 变量归零），
+          // 弹层总高跨 tab 恒定且底部无留白
+          activeTab === 'file' && styles['popup-no-more'],
+        )}
         style={{
           position: 'fixed',
           left: position.left,
@@ -384,9 +390,14 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
           <div className={cx(styles.tabs)}>
             <Segmented
               block
-              size="large"
+              size="middle"
               value={activeTab}
-              onChange={(value) => setActiveTab(value as AtPopupTab)}
+              onChange={(value) => {
+                setActiveTab(value as AtPopupTab);
+                // 焦点/光标交还编辑器（点击会把焦点落入切换器内部
+                // radio,不交还则编辑器收不到 ↑↓ 键盘导航）
+                onTabSwitch?.();
+              }}
               options={tabs.map((tab) => ({
                 label: t(TAB_LABEL_KEY[tab]),
                 value: tab,
@@ -403,10 +414,12 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
           )}
           onMouseMove={handleContentMouseMove}
         >
+          {/* 内嵌列表统一 simple 模式（无背景圆形图标 + 标题单行紧凑行） */}
           {activeTab === 'expert' && (
             <ExpertListView
               type="convenient"
               variant="list"
+              simple
               keyword={searchText}
               onSelect={onSelectExpert}
               className={cx(styles['embed-list'])}
@@ -416,6 +429,7 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
             <KnowledgeListView
               type="recent"
               variant="list"
+              simple
               keyword={searchText}
               onSelect={onSelectDoc}
               className={cx(styles['embed-list'])}
@@ -425,6 +439,7 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
             <SkillListView
               type="convenient"
               variant="list"
+              simple
               keyword={searchText}
               onSelect={onSelectSkill}
               className={cx(styles['embed-list'])}
@@ -444,13 +459,15 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
             />
           )}
         </div>
-        {/* 更多入口：专家/资料库/技能 tab（能力大弹窗无文件维度），
-            定位对应维度打开（专家仅首页开放范围）；block 按钮宽度由
-            wrap 的 content 区约束（100%+水平 margin 会溢出弹层） */}
+        {/* 更多入口：专家/资料库/技能 tab 显示；文件 tab（能力大弹窗无
+            文件维度）不渲染，高度让给列表区（popup-no-more）——弹层总高
+            跨 tab 恒定且无底部留白；block 按钮宽度由 wrap 的 content 区
+            约束（100%+水平 margin 会溢出弹层） */}
         {activeTab !== 'file' && (
           <div className={cx(styles['more-wrap'])}>
             <Button
               block
+              size="middle"
               className={cx(styles.more)}
               data-at-more
               onClick={() => onMore(activeTab)}

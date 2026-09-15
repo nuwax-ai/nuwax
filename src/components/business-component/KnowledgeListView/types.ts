@@ -45,6 +45,11 @@ export interface KnowledgeListViewProps {
   onSelect: (item: KnowledgeListItem) => void;
   /** 每页数量，默认 20（树平铺后客户端切片步长） */
   pageSize?: number;
+  /**
+   * 简单模式（仅 variant=list 生效）：单行紧凑行——无背景圆形图标 +
+   * 标题；grid 变体传入忽略。默认 false
+   */
+  simple?: boolean;
   /** 根容器（滚动容器）类名 */
   className?: string;
 }

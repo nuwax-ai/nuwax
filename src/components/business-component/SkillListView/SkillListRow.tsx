@@ -3,6 +3,7 @@
  * 右端常驻启用开关。无边线，悬停方形圆角灰底；整行点击即选中（list
  * 紧凑场景不渲染悬停「选择」按钮，仅保留功能性开关）。与 grid 变体
  * 功能一致（选中/开关/付费角标），仅布局不同。
+ * simple 模式：无背景圆形图标 + 标题单行，不渲染描述与开关。
  */
 import { t } from '@/services/i18nRuntime';
 import { Badge, Switch } from 'antd';
@@ -17,52 +18,59 @@ import SkillIcon from './SkillIcon';
 
 const cx = classNames.bind(styles);
 
-const SkillListRow: React.FC<SkillCardBaseProps> = ({
+const SkillListRow: React.FC<SkillCardBaseProps & { simple?: boolean }> = ({
   item,
   index,
   onSelect,
   onToggleEnable,
   enableBusyKeys,
+  simple = false,
 }) => {
   const row = (
     <div
       data-skill-key={item.key}
-      className={cx(styles['list-row'])}
+      className={cx(styles['list-row'], simple && styles['row-simple'])}
       onClick={() => onSelect(item)}
     >
       <SkillIcon
         icon={item.icon}
         name={item.name}
         background={
-          SKILL_ICON_BACKGROUNDS[index % SKILL_ICON_BACKGROUNDS.length]
+          simple
+            ? 'transparent'
+            : SKILL_ICON_BACKGROUNDS[index % SKILL_ICON_BACKGROUNDS.length]
         }
-        className={cx(styles['list-icon'])}
+        className={cx(styles['list-icon'], simple && styles['icon-simple'])}
       />
       <div className={cx(styles['card-heading'])}>
         <span className={cx(styles['card-name'])} title={item.name}>
           {item.name}
         </span>
-        <div className={cx(styles['card-desc'])} title={item.description}>
-          {item.description}
+        {!simple && (
+          <div className={cx(styles['card-desc'])} title={item.description}>
+            {item.description}
+          </div>
+        )}
+      </div>
+      {!simple && (
+        <div className={cx(styles['list-actions'])}>
+          <Switch
+            className={cx(styles['card-switch'])}
+            size="small"
+            checked={item.enabled === true}
+            loading={enableBusyKeys?.includes(item.key)}
+            aria-label={t(
+              item.enabled
+                ? 'PC.Components.CapabilityModal.unEnable'
+                : 'PC.Components.CapabilityModal.enable',
+            )}
+            onClick={(_, event) => {
+              event.stopPropagation();
+              onToggleEnable(item);
+            }}
+          />
         </div>
-      </div>
-      <div className={cx(styles['list-actions'])}>
-        <Switch
-          className={cx(styles['card-switch'])}
-          size="small"
-          checked={item.enabled === true}
-          loading={enableBusyKeys?.includes(item.key)}
-          aria-label={t(
-            item.enabled
-              ? 'PC.Components.CapabilityModal.unEnable'
-              : 'PC.Components.CapabilityModal.enable',
-          )}
-          onClick={(_, event) => {
-            event.stopPropagation();
-            onToggleEnable(item);
-          }}
-        />
-      </div>
+      )}
     </div>
   );
   if (item.paymentRequired) {

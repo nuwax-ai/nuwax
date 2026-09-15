@@ -48,6 +48,7 @@ const SkillListView: React.FC<SkillListViewProps> = ({
   onSelect,
   onEnabledChange,
   pageSize = 20,
+  simple = false,
   className,
 }) => {
   const {
@@ -228,6 +229,7 @@ const SkillListView: React.FC<SkillListViewProps> = ({
                 key={item.key}
                 item={item}
                 index={index}
+                simple={simple}
                 {...cardProps}
               />
             ),

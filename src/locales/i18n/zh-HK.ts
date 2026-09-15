@@ -6230,6 +6230,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createButton": "新建項目",
   "PC.Pages.SpaceProjectManage.createNormalProject": "常規項目",
   "PC.Pages.SpaceProjectManage.createNormalProjectBtn": "建立常規項目",
+  "PC.Pages.SpaceProjectManage.editNormalProject": "編輯常規項目",
   "PC.Pages.SpaceProjectManage.createPageApp": "網頁應用",
   "PC.Pages.SpaceProjectManage.createUserApp": "全棧應用",
   "PC.Pages.SpaceProjectManage.createUserAppBtn": "建立全棧應用",
@@ -6252,7 +6253,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.ThirdAppIntegration.editTitle": "編輯三方應用",
   // 三方應用詳情
   "PC.Pages.ThirdAppDetail.tabSetting": "設定",
-  "PC.Pages.ThirdAppDetail.untitled": "未命名應用",
   "PC.Pages.ThirdAppDetail.emptyValue": "—",
   "PC.Pages.ThirdAppDetail.oauthTitle": "OAuth2 認證資訊",
   "PC.Pages.ThirdAppDetail.oauthDesc": "平台已為該項目自動產生 OAuth2 憑證，可用於第三方登入與介面鑑權。Client Secret 屬於敏感資訊，請勿寫入前端或提交到公開倉庫。",
@@ -6269,7 +6269,7 @@ export const ZH_HK: SystemLangMap = {
   // 常規項目詳情頁
   "PC.Pages.NormalProjectDetail.tabPlan": "計劃",
   "PC.Pages.NormalProjectDetail.tabAsset": "資產",
-  "PC.Pages.NormalProjectDetail.comingSoon": "功能即將開放",
+  "PC.Pages.NormalProjectDetail.repositoryLoadFailed": "頁面載入失敗，請重新整理後再試",
   "PC.Pages.NormalProjectDetail.untitled": "未命名項目",
   "PC.Pages.NormalProjectDetail.hideConversationPanel": "隱藏相關任務",
   "PC.Pages.NormalProjectDetail.showConversationPanel": "顯示相關任務",
@@ -6278,7 +6278,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppProjectDetail.tabPlan": "計劃",
   "PC.Pages.AppProjectDetail.tabAsset": "資產",
   "PC.Pages.AppProjectDetail.tabSetting": "設定",
-  "PC.Pages.AppProjectDetail.comingSoon": "功能即將開放",
+  "PC.Pages.AppProjectDetail.repositoryLoadFailed": "頁面載入失敗，請重新整理後再試",
   // OAuth2 认证
   "PC.Pages.AppProjectDetail.oauthTitle": "OAuth2 認證資訊",
   "PC.Pages.AppProjectDetail.oauthDesc": "平台已為該項目自動產生 OAuth2 憑證，可用於第三方登入與介面鑑權。Client Secret 屬於敏感資訊，請勿寫入前端或提交到公開倉庫。",

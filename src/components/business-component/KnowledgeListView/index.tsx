@@ -34,6 +34,7 @@ const KnowledgeListView: React.FC<KnowledgeListViewProps> = ({
   spaceId,
   onSelect,
   pageSize = 20,
+  simple = false,
   className,
 }) => {
   const { list, loading, hasMore, loadMore } = useKnowledgeList({
@@ -93,6 +94,7 @@ const KnowledgeListView: React.FC<KnowledgeListViewProps> = ({
               key={item.key}
               item={item}
               variant={variant}
+              simple={simple}
               onSelect={onSelect}
             />
           ))}

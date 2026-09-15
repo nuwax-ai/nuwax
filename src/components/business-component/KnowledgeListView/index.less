@@ -186,3 +186,22 @@
 .row[data-variant='grid']:hover .select-btn {
   display: inline-block;
 }
+
+// ---- 简单模式（仅 list 变体）：无背景圆形图标 + 标题单行紧凑行 ----
+.row-simple {
+  min-height: 40px;
+  padding: 4px 12px;
+}
+
+// RepoFileIcon 的 tinted 底为内联样式,须 !important 覆盖
+.file-icon.icon-simple {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent !important;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
