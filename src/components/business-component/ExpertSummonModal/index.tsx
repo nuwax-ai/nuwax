@@ -3,9 +3,11 @@
  * @description 专家付费拦截用的 Modal + ExpertSummonCard 组合纯展示包装：
  * 宽度随内容自适应、居中、无 footer；详情复核/套餐订阅/召唤在
  * ExpertSummonCard 内自闭环，外部只需传入专家信息与回调。
- * 消费方：添加能力弹窗（CapabilityModal）付费专家「聘请」、
- * 专家&专家团页（ExpertSkillConnector）付费专家「召唤/付费角标」——
- * 两处拦截口径一致（先按 /agent/:id 详情复核，确认付费未订阅才弹）。
+ * 消费方：系统/团队广场（Square、SpaceSquare）付费智能体、
+ * 专家&专家团页（ExpertSkillConnector）付费专家——与能力弹窗
+ * （ExpertListView 内聚的付费门）同源同款：同卡同 Modal 定制样式
+ * （内容区去内边距/透明背景，见 index.less），拦截口径一致
+ * （先按 /agent/:id 详情复核，确认付费未订阅才弹）。
  *
  * 用法：
  * ```tsx

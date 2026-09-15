@@ -64,6 +64,11 @@ export interface ConnectorListViewProps {
   onConnectedChange?: (item: ConnectorListItem, connected: boolean) => void;
   /** 每页数量，默认 20（connected 视图忽略） */
   pageSize?: number;
+  /**
+   * 简单模式（仅 variant=list 生效）：单行紧凑行——无背景圆形图标 +
+   * 标题，不渲染描述、连接状态与开关；grid 变体传入忽略。默认 false
+   */
+  simple?: boolean;
   /** 根容器（滚动容器）类名 */
   className?: string;
 }

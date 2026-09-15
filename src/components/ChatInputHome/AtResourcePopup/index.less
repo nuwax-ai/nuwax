@@ -7,7 +7,11 @@
 
 // 弹层本体：固定在光标附近（fixed 定位由内联 style 受控注入）
 .popup {
-  width: 320px;
+  // 「更多」区高度（含 padding）：多 tab 文件页不渲染更多区时归零，
+  // 该高度让渡给列表区——弹层总高跨 tab 恒定
+  --more-h: 46px;
+
+  width: 380px;
   max-width: calc(100vw - 8px);
   background: @colorBgContainer;
   border-radius: 16px;
@@ -22,29 +26,38 @@
   display: flex;
   flex-direction: column;
 
-  // 顶部分段 tab（antd Segmented：灰底容器 + 白色胶囊选中）
+  // 顶部分段 tab（antd Segmented：灰底容器 + 白色胶囊选中，小尺寸）
   .tabs {
     flex-shrink: 0;
-    padding: 12px 16px 8px;
+    padding: 8px 12px 6px;
   }
 
   // 内容区：当前 tab 的列表（内嵌列表组件根节点即滚动容器）。
-  // 最大高度统一在容器层收敛（内嵌列表组件不自限）：列表区上限 360px
-  // （约 5-6 行），与外部传入的弹层 maxHeight 取小（视口小时 flex 收缩）；
-  // 上下 4px 内边距给键盘聚焦描边（box-shadow）留出空间，避免在滚动
-  // 容器边缘被裁断
+  // 高度统一在容器层收敛（内嵌列表组件不自限）：多 tab 固定基准
+  // ——列表区与更多区之和恒为 366px（有更多按钮时列表 320+更多 46；
+  // 文件页更多区不渲染则整段让渡给列表 366），切换 tab 面板高度不随
+  // 行数/空态/loading 差异跳动（少则留白、多则列表内部滚动）；单 tab
+  // 高度随内容、以同值为上限；外部传入的弹层 maxHeight 不足时经
+  // flex 收缩让位；上下 4px 内边距给键盘聚焦描边（box-shadow）留出
+  // 空间，避免在滚动容器边缘被裁断
   .content {
-    flex: 1;
+    flex: 1 1 calc(366px - var(--more-h));
     min-height: 0;
-    max-height: 360px;
+    max-height: calc(366px - var(--more-h));
     display: flex;
     flex-direction: column;
     padding: 4px 12px;
   }
 
-  // 无切换器（单 tab 收敛为纯资料库）时顶部留白
+  // 单 tab（无切换器，无切换即无跳动）：高度随内容，上限即固定基准
   .content-no-tabs {
-    padding-top: 12px;
+    flex: 0 1 auto;
+    padding-top: 8px;
+  }
+
+  // 多 tab 的文件页：更多区不渲染，高度让渡（见 --more-h）
+  &.popup-no-more {
+    --more-h: 0;
   }
 
   // 内嵌列表（ExpertListView / KnowledgeListView·list 变体）
@@ -127,7 +140,7 @@
   // margin 溢出弹层容器）；按钮视觉随 antd 主题
   .more-wrap {
     flex-shrink: 0;
-    padding: 8px 16px 12px;
+    padding: 6px 12px 8px;
   }
 
   .more-icon {

@@ -23,12 +23,12 @@ import {
 import type { TabsProps } from 'antd';
 import {
   Button,
-  Empty,
   Form,
   Input,
   message,
   Modal,
   Radio,
+  Result,
   Spin,
   Tabs,
 } from 'antd';
@@ -115,12 +115,12 @@ const pickResponseData = <T,>(
  *
  * 数据：
  * - 进页拉 apiUserAppGetById，用 name 填标题、用 deployType 回填平台/私服；
- * - 设置 Tab 拉 OAuth2、自定义域名、项目会话列表；
+ * - 进页拉项目会话列表，设置 Tab 再拉 OAuth2 与自定义域名；
  * - 选私服时再拉私有服务器列表（进页若已是私服也会拉一次）；
  * - 「设置部署服务器」：平台直接保存；私服弹窗单选后保存。
  *
- * 计划 / 资产 Tab 暂为占位。路由参数 spaceId、appId 来自
- * `/space/:spaceId/app-project-detail/:appId`。
+ * 计划 / 资产 Tab 分别通过 iframe 展示项目计划目录与资料库文档。
+ * 路由参数 spaceId、appId 来自 `/space/:spaceId/app-project-detail/:appId`。
  *
  * @returns 全栈应用详情页
  */
@@ -129,10 +129,11 @@ const AppProjectDetail: React.FC = () => {
   const spaceId = Number(params.spaceId);
   const appId = Number(params.appId);
 
-  const [activeTab, setActiveTab] = useState<SettingTabKey>('setting');
+  const [activeTab, setActiveTab] = useState<SettingTabKey>('plan');
   const [conversations, setConversations] = useState<
     UserProjectConversationInfo[]
   >([]);
+  const [projectInfo, setProjectInfo] = useState<UserAppInfo>();
   const [projectName, setProjectName] = useState<string>('');
   const [domains, setDomains] = useState<UserAppDomainInfo[]>([]);
   const [deployMode, setDeployMode] = useState<UserAppDeployTypeEnum>(
@@ -153,6 +154,7 @@ const AppProjectDetail: React.FC = () => {
     useState<number>();
   const [conversationPanelVisible, setConversationPanelVisible] =
     useState<boolean>(true);
+  const [iframeLoadFailed, setIframeLoadFailed] = useState<boolean>(false);
 
   /** 项目下全部用户会话，供右侧任务列表展示 */
   const { run: runConversations, loading } = useRequest(
@@ -235,6 +237,7 @@ const AppProjectDetail: React.FC = () => {
         if (!info?.id) {
           return;
         }
+        setProjectInfo(info);
         if (info.name) {
           setProjectName(info.name);
         }
@@ -334,7 +337,7 @@ const AppProjectDetail: React.FC = () => {
     setOauthLoading(true);
     setSecretVisible(false);
     try {
-      const settingRes = await apiThirdAppOauth2SettingGet(String(appId));
+      const settingRes = await apiThirdAppOauth2SettingGet(appId);
       const info = pickResponseData(settingRes);
       setOauthInfo(info);
       setHomepageUrl(info?.homepageUrl || '');
@@ -344,7 +347,7 @@ const AppProjectDetail: React.FC = () => {
         return;
       }
       try {
-        const secretRes = await apiThirdAppOauth2SecretGet(String(appId));
+        const secretRes = await apiThirdAppOauth2SecretGet(appId);
         const secret = pickResponseData(secretRes);
         setClientSecret(typeof secret === 'string' ? secret : '');
       } catch (error) {
@@ -362,30 +365,23 @@ const AppProjectDetail: React.FC = () => {
     }
   }, [appId]);
 
-  // 进页拉应用详情，与当前 Tab 无关
+  // 进页拉应用详情与当前应用的会话列表，与当前 Tab 无关
   useEffect(() => {
     if (!appId) {
       return;
     }
     runGetUserApp();
-  }, [appId, runGetUserApp]);
+    runConversations();
+  }, [appId, runConversations, runGetUserApp]);
 
-  // 域名列表与设置 Tab 共用，进页即拉，绑定/解绑后可复用
-  useEffect(() => {
-    if (!spaceId || !appId) {
-      return;
-    }
-    runDomainList(appId);
-  }, [appId, spaceId]);
-
-  // 切到设置 Tab 时拉 OAuth2 与相关任务，避免计划/资产 Tab 空跑接口
+  // 切到设置 Tab 时再拉 OAuth2 与域名列表，避免进页空跑设置接口
   useEffect(() => {
     if (activeTab !== 'setting' || !appId) {
       return;
     }
     void loadOauthSetting();
-    runConversations();
-  }, [activeTab, appId, loadOauthSetting, runConversations]);
+    runDomainList(appId);
+  }, [activeTab, appId, loadOauthSetting, runDomainList]);
 
   /**
    * 切换发布位置；选私有服务器时再拉私服列表。
@@ -878,16 +874,68 @@ const AppProjectDetail: React.FC = () => {
     </div>
   );
 
-  /**
-   * 计划 / 资产 Tab 占位。
-   *
-   * @returns 空态
-   */
-  const renderComingSoon = () => (
-    <div className={cx('flex', 'items-center', 'content-center', 'h-full')}>
-      <Empty description={dict('PC.Pages.AppProjectDetail.comingSoon')} />
-    </div>
-  );
+  /** 当前计划或资产 Tab 对应的仓库页面地址 */
+  const repositoryPageUrl = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    // 仓库页面会读取父窗口的嵌入配置，必须与父页面保持同源。
+    const domain = window.location.origin;
+    if (activeTab === 'plan' && projectInfo?.planSlugId) {
+      return `${domain}/repo/folder/${encodeURIComponent(
+        projectInfo.planSlugId,
+      )}`;
+    }
+    if (activeTab === 'asset' && projectInfo?.repoSlugId) {
+      return `${domain}/repo/doc/${encodeURIComponent(
+        projectInfo.repoSlugId,
+      )}?just_show_content=true&hide_sheet=true`;
+    }
+    return '';
+  }, [activeTab, projectInfo?.planSlugId, projectInfo?.repoSlugId]);
+
+  /** iframe 地址变化时清除上一个页面的失败状态 */
+  useEffect(() => {
+    setIframeLoadFailed(false);
+  }, [repositoryPageUrl]);
+
+  /** 重新挂载 iframe，触发页面再次加载 */
+  const handleReloadIframe = useCallback(() => {
+    setIframeLoadFailed(false);
+  }, []);
+
+  /** 渲染计划或资产仓库页面 */
+  const renderRepositoryPage = () => {
+    if (iframeLoadFailed || !repositoryPageUrl) {
+      return (
+        <Result
+          className={cx(styles['repository-error'])}
+          status="error"
+          title={dict('PC.Pages.AppProjectDetail.repositoryLoadFailed')}
+          extra={
+            repositoryPageUrl ? (
+              <Button type="primary" onClick={handleReloadIframe}>
+                {dict('PC.Common.Global.refresh')}
+              </Button>
+            ) : null
+          }
+        />
+      );
+    }
+    return (
+      <iframe
+        className={cx(styles['repository-iframe'])}
+        src={repositoryPageUrl}
+        onError={() => setIframeLoadFailed(true)}
+        title={
+          activeTab === 'plan'
+            ? dict('PC.Pages.AppProjectDetail.tabPlan')
+            : dict('PC.Pages.AppProjectDetail.tabAsset')
+        }
+      />
+    );
+  };
 
   return (
     <div className={cx(styles.page, 'h-full', 'flex', 'flex-col')}>
@@ -936,11 +984,16 @@ const AppProjectDetail: React.FC = () => {
             <div
               className={cx(
                 styles['main-scroll'],
+                {
+                  [styles['repository-content']]: activeTab !== 'setting',
+                },
                 'flex-1',
                 'scroll-container-hide',
               )}
             >
-              {activeTab === 'setting' ? renderSetting() : renderComingSoon()}
+              {activeTab === 'setting'
+                ? renderSetting()
+                : renderRepositoryPage()}
             </div>
           </div>
           {conversationPanelVisible ? (

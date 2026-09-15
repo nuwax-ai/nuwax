@@ -6235,6 +6235,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.createButton": "新規プロジェクト",
   "PC.Pages.SpaceProjectManage.createNormalProject": "通常プロジェクト",
   "PC.Pages.SpaceProjectManage.createNormalProjectBtn": "通常プロジェクトを作成",
+  "PC.Pages.SpaceProjectManage.editNormalProject": "通常プロジェクトを編集",
   "PC.Pages.SpaceProjectManage.createPageApp": "Webアプリ",
   "PC.Pages.SpaceProjectManage.createUserApp": "フルスタックアプリ",
   "PC.Pages.SpaceProjectManage.createUserAppBtn": "フルスタックアプリを作成",
@@ -6257,7 +6258,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ThirdAppIntegration.editTitle": "サードパーティアプリを編集",
   // サードパーティアプリ詳細
   "PC.Pages.ThirdAppDetail.tabSetting": "設定",
-  "PC.Pages.ThirdAppDetail.untitled": "名称未設定アプリ",
   "PC.Pages.ThirdAppDetail.emptyValue": "—",
   "PC.Pages.ThirdAppDetail.oauthTitle": "OAuth2 認証情報",
   "PC.Pages.ThirdAppDetail.oauthDesc": "このプロジェクト用の OAuth2 認証情報が自動生成されています。第三者ログインと API 認証に利用できます。Client Secret は機密情報です。フロントエンドや公開リポジトリに書かないでください。",
@@ -6274,7 +6274,7 @@ export const JA_JP: SystemLangMap = {
   // 通常プロジェクト詳細ページ
   "PC.Pages.NormalProjectDetail.tabPlan": "計画",
   "PC.Pages.NormalProjectDetail.tabAsset": "資産",
-  "PC.Pages.NormalProjectDetail.comingSoon": "近日公開",
+  "PC.Pages.NormalProjectDetail.repositoryLoadFailed": "ページを読み込めませんでした。更新してもう一度お試しください",
   "PC.Pages.NormalProjectDetail.untitled": "名称未設定プロジェクト",
   "PC.Pages.NormalProjectDetail.hideConversationPanel": "関連タスクを隠す",
   "PC.Pages.NormalProjectDetail.showConversationPanel": "関連タスクを表示",
@@ -6283,7 +6283,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectDetail.tabPlan": "計画",
   "PC.Pages.AppProjectDetail.tabAsset": "資産",
   "PC.Pages.AppProjectDetail.tabSetting": "設定",
-  "PC.Pages.AppProjectDetail.comingSoon": "近日公開",
+  "PC.Pages.AppProjectDetail.repositoryLoadFailed": "ページを読み込めませんでした。更新してもう一度お試しください",
   // OAuth2 认证
   "PC.Pages.AppProjectDetail.oauthTitle": "OAuth2 認証情報",
   "PC.Pages.AppProjectDetail.oauthDesc": "このプロジェクト用の OAuth2 認証情報が自動生成されています。第三者ログインと API 認証に利用できます。Client Secret は機密情報です。フロントエンドや公開リポジトリに書かないでください。",

@@ -214,7 +214,7 @@ describe('AtResourcePopup·双模式 tab 结构', () => {
     ).toBeNull();
   });
 
-  it('session：上下文文件默认激活且无「更多」入口，切资料库后出现', async () => {
+  it('session：文件 tab 无「更多」（高度让渡列表区），切资料库后出现', async () => {
     const ref = createRef<AtResourcePopupHandle>();
     renderPopup({
       mode: 'session',
@@ -222,8 +222,10 @@ describe('AtResourcePopup·双模式 tab 结构', () => {
       onFetchMentionFiles: async () => [file],
     });
     expect(await screen.findByText('报告.md')).toBeInTheDocument();
+    // 文件 tab：更多区不渲染（高度让渡给列表区，弹层总高不变）
     expect(screen.queryByText('PC.Components.AtResourcePopup.more')).toBeNull();
-    // → 切资料库：列表挂载（recent/list）+「更多」入口出现
+    expect(document.querySelector('[data-at-more]')).toBeNull();
+    // → 切资料库：列表挂载（recent/list）+「更多」出现
     act(() => ref.current?.handleArrowRight());
     await waitFor(() =>
       expect(screen.getByTestId('at-knowledge-list')).toBeInTheDocument(),
@@ -232,9 +234,7 @@ describe('AtResourcePopup·双模式 tab 结构', () => {
       type: 'recent',
       variant: 'list',
     });
-    expect(
-      screen.getByText('PC.Components.AtResourcePopup.more'),
-    ).toBeInTheDocument();
+    expect(document.querySelector('[data-at-more]')).toBeTruthy();
   });
 
   it('home 且专家未开放（expertAvailable=false）：收敛为纯资料库，无切换器无专家列表', async () => {

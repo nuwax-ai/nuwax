@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -29,6 +30,26 @@ export interface ThirdAppOauth2Info {
   scopes: string[];
   /** OAuth2 接入是否启用 */
   enabled: boolean;
+}
+
+/** OAuth2 应用完整信息（仅读接口响应） */
+export interface ThirdAppOauth2AppInfo extends ThirdAppOauth2Info {
+  /** 项目类型：三方应用或全栈应用 */
+  projectType: AgentComponentTypeEnum.ThirdApp | AgentComponentTypeEnum.UserApp;
+  /** 应用名称 */
+  name: string;
+  /** 应用描述 */
+  description: string;
+  /** 应用图标 */
+  icon: string;
+  /** 所属空间 ID */
+  spaceId: number;
+  /** 创建者用户 ID */
+  creatorId: number;
+  /** 创建时间 */
+  created: string;
+  /** 修改时间 */
+  modified: string;
 }
 
 /** 保存主页地址与回调地址（留空表示不修改） */
@@ -109,29 +130,47 @@ export interface ThirdAppOauth2CreateParams {
 }
 
 // 创建三方应用（自动生成 OAuth2 凭证；明文密钥仍需调 -secret 获取）
-export async function apiThirdAppOauth2CredentialCreate(data: ThirdAppOauth2CreateParams): Promise<RequestResponse<ThirdAppOauth2Info>> {
-  return request('/api/user-project/oauth2/create',
-    {
-      method: 'POST',
-      data,
-    },
-  );
+export async function apiThirdAppOauth2CredentialCreate(
+  data: ThirdAppOauth2CreateParams,
+): Promise<RequestResponse<ThirdAppOauth2Info>> {
+  return request('/api/user-project/oauth2/create', {
+    method: 'POST',
+    data,
+  });
 }
 
 // 查询 OAuth2 认证信息（首次访问自动生成凭证，不含密钥明文）
-export async function apiThirdAppOauth2SettingGet(projectId: string): Promise<RequestResponse<ThirdAppOauth2Info>> {
-  return request(`/api/user-project/oauth2/setting/${projectId}`,
-    {
-      method: 'GET',
-    },
-  );
+export async function apiThirdAppOauth2SettingGet(
+  projectId: number,
+): Promise<RequestResponse<ThirdAppOauth2Info>> {
+  return request(`/api/user-project/oauth2/setting/${projectId}`, {
+    method: 'GET',
+  });
 }
 
 // 查看 Client Secret 明文（审计留痕）
-export async function apiThirdAppOauth2SecretGet(projectId: string): Promise<RequestResponse<string>> {
-  return request(`/api/user-project/oauth2/secret/${projectId}`,
-    {
-      method: 'GET',
-    },
-  );
+export async function apiThirdAppOauth2SecretGet(
+  projectId: number,
+): Promise<RequestResponse<string>> {
+  return request(`/api/user-project/oauth2/secret/${projectId}`, {
+    method: 'GET',
+  });
+}
+
+// 查询三方应用信息（仅读，不自动生成凭证）
+export async function apiThirdAppOauth2InfoGet(
+  projectId: number,
+): Promise<RequestResponse<ThirdAppOauth2AppInfo>> {
+  return request(`/api/user-project/oauth2/info/${projectId}`, {
+    method: 'GET',
+  });
+}
+
+// 删除三方应用（凭证随行吊销：已签发授权码与令牌立即失效）
+export async function apiThirdAppOauth2Delete(
+  projectId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user-project/oauth2/delete/${projectId}`, {
+    method: 'POST',
+  });
 }
