@@ -188,10 +188,6 @@ export function createConversationRuntimeSession(
     ownerMessageId: string,
     context?: {
       isSuggestEnabled?: boolean;
-      topicSnapshot?: ConversationInfo | null;
-      topicSync?: boolean;
-      firstEventOfConnection?: boolean;
-      lastMessage?: string;
     },
   ) => {
     currentRequestId = res.requestId || '';
@@ -286,21 +282,6 @@ export function createConversationRuntimeSession(
         runtime.effects.dispatch({
           type: 'suggest.fetch',
           params: { conversationId } as never,
-        });
-      }
-      // 首轮消息后更新主题（gate：快照未更新过 && 本次连接收到过事件）
-      if (
-        context?.topicSnapshot &&
-        context.topicSnapshot.topicUpdated !== 1 &&
-        context.topicSync !== false &&
-        context.firstEventOfConnection &&
-        context.lastMessage
-      ) {
-        runtime.effects.dispatch({
-          type: 'topic.update',
-          conversationId: conversationId as number,
-          firstMessage: context.lastMessage,
-          currentInfo: context.topicSnapshot,
         });
       }
       return;
@@ -411,7 +392,10 @@ export function createConversationRuntimeSession(
 
     // 连接级终态解析记忆（与旧线 hasResolvedTerminalStatus 一致）
     let hasResolvedTerminalStatus = false;
-    let firstEventOfConnection = true;
+    // 首事件即更名（对齐旧线 updateTopicOnce 时机）：本连接首个事件（任意类型）
+    // 消费一次。此前分发挂在 FINAL 分支且要求 FINAL 为首事件——正常流式回答前面
+    // 必有 MESSAGE/THINK 事件，到 FINAL 时恒为 false，改名接口永不触发（禅道 bug2382）
+    let topicUpdateArmed = true;
     const liveRunId = runtime.liveConnection.startRun();
 
     const abortConnection = openLiveConversationStream(params, {
@@ -426,16 +410,32 @@ export function createConversationRuntimeSession(
           );
         }
 
+        // 首轮消息后更新会话主题（gate 与旧线同源：快照存在且【未更名过或还没有
+        // 名字】、非隔离入口 isSync 语义；bug2382：/api/project/create 预建的会话
+        // 预置 topicUpdated=1+空 topic，仅看标记会被堵死，无名即应尝试命名；
+        // 重复防护=执行体 needUpdateTopic 锁+后端 topicUpdated）
+        if (topicUpdateArmed) {
+          topicUpdateArmed = false;
+          if (
+            input.currentInfo &&
+            (input.currentInfo.topicUpdated !== 1 ||
+              !input.currentInfo.topic) &&
+            input.topicGate?.isSync !== false
+          ) {
+            runtime.effects.dispatch({
+              type: 'topic.update',
+              conversationId,
+              firstMessage: message,
+              currentInfo: input.currentInfo,
+            });
+          }
+        }
+
         notifyState();
         // 消息投影 + 事件分支副作用（live 与 sub 恢复共用）
         applyStreamEvent(res, currentMessageId, {
           isSuggestEnabled: input.isSuggestEnabled,
-          topicSnapshot: input.currentInfo,
-          topicSync: input.topicGate?.isSync,
-          firstEventOfConnection,
-          lastMessage: message,
         });
-        firstEventOfConnection = false;
       },
       onClose: () => {
         // 过期连接：只清理自己的消息，不触碰新一轮（与旧线 superseded 保护一致）
