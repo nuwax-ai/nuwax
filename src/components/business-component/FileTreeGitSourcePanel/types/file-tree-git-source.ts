@@ -91,6 +91,10 @@ export interface FileTreeContainerProps {
   fileTreeContainerRef: React.RefObject<HTMLDivElement>;
   /** 文件树数据是否加载中 */
   fileTreeDataLoading?: boolean;
+  /** 已完成懒加载的文件夹 ID */
+  loadedFolderIds?: Set<string>;
+  /** 缓存恢复时补拉仍处于展开状态的目录 */
+  onLoadDirectory?: (path: string) => void | Promise<void>;
   /** TaskAgent 自动选中的文件 ID（外部驱动选中） */
   taskAgentSelectedFileId?: string;
   /** 是否允许删除技能文件（如 SKILL.md） */

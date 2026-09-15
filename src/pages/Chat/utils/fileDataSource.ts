@@ -24,11 +24,26 @@ export function mergeDirectoryLevelFiles<T extends { name: string }>(
   directoryPath: string,
 ): T[] {
   const normalizedDirectoryPath = directoryPath.replace(/^\/+|\/+$/g, '');
-  const retainedFiles = loadedFiles.filter(
-    (file) =>
-      parentDirectory(file.name.replace(/^\/+|\/+$/g, '')) !==
-      normalizedDirectoryPath,
+  const incomingNames = new Set(
+    directoryFiles.map((file) => file.name.replace(/^\/+|\/+$/g, '')),
   );
+  const removedChildPaths = loadedFiles
+    .map((file) => file.name.replace(/^\/+|\/+$/g, ''))
+    .filter(
+      (name) =>
+        parentDirectory(name) === normalizedDirectoryPath &&
+        !incomingNames.has(name),
+    );
+  const retainedFiles = loadedFiles.filter((file) => {
+    const name = file.name.replace(/^\/+|\/+$/g, '');
+    if (parentDirectory(name) === normalizedDirectoryPath) {
+      return false;
+    }
+    return !removedChildPaths.some(
+      (removedPath) =>
+        name === removedPath || name.startsWith(`${removedPath}/`),
+    );
+  });
   const mergedFiles = new Map<string, T>();
 
   [...retainedFiles, ...directoryFiles].forEach((file) => {

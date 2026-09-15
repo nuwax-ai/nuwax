@@ -52,7 +52,10 @@ import React, {
 } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
-import AppDevProHeader from './AppDevProHeader';
+import {
+  AppDevProHeaderActions,
+  AppDevProHeaderBrand,
+} from './AppDevProHeader';
 import AppDevAppPreviewPanel from './components/AppDevAppPreviewPanel';
 import AppDevBottomConsole, {
   type ConsoleExternalContainerStatus,
@@ -486,14 +489,17 @@ const AppDevPro: React.FC = () => {
    *
    * @param targetEnv 目标环境
    */
-  const startEnvPodIfNeeded = useCallback((targetEnv: UserAppDbEnvEnum) => {
-    const status =
-      targetEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus;
-    if (status === 'running' || status === 'starting') {
-      return;
-    }
-    void ensureEnvPodRef.current(targetEnv, status === 'error');
-  }, [podStatus, prodPod.status]);
+  const startEnvPodIfNeeded = useCallback(
+    (targetEnv: UserAppDbEnvEnum) => {
+      const status =
+        targetEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus;
+      if (status === 'running' || status === 'starting') {
+        return;
+      }
+      void ensureEnvPodRef.current(targetEnv, status === 'error');
+    },
+    [podStatus, prodPod.status],
+  );
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(appId, {
@@ -1917,6 +1923,9 @@ const AppDevPro: React.FC = () => {
   const isDatabasePanelOpen = workspaceView === 'database';
   /** 应用预览独立视图是否激活（Header 图标高亮） */
   const isAppPreviewOpen = workspaceView === 'app-preview';
+  /** 线上环境未部署时没有可预览的应用，隐藏应用预览入口 */
+  const isShowAppPreview =
+    dbEnv === UserAppDbEnvEnum.Dev || userAppInfo?.prodDeployed === true;
   /** 远程桌面页签是否激活（Header 图标高亮） */
   const isAgentDesktopOpen = previewTabs.activeTab?.toolId === 'remote-desktop';
 
@@ -1989,6 +1998,7 @@ const AppDevPro: React.FC = () => {
         appId={appId}
         activeTab={databaseActiveTab}
         env={dbEnv}
+        visible={workspaceView === 'database'}
         devContainerStatus={envPodConversationId ? podStatus : undefined}
         prodContainerStatus={envPodConversationId ? prodPod.status : undefined}
         iframeKey={databaseIframeKey}
@@ -2006,6 +2016,7 @@ const AppDevPro: React.FC = () => {
       handleRetryContainer,
       podStatus,
       prodPod.status,
+      workspaceView,
     ],
   );
 
@@ -2332,34 +2343,7 @@ const AppDevPro: React.FC = () => {
   // ==================== 主渲染 ====================
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
-      {/* 页面顶部 Header：返回、项目信息、文件树/终端入口 */}
-      <AppDevProHeader
-        userAppInfo={userAppInfo}
-        spaceId={spaceId}
-        onConfirmUpdate={setUserAppInfo}
-        onPublish={handleOpenPublish}
-        onOpenMarketPublish={() => setOpenPublishModal(true)}
-        publishing={publishFlow.publishing}
-        remotePublishing={showRemotePublishing}
-        onCancelRemotePublish={handleCancelRemotePublish}
-        cancelRemotePublishLoading={cancelRemotePublishLoading}
-        isFileTreeSidebarVisible={isFileTreeIconActive}
-        onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-        isTerminalPanelOpen={isTerminalIconActive}
-        onOpenTerminalPanel={handleOpenTerminalPanel}
-        onOpenSettings={() => setSettingsOpen(true)}
-        isDatabasePanelOpen={isDatabasePanelOpen}
-        onOpenDatabase={handleOpenDatabasePanel}
-        isAppPreviewOpen={isAppPreviewOpen}
-        onOpenAppPreview={handleOpenAppPreview}
-        isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
-        isAgentDesktopOpen={isAgentDesktopOpen}
-        onOpenDesktopPanel={handleOpenDesktopPanel}
-        env={dbEnv}
-        onEnvChange={handleEnvChange}
-      />
-
-      {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}
+      {/* 主内容区域：左（应用信息 + 聊天） | 右（环境切换与操作 + 内容） */}
       <section
         className={cx(
           'flex',
@@ -2369,23 +2353,55 @@ const AppDevPro: React.FC = () => {
         )}
       >
         <div className={cx(styles['main-row'])}>
-          {/* 左侧面板：聊天区域（始终显示） */}
+          {/* 左栏：顶部应用信息 + 聊天区域（始终显示） */}
           <div className={cx(styles['left-panel'])}>
-            <AgentConversationChatPanel
-              selectedComputerId={finalSelectedComputerId}
-              onChangeSelectedComputerId={setSelectedComputerId}
-              onConversationEnd={handleConversationEnd}
+            <AppDevProHeaderBrand
+              userAppInfo={userAppInfo}
+              spaceId={spaceId}
+              onConfirmUpdate={setUserAppInfo}
             />
+            <div className={cx(styles['left-panel-body'])}>
+              <AgentConversationChatPanel
+                selectedComputerId={finalSelectedComputerId}
+                onChangeSelectedComputerId={setSelectedComputerId}
+                onConversationEnd={handleConversationEnd}
+              />
+            </div>
           </div>
 
-          <div
-            className={cx('flex', 'flex-1', styles['content-container'], {
-              [styles['content-container-fullscreen']]:
-                fileView.preview.isFullscreen,
-            })}
-          >
-            {/* 中间面板（文件树） + 右侧面板（文件预览 + 终端） */}
-            <>
+          {/* 右栏：顶部环境切换与操作入口 + 内容区 */}
+          <div className={cx(styles['right-column'])}>
+            <AppDevProHeaderActions
+              userAppInfo={userAppInfo}
+              onPublish={handleOpenPublish}
+              onOpenMarketPublish={() => setOpenPublishModal(true)}
+              publishing={publishFlow.publishing}
+              remotePublishing={showRemotePublishing}
+              onCancelRemotePublish={handleCancelRemotePublish}
+              cancelRemotePublishLoading={cancelRemotePublishLoading}
+              isFileTreeSidebarVisible={isFileTreeIconActive}
+              onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+              isTerminalPanelOpen={isTerminalIconActive}
+              onOpenTerminalPanel={handleOpenTerminalPanel}
+              onOpenSettings={() => setSettingsOpen(true)}
+              isDatabasePanelOpen={isDatabasePanelOpen}
+              onOpenDatabase={handleOpenDatabasePanel}
+              isShowAppPreview={isShowAppPreview}
+              isAppPreviewOpen={isAppPreviewOpen}
+              onOpenAppPreview={handleOpenAppPreview}
+              isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
+              isAgentDesktopOpen={isAgentDesktopOpen}
+              onOpenDesktopPanel={handleOpenDesktopPanel}
+              env={dbEnv}
+              onEnvChange={handleEnvChange}
+            />
+
+            <div
+              className={cx('flex', 'flex-1', styles['content-container'], {
+                [styles['content-container-fullscreen']]:
+                  fileView.preview.isFullscreen,
+              })}
+            >
               {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
               <div
                 className={cx(styles['middle-panel'], {
@@ -2430,7 +2446,7 @@ const AppDevPro: React.FC = () => {
               </div>
               {/* 右侧面板：文件预览 + 终端 */}
               {renderRightPanel()}
-            </>
+            </div>
           </div>
         </div>
       </section>

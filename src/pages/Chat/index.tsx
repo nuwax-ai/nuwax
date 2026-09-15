@@ -832,7 +832,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   } = useChatFiles({
     id,
     fileTreeData: workspaceDirectoryFiles.files,
-    handleRefreshFileList: async () => workspaceDirectoryFiles.refresh(),
+    handleRefreshFileList: async (_id, path) =>
+      workspaceDirectoryFiles.refresh(path),
     onFileMutationSuccessRef: refreshGitListRef,
   });
 
@@ -1475,9 +1476,21 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   }, [viewMode]);
 
   // 文件树 props
+  const loadedWorkspaceFolderIds = useMemo(
+    () =>
+      new Set(
+        [...workspaceDirectoryFiles.loadedDirectoryPaths]
+          .filter(Boolean)
+          .map(workspaceNodeId),
+      ),
+    [workspaceDirectoryFiles.loadedDirectoryPaths],
+  );
+
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
+      loadedFolderIds: loadedWorkspaceFolderIds,
+      onLoadDirectory: workspaceDirectoryFiles.loadDirectory,
       handleFileSelect: async (
         fileId: string,
         options?: { selectFolder?: boolean },
@@ -1493,6 +1506,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }),
     [
       fileView.tree,
+      loadedWorkspaceFolderIds,
+      workspaceDirectoryFiles.loadDirectory,
       setTaskAgentSelectedFileId,
       gitSourceControl.setSelectedChangeFile,
       collapseTerminalConsole,
