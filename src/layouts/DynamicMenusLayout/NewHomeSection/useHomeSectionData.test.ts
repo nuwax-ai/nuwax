@@ -308,6 +308,22 @@ describe('useHomeSectionData', () => {
     ]);
   });
 
+  it('回包 data 非数组（错误信封/网关异常页）按空列表降级，不致 filter 崩溃', async () => {
+    // 事故背景：本地 dev proxy 指向生产网关时回包异常，非数组 data 直通
+    // setLocalList 后 visibleConversationList 的 localList.filter 抛 TypeError
+    apiAgentConversationListMock.mockResolvedValue({
+      data: { code: 'A0230', message: 'unauthorized' },
+    });
+    const useHomeSectionData = await freshHook();
+
+    const { result } = renderHook(() =>
+      useHomeSectionData({ isSidebarNavMode: true }),
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.visibleConversationList).toEqual([]);
+  });
+
   it('chatId 派生：会话详情路径提取第一段 id', async () => {
     apiAgentConversationListMock.mockResolvedValue({ data: [] });
     const useHomeSectionData = await freshHook();

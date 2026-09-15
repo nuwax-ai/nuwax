@@ -160,9 +160,12 @@ export function useHomeSectionData(options: {
         });
 
         // 回包落地前重放本地标记覆盖：列表读接口可能滞后于标记接口，
-        // 整体替换会短暂复活刚归档/置顶的会话（TTL 内本地写优先）
+        // 整体替换会短暂复活刚归档/置顶的会话（TTL 内本地写优先）。
+        // 边界防御：错误信封/网关异常页会让 data 呈非数组（对象、字符串等），
+        // 直通 setLocalList 会致 localList.filter 崩溃并经 componentCache
+        // 毒化后续挂载；此处按空列表降级
         const data = applyConversationFlagOverrides(
-          res.data ?? [],
+          Array.isArray(res.data) ? res.data : [],
           flagOverridesRef.current,
         );
         if (isRefresh) {
@@ -208,6 +211,30 @@ export function useHomeSectionData(options: {
     },
     [],
   );
+
+  // conversation-updated 的静默重拉做 3s 合并节流（首发立即、突发合并为末次）：
+  // 智能体执行期间 SSE 会高频补发该事件，且本地补丁已先行同步 topic/icon，
+  // 重拉只为兜底与后端对齐；每次事件都全量重拉会让侧栏整列表重渲染，
+  // 长列表下代价极高（曾致滚动时 10s+ 级主线程阻塞）
+  const conversationReloadAtRef = useRef(0);
+  const conversationReloadTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const throttledConversationReload = useCallback(() => {
+    const interval = 3000;
+    const now = Date.now();
+    if (now - conversationReloadAtRef.current >= interval) {
+      conversationReloadAtRef.current = now;
+      loadListRef.current(true, { silent: true });
+      return;
+    }
+    if (conversationReloadTimerRef.current) return;
+    conversationReloadTimerRef.current = setTimeout(() => {
+      conversationReloadTimerRef.current = null;
+      conversationReloadAtRef.current = Date.now();
+      loadListRef.current(true, { silent: true });
+    }, interval - (now - conversationReloadAtRef.current));
+  }, []);
 
   const initialLoad = useCallback(() => {
     loadListRef.current(true, { silent: !!componentCache.list?.length });
@@ -358,8 +385,8 @@ export function useHomeSectionData(options: {
 
       // 补一次静默重新查询与后端对齐：本地补丁是最快路径，但列表未加载、
       // id 未命中或组件刚挂载等场景下补丁会落空，重新查询可确保接口
-      // 返回的最新 topic/icon 真正应用到列表
-      loadListRef.current(true, { silent: true });
+      // 返回的最新 topic/icon 真正应用到列表（节流合并，见 throttledConversationReload）
+      throttledConversationReload();
     };
 
     const handleConversationDeleted = (e: Event) => {
@@ -409,6 +436,10 @@ export function useHomeSectionData(options: {
       handleUpdateConversationListTaskStatus,
     );
     return () => {
+      if (conversationReloadTimerRef.current) {
+        clearTimeout(conversationReloadTimerRef.current);
+        conversationReloadTimerRef.current = null;
+      }
       window.removeEventListener(
         'conversation-updated',
         handleConversationUpdated,
@@ -426,7 +457,7 @@ export function useHomeSectionData(options: {
         handleUpdateConversationListTaskStatus,
       );
     };
-  }, []);
+  }, [throttledConversationReload]);
 
   const isFirstSearchKeywordEffect = useRef(true);
   useEffect(() => {
