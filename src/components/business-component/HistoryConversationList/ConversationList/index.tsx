@@ -1,8 +1,8 @@
 import ConversationContextMenu from '@/components/business-component/ConversationContextMenu';
 import { apiAgentConversationList } from '@/services/agentConfig';
+import { migrateLocalConversationFavorites } from '@/services/conversationFavoriteMigration';
 import { t } from '@/services/i18nRuntime';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { migrateLocalConversationFavorites } from '@/services/conversationFavoriteMigration';
 import {
   applyConversationFlagOverrides,
   ConversationFlagOverride,
@@ -27,6 +27,12 @@ interface ConversationListProps {
   onItemClick?: (id: number, agentId: number) => void;
   onEdit?: (id: number, currentTopic: string) => void;
   onDelete?: (id: number) => void;
+  /**
+   * 「全部/已归档」视图排除项目会话（projectFilter=exclude，2026-09-14 后端上线）。
+   * 项目会话由「项目」tab 承接；「已收藏」视图不排除（收藏是跨归档/跨项目的个人视图）。
+   * 无项目 tab 的入口（OpenApp 应用侧栏）须保持 false，否则项目会话无处可见。
+   */
+  excludeProjectConversations?: boolean;
 }
 
 export interface ConversationListRef {
@@ -38,329 +44,351 @@ export interface ConversationListRef {
 const ConversationList = React.forwardRef<
   ConversationListRef,
   ConversationListProps
->(({ agentId = null, keyword = '', onItemClick, onEdit, onDelete }, ref) => {
-  const [list, setList] = useState<ConversationInfo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const size = useSize(containerRef);
-  const [viewMode, setViewMode] = useState<ListViewMode>('all');
-  // 旧 localStorage 收藏一次性迁移上报后端（幂等标记防重入，2026-09-13 收藏后端化）
-  useEffect(() => {
-    void migrateLocalConversationFavorites();
-  }, []);
-  // 标记（置顶/归档）本地覆盖：防止刷新的滞后回包把刚归档的会话复活回列表
-  const flagOverridesRef = useRef(new Map<string, ConversationFlagOverride>());
-
-  // 展示列表：全部视图隐藏归档项、置顶项排前；收藏/归档视图按各自口径过滤
-  const visibleList = useMemo(() => {
-    if (viewMode === 'archived') {
-      return list.filter((item) => item.archived === true);
-    }
-    if (viewMode === 'collected') {
-      // 收藏是跨归档的个人视图：已归档但收藏过的也保留。
-      // 服务端 collectedFilter=only 已过滤，这里按回包打标再滤一遍兜底
-      // （后端过滤未生效时不至于错显全部，2026-09-13）
-      return list.filter((item) => item.collected === true);
-    }
-    const nonArchived = list.filter((item) => item.archived !== true);
-    return [...nonArchived].sort(
-      (a, b) => Number(b.pinned === true) - Number(a.pinned === true),
+>(
+  (
+    {
+      agentId = null,
+      keyword = '',
+      onItemClick,
+      onEdit,
+      onDelete,
+      excludeProjectConversations = false,
+    },
+    ref,
+  ) => {
+    const [list, setList] = useState<ConversationInfo[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const size = useSize(containerRef);
+    const [viewMode, setViewMode] = useState<ListViewMode>('all');
+    // 旧 localStorage 收藏一次性迁移上报后端（幂等标记防重入，2026-09-13 收藏后端化）
+    useEffect(() => {
+      void migrateLocalConversationFavorites();
+    }, []);
+    // 标记（置顶/归档）本地覆盖：防止刷新的滞后回包把刚归档的会话复活回列表
+    const flagOverridesRef = useRef(
+      new Map<string, ConversationFlagOverride>(),
     );
-  }, [list, viewMode]);
 
-  // 计算每页条数
-  const calculatePageSize = () => {
-    if (!size?.height) return 20;
-    // 每项高度约 60px (56px content + 4px gap)
-    const count = Math.ceil(size.height / 60);
-    return Math.max(count, 10); // 至少加载10条
-  };
-
-  // 加载数据
-  const loadData = async (isRefresh = false) => {
-    if (loading || (!hasMore && !isRefresh)) return;
-    setLoading(true);
-
-    const pageSize = calculatePageSize();
-    const lastId = isRefresh
-      ? null
-      : list.length > 0
-      ? list[list.length - 1].id
-      : null;
-
-    try {
-      const res = await apiAgentConversationList({
-        agentId,
-        // 归档过滤按视图走服务端：全部=exclude，收藏=含归档全量，已归档=only
-        archivedFilter:
-          viewMode === 'archived'
-            ? 'only'
-            : viewMode === 'collected'
-            ? 'all'
-            : 'exclude',
-        // 收藏过滤走服务端（2026-09-13 上线）：已收藏视图只拉收藏项；
-        // collectedFilter 缺省=all，其余视图不传
-        collectedFilter: viewMode === 'collected' ? 'only' : undefined,
-        lastId,
-        limit: isRefresh ? pageSize : 20,
-        topic: keyword || undefined,
-      });
-
-      // 回包落地前重放本地标记覆盖：列表读接口可能滞后于标记接口，
-      // 整体替换会短暂复活刚归档/置顶的会话（TTL 内本地写优先）
-      const data = applyConversationFlagOverrides(
-        res.data || [],
-        flagOverridesRef.current,
-      );
-      if (isRefresh) {
-        setList((prev) => {
-          if (viewMode !== 'archived') return data;
-          // 已归档视图兜底：后端归档过滤未上线时回包是未过滤流，
-          // 保留此前其它视图已加载到的归档项，避免切视图后首屏丢失
-          const prevArchived = prev.filter((item) => item.archived === true);
-          const seen = new Set<string | number>();
-          return [...data, ...prevArchived].filter((item) => {
-            if (seen.has(item.id)) return false;
-            seen.add(item.id);
-            return true;
-          });
-        });
-      } else {
-        setList((prev) => [...prev, ...data]);
+    // 展示列表：全部视图隐藏归档项、置顶项排前；收藏/归档视图按各自口径过滤
+    const visibleList = useMemo(() => {
+      if (viewMode === 'archived') {
+        return list.filter((item) => item.archived === true);
       }
-      setHasMore(data.length >= (isRefresh ? pageSize : 20));
-    } catch (error) {
-      console.error('Fetch conversation list failed:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  // 暴露给父组件的方法
-  React.useImperativeHandle(ref, () => ({
-    updateItemTopic: (id: number, newTopic: string) => {
-      setList((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, topic: newTopic } : item,
-        ),
+      if (viewMode === 'collected') {
+        // 收藏是跨归档的个人视图：已归档但收藏过的也保留。
+        // 服务端 collectedFilter=only 已过滤，这里按回包打标再滤一遍兜底
+        // （后端过滤未生效时不至于错显全部，2026-09-13）
+        return list.filter((item) => item.collected === true);
+      }
+      const nonArchived = list.filter((item) => item.archived !== true);
+      return [...nonArchived].sort(
+        (a, b) => Number(b.pinned === true) - Number(a.pinned === true),
       );
-    },
-    removeItem: (id: number) => {
-      setList((prev) => prev.filter((item) => item.id !== id));
-    },
-    refresh: () => {
+    }, [list, viewMode]);
+
+    // 计算每页条数
+    const calculatePageSize = () => {
+      if (!size?.height) return 20;
+      // 每项高度约 60px (56px content + 4px gap)
+      const count = Math.ceil(size.height / 60);
+      return Math.max(count, 10); // 至少加载10条
+    };
+
+    // 加载数据
+    const loadData = async (isRefresh = false) => {
+      if (loading || (!hasMore && !isRefresh)) return;
+      setLoading(true);
+
+      const pageSize = calculatePageSize();
+      const lastId = isRefresh
+        ? null
+        : list.length > 0
+        ? list[list.length - 1].id
+        : null;
+
+      try {
+        const res = await apiAgentConversationList({
+          agentId,
+          // 归档过滤按视图走服务端：全部=exclude，收藏=含归档全量，已归档=only
+          archivedFilter:
+            viewMode === 'archived'
+              ? 'only'
+              : viewMode === 'collected'
+              ? 'all'
+              : 'exclude',
+          // 收藏过滤走服务端（2026-09-13 上线）：已收藏视图只拉收藏项；
+          // collectedFilter 缺省=all，其余视图不传
+          collectedFilter: viewMode === 'collected' ? 'only' : undefined,
+          // 项目会话过滤（2026-09-14 上线）：任务视图排除项目会话（由「项目」tab 承接）；
+          // 已收藏视图不排除——收藏是跨归档/跨项目的个人视图，收藏的项目会话仅在此可见
+          projectFilter:
+            excludeProjectConversations && viewMode !== 'collected'
+              ? 'exclude'
+              : undefined,
+          lastId,
+          limit: isRefresh ? pageSize : 20,
+          topic: keyword || undefined,
+        });
+
+        // 回包落地前重放本地标记覆盖：列表读接口可能滞后于标记接口，
+        // 整体替换会短暂复活刚归档/置顶的会话（TTL 内本地写优先）
+        const data = applyConversationFlagOverrides(
+          res.data || [],
+          flagOverridesRef.current,
+        );
+        if (isRefresh) {
+          setList((prev) => {
+            if (viewMode !== 'archived') return data;
+            // 已归档视图兜底：后端归档过滤未上线时回包是未过滤流，
+            // 保留此前其它视图已加载到的归档项，避免切视图后首屏丢失
+            const prevArchived = prev.filter((item) => item.archived === true);
+            const seen = new Set<string | number>();
+            return [...data, ...prevArchived].filter((item) => {
+              if (seen.has(item.id)) return false;
+              seen.add(item.id);
+              return true;
+            });
+          });
+        } else {
+          setList((prev) => [...prev, ...data]);
+        }
+        setHasMore(data.length >= (isRefresh ? pageSize : 20));
+      } catch (error) {
+        console.error('Fetch conversation list failed:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    // 暴露给父组件的方法
+    React.useImperativeHandle(ref, () => ({
+      updateItemTopic: (id: number, newTopic: string) => {
+        setList((prev) =>
+          prev.map((item) =>
+            item.id === id ? { ...item, topic: newTopic } : item,
+          ),
+        );
+      },
+      removeItem: (id: number) => {
+        setList((prev) => prev.filter((item) => item.id !== id));
+      },
+      refresh: () => {
+        if (containerRef.current) {
+          containerRef.current.scrollTop = 0;
+        }
+        setList([]);
+        loadData(true);
+      },
+    }));
+
+    // 监听关键词变化刷新
+    useEffect(() => {
+      setHasMore(true);
+      loadData(true);
+    }, [keyword, agentId]);
+
+    // 视图切换重置整流重拉：归档/收藏视图走各自 archivedFilter 的服务端过滤
+    // （挂载时的首拉由上方 keyword effect 负责，这里跳过首渲染避免重复请求）
+    const viewModeInitializedRef = useRef(false);
+    useEffect(() => {
+      if (!viewModeInitializedRef.current) {
+        viewModeInitializedRef.current = true;
+        return;
+      }
       if (containerRef.current) {
         containerRef.current.scrollTop = 0;
       }
       setList([]);
+      setHasMore(true);
       loadData(true);
-    },
-  }));
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viewMode]);
 
-  // 监听关键词变化刷新
-  useEffect(() => {
-    setHasMore(true);
-    loadData(true);
-  }, [keyword, agentId]);
+    // 滚动监听
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
 
-  // 视图切换重置整流重拉：归档/收藏视图走各自 archivedFilter 的服务端过滤
-  // （挂载时的首拉由上方 keyword effect 负责，这里跳过首渲染避免重复请求）
-  const viewModeInitializedRef = useRef(false);
-  useEffect(() => {
-    if (!viewModeInitializedRef.current) {
-      viewModeInitializedRef.current = true;
-      return;
-    }
-    if (containerRef.current) {
-      containerRef.current.scrollTop = 0;
-    }
-    setList([]);
-    setHasMore(true);
-    loadData(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewMode]);
+      const handleScroll = () => {
+        if (loading || !hasMore) return;
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        if (scrollTop + clientHeight >= scrollHeight - 20) {
+          loadData();
+        }
+      };
 
-  // 滚动监听
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }, [loading, hasMore, list]);
 
-    const handleScroll = () => {
-      if (loading || !hasMore) return;
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      if (scrollTop + clientHeight >= scrollHeight - 20) {
-        loadData();
-      }
-    };
+    // 视图分类 tab：全部 / 已收藏（服务端）/ 已归档（服务端）
+    const viewTabs: Array<{ key: ListViewMode; label: string }> = [
+      { key: 'all', label: t('PC.Common.Global.all') },
+      {
+        key: 'collected',
+        label: t('PC.Components.HistoryConversationList.collectedTab'),
+      },
+      {
+        key: 'archived',
+        label: t('PC.Components.HistoryConversationList.archivedTab'),
+      },
+    ];
 
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [loading, hasMore, list]);
-
-  // 视图分类 tab：全部 / 已收藏（服务端）/ 已归档（服务端）
-  const viewTabs: Array<{ key: ListViewMode; label: string }> = [
-    { key: 'all', label: t('PC.Common.Global.all') },
-    {
-      key: 'collected',
-      label: t('PC.Components.HistoryConversationList.collectedTab'),
-    },
-    {
-      key: 'archived',
-      label: t('PC.Components.HistoryConversationList.archivedTab'),
-    },
-  ];
-
-  return (
-    <div className={styles.view}>
-      <div className={styles.tabs}>
-        {viewTabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            className={
-              viewMode === tab.key
-                ? `${styles['tab']} ${styles['tab-active']}`
-                : styles.tab
-            }
-            onClick={() => setViewMode(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      <div
-        ref={containerRef}
-        className={cx(styles.container, 'scroll-container')}
-      >
-        <div className={styles['list-content']}>
-          {visibleList.map((item) => (
-            <ConversationContextMenu
-              key={item.id}
-              conversationId={item.id}
-              currentTopic={item.topic}
-              pinned={item.pinned === true}
-              archived={item.archived === true}
-              collected={item.collected === true}
-              onFlagChanged={(kind, enabled) => {
-                recordConversationFlagOverride(
-                  flagOverridesRef.current,
-                  item.id,
-                  kind,
-                  enabled,
-                );
-                setList((prev) =>
-                  prev.map((conversation) =>
-                    conversation.id === item.id
-                      ? { ...conversation, [kind]: enabled }
-                      : conversation,
-                  ),
-                );
-              }}
-              onCollectedChanged={(collected) => {
-                // 收藏视图内取消收藏后，该行随 visibleList 过滤自动消失
-                setList((prev) =>
-                  prev.map((conversation) =>
-                    conversation.id === item.id
-                      ? { ...conversation, collected }
-                      : conversation,
-                  ),
-                );
-              }}
-              onRename={onEdit ? () => onEdit(item.id, item.topic) : undefined}
-              onDelete={onDelete ? () => onDelete(item.id) : undefined}
+    return (
+      <div className={styles.view}>
+        <div className={styles.tabs}>
+          {viewTabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              className={
+                viewMode === tab.key
+                  ? `${styles['tab']} ${styles['tab-active']}`
+                  : styles.tab
+              }
+              onClick={() => setViewMode(tab.key)}
             >
-              <div
-                className={styles['list-item']}
-                onClick={() => onItemClick?.(item.id, item.agentId)}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div
+          ref={containerRef}
+          className={cx(styles.container, 'scroll-container')}
+        >
+          <div className={styles['list-content']}>
+            {visibleList.map((item) => (
+              <ConversationContextMenu
+                key={item.id}
+                conversationId={item.id}
+                currentTopic={item.topic}
+                pinned={item.pinned === true}
+                archived={item.archived === true}
+                collected={item.collected === true}
+                onFlagChanged={(kind, enabled) => {
+                  recordConversationFlagOverride(
+                    flagOverridesRef.current,
+                    item.id,
+                    kind,
+                    enabled,
+                  );
+                  setList((prev) =>
+                    prev.map((conversation) =>
+                      conversation.id === item.id
+                        ? { ...conversation, [kind]: enabled }
+                        : conversation,
+                    ),
+                  );
+                }}
+                onCollectedChanged={(collected) => {
+                  // 收藏视图内取消收藏后，该行随 visibleList 过滤自动消失
+                  setList((prev) =>
+                    prev.map((conversation) =>
+                      conversation.id === item.id
+                        ? { ...conversation, collected }
+                        : conversation,
+                    ),
+                  );
+                }}
+                onRename={
+                  onEdit ? () => onEdit(item.id, item.topic) : undefined
+                }
+                onDelete={onDelete ? () => onDelete(item.id) : undefined}
               >
-                <div className={styles['item-header']}>
-                  <div className={styles['topic-wrapper']}>
-                    <span className={styles.topic}>{item.topic}</span>
-                    <Tooltip
-                      title={t(
-                        'PC.Components.HistoryConversationList.editTitleTooltip',
-                      )}
-                      mouseEnterDelay={0.5}
-                    >
-                      <EditOutlined
-                        className={styles['edit-icon']}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEdit?.(item.id, item.topic);
-                        }}
-                      />
-                    </Tooltip>
-                  </div>
-                  <div className={styles['right-area']}>
-                    <span className={styles.date}>
-                      {dayjs(item.modified).format(
-                        t(
-                          'PC.Components.HistoryConversationList.dateTimeFormat',
-                        ),
-                      )}
-                    </span>
-                    <Space className={styles.actions} size={12}>
+                <div
+                  className={styles['list-item']}
+                  onClick={() => onItemClick?.(item.id, item.agentId)}
+                >
+                  <div className={styles['item-header']}>
+                    <div className={styles['topic-wrapper']}>
+                      <span className={styles.topic}>{item.topic}</span>
                       <Tooltip
                         title={t(
-                          'PC.Components.HistoryConversationList.deleteTooltip',
+                          'PC.Components.HistoryConversationList.editTitleTooltip',
                         )}
                         mouseEnterDelay={0.5}
                       >
-                        <DeleteOutlined
-                          className={cx(styles['action-icon'], styles.delete)}
+                        <EditOutlined
+                          className={styles['edit-icon']}
                           onClick={(e) => {
                             e.stopPropagation();
-                            onDelete?.(item.id);
+                            onEdit?.(item.id, item.topic);
                           }}
                         />
                       </Tooltip>
-                    </Space>
-                  </div>
-                </div>
-                <div className={styles['summary-wrapper']}>
-                  <div className={styles.summary}>
-                    {item.summary ||
-                      t('PC.Components.HistoryConversationList.summaryEmpty')}
-                  </div>
-                  <div className={styles['tag-wrapper']}>
-                    <div className={styles['agent-tag-bottom']}>
-                      {item.agent?.name ||
-                        t(
-                          'PC.Components.HistoryConversationList.agentFallback',
+                    </div>
+                    <div className={styles['right-area']}>
+                      <span className={styles.date}>
+                        {dayjs(item.modified).format(
+                          t(
+                            'PC.Components.HistoryConversationList.dateTimeFormat',
+                          ),
                         )}
+                      </span>
+                      <Space className={styles.actions} size={12}>
+                        <Tooltip
+                          title={t(
+                            'PC.Components.HistoryConversationList.deleteTooltip',
+                          )}
+                          mouseEnterDelay={0.5}
+                        >
+                          <DeleteOutlined
+                            className={cx(styles['action-icon'], styles.delete)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete?.(item.id);
+                            }}
+                          />
+                        </Tooltip>
+                      </Space>
+                    </div>
+                  </div>
+                  <div className={styles['summary-wrapper']}>
+                    <div className={styles.summary}>
+                      {item.summary ||
+                        t('PC.Components.HistoryConversationList.summaryEmpty')}
+                    </div>
+                    <div className={styles['tag-wrapper']}>
+                      <div className={styles['agent-tag-bottom']}>
+                        {item.agent?.name ||
+                          t(
+                            'PC.Components.HistoryConversationList.agentFallback',
+                          )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </ConversationContextMenu>
-          ))}
-          {loading && (
-            <div className={styles.loading}>
-              <Spin size="small" />
-            </div>
-          )}
-          {/* 收藏/归档视图空态提示（均走服务端过滤 + 回包打标兜底） */}
-          {!loading &&
-            viewMode !== 'all' &&
-            visibleList.length === 0 &&
-            list.length > 0 && (
-              <div className={styles.nomore}>
-                {t(
-                  viewMode === 'collected'
-                    ? 'PC.Components.HistoryConversationList.collectedEmpty'
-                    : 'PC.Components.HistoryConversationList.archivedEmpty',
-                )}
+              </ConversationContextMenu>
+            ))}
+            {loading && (
+              <div className={styles.loading}>
+                <Spin size="small" />
               </div>
             )}
-          {!hasMore && list?.length > 8 && (
-            <div className={styles.nomore}>
-              {t('PC.Components.HistoryConversationList.noMoreData')}
-            </div>
-          )}
+            {/* 收藏/归档视图空态提示（均走服务端过滤 + 回包打标兜底） */}
+            {!loading &&
+              viewMode !== 'all' &&
+              visibleList.length === 0 &&
+              list.length > 0 && (
+                <div className={styles.nomore}>
+                  {t(
+                    viewMode === 'collected'
+                      ? 'PC.Components.HistoryConversationList.collectedEmpty'
+                      : 'PC.Components.HistoryConversationList.archivedEmpty',
+                  )}
+                </div>
+              )}
+            {!hasMore && list?.length > 8 && (
+              <div className={styles.nomore}>
+                {t('PC.Components.HistoryConversationList.noMoreData')}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);
 
 export default ConversationList;

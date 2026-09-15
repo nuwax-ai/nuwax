@@ -241,6 +241,9 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
               onItemClick={onClickLink}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              // 有「项目」tab 承接项目会话时，任务列表排除项目会话防双显；
+              // 无项目 tab 的入口（OpenApp 应用侧栏）保持全量，否则项目会话无处可见
+              excludeProjectConversations={enableProjectTab}
             />
           ) : (
             <ProjectList

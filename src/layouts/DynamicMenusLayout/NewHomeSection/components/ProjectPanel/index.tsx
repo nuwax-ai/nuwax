@@ -14,8 +14,9 @@ import {
   apiUserAppUpdate,
   apiUserProjectArchive,
   apiUserProjectCollect,
+  apiUserProjectConversations,
+  apiUserProjectPageQuery,
   apiUserProjectPin,
-  apiUserProjectTabPageQuery,
   apiUserProjectUnCollect,
 } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
@@ -53,6 +54,7 @@ import {
   mergeFlagIds,
   PROJECT_PAGE_SIZE,
   remainingProjects,
+  toProjectChildren,
   toProjectItem,
 } from './projectPagination';
 
@@ -92,7 +94,8 @@ export interface ProjectItem {
  * 置顶排前、归档默认隐藏+「已归档」入口,对齐任务列表会话的交互形态。
  * **项目子项(项目下的会话):不做置顶**(同日定调),仅 重命名/删除 + 状态徽标。
  *
- * 数据走 apiUserProjectTabPageQuery（2026-09-08 新接口：项目列表附带各项目会话列表）；
+ * 数据走 apiUserProjectPageQuery（2026-09-14 统一接口：回包含归档项目、
+ * 不附带子会话，子会话挂载/翻页后经 apiUserProjectConversations 补拉）；
  * 项目层分页（2026-09-12）：首屏 20 条 +「查看更多」按页追加、按 projectId 去重合并；
  * 重命名/删除已接真实接口（项目→normal-project/userapp、子项会话→agent conversation，
  * wiki 2026-09-11 v2 契约）；置顶/归档/收藏走 user-project pin/archive/collect
@@ -168,7 +171,7 @@ const ProjectPanel = forwardRef<
         const requestSpaceId = spaceIdRef.current;
         if (options.append) setLoadingMore(true);
         try {
-          const res = await apiUserProjectTabPageQuery({
+          const res = await apiUserProjectPageQuery({
             queryFilter: { spaceId: requestSpaceId },
             current: page,
             pageSize: PROJECT_PAGE_SIZE,
@@ -225,6 +228,55 @@ const ProjectPanel = forwardRef<
       pageRef.current = 1;
       void fetchPage(1, { append: false }).finally(() => setLoading(false));
     }, [spaceId, fetchPage]);
+
+    // 子会话懒加载（统一接口不随列表回包 conversations）：未归档项目挂载/翻页后
+    // 补拉（默认全展开形态，可见项目一律预取保住路由反查）；失败置空数组避免
+    // 行内永久 Spin（不自动重试，列表刷新可重试）；在途守卫防 effect 重跑重复拉取
+    const loadingChildrenRef = useRef<Set<number>>(new Set());
+    useEffect(() => {
+      const fallback = dict('PC.Constants.Menus.newChat');
+      projects.forEach((project) => {
+        if (
+          project.children !== undefined ||
+          archivedIds.has(project.id) ||
+          loadingChildrenRef.current.has(project.id)
+        ) {
+          return;
+        }
+        loadingChildrenRef.current.add(project.id);
+        void Promise.resolve(
+          apiUserProjectConversations(
+            project.id,
+            project.projectType ?? AgentComponentTypeEnum.NormalProject,
+          ),
+        )
+          .then((res) => {
+            setProjects((previous) =>
+              previous.map((item) =>
+                item.id !== project.id
+                  ? item
+                  : {
+                      ...item,
+                      children: toProjectChildren(
+                        res?.code === SUCCESS_CODE ? res.data ?? [] : [],
+                        fallback,
+                      ),
+                    },
+              ),
+            );
+          })
+          .catch(() => {
+            setProjects((previous) =>
+              previous.map((item) =>
+                item.id !== project.id ? item : { ...item, children: [] },
+              ),
+            );
+          })
+          .finally(() => {
+            loadingChildrenRef.current.delete(project.id);
+          });
+      });
+    }, [projects, archivedIds]);
 
     const hasMore = hasMoreProjects(projects.length, total);
     const remainingCount = remainingProjects(projects.length, total);
@@ -784,6 +836,12 @@ const ProjectPanel = forwardRef<
                 </div>
               </Dropdown>
               <div className={styles.children} hidden={!expanded}>
+                {/* 子会话懒加载中（统一接口不随列表回包，挂载/翻页后补拉） */}
+                {project.children === undefined && (
+                  <div className={cx(styles.child)}>
+                    <Spin size="small" />
+                  </div>
+                )}
                 {(project.children ?? []).map((child) => {
                   const isChildActive =
                     activeConversationId !== undefined &&
