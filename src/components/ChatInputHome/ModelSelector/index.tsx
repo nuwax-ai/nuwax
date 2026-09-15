@@ -309,11 +309,21 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   );
 
   // 渲染 tab 内单个模型项:
-  // 系统 tab 展示 tag / 倍率;个人 tab 保留编辑/删除;团队 tab 按空间名分组展示
+  // 系统 tab 展示 tag / 倍率(勾选 icon 排倍率之前);个人 tab 保留编辑/删除;
+  // 团队 tab 按空间名分组展示
   const renderModelItem = useCallback(
     (model: ModelOptionDto, tab: ModelTabKey) => {
       const isSelected = model.id === selectedModelId;
       const showMeta = tab === 'system';
+      // 系统 tab 有倍率时勾选 icon 紧排倍率之前,其余(无倍率)维度保持行末
+      const hasCost =
+        showMeta &&
+        model.cost !== null &&
+        model.cost !== undefined &&
+        model.cost !== '';
+      const checkIcon = isSelected ? (
+        <CheckOutlined className={cx(styles['item-check'])} />
+      ) : null;
       return (
         <div
           key={model.id}
@@ -324,7 +334,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         >
           <div className={cx(styles['item-content'])}>
             <div className={cx(styles['item-title-row'])}>
-              <span className={cx(styles['item-name'])}>{model.name}</span>
+              {/* 名称截断时 hover tooltip 展示全称(与描述行同款) */}
+              <Typography.Text
+                className={cx(styles['item-name'])}
+                ellipsis={{ tooltip: model.name }}
+              >
+                {model.name}
+              </Typography.Text>
               {showMeta && model.tag && (
                 <Tag
                   color={model.tagColor || undefined}
@@ -343,12 +359,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               </Typography.Text>
             )}
           </div>
-          {showMeta &&
-            model.cost !== null &&
-            model.cost !== undefined &&
-            model.cost !== '' && (
-              <span className={cx(styles['item-cost'])}>{model.cost}</span>
-            )}
+          {hasCost && checkIcon}
+          {hasCost && (
+            <span className={cx(styles['item-cost'])}>{model.cost}</span>
+          )}
           {tab === 'personal' && (
             <div className={cx(styles['item-actions'])}>
               <EditOutlined
@@ -367,7 +381,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               />
             </div>
           )}
-          {isSelected && <CheckOutlined className={cx(styles['item-check'])} />}
+          {!hasCost && checkIcon}
         </div>
       );
     },
@@ -479,7 +493,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         label: (
           <div className={cx(styles['menu-item'])}>
             <div className={cx(styles['item-content'])}>
-              <span className={cx(styles['item-name'])}>{model.name}</span>
+              <Typography.Text
+                className={cx(styles['item-name'])}
+                ellipsis={{ tooltip: model.name }}
+              >
+                {model.name}
+              </Typography.Text>
               {model.description && (
                 <Typography.Text
                   className={cx(styles['item-desc'])}
