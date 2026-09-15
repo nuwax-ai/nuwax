@@ -48,6 +48,7 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
   spaceId,
   onConnectedChange,
   pageSize = 20,
+  simple = false,
   className,
 }) => {
   const { list, loading, hasMore, loadMore, reload, updateItem } =
@@ -256,6 +257,7 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
                 key={item.key}
                 item={item}
                 index={index}
+                simple={simple}
                 {...cardProps}
               />
             ),

@@ -6,6 +6,7 @@
  * 整行点击即选中；grid 变体另有悬停浮现的「选择」按钮（绝对定位覆盖
  * 时间胶囊区域，stopPropagation 防止冒泡双触发），list 紧凑场景不渲染
  * （整行可点已覆盖）且无边框、悬停灰底（与专家/技能 list 行口径一致）。
+ * simple 模式（仅 list）：无背景圆形图标 + 标题，行更紧凑。
  */
 import { t } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';
@@ -22,12 +23,15 @@ export interface KnowledgeRowProps {
   item: KnowledgeListItem;
   /** 布局变体：list 不渲染悬停「选择」按钮（整行点击即选中），默认 grid */
   variant?: KnowledgeListVariant;
+  /** 简单模式（仅 list 生效）：无背景圆形图标 + 标题单行紧凑行 */
+  simple?: boolean;
   onSelect: (item: KnowledgeListItem) => void;
 }
 
 const KnowledgeRow: React.FC<KnowledgeRowProps> = ({
   item,
   variant = 'grid',
+  simple = false,
   onSelect,
 }) => {
   const { name } = item;
@@ -35,14 +39,14 @@ const KnowledgeRow: React.FC<KnowledgeRowProps> = ({
     <div
       data-knowledge-key={item.key}
       data-variant={variant}
-      className={cx(styles.row)}
+      className={cx(styles.row, simple && styles['row-simple'])}
       onClick={() => onSelect(item)}
     >
       <RepoFileIcon
         fileType={item.fileType}
         pageType={item.pageType}
         name={name}
-        className={cx(styles['file-icon'])}
+        className={cx(styles['file-icon'], simple && styles['icon-simple'])}
       />
       <span className={cx(styles.name)} title={name}>
         {name}

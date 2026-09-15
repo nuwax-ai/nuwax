@@ -269,6 +269,39 @@ describe('编辑器发送协议和历史', () => {
       expect(getSerializedEditorText(editor)).toBe('写个报告 /');
     },
   );
+  it(
+    '+ 号入口插入触发字符：空编辑器（残留 <br> 占位）不另起新行，' +
+      '有光标记录时恢复到原光标位置',
+    () => {
+      const ref = createRef<MentionEditorHandle>();
+      const { container } = render(
+        <MentionEditor
+          ref={ref}
+          autoFocus={false}
+          onPaste={vi.fn()}
+          onChange={vi.fn()}
+        />,
+      );
+      const editor = container.querySelector(
+        '[contenteditable="true"]',
+      ) as HTMLElement;
+      // Chrome 空 contenteditable 残留 <br>：插到 BR 之前（BR 之后会渲染新行）
+      editor.innerHTML = '<br>';
+      window.getSelection()?.removeAllRanges();
+      act(() => ref.current?.insertTriggerText('@'));
+      expect(getSerializedEditorText(editor)).toBe('@');
+      expect(editor.firstChild?.nodeType).toBe(Node.TEXT_NODE);
+
+      // 光标在文本中间 → selectionchange 记录 → 菜单夺焦后插入恢复到中间
+      //（光标前非空白自动补空格——@ 触发白名单要求前邻空白）
+      editor.innerHTML = '前后';
+      caret(editor.firstChild!, 1);
+      document.dispatchEvent(new Event('selectionchange'));
+      window.getSelection()?.removeAllRanges();
+      act(() => ref.current?.insertTriggerText('@'));
+      expect(getSerializedEditorText(editor)).toBe('前 @后');
+    },
+  );
   it('IME 输入中不触发弹窗，组合结束后触发技能弹层；Escape 不发送', () => {
     const send = vi.fn();
     const { container } = render(
@@ -1159,6 +1192,42 @@ describe('@ 弹层·首页模式（专家+资料库）', () => {
       expect(screen.getByTestId('at-expert-list')).toBeInTheDocument(),
     );
     expect(screen.queryByTestId('at-knowledge-list')).toBeNull();
+  });
+
+  it('鼠标点击切换 tab：焦点交还编辑器后弹层不被失焦检查误关', async () => {
+    const { container } = render(
+      <MentionEditor
+        autoFocus={false}
+        onPaste={vi.fn()}
+        atHomePanel
+        capabilityResourceTypes={['skill', 'expert', 'knowledge']}
+        onChange={vi.fn()}
+      />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '@');
+    await waitFor(() =>
+      expect(screen.getByTestId('at-expert-list')).toBeInTheDocument(),
+    );
+    // 模拟点击切换器:编辑器失焦(label→radio 聚焦)→ onChange 切 tab
+    // 并把焦点/光标交还编辑器 → 200ms 失焦检查须放行编辑器焦点
+    fireEvent.blur(editor);
+    fireEvent.click(
+      screen.getByText('PC.Components.AtResourcePopup.tabKnowledge'),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('at-knowledge-list')).toBeInTheDocument(),
+    );
+    expect(document.activeElement).toBe(editor);
+    await act(async () => {
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 250);
+      });
+    });
+    // 弹层仍在(未被误关),停留在资料库 tab
+    expect(screen.getByTestId('at-knowledge-list')).toBeInTheDocument();
   });
 
   it('弹层打开期间 Tab 不跳出弹窗：默认行为被拦截，焦点保持在编辑器（循环停靠点）', async () => {
