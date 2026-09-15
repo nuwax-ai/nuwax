@@ -138,7 +138,7 @@ const ThirdAppDetail: React.FC = () => {
     setOauthLoading(true);
     setSecretVisible(false);
     try {
-      const infoResponse = await apiThirdAppOauth2InfoGet(String(projectId));
+      const infoResponse = await apiThirdAppOauth2InfoGet(projectId);
       const info = pickResponseData(infoResponse);
       setAppInfo(info);
       setOauthInfo(info);
@@ -148,9 +148,7 @@ const ThirdAppDetail: React.FC = () => {
         setClientSecret('');
         return;
       }
-      const secretResponse = await apiThirdAppOauth2SecretGet(
-        String(projectId),
-      );
+      const secretResponse = await apiThirdAppOauth2SecretGet(projectId);
       const secret = pickResponseData(secretResponse);
       setClientSecret(typeof secret === 'string' ? secret : '');
     } catch (error) {

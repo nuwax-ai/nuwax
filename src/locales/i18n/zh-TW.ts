@@ -6278,7 +6278,7 @@ export const ZH_TW: SystemLangMap = {
   // 常規項目詳情頁
   "PC.Pages.NormalProjectDetail.tabPlan": "計畫",
   "PC.Pages.NormalProjectDetail.tabAsset": "資產",
-  "PC.Pages.NormalProjectDetail.comingSoon": "功能即將開放",
+  "PC.Pages.NormalProjectDetail.repositoryLoadFailed": "頁面載入失敗，請重新整理後再試",
   "PC.Pages.NormalProjectDetail.untitled": "未命名專案",
   "PC.Pages.NormalProjectDetail.hideConversationPanel": "隱藏相關任務",
   "PC.Pages.NormalProjectDetail.showConversationPanel": "顯示相關任務",
@@ -6287,7 +6287,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppProjectDetail.tabPlan": "計畫",
   "PC.Pages.AppProjectDetail.tabAsset": "資產",
   "PC.Pages.AppProjectDetail.tabSetting": "設定",
-  "PC.Pages.AppProjectDetail.comingSoon": "功能即將開放",
+  "PC.Pages.AppProjectDetail.repositoryLoadFailed": "頁面載入失敗，請重新整理後再試",
   // OAuth2 认证
   "PC.Pages.AppProjectDetail.oauthTitle": "OAuth2 認證資訊",
   "PC.Pages.AppProjectDetail.oauthDesc": "平台已為該專案自動產生 OAuth2 憑證，可用於第三方登入與介面鑑權。Client Secret 屬於敏感資訊，請勿寫入前端或提交到公開倉庫。",

@@ -6402,7 +6402,7 @@ export const EN_US: SystemLangMap = {
   // 常规项目详情页
   "PC.Pages.NormalProjectDetail.tabPlan": "Plan",
   "PC.Pages.NormalProjectDetail.tabAsset": "Assets",
-  "PC.Pages.NormalProjectDetail.comingSoon": "Coming soon",
+  "PC.Pages.NormalProjectDetail.repositoryLoadFailed": "Page failed to load. Refresh and try again.",
   "PC.Pages.NormalProjectDetail.untitled": "Untitled project",
   "PC.Pages.NormalProjectDetail.hideConversationPanel": "Hide related tasks",
   "PC.Pages.NormalProjectDetail.showConversationPanel": "Show related tasks",
@@ -6411,7 +6411,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectDetail.tabPlan": "Plan",
   "PC.Pages.AppProjectDetail.tabAsset": "Assets",
   "PC.Pages.AppProjectDetail.tabSetting": "Settings",
-  "PC.Pages.AppProjectDetail.comingSoon": "Coming soon",
+  "PC.Pages.AppProjectDetail.repositoryLoadFailed": "Page failed to load. Refresh and try again.",
   // OAuth2 认证
   "PC.Pages.AppProjectDetail.oauthTitle": "OAuth2 credentials",
   "PC.Pages.AppProjectDetail.oauthDesc": "The platform generated OAuth2 credentials for this project. They can be used for third-party sign-in and API auth. Keep the Client Secret private and never commit it to a public repo.",
