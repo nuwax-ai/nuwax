@@ -75,6 +75,8 @@ export interface PreviewTabBarProps {
   onExportProject?: () => void;
   /** 是否为云电脑（影响重启文案） */
   isCloudComputer?: boolean;
+  /** 是否展示更多操作菜单，线上环境不展示 */
+  showMoreActions?: boolean;
   /** 空间模型列表（TaskAgent 模型下拉） */
   originalModelConfigList?: ModelConfigInfo[];
   /** 智能体配置（TaskAgent 模型下拉） */
@@ -333,6 +335,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onRestartAgent,
   onExportProject,
   isCloudComputer,
+  showMoreActions = true,
   originalModelConfigList,
   agentConfigInfo,
   onModelChange,
@@ -746,12 +749,14 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           agentConfigInfo={agentConfigInfo}
           onModelChange={onModelChange}
         />
-        <MoreActionsMenu
-          onRestartServer={onRestartServer}
-          onRestartAgent={onRestartAgent}
-          onExportProject={onExportProject}
-          isCloudComputer={isCloudComputer}
-        />
+        {showMoreActions ? (
+          <MoreActionsMenu
+            onRestartServer={onRestartServer}
+            onRestartAgent={onRestartAgent}
+            onExportProject={onExportProject}
+            isCloudComputer={isCloudComputer}
+          />
+        ) : null}
       </div>
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}

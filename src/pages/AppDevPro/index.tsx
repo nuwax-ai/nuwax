@@ -2050,7 +2050,8 @@ const AppDevPro: React.FC = () => {
    */
   const renderRightPanel = () => {
     const isFilesWorkspace = workspaceView === 'files';
-    const moreActions = (
+    const isProdEnv = dbEnv === UserAppDbEnvEnum.Prod;
+    const moreActions = isProdEnv ? null : (
       <MoreActionsMenu
         onRestartServer={() => {
           if (queryConversationId) {
@@ -2083,6 +2084,7 @@ const AppDevPro: React.FC = () => {
               onTogglePinTab={previewTabs.togglePinTab}
               onTabReorder={previewTabs.reorderTabs}
               permanentWorkspaceToolIds={workspaceToolIds}
+              showMoreActions={!isProdEnv}
               onRestartServer={() => {
                 if (queryConversationId) {
                   restartVncPod(queryConversationId, finalSelectedComputerId);
@@ -2109,6 +2111,7 @@ const AppDevPro: React.FC = () => {
               onTogglePinTab={noop}
               onTabReorder={noop}
               permanentWorkspaceToolIds={DATABASE_WORKSPACE_TOOL_IDS}
+              showMoreActions={!isProdEnv}
               onRestartServer={() => {
                 if (queryConversationId) {
                   restartVncPod(queryConversationId, finalSelectedComputerId);
@@ -2143,9 +2146,11 @@ const AppDevPro: React.FC = () => {
                   previewDevActionLocked={previewDevActionLocked}
                 />
               )}
-              <div className={cx(styles['tool-workspace-actions'])}>
-                {moreActions}
-              </div>
+              {moreActions ? (
+                <div className={cx(styles['tool-workspace-actions'])}>
+                  {moreActions}
+                </div>
+              ) : null}
             </div>
           )}
           <div className={cx(styles['right-panel-main'])}>
