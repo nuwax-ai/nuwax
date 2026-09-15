@@ -25,11 +25,13 @@ export interface AppDevDatabaseWorkspaceProps {
   onRetryContainer?: () => void;
   /** 容器重启成功后重挂 iframe */
   iframeKey?: number;
+  /** 数据库工作区是否正在展示（不在应用预览等其它页时为 false） */
+  visible?: boolean;
 }
 
 /**
- * 数据库工作区：开发 / 线上各保留一套管理页，切换环境时不卸载。
- * 已启动成功的环境直接回显；未启动或失败的环境由页面重新 ensure。
+ * 数据库工作区：开发 / 线上各保留一套面板。
+ * 仅当前可见的环境才挂载管理 iframe，避免在隐藏容器里提前加载导致空白。
  *
  * @param props.appId 应用 ID
  * @param props.activeTab 当前激活的数据库 Tab
@@ -44,13 +46,18 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
   prodContainerStatus,
   onRetryContainer,
   iframeKey = 0,
+  visible = true,
 }) => {
+  const showDevDatabase =
+    visible && activeTab === 'database' && env === UserAppDbEnvEnum.Dev;
+  const showProdDatabase =
+    visible && activeTab === 'database' && env === UserAppDbEnvEnum.Prod;
+
   return (
     <div className={cx(styles.workspace)}>
       <div
         className={cx(styles.pane, {
-          [styles.hidden]:
-            activeTab !== 'database' || env !== UserAppDbEnvEnum.Dev,
+          [styles.hidden]: !showDevDatabase,
         })}
       >
         <AppDevDatabasePanel
@@ -58,6 +65,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           env={UserAppDbEnvEnum.Dev}
           containerStatus={devContainerStatus}
           iframeKey={iframeKey}
+          active={showDevDatabase}
           onRetryContainer={
             env === UserAppDbEnvEnum.Dev ? onRetryContainer : undefined
           }
@@ -65,8 +73,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
       </div>
       <div
         className={cx(styles.pane, {
-          [styles.hidden]:
-            activeTab !== 'database' || env !== UserAppDbEnvEnum.Prod,
+          [styles.hidden]: !showProdDatabase,
         })}
       >
         <AppDevDatabasePanel
@@ -74,6 +81,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           env={UserAppDbEnvEnum.Prod}
           containerStatus={prodContainerStatus}
           iframeKey={iframeKey}
+          active={showProdDatabase}
           onRetryContainer={
             env === UserAppDbEnvEnum.Prod ? onRetryContainer : undefined
           }

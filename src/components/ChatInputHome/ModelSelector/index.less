@@ -242,12 +242,13 @@
     }
   }
 
-  // tab 模式:脱离 Menu 的自绘列表项;定宽对齐旧版弹层(menu-item 200px + menu 两侧 padding)
+  // tab 模式:脱离 Menu 的自绘列表项;原 224px(旧版弹层 200px + menu 两侧
+  // padding),2026-09-15 产品要求弹层加宽 50px,列表项随之定宽 274px
   .list-item {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    width: 224px;
+    width: 274px;
     box-sizing: border-box;
     padding: 4px 6px;
     border-radius: @borderRadius;
