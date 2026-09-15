@@ -2,7 +2,11 @@ import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
-import { CodeOutlined, SettingOutlined } from '@ant-design/icons';
+import {
+  CodeOutlined,
+  HistoryOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback } from 'react';
@@ -56,6 +60,10 @@ export interface AppDevProHeaderActionsProps {
   isAppPreviewOpen?: boolean;
   /** 打开应用预览页签 */
   onOpenAppPreview?: () => void;
+  /** 历史版本抽屉是否打开 */
+  isBuildVersionsOpen?: boolean;
+  /** 打开历史版本抽屉 */
+  onOpenBuildVersions?: () => void;
   /** 当前环境 */
   env?: UserAppDbEnvEnum;
   /** 切换开发 / 线上环境 */
@@ -90,6 +98,8 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   isShowAppPreview = true,
   isAppPreviewOpen = false,
   onOpenAppPreview,
+  isBuildVersionsOpen = false,
+  onOpenBuildVersions,
   env = UserAppDbEnvEnum.Dev,
   onEnvChange,
 }) => {
@@ -151,6 +161,19 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
             className={cx(styles['panel-btn'])}
             icon={<SettingOutlined style={{ fontSize: 16 }} />}
             onClick={onOpenSettings}
+          />
+        </ConditionRender>
+
+        {/* 历史版本：仅线上环境显示 */}
+        <ConditionRender condition={env === UserAppDbEnvEnum.Prod}>
+          <TooltipIcon
+            title={dict('PC.Pages.AppDevPro.buildVersions')}
+            ariaLabel={dict('PC.Pages.AppDevPro.buildVersions')}
+            className={cx(styles['panel-btn'], {
+              [styles.active]: isBuildVersionsOpen,
+            })}
+            icon={<HistoryOutlined style={{ fontSize: 16 }} />}
+            onClick={onOpenBuildVersions}
           />
         </ConditionRender>
 

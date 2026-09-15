@@ -1,0 +1,99 @@
+@import '@/styles/token';
+
+.panel {
+  flex-shrink: 0;
+  width: 360px;
+  height: 100%;
+  background: @colorBgContainer;
+  border: @lineWidth solid @colorSplit;
+  margin-left: 10px;
+  border-radius: @borderRadius;
+}
+
+.content {
+  padding: 0 16px 16px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 0;
+  border-bottom: @lineWidth solid @colorSplit;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.itemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.version {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  color: @colorText;
+  word-break: break-all;
+}
+
+.tags {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+
+  :global(.ant-tag) {
+    margin-inline-end: 0;
+  }
+}
+
+.meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.metaLabel {
+  flex-shrink: 0;
+  width: 56px;
+  color: @colorTextTertiary;
+}
+
+.metaValue {
+  min-width: 0;
+  flex: 1;
+  color: @colorTextSecondary;
+  word-break: break-all;
+  text-align: left;
+}
+
+.copyable {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+
+  &:hover {
+    color: @colorPrimary;
+  }
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+}

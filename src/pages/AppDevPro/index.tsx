@@ -57,6 +57,7 @@ import AppDevBottomConsole, {
   type ConsoleLayoutMode,
 } from './components/AppDevBottomConsole';
 import DevLogActions from './components/AppDevBottomConsole/DevLogActions';
+import AppDevBuildVersionDrawer from './components/AppDevBuildVersionDrawer';
 import AppDevDatabaseWorkspace, {
   type AppDevDatabaseWorkspaceTab,
 } from './components/AppDevDatabaseWorkspace';
@@ -218,6 +219,8 @@ const AppDevPro: React.FC = () => {
   );
   /** 项目设置弹窗 */
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  /** 线上环境历史版本抽屉 */
+  const [buildVersionsOpen, setBuildVersionsOpen] = useState<boolean>(false);
   /** 全栈应用详情 */
   const [userAppInfo, setUserAppInfo] = useState<UserAppInfo | null>(null);
   /** 应用绑定的域名列表 */
@@ -1838,6 +1841,7 @@ const AppDevPro: React.FC = () => {
       startEnvPodIfNeeded(nextEnv);
       if (nextEnv === UserAppDbEnvEnum.Dev) {
         setSettingsOpen(false);
+        setBuildVersionsOpen(false);
         return;
       }
       previewTabs.closeTab(getToolTabId('remote-desktop'));
@@ -2337,60 +2341,72 @@ const AppDevPro: React.FC = () => {
               isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
               isAgentDesktopOpen={isAgentDesktopOpen}
               onOpenDesktopPanel={handleOpenDesktopPanel}
+              isBuildVersionsOpen={buildVersionsOpen}
+              onOpenBuildVersions={() => setBuildVersionsOpen(true)}
               env={dbEnv}
               onEnvChange={handleEnvChange}
             />
 
-            <div
-              className={cx('flex', 'flex-1', styles['content-container'], {
-                [styles['content-container-fullscreen']]:
-                  fileView.preview.isFullscreen,
-              })}
-            >
-              {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
+            <div className={cx(styles['right-column-body'])}>
               <div
-                className={cx(styles['middle-panel'], {
-                  [styles['middle-panel-visible']]:
-                    workspaceView === 'files' && canShowFileView,
-                  [styles['middle-panel-hidden']]: !(
-                    workspaceView === 'files' && canShowFileView
-                  ),
+                className={cx('flex', 'flex-1', styles['content-container'], {
+                  [styles['content-container-fullscreen']]:
+                    fileView.preview.isFullscreen,
                 })}
               >
-                {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
-                <FileTreeGitSourcePanel
-                  className={cx(styles['file-tree-sidebar'], 'w-full')}
-                  showSourceControl={isVersionControlEnabled}
-                  enableVersionControl={enableVersionControl}
-                  tree={fileView.tree}
-                  treeClassName="w-full h-full"
-                  onImportProject={handleImportProject}
-                  importProjectLabel={dict(
-                    'PC.Pages.AppDevFileTreeContextMenu.importProject',
-                  )}
-                  isImportingProject={isImportingProject}
-                  sourceControl={{
-                    changeFiles: fileView.changeFiles,
-                    selectedChangeFile: gitSourceControl.selectedChangeFile,
-                    isCommitting:
-                      gitSourceControl.isCommitting ||
-                      fileView.preview.isSavingFiles,
-                    isRefreshingGitList: fileView.isRefreshingGitList,
-                    onRefreshGitList: fileView.refreshGitList,
-                    onDiffFileSelect: handleGitDiffFileSelect,
-                    onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                    onDiscardChanges: gitSourceControl.handleDiscardChange,
-                    onStageChanges: gitSourceControl.handleStageChanges,
-                    onUnstageChanges: gitSourceControl.handleUnstageChanges,
-                    onAddToGitignore: (fileId) => {
-                      void gitSourceControl.handleAddToGitignore(fileId);
-                    },
-                    onCommit: gitSourceControl.handleCommit,
-                  }}
-                />
+                {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
+                <div
+                  className={cx(styles['middle-panel'], {
+                    [styles['middle-panel-visible']]:
+                      workspaceView === 'files' && canShowFileView,
+                    [styles['middle-panel-hidden']]: !(
+                      workspaceView === 'files' && canShowFileView
+                    ),
+                  })}
+                >
+                  {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
+                  <FileTreeGitSourcePanel
+                    className={cx(styles['file-tree-sidebar'], 'w-full')}
+                    showSourceControl={isVersionControlEnabled}
+                    enableVersionControl={enableVersionControl}
+                    tree={fileView.tree}
+                    treeClassName="w-full h-full"
+                    onImportProject={handleImportProject}
+                    importProjectLabel={dict(
+                      'PC.Pages.AppDevFileTreeContextMenu.importProject',
+                    )}
+                    isImportingProject={isImportingProject}
+                    sourceControl={{
+                      changeFiles: fileView.changeFiles,
+                      selectedChangeFile: gitSourceControl.selectedChangeFile,
+                      isCommitting:
+                        gitSourceControl.isCommitting ||
+                        fileView.preview.isSavingFiles,
+                      isRefreshingGitList: fileView.isRefreshingGitList,
+                      onRefreshGitList: fileView.refreshGitList,
+                      onDiffFileSelect: handleGitDiffFileSelect,
+                      onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
+                      onDiscardChanges: gitSourceControl.handleDiscardChange,
+                      onStageChanges: gitSourceControl.handleStageChanges,
+                      onUnstageChanges: gitSourceControl.handleUnstageChanges,
+                      onAddToGitignore: (fileId) => {
+                        void gitSourceControl.handleAddToGitignore(fileId);
+                      },
+                      onCommit: gitSourceControl.handleCommit,
+                    }}
+                  />
+                </div>
+                {/* 右侧面板：文件预览 + 终端 */}
+                {renderRightPanel()}
               </div>
-              {/* 右侧面板：文件预览 + 终端 */}
-              {renderRightPanel()}
+
+              {/* 线上环境历史版本侧栏 */}
+              <AppDevBuildVersionDrawer
+                visible={buildVersionsOpen}
+                appId={appId}
+                currentReleaseId={userAppInfo?.prodReleaseId}
+                onClose={() => setBuildVersionsOpen(false)}
+              />
             </div>
           </div>
         </div>
