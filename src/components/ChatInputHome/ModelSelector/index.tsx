@@ -391,14 +391,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                 </Tag>
               )}
             </div>
-            {model.description && (
-              <Typography.Text
-                className={cx(styles['item-desc'])}
-                ellipsis={{ tooltip: model.description }}
-              >
-                {model.description}
-              </Typography.Text>
-            )}
           </div>
           {hasCost && checkIcon}
           {hasCost && (
