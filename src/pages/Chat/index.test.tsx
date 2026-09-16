@@ -29,6 +29,8 @@ const {
   mockAgentDetailModal,
   mockResizableSplit,
   mockInitSelectedComponentList,
+  mockUseConversationRuntimeSession,
+  mockRuntimeSend,
   conversationInfoState,
   agentDetailState,
   modelOverrides,
@@ -42,6 +44,8 @@ const {
   mockAgentDetailModal: vi.fn(),
   mockResizableSplit: vi.fn(),
   mockInitSelectedComponentList: vi.fn(),
+  mockUseConversationRuntimeSession: vi.fn(),
+  mockRuntimeSend: vi.fn(),
   conversationInfoState: {
     current: null as any,
   },
@@ -64,6 +68,11 @@ vi.mock('umi', () => ({
 vi.mock('@/services/i18nRuntime', () => ({
   t: (k: string) => k,
   dict: (k: string) => k,
+}));
+
+vi.mock('@/features/conversation/react/useConversationRuntimeSession', () => ({
+  useConversationRuntimeSession: (...args: unknown[]) =>
+    mockUseConversationRuntimeSession(...args),
 }));
 
 vi.mock('@/services/skill', () => ({
@@ -283,6 +292,10 @@ vi.mock('@/utils/router', () => ({
 }));
 
 vi.mock('@/services/vncDesktop', () => ({
+  apiGetStaticFileList: vi.fn().mockResolvedValue({
+    code: '0000',
+    data: { files: [] },
+  }),
   apiUpdateStaticFile: vi.fn(),
 }));
 
@@ -385,6 +398,7 @@ describe('ChatCore / ChatPage', () => {
     vi.clearAllMocks();
     conversationInfoState.current = null;
     modelOverrides.current = {};
+    mockUseConversationRuntimeSession.mockReturnValue(null);
     agentDetailState.current = { name: 'DetailAgent', agentId: 200 };
     mockUseParams.mockReturnValue({ id: '100', agentId: '200' });
     mockUseLocation.mockReturnValue({
@@ -453,6 +467,55 @@ describe('ChatCore / ChatPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('left-content')).toBeInTheDocument();
     });
+  });
+
+  it('runtime 开启时首条自动发送直接进入 runtime session', async () => {
+    const legacySend = vi.fn();
+    modelOverrides.current = { onMessageSend: legacySend };
+    const loadedConversation = {
+      id: 100,
+      messageList: [],
+      agent: { name: 'ConvAgent', id: 200, openSuggest: 1 },
+    };
+    mockRunAsync.mockResolvedValue({ data: loadedConversation });
+    mockUseConversationRuntimeSession.mockReturnValue({
+      session: { send: mockRuntimeSend },
+      conversationProps: {},
+    });
+
+    render(
+      <ChatCore
+        id={100}
+        agentId={200}
+        locationState={{
+          message: '首条消息',
+          files: [{ key: 'f1', url: '/f1', name: 'a.txt', type: 'text/plain' }],
+          infos: [{ id: 9, type: 'Plugin' }],
+          variableParams: { city: '杭州' },
+          skillIds: [11],
+          selectedDocs: [{ id: 12, name: '资料' }],
+          modelId: 456,
+          agentMode: 'ask',
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(mockRuntimeSend).toHaveBeenCalledTimes(1));
+    expect(mockRuntimeSend).toHaveBeenCalledWith({
+      conversationId: 100,
+      message: '首条消息',
+      files: [{ key: 'f1', url: '/f1', name: 'a.txt', type: 'text/plain' }],
+      infos: [{ id: 9, type: 'Plugin' }],
+      variableParams: { city: '杭州' },
+      sandboxId: undefined,
+      currentInfo: loadedConversation,
+      isSuggestEnabled: true,
+      skillIds: [11],
+      selectedDocs: [{ id: 12, name: '资料' }],
+      modelId: 456,
+      agentMode: 'ask',
+    });
+    expect(legacySend).not.toHaveBeenCalled();
   });
 
   it('loadingConversation=true 时展示 Loading，不渲染 LeftContent', () => {

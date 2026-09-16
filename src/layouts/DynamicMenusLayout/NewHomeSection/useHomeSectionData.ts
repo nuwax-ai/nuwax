@@ -244,6 +244,26 @@ export function useHomeSectionData(options: {
       }
       return;
     }
+
+    if (event.operation === 'deleted') {
+      const routeConversationId = extractConversationIdFromPath(
+        location.pathname,
+        location.search,
+      );
+      if (routeConversationId === event.conversationId) {
+        if (location.pathname.startsWith('/home/chat')) {
+          history.replace('/home');
+        } else if (
+          location.pathname === '/space' ||
+          location.pathname.startsWith('/space/')
+        ) {
+          const searchParams = new URLSearchParams(location.search);
+          searchParams.delete('conversationId');
+          const search = searchParams.toString();
+          history.replace(`${location.pathname}${search ? `?${search}` : ''}`);
+        }
+      }
+    }
     setLocalList((previous) => applyConversationChangedToList(previous, event));
     if (
       event.operation === 'updated' &&

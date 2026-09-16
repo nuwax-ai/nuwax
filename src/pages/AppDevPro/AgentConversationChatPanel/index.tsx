@@ -163,7 +163,10 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       <UnifiedChatSession
         conversationId={conversationInfo?.id}
         messageList={messageList}
-        isLoading={loadingConversation}
+        isLoading={
+          loadingConversation &&
+          !(messageList?.length && conversationInfo?.id === queryConversationId)
+        }
         loadingMore={loadingMore}
         isMoreMessage={isMoreMessage}
         isConversationActive={

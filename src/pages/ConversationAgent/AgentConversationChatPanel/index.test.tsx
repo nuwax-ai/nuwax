@@ -147,6 +147,20 @@ describe('AgentConversationChatPanel', () => {
     });
   });
 
+  it('当前 URL 会话已有乐观消息时不再被详情 loading 遮挡', () => {
+    const model = createConversationInfoModel({ loadingConversation: true });
+    mockUseModel.mockReturnValue(model);
+    mockUseLocation.mockReturnValue({
+      key: 'route-loading',
+      state: {},
+      search: '?agentId=88&conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel />);
+
+    expect(latestUnifiedProps().isLoading).toBe(false);
+  });
+
   it('新建智能体跳转后保留选中的工具，后续发送也使用当前选中态', async () => {
     const model = createConversationInfoModel();
     mockUseModel.mockReturnValue(model);

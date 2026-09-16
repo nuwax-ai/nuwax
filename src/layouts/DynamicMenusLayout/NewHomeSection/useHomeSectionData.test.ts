@@ -16,6 +16,7 @@ import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 const apiAgentConversationListMock = vi.fn();
 const handleCloseMobileMenu = vi.fn();
 const historyPush = vi.fn();
+const historyReplace = vi.fn();
 
 /** umi mock 的可变状态：location/params 按用例改写后 rerender 生效 */
 const umiState = {
@@ -32,7 +33,7 @@ vi.mock('umi', () => ({
   useParams: () => umiState.params,
   useModel: (name: string) =>
     name === 'layout' ? { handleCloseMobileMenu } : {},
-  history: { push: historyPush },
+  history: { push: historyPush, replace: historyReplace },
 }));
 
 vi.mock('@/services/agentConfig', () => ({
@@ -76,6 +77,7 @@ describe('useHomeSectionData', () => {
     // 否则失败用例的遗留夹具会被下一用例消费（跨用例污染实锤）
     apiAgentConversationListMock.mockReset();
     historyPush.mockReset();
+    historyReplace.mockReset();
     handleCloseMobileMenu.mockReset();
     umiState.location = {
       pathname: '/home',
@@ -309,6 +311,50 @@ describe('useHomeSectionData', () => {
     expect(result.current.visibleConversationList.map((i) => i.id)).toEqual([
       2,
     ]);
+  });
+
+  it('删除当前 /home/chat 会话后回首页', async () => {
+    apiAgentConversationListMock.mockResolvedValue({
+      data: [buildConversation({ id: 1 })],
+    });
+    umiState.location = {
+      pathname: '/home/chat/1/88',
+      search: '',
+      state: null,
+    };
+    // /app/:agentId 等路由参数不能参与会话删除命中判断。
+    umiState.params = { id: '88' };
+    const useHomeSectionData = await freshHook();
+    renderHook(() => useHomeSectionData({ isSidebarNavMode: true }));
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('conversation-deleted', { detail: { id: 1 } }),
+      );
+    });
+
+    expect(historyReplace).toHaveBeenCalledWith('/home');
+  });
+
+  it('删除当前 /space 会话后移除 conversationId 并留在项目页', async () => {
+    apiAgentConversationListMock.mockResolvedValue({ data: [] });
+    umiState.location = {
+      pathname: '/space/752/app-pro',
+      search: '?appId=29&conversationId=42&panel=chat',
+      state: null,
+    };
+    const useHomeSectionData = await freshHook();
+    renderHook(() => useHomeSectionData({ isSidebarNavMode: true }));
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('conversation-deleted', { detail: { id: 42 } }),
+      );
+    });
+
+    expect(historyReplace).toHaveBeenCalledWith(
+      '/space/752/app-pro?appId=29&panel=chat',
+    );
   });
 
   it('回包 data 非数组（错误信封/网关异常页）按空列表降级，不致 filter 崩溃', async () => {

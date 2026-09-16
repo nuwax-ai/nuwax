@@ -198,6 +198,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // 异步查询会话加载状态
   const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
   const hasRenderedChatRef = useRef(false);
+  const runtimeLineRef =
+    useRef<ReturnType<typeof useConversationRuntimeSession>>(null);
 
   // 开放应用智能体会话聊天页面相关状态
   const workspaceDirectoryFiles = useWorkspaceDirectoryFiles(id);
@@ -752,7 +754,25 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             agentMode: (stateToUse?.agentMode as AgentMode) || 'yolo',
           };
 
-          onMessageSend(sendParams);
+          const runtimeSession = runtimeLineRef.current?.session;
+          if (runtimeSession) {
+            runtimeSession.send({
+              conversationId: id,
+              message,
+              files,
+              infos,
+              variableParams: firstVariableParams,
+              sandboxId: effectiveSandboxId,
+              currentInfo: data,
+              isSuggestEnabled: data?.agent?.openSuggest === 1,
+              skillIds,
+              selectedDocs: firstSelectedDocs,
+              modelId: selectedModelId,
+              agentMode: (stateToUse?.agentMode as AgentMode) || 'yolo',
+            });
+          } else {
+            onMessageSend(sendParams);
+          }
         }
       };
       asyncFun();
@@ -1764,6 +1784,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       setFileTreeRefreshTrigger,
     },
   });
+  runtimeLineRef.current = runtimeLine;
 
   const fetchMentionFiles = useCallback(async (): Promise<
     FileMentionItem[]
