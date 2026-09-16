@@ -226,8 +226,11 @@ export async function apiUserAppProdDeployable(
 export async function apiUserAppBuildVersions(
   appId: number,
 ): Promise<RequestResponse<BuildVersionDto[]>> {
-  return request(`/api/userapp/build-versions/${appId}`, {
+  return request('/api/userapp/build-versions', {
     method: 'GET',
+    params: {
+      appId,
+    },
   });
 }
 
