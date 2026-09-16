@@ -529,8 +529,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                 }
                 // 滚动条贴列右缘（2026-09-12 需求）：外扩进右 padding 带，不叠压行内容
                 scrollbarEdge
+                // 顶部 3px：标题行自然落位 19px（列 padding 16 + 3），行高中点
+                // 31px 对齐顶栏 logo/搜索/内容区标题中线；勿用负 margin 上提——
+                // 本组件 content 为 overflow:hidden，负 margin 顶出盒顶的部分
+                // 会被裁（「广场/更多/系统管理」标题首字缺角的根因）
                 style={{
-                  padding: `${token.paddingSM}px 0`,
+                  padding: '3px 0 12px',
                 }}
               >
                 <div
@@ -542,10 +546,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                   {/* 标题（选中导航项名称） */}
                   <ConditionRender condition={isShowTitle && currentTitle}>
                     {/* 水平 10px 与行内容（容器 10 + 行 padding 10 = 20px）对齐；
-                        垂直上提 9px 与顶栏 logo/搜索/内容区标题同一中线：列 padding
-                        (@padding 16) + 滚动容器 paddingSM 12 把标题行顶到 28px，
-                        24px 行高中点落在 40px，需回到 19px 顶（中点 31px 对齐线） */}
-                    <div style={{ margin: '-9px 0 0', padding: '0 10px 12px' }}>
+                        垂直落位由 HoverScrollbar 顶部 padding 3px 承担（列 padding
+                        16 + 3 = 19px 顶，行高中点 31px 对齐顶栏中线）——此处禁止
+                        再用负 margin 上提：外层 content overflow:hidden 会裁掉
+                        盒顶（「广场/更多」首字缺角根因）；底部 21px 使后续菜单
+                        落点与旧负 margin 方案逐像素一致（19+24+21 = 28+24+12） */}
+                    <div style={{ padding: '0 10px 21px' }}>
                       <Typography.Title
                         level={5}
                         style={{ marginBottom: 0 }}
