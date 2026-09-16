@@ -369,22 +369,21 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     [isExternalList, personalModels, teamModels, selectedModelId],
   );
 
-  // 渲染 tab 内单个模型项:
-  // 系统 tab 展示 tag / 倍率(勾选 icon 排倍率之前);个人 tab 保留编辑/删除;
-  // 团队 tab 不分组平铺,空间名作为 tag 展示在名称行最右侧
+  // 渲染 tab 内单个模型项:系统 tab 展示 tag / 倍率,个人 tab 常驻
+  // 编辑/删除按钮,团队 tab 不分组平铺(空间名 tag 靠名称行最右)。
+  // 三个 tab 统一:勾选 icon 恒排行末最右,常驻占位仅切换显隐
   const renderModelItem = useCallback(
     (model: ModelOptionDto, tab: ModelTabKey) => {
       const isSelected = model.id === selectedModelId;
       const showMeta = tab === 'system';
-      // 系统 tab 有倍率时勾选 icon 紧排倍率之前,其余(无倍率)维度保持行末
+      // 系统 tab 的倍率有值才展示
       const hasCost =
         showMeta &&
         model.cost !== null &&
         model.cost !== undefined &&
         model.cost !== '';
-      const checkIcon = isSelected ? (
-        <CheckOutlined className={cx(styles['item-check'])} />
-      ) : null;
+      // 勾选 icon 常驻渲染占位,选中态由样式切换 opacity,行内布局恒定
+      const checkIcon = <CheckOutlined className={cx(styles['item-check'])} />;
       return (
         <div
           key={model.id}
@@ -408,7 +407,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                   {model.tag}
                 </Tag>
               )}
-              {/* 团队 tab:空间名 tag 吸附名称行最右端(勾选 icon 之前) */}
+              {/* 团队 tab:空间名 tag 吸附名称行最右(勾选 icon 统一在行末) */}
               {tab === 'team' && model.spaceName && (
                 <Tag
                   className={cx(styles['item-tag'], styles['item-space-tag'])}
@@ -418,10 +417,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               )}
             </div>
           </div>
-          {hasCost && checkIcon}
+          {/* 系统模型的倍率 */}
           {hasCost && (
             <span className={cx(styles['item-cost'])}>{model.cost}</span>
           )}
+          {/* 个人 tab:编辑/删除按钮 */}
           {tab === 'personal' && (
             <div className={cx(styles['item-actions'])}>
               <EditOutlined
@@ -440,7 +440,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               />
             </div>
           )}
-          {!hasCost && checkIcon}
+          {/* 三个 tab 统一:勾选 icon 恒居行末最右(常驻占位,opacity 显隐) */}
+          {checkIcon}
         </div>
       );
     },
