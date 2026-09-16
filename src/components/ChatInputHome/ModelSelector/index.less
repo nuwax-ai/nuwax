@@ -149,6 +149,24 @@
     overflow-y: auto;
     overflow-x: hidden;
     padding: 2px 6px 6px;
+
+    // 收窄默认垂直滚动条(webkit 默认约 15px),同款见 MentionEditor
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @colorBorder;
+      border-radius: 3px;
+
+      &:hover {
+        background: @colorTextTertiary;
+      }
+    }
   }
 
   // 空态文案在定高列表区(弹层弹性填充区)垂直居中
@@ -196,9 +214,9 @@
         white-space: nowrap;
       }
 
-      // 团队 tab 的空间名 tag:覆盖 item-tag 的左间距,吸附名称行
-      // 最右端(行末勾选 icon 之前);置于 .item-tag 之后保证覆盖生效。
-      // 文案用三级灰(比 antd Tag 默认文案浅、比描述行的四级灰深,
+      // 团队 tab 的空间名 tag:覆盖 item-tag 的左间距,吸附名称行最右端
+      // (勾选 icon 统一在行末,紧排其右);置于 .item-tag 之后保证覆盖
+      // 生效。文案用三级灰(比 antd Tag 默认文案浅、比描述行的四级灰深,
       // 保证在 tag 底色上可读)
       .item-space-tag {
         margin-left: auto;
@@ -245,6 +263,8 @@
     }
   }
 
+  // 勾选 icon(external 分组下拉共用);tab 列表项内的常驻占位/显隐/
+  // 尺寸覆盖见 .list-item
   .item-check {
     margin-left: @marginSm;
     color: @colorPrimary;
@@ -286,6 +306,23 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity @motionDurationMid;
+    }
+
+    // 勾选 icon:同一手法常驻占位 + opacity 显隐,选中仅切换可见性,
+    // 行内布局恒定不挤压名称区;尺寸调小到与 tag 文案一致(11px),
+    // 左间距 6px(无对应 token 档位,字面量)
+    .item-check {
+      flex-shrink: 0;
+      margin-left: 6px;
+      font-size: 11px;
+      opacity: 0;
+      transition: opacity @motionDurationMid;
+    }
+
+    &.item-selected {
+      .item-check {
+        opacity: 1;
+      }
     }
 
     &:hover {

@@ -2411,6 +2411,10 @@ const AppDevPro: React.FC = () => {
                 visible={buildVersionsOpen}
                 appId={appId}
                 currentReleaseId={userAppInfo?.prodReleaseId}
+                deployingVersion={publishFlow.deployingReleaseId}
+                onDeployVersion={(version) => {
+                  void publishFlow.deployVersion(version);
+                }}
                 onClose={() => setBuildVersionsOpen(false)}
               />
             </div>

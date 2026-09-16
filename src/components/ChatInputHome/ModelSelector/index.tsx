@@ -27,6 +27,7 @@ import {
   message,
   Segmented,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd';
 import classNames from 'classnames';
@@ -49,6 +50,33 @@ const isSystemModel = (model: ModelOptionDto) => {
   if (model.scope === 'Tenant') return true;
   if (model.scope === 'Space') return false;
   return model.spaceId === -1;
+};
+
+/**
+ * 截断文案 hover 展示全称(仅实际溢出时):
+ * 弃用 Typography 内建 ellipsis tooltip——弹层关闭/文案变更瞬间门户
+ * 会残留在 body 流末尾错位闪现(页面左下角偶现闪动),且无法传
+ * destroyOnHidden;自绘 Tooltip 隐藏即销毁门户,规避该竞态
+ */
+const EllipsisTooltipText: React.FC<{
+  text: string;
+  className?: string;
+}> = ({ text, className }) => {
+  const [tip, setTip] = useState('');
+  return (
+    <Tooltip title={tip} destroyOnHidden>
+      <span
+        className={className}
+        onMouseEnter={(e) => {
+          const el = e.currentTarget;
+          setTip(el.scrollWidth > el.clientWidth ? text : '');
+        }}
+        onMouseLeave={() => setTip('')}
+      >
+        {text}
+      </span>
+    </Tooltip>
+  );
 };
 
 /**
@@ -341,22 +369,21 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     [isExternalList, personalModels, teamModels, selectedModelId],
   );
 
-  // 渲染 tab 内单个模型项:
-  // 系统 tab 展示 tag / 倍率(勾选 icon 排倍率之前);个人 tab 保留编辑/删除;
-  // 团队 tab 不分组平铺,空间名作为 tag 展示在名称行最右侧
+  // 渲染 tab 内单个模型项:系统 tab 展示 tag / 倍率,个人 tab 常驻
+  // 编辑/删除按钮,团队 tab 不分组平铺(空间名 tag 靠名称行最右)。
+  // 三个 tab 统一:勾选 icon 恒排行末最右,常驻占位仅切换显隐
   const renderModelItem = useCallback(
     (model: ModelOptionDto, tab: ModelTabKey) => {
       const isSelected = model.id === selectedModelId;
       const showMeta = tab === 'system';
-      // 系统 tab 有倍率时勾选 icon 紧排倍率之前,其余(无倍率)维度保持行末
+      // 系统 tab 的倍率有值才展示
       const hasCost =
         showMeta &&
         model.cost !== null &&
         model.cost !== undefined &&
         model.cost !== '';
-      const checkIcon = isSelected ? (
-        <CheckOutlined className={cx(styles['item-check'])} />
-      ) : null;
+      // 勾选 icon 常驻渲染占位,选中态由样式切换 opacity,行内布局恒定
+      const checkIcon = <CheckOutlined className={cx(styles['item-check'])} />;
       return (
         <div
           key={model.id}
@@ -368,12 +395,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           <div className={cx(styles['item-content'])}>
             <div className={cx(styles['item-title-row'])}>
               {/* 名称截断时 hover tooltip 展示全称(与描述行同款) */}
-              <Typography.Text
+              <EllipsisTooltipText
+                text={model.name}
                 className={cx(styles['item-name'])}
-                ellipsis={{ tooltip: model.name }}
-              >
-                {model.name}
-              </Typography.Text>
+              />
               {showMeta && model.tag && (
                 <Tag
                   color={model.tagColor || undefined}
@@ -382,7 +407,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                   {model.tag}
                 </Tag>
               )}
-              {/* 团队 tab:空间名 tag 吸附名称行最右端(勾选 icon 之前) */}
+              {/* 团队 tab:空间名 tag 吸附名称行最右(勾选 icon 统一在行末) */}
               {tab === 'team' && model.spaceName && (
                 <Tag
                   className={cx(styles['item-tag'], styles['item-space-tag'])}
@@ -391,19 +416,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                 </Tag>
               )}
             </div>
-            {model.description && (
-              <Typography.Text
-                className={cx(styles['item-desc'])}
-                ellipsis={{ tooltip: model.description }}
-              >
-                {model.description}
-              </Typography.Text>
-            )}
           </div>
-          {hasCost && checkIcon}
+          {/* 系统模型的倍率 */}
           {hasCost && (
             <span className={cx(styles['item-cost'])}>{model.cost}</span>
           )}
+          {/* 个人 tab:编辑/删除按钮 */}
           {tab === 'personal' && (
             <div className={cx(styles['item-actions'])}>
               <EditOutlined
@@ -422,7 +440,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               />
             </div>
           )}
-          {!hasCost && checkIcon}
+          {/* 三个 tab 统一:勾选 icon 恒居行末最右(常驻占位,opacity 显隐) */}
+          {checkIcon}
         </div>
       );
     },
@@ -625,16 +644,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               [styles.open]: open,
             })}
           >
-            <Typography.Text
-              ellipsis={{
-                tooltip:
-                  selectedModel?.name ||
-                  dict('PC.Components.ModelSelector.selectModel'),
-              }}
-            >
-              {selectedModel?.name ||
-                dict('PC.Components.ModelSelector.selectModel')}
-            </Typography.Text>
+            <EllipsisTooltipText
+              text={
+                selectedModel?.name ||
+                dict('PC.Components.ModelSelector.selectModel')
+              }
+            />
             <SvgIcon
               name="icons-common-caret_down"
               style={{ fontSize: 14 }}
