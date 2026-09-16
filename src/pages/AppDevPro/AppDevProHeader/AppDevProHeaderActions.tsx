@@ -2,14 +2,10 @@ import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
-import {
-  CodeOutlined,
-  HistoryOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
+import { CodeOutlined } from '@ant-design/icons';
+import { Button, Dropdown, MenuProps, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import DatabaseGlyph from '../components/DatabaseGlyph';
 import { UserAppDbEnvEnum } from '../services/appDb';
 import type { UserAppInfo } from '../type';
@@ -42,8 +38,8 @@ export interface AppDevProHeaderActionsProps {
   isTerminalPanelOpen?: boolean;
   /** 打开终端面板（底部控制台终端 Tab 全屏） */
   onOpenTerminalPanel?: () => void;
-  /** 打开项目设置弹窗 */
-  onOpenSettings?: () => void;
+  /** 打开域名绑定弹窗（线上环境更多菜单） */
+  onOpenDomainBinding?: () => void;
   /** 数据库页签是否处于激活状态 */
   isDatabasePanelOpen?: boolean;
   /** 打开 / 关闭数据库工作区（再次点击还原打开前状态） */
@@ -60,10 +56,14 @@ export interface AppDevProHeaderActionsProps {
   isAppPreviewOpen?: boolean;
   /** 打开应用预览页签 */
   onOpenAppPreview?: () => void;
-  /** 历史版本抽屉是否打开 */
-  isBuildVersionsOpen?: boolean;
-  /** 打开历史版本抽屉 */
-  onOpenBuildVersions?: () => void;
+  /** 构建包版本记录侧栏是否打开 */
+  isBuildVersionRecordsOpen?: boolean;
+  /** 切换构建包版本记录侧栏显隐 */
+  onToggleBuildVersionRecords?: () => void;
+  /** 发布版本记录侧栏是否打开 */
+  isPublishVersionRecordsOpen?: boolean;
+  /** 切换发布版本记录侧栏显隐 */
+  onTogglePublishVersionRecords?: () => void;
   /** 当前环境 */
   env?: UserAppDbEnvEnum;
   /** 切换开发 / 线上环境 */
@@ -89,7 +89,7 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   onToggleFileTreeSidebar,
   isTerminalPanelOpen = false,
   onOpenTerminalPanel,
-  onOpenSettings,
+  onOpenDomainBinding,
   isDatabasePanelOpen = false,
   onOpenDatabase,
   isShowDesktop = false,
@@ -98,8 +98,10 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   isShowAppPreview = true,
   isAppPreviewOpen = false,
   onOpenAppPreview,
-  isBuildVersionsOpen = false,
-  onOpenBuildVersions,
+  isBuildVersionRecordsOpen = false,
+  onToggleBuildVersionRecords,
+  isPublishVersionRecordsOpen = false,
+  onTogglePublishVersionRecords,
   env = UserAppDbEnvEnum.Dev,
   onEnvChange,
 }) => {
@@ -123,6 +125,44 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   const handleSelectProdEnv = useCallback(() => {
     onEnvChange?.(UserAppDbEnvEnum.Prod);
   }, [onEnvChange]);
+
+  /** 线上环境更多菜单：域名绑定、构建包版本记录、发布版本记录 */
+  const prodMoreMenuItems = useMemo<MenuProps['items']>(
+    () => [
+      {
+        key: 'domainBinding',
+        label: (
+          <div onClick={onOpenDomainBinding}>
+            {dict('PC.Pages.AppDevPro.domainBinding')}
+          </div>
+        ),
+      },
+      {
+        key: 'buildVersionRecords',
+        label: (
+          <div onClick={onToggleBuildVersionRecords}>
+            {dict('PC.Pages.AppDevPro.buildVersionRecords')}
+          </div>
+        ),
+      },
+      {
+        key: 'publishVersionRecords',
+        label: (
+          <div onClick={onTogglePublishVersionRecords}>
+            {dict('PC.Pages.AppDevPro.publishVersionRecords')}
+          </div>
+        ),
+      },
+    ],
+    [
+      onOpenDomainBinding,
+      onToggleBuildVersionRecords,
+      onTogglePublishVersionRecords,
+    ],
+  );
+
+  const isProdMoreMenuActive =
+    isBuildVersionRecordsOpen || isPublishVersionRecordsOpen;
 
   return (
     <header className={cx('flex', 'items-center', styles.header, className)}>
@@ -154,27 +194,25 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
       </div>
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        {/* 项目设置：仅线上环境显示 */}
+        {/* 线上环境更多：域名绑定 / 构建包版本记录 / 发布版本记录 */}
         <ConditionRender condition={env === UserAppDbEnvEnum.Prod}>
-          <TooltipIcon
-            title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
-            className={cx(styles['panel-btn'])}
-            icon={<SettingOutlined style={{ fontSize: 16 }} />}
-            onClick={onOpenSettings}
-          />
-        </ConditionRender>
-
-        {/* 历史版本：仅线上环境显示 */}
-        <ConditionRender condition={env === UserAppDbEnvEnum.Prod}>
-          <TooltipIcon
-            title={dict('PC.Pages.AppDevPro.buildVersions')}
-            ariaLabel={dict('PC.Pages.AppDevPro.buildVersions')}
-            className={cx(styles['panel-btn'], {
-              [styles.active]: isBuildVersionsOpen,
-            })}
-            icon={<HistoryOutlined style={{ fontSize: 16 }} />}
-            onClick={onOpenBuildVersions}
-          />
+          <div className={cx(styles['fold-box'])}>
+            <Dropdown menu={{ items: prodMoreMenuItems }} placement="bottomLeft">
+              <span
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'cursor-pointer',
+                  styles['fold-btn'],
+                  {
+                    [styles.active]: isProdMoreMenuActive,
+                  },
+                )}
+              >
+                <SvgIcon name="icons-common-more" />
+              </span>
+            </Dropdown>
+          </div>
         </ConditionRender>
 
         {/* 数据库工作区：管理页 + 配置页 */}

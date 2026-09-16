@@ -7,6 +7,7 @@
 
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import type { HistoryData } from '@/types/interfaces/publish';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   ProjectLatestConversationResult,
@@ -97,6 +98,15 @@ export async function apiUserAppGetById(
   id: number,
 ): Promise<RequestResponse<UserAppInfo>> {
   return request(`/api/userapp/get/${id}`, {
+    method: 'GET',
+  });
+}
+
+/** 查询全栈应用配置历史（发布版本记录） */
+export async function apiUserAppConfigHistoryList(
+  appId: number,
+): Promise<RequestResponse<HistoryData[]>> {
+  return request(`/api/userapp/config/history/list/${appId}`, {
     method: 'GET',
   });
 }

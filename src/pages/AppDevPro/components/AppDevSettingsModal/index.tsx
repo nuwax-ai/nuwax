@@ -200,7 +200,7 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
 
   return (
     <Modal
-      title={t('PC.Pages.AppDevSettingsModal.title')}
+      title={t('PC.Pages.AppDevSettingsModal.domainBinding')}
       open={open}
       onCancel={onCancel}
       width={520}
@@ -208,10 +208,6 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
       footer={null}
     >
       <div className={cx(styles.settingsModal)}>
-        <div className={cx(styles.sectionTitle)}>
-          {t('PC.Pages.AppDevSettingsModal.domainBinding')}
-        </div>
-
         {platformDomains.length > 0 ? (
           <div className={cx(styles.platformDomainList)}>
             {platformDomains.map((item) => (

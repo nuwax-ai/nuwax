@@ -75,7 +75,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const [taskId, setTaskId] = useState<string>('');
   const [cancelLoading, setCancelLoading] = useState<boolean>(false);
   const [stopLoading, setStopLoading] = useState<boolean>(false);
-  /** 历史版本侧栏触发的指定 releaseId 部署 */
+  /** 历史构建包版本侧栏触发的指定 releaseId 部署 */
   const [deployingReleaseId, setDeployingReleaseId] = useState<string>('');
   /** 部署成功后异步拿到的线上 Prod 域名 */
   const [prodAccessUrl, setProdAccessUrl] = useState<string>('');
@@ -314,7 +314,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, [appId, listenBuildProgress, stopStream]);
 
   /**
-   * 历史版本：跳过构建与检测，直接部署指定 releaseId。
+   * 历史构建包版本：跳过构建与检测，直接部署指定 releaseId。
    *
    * @param releaseId 构建版本号
    */
