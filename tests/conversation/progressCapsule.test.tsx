@@ -78,6 +78,28 @@ describe('会话进度胶囊', () => {
     ]);
   });
 
+  it('无运行中动作与计划时兜底留空，不泄漏硬编码文案', () => {
+    const messages = [
+      {
+        id: 'user-1',
+        role: AssistantRoleEnum.USER,
+        text: '开始',
+        time: '2026-09-16 09:00:00',
+        status: MessageStatusEnum.Complete,
+      },
+      {
+        id: 'assistant-1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '',
+        time: '2026-09-16 09:00:01',
+        status: MessageStatusEnum.Loading,
+      },
+    ] as MessageInfo[];
+    const model = selectProgressCapsule(messages, true);
+    expect(model).not.toBeNull();
+    expect(model?.currentAction).toBe('');
+  });
+
   it('默认折叠，点击展开详情，终态立即卸载', () => {
     const { rerender } = render(
       <ConversationProgressCapsule

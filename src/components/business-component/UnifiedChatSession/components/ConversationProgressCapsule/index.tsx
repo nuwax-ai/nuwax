@@ -96,6 +96,10 @@ const ConversationProgressCapsule: React.FC<
   const progressText = model.totalCount
     ? `${model.completedCount}/${model.totalCount}`
     : t('PC.Components.ConversationProgressCapsule.running');
+  // 选择器兜底留空（保持纯函数）：无运行中动作时用 running 词条占位。
+  const displayAction =
+    model.currentAction ||
+    t('PC.Components.ConversationProgressCapsule.running');
 
   return (
     <div
@@ -115,7 +119,7 @@ const ConversationProgressCapsule: React.FC<
         onClick={() => setExpanded((value) => !value)}
       >
         <LoadingOutlined spin className={cx(safeStyles.spinner)} />
-        <span className={cx(safeStyles.action)}>{model.currentAction}</span>
+        <span className={cx(safeStyles.action)}>{displayAction}</span>
         <span className={cx(safeStyles.count)}>{progressText}</span>
         {expanded ? <UpOutlined /> : <DownOutlined />}
       </button>
@@ -130,7 +134,7 @@ const ConversationProgressCapsule: React.FC<
           </div>
           <div className={cx(safeStyles['current-action'])}>
             <LoadingOutlined spin />
-            <span>{model.currentAction}</span>
+            <span>{displayAction}</span>
           </div>
           <div className={cx(safeStyles.groups)}>
             <StepGroup

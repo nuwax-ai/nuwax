@@ -11,7 +11,11 @@ const {
   mockHistory,
 } = vi.hoisted(() => ({
   mockUnifiedChatSession: vi.fn(),
-  mockUseConversationRuntimeSession: vi.fn(() => null),
+  // rest 形参签名：umi mock 的 spread 转发（(...args) => mock(...args)）才可通过类型检查
+  mockUseConversationRuntimeSession: vi.fn((...args: unknown[]) => {
+    void args;
+    return null;
+  }),
   mockUseModel: vi.fn(),
   mockUseLocation: vi.fn(),
   mockHistory: { action: 'PUSH' },

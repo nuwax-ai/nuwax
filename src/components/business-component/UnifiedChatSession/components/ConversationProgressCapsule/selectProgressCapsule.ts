@@ -77,11 +77,9 @@ export function selectProgressCapsule(
         node.status === 'running',
     );
   const activeStep = steps.find((step) => step.status === 'active');
+  // 兜底文案留空，由展示层用 running 词条渲染——选择器保持纯净、不依赖 i18n。
   const currentAction =
-    nodeAction(runningNode) ||
-    activeStep?.content ||
-    nodeAction(planNode) ||
-    '任务执行中';
+    nodeAction(runningNode) || activeStep?.content || nodeAction(planNode);
 
   return {
     turnKey: turn.key,

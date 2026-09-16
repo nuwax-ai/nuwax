@@ -855,9 +855,20 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
             requiredNameList={requiredNameList}
             isVariablesFilled
             agentInfo={{
-              ...agentDetail,
+              // 显式挑字段（同 Chat 页口径）：agentDetail 全量 spread 会把
+              // 与门面契约不兼容的字段（如 sandboxId 两态）一起带进类型检查。
               id: agentId,
+              name: agentDetail?.name,
+              icon: agentDetail?.icon,
+              type: agentDetail?.type,
+              openingChatMsg: agentDetail?.openingChatMsg,
               guidQuestionDtos: chatSuggestList,
+              hasPermission: agentDetail?.hasPermission,
+              sandboxId: agentDetail?.sandboxId,
+              hideDesktop: agentDetail?.hideDesktop,
+              expandPageArea: agentDetail?.expandPageArea,
+              allowChooseMode: agentDetail?.allowChooseMode,
+              enableVersionControl: agentDetail?.enableVersionControl,
             }}
             chatSuggestList={chatSuggestList}
             onSendMessage={handleMessageSend}
