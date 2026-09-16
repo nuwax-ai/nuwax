@@ -4,7 +4,7 @@ import { MessageTypeEnum } from '@/types/enums/agent';
 import type { SendMessageParams } from '@/types/interfaces/conversationInfo';
 import { useEffect, useRef } from 'react';
 
-export interface AppDevProInitialConversationState {
+export interface InitialConversationState {
   message?: string;
   files?: SendMessageParams['files'];
   infos?: SendMessageParams['infos'];
@@ -15,19 +15,19 @@ export interface AppDevProInitialConversationState {
 
 interface UseInitialConversationAutoSendParams {
   conversationId?: number;
-  routeState?: AppDevProInitialConversationState | null;
+  routeState?: InitialConversationState | null;
   getEffectiveSandboxId: (conversationInfo?: unknown) => string | number;
   onMessageSend: (params: SendMessageParams) => void;
 }
 
-const hasInitialPayload = (state?: AppDevProInitialConversationState | null) =>
+const hasInitialPayload = (state?: InitialConversationState | null) =>
   Boolean(
     state &&
       (state.message?.trim() || state.files?.length || state.skillIds?.length),
   );
 
 /**
- * AppDevPro 进页时消费路由透传的首条消息。
+ * 开发详情进页时消费路由透传的首条消息。
  *
  * 详情查询不复用 conversationInfo model 的防抖 runAsync：进页查询与
  * 自动发送并发时，被防抖取消的 Promise 不会 resolve，会使首条消息挂起。

@@ -2,7 +2,9 @@ import { UnifiedChatSession } from '@/components/business-component';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversationMentionFiles from '@/hooks/useConversationMentionFiles';
+import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { TaskStatus } from '@/types/enums/agent';
+import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
@@ -92,6 +94,33 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     runAsync,
   } = useModel('conversationInfo');
 
+  const {
+    selectedComponentList,
+    setSelectedComponentList,
+    handleSelectComponent,
+    initSelectedComponentList,
+  } = useSelectedComponent();
+  const selectionInitKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const key = location.key || '';
+    if (!key || selectionInitKeyRef.current === key) return;
+    const state = location.state as
+      | { messageSourceType?: string; infos?: AgentSelectedComponentInfo[] }
+      | undefined;
+    if (
+      state?.messageSourceType !== 'new_chat' &&
+      Array.isArray(state?.infos)
+    ) {
+      selectionInitKeyRef.current = key;
+      setSelectedComponentList(state.infos);
+      return;
+    }
+    if (manualComponents.length > 0) {
+      selectionInitKeyRef.current = key;
+      initSelectedComponentList(manualComponents);
+    }
+  }, [location.key, location.state, manualComponents]);
+
   // 监听 isConversationActive 从 true → false，触发会话结束回调
   useEffect(() => {
     if (prevIsActiveRef.current && !isConversationActive) {
@@ -162,7 +191,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
               id,
               messageInfo,
               files,
-              infos: manualComponents,
+              infos: selectedComponentList,
               sandboxId: selectedComputerId,
               debug: true,
               isSync: false,
@@ -174,6 +203,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         }}
         onLoadMoreMessage={handleLoadMoreMessage}
         manualComponents={manualComponents}
+        selectedComponentList={selectedComponentList}
+        onSelectComponent={handleSelectComponent}
         selectedComputerId={selectedComputerId}
         onComputerSelect={(id) => {
           onChangeSelectedComputerId?.(id);

@@ -13,6 +13,10 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
+import {
+  useInitialConversationAutoSend,
+  type InitialConversationState,
+} from '@/hooks/useInitialConversationAutoSend';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
@@ -78,10 +82,6 @@ import {
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
-import {
-  useInitialConversationAutoSend,
-  type AppDevProInitialConversationState,
-} from './hooks/useInitialConversationAutoSend';
 import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
 import { useUserAppRuntime } from './hooks/useUserAppRuntime';
@@ -551,7 +551,7 @@ const AppDevPro: React.FC = () => {
   useInitialConversationAutoSend({
     conversationId: queryConversationId,
     routeState: (location.state || history.location.state) as
-      | AppDevProInitialConversationState
+      | InitialConversationState
       | undefined,
     getEffectiveSandboxId,
     onMessageSend,

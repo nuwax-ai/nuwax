@@ -4,7 +4,6 @@ import {
   GitVersionRecordPanel,
   type ConsoleLayoutMode,
 } from '@/components/business-component';
-import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import FileTreeGitSourcePanel, {
   useSourceControl,
   type ChangeListSection,
@@ -21,6 +20,10 @@ import VersionHistory from '@/components/VersionHistory';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import {
+  useInitialConversationAutoSend,
+  type InitialConversationState,
+} from '@/hooks/useInitialConversationAutoSend';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
@@ -41,7 +44,6 @@ import {
 import {
   AgentComponentTypeEnum,
   HideDesktopEnum,
-  MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
@@ -249,7 +251,6 @@ const ConversationAgent: React.FC = () => {
     setTaskAgentSelectedFileId,
     setIsLoadingOtherInterface,
     onMessageSend,
-    runAsync,
     resetInit,
     restartVncPod,
     restartAgent,
@@ -472,67 +473,14 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
-  /**
-   * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
-   */
-  useEffect(() => {
-    // 优先使用路由参数中指定的 conversationId
-    const id = queryConversationId;
-
-    // 如果 id 存在，则自动触发消息发送
-    if (id) {
-      const state = (location.state || history.location.state) as any;
-      if (
-        state &&
-        (state.message?.trim() || state.files?.length || state.skillIds?.length)
-      ) {
-        const asyncFun = async () => {
-          let data = null;
-          try {
-            const { data: _data } = await runAsync(id);
-            data = _data;
-          } catch (error) {
-            console.error(
-              'Failed to query conversation before auto-send',
-              error,
-            );
-          }
-
-          // 会话消息列表
-          const list = data?.messageList || [];
-          const len = list?.length || 0;
-          // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
-          const isCanMessage =
-            !len ||
-            (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
-
-          if (isCanMessage) {
-            // 确定沙箱 ID
-            const effectiveSandboxId = String(getEffectiveSandboxId(data));
-            onMessageSend({
-              id,
-              messageInfo: state.message || '',
-              files: state.files,
-              infos: state.infos || [],
-              sandboxId: effectiveSandboxId,
-              debug: true,
-              isSync: false,
-              skillIds: state.skillIds,
-              modelId: state.modelId,
-              agentMode: (state.agentMode as AgentMode) || 'yolo',
-              data,
-            });
-          }
-        };
-        asyncFun();
-      }
-    }
-  }, [
-    location.state,
-    history.location.state,
-    selectedComputerId,
-    queryConversationId,
-  ]);
+  useInitialConversationAutoSend({
+    conversationId: queryConversationId,
+    routeState: (location.state || history.location.state) as
+      | InitialConversationState
+      | undefined,
+    getEffectiveSandboxId,
+    onMessageSend,
+  });
 
   /** 空间变化时重新加载模型列表 */
   useEffect(() => {
