@@ -78,13 +78,12 @@
   box-shadow: @boxShadowSecondary;
   padding: 4px 0 0;
 
-  // 三 tab 模式:弹层定高 368px、定宽(列表项 274px + 列表区左右
-  // padding 6px×2 = 286px)——各 tab 高度一致,空数据 tab 也不收缩
-  // 变窄;external 分组下拉不受影响
+  // 三 tab 模式:弹层定高 368px、定宽 340px——各 tab 高度/宽度一致,
+  // 空数据 tab 也不收缩变窄;external 分组下拉不受影响
   &.tab-mode {
     box-sizing: border-box;
     height: 368px;
-    width: 286px;
+    width: 340px;
   }
 
   :global {
@@ -134,7 +133,7 @@
   }
 
   // 三 tab 弹层(agentId 模式):Segmented 分段控件,样式对齐专家&技能&连接器页主 tab
-  // 宽度跟随列表区(.list-item 定宽),保持与旧版分组下拉一致的弹层宽度
+  // 宽度跟随弹层定宽(340px)平铺
   .model-tabs {
     flex-shrink: 0;
     box-sizing: border-box;
@@ -189,6 +188,15 @@
       display: flex;
       align-items: center;
       min-width: 0;
+
+      // 供应商 icon:恒定占位,空值由 JS 兜底 custom.png
+      .item-icon {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        margin-right: @marginXxs;
+        border-radius: 2px;
+      }
 
       .item-name {
         color: @colorTextSecondary;
@@ -285,13 +293,15 @@
     }
   }
 
-  // tab 模式:脱离 Menu 的自绘列表项;原 224px(旧版弹层 200px + menu 两侧
-  // padding),2026-09-15 产品要求弹层加宽 50px,列表项随之定宽 274px
+  // tab 模式:脱离 Menu 的自绘列表项,弹性填满弹层定宽(340px - 列表区
+  // 两侧 padding 12px = 328px)——滚动条出现时行自行收窄,行末勾选
+  // icon 不被滚动条裁切。历史:224px(旧版弹层 200px + menu 两侧
+  // padding)→ 2026-09-15 产品要求加宽 50px 定宽 274px → 弹层定宽后改弹性
   .list-item {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    width: 274px;
+    width: 100%;
     box-sizing: border-box;
     padding: 4px 6px;
     border-radius: @borderRadius;
