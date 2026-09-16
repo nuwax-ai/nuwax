@@ -10,6 +10,11 @@ import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { apiNormalProjectCreate } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetUserSelectableSandboxList } from '@/services/systemManage';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  emitConversationChanged,
+  emitProjectChanged,
+} from '@/utils/directorySyncEvents';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import {
@@ -17,8 +22,8 @@ import {
   FolderOpenOutlined,
   FolderOutlined,
 } from '@ant-design/icons';
-import { Dropdown, Form, Input, message, Select, Spin } from 'antd';
 import type { FormProps } from 'antd';
+import { Dropdown, Form, Input, message, Select, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
@@ -132,6 +137,29 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
       });
       const newId = res?.data?.id ?? res?.data?.targetId;
       if (res?.code === SUCCESS_CODE && newId) {
+        emitProjectChanged({
+          operation: 'created',
+          project: {
+            projectId: String(newId),
+            projectType: AgentComponentTypeEnum.NormalProject,
+            ...(spaceId !== undefined ? { spaceId: String(spaceId) } : {}),
+          },
+          origin: 'create-normal-project-modal',
+          reason: 'create',
+        });
+        if (res.data?.conversationId) {
+          emitConversationChanged({
+            operation: 'created',
+            conversationId: String(res.data.conversationId),
+            project: {
+              projectId: String(newId),
+              projectType: AgentComponentTypeEnum.NormalProject,
+              ...(spaceId !== undefined ? { spaceId: String(spaceId) } : {}),
+            },
+            origin: 'create-normal-project-modal',
+            reason: 'create',
+          });
+        }
         message.success(dict('PC.Pages.SpaceProjectManage.createSuccess'));
         onConfirm({
           id: newId,
@@ -241,7 +269,9 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
                   {
                     key: 'pick-folder',
                     icon: <FolderOpenOutlined />,
-                    label: dict('PC.Components.WorkspaceDir.openComputerFolder'),
+                    label: dict(
+                      'PC.Components.WorkspaceDir.openComputerFolder',
+                    ),
                   },
                 ],
                 onClick: ({ key }: { key: string }) => {

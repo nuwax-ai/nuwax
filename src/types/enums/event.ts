@@ -9,4 +9,7 @@ export enum EventTypeEnum {
   RefreshConversationList = 'refresh_conversation_list',
   // 左侧会话列表需要乐观更新会话状态
   UpdateConversationListTaskStatus = 'update_conversation_list_task_status',
+  // 项目/会话目录元数据发生变化
+  ConversationChanged = 'directory_conversation_changed',
+  ProjectChanged = 'directory_project_changed',
 }

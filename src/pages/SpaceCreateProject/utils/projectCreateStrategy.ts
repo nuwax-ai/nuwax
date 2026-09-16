@@ -5,6 +5,10 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentSubTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
+import {
+  emitConversationChanged,
+  emitProjectChanged,
+} from '@/utils/directorySyncEvents';
 import { message } from 'antd';
 import { history } from 'umi';
 
@@ -104,6 +108,41 @@ export const createProjectAndNavigate = async ({
       );
     }
     const { targetId, conversationId } = res.data;
+    const directoryProjectTypes = new Set([
+      AgentComponentTypeEnum.NormalProject,
+      AgentComponentTypeEnum.UserApp,
+      AgentComponentTypeEnum.PageApp,
+    ]);
+    const isDirectoryProject = directoryProjectTypes.has(payload.type);
+    if (isDirectoryProject) {
+      emitProjectChanged({
+        operation: 'created',
+        project: {
+          projectId: String(targetId),
+          projectType: payload.type,
+          spaceId: String(spaceId),
+        },
+        origin: 'project-create-strategy',
+        reason: 'create',
+      });
+    }
+    if (conversationId) {
+      emitConversationChanged({
+        operation: 'created',
+        conversationId: String(conversationId),
+        ...(isDirectoryProject
+          ? {
+              project: {
+                projectId: String(targetId),
+                projectType: payload.type,
+                spaceId: String(spaceId),
+              },
+            }
+          : {}),
+        origin: 'project-create-strategy',
+        reason: 'create',
+      });
+    }
 
     const routeState = {
       message: payload.prompt,

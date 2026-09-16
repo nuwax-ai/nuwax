@@ -270,6 +270,12 @@ export interface MentionEditorProps {
   /** Width reserved before the first line of text. */
   inlinePrefixWidth?: number;
   /**
+   * 编辑器内部滚动回调（scrollTop 像素）：行首回执 pill 为绝对定位浮层，
+   * 宿主靠此同步 translateY 让 pill 随首行一起滚出可视区，
+   * 避免长文本换行滚动后正文压住 pill
+   */
+  onEditorScroll?: (scrollTop: number) => void;
+  /**
    * 是否启用技能 chip 能力（编程化插入与 defaultMentions 回显守卫），默认 true。
    * 不影响 / 能力弹窗——能力弹窗随时可唤起，仅按 capabilityResourceTypes 收敛可选类型
    */
@@ -325,6 +331,11 @@ export interface MentionEditorHandle {
    * 造成草稿在 state 里但输入框不显示
    */
   setEditorText: (text: string) => void;
+  /**
+   * 草稿落盘用的纯文本：mention chip 剥离（chip 无法跨刷新/切换还原，
+   * 残留的 @/ 名称字面量会污染恢复后的输入框）
+   */
+  getPlainText: () => string;
   /** 以编程方式插入提及项（追加到编辑器末尾） */
   handleAtIconMentionSelect: (item: MentionItem) => void;
   /** 获取焦点 */

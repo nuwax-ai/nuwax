@@ -503,10 +503,20 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
       return;
     }
 
-    /** 更新标签栏轨道宽度 */
+    const lastWidthRef = { current: -1 };
+    let rafId = 0;
+
+    /** 更新标签栏轨道宽度；宽度未变时不 setState，避免 ResizeObserver 反馈环 */
     const updateTrackWidth = () => {
-      const next = Math.max(0, trackEl.scrollWidth - 2);
-      setTrackScrollWidth((prev) => (prev === next ? prev : next));
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const next = Math.max(0, trackEl.scrollWidth - 2);
+        if (lastWidthRef.current === next) {
+          return;
+        }
+        lastWidthRef.current = next;
+        setTrackScrollWidth(next);
+      });
     };
 
     updateTrackWidth();
@@ -515,6 +525,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
     const resizeObserver = new ResizeObserver(updateTrackWidth);
     resizeObserver.observe(trackEl);
     return () => {
+      cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
     };
   }, [tabs]);

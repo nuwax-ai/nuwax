@@ -7,7 +7,9 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiNormalProjectUpdate } from '@/services/userProjectApp';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { UserProjectItem } from '@/types/interfaces/userProject';
+import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
@@ -105,6 +107,19 @@ const EditNormalProjectModal: React.FC<EditNormalProjectModalProps> = ({
           }
           resetForm();
           message.success(dict('PC.Common.Global.saveSuccess'));
+          emitProjectChanged({
+            operation: 'updated',
+            project: {
+              projectId: String(project.id),
+              projectType: AgentComponentTypeEnum.NormalProject,
+              ...(project.spaceId !== undefined
+                ? { spaceId: String(project.spaceId) }
+                : {}),
+            },
+            patch: editedInfo,
+            origin: 'edit-normal-project-modal',
+            reason: 'rename',
+          });
           onEdited(project.id, editedInfo);
         } finally {
           setLoading(false);

@@ -78,6 +78,8 @@ describe('useConversationAgentChatSession', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // 本组合同聚焦 legacy model 透传；runtime V2 由 conversationRuntimeSession 专项覆盖。
+    localStorage.setItem('conversation_runtime_enabled', '0');
     mockUseModel.mockImplementation((name: string) => {
       if (name === 'conversationAgent') {
         return createConversationAgentModel();

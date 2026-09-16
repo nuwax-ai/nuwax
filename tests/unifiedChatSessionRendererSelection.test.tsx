@@ -1,6 +1,6 @@
 /**
  * ChatContentArea 渲染线选择器合同测试（V2 双线重构）：
- * 默认（不传 messageRenderer）走 V1 逐消息 ChatView（现有测试零行为变化）；
+ * 默认（不传 messageRenderer）走 V2；
  * messageRenderer='v2' 按需加载 V2 渲染器；renderMessageItem 自定义入口恒优先。
  */
 import ChatContentArea from '@/components/business-component/UnifiedChatSession/components/ChatContentArea';
@@ -69,10 +69,14 @@ const list = [
 ];
 
 describe('ChatContentArea 渲染线选择', () => {
-  it('默认 v1：逐消息 ChatView，不加载 V2 渲染器', () => {
+  it('默认 v2：按需加载 V2 渲染器', async () => {
     render(<ChatContentArea {...baseProps} messageList={list} />);
-    expect(screen.getAllByTestId('chat-view')).toHaveLength(2);
-    expect(screen.queryByTestId('conversation-renderer-v2')).toBeNull();
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('conversation-renderer-v2'),
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('chat-view')).toBeNull();
   });
 
   it("messageRenderer='v2'：按需加载并渲染 V2 渲染器", async () => {

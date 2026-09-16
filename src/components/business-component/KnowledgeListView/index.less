@@ -49,6 +49,12 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+// simple 紧凑行（@ 弹层等）：行间距归零（覆盖 .root 的 8px 行距），
+// 可点区域靠行自带 padding
+.root-list-simple {
+  row-gap: 0;
+}
+
 // 首次加载/空态占满可视高度（保持滚动容器尺寸稳定）
 .state {
   grid-column: 1 / -1;
@@ -189,8 +195,12 @@
 
 // ---- 简单模式（仅 list 变体）：无背景圆形图标 + 标题单行紧凑行 ----
 .row-simple {
-  min-height: 40px;
-  padding: 4px 12px;
+  // 定高与 @ 弹层顶部 Segmented 切换器同高（controlHeight 32），
+  // 内容垂直居中靠行内 align-items:center；清掉基础行 56px 保底高
+  height: 32px;
+  min-height: 0;
+  padding-block: 0;
+  padding-inline: 12px;
 }
 
 // RepoFileIcon 的 tinted 底为内联样式,须 !important 覆盖

@@ -2,13 +2,17 @@ import type {
   AgentInterventionHandlersOverride,
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
+import type { ChatInputUnifiedProps } from '@/components/business-component/ChatInputUnified';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
 import type { FetchMentionFiles } from '@/components/ChatInputHome/MentionPopup/types';
 import type { ConversationSessionView } from '@/features/conversation/domain/sessionView';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import type { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
-import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
-import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  AgentSelectedComponentInfo,
+  GuidQuestionDto,
+} from '@/types/interfaces/agent';
+import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
   MessageInfo,
@@ -26,7 +30,8 @@ export interface UnifiedAgentInfo {
   guidQuestionDtos?: any[];
   eventBindConfig?: any;
   hasPermission?: boolean;
-  sandboxId?: string;
+  /** Agent 绑定的沙箱 id（透传 ChatInputUnified agentSandboxId，后端 string/number 两态都有） */
+  sandboxId?: string | number;
   hideDesktop?: number;
   expandPageArea?: number;
   /** 是否允许用户在对话框中选择 Agent 模式（1 允许，其他不允许） */
@@ -59,7 +64,8 @@ export interface UnifiedChatSessionProps {
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   showDebug?: boolean;
   loadingSuggest?: boolean; // 会话建议加载状态
-  chatSuggestList?: string[]; // 页面会话建议（开场白问题推荐）
+  // 与 RecommendListProps 同口径：开场白问题推荐（对象）与轮次后建议（字符串）两态
+  chatSuggestList?: GuidQuestionDto[] | string[]; // 页面会话建议
 
   // 智能体配置与信息
   agentInfo?: UnifiedAgentInfo;
@@ -97,6 +103,10 @@ export interface UnifiedChatSessionProps {
   clearLoading?: boolean;
   /** 是否展示清空会话/小刷子按钮（默认 true） */
   showClearIcon?: boolean;
+  /** 是否展示 TaskAgent 会话底部执行状态栏（默认 true） */
+  showConversationStatus?: boolean;
+  /** 是否展示执行期右上角进度胶囊；仅主 Chat 的 TaskAgent 入口显式开启。 */
+  showConversationProgressCapsule?: boolean;
   isSelectionLocked?: boolean;
   hasUserSentMessage?: boolean;
   readonly?: boolean;
@@ -119,7 +129,7 @@ export interface UnifiedChatSessionProps {
   ) => React.ReactNode;
   renderEmptyState?: () => React.ReactNode;
   /**
-   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView（默认）；v2 = V2
+   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView；v2 = V2（统一默认）
    * 轮次工作轨迹渲染器。renderMessageItem 恒优先走原逻辑。
    */
   messageRenderer?: 'v1' | 'v2';
@@ -142,7 +152,7 @@ export interface UnifiedChatSessionProps {
   voiceInputMock?: boolean;
 
   // 输入框属性透传，用于支持展示不同的工具栏、工具列表配置
-  chatInputProps?: Partial<ChatInputProps>;
+  chatInputProps?: Partial<ChatInputUnifiedProps>;
 
   /**
    * 队列两次消费之间的最小间隔（ms），用于规避会话状态切换的中间空白；默认 500。

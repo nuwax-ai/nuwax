@@ -16,7 +16,7 @@ import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import { createLogger } from '@/utils/logger';
 import dayjs from 'dayjs';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 const resumeStreamLogger = createLogger('[ResumeStreamHandlers]');
@@ -174,15 +174,72 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
   const onStreamErrorRef = useRef(deps.onStreamError);
   onStreamErrorRef.current = deps.onStreamError;
 
+  const scrollGenerationRef = useRef(0);
+  const scrollFrameRef = useRef<number | null>(null);
+  const scrollResetTimersRef = useRef(
+    new Map<
+      ReturnType<typeof setTimeout>,
+      HTMLDivElement & { __isProgrammaticScroll?: boolean }
+    >(),
+  );
+
+  const clearResumeScroll = useCallback(() => {
+    scrollGenerationRef.current += 1;
+    if (scrollFrameRef.current !== null) {
+      cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+    }
+    scrollResetTimersRef.current.forEach((element, timer) => {
+      clearTimeout(timer);
+      element.__isProgrammaticScroll = false;
+    });
+    scrollResetTimersRef.current.clear();
+  }, []);
+
+  useEffect(() => clearResumeScroll, [clearResumeScroll]);
+
+  // 重放事件仍逐条同步处理，只将同帧内的滚动合并，避免反复读写布局。
+  const scheduleResumeScroll = useCallback(
+    (generation: number) => {
+      if (
+        generation !== scrollGenerationRef.current ||
+        !allowAutoScrollRef.current ||
+        scrollFrameRef.current !== null
+      ) {
+        return;
+      }
+      scrollFrameRef.current = requestAnimationFrame(() => {
+        if (generation !== scrollGenerationRef.current) return;
+        scrollFrameRef.current = null;
+        if (!allowAutoScrollRef.current) return;
+        const element = messageViewRef.current as
+          | (HTMLDivElement & { __isProgrammaticScroll?: boolean })
+          | null;
+        if (!element) return;
+
+        element.__isProgrammaticScroll = true;
+        element.scrollTo({ top: element.scrollHeight, behavior: 'instant' });
+        // 保留每次滚动的 100ms 窗口，持续重放不能延长标记而屏蔽用户滚动。
+        const timer = setTimeout(() => {
+          element.__isProgrammaticScroll = false;
+          scrollResetTimersRef.current.delete(timer);
+        }, 100);
+        scrollResetTimersRef.current.set(timer, element);
+      });
+    },
+    [allowAutoScrollRef, messageViewRef],
+  );
+
   // 中断会话流式恢复(sub)连接，并重置占位记忆
   const abortResumeStream = useCallback(() => {
+    clearResumeScroll();
     if (resumeAbortRef.current) {
       resumeAbortRef.current();
       resumeAbortRef.current = null;
     }
     resumeConversationIdRef.current = null;
     resumeMessageIdRef.current = null;
-  }, []);
+  }, [clearResumeScroll]);
 
   // 追加一条空白 assistant 占位消息用于接收 sub 流式重建，返回其 id。
   // 仅复用「本次恢复已追加的占位」（resumeMessageIdRef 记忆），【不】复用历史里的任何消息——
@@ -342,6 +399,8 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
         debugSource,
       );
       const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+      const scrollGeneration = scrollGenerationRef.current;
+      let scrollClosed = false;
       resumeAbortRef.current = createSSEConnection({
         url: `${CONVERSATION_CHAT_SUB_URL}/${conversationId}`,
         method: 'GET',
@@ -373,25 +432,7 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
           if (res?.eventType === ConversationEventTypeEnum.ERROR) {
             abortResumeStream();
           }
-          // 流式恢复期间跟随自动滚动
-          if (allowAutoScrollRef.current) {
-            requestAnimationFrame(() => {
-              const element = messageViewRef?.current;
-              if (element) {
-                // 标记程序滚动,避免被 useConversationScrollDetection 误判为用户滚动
-                // 而把 allowAutoScrollRef 置 false,导致恢复流「滚一半就停」
-                // (与 useUnifiedChatScroll.performScroll 的标志写法保持一致)
-                (element as any).__isProgrammaticScroll = true;
-                element.scrollTo({
-                  top: element.scrollHeight,
-                  behavior: 'instant',
-                });
-                setTimeout(() => {
-                  (element as any).__isProgrammaticScroll = false;
-                }, 100);
-              }
-            });
-          }
+          if (!scrollClosed) scheduleResumeScroll(scrollGeneration);
         },
         // 网络错误与正常关闭区别处置：错误按 chat onError 同款收敛（占位 Error + FAILED）；
         // 随后工具层仍会触发 onClose → onStreamClosed（占位已是 Error，幂等 noop + 活跃态重算）
@@ -399,6 +440,8 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
           onStreamErrorRef.current?.(resumeMessageIdRef.current);
         },
         onClose: () => {
+          // 正常 EOF 保留最终结果已排入的最后一帧，关闭后的尾包不再排滚动。
+          scrollClosed = true;
           resumeAbortRef.current = null;
           resumeConversationIdRef.current = null;
           // 收尾本次恢复的占位：sub 中途死亡（网络切换等）且本地 chat 连接不存在时，
@@ -414,6 +457,7 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
       abortResumeStream,
       ensureResumeAssistantPlaceholder,
       resetResumeMessageState,
+      scheduleResumeScroll,
       upsertResumeUserMessage,
     ],
   );

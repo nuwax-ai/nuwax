@@ -73,6 +73,54 @@ const useElapsedMs = (
   return undefined;
 };
 
+// 计时状态仅由标签持有，避免每秒重渲染整轮正文与工具详情。
+const TraceMetrics: React.FC<{ turn: ConversationTurnPresentationV2 }> = ({
+  turn,
+}) => {
+  const elapsedMs = useElapsedMs(turn);
+  const metricParts: string[] = [];
+  if (!turn.running && turn.metrics.toolCount > 0) {
+    metricParts.push(
+      dict(
+        'PC.Components.ConversationRendererV2.traceMetricTools',
+        turn.metrics.toolCount,
+      ),
+    );
+  }
+  if (!turn.running && turn.metrics.messageCount > 0) {
+    metricParts.push(
+      dict(
+        'PC.Components.ConversationRendererV2.traceMetricMessages',
+        turn.metrics.messageCount,
+      ),
+    );
+  }
+  const elapsedText = turn.running
+    ? formatElapsedClock(elapsedMs ?? 0)
+    : formatElapsed(elapsedMs);
+  if (elapsedText) {
+    metricParts.push(
+      dict(
+        turn.running
+          ? 'PC.Components.ConversationRendererV2.traceMetricRunning'
+          : 'PC.Components.ConversationRendererV2.traceMetricElapsed',
+        elapsedText,
+      ),
+    );
+  }
+  const headerText = metricParts.length
+    ? metricParts.join(' · ')
+    : dict('PC.Components.ConversationRendererV2.traceTitleProcessOnly');
+
+  return (
+    <span
+      className={cx(styles['trace-metrics'], styles['trace-metrics-leading'])}
+    >
+      {headerText}
+    </span>
+  );
+};
+
 export interface WorkTraceDisclosureProps {
   turn: ConversationTurnPresentationV2;
   preferences: ConversationRenderPreferencesV2;
@@ -181,41 +229,6 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
     return typeof manual === 'boolean' ? manual : item.active;
   };
 
-  const elapsedMs = useElapsedMs(turn);
-  const metricParts: string[] = [];
-  if (!turn.running && turn.metrics.toolCount > 0) {
-    metricParts.push(
-      dict(
-        'PC.Components.ConversationRendererV2.traceMetricTools',
-        turn.metrics.toolCount,
-      ),
-    );
-  }
-  if (!turn.running && turn.metrics.messageCount > 0) {
-    metricParts.push(
-      dict(
-        'PC.Components.ConversationRendererV2.traceMetricMessages',
-        turn.metrics.messageCount,
-      ),
-    );
-  }
-  const elapsedText = turn.running
-    ? formatElapsedClock(elapsedMs ?? 0)
-    : formatElapsed(elapsedMs);
-  if (elapsedText) {
-    metricParts.push(
-      dict(
-        turn.running
-          ? 'PC.Components.ConversationRendererV2.traceMetricRunning'
-          : 'PC.Components.ConversationRendererV2.traceMetricElapsed',
-        elapsedText,
-      ),
-    );
-  }
-  const headerText = metricParts.length
-    ? metricParts.join(' · ')
-    : dict('PC.Components.ConversationRendererV2.traceTitleProcessOnly');
-
   const traceBodyId = `v2-trace-body-${turn.key}`;
   const traceThemeStyle = {
     '--v2-color-text': token.colorText,
@@ -248,14 +261,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
         data-testid="v2-trace-toggle"
         onClick={() => onManualToggle(!expanded)}
       >
-        <span
-          className={cx(
-            styles['trace-metrics'],
-            styles['trace-metrics-leading'],
-          )}
-        >
-          {headerText}
-        </span>
+        <TraceMetrics turn={turn} />
         <DownOutlined
           className={cx(
             styles['trace-chevron'],

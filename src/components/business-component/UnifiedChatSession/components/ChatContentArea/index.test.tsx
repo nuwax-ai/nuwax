@@ -100,4 +100,66 @@ describe('ChatContentArea', () => {
       '1557156',
     );
   });
+
+  it('isMoreMessage 为 true 时哨兵恒渲染，不因本地列表短于一页而隐藏', () => {
+    // 回归背景：门槛曾对比本地列表长度与 MESSAGE_PAGE_SIZE，模型层水合会把
+    // 整页 10 条缩成 9，导致哨兵永不渲染、向上滚动加载历史失效
+    const loadMoreRef = createRef<HTMLDivElement>();
+    const message = {
+      id: 'message-1',
+      role: AssistantRoleEnum.ASSISTANT,
+      text: 'result',
+    } as MessageInfo;
+
+    render(
+      <ChatContentArea
+        conversationId="1557156"
+        messageViewRef={createRef<HTMLDivElement>()}
+        handleMouseEnter={vi.fn()}
+        handleMouseLeave={vi.fn()}
+        isLoading={false}
+        messageList={[message]}
+        isMoreMessage
+        loadingMore
+        loadMoreRef={loadMoreRef}
+        effectiveRoleInfo={roleInfo}
+        shouldShowSessionSuggest={false}
+        handleMessageSend={vi.fn()}
+        showTaskExecutingWait={false}
+      />,
+    );
+
+    expect(loadMoreRef.current).not.toBeNull();
+    // 加载中文案与图标随 loadingMore 出现（容器由 CSS 定高，不产生布局抖动）
+    expect(
+      screen.getByText('PC.Pages.Chat.loadingHistoryConversation'),
+    ).toBeInTheDocument();
+  });
+
+  it('isMoreMessage 为 false 时不渲染哨兵', () => {
+    const loadMoreRef = createRef<HTMLDivElement>();
+    const message = {
+      id: 'message-1',
+      role: AssistantRoleEnum.ASSISTANT,
+      text: 'result',
+    } as MessageInfo;
+
+    render(
+      <ChatContentArea
+        conversationId="1557156"
+        messageViewRef={createRef<HTMLDivElement>()}
+        handleMouseEnter={vi.fn()}
+        handleMouseLeave={vi.fn()}
+        isLoading={false}
+        messageList={[message]}
+        loadMoreRef={loadMoreRef}
+        effectiveRoleInfo={roleInfo}
+        shouldShowSessionSuggest={false}
+        handleMessageSend={vi.fn()}
+        showTaskExecutingWait={false}
+      />,
+    );
+
+    expect(loadMoreRef.current).toBeNull();
+  });
 });

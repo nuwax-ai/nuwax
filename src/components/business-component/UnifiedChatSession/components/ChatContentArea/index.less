@@ -50,11 +50,14 @@
     // 加载更多按钮容器
     .load-more-container {
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
+      // 定高常驻 + 常规流：文案出现/消失高度恒定（不抖动）；
+      // 不用悬浮——上探被滚动顶界裁剪、下挂压住首条消息且随翻页漂移
+      height: 28px;
+      flex-shrink: 0;
       margin-bottom: @paddingSm;
       text-align: center;
-      padding: @padding @zero-value;
       color: @colorTextTertiary;
     }
 

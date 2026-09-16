@@ -274,12 +274,16 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   const canShowIframe = !!previewUrl && (running || directPreview);
 
   const handleIframeLoad = useCallback(() => {
-    setLoadedInstanceKey(previewInstanceKey);
+    setLoadedInstanceKey((prev) =>
+      prev === previewInstanceKey ? prev : previewInstanceKey,
+    );
   }, [previewInstanceKey]);
 
   /** iframe 加载失败时收起加载遮罩，露出失败提示 */
   const handleIframeError = useCallback(() => {
-    setLoadedInstanceKey(previewInstanceKey);
+    setLoadedInstanceKey((prev) =>
+      prev === previewInstanceKey ? prev : previewInstanceKey,
+    );
   }, [previewInstanceKey]);
 
   /** 刷新 iframe 时重新展示加载遮罩 */

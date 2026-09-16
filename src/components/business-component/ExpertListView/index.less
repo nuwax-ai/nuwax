@@ -47,6 +47,11 @@
   row-gap: 8px;
 }
 
+// simple 紧凑行（@ 弹层等）：行间距归零，可点区域靠行自带 padding
+.root-list-simple {
+  row-gap: 0;
+}
+
 // 首次加载/空态占满可视高度（保持滚动容器尺寸稳定）
 .state {
   grid-column: 1 / -1;
@@ -81,6 +86,18 @@
   padding-inline: 7px;
   font-size: 10px;
   font-weight: 400;
+  line-height: 16px;
+}
+
+// simple 紧凑行付费小 Tag（行尾内联）：弹层滚动容器会裁切左上角 Ribbon
+// 的负向偏移且压住图标，simple 行改内联 Tag（同 AppDev 选择弹层口径；
+// 双写提权压过 cssinjs；高 18px 与 Ribbon 角标同口径）
+.paid-tag.paid-tag {
+  flex-shrink: 0;
+  margin-right: 0;
+  margin-inline-end: 0;
+  padding-inline: 5px;
+  font-size: 10px;
   line-height: 16px;
 }
 
@@ -271,7 +288,11 @@
 
 // ---- 简单模式（仅 list 变体）：无背景圆形图标 + 标题单行紧凑行 ----
 .row-simple {
-  padding: 6px 12px;
+  // 定高与 @ 弹层顶部 Segmented 切换器同高（controlHeight 32），
+  // 内容垂直居中靠行内 align-items:center
+  height: 32px;
+  padding-block: 0;
+  padding-inline: 12px;
 }
 
 .list-icon.icon-simple {

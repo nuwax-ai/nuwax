@@ -419,14 +419,22 @@ describe('列表数据一致性（@ 弹层·上下文文件 tab）', () => {
     // 取数未返回：展示 loading 态，且不触发「空文件切资料库 tab」
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.queryByText('报告.md')).toBeNull();
-    // 判定期间不显示切换器（打开即判定，文件 tab 不先闪现）
+    // 判定期间切换器占位隐藏（打开即判定，文件 tab 不先闪现；占位保持
+    // 弹层高度与判定完成后一致，显形零跳动）——DOM 仍在但标记为隐藏
     expect(
-      screen.queryByText('PC.Components.AtResourcePopup.tabFile'),
-    ).toBeNull();
+      screen.getByText('PC.Components.AtResourcePopup.tabFile'),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-at-tabs]')?.hasAttribute('data-hidden'),
+    ).toBe(true);
     // 刷新微任务让 onFetchMentionFiles 被调用（pending promise 创建）
     await act(async () => {});
     await act(async () => resolveFetch([file]));
     await screen.findByText('报告.md');
+    // 判定完成：切换器显形（占位隐藏标记移除，高度无变化）
+    expect(
+      document.querySelector('[data-at-tabs]')?.hasAttribute('data-hidden'),
+    ).toBe(false);
     // 文件非空：停留在文件 tab，未渲染资料库列表
     expect(screen.queryByTestId('at-knowledge-list')).toBeNull();
   });
@@ -812,6 +820,49 @@ describe('/ 弹层·技能便捷视图（单列表，与 @ 交互一致）', () 
     fireEvent.click(moreBtn!);
     expect(capabilityModalProps.open).toBe(true);
     expect(capabilityModalProps.defaultResourceType).toBe('skill');
+  });
+
+  it('付费套餐弹窗夺焦不关闭弹层：antd Modal 门层期间失焦/外点均放行（弹层是弹窗宿主），Modal 层撤走后才正常关闭', async () => {
+    const { container } = render(
+      <MentionEditor autoFocus={false} onPaste={vi.fn()} onChange={vi.fn()} />,
+    );
+    const editor = container.querySelector(
+      '[contenteditable="true"]',
+    ) as HTMLElement;
+    type(editor, '/');
+    await waitFor(() =>
+      expect(screen.getByTestId('at-skill-list')).toBeInTheDocument(),
+    );
+    // 模拟内嵌技能列表内聚的付费套餐弹窗（真实链路：回车选付费技能 →
+    // 付费拦截门弹套餐）：antd Modal portal 到 body，不在弹层 wrapper 内
+    const modalWrap = document.createElement('div');
+    modalWrap.className = 'ant-modal-wrap';
+    const modalDialog = document.createElement('div');
+    modalDialog.tabIndex = -1;
+    modalWrap.appendChild(modalDialog);
+    document.body.appendChild(modalWrap);
+    // 1) 套餐弹窗夺焦（activeElement 落入 Modal 层）+ 编辑器失焦：
+    //    200ms 延迟关闭判定须放行——否则弹层卸载连锁关闭套餐弹窗
+    act(() => modalDialog.focus());
+    fireEvent.blur(editor);
+    await act(async () => {
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 250);
+      });
+    });
+    expect(screen.getByTestId('at-skill-list')).toBeInTheDocument();
+    // 2) 套餐弹窗内的点击（mousedown）不当作「弹层外点击」
+    fireEvent.mouseDown(modalDialog);
+    expect(screen.getByTestId('at-skill-list')).toBeInTheDocument();
+    // 3) 负向对照：Modal 层撤走（焦点随节点移除回落 body）、失焦后正常关闭
+    modalWrap.remove();
+    fireEvent.blur(editor);
+    await act(async () => {
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 250);
+      });
+    });
+    expect(screen.queryByTestId('at-skill-list')).not.toBeInTheDocument();
   });
 });
 

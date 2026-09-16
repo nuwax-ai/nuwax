@@ -12,15 +12,16 @@
  */
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
+import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { apiAgentConversationList } from '@/services/agentConfig';
-import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   applyConversationFlagOverrides,
   ConversationFlagOverride,
   recordConversationFlagOverride,
 } from '@/utils/conversationFlagOverrides';
+import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
 import { jumpTo } from '@/utils/router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -167,9 +168,12 @@ export function useHomeSectionData(options: {
         });
 
         // 回包落地前重放本地标记覆盖：列表读接口可能滞后于标记接口，
-        // 整体替换会短暂复活刚归档/置顶的会话（TTL 内本地写优先）
+        // 整体替换会短暂复活刚归档/置顶的会话（TTL 内本地写优先）。
+        // 边界防御：错误信封/网关异常页会让 data 呈非数组（对象、字符串等），
+        // 直通 setLocalList 会致 localList.filter 崩溃并经 componentCache
+        // 毒化后续挂载；此处按空列表降级
         const data = applyConversationFlagOverrides(
-          res.data ?? [],
+          Array.isArray(res.data) ? res.data : [],
           flagOverridesRef.current,
         );
         if (isRefresh) {
@@ -207,6 +211,48 @@ export function useHomeSectionData(options: {
   useEffect(() => {
     loadListRef.current = loadList;
   }, [loadList]);
+
+  // 会话更新（原 conversation-updated window 事件，经 directorySync 桥接进入订阅）
+  // 的静默重拉做 3s 合并节流（首发立即、突发合并为末次）：智能体执行期间 SSE
+  // 会高频补发该事件，且本地补丁已先行同步 topic/icon，重拉只为兜底与后端对齐；
+  // 每次事件都全量重拉会让侧栏整列表重渲染，长列表下代价极高
+  // （曾致滚动时 10s+ 级主线程阻塞）
+  const conversationReloadAtRef = useRef(0);
+  const conversationReloadTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const throttledConversationReload = useCallback(() => {
+    const interval = 3000;
+    const now = Date.now();
+    if (now - conversationReloadAtRef.current >= interval) {
+      conversationReloadAtRef.current = now;
+      loadListRef.current(true, { silent: true });
+      return;
+    }
+    if (conversationReloadTimerRef.current) return;
+    conversationReloadTimerRef.current = setTimeout(() => {
+      conversationReloadTimerRef.current = null;
+      conversationReloadAtRef.current = Date.now();
+      loadListRef.current(true, { silent: true });
+    }, interval - (now - conversationReloadAtRef.current));
+  }, []);
+
+  useConversationChanged((event) => {
+    if (event.operation === 'created') {
+      if (!event.project) {
+        loadListRef.current(true, { silent: true });
+      }
+      return;
+    }
+    setLocalList((previous) => applyConversationChangedToList(previous, event));
+    if (
+      event.operation === 'updated' &&
+      (event.patch?.topic !== undefined || event.patch?.icon !== undefined)
+    ) {
+      // 本地补丁已先行同步，重拉仅兜底对齐后端，高频突发走节流合并
+      throttledConversationReload();
+    }
+  });
 
   /** 稳定刷新入口：事件回调/跨层消费者不捕获闭包轮换的 loadList */
   const refreshList = useCallback<HomeSectionDataShell['refreshList']>(
@@ -339,98 +385,24 @@ export function useHomeSectionData(options: {
   }, [location.pathname, location.state]);
 
   useEffect(() => {
-    const handleConversationUpdated = (e: Event) => {
-      const customEvent = e as CustomEvent<{
-        id: number | string;
-        topic?: string;
-        icon?: string;
-      }>;
-      if (!customEvent.detail) return;
-      const { id, topic, icon } = customEvent.detail;
-      const targetId = String(id);
-
-      // 同步「任务」列表中的名称/图标（本地补丁是最快路径）
-      setLocalList((prev) =>
-        prev.map((item) => {
-          if (String(item.id) === targetId) {
-            return {
-              ...item,
-              ...(topic !== undefined ? { topic } : {}),
-              ...(icon !== undefined ? { icon } : {}),
-            };
-          }
-          return item;
-        }),
-      );
-
-      // 补一次静默重新查询与后端对齐：本地补丁是最快路径，但列表未加载、
-      // id 未命中或组件刚挂载等场景下补丁会落空，重新查询可确保接口
-      // 返回的最新 topic/icon 真正应用到列表
-      loadListRef.current(true, { silent: true });
-    };
-
-    const handleConversationDeleted = (e: Event) => {
-      const customEvent = e as CustomEvent<{ id: number }>;
-      if (!customEvent.detail) return;
-      const { id } = customEvent.detail;
-      setLocalList((prev) => prev.filter((item) => item.id !== id));
-    };
-
     const handleRefreshConversationList = () => {
       // 会话结束（SSE 关闭）/主题更新时：静默刷新任务列表
       loadListRef.current(true, { silent: true });
     };
 
-    const handleUpdateConversationListTaskStatus = ({
-      conversationId,
-      taskStatus,
-    }: {
-      conversationId: number | string;
-      taskStatus: TaskStatus;
-    }) => {
-      const targetConversationId = String(conversationId);
-
-      // 「任务」列表本地补丁。轮询补偿会周期性补发终态事件，命中条目无实际变化时
-      // 返回原引用，避免列表每 5s 无谓重渲染。
-      setLocalList((prev) => {
-        const targetIndex = prev.findIndex(
-          (item) => item.id?.toString() === targetConversationId,
-        );
-        if (targetIndex < 0 || prev[targetIndex].taskStatus === taskStatus) {
-          return prev;
-        }
-        const next = [...prev];
-        next[targetIndex] = { ...next[targetIndex], taskStatus };
-        return next;
-      });
-    };
-
-    window.addEventListener('conversation-updated', handleConversationUpdated);
-    window.addEventListener('conversation-deleted', handleConversationDeleted);
     eventBus.on(
       EVENT_TYPE.RefreshConversationList,
       handleRefreshConversationList,
     );
-    eventBus.on(
-      EVENT_TYPE.UpdateConversationListTaskStatus,
-      handleUpdateConversationListTaskStatus,
-    );
     return () => {
-      window.removeEventListener(
-        'conversation-updated',
-        handleConversationUpdated,
-      );
-      window.removeEventListener(
-        'conversation-deleted',
-        handleConversationDeleted,
-      );
+      // 卸载时清掉可能在途的节流重拉定时器（见 throttledConversationReload）
+      if (conversationReloadTimerRef.current) {
+        clearTimeout(conversationReloadTimerRef.current);
+        conversationReloadTimerRef.current = null;
+      }
       eventBus.off(
         EVENT_TYPE.RefreshConversationList,
         handleRefreshConversationList,
-      );
-      eventBus.off(
-        EVENT_TYPE.UpdateConversationListTaskStatus,
-        handleUpdateConversationListTaskStatus,
       );
     };
   }, []);

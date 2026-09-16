@@ -147,7 +147,16 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   const mentionFilesEnabled = !!mentionConversationId;
 
   return (
-    <div className={classNames('flex', 'flex-col', 'h-full', className)}>
+    <div
+      className={classNames(
+        'flex',
+        'flex-col',
+        'h-full',
+        'overflow-hide',
+        className,
+      )}
+      style={{ minHeight: 0 }}
+    >
       <UnifiedChatSession
         conversationId={conversationInfo?.id}
         messageList={messageList}
