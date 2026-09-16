@@ -93,16 +93,21 @@ const getStepIndex = (
   if (phase === 'success') {
     return 2;
   }
-  if (
-    phase === 'deploying' ||
-    (phase === 'failed' && failedStage === 'deploy')
-  ) {
+  if (phase === 'failed' || phase === 'cancelled') {
+    if (failedStage === 'deploy') {
+      return 2;
+    }
+    if (failedStage === 'check') {
+      return 1;
+    }
+    if (failedStage === 'build') {
+      return 0;
+    }
+  }
+  if (phase === 'deploying') {
     return 2;
   }
-  if (
-    phase === 'checkingDeployable' ||
-    (phase === 'failed' && failedStage === 'check')
-  ) {
+  if (phase === 'checkingDeployable') {
     return 1;
   }
   if (phase === 'idle') {
@@ -391,26 +396,30 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     [startServices],
   );
 
-  /** 检测可部署：进入该步及之后都保留，方便回看结果 */
-  const showCheckSection =
+  /** 终止阶段：失败或取消时错误落在哪一步（与 hook failedStage 一致） */
+  const isTerminalPhase = phase === 'failed' || phase === 'cancelled';
+  const passedCheckStage =
     phase === 'checkingDeployable' ||
     phase === 'deploying' ||
-    (phase === 'failed' &&
-      (failedStage === 'check' || failedStage === 'deploy')) ||
-    phase === 'success';
+    phase === 'success' ||
+    (isTerminalPhase &&
+      (failedStage === 'check' || failedStage === 'deploy'));
+  const passedDeployStage =
+    phase === 'deploying' ||
+    phase === 'success' ||
+    (isTerminalPhase && failedStage === 'deploy');
+
+  /** 检测可部署：进入该步及之后都保留，方便回看结果 */
+  const showCheckSection = passedCheckStage;
   /** 部署服务：进入 start 或已有日志时展示 */
   const showStartSection =
-    startServices.length > 0 ||
-    phase === 'deploying' ||
-    (phase === 'failed' && failedStage === 'deploy') ||
-    phase === 'success';
+    startServices.length > 0 || passedDeployStage;
   /** 构建打包：有日志、正在构建，或后续步骤已出现时都保留 */
   const showBuildSection =
     services.length > 0 ||
     phase === 'starting' ||
     phase === 'building' ||
-    (phase === 'failed' && failedStage === 'build') ||
-    phase === 'cancelled' ||
+    (isTerminalPhase && failedStage === 'build') ||
     showCheckSection;
 
   /** 按失败落点选默认文案，接口错误优先 */
@@ -437,10 +446,11 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
           kind: 'process',
           text: runningText || dict('PC.Pages.AppDevPro.publishBuilding'),
         }
-      : phase === 'failed' && failedStage === 'build'
-      ? { kind: 'error', text: failText }
-      : phase === 'cancelled' && !showCheckSection
-      ? { kind: 'error', text: cancelText }
+      : isTerminalPhase && failedStage === 'build'
+      ? {
+          kind: 'error',
+          text: phase === 'cancelled' ? cancelText : failText,
+        }
       : { kind: 'finish', text: dict('PC.Pages.AppDevPro.buildStatusOk') };
 
   /**
@@ -450,10 +460,11 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   const checkStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
     phase === 'checkingDeployable'
       ? { kind: 'process', text: dict('PC.Pages.AppDevPro.checkingDeployable') }
-      : phase === 'failed' && failedStage === 'check'
-      ? { kind: 'error', text: failText }
-      : phase === 'cancelled' && showCheckSection && !showStartSection
-      ? { kind: 'error', text: cancelText }
+      : isTerminalPhase && failedStage === 'check'
+      ? {
+          kind: 'error',
+          text: phase === 'cancelled' ? cancelText : failText,
+        }
       : { kind: 'finish', text: dict('PC.Pages.AppDevPro.checkDeployableOk') };
 
   /**
@@ -463,10 +474,11 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   const startStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
     phase === 'deploying'
       ? { kind: 'process', text: dict('PC.Pages.AppDevPro.deploying') }
-      : phase === 'failed' && failedStage === 'deploy'
-      ? { kind: 'error', text: failText }
-      : phase === 'cancelled' && showStartSection
-      ? { kind: 'error', text: cancelText }
+      : isTerminalPhase && failedStage === 'deploy'
+      ? {
+          kind: 'error',
+          text: phase === 'cancelled' ? cancelText : failText,
+        }
       : {
           kind: 'finish',
           text: successText || dict('PC.Pages.AppDevPro.deploySuccess'),
