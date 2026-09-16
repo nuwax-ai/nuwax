@@ -383,6 +383,8 @@ export interface UserAppInfo {
   creatorId: number;
   /** 应用名称 */
   name: string;
+  /** 应用名称是否已定义 */
+  nameDefined: boolean;
   /** 应用描述 */
   description: string;
   /** 应用图标 */

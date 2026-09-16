@@ -13,6 +13,10 @@ interface UseInitProjectMetadataProps {
   /** 自定义生成结果写入逻辑；未传时使用通用资源更新逻辑 */
   applyMetadata?: (meta: GeneratedMetadata) => Promise<void>;
   onSuccess?: () => void;
+  /** 为 false 时等待（如应用详情尚未返回）；默认 true */
+  ready?: boolean;
+  /** 为 false 时跳过 generate-info；默认 true */
+  shouldInit?: boolean;
 }
 
 /**
@@ -23,44 +27,60 @@ export const useInitProjectMetadata = ({
   targetId,
   applyMetadata,
   onSuccess,
+  ready = true,
+  shouldInit = true,
 }: UseInitProjectMetadataProps) => {
   const location = useLocation();
   const hasInitRef = useRef(false);
 
   useEffect(() => {
+    if (!targetId || hasInitRef.current || !ready) {
+      return;
+    }
+
+    if (!shouldInit) {
+      hasInitRef.current = true;
+      return;
+    }
+
     const state = (location.state || history.location.state) as
       | { message?: string }
       | undefined;
     const prompt = state?.message?.trim();
 
-    if (
-      history.action === 'PUSH' &&
-      prompt &&
-      targetId &&
-      !hasInitRef.current
-    ) {
-      hasInitRef.current = true;
-
-      const initMetadata = async () => {
-        try {
-          const meta = await fetchGeneratedMetadata(prompt);
-          if (meta) {
-            if (applyMetadata) {
-              await applyMetadata(meta);
-            } else {
-              await applyGeneratedIcon(targetType, targetId, meta);
-            }
-            onSuccess?.();
-          }
-        } catch (error) {
-          console.error(
-            `Failed to initialize metadata for ${targetType}:`,
-            error,
-          );
-        }
-      };
-
-      initMetadata();
+    if (history.action !== 'PUSH' || !prompt) {
+      return;
     }
-  }, [targetType, targetId, location.state, applyMetadata, onSuccess]);
+
+    hasInitRef.current = true;
+
+    const initMetadata = async () => {
+      try {
+        const meta = await fetchGeneratedMetadata(prompt);
+        if (meta) {
+          if (applyMetadata) {
+            await applyMetadata(meta);
+          } else {
+            await applyGeneratedIcon(targetType, targetId, meta);
+          }
+          onSuccess?.();
+        }
+      } catch (error) {
+        console.error(
+          `Failed to initialize metadata for ${targetType}:`,
+          error,
+        );
+      }
+    };
+
+    void initMetadata();
+  }, [
+    targetType,
+    targetId,
+    location.state,
+    applyMetadata,
+    onSuccess,
+    ready,
+    shouldInit,
+  ]);
 };

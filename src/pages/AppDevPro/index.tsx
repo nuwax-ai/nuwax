@@ -237,6 +237,8 @@ const AppDevPro: React.FC = () => {
     useState<boolean>(false);
   /** 全栈应用详情 */
   const [userAppInfo, setUserAppInfo] = useState<UserAppInfo | null>(null);
+  /** 是否已完成首次 apiUserAppGetById（用于 gate 自动生成名称） */
+  const [userAppInfoFetched, setUserAppInfoFetched] = useState(false);
   useProjectChanged((event) => {
     if (
       event.project.projectType !== AgentComponentTypeEnum.UserApp ||
@@ -650,13 +652,19 @@ const AppDevPro: React.FC = () => {
       if (result?.code === SUCCESS_CODE && result.data) {
         setUserAppInfo(result.data);
       }
+      setUserAppInfoFetched(true);
+    },
+    onError: () => {
+      setUserAppInfoFetched(true);
     },
   });
 
-  /** Prompt 创建并进入页面后生成应用名称、描述和图标，再刷新应用详情 */
+  /** Prompt 创建并进入页面后：nameDefined 为 false 时才 generate-info 并更新名称 */
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.UserApp,
     targetId: appId,
+    ready: userAppInfoFetched,
+    shouldInit: userAppInfo?.nameDefined === false,
     applyMetadata: async (meta) => {
       await apiUserAppUpdate({
         id: appId,
@@ -830,8 +838,10 @@ const AppDevPro: React.FC = () => {
   useEffect(() => {
     if (!appId) {
       setUserAppInfo(null);
+      setUserAppInfoFetched(false);
       return;
     }
+    setUserAppInfoFetched(false);
     runGetUserAppInfo(appId);
   }, [appId, runGetUserAppInfo]);
 
