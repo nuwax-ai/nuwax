@@ -4,11 +4,7 @@ import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiAgentConversationModelOptions } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiModelDelete,
-  apiModelListPersonal,
-  apiModelListTeam,
-} from '@/services/modelConfig';
+import { apiModelDelete } from '@/services/modelConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { SpaceTypeEnum } from '@/types/enums/space';
 import { ModelOptionDto } from '@/types/interfaces/agent';
@@ -41,15 +37,21 @@ const cx = classNames.bind(styles);
 /** 模型弹层 tab:系统(公共)/ 个人 / 团队 */
 type ModelTabKey = 'system' | 'personal' | 'team';
 
+/** 模型供应商 icon 兜底图(options 回包 providerIcon 为空时使用) */
+const DEFAULT_PROVIDER_ICON =
+  'http://s3.nuwax.com:9443/nuwax-public/providers/custom.png';
+
 /**
- * 判断是否系统(公共)模型,沿用旧分组规则:
- * scope 为 Tenant 或未归属任何空间(spaceId === -1)时视为系统模型;
- * Space(空间)域模型(个人/团队)不属于公共维度,过滤出系统 tab
+ * 模型归 tab 分类:三 tab 数据同源 options 接口——scope 为 Tenant 归
+ * 系统;Space 域按 spaceType 细分(Personal 归个人、Team 归团队);
+ * 遗留兜底:无 scope 的旧数据按 spaceId === -1 归系统,其余归个人
  */
-const isSystemModel = (model: ModelOptionDto) => {
-  if (model.scope === 'Tenant') return true;
-  if (model.scope === 'Space') return false;
-  return model.spaceId === -1;
+const getModelTabKey = (model: ModelOptionDto): ModelTabKey => {
+  if (model.scope === 'Tenant') return 'system';
+  if (model.scope === 'Space') {
+    return model.spaceType === SpaceTypeEnum.Team ? 'team' : 'personal';
+  }
+  return model.spaceId === -1 ? 'system' : 'personal';
 };
 
 /**
@@ -107,8 +109,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   const [activeTab, setActiveTab] = useState<ModelTabKey>('system');
 
   // options 接口原始回包首项 id(后端按"该智能体最近使用的模型"排首):
-  // 首项可能是 Space 域模型(个人/团队),会被 isSystemModel 过滤出
-  // 系统 tab,自动落回时优先在三 tab 合集中找它,实现跨 tab 恢复
+  // 首项可能是 Space 域模型(个人/团队),会被分类出系统 tab,自动
+  // 落回时优先在三 tab 合集中找它,实现跨 tab 恢复
   const [preferredModelId, setPreferredModelId] = useState<number>();
 
   // 弹窗控制
@@ -135,82 +137,38 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     [agentType],
   );
 
-  // 获取系统 tab 模型:按智能体查询可用模型,仅保留系统(公共)部分;
-  // 回包涵盖系统/个人/团队三个维度,其 id 集是"该智能体可用模型"的
-  // 权威口径,返回给调用方供个人/团队 tab 过滤
-  const fetchSystemModels = useCallback(
-    async (id: number): Promise<Set<number> | undefined> => {
-      try {
-        const res = await apiAgentConversationModelOptions(id);
-        if (res.code === SUCCESS_CODE && res.data) {
-          // 回包按"最近使用"排序,先记录原始首项再过滤(首项可能非系统域)
-          setPreferredModelId(res.data[0]?.id);
-          setSystemModels(filterByAgentType(res.data.filter(isSystemModel)));
-        }
-        return new Set(res.data?.map((model) => model.id));
-      } catch (error) {
-        console.error('Failed to get agent model list:', error);
-        // 拉取失败返回 undefined:个人/团队退化为不过滤(维持可用性)
-        return undefined;
-      }
-    },
-    [filterByAgentType],
-  );
-
-  // 获取个人 tab 模型:按 options 回包 id 集过滤(独立接口无智能体
-  // 上下文,需剔除当前智能体不可用的模型),再叠加智能体类型过滤
-  const fetchPersonalModels = useCallback(
-    async (availableIds?: Set<number>) => {
-      try {
-        const res = await apiModelListPersonal();
-        if (res.code === SUCCESS_CODE && res.data) {
-          const models = availableIds
-            ? res.data.filter((model) => availableIds.has(model.id))
-            : res.data;
-          setPersonalModels(filterByAgentType(models));
-        }
-      } catch (error) {
-        console.error('Failed to get personal model list:', error);
-      }
-    },
-    [filterByAgentType],
-  );
-
-  // 获取团队 tab 模型:过滤规则同个人 tab
-  const fetchTeamModels = useCallback(
-    async (availableIds?: Set<number>) => {
-      try {
-        const res = await apiModelListTeam();
-        if (res.code === SUCCESS_CODE && res.data) {
-          const models = availableIds
-            ? res.data.filter((model) => availableIds.has(model.id))
-            : res.data;
-          setTeamModels(filterByAgentType(models));
-        }
-      } catch (error) {
-        console.error('Failed to get team model list:', error);
-      }
-    },
-    [filterByAgentType],
-  );
-
-  // 拉取三个 tab 的模型列表(增删改模型后也会调用刷新)。options 是
-  // 权威口径须先到,个人/团队回包按其 id 集过滤,二者之间保持并行
+  // 拉取模型列表(增删改模型后也会调用刷新)。三 tab 同源 options 接口:
+  // 回包即该智能体可用的全部模型(系统/个人/团队),一次请求按
+  // scope + spaceType 分类进各 tab,无需再调个人/团队独立接口
   const fetchAllModelLists = useCallback(
     async (id: number) => {
       setLoading(true);
       try {
-        const availableIds = await fetchSystemModels(id);
-        await Promise.all([
-          fetchPersonalModels(availableIds),
-          fetchTeamModels(availableIds),
-        ]);
+        const res = await apiAgentConversationModelOptions(id);
+        if (res.code === SUCCESS_CODE && res.data) {
+          // 回包按"该智能体最近使用的模型"排序,先记录原始首项再分类
+          // (首项可能在任意 tab,自动落回时跨 tab 优先恢复)
+          setPreferredModelId(res.data[0]?.id);
+          const tabModels: Record<ModelTabKey, ModelOptionDto[]> = {
+            system: [],
+            personal: [],
+            team: [],
+          };
+          filterByAgentType(res.data).forEach((model) => {
+            tabModels[getModelTabKey(model)].push(model);
+          });
+          setSystemModels(tabModels.system);
+          setPersonalModels(tabModels.personal);
+          setTeamModels(tabModels.team);
+        }
+      } catch (error) {
+        console.error('Failed to get agent model list:', error);
       } finally {
         setLoading(false);
         setInitialized(true);
       }
     },
-    [fetchSystemModels, fetchPersonalModels, fetchTeamModels],
+    [filterByAgentType],
   );
 
   // 监听 agentId 的变化，当 agentId 改变时，重新加载数据并重置初始化状态与模型列表
@@ -369,9 +327,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     [isExternalList, personalModels, teamModels, selectedModelId],
   );
 
-  // 渲染 tab 内单个模型项:系统 tab 展示 tag / 倍率,个人 tab 常驻
-  // 编辑/删除按钮,团队 tab 不分组平铺(空间名 tag 靠名称行最右)。
-  // 三个 tab 统一:勾选 icon 恒排行末最右,常驻占位仅切换显隐
+  // 渲染 tab 内单个模型项:名称前展示供应商 icon,系统 tab 展示 tag /
+  // 倍率,个人 tab 常驻编辑/删除按钮,团队 tab 不分组平铺(空间名 tag
+  // 靠名称行最右)。三个 tab 统一:勾选 icon 恒排行末最右,常驻占位
+  // 仅切换显隐
   const renderModelItem = useCallback(
     (model: ModelOptionDto, tab: ModelTabKey) => {
       const isSelected = model.id === selectedModelId;
@@ -394,6 +353,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         >
           <div className={cx(styles['item-content'])}>
             <div className={cx(styles['item-title-row'])}>
+              {/* 供应商 icon:回包 providerIcon 为空时兜底 custom.png */}
+              <img
+                className={cx(styles['item-icon'])}
+                src={model.providerIcon || DEFAULT_PROVIDER_ICON}
+                alt=""
+              />
               {/* 名称截断时 hover tooltip 展示全称(与描述行同款) */}
               <EllipsisTooltipText
                 text={model.name}
@@ -625,11 +590,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             )}
             {!isExternalList && (
               <div className={styles['add-button-wrap']}>
+                {/* block 占满整行,内容靠左/左右 padding 8px/无边框见 add-model-btn */}
                 <Button
                   block
                   type="text"
                   icon={<PlusOutlined />}
                   onClick={handleAddModel}
+                  className={cx(styles['add-model-btn'])}
                 >
                   {dict('PC.Components.ModelSelector.addPersonalModel')}
                 </Button>
@@ -644,6 +611,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               [styles.open]: open,
             })}
           >
+            {selectedModel && (
+              <img
+                className={cx(styles['selector-model-icon'])}
+                src={selectedModel.providerIcon || DEFAULT_PROVIDER_ICON}
+                alt=""
+              />
+            )}
             <EllipsisTooltipText
               text={
                 selectedModel?.name ||
