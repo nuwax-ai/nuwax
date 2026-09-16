@@ -2,6 +2,7 @@ import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
+import { PublishStatusEnum } from '@/types/enums/common';
 import { CodeOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -117,6 +118,9 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   const isDevEnv = env === UserAppDbEnvEnum.Dev;
   /** 已部署到生产环境后才可发布到广场 / 空间 */
   const showMarketPublish = userAppInfo?.prodDeployed === true;
+  /** 已发布到广场 / 空间后才展示发布版本记录 */
+  const showPublishVersionRecords =
+    userAppInfo?.publishStatus === PublishStatusEnum.Published;
 
   const handleSelectDevEnv = useCallback(() => {
     onEnvChange?.(UserAppDbEnvEnum.Dev);
@@ -126,7 +130,7 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
     onEnvChange?.(UserAppDbEnvEnum.Prod);
   }, [onEnvChange]);
 
-  /** 线上环境更多菜单：域名绑定、构建包版本记录、发布版本记录 */
+  /** 线上环境更多菜单：域名绑定、构建包版本记录、发布版本记录（已发布时） */
   const prodMoreMenuItems = useMemo<MenuProps['items']>(
     () => [
       {
@@ -145,19 +149,24 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
           </div>
         ),
       },
-      {
-        key: 'publishVersionRecords',
-        label: (
-          <div onClick={onTogglePublishVersionRecords}>
-            {dict('PC.Pages.AppDevPro.publishVersionRecords')}
-          </div>
-        ),
-      },
+      ...(showPublishVersionRecords
+        ? [
+            {
+              key: 'publishVersionRecords',
+              label: (
+                <div onClick={onTogglePublishVersionRecords}>
+                  {dict('PC.Pages.AppDevPro.publishVersionRecords')}
+                </div>
+              ),
+            },
+          ]
+        : []),
     ],
     [
       onOpenDomainBinding,
       onToggleBuildVersionRecords,
       onTogglePublishVersionRecords,
+      showPublishVersionRecords,
     ],
   );
 

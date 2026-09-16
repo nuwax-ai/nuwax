@@ -18,8 +18,8 @@ export interface CreateThirdAppModalProps {
   open: boolean;
   /** 关闭弹窗 */
   onCancel: () => void;
-  /** 创建成功 */
-  onCreated: () => void;
+  /** 创建成功，回传新建项目的 projectId */
+  onCreated: (projectId: number) => void;
 }
 
 interface CreateThirdAppFormValues {
@@ -76,12 +76,13 @@ const CreateThirdAppModal: React.FC<CreateThirdAppModalProps> = ({
           description: resolved.description?.trim() || undefined,
           icon: resolved.icon || undefined,
         });
-        if (response?.code !== SUCCESS_CODE) {
+        const projectId = response?.data?.projectId;
+        if (response?.code !== SUCCESS_CODE || !projectId) {
           return;
         }
         resetForm();
         message.success(dict('PC.Pages.SpaceProjectManage.createSuccess'));
-        onCreated();
+        onCreated(projectId);
       } finally {
         setLoading(false);
       }

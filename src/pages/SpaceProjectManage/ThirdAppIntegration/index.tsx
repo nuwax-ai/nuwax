@@ -114,6 +114,14 @@ const ThirdAppIntegration: React.FC = () => {
     },
   );
 
+  /** 重复点击菜单或切换空间：重置列表态，展示与首次进入一致的 Loading */
+  useEffect(() => {
+    setHasLoaded(false);
+    setList([]);
+    setPage(1);
+    setHasMore(true);
+  }, [refreshToken, spaceId]);
+
   /** 搜索、空间变化或重复点击菜单时，从第一页重新加载 */
   useEffect(() => {
     if (!spaceId) {
@@ -173,11 +181,14 @@ const ThirdAppIntegration: React.FC = () => {
     [keyword, runQuery],
   );
 
-  /** 创建完成后关闭弹窗并刷新列表 */
-  const handleCreated = useCallback(() => {
-    setCreateOpen(false);
-    runQuery(keyword, 1);
-  }, [keyword, runQuery]);
+  /** 创建完成后跳转三方应用详情页 */
+  const handleCreated = useCallback(
+    (projectId: number) => {
+      setCreateOpen(false);
+      history.push(`/space/${spaceId}/third-app-detail/${projectId}`);
+    },
+    [spaceId],
+  );
 
   /** 打开三方应用详情 */
   const handleOpenProject = useCallback(
