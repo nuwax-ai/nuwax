@@ -384,6 +384,19 @@ export function useConversationRuntimeSession(
     [session],
   );
 
+  // UnifiedChatSession 的轮询 Hook 会把 resume/abort 句柄放入 refreshDeps。
+  // 不能在 conversationProps 中直接 bind，否则每次快照写回 render 都会生成新引用，
+  // 使 useRequest 立即重启并形成「详情请求 -> render -> 再请求」循环。
+  const onResumeConversationStream = useCallback(
+    (...args: Parameters<ConversationRuntimeSession['resumeConversationStream']>) =>
+      session?.resumeConversationStream(...args),
+    [session],
+  );
+  const onAbortResumeStream = useCallback(
+    () => session?.abortResumeStream(),
+    [session],
+  );
+
   if (!session) {
     return null;
   }
@@ -400,8 +413,8 @@ export function useConversationRuntimeSession(
     onSendMessage,
     runStopConversation,
     loadingStopConversation,
-    onResumeConversationStream: session.resumeConversationStream.bind(session),
-    onAbortResumeStream: session.abortResumeStream.bind(session),
+    onResumeConversationStream,
+    onAbortResumeStream,
     onReloadConversationHistoryAsync,
     onConversationSnapshot,
     onTerminalTaskStatus,
