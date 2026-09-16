@@ -294,12 +294,9 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
             position: 'fixed',
             top: 0,
             left: 0,
-            width: isMac()
-              ? firstMenuWidth +
-                (shouldShowSecondMenu && !isSecondMenuCollapsed
-                  ? NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH
-                  : 0)
-              : '100vw',
+            // 全宽顶部带（含 mac 内容区顶部空白带）：带内交互元素由
+            // titlebarDragRegionSync 挖洞避让，空白处可拖/双击缩放。
+            width: '100vw',
             height: isMac() ? shellAvoid.TOP : shellAvoid.CONTENT_TOP,
             pointerEvents: 'none',
           }}
