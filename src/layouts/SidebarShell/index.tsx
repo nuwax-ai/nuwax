@@ -18,7 +18,12 @@ import {
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import { isImmersiveShell, isMac, shellAvoid } from '@/utils/hostBridge';
+import {
+  isImmersiveShell,
+  isMac,
+  isWinLinuxShell,
+  shellAvoid,
+} from '@/utils/hostBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -257,9 +262,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
    */
   const contentNode = useMemo(() => {
     // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
-    // - Win/Linux 避让 shellAvoid.CONTENT_TOP（28 < 顶行行高 36：顶行透明，
-    //   图标/菜单字形实际只占行上部 ~26px，内容卡可上提到字形下沿，
-    //   减少顶部空白；行内字形与卡片的层叠由壳侧顶行 z-index 保证）；
+    // - Win/Linux 避让 shellAvoid.CONTENT_TOP（与顶行同高，圆角从下沿开始）；
     // - mac 默认不退让（顶行透明、图标组悬浮于侧栏列上方，展开态内容区
     //   直接顶到窗口上沿）；仅整条侧栏收起后内容区顶到窗口上沿时，
     //   才避让工具栏整条高度（图标簇悬浮于内容区左上，需要让位）；
@@ -285,6 +288,15 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
           marginTop:
             isImmersiveShell() && immersiveMarginTop
               ? immersiveMargin
+              : undefined,
+          // 单栏展开态默认贴边方角；Windows/Linux 沉浸主窗口在顶栏与
+          // 内容区交界处留一个圆角。mac、浏览器和独立窗口维持现状。
+          borderTopLeftRadius:
+            isWinLinuxShell() &&
+            immersiveMarginTop &&
+            !isSecondMenuCollapsed &&
+            effectiveNavigationStyle === ThemeNavigationStyleType.STYLE3
+              ? 12
               : undefined,
         }}
       >
