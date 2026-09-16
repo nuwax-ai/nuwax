@@ -11,7 +11,7 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { initHostBridgeEvents } from '@/services/hostBridgeEvents';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { isImmersiveShell, shellAvoid } from '@/utils/hostBridge';
+import { isImmersiveShell, isMac, shellAvoid } from '@/utils/hostBridge';
 import { jumpTo } from '@/utils/router';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
@@ -286,6 +286,25 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
 
   return (
     <div className={navigationClassName}>
+      {isImmersiveShell() && (
+        <div
+          data-nuwax-titlebar-drag="true"
+          aria-hidden
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: isMac()
+              ? firstMenuWidth +
+                (shouldShowSecondMenu && !isSecondMenuCollapsed
+                  ? NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH
+                  : 0)
+              : '100vw',
+            height: isMac() ? shellAvoid.TOP : shellAvoid.CONTENT_TOP,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
       {/* 一级导航菜单栏 */}
       <div
         className={cx(

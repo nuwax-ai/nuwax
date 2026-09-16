@@ -344,6 +344,14 @@ export const layout = {
       /* 宿主缺失或调用失败均忽略 */
     }
   },
+  /** 同步顶部空白拖拽矩形；浏览器/旧宿主无桥时 no-op。 */
+  setTitlebarDragRegions(regions: TitlebarDragRegion[]): void {
+    try {
+      getBridge()?.layout?.setTitlebarDragRegions?.(regions);
+    } catch {
+      /* 宿主缺失或调用失败均忽略 */
+    }
+  },
 };
 
 /**
