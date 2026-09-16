@@ -9,7 +9,13 @@ import {
 } from '@ant-design/icons';
 import { Button, Collapse, Modal, Steps, Tag } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type {
   UserAppDeployFailedStage,
   UserAppPublishPhase,
@@ -40,8 +46,16 @@ export interface AppDevPublishProgressModalProps {
   failedStage?: UserAppDeployFailedStage | null;
   /** 取消接口 loading */
   cancelLoading?: boolean;
-  /** 取消当前进行中的任务（构建 / 检测 / 部署） */
+  /** 取消当前进行中的构建任务（构建 / 检测可部署） */
   onCancelTask?: () => void;
+  /** 停止部署 loading */
+  stopLoading?: boolean;
+  /** 停止生产部署（部署服务阶段） */
+  onStopDeploy?: () => void;
+  /** 停止部署确认标题 */
+  stopDeployTitle?: string;
+  /** 停止部署确认内容 */
+  stopDeployContent?: string;
   /** 关闭弹窗 */
   onClose: () => void;
   /** 弹窗标题 */
@@ -282,6 +296,10 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   failedStage = null,
   cancelLoading = false,
   onCancelTask,
+  stopLoading = false,
+  onStopDeploy,
+  stopDeployTitle,
+  stopDeployContent,
   onClose,
   title,
   showSteps = true,
@@ -299,12 +317,13 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     phase === 'building' ||
     phase === 'checkingDeployable' ||
     phase === 'deploying';
-  /** 与 running 同期可取消任务 */
+  /** 构建 / 检测可部署阶段可取消 build 任务 */
   const canCancelTask =
     phase === 'starting' ||
     phase === 'building' ||
-    phase === 'checkingDeployable' ||
-    phase === 'deploying';
+    phase === 'checkingDeployable';
+  /** 部署服务阶段可停止生产部署 */
+  const canStopDeploy = phase === 'deploying';
   /** 构建服务折叠面板展开项，新服务到来时自动展开 */
   const [buildActiveKeys, setBuildActiveKeys] = useState<string[]>([]);
   /** 已因构建成功自动收起过的面板，避免再次收起用户手动展开的项 */
@@ -449,8 +468,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
         };
 
   /** 部署成功且已异步拿到 Prod 域名时展示访问地址 */
-  const displayAccessUrl =
-    startStatus.kind === 'finish' ? prodAccessUrl : '';
+  const displayAccessUrl = startStatus.kind === 'finish' ? prodAccessUrl : '';
 
   /**
    * 构建中：新服务自动展开。
@@ -485,7 +503,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     });
   }, [startServices]);
 
-  /** 二次确认后取消进行中的任务 */
+  /** 二次确认后取消进行中的构建任务 */
   const handleRequestCancel = () => {
     modalConfirm(
       cancelTitle || dict('PC.Pages.AppDevPro.cancelPublishTitle'),
@@ -496,10 +514,25 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     );
   };
 
-  /** 进行中点关闭等于取消任务；否则直接关弹窗 */
+  /** 二次确认后停止生产部署 */
+  const handleRequestStopDeploy = () => {
+    modalConfirm(
+      stopDeployTitle || dict('PC.Pages.AppDevPro.confirmStopDeployTitle'),
+      stopDeployContent || dict('PC.Pages.AppDevPro.confirmStopDeployContent'),
+      () => {
+        onStopDeploy?.();
+      },
+    );
+  };
+
+  /** 进行中点关闭：构建阶段取消任务；部署阶段停止部署；否则直接关弹窗 */
   const handleCancelModal = () => {
     if (canCancelTask) {
       handleRequestCancel();
+      return;
+    }
+    if (canStopDeploy) {
+      handleRequestStopDeploy();
       return;
     }
     if (running) {
@@ -525,7 +558,18 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
                 loading={cancelLoading}
                 onClick={handleRequestCancel}
               >
-                {dict('PC.Pages.AppDevPro.cancelTask')}
+                {dict('PC.Pages.AppDevPro.cancelBuild')}
+              </Button>,
+            ]
+          : canStopDeploy
+          ? [
+              <Button
+                key="stop-deploy"
+                danger
+                loading={stopLoading}
+                onClick={handleRequestStopDeploy}
+              >
+                {dict('PC.Pages.AppDevPro.stopDeploy')}
               </Button>,
             ]
           : [
