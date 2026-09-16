@@ -1,5 +1,5 @@
 import { XProTable } from '@/components/ProComponents';
-import { useSubscriptionPurchase } from '@/pages/MorePage/MySubscriptions/hooks/useSubscriptionPurchase';
+import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetMyBillOrders } from '@/services/subscriptionService';
 import {

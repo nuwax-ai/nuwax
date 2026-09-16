@@ -1,12 +1,12 @@
 import type { RequestResponse } from '@/types/interfaces/request';
-import { request } from 'umi';
 import {
   SubscriptionPlanInfo,
   SubscriptionPlanListParams,
   SubscriptionPlanSortItem,
   SubscriptionPlanStatsParams,
   SubscriptionPlanStatsResult,
-} from '../types/subscription';
+} from '@/types/interfaces/subscriptionPlan';
+import { request } from 'umi';
 
 /**
  * 下架订阅计划

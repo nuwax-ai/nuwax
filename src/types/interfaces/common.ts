@@ -1,6 +1,5 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
-import type { ResourcePricingType } from '@/pages/SpaceResource/types/resource';
 import type {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -33,6 +32,7 @@ import type {
   KnowledgeInfo,
 } from '@/types/interfaces/knowledge';
 import type { InputAndOutConfig } from '@/types/interfaces/node';
+import type { ResourcePricingType } from '@/types/interfaces/resource';
 import type { FormInstance, GetProp, UploadFile, UploadProps } from 'antd';
 import React from 'react';
 

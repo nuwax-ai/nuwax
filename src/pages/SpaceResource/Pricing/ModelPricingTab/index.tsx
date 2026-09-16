@@ -1,6 +1,17 @@
 import ModelPriceTierList from '@/components/business-component/ModelPriceTierList';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import { dict } from '@/services/i18nRuntime';
+import {
+  apiDeleteToolPricing,
+  apiListPricingConfig,
+  apiUpdateToolPricing,
+} from '@/services/resource';
+import {
+  ResourcePricingConfigInfo,
+  ResourcePricingStatus,
+  ResourcePricingType,
+  ToolPricingTargetType,
+} from '@/types/interfaces/resource';
 import { modalConfirm } from '@/utils/ant-custom';
 import { getPricingTypeLabel } from '@/utils/resourcePricing';
 import { PlusOutlined } from '@ant-design/icons';
@@ -8,17 +19,6 @@ import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Form, Switch, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiDeleteToolPricing,
-  apiListPricingConfig,
-  apiUpdateToolPricing,
-} from '../../services/resource';
-import {
-  ResourcePricingConfigInfo,
-  ResourcePricingStatus,
-  ResourcePricingType,
-  ToolPricingTargetType,
-} from '../../types/resource';
 import ModelPricingModal from './ModelPricingModal';
 
 interface ModelPricingTabProps {

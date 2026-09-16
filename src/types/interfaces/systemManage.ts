@@ -1,4 +1,3 @@
-import { ResourcePricingConfigInfo } from '@/pages/SpaceResource/types/resource';
 import {
   AccessControlEnum,
   MessageScopeEnum,
@@ -8,6 +7,7 @@ import {
   UserRoleEnum,
   UserStatusEnum,
 } from '@/types/enums/systemManage';
+import { ResourcePricingConfigInfo } from '@/types/interfaces/resource';
 import { PublishStatusEnum } from '../enums/common';
 import {
   KnowledgeDataTypeEnum,

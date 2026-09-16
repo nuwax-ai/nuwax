@@ -1,3 +1,4 @@
+import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
 import { dict } from '@/services/i18nRuntime';
 import {
   MyPlanPeriodEnum,
@@ -10,7 +11,6 @@ import { Button } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import { useSubscriptionPurchase } from '../../hooks/useSubscriptionPurchase';
 import styles from './index.less';
 
 export interface PlanInfo {

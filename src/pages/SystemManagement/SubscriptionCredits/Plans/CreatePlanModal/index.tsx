@@ -1,6 +1,11 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetUserGroupList } from '@/services/menuPermission/userGroupManage';
+import {
+  SubscriptionPlanBizTypeEnum,
+  SubscriptionPlanInfo,
+  SubscriptionPlanStatusEnum,
+} from '@/types/interfaces/subscriptionPlan';
 import { UserGroupInfo } from '@/types/menuPermission/user-group-manage';
 import { customizeRequiredMark } from '@/utils/form';
 import type { InputRef } from 'antd';
@@ -21,11 +26,6 @@ import {
   apiCreateSubscriptionPlan,
   apiUpdateSubscriptionPlan,
 } from '../../services/subscription';
-import {
-  SubscriptionPlanBizTypeEnum,
-  SubscriptionPlanInfo,
-  SubscriptionPlanStatusEnum,
-} from '../../types/subscription';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

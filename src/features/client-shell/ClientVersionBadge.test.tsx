@@ -1,8 +1,8 @@
 /**
- * 单元测试：ClientVersionBadge —— 各状态分支渲染。
- * mock clientUpdateService（状态源）与 i18n；仅验徽标位形态，弹窗交互走 available 分支抽查。
+ * 单元测试：ClientVersionBadge —— 各状态分支渲染与点击直连下载/安装。
+ * mock clientUpdateService（状态源）与 i18n；hover 更新日志卡片走 available 分支抽查。
  */
-import { act, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ClientVersionBadge from './ClientVersionBadge';
@@ -62,40 +62,50 @@ describe('ClientVersionBadge', () => {
     }
   });
 
-  it('available → 下载图标；点击弹说明弹窗，下载按钮触发后关弹窗', async () => {
+  it('available → 点击徽标直接触发下载', async () => {
     setState({
       status: 'available',
       version: '1.0.7',
       releaseDate: '2026-09-16T00:00:00.000Z',
-      releaseNotes: '# 说明\n修复若干问题',
+      releaseNotes: '## 变更\n- 修复若干问题',
     });
     render(<ClientVersionBadge />);
-    // 入口 icon 是 span[role=button]，弹窗 footer 是原生 button——同名按标签区分
-    const entryIcon = screen
-      .getAllByRole('button', { name: 'PC.Components.ClientUpdate.download' })
-      .find((el) => el.tagName === 'SPAN')!;
-    await userEvent.click(entryIcon);
-    // 弹窗：标题带目标版本，说明与日期可见
-    expect(await screen.findByText(/v1\.0\.7/)).toBeInTheDocument();
-    expect(screen.getByText(/修复若干问题/)).toBeInTheDocument();
-    expect(screen.getByText(/2026-09-16/)).toBeInTheDocument();
-    // 弹窗 footer 主按钮 → 触发服务下载并关弹窗
-    const footerBtn = screen
-      .getAllByRole('button', { name: 'PC.Components.ClientUpdate.download' })
-      .find((el) => el.tagName === 'BUTTON')!;
-    await userEvent.click(footerBtn);
+    // 悬浮卡未展开时，role=button 的入口只有徽标本身
+    await userEvent.click(
+      screen.getByRole('button', { name: 'PC.Components.ClientUpdate.download' }),
+    );
     expect(serviceMock.download).toHaveBeenCalled();
   });
 
-  it('downloading → 进度圆环（aria-label）', () => {
+  it('available → hover 弹更新日志卡片（目标版本/日期/日志）', async () => {
+    setState({
+      status: 'available',
+      version: '1.0.7',
+      releaseDate: '2026-09-16T00:00:00.000Z',
+      releaseNotes: '## 变更\n- **客户端版本**：修复若干问题',
+    });
+    render(<ClientVersionBadge />);
+    fireEvent.mouseEnter(
+      screen.getByRole('button', { name: 'PC.Components.ClientUpdate.download' }),
+    );
+    // 卡片标题 = 目标版本 + 更新日志
+    expect(
+      await screen.findByText(/v1\.0\.7 PC\.Components\.ClientUpdate\.releaseNotesTitle/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/2026-09-16/)).toBeInTheDocument();
+    expect(screen.getByText(/修复若干问题/)).toBeInTheDocument();
+  });
+
+  it('downloading → 进度圆环（aria-label），卡片内下载中态带百分比', async () => {
     setState({
       status: 'downloading',
       progress: { percent: 42, bytesPerSecond: 1, transferred: 1, total: 10 },
     });
     render(<ClientVersionBadge />);
-    expect(
+    fireEvent.mouseEnter(
       screen.getByLabelText('PC.Components.ClientUpdate.downloading'),
-    ).toBeInTheDocument();
+    );
+    expect(await screen.findByText(/42%/)).toBeInTheDocument();
   });
 
   it('downloaded → 重启安装图标，点击触发 install', async () => {
@@ -107,11 +117,12 @@ describe('ClientVersionBadge', () => {
     expect(serviceMock.install).toHaveBeenCalled();
   });
 
-  it('error（有目标版本）→ 红色信息图标入口', () => {
+  it('error（有目标版本）→ 红色信息图标，点击重试触发 download', async () => {
     setState({ status: 'error', version: '1.0.7', error: 'HTTP 500' });
     render(<ClientVersionBadge />);
-    expect(
+    await userEvent.click(
       screen.getByRole('button', { name: 'PC.Components.ClientUpdate.errorTitle' }),
-    ).toBeInTheDocument();
+    );
+    expect(serviceMock.download).toHaveBeenCalled();
   });
 });

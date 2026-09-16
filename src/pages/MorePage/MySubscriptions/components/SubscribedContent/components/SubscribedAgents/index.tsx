@@ -1,3 +1,4 @@
+import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetMySubscription } from '@/services/subscriptionService';
 import {
@@ -15,7 +16,6 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
 import { useRequest } from 'umi';
-import { useSubscriptionPurchase } from '../../../../hooks/useSubscriptionPurchase';
 import { getPeriodUnitText } from '../../../../utils';
 import styles from './index.less';
 
