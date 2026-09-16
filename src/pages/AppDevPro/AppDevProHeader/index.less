@@ -53,26 +53,13 @@
 
   // 右栏头部左右布局：环境切换靠左，图标与按钮靠右
   .env-switch {
-    gap: 10px;
     flex-shrink: 0;
-    height: 40px;
-    padding: 0 4px;
-    border-radius: 5px;
-    background: @WHITE21;
+  }
 
-    .env-item {
-      height: 32px;
-      line-height: 32px;
-      padding: 0 15px;
-      font-size: 14px;
-      color: @BLANK04;
-      user-select: none;
-      white-space: nowrap;
-
-      &.active {
-        border-radius: 5px;
-        background: @WHITE;
-        color: @BLUE07;
+  .segmented {
+    :global {
+      .ant-segmented-item-label {
+        white-space: nowrap;
       }
     }
   }

@@ -29,34 +29,16 @@
   }
 
   .menus-box {
-    gap: 10px;
     position: absolute;
     left: 50%;
     top: 10px;
-    height: 40px;
-    padding: 0 15px;
     transform: translateX(-50%);
-    border-radius: 5px;
-    background: @WHITE21;
+  }
 
-    .head-menu {
-      height: 32px;
-      line-height: 32px;
-      padding: 0 15px;
-      font-size: 14px;
-      color: @BLANK04;
-      user-select: none;
-      white-space: nowrap;
-
-      &.active {
-        border-radius: 5px;
-        background: @WHITE;
-        color: @BLUE07;
-      }
-
-      &.disabled {
-        color: @GRAY05;
-        cursor: not-allowed;
+  .segmented {
+    :global {
+      .ant-segmented-item-label {
+        white-space: nowrap;
       }
     }
   }
