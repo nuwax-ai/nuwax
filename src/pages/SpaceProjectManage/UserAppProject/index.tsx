@@ -22,7 +22,7 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
 import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
-import ProjectCard from '../components/ProjectCard';
+import ProjectListCard from '../components/ProjectListCard';
 import { apiUserProjectPageQuery } from '../services';
 import styles from './index.less';
 
@@ -260,7 +260,7 @@ const UserAppProject: React.FC = () => {
           >
             <div className={cx(styles['main-container'])}>
               {list.map((item) => (
-                <ProjectCard
+                <ProjectListCard
                   key={item.id}
                   item={item}
                   onClick={handleOpenProject}

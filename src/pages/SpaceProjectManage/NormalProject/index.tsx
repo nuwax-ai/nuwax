@@ -24,7 +24,7 @@ import CreateNormalProjectModal from '../components/CreateNormalProjectModal';
 import EditNormalProjectModal, {
   type EditedNormalProjectInfo,
 } from '../components/EditNormalProjectModal';
-import ProjectCard from '../components/ProjectCard';
+import ProjectListCard from '../components/ProjectListCard';
 import { apiUserProjectPageQuery } from '../services';
 import { openProject } from '../type';
 import styles from './index.less';
@@ -261,7 +261,7 @@ const NormalProject: React.FC = () => {
           >
             <div className={cx(styles['main-container'])}>
               {list.map((item) => (
-                <ProjectCard
+                <ProjectListCard
                   key={item.id}
                   item={item}
                   onClick={handleOpenProject}

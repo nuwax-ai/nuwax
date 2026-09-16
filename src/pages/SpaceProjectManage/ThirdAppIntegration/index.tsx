@@ -20,7 +20,7 @@ import CreateThirdAppModal from './CreateThirdAppModal';
 import EditThirdAppModal, {
   type EditedThirdAppInfo,
 } from './EditThirdAppModal';
-import ThirdAppCard from './ThirdAppCard';
+import ProjectListCard from '../components/ProjectListCard';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -247,7 +247,7 @@ const ThirdAppIntegration: React.FC = () => {
           >
             <div className={cx(styles['main-container'])}>
               {list.map((item) => (
-                <ThirdAppCard
+                <ProjectListCard
                   key={item.id}
                   item={item}
                   onClick={handleOpenProject}
