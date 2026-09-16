@@ -13,6 +13,7 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { history, useModel } from 'umi';
 import { useSidebarCollapse } from '../useSidebarCollapse';
+import { ClientVersionBadge } from '@/features/client-shell';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -70,6 +71,8 @@ interface SidebarNavHeaderProps {
   onMenuClick: (menu: MenuItemDto) => void;
   /** 新建任务（新建会话） */
   onNewTask: () => void;
+  /** logo 旁渲染客户端版本徽标（仅布局级实例传 true；内容区复用处不重复出现） */
+  showClientVersionBadge?: boolean;
 }
 
 const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
@@ -77,6 +80,7 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
   activeTab,
   onMenuClick,
   onNewTask,
+  showClientVersionBadge = false,
 }) => {
   const { isSecondMenuCollapsed, toggleCollapse } = useSidebarCollapse();
   const { setOpenSearchModal } = useModel('layout');
@@ -121,6 +125,8 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
             onClick={() => history.push('/home')}
           />
         )}
+        {/* 客户端版本徽标（仅桌面宿主 + 布局级实例；浏览器/旧宿主组件内部自隐藏） */}
+        {showClientVersionBadge && <ClientVersionBadge />}
         <div className={cx(styles['header-actions'])}>
           <Tooltip
             title={dict(
