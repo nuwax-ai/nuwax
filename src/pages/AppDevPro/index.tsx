@@ -730,9 +730,15 @@ const AppDevPro: React.FC = () => {
     resumeTasksActive();
   }, [cancelUnfinishedBuild, publishFlow, resumeTasksActive]);
 
-  /** 弹窗内取消任务后恢复 tasks/active 轮询 */
+  /** 弹窗内取消构建任务后恢复 tasks/active 轮询 */
   const handleCancelDeployTask = useCallback(async () => {
     await publishFlow.cancelTask();
+    resumeTasksActive();
+  }, [publishFlow, resumeTasksActive]);
+
+  /** 弹窗内停止生产部署后恢复 tasks/active 轮询 */
+  const handleStopDeploy = useCallback(async () => {
+    await publishFlow.stopDeploy();
     resumeTasksActive();
   }, [publishFlow, resumeTasksActive]);
 
@@ -2453,6 +2459,10 @@ const AppDevPro: React.FC = () => {
                 visible={buildVersionsOpen}
                 appId={appId}
                 currentReleaseId={userAppInfo?.prodReleaseId}
+                deployingVersion={publishFlow.deployingReleaseId}
+                onDeployVersion={(version) => {
+                  void publishFlow.deployVersion(version);
+                }}
                 onClose={() => setBuildVersionsOpen(false)}
               />
             </div>
@@ -2517,6 +2527,8 @@ const AppDevPro: React.FC = () => {
         failedStage={publishFlow.failedStage}
         cancelLoading={publishFlow.cancelLoading}
         onCancelTask={handleCancelDeployTask}
+        stopLoading={publishFlow.stopLoading}
+        onStopDeploy={handleStopDeploy}
         onClose={handleCloseDeployProgress}
       />
     </div>

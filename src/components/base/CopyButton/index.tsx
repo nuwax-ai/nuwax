@@ -1,6 +1,6 @@
 import { dict } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils/clipboard';
-import { message } from 'antd';
+import { App } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import SvgIcon from '../SvgIcon';
@@ -58,6 +58,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   successMessage,
   errorMessage,
 }) => {
+  const { message } = App.useApp();
   const accessibleLabel =
     typeof children === 'string'
       ? children

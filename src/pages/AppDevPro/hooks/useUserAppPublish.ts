@@ -9,6 +9,7 @@ import {
   apiUserAppGetById,
   apiUserAppProdDeployable,
   apiUserAppProdStart,
+  apiUserAppProdStop,
 } from '../services/appDevPro';
 import {
   apiUserAppDomainList,
@@ -62,31 +63,34 @@ export interface UseUserAppPublishOptions {
 export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const { appId, onProjectInfo, onDomainList } = options;
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<boolean>(false);
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
   const [services, setServices] = useState<UserAppTaskServiceProgress[]>([]);
   const [startServices, setStartServices] = useState<
     UserAppTaskServiceProgress[]
   >([]);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [failedStage, setFailedStage] =
     useState<UserAppDeployFailedStage | null>(null);
-  const [taskId, setTaskId] = useState('');
-  const [cancelLoading, setCancelLoading] = useState(false);
+  const [taskId, setTaskId] = useState<string>('');
+  const [cancelLoading, setCancelLoading] = useState<boolean>(false);
+  const [stopLoading, setStopLoading] = useState<boolean>(false);
+  /** 历史版本侧栏触发的指定 releaseId 部署 */
+  const [deployingReleaseId, setDeployingReleaseId] = useState<string>('');
   /** 部署成功后异步拿到的线上 Prod 域名 */
-  const [prodAccessUrl, setProdAccessUrl] = useState('');
+  const [prodAccessUrl, setProdAccessUrl] = useState<string>('');
 
   const abortRef = useRef<AbortController | null>(null);
-  const cancelledRef = useRef(false);
+  const cancelledRef = useRef<boolean>(false);
   const terminalRef = useRef<UserAppTaskTerminalStatus | null>(null);
   const lastSeqRef = useRef<number | undefined>(undefined);
-  const taskIdRef = useRef('');
+  const taskIdRef = useRef<string>('');
   const servicesRef = useRef<UserAppTaskServiceProgress[]>([]);
   const startServicesRef = useRef<UserAppTaskServiceProgress[]>([]);
   const streamStageRef = useRef<'build' | 'start'>('build');
-  const releaseIdRef = useRef('');
-  const buildSucceededRef = useRef(false);
-  const checkPassedRef = useRef(false);
+  const releaseIdRef = useRef<string>('');
+  const buildSucceededRef = useRef<boolean>(false);
+  const checkPassedRef = useRef<boolean>(false);
 
   /** 清空当前发布任务现场（构建/部署日志、错误、taskId、SSE 序号） */
   const resetTaskState = useCallback(() => {
@@ -310,6 +314,67 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, [appId, listenBuildProgress, stopStream]);
 
   /**
+   * 历史版本：跳过构建与检测，直接部署指定 releaseId。
+   *
+   * @param releaseId 构建版本号
+   */
+  const deployVersion = useCallback(
+    async (releaseId: string) => {
+      if (!appId) {
+        message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
+        return;
+      }
+      if (
+        phase === 'starting' ||
+        phase === 'building' ||
+        phase === 'checkingDeployable' ||
+        phase === 'deploying'
+      ) {
+        setOpen(true);
+        return;
+      }
+      if (!releaseId.trim()) {
+        return;
+      }
+
+      resetTaskState();
+      releaseIdRef.current = releaseId.trim();
+      buildSucceededRef.current = true;
+      checkPassedRef.current = true;
+      setDeployingReleaseId(releaseId.trim());
+      setOpen(true);
+
+      try {
+        await submitProdStart();
+        if (cancelledRef.current) {
+          setPhase('cancelled');
+          return;
+        }
+        setPhase('success');
+        void refreshAfterDeploy();
+      } catch (error) {
+        if (
+          cancelledRef.current ||
+          (error instanceof Error && error.name === 'AbortError')
+        ) {
+          setPhase('cancelled');
+          return;
+        }
+        const text = pickUserAppRequestErrorText(
+          error,
+          dict('PC.Pages.AppDevPro.startFailed'),
+        );
+        setFailedStage('deploy');
+        setErrorMessage(text);
+        setPhase('failed');
+      } finally {
+        setDeployingReleaseId('');
+      }
+    },
+    [appId, phase, refreshAfterDeploy, resetTaskState, submitProdStart],
+  );
+
+  /**
    * 点击部署：创建构建任务，监听进度，成功后调用生产部署。
    */
   const startPublish = useCallback(async () => {
@@ -433,6 +498,37 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   ]);
 
   /**
+   * 部署服务阶段停止生产部署（检测可部署已通过，不再走 build cancel）。
+   */
+  const stopDeploy = useCallback(async () => {
+    if (!appId) {
+      return;
+    }
+    setStopLoading(true);
+    try {
+      cancelledRef.current = true;
+      stopStream();
+      const result = await apiUserAppProdStop({
+        appId,
+        releaseId: releaseIdRef.current || undefined,
+      });
+      if (result && typeof result === 'object' && 'code' in result) {
+        if (result.code && result.code !== SUCCESS_CODE) {
+          throw new Error(
+            result.message || dict('PC.Pages.AppDevPro.stopFailed'),
+          );
+        }
+      }
+      setPhase('cancelled');
+      message.success(dict('PC.Pages.AppDevPro.stopDeploySuccess'));
+    } catch (error) {
+      console.error('[AppDevPro] Stop deploy failed:', error);
+    } finally {
+      setStopLoading(false);
+    }
+  }, [appId, stopStream]);
+
+  /**
    * 取消当前构建任务。
    */
   const cancelTask = useCallback(async () => {
@@ -491,9 +587,13 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     failedStage,
     taskId,
     cancelLoading,
+    stopLoading,
     publishing,
     startPublish,
+    deployVersion,
+    deployingReleaseId,
     cancelTask,
+    stopDeploy,
     closeModal,
     startServices,
     prodAccessUrl,

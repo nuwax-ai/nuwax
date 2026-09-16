@@ -1,8 +1,9 @@
+import CopyButton from '@/components/base/CopyButton';
 import Loading from '@/components/custom/Loading';
 import ToggleWrap from '@/components/ToggleWrap';
 import { dict } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils/clipboard';
-import { Empty, Tag } from 'antd';
+import { Button, Empty, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -20,6 +21,10 @@ export interface AppDevBuildVersionDrawerProps {
   appId?: number;
   /** 当前生产部署版本号，用于标记「当前」 */
   currentReleaseId?: string;
+  /** 部署指定版本（releaseId 取 version 字段） */
+  onDeployVersion?: (version: string) => void;
+  /** 当前正在部署的版本号 */
+  deployingVersion?: string;
   /** 关闭侧栏 */
   onClose: () => void;
 }
@@ -77,6 +82,8 @@ const shortGitCommit = (gitCommit?: string): string => {
  * @param props.visible 是否显示
  * @param props.appId 应用 ID
  * @param props.currentReleaseId 当前生产部署版本
+ * @param props.onDeployVersion 部署指定版本
+ * @param props.deployingVersion 当前部署中的版本
  * @param props.onClose 关闭回调
  * @returns 历史版本侧栏
  */
@@ -84,6 +91,8 @@ const AppDevBuildVersionDrawer: React.FC<AppDevBuildVersionDrawerProps> = ({
   visible,
   appId,
   currentReleaseId,
+  onDeployVersion,
+  deployingVersion = '',
   onClose,
 }) => {
   const { data, loading } = useRequest(
@@ -111,25 +120,39 @@ const AppDevBuildVersionDrawer: React.FC<AppDevBuildVersionDrawerProps> = ({
       {versions.map((item) => {
         const isCurrent =
           !!currentReleaseId && item.version === currentReleaseId;
+        const isDeploying = deployingVersion === item.version;
         return (
           <div
             key={`${item.version}-${item.gitCommit}-${item.buildTime}`}
             className={cx(styles.item)}
           >
             <div className={cx(styles.itemHeader)}>
-              <span className={cx(styles.version)}>{item.version}</span>
-              <div className={cx(styles.tags)}>
-                {item.latest ? (
-                  <Tag color="blue">
-                    {dict('PC.Pages.AppDevPro.buildVersionLatest')}
-                  </Tag>
-                ) : null}
-                {isCurrent ? (
-                  <Tag color="green">
-                    {dict('PC.Pages.AppDevPro.buildVersionCurrent')}
-                  </Tag>
-                ) : null}
+              <div className={cx(styles.versionRow)}>
+                <span className={cx(styles.version)}>{item.version}</span>
+                <CopyButton
+                  text={item.version}
+                  className={cx(styles.versionCopy)}
+                  tooltipText={dict('PC.Common.Global.copy')}
+                  showSuccessMsg
+                  successMessage={dict('PC.Utils.Clipboard.copySuccess')}
+                >
+                  {''}
+                </CopyButton>
               </div>
+              {item.latest || isCurrent ? (
+                <div className={cx(styles.tags)}>
+                  {item.latest ? (
+                    <Tag color="blue">
+                      {dict('PC.Pages.AppDevPro.buildVersionLatest')}
+                    </Tag>
+                  ) : null}
+                  {isCurrent ? (
+                    <Tag color="green">
+                      {dict('PC.Pages.AppDevPro.buildVersionCurrent')}
+                    </Tag>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
             {item.gitCommit ? (
               <div className={cx(styles.meta)}>
@@ -174,6 +197,17 @@ const AppDevBuildVersionDrawer: React.FC<AppDevBuildVersionDrawerProps> = ({
                   {item.packageUrl}
                 </button>
               </div>
+            ) : null}
+            {!isCurrent ? (
+              <Button
+                type="primary"
+                className={cx(styles.deployBtn, 'w-full')}
+                loading={isDeploying}
+                disabled={!!deployingVersion && !isDeploying}
+                onClick={() => onDeployVersion?.(item.version)}
+              >
+                {dict('PC.Pages.AppDevPro.deployThisVersion')}
+              </Button>
             ) : null}
           </div>
         );

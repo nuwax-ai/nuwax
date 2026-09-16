@@ -8,7 +8,6 @@ import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import * as React from 'react';
 
-import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type {
@@ -169,21 +168,24 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
 
             {renderedMessageList?.length > 0 ? (
               <>
-                {/* 加载历史消息的触发探测节点 */}
-                {isMoreMessage &&
-                  (renderedMessageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
-                    <div
-                      ref={loadMoreRef}
-                      className={cx(styles['load-more-container'])}
-                    >
-                      {loadingMore ? (
-                        <span>
-                          <LoadingOutlined style={{ marginRight: 8 }} />
-                          {dict('PC.Pages.Chat.loadingHistoryConversation')}
-                        </span>
-                      ) : null}
-                    </div>
-                  )}
+                {/* 加载历史消息的触发探测节点。
+                    门槛只认 isMoreMessage：不能再用列表长度（原始或过滤后）对比
+                    MESSAGE_PAGE_SIZE——模型层水合/快照合并会把"整页 10 条"缩成 9，
+                    导致哨兵永不渲染、上滑加载失效；"可能有更多"的判定本来就该
+                    由模型层 isMoreMessage 单点负责 */}
+                {isMoreMessage && (
+                  <div
+                    ref={loadMoreRef}
+                    className={cx(styles['load-more-container'])}
+                  >
+                    {loadingMore ? (
+                      <span>
+                        <LoadingOutlined style={{ marginRight: 8 }} />
+                        {dict('PC.Pages.Chat.loadingHistoryConversation')}
+                      </span>
+                    ) : null}
+                  </div>
+                )}
 
                 {/* 消息渲染列表：渲染线选择（V2 双线重构）。自定义 renderMessageItem 恒走原逻辑 */}
                 {messageRenderer === 'v2' && !renderMessageItem ? (

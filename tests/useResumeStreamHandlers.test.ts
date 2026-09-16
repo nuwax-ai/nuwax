@@ -8,8 +8,8 @@ import {
 } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockCreateSSEConnection } = vi.hoisted(() => ({
   mockCreateSSEConnection: vi.fn(),
@@ -351,6 +351,197 @@ describe('useResumeStreamHandlers', () => {
     });
     expect(abortSse).toHaveBeenCalledTimes(1);
     expect(mockCreateSSEConnection).toHaveBeenCalledTimes(3);
+  });
+
+  describe('恢复流滚动合帧', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({
+        toFake: [
+          'setTimeout',
+          'clearTimeout',
+          'requestAnimationFrame',
+          'cancelAnimationFrame',
+        ],
+      });
+    });
+
+    afterEach(() => {
+      cleanup();
+      vi.restoreAllMocks();
+      vi.useRealTimers();
+    });
+
+    const createScrollFixture = () => {
+      const element = document.createElement('div') as HTMLDivElement & {
+        __isProgrammaticScroll?: boolean;
+      };
+      element.scrollTo = vi.fn();
+      Object.defineProperty(element, 'scrollHeight', { value: 800 });
+      const messageViewRef = { current: element };
+      const allowAutoScrollRef = { current: true };
+      const handleChangeMessageList = vi.fn();
+      const onTerminalEvent = vi.fn();
+      const hook = renderHook(() =>
+        useResumeStreamHandlers({
+          setMessageList: vi.fn(),
+          handleChangeMessageList,
+          messageViewRef,
+          allowAutoScrollRef,
+          onTerminalEvent,
+        }),
+      );
+      act(() => hook.result.current.resumeConversationStream(1001, []));
+      return {
+        ...hook,
+        element,
+        messageViewRef,
+        allowAutoScrollRef,
+        handleChangeMessageList,
+        onTerminalEvent,
+        handlers: mockCreateSSEConnection.mock.calls[0][0],
+      };
+    };
+
+    const chunk = {
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      data: { text: 'chunk' },
+    };
+
+    it('同帧的全部事件立即按序送达，滚动只执行一次且可在下一帧继续', () => {
+      const fixture = createScrollFixture();
+      const requestFrame = vi.spyOn(globalThis, 'requestAnimationFrame');
+      const events = Array.from({ length: 20 }, (_, index) => ({
+        ...chunk,
+        data: { text: String(index) },
+      }));
+      act(() => events.forEach((event) => fixture.handlers.onMessage(event)));
+
+      expect(fixture.handleChangeMessageList).toHaveBeenCalledTimes(20);
+      expect(
+        fixture.handleChangeMessageList.mock.calls.map((call) => call[1]),
+      ).toEqual(events);
+      expect(requestFrame).toHaveBeenCalledTimes(1);
+      expect(fixture.element.scrollTo).not.toHaveBeenCalled();
+
+      act(() => vi.advanceTimersByTime(20));
+      expect(fixture.element.scrollTo).toHaveBeenCalledTimes(1);
+      expect(fixture.element.scrollTo).toHaveBeenCalledWith({
+        top: 800,
+        behavior: 'instant',
+      });
+      expect(fixture.element.__isProgrammaticScroll).toBe(true);
+
+      act(() => fixture.handlers.onMessage(chunk));
+      act(() => vi.advanceTimersByTime(20));
+      expect(fixture.element.scrollTo).toHaveBeenCalledTimes(2);
+      act(() => vi.advanceTimersByTime(100));
+      expect(fixture.element.__isProgrammaticScroll).toBe(false);
+    });
+
+    it('帧执行前关闭自动滚动时不强制置底，恢复开关后仍能滚动', () => {
+      const fixture = createScrollFixture();
+      act(() => fixture.handlers.onMessage(chunk));
+      fixture.allowAutoScrollRef.current = false;
+      act(() => vi.advanceTimersByTime(20));
+      expect(fixture.element.scrollTo).not.toHaveBeenCalled();
+
+      fixture.allowAutoScrollRef.current = true;
+      act(() => fixture.handlers.onMessage(chunk));
+      act(() => vi.advanceTimersByTime(20));
+      expect(fixture.element.scrollTo).toHaveBeenCalledTimes(1);
+    });
+
+    it('切会话取消旧帧，旧连接尾包也不会排入新会话的滚动', () => {
+      const fixture = createScrollFixture();
+      act(() => fixture.handlers.onMessage(chunk));
+      act(() => fixture.result.current.resumeConversationStream(1002, []));
+      const nextHandlers = mockCreateSSEConnection.mock.calls[1][0];
+      act(() => fixture.handlers.onMessage(chunk));
+      act(() => vi.advanceTimersByTime(20));
+      expect(fixture.element.scrollTo).not.toHaveBeenCalled();
+
+      act(() => nextHandlers.onMessage(chunk));
+      act(() => vi.advanceTimersByTime(20));
+      expect(fixture.element.scrollTo).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(['abort', 'unmount'] as const)(
+      '%s 清理待执行帧和程序滚动标记定时器',
+      (action) => {
+        const fixture = createScrollFixture();
+        act(() => fixture.handlers.onMessage(chunk));
+        act(() => vi.advanceTimersByTime(20));
+        expect(fixture.element.__isProgrammaticScroll).toBe(true);
+        act(() => fixture.handlers.onMessage(chunk));
+        act(() => {
+          if (action === 'abort') fixture.result.current.abortResumeStream();
+          if (action === 'unmount') fixture.unmount();
+        });
+        expect(fixture.element.__isProgrammaticScroll).toBe(false);
+        act(() => vi.advanceTimersByTime(200));
+        expect(fixture.element.scrollTo).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(0);
+      },
+    );
+
+    it('FINAL_RESULT 后同步关闭仍执行最后一帧，关闭后的尾包不再排滚动', () => {
+      const fixture = createScrollFixture();
+      const finalResult = {
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        data: { success: true },
+      };
+      act(() => {
+        fixture.handlers.onMessage(finalResult);
+        fixture.handlers.onClose();
+      });
+      expect(fixture.onTerminalEvent).toHaveBeenCalledWith(1001, finalResult);
+      act(() => vi.advanceTimersByTime(20));
+      expect(fixture.element.scrollTo).toHaveBeenCalledTimes(1);
+      expect(fixture.element.__isProgrammaticScroll).toBe(true);
+
+      act(() => fixture.handlers.onMessage(chunk));
+      act(() => vi.advanceTimersByTime(100));
+      expect(fixture.element.scrollTo).toHaveBeenCalledTimes(1);
+      expect(fixture.element.__isProgrammaticScroll).toBe(false);
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('连续多帧滚动不延长已有的 100ms 程序滚动标记窗口', () => {
+      const fixture = createScrollFixture();
+      for (let index = 0; index < 5; index += 1) {
+        act(() => fixture.handlers.onMessage(chunk));
+        act(() => vi.advanceTimersByTime(20));
+        expect(fixture.element.__isProgrammaticScroll).toBe(true);
+      }
+      act(() => fixture.handlers.onMessage(chunk));
+      act(() => vi.advanceTimersByTime(20));
+      expect(fixture.element.scrollTo).toHaveBeenCalledTimes(6);
+      expect(fixture.element.__isProgrammaticScroll).toBe(false);
+
+      act(() => fixture.result.current.abortResumeStream());
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('终态立即处理；ERROR 取消旧帧且不重新排入，FINAL_RESULT 仍允许当前帧置底', () => {
+      const fixture = createScrollFixture();
+      const finalResult = {
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        data: { success: true },
+      };
+      act(() => fixture.handlers.onMessage(finalResult));
+      expect(fixture.onTerminalEvent).toHaveBeenCalledWith(1001, finalResult);
+      act(() => vi.advanceTimersByTime(20));
+      expect(fixture.element.scrollTo).toHaveBeenCalledTimes(1);
+
+      act(() => fixture.handlers.onMessage(chunk));
+      const error = { eventType: ConversationEventTypeEnum.ERROR };
+      act(() => fixture.handlers.onMessage(error));
+      expect(fixture.onTerminalEvent).toHaveBeenCalledWith(1001, error);
+      expect(abortSse).toHaveBeenCalledTimes(1);
+      expect(fixture.handleChangeMessageList).toHaveBeenCalledTimes(3);
+      act(() => vi.advanceTimersByTime(200));
+      expect(fixture.element.scrollTo).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('新增干预回调（onTerminalEvent / onStreamClosed / onStreamError）', () => {

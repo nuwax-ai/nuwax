@@ -84,6 +84,18 @@
   line-height: 16px;
 }
 
+// simple 紧凑行付费小 Tag（行尾内联）：弹层滚动容器会裁切左上角 Ribbon
+// 的负向偏移且压住图标，simple 行改内联 Tag（同 AppDev 选择弹层口径；
+// 双写提权压过 cssinjs；高 18px 与 Ribbon 角标同口径）
+.paid-tag.paid-tag {
+  flex-shrink: 0;
+  margin-right: 0;
+  margin-inline-end: 0;
+  padding-inline: 5px;
+  font-size: 10px;
+  line-height: 16px;
+}
+
 // ---- grid 变体卡片（两栏，与能力弹窗简化技能卡同款） ----
 .card {
   display: flex;
