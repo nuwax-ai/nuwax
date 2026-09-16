@@ -1,12 +1,12 @@
 import type { RequestResponse } from '@/types/interfaces/request';
-import { request } from 'umi';
 import {
   ListPricingConfigsParams,
   ModelPricingInfo,
   QueryPricingInfoParams,
   ResourcePricingConfigInfo,
   ToolPricingInfo,
-} from '../types/resource';
+} from '@/types/interfaces/resource';
+import { request } from 'umi';
 
 // ======================= 模型定价 =======================
 /**

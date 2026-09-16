@@ -507,23 +507,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/components/business-component/CreditsBalance/index.tsx",
-    "to": "src/pages/MorePage/MySubscriptions/components/CreditsBreakdown/components/PurchaseModal/index.tsx",
-    "unresolvedTo": "@/pages/MorePage/MySubscriptions/components/CreditsBreakdown/components/PurchaseModal",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "non-pages-not-to-pages"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/components/business-component/FileTreeGitSourcePanel/FileTreePanel/SearchView/index.tsx",
     "to": "src/pages/AppDev/components/ChatArea/components/MentionSelector/utils.ts",
     "unresolvedTo": "@/pages/AppDev/components/ChatArea/components/MentionSelector/utils",
@@ -544,23 +527,6 @@
     "from": "src/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView.tsx",
     "to": "src/pages/AppDev/components/index.ts",
     "unresolvedTo": "@/pages/AppDev/components",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "non-pages-not-to-pages"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/components/business-component/PaymentSubscriptionModal/index.tsx",
-    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
-    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
     "dependencyTypes": [
       "aliased",
       "aliased-tsconfig",
@@ -626,111 +592,9 @@
   },
   {
     "type": "dependency",
-    "from": "src/hooks/useSubscription.ts",
-    "to": "src/pages/EditAgent/services/agent-subscription-plan.ts",
-    "unresolvedTo": "@/pages/EditAgent/services/agent-subscription-plan",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "non-pages-not-to-pages"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/hooks/useSubscription.ts",
-    "to": "src/pages/MorePage/MySubscriptions/hooks/useSubscriptionPurchase.ts",
-    "unresolvedTo": "@/pages/MorePage/MySubscriptions/hooks/useSubscriptionPurchase",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "non-pages-not-to-pages"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/hooks/useSubscription.ts",
-    "to": "src/pages/SpaceResource/services/resource.ts",
-    "unresolvedTo": "@/pages/SpaceResource/services/resource",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "non-pages-not-to-pages"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/hooks/useSubscription.ts",
-    "to": "src/pages/SpaceResource/types/resource.ts",
-    "unresolvedTo": "@/pages/SpaceResource/types/resource",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "non-pages-not-to-pages"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/hooks/useSubscription.ts",
-    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
-    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "non-pages-not-to-pages"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel/index.tsx",
     "to": "src/pages/AppDevPro/services/appDevPro.ts",
     "unresolvedTo": "@/pages/AppDevPro/services/appDevPro",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "non-pages-not-to-pages"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/utils/resourcePricing.ts",
-    "to": "src/pages/SpaceResource/types/resource.ts",
-    "unresolvedTo": "@/pages/SpaceResource/types/resource",
     "dependencyTypes": [
       "aliased",
       "aliased-tsconfig",
@@ -966,108 +830,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/pages/EditAgent/SubscriptionSetting/CreatePlanModal/index.tsx",
-    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
-    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "pages-not-to-other-pages[EditAgent]"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/pages/EditAgent/SubscriptionSetting/index.tsx",
-    "to": "src/pages/SpaceResource/services/resource.ts",
-    "unresolvedTo": "@/pages/SpaceResource/services/resource",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "pages-not-to-other-pages[EditAgent]"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/pages/EditAgent/SubscriptionSetting/index.tsx",
-    "to": "src/pages/SpaceResource/types/resource.ts",
-    "unresolvedTo": "@/pages/SpaceResource/types/resource",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "pages-not-to-other-pages[EditAgent]"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/pages/EditAgent/SubscriptionSetting/index.tsx",
-    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
-    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "pages-not-to-other-pages[EditAgent]"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/pages/EditAgent/SubscriptionSetting/SubscriptionPlanCard/index.tsx",
-    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
-    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "pages-not-to-other-pages[EditAgent]"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/pages/EditAgent/SubscriptionStats/index.tsx",
-    "to": "src/pages/SystemManagement/SubscriptionCredits/types/subscription.ts",
-    "unresolvedTo": "@/pages/SystemManagement/SubscriptionCredits/types/subscription",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "pages-not-to-other-pages[EditAgent]"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/pages/GlobalModelManage/index.tsx",
     "to": "src/pages/MorePage/ModelPermissions/ModalitiesTagsCell/index.tsx",
     "unresolvedTo": "../MorePage/ModelPermissions/ModalitiesTagsCell",
@@ -1083,23 +845,6 @@
     "to": "src/pages/SystemManagement/Content/components/TargetAuthModal/index.tsx",
     "unresolvedTo": "../SystemManagement/Content/components/TargetAuthModal",
     "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "pages-not-to-other-pages[GlobalModelManage]"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/pages/GlobalModelManage/Pricing/ModelPricingTab/index.tsx",
-    "to": "src/pages/SpaceResource/types/resource.ts",
-    "unresolvedTo": "@/pages/SpaceResource/types/resource",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
     "rule": {
       "severity": "error",
       "name": "pages-not-to-other-pages[GlobalModelManage]"
@@ -1155,23 +900,6 @@
     "from": "src/pages/MorePage/MyEarnings/components/DailyEarningsList/components/DailyEarningsDetailModal/index.tsx",
     "to": "src/pages/SystemManagement/PaymentEarnings/constants.ts",
     "unresolvedTo": "@/pages/SystemManagement/PaymentEarnings/constants",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "pages-not-to-other-pages[MorePage]"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/pages/MorePage/MySubscriptions/hooks/useSubscriptionPurchase.ts",
-    "to": "src/pages/EditAgent/services/agent-subscription-plan.ts",
-    "unresolvedTo": "@/pages/EditAgent/services/agent-subscription-plan",
     "dependencyTypes": [
       "aliased",
       "aliased-tsconfig",

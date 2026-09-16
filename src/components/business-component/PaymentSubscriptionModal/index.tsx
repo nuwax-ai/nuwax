@@ -9,10 +9,6 @@
  */
 import ConditionRender from '@/components/ConditionRender';
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
-import {
-  SubscriptionPlanInfo,
-  SubscriptionPlanPeriodEnum,
-} from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { dict } from '@/services/i18nRuntime';
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import {
@@ -20,6 +16,10 @@ import {
   MySubscriptionStatusEnum,
   type MySubscriptionItem,
 } from '@/types/interfaces/subscription';
+import {
+  SubscriptionPlanInfo,
+  SubscriptionPlanPeriodEnum,
+} from '@/types/interfaces/subscriptionPlan';
 import { Button, Empty, Modal, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';

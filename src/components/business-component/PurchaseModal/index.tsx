@@ -1,4 +1,5 @@
 import { XModalForm } from '@/components/ProComponents';
+import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
 import { dict } from '@/services/i18nRuntime';
 import { apiListCreditPackages } from '@/services/subscriptionService';
 import { CreditPackageInfo } from '@/types/interfaces/subscription';
@@ -6,7 +7,6 @@ import { Space, Spin, Statistic } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
 import { useRequest } from 'umi';
-import { useSubscriptionPurchase } from '../../../../hooks/useSubscriptionPurchase';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

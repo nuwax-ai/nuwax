@@ -1,5 +1,5 @@
-import { ResourcePricingType } from '@/pages/SpaceResource/types/resource';
 import { dict } from '@/services/i18nRuntime';
+import { ResourcePricingType } from '@/types/interfaces/resource';
 
 /** 资源定价类型对应的 i18n key */
 export const PRICING_TYPE_LABEL_KEY: Record<ResourcePricingType, string> = {

@@ -1,17 +1,17 @@
-import { apiGetAgentSubscriptionPlanList } from '@/pages/EditAgent/services/agent-subscription-plan';
-import { useSubscriptionPurchase } from '@/pages/MorePage/MySubscriptions/hooks/useSubscriptionPurchase';
-import { apiQueryToolPricing } from '@/pages/SpaceResource/services/resource';
+import { useSubscriptionPurchase } from '@/hooks/useSubscriptionPurchase';
+import { apiGetAgentSubscriptionPlanList } from '@/services/agent-subscription-plan';
+import { dict } from '@/services/i18nRuntime';
+import { apiQueryToolPricing } from '@/services/resource';
+import { apiGetMySubscription } from '@/services/subscriptionService';
 import {
   ResourcePricingConfigInfo,
   ToolPricingTargetType,
-} from '@/pages/SpaceResource/types/resource';
+} from '@/types/interfaces/resource';
+import { BizTypeEnum } from '@/types/interfaces/subscription';
 import {
   SubscriptionPlanInfo,
   SubscriptionPlanStatusEnum,
-} from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
-import { dict } from '@/services/i18nRuntime';
-import { apiGetMySubscription } from '@/services/subscriptionService';
-import { BizTypeEnum } from '@/types/interfaces/subscription';
+} from '@/types/interfaces/subscriptionPlan';
 import { message } from 'antd';
 import { useCallback, useState } from 'react';
 import useRequestPromiseBridge from './useRequestPromiseBridge';

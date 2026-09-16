@@ -1,4 +1,4 @@
-import { SubscriptionPlanInfo } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import { SubscriptionPlanInfo } from '@/types/interfaces/subscriptionPlan';
 
 // 资源定价 - 模型定价信息
 export interface ModelPricingInfo {

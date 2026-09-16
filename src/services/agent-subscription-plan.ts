@@ -1,10 +1,10 @@
+import type { RequestResponse } from '@/types/interfaces/request';
+import { BillOrderInfo } from '@/types/interfaces/subscription';
 import {
   SubscriptionPlanInfo,
   SubscriptionPlanSortItem,
   SubscriptionPlanStatsResult,
-} from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
-import type { RequestResponse } from '@/types/interfaces/request';
-import { BillOrderInfo } from '@/types/interfaces/subscription';
+} from '@/types/interfaces/subscriptionPlan';
 import { request } from 'umi';
 
 /**

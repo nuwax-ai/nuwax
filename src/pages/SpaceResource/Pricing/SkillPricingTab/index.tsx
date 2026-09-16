@@ -1,27 +1,27 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
 import { dict } from '@/services/i18nRuntime';
 import {
+  apiDeleteToolPricing,
+  apiListPricingConfig,
+  apiUpdateToolPricing,
+} from '@/services/resource';
+import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
 import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import {
+  ResourcePricingConfigInfo,
+  ResourcePricingStatus,
+  ResourcePricingType,
+  ToolPricingTargetType,
+} from '@/types/interfaces/resource';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Switch, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import {
-  apiDeleteToolPricing,
-  apiListPricingConfig,
-  apiUpdateToolPricing,
-} from '../../services/resource';
-import {
-  ResourcePricingConfigInfo,
-  ResourcePricingStatus,
-  ResourcePricingType,
-  ToolPricingTargetType,
-} from '../../types/resource';
 import styles from './index.less';
 import SkillPricingFormModal from './SkillPricingFormModal';
 

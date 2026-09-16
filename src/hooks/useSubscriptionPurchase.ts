@@ -2,7 +2,7 @@ import { PAYMENT_SETTLEMENT_PATH } from '@/constants/subscription.constants';
 import {
   apiCreateAgentSubscriptionOrder,
   apiGetAgentSubscriptionOrderCashier,
-} from '@/pages/EditAgent/services/agent-subscription-plan';
+} from '@/services/agent-subscription-plan';
 import { dict } from '@/services/i18nRuntime';
 import { apiCreateCreditOrder } from '@/services/subscriptionService';
 import { message } from 'antd';
