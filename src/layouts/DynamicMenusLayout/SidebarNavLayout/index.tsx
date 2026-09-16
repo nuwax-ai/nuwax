@@ -447,7 +447,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         {/* 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右：消息/设备/更多/文档，走接口）+
             最右「客户端设置」（仅 Nuwax 客户端渲染，打开壳设置弹窗） */}
         <div className={cx(styles['sidebar-footer'])}>
-          <User placement="rightTop">
+          {/* topLeft：弹窗底部贴用户区顶部、左缘与用户区对齐 */}
+          <User placement="topLeft">
             <div
               className={cx(styles['sidebar-user-row'])}
               onClick={() => setOpenAdmin(true)}
