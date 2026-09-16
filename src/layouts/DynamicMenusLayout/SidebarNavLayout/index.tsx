@@ -497,12 +497,20 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         </div>
       </div>
 
-      {/* 二级菜单列：选中「有子菜单/Section」的域时在会话列右侧并列展开（原二级菜单保留） */}
-      {secondMenuVisible && (
+      {/* 二级菜单列：选中「有子菜单/Section」的域时在会话列右侧并列展开（原二级菜单保留）。
+          挂载门控用可用性（shouldShowSecondMenu），收起/展开只驱动 width/opacity 过渡：
+          按显隐条件卸载会让二级列瞬移（less 的 width 过渡永不生效），内容区先跳
+          200px 再随主列滑动，两段式与无二级列页面的单段滑动观感割裂（禅道 bug2349） */}
+      {shouldShowSecondMenu && (
         <div
           className={cx(styles['second-column'], 'noselect')}
           style={{
-            width: SECOND_COLUMN_WIDTH,
+            width: secondMenuVisible ? SECOND_COLUMN_WIDTH : 0,
+            opacity: secondMenuVisible ? 1 : 0,
+            // border-box 的收缩下限=padding+border（10+10+1），width:0 仍会残留
+            // 21px 底色条，收起时须同步归零（展开交还 less 默认值）
+            padding: secondMenuVisible ? undefined : 0,
+            borderRightWidth: secondMenuVisible ? undefined : 0,
             paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
             // 底色交给 less（原型 #fafafa，2026-09-12）：此处原内联 transparent
             // 会盖掉 less 背景，移除后单栏二级列按原型配色渲染
