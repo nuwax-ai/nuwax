@@ -164,9 +164,15 @@ const Home: React.FC = () => {
     isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
       ? tenantConfigInfo.defaultTaskAgentId
       : tenantConfigInfo?.defaultAgentId;
-  // 会话对象优先级：召唤专家 > 推荐pill > 默认智能体
+  const isUserAppPinned =
+    pinnedProject?.projectType === AgentComponentTypeEnum.UserApp;
+  // 会话对象优先级：召唤专家 > 推荐pill > 默认智能体；全栈上框命中推荐位前
+  // 不回落租户默认智能体（出范围，且其详情会与命中详情并发、晚到覆盖工具
+  // 选中——禅道bug2394）；常规项目上框维持默认兜底（发送链依赖它作 agentId）
   const currentAgentId =
-    summonedExpert?.agentId || selectedRecommend?.targetId || defaultAgentId;
+    summonedExpert?.agentId ||
+    selectedRecommend?.targetId ||
+    (isUserAppPinned ? undefined : defaultAgentId);
 
   const handleAgentModeChange = useCallback(
     (mode: AgentMode) => {
@@ -195,15 +201,6 @@ const Home: React.FC = () => {
     : selectedRecommend
     ? showSpaceSelectorForFunctionType(selectedFunctionType)
     : false;
-
-  const runDetail = useCallback(async (agentId: number) => {
-    try {
-      const { data } = await apiPublishedAgentInfo(agentId);
-      setAgentDetail(data);
-    } catch {
-      setAgentDetail(undefined);
-    }
-  }, []);
 
   const runRecommendNavList = useCallback(async () => {
     try {
@@ -245,12 +242,23 @@ const Home: React.FC = () => {
   useEffect(() => {
     // 切换会话对象（默认/推荐/专家）：重拉智能体详情；
     // 不在此清空输入——清输入只发生在用户显式切 pill/分类时（见对应 handler），
-    // 选专家仅替换上方所选智能体，已输入内容与其他已选项保持
+    // 选专家仅替换上方所选智能体，已输入内容与其他已选项保持；
+    // cancelled 守卫：快速连续切换（上框命中/召唤/切 pill）时旧响应晚到
+    // 不得覆盖新会话对象的详情与工具选中（禅道bug2394 根因之一）
     setAgentDetail(undefined);
-    if (currentAgentId) {
-      runDetail(currentAgentId);
-    }
-  }, [currentAgentId, runDetail]);
+    if (!currentAgentId) return;
+    let cancelled = false;
+    apiPublishedAgentInfo(currentAgentId)
+      .then(({ data }) => {
+        if (!cancelled) setAgentDetail(data);
+      })
+      .catch(() => {
+        if (!cancelled) setAgentDetail(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentAgentId]);
 
   useEffect(() => {
     if (agentDetail) {
@@ -278,7 +286,12 @@ const Home: React.FC = () => {
   useEffect(() => {
     const pinned = consumePinnedProject();
     if (!pinned) return;
+    // 同项目重复 pin（项目列表连续点「+」）只刷新上框数据（名称/图标可能
+    // 更新），不重置选择态：重置会把会话对象弹回租户默认智能体，其详情与
+    // 命中推荐位的详情并发，工具选中被默认工具覆盖（禅道bug2394）
+    const isSameProject = pinnedProject?.projectId === pinned.projectId;
     setPinnedProject(pinned);
+    if (isSameProject) return;
     agentMissedPromptedRef.current = undefined;
     // 上框项目自带空间/沙箱/工作区，复位与之互斥的选择
     setSelectedRecommend(undefined);
@@ -287,7 +300,7 @@ const Home: React.FC = () => {
     setWorkspaceDir('');
     setSelectedModelId(undefined);
     setSelectedSpaceId(undefined);
-  }, [contextMap, consumePinnedProject]);
+  }, [contextMap, consumePinnedProject, pinnedProject?.projectId]);
 
   // 上框默认命中：全栈优先按项目 devAgentId 精确命中推荐位（列表晚到时同样生效）；
   // devAgentId 契约未 ready 或未命中时，按类型兜底唯一同类型推荐自动选中
@@ -295,8 +308,6 @@ const Home: React.FC = () => {
   // （同一项目只提示一次）；常规项目不自动命中智能体，保留用户手选的同类型
   // 智能体；刚消费上框时的旧选中已在上方清掉，未手选时发送由后端兜默认；
   // 推荐列表置灰（isAgentSelectable 的不可用判定）不受影响照常生效
-  const isUserAppPinned =
-    pinnedProject?.projectType === AgentComponentTypeEnum.UserApp;
   useEffect(() => {
     // 常规项目上框不自动命中，但必须保留用户手选的常规项目 Agent。
     // 切入上框时的旧推荐项由 consume effect 清理，不能在这里反复清空。
@@ -333,8 +344,19 @@ const Home: React.FC = () => {
   ) => {
     if (submitting) return;
 
-    if (!tenantConfigInfo || !currentAgentId) {
+    if (!tenantConfigInfo) {
       message.warning(dict('PC.Pages.Home.noTenantInfo'));
+      return;
+    }
+    // 上框期间会话对象未定（全栈未命中且未手选）引导手选，不误报租户信息缺失
+    if (!currentAgentId) {
+      message.warning(
+        dict(
+          pinnedProject
+            ? 'PC.Pages.Home.pinnedProject.agentMissed'
+            : 'PC.Pages.Home.noTenantInfo',
+        ),
+      );
       return;
     }
 
