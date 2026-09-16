@@ -21,7 +21,6 @@ import {
   syncLangFromUserInfo,
 } from './services/i18nRuntime';
 import { apiQueryMenus } from './services/menuService';
-import { initTitlebarDragRegionSync } from './services/titlebarDragRegionSync';
 import {
   resolveEffectiveNavigationStyle,
   unifiedThemeService,
@@ -30,6 +29,7 @@ import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
 import { installDirectorySyncLegacyBridge } from './utils/directorySyncEvents';
+import { initClientShell } from './features/client-shell';
 import { hostBridge, syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
 import { isConversationMockPage } from './utils/isConversationMockPage';
@@ -336,10 +336,11 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   useEffect(() => {
     syncShellAvoidanceCss();
     const disposeTheme = initBrandTheme();
-    const disposeTitlebarRegions = initTitlebarDragRegionSync();
+    // 客户端专属适配聚合入口（构建版本上报/标题栏热区/未来适配统一在此登记）
+    const disposeClientShell = initClientShell();
     return () => {
       disposeTheme();
-      disposeTitlebarRegions();
+      disposeClientShell();
     };
   }, []);
 

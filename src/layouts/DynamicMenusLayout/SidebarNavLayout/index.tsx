@@ -374,6 +374,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           activeTab={navHighlightTab}
           onMenuClick={handleTabClick}
           onNewTask={handleNewTask}
+          showClientVersionBadge
         />
         <div className={cx(styles['nav-menus-scroll'])}>
           <NewHomeSection

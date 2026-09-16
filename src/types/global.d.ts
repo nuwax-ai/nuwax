@@ -68,6 +68,33 @@ interface TitlebarDragRegion {
   height: number;
 }
 
+/** 宿主客户端更新状态（桥 updater.getState 回包；status 语义与壳 UpdateState 一致）。 */
+interface ClientUpdateState {
+  status:
+    | 'idle'
+    | 'checking'
+    | 'available'
+    | 'not-available'
+    | 'downloading'
+    | 'downloaded'
+    | 'error';
+  /** 宿主客户端当前版本（徽标常显版本号）。 */
+  hostVersion: string;
+  /** 目标版本（available 及之后的状态存在）。 */
+  version?: string;
+  releaseDate?: string;
+  releaseNotes?: string;
+  progress?: {
+    percent: number;
+    bytesPerSecond: number;
+    transferred: number;
+    total: number;
+  };
+  error?: string;
+  canAutoUpdate?: boolean;
+  isReadOnlyVolumeError?: boolean;
+}
+
 // 扩展全局作用域（本文件为全局脚本，顶层声明直接合并到全局类型，
 // 故 interface Window 不需要 declare global 包裹）
 interface Window {
@@ -128,6 +155,26 @@ interface Window {
     i18n?: {
       /** 推送当前语言（如 en-US / zh-CN；fire-and-forget，失败静默）。 */
       syncLang?: (lang: string) => void;
+    };
+    // nuwaclaw 客户端宿主注入：宿主自身更新状态与动作（logo 旁版本徽标消费；
+    // 与壳关于页共用主进程同一更新器；旧宿主无此命名空间，feature-detect 后隐藏徽标）
+    updater?: {
+      /** 当前更新状态 + 宿主客户端版本（hostVersion）。 */
+      getState?: () => Promise<ClientUpdateState | null>;
+      /** 触发一次更新检查（与关于页同源）。 */
+      check?: () => Promise<{ hasUpdate?: boolean; error?: string } | null>;
+      /** 下载更新（幂等）。 */
+      download?: () => Promise<{ success: boolean; error?: string }>;
+      /** 重启并安装（仅 downloaded 状态有意义）。 */
+      install?: () => Promise<{ success: boolean; error?: string }>;
+    };
+    // nuwax→nuwaclaw 壳页面元信息上报（构建版本，关于页「界面版本」展示）
+    meta?: {
+      /** 上报前端构建信息（appVersion 来自构建期生成的版本常量）。 */
+      syncWebInfo?: (payload: {
+        appVersion: string;
+        gitHash?: string;
+      }) => void;
     };
     // nuwaclaw 客户端宿主注入：宿主身份只读信息（host→guest，构建期注入非 IPC）
     host?: {

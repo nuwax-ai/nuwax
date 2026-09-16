@@ -370,6 +370,63 @@ export const i18n = {
 };
 
 /**
+ * 页面元信息上报（guest→host）：启动时上报前端构建版本，壳关于页
+ * 「界面版本（nuwax pc web）」展示。浏览器无桥 no-op。
+ */
+export const meta = {
+  /** 上报构建信息（appVersion 来自构建期生成的版本常量；fire-and-forget）。 */
+  syncWebInfo(payload: { appVersion: string; gitHash?: string }): void {
+    try {
+      getBridge()?.meta?.syncWebInfo?.(payload);
+    } catch {
+      /* 宿主缺失或调用失败均忽略 */
+    }
+  },
+};
+
+/**
+ * 宿主客户端更新（guest→host）：logo 旁版本徽标消费的状态与动作。
+ * 与壳关于页共用主进程同一更新器；浏览器 / 旧宿主无 updater 命名空间 → 全部降级
+ * （getState 返回 null，徽标整体隐藏）。
+ */
+export const updater = {
+  /** 当前更新状态 + 宿主版本；宿主无此能力或调用失败 → null。 */
+  getState(): Promise<ClientUpdateState | null> {
+    try {
+      return Promise.resolve(
+        getBridge()?.updater?.getState?.() ?? Promise.resolve(null),
+      );
+    } catch {
+      return Promise.resolve(null);
+    }
+  },
+  /** 触发一次更新检查（fire-and-forget 语义；失败静默由轮询兜底）。 */
+  async check(): Promise<void> {
+    try {
+      await getBridge()?.updater?.check?.();
+    } catch {
+      /* 忽略 */
+    }
+  },
+  /** 下载更新；返回宿主原始回包（success/error），宿主无能力/异常 → null。 */
+  async download(): Promise<{ success: boolean; error?: string } | null> {
+    try {
+      return (await getBridge()?.updater?.download?.()) ?? null;
+    } catch {
+      return null;
+    }
+  },
+  /** 重启并安装（仅 downloaded 状态有意义）。 */
+  async install(): Promise<void> {
+    try {
+      await getBridge()?.updater?.install?.();
+    } catch {
+      /* 忽略 */
+    }
+  },
+};
+
+/**
  * 宿主身份（host→guest 只读）：区分宿主产品——nuwaclaw（社区版）/
  * nuwax（商业版 Nuwax；2026-09 改名前为 nuwawork，保留以兼容存量宿主），
  * 用于按宿主开关桌面专属能力或降级。
@@ -412,6 +469,8 @@ export const hostBridge = {
   theme,
   layout,
   i18n,
+  meta,
+  updater,
   host,
 };
 
