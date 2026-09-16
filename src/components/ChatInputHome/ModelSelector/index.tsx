@@ -590,11 +590,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             )}
             {!isExternalList && (
               <div className={styles['add-button-wrap']}>
+                {/* block 占满整行,内容靠左/左右 padding 8px/无边框见 add-model-btn */}
                 <Button
                   block
                   type="text"
                   icon={<PlusOutlined />}
                   onClick={handleAddModel}
+                  className={cx(styles['add-model-btn'])}
                 >
                   {dict('PC.Components.ModelSelector.addPersonalModel')}
                 </Button>
@@ -609,6 +611,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               [styles.open]: open,
             })}
           >
+            {selectedModel && (
+              <img
+                className={cx(styles['selector-model-icon'])}
+                src={selectedModel.providerIcon || DEFAULT_PROVIDER_ICON}
+                alt=""
+              />
+            )}
             <EllipsisTooltipText
               text={
                 selectedModel?.name ||

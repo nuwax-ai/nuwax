@@ -52,6 +52,14 @@
       margin-right: @marginXxs;
     }
 
+    // 选中模型的供应商 icon(空值兜底同列表项),比列表项内的 16px 略小
+    .selector-model-icon {
+      width: 14px;
+      height: 14px;
+      margin-right: @marginXxs;
+      border-radius: 2px;
+    }
+
     .selector-arrow {
       transition: transform @motionDurationFast ease;
     }
@@ -97,6 +105,14 @@
     flex-shrink: 0;
     padding: 4px;
     border-top: 1px solid @colorBorderSecondary;
+
+    // 配置自定义模型按钮:block 占满整行,内容靠左、左右 padding 8px;
+    // type=text 本无边框,显式置 none 兜底
+    .add-model-btn {
+      justify-content: flex-start;
+      padding-inline: 8px;
+      border: none;
+    }
   }
 }
 
