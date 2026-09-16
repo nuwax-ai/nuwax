@@ -1,0 +1,147 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.capsule {
+  position: absolute;
+  z-index: 20;
+  top: @marginMd;
+  right: @marginMd;
+  width: min(360px, calc(100% - 2 * @marginMd));
+  color: @colorText;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 999px;
+  background: color-mix(in srgb, @colorBgElevated 94%, transparent);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 16%);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+  transition: border-radius 0.18s ease, width 0.18s ease;
+}
+
+.expanded {
+  width: min(440px, calc(100% - 2 * @marginMd));
+  border-radius: @borderRadiusLg;
+}
+
+.trigger {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: @marginXs;
+  padding: @paddingXs @paddingSm;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.spinner {
+  color: @colorPrimary;
+  flex: none;
+}
+
+.action {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: @fontSizeSm;
+}
+
+.count {
+  flex: none;
+  color: @colorTextSecondary;
+  font-variant-numeric: tabular-nums;
+  font-size: @fontSizeSm;
+}
+
+.panel {
+  border-top: 1px solid @colorBorderSecondary;
+  padding: @paddingSm;
+}
+
+.panel-title,
+.current-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @marginXs;
+}
+
+.panel-title {
+  font-weight: 600;
+  margin-bottom: @marginSm;
+}
+
+.current-action {
+  justify-content: flex-start;
+  padding: @paddingXs @paddingSm;
+  border-radius: @borderRadius;
+  background: var(--fill-color-secondary, rgb(127 127 127 / 10%));
+  font-size: @fontSizeSm;
+}
+
+.groups {
+  max-height: min(52cqh, 420px);
+  overflow: auto;
+  margin-top: @marginSm;
+}
+
+.group + .group {
+  margin-top: @marginSm;
+}
+
+.group-title {
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  margin-bottom: @marginXs;
+}
+
+.step-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: @marginXs;
+  padding: 5px 0;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.step-icon {
+  width: 16px;
+  flex: none;
+  color: @colorTextSecondary;
+}
+
+.step-completed .step-icon {
+  color: @colorSuccess;
+}
+
+.step-active .step-icon {
+  color: @colorPrimary;
+}
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 5px 0 0 4px;
+  border: 1px solid currentcolor;
+  border-radius: 50%;
+}
+
+@container (max-width: 520px) {
+  .capsule,
+  .expanded {
+    top: @marginXs;
+    right: @marginXs;
+    width: calc(100% - 2 * @marginXs);
+  }
+}

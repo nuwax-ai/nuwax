@@ -1,4 +1,3 @@
-import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
 import {
@@ -10,18 +9,12 @@ import {
   readAgentModeCache,
   writeAgentModeCache,
 } from '@/components/business-component/AgentIntervention/hooks/useAgentInterventionLayer';
-import ChatInputUnified from '@/components/business-component/ChatInputUnified';
-import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
-import ChatView from '@/components/ChatView';
+import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import NewConversationSet from '@/components/NewConversationSet';
-import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
-import { ConversationRendererV2Lazy } from '@/features/conversation/LazyConversationRendererV2';
 import useAgentDetails from '@/hooks/useAgentDetails';
-import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
@@ -147,9 +140,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
-  // 会话快捷导航的滚动容器引用（消息内容区）
-  const chatContentRef = useRef<HTMLDivElement>(null);
-
   // 页面复制弹窗状态
   const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
 
@@ -570,28 +560,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     };
   }, [agentDetail]);
 
-  // ── 渲染线（V2 双线重构·调试接入）：本页基线恒 V1，仅会话覆盖可显式切 V2；
-  // 不接全局偏好链，全局默认值变化不改变本页存量观感 ──
-  const { sessionOverride: rendererSessionOverride } =
-    useConversationRendererPreference(conversationId);
-  const messageRenderer = rendererSessionOverride ?? 'v1';
-
-  /** V1 消息列表（渲染线 v2 加载失败/渲染异常时的回退同源） */
-  const renderV1MessageList = () => (
-    <>
-      {messageList?.map((item: MessageInfo, index: number) => (
-        <ChatView
-          key={index}
-          conversationId={conversationId || ''}
-          messageInfo={item}
-          roleInfo={roleInfo}
-          contentClassName={styles['chat-inner']}
-          mode={'none'}
-        />
-      ))}
-    </>
-  );
-
   // 消息发送
   const handleMessageSend = (
     messageInfo: string,
@@ -873,125 +841,59 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         {/* 页面主体: 内容区域 */}
         <div className={cx(styles['main-content-box'])}>
           {/* 聊天内容区域 */}
-          <div className={cx(styles['chat-section'])}>
-            <div
-              className={cx(styles['chat-wrapper-content'], 'scroll-container')}
-              ref={chatContentRef}
-            >
-              <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-                {/* 新对话设置 */}
-                <NewConversationSet
-                  key={agentId}
-                  className="mb-16"
-                  form={form}
-                  isFilled
-                  variables={variables}
-                  userFillVariables={variableParams}
-                />
-                {messageList?.length > 0 ? (
-                  <>
-                    {/* 渲染线选择（V2 双线重构·调试）：基线 V1，会话覆盖可显式
-                        切 V2；V2 chunk 失败/渲染异常自动回退 V1 列表 */}
-                    {messageRenderer === 'v2' ? (
-                      <ConversationRendererV2Lazy
-                        fallback={renderV1MessageList()}
-                        conversationId={conversationId || ''}
-                        messageList={messageList}
-                        roleInfo={roleInfo}
-                        messageBottomMode="none"
-                        showStatusDesc={
-                          agentDetail?.type !== AgentTypeEnum.TaskAgent
-                        }
-                      />
-                    ) : (
-                      renderV1MessageList()
-                    )}
-                    {/*会话建议*/}
-                    <RecommendList
-                      itemClassName={styles['suggest-item']}
-                      chatSuggestList={chatSuggestList}
-                      onClick={handleMessageSend}
-                    />
-                  </>
-                ) : isLoaded ? (
-                  <AgentChatEmpty
-                    className={cx({ 'h-full': !variables?.length })}
-                    icon={agentDetail?.icon}
-                    name={agentDetail?.name || ''}
-                    // 会话建议
-                    extra={
-                      <RecommendList
-                        className="mt-16"
-                        itemClassName={cx(styles['suggest-item'])}
-                        chatSuggestList={chatSuggestList}
-                        onClick={handleMessageSend}
-                      />
-                    }
-                  />
-                ) : null}
-              </div>
-            </div>
-
-            {/* 会话快捷导航：内容区左缘缩略导航条（chat-section 为定位上下文） */}
-            <ConversationQuickNav
-              scrollContainerRef={chatContentRef}
-              messageList={messageList}
-            />
-
-            <ChatInputUnified
-              key={`agent-details-${agentId}`}
-              className={cx(styles['chat-input-container'])}
-              onEnter={handleMessageSend}
-              isClearInput={false}
-              wholeDisabled={wholeDisabled}
-              // 详情页自管会话（无全局会话态）：传自管消息列表驱动清空按钮显隐，
-              // 不传会话活跃 props = 恒发送态（与旧版在此场景的实际表现一致）
-              messageList={messageList}
-              // 详情页不展示会话调试悬浮按钮
-              showDebugFab={false}
-              manualComponents={agentDetail?.manualComponents || []}
-              selectedComponentList={selectedComponentList}
-              onSelectComponent={handleSelectComponent}
-              showAnnouncement={true}
-              isTaskAgentActive={agentDetail?.type === AgentTypeEnum.TaskAgent}
-              selectedComputerId={selectedComputerId}
-              onComputerSelect={setSelectedComputerId}
-              agentId={agentId}
-              agentSandboxId={agentDetail?.sandboxId}
-              hasPermission={agentDetail?.hasPermission}
-              agentEnableVersionControl={agentDetail?.enableVersionControl}
-              agentMode={agentMode}
-              onAgentModeChange={handleAgentModeChange}
-              maskText={t(
+          <UnifiedChatSession
+            key={`agent-details-${agentId}`}
+            className={cx(styles['chat-section'])}
+            conversationId={conversationId ?? undefined}
+            messageList={messageList}
+            roleInfo={roleInfo}
+            isLoading={!isLoaded}
+            messageBottomMode="none"
+            form={form}
+            variables={variables}
+            variableParams={variableParams}
+            requiredNameList={requiredNameList}
+            isVariablesFilled
+            agentInfo={{
+              ...agentDetail,
+              id: agentId,
+              guidQuestionDtos: chatSuggestList,
+            }}
+            chatSuggestList={chatSuggestList}
+            onSendMessage={handleMessageSend}
+            chatInputDisabled={wholeDisabled}
+            showClearIcon={false}
+            showConversationStatus={false}
+            manualComponents={agentDetail?.manualComponents || []}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
+            showAnnouncement
+            selectedComputerId={selectedComputerId}
+            onComputerSelect={setSelectedComputerId}
+            initialAgentMode={agentMode}
+            mentionPlacement="up"
+            readonly={
+              agentDetail?.allowPrivateSandbox === DefaultSelectedEnum.No
+            }
+            enableMention={
+              agentDetail?.type === AgentTypeEnum.TaskAgent &&
+              Number(agentDetail?.allowAtSkill) === 1
+            }
+            allowOtherModel={agentDetail?.allowOtherModel}
+            selectedModelId={selectedModelId}
+            onModelSelect={setSelectedModelId}
+            chatInputProps={{
+              isClearInput: false,
+              showDebugFab: false,
+              atHomePanel: true,
+              defaultMentions,
+              agentMode,
+              onAgentModeChange: handleAgentModeChange,
+              maskText: t(
                 'PC.Components.ConversationDetails.noAgentPermission',
-              )}
-              fixedSelection={!!agentDetail?.sandboxId}
-              isPersonalComputer={!!agentDetail?.sandboxId}
-              mentionPlacement="up"
-              readonly={
-                agentDetail?.allowPrivateSandbox === DefaultSelectedEnum.No
-              }
-              /**
-               * 技能 chip 能力（defaultMentions 回显守卫）+ / 技能弹层门控：
-               * allowAtSkill 兼容数字/字符串 1（后端两种形态都可能返回）
-               */
-              enableMention={
-                agentDetail?.type === AgentTypeEnum.TaskAgent &&
-                Number(agentDetail?.allowAtSkill) === 1
-              }
-              /**
-               * 智能体首页式 @：无会话上下文，@ 唤起资源弹层；本页未开放
-               * 专家（无 showExpertCapability）→ 收敛为纯资料库列表
-               */
-              atHomePanel
-              allowOtherModel={agentDetail?.allowOtherModel}
-              selectedModelId={selectedModelId}
-              onModelSelect={setSelectedModelId}
-              agentType={agentDetail?.type}
-              // 通用性智能体才有技能，所以技能信息存在时才显示提及项，其他类型智能体不显示提及项
-              defaultMentions={defaultMentions}
-            />
-          </div>
+              ),
+            }}
+          />
         </div>
       </div>
     );

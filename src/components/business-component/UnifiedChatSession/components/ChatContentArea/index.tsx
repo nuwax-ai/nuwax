@@ -68,7 +68,7 @@ export interface ChatContentAreaProps {
   showTaskExecutingWait: boolean;
   renderEmptyState?: () => React.ReactNode;
   /**
-   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView（默认，零行为变化）；
+   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView；
    * v2 = ConversationRendererV2（轮次工作轨迹 + 最终回答）。
    * renderMessageItem 自定义入口恒走原逻辑，不受本参数影响。
    */
@@ -104,7 +104,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
   handleMessageSend,
   showTaskExecutingWait,
   renderEmptyState,
-  messageRenderer = 'v1',
+  messageRenderer = 'v2',
   onOpenToolResource,
 }) => {
   const renderedMessageList = React.useMemo(() => {
@@ -121,7 +121,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
     return messageList;
   }, [messageList]);
 
-  // V1 列表渲染（默认分支与 V2 chunk 失败回退共用）
+  // V1 列表渲染（显式回退分支与 V2 chunk 失败回退共用）
   const renderV1MessageList = () =>
     renderedMessageList?.map((item: MessageInfo, idx: number) => {
       const isLastMessage = idx === renderedMessageList.length - 1;

@@ -59,8 +59,13 @@ export interface RuntimeLineEffectsResources {
   setTaskAgentSelectedFileId?: Dispatch<SetStateAction<string>>;
   setTaskAgentSelectTrigger?: Dispatch<SetStateAction<number | string>>;
   setFileTreeRefreshTrigger?: Dispatch<SetStateAction<number>>;
+  /** 建议请求状态写回（仅真正发起 suggest 请求时进入 loading）。 */
+  onSuggestLoadingChange?: (
+    loading: boolean,
+    conversationId: number,
+  ) => void;
   /** 建议列表写回（绑定层 setChatSuggestList） */
-  onSuggestLoaded?: (list: string[]) => void;
+  onSuggestLoaded?: (list: string[], conversationId: number) => void;
   /** 「正在执行任务」冲突确认（绑定层实现 modalConfirm + 停止） */
   confirmStop?: (conversationId: number) => void;
 }
@@ -69,7 +74,6 @@ const asyncNoop = async () => {};
 
 /** 建议拉取防抖（对齐旧线 useRequest debounceWait: 300） */
 const SUGGEST_DEBOUNCE_MS = 300;
-let suggestDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function createRuntimeLineEffectsAdapter(deps: {
   setConversationInfo: Dispatch<
@@ -79,6 +83,8 @@ export function createRuntimeLineEffectsAdapter(deps: {
 }): ConversationEffectsAdapter {
   const resources = deps.resources ?? {};
   const setConversationInfo = deps.setConversationInfo;
+  let suggestDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+  let suggestRequestVersion = 0;
   /**
    * 「每个会话仅更新一次主题」标记。绑定层实例会跨会话复用，
    * 不能用单个 boolean，否则命名首个会话后会永久拦截后续会话。
@@ -109,19 +115,31 @@ export function createRuntimeLineEffectsAdapter(deps: {
           return;
         case 'suggest.fetch': {
           // 与旧线对齐：300ms trailing 防抖（连续 FINAL 只发最后一次）
+          const conversationId = Number(effect.params.conversationId);
+          const requestVersion = ++suggestRequestVersion;
           if (suggestDebounceTimer !== undefined) {
             clearTimeout(suggestDebounceTimer);
           }
           suggestDebounceTimer = setTimeout(() => {
             suggestDebounceTimer = undefined;
+            resources.onSuggestLoadingChange?.(true, conversationId);
             void apiAgentConversationChatSuggest(effect.params as never)
               .then((result) => {
+                if (requestVersion !== suggestRequestVersion) {
+                  return;
+                }
                 resources.onSuggestLoaded?.(
                   ((result as { data?: string[] })?.data ?? []) as string[],
+                  conversationId,
                 );
               })
               .catch(() => {
                 // 建议拉取失败静默（与旧线 useRequest onError 静默一致）
+              })
+              .finally(() => {
+                if (requestVersion === suggestRequestVersion) {
+                  resources.onSuggestLoadingChange?.(false, conversationId);
+                }
               });
           }, SUGGEST_DEBOUNCE_MS);
           return;

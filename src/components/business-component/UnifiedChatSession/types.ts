@@ -97,6 +97,10 @@ export interface UnifiedChatSessionProps {
   clearLoading?: boolean;
   /** 是否展示清空会话/小刷子按钮（默认 true） */
   showClearIcon?: boolean;
+  /** 是否展示 TaskAgent 会话底部执行状态栏（默认 true） */
+  showConversationStatus?: boolean;
+  /** 是否展示执行期右上角进度胶囊；仅主 Chat 的 TaskAgent 入口显式开启。 */
+  showConversationProgressCapsule?: boolean;
   isSelectionLocked?: boolean;
   hasUserSentMessage?: boolean;
   readonly?: boolean;
@@ -119,7 +123,7 @@ export interface UnifiedChatSessionProps {
   ) => React.ReactNode;
   renderEmptyState?: () => React.ReactNode;
   /**
-   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView（默认）；v2 = V2
+   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView；v2 = V2（统一默认）
    * 轮次工作轨迹渲染器。renderMessageItem 恒优先走原逻辑。
    */
   messageRenderer?: 'v1' | 'v2';

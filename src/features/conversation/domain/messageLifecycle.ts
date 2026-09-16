@@ -1,3 +1,4 @@
+import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
   MessageInfo,
@@ -86,4 +87,96 @@ export function markOwnedMessageStreamError(
         }
       : message,
   );
+}
+
+/**
+ * 终态确认后的消息收敛。轮询、live FINAL/ERROR 与 sub 恢复必须共用同一规则，
+ * 避免 taskStatus 已完成但末条恢复占位仍为 Loading。
+ */
+export function finalizeMessagesOnTerminalTaskStatus(
+  messageList: MessageInfo[],
+  taskStatus: TaskStatus,
+): MessageInfo[] {
+  if (!messageList.length || taskStatus === TaskStatus.EXECUTING) {
+    return messageList;
+  }
+
+  let currentRoundStart = 0;
+  for (let index = messageList.length - 1; index >= 0; index -= 1) {
+    if (messageList[index].role === AssistantRoleEnum.USER) {
+      currentRoundStart = index + 1;
+      break;
+    }
+  }
+
+  const messageTerminalStatus =
+    taskStatus === TaskStatus.FAILED
+      ? MessageStatusEnum.Error
+      : MessageStatusEnum.Complete;
+  const processingTerminalStatus =
+    taskStatus === TaskStatus.FAILED
+      ? ProcessingEnum.FAILED
+      : ProcessingEnum.FINISHED;
+  const next = messageList.slice();
+  const lastIndex = next.length - 1;
+  let changed = false;
+
+  for (let index = lastIndex; index >= currentRoundStart; index -= 1) {
+    const message = next[index];
+    const isTail = index === lastIndex;
+    const incomplete =
+      isTail &&
+      (message.status === MessageStatusEnum.Loading ||
+        message.status === MessageStatusEnum.Incomplete);
+    let processingChanged = false;
+    const processingList = message.processingList?.map((item) => {
+      if (item.status !== ProcessingEnum.EXECUTING) {
+        return item;
+      }
+      processingChanged = true;
+      return { ...item, status: processingTerminalStatus };
+    });
+    const settleFailedInteraction = <T extends { responseStatus?: string }>(
+      interaction: T,
+    ): T => {
+      if (
+        taskStatus !== TaskStatus.FAILED ||
+        (interaction.responseStatus !== undefined &&
+          interaction.responseStatus !== 'pending' &&
+          interaction.responseStatus !== 'submitting')
+      ) {
+        return interaction;
+      }
+      return { ...interaction, responseStatus: 'failed' };
+    };
+    const mcpAskInteractions = message.mcpAskInteractions?.map(
+      settleFailedInteraction,
+    );
+    const acpPermissionInteractions = message.acpPermissionInteractions?.map(
+      settleFailedInteraction,
+    );
+    const interventionChanged =
+      mcpAskInteractions?.some(
+        (item, itemIndex) => item !== message.mcpAskInteractions?.[itemIndex],
+      ) ||
+      acpPermissionInteractions?.some(
+        (item, itemIndex) =>
+          item !== message.acpPermissionInteractions?.[itemIndex],
+      );
+
+    if (!incomplete && !processingChanged && !interventionChanged) {
+      continue;
+    }
+    next[index] = {
+      ...message,
+      thinkingFinished: isTail ? true : message.thinkingFinished,
+      status: incomplete ? messageTerminalStatus : message.status,
+      processingList,
+      mcpAskInteractions,
+      acpPermissionInteractions,
+    };
+    changed = true;
+  }
+
+  return changed ? next : messageList;
 }

@@ -21,13 +21,14 @@ import {
   syncLangFromUserInfo,
 } from './services/i18nRuntime';
 import { apiQueryMenus } from './services/menuService';
+import { initTitlebarDragRegionSync } from './services/titlebarDragRegionSync';
 import {
   resolveEffectiveNavigationStyle,
   unifiedThemeService,
 } from './services/unifiedThemeService';
 import { UserService } from './services/userService';
-import { initTitlebarDragRegionSync } from './services/titlebarDragRegionSync';
 import type { MenuItemDto } from './types/interfaces/menu';
+import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
 import { hostBridge, syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
 import { isConversationMockPage } from './utils/isConversationMockPage';
@@ -49,6 +50,8 @@ export interface InitialStateType {
  * 这里加载菜单数据，确保在任何页面刷新时都能获取到菜单权限
  */
 export async function getInitialState(): Promise<InitialStateType> {
+  // 必须在首个会话组件挂载前完成，避免首屏先读到旧偏好。
+  migrateConversationDefaultsToV2();
   try {
     await initI18n();
 

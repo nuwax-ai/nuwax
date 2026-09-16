@@ -96,15 +96,49 @@ describe('runtimeLine effects adapter', () => {
     vi.useFakeTimers();
     mockSuggestApi.mockResolvedValue({ data: ['建议一', '建议二'] });
     const onSuggestLoaded = vi.fn();
-    const adapter = createAdapter({ onSuggestLoaded });
+    const onSuggestLoadingChange = vi.fn();
+    const adapter = createAdapter({
+      onSuggestLoaded,
+      onSuggestLoadingChange,
+    });
 
-    adapter.dispatch({ type: 'suggest.fetch', params: {} as never });
-    adapter.dispatch({ type: 'suggest.fetch', params: {} as never });
+    adapter.dispatch({
+      type: 'suggest.fetch',
+      params: { conversationId: 1001 } as never,
+    });
+    adapter.dispatch({
+      type: 'suggest.fetch',
+      params: { conversationId: 1001 } as never,
+    });
     expect(mockSuggestApi).not.toHaveBeenCalled(); // 防抖窗口内未发
+    expect(onSuggestLoadingChange).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(350);
     expect(mockSuggestApi).toHaveBeenCalledTimes(1); // 连续触发只发一次
-    expect(onSuggestLoaded).toHaveBeenCalledWith(['建议一', '建议二']);
+    expect(onSuggestLoadingChange).toHaveBeenNthCalledWith(1, true, 1001);
+    expect(onSuggestLoaded).toHaveBeenCalledWith(['建议一', '建议二'], 1001);
+    expect(onSuggestLoadingChange).toHaveBeenNthCalledWith(2, false, 1001);
+  });
+
+  it('suggest.fetch 失败：静默失败并关闭 loading', async () => {
+    vi.useFakeTimers();
+    mockSuggestApi.mockRejectedValue(new Error('network error'));
+    const onSuggestLoaded = vi.fn();
+    const onSuggestLoadingChange = vi.fn();
+    const adapter = createAdapter({
+      onSuggestLoaded,
+      onSuggestLoadingChange,
+    });
+
+    adapter.dispatch({
+      type: 'suggest.fetch',
+      params: { conversationId: 1001 } as never,
+    });
+    await vi.advanceTimersByTimeAsync(350);
+
+    expect(onSuggestLoaded).not.toHaveBeenCalled();
+    expect(onSuggestLoadingChange).toHaveBeenNthCalledWith(1, true, 1001);
+    expect(onSuggestLoadingChange).toHaveBeenNthCalledWith(2, false, 1001);
   });
 
   it('topic.update：一次门禁 + 成功写回/列表刷新/历史双拉，失败回滚门禁', async () => {

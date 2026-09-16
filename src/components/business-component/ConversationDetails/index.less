@@ -76,48 +76,6 @@
       flex-direction: column;
       // 会话快捷导航的定位上下文（组件 absolute 贴本列左缘垂直居中）
       position: relative;
-
-      .chat-wrapper-content {
-        margin-bottom: 5px;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-
-        .chat-wrapper {
-          padding-bottom: 40px - 16px;
-          max-width: 800px;
-          width: 100%;
-          margin: 0 auto;
-
-          .loading {
-            color: @colorPrimary;
-          }
-
-          .chat-inner {
-            background-color: transparent;
-            padding: 0 @paddingXs;
-          }
-
-          .suggest-item {
-            background-color: @colorBgContainer;
-
-            &:hover {
-              background-color: @colorBgContainer;
-            }
-          }
-        }
-      }
-
-      .chat-input-container {
-        position: sticky;
-        bottom: 0;
-        z-index: 10;
-        display: flex;
-        flex-direction: column;
-        background-color: transparent;
-        border-radius: @borderRadiusLg @borderRadiusLg 0 0;
-        width: 100%;
-      }
     }
   }
 }

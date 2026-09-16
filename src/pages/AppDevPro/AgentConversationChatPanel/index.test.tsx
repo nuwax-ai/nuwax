@@ -3,19 +3,30 @@ import { TaskStatus } from '@/types/enums/agent';
 import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockUnifiedChatSession, mockUseModel, mockUseLocation, mockHistory } =
-  vi.hoisted(() => ({
-    mockUnifiedChatSession: vi.fn(),
-    mockUseModel: vi.fn(),
-    mockUseLocation: vi.fn(),
-    mockHistory: { action: 'PUSH' },
-  }));
+const {
+  mockUnifiedChatSession,
+  mockUseConversationRuntimeSession,
+  mockUseModel,
+  mockUseLocation,
+  mockHistory,
+} = vi.hoisted(() => ({
+  mockUnifiedChatSession: vi.fn(),
+  mockUseConversationRuntimeSession: vi.fn(() => null),
+  mockUseModel: vi.fn(),
+  mockUseLocation: vi.fn(),
+  mockHistory: { action: 'PUSH' },
+}));
 
 vi.mock('@/components/business-component', () => ({
   UnifiedChatSession: (props: any) => {
     mockUnifiedChatSession(props);
     return <div data-testid="unified-chat-session" />;
   },
+}));
+
+vi.mock('@/features/conversation/react/useConversationRuntimeSession', () => ({
+  useConversationRuntimeSession: (...args: unknown[]) =>
+    mockUseConversationRuntimeSession(...args),
 }));
 
 vi.mock('umi', () => ({
@@ -81,6 +92,7 @@ const latestUnifiedProps = () =>
 describe('AgentConversationChatPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseConversationRuntimeSession.mockReturnValue(null);
     mockHistory.action = 'PUSH';
     mockUseLocation.mockReturnValue({
       key: 'route-1',
@@ -123,6 +135,22 @@ describe('AgentConversationChatPanel', () => {
       sandboxId: 'computer-prop',
       allowOtherModel: true,
     });
+  });
+
+  it('保留 App Pro 页面模型的消息和推荐，不被未对齐的 runtime 数据覆盖', () => {
+    const model = createConversationInfoModel();
+    mockUseModel.mockReturnValue(model);
+    mockUseConversationRuntimeSession.mockReturnValue({
+      conversationProps: {
+        messageList: [],
+        chatSuggestList: [],
+      },
+    } as any);
+
+    render(<AgentConversationChatPanel />);
+
+    expect(latestUnifiedProps().messageList).toBe(model.messageList);
+    expect(latestUnifiedProps().chatSuggestList).toBe(model.chatSuggestList);
   });
 
   it('发送消息时带上电脑、已选组件、模型和调试会话参数', async () => {

@@ -1855,6 +1855,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       allowChooseMode: effectiveAgent?.allowChooseMode,
       enableVersionControl: effectiveAgent?.enableVersionControl,
     },
+    showConversationProgressCapsule:
+      effectiveAgent?.type === AgentTypeEnum.TaskAgent,
     onSendMessage: handleMessageSend,
     onClear: showClearContext && !chromeFlags.hideNew ? handleClear : undefined,
     onLoadMoreMessage: handleLoadMoreMessage,
