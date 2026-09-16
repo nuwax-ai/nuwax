@@ -218,6 +218,38 @@ describe('AgentConversationChatPanel', () => {
     });
   });
 
+  it('新建全栈项目跳转时恢复工具选中态，即使没有 messageSourceType', async () => {
+    mockUseModel.mockReturnValue(createConversationInfoModel());
+    mockUseLocation.mockReturnValue({
+      key: 'route-from-project-create',
+      state: { infos: [{ id: 2, type: 'Workflow' }] },
+      search: '?conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel />);
+
+    await waitFor(() => {
+      expect(latestUnifiedProps().selectedComponentList).toEqual([
+        { id: 2, type: 'Workflow' },
+      ]);
+    });
+  });
+
+  it('明确传入空工具列表时不重新选中智能体默认工具', async () => {
+    mockUseModel.mockReturnValue(createConversationInfoModel());
+    mockUseLocation.mockReturnValue({
+      key: 'route-without-tools',
+      state: { infos: [] },
+      search: '?conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel />);
+
+    await waitFor(() => {
+      expect(latestUnifiedProps().selectedComponentList).toEqual([]);
+    });
+  });
+
   it('重新加载历史时把字符串 id 转数字并返回 messageList', async () => {
     const model = createConversationInfoModel();
     mockUseModel.mockReturnValue(model);
