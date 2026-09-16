@@ -117,6 +117,14 @@ const NormalProject: React.FC = () => {
     },
   );
 
+  /** 重复点击菜单或切换空间：重置列表态，展示与首次进入一致的 Loading */
+  useEffect(() => {
+    setHasLoaded(false);
+    setList([]);
+    setPage(1);
+    setHasMore(true);
+  }, [refreshToken, spaceId]);
+
   /** 搜索、空间变化或重复点击菜单时，从第一页重新加载 */
   useEffect(() => {
     if (!spaceId) {

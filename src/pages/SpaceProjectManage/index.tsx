@@ -43,7 +43,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useParams } from 'umi';
+import { useLocation, useParams } from 'umi';
 import CreateUserApp from '../AppDevPro/components/CreateUserApp';
 import ConversationPanel from './components/ConversationPanel';
 import CreateNormalProjectModal from './components/CreateNormalProjectModal';
@@ -106,7 +106,9 @@ const resolveRowLatestConversation = (
  */
 const SpaceProjectManage: React.FC = () => {
   const params = useParams();
+  const location = useLocation();
   const spaceId = Number(params.spaceId);
+  const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
   const { pin } = useHomePinnedProjectHandoff();
 
   const [activeTab, setActiveTab] = useState<ProjectTabKey>('all');
@@ -183,7 +185,7 @@ const SpaceProjectManage: React.FC = () => {
 
   useEffect(() => {
     void queryProjects();
-  }, [queryProjects]);
+  }, [queryProjects, refreshToken]);
 
   useProjectChanged((event) => {
     if (
