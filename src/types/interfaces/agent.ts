@@ -30,6 +30,7 @@ import type {
   AgentTypeEnum,
   HistoryActionTypeEnum,
   OpenCloseEnum,
+  SpaceTypeEnum,
 } from '@/types/enums/space';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
@@ -978,6 +979,10 @@ export interface ModelOptionDto {
   cost?: string;
   /** 所属空间名称(团队模型展示"空间名.模型名"前缀,接口可能不返回) */
   spaceName?: string;
+  /** 所属空间类型(scope 为 Space 时区分个人/团队模型,接口可能不返回) */
+  spaceType?: SpaceTypeEnum;
+  /** 模型供应商 icon 地址(为空时前端兜底 custom.png,接口可能不返回) */
+  providerIcon?: string;
 }
 
 // 日志查询响应-工作空间

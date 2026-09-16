@@ -31,6 +31,8 @@ export interface AppDevProHeaderBrandProps {
   userAppInfo?: UserAppInfo | null;
   /** 空间 ID（创建应用时使用） */
   spaceId?: number;
+  /** 全栈应用 ID（返回项目详情页） */
+  appId?: number;
   /** 更新应用成功 */
   onConfirmUpdate?: (info: UserAppInfo) => void;
 }
@@ -49,6 +51,7 @@ const AppDevProHeaderBrand: React.FC<AppDevProHeaderBrandProps> = ({
   hideBack = false,
   userAppInfo,
   spaceId,
+  appId,
   onConfirmUpdate,
 }) => {
   const [editOpen, setEditOpen] = useState(false);
@@ -72,6 +75,26 @@ const AppDevProHeaderBrand: React.FC<AppDevProHeaderBrandProps> = ({
     [onConfirmUpdate],
   );
 
+  /**
+   * 返回应用项目详情页。
+   * 不用 history.back()：预览 iframe 内跳转可能污染浏览器历史栈。
+   */
+  const handleBack = useCallback(() => {
+    const targetSpaceId = spaceId ?? userAppInfo?.spaceId;
+    const targetAppId = appId ?? userAppInfo?.id;
+    if (targetSpaceId && targetAppId) {
+      history.push(
+        `/space/${targetSpaceId}/app-project-detail/${targetAppId}`,
+      );
+      return;
+    }
+    if (targetSpaceId) {
+      history.push(`/space/${targetSpaceId}/project-manage`);
+      return;
+    }
+    history.back();
+  }, [appId, spaceId, userAppInfo?.id, userAppInfo?.spaceId]);
+
   const showUnpublishedTag =
     !!userAppInfo &&
     userAppInfo.publishStatus !== PublishStatusEnum.Published &&
@@ -85,9 +108,7 @@ const AppDevProHeaderBrand: React.FC<AppDevProHeaderBrandProps> = ({
           <SvgIcon
             name="icons-nav-backward"
             className={cx(styles['icon-backward'])}
-            onClick={() => {
-              history.back();
-            }}
+            onClick={handleBack}
           />
         </ConditionRender>
 

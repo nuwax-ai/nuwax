@@ -509,6 +509,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
   }, [env, resetTaskState, stopStream]);
 
   const busy = phase === 'starting' || phase === 'building';
+  const restarting = busy && action === 'restart';
 
   return {
     open,
@@ -518,6 +519,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     errorMessage,
     cancelLoading,
     busy,
+    restarting,
     running,
     stopping,
     start,

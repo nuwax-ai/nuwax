@@ -10,6 +10,7 @@ import { useFileTreePreviewView } from '@/components/business-component/FileTree
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import AppDevPublishVersionRecords from './components/AppDevPublishVersionRecords';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
@@ -77,6 +78,7 @@ import {
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
+import PreviewRuntimeButtons from './ConversationAgentFilePreview/PreviewTabBar/PreviewRuntimeButtons';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import {
   useInitialConversationAutoSend,
@@ -104,8 +106,12 @@ import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 const cx = classNames.bind(styles);
 
-/** Header 工作区：文件树预览与应用预览 / 数据库互斥，后两者不进入文件标签栏 */
-type AppDevWorkspaceView = 'files' | 'app-preview' | 'database';
+/** Header 工作区：文件树预览与应用预览 / 数据库 / 远程桌面互斥，后三者不进入文件标签栏 */
+type AppDevWorkspaceView =
+  | 'files'
+  | 'app-preview'
+  | 'database'
+  | 'remote-desktop';
 
 /** 数据库工作区常驻页签，保持引用稳定，避免 Tab 栏 effect 反复执行 */
 const DATABASE_WORKSPACE_TOOL_IDS: PreviewToolId[] = [
@@ -215,16 +221,24 @@ const AppDevPro: React.FC = () => {
   /** 打开数据库前的工作区，再次点击图标时还原 */
   const workspaceViewBeforeDatabaseRef =
     useRef<AppDevWorkspaceView>('app-preview');
+  /** 打开远程桌面前的工作区，再次点击图标时还原 */
+  const workspaceViewBeforeRemoteDesktopRef =
+    useRef<AppDevWorkspaceView>('files');
   /** 数据库工作区当前 Tab */
   const [databaseTabId, setDatabaseTabId] = useState(() =>
     getToolTabId('database'),
   );
   /** 项目设置弹窗 */
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
-  /** 线上环境历史版本抽屉 */
+  /** 线上环境构建包版本记录侧栏 */
   const [buildVersionsOpen, setBuildVersionsOpen] = useState<boolean>(false);
+  /** 线上环境发布版本记录侧栏 */
+  const [publishVersionRecordsOpen, setPublishVersionRecordsOpen] =
+    useState<boolean>(false);
   /** 全栈应用详情 */
   const [userAppInfo, setUserAppInfo] = useState<UserAppInfo | null>(null);
+  /** 是否已完成首次 apiUserAppGetById（用于 gate 自动生成名称） */
+  const [userAppInfoFetched, setUserAppInfoFetched] = useState(false);
   useProjectChanged((event) => {
     if (
       event.project.projectType !== AgentComponentTypeEnum.UserApp ||
@@ -638,13 +652,19 @@ const AppDevPro: React.FC = () => {
       if (result?.code === SUCCESS_CODE && result.data) {
         setUserAppInfo(result.data);
       }
+      setUserAppInfoFetched(true);
+    },
+    onError: () => {
+      setUserAppInfoFetched(true);
     },
   });
 
-  /** Prompt 创建并进入页面后生成应用名称、描述和图标，再刷新应用详情 */
+  /** Prompt 创建并进入页面后：nameDefined 为 false 时才 generate-info 并更新名称 */
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.UserApp,
     targetId: appId,
+    ready: userAppInfoFetched,
+    shouldInit: userAppInfo?.nameDefined === false,
     applyMetadata: async (meta) => {
       await apiUserAppUpdate({
         id: appId,
@@ -779,8 +799,6 @@ const AppDevPro: React.FC = () => {
   previewRunningRef.current = previewRuntime.running;
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
-  /** 会话进行中服务已在跑时，结束后重启预览以加载新文件 */
-  const restartPreviewAfterConversationRef = useRef(false);
 
   /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
   const previewDevActionLocked =
@@ -820,8 +838,10 @@ const AppDevPro: React.FC = () => {
   useEffect(() => {
     if (!appId) {
       setUserAppInfo(null);
+      setUserAppInfoFetched(false);
       return;
     }
+    setUserAppInfoFetched(false);
     runGetUserAppInfo(appId);
   }, [appId, runGetUserAppInfo]);
 
@@ -860,14 +880,7 @@ const AppDevPro: React.FC = () => {
 
     // 刷新 Git 源代码管理状态列表
     void refreshGitListIfEnabled();
-
-    // 会话结束前预览已在运行：等准备预览 effect 在确认卡清空后再重启
-    if (dbEnv === UserAppDbEnvEnum.Dev && previewRuntime.running) {
-      restartPreviewAfterConversationRef.current = true;
-    }
   }, [
-    dbEnv,
-    previewRuntime.running,
     queryConversationId,
     refreshFileListImmediately,
     refreshGitListIfEnabled,
@@ -1417,8 +1430,7 @@ const AppDevPro: React.FC = () => {
       if (
         WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) ||
         toolId === 'database' ||
-        toolId === 'database-config' ||
-        toolId === 'remote-desktop'
+        toolId === 'database-config'
       ) {
         closePreviewView();
         return;
@@ -1442,7 +1454,7 @@ const AppDevPro: React.FC = () => {
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
    * 开发环境须等 tasks/active 首包：允许则 start；不允许（服务已在跑）且已有预览域名则直接 iframe，不再 start / stream。
    * 允许 start 时还须文件树已有数据，避免空项目拉起预览。
-   * 会话进行中或仍有待回复确认卡时不启动；已有预览则会话结束后再重启。
+   * 会话进行中或仍有待回复确认卡时不启动；会话结束后不自动 restart，仅首次 start。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
    */
   useEffect(() => {
@@ -1482,14 +1494,6 @@ const AppDevPro: React.FC = () => {
     }
     // 可以 start，但文件树还没数据时不启动（等文件列表回来后再走本 effect）
     if (!hasFileTreeData) {
-      return;
-    }
-    // 新会话结束前预览已在运行：重启以加载会话改过的文件
-    if (restartPreviewAfterConversationRef.current) {
-      restartPreviewAfterConversationRef.current = false;
-      setPreviewIframeUrl(appPreviewUrlRef.current);
-      void restartPreviewRuntimeRef.current();
-      setPreviewEnterSettled(true);
       return;
     }
     // 尚未运行则启动；已运行则 startIfNeeded 内部会跳过
@@ -1863,24 +1867,49 @@ const AppDevPro: React.FC = () => {
     setPreviewRefreshKey((prev) => prev + 1);
   }, []);
 
+  /** 切换构建包版本记录侧栏；与发布版本记录互斥 */
+  const handleToggleBuildVersionRecords = useCallback(() => {
+    setBuildVersionsOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setPublishVersionRecordsOpen(false);
+      }
+      return next;
+    });
+  }, []);
+
+  /** 切换发布版本记录侧栏；与构建包版本记录互斥 */
+  const handleTogglePublishVersionRecords = useCallback(() => {
+    setPublishVersionRecordsOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setBuildVersionsOpen(false);
+      }
+      return next;
+    });
+  }, []);
+
   /**
-   * 打开 / 关闭远程桌面页签
-   * 内容区与数据库页签同一尺寸；再次点击关闭
+   * 打开 / 关闭独立远程桌面工作区
+   * 内容区与数据库工作区同一尺寸；再次点击还原打开前的工作区
    */
   const handleOpenDesktopPanel = useCallback(() => {
+    resetDevConsoleExpandedLayout();
     if (!appId) {
       message.warning(dict('PC.Pages.AppDevPro.remoteDesktopEmpty'));
       return;
     }
 
-    setWorkspaceView('files');
-    if (previewTabs.activeTab?.toolId === 'remote-desktop') {
-      previewTabs.closeTab(getToolTabId('remote-desktop'));
+    if (workspaceView === 'remote-desktop') {
+      const prev = workspaceViewBeforeRemoteDesktopRef.current;
+      setWorkspaceView(prev === 'remote-desktop' ? 'files' : prev);
       return;
     }
 
-    previewTabs.openToolTab('remote-desktop');
-  }, [appId, previewTabs]);
+    workspaceViewBeforeRemoteDesktopRef.current = workspaceView;
+    previewTabs.closeTab(getToolTabId('remote-desktop'));
+    setWorkspaceView('remote-desktop');
+  }, [appId, previewTabs, resetDevConsoleExpandedLayout, workspaceView]);
 
   /**
    * 切换环境：线上环境没有文件树，隐藏图标与中间栏。
@@ -1896,6 +1925,7 @@ const AppDevPro: React.FC = () => {
       if (nextEnv === UserAppDbEnvEnum.Dev) {
         setSettingsOpen(false);
         setBuildVersionsOpen(false);
+        setPublishVersionRecordsOpen(false);
         return;
       }
       previewTabs.closeTab(getToolTabId('remote-desktop'));
@@ -1929,8 +1959,8 @@ const AppDevPro: React.FC = () => {
   /** 线上环境未部署时没有可预览的应用，隐藏应用预览入口 */
   const isShowAppPreview =
     dbEnv === UserAppDbEnvEnum.Dev || userAppInfo?.prodDeployed === true;
-  /** 远程桌面页签是否激活（Header 图标高亮） */
-  const isAgentDesktopOpen = previewTabs.activeTab?.toolId === 'remote-desktop';
+  /** 远程桌面独立工作区是否激活（Header 图标高亮） */
+  const isAgentDesktopOpen = workspaceView === 'remote-desktop';
 
   /** 启动成功后：使用当前环境对应的开发或线上域名 */
   const appPreviewUrl = useMemo(
@@ -2088,8 +2118,8 @@ const AppDevPro: React.FC = () => {
     ],
   );
 
-  /** 「远程桌面」页签：与数据库同一内容区嵌入 iframe */
-  const remoteDesktopPanel = useMemo(
+  /** 远程桌面工作区：与数据库同一内容区嵌入 iframe */
+  const remoteDesktopWorkspace = useMemo(
     () => <AppDevRemoteDesktopPanel appId={appId} />,
     [appId],
   );
@@ -2127,7 +2157,7 @@ const AppDevPro: React.FC = () => {
   /**
    * 渲染右侧面板
    * 文件树工作区：顶部 PreviewTabBar + 文件预览
-   * 应用预览 / 数据库：独立视图，不进入文件标签栏，占满文件树工作区尺寸
+   * 应用预览 / 数据库 / 远程桌面：独立视图，不进入文件标签栏，占满工作区尺寸
    */
   const renderRightPanel = () => {
     const isFilesWorkspace = workspaceView === 'files';
@@ -2150,6 +2180,31 @@ const AppDevPro: React.FC = () => {
         isCloudComputer={finalSelectedComputerId === '-1'}
       />
     );
+    const previewRuntimeButtons = (
+      <PreviewRuntimeButtons
+        onRestartPreviewRuntime={handleRestartPreviewRuntime}
+        onStopPreviewRuntime={handleStopPreviewRuntime}
+        previewRuntimeBusy={previewRuntime.busy}
+        previewRuntimeRestarting={previewRuntime.restarting}
+        previewRuntimeStopping={previewRuntime.stopping}
+        previewRuntimeReady={
+          podReady && !isConversationActive && !hasPendingIntervention
+        }
+        previewContainerFailed={previewContainerFailed}
+        previewDevActionLocked={previewDevActionLocked}
+      />
+    );
+    const previewRuntimeTabBarProps = {
+      onRestartPreviewRuntime: handleRestartPreviewRuntime,
+      onStopPreviewRuntime: handleStopPreviewRuntime,
+      previewRuntimeBusy: previewRuntime.busy,
+      previewRuntimeRestarting: previewRuntime.restarting,
+      previewRuntimeStopping: previewRuntime.stopping,
+      previewRuntimeReady:
+        podReady && !isConversationActive && !hasPendingIntervention,
+      previewContainerFailed,
+      previewDevActionLocked,
+    };
 
     return (
       <div className={cx(styles['right-panel'])}>
@@ -2180,6 +2235,7 @@ const AppDevPro: React.FC = () => {
                 void fileView.tree.handleExportProject?.();
               }}
               isCloudComputer={finalSelectedComputerId === '-1'}
+              {...previewRuntimeTabBarProps}
             />
           ) : workspaceView === 'database' ? (
             <PreviewTabBar
@@ -2207,32 +2263,33 @@ const AppDevPro: React.FC = () => {
                 void fileView.tree.handleExportProject?.();
               }}
               isCloudComputer={finalSelectedComputerId === '-1'}
+              {...previewRuntimeTabBarProps}
             />
+          ) : workspaceView === 'remote-desktop' ? (
+            <div className={cx(styles['tool-workspace-bar'])}>
+              <span className={cx(styles['tool-workspace-title'])}>
+                {dict('PC.Pages.AppDevPro.remoteDesktop')}
+              </span>
+              <div className={cx(styles['tool-workspace-actions'])}>
+                {moreActions}
+                {previewRuntimeButtons}
+              </div>
+            </div>
           ) : (
             <div className={cx(styles['tool-workspace-bar'])}>
-              {workspaceView === 'app-preview' && (
-                <PreviewChromeActions
-                  previewUrl={activePreviewUrl}
-                  onNavigatePreview={handleNavigatePreview}
-                  onRefreshPreview={handleRefreshPreview}
-                  onStartPreviewRuntime={handleStartPreviewRuntime}
-                  onRestartPreviewRuntime={handleRestartPreviewRuntime}
-                  onStopPreviewRuntime={handleStopPreviewRuntime}
-                  previewRuntimeBusy={previewRuntime.busy}
-                  previewRuntimeRunning={previewRuntime.running}
-                  previewRuntimeStopping={previewRuntime.stopping}
-                  previewRuntimeReady={
-                    podReady && !isConversationActive && !hasPendingIntervention
-                  }
-                  previewContainerFailed={previewContainerFailed}
-                  previewDevActionLocked={previewDevActionLocked}
-                />
-              )}
-              {moreActions ? (
-                <div className={cx(styles['tool-workspace-actions'])}>
-                  {moreActions}
+              {workspaceView === 'app-preview' ? (
+                <div className={cx(styles['tool-workspace-preview-chrome'])}>
+                  <PreviewChromeActions
+                    previewUrl={activePreviewUrl}
+                    onNavigatePreview={handleNavigatePreview}
+                    onRefreshPreview={handleRefreshPreview}
+                  />
                 </div>
               ) : null}
+              <div className={cx(styles['tool-workspace-actions'])}>
+                {moreActions}
+                {previewRuntimeButtons}
+              </div>
             </div>
           )}
           <div className={cx(styles['right-panel-main'])}>
@@ -2246,7 +2303,6 @@ const AppDevPro: React.FC = () => {
                   preview={fileView.preview}
                   diffFile={gitSourceControl.selectedDiffFile ?? undefined}
                   activeTab={previewTabs.activeTab}
-                  remoteDesktopPanel={remoteDesktopPanel}
                   versionPanel={versionControlPanel}
                   providerClassName={fileView.className}
                   className={cx(
@@ -2271,6 +2327,14 @@ const AppDevPro: React.FC = () => {
                 })}
               >
                 {databaseWorkspace}
+              </div>
+              <div
+                className={cx(styles['tool-workspace'], {
+                  [styles['workspace-pane-hidden']]:
+                    workspaceView !== 'remote-desktop',
+                })}
+              >
+                {remoteDesktopWorkspace}
               </div>
             </div>
 
@@ -2361,6 +2425,7 @@ const AppDevPro: React.FC = () => {
             <AppDevProHeaderBrand
               userAppInfo={userAppInfo}
               spaceId={spaceId}
+              appId={appId}
               onConfirmUpdate={setUserAppInfo}
             />
             <div className={cx(styles['left-panel-body'])}>
@@ -2386,7 +2451,7 @@ const AppDevPro: React.FC = () => {
               onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
               isTerminalPanelOpen={isTerminalIconActive}
               onOpenTerminalPanel={handleOpenTerminalPanel}
-              onOpenSettings={() => setSettingsOpen(true)}
+              onOpenDomainBinding={() => setSettingsOpen(true)}
               isDatabasePanelOpen={isDatabasePanelOpen}
               onOpenDatabase={handleOpenDatabasePanel}
               isShowAppPreview={isShowAppPreview}
@@ -2395,8 +2460,10 @@ const AppDevPro: React.FC = () => {
               isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
               isAgentDesktopOpen={isAgentDesktopOpen}
               onOpenDesktopPanel={handleOpenDesktopPanel}
-              isBuildVersionsOpen={buildVersionsOpen}
-              onOpenBuildVersions={() => setBuildVersionsOpen(true)}
+              isBuildVersionRecordsOpen={buildVersionsOpen}
+              onToggleBuildVersionRecords={handleToggleBuildVersionRecords}
+              isPublishVersionRecordsOpen={publishVersionRecordsOpen}
+              onTogglePublishVersionRecords={handleTogglePublishVersionRecords}
               env={dbEnv}
               onEnvChange={handleEnvChange}
             />
@@ -2454,7 +2521,7 @@ const AppDevPro: React.FC = () => {
                 {renderRightPanel()}
               </div>
 
-              {/* 线上环境历史版本侧栏 */}
+              {/* 线上环境构建包版本记录侧栏 */}
               <AppDevBuildVersionDrawer
                 visible={buildVersionsOpen}
                 appId={appId}
@@ -2465,6 +2532,15 @@ const AppDevPro: React.FC = () => {
                 }}
                 onClose={() => setBuildVersionsOpen(false)}
               />
+              {/* 线上环境发布版本记录侧栏 */}
+              {appId ? (
+                <AppDevPublishVersionRecords
+                  appId={appId}
+                  appName={userAppInfo?.name}
+                  visible={publishVersionRecordsOpen}
+                  onClose={() => setPublishVersionRecordsOpen(false)}
+                />
+              ) : null}
             </div>
           </div>
         </div>
@@ -2480,7 +2556,7 @@ const AppDevPro: React.FC = () => {
         onConfirm={handleImportProjectConfirm}
       />
 
-      {/* 项目设置：复用平台认证 + 域名绑定 */}
+      {/* 域名绑定 */}
       <AppDevSettingsModal
         open={settingsOpen}
         projectInfo={

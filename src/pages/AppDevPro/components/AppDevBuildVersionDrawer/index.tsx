@@ -15,7 +15,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 export interface AppDevBuildVersionDrawerProps {
-  /** 是否显示历史版本侧栏 */
+  /** 是否显示历史构建包版本侧栏 */
   visible: boolean;
   /** 应用 ID，用于拉取构建版本列表 */
   appId?: number;
@@ -76,7 +76,7 @@ const shortGitCommit = (gitCommit?: string): string => {
 };
 
 /**
- * AppDevPro 线上环境历史版本侧栏。
+ * AppDevPro 线上环境历史构建包版本侧栏。
  * 打开时调用 /api/userapp/build-versions（appId 作 query 参数）拉取构建包列表。
  *
  * @param props.visible 是否显示
@@ -85,7 +85,7 @@ const shortGitCommit = (gitCommit?: string): string => {
  * @param props.onDeployVersion 部署指定版本
  * @param props.deployingVersion 当前部署中的版本
  * @param props.onClose 关闭回调
- * @returns 历史版本侧栏
+ * @returns 历史构建包版本侧栏
  */
 const AppDevBuildVersionDrawer: React.FC<AppDevBuildVersionDrawerProps> = ({
   visible,
@@ -224,7 +224,7 @@ const AppDevBuildVersionDrawer: React.FC<AppDevBuildVersionDrawerProps> = ({
 
   return (
     <ToggleWrap
-      title={dict('PC.Pages.AppDevPro.buildVersions')}
+      title={dict('PC.Pages.AppDevPro.buildVersionRecords')}
       visible={visible}
       onClose={onClose}
       className={cx(styles.panel)}

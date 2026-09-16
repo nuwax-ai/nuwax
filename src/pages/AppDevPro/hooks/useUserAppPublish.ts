@@ -75,7 +75,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const [taskId, setTaskId] = useState<string>('');
   const [cancelLoading, setCancelLoading] = useState<boolean>(false);
   const [stopLoading, setStopLoading] = useState<boolean>(false);
-  /** 历史版本侧栏触发的指定 releaseId 部署 */
+  /** 历史构建包版本侧栏触发的指定 releaseId 部署 */
   const [deployingReleaseId, setDeployingReleaseId] = useState<string>('');
   /** 部署成功后异步拿到的线上 Prod 域名 */
   const [prodAccessUrl, setProdAccessUrl] = useState<string>('');
@@ -91,6 +91,30 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const releaseIdRef = useRef<string>('');
   const buildSucceededRef = useRef<boolean>(false);
   const checkPassedRef = useRef<boolean>(false);
+  /** 当前进行中的步骤，取消时用于标记错误落点 */
+  const activeStageRef = useRef<UserAppDeployFailedStage>('build');
+
+  /**
+   * 切换进行中的阶段，并同步 activeStageRef。
+   *
+   * @param next 下一阶段
+   */
+  const setPublishPhase = useCallback((next: UserAppPublishPhase) => {
+    if (next === 'starting' || next === 'building') {
+      activeStageRef.current = 'build';
+    } else if (next === 'checkingDeployable') {
+      activeStageRef.current = 'check';
+    } else if (next === 'deploying') {
+      activeStageRef.current = 'deploy';
+    }
+    setPhase(next);
+  }, []);
+
+  /** 取消部署：保留已完成步骤，错误落在当前步骤 */
+  const markCancelled = useCallback(() => {
+    setFailedStage(activeStageRef.current);
+    setPhase('cancelled');
+  }, []);
 
   /** 清空当前发布任务现场（构建/部署日志、错误、taskId、SSE 序号） */
   const resetTaskState = useCallback(() => {
@@ -110,6 +134,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     releaseIdRef.current = '';
     buildSucceededRef.current = false;
     checkPassedRef.current = false;
+    activeStageRef.current = 'build';
   }, []);
 
   const stopStream = useCallback(() => {
@@ -182,7 +207,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     if (!appId) {
       throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
     }
-    setPhase('checkingDeployable');
+    setPublishPhase('checkingDeployable');
     const startedAt = Date.now();
     while (!cancelledRef.current) {
       try {
@@ -210,7 +235,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         window.setTimeout(resolve, DEPLOYABLE_POLL_INTERVAL_MS);
       });
     }
-  }, [appId]);
+  }, [appId, setPublishPhase]);
 
   /**
    * 部署成功后并行刷新应用详情与域名列表。
@@ -260,7 +285,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     if (!appId) {
       throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
     }
-    setPhase('deploying');
+    setPublishPhase('deploying');
     stopStream();
     lastSeqRef.current = undefined;
     streamStageRef.current = 'start';
@@ -285,7 +310,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       if (currentTaskId) {
         await apiUserAppBuildCancel(currentTaskId);
       }
-      setPhase('cancelled');
+      markCancelled();
       return;
     }
 
@@ -294,7 +319,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       throw new Error(task?.error || dict('PC.Pages.AppDevPro.startFailed'));
     }
     if (immediate === 'cancelled') {
-      setPhase('cancelled');
+      markCancelled();
       return;
     }
 
@@ -304,17 +329,17 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         dict('PC.Pages.AppDevPro.startFailed'),
       );
       if (streamResult === 'cancelled' || cancelledRef.current) {
-        setPhase('cancelled');
+        markCancelled();
         return;
       }
       if (streamResult === 'failed') {
         throw new Error(dict('PC.Pages.AppDevPro.startFailed'));
       }
     }
-  }, [appId, listenBuildProgress, stopStream]);
+  }, [appId, listenBuildProgress, markCancelled, stopStream]);
 
   /**
-   * 历史版本：跳过构建与检测，直接部署指定 releaseId。
+   * 历史构建包版本：跳过构建与检测，直接部署指定 releaseId。
    *
    * @param releaseId 构建版本号
    */
@@ -347,7 +372,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       try {
         await submitProdStart();
         if (cancelledRef.current) {
-          setPhase('cancelled');
+          markCancelled();
           return;
         }
         setPhase('success');
@@ -357,7 +382,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
           cancelledRef.current ||
           (error instanceof Error && error.name === 'AbortError')
         ) {
-          setPhase('cancelled');
+          markCancelled();
           return;
         }
         const text = pickUserAppRequestErrorText(
@@ -371,7 +396,14 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         setDeployingReleaseId('');
       }
     },
-    [appId, phase, refreshAfterDeploy, resetTaskState, submitProdStart],
+    [
+      appId,
+      markCancelled,
+      phase,
+      refreshAfterDeploy,
+      resetTaskState,
+      submitProdStart,
+    ],
   );
 
   /**
@@ -394,7 +426,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
 
     resetTaskState();
     setOpen(true);
-    setPhase('starting');
+    setPublishPhase('starting');
 
     try {
       const task = unwrapUserAppResponse(
@@ -411,7 +443,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
 
       if (cancelledRef.current) {
         await apiUserAppBuildCancel(currentTaskId);
-        setPhase('cancelled');
+        markCancelled();
         return;
       }
 
@@ -422,15 +454,15 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         );
       }
       if (immediate === 'cancelled') {
-        setPhase('cancelled');
+        markCancelled();
         return;
       }
 
       if (immediate !== 'succeeded') {
-        setPhase('building');
+        setPublishPhase('building');
         const streamResult = await listenBuildProgress(currentTaskId);
         if (streamResult === 'cancelled' || cancelledRef.current) {
-          setPhase('cancelled');
+          markCancelled();
           return;
         }
         if (streamResult === 'failed') {
@@ -439,7 +471,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       }
 
       if (cancelledRef.current) {
-        setPhase('cancelled');
+        markCancelled();
         return;
       }
 
@@ -450,14 +482,14 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       buildSucceededRef.current = true;
       await waitUntilProdDeployable();
       if (cancelledRef.current) {
-        setPhase('cancelled');
+        markCancelled();
         return;
       }
 
       await submitProdStart();
 
       if (cancelledRef.current) {
-        setPhase('cancelled');
+        markCancelled();
         return;
       }
 
@@ -468,7 +500,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         cancelledRef.current ||
         (error instanceof Error && error.name === 'AbortError')
       ) {
-        setPhase('cancelled');
+        markCancelled();
         return;
       }
       const stage: UserAppDeployFailedStage = !buildSucceededRef.current
@@ -490,9 +522,11 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, [
     appId,
     listenBuildProgress,
+    markCancelled,
     refreshAfterDeploy,
     phase,
     resetTaskState,
+    setPublishPhase,
     submitProdStart,
     waitUntilProdDeployable,
   ]);
@@ -519,14 +553,14 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
           );
         }
       }
-      setPhase('cancelled');
+      markCancelled();
       message.success(dict('PC.Pages.AppDevPro.stopDeploySuccess'));
     } catch (error) {
       console.error('[AppDevPro] Stop deploy failed:', error);
     } finally {
       setStopLoading(false);
     }
-  }, [appId, stopStream]);
+  }, [appId, markCancelled, stopStream]);
 
   /**
    * 取消当前构建任务。
@@ -536,7 +570,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     if (!currentTaskId) {
       cancelledRef.current = true;
       stopStream();
-      setPhase('cancelled');
+      markCancelled();
       setOpen(false);
       return;
     }
@@ -545,7 +579,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       cancelledRef.current = true;
       await apiUserAppBuildCancel(currentTaskId);
       stopStream();
-      setPhase('cancelled');
+      markCancelled();
       setOpen(false);
       message.success(dict('PC.Pages.AppDevPro.publishCancelled'));
     } catch (error) {
@@ -553,7 +587,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     } finally {
       setCancelLoading(false);
     }
-  }, [stopStream, taskId]);
+  }, [markCancelled, stopStream, taskId]);
 
   /**
    * 关闭进度弹窗（进行中需先取消）。

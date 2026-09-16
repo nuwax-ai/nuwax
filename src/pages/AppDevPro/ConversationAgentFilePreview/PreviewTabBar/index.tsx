@@ -38,6 +38,7 @@ import {
   WORKSPACE_PREVIEW_TOOL_IDS,
 } from '../hooks/usePreviewTabs';
 import PreviewChromeActions from './PreviewChromeActions';
+import PreviewRuntimeButtons from './PreviewRuntimeButtons';
 import PreviewTabContextMenu from './PreviewTabContextMenu';
 import PreviewTabLabel from './PreviewTabLabel';
 import PreviewTabModelSelect from './PreviewTabModelSelect';
@@ -97,12 +98,16 @@ export interface PreviewTabBarProps {
   onStopPreviewRuntime?: () => void;
   /** 启动 / 重启进行中 */
   previewRuntimeBusy?: boolean;
+  /** 重启进行中（仅重启按钮 loading） */
+  previewRuntimeRestarting?: boolean;
   /** 服务是否已启动 */
   previewRuntimeRunning?: boolean;
   /** 停止进行中 */
   previewRuntimeStopping?: boolean;
   /** 预览容器是否已就绪 */
   previewRuntimeReady?: boolean;
+  /** 当前环境容器启动失败，停止应用不可点 */
+  previewContainerFailed?: boolean;
   /**
    * 开发环境进行中任务锁定启动 / 重启（线上环境不传或 false）
    */
@@ -346,9 +351,11 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onRestartPreviewRuntime,
   onStopPreviewRuntime,
   previewRuntimeBusy = false,
+  previewRuntimeRestarting = false,
   previewRuntimeRunning = false,
   previewRuntimeStopping = false,
   previewRuntimeReady = true,
+  previewContainerFailed = false,
   previewDevActionLocked = false,
 }) => {
   /** 拖拽中的标签 ID */
@@ -736,24 +743,16 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
         </div>
       </div>
 
-      {/* 应用预览：启动 / 重启 / 停止 + 地址栏 */}
+      {/* 应用预览：地址栏 */}
       {activeTabId === getToolTabId('preview') && (
         <PreviewChromeActions
           previewUrl={previewUrl}
           onNavigatePreview={onNavigatePreview}
           onRefreshPreview={onRefreshPreview}
-          onStartPreviewRuntime={onStartPreviewRuntime}
-          onRestartPreviewRuntime={onRestartPreviewRuntime}
-          onStopPreviewRuntime={onStopPreviewRuntime}
-          previewRuntimeBusy={previewRuntimeBusy}
-          previewRuntimeRunning={previewRuntimeRunning}
-          previewRuntimeStopping={previewRuntimeStopping}
-          previewRuntimeReady={previewRuntimeReady}
-          previewDevActionLocked={previewDevActionLocked}
         />
       )}
 
-      {/* 更多操作菜单 */}
+      {/* 更多操作 + 重启 / 停止 */}
       <div className={cx(styles['tab-bar-actions'])}>
         <PreviewTabModelSelect
           originalModelConfigList={originalModelConfigList}
@@ -766,6 +765,18 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
             onRestartAgent={onRestartAgent}
             onExportProject={onExportProject}
             isCloudComputer={isCloudComputer}
+          />
+        ) : null}
+        {onRestartPreviewRuntime ? (
+          <PreviewRuntimeButtons
+            onRestartPreviewRuntime={onRestartPreviewRuntime}
+            onStopPreviewRuntime={onStopPreviewRuntime}
+            previewRuntimeBusy={previewRuntimeBusy}
+            previewRuntimeRestarting={previewRuntimeRestarting}
+            previewRuntimeStopping={previewRuntimeStopping}
+            previewRuntimeReady={previewRuntimeReady}
+            previewContainerFailed={previewContainerFailed}
+            previewDevActionLocked={previewDevActionLocked}
           />
         ) : null}
       </div>
