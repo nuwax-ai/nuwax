@@ -128,7 +128,10 @@ const AppDevPublishVersionRecords: React.FC<AppDevPublishVersionRecordsProps> = 
   const content = loading ? (
     <Loading className="h-full" />
   ) : publishList.length > 0 ? (
-    <div className={cx(styles.list)}>
+    <div className={cx(styles['main-wrap'])}>
+      <h5 className={cx(styles.title)}>
+        {dict('PC.Components.VersionHistory.currentPublish')}
+      </h5>
       {publishList.map((info) => (
         <CurrentPublishItem
           key={info.publishId}
