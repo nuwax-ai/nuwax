@@ -498,6 +498,18 @@ const ChatInputUnifiedImpl: React.FC<
     ? inputPrefixPillRowWidth + 8
     : 0;
 
+  // 行首回执 pill 随编辑器内部滚动同步上移：pill 是绝对定位浮层，首行
+  // 滚出可视区时一并滚出，避免长文本滚动后的正文压住 pill；直改 DOM
+  // 不走 state（滚动高频触发，避免整输入框重渲染）
+  const handleEditorScroll = useCallback((scrollTop: number) => {
+    const pillRow = inputPrefixPillRowRef.current;
+    if (!pillRow) {
+      return;
+    }
+    pillRow.style.transform =
+      scrollTop > 0 ? `translateY(-${scrollTop}px)` : '';
+  }, []);
+
   useLayoutEffect(() => {
     if (!hasInputPrefixPill || !inputPrefixPillRowRef.current) {
       setInputPrefixPillRowWidth(0);
@@ -972,6 +984,14 @@ const ChatInputUnifiedImpl: React.FC<
   // 最新输入镜像：卸载兜底落盘用（节流定时器可能尚未触发）
   const draftStateRef = useRef({ text: messageInfo, skillIds });
   draftStateRef.current = { text: messageInfo, skillIds };
+  // 草稿落盘文本镜像：mention chip 剥离后的纯文本（编辑器挂载后 DOM 直读）。
+  // chip 无法跨刷新/切换还原成 chip，序列化残留的 @/ 名称字面量会污染
+  // 恢复后的输入框——技能 chip 一并不再随草稿持久化
+  const draftTextRef = useRef(messageInfo);
+  useEffect(() => {
+    draftTextRef.current =
+      mentionEditorRef.current?.getPlainText?.() ?? messageInfo;
+  }, [messageInfo]);
   // 状态文本当前归属的作用域：仅恢复 effect 建立新作用域时更新——节流落盘前
   // 校验，防「作用域已切换、文本仍旧会话」的过渡渲染把旧内容写进新桶
   const draftStateScopeRef = useRef<string | null>(null);
@@ -994,14 +1014,15 @@ const ChatInputUnifiedImpl: React.FC<
     const draft = loadDraft(draftScope);
     const text = draft?.text ?? '';
     if (isScopeSwitch) {
-      setSkillIds(draft?.skillIds ?? []);
+      // 技能 chip 不随草稿持久化（无法还原成 chip）：切换会话直接清空，
+      // 避免上一会话技能作为不可见附件带入新会话
+      setSkillIds([]);
       setMessageInfo(text);
       mentionEditorRef.current?.setEditorText?.(text);
       return;
     }
     // 首挂：输入为空才回填草稿，不覆盖已开始的输入（含队列编辑回填内容）
     if (!draftStateRef.current.text && text) {
-      setSkillIds((prev) => (prev.length ? prev : draft?.skillIds ?? []));
       mentionEditorRef.current?.setEditorText?.(text);
     }
   }, [draftScope]);
@@ -1019,8 +1040,7 @@ const ChatInputUnifiedImpl: React.FC<
       if (draftStateScopeRef.current !== draftScope) return;
       saveDraft(draftScope, {
         version: 1,
-        text: draftStateRef.current.text,
-        skillIds: draftStateRef.current.skillIds,
+        text: draftTextRef.current,
       });
     }, 1000);
     return () => {
@@ -1037,13 +1057,13 @@ const ChatInputUnifiedImpl: React.FC<
     const scope = draftScope;
     return () => {
       if (draftConsumedRef.current) return;
-      const { text, skillIds } = draftStateRef.current;
+      const text = draftTextRef.current;
       // 卸载兜底只补写、不删除：teardown 阶段镜像可能已被次生效应清空
       // （过渡期 model 复位/二次 teardown 等），空值落盘会误删已持久化的
       // 草稿（2026-09-15 实测切会话 100% 复现丢失）；用户真正清空输入由
       // 1s 节流的空值落盘负责删键
-      if (!text.trim() && !skillIds?.length) return;
-      saveDraft(scope, { version: 1, text, skillIds });
+      if (!text.trim()) return;
+      saveDraft(scope, { version: 1, text });
     };
   }, [draftScope]);
 
@@ -1305,6 +1325,8 @@ const ChatInputUnifiedImpl: React.FC<
               value={messageInfo}
               // 行首回执 pill 占位：输入文本缩进到 pill 之后
               inlinePrefixWidth={inputPrefixPillOffset}
+              // pill 浮层随编辑器滚动同步上移（见 handleEditorScroll）
+              onEditorScroll={handleEditorScroll}
               onChange={setMessageInfo}
               onSkillIdsChange={setSkillIds}
               enableMention={enableMention}
@@ -1745,55 +1767,57 @@ const ChatInputUnifiedImpl: React.FC<
                       （input-line 行首），不再占位工具栏 */}
 
                   {/* 已连接连接器头像组（重叠，最多 3 个，超出尾部 +N）：
-                      点击唤起能力弹窗并定位连接器页签；数据在弹窗关闭后刷新 */}
-                  {connectedConnectors.length > 0 && (
-                    <VoiceFooter.HideWhenActive>
-                      <Tooltip
-                        title={t(
-                          'PC.Components.ChatInputHome.connectedConnectors',
-                        )}
-                      >
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label={t(
+                      点击唤起能力弹窗并定位连接器页签；数据在弹窗关闭后刷新。
+                      ChatBot 类型智能体不展示（未传 agentType 的普通入口不受影响） */}
+                  {agentType !== AgentTypeEnum.ChatBot &&
+                    connectedConnectors.length > 0 && (
+                      <VoiceFooter.HideWhenActive>
+                        <Tooltip
+                          title={t(
                             'PC.Components.ChatInputHome.connectedConnectors',
                           )}
-                          className={cx(
-                            'flex',
-                            'items-center',
-                            styles['connector-group'],
-                          )}
-                          onClick={() =>
-                            mentionEditorRef.current?.openCapabilityWithType?.(
-                              'connector',
-                              // 头像组入口专用：初始进入「已连接」聚合页签
-                              { connectedView: true },
-                            )
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
+                        >
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            aria-label={t(
+                              'PC.Components.ChatInputHome.connectedConnectors',
+                            )}
+                            className={cx(
+                              'flex',
+                              'items-center',
+                              styles['connector-group'],
+                            )}
+                            onClick={() =>
                               mentionEditorRef.current?.openCapabilityWithType?.(
                                 'connector',
+                                // 头像组入口专用：初始进入「已连接」聚合页签
                                 { connectedView: true },
-                              );
+                              )
                             }
-                          }}
-                        >
-                          <Avatar.Group maxCount={3} size={20}>
-                            {connectedConnectors.map((connector, index) => (
-                              <ConnectorAvatar
-                                key={connector.key}
-                                connector={connector}
-                                index={index}
-                              />
-                            ))}
-                          </Avatar.Group>
-                        </span>
-                      </Tooltip>
-                    </VoiceFooter.HideWhenActive>
-                  )}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                mentionEditorRef.current?.openCapabilityWithType?.(
+                                  'connector',
+                                  { connectedView: true },
+                                );
+                              }
+                            }}
+                          >
+                            <Avatar.Group maxCount={3} size={20}>
+                              {connectedConnectors.map((connector, index) => (
+                                <ConnectorAvatar
+                                  key={connector.key}
+                                  connector={connector}
+                                  index={index}
+                                />
+                              ))}
+                            </Avatar.Group>
+                          </span>
+                        </Tooltip>
+                      </VoiceFooter.HideWhenActive>
+                    )}
 
                   <VoiceFooter.HideWhenActive>
                     <ManualComponentItem

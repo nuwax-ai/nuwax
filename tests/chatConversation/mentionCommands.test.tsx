@@ -419,14 +419,22 @@ describe('列表数据一致性（@ 弹层·上下文文件 tab）', () => {
     // 取数未返回：展示 loading 态，且不触发「空文件切资料库 tab」
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.queryByText('报告.md')).toBeNull();
-    // 判定期间不显示切换器（打开即判定，文件 tab 不先闪现）
+    // 判定期间切换器占位隐藏（打开即判定，文件 tab 不先闪现；占位保持
+    // 弹层高度与判定完成后一致，显形零跳动）——DOM 仍在但标记为隐藏
     expect(
-      screen.queryByText('PC.Components.AtResourcePopup.tabFile'),
-    ).toBeNull();
+      screen.getByText('PC.Components.AtResourcePopup.tabFile'),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-at-tabs]')?.hasAttribute('data-hidden'),
+    ).toBe(true);
     // 刷新微任务让 onFetchMentionFiles 被调用（pending promise 创建）
     await act(async () => {});
     await act(async () => resolveFetch([file]));
     await screen.findByText('报告.md');
+    // 判定完成：切换器显形（占位隐藏标记移除，高度无变化）
+    expect(
+      document.querySelector('[data-at-tabs]')?.hasAttribute('data-hidden'),
+    ).toBe(false);
     // 文件非空：停留在文件 tab，未渲染资料库列表
     expect(screen.queryByTestId('at-knowledge-list')).toBeNull();
   });

@@ -1,5 +1,5 @@
 /**
- * AtResourcePopup 组件样式：@ 资源弹层（宽 320 大圆角浮层卡片）
+ * AtResourcePopup 组件样式：@ 资源弹层（宽 340 大圆角浮层卡片）
  */
 
 @import '@/styles/color';
@@ -9,9 +9,10 @@
 .popup {
   // 「更多」区高度（含 padding）：多 tab 文件页不渲染更多区时归零，
   // 该高度让渡给列表区——弹层总高跨 tab 恒定
-  --more-h: 46px;
+  --more-h: 40px;
 
-  width: 380px;
+  // 弹层宽度：右侧定位夹取（MentionEditor innerWidth - 348）随此同步
+  width: 340px;
   max-width: calc(100vw - 8px);
   background: @colorBgContainer;
   border-radius: 16px;
@@ -29,7 +30,12 @@
   // 顶部分段 tab（antd Segmented：灰底容器 + 白色胶囊选中，小尺寸）
   .tabs {
     flex-shrink: 0;
-    padding: 8px 12px 6px;
+    padding: 4px;
+  }
+
+  // 判定期间切换器占位隐藏：保留布局高度，判定完成显形零跳动
+  .tabs-hidden {
+    visibility: hidden;
   }
 
   // 内容区：当前 tab 的列表（内嵌列表组件根节点即滚动容器）。
@@ -46,16 +52,26 @@
     max-height: calc(366px - var(--more-h));
     display: flex;
     flex-direction: column;
-    padding: 4px 12px;
+    padding: 4px;
   }
 
   // 单 tab（无切换器，无切换即无跳动）：高度随内容，上限即固定基准
   .content-no-tabs {
     flex: 0 1 auto;
-    padding-top: 8px;
+    padding-top: 4px;
   }
 
-  // 多 tab 的文件页：更多区不渲染，高度让渡（见 --more-h）
+  // slash（单技能 tab）等高形态：无切换器但列表区定高占满——弹层总高
+  // 与多 tab 形态（@ 专家弹层）恒等（列表+padding 374 + 更多 40）
+  .content-slash-full {
+    flex: 1 1 366px;
+    max-height: 366px;
+  }
+
+  // 多 tab 的文件页：更多区不渲染，高度让渡（见 --more-h）。
+  // 值必须带 px 单位：calc(366px - var(--more-h)) 里裸 0 与 px 混算
+  // 非法，整条 flex/max-height 会被浏览器判无效回退 auto——文件页
+  // 曾因此塌成内容高度，切换 tab 弹层高度跳变
   &.popup-no-more {
     --more-h: 0;
   }
@@ -71,7 +87,8 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 4px;
+    // 边缘留白由外层 .content 的 4px 统一提供（与资料库行口径一致）
+    padding: 0;
 
     &::-webkit-scrollbar {
       width: 6px;
@@ -91,7 +108,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
+    // 定高与资料库 simple 行（32px）同口径，行间距为零首尾相接
+    height: 32px;
+    padding-block: 0;
+    padding-inline: 12px;
     border-radius: @borderRadius;
     cursor: pointer;
 
@@ -140,7 +160,7 @@
   // margin 溢出弹层容器）；按钮视觉随 antd 主题
   .more-wrap {
     flex-shrink: 0;
-    padding: 6px 12px 8px;
+    padding: 4px;
   }
 
   .more-icon {

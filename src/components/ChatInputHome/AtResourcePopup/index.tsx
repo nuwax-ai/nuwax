@@ -233,10 +233,16 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
     useEffect(() => {
       setActiveTab((current) => (tabs.includes(current) ? current : tabs[0]));
     }, [tabs]);
-    // 切换器显隐：单 tab 收敛隐藏；会话页判定期间（null）也隐藏——
+    // 多 tab 形态（布局基准）：内容区定高 + 切换器常驻占位（判定期间
+    // 仅隐藏不卸载），判定完成切换器显形时弹层高度零跳动
+    const multiForm = tabs.length > 1;
+    // 切换器可见性：单 tab 收敛隐藏；会话页判定期间（null）占位隐藏——
     // 避免先展示「文件 tab」拉完为空再消失的闪变，判定完成即定型
     const showTabs =
-      tabs.length > 1 && !(mode === 'session' && fileAvailable === null);
+      multiForm && !(mode === 'session' && fileAvailable === null);
+    // slash（单技能 tab）形态：无切换器，但内容区定高占满——弹层总高
+    // 与多 tab 形态（@ 专家弹层）等高，不随技能行数变化
+    const isSlash = mode === 'slash';
 
     // ---- 键盘导航（DOM 卡片代理，仿 CapabilityModal 内嵌列表方案）----
     const contentRef = useRef<HTMLDivElement>(null);
@@ -384,10 +390,17 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
         // @ 后继续输入的实时搜索链路（searchText）不被打断
         onMouseDown={(e) => e.preventDefault()}
       >
-        {/* 分段 tab（单 tab 收敛或会话页判定期间隐藏——打开即判定文件
-            可用性,避免「先展示文件 tab 拉完为空再消失」的闪变） */}
-        {showTabs && (
-          <div className={cx(styles.tabs)}>
+        {/* 分段 tab（单 tab 收敛卸载；会话页判定期间占位隐藏——打开即
+            判定文件可用性,避免「先展示文件 tab 拉完为空再消失」的闪变,
+            且判定完成显形时弹层高度零跳动） */}
+        {multiForm && (
+          <div
+            data-at-tabs
+            // 判定期间占位隐藏的 DOM 可观测标记（视觉由 tabs-hidden 的
+            // visibility 控制；测试与调试据此判定显隐）
+            data-hidden={!showTabs || undefined}
+            className={cx(styles.tabs, !showTabs && styles['tabs-hidden'])}
+          >
             <Segmented
               block
               size="middle"
@@ -409,8 +422,11 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
           ref={contentRef}
           className={cx(
             styles.content,
-            // 无切换器（单 tab 收敛/判定期间）时顶部补留白，列表不贴弹层上缘
-            !showTabs && styles['content-no-tabs'],
+            // 单 tab 收敛（无切换器）时高度随内容；判定期间仍走多 tab
+            // 定高形态（切换器占位隐藏），避免判定完成弹层高度跳动；
+            // slash 单技能 tab 定高占满，与多 tab 形态（@ 专家弹层）等高
+            !multiForm && !isSlash && styles['content-no-tabs'],
+            isSlash && styles['content-slash-full'],
           )}
           onMouseMove={handleContentMouseMove}
         >

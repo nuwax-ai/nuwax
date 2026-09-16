@@ -65,6 +65,9 @@
     position: relative;
     width: 100%;
     min-width: 0;
+
+    /* 裁切随编辑器滚动上移的回执 pill（与首行文字同口径被滚出） */
+    overflow: hidden;
   }
 
   /* 行首回执 pill 行（专家/召唤专家/首页项目类型）：内联占据输入框最前面，
@@ -695,7 +698,11 @@
 .expert-pill {
   gap: 4px;
   max-width: 180px;
-  padding: 3px 6px 3px 10px;
+
+  /* 垂直度量与编辑器内技能 chip（.mention-chip：12px×1.5 行高 + 上下
+     2px padding = 22px）同高；文字行高钉 18px 防宿主行高漂移 */
+  padding: 2px 6px 2px 10px;
+  line-height: 18px;
   border-radius: 999px;
   background: @colorFillSecondary;
   font-size: 12px;

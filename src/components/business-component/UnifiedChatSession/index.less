@@ -18,6 +18,7 @@
   position: relative;
   container-type: size;
 
+  /* 裸 0 与 cqh/px 混算会令 calc 整条失效，默认值必须带单位 */
   --chat-input-height: 0;
   // 遮罩下卡片可占满面板高度（减输入框高与上下留白）；AcpPermissionCard 内部滚动预算也消费此变量
   --intervention-max-height: calc(
