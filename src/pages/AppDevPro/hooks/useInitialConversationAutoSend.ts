@@ -76,8 +76,6 @@ export const useInitialConversationAutoSend = ({
         files: routeState?.files,
         infos: routeState?.infos || [],
         sandboxId: String(getEffectiveSandboxId(data)),
-        debug: true,
-        isSync: false,
         skillIds: routeState?.skillIds,
         modelId: routeState?.modelId,
         agentMode: routeState?.agentMode || 'yolo',
