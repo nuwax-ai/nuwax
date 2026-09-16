@@ -1,5 +1,5 @@
+import { finalizeMessagesOnTerminalTaskStatus } from '@/features/conversation/domain/messageLifecycle';
 import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
-import { findCurrentRoundStart } from '@/models/conversationInfoMessageList';
 import { ConversationEventTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
@@ -117,88 +117,9 @@ export function useConversationTerminalFinalizer(
       // 3. 末条消息兜底落终态：流式占位（Loading/Incomplete）→ Complete/Error，
       //    残留 EXECUTING 的 processing 块 → FINISHED/FAILED。
       //    正常路径 handleChangeMessageList 已处理时此处为幂等 noop。
-      const messageTerminalStatus =
-        taskStatus === TaskStatus.FAILED
-          ? MessageStatusEnum.Error
-          : MessageStatusEnum.Complete;
-      const processingTerminalStatus =
-        taskStatus === TaskStatus.FAILED
-          ? ProcessingEnum.FAILED
-          : ProcessingEnum.FINISHED;
-      const settleFailedResponseStatus = <
-        T extends { responseStatus?: string },
-      >(
-        interaction: T,
-      ): T => {
-        if (
-          taskStatus !== TaskStatus.FAILED ||
-          (interaction.responseStatus !== undefined &&
-            interaction.responseStatus !== 'pending' &&
-            interaction.responseStatus !== 'submitting')
-        ) {
-          return interaction;
-        }
-        return { ...interaction, responseStatus: 'failed' };
-      };
-
       setMessageList((prev) => {
-        if (!prev?.length) {
-          return prev;
-        }
-        // 与 isSessionStreamBusy 的检查范围对齐（共享 findCurrentRoundStart）：
-        // 当前轮次（最后一条 USER 之后）的所有 assistant 消息的 EXECUTING
-        // processing 残留都要收敛，否则任一残留都会让 busy 持续为 true
-        // → 活跃态被 rAF 重算顶回 true → 按钮卡「会话中」。
-        const lastIndex = prev.length - 1;
-        const firstRecent = findCurrentRoundStart(prev);
-        const next = prev.slice();
-        let changed = false;
-
-        for (let i = lastIndex; i >= firstRecent; i -= 1) {
-          const message = next[i];
-          const isTail = i === lastIndex;
-          const incomplete =
-            isTail &&
-            (message.status === MessageStatusEnum.Loading ||
-              message.status === MessageStatusEnum.Incomplete);
-          const processingList = Array.isArray(message.processingList)
-            ? message.processingList.map((item) =>
-                item.status === ProcessingEnum.EXECUTING
-                  ? { ...item, status: processingTerminalStatus }
-                  : item,
-              )
-            : message.processingList;
-          const processingChanged = processingList !== message.processingList;
-          const mcpAskInteractions = message.mcpAskInteractions?.map(
-            settleFailedResponseStatus,
-          );
-          const acpPermissionInteractions =
-            message.acpPermissionInteractions?.map(settleFailedResponseStatus);
-          const interventionChanged =
-            mcpAskInteractions?.some(
-              (item, index) => item !== message.mcpAskInteractions?.[index],
-            ) ||
-            acpPermissionInteractions?.some(
-              (item, index) =>
-                item !== message.acpPermissionInteractions?.[index],
-            );
-          if (!incomplete && !processingChanged && !interventionChanged) {
-            continue;
-          }
-          next[i] = {
-            ...message,
-            thinkingFinished: isTail ? true : message.thinkingFinished,
-            status: incomplete ? messageTerminalStatus : message.status,
-            processingList,
-            mcpAskInteractions,
-            acpPermissionInteractions,
-          };
-          changed = true;
-        }
-
-        if (!changed) {
-          return prev;
-        }
+        const next = finalizeMessagesOnTerminalTaskStatus(prev, taskStatus);
+        if (next === prev) return prev;
         messageListRef.current = next;
         return next;
       });

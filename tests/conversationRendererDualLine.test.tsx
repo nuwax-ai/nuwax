@@ -178,7 +178,13 @@ describe('数据线 × 渲染线四组合', () => {
     ['legacy', legacyMessageList],
     ['runtime', runtimeMessageList],
   ] as const)('%s 数据 + V1：按消息数渲染 ChatView', (_line, list) => {
-    render(<ChatContentArea {...baseContentAreaProps} messageList={list} />);
+    render(
+      <ChatContentArea
+        {...baseContentAreaProps}
+        messageList={list}
+        messageRenderer="v1"
+      />,
+    );
     expect(screen.getAllByTestId('chat-view')).toHaveLength(list.length);
   });
 

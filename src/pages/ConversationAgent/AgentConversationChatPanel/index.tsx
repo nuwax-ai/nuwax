@@ -116,6 +116,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   const runtimeLine = useConversationRuntimeSession({
     conversationId: conversationInfo?.id,
     effectsResources: {}, // 面板入口无 chat model 资源；页面预览类 effect 静默忽略
+    isSync: false,
   });
 
   return (

@@ -77,7 +77,7 @@ const shortGitCommit = (gitCommit?: string): string => {
 
 /**
  * AppDevPro 线上环境历史版本侧栏。
- * 打开时调用 /api/userapp/build-versions/{appId} 拉取构建包列表。
+ * 打开时调用 /api/userapp/build-versions（appId 作 query 参数）拉取构建包列表。
  *
  * @param props.visible 是否显示
  * @param props.appId 应用 ID

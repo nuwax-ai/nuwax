@@ -2,11 +2,14 @@
  * 新线 runtime session 核心环合同测试（双线方案 R2）。
  * send → live 连接（transport mock）→ 事件投影 → 终态收尾，编排语义对齐旧线。
  */
+import { processInterventionSsePatch } from '@/components/business-component/AgentIntervention/utils/processInterventionSsePatch';
+import { reconcileAcpPermissionStatusesInMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus';
 import { createConversationRuntimeSession } from '@/features/conversation/runtime/createConversationRuntimeSession';
 import type { ConversationEffectsAdapter } from '@/features/conversation/runtime/effectDispatcher';
 import {
   ConversationEventTypeEnum,
   MessageModeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -36,6 +39,10 @@ vi.mock('@/utils/conversationTaskStatusSync', () => ({
 
 vi.mock('@/utils/fetchEventSourceConversationInfo', () => ({
   createSSEConnection: (...args: unknown[]) => mockCreateSSE(...args),
+}));
+
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
 }));
 
 // 基线版 common/home.constants 经 i18nRuntime→umi 传递依赖破坏非 umi 测试环境
@@ -134,6 +141,70 @@ describe('conversationRuntimeSession', () => {
     expect(messages[1].text).toBe('答案');
     expect(messages[1].status).toBe(MessageStatusEnum.Complete);
     expect(session.getState().currentRequestId).toBe('req-1');
+  });
+
+  it('ASK_QUESTION 优先投影为干预交互，不落入普通 PROCESSING', () => {
+    const { session } = createSession({
+      interventionAdapter: {
+        patchEvent: processInterventionSsePatch,
+        reconcileMessages: reconcileAcpPermissionStatusesInMessageList,
+      },
+    });
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '演示 ask-question' });
+    const callbacks = mockOpenLive.mock.calls[0][1] as LiveCallbacks;
+
+    callbacks.onMessage({
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      requestId: 'req-ask',
+      data: {
+        name: 'AskQuestion',
+        type: 'Event',
+        status: 'EXECUTING',
+        subEventType: 'ASK_QUESTION',
+        result: {
+          name: '请选择继续方式',
+          type: 'Event',
+          success: true,
+          data: {
+            schemaVersion: 'nuwax.mcp_ask.v1',
+            requestId: 'ask-runtime-1',
+            revision: 1,
+            title: '请选择继续方式',
+            ui: {
+              presentation: 'inline',
+              title: '请选择继续方式',
+              fields: [
+                {
+                  name: 'choice',
+                  title: '继续方式',
+                  widget: 'radio',
+                  required: true,
+                  options: [
+                    { value: '继续', label: '继续执行' },
+                    { value: '暂停', label: '暂停等待' },
+                  ],
+                },
+              ],
+            },
+          },
+          executeId: 'tool-call-runtime-1',
+          input: null,
+        },
+      },
+    } as ConversationChatResponse);
+
+    const assistant = session.store.getSnapshot()[1];
+    expect(assistant.mcpAskInteractions).toHaveLength(1);
+    expect(assistant.mcpAskInteractions?.[0]).toMatchObject({
+      toolCallId: 'ask-runtime-1',
+      executeId: 'tool-call-runtime-1',
+      responseStatus: 'pending',
+      input: { requestId: 'ask-runtime-1' },
+    });
+    expect(assistant.processingList).toBeUndefined();
+    expect(assistant.text).toBe('');
+    expect(session.getState().currentRequestId).toBe('req-ask');
   });
 
   it('onClose 正常收尾：finalize + 释放活跃/等终态 + 终态兜底查询（FINAL 未解析时）', async () => {
@@ -235,7 +306,8 @@ describe('conversationRuntimeSession', () => {
   });
 
   it('stop：中断连接、消息终态 Stopped', () => {
-    const { session } = createSession();
+    const stopRequest = vi.fn().mockResolvedValue(undefined);
+    const { session } = createSession({ stopRequest });
     const abort = vi.fn();
     mockOpenLive.mockReturnValue(abort);
     session.send({ conversationId: 1001, message: '你好' });
@@ -246,6 +318,65 @@ describe('conversationRuntimeSession', () => {
     expect(session.store.getSnapshot()[1].status).toBe(
       MessageStatusEnum.Stopped,
     );
+    expect(stopRequest).toHaveBeenCalledWith('1001');
+  });
+
+  it('disableConversationActive：仅清前端活跃态，不发送空 ID stop 请求', () => {
+    const stopRequest = vi.fn().mockResolvedValue(undefined);
+    const { session } = createSession({ stopRequest });
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '你好' });
+
+    session.disableConversationActive();
+
+    expect(session.getState().isConversationActive).toBe(false);
+    expect(stopRequest).not.toHaveBeenCalled();
+  });
+
+  it('轮询/sub 确认终态：完整收敛 Loading 占位、执行中工具与会话活跃态', () => {
+    const applyTaskStatus = vi.fn();
+    const { session } = createSession({ applyTaskStatus });
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '继续执行' });
+    const assistant = session.store.getSnapshot()[1];
+    session.store.patchMessage(assistant.id, {
+      processingList: [
+        {
+          executeId: 'tool-running',
+          status: 'EXECUTING',
+        } as never,
+      ],
+    });
+
+    session.finalizeConversationTerminal(1001, TaskStatus.COMPLETE);
+
+    const finalized = session.store.getSnapshot()[1];
+    expect(finalized.status).toBe(MessageStatusEnum.Complete);
+    expect(finalized.thinkingFinished).toBe(true);
+    expect(finalized.processingList?.[0].status).toBe('FINISHED');
+    expect(session.getState()).toMatchObject({
+      isConversationActive: false,
+      isAwaitingChatTerminal: false,
+    });
+    expect(applyTaskStatus).toHaveBeenCalledWith(1001, TaskStatus.COMPLETE);
+  });
+
+  it('切换会话：中断 live/sub 并清空上一会话状态，避免空 Loading 跨会话残留', () => {
+    const { session } = createSession();
+    const abortLive = vi.fn();
+    mockOpenLive.mockReturnValue(abortLive);
+    session.send({ conversationId: 1001, message: '上一会话' });
+
+    session.resetForConversationSwitch();
+
+    expect(abortLive).toHaveBeenCalledTimes(1);
+    expect(session.store.getSnapshot()).toEqual([]);
+    expect(session.getState()).toEqual({
+      isConversationActive: false,
+      isAwaitingChatTerminal: false,
+      currentRequestId: '',
+      currentConversationId: null,
+    });
   });
 
   it('R3 load：详情加载整体替换并保留乐观尾，过期返回丢弃', async () => {
@@ -278,6 +409,33 @@ describe('conversationRuntimeSession', () => {
     void session.load(2002); // 同步置 currentConversationId = 2002
     resolveLate!({ data: { id: 1001, messageList: [] } });
     expect(await late).toBeUndefined();
+  });
+
+  it('历史详情与轮询快照统一经过 hydrate 后再写入 store', async () => {
+    const hydrateHistoryMessages = vi.fn((messages: any[]) =>
+      messages.map((message) => ({ ...message, hydrated: true })),
+    );
+    const loadRequest = vi
+      .fn()
+      .mockResolvedValue({ data: { id: 1001, messageList: [persisted] } });
+    const { session } = createSession({
+      loadRequest,
+      hydrateHistoryMessages,
+    });
+
+    const loaded = await session.load(1001);
+    expect((loaded?.messageList?.[0] as any).hydrated).toBe(true);
+    expect((session.store.getSnapshot()[0] as any).hydrated).toBe(true);
+
+    session.applySnapshot(1001, [{ ...persisted, id: 'persisted-2' } as never]);
+    expect(hydrateHistoryMessages).toHaveBeenCalledTimes(2);
+    expect(
+      (
+        session.store
+          .getSnapshot()
+          .find((item) => item.id === 'persisted-2') as any
+      ).hydrated,
+    ).toBe(true);
   });
 
   it('R3 applySnapshot：会话门禁——不匹配的快照丢弃', () => {
@@ -318,6 +476,35 @@ describe('conversationRuntimeSession', () => {
 
     resumeCallbacks.onClose();
     expect(mockCreateSSE).toHaveBeenCalledTimes(1);
+  });
+
+  it('R3 resume：sub FINAL_RESULT 统一清算占位与执行中工具', () => {
+    const applyTaskStatus = vi.fn();
+    const { session } = createSession({ applyTaskStatus });
+    mockCreateSSE.mockReturnValue(vi.fn());
+
+    session.resumeConversationStream(1001, [], undefined, 'test-terminal');
+    const resumeCallbacks = mockCreateSSE.mock.calls[0][0];
+    const assistant = session.store.getSnapshot()[0];
+    session.store.patchMessage(assistant.id, {
+      processingList: [
+        { executeId: 'resume-tool', status: 'EXECUTING' } as never,
+      ],
+    });
+
+    resumeCallbacks.onMessage({
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      data: {
+        success: true,
+        outputText: '恢复完成',
+        componentExecuteResults: [],
+      },
+    } as ConversationChatResponse);
+
+    const finalized = session.store.getSnapshot()[0];
+    expect(finalized.status).toBe(MessageStatusEnum.Complete);
+    expect(finalized.processingList?.[0].status).toBe('FINISHED');
+    expect(applyTaskStatus).toHaveBeenCalledWith(1001, TaskStatus.COMPLETE);
   });
 });
 

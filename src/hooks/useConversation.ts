@@ -11,6 +11,7 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
+import { emitConversationChanged } from '@/utils/directorySyncEvents';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import { history } from 'umi';
@@ -119,6 +120,21 @@ const useConversation = () => {
 
     const id = res.data?.id;
     if (id) {
+      emitConversationChanged({
+        operation: 'created',
+        conversationId: String(id),
+        ...(attach?.projectId
+          ? {
+              project: {
+                projectId: String(attach.projectId),
+                projectType:
+                  attach.projectType ?? AgentComponentTypeEnum.NormalProject,
+              },
+            }
+          : {}),
+        origin: 'use-conversation',
+        reason: 'create',
+      });
       // 跳转会话页面；项目上框带 redirectUrl 时跳指定页（如全栈 IDE），
       // attach（含 message/files 等）作为 route state 由目标页自动发首条消息
       const url = attach?.redirectUrl

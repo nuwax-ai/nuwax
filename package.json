@@ -41,7 +41,9 @@
     "test": "vitest",
     "test:conversation": "vitest run tests/conversation tests/chatConversation tests/createConversation tests/liveConnection tests/resume tests/snapshot tests/terminal tests/runtimeLine tests/messageQueue tests/queueStorage tests/unifiedChatSession tests/useConversation tests/useExecutingTaskStatusPoll tests/useChatFinishedWhenListExecuting tests/interventionDock",
     "verify-commit": "max verify-commit",
-    "verify:conversation": "npm run test:conversation && npm run e2e:conversation"
+    "verify:conversation": "npm run test:conversation && npm run e2e:conversation",
+    "postbuild:prod": "node scripts/write-dist-version.js",
+    "postbuild:dev": "node scripts/write-dist-version.js"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

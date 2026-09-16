@@ -1,5 +1,9 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  useConversationChanged,
+  useProjectChanged,
+} from '@/hooks/useDirectorySync';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -16,6 +20,11 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserProjectConversationInfo } from '@/types/interfaces/userProject';
+import {
+  applyConversationChangedToList,
+  applyProjectChangedToList,
+  emitProjectChanged,
+} from '@/utils/directorySyncEvents';
 import {
   DeleteOutlined,
   DownOutlined,
@@ -175,6 +184,43 @@ const SpaceProjectManage: React.FC = () => {
   useEffect(() => {
     void queryProjects();
   }, [queryProjects]);
+
+  useProjectChanged((event) => {
+    if (
+      event.project.spaceId !== undefined &&
+      event.project.spaceId !== String(spaceId)
+    ) {
+      return;
+    }
+    if (event.operation === 'created') {
+      void queryProjects();
+      return;
+    }
+    setList((previous) =>
+      applyProjectChangedToList<ProjectListItem>(previous, event),
+    );
+  });
+
+  useConversationChanged((event) => {
+    setConversations((previous) =>
+      applyConversationChangedToList(previous, event),
+    );
+    conversationsByProjectRef.current.forEach((records, projectId) => {
+      const next = applyConversationChangedToList(records, event);
+      if (next !== records) {
+        conversationsByProjectRef.current.set(projectId, next);
+      }
+    });
+    if (event.operation === 'deleted') {
+      conversationProjectRef.current.delete(Number(event.conversationId));
+    }
+    if (
+      event.project &&
+      (event.operation === 'created' || event.operation === 'deleted')
+    ) {
+      void queryProjects();
+    }
+  });
 
   /**
    * 当前列表内每个项目并行拉会话，合并后按更新时间倒序展示到右侧。
@@ -408,6 +454,17 @@ const SpaceProjectManage: React.FC = () => {
           : item,
       ),
     );
+    emitProjectChanged({
+      operation: 'updated',
+      project: {
+        projectId: String(id),
+        projectType,
+        spaceId: String(spaceId),
+      },
+      patch: { name },
+      origin: 'space-project-manage',
+      reason: 'rename',
+    });
     setRenameTarget(undefined);
   };
 
@@ -425,6 +482,16 @@ const SpaceProjectManage: React.FC = () => {
             ? await apiUserAppDelete(item.id)
             : await apiNormalProjectDelete(item.id);
         if (res?.code === SUCCESS_CODE) {
+          emitProjectChanged({
+            operation: 'deleted',
+            project: {
+              projectId: String(item.id),
+              projectType: item.projectType,
+              spaceId: String(spaceId),
+            },
+            origin: 'space-project-manage',
+            reason: 'delete',
+          });
           void queryProjects();
         }
       },

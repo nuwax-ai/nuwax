@@ -2,10 +2,13 @@ import type { AgentMode } from '@/components/business-component/AgentInterventio
 import {
   hydrateMcpAskInteractionsInMessageList,
   prependAndHydrateMcpAskMessageList,
+  processInterventionSsePatch,
   useAgentInterventionHandlers,
 } from '@/components/business-component/AgentIntervention';
+import { reconcileAcpPermissionStatusesInMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus';
 import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
+import { mergeConversationInfoTaskStatus } from '@/features/conversation/domain/taskStatus';
 import {
   applyTerminalTaskStatus,
   createRuntimeLineEffectsAdapter,
@@ -19,6 +22,7 @@ import {
   createConversationRuntimeSession,
   type ConversationRuntimeSession,
 } from '@/features/conversation/runtime/createConversationRuntimeSession';
+import { useConversationChanged } from '@/hooks/useDirectorySync';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   appendThinkChunk,
@@ -108,6 +112,35 @@ export function useConversationRuntimeSession(
   const [loadingMore, setLoadingMore] = useState(false);
   const conversationInfoRef = useRef<ConversationInfo | null | undefined>(null);
   conversationInfoRef.current = conversationInfo;
+  useConversationChanged((event) => {
+    if (
+      event.operation !== 'updated' ||
+      String(conversationId) !== event.conversationId ||
+      !event.patch
+    ) {
+      return;
+    }
+    setConversationInfo((previous) => {
+      if (!previous || String(previous.id) !== event.conversationId) {
+        return previous;
+      }
+      const next = {
+        ...previous,
+        ...(event.patch?.topic !== undefined
+          ? { topic: event.patch.topic }
+          : {}),
+        ...(event.patch?.icon !== undefined ? { icon: event.patch.icon } : {}),
+        ...(event.patch?.taskStatus !== undefined
+          ? { taskStatus: event.patch.taskStatus }
+          : {}),
+      };
+      return next.topic === previous.topic &&
+        next.icon === previous.icon &&
+        next.taskStatus === previous.taskStatus
+        ? previous
+        : next;
+    });
+  });
   /** 会话是否开启建议（对齐旧线 isSuggest：agent.openSuggest === Open） */
   const isSuggestEnabledRef = useRef(false);
   isSuggestEnabledRef.current =
@@ -126,13 +159,33 @@ export function useConversationRuntimeSession(
           finalizeThinkBlock,
         },
       },
+      interventionAdapter: {
+        patchEvent: processInterventionSsePatch,
+        reconcileMessages: reconcileAcpPermissionStatusesInMessageList,
+      },
+      hydrateHistoryMessages: hydrateMcpAskInteractionsInMessageList,
       effectsAdapter: createRuntimeLineEffectsAdapter({
         setConversationInfo,
         resources: {
           ...(effectsResources as never as Record<string, unknown>),
-          onSuggestLoaded: (list: string[]) => {
-            setLoadingSuggest(false);
-            setChatSuggestList(list);
+          onSuggestLoadingChange: (
+            loading: boolean,
+            targetConversationId: number,
+          ) => {
+            if (
+              sessionRef.current?.getState().currentConversationId ===
+              targetConversationId
+            ) {
+              setLoadingSuggest(loading);
+            }
+          },
+          onSuggestLoaded: (list: string[], targetConversationId: number) => {
+            if (
+              sessionRef.current?.getState().currentConversationId ===
+              targetConversationId
+            ) {
+              setChatSuggestList(list);
+            }
           },
           confirmStop: (conversationId: number) => {
             // 对齐旧线「正在执行任务」冲突确认：确认后停止本会话
@@ -172,10 +225,13 @@ export function useConversationRuntimeSession(
     }
     setConversationInfo(null);
     setChatSuggestList([]);
-    session.store.reset();
+    setLoadingSuggest(false);
+    session.resetForConversationSwitch();
     void session.load(conversationId).then((data) => {
       if (data) {
-        setConversationInfo(data);
+        setConversationInfo((prev) =>
+          mergeConversationInfoTaskStatus(prev, data),
+        );
       }
       // 有历史则允许首次上滑确认（对齐旧线：len > 0 → isMoreMessage = true）
       setIsMoreMessage((data?.messageList?.length ?? 0) > 0);
@@ -242,7 +298,7 @@ export function useConversationRuntimeSession(
   const { handleChatProcessingList } = useModel('chat');
   useEffect(() => {
     if (!session) return;
-    handleChatProcessingList(
+    handleChatProcessingList?.(
       messageList.flatMap((message) =>
         Array.isArray(message.processingList) ? message.processingList : [],
       ),
@@ -262,8 +318,6 @@ export function useConversationRuntimeSession(
         return;
       }
       const isSync = options.isSync !== false;
-      // 建议拉取置 loading（结果经 effect 写回；对齐旧线 loadingSuggest）
-      setLoadingSuggest(true);
       session.send({
         conversationId,
         message: messageInfo,
@@ -330,7 +384,9 @@ export function useConversationRuntimeSession(
       }
       const data = await session.load(reloadId);
       if (data) {
-        setConversationInfo(data);
+        setConversationInfo((prev) =>
+          mergeConversationInfoTaskStatus(prev, data),
+        );
       }
       return data?.messageList;
     },
@@ -342,10 +398,7 @@ export function useConversationRuntimeSession(
       if (!session || !snapshot) {
         return;
       }
-      const hydrated = hydrateMcpAskInteractionsInMessageList(
-        snapshot.messageList || [],
-      );
-      session.applySnapshot(snapshot.id, hydrated);
+      session.applySnapshot(snapshot.id, snapshot.messageList || []);
     },
     [session],
   );
@@ -359,8 +412,24 @@ export function useConversationRuntimeSession(
       if (current === null) {
         return;
       }
-      applyTerminalTaskStatus(setConversationInfo, current, status);
+      session.finalizeConversationTerminal(current, status);
     },
+    [session],
+  );
+
+  // UnifiedChatSession 的轮询 Hook 会把 resume/abort 句柄放入 refreshDeps。
+  // 不能在 conversationProps 中直接 bind，否则每次快照写回 render 都会生成新引用，
+  // 使 useRequest 立即重启并形成「详情请求 -> render -> 再请求」循环。
+  const onResumeConversationStream = useCallback(
+    (
+      ...args: Parameters<
+        ConversationRuntimeSession['resumeConversationStream']
+      >
+    ) => session?.resumeConversationStream(...args),
+    [session],
+  );
+  const onAbortResumeStream = useCallback(
+    () => session?.abortResumeStream(),
     [session],
   );
 
@@ -380,8 +449,8 @@ export function useConversationRuntimeSession(
     onSendMessage,
     runStopConversation,
     loadingStopConversation,
-    onResumeConversationStream: session.resumeConversationStream.bind(session),
-    onAbortResumeStream: session.abortResumeStream.bind(session),
+    onResumeConversationStream,
+    onAbortResumeStream,
     onReloadConversationHistoryAsync,
     onConversationSnapshot,
     onTerminalTaskStatus,
@@ -396,7 +465,7 @@ export function useConversationRuntimeSession(
     getCurrentConversationId: () =>
       session.getState().currentConversationId as number | null,
     getCurrentConversationRequestId: () => session.getState().currentRequestId,
-    disabledConversationActive: () => session.stop(''),
+    disabledConversationActive: session.disableConversationActive,
     setMessageList: storeAsDispatch(session.store),
   };
 

@@ -66,6 +66,20 @@ export interface RuntimeSessionListener {
 export interface RuntimeSessionConfig {
   adapters: ConversationEventReducerAdapters;
   effectsAdapter: ConversationEffectsAdapter;
+  /**
+   * 干预事件必须先于通用 reducer 消费，否则 ASK/ACP 会被当作普通 PROCESSING，
+   * 导致 DockPanel 丢失。具体协议解析由绑定层注入，runtime 核心不反向依赖组件层。
+   */
+  interventionAdapter?: {
+    patchEvent: (
+      event: ConversationChatResponse,
+      currentMessage: MessageInfo,
+      contextMessages: MessageInfo[],
+    ) => MessageInfo | null;
+    reconcileMessages?: (messages: MessageInfo[]) => MessageInfo[];
+  };
+  /** 历史详情与轮询快照进入 store 前的统一 hydrate（ASK 等历史协议重建）。 */
+  hydrateHistoryMessages?: (messages: MessageInfo[]) => MessageInfo[];
   /** 后端 stop 请求句柄 */
   stopRequest?: (conversationId: string) => Promise<unknown>;
   /** 会话详情查询句柄（load 用；返回 hydrate 后的消息列表由绑定层负责） */
@@ -87,6 +101,15 @@ export interface ConversationRuntimeSession {
   readonly runtime: ConversationRuntime;
   send(input: RuntimeSessionSendInput): void;
   stop(conversationId: number | string): void;
+  /** 切换会话时完整释放上一会话连接、消息与派生态。 */
+  resetForConversationSwitch(): void;
+  /** 对齐 legacy 的轮询/sub/live 终态统一清算。 */
+  finalizeConversationTerminal(
+    conversationId: number | string,
+    status: TaskStatus,
+  ): void;
+  /** 仅清理前端活跃态，不中断连接、不发送后端 stop 请求。 */
+  disableConversationActive(): void;
   /** 加载会话详情：消息整体替换（保留乐观尾）；返回会话数据供绑定层消费 */
   load(conversationId: number): Promise<ConversationInfo | undefined>;
   /** 轮询/恢复快照归并（conversationId 门禁，与旧线兼容回调同规则） */
@@ -179,6 +202,25 @@ export function createConversationRuntimeSession(
     }
   };
 
+  const finalizeConversationTerminal = (
+    conversationId: number | string,
+    status: TaskStatus,
+  ) => {
+    if (
+      status === TaskStatus.EXECUTING ||
+      (currentConversationId !== null &&
+        String(currentConversationId) !== String(conversationId))
+    ) {
+      return;
+    }
+    lastSendAt = 0;
+    isConversationActive = false;
+    isAwaitingChatTerminal = false;
+    store.finalizeOnTerminalTaskStatus(status);
+    config.applyTaskStatus?.(conversationId, status);
+    notifyState();
+  };
+
   /**
    * 流事件投影（live 与 sub 恢复共用）：reducer 归并 → store 写入 +
    * requestId 记录 + ERROR 终态的 FAILED 补丁。旧线 handleChangeMessageList 的消息面。
@@ -191,11 +233,25 @@ export function createConversationRuntimeSession(
     },
   ) => {
     currentRequestId = res.requestId || '';
-    const reduction = runtime.reduceStreamEvent(
-      store.getSnapshot(),
-      ownerMessageId,
-      res,
+    const snapshot = store.getSnapshot();
+    const currentMessage = snapshot.find(
+      (message) => message.id === ownerMessageId,
     );
+    const interventionPatch = currentMessage
+      ? config.interventionAdapter?.patchEvent(res, currentMessage, snapshot)
+      : null;
+    if (interventionPatch) {
+      const patchedMessages = snapshot.map((message) =>
+        message.id === ownerMessageId ? interventionPatch : message,
+      );
+      store.applyStreamReduction(
+        config.interventionAdapter?.reconcileMessages?.(patchedMessages) ??
+          patchedMessages,
+      );
+      return;
+    }
+
+    const reduction = runtime.reduceStreamEvent(snapshot, ownerMessageId, res);
     store.applyStreamReduction(reduction.messages);
 
     const data = (res.data ?? {}) as Record<string, unknown>;
@@ -203,7 +259,7 @@ export function createConversationRuntimeSession(
 
     if (res.eventType === 'ERROR') {
       if (conversationId !== null) {
-        config.applyTaskStatus?.(conversationId, TaskStatus.FAILED);
+        finalizeConversationTerminal(conversationId, TaskStatus.FAILED);
         runtime.effects.dispatch({
           type: 'recent.status.patch',
           conversationId,
@@ -275,7 +331,9 @@ export function createConversationRuntimeSession(
         res,
       );
       if (terminalStatus) {
-        config.applyTaskStatus?.(conversationId, terminalStatus);
+        // applyStreamEvent 同时承接 live 与 sub；终态必须在这里统一清算，
+        // 否则历史会话通过 sub 恢复时只会更新 taskStatus，Loading/工具态仍残留。
+        finalizeConversationTerminal(conversationId, terminalStatus);
       }
       // 建议：会话开启时拉取
       if (context?.isSuggestEnabled) {
@@ -301,7 +359,10 @@ export function createConversationRuntimeSession(
       return undefined;
     }
     if (data?.messageList) {
-      store.replaceFromHistory(data.messageList);
+      const hydratedMessages =
+        config.hydrateHistoryMessages?.(data.messageList) ?? data.messageList;
+      store.replaceFromHistory(hydratedMessages);
+      return { ...data, messageList: hydratedMessages };
     }
     return data;
   };
@@ -317,7 +378,7 @@ export function createConversationRuntimeSession(
     ) {
       return;
     }
-    store.mergeSnapshot(incoming);
+    store.mergeSnapshot(config.hydrateHistoryMessages?.(incoming) ?? incoming);
   };
 
   const send = (input: RuntimeSessionSendInput) => {
@@ -400,14 +461,19 @@ export function createConversationRuntimeSession(
 
     const abortConnection = openLiveConversationStream(params, {
       onMessage: (res: ConversationChatResponse) => {
-        if (res.eventType === 'FINAL_RESULT' || res.eventType === 'ERROR') {
-          isAwaitingChatTerminal = false;
-          notifyState();
+        if (!runtime.liveConnection.isCurrent(liveRunId)) {
+          return;
         }
+        let terminalStatus: TaskStatus | undefined;
         if (res.eventType === 'FINAL_RESULT') {
-          hasResolvedTerminalStatus = Boolean(
-            resolveTerminalTaskStatus(res.data?.success, res.data, res),
+          terminalStatus = resolveTerminalTaskStatus(
+            res.data?.success,
+            res.data,
+            res,
           );
+          hasResolvedTerminalStatus = Boolean(terminalStatus);
+        } else if (res.eventType === 'ERROR') {
+          terminalStatus = TaskStatus.FAILED;
         }
 
         // 首轮消息后更新会话主题（gate 与旧线同源：快照存在且【未更名过或还没有
@@ -436,6 +502,13 @@ export function createConversationRuntimeSession(
         applyStreamEvent(res, currentMessageId, {
           isSuggestEnabled: input.isSuggestEnabled,
         });
+        if (
+          !terminalStatus &&
+          (res.eventType === 'FINAL_RESULT' || res.eventType === 'ERROR')
+        ) {
+          isAwaitingChatTerminal = false;
+          notifyState();
+        }
       },
       onClose: () => {
         // 过期连接：只清理自己的消息，不触碰新一轮（与旧线 superseded 保护一致）
@@ -537,11 +610,27 @@ export function createConversationRuntimeSession(
     }))(),
   });
 
+  const resetForConversationSwitch = () => {
+    runtime.liveConnection.abortCurrent();
+    resumeController.abortResumeStream();
+    runtime.resetStreamProjection();
+    store.reset();
+    lastSendAt = 0;
+    isConversationActive = false;
+    isAwaitingChatTerminal = false;
+    currentRequestId = '';
+    currentConversationId = null;
+    notifyState();
+  };
+
   return {
     store,
     runtime,
     send,
     stop,
+    resetForConversationSwitch,
+    finalizeConversationTerminal,
+    disableConversationActive,
     load,
     applySnapshot,
     resumeConversationStream: (
@@ -571,11 +660,7 @@ export function createConversationRuntimeSession(
       resumeAllowAutoScrollRef = allowAutoScrollRef;
     },
     dispose() {
-      runtime.liveConnection.abortCurrent();
-      runtime.resetStreamProjection();
-      store.reset();
-      isAwaitingChatTerminal = false;
-      disableConversationActive();
+      resetForConversationSwitch();
     },
     getState: () => ({
       isConversationActive,

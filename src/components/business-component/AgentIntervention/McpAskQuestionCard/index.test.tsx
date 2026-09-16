@@ -15,6 +15,8 @@ vi.mock('@/services/i18nRuntime', () => ({
       'PC.Components.McpAskQuestionCard.fieldRequired': '请填写此项',
       'PC.Components.McpAskQuestionCard.multiSelectMin': '请至少选择一项',
       'PC.Components.McpAskQuestionCard.skip': '跳过',
+      'PC.Components.McpAskQuestionCard.expandDesc': '展开全文',
+      'PC.Components.McpAskQuestionCard.collapseDesc': '收起',
     };
     const template = dict[key] ?? key;
     return args.reduce(
@@ -193,5 +195,49 @@ describe('McpAskQuestionCard', () => {
       '矩形 143 户型封窗报价单会挡在填满后的画布左侧',
     );
     expect(subTitleNode?.textContent).toContain('需要先核对报价再继续生成。');
+  });
+
+  it('hides the desc expand toggle when the description fits two lines', () => {
+    // jsdom 无布局，scrollHeight===clientHeight===0 即「未溢出」，短文案不得渲染按钮
+    render(
+      <McpAskQuestionCard
+        interaction={interaction}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    expect(screen.getByText('Agent 需要你确认下一步。')).toBeTruthy();
+    expect(screen.queryByText('展开全文')).toBeNull();
+  });
+
+  it('shows the desc expand toggle and collapses back when the description overflows', () => {
+    // 原型上 mock 出溢出量（scrollHeight>clientHeight），锁「溢出才出按钮 + 展开/收起往返」
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get: () => 60,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get: () => 36,
+    });
+    try {
+      render(
+        <McpAskQuestionCard
+          interaction={interaction}
+          keyboardShortcutsEnabled={false}
+        />,
+      );
+
+      fireEvent.click(screen.getByText('展开全文'));
+      expect(screen.getByText('收起')).toBeTruthy();
+      expect(document.querySelector('.desc-expanded')).toBeTruthy();
+
+      fireEvent.click(screen.getByText('收起'));
+      expect(screen.getByText('展开全文')).toBeTruthy();
+      expect(document.querySelector('.desc-expanded')).toBeNull();
+    } finally {
+      delete (HTMLElement.prototype as any).scrollHeight;
+      delete (HTMLElement.prototype as any).clientHeight;
+    }
   });
 });

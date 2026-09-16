@@ -1,4 +1,8 @@
 import {
+  useConversationChanged,
+  useProjectChanged,
+} from '@/hooks/useDirectorySync';
+import {
   apiAgentConversationDelete,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
@@ -54,6 +58,28 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
   // 重命名/删除 Modal 对活动列表生效：按一级 tab 路由到对应列表的 ref
   const activeList = () =>
     sourceTab === 'task' ? listRef.current : projectListRef.current;
+
+  useConversationChanged((event) => {
+    if (event.operation === 'created') {
+      const targetTab = event.project ? 'project' : 'task';
+      if (sourceTab === targetTab) activeList()?.refresh();
+      return;
+    }
+    if (event.operation === 'deleted') {
+      activeList()?.removeItem(Number(event.conversationId));
+      return;
+    }
+    if (event.patch?.topic !== undefined) {
+      activeList()?.updateItemTopic(
+        Number(event.conversationId),
+        event.patch.topic,
+      );
+    }
+  });
+
+  useProjectChanged(() => {
+    if (sourceTab === 'project') projectListRef.current?.refresh();
+  });
 
   const { isMobile } = useModel('layout');
 

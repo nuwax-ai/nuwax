@@ -88,6 +88,7 @@ import {
   VncDesktopContainerInfo,
 } from '@/types/interfaces/vncDesktop';
 import { extractTaskResult } from '@/utils';
+import { emitConversationChanged } from '@/utils/directorySyncEvents';
 
 import { useConversationTerminalFinalizer } from '@/hooks/useConversationTerminalFinalizer';
 import { modalConfirm } from '@/utils/ant-custom';
@@ -664,6 +665,18 @@ export default () => {
             topicUpdated: result?.data?.topicUpdated,
           } as ConversationInfo),
       );
+      if (result?.data?.id !== undefined) {
+        emitConversationChanged({
+          operation: 'updated',
+          conversationId: String(result.data.id),
+          patch: {
+            topic: result.data.topic,
+            icon: result.data.icon,
+          },
+          origin: 'conversation-legacy',
+          reason: 'auto-topic',
+        });
+      }
     },
   });
 
