@@ -422,6 +422,7 @@ const Home: React.FC = () => {
     return chatboxCategories.map((category) => ({
       key: category.key,
       label: category.label,
+      icon: category.icon,
       items: recommendNavList.filter(
         (item) => (item.category || firstKey) === category.key,
       ),

@@ -11,6 +11,8 @@ export interface HomeCategoryDef {
   key: string;
   /** 分类名称,由接口下发 */
   label: string;
+  /** 分类图标,接口下发才有,为空不展示 */
+  icon?: string;
   /** 分类下展示的推荐 pill 列表 */
   items: DisplayRecommendInfo[];
 }
@@ -44,7 +46,19 @@ const HomeCategoryTabs: React.FC<HomeCategoryTabsProps> = ({
         onChange={(value) => onChange(String(value))}
         options={categories.map((category) => ({
           value: category.key,
-          label: category.label,
+          label: (
+            <span className={cx(styles['item-label'])}>
+              {category.icon && (
+                <img
+                  className={cx(styles['item-icon'])}
+                  src={category.icon}
+                  alt=""
+                  aria-hidden="true"
+                />
+              )}
+              <span className={cx(styles['item-text'])}>{category.label}</span>
+            </span>
+          ),
         }))}
       />
     </div>
