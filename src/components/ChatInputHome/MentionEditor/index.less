@@ -31,9 +31,18 @@
   white-space: pre-wrap;
   caret-color: @colorPrimary;
 
+  /* contenteditable 换行包出的 div/p 块整体重置缩进（缺省 text-indent
+     会作用于每个块的首行）；但编辑器的首个块就是视觉首行——与纯文本
+     首行同口径恢复让位缩进，避免块内行首的 mention chip 从 x=0 开始
+     钻进行首回执 pill 浮层底下被盖住 */
   & > div,
   & > p {
     text-indent: 0;
+  }
+
+  & > div:first-child,
+  & > p:first-child {
+    text-indent: var(--mention-inline-prefix-offset, 0);
   }
 
   // 自定义 placeholder，避免 contenteditable 的 :empty 不稳定问题
@@ -97,9 +106,7 @@
   background-color: @colorBgLayout;
   border-radius: @borderRadius;
   padding: 2px 4px 2px 8px;
-  // 垂直 margin 参与行盒高度：为高于普通文本的 chip 行留出上下呼吸，
-  // 避免多行 chip 换行后行间贴死（横向与紧邻文字保持小间距）
-  margin: 3px 2px;
+  margin: 0 2px;
   user-select: none;
   cursor: default;
   transition: all 0.2s;

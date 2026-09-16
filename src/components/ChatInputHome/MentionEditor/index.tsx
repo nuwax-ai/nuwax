@@ -168,7 +168,7 @@ const getCaretPosition = (
       4,
       Math.min(
         rect.left,
-        (window.innerWidth || document.documentElement.clientWidth) - 388,
+        (window.innerWidth || document.documentElement.clientWidth) - 348,
       ),
     ),
     finalPlacement,
@@ -223,12 +223,21 @@ const BLOCK_ELEMENT_RE =
  * @param node - 需要序列化的节点
  * @returns 纯文本结果
  */
-const serializeEditorNode = (node: Node): string => {
+const isMentionChipEl = (node: Node): boolean =>
+  node instanceof HTMLElement &&
+  (!!node.dataset?.mentionKind || !!node.dataset?.mentionName);
+
+const serializeEditorNode = (node: Node, stripChips = false): string => {
   if (node.nodeType === Node.TEXT_NODE) {
     return node.textContent || '';
   }
 
   if (!(node instanceof HTMLElement)) {
+    return '';
+  }
+
+  // 剥离模式：mention chip 不参与文本（草稿落盘场景，防引用字面量残留）
+  if (stripChips && isMentionChipEl(node)) {
     return '';
   }
 
@@ -244,8 +253,23 @@ const serializeEditorNode = (node: Node): string => {
     return '\n';
   }
 
+  // 子节点序列化：剥离模式下 chip 后紧跟的空白分隔（chip 回显时自动补的
+  // 空格文本节点）一并跳过——避免草稿文本残留名称字面量或成对空格
+  let prevStrippedChip = false;
   let text = Array.from(node.childNodes)
-    .map((childNode) => serializeEditorNode(childNode))
+    .map((childNode) => {
+      const isChip = stripChips && isMentionChipEl(childNode);
+      if (
+        prevStrippedChip &&
+        childNode.nodeType === Node.TEXT_NODE &&
+        !(childNode.textContent || '').trim()
+      ) {
+        prevStrippedChip = isChip;
+        return '';
+      }
+      prevStrippedChip = isChip;
+      return serializeEditorNode(childNode, stripChips);
+    })
     .join('');
 
   // 块级节点视为一行：内容末尾补换行（若子节点已是 BR 结尾则不再重复）
@@ -262,11 +286,26 @@ const serializeEditorNode = (node: Node): string => {
  * @param element - 编辑器 DOM 元素
  * @returns 去除控制字符后的纯文本（保留换行）
  */
-export const getSerializedEditorText = (element: HTMLElement): string => {
+export const getSerializedEditorText = (
+  element: HTMLElement,
+  stripChips = false,
+): string => {
   const children = Array.from(element.childNodes);
+  let prevStrippedChip = false;
   const text = children
     .map((node, index) => {
-      let part = serializeEditorNode(node);
+      const isChip = stripChips && isMentionChipEl(node);
+      let part: string;
+      if (
+        prevStrippedChip &&
+        node.nodeType === Node.TEXT_NODE &&
+        !(node.textContent || '').trim()
+      ) {
+        part = '';
+      } else {
+        part = serializeEditorNode(node, stripChips);
+      }
+      prevStrippedChip = isChip;
       // 粘贴/回车多行内容时，Chrome 会把首行留作根级裸文本、后续行包进块级节点。
       // 裸文本自身不会补换行，导致序列化后首行与下一行被拼在一起。
       // 若其下一个兄弟是块级节点（BR 已自带 \n，需排除避免重复），则视为独立一行补 \n。
@@ -450,6 +489,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       disabled = false,
       className,
       inlinePrefixWidth = 0,
+      onEditorScroll,
       onMentionSelect,
       onFetchMentionFiles,
       onPluginSelect,
@@ -879,9 +919,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       if (!!defaultPlaceholder) {
         return defaultPlaceholder;
       }
-      // / 能力弹窗随时可唤起，统一展示含 / 引导的默认占位文案
-      return t('PC.Components.ChatInputCommands.hint');
-    }, [defaultPlaceholder]);
+      // / 能力弹窗随时可唤起，统一展示含 / 引导的默认占位文案；
+      // @ 的引用对象随形态分流：首页模式引用专家、会话页模式引用文件
+      return t(
+        atHomePanel
+          ? 'PC.Components.ChatInputCommands.hintHome'
+          : 'PC.Components.ChatInputCommands.hint',
+      );
+    }, [defaultPlaceholder, atHomePanel]);
 
     /**
      * 弹窗最大高度：不超过视口内从弹窗 top 到底部的空间，避免弹窗撑出页面滚动条导致左右闪动
@@ -1325,10 +1370,23 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       [onChange, resetUndoStack, closeMentionPopup, syncMentionsFromDom],
     );
 
+    /**
+     * 草稿落盘用的纯文本：mention chip 剥离——chip 无法跨刷新/切换还原，
+     * 序列化残留的 @/ 名称字面量会污染恢复后的输入框
+     */
+    const getPlainText = useCallback(
+      () =>
+        editorRef.current
+          ? getSerializedEditorText(editorRef.current, true)
+          : '',
+      [],
+    );
+
     // 通过 useImperativeHandle 暴露方法
     useImperativeHandle(ref, () => ({
       clear,
       setEditorText,
+      getPlainText,
       handleAtIconMentionSelect,
       insertTriggerText,
       focus: () => {
@@ -2132,6 +2190,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           onCompositionStart={handleCompositionStart}
           /** 输入法组合结束事件 */
           onCompositionEnd={handleCompositionEnd}
+          // 内部滚动上报：行首回执 pill 浮层随首行同步滚出（防滚动后正文压住 pill）
+          onScroll={(e) => onEditorScroll?.(e.currentTarget.scrollTop)}
           style={
             {
               minHeight: `${minHeight}px`,
