@@ -497,12 +497,20 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         </div>
       </div>
 
-      {/* 二级菜单列：选中「有子菜单/Section」的域时在会话列右侧并列展开（原二级菜单保留） */}
-      {secondMenuVisible && (
+      {/* 二级菜单列：选中「有子菜单/Section」的域时在会话列右侧并列展开（原二级菜单保留）。
+          挂载门控用可用性（shouldShowSecondMenu），收起/展开只驱动 width/opacity 过渡：
+          按显隐条件卸载会让二级列瞬移（less 的 width 过渡永不生效），内容区先跳
+          200px 再随主列滑动，两段式与无二级列页面的单段滑动观感割裂（禅道 bug2349） */}
+      {shouldShowSecondMenu && (
         <div
           className={cx(styles['second-column'], 'noselect')}
           style={{
-            width: SECOND_COLUMN_WIDTH,
+            width: secondMenuVisible ? SECOND_COLUMN_WIDTH : 0,
+            opacity: secondMenuVisible ? 1 : 0,
+            // border-box 的收缩下限=padding+border（10+10+1），width:0 仍会残留
+            // 21px 底色条，收起时须同步归零（展开交还 less 默认值）
+            padding: secondMenuVisible ? undefined : 0,
+            borderRightWidth: secondMenuVisible ? undefined : 0,
             paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
             // 底色交给 less（原型 #fafafa，2026-09-12）：此处原内联 transparent
             // 会盖掉 less 背景，移除后单栏二级列按原型配色渲染
@@ -521,8 +529,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                 }
                 // 滚动条贴列右缘（2026-09-12 需求）：外扩进右 padding 带，不叠压行内容
                 scrollbarEdge
+                // 顶部 3px：标题行自然落位 19px（列 padding 16 + 3），行高中点
+                // 31px 对齐顶栏 logo/搜索/内容区标题中线；勿用负 margin 上提——
+                // 本组件 content 为 overflow:hidden，负 margin 顶出盒顶的部分
+                // 会被裁（「广场/更多/系统管理」标题首字缺角的根因）
                 style={{
-                  padding: `${token.paddingSM}px 0`,
+                  padding: '3px 0 12px',
                 }}
               >
                 <div
@@ -534,10 +546,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                   {/* 标题（选中导航项名称） */}
                   <ConditionRender condition={isShowTitle && currentTitle}>
                     {/* 水平 10px 与行内容（容器 10 + 行 padding 10 = 20px）对齐；
-                        垂直上提 9px 与顶栏 logo/搜索/内容区标题同一中线：列 padding
-                        (@padding 16) + 滚动容器 paddingSM 12 把标题行顶到 28px，
-                        24px 行高中点落在 40px，需回到 19px 顶（中点 31px 对齐线） */}
-                    <div style={{ margin: '-9px 0 0', padding: '0 10px 12px' }}>
+                        垂直落位由 HoverScrollbar 顶部 padding 3px 承担（列 padding
+                        16 + 3 = 19px 顶，行高中点 31px 对齐顶栏中线）——此处禁止
+                        再用负 margin 上提：外层 content overflow:hidden 会裁掉
+                        盒顶（「广场/更多」首字缺角根因）；底部 21px 使后续菜单
+                        落点与旧负 margin 方案逐像素一致（19+24+21 = 28+24+12） */}
+                    <div style={{ padding: '0 10px 21px' }}>
                       <Typography.Title
                         level={5}
                         style={{ marginBottom: 0 }}

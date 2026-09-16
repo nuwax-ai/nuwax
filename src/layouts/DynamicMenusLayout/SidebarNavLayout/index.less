@@ -167,7 +167,12 @@
     border-right: 1px solid #f0f0f3;
     border-radius: 0;
     margin-right: 0;
-    transition: width 0.3s ease-in-out, background-color 0.3s ease;
+    // opacity/padding/border 与 width 同步过渡（收起/展开由 SidebarNavLayout 驱动
+    // width/opacity/padding/borderRightWidth，列保持挂载）：与主列 .nav-menus 同规格，
+    // 两列同速收拢/展开不瞬移；padding/border 不同步归零会残留 21px 底色条
+    transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out,
+      padding 0.3s ease-in-out, border-right-width 0.3s ease-in-out,
+      background-color 0.3s ease;
 
     // 二级菜单项同步一级列规格（33px 项高/11px 圆角/13.5px 字号/16px 图标），
     // 交互态按 2026-09-12 原型 tm-item 落皮：本列白底不适配「白卡+阴影」（白卡

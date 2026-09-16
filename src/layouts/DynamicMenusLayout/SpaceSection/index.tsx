@@ -110,7 +110,9 @@ const SpaceSection: React.FC<{
 
   return (
     <div className={cx('h-full', 'overflow-y', styles.container)} style={style}>
-      <div style={{ padding: '0 12px 12px' }}>
+      {/* 头部包裹层间距走 .header-box（经典布局原 0 12px 12px；单栏 style3
+          在 less 内 scope 对齐标题分支落位 3px 10px 21px，2026-09-16） */}
+      <div className={cx(styles['header-box'])}>
         <SpaceTitle name={dynamicTitle} />
       </div>
 

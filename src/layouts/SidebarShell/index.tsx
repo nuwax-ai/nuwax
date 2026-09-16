@@ -262,7 +262,8 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
    */
   const contentNode = useMemo(() => {
     // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
-    // - Win/Linux 避让 shellAvoid.CONTENT_TOP（与顶行同高，圆角从下沿开始）；
+    // - Win/Linux 避让 shellAvoid.CONTENT_TOP（28 < 顶行行高 40：顶行透明，
+    //   字形只占行上部，内容卡上提到字形下沿，减少顶部空白）；
     // - mac 默认不退让（顶行透明、图标组悬浮于侧栏列上方，展开态内容区
     //   直接顶到窗口上沿）；仅整条侧栏收起后内容区顶到窗口上沿时，
     //   才避让工具栏整条高度（图标簇悬浮于内容区左上，需要让位）；
