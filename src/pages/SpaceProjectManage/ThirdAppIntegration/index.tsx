@@ -173,11 +173,14 @@ const ThirdAppIntegration: React.FC = () => {
     [keyword, runQuery],
   );
 
-  /** 创建完成后关闭弹窗并刷新列表 */
-  const handleCreated = useCallback(() => {
-    setCreateOpen(false);
-    runQuery(keyword, 1);
-  }, [keyword, runQuery]);
+  /** 创建完成后跳转三方应用详情页 */
+  const handleCreated = useCallback(
+    (projectId: number) => {
+      setCreateOpen(false);
+      history.push(`/space/${spaceId}/third-app-detail/${projectId}`);
+    },
+    [spaceId],
+  );
 
   /** 打开三方应用详情 */
   const handleOpenProject = useCallback(
