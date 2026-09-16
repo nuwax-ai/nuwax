@@ -23,6 +23,9 @@ export function useSlashPlugins(
       const component = {
         id: item.targetId,
         type: item.componentType ?? AgentComponentTypeEnum.Plugin,
+        name: item.name,
+        icon: item.icon ?? '',
+        description: item.description ?? '',
       };
       setPlugins((prev) =>
         prev.some((plugin) => plugin.id === item.targetId)

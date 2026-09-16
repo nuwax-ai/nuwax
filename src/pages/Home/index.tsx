@@ -85,6 +85,7 @@ const Home: React.FC = () => {
   const location = useLocation();
   const {
     selectedComponentList,
+    selectedComponentDetails,
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
@@ -375,7 +376,19 @@ const Home: React.FC = () => {
           return;
         }
         await createProjectAndNavigate({
-          payload: plan.payload,
+          payload:
+            plan.payload.type === AgentComponentTypeEnum.PageApp
+              ? {
+                  ...plan.payload,
+                  tools: plan.payload.tools?.map((item) => ({
+                    ...item,
+                    ...selectedComponentDetails.find(
+                      (detail) =>
+                        detail.id === item.id && detail.type === item.type,
+                    ),
+                  })),
+                }
+              : plan.payload,
           spaceId: plan.spaceId,
           tenantConfigInfo,
           setContext,
