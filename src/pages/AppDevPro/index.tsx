@@ -78,6 +78,7 @@ import {
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
+import PreviewRuntimeButtons from './ConversationAgentFilePreview/PreviewTabBar/PreviewRuntimeButtons';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import {
   useInitialConversationAutoSend,
@@ -2169,6 +2170,31 @@ const AppDevPro: React.FC = () => {
         isCloudComputer={finalSelectedComputerId === '-1'}
       />
     );
+    const previewRuntimeButtons = (
+      <PreviewRuntimeButtons
+        onRestartPreviewRuntime={handleRestartPreviewRuntime}
+        onStopPreviewRuntime={handleStopPreviewRuntime}
+        previewRuntimeBusy={previewRuntime.busy}
+        previewRuntimeRestarting={previewRuntime.restarting}
+        previewRuntimeStopping={previewRuntime.stopping}
+        previewRuntimeReady={
+          podReady && !isConversationActive && !hasPendingIntervention
+        }
+        previewContainerFailed={previewContainerFailed}
+        previewDevActionLocked={previewDevActionLocked}
+      />
+    );
+    const previewRuntimeTabBarProps = {
+      onRestartPreviewRuntime: handleRestartPreviewRuntime,
+      onStopPreviewRuntime: handleStopPreviewRuntime,
+      previewRuntimeBusy: previewRuntime.busy,
+      previewRuntimeRestarting: previewRuntime.restarting,
+      previewRuntimeStopping: previewRuntime.stopping,
+      previewRuntimeReady:
+        podReady && !isConversationActive && !hasPendingIntervention,
+      previewContainerFailed,
+      previewDevActionLocked,
+    };
 
     return (
       <div className={cx(styles['right-panel'])}>
@@ -2199,6 +2225,7 @@ const AppDevPro: React.FC = () => {
                 void fileView.tree.handleExportProject?.();
               }}
               isCloudComputer={finalSelectedComputerId === '-1'}
+              {...previewRuntimeTabBarProps}
             />
           ) : workspaceView === 'database' ? (
             <PreviewTabBar
@@ -2226,43 +2253,33 @@ const AppDevPro: React.FC = () => {
                 void fileView.tree.handleExportProject?.();
               }}
               isCloudComputer={finalSelectedComputerId === '-1'}
+              {...previewRuntimeTabBarProps}
             />
           ) : workspaceView === 'remote-desktop' ? (
             <div className={cx(styles['tool-workspace-bar'])}>
               <span className={cx(styles['tool-workspace-title'])}>
                 {dict('PC.Pages.AppDevPro.remoteDesktop')}
               </span>
-              {moreActions ? (
-                <div className={cx(styles['tool-workspace-actions'])}>
-                  {moreActions}
-                </div>
-              ) : null}
+              <div className={cx(styles['tool-workspace-actions'])}>
+                {moreActions}
+                {previewRuntimeButtons}
+              </div>
             </div>
           ) : (
             <div className={cx(styles['tool-workspace-bar'])}>
-              {workspaceView === 'app-preview' && (
-                <PreviewChromeActions
-                  previewUrl={activePreviewUrl}
-                  onNavigatePreview={handleNavigatePreview}
-                  onRefreshPreview={handleRefreshPreview}
-                  onStartPreviewRuntime={handleStartPreviewRuntime}
-                  onRestartPreviewRuntime={handleRestartPreviewRuntime}
-                  onStopPreviewRuntime={handleStopPreviewRuntime}
-                  previewRuntimeBusy={previewRuntime.busy}
-                  previewRuntimeRunning={previewRuntime.running}
-                  previewRuntimeStopping={previewRuntime.stopping}
-                  previewRuntimeReady={
-                    podReady && !isConversationActive && !hasPendingIntervention
-                  }
-                  previewContainerFailed={previewContainerFailed}
-                  previewDevActionLocked={previewDevActionLocked}
-                />
-              )}
-              {moreActions ? (
-                <div className={cx(styles['tool-workspace-actions'])}>
-                  {moreActions}
+              {workspaceView === 'app-preview' ? (
+                <div className={cx(styles['tool-workspace-preview-chrome'])}>
+                  <PreviewChromeActions
+                    previewUrl={activePreviewUrl}
+                    onNavigatePreview={handleNavigatePreview}
+                    onRefreshPreview={handleRefreshPreview}
+                  />
                 </div>
               ) : null}
+              <div className={cx(styles['tool-workspace-actions'])}>
+                {moreActions}
+                {previewRuntimeButtons}
+              </div>
             </div>
           )}
           <div className={cx(styles['right-panel-main'])}>
@@ -2398,6 +2415,7 @@ const AppDevPro: React.FC = () => {
             <AppDevProHeaderBrand
               userAppInfo={userAppInfo}
               spaceId={spaceId}
+              appId={appId}
               onConfirmUpdate={setUserAppInfo}
             />
             <div className={cx(styles['left-panel-body'])}>
