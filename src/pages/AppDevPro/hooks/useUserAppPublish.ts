@@ -9,6 +9,7 @@ import {
   apiUserAppGetById,
   apiUserAppProdDeployable,
   apiUserAppProdStart,
+  apiUserAppProdStop,
 } from '../services/appDevPro';
 import {
   apiUserAppDomainList,
@@ -73,6 +74,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     useState<UserAppDeployFailedStage | null>(null);
   const [taskId, setTaskId] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [stopLoading, setStopLoading] = useState(false);
   /** 部署成功后异步拿到的线上 Prod 域名 */
   const [prodAccessUrl, setProdAccessUrl] = useState('');
 
@@ -433,6 +435,37 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   ]);
 
   /**
+   * 部署服务阶段停止生产部署（检测可部署已通过，不再走 build cancel）。
+   */
+  const stopDeploy = useCallback(async () => {
+    if (!appId) {
+      return;
+    }
+    setStopLoading(true);
+    try {
+      cancelledRef.current = true;
+      stopStream();
+      const result = await apiUserAppProdStop({
+        appId,
+        releaseId: releaseIdRef.current || undefined,
+      });
+      if (result && typeof result === 'object' && 'code' in result) {
+        if (result.code && result.code !== SUCCESS_CODE) {
+          throw new Error(
+            result.message || dict('PC.Pages.AppDevPro.stopFailed'),
+          );
+        }
+      }
+      setPhase('cancelled');
+      message.success(dict('PC.Pages.AppDevPro.stopDeploySuccess'));
+    } catch (error) {
+      console.error('[AppDevPro] Stop deploy failed:', error);
+    } finally {
+      setStopLoading(false);
+    }
+  }, [appId, stopStream]);
+
+  /**
    * 取消当前构建任务。
    */
   const cancelTask = useCallback(async () => {
@@ -491,9 +524,11 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     failedStage,
     taskId,
     cancelLoading,
+    stopLoading,
     publishing,
     startPublish,
     cancelTask,
+    stopDeploy,
     closeModal,
     startServices,
     prodAccessUrl,
