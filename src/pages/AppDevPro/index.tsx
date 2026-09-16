@@ -591,12 +591,12 @@ const AppDevPro: React.FC = () => {
     };
   }, [queryConversationId]);
 
-  // 监听状态管理器中的 conversationInfo 变化以关闭加载状态
+  // 监听会话 ID 回填以关闭加载状态（勿依赖整个 conversationInfo 对象，避免 SSE 更新触发多余 effect）
   useEffect(() => {
-    if (conversationInfo) {
+    if (conversationInfo?.id) {
       setLoadingAgentConfigInfo(false);
     }
-  }, [conversationInfo]);
+  }, [conversationInfo?.id]);
 
   /** 按应用 ID 查询项目详情 */
   const { run: runGetUserAppInfo } = useRequest(apiUserAppGetById, {

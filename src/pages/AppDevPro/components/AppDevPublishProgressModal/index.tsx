@@ -252,6 +252,11 @@ const DeployAccessLink: React.FC<{ url: string }> = ({ url }) => {
  * @param props.emptyText 无日志时的占位；不传则不渲染（部署步骤不展示等待文案）
  * @returns 日志块；无内容时返回 null
  */
+/** 比较折叠面板 key 列表是否一致，避免 effect 每次返回新数组触发重渲染 */
+const isSameKeyList = (left: string[], right: string[]): boolean =>
+  left.length === right.length &&
+  left.every((item, index) => item === right[index]);
+
 const ServiceLogBlock: React.FC<{
   logs: string[];
   emptyText?: string;
@@ -490,7 +495,8 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
           next.add(key);
         }
       });
-      return Array.from(next);
+      const nextKeys = Array.from(next);
+      return isSameKeyList(prev, nextKeys) ? prev : nextKeys;
     });
   }, [services]);
 
@@ -499,7 +505,8 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     setStartActiveKeys((prev) => {
       const next = new Set(prev);
       startServices.forEach((item) => next.add(`start:${item.serviceId}`));
-      return Array.from(next);
+      const nextKeys = Array.from(next);
+      return isSameKeyList(prev, nextKeys) ? prev : nextKeys;
     });
   }, [startServices]);
 
