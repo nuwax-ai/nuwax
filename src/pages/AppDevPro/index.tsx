@@ -779,8 +779,6 @@ const AppDevPro: React.FC = () => {
   previewRunningRef.current = previewRuntime.running;
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
-  /** 会话进行中服务已在跑时，结束后重启预览以加载新文件 */
-  const restartPreviewAfterConversationRef = useRef(false);
 
   /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
   const previewDevActionLocked =
@@ -860,14 +858,7 @@ const AppDevPro: React.FC = () => {
 
     // 刷新 Git 源代码管理状态列表
     void refreshGitListIfEnabled();
-
-    // 会话结束前预览已在运行：等准备预览 effect 在确认卡清空后再重启
-    if (dbEnv === UserAppDbEnvEnum.Dev && previewRuntime.running) {
-      restartPreviewAfterConversationRef.current = true;
-    }
   }, [
-    dbEnv,
-    previewRuntime.running,
     queryConversationId,
     refreshFileListImmediately,
     refreshGitListIfEnabled,
@@ -1442,7 +1433,7 @@ const AppDevPro: React.FC = () => {
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
    * 开发环境须等 tasks/active 首包：允许则 start；不允许（服务已在跑）且已有预览域名则直接 iframe，不再 start / stream。
    * 允许 start 时还须文件树已有数据，避免空项目拉起预览。
-   * 会话进行中或仍有待回复确认卡时不启动；已有预览则会话结束后再重启。
+   * 会话进行中或仍有待回复确认卡时不启动；会话结束后不自动 restart，仅首次 start。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
    */
   useEffect(() => {
@@ -1482,14 +1473,6 @@ const AppDevPro: React.FC = () => {
     }
     // 可以 start，但文件树还没数据时不启动（等文件列表回来后再走本 effect）
     if (!hasFileTreeData) {
-      return;
-    }
-    // 新会话结束前预览已在运行：重启以加载会话改过的文件
-    if (restartPreviewAfterConversationRef.current) {
-      restartPreviewAfterConversationRef.current = false;
-      setPreviewIframeUrl(appPreviewUrlRef.current);
-      void restartPreviewRuntimeRef.current();
-      setPreviewEnterSettled(true);
       return;
     }
     // 尚未运行则启动；已运行则 startIfNeeded 内部会跳过
