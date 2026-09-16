@@ -3,8 +3,9 @@
 
 .header {
   position: relative;
-  padding: @paddingSm;
-  // overflow-x: auto;
+  padding: @paddingSm 0;
+  // 左右两栏头部等高，保证会话区与内容区顶部对齐
+  min-height: 52px;
   flex-shrink: 0;
   box-sizing: border-box;
 
@@ -50,14 +51,12 @@
     gap: 8px;
   }
 
+  // 右栏头部左右布局：环境切换靠左，图标与按钮靠右
   .env-switch {
     gap: 10px;
-    position: absolute;
-    left: 50%;
-    top: 50%;
+    flex-shrink: 0;
     height: 40px;
-    padding: 0 8px;
-    transform: translate(-50%, -50%);
+    padding: 0 4px;
     border-radius: 5px;
     background: @WHITE21;
 

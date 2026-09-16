@@ -1,5 +1,4 @@
 import { GitVersionRecordPanel } from '@/components/business-component';
-import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import FileTreeGitSourcePanel, {
   useSourceControl,
@@ -22,11 +21,7 @@ import {
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import {
-  AgentComponentTypeEnum,
-  MessageTypeEnum,
-  TaskStatus,
-} from '@/types/enums/agent';
+import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import { RequestResponse } from '@/types/interfaces/request';
@@ -52,13 +47,17 @@ import React, {
 } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
-import AppDevProHeader from './AppDevProHeader';
+import {
+  AppDevProHeaderActions,
+  AppDevProHeaderBrand,
+} from './AppDevProHeader';
 import AppDevAppPreviewPanel from './components/AppDevAppPreviewPanel';
 import AppDevBottomConsole, {
   type ConsoleExternalContainerStatus,
   type ConsoleLayoutMode,
 } from './components/AppDevBottomConsole';
 import DevLogActions from './components/AppDevBottomConsole/DevLogActions';
+import AppDevBuildVersionDrawer from './components/AppDevBuildVersionDrawer';
 import AppDevDatabaseWorkspace, {
   type AppDevDatabaseWorkspaceTab,
 } from './components/AppDevDatabaseWorkspace';
@@ -77,6 +76,10 @@ import {
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
+import {
+  useInitialConversationAutoSend,
+  type AppDevProInitialConversationState,
+} from './hooks/useInitialConversationAutoSend';
 import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
 import { useUserAppRuntime } from './hooks/useUserAppRuntime';
@@ -216,6 +219,8 @@ const AppDevPro: React.FC = () => {
   );
   /** 项目设置弹窗 */
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  /** 线上环境历史版本抽屉 */
+  const [buildVersionsOpen, setBuildVersionsOpen] = useState<boolean>(false);
   /** 全栈应用详情 */
   const [userAppInfo, setUserAppInfo] = useState<UserAppInfo | null>(null);
   /** 应用绑定的域名列表 */
@@ -258,7 +263,6 @@ const AppDevPro: React.FC = () => {
     setTaskAgentSelectedFileId,
     setIsLoadingOtherInterface,
     onMessageSend,
-    runAsync,
     resetInit,
     restartVncPod,
     setPodAppStage,
@@ -486,14 +490,17 @@ const AppDevPro: React.FC = () => {
    *
    * @param targetEnv 目标环境
    */
-  const startEnvPodIfNeeded = useCallback((targetEnv: UserAppDbEnvEnum) => {
-    const status =
-      targetEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus;
-    if (status === 'running' || status === 'starting') {
-      return;
-    }
-    void ensureEnvPodRef.current(targetEnv, status === 'error');
-  }, [podStatus, prodPod.status]);
+  const startEnvPodIfNeeded = useCallback(
+    (targetEnv: UserAppDbEnvEnum) => {
+      const status =
+        targetEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus;
+      if (status === 'running' || status === 'starting') {
+        return;
+      }
+      void ensureEnvPodRef.current(targetEnv, status === 'error');
+    },
+    [podStatus, prodPod.status],
+  );
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(appId, {
@@ -508,67 +515,14 @@ const AppDevPro: React.FC = () => {
 
   // ==================== 副作用 (Effects) ====================
 
-  /**
-   * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
-   */
-  useEffect(() => {
-    // 优先使用路由参数中指定的 conversationId
-    const id = queryConversationId;
-
-    // 如果 id 存在，则自动触发消息发送
-    if (id) {
-      const state = (location.state || history.location.state) as any;
-      if (
-        state &&
-        (state.message?.trim() || state.files?.length || state.skillIds?.length)
-      ) {
-        const asyncFun = async () => {
-          let data = null;
-          try {
-            const { data: _data } = await runAsync(id);
-            data = _data;
-          } catch (error) {
-            console.error(
-              'Failed to query conversation before auto-send',
-              error,
-            );
-          }
-
-          // 会话消息列表
-          const list = data?.messageList || [];
-          const len = list?.length || 0;
-          // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
-          const isCanMessage =
-            !len ||
-            (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
-
-          if (isCanMessage) {
-            // 确定沙箱 ID
-            const effectiveSandboxId = String(getEffectiveSandboxId(data));
-            onMessageSend({
-              id,
-              messageInfo: state.message || '',
-              files: state.files,
-              infos: state.infos || [],
-              sandboxId: effectiveSandboxId,
-              debug: true,
-              isSync: false,
-              skillIds: state.skillIds,
-              modelId: state.modelId,
-              agentMode: (state.agentMode as AgentMode) || 'yolo',
-              data,
-            });
-          }
-        };
-        asyncFun();
-      }
-    }
-  }, [
-    location.state,
-    history.location.state,
-    selectedComputerId,
-    queryConversationId,
-  ]);
+  useInitialConversationAutoSend({
+    conversationId: queryConversationId,
+    routeState: (location.state || history.location.state) as
+      | AppDevProInitialConversationState
+      | undefined,
+    getEffectiveSandboxId,
+    onMessageSend,
+  });
 
   /** URL 中的 appId 变化时同步到本地状态 */
   useEffect(() => {
@@ -728,9 +682,15 @@ const AppDevPro: React.FC = () => {
     resumeTasksActive();
   }, [cancelUnfinishedBuild, publishFlow, resumeTasksActive]);
 
-  /** 弹窗内取消任务后恢复 tasks/active 轮询 */
+  /** 弹窗内取消构建任务后恢复 tasks/active 轮询 */
   const handleCancelDeployTask = useCallback(async () => {
     await publishFlow.cancelTask();
+    resumeTasksActive();
+  }, [publishFlow, resumeTasksActive]);
+
+  /** 弹窗内停止生产部署后恢复 tasks/active 轮询 */
+  const handleStopDeploy = useCallback(async () => {
+    await publishFlow.stopDeploy();
     resumeTasksActive();
   }, [publishFlow, resumeTasksActive]);
 
@@ -1887,6 +1847,7 @@ const AppDevPro: React.FC = () => {
       startEnvPodIfNeeded(nextEnv);
       if (nextEnv === UserAppDbEnvEnum.Dev) {
         setSettingsOpen(false);
+        setBuildVersionsOpen(false);
         return;
       }
       previewTabs.closeTab(getToolTabId('remote-desktop'));
@@ -1917,6 +1878,9 @@ const AppDevPro: React.FC = () => {
   const isDatabasePanelOpen = workspaceView === 'database';
   /** 应用预览独立视图是否激活（Header 图标高亮） */
   const isAppPreviewOpen = workspaceView === 'app-preview';
+  /** 线上环境未部署时没有可预览的应用，隐藏应用预览入口 */
+  const isShowAppPreview =
+    dbEnv === UserAppDbEnvEnum.Dev || userAppInfo?.prodDeployed === true;
   /** 远程桌面页签是否激活（Header 图标高亮） */
   const isAgentDesktopOpen = previewTabs.activeTab?.toolId === 'remote-desktop';
 
@@ -1989,6 +1953,7 @@ const AppDevPro: React.FC = () => {
         appId={appId}
         activeTab={databaseActiveTab}
         env={dbEnv}
+        visible={workspaceView === 'database'}
         devContainerStatus={envPodConversationId ? podStatus : undefined}
         prodContainerStatus={envPodConversationId ? prodPod.status : undefined}
         iframeKey={databaseIframeKey}
@@ -2006,6 +1971,7 @@ const AppDevPro: React.FC = () => {
       handleRetryContainer,
       podStatus,
       prodPod.status,
+      workspaceView,
     ],
   );
 
@@ -2332,34 +2298,7 @@ const AppDevPro: React.FC = () => {
   // ==================== 主渲染 ====================
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
-      {/* 页面顶部 Header：返回、项目信息、文件树/终端入口 */}
-      <AppDevProHeader
-        userAppInfo={userAppInfo}
-        spaceId={spaceId}
-        onConfirmUpdate={setUserAppInfo}
-        onPublish={handleOpenPublish}
-        onOpenMarketPublish={() => setOpenPublishModal(true)}
-        publishing={publishFlow.publishing}
-        remotePublishing={showRemotePublishing}
-        onCancelRemotePublish={handleCancelRemotePublish}
-        cancelRemotePublishLoading={cancelRemotePublishLoading}
-        isFileTreeSidebarVisible={isFileTreeIconActive}
-        onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-        isTerminalPanelOpen={isTerminalIconActive}
-        onOpenTerminalPanel={handleOpenTerminalPanel}
-        onOpenSettings={() => setSettingsOpen(true)}
-        isDatabasePanelOpen={isDatabasePanelOpen}
-        onOpenDatabase={handleOpenDatabasePanel}
-        isAppPreviewOpen={isAppPreviewOpen}
-        onOpenAppPreview={handleOpenAppPreview}
-        isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
-        isAgentDesktopOpen={isAgentDesktopOpen}
-        onOpenDesktopPanel={handleOpenDesktopPanel}
-        env={dbEnv}
-        onEnvChange={handleEnvChange}
-      />
-
-      {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}
+      {/* 主内容区域：左（应用信息 + 聊天） | 右（环境切换与操作 + 内容） */}
       <section
         className={cx(
           'flex',
@@ -2369,68 +2308,116 @@ const AppDevPro: React.FC = () => {
         )}
       >
         <div className={cx(styles['main-row'])}>
-          {/* 左侧面板：聊天区域（始终显示） */}
+          {/* 左栏：顶部应用信息 + 聊天区域（始终显示） */}
           <div className={cx(styles['left-panel'])}>
-            <AgentConversationChatPanel
-              selectedComputerId={finalSelectedComputerId}
-              onChangeSelectedComputerId={setSelectedComputerId}
-              onConversationEnd={handleConversationEnd}
+            <AppDevProHeaderBrand
+              userAppInfo={userAppInfo}
+              spaceId={spaceId}
+              onConfirmUpdate={setUserAppInfo}
             />
+            <div className={cx(styles['left-panel-body'])}>
+              <AgentConversationChatPanel
+                selectedComputerId={finalSelectedComputerId}
+                onChangeSelectedComputerId={setSelectedComputerId}
+                onConversationEnd={handleConversationEnd}
+              />
+            </div>
           </div>
 
-          <div
-            className={cx('flex', 'flex-1', styles['content-container'], {
-              [styles['content-container-fullscreen']]:
-                fileView.preview.isFullscreen,
-            })}
-          >
-            {/* 中间面板（文件树） + 右侧面板（文件预览 + 终端） */}
-            <>
-              {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
+          {/* 右栏：顶部环境切换与操作入口 + 内容区 */}
+          <div className={cx(styles['right-column'])}>
+            <AppDevProHeaderActions
+              userAppInfo={userAppInfo}
+              onPublish={handleOpenPublish}
+              onOpenMarketPublish={() => setOpenPublishModal(true)}
+              publishing={publishFlow.publishing}
+              remotePublishing={showRemotePublishing}
+              onCancelRemotePublish={handleCancelRemotePublish}
+              cancelRemotePublishLoading={cancelRemotePublishLoading}
+              isFileTreeSidebarVisible={isFileTreeIconActive}
+              onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+              isTerminalPanelOpen={isTerminalIconActive}
+              onOpenTerminalPanel={handleOpenTerminalPanel}
+              onOpenSettings={() => setSettingsOpen(true)}
+              isDatabasePanelOpen={isDatabasePanelOpen}
+              onOpenDatabase={handleOpenDatabasePanel}
+              isShowAppPreview={isShowAppPreview}
+              isAppPreviewOpen={isAppPreviewOpen}
+              onOpenAppPreview={handleOpenAppPreview}
+              isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
+              isAgentDesktopOpen={isAgentDesktopOpen}
+              onOpenDesktopPanel={handleOpenDesktopPanel}
+              isBuildVersionsOpen={buildVersionsOpen}
+              onOpenBuildVersions={() => setBuildVersionsOpen(true)}
+              env={dbEnv}
+              onEnvChange={handleEnvChange}
+            />
+
+            <div className={cx(styles['right-column-body'])}>
               <div
-                className={cx(styles['middle-panel'], {
-                  [styles['middle-panel-visible']]:
-                    workspaceView === 'files' && canShowFileView,
-                  [styles['middle-panel-hidden']]: !(
-                    workspaceView === 'files' && canShowFileView
-                  ),
+                className={cx('flex', 'flex-1', styles['content-container'], {
+                  [styles['content-container-fullscreen']]:
+                    fileView.preview.isFullscreen,
                 })}
               >
-                {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
-                <FileTreeGitSourcePanel
-                  className={cx(styles['file-tree-sidebar'], 'w-full')}
-                  showSourceControl={isVersionControlEnabled}
-                  enableVersionControl={enableVersionControl}
-                  tree={fileView.tree}
-                  treeClassName="w-full h-full"
-                  onImportProject={handleImportProject}
-                  importProjectLabel={dict(
-                    'PC.Pages.AppDevFileTreeContextMenu.importProject',
-                  )}
-                  isImportingProject={isImportingProject}
-                  sourceControl={{
-                    changeFiles: fileView.changeFiles,
-                    selectedChangeFile: gitSourceControl.selectedChangeFile,
-                    isCommitting:
-                      gitSourceControl.isCommitting ||
-                      fileView.preview.isSavingFiles,
-                    isRefreshingGitList: fileView.isRefreshingGitList,
-                    onRefreshGitList: fileView.refreshGitList,
-                    onDiffFileSelect: handleGitDiffFileSelect,
-                    onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                    onDiscardChanges: gitSourceControl.handleDiscardChange,
-                    onStageChanges: gitSourceControl.handleStageChanges,
-                    onUnstageChanges: gitSourceControl.handleUnstageChanges,
-                    onAddToGitignore: (fileId) => {
-                      void gitSourceControl.handleAddToGitignore(fileId);
-                    },
-                    onCommit: gitSourceControl.handleCommit,
-                  }}
-                />
+                {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
+                <div
+                  className={cx(styles['middle-panel'], {
+                    [styles['middle-panel-visible']]:
+                      workspaceView === 'files' && canShowFileView,
+                    [styles['middle-panel-hidden']]: !(
+                      workspaceView === 'files' && canShowFileView
+                    ),
+                  })}
+                >
+                  {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
+                  <FileTreeGitSourcePanel
+                    className={cx(styles['file-tree-sidebar'], 'w-full')}
+                    showSourceControl={isVersionControlEnabled}
+                    enableVersionControl={enableVersionControl}
+                    tree={fileView.tree}
+                    treeClassName="w-full h-full"
+                    onImportProject={handleImportProject}
+                    importProjectLabel={dict(
+                      'PC.Pages.AppDevFileTreeContextMenu.importProject',
+                    )}
+                    isImportingProject={isImportingProject}
+                    sourceControl={{
+                      changeFiles: fileView.changeFiles,
+                      selectedChangeFile: gitSourceControl.selectedChangeFile,
+                      isCommitting:
+                        gitSourceControl.isCommitting ||
+                        fileView.preview.isSavingFiles,
+                      isRefreshingGitList: fileView.isRefreshingGitList,
+                      onRefreshGitList: fileView.refreshGitList,
+                      onDiffFileSelect: handleGitDiffFileSelect,
+                      onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
+                      onDiscardChanges: gitSourceControl.handleDiscardChange,
+                      onStageChanges: gitSourceControl.handleStageChanges,
+                      onUnstageChanges: gitSourceControl.handleUnstageChanges,
+                      onAddToGitignore: (fileId) => {
+                        void gitSourceControl.handleAddToGitignore(fileId);
+                      },
+                      onCommit: gitSourceControl.handleCommit,
+                    }}
+                  />
+                </div>
+                {/* 右侧面板：文件预览 + 终端 */}
+                {renderRightPanel()}
               </div>
-              {/* 右侧面板：文件预览 + 终端 */}
-              {renderRightPanel()}
-            </>
+
+              {/* 线上环境历史版本侧栏 */}
+              <AppDevBuildVersionDrawer
+                visible={buildVersionsOpen}
+                appId={appId}
+                currentReleaseId={userAppInfo?.prodReleaseId}
+                deployingVersion={publishFlow.deployingReleaseId}
+                onDeployVersion={(version) => {
+                  void publishFlow.deployVersion(version);
+                }}
+                onClose={() => setBuildVersionsOpen(false)}
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -2492,6 +2479,8 @@ const AppDevPro: React.FC = () => {
         failedStage={publishFlow.failedStage}
         cancelLoading={publishFlow.cancelLoading}
         onCancelTask={handleCancelDeployTask}
+        stopLoading={publishFlow.stopLoading}
+        onStopDeploy={handleStopDeploy}
         onClose={handleCloseDeployProgress}
       />
     </div>

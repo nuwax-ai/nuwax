@@ -2,6 +2,9 @@
  * 会话框右上角的 debug 悬浮按钮：收纳「会话密度」（三档折叠密度）与
  * 「会话显示」（渲染版本 / V2 预设 / 逐类覆盖）两个调试入口，
  * 不再占用输入区工具栏位。复用 ChatInputHome 的样式模块（无本地 less）。
+ *
+ * 产品定调（2026-09-15）：本按钮及缓存遥测面板默认展示（含提测环境），
+ * 正式上线前统一关闭——勿在上线前单独加环境门控。
  */
 import styles from '@/components/ChatInputHome/index.less';
 import { useConversationDensity } from '@/hooks/useConversationDensity';

@@ -2,6 +2,7 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import { normalizeTerminalWsUrl } from '@/utils/terminalWsUrl';
 import { request } from 'umi';
 import type {
+  BuildVersionDto,
   CreateUserAppParams,
   CreateUserProjectParams,
   ProjectLatestConversationResult,
@@ -211,6 +212,24 @@ export async function apiUserAppProdDeployable(
     params: {
       appId,
       releaseId,
+    },
+  });
+}
+
+/**
+ * 查询应用构建包版本列表。
+ * 每项为 BuildVersionDto：version、gitCommit、latest、packageUrl、buildTime。
+ *
+ * @param appId 应用 ID
+ * @returns 构建包版本列表
+ */
+export async function apiUserAppBuildVersions(
+  appId: number,
+): Promise<RequestResponse<BuildVersionDto[]>> {
+  return request('/api/userapp/build-versions', {
+    method: 'GET',
+    params: {
+      appId,
     },
   });
 }

@@ -428,7 +428,7 @@ const BindUser: React.FC<BindUserProps> = ({
     >
       <div className={cx(styles.contentWrapper)}>
         {/* 左侧：搜索并选择成员 */}
-        <div className={cx(styles['add-member-left-column'], 'flex-1')}>
+        <div className={cx(styles['add-member-left-column'], 'flex-1', 'overflow-hide')}>
           <Input.Search
             placeholder={t('PC.Pages.SystemMenuBindUser.leftSearchPlaceholder')}
             allowClear
@@ -440,14 +440,16 @@ const BindUser: React.FC<BindUserProps> = ({
               checked={leftChecked}
               onChange={(e) => handleSingleCheckChange(e.target.checked)}
             >
-              <Avatar src={leftMember.avatar || personalImage} />{' '}
-              {leftMember.nickName || leftMember.userName}
+              <div className="flex items-center gap-4 overflow-hide">
+                <Avatar src={leftMember.avatar || personalImage} />
+                <span className="text-ellipsis">{leftMember.nickName || leftMember.userName}</span>
+              </div>
             </Checkbox>
           )}
         </div>
 
         {/* 右侧：已选成员列表，支持关键字后端搜索 + 滚动加载更多 */}
-        <div className={cx('flex-1', styles.rightColumn)}>
+        <div className={cx('flex-1', styles.rightColumn, 'overflow-hide')}>
           <Input.Search
             placeholder={t(
               'PC.Pages.SystemMenuBindUser.rightSearchPlaceholder',

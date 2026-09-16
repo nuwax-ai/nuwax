@@ -7,14 +7,18 @@
 #        → 本地 dev → test（构建部署）→ gitlab/test
 #
 # 流程：
-#   1. 前置校验（配置解析 / 分支 / 干净工作区 / git fetch --all --prune / 分支存在性）
+#   1. 前置校验（配置解析 / 分支 / 干净工作区 / git fetch --all --prune / 分支存在性；
+#      停在链路中段分支且工作区干净时自动切回起跑分支，支持失败后直接重跑续跑）
 #   2. 合并 origin/<版本开发分支> 进个人分支
 #   3. 推送个人分支到 GitHub（origin）
-#   4. 跑 pnpm run test:conversation 质量门（非存量挂失败则止步，不碰后续分支）
+#   4. 跑 pnpm run test:conversation 质量门（非存量挂失败则止步，不碰后续分支；
+#      断点续跑且版本分支已包含个人分支时跳过——该批代码上一轮已过门并推送）
 #   5. 合入版本开发分支并推 origin
 #   6. 合入本地 dev（部署数据源；不推送远端）+ gitlab/dev 独有提交盲区告警
-#   7. 切 test、pull gitlab+origin 双远端，merge dev（-X ours）→ 构建 → 提交 dist
+#   7. 切 test、pull gitlab+origin 双远端，merge dev（-X ours；仅 dist/ 产物冲突自动
+#      按全量重建解决，源码冲突回滚交人工）→ 构建 → 提交 dist
 #      → push origin/test + gitlab/test（部署步骤已内联，语义同 deploy_test.sh）
+#      → 打印三处远端落点核验
 #   8. 切回个人开发分支
 #
 # 配置（优先级：环境变量 > scripts/deploy_sync_test.env 配置文件 > 交互提示/内置默认）：
@@ -38,7 +42,8 @@
 # 说明：
 # - dev 仅本地合并不推送（如需推 origin/dev / gitlab/dev，在步骤 6 后补 run git push 即可）。
 # - 远端显式点名（origin / gitlab），不依赖 upstream 隐式行为。
-# - 非 DRY_RUN 下任何一步失败即停：成功自动切回原分支；失败会停在出错分支并提示。
+# - 非 DRY_RUN 下任何一步失败即停：成功自动切回原分支；失败时若无未提交改动也自动切回起跑分支
+#   （冲突已回滚/构建产物不阻塞的场景），有未提交改动或冲突态则停在出错分支交人工。
 
 set -euo pipefail
 
@@ -47,12 +52,26 @@ cd "$(git rev-parse --show-toplevel)"
 CONFIG_FILE="${CONFIG_FILE:-$(git rev-parse --show-toplevel)/scripts/deploy_sync_test.env}"
 
 CURRENT_STEP="配置解析"
-trap 'echo "❌ 步骤失败：${CURRENT_STEP}（当前分支：$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")）。请按上方输出排查后重跑脚本。" >&2' ERR
+trap 'echo "❌ 步骤失败：${CURRENT_STEP}（当前分支：$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")）。请按上方输出排查后重跑脚本。" >&2; return_to_start' ERR
+
+# 失败归位：已离开起跑分支且 tracked 无改动时 best-effort 切回，免得失败后停在链路中段分支、
+# 重跑还得手工 checkout（首跑实证：停在 test 上重跑被步骤 1 拦死）。配置阶段 FEATURE_BRANCH
+# 可能为空，判空自然 no-op；未提交改动/冲突态不切（git diff 非 quiet），交人工处理。
+return_to_start() {
+  trap - ERR
+  [ -n "${FEATURE_BRANCH:-}" ] || return 0
+  [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)" != "$FEATURE_BRANCH" ] || return 0
+  git diff --quiet && git diff --cached --quiet || return 0
+  if git checkout "$FEATURE_BRANCH" >/dev/null 2>&1; then
+    echo "↩ 已自动切回起跑分支 ${FEATURE_BRANCH}（处理完问题后直接重跑本脚本即可续跑）" >&2
+  fi
+}
 
 log() { echo ">>> $*"; }
 die() {
   trap - ERR
   echo "❌ $*" >&2
+  return_to_start
   exit 1
 }
 
@@ -177,8 +196,15 @@ fi
 # ---------- 正式流程 ----------
 CURRENT_STEP="前置校验"
 log "步骤 1/8：前置校验（分支角色：个人=${FEATURE_BRANCH} 版本=${VERSION_BRANCH} 集成=${DEV_BRANCH} 测试=${TEST_BRANCH}）"
-[ "$(git rev-parse --abbrev-ref HEAD)" = "$FEATURE_BRANCH" ] ||
-  die "当前分支不是 ${FEATURE_BRANCH}，请先切过去再运行本脚本（或检查 FEATURE_BRANCH 配置）"
+if [ "$(git rev-parse --abbrev-ref HEAD)" != "$FEATURE_BRANCH" ]; then
+  # 上次失败可能停在链路中段分支（如 test）：tracked 干净时自动切回起跑分支再续跑，不干净才拦
+  if git diff --quiet && git diff --cached --quiet; then
+    log "当前分支不是 ${FEATURE_BRANCH}（上次失败残留？），工作区干净，自动切换过去"
+    run git checkout "$FEATURE_BRANCH"
+  else
+    die "当前分支不是 ${FEATURE_BRANCH} 且工作区有未提交改动：请先手工处理并切回 ${FEATURE_BRANCH} 再运行本脚本（或检查 FEATURE_BRANCH 配置）"
+  fi
+fi
 [ -z "$(git status --porcelain -uno)" ] ||
   die "工作区有未提交改动，后续 checkout/merge 会互相干扰；请先提交或 stash：
 $(git status --porcelain -uno | sed 's/^/    /')"
@@ -216,8 +242,15 @@ log "步骤 3/8：推送 ${FEATURE_BRANCH} 到 GitHub（origin）"
 run git push origin "$FEATURE_BRANCH"
 
 CURRENT_STEP="test:conversation 质量门"
-log "步骤 4/8：执行 pnpm run test:conversation（非存量挂失败则止步）"
-run_test_gate
+# 续跑免重跑：VERSION 已包含 FEATURE ⇒ 这批代码上一轮已过质量门并随步骤 5 推上共享分支
+# （步骤 5 先合并后推送，顺序保证），本轮步骤 5 注定跳过合并，不会有无门新代码流向共享分支；
+# FEATURE 之后有新提交则祖先判定立即失效，恢复拦截。判定与步骤 5 的 skip 同源（本地 VERSION 引用）。
+if git merge-base --is-ancestor "$FEATURE_BRANCH" "$VERSION_BRANCH"; then
+  log "步骤 4/8：${VERSION_BRANCH} 已包含 ${FEATURE_BRANCH}（断点续跑），跳过质量门"
+else
+  log "步骤 4/8：执行 pnpm run test:conversation（非存量挂失败则止步）"
+  run_test_gate
+fi
 
 CURRENT_STEP="合入版本开发分支 ${VERSION_BRANCH}"
 log "步骤 5/8：合入团队版本开发分支 ${VERSION_BRANCH} 并推 origin"
@@ -259,8 +292,20 @@ run git pull --no-verify gitlab "$TEST_BRANCH"
 run git pull --no-verify origin "$TEST_BRANCH"
 if ! run git merge "$DEV_BRANCH" -X ours --no-verify \
   -m "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（冲突以本地 ${TEST_BRANCH} 为准）"; then
-  git merge --abort 2>/dev/null || true
-  die "合并 ${DEV_BRANCH} 进 ${TEST_BRANCH} 冲突：已回滚。请手动在 ${TEST_BRANCH} 上解决冲突提交后，再重跑本脚本"
+  # dist/ 构建产物文件名带内容哈希，test 与 dev 两侧必然各异，-X ours 解不了
+  # rename/rename 冲突；dist 随后本步骤会全量重建，故冲突仅在 dist/ 内时
+  # 直接清空 dist 提交合并即可，源码冲突才回滚交人工。
+  all_conflicts=$(git diff --name-only --diff-filter=U)
+  non_dist_conflicts=$(git diff --name-only --diff-filter=U -- . ':(exclude)dist')
+  if [ -n "$all_conflicts" ] && [ -z "$non_dist_conflicts" ]; then
+    log "merge 冲突全部位于 dist/ 构建产物，按全量重建处理（清空 dist 后提交合并）"
+    git rm -rf -q dist
+    run git commit --no-verify \
+      -m "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（dist 产物冲突按全量重建处理）"
+  else
+    git merge --abort 2>/dev/null || true
+    die "合并 ${DEV_BRANCH} 进 ${TEST_BRANCH} 冲突：已回滚。请手动在 ${TEST_BRANCH} 上解决冲突提交后，再重跑本脚本"
+  fi
 fi
 run npm run build:prod:m gitlab
 run git add -f dist
@@ -270,6 +315,12 @@ if ! run git commit -m "update $(date '+%Y%m%d%H%M')" --no-verify; then
 fi
 run git push origin "$TEST_BRANCH"
 run git push gitlab "$TEST_BRANCH"
+
+# 部署核验：推送成功后远端跟踪引用已更新，打印三处落点头部（可直接贴提测单，免手工 fetch 比对）
+log "部署核验（三处远端落点）："
+for ref in "origin/${VERSION_BRANCH}" "origin/${TEST_BRANCH}" "gitlab/${TEST_BRANCH}"; do
+  echo "    ${ref} → $(git log --oneline -1 "${ref}" 2>/dev/null || echo '读取失败')"
+done
 
 CURRENT_STEP="收尾"
 log "步骤 8/8：切回 ${FEATURE_BRANCH}"

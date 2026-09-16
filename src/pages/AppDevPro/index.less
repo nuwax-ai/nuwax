@@ -19,6 +19,7 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    // 头部移入左右两栏内部，顶部间距由栏内头部 padding 提供
     margin: 0 @marginSm @marginSm;
   }
 
@@ -59,6 +60,33 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+  }
+
+  /** 左栏应用信息头部下方的会话区 */
+  .left-panel-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /** 右栏：操作头部 + 内容区 */
+  .right-column {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /** 右栏主体：工作区 + 历史版本侧栏 */
+  .right-column-body {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    overflow: hidden;
   }
 
   .middle-panel {
@@ -228,6 +256,10 @@
       width: 100%;
       border-right: none;
       border-bottom: @lineWidth solid @colorSplit;
+    }
+
+    .right-column {
+      width: 100%;
     }
 
     .right-panel {

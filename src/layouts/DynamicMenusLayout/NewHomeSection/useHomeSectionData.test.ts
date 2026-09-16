@@ -101,9 +101,12 @@ describe('useHomeSectionData', () => {
 
     expect(apiAgentConversationListMock).toHaveBeenCalledTimes(1);
     expect(apiAgentConversationListMock).toHaveBeenCalledWith(
+      // 任务/项目分组区分（projectFilter 2026-09-14 后端上线）：任务列表
+      // 排除项目会话，项目分组（ProjectPanel）承接展示
       expect.objectContaining({
         lastId: null,
         agentId: null,
+        projectFilter: 'exclude',
       }),
     );
     expect(result.current.visibleConversationList.map((i) => i.id)).toEqual([

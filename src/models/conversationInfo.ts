@@ -683,12 +683,14 @@ export default () => {
       // 检查是否需要更新主题：必须满足以下条件
       // 1. isSync 为 true（需要同步）
       // 2. conversationInfo 存在
-      // 3. topicUpdated 不等于 1（主题未更新过）
+      // 3. topicUpdated 不等于 1（主题未更新过）或 topic 为空（bug2382：
+      //    /api/project/create 预建会话预置 topicUpdated=1+空 topic，仅看标记
+      //    会被堵死——无名即应尝试自动命名）
       // 4. needUpdateTopicRef.current 为 true（允许更新）
       if (
         isSync &&
         currentInfo &&
-        currentInfo?.topicUpdated !== 1 &&
+        (currentInfo?.topicUpdated !== 1 || !currentInfo?.topic) &&
         needUpdateTopicRef.current
       ) {
         // 标记已更新，防止重复调用

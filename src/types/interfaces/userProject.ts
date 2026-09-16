@@ -357,16 +357,18 @@ export interface CreateUserAppParams {
   devAgentId?: number;
 }
 
-/** 构建版本记录 */
+/** 构建包版本（/api/userapp/build-versions 列表项） */
 export interface BuildVersionDto {
   /** 版本号 */
   version: string;
-  /** Git 提交哈希 */
+  /** Git 提交 */
   gitCommit: string;
-  /** 是否为最新版本 */
+  /** 是否最新版本 */
   latest: boolean;
   /** 安装包地址 */
   packageUrl: string;
+  /** 构建时间（date-time） */
+  buildTime: string;
 }
 
 /** 全栈应用详情（创建 / get 接口返回；id 即 app_id） */
