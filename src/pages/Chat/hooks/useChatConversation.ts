@@ -10,6 +10,7 @@ import {
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
+import { emitConversationChanged } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
 import { appendOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 import { FormInstance, message } from 'antd';
@@ -95,6 +96,12 @@ export const useChatConversation = ({
         // 注意：这里不重置 clearLoading，让它在外部 useEffect([id]) 中重置
         setIsLoadingOtherInterface(false);
         const { id: newConversationId, agentId: newAgentId } = res.data;
+        emitConversationChanged({
+          operation: 'created',
+          conversationId: String(newConversationId),
+          origin: 'chat-clear',
+          reason: 'create',
+        });
 
         // 会话发起后跳转的页面URL
         let url = '';

@@ -3,10 +3,12 @@
  * 右端常驻启用开关。无边线，悬停方形圆角灰底；整行点击即选中（list
  * 紧凑场景不渲染悬停「选择」按钮，仅保留功能性开关）。与 grid 变体
  * 功能一致（选中/开关/付费角标），仅布局不同。
- * simple 模式：无背景圆形图标 + 标题单行，不渲染描述与开关。
+ * simple 模式：无背景圆形图标 + 标题单行，不渲染描述与开关；付费标识
+ * 经行尾内联小 Tag 展示（左上角 Ribbon 会被弹层滚动容器裁切且压住图标，
+ * 同 AppDev CombinedMentionSelector 口径）。
  */
 import { t } from '@/services/i18nRuntime';
-import { Badge, Switch } from 'antd';
+import { Badge, Switch, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -71,9 +73,21 @@ const SkillListRow: React.FC<SkillCardBaseProps & { simple?: boolean }> = ({
           />
         </div>
       )}
+      {simple && item.paymentRequired && (
+        <Tag
+          className={cx(styles['paid-tag'])}
+          color={item.subscribed ? 'success' : 'processing'}
+        >
+          {t(
+            item.subscribed
+              ? 'PC.Pages.Square.SingleAgent.subscribed'
+              : 'PC.Pages.Square.SingleAgent.paid',
+          )}
+        </Tag>
+      )}
     </div>
   );
-  if (item.paymentRequired) {
+  if (item.paymentRequired && !simple) {
     return (
       <Badge.Ribbon
         placement="start"

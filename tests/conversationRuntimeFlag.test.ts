@@ -1,6 +1,6 @@
 /**
  * 会话双线切换 flag 合同测试（双线方案 §3.3）。
- * 优先级：URL param > localStorage > 构建常量默认（legacy）。
+ * 优先级：URL param > localStorage > 构建常量默认（runtime V2）。
  */
 import {
   CONVERSATION_RUNTIME_DEFAULT,
@@ -21,9 +21,9 @@ describe('conversationRuntimeFlag', () => {
     vi.restoreAllMocks();
   });
 
-  it('默认 legacy：不设置任何开关时为 false', () => {
-    expect(CONVERSATION_RUNTIME_DEFAULT).toBe(false);
-    expect(isConversationRuntimeEnabled()).toBe(false);
+  it('默认 runtime V2：不设置任何开关时为 true', () => {
+    expect(CONVERSATION_RUNTIME_DEFAULT).toBe(true);
+    expect(isConversationRuntimeEnabled()).toBe(true);
   });
 
   it('localStorage 开启后粘性生效', () => {
@@ -46,10 +46,10 @@ describe('conversationRuntimeFlag', () => {
     expect(isConversationRuntimeEnabled()).toBe(false);
   });
 
-  it('清除 localStorage 回落默认 legacy', () => {
-    setConversationRuntimeEnabled(true);
+  it('清除 localStorage 回落默认 runtime V2', () => {
+    setConversationRuntimeEnabled(false);
     setConversationRuntimeEnabled(null);
-    expect(isConversationRuntimeEnabled()).toBe(false);
+    expect(isConversationRuntimeEnabled()).toBe(true);
   });
 
   it('URL 写入器（调试开关）：改写参数保留其余 query，改后即时求值生效', () => {

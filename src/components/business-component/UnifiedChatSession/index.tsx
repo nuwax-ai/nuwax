@@ -16,6 +16,7 @@ import {
   useConversationSession,
 } from '@/features/conversation/react/ConversationSessionProvider';
 import { useConversationStreamResume } from '@/features/conversation/react/useConversationStreamResume';
+import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
@@ -30,6 +31,7 @@ import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
 import ChatContentArea from './components/ChatContentArea';
+import ConversationProgressCapsule from './components/ConversationProgressCapsule';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
 import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
 
@@ -80,6 +82,8 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   isVariablesDisabled,
   clearLoading = false,
   showClearIcon = true,
+  showConversationStatus = true,
+  showConversationProgressCapsule = false,
   isSelectionLocked = false,
   hasUserSentMessage = false,
   readonly,
@@ -209,6 +213,9 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   // Facade sessionView（方案 §6.4）：入口注入 > ctx 派生（Provider 以入口原始字段
   // + 队列/干预态派生；resumeSubscribed 仍在恢复 hook 内部，其轮询门禁自持真实值）。
   const session = sessionView ?? derivedSessionView;
+  const { renderer: preferredMessageRenderer } =
+    useConversationRendererPreference(conversationId);
+  const effectiveMessageRenderer = messageRenderer ?? preferredMessageRenderer;
 
   // 滚到底部按钮需避开队列面板：测量队列区域高度写入 CSS 变量
   const sessionContainerRef = useRef<HTMLDivElement>(null);
@@ -376,7 +383,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
         loadMoreRef={loadMoreRef}
         loadingMore={loadingMore}
         renderMessageItem={renderMessageItem}
-        messageRenderer={messageRenderer}
+        messageRenderer={effectiveMessageRenderer}
         onOpenToolResource={onOpenToolResource}
         effectiveRoleInfo={effectiveRoleInfo}
         messageBottomMode={messageBottomMode}
@@ -395,8 +402,18 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
         messageList={messageList ?? []}
       />
 
+      {/* 执行期右上角胶囊：数据来自同一份 V2 投影，终态立即卸载。 */}
+      {showConversationProgressCapsule && (
+        <ConversationProgressCapsule
+          conversationId={conversationId}
+          messageList={messageList ?? []}
+          active={session.shouldShowStop}
+        />
+      )}
+
       {/* 会话执行状态栏 */}
-      {messageList?.length > 0 &&
+      {showConversationStatus &&
+        messageList?.length > 0 &&
         agentInfo?.type === AgentTypeEnum.TaskAgent && (
           <ConversationStatus
             messageList={messageList}

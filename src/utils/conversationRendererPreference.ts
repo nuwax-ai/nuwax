@@ -189,6 +189,12 @@ export function setSessionRendererOverride(
   broadcast();
 }
 
+/** 发版迁移用：清除历史会话级渲染线锁定，回落当前大版本默认。 */
+export function clearAllSessionRendererOverrides(): void {
+  writeSessionOverrides({});
+  broadcast();
+}
+
 /**
  * 写入 URL 级渲染线覆盖（调试入口用）：replaceState 改写 conversationRenderer
  * 参数（保留其余 query），随后广播使已挂载 hook 即时重解析——URL 是最高优先级源，

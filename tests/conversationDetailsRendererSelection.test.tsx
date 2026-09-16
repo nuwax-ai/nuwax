@@ -1,7 +1,7 @@
 /**
  * ConversationDetails 渲染线选择合同测试（V2 双线重构·调试接入）：
- * - 本页基线恒 V1（不接全局偏好链——全局默认 v2 也不改变本页观感）；
- * - 会话覆盖（session override）显式切 V2；清除后回 V1。
+ * - 详情页已纳入 UnifiedChatSession，默认跟随全局 V2；
+ * - 会话覆盖（session override）仍可显式回退 V1。
  * （头部 RendererLineToggle 已于 2026-09-12 需求去除——调试统一走会话框
  *  悬浮按钮的「会话显示」设置；示例页 examples/MockChat* 自带切换不受影响）
  */
@@ -10,6 +10,15 @@ import type { AgentDetailDto } from '@/types/interfaces/agent';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+Element.prototype.scrollTo = vi.fn() as any;
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+// @ts-expect-error jsdom polyfill
+global.ResizeObserver = ResizeObserverStub;
 
 const { detailResult } = vi.hoisted(() => ({
   // onResultSuccess 读取的字段：openingChatMsg 走入 messageList、conversationId
@@ -82,6 +91,14 @@ vi.mock(
   '@/components/business-component/ConversationDetails/index.less',
   () => ({ default: new Proxy({}, { get: () => 'cls' }) }),
 );
+vi.mock(
+  '@/components/business-component/UnifiedChatSession/index.less',
+  () => ({ default: new Proxy({}, { get: () => 'cls' }) }),
+);
+vi.mock(
+  '@/components/business-component/UnifiedChatSession/components/ChatContentArea/index.less',
+  () => ({ default: new Proxy({}, { get: () => 'cls' }) }),
+);
 // 桶导入过重：按名替身（本组件只用这两个）
 vi.mock('@/components/business-component', () => ({
   CopyToSpaceComponent: () => null,
@@ -136,8 +153,27 @@ vi.mock(
   () => ({
     readAgentModeCache: vi.fn(() => undefined),
     writeAgentModeCache: vi.fn(),
+    useAgentInterventionLayer: () => ({
+      agentMode: 'yolo',
+      chatLayerProps: {},
+      agentModeInputProps: {
+        agentMode: 'yolo',
+        onAgentModeChange: vi.fn(),
+      },
+    }),
   }),
 );
+vi.mock('@/components/business-component/AgentIntervention', () => ({
+  AgentInterventionChatLayer: () => null,
+  useAgentInterventionLayer: () => ({
+    agentMode: 'yolo',
+    chatLayerProps: {},
+    agentModeInputProps: {
+      agentMode: 'yolo',
+      onAgentModeChange: vi.fn(),
+    },
+  }),
+}));
 vi.mock('@/hooks/useAgentDetails', () => ({
   default: () => ({
     agentDetail: { name: 'Mock Agent', icon: '' },
@@ -174,7 +210,7 @@ const setSearch = (search: string) => {
   window.history.replaceState(null, '', search || location.pathname);
 };
 
-describe('ConversationDetails 渲染线选择（默认恒 V1，按会话显式切 V2）', () => {
+describe('ConversationDetails 统一渲染线选择', () => {
   beforeEach(() => {
     localStorage.clear();
     setSearch('');
@@ -186,17 +222,8 @@ describe('ConversationDetails 渲染线选择（默认恒 V1，按会话显式�
     vi.restoreAllMocks();
   });
 
-  it('默认 V1：即使全局偏好为 v2 也不改变本页（不接全局链），逐消息 ChatView', async () => {
+  it('默认跟随全局 V2', async () => {
     setGlobalRendererVersion('v2');
-    render(<ConversationDetails agentId={1} />);
-    await waitFor(() => {
-      expect(screen.getAllByTestId('chat-view')).toHaveLength(1);
-    });
-    expect(screen.queryByTestId('conversation-renderer-v2')).toBeNull();
-  });
-
-  it('会话覆盖 v2：渲染 V2 渲染器，不再出现 V1 ChatView', async () => {
-    setSessionRendererOverride(777, 'v2');
     render(<ConversationDetails agentId={1} />);
     await waitFor(() => {
       expect(
@@ -204,5 +231,14 @@ describe('ConversationDetails 渲染线选择（默认恒 V1，按会话显式�
       ).toBeInTheDocument();
     });
     expect(screen.queryByTestId('chat-view')).toBeNull();
+  });
+
+  it('会话覆盖 v1：可紧急回退逐消息 ChatView', async () => {
+    setSessionRendererOverride(777, 'v1');
+    render(<ConversationDetails agentId={1} />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('chat-view')).toHaveLength(1);
+    });
+    expect(screen.queryByTestId('conversation-renderer-v2')).toBeNull();
   });
 });

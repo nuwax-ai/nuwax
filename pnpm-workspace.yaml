@@ -1,2 +1,5 @@
 packages:
   - 'packages/*'
+
+patchedDependencies:
+  vfile-location@5.0.3: patches/vfile-location@5.0.3.patch

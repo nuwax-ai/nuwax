@@ -2,12 +2,12 @@
  * 会话双线切换 flag（docs/conversation/conversation-dual-track-plan.md §3.3）。
  *
  * 优先级：URL param > localStorage > 构建常量默认。
- * 默认 legacy（false）：不启用时线上行为与旧线完全一致，新线代码不被入口消费。
+ * 大版本起默认 runtime V2；仍可用 URL/localStorage 显式回退 legacy。
  * 运行时整体切换：改 URL `?conversationRuntime=1` 或 localStorage，无需发版。
  */
 
-/** 发布默认值：R6 默认值决策前保持 legacy */
-export const CONVERSATION_RUNTIME_DEFAULT = false;
+/** 发布默认值：大版本默认走 runtime V2 */
+export const CONVERSATION_RUNTIME_DEFAULT = true;
 
 const URL_PARAM = 'conversationRuntime';
 const STORAGE_KEY = 'conversation_runtime_enabled';

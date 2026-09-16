@@ -2,7 +2,7 @@ import { SANDBOX } from '@/constants/common.constants';
 import { dict } from '@/services/i18nRuntime';
 import { Button, Empty } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -71,18 +71,17 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
   const onLoadRef = useRef(onLoad);
   const onErrorRef = useRef(onError);
   const onRetryRef = useRef(onRetry);
-  const prevSrcKeyRef = useRef(`${src}::${String(iframeKey ?? '')}`);
   onLoadRef.current = onLoad;
   onErrorRef.current = onError;
   onRetryRef.current = onRetry;
 
   const srcKey = `${src}::${String(iframeKey ?? '')}`;
-  if (prevSrcKeyRef.current !== srcKey) {
-    prevSrcKeyRef.current = srcKey;
-    if (loadError) {
-      setLoadError(false);
-    }
-  }
+
+  /** 地址变化时重置 settled，禁止在 render 阶段 setState */
+  useLayoutEffect(() => {
+    settledInstanceRef.current = '';
+    setLoadError((prev) => (prev ? false : prev));
+  }, [srcKey]);
 
   const handleLoad = useCallback(() => {
     if (settledInstanceRef.current === instanceId) {
@@ -92,7 +91,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
       return;
     }
     settledInstanceRef.current = instanceId;
-    setLoadError(false);
+    setLoadError((prev) => (prev ? false : prev));
     onLoadRef.current?.();
   }, [instanceId]);
 

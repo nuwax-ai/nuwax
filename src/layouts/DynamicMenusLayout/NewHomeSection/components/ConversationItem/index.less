@@ -68,6 +68,10 @@
       .conversation-topic {
         flex: 1;
         min-width: 0;
+        // 原生省略号（替代 Typography.Text ellipsis，避免逐渲染 em 测量重排）
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
         font-size: @fontSize;
         line-height: @lineHeight;
         color: @navSecondMenuAdaptiveText;
@@ -130,6 +134,10 @@
       .conversation-agent-name {
         flex: 1;
         min-width: 0;
+        // 同 .conversation-topic：原生省略号
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
         font-size: @fontSizeSm;
         line-height: @lineHeightSm;
         color: @navSecondMenuAdaptiveTextSecondary;

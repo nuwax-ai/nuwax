@@ -12,6 +12,7 @@ import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useProjectChanged } from '@/hooks/useDirectorySync';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
@@ -29,6 +30,7 @@ import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
+import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
@@ -223,6 +225,37 @@ const AppDevPro: React.FC = () => {
   const [buildVersionsOpen, setBuildVersionsOpen] = useState<boolean>(false);
   /** 全栈应用详情 */
   const [userAppInfo, setUserAppInfo] = useState<UserAppInfo | null>(null);
+  useProjectChanged((event) => {
+    if (
+      event.project.projectType !== AgentComponentTypeEnum.UserApp ||
+      event.project.projectId !== String(appId) ||
+      (event.project.spaceId !== undefined &&
+        event.project.spaceId !== String(spaceId))
+    ) {
+      return;
+    }
+    if (event.operation === 'deleted') {
+      history.replace(`/space/${spaceId}/project-manage`);
+      return;
+    }
+    if (event.operation !== 'updated' || !event.patch) return;
+    setUserAppInfo((previous) =>
+      previous
+        ? {
+            ...previous,
+            ...(event.patch?.name !== undefined
+              ? { name: event.patch.name }
+              : {}),
+            ...(event.patch?.description !== undefined
+              ? { description: event.patch.description }
+              : {}),
+            ...(event.patch?.icon !== undefined
+              ? { icon: event.patch.icon ?? '' }
+              : {}),
+          }
+        : previous,
+    );
+  });
   /** 应用绑定的域名列表 */
   const [userAppDomainList, setUserAppDomainList] = useState<
     UserAppDomainInfo[]
@@ -591,12 +624,12 @@ const AppDevPro: React.FC = () => {
     };
   }, [queryConversationId]);
 
-  // 监听状态管理器中的 conversationInfo 变化以关闭加载状态
+  // 监听会话 ID 回填以关闭加载状态（勿依赖整个 conversationInfo 对象，避免 SSE 更新触发多余 effect）
   useEffect(() => {
-    if (conversationInfo) {
+    if (conversationInfo?.id) {
       setLoadingAgentConfigInfo(false);
     }
-  }, [conversationInfo]);
+  }, [conversationInfo?.id]);
 
   /** 按应用 ID 查询项目详情 */
   const { run: runGetUserAppInfo } = useRequest(apiUserAppGetById, {
@@ -618,6 +651,21 @@ const AppDevPro: React.FC = () => {
         name: meta.name?.trim() || undefined,
         description: meta.description?.trim() || undefined,
         icon: meta.iconUrl?.trim() || undefined,
+      });
+      emitProjectChanged({
+        operation: 'updated',
+        project: {
+          projectId: String(appId),
+          projectType: AgentComponentTypeEnum.UserApp,
+          spaceId: String(spaceId),
+        },
+        patch: {
+          name: meta.name?.trim() || undefined,
+          description: meta.description?.trim() || undefined,
+          icon: meta.iconUrl?.trim() || undefined,
+        },
+        origin: 'app-dev-pro',
+        reason: 'auto-metadata',
       });
     },
     onSuccess: () => {
@@ -2411,6 +2459,10 @@ const AppDevPro: React.FC = () => {
                 visible={buildVersionsOpen}
                 appId={appId}
                 currentReleaseId={userAppInfo?.prodReleaseId}
+                deployingVersion={publishFlow.deployingReleaseId}
+                onDeployVersion={(version) => {
+                  void publishFlow.deployVersion(version);
+                }}
                 onClose={() => setBuildVersionsOpen(false)}
               />
             </div>

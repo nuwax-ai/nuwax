@@ -75,6 +75,8 @@ const KnowledgeListView: React.FC<KnowledgeListViewProps> = ({
       className={cx(
         styles.root,
         variant === 'grid' ? styles['root-grid'] : styles['root-list'],
+        // simple 紧凑行行间距归零（simple 仅 list 变体生效）
+        variant !== 'grid' && simple && styles['root-list-simple'],
         className,
       )}
       onScroll={handleScroll}

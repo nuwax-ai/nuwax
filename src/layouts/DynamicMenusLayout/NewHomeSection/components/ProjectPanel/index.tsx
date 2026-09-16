@@ -1,6 +1,10 @@
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  useConversationChanged,
+  useProjectChanged,
+} from '@/hooks/useDirectorySync';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import {
   apiAgentConversationDelete,
@@ -21,6 +25,12 @@ import {
 } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import {
+  applyConversationChangedToList,
+  applyProjectChangedToList,
+  emitProjectChanged,
+  matchesProjectRef,
+} from '@/utils/directorySyncEvents';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -232,51 +242,137 @@ const ProjectPanel = forwardRef<
     // 子会话懒加载（统一接口不随列表回包 conversations）：未归档项目挂载/翻页后
     // 补拉（默认全展开形态，可见项目一律预取保住路由反查）；失败置空数组避免
     // 行内永久 Spin（不自动重试，列表刷新可重试）；在途守卫防 effect 重跑重复拉取
-    const loadingChildrenRef = useRef<Set<number>>(new Set());
+    const loadingChildrenRef = useRef<Set<string>>(new Set());
+    const childrenRevisionRef = useRef<Map<string, number>>(new Map());
+    const projectKey = useCallback(
+      (project: Pick<ProjectItem, 'id' | 'projectType'>) =>
+        `${project.projectType ?? AgentComponentTypeEnum.NormalProject}:${
+          project.id
+        }`,
+      [],
+    );
+
+    const invalidateProjectChildren = useCallback(
+      (target: {
+        projectId: string;
+        projectType: AgentComponentTypeEnum;
+        spaceId?: string;
+      }) => {
+        setProjects((previous) =>
+          previous.map((project) => {
+            if (!matchesProjectRef(project, target)) return project;
+            const key = projectKey(project);
+            childrenRevisionRef.current.set(
+              key,
+              (childrenRevisionRef.current.get(key) ?? 0) + 1,
+            );
+            return { ...project, children: undefined };
+          }),
+        );
+      },
+      [projectKey],
+    );
+
     useEffect(() => {
       const fallback = dict('PC.Constants.Menus.newChat');
       projects.forEach((project) => {
+        const key = projectKey(project);
         if (
           project.children !== undefined ||
           archivedIds.has(project.id) ||
-          loadingChildrenRef.current.has(project.id)
+          loadingChildrenRef.current.has(key)
         ) {
           return;
         }
-        loadingChildrenRef.current.add(project.id);
+        const requestRevision = childrenRevisionRef.current.get(key) ?? 0;
+        loadingChildrenRef.current.add(key);
         void Promise.resolve(
           apiUserProjectConversations(
             project.id,
             project.projectType ?? AgentComponentTypeEnum.NormalProject,
           ),
         )
-          .then((res) => {
+          .then((res) =>
+            toProjectChildren(
+              res?.code === SUCCESS_CODE ? res.data ?? [] : [],
+              fallback,
+            ),
+          )
+          .catch(() => [] as ProjectChildItem[])
+          .then((children) => {
+            loadingChildrenRef.current.delete(key);
+            const stale =
+              (childrenRevisionRef.current.get(key) ?? 0) !== requestRevision;
             setProjects((previous) =>
               previous.map((item) =>
-                item.id !== project.id
+                projectKey(item) !== key
                   ? item
-                  : {
-                      ...item,
-                      children: toProjectChildren(
-                        res?.code === SUCCESS_CODE ? res.data ?? [] : [],
-                        fallback,
-                      ),
-                    },
-              ),
-            );
-          })
-          .catch(() => {
-            setProjects((previous) =>
-              previous.map((item) =>
-                item.id !== project.id ? item : { ...item, children: [] },
+                  : { ...item, children: stale ? undefined : children },
               ),
             );
           })
           .finally(() => {
-            loadingChildrenRef.current.delete(project.id);
+            loadingChildrenRef.current.delete(key);
           });
       });
-    }, [projects, archivedIds]);
+    }, [projects, archivedIds, projectKey]);
+
+    useConversationChanged((event) => {
+      setProjects((previous) =>
+        previous.map((project) => {
+          if (!project.children) return project;
+          const children = applyConversationChangedToList(
+            project.children,
+            event,
+            { topicField: 'name' },
+          );
+          return children === project.children
+            ? project
+            : { ...project, children };
+        }),
+      );
+      if (
+        event.project &&
+        (event.operation === 'created' || event.operation === 'deleted')
+      ) {
+        invalidateProjectChildren(event.project);
+      }
+    });
+
+    useProjectChanged((event) => {
+      if (
+        event.project.spaceId !== undefined &&
+        event.project.spaceId !== String(spaceId ?? '')
+      ) {
+        return;
+      }
+      if (event.operation === 'created') {
+        void fetchPage(1, { append: false });
+        return;
+      }
+      setProjects((previous) => applyProjectChangedToList(previous, event));
+      if (event.operation === 'deleted') {
+        const projectId = Number(event.project.projectId);
+        setPinnedIds((previous) => {
+          if (!previous.has(projectId)) return previous;
+          const next = new Set(previous);
+          next.delete(projectId);
+          return next;
+        });
+        setArchivedIds((previous) => {
+          if (!previous.has(projectId)) return previous;
+          const next = new Set(previous);
+          next.delete(projectId);
+          return next;
+        });
+        setCollectedIds((previous) => {
+          if (!previous.has(projectId)) return previous;
+          const next = new Set(previous);
+          next.delete(projectId);
+          return next;
+        });
+      }
+    });
 
     const hasMore = hasMoreProjects(projects.length, total);
     const remainingCount = remainingProjects(projects.length, total);
@@ -482,6 +578,8 @@ const ProjectPanel = forwardRef<
       if (!target) return;
       setProjectRenaming(true);
       try {
+        // 常规/全栈走真实接口持久化；PageApp 契约未覆盖仅本地改名，不广播
+        let persisted = false;
         if (
           target.projectType === AgentComponentTypeEnum.NormalProject ||
           target.projectType === AgentComponentTypeEnum.UserApp
@@ -491,6 +589,7 @@ const ProjectPanel = forwardRef<
               ? await apiUserAppUpdate({ id: target.id, name: trimmed })
               : await apiNormalProjectUpdate({ id: target.id, name: trimmed });
           if (res?.code !== SUCCESS_CODE) return;
+          persisted = true;
         }
         setProjects((prev) =>
           prev.map((project) =>
@@ -499,6 +598,22 @@ const ProjectPanel = forwardRef<
               : { ...project, name: trimmed },
           ),
         );
+        if (persisted) {
+          emitProjectChanged({
+            operation: 'updated',
+            project: {
+              projectId: String(target.id),
+              projectType:
+                target.projectType ?? AgentComponentTypeEnum.NormalProject,
+              ...(target.spaceId !== undefined
+                ? { spaceId: String(target.spaceId) }
+                : {}),
+            },
+            patch: { name: trimmed },
+            origin: 'project-panel',
+            reason: 'rename',
+          });
+        }
         setRenameProjectId(undefined);
       } finally {
         setProjectRenaming(false);
@@ -539,6 +654,19 @@ const ProjectPanel = forwardRef<
             const next = new Set(prev);
             next.delete(project.id);
             return next;
+          });
+          emitProjectChanged({
+            operation: 'deleted',
+            project: {
+              projectId: String(project.id),
+              projectType:
+                project.projectType ?? AgentComponentTypeEnum.NormalProject,
+              ...(project.spaceId !== undefined
+                ? { spaceId: String(project.spaceId) }
+                : {}),
+            },
+            origin: 'project-panel',
+            reason: 'delete',
           });
         },
       });

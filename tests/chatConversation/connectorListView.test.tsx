@@ -123,7 +123,7 @@ describe('ConnectorListView·场景接口参数契约', () => {
     );
   });
 
-  it('team·具体空间：仅传 spaceId；未传则 scope=space 聚合', async () => {
+  it('team·恒带 scope=space：具体空间叠 spaceId 收窄；未传 spaceId 聚合全部空间', async () => {
     apiConnectorProviderPageList.mockResolvedValue(pageOf([]));
     renderView({ type: 'team', spaceId: 3 });
     await waitFor(() =>
@@ -131,6 +131,7 @@ describe('ConnectorListView·场景接口参数契约', () => {
         pageNum: 1,
         pageSize: 20,
         keyword: undefined,
+        scope: 'space',
         spaceId: 3,
       }),
     );

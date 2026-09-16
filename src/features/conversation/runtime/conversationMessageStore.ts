@@ -1,5 +1,6 @@
 import {
   finalizeMessagesOnStreamClose,
+  finalizeMessagesOnTerminalTaskStatus,
   finalizeOwnedMessageOnStaleClose,
   markOwnedMessageStreamError,
 } from '@/features/conversation/domain/messageLifecycle';
@@ -8,6 +9,7 @@ import {
   preserveOptimisticMessageTail,
   reconcileConversationSnapshotMessages,
 } from '@/models/conversationInfoMessageList';
+import type { TaskStatus } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 
 /**
@@ -46,6 +48,8 @@ export interface ConversationMessageStore {
   prependFromHistory(incoming: MessageInfo[]): MessageInfo[];
   /** 流结束：Loading/Incomplete → Stopped，执行中 processing → FAILED */
   finalizeOnClose(): void;
+  /** 协议/轮询终态：对齐 legacy 统一清算 Loading 与执行中工具。 */
+  finalizeOnTerminalTaskStatus(taskStatus: TaskStatus): void;
   /** 网络错误：owner 消息 → Error，其执行中 processing → FAILED */
   markStreamError(ownerId: string): void;
   /** 过期连接的迟到 close：只清理 owner 自己的消息 */
@@ -124,6 +128,10 @@ export function createConversationMessageStore(
           error,
         );
       }
+    },
+
+    finalizeOnTerminalTaskStatus(taskStatus) {
+      commit(finalizeMessagesOnTerminalTaskStatus(messages, taskStatus));
     },
 
     markStreamError(ownerId) {

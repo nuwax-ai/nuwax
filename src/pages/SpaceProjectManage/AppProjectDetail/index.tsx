@@ -2,6 +2,10 @@ import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  useConversationChanged,
+  useProjectChanged,
+} from '@/hooks/useDirectorySync';
 import { dict } from '@/services/i18nRuntime';
 import { apiUserAppGetById } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -13,6 +17,7 @@ import {
 } from '@/types/interfaces/userProject';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { isValidDomain, normalizeDomain } from '@/utils/common';
+import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import {
   EyeInvisibleOutlined,
@@ -156,6 +161,39 @@ const AppProjectDetail: React.FC = () => {
     useState<boolean>(true);
   const [iframeLoadFailed, setIframeLoadFailed] = useState<boolean>(false);
 
+  useProjectChanged((event) => {
+    if (
+      event.project.projectType !== AgentComponentTypeEnum.UserApp ||
+      event.project.projectId !== String(appId) ||
+      (event.project.spaceId !== undefined &&
+        event.project.spaceId !== String(spaceId))
+    ) {
+      return;
+    }
+    if (event.operation === 'deleted') {
+      history.replace(`/space/${spaceId}/project-manage`);
+      return;
+    }
+    if (event.operation !== 'updated' || !event.patch) return;
+    setProjectInfo((previous) =>
+      previous
+        ? {
+            ...previous,
+            ...(event.patch?.name !== undefined
+              ? { name: event.patch.name }
+              : {}),
+            ...(event.patch?.description !== undefined
+              ? { description: event.patch.description }
+              : {}),
+            ...(event.patch?.icon !== undefined
+              ? { icon: event.patch.icon ?? '' }
+              : {}),
+          }
+        : previous,
+    );
+    if (event.patch.name !== undefined) setProjectName(event.patch.name);
+  });
+
   /** 项目下全部用户会话，供右侧任务列表展示 */
   const { run: runConversations, loading } = useRequest(
     () => apiUserProjectConversations(appId, AgentComponentTypeEnum.UserApp),
@@ -179,6 +217,22 @@ const AppProjectDetail: React.FC = () => {
       },
     },
   );
+
+  useConversationChanged((event) => {
+    if (
+      !event.project ||
+      event.project.projectType !== AgentComponentTypeEnum.UserApp ||
+      event.project.projectId !== String(appId)
+    ) {
+      return;
+    }
+    setConversations((previous) =>
+      applyConversationChangedToList(previous, event),
+    );
+    if (event.operation === 'created' || event.operation === 'deleted') {
+      runConversations();
+    }
+  });
 
   /** 应用已绑定的自定义域名列表 */
   const { run: runDomainList } = useRequest(apiUserAppDomainList, {

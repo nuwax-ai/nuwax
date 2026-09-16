@@ -313,6 +313,8 @@ export interface FilePreviewProps {
   src?: string | ArrayBuffer | Blob | File;
   /** File content string (alternative to src) */
   content?: string;
+  /** 重新读取正文的信号，不改变预览实例身份。 */
+  refreshKey?: number | string;
   /** For multiple images: array of image sources */
   srcList?: Array<string | File>;
   /** File type (auto-detected if not provided) */
@@ -561,12 +563,19 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   className,
   style,
   content: propsContent,
+  refreshKey,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const htmlIframeCleanupRef = useRef<(() => void) | null>(null);
   const markdownScrollRef = useRef<HTMLDivElement>(null);
   const markdownAnchorCleanupRef = useRef<(() => void) | null>(null);
   const previewerRef = useRef<any>(null);
+  const textRequestIdRef = useRef(0);
+  const textAbortControllerRef = useRef<AbortController | null>(null);
+  const loadedTextSourceRef = useRef<{
+    src: FilePreviewProps['src'];
+    type: FileType;
+  } | null>(null);
   const [status, setStatus] = useState<PreviewStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [detectedType, setDetectedType] = useState<FileType | undefined>();
@@ -693,7 +702,14 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   }, [src, fileName]);
 
   const initPreview = async () => {
-    if (!containerRef.current || (!src && !srcList?.length && !propsContent))
+    const requestId = ++textRequestIdRef.current;
+    textAbortControllerRef.current?.abort();
+    textAbortControllerRef.current = null;
+    const isCurrentRequest = () => requestId === textRequestIdRef.current;
+    if (
+      !containerRef.current ||
+      (!src && !srcList?.length && propsContent === undefined)
+    )
       return;
 
     // Handle srcList for image gallery
@@ -704,7 +720,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       return;
     }
 
-    if (!src) return;
+    if (!src && propsContent === undefined) return;
 
     // Detect file type
     let type: FileType = fileType || 'unsupported';
@@ -730,6 +746,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       }
     }
 
+    if (!isCurrentRequest()) return;
     setDetectedType(type);
 
     if (type === 'unsupported') {
@@ -746,17 +763,29 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     // Text-based types
     if (['markdown', 'text'].includes(type)) {
-      if (propsContent) {
+      if (propsContent !== undefined) {
+        loadedTextSourceRef.current = { src, type };
         setTextContent(propsContent);
         setStatus('success');
         onRendered?.();
         return;
       }
-      setStatus('loading');
+      // 同一 Markdown 后台刷新时保留已展示的 DOM，正文相同则不会重新解析。
+      const preserveMarkdown =
+        type === 'markdown' &&
+        status === 'success' &&
+        loadedTextSourceRef.current?.src === src &&
+        loadedTextSourceRef.current?.type === type;
+      if (!preserveMarkdown) setStatus('loading');
+      const controller = new AbortController();
+      textAbortControllerRef.current = controller;
       try {
         let content: string;
         if (typeof src === 'string') {
-          const response = await fetch(src);
+          const response = await fetch(src, {
+            signal: controller.signal,
+            ...(refreshKey !== undefined ? { cache: 'no-cache' as const } : {}),
+          });
           // 非 2xx（文件不存在/网关拒绝）时响应体是错误报文，走失败态而非当文档渲染
           if (!response.ok) {
             throw new Error(`Load file failed: ${response.status}`);
@@ -767,10 +796,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         } else {
           content = new TextDecoder().decode(src);
         }
+        if (!isCurrentRequest()) return;
+        loadedTextSourceRef.current = { src, type };
         setTextContent(content);
         setStatus('success');
         onRendered?.();
       } catch (error: any) {
+        if (!isCurrentRequest() || controller.signal.aborted) return;
         setStatus('error');
         setErrorMessage(t('PC.Components.FilePreview.errorLoadFileContent'));
         onError?.(error);
@@ -904,12 +936,14 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   };
 
   useEffect(() => {
-    if (src || srcList?.length || propsContent) {
+    if (src || srcList?.length || propsContent !== undefined) {
       initPreview();
     } else {
       setStatus('idle');
     }
     return () => {
+      textRequestIdRef.current += 1;
+      textAbortControllerRef.current?.abort();
       if (previewerRef.current) {
         try {
           previewerRef.current.destroy?.();
@@ -920,7 +954,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, srcList, fileType, propsContent]);
+  }, [src, srcList, fileType, propsContent, refreshKey]);
 
   // ResizeObserver 监听容器尺寸变化
   const lastSizeRef = useRef<{ width: number; height: number } | null>(null);
@@ -1052,6 +1086,22 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     return unwrapLatexInlineCode(withImages);
   }, [textContent, normalizeImageSrc]);
 
+  const markdownTableLabel = t('PC.Components.MarkdownRenderer.tableCodeBlock');
+  // 缓存元素而非 render 函数，避免父级/可见性更新重新解析整篇文档。
+  // 表格组件读取运行时词典，译文变化也必须使缓存失效。
+  const markdownContent = useMemo(
+    () => (
+      <ReactMarkdown
+        remarkPlugins={FILE_PREVIEW_REMARK_PLUGINS}
+        rehypePlugins={FILE_PREVIEW_REHYPE_PLUGINS}
+        components={FILE_PREVIEW_MARKDOWN_COMPONENTS}
+      >
+        {processedMarkdown}
+      </ReactMarkdown>
+    ),
+    [processedMarkdown, markdownTableLabel],
+  );
+
   const renderPreviewContent = () => {
     if (!resolvedType) return null;
 
@@ -1153,17 +1203,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                   transition: 'opacity 0.3s ease-in-out',
                 }}
               >
-                <ReactMarkdown
-                  remarkPlugins={FILE_PREVIEW_REMARK_PLUGINS}
-                  rehypePlugins={
-                    FILE_PREVIEW_REHYPE_PLUGINS as Parameters<
-                      typeof ReactMarkdown
-                    >[0]['rehypePlugins']
-                  }
-                  components={FILE_PREVIEW_MARKDOWN_COMPONENTS}
-                >
-                  {processedMarkdown}
-                </ReactMarkdown>
+                {markdownContent}
               </div>
             )}
           </div>

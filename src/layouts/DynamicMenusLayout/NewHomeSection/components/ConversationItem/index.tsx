@@ -3,7 +3,6 @@ import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { PushpinFilled } from '@ant-design/icons';
-import { Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { formatRelativeTime } from '../../utils';
@@ -77,14 +76,13 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           <div className={cx(styles['conversation-item-content'])}>
             <div className={cx(styles['conversation-topic-row'])}>
               {pinned && <PushpinFilled className={cx(styles['pin-icon'])} />}
-              <Typography.Text
-                className={cx(styles['conversation-topic'])}
-                ellipsis={true}
-              >
+              {/* 原生省略号替代 Typography.Text ellipsis：antd 的省略检测会在
+                  每次重渲染插入 <em> 强制同步重排，长列表高频刷新下造成秒级卡顿 */}
+              <span className={cx(styles['conversation-topic'])}>
                 {item.topic ||
                   item.agent?.name ||
                   dict('PC.Constants.Menus.newChat')}
-              </Typography.Text>
+              </span>
               {item.taskStatus === TaskStatus.EXECUTING && (
                 <span className={cx(styles['status-tag'])}>
                   {executingText}
@@ -99,12 +97,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             </div>
             {hasAgentName && (
               <div className={cx(styles['conversation-meta'])}>
-                <Typography.Text
-                  className={cx(styles['conversation-agent-name'])}
-                  ellipsis={true}
-                >
+                <span className={cx(styles['conversation-agent-name'])}>
                   {item.agent?.name}
-                </Typography.Text>
+                </span>
                 <span className={cx(styles['conversation-date'])}>
                   {formatRelativeTime(item.modified)}
                 </span>

@@ -3,8 +3,8 @@
  * @description 四种视图的接口适配（与设计矩阵一致）：
  * - system    GET /connector/providers { pageNum, pageSize, scope: 'official',
  *             category?, keyword? } 服务端分页（官方连接器目录）；
- * - team      同接口 { pageNum, pageSize, keyword?, spaceId } / 未传 spaceId
- *             → { scope: 'space' } 服务端聚合全部空间（无需空间列表）；
+ * - team      同接口 { pageNum, pageSize, keyword?, scope: 'space' } 服务端
+ *             分页：「全部」聚合全部空间，具体空间再叠 spaceId 收窄；
  * - connected 同接口 { connected: 'true' } 全量数组（兼容裸数组/records
  *             双壳），keyword 客户端过滤，无分页；
  * - search    同接口 { pageNum, pageSize, keyword? } 纯关键字搜索
@@ -69,8 +69,10 @@ const buildParams = (
       pageNum: page,
       pageSize,
       keyword: kw,
-      // 具体空间 = 仅传 spaceId；「全部」= scope=space 服务端聚合全部空间
-      ...(spaceId ? { spaceId } : { scope: 'space' }),
+      // 与空间连接器页同口径恒带 scope=space：「全部」聚合全部空间，
+      // 具体空间再叠 spaceId 收窄（spaceId 仅在 scope=space 下生效）
+      scope: 'space',
+      ...(spaceId ? { spaceId } : {}),
     };
   }
   if (type === 'search') {

@@ -33,9 +33,15 @@
 
 .itemHeader {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 8px;
+}
+
+.versionRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
 }
 
 .version {
@@ -47,15 +53,31 @@
   word-break: break-all;
 }
 
+.versionCopy {
+  flex-shrink: 0;
+
+  :global(.copy-image) {
+    margin-right: 0;
+  }
+
+  span:empty {
+    display: none;
+  }
+}
+
 .tags {
   display: flex;
-  flex-shrink: 0;
   align-items: center;
   gap: 4px;
 
   :global(.ant-tag) {
     margin-inline-end: 0;
   }
+}
+
+.deployBtn {
+  align-self: flex-start;
+  margin-top: 4px;
 }
 
 .meta {

@@ -1,5 +1,20 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
+
+/** 读取当前提交短哈希；非 git 工作区（如解包产物）容错返回空串。 */
+const readGitHash = () => {
+  try {
+    return execSync('git rev-parse --short HEAD', {
+      cwd: path.join(__dirname, '..'),
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim();
+  } catch {
+    return '';
+  }
+};
 
 /**
  * 生成版本信息常量文件
@@ -9,10 +24,11 @@ const generateVersion = () => {
   try {
     // 读取 package.json
     const packageJsonPath = path.join(__dirname, '../package.json');
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
     const appName = packageJson.name || 'unknown';
     const appVersion = packageJson.version || '0.0.0';
+    const gitHash = readGitHash();
 
     // 生成版本常量文件内容
     const versionContent = `/**
@@ -21,6 +37,7 @@ const generateVersion = () => {
  */
 export const APP_VERSION = '${appVersion}';
 export const APP_NAME = '${appName}';
+export const APP_GIT_HASH = '${gitHash}';
 `;
 
     // 确定输出文件路径

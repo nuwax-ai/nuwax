@@ -49,7 +49,7 @@ vi.mock('@/services/userProjectApp', async () => {
   // 子会话时间取「5 分钟前」,断言走 relativeMinutes 分支
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   return {
-    apiUserProjectTabPageQuery: vi.fn().mockResolvedValue({
+    apiUserProjectPageQuery: vi.fn().mockResolvedValue({
       code: (await import('@/constants/codes.constants')).SUCCESS_CODE,
       data: {
         records: [
@@ -59,26 +59,37 @@ vi.mock('@/services/userProjectApp', async () => {
             projectType: 'UserApp',
             modified: fiveMinutesAgo,
             created: fiveMinutesAgo,
-            conversations: [
-              {
-                id: 11,
-                topic: '子会话一',
-                modified: fiveMinutesAgo,
-                taskStatus: 'COMPLETE',
-                agentId: 4166,
-              },
-            ],
           },
           { projectId: 2, name: '项目乙', projectType: 'NormalProject' },
         ],
+        total: 2,
       },
     }),
+    apiUserProjectConversations: vi.fn().mockImplementation((projectId) =>
+      Promise.resolve({
+        code: '0000',
+        data:
+          projectId === 1
+            ? [
+                {
+                  id: 11,
+                  topic: '子会话一',
+                  modified: fiveMinutesAgo,
+                  taskStatus: 'COMPLETE',
+                  agentId: 4166,
+                },
+              ]
+            : [],
+      }),
+    ),
     apiNormalProjectUpdate: vi.fn().mockResolvedValue({ code: '0000' }),
     apiNormalProjectDelete: vi.fn().mockResolvedValue({ code: '0000' }),
     apiUserAppUpdate: vi.fn().mockResolvedValue({ code: '0000' }),
     apiUserAppDelete: vi.fn().mockResolvedValue({ code: '0000' }),
     apiUserProjectPin: vi.fn().mockResolvedValue({ code: '0000' }),
     apiUserProjectArchive: vi.fn().mockResolvedValue({ code: '0000' }),
+    apiUserProjectCollect: vi.fn().mockResolvedValue({ code: '0000' }),
+    apiUserProjectUnCollect: vi.fn().mockResolvedValue({ code: '0000' }),
   };
 });
 

@@ -19,6 +19,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
+import { emitConversationChanged } from '@/utils/directorySyncEvents';
 
 // vi.hoisted：mock 工厂随静态 import 提前执行，引用的 spy 必须先于 import 初始化
 const {
@@ -266,5 +267,67 @@ describe('ProjectPanel 选中关系', () => {
     // 归档项目不进可见列表 → 反查必不命中
     await waitFor(() => expect(onResolved).toHaveBeenLastCalledWith(null));
     expect(document.querySelector('[class*="child-active"]')).toBeNull();
+  });
+
+  it('跨页面会话改名后立即补丁项目子行', async () => {
+    respondPage(defaultRecords(), defaultConversations());
+    render(<ProjectPanel compact />);
+    await waitFor(() => expect(screen.getByText('会话11')).toBeTruthy());
+
+    act(() => {
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '11',
+        patch: { topic: '跨页面新标题' },
+        origin: 'test',
+        reason: 'rename',
+      });
+    });
+
+    expect(screen.getByText('跨页面新标题')).toBeTruthy();
+  });
+
+  it('子会话请求途中收到创建事件时丢弃旧响应并补拉一次', async () => {
+    pageQueryMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: { records: [buildRecord()], total: 1 },
+    });
+    let resolveFirst: ((value: unknown) => void) | undefined;
+    conversationsMock
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: [buildConversation(11), buildConversation(13, '新建会话')],
+      });
+
+    render(<ProjectPanel compact />);
+    await waitFor(() => expect(conversationsMock).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      emitConversationChanged({
+        operation: 'created',
+        conversationId: '13',
+        project: {
+          projectId: '1',
+          projectType: AgentComponentTypeEnum.NormalProject,
+          spaceId: '100',
+        },
+        origin: 'test',
+        reason: 'create',
+      });
+      resolveFirst?.({
+        code: SUCCESS_CODE,
+        data: [buildConversation(11, '旧响应会话')],
+      });
+    });
+
+    await waitFor(() => expect(conversationsMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByText('新建会话')).toBeTruthy());
+    expect(screen.queryByText('旧响应会话')).toBeNull();
   });
 });
