@@ -1,5 +1,5 @@
 import SiteFooter from '@/components/SiteFooter';
-import PurchaseModal from '@/pages/MorePage/MySubscriptions/components/CreditsBreakdown/components/PurchaseModal';
+import PurchaseModal from '@/components/business-component/PurchaseModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -15,14 +15,12 @@ interface CreditsBalanceProps {
   className?: string;
   showFooter?: boolean;
   onClick?: () => void;
-  stacked?: boolean;
 }
 
 const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   className,
   showFooter = true,
   onClick,
-  stacked = false,
 }) => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const [balance, setBalance] = useState<number | null>(null);
@@ -76,9 +74,7 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
     <div className={cx(styles['credits-balance-wrapper'])}>
       {showCredits && (
         <div
-          className={cx(styles.container, className, {
-            [styles.stacked]: stacked,
-          })}
+          className={cx(styles.container, className)}
           onClick={handleClickBalance}
         >
           <span className={cx(styles.label)}>

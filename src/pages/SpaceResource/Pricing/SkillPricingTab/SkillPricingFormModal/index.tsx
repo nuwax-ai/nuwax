@@ -1,16 +1,16 @@
 import Created from '@/components/Created';
 import CustomFormModal from '@/components/CustomFormModal';
-import { apiUpdateToolPricing } from '@/pages/SpaceResource/services/resource';
+import { dict } from '@/services/i18nRuntime';
+import { apiUpdateToolPricing } from '@/services/resource';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import type { CreatedNodeItem } from '@/types/interfaces/common';
 import {
   ResourcePricingConfigInfo,
   ResourcePricingStatus,
   ResourcePricingType,
   ToolPricingTargetType,
-} from '@/pages/SpaceResource/types/resource';
-import { dict } from '@/services/i18nRuntime';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
-import type { CreatedNodeItem } from '@/types/interfaces/common';
+} from '@/types/interfaces/resource';
 import { customizeRequiredMark } from '@/utils/form';
 import { createPriceInputNumberProps } from '@/utils/priceInput';
 import { Form, Input, InputNumber, Radio, Switch, message } from 'antd';

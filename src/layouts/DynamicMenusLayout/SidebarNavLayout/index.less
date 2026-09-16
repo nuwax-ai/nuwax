@@ -7,7 +7,9 @@
 }
 
 .container {
-  overflow: hidden;
+  // 不设 overflow:hidden：根盒宽度=收缩包裹（主列+二级列），会裁掉贴右缘的
+  // 宽度拖拽分隔条（分隔条 1px + 热区右扩 4px 落在根盒外）；各列自身
+  // （.nav-menus/.second-column）已有 overflow:hidden 承担内容裁剪
   // background-color: @colorBgLayout;
 
   .first-menus {

@@ -157,6 +157,20 @@ describe('AgentConversationChatPanel', () => {
     expect(latestUnifiedProps().chatSuggestList).toBe(model.chatSuggestList);
   });
 
+  it('当前 URL 会话已有乐观消息时不再被详情 loading 遮挡', () => {
+    const model = createConversationInfoModel({ loadingConversation: true });
+    mockUseModel.mockReturnValue(model);
+    mockUseLocation.mockReturnValue({
+      key: 'route-loading',
+      state: {},
+      search: '?conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel />);
+
+    expect(latestUnifiedProps().isLoading).toBe(false);
+  });
+
   it('发送消息时带上电脑、已选组件、模型和调试会话参数', async () => {
     const model = createConversationInfoModel();
     mockUseModel.mockReturnValue(model);
@@ -213,6 +227,38 @@ describe('AgentConversationChatPanel', () => {
     act(() => {
       latestUnifiedProps().onSelectComponent({ id: 2, type: 'Workflow' });
     });
+    await waitFor(() => {
+      expect(latestUnifiedProps().selectedComponentList).toEqual([]);
+    });
+  });
+
+  it('新建全栈项目跳转时恢复工具选中态，即使没有 messageSourceType', async () => {
+    mockUseModel.mockReturnValue(createConversationInfoModel());
+    mockUseLocation.mockReturnValue({
+      key: 'route-from-project-create',
+      state: { infos: [{ id: 2, type: 'Workflow' }] },
+      search: '?conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel />);
+
+    await waitFor(() => {
+      expect(latestUnifiedProps().selectedComponentList).toEqual([
+        { id: 2, type: 'Workflow' },
+      ]);
+    });
+  });
+
+  it('明确传入空工具列表时不重新选中智能体默认工具', async () => {
+    mockUseModel.mockReturnValue(createConversationInfoModel());
+    mockUseLocation.mockReturnValue({
+      key: 'route-without-tools',
+      state: { infos: [] },
+      search: '?conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel />);
+
     await waitFor(() => {
       expect(latestUnifiedProps().selectedComponentList).toEqual([]);
     });

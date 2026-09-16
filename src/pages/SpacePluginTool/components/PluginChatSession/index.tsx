@@ -22,6 +22,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedComponentList, setSelectedComponentList] = useState<any[]>([]);
+  const selectionInitializedRef = useRef(false);
   const hasAutoSentRef = useRef(false);
 
   const {
@@ -58,7 +59,10 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       if (state.modelId) setSelectedModelId(state.modelId);
       if (state.selectedComputerId)
         setSelectedComputerId(state.selectedComputerId);
-      if (state.infos) setSelectedComponentList(state.infos);
+      if (Array.isArray(state.infos)) {
+        selectionInitializedRef.current = true;
+        setSelectedComponentList(state.infos);
+      }
     }
   }, [location.state]);
 
@@ -78,12 +82,15 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
           conversationInfo?.agent?.modelComponentConfig?.targetId;
         if (modelId) setSelectedModelId(modelId);
       }
-      if (!selectedComponentList?.length) {
+      if (!selectionInitializedRef.current) {
         const infos =
           conversationInfo?.infos ||
           conversationInfo?.agent?.manualComponents ||
           [];
-        if (infos?.length) setSelectedComponentList(infos);
+        if (infos?.length) {
+          selectionInitializedRef.current = true;
+          setSelectedComponentList(infos);
+        }
       }
     }
   }, [conversationInfo]);
@@ -91,7 +98,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
   // 3. 进入页面携带首条消息自动触发发送会话
   useEffect(() => {
     if (hasAutoSentRef.current) return;
-    if (conversationId && conversationInfo) {
+    if (conversationId && conversationInfo?.id === conversationId) {
       const state = (location.state || (history as any).location?.state) as any;
       if (
         state &&

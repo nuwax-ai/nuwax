@@ -1,4 +1,3 @@
-import type { ResourcePricingType } from '@/pages/SpaceResource/types/resource';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -6,6 +5,7 @@ import type {
   AgentStatisticsInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import type { ResourcePricingType } from '@/types/interfaces/resource';
 import React from 'react';
 import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 
@@ -105,6 +105,8 @@ export interface SquareCategoryInfo {
   key: string;
   // 类别描述
   label: string;
+  // 分类图标,后端非必填,为空前端不展示
+  icon?: string;
   type: SquareAgentTypeEnum;
   children?: SquareCategoryInfo[];
 }

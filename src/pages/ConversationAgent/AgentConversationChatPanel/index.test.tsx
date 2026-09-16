@@ -1,6 +1,6 @@
 import AgentConversationChatPanel from '@/pages/ConversationAgent/AgentConversationChatPanel';
 import { TaskStatus } from '@/types/enums/agent';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockUnifiedChatSession, mockUseModel, mockUseLocation, mockHistory } =
@@ -16,6 +16,10 @@ vi.mock('@/components/business-component', () => ({
     mockUnifiedChatSession(props);
     return <div data-testid="unified-chat-session" />;
   },
+}));
+
+vi.mock('@/features/conversation/react/useConversationRuntimeSession', () => ({
+  useConversationRuntimeSession: () => null,
 }));
 
 vi.mock('umi', () => ({
@@ -46,7 +50,7 @@ function createConversationInfoModel(overrides: Record<string, any> = {}) {
     chatSuggestList: ['next'],
     loadingConversation: false,
     onMessageSend: vi.fn(),
-    manualComponents: [{ id: 'component-1' }],
+    manualComponents: [{ id: 1, type: 'Plugin', defaultSelected: 1 }],
     isMoreMessage: true,
     loadingMore: false,
     handleLoadMoreMessage: vi.fn(),
@@ -133,7 +137,7 @@ describe('AgentConversationChatPanel', () => {
       id: 7001,
       messageInfo: 'fix it',
       files: [{ name: 'a.ts' }],
-      infos: [{ id: 'component-1' }],
+      infos: [{ id: 1, type: 'Plugin' }],
       sandboxId: 'computer-prop',
       debug: true,
       isSync: false,
@@ -141,6 +145,45 @@ describe('AgentConversationChatPanel', () => {
       modelId: 456,
       agentMode: 'ask',
     });
+  });
+
+  it('当前 URL 会话已有乐观消息时不再被详情 loading 遮挡', () => {
+    const model = createConversationInfoModel({ loadingConversation: true });
+    mockUseModel.mockReturnValue(model);
+    mockUseLocation.mockReturnValue({
+      key: 'route-loading',
+      state: {},
+      search: '?agentId=88&conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel />);
+
+    expect(latestUnifiedProps().isLoading).toBe(false);
+  });
+
+  it('新建智能体跳转后保留选中的工具，后续发送也使用当前选中态', async () => {
+    const model = createConversationInfoModel();
+    mockUseModel.mockReturnValue(model);
+    mockUseLocation.mockReturnValue({
+      key: 'route-from-project-create',
+      state: { infos: [{ id: 2, type: 'Workflow' }] },
+      search: '?agentId=88&conversationId=7001',
+    });
+
+    render(<AgentConversationChatPanel />);
+    await waitFor(() => {
+      expect(latestUnifiedProps().selectedComponentList).toEqual([
+        { id: 2, type: 'Workflow' },
+      ]);
+    });
+
+    act(() => {
+      latestUnifiedProps().onSelectComponent({ id: 2, type: 'Workflow' });
+    });
+    latestUnifiedProps().onSendMessage('继续', [], []);
+    expect(model.onMessageSend).toHaveBeenCalledWith(
+      expect.objectContaining({ infos: [] }),
+    );
   });
 
   it('重新加载历史时把字符串 id 转数字并返回 messageList', async () => {

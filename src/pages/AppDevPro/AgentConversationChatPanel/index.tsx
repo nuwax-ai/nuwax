@@ -103,7 +103,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   } = useSelectedComponent();
 
   // 选中态初始化（按 location.key 一次性应用，对齐 Chat 页语义）：
-  // - 首页携 state 透传（messageSourceType 非 new_chat）→ 恢复用户在首页选的工具；
+  // - 跳转时明确传入 infos（含空数组）→ 恢复上个输入框的工具选中态；
   // - 直进页面 → 按智能体 manualComponents 的默认选中初始化。
   // 不能像 Chat 页那样随 manualComponents 引用重放：AppDevPro 详情 5s 轮询会
   // 反复刷新 manualComponents 引用，重放会把用户正在挑选的选中态重置。
@@ -116,9 +116,12 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     const state = location.state as
       | { messageSourceType?: string; infos?: AgentSelectedComponentInfo[] }
       | undefined;
-    if (state?.messageSourceType && state.messageSourceType !== 'new_chat') {
+    if (
+      state?.messageSourceType !== 'new_chat' &&
+      Array.isArray(state?.infos)
+    ) {
       selectionInitKeyRef.current = key;
-      setSelectedComponentList(state.infos || []);
+      setSelectedComponentList(state.infos);
       return;
     }
     if (manualComponents.length > 0) {
@@ -160,7 +163,10 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       <UnifiedChatSession
         conversationId={conversationInfo?.id}
         messageList={messageList}
-        isLoading={loadingConversation}
+        isLoading={
+          loadingConversation &&
+          !(messageList?.length && conversationInfo?.id === queryConversationId)
+        }
         loadingMore={loadingMore}
         isMoreMessage={isMoreMessage}
         isConversationActive={

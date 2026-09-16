@@ -2,14 +2,14 @@ import CustomFormModal from '@/components/CustomFormModal';
 import {
   apiCreateAgentSubscriptionPlan,
   apiUpdateAgentSubscriptionPlan,
-} from '@/pages/EditAgent/services/agent-subscription-plan';
+} from '@/services/agent-subscription-plan';
+import { dict } from '@/services/i18nRuntime';
 import {
   SubscriptionPlanBizTypeEnum,
   SubscriptionPlanInfo,
   SubscriptionPlanPeriodEnum,
   SubscriptionPlanStatusEnum,
-} from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
-import { dict } from '@/services/i18nRuntime';
+} from '@/types/interfaces/subscriptionPlan';
 import { customizeRequiredMark } from '@/utils/form';
 import {
   Button,

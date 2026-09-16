@@ -622,6 +622,7 @@ const ChatInputUnifiedImpl: React.FC<
   // 发送后草稿已消费：卸载兜底跳过回写（isClearInput=false 时输入仍在，
   // 不把已发送内容重新落成草稿）；后续再次编辑会复位该标记
   const draftConsumedRef = useRef(false);
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const confirmSendMessage = (value: string) => {
     if (!!value.trim() || !!files?.length) {
@@ -636,6 +637,10 @@ const ChatInputUnifiedImpl: React.FC<
       );
       // 已发送内容不再是草稿：无论 isClearInput 与否都清除（isClearInput=false
       // 时输入保留供失败重试，但草稿已消费，卸载兜底不再回写旧内容）
+      if (draftSaveTimerRef.current) {
+        clearTimeout(draftSaveTimerRef.current);
+        draftSaveTimerRef.current = null;
+      }
       draftConsumedRef.current = true;
       const scope = draftScope;
       if (scope) {
@@ -998,8 +1003,6 @@ const ChatInputUnifiedImpl: React.FC<
   // 上一个作用域标记：区分「首挂恢复」（输入为空才回填，不覆盖队列编辑回填）
   // 与「同实例切换会话」（旧内容属于旧会话，无条件切到新草稿）
   const lastDraftScopeRef = useRef<string | null>(null);
-  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // 恢复：进入会话回填草稿。切换会话（同一实例换了作用域）时旧内容不属于新
   // 会话，无条件由新草稿接管（空草稿=清空输入，防旧会话内容落入新桶）。
   // 编辑器聚焦态下外部 value 通道会被 MentionEditor 聚焦守卫拦截，DOM 直达
@@ -1036,6 +1039,7 @@ const ChatInputUnifiedImpl: React.FC<
     draftConsumedRef.current = false;
     draftSaveTimerRef.current = setTimeout(() => {
       draftSaveTimerRef.current = null;
+      if (draftConsumedRef.current) return;
       // 过渡渲染余波：文本仍属旧作用域时不落盘（恢复 effect 接管后会再触发）
       if (draftStateScopeRef.current !== draftScope) return;
       saveDraft(draftScope, {

@@ -117,6 +117,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   // 会话输入框已选择组件
   const {
     selectedComponentList,
+    selectedComponentDetails,
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
@@ -195,7 +196,10 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
           files,
           skillIds,
           modelId,
-          tools: selectedComponentList,
+          tools:
+            activeTabRef.current === AgentComponentTypeEnum.PageApp
+              ? selectedComponentDetails
+              : selectedComponentList,
           computerId: selectedComputerId,
           // 仅个人电脑时带上自定义工作目录（非空才传）
           workspacePath:
@@ -209,6 +213,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
     [
       onSubmit,
       selectedComponentList,
+      selectedComponentDetails,
       selectedComputerId,
       workspacePath,
       agentMode,

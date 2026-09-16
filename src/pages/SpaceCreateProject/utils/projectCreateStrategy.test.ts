@@ -40,12 +40,61 @@ beforeEach(() => {
   historyPushMock.mockClear();
   apiProjectCreateMock.mockReset();
   apiProjectCreateMock.mockResolvedValue({
-    data: { targetType: 'NormalProject', targetId: 92, conversationId: 1562257 },
+    data: {
+      targetType: 'NormalProject',
+      targetId: 92,
+      conversationId: 1562257,
+    },
   });
   setContextMock.mockClear();
 });
 
 describe('createProjectAndNavigate 跳转策略', () => {
+  it.each([
+    [
+      AgentComponentTypeEnum.Agent,
+      '/space/1/agent-dev?agentId=92&conversationId=1562257',
+    ],
+    [AgentComponentTypeEnum.PageApp, '/space/1/app-dev/92'],
+    [
+      AgentComponentTypeEnum.UserApp,
+      '/space/1/app-pro?appId=92&conversationId=1562257',
+    ],
+    [AgentComponentTypeEnum.NormalProject, '/home/chat/1562257/7'],
+    [
+      AgentComponentTypeEnum.Skill,
+      '/space/1/skill-details-conversation/92?conversationId=1562257',
+    ],
+    [
+      AgentComponentTypeEnum.Plugin,
+      '/space/1/plugin/92/cloud-tool?conversationId=1562257',
+    ],
+  ])('%s 新建后将工具和首条消息带到详情', async (type, url) => {
+    const tools = [{ id: 23, type: AgentComponentTypeEnum.Plugin }];
+    await createProjectAndNavigate({
+      payload: {
+        type,
+        prompt: '验收首条消息',
+        tools,
+        agentId: 7,
+        devAgentId: 7,
+      },
+      spaceId: 1,
+      setContext: setContextMock,
+    });
+
+    expect(historyPushMock).toHaveBeenCalledWith(
+      url,
+      expect.objectContaining({ message: '验收首条消息', infos: tools }),
+    );
+    if (type === AgentComponentTypeEnum.PageApp) {
+      expect(setContextMock).toHaveBeenCalledWith(
+        'app-dev-initial-92',
+        expect.objectContaining({ message: '验收首条消息', infos: tools }),
+      );
+    }
+  });
+
   it('常规项目 → /home/chat/{conversationId}/{agentId}（不再误跳全栈 app-pro）', async () => {
     await runCreate(AgentComponentTypeEnum.NormalProject);
 

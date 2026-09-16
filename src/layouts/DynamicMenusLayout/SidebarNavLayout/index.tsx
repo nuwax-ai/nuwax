@@ -5,6 +5,7 @@
  */
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import ConditionRender from '@/components/ConditionRender';
+import ResizeDivider from '@/components/ResizableSplit/ResizeDivider';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { initHostBridgeEvents } from '@/services/hostBridgeEvents';
@@ -18,10 +19,23 @@ import {
   shellAvoid,
 } from '@/utils/hostBridge';
 import { jumpTo } from '@/utils/router';
+import {
+  clampNavSidebarWidth,
+  loadNavSidebarWidthPx,
+  NAV_SIDEBAR_WIDTH_MAX,
+  NAV_SIDEBAR_WIDTH_MIN,
+  saveNavSidebarWidthPx,
+} from '@/utils/sidebarNavWidthPreference';
 import { EllipsisOutlined, SettingOutlined } from '@ant-design/icons';
 import { theme, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 // 复用原有组件
@@ -318,8 +332,55 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       secondMenuAvailable: shouldShowSecondMenu,
     });
 
+  // —— 主会话列宽度拖拽（style3 单栏专属，与会话详情面板分栏共用 ResizeDivider）——
+  // 宽度偏好持久化到 localStorage（仅本布局挂载时读写，切经典风格不消费）；
+  // 移动端不启用拖拽，宽度恒为默认值（与 layout model 的 getCurrentMenuWidth 常量口径一致）
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [navWidth, setNavWidth] = useState(() =>
+    isMobile
+      ? NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH
+      : loadNavSidebarWidthPx(),
+  );
+  // 拖拽中标志：临时关掉 .nav-menus 的 width 过渡，避免分隔条跟随迟滞
+  const [isNavResizing, setIsNavResizing] = useState(false);
+  const navColumnWidth = isMobile
+    ? NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH
+    : navWidth;
+
+  // clientX（视口坐标）→ 根容器左缘相对值 = 新列宽；根容器即窗口最左列，rect 计算保持稳健
+  const resolveNavWidthFromClientX = useCallback((clientX: number) => {
+    const rootRect = rootRef.current?.getBoundingClientRect();
+    if (!rootRect) return null;
+    return clampNavSidebarWidth(clientX - rootRect.left);
+  }, []);
+
+  const handleNavDividerMove = useCallback(
+    (clientX: number) => {
+      const next = resolveNavWidthFromClientX(clientX);
+      if (next !== null) setNavWidth(next);
+    },
+    [resolveNavWidthFromClientX],
+  );
+
+  const handleNavDividerEnd = useCallback(
+    (clientX: number) => {
+      const next = resolveNavWidthFromClientX(clientX);
+      if (next !== null) {
+        setNavWidth(next);
+        saveNavSidebarWidthPx(next);
+      }
+    },
+    [resolveNavWidthFromClientX],
+  );
+
   return (
-    <div className={navigationClassName}>
+    <div
+      className={navigationClassName}
+      ref={rootRef}
+      // 分隔条（absolute）的定位锚点：与外层 #mobile-menu-container 同盒，
+      // 原 absolute 子元素（sidebar-expand-btn）锚点等效不变
+      style={{ position: 'relative' }}
+    >
       {isImmersiveShell() && (
         <div
           data-nuwax-titlebar-drag="true"
@@ -331,8 +392,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             width: isMac()
               ? primarySidebarCollapsed
                 ? '100vw'
-                : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH +
-                  (secondMenuVisible ? SECOND_COLUMN_WIDTH : 0)
+                : navColumnWidth + (secondMenuVisible ? SECOND_COLUMN_WIDTH : 0)
               : '100vw',
             height: isMac() ? shellAvoid.TOP : shellAvoid.CONTENT_TOP,
             pointerEvents: 'none',
@@ -344,9 +404,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       <div
         className={cx(styles['nav-menus'], 'noselect')}
         style={{
-          width: primarySidebarCollapsed
-            ? 0
-            : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
+          width: primarySidebarCollapsed ? 0 : navColumnWidth,
+          // 拖拽调宽中临时关掉 less 的 width 过渡（否则分隔条跟随迟滞）；
+          // 其余场景（折叠/展开）恢复走 less 的 0.3s 动画
+          transition: isNavResizing ? 'none' : undefined,
           // 桌面端沉浸式：顶部留白避让 nuwaclaw 红绿灯工具栏；
           // 一级栏已移除，浏览器端也不再需要 border-left（侧栏即最左列）
           paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
@@ -386,7 +447,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         {/* 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右：消息/设备/更多/文档，走接口）+
             最右「客户端设置」（仅 Nuwax 客户端渲染，打开壳设置弹窗） */}
         <div className={cx(styles['sidebar-footer'])}>
-          <User placement="rightTop">
+          {/* topLeft：弹窗底部贴用户区顶部、左缘与用户区对齐 */}
+          <User placement="topLeft">
             <div
               className={cx(styles['sidebar-user-row'])}
               onClick={() => setOpenAdmin(true)}
@@ -493,6 +555,20 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* 主会话列宽度拖拽分隔条（style3 单栏专属）：与会话详情「面板/会话区」
+          分栏共用同一 ResizeDivider，交互/视觉完全一致。折叠态与移动端不挂载；
+          DOM 后置于二级列之后，压在列边界（主列|二级列 或 主列|内容区）上 */}
+      {!primarySidebarCollapsed && !isMobile && (
+        <ResizeDivider
+          position={navWidth}
+          minX={NAV_SIDEBAR_WIDTH_MIN}
+          maxX={NAV_SIDEBAR_WIDTH_MAX}
+          onDraggingChange={setIsNavResizing}
+          onDragMove={handleNavDividerMove}
+          onDragEnd={handleNavDividerEnd}
+        />
       )}
 
       {/* 折叠态展开按钮。主站页：原位复刻收起按钮位置（顶栏随侧栏收起而不可点，

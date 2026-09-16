@@ -1,6 +1,6 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import type { ResourcePricingConfigInfo } from '@/pages/SpaceResource/types/resource';
 import { dict } from '@/services/i18nRuntime';
+import type { ResourcePricingConfigInfo } from '@/types/interfaces/resource';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType } from '@ant-design/pro-components';
 import { Button, Form } from 'antd';

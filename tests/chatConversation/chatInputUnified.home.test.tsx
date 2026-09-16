@@ -232,7 +232,10 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 describe('工作目录栏（首页我的电脑场景）', () => {
   it('个人电脑 + 提供目录回调时渲染，弹窗收到所选电脑 id', () => {
@@ -476,6 +479,28 @@ describe('首页草稿（draftKey=home）', () => {
     await waitFor(() => expect(onEnter).toHaveBeenCalled());
     expect(onEnter.mock.calls[0][0]).toBe('待发送内容');
     // 已发送内容不再是草稿
+    expect(loadDraft('home')).toBeNull();
+    expect(localStorage.getItem(HOME_DRAFT_KEY)).toBeNull();
+  });
+
+  it('发送后取消挂起的节流落盘，不把已发送内容重新写回草稿', () => {
+    vi.useFakeTimers();
+    const onEnter = vi.fn();
+    renderHomeInput({ onEnter, isClearInput: false });
+
+    act(() => {
+      editor.lastProps.onChange('刚输入且立即发送');
+    });
+    act(() => {
+      editor.lastProps.onPressEnter();
+    });
+
+    expect(onEnter.mock.calls[0][0]).toBe('刚输入且立即发送');
+    expect(loadDraft('home')).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(1100);
+    });
     expect(loadDraft('home')).toBeNull();
     expect(localStorage.getItem(HOME_DRAFT_KEY)).toBeNull();
   });
