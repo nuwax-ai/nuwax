@@ -133,6 +133,8 @@ export function useConversationStreamResume(
   // sub 是否已订阅（开/闭之间）。ref 用于回调闭包安全读取；state 用于驱动 ready 重算
   const isResumeSubscribedRef = useRef(false);
   const [isResumeSubscribed, setIsResumeSubscribed] = useState(false);
+  // 先由 entry effect 决定是否恢复 sub，避免 ahooks 挂载时与历史 reload 并发拉全量详情。
+  const [entryConversationId, setEntryConversationId] = useState<number>();
   // 用 ref 保存最新值，避免轮询 onSuccess / subscribe 异步回调闭包过期
   // conversationId 一并放入：subscribe 的 await 与 sub onClose 都是异步，需要回调执行时
   // 能读到「当前会话」以判断本次回调是否仍属于同一会话（防跨会话覆盖/误杀）
@@ -473,6 +475,7 @@ export function useConversationStreamResume(
 
   const isPollingReady =
     !!conversationId &&
+    entryConversationId === conversationId &&
     !isLocallyStreaming &&
     !isAwaitingChatTerminal &&
     !isResumeSubscribed &&
@@ -575,6 +578,7 @@ export function useConversationStreamResume(
   // 不把 isLocallyStreaming 放入依赖，避免「本地发送结束」瞬间触发订阅；
   // 该窗口由冷却时间 + 轮询兜底覆盖。
   useEffect(() => {
+    setEntryConversationId(conversationId);
     if (!conversationId) return;
     if (
       taskStatus === TaskStatus.EXECUTING &&

@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  vfile-location@5.0.3:
+    hash: 90c619b34ed0a2fb91b2cfab03a06810ea62a02288e26d8bbadf2b18a9b24735
+    path: patches/vfile-location@5.0.3.patch
+
 importers:
 
   .:
@@ -18426,7 +18431,7 @@ snapshots:
       hastscript: 9.0.1
       property-information: 7.1.0
       vfile: 6.0.3
-      vfile-location: 5.0.3
+      vfile-location: 5.0.3(patch_hash=90c619b34ed0a2fb91b2cfab03a06810ea62a02288e26d8bbadf2b18a9b24735)
       web-namespaces: 2.0.1
 
   hast-util-is-element@3.0.0:
@@ -23732,7 +23737,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vfile-location@5.0.3:
+  vfile-location@5.0.3(patch_hash=90c619b34ed0a2fb91b2cfab03a06810ea62a02288e26d8bbadf2b18a9b24735):
     dependencies:
       '@types/unist': 3.0.3
       vfile: 6.0.3

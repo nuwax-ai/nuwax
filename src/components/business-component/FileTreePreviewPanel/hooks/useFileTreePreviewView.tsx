@@ -7,11 +7,11 @@ import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
+import { ImageViewer } from '@/components/business-component/ImageViewer';
 import { OpenUiRuntimeFrame } from '@/components/business-component/OpenUiArtifactView';
 import CodeViewer from '@/components/CodeViewer';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { ImageViewer } from '@/pages/AppDev/components';
 import { dict } from '@/services/i18nRuntime';
 import { fetchContentFromUrl } from '@/services/skill';
 import { HideDesktopEnum } from '@/types/enums/agent';
@@ -290,6 +290,8 @@ export function useFileTreePreviewView(
   const [fileRefreshTimestamp, setFileRefreshTimestamp] = useState<number>(
     Date.now(),
   );
+  // Markdown 由 FilePreview 统一加载；刷新信号不参与组件身份，保留正文和滚动位置。
+  const [markdownRefreshKey, setMarkdownRefreshKey] = useState(0);
   /** html / md / .openui.json：预览或代码视图，默认预览 */
   const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
     'preview',
@@ -451,13 +453,20 @@ export function useFileTreePreviewView(
 
       const fileName = currentNode.name || '';
       const currentDocumentResult = isDocumentFile(fileName);
+      const isMarkdownPreview =
+        isMarkdownFile(fileName) && viewFileType === 'preview';
       const shouldOnlyRefreshPreview =
+        isMarkdownPreview ||
         isVideoFile(fileName) ||
         isAudioFile(fileName) ||
         currentDocumentResult?.isDoc ||
         isImageFile(fileName);
 
-      setFileRefreshTimestamp(Date.now());
+      if (isMarkdownPreview) {
+        setMarkdownRefreshKey((key) => key + 1);
+      } else {
+        setFileRefreshTimestamp(Date.now());
+      }
 
       if (shouldOnlyRefreshPreview) {
         setSelectedFileNode((prevNode) =>
@@ -486,7 +495,12 @@ export function useFileTreePreviewView(
           : prevNode,
       );
     },
-    [selectedFileId, selectedFileNode, fetchFileContentUpdateFiles],
+    [
+      selectedFileId,
+      selectedFileNode,
+      viewFileType,
+      fetchFileContentUpdateFiles,
+    ],
   );
 
   // 刷新文件树和文件内容
@@ -685,6 +699,9 @@ export function useFileTreePreviewView(
 
         // 更新刷新时间戳，触发预览区重渲染
         setFileRefreshTimestamp(Date.now());
+        if (isMarkdownFile(fileNode.name || '')) {
+          setMarkdownRefreshKey((key) => key + 1);
+        }
 
         // 先写 ref 再 setState，降低异步回调读取旧选中值的概率
         selectedFileIdRef.current = currentSelectedId;
@@ -725,7 +742,10 @@ export function useFileTreePreviewView(
            *   被重新挂载，iframe 再次加载并造成预览区闪烁。
            * Markdown 同理由 FilePreview 自己按需加载；代码视图仍走下方正文请求。
            */
-          if ((_isMarkdownFile || isHtmlFile) && !initViewFileType) {
+          if (
+            (_isMarkdownFile && initViewFileType !== 'code') ||
+            (isHtmlFile && !initViewFileType)
+          ) {
             setSelectedFileNode({
               ...fileNode,
               content: '',
@@ -1832,6 +1852,17 @@ export function useFileTreePreviewView(
       fileProxyUrl: string,
       selectedFileId: string,
     ): { key: string; url: string } => {
+      if (fileType === 'markdown') {
+        return {
+          key: JSON.stringify([
+            fileType,
+            targetId,
+            selectedFileId,
+            fileProxyUrl,
+          ]),
+          url: fileProxyUrl,
+        };
+      }
       /**
        * taskAgentSelectTrigger 只负责驱动自动选中 effect；真正选中文件时会统一更新
        * fileRefreshTimestamp。若两者都参与 key，一次消息文件点击会先因 trigger 重建，
@@ -1847,7 +1878,7 @@ export function useFileTreePreviewView(
 
       return { key: fileKey, url: fileUrl };
     },
-    [fileRefreshTimestamp],
+    [fileRefreshTimestamp, targetId],
   );
 
   // 文件树已加载的 OpenUI 内容：useMemo 稳定化，避免每次渲染重新 parse
@@ -2128,7 +2159,9 @@ export function useFileTreePreviewView(
     if (
       (isHtmlInCondition || isMarkdownFile(fileNameLower)) &&
       viewFileType === 'preview' &&
-      (fileProxyUrl || selectedFileNode?.content)
+      (fileProxyUrl ||
+        selectedFileNode?.content ||
+        (!isHtmlInCondition && typeof selectedFileNode?.content === 'string'))
     ) {
       const fileTypeForPreview = isHtmlInCondition ? 'html' : 'markdown';
       const { key: filePreviewKey, url: filePreviewUrl } =
@@ -2138,7 +2171,13 @@ export function useFileTreePreviewView(
         <FilePreview
           key={filePreviewKey}
           src={filePreviewUrl}
-          content={selectedFileNode?.content}
+          // 远程 Markdown 不传编辑器缓存，避免旧正文覆盖预览自己的刷新结果。
+          content={
+            !isHtmlInCondition && fileProxyUrl
+              ? undefined
+              : selectedFileNode?.content
+          }
+          refreshKey={isHtmlInCondition ? undefined : markdownRefreshKey}
           fileType={fileTypeForPreview}
           staticFileBasePath={staticFileBasePath}
         />
@@ -2246,6 +2285,7 @@ export function useFileTreePreviewView(
       documentFileType,
       isImage,
       buildFilePreviewProps,
+      markdownRefreshKey,
       isDynamicTheme,
       onFullscreenPreview,
       handleContentChange,
