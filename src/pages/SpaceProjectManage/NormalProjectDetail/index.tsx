@@ -2,6 +2,10 @@ import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  useConversationChanged,
+  useProjectChanged,
+} from '@/hooks/useDirectorySync';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
 import { apiNormalProjectGetById } from '@/services/userProjectApp';
@@ -11,6 +15,7 @@ import type {
   UserNormalProjectInfo,
   UserProjectConversationInfo,
 } from '@/types/interfaces/userProject';
+import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import type { TabsProps } from 'antd';
 import { Button, Result, Tabs } from 'antd';
@@ -73,6 +78,39 @@ const NormalProjectDetail: React.FC = () => {
     useState(true);
   const [iframeLoadFailed, setIframeLoadFailed] = useState(false);
 
+  useProjectChanged((event) => {
+    if (
+      event.project.projectType !== AgentComponentTypeEnum.NormalProject ||
+      event.project.projectId !== String(projectId) ||
+      (event.project.spaceId !== undefined &&
+        event.project.spaceId !== String(spaceId))
+    ) {
+      return;
+    }
+    if (event.operation === 'deleted') {
+      history.replace(`/space/${spaceId}/project-manage`);
+      return;
+    }
+    if (event.operation !== 'updated' || !event.patch) return;
+    setProjectInfo((previous) =>
+      previous
+        ? {
+            ...previous,
+            ...(event.patch?.name !== undefined
+              ? { name: event.patch.name }
+              : {}),
+            ...(event.patch?.description !== undefined
+              ? { description: event.patch.description }
+              : {}),
+            ...(event.patch?.icon !== undefined
+              ? { icon: event.patch.icon ?? '' }
+              : {}),
+          }
+        : previous,
+    );
+    if (event.patch.name !== undefined) setProjectName(event.patch.name);
+  });
+
   /** 顶部 Tab 仅负责切换状态，内容由页面主体区域统一渲染 */
   const tabItems = useMemo<TabsProps['items']>(
     () => [
@@ -131,6 +169,22 @@ const NormalProjectDetail: React.FC = () => {
       },
     },
   );
+
+  useConversationChanged((event) => {
+    if (
+      !event.project ||
+      event.project.projectType !== AgentComponentTypeEnum.NormalProject ||
+      event.project.projectId !== String(projectId)
+    ) {
+      return;
+    }
+    setConversations((previous) =>
+      applyConversationChangedToList(previous, event),
+    );
+    if (event.operation === 'created' || event.operation === 'deleted') {
+      runConversations();
+    }
+  });
 
   /** 进入页面后并行获取详情与相关任务 */
   useEffect(() => {

@@ -6,8 +6,10 @@ import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { dict } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { Form, FormProps, Input, message } from 'antd';
@@ -104,6 +106,18 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
       const data = unwrapUserAppInfo(result);
       setImageUrl('');
       if (data) {
+        emitProjectChanged({
+          operation: 'created',
+          project: {
+            projectId: String(data.id),
+            projectType: AgentComponentTypeEnum.UserApp,
+            ...(data.spaceId !== undefined
+              ? { spaceId: String(data.spaceId) }
+              : {}),
+          },
+          origin: 'create-user-app',
+          reason: 'create',
+        });
         onConfirmCreate?.(data);
       }
       message.success(dict('PC.Components.CreateUserApp.createSuccess'));
@@ -126,13 +140,32 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
       setLoading(false);
       const data = unwrapUserAppInfo(result);
       const payload = params[0];
-      onConfirmUpdate?.(
+      const nextInfo =
         data ??
-          ({
-            ...userAppInfo,
-            ...payload,
-          } as UserAppInfo),
-      );
+        ({
+          ...userAppInfo,
+          ...payload,
+        } as UserAppInfo);
+      emitProjectChanged({
+        operation: 'updated',
+        project: {
+          projectId: String(payload.id),
+          projectType: AgentComponentTypeEnum.UserApp,
+          ...(nextInfo.spaceId !== undefined
+            ? { spaceId: String(nextInfo.spaceId) }
+            : spaceId !== undefined
+            ? { spaceId: String(spaceId) }
+            : {}),
+        },
+        patch: {
+          name: payload.name,
+          description: payload.description,
+          icon: payload.icon,
+        },
+        origin: 'create-user-app',
+        reason: 'rename',
+      });
+      onConfirmUpdate?.(nextInfo);
     },
     onError: () => {
       setLoading(false);

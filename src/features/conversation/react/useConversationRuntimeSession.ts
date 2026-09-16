@@ -22,6 +22,7 @@ import {
   createConversationRuntimeSession,
   type ConversationRuntimeSession,
 } from '@/features/conversation/runtime/createConversationRuntimeSession';
+import { useConversationChanged } from '@/hooks/useDirectorySync';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   appendThinkChunk,
@@ -111,6 +112,35 @@ export function useConversationRuntimeSession(
   const [loadingMore, setLoadingMore] = useState(false);
   const conversationInfoRef = useRef<ConversationInfo | null | undefined>(null);
   conversationInfoRef.current = conversationInfo;
+  useConversationChanged((event) => {
+    if (
+      event.operation !== 'updated' ||
+      String(conversationId) !== event.conversationId ||
+      !event.patch
+    ) {
+      return;
+    }
+    setConversationInfo((previous) => {
+      if (!previous || String(previous.id) !== event.conversationId) {
+        return previous;
+      }
+      const next = {
+        ...previous,
+        ...(event.patch?.topic !== undefined
+          ? { topic: event.patch.topic }
+          : {}),
+        ...(event.patch?.icon !== undefined ? { icon: event.patch.icon } : {}),
+        ...(event.patch?.taskStatus !== undefined
+          ? { taskStatus: event.patch.taskStatus }
+          : {}),
+      };
+      return next.topic === previous.topic &&
+        next.icon === previous.icon &&
+        next.taskStatus === previous.taskStatus
+        ? previous
+        : next;
+    });
+  });
   /** 会话是否开启建议（对齐旧线 isSuggest：agent.openSuggest === Open） */
   const isSuggestEnabledRef = useRef(false);
   isSuggestEnabledRef.current =
@@ -138,7 +168,10 @@ export function useConversationRuntimeSession(
         setConversationInfo,
         resources: {
           ...(effectsResources as never as Record<string, unknown>),
-          onSuggestLoadingChange: (loading, targetConversationId) => {
+          onSuggestLoadingChange: (
+            loading: boolean,
+            targetConversationId: number,
+          ) => {
             if (
               sessionRef.current?.getState().currentConversationId ===
               targetConversationId
@@ -146,7 +179,7 @@ export function useConversationRuntimeSession(
               setLoadingSuggest(loading);
             }
           },
-          onSuggestLoaded: (list: string[], targetConversationId) => {
+          onSuggestLoaded: (list: string[], targetConversationId: number) => {
             if (
               sessionRef.current?.getState().currentConversationId ===
               targetConversationId
@@ -388,8 +421,11 @@ export function useConversationRuntimeSession(
   // 不能在 conversationProps 中直接 bind，否则每次快照写回 render 都会生成新引用，
   // 使 useRequest 立即重启并形成「详情请求 -> render -> 再请求」循环。
   const onResumeConversationStream = useCallback(
-    (...args: Parameters<ConversationRuntimeSession['resumeConversationStream']>) =>
-      session?.resumeConversationStream(...args),
+    (
+      ...args: Parameters<
+        ConversationRuntimeSession['resumeConversationStream']
+      >
+    ) => session?.resumeConversationStream(...args),
     [session],
   );
   const onAbortResumeStream = useCallback(

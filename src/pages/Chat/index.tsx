@@ -14,6 +14,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
+import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
@@ -336,6 +337,36 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     abortResumeStream,
     refreshGitListRef,
   } = useModel('conversationInfo');
+
+  useConversationChanged((event) => {
+    if (
+      event.operation !== 'updated' ||
+      !event.patch ||
+      String(conversationInfo?.id ?? id ?? '') !== event.conversationId
+    ) {
+      return;
+    }
+    setConversationInfo((previous: ConversationInfo | null | undefined) => {
+      if (!previous || String(previous.id) !== event.conversationId) {
+        return previous;
+      }
+      const next = {
+        ...previous,
+        ...(event.patch?.topic !== undefined
+          ? { topic: event.patch.topic }
+          : {}),
+        ...(event.patch?.icon !== undefined ? { icon: event.patch.icon } : {}),
+        ...(event.patch?.taskStatus !== undefined
+          ? { taskStatus: event.patch.taskStatus }
+          : {}),
+      };
+      return next.topic === previous.topic &&
+        next.icon === previous.icon &&
+        next.taskStatus === previous.taskStatus
+        ? previous
+        : next;
+    });
+  });
 
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =

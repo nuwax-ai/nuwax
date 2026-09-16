@@ -29,6 +29,7 @@ import {
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
+import { installDirectorySyncLegacyBridge } from './utils/directorySyncEvents';
 import { hostBridge, syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
 import { isConversationMockPage } from './utils/isConversationMockPage';
@@ -103,6 +104,8 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
 }) => {
   const setAntdConfig = useAntdConfigSetter();
   const lastAppliedRef = useRef<string>('');
+
+  useEffect(() => installDirectorySyncLegacyBridge(), []);
 
   // 输出版本信息到控制台
   useEffect(() => {

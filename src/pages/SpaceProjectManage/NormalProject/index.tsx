@@ -1,15 +1,19 @@
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useProjectChanged } from '@/hooks/useDirectorySync';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
 import { apiNormalProjectDelete } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   UserProjectItem,
   UserProjectPageResult,
 } from '@/types/interfaces/userProject';
+import {
+  applyProjectChangedToList,
+  emitProjectChanged,
+} from '@/utils/directorySyncEvents';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
@@ -121,6 +125,23 @@ const NormalProject: React.FC = () => {
     run(keyword, 1);
   }, [keyword, refreshToken, run, spaceId]);
 
+  useProjectChanged((event) => {
+    if (
+      event.project.projectType !== AgentComponentTypeEnum.NormalProject ||
+      (event.project.spaceId !== undefined &&
+        event.project.spaceId !== String(spaceId))
+    ) {
+      return;
+    }
+    if (event.operation === 'created') {
+      run(keyword, 1);
+      return;
+    }
+    setList((previous) =>
+      applyProjectChangedToList<UserProjectItem>(previous, event),
+    );
+  });
+
   /** 滚动到底部后加载下一页 */
   const handleLoadMore = useCallback(() => {
     if (loading || !hasMore) {
@@ -147,12 +168,22 @@ const NormalProject: React.FC = () => {
         onOk: async () => {
           const res = await apiNormalProjectDelete(item.id);
           if (res?.code === SUCCESS_CODE) {
+            emitProjectChanged({
+              operation: 'deleted',
+              project: {
+                projectId: String(item.id),
+                projectType: AgentComponentTypeEnum.NormalProject,
+                spaceId: String(spaceId),
+              },
+              origin: 'normal-project-list',
+              reason: 'delete',
+            });
             run(keyword, 1);
           }
         },
       });
     },
-    [keyword, run],
+    [keyword, run, spaceId],
   );
 
   /** 打开常规项目编辑弹窗 */

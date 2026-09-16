@@ -23,6 +23,7 @@ import {
   applyTerminalTaskStatus,
   emitConversationListTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
+import { emitConversationChanged } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
@@ -60,10 +61,7 @@ export interface RuntimeLineEffectsResources {
   setTaskAgentSelectTrigger?: Dispatch<SetStateAction<number | string>>;
   setFileTreeRefreshTrigger?: Dispatch<SetStateAction<number>>;
   /** 建议请求状态写回（仅真正发起 suggest 请求时进入 loading）。 */
-  onSuggestLoadingChange?: (
-    loading: boolean,
-    conversationId: number,
-  ) => void;
+  onSuggestLoadingChange?: (loading: boolean, conversationId: number) => void;
   /** 建议列表写回（绑定层 setChatSuggestList） */
   onSuggestLoaded?: (list: string[], conversationId: number) => void;
   /** 「正在执行任务」冲突确认（绑定层实现 modalConfirm + 停止） */
@@ -162,6 +160,16 @@ export function createRuntimeLineEffectsAdapter(deps: {
                 ...effect.currentInfo,
                 topicUpdated: snapshot?.topicUpdated as number,
                 topic: snapshot?.topic as string,
+              });
+              emitConversationChanged({
+                operation: 'updated',
+                conversationId: String(effect.conversationId),
+                patch: {
+                  topic: snapshot?.topic,
+                  icon: snapshot?.icon,
+                },
+                origin: 'conversation-runtime',
+                reason: 'auto-topic',
               });
               if (!resources.isAppSidebarMode) {
                 eventBus.emit(EVENT_TYPE.RefreshConversationList, {

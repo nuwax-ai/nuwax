@@ -176,6 +176,16 @@ describe('runtimeLine effects adapter', () => {
       EVENT_TYPE.RefreshConversationList,
       expect.objectContaining({ reason: 'topic-updated' }),
     );
+    expect(mockEventBusEmit).toHaveBeenCalledWith(
+      EVENT_TYPE.ConversationChanged,
+      expect.objectContaining({
+        type: 'conversation.changed',
+        operation: 'updated',
+        conversationId: '1001',
+        patch: expect.objectContaining({ topic: '新主题' }),
+        reason: 'auto-topic',
+      }),
+    );
     expect(runHistory).toHaveBeenCalledWith({ agentId: null, limit: 5 });
     expect(runHistoryItem).toHaveBeenCalledWith({ agentId: 9, limit: 20 });
   });
