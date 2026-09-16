@@ -27,6 +27,7 @@ import {
   message,
   Segmented,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd';
 import classNames from 'classnames';
@@ -49,6 +50,33 @@ const isSystemModel = (model: ModelOptionDto) => {
   if (model.scope === 'Tenant') return true;
   if (model.scope === 'Space') return false;
   return model.spaceId === -1;
+};
+
+/**
+ * 截断文案 hover 展示全称(仅实际溢出时):
+ * 弃用 Typography 内建 ellipsis tooltip——弹层关闭/文案变更瞬间门户
+ * 会残留在 body 流末尾错位闪现(页面左下角偶现闪动),且无法传
+ * destroyOnHidden;自绘 Tooltip 隐藏即销毁门户,规避该竞态
+ */
+const EllipsisTooltipText: React.FC<{
+  text: string;
+  className?: string;
+}> = ({ text, className }) => {
+  const [tip, setTip] = useState('');
+  return (
+    <Tooltip title={tip} destroyOnHidden>
+      <span
+        className={className}
+        onMouseEnter={(e) => {
+          const el = e.currentTarget;
+          setTip(el.scrollWidth > el.clientWidth ? text : '');
+        }}
+        onMouseLeave={() => setTip('')}
+      >
+        {text}
+      </span>
+    </Tooltip>
+  );
 };
 
 /**
@@ -368,12 +396,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           <div className={cx(styles['item-content'])}>
             <div className={cx(styles['item-title-row'])}>
               {/* 名称截断时 hover tooltip 展示全称(与描述行同款) */}
-              <Typography.Text
+              <EllipsisTooltipText
+                text={model.name}
                 className={cx(styles['item-name'])}
-                ellipsis={{ tooltip: model.name }}
-              >
-                {model.name}
-              </Typography.Text>
+              />
               {showMeta && model.tag && (
                 <Tag
                   color={model.tagColor || undefined}
@@ -617,16 +643,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               [styles.open]: open,
             })}
           >
-            <Typography.Text
-              ellipsis={{
-                tooltip:
-                  selectedModel?.name ||
-                  dict('PC.Components.ModelSelector.selectModel'),
-              }}
-            >
-              {selectedModel?.name ||
-                dict('PC.Components.ModelSelector.selectModel')}
-            </Typography.Text>
+            <EllipsisTooltipText
+              text={
+                selectedModel?.name ||
+                dict('PC.Components.ModelSelector.selectModel')
+              }
+            />
             <SvgIcon
               name="icons-common-caret_down"
               style={{ fontSize: 14 }}
