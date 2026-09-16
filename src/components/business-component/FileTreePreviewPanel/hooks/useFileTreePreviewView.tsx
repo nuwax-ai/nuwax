@@ -7,7 +7,7 @@ import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
-import { ImageViewer } from '@/components/business-component/ImageViewer';
+import ImageViewer from '@/components/business-component/ImageViewer';
 import { OpenUiRuntimeFrame } from '@/components/business-component/OpenUiArtifactView';
 import CodeViewer from '@/components/CodeViewer';
 import Loading from '@/components/custom/Loading';
