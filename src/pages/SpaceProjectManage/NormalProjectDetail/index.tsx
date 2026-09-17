@@ -226,15 +226,17 @@ const NormalProjectDetail: React.FC = () => {
     [projectId, spaceId],
   );
 
-  /** 新建任务：将当前常规项目上框后进入首页 */
+  /** 新建任务：将当前常规项目上框后进入首页（同 ProjectPanel「+ 新建会话」） */
   const handleCreateConversation = useCallback(() => {
     pin({
       projectId,
       spaceId,
-      projectType: AgentComponentTypeEnum.NormalProject,
+      projectType:
+        projectInfo?.projectType ?? AgentComponentTypeEnum.NormalProject,
       name: projectInfo?.name || projectName,
       icon: projectInfo?.icon,
       sandboxId: projectInfo?.sandboxId,
+      devAgentId: projectInfo?.devAgentId ?? undefined,
     });
   }, [pin, projectId, projectInfo, projectName, spaceId]);
 
