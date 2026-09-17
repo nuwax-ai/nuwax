@@ -23,18 +23,20 @@
 .expanded {
   width: min(440px, calc(100% - 2 * @marginMd));
   border-radius: @borderRadiusLg;
-  // 右锚定展开：面板从右缘向左铺开（clip-path 左侧内缩收拢→展开）
-  animation: capsule-reveal-right 0.24s ease-out;
+  // 从右向左展示：面板整体从右侧滑入落位，同时内容自右缘向左揭示
+  animation: capsule-reveal-right 0.36s ease-out;
 }
 
 @keyframes capsule-reveal-right {
   from {
-    clip-path: inset(0 0 0 60%);
-    opacity: 0.35;
+    clip-path: inset(0 0 0 45%);
+    transform: translateX(36px);
+    opacity: 0;
   }
 
   to {
     clip-path: inset(0 0 0 0);
+    transform: translateX(0);
     opacity: 1;
   }
 }
