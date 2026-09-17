@@ -58,6 +58,34 @@ const ConversationDebugFab: React.FC<ConversationDebugFabProps> = ({
   const content = useMemo(
     () => (
       <div style={{ width: 300 }} data-testid="conversation-debug-panel">
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            marginBottom: 12,
+          }}
+        >
+          <span
+            style={{
+              padding: '1px 6px',
+              borderRadius: 3,
+              background: '#ff6b35',
+              color: '#fff',
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+            }}
+          >
+            DEBUG
+          </span>
+          <span
+            style={{ fontSize: 11, color: token.colorTextTertiary }}
+            data-testid="conversation-debug-badge-hint"
+          >
+            调试面板 · 正式上线前移除
+          </span>
+        </div>
         <div style={{ marginBottom: 12 }}>
           <div
             style={{

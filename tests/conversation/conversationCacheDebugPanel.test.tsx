@@ -54,6 +54,8 @@ describe('ConversationCacheDebugPanel', () => {
 
     const view = render(<ConversationCacheDebugPanel />);
 
+    // 面板内容自带 DEBUG 调试标识
+    expect(screen.getByText('DEBUG')).toBeInTheDocument();
     expect(screen.getByText('chat:301')).toBeInTheDocument();
     expect(screen.getByText('terminal')).toBeInTheDocument();
     expect(screen.getByText('draft 6c /1s')).toBeInTheDocument();
@@ -110,11 +112,12 @@ describe('缓存遥测入口拆分', () => {
     localStorage.clear();
   });
 
-  it('会话调试面板不再包含缓存遥测', async () => {
+  it('会话调试面板不再包含缓存遥测，顶部带 DEBUG 标识', async () => {
     const user = userEvent.setup();
     render(<ConversationDebugFab conversationId={1} />);
     await user.click(screen.getByTestId('conversation-debug-entry'));
     expect(screen.getByTestId('conversation-debug-panel')).toBeInTheDocument();
+    expect(screen.getByText('DEBUG')).toBeInTheDocument();
     expect(
       screen.queryByTestId('conversation-cache-debug'),
     ).not.toBeInTheDocument();

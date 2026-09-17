@@ -49,8 +49,12 @@ const ConversationCacheDebugPanel: React.FC = () => {
     <section className={styles.panel} data-testid="conversation-cache-debug">
       <div className={styles.masthead}>
         <div>
-          <div className={styles.eyebrow}>Runtime telemetry</div>
+          <div className={styles.eyebrowRow}>
+            <span className={styles.debugBadge}>DEBUG</span>
+            <span className={styles.eyebrow}>Runtime telemetry</span>
+          </div>
           <div className={styles.title}>Conversation page cache</div>
+          <div className={styles.debugHint}>debug-only · 正式上线前移除</div>
         </div>
         <label className={styles.capacity}>
           CAP
