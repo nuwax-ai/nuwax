@@ -1,5 +1,6 @@
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import CustomPopover from '@/components/CustomPopover';
+import SvgIcon from '@/components/base/SvgIcon';
 import {
   KNOWLEDGE_QA_IMPORT_TYPE,
   KNOWLEDGE_TEXT_IMPORT_TYPE,
@@ -9,7 +10,7 @@ import { KnowledgeDocTypeEnum } from '@/types/enums/library';
 import type { KnowledgeHeaderProps } from '@/types/interfaces/knowledge';
 import { formatBytes } from '@/utils/byteConverter';
 import { jumpBack } from '@/utils/router';
-import { DownOutlined, FormOutlined, LeftOutlined } from '@ant-design/icons';
+import { DownOutlined, FormOutlined } from '@ant-design/icons';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -45,7 +46,8 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
 
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
-      <LeftOutlined
+      <SvgIcon
+        name="icons-nav-backward"
         className={cx(styles['icon-back'], 'cursor-pointer')}
         onClick={() => jumpBack(`/space/${spaceId}/library`)}
       />

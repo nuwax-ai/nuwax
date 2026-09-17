@@ -2,6 +2,7 @@
  * 示例页面导航组件
  * 提供示例页面之间的快速导航
  */
+import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import {
   AppstoreOutlined,
@@ -154,7 +155,12 @@ const ExampleNavigation: React.FC<ExampleNavigationProps> = ({
           {/* 返回按钮 */}
           {showBackButton && (
             <Button
-              icon={<ArrowLeftOutlined />}
+              icon={
+                <SvgIcon
+                  name="icons-nav-backward"
+                  style={{ fontSize: 'inherit' }}
+                />
+              }
               onClick={() => history.push(backPath)}
               className="back-button"
             >

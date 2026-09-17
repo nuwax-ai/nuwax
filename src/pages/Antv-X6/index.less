@@ -318,10 +318,12 @@
   min-width: 1200px;
 
   .back-icon-style {
-    font-size: 16px;
-    color: @BLANK17;
+    // 与 EditAgent AgentHeader .icon-backward 同款：SvgIcon 默认内联 20px，
+    // 图标与图标后内容的间距 = 右 padding 8px + margin 4px，与旧 12px 一致
+    color: @navFirstMenuTextSecondary;
     cursor: pointer;
-    margin-right: 12px;
+    padding: @paddingXxs @paddingXs;
+    margin-right: @marginXxs;
   }
 
   .header-icon-style {

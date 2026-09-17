@@ -1,3 +1,4 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { MCP_EDIT_HEAD_MENU_LIST } from '@/constants/mcp.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -8,7 +9,7 @@ import {
 import { McpEditHeaderProps } from '@/types/interfaces/mcp';
 import { getMcpDeployStatus } from '@/utils/mcp';
 import { jumpBack } from '@/utils/router';
-import { CheckCircleTwoTone, LeftOutlined } from '@ant-design/icons';
+import { CheckCircleTwoTone } from '@ant-design/icons';
 import { Button, Segmented } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -75,7 +76,10 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
           className={cx('flex', 'items-center', 'cursor-pointer')}
           onClick={() => jumpBack(`/space/${spaceId}/mcp`)}
         >
-          <LeftOutlined className={cx('hover-box', styles.icon)} />
+          <SvgIcon
+            name="icons-nav-backward"
+            className={cx('hover-box', styles.icon)}
+          />
           <span className={styles.name}>
             {dict('PC.Pages.SpaceMcpEdit.editMcpService')}
           </span>

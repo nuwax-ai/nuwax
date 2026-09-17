@@ -1,4 +1,5 @@
 import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
+import SvgIcon from '@/components/base/SvgIcon';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
@@ -12,7 +13,6 @@ import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { getNumbersOnly, isWeakNumber } from '@/utils/common';
 import { hostBridge } from '@/utils/hostBridge';
-import { LeftOutlined } from '@ant-design/icons';
 import { Button, Input, InputRef } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -266,7 +266,7 @@ const VerifyCode: React.FC = () => {
               color="default"
               variant="filled"
               shape="circle"
-              icon={<LeftOutlined />}
+              icon={<SvgIcon name="icons-nav-backward" />}
               onClick={() => history.back()}
             />
           </div>
