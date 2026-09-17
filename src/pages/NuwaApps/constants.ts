@@ -14,10 +14,14 @@ export const SQUARE_PAGE_APP_PATH = '/square?cate_type=PageApp';
 export const APP_LIST_PAGE_SIZE = 48;
 
 /** 应用列表目标类型过滤(app/list 请求体 targetTypes,两 tab 共用) */
-export const APP_LIST_TARGET_TYPES: string[] = ['Agent', 'UserApp'];
+export const APP_LIST_TARGET_TYPES: string[] = ['Agent', 'UserApp', 'ThirdApp'];
 
 /** 应用列表子类型过滤(app/list 请求体 targetSubTypes,两 tab 共用) */
-export const APP_LIST_TARGET_SUBTYPES: string[] = ['PageApp', 'UserApp'];
+export const APP_LIST_TARGET_SUBTYPES: string[] = [
+  'PageApp',
+  'UserApp',
+  'ThirdApp',
+];
 
 /** 最近使用列表拉取条数(recentlyUsed/list 请求体参数,暂写死 200) */
 export const RECENT_USED_SIZE = 200;
