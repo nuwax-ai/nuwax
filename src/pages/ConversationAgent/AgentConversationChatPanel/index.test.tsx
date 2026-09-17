@@ -140,7 +140,6 @@ describe('AgentConversationChatPanel', () => {
       infos: [{ id: 1, type: 'Plugin' }],
       sandboxId: 'computer-prop',
       debug: true,
-      isSync: false,
       skillIds: [11],
       modelId: 456,
       agentMode: 'ask',

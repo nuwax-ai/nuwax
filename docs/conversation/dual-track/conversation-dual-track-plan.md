@@ -63,7 +63,7 @@ git diff c710ab296 --name-only -- src/models/ | wc -l   # 结果 = 0
 ## 6. 关键实现细节（团队维护需知）
 
 - **覆盖顺序**：`conversationProps` 展开必须在 props 对象**末尾**（放前面会被旧线字段覆盖，这是踩过的坑）。
-- **isSync 语义**：隔离入口（ConversationAgent 预览）传 `isSync: false`，统一经 `topicGate.isSync` gate 乐观列表标记 / topic 更新 / onClose 列表刷新。
+- **isSync 语义**：真实会话入口（主 Chat、ConversationAgent 主区面板、AppDevPro 面板、插件试运行）保持默认 `isSync: true`，侧栏会话列表依赖其乐观 EXECUTING 标记 + 流结束刷新；隔离入口（EditAgent 预览调试、ConversationAgent 预览 Tab）传 `isSync: false`，统一经 `topicGate.isSync` gate 乐观列表标记 / topic 更新 / onClose 列表刷新。
 - **taskStatus 写回**：session 的 `applyTaskStatus` 通道统一处理 ERROR / onError / onClose 兜底 / FINAL 四处。
 - **suggest 防抖**：runtimeLineHttp adapter 内 300ms trailing（对齐旧线 `debounceWait: 300`）。
 - **干预回执**：绑定层 `useAgentInterventionHandlers` 写入经 `storeAsDispatch` 走新线 store。

@@ -207,7 +207,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
               infos: selectedComponentList,
               sandboxId: selectedComputerId,
               debug: true,
-              isSync: false,
               skillIds,
               modelId: modelId || selectedModelId,
               agentMode: selectedAgentMode,
