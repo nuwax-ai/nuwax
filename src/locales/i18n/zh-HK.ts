@@ -1434,7 +1434,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search": "搜索",
   "PC.Components.ClientUpdate.versionLabel": "客戶端版本",
   "PC.Components.ClientUpdate.download": "下載更新",
-  "PC.Components.ClientUpdate.install": "重啟安裝",
+  "PC.Components.ClientUpdate.install": "重啟更新",
   "PC.Components.ClientUpdate.downloading": "下載中",
   "PC.Components.ClientUpdate.retry": "重試下載",
   "PC.Components.ClientUpdate.releaseDate": "發布日期",

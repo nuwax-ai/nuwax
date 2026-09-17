@@ -1434,7 +1434,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search": "検索",
   "PC.Components.ClientUpdate.versionLabel": "クライアントバージョン",
   "PC.Components.ClientUpdate.download": "アップデートをダウンロード",
-  "PC.Components.ClientUpdate.install": "再起動してインストール",
+  "PC.Components.ClientUpdate.install": "再起動して更新",
   "PC.Components.ClientUpdate.downloading": "ダウンロード中",
   "PC.Components.ClientUpdate.retry": "再ダウンロード",
   "PC.Components.ClientUpdate.releaseDate": "リリース日",
