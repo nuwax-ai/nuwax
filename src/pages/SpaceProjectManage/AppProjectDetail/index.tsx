@@ -6,6 +6,7 @@ import {
   useConversationChanged,
   useProjectChanged,
 } from '@/hooks/useDirectorySync';
+import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
 import { apiUserAppGetById } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -133,6 +134,7 @@ const AppProjectDetail: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const appId = Number(params.appId);
+  const { pin } = useHomePinnedProjectHandoff();
 
   const [activeTab, setActiveTab] = useState<SettingTabKey>('plan');
   const [conversations, setConversations] = useState<
@@ -516,13 +518,18 @@ const AppProjectDetail: React.FC = () => {
     [appId, spaceId],
   );
 
-  /** 新建任务：进入全栈 IDE，由 IDE 内创建会话 */
+  /** 新建任务：将当前全栈项目上框后进入首页（同 ProjectPanel「+ 新建会话」） */
   const handleCreateConversation = useCallback(() => {
-    openProject(spaceId, {
-      id: appId,
+    pin({
+      projectId: appId,
+      spaceId,
       projectType: AgentComponentTypeEnum.UserApp,
+      name: projectInfo?.name || projectName,
+      icon: projectInfo?.icon,
+      sandboxId: projectInfo?.sandboxId,
+      devAgentId: projectInfo?.devAgentId,
     });
-  }, [appId, spaceId]);
+  }, [appId, pin, projectInfo, projectName, spaceId]);
 
   /** 绑定弹窗中的规范化域名 */
   const bindDomainValue = useMemo(

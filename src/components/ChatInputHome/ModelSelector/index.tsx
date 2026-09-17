@@ -15,6 +15,8 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -235,6 +237,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     if (lookupList.length > 0) return lookupList[0];
     return null;
   }, [selectedModelId, lookupList]);
+
+  // 选中模型归 tab(external 注入列表无三 tab,恒走模型 icon 展示):
+  // 个人 → 单用户 icon、团队 → 多用户 icon、系统 → 模型供应商 icon
+  const selectedModelTab: ModelTabKey | null =
+    !isExternalList && selectedModel ? getModelTabKey(selectedModel) : null;
 
   // 处理模型选择
   const handleSelect = useCallback(
@@ -611,13 +618,21 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               [styles.open]: open,
             })}
           >
-            {selectedModel && (
-              <img
-                className={cx(styles['selector-model-icon'])}
-                src={selectedModel.providerIcon || DEFAULT_PROVIDER_ICON}
-                alt=""
-              />
-            )}
+            {selectedModel &&
+              (selectedModelTab === 'personal' ? (
+                /* 个人 tab:单用户 icon */
+                <UserOutlined className={cx(styles['selector-model-icon'])} />
+              ) : selectedModelTab === 'team' ? (
+                /* 团队 tab:多用户 icon(同系统概览用户统计卡) */
+                <TeamOutlined className={cx(styles['selector-model-icon'])} />
+              ) : (
+                /* 系统 tab / external 注入列表:保持模型供应商 icon */
+                <img
+                  className={cx(styles['selector-model-icon'])}
+                  src={selectedModel.providerIcon || DEFAULT_PROVIDER_ICON}
+                  alt=""
+                />
+              ))}
             <EllipsisTooltipText
               text={
                 selectedModel?.name ||
