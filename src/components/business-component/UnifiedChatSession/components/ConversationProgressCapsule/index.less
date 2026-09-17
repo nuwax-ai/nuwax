@@ -158,7 +158,19 @@
   white-space: nowrap;
 }
 
-// 任务结果卡片：对齐会话输出 task-result 的浅灰卡片形态
+// task-result 产物行：对齐会话输出 TaskResultRow 的行形态（图标+描述+箭头）
+.result-row {
+  display: flex;
+  align-items: center;
+  gap: @marginXs;
+  padding: 6px 10px;
+  border-radius: @borderRadius;
+  background: @colorBgContainerDisabled;
+  font-size: @fontSizeSm;
+  color: @colorText;
+}
+
+// 任务结果正文卡片（无标签产物时回退）：对齐会话输出 task-result 的浅灰卡片形态
 .result-card {
   padding: 8px 10px;
   border-radius: @borderRadius;

@@ -387,17 +387,41 @@ const ConversationProgressCapsule: React.FC<
 
       {expanded && (
         <div ref={panelRef} className={cx(safeStyles.panel)}>
-          {model.finalResult && (
+          {(model.taskResults.length > 0 || model.finalResult) && (
             <section className={cx(safeStyles.group)}>
               <GroupTitle icon={<FileTextOutlined />}>
                 {t('PC.Components.ConversationProgressCapsule.taskResult')}
               </GroupTitle>
-              <div
-                className={cx(safeStyles['result-card'])}
-                title={model.finalResult}
-              >
-                {model.finalResult}
-              </div>
+              {model.taskResults.map((item) => (
+                <div
+                  key={item.key}
+                  className={cx(safeStyles['result-row'])}
+                  title={item.description || item.file}
+                >
+                  <span
+                    className={cx(safeStyles['node-kind-icon'])}
+                    aria-hidden
+                  >
+                    <FileTextOutlined />
+                  </span>
+                  <span
+                    className={cx(safeStyles['node-text'], safeStyles.truncate)}
+                  >
+                    {item.description || item.file}
+                  </span>
+                  <span className={cx(safeStyles['chevron-dim'])} aria-hidden>
+                    <RightOutlined />
+                  </span>
+                </div>
+              ))}
+              {!model.taskResults.length && model.finalResult && (
+                <div
+                  className={cx(safeStyles['result-card'])}
+                  title={model.finalResult}
+                >
+                  {model.finalResult}
+                </div>
+              )}
             </section>
           )}
           <button

@@ -91,7 +91,10 @@ const buildMessages = ({
                 AgentComponentTypeEnum.ToolCall,
                 `命令${index}`,
               ),
-            ).join('') + '已执行全部七个步骤，构建通过。'
+            ).join('') +
+            '已执行全部七个步骤，构建通过。' +
+            '<task-result><description>月度报表页面</description><file>999999/report/index.html</file></task-result>' +
+            '<task-result><description>数据明细导出</description><file>999999/report/summary.md</file></task-result>'
           : ''),
       time: '2026-09-16 09:00:01',
       status: finished
@@ -526,6 +529,11 @@ describe('会话进度胶囊', () => {
       false,
     );
     expect(model?.finalResult).toBe('已执行全部七个步骤，构建通过。');
+    expect(model?.taskResults).toHaveLength(2);
+    expect(model?.taskResults[0]).toMatchObject({
+      description: '月度报表页面',
+      file: '999999/report/index.html',
+    });
     // tool-1 + 7 条追加终端
     expect(model?.terminals).toHaveLength(8);
 
@@ -545,10 +553,10 @@ describe('会话进度胶囊', () => {
       '命令6',
     );
     fireEvent.click(screen.getByTestId('capsule-trigger'));
-    // 任务结果卡片
-    expect(
-      screen.getByText('已执行全部七个步骤，构建通过。'),
-    ).toBeInTheDocument();
+    // 任务结果：task-result 标签行（会话输出同款），正文卡片被替代
+    expect(screen.getByText('月度报表页面')).toBeInTheDocument();
+    expect(screen.getByText('数据明细导出')).toBeInTheDocument();
+    expect(screen.queryByText('已执行全部七个步骤，构建通过。')).toBeNull();
     // 终端默认只展示前 5 条（tool-1 + step-0..3），第 5 条不可见；展开按钮显示总数
     expect(screen.getByText('echo step-3')).toBeInTheDocument();
     expect(screen.queryByText('echo step-4')).toBeNull();
