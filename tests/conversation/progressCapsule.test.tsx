@@ -47,6 +47,8 @@ const planResult = (done: number) => ({
 interface BuildMessagesOptions {
   /** 终态版：消息与 processing 均落 FINISHED/Complete */
   finished?: boolean;
+  /** 追加 7 条终端命令（验证折叠）与最终输出正文 */
+  richContent?: boolean;
   /** 追加新轮（新 user 消息 + 空 assistant），hasContent=false */
   withEmptyNewTurn?: boolean;
   /** 追加的新轮带 plan + 终端，hasContent=true */
@@ -57,6 +59,7 @@ interface BuildMessagesOptions {
 
 const buildMessages = ({
   finished = false,
+  richContent = false,
   withEmptyNewTurn = false,
   withResumedNewTurn = false,
   error = false,
@@ -80,7 +83,16 @@ const buildMessages = ({
         processTag('plan-1', AgentComponentTypeEnum.Plan, '执行计划') +
         processTag('tool-1', AgentComponentTypeEnum.ToolCall, '运行测试') +
         processTag('edit-1', AgentComponentTypeEnum.ToolCall, '编辑文件') +
-        processTag('agent-1', AgentComponentTypeEnum.SubAgent, '检索子代理'),
+        processTag('agent-1', AgentComponentTypeEnum.SubAgent, '检索子代理') +
+        (richContent
+          ? Array.from({ length: 7 }, (_, index) =>
+              processTag(
+                `term-${index}`,
+                AgentComponentTypeEnum.ToolCall,
+                `命令${index}`,
+              ),
+            ).join('') + '已执行全部七个步骤，构建通过。'
+          : ''),
       time: '2026-09-16 09:00:01',
       status: finished
         ? error
@@ -125,6 +137,15 @@ const buildMessages = ({
           name: '检索子代理',
           status: processingStatus,
         },
+        ...(richContent
+          ? Array.from({ length: 7 }, (_, index) => ({
+              executeId: `term-${index}`,
+              type: AgentComponentTypeEnum.ToolCall,
+              name: `命令${index}`,
+              status: processingStatus,
+              result: { input: { command: `echo step-${index}` } },
+            }))
+          : []),
       ],
     },
   ];
@@ -334,11 +355,11 @@ describe('会话进度胶囊', () => {
     expect(
       screen.getByText('PC.Components.ConversationProgressCapsule.running 1'),
     ).toBeInTheDocument();
-    // 点分区头展开子代理行
+    // 点分区头展开子代理行（触发器动态文案也含子代理名，存在即可）
     fireEvent.click(
       screen.getByText('PC.Components.ConversationProgressCapsule.agents'),
     );
-    expect(screen.getByText('检索子代理')).toBeInTheDocument();
+    expect(screen.getAllByText('检索子代理').length).toBeGreaterThan(0);
 
     // 会话结束：胶囊常驻，触发器换终态图标
     rerender(
@@ -497,6 +518,46 @@ describe('会话进度胶囊', () => {
     expect(apiGitLogList).toHaveBeenCalledWith(
       expect.objectContaining({ workspaceType: 'taskAgent', cid: 1 }),
     );
+  });
+
+  it('任务结果展示+终端超 5 折叠+触发器动态文案', async () => {
+    const model = selectProgressCapsule(
+      buildMessages({ finished: true, richContent: true }),
+      false,
+    );
+    expect(model?.finalResult).toBe('已执行全部七个步骤，构建通过。');
+    // tool-1 + 7 条追加终端
+    expect(model?.terminals).toHaveLength(8);
+
+    render(
+      <ConversationProgressCapsule
+        conversationId={1}
+        messageList={buildMessages({ finished: true, richContent: true })}
+        active={false}
+      />,
+    );
+    // 触发器文案为终态词条（动态），非写死的「展开状态」
+    expect(screen.getByTestId('capsule-trigger').textContent).not.toContain(
+      'PC.Components.ConversationProgressCapsule.expandStatus',
+    );
+    // 终态动态文案优先取最后执行的动作（最后一条终端命令）
+    expect(screen.getByTestId('capsule-trigger').textContent).toContain(
+      '命令6',
+    );
+    fireEvent.click(screen.getByTestId('capsule-trigger'));
+    // 任务结果卡片
+    expect(
+      screen.getByText('已执行全部七个步骤，构建通过。'),
+    ).toBeInTheDocument();
+    // 终端默认只展示前 5 条（tool-1 + step-0..3），第 5 条不可见；展开按钮显示总数
+    expect(screen.getByText('echo step-3')).toBeInTheDocument();
+    expect(screen.queryByText('echo step-4')).toBeNull();
+    fireEvent.click(
+      screen.getByText(
+        'PC.Components.ConversationProgressCapsule.terminalExpand:8',
+      ),
+    );
+    expect(screen.getByText('echo step-6')).toBeInTheDocument();
   });
 
   it('未开启版本管理不请求 git 接口，触发器更改胶囊回退 V2 编辑口径', async () => {

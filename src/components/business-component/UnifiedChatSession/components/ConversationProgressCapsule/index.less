@@ -136,6 +136,46 @@
   }
 }
 
+.group-title-main {
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXxs;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.group-title-icon {
+  flex: none;
+  display: inline-flex;
+  font-size: 12px;
+  color: @colorTextTertiary;
+}
+
+.group-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 任务结果卡片：对齐会话输出 task-result 的浅灰卡片形态
+.result-card {
+  padding: 8px 10px;
+  border-radius: @borderRadius;
+  background: @colorBgContainerDisabled;
+  color: @colorText;
+  font-size: @fontSizeSm;
+  line-height: 1.6;
+  word-break: break-word;
+  overflow: hidden;
+  /* stylelint-disable-next-line property-no-vendor-prefix, declaration-block-no-duplicate-properties -- line-clamp 需要 -webkit 前缀 */
+  display: -webkit-box;
+  /* stylelint-disable-next-line property-no-vendor-prefix -- line-clamp 需要 -webkit 前缀 */
+  -webkit-box-orient: vertical;
+  /* stylelint-disable-next-line property-no-vendor-prefix -- line-clamp 需要 -webkit 前缀 */
+  -webkit-line-clamp: 4;
+}
+
 .counter {
   color: @colorPrimary;
   font-variant-numeric: tabular-nums;

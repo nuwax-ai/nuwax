@@ -9,7 +9,9 @@ import {
   CodeOutlined,
   DiffOutlined,
   DownOutlined,
+  FileTextOutlined,
   LoadingOutlined,
+  OrderedListOutlined,
   RightOutlined,
   RobotOutlined,
   ShrinkOutlined,
@@ -28,6 +30,9 @@ import { useGitDiffFiles } from './useGitDiffFiles';
 
 const cx = classNames.bind(styles);
 const safeStyles = styles ?? ({} as typeof styles);
+
+/** 终端列表折叠阈值：超过默认只展示前 5 条，点击展开全部 */
+const TERMINAL_COLLAPSE_LIMIT = 5;
 
 // JS 逐帧驱动面板渐显动效（纯 opacity 淡入/淡出）：rAF 对齐刷新率（平滑），
 // 24ms 未触发则降级 setTimeout 兜底（该环境 CSS 动画被系统设置冻结）。
@@ -129,14 +134,27 @@ const StepRow: React.FC<{ step: ProgressCapsuleStep; strike?: boolean }> = ({
   </li>
 );
 
+const GroupTitle: React.FC<{
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ icon, children }) => (
+  <div className={cx(safeStyles['group-title'])}>
+    <span className={cx(safeStyles['group-title-icon'])} aria-hidden>
+      {icon}
+    </span>
+    <span className={cx(safeStyles['group-title-text'])}>{children}</span>
+  </div>
+);
+
 const StepGroup: React.FC<{
   title: string;
+  icon: React.ReactNode;
   steps: ProgressCapsuleStep[];
-}> = ({ title, steps }) => {
+}> = ({ title, icon, steps }) => {
   if (!steps.length) return null;
   return (
     <section className={cx(safeStyles.group)}>
-      <div className={cx(safeStyles['group-title'])}>{title}</div>
+      <GroupTitle icon={icon}>{title}</GroupTitle>
       <ul className={cx(safeStyles['step-list'])}>
         {steps.map((step, index) => (
           <StepRow
@@ -183,28 +201,14 @@ const NodeRow: React.FC<{
   </li>
 );
 
-const NodeGroup: React.FC<{
-  title: string;
-  nodes: ProgressCapsuleNode[];
-  icon: React.ReactNode;
-  monospace?: boolean;
-}> = ({ title, nodes, icon, monospace }) => {
-  if (!nodes.length) return null;
-  return (
-    <section className={cx(safeStyles.group)}>
-      <div className={cx(safeStyles['group-title'])}>{title}</div>
-      <ul className={cx(safeStyles['step-list'])}>
-        {nodes.map((node) => (
-          <NodeRow
-            key={node.id}
-            node={node}
-            icon={icon}
-            monospace={monospace}
-          />
-        ))}
-      </ul>
-    </section>
-  );
+const terminalStatusLabel = (status?: 'complete' | 'error' | 'stopped') => {
+  if (status === 'error') {
+    return t('PC.Components.ConversationProgressCapsule.failed');
+  }
+  if (status === 'stopped') {
+    return t('PC.Components.ConversationProgressCapsule.stopped');
+  }
+  return t('PC.Components.ConversationProgressCapsule.finished');
 };
 
 const terminalStatusIcon = (status?: 'complete' | 'error' | 'stopped') => {
@@ -253,6 +257,7 @@ const ConversationProgressCapsule: React.FC<
   const [closing, setClosing] = useState(false);
   const [completedOpen, setCompletedOpen] = useState(true);
   const [agentsOpen, setAgentsOpen] = useState(false);
+  const [terminalsOpen, setTerminalsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const motionCleanupRef = useRef<(() => void) | undefined>(undefined);
@@ -364,7 +369,10 @@ const ConversationProgressCapsule: React.FC<
           terminalStatusIcon(model.terminalStatus)
         )}
         <span className={cx(safeStyles['trigger-label'])}>
-          {t('PC.Components.ConversationProgressCapsule.expandStatus')}
+          {model.currentAction ||
+            (model.running
+              ? t('PC.Components.ConversationProgressCapsule.running')
+              : terminalStatusLabel(model.terminalStatus))}
         </span>
         {changeStats && (
           <span className={cx(safeStyles.chip)}>
@@ -379,6 +387,19 @@ const ConversationProgressCapsule: React.FC<
 
       {expanded && (
         <div ref={panelRef} className={cx(safeStyles.panel)}>
+          {model.finalResult && (
+            <section className={cx(safeStyles.group)}>
+              <GroupTitle icon={<FileTextOutlined />}>
+                {t('PC.Components.ConversationProgressCapsule.taskResult')}
+              </GroupTitle>
+              <div
+                className={cx(safeStyles['result-card'])}
+                title={model.finalResult}
+              >
+                {model.finalResult}
+              </div>
+            </section>
+          )}
           <button
             type="button"
             className={cx(safeStyles['panel-collapse'])}
@@ -392,9 +413,9 @@ const ConversationProgressCapsule: React.FC<
           {enableVersionControl &&
             (gitDiff.summary || gitDiff.loading || gitDiff.branch) && (
               <section className={cx(safeStyles.group)}>
-                <div className={cx(safeStyles['group-title'])}>
+                <GroupTitle icon={<BranchesOutlined />}>
                   {t('PC.Components.ConversationProgressCapsule.gitTools')}
-                </div>
+                </GroupTitle>
                 <div className={cx(safeStyles.node)}>
                   <span
                     className={cx(safeStyles['node-kind-icon'])}
@@ -451,14 +472,23 @@ const ConversationProgressCapsule: React.FC<
 
           <StepGroup
             title={t('PC.Components.ConversationProgressCapsule.plan')}
+            icon={<OrderedListOutlined />}
             steps={[...activeSteps, ...pendingSteps]}
           />
 
           {model.totalCount > 0 && (
             <section className={cx(safeStyles.group)}>
               <div className={cx(safeStyles['group-title'])}>
-                <span>
-                  {t('PC.Components.ConversationProgressCapsule.progress')}
+                <span className={cx(safeStyles['group-title-main'])}>
+                  <span
+                    className={cx(safeStyles['group-title-icon'])}
+                    aria-hidden
+                  >
+                    <OrderedListOutlined />
+                  </span>
+                  <span className={cx(safeStyles['group-title-text'])}>
+                    {t('PC.Components.ConversationProgressCapsule.progress')}
+                  </span>
                 </span>
                 <span className={cx(safeStyles.counter)}>
                   {model.completedCount}/{model.totalCount}
@@ -501,12 +531,52 @@ const ConversationProgressCapsule: React.FC<
             </section>
           )}
 
-          <NodeGroup
-            title={t('PC.Components.ConversationProgressCapsule.terminal')}
-            nodes={model.terminals}
-            icon={<CodeOutlined />}
-            monospace
-          />
+          {model.terminals.length > 0 && (
+            <section className={cx(safeStyles.group)}>
+              <GroupTitle icon={<CodeOutlined />}>
+                {t('PC.Components.ConversationProgressCapsule.terminal')}
+              </GroupTitle>
+              <ul className={cx(safeStyles['step-list'])}>
+                {(terminalsOpen
+                  ? model.terminals
+                  : model.terminals.slice(0, TERMINAL_COLLAPSE_LIMIT)
+                ).map((node) => (
+                  <NodeRow
+                    key={node.id}
+                    node={node}
+                    icon={<CodeOutlined />}
+                    monospace
+                  />
+                ))}
+              </ul>
+              {model.terminals.length > TERMINAL_COLLAPSE_LIMIT && (
+                <button
+                  type="button"
+                  className={cx(safeStyles['group-toggle'])}
+                  aria-expanded={terminalsOpen}
+                  onClick={() => setTerminalsOpen((value) => !value)}
+                >
+                  <DownOutlined
+                    className={cx(
+                      safeStyles['toggle-chevron'],
+                      terminalsOpen && safeStyles['toggle-chevron-down-open'],
+                    )}
+                  />
+                  <span>
+                    {terminalsOpen
+                      ? t(
+                          'PC.Components.ConversationProgressCapsule.terminalCollapse',
+                          model.terminals.length,
+                        )
+                      : t(
+                          'PC.Components.ConversationProgressCapsule.terminalExpand',
+                          model.terminals.length,
+                        )}
+                  </span>
+                </button>
+              )}
+            </section>
+          )}
 
           {model.subagents.length > 0 && (
             <section className={cx(safeStyles.group)}>

@@ -38,6 +38,8 @@ export interface ProgressCapsuleModel {
   /** 轮次终态，仅会话结束后给出 */
   terminalStatus?: 'complete' | 'error' | 'stopped';
   currentAction: string;
+  /** 会话最终输出正文（V2 投影 finalAnswer，空串表示无） */
+  finalResult: string;
   steps: ProgressCapsuleStep[];
   terminals: ProgressCapsuleNode[];
   subagents: ProgressCapsuleNode[];
@@ -157,11 +159,14 @@ export function selectProgressCapsule(
       activeStep?.content ||
       nodeAction(planNode);
 
+  const finalResult = turn.finalAnswer.text.trim();
+
   const hasContent =
     steps.length > 0 ||
     terminals.length > 0 ||
     subagents.length > 0 ||
     fileEdits.length > 0 ||
+    Boolean(finalResult) ||
     Boolean(currentAction);
   if (!hasContent) return null;
 
@@ -170,6 +175,7 @@ export function selectProgressCapsule(
     running,
     terminalStatus: active ? undefined : turn.terminalStatus,
     currentAction,
+    finalResult,
     steps,
     terminals,
     subagents,
