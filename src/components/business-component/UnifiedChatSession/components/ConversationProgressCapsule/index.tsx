@@ -192,9 +192,23 @@ const ConversationProgressCapsule: React.FC<
     [active, messageList],
   );
   const [expanded, setExpanded] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [completedOpen, setCompletedOpen] = useState(true);
   const [agentsOpen, setAgentsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<number>();
+
+  // 收起先播退出动画再卸载面板：收起态 DOM 无面板，胶囊宽度贴合触发器内容
+  const closePanel = () => {
+    if (closing) return;
+    setClosing(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      setExpanded(false);
+      setClosing(false);
+    }, 340);
+  };
+
+  useEffect(() => () => window.clearTimeout(closeTimerRef.current), []);
   const gitDiff = useGitDiffFiles({
     conversationId,
     enabled: enableVersionControl,
@@ -207,10 +221,10 @@ const ConversationProgressCapsule: React.FC<
   useEffect(() => {
     if (!expanded) return;
     const onPointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setExpanded(false);
+      if (!rootRef.current?.contains(event.target as Node)) closePanel();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setExpanded(false);
+      if (event.key === 'Escape') closePanel();
     };
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
@@ -286,21 +300,16 @@ const ConversationProgressCapsule: React.FC<
         )}
       </button>
 
-      <div
-        className={cx(
-          safeStyles['panel-wrap'],
-          expanded && safeStyles['panel-wrap-open'],
-        )}
-        aria-hidden={!expanded}
-        data-testid="capsule-panel-wrap"
-      >
-        <div className={cx(safeStyles.panel)}>
+      {expanded && (
+        <div
+          className={cx(safeStyles.panel, closing && safeStyles['panel-out'])}
+        >
           <button
             type="button"
             className={cx(safeStyles['panel-collapse'])}
             data-testid="capsule-collapse"
             aria-label={t('PC.Components.ConversationProgressCapsule.collapse')}
-            onClick={() => setExpanded(false)}
+            onClick={closePanel}
           >
             <ShrinkOutlined />
           </button>
@@ -477,7 +486,7 @@ const ConversationProgressCapsule: React.FC<
             </section>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

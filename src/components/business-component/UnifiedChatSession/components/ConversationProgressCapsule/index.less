@@ -100,40 +100,48 @@
   color: @colorError;
 }
 
-// 面板双向开合：展开从右向左滑出揭示，收起反向收回。
-// 常驻 DOM + grid 行高 0fr/1fr 过渡（面板条件卸载无法做退出动画）。
-.panel-wrap {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  clip-path: inset(0 0 0 45%);
-  transform: translateX(48px);
-  pointer-events: none;
-  transition: grid-template-rows 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
-    opacity 0.32s ease-out, clip-path 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
-    transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-
-.panel-wrap-open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  clip-path: inset(0 0 0 0);
-  transform: translateX(0);
-  pointer-events: auto;
-}
-
+// 面板双向动效：挂载时从右向左滑出揭示；卸载前挂 .panel-out 反向收回。
+// 面板条件渲染（收起态 DOM 无面板），胶囊收起宽度只贴合触发器内容。
 .panel {
   position: relative;
-  min-height: 0;
-  overflow: hidden;
-  padding: 0;
-}
-
-.panel-wrap-open .panel {
   border-top: 1px solid @colorBorderSecondary;
   padding: @paddingSm 32px @paddingSm @paddingSm;
   max-height: min(60cqh, 480px);
   overflow-y: auto;
+  animation: capsule-panel-in 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.panel-out {
+  animation: capsule-panel-out 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes capsule-panel-in {
+  from {
+    clip-path: inset(0 0 0 45%);
+    transform: translateX(48px);
+    opacity: 0;
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes capsule-panel-out {
+  from {
+    clip-path: inset(0 0 0 0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    clip-path: inset(0 0 0 55%);
+    transform: translateX(48px);
+    opacity: 0;
+  }
 }
 
 .panel-collapse {
