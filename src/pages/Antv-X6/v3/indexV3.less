@@ -1,6 +1,13 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
-
+.container {
+  background-image: @backgroundImage;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  transition: background-image 0.3s ease;
+}
 .absolute-box {
   position: absolute;
   height: 42px;
@@ -331,9 +338,9 @@
 
 .fold-header-style {
   height: 56px;
-  border-bottom: 1px solid @WHITE11;
+  border-bottom: none;
   padding: 0 16px;
-  background-color: @WHITE02;
+  background: @pageContainerBg;
   box-sizing: border-box;
   // 锚定 #container（页面自身），不锚定视口：工作流详情现与主站同用
   // page-container 容器（卡片内有边距），fixed 会横跨视口顶部与卡片错位
