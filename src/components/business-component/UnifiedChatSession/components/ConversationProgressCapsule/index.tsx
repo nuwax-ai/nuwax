@@ -462,16 +462,6 @@ const ConversationProgressCapsule: React.FC<
               )}
             </section>
           )}
-          <button
-            type="button"
-            className={cx(safeStyles['panel-collapse'])}
-            data-testid="capsule-collapse"
-            aria-label={t('PC.Components.ConversationProgressCapsule.collapse')}
-            onClick={closePanel}
-          >
-            <ShrinkOutlined />
-          </button>
-
           {enableVersionControl &&
             (gitDiff.summary || gitDiff.loading || gitDiff.branch) && (
               <section className={cx(safeStyles.group)}>

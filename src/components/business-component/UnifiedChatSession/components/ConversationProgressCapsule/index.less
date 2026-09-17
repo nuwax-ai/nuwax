@@ -164,6 +164,11 @@
 
 // task-result 产物行：对齐会话输出 TaskResultRow 的行形态（图标+描述+箭头）
 .result-row {
+  // button 化后补齐 reset：默认边框/字体与宽度约束（否则行溢出、截断失效）
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: @marginXs;
@@ -173,6 +178,10 @@
   font-size: @fontSizeSm;
   color: @colorText;
   cursor: pointer;
+
+  &:hover {
+    background: @colorBgTextHover;
+  }
 
   // 多条产物行之间的间距
   & + & {
