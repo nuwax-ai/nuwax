@@ -20,6 +20,7 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 import {
   selectProgressCapsule,
@@ -253,6 +254,18 @@ const ConversationProgressCapsule: React.FC<
     () => selectProgressCapsule(messageList, active),
     [active, messageList],
   );
+  const {
+    openPreviewView,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
+  } = useModel('conversationInfo') as {
+    openPreviewView: (
+      cid: number,
+      opts?: { forceRefresh?: boolean },
+    ) => Promise<void>;
+    setTaskAgentSelectedFileId: (fileId: string) => void;
+    setTaskAgentSelectTrigger: (trigger: number) => void;
+  };
   const [expanded, setExpanded] = useState(false);
   const [closing, setClosing] = useState(false);
   const [completedOpen, setCompletedOpen] = useState(true);
@@ -261,6 +274,17 @@ const ConversationProgressCapsule: React.FC<
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const motionCleanupRef = useRef<(() => void) | undefined>(undefined);
+
+  /** 打开任务结果产物文件：对齐会话输出 <task-result> 的点击口径 */
+  const handleOpenTaskResult = async (file: string) => {
+    if (!conversationId) return;
+    let fileId = file.split(`${conversationId}/`).pop();
+    if (fileId?.endsWith('/')) fileId = fileId.slice(0, -1);
+    if (!fileId) return;
+    await openPreviewView(Number(conversationId), { forceRefresh: true });
+    setTaskAgentSelectedFileId(fileId);
+    setTaskAgentSelectTrigger(Date.now());
+  };
 
   // 挂载即播进场动效（从右向左滑出揭示）
   useEffect(() => {
@@ -405,10 +429,12 @@ const ConversationProgressCapsule: React.FC<
                 {t('PC.Components.ConversationProgressCapsule.taskResult')}
               </GroupTitle>
               {model.taskResults.map((item) => (
-                <div
+                <button
                   key={item.key}
+                  type="button"
                   className={cx(safeStyles['result-row'])}
                   title={item.description || item.file}
+                  onClick={() => handleOpenTaskResult(item.file)}
                 >
                   <span
                     className={cx(safeStyles['node-kind-icon'])}
@@ -424,7 +450,7 @@ const ConversationProgressCapsule: React.FC<
                   <span className={cx(safeStyles['chevron-dim'])} aria-hidden>
                     <RightOutlined />
                   </span>
-                </div>
+                </button>
               ))}
               {!model.taskResults.length && model.finalResult && (
                 <div

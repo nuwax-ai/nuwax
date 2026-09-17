@@ -11,6 +11,13 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('umi', () => ({
+  useModel: () => ({
+    openPreviewView: vi.fn(),
+    setTaskAgentSelectedFileId: vi.fn(),
+    setTaskAgentSelectTrigger: vi.fn(),
+  }),
+}));
 vi.mock('@/services/i18nRuntime', () => ({
   t: (key: string, value?: number) =>
     value === undefined ? key : `${key}:${value}`,
