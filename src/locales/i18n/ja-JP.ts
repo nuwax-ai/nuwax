@@ -1414,6 +1414,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.CollapseButton.collapseMenu": "メニューを折りたたむ",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu": "メニューを展開する",
   "PC.Layouts.DynamicMenusLayout.ConversationItem.executing": "実行中",
+  "PC.Layouts.DynamicMenusLayout.ConversationItem.unreadFinished": "未読の結果があります",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.createSuccess": "正常に作成されました",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.createTeamSpace": "チームスペースの作成",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.description": "説明",

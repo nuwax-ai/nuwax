@@ -119,7 +119,6 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
             infos: state.infos || [],
             sandboxId: String(selectedComputerId || '-1'),
             debug: true,
-            isSync: false,
             skillIds: state.skillIds || [],
             modelId: selectedModelId,
             agentMode: state.agentMode || 'yolo',

@@ -1435,6 +1435,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.CollapseButton.collapseMenu": "收起選單",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu": "展開選單",
   "PC.Layouts.DynamicMenusLayout.ConversationItem.executing": "執行中",
+  "PC.Layouts.DynamicMenusLayout.ConversationItem.unreadFinished": "有新結果未查看",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.createSuccess": "新建成功",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.createTeamSpace": "建立團隊空間",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.description": "描述",

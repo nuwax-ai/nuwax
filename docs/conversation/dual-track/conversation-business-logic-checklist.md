@@ -51,7 +51,7 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 | --- | --- | --- | --- | --- | --- |
 | A1 | 〔双〕发送即乐观上屏 | user 消息 + assistant Loading 占位立即出现,不等后端;列表原有 Incomplete 消息置 Complete | conversationInfoModel · conversationRuntimeSession · E2E-02/03/08 | 页面直观点发送,肉眼确认两条立即上屏 | ➖ |
 | A2 | 发送瞬间乐观活跃态 | `isConversationActive=true` + `isAwaitingChatTerminal=true` 立即生效(3s 保活内拒绝置 false) | conversationInfoModel | — | ➖ |
-| A3 | 〔双〕乐观「执行中」标记 | isSync 入口发送后侧栏会话立即标执行中;隔离入口(`isSync:false`)不发 | conversationEffects · runtimeLineEffects · conversationRuntimeSession(R6) | 主 Chat 发送 → 侧栏立即转圈;预览 Tab 发送 → 侧栏不动 | ➖ |
+| A3 | 〔双〕乐观「执行中」标记 | 真实会话入口(主 Chat/ConversationAgent 主区/AppDevPro 面板/插件试运行,isSync 默认 true)发送后侧栏会话立即标执行中;隔离入口(EditAgent 预览调试、ConversationAgent 预览 Tab,`isSync:false`)不发 | conversationEffects · runtimeLineEffects · conversationRuntimeSession(R6) | 主 Chat/app-pro 开发页/智能体开发页发送 → 侧栏对应行立即标执行中;预览 Tab 发送 → 侧栏不动 | ➖ |
 | A4 | 〔双〕参数面透传 | files/infos/variableParams/sandboxId/skillIds/modelId/agentMode 完整到达请求体 | chatConversation · conversationDualTrackParity · conversationRuntimeSession | 挑一个带附件+@技能+变量表单的智能体发送,后端收参正确 | ➖ |
 | A5 | 必填变量拦截 | 变量未填齐时阻止发送并触发表单校验 | chatConversation | 变量表单留空点发送 → 校验提示,不发请求 | ➖ |
 | A6 | 首次进入自动发送 | `location.state` 带 message 时,仅会话为空/纯开场白才自动发;刷新(无 state)不重发 | — | 🖐 从入口卡片带消息进会话 → 自动发送;F5 刷新 → 不重发 | ➖ |
@@ -231,7 +231,7 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 | L1 | flag 优先级 | URL `?conversationRuntime=1/0` > localStorage `conversation_runtime_enabled` > 默认 **false(legacy)**;清除回落默认 | conversationRuntimeFlag · E2E-05/06 | — | ➖ |
 | L2 | 五入口接线 | `...(runtimeLine?.conversationProps ?? {})` 置 props **末尾**覆盖旧线字段;flag off 空对象零影响 | conversationDualTrackParity · E2E-02/03/07/08 | 🖐 五入口各开一次 `?conversationRuntime=1` 发消息 | ➖ |
 | L3 | 线归属不漂移 | 流式过程/结束后线归属稳定(props 覆盖顺序) | E2E-03/08 | — | ➖ |
-| L4 | isSync 隔离语义 | 预览等隔离入口 `isSync:false`:乐观列表标记/topic 更新/onClose 列表刷新全 gate | conversationRuntimeSession(R6) · conversationEffects | — | ➖ |
+| L4 | isSync 隔离语义 | 预览等隔离入口(EditAgent 预览调试、ConversationAgent 预览 Tab)`isSync:false`:乐观列表标记/topic 更新/onClose 列表刷新全 gate;真实会话入口一律默认 true(2026-09-17 起含 AppDevPro 面板、插件试运行、ConversationAgent 主区面板) | conversationRuntimeSession(R6) · conversationEffects | — | ➖ |
 | L5 | 新线 store 接管 | 新线 messageList 唯一写入口 conversationMessageStore;干预回执经 storeAsDispatch 入新线 store | conversationMessageStore · useConversationRuntimeSession | — | ➖ |
 | L6 | ❗ 新线 effect 分发缺口 | 新线 session 仅分发 8 类 effect;`desktop.open`(远程桌面)、`preview.file.refresh`(文件树节流刷新)、`taskResult.settle`(TaskAgent 收尾文件链)**有执行体但无分发点**(`createConversationRuntimeSession.ts` 无 dispatch;执行体在 mainChatEffectsAdapter:213/runtimeLineHttp:192)。runtime 线上这三条链路疑似不触发,E2E-07 未覆盖文件树断言 | — | 🖐 **runtime 线 TaskAgent 会话**:执行任务后确认文件树刷新/Git 刷新/task-result 文件自动打开是否生效;远程桌面/ToolCall 文件树刷新同样验证。结论要么补接线要么记为已知差异 | ➖ |
 | L7 | 预览 effects 子集 | previewEffectsAdapter 只执行 suggest/预览/终态补丁,忽略列表/主题/卡片/桌面(预期差异) | conversationEffects(preview 4 条) | — | ➖ |

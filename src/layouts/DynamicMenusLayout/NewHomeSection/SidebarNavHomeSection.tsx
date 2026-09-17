@@ -13,6 +13,7 @@ import ProjectPanel, { ProjectPanelHandle } from './components/ProjectPanel';
 import styles from './index.less';
 import TaskListSection from './TaskListSection';
 import { HomeSectionDataShell } from './useHomeSectionData';
+import { useFinishedConversationUnread } from './useFinishedConversationUnread';
 
 const cx = classNames.bind(styles);
 
@@ -21,6 +22,8 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
 }) => {
   const location = useLocation();
   const projectPanelRef = useRef<ProjectPanelHandle>(null);
+  // 会话结束未读蓝点 id 快照（页面级内存态，订阅重渲染见 hook 层）
+  const unreadConversationIds = useFinishedConversationUnread();
   // 单栏分组折叠态（原型：点击分组头折叠/展开对应列表，不做持久化）
   const [projectCollapsed, setProjectCollapsed] = useState(false);
   const [taskCollapsed, setTaskCollapsed] = useState(false);
@@ -179,6 +182,8 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
           <ProjectPanel
             ref={projectPanelRef}
             compact
+            leadingMark
+            unreadConversationIds={unreadConversationIds}
             onVisibleCountChange={shell.handleProjectCountChange}
             onConversationClick={shell.handleConversationClick}
             activeConversationId={shell.chatId}
@@ -198,6 +203,8 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
         {!taskCollapsed && (
           <TaskListSection
             compact
+            leadingMark
+            unreadConversationIds={unreadConversationIds}
             list={shell.visibleConversationList}
             loading={shell.loading}
             keyword={shell.keyword}

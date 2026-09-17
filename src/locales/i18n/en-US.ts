@@ -1544,6 +1544,7 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.CollapseButton.collapseMenu": "Collapse Menu",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu": "Expand Menu",
   "PC.Layouts.DynamicMenusLayout.ConversationItem.executing": "Executing",
+  "PC.Layouts.DynamicMenusLayout.ConversationItem.unreadFinished": "New result not viewed",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.createSuccess": "Created successfully",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.createTeamSpace": "Create Team Space",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.description": "Description",

@@ -1,9 +1,27 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import type { ProjectChildItem, ProjectItem } from './index';
 
-/** 项目列表分页大小（统一接口 current/pageSize/total 契约，首页 20 条 + 查看更多追加） */
+/**
+ * 项目列表分页大小（统一接口 current/pageSize/total 契约，首页 20 条 + 查看更多追加）
+ */
 export const PROJECT_PAGE_SIZE = 20;
+
+/**
+ * 项目唯一键：`${projectType}:${projectId}`。
+ * 后端 user-project 列表合并常规项目/全栈应用两套编号，projectId 数字会跨类型撞车
+ * （2026-09-17 实测：UserApp 94 与 NormalProject 94 同列表共存），所有身份判断
+ * （React key、置顶/归档/收藏/折叠标记、改名删除定位）必须走复合键。
+ */
+export function projectKeyOf(project: {
+  id: number | string;
+  projectType?: string;
+}): string {
+  return `${project.projectType ?? AgentComponentTypeEnum.NormalProject}:${
+    project.id
+  }`;
+}
 
 /**
  * 会话列表 → 面板子项。undefined 透传（未加载）与空数组（已加载无会话）
@@ -49,26 +67,29 @@ export function toProjectItem(
   };
 }
 
-/** 追加一页项目：按 id 去重合并（保持既有顺序，新项排后），翻页重复回包时幂等 */
+/** 追加一页项目：按复合键去重合并（保持既有顺序，新项排后），翻页重复回包时幂等。
+ *  勿退回裸 id 去重——projectId 跨项目类型会撞车（见 projectKeyOf 注释）。 */
 export function appendProjectsPage(
   previous: ProjectItem[],
   incoming: ProjectItem[],
 ): ProjectItem[] {
-  const seen = new Set(previous.map((item) => item.id));
+  const seen = new Set(previous.map((item) => projectKeyOf(item)));
   const merged = [...previous];
   for (const item of incoming) {
-    if (seen.has(item.id)) continue;
-    seen.add(item.id);
+    const key = projectKeyOf(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
     merged.push(item);
   }
   return merged;
 }
 
-/** 置顶/归档标记增量合并：追加页只并入新标记，不回退已加载页的标记 */
+/** 置顶/归档标记增量合并：追加页只并入新标记，不回退已加载页的标记
+ *  （集合存复合键，见 projectKeyOf） */
 export function mergeFlagIds(
-  previous: Set<number>,
-  incoming: Set<number>,
-): Set<number> {
+  previous: Set<string>,
+  incoming: Set<string>,
+): Set<string> {
   return new Set([...previous, ...incoming]);
 }
 
@@ -83,19 +104,20 @@ export function remainingProjects(loadedCount: number, total: number): number {
 }
 
 /**
- * 按路由会话 id 反查所属项目 id（未命中返回 null）。
+ * 按路由会话 id 反查所属项目复合键（未命中返回 null）。
  * 会话条目（ConversationInfo）不带项目归属字段，只能基于已加载的项目数据反查；
  * 调用方传可见列表（visibleProjects），归档项目天然不命中。
+ * 返回复合键（projectKeyOf）：projectId 跨类型撞车，裸 id 无法唯一定位项目。
  */
-export function findProjectIdByConversation(
+export function findProjectKeyByConversation(
   projects: ProjectItem[],
   conversationId?: string,
-): number | null {
+): string | null {
   if (!conversationId) return null;
   const found = projects.find((project) =>
     (project.children ?? []).some(
       (child) => String(child.id) === conversationId,
     ),
   );
-  return found?.id ?? null;
+  return found ? projectKeyOf(found) : null;
 }

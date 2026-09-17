@@ -134,14 +134,16 @@
       }
     }
 
-    // 执行中绿点(呼吸闪烁,与「最近」分组子条目同款)
-    .status-dot {
+    // 执行中标签（与任务列表 ConversationItem 的 status-tag 同款同参：
+    // 11px 主色胶囊，置于行尾时间之前）
+    .status-tag {
       flex-shrink: 0;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background-color: @colorSuccess;
-      animation: project-status-pulse 1.6s ease-in-out infinite;
+      font-size: 11px;
+      color: @colorPrimary;
+      background-color: @colorPrimaryBg;
+      padding: 0 6px;
+      border-radius: @borderRadiusXs;
+      line-height: 16px;
     }
 
     // 失败红叹号
@@ -196,17 +198,6 @@
         opacity: 1;
       }
     }
-  }
-}
-
-@keyframes project-status-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.35;
   }
 }
 
@@ -380,10 +371,6 @@
   .project .row .arrow,
   .project-more {
     transition: none;
-  }
-
-  .project .child .status-dot {
-    animation: none;
   }
 }
 

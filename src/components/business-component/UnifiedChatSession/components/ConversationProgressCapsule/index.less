@@ -189,24 +189,6 @@
   }
 }
 
-// 任务结果正文卡片（无标签产物时回退）：对齐会话输出 task-result 的浅灰卡片形态
-.result-card {
-  padding: 8px 10px;
-  border-radius: @borderRadius;
-  background: @colorBgContainerDisabled;
-  color: @colorText;
-  font-size: @fontSizeSm;
-  line-height: 1.6;
-  word-break: break-word;
-  overflow: hidden;
-  /* stylelint-disable-next-line property-no-vendor-prefix, declaration-block-no-duplicate-properties -- line-clamp 需要 -webkit 前缀 */
-  display: -webkit-box;
-  /* stylelint-disable-next-line property-no-vendor-prefix -- line-clamp 需要 -webkit 前缀 */
-  -webkit-box-orient: vertical;
-  /* stylelint-disable-next-line property-no-vendor-prefix -- line-clamp 需要 -webkit 前缀 */
-  -webkit-line-clamp: 4;
-}
-
 .counter {
   color: @colorPrimary;
   font-variant-numeric: tabular-nums;

@@ -535,7 +535,6 @@ describe('会话进度胶囊', () => {
       buildMessages({ finished: true, richContent: true }),
       false,
     );
-    expect(model?.finalResult).toBe('已执行全部七个步骤，构建通过。');
     expect(model?.taskResults).toHaveLength(2);
     expect(model?.taskResults[0]).toMatchObject({
       description: '月度报表页面',
