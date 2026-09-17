@@ -358,6 +358,38 @@ export const layout = {
 };
 
 /**
+ * 标题栏手势（guest→host）：guest 在 mousedown 捕获阶段命中判定（目标空白且
+ * 位于顶部带内）后请求壳执行原生窗口拖拽/双击缩放。壳层不再常驻拖拽矩形，
+ * 页面控件点击零吞没；旧宿主无桥全部 no-op（无拖拽、无副作用）。
+ */
+export const titlebar = {
+  /** 空白处按下：请求主进程开始跟随光标移动窗口。 */
+  beginDrag(): void {
+    try {
+      getBridge()?.titlebar?.beginDrag?.();
+    } catch {
+      /* 宿主缺失或调用失败均忽略 */
+    }
+  },
+  /** 结束拖拽会话（mouseup / blur / 按键异常时补发）。 */
+  endDrag(): void {
+    try {
+      getBridge()?.titlebar?.endDrag?.();
+    } catch {
+      /* 宿主缺失或调用失败均忽略 */
+    }
+  },
+  /** 空白处双击：切换最大化/还原。 */
+  toggleMaximize(): void {
+    try {
+      getBridge()?.titlebar?.toggleMaximize?.();
+    } catch {
+      /* 宿主缺失或调用失败均忽略 */
+    }
+  },
+};
+
+/**
  * 语言同步（guest→host）：把 nuwax 当前语言推给 nuwaclaw 壳，壳的 UI 文案与
  * 主进程语言跟随切换。浏览器无桥 no-op。
  */
@@ -471,6 +503,7 @@ export const hostBridge = {
   events,
   theme,
   layout,
+  titlebar,
   i18n,
   meta,
   updater,
