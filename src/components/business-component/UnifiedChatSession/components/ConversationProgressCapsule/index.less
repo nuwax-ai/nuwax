@@ -7,7 +7,7 @@
   z-index: 20;
   top: @marginMd;
   right: @marginMd;
-  // 收起态贴合内容宽度；整体最大 280px（展开面板同宽）
+  // 收起态贴合内容宽度；280px 为整体上限
   width: fit-content;
   max-width: min(280px, calc(100% - 2 * @marginMd));
   color: @colorText;
@@ -38,7 +38,10 @@
 }
 
 .trigger-label {
-  flex: none;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   font-size: @fontSizeSm;
 }

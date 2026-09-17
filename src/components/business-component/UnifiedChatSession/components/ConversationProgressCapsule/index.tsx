@@ -29,52 +29,31 @@ import { useGitDiffFiles } from './useGitDiffFiles';
 const cx = classNames.bind(styles);
 const safeStyles = styles ?? ({} as typeof styles);
 
-// JS 逐帧驱动面板动效：rAF 对齐刷新率（平滑），24ms 未触发则降级
-// setTimeout 兜底（该环境 CSS 动画被系统设置冻结，rAF 也可能停）。
+// JS 逐帧驱动面板渐显动效（纯 opacity 淡入/淡出）：rAF 对齐刷新率（平滑），
+// 24ms 未触发则降级 setTimeout 兜底（该环境 CSS 动画被系统设置冻结）。
 const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
-// 落位带轻微回弹的弹性曲线（用于位移/裁剪；透明度不过冲）
-const easeOutBack = (x: number) => {
-  const c1 = 1.28;
-  const c3 = c1 + 1;
-  return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
-};
 
-const animatePanelStyle = (
+const animatePanelFade = (
   panel: HTMLElement,
   duration: number,
   reverse: boolean,
   onDone?: () => void,
 ): (() => void) => {
-  const insetFrom = reverse ? 0 : 45;
-  const insetTo = reverse ? 55 : 0;
-  const shiftFrom = reverse ? 0 : 48;
-  const shiftTo = reverse ? 48 : 0;
+  const from = reverse ? 1 : 0;
+  const to = reverse ? 0 : 1;
   const start = performance.now();
   let timer = 0;
   let rafId = 0;
   let stopped = false;
   const finish = () => {
-    if (!reverse) {
-      panel.style.clipPath = '';
-      panel.style.transform = '';
-      panel.style.opacity = '';
-    }
+    if (!reverse) panel.style.opacity = '';
     onDone?.();
   };
   const tick = () => {
     if (stopped) return;
     const p = Math.min(1, (performance.now() - start) / duration);
-    const eShift = reverse ? easeOutCubic(p) : easeOutBack(p);
-    const eFade = easeOutCubic(p);
-    panel.style.clipPath = `inset(0 0 0 ${(
-      insetFrom +
-      (insetTo - insetFrom) * eShift
-    ).toFixed(2)}%)`;
-    panel.style.transform = `translateX(${(
-      shiftFrom +
-      (shiftTo - shiftFrom) * eShift
-    ).toFixed(1)}px)`;
-    panel.style.opacity = (reverse ? 1 - eFade : eFade).toFixed(3);
+    const e = easeOutCubic(p);
+    panel.style.opacity = (from + (to - from) * e).toFixed(3);
     if (p < 1) {
       // 自递归调度：rAF 对齐刷新率，24ms 未触发降级 setTimeout 兜底
       let fired = false;
@@ -282,7 +261,7 @@ const ConversationProgressCapsule: React.FC<
   useEffect(() => {
     if (!expanded || !panelRef.current) return;
     motionCleanupRef.current?.();
-    motionCleanupRef.current = animatePanelStyle(panelRef.current, 460, false);
+    motionCleanupRef.current = animatePanelFade(panelRef.current, 280, false);
   }, [expanded, model?.turnKey]);
 
   useEffect(
@@ -302,7 +281,7 @@ const ConversationProgressCapsule: React.FC<
     }
     setClosing(true);
     motionCleanupRef.current?.();
-    motionCleanupRef.current = animatePanelStyle(panel, 320, true, () => {
+    motionCleanupRef.current = animatePanelFade(panel, 240, true, () => {
       setExpanded(false);
       setClosing(false);
     });
