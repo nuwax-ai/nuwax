@@ -57,10 +57,10 @@ describe('ConversationCacheDebugPanel', () => {
     // 面板内容自带 DEBUG 调试标识
     expect(screen.getByText('DEBUG')).toBeInTheDocument();
     expect(screen.getByText('chat:301')).toBeInTheDocument();
-    expect(screen.getByText('terminal')).toBeInTheDocument();
-    expect(screen.getByText('draft 6c /1s')).toBeInTheDocument();
-    expect(screen.getByText('TERM:ON')).toBeInTheDocument();
-    expect(screen.getByText('WS:ON')).toBeInTheDocument();
+    expect(screen.getByText('终端')).toBeInTheDocument();
+    expect(screen.getByText('草稿 6字/1技能')).toBeInTheDocument();
+    expect(screen.getByText('终端 开')).toBeInTheDocument();
+    expect(screen.getByText('终端连接 开')).toBeInTheDocument();
     expect(view.container).not.toHaveTextContent('secret');
   });
 
@@ -77,7 +77,7 @@ describe('ConversationCacheDebugPanel', () => {
     });
 
     const view = render(<ConversationCacheDebugPanel />);
-    expect(screen.getByText('No executing instances')).toBeInTheDocument();
+    expect(screen.getByText('暂无执行中的页面实例')).toBeInTheDocument();
 
     act(() => {
       conversationPageCacheManager.markConversationTaskStatus(
@@ -86,14 +86,14 @@ describe('ConversationCacheDebugPanel', () => {
       );
     });
     expect(screen.getAllByText('chat:501').length).toBeGreaterThanOrEqual(1);
-    // 执行中分区徽标 + LRU 列表标记，两处均出现
-    expect(screen.getAllByText('EXEC').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText('run 0s')).toBeInTheDocument();
+    // 执行中徽标 + LRU 列表标记 + 摘要指标，多处出现
+    expect(screen.getAllByText('执行中').length).toBeGreaterThanOrEqual(3);
+    expect(screen.getByText('已执行 0秒')).toBeInTheDocument();
     // 执行中计数指标
     expect(
       view.container.querySelector('[data-testid="conversation-cache-debug"]')
         ?.textContent,
-    ).toContain('executing');
+    ).toContain('执行中');
 
     act(() => {
       conversationPageCacheManager.markConversationTaskStatus(
@@ -101,7 +101,7 @@ describe('ConversationCacheDebugPanel', () => {
         TaskStatus.COMPLETE,
       );
     });
-    expect(screen.getByText('No executing instances')).toBeInTheDocument();
+    expect(screen.getByText('暂无执行中的页面实例')).toBeInTheDocument();
   });
 });
 

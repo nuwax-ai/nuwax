@@ -16,17 +16,31 @@ import styles from './ConversationCacheDebugPanel.module.less';
 const cx = classNames.bind(styles);
 
 const RESOURCE_LABELS = [
-  ['terminalMounted', 'TERM'],
-  ['terminalConnected', 'WS'],
-  ['pageIframeMounted', 'IFRAME'],
-  ['fileWorkspaceDirty', 'DIRTY'],
-  ['desktopVisible', 'VNC'],
+  ['terminalMounted', '终端'],
+  ['terminalConnected', '终端连接'],
+  ['pageIframeMounted', '页面iframe'],
+  ['fileWorkspaceDirty', '文件未保存'],
+  ['desktopVisible', '云电脑'],
 ] as const;
+
+const LIFECYCLE_LABELS: Record<string, string> = {
+  active: '激活',
+  cached: '缓存',
+  disposing: '销毁中',
+};
+
+const VIEW_LABELS: Record<string, string> = {
+  closed: '面板收起',
+  filePreview: '文件预览',
+  terminal: '终端',
+  desktop: '云电脑',
+  pagePreview: '页面预览',
+};
 
 const relativeTime = (timestamp: number) => {
   const seconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 60) return `${seconds}秒`;
+  return `${Math.floor(seconds / 60)}分`;
 };
 
 const ConversationCacheDebugPanel: React.FC = () => {
@@ -51,16 +65,16 @@ const ConversationCacheDebugPanel: React.FC = () => {
         <div>
           <div className={styles.eyebrowRow}>
             <span className={styles.debugBadge}>DEBUG</span>
-            <span className={styles.eyebrow}>Runtime telemetry</span>
+            <span className={styles.eyebrow}>运行时遥测</span>
           </div>
-          <div className={styles.title}>Conversation page cache</div>
-          <div className={styles.debugHint}>debug-only · 正式上线前移除</div>
+          <div className={styles.title}>会话页面缓存</div>
+          <div className={styles.debugHint}>仅调试显示 · 正式上线前移除</div>
         </div>
         <label className={styles.capacity}>
-          CAP
+          容量上限
           <InputNumber
             className={styles.capacityInput}
-            aria-label="conversation cache capacity"
+            aria-label="会话页面缓存容量上限"
             min={1}
             max={12}
             size="small"
@@ -78,29 +92,29 @@ const ConversationCacheDebugPanel: React.FC = () => {
       <div className={styles.summary}>
         <div className={styles.metric}>
           <span className={styles.metricValue}>{snapshot.entries.length}</span>
-          <span className={styles.metricLabel}>instances</span>
+          <span className={styles.metricLabel}>实例总数</span>
         </div>
         <div className={styles.metric}>
           <span className={styles.metricValue}>{activeCount}</span>
-          <span className={styles.metricLabel}>active</span>
+          <span className={styles.metricLabel}>当前激活</span>
         </div>
         <div className={cx(styles.metric, styles.metricExecuting)}>
           <span className={styles.metricValue}>{executingEntries.length}</span>
-          <span className={styles.metricLabel}>executing</span>
+          <span className={styles.metricLabel}>执行中</span>
         </div>
         <div className={styles.metric}>
           <span className={styles.metricValue}>{draftCount}</span>
-          <span className={styles.metricLabel}>drafts</span>
+          <span className={styles.metricLabel}>含草稿</span>
         </div>
       </div>
 
       <div className={styles.execSection}>
         <div className={styles.execHeader}>
-          <span className={styles.eyebrow}>Executing instances</span>
-          <span className={styles.execHint}>CREATE / EXECUTING</span>
+          <span className={styles.eyebrow}>执行中的页面实例</span>
+          <span className={styles.execHint}>任务状态 CREATE / EXECUTING</span>
         </div>
         {executingEntries.length === 0 ? (
-          <div className={styles.execEmpty}>No executing instances</div>
+          <div className={styles.execEmpty}>暂无执行中的页面实例</div>
         ) : (
           executingEntries.map((entry) => (
             <article
@@ -110,19 +124,24 @@ const ConversationCacheDebugPanel: React.FC = () => {
                 entry.key === snapshot.activeKey && styles.execRowActive,
               )}
             >
-              <span className={styles.execBadge}>EXEC</span>
+              <span className={styles.execBadge}>执行中</span>
               <span className={styles.key} title={entry.key}>
                 {entry.key}
               </span>
-              <span className={styles.state}>{entry.lifecycle}</span>
-              <span className={styles.state}>{entry.view}</span>
               <span className={styles.state}>
-                run {relativeTime(entry.executingSince ?? entry.lastAccessAt)}
+                {LIFECYCLE_LABELS[entry.lifecycle] ?? entry.lifecycle}
               </span>
               <span className={styles.state}>
-                seen {relativeTime(entry.lastAccessAt)}
+                {VIEW_LABELS[entry.view] ?? entry.view}
               </span>
-              <span className={styles.state}>rev {entry.revision}</span>
+              <span className={styles.state}>
+                已执行{' '}
+                {relativeTime(entry.executingSince ?? entry.lastAccessAt)}
+              </span>
+              <span className={styles.state}>
+                上次使用 {relativeTime(entry.lastAccessAt)}
+              </span>
+              <span className={styles.state}>第 {entry.revision} 次激活</span>
             </article>
           ))
         )}
@@ -130,7 +149,7 @@ const ConversationCacheDebugPanel: React.FC = () => {
 
       <div className={styles.list}>
         {snapshot.entries.length === 0 ? (
-          <div className={styles.empty}>No cached conversation pages</div>
+          <div className={styles.empty}>暂无缓存的会话页面</div>
         ) : (
           snapshot.entries.map((entry, index) => {
             const active = entry.key === snapshot.activeKey;
@@ -146,11 +165,15 @@ const ConversationCacheDebugPanel: React.FC = () => {
                   </span>
                   {entry.executing && (
                     <span className={cx(styles.state, styles.stateExec)}>
-                      EXEC
+                      执行中
                     </span>
                   )}
-                  <span className={styles.state}>{entry.lifecycle}</span>
-                  <span className={styles.state}>{entry.view}</span>
+                  <span className={styles.state}>
+                    {LIFECYCLE_LABELS[entry.lifecycle] ?? entry.lifecycle}
+                  </span>
+                  <span className={styles.state}>
+                    {VIEW_LABELS[entry.view] ?? entry.view}
+                  </span>
                   {!active && (
                     <button
                       type="button"
@@ -162,16 +185,17 @@ const ConversationCacheDebugPanel: React.FC = () => {
                         )
                       }
                     >
-                      evict
+                      淘汰
                     </button>
                   )}
                 </div>
                 <div className={styles.entryMeta}>
-                  <span>rev {entry.revision}</span>
-                  <span>seen {relativeTime(entry.lastAccessAt)}</span>
+                  <span>第 {entry.revision} 次激活</span>
+                  <span>上次使用 {relativeTime(entry.lastAccessAt)}</span>
                   <span>
-                    draft {entry.draft.hasContent ? entry.draft.textLength : 0}c
-                    /{entry.draft.skillCount}s
+                    草稿 {entry.draft.hasContent ? entry.draft.textLength : 0}
+                    字/
+                    {entry.draft.skillCount}技能
                   </span>
                 </div>
                 <div className={styles.resourceRow}>
@@ -185,7 +209,7 @@ const ConversationCacheDebugPanel: React.FC = () => {
                           enabled && styles.resourceOn,
                         )}
                       >
-                        {label}:{enabled ? 'ON' : 'OFF'}
+                        {label} {enabled ? '开' : '关'}
                       </span>
                     );
                   })}
@@ -197,10 +221,8 @@ const ConversationCacheDebugPanel: React.FC = () => {
       </div>
 
       <div className={styles.footer}>
-        <span>LRU newest → oldest</span>
-        <span>
-          VNC owner: {snapshot.sharedVncOwnerConversationId ?? 'none'}
-        </span>
+        <span>LRU 从新到旧排序</span>
+        <span>VNC 占用：{snapshot.sharedVncOwnerConversationId ?? '无'}</span>
       </div>
     </section>
   );
