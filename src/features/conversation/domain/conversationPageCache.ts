@@ -49,6 +49,10 @@ export interface ConversationPageCacheEntry {
   agentId?: string;
   view: ConversationWorkspaceView;
   lifecycle: ConversationPageCacheLifecycle;
+  /** 会话任务处于 CREATE/EXECUTING（执行中）时为 true。 */
+  executing: boolean;
+  /** 进入执行态的时间戳；非执行态为 null。 */
+  executingSince: number | null;
   createdAt: number;
   lastAccessAt: number;
   revision: number;

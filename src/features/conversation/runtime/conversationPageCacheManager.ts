@@ -89,6 +89,8 @@ class ConversationPageCacheManager {
   private disposeListeners = new Set<DisposeListener>();
   private activeKey: string | null = null;
   private endedConversationIds = new Set<string>();
+  /** 执行中（CREATE/EXECUTING）的会话 id → 进入执行态的时间戳。 */
+  private executingConversations = new Map<string, number>();
   private sharedVncOwnerConversationId: string | null = null;
   private capacity = this.readCapacity();
   private snapshot: ConversationPageCacheSnapshot = {
@@ -128,11 +130,17 @@ class ConversationPageCacheManager {
       activeKey: this.activeKey,
       sharedVncOwnerConversationId: this.sharedVncOwnerConversationId,
       entries: [...this.entries.values()]
-        .map((entry) => ({
-          ...entry,
-          draft: { ...entry.draft },
-          resources: { ...entry.resources },
-        }))
+        .map((entry) => {
+          const executingSince =
+            this.executingConversations.get(entry.conversationId) ?? null;
+          return {
+            ...entry,
+            executing: executingSince !== null,
+            executingSince,
+            draft: { ...entry.draft },
+            resources: { ...entry.resources },
+          };
+        })
         .sort((left, right) => right.lastAccessAt - left.lastAccessAt),
     };
     this.listeners.forEach((listener) => listener());
@@ -182,6 +190,8 @@ class ConversationPageCacheManager {
       conversationId,
       view: preferences[key] ?? 'closed',
       lifecycle: key === this.activeKey ? 'active' : 'cached',
+      executing: this.executingConversations.has(conversationId),
+      executingSince: this.executingConversations.get(conversationId) ?? null,
       createdAt: now,
       lastAccessAt: now,
       revision: 1,
@@ -230,6 +240,11 @@ class ConversationPageCacheManager {
             : String(input.agentId),
         view: preferences[key] ?? 'closed',
         lifecycle: 'active',
+        executing: this.executingConversations.has(
+          String(input.conversationId),
+        ),
+        executingSince:
+          this.executingConversations.get(String(input.conversationId)) ?? null,
         createdAt: now,
         lastAccessAt: now,
         revision: 1,
@@ -283,9 +298,14 @@ class ConversationPageCacheManager {
       taskStatus === TaskStatus.EXECUTING
     ) {
       this.endedConversationIds.delete(normalizedId);
+      if (!this.executingConversations.has(normalizedId)) {
+        this.executingConversations.set(normalizedId, Date.now());
+        this.emit();
+      }
       return;
     }
     if (!isTerminalTaskStatus(taskStatus)) return;
+    const wasExecuting = this.executingConversations.delete(normalizedId);
     if (
       [...this.entries.values()].some(
         (entry) => entry.conversationId === normalizedId,
@@ -294,6 +314,7 @@ class ConversationPageCacheManager {
       this.endedConversationIds.add(normalizedId);
     }
     this.releaseEndedHidden(normalizedId);
+    if (wasExecuting) this.emit();
   }
 
   releaseEndedHidden(conversationId: number | string) {
@@ -400,6 +421,7 @@ class ConversationPageCacheManager {
 
   invalidateConversation(conversationId: number | string, reason = 'manual') {
     const normalizedId = String(conversationId);
+    this.executingConversations.delete(normalizedId);
     [...this.entries.values()]
       .filter((entry) => entry.conversationId === normalizedId)
       .forEach((entry) => this.invalidate(entry.key, reason));

@@ -20,6 +20,8 @@ const entry = (
   conversationId: key,
   view: 'closed',
   lifecycle: 'cached',
+  executing: false,
+  executingSince: null,
   createdAt: lastAccessAt,
   lastAccessAt,
   revision: 1,
@@ -191,6 +193,65 @@ describe('conversationPageCache', () => {
     conversationPageCacheManager.deactivate('chat:204');
 
     expect(conversationPageCacheManager.getEntry('chat:204')).toBeDefined();
+  });
+
+  it('执行中（EXECUTING）条目在快照标记 executing，终态后清除', () => {
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 301,
+    });
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 302,
+    });
+    conversationPageCacheManager.markConversationTaskStatus(
+      301,
+      TaskStatus.EXECUTING,
+    );
+    conversationPageCacheManager.markConversationTaskStatus(
+      302,
+      TaskStatus.EXECUTING,
+    );
+
+    let snapshot = conversationPageCacheManager.getSnapshot();
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:301')?.executing,
+    ).toBe(true);
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:301')?.executingSince,
+    ).not.toBeNull();
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:302')?.executing,
+    ).toBe(true);
+
+    conversationPageCacheManager.markConversationTaskStatus(
+      302,
+      TaskStatus.COMPLETE,
+    );
+    snapshot = conversationPageCacheManager.getSnapshot();
+    // 当前会话终态仍显示，仅清除执行标记
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:302')?.executing,
+    ).toBe(false);
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:302')?.executingSince,
+    ).toBeNull();
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:301')?.executing,
+    ).toBe(true);
+  });
+
+  it('执行事件先于页面激活到达时，新建条目仍带执行标记', () => {
+    conversationPageCacheManager.markConversationTaskStatus(
+      401,
+      TaskStatus.CREATE,
+    );
+    const created = conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 401,
+    });
+    expect(created.executing).toBe(true);
+    expect(created.executingSince).not.toBeNull();
   });
 
   it('草稿快照只暴露长度，不暴露正文', () => {

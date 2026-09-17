@@ -1,3 +1,9 @@
+/**
+ * 会话页面缓存遥测面板：LRU 实例列表 + 执行中的页面实例分区。
+ * 纯调试用途，由 ConversationCacheDebugFab 独立入口弹出（2026-09-17 拆分）。
+ *
+ * TODO(正式上线前移除): 调试面板，正式上线前随两个 debug 悬浮入口一并删除。
+ */
 import {
   conversationPageCacheManager,
   useConversationPageCache,
@@ -28,6 +34,13 @@ const ConversationCacheDebugPanel: React.FC = () => {
   const activeCount = snapshot.entries.filter(
     (entry) => entry.lifecycle === 'active',
   ).length;
+  const executingEntries = snapshot.entries
+    .filter((entry) => entry.executing)
+    .sort(
+      (left, right) =>
+        (right.executingSince ?? right.lastAccessAt) -
+        (left.executingSince ?? left.lastAccessAt),
+    );
   const draftCount = snapshot.entries.filter(
     (entry) => entry.draft.hasContent,
   ).length;
@@ -67,10 +80,48 @@ const ConversationCacheDebugPanel: React.FC = () => {
           <span className={styles.metricValue}>{activeCount}</span>
           <span className={styles.metricLabel}>active</span>
         </div>
+        <div className={cx(styles.metric, styles.metricExecuting)}>
+          <span className={styles.metricValue}>{executingEntries.length}</span>
+          <span className={styles.metricLabel}>executing</span>
+        </div>
         <div className={styles.metric}>
           <span className={styles.metricValue}>{draftCount}</span>
           <span className={styles.metricLabel}>drafts</span>
         </div>
+      </div>
+
+      <div className={styles.execSection}>
+        <div className={styles.execHeader}>
+          <span className={styles.eyebrow}>Executing instances</span>
+          <span className={styles.execHint}>CREATE / EXECUTING</span>
+        </div>
+        {executingEntries.length === 0 ? (
+          <div className={styles.execEmpty}>No executing instances</div>
+        ) : (
+          executingEntries.map((entry) => (
+            <article
+              key={entry.key}
+              className={cx(
+                styles.execRow,
+                entry.key === snapshot.activeKey && styles.execRowActive,
+              )}
+            >
+              <span className={styles.execBadge}>EXEC</span>
+              <span className={styles.key} title={entry.key}>
+                {entry.key}
+              </span>
+              <span className={styles.state}>{entry.lifecycle}</span>
+              <span className={styles.state}>{entry.view}</span>
+              <span className={styles.state}>
+                run {relativeTime(entry.executingSince ?? entry.lastAccessAt)}
+              </span>
+              <span className={styles.state}>
+                seen {relativeTime(entry.lastAccessAt)}
+              </span>
+              <span className={styles.state}>rev {entry.revision}</span>
+            </article>
+          ))
+        )}
       </div>
 
       <div className={styles.list}>
@@ -89,6 +140,11 @@ const ConversationCacheDebugPanel: React.FC = () => {
                   <span className={styles.key} title={entry.key}>
                     {entry.key}
                   </span>
+                  {entry.executing && (
+                    <span className={cx(styles.state, styles.stateExec)}>
+                      EXEC
+                    </span>
+                  )}
                   <span className={styles.state}>{entry.lifecycle}</span>
                   <span className={styles.state}>{entry.view}</span>
                   {!active && (
