@@ -152,6 +152,8 @@
 }
 
 .group-title-text {
+  // 占满图标右侧剩余宽度：否则 space-between 会把图标与文字拆到两端
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
