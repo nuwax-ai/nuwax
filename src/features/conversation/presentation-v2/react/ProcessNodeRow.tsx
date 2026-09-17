@@ -355,12 +355,7 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
       {toolPresentation && toolPresentation.files.length > 0 ? (
         <>
           {toolPresentation.files.length > 1 && (
-            <span
-              className={cx(
-                styles['node-summary'],
-                node.status === 'running' && styles['shimmer-text'],
-              )}
-            >
+            <span className={cx(styles['node-summary'])}>
               {toolPresentation.target}
             </span>
           )}
@@ -371,14 +366,7 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
           </span>
         </>
       ) : (
-        <span
-          className={cx(
-            styles['node-summary'],
-            node.status === 'running' && styles['shimmer-text'],
-          )}
-        >
-          {summaryText}
-        </span>
+        <span className={cx(styles['node-summary'])}>{summaryText}</span>
       )}
       {toolPresentation?.meta && (
         <span className={cx(styles['node-meta'])}>{toolPresentation.meta}</span>
