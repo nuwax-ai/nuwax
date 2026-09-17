@@ -106,7 +106,7 @@ export interface PublishedAppListParams {
 /**
  * 女娲应用-应用列表接口（系统应用/团队空间两维度共用）
  * @description POST /api/published/app/list——两维度均携带
- * targetTypes=[Agent, UserApp] + targetSubTypes=[PageApp, UserApp] 过滤；
+ * targetTypes=[Agent, UserApp, ThirdApp] + targetSubTypes=[PageApp, UserApp, ThirdApp] 过滤；
  * 系统应用：scope=Tenant（本租户内）+ official=true 查官方应用（category/kw 可选筛选）；
  * 团队空间：scope=Space + justReturnSpaceData=true 查空间已发布应用，
  * 选中具体空间追加 spaceId
@@ -123,11 +123,11 @@ export async function apiPublishedAppList(
 /**
  * 女娲应用-最近使用列表接口
  * @description POST /api/published/app/recentlyUsed/list——
- * 全量数组（同 skill 域 recentlyUsed/list 先例，无分页），按最近使用排序返回
+ * 按最近使用排序返回，pageSize 控制拉取条数上限（无分页游标）
  */
 export async function apiPublishedAppRecentlyUsedList(data: {
   /** 拉取条数上限 */
-  size?: number;
+  pageSize?: number;
 }): Promise<RequestResponse<SquarePublishedItemInfo[]>> {
   return request('/api/published/app/recentlyUsed/list', {
     method: 'POST',

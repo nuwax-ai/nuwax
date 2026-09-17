@@ -160,6 +160,8 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
 
   return (
     <CardWrapper
+      // 智能体卡片图标裁圆（「人」形资源口径）
+      iconShape="circle"
       title={agentConfigInfo.name}
       avatar={agentConfigInfo.creator?.avatar || ''}
       name={

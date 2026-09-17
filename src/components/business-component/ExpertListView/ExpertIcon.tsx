@@ -1,6 +1,6 @@
 /**
  * 专家图标：受保护地址解析（Bearer 解码）+ 失败/为空回退名称首字，
- * 双变体卡片共用；圆角方形 tinted 底（专家口径，区别于技能圆形）。
+ * 双变体卡片共用；圆形 tinted 底（与技能口径对齐）。
  */
 import SvgIcon from '@/components/base/SvgIcon';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';

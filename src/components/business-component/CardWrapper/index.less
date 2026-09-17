@@ -66,3 +66,13 @@
     font-weight: @fontWeightStrong;
   }
 }
+
+/* 圆形图标口径（iconShape="circle"）：智能体/专家等「人」形资源卡片
+   48px 图标随容器裁圆；与 .container 同元素，置于其后靠源序取胜 */
+.icon-circle {
+  .header {
+    .image {
+      border-radius: 50%;
+    }
+  }
+}

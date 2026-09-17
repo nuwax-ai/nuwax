@@ -614,6 +614,12 @@ const Square: React.FC = () => {
                     return (
                       <SingleAgent
                         key={index}
+                        // 智能体 tab 卡片图标裁圆（网页应用 tab 保持方形）
+                        iconShape={
+                          categoryTypeRef.current === SquareAgentTypeEnum.Agent
+                            ? 'circle'
+                            : 'square'
+                        }
                         extra={paymentExtra}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
