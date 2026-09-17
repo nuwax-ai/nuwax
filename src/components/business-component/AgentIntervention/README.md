@@ -546,6 +546,8 @@ SSE (ConversationChatResponse)
       → useActiveInterventionQueue（FIFO；pending/submitting 进队）
         → AgentInterventionChatLayer → DockPanel（front 可点，逐个 notify-resolved）
             → AcpPermissionCard / McpAskQuestionCard
+            → useInterventionPageInert（aria-modal 指针侧：祖先链旁支 inert，
+              IntersectionObserver 门控——display:none 保活的后台会话弹窗不锁可见页）
             → respondAcpPermission → POST .../permission-request/response
             → respondMcpAsk → buildMcpAskResumeMessage → onSendMessage
 ```
