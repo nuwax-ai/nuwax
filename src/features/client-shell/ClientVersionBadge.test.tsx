@@ -62,7 +62,7 @@ describe('ClientVersionBadge', () => {
     }
   });
 
-  it('available → 点击徽标直接触发下载', async () => {
+  it('available → 「更新」文案胶囊（无下载图标），点击徽标直接触发下载', async () => {
     setState({
       status: 'available',
       version: '1.0.7',
@@ -70,10 +70,10 @@ describe('ClientVersionBadge', () => {
       releaseNotes: '## 变更\n- 修复若干问题',
     });
     render(<ClientVersionBadge />);
-    // 悬浮卡未展开时，role=button 的入口只有徽标本身
-    await userEvent.click(
-      screen.getByRole('button', { name: 'PC.Components.ClientUpdate.download' }),
-    );
+    const badge = screen.getByRole('button', { name: 'PC.Components.ClientUpdate.download' });
+    expect(badge.textContent).toBe('PC.Components.ClientUpdate.update');
+    expect(document.querySelector('.anticon-download')).toBeNull();
+    await userEvent.click(badge);
     expect(serviceMock.download).toHaveBeenCalled();
   });
 
@@ -96,7 +96,7 @@ describe('ClientVersionBadge', () => {
     expect(screen.getByText(/修复若干问题/)).toBeInTheDocument();
   });
 
-  it('downloading → 进度圆环（aria-label），卡片内下载中态带百分比', async () => {
+  it('downloading → 进度圆环（加粗描边+缩小尺寸），卡片内下载中态带百分比', async () => {
     setState({
       status: 'downloading',
       progress: { percent: 42, bytesPerSecond: 1, transferred: 1, total: 10 },
@@ -106,15 +106,34 @@ describe('ClientVersionBadge', () => {
       screen.getByLabelText('PC.Components.ClientUpdate.downloading'),
     );
     expect(await screen.findByText(/42%/)).toBeInTheDocument();
+    const inner = document.querySelector('.ant-progress-inner');
+    expect(inner).not.toBeNull();
+    expect(inner.getAttribute('style')).toContain('width: 16px');
+    const ring = document.querySelector('svg.ant-progress-circle');
+    expect(ring).not.toBeNull();
+    const strokeWidths = Array.from(ring.querySelectorAll('circle')).map((c) =>
+      c.getAttribute('stroke-width'),
+    );
+    expect(strokeWidths).toContain('18');
   });
 
-  it('downloaded → 重启安装图标，点击触发 install', async () => {
+  it('downloaded → 「重启更新」文案胶囊，点击触发 install 并进入 loading', async () => {
     setState({ status: 'downloaded', version: '1.0.7' });
     render(<ClientVersionBadge />);
-    await userEvent.click(
-      screen.getByRole('button', { name: 'PC.Components.ClientUpdate.install' }),
+    const badge = screen.getByRole('button', { name: 'PC.Components.ClientUpdate.install' });
+    // 图标态已收敛为文案态
+    expect(badge.textContent).toContain('PC.Components.ClientUpdate.install');
+    expect(document.querySelector('.anticon-rocket')).toBeNull();
+    let finishInstall!: () => void;
+    serviceMock.install.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishInstall = resolve;
+      }),
     );
+    await userEvent.click(badge);
     expect(serviceMock.install).toHaveBeenCalled();
+    expect(document.querySelector('.anticon-loading')).toBeInTheDocument();
+    finishInstall();
   });
 
   it('error（有目标版本）→ 红色信息图标，点击重试触发 download', async () => {
