@@ -19,13 +19,29 @@ function mockRect(el: Element, x: number, y: number, width: number, height: numb
   }));
 }
 
+/** 声明一个全宽顶部带。 */
+function markBand(width: number, height = 36) {
+  const marked = document.createElement('div');
+  marked.dataset.nuwaxTitlebarDrag = 'true';
+  mockRect(marked, 0, 0, width, height);
+  document.body.append(marked);
+  return marked;
+}
+
+/** 按区间桩 elementFromPoint（jsdom 无此 API，直接赋值）：命中区间返回对应交互元素，否则 null。 */
+function stubHits(intervals: Array<{ from: number; to: number; el: Element }>) {
+  (document as any).elementFromPoint = (x: number) =>
+    intervals.find((i) => x >= i.from && x < i.to)?.el ?? null;
+}
+
 describe('titlebarDragRegionSync', () => {
   afterEach(() => {
     document.body.innerHTML = '';
+    delete (document as any).elementFromPoint;
     vi.restoreAllMocks();
   });
 
-  it('只收集显式标记并裁剪到顶部 48px', () => {
+  it('只收集显式标记并裁剪到顶部 48px；无交互命中时整带保留', () => {
     const marked = document.createElement('div');
     marked.dataset.nuwaxTitlebarDrag = 'true';
     marked.getBoundingClientRect = vi.fn(() => ({
@@ -47,24 +63,17 @@ describe('titlebarDragRegionSync', () => {
   });
 
   it('带内交互元素挖洞：左右留空隙、洞内不放拖拽矩形', () => {
-    const marked = document.createElement('div');
-    marked.dataset.nuwaxTitlebarDrag = 'true';
-    mockRect(marked, 0, 0, 1000, 36);
-    document.body.append(marked);
-
-    // 右上角头像簇：与带纵向相交（部分高出带上沿），应整段挖洞
+    markBand(1000);
     const avatar = document.createElement('button');
-    avatar.setAttribute('aria-label', '用户头像');
-    mockRect(avatar, 900, 12, 60, 40);
-    document.body.append(avatar);
-
-    // 页头按钮：完全在带内
     const headerBtn = document.createElement('button');
-    mockRect(headerBtn, 400, 8, 32, 20);
-    document.body.append(headerBtn);
+    document.body.append(avatar, headerBtn);
+    stubHits([
+      { from: 900, to: 960, el: avatar },
+      { from: 400, to: 432, el: headerBtn },
+    ]);
 
     const regions = collectTitlebarDragRegions();
-    // 空隙：[0,396) [436,896) [964,1000)，外扩 4px 边距已计入洞
+    // 洞外扩 4px：[396,436) 与 [896,964)；空隙 [0,396) [436,896) [964,1000)
     expect(regions).toEqual([
       { x: 0, y: 0, width: 396, height: 36 },
       { x: 436, y: 0, width: 460, height: 36 },
@@ -72,24 +81,26 @@ describe('titlebarDragRegionSync', () => {
     ]);
   });
 
-  it('带外的交互元素不挖洞；窄于 MIN_GAP_WIDTH 的碎片被丢弃', () => {
-    const marked = document.createElement('div');
-    marked.dataset.nuwaxTitlebarDrag = 'true';
-    mockRect(marked, 0, 0, 600, 36);
-    document.body.append(marked);
+  it('非交互元素不挖洞：普通 div 覆盖处仍是拖拽区', () => {
+    markBand(600);
+    const plain = document.createElement('div');
+    document.body.append(plain);
+    stubHits([{ from: 100, to: 300, el: plain }]);
 
-    // 带下方元素：不挖洞
-    const below = document.createElement('button');
-    mockRect(below, 100, 36, 80, 24);
-    document.body.append(below);
+    expect(collectTitlebarDragRegions()).toEqual([
+      { x: 0, y: 0, width: 600, height: 36 },
+    ]);
+  });
 
-    // 带内按钮贴右缘：右侧空隙 8px 恰好达标，左侧整段保留
-    const rightBtn = document.createElement('button');
-    mockRect(rightBtn, 580, 4, 12, 16);
-    document.body.append(rightBtn);
+  it('自绘 onClick 控件（cursor:pointer 的 div）同样挖洞；右缘窄碎片丢弃', () => {
+    markBand(600);
+    const fakeButton = document.createElement('div');
+    fakeButton.style.cursor = 'pointer';
+    document.body.append(fakeButton);
+    stubHits([{ from: 560, to: 592, el: fakeButton }]);
 
     const regions = collectTitlebarDragRegions();
-    // 右缘洞 [576,596)：其后空隙 600-596=4 < MIN_GAP_WIDTH(8)，整段丢弃
-    expect(regions).toEqual([{ x: 0, y: 0, width: 576, height: 36 }]);
+    // 洞 [556,596)：其后空隙 600-596=4 < MIN_GAP_WIDTH(8)，整段丢弃
+    expect(regions).toEqual([{ x: 0, y: 0, width: 556, height: 36 }]);
   });
 });
