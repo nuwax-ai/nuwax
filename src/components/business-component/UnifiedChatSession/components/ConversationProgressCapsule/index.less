@@ -99,16 +99,18 @@
 }
 
 .panel-collapse {
-  position: sticky;
-  top: 0;
-  float: right;
-  margin-left: @marginXs;
+  // 固定在面板右上角内空区（胶囊根 absolute），不随面板内容滚动
+  position: absolute;
+  top: 30px;
+  right: 10px;
+  z-index: 2;
   border: 0;
   background: transparent;
   cursor: pointer;
   color: @colorTextSecondary;
   font-size: @fontSizeSm;
   line-height: 1;
+  padding: 2px;
 
   &:hover {
     color: @colorText;
@@ -170,6 +172,12 @@
   background: @colorBgContainerDisabled;
   font-size: @fontSizeSm;
   color: @colorText;
+  cursor: pointer;
+
+  // 多条产物行之间的间距
+  & + & {
+    margin-top: 6px;
+  }
 }
 
 // 任务结果正文卡片（无标签产物时回退）：对齐会话输出 task-result 的浅灰卡片形态
