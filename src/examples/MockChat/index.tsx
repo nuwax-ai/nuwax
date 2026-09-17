@@ -707,6 +707,7 @@ const MockChat: React.FC = () => {
                   hasPermission: true,
                   sandboxId: 'mock-sandbox',
                 }}
+                showConversationProgressCapsule
                 initialAgentMode="yolo"
                 onSendMessage={sendMessage}
                 onLoadMoreMessage={model.handleLoadMoreMessage}

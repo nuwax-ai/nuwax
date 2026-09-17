@@ -596,8 +596,12 @@ export const MOCK_SCENARIOS: MockScenario[] = [
       think('让我分析'),
       think('这个任务需要'),
       think('首先制定计划', true),
-      processing('终端执行 ls -la', 'EXECUTING', 'tc-1'),
-      processing('终端执行 ls -la', 'FINISHED', 'tc-1'),
+      processing('终端执行 ls -la', 'EXECUTING', 'tc-1', undefined, {
+        input: { command: 'ls -la' },
+      }),
+      processing('终端执行 ls -la', 'FINISHED', 'tc-1', undefined, {
+        input: { command: 'ls -la' },
+      }),
       chat('好的，我来'),
       chat('帮你完成这个任务。'),
       chat('已执行完毕。', true),
