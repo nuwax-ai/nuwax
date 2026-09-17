@@ -1576,6 +1576,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask": "任务",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search": "搜索",
   "PC.Components.ClientUpdate.versionLabel": "客户端版本",
+  "PC.Components.ClientUpdate.update": "更新",
   "PC.Components.ClientUpdate.download": "下载更新",
   "PC.Components.ClientUpdate.install": "重启更新",
   "PC.Components.ClientUpdate.downloading": "下载中",

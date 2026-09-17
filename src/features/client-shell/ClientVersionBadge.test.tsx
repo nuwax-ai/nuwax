@@ -62,7 +62,7 @@ describe('ClientVersionBadge', () => {
     }
   });
 
-  it('available → 点击徽标直接触发下载', async () => {
+  it('available → 「更新」文案胶囊（无下载图标），点击徽标直接触发下载', async () => {
     setState({
       status: 'available',
       version: '1.0.7',
@@ -70,10 +70,10 @@ describe('ClientVersionBadge', () => {
       releaseNotes: '## 变更\n- 修复若干问题',
     });
     render(<ClientVersionBadge />);
-    // 悬浮卡未展开时，role=button 的入口只有徽标本身
-    await userEvent.click(
-      screen.getByRole('button', { name: 'PC.Components.ClientUpdate.download' }),
-    );
+    const badge = screen.getByRole('button', { name: 'PC.Components.ClientUpdate.download' });
+    expect(badge.textContent).toBe('PC.Components.ClientUpdate.update');
+    expect(document.querySelector('.anticon-download')).toBeNull();
+    await userEvent.click(badge);
     expect(serviceMock.download).toHaveBeenCalled();
   });
 

@@ -1576,6 +1576,7 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask": "Tasks",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search": "Search",
   "PC.Components.ClientUpdate.versionLabel": "Client Version",
+  "PC.Components.ClientUpdate.update": "Update",
   "PC.Components.ClientUpdate.download": "Download Update",
   "PC.Components.ClientUpdate.install": "Restart to Update",
   "PC.Components.ClientUpdate.downloading": "Downloading",

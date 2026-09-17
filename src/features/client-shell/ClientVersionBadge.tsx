@@ -1,6 +1,6 @@
 /**
  * 客户端版本徽标（logo 旁，仅桌面宿主）
- * @description 常显宿主客户端版本号；有新版本 → 主题色下载图标：hover 弹
+ * @description 常显宿主客户端版本号；有新版本 → 「更新」文案胶囊：hover 弹
  * 「目标版本 + 发布日期 + 更新日志」卡片，点击直接进入下载流程；
  * 下载中 → 进度圆环（卡片内同步进度）；下载完成 → 「重启更新」文案胶囊（点击进入 loading
  * 后重启安装）；失败（已有目标版本）→ 点击重试。
@@ -15,7 +15,7 @@ import {
   subscribe,
 } from './clientUpdateService';
 import ReleaseNotesContent from './ReleaseNotesContent';
-import { DownloadOutlined, InfoCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Button, Popover, Progress } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 
@@ -198,8 +198,9 @@ const ClientVersionBadge: React.FC = () => {
                 marginLeft: 10,
                 background: isError ? 'var(--xagi-color-error-bg)' : 'var(--xagi-color-primary-bg)',
                 color: isError ? 'var(--xagi-color-error)' : 'var(--xagi-color-primary)',
-                fontSize: status === 'downloaded' ? 12 : 15,
-                fontWeight: status === 'downloaded' ? 500 : undefined,
+                // 文案胶囊（更新/重启更新）12px 与版本号小字同级；error 仍为图标
+                fontSize: isError ? 15 : 12,
+                fontWeight: isError ? undefined : 500,
                 cursor: 'pointer',
               }
         }
@@ -214,7 +215,7 @@ const ClientVersionBadge: React.FC = () => {
         ) : isError ? (
           <InfoCircleOutlined />
         ) : (
-          <DownloadOutlined />
+          dict('PC.Components.ClientUpdate.update')
         )}
       </span>
     </Popover>
