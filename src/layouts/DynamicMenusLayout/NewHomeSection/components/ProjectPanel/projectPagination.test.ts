@@ -5,10 +5,11 @@ import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import {
   appendProjectsPage,
-  findProjectIdByConversation,
+  findProjectKeyByConversation,
   hasMoreProjects,
   mergeFlagIds,
   PROJECT_PAGE_SIZE,
+  projectKeyOf,
   remainingProjects,
   toProjectItem,
 } from './projectPagination';
@@ -94,7 +95,7 @@ describe('toProjectItem', () => {
 });
 
 describe('appendProjectsPage', () => {
-  it('按 id 去重追加并保持顺序', () => {
+  it('按复合键去重追加并保持顺序', () => {
     const first = [
       toProjectItem(buildRecord({ projectId: 1, name: '一' }), '新会话'),
       toProjectItem(buildRecord({ projectId: 2, name: '二' }), '新会话'),
@@ -109,6 +110,35 @@ describe('appendProjectsPage', () => {
     expect(merged[1].name).toBe('二');
   });
 
+  it('同号异类项目不去重（projectId 跨类型撞车，复合键不同即两个项目）', () => {
+    const first = [
+      toProjectItem(
+        buildRecord({
+          projectId: 94,
+          projectType: AgentComponentTypeEnum.UserApp,
+          name: '全栈',
+        }),
+        '新会话',
+      ),
+    ];
+    const second = [
+      toProjectItem(
+        buildRecord({
+          projectId: 94,
+          projectType: AgentComponentTypeEnum.NormalProject,
+          name: '常规',
+        }),
+        '新会话',
+      ),
+    ];
+    const merged = appendProjectsPage(first, second);
+    expect(merged).toHaveLength(2);
+    expect(merged.map((item) => projectKeyOf(item))).toEqual([
+      'UserApp:94',
+      'NormalProject:94',
+    ]);
+  });
+
   it('空入参保持原列表', () => {
     const first = [toProjectItem(buildRecord(), '新会话')];
     expect(appendProjectsPage(first, [])).toEqual(first);
@@ -118,8 +148,8 @@ describe('appendProjectsPage', () => {
 
 describe('mergeFlagIds', () => {
   it('并集合并不丢失既有标记', () => {
-    expect(mergeFlagIds(new Set([1, 2]), new Set([2, 3]))).toEqual(
-      new Set([1, 2, 3]),
+    expect(mergeFlagIds(new Set(['a', 'b']), new Set(['b', 'c']))).toEqual(
+      new Set(['a', 'b', 'c']),
     );
   });
 });
@@ -139,7 +169,7 @@ describe('hasMoreProjects / remainingProjects', () => {
   });
 });
 
-describe('findProjectIdByConversation', () => {
+describe('findProjectKeyByConversation', () => {
   const projects = [
     toProjectItem(
       buildRecord({
@@ -161,19 +191,32 @@ describe('findProjectIdByConversation', () => {
     toProjectItem(buildRecord({ projectId: 3 }), '新会话'),
   ];
 
-  it('命中子会话返回所属项目 id（数字 id 与路由字符串比对）', () => {
-    expect(findProjectIdByConversation(projects, '11')).toBe(1);
-    expect(findProjectIdByConversation(projects, '21')).toBe(2);
-    expect(findProjectIdByConversation(projects, '22')).toBe(2);
+  it('命中子会话返回所属项目复合键（数字 id 与路由字符串比对）', () => {
+    expect(findProjectKeyByConversation(projects, '11')).toBe(
+      'NormalProject:1',
+    );
+    expect(findProjectKeyByConversation(projects, '21')).toBe(
+      'NormalProject:2',
+    );
+    expect(findProjectKeyByConversation(projects, '22')).toBe(
+      'NormalProject:2',
+    );
   });
 
   it('未命中（独立任务/无子会话项目）返回 null', () => {
-    expect(findProjectIdByConversation(projects, '99')).toBeNull();
-    expect(findProjectIdByConversation(projects, undefined)).toBeNull();
-    expect(findProjectIdByConversation(projects, '')).toBeNull();
+    expect(findProjectKeyByConversation(projects, '99')).toBeNull();
+    expect(findProjectKeyByConversation(projects, undefined)).toBeNull();
+    expect(findProjectKeyByConversation(projects, '')).toBeNull();
   });
 
   it('空项目列表返回 null', () => {
-    expect(findProjectIdByConversation([], '11')).toBeNull();
+    expect(findProjectKeyByConversation([], '11')).toBeNull();
+  });
+});
+
+describe('projectKeyOf', () => {
+  it('复合键含 projectType，类型缺省回落 NormalProject', () => {
+    expect(projectKeyOf({ id: 94, projectType: 'UserApp' })).toBe('UserApp:94');
+    expect(projectKeyOf({ id: 94 })).toBe('NormalProject:94');
   });
 });

@@ -70,10 +70,11 @@ import { formatRelativeTime } from '../../utils';
 import styles from './index.less';
 import {
   appendProjectsPage,
-  findProjectIdByConversation,
+  findProjectKeyByConversation,
   hasMoreProjects,
   mergeFlagIds,
   PROJECT_PAGE_SIZE,
+  projectKeyOf,
   remainingProjects,
   toProjectChildren,
   toProjectItem,
@@ -204,27 +205,28 @@ const ProjectPanel = forwardRef<
     const [projects, setProjects] = useState<ProjectItem[]>([]);
     // 空态仅在接口返回后展示：加载中先渲染 Spin，避免一进来就闪「暂无项目」
     const [loading, setLoading] = useState(true);
-    const [collapsedIds, setCollapsedIds] = useState<Set<number>>(
+    // 标记集合一律存复合键（projectKeyOf）：projectId 跨项目类型撞车，裸 id 会串标记
+    const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
       () => new Set(),
     );
     // 项目级标记：置顶/归档/收藏回读自后端字段（字段未返回时不标记）
-    const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => new Set());
-    const [archivedIds, setArchivedIds] = useState<Set<number>>(
+    const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => new Set());
+    const [archivedIds, setArchivedIds] = useState<Set<string>>(
       () => new Set(),
     );
-    const [collectedIds, setCollectedIds] = useState<Set<number>>(
+    const [collectedIds, setCollectedIds] = useState<Set<string>>(
       () => new Set(),
     );
     // 子项重命名弹窗状态(projectId + childId 定位目标子项)
     const [renameTarget, setRenameTarget] = useState<{
-      projectId: number;
+      projectKey: string;
       childId: number;
     }>();
     const [renameName, setRenameName] = useState('');
     // 重命名提交中（Modal confirmLoading，防慢接口下重复提交）
     const [renaming, setRenaming] = useState(false);
     // 项目重命名弹窗状态
-    const [renameProjectId, setRenameProjectId] = useState<number>();
+    const [renameProjectId, setRenameProjectId] = useState<string>();
     const [projectRenameName, setProjectRenameName] = useState('');
     const [projectRenaming, setProjectRenaming] = useState(false);
     // 分页：首屏 PROJECT_PAGE_SIZE 条，「查看更多」按页追加（tab 接口 current/pageSize/total 契约）
@@ -286,12 +288,17 @@ const ProjectPanel = forwardRef<
               });
             });
             // 置顶/归档/收藏回读恢复(wiki 2026-09-11 行6 契约先行:字段未返回时不标记;
-            // 追加页只并入新标记,不回退已加载页)
+            // 追加页只并入新标记,不回退已加载页)。键=复合键,防 projectId 跨类型撞车串标记
             const pageFlagIds = (flag: 'pinned' | 'archived' | 'collected') =>
               new Set(
                 records
                   .filter((item) => item[flag] === true)
-                  .map((item) => item.projectId),
+                  .map((item) =>
+                    projectKeyOf({
+                      id: item.projectId,
+                      projectType: item.projectType,
+                    }),
+                  ),
               );
             setPinnedIds((previous) =>
               options.append
@@ -336,20 +343,15 @@ const ProjectPanel = forwardRef<
     const recentChildEventsRef = useRef<
       Array<{ event: ConversationChangedEvent; at: number }>
     >([]);
-    const projectKey = useCallback(
-      (project: Pick<ProjectItem, 'id' | 'projectType'>) =>
-        `${project.projectType ?? AgentComponentTypeEnum.NormalProject}:${
-          project.id
-        }`,
-      [],
-    );
+    // 项目身份统一走复合键 projectKeyOf（模块级单源，见 projectPagination.ts）；
+    // 子会话加载/刷新的键口径与其一致
 
     const requestChildrenRef = useRef<(project: ProjectItem) => Promise<void>>(
       async () => {},
     );
     const requestChildren = useCallback(
       async (project: ProjectItem): Promise<void> => {
-        const key = projectKey(project);
+        const key = projectKeyOf(project);
         if (loadingChildrenRef.current.has(key)) {
           pendingChildrenRefreshRef.current.add(key);
           return;
@@ -377,14 +379,14 @@ const ProjectPanel = forwardRef<
           }
           setProjects((previous) =>
             previous.map((item) =>
-              projectKey(item) === key ? { ...item, children } : item,
+              projectKeyOf(item) === key ? { ...item, children } : item,
             ),
           );
         } catch {
           // 首次失败结束加载态；下次可见性核对或事件会重试。
           setProjects((previous) =>
             previous.map((item) =>
-              projectKey(item) === key && item.children === undefined
+              projectKeyOf(item) === key && item.children === undefined
                 ? { ...item, children: [] }
                 : item,
             ),
@@ -393,13 +395,13 @@ const ProjectPanel = forwardRef<
           loadingChildrenRef.current.delete(key);
           if (pendingChildrenRefreshRef.current.delete(key)) {
             const current = projectsRef.current.find(
-              (item) => projectKey(item) === key,
+              (item) => projectKeyOf(item) === key,
             );
             if (current) void requestChildrenRef.current(current);
           }
         }
       },
-      [projectKey],
+      [],
     );
     requestChildrenRef.current = requestChildren;
 
@@ -413,7 +415,7 @@ const ProjectPanel = forwardRef<
           matchesProjectRef(project, target),
         );
         matched.forEach((project) => {
-          const key = projectKey(project);
+          const key = projectKeyOf(project);
           childrenRevisionRef.current.set(
             key,
             (childrenRevisionRef.current.get(key) ?? 0) + 1,
@@ -422,22 +424,22 @@ const ProjectPanel = forwardRef<
         });
         return matched.length > 0;
       },
-      [projectKey],
+      [],
     );
 
     useEffect(() => {
       projects.forEach((project) => {
-        const key = projectKey(project);
+        const key = projectKeyOf(project);
         if (
           project.children !== undefined ||
-          archivedIds.has(project.id) ||
+          archivedIds.has(projectKeyOf(project)) ||
           loadingChildrenRef.current.has(key)
         ) {
           return;
         }
         void requestChildren(project);
       });
-    }, [projects, archivedIds, projectKey, requestChildren]);
+    }, [projects, archivedIds, requestChildren]);
 
     useConversationChanged((event) => {
       const now = Date.now();
@@ -484,23 +486,26 @@ const ProjectPanel = forwardRef<
       }
       setProjects((previous) => applyProjectChangedToList(previous, event));
       if (event.operation === 'deleted') {
-        const projectId = Number(event.project.projectId);
+        const deletedKey = projectKeyOf({
+          id: event.project.projectId,
+          projectType: event.project.projectType,
+        });
         setPinnedIds((previous) => {
-          if (!previous.has(projectId)) return previous;
+          if (!previous.has(deletedKey)) return previous;
           const next = new Set(previous);
-          next.delete(projectId);
+          next.delete(deletedKey);
           return next;
         });
         setArchivedIds((previous) => {
-          if (!previous.has(projectId)) return previous;
+          if (!previous.has(deletedKey)) return previous;
           const next = new Set(previous);
-          next.delete(projectId);
+          next.delete(deletedKey);
           return next;
         });
         setCollectedIds((previous) => {
-          if (!previous.has(projectId)) return previous;
+          if (!previous.has(deletedKey)) return previous;
           const next = new Set(previous);
-          next.delete(projectId);
+          next.delete(deletedKey);
           return next;
         });
       }
@@ -521,12 +526,13 @@ const ProjectPanel = forwardRef<
     );
 
     const handleProjectClick = (project: ProjectItem) => {
+      const key = projectKeyOf(project);
       setCollapsedIds((prev) => {
         const next = new Set(prev);
-        if (next.has(project.id)) {
-          next.delete(project.id);
+        if (next.has(key)) {
+          next.delete(key);
         } else {
-          next.add(project.id);
+          next.add(key);
         }
         return next;
       });
@@ -534,9 +540,13 @@ const ProjectPanel = forwardRef<
 
     // 项目可见列表:隐藏归档项（侧栏不设归档查看入口）、置顶排前(稳定排序保持原相对顺序)
     const visibleProjects = useMemo(() => {
-      const filtered = projects.filter((item) => !archivedIds.has(item.id));
+      const filtered = projects.filter(
+        (item) => !archivedIds.has(projectKeyOf(item)),
+      );
       return [...filtered].sort(
-        (a, b) => Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id)),
+        (a, b) =>
+          Number(pinnedIds.has(projectKeyOf(b))) -
+          Number(pinnedIds.has(projectKeyOf(a))),
       );
     }, [projects, archivedIds, pinnedIds]);
 
@@ -578,33 +588,34 @@ const ProjectPanel = forwardRef<
       };
     }, [findProjectByConversation, requestChildren]);
 
-    // 当前路由会话反查所属项目（会话条目无项目归属字段，只能扫已加载的子会话）
-    const activeChildProjectId = useMemo(
-      () => findProjectIdByConversation(visibleProjects, activeConversationId),
+    // 当前路由会话反查所属项目（会话条目无项目归属字段，只能扫已加载的子会话）；
+    // 命中结果为复合键，与 collapsedIds 键口径一致
+    const activeChildProjectKey = useMemo(
+      () => findProjectKeyByConversation(visibleProjects, activeConversationId),
       [visibleProjects, activeConversationId],
     );
 
     // 命中项目会话时确保所属项目展开（只随路由会话/数据变化触发一次，
     // 用户随后手动折叠不会被强制弹回）
     useEffect(() => {
-      if (activeChildProjectId === null) return;
+      if (activeChildProjectKey === null) return;
       setCollapsedIds((prev) => {
-        if (!prev.has(activeChildProjectId)) return prev;
+        if (!prev.has(activeChildProjectKey)) return prev;
         const next = new Set(prev);
-        next.delete(activeChildProjectId);
+        next.delete(activeChildProjectKey);
         return next;
       });
-    }, [activeChildProjectId]);
+    }, [activeChildProjectKey]);
 
     // 反查结果上报父级（命中=当前会话 id / 未命中=null）：任务列表据此对同一
     // 会话互斥去高亮，选中只落项目分组一处
     useEffect(() => {
       onActiveChildResolved?.(
-        activeChildProjectId !== null && activeConversationId !== undefined
+        activeChildProjectKey !== null && activeConversationId !== undefined
           ? activeConversationId
           : null,
       );
-    }, [activeChildProjectId, activeConversationId, onActiveChildResolved]);
+    }, [activeChildProjectKey, activeConversationId, onActiveChildResolved]);
 
     useImperativeHandle(
       ref,
@@ -612,12 +623,13 @@ const ProjectPanel = forwardRef<
         toggleAll: () =>
           setCollapsedIds((previous) => {
             const allExpanded = visibleProjects.every(
-              (project) => !previous.has(project.id),
+              (project) => !previous.has(projectKeyOf(project)),
             );
             const next = new Set(previous);
             visibleProjects.forEach((project) => {
-              if (allExpanded) next.add(project.id);
-              else next.delete(project.id);
+              const key = projectKeyOf(project);
+              if (allExpanded) next.add(key);
+              else next.delete(key);
             });
             return next;
           }),
@@ -626,7 +638,8 @@ const ProjectPanel = forwardRef<
             await fetchPage(1, { append: false });
             const candidates = projectsRef.current.filter(
               (project) =>
-                !archivedIds.has(project.id) && !collapsedIds.has(project.id),
+                !archivedIds.has(projectKeyOf(project)) &&
+                !collapsedIds.has(projectKeyOf(project)),
             );
             for (let index = 0; index < candidates.length; index += 4) {
               await Promise.all(
@@ -653,20 +666,19 @@ const ProjectPanel = forwardRef<
       project: ProjectItem,
     ) => {
       const setter = kind === 'pinned' ? setPinnedIds : setArchivedIds;
+      const key = projectKeyOf(project);
       const applyFlag = () => {
         setter((prev) => {
           const next = new Set(prev);
-          if (next.has(project.id)) {
-            next.delete(project.id);
+          if (next.has(key)) {
+            next.delete(key);
           } else {
-            next.add(project.id);
+            next.add(key);
           }
           return next;
         });
       };
-      const enabled = !(kind === 'pinned' ? pinnedIds : archivedIds).has(
-        project.id,
-      );
+      const enabled = !(kind === 'pinned' ? pinnedIds : archivedIds).has(key);
       const toastKeyMap = {
         pinned: enabled
           ? 'PC.Components.ConversationContextMenu.pinnedToast'
@@ -696,10 +708,13 @@ const ProjectPanel = forwardRef<
         ).catch(() => null);
         if (res?.code !== SUCCESS_CODE) {
           message.error(dict('PC.Common.Global.operationFailed'));
-          return;
+        } else {
+          applyFlag();
+          message.success(dict(toastKeyMap[kind]));
         }
-        applyFlag();
-        message.success(dict(toastKeyMap[kind]));
+        // 成败都向服务端真值收敛一次：置顶回包丢失/报错但后端已提交时，本地若
+        // 不重拉会一直停在未聚拢的顺序、直到手动刷新才恢复（2026-09-17 用户实测）
+        void fetchPage(1, { append: false });
       })();
     };
 
@@ -707,14 +722,15 @@ const ProjectPanel = forwardRef<
     // 按当前状态选择（2026-09-13 上线）。PageApp 同 pin/archive 口径暂本地。
     // 后端成功才更新标记，失败 toast 不动状态;toast 文案与任务会话菜单同款
     const toggleProjectCollected = (project: ProjectItem) => {
-      const enabled = !collectedIds.has(project.id);
+      const key = projectKeyOf(project);
+      const enabled = !collectedIds.has(key);
       const applyCollected = () => {
         setCollectedIds((prev) => {
           const next = new Set(prev);
-          if (next.has(project.id)) {
-            next.delete(project.id);
+          if (next.has(key)) {
+            next.delete(key);
           } else {
-            next.add(project.id);
+            next.add(key);
           }
           return next;
         });
@@ -742,16 +758,18 @@ const ProjectPanel = forwardRef<
         ).catch(() => null);
         if (res?.code !== SUCCESS_CODE) {
           message.error(dict('PC.Common.Global.operationFailed'));
-          return;
+        } else {
+          applyCollected();
+          message.success(
+            dict(
+              enabled
+                ? 'PC.Components.ConversationContextMenu.collectedToast'
+                : 'PC.Components.ConversationContextMenu.uncollectedToast',
+            ),
+          );
         }
-        applyCollected();
-        message.success(
-          dict(
-            enabled
-              ? 'PC.Components.ConversationContextMenu.collectedToast'
-              : 'PC.Components.ConversationContextMenu.uncollectedToast',
-          ),
-        );
+        // 同 toggleProjectFlag：成败都向服务端真值收敛一次（回包丢失场景自愈）
+        void fetchPage(1, { append: false });
       })();
     };
 
@@ -760,7 +778,9 @@ const ProjectPanel = forwardRef<
       if (projectRenaming) return;
       const trimmed = projectRenameName.trim();
       if (!trimmed || !renameProjectId) return;
-      const target = projects.find((project) => project.id === renameProjectId);
+      const target = projects.find(
+        (project) => projectKeyOf(project) === renameProjectId,
+      );
       if (!target) return;
       setProjectRenaming(true);
       try {
@@ -779,7 +799,7 @@ const ProjectPanel = forwardRef<
         }
         setProjects((prev) =>
           prev.map((project) =>
-            project.id !== renameProjectId
+            projectKeyOf(project) !== renameProjectId
               ? project
               : { ...project, name: trimmed },
           ),
@@ -825,20 +845,24 @@ const ProjectPanel = forwardRef<
                 : await apiNormalProjectDelete(project.id);
             if (res?.code !== SUCCESS_CODE) return;
           }
-          setProjects((prev) => prev.filter((item) => item.id !== project.id));
+          // 本地移除按复合键定位：裸 id 会把同号异类项目一并误删
+          const deletedKey = projectKeyOf(project);
+          setProjects((prev) =>
+            prev.filter((item) => projectKeyOf(item) !== deletedKey),
+          );
           setPinnedIds((prev) => {
             const next = new Set(prev);
-            next.delete(project.id);
+            next.delete(deletedKey);
             return next;
           });
           setArchivedIds((prev) => {
             const next = new Set(prev);
-            next.delete(project.id);
+            next.delete(deletedKey);
             return next;
           });
           setCollectedIds((prev) => {
             const next = new Set(prev);
-            next.delete(project.id);
+            next.delete(deletedKey);
             return next;
           });
           emitProjectChanged({
@@ -858,68 +882,68 @@ const ProjectPanel = forwardRef<
       });
     };
 
-    // 项目行右键菜单:置顶/归档/收藏/重命名/删除
-    const buildProjectMenu = (project: ProjectItem) => ({
-      items: [
-        {
-          key: 'pin',
-          icon: <PushpinOutlined />,
-          label: dict(
-            pinnedIds.has(project.id)
-              ? 'PC.Components.ConversationContextMenu.unpin'
-              : 'PC.Components.ConversationContextMenu.pin',
-          ),
+    // 项目行右键菜单:置顶/归档/收藏/重命名/删除（标记判断走复合键；
+    // flagKey 避免与 onClick 解参 key 遮蔽）
+    const buildProjectMenu = (project: ProjectItem) => {
+      const flagKey = projectKeyOf(project);
+      return {
+        items: [
+          {
+            key: 'pin',
+            icon: <PushpinOutlined />,
+            label: dict(
+              pinnedIds.has(flagKey)
+                ? 'PC.Components.ConversationContextMenu.unpin'
+                : 'PC.Components.ConversationContextMenu.pin',
+            ),
+          },
+          {
+            key: 'archive',
+            icon: <InboxOutlined />,
+            label: dict(
+              archivedIds.has(flagKey)
+                ? 'PC.Components.ConversationContextMenu.unarchive'
+                : 'PC.Components.ConversationContextMenu.archive',
+            ),
+          },
+          {
+            key: 'collect',
+            icon: collectedIds.has(flagKey) ? <StarFilled /> : <StarOutlined />,
+            label: dict(
+              collectedIds.has(flagKey)
+                ? 'PC.Components.ConversationContextMenu.unfavorite'
+                : 'PC.Components.ConversationContextMenu.favorite',
+            ),
+          },
+          { type: 'divider' as const },
+          {
+            key: 'rename',
+            icon: <EditOutlined />,
+            label: dict('PC.Components.ConversationContextMenu.rename'),
+          },
+          {
+            key: 'delete',
+            icon: <DeleteOutlined />,
+            danger: true,
+            label: dict('PC.Common.Global.delete'),
+          },
+        ],
+        onClick: ({ key }: { key: string }) => {
+          if (key === 'pin') {
+            toggleProjectFlag('pinned', project);
+          } else if (key === 'archive') {
+            toggleProjectFlag('archived', project);
+          } else if (key === 'collect') {
+            toggleProjectCollected(project);
+          } else if (key === 'rename') {
+            setRenameProjectId(flagKey);
+            setProjectRenameName(project.name);
+          } else if (key === 'delete') {
+            openProjectDelete(project);
+          }
         },
-        {
-          key: 'archive',
-          icon: <InboxOutlined />,
-          label: dict(
-            archivedIds.has(project.id)
-              ? 'PC.Components.ConversationContextMenu.unarchive'
-              : 'PC.Components.ConversationContextMenu.archive',
-          ),
-        },
-        {
-          key: 'collect',
-          icon: collectedIds.has(project.id) ? (
-            <StarFilled />
-          ) : (
-            <StarOutlined />
-          ),
-          label: dict(
-            collectedIds.has(project.id)
-              ? 'PC.Components.ConversationContextMenu.unfavorite'
-              : 'PC.Components.ConversationContextMenu.favorite',
-          ),
-        },
-        { type: 'divider' as const },
-        {
-          key: 'rename',
-          icon: <EditOutlined />,
-          label: dict('PC.Components.ConversationContextMenu.rename'),
-        },
-        {
-          key: 'delete',
-          icon: <DeleteOutlined />,
-          danger: true,
-          label: dict('PC.Common.Global.delete'),
-        },
-      ],
-      onClick: ({ key }: { key: string }) => {
-        if (key === 'pin') {
-          toggleProjectFlag('pinned', project);
-        } else if (key === 'archive') {
-          toggleProjectFlag('archived', project);
-        } else if (key === 'collect') {
-          toggleProjectCollected(project);
-        } else if (key === 'rename') {
-          setRenameProjectId(project.id);
-          setProjectRenameName(project.name);
-        } else if (key === 'delete') {
-          openProjectDelete(project);
-        }
-      },
-    });
+      };
+    };
 
     // 子项重命名:走会话改名真实接口,成功后派发 conversation-updated 供任务列表同步
     const handleChildRenameSubmit = async () => {
@@ -940,7 +964,7 @@ const ProjectPanel = forwardRef<
           );
           setProjects((prev) =>
             prev.map((project) =>
-              project.id !== renameTarget.projectId
+              projectKeyOf(project) !== renameTarget.projectKey
                 ? project
                 : {
                     ...project,
@@ -959,7 +983,7 @@ const ProjectPanel = forwardRef<
       }
     };
 
-    const openChildDelete = (projectId: number, child: ProjectChildItem) => {
+    const openChildDelete = (projectKey: string, child: ProjectChildItem) => {
       Modal.confirm({
         title: dict('PC.Common.Global.deleteConfirmTitle'),
         content: dict('PC.Common.Global.deleteConfirmContent'),
@@ -976,7 +1000,7 @@ const ProjectPanel = forwardRef<
             );
             setProjects((prev) =>
               prev.map((project) =>
-                project.id !== projectId
+                projectKeyOf(project) !== projectKey
                   ? project
                   : {
                       ...project,
@@ -992,7 +1016,7 @@ const ProjectPanel = forwardRef<
     };
 
     // 子项菜单:项目下的会话不做置顶(2026-09-08 定调),仅 重命名/删除
-    const buildChildMenu = (projectId: number, child: ProjectChildItem) => ({
+    const buildChildMenu = (projectKey: string, child: ProjectChildItem) => ({
       items: [
         {
           key: 'rename',
@@ -1008,10 +1032,10 @@ const ProjectPanel = forwardRef<
       ],
       onClick: ({ key }: { key: string }) => {
         if (key === 'rename') {
-          setRenameTarget({ projectId, childId: child.id });
+          setRenameTarget({ projectKey, childId: child.id });
           setRenameName(child.name);
         } else if (key === 'delete') {
-          openChildDelete(projectId, child);
+          openChildDelete(projectKey, child);
         }
       },
     });
@@ -1093,9 +1117,9 @@ const ProjectPanel = forwardRef<
         className={cx(styles['project-panel'], { [styles.compact]: compact })}
       >
         {visibleProjects.map((project) => {
-          const expanded = !collapsedIds.has(project.id);
+          const expanded = !collapsedIds.has(projectKeyOf(project));
           return (
-            <div key={project.id} className={cx(styles.project)}>
+            <div key={projectKeyOf(project)} className={cx(styles.project)}>
               <Dropdown
                 menu={buildProjectMenu(project)}
                 trigger={['contextMenu']}
@@ -1117,7 +1141,7 @@ const ProjectPanel = forwardRef<
                   {compact && (
                     <FolderOutlined className={styles['project-icon']} />
                   )}
-                  {pinnedIds.has(project.id) && (
+                  {pinnedIds.has(projectKeyOf(project)) && (
                     <PushpinFilled className={cx(styles['pin-icon'])} />
                   )}
                   <span className={cx(styles.name)}>{project.name}</span>
@@ -1184,12 +1208,6 @@ const ProjectPanel = forwardRef<
                         }
                       }}
                     >
-                      {child.taskStatus === TaskStatus.EXECUTING && (
-                        <span
-                          className={cx(styles['status-dot'])}
-                          aria-label={executingText}
-                        />
-                      )}
                       {child.taskStatus === TaskStatus.FAILED && (
                         <ExclamationCircleFilled
                           className={cx(styles['status-failed'])}
@@ -1199,6 +1217,12 @@ const ProjectPanel = forwardRef<
                       <span className={cx(styles['child-name'])}>
                         {child.name}
                       </span>
+                      {/* 执行中标签与任务列表 ConversationItem 同款同位（行尾时间之前） */}
+                      {child.taskStatus === TaskStatus.EXECUTING && (
+                        <span className={cx(styles['status-tag'])}>
+                          {executingText}
+                        </span>
+                      )}
                       {child.modified && (
                         <span className={cx(styles['child-time'])}>
                           {formatRelativeTime(child.modified)}
@@ -1207,7 +1231,7 @@ const ProjectPanel = forwardRef<
                       <div className={styles['child-actions']}>
                         {/* 子任务悬停操作浮层 */}
                         <Dropdown
-                          menu={buildChildMenu(project.id, child)}
+                          menu={buildChildMenu(projectKeyOf(project), child)}
                           trigger={['click']}
                         >
                           <button

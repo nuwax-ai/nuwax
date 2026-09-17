@@ -18,6 +18,7 @@ import { createRef } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EVENT_TYPE } from '@/constants/event.constants';
+import { apiUserProjectPin } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
@@ -389,7 +390,7 @@ describe('ProjectPanel 选中关系', () => {
     render(<ProjectPanel compact />);
     await waitFor(() =>
       expect(
-        screen.getByLabelText(
+        screen.getByText(
           'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
         ),
       ).toBeTruthy(),
@@ -401,7 +402,7 @@ describe('ProjectPanel 选中关系', () => {
 
     await waitFor(() =>
       expect(
-        screen.queryByLabelText(
+        screen.queryByText(
           'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
         ),
       ).toBeNull(),
@@ -475,5 +476,199 @@ describe('ProjectPanel 选中关系', () => {
 
     await waitFor(() => expect(screen.getByText('最新项目名')).toBeTruthy());
     expect(screen.queryByText('项目一')).toBeNull();
+  });
+
+  it('置顶项目后本地列表立即聚拢置顶分组（无需刷新）', async () => {
+    vi.mocked(apiUserProjectPin).mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: null,
+    } as never);
+    // 首屏不带置顶；置顶成功后的收敛重拉回包里服务端已落置顶（读己之写）
+    pageQueryMock
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: {
+          records: [
+            buildRecord({ projectId: 1, name: '置顶甲', pinned: true }),
+            buildRecord({ projectId: 2, name: '普通乙' }),
+            buildRecord({ projectId: 3, name: '普通丙' }),
+            buildRecord({ projectId: 4, name: '待置顶丁' }),
+          ],
+          total: 4,
+        },
+      })
+      .mockResolvedValue({
+        code: SUCCESS_CODE,
+        data: {
+          records: [
+            buildRecord({ projectId: 1, name: '置顶甲', pinned: true }),
+            buildRecord({ projectId: 2, name: '普通乙' }),
+            buildRecord({ projectId: 3, name: '普通丙' }),
+            buildRecord({ projectId: 4, name: '待置顶丁', pinned: true }),
+          ],
+          total: 4,
+        },
+      });
+    render(<ProjectPanel />);
+    await waitFor(() => expect(screen.getByText('待置顶丁')).toBeTruthy());
+
+    // 打开「待置顶丁」行 ⋯ 菜单 → 点「置顶」
+    const row = screen.getByText('待置顶丁').closest('[class*="row"]');
+    expect(row).toBeTruthy();
+    const moreButton = row!.querySelector<HTMLButtonElement>(
+      'button[aria-label="PC.Components.ActionMenu.more"]',
+    );
+    expect(moreButton).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(moreButton!);
+    });
+    await act(async () => {
+      fireEvent.click(
+        screen.getByText('PC.Components.ConversationContextMenu.pin'),
+      );
+    });
+
+    // 置顶成功后本地立即重排：置顶项相邻且居前，普通项目垫后
+    await waitFor(() => {
+      const order = screen
+        .getAllByText(/^(置顶甲|普通乙|普通丙|待置顶丁)$/)
+        .map((el) => el.textContent);
+      expect(order).toEqual(['置顶甲', '待置顶丁', '普通乙', '普通丙']);
+    });
+  });
+
+  it('置顶回包丢失但后端已提交：收敛重拉后自动聚拢（无需手动刷新）', async () => {
+    // 模拟响应链路丢失：请求 reject → 前端当作失败，不落本地标记
+    vi.mocked(apiUserProjectPin).mockRejectedValue(new Error('network lost'));
+    const unpinned = {
+      code: SUCCESS_CODE,
+      data: {
+        records: [
+          buildRecord({ projectId: 1, name: '已置顶甲', pinned: true }),
+          buildRecord({ projectId: 2, name: '待置顶乙' }),
+        ],
+        total: 2,
+      },
+    };
+    const committed = {
+      code: SUCCESS_CODE,
+      data: {
+        records: [
+          buildRecord({ projectId: 1, name: '已置顶甲', pinned: true }),
+          buildRecord({ projectId: 2, name: '待置顶乙', pinned: true }),
+        ],
+        total: 2,
+      },
+    };
+    // 首屏看不到置顶；toggle 失败后的收敛重拉读到后端真值（已置顶）
+    pageQueryMock
+      .mockResolvedValueOnce(unpinned)
+      .mockResolvedValueOnce(committed);
+    render(<ProjectPanel />);
+    await waitFor(() => expect(screen.getByText('待置顶乙')).toBeTruthy());
+    expect(
+      screen
+        .getByText('待置顶乙')
+        .closest('[class*="row"]')
+        ?.querySelector('.anticon-pushpin'),
+    ).toBeNull();
+
+    const row = screen.getByText('待置顶乙').closest('[class*="row"]');
+    await act(async () => {
+      fireEvent.click(
+        row!.querySelector<HTMLButtonElement>(
+          'button[aria-label="PC.Components.ActionMenu.more"]',
+        )!,
+      );
+    });
+    await act(async () => {
+      fireEvent.click(
+        screen.getByText('PC.Components.ConversationContextMenu.pin'),
+      );
+    });
+
+    // 失败路径不落乐观标记，但收敛重拉把服务端真值（已置顶、置顶排前）带回来
+    await waitFor(() => {
+      const order = screen
+        .getAllByText(/^(已置顶甲|待置顶乙)$/)
+        .map((el) => el.textContent);
+      expect(order).toEqual(['已置顶甲', '待置顶乙']);
+      expect(
+        screen
+          .getByText('待置顶乙')
+          .closest('[class*="row"]')
+          ?.querySelector('.anticon-pushpin'),
+      ).toBeTruthy();
+    });
+  });
+
+  it('同号异类项目（projectId 跨类型撞车）：置顶互不串标记、React key 不撞', async () => {
+    vi.mocked(apiUserProjectPin).mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: null,
+    } as never);
+    // 两个 projectId 同为 94 的不同类型项目：UserApp「全栈九四」+ NormalProject「常规九四」
+    const records = (pinnedRegular94 = false) => [
+      buildRecord({
+        projectId: 94,
+        projectType: AgentComponentTypeEnum.UserApp,
+        name: '全栈九四',
+      }),
+      buildRecord({
+        projectId: 94,
+        projectType: AgentComponentTypeEnum.NormalProject,
+        name: '常规九四',
+        pinned: pinnedRegular94 || undefined,
+      }),
+      buildRecord({ projectId: 2, name: '普通二' }),
+    ];
+    // 首屏无置顶；置顶后收敛重拉回包读到已提交真值（读己之写）
+    pageQueryMock
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: { records: records(), total: 3 },
+      })
+      .mockResolvedValue({
+        code: SUCCESS_CODE,
+        data: { records: records(true), total: 3 },
+      });
+    render(<ProjectPanel />);
+    await waitFor(() => expect(screen.getByText('常规九四')).toBeTruthy());
+    // 两行都在（复合键 React key 不互斥）
+    expect(screen.getByText('全栈九四')).toBeTruthy();
+    expect(screen.getByText('普通二')).toBeTruthy();
+
+    // 置顶「常规九四」：只它亮图钉+排前，「全栈九四」不受影响
+    const row = screen.getByText('常规九四').closest('[class*="row"]');
+    await act(async () => {
+      fireEvent.click(
+        row!.querySelector<HTMLButtonElement>(
+          'button[aria-label="PC.Components.ActionMenu.more"]',
+        )!,
+      );
+    });
+    await act(async () => {
+      fireEvent.click(
+        screen.getByText('PC.Components.ConversationContextMenu.pin'),
+      );
+    });
+    await waitFor(() => {
+      const order = screen
+        .getAllByText(/^(全栈九四|常规九四|普通二)$/)
+        .map((el) => el.textContent);
+      expect(order).toEqual(['常规九四', '全栈九四', '普通二']);
+      expect(
+        screen
+          .getByText('常规九四')
+          .closest('[class*="row"]')
+          ?.querySelector('.anticon-pushpin'),
+      ).toBeTruthy();
+      expect(
+        screen
+          .getByText('全栈九四')
+          .closest('[class*="row"]')
+          ?.querySelector('.anticon-pushpin'),
+      ).toBeNull();
+    });
   });
 });
