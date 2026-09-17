@@ -27,6 +27,8 @@ interface CardWrapperProps {
   icon: string;
   // 默认图片
   defaultIcon: string;
+  // 图标形态：方形圆角（默认）/ 圆形（智能体、专家等「人」形资源口径）
+  iconShape?: 'square' | 'circle';
   // 加载状态
   loading?: boolean;
 }
@@ -46,12 +48,20 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
   icon,
   defaultIcon,
   style,
+  iconShape = 'square',
   loading = false,
 }) => {
   if (loading) {
     return (
       <div
-        className={cx('flex', 'flex-col', 'gap-2', styles.container, className)}
+        className={cx(
+          'flex',
+          'flex-col',
+          'gap-2',
+          styles.container,
+          iconShape === 'circle' && styles['icon-circle'],
+          className,
+        )}
         style={{ ...style, height: 170 }}
       >
         <header className={cx('flex', styles.header)} style={{ gap: 8 }}>
@@ -60,7 +70,12 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
             size="large"
             shape="square"
             className={styles.image}
-            style={{ width: 50, height: 50, borderRadius: 10 }}
+            style={{
+              width: 50,
+              height: 50,
+              // 骨架屏圆随图标形态（与加载完成后的裁圆口径一致）
+              borderRadius: iconShape === 'circle' ? '50%' : 10,
+            }}
           />
           <div
             className={cx(
@@ -131,7 +146,14 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
 
   return (
     <div
-      className={cx('flex', 'flex-col', 'gap-4', styles.container, className)}
+      className={cx(
+        'flex',
+        'flex-col',
+        'gap-4',
+        styles.container,
+        iconShape === 'circle' && styles['icon-circle'],
+        className,
+      )}
       onClick={onClick}
       style={style}
     >

@@ -128,14 +128,14 @@
   min-width: 0;
 }
 
-// 圆角方 tinted 图标（grid 40 / list 32；专家口径区别于技能圆形）
+// 圆形 tinted 图标（grid 40 / list 32；与技能圆形口径对齐）
 .card-icon,
 .list-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  border-radius: 10px;
+  border-radius: 50%;
   overflow: hidden;
   color: @expert-secondary;
   font-weight: 600;
@@ -143,7 +143,10 @@
   img {
     width: 24px;
     height: 24px;
-    object-fit: contain;
+    // 图片本体裁圆:方形不透明切图小于容器时不裸露方角
+    // (透明底图标随圆底呈现,与名称首字/svg 回退口径一致)
+    border-radius: 50%;
+    object-fit: cover;
   }
 }
 
@@ -299,4 +302,13 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
+
+  // simple 无 tinted 底,后端方形切图若小于容器会裸露方形边缘:
+  // 图片撑满容器并圆形裁切(@ 弹层等紧凑行)
+  img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
 }
