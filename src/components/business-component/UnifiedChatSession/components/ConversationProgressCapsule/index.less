@@ -17,26 +17,11 @@
   box-shadow: 0 8px 28px rgb(0 0 0 / 16%);
   backdrop-filter: blur(16px);
   overflow: hidden;
-  transition: border-radius 0.18s ease;
 }
 
 .expanded {
   width: min(440px, calc(100% - 2 * @marginMd));
   border-radius: @borderRadiusLg;
-  // 整体快速揭示掩盖宽度跳变；位移交给 panel-wrap 从右向左滑出
-  animation: capsule-reveal-right 0.3s ease-out;
-}
-
-@keyframes capsule-reveal-right {
-  from {
-    clip-path: inset(0 0 0 40%);
-    opacity: 0.4;
-  }
-
-  to {
-    clip-path: inset(0 0 0 0);
-    opacity: 1;
-  }
 }
 
 .trigger {
@@ -100,7 +85,8 @@
   color: @colorError;
 }
 
-// 面板双向动效：挂载时从右向左滑出揭示；卸载前挂 .panel-out 反向收回。
+// 面板动效由组件内 JS 逐帧驱动（见 index.tsx animatePanelStyle）：
+// CSS 动画在部分环境（系统减弱动态效果）冻结在起点会让面板不可见。
 // 面板条件渲染（收起态 DOM 无面板），胶囊收起宽度只贴合触发器内容。
 .panel {
   position: relative;
@@ -108,40 +94,6 @@
   padding: @paddingSm 32px @paddingSm @paddingSm;
   max-height: min(60cqh, 480px);
   overflow-y: auto;
-  animation: capsule-panel-in 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-
-.panel-out {
-  animation: capsule-panel-out 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-  pointer-events: none;
-}
-
-@keyframes capsule-panel-in {
-  from {
-    clip-path: inset(0 0 0 45%);
-    transform: translateX(48px);
-    opacity: 0;
-  }
-
-  to {
-    clip-path: inset(0 0 0 0);
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes capsule-panel-out {
-  from {
-    clip-path: inset(0 0 0 0);
-    transform: translateX(0);
-    opacity: 1;
-  }
-
-  to {
-    clip-path: inset(0 0 0 55%);
-    transform: translateX(48px);
-    opacity: 0;
-  }
 }
 
 .panel-collapse {

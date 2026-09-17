@@ -29,6 +29,52 @@ import { useGitDiffFiles } from './useGitDiffFiles';
 const cx = classNames.bind(styles);
 const safeStyles = styles ?? ({} as typeof styles);
 
+// JS 逐帧驱动面板动效（setTimeout 16ms 步进）：用户环境的 CSS 动画被
+// 系统设置冻结且冻结在起点（opacity:0 会让面板不可见），改走主线程插值。
+const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
+
+const animatePanelStyle = (
+  panel: HTMLElement,
+  duration: number,
+  reverse: boolean,
+  onDone?: () => void,
+): (() => void) => {
+  const insetFrom = reverse ? 0 : 45;
+  const insetTo = reverse ? 55 : 0;
+  const shiftFrom = reverse ? 0 : 48;
+  const shiftTo = reverse ? 48 : 0;
+  const start = performance.now();
+  let timer = 0;
+  const finish = () => {
+    if (!reverse) {
+      panel.style.clipPath = '';
+      panel.style.transform = '';
+      panel.style.opacity = '';
+    }
+    onDone?.();
+  };
+  const tick = () => {
+    const p = Math.min(1, (performance.now() - start) / duration);
+    const e = easeOutCubic(p);
+    panel.style.clipPath = `inset(0 0 0 ${(
+      insetFrom +
+      (insetTo - insetFrom) * e
+    ).toFixed(2)}%)`;
+    panel.style.transform = `translateX(${(
+      shiftFrom +
+      (shiftTo - shiftFrom) * e
+    ).toFixed(1)}px)`;
+    panel.style.opacity = (reverse ? 1 - e : e).toFixed(3);
+    if (p < 1) {
+      timer = window.setTimeout(tick, 16);
+    } else {
+      finish();
+    }
+  };
+  timer = window.setTimeout(tick, 0);
+  return () => window.clearTimeout(timer);
+};
+
 interface ConversationProgressCapsuleProps {
   conversationId?: number;
   messageList: MessageInfo[];
@@ -196,19 +242,38 @@ const ConversationProgressCapsule: React.FC<
   const [completedOpen, setCompletedOpen] = useState(true);
   const [agentsOpen, setAgentsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const closeTimerRef = useRef<number>();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const motionCleanupRef = useRef<(() => void) | undefined>(undefined);
 
-  // 收起先播退出动画再卸载面板：收起态 DOM 无面板，胶囊宽度贴合触发器内容
+  // 挂载即播进场动效（从右向左滑出揭示）
+  useEffect(() => {
+    if (!expanded || !panelRef.current) return;
+    motionCleanupRef.current?.();
+    motionCleanupRef.current = animatePanelStyle(panelRef.current, 420, false);
+  }, [expanded, model?.turnKey]);
+
+  useEffect(
+    () => () => {
+      motionCleanupRef.current?.();
+    },
+    [],
+  );
+
+  // 收起先播退场动效（向右收回）再卸载面板：收起态 DOM 无面板，胶囊宽度贴合触发器内容
   const closePanel = () => {
     if (closing) return;
+    const panel = panelRef.current;
+    if (!panel) {
+      setExpanded(false);
+      return;
+    }
     setClosing(true);
-    closeTimerRef.current = window.setTimeout(() => {
+    motionCleanupRef.current?.();
+    motionCleanupRef.current = animatePanelStyle(panel, 340, true, () => {
       setExpanded(false);
       setClosing(false);
-    }, 340);
+    });
   };
-
-  useEffect(() => () => window.clearTimeout(closeTimerRef.current), []);
   const gitDiff = useGitDiffFiles({
     conversationId,
     enabled: enableVersionControl,
@@ -301,9 +366,7 @@ const ConversationProgressCapsule: React.FC<
       </button>
 
       {expanded && (
-        <div
-          className={cx(safeStyles.panel, closing && safeStyles['panel-out'])}
-        >
+        <div ref={panelRef} className={cx(safeStyles.panel)}>
           <button
             type="button"
             className={cx(safeStyles['panel-collapse'])}
