@@ -15,6 +15,7 @@ import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenLis
 import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { apiAgentConversationList } from '@/services/agentConfig';
+import { TaskStatus } from '@/types/enums/agent';
 import type { ConversationChangedEvent } from '@/types/directorySync';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
@@ -33,6 +34,11 @@ import { jumpTo } from '@/utils/router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import { extractConversationIdFromPath } from '../sidebarSelectionPolicy';
+import {
+  markConversationFinished,
+  markConversationVisited,
+  setActiveConversation,
+} from './finishedConversationUnread';
 
 /** 经典形态列表项高度（单栏紧凑行 36px），calcPageSize 估算首页条数用 */
 const ITEM_HEIGHT = 58;
@@ -537,6 +543,8 @@ export function useHomeSectionData(options: {
     (item: ConversationInfo) => {
       handleCloseMobileMenu();
       const { id, agentId, devTargetType, devTargetId, devSpaceId } = item;
+      // 点击即视为已进入：立即清未读蓝点（跨应用路由 chatId 派生可能滞后，先清兜底）
+      if (id != null) markConversationVisited(id);
 
       if (devTargetType === 'Agent' && devSpaceId && id) {
         history.push(
@@ -555,6 +563,36 @@ export function useHomeSectionData(options: {
     },
     [handleCloseMobileMenu],
   );
+
+  // 会话结束未读蓝点：当前会话 id 变化 = 已进入（面板点击/搜索弹窗/快捷导航等
+  // 一切路径统一在此清除），同时同步「结束时是否在场」的判定基准
+  useEffect(() => {
+    setActiveConversation(chatId);
+    if (chatId) markConversationVisited(chatId);
+  }, [chatId]);
+
+  // 会话结束未读蓝点·本地兜底信号：列表内 EXECUTING→终态 跃迁即「结束」
+  // （chat_finished 通知不覆盖普通聊天——2026-09-17 testagent 实测不下发；
+  // 静默刷新回包里观察到「之前执行中、现在已结束」且此刻不在该会话里，
+  // 即记蓝点。首见终态不算——页面没见证过「执行中」就不算「结束后未看」）
+  const listTaskStatusRef = useRef(new Map<string, TaskStatus>());
+  useEffect(() => {
+    const prev = listTaskStatusRef.current;
+    const next = new Map<string, TaskStatus>();
+    for (const item of localList) {
+      if (item.taskStatus === undefined) continue;
+      const id = String(item.id);
+      next.set(id, item.taskStatus);
+      if (
+        prev.get(id) === TaskStatus.EXECUTING &&
+        isTerminalTaskStatus(item.taskStatus) &&
+        id !== chatId
+      ) {
+        markConversationFinished(id);
+      }
+    }
+    listTaskStatusRef.current = next;
+  }, [localList, chatId]);
 
   // 分组头计数：项目 = 可见项目数（ProjectPanel 上报，过滤归档后的可见数，
   // 与任务计数口径一致；真实接口数据到达前先计 0）

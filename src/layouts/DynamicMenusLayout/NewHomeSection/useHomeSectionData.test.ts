@@ -260,6 +260,61 @@ describe('useHomeSectionData', () => {
     ]);
   });
 
+  it('蓝点本地信号：列表 EXECUTING→终态 跃迁且不在该会话 → 记蓝点；首见终态不记', async () => {
+    apiAgentConversationListMock.mockResolvedValueOnce({
+      data: [
+        buildConversation({ id: 7, taskStatus: TaskStatus.EXECUTING }),
+        buildConversation({ id: 8, taskStatus: TaskStatus.COMPLETE }),
+      ],
+    });
+    const useHomeSectionData = await freshHook();
+    // 与 hook 同一批 resetModules 后的模块实例（同一 store）
+    const store = await import('./finishedConversationUnread');
+    const { result } = renderHook(() =>
+      useHomeSectionData({ isSidebarNavMode: true }),
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // 刷新回包：7 终态（不在该会话）→ 记蓝点；8 首见即终态 → 不记
+    apiAgentConversationListMock.mockResolvedValueOnce({
+      data: [
+        buildConversation({ id: 7, taskStatus: TaskStatus.COMPLETE }),
+        buildConversation({ id: 8, taskStatus: TaskStatus.COMPLETE }),
+      ],
+    });
+    await act(async () => {
+      result.current.refreshList(true, { silent: true });
+      await flush();
+    });
+
+    const snapshot = store.getFinishedConversationUnreadSnapshot();
+    expect(snapshot.has('7')).toBe(true);
+    expect(snapshot.has('8')).toBe(false);
+  });
+
+  it('蓝点本地信号：结束时正在该会话里（chatId 命中）→ 不记蓝点', async () => {
+    umiState.params = { id: '7' };
+    apiAgentConversationListMock.mockResolvedValueOnce({
+      data: [buildConversation({ id: 7, taskStatus: TaskStatus.EXECUTING })],
+    });
+    const useHomeSectionData = await freshHook();
+    const store = await import('./finishedConversationUnread');
+    const { result } = renderHook(() =>
+      useHomeSectionData({ isSidebarNavMode: true }),
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    apiAgentConversationListMock.mockResolvedValueOnce({
+      data: [buildConversation({ id: 7, taskStatus: TaskStatus.COMPLETE })],
+    });
+    await act(async () => {
+      result.current.refreshList(true, { silent: true });
+      await flush();
+    });
+
+    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
+  });
+
   it('resetSearchAndRefresh：清空关键词并按空 topic 整体刷新', async () => {
     apiAgentConversationListMock.mockResolvedValue({ data: [] });
     const useHomeSectionData = await freshHook();

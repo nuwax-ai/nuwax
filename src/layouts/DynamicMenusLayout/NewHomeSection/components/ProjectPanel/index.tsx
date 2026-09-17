@@ -67,6 +67,7 @@ import {
 } from 'react';
 import { useParams } from 'umi';
 import { formatRelativeTime } from '../../utils';
+import ConversationStatusMark from '../ConversationStatusMark';
 import styles from './index.less';
 import {
   appendProjectsPage,
@@ -186,6 +187,13 @@ const ProjectPanel = forwardRef<
     activeConversationId?: string;
     /** 反查结果上报:命中传会话 id、未命中传 null(任务列表据此互斥,选中只落一处) */
     onActiveChildResolved?: (conversationId: string | null) => void;
+    /**
+     * 子会话行行首状态标记(单栏 style3 启用):执行中转圈替换「执行中」文字胶囊、
+     * 结束未读亮蓝点。经典布局不传维持现状(2026-09-17 定调:style1/2 待定)。
+     */
+    leadingMark?: boolean;
+    /** 会话结束未读 id 快照(leadingMark 开启时消费) */
+    unreadConversationIds?: ReadonlySet<string>;
   }
 >(
   (
@@ -195,6 +203,8 @@ const ProjectPanel = forwardRef<
       compact = false,
       activeConversationId,
       onActiveChildResolved,
+      leadingMark = false,
+      unreadConversationIds,
     },
     ref,
   ) => {
@@ -1208,6 +1218,12 @@ const ProjectPanel = forwardRef<
                         }
                       }}
                     >
+                      {leadingMark && (
+                        <ConversationStatusMark
+                          taskStatus={child.taskStatus}
+                          unread={unreadConversationIds?.has(String(child.id))}
+                        />
+                      )}
                       {child.taskStatus === TaskStatus.FAILED && (
                         <ExclamationCircleFilled
                           className={cx(styles['status-failed'])}
@@ -1217,8 +1233,8 @@ const ProjectPanel = forwardRef<
                       <span className={cx(styles['child-name'])}>
                         {child.name}
                       </span>
-                      {/* 执行中标签与任务列表 ConversationItem 同款同位（行尾时间之前） */}
-                      {child.taskStatus === TaskStatus.EXECUTING && (
+                      {/* leadingMark 开启时「执行中」由行首转圈表达（文字胶囊仅经典布局保留） */}
+                      {!leadingMark && child.taskStatus === TaskStatus.EXECUTING && (
                         <span className={cx(styles['status-tag'])}>
                           {executingText}
                         </span>

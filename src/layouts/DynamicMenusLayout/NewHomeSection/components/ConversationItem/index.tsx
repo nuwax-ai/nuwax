@@ -6,6 +6,7 @@ import { PushpinFilled } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import { formatRelativeTime } from '../../utils';
+import ConversationStatusMark from '../ConversationStatusMark';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -21,6 +22,13 @@ interface ConversationItemProps {
   archived?: boolean;
   /** 服务端收藏状态（菜单「收藏/取消收藏」按此选择接口路径与文案） */
   collected?: boolean;
+  /**
+   * 行首状态标记（单栏 style3 启用）：执行中转圈替换「执行中」文字胶囊，
+   * 结束未读亮蓝点。经典布局不传维持现状（2026-09-17 定调：style1/2 待定）。
+   */
+  leadingMark?: boolean;
+  /** 会话结束未读 id 快照（leadingMark 开启时消费） */
+  unreadConversationIds?: ReadonlySet<string>;
   onFlagChanged?: (kind: 'pinned' | 'archived', enabled: boolean) => void;
   onCollectedChanged?: (collected: boolean) => void;
 }
@@ -33,6 +41,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   pinned = false,
   archived = false,
   collected = false,
+  leadingMark = false,
+  unreadConversationIds,
   onFlagChanged,
   onCollectedChanged,
 }) => {
@@ -74,20 +84,27 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           }}
         >
           <div className={cx(styles['conversation-item-content'])}>
-            <div className={cx(styles['conversation-topic-row'])}>
-              {pinned && <PushpinFilled className={cx(styles['pin-icon'])} />}
-              {/* 原生省略号替代 Typography.Text ellipsis：antd 的省略检测会在
-                  每次重渲染插入 <em> 强制同步重排，长列表高频刷新下造成秒级卡顿 */}
-              <span className={cx(styles['conversation-topic'])}>
-                {item.topic ||
-                  item.agent?.name ||
-                  dict('PC.Constants.Menus.newChat')}
+          <div className={cx(styles['conversation-topic-row'])}>
+            {leadingMark && (
+              <ConversationStatusMark
+                taskStatus={item.taskStatus}
+                unread={unreadConversationIds?.has(String(item.id))}
+              />
+            )}
+            {pinned && <PushpinFilled className={cx(styles['pin-icon'])} />}
+            {/* 原生省略号替代 Typography.Text ellipsis：antd 的省略检测会在
+                每次重渲染插入 <em> 强制同步重排，长列表高频刷新下造成秒级卡顿 */}
+            <span className={cx(styles['conversation-topic'])}>
+              {item.topic ||
+                item.agent?.name ||
+                dict('PC.Constants.Menus.newChat')}
+            </span>
+            {/* leadingMark 开启时「执行中」由行首转圈表达（文字胶囊仅经典布局保留） */}
+            {!leadingMark && item.taskStatus === TaskStatus.EXECUTING && (
+              <span className={cx(styles['status-tag'])}>
+                {executingText}
               </span>
-              {item.taskStatus === TaskStatus.EXECUTING && (
-                <span className={cx(styles['status-tag'])}>
-                  {executingText}
-                </span>
-              )}
+            )}
               {moreButton}
               {!hasAgentName && (
                 <span className={cx(styles['conversation-date'])}>
