@@ -23,7 +23,7 @@
 
 ## 2. 边界与兼容性
 
-- 不修改后端协议，legacy/runtime 两条数据线继续产出同一 `MessageInfo[]`。
+- 不修改后端协议，V1（legacy）/ V2（runtime）两条数据线继续产出同一 `MessageInfo[]`。
 - 不将 V1 工具卡嵌回 V2；V2 只复用同源的 `processingList` / `componentExecutedList` / `finalResult` 数据。
 - 用户气泡和最终回答 Markdown 保持原渲染链；V2 只重构助手过程区及回答操作栏。
 - 投影或 React 渲染异常时，整份会话回退 V1，禁止白屏或 V1/V2 半套混合。
@@ -140,6 +140,13 @@ MessageInfo[]
 - 折叠状态下，细线箭头仅在 hover 或键盘 focus 时出现；展开状态下，向下箭头常驻显示。
 - 控件使用原生 `button`、`aria-expanded`、`aria-controls` 和可见焦点态。
 
+### 7.4 懒挂载（性能语义）
+
+- 三层折叠内容均为严格条件渲染（`{expanded && ...}`）：收起即卸载对应子树、再展开重建（markdown/终端全文重渲），不是 `display:none` 常驻 DOM。
+- 收起态 DOM 占用逐层收敛：终态轮默认收起时每轮只剩轨迹头部指标行，组收起只剩组头摘要行，行收起只剩紧凑事件行。
+- 卸载只影响渲染层：投影数据（`turn.nodes`）常驻内存；组/单项手动展开态由 `WorkTraceDisclosure` 托管，外层收起不清空（见 7.2）。
+- 隐藏节点（focused 预设等）在渲染序列组装阶段即被剔除（`splitNodesByVisibility`），连摘要行都不产生，由「另有 N 项已隐藏」入口恢复。
+
 ## 8. 视觉与操作栏验收修订
 
 本轮真实页面验收后补充以下统一规则：
@@ -175,7 +182,7 @@ MessageInfo[]
 | 验证项 | 结果 |
 | --- | --- |
 | `npm run test:conversation` | 49 文件、462 用例通过 |
-| V2 分组专用 E2E | legacy/runtime × V2，4/4 通过 |
+| V2 分组专用 E2E | V1/V2 数据线 × V2 渲染，4/4 通过 |
 | 真实会话 `/home/chat/1561455/2592` | 运行/终态折叠、分组、失败终端、类型化详情通过 |
 | 回答操作栏 DOM | 消息时间位于最后一项，右边距为 0 |
 | 消息时间 | 页面显示“昨天 / 前天”，旧 `v2-answer-duration` 数量为 0 |

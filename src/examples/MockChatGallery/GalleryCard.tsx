@@ -356,7 +356,7 @@ const GalleryCard: React.FC<GalleryCardProps> = ({
           >
             重播
           </Button>
-          <Tooltip title="在新窗口打开单页深看（可切 legacy 轨）">
+          <Tooltip title="在新窗口打开单页深看（可切 V1 数据线）">
             <a
               href={deepLink}
               target="_blank"

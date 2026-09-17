@@ -35,6 +35,7 @@ docs/conversation/
 
 | 要做什么 | 看哪篇 |
 | --- | --- |
+| 术语口径（V1=旧线 / V2=新线）与渲染 V2 契约 | [renderer-v2.md](./renderer-v2.md)（术语约定 / 关键契约 / 懒挂载；分组折叠状态机见 [renderer-v2-grouped-trace-summary.md](./renderer-v2-grouped-trace-summary.md)） |
 | 业务逻辑逐条验收 | [dual-track/conversation-business-logic-checklist.md](./dual-track/conversation-business-logic-checklist.md) |
 | 测试回归跑什么 | [dual-track/conversation-regression-test-plan.md](./dual-track/conversation-regression-test-plan.md) |
 | 日常维护 / 排查 | [dual-track/conversation-maintenance-guide.md](./dual-track/conversation-maintenance-guide.md) |
