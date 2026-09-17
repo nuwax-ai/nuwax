@@ -14,12 +14,18 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import { createRef } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { EVENT_TYPE } from '@/constants/event.constants';
+import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
-import { emitConversationChanged } from '@/utils/directorySyncEvents';
+import {
+  emitConversationChanged,
+  emitProjectChanged,
+} from '@/utils/directorySyncEvents';
+import eventBus from '@/utils/eventBus';
 
 // vi.hoisted：mock 工厂随静态 import 提前执行，引用的 spy 必须先于 import 初始化
 const {
@@ -28,12 +34,14 @@ const {
   conversationUpdateMock,
   conversationDeleteMock,
   pinMock,
+  conversationDetailMock,
 } = vi.hoisted(() => ({
   pageQueryMock: vi.fn(),
   conversationsMock: vi.fn(),
   conversationUpdateMock: vi.fn(),
   conversationDeleteMock: vi.fn(),
   pinMock: vi.fn(),
+  conversationDetailMock: vi.fn(),
 }));
 
 vi.mock('umi', () => ({
@@ -56,6 +64,7 @@ vi.mock('@/services/userProjectApp', () => ({
 vi.mock('@/services/agentConfig', () => ({
   apiAgentConversationUpdate: conversationUpdateMock,
   apiAgentConversationDelete: conversationDeleteMock,
+  apiAgentConversation: conversationDetailMock,
 }));
 
 vi.mock('@/hooks/useHomePinnedProjectHandoff', () => ({
@@ -77,7 +86,7 @@ vi.mock('@/components/base/SvgIcon', () => ({
   default: () => null,
 }));
 
-import ProjectPanel from './index';
+import ProjectPanel, { type ProjectPanelHandle } from './index';
 
 const buildConversation = (id: number, topic = `会话${id}`) =>
   ({
@@ -165,6 +174,7 @@ describe('ProjectPanel 选中关系', () => {
     conversationUpdateMock.mockReset();
     conversationDeleteMock.mockReset();
     pinMock.mockReset();
+    conversationDetailMock.mockReset();
   });
 
   it('命中项目子会话：折叠态自动展开 + 子行高亮（child-active/aria-current）', async () => {
@@ -329,5 +339,141 @@ describe('ProjectPanel 选中关系', () => {
     await waitFor(() => expect(conversationsMock).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.getByText('新建会话')).toBeTruthy());
     expect(screen.queryByText('旧响应会话')).toBeNull();
+  });
+
+  it('/home 无空间参数时接收带 spaceId 的新项目事件', async () => {
+    respondPage([buildRecord()], defaultConversations());
+    render(<ProjectPanel compact />);
+    await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
+    pageQueryMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: {
+        records: [buildRecord(), buildRecord({ projectId: 3, name: '新项目' })],
+        total: 2,
+      },
+    });
+
+    act(() => {
+      emitProjectChanged({
+        operation: 'created',
+        project: {
+          projectId: '3',
+          projectType: AgentComponentTypeEnum.NormalProject,
+          spaceId: '100',
+        },
+        origin: 'test',
+        reason: 'create',
+      });
+    });
+
+    await waitFor(() => expect(screen.getByText('新项目')).toBeTruthy());
+  });
+
+  it('项目子会话接收结束事件并刷新状态', async () => {
+    respondPage([buildRecord()], {
+      1: [buildConversation(11, '执行任务')],
+    });
+    conversationsMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [
+        {
+          ...buildConversation(11, '执行任务'),
+          taskStatus: TaskStatus.EXECUTING,
+        },
+      ],
+    });
+    conversationDetailMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: { taskStatus: TaskStatus.COMPLETE },
+    });
+    render(<ProjectPanel compact />);
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText(
+          'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+        ),
+      ).toBeTruthy(),
+    );
+
+    act(() => {
+      eventBus.emit(EVENT_TYPE.ChatFinished, { conversationId: '11' });
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.queryByLabelText(
+          'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+        ),
+      ).toBeNull(),
+    );
+  });
+
+  it('返回单栏时核对项目和已展开子会话，发现跨端新增行', async () => {
+    respondPage([buildRecord()], { 1: [buildConversation(11)] });
+    const ref = createRef<ProjectPanelHandle>();
+    render(<ProjectPanel ref={ref} compact />);
+    await waitFor(() => expect(screen.getByText('会话11')).toBeTruthy());
+
+    pageQueryMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: {
+        records: [
+          buildRecord(),
+          buildRecord({ projectId: 3, name: '跨端项目' }),
+        ],
+        total: 2,
+      },
+    });
+    conversationsMock.mockImplementation((projectId: number) =>
+      Promise.resolve({
+        code: SUCCESS_CODE,
+        data:
+          projectId === 1
+            ? [buildConversation(11), buildConversation(12, '跨端会话')]
+            : [],
+      }),
+    );
+
+    act(() => ref.current?.revalidateVisible());
+
+    await waitFor(() => expect(screen.getByText('跨端项目')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('跨端会话')).toBeTruthy());
+  });
+
+  it('项目刷新在途的改名事件不会被旧回包覆盖', async () => {
+    respondPage([buildRecord()], { 1: [] });
+    const ref = createRef<ProjectPanelHandle>();
+    render(<ProjectPanel ref={ref} compact />);
+    await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
+    let resolveRefresh: ((value: unknown) => void) | undefined;
+    pageQueryMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveRefresh = resolve;
+        }),
+    );
+
+    act(() => ref.current?.revalidateVisible());
+    await waitFor(() => expect(resolveRefresh).toBeDefined());
+    act(() => {
+      emitProjectChanged({
+        operation: 'updated',
+        project: {
+          projectId: '1',
+          projectType: AgentComponentTypeEnum.NormalProject,
+          spaceId: '100',
+        },
+        patch: { name: '最新项目名' },
+        origin: 'test',
+        reason: 'rename',
+      });
+      resolveRefresh?.({
+        code: SUCCESS_CODE,
+        data: { records: [buildRecord()], total: 1 },
+      });
+    });
+
+    await waitFor(() => expect(screen.getByText('最新项目名')).toBeTruthy());
+    expect(screen.queryByText('项目一')).toBeNull();
   });
 });

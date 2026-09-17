@@ -11,9 +11,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TaskStatus } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 
 const apiAgentConversationListMock = vi.fn();
+const apiAgentConversationMock = vi.fn();
 const handleCloseMobileMenu = vi.fn();
 const historyPush = vi.fn();
 const historyReplace = vi.fn();
@@ -39,7 +41,7 @@ vi.mock('umi', () => ({
 vi.mock('@/services/agentConfig', () => ({
   apiAgentConversationList: apiAgentConversationListMock,
   // conversationTaskStatusSync 传递依赖的具名导出（列表无执行中任务时不会被调）
-  apiAgentConversation: vi.fn(),
+  apiAgentConversation: apiAgentConversationMock,
 }));
 
 // 传递链（userService 等）存在模块顶层 dict() 求值，测试环境未初始化 i18n 会炸
@@ -76,6 +78,7 @@ describe('useHomeSectionData', () => {
     // mockReset 而非 clearAllMocks：Once 实现队列必须一并清空，
     // 否则失败用例的遗留夹具会被下一用例消费（跨用例污染实锤）
     apiAgentConversationListMock.mockReset();
+    apiAgentConversationMock.mockReset();
     historyPush.mockReset();
     historyReplace.mockReset();
     handleCloseMobileMenu.mockReset();
@@ -205,6 +208,18 @@ describe('useHomeSectionData', () => {
       ...Array.from({ length: 30 }, (_, i) => i + 1),
       31,
     ]);
+
+    apiAgentConversationListMock.mockResolvedValueOnce({
+      data: [...pageOne, buildConversation({ id: 31 })],
+    });
+    await act(async () => {
+      result.current.refreshList(true, { silent: true });
+      await flush();
+    });
+    expect(apiAgentConversationListMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ lastId: null, limit: 31 }),
+    );
+    expect(result.current.visibleConversationList).toHaveLength(31);
   });
 
   it('可见列表：隐藏归档、置顶排前', async () => {
@@ -419,5 +434,119 @@ describe('useHomeSectionData', () => {
     await waitFor(() =>
       expect(apiAgentConversationListMock).toHaveBeenCalledTimes(1),
     );
+  });
+
+  it('刷新在途的创建事件会补拉，新会话最终出现在任务列表', async () => {
+    let resolveFirst: ((value: unknown) => void) | undefined;
+    apiAgentConversationListMock
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockResolvedValueOnce({
+        data: [buildConversation({ id: 1 }), buildConversation({ id: 2 })],
+      });
+    const useHomeSectionData = await freshHook();
+    const { emitConversationChanged } = await import(
+      '@/utils/directorySyncEvents'
+    );
+    const { result } = renderHook(() =>
+      useHomeSectionData({ isSidebarNavMode: true }),
+    );
+    await waitFor(() => expect(resolveFirst).toBeDefined());
+
+    act(() => {
+      emitConversationChanged({
+        operation: 'created',
+        conversationId: '2',
+        origin: 'test',
+        reason: 'create',
+      });
+      resolveFirst?.({ data: [buildConversation({ id: 1 })] });
+    });
+
+    await waitFor(() =>
+      expect(
+        result.current.visibleConversationList.map((item) => item.id),
+      ).toEqual([1, 2]),
+    );
+    expect(apiAgentConversationListMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('慢刷新回包不能把最新终态覆盖回执行中', async () => {
+    let resolveRefresh: ((value: unknown) => void) | undefined;
+    apiAgentConversationListMock
+      .mockResolvedValueOnce({
+        data: [buildConversation({ id: 1, taskStatus: TaskStatus.EXECUTING })],
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRefresh = resolve;
+          }),
+      );
+    const useHomeSectionData = await freshHook();
+    const { emitConversationChanged } = await import(
+      '@/utils/directorySyncEvents'
+    );
+    const { result } = renderHook(() =>
+      useHomeSectionData({ isSidebarNavMode: true }),
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() => result.current.refreshList(true, { silent: true }));
+    await waitFor(() => expect(resolveRefresh).toBeDefined());
+
+    act(() => {
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '1',
+        patch: { taskStatus: TaskStatus.COMPLETE },
+        origin: 'test',
+        reason: 'terminal',
+      });
+      resolveRefresh?.({
+        data: [buildConversation({ id: 1, taskStatus: TaskStatus.EXECUTING })],
+      });
+    });
+
+    await waitFor(() =>
+      expect(result.current.visibleConversationList[0].taskStatus).toBe(
+        TaskStatus.COMPLETE,
+      ),
+    );
+  });
+
+  it('后台任务结束时按会话 ID 查询终态，旧列表回包仍保留完成状态', async () => {
+    apiAgentConversationListMock.mockResolvedValue({
+      data: [buildConversation({ id: 1, taskStatus: TaskStatus.EXECUTING })],
+    });
+    apiAgentConversationMock.mockResolvedValue({
+      code: '0000',
+      data: buildConversation({ id: 1, taskStatus: TaskStatus.COMPLETE }),
+    });
+    const useHomeSectionData = await freshHook();
+    const { default: eventBus } = await import('@/utils/eventBus');
+    const { EVENT_TYPE } = await import('@/constants/event.constants');
+    const { result } = renderHook(() =>
+      useHomeSectionData({ isSidebarNavMode: true }),
+    );
+    await waitFor(() =>
+      expect(result.current.visibleConversationList[0]?.taskStatus).toBe(
+        TaskStatus.EXECUTING,
+      ),
+    );
+
+    act(() => {
+      eventBus.emit(EVENT_TYPE.ChatFinished, { conversationId: '1' });
+    });
+
+    await waitFor(() =>
+      expect(result.current.visibleConversationList[0]?.taskStatus).toBe(
+        TaskStatus.COMPLETE,
+      ),
+    );
+    expect(apiAgentConversationMock).toHaveBeenCalledWith(1);
   });
 });

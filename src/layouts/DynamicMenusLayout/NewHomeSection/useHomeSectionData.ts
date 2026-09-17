@@ -15,12 +15,18 @@ import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenLis
 import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { apiAgentConversationList } from '@/services/agentConfig';
+import type { ConversationChangedEvent } from '@/types/directorySync';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   applyConversationFlagOverrides,
   ConversationFlagOverride,
   recordConversationFlagOverride,
 } from '@/utils/conversationFlagOverrides';
+import {
+  emitConversationListTaskStatus,
+  fetchConversationTaskStatus,
+  isTerminalTaskStatus,
+} from '@/utils/conversationTaskStatusSync';
 import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
 import { jumpTo } from '@/utils/router';
@@ -31,6 +37,7 @@ import { extractConversationIdFromPath } from '../sidebarSelectionPolicy';
 /** 经典形态列表项高度（单栏紧凑行 36px），calcPageSize 估算首页条数用 */
 const ITEM_HEIGHT = 58;
 const COMPACT_ITEM_HEIGHT = 36;
+const RECENT_EVENT_TTL_MS = 60_000;
 
 const componentCache = {
   list: null as ConversationInfo[] | null,
@@ -122,6 +129,14 @@ export function useHomeSectionData(options: {
   const initializedRef = useRef(false);
   const pageSizeRef = useRef(30);
   const loadingRef = useRef(false);
+  const pendingRefreshRef = useRef(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queryEpochRef = useRef(0);
+  const recentEventsRef = useRef<
+    Array<{ event: ConversationChangedEvent; at: number }>
+  >([]);
+  const searchKeywordRef = useRef(searchKeyword);
+  searchKeywordRef.current = searchKeyword;
   // 标记（置顶/归档）本地覆盖：防止静默刷新的滞后回包把刚归档的会话复活回列表
   const flagOverridesRef = useRef(new Map<string, ConversationFlagOverride>());
 
@@ -133,18 +148,39 @@ export function useHomeSectionData(options: {
     return Math.max(count, 10);
   }, [isSidebarNavMode]);
 
+  // 先声明后赋值：loadList 的 finally 会经排队补发引用自身
+  const loadListRef = useRef<
+    (
+      isRefresh?: boolean,
+      options?: { silent?: boolean; topic?: string },
+    ) => Promise<void>
+  >(async () => {});
+
   const loadList = useCallback(
     async (
       isRefresh = false,
       options?: { silent?: boolean; topic?: string },
     ) => {
-      if (loadingRef.current || (!hasMore && !isRefresh)) return;
+      if (loadingRef.current) {
+        if (isRefresh) pendingRefreshRef.current = true;
+        return;
+      }
+      if (!hasMore && !isRefresh) return;
       loadingRef.current = true;
+      const requestEpoch = queryEpochRef.current;
       if (!options?.silent) {
         setLoading(true);
       }
 
-      const pageSize = isRefresh ? calcPageSize() : pageSizeRef.current;
+      // 静默核对保留已翻到的任务窗口，避免回到侧栏时只剩首屏。
+      const pageSize = isRefresh
+        ? Math.max(
+            calcPageSize(),
+            options?.topic !== undefined && options.topic !== searchKeyword
+              ? 0
+              : localList.length,
+          )
+        : pageSizeRef.current;
       if (isRefresh) pageSizeRef.current = pageSize;
       const lastId = isRefresh
         ? null
@@ -173,14 +209,23 @@ export function useHomeSectionData(options: {
         // 直通 setLocalList 会致 localList.filter 崩溃并经 componentCache
         // 毒化后续挂载；此处按空列表降级
         const data = applyConversationFlagOverrides(
-          Array.isArray(res.data) ? res.data : [],
+          Array.isArray(res?.data) ? res.data : [],
           flagOverridesRef.current,
         );
+        if (requestEpoch !== queryEpochRef.current) return;
+        const now = Date.now();
+        recentEventsRef.current = recentEventsRef.current.filter(
+          ({ at }) => now - at < RECENT_EVENT_TTL_MS,
+        );
+        const reconciled = recentEventsRef.current.reduce(
+          (list, { event }) => applyConversationChangedToList(list, event),
+          data,
+        );
         if (isRefresh) {
-          setLocalList(data);
+          setLocalList(reconciled);
         } else {
           setLocalList((prev) => {
-            const merged = [...prev, ...data];
+            const merged = [...prev, ...reconciled];
             const unique: ConversationInfo[] = [];
             const seen = new Set();
             for (const item of merged) {
@@ -202,12 +247,21 @@ export function useHomeSectionData(options: {
         if (!options?.silent) {
           setLoading(false);
         }
+        if (pendingRefreshRef.current && refreshTimerRef.current === null) {
+          pendingRefreshRef.current = false;
+          refreshTimerRef.current = setTimeout(() => {
+            refreshTimerRef.current = null;
+            loadListRef.current(true, {
+              silent: true,
+              topic: searchKeywordRef.current,
+            });
+          }, 0);
+        }
       }
     },
     [hasMore, localList, calcPageSize, searchKeyword],
   );
 
-  const loadListRef = useRef(loadList);
   useEffect(() => {
     loadListRef.current = loadList;
   }, [loadList]);
@@ -238,6 +292,11 @@ export function useHomeSectionData(options: {
   }, []);
 
   useConversationChanged((event) => {
+    const now = Date.now();
+    recentEventsRef.current = recentEventsRef.current
+      .filter(({ at }) => now - at < RECENT_EVENT_TTL_MS)
+      .slice(-199);
+    recentEventsRef.current.push({ event, at: now });
     if (event.operation === 'created') {
       if (!event.project) {
         loadListRef.current(true, { silent: true });
@@ -287,6 +346,7 @@ export function useHomeSectionData(options: {
   }, []);
 
   const resetSearchAndRefresh = useCallback(() => {
+    queryEpochRef.current += 1;
     setKeyword('');
     setSearchKeyword('');
     componentCache.keyword = '';
@@ -294,9 +354,27 @@ export function useHomeSectionData(options: {
     loadListRef.current(true, { topic: '' });
   }, []);
 
-  const handleConversationChatFinished = useCallback(() => {
-    loadListRef.current(true, { silent: true });
-  }, []);
+  const localListRef = useRef(localList);
+  localListRef.current = localList;
+  const handleConversationChatFinished = useCallback(
+    (payload: { conversationId: string }) => {
+      if (
+        localListRef.current.some(
+          (item) => String(item.id) === payload.conversationId,
+        )
+      ) {
+        void fetchConversationTaskStatus(payload.conversationId).then(
+          (status) => {
+            if (isTerminalTaskStatus(status)) {
+              emitConversationListTaskStatus(payload.conversationId, status);
+            }
+          },
+        );
+      }
+      loadListRef.current(true, { silent: true });
+    },
+    [],
+  );
 
   useChatFinishedWhenListExecuting({
     conversationList: localList,
@@ -382,27 +460,38 @@ export function useHomeSectionData(options: {
   }, [isSidebarNavMode, initialLoad]);
 
   const prevPathnameRef = useRef(location.pathname);
+  const classicPrefetchedRef = useRef(false);
   useEffect(() => {
     if (!initializedRef.current) return;
 
     const isHomeRoute = location.pathname.startsWith('/home');
     const wasHomeRoute = prevPathnameRef.current.startsWith('/home');
+    const routeChanged = prevPathnameRef.current !== location.pathname;
+    const shouldPrefetchClassic =
+      !isSidebarNavMode &&
+      !classicPrefetchedRef.current &&
+      location.pathname === '/home';
+    if (shouldPrefetchClassic) classicPrefetchedRef.current = true;
     const isHomepageMenuClick =
       (location.state as { menuCode?: string } | null)?.menuCode === 'homepage';
 
-    if (isHomepageMenuClick || location.pathname === '/home') {
+    if (
+      isHomepageMenuClick ||
+      shouldPrefetchClassic ||
+      (routeChanged && location.pathname === '/home')
+    ) {
       // 点击主页菜单时，即使路径没有变化，也按当前视图静默更新并回到顶部
       loadListRef.current(true, { silent: true });
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop = 0;
       }
-    } else if (isHomeRoute && !wasHomeRoute) {
+    } else if (routeChanged && isHomeRoute && !wasHomeRoute) {
       // 从其他页面（如 /space）切回到 /home/chat 页面，即使组件未销毁也应当静默更新一次
       loadListRef.current(true, { silent: true });
     }
 
     prevPathnameRef.current = location.pathname;
-  }, [location.pathname, location.state]);
+  }, [location.pathname, location.state, isSidebarNavMode]);
 
   useEffect(() => {
     const handleRefreshConversationList = () => {
@@ -420,6 +509,10 @@ export function useHomeSectionData(options: {
         clearTimeout(conversationReloadTimerRef.current);
         conversationReloadTimerRef.current = null;
       }
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
       eventBus.off(
         EVENT_TYPE.RefreshConversationList,
         handleRefreshConversationList,
@@ -434,6 +527,7 @@ export function useHomeSectionData(options: {
       return;
     }
     if (!initializedRef.current) return;
+    queryEpochRef.current += 1;
     setHasMore(true);
     setLocalList([]);
     loadList(true);

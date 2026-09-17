@@ -1,6 +1,7 @@
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import {
   useConversationChanged,
   useProjectChanged,
@@ -23,14 +24,24 @@ import {
   apiUserProjectPin,
   apiUserProjectUnCollect,
 } from '@/services/userProjectApp';
+import type {
+  ConversationChangedEvent,
+  ProjectChangedEvent,
+} from '@/types/directorySync';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import {
+  emitConversationListTaskStatus,
+  fetchConversationTaskStatus,
+  isTerminalTaskStatus,
+} from '@/utils/conversationTaskStatusSync';
 import {
   applyConversationChangedToList,
   applyProjectChangedToList,
   emitProjectChanged,
   matchesProjectRef,
 } from '@/utils/directorySyncEvents';
+import eventBus from '@/utils/eventBus';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -97,6 +108,52 @@ export interface ProjectItem {
   children?: ProjectChildItem[];
 }
 
+const applyProjectChildEvent = (
+  children: ProjectChildItem[],
+  event: ConversationChangedEvent,
+): ProjectChildItem[] => {
+  const patched = applyConversationChangedToList(children, event, {
+    topicField: 'name',
+  });
+  if (event.operation !== 'updated' || !event.patch) return patched;
+  const target = patched.find(
+    (child) => String(child.id) === event.conversationId,
+  );
+  if (!target?.conversation) return patched;
+  const source = target.conversation;
+  if (
+    source.topic ===
+      (event.patch.topic !== undefined ? event.patch.topic : source.topic) &&
+    source.icon ===
+      (event.patch.icon !== undefined ? event.patch.icon : source.icon) &&
+    source.taskStatus ===
+      (event.patch.taskStatus !== undefined
+        ? event.patch.taskStatus
+        : source.taskStatus)
+  ) {
+    return patched;
+  }
+  return patched.map((child) => {
+    if (String(child.id) !== event.conversationId || !child.conversation) {
+      return child;
+    }
+    const conversation = child.conversation;
+    return {
+      ...child,
+      conversation: {
+        ...conversation,
+        ...(event.patch?.topic !== undefined
+          ? { topic: event.patch.topic }
+          : {}),
+        ...(event.patch?.icon !== undefined ? { icon: event.patch.icon } : {}),
+        ...(event.patch?.taskStatus !== undefined
+          ? { taskStatus: event.patch.taskStatus }
+          : {}),
+      },
+    };
+  });
+};
+
 /**
  * 「项目」Tab 面板。
  *
@@ -113,6 +170,7 @@ export interface ProjectItem {
  */
 export interface ProjectPanelHandle {
   toggleAll: () => void;
+  revalidateVisible: () => void;
 }
 
 const ProjectPanel = forwardRef<
@@ -174,30 +232,59 @@ const ProjectPanel = forwardRef<
     const [loadingMore, setLoadingMore] = useState(false);
     const pageRef = useRef(1);
     const spaceIdRef = useRef(spaceId);
+    const projectsRef = useRef(projects);
+    projectsRef.current = projects;
+    const pageRequestVersionRef = useRef(0);
+    const recentProjectEventsRef = useRef<
+      Array<{ event: ProjectChangedEvent; at: number }>
+    >([]);
 
     // 拉取指定页项目列表(page=1 整体替换,后续页追加合并;失败保持现状由空态兜底)
     const fetchPage = useCallback(
       async (page: number, options: { append: boolean }) => {
         const requestSpaceId = spaceIdRef.current;
+        const requestVersion = ++pageRequestVersionRef.current;
+        const pageSize = options.append
+          ? PROJECT_PAGE_SIZE
+          : Math.max(PROJECT_PAGE_SIZE, pageRef.current * PROJECT_PAGE_SIZE);
         if (options.append) setLoadingMore(true);
         try {
           const res = await apiUserProjectPageQuery({
             queryFilter: { spaceId: requestSpaceId },
             current: page,
-            pageSize: PROJECT_PAGE_SIZE,
+            pageSize,
             orders: [],
             filters: [],
             columns: [],
           });
           // 空间已切换:丢弃过期响应
-          if (requestSpaceId !== spaceIdRef.current) return;
+          if (
+            requestSpaceId !== spaceIdRef.current ||
+            requestVersion !== pageRequestVersionRef.current
+          )
+            return;
           if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
             const records = res.data.records;
             const fallback = dict('PC.Constants.Menus.newChat');
-            const mapped = records.map((item) => toProjectItem(item, fallback));
-            setProjects((previous) =>
-              options.append ? appendProjectsPage(previous, mapped) : mapped,
+            const now = Date.now();
+            recentProjectEventsRef.current =
+              recentProjectEventsRef.current.filter(
+                ({ at }) => now - at < 60_000,
+              );
+            const mapped = recentProjectEventsRef.current.reduce(
+              (list, { event }) => applyProjectChangedToList(list, event),
+              records.map((item) => toProjectItem(item, fallback)),
             );
+            setProjects((previous) => {
+              if (options.append) return appendProjectsPage(previous, mapped);
+              return mapped.map((item) => {
+                const cached = previous.find(
+                  (old) =>
+                    old.id === item.id && old.projectType === item.projectType,
+                );
+                return cached ? { ...item, children: cached.children } : item;
+              });
+            });
             // 置顶/归档/收藏回读恢复(wiki 2026-09-11 行6 契约先行:字段未返回时不标记;
             // 追加页只并入新标记,不回退已加载页)
             const pageFlagIds = (flag: 'pinned' | 'archived' | 'collected') =>
@@ -221,7 +308,9 @@ const ProjectPanel = forwardRef<
                 ? mergeFlagIds(previous, pageFlagIds('collected'))
                 : pageFlagIds('collected'),
             );
-            pageRef.current = page;
+            pageRef.current = options.append
+              ? page
+              : Math.max(1, Math.ceil(records.length / PROJECT_PAGE_SIZE));
             setTotal(res.data.total ?? 0);
           }
         } catch {
@@ -235,15 +324,18 @@ const ProjectPanel = forwardRef<
 
     useEffect(() => {
       spaceIdRef.current = spaceId;
+      pageRequestVersionRef.current += 1;
       pageRef.current = 1;
       void fetchPage(1, { append: false }).finally(() => setLoading(false));
     }, [spaceId, fetchPage]);
 
-    // 子会话懒加载（统一接口不随列表回包 conversations）：未归档项目挂载/翻页后
-    // 补拉（默认全展开形态，可见项目一律预取保住路由反查）；失败置空数组避免
-    // 行内永久 Spin（不自动重试，列表刷新可重试）；在途守卫防 effect 重跑重复拉取
+    // 子会话按项目加载。刷新时保留旧行；在途事件通过 revision 和补拉收敛。
     const loadingChildrenRef = useRef<Set<string>>(new Set());
+    const pendingChildrenRefreshRef = useRef<Set<string>>(new Set());
     const childrenRevisionRef = useRef<Map<string, number>>(new Map());
+    const recentChildEventsRef = useRef<
+      Array<{ event: ConversationChangedEvent; at: number }>
+    >([]);
     const projectKey = useCallback(
       (project: Pick<ProjectItem, 'id' | 'projectType'>) =>
         `${project.projectType ?? AgentComponentTypeEnum.NormalProject}:${
@@ -252,29 +344,88 @@ const ProjectPanel = forwardRef<
       [],
     );
 
+    const requestChildrenRef = useRef<(project: ProjectItem) => Promise<void>>(
+      async () => {},
+    );
+    const requestChildren = useCallback(
+      async (project: ProjectItem): Promise<void> => {
+        const key = projectKey(project);
+        if (loadingChildrenRef.current.has(key)) {
+          pendingChildrenRefreshRef.current.add(key);
+          return;
+        }
+        const requestRevision = childrenRevisionRef.current.get(key) ?? 0;
+        loadingChildrenRef.current.add(key);
+        try {
+          const res = await apiUserProjectConversations(
+            project.id,
+            project.projectType ?? AgentComponentTypeEnum.NormalProject,
+          );
+          const fallback = dict('PC.Constants.Menus.newChat');
+          const now = Date.now();
+          recentChildEventsRef.current = recentChildEventsRef.current.filter(
+            ({ at }) => now - at < 60_000,
+          );
+          if (res?.code !== SUCCESS_CODE || !Array.isArray(res.data)) return;
+          const children = recentChildEventsRef.current.reduce(
+            (list, { event }) => applyProjectChildEvent(list, event),
+            toProjectChildren(res.data, fallback) ?? [],
+          );
+          if ((childrenRevisionRef.current.get(key) ?? 0) !== requestRevision) {
+            pendingChildrenRefreshRef.current.add(key);
+            return;
+          }
+          setProjects((previous) =>
+            previous.map((item) =>
+              projectKey(item) === key ? { ...item, children } : item,
+            ),
+          );
+        } catch {
+          // 首次失败结束加载态；下次可见性核对或事件会重试。
+          setProjects((previous) =>
+            previous.map((item) =>
+              projectKey(item) === key && item.children === undefined
+                ? { ...item, children: [] }
+                : item,
+            ),
+          );
+        } finally {
+          loadingChildrenRef.current.delete(key);
+          if (pendingChildrenRefreshRef.current.delete(key)) {
+            const current = projectsRef.current.find(
+              (item) => projectKey(item) === key,
+            );
+            if (current) void requestChildrenRef.current(current);
+          }
+        }
+      },
+      [projectKey],
+    );
+    requestChildrenRef.current = requestChildren;
+
     const invalidateProjectChildren = useCallback(
       (target: {
         projectId: string;
         projectType: AgentComponentTypeEnum;
         spaceId?: string;
       }) => {
-        setProjects((previous) =>
-          previous.map((project) => {
-            if (!matchesProjectRef(project, target)) return project;
-            const key = projectKey(project);
-            childrenRevisionRef.current.set(
-              key,
-              (childrenRevisionRef.current.get(key) ?? 0) + 1,
-            );
-            return { ...project, children: undefined };
-          }),
+        const matched = projectsRef.current.filter((project) =>
+          matchesProjectRef(project, target),
         );
+        matched.forEach((project) => {
+          const key = projectKey(project);
+          childrenRevisionRef.current.set(
+            key,
+            (childrenRevisionRef.current.get(key) ?? 0) + 1,
+          );
+          void requestChildrenRef.current(project);
+        });
+        return matched.length > 0;
       },
       [projectKey],
     );
 
     useEffect(() => {
-      const fallback = dict('PC.Constants.Menus.newChat');
       projects.forEach((project) => {
         const key = projectKey(project);
         if (
@@ -284,48 +435,20 @@ const ProjectPanel = forwardRef<
         ) {
           return;
         }
-        const requestRevision = childrenRevisionRef.current.get(key) ?? 0;
-        loadingChildrenRef.current.add(key);
-        void Promise.resolve(
-          apiUserProjectConversations(
-            project.id,
-            project.projectType ?? AgentComponentTypeEnum.NormalProject,
-          ),
-        )
-          .then((res) =>
-            toProjectChildren(
-              res?.code === SUCCESS_CODE ? res.data ?? [] : [],
-              fallback,
-            ),
-          )
-          .catch(() => [] as ProjectChildItem[])
-          .then((children) => {
-            loadingChildrenRef.current.delete(key);
-            const stale =
-              (childrenRevisionRef.current.get(key) ?? 0) !== requestRevision;
-            setProjects((previous) =>
-              previous.map((item) =>
-                projectKey(item) !== key
-                  ? item
-                  : { ...item, children: stale ? undefined : children },
-              ),
-            );
-          })
-          .finally(() => {
-            loadingChildrenRef.current.delete(key);
-          });
+        void requestChildren(project);
       });
-    }, [projects, archivedIds, projectKey]);
+    }, [projects, archivedIds, projectKey, requestChildren]);
 
     useConversationChanged((event) => {
+      const now = Date.now();
+      recentChildEventsRef.current = recentChildEventsRef.current
+        .filter(({ at }) => now - at < 60_000)
+        .slice(-199);
+      recentChildEventsRef.current.push({ event, at: now });
       setProjects((previous) =>
         previous.map((project) => {
           if (!project.children) return project;
-          const children = applyConversationChangedToList(
-            project.children,
-            event,
-            { topicField: 'name' },
-          );
+          const children = applyProjectChildEvent(project.children, event);
           return children === project.children
             ? project
             : { ...project, children };
@@ -335,17 +458,26 @@ const ProjectPanel = forwardRef<
         event.project &&
         (event.operation === 'created' || event.operation === 'deleted')
       ) {
-        invalidateProjectChildren(event.project);
+        const found = invalidateProjectChildren(event.project);
+        if (!found && event.operation === 'created') {
+          void fetchPage(1, { append: false });
+        }
       }
     });
 
     useProjectChanged((event) => {
       if (
+        spaceId !== undefined &&
         event.project.spaceId !== undefined &&
-        event.project.spaceId !== String(spaceId ?? '')
+        event.project.spaceId !== String(spaceId)
       ) {
         return;
       }
+      const now = Date.now();
+      recentProjectEventsRef.current = recentProjectEventsRef.current
+        .filter(({ at }) => now - at < 60_000)
+        .slice(-199);
+      recentProjectEventsRef.current.push({ event, at: now });
       if (event.operation === 'created') {
         void fetchPage(1, { append: false });
         return;
@@ -408,6 +540,44 @@ const ProjectPanel = forwardRef<
       );
     }, [projects, archivedIds, pinnedIds]);
 
+    const findProjectByConversation = useCallback(
+      (conversationId: number | string) =>
+        projectsRef.current.find((project) =>
+          project.children?.some(
+            (child) => String(child.id) === String(conversationId),
+          ),
+        ),
+      [],
+    );
+
+    useEffect(() => {
+      const refreshConversation = (payload?: {
+        conversationId?: number | string;
+      }) => {
+        if (payload?.conversationId === undefined) return;
+        const project = findProjectByConversation(payload.conversationId);
+        if (project) void requestChildren(project);
+      };
+      const onChatFinished = (payload: { conversationId: string }) => {
+        const project = findProjectByConversation(payload.conversationId);
+        if (!project) return;
+        void fetchConversationTaskStatus(payload.conversationId).then(
+          (status) => {
+            if (isTerminalTaskStatus(status)) {
+              emitConversationListTaskStatus(payload.conversationId, status);
+            }
+            void requestChildren(project);
+          },
+        );
+      };
+      eventBus.on(EVENT_TYPE.RefreshConversationList, refreshConversation);
+      eventBus.on(EVENT_TYPE.ChatFinished, onChatFinished);
+      return () => {
+        eventBus.off(EVENT_TYPE.RefreshConversationList, refreshConversation);
+        eventBus.off(EVENT_TYPE.ChatFinished, onChatFinished);
+      };
+    }, [findProjectByConversation, requestChildren]);
+
     // 当前路由会话反查所属项目（会话条目无项目归属字段，只能扫已加载的子会话）
     const activeChildProjectId = useMemo(
       () => findProjectIdByConversation(visibleProjects, activeConversationId),
@@ -451,8 +621,24 @@ const ProjectPanel = forwardRef<
             });
             return next;
           }),
+        revalidateVisible: () => {
+          void (async () => {
+            await fetchPage(1, { append: false });
+            const candidates = projectsRef.current.filter(
+              (project) =>
+                !archivedIds.has(project.id) && !collapsedIds.has(project.id),
+            );
+            for (let index = 0; index < candidates.length; index += 4) {
+              await Promise.all(
+                candidates
+                  .slice(index, index + 4)
+                  .map((project) => requestChildren(project)),
+              );
+            }
+          })();
+        },
       }),
-      [visibleProjects],
+      [visibleProjects, archivedIds, collapsedIds, fetchPage, requestChildren],
     );
 
     useEffect(() => {
