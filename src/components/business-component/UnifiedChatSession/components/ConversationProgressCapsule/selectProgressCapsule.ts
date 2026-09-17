@@ -46,8 +46,6 @@ export interface ProgressCapsuleModel {
   /** 轮次终态，仅会话结束后给出 */
   terminalStatus?: 'complete' | 'error' | 'stopped';
   currentAction: string;
-  /** 会话最终输出正文（V2 投影 finalAnswer，空串表示无） */
-  finalResult: string;
   /** 消息内 <task-result> 标签产物（会话输出同款：描述 + 文件路径） */
   taskResults: ProgressCapsuleTaskResult[];
   steps: ProgressCapsuleStep[];
@@ -198,7 +196,6 @@ export function selectProgressCapsule(
       nodeAction(planNode);
 
   // 标签产物单独成行展示，正文里剥掉避免重复
-  const finalResult = turn.finalAnswer.text.replace(TASK_RESULT_TAG, '').trim();
   const taskResults = extractTaskResults(turn.assistantMessages);
 
   const hasContent =
@@ -207,7 +204,6 @@ export function selectProgressCapsule(
     subagents.length > 0 ||
     fileEdits.length > 0 ||
     taskResults.length > 0 ||
-    Boolean(finalResult) ||
     Boolean(currentAction);
   if (!hasContent) return null;
 
@@ -216,7 +212,6 @@ export function selectProgressCapsule(
     running,
     terminalStatus: active ? undefined : turn.terminalStatus,
     currentAction,
-    finalResult,
     taskResults,
     steps,
     terminals,

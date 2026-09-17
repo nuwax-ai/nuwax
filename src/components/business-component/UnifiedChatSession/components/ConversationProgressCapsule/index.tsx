@@ -423,7 +423,7 @@ const ConversationProgressCapsule: React.FC<
 
       {expanded && (
         <div ref={panelRef} className={cx(safeStyles.panel)}>
-          {(model.taskResults.length > 0 || model.finalResult) && (
+          {model.taskResults.length > 0 && (
             <section className={cx(safeStyles.group)}>
               <GroupTitle icon={<FileTextOutlined />}>
                 {t('PC.Components.ConversationProgressCapsule.taskResult')}
@@ -452,14 +452,6 @@ const ConversationProgressCapsule: React.FC<
                   </span>
                 </button>
               ))}
-              {!model.taskResults.length && model.finalResult && (
-                <div
-                  className={cx(safeStyles['result-card'])}
-                  title={model.finalResult}
-                >
-                  {model.finalResult}
-                </div>
-              )}
             </section>
           )}
           {enableVersionControl &&
