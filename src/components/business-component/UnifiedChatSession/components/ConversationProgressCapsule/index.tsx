@@ -286,7 +286,14 @@ const ConversationProgressCapsule: React.FC<
         )}
       </button>
 
-      {expanded && (
+      <div
+        className={cx(
+          safeStyles['panel-wrap'],
+          expanded && safeStyles['panel-wrap-open'],
+        )}
+        aria-hidden={!expanded}
+        data-testid="capsule-panel-wrap"
+      >
         <div className={cx(safeStyles.panel)}>
           <button
             type="button"
@@ -470,7 +477,7 @@ const ConversationProgressCapsule: React.FC<
             </section>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -23,20 +23,18 @@
 .expanded {
   width: min(440px, calc(100% - 2 * @marginMd));
   border-radius: @borderRadiusLg;
-  // 从右向左展示：面板整体从右侧滑入落位，同时内容自右缘向左揭示
-  animation: capsule-reveal-right 0.36s ease-out;
+  // 整体快速揭示掩盖宽度跳变；位移交给 panel-wrap 从右向左滑出
+  animation: capsule-reveal-right 0.3s ease-out;
 }
 
 @keyframes capsule-reveal-right {
   from {
-    clip-path: inset(0 0 0 45%);
-    transform: translateX(36px);
-    opacity: 0;
+    clip-path: inset(0 0 0 40%);
+    opacity: 0.4;
   }
 
   to {
     clip-path: inset(0 0 0 0);
-    transform: translateX(0);
     opacity: 1;
   }
 }
@@ -102,12 +100,40 @@
   color: @colorError;
 }
 
+// 面板双向开合：展开从右向左滑出揭示，收起反向收回。
+// 常驻 DOM + grid 行高 0fr/1fr 过渡（面板条件卸载无法做退出动画）。
+.panel-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  clip-path: inset(0 0 0 45%);
+  transform: translateX(48px);
+  pointer-events: none;
+  transition: grid-template-rows 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.32s ease-out, clip-path 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.panel-wrap-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  clip-path: inset(0 0 0 0);
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
 .panel {
   position: relative;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.panel-wrap-open .panel {
   border-top: 1px solid @colorBorderSecondary;
   padding: @paddingSm 32px @paddingSm @paddingSm;
   max-height: min(60cqh, 480px);
-  overflow: auto;
+  overflow-y: auto;
 }
 
 .panel-collapse {

@@ -317,7 +317,10 @@ describe('会话进度胶囊', () => {
     );
     const trigger = screen.getByTestId('capsule-trigger');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('步骤1')).toBeNull();
+    // 面板常驻 DOM（双向开合过渡），收起态整组 aria-hidden
+    expect(
+      screen.getByTestId('capsule-panel-wrap').getAttribute('aria-hidden'),
+    ).toBe('true');
 
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
