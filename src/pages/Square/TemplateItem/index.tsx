@@ -59,6 +59,8 @@ const TemplateItem: React.FC<TemplateItemProps> = ({
 
   return (
     <CardWrapper
+      // 模板-智能体裁圆（「人」形资源口径）；工作流/技能模板保持方形
+      iconShape={targetType === SquareAgentTypeEnum.Agent ? 'circle' : 'square'}
       title={name}
       avatar={publishUser?.avatar || ''}
       name={publishUser?.nickName || publishUser?.userName}

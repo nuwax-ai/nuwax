@@ -613,6 +613,8 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
                 <ResourceCard
                   key={item.id}
                   item={item}
+                  // 专家&专家团卡片图标裁圆（技能/连接器保持方形口径）
+                  iconShape={resourceType === 'expert' ? 'circle' : 'square'}
                   showSummon={resourceType === 'expert'}
                   onSummon={
                     resourceType === 'expert' ? handleSummon : undefined

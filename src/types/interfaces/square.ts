@@ -134,6 +134,8 @@ export interface SingleAgentProps {
   showCollectCount?: boolean;
   collectApi?: (targetId: number) => Promise<any>;
   unCollectApi?: (targetId: number) => Promise<any>;
+  // 卡片图标形态：方形圆角（默认）/ 圆形（智能体「人」形资源口径）
+  iconShape?: 'square' | 'circle';
 }
 
 // 广场单个组件（插件、工作流等）

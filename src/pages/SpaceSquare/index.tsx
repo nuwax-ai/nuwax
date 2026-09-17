@@ -340,6 +340,8 @@ const SpaceSection: React.FC = () => {
         return (
           <SingleAgent
             key={index}
+            // 智能体 tab 卡片图标裁圆（「人」形资源口径）
+            iconShape="circle"
             title={title}
             publishedItemInfo={item}
             extra={getExtra(dict('PC.Pages.SpaceSquare.agent'), item, type)}

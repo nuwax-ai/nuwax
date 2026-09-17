@@ -90,6 +90,8 @@ interface ResourceCardProps {
   onToggleEnabled?: (item: ResourceItem, enabled: boolean) => void;
   /** 启用开关请求中（Switch loading 防重复点击） */
   toggling?: boolean;
+  /** 卡片图标形态：方形圆角（默认）/ 圆形（专家&专家团「人」形资源口径） */
+  iconShape?: 'square' | 'circle';
 }
 
 const ResourceCard: React.FC<ResourceCardProps> = ({
@@ -109,6 +111,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
   connecting,
   onToggleEnabled,
   toggling,
+  iconShape = 'square',
 }) => {
   const { name, description, icon, publishUser, stats } = item;
   /** 连接器卡片状态行（分类 + 已连接/未连接） */
@@ -139,6 +142,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
         // 无统计行的紧凑卡片（技能/连接器页）
         [styles['card-compact']]: !showStats,
       })}
+      iconShape={iconShape}
       title={name}
       // 发布者信息（与广场卡片一致：头像兜底默认头像，昵称缺失回退用户名；
       // 团队空间/连接器数据无发布者时不渲染该行）
