@@ -235,6 +235,41 @@
   font: 12px/20px Menlo, Monaco, Consolas, monospace;
 }
 
+// 运行中文案扫光：一段高亮从左向右流过（思考/工具/子智能体运行行共用）
+@keyframes v2-shimmer-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%)) 0%,
+    var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%)) 38%,
+    var(--v2-color-text, rgba(0, 0, 0, 88%)) 50%,
+    var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%)) 62%,
+    var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%)) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  /* stylelint-disable-next-line property-no-vendor-prefix -- Safari 需要 -webkit 前缀 */
+  -webkit-background-clip: text;
+  /* stylelint-disable-next-line property-no-vendor-prefix -- Safari 需要 -webkit 前缀 */
+  -webkit-text-fill-color: transparent;
+  animation: v2-shimmer-sweep 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-text {
+    animation: none;
+  }
+}
+
 .node-row:hover .node-disclosure,
 .node-row:focus-visible .node-disclosure,
 .tool-group-toggle:hover .tool-group-chevron,
@@ -246,10 +281,11 @@
 .node-detail {
   max-height: ~'min(420px, 52vh)';
   overflow-y: auto;
-  margin: 2px 6px 8px 21px;
-  padding-left: 0;
+  margin: 2px 6px 8px 7px;
+  padding-left: 14px;
   color: var(--v2-color-text, rgba(0, 0, 0, 88%));
-  border-left: 0;
+  // 引导竖线与工具组 body 的 ::before 同款同位（行首 14px 图标列中心 7px 处）
+  border-left: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
 }
 
 .node-detail-text {
@@ -636,8 +672,8 @@ a.tool-detail-resource {
   }
 
   .node-detail {
-    margin-left: 19px;
-    padding-left: 8px;
+    margin-left: 7px;
+    padding-left: 12px;
   }
 
   .tool-terminal,

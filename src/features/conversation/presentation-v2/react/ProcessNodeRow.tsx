@@ -344,11 +344,23 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
         }}
         aria-hidden="true"
       />
-      <span className={cx(styles['node-title'])}>{title}</span>
+      <span
+        className={cx(
+          styles['node-title'],
+          node.status === 'running' && styles['shimmer-text'],
+        )}
+      >
+        {title}
+      </span>
       {toolPresentation && toolPresentation.files.length > 0 ? (
         <>
           {toolPresentation.files.length > 1 && (
-            <span className={cx(styles['node-summary'])}>
+            <span
+              className={cx(
+                styles['node-summary'],
+                node.status === 'running' && styles['shimmer-text'],
+              )}
+            >
               {toolPresentation.target}
             </span>
           )}
@@ -359,7 +371,14 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
           </span>
         </>
       ) : (
-        <span className={cx(styles['node-summary'])}>{summaryText}</span>
+        <span
+          className={cx(
+            styles['node-summary'],
+            node.status === 'running' && styles['shimmer-text'],
+          )}
+        >
+          {summaryText}
+        </span>
       )}
       {toolPresentation?.meta && (
         <span className={cx(styles['node-meta'])}>{toolPresentation.meta}</span>

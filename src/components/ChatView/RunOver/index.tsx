@@ -142,7 +142,7 @@ const RunOver: React.FC<RunOverProps> = ({
         {isThinking ? (
           <>
             <LoadingOutlined className={cx(styles.successColor)} />
-            <span className={cx(styles['status-name'])}>
+            <span className={cx(styles['status-name'], styles['shimmer-text'])}>
               {dict('PC.Components.RunOver.thinking')}
             </span>
           </>
@@ -151,7 +151,13 @@ const RunOver: React.FC<RunOverProps> = ({
           <>
             <LoadingOutlined className={cx(styles.successColor)} />
             {showStatusDesc && lastProcessInfo && (
-              <span className={cx(styles['status-name'])}>
+              <span
+                className={cx(
+                  styles['status-name'],
+                  lastProcessInfo.status === ProcessingEnum.EXECUTING &&
+                    styles['shimmer-text'],
+                )}
+              >
                 {lastProcessInfo.status === ProcessingEnum.EXECUTING
                   ? `${dict('PC.Components.RunOver.calling', '')} `
                   : `${dict('PC.Components.RunOver.called', '')} `}
