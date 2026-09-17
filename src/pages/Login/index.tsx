@@ -17,9 +17,6 @@ import {
 import {
   hostBridge,
   isDesktopHost,
-  isImmersiveShell,
-  needsTopRightAvoid,
-  shellAvoid,
 } from '@/utils/hostBridge';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
@@ -652,20 +649,6 @@ const Login: React.FC = () => {
         },
       }}
     >
-      {isImmersiveShell() && (
-        <div
-          data-nuwax-titlebar-drag="true"
-          aria-hidden
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: needsTopRightAvoid() ? shellAvoid.RIGHT : 160,
-            height: shellAvoid.TOP,
-            pointerEvents: 'none',
-          }}
-        />
-      )}
       <LoginLangSwitcher />
       <BasicLayout>
         <div>

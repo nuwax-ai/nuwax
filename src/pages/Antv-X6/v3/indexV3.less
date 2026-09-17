@@ -1,6 +1,15 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
 
+.container {
+  background-image: @backgroundImage;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  transition: background-image 0.3s ease;
+}
+
 .absolute-box {
   position: absolute;
   height: 42px;
@@ -133,6 +142,33 @@
   overflow-x: hidden;
   min-height: 600px;
   min-width: 1200px;
+}
+
+// 单栏风格（style3）：工作流详情与主站同用 page-container（贴边满铺），容器
+// 形态由页面自担——对齐全栈应用/智能体开发详情的 .section 卡片（左右下
+// @marginSm 边距 + 圆角/描边/底色，EditAgent .section 同款）。经典风格/移动端
+// 走 bare 裸全屏（祖先无 xagi-nav-style3），维持历史满铺不动；EditAgent 内嵌
+// AgentFlow 场景由 AgentFlowCanvas/index.less 反向覆盖归零。
+// min-width/min-height 一并归零：单栏下容器需动态响应外层（page-container =
+// 视口 - 常驻侧栏 - 边距）高宽，X6 已 autoResize 跟随；1200px 下限会把溢出
+// 转嫁给 overflow:hidden 的 page-container 裁切。header 的 min-width 同步
+// 解除，防其撑出容器右缘被裁。
+.xagi-nav-style3 #container {
+  top: 0;
+  left: @marginSm;
+  right: @marginSm;
+  bottom: @marginSm;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  border-radius: @pageContainerBorderRadius;
+  border: @lineWidth solid @colorSplit;
+  background-color: @colorBgContainer;
+}
+
+.xagi-nav-style3 .fold-header-style {
+  min-width: 0;
 }
 
 .x6-widget-transform {
@@ -304,9 +340,9 @@
 
 .fold-header-style {
   height: 56px;
-  border-bottom: 1px solid @WHITE11;
+  border-bottom: none;
   padding: 0 16px;
-  background-color: @WHITE02;
+  background: @pageContainerBg;
   box-sizing: border-box;
   // 锚定 #container（页面自身），不锚定视口：工作流详情现与主站同用
   // page-container 容器（卡片内有边距），fixed 会横跨视口顶部与卡片错位
@@ -318,10 +354,12 @@
   min-width: 1200px;
 
   .back-icon-style {
-    font-size: 16px;
-    color: @BLANK17;
+    // 与 EditAgent AgentHeader .icon-backward 同款：SvgIcon 默认内联 20px，
+    // 图标与图标后内容的间距 = 右 padding 8px + margin 4px，与旧 12px 一致
+    color: @navFirstMenuTextSecondary;
     cursor: pointer;
-    margin-right: 12px;
+    padding: @paddingXxs @paddingXs;
+    margin-right: @marginXxs;
   }
 
   .header-icon-style {

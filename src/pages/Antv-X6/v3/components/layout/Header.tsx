@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import SvgIcon from '@/components/base/SvgIcon';
 import useStyle3WorkbenchHost from '@/hooks/useStyle3WorkbenchHost';
 import { SaveStatusEnum } from '@/models/workflowV3';
 import { useIsAgentFlow } from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
@@ -16,7 +17,6 @@ import {
   ExclamationCircleFilled,
   FormOutlined,
   InfoCircleOutlined,
-  LeftOutlined,
   LoadingOutlined,
   RedoOutlined,
   SaveOutlined,
@@ -234,7 +234,8 @@ const Header: React.FC<HeaderProp> = ({
     <div className="fold-header-style flex items-center gap-20">
       <div className="dis-left flex-1">
         <ConditionRender condition={!hideBack}>
-          <LeftOutlined
+          <SvgIcon
+            name="icons-nav-backward"
             className="back-icon-style"
             onClick={() => {
               if (onBack) {

@@ -52,12 +52,17 @@
       margin-right: @marginXxs;
     }
 
-    // 选中模型的供应商 icon(空值兜底同列表项),比列表项内的 16px 略小
+    // 选中模型的供应商 icon(空值兜底同列表项),比列表项内的 16px 略小;
+    // 个人/团队 tab 换 antd 用户图标(单人/多人),字体图标按字号定尺寸同 14px
     .selector-model-icon {
       width: 14px;
       height: 14px;
       margin-right: @marginXxs;
       border-radius: 2px;
+
+      &.anticon {
+        font-size: 14px;
+      }
     }
 
     .selector-arrow {

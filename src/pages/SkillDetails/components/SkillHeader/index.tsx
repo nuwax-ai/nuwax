@@ -1,4 +1,5 @@
 import agentImage from '@/assets/images/agent_image.png';
+import SvgIcon from '@/components/base/SvgIcon';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { t } from '@/services/i18nRuntime';
 import { PublishStatusEnum } from '@/types/enums/common';
@@ -7,7 +8,6 @@ import {
   CheckCircleFilled,
   ClockCircleOutlined,
   FormOutlined,
-  LeftOutlined,
 } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
@@ -56,7 +56,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
     >
       <Button
         type="text"
-        icon={<LeftOutlined />}
+        icon={<SvgIcon name="icons-nav-backward" />}
         onClick={() => {
           history.push(`/space/${spaceId}/skill-manage`);
         }}

@@ -7,7 +7,9 @@
   height: 100%;
   overflow: hidden;
 
-  // 覆盖 #container 的 position:absolute
+  // 覆盖 #container 的 position:absolute（含 style3 下 v3/indexV3.less 的
+  // .xagi-nav-style3 #container 容器卡片形态——内嵌画布已处于 EditAgent 的
+  // .section 卡片内，边距/描边/圆角/底色一并归零，防双层容器）
   #container {
     position: relative !important;
     width: 100% !important;
@@ -16,5 +18,10 @@
     min-height: 0 !important;
     top: auto !important;
     left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: none !important;
   }
 }

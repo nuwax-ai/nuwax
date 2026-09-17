@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import SvgIcon from '@/components/base/SvgIcon';
 import useStyle3WorkbenchHost from '@/hooks/useStyle3WorkbenchHost';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -11,7 +12,6 @@ import {
   ClockCircleOutlined,
   FormOutlined,
   InfoCircleOutlined,
-  LeftOutlined,
 } from '@ant-design/icons';
 import { Button, Popover, Tag } from 'antd';
 import React, { useMemo } from 'react';
@@ -69,7 +69,8 @@ const Header: React.FC<HeaderProp> = ({
     <div className="fold-header-style flex items-center gap-20">
       <div className="dis-left flex-1">
         <ConditionRender condition={!hideBack}>
-          <LeftOutlined
+          <SvgIcon
+            name="icons-nav-backward"
             className="back-icon-style"
             onClick={() => {
               if (style3WorkbenchHost) {

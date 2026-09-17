@@ -151,6 +151,17 @@ interface Window {
       /** 上报 webview 顶部明确空白区；主窗口拖拽层由壳渲染。 */
       setTitlebarDragRegions?: (regions: TitlebarDragRegion[]) => void;
     };
+    // nuwax→nuwaclaw 标题栏手势通道：guest 命中判定（mousedown 目标为空白）后
+    // 请求壳执行原生窗口拖拽/双击缩放——拖拽层不再常驻盖在 webview 上，页面
+    // 任何控件点击零吞没（2026-09-17 架构切换：事件时判定替代预计算矩形挖洞）
+    titlebar?: {
+      /** 空白处按下：请求主进程开始跟随光标移动窗口（mouseup/失焦由 guest 补发 end）。 */
+      beginDrag?: () => void;
+      /** 结束拖拽会话（mouseup / blur / 按键异常时补发）。 */
+      endDrag?: () => void;
+      /** 空白处双击：切换最大化/还原。 */
+      toggleMaximize?: () => void;
+    };
     // nuwax→nuwaclaw 壳语言同步通道（壳 UI 文案/主进程语言跟随 webview 多语言设置）
     i18n?: {
       /** 推送当前语言（如 en-US / zh-CN；fire-and-forget，失败静默）。 */

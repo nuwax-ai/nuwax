@@ -1,8 +1,9 @@
 import databaseImage from '@/assets/images/database_image.png';
+import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import { TableHeaderProps } from '@/types/interfaces/dataTable';
 import { jumpBack } from '@/utils/router';
-import { FormOutlined, LeftOutlined } from '@ant-design/icons';
+import { FormOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 import classNames from 'classnames';
 import styles from './index.less';
@@ -18,7 +19,8 @@ const TableHeader: React.FC<TableHeaderProps> = ({
 }) => {
   return (
     <header className={cx('dis-left', styles['database-header'])}>
-      <LeftOutlined
+      <SvgIcon
+        name="icons-nav-backward"
         className={cx(styles['icon-back'])}
         onClick={() => jumpBack(`/space/${spaceId}/library`)}
       />
