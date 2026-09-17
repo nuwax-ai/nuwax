@@ -1,3 +1,4 @@
+/* stylelint-disable unit-no-unknown, at-rule-no-unknown -- 容器查询单位 cqh 与 @container 为合法现代 CSS */
 @import '@/styles/color';
 @import '@/styles/token';
 
@@ -39,6 +40,22 @@
 .spinner {
   color: @colorPrimary;
   flex: none;
+}
+
+.status-icon {
+  flex: none;
+}
+
+.status-done {
+  color: @colorSuccess;
+}
+
+.status-error {
+  color: @colorError;
+}
+
+.status-stopped {
+  color: @colorTextSecondary;
 }
 
 .action {
@@ -94,9 +111,34 @@
 }
 
 .group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @marginXs;
   color: @colorTextSecondary;
   font-size: @fontSizeSm;
   margin-bottom: @marginXs;
+}
+
+.group-meta {
+  color: @colorTextTertiary;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat {
+  flex: none;
+  display: inline-flex;
+  gap: @marginXs;
+  font-size: @fontSizeSm;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-add {
+  color: @colorSuccess;
+}
+
+.stat-del {
+  color: @colorError;
 }
 
 .step-list {
@@ -135,6 +177,50 @@
   margin: 5px 0 0 4px;
   border: 1px solid currentcolor;
   border-radius: 50%;
+}
+
+.node {
+  display: flex;
+  align-items: flex-start;
+  gap: @marginXs;
+  padding: 5px 0;
+  line-height: 1.45;
+}
+
+.node-kind-icon {
+  width: 16px;
+  flex: none;
+  color: @colorTextSecondary;
+}
+
+.node-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-mono {
+  font-family: @fontFamilyCode;
+  font-size: @fontSizeSm;
+}
+
+.node-status-icon {
+  flex: none;
+  color: @colorTextSecondary;
+}
+
+.node-running .node-status-icon {
+  color: @colorPrimary;
+}
+
+.node-finished .node-status-icon {
+  color: @colorSuccess;
+}
+
+.node-failed .node-status-icon {
+  color: @colorError;
 }
 
 @container (max-width: 520px) {

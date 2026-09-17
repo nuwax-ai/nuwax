@@ -7,7 +7,7 @@
  * 浏览器端全部 no-op/自隐藏（各子模块内部已做宿主 feature-detect）。
  */
 import { APP_GIT_HASH, APP_VERSION } from '@/constants/version';
-import { initTitlebarDragRegionSync } from '@/services/titlebarDragRegionSync';
+import { initTitlebarDragGesture } from '@/services/titlebarDragGesture';
 import { hostBridge } from '@/utils/hostBridge';
 
 /**
@@ -21,11 +21,11 @@ export function initClientShell(): () => void {
     ...(APP_GIT_HASH ? { gitHash: APP_GIT_HASH } : {}),
   });
 
-  // 标题栏拖拽热区同步（guest 上报空白矩形，壳渲染 drag region）
-  const disposeDragRegions = initTitlebarDragRegionSync();
+  // 标题栏手势（mousedown 命中判定→壳主进程拖窗/双击缩放；壳层无覆盖零吞点击）
+  const disposeDragGesture = initTitlebarDragGesture();
 
   return () => {
-    disposeDragRegions();
+    disposeDragGesture();
   };
 }
 

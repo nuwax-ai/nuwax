@@ -49,6 +49,10 @@ import NodePanelDrawer from '../panels/PropertyPanel';
 import ControlPanel from './ControlPanel';
 import ErrorList from './ErrorList';
 import Header from './Header';
+import styles from '../../indexV3.less';
+import classNames from 'classnames';
+
+const cx = classNames.bind(styles);
 
 export interface WorkflowLayoutProps {
   // Header Props
@@ -273,7 +277,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   return (
     // 顶部退让由路由层 wrappers/immersiveShellAvoid 统一承担（独立路由与
     // EditAgent 内嵌两种宿主都经过各自的 wrapper），此处不再携带避让代码。
-    <div id="container">
+    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       {/* AgentFlow 作为智能体子类型嵌入 EditAgent 时，顶部栏由 EditAgent 的 AgentHeader 提供，
           不再渲染工作流编辑器自带的 Header（避免出现第二条顶部栏，与 TaskAgent 一致） */}
       {!isAgentFlow && (

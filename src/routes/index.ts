@@ -121,6 +121,7 @@ const routes = [
       {
         path: '/space/:spaceId/app-pro',
         component: '@/pages/AppDevPro',
+        wrappers: ['@/wrappers/immersiveShellAvoid'],
         layout: false,
       },
       {

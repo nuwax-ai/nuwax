@@ -2,6 +2,7 @@ import avatarImage from '@/assets/images/avatar.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import ConditionRender from '@/components/ConditionRender';
+import SvgIcon from '@/components/base/SvgIcon';
 import CollectStar from '@/pages/SpaceDevelop/ApplicationItem/CollectStar';
 import {
   apiPublishedPluginCollect,
@@ -21,7 +22,6 @@ import type {
   PublishSkillInfo,
   PublishWorkflowInfo,
 } from '@/types/interfaces/plugin';
-import { LeftOutlined } from '@ant-design/icons';
 import { message, Space } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -117,7 +117,8 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
 
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
-      <LeftOutlined
+      <SvgIcon
+        name="icons-nav-backward"
         className={cx(styles['icon-back'], 'cursor-pointer')}
         onClick={handleBack}
       />

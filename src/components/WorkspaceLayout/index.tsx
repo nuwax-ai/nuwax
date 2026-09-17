@@ -1,5 +1,6 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
-import { LeftOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import { history } from 'umi';
@@ -70,7 +71,8 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           {/* 标题左侧插槽 (若存在则不显示内置返回按钮) */}
           {titleLeftSlot ||
             (back && (
-              <LeftOutlined
+              <SvgIcon
+                name="icons-nav-backward"
                 className={cx(styles['icon-back'], 'cursor-pointer')}
                 onClick={handleBack}
               />

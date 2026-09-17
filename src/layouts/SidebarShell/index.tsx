@@ -272,6 +272,13 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     //   承担避让，此处叠加会造成双重下移。
     const macAvoidance = isSecondMenuCollapsed ? shellAvoid.TOOLBAR : undefined;
     const immersiveMargin = isMac() ? macAvoidance : shellAvoid.CONTENT_TOP;
+    // 全屏工作台页（immersiveMarginTop=false）的顶部避让整体交由路由层
+    // immersiveShellAvoid 承担；但 mac 该层写死 0px（无菜单详情页前提，页头
+    // 自 x≈260 起），侧栏收起后内容区顶到 x=0，左上角被壳悬浮工具栏压住——
+    // mac 收起态在此统一补 TOOLBAR 退让（与主站页同款）；Win/Linux 工作台页
+    // 仍由 immersiveShellAvoid 的 44px 承担，不叠加。
+    const macWorkbenchCollapsedAvoid =
+      isMac() && isSecondMenuCollapsed && !immersiveMarginTop;
     return (
       <div
         className={cx(
@@ -287,7 +294,8 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
         id="page-container-selector"
         style={{
           marginTop:
-            isImmersiveShell() && immersiveMarginTop
+            isImmersiveShell() &&
+            (immersiveMarginTop || macWorkbenchCollapsedAvoid)
               ? immersiveMargin
               : undefined,
           // 单栏展开态默认贴边方角；Windows/Linux 沉浸主窗口在顶栏与
