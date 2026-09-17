@@ -17,12 +17,26 @@
   box-shadow: 0 8px 28px rgb(0 0 0 / 16%);
   backdrop-filter: blur(16px);
   overflow: hidden;
-  transition: border-radius 0.18s ease, width 0.18s ease;
+  transition: border-radius 0.18s ease;
 }
 
 .expanded {
   width: min(440px, calc(100% - 2 * @marginMd));
   border-radius: @borderRadiusLg;
+  // 右锚定展开：面板从右缘向左铺开（clip-path 左侧内缩收拢→展开）
+  animation: capsule-reveal-right 0.24s ease-out;
+}
+
+@keyframes capsule-reveal-right {
+  from {
+    clip-path: inset(0 0 0 60%);
+    opacity: 0.35;
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
 }
 
 .trigger {
