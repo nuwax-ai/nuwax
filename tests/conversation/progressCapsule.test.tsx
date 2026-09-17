@@ -1,6 +1,7 @@
 import {
   apiGitDiff,
   apiGitLogList,
+  apiGitStatus,
 } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import ConversationProgressCapsule from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule';
 import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
@@ -10,6 +11,13 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('umi', () => ({
+  useModel: () => ({
+    openPreviewView: vi.fn(),
+    setTaskAgentSelectedFileId: vi.fn(),
+    setTaskAgentSelectTrigger: vi.fn(),
+  }),
+}));
 vi.mock('@/services/i18nRuntime', () => ({
   t: (key: string, value?: number) =>
     value === undefined ? key : `${key}:${value}`,
@@ -20,7 +28,11 @@ vi.mock(
 );
 vi.mock(
   '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management',
-  () => ({ apiGitDiff: vi.fn(), apiGitLogList: vi.fn() }),
+  () => ({
+    apiGitDiff: vi.fn(),
+    apiGitLogList: vi.fn(),
+    apiGitStatus: vi.fn(),
+  }),
 );
 
 const processTag = (executeId: string, type: string, name: string) =>
@@ -42,6 +54,8 @@ const planResult = (done: number) => ({
 interface BuildMessagesOptions {
   /** 终态版：消息与 processing 均落 FINISHED/Complete */
   finished?: boolean;
+  /** 追加 7 条终端命令（验证折叠）与最终输出正文 */
+  richContent?: boolean;
   /** 追加新轮（新 user 消息 + 空 assistant），hasContent=false */
   withEmptyNewTurn?: boolean;
   /** 追加的新轮带 plan + 终端，hasContent=true */
@@ -52,6 +66,7 @@ interface BuildMessagesOptions {
 
 const buildMessages = ({
   finished = false,
+  richContent = false,
   withEmptyNewTurn = false,
   withResumedNewTurn = false,
   error = false,
@@ -75,7 +90,19 @@ const buildMessages = ({
         processTag('plan-1', AgentComponentTypeEnum.Plan, '执行计划') +
         processTag('tool-1', AgentComponentTypeEnum.ToolCall, '运行测试') +
         processTag('edit-1', AgentComponentTypeEnum.ToolCall, '编辑文件') +
-        processTag('agent-1', AgentComponentTypeEnum.SubAgent, '检索子代理'),
+        processTag('agent-1', AgentComponentTypeEnum.SubAgent, '检索子代理') +
+        (richContent
+          ? Array.from({ length: 7 }, (_, index) =>
+              processTag(
+                `term-${index}`,
+                AgentComponentTypeEnum.ToolCall,
+                `命令${index}`,
+              ),
+            ).join('') +
+            '已执行全部七个步骤，构建通过。' +
+            '<task-result><description>月度报表页面</description><file>999999/report/index.html</file></task-result>' +
+            '<task-result><description>数据明细导出</description><file>999999/report/summary.md</file></task-result>'
+          : ''),
       time: '2026-09-16 09:00:01',
       status: finished
         ? error
@@ -120,6 +147,15 @@ const buildMessages = ({
           name: '检索子代理',
           status: processingStatus,
         },
+        ...(richContent
+          ? Array.from({ length: 7 }, (_, index) => ({
+              executeId: `term-${index}`,
+              type: AgentComponentTypeEnum.ToolCall,
+              name: `命令${index}`,
+              status: processingStatus,
+              result: { input: { command: `echo step-${index}` } },
+            }))
+          : []),
       ],
     },
   ];
@@ -186,6 +222,19 @@ const buildMessages = ({
 describe('会话进度胶囊', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // 默认安全实现：单跑用例时无残留 mock，接口返回空数据而非 undefined
+    vi.mocked(apiGitDiff).mockResolvedValue({
+      code: '0000',
+      data: { summary: { files: [], insertions: 0, deletions: 0 } },
+    } as never);
+    vi.mocked(apiGitLogList).mockResolvedValue({
+      code: '0000',
+      data: { commits: [], total: 0 },
+    } as never);
+    vi.mocked(apiGitStatus).mockResolvedValue({
+      code: '0000',
+      data: {},
+    } as never);
   });
 
   it('从最新活跃轮提取计划分组、终端与子智能体', () => {
@@ -289,7 +338,7 @@ describe('会话进度胶囊', () => {
     expect(resumed?.terminals[0]).toMatchObject({ command: 'npm run build' });
   });
 
-  it('默认折叠，点击展开终端与子智能体分组，终态不卸载', () => {
+  it('默认折叠，展开后按分区展示（计划/进程/终端/智能体摘要），终态不卸载', () => {
     const { rerender, container } = render(
       <ConversationProgressCapsule
         conversationId={1}
@@ -297,19 +346,32 @@ describe('会话进度胶囊', () => {
         active
       />,
     );
-    const trigger = screen.getByRole('button');
+    const trigger = screen.getByTestId('capsule-trigger');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    // 收起态面板不在 DOM（条件渲染），胶囊宽度只贴合触发器内容
     expect(screen.queryByText('步骤1')).toBeNull();
 
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('步骤1')).toBeInTheDocument();
+    // 计划：活跃 + 待处理步骤（单行截断）
     expect(screen.getByText('运行验收')).toBeInTheDocument();
+    expect(screen.getByText('生成交付说明')).toBeInTheDocument();
+    // 进程：n/n 计数，已完成默认展开且带删除线
+    expect(screen.getByText('1/3')).toBeInTheDocument();
+    expect(screen.getByText('步骤1')).toBeInTheDocument();
+    // 终端
     expect(screen.getByText('npm run test:conversation')).toBeInTheDocument();
-    // 子代理名同时出现在收起态动作文案与面板行，存在即可
+    // 智能体默认折叠：显示运行中摘要（fixture 子代理 running）
+    expect(
+      screen.getByText('PC.Components.ConversationProgressCapsule.running 1'),
+    ).toBeInTheDocument();
+    // 点分区头展开子代理行（触发器动态文案也含子代理名，存在即可）
+    fireEvent.click(
+      screen.getByText('PC.Components.ConversationProgressCapsule.agents'),
+    );
     expect(screen.getAllByText('检索子代理').length).toBeGreaterThan(0);
 
-    // 会话结束：胶囊常驻，换终态图标，不再渲染 spinner
+    // 会话结束：胶囊常驻，触发器换终态图标
     rerender(
       <ConversationProgressCapsule
         conversationId={1}
@@ -333,7 +395,7 @@ describe('会话进度胶囊', () => {
     );
     expect(screen.queryByTestId('conversation-progress-capsule')).toBeNull();
 
-    // 新轮产出内容：恢复显示新轮终端命令
+    // 新轮产出内容：恢复显示，面板自动收起
     rerender(
       <ConversationProgressCapsule
         conversationId={1}
@@ -347,14 +409,13 @@ describe('会话进度胶囊', () => {
     expect(
       screen.getByTestId('conversation-progress-capsule'),
     ).toBeInTheDocument();
-    // turnKey 变化后面板自动收起
-    expect(screen.getByRole('button')).toHaveAttribute(
+    expect(screen.getByTestId('capsule-trigger')).toHaveAttribute(
       'aria-expanded',
       'false',
     );
   });
 
-  it('开启版本管理：终态后展示 git diff 文件（worktree 口径优先）', async () => {
+  it('开启版本管理：终态后 Git 工具区展示更改聚合与分支（worktree 口径优先）', async () => {
     vi.mocked(apiGitDiff).mockResolvedValue({
       code: '0000',
       data: {
@@ -380,6 +441,10 @@ describe('会话进度胶囊', () => {
         },
       },
     } as never);
+    vi.mocked(apiGitStatus).mockResolvedValue({
+      code: '0000',
+      data: { current: 'feat-test' },
+    } as never);
     const { rerender } = render(
       <ConversationProgressCapsule
         conversationId={1}
@@ -388,7 +453,7 @@ describe('会话进度胶囊', () => {
         enableVersionControl
       />,
     );
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByTestId('capsule-trigger'));
     rerender(
       <ConversationProgressCapsule
         conversationId={1}
@@ -397,11 +462,13 @@ describe('会话进度胶囊', () => {
         enableVersionControl
       />,
     );
+    // 分支行（/api/git/status current）
     expect(
-      await screen.findByText('src/app.tsx', {}, { timeout: 2000 }),
+      await screen.findByText('feat-test', {}, { timeout: 2000 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('README.md')).toBeInTheDocument();
-    expect(screen.getByText('+11 −2')).toBeInTheDocument();
+    // 聚合统计：触发器胶囊与面板「更改」行各一份
+    expect(screen.getAllByText('+11').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('−2').length).toBeGreaterThan(0);
     expect(apiGitDiff).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceType: 'taskAgent',
@@ -449,14 +516,66 @@ describe('会话进度胶囊', () => {
         enableVersionControl
       />,
     );
-    fireEvent.click(screen.getByRole('button'));
-    expect(await screen.findByText('src/lib.ts')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('capsule-trigger'));
+    // 聚合统计同时出现在触发器胶囊与面板「更改」行
+    await waitFor(
+      () => {
+        expect(screen.getAllByText('+3').length).toBeGreaterThan(0);
+      },
+      { timeout: 2000 },
+    );
+    expect(screen.getAllByText('−1').length).toBeGreaterThan(0);
     expect(apiGitLogList).toHaveBeenCalledWith(
       expect.objectContaining({ workspaceType: 'taskAgent', cid: 1 }),
     );
   });
 
-  it('未开启版本管理不请求 git 接口，文件变更回退 V2 编辑口径', async () => {
+  it('任务结果展示+终端超 5 折叠+触发器动态文案', async () => {
+    const model = selectProgressCapsule(
+      buildMessages({ finished: true, richContent: true }),
+      false,
+    );
+    expect(model?.finalResult).toBe('已执行全部七个步骤，构建通过。');
+    expect(model?.taskResults).toHaveLength(2);
+    expect(model?.taskResults[0]).toMatchObject({
+      description: '月度报表页面',
+      file: '999999/report/index.html',
+    });
+    // tool-1 + 7 条追加终端
+    expect(model?.terminals).toHaveLength(8);
+
+    render(
+      <ConversationProgressCapsule
+        conversationId={1}
+        messageList={buildMessages({ finished: true, richContent: true })}
+        active={false}
+      />,
+    );
+    // 触发器文案为终态词条（动态），非写死的「展开状态」
+    expect(screen.getByTestId('capsule-trigger').textContent).not.toContain(
+      'PC.Components.ConversationProgressCapsule.expandStatus',
+    );
+    // 终态动态文案优先取最后执行的动作（最后一条终端命令）
+    expect(screen.getByTestId('capsule-trigger').textContent).toContain(
+      '命令6',
+    );
+    fireEvent.click(screen.getByTestId('capsule-trigger'));
+    // 任务结果：task-result 标签行（会话输出同款），正文卡片被替代
+    expect(screen.getByText('月度报表页面')).toBeInTheDocument();
+    expect(screen.getByText('数据明细导出')).toBeInTheDocument();
+    expect(screen.queryByText('已执行全部七个步骤，构建通过。')).toBeNull();
+    // 终端默认只展示前 5 条（tool-1 + step-0..3），第 5 条不可见；展开按钮显示总数
+    expect(screen.getByText('echo step-3')).toBeInTheDocument();
+    expect(screen.queryByText('echo step-4')).toBeNull();
+    fireEvent.click(
+      screen.getByText(
+        'PC.Components.ConversationProgressCapsule.terminalExpand:8',
+      ),
+    );
+    expect(screen.getByText('echo step-6')).toBeInTheDocument();
+  });
+
+  it('未开启版本管理不请求 git 接口，触发器更改胶囊回退 V2 编辑口径', async () => {
     render(
       <ConversationProgressCapsule
         conversationId={1}
@@ -464,13 +583,18 @@ describe('会话进度胶囊', () => {
         active={false}
       />,
     );
-    fireEvent.click(screen.getByRole('button'));
-    expect(screen.getByText('src/edited.ts')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('capsule-trigger'));
+    // 收起态更改胶囊来自 V2 编辑聚合
+    expect(
+      screen.getAllByText('PC.Components.ConversationProgressCapsule.changes')
+        .length,
+    ).toBeGreaterThan(0);
     await waitFor(() => {
       expect(
         screen.getByTestId('conversation-progress-capsule'),
       ).toBeInTheDocument();
     });
     expect(apiGitDiff).not.toHaveBeenCalled();
+    expect(apiGitStatus).not.toHaveBeenCalled();
   });
 });

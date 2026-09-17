@@ -7,6 +7,7 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'umi';
 
 import ProjectPanel, { ProjectPanelHandle } from './components/ProjectPanel';
 import styles from './index.less';
@@ -18,10 +19,60 @@ const cx = classNames.bind(styles);
 const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
   shell,
 }) => {
+  const location = useLocation();
   const projectPanelRef = useRef<ProjectPanelHandle>(null);
   // 单栏分组折叠态（原型：点击分组头折叠/展开对应列表，不做持久化）
   const [projectCollapsed, setProjectCollapsed] = useState(false);
   const [taskCollapsed, setTaskCollapsed] = useState(false);
+  const lastSyncAtRef = useRef(Date.now());
+  const pendingSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const previousPathRef = useRef(location.pathname);
+  const syncRef = useRef<() => void>(() => {});
+  syncRef.current = () => {
+    const remaining = 30_000 - (Date.now() - lastSyncAtRef.current);
+    if (remaining > 0) {
+      // 很快切走又返回也要核对一次；合并到节流窗口末尾，不持续轮询。
+      if (!pendingSyncTimerRef.current) {
+        pendingSyncTimerRef.current = setTimeout(() => {
+          pendingSyncTimerRef.current = null;
+          if (document.visibilityState === 'visible') syncRef.current();
+        }, remaining);
+      }
+      return;
+    }
+    if (pendingSyncTimerRef.current) {
+      clearTimeout(pendingSyncTimerRef.current);
+      pendingSyncTimerRef.current = null;
+    }
+    lastSyncAtRef.current = Date.now();
+    shell.refreshList(true, { silent: true });
+    if (!projectCollapsed) projectPanelRef.current?.revalidateVisible();
+  };
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') syncRef.current();
+    };
+    window.addEventListener('focus', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
+      if (pendingSyncTimerRef.current) {
+        clearTimeout(pendingSyncTimerRef.current);
+        pendingSyncTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (previousPathRef.current !== location.pathname) {
+      previousPathRef.current = location.pathname;
+      syncRef.current();
+    }
+  }, [location.pathname]);
 
   // 任务列表是否在滚动视口内（触底加载分页仅在其可见时生效）
   const taskListVisible = !taskCollapsed;

@@ -90,6 +90,7 @@ import React, {
 } from 'react';
 import { useLocation, useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import ConversationCacheDebugFab from './ConversationCacheDebugFab';
 import ConversationDebugFab from './ConversationDebugFab';
 import {
   clearDraft,
@@ -1199,6 +1200,9 @@ const ChatInputUnifiedImpl: React.FC<
         {showDebugFab && (
           <ConversationDebugFab conversationId={ownConversationId} />
         )}
+
+        {/* 页面缓存遥测独立悬浮按钮：LRU 实例 + 执行中实例（TODO 上线前随调试入口统一移除） */}
+        {showDebugFab && <ConversationCacheDebugFab />}
 
         {tabsSlot && (
           <div className={cx(styles['tabs-wrapper'])}>{tabsSlot}</div>

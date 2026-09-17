@@ -30,7 +30,8 @@ vi.mock('@/services/i18nRuntime', () => ({
   t: (key: string) => key,
 }));
 vi.mock('@/features/conversation/presentation-v2/react/index.less', () => ({
-  default: new Proxy({}, { get: () => 'cls' }),
+  // 返回真实 key 名：动效 class 等样式断言需要区分类名
+  default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
 vi.mock('@/components/ChatView', () => ({
   default: ({ messageInfo }: { messageInfo: MessageInfo }) => (
@@ -366,6 +367,59 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(toggle.textContent).not.toContain('traceMetricTools');
     expect(toggle.textContent).not.toContain('traceMetricMessages');
     expect(toggle.lastElementChild?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('运行中的思考/工具行文案带扫光动效 class，终态行不带', () => {
+    const messages = buildTurn({
+      status: MessageStatusEnum.Loading,
+      text: [
+        thinkTag('thinking', '先想想要用哪个工具'),
+        processTag({
+          executeId: 'e-done',
+          type: 'ToolCall',
+          status: 'FINISHED',
+          name: '查天气',
+        }),
+        processTag({
+          executeId: 'e-running',
+          type: 'ToolCall',
+          status: 'EXECUTING',
+          name: '运行测试',
+        }),
+        '天气查询完成',
+      ].join(''),
+      processingList: [
+        {
+          executeId: 'e-done',
+          name: '查天气',
+          type: AgentComponentTypeEnum.ToolCall,
+          status: 'FINISHED',
+        },
+        {
+          executeId: 'e-running',
+          name: '运行测试',
+          type: AgentComponentTypeEnum.ToolCall,
+          status: 'EXECUTING',
+        },
+      ] as MessageInfo['processingList'],
+    });
+    renderV2(messages, PREFS('balanced'));
+    // 运行中思考行：标题/摘要挂扫光 class（css-modules 哈希用子串匹配；focused 预设下思考节点隐藏，用 balanced）
+    const reasoningRow = document.querySelector('[data-node-kind="reasoning"]');
+    expect(reasoningRow).not.toBeNull();
+    expect(
+      reasoningRow?.querySelectorAll('[class*="shimmer"]').length,
+    ).toBeGreaterThan(0);
+    // 运行中工具行同样挂扫光
+    const runningToolRow = [
+      ...document.querySelectorAll('[data-node-kind="tool"]'),
+    ].find((row) => row.querySelector('[class*="shimmer"]'));
+    expect(runningToolRow).toBeDefined();
+    // 终态（finished）行不挂扫光
+    const finishedRows = [
+      ...document.querySelectorAll('[data-node-kind="tool"]'),
+    ].filter((row) => !row.querySelector('[class*="shimmer"]'));
+    expect(finishedRows.length).toBeGreaterThan(0);
   });
 
   it('终态保留工具、消息与工作时长全量指标', () => {

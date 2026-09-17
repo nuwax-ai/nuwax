@@ -13,7 +13,7 @@ React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-
 
 ## 核心业务入口
 
-- **会话**:`src/pages/Chat/**` —— 五入口复用 UnifiedChatSession(Chat / ConversationAgent 会话面板 / EditAgent 预览调试 / 插件 / 技能);双轨 legacy/runtime,flag `?conversationRuntime=1`(默认 legacy)
+- **会话**:`src/pages/Chat/**` —— 五入口复用 UnifiedChatSession(Chat / ConversationAgent 会话面板 / EditAgent 预览调试 / 插件 / 技能);术语口径 V1=旧线(legacy 数据+V1 渲染)/V2=新线(runtime 数据+V2 渲染),默认已全 V2;调试回切 `?conversationRuntime=0` 或 `?conversationRenderer=v1`
 - **智能体平台**:EditAgent(编排 + AgentFlow)、ConversationAgent、AppDev/AppDevPro(Web IDE)、SpacePluginTool(插件)
 - **目录速查**:`pages/` · `components/`(base / business-component) · `hooks/` · `services/` · `models/` · `utils/` · `features/conversation/`(会话新线)
 

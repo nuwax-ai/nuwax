@@ -3,6 +3,7 @@ import {
   type ConversationProcessNode,
 } from '@/features/conversation/presentation-v2';
 import { normalizeV2ToolDetail } from '@/features/conversation/presentation-v2/toolDetail';
+import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 
 export type ProgressStepStatus = 'completed' | 'active' | 'pending';
@@ -18,6 +19,13 @@ export interface ProgressCapsuleNode {
   title: string;
   command?: string;
   status: ConversationProcessNode['status'];
+}
+
+/** <task-result> 标签产物行：描述优先展示，file 为产物路径 */
+export interface ProgressCapsuleTaskResult {
+  key: string;
+  description: string;
+  file: string;
 }
 
 /** 该轮文件编辑（V2 投影口径：编辑行数，非 git 统计） */
@@ -38,6 +46,10 @@ export interface ProgressCapsuleModel {
   /** 轮次终态，仅会话结束后给出 */
   terminalStatus?: 'complete' | 'error' | 'stopped';
   currentAction: string;
+  /** 会话最终输出正文（V2 投影 finalAnswer，空串表示无） */
+  finalResult: string;
+  /** 消息内 <task-result> 标签产物（会话输出同款：描述 + 文件路径） */
+  taskResults: ProgressCapsuleTaskResult[];
   steps: ProgressCapsuleStep[];
   terminals: ProgressCapsuleNode[];
   subagents: ProgressCapsuleNode[];
@@ -66,6 +78,34 @@ const nodeAction = (node: ConversationProcessNode | undefined): string =>
 
 const nodeDisplayTitle = (node: ConversationProcessNode): string =>
   node.title?.trim() || nodeAction(node);
+
+const TASK_RESULT_TAG = /<task-result[^>]*>([\s\S]*?)<\/task-result>/g;
+const pickTaskResultChild = (inner: string, tag: string): string =>
+  (inner.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`))?.[1] ?? '')
+    .trim()
+    .replace(/<[^>]+>/g, '');
+
+/** 从轮内 assistant 消息原文提取 <task-result> 标签（会话输出同源口径） */
+const extractTaskResults = (
+  messages: MessageInfo[],
+): ProgressCapsuleTaskResult[] => {
+  const results: ProgressCapsuleTaskResult[] = [];
+  for (const message of messages) {
+    if (message.role !== AssistantRoleEnum.ASSISTANT) continue;
+    for (const match of message.text?.matchAll(TASK_RESULT_TAG) ?? []) {
+      const description = pickTaskResultChild(match[1], 'description');
+      const file = pickTaskResultChild(match[1], 'file');
+      if (description || file) {
+        results.push({
+          key: `${message.id}-${results.length}`,
+          description,
+          file,
+        });
+      }
+    }
+  }
+  return results;
+};
 
 /**
  * 从 V2 投影抽取最近一轮的 Plan / 终端 / 子智能体。
@@ -157,11 +197,17 @@ export function selectProgressCapsule(
       activeStep?.content ||
       nodeAction(planNode);
 
+  // 标签产物单独成行展示，正文里剥掉避免重复
+  const finalResult = turn.finalAnswer.text.replace(TASK_RESULT_TAG, '').trim();
+  const taskResults = extractTaskResults(turn.assistantMessages);
+
   const hasContent =
     steps.length > 0 ||
     terminals.length > 0 ||
     subagents.length > 0 ||
     fileEdits.length > 0 ||
+    taskResults.length > 0 ||
+    Boolean(finalResult) ||
     Boolean(currentAction);
   if (!hasContent) return null;
 
@@ -170,6 +216,8 @@ export function selectProgressCapsule(
     running,
     terminalStatus: active ? undefined : turn.terminalStatus,
     currentAction,
+    finalResult,
+    taskResults,
     steps,
     terminals,
     subagents,

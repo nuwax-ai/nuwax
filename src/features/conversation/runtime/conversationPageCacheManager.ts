@@ -1,3 +1,7 @@
+import { EVENT_TYPE } from '@/constants/event.constants';
+import type { ConversationChangedEvent } from '@/types/directorySync';
+import { TaskStatus } from '@/types/enums/agent';
+import eventBus from '@/utils/eventBus';
 import {
   DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
   EMPTY_DRAFT_SUMMARY,
@@ -11,6 +15,7 @@ import {
   type ConversationPageResourceState,
   type ConversationWorkspaceView,
 } from '../domain/conversationPageCache';
+import { isTerminalTaskStatus } from '../domain/taskStatus';
 
 const PANEL_STORAGE_KEY = 'conversation_page_panel_state:v1';
 const CAPACITY_STORAGE_KEY = 'conversation_page_cache_capacity';
@@ -83,6 +88,9 @@ class ConversationPageCacheManager {
   private listeners = new Set<Listener>();
   private disposeListeners = new Set<DisposeListener>();
   private activeKey: string | null = null;
+  private endedConversationIds = new Set<string>();
+  /** 执行中（CREATE/EXECUTING）的会话 id → 进入执行态的时间戳。 */
+  private executingConversations = new Map<string, number>();
   private sharedVncOwnerConversationId: string | null = null;
   private capacity = this.readCapacity();
   private snapshot: ConversationPageCacheSnapshot = {
@@ -122,11 +130,17 @@ class ConversationPageCacheManager {
       activeKey: this.activeKey,
       sharedVncOwnerConversationId: this.sharedVncOwnerConversationId,
       entries: [...this.entries.values()]
-        .map((entry) => ({
-          ...entry,
-          draft: { ...entry.draft },
-          resources: { ...entry.resources },
-        }))
+        .map((entry) => {
+          const executingSince =
+            this.executingConversations.get(entry.conversationId) ?? null;
+          return {
+            ...entry,
+            executing: executingSince !== null,
+            executingSince,
+            draft: { ...entry.draft },
+            resources: { ...entry.resources },
+          };
+        })
         .sort((left, right) => right.lastAccessAt - left.lastAccessAt),
     };
     this.listeners.forEach((listener) => listener());
@@ -176,6 +190,8 @@ class ConversationPageCacheManager {
       conversationId,
       view: preferences[key] ?? 'closed',
       lifecycle: key === this.activeKey ? 'active' : 'cached',
+      executing: this.executingConversations.has(conversationId),
+      executingSince: this.executingConversations.get(conversationId) ?? null,
       createdAt: now,
       lastAccessAt: now,
       revision: 1,
@@ -224,6 +240,11 @@ class ConversationPageCacheManager {
             : String(input.agentId),
         view: preferences[key] ?? 'closed',
         lifecycle: 'active',
+        executing: this.executingConversations.has(
+          String(input.conversationId),
+        ),
+        executingSince:
+          this.executingConversations.get(String(input.conversationId)) ?? null,
         createdAt: now,
         lastAccessAt: now,
         revision: 1,
@@ -248,6 +269,69 @@ class ConversationPageCacheManager {
     this.activeKey = key;
     this.emit();
     return entry;
+  }
+
+  deactivate(key: string) {
+    if (this.activeKey !== key) return;
+    this.activeKey = null;
+    const entry = this.entries.get(key);
+    if (entry) {
+      this.entries.set(key, {
+        ...entry,
+        lifecycle: 'cached',
+        resources: { ...entry.resources, desktopVisible: false },
+      });
+    }
+    this.emit();
+    if (entry && this.endedConversationIds.has(entry.conversationId)) {
+      this.releaseEndedHidden(entry.conversationId);
+    }
+  }
+
+  markConversationTaskStatus(
+    conversationId: number | string,
+    taskStatus: TaskStatus | undefined,
+  ) {
+    const normalizedId = String(conversationId);
+    if (
+      taskStatus === TaskStatus.CREATE ||
+      taskStatus === TaskStatus.EXECUTING
+    ) {
+      this.endedConversationIds.delete(normalizedId);
+      if (!this.executingConversations.has(normalizedId)) {
+        this.executingConversations.set(normalizedId, Date.now());
+        this.emit();
+      }
+      return;
+    }
+    if (!isTerminalTaskStatus(taskStatus)) return;
+    const wasExecuting = this.executingConversations.delete(normalizedId);
+    if (
+      [...this.entries.values()].some(
+        (entry) => entry.conversationId === normalizedId,
+      )
+    ) {
+      this.endedConversationIds.add(normalizedId);
+    }
+    this.releaseEndedHidden(normalizedId);
+    if (wasExecuting) this.emit();
+  }
+
+  releaseEndedHidden(conversationId: number | string) {
+    const normalizedId = String(conversationId);
+    [...this.entries.values()]
+      .filter(
+        (entry) =>
+          entry.conversationId === normalizedId && entry.key !== this.activeKey,
+      )
+      .forEach((entry) => this.invalidate(entry.key, 'terminal'));
+    if (
+      ![...this.entries.values()].some(
+        (entry) => entry.conversationId === normalizedId,
+      )
+    ) {
+      this.endedConversationIds.delete(normalizedId);
+    }
   }
 
   update(
@@ -313,6 +397,13 @@ class ConversationPageCacheManager {
       const disposing = { ...current, lifecycle: 'disposing' as const };
       this.disposeListeners.forEach((listener) => listener(disposing, reason));
       this.entries.delete(key);
+      if (
+        ![...this.entries.values()].some(
+          (entry) => entry.conversationId === current.conversationId,
+        )
+      ) {
+        this.endedConversationIds.delete(current.conversationId);
+      }
     }
     if (this.activeKey === key) this.activeKey = null;
     if (options.clearPanelPreference) {
@@ -330,6 +421,7 @@ class ConversationPageCacheManager {
 
   invalidateConversation(conversationId: number | string, reason = 'manual') {
     const normalizedId = String(conversationId);
+    this.executingConversations.delete(normalizedId);
     [...this.entries.values()]
       .filter((entry) => entry.conversationId === normalizedId)
       .forEach((entry) => this.invalidate(entry.key, reason));
@@ -483,6 +575,33 @@ class ConversationPageCacheManager {
 }
 
 export const conversationPageCacheManager = new ConversationPageCacheManager();
+
+eventBus.on(
+  EVENT_TYPE.UpdateConversationListTaskStatus,
+  (payload: { conversationId: number | string; taskStatus?: TaskStatus }) => {
+    if (payload?.conversationId !== undefined) {
+      conversationPageCacheManager.markConversationTaskStatus(
+        payload.conversationId,
+        payload.taskStatus,
+      );
+    }
+  },
+);
+
+eventBus.on(
+  EVENT_TYPE.ConversationChanged,
+  (event: ConversationChangedEvent) => {
+    if (
+      event.operation === 'updated' &&
+      event.patch?.taskStatus !== undefined
+    ) {
+      conversationPageCacheManager.markConversationTaskStatus(
+        event.conversationId,
+        event.patch.taskStatus,
+      );
+    }
+  },
+);
 
 if (typeof window !== 'undefined') {
   const registry = window as Window & {

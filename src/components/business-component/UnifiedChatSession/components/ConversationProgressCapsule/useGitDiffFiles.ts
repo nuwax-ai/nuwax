@@ -1,6 +1,7 @@
 import {
   apiGitDiff,
   apiGitLogList,
+  apiGitStatus,
 } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import type { GitDiffSummaryFileItem } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -52,9 +53,9 @@ const toSummary = (
 };
 
 /**
- * 会话结束后拉取 git diff 文件汇总：worktree 优先；开自动提交时
- * worktree 干净，兜底最新一次 commit 的 diff。失败/空均静默返回 null，
- * 由展示层回退 V2 投影的文件编辑数据。
+ * 会话结束后拉取 git 状态：worktree diff 优先；开自动提交时 worktree
+ * 干净，兜底最新一次 commit 的 diff。同时取当前分支名。
+ * 失败/空均静默返回 null，由展示层回退 V2 投影的文件编辑数据。
  */
 export function useGitDiffFiles({
   conversationId,
@@ -63,10 +64,12 @@ export function useGitDiffFiles({
   running,
 }: GitDiffFilesParams) {
   const [summary, setSummary] = useState<GitDiffFilesSummary | null>(null);
+  const [branch, setBranch] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setSummary(null);
+    setBranch(null);
     if (!enabled || running || !conversationId || !turnKey) return;
 
     let cancelled = false;
@@ -77,10 +80,18 @@ export function useGitDiffFiles({
     setLoading(true);
     (async () => {
       try {
-        let next = toSummary(
-          await apiGitDiff({ ...workspace, source: 'worktree' }),
-          'worktree',
-        );
+        const [diffRes, statusRes] = await Promise.all([
+          apiGitDiff({ ...workspace, source: 'worktree' }),
+          apiGitStatus(workspace).catch(() => null),
+        ]);
+        if (cancelled) return;
+        if (statusRes?.code === SUCCESS_CODE) {
+          setBranch(
+            (statusRes.data as { current?: string } | undefined)?.current ??
+              null,
+          );
+        }
+        let next = toSummary(diffRes, 'worktree');
         if (cancelled) return;
         if (!next) {
           const log = await apiGitLogList({
@@ -110,5 +121,5 @@ export function useGitDiffFiles({
     };
   }, [conversationId, enabled, running, turnKey]);
 
-  return { summary, loading };
+  return { summary, branch, loading };
 }

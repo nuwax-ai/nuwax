@@ -28,11 +28,40 @@
     flex: 1;
   }
 
+  // 运行中文案扫光：一段高亮从左向右流过（正在思考 / 正在调用 X）
+  .shimmer-text {
+    background: linear-gradient(
+      90deg,
+      @colorTextDescription 0%,
+      @colorTextDescription 38%,
+      @colorText 50%,
+      @colorTextDescription 62%,
+      @colorTextDescription 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    /* stylelint-disable-next-line property-no-vendor-prefix -- Safari 需要 -webkit 前缀 */
+    -webkit-background-clip: text;
+    /* stylelint-disable-next-line property-no-vendor-prefix -- Safari 需要 -webkit 前缀 */
+    -webkit-text-fill-color: transparent;
+    animation: runover-shimmer-sweep 2.4s linear infinite;
+  }
+
   .icon {
     color: @colorSuccessText;
     margin-left: @marginXxs;
     font-size: @fontSizeSm;
     flex-shrink: 0;
+  }
+}
+
+@keyframes runover-shimmer-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
   }
 }
 

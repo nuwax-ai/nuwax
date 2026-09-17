@@ -35,7 +35,8 @@
 }
 
 // 统一干预底部 sheet：脱离文档流固定贴底，卡片直接沉到面板底、盖住输入框位置（完全遮挡）；
-// 无遮罩背景，其余区域交互被拦截；决策完成后卸载、会话布局无跳动
+// 本层对指针穿透：消息区滚动/点击、进度胶囊、快捷导航等背景交互不拦截，仅卡片自身可交互
+// （产品定调 2026-09-17：弹窗不挡页面）；决策完成后卸载、会话布局无跳动
 .intervention-dock {
   position: absolute;
   inset: 0;
@@ -44,17 +45,20 @@
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
+  pointer-events: none; // 全层穿透，交互放行给底下消息区/胶囊；卡片由 > * 子树接回
   // 视觉底距目标 42px = 本层 26px + 链路固有 ~16px（实测：8px→16px、16px→32px）
   padding-bottom: 30px;
   box-sizing: border-box;
   animation: slide-in-up 0.3s ease-out;
 
-  // DockPanel 根节点（.cardSlot / .stackRoot 恒为单根）：限宽居中，与会话列对齐
+  // DockPanel 根节点（.cardSlot / .stackRoot 恒为单根）：限宽居中，与会话列对齐；
+  // 仅卡片堆叠区接回指针（后层卡片的 none 由 DockPanel.less 自带规则保持）
   > * {
     width: 100%;
     max-width: @chat-max-width;
     box-sizing: border-box;
     padding: @zero-value @paddingXs;
+    pointer-events: auto;
   }
 }
 

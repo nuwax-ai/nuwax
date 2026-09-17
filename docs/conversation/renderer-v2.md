@@ -6,6 +6,10 @@
 
 普通会话的消息列表在旧 `ChatView + MarkdownRenderer`（V1，完全冻结）之外，新增一条正交的渲染线 V2：`MessageInfo[] → 纯投影 → 整轮轨迹 / 工具组 / 单项详情 + 最终回答`。数据线（`conversationRuntime` legacy/runtime）与渲染线（V1/V2）自由组合成 2×2 矩阵。
 
+## 术语约定
+
+日常交流只说 **V1 / V2**：V1 = 旧线（legacy 数据线 + V1 渲染），V2 = 新线（runtime 数据线 + V2 渲染）——两者绑定放量，默认已全走 V2。代码与调试入口保留两个正交开关名（数据线 `conversationRuntime`、渲染线 `conversationRenderer`）：2×2 组合真实存在（如渲染异常回退 V1 时数据线不变），数据线若也叫 v1/v2 会与渲染线撞名产生歧义。
+
 ## 结构分层
 
 ```
@@ -27,7 +31,7 @@ src/features/conversation/presentation-v2/          纯投影层（无 React，�
     formatElapsed.ts             耗时文案
 src/utils/conversationRendererPreference.ts   偏好存取（URL>会话覆盖>全局>默认 V2）
 src/hooks/useConversationRendererPreference.ts 偏好 hook（CustomEvent 即时同步）
-UnifiedChatSession/components/ChatContentArea  渲染线选择边界（messageRenderer prop，默认 v1）
+UnifiedChatSession/components/ChatContentArea  渲染线选择边界（messageRenderer prop，默认 v2）
 UnifiedChatSession/components/ChatInputHomeIndependent/ConversationDisplaySettings.tsx
                                               输入区「会话显示」入口
 ```
@@ -41,6 +45,7 @@ UnifiedChatSession/components/ChatInputHomeIndependent/ConversationDisplaySettin
 - **最终回答**（三级选择，禁止读 `ConversationInfo.summary`）： ① 最后一条非空 `finalResult.outputText`（剥内嵌标签）② 终态最后一条非空正文段 ③ 无正文只显示停止/错误状态。运行态以末尾正文段为实时回答区。
 - **指标**：工具数 = 非 Plan/Event 的 executeId 去重；消息数 = reasoning+context+completed-interaction（narration 直出不计）；耗时优先 `finalResult.start/endTime`，其次 processing 最早开始/最晚结束，运行态每秒跳动、终态冻结；零工具时头部以「执行过程」开头，缺失指标单独省略。
 - **三层交互**：整轮运行时默认展开且头部只显示「工作中 T」；流式结束时自动收起一次，历史终态轮也默认收起，终态头保留完整指标。当前最后活动工具组默认展开，正文/思考/新组出现时旧组自动收起一次；终态组默认收起。用户手动重开后的状态不会被流式增量重复覆盖，外层收起也不会清空组和单项状态。折叠控件均使用原生 button、`aria-expanded`/`aria-controls` 和可见焦点；无有效详情的事件行为静态元素、不显示假箭头；`prefers-reduced-motion` 下停用动效。
+- **懒挂载**：三层折叠均为严格条件渲染（`{expanded && ...}`），收起即卸载、再展开重建，非 `display:none` 常驻；终态轮/组默认收起时长会话每轮 DOM 仅剩轨迹头部行。投影数据常驻内存，卸载只影响渲染层（详见 summary 第 7.4 节）。
 - **箭头行为**：三层统一使用细线 `DownOutlined`，收起旋转为 `>`、展开为 `∨`；工具组和单工具在收起态仅 hover/focus 显示，展开态常驻，并紧跟摘要内容。
 - **类型化详情**：终端仅显示 Shell、命令、stdout/stderr 与退出码；文件读取显示路径/行范围/正文；编辑显示文件统计与统一 Diff；搜索/浏览器显示查询、标题、URL 和摘要；Skill 渲染 Markdown；Plan/Todo 作为独立状态清单；Generic 仅显示清洗后的输入/结果。原始协议 JSON 不进入普通详情。文件/URL 可通过可选资源回调联动宿主预览，否则保持可复制文本或普通链接。
 - **回答操作栏**：用户消息只保留复制；助手最终回答保留复制/分享，图标统一为 12px。最右侧时间复用 V1 `formatTimeAgo(message.time)` 规则并每分钟刷新；轨迹头的「已工作 T」继续单独表达执行耗时。

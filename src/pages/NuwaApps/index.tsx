@@ -125,9 +125,9 @@ const NuwaApps: React.FC = () => {
     return () => observer.disconnect();
   }, [hasRecent]);
 
-  // 最近使用:POST /api/published/app/recentlyUsed/list(全量数组,按最近使用排序)
+  // 最近使用:POST /api/published/app/recentlyUsed/list(pageSize 控制条数上限,按最近使用排序)
   useRequest(
-    () => apiPublishedAppRecentlyUsedList({ size: RECENT_USED_SIZE }),
+    () => apiPublishedAppRecentlyUsedList({ pageSize: RECENT_USED_SIZE }),
     {
       onSuccess: (result: SquarePublishedItemInfo[]) => {
         setRecentList(result || []);

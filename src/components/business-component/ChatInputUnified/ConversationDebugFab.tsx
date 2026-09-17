@@ -2,9 +2,10 @@
  * 会话框右上角的 debug 悬浮按钮：收纳「会话密度」（三档折叠密度）与
  * 「会话显示」（渲染版本 / V2 预设 / 逐类覆盖）两个调试入口，
  * 不再占用输入区工具栏位。复用 ChatInputHome 的样式模块（无本地 less）。
+ * 缓存遥测已拆分至独立的 ConversationCacheDebugFab（2026-09-17）。
  *
- * 产品定调（2026-09-15）：本按钮及缓存遥测面板默认展示（含提测环境），
- * 正式上线前统一关闭——勿在上线前单独加环境门控。
+ * TODO(正式上线前移除): 本调试入口属开发期调试面板——打包部署测试环境须保留
+ * 可见（2026-09-17 用户定调），正式上线前统一删除。
  */
 import styles from '@/components/ChatInputHome/index.less';
 import { useConversationDensity } from '@/hooks/useConversationDensity';
@@ -14,7 +15,6 @@ import { BugOutlined, CheckOutlined } from '@ant-design/icons';
 import { Popover, Tooltip, theme } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
-import ConversationCacheDebugPanel from './ConversationCacheDebugPanel';
 import ConversationDisplaySettings from './ConversationDisplaySettings';
 
 const cx = classNames.bind(styles);
@@ -54,14 +54,38 @@ const ConversationDebugFab: React.FC<ConversationDebugFabProps> = ({
   const [open, setOpen] = useState(false);
   const { token } = theme.useToken();
   const { density, setDensity } = useConversationDensity();
-  const showCacheDebug = process.env.NODE_ENV !== 'production';
 
   const content = useMemo(
     () => (
-      <div
-        style={{ width: showCacheDebug ? 420 : 300 }}
-        data-testid="conversation-debug-panel"
-      >
+      <div style={{ width: 300 }} data-testid="conversation-debug-panel">
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            marginBottom: 12,
+          }}
+        >
+          <span
+            style={{
+              padding: '1px 6px',
+              borderRadius: 3,
+              background: '#ff6b35',
+              color: '#fff',
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+            }}
+          >
+            DEBUG
+          </span>
+          <span
+            style={{ fontSize: 11, color: token.colorTextTertiary }}
+            data-testid="conversation-debug-badge-hint"
+          >
+            调试面板 · 正式上线前移除
+          </span>
+        </div>
         <div style={{ marginBottom: 12 }}>
           <div
             style={{
@@ -130,14 +154,9 @@ const ConversationDebugFab: React.FC<ConversationDebugFabProps> = ({
           </div>
           <ConversationDisplaySettings conversationId={conversationId} />
         </div>
-        {showCacheDebug && (
-          <div style={{ marginTop: 12 }}>
-            <ConversationCacheDebugPanel />
-          </div>
-        )}
       </div>
     ),
-    [density, conversationId, token, setDensity, showCacheDebug],
+    [density, conversationId, token, setDensity],
   );
 
   return (

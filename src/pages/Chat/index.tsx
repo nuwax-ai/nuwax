@@ -1489,6 +1489,20 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
   }, [pageCacheKey, agentId, defaultFileTreeVisible, rememberWorkspaceView]);
 
+  useEffect(
+    () => () => conversationPageCacheManager.deactivate(pageCacheKey),
+    [pageCacheKey],
+  );
+
+  useEffect(() => {
+    if (conversationInfo?.id === id) {
+      conversationPageCacheManager.markConversationTaskStatus(
+        id,
+        conversationInfo.taskStatus,
+      );
+    }
+  }, [id, conversationInfo?.id, conversationInfo?.taskStatus]);
+
   // desktop/pagePreview 依赖异步到达的 agent/沙箱信息，仅消费当前 key 的待恢复任务一次。
   useEffect(() => {
     const pending = pendingWorkspaceRestoreRef.current;

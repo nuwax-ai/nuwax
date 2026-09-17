@@ -598,13 +598,14 @@ const MockChat: React.FC = () => {
                   color={isRuntimeLine ? 'geekblue' : 'default'}
                   style={{ marginLeft: 12 }}
                 >
-                  {isRuntimeLine ? 'runtime 轨' : 'legacy 轨'}
+                  {isRuntimeLine ? 'V2 数据线' : 'V1 数据线'}
                 </Tag>
               </Title>
               <Text type="secondary">
                 {scenarios.length} 个故障注入场景，复用生产会话模型与
-                UI；应用内嵌 形态访问 /app/mock-chat。会话轨与渲染线均为双线，
-                可用下方开关或 URL 参数切换（?conversationRuntime=1、
+                UI；应用内嵌 形态访问 /app/mock-chat。数据线（V1=legacy /
+                V2=runtime）与渲染线（V1/V2）均为双线， 可用下方开关或 URL
+                参数切换（?conversationRuntime=1、
                 ?conversationRenderer=v1|v2）。
               </Text>
             </div>
@@ -626,8 +627,8 @@ const MockChat: React.FC = () => {
             <Segmented
               data-testid="mock-track-toggle"
               options={[
-                { value: false, label: '会话轨 legacy' },
-                { value: true, label: '会话轨 runtime' },
+                { value: false, label: 'V1 数据线' },
+                { value: true, label: 'V2 数据线' },
               ]}
               value={isConversationRuntimeEnabled()}
               onChange={(value) => {
@@ -707,6 +708,7 @@ const MockChat: React.FC = () => {
                   hasPermission: true,
                   sandboxId: 'mock-sandbox',
                 }}
+                showConversationProgressCapsule
                 initialAgentMode="yolo"
                 onSendMessage={sendMessage}
                 onLoadMoreMessage={model.handleLoadMoreMessage}

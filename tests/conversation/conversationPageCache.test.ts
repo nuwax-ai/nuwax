@@ -1,3 +1,4 @@
+import { EVENT_TYPE } from '@/constants/event.constants';
 import {
   DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
   EMPTY_DRAFT_SUMMARY,
@@ -6,6 +7,8 @@ import {
   type ConversationPageCacheEntry,
 } from '@/features/conversation/domain/conversationPageCache';
 import { conversationPageCacheManager } from '@/features/conversation/runtime/conversationPageCacheManager';
+import { TaskStatus } from '@/types/enums/agent';
+import eventBus from '@/utils/eventBus';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const entry = (
@@ -17,6 +20,8 @@ const entry = (
   conversationId: key,
   view: 'closed',
   lifecycle: 'cached',
+  executing: false,
+  executingSince: null,
   createdAt: lastAccessAt,
   lastAccessAt,
   revision: 1,
@@ -122,6 +127,131 @@ describe('conversationPageCache', () => {
       conversationId: 101,
     });
     expect(restored.view).toBe('terminal');
+  });
+
+  it('隐藏会话确认结束后释放实例，保留面板偏好和草稿', () => {
+    const first = conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 201,
+    });
+    conversationPageCacheManager.update(first.key, { view: 'terminal' });
+    conversationPageCacheManager.saveDraft(first.key, {
+      version: 1,
+      text: '继续编辑',
+    });
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 202,
+    });
+
+    eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+      conversationId: 201,
+      taskStatus: TaskStatus.COMPLETE,
+    });
+
+    expect(conversationPageCacheManager.getEntry(first.key)).toBeUndefined();
+    expect(conversationPageCacheManager.getSnapshot().activeKey).toBe(
+      'chat:202',
+    );
+    expect(conversationPageCacheManager.getPanelPreference(first.key)).toBe(
+      'terminal',
+    );
+    expect(conversationPageCacheManager.loadDraft(first.key)?.text).toBe(
+      '继续编辑',
+    );
+  });
+
+  it('当前会话终态仍显示，离开后可按终态释放', () => {
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 203,
+    });
+    eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+      conversationId: 203,
+      taskStatus: TaskStatus.COMPLETE,
+    });
+    expect(conversationPageCacheManager.getEntry('chat:203')).toBeDefined();
+
+    conversationPageCacheManager.deactivate('chat:203');
+    expect(conversationPageCacheManager.getEntry('chat:203')).toBeUndefined();
+  });
+
+  it('终态后同会话重新执行，离开时继续保活', () => {
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 204,
+    });
+    conversationPageCacheManager.markConversationTaskStatus(
+      204,
+      TaskStatus.COMPLETE,
+    );
+    conversationPageCacheManager.markConversationTaskStatus(
+      204,
+      TaskStatus.EXECUTING,
+    );
+
+    conversationPageCacheManager.deactivate('chat:204');
+
+    expect(conversationPageCacheManager.getEntry('chat:204')).toBeDefined();
+  });
+
+  it('执行中（EXECUTING）条目在快照标记 executing，终态后清除', () => {
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 301,
+    });
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 302,
+    });
+    conversationPageCacheManager.markConversationTaskStatus(
+      301,
+      TaskStatus.EXECUTING,
+    );
+    conversationPageCacheManager.markConversationTaskStatus(
+      302,
+      TaskStatus.EXECUTING,
+    );
+
+    let snapshot = conversationPageCacheManager.getSnapshot();
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:301')?.executing,
+    ).toBe(true);
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:301')?.executingSince,
+    ).not.toBeNull();
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:302')?.executing,
+    ).toBe(true);
+
+    conversationPageCacheManager.markConversationTaskStatus(
+      302,
+      TaskStatus.COMPLETE,
+    );
+    snapshot = conversationPageCacheManager.getSnapshot();
+    // 当前会话终态仍显示，仅清除执行标记
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:302')?.executing,
+    ).toBe(false);
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:302')?.executingSince,
+    ).toBeNull();
+    expect(
+      snapshot.entries.find((item) => item.key === 'chat:301')?.executing,
+    ).toBe(true);
+  });
+
+  it('执行事件先于页面激活到达时，新建条目仍带执行标记', () => {
+    conversationPageCacheManager.markConversationTaskStatus(
+      401,
+      TaskStatus.CREATE,
+    );
+    const created = conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 401,
+    });
+    expect(created.executing).toBe(true);
+    expect(created.executingSince).not.toBeNull();
   });
 
   it('草稿快照只暴露长度，不暴露正文', () => {

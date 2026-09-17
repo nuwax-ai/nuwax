@@ -4,8 +4,8 @@
  * runtime 会话与断言 verdict，顶部汇总 N/M 通过、失败项一键重播。
  *
  * 边界（有意设计）：
- * - 仅 runtime 轨——legacy 轨依赖全局 conversationInfo model，无法多实例并存，
- *   legacy 验收请走单页 /mock-chat（卡片「深看」直达）；
+ * - 仅 V2 数据线（runtime）——V1 数据线（legacy）依赖全局 conversationInfo model，无法多实例并存，
+ *   V1 验收请走单页 /mock-chat（卡片「深看」直达）；
  * - 汇总快照写 window.__MOCK_GALLERY_ASSERTIONS__，不触碰单页 e2e 合同
  *   （window.__MOCK_CHAT_ASSERTIONS__）；
  * - mock 服务端按 conversationId 键控（mock/conversationMock.ts Map 改造）。
@@ -282,10 +282,10 @@ const MockChatGallery: React.FC = () => {
             <Title level={4} style={{ margin: 0 }}>
               会话场景综合验收 · Mock Gallery
             </Title>
-            <Tag color="geekblue">runtime 轨</Tag>
+            <Tag color="geekblue">V2 数据线</Tag>
             <Text type="secondary">
               {scenarios.length} 个场景按组批播（错峰 {STAGGER_MS}ms · 并发上限{' '}
-              {MAX_CONCURRENT_PLAYING}）；legacy 轨请走单页深看
+              {MAX_CONCURRENT_PLAYING}）；V1 数据线请走单页深看
             </Text>
           </Space>
           <Space wrap align="center">

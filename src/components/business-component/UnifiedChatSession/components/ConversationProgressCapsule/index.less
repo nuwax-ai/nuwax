@@ -7,34 +7,55 @@
   z-index: 20;
   top: @marginMd;
   right: @marginMd;
-  width: min(360px, calc(100% - 2 * @marginMd));
+  // 收起态贴合内容宽度；320px 为整体上限
+  width: fit-content;
+  max-width: min(320px, calc(100% - 2 * @marginMd));
   color: @colorText;
   border: 1px solid @colorBorderSecondary;
   border-radius: 999px;
-  background: color-mix(in srgb, @colorBgElevated 94%, transparent);
-  box-shadow: 0 8px 28px rgb(0 0 0 / 16%);
-  backdrop-filter: blur(16px);
+  background: @colorBgElevated;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
   overflow: hidden;
-  transition: border-radius 0.18s ease, width 0.18s ease;
 }
 
 .expanded {
-  width: min(440px, calc(100% - 2 * @marginMd));
+  width: min(320px, calc(100% - 2 * @marginMd));
   border-radius: @borderRadiusLg;
 }
 
 .trigger {
   width: 100%;
-  min-height: 42px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   gap: @marginXs;
-  padding: @paddingXs @paddingSm;
+  padding: 3px 6px 3px @paddingXs;
   border: 0;
   color: inherit;
   background: transparent;
   cursor: pointer;
   text-align: left;
+}
+
+.trigger-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: @fontSizeSm;
+}
+
+.chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: @fontSizeSm;
+  font-variant-numeric: tabular-nums;
 }
 
 .spinner {
@@ -58,52 +79,42 @@
   color: @colorTextSecondary;
 }
 
-.action {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: @fontSizeSm;
+.stat-add {
+  color: @colorSuccess;
 }
 
-.count {
-  flex: none;
-  color: @colorTextSecondary;
-  font-variant-numeric: tabular-nums;
-  font-size: @fontSizeSm;
+.stat-del {
+  color: @colorError;
 }
 
+// 面板动效由组件内 JS 逐帧驱动（见 index.tsx animatePanelStyle）：
+// CSS 动画在部分环境（系统减弱动态效果）冻结在起点会让面板不可见。
+// 面板条件渲染（收起态 DOM 无面板），胶囊收起宽度只贴合触发器内容。
 .panel {
+  position: relative;
   border-top: 1px solid @colorBorderSecondary;
-  padding: @paddingSm;
+  padding: @paddingSm 32px @paddingSm @paddingSm;
+  max-height: min(60cqh, 480px);
+  overflow-y: auto;
 }
 
-.panel-title,
-.current-action {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: @marginXs;
-}
-
-.panel-title {
-  font-weight: 600;
-  margin-bottom: @marginSm;
-}
-
-.current-action {
-  justify-content: flex-start;
-  padding: @paddingXs @paddingSm;
-  border-radius: @borderRadius;
-  background: var(--fill-color-secondary, rgb(127 127 127 / 10%));
+.panel-collapse {
+  // 固定在面板右上角内空区（胶囊根 absolute），不随面板内容滚动
+  position: absolute;
+  top: 43px;
+  right: 12px;
+  z-index: 2;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: @colorTextSecondary;
   font-size: @fontSizeSm;
-}
+  line-height: 1;
+  padding: 2px;
 
-.groups {
-  max-height: min(52cqh, 420px);
-  overflow: auto;
-  margin-top: @marginSm;
+  &:hover {
+    color: @colorText;
+  }
 }
 
 .group + .group {
@@ -118,27 +129,141 @@
   color: @colorTextSecondary;
   font-size: @fontSizeSm;
   margin-bottom: @marginXs;
+
+  > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
-.group-meta {
-  color: @colorTextTertiary;
-  font-variant-numeric: tabular-nums;
+.group-title-main {
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXxs;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.stat {
+.group-title-icon {
   flex: none;
   display: inline-flex;
+  font-size: 12px;
+  color: @colorTextTertiary;
+}
+
+.group-title-text {
+  // 占满图标右侧剩余宽度：否则 space-between 会把图标与文字拆到两端
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// task-result 产物行：对齐会话输出 TaskResultRow 的行形态（图标+描述+箭头）
+.result-row {
+  // button 化后补齐 reset：默认边框/字体与宽度约束（否则行溢出、截断失效）
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  display: flex;
+  align-items: center;
   gap: @marginXs;
+  padding: 6px 10px;
+  border-radius: @borderRadius;
+  background: @colorBgContainerDisabled;
   font-size: @fontSizeSm;
+  color: @colorText;
+  cursor: pointer;
+
+  &:hover {
+    background: @colorBgTextHover;
+  }
+
+  // 多条产物行之间的间距
+  & + & {
+    margin-top: 6px;
+  }
+}
+
+// 任务结果正文卡片（无标签产物时回退）：对齐会话输出 task-result 的浅灰卡片形态
+.result-card {
+  padding: 8px 10px;
+  border-radius: @borderRadius;
+  background: @colorBgContainerDisabled;
+  color: @colorText;
+  font-size: @fontSizeSm;
+  line-height: 1.6;
+  word-break: break-word;
+  overflow: hidden;
+  /* stylelint-disable-next-line property-no-vendor-prefix, declaration-block-no-duplicate-properties -- line-clamp 需要 -webkit 前缀 */
+  display: -webkit-box;
+  /* stylelint-disable-next-line property-no-vendor-prefix -- line-clamp 需要 -webkit 前缀 */
+  -webkit-box-orient: vertical;
+  /* stylelint-disable-next-line property-no-vendor-prefix -- line-clamp 需要 -webkit 前缀 */
+  -webkit-line-clamp: 4;
+}
+
+.counter {
+  color: @colorPrimary;
   font-variant-numeric: tabular-nums;
 }
 
-.stat-add {
-  color: @colorSuccess;
+.group-toggle,
+.action-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: @marginXs;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font-size: @fontSizeSm;
+  text-align: left;
 }
 
-.stat-del {
-  color: @colorError;
+.toggle-chevron {
+  flex: none;
+  font-size: 10px;
+  color: @colorTextTertiary;
+  transition: transform 0.18s ease;
+}
+
+.toggle-chevron-open {
+  transform: rotate(90deg);
+}
+
+.toggle-chevron-down-open {
+  transform: rotate(180deg);
+}
+
+.chevron-dim {
+  flex: none;
+  color: @colorTextTertiary;
+  font-size: 12px;
+}
+
+.summary-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: @marginXs;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font-size: @fontSizeSm;
+  text-align: left;
+}
+
+.summary-done {
+  color: @colorSuccess;
 }
 
 .step-list {
@@ -153,7 +278,6 @@
   gap: @marginXs;
   padding: 5px 0;
   line-height: 1.45;
-  word-break: break-word;
 }
 
 .step-icon {
@@ -168,6 +292,22 @@
 
 .step-active .step-icon {
   color: @colorPrimary;
+}
+
+.step-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strike {
+  text-decoration: line-through;
+  color: @colorTextTertiary;
 }
 
 .dot {
@@ -201,7 +341,7 @@
   white-space: nowrap;
 }
 
-.node-mono {
+.mono {
   font-family: @fontFamilyCode;
   font-size: @fontSizeSm;
 }
