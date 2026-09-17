@@ -8,10 +8,14 @@ import {
   ApiCollectEventResponse,
 } from '@/services/event';
 import { dict } from '@/services/i18nRuntime';
+import {
+  getHostVisibility,
+  subscribeHostVisibility,
+} from '@/services/hostVisibility';
 import eventBus from '@/utils/eventBus';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Modal } from 'antd';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useRequest } from 'umi';
 
 export default function useEventPolling(): React.ReactElement | null {
@@ -143,8 +147,10 @@ export default function useEventPolling(): React.ReactElement | null {
           } catch (error) {
             console.error('Error processing event:', error);
           } finally {
-            // 重新开始轮询
-            startPolling();
+            // 重新开始轮询；宿主不可见（休眠控制）时不得重启，等恢复可见的 host-activity 沿拉起
+            if (getHostVisibility()) {
+              startPolling();
+            }
             // 处理完成，重置标记
             isProcessingRef.current = false;
           }
@@ -153,6 +159,18 @@ export default function useEventPolling(): React.ReactElement | null {
       onError: () => {},
     },
   );
+
+  // 休眠控制（客户端宿主）：webview 感知不到宿主最小化/托盘隐藏/锁屏（实测
+  // 2026-09-17），改由壳 host-activity 事件暂停/恢复全局事件轮询；浏览器端恒
+  // visible，pollingWhenHidden 的 tab 级行为不变。挂载即休眠（--hidden 冷启动）
+  // 时自查停轮询（订阅不做注册即回调）。
+  useEffect(() => {
+    if (!getHostVisibility()) stopPolling();
+    return subscribeHostVisibility((nextVisible) => {
+      if (nextVisible) startPolling();
+      else stopPolling();
+    });
+  }, [startPolling, stopPolling]);
 
   // 返回 contextHolder，需要在组件中渲染
   return contextHolder;

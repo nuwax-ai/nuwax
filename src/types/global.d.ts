@@ -34,6 +34,12 @@ type HostCommand =
   /** 新建任务（壳层接管 ⌘N/Ctrl+N：浏览器保留键页面收不到，壳 before-input-event 拦截后下发） */
   | {
       type: 'new-task';
+    }
+  /** 休眠控制：宿主可见性变化（锁屏/最小化/托盘隐藏/恢复）。壳 hostActivity 服务沿状态变化沿下发 */
+  | {
+      type: 'host-activity';
+      /** true=宿主可见（恢复轮询并立即补拉）；false=不可见（暂停后台轮询） */
+      visible: boolean;
     };
 
 /**

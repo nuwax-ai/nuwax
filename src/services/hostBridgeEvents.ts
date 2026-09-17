@@ -11,6 +11,7 @@
  * 内部经 currentHandlers 读最新 handlers，故 handlers 变化无需重新注册。
  */
 import { hostBridge } from '@/utils/hostBridge';
+import { handleHostActivityPayload } from './hostVisibility';
 
 /** 宿主命令需要驱动的业务能力（由调用方注入）。 */
 export interface HostBridgeEventHandlers {
@@ -32,6 +33,10 @@ function handleHostCommand(payload: HostCommand): void {
       break;
     case 'new-task':
       currentHandlers?.createNewTask();
+      break;
+    case 'host-activity':
+      // 休眠控制：壳 hostActivity 服务下发的宿主可见性沿，不依赖注入 handlers
+      handleHostActivityPayload(payload);
       break;
     default:
       console.warn(

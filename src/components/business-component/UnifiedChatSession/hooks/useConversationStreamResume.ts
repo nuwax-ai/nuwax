@@ -1,5 +1,9 @@
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import {
+  getHostVisibility,
+  subscribeHostVisibility,
+} from '@/services/hostVisibility';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -458,12 +462,18 @@ export function useConversationStreamResume(
   const subscribeRef = useRef(subscribe);
   subscribeRef.current = subscribe;
 
+  // 休眠控制（客户端宿主）：webview 的 document.visibilityState 不随宿主窗口
+  // 最小化/托盘隐藏/锁屏变化（实测 2026-09-17），轮询可见性改由壳 host-activity
+  // 事件驱动；浏览器端恒 visible，pollingWhenHidden 的 tab 级行为不变
+  const [hostVisible, setHostVisible] = useState(getHostVisibility);
+
   const isPollingReady =
     !!conversationId &&
     !isLocallyStreaming &&
     !isAwaitingChatTerminal &&
     !isResumeSubscribed &&
-    !!resumeStream;
+    !!resumeStream &&
+    hostVisible;
 
   // 轮询会话状态：仅标签可见时触发(pollingWhenHidden:false)，复用全局轮询方案。
   // ready 含 !isResumeSubscribed：续上 sub 后不再轮询（subscribe 的 stopPolling 作立即兜底）。
@@ -575,6 +585,17 @@ export function useConversationStreamResume(
         }
       },
     },
+  );
+
+  // 休眠控制：不可见沿立即停轮询（ready 翻转只阻后续轮询，同上 stopPolling 兜底
+  // 范式）；恢复可见时 setHostVisible 触发 ready 重算，ahooks 自动补拉一轮快照
+  useEffect(
+    () =>
+      subscribeHostVisibility((nextVisible) => {
+        setHostVisible(nextVisible);
+        if (!nextVisible) cancel();
+      }),
+    [cancel],
   );
 
   // 把 run/cancel 注入 pollingControlsRef，供 subscribe / onClose 调用

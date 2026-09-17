@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  * 可在 vitest 直接 import 运行。本测试聚焦「宿主命令 → 业务能力」分发与生命周期。
  */
 import { initHostBridgeEvents } from './hostBridgeEvents';
+import { __resetForTest, getHostVisibility } from './hostVisibility';
 
 describe('hostBridgeEvents · 宿主命令响应（host→guest 通道消费端）', () => {
   const originalBridge = (window as any).NuwaClawBridge;
@@ -45,6 +46,18 @@ describe('hostBridgeEvents · 宿主命令响应（host→guest 通道消费端�
 
     registeredHandler!({ type: 'new-task' });
     expect(createNewTask).toHaveBeenCalledTimes(1);
+  });
+
+  it('host-activity 命令 → 分发到 hostVisibility（休眠控制），不依赖注入 handlers', () => {
+    __resetForTest();
+    initHostBridgeEvents({ setSecondMenuCollapsed: vi.fn(), createNewTask: vi.fn() });
+
+    registeredHandler!({ type: 'host-activity', visible: false });
+    expect(getHostVisibility()).toBe(false);
+
+    registeredHandler!({ type: 'host-activity', visible: true });
+    expect(getHostVisibility()).toBe(true);
+    __resetForTest();
   });
 
   it('未知命令类型 → 不调用 setSecondMenuCollapsed（仅 console.warn）', () => {
