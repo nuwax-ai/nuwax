@@ -1,11 +1,14 @@
 import CurrentPublishItem from '@/components/VersionHistory/CurrentPublishItem';
+import PublishRecordItem from '@/components/VersionHistory/PublishRecordItem';
 import Loading from '@/components/custom/Loading';
 import ToggleWrap from '@/components/ToggleWrap';
 import { dict } from '@/services/i18nRuntime';
 import { apiPublishItemList, apiPublishOffShelf } from '@/services/publish';
+import { apiUserAppConfigHistoryList } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import type {
+  HistoryData,
   PublishItemInfo,
   PublishOffShelfParams,
 } from '@/types/interfaces/publish';
@@ -47,6 +50,22 @@ const AppDevPublishVersionRecords: React.FC<AppDevPublishVersionRecordsProps> = 
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [publishList, setPublishList] = useState<PublishItemInfo[]>([]);
+  const [versionHistoryList, setVersionHistoryList] = useState<HistoryData[]>(
+    [],
+  );
+
+  // 查询全栈应用配置历史（发布记录）
+  const { run: runHistory } = useRequest(apiUserAppConfigHistoryList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: HistoryData[]) => {
+      setVersionHistoryList(result ?? []);
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
 
   // 查询指定全栈应用已发布列表
   const { run: runPublishList } = useRequest(apiPublishItemList, {
@@ -85,16 +104,15 @@ const AppDevPublishVersionRecords: React.FC<AppDevPublishVersionRecordsProps> = 
     if (!visible || !appId) {
       return;
     }
-    // 加载中
     setLoading(true);
-    // 清空发布列表
     setPublishList([]);
-    // 查询指定全栈应用已发布列表
+    setVersionHistoryList([]);
+    runHistory(appId);
     runPublishList({
       targetId: appId,
       targetType: AgentComponentTypeEnum.UserApp,
     });
-  }, [appId, runPublishList, visible]);
+  }, [appId, runHistory, runPublishList, visible]);
 
   // 下架全栈应用
   const handleOffShelf = useCallback(
@@ -127,16 +145,30 @@ const AppDevPublishVersionRecords: React.FC<AppDevPublishVersionRecordsProps> = 
 
   const content = loading ? (
     <Loading className="h-full" />
-  ) : publishList.length > 0 ? (
+  ) : publishList.length > 0 || versionHistoryList.length > 0 ? (
     <div className={cx(styles['main-wrap'])}>
+      {publishList.length > 0 ? (
+        <>
+          <h5 className={cx(styles.title)}>
+            {dict('PC.Components.VersionHistory.currentPublish')}
+          </h5>
+          {publishList.map((info) => (
+            <CurrentPublishItem
+              key={info.publishId}
+              info={info}
+              onOffShelf={() => handleOffShelf(info)}
+            />
+          ))}
+        </>
+      ) : null}
       <h5 className={cx(styles.title)}>
-        {dict('PC.Components.VersionHistory.currentPublish')}
+        {dict('PC.Components.PublishComponentModal.publishRecord')}
       </h5>
-      {publishList.map((info) => (
-        <CurrentPublishItem
-          key={info.publishId}
-          info={info}
-          onOffShelf={() => handleOffShelf(info)}
+      {versionHistoryList.map((item) => (
+        <PublishRecordItem
+          key={item.id}
+          info={item}
+          renderActions={() => null}
         />
       ))}
     </div>

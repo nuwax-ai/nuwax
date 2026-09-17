@@ -2,8 +2,9 @@ import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
+import { PublishStatusEnum } from '@/types/enums/common';
 import { CodeOutlined } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, Tooltip } from 'antd';
+import { Button, Dropdown, MenuProps, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo } from 'react';
 import DatabaseGlyph from '../components/DatabaseGlyph';
@@ -117,16 +118,32 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   const isDevEnv = env === UserAppDbEnvEnum.Dev;
   /** 已部署到生产环境后才可发布到广场 / 空间 */
   const showMarketPublish = userAppInfo?.prodDeployed === true;
+  /** 已发布到广场 / 空间后才展示发布版本记录 */
+  const showPublishVersionRecords =
+    userAppInfo?.publishStatus === PublishStatusEnum.Published;
 
-  const handleSelectDevEnv = useCallback(() => {
-    onEnvChange?.(UserAppDbEnvEnum.Dev);
-  }, [onEnvChange]);
+  const envOptions = useMemo(
+    () => [
+      {
+        label: dict('PC.Pages.AppDevPro.devEnv'),
+        value: UserAppDbEnvEnum.Dev,
+      },
+      {
+        label: dict('PC.Pages.AppDevPro.onlineEnv'),
+        value: UserAppDbEnvEnum.Prod,
+      },
+    ],
+    [],
+  );
 
-  const handleSelectProdEnv = useCallback(() => {
-    onEnvChange?.(UserAppDbEnvEnum.Prod);
-  }, [onEnvChange]);
+  const handleEnvChange = useCallback(
+    (value: UserAppDbEnvEnum) => {
+      onEnvChange?.(value);
+    },
+    [onEnvChange],
+  );
 
-  /** 线上环境更多菜单：域名绑定、构建包版本记录、发布版本记录 */
+  /** 线上环境更多菜单：域名绑定、构建包版本记录、发布版本记录（已发布时） */
   const prodMoreMenuItems = useMemo<MenuProps['items']>(
     () => [
       {
@@ -145,19 +162,24 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
           </div>
         ),
       },
-      {
-        key: 'publishVersionRecords',
-        label: (
-          <div onClick={onTogglePublishVersionRecords}>
-            {dict('PC.Pages.AppDevPro.publishVersionRecords')}
-          </div>
-        ),
-      },
+      ...(showPublishVersionRecords
+        ? [
+            {
+              key: 'publishVersionRecords',
+              label: (
+                <div onClick={onTogglePublishVersionRecords}>
+                  {dict('PC.Pages.AppDevPro.publishVersionRecords')}
+                </div>
+              ),
+            },
+          ]
+        : []),
     ],
     [
       onOpenDomainBinding,
       onToggleBuildVersionRecords,
       onTogglePublishVersionRecords,
+      showPublishVersionRecords,
     ],
   );
 
@@ -167,31 +189,12 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   return (
     <header className={cx('flex', 'items-center', styles.header, className)}>
       {/* 环境切换：开发 / 线上始终展示，图标入口仍按当前环境显隐 */}
-      <div
-        className={cx(
-          'flex',
-          'items-center',
-          'content-center',
-          styles['env-switch'],
-        )}
-      >
-        <div
-          className={cx('cursor-pointer', styles['env-item'], {
-            [styles.active]: env === UserAppDbEnvEnum.Dev,
-          })}
-          onClick={handleSelectDevEnv}
-        >
-          {dict('PC.Pages.AppDevPro.devEnv')}
-        </div>
-        <div
-          className={cx('cursor-pointer', styles['env-item'], {
-            [styles.active]: env === UserAppDbEnvEnum.Prod,
-          })}
-          onClick={handleSelectProdEnv}
-        >
-          {dict('PC.Pages.AppDevPro.onlineEnv')}
-        </div>
-      </div>
+      <Segmented
+        className={cx(styles['env-switch'], styles.segmented)}
+        options={envOptions}
+        value={env}
+        onChange={(value) => handleEnvChange(value as UserAppDbEnvEnum)}
+      />
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/* 线上环境更多：域名绑定 / 构建包版本记录 / 发布版本记录 */}

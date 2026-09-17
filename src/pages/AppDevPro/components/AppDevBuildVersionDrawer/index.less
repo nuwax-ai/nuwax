@@ -11,7 +11,12 @@
 }
 
 .content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   padding: 0 16px 16px;
+  overflow: auto;
 }
 
 .list {
@@ -115,7 +120,8 @@
 
 .empty {
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  min-height: 240px;
+  min-height: 0;
 }

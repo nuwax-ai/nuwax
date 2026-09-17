@@ -115,8 +115,15 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
           return (
             <li
               key={item.id}
-              className={cx(styles['conversation-item'])}
-              onClick={() => onSelect(item)}
+              className={cx(styles['conversation-item'], {
+                [styles['conversation-item-disabled']]: !owner.isMine,
+              })}
+              onClick={() => {
+                if (!owner.isMine) {
+                  return;
+                }
+                onSelect(item);
+              }}
             >
               <div className={cx(styles['conversation-top'])}>
                 <div className={cx(styles['conversation-name'], 'text-ellipsis')} title={title}>

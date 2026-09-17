@@ -24,7 +24,7 @@ import CreateNormalProjectModal from '../components/CreateNormalProjectModal';
 import EditNormalProjectModal, {
   type EditedNormalProjectInfo,
 } from '../components/EditNormalProjectModal';
-import ProjectCard from '../components/ProjectCard';
+import ProjectListCard from '../components/ProjectListCard';
 import { apiUserProjectPageQuery } from '../services';
 import { openProject } from '../type';
 import styles from './index.less';
@@ -116,6 +116,14 @@ const NormalProject: React.FC = () => {
       },
     },
   );
+
+  /** 重复点击菜单或切换空间：重置列表态，展示与首次进入一致的 Loading */
+  useEffect(() => {
+    setHasLoaded(false);
+    setList([]);
+    setPage(1);
+    setHasMore(true);
+  }, [refreshToken, spaceId]);
 
   /** 搜索、空间变化或重复点击菜单时，从第一页重新加载 */
   useEffect(() => {
@@ -253,7 +261,7 @@ const NormalProject: React.FC = () => {
           >
             <div className={cx(styles['main-container'])}>
               {list.map((item) => (
-                <ProjectCard
+                <ProjectListCard
                   key={item.id}
                   item={item}
                   onClick={handleOpenProject}

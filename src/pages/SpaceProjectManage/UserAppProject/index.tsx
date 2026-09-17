@@ -22,9 +22,8 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
 import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
-import ProjectCard from '../components/ProjectCard';
+import ProjectListCard from '../components/ProjectListCard';
 import { apiUserProjectPageQuery } from '../services';
-import { openProject } from '../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -112,6 +111,14 @@ const UserAppProject: React.FC = () => {
       },
     },
   );
+
+  /** 重复点击菜单或切换空间：重置列表态，展示与首次进入一致的 Loading */
+  useEffect(() => {
+    setHasLoaded(false);
+    setList([]);
+    setPage(1);
+    setHasMore(true);
+  }, [refreshToken, spaceId]);
 
   /** 搜索、空间变化或重复点击菜单时，从第一页重新加载 */
   useEffect(() => {
@@ -253,7 +260,7 @@ const UserAppProject: React.FC = () => {
           >
             <div className={cx(styles['main-container'])}>
               {list.map((item) => (
-                <ProjectCard
+                <ProjectListCard
                   key={item.id}
                   item={item}
                   onClick={handleOpenProject}
@@ -277,11 +284,7 @@ const UserAppProject: React.FC = () => {
         onCancel={() => setOpenCreate(false)}
         onConfirmCreate={(result) => {
           setOpenCreate(false);
-          openProject(
-            spaceId,
-            { id: result.id, projectType: AgentComponentTypeEnum.UserApp },
-            result.conversationId,
-          );
+          history.push(`/space/${spaceId}/app-project-detail/${result.id}`);
         }}
       />
 
