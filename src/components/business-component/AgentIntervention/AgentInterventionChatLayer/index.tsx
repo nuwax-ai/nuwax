@@ -4,7 +4,6 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useActiveInterventionQueue } from '../hooks/useActiveInterventionQueue';
 import { useInterventionDialogFocus } from '../hooks/useInterventionDialogFocus';
-import { useInterventionPageInert } from '../hooks/useInterventionPageInert';
 import type {
   AcpPermissionInteraction,
   AcpPermissionRespondExtras,
@@ -89,9 +88,6 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
 
   // 遮罩对话框的焦点管理：有干预时聚焦入内 + Tab 循环 + 关闭还原（hook 须无条件调用）
   const dialogFocus = useInterventionDialogFocus(queueItems.length > 0);
-  // aria-modal 的指针侧承诺：干预期间侧栏/顶栏等对话框祖先链之外的旁支全部
-  // inert（不可点/不可滚）；后台保活会话的隐形弹窗不锁可见页面（IO 门控）
-  useInterventionPageInert(queueItems.length > 0, dialogFocus.containerRef);
 
   if (!queueItems.length) {
     return null;

@@ -29,27 +29,6 @@ vi.mock('../AcpPermissionCard', () => ({
   ),
 }));
 
-// jsdom 无 IntersectionObserver：桩成可手动触发，用例里控制「可见/不可见」
-class IntersectionObserverStub {
-  static instances: IntersectionObserverStub[] = [];
-  private cb: IntersectionObserverCallback;
-  constructor(cb: IntersectionObserverCallback) {
-    this.cb = cb;
-    IntersectionObserverStub.instances.push(this);
-  }
-  observe = vi.fn();
-  disconnect = vi.fn();
-  unobserve = vi.fn();
-  takeRecords = vi.fn(() => []);
-  emit(isIntersecting: boolean) {
-    this.cb(
-      [{ isIntersecting } as unknown as IntersectionObserverEntry],
-      this as unknown as IntersectionObserver,
-    );
-  }
-}
-vi.stubGlobal('IntersectionObserver', IntersectionObserverStub);
-
 const createInteraction = (id: string, createdAt: number) => ({
   intervention: {
     id,
@@ -161,24 +140,6 @@ describe('AgentInterventionChatLayer', () => {
 
     unmount();
     expect(document.activeElement).toBe(outside);
-    outside.remove();
-  });
-
-  it('干预可见期间祖先链旁支被 inert（侧栏等不可点不可滚），卸载后还原', () => {
-    const outside = document.createElement('button');
-    document.body.appendChild(outside);
-
-    const { unmount } = renderWithOneIntervention();
-    IntersectionObserverStub.instances.at(-1)?.emit(true);
-
-    expect(outside).toHaveAttribute('inert');
-    const dialog = screen.getByRole('dialog');
-    expect(dialog).not.toHaveAttribute('inert');
-    // 对话框自己的祖先链不得被 inert，否则卡片自身也无法交互
-    expect(dialog.parentElement).not.toHaveAttribute('inert');
-
-    unmount();
-    expect(outside).not.toHaveAttribute('inert');
     outside.remove();
   });
 });
