@@ -7,20 +7,19 @@
   z-index: 20;
   top: @marginMd;
   right: @marginMd;
-  // 收起态贴合内容宽度，不占满整行
+  // 收起态贴合内容宽度；整体最大 280px（展开面板同宽）
   width: fit-content;
-  max-width: calc(100% - 2 * @marginMd);
+  max-width: min(280px, calc(100% - 2 * @marginMd));
   color: @colorText;
   border: 1px solid @colorBorderSecondary;
   border-radius: 999px;
-  background: color-mix(in srgb, @colorBgElevated 94%, transparent);
+  background: @colorBgElevated;
   box-shadow: 0 8px 28px rgb(0 0 0 / 16%);
-  backdrop-filter: blur(16px);
   overflow: hidden;
 }
 
 .expanded {
-  width: min(440px, calc(100% - 2 * @marginMd));
+  width: min(280px, calc(100% - 2 * @marginMd));
   border-radius: @borderRadiusLg;
 }
 
@@ -125,6 +124,13 @@
   color: @colorTextSecondary;
   font-size: @fontSizeSm;
   margin-bottom: @marginXs;
+
+  > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .counter {
