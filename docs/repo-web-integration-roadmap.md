@@ -23,6 +23,7 @@
 | B6 | 桌面端 nuwaclaw webview：`/repo/` 加载时的 bridge token 注入与宿主能力适配 | 主仓+客户端 | ⬜ | 需先实测 webview 下表现 |
 | B7 | 权限模型边界：主仓菜单/按钮权限（resourceTree）与资料库文档级权限的分工与传递 | 设计+后端 | ⬜ | 契约 §4-4 |
 | B8 | 监控埋点/错误上报通道统一 | 主仓+子仓 | ⬜ | 契约 §4-5 |
+| B9 | **qiankun 布局内嵌试点**（2026-09-17）：主站侧栏常驻+内容区加载子应用，形态由整页挂载演进；通用契约沉淀 [micro-frontend-qiankun.md](./micro-frontend-qiankun.md)，dev 链路全通（挂载/数据/深链/前进后退/卸载/WS/视觉），生产化步骤待立项 | 主仓+子仓 | 🚧 dev PoC ✅ | 代码在双仓本地分支未推：主仓 `feat/repo-web-qiankun`、子仓 `feat/qiankun-slave`（未 bump pin）；观察项=portal→doc 首跳 update-depth、document.title 改写 |
 
 ## 2. 环境与协作项（非本仓代码）
 

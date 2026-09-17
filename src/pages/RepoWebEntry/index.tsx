@@ -1,4 +1,5 @@
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { useNavigate } from '@umijs/max';
 import { t } from '@/services/i18nRuntime';
 import { Spin } from 'antd';
 import classNames from 'classnames';
@@ -6,11 +7,13 @@ import React, { useEffect } from 'react';
 
 /**
  * 资料库（nuwax-repo-web）稳定入口。
- * @description 整页重定向到同域子应用 `/repo/`（构建产物由 `npm run sync:repo-web`
- * 同步到 public/repo/）。本路由 path 属集成契约的一部分，永不变更——将来若切换为
- * 布局内嵌方案，仅替换本页实现；契约细节见 docs/repo-web-integration.md。
+ * @description SPA 跳转到 qiankun 布局内嵌路由 `/repo/*`（路由侧经 microApp 挂载子应用）。
+ * 本路由 path 属集成契约的一部分，永不变更——形态切换仅替换本页实现（v0 为整页重定向，
+ * 现为 qiankun 内嵌跳转）；契约细节见 docs/repo-web-integration.md。
  */
 const RepoWebEntry: React.FC = () => {
+  const navigate = useNavigate();
+
   useEffect(() => {
     // dev 桥：dev 下主应用登录走跨域绝对地址（BASE_URL），后端 set-cookie 的 ticket
     // 落不到本地域，而 ticket 与登录 token 等值（见契约 §2.2）——把 token 镜像成同源
@@ -21,8 +24,8 @@ const RepoWebEntry: React.FC = () => {
         document.cookie = `ticket=${token}; path=/`;
       }
     }
-    window.location.replace('/repo/');
-  }, []);
+    navigate('/repo', { replace: true });
+  }, [navigate]);
 
   return (
     <div

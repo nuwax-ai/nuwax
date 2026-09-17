@@ -20,7 +20,9 @@ export default defineConfig({
     '/api/tenant': { target: testAgent, changeOrigin: true },
     '/api/file': { target: testAgent, changeOrigin: true },
     '/api/f': { target: testAgent, changeOrigin: true },
-    // 协作 WS：网关路由待后端确认（契约 docs/repo-web-integration.md §6-3），落地后自动生效
+    // 协作 WS：网关路由待后端确认（契约 docs/repo-web-integration.md §6-3），落地后自动生效。
+    // qiankun dev 不需要 /repo HTTP 代理：子应用 entry/模块直连其 vite dev server（7100），
+    // 业务 API 走上方 /api/* 代理；且任何 /repo 前缀代理都会吞掉 /repo-entry 稳定入口。
     '/repo/ws': { target: testAgent, changeOrigin: true, ws: true },
   },
 });

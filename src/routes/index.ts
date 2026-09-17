@@ -43,9 +43,17 @@ const routes = [
         path: '/open-iframe-page/:menuCode',
         component: '@/pages/OpenIframePage',
       },
-      // 资料库（nuwax-repo-web）稳定入口：整页重定向到同域子应用 /repo/，
+      // 资料库（nuwax-repo-web）稳定入口：SPA 跳转（dev 桥种 ticket cookie）到 /repo，
       // path 永不变更（集成契约见 docs/repo-web-integration.md）
       { path: '/repo-entry', component: '@/pages/RepoWebEntry' },
+      // 资料库 qiankun 布局内嵌：microApp 值必须与 config.ts qiankun.master.apps[].name
+      // 及子仓插件注册名一致（nuwax-repo-web）；/* 通配承接子应用深链（/repo/doc/:slugId 等）。
+      // 新子应用照此模式追加路由，接入契约见 docs/micro-frontend-qiankun.md
+      {
+        path: '/repo/*',
+        microApp: 'nuwax-repo-web',
+        microAppProps: { autoSetLoading: true },
+      },
       { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
       { path: '/my-computer-manage', component: '@/pages/MyComputerManage' },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },

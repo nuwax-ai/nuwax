@@ -34,6 +34,30 @@ export default defineConfig({
   model: {},
   initialState: {},
   request: {},
+  // qiankun 微前端宿主：子应用注册表。新子应用在此追加，
+  // 接入契约（生命周期导出/base 对齐/端口约定/样式隔离档位）见 docs/micro-frontend-qiankun.md。
+  // 注意：name 必须与子应用侧插件注册名/生命周期导出名完全一致（qiankun 按 name 抓取生命周期）。
+  qiankun: {
+    master: {
+      apps: [
+        {
+          // 资料库（nuwax-repo-web，Vite8 子应用）。
+          // dev：entry 传子应用 vite dev server 根路径 http://localhost:7100/（vite 302 到
+          //   /repo/），qiankun 注入的 publicPath=origin 不含 base——与子仓插件 dev 档
+          //   changeScriptOrigin:true 配合，模块直连 7100（跨域 CORS 已放行），主站无需代理。
+          // 生产：同域静态产物 /repo/（sync:repo-web 产出，nginx try_files 回退）；子仓插件
+          //   build 档 changeScriptOrigin:false，脚本 src 自带 /repo base 即正确地址。
+          name: 'nuwax-repo-web',
+          entry:
+            process.env.NODE_ENV === 'development'
+              ? 'http://localhost:7100/'
+              : '/repo/',
+        },
+      ],
+    },
+  },
+  // qiankun master 插件默认把挂载根 id 改为 root-master，显式钉回主站既有 #root 防呆
+  mountElementId: 'root',
   routes,
   npmClient: 'pnpm',
   // 排除不兼容模块联邦的包
