@@ -23,8 +23,8 @@ export const APP_LIST_TARGET_SUBTYPES: string[] = [
   'ThirdApp',
 ];
 
-/** 最近使用列表拉取条数(recentlyUsed/list 请求体参数,暂写死 200) */
-export const RECENT_USED_SIZE = 200;
+/** 最近使用列表拉取条数(recentlyUsed/list 请求体 pageSize 参数) */
+export const RECENT_USED_SIZE = 100;
 
 /** 最近使用收起时最多展示的行数(超出走展开/收起;列数按首行卡片实测) */
 export const RECENT_COLLAPSED_MAX_ROWS = 2;

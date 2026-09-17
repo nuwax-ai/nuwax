@@ -123,11 +123,11 @@ export async function apiPublishedAppList(
 /**
  * 女娲应用-最近使用列表接口
  * @description POST /api/published/app/recentlyUsed/list——
- * 全量数组（同 skill 域 recentlyUsed/list 先例，无分页），按最近使用排序返回
+ * 按最近使用排序返回，pageSize 控制拉取条数上限（无分页游标）
  */
 export async function apiPublishedAppRecentlyUsedList(data: {
   /** 拉取条数上限 */
-  size?: number;
+  pageSize?: number;
 }): Promise<RequestResponse<SquarePublishedItemInfo[]>> {
   return request('/api/published/app/recentlyUsed/list', {
     method: 'POST',
