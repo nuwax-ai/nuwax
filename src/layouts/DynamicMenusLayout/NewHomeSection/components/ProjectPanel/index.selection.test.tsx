@@ -36,6 +36,7 @@ const {
   conversationDeleteMock,
   pinMock,
   conversationDetailMock,
+  conversationListMock,
 } = vi.hoisted(() => ({
   pageQueryMock: vi.fn(),
   conversationsMock: vi.fn(),
@@ -43,6 +44,7 @@ const {
   conversationDeleteMock: vi.fn(),
   pinMock: vi.fn(),
   conversationDetailMock: vi.fn(),
+  conversationListMock: vi.fn(),
 }));
 
 vi.mock('umi', () => ({
@@ -66,6 +68,7 @@ vi.mock('@/services/agentConfig', () => ({
   apiAgentConversationUpdate: conversationUpdateMock,
   apiAgentConversationDelete: conversationDeleteMock,
   apiAgentConversation: conversationDetailMock,
+  apiAgentConversationList: conversationListMock,
 }));
 
 vi.mock('@/hooks/useHomePinnedProjectHandoff', () => ({
@@ -176,6 +179,12 @@ describe('ProjectPanel 选中关系', () => {
     conversationDeleteMock.mockReset();
     pinMock.mockReset();
     conversationDetailMock.mockReset();
+    // 切回核对探针默认回空列表（全部子会话「消失」→ 全量兜底），个别用例按需覆写
+    conversationListMock.mockReset();
+    conversationListMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [],
+    });
   });
 
   it('命中项目子会话：折叠态自动展开 + 子行高亮（child-active/aria-current）', async () => {
@@ -434,11 +443,139 @@ describe('ProjectPanel 选中关系', () => {
             : [],
       }),
     );
+    // 探针：11 无差异；跨端新增的 12 经 devTarget 归属命中项目 1 → 只重拉项目 1
+    conversationListMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [
+        buildConversation(11),
+        {
+          ...buildConversation(12, '跨端会话'),
+          devTargetType: AgentComponentTypeEnum.NormalProject,
+          devTargetId: '1',
+        } as ConversationInfo,
+      ],
+    });
 
     act(() => ref.current?.revalidateVisible());
 
     await waitFor(() => expect(screen.getByText('跨端项目')).toBeTruthy());
     await waitFor(() => expect(screen.getByText('跨端会话')).toBeTruthy());
+  });
+
+  it('切回核对探针：无差异时不再逐项目重拉子会话', async () => {
+    respondPage([buildRecord()], { 1: [buildConversation(11)] });
+    const ref = createRef<ProjectPanelHandle>();
+    render(<ProjectPanel ref={ref} compact />);
+    await waitFor(() => expect(screen.getByText('会话11')).toBeTruthy());
+    expect(conversationsMock).toHaveBeenCalledTimes(1);
+    expect(ref.current?.hasExecutingChildren()).toBe(false);
+
+    // 探针回包与已加载子会话指纹完全一致（常态切回：切走期间无变化）
+    conversationListMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [buildConversation(11)],
+    });
+    act(() => ref.current?.revalidateVisible());
+
+    await waitFor(() => expect(pageQueryMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(conversationListMock).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await flush();
+      await flush();
+    });
+    // 项目行重拉 + 探针各一次，子会话零重拉
+    expect(conversationsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('切回核对探针：执行中→终态先 emit 本地补丁，仅重拉受影响项目', async () => {
+    respondPage(
+      [buildRecord({ projectId: 1 }), buildRecord({ projectId: 2 })],
+      {
+        1: [
+          {
+            ...buildConversation(11, '执行任务'),
+            taskStatus: TaskStatus.EXECUTING,
+          },
+        ],
+        2: [buildConversation(21)],
+      },
+    );
+    const ref = createRef<ProjectPanelHandle>();
+    render(<ProjectPanel ref={ref} compact />);
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+        ),
+      ).toBeTruthy(),
+    );
+    expect(ref.current?.hasExecutingChildren()).toBe(true);
+    expect(conversationsMock).toHaveBeenCalledTimes(2);
+
+    // 探针：11 已终态（21 无差异）；子会话重拉也回终态（emit 补丁与重拉双路收敛）
+    conversationsMock.mockImplementation((projectId: number) =>
+      Promise.resolve({
+        code: SUCCESS_CODE,
+        data:
+          projectId === 1
+            ? [
+                {
+                  ...buildConversation(11, '执行任务'),
+                  taskStatus: TaskStatus.COMPLETE,
+                },
+              ]
+            : [buildConversation(21)],
+      }),
+    );
+    conversationListMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [
+        {
+          ...buildConversation(11, '执行任务'),
+          taskStatus: TaskStatus.COMPLETE,
+        },
+        buildConversation(21),
+      ],
+    });
+    act(() => ref.current?.revalidateVisible());
+
+    // 「执行中」标记翻新（emit 终态补丁 + 受影响项目重拉）
+    await waitFor(() =>
+      expect(
+        screen.queryByText(
+          'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+        ),
+      ).toBeNull(),
+    );
+    expect(ref.current?.hasExecutingChildren()).toBe(false);
+    // 只重拉项目 1（差异项目），项目 2 无差异不重拉
+    await waitFor(() => expect(conversationsMock).toHaveBeenCalledTimes(3));
+    expect(conversationsMock).toHaveBeenLastCalledWith(
+      1,
+      AgentComponentTypeEnum.NormalProject,
+    );
+  });
+
+  it('切回核对探针：出现未加载过的会话 id 时全量兜底发现新增行', async () => {
+    respondPage([buildRecord()], { 1: [buildConversation(11)] });
+    const ref = createRef<ProjectPanelHandle>();
+    render(<ProjectPanel ref={ref} compact />);
+    await waitFor(() => expect(screen.getByText('会话11')).toBeTruthy());
+
+    // 探针出现未知 id（切走期间新增会话，无法定位归属项目）→ 全量兜底重拉
+    conversationsMock.mockImplementation(() =>
+      Promise.resolve({
+        code: SUCCESS_CODE,
+        data: [buildConversation(11), buildConversation(12, '探针新会话')],
+      }),
+    );
+    conversationListMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [buildConversation(11), buildConversation(12, '探针新会话')],
+    });
+    act(() => ref.current?.revalidateVisible());
+
+    await waitFor(() => expect(screen.getByText('探针新会话')).toBeTruthy());
   });
 
   it('项目刷新在途的改名事件不会被旧回包覆盖', async () => {

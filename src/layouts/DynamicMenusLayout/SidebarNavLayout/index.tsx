@@ -124,6 +124,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     setIsSecondMenuCollapsed,
     setOpenMessage,
     setOpenAdmin,
+    setOpenSearchModal,
   } = useModel('layout');
 
   // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
@@ -179,13 +180,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     refreshUserInfo();
   }, []);
 
-  // nuwaclaw 桌面端：注册宿主命令监听（工具栏「收起二级菜单」、壳层 ⌘N 新建任务经此通道下发）
+  // nuwaclaw 桌面端：注册宿主命令监听（工具栏「收起二级菜单」、壳层 ⌘N 新建任务、
+  // 应用菜单「文件 → 搜索」（⌘K 菜单化）经此通道下发）
   useEffect(() => {
     return initHostBridgeEvents({
       setSecondMenuCollapsed: setIsSecondMenuCollapsed,
       createNewTask: handleNewTask,
+      openSearch: () => setOpenSearchModal(true),
     });
-  }, [setIsSecondMenuCollapsed, handleNewTask]);
+  }, [setIsSecondMenuCollapsed, handleNewTask, setOpenSearchModal]);
 
   /**
    * 用户区域操作

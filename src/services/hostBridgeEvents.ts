@@ -19,6 +19,9 @@ export interface HostBridgeEventHandlers {
   setSecondMenuCollapsed: (collapsed: boolean) => void;
   /** 新建任务（与侧栏「新建任务」同一处理函数；壳层 ⌘N/Ctrl+N 接管下发）。 */
   createNewTask: () => void;
+  /** 打开全局搜索（layout model 的 setOpenSearchModal(true)；壳应用菜单「文件 → 搜索」
+   * 下发。可选：仅挂了 SidebarSearchModal 的单栏布局注入，经典布局无实体不注入。 */
+  openSearch?: () => void;
 }
 
 /** 最近一次注入的 handlers（handleHostCommand 闭包读取，保证读到最新）。 */
@@ -33,6 +36,9 @@ function handleHostCommand(payload: HostCommand): void {
       break;
     case 'new-task':
       currentHandlers?.createNewTask();
+      break;
+    case 'open-search':
+      currentHandlers?.openSearch?.();
       break;
     case 'host-activity':
       // 休眠控制：壳 hostActivity 服务下发的宿主可见性沿，不依赖注入 handlers
