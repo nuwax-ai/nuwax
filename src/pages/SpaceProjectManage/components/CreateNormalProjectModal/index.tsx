@@ -135,7 +135,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
             ? workspacePath || undefined
             : undefined,
       });
-      const newId = res?.data?.id ?? res?.data?.targetId;
+      const newId = res?.data?.projectId;
       if (res?.code === SUCCESS_CODE && newId) {
         emitProjectChanged({
           operation: 'created',
@@ -165,8 +165,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
           id: newId,
           name: values.name.trim(),
           sandboxId: numericSandboxId,
-          conversationId: res?.data?.conversationId,
-          agentId: res?.data?.agentId,
+          conversationId: res.data.conversationId ?? undefined,
         });
       } else {
         message.error(
