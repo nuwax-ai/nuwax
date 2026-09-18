@@ -2694,6 +2694,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppDevPro.previewAppLoading": "應用載入中",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "請稍候，介面即將呈現",
   "PC.Pages.AppDevPro.iframeLoadFailed": "頁面載入失敗，請重新整理後重試",
+  "PC.Pages.AppDevPro.iframeLoadFailedWithStatus": "頁面載入失敗（HTTP {0}），請重新整理後重試或檢查開發伺服器",
   "PC.Pages.AppDevPro.previewJumpHint": "按 Enter 跳轉到: {0}",
   "PC.Pages.AppDevPro.previewStartHint": "服務已停止，啟動後即可預覽應用",
   "PC.Pages.AppDevPro.previewStartRetry": "重新啟動",

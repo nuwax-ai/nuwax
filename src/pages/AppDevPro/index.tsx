@@ -103,10 +103,8 @@ import {
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
-import {
-  buildUserAppAppPreviewUrl,
-  probeUserAppPreviewUrlReachable,
-} from './utils/userAppPreviewUrl';
+import { probePreviewReachable } from './utils/previewHealthCheck';
+import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 const cx = classNames.bind(styles);
 
 /** Header 工作区：文件树预览与应用预览 / 数据库 / 远程桌面互斥，后三者不进入文件标签栏 */
@@ -436,9 +434,13 @@ const AppDevPro: React.FC = () => {
   const prodPod = useUserAppEnvPod(envPodConversationId, UserAppDbEnvEnum.Prod);
   const podStatus = devPod.status;
   const podReady = podStatus === 'running';
-  /** 当前 Header 环境的容器是否启动失败，失败时预览「停止应用」不可点 */
-  const previewContainerFailed =
-    (dbEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus) === 'error';
+  /** 当前 Header 环境（开发 / 线上）的 pod ensure 状态 */
+  const currentEnvPodStatus =
+    dbEnv === UserAppDbEnvEnum.Prod ? prodPod.status : podStatus;
+  const currentEnvPodReady = currentEnvPodStatus === 'running';
+  const previewPodEnsuring = currentEnvPodStatus === 'starting';
+  /** ensure 失败时预览「重启 / 停止应用」均不可点 */
+  const previewContainerFailed = currentEnvPodStatus === 'error';
 
   /**
    * 进入页面即启动并保活开发环境容器。
@@ -809,7 +811,7 @@ const AppDevPro: React.FC = () => {
   const prepareDevPreviewIfNeeded = useCallback(async () => {
     const previewUrl = appPreviewUrlRef.current;
     if (previewUrl) {
-      const reachable = await probeUserAppPreviewUrlReachable(previewUrl);
+      const reachable = await probePreviewReachable(previewUrl);
       if (reachable) {
         setPreviewIframeUrl(previewUrl);
         markPreviewReadyRef.current();
@@ -2218,8 +2220,12 @@ const AppDevPro: React.FC = () => {
         previewRuntimeRestarting={previewRuntime.restarting}
         previewRuntimeStopping={previewRuntime.stopping}
         previewRuntimeReady={
-          podReady && !isConversationActive && !hasPendingIntervention
+          currentEnvPodReady &&
+          !isConversationActive &&
+          !hasPendingIntervention
         }
+        previewEnvPodReady={currentEnvPodReady}
+        previewPodEnsuring={previewPodEnsuring}
         previewContainerFailed={previewContainerFailed}
         previewDevActionLocked={previewDevActionLocked}
       />
@@ -2231,7 +2237,11 @@ const AppDevPro: React.FC = () => {
       previewRuntimeRestarting: previewRuntime.restarting,
       previewRuntimeStopping: previewRuntime.stopping,
       previewRuntimeReady:
-        podReady && !isConversationActive && !hasPendingIntervention,
+        currentEnvPodReady &&
+        !isConversationActive &&
+        !hasPendingIntervention,
+      previewEnvPodReady: currentEnvPodReady,
+      previewPodEnsuring,
       previewContainerFailed,
       previewDevActionLocked,
     };

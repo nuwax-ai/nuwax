@@ -2800,6 +2800,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.previewAppLoading": "Loading app",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "Please wait, the interface will appear shortly",
   "PC.Pages.AppDevPro.iframeLoadFailed": "Failed to load the page. Please refresh and try again.",
+  "PC.Pages.AppDevPro.iframeLoadFailedWithStatus": "Failed to load the page (HTTP {0}). Please refresh or check the development server.",
   "PC.Pages.AppDevPro.previewJumpHint": "Press Enter to jump to: {0}",
   "PC.Pages.AppDevPro.previewStartHint": "The service is stopped. Start it to preview the app",
   "PC.Pages.AppDevPro.previewStartRetry": "Restart",

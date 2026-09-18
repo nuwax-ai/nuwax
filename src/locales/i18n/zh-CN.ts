@@ -2800,6 +2800,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.previewAppLoading": "应用加载中",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "请稍候，界面即将呈现",
   "PC.Pages.AppDevPro.iframeLoadFailed": "页面加载失败，请刷新后重试",
+  "PC.Pages.AppDevPro.iframeLoadFailedWithStatus": "页面加载失败（HTTP {0}），请刷新后重试或检查开发服务器",
   "PC.Pages.AppDevPro.previewJumpHint": "按 Enter 跳转到: {0}",
   "PC.Pages.AppDevPro.previewStartHint": "服务已停止，启动后即可预览应用",
   "PC.Pages.AppDevPro.previewStartRetry": "重新启动",

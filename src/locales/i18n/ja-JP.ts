@@ -2731,6 +2731,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.previewAppLoading": "アプリを読み込み中",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "しばらくお待ちください。まもなく画面が表示されます",
   "PC.Pages.AppDevPro.iframeLoadFailed": "ページの読み込みに失敗しました。更新して再試行してください。",
+  "PC.Pages.AppDevPro.iframeLoadFailedWithStatus": "ページの読み込みに失敗しました（HTTP {0}）。更新するか、開発サーバーを確認してください。",
   "PC.Pages.AppDevPro.previewJumpHint": "Enter で移動: {0}",
   "PC.Pages.AppDevPro.previewStartHint": "サービスは停止しています。起動するとアプリをプレビューできます",
   "PC.Pages.AppDevPro.previewStartRetry": "再起動",

@@ -19,7 +19,11 @@ export interface PreviewRuntimeButtonsProps {
   previewRuntimeStopping?: boolean;
   /** 预览容器是否已就绪 */
   previewRuntimeReady?: boolean;
-  /** 当前环境容器启动失败，停止应用不可点 */
+  /** 当前 Header 环境 pod ensure 已成功（running） */
+  previewEnvPodReady?: boolean;
+  /** 当前环境 pod ensure 进行中 */
+  previewPodEnsuring?: boolean;
+  /** 当前环境容器 ensure 失败，重启 / 停止均不可点 */
   previewContainerFailed?: boolean;
   /** 开发环境进行中任务锁定启动 / 重启 */
   previewDevActionLocked?: boolean;
@@ -38,6 +42,8 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
   previewRuntimeRestarting = false,
   previewRuntimeStopping = false,
   previewRuntimeReady = true,
+  previewEnvPodReady = true,
+  previewPodEnsuring = false,
   previewContainerFailed = false,
   previewDevActionLocked = false,
 }) => {
@@ -45,13 +51,17 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
     return null;
   }
 
+  const podActionBlocked =
+    previewPodEnsuring || previewContainerFailed || !previewEnvPodReady;
+
   const restartDisabled =
+    podActionBlocked ||
     !previewRuntimeReady ||
     previewDevActionLocked ||
     previewRuntimeBusy ||
     previewRuntimeStopping;
 
-  const stopDisabled = previewRuntimeStopping || previewContainerFailed;
+  const stopDisabled = podActionBlocked || previewRuntimeStopping;
 
   return (
     <div className={cx(styles['preview-runtime-text-actions'])}>
