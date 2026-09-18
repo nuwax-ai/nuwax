@@ -11,10 +11,7 @@ import { apiNormalProjectCreate } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetUserSelectableSandboxList } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import {
-  emitConversationChanged,
-  emitProjectChanged,
-} from '@/utils/directorySyncEvents';
+import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import {
@@ -137,6 +134,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
       });
       const newId = res?.data?.projectId;
       if (res?.code === SUCCESS_CODE && newId) {
+        // 发送项目创建事件
         emitProjectChanged({
           operation: 'created',
           project: {
@@ -147,20 +145,10 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
           origin: 'create-normal-project-modal',
           reason: 'create',
         });
-        if (res.data?.conversationId) {
-          emitConversationChanged({
-            operation: 'created',
-            conversationId: String(res.data.conversationId),
-            project: {
-              projectId: String(newId),
-              projectType: AgentComponentTypeEnum.NormalProject,
-              ...(spaceId !== undefined ? { spaceId: String(spaceId) } : {}),
-            },
-            origin: 'create-normal-project-modal',
-            reason: 'create',
-          });
-        }
+
         message.success(dict('PC.Pages.SpaceProjectManage.createSuccess'));
+
+        // 回调创建成功
         onConfirm({
           id: newId,
           name: values.name.trim(),

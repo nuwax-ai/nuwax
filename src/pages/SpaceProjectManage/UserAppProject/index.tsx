@@ -25,6 +25,7 @@ import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
 import ProjectListCard from '../components/ProjectListCard';
 import { apiUserProjectPageQuery } from '../services';
 import styles from './index.less';
+import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 
 const cx = classNames.bind(styles);
 const PAGE_SIZE = 48;
@@ -56,6 +57,8 @@ const UserAppProject: React.FC = () => {
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [openCreate, setOpenCreate] = useState<boolean>(false);
   const [editTarget, setEditTarget] = useState<UserProjectItem>();
+
+  const { pin } = useHomePinnedProjectHandoff();
 
   const { run, loading } = useRequest(
     (name?: string, pageIndex: number = 1) =>
@@ -277,17 +280,26 @@ const UserAppProject: React.FC = () => {
         </div>
       )}
 
+      {/* 创建全栈应用弹窗 */}
       <CreateUserApp
         spaceId={spaceId}
         mode={CreateUpdateModeEnum.Create}
         open={openCreate}
         onCancel={() => setOpenCreate(false)}
-        onConfirmCreate={(result) => {
+        onConfirmCreate={(project: UserAppInfo) => {
           setOpenCreate(false);
-          history.push(`/space/${spaceId}/app-project-detail/${result.id}`);
+          pin({
+            projectId: project.id,
+            spaceId,
+            projectType: AgentComponentTypeEnum.NormalProject,
+            name: project.name,
+            sandboxId: project.sandboxId,
+            devAgentId: project.devAgentId,
+          });
         }}
       />
 
+      {/* 编辑全栈应用弹窗 */}
       <CreateUserApp
         mode={CreateUpdateModeEnum.Update}
         userAppInfo={editTarget as UserAppInfo | undefined}

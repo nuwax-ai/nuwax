@@ -4,16 +4,22 @@ import GuardedFormModal, {
 } from '@/components/business-component/GuardedFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
+import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import type { RequestResponse } from '@/types/interfaces/request';
+import {
+  DisplayRecommendFunctionTypeEnum,
+  type DisplayRecommendGroup,
+  type DisplayRecommendInfo,
+} from '@/types/interfaces/displayRecommend';
 import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
-import { Form, FormProps, Input, message } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
+import { Form, FormProps, Input, message, Select } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import { apiUserAppCreate, apiUserAppUpdate } from '../../services/appDevPro';
 import type {
@@ -40,34 +46,12 @@ export interface CreateUserAppProps {
 }
 
 /**
- * 从创建/更新接口回调中取出应用详情。
- * umi request 可能返回完整 Response，也可能直接返回 data。
- *
- * @param result 接口成功回调入参
- * @returns 应用详情；无法识别时返回 undefined
- */
-const unwrapUserAppInfo = (
-  result: UserAppInfo | RequestResponse<UserAppInfo> | undefined,
-): UserAppInfo | undefined => {
-  if (!result) {
-    return undefined;
-  }
-  if ('data' in result && result.data) {
-    return result.data;
-  }
-  if ('id' in result) {
-    return result;
-  }
-  return undefined;
-};
-
-/**
  * 创建 / 更新全栈应用弹窗。
  *
  * 参考 CreateAgent：名称、介绍、图标表单；创建走 apiUserAppCreate，更新走 apiUserAppUpdate。
  * 创建时若未上传图标，会尝试根据名称和介绍自动生成图标。
  * 创建参数对齐首页创建全栈口径：sandboxId 传云电脑哨兵 -1（全栈仅云端）、
- * devAgentId 传租户默认任务智能体（契约先行）。
+ * devAgentId 取自推荐位 functionType=UserAppDev 的下拉选项（targetId）。
  *
  * @param props 弹窗属性
  * @param props.spaceId 空间 ID
@@ -93,17 +77,29 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
   const [imageUrl, setImageUrl] = useState<string>('');
   /** 提交中，用于弹窗确认按钮 loading */
   const [loading, setLoading] = useState<boolean>(false);
+  /** 全栈应用开发智能体推荐项（functionType=UserAppDev） */
+  const [devAgentOptions, setDevAgentOptions] = useState<DisplayRecommendInfo[]>(
+    [],
+  );
 
-  // 租户配置：devAgentId 取租户默认任务智能体（全栈开发为任务智能体形态，
-  // 与首页 currentAgentId 的默认解析同源；创建参数对齐见 onFinish 处注释）
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 加载全栈应用开发智能体推荐项
+  const [devAgentLoading, setDevAgentLoading] = useState<boolean>(false);
+
+  // 全栈应用开发智能体推荐项下拉选项
+  const devAgentSelectOptions = useMemo(
+    () =>
+      devAgentOptions.map((item) => ({
+        label: item.label,
+        value: item.targetId,
+      })),
+    [devAgentOptions],
+  );
 
   // 创建全栈应用
   const { run: runAdd } = useRequest(apiUserAppCreate, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: UserAppInfo | RequestResponse<UserAppInfo>) => {
-      const data = unwrapUserAppInfo(result);
+    onSuccess: (data: UserAppInfo) => {
       setImageUrl('');
       if (data) {
         emitProjectChanged({
@@ -133,12 +129,11 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (
-      result: UserAppInfo | RequestResponse<UserAppInfo>,
+      data: UserAppInfo,
       params: UpdateUserAppParams[],
     ) => {
       message.success(dict('PC.Components.CreateUserApp.editSuccess'));
       setLoading(false);
-      const data = unwrapUserAppInfo(result);
       const payload = params[0];
       const nextInfo =
         data ??
@@ -173,6 +168,60 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
   });
 
   /**
+   * 从推荐列表中收集 functionType=UserAppDev 的项。
+   *
+   * @param groups 首页 / 对话框推荐分组
+   * @returns 排序后的全栈应用开发智能体列表
+   */
+  const pickUserAppDevAgents = useCallback(
+    (groups: Array<DisplayRecommendGroup | undefined>) => {
+      const allList: DisplayRecommendInfo[] = [];
+      groups.forEach((group) => {
+        if (!group) {
+          return;
+        }
+        Object.values(group).forEach((list) => {
+          if (Array.isArray(list)) {
+            allList.push(...list);
+          }
+        });
+      });
+      return allList
+        .filter(
+          (item) =>
+            item.functionType === DisplayRecommendFunctionTypeEnum.UserAppDev,
+        )
+        .sort((prev, next) => (prev.sort ?? 0) - (next.sort ?? 0));
+    },
+    [],
+  );
+
+  /** 打开弹窗时拉取全栈应用开发智能体推荐列表 */
+  const loadDevAgentOptions = useCallback(async () => {
+    setDevAgentLoading(true);
+    try {
+      const result = await apiDisplayRecommendList();
+      if (result?.code !== SUCCESS_CODE || !result.data) {
+        setDevAgentOptions([]);
+        return;
+      }
+      const list = pickUserAppDevAgents([
+        result.data.recHome,
+        result.data.recChatBoxNav,
+      ]);
+      setDevAgentOptions(list);
+      if (list.length > 0) {
+        form.setFieldValue('devAgentId', list[0].targetId);
+      }
+    } catch (error) {
+      console.error('[CreateUserApp] Failed to load dev agent options:', error);
+      setDevAgentOptions([]);
+    } finally {
+      setDevAgentLoading(false);
+    }
+  }, [form, pickUserAppDevAgents]);
+
+  /**
    * 按当前应用详情回填表单与图标。
    */
   const initForm = useCallback(() => {
@@ -180,15 +229,20 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
     form.setFieldsValue({
       name: userAppInfo?.name,
       description: userAppInfo?.description,
+      devAgentId: undefined,
     });
   }, [form, userAppInfo]);
 
-  // 弹窗打开时回填表单
+  // 弹窗打开时回填表单，创建模式下加载开发智能体列表
   useEffect(() => {
-    if (open) {
-      initForm();
+    if (!open) {
+      return;
     }
-  }, [open, initForm]);
+    initForm();
+    if (mode === CreateUpdateModeEnum.Create) {
+      void loadDevAgentOptions();
+    }
+  }, [initForm, loadDevAgentOptions, mode, open]);
 
   /**
    * 提交表单：创建时补全图标后调用创建接口，更新时必须带应用 ID。
@@ -207,18 +261,13 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
           name: values.name,
           description: values.description,
         });
-        // 创建参数对齐首页创建全栈（/api/project/create）的传值口径：
-        // sandboxId=云电脑哨兵 -1（全栈仅云端，由后端分配云端沙箱）、
-        // devAgentId=生效智能体（本入口无推荐位，取租户默认任务智能体）
         runAdd({
           ...values,
           description: description ?? values.description,
           icon,
           spaceId,
           sandboxId: Number(CLOUD_SANDBOX_ID),
-          devAgentId:
-            tenantConfigInfo?.defaultTaskAgentId ??
-            tenantConfigInfo?.defaultAgentId,
+          devAgentId: values.devAgentId,
         });
       } else {
         // 更新应用：缺少 id 时不发请求
@@ -307,6 +356,32 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
           )}
           maxLength={10000}
         />
+        {mode === CreateUpdateModeEnum.Create ? (
+          <Form.Item
+            name="devAgentId"
+            label={dict('PC.Components.CreateUserApp.devAgentLabel')}
+            rules={
+              devAgentOptions.length > 0
+                ? [
+                    {
+                      required: true,
+                      message: dict(
+                        'PC.Components.CreateUserApp.devAgentRequired',
+                      ),
+                    },
+                  ]
+                : []
+            }
+          >
+            <Select
+              loading={devAgentLoading}
+              placeholder={dict(
+                'PC.Components.CreateUserApp.devAgentPlaceholder',
+              )}
+              options={devAgentSelectOptions}
+            />
+          </Form.Item>
+        ) : null}
         <Form.Item
           name="icon"
           label={dict('PC.Components.CreateUserApp.iconLabel')}

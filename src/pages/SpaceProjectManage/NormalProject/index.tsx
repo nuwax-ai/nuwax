@@ -285,18 +285,6 @@ const NormalProject: React.FC = () => {
         onCancel={() => setOpenCreate(false)}
         onConfirm={(project) => {
           setOpenCreate(false);
-          if (project.conversationId && project.agentId) {
-            openProject(
-              spaceId,
-              {
-                id: project.id,
-                projectType: AgentComponentTypeEnum.NormalProject,
-              },
-              project.conversationId,
-              project.agentId,
-            );
-            return;
-          }
           pin({
             projectId: project.id,
             spaceId,
