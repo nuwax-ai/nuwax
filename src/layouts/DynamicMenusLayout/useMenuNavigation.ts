@@ -6,7 +6,7 @@
  * - handlerClick（租户默认智能体建会话）
  * - handleNewConversation（新对话菜单跳下一个菜单）
  * - activeTab 路径同步大 effect（agent/square/more-page/system 特判树 + 匹配回退）
- * - handleRefreshEditAndCollect / findFirstChildWithPath（handleTabClick 内部依赖）
+ * - findFirstChildWithPath（handleTabClick 内部依赖）
  * - handleTabClick（一级菜单点击：缓存路径回跳/iframe/新对话特判）
  *
  * 布局差异留在各自文件内：SECOND_MENU_SECTION_TABS 只被 shouldShowSecondMenu 使用、
@@ -61,7 +61,6 @@ export function useMenuNavigation(): UseMenuNavigationResult {
   const params = useParams();
   const { handleCloseMobileMenu } = useModel('layout');
   const { firstLevelMenus, hasPathUnderFirstLevelMenu } = useModel('menuModel');
-  const { runEdit } = useModel('devCollectAgent');
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const { handleCreateConversation } = useConversation();
 
@@ -200,13 +199,6 @@ export function useMenuNavigation(): UseMenuNavigationResult {
     }
   }, [location.pathname, params, firstLevelMenus, handleNewConversation]);
 
-  const handleRefreshEditAndCollect = useCallback(() => {
-    // 最近编辑
-    runEdit({
-      size: 5,
-    });
-  }, []);
-
   /**
    * 递归查找第一个有 path 的子菜单
    * 如果第一个子菜单没有 path 但有 children，继续递归查找
@@ -274,8 +266,6 @@ export function useMenuNavigation(): UseMenuNavigationResult {
       setIsClickNewConversation(false);
 
       if (menu.code === 'workspace') {
-        handleRefreshEditAndCollect();
-
         // 防止系统设置中工作空间没有设置路径，导致跳转失败
         const url = menu.path || '/space';
         history.push(url, { _t: Date.now(), menuCode: menu.code });
@@ -336,7 +326,6 @@ export function useMenuNavigation(): UseMenuNavigationResult {
     [
       handleCloseMobileMenu,
       findFirstChildWithPath,
-      handleRefreshEditAndCollect,
       handlerClick,
       handleNewConversation,
     ],

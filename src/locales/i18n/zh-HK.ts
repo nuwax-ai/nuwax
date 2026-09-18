@@ -1455,7 +1455,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.newConversation": "新對話",
   "PC.Layouts.DynamicMenusLayout.newProject": "新建項目",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace": "個人空間",
-  "PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited": "最近編輯",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.searchSpacePlaceholder": "搜尋空間",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.noSpaceMatch": "未找到符合的空間",
   "PC.Layouts.DynamicMenusLayout.SquareSection.agent": "智能體",

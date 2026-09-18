@@ -1,15 +1,12 @@
-import MenuListItem from '@/components/base/MenuListItem';
-import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SPACE_ID } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetSpaceDetail } from '@/services/teamSetting';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
-import type { AgentInfo } from '@/types/interfaces/agent';
 import { SpaceInfo } from '@/types/interfaces/workspace';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import { history, useModel, useParams } from 'umi';
+import { useModel, useParams } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 import { updatePathUrlToLocalStorage } from '../utils';
 import styles from './index.less';
@@ -25,7 +22,6 @@ const SpaceSection: React.FC<{
 
   const { spaceList, currentSpaceInfo, handleCurrentSpaceInfo, getSpaceId } =
     useModel('spaceModel');
-  const { editAgentList, runEdit } = useModel('devCollectAgent');
   // // 关闭移动端菜单
   // const { handleCloseMobileMenu } = useModel('layout');
 
@@ -95,19 +91,6 @@ const SpaceSection: React.FC<{
     }
   }, [spaceList, finalSpaceId]);
 
-  useEffect(() => {
-    // 最近编辑
-    runEdit({
-      size: 5,
-    });
-  }, []);
-
-  // 点击进入"工作空间智能体"
-  const handleClick = (info: AgentInfo) => {
-    const { agentId, spaceId } = info;
-    history.push(`/space/${spaceId}/agent/${agentId}`);
-  };
-
   return (
     <div className={cx('h-full', 'overflow-y', styles.container)} style={style}>
       {/* 头部包裹层间距走 .header-box（经典布局原 0 12px 12px；单栏 style3
@@ -118,21 +101,6 @@ const SpaceSection: React.FC<{
 
       {/* 空间菜单列表 */}
       <DynamicSecondMenu parentCode={activeTab} />
-      <ConditionRender condition={editAgentList?.length}>
-        <h3 className={cx(styles['collection-title'])}>
-          {dict('PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited')}
-        </h3>
-        <div className="flex flex-col gap-4">
-          {editAgentList?.map((item: AgentInfo) => (
-            <MenuListItem
-              key={item.id}
-              onClick={() => handleClick(item)}
-              icon={item.icon}
-              name={item.name}
-            />
-          ))}
-        </div>
-      </ConditionRender>
     </div>
   );
 };

@@ -1455,7 +1455,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.newConversation": "新しい会話",
   "PC.Layouts.DynamicMenusLayout.newProject": "新規プロジェクト",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace": "パーソナルスペース",
-  "PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited": "最近編集したもの",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.searchSpacePlaceholder": "スペースを検索",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.noSpaceMatch": "一致するスペースがありません",
   "PC.Layouts.DynamicMenusLayout.SquareSection.agent": "エージェント",

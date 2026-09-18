@@ -31,7 +31,7 @@ export interface DynamicSecondMenuProps {
 /**
  * 动态二级/三级菜单组件
  * 复用现有的 SecondMenuItem 组件实现，保持 UI 样式一致
- * 特殊处理：主页显示最近使用+会话记录，工作空间显示最近编辑+开发收藏
+ * 特殊处理：主页显示最近使用+会话记录，工作空间显示开发收藏
  */
 const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   parentCode,
