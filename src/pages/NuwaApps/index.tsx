@@ -3,7 +3,8 @@
  * @description 应用分发页:最近使用(POST recentlyUsed/list 接口,点击进应用详情)+ 应用列表区
  * (主tab:系统应用/团队空间两维度共用 POST app/list,系统应用 scope=Tenant(本租户内)、
  * 团队空间 scope=Space,再经 official / justReturnSpaceData 区分,两 tab 均滚动触底分页追加;
- * 点击任意应用先 POST recentlyUsed/add 上报使用记录再进应用详情 /agent/:id);
+ * 点击应用先 POST recentlyUsed/add 上报使用记录再进应用详情 /agent/:id,
+ * 智能体网页应用(targetType=Agent + targetSubType=PageApp)不上报);
  * 「更多」跳广场-网页应用
  */
 import agentImage from '@/assets/images/agent_image.png';
@@ -17,6 +18,7 @@ import {
   apiPublishedCategoryList,
 } from '@/services/square';
 import { apiSpaceList } from '@/services/workspace';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { Page } from '@/types/interfaces/request';
 import type {
   SquareCategoryInfo,
@@ -35,6 +37,7 @@ import {
   APP_LIST_TARGET_TYPES,
   APP_SCROLL_CONTAINER_ID,
   PAGE_APP_CATEGORY_ROOT_KEY,
+  PAGE_APP_TARGET_SUBTYPE,
   RECENT_COLLAPSED_MAX_ROWS,
   RECENT_USED_SIZE,
   SQUARE_PAGE_APP_PATH,
@@ -348,11 +351,17 @@ const NuwaApps: React.FC = () => {
   };
 
   // 应用点击统一分流:先异步上报最近使用(不阻塞跳转,成功后由
-  // runRecentlyUsedAdd 的 onSuccess 重拉列表);全栈应用(targetSubType=UserApp)
-  // 跳全栈应用页 /user-app/:appId;其余应用进应用详情 /agent/:targetId
-  // (新接口条目为发布对象,无会话字段,不再续上次会话)
+  // runRecentlyUsedAdd 的 onSuccess 重拉列表);智能体网页应用
+  // (targetType=Agent 且 targetSubType=PageApp)不上报;全栈应用
+  // (targetSubType=UserApp)跳全栈应用页 /user-app/:appId;其余应用进应用详情
+  // /agent/:targetId(新接口条目为发布对象,无会话字段,不再续上次会话)
   const handleAppClick = (app: SquarePublishedItemInfo) => {
-    runRecentlyUsedAdd(app);
+    const isAgentPageApp =
+      app.targetType === SquareAgentTypeEnum.Agent &&
+      app.targetSubType === PAGE_APP_TARGET_SUBTYPE;
+    if (!isAgentPageApp) {
+      runRecentlyUsedAdd(app);
+    }
     if (app.targetSubType === USER_APP_TARGET_SUBTYPE) {
       history.push(`${USER_APP_PATH_PREFIX}/${app.targetId}`);
     } else {
