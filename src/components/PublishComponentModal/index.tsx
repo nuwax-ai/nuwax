@@ -214,6 +214,12 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
           currentTitle ?? dict('PC.Components.PublishComponentModal.userApp'),
         );
         break;
+      case AgentComponentTypeEnum.ThirdApp:
+        _classifyList = pageAppInfoList;
+        setTitle(
+          currentTitle ?? dict('PC.Components.PublishComponentModal.thirdApp'),
+        );
+        break;
     }
     // 分类选择列表 - 数据类型转换
     const list = _classifyList?.map((item: SquareAgentInfo) => ({

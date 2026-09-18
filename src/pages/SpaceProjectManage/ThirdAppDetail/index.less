@@ -29,6 +29,21 @@
   line-height: @fontHeightLg;
 }
 
+.header-actions {
+  flex-shrink: 0;
+  gap: @marginSm;
+  margin-left: auto;
+}
+
+.history-btn {
+  color: @colorTextSecondary;
+
+  &.active,
+  &:hover {
+    color: @colorPrimary;
+  }
+}
+
 .tabs {
   display: flex;
   height: 100%;
@@ -60,6 +75,22 @@
     background: @colorPrimary;
     border-radius: @borderRadiusXs;
   }
+}
+
+.body {
+  min-height: 0;
+}
+
+.body-with-records .main {
+  padding-right: @paddingMd;
+}
+
+.publish-records-panel {
+  margin-left: 0;
+  border-radius: 0;
+  border-top: none;
+  border-bottom: none;
+  border-right: none;
 }
 
 .main {

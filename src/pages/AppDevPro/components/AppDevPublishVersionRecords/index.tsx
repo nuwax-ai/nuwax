@@ -24,20 +24,25 @@ const cx = classNames.bind(styles);
 export interface AppDevPublishVersionRecordsProps {
   /** 是否显示侧栏 */
   visible: boolean;
-  /** 全栈应用 ID */
+  /** 目标 ID（全栈应用 / 三方应用等项目 ID） */
   appId: number;
+  /** 目标类型，默认全栈应用 */
+  targetType?: AgentComponentTypeEnum;
   /** 应用名称，下架确认弹窗展示 */
   appName?: string;
+  /** 侧栏容器额外类名（用于页面级布局微调） */
+  className?: string;
   /** 关闭侧栏 */
   onClose: () => void;
 }
 
 /**
- * AppDevPro 发布版本记录侧栏。
- * 仅调用 POST /api/publish/item/list 查询 UserApp 发布项。
+ * 发布版本记录侧栏（全栈应用 / 三方应用共用）。
+ * 当前发布：POST /api/publish/item/list；发布记录：GET /api/user-project/config/history/list。
  *
  * @param props.visible 是否显示
- * @param props.appId 应用 ID
+ * @param props.appId 目标 ID
+ * @param props.targetType 目标类型
  * @param props.appName 应用名称
  * @param props.onClose 关闭回调
  * @returns 发布版本记录侧栏
@@ -45,9 +50,15 @@ export interface AppDevPublishVersionRecordsProps {
 const AppDevPublishVersionRecords: React.FC<AppDevPublishVersionRecordsProps> = ({
   visible,
   appId,
+  targetType = AgentComponentTypeEnum.UserApp,
   appName,
+  className,
   onClose,
 }) => {
+  const offShelfTargetLabel =
+    targetType === AgentComponentTypeEnum.ThirdApp
+      ? dict('PC.Components.VersionHistory.thirdApp')
+      : dict('PC.Components.VersionHistory.userApp');
   const [loading, setLoading] = useState<boolean>(false);
   const [publishList, setPublishList] = useState<PublishItemInfo[]>([]);
   const [versionHistoryList, setVersionHistoryList] = useState<HistoryData[]>(
@@ -107,14 +118,13 @@ const AppDevPublishVersionRecords: React.FC<AppDevPublishVersionRecordsProps> = 
     setLoading(true);
     setPublishList([]);
     setVersionHistoryList([]);
-    runHistory(appId, AgentComponentTypeEnum.UserApp);
+    runHistory(appId, targetType);
     runPublishList({
       targetId: appId,
-      targetType: AgentComponentTypeEnum.UserApp,
+      targetType,
     });
-  }, [appId, runHistory, runPublishList, visible]);
+  }, [appId, runHistory, runPublishList, targetType, visible]);
 
-  // 下架全栈应用
   const handleOffShelf = useCallback(
     (info: PublishItemInfo) => {
       if (info?.publishStatus !== PublishStatusEnum.Published) {
@@ -124,7 +134,7 @@ const AppDevPublishVersionRecords: React.FC<AppDevPublishVersionRecordsProps> = 
       Modal.confirm({
         title: dict(
           'PC.Components.VersionHistory.confirmOffShelf',
-          dict('PC.Components.VersionHistory.userApp'),
+          offShelfTargetLabel,
         ),
         icon: <ExclamationCircleFilled />,
         content: appName,
@@ -133,14 +143,14 @@ const AppDevPublishVersionRecords: React.FC<AppDevPublishVersionRecordsProps> = 
         cancelText: dict('PC.Common.Global.cancel'),
         onOk: () => {
           runOffShelf({
-            targetType: AgentComponentTypeEnum.UserApp,
+            targetType,
             targetId: appId,
             publishId: info.publishId,
           });
         },
       });
     },
-    [appId, appName, runOffShelf],
+    [appId, appName, offShelfTargetLabel, runOffShelf, targetType],
   );
 
   const content = loading ? (
@@ -186,7 +196,7 @@ const AppDevPublishVersionRecords: React.FC<AppDevPublishVersionRecordsProps> = 
       title={dict('PC.Pages.AppDevPro.publishVersionRecords')}
       visible={visible}
       onClose={onClose}
-      className={cx(styles.panel)}
+      className={cx(styles.panel, className)}
     >
       <div className={cx(styles.content)}>{content}</div>
     </ToggleWrap>
