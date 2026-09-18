@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>支付结算中</title>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --page-bg: #f4f5f7;
+      --card: #ffffff;
+      --brand: #2563eb;
+      --ok: #059669;
+      --err: #dc2626;
+      --radius: 12px;
+      --font: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--page-bg);
+      color: var(--ink);
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 20px;
+      border: 3px solid var(--line);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-size: 1.25rem; margin: 0 0 8px; font-weight: 700; }
+    .sub { font-size: 0.9rem; color: var(--muted); line-height: 1.5; margin: 0 0 20px; }
+    .order-id { font-size: 0.8rem; color: var(--muted); word-break: break-all; }
+    .btn {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      background: var(--brand);
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn:hover { filter: brightness(1.05); }
+    .state-ok .spinner { display: none; }
+    .state-ok .icon-ok {
+      display: block;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: #ecfdf5;
+      color: var(--ok);
+      font-size: 1.5rem;
+      line-height: 48px;
+    }
+    .state-err .spinner { display: none; }
+    .state-err .icon-err {
+      display: block;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: #fef2f2;
+      color: var(--err);
+      font-size: 1.5rem;
+      line-height: 48px;
+    }
+    .icon-ok, .icon-err { display: none; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="spinner" id="spinner"></div>
+    <div class="icon-ok" id="iconOk">✓</div>
+    <div class="icon-err" id="iconErr">!</div>
+    <h1 id="title">正在确认支付结果</h1>
+    <p class="sub" id="subtitle">请稍候，正在同步订单与积分，完成后将自动返回。</p>
+    <p class="order-id" id="orderHint"></p>
+    <div id="actions" class="hidden">
+      <a class="btn" id="btnReturn" href="#">返回</a>
+    </div>
+  </div>
+  <script src="https://res.wx.qq.com/open/js/jweixin-1.3.2.js"></script>
+  <script>
+(function () {
+  var RESERVED = { orderId: 1, returnUrl: 1, callback: 1, pollIntervalMs: 1, pollMaxTimes: 1 };
+  var API = '/api/bill/order/settlement-status';
+  var DEFAULT_POLL_MS = 2000;
+  var DEFAULT_POLL_MAX = 60;
+
+  function $(id) { return document.getElementById(id); }
+
+  function parseParams() {
+    var sp = new URLSearchParams(window.location.search);
+    var orderId = sp.get('orderId');
+    var returnUrl = sp.get('returnUrl') || sp.get('callback');
+    
+    // 巧妙防御：若 returnUrl 存在且不包含 '#'，但当前中转页却带有 hash
+    // 说明因重定向自动解码，导致 hash 段被浏览器误解析为中转页自身的 hash 了，必须进行缝合复原
+    if (returnUrl && returnUrl.indexOf('#') === -1 && window.location.hash) {
+      var h = window.location.hash;
+      // 移除可能被误吞到 hash 段中的 &token=xxx 或 ?token=xxx 参数，保持回跳 URL 绝对洁净
+      h = h.replace(/([&?])token=[^&]*/g, '');
+      returnUrl = returnUrl + h;
+    }
+
+    var passthrough = {};
+    sp.forEach(function (v, k) {
+      if (!RESERVED[k]) passthrough[k] = v;
+    });
+    var pollIntervalMs = parseInt(sp.get('pollIntervalMs') || '', 10);
+    var pollMaxTimes = parseInt(sp.get('pollMaxTimes') || '', 10);
+    return {
+      orderId: orderId,
+      returnUrl: returnUrl,
+      passthrough: passthrough,
+      pollIntervalMs: isNaN(pollIntervalMs) ? DEFAULT_POLL_MS : Math.max(800, pollIntervalMs),
+      pollMaxTimes: isNaN(pollMaxTimes) ? DEFAULT_POLL_MAX : Math.max(5, Math.min(120, pollMaxTimes))
+    };
+  }
+
+  function safeReturnUrl(raw) {
+    if (!raw || !raw.trim()) return null;
+    try {
+      var u = new URL(raw.trim(), window.location.origin);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+      return u.href;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function buildFinalUrl(returnUrl, passthrough, extra) {
+    var hashIndex = returnUrl.indexOf('#');
+    if (hashIndex === -1) {
+      var u = new URL(returnUrl);
+      Object.keys(passthrough || {}).forEach(function (k) {
+        u.searchParams.set(k, passthrough[k]);
+      });
+      if (extra) {
+        Object.keys(extra).forEach(function (k) {
+          u.searchParams.set(k, extra[k]);
+        });
+      }
+      return u.href;
+    } else {
+      var basePart = returnUrl.substring(0, hashIndex);
+      var hashPart = returnUrl.substring(hashIndex);
+      var qIndex = hashPart.indexOf('?');
+      var hashPath = hashPart;
+      var hashQuery = '';
+      if (qIndex !== -1) {
+        hashPath = hashPart.substring(0, qIndex);
+        hashQuery = hashPart.substring(qIndex + 1);
+      }
+      var sp = new URLSearchParams(hashQuery);
+      Object.keys(passthrough || {}).forEach(function (k) {
+        sp.set(k, passthrough[k]);
+      });
+      if (extra) {
+        Object.keys(extra).forEach(function (k) {
+          sp.set(k, extra[k]);
+        });
+      }
+      var newHashQuery = sp.toString();
+      var finalHash = hashPath + (newHashQuery ? '?' + newHashQuery : '');
+      return basePart + finalHash;
+    }
+  }
+
+  function showError(title, sub, showBtn) {
+    $('card').className = 'card state-err';
+    $('title').textContent = title;
+    $('subtitle').textContent = sub;
+    $('spinner').classList.add('hidden');
+    if (showBtn) $('actions').classList.remove('hidden');
+  }
+
+  function showSuccess(sub) {
+    $('card').className = 'card state-ok';
+    $('title').textContent = '支付成功';
+    $('subtitle').textContent = sub || '即将返回…';
+    $('spinner').classList.add('hidden');
+  }
+
+  function isWechatMp() {
+    var sp = new URLSearchParams(window.location.search);
+    return sp.get('isMp') === '1' || /miniProgram/i.test(navigator.userAgent) || window.__wxjs_environment === 'miniprogram';
+  }
+
+  function fetchStatus(orderId) {
+    var isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    var baseUrl = isDev ? 'https://testagent.xspaceagi.com' : '';
+    var url = baseUrl + API + '?orderId=' + encodeURIComponent(orderId);
+    
+    var headers = { Accept: 'application/json' };
+    if (isDev || isWechatMp()) {
+      var sp = new URLSearchParams(window.location.search);
+      var token = localStorage.getItem('ACCESS_TOKEN') || sp.get('token') || '';
+      // 容错提取：若 token 因重定向解码被浏览器误吞到了 hash 中，尝试通过正则从 hash 中安全提取
+      if (!token && window.location.hash) {
+        var match = window.location.hash.match(/[&?]token=([^&]*)/);
+        if (match) {
+          token = decodeURIComponent(match[1]);
+        }
+      }
+      if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+      }
+    }
+    
+    return fetch(url, { 
+      method: 'GET', 
+      credentials: 'include', 
+      headers: headers 
+    })
+      .then(function (r) { return r.json(); });
+  }
+
+  var ctx = parseParams();
+  var target = safeReturnUrl(ctx.returnUrl);
+
+  if (!ctx.orderId) {
+    showError('参数错误', '缺少 orderId', false);
+    return;
+  }
+  if (!target) {
+    showError('参数错误', '缺少或无效的 returnUrl / callback', false);
+    return;
+  }
+
+  $('orderHint').textContent = '订单号：' + ctx.orderId;
+  $('btnReturn').href = buildFinalUrl(target, ctx.passthrough, { payResult: 'pending' });
+
+  var pollCount = 0;
+  var timer = null;
+
+
+  function redirectSuccess() {
+    showSuccess('正在返回业务页面…');
+    window.setTimeout(function () {
+      if (isWechatMp() && typeof wx !== 'undefined' && wx.miniProgram) {
+        wx.miniProgram.navigateBack();
+      } else {
+        window.location.replace(buildFinalUrl(target, ctx.passthrough, { payResult: 'success' }));
+      }
+    }, 600);
+  }
+
+  function redirectFailed(message) {
+    showError('支付未完成', message || '订单未支付成功', true);
+    var failUrl = buildFinalUrl(target, ctx.passthrough, { payResult: 'failed' });
+    $('btnReturn').href = failUrl;
+    $('btnReturn').onclick = function (e) {
+      if (isWechatMp() && typeof wx !== 'undefined' && wx.miniProgram) {
+        e.preventDefault();
+        wx.miniProgram.navigateBack();
+      }
+    };
+  }
+
+  function tick() {
+    pollCount++;
+    fetchStatus(ctx.orderId).then(function (j) {
+      if (!j || j.code !== '0000' || !j.data) {
+        if (pollCount >= ctx.pollMaxTimes) {
+          clearInterval(timer);
+          showError('查询超时', (j && j.message) ? j.message : '请稍后在业务页面刷新查看', true);
+          return;
+        }
+        return;
+      }
+      var d = j.data;
+      if (d.settled) {
+        clearInterval(timer);
+        redirectSuccess();
+        return;
+      }
+      if (d.terminalFailed) {
+        clearInterval(timer);
+        redirectFailed(d.message);
+        return;
+      }
+      if (pollCount >= ctx.pollMaxTimes) {
+        clearInterval(timer);
+        showError('仍在处理中', '同步时间较长，请返回业务页稍后刷新', true);
+        $('btnReturn').href = buildFinalUrl(target, ctx.passthrough, { payResult: 'pending' });
+      }
+    }).catch(function () {
+      if (pollCount >= ctx.pollMaxTimes) {
+        clearInterval(timer);
+        showError('网络异常', '无法连接服务器，请检查网络后重试', true);
+      }
+    });
+  }
+
+  tick();
+  timer = setInterval(tick, ctx.pollIntervalMs);
+})();
+  </script>
+</body>
+</html>
