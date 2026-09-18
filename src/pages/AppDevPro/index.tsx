@@ -2061,9 +2061,12 @@ const AppDevPro: React.FC = () => {
     void ensureEnvPodRef.current(UserAppDbEnvEnum.Prod);
   }, [canDirectProdPreview, envPodConversationId, prodPod.status]);
 
-  /** 线上环境有预览地址且容器就绪时直接视为可预览，不调用启动接口 */
+  /** 线上环境有预览地址且容器就绪时直接视为可预览，不调用启动接口（用户主动停止后不再自动 markReady） */
   useEffect(() => {
     if (!canDirectProdPreview || prodPod.status !== 'running') {
+      return;
+    }
+    if (previewUserStoppedRef.current) {
       return;
     }
     markPreviewReadyRef.current();
@@ -2573,6 +2576,7 @@ const AppDevPro: React.FC = () => {
                 visible={buildVersionsOpen}
                 appId={appId}
                 currentReleaseId={userAppInfo?.prodReleaseId}
+                prodDeployed={userAppInfo?.prodDeployed === true}
                 deployingVersion={publishFlow.deployingReleaseId}
                 onDeployVersion={(version) => {
                   void publishFlow.deployVersion(version);
