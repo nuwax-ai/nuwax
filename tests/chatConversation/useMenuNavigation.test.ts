@@ -18,7 +18,6 @@ const nav = vi.hoisted(() => ({
   menus: [] as MenuItemDto[],
   historyPush: vi.fn(),
   handleCloseMobileMenu: vi.fn(),
-  runEdit: vi.fn(),
   handleCreateConversation: vi.fn(),
   hasPathUnderFirstLevelMenu: vi.fn(),
 }));
@@ -37,8 +36,6 @@ vi.mock('umi', () => ({
           otherMenus: [],
           hasPathUnderFirstLevelMenu: nav.hasPathUnderFirstLevelMenu,
         };
-      case 'devCollectAgent':
-        return { runEdit: nav.runEdit };
       case 'tenantConfigInfo':
         return { tenantConfigInfo: { defaultAgentId: 42 } };
       default:
@@ -59,7 +56,7 @@ const buildMenus = (overrides: Partial<MenuItemDto> = {}): MenuItemDto =>
     name: '菜单',
     path: '/some',
     ...overrides,
-  }) as unknown as MenuItemDto;
+  } as unknown as MenuItemDto);
 
 describe('useMenuNavigation：activeTab 路径同步 effect', () => {
   beforeEach(() => {
@@ -82,7 +79,11 @@ describe('useMenuNavigation：activeTab 路径同步 effect', () => {
   });
 
   it('/square?cate_type=… → system_square', () => {
-    nav.location = { pathname: '/square', search: '?cate_type=Agent', state: undefined };
+    nav.location = {
+      pathname: '/square',
+      search: '?cate_type=Agent',
+      state: undefined,
+    };
     const { result } = renderHook(() => useMenuNavigation());
     expect(result.current.activeTab).toBe('system_square');
   });
@@ -101,7 +102,11 @@ describe('useMenuNavigation：activeTab 路径同步 effect', () => {
   });
 
   it('menuCode 参数命中子菜单 → 所属一级 code', () => {
-    nav.location = { pathname: '/system/menu/list', search: '', state: undefined };
+    nav.location = {
+      pathname: '/system/menu/list',
+      search: '',
+      state: undefined,
+    };
     nav.params = { menuCode: 'system_menu' };
     const { result } = renderHook(() => useMenuNavigation());
     expect(result.current.activeTab).toBe('system_manage');
@@ -135,12 +140,13 @@ describe('useMenuNavigation：handleTabClick', () => {
     vi.clearAllMocks();
   });
 
-  it('workspace 菜单：刷新最近编辑并跳转 /space', () => {
+  it('workspace 菜单：跳转 /space', () => {
     const { result } = renderHook(() => useMenuNavigation());
     act(() => {
-      result.current.handleTabClick(buildMenus({ code: 'workspace', path: '/space' }));
+      result.current.handleTabClick(
+        buildMenus({ code: 'workspace', path: '/space' }),
+      );
     });
-    expect(nav.runEdit).toHaveBeenCalledWith({ size: 5 });
     expect(nav.historyPush).toHaveBeenCalledWith(
       '/space',
       expect.objectContaining({ menuCode: 'workspace' }),
@@ -167,7 +173,9 @@ describe('useMenuNavigation：handleTabClick', () => {
   it('普通菜单：置激活并跳转', () => {
     const { result } = renderHook(() => useMenuNavigation());
     act(() => {
-      result.current.handleTabClick(buildMenus({ code: 'system_manage', path: '/system' }));
+      result.current.handleTabClick(
+        buildMenus({ code: 'system_manage', path: '/system' }),
+      );
     });
     expect(result.current.activeTab).toBe('system_manage');
     expect(nav.historyPush).toHaveBeenCalledWith(

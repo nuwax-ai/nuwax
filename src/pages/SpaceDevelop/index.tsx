@@ -153,7 +153,6 @@ const SpaceDevelop: React.FC = () => {
   // 接口返回的全量列表，供本地筛选与删除后重算
   const agentAllRef = useRef<AgentConfigInfo[]>([]);
 
-  const { runEdit } = useModel('devCollectAgent');
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
 
@@ -254,9 +253,6 @@ const SpaceDevelop: React.FC = () => {
     onSuccess: () => {
       message.success(dict('PC.Pages.SpaceDevelop.Index.deleteSuccess'));
       handleDelAgent();
-      runEdit({
-        size: 5,
-      });
     },
   });
 

@@ -47,7 +47,7 @@ const routes = [
       { path: '/my-computer-manage', component: '@/pages/MyComputerManage' },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
       // 全栈应用页(女娲应用-全栈应用卡片入口:左侧会话区 + 右侧应用域名 iframe)
-      { path: '/userApp/:appId', component: '@/pages/UserApp' },
+      { path: '/user-app/:appId', component: '@/pages/UserApp' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
       // 页面开发

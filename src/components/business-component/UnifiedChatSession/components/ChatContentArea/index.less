@@ -7,7 +7,9 @@
 @margin-bottom-gap: 5px;
 
 .chat-wrapper-content {
-  overflow: auto;
+  // 横向收敛：表格/代码块自带内部滚动，外层横向滚动冗余（问题区 #12；
+  // 与 pages/Chat/components/LeftContent 同名规则须保持一致）
+  overflow: hidden auto;
   margin-bottom: @margin-bottom-gap;
   padding-left: 8px;
   display: flex;

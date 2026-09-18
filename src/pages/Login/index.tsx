@@ -278,6 +278,10 @@ const Login: React.FC = () => {
     // 否则 style3 会回落为经典风格，工作台详情随即误走 bare 而非 page-container。
     unifiedThemeService.clearUserThemeConfig({ preserveExplicitChoice: true });
     runTenantConfig();
+    // 登录页无侧栏，撤销壳顶栏「展开/收起」按钮的可用态：该状态由
+    // DynamicMenusLayout 推送（layout:false 页从不推），壳本地态跨 webview
+    // 重载不重置，登出/闪断后残留 true 会把按钮带进登录页（无桥自动 no-op）。
+    hostBridge.layout.setSecondMenuAvailable(false);
   }, []);
 
   useEffect(() => {

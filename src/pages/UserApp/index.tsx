@@ -1,5 +1,5 @@
 /**
- * 全栈应用页(女娲应用-全栈应用卡片入口 /userApp/:appId)
+ * 全栈应用页(女娲应用-全栈应用卡片入口 /user-app/:appId)
  * @description 应用页面 iframe(PagePreviewIframe)占满全屏。header 左侧展示
  * 应用详情名称(应用域名与宿主跨域,iframe 文档标题读不到:contentDocument
  * 为 null,组件内 querySelector('head > title') 不会执行,故由本页显式传入

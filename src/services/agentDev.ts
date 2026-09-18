@@ -103,16 +103,6 @@ export async function apiUserUsedAgentList(
   );
 }
 
-// 查询用户最近编辑的智能体列表
-export async function apiUserEditAgentList(
-  params: ListParams,
-): Promise<RequestResponse<AgentInfo[]>> {
-  const size = params.size;
-  return request(`/api/user/agent/edit/list/${size}`, {
-    method: 'GET',
-  });
-}
-
 // 查询用户开发智能体收藏列表
 export async function apiUserDevCollectAgentList(
   params: PageParams,

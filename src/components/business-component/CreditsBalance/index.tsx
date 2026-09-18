@@ -1,6 +1,7 @@
 import SiteFooter from '@/components/SiteFooter';
 import PurchaseModal from '@/components/business-component/PurchaseModal';
 import { dict } from '@/services/i18nRuntime';
+import { getHostVisibility } from '@/services/hostVisibility';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Tooltip, Typography } from 'antd';
@@ -42,6 +43,8 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
       fetchCredits();
       // 增加定时刷新，每 1 分钟刷新一次
       intervalId = setInterval(() => {
+        // 不可见（浏览器 tab 切走 / 客户端休眠控制）跳过本轮，回可见后下轮补上
+        if (document.hidden || !getHostVisibility()) return;
         fetchCredits();
       }, 60000);
     }

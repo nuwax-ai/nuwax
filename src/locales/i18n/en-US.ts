@@ -1561,7 +1561,6 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "Failed",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder": "Search",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace": "Personal Space",
-  "PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited": "Recently Edited",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.searchSpacePlaceholder": "Search spaces",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.noSpaceMatch": "No matching spaces",
   "PC.Layouts.DynamicMenusLayout.SquareSection.agent": "Agent",

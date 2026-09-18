@@ -1561,7 +1561,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "失败",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder": "搜索",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace": "个人空间",
-  "PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited": "最近编辑",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.searchSpacePlaceholder": "搜索空间",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.noSpaceMatch": "未找到匹配的空间",
   "PC.Layouts.DynamicMenusLayout.SquareSection.agent": "智能体",
