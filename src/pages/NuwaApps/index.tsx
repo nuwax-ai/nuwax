@@ -322,7 +322,7 @@ const NuwaApps: React.FC = () => {
   };
 
   // 应用点击统一分流:全栈应用(targetSubType=UserApp)跳全栈应用页
-  // /userApp/:appId;其余应用进应用详情 /agent/:targetId(新接口条目为
+  // /user-app/:appId;其余应用进应用详情 /agent/:targetId(新接口条目为
   // 发布对象,无会话字段,不再续上次会话)
   const handleAppClick = (app: SquarePublishedItemInfo) => {
     if (app.targetSubType === USER_APP_TARGET_SUBTYPE) {
