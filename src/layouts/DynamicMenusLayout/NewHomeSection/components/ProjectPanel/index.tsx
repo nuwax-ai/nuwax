@@ -9,6 +9,7 @@ import {
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import {
   apiAgentConversationDelete,
+  apiAgentConversationList,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
@@ -68,6 +69,7 @@ import {
 import { useParams } from 'umi';
 import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
+import { CHILDREN_PROBE_LIMIT, diffChildrenProbe } from './childrenProbe';
 import styles from './index.less';
 import {
   appendProjectsPage,
@@ -173,6 +175,8 @@ const applyProjectChildEvent = (
 export interface ProjectPanelHandle {
   toggleAll: () => void;
   revalidateVisible: () => void;
+  /** 任一已加载子会话仍在执行中（页签切回「活动门控」的前置判定用） */
+  hasExecutingChildren: () => boolean;
 }
 
 const ProjectPanel = forwardRef<
@@ -627,6 +631,20 @@ const ProjectPanel = forwardRef<
       );
     }, [activeChildProjectKey, activeConversationId, onActiveChildResolved]);
 
+    // 子会话按 4 个一批并发重拉（探针命中差异/全量兜底共用）
+    const requestChildrenBatched = useCallback(
+      async (candidates: ProjectItem[]) => {
+        for (let index = 0; index < candidates.length; index += 4) {
+          await Promise.all(
+            candidates
+              .slice(index, index + 4)
+              .map((project) => requestChildren(project)),
+          );
+        }
+      },
+      [requestChildren],
+    );
+
     useImperativeHandle(
       ref,
       () => ({
@@ -643,25 +661,69 @@ const ProjectPanel = forwardRef<
             });
             return next;
           }),
+        hasExecutingChildren: () =>
+          projectsRef.current.some((project) =>
+            (project.children ?? []).some(
+              (child) => child.taskStatus === TaskStatus.EXECUTING,
+            ),
+          ),
         revalidateVisible: () => {
           void (async () => {
             await fetchPage(1, { append: false });
-            const candidates = projectsRef.current.filter(
-              (project) =>
-                !archivedIds.has(projectKeyOf(project)) &&
-                !collapsedIds.has(projectKeyOf(project)),
-            );
-            for (let index = 0; index < candidates.length; index += 4) {
-              await Promise.all(
-                candidates
-                  .slice(index, index + 4)
-                  .map((project) => requestChildren(project)),
+            const revalidateAll = () => {
+              const candidates = projectsRef.current.filter(
+                (project) =>
+                  !archivedIds.has(projectKeyOf(project)) &&
+                  !collapsedIds.has(projectKeyOf(project)),
               );
+              return requestChildrenBatched(candidates);
+            };
+            // 探针：一次拉回全部项目会话与已加载子会话指纹比对（见
+            // childrenProbe.ts）。无差异零子会话请求；探针异常/不可靠全量兜底
+            let rows: ConversationInfo[] | undefined;
+            try {
+              const res = await apiAgentConversationList({
+                agentId: null,
+                projectFilter: 'only',
+                archivedFilter: 'all',
+                limit: CHILDREN_PROBE_LIMIT,
+              });
+              if (res?.code === SUCCESS_CODE && Array.isArray(res.data)) {
+                rows = res.data;
+              }
+            } catch {
+              // 忽略：走全量兜底
             }
+            if (!rows) {
+              void revalidateAll();
+              return;
+            }
+            const result = diffChildrenProbe(projectsRef.current, rows);
+            // EXECUTING→终态先经统一入口 emit：本地补丁翻新 + 未读蓝点标记
+            result.finishedTransitions.forEach(
+              ({ conversationId, taskStatus }) =>
+                emitConversationListTaskStatus(conversationId, taskStatus),
+            );
+            if (result.truncated || result.hasUnknownConversation) {
+              void revalidateAll();
+              return;
+            }
+            if (result.changedProjectKeys.size === 0) return;
+            void requestChildrenBatched(
+              projectsRef.current.filter((project) =>
+                result.changedProjectKeys.has(projectKeyOf(project)),
+              ),
+            );
           })();
         },
       }),
-      [visibleProjects, archivedIds, collapsedIds, fetchPage, requestChildren],
+      [
+        visibleProjects,
+        archivedIds,
+        collapsedIds,
+        fetchPage,
+        requestChildrenBatched,
+      ],
     );
 
     useEffect(() => {
@@ -1234,11 +1296,12 @@ const ProjectPanel = forwardRef<
                         {child.name}
                       </span>
                       {/* leadingMark 开启时「执行中」由行首转圈表达（文字胶囊仅经典布局保留） */}
-                      {!leadingMark && child.taskStatus === TaskStatus.EXECUTING && (
-                        <span className={cx(styles['status-tag'])}>
-                          {executingText}
-                        </span>
-                      )}
+                      {!leadingMark &&
+                        child.taskStatus === TaskStatus.EXECUTING && (
+                          <span className={cx(styles['status-tag'])}>
+                            {executingText}
+                          </span>
+                        )}
                       {child.modified && (
                         <span className={cx(styles['child-time'])}>
                           {formatRelativeTime(child.modified)}

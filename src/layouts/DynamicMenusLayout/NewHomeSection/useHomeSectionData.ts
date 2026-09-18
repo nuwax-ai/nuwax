@@ -15,8 +15,8 @@ import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenLis
 import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { apiAgentConversationList } from '@/services/agentConfig';
-import { TaskStatus } from '@/types/enums/agent';
 import type { ConversationChangedEvent } from '@/types/directorySync';
+import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   applyConversationFlagOverrides,
@@ -26,6 +26,7 @@ import {
 import {
   emitConversationListTaskStatus,
   fetchConversationTaskStatus,
+  hasExecutingTaskInList,
   isTerminalTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
@@ -63,6 +64,11 @@ export interface HomeSectionDataShell {
   chatId: string | undefined;
   /** 任务列表：隐藏归档、置顶排前 */
   visibleConversationList: ConversationInfo[];
+  /**
+   * 任务列表中是否存在执行中会话（页签切回「活动门控」前置判定用）。
+   * 全量 localList 口径，不受关键词过滤影响。
+   */
+  hasExecutingTask: boolean;
   loading: boolean;
   hasMore: boolean;
   keyword: string;
@@ -544,7 +550,7 @@ export function useHomeSectionData(options: {
       handleCloseMobileMenu();
       const { id, agentId, devTargetType, devTargetId, devSpaceId } = item;
       // 点击即视为已进入：立即清未读蓝点（跨应用路由 chatId 派生可能滞后，先清兜底）
-      if (id != null) markConversationVisited(id);
+      if (id !== null && id !== undefined) markConversationVisited(id);
 
       if (devTargetType === 'Agent' && devSpaceId && id) {
         history.push(
@@ -594,6 +600,12 @@ export function useHomeSectionData(options: {
     listTaskStatusRef.current = next;
   }, [localList, chatId]);
 
+  // 页签切回「活动门控」：列表里是否还有执行中会话（全量口径）
+  const hasExecutingTask = useMemo(
+    () => hasExecutingTaskInList(localList),
+    [localList],
+  );
+
   // 分组头计数：项目 = 可见项目数（ProjectPanel 上报，过滤归档后的可见数，
   // 与任务计数口径一致；真实接口数据到达前先计 0）
   const [projectCount, setProjectCount] = useState(0);
@@ -621,6 +633,7 @@ export function useHomeSectionData(options: {
     scrollShowRef,
     chatId,
     visibleConversationList,
+    hasExecutingTask,
     loading,
     hasMore,
     keyword,
