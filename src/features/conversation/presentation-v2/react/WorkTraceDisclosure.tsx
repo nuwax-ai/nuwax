@@ -1,8 +1,6 @@
 /**
  * V2 整轮工作轨迹：外层指标 disclosure → 连续工具组 → 原子工具详情。
  * 展开状态全部保存在本层，外层收起导致子树卸载时不会丢失用户选择。
- * 叙述（narration）与折叠解耦：收起只收工具/思考行，叙述按原位顺序恒直出，
- * 保证直播、终态与刷新还原后的过程叙述展示对齐。
  */
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
@@ -169,8 +167,6 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
       ];
     });
   }, [revealHidden, traceItems, visibleNodes]);
-  // 叙述直出与折叠解耦：收起态也要渲染的 narration 项（预设不过滤叙述）
-  const hasNarration = shownItems.some((item) => item.kind === 'narration');
 
   const [nodeExpanded, setNodeExpanded] = useState<Record<string, boolean>>({});
   const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>(
@@ -275,7 +271,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
           aria-hidden="true"
         />
       </button>
-      {(expanded || hasNarration) && (
+      {expanded && (
         <div id={traceBodyId} className={cx(styles['trace-body'])}>
           {shownItems.map((item) => {
             if (item.kind === 'narration') {
@@ -284,10 +280,6 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
                   {item.node.text ?? ''}
                 </NarrationText>
               );
-            }
-            if (!expanded) {
-              // 收起态：工具/思考行保持懒挂载卸载，仅叙述直出
-              return null;
             }
             if (item.kind === 'tool-group') {
               return (
@@ -321,7 +313,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
               />
             );
           })}
-          {expanded && !revealHidden && hiddenCount > 0 && (
+          {!revealHidden && hiddenCount > 0 && (
             <button
               type="button"
               className={cx(styles['hidden-entry'])}

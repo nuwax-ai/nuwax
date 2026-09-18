@@ -348,28 +348,6 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('终态收起态叙述仍按原位直出（与折叠解耦），展开后工具/思考行才挂载', () => {
-    renderV2(buildTurn());
-    const toggle = screen.getByTestId('v2-trace-toggle');
-    // 收起态：叙述直出可见，工具/思考行保持卸载（懒挂载不破坏）
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByTestId('v2-narration').textContent).toContain(
-      '天气查询完成',
-    );
-    expect(document.querySelector('[data-node-kind="reasoning"]')).toBeNull();
-    expect(document.querySelector('[data-node-id="e1"]')).toBeNull();
-    // 展开后节点行挂载，叙述仍在原位
-    fireEvent.click(toggle);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByTestId('v2-narration').textContent).toContain(
-      '天气查询完成',
-    );
-    expect(
-      document.querySelector('[data-node-kind="reasoning"]'),
-    ).not.toBeNull();
-    expect(document.querySelector('[data-node-id="e1"]')).not.toBeNull();
-  });
-
   it('运行轮默认展开，工作时长沿用会话状态栏的用户消息起点与 MM:SS 格式', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-09-09T12:03:14+08:00'));

@@ -36,7 +36,6 @@ docs/conversation/
 | 要做什么 | 看哪篇 |
 | --- | --- |
 | 术语口径（V1=旧线 / V2=新线）与渲染 V2 契约 | [renderer-v2.md](./renderer-v2.md)（术语约定 / 关键契约 / 懒挂载；分组折叠状态机见 [renderer-v2-grouped-trace-summary.md](./renderer-v2-grouped-trace-summary.md)） |
-| 工具折叠区+后续输入渲染机制（直播 vs 历史回放）与「刷新后过程消息消失」排查 | [process-content-rendering-live-vs-history.md](./process-content-rendering-live-vs-history.md)（两层分隔信号 / 后端缺陷单材料，2026-09-18） |
 | 业务逻辑逐条验收 | [dual-track/conversation-business-logic-checklist.md](./dual-track/conversation-business-logic-checklist.md) |
 | 测试回归跑什么 | [dual-track/conversation-regression-test-plan.md](./dual-track/conversation-regression-test-plan.md) |
 | 日常维护 / 排查 | [dual-track/conversation-maintenance-guide.md](./dual-track/conversation-maintenance-guide.md) |
@@ -67,7 +66,6 @@ isSessionActive = isConversationActive（连接生命周期）
 
 ## 变更记录
 
-- 2026-09-18 新增过程内容分隔渲染机制文档（直播 vs 历史回放两节 + 后端缺陷单材料；「刷新后过程消息消失」排查定案）
 - 2026-08-27 新增手动验收清单（渲染线 + ux-m1 全功能分步走查）；e2e 文案语言钉死（?lang=zh-CN，dev server 需带正确 BASE_URL 重启）
 - 2026-08-26 新增 runtime 桥接死循环 + 终态 text 覆盖修复留存（审查处置轮，配套 file-preview 缓存版本 bump 见 docs 根）
 - 2026-08-25 新增会话渲染调研与升级开发计划（含已完成功能演示回归补齐：e2e 渲染探针）
