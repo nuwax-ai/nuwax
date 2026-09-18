@@ -111,7 +111,11 @@ const OpenIframePage: React.FC = () => {
   }, [iframeUrl, iframeKey, ecoWebOrigin]);
 
   return (
-    <div className={classNames('h-full', 'w-full', 'relative')}>
+    // overflow-hidden + iframe 块级化：iframe 默认 inline 元素基线对齐会在底部
+    // 多出几像素，叠加容器装饰边距把宿主撑出右侧滚动条（问题区 #16）
+    <div
+      className={classNames('h-full', 'w-full', 'relative', 'overflow-hidden')}
+    >
       {/* 独立会话页面 BaseTemplate 侧边栏隐藏时的展开按钮 */}
       <ConditionRender
         condition={
@@ -148,7 +152,7 @@ const OpenIframePage: React.FC = () => {
           src={iframeUrl}
           width="100%"
           height="100%"
-          style={{ border: 'none' }}
+          style={{ border: 'none', display: 'block' }}
         />
       )}
     </div>
