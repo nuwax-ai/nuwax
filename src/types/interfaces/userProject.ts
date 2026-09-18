@@ -143,17 +143,21 @@ export interface UserNormalProjectInfo {
   redirectUri?: string | null;
   /** OAuth2 接入是否启用 */
   oauthEnabled?: boolean;
+  /** 发布状态 */
+  publishStatus?: PublishStatusEnum;
   /** 置顶标记 */
   pinned: boolean;
   /** 归档标记 */
   archived: boolean;
+  /** 名称是否已定制 */
+  nameDefined?: boolean;
   /** 当前用户收藏标记 */
   collected: boolean;
   /** 更新时间 */
   modified: string;
   /** 创建时间 */
   created: string;
-  /** 开发智能体关联的会话ID（不落库，仅传输） */
+  /** 开发智能体关联的会话 ID（不落库，仅传输） */
   conversationId?: number | null;
 }
 

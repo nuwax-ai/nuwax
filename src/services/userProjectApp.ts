@@ -102,12 +102,14 @@ export async function apiUserAppGetById(
   });
 }
 
-/** 查询全栈应用配置历史（发布版本记录） */
+/** 查询应用历史配置信息（三方应用-全栈应用的发布操作流水）*/
 export async function apiUserAppConfigHistoryList(
-  appId: number,
+  projectId: number,
+  projectType: string,
 ): Promise<RequestResponse<HistoryData[]>> {
-  return request(`/api/userapp/config/history/list/${appId}`, {
+  return request(`/api/user-project/config/history/list/${projectId}`, {
     method: 'GET',
+    params: { projectType },
   });
 }
 

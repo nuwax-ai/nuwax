@@ -135,7 +135,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
             ? workspacePath || undefined
             : undefined,
       });
-      const newId = res?.data?.id ?? res?.data?.targetId;
+      const newId = res?.data?.projectId;
       if (res?.code === SUCCESS_CODE && newId) {
         emitProjectChanged({
           operation: 'created',
@@ -165,8 +165,7 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
           id: newId,
           name: values.name.trim(),
           sandboxId: numericSandboxId,
-          conversationId: res?.data?.conversationId,
-          agentId: res?.data?.agentId,
+          conversationId: res.data.conversationId ?? undefined,
         });
       } else {
         message.error(
@@ -204,6 +203,17 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
+        <Form.Item
+          name="icon"
+          label={dict('PC.Pages.SpaceProjectManage.iconLabel')}
+        >
+          <UploadAvatar
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            defaultImage={agentImage as string}
+            svgIconName="icons-workspace-agent"
+          />
+        </Form.Item>
         <Form.Item
           name="name"
           label={dict('PC.Pages.SpaceProjectManage.nameLabel')}
@@ -298,17 +308,6 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
             </Dropdown>
           </Form.Item>
         ) : null}
-        <Form.Item
-          name="icon"
-          label={dict('PC.Pages.SpaceProjectManage.iconLabel')}
-        >
-          <UploadAvatar
-            onUploadSuccess={setImageUrl}
-            imageUrl={imageUrl}
-            defaultImage={agentImage as string}
-            svgIconName="icons-workspace-agent"
-          />
-        </Form.Item>
       </GuardedFormModalForm>
       <WorkspaceDirPickerModal
         sandboxId={sandboxId}

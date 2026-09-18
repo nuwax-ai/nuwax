@@ -4,6 +4,9 @@ export const PAGE_APP_CATEGORY_ROOT_KEY = 'PageApp';
 /** 全栈应用子类型标识:回包 targetSubType 为该值时,点击卡片跳全栈应用页 */
 export const USER_APP_TARGET_SUBTYPE = 'UserApp';
 
+/** 网页应用子类型标识:targetType=Agent 且 targetSubType 为该值时,点击不上报最近使用 */
+export const PAGE_APP_TARGET_SUBTYPE = 'PageApp';
+
 /** 全栈应用详情路由前缀(拼 targetId 跳转 /user-app/:appId) */
 export const USER_APP_PATH_PREFIX = '/user-app';
 
