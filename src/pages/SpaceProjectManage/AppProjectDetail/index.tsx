@@ -1068,6 +1068,7 @@ const AppProjectDetail: React.FC = () => {
         </div>
       )}
 
+      {/* 私有服务器部署选择弹窗 */}
       <SelectDeployServerModal
         open={deployTargetOpen}
         servers={privateServers}
@@ -1079,6 +1080,7 @@ const AppProjectDetail: React.FC = () => {
         onCancel={handleCloseDeployTargetModal}
       />
 
+      {/* 绑定域名弹窗 */}
       <Modal
         title={dict('PC.Pages.AppProjectDetail.bindDomain')}
         open={bindOpen}

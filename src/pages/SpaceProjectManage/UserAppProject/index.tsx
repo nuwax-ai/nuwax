@@ -25,8 +25,6 @@ import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
 import ProjectListCard from '../components/ProjectListCard';
 import { apiUserProjectPageQuery } from '../services';
 import styles from './index.less';
-import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
-
 const cx = classNames.bind(styles);
 const PAGE_SIZE = 48;
 const SCROLL_CONTAINER_ID = 'user-app-project-scroll';
@@ -57,8 +55,6 @@ const UserAppProject: React.FC = () => {
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [openCreate, setOpenCreate] = useState<boolean>(false);
   const [editTarget, setEditTarget] = useState<UserProjectItem>();
-
-  const { pin } = useHomePinnedProjectHandoff();
 
   const { run, loading } = useRequest(
     (name?: string, pageIndex: number = 1) =>
@@ -288,14 +284,7 @@ const UserAppProject: React.FC = () => {
         onCancel={() => setOpenCreate(false)}
         onConfirmCreate={(project: UserAppInfo) => {
           setOpenCreate(false);
-          pin({
-            projectId: project.id,
-            spaceId,
-            projectType: AgentComponentTypeEnum.NormalProject,
-            name: project.name,
-            sandboxId: project.sandboxId,
-            devAgentId: project.devAgentId,
-          });
+          history.push(`/space/${spaceId}/app-project-detail/${project.id}`);
         }}
       />
 
