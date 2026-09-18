@@ -8,6 +8,9 @@ import { Button, Dropdown, MenuProps, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo } from 'react';
 import DatabaseGlyph from '../components/DatabaseGlyph';
+import PreviewRuntimeButtons, {
+  type PreviewRuntimeButtonsProps,
+} from '../ConversationAgentFilePreview/PreviewTabBar/PreviewRuntimeButtons';
 import { UserAppDbEnvEnum } from '../services/appDb';
 import type { UserAppInfo } from '../type';
 import styles from './index.less';
@@ -69,6 +72,8 @@ export interface AppDevProHeaderActionsProps {
   env?: UserAppDbEnvEnum;
   /** 切换开发 / 线上环境 */
   onEnvChange?: (env: UserAppDbEnvEnum) => void;
+  /** 应用预览重启 / 停止（Header 图标，逻辑与预览区一致） */
+  previewRuntimeControls?: PreviewRuntimeButtonsProps;
 }
 
 /**
@@ -105,6 +110,7 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   onTogglePublishVersionRecords,
   env = UserAppDbEnvEnum.Dev,
   onEnvChange,
+  previewRuntimeControls,
 }) => {
   const handlePublishClick = useCallback(() => {
     if (remotePublishing) {
@@ -197,6 +203,15 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
       />
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
+        {/* 应用预览：重启 / 停止（图标，置于右侧图标组最前） */}
+        <ConditionRender condition={isShowAppPreview && !!previewRuntimeControls}>
+          <PreviewRuntimeButtons
+            {...previewRuntimeControls}
+            variant="icon"
+            iconButtonClassName={styles['panel-btn']}
+          />
+        </ConditionRender>
+
         {/* 线上环境更多：域名绑定 / 构建包版本记录 / 发布版本记录 */}
         <ConditionRender condition={env === UserAppDbEnvEnum.Prod}>
           <div className={cx(styles['fold-box'])}>

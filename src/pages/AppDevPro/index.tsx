@@ -82,7 +82,6 @@ import {
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
-import PreviewRuntimeButtons from './ConversationAgentFilePreview/PreviewTabBar/PreviewRuntimeButtons';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
@@ -1205,7 +1204,7 @@ const AppDevPro: React.FC = () => {
     setDevConsoleLayoutResetSignal((n) => n + 1);
   }, []);
 
-  /** 打开 / 收起底部终端全屏（与文件树、智能体电脑互斥；再次点击仅折叠，不影响 ensure/连接） */
+  /** 打开 / 收起底部终端全屏（与文件树、应用预览、数据库、智能体电脑互斥；再次点击仅折叠，不影响 ensure/连接） */
   const handleOpenTerminalPanel = useCallback(() => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
@@ -1213,6 +1212,11 @@ const AppDevPro: React.FC = () => {
     if (isTerminalExpanded) {
       setDevConsoleCollapseSignal((n) => n + 1);
       return;
+    }
+
+    // 从独立工作区切回文件工作区，保证 Header 仅终端图标高亮
+    if (workspaceView !== 'files') {
+      setWorkspaceView('files');
     }
 
     // 先按当前环境接入容器：已启动稍后直接连；未启动或失败则先拉起
@@ -1232,6 +1236,7 @@ const AppDevPro: React.FC = () => {
     openPreviewView,
     queryConversationId,
     startEnvPodIfNeeded,
+    workspaceView,
   ]);
 
   /** 是否打开终端面板 */
@@ -1828,6 +1833,38 @@ const AppDevPro: React.FC = () => {
     );
   }, [previewRuntime]);
 
+  /** Header 应用预览重启 / 停止图标（逻辑与预览区原按钮一致） */
+  const previewRuntimeControls = useMemo(
+    () => ({
+      onRestartPreviewRuntime: handleRestartPreviewRuntime,
+      onStopPreviewRuntime: handleStopPreviewRuntime,
+      previewRuntimeBusy: previewRuntime.busy,
+      previewRuntimeRestarting: previewRuntime.restarting,
+      previewRuntimeStopping: previewRuntime.stopping,
+      previewRuntimeReady:
+        currentEnvPodReady &&
+        !isConversationActive &&
+        !hasPendingIntervention,
+      previewEnvPodReady: currentEnvPodReady,
+      previewPodEnsuring,
+      previewContainerFailed,
+      previewDevActionLocked,
+    }),
+    [
+      currentEnvPodReady,
+      handleRestartPreviewRuntime,
+      handleStopPreviewRuntime,
+      hasPendingIntervention,
+      isConversationActive,
+      previewContainerFailed,
+      previewDevActionLocked,
+      previewPodEnsuring,
+      previewRuntime.busy,
+      previewRuntime.restarting,
+      previewRuntime.stopping,
+    ],
+  );
+
   /**
    * 容器启动失败后重试：成功后按当前工作区自动接入。
    * 数据库页重挂管理 iframe；应用预览页重新启动预览（线上环境直接刷新 iframe）。
@@ -1984,15 +2021,18 @@ const AppDevPro: React.FC = () => {
     ],
   );
 
-  /** 数据库或数据库配置独立视图是否激活（Header 图标高亮） */
-  const isDatabasePanelOpen = workspaceView === 'database';
-  /** 应用预览独立视图是否激活（Header 图标高亮） */
-  const isAppPreviewOpen = workspaceView === 'app-preview';
+  /** 数据库或数据库配置独立视图是否激活（Header 图标高亮，与终端互斥） */
+  const isDatabasePanelOpen =
+    workspaceView === 'database' && !isTerminalPanelOpen;
+  /** 应用预览独立视图是否激活（Header 图标高亮，与终端互斥） */
+  const isAppPreviewOpen =
+    workspaceView === 'app-preview' && !isTerminalPanelOpen;
   /** 线上环境未部署时没有可预览的应用，隐藏应用预览入口 */
   const isShowAppPreview =
     dbEnv === UserAppDbEnvEnum.Dev || userAppInfo?.prodDeployed === true;
-  /** 远程桌面独立工作区是否激活（Header 图标高亮） */
-  const isAgentDesktopOpen = workspaceView === 'remote-desktop';
+  /** 远程桌面独立工作区是否激活（Header 图标高亮，与终端互斥） */
+  const isAgentDesktopOpen =
+    workspaceView === 'remote-desktop' && !isTerminalPanelOpen;
 
   /** 启动成功后：使用当前环境对应的开发或线上域名 */
   const appPreviewUrl = useMemo(
@@ -2212,40 +2252,6 @@ const AppDevPro: React.FC = () => {
         isCloudComputer={finalSelectedComputerId === '-1'}
       />
     );
-    const previewRuntimeButtons = (
-      <PreviewRuntimeButtons
-        onRestartPreviewRuntime={handleRestartPreviewRuntime}
-        onStopPreviewRuntime={handleStopPreviewRuntime}
-        previewRuntimeBusy={previewRuntime.busy}
-        previewRuntimeRestarting={previewRuntime.restarting}
-        previewRuntimeStopping={previewRuntime.stopping}
-        previewRuntimeReady={
-          currentEnvPodReady &&
-          !isConversationActive &&
-          !hasPendingIntervention
-        }
-        previewEnvPodReady={currentEnvPodReady}
-        previewPodEnsuring={previewPodEnsuring}
-        previewContainerFailed={previewContainerFailed}
-        previewDevActionLocked={previewDevActionLocked}
-      />
-    );
-    const previewRuntimeTabBarProps = {
-      onRestartPreviewRuntime: handleRestartPreviewRuntime,
-      onStopPreviewRuntime: handleStopPreviewRuntime,
-      previewRuntimeBusy: previewRuntime.busy,
-      previewRuntimeRestarting: previewRuntime.restarting,
-      previewRuntimeStopping: previewRuntime.stopping,
-      previewRuntimeReady:
-        currentEnvPodReady &&
-        !isConversationActive &&
-        !hasPendingIntervention,
-      previewEnvPodReady: currentEnvPodReady,
-      previewPodEnsuring,
-      previewContainerFailed,
-      previewDevActionLocked,
-    };
-
     return (
       <div className={cx(styles['right-panel'])}>
         <div className={cx(styles['right-panel-body'])}>
@@ -2275,7 +2281,6 @@ const AppDevPro: React.FC = () => {
                 void fileView.tree.handleExportProject?.();
               }}
               isCloudComputer={finalSelectedComputerId === '-1'}
-              {...previewRuntimeTabBarProps}
             />
           ) : workspaceView === 'database' ? (
             <PreviewTabBar
@@ -2303,7 +2308,6 @@ const AppDevPro: React.FC = () => {
                 void fileView.tree.handleExportProject?.();
               }}
               isCloudComputer={finalSelectedComputerId === '-1'}
-              {...previewRuntimeTabBarProps}
             />
           ) : workspaceView === 'remote-desktop' ? (
             <div className={cx(styles['tool-workspace-bar'])}>
@@ -2312,7 +2316,6 @@ const AppDevPro: React.FC = () => {
               </span>
               <div className={cx(styles['tool-workspace-actions'])}>
                 {moreActions}
-                {previewRuntimeButtons}
               </div>
             </div>
           ) : (
@@ -2328,7 +2331,6 @@ const AppDevPro: React.FC = () => {
               ) : null}
               <div className={cx(styles['tool-workspace-actions'])}>
                 {moreActions}
-                {previewRuntimeButtons}
               </div>
             </div>
           )}
@@ -2506,6 +2508,7 @@ const AppDevPro: React.FC = () => {
               onTogglePublishVersionRecords={handleTogglePublishVersionRecords}
               env={dbEnv}
               onEnvChange={handleEnvChange}
+              previewRuntimeControls={previewRuntimeControls}
             />
 
             <div className={cx(styles['right-column-body'])}>

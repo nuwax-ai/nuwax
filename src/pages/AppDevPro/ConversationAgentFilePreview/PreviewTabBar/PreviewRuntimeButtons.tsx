@@ -1,4 +1,7 @@
+import { SvgIcon } from '@/components/base';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
+import { LoadingOutlined, PoweroffOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -27,10 +30,14 @@ export interface PreviewRuntimeButtonsProps {
   previewContainerFailed?: boolean;
   /** 开发环境进行中任务锁定启动 / 重启 */
   previewDevActionLocked?: boolean;
+  /** 展示形态：Header 图标 / 预览区文字按钮 */
+  variant?: 'icon' | 'text';
+  /** 图标按钮外层类名（Header panel-btn） */
+  iconButtonClassName?: string;
 }
 
 /**
- * 应用预览：重启 / 停止按钮，常驻在更多操作右侧。
+ * 应用预览：重启 / 停止控制。
  *
  * @param props 预览运行时参数
  * @returns 重启与停止按钮组
@@ -46,6 +53,8 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
   previewPodEnsuring = false,
   previewContainerFailed = false,
   previewDevActionLocked = false,
+  variant = 'text',
+  iconButtonClassName,
 }) => {
   if (!onRestartPreviewRuntime && !onStopPreviewRuntime) {
     return null;
@@ -62,6 +71,49 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
     previewRuntimeStopping;
 
   const stopDisabled = podActionBlocked || previewRuntimeStopping;
+
+  if (variant === 'icon') {
+    return (
+      <div className={cx(styles['preview-runtime-icon-actions'])}>
+        {onRestartPreviewRuntime ? (
+          <TooltipIcon
+            title={dict('PC.Pages.AppDevPro.restartService')}
+            ariaLabel={dict('PC.Pages.AppDevPro.restartService')}
+            className={classNames(iconButtonClassName, {
+              [styles['preview-runtime-icon-disabled']]: restartDisabled,
+            })}
+            icon={
+              previewRuntimeRestarting ? (
+                <LoadingOutlined style={{ fontSize: 16 }} />
+              ) : (
+                <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />
+              )
+            }
+            onClick={
+              restartDisabled ? undefined : onRestartPreviewRuntime
+            }
+          />
+        ) : null}
+        {onStopPreviewRuntime ? (
+          <TooltipIcon
+            title={dict('PC.Pages.AppDevPro.stopService')}
+            ariaLabel={dict('PC.Pages.AppDevPro.stopService')}
+            className={classNames(iconButtonClassName, {
+              [styles['preview-runtime-icon-disabled']]: stopDisabled,
+            })}
+            icon={
+              previewRuntimeStopping ? (
+                <LoadingOutlined style={{ fontSize: 16 }} />
+              ) : (
+                <PoweroffOutlined style={{ fontSize: 16 }} />
+              )
+            }
+            onClick={stopDisabled ? undefined : onStopPreviewRuntime}
+          />
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles['preview-runtime-text-actions'])}>

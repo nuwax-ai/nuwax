@@ -147,11 +147,6 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
       return;
     }
 
-    if (result.opaque) {
-      settleSuccess();
-      return;
-    }
-
     settleFailure(result.status);
   }, [instanceId, settleFailure, settleSuccess, src]);
 
