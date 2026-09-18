@@ -6422,6 +6422,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.descriptionLabel": "Description",
   "PC.Pages.SpaceProjectManage.descriptionPlaceholder": "Enter project description",
   "PC.Pages.SpaceProjectManage.iconLabel": "Icon",
+  "PC.Pages.SpaceProjectManage.projectInfoSection": "Project info",
+  "PC.Pages.SpaceProjectManage.personalDevEnvSection": "Personal dev environment",
   "PC.Pages.SpaceProjectManage.createSuccess": "Created successfully",
   "PC.Pages.SpaceProjectManage.createFailed": "Creation failed, please try again later",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "No conversation yet. Open the project before exporting.",

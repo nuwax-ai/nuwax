@@ -6296,6 +6296,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.descriptionLabel": "説明",
   "PC.Pages.SpaceProjectManage.descriptionPlaceholder": "プロジェクトの説明を入力してください",
   "PC.Pages.SpaceProjectManage.iconLabel": "アイコン",
+  "PC.Pages.SpaceProjectManage.projectInfoSection": "プロジェクト情報",
+  "PC.Pages.SpaceProjectManage.personalDevEnvSection": "個人開発環境",
   "PC.Pages.SpaceProjectManage.createSuccess": "作成しました",
   "PC.Pages.SpaceProjectManage.createFailed": "作成に失敗しました。しばらくしてから再試行してください",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "まだ会話がありません。プロジェクトに入ってから書き出してください。",

@@ -191,6 +191,9 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
+        <h5 className={cx(styles['section-title'])}>
+          {dict('PC.Pages.SpaceProjectManage.projectInfoSection')}
+        </h5>
         <Form.Item
           name="icon"
           label={dict('PC.Pages.SpaceProjectManage.iconLabel')}
@@ -237,6 +240,9 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
           )}
           maxLength={10000}
         />
+        <h5 className={cx(styles['section-title'])}>
+          {dict('PC.Pages.SpaceProjectManage.personalDevEnvSection')}
+        </h5>
         <Form.Item
           name="sandboxId"
           label={dict('PC.Pages.SpaceProjectManage.runtimeEnv')}

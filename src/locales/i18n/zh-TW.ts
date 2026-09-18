@@ -6298,6 +6298,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.descriptionLabel": "描述",
   "PC.Pages.SpaceProjectManage.descriptionPlaceholder": "請輸入項目描述",
   "PC.Pages.SpaceProjectManage.iconLabel": "圖示",
+  "PC.Pages.SpaceProjectManage.projectInfoSection": "專案資訊",
+  "PC.Pages.SpaceProjectManage.personalDevEnvSection": "個人開發環境",
   "PC.Pages.SpaceProjectManage.createSuccess": "創建成功",
   "PC.Pages.SpaceProjectManage.createFailed": "創建失敗，請稍後重試",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "項目暫無會話，請進入項目後再導出",

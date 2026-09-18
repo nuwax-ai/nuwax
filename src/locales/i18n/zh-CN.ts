@@ -6417,6 +6417,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.descriptionLabel": "描述",
   "PC.Pages.SpaceProjectManage.descriptionPlaceholder": "请输入项目描述",
   "PC.Pages.SpaceProjectManage.iconLabel": "图标",
+  "PC.Pages.SpaceProjectManage.projectInfoSection": "项目信息",
+  "PC.Pages.SpaceProjectManage.personalDevEnvSection": "个人开发环境",
   "PC.Pages.SpaceProjectManage.createSuccess": "创建成功",
   "PC.Pages.SpaceProjectManage.createFailed": "创建失败，请稍后重试",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "项目暂无会话，请进入项目后再导出",
