@@ -103,7 +103,10 @@ import {
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
-import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
+import {
+  buildUserAppAppPreviewUrl,
+  probeUserAppPreviewUrlReachable,
+} from './utils/userAppPreviewUrl';
 const cx = classNames.bind(styles);
 
 /** Header 工作区：文件树预览与应用预览 / 数据库 / 远程桌面互斥，后三者不进入文件标签栏 */
@@ -800,6 +803,25 @@ const AppDevPro: React.FC = () => {
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
 
+  /**
+   * 开发环境进页 / 打开预览：先探测 dev 域名是否可访问，可达则直接 iframe，否则走 start。
+   */
+  const prepareDevPreviewIfNeeded = useCallback(async () => {
+    const previewUrl = appPreviewUrlRef.current;
+    if (previewUrl) {
+      const reachable = await probeUserAppPreviewUrlReachable(previewUrl);
+      if (reachable) {
+        setPreviewIframeUrl(previewUrl);
+        markPreviewReadyRef.current();
+        setPreviewRefreshKey((prev) => prev + 1);
+        return;
+      }
+    }
+    startPreviewIfNeededRef.current();
+  }, []);
+  const prepareDevPreviewIfNeededRef = useRef(prepareDevPreviewIfNeeded);
+  prepareDevPreviewIfNeededRef.current = prepareDevPreviewIfNeeded;
+
   /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
   const previewDevActionLocked =
     dbEnv === UserAppDbEnvEnum.Dev && !devActionAllowed;
@@ -1452,7 +1474,8 @@ const AppDevPro: React.FC = () => {
 
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
-   * 开发环境须等 tasks/active 首包：允许则 start；不允许（服务已在跑）且已有预览域名则直接 iframe，不再 start / stream。
+   * 开发环境须等 tasks/active 首包：允许则先探测 dev 域名，可达直接 iframe，否则 start；
+   * 不允许（服务已在跑）且已有预览域名则直接 iframe，不再 start / stream。
    * 允许 start 时还须文件树已有数据，避免空项目拉起预览。
    * 会话进行中或仍有待回复确认卡时不启动；会话结束后不自动 restart，仅首次 start。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
@@ -1496,9 +1519,17 @@ const AppDevPro: React.FC = () => {
     if (!hasFileTreeData) {
       return;
     }
-    // 尚未运行则启动；已运行则 startIfNeeded 内部会跳过
-    startPreviewIfNeededRef.current();
-    setPreviewEnterSettled(true);
+    // 先探测 dev 域名是否已可访问，可达则跳过 start / stream
+    let cancelled = false;
+    void (async () => {
+      await prepareDevPreviewIfNeededRef.current();
+      if (!cancelled) {
+        setPreviewEnterSettled(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [
     appId,
     conversationReady,
@@ -1759,7 +1790,7 @@ const AppDevPro: React.FC = () => {
       !isConversationActive &&
       !hasPendingIntervention
     ) {
-      previewRuntime.startIfNeeded();
+      void prepareDevPreviewIfNeededRef.current();
     }
   }, [
     dbEnv,
@@ -1767,7 +1798,6 @@ const AppDevPro: React.FC = () => {
     isConversationActive,
     podReady,
     previewDevActionLocked,
-    previewRuntime,
     resetDevConsoleExpandedLayout,
   ]);
 
@@ -1825,7 +1855,7 @@ const AppDevPro: React.FC = () => {
       void restartPreviewRuntimeRef.current();
       return;
     }
-    void startPreviewRuntimeRef.current();
+    void prepareDevPreviewIfNeededRef.current();
   }, [dbEnv]);
 
   /** 取消 tasks/active 中的远程构建任务 */
