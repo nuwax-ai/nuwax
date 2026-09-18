@@ -123,6 +123,30 @@ describe('selectConversationSessionView', () => {
     expect(streaming.shouldShowTaskWait).toBe(false);
   });
 
+  it('轮内收尾间隙不显示等待提示：末条已完但仍等 FINAL 终态', () => {
+    const view = selectConversationSessionView(
+      baseInput({
+        taskStatus: TaskStatus.EXECUTING,
+        messageList: [completeMessage],
+        awaitingChatTerminal: true,
+      }),
+    );
+    expect(view.phase).toBe('awaiting-terminal');
+    expect(view.shouldShowTaskWait).toBe(false);
+  });
+
+  it('轮内收尾间隙不显示等待提示：末条已完但连接仍开（model 活跃）', () => {
+    const view = selectConversationSessionView(
+      baseInput({
+        taskStatus: TaskStatus.EXECUTING,
+        messageList: [completeMessage],
+        modelStreamActive: true,
+      }),
+    );
+    expect(view.phase).toBe('streaming');
+    expect(view.shouldShowTaskWait).toBe(false);
+  });
+
   it('队列有消息或流式活跃时不显示建议', () => {
     const queued = selectConversationSessionView(
       baseInput({

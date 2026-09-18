@@ -107,7 +107,11 @@ export function selectConversationSessionView(
       messageList,
       taskStatus,
     ),
-    shouldShowTaskWait: shouldShowTaskExecutingWait(taskStatus, messageList),
+    // 等待提示仅在 idle 稳态展示：本轮流内（连接仍开 / 等 FINAL 终态）的
+    // 消息间隙——末条 finished 分片已落定而 FINAL_RESULT 未到——不得渲染，
+    // 否则每轮收尾都会闪现后又被「运行完毕」替换。
+    shouldShowTaskWait:
+      phase === 'idle' && shouldShowTaskExecutingWait(taskStatus, messageList),
     shouldShowSuggest: shouldShowSessionSuggest(
       messageList,
       Boolean(hasQueuedMessages),

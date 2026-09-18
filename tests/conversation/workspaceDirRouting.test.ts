@@ -11,14 +11,17 @@ vi.mock('@/utils/exportImportFile', () => ({
 describe('目录浏览网关路由', () => {
   it('根目录与子目录都携带当前电脑 ID', async () => {
     await apiBrowseFsRoots('11');
-    expect(request).toHaveBeenLastCalledWith('/api/computer/fs/roots', {
+    expect(request).toHaveBeenLastCalledWith('/api/computer/static/fs/roots', {
       method: 'GET',
       params: { sandboxId: '11' },
     });
     await apiBrowseFsChildren('/work', '22');
-    expect(request).toHaveBeenLastCalledWith('/api/computer/fs/children', {
-      method: 'GET',
-      params: { path: '/work', sandboxId: '22' },
-    });
+    expect(request).toHaveBeenLastCalledWith(
+      '/api/computer/static/fs/children',
+      {
+        method: 'GET',
+        params: { path: '/work', sandboxId: '22' },
+      },
+    );
   });
 });
