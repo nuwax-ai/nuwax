@@ -205,6 +205,17 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
         autoComplete="off"
       >
         <Form.Item
+          name="icon"
+          label={dict('PC.Pages.SpaceProjectManage.iconLabel')}
+        >
+          <UploadAvatar
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            defaultImage={agentImage as string}
+            svgIconName="icons-workspace-agent"
+          />
+        </Form.Item>
+        <Form.Item
           name="name"
           label={dict('PC.Pages.SpaceProjectManage.nameLabel')}
           validateTrigger="onBlur"
@@ -298,17 +309,6 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
             </Dropdown>
           </Form.Item>
         ) : null}
-        <Form.Item
-          name="icon"
-          label={dict('PC.Pages.SpaceProjectManage.iconLabel')}
-        >
-          <UploadAvatar
-            onUploadSuccess={setImageUrl}
-            imageUrl={imageUrl}
-            defaultImage={agentImage as string}
-            svgIconName="icons-workspace-agent"
-          />
-        </Form.Item>
       </GuardedFormModalForm>
       <WorkspaceDirPickerModal
         sandboxId={sandboxId}

@@ -1,4 +1,5 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { PublishStatusEnum } from '@/types/enums/common';
 import { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -50,6 +51,8 @@ export interface ThirdAppOauth2AppInfo extends ThirdAppOauth2Info {
   created: string;
   /** 修改时间 */
   modified: string;
+  /** 发布状态（与列表页 publishStatus 语义一致） */
+  publishStatus?: PublishStatusEnum;
 }
 
 /** 保存主页地址与回调地址（留空表示不修改） */

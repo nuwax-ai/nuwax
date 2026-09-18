@@ -1,4 +1,5 @@
 import { CategoryTypeEnum } from '@/types/enums/agent';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type {
   SquareCategoryInfo,
@@ -130,6 +131,25 @@ export async function apiPublishedAppRecentlyUsedList(data: {
   pageSize?: number;
 }): Promise<RequestResponse<SquarePublishedItemInfo[]>> {
   return request('/api/published/app/recentlyUsed/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 女娲应用-新增最近使用记录接口
+ * @description POST /api/published/app/recentlyUsed/add——
+ * 点击应用时上报使用记录：projectId=应用条目的 targetId、
+ * projectType=应用条目的 targetType；调用成功后由调用方
+ * 重拉最近使用与系统应用/团队空间应用列表
+ */
+export async function apiPublishedAppRecentlyUsedAdd(data: {
+  /** 目标对象 ID（应用条目的 targetId） */
+  projectId: number;
+  /** 目标类型（应用条目的 targetType） */
+  projectType: SquareAgentTypeEnum;
+}): Promise<RequestResponse<null>> {
+  return request('/api/published/app/recentlyUsed/add', {
     method: 'POST',
     data,
   });
