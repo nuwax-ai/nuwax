@@ -207,8 +207,11 @@ export const navigateOpenIframePath = (
 export const handleOpenUrl = (menu: MenuItemDto, parentCode?: string) => {
   const resolvedMenu = resolveMenuPath(menu);
   const { openType = OpenTypeEnum.CurrentTab, path = '' } = resolvedMenu;
-  // 桌面端主窗口：文档等导航一律新开独立窗口（外链直接开窗，站内页走同源开窗）。
-  // 独立窗口内 isImmersiveShell=false，回落浏览器式行为。
+  // 桌面端主窗口：NewTab 外链经宿主开独立窗口（独立窗口内 isImmersiveShell=false，
+  // 回落浏览器式行为）。CurrentTab 不再经 native.openWindow same-window——那是
+  // webview.loadURL 的 document 级整页导航，点击外链型菜单（消息/资源库/生态
+  // 市场）整个 SPA 重载闪白（2026-09-18 提测）；open-iframe-page 本就是站内
+  // 路由，直接 SPA 跳转（与 jumpTo 链 2026-09-11 的修法对齐，见 router.ts 头注）。
   if (isImmersiveShell()) {
     // 开窗失败（旧壳无 handler 等）回落浏览器式行为，保证点击有响应
     if (openType === OpenTypeEnum.NewTab && /^https?:\/\//i.test(path)) {
@@ -219,9 +222,7 @@ export const handleOpenUrl = (menu: MenuItemDto, parentCode?: string) => {
     }
     if (openType !== OpenTypeEnum.NewTab) {
       const shellPath = buildOpenIframePath(resolvedMenu);
-      void hostBridge.native.openWindow(shellPath).then((res) => {
-        if (!res.success) history.push(shellPath, { _t: Date.now() });
-      });
+      navigateOpenIframePath(shellPath);
       return;
     }
   }

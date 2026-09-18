@@ -189,6 +189,8 @@ const VerifyCode: React.FC = () => {
 
     // 设置页面title
     setTitle();
+    // 认证页无侧栏，撤销壳顶栏「展开/收起」按钮可用态（同 Login 页；无桥 no-op）
+    hostBridge.layout.setSecondMenuAvailable(false);
   }, []);
 
   const handleReady = () => {
