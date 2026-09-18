@@ -1,3 +1,4 @@
+/* stylelint-disable at-rule-no-unknown -- @container 容器查询为合法现代 CSS（同 ConversationProgressCapsule 先例） */
 @import '@/styles/token';
 
 .model-selector-container {
@@ -363,6 +364,16 @@
         opacity: 1;
         pointer-events: auto;
       }
+    }
+  }
+}
+
+/* 窄输入框容器降级（问题区 #15）：触发钮文字收窄省宽，避免右侧组溢出
+   裁掉发送钮。仅在 .chat-container 容器查询上下文内生效 */
+@container chat-input-box (max-width: 440px) {
+  .model-selector-container .selector-btn {
+    span {
+      max-width: 44px;
     }
   }
 }

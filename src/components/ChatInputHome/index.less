@@ -1,3 +1,4 @@
+/* stylelint-disable at-rule-no-unknown -- @container 容器查询为合法现代 CSS（同 ConversationProgressCapsule 先例） */
 @import '@/styles/color';
 @import '@/styles/token';
 
@@ -15,6 +16,10 @@
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 13%);
   box-shadow: 0 5px 16px -4px #00000012;
+  // 窄容器（会话页左栏拖窄/EditAgent 预览调试面板）下按宽度降级工具栏，
+  // 防止状态栏叠加溢出被 overflow:hidden 裁掉发送钮（问题区 #15）
+  container-type: inline-size;
+  container-name: chat-input-box;
 
   &.drag-over {
     border-color: @colorPrimary;
@@ -325,6 +330,26 @@
     .footer-voice-active {
       align-items: center;
     }
+  }
+}
+
+/* 窄容器降级（问题区 #15）：
+   ≤560px 审批 pill 只留盾牌图标（文字隐藏，Tooltip 说明仍在）；
+   ≤440px 隐藏已连接连接器头像组——连接器入口仍可从 + 号聚合菜单进入，
+   让位右侧电脑/模型选择器与发送钮。分档从宽到窄叠加生效，不换行不出滚动条 */
+@container chat-input-box (max-width: 560px) {
+  .chat-container .approval-pill {
+    padding: @paddingXxs;
+
+    > span:not(.approval-pill-icon-slot) {
+      display: none;
+    }
+  }
+}
+
+@container chat-input-box (max-width: 440px) {
+  .chat-container .connector-group {
+    display: none;
   }
 }
 

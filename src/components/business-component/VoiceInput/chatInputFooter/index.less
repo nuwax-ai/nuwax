@@ -1,3 +1,4 @@
+/* stylelint-disable at-rule-no-unknown -- @container 容器查询为合法现代 CSS（同 ConversationProgressCapsule 先例） */
 @import '@/styles/color';
 @import '@/styles/token';
 
@@ -65,4 +66,18 @@
   color: @colorIcon;
   background-color: @colorBgContainerDisabled;
   opacity: 1;
+}
+
+/* 窄输入框容器降级（问题区 #15）：右侧操作组允许收缩，
+   语音占位与发送/停止钮保形不被裁；容器名来自 ChatInputHome 的 .chat-container */
+@container chat-input-box (max-width: 440px) {
+  .voice-footer-right {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .voice-footer-right .voice-action-send,
+  .voice-footer-right .voice-action-stop {
+    flex-shrink: 0;
+  }
 }
