@@ -70,7 +70,8 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
     previewRuntimeBusy ||
     previewRuntimeStopping;
 
-  const stopDisabled = podActionBlocked || previewRuntimeStopping;
+  const stopDisabled =
+    podActionBlocked || previewRuntimeStopping || previewRuntimeRestarting;
 
   if (variant === 'icon') {
     return (

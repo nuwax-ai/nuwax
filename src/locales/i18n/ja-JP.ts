@@ -2830,6 +2830,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.stopFailed": "停止に失敗しました",
   "PC.Pages.AppDevPro.previewStopping": "サービスを停止しています…",
   "PC.Pages.AppDevPro.previewStoppingHint": "停止が完了すると、再度プレビューを起動できます",
+  "PC.Pages.AppDevPro.previewRestarting": "サービスを再起動しています…",
+  "PC.Pages.AppDevPro.previewRestartingHint": "再起動が完了すると、プレビューが自動的に更新されます",
   "PC.Pages.AppDevPro.stopService": "アプリを停止",
   "PC.Pages.AppDevPro.stopSuccess": "サービスを停止しました",
   "PC.Pages.AppDevPro.waitingLogs": "タスクログを待っています...",

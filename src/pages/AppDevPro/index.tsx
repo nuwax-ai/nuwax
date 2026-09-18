@@ -2158,6 +2158,9 @@ const AppDevPro: React.FC = () => {
         devActionLocked={previewDevActionLocked}
         allowStoppedHero={previewUserStopped || previewEnterSettled}
         stopping={previewRuntime.stopping}
+        restarting={
+          dbEnv === UserAppDbEnvEnum.Prod && previewRuntime.restarting
+        }
         directPreview={dbEnv === UserAppDbEnvEnum.Prod}
       />
     ),
@@ -2179,6 +2182,7 @@ const AppDevPro: React.FC = () => {
       previewRuntime.running,
       previewRuntime.services,
       previewRuntime.stopping,
+      previewRuntime.restarting,
       dbEnv,
       canDirectProdPreview,
       devPod.status,

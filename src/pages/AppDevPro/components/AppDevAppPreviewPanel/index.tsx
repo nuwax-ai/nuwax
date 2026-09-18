@@ -67,6 +67,8 @@ export interface AppDevAppPreviewPanelProps {
   directPreview?: boolean;
   /** 正在调用停止接口，避免 iframe 被关掉后露出空白 */
   stopping?: boolean;
+  /** 线上环境重启进行中：展示重启提示，隐藏 iframe */
+  restarting?: boolean;
 }
 
 /**
@@ -252,6 +254,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   allowStoppedHero = false,
   directPreview = false,
   stopping = false,
+  restarting = false,
 }) => {
   const logs = useMemo(() => {
     const lines = flattenTaskLogs(services);
@@ -302,6 +305,18 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
 
   /** 线上环境容器就绪后直接预览，不展示开发环境的准备中 / 启动日志 */
   if (directPreview) {
+    if (restarting) {
+      return (
+        <div className={cx(styles.container, styles.stage)}>
+          <PreviewHero
+            spinning
+            title={dict('PC.Pages.AppDevPro.previewRestarting')}
+            hint={dict('PC.Pages.AppDevPro.previewRestartingHint')}
+          />
+        </div>
+      );
+    }
+
     if (previewUrl) {
       return (
         <div className={cx(styles.container)}>

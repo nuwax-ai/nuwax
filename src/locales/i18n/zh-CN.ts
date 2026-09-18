@@ -2899,6 +2899,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.stopFailed": "停止失败",
   "PC.Pages.AppDevPro.previewStopping": "正在停止服务…",
   "PC.Pages.AppDevPro.previewStoppingHint": "请稍候，停止完成后可再次启动预览",
+  "PC.Pages.AppDevPro.previewRestarting": "正在重启服务…",
+  "PC.Pages.AppDevPro.previewRestartingHint": "请稍候，重启完成后将自动刷新预览",
   "PC.Pages.AppDevPro.stopService": "停止应用",
   "PC.Pages.AppDevPro.stopSuccess": "已停止服务",
   "PC.Pages.AppDevPro.waitingLogs": "等待任务日志...",

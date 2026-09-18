@@ -2899,6 +2899,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.stopFailed": "Stop failed",
   "PC.Pages.AppDevPro.previewStopping": "Stopping service…",
   "PC.Pages.AppDevPro.previewStoppingHint": "Please wait. You can start preview again after it stops.",
+  "PC.Pages.AppDevPro.previewRestarting": "Restarting service…",
+  "PC.Pages.AppDevPro.previewRestartingHint": "Please wait. The preview will refresh automatically when the restart completes.",
   "PC.Pages.AppDevPro.stopService": "Stop app",
   "PC.Pages.AppDevPro.stopSuccess": "Service stopped",
   "PC.Pages.AppDevPro.waitingLogs": "Waiting for task logs...",
