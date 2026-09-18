@@ -348,25 +348,25 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('终态收起态叙述仍按原位直出（与折叠解耦），展开后工具/思考行才挂载', () => {
+  it('终态收起态叙述原位直出（不属折叠控制范围），展开后思考/工具行按时序挂载', () => {
     renderV2(buildTurn());
     const toggle = screen.getByTestId('v2-trace-toggle');
-    // 收起态：叙述直出可见，工具/思考行保持卸载（懒挂载不破坏）
+    // 收起态：叙述直出可见，思考/工具行未挂载，也无折叠体包装层
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByTestId('v2-narration').textContent).toContain(
-      '天气查询完成',
-    );
+    const narration = screen.getByTestId('v2-narration');
+    expect(narration.textContent).toContain('天气查询完成');
     expect(document.querySelector('[data-node-kind="reasoning"]')).toBeNull();
     expect(document.querySelector('[data-node-id="e1"]')).toBeNull();
-    // 展开后节点行挂载，叙述仍在原位
+    // 展开后思考/工具行挂载，叙述仍在原位（时序：思考 → 叙述）
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByTestId('v2-narration').textContent).toContain(
-      '天气查询完成',
-    );
+    const reasoning = document.querySelector('[data-node-kind="reasoning"]')!;
+    expect(reasoning).not.toBeNull();
+    expect(narration.textContent).toContain('天气查询完成');
     expect(
-      document.querySelector('[data-node-kind="reasoning"]'),
-    ).not.toBeNull();
+      reasoning.compareDocumentPosition(narration) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(document.querySelector('[data-node-id="e1"]')).not.toBeNull();
   });
 
@@ -641,14 +641,9 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     expect(
       screen.getByTestId('tool-detail').getAttribute('data-execute-id'),
     ).toBe('e1');
-    // 轨迹头同样为原生 button 且带 aria-controls 联动
+    // 轨迹头同样为原生 button
     const traceToggle = screen.getByTestId('v2-trace-toggle');
     expect(traceToggle.nodeName).toBe('BUTTON');
-    expect(traceToggle.getAttribute('aria-controls')).toBe(
-      `v2-trace-body-${document
-        .querySelector('[data-trace-key]')
-        ?.getAttribute('data-trace-key')}`,
-    );
   });
 
   it('连续工具压缩为动作摘要组，活动尾组默认展开并逐条保序', () => {
@@ -765,26 +760,22 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
     );
   });
 
-  it('过程说明穿插直出在轨迹体原位（工具之间），展开即见正文；narration-only 终态轮无空轨迹条', () => {
+  it('过程叙述按时序原位穿插（工具行之后、回答之前）；narration-only 终态轮无空轨迹条', () => {
     renderV2(buildTurn());
     fireEvent.click(screen.getByTestId('v2-trace-toggle'));
-    const trace = document.querySelector('[data-trace-key]');
+    const toolRow = document.querySelector('[data-node-id="e1"]')!;
     const narration = screen.getByTestId('v2-narration');
     const answer = screen.getByTestId('v2-final-answer');
-    // DOM 顺序：轨迹条 → narration（体内穿插）→ 最终回答
+    // 时序：工具行 → narration → 最终回答
     expect(
-      Boolean(
-        trace &&
-          narration.compareDocumentPosition(trace) &
-            Node.DOCUMENT_POSITION_PRECEDING,
-      ),
-    ).toBe(true);
+      toolRow.compareDocumentPosition(narration) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(
       narration.compareDocumentPosition(answer) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    // 穿插位置：narration 在轨迹体内（trace-body 的后代），且不再是节点行
-    expect(narration.closest('[data-trace-key]')).not.toBeNull();
+    // 叙述不是节点行
     expect(document.querySelector('[data-node-kind="narration"]')).toBeNull();
 
     // narration-only 终态轮：无轨迹条、无节点行，正文直接展示

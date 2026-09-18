@@ -112,9 +112,9 @@ const TurnBlock: React.FC<{
   const lastAssistant = [...turn.assistantMessages]
     .reverse()
     .find((message) => message.role === AssistantRoleEnum.ASSISTANT);
-  // 轨迹条只在确有节点行（非 narration）或运行中时出现；
-  // 仅剩 narration（无工具无思考）的终态轮直接以正文展示，不套空轨迹条
-  const narrationOnly = turn.nodes.some((node) => node.kind === 'narration');
+  // 轨迹条只在确有过程行（非 narration）或运行中时出现；
+  // narration 由轨迹条按原位直出（不属折叠控制范围），纯文案轮无轨迹条直接铺正文
+  const narrationNodes = turn.nodes.filter((node) => node.kind === 'narration');
   const showTrace =
     turn.nodes.some((node) => node.kind !== 'narration') || turn.running;
 
@@ -150,16 +150,15 @@ const TurnBlock: React.FC<{
             onOpenResource={onOpenToolResource}
           />
         )}
-        {/* 无节点行的轮次（纯说明）：narration 直接以正文展示 */}
-        {!showTrace && narrationOnly && (
+        {/* narration-only 轮次（无折叠条可依附）：纯文案直出；有轨迹的轮由
+            WorkTraceDisclosure 按原位渲染叙述（不属折叠控制范围、恒可见） */}
+        {!showTrace && narrationNodes.length > 0 && (
           <div className={cx(styles['narration-block'])}>
-            {turn.nodes
-              .filter((node) => node.kind === 'narration')
-              .map((node) => (
-                <NarrationText key={node.id} narrationId={node.id}>
-                  {node.text ?? ''}
-                </NarrationText>
-              ))}
+            {narrationNodes.map((node) => (
+              <NarrationText key={node.id} narrationId={node.id}>
+                {node.text ?? ''}
+              </NarrationText>
+            ))}
           </div>
         )}
         <FinalAnswerBlock

@@ -1,8 +1,8 @@
 /**
- * V2 整轮工作轨迹：外层指标 disclosure → 连续工具组 → 原子工具详情。
- * 展开状态全部保存在本层，外层收起导致子树卸载时不会丢失用户选择。
- * 叙述（narration）与折叠解耦：收起只收工具/思考行，叙述按原位顺序恒直出，
- * 保证直播、终态与刷新还原后的过程叙述展示对齐。
+ * V2 整轮工作轨迹：单折叠头（轮级统计）+ 按时序穿插的过程行块与叙述。
+ * 折叠只控制思考/工具行块——收起即整体懒卸载，展开时按真实时序原位插入；
+ * 叙述（narration）原位直出、不属于折叠控制范围（收起/展开均渲染），
+ * 直播、终态与刷新还原的过程叙述展示对齐。
  */
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
@@ -169,8 +169,6 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
       ];
     });
   }, [revealHidden, traceItems, visibleNodes]);
-  // 叙述直出与折叠解耦：收起态也要渲染的 narration 项（预设不过滤叙述）
-  const hasNarration = shownItems.some((item) => item.kind === 'narration');
 
   const [nodeExpanded, setNodeExpanded] = useState<Record<string, boolean>>({});
   const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>(
@@ -233,7 +231,6 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
     return typeof manual === 'boolean' ? manual : item.active;
   };
 
-  const traceBodyId = `v2-trace-body-${turn.key}`;
   const traceThemeStyle = {
     '--v2-color-text': token.colorText,
     '--v2-color-text-secondary': token.colorTextSecondary,
@@ -261,7 +258,6 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
         type="button"
         className={cx(styles['trace-toggle'])}
         aria-expanded={expanded}
-        aria-controls={traceBodyId}
         data-testid="v2-trace-toggle"
         onClick={() => onManualToggle(!expanded)}
       >
@@ -275,66 +271,63 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
           aria-hidden="true"
         />
       </button>
-      {(expanded || hasNarration) && (
-        <div id={traceBodyId} className={cx(styles['trace-body'])}>
-          {shownItems.map((item) => {
-            if (item.kind === 'narration') {
-              return (
-                <NarrationText key={item.id} narrationId={item.id}>
-                  {item.node.text ?? ''}
-                </NarrationText>
-              );
-            }
-            if (!expanded) {
-              // 收起态：工具/思考行保持懒挂载卸载，仅叙述直出
-              return null;
-            }
-            if (item.kind === 'tool-group') {
-              return (
-                <ToolGroupDisclosure
-                  key={item.id}
-                  group={item}
-                  nodes={item.nodes}
-                  expanded={groupIsExpanded(item)}
-                  onToggle={() =>
-                    setGroupExpanded((previous) => {
-                      const current =
-                        typeof previous[item.id] === 'boolean'
-                          ? previous[item.id]
-                          : item.active;
-                      return { ...previous, [item.id]: !current };
-                    })
-                  }
-                  nodeIsExpanded={nodeIsExpanded}
-                  onToggleNode={toggleNode}
-                  onOpenResource={onOpenResource}
-                />
-              );
-            }
-            return (
-              <ProcessNodeRow
-                key={item.id}
-                node={item.node}
-                expanded={nodeIsExpanded(item.node)}
-                onToggle={() => toggleNode(item.node.id)}
-                onOpenResource={onOpenResource}
-              />
-            );
-          })}
-          {expanded && !revealHidden && hiddenCount > 0 && (
-            <button
-              type="button"
-              className={cx(styles['hidden-entry'])}
-              data-testid="v2-hidden-entry"
-              onClick={() => setRevealHidden(true)}
-            >
-              {dict(
-                'PC.Components.ConversationRendererV2.hiddenEntry',
-                hiddenCount,
-              )}
-            </button>
+      {shownItems.map((item) => {
+        // 叙述直出在原位、不属于折叠控制范围（收起/展开均渲染，时序与直播对齐）；
+        // 思考/工具行块仅展开态挂载，收起即整体懒卸载
+        if (item.kind === 'narration') {
+          return (
+            <NarrationText key={item.id} narrationId={item.id}>
+              {item.node.text ?? ''}
+            </NarrationText>
+          );
+        }
+        if (!expanded) {
+          return null;
+        }
+        if (item.kind === 'tool-group') {
+          return (
+            <ToolGroupDisclosure
+              key={item.id}
+              group={item}
+              nodes={item.nodes}
+              expanded={groupIsExpanded(item)}
+              onToggle={() =>
+                setGroupExpanded((previous) => {
+                  const current =
+                    typeof previous[item.id] === 'boolean'
+                      ? previous[item.id]
+                      : item.active;
+                  return { ...previous, [item.id]: !current };
+                })
+              }
+              nodeIsExpanded={nodeIsExpanded}
+              onToggleNode={toggleNode}
+              onOpenResource={onOpenResource}
+            />
+          );
+        }
+        return (
+          <ProcessNodeRow
+            key={item.id}
+            node={item.node}
+            expanded={nodeIsExpanded(item.node)}
+            onToggle={() => toggleNode(item.node.id)}
+            onOpenResource={onOpenResource}
+          />
+        );
+      })}
+      {expanded && !revealHidden && hiddenCount > 0 && (
+        <button
+          type="button"
+          className={cx(styles['hidden-entry'])}
+          data-testid="v2-hidden-entry"
+          onClick={() => setRevealHidden(true)}
+        >
+          {dict(
+            'PC.Components.ConversationRendererV2.hiddenEntry',
+            hiddenCount,
           )}
-        </div>
+        </button>
       )}
     </div>
   );
