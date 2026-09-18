@@ -3,7 +3,8 @@
  * @description 应用分发页:最近使用(POST recentlyUsed/list 接口,点击进应用详情)+ 应用列表区
  * (主tab:系统应用/团队空间两维度共用 POST app/list,系统应用 scope=Tenant(本租户内)、
  * 团队空间 scope=Space,再经 official / justReturnSpaceData 区分,两 tab 均滚动触底分页追加;
- * 点击进应用详情 /agent/:id);「更多」跳广场-网页应用
+ * 点击任意应用先 POST recentlyUsed/add 上报使用记录再进应用详情 /agent/:id);
+ * 「更多」跳广场-网页应用
  */
 import agentImage from '@/assets/images/agent_image.png';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
@@ -11,6 +12,7 @@ import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedAppList,
+  apiPublishedAppRecentlyUsedAdd,
   apiPublishedAppRecentlyUsedList,
   apiPublishedCategoryList,
 } from '@/services/square';
@@ -126,7 +128,7 @@ const NuwaApps: React.FC = () => {
   }, [hasRecent]);
 
   // 最近使用:POST /api/published/app/recentlyUsed/list(pageSize 控制条数上限,按最近使用排序)
-  useRequest(
+  const { run: runRecentlyUsedList } = useRequest(
     () => apiPublishedAppRecentlyUsedList({ pageSize: RECENT_USED_SIZE }),
     {
       onSuccess: (result: SquarePublishedItemInfo[]) => {
@@ -277,6 +279,30 @@ const NuwaApps: React.FC = () => {
     },
   );
 
+  // 点击应用上报最近使用:POST /api/published/app/recentlyUsed/add
+  // (projectId=targetId、projectType=targetType);上报成功后重拉最近使用
+  // 与两 tab 应用列表第一页,让使用记录即时反映(沿用当前筛选条件)
+  const { run: runRecentlyUsedAdd } = useRequest(
+    (app: SquarePublishedItemInfo) =>
+      apiPublishedAppRecentlyUsedAdd({
+        projectId: app.targetId,
+        projectType: app.targetType,
+      }),
+    {
+      manual: true,
+      onSuccess: () => {
+        runRecentlyUsedList();
+        runAppList({ page: 1, category: activeCategory, kw: keyword });
+        const spaceId = Number(activeSpace);
+        runSpaceAppList({
+          page: 1,
+          spaceId: spaceId > 0 ? spaceId : undefined,
+          kw: keyword,
+        });
+      },
+    },
+  );
+
   // 激活 tab 内的筛选条件变化时重置回第一页查询(切回 tab 时按保留的筛选重新拉取)
   useEffect(() => {
     if (activeSource !== 'system') return;
@@ -321,10 +347,12 @@ const NuwaApps: React.FC = () => {
     history.push(SQUARE_PAGE_APP_PATH);
   };
 
-  // 应用点击统一分流:全栈应用(targetSubType=UserApp)跳全栈应用页
-  // /user-app/:appId;其余应用进应用详情 /agent/:targetId(新接口条目为
-  // 发布对象,无会话字段,不再续上次会话)
+  // 应用点击统一分流:先异步上报最近使用(不阻塞跳转,成功后由
+  // runRecentlyUsedAdd 的 onSuccess 重拉列表);全栈应用(targetSubType=UserApp)
+  // 跳全栈应用页 /user-app/:appId;其余应用进应用详情 /agent/:targetId
+  // (新接口条目为发布对象,无会话字段,不再续上次会话)
   const handleAppClick = (app: SquarePublishedItemInfo) => {
+    runRecentlyUsedAdd(app);
     if (app.targetSubType === USER_APP_TARGET_SUBTYPE) {
       history.push(`${USER_APP_PATH_PREFIX}/${app.targetId}`);
     } else {
