@@ -278,6 +278,7 @@ const NormalProject: React.FC = () => {
         </div>
       )}
 
+      {/* 创建常规项目弹窗 */}
       <CreateNormalProjectModal
         spaceId={spaceId}
         open={openCreate}
@@ -306,6 +307,7 @@ const NormalProject: React.FC = () => {
         }}
       />
 
+      {/* 编辑常规项目弹窗 */}
       <EditNormalProjectModal
         project={editTarget}
         onCancel={() => setEditTarget(undefined)}
