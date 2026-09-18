@@ -12,7 +12,7 @@ import { SkillCopyTypeEnum } from './library';
 // 历史记录数据
 export interface HistoryData {
   id: number;
-  // 可用值:Agent,Plugin,Workflow
+  // 可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill,Model,PageApp,Mcp,UserApp,ThirdApp,NormalProject,Conversation
   targetType: AgentComponentTypeEnum;
   targetId: number;
   // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode

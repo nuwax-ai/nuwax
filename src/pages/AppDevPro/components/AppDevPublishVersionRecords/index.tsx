@@ -107,7 +107,7 @@ const AppDevPublishVersionRecords: React.FC<AppDevPublishVersionRecordsProps> = 
     setLoading(true);
     setPublishList([]);
     setVersionHistoryList([]);
-    runHistory(appId);
+    runHistory(appId, AgentComponentTypeEnum.UserApp);
     runPublishList({
       targetId: appId,
       targetType: AgentComponentTypeEnum.UserApp,
