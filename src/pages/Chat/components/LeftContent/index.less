@@ -67,7 +67,8 @@
       overflow: hidden;
 
       .chat-wrapper-content {
-        overflow: auto;
+        // 横向收敛：表格/代码块自带内部滚动，外层横向滚动冗余（问题区 #12）
+        overflow: hidden auto;
         margin-bottom: 5px;
         display: flex;
         flex-direction: column;
