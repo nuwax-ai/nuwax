@@ -108,6 +108,41 @@
       overflow-y: auto;
     }
 
+    // plan_approval（MCP 外挂式计划审批）条目清单
+    .planEntries {
+      flex-shrink: 0;
+      margin: @marginXs @paddingSm 0;
+      padding: 0;
+      max-height: 260px;
+      overflow-y: auto;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .planEntryItem {
+        display: flex;
+        align-items: flex-start;
+        gap: @marginXs;
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: var(--background-color-third, rgba(0, 0, 0, 4%));
+        font-size: 12px;
+        line-height: 18px;
+      }
+
+      .planEntryIndex {
+        flex-shrink: 0;
+        min-width: 16px;
+        color: var(--text-color-secondary, rgba(0, 0, 0, 45%));
+        text-align: right;
+      }
+
+      .planEntryContent {
+        word-break: break-word;
+      }
+    }
+
     .filePreview {
       flex: 0 1 auto;
       min-height: 0;

@@ -5709,6 +5709,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.AcpPermissionCard.option.default": "是，手動逐項審批編輯",
   "PC.Components.AcpPermissionCard.option.plan": "否，繼續完善計劃",
   "PC.Components.AcpPermissionCard.option.planApprove": "批准，退出計劃模式並開始實施。",
+  "PC.Components.AcpPermissionCard.planApprovalTitle": "計劃待批准",
   "PC.Components.AcpPermissionCard.revisionPlaceholder": "如需修改計劃，請輸入修改意見後提交",
   "PC.Components.AcpPermissionCard.rejectOnce": "拒絕",
   "PC.Components.AcpPermissionCard.shortcutHint": "{0}（{1}）",

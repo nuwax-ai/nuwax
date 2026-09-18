@@ -5722,6 +5722,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.AcpPermissionCard.option.default": "はい、編集を手動で承認します",
   "PC.Components.AcpPermissionCard.option.plan": "いいえ、計画策定を続けます",
   "PC.Components.AcpPermissionCard.option.planApprove": "承認：計画モードを終了して実装を開始します。",
+  "PC.Components.AcpPermissionCard.planApprovalTitle": "計画は承認待ちです",
   "PC.Components.AcpPermissionCard.revisionPlaceholder": "計画を修正する場合は修正意見を入力して送信してください",
   "PC.Components.AcpPermissionCard.rejectOnce": "拒否",
   "PC.Components.AcpPermissionCard.shortcutHint": "{0} ({1})",

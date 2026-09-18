@@ -318,6 +318,64 @@ describe('useAgentInterventionLayer', () => {
     },
   );
 
+  itPlan(
+    'maps plan_approval approve back to previous business mode (MCP plan flow)',
+    () => {
+      const { result } = renderModeEnabledLayer();
+
+      // 计划阶段：档位停在 plan（切换前档位 yolo）
+      act(() => {
+        result.current.agentModeInputProps.onAgentModeChange('plan');
+      });
+
+      act(() => {
+        result.current.chatLayerProps.onRespondAcpPermission?.(
+          switchModeInteraction('plan_approval'),
+          { outcome: { outcome: 'selected', optionId: 'approve' } },
+        );
+      });
+
+      // 批准：业务档位回写为切 plan 前的 yolo（下一轮 chat 不再带 plan）
+      expect(result.current.agentMode).toBe('yolo');
+      expect(
+        conversationInfoHandlers.respondAcpPermission,
+      ).toHaveBeenCalledWith(expect.anything(), {
+        outcome: { outcome: 'selected', optionId: 'approve' },
+      });
+    },
+  );
+
+  itPlan(
+    'plan_approval revise keeps plan and sends revision text as new message',
+    async () => {
+      const onSendMessage = vi.fn();
+      const { result } = renderHook(() =>
+        useAgentInterventionLayer({
+          conversationId: 1,
+          agentId: 2001,
+          messageList: [],
+          allowChooseMode: DefaultSelectedEnum.Yes,
+          onSendMessage,
+        }),
+      );
+
+      act(() => {
+        result.current.agentModeInputProps.onAgentModeChange('plan');
+      });
+
+      await act(async () => {
+        await result.current.chatLayerProps.onRespondAcpPermission?.(
+          switchModeInteraction('plan_approval'),
+          { outcome: { outcome: 'selected', optionId: 'revise' } },
+          { revisionText: '第二步改成先写测试' },
+        );
+      });
+
+      expect(onSendMessage).toHaveBeenCalledWith('第二步改成先写测试');
+      expect(result.current.agentMode).toBe('plan');
+    },
+  );
+
   itPlan('keeps plan mode when switch_mode approval keeps planning', () => {
     const { result } = renderModeEnabledLayer();
 

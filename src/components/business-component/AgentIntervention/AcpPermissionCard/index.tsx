@@ -132,7 +132,15 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   const title =
     toolCall.title?.trim() || t('PC.Components.AcpPermissionCard.defaultTitle');
   const rawCommand = (toolCall.rawInput as any)?.command;
-  const displayTitle = title === 'bash' && rawCommand ? rawCommand : title;
+  const planApprovalTitle = translate(
+    'PC.Components.AcpPermissionCard.planApprovalTitle',
+  );
+  const displayTitle =
+    toolCall.kind === 'plan_approval' && planApprovalTitle
+      ? planApprovalTitle
+      : title === 'bash' && rawCommand
+      ? rawCommand
+      : title;
   const fileDiffItems = useMemo(
     () =>
       normalizeFileDiffItems({
@@ -194,19 +202,37 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   );
 
   const isSwitchMode = toolCall.kind === 'switch_mode';
+  // plan_approval：壳内 plan MCP server 的 nuwax_plan_submit 挂起审批（MCP 外挂式，
+  // rawInput 携带计划条目）。与 switch_mode 共用简化视图（单一批准 + 修订输入）。
+  const isPlanApproval = toolCall.kind === 'plan_approval';
+  const isPlanSimplified = isSwitchMode || isPlanApproval;
+
+  // plan_approval 的计划条目清单（壳侧合成请求的 rawInput.entries）
+  const planEntries = useMemo<Array<{ content: string }>>(() => {
+    if (!isPlanApproval) {
+      return [];
+    }
+    const raw = (toolCall.rawInput as any)?.entries;
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw.filter(
+      (entry: any) => entry && typeof entry.content === 'string',
+    );
+  }, [isPlanApproval, toolCall.rawInput]);
 
   /**
-   * switch_mode 简化视图的批准项：UI 折叠为单一「批准」（业务档位由响应层
+   * switch_mode/plan_approval 简化视图的批准项：UI 折叠为单一「批准」（业务档位由响应层
    * 回写为切 plan 前的档位），规范 yes optionId 优先 allow_once（claude 的
-   * default=手动逐项审批，与 ask 语义一致），否则首个 allow_*。
+   * default=手动逐项审批，与 ask 语义一致；plan_approval 的 approve 即 allow_once），否则首个 allow_*。
    */
   const approveOption = useMemo(() => {
-    if (!isSwitchMode) return undefined;
+    if (!isPlanSimplified) return undefined;
     const allows = visibleOptions.filter((option) =>
       option.kind.startsWith('allow'),
     );
     return allows.find((option) => option.kind === 'allow_once') ?? allows[0];
-  }, [isSwitchMode, visibleOptions]);
+  }, [isPlanSimplified, visibleOptions]);
 
   // 修订输入：有文字提交 = 应答「继续完善计划」+ 文本作为新消息发给 agent
   const [revisionText, setRevisionText] = useState('');
@@ -239,9 +265,9 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     isSubmitted,
   ]);
 
-  // switch_mode 卡片 Enter 提交（输入框内由 onPressEnter 处理，此处覆盖卡片焦点态）
+  // switch_mode/plan_approval 卡片 Enter 提交（输入框内由 onPressEnter 处理，此处覆盖卡片焦点态）
   useEffect(() => {
-    if (!isSwitchMode || disabled) {
+    if (!isPlanSimplified || disabled) {
       return;
     }
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -261,7 +287,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [isSwitchMode, disabled, handlePlanSubmit]);
+  }, [isPlanSimplified, disabled, handlePlanSubmit]);
 
   /**
    * 选项标签解析（避免同 kind 选项坍缩成同一文案，如 ExitPlanMode 的
@@ -307,9 +333,9 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   const isCancelLoading = isSubmitting && submitType === 'cancel';
 
   useAcpPermissionShortcuts({
-    // switch_mode：多选项快捷键禁用（UI 折叠为单批准+输入框），Esc 仍生效
-    enabled: !disabled && keyboardShortcutsEnabled && !isSwitchMode,
-    options: isSwitchMode ? [] : visibleOptions,
+    // switch_mode/plan_approval：多选项快捷键禁用（UI 折叠为单批准+输入框），Esc 仍生效
+    enabled: !disabled && keyboardShortcutsEnabled && !isPlanSimplified,
+    options: isPlanSimplified ? [] : visibleOptions,
     onSelect: handleSelect,
     onCancel: handleCancel,
     activeIndex,
@@ -358,6 +384,16 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
       </header>
 
       <div className={styles.body}>
+        {planEntries.length ? (
+          <ul className={styles.planEntries}>
+            {planEntries.map((entry, index) => (
+              <li key={index} className={styles.planEntryItem}>
+                <span className={styles.planEntryIndex}>{index + 1}</span>
+                <span className={styles.planEntryContent}>{entry.content}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {planDocument ? (
           <div className={styles.planDocWrap}>
             <MarkdownCustomPlanDoc
@@ -396,7 +432,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
           </div>
         ) : null}
         <div className={styles.actions}>
-          {isSwitchMode ? (
+          {isPlanSimplified ? (
             <>
               {approveOption ? (
                 <Button
@@ -494,7 +530,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
           loading={isSubmitLoading}
           disabled={disabled}
           onClick={() => {
-            if (isSwitchMode) {
+            if (isPlanSimplified) {
               // 有修订文字 → 应答「继续完善计划」+ 文本；无文字 → 批准
               handlePlanSubmit();
               return;

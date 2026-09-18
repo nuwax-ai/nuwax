@@ -1,11 +1,20 @@
 import type { McpAskRespondPayload } from './mcpAskIntervention';
 
 /**
- * plan 模式功能开关：9 月版本暂不放开，后续翻 true 即启用。
- * false 时：模式选择器只显示 ask/yolo；isAgentMode('plan') 为 false（缓存回落 yolo）；
- * 后端代码全量保留休眠（无 plan 入口自然不触发）。
+ * plan 模式功能开关（MCP 外挂式实现，契约见壳仓 docs/20260918-plan-mode-via-mcp.md）：
+ * - 传输：agentMode="plan" 随 chat 请求直透壳（云端 String 无校验），不进 ACP 模式状态机；
+ * - 审批：壳内 plan MCP server 的 nuwax_plan_submit 挂起 → acpRequestPermission 形状
+ *   下发（kind=plan_approval，data 整体透传），应答走既有 permission response API；
+ * - 回写：批准后业务档位回写为切 plan 前档位（previousMode），修订保持 plan。
  */
-export const PLAN_MODE_ENABLED = false;
+export const PLAN_MODE_ENABLED = true;
+
+/** 计划审批 kind（壳侧合成 permission 请求的自由字符串 kind，云端透传） */
+export const PLAN_APPROVAL_KIND = 'plan_approval';
+
+/** 计划审批 optionId 约定（应答载荷仅 optionId，语义壳/前端两侧约定） */
+export const PLAN_APPROVAL_OPTION_APPROVE = 'approve';
+export const PLAN_APPROVAL_OPTION_REVISE = 'revise';
 
 export type AgentMode = 'ask' | 'yolo' | 'plan';
 
@@ -25,6 +34,7 @@ export type AcpToolKind =
   | 'think'
   | 'fetch'
   | 'switch_mode'
+  | 'plan_approval'
   | 'other';
 
 export interface AcpPermissionOption {

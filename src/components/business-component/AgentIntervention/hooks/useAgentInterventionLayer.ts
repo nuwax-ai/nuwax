@@ -218,18 +218,36 @@ export const SWITCH_MODE_OPTION_AGENT_MODE: Partial<Record<string, AgentMode>> =
     plan: 'plan',
   };
 
-/** switch_mode 审批响应 → 业务档位回写（非 switch_mode / 取消时 不动作）。
- * @param previousMode 切到 plan 前的业务档位（无则按选项语义/ask 兜底） */
+/**
+ * 计划类审批响应 → 业务档位回写（非计划类 kind / 取消时不动作）。
+ *
+ * 两种计划审批形态：
+ * - switch_mode（引擎原生 ExitPlanMode）：批准选项语义 = 目标权限模式，按
+ *   SWITCH_MODE_OPTION_AGENT_MODE 折算；
+ * - plan_approval（壳内 plan MCP server 的 nuwax_plan_submit 挂起，MCP 外挂式）：
+ *   approve → 回写切 plan 前档位（无记录兜底 ask）；revise → 保持 plan
+ *   （修订意见作为新消息在 plan 档发出，引擎修订后重新 submit）。
+ *
+ * @param previousMode 切到 plan 前的业务档位（无则按选项语义/ask 兜底）
+ */
 export const syncAgentModeFromSwitchMode = (
   interaction: AcpPermissionInteraction,
   response: AcpRequestPermissionResponse,
   apply: (mode: AgentMode) => void,
   previousMode?: AgentMode | null,
 ): void => {
-  if (interaction.intervention.acp.request.toolCall.kind !== 'switch_mode') {
+  const kind = interaction.intervention.acp.request.toolCall.kind;
+  if (kind !== 'switch_mode' && kind !== 'plan_approval') {
     return;
   }
   if (response.outcome.outcome !== 'selected') {
+    return;
+  }
+  if (kind === 'plan_approval') {
+    if (response.outcome.optionId === 'approve') {
+      apply(previousMode ?? 'ask');
+    }
+    // revise：保持 plan（修订文本经 extras.revisionText 作为新消息发出）
     return;
   }
   const mapped = SWITCH_MODE_OPTION_AGENT_MODE[response.outcome.optionId];
