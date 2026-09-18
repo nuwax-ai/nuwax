@@ -1,5 +1,8 @@
 import SvgIcon from '@/components/base/SvgIcon';
-import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import {
+  PLAN_MODE_ENABLED,
+  type AgentMode,
+} from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import {
   ChatInputVoiceFooter,
@@ -58,6 +61,7 @@ import {
   CloseOutlined,
   DesktopOutlined,
   DownOutlined,
+  FileTextOutlined,
   FolderOpenOutlined,
   FolderOutlined,
   HistoryOutlined,
@@ -1631,6 +1635,62 @@ const ChatInputUnifiedImpl: React.FC<
                               </div>
                             ),
                           },
+                          ...(PLAN_MODE_ENABLED
+                            ? [
+                                {
+                                  key: 'plan-mode',
+                                  label: (
+                                    <div
+                                      className={cx(
+                                        'flex',
+                                        'items-center',
+                                        'justify-between',
+                                        styles['plus-menu-switch-row'],
+                                      )}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (
+                                          !wholeDisabled &&
+                                          !isSessionActive
+                                        ) {
+                                          setChatboxMode(
+                                            agentMode === 'plan'
+                                              ? 'yolo'
+                                              : 'plan',
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      <span
+                                        className={cx(
+                                          'flex',
+                                          'items-center',
+                                          styles['plus-menu-label'],
+                                        )}
+                                      >
+                                        <span
+                                          className={styles['trigger-pill']}
+                                        >
+                                          <FileTextOutlined />
+                                        </span>
+                                        {t(
+                                          'PC.Components.ChatInputHome.agentModePlan',
+                                        )}
+                                      </span>
+                                      <Switch
+                                        checked={agentMode === 'plan'}
+                                        disabled={
+                                          wholeDisabled || isSessionActive
+                                        }
+                                        aria-label={t(
+                                          'PC.Components.ChatInputHome.agentModePlan',
+                                        )}
+                                      />
+                                    </div>
+                                  ),
+                                },
+                              ]
+                            : []),
                         ],
                       }}
                     >
@@ -1732,6 +1792,51 @@ const ChatInputUnifiedImpl: React.FC<
                           </span>
                           <span>
                             {t('PC.Components.ChatInputHome.agentModeApproval')}
+                          </span>
+                        </span>
+                      </Tooltip>
+                    )}
+                  </VoiceFooter.HideWhenActive>
+                  <VoiceFooter.HideWhenActive>
+                    {PLAN_MODE_ENABLED && agentMode === 'plan' && (
+                      <Tooltip
+                        title={t(
+                          'PC.Components.ChatInputHome.agentModePlanDesc',
+                        )}
+                      >
+                        <span
+                          className={cx(
+                            'flex',
+                            'items-center',
+                            styles['approval-pill'],
+                            {
+                              [styles.disabled]:
+                                wholeDisabled || isSessionActive,
+                            },
+                          )}
+                        >
+                          <span
+                            className={cx(
+                              'flex',
+                              'items-center',
+                              'justify-center',
+                              styles['approval-pill-icon-slot'],
+                            )}
+                          >
+                            <FileTextOutlined
+                              className={cx(styles['approval-pill-icon'])}
+                            />
+                            <CloseOutlined
+                              className={cx(styles['approval-pill-close'])}
+                              onClick={() => {
+                                if (!wholeDisabled && !isSessionActive) {
+                                  setChatboxMode('yolo');
+                                }
+                              }}
+                            />
+                          </span>
+                          <span>
+                            {t('PC.Components.ChatInputHome.agentModePlan')}
                           </span>
                         </span>
                       </Tooltip>
