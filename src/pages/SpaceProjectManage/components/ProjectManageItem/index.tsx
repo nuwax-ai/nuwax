@@ -30,7 +30,7 @@ export interface ProjectManageItemProps {
   item: ProjectListItem;
   /** 点击卡片主体，通常跳转详情页 */
   onClick: (item: ProjectListItem) => void;
-  /** 编辑/重命名；未传入时不展示对应菜单项 */
+  /** 编辑；未传入时不展示对应菜单项 */
   onEdit?: (item: ProjectListItem) => void;
   /** 删除；未传入时不展示对应菜单项 */
   onDelete?: (item: ProjectListItem) => void;
@@ -40,7 +40,7 @@ export interface ProjectManageItemProps {
  * 项目管理列表卡片。
  *
  * 布局与 SpaceLibrary.ComponentItem 一致：CardWrapper + 最后编辑时间 + footer 类型标签 + 更多操作。
- * 三方应用菜单文案为「编辑」，常规/全栈为「重命名」。
+ * 更多菜单统一为「编辑」与「删除」，具体编辑内容由父组件按项目类型打开对应弹窗。
  *
  * @param props 卡片属性
  * @returns 单个项目卡片
@@ -58,11 +58,7 @@ const ProjectManageItem: React.FC<ProjectManageItemProps> = ({
       actions.push({
         type: ProjectManageItemActionEnum.Edit,
         icon: <EditOutlined />,
-        // 三方应用走完整编辑弹窗，其余类型仅重命名
-        label:
-          item.projectType === AgentComponentTypeEnum.ThirdApp
-            ? dict('PC.Common.Global.edit')
-            : dict('PC.Components.ConversationContextMenu.rename'),
+        label: dict('PC.Common.Global.edit'),
       });
     }
     if (onDelete) {
@@ -74,7 +70,7 @@ const ProjectManageItem: React.FC<ProjectManageItemProps> = ({
       });
     }
     return actions;
-  }, [item.projectType, onDelete, onEdit]);
+  }, [onDelete, onEdit]);
 
   /** 分发更多菜单点击到父组件 */
   const handleClickMore = useCallback(

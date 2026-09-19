@@ -6,14 +6,13 @@ import { useProjectChanged } from '@/hooks/useDirectorySync';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiNormalProjectDelete,
-  apiNormalProjectUpdate,
   apiUserAppDelete,
-  apiUserAppUpdate,
   apiUserProjectPageQuery,
 } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
+  UserAppInfo,
   UserProjectItem,
   UserProjectTabPageResult,
 } from '@/types/interfaces/userProject';
@@ -28,6 +27,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
 import CreateUserApp from '../AppDevPro/components/CreateUserApp';
 import CreateNormalProjectModal from './components/CreateNormalProjectModal';
+import EditNormalProjectModal, {
+  type EditedNormalProjectInfo,
+} from './components/EditNormalProjectModal';
 import ProjectManageItem from './components/ProjectManageItem';
 import styles from './index.less';
 import { normalizeProjectRows, type ProjectListItem } from './projectRows';
@@ -54,7 +56,7 @@ const SCROLL_CONTAINER_ID = 'space-project-manage-scroll';
  * - Tab 筛选：「全部」单次 page-query 不传 projectType；切换类型 Tab 时附带 projectType
  * - 搜索：按项目名称模糊匹配；列表滚动到底部分页加载（pageSize=48）
  * - 新建：下拉菜单支持创建常规项目 / 全栈应用 / 三方应用，成功后跳转对应详情页
- * - 卡片操作：常规/全栈支持重命名与删除；三方应用支持编辑（名称/描述/图标）与删除
+ * - 卡片操作：常规/全栈/三方均支持编辑（各类型对应编辑弹窗）与删除
  * - 列表 UI 对齐 SpaceLibrary；卡片由 ProjectManageItem 渲染（CardWrapper 布局）
  *
  * @returns 项目管理页面
@@ -79,11 +81,11 @@ const SpaceProjectManage: React.FC = () => {
   const [openCreateUserApp, setOpenCreateUserApp] = useState(false);
   const [openCreateThirdApp, setOpenCreateThirdApp] = useState(false);
 
-  // ---- 编辑/重命名弹窗态 ----
-  /** 常规项目、全栈应用：仅改名称 */
-  const [renameTarget, setRenameTarget] = useState<ProjectListItem>();
-  const [renameName, setRenameName] = useState('');
-  /** 三方应用：名称 / 描述 / 图标 */
+  // ---- 编辑弹窗态 ----
+  const [editNormalProjectTarget, setEditNormalProjectTarget] =
+    useState<ProjectListItem>();
+  const [editUserAppTarget, setEditUserAppTarget] =
+    useState<ProjectListItem>();
   const [editThirdAppTarget, setEditThirdAppTarget] =
     useState<ProjectListItem>();
 
@@ -266,16 +268,52 @@ const SpaceProjectManage: React.FC = () => {
     [],
   );
 
-  /**
-   * 编辑入口：三方应用打开 EditThirdAppModal，其余可管理类型打开重命名弹窗。
-   */
+  /** 编辑入口：按项目类型打开对应编辑弹窗 */
   const handleEditProject = useCallback((item: ProjectListItem) => {
-    if (item.projectType === AgentComponentTypeEnum.ThirdApp) {
-      setEditThirdAppTarget(item);
+    if (item.projectType === AgentComponentTypeEnum.NormalProject) {
+      setEditNormalProjectTarget(item);
       return;
     }
-    setRenameTarget(item);
-    setRenameName(item.name);
+    if (item.projectType === AgentComponentTypeEnum.UserApp) {
+      setEditUserAppTarget(item);
+      return;
+    }
+    if (item.projectType === AgentComponentTypeEnum.ThirdApp) {
+      setEditThirdAppTarget(item);
+    }
+  }, []);
+
+  /** 常规项目编辑成功后更新本地列表 */
+  const handleNormalProjectEdited = useCallback(
+    (projectId: number, editedInfo: EditedNormalProjectInfo) => {
+      setList((previous) =>
+        previous.map((item) =>
+          item.id === projectId &&
+          item.projectType === AgentComponentTypeEnum.NormalProject
+            ? { ...item, ...editedInfo }
+            : item,
+        ),
+      );
+      setEditNormalProjectTarget(undefined);
+    },
+    [],
+  );
+
+  /** 全栈应用编辑成功后更新本地列表 */
+  const handleUserAppEdited = useCallback((info: UserAppInfo) => {
+    setList((previous) =>
+      previous.map((item) =>
+        item.id === info.id && item.projectType === AgentComponentTypeEnum.UserApp
+          ? {
+              ...item,
+              name: info.name,
+              description: info.description,
+              icon: info.icon,
+            }
+          : item,
+      ),
+    );
+    setEditUserAppTarget(undefined);
   }, []);
 
   /** 三方应用编辑成功后更新本地列表并广播 directorySync 事件 */
@@ -304,38 +342,6 @@ const SpaceProjectManage: React.FC = () => {
     },
     [spaceId],
   );
-
-  /** 提交常规项目 / 全栈应用重命名 */
-  const handleRenameSubmit = async () => {
-    const name = renameName.trim();
-    if (!name || !renameTarget) return;
-    const { id, projectType } = renameTarget;
-    // wiki 2026-09-11 行4：常规项目 CRUD 切 normal-project 族（全栈应用不变）
-    const res =
-      projectType === AgentComponentTypeEnum.UserApp
-        ? await apiUserAppUpdate({ id, name })
-        : await apiNormalProjectUpdate({ id, name });
-    if (res?.code !== SUCCESS_CODE) return;
-    setList((prev) =>
-      prev.map((item) =>
-        item.id === id && item.projectType === projectType
-          ? { ...item, name }
-          : item,
-      ),
-    );
-    emitProjectChanged({
-      operation: 'updated',
-      project: {
-        projectId: String(id),
-        projectType,
-        spaceId: String(spaceId),
-      },
-      patch: { name },
-      origin: 'space-project-manage',
-      reason: 'rename',
-    });
-    setRenameTarget(undefined);
-  };
 
   /** 删除前二次确认；按类型调用对应删除接口 */
   const openDeleteConfirm = useCallback(
@@ -498,30 +504,26 @@ const SpaceProjectManage: React.FC = () => {
           history.push(`/space/${spaceId}/third-app-detail/${projectId}`);
         }}
       />
-      {/* 编辑（三方应用：名称/描述/图标） */}
+      {/* 编辑：常规项目（名称/描述/图标） */}
+      <EditNormalProjectModal
+        project={editNormalProjectTarget as UserProjectItem | undefined}
+        onCancel={() => setEditNormalProjectTarget(undefined)}
+        onEdited={handleNormalProjectEdited}
+      />
+      {/* 编辑：全栈应用（名称/描述/图标） */}
+      <CreateUserApp
+        mode={CreateUpdateModeEnum.Update}
+        userAppInfo={editUserAppTarget as UserAppInfo | undefined}
+        open={editUserAppTarget !== undefined}
+        onCancel={() => setEditUserAppTarget(undefined)}
+        onConfirmUpdate={handleUserAppEdited}
+      />
+      {/* 编辑：三方应用（名称/描述/图标） */}
       <EditThirdAppModal
         app={editThirdAppTarget as UserProjectItem | undefined}
         onCancel={() => setEditThirdAppTarget(undefined)}
         onEdited={handleThirdAppEdited}
       />
-      {/* 重命名（常规项目/全栈应用，走真实接口） */}
-      <Modal
-        title={dict('PC.Components.HistoryConversationList.renameModalTitle')}
-        open={renameTarget !== undefined}
-        onOk={() => void handleRenameSubmit()}
-        onCancel={() => setRenameTarget(undefined)}
-        okButtonProps={{ disabled: !renameName.trim() }}
-        okText={dict('PC.Common.Global.confirm')}
-        cancelText={dict('PC.Common.Global.cancel')}
-        destroyOnHidden
-      >
-        <Input
-          value={renameName}
-          onChange={(event) => setRenameName(event.target.value)}
-          onPressEnter={() => void handleRenameSubmit()}
-          maxLength={50}
-        />
-      </Modal>
     </WorkspaceLayout>
   );
 };
