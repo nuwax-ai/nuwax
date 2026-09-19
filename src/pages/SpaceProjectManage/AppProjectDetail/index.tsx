@@ -393,7 +393,7 @@ const AppProjectDetail: React.FC = () => {
     setOauthLoading(true);
     setSecretVisible(false);
     try {
-      const settingRes = await apiThirdAppOauth2SettingGet(appId);
+      const settingRes = await apiThirdAppOauth2SettingGet(appId, AgentComponentTypeEnum.UserApp);
       const info = pickResponseData(settingRes);
       setOauthInfo(info);
       setHomepageUrl(info?.homepageUrl || '');
@@ -403,7 +403,7 @@ const AppProjectDetail: React.FC = () => {
         return;
       }
       try {
-        const secretRes = await apiThirdAppOauth2SecretGet(appId);
+        const secretRes = await apiThirdAppOauth2SecretGet(appId, AgentComponentTypeEnum.UserApp);
         const secret = pickResponseData(secretRes);
         setClientSecret(typeof secret === 'string' ? secret : '');
       } catch (error) {
