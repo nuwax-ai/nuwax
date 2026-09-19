@@ -239,8 +239,9 @@ const MockChat: React.FC = () => {
     /** 重置并装载会话详情（prepareScenario 用） */
     resetAndLoad: async (): Promise<void> => {
       if (runtimeLine) {
-        runtimeLine.session.store.reset();
-        await runtimeLine.session.load(MOCK_CONVERSATION_ID);
+        // 同会话 id 重放：必须连带清 hook 层 conversationInfo 终态残留
+        //（终态守卫会吞掉新场景 EXECUTING，活跃信号丢失）
+        await runtimeLine.resetAndReloadConversation();
         return;
       }
       await model.runAsync(MOCK_CONVERSATION_ID);

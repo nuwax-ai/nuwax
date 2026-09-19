@@ -92,6 +92,8 @@ export interface UseConversationRuntimeSessionResult {
   state: ReturnType<ConversationRuntimeSession['getState']>;
   /** 会话面 props：与旧线 chatSessionProps 对应字段同形状，入口展开覆盖 */
   conversationProps: Record<string, unknown>;
+  /** 显式重置并重装当前会话（同会话 id 重放用；语义同会话切换 effect） */
+  resetAndReloadConversation: () => Promise<void>;
 }
 
 export function useConversationRuntimeSession(
@@ -258,6 +260,29 @@ export function useConversationRuntimeSession(
       requestAnimationFrame(forceScrollToBottom);
     });
   }, [session, conversationId, messageViewRef]);
+
+  /**
+   * 显式「重置并重装」：与上方会话切换 effect 同语义。同会话 id 重放
+   *（mock 调试页 prepareScenario）时，终态残留的 conversationInfo 必须先清——
+   * 否则 mergeConversationInfoTaskStatus 的「终态不被 EXECUTING 盖回」守卫
+   * 会吞掉新场景的 EXECUTING，活跃信号（taskStatus）永不恢复。
+   */
+  const resetAndReloadConversation = useCallback(async () => {
+    if (!session || conversationId === undefined) {
+      return;
+    }
+    setConversationInfo(null);
+    setChatSuggestList([]);
+    setLoadingSuggest(false);
+    session.resetForConversationSwitch();
+    const data = await session.load(conversationId);
+    if (data) {
+      setConversationInfo((prev) =>
+        mergeConversationInfoTaskStatus(prev, data),
+      );
+    }
+    setIsMoreMessage((data?.messageList?.length ?? 0) > 0);
+  }, [session, conversationId]);
 
   // 滚动 refs 注入
   useEffect(() => {
@@ -479,5 +504,11 @@ export function useConversationRuntimeSession(
     setMessageList: storeAsDispatch(session.store),
   };
 
-  return { session, messageList, state, conversationProps };
+  return {
+    session,
+    messageList,
+    state,
+    conversationProps,
+    resetAndReloadConversation,
+  };
 }

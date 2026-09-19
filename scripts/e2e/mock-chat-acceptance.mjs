@@ -56,12 +56,11 @@ const REAL_TIMING_TIMEOUT_SEC = 360;
 /** 已知真实行为差异（mock-optimization-plan.md 风险表）：不算失败但醒目报告。
  * interactive: true 仅匹配交互型用例（断言型快照层不受该缺口影响照常跑） */
 const KNOWN_ISSUES = [
-  {
-    scenario: 'SESSION_RESUME',
-    line: 'runtime',
-    reason:
-      'runtime 续接不清快照 EXECUTING（mock-optimization-plan.md 风险表，另行立项）',
-  },
+  // SESSION_RESUME × runtime 已修（2026-09-19）：终态后到达的轮询快照可能带
+  // 滞后的 EXECUTING 消息（服务端 messageList 落库晚于 taskStatus），reconcile
+  // 稳定 ID 覆盖把已收敛 processing 盖回——session 记录已确认终态，applySnapshot
+  // 归并后按终态重收敛（tests/conversation/sessionSnapshotTerminalGuard.test.ts）。
+  // KNOWN-FAIL 条目删除，恢复真断言。
   // v1 终端卡展开断链（2026-09-19 全量矩阵复测发现，既有失败非新回归）：
   // 终端卡标题/exit 徽标正常（terminalItem.command/exitCode 在），但
   // terminalItem.content 为空 → 展开按钮不渲染、点击标题落到文件树兜底，

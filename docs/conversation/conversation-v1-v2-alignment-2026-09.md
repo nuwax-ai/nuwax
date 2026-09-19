@@ -66,7 +66,7 @@
 
 | 项 | 现象 | 跟踪机制 |
 | --- | --- | --- |
-| runtime 续接不清快照 EXECUTING（SESSION_RESUME 断言 4） | sub 恢复重放时快照残留 EXECUTING 不清 | E2E KNOWN-FAIL 显式跟踪，待专项（runtime resume 投影 upsert 或 finalize 尾巴） |
+| runtime 续接不清快照 EXECUTING（SESSION_RESUME 断言 4） | **已修（09-19，T1.2）**：终态后轮询快照滞后 EXECUTING 被 reconcile 盖回 → session 终态记忆 + applySnapshot 按终态重收敛；mock 页同会话重放终态残留 → hook `resetAndReloadConversation` | 回归锚 `tests/conversation/sessionSnapshotTerminalGuard.test.ts`；E2E KNOWN-FAIL 已删、SESSION_RESUME 4/4 真断言绿 |
 | 终态守卫未丢弃迟到分片 | `shouldDropLateMessageChunk` 真实时长下未生效（154s 迟到分片两轨都渲染了） | **两轨一致**，非 V1/V2 差异；E2E KNOWN-FAIL（LATE_CHUNK_SLOW 双轨守卫证据用例），终态收敛线专项 |
 | 延迟 Ask 表单补偿仅旧线（B11） | V1 在 FINAL_RESULT 后按 250/750/1500ms 静默补读补齐慢落库 Ask 表单；runtime 线无对应逻辑 | 业务影响待确认（后端若已根治慢落库可判废弃，否则需移植） |
 
