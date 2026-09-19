@@ -18,6 +18,8 @@ import {
   apiPublishedAppRecentlyUsedAdd,
   apiPublishedAppRecentlyUsedList,
   apiPublishedCategoryList,
+  APP_LIST_TARGET_SUBTYPES,
+  APP_LIST_TARGET_TYPES,
 } from '@/services/square';
 import { apiSpaceList } from '@/services/workspace';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -35,8 +37,6 @@ import { history, useRequest } from 'umi';
 import AppCard from './components/AppCard';
 import {
   APP_LIST_PAGE_SIZE,
-  APP_LIST_TARGET_SUBTYPES,
-  APP_LIST_TARGET_TYPES,
   APP_SCROLL_CONTAINER_ID,
   PAGE_APP_CATEGORY_ROOT_KEY,
   PAGE_APP_TARGET_SUBTYPE,

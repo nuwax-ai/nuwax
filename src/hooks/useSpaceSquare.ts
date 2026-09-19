@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { jumpTo } from '@/utils/router';
@@ -11,10 +12,11 @@ const useSpaceSquare = () => {
     SquarePublishedItemInfo[]
   >([]);
 
-  // 点击单项
+  // 点击单项(类型联合:app/list 应用列表口径下条目还可能是
+  // UserApp 全栈应用/ThirdApp 三方应用,由调用方前置分流)
   const handleClick = (
     targetId: number,
-    targetType: SquareAgentTypeEnum,
+    targetType: SquareAgentTypeEnum | AgentComponentTypeEnum,
     from: 'space' | 'square' = 'square',
     conversationId?: number,
   ) => {
