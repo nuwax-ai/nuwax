@@ -245,7 +245,8 @@ export const syncAgentModeFromSwitchMode = (
   }
   if (kind === 'plan_approval') {
     if (response.outcome.optionId === 'approve') {
-      apply(previousMode ?? 'ask');
+      // 兜底 yolo：批准计划不得改变用户审批偏好，未知原档位时回产品默认「自动」
+      apply(previousMode ?? 'yolo');
     }
     // revise：保持 plan（修订文本经 extras.revisionText 作为新消息发出）
     return;
@@ -300,10 +301,24 @@ export function useAgentInterventionLayer(
   const agentModeRef = useRef(agentMode);
   agentModeRef.current = agentMode;
 
+  /**
+   * 切到 plan 档前的业务档位（内存态）。skipStorage（V2 Chat 页注入 interventionHandlers /
+   * 未开启模式选择）时 localStorage 不写，此 ref 是唯一记录——plan_approval 批准后回写用，
+   * 保证「批准计划不改变用户审批偏好」（兜底回产品默认 yolo）。
+   */
+  const previousModeRef = useRef<AgentMode | null>(null);
+
   const setAgentMode = useCallback(
     (mode: AgentMode) => {
       const previous = agentModeRef.current;
       setAgentModeState(mode);
+      // 内存态 previousMode：与下方 localStorage 分支同语义（切到 plan 记录、切离清除），
+      // 必须在 skipStorage 返回之前维护
+      if (mode === 'plan' && previous !== 'plan') {
+        previousModeRef.current = previous;
+      } else if (mode !== 'plan') {
+        previousModeRef.current = null;
+      }
       if (skipStorage) {
         return;
       }
@@ -393,7 +408,7 @@ export function useAgentInterventionLayer(
       extras?: AcpPermissionRespondExtras,
     ) => {
       const previousMode = skipStorage
-        ? null
+        ? previousModeRef.current
         : readAgentModePreviousMode(agentId);
       syncAgentModeFromSwitchMode(
         interaction,

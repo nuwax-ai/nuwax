@@ -346,6 +346,75 @@ describe('useAgentInterventionLayer', () => {
   );
 
   itPlan(
+    'plan_approval approve restores previous yolo even with interventionHandlers (skipStorage)',
+    () => {
+      // 生产条件：V2 Chat 页经 runtime session 注入 interventionHandlers → skipStorage=true
+      // （回归：此前 previousMode 无记录，批准兜底 'ask' 导致审批模式被自动打开）
+      const noopHandlers = {
+        respondAcpPermission: () => undefined,
+        respondMcpAsk: async () => null,
+      };
+      const { result } = renderHook(() =>
+        useAgentInterventionLayer({
+          conversationId: 1,
+          agentId: 2001,
+          messageList: [],
+          allowChooseMode: DefaultSelectedEnum.Yes,
+          onSendMessage: vi.fn(),
+          interventionHandlers: noopHandlers,
+        }),
+      );
+
+      // 默认 yolo → 切 plan（skipStorage 下仅内存记录 previousMode）
+      act(() => {
+        result.current.agentModeInputProps.onAgentModeChange('plan');
+      });
+      expect(result.current.agentMode).toBe('plan');
+
+      act(() => {
+        result.current.chatLayerProps.onRespondAcpPermission?.(
+          switchModeInteraction('plan_approval'),
+          { outcome: { outcome: 'selected', optionId: 'approve' } },
+        );
+      });
+
+      // 批准后回写切 plan 前的 yolo——审批偏好不被计划批准改变
+      expect(result.current.agentMode).toBe('yolo');
+      expect(localStorage.getItem('nuwax_agent_mode_cache')).toBeNull();
+    },
+  );
+
+  itPlan(
+    'plan_approval approve falls back to yolo with no previous record (skipStorage)',
+    () => {
+      const noopHandlers = {
+        respondAcpPermission: () => undefined,
+        respondMcpAsk: async () => null,
+      };
+      const { result } = renderHook(() =>
+        useAgentInterventionLayer({
+          conversationId: 1,
+          agentId: 2001,
+          messageList: [],
+          allowChooseMode: DefaultSelectedEnum.Yes,
+          onSendMessage: vi.fn(),
+          interventionHandlers: noopHandlers,
+        }),
+      );
+
+      // 未经过前端切换（如刷新后直接审批挂起中的计划）：兜底回产品默认「自动」
+      act(() => {
+        result.current.chatLayerProps.onRespondAcpPermission?.(
+          switchModeInteraction('plan_approval'),
+          { outcome: { outcome: 'selected', optionId: 'approve' } },
+        );
+      });
+
+      expect(result.current.agentMode).toBe('yolo');
+    },
+  );
+
+  itPlan(
     'plan_approval revise keeps plan and sends revision text as new message',
     async () => {
       const onSendMessage = vi.fn();

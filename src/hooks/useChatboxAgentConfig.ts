@@ -93,16 +93,18 @@ export function useChatboxAgentConfig(options: {
   // 三键全量写入服务端（agentId 缺失时跳过）
   const persist = useCallback(
     (next: {
-      mode?: 'yolo' | 'ask';
+      mode?: AgentMode;
       enableVersionControl?: number;
       autoCommit?: number;
     }) => {
       if (!agentId) {
         return;
       }
+      // 服务端仅认 ask/yolo：plan 是请求期传输编码，持久化统一序列化为 yolo
+      const serializeMode = (mode?: AgentMode): 'yolo' | 'ask' =>
+        mode === 'ask' ? 'ask' : 'yolo';
       const value = {
-        mode:
-          next.mode ?? (modeRef.current === 'plan' ? 'yolo' : modeRef.current),
+        mode: serializeMode(next.mode ?? modeRef.current),
         enableVersionControl: next.enableVersionControl ?? evRef.current,
         autoCommit: next.autoCommit ?? acRef.current,
       };
@@ -113,9 +115,9 @@ export function useChatboxAgentConfig(options: {
     [agentId],
   );
 
-  /** 切换审批模式（ask/yolo）：同步宿主 state 并持久化 */
+  /** 切换模式（ask/yolo/plan）：同步宿主 state 并持久化（plan 序列化为 yolo 落库） */
   const setMode = useCallback(
-    (mode: 'yolo' | 'ask') => {
+    (mode: AgentMode) => {
       userMutatedRef.current = true;
       onModeChangeRef.current?.(mode);
       persist({ mode });
