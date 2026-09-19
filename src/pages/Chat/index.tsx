@@ -203,7 +203,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     useRef<ReturnType<typeof useConversationRuntimeSession>>(null);
 
   // 开放应用智能体会话聊天页面相关状态
-  const workspaceDirectoryFiles = useWorkspaceDirectoryFiles(id);
   const {
     handleSetAppAgentDetail,
     isAppSidebarMode,
@@ -340,6 +339,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     abortResumeStream,
     refreshGitListRef,
   } = useModel('conversationInfo');
+
+  // 工作区目录懒加载（#5a 单层树）：首拉门控 = 文件树面板可见——「打开面板才拉」，
+  // 新会话挂载不预发 file-list（后端契约：工作区在 chat 之后才建立）
+  const workspaceDirectoryFiles = useWorkspaceDirectoryFiles(id, {
+    enabled: isFileTreeVisible,
+  });
 
   useConversationChanged((event) => {
     if (
@@ -957,15 +962,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   }, [fileTreeSelfManaged, setFileTreeSelfManaged]);
 
   /**
-   * #5a 文件树懒加载收尾：订阅模型层刷新信号，节流刷新当前层目录列表。
+   * #5a 文件树懒加载收尾：订阅模型层刷新信号，节流刷新已加载目录。
    * 门控后模型层不再全量拉树、只发 fileTreeRefreshTrigger（SSE 流式期间 /
-   * 任务结束 / 打开预览均会触发），此处刷新 active 源当前目录补齐列表同步。
-   * 当前打开文件的正文重拉由 useFileTreePreviewView 内已有的 trigger
-   * 监听负责，两者互不重复。
+   * 任务结束 / 打开预览均会触发），此处刷新「已加载的全部目录」（含根层，
+   * refreshAllLoaded）补齐列表同步——不止 currentPath 单层，修复「打开的
+   * 目录不刷新」。当前打开文件的正文重拉由 useFileTreePreviewView 内已有的
+   * trigger 监听负责，两者互不重复。
    */
   const handledDirectoryRefreshTriggerRef = useRef<number>(0);
   const activeDirectoryRefreshRef = useRef<() => void>(() => {});
-  activeDirectoryRefreshRef.current = workspaceDirectoryFiles.refresh;
+  activeDirectoryRefreshRef.current = workspaceDirectoryFiles.refreshAllLoaded;
   const throttledRefreshActiveDirectory = useMemo(
     () =>
       throttle(() => activeDirectoryRefreshRef.current(), 2000, {
@@ -981,13 +987,19 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   useEffect(() => {
     if (
       !fileTreeRefreshTrigger ||
-      handledDirectoryRefreshTriggerRef.current === fileTreeRefreshTrigger
+      handledDirectoryRefreshTriggerRef.current === fileTreeRefreshTrigger ||
+      // 面板关闭期间不刷目录（打开面板时 openPreviewView 的 needRefresh 会补拉）
+      !isFileTreeVisible
     ) {
       return;
     }
     handledDirectoryRefreshTriggerRef.current = fileTreeRefreshTrigger;
     throttledRefreshActiveDirectory();
-  }, [fileTreeRefreshTrigger, throttledRefreshActiveDirectory]);
+  }, [
+    fileTreeRefreshTrigger,
+    throttledRefreshActiveDirectory,
+    isFileTreeVisible,
+  ]);
 
   /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
   const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
@@ -1062,6 +1074,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       }
       setTaskAgentSelectedFileId('');
     },
+    // 懒加载宿主：目标父目录已加载才允许「未命中判 miss」；父目录导航在途时
+    // hook 保持等待（目录层到达后完成选中），修复嵌套文件打开竞态
+    isAutoSelectDirectoryLoaded: (fileId: string) =>
+      workspaceDirectoryFiles.loadedDirectoryPaths.has(
+        parentDirectory(workspaceRelativePath(fileId)),
+      ),
     /** 文件树选中文件时，关闭 Git 版本记录面板 */
     onFileSelectOpenPreview: () => {
       closeVersionPanelForFilePreviewRef.current();

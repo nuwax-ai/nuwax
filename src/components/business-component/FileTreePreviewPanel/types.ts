@@ -138,6 +138,13 @@ export interface FileTreePreviewViewProps {
   onOpenDirectory?: (node: FileNode) => void | Promise<void>;
   /** 刷新文件树后，当前选中文件已不存在时回调 */
   onSelectedFileMissing?: (fileId: string) => void;
+  /**
+   * 懒加载宿主传入：目标文件所在目录是否已完成加载。
+   * 自动选中未命中时，若所在目录尚未加载（父目录导航在途）则保持等待——
+   * 目录层到达后 files 变化会重入 effect 完成选中，不误判 miss 清空目标。
+   * 未传时维持「已拉取即判 miss」旧语义（全量树宿主）。
+   */
+  isAutoSelectDirectoryLoaded?: (fileId: string) => boolean;
   /** CodeViewer 是否使用动态主题（Chat 页为 true） */
   isDynamicTheme?: boolean;
   /** 是否启用 Git status（仅通用型 TaskAgent 智能体） */

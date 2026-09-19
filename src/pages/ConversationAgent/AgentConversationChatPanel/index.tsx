@@ -121,14 +121,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     }
   }, [location.key, location.state, manualComponents]);
 
-  // 监听 isConversationActive 从 true → false，触发会话结束回调
-  useEffect(() => {
-    if (prevIsActiveRef.current && !isConversationActive) {
-      onConversationEnd?.();
-    }
-    prevIsActiveRef.current = isConversationActive;
-  }, [isConversationActive, onConversationEnd]);
-
   // @ 文件提及数据源：URL 会话 id 进页即得——若等会话详情回填 conversationInfo，
   // 进入后一段时间内 @ 会是纯文本；开发会话均为任务型智能体，文件按会话维度取数，
   // 无需 agent 类型门槛
@@ -144,8 +136,28 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   // 关闭（默认）为空对象，旧线原值原行为。
   const runtimeLine = useConversationRuntimeSession({
     conversationId: conversationInfo?.id,
+    // chat 请求携带面板当前选中电脑（空串兜底 undefined），与旧线发送参数对齐
+    getSandboxId: () => selectedComputerId || undefined,
     effectsResources: {}, // 面板入口无 chat model 资源；页面预览类 effect 静默忽略
   });
+
+  // 结束沿必须消费「实际生效」的活跃态：V2 下 onSendMessage 被 conversationProps
+  // 覆盖走 runtime 线，model 的置位点不再执行——生效值以 conversationProps 为准
+  //（session.getState + taskStatus 合成，即传给 UnifiedChatSession 的同一值），
+  // V1（无 runtime 线）回落 model 值（原行为）。监听 true → false 触发会话结束回调
+  //（页面刷文件树/Git/编排的唯一触发点）。
+  const effectiveIsActive =
+    (
+      runtimeLine?.conversationProps as
+        | { isConversationActive?: boolean }
+        | undefined
+    )?.isConversationActive ?? isConversationActive;
+  useEffect(() => {
+    if (prevIsActiveRef.current && !effectiveIsActive) {
+      onConversationEnd?.();
+    }
+    prevIsActiveRef.current = effectiveIsActive;
+  }, [effectiveIsActive, onConversationEnd]);
 
   return (
     <div className={classNames('flex', 'flex-col', 'h-full', className)}>

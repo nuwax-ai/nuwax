@@ -635,6 +635,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   // 关闭（默认）为空对象，旧线原值原行为。
   const runtimeLine = useConversationRuntimeSession({
     conversationId: devConversationIdRef.current || undefined,
+    // 隔离入口与旧线（onMessageSend isSync:false）一致：不同步会话记录
+    //（不发乐观列表标记、不更新主题）
+    isSync: false,
     // chat 请求携带当前生效电脑的 sandboxId（effectiveSandboxId 链尾已兜底云电脑 -1）
     getSandboxId: () => effectiveSandboxId,
     effectsResources: {

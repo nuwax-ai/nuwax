@@ -3,13 +3,19 @@ import { TaskStatus } from '@/types/enums/agent';
 import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockUnifiedChatSession, mockUseModel, mockUseLocation, mockHistory } =
-  vi.hoisted(() => ({
-    mockUnifiedChatSession: vi.fn(),
-    mockUseModel: vi.fn(),
-    mockUseLocation: vi.fn(),
-    mockHistory: { action: 'PUSH' },
-  }));
+const {
+  mockUnifiedChatSession,
+  mockUseModel,
+  mockUseLocation,
+  mockHistory,
+  mockUseRuntimeSession,
+} = vi.hoisted(() => ({
+  mockUnifiedChatSession: vi.fn(),
+  mockUseModel: vi.fn(),
+  mockUseLocation: vi.fn(),
+  mockHistory: { action: 'PUSH' },
+  mockUseRuntimeSession: vi.fn(),
+}));
 
 vi.mock('@/components/business-component', () => ({
   UnifiedChatSession: (props: any) => {
@@ -19,7 +25,8 @@ vi.mock('@/components/business-component', () => ({
 }));
 
 vi.mock('@/features/conversation/react/useConversationRuntimeSession', () => ({
-  useConversationRuntimeSession: () => null,
+  useConversationRuntimeSession: (...args: unknown[]) =>
+    mockUseRuntimeSession(...args),
 }));
 
 vi.mock('umi', () => ({
@@ -77,6 +84,8 @@ describe('AgentConversationChatPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockHistory.action = 'PUSH';
+    // 默认无 runtime 线（V1 形态），双线用例自行覆写
+    mockUseRuntimeSession.mockReturnValue(null);
     mockUseLocation.mockReturnValue({
       key: 'route-1',
       state: {
@@ -217,6 +226,65 @@ describe('AgentConversationChatPanel', () => {
       <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
     );
 
+    expect(onConversationEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('V2 线：conversationProps 的活跃态下降沿触发会话结束回调（model 置位点不再执行）', () => {
+    // V2 下 onSendMessage 走 runtime 线，model 的 isConversationActive 恒 false——
+    // 结束沿必须消费 conversationProps 的生效值
+    const model = createConversationInfoModel({
+      isConversationActive: false,
+    });
+    mockUseModel.mockReturnValue(model);
+    mockUseRuntimeSession.mockReturnValue({
+      conversationProps: { isConversationActive: true },
+    });
+    const onConversationEnd = vi.fn();
+    const { rerender } = render(
+      <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
+    );
+    expect(onConversationEnd).not.toHaveBeenCalled();
+
+    mockUseRuntimeSession.mockReturnValue({
+      conversationProps: { isConversationActive: false },
+    });
+    rerender(
+      <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
+    );
+
+    expect(onConversationEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('V2 线：生效值优先于 model 值（model 恒 false 不干扰 runtime 值驱动的沿检测）', () => {
+    const model = createConversationInfoModel({
+      isConversationActive: false,
+    });
+    mockUseModel.mockReturnValue(model);
+    // 生效值 false（合成值即 false），model 值同为 false：无上升沿噪声
+    mockUseRuntimeSession.mockReturnValue({
+      conversationProps: { isConversationActive: false },
+    });
+    const onConversationEnd = vi.fn();
+    const { rerender } = render(
+      <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
+    );
+    expect(onConversationEnd).not.toHaveBeenCalled();
+
+    // 生效值上升 → 再下降：一次沿
+    mockUseRuntimeSession.mockReturnValue({
+      conversationProps: { isConversationActive: true },
+    });
+    rerender(
+      <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
+    );
+    expect(onConversationEnd).not.toHaveBeenCalled();
+
+    mockUseRuntimeSession.mockReturnValue({
+      conversationProps: { isConversationActive: false },
+    });
+    rerender(
+      <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
+    );
     expect(onConversationEnd).toHaveBeenCalledTimes(1);
   });
 

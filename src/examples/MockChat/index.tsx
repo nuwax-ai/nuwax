@@ -199,6 +199,9 @@ const MockChat: React.FC = () => {
   const runtimeAllowAutoScrollRef = useRef(true);
   const runtimeLine = useConversationRuntimeSession({
     conversationId: MOCK_CONVERSATION_ID,
+    // 隔离入口与旧线（isSync:false）一致：mock 会话不同步会话记录
+    //（不发乐观列表标记、不更新主题）
+    isSync: false,
     // runtime 轨滚动跟随（resumeController 置底）需要自己的容器 ref
     messageViewRef: runtimeMessageViewRef,
     allowAutoScrollRef: runtimeAllowAutoScrollRef,
