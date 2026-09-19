@@ -6753,6 +6753,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.tabNormalProject": "Normal Project",
   "PC.Pages.SpaceProjectManage.tabPageApp": "Web App",
   "PC.Pages.SpaceProjectManage.tabUserApp": "Full-stack App",
+  "PC.Pages.SpaceProjectManage.tabThirdApp": "Third-party App",
   "PC.Pages.SpaceProjectManage.searchPlaceholder": "Search project name",
   "PC.Pages.SpaceProjectManage.createButton": "New Project",
   "PC.Pages.SpaceProjectManage.createNormalProject": "Normal Project",

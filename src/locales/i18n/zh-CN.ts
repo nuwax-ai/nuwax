@@ -6715,6 +6715,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.tabNormalProject": "常规项目",
   "PC.Pages.SpaceProjectManage.tabPageApp": "网页应用",
   "PC.Pages.SpaceProjectManage.tabUserApp": "全栈应用",
+  "PC.Pages.SpaceProjectManage.tabThirdApp": "三方应用",
   "PC.Pages.SpaceProjectManage.searchPlaceholder": "搜索项目名称",
   "PC.Pages.SpaceProjectManage.createButton": "新建项目",
   "PC.Pages.SpaceProjectManage.createNormalProject": "常规项目",

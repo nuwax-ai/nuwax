@@ -6634,6 +6634,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.tabNormalProject": "通常プロジェクト",
   "PC.Pages.SpaceProjectManage.tabPageApp": "Webアプリ",
   "PC.Pages.SpaceProjectManage.tabUserApp": "フルスタックアプリ",
+  "PC.Pages.SpaceProjectManage.tabThirdApp": "サードパーティアプリ",
   "PC.Pages.SpaceProjectManage.searchPlaceholder": "プロジェクト名を検索",
   "PC.Pages.SpaceProjectManage.createButton": "新規プロジェクト",
   "PC.Pages.SpaceProjectManage.createNormalProject": "通常プロジェクト",

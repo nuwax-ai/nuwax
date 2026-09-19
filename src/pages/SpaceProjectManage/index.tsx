@@ -1,192 +1,186 @@
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
+import Loading from '@/components/custom/Loading';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import {
-  useConversationChanged,
-  useProjectChanged,
-} from '@/hooks/useDirectorySync';
-import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
+import { useProjectChanged } from '@/hooks/useDirectorySync';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiNormalProjectDelete,
-  apiNormalProjectGetById,
-  apiNormalProjectLatestConversation,
   apiNormalProjectUpdate,
   apiUserAppDelete,
   apiUserAppUpdate,
   apiUserProjectPageQuery,
 } from '@/services/userProjectApp';
-import { apiDownloadAllFiles } from '@/services/vncDesktop';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import type { RequestResponse } from '@/types/interfaces/request';
-import type { UserProjectConversationInfo } from '@/types/interfaces/userProject';
+import type {
+  UserProjectItem,
+  UserProjectTabPageResult,
+} from '@/types/interfaces/userProject';
 import {
-  applyConversationChangedToList,
   applyProjectChangedToList,
   emitProjectChanged,
 } from '@/utils/directorySyncEvents';
-import {
-  DeleteOutlined,
-  DownOutlined,
-  EditOutlined,
-  ExportOutlined,
-  FolderOpenOutlined,
-  MoreOutlined,
-  PlusOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
-import { Button, Dropdown, Empty, Input, message, Modal, Spin } from 'antd';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { useLocation, useParams } from 'umi';
+import { DownOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Empty, Input, Modal } from 'antd';
+import classNames from 'classnames';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { history, useLocation, useParams, useRequest } from 'umi';
 import CreateUserApp from '../AppDevPro/components/CreateUserApp';
-import ConversationPanel from './components/ConversationPanel';
 import CreateNormalProjectModal from './components/CreateNormalProjectModal';
+import ProjectManageItem from './components/ProjectManageItem';
 import styles from './index.less';
 import { normalizeProjectRows, type ProjectListItem } from './projectRows';
-import { apiUserProjectConversations } from './services';
+import { apiThirdAppOauth2Delete } from './services/thirdAppOauth2';
+import CreateThirdAppModal from './ThirdAppIntegration/CreateThirdAppModal';
+import EditThirdAppModal, {
+  type EditedThirdAppInfo,
+} from './ThirdAppIntegration/EditThirdAppModal';
 import {
   openProject,
-  PROJECT_MANAGE_TYPES,
   PROJECT_TAB_LABEL_KEYS,
   PROJECT_TAB_TYPES,
-  projectTypeBadgeClass,
   type ProjectTabKey,
 } from './type';
 
-/** 兼容 umi request 已解包 data 与完整 Response 两种形态 */
-const unwrapConversationList = (
-  result?:
-    | UserProjectConversationInfo[]
-    | RequestResponse<UserProjectConversationInfo[]>
-    | null,
-): UserProjectConversationInfo[] => {
-  if (!result) {
-    return [];
-  }
-  if (Array.isArray(result)) {
-    return result;
-  }
-  if (result.code && result.code !== SUCCESS_CODE) {
-    return [];
-  }
-  return Array.isArray(result.data) ? result.data : [];
-};
+const cx = classNames.bind(styles);
+const PAGE_SIZE = 48;
+const SCROLL_CONTAINER_ID = 'space-project-manage-scroll';
 
 /**
- * 行最新会话解析：统一列表接口不回包 conversations，取右侧任务链路已拉到的
- * 项目会话（conversationsByProjectRef），按 modified 最新一条作为「最新会话」
- * （含 id/agentId，打开与导出共用；tab 接口时代 conversationId 实测恒 null
- * 不再依赖，未就绪返回 undefined 由调用方兜底链处理）。
- */
-const resolveRowLatestConversation = (
-  conversations?: UserProjectConversationInfo[],
-): UserProjectConversationInfo | undefined => {
-  if (!conversations?.length) return undefined;
-  return [...conversations].sort((a, b) =>
-    (b.modified || '').localeCompare(a.modified || ''),
-  )[0];
-};
-
-/**
- * 项目管理：个人/团队空间下的项目列表（常规项目/网页应用/全栈应用三类合并查询）。
- * 数据走统一接口 page-query（2026-09-14 两接口统一：回包含归档项目、不附带
- * 项目会话，行级 conversations 由右侧任务链路拉取后经 ref 回填供打开/导出取用）；
- * 右侧「相关任务」走 apiUserProjectConversations，按当前列表内项目合并展示；
- * 常规项目/全栈应用的重命名、删除、导出走真实接口（normal-project / userapp /
- * download-all-files 契约，操作清单对齐 wiki「全栈应用开发接口清单」v2 2026-09-11）；
- * 打开项目按类型分发落点（常规项目对齐单栏「项目」分组跳 home/chat 会话详情）；
- * PageApp 契约未覆盖改名删除，不挂菜单。新建入口与类型 tab 均去除网页应用
- * （2026-09-10）；「全部」仍合并查询三类，存量 PageApp 项目照常列表/打开。
+ * 空间项目管理页：聚合展示常规项目、全栈应用、三方应用（及历史网页应用）。
+ *
+ * 功能概览：
+ * - Tab 筛选：「全部」单次 page-query 不传 projectType；切换类型 Tab 时附带 projectType
+ * - 搜索：按项目名称模糊匹配；列表滚动到底部分页加载（pageSize=48）
+ * - 新建：下拉菜单支持创建常规项目 / 全栈应用 / 三方应用，成功后跳转对应详情页
+ * - 卡片操作：常规/全栈支持重命名与删除；三方应用支持编辑（名称/描述/图标）与删除
+ * - 列表 UI 对齐 SpaceLibrary；卡片由 ProjectManageItem 渲染（CardWrapper 布局）
+ *
+ * @returns 项目管理页面
  */
 const SpaceProjectManage: React.FC = () => {
   const params = useParams();
   const location = useLocation();
   const spaceId = Number(params.spaceId);
+  /** 侧边栏重复点击同一菜单时通过 location.state._t 触发列表刷新 */
   const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
-  const { pin } = useHomePinnedProjectHandoff();
 
+  // ---- 列表查询态 ----
   const [activeTab, setActiveTab] = useState<ProjectTabKey>('all');
   const [keyword, setKeyword] = useState('');
   const [list, setList] = useState<ProjectListItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [conversations, setConversations] = useState<
-    UserProjectConversationInfo[]
-  >([]);
-  const [conversationLoading, setConversationLoading] = useState(false);
-  const conversationProjectRef = useRef<Map<number, ProjectListItem>>(
-    new Map(),
-  );
-  // 项目 → 已拉取会话列表（行最新会话取用；与右侧任务同源，避免列表行再发请求）
-  const conversationsByProjectRef = useRef<
-    Map<number, UserProjectConversationInfo[]>
-  >(new Map());
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  // 新建弹窗态
+  // ---- 新建弹窗态 ----
   const [openCreateNormal, setOpenCreateNormal] = useState(false);
   const [openCreateUserApp, setOpenCreateUserApp] = useState(false);
-  // 重命名弹窗态
+  const [openCreateThirdApp, setOpenCreateThirdApp] = useState(false);
+
+  // ---- 编辑/重命名弹窗态 ----
+  /** 常规项目、全栈应用：仅改名称 */
   const [renameTarget, setRenameTarget] = useState<ProjectListItem>();
   const [renameName, setRenameName] = useState('');
+  /** 三方应用：名称 / 描述 / 图标 */
+  const [editThirdAppTarget, setEditThirdAppTarget] =
+    useState<ProjectListItem>();
 
-  const queryProjects = useCallback(async () => {
-    if (!spaceId) return;
-    setLoading(true);
-    try {
-      const name = keyword.trim();
-      const buildBody = (projectType: AgentComponentTypeEnum) => ({
-        queryFilter: { spaceId, projectType, name },
-        current: 1,
-        pageSize: 50,
+  const projectTypeFilter =
+    activeTab === 'all' ? undefined : activeTab;
+
+  /** 分页查询当前 Tab + 关键词下的项目列表 */
+  const { run, loading } = useRequest(
+    (name?: string, pageIndex: number = 1) =>
+      apiUserProjectPageQuery({
+        queryFilter: {
+          spaceId,
+          name: name?.trim() || undefined,
+          ...(projectTypeFilter ? { projectType: projectTypeFilter } : {}),
+        },
+        current: pageIndex,
+        pageSize: PAGE_SIZE,
         orders: [],
         filters: [],
         columns: [],
-      });
-      if (activeTab === 'all') {
-        // 全部：三类并行拉取后按更新时间合并排序
-        const results = await Promise.all(
-          PROJECT_MANAGE_TYPES.map((type) =>
-            apiUserProjectPageQuery(buildBody(type)).catch(() => null),
-          ),
-        );
-        const records = results.flatMap((res) =>
-          res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)
-            ? res.data.records
-            : [],
-        );
-        // 当前后端会忽略 queryFilter.projectType，三次响应可能完全相同；
-        // 按「类型 + projectId」去重，兼容后端后续恢复服务端过滤。
-        setList(normalizeProjectRows(records));
-      } else {
-        const res = await apiUserProjectPageQuery(
-          buildBody(activeTab as AgentComponentTypeEnum),
-        );
-        if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
-          // 后端未按 projectType 过滤时，由前端保证 tab 只展示目标类型。
-          setList(
-            normalizeProjectRows(
-              res.data.records,
-              activeTab as AgentComponentTypeEnum,
-            ),
-          );
-        } else {
+      }),
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: (
+        result: UserProjectTabPageResult,
+        params: [name?: string, pageIndex?: number],
+      ) => {
+        const pageResult = result;
+        if (!pageResult) {
           setList([]);
+          setHasMore(false);
+          setHasLoaded(true);
+          return;
         }
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [spaceId, activeTab, keyword]);
+        const current = pageResult.current || params[1] || 1;
+        const size = pageResult.size || PAGE_SIZE;
+        const records = Array.isArray(pageResult.records)
+          ? normalizeProjectRows(pageResult.records, projectTypeFilter)
+          : [];
+        setList((previous) => {
+          if (current === 1) {
+            return records;
+          }
+          const merged = new Map<string, ProjectListItem>();
+          previous.forEach((item) =>
+            merged.set(`${item.projectType}-${item.id}`, item),
+          );
+          records.forEach((item) =>
+            merged.set(`${item.projectType}-${item.id}`, item),
+          );
+          return [...merged.values()].sort((a, b) =>
+            (b.modified || '').localeCompare(a.modified || ''),
+          );
+        });
+        setPage(current);
+        setHasMore(current * size < (pageResult.total || 0));
+        setHasLoaded(true);
+      },
+      onError: (
+        _error: unknown,
+        params: [name?: string, pageIndex?: number],
+      ) => {
+        if ((params[1] || 1) === 1) {
+          setList([]);
+          setHasMore(false);
+        }
+        setHasLoaded(true);
+      },
+    },
+  );
 
+  /** 重复点击菜单、切换空间或 Tab：重置列表态，展示与首次进入一致的 Loading */
   useEffect(() => {
-    void queryProjects();
-  }, [queryProjects, refreshToken]);
+    setHasLoaded(false);
+    setList([]);
+    setPage(1);
+    setHasMore(true);
+  }, [refreshToken, spaceId, activeTab]);
 
+  /** Tab、关键词、空间或菜单重复点击时，从第一页重新加载 */
+  useEffect(() => {
+    if (!spaceId) {
+      return;
+    }
+    run(keyword, 1);
+  }, [keyword, refreshToken, run, spaceId, activeTab]);
+
+  /** 滚动到底部后加载下一页 */
+  const handleLoadMore = useCallback(() => {
+    if (loading || !hasMore) {
+      return;
+    }
+    run(keyword, page + 1);
+  }, [hasMore, keyword, loading, page, run]);
+
+  /** 监听跨页面项目变更事件，同步列表（创建全量刷新，更新/删除增量合并） */
   useProjectChanged((event) => {
     if (
       event.project.spaceId !== undefined &&
@@ -195,7 +189,7 @@ const SpaceProjectManage: React.FC = () => {
       return;
     }
     if (event.operation === 'created') {
-      void queryProjects();
+      run(keyword, 1);
       return;
     }
     setList((previous) =>
@@ -203,83 +197,13 @@ const SpaceProjectManage: React.FC = () => {
     );
   });
 
-  useConversationChanged((event) => {
-    setConversations((previous) =>
-      applyConversationChangedToList(previous, event),
-    );
-    conversationsByProjectRef.current.forEach((records, projectId) => {
-      const next = applyConversationChangedToList(records, event);
-      if (next !== records) {
-        conversationsByProjectRef.current.set(projectId, next);
-      }
-    });
-    if (event.operation === 'deleted') {
-      conversationProjectRef.current.delete(Number(event.conversationId));
-    }
-    if (
-      event.project &&
-      (event.operation === 'created' || event.operation === 'deleted')
-    ) {
-      void queryProjects();
-    }
-  });
-
-  /**
-   * 当前列表内每个项目并行拉会话，合并后按更新时间倒序展示到右侧。
-   */
-  useEffect(() => {
-    let cancelled = false;
-    if (!list.length) {
-      conversationProjectRef.current = new Map();
-      conversationsByProjectRef.current = new Map();
-      setConversations([]);
-      setConversationLoading(false);
-      return;
-    }
-    setConversationLoading(true);
-    void (async () => {
-      const results = await Promise.all(
-        list.map((project) =>
-          apiUserProjectConversations(project.id, project.projectType)
-            .then((res) => ({
-              project,
-              records: unwrapConversationList(res),
-            }))
-            .catch(() => ({
-              project,
-              records: [] as UserProjectConversationInfo[],
-            })),
-        ),
-      );
-      if (cancelled) {
-        return;
-      }
-      const projectMap = new Map<number, ProjectListItem>();
-      const conversationMap = new Map<number, UserProjectConversationInfo[]>();
-      const merged: UserProjectConversationInfo[] = [];
-      results.forEach(({ project, records }) => {
-        conversationMap.set(project.id, records);
-        records.forEach((item) => {
-          projectMap.set(item.id, project);
-          merged.push(item);
-        });
-      });
-      merged.sort((a, b) => (b.modified || '').localeCompare(a.modified || ''));
-      conversationProjectRef.current = projectMap;
-      conversationsByProjectRef.current = conversationMap;
-      setConversations(merged);
-      setConversationLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [list]);
-
+  /** 顶部类型 Tab：全部 + 常规 / 全栈 / 三方 */
   const tabs = useMemo(
     () => ['all', ...PROJECT_TAB_TYPES] as ProjectTabKey[],
     [],
   );
 
+  /** 新建下拉菜单项（key 为 AgentComponentTypeEnum） */
   const createMenuItems = [
     {
       key: AgentComponentTypeEnum.NormalProject,
@@ -289,156 +213,99 @@ const SpaceProjectManage: React.FC = () => {
       key: AgentComponentTypeEnum.UserApp,
       label: dict('PC.Pages.SpaceProjectManage.createUserApp'),
     },
+    {
+      key: AgentComponentTypeEnum.ThirdApp,
+      label: dict('PC.Pages.SpaceProjectManage.tabThirdApp'),
+    },
   ];
 
+  /** 根据所选类型打开对应创建弹窗 */
   const handleCreateMenuClick = (key: string) => {
     if (key === AgentComponentTypeEnum.NormalProject) {
       setOpenCreateNormal(true);
-    } else {
+      return;
+    }
+    if (key === AgentComponentTypeEnum.UserApp) {
       setOpenCreateUserApp(true);
+      return;
+    }
+    if (key === AgentComponentTypeEnum.ThirdApp) {
+      setOpenCreateThirdApp(true);
     }
   };
 
-  /** 打开项目防重复点击（常规项目缺会话走接口兜底期间,忽略重复点击） */
-  const openingProjectRef = useRef(false);
-
   /**
-   * 打开项目（落点与单栏「项目」分组会话点击同源）：
-   * - PageApp → 网页 IDE；
-   * - 常规项目 → home/chat 会话详情（会话/智能体 id 取自行 conversations[]）；
-   *   行内无会话时按 wiki 2026-09-11 行5 兜底：先调 normal-project/conversation
-   *   取最新会话,仍无则 normal-project/get 防御式取（响应契约未细化,宽松读取）,
-   *   终回退上框 /home（发送即建会话绑定项目,落地即会话详情）；
-   * - 全栈应用 → 全栈 IDE 携最新会话 id 直达续聊（conversationId 参数与
-   *   单栏全栈会话点击对齐）。
+   * 点击卡片：按 projectType 跳转各类型详情页。
+   * 未知类型回退 openProject 通用逻辑。
    */
   const handleOpenProject = useCallback(
     (item: ProjectListItem) => {
-      if (item.projectType === AgentComponentTypeEnum.PageApp) {
-        openProject(spaceId, item);
-        return;
-      }
-      const latest = resolveRowLatestConversation(
-        conversationsByProjectRef.current.get(item.id),
-      );
-      const conversationId = latest?.id ?? item.conversationId ?? undefined;
-      if (item.projectType === AgentComponentTypeEnum.NormalProject) {
-        const agentId = latest?.agentId;
-        if (conversationId && agentId) {
-          openProject(spaceId, item, conversationId, agentId);
+      switch (item.projectType) {
+        case AgentComponentTypeEnum.NormalProject:
+          history.push(`/space/${spaceId}/normal-project-detail/${item.id}`);
           return;
-        }
-        if (openingProjectRef.current) return;
-        openingProjectRef.current = true;
-        void (async () => {
-          try {
-            const conv = await apiNormalProjectLatestConversation(
-              item.id,
-            ).catch(() => null);
-            const convData =
-              conv?.code === SUCCESS_CODE ? conv.data ?? null : null;
-            const convCid = convData?.conversationId ?? convData?.id;
-            const convAid = convData?.agentId;
-            if (convCid && convAid) {
-              openProject(spaceId, item, convCid, convAid);
-              return;
-            }
-            const got = await apiNormalProjectGetById(item.id).catch(
-              () => null,
-            );
-            const rowData = got?.code === SUCCESS_CODE ? got.data : null;
-            const rowCid = rowData?.conversationId ?? undefined;
-            const rowAid = rowData?.devAgentId ?? undefined;
-            if (rowCid && rowAid) {
-              openProject(spaceId, item, rowCid, rowAid);
-              return;
-            }
-            pin({
-              projectId: item.id,
-              spaceId,
-              projectType: item.projectType,
-              name: item.name,
-              icon: item.icon,
-              sandboxId: item.sandboxId,
-            });
-          } finally {
-            openingProjectRef.current = false;
-          }
-        })();
-        return;
+        case AgentComponentTypeEnum.UserApp:
+          history.push(`/space/${spaceId}/app-project-detail/${item.id}`);
+          return;
+        case AgentComponentTypeEnum.ThirdApp:
+          history.push(`/space/${spaceId}/third-app-detail/${item.id}`);
+          return;
+        default:
+          openProject(spaceId, item);
       }
-      openProject(spaceId, item, conversationId);
-    },
-    [spaceId, pin],
-  );
-
-  /**
-   * 打开右侧任务：按会话所属项目类型分发（常规项目需会话 + 智能体 id）。
-   *
-   * @param item 会话
-   */
-  const handleSelectConversation = useCallback(
-    (item: UserProjectConversationInfo) => {
-      const project = conversationProjectRef.current.get(item.id);
-      if (!project) {
-        return;
-      }
-      if (project.projectType === AgentComponentTypeEnum.NormalProject) {
-        openProject(spaceId, project, item.id, item.agentId);
-        return;
-      }
-      openProject(spaceId, project, item.id);
     },
     [spaceId],
   );
 
-  /**
-   * 新建任务：优先打开列表中最近更新的全栈/常规项目以创建新会话；
-   * 没有可打开的项目时走新建全栈应用。
-   */
-  const handleCreateConversation = useCallback(() => {
-    const target = list.find(
-      (item) =>
-        item.projectType === AgentComponentTypeEnum.UserApp ||
-        item.projectType === AgentComponentTypeEnum.NormalProject,
-    );
-    if (!target) {
-      setOpenCreateUserApp(true);
-      return;
-    }
-    if (target.projectType === AgentComponentTypeEnum.NormalProject) {
-      pin({
-        projectId: target.id,
-        spaceId,
-        projectType: target.projectType,
-        name: target.name,
-        icon: target.icon,
-        sandboxId: target.sandboxId,
-      });
-      return;
-    }
-    openProject(spaceId, target);
-  }, [list, pin, spaceId]);
+  /** 是否展示卡片「更多」菜单（网页应用等历史类型仅支持查看） */
+  const supportsManageActions = useCallback(
+    (projectType: AgentComponentTypeEnum) =>
+      projectType === AgentComponentTypeEnum.NormalProject ||
+      projectType === AgentComponentTypeEnum.UserApp ||
+      projectType === AgentComponentTypeEnum.ThirdApp,
+    [],
+  );
 
   /**
-   * 导出项目（wiki #30：download-all-files 适用全栈/常规项目）。
-   * 导出以会话为锚（cId），用行最新会话（resolveRowLatestConversation）；
-   * 无会话提示先进入项目。
+   * 编辑入口：三方应用打开 EditThirdAppModal，其余可管理类型打开重命名弹窗。
    */
-  const handleExportProject = useCallback((item: ProjectListItem) => {
-    const latest = resolveRowLatestConversation(
-      conversationsByProjectRef.current.get(item.id),
-    );
-    const conversationId = latest?.id ?? item.conversationId ?? undefined;
-    if (!conversationId) {
-      message.warning(
-        dict('PC.Pages.SpaceProjectManage.exportRequiresConversation'),
-      );
+  const handleEditProject = useCallback((item: ProjectListItem) => {
+    if (item.projectType === AgentComponentTypeEnum.ThirdApp) {
+      setEditThirdAppTarget(item);
       return;
     }
-    void apiDownloadAllFiles(conversationId);
+    setRenameTarget(item);
+    setRenameName(item.name);
   }, []);
 
+  /** 三方应用编辑成功后更新本地列表并广播 directorySync 事件 */
+  const handleThirdAppEdited = useCallback(
+    (appId: number, editedInfo: EditedThirdAppInfo) => {
+      setList((previous) =>
+        previous.map((item) =>
+          item.id === appId &&
+          item.projectType === AgentComponentTypeEnum.ThirdApp
+            ? { ...item, ...editedInfo }
+            : item,
+        ),
+      );
+      emitProjectChanged({
+        operation: 'updated',
+        project: {
+          projectId: String(appId),
+          projectType: AgentComponentTypeEnum.ThirdApp,
+          spaceId: String(spaceId),
+        },
+        patch: editedInfo,
+        origin: 'space-project-manage',
+        reason: 'edit',
+      });
+      setEditThirdAppTarget(undefined);
+    },
+    [spaceId],
+  );
+
+  /** 提交常规项目 / 全栈应用重命名 */
   const handleRenameSubmit = async () => {
     const name = renameName.trim();
     if (!name || !renameTarget) return;
@@ -470,249 +337,172 @@ const SpaceProjectManage: React.FC = () => {
     setRenameTarget(undefined);
   };
 
-  const openDeleteConfirm = (item: ProjectListItem) => {
-    Modal.confirm({
-      title: dict('PC.Common.Global.deleteConfirmTitle'),
-      content: dict('PC.Common.Global.deleteConfirmContent'),
-      okButtonProps: { danger: true },
-      okText: dict('PC.Common.Global.delete'),
-      cancelText: dict('PC.Common.Global.cancel'),
-      onOk: async () => {
-        // wiki 2026-09-11 行4：常规项目 CRUD 切 normal-project 族（全栈应用不变）
-        const res =
-          item.projectType === AgentComponentTypeEnum.UserApp
-            ? await apiUserAppDelete(item.id)
-            : await apiNormalProjectDelete(item.id);
-        if (res?.code === SUCCESS_CODE) {
-          emitProjectChanged({
-            operation: 'deleted',
-            project: {
-              projectId: String(item.id),
-              projectType: item.projectType,
-              spaceId: String(spaceId),
-            },
-            origin: 'space-project-manage',
-            reason: 'delete',
-          });
-          void queryProjects();
-        }
-      },
-    });
-  };
-
-  const buildCardMenu = (item: ProjectListItem) => ({
-    items: [
-      {
-        key: 'rename',
-        icon: <EditOutlined />,
-        label: dict('PC.Components.ConversationContextMenu.rename'),
-      },
-      {
-        key: 'export',
-        icon: <ExportOutlined />,
-        label: dict('PC.Common.Global.export'),
-      },
-      { type: 'divider' as const },
-      {
-        key: 'delete',
-        icon: <DeleteOutlined />,
-        danger: true,
-        label: dict('PC.Common.Global.delete'),
-      },
-    ],
-    onClick: ({ key }: { key: string }) => {
-      if (key === 'rename') {
-        setRenameTarget(item);
-        setRenameName(item.name);
-      } else if (key === 'export') {
-        handleExportProject(item);
-      } else if (key === 'delete') {
-        openDeleteConfirm(item);
-      }
+  /** 删除前二次确认；按类型调用对应删除接口 */
+  const openDeleteConfirm = useCallback(
+    (item: ProjectListItem) => {
+      Modal.confirm({
+        title: dict('PC.Common.Global.deleteConfirmTitle'),
+        content: dict('PC.Common.Global.deleteConfirmContent'),
+        okButtonProps: { danger: true },
+        okText: dict('PC.Common.Global.delete'),
+        cancelText: dict('PC.Common.Global.cancel'),
+        onOk: async () => {
+          const res =
+            item.projectType === AgentComponentTypeEnum.UserApp
+              ? await apiUserAppDelete(item.id)
+              : item.projectType === AgentComponentTypeEnum.ThirdApp
+                ? await apiThirdAppOauth2Delete(item.id)
+                : await apiNormalProjectDelete(item.id);
+          if (res?.code === SUCCESS_CODE) {
+            emitProjectChanged({
+              operation: 'deleted',
+              project: {
+                projectId: String(item.id),
+                projectType: item.projectType,
+                spaceId: String(spaceId),
+              },
+              origin: 'space-project-manage',
+              reason: 'delete',
+            });
+            run(keyword, 1);
+          }
+        },
+      });
     },
-  });
+    [keyword, run, spaceId],
+  );
 
   return (
     <WorkspaceLayout
       title={dict('PC.Pages.SpaceProjectManage.menuTitle')}
       hideScroll
+      leftSlot={
+        // 类型 Tab
+        <div className={styles.tabs}>
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              className={
+                tab === activeTab
+                  ? `${styles.tab} ${styles['tab-active']}`
+                  : styles.tab
+              }
+              onClick={() => setActiveTab(tab)}
+            >
+              {dict(PROJECT_TAB_LABEL_KEYS[tab])}
+            </button>
+          ))}
+        </div>
+      }
+      rightSlot={
+        <>
+          {/* 项目名称搜索 */}
+          <Input
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder={dict('PC.Pages.SpaceProjectManage.searchPlaceholder')}
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            onClear={() => setKeyword('')}
+            style={{ width: 214 }}
+          />
+          {/* 新建：常规项目 / 全栈应用 / 三方应用 */}
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: createMenuItems,
+              onClick: ({ key }) => handleCreateMenuClick(key),
+            }}
+          >
+            <Button type="primary" icon={<PlusOutlined />}>
+              {dict('PC.Pages.SpaceProjectManage.createButton')}
+              <DownOutlined />
+            </Button>
+          </Dropdown>
+        </>
+      }
     >
-      <div className={styles['project-manage']}>
-        <div className={styles['manage-body']}>
-          <div className={styles['manage-main']}>
-            <div className={styles.toolbar}>
-              <div className={styles.tabs}>
-                {tabs.map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    className={
-                      tab === activeTab
-                        ? `${styles.tab} ${styles['tab-active']}`
-                        : styles.tab
+      {/* 列表区：Loading / 滚动分页卡片网格 / 空态 */}
+      <div className={cx(styles['project-manage'], 'flex', 'flex-col', 'h-full')}>
+        {!hasLoaded ? (
+          <Loading />
+        ) : list.length > 0 ? (
+          <div
+            id={SCROLL_CONTAINER_ID}
+            className={cx('flex-1', 'scroll-container-hide')}
+          >
+            <InfiniteScrollDiv
+              scrollableTarget={SCROLL_CONTAINER_ID}
+              list={list}
+              hasMore={hasMore}
+              showLoader={loading}
+              onScroll={handleLoadMore}
+            >
+              <div className={cx(styles['main-container'])}>
+                {list.map((item) => (
+                  <ProjectManageItem
+                    key={`${item.projectType}-${item.id}`}
+                    item={item}
+                    onClick={handleOpenProject}
+                    onEdit={
+                      supportsManageActions(item.projectType)
+                        ? handleEditProject
+                        : undefined
                     }
-                    onClick={() => setActiveTab(tab)}
-                  >
-                    {dict(PROJECT_TAB_LABEL_KEYS[tab])}
-                  </button>
+                    onDelete={
+                      supportsManageActions(item.projectType)
+                        ? openDeleteConfirm
+                        : undefined
+                    }
+                  />
                 ))}
               </div>
-              <Input
-                className={styles.search}
-                allowClear
-                prefix={<SearchOutlined />}
-                placeholder={dict(
-                  'PC.Pages.SpaceProjectManage.searchPlaceholder',
-                )}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
-              <Dropdown
-                trigger={['click']}
-                menu={{
-                  items: createMenuItems,
-                  onClick: ({ key }) => handleCreateMenuClick(key),
-                }}
-              >
-                <Button type="primary" icon={<PlusOutlined />}>
-                  {dict('PC.Pages.SpaceProjectManage.createButton')}
-                  <DownOutlined />
-                </Button>
-              </Dropdown>
-            </div>
-
-            <Spin spinning={loading}>
-              {list.length === 0 && !loading ? (
-                <Empty
-                  className={styles.empty}
-                  description={dict('PC.Pages.SpaceProjectManage.emptyText')}
-                >
-                  <Button
-                    type="primary"
-                    ghost
-                    icon={<FolderOpenOutlined />}
-                    onClick={() => setOpenCreateUserApp(true)}
-                  >
-                    {dict('PC.Pages.SpaceProjectManage.createButton')}
-                  </Button>
-                </Empty>
-              ) : (
-                <div className={styles.grid}>
-                  {list.map((item) => (
-                    <div
-                      key={`${item.projectType}-${item.id}`}
-                      className={styles.card}
-                      onClick={() => handleOpenProject(item)}
-                    >
-                      <div className={styles['card-icon']}>
-                        {item.icon ? (
-                          <img src={item.icon} alt="" />
-                        ) : (
-                          <FolderOpenOutlined />
-                        )}
-                      </div>
-                      <div className={styles['card-body']}>
-                        <div className={styles['card-title-row']}>
-                          <span
-                            className={styles['card-title']}
-                            title={item.name}
-                          >
-                            {item.name}
-                          </span>
-                          <span
-                            className={`${styles.badge} ${
-                              styles[projectTypeBadgeClass(item.projectType)]
-                            }`}
-                          >
-                            {dict(PROJECT_TAB_LABEL_KEYS[item.projectType])}
-                          </span>
-                          {/* 契约只覆盖常规项目/全栈应用的改名删除，PageApp 不挂菜单 */}
-                          {item.projectType !==
-                            AgentComponentTypeEnum.PageApp && (
-                            <Dropdown
-                              trigger={['click']}
-                              menu={buildCardMenu(item)}
-                            >
-                              <button
-                                type="button"
-                                className={styles['card-more']}
-                                aria-label={dict(
-                                  'PC.Components.ActionMenu.more',
-                                )}
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                <MoreOutlined />
-                              </button>
-                            </Dropdown>
-                          )}
-                        </div>
-                        <div
-                          className={styles['card-desc']}
-                          title={item.description || undefined}
-                        >
-                          {item.description ||
-                            dict('PC.Pages.SpaceProjectManage.noDescription')}
-                        </div>
-                        <div className={styles['card-time']}>
-                          {(item.modified || '').slice(0, 16).replace('T', ' ')}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Spin>
+            </InfiniteScrollDiv>
           </div>
-          <ConversationPanel
-            conversations={conversations}
-            loading={conversationLoading}
-            onSelect={handleSelectConversation}
-            onCreate={handleCreateConversation}
-          />
-        </div>
+        ) : (
+          <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+            <Empty description={dict('PC.Pages.SpaceProjectManage.emptyText')} />
+          </div>
+        )}
       </div>
 
-      {/* 新建：常规项目（名称直达统一创建接口；创建返回首个会话+智能体 id
-          时直达 home/chat 详情，实测常态未返回则上框到 /home，发送即建会话） */}
+      {/* 新建：常规项目 */}
       <CreateNormalProjectModal
         spaceId={spaceId}
         open={openCreateNormal}
         onCancel={() => setOpenCreateNormal(false)}
         onConfirm={(project) => {
           setOpenCreateNormal(false);
-          if (project.conversationId && project.agentId) {
-            openProject(
-              spaceId,
-              {
-                id: project.id,
-                projectType: AgentComponentTypeEnum.NormalProject,
-              },
-              project.conversationId,
-              project.agentId,
-            );
-            return;
-          }
-          pin({
-            projectId: project.id,
-            spaceId,
-            projectType: AgentComponentTypeEnum.NormalProject,
-            name: project.name,
-            sandboxId: project.sandboxId,
-          });
+          history.push(`/space/${spaceId}/normal-project-detail/${project.id}`);
         }}
       />
-      {/* 新建：全栈应用（复用 AppDevPro 创建弹窗，成功即进 IDE 续聊创建返回的首个会话） */}
+      {/* 新建：全栈应用 */}
       <CreateUserApp
         spaceId={spaceId}
         mode={CreateUpdateModeEnum.Create}
         open={openCreateUserApp}
         onCancel={() => setOpenCreateUserApp(false)}
         onConfirmCreate={(result) => {
-          openProject(
-            spaceId,
-            { id: result.id, projectType: AgentComponentTypeEnum.UserApp },
-            result.conversationId,
-          );
+          setOpenCreateUserApp(false);
+          history.push(`/space/${spaceId}/app-project-detail/${result.id}`);
         }}
+      />
+      {/* 新建：三方应用 */}
+      <CreateThirdAppModal
+        spaceId={spaceId}
+        open={openCreateThirdApp}
+        onCancel={() => setOpenCreateThirdApp(false)}
+        onCreated={(projectId) => {
+          setOpenCreateThirdApp(false);
+          history.push(`/space/${spaceId}/third-app-detail/${projectId}`);
+        }}
+      />
+      {/* 编辑（三方应用：名称/描述/图标） */}
+      <EditThirdAppModal
+        app={editThirdAppTarget as UserProjectItem | undefined}
+        onCancel={() => setEditThirdAppTarget(undefined)}
+        onEdited={handleThirdAppEdited}
       />
       {/* 重命名（常规项目/全栈应用，走真实接口） */}
       <Modal
