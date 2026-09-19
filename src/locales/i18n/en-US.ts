@@ -4678,7 +4678,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Square.Square.userApp": "Full-stack App",
   "PC.Pages.Square.Square.thirdApp": "Third-party App",
   // Nuwa Apps page
-  "PC.Pages.NuwaApps.title": "Nüwa Apps",
+  "PC.Pages.NuwaApps.title": "Nuwa Apps",
   "PC.Pages.NuwaApps.searchPlaceholder": "Search apps",
   "PC.Pages.NuwaApps.more": "More",
   "PC.Pages.NuwaApps.recentlyUsed": "Recently Used",
