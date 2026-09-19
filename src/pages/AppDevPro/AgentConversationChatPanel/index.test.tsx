@@ -175,6 +175,7 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     const onConversationEnd = vi.fn();
     mockUseRuntimeSession.mockReturnValue({
       conversationProps: { isConversationActive: true },
+      effectiveIsActive: true,
     });
     const { rerender } = render(
       <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
@@ -183,6 +184,7 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
 
     mockUseRuntimeSession.mockReturnValue({
       conversationProps: { isConversationActive: false },
+      effectiveIsActive: false,
     });
     rerender(
       <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,

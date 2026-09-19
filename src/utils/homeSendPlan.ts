@@ -3,6 +3,7 @@ import {
   getProjectTypeByFunctionType,
   showSpaceSelectorForFunctionType,
 } from '@/constants/recommendAgentPolicy.constants';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type {
@@ -35,7 +36,9 @@ export const resolvePersonalWorkspacePath = (
   computerId?: string,
   workspacePath?: string,
 ): string | undefined =>
-  computerId && computerId !== '-1' ? workspacePath || undefined : undefined;
+  computerId && computerId !== CLOUD_SANDBOX_ID
+    ? workspacePath || undefined
+    : undefined;
 
 /**
  * 常规项目参与者判定（多人参与）：上框常规项目且 owner === false（后端按当前
@@ -186,16 +189,16 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
     const isUserApp =
       pinnedProject.projectType === AgentComponentTypeEnum.UserApp;
     // 参与者（常规项目多人参与）自选沙箱：项目沙箱可能绑定创建者的个人电脑
-    //（参与者不可用），改带参与者自己的选择——云端也显式 -1，防后端回落项目
-    // 沙箱；个人电脑另带工作目录。selectedComputerId 随 attach 走 route state，
-    // 会话页首条消息沙箱链路（getEffectiveSandboxId）现成衔接。
+    //（参与者不可用），改带参与者自己的选择——云端也显式云哨兵（CLOUD_SANDBOX_ID），
+    // 防后端回落项目沙箱；个人电脑另带工作目录。selectedComputerId 随 attach
+    // 走 route state，会话页首条消息沙箱链路（getEffectiveSandboxId）现成衔接。
     const sandboxAttach = pinnedProjectSandboxSelection
       ? {
           selectedComputerId,
           sandboxId:
-            selectedComputerId && selectedComputerId !== '-1'
+            selectedComputerId && selectedComputerId !== CLOUD_SANDBOX_ID
               ? Number(selectedComputerId)
-              : -1,
+              : Number(CLOUD_SANDBOX_ID),
           workspacePath: resolvePersonalWorkspacePath(
             selectedComputerId,
             workspacePath,

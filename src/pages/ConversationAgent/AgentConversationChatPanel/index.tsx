@@ -142,16 +142,11 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   });
 
   // 结束沿必须消费「实际生效」的活跃态：V2 下 onSendMessage 被 conversationProps
-  // 覆盖走 runtime 线，model 的置位点不再执行——生效值以 conversationProps 为准
-  //（session.getState + taskStatus 合成，即传给 UnifiedChatSession 的同一值），
-  // V1（无 runtime 线）回落 model 值（原行为）。监听 true → false 触发会话结束回调
-  //（页面刷文件树/Git/编排的唯一触发点）。
-  const effectiveIsActive =
-    (
-      runtimeLine?.conversationProps as
-        | { isConversationActive?: boolean }
-        | undefined
-    )?.isConversationActive ?? isConversationActive;
+  // 覆盖走 runtime 线，model 的置位点不再执行——生效值以 runtime 线合成的
+  // effectiveIsActive 为准（session.getState + taskStatus，即传给
+  // UnifiedChatSession 的同一值），V1（无 runtime 线）回落 model 值（原行为）。
+  // 监听 true → false 触发会话结束回调（页面刷文件树/Git/编排的唯一触发点）。
+  const effectiveIsActive = runtimeLine?.effectiveIsActive ?? isConversationActive;
   useEffect(() => {
     if (prevIsActiveRef.current && !effectiveIsActive) {
       onConversationEnd?.();

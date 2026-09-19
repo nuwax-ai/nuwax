@@ -92,6 +92,11 @@ export interface UseConversationRuntimeSessionResult {
   state: ReturnType<ConversationRuntimeSession['getState']>;
   /** 会话面 props：与旧线 chatSessionProps 对应字段同形状，入口展开覆盖 */
   conversationProps: Record<string, unknown>;
+  /**
+   * 完整活跃（本地流式 || 后台执行中）：conversationProps.isConversationActive
+   * 的同源类型化出口——入口结束沿等场景无须从 conversationProps 强转挖值。
+   */
+  effectiveIsActive: boolean;
   /** 显式重置并重装当前会话（同会话 id 重放用；语义同会话切换 effect） */
   resetAndReloadConversation: () => Promise<void>;
 }
@@ -229,45 +234,12 @@ export function useConversationRuntimeSession(
   }
   const session = sessionRef.current;
 
-  // 会话切换：重置绑定层本地会话状态
-  useEffect(() => {
-    if (!session || conversationId === undefined) {
-      return;
-    }
-    setConversationInfo(null);
-    setChatSuggestList([]);
-    setLoadingSuggest(false);
-    session.resetForConversationSwitch();
-    void session.load(conversationId).then((data) => {
-      if (data) {
-        setConversationInfo((prev) =>
-          mergeConversationInfoTaskStatus(prev, data),
-        );
-      }
-      // 有历史则允许首次上滑确认（对齐旧线：len > 0 → isMoreMessage = true）
-      setIsMoreMessage((data?.messageList?.length ?? 0) > 0);
-      // 会话加载后置底（对齐旧线 load 后强制置底；rAF 连续 800ms）
-      const startTime = Date.now();
-      const forceScrollToBottom = () => {
-        const element = messageViewRef?.current;
-        if (element) {
-          element.scrollTo({ top: element.scrollHeight, behavior: 'instant' });
-        }
-        if (Date.now() - startTime < 800) {
-          requestAnimationFrame(forceScrollToBottom);
-        }
-      };
-      requestAnimationFrame(forceScrollToBottom);
-    });
-  }, [session, conversationId, messageViewRef]);
-
   /**
-   * 显式「重置并重装」：与上方会话切换 effect 同语义。同会话 id 重放
-   *（mock 调试页 prepareScenario）时，终态残留的 conversationInfo 必须先清——
-   * 否则 mergeConversationInfoTaskStatus 的「终态不被 EXECUTING 盖回」守卫
-   * 会吞掉新场景的 EXECUTING，活跃信号（taskStatus）永不恢复。
+   * 「清本地状态 → 重置 session → 装载会话 → 回填」共享核心：会话切换
+   * effect 与显式重置重装（同会话 id 重放）共用同一序列，可重置状态
+   * 清单只有这一处维护点。
    */
-  const resetAndReloadConversation = useCallback(async () => {
+  const resetLocalAndLoadConversation = useCallback(async () => {
     if (!session || conversationId === undefined) {
       return;
     }
@@ -281,8 +253,41 @@ export function useConversationRuntimeSession(
         mergeConversationInfoTaskStatus(prev, data),
       );
     }
+    // 有历史则允许首次上滑确认（对齐旧线：len > 0 → isMoreMessage = true）
     setIsMoreMessage((data?.messageList?.length ?? 0) > 0);
   }, [session, conversationId]);
+
+  // 会话切换：重置绑定层本地会话状态
+  useEffect(() => {
+    if (!session || conversationId === undefined) {
+      return;
+    }
+    void resetLocalAndLoadConversation().then(() => {
+      // 会话加载后置底（对齐旧线 load 后强制置底；rAF 连续 800ms）
+      const startTime = Date.now();
+      const forceScrollToBottom = () => {
+        const element = messageViewRef?.current;
+        if (element) {
+          element.scrollTo({ top: element.scrollHeight, behavior: 'instant' });
+        }
+        if (Date.now() - startTime < 800) {
+          requestAnimationFrame(forceScrollToBottom);
+        }
+      };
+      requestAnimationFrame(forceScrollToBottom);
+    });
+  }, [session, conversationId, messageViewRef, resetLocalAndLoadConversation]);
+
+  /**
+   * 显式「重置并重装」（同会话 id 重放用，mock 调试页 prepareScenario）：
+   * 终态残留的 conversationInfo 必须先清——否则
+   * mergeConversationInfoTaskStatus 的「终态不被 EXECUTING 盖回」守卫
+   * 会吞掉新场景的 EXECUTING，活跃信号（taskStatus）永不恢复。
+   */
+  const resetAndReloadConversation = useCallback(
+    () => resetLocalAndLoadConversation(),
+    [resetLocalAndLoadConversation],
+  );
 
   // 滚动 refs 注入
   useEffect(() => {
@@ -474,11 +479,12 @@ export function useConversationRuntimeSession(
 
   const state = session.getState();
   const taskExecuting = conversationInfo?.taskStatus === 'EXECUTING';
+  // 完整活跃（本地流式 || 后台执行中）：与旧线入口合成规则一致
+  const effectiveIsActive = state.isConversationActive || taskExecuting;
 
   const conversationProps: Record<string, unknown> = {
     messageList,
-    // 完整活跃（本地流式 || 后台执行中）：与旧线入口合成规则一致
-    isConversationActive: state.isConversationActive || taskExecuting,
+    isConversationActive: effectiveIsActive,
     isLocallyStreaming: state.isConversationActive,
     isAwaitingChatTerminal: state.isAwaitingChatTerminal,
     onSendMessage,
@@ -509,6 +515,7 @@ export function useConversationRuntimeSession(
     messageList,
     state,
     conversationProps,
+    effectiveIsActive,
     resetAndReloadConversation,
   };
 }

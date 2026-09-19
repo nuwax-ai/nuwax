@@ -238,6 +238,7 @@ describe('AgentConversationChatPanel', () => {
     mockUseModel.mockReturnValue(model);
     mockUseRuntimeSession.mockReturnValue({
       conversationProps: { isConversationActive: true },
+      effectiveIsActive: true,
     });
     const onConversationEnd = vi.fn();
     const { rerender } = render(
@@ -247,6 +248,7 @@ describe('AgentConversationChatPanel', () => {
 
     mockUseRuntimeSession.mockReturnValue({
       conversationProps: { isConversationActive: false },
+      effectiveIsActive: false,
     });
     rerender(
       <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
@@ -263,6 +265,7 @@ describe('AgentConversationChatPanel', () => {
     // 生效值 false（合成值即 false），model 值同为 false：无上升沿噪声
     mockUseRuntimeSession.mockReturnValue({
       conversationProps: { isConversationActive: false },
+      effectiveIsActive: false,
     });
     const onConversationEnd = vi.fn();
     const { rerender } = render(
@@ -273,6 +276,7 @@ describe('AgentConversationChatPanel', () => {
     // 生效值上升 → 再下降：一次沿
     mockUseRuntimeSession.mockReturnValue({
       conversationProps: { isConversationActive: true },
+      effectiveIsActive: true,
     });
     rerender(
       <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
@@ -281,6 +285,7 @@ describe('AgentConversationChatPanel', () => {
 
     mockUseRuntimeSession.mockReturnValue({
       conversationProps: { isConversationActive: false },
+      effectiveIsActive: false,
     });
     rerender(
       <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
