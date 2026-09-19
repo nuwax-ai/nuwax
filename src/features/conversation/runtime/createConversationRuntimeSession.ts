@@ -17,8 +17,10 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
-import { extractTaskResult } from '@/utils';
+// 直连纯函数模块：勿改回 '@/utils' 桶——桶转发组件链会在非 umi 环境（vitest/parity）
+// 拉起 @umijs/bundler-utils 的 esbuild 触发 TextEncoder 不变量崩溃
 import { syncTerminalConversationTaskStatus } from '@/utils/conversationTaskStatusSync';
+import { extractTaskResult } from '@/utils/taskResult';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import {
