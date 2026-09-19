@@ -2,6 +2,7 @@
  * V2 轨迹原子事件行：类型图标 + 动作 + 目标 + 局部状态。
  * 只有存在有效详情的节点才渲染 button/disclosure，避免空节点伪装成可展开项。
  */
+import SvgIcon from '@/components/base/SvgIcon';
 import {
   getToolPresentationKind,
   type ToolPresentationKind,
@@ -16,7 +17,6 @@ import {
   CloseCircleOutlined,
   CodeOutlined,
   CommentOutlined,
-  DownOutlined,
   EditOutlined,
   FileTextOutlined,
   GlobalOutlined,
@@ -514,13 +514,15 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
         />
       )}
       {hasDetail && (
-        <DownOutlined
+        <span
           data-testid="v2-node-disclosure"
           className={cx(styles['node-disclosure'], {
             [styles['node-disclosure-open']]: expanded,
           })}
           aria-hidden="true"
-        />
+        >
+          <SvgIcon name="icons-common-caret_down" style={{ fontSize: 10 }} />
+        </span>
       )}
     </>
   );

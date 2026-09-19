@@ -3,10 +3,10 @@
  * 展开状态全部保存在本层，外层收起导致子树卸载时不会丢失用户选择。
  */
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
+import SvgIcon from '@/components/base/SvgIcon';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import type { OpenUiArtifact } from '@/types/interfaces/openUi';
-import { DownOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -273,14 +273,16 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
         onClick={() => onManualToggle(!expanded)}
       >
         <TraceMetrics turn={turn} />
-        <DownOutlined
+        <span
           className={cx(
             styles['trace-chevron'],
             styles['trace-chevron-trailing'],
             { [styles['trace-chevron-open']]: expanded },
           )}
           aria-hidden="true"
-        />
+        >
+          <SvgIcon name="icons-common-caret_down" style={{ fontSize: 10 }} />
+        </span>
       </button>
       {/* 轨迹体：产物为 inline/sidecar 的 OpenUI 节点原位渲染看板/摘要行，收起态保持
           显示；失败与无产物退化态回落普通工具行（词条化动作，协议名不外露） */}

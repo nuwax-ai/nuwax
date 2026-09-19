@@ -23,6 +23,10 @@ vi.mock('@/services/i18nRuntime', () => ({
     values.length ? `${key}:${values.join(',')}` : key,
   t: (key: string) => key,
 }));
+// SvgIcon 内部读自身 css-modules,vitest 环境未编译——以轻量桩替换
+vi.mock('@/components/base/SvgIcon', () => ({
+  default: ({ name }: { name: string }) => <span data-svg-icon={name} />,
+}));
 vi.mock(
   '@/components/business-component/UnifiedChatSession/components/ChatContentArea/index.less',
   () => ({ default: new Proxy({}, { get: () => 'cls' }) }),

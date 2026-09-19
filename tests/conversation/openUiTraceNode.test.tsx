@@ -24,6 +24,10 @@ vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string, ...values: (string | number)[]) =>
     values.length ? `${key}:${values.join(',')}` : key,
 }));
+// SvgIcon 内部读自身 css-modules,vitest 环境未编译——以轻量桩替换
+vi.mock('@/components/base/SvgIcon', () => ({
+  default: ({ name }: { name: string }) => <span data-svg-icon={name} />,
+}));
 vi.mock('@/features/conversation/presentation-v2/react/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
@@ -171,7 +175,9 @@ describe('OpenUiTraceNode', () => {
         conversationId={1562078}
       />,
     );
-    expect(container.querySelector('[data-testid="v2-openui-node"]')).toBeNull();
+    expect(
+      container.querySelector('[data-testid="v2-openui-node"]'),
+    ).toBeNull();
   });
 
   it('absent（执行窗）：渲染 null，回落普通行兜底', () => {
@@ -181,7 +187,9 @@ describe('OpenUiTraceNode', () => {
         conversationId={1562078}
       />,
     );
-    expect(container.querySelector('[data-testid="v2-openui-node"]')).toBeNull();
+    expect(
+      container.querySelector('[data-testid="v2-openui-node"]'),
+    ).toBeNull();
   });
 
   it('onOpenSidecar 回调透传给 OpenUiArtifactView', async () => {
@@ -214,9 +222,7 @@ describe('WorkTraceDisclosure · OpenUI 常显区', () => {
     expect(screen.getByTestId('v2-trace-toggle')).toBeInTheDocument();
     expect(screen.queryByTestId('v2-node-disclosure')).toBeNull();
     // OpenUI 看板常显
-    expect(
-      await screen.findByTestId('v2-openui-node'),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('v2-openui-node')).toBeInTheDocument();
     await screen.findByTestId('openui-artifact-view');
   });
 
@@ -244,9 +250,7 @@ describe('WorkTraceDisclosure · OpenUI 常显区', () => {
         conversationId={1562078}
       />,
     );
-    expect(
-      await screen.findByTestId('v2-openui-node'),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('v2-openui-node')).toBeInTheDocument();
   });
 
   it('absent（终态退化）：回落普通行且动作词条化，协议名不外露、不进收起保持范围', () => {

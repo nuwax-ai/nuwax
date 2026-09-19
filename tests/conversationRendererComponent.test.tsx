@@ -30,6 +30,10 @@ vi.mock('@/services/i18nRuntime', () => ({
     values.length ? `${key}:${values.join(',')}` : key,
   t: (key: string) => key,
 }));
+// SvgIcon 内部读自身 css-modules,vitest 环境未编译——以轻量桩替换
+vi.mock('@/components/base/SvgIcon', () => ({
+  default: ({ name }: { name: string }) => <span data-svg-icon={name} />,
+}));
 vi.mock('@/features/conversation/presentation-v2/react/index.less', () => ({
   // 返回真实 key 名：动效 class 等样式断言需要区分类名
   default: new Proxy({}, { get: (_, key) => String(key) }),

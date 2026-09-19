@@ -24,6 +24,10 @@ vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string, ...values: (string | number)[]) =>
     values.length ? `${key}:${values.join(',')}` : key,
 }));
+// SvgIcon 内部读自身 css-modules,vitest 环境未编译——以轻量桩替换
+vi.mock('@/components/base/SvgIcon', () => ({
+  default: ({ name }: { name: string }) => <span data-svg-icon={name} />,
+}));
 vi.mock('@/components/MarkdownRenderer', () => ({
   PureMarkdownRenderer: ({ children }: { children: string }) => {
     renderMarkdown(children);

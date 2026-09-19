@@ -13,6 +13,10 @@ vi.mock('umi', () => ({
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
 }));
+// SvgIcon 内部读自身 css-modules,vitest 环境未编译——以轻量桩替换
+vi.mock('@/components/base/SvgIcon', () => ({
+  default: ({ name }: { name: string }) => <span data-svg-icon={name} />,
+}));
 vi.mock('@/components/MarkdownRenderer', () => ({
   default: ({ answer }: { answer: string }) => (
     <div data-testid="markdown-renderer">{answer}</div>

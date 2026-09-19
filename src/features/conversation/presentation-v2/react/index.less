@@ -209,7 +209,7 @@
   min-height: 30px;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   padding: 0;
   color: var(--v2-color-text, rgba(0, 0, 0, 88%));
   font-size: 13px;
@@ -227,6 +227,7 @@
   width: 14px;
   font-size: 14px;
   flex-shrink: 0;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
 }
 
 .todo-trace-title {
@@ -235,6 +236,7 @@
 }
 
 .todo-trace-progress {
+  margin-left: 2px;
   color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
   font-variant-numeric: tabular-nums;
 }
@@ -244,50 +246,54 @@
   flex-shrink: 0;
 }
 
+// 列表承载：浅灰圆角面板（对齐参考样式），不再用引导竖线
 .todo-trace-body {
-  position: relative;
+  margin: 2px 0 6px;
+  padding: 6px 16px;
+  background: var(--v2-color-fill, rgba(5, 5, 5, 4%));
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin: 1px 0 5px 12px;
-  padding-left: 8px;
-
-  // 与工具组 body 同款引导竖线（行首 14px 图标列中心）
-  &::before {
-    content: '';
-    position: absolute;
-    top: 3px;
-    bottom: 3px;
-    left: -5.5px;
-    width: 1px;
-    background: var(--v2-color-border, rgba(5, 5, 5, 8%));
-  }
 }
 
 .todo-step {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
+  padding: 7px 0;
   font-size: 13px;
   line-height: 20px;
-  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
 }
 
+// 状态图标定高居中盒：svg 基线排会高于 20px 行高的中文文字，须盒内居中
 .todo-step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 14px;
-  font-size: 13px;
-  line-height: 20px;
+  height: 20px;
+  font-size: 14px;
   flex-shrink: 0;
   color: var(--v2-color-text-quaternary, rgba(5, 5, 5, 32%));
 }
 
 // 待办项空心圆（对齐参考 ○）：图标集无素圈，CSS 圆环代替
 .todo-step-circle {
-  width: 10px;
-  height: 10px;
-  margin: 5px 2px 0;
-  border: 1.5px solid var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
-  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 20px;
+  flex-shrink: 0;
+
+  &::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
+    border-radius: 50%;
+  }
 }
 
 .todo-step-text {
@@ -295,21 +301,23 @@
   word-break: break-word;
 }
 
-// 完成：绿勾 + 删除线弱化；进行中：箭头 + 主文字色；失败：红 ✗
+// 完成：绿圈勾 + 删除线灰字；进行中：→ + 主文字加粗；失败：红 ✗
 .todo-step.is-completed .todo-step-icon {
   color: var(--v2-color-success, #52c41a);
 }
 
 .todo-step.is-completed .todo-step-text {
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
   text-decoration: line-through;
 }
 
 .todo-step.is-in-progress .todo-step-icon {
-  color: var(--v2-color-primary, #6a5af9);
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
 }
 
 .todo-step.is-in-progress .todo-step-text {
   color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font-weight: 500;
 }
 
 .todo-step.is-failed .todo-step-icon {

@@ -1,11 +1,8 @@
 /** 连续工具组：组头负责压缩动作类型，组内保留每次真实执行及其详情。 */
+import SvgIcon from '@/components/base/SvgIcon';
 import { getToolGroupStatus } from '@/features/conversation/presentation-v2/traceItems';
 import { dict } from '@/services/i18nRuntime';
-import {
-  CloseCircleOutlined,
-  DownOutlined,
-  LoadingOutlined,
-} from '@ant-design/icons';
+import { CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -125,12 +122,14 @@ const ToolGroupDisclosure: React.FC<ToolGroupDisclosureProps> = ({
             aria-hidden="true"
           />
         )}
-        <DownOutlined
+        <span
           className={cx(styles['tool-group-chevron'], {
             [styles['tool-group-chevron-open']]: expanded,
           })}
           aria-hidden="true"
-        />
+        >
+          <SvgIcon name="icons-common-caret_down" style={{ fontSize: 10 }} />
+        </span>
       </button>
       {expanded && (
         <div id={bodyId} className={cx(styles['tool-group-body'])}>
