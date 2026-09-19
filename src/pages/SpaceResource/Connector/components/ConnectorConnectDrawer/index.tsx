@@ -1,4 +1,5 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiConnectorConnectionCreate } from '@/services/systemManage';
 import type {
   ConnectorAuthConfigField,
@@ -92,7 +93,7 @@ const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
       return;
     }
     if (!record?.service) {
-      message.error('连接器 service 缺失，无法建立连接');
+      message.error(dict('PC.Pages.SpaceConnector.toastServiceMissing'));
       return;
     }
     const connectionName = String(values.connectionName ?? '').trim();
@@ -106,14 +107,17 @@ const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
         fields: values.credentials ?? {},
       });
       if (response?.code !== SUCCESS_CODE) {
-        message.error(response?.message || '建立连接失败');
+        message.error(
+          response?.message ||
+            dict('PC.Pages.SpaceConnector.toastConnectFailed'),
+        );
         return;
       }
-      message.success('连接成功');
+      message.success(dict('PC.Pages.SpaceConnector.toastConnectSuccess'));
       onClose();
       onConnected?.();
     } catch {
-      message.error('建立连接失败');
+      message.error(dict('PC.Pages.SpaceConnector.toastConnectFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -122,7 +126,7 @@ const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
   return (
     <Drawer
       className={styles.drawer}
-      title="连接设置"
+      title={dict('PC.Pages.SpaceConnector.drawerConnectTitle')}
       placement="right"
       open={open}
       onClose={onClose}
@@ -134,15 +138,22 @@ const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
       <div className={styles.content}>
         {/* 连接器名称：静态展示当前连接器（设计稿是选择框，按需求不做选择） */}
         <div className={styles.connectorSection}>
-          <span className={styles.connectorLabel}>连接器</span>
+          <span className={styles.connectorLabel}>
+            {dict('PC.Pages.SpaceConnector.labelConnector')}
+          </span>
           <div className={styles.connectorNameBox}>{displayName}</div>
         </div>
 
         <Form form={form} layout="vertical" className={styles.form}>
           {/* 连接名称：可选，缺省使用连接器名称 */}
-          <Form.Item name="connectionName" label="连接名称（可选）">
+          <Form.Item
+            name="connectionName"
+            label={dict('PC.Pages.SpaceConnector.formConnectionNameLabel')}
+          >
             <Input
-              placeholder="默认使用连接器名称"
+              placeholder={dict(
+                'PC.Pages.SpaceConnector.placeholderDefaultConnectorName',
+              )}
               allowClear
               maxLength={100}
             />
@@ -157,14 +168,25 @@ const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
             const label = (
               field.label ||
               field.name ||
-              `字段 ${index + 1}`
+              dict('PC.Pages.SpaceConnector.fieldFallbackLabel', index + 1)
             ).toUpperCase();
             return (
               <Form.Item
                 key={fieldKey}
                 name={['credentials', fieldKey]}
-                label={`凭证字段 · ${label}`}
-                rules={[{ required: true, message: `请输入${label}` }]}
+                label={dict(
+                  'PC.Pages.SpaceConnector.credentialFieldLabel',
+                  label,
+                )}
+                rules={[
+                  {
+                    required: true,
+                    message: dict(
+                      'PC.Pages.SpaceConnector.formPleaseInput',
+                      label,
+                    ),
+                  },
+                ]}
               >
                 {field.secret !== false ? (
                   <Input.Password
@@ -186,7 +208,7 @@ const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
           loading={submitting}
           onClick={handleSubmit}
         >
-          加密保存并建立连接
+          {dict('PC.Pages.SpaceConnector.btnEncryptSaveConnect')}
         </Button>
       </div>
     </Drawer>

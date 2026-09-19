@@ -25,7 +25,6 @@ import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
 import ProjectListCard from '../components/ProjectListCard';
 import { apiUserProjectPageQuery } from '../services';
 import styles from './index.less';
-
 const cx = classNames.bind(styles);
 const PAGE_SIZE = 48;
 const SCROLL_CONTAINER_ID = 'user-app-project-scroll';
@@ -277,17 +276,19 @@ const UserAppProject: React.FC = () => {
         </div>
       )}
 
+      {/* 创建全栈应用弹窗 */}
       <CreateUserApp
         spaceId={spaceId}
         mode={CreateUpdateModeEnum.Create}
         open={openCreate}
         onCancel={() => setOpenCreate(false)}
-        onConfirmCreate={(result) => {
+        onConfirmCreate={(project: UserAppInfo) => {
           setOpenCreate(false);
-          history.push(`/space/${spaceId}/app-project-detail/${result.id}`);
+          history.push(`/space/${spaceId}/app-project-detail/${project.id}`);
         }}
       />
 
+      {/* 编辑全栈应用弹窗 */}
       <CreateUserApp
         mode={CreateUpdateModeEnum.Update}
         userAppInfo={editTarget as UserAppInfo | undefined}

@@ -1,5 +1,35 @@
 @import '@/styles/token';
 
+.section-title {
+  display: flex;
+  align-items: center;
+  margin: 0 0 @marginSm;
+  color: @colorText;
+  font-size: @fontSize;
+  line-height: @fontHeight;
+  font-weight: @fontWeightStrong;
+
+  &::before,
+  &::after {
+    flex: 1;
+    height: @lineWidth;
+    background: @colorSplit;
+    content: '';
+  }
+
+  &::before {
+    margin-right: @marginSm;
+  }
+
+  &::after {
+    margin-left: @marginSm;
+  }
+
+  &:not(:first-child) {
+    margin-top: @marginSm;
+  }
+}
+
 .dir-trigger {
   display: flex;
   align-items: center;

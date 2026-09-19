@@ -1,4 +1,5 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiConnectorRuntimeExecute,
   apiSystemConnectorProviderDetail,
@@ -145,7 +146,11 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
         .filter((action) => action?.actionKey || action?.name)
         .map((action) => ({
           label: action.actionKey
-            ? `${action.name}（${action.actionKey}）`
+            ? dict(
+                'PC.Pages.ConnectorManage.formActionOption',
+                action.name,
+                action.actionKey,
+              )
             : action.name,
           value: String(action.actionKey ?? action.name),
         })),
@@ -191,7 +196,7 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
         setDetailActions([]);
         setSelectedActionKey(undefined);
         setArgsJson('');
-        message.error('加载连接器详情失败');
+        message.error(dict('PC.Pages.ConnectorManage.toastLoadDetailFailed'));
       } finally {
         setLoading(false);
       }
@@ -251,12 +256,14 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
           parsed === null ||
           Array.isArray(parsed)
         ) {
-          message.error('输入参数必须是 JSON 对象');
+          message.error(
+            dict('PC.Pages.ConnectorManage.toastArgsMustBeJsonObject'),
+          );
           return;
         }
         args = parsed as Record<string, unknown>;
       } catch {
-        message.error('输入参数不是有效的 JSON');
+        message.error(dict('PC.Pages.ConnectorManage.toastArgsInvalidJson'));
         return;
       }
     }
@@ -273,11 +280,13 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
       } else {
         // 非 0000：data 缺失，展示 envelope 关键信息方便排障
         setResult({
-          message: response?.message || '执行失败（无返回数据）',
+          message:
+            response?.message ||
+            dict('PC.Pages.ConnectorManage.descExecuteFailedNoData'),
         });
       }
     } catch {
-      message.error('执行失败');
+      message.error(dict('PC.Pages.ConnectorManage.toastExecuteFailed'));
     } finally {
       setExecuting(false);
     }
@@ -286,7 +295,7 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
   return (
     <Modal
       className={styles.modal}
-      title="工具调试"
+      title={dict('PC.Pages.ConnectorManage.modalActionDebugTitle')}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -298,10 +307,14 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
         <div className={styles.layout}>
           {/* 左栏：执行参数 */}
           <div className={styles.paramsCard}>
-            <div className={styles.paramsTitle}>执行参数</div>
+            <div className={styles.paramsTitle}>
+              {dict('PC.Pages.ConnectorManage.modalExecParamsTitle')}
+            </div>
 
             <div className={styles.field}>
-              <div className={styles.fieldLabel}>连接器</div>
+              <div className={styles.fieldLabel}>
+                {dict('PC.Pages.ConnectorManage.formConnectorLabel')}
+              </div>
               {/* 固定展示当前传入的连接器（只读，不可切换其他连接器）：
                   展示名取详情接口 provider.displayName，加载中回退 service */}
               <div
@@ -313,12 +326,18 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
             </div>
 
             <div className={styles.field}>
-              <div className={styles.fieldLabel}>动作</div>
+              <div className={styles.fieldLabel}>
+                {dict('PC.Pages.ConnectorManage.formActionLabel')}
+              </div>
               <Select
                 value={selectedActionKey}
                 options={actionOptions}
                 onChange={handleActionChange}
-                placeholder={loading ? '加载中…' : '请选择动作'}
+                placeholder={
+                  loading
+                    ? dict('PC.Pages.ConnectorManage.placeholderLoading')
+                    : dict('PC.Pages.ConnectorManage.placeholderSelectAction')
+                }
                 loading={loading}
                 showSearch
                 optionFilterProp="label"
@@ -326,7 +345,9 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
             </div>
 
             <div className={styles.field}>
-              <div className={styles.fieldLabel}>输入参数（JSON）</div>
+              <div className={styles.fieldLabel}>
+                {dict('PC.Pages.ConnectorManage.formInputArgsJsonLabel')}
+              </div>
               <Input.TextArea
                 className={styles.jsonInput}
                 value={argsJson}
@@ -346,14 +367,16 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
               disabled={!defaultService || !selectedActionKey}
               onClick={handleExecute}
             >
-              执行
+              {dict('PC.Pages.ConnectorManage.btnExecute')}
             </Button>
           </div>
 
           {/* 右栏：执行结果（标题栏可折叠） */}
           <div className={styles.resultPanel}>
             <div className={styles.resultHeader}>
-              <span>执行结果</span>
+              <span>
+                {dict('PC.Pages.ConnectorManage.modalExecResultTitle')}
+              </span>
               <MinusOutlined
                 className={styles.resultCollapseBtn}
                 onClick={() => setResultCollapsed((prev) => !prev)}
@@ -362,7 +385,7 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
             {!resultCollapsed ? (
               <div className={styles.resultBody}>
                 {result === undefined ? (
-                  '尚未执行。'
+                  dict('PC.Pages.ConnectorManage.emptyNotExecuted')
                 ) : (
                   <pre className={styles.resultJson}>
                     {JSON.stringify(result, null, 2)}
