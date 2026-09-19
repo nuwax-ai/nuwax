@@ -776,6 +776,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/examples/trace-structure-demo',
+    component: '@/examples/TraceStructureDemo',
+    layout: false,
+  },
+  {
     path: '/examples/empty-state-showcase',
     component: '@/examples/EmptyStateShowcase',
     layout: false,

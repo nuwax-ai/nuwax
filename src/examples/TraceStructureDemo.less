@@ -1,0 +1,36 @@
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+// 新结构 · 纯统计行：版式对齐真实 trace-toggle（hairline 下边线），但不可点
+.trace-stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+// 新结构 · 标题栏（演示壳，近似 TurnBlock 标题栏）
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 2px;
+}
+
+.titlebar-name {
+  font-size: 13px;
+  color: rgba(5, 5, 5, 65%);
+}
+
+.titlebar-over {
+  font-size: 12px;
+  color: #52c41a;
+}
