@@ -409,16 +409,16 @@ const NuwaApps: React.FC = () => {
       <header className={cx('flex', 'items-center', styles.header)}>
         <h3 className={cx(styles.title)}>{dict('PC.Pages.NuwaApps.title')}</h3>
         <div className={cx('flex', 'items-center', styles['header-actions'])}>
+          {/* 「更多」入口:样式对齐专家·技能·连接器页工具栏 more-btn,排布在搜索框左侧 */}
+          <a className={cx(styles['more-btn'])} onClick={handleGoSquare}>
+            {dict('PC.Pages.NuwaApps.more')}
+          </a>
           <Input.Search
             className={cx(styles['search-input'])}
             allowClear
             placeholder={dict('PC.Pages.NuwaApps.searchPlaceholder')}
             onSearch={(value) => setKeyword(value || '')}
           />
-          {/* 「更多」入口:样式对齐专家·技能·连接器页工具栏 more-btn,排布在搜索框右侧 */}
-          <a className={cx(styles['more-btn'])} onClick={handleGoSquare}>
-            {dict('PC.Pages.NuwaApps.more')}
-          </a>
         </div>
       </header>
 
