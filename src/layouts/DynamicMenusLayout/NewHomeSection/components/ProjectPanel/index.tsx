@@ -47,6 +47,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleFilled,
+  FolderOpenOutlined,
   FolderOutlined,
   InboxOutlined,
   LoadingOutlined,
@@ -1228,7 +1229,11 @@ const ProjectPanel = forwardRef<
                     }
                   }}
                 >
-                  {compact && (
+                  {/* 展开指示=文件夹图标双态（2026-09-19 定调：行尾箭头去除，
+                      展开=打开态/收起=默认态），经典/单栏统一渲染 */}
+                  {expanded ? (
+                    <FolderOpenOutlined className={styles['project-icon']} />
+                  ) : (
                     <FolderOutlined className={styles['project-icon']} />
                   )}
                   {pinnedIds.has(projectKeyOf(project)) && (
@@ -1254,13 +1259,6 @@ const ProjectPanel = forwardRef<
                       </button>
                     </Dropdown>
                   </div>
-                  <SvgIcon
-                    name="icons-common-caret_down"
-                    style={{ fontSize: 18 }}
-                    className={cx(styles.arrow, {
-                      [styles.arrowExpanded]: expanded,
-                    })}
-                  />
                 </div>
               </Dropdown>
               <div className={styles.children} hidden={!expanded}>

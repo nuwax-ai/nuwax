@@ -107,16 +107,12 @@
       color: @navSecondMenuAdaptiveText;
     }
 
-    .arrow {
+    // 行首文件夹图标（2026-09-19 定调：展开=打开态/收起=默认态，替代原行尾
+    // caret 箭头作展开指示）；经典行间距由 flex gap 承担，不加 margin
+    .project-icon {
       flex-shrink: 0;
-      // 尺寸由 SvgIcon style.fontSize 传入（组件内联字号优先于此处，18px 时
-      // 项目图标 caret_down 视觉宽约 10px）；此处只管颜色与旋转
+      font-size: 15px;
       color: @navSecondMenuAdaptiveTextTertiary;
-      transition: transform 0.3s ease-in-out;
-    }
-
-    .arrowExpanded {
-      transform: rotate(180deg);
     }
   }
 
@@ -281,13 +277,9 @@
     &.expanded .name {
       font-weight: 400;
     }
-
-    .arrow {
-      width: 18px;
-      margin-left: 2px;
-    }
   }
 
+  // 紧凑行 gap 2px，图标与名称间距由 margin 补齐（覆盖基础 .row 的 gap 口径）
   .project-icon {
     flex-shrink: 0;
     font-size: 15px;
@@ -295,17 +287,19 @@
     margin-right: @marginXxs;
   }
 
+  // 原让位行尾 caret 箭头（18px+边距=30px），箭头已去除改为贴行右 padding
   .project-more {
     position: absolute;
-    right: 30px;
+    right: 10px;
     background: @colorBgContainer;
   }
 
   .row:hover .name,
   .row:focus-visible .name,
   .row:has(:focus-visible) .name {
-    // 50px 让位绝对定位的 actions 浮层(见下方 .project-actions 覆盖)
-    padding-right: 50px;
+    // 60px 让位绝对定位的 actions 浮层（right:10px + 两枚 24px 按钮+2px gap），
+    // 见下方 .project-actions 覆盖
+    padding-right: 60px;
   }
 
   .children {
@@ -344,10 +338,11 @@
   }
 
   // 紧凑态 actions 浮层覆盖：行 hover 本身已是白卡，浮层不再叠第二层白底
-  // （行名 padding-right 让位已保证不重叠），仅保留定位
+  // （行名 padding-right 让位已保证不重叠），仅保留定位；右缘贴行 padding
+  // （原 30px 让位行尾箭头，箭头已去除）
   .project-actions {
     position: absolute;
-    right: 30px;
+    right: 10px;
     background: transparent;
     border-radius: @borderRadius;
   }
@@ -374,7 +369,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .project .row .arrow,
   .project-more {
     transition: none;
   }
@@ -473,7 +467,7 @@
   }
 
   .compact .row .name {
-    padding-right: 50px;
+    padding-right: 60px;
   }
 
   .project .child {
