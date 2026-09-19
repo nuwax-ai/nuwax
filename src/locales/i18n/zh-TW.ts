@@ -71,6 +71,9 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.AgentType.skill": "技能",
   "PC.Components.AgentType.table": "資料表",
   "PC.Components.AgentType.workflow": "工作流",
+  "PC.Components.AgentType.normalProject": "常規項目",
+  "PC.Components.AgentType.userApp": "全棧應用",
+  "PC.Components.AgentType.thirdApp": "三方應用",
   "PC.Components.AppDevEmptyState.addDataDescription": "點選“+“新增資料資源",
   "PC.Components.AgentInterventionChatLayer.dialogLabel": "待處理的智能體請求",
   "PC.Components.AcpPermissionCard.allowAlways": "始終允許",
@@ -6617,6 +6620,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.projectInfoSection": "專案資訊",
   "PC.Pages.SpaceProjectManage.personalDevEnvSection": "個人開發環境",
   "PC.Pages.SpaceProjectManage.createSuccess": "創建成功",
+  "PC.Pages.SpaceProjectManage.deleteConfirmContent": "確定要刪除「{0}」嗎？",
   "PC.Pages.SpaceProjectManage.createFailed": "創建失敗，請稍後重試",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "項目暫無會話，請進入項目後再導出",
   // 三方應用接入

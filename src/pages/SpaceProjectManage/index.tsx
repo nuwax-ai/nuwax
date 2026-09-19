@@ -348,7 +348,10 @@ const SpaceProjectManage: React.FC = () => {
     (item: ProjectListItem) => {
       Modal.confirm({
         title: dict('PC.Common.Global.deleteConfirmTitle'),
-        content: dict('PC.Common.Global.deleteConfirmContent'),
+        content: dict(
+          'PC.Pages.SpaceProjectManage.deleteConfirmContent',
+          item.name,
+        ),
         okButtonProps: { danger: true },
         okText: dict('PC.Common.Global.delete'),
         cancelText: dict('PC.Common.Global.cancel'),

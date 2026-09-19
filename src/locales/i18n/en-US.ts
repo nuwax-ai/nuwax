@@ -106,6 +106,9 @@ export const EN_US: SystemLangMap = {
   "PC.Components.AgentType.skill": "Skill",
   "PC.Components.AgentType.table": "Data Table",
   "PC.Components.AgentType.workflow": "Workflow",
+  "PC.Components.AgentType.normalProject": "Normal Project",
+  "PC.Components.AgentType.userApp": "Full-stack App",
+  "PC.Components.AgentType.thirdApp": "Third-party App",
   "PC.Components.AppDevEmptyState.addDataDescription": "Click \"+\" to add data resources",
   "PC.Components.AppDevEmptyState.close": "Close",
   "PC.Components.AppDevEmptyState.conversationEmptyDescription": "Ask the AI assistant to start your project development",
@@ -6774,6 +6777,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.projectInfoSection": "Project info",
   "PC.Pages.SpaceProjectManage.personalDevEnvSection": "Personal dev environment",
   "PC.Pages.SpaceProjectManage.createSuccess": "Created successfully",
+  "PC.Pages.SpaceProjectManage.deleteConfirmContent": "Are you sure you want to delete \"{0}\"?",
   "PC.Pages.SpaceProjectManage.createFailed": "Creation failed, please try again later",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "No conversation yet. Open the project before exporting.",
   // Third-party app integration

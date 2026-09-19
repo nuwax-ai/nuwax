@@ -106,6 +106,9 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.AgentType.skill": "技能",
   "PC.Components.AgentType.table": "数据表",
   "PC.Components.AgentType.workflow": "工作流",
+  "PC.Components.AgentType.normalProject": "常规项目",
+  "PC.Components.AgentType.userApp": "全栈应用",
+  "PC.Components.AgentType.thirdApp": "三方应用",
   "PC.Components.AppDevEmptyState.addDataDescription": "点击“+“添加数据资源",
   "PC.Components.AppDevEmptyState.close": "关闭",
   "PC.Components.AppDevEmptyState.conversationEmptyDescription": "向 AI 助手提问，开始你的项目开发",
@@ -6736,6 +6739,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.projectInfoSection": "项目信息",
   "PC.Pages.SpaceProjectManage.personalDevEnvSection": "个人开发环境",
   "PC.Pages.SpaceProjectManage.createSuccess": "创建成功",
+  "PC.Pages.SpaceProjectManage.deleteConfirmContent": "确定要删除「{0}」吗？",
   "PC.Pages.SpaceProjectManage.createFailed": "创建失败，请稍后重试",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "项目暂无会话，请进入项目后再导出",
   // 三方应用接入

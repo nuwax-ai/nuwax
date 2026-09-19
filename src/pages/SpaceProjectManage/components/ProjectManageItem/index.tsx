@@ -13,7 +13,6 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo } from 'react';
 import type { ProjectListItem } from '../../projectRows';
-import { PROJECT_TAB_LABEL_KEYS } from '../../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -88,16 +87,16 @@ const ProjectManageItem: React.FC<ProjectManageItemProps> = ({
   const publishStatus = (item as { publishStatus?: PublishStatusEnum })
     .publishStatus;
 
-  /** footer：项目类型标签 + 更多操作按钮 */
+  /** footer：项目类型标签（对齐 SpaceLibrary AgentType 徽标）+ 更多操作按钮 */
   const projectTypeLabel = (
     <footer className={cx('flex', 'items-center', 'content-between')}>
-      {item.projectType === AgentComponentTypeEnum.PageApp ? (
-        <AgentType type={AgentComponentTypeEnum.Page} />
-      ) : (
-        <span className={cx(styles.type)}>
-          {dict(PROJECT_TAB_LABEL_KEYS[item.projectType] || item.projectType)}
-        </span>
-      )}
+      <AgentType
+        type={
+          item.projectType === AgentComponentTypeEnum.PageApp
+            ? AgentComponentTypeEnum.Page
+            : item.projectType
+        }
+      />
       {actionList.length > 0 ? (
         <CustomPopover list={actionList} onClick={handleClickMore}>
           <Button size="small" type="text" icon={<ICON_MORE />} />
