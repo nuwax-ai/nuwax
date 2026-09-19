@@ -46,7 +46,10 @@ import type { UploadFileInfo } from '@/types/interfaces/common';
 import { type DisplayRecommendInfo } from '@/types/interfaces/displayRecommend';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { SquareCategoryInfo } from '@/types/interfaces/square';
-import { buildHomeSendPlan } from '@/utils/homeSendPlan';
+import {
+  buildHomeSendPlan,
+  resolvePinnedSandboxSelectable,
+} from '@/utils/homeSendPlan';
 import { App } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -166,6 +169,13 @@ const Home: React.FC = () => {
       : tenantConfigInfo?.defaultAgentId;
   const isUserAppPinned =
     pinnedProject?.projectType === AgentComponentTypeEnum.UserApp;
+  // 常规项目参与者判定（多人参与）：owner === false（后端按当前用户视角回的
+  // 布尔）时开放沙箱自选（云端/个人电脑+工作目录）——项目沙箱可能绑定创建者的
+  // 个人电脑，参与者不可用；创建者本人/字段未回包走项目沙箱现状
+  const pinnedParticipantSandbox = useMemo(
+    () => resolvePinnedSandboxSelectable(pinnedProject),
+    [pinnedProject],
+  );
   // 会话对象优先级：召唤专家 > 推荐pill > 默认智能体；全栈上框命中推荐位前
   // 不回落租户默认智能体（出范围，且其详情会与命中详情并发、晚到覆盖工具
   // 选中——禅道bug2394）；常规项目上框维持默认兜底（发送链依赖它作 agentId）
@@ -379,6 +389,7 @@ const Home: React.FC = () => {
       const plan = buildHomeSendPlan({
         currentAgentId,
         pinnedProject,
+        pinnedProjectSandboxSelection: pinnedParticipantSandbox,
         selectedFunctionType,
         message: inputMessage,
         files,
@@ -628,6 +639,8 @@ const Home: React.FC = () => {
                 }
               : undefined
           }
+          // 参与者上框常规项目：解除电脑选择器/工作目录栏隐藏（沙箱自选）
+          pinnedProjectSandboxSelectable={pinnedParticipantSandbox}
           onClearPinnedProject={
             pinnedProject ? handleClearPinnedProject : undefined
           }

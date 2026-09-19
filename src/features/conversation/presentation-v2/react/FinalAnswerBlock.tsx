@@ -23,12 +23,16 @@ export interface FinalAnswerBlockProps {
   turn: ConversationTurnPresentationV2;
   messageBottomMode?: 'none' | 'home' | 'chat';
   showDebug?: boolean;
+  /** 会话 id：透传 MarkdownRenderer 供 <task-result> 文件卡切工作区相对路径
+   *（缺失时 fileId 退化为 basename，嵌套目录文件打不开——对齐 V1 ChatView 传参） */
+  conversationId?: number | string;
 }
 
 const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
   turn,
   messageBottomMode = 'chat',
   showDebug = false,
+  conversationId,
 }) => {
   const { data: themeData } = useUnifiedTheme();
   const lastAssistant = [...turn.assistantMessages]
@@ -88,6 +92,7 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
           id={messageIdRef.current}
           markdownRef={markdownRef}
           answer={answerText}
+          conversationId={conversationId}
           theme={themeData.antdTheme === 'dark' ? 'dark' : 'light'}
           thinking=""
           status={lastAssistant?.status}

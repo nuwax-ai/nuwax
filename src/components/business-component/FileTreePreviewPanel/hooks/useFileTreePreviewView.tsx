@@ -146,6 +146,8 @@ export function useFileTreePreviewView(
     onOpenDirectory,
     /** 刷新文件树后，当前选中文件已不存在时回调 */
     onSelectedFileMissing,
+    /** 懒加载宿主：目标所在目录是否已加载（未命中时等待而非判 miss） */
+    isAutoSelectDirectoryLoaded,
     isDynamicTheme = false,
     /** 是否启用 Git status，仅通用型 TaskAgent 智能体为 true */
     enableGitStatus = false,
@@ -298,6 +300,8 @@ export function useFileTreePreviewView(
   );
   const onSelectedFileMissingRef = useRef(onSelectedFileMissing);
   onSelectedFileMissingRef.current = onSelectedFileMissing;
+  const isAutoSelectDirectoryLoadedRef = useRef(isAutoSelectDirectoryLoaded);
+  isAutoSelectDirectoryLoadedRef.current = isAutoSelectDirectoryLoaded;
 
   useEffect(() => {
     if (!initViewFileType) {
@@ -1011,6 +1015,18 @@ export function useFileTreePreviewView(
           !originalFiles?.length &&
           !isFileTreeFetchInFlight
         ) {
+          // 懒加载宿主：目标所在目录尚未加载（父目录导航在途）时保持等待，
+          // 目录层到达后 files 变化重入本 effect 完成选中，不误判 miss
+          if (
+            isAutoSelectDirectoryLoadedRef.current &&
+            !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
+          ) {
+            pendingTaskAgentAutoSelectRef.current = {
+              fileId: taskAgentSelectedFileId,
+              trigger: taskAgentSelectTrigger,
+            };
+            return;
+          }
           abandonAutoSelectWhenTreeEmpty();
           return;
         }
@@ -1058,6 +1074,14 @@ export function useFileTreePreviewView(
 
     // 目标不在当前树中（例如新产出文件）：尝试刷新后再选
     if (hasFetchedOriginalFiles) {
+      // 懒加载宿主：目标所在目录尚未加载（父目录导航在途）时保持等待
+      //（pending 已记录，目录层到达后 files 变化重入完成选中），不误判 miss
+      if (
+        isAutoSelectDirectoryLoadedRef.current &&
+        !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
+      ) {
+        return;
+      }
       abandonAutoSelectWhenTreeEmpty();
       return;
     }

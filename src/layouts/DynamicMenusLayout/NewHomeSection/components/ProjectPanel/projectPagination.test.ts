@@ -47,6 +47,7 @@ describe('toProjectItem', () => {
         icon: 'x.svg',
         sandboxId: 7,
         devAgentId: 9,
+        owner: false,
         pinned: true,
         conversations: [conversation],
       }),
@@ -57,6 +58,8 @@ describe('toProjectItem', () => {
     expect(item.icon).toBe('x.svg');
     expect(item.sandboxId).toBe(7);
     expect(item.devAgentId).toBe(9);
+    // 当前用户是否创建者布尔透传（=== false 判参与者，undefined 走现状）
+    expect(item.owner).toBe(false);
     expect(item.children).toHaveLength(1);
     expect(item.children?.[0]).toMatchObject({
       id: 11,

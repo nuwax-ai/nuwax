@@ -3,9 +3,12 @@ import Loading from '@/components/custom/Loading';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
+import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiNormalProjectDelete,
+  apiNormalProjectGetById,
+  apiNormalProjectLatestConversation,
   apiUserAppDelete,
   apiUserProjectPageQuery,
 } from '@/services/userProjectApp';
@@ -23,7 +26,7 @@ import {
 import { DownOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
 import CreateUserApp from '../AppDevPro/components/CreateUserApp';
 import CreateNormalProjectModal from './components/CreateNormalProjectModal';
@@ -236,9 +239,12 @@ const SpaceProjectManage: React.FC = () => {
     }
   };
 
+  const { pin } = useHomePinnedProjectHandoff();
+  const openingProjectRef = useRef(false);
+
   /**
    * 点击卡片：按 projectType 跳转各类型详情页。
-   * 未知类型回退 openProject 通用逻辑。
+   * 未知类型走「最近会话→详情兜底→pin 上框」通用逻辑。
    */
   const handleOpenProject = useCallback(
     (item: ProjectListItem) => {
@@ -252,8 +258,46 @@ const SpaceProjectManage: React.FC = () => {
         case AgentComponentTypeEnum.ThirdApp:
           history.push(`/space/${spaceId}/third-app-detail/${item.id}`);
           return;
-        default:
-          openProject(spaceId, item);
+        default: {
+          if (openingProjectRef.current) return;
+          openingProjectRef.current = true;
+          void (async () => {
+            try {
+              const conv = await apiNormalProjectLatestConversation(
+                item.id,
+              ).catch(() => null);
+              const convData =
+                conv?.code === SUCCESS_CODE ? conv.data ?? null : null;
+              const convCid = convData?.conversationId ?? convData?.id;
+              const convAid = convData?.agentId;
+              if (convCid && convAid) {
+                openProject(spaceId, item, convCid, convAid);
+                return;
+              }
+              const got = await apiNormalProjectGetById(item.id).catch(
+                () => null,
+              );
+              const rowData = got?.code === SUCCESS_CODE ? got.data : null;
+              const rowCid = rowData?.conversationId ?? undefined;
+              const rowAid = rowData?.devAgentId ?? undefined;
+              if (rowCid && rowAid) {
+                openProject(spaceId, item, rowCid, rowAid);
+                return;
+              }
+              pin({
+                projectId: item.id,
+                spaceId,
+                projectType: item.projectType,
+                name: item.name,
+                icon: item.icon,
+                sandboxId: item.sandboxId,
+                owner: item.owner,
+              });
+            } finally {
+              openingProjectRef.current = false;
+            }
+          })();
+        }
       }
     },
     [spaceId],

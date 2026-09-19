@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   FileTreePreviewViewProps,
@@ -207,5 +207,99 @@ describe('Markdown 文件树刷新', () => {
       '/static/movie.mp4?t=2000',
     );
     expect(mocks.fetchContent).not.toHaveBeenCalled();
+  });
+});
+
+describe('懒加载嵌套自动选中（abandon 竞态修复）', () => {
+  /** 根层仅目录节点：嵌套目标必然不在已加载层，且模糊匹配零候选 */
+  const rootOnly = [
+    {
+      name: 'docs',
+      isDir: true,
+      fileId: 'workspace:docs',
+      dataSourceId: 'workspace',
+      relativePath: 'docs',
+    },
+  ];
+  const withReport = [
+    ...rootOnly,
+    {
+      name: 'docs/report.md',
+      isDir: false,
+      fileId: 'workspace:docs/report.md',
+      dataSourceId: 'workspace',
+      relativePath: 'docs/report.md',
+      fileProxyUrl: '/static/docs/report.md',
+    },
+  ];
+  /** fileId（workspace: 前缀）→ 父目录相对路径（与 Chat 页谓词同口径） */
+  const parentDirOf = (fileId: string) =>
+    fileId
+      .replace(/^workspace:/, '')
+      .split('/')
+      .slice(0, -1)
+      .join('/');
+
+  it('父目录导航在途：不误判 miss，目录层到达后完成选中', async () => {
+    const missing = vi.fn();
+    const loadedDirs = new Set<string>(['']);
+    const predicate = (fileId: string) => loadedDirs.has(parentDirOf(fileId));
+    const { rerender } = render(
+      <Harness
+        originalFiles={rootOnly}
+        taskAgentSelectedFileId="workspace:docs/report.md"
+        taskAgentSelectTrigger={1}
+        isAutoSelectDirectoryLoaded={predicate}
+        onSelectedFileMissing={missing}
+      />,
+    );
+    await act(async () => {});
+    // 目标父目录 docs 尚未加载：保持等待，不通知 miss、不清空目标
+    expect(missing).not.toHaveBeenCalled();
+
+    // 父目录数据到达（navigate 完成），目标出现在树中 → 自动选中成功
+    loadedDirs.add('docs');
+    rerender(
+      <Harness
+        originalFiles={withReport}
+        taskAgentSelectedFileId="workspace:docs/report.md"
+        taskAgentSelectTrigger={1}
+        isAutoSelectDirectoryLoaded={predicate}
+        onSelectedFileMissing={missing}
+      />,
+    );
+    await waitFor(() =>
+      expect(view.preview.selectedFileId).toBe('workspace:docs/report.md'),
+    );
+    expect(missing).not.toHaveBeenCalled();
+  });
+
+  it('父目录已加载仍不命中：维持旧语义判 miss（onSelectedFileMissing）', async () => {
+    const missing = vi.fn();
+    render(
+      <Harness
+        originalFiles={rootOnly}
+        taskAgentSelectedFileId="workspace:docs/report.md"
+        taskAgentSelectTrigger={1}
+        isAutoSelectDirectoryLoaded={() => true}
+        onSelectedFileMissing={missing}
+      />,
+    );
+    await act(async () => {});
+    expect(missing).toHaveBeenCalledWith('workspace:docs/report.md');
+  });
+
+  it('未传谓词（全量树宿主）：不命中即判 miss（旧行为不变）', async () => {
+    const missing = vi.fn();
+    render(
+      <Harness
+        originalFiles={rootOnly}
+        taskAgentSelectedFileId="workspace:docs/report.md"
+        taskAgentSelectTrigger={1}
+        onSelectedFileMissing={missing}
+      />,
+    );
+    await act(async () => {});
+    expect(missing).toHaveBeenCalledWith('workspace:docs/report.md');
   });
 });

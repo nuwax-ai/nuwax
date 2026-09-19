@@ -1,11 +1,14 @@
 import type { ConversationEventReducerAdapters } from '@/features/conversation/domain/reduceConversationEvent';
 import { resolveTerminalTaskStatus } from '@/features/conversation/domain/taskStatus';
 import {
+  AgentComponentTypeEnum,
   AssistantRoleEnum,
+  DefaultSelectedEnum,
   MessageModeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   AttachmentFile,
   ConversationChatParams,
@@ -14,7 +17,10 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
+// 直连纯函数模块：勿改回 '@/utils' 桶——桶转发组件链会在非 umi 环境（vitest/parity）
+// 拉起 @umijs/bundler-utils 的 esbuild 触发 TextEncoder 不变量崩溃
 import { syncTerminalConversationTaskStatus } from '@/utils/conversationTaskStatusSync';
+import { extractTaskResult } from '@/utils/taskResult';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -162,6 +168,20 @@ export function createConversationRuntimeSession(
   let isAwaitingChatTerminal = false;
   let currentRequestId = '';
   let currentConversationId: number | string | null = null;
+  /**
+   * 当前会话的智能体快照（TaskAgent 收尾 / 版本管理判定用）：
+   * load 详情与 send 快照双路写入，切会话时随 reset 清空
+   *（对齐旧线 conversationInfoRef.current?.agent 的读取口径）。
+   */
+  let currentAgent: ConversationInfo['agent'] | undefined;
+  /**
+   * 本会话已确认的协议终态：终态后到达的轮询快照可能仍带滞后的 EXECUTING
+   * 消息（服务端 messageList 落库晚于 taskStatus），reconcile 的稳定 ID 覆盖
+   * 语义会把已收敛的 processing 盖回执行中——归并后按终态重新收敛
+   *（对齐旧线 useConversationTerminalFinalizer 的 taskStatus 监听 sweep）。
+   * send（新一轮）/ 切会话时清空。
+   */
+  let settledTerminalStatus: TaskStatus | null = null;
   let lastSendAt = 0;
   const stateListeners = new Set<RuntimeSessionListener>();
 
@@ -216,6 +236,7 @@ export function createConversationRuntimeSession(
     lastSendAt = 0;
     isConversationActive = false;
     isAwaitingChatTerminal = false;
+    settledTerminalStatus = status;
     store.finalizeOnTerminalTaskStatus(status);
     config.applyTaskStatus?.(conversationId, status);
     notifyState();
@@ -272,6 +293,16 @@ export function createConversationRuntimeSession(
     if (res.eventType === 'PROCESSING' && conversationId !== null) {
       const processing = (reduction.processing ?? data) as Record<string, any>;
       const input = processing?.result?.input ?? {};
+      // 文件树节流刷新（对齐旧线 ToolCall 分支）。旧线的「面板可见且处于
+      // preview 视图」门控在懒加载单层刷新下放开：消费端 2s 节流兜底，
+      // runtime 核心不反向依赖 UI 状态；面板关闭期间由消费端按可见性跳过
+      if (data.type === AgentComponentTypeEnum.ToolCall) {
+        runtime.effects.dispatch({
+          type: 'preview.file.refresh',
+          conversationId: conversationId as number,
+          mode: 'throttled',
+        });
+      }
       // 页面预览 / 链接打开（对齐旧线 PROCESSING 分支）
       if (processing?.status === 'EXECUTING' && data.type === 'Page') {
         const uriType = input.uri_type ?? 'Page';
@@ -335,6 +366,26 @@ export function createConversationRuntimeSession(
         // 否则历史会话通过 sub 恢复时只会更新 taskStatus，Loading/工具态仍残留。
         finalizeConversationTerminal(conversationId, terminalStatus);
       }
+      // TaskAgent 收尾组合体（对齐旧线 conversationInfo :1501-1547：立即刷文件树
+      // → 按需刷 Git → task-result 文件选中开预览 → 未命中发兜底 trigger；
+      // 执行体在消费端 taskResult.settle case，file 传含会话段的原始终路径）
+      if (currentAgent?.type === AgentTypeEnum.TaskAgent) {
+        const taskResult = extractTaskResult(
+          (data as { outputText?: string }).outputText ?? '',
+        );
+        runtime.effects.dispatch({
+          type: 'taskResult.settle',
+          conversationId: conversationId as number,
+          taskResult: {
+            hasTaskResult: taskResult.hasTaskResult,
+            file: taskResult.file,
+          },
+          enableVersionControl:
+            // 与 isAgentVersionControlEnabled 同语义（枚举直比，避免引入
+            // agent.constants 的 i18nRuntime/umi 重链破坏非 umi 测试环境）
+            currentAgent?.enableVersionControl === DefaultSelectedEnum.Yes,
+        });
+      }
       // 建议：会话开启时拉取
       if (context?.isSuggestEnabled) {
         runtime.effects.dispatch({
@@ -358,6 +409,7 @@ export function createConversationRuntimeSession(
     if (currentConversationId !== conversationId) {
       return undefined;
     }
+    currentAgent = data?.agent;
     if (data?.messageList) {
       const hydratedMessages =
         config.hydrateHistoryMessages?.(data.messageList) ?? data.messageList;
@@ -379,6 +431,14 @@ export function createConversationRuntimeSession(
       return;
     }
     store.mergeSnapshot(config.hydrateHistoryMessages?.(incoming) ?? incoming);
+    // 终态后的快照归并以终态重收敛收尾：服务端 messageList 可能滞后于
+    // taskStatus（EXECUTING 残留），reconcile 覆盖语义不得复活执行中工具
+    if (
+      settledTerminalStatus !== null &&
+      settledTerminalStatus !== TaskStatus.EXECUTING
+    ) {
+      store.finalizeOnTerminalTaskStatus(settledTerminalStatus);
+    }
   };
 
   const send = (input: RuntimeSessionSendInput) => {
@@ -387,6 +447,12 @@ export function createConversationRuntimeSession(
     runtime.liveConnection.abortCurrent();
     runtime.resetStreamProjection();
     currentConversationId = conversationId;
+    // 新一轮发送：清上一轮终态记忆（终态自愈只对本轮快照生效）
+    settledTerminalStatus = null;
+    // send 携带快照时刷新 agent 快照（TaskAgent 收尾判定；隔离入口可缺省沿用）
+    if (input.currentInfo?.agent) {
+      currentAgent = input.currentInfo.agent;
+    }
 
     isAwaitingChatTerminal = true;
     isConversationActive = true;
@@ -620,6 +686,8 @@ export function createConversationRuntimeSession(
     isAwaitingChatTerminal = false;
     currentRequestId = '';
     currentConversationId = null;
+    currentAgent = undefined;
+    settledTerminalStatus = null;
     notifyState();
   };
 

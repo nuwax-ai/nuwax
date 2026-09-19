@@ -199,6 +199,9 @@ const MockChat: React.FC = () => {
   const runtimeAllowAutoScrollRef = useRef(true);
   const runtimeLine = useConversationRuntimeSession({
     conversationId: MOCK_CONVERSATION_ID,
+    // 隔离入口与旧线（isSync:false）一致：mock 会话不同步会话记录
+    //（不发乐观列表标记、不更新主题）
+    isSync: false,
     // runtime 轨滚动跟随（resumeController 置底）需要自己的容器 ref
     messageViewRef: runtimeMessageViewRef,
     allowAutoScrollRef: runtimeAllowAutoScrollRef,
@@ -236,8 +239,9 @@ const MockChat: React.FC = () => {
     /** 重置并装载会话详情（prepareScenario 用） */
     resetAndLoad: async (): Promise<void> => {
       if (runtimeLine) {
-        runtimeLine.session.store.reset();
-        await runtimeLine.session.load(MOCK_CONVERSATION_ID);
+        // 同会话 id 重放：必须连带清 hook 层 conversationInfo 终态残留
+        //（终态守卫会吞掉新场景 EXECUTING，活跃信号丢失）
+        await runtimeLine.resetAndReloadConversation();
         return;
       }
       await model.runAsync(MOCK_CONVERSATION_ID);

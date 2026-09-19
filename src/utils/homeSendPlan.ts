@@ -3,6 +3,7 @@ import {
   getProjectTypeByFunctionType,
   showSpaceSelectorForFunctionType,
 } from '@/constants/recommendAgentPolicy.constants';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type {
@@ -19,7 +20,8 @@ import type { PinnedProjectInfo } from '@/types/interfaces/userProject';
  * 分支优先级：
  * 1. 项目上框（pinnedProject）→ 直接创建会话并绑定项目（带
  *    projectId/devAgentId/sandboxId，全栈另带 redirectUrl 直接跳 IDE），
- *    不走 /api/project/create；
+ *    不走 /api/project/create；常规项目参与者（pinnedProjectSandboxSelection）
+ *    改带自选沙箱（云端/个人电脑+工作目录）；
  * 2. 项目类推荐（functionType 映射出项目类型）→ 建项目分支 payload；
  * 3. 其余 → 纯会话分支 attach。
  *
@@ -34,7 +36,44 @@ export const resolvePersonalWorkspacePath = (
   computerId?: string,
   workspacePath?: string,
 ): string | undefined =>
-  computerId && computerId !== '-1' ? workspacePath || undefined : undefined;
+  computerId && computerId !== CLOUD_SANDBOX_ID
+    ? workspacePath || undefined
+    : undefined;
+
+/**
+ * 常规项目参与者判定（多人参与）：上框常规项目且 owner === false（后端按当前
+ * 用户视角回的布尔，须严格等于——undefined=未回包会被 falsy 误吞）→ 参与者，
+ * 新建会话时开放沙箱自选（云端/个人电脑+工作目录）——项目沙箱可能绑定的是
+ * 创建者的个人电脑，参与者不可用。创建者本人 / 字段未回包 / 非常规项目
+ * → false，沿用项目沙箱现状（防御式降级，与 pinned/archived 契约先行同口径）。
+ */
+export const resolvePinnedSandboxSelectable = (
+  pinned?: Pick<PinnedProjectInfo, 'projectType' | 'owner'>,
+): boolean =>
+  !!pinned &&
+  pinned.projectType === AgentComponentTypeEnum.NormalProject &&
+  pinned.owner === false;
+
+/**
+ * 详情接口回包 creatorId（创建者用户 id）→ owner 布尔（当前用户是否创建者）。
+ * 详情契约未随列表加 owner 字段，用详情已有 creatorId 与当前用户 id 比对等价计算；
+ * 任一侧缺失返回 undefined（消费侧按 === false 判参与者，undefined 走现状）。
+ */
+export const resolveProjectOwnerFlag = (
+  creatorId?: number,
+  currentUserId?: number | string | null,
+): boolean | undefined => {
+  if (
+    creatorId === undefined ||
+    creatorId === null ||
+    currentUserId === undefined ||
+    currentUserId === null ||
+    currentUserId === ''
+  ) {
+    return undefined;
+  }
+  return String(creatorId) === String(currentUserId);
+};
 
 /** 建项目分支 payload（与 pages 层 ProjectCreatePayload 结构对齐；utils 禁依赖 pages） */
 export interface HomeProjectCreatePayload {
@@ -74,7 +113,7 @@ export interface HomeConversationAttach {
   projectType?: AgentComponentTypeEnum;
   /** 上框项目为全栈时携带（= 当前选中的全栈类智能体） */
   devAgentId?: number;
-  /** 上框项目沙箱（优先于个人电脑选择） */
+  /** 上框项目沙箱（创建者走项目绑定；参与者自选=云端 -1/个人电脑 id，优先于项目沙箱） */
   sandboxId?: number;
   /** 创建成功后的跳转 URL 前缀（拼接会话 id；全栈跳 app-pro 用） */
   redirectUrl?: string;
@@ -88,6 +127,11 @@ export interface HomeSendPlanInput {
   currentAgentId: number;
   /** 首页项目上框（存在时优先生效） */
   pinnedProject?: PinnedProjectInfo;
+  /**
+   * 上框常规项目为参与者（resolvePinnedSandboxSelectable 产物）：
+   * 沙箱由参与者自选（云端/个人电脑+工作目录），不用项目沙箱
+   */
+  pinnedProjectSandboxSelection?: boolean;
   /** 当前选中推荐位功能类型（无上框时决定是否走建项目分支） */
   selectedFunctionType?: string | null;
   message: string;
@@ -125,6 +169,7 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
   const {
     currentAgentId,
     pinnedProject,
+    pinnedProjectSandboxSelection,
     selectedFunctionType,
     message,
     files,
@@ -143,6 +188,27 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
   if (pinnedProject) {
     const isUserApp =
       pinnedProject.projectType === AgentComponentTypeEnum.UserApp;
+    // 参与者（常规项目多人参与）自选沙箱：项目沙箱可能绑定创建者的个人电脑
+    //（参与者不可用），改带参与者自己的选择——云端也显式云哨兵（CLOUD_SANDBOX_ID），
+    // 防后端回落项目沙箱；个人电脑另带工作目录。selectedComputerId 随 attach
+    // 走 route state，会话页首条消息沙箱链路（getEffectiveSandboxId）现成衔接。
+    const sandboxAttach = pinnedProjectSandboxSelection
+      ? {
+          selectedComputerId,
+          sandboxId:
+            selectedComputerId && selectedComputerId !== CLOUD_SANDBOX_ID
+              ? Number(selectedComputerId)
+              : Number(CLOUD_SANDBOX_ID),
+          workspacePath: resolvePersonalWorkspacePath(
+            selectedComputerId,
+            workspacePath,
+          ),
+        }
+      : {
+          ...(pinnedProject.sandboxId
+            ? { sandboxId: pinnedProject.sandboxId }
+            : {}),
+        };
     return {
       kind: 'createConversation',
       agentId: currentAgentId,
@@ -157,9 +223,7 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
         selectedDocs,
         projectId: pinnedProject.projectId,
         projectType: pinnedProject.projectType,
-        ...(pinnedProject.sandboxId
-          ? { sandboxId: pinnedProject.sandboxId }
-          : {}),
+        ...sandboxAttach,
         ...(isUserApp
           ? {
               devAgentId: currentAgentId,

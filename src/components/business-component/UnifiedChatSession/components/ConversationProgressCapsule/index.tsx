@@ -10,6 +10,7 @@ import {
   DiffOutlined,
   DownOutlined,
   FileTextOutlined,
+  LayoutOutlined,
   LoadingOutlined,
   OrderedListOutlined,
   RightOutlined,
@@ -286,6 +287,14 @@ const ConversationProgressCapsule: React.FC<
     setTaskAgentSelectTrigger(Date.now());
   };
 
+  /** 打开 OpenUI 产物预览：对齐 V1 handleOpenUiSidecar 口径（data/{artifactId}.openui.json） */
+  const handleOpenOpenUiPreview = async (artifactId: string) => {
+    if (!conversationId) return;
+    await openPreviewView(Number(conversationId), { forceRefresh: true });
+    setTaskAgentSelectedFileId(`data/${artifactId}.openui.json`);
+    setTaskAgentSelectTrigger(Date.now());
+  };
+
   // 挂载即播进场动效（从右向左滑出揭示）
   useEffect(() => {
     if (!expanded || !panelRef.current) return;
@@ -446,6 +455,37 @@ const ConversationProgressCapsule: React.FC<
                     className={cx(safeStyles['node-text'], safeStyles.truncate)}
                   >
                     {item.description || item.file}
+                  </span>
+                  <span className={cx(safeStyles['chevron-dim'])} aria-hidden>
+                    <RightOutlined />
+                  </span>
+                </button>
+              ))}
+            </section>
+          )}
+          {model.openuiRenders.length > 0 && (
+            <section className={cx(safeStyles.group)}>
+              <GroupTitle icon={<LayoutOutlined />}>
+                {t('PC.Components.ConversationProgressCapsule.openUi')}
+              </GroupTitle>
+              {model.openuiRenders.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={cx(safeStyles['result-row'])}
+                  title={item.title}
+                  onClick={() => handleOpenOpenUiPreview(item.artifactId)}
+                >
+                  <span
+                    className={cx(safeStyles['node-kind-icon'])}
+                    aria-hidden
+                  >
+                    <LayoutOutlined />
+                  </span>
+                  <span
+                    className={cx(safeStyles['node-text'], safeStyles.truncate)}
+                  >
+                    {item.title}
                   </span>
                   <span className={cx(safeStyles['chevron-dim'])} aria-hidden>
                     <RightOutlined />

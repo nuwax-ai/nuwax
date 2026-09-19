@@ -56,47 +56,35 @@ const REAL_TIMING_TIMEOUT_SEC = 360;
 /** 已知真实行为差异（mock-optimization-plan.md 风险表）：不算失败但醒目报告。
  * interactive: true 仅匹配交互型用例（断言型快照层不受该缺口影响照常跑） */
 const KNOWN_ISSUES = [
+  // SESSION_RESUME × runtime 已修（2026-09-19）：终态后到达的轮询快照可能带
+  // 滞后的 EXECUTING 消息（服务端 messageList 落库晚于 taskStatus），reconcile
+  // 稳定 ID 覆盖把已收敛 processing 盖回——session 记录已确认终态，applySnapshot
+  // 归并后按终态重收敛（tests/conversation/sessionSnapshotTerminalGuard.test.ts）。
+  // KNOWN-FAIL 条目删除，恢复真断言。
+  // v1 终端卡展开断链（2026-09-19 全量矩阵复测发现，既有失败非新回归）：
+  // 终端卡标题/exit 徽标正常（terminalItem.command/exitCode 在），但
+  // terminalItem.content 为空 → 展开按钮不渲染、点击标题落到文件树兜底，
+  // `[class*="terminal-output"]` 恒 0。MarkdownCustomProcess 自 9 月初未改，
+  // 断链在数据链（PROCESSING → processingList detail 形态），终端域专项排查。
   {
-    scenario: 'SESSION_RESUME',
-    line: 'runtime',
-    reason:
-      'runtime 续接不清快照 EXECUTING（mock-optimization-plan.md 风险表，另行立项）',
-  },
-  // runtime 轨干预/OpenUI 渲染缺口（M3 探针确证：事件全发、消息投影正常，
-  // 但 dockExists=false、OpenUI inline 无 DOM——干预事件未桥接
-  // AgentIntervention dock 数据源。R6 默认切换前的阻塞级修复项）
-  {
-    scenario: 'PERMISSION_REQUEST',
-    line: 'runtime',
+    scenario: 'TERMINAL_OUTPUT',
+    line: 'legacy',
     interactive: true,
     reason:
-      'runtime 轨干预 dock 未渲染（ask 模式审批卡不出，事件已到但 DOM 无卡）——runtime 干预桥接另行立项',
+      'v1 终端卡展开断链：terminalItem.content 空、点击无展开（数据链既有失败，终端域另行立项）',
   },
   {
-    scenario: 'ASK_QUESTION',
+    scenario: 'TERMINAL_OUTPUT',
     line: 'runtime',
     interactive: true,
-    reason: 'runtime 轨干预 dock 未渲染（同 PERMISSION_REQUEST 桥接缺口）',
+    reason: 'v1 终端卡展开断链（同 legacy，两轨一致）——终端域另行立项',
   },
-  {
-    scenario: 'INTERVENTION_STACK',
-    line: 'runtime',
-    interactive: true,
-    reason: 'runtime 轨干预 dock 未渲染（同 PERMISSION_REQUEST 桥接缺口）',
-  },
-  {
-    scenario: 'OPENUI_RENDER',
-    line: 'runtime',
-    interactive: true,
-    reason:
-      'runtime 轨 OpenUI inline 组件未渲染（消息投影未接 OpenUI applier，legacy 正常）——另行立项',
-  },
-  {
-    scenario: 'OPENUI_INTERACTIVE',
-    line: 'runtime',
-    interactive: true,
-    reason: 'runtime 轨 OpenUI inline 组件未渲染（同 OPENUI_RENDER 桥接缺口）',
-  },
+  // runtime 轨干预 dock / OpenUI 渲染缺口已修（2974cb2a2 的 interventionAdapter
+  // 把 processInterventionSsePatch 接进 runtime session——applier 写的
+  // acpPermissionInteractions / mcpAskInteractions 正是 useActiveInterventionQueue
+  // 的派生源，dock 自动出卡；OpenUI 另加 V2 渲染层 OpenUiTraceNode 常显挂载）。
+  // PERMISSION_REQUEST / ASK_QUESTION / INTERVENTION_STACK / OPENUI_* 的 runtime
+  // 用例均已复测恢复真断言（2026-09-19）。
   // 终态守卫在 154s 真实时长（心跳维活）场景未丢弃迟到分片（两轨一致，
   // 消息列表渲染了迟到文本）——压缩版 LATE_CHUNK 的断言只查 EXECUTING 残留
   // 从未验证守卫证据，M3 真实时长首次暴露。初步定位：shouldDropLateMessageChunk
@@ -1212,8 +1200,20 @@ const INTERACTIVE_CASES = [
     renderers: ['v1', 'v2'],
   },
   // V1 DOM 探针（think-header/process-group 等）：仅 v1
-  { id: 'OPENUI_RENDER', speed: 0.05, drive: driveOpenuiRender },
-  { id: 'OPENUI_INTERACTIVE', speed: 0.05, drive: driveOpenUiInteractiveProbe },
+  // OpenUI 双渲染断言：V1（MarkdownCustomProcess 挂载）与 V2（OpenUiTraceNode
+  // 常显挂载）都应渲染出看板/表单与动作回发。
+  {
+    id: 'OPENUI_RENDER',
+    speed: 0.05,
+    drive: driveOpenuiRender,
+    renderers: ['v1', 'v2'],
+  },
+  {
+    id: 'OPENUI_INTERACTIVE',
+    speed: 0.05,
+    drive: driveOpenUiInteractiveProbe,
+    renderers: ['v1', 'v2'],
+  },
   { id: 'LONG_TASK_INTERLEAVED', speed: 0.05, drive: driveThinkRenderProbe },
   { id: 'RENDER_SHOWCASE', speed: 0.05, drive: driveRenderShowcaseProbe },
   { id: 'TERMINAL_OUTPUT', speed: 0.05, drive: driveTerminalOutputProbe },

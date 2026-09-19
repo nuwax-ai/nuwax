@@ -38,7 +38,7 @@ export const runtimeLineHttp = {
     apiAgentConversationMessageList({ conversationId, index, size }),
 };
 
-/** 页面资源注入面（缺省项以安全 noop 兜底；见 mainChatEffectsAdapter deps） */
+/** 页面资源注入面（缺省项以安全 noop 兜底；形态见 RuntimeLineEffectsResources） */
 export interface RuntimeLineEffectsResources {
   isAppSidebarMode?: boolean;
   runHistory?: (params: {

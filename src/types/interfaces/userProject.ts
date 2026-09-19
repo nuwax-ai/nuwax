@@ -214,6 +214,12 @@ export interface UserProjectTabItem {
   archived?: boolean;
   /** 项目收藏标记（2026-09-13 collect/unCollect 接口上线，列表回读打标） */
   collected?: boolean;
+  /**
+   * 当前用户是否项目创建者（2026-09-19 后端契约上线：常规项目多人参与，
+   * 列表回包按当前用户视角回布尔）。参与者判定必须 === false——
+   * undefined=接口未回包走现状，勿用 falsy 误吞。
+   */
+  owner?: boolean;
   /** 更新时间 */
   modified: string;
   /** 创建时间 */
@@ -311,6 +317,11 @@ export interface PinnedProjectInfo {
   sandboxId?: number;
   /** 项目绑定的调试智能体 ID（全栈默认命中用；契约先行，缺失走手选降级） */
   devAgentId?: number;
+  /**
+   * 当前用户是否项目创建者（来源同 UserProjectTabItem.owner，=== false 判参与者）。
+   * 参与者上框常规项目时可自选沙箱（云端/个人电脑+工作目录）。
+   */
+  owner?: boolean;
 }
 
 /** 创建常规项目参数（管理端 /api/user-project/create；首页对话框创建走 /api/project/create 另一套） */

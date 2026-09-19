@@ -5,6 +5,7 @@
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import { DownOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
@@ -18,6 +19,7 @@ import {
   composeConversationTraceItems,
   getToolGroupActionKinds,
   getToolGroupStatus,
+  isOpenUiRenderElementNode,
 } from '../traceItems';
 import type {
   ConversationProcessNode,
@@ -26,6 +28,7 @@ import type {
   ConversationTraceItem,
   ConversationTurnPresentationV2,
 } from '../types';
+import OpenUiTraceNode from './OpenUiTraceNode';
 import ProcessNodeRow from './ProcessNodeRow';
 import ToolGroupDisclosure from './ToolGroupDisclosure';
 import { formatElapsed, formatElapsedClock } from './formatElapsed';
@@ -127,6 +130,10 @@ export interface WorkTraceDisclosureProps {
   manualExpanded?: boolean;
   onManualToggle: (expanded: boolean) => void;
   onOpenResource?: (resource: ConversationToolResource) => void;
+  /** OpenUI 产物文件 URL 构建与动作回发所需的会话 ID */
+  conversationId?: number | string;
+  /** OpenUI sidecar 摘要行点击 / autoOpen：打开预览面板并选中 .openui.json */
+  onOpenSidecar?: (artifact: OpenUiArtifact) => void;
 }
 
 const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
@@ -135,6 +142,8 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
   manualExpanded,
   onManualToggle,
   onOpenResource,
+  conversationId,
+  onOpenSidecar,
 }) => {
   const { token } = theme.useToken();
   const [revealHidden, setRevealHidden] = useState(false);
@@ -271,10 +280,25 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
           aria-hidden="true"
         />
       </button>
-      {expanded && (
-        <div id={traceBodyId} className={cx(styles['trace-body'])}>
-          {shownItems.map((item) => {
-            if (item.kind === 'narration') {
+      {/* 轨迹体：产物为 inline/sidecar 的 OpenUI 节点原位渲染看板/摘要行，收起态保持
+          显示；失败与无产物退化态回落普通工具行（词条化动作，协议名不外露） */}
+      <div id={traceBodyId} className={cx(styles['trace-body'])}>
+        {shownItems.map((item) => {
+          if (
+            item.kind === 'standalone' &&
+            isOpenUiRenderElementNode(item.node)
+          ) {
+            return (
+              <OpenUiTraceNode
+                key={item.id}
+                node={item.node}
+                conversationId={conversationId}
+                onOpenSidecar={onOpenSidecar}
+              />
+            );
+          }
+          if (!expanded) return null;
+          if (item.kind === 'narration') {
               return (
                 <NarrationText key={item.id} narrationId={item.id}>
                   {item.node.text ?? ''}
@@ -313,7 +337,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
               />
             );
           })}
-          {!revealHidden && hiddenCount > 0 && (
+          {expanded && !revealHidden && hiddenCount > 0 && (
             <button
               type="button"
               className={cx(styles['hidden-entry'])}
@@ -326,8 +350,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
               )}
             </button>
           )}
-        </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -5,7 +5,7 @@
  * 前后工具组；本模块为纯函数，不持有 React 展开状态。
  */
 import { getToolPresentationKind } from '@/components/MarkdownCustomProcess/toolPresentation';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { resolveOpenUiDisplayState } from '@/utils/openUiArtifact';
 import { normalizeV2ToolDetail } from './toolDetail';
 import type {
   ConversationProcessNode,
@@ -13,7 +13,8 @@ import type {
   ConversationTraceItem,
 } from './types';
 
-const OPEN_UI_NAME = /nuwax_render_openui|Backend\.Sandbox\.Event\.renderUI/i;
+// OpenUI 渲染工具名：仅考虑后端下发的 Backend.Sandbox.Event.renderUI（大小写变体）
+const OPEN_UI_NAME = /Backend\.Sandbox\.Event\.renderUI/i;
 
 export const getNodeToolActionKind = (
   node: ConversationProcessNode,
@@ -26,12 +27,23 @@ export const getNodeToolActionKind = (
 
 export const isOpenUiToolNode = (node: ConversationProcessNode): boolean => {
   if (node.kind !== 'tool') return false;
-  const componentType = node.processing?.type ?? node.componentType;
+  // 只认工具名（对齐 V1 isOpenUiRenderToolName 口径）：流式 applier
+  // （applyOpenUiToolCallSseEvent）把 RENDER_UI 项 type 记为 ToolCall，
+  // 历史 finalResult 里可能保留 Event——两种 componentType 都需独立展示。
   const name = node.processing?.name ?? node.title;
-  return (
-    componentType === AgentComponentTypeEnum.Event && OPEN_UI_NAME.test(name)
-  );
+  return OPEN_UI_NAME.test(name);
 };
+
+/**
+ * 是否由 OpenUI 渲染元素接管：产物 presentation 为 inline / sidecar 两种形态之一
+ * （resolveOpenUiDisplayState 的 ready / input-only 均已按 mode 校验）。
+ * 生成中无产物、失败、终态退化一律回落普通轨迹行（动作词条替代协议名）。
+ */
+export const isOpenUiRenderElementNode = (
+  node: ConversationProcessNode,
+): boolean =>
+  isOpenUiToolNode(node) &&
+  resolveOpenUiDisplayState(node.processing?.result).status !== 'absent';
 
 export const isGroupableToolNode = (node: ConversationProcessNode): boolean =>
   node.kind === 'tool' &&

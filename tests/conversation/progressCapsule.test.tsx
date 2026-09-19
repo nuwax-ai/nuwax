@@ -11,12 +11,13 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const conversationInfoModel = vi.hoisted(() => ({
+  openPreviewView: vi.fn(),
+  setTaskAgentSelectedFileId: vi.fn(),
+  setTaskAgentSelectTrigger: vi.fn(),
+}));
 vi.mock('umi', () => ({
-  useModel: () => ({
-    openPreviewView: vi.fn(),
-    setTaskAgentSelectedFileId: vi.fn(),
-    setTaskAgentSelectTrigger: vi.fn(),
-  }),
+  useModel: () => conversationInfoModel,
 }));
 vi.mock('@/services/i18nRuntime', () => ({
   t: (key: string, value?: number) =>
@@ -287,6 +288,131 @@ describe('会话进度胶囊', () => {
       },
     ] as MessageInfo[];
     expect(selectProgressCapsule(messages, true)).toBeNull();
+  });
+
+  it('OpenUI 节点动作文案收敛：currentAction 不外露协议工具名', () => {
+    const artifactId = '1219fcb4-a107-4f92-abff-7f8922f1228d';
+    const ref = {
+      type: 'nuwax.openui-ref',
+      schemaVersion: 'nuwax.openui-ref/v1',
+      artifactId,
+      path: `data/${artifactId}.openui.json`,
+      title: '演示看板',
+      presentation: { mode: 'inline', autoOpen: false },
+      digest: `sha256:${'a'.repeat(64)}`,
+      operation: 'created',
+    };
+    const messages = [
+      {
+        id: 'user-op',
+        role: AssistantRoleEnum.USER,
+        text: '生成看板',
+        time: '2026-09-19 09:00:00',
+        status: MessageStatusEnum.Complete,
+      },
+      {
+        id: 'assistant-op',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: processTag(
+          'op-1',
+          AgentComponentTypeEnum.Event,
+          'Backend.Sandbox.Event.renderUI',
+        ),
+        time: '2026-09-19 09:00:01',
+        status: MessageStatusEnum.Complete,
+        processingList: [
+          {
+            executeId: 'op-1',
+            type: AgentComponentTypeEnum.Event,
+            name: 'Backend.Sandbox.Event.renderUI',
+            status: ProcessingEnum.FINISHED,
+            result: {
+              executeId: 'op-1',
+              name: 'Backend.Sandbox.Event.renderUI',
+              data: ref,
+            },
+          },
+        ],
+      },
+    ] as unknown as MessageInfo[];
+    const model = selectProgressCapsule(messages, false);
+    expect(model).not.toBeNull();
+    expect(model?.currentAction).not.toContain('Backend.Sandbox.Event.renderUI');
+    expect(model?.currentAction).toContain('toolActionOpenUiFinished');
+    expect(model?.currentAction).toContain('演示看板');
+    // OpenUI 产物行收集：标题 + artifactId（供面板重开预览）
+    expect(model?.openuiRenders).toEqual([
+      {
+        key: 'op-1',
+        title: '演示看板',
+        artifactId,
+        status: 'finished',
+      },
+    ]);
+  });
+
+  it('OpenUI 面板分区：点击产物行走 openui 预览打开口径', async () => {
+    const artifactId = '1219fcb4-a107-4f92-abff-7f8922f1228d';
+    const messages = [
+      {
+        id: 'user-op',
+        role: AssistantRoleEnum.USER,
+        text: '生成看板',
+        time: '2026-09-19 09:00:00',
+        status: MessageStatusEnum.Complete,
+      },
+      {
+        id: 'assistant-op',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: processTag(
+          'op-1',
+          AgentComponentTypeEnum.Event,
+          'Backend.Sandbox.Event.renderUI',
+        ),
+        time: '2026-09-19 09:00:01',
+        status: MessageStatusEnum.Complete,
+        processingList: [
+          {
+            executeId: 'op-1',
+            type: AgentComponentTypeEnum.Event,
+            name: 'Backend.Sandbox.Event.renderUI',
+            status: ProcessingEnum.FINISHED,
+            result: {
+              executeId: 'op-1',
+              name: 'Backend.Sandbox.Event.renderUI',
+              data: {
+                type: 'nuwax.openui-ref',
+                schemaVersion: 'nuwax.openui-ref/v1',
+                artifactId,
+                path: `data/${artifactId}.openui.json`,
+                title: '演示看板',
+                presentation: { mode: 'inline', autoOpen: false },
+                digest: `sha256:${'a'.repeat(64)}`,
+                operation: 'created',
+              },
+            },
+          },
+        ],
+      },
+    ] as unknown as MessageInfo[];
+    render(
+      <ConversationProgressCapsule
+        conversationId={999}
+        messageList={messages}
+        active={false}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('capsule-trigger'));
+    fireEvent.click(await screen.findByText('演示看板'));
+    await waitFor(() =>
+      expect(conversationInfoModel.setTaskAgentSelectedFileId).toHaveBeenCalledWith(
+        `data/${artifactId}.openui.json`,
+      ),
+    );
+    expect(conversationInfoModel.openPreviewView).toHaveBeenCalledWith(
+      999,
+      { forceRefresh: true },
+    );
   });
 
   it('终态常驻：会话结束后仍显示最后一轮内容并带终态标记', () => {

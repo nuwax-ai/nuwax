@@ -16,7 +16,19 @@ export interface WorkspaceStaticFile extends StaticFileInfo {
   relativePath: string;
 }
 
-export function useWorkspaceDirectoryFiles(conversationId: number | undefined) {
+export function useWorkspaceDirectoryFiles(
+  conversationId: number | undefined,
+  options?: {
+    /**
+     * 首拉门控（「打开文件树面板才拉」口径）：false 时挂载/切会话不主动拉
+     * 根层，由面板打开链（openPreviewView → fileTreeRefreshTrigger →
+     * refreshAllLoaded）补拉。默认 true 维持原行为。新会话场景保证
+     * file-list 不先于 chat 请求发出（后端契约：工作区在 chat 后才建立）。
+     */
+    enabled?: boolean;
+  },
+) {
+  const enabled = options?.enabled !== false;
   const [currentPath, setCurrentPath] = useState('');
   const [files, setFiles] = useState<WorkspaceStaticFile[]>([]);
   const [loadedDirectoryPaths, setLoadedDirectoryPaths] = useState<Set<string>>(
@@ -24,6 +36,8 @@ export function useWorkspaceDirectoryFiles(conversationId: number | undefined) {
   );
   const [loading, setLoading] = useState(false);
   const directoryRequestTokensRef = useRef(new Map<string, number>());
+  /** 在途目录请求集合（loadDirectory 写入/finally 清除；首拉与刷新去重用） */
+  const inflightDirectoryRequestsRef = useRef(new Set<string>());
   const activeRequestCountRef = useRef(0);
   const conversationIdRef = useRef(conversationId);
 
@@ -31,6 +45,7 @@ export function useWorkspaceDirectoryFiles(conversationId: number | undefined) {
   useEffect(() => {
     conversationIdRef.current = conversationId;
     directoryRequestTokensRef.current.clear();
+    inflightDirectoryRequestsRef.current.clear();
     activeRequestCountRef.current = 0;
     setCurrentPath('');
     setFiles([]);
@@ -45,6 +60,7 @@ export function useWorkspaceDirectoryFiles(conversationId: number | undefined) {
       const token =
         (directoryRequestTokensRef.current.get(requestPath) || 0) + 1;
       directoryRequestTokensRef.current.set(requestPath, token);
+      inflightDirectoryRequestsRef.current.add(requestPath);
       activeRequestCountRef.current += 1;
       setLoading(true);
       try {
@@ -114,6 +130,7 @@ export function useWorkspaceDirectoryFiles(conversationId: number | undefined) {
           );
         }
       } finally {
+        inflightDirectoryRequestsRef.current.delete(requestPath);
         if (conversationIdRef.current === conversationId) {
           activeRequestCountRef.current = Math.max(
             0,
@@ -131,9 +148,34 @@ export function useWorkspaceDirectoryFiles(conversationId: number | undefined) {
     [currentPath, loadDirectory],
   );
 
+  /** 同目录在途时跳过（首拉门控与刷新信号同拍触发的去重；用户导航/手动刷新不走此入口） */
+  const loadDirectoryIfIdle = useCallback(
+    (path: string) => {
+      if (inflightDirectoryRequestsRef.current.has(path)) return;
+      void loadDirectory(path);
+    },
+    [loadDirectory],
+  );
+
+  // 首拉门控（「打开文件树面板才拉」）：enabled=false 时挂载/切会话不预发
+  // file-list（后端契约：新会话工作区在 chat 之后才建立）；面板打开链
+  // （openPreviewView → fileTreeRefreshTrigger → refreshAllLoaded）会补拉
   useEffect(() => {
-    void loadDirectory('');
-  }, [conversationId, loadDirectory]);
+    if (!conversationId || !enabled) return;
+    loadDirectoryIfIdle('');
+  }, [conversationId, enabled, loadDirectoryIfIdle]);
+
+  /**
+   * 刷新全部已加载目录（含根层——切会话后集合为空也不漏）：
+   * 「打开的目录不刷新」修复——刷新信号到达时不止刷 currentPath 单层，
+   * 已展开已加载的目录一并重拉（外层 2s 节流兜底）。在途目录跳过防重复。
+   */
+  const refreshAllLoaded = useCallback(() => {
+    loadDirectoryIfIdle('');
+    loadedDirectoryPaths.forEach((path) => {
+      if (path) loadDirectoryIfIdle(path);
+    });
+  }, [loadDirectoryIfIdle, loadedDirectoryPaths]);
 
   const navigate = useCallback(
     (path: string) => {
@@ -152,5 +194,6 @@ export function useWorkspaceDirectoryFiles(conversationId: number | undefined) {
     navigate,
     loadDirectory,
     refresh,
+    refreshAllLoaded,
   };
 }

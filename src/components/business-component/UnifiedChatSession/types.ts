@@ -18,6 +18,7 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import * as React from 'react';
 
@@ -138,6 +139,11 @@ export interface UnifiedChatSessionProps {
    * 未提供时 V2 详情内文件路径仅展示不可点。
    */
   onOpenToolResource?: (resource: ConversationToolResource) => void;
+  /**
+   * V2 OpenUI sidecar 打开联动（摘要行点击 / autoOpen）；仅 messageRenderer='v2' 时生效。
+   * 未提供时由 UnifiedChatSession 内置默认实现兜底（打开预览面板并选中 .openui.json）。
+   */
+  onOpenOpenUiSidecar?: (artifact: OpenUiArtifact) => void;
 
   // 功能配置开关
   onFetchMentionFiles?: FetchMentionFiles;

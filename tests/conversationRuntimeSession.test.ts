@@ -128,6 +128,24 @@ describe('conversationRuntimeSession', () => {
     expect(session.getState().isAwaitingChatTerminal).toBe(true);
   });
 
+  it('send：sandboxId 随 chat 请求体透传（不传时请求体不带该字段）', () => {
+    const { session } = createSession();
+    mockOpenLive.mockReturnValue(vi.fn());
+
+    session.send({
+      conversationId: 1001,
+      message: '你好',
+      sandboxId: '4321',
+    });
+    const withSandbox = mockOpenLive.mock.calls[0][0] as ConversationChatParams;
+    expect(withSandbox.sandboxId).toBe('4321');
+
+    session.send({ conversationId: 1001, message: '再来' });
+    const withoutSandbox = mockOpenLive.mock
+      .calls[1][0] as ConversationChatParams;
+    expect(withoutSandbox.sandboxId).toBeUndefined();
+  });
+
   it('事件投影：MESSAGE chunk 归并进 assistant 占位，requestId 更新', () => {
     const { session } = createSession();
     mockOpenLive.mockReturnValue(vi.fn());
@@ -205,6 +223,76 @@ describe('conversationRuntimeSession', () => {
     expect(assistant.processingList).toBeUndefined();
     expect(assistant.text).toBe('');
     expect(session.getState().currentRequestId).toBe('req-ask');
+  });
+
+  it('REQUEST_PERMISSION 优先投影为 ACP 干预交互，不落入普通 PROCESSING', () => {
+    const { session } = createSession({
+      interventionAdapter: {
+        patchEvent: processInterventionSsePatch,
+        reconcileMessages: reconcileAcpPermissionStatusesInMessageList,
+      },
+    });
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '演示权限审批' });
+    const callbacks = mockOpenLive.mock.calls[0][1] as LiveCallbacks;
+
+    callbacks.onMessage({
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      requestId: 'req-perm',
+      data: {
+        targetId: -1,
+        name: 'Backend.Sandbox.Event.RequestPermission',
+        type: 'Event',
+        status: 'FINISHED',
+        executeId: 'perm-runtime-1',
+        subEventType: 'REQUEST_PERMISSION',
+        result: {
+          id: -1,
+          name: 'Backend.Sandbox.Event.RequestPermission',
+          type: 'Event',
+          startTime: Date.now(),
+          endTime: Date.now(),
+          input: {
+            request_permission_request: {
+              sessionId: 'sess-runtime-1',
+              toolCall: {
+                toolCallId: 'perm-runtime-1',
+                kind: 'other',
+                status: 'pending',
+                title: '执行 bash 命令',
+                rawInput: { command: 'ls -la' },
+              },
+              options: [
+                {
+                  optionId: 'allow_once',
+                  name: '允许一次',
+                  kind: 'allow_once',
+                },
+                { optionId: 'reject', name: '拒绝', kind: 'reject_once' },
+              ],
+            },
+            toolCallId: 'perm-runtime-1',
+          },
+          executeId: 'perm-runtime-1',
+        },
+        _meta: {
+          nuwaclaw_intervention_id: 'itv-perm-runtime-1',
+          nuwaclaw_revision: 1,
+        },
+      },
+    } as ConversationChatResponse);
+
+    const assistant = session.store.getSnapshot()[1];
+    expect(assistant.acpPermissionInteractions).toHaveLength(1);
+    expect(assistant.acpPermissionInteractions?.[0]).toMatchObject({
+      executeId: 'perm-runtime-1',
+      responseStatus: 'pending',
+    });
+    expect(assistant.acpPermissionInteractions?.[0]?.intervention).toBeTruthy();
+    // 干预事件不进通用 PROCESSING 投影（不产工具块、不污染正文）
+    expect(assistant.processingList).toBeUndefined();
+    expect(assistant.text).toBe('');
+    expect(session.getState().currentRequestId).toBe('req-perm');
   });
 
   it('onClose 正常收尾：finalize + 释放活跃/等终态 + 终态兜底查询（FINAL 未解析时）', async () => {
@@ -839,5 +927,176 @@ describe('conversationRuntimeSession 关键业务场景（T03/T04/T06）', () =>
         uri: '/chart',
       }),
     });
+  });
+});
+
+describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录不刷新回归）', () => {
+  const createSessionWith = () => {
+    const dispatched: unknown[] = [];
+    const session = createConversationRuntimeSession({
+      adapters: {
+        renderProcessingBlock: vi.fn(() => 'block'),
+        reconcileFinalMessage: vi.fn((message) => message),
+      },
+      effectsAdapter: {
+        dispatch: (effect: unknown) => {
+          dispatched.push(effect);
+        },
+      } as never,
+    });
+    return { session, dispatched };
+  };
+  const getCallbacks = (n = -1) =>
+    mockOpenLive.mock.calls.at(n)![1] as {
+      onMessage: (res: ConversationChatResponse) => void;
+      onClose: () => void;
+      onError: () => void;
+    };
+  const fileRefreshDispatches = (dispatched: unknown[]) =>
+    dispatched.filter(
+      (e) => (e as { type: string }).type === 'preview.file.refresh',
+    );
+  const settleDispatches = (dispatched: unknown[]) =>
+    dispatched.filter(
+      (e) => (e as { type: string }).type === 'taskResult.settle',
+    );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSyncTerminal.mockResolvedValue(undefined);
+  });
+
+  it('PROCESSING ToolCall：dispatch preview.file.refresh（throttled）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '调工具' });
+
+    getCallbacks().onMessage({
+      requestId: 'req-tool',
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      data: {
+        type: 'ToolCall',
+        name: 'search',
+        executeId: 'exec-1',
+        status: 'EXECUTING',
+        result: {},
+      },
+    } as ConversationChatResponse);
+
+    expect(fileRefreshDispatches(dispatched)).toEqual([
+      { type: 'preview.file.refresh', conversationId: 1001, mode: 'throttled' },
+    ]);
+  });
+
+  it('PROCESSING 非 ToolCall（Page）不发文件树刷新', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '页面' });
+
+    getCallbacks().onMessage({
+      requestId: 'req-page',
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      data: {
+        type: 'Page',
+        status: 'EXECUTING',
+        executeId: 'exec-page',
+        result: { executeId: 'exec-page', input: { uri: '/chart' } },
+      },
+    } as ConversationChatResponse);
+
+    expect(fileRefreshDispatches(dispatched)).toEqual([]);
+  });
+
+  it('FINAL_RESULT + TaskAgent：dispatch taskResult.settle（task-result 文件原始终路径）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: '生成文件',
+      currentInfo: {
+        id: 1001,
+        agent: { type: 'TaskAgent', enableVersionControl: 1 },
+      } as never,
+    });
+
+    getCallbacks().onMessage({
+      requestId: 'req-final',
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      data: {
+        success: true,
+        outputText:
+          '<task-result><description>报告</description><file>/home/user/1001/docs/report.md</file></task-result>',
+        error: '',
+        componentExecuteResults: [],
+      },
+    } as ConversationChatResponse);
+
+    expect(settleDispatches(dispatched)).toEqual([
+      {
+        type: 'taskResult.settle',
+        conversationId: 1001,
+        taskResult: {
+          hasTaskResult: true,
+          file: '/home/user/1001/docs/report.md',
+        },
+        enableVersionControl: true,
+      },
+    ]);
+  });
+
+  it('FINAL_RESULT + 非 TaskAgent：不发 taskResult.settle（对齐旧线门控）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: '普通对话',
+      currentInfo: { id: 1001, agent: { type: 'Chat' } } as never,
+    });
+
+    getCallbacks().onMessage({
+      requestId: 'req-final',
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      data: {
+        success: true,
+        outputText: '答',
+        error: '',
+        componentExecuteResults: [],
+      },
+    } as ConversationChatResponse);
+
+    expect(settleDispatches(dispatched)).toEqual([]);
+  });
+
+  it('FINAL_RESULT 无 task-result：settle 携带 hasTaskResult=false（消费端走兜底 trigger）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: '无产物任务',
+      currentInfo: {
+        id: 1001,
+        agent: { type: 'TaskAgent' },
+      } as never,
+    });
+
+    getCallbacks().onMessage({
+      requestId: 'req-final',
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      data: {
+        success: true,
+        outputText: '完成',
+        error: '',
+        componentExecuteResults: [],
+      },
+    } as ConversationChatResponse);
+
+    expect(settleDispatches(dispatched)).toEqual([
+      {
+        type: 'taskResult.settle',
+        conversationId: 1001,
+        taskResult: { hasTaskResult: false },
+        enableVersionControl: false,
+      },
+    ]);
   });
 });
