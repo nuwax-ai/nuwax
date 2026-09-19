@@ -263,7 +263,11 @@ describe('conversationRuntimeSession', () => {
                 rawInput: { command: 'ls -la' },
               },
               options: [
-                { optionId: 'allow_once', name: '允许一次', kind: 'allow_once' },
+                {
+                  optionId: 'allow_once',
+                  name: '允许一次',
+                  kind: 'allow_once',
+                },
                 { optionId: 'reject', name: '拒绝', kind: 'reject_once' },
               ],
             },
@@ -923,5 +927,176 @@ describe('conversationRuntimeSession 关键业务场景（T03/T04/T06）', () =>
         uri: '/chart',
       }),
     });
+  });
+});
+
+describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录不刷新回归）', () => {
+  const createSessionWith = () => {
+    const dispatched: unknown[] = [];
+    const session = createConversationRuntimeSession({
+      adapters: {
+        renderProcessingBlock: vi.fn(() => 'block'),
+        reconcileFinalMessage: vi.fn((message) => message),
+      },
+      effectsAdapter: {
+        dispatch: (effect: unknown) => {
+          dispatched.push(effect);
+        },
+      } as never,
+    });
+    return { session, dispatched };
+  };
+  const getCallbacks = (n = -1) =>
+    mockOpenLive.mock.calls.at(n)![1] as {
+      onMessage: (res: ConversationChatResponse) => void;
+      onClose: () => void;
+      onError: () => void;
+    };
+  const fileRefreshDispatches = (dispatched: unknown[]) =>
+    dispatched.filter(
+      (e) => (e as { type: string }).type === 'preview.file.refresh',
+    );
+  const settleDispatches = (dispatched: unknown[]) =>
+    dispatched.filter(
+      (e) => (e as { type: string }).type === 'taskResult.settle',
+    );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSyncTerminal.mockResolvedValue(undefined);
+  });
+
+  it('PROCESSING ToolCall：dispatch preview.file.refresh（throttled）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '调工具' });
+
+    getCallbacks().onMessage({
+      requestId: 'req-tool',
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      data: {
+        type: 'ToolCall',
+        name: 'search',
+        executeId: 'exec-1',
+        status: 'EXECUTING',
+        result: {},
+      },
+    } as ConversationChatResponse);
+
+    expect(fileRefreshDispatches(dispatched)).toEqual([
+      { type: 'preview.file.refresh', conversationId: 1001, mode: 'throttled' },
+    ]);
+  });
+
+  it('PROCESSING 非 ToolCall（Page）不发文件树刷新', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '页面' });
+
+    getCallbacks().onMessage({
+      requestId: 'req-page',
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      data: {
+        type: 'Page',
+        status: 'EXECUTING',
+        executeId: 'exec-page',
+        result: { executeId: 'exec-page', input: { uri: '/chart' } },
+      },
+    } as ConversationChatResponse);
+
+    expect(fileRefreshDispatches(dispatched)).toEqual([]);
+  });
+
+  it('FINAL_RESULT + TaskAgent：dispatch taskResult.settle（task-result 文件原始终路径）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: '生成文件',
+      currentInfo: {
+        id: 1001,
+        agent: { type: 'TaskAgent', enableVersionControl: 1 },
+      } as never,
+    });
+
+    getCallbacks().onMessage({
+      requestId: 'req-final',
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      data: {
+        success: true,
+        outputText:
+          '<task-result><description>报告</description><file>/home/user/1001/docs/report.md</file></task-result>',
+        error: '',
+        componentExecuteResults: [],
+      },
+    } as ConversationChatResponse);
+
+    expect(settleDispatches(dispatched)).toEqual([
+      {
+        type: 'taskResult.settle',
+        conversationId: 1001,
+        taskResult: {
+          hasTaskResult: true,
+          file: '/home/user/1001/docs/report.md',
+        },
+        enableVersionControl: true,
+      },
+    ]);
+  });
+
+  it('FINAL_RESULT + 非 TaskAgent：不发 taskResult.settle（对齐旧线门控）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: '普通对话',
+      currentInfo: { id: 1001, agent: { type: 'Chat' } } as never,
+    });
+
+    getCallbacks().onMessage({
+      requestId: 'req-final',
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      data: {
+        success: true,
+        outputText: '答',
+        error: '',
+        componentExecuteResults: [],
+      },
+    } as ConversationChatResponse);
+
+    expect(settleDispatches(dispatched)).toEqual([]);
+  });
+
+  it('FINAL_RESULT 无 task-result：settle 携带 hasTaskResult=false（消费端走兜底 trigger）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: '无产物任务',
+      currentInfo: {
+        id: 1001,
+        agent: { type: 'TaskAgent' },
+      } as never,
+    });
+
+    getCallbacks().onMessage({
+      requestId: 'req-final',
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      data: {
+        success: true,
+        outputText: '完成',
+        error: '',
+        componentExecuteResults: [],
+      },
+    } as ConversationChatResponse);
+
+    expect(settleDispatches(dispatched)).toEqual([
+      {
+        type: 'taskResult.settle',
+        conversationId: 1001,
+        taskResult: { hasTaskResult: false },
+        enableVersionControl: false,
+      },
+    ]);
   });
 });

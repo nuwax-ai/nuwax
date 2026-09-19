@@ -72,7 +72,7 @@ const storeAsDispatch = (
  */
 export interface RuntimeSessionLineOptions {
   conversationId?: number;
-  /** 页面资源注入（effect 执行体所需；见 mainChatEffectsAdapter deps） */
+  /** 页面资源注入（effect 执行体所需；形态见 runtimeLineHttp 的 RuntimeLineEffectsResources） */
   effectsResources?: Record<string, unknown>;
   /** 滚动 refs（resumeController 滚动跟随） */
   messageViewRef?: { current: HTMLDivElement | null };
