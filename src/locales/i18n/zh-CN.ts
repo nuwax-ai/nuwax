@@ -6713,7 +6713,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceConnector.toastConnectFailed': '建立连接失败',
   'PC.Pages.SpaceConnector.toastConnectSuccess': '连接成功',
   // 项目管理
-  "PC.Pages.SpaceProjectManage.menuTitle": "项目管理",
+  "PC.Pages.SpaceProjectManage.menuTitle": "项目&应用",
   "PC.Pages.SpaceProjectManage.tabAll": "全部",
   "PC.Pages.SpaceProjectManage.tabNormalProject": "常规项目",
   "PC.Pages.SpaceProjectManage.tabPageApp": "网页应用",
