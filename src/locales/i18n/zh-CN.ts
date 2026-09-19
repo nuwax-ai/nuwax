@@ -106,6 +106,9 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.AgentType.skill": "技能",
   "PC.Components.AgentType.table": "数据表",
   "PC.Components.AgentType.workflow": "工作流",
+  "PC.Components.AgentType.normalProject": "常规项目",
+  "PC.Components.AgentType.userApp": "全栈应用",
+  "PC.Components.AgentType.thirdApp": "三方应用",
   "PC.Components.AppDevEmptyState.addDataDescription": "点击“+“添加数据资源",
   "PC.Components.AppDevEmptyState.close": "关闭",
   "PC.Components.AppDevEmptyState.conversationEmptyDescription": "向 AI 助手提问，开始你的项目开发",
@@ -4674,6 +4677,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Square.Square.onlyOfficial": "仅查看官方{0}",
   "PC.Pages.Square.Square.pageApp": "网页应用",
   "PC.Pages.Square.Square.userApp": "全栈应用",
+  "PC.Pages.Square.Square.thirdApp": "三方应用",
   // 女娲应用页
   "PC.Pages.NuwaApps.title": "女娲应用",
   "PC.Pages.NuwaApps.searchPlaceholder": "搜索应用",
@@ -6714,6 +6718,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.tabNormalProject": "常规项目",
   "PC.Pages.SpaceProjectManage.tabPageApp": "网页应用",
   "PC.Pages.SpaceProjectManage.tabUserApp": "全栈应用",
+  "PC.Pages.SpaceProjectManage.tabThirdApp": "三方应用",
   "PC.Pages.SpaceProjectManage.searchPlaceholder": "搜索项目名称",
   "PC.Pages.SpaceProjectManage.createButton": "新建项目",
   "PC.Pages.SpaceProjectManage.createNormalProject": "常规项目",
@@ -6734,6 +6739,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.projectInfoSection": "项目信息",
   "PC.Pages.SpaceProjectManage.personalDevEnvSection": "个人开发环境",
   "PC.Pages.SpaceProjectManage.createSuccess": "创建成功",
+  "PC.Pages.SpaceProjectManage.deleteConfirmContent": "确定要删除「{0}」吗？",
   "PC.Pages.SpaceProjectManage.createFailed": "创建失败，请稍后重试",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "项目暂无会话，请进入项目后再导出",
   // 三方应用接入

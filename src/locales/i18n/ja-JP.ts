@@ -71,6 +71,9 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.AgentType.skill": "スキル",
   "PC.Components.AgentType.table": "データテーブル",
   "PC.Components.AgentType.workflow": "ワークフロー",
+  "PC.Components.AgentType.normalProject": "通常プロジェクト",
+  "PC.Components.AgentType.userApp": "フルスタックアプリ",
+  "PC.Components.AgentType.thirdApp": "サードパーティアプリ",
   "PC.Components.AppDevEmptyState.addDataDescription": "「+」をクリックしてデータリソースを追加します",
   "PC.Components.AppDevEmptyState.close": "近い",
   "PC.Components.AppDevEmptyState.conversationEmptyDescription": "AI アシスタントにプロジェクト開発を開始するよう依頼する",
@@ -4397,6 +4400,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Square.Square.onlyOfficial": "公式{0}のみ",
   "PC.Pages.Square.Square.pageApp": "ウェブアプリ",
   "PC.Pages.Square.Square.userApp": "フルスタックアプリ",
+  "PC.Pages.Square.Square.thirdApp": "サードパーティアプリ",
   // 女媧アプリページ
   "PC.Pages.NuwaApps.title": "女媧アプリ",
   "PC.Pages.NuwaApps.searchPlaceholder": "アプリを検索",
@@ -6633,6 +6637,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.tabNormalProject": "通常プロジェクト",
   "PC.Pages.SpaceProjectManage.tabPageApp": "Webアプリ",
   "PC.Pages.SpaceProjectManage.tabUserApp": "フルスタックアプリ",
+  "PC.Pages.SpaceProjectManage.tabThirdApp": "サードパーティアプリ",
   "PC.Pages.SpaceProjectManage.searchPlaceholder": "プロジェクト名を検索",
   "PC.Pages.SpaceProjectManage.createButton": "新規プロジェクト",
   "PC.Pages.SpaceProjectManage.createNormalProject": "通常プロジェクト",
@@ -6653,6 +6658,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.projectInfoSection": "プロジェクト情報",
   "PC.Pages.SpaceProjectManage.personalDevEnvSection": "個人開発環境",
   "PC.Pages.SpaceProjectManage.createSuccess": "作成しました",
+  "PC.Pages.SpaceProjectManage.deleteConfirmContent": "「{0}」を削除してもよろしいですか？",
   "PC.Pages.SpaceProjectManage.createFailed": "作成に失敗しました。しばらくしてから再試行してください",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "まだ会話がありません。プロジェクトに入ってから書き出してください。",
   // サードパーティアプリ連携

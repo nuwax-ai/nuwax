@@ -71,6 +71,9 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.AgentType.skill": "技能",
   "PC.Components.AgentType.table": "資料表",
   "PC.Components.AgentType.workflow": "工作流",
+  "PC.Components.AgentType.normalProject": "常規項目",
+  "PC.Components.AgentType.userApp": "全棧應用",
+  "PC.Components.AgentType.thirdApp": "三方應用",
   "PC.Components.AppDevEmptyState.addDataDescription": "點選“+“新增資料資源",
   "PC.Components.AgentInterventionChatLayer.dialogLabel": "待處理的智能體請求",
   "PC.Components.AcpPermissionCard.allowAlways": "始終允許",
@@ -4412,6 +4415,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.Square.Square.onlyOfficial": "僅檢視官方{0}",
   "PC.Pages.Square.Square.pageApp": "網頁應用",
   "PC.Pages.Square.Square.userApp": "全棧應用",
+  "PC.Pages.Square.Square.thirdApp": "三方應用",
   // 女媧應用頁
   "PC.Pages.NuwaApps.title": "女媧應用",
   "PC.Pages.NuwaApps.searchPlaceholder": "搜尋應用",
@@ -6595,6 +6599,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.tabNormalProject": "常規項目",
   "PC.Pages.SpaceProjectManage.tabPageApp": "網頁應用",
   "PC.Pages.SpaceProjectManage.tabUserApp": "全棧應用",
+  "PC.Pages.SpaceProjectManage.tabThirdApp": "三方應用",
   "PC.Pages.SpaceProjectManage.searchPlaceholder": "搜尋項目名稱",
   "PC.Pages.SpaceProjectManage.createButton": "新建項目",
   "PC.Pages.SpaceProjectManage.createNormalProject": "常規項目",
@@ -6615,6 +6620,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.projectInfoSection": "專案資訊",
   "PC.Pages.SpaceProjectManage.personalDevEnvSection": "個人開發環境",
   "PC.Pages.SpaceProjectManage.createSuccess": "創建成功",
+  "PC.Pages.SpaceProjectManage.deleteConfirmContent": "確定要刪除「{0}」嗎？",
   "PC.Pages.SpaceProjectManage.createFailed": "創建失敗，請稍後重試",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "項目暫無會話，請進入項目後再導出",
   // 三方應用接入

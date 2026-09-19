@@ -13,8 +13,8 @@ import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 export interface SquarePublishedListParams {
   // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill
   targetType?: AgentComponentTypeEnum;
-  // 模板模式下，目标类型
-  targetSubType?: 'ChatBot' | 'PageApp' | 'UserApp';
+  // 子类型,可用值:Multi,Single,WorkflowChat,ChatBot,TaskAgent,Agent,PageApp,UserApp,ThirdApp
+  targetSubType?: 'ChatBot' | 'PageApp' | 'UserApp' | 'ThirdApp';
   // 页码，从1开始
   page: number;
   // 每页数量

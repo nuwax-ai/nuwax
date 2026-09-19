@@ -1,52 +1,10 @@
 @import '@/styles/token.less';
 
-.project-manage {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
-.manage-body {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
-.manage-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: @padding;
-  overflow: auto;
-  padding-right: @paddingXs;
-}
-
-@media (max-width: 960px) {
-  .manage-body {
-    flex-direction: column;
-    overflow: auto;
-  }
-
-  .manage-main {
-    overflow: visible;
-    padding-right: 0;
-  }
-}
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: @marginSm;
-}
-
 .tabs {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: @marginXxs;
-  flex: 1;
-  min-width: 0;
 }
 
 .tab {
@@ -71,132 +29,27 @@
   font-weight: @fontWeightStrong;
 }
 
-.search {
-  width: 240px;
-  flex-shrink: 0;
+.project-manage {
+  height: 100%;
+  min-height: 0;
 }
 
-.grid {
+.main-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: @padding;
+  align-content: start;
+  margin-top: @marginSm;
 }
 
-.card {
-  display: flex;
-  gap: @marginSm;
-  padding: @padding;
-  border-radius: @borderRadius;
-  background: @colorBgContainer;
-  border: 1px solid @colorBorderSecondary;
-  cursor: pointer;
-  transition: all @motionDurationFast @motionEaseOut;
-
-  &:hover {
-    box-shadow: @boxShadowTertiary;
-    border-color: @colorPrimaryBorder;
+@media (min-width: 1440px) {
+  .main-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-.card-icon {
-  width: @controlHeightLg;
-  height: @controlHeightLg;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: @borderRadius;
-  background: @colorFillSecondary;
-  color: @colorTextSecondary;
-  font-size: @fontSizeXl;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+@media (max-width: 640px) {
+  .main-container {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
-}
-
-.card-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: @marginXxs;
-}
-
-.card-title-row {
-  display: flex;
-  align-items: center;
-  gap: @marginXs;
-}
-
-.card-more {
-  flex-shrink: 0;
-  border: none;
-  background: transparent;
-  padding: @paddingXxs;
-  border-radius: @borderRadius;
-  color: @colorTextTertiary;
-  cursor: pointer;
-
-  &:hover {
-    color: @colorText;
-    background: @colorFillSecondary;
-  }
-}
-
-.card-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: @fontSize;
-  font-weight: @fontWeightStrong;
-  color: @colorText;
-}
-
-.badge {
-  flex-shrink: 0;
-  font-size: @fontSizeSm;
-  line-height: @fontHeightSm;
-  padding: 0 @paddingXs;
-  border-radius: @borderRadius;
-}
-
-// 类型徽标配色：常规=蓝 / 网页=紫 / 全栈=绿
-.badge-normalproject {
-  color: @colorPrimary;
-  background: @colorPrimaryBg;
-}
-
-.badge-pageapp {
-  color: @colorInfo;
-  background: @colorInfoBg;
-}
-
-.badge-userapp {
-  color: @colorSuccess;
-  background: @colorSuccessBg;
-}
-
-.card-desc {
-  font-size: @fontSizeSm;
-  color: @colorTextTertiary;
-  display: box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-time {
-  margin-top: auto;
-  font-size: @fontSizeSm;
-  color: @colorTextQuaternary;
-}
-
-.empty {
-  margin-top: 80px;
 }
