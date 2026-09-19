@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type {
   ConnectorAuthType,
   CreateConnectorProviderParams,
@@ -101,34 +102,50 @@ export interface ConnectorAuthConfigSectionProps {
   editMode?: boolean;
 }
 
-const INJECTION_LOCATION_OPTIONS: Array<{
+/** 注入位置选项（函数包裹，避免模块顶层调用 dict 早于 i18n 初始化） */
+const getInjectionLocationOptions = (): Array<{
   label: string;
   value: InjectionLocation;
-}> = [
-  { label: '请求头 header', value: 'header' },
-  { label: '查询参数 query', value: 'query' },
+}> => [
+  {
+    label: dict('PC.Pages.ConnectorManage.formOptionInjectHeader'),
+    value: 'header',
+  },
+  {
+    label: dict('PC.Pages.ConnectorManage.formOptionInjectQuery'),
+    value: 'query',
+  },
 ];
 
 /** 自定义认证「注入规则」行的位置下拉（短文案，与设计稿一致） */
-const RULE_LOCATION_OPTIONS: Array<{
+const getRuleLocationOptions = (): Array<{
   label: string;
   value: InjectionLocation;
-}> = [
-  { label: '请求头', value: 'header' },
-  { label: '查询参数', value: 'query' },
+}> => [
+  {
+    label: dict('PC.Pages.ConnectorManage.formOptionRuleHeader'),
+    value: 'header',
+  },
+  {
+    label: dict('PC.Pages.ConnectorManage.formOptionRuleQuery'),
+    value: 'query',
+  },
 ];
 
 /** OAuth 2.0 - OAUTH APP 模式（二选一） */
-const OAUTH_APP_MODE_OPTIONS = [
+const getOauthAppModeOptions = (): Array<{
+  label: string;
+  value: 'platform' | 'byo';
+}> => [
   {
-    label: 'platform · 全局公共 App（配置一次，全员共用）',
+    label: dict('PC.Pages.ConnectorManage.formOptionOauthPlatform'),
     value: 'platform',
   },
   {
-    label: 'byo · 个人 App（每个用户连接时自填）',
+    label: dict('PC.Pages.ConnectorManage.formOptionOauthByo'),
     value: 'byo',
   },
-] as const;
+];
 
 /**
  * oauth2 同族认证方式（oauth2 / oauth2_device 扫描授权（设备码））：
@@ -139,21 +156,24 @@ const OAUTH_APP_MODE_OPTIONS = [
 export const isOauthLikeAuthType = (authType?: string): boolean =>
   authType === 'oauth2' || authType === 'oauth2_device';
 
-/** oauth2 - platform 模式 App 配置 placeholder 集 */
-const OAUTH_PLATFORM_PLACEHOLDERS = {
-  clientId: '在 IdP 注册的 Client ID',
-  authUrl: 'https://idp.example.com/oauth',
-  tokenUrl: 'https://idp.example.com/oauth',
-  scopes: '如 read:user repo',
-};
-
-/** 扫描授权（设备码）- platform 模式 placeholder 集（以飞书设备码流程为例） */
-const OAUTH_DEVICE_PLACEHOLDERS = {
-  clientId: '飞书开放平台的 App ID，如 cli_xxx',
-  authUrl: 'https://accounts.feishu.cn/oauth/v1/device_authorization',
-  tokenUrl: 'https://open.feishu.cn/open-apis/authen/v2/oauth/token',
-  scopes: '如 offline_access contact:user.base:readonly',
-};
+/**
+ * oauth2 / 扫描授权（设备码）- platform 模式 App 配置 placeholder 集
+ * （oauth2 通用 IdP 口径；设备码以飞书流程为例）
+ */
+const getOauthPlatformPlaceholders = (authType?: string) =>
+  authType === 'oauth2_device'
+    ? {
+        clientId: dict('PC.Pages.ConnectorManage.placeholderDeviceClientId'),
+        authUrl: 'https://accounts.feishu.cn/oauth/v1/device_authorization',
+        tokenUrl: 'https://open.feishu.cn/open-apis/authen/v2/oauth/token',
+        scopes: dict('PC.Pages.ConnectorManage.placeholderDeviceScopes'),
+      }
+    : {
+        clientId: dict('PC.Pages.ConnectorManage.placeholderPlatformClientId'),
+        authUrl: 'https://idp.example.com/oauth',
+        tokenUrl: 'https://idp.example.com/oauth',
+        scopes: dict('PC.Pages.ConnectorManage.placeholderPlatformScopes'),
+      };
 
 /** OAuth 2.0 固定回调地址（展示用，请到 IdP 登记） */
 const OAUTH_CALLBACK_URL =
@@ -283,24 +303,21 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
    * platform 模式 App 配置 placeholder：oauth2 通用 IdP 口径，
    * 扫描授权（设备码）按飞书设备码流程示例
    */
-  const platformPlaceholders =
-    authType === 'oauth2_device'
-      ? OAUTH_DEVICE_PLACEHOLDERS
-      : OAUTH_PLATFORM_PLACEHOLDERS;
+  const platformPlaceholders = getOauthPlatformPlaceholders(authType);
 
   return (
     <div className={styles.authSection}>
-      <div className={styles.authSectionTitle}>认证配置</div>
+      <div className={styles.authSectionTitle}>
+        {dict('PC.Pages.ConnectorManage.formAuthSectionTitle')}
+      </div>
       {authType === 'no_auth' ? (
         <div className={styles.authHint}>
-          免鉴权连接器不收集任何凭证，连接即可直接执行。
+          {dict('PC.Pages.ConnectorManage.tipNoAuth')}
         </div>
       ) : authType === 'bearer' ? (
         // Bearer 为固定约定：自动收集 Token 并注入 Authorization 头，无需配置
         <div className={styles.authHint}>
-          {
-            '建连时收集一个 Token，执行时自动注入 Authorization: Bearer <token>，无需额外配置。'
-          }
+          {dict('PC.Pages.ConnectorManage.tipBearer')}
         </div>
       ) : authType === 'custom' ? (
         <>
@@ -316,7 +333,11 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                     (value as Array<{ name?: string }> | undefined) ?? [];
                   if (!rows.some((row) => row?.name?.trim())) {
                     return Promise.reject(
-                      new Error('至少配置一个凭证字段（字段名必填）'),
+                      new Error(
+                        dict(
+                          'PC.Pages.ConnectorManage.formCredentialFieldRequired',
+                        ),
+                      ),
                     );
                   }
                 },
@@ -327,14 +348,14 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
               <>
                 <div className={styles.customGroupHeader}>
                   <span className={styles.customGroupTitle}>
-                    凭证字段（连接界面逐项收集）
+                    {dict('PC.Pages.ConnectorManage.formCredentialGroupTitle')}
                   </span>
                   <Button
                     size="small"
                     icon={<PlusOutlined />}
                     onClick={() => add({ name: '', label: '', secret: true })}
                   >
-                    添加
+                    {dict('PC.Pages.ConnectorManage.btnAdd')}
                   </Button>
                 </div>
                 {fields.map(({ key, name, ...restField }) => (
@@ -345,14 +366,24 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                       className={styles.customField}
                     >
                       {/* 紧凑动态行只限字数不加 showCount（计数后缀会挤占行内输入宽度） */}
-                      <Input placeholder="字段名 如 apiKey" maxLength={100} />
+                      <Input
+                        placeholder={dict(
+                          'PC.Pages.ConnectorManage.placeholderCredentialRowName',
+                        )}
+                        maxLength={100}
+                      />
                     </Form.Item>
                     <Form.Item
                       {...restField}
                       name={[name, 'label']}
                       className={styles.customField}
                     >
-                      <Input placeholder="显示名 如 API Key" maxLength={100} />
+                      <Input
+                        placeholder={dict(
+                          'PC.Pages.ConnectorManage.placeholderCredentialRowLabel',
+                        )}
+                        maxLength={100}
+                      />
                     </Form.Item>
                     <Form.Item
                       {...restField}
@@ -360,7 +391,9 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                       valuePropName="checked"
                       className={styles.customFixed}
                     >
-                      <Checkbox>密文框</Checkbox>
+                      <Checkbox>
+                        {dict('PC.Pages.ConnectorManage.formSecretCheckbox')}
+                      </Checkbox>
                     </Form.Item>
                     <CloseOutlined
                       className={styles.customRowRemove}
@@ -383,7 +416,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                   className={`${styles.customGroupHeader} ${styles.customGroupHeaderGap}`}
                 >
                   <span className={styles.customGroupTitle}>
-                    注入规则（凭证字段 → 请求位置）
+                    {dict('PC.Pages.ConnectorManage.formInjectGroupTitle')}
                   </span>
                   <Button
                     size="small"
@@ -392,7 +425,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                       add({ field: '', location: 'header', targetName: '' })
                     }
                   >
-                    添加
+                    {dict('PC.Pages.ConnectorManage.btnAdd')}
                   </Button>
                 </div>
                 {fields.map(({ key, name, ...restField }) => (
@@ -402,7 +435,12 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                       name={[name, 'field']}
                       className={styles.customField}
                     >
-                      <Input placeholder="凭证字段 如 apiKey" maxLength={100} />
+                      <Input
+                        placeholder={dict(
+                          'PC.Pages.ConnectorManage.placeholderInjectRuleField',
+                        )}
+                        maxLength={100}
+                      />
                     </Form.Item>
                     <span className={styles.customArrow}>→</span>
                     <Form.Item
@@ -410,14 +448,19 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                       name={[name, 'location']}
                       className={styles.customLocation}
                     >
-                      <Select options={RULE_LOCATION_OPTIONS} />
+                      <Select options={getRuleLocationOptions()} />
                     </Form.Item>
                     <Form.Item
                       {...restField}
                       name={[name, 'targetName']}
                       className={styles.customField}
                     >
-                      <Input placeholder="名称 如 X-Api-Key" maxLength={100} />
+                      <Input
+                        placeholder={dict(
+                          'PC.Pages.ConnectorManage.placeholderInjectRuleTargetName',
+                        )}
+                        maxLength={100}
+                      />
                     </Form.Item>
                     <CloseOutlined
                       className={styles.customRowRemove}
@@ -430,21 +473,21 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
           </Form.List>
           {/* 提示常驻认证配置底部 */}
           <div className={styles.authHint}>
-            凭证加密落库；执行时按注入规则写入请求头 / 查询参数（格式
-            header:名称 或 query:名称）。
+            {dict('PC.Pages.ConnectorManage.tipCustomAuth')}
           </div>
         </>
       ) : isOauthLikeAuthType(authType) ? (
         <>
-          <Form.Item name="oauthAppMode" label="OAUTH APP 模式（二选一）">
-            <Select options={[...OAUTH_APP_MODE_OPTIONS]} />
+          <Form.Item
+            name="oauthAppMode"
+            label={dict('PC.Pages.ConnectorManage.formOauthAppMode')}
+          >
+            <Select options={getOauthAppModeOptions()} />
           </Form.Item>
           {oauthAppMode === 'byo' ? (
             // byo：平台不维护公共 App，连接时用户在授权弹窗自填，此处无配置项
             <div className={styles.authHint}>
-              该连接器为 byo 模式：平台不维护公共
-              App。用户连接时在授权弹窗中自行填写自己的 App（Client ID / Secret
-              / 授权端点 / 令牌端点），配置按用户隔离加密保存。
+              {dict('PC.Pages.ConnectorManage.tipOauthByo')}
             </div>
           ) : (
             <>
@@ -453,7 +496,14 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                   <Form.Item
                     name="oauthClientId"
                     label="CLIENT ID"
-                    rules={[{ required: true, message: '请输入 Client ID' }]}
+                    rules={[
+                      {
+                        required: true,
+                        message: dict(
+                          'PC.Pages.ConnectorManage.formClientIdRequired',
+                        ),
+                      },
+                    ]}
                   >
                     <Input
                       placeholder={platformPlaceholders.clientId}
@@ -471,14 +521,25 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                     rules={
                       editMode
                         ? []
-                        : [{ required: true, message: '请输入 Client Secret' }]
+                        : [
+                            {
+                              required: true,
+                              message: dict(
+                                'PC.Pages.ConnectorManage.formClientSecretRequired',
+                              ),
+                            },
+                          ]
                     }
                   >
                     <Input.Password
                       placeholder={
                         editMode
-                          ? '留空保持不变（加密落库）'
-                          : '首次必填（加密落库）'
+                          ? dict(
+                              'PC.Pages.ConnectorManage.placeholderClientSecretKeep',
+                            )
+                          : dict(
+                              'PC.Pages.ConnectorManage.placeholderClientSecretFirst',
+                            )
                       }
                       maxLength={100}
                       autoComplete="new-password"
@@ -490,8 +551,15 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                 <Col span={12}>
                   <Form.Item
                     name="oauthAuthUrl"
-                    label="授权端点 AUTHURL"
-                    rules={[{ required: true, message: '请输入授权端点' }]}
+                    label={dict('PC.Pages.ConnectorManage.formAuthUrlLabel')}
+                    rules={[
+                      {
+                        required: true,
+                        message: dict(
+                          'PC.Pages.ConnectorManage.formAuthUrlRequired',
+                        ),
+                      },
+                    ]}
                   >
                     <Input
                       placeholder={platformPlaceholders.authUrl}
@@ -504,8 +572,15 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                 <Col span={12}>
                   <Form.Item
                     name="oauthTokenUrl"
-                    label="令牌端点 TOKENURL"
-                    rules={[{ required: true, message: '请输入令牌端点' }]}
+                    label={dict('PC.Pages.ConnectorManage.formTokenUrlLabel')}
+                    rules={[
+                      {
+                        required: true,
+                        message: dict(
+                          'PC.Pages.ConnectorManage.formTokenUrlRequired',
+                        ),
+                      },
+                    ]}
                   >
                     <Input
                       placeholder={platformPlaceholders.tokenUrl}
@@ -518,7 +593,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
               </Row>
               <Form.Item
                 name="oauthScopes"
-                label="SCOPES（空格或逗号分隔，可选）"
+                label={dict('PC.Pages.ConnectorManage.formOauthScopes')}
               >
                 <Input
                   placeholder={platformPlaceholders.scopes}
@@ -529,7 +604,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
               </Form.Item>
               {/* 回调地址：只读提示条，支持一键复制 */}
               <div className={styles.callbackBar}>
-                <span>回调地址（请到 IdP 登记）：</span>
+                <span>{dict('PC.Pages.ConnectorManage.tipOauthCallback')}</span>
                 <Typography.Text
                   className={styles.callbackUrl}
                   copyable={{ text: OAUTH_CALLBACK_URL }}
@@ -544,9 +619,14 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
         <>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="credentialFieldName" label="凭证字段名">
+              <Form.Item
+                name="credentialFieldName"
+                label={dict('PC.Pages.ConnectorManage.formCredentialNameLabel')}
+              >
                 <Input
-                  placeholder="如 apiKey"
+                  placeholder={dict(
+                    'PC.Pages.ConnectorManage.placeholderCredentialNameExample',
+                  )}
                   maxLength={100}
                   showCount
                   allowClear
@@ -554,8 +634,11 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="injectionLocation" label="注入位置">
-                <Select options={INJECTION_LOCATION_OPTIONS} />
+              <Form.Item
+                name="injectionLocation"
+                label={dict('PC.Pages.ConnectorManage.formInjectionLocation')}
+              >
+                <Select options={getInjectionLocationOptions()} />
               </Form.Item>
             </Col>
           </Row>
@@ -563,9 +646,14 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
           <Row gutter={16}>
             <Col span={12}>
               {injectionLocation === 'header' ? (
-                <Form.Item name="requestHeaderName" label="请求头名称">
+                <Form.Item
+                  name="requestHeaderName"
+                  label={dict('PC.Pages.ConnectorManage.formRequestHeaderName')}
+                >
                   <Input
-                    placeholder="如 Authorization"
+                    placeholder={dict(
+                      'PC.Pages.ConnectorManage.placeholderRequestHeaderExample',
+                    )}
                     maxLength={100}
                     showCount
                     allowClear
@@ -574,9 +662,14 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
               ) : null}
             </Col>
             <Col span={12}>
-              <Form.Item name="valuePrefix" label="值前缀（可选）">
+              <Form.Item
+                name="valuePrefix"
+                label={dict('PC.Pages.ConnectorManage.formValuePrefixOptional')}
+              >
                 <Input
-                  placeholder="如 Token（可留空）"
+                  placeholder={dict(
+                    'PC.Pages.ConnectorManage.placeholderValuePrefixExample',
+                  )}
                   maxLength={100}
                   showCount
                   allowClear
@@ -586,7 +679,7 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
           </Row>
           {/* 提示常驻认证配置底部（两种注入位置都展示） */}
           <div className={styles.authHint}>
-            注入 query 时，查询参数名即『凭证字段名』。
+            {dict('PC.Pages.ConnectorManage.tipQueryInjection')}
           </div>
         </>
       )}

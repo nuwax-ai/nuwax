@@ -4,7 +4,8 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import ConnectorConnectDrawer from '@/pages/SpaceResource/Connector/components/ConnectorConnectDrawer';
 import ConnectorActionCreateModal from '@/pages/SystemManagement/ConnectorManage/components/ConnectorActionCreateModal';
 import ConnectorActionDebugModal from '@/pages/SystemManagement/ConnectorManage/components/ConnectorActionDebugModal';
-import { AUTH_TYPE_LABEL_MAP } from '@/pages/SystemManagement/ConnectorManage/constants';
+import { getAuthTypeLabelMap } from '@/pages/SystemManagement/ConnectorManage/constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiConnectorActionCreate,
   apiConnectorActionDelete,
@@ -321,7 +322,7 @@ const ConnectorProviderDetailDrawer: React.FC<
   const handleToggleAction = useCallback(
     async (action: ConnectorProviderAction) => {
       if (action.id === undefined || action.id === null || action.id === '') {
-        message.error('工具 id 缺失，无法切换状态');
+        message.error(dict('PC.Pages.ConnectorManage.toastToggleMissingId'));
         return;
       }
       const idKey = action.id;
@@ -360,7 +361,11 @@ const ConnectorProviderDetailDrawer: React.FC<
         if (response?.code !== SUCCESS_CODE) {
           throw new Error(response?.message || 'toggle failed');
         }
-        message.success(nextEnabled ? '已启用该工具' : '已停用该工具');
+        message.success(
+          nextEnabled
+            ? dict('PC.Pages.ConnectorManage.toastToolEnabled')
+            : dict('PC.Pages.ConnectorManage.toastToolDisabled'),
+        );
         // 静默刷新详情：失败也不影响用户已看到的乐观结果
         try {
           const refreshResponse = await apiSystemConnectorProviderDetail({
@@ -385,7 +390,11 @@ const ConnectorProviderDetailDrawer: React.FC<
             ),
           };
         });
-        message.error(nextEnabled ? '启用工具失败' : '停用工具失败');
+        message.error(
+          nextEnabled
+            ? dict('PC.Pages.ConnectorManage.toastEnableToolFailed')
+            : dict('PC.Pages.ConnectorManage.toastDisableToolFailed'),
+        );
       } finally {
         setTogglingActionIds((prev) => {
           const next = new Set(prev);
@@ -404,7 +413,7 @@ const ConnectorProviderDetailDrawer: React.FC<
   const handleDeleteAction = useCallback(
     async (action: ConnectorProviderAction) => {
       if (action.id === undefined || action.id === null || action.id === '') {
-        message.error('工具 id 缺失，无法删除');
+        message.error(dict('PC.Pages.ConnectorManage.toastDeleteMissingId'));
         return;
       }
       const idKey = action.id;
@@ -430,10 +439,10 @@ const ConnectorProviderDetailDrawer: React.FC<
             actions: prev.actions.filter((a) => a.id !== idKey),
           };
         });
-        message.success('已删除该工具');
+        message.success(dict('PC.Pages.ConnectorManage.toastToolDeleted'));
         onActionsChanged?.();
       } catch {
-        message.error('删除工具失败');
+        message.error(dict('PC.Pages.ConnectorManage.toastDeleteToolFailed'));
       } finally {
         setDeletingActionIds((prev) => {
           const next = new Set(prev);
@@ -458,7 +467,9 @@ const ConnectorProviderDetailDrawer: React.FC<
    */
   const handleOauthAuthorize = useCallback(async () => {
     if (!service) {
-      message.error('连接器 service 缺失，无法发起授权');
+      message.error(
+        dict('PC.Pages.ConnectorManage.toastServiceMissingForAuthorize'),
+      );
       return;
     }
     // 已有授权弹窗在打开：聚焦既有弹窗即可，不重复发起
@@ -473,13 +484,18 @@ const ConnectorProviderDetailDrawer: React.FC<
         spaceId: connectSpaceId,
       });
       if (response?.code !== SUCCESS_CODE || !response.data?.authorizeUrl) {
-        message.error(response?.message || '获取授权地址失败');
+        message.error(
+          response?.message ||
+            dict('PC.Pages.ConnectorManage.toastGetAuthorizeUrlFailed'),
+        );
         return;
       }
       // 保持 window 引用（不加 noopener），后续要轮询它的 closed 状态
       const win = window.open(response.data.authorizeUrl, '_blank');
       if (!win) {
-        message.warning('授权窗口被浏览器拦截，请允许弹窗后重试');
+        message.warning(
+          dict('PC.Pages.ConnectorManage.toastAuthorizeWindowBlocked'),
+        );
         return;
       }
       oauthWinRef.current = win;
@@ -494,7 +510,9 @@ const ConnectorProviderDetailDrawer: React.FC<
           // 弹窗关闭即刷新详情：授权成功则 connected=true、按钮消失
           void fetchDetail().then((latest) => {
             if (latest?.provider?.connected) {
-              message.success('连接成功');
+              message.success(
+                dict('PC.Pages.ConnectorManage.toastConnectSuccess'),
+              );
               onConnectionChanged?.();
             }
           });
@@ -529,7 +547,7 @@ const ConnectorProviderDetailDrawer: React.FC<
         {
           name: keyName,
           label: keyName,
-          placeholder: '粘贴 API Key',
+          placeholder: dict('PC.Pages.ConnectorManage.placeholderPasteApiKey'),
           secret: true,
         },
       ];
@@ -539,7 +557,7 @@ const ConnectorProviderDetailDrawer: React.FC<
         {
           name: 'token',
           label: 'token',
-          placeholder: '粘贴 Token',
+          placeholder: dict('PC.Pages.ConnectorManage.placeholderPasteToken'),
           secret: true,
         },
       ];
@@ -550,12 +568,14 @@ const ConnectorProviderDetailDrawer: React.FC<
   // ---------------- 概览字段（详情接口 provider 为权威源） ----------------
   const provider = detail?.provider ?? null;
   const authTypeValue = provider?.authType;
+  const authTypeLabelMap = getAuthTypeLabelMap();
   const authLabel =
-    (authTypeValue && AUTH_TYPE_LABEL_MAP[authTypeValue]) ??
-    authTypeValue ??
-    '-';
+    (authTypeValue && authTypeLabelMap[authTypeValue]) ?? authTypeValue ?? '-';
   const baseUrl = provider?.baseUrl ?? '-';
-  const proxyLabel = provider?.proxyEnabled ?? false ? '已开启' : '未开启';
+  const proxyLabel =
+    provider?.proxyEnabled ?? false
+      ? dict('PC.Pages.ConnectorManage.descProxyEnabled')
+      : dict('PC.Pages.ConnectorManage.descProxyDisabled');
   const connected = provider?.connected ?? false;
 
   /**
@@ -568,8 +588,8 @@ const ConnectorProviderDetailDrawer: React.FC<
   const connectButtonText =
     authTypeValue && authTypeValue !== 'no_auth'
       ? authTypeValue === 'oauth2'
-        ? '去授权'
-        : '去连接'
+        ? dict('PC.Pages.ConnectorManage.btnGoAuthorize')
+        : dict('PC.Pages.ConnectorManage.btnGoConnect')
       : null;
 
   const handleConnectClick = () => {
@@ -605,7 +625,7 @@ const ConnectorProviderDetailDrawer: React.FC<
    */
   const handleDisconnect = useCallback(async () => {
     if (connectionId === null) {
-      message.error('连接 id 缺失，无法断开连接');
+      message.error(dict('PC.Pages.ConnectorManage.toastDisconnectMissingId'));
       return;
     }
     if (disconnecting) return;
@@ -613,7 +633,7 @@ const ConnectorProviderDetailDrawer: React.FC<
       setDisconnecting(true);
       const response = await apiConnectorConnectionDelete(connectionId);
       if (response?.code === SUCCESS_CODE) {
-        message.success('已断开连接');
+        message.success(dict('PC.Pages.ConnectorManage.toastDisconnected'));
         await fetchDetail();
         onConnectionChanged?.();
       }
@@ -628,7 +648,7 @@ const ConnectorProviderDetailDrawer: React.FC<
   // ---------------- 工具表格列 ----------------
   const toolColumns: ColumnsType<ConnectorProviderAction> = [
     {
-      title: '工具名称',
+      title: dict('PC.Pages.ConnectorManage.columnToolName'),
       dataIndex: 'name',
       width: 220,
       render: (_, action) => (
@@ -644,31 +664,33 @@ const ConnectorProviderDetailDrawer: React.FC<
       ),
     },
     {
-      title: '工具说明',
+      title: dict('PC.Pages.ConnectorManage.columnToolDesc'),
       dataIndex: 'description',
       ellipsis: true,
       render: (_, action) => action.description || '-',
     },
     {
-      title: '状态',
+      title: dict('PC.Pages.ConnectorManage.columnStatus'),
       dataIndex: 'status',
       width: 90,
       align: 'center',
       render: (_, action) => (
         <Tag color={action.status === 'enabled' ? 'green' : 'default'}>
-          {action.status === 'enabled' ? '启用' : '停用'}
+          {action.status === 'enabled'
+            ? dict('PC.Common.Global.enable')
+            : dict('PC.Pages.ConnectorManage.statusDisabled')}
         </Tag>
       ),
     },
     {
-      title: '接口',
+      title: dict('PC.Pages.ConnectorManage.columnProtocol'),
       dataIndex: 'protocol',
       width: 90,
       align: 'center',
       render: (_, action) => (action.protocol || 'HTTP').toUpperCase(),
     },
     {
-      title: '操作',
+      title: dict('PC.Common.Global.operation'),
       key: 'actions',
       width: 250,
       align: 'center',
@@ -687,10 +709,12 @@ const ConnectorProviderDetailDrawer: React.FC<
                   setDebugModalOpen(true);
                 }}
               >
-                调试
+                {dict('PC.Pages.ConnectorManage.btnDebug')}
               </a>
             ) : (
-              <span className={styles.actionDisabled}>调试</span>
+              <span className={styles.actionDisabled}>
+                {dict('PC.Pages.ConnectorManage.btnDebug')}
+              </span>
             )}
             {/* 编辑：复用「新增工具」弹窗回填当前工具定义（编辑模式） */}
             <a
@@ -699,7 +723,7 @@ const ConnectorProviderDetailDrawer: React.FC<
                 setActionModalOpen(true);
               }}
             >
-              编辑
+              {dict('PC.Common.Global.edit')}
             </a>
             {toggling ? (
               <span
@@ -707,25 +731,33 @@ const ConnectorProviderDetailDrawer: React.FC<
                 style={{ color: isEnabled ? '#ff4d4f' : '#1890ff' }}
               >
                 <Spin size="small" />
-                <span>{isEnabled ? '停用中…' : '启用中…'}</span>
+                <span>
+                  {isEnabled
+                    ? dict('PC.Pages.ConnectorManage.btnDisabling')
+                    : dict('PC.Pages.ConnectorManage.btnEnabling')}
+                </span>
               </span>
             ) : (
               <a
                 onClick={() => handleToggleAction(action)}
                 style={{ color: isEnabled ? '#ff4d4f' : '#1890ff' }}
               >
-                {isEnabled ? '停用' : '启用'}
+                {isEnabled
+                  ? dict('PC.Pages.ConnectorManage.statusDisabled')
+                  : dict('PC.Common.Global.enable')}
               </a>
             )}
             {/* 删除：Popconfirm 二次确认，请求飞行中「确定」置 loading */}
             <Popconfirm
-              title="确认删除该工具？"
-              okText="确认删除"
-              cancelText="取消"
+              title={dict('PC.Pages.ConnectorManage.tipConfirmDeleteTool')}
+              okText={dict('PC.Pages.ConnectorManage.btnConfirmDelete')}
+              cancelText={dict('PC.Common.Global.cancel')}
               okButtonProps={{ danger: true, loading: deleting }}
               onConfirm={() => handleDeleteAction(action)}
             >
-              <a style={{ color: '#ff4d4f' }}>删除</a>
+              <a style={{ color: '#ff4d4f' }}>
+                {dict('PC.Common.Global.delete')}
+              </a>
             </Popconfirm>
           </Space>
         );
@@ -748,20 +780,24 @@ const ConnectorProviderDetailDrawer: React.FC<
       <div className={styles.content}>
         {!service ? (
           <div className={styles.emptyWrap}>
-            <Empty description="缺少 service 参数" />
+            <Empty
+              description={dict('PC.Pages.ConnectorManage.emptyMissingService')}
+            />
           </div>
         ) : loading ? (
           <Loading className="h-full" />
         ) : !detail ? (
           <div className={styles.emptyWrap}>
-            <Empty description="暂无数据" />
+            <Empty description={dict('PC.Common.Global.noData')} />
           </div>
         ) : (
           <>
             {/* 顶部概览（label / value 两列网格） */}
             <div className={styles.infoGrid}>
               <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>认证方式</span>
+                <span className={styles.infoLabel}>
+                  {dict('PC.Pages.ConnectorManage.descAuthType')}
+                </span>
                 <span className={styles.infoValue}>{authLabel}</span>
               </div>
               <div className={styles.infoItem}>
@@ -769,26 +805,36 @@ const ConnectorProviderDetailDrawer: React.FC<
                 <span className={styles.infoValue}>{baseUrl}</span>
               </div>
               <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>通用代理</span>
+                <span className={styles.infoLabel}>
+                  {dict('PC.Pages.ConnectorManage.descProxy')}
+                </span>
                 <span className={styles.infoValue}>{proxyLabel}</span>
               </div>
               {/* 免鉴权（no_auth）无连接概念：连接状态整项不展示 */}
               {authTypeValue !== 'no_auth' ? (
                 <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>连接状态</span>
+                  <span className={styles.infoLabel}>
+                    {dict('PC.Pages.ConnectorManage.descConnectStatus')}
+                  </span>
                   <span
                     className={`${styles.infoValue} ${styles.connectValue}`}
                   >
                     {connected ? (
                       <>
-                        <span className={styles.connectedText}>已连接</span>
+                        <span className={styles.connectedText}>
+                          {dict('PC.Components.CapabilityModal.connected')}
+                        </span>
                         {/* 断开连接：Popconfirm 二次确认（交互同工具删除），
                             管理侧 / 空间侧均展示；成功后 connected 变 false、
                             按钮消失（空间侧随之出现「去连接」） */}
                         <Popconfirm
-                          title="确认断开该连接？"
-                          okText="确认断开"
-                          cancelText="取消"
+                          title={dict(
+                            'PC.Pages.ConnectorManage.tipConfirmDisconnect',
+                          )}
+                          okText={dict(
+                            'PC.Pages.ConnectorManage.btnConfirmDisconnect',
+                          )}
+                          cancelText={dict('PC.Common.Global.cancel')}
                           okButtonProps={{
                             danger: true,
                             loading: disconnecting,
@@ -801,13 +847,15 @@ const ConnectorProviderDetailDrawer: React.FC<
                             className={styles.disconnectBtn}
                             loading={disconnecting}
                           >
-                            断开连接
+                            {dict('PC.Pages.ConnectorManage.btnDisconnect')}
                           </Button>
                         </Popconfirm>
                       </>
                     ) : (
                       <>
-                        <span className={styles.disconnectedText}>未连接</span>
+                        <span className={styles.disconnectedText}>
+                          {dict('PC.Components.CapabilityModal.disconnected')}
+                        </span>
                         {connectButtonText ? (
                           <Button
                             type="primary"
@@ -828,7 +876,9 @@ const ConnectorProviderDetailDrawer: React.FC<
 
             {/* 工具栏：工具列表标题 + 「+ 添加工具」 */}
             <div className={styles.toolbar}>
-              <div className={styles.toolSectionTitle}>工具列表</div>
+              <div className={styles.toolSectionTitle}>
+                {dict('PC.Pages.ConnectorManage.descToolList')}
+              </div>
               <Button
                 type="primary"
                 onClick={() => {
@@ -837,7 +887,7 @@ const ConnectorProviderDetailDrawer: React.FC<
                   setActionModalOpen(true);
                 }}
               >
-                + 添加工具
+                {dict('PC.Pages.ConnectorManage.btnAddTool')}
               </Button>
             </div>
 
