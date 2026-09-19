@@ -108,7 +108,25 @@
       overflow-y: auto;
     }
 
-    // plan_approval（MCP 外挂式计划审批）条目清单
+    // plan_approval 摘要行（完整计划卡在消息流置尾展示）
+    .planSummary {
+      flex-shrink: 0;
+      margin: @marginXs @paddingSm 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--background-color-third, rgba(0, 0, 0, 4%));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+
+      .planSummaryCount {
+        color: var(--text-color-secondary, rgba(0, 0, 0, 45%));
+        font-size: 12px;
+      }
+    }
+
+    // plan_approval（MCP 外挂式计划审批）条目清单（保留兼容旧渲染）
     .planEntries {
       flex-shrink: 0;
       margin: @marginXs @paddingSm 0;

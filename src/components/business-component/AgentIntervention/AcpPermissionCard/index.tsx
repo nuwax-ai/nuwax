@@ -384,15 +384,15 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
       </header>
 
       <div className={styles.body}>
-        {planEntries.length ? (
-          <ul className={styles.planEntries}>
-            {planEntries.map((entry, index) => (
-              <li key={index} className={styles.planEntryItem}>
-                <span className={styles.planEntryIndex}>{index + 1}</span>
-                <span className={styles.planEntryContent}>{entry.content}</span>
-              </li>
-            ))}
-          </ul>
+        {isPlanApproval && planEntries.length ? (
+          <div className={styles.planSummary}>
+            <span>
+              {t('PC.Components.AcpPermissionCard.planApprovalTitle')}
+            </span>
+            <span className={styles.planSummaryCount}>
+              {t('PC.Components.PlanDetailCard.stepCount', planEntries.length)}
+            </span>
+          </div>
         ) : null}
         {planDocument ? (
           <div className={styles.planDocWrap}>
@@ -443,9 +443,15 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
                   <span className={styles.buttonLabel}>
                     <span className={styles['option-index']}>1</span>
                     <EllipsisTooltip
-                      text={t(
-                        'PC.Components.AcpPermissionCard.option.planApprove',
-                      )}
+                      text={
+                        isPlanApproval
+                          ? t(
+                              'PC.Components.AcpPermissionCard.planApprovalApprove',
+                            )
+                          : t(
+                              'PC.Components.AcpPermissionCard.option.planApprove',
+                            )
+                      }
                       className={styles['button-text']}
                     />
                   </span>

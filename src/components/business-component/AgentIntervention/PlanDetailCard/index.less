@@ -1,0 +1,117 @@
+.plan-detail-card {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--v2-color-border, rgba(0, 0, 0, 8%));
+  border-radius: 10px;
+  background: var(--v2-color-fill, rgba(0, 0, 0, 2%));
+
+  .plan-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    min-height: 28px;
+
+    .plan-detail-icon {
+      color: var(--v2-color-primary, #3b5bfd);
+      font-size: 14px;
+    }
+
+    .plan-detail-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+    }
+
+    .plan-detail-progress {
+      font-size: 12px;
+      color: var(--v2-color-text-tertiary, rgba(0, 0, 0, 45%));
+      padding: 0 6px;
+      border-radius: 8px;
+      background: var(--v2-color-fill-hover, rgba(0, 0, 0, 6%));
+    }
+
+    .plan-detail-actions {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+  }
+
+  .plan-detail-body {
+    margin-top: 6px;
+  }
+
+  .plan-entries {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &.is-large {
+      gap: 12px;
+
+      .plan-entry {
+        font-size: 14px;
+        line-height: 22px;
+        padding: 8px 12px;
+      }
+    }
+
+    .plan-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      line-height: 20px;
+      color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+
+      .entry-done {
+        color: var(--v2-color-success, #52c41a);
+      }
+
+      .entry-running {
+        color: var(--v2-color-primary, #3b5bfd);
+      }
+
+      .entry-failed {
+        color: var(--v2-color-error, #ff4d4f);
+      }
+
+      .entry-pending {
+        color: var(--v2-color-text-quaternary, rgba(0, 0, 0, 25%));
+      }
+
+      .plan-entry-index {
+        flex-shrink: 0;
+        min-width: 18px;
+        text-align: right;
+        color: var(--v2-color-text-tertiary, rgba(0, 0, 0, 45%));
+      }
+
+      .plan-entry-content {
+        word-break: break-word;
+      }
+    }
+  }
+}
+
+.plan-preview-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+
+  .plan-detail-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+}
+
+.plan-preview-body {
+  max-height: 68vh;
+  overflow-y: auto;
+}

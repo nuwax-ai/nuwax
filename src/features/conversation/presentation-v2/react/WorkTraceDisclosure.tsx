@@ -2,6 +2,7 @@
  * V2 整轮工作轨迹：外层指标 disclosure → 连续工具组 → 原子工具详情。
  * 展开状态全部保存在本层，外层收起导致子树卸载时不会丢失用户选择。
  */
+import PlanDetailCard from '@/components/business-component/AgentIntervention/PlanDetailCard';
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
@@ -14,6 +15,7 @@ import {
   resolveNodeMode,
   splitNodesByVisibility,
 } from '../renderPreferences';
+import { normalizeV2ToolDetail } from '../toolDetail';
 import {
   composeConversationTraceItems,
   getToolGroupActionKinds,
@@ -26,10 +28,10 @@ import type {
   ConversationTraceItem,
   ConversationTurnPresentationV2,
 } from '../types';
-import ProcessNodeRow from './ProcessNodeRow';
-import ToolGroupDisclosure from './ToolGroupDisclosure';
 import { formatElapsed, formatElapsedClock } from './formatElapsed';
 import styles from './index.less';
+import ProcessNodeRow from './ProcessNodeRow';
+import ToolGroupDisclosure from './ToolGroupDisclosure';
 
 const cx = classNames.bind(styles);
 
@@ -168,6 +170,28 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
     });
   }, [revealHidden, traceItems, visibleNodes]);
 
+  // 计划节点抽出置尾（产品定案 2026-09-19）：计划方案卡始终渲染在轨迹之后、
+  // 不受轨迹折叠影响；轨迹内不再重复展示 plan 行。取最后一个 plan 节点
+  // （投影层已对相邻 plan 去冗余，正常仅一个）。
+  const latestPlanNode = useMemo(() => {
+    for (let index = traceItems.length - 1; index >= 0; index -= 1) {
+      const item = traceItems[index];
+      if (item.kind === 'standalone' && item.node.kind === 'plan') {
+        return item.node;
+      }
+    }
+    return null;
+  }, [traceItems]);
+  const planDetailEntries = useMemo(() => {
+    if (!latestPlanNode) return [];
+    return normalizeV2ToolDetail({
+      componentType:
+        latestPlanNode.processing?.type ?? latestPlanNode.componentType,
+      name: latestPlanNode.processing?.name ?? latestPlanNode.title,
+      result: latestPlanNode.processing?.result,
+    }).steps;
+  }, [latestPlanNode]);
+
   const [nodeExpanded, setNodeExpanded] = useState<Record<string, boolean>>({});
   const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>(
     {},
@@ -274,6 +298,9 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
       {expanded && (
         <div id={traceBodyId} className={cx(styles['trace-body'])}>
           {shownItems.map((item) => {
+            if (item.kind === 'standalone' && item.node.kind === 'plan') {
+              return null; // 计划卡置尾渲染（见 trace 容器后）
+            }
             if (item.kind === 'narration') {
               return (
                 <NarrationText key={item.id} narrationId={item.id}>
@@ -326,6 +353,11 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
               )}
             </button>
           )}
+        </div>
+      )}
+      {planDetailEntries.length > 0 && (
+        <div className={cx(styles['trace-plan-tail'])}>
+          <PlanDetailCard entries={planDetailEntries} defaultExpanded />
         </div>
       )}
     </div>
