@@ -138,11 +138,11 @@ const RunOver: React.FC<RunOverProps> = ({
       trigger="hover"
     >
       <div className={cx('cursor-pointer', styles['run-success'])}>
-        {/* 显示loading状态 */}
+        {/* 显示loading状态（扫光只保留在会话消息流渲染内容里，状态栏一律不用） */}
         {isThinking ? (
           <>
             <LoadingOutlined className={cx(styles.successColor)} />
-            <span className={cx(styles['status-name'], styles['shimmer-text'])}>
+            <span className={cx(styles['status-name'])}>
               {dict('PC.Components.RunOver.thinking')}
             </span>
           </>
@@ -151,13 +151,7 @@ const RunOver: React.FC<RunOverProps> = ({
           <>
             <LoadingOutlined className={cx(styles.successColor)} />
             {showStatusDesc && lastProcessInfo && (
-              <span
-                className={cx(
-                  styles['status-name'],
-                  lastProcessInfo.status === ProcessingEnum.EXECUTING &&
-                    styles['shimmer-text'],
-                )}
-              >
+              <span className={cx(styles['status-name'])}>
                 {lastProcessInfo.status === ProcessingEnum.EXECUTING
                   ? `${dict('PC.Components.RunOver.calling', '')} `
                   : `${dict('PC.Components.RunOver.called', '')} `}

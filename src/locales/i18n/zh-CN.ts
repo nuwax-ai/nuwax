@@ -274,6 +274,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ConversationRendererV2.traceMetricRunning": "工作中 {0}",
   "PC.Components.ConversationRendererV2.traceMetricElapsed": "已工作 {0}",
   "PC.Components.ConversationRendererV2.nodeTitleReasoning": "思考",
+  "PC.Components.ConversationRendererV2.nodeTitleReasoningRunning": "正在思考",
   "PC.Components.ConversationRendererV2.nodeTitleContext": "上下文",
   "PC.Components.ConversationRendererV2.nodeTitleTool": "工具调用",
   "PC.Components.ConversationRendererV2.nodeTitleSubagent": "子智能体",

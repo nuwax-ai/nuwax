@@ -10,6 +10,7 @@ import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { normalizeV2ToolDetail } from '@/features/conversation/presentation-v2/toolDetail';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
+import { resolveOpenUiDisplayState } from '@/utils/openUiArtifact';
 import {
   BulbOutlined,
   CloseCircleOutlined,
@@ -30,7 +31,7 @@ import {
 } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   getNodeToolActionKind,
   hasProcessNodeDetail,
@@ -41,7 +42,6 @@ import type {
   ConversationToolActionKind,
   ConversationToolResource,
 } from '../types';
-import { resolveOpenUiDisplayState } from '@/utils/openUiArtifact';
 import FileResourceLink from './FileResourceLink';
 import styles from './index.less';
 import ToolNodeDetail from './ToolNodeDetail';
@@ -178,6 +178,38 @@ export const toolActionLabel = (
 
 const firstLine = (value?: string): string =>
   (value ?? '').split(/\r?\n/, 1)[0].trim();
+
+/**
+ * 运行中思考摘要的贴尾滚动：每帧把 scrollLeft 向最大滚动位推进
+ * （指数缓出 + 最低速度），内容流式追加时呈现持续流动的播放感。
+ * 与 MarkdownCustomThink 的 ticker 同一套 rAF 方案——滚动由 JS 驱动，
+ * CSS 动画被系统「减弱动态效果」冻结时依然生效。
+ */
+const useTailGlide = (
+  viewportRef: React.RefObject<HTMLSpanElement>,
+  active: boolean,
+) => {
+  useEffect(() => {
+    if (!active) return;
+    let frame = 0;
+    const glide = () => {
+      const viewport = viewportRef.current;
+      if (viewport) {
+        const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+        if (maxScroll > 0) {
+          const next =
+            viewport.scrollLeft +
+            (maxScroll - viewport.scrollLeft) * 0.08 +
+            0.5;
+          viewport.scrollLeft = Math.min(next, maxScroll);
+        }
+      }
+      frame = requestAnimationFrame(glide);
+    };
+    frame = requestAnimationFrame(glide);
+    return () => cancelAnimationFrame(frame);
+  }, [active, viewportRef]);
+};
 
 export interface ToolNodePresentation {
   kind: ConversationToolActionKind;
@@ -370,7 +402,16 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
     : KIND_ICONS[node.kind] ?? QuestionCircleOutlined;
   const detailId = `v2-node-${node.id}`;
   const hasDetail = hasProcessNodeDetail(node);
-  const title = toolPresentation?.action ?? nodeDisplayTitle(node);
+  // 运行中的思考行走「正在思考 · 摘要贴尾滚动」形态（对齐参考交互），结束后回「思考」静态行
+  const isRunningReasoning =
+    node.kind === 'reasoning' && node.status === 'running';
+  const tickerViewportRef = useRef<HTMLSpanElement>(null);
+  useTailGlide(tickerViewportRef, isRunningReasoning);
+  const title =
+    toolPresentation?.action ??
+    (isRunningReasoning
+      ? dict('PC.Components.ConversationRendererV2.nodeTitleReasoningRunning')
+      : nodeDisplayTitle(node));
   const summaryText = toolPresentation
     ? toolPresentation.target
     : node.kind === 'completed-interaction'
@@ -408,6 +449,27 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
             {toolPresentation.files.map((filePath) => (
               <FileResourceLink key={filePath} target={filePath} inline />
             ))}
+          </span>
+        </>
+      ) : isRunningReasoning && (node.thinkText ?? '').trim() ? (
+        <>
+          <span className={cx(styles['node-dot'])} aria-hidden="true">
+            ·
+          </span>
+          <span
+            ref={tickerViewportRef}
+            className={cx(
+              styles['node-summary'],
+              styles['node-summary-ticker'],
+            )}
+            data-testid="v2-node-summary-ticker"
+          >
+            {/* 放全量思考文本(与 MarkdownCustomThink 同口径):换行在 nowrap
+                视口内摊平成一行,rAF 贴尾才能持续追到最新追加的文字;
+                summary 只是首行,内容一换行就冻结,滚动会停在旧文上 */}
+            <span className={cx(styles['node-summary-ticker-text'])}>
+              {node.thinkText}
+            </span>
           </span>
         </>
       ) : (

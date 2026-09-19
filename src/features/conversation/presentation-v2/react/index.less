@@ -219,6 +219,37 @@
   white-space: nowrap;
 }
 
+// 运行中思考摘要的贴尾滚动视口：滚动由 ProcessNodeRow 的 rAF 贴尾逐帧驱动
+// （故不设 scroll-behavior:smooth，会把程序赋值异步动画化）；滚动条隐藏保持
+// 「播放」观感，左缘淡出强化内容从右侧持续流出的方向感
+.node-summary-ticker {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* stylelint-disable-next-line property-no-vendor-prefix -- Safari 需要 -webkit 前缀 */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12px);
+  mask-image: linear-gradient(to right, transparent, #000 12px);
+}
+
+.node-summary-ticker-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+// 「正在思考 · 内容」的点分隔
+.node-dot {
+  flex-shrink: 0;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+}
+
 // 折叠行内的文件链接组：徽标 + 可点文件名逐个排列，超宽整组截断
 .node-file-links {
   display: inline-flex;

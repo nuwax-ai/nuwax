@@ -274,6 +274,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ConversationRendererV2.traceMetricRunning": "Working for {0}",
   "PC.Components.ConversationRendererV2.traceMetricElapsed": "Worked {0}",
   "PC.Components.ConversationRendererV2.nodeTitleReasoning": "Thinking",
+  "PC.Components.ConversationRendererV2.nodeTitleReasoningRunning": "Thinking",
   "PC.Components.ConversationRendererV2.nodeTitleContext": "Context",
   "PC.Components.ConversationRendererV2.nodeTitleTool": "Tool call",
   "PC.Components.ConversationRendererV2.nodeTitleSubagent": "Sub-agent",
