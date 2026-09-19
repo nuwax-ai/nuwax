@@ -225,6 +225,72 @@ describe('conversationRuntimeSession', () => {
     expect(session.getState().currentRequestId).toBe('req-ask');
   });
 
+  it('REQUEST_PERMISSION 优先投影为 ACP 干预交互，不落入普通 PROCESSING', () => {
+    const { session } = createSession({
+      interventionAdapter: {
+        patchEvent: processInterventionSsePatch,
+        reconcileMessages: reconcileAcpPermissionStatusesInMessageList,
+      },
+    });
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '演示权限审批' });
+    const callbacks = mockOpenLive.mock.calls[0][1] as LiveCallbacks;
+
+    callbacks.onMessage({
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      requestId: 'req-perm',
+      data: {
+        targetId: -1,
+        name: 'Backend.Sandbox.Event.RequestPermission',
+        type: 'Event',
+        status: 'FINISHED',
+        executeId: 'perm-runtime-1',
+        subEventType: 'REQUEST_PERMISSION',
+        result: {
+          id: -1,
+          name: 'Backend.Sandbox.Event.RequestPermission',
+          type: 'Event',
+          startTime: Date.now(),
+          endTime: Date.now(),
+          input: {
+            request_permission_request: {
+              sessionId: 'sess-runtime-1',
+              toolCall: {
+                toolCallId: 'perm-runtime-1',
+                kind: 'other',
+                status: 'pending',
+                title: '执行 bash 命令',
+                rawInput: { command: 'ls -la' },
+              },
+              options: [
+                { optionId: 'allow_once', name: '允许一次', kind: 'allow_once' },
+                { optionId: 'reject', name: '拒绝', kind: 'reject_once' },
+              ],
+            },
+            toolCallId: 'perm-runtime-1',
+          },
+          executeId: 'perm-runtime-1',
+        },
+        _meta: {
+          nuwaclaw_intervention_id: 'itv-perm-runtime-1',
+          nuwaclaw_revision: 1,
+        },
+      },
+    } as ConversationChatResponse);
+
+    const assistant = session.store.getSnapshot()[1];
+    expect(assistant.acpPermissionInteractions).toHaveLength(1);
+    expect(assistant.acpPermissionInteractions?.[0]).toMatchObject({
+      executeId: 'perm-runtime-1',
+      responseStatus: 'pending',
+    });
+    expect(assistant.acpPermissionInteractions?.[0]?.intervention).toBeTruthy();
+    // 干预事件不进通用 PROCESSING 投影（不产工具块、不污染正文）
+    expect(assistant.processingList).toBeUndefined();
+    expect(assistant.text).toBe('');
+    expect(session.getState().currentRequestId).toBe('req-perm');
+  });
+
   it('onClose 正常收尾：finalize + 释放活跃/等终态 + 终态兜底查询（FINAL 未解析时）', async () => {
     const { session } = createSession();
     mockOpenLive.mockReturnValue(vi.fn());

@@ -31,12 +31,17 @@ import {
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { getNodeToolActionKind, hasProcessNodeDetail } from '../traceItems';
+import {
+  getNodeToolActionKind,
+  hasProcessNodeDetail,
+  isOpenUiToolNode,
+} from '../traceItems';
 import type {
   ConversationProcessNode,
   ConversationToolActionKind,
   ConversationToolResource,
 } from '../types';
+import { resolveOpenUiDisplayState } from '@/utils/openUiArtifact';
 import FileResourceLink from './FileResourceLink';
 import styles from './index.less';
 import ToolNodeDetail from './ToolNodeDetail';
@@ -184,9 +189,49 @@ export interface ToolNodePresentation {
   files: string[];
 }
 
+const openUiActionSuffix = (
+  status: ConversationProcessNode['status'],
+): string =>
+  status === 'running'
+    ? 'Running'
+    : status === 'failed'
+    ? 'Failed'
+    : 'Finished';
+
+/**
+ * OpenUI 节点降级行（失败/终态无产物，不由渲染元素接管）：动作词条替代协议名，
+ * 产物标题（有则取）作 target，协议工具名不外露。
+ */
+const openUiNodePresentation = (
+  node: ConversationProcessNode,
+): ToolNodePresentation => {
+  const state = resolveOpenUiDisplayState(node.processing?.result);
+  const title =
+    state.status === 'ready'
+      ? state.artifact?.title
+      : state.status === 'input-only'
+      ? state.renderInput?.title
+      : undefined;
+  return {
+    kind: 'generic',
+    action: dict(
+      `PC.Components.ConversationRendererV2.toolActionOpenUi${openUiActionSuffix(
+        node.status,
+      )}`,
+    ),
+    target: title ?? '',
+    meta: '',
+    isCreate: false,
+    files: [],
+  };
+};
+
 export const getToolNodePresentation = (
   node: ConversationProcessNode,
 ): ToolNodePresentation => {
+  if (isOpenUiToolNode(node)) {
+    return openUiNodePresentation(node);
+  }
   const detail = normalizeV2ToolDetail({
     componentType: node.processing?.type ?? node.componentType,
     name: node.processing?.name ?? node.title,

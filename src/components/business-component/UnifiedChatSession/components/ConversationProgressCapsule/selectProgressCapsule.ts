@@ -1,10 +1,13 @@
 import {
+  isOpenUiToolNode,
   projectConversation,
   type ConversationProcessNode,
 } from '@/features/conversation/presentation-v2';
 import { normalizeV2ToolDetail } from '@/features/conversation/presentation-v2/toolDetail';
+import { t } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { extractOpenUiArtifactId, resolveOpenUiDisplayState } from '@/utils/openUiArtifact';
 
 export type ProgressStepStatus = 'completed' | 'active' | 'pending';
 
@@ -28,6 +31,15 @@ export interface ProgressCapsuleTaskResult {
   file: string;
 }
 
+/** OpenUI 产物行（仅 Backend.Sandbox.Event.renderUI，inline/sidecar 两形态）：
+ *  title 取产物标题，artifactId 用于从面板重开预览（data/{id}.openui.json） */
+export interface ProgressCapsuleOpenUi {
+  key: string;
+  title: string;
+  artifactId: string;
+  status: ConversationProcessNode['status'];
+}
+
 /** 该轮文件编辑（V2 投影口径：编辑行数，非 git 统计） */
 export interface ProgressCapsuleFileEdit {
   id: string;
@@ -46,8 +58,10 @@ export interface ProgressCapsuleModel {
   /** 轮次终态，仅会话结束后给出 */
   terminalStatus?: 'complete' | 'error' | 'stopped';
   currentAction: string;
-  /** 消息内 <task-result> 标签产物（会话输出同款：描述 + 文件路径） */
+  /** 消息内 <task-result> 标签产物（会话输出同源口径） */
   taskResults: ProgressCapsuleTaskResult[];
+  /** OpenUI 产物（按 artifactId 去重保序，同 id 更新替换旧行） */
+  openuiRenders: ProgressCapsuleOpenUi[];
   steps: ProgressCapsuleStep[];
   terminals: ProgressCapsuleNode[];
   subagents: ProgressCapsuleNode[];
@@ -73,6 +87,32 @@ const normalizeStepStatus = (status: string): ProgressStepStatus => {
 
 const nodeAction = (node: ConversationProcessNode | undefined): string =>
   node?.summary?.trim() || node?.title?.trim() || '';
+
+/** OpenUI 节点的动作文案：协议工具名不外露，三态词条 + 产物标题（有则拼） */
+const openUiActionText = (node: ConversationProcessNode): string => {
+  const label = t(
+    `PC.Components.ConversationRendererV2.toolActionOpenUi${
+      node.status === 'running'
+        ? 'Running'
+        : node.status === 'failed'
+        ? 'Failed'
+        : 'Finished'
+    }`,
+  );
+  const state = resolveOpenUiDisplayState(node.processing?.result);
+  const title =
+    state.status === 'ready'
+      ? state.artifact?.title
+      : state.status === 'input-only'
+      ? state.renderInput?.title
+      : undefined;
+  return title ? `${label} · ${title}` : label;
+};
+
+const nodeActionText = (node: ConversationProcessNode | undefined): string => {
+  if (!node) return '';
+  return isOpenUiToolNode(node) ? openUiActionText(node) : nodeAction(node);
+};
 
 const nodeDisplayTitle = (node: ConversationProcessNode): string =>
   node.title?.trim() || nodeAction(node);
@@ -189,14 +229,60 @@ export function selectProgressCapsule(
     .find((node) => node.kind === 'tool' || node.kind === 'subagent');
   const running = active && turn.running;
   const currentAction = running
-    ? nodeAction(runningNode) || activeStep?.content || nodeAction(planNode)
-    : nodeAction(runningNode) ||
-      nodeAction(lastActionNode) ||
+    ? nodeActionText(runningNode) ||
+      activeStep?.content ||
+      nodeAction(planNode)
+    : nodeActionText(runningNode) ||
+      nodeActionText(lastActionNode) ||
       activeStep?.content ||
       nodeAction(planNode);
 
   // 标签产物单独成行展示，正文里剥掉避免重复
   const taskResults = extractTaskResults(turn.assistantMessages);
+
+  // OpenUI 产物行：仅 renderUI 且产物为 inline/sidecar 两形态（ready/input-only），
+  // 同 artifactId 的更新渲染替换旧行；无 artifactId（无法重开预览）不收集
+  const openuiRenders: ProgressCapsuleOpenUi[] = [];
+  const openuiSeen = new Set<string>();
+  for (const node of turn.nodes) {
+    if (node.kind !== 'tool' || !isOpenUiToolNode(node)) continue;
+    const state = resolveOpenUiDisplayState(node.processing?.result);
+    if (state.status === 'absent') continue;
+    const artifactId =
+      state.status === 'ready'
+        ? state.artifact.artifactId
+        : state.renderInput.artifactId ??
+          extractOpenUiArtifactId(node.processing?.result);
+    if (!artifactId) continue;
+    const title =
+      (state.status === 'ready'
+        ? state.artifact.title
+        : state.renderInput.title) ||
+      t(
+        `PC.Components.ConversationRendererV2.toolActionOpenUi${
+          node.status === 'failed'
+            ? 'Failed'
+            : node.status === 'running'
+            ? 'Running'
+            : 'Finished'
+        }`,
+      );
+    const row: ProgressCapsuleOpenUi = {
+      key: node.id,
+      title,
+      artifactId,
+      status: node.status,
+    };
+    if (openuiSeen.has(artifactId)) {
+      const index = openuiRenders.findIndex(
+        (item) => item.artifactId === artifactId,
+      );
+      if (index > -1) openuiRenders[index] = row;
+    } else {
+      openuiSeen.add(artifactId);
+      openuiRenders.push(row);
+    }
+  }
 
   const hasContent =
     steps.length > 0 ||
@@ -204,6 +290,7 @@ export function selectProgressCapsule(
     subagents.length > 0 ||
     fileEdits.length > 0 ||
     taskResults.length > 0 ||
+    openuiRenders.length > 0 ||
     Boolean(currentAction);
   if (!hasContent) return null;
 
@@ -213,6 +300,7 @@ export function selectProgressCapsule(
     terminalStatus: active ? undefined : turn.terminalStatus,
     currentAction,
     taskResults,
+    openuiRenders,
     steps,
     terminals,
     subagents,

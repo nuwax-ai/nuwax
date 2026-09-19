@@ -13,6 +13,7 @@ import ChatView from '@/components/ChatView';
 import RunOver from '@/components/ChatView/RunOver';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import { AssistantRoleEnum } from '@/types/enums/agent';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import type {
   MessageInfo,
   RoleInfo,
@@ -46,6 +47,8 @@ export interface ConversationRendererV2Props {
   onPresentation?: (presentation: ConversationPresentationV2 | null) => void;
   /** 可选宿主资源联动；未提供时文件与 URL 仍在详情内可读。 */
   onOpenToolResource?: (resource: ConversationToolResource) => void;
+  /** OpenUI sidecar 打开联动（预览面板 + 文件树选中 .openui.json）；未提供时摘要行仍展示。 */
+  onOpenOpenUiSidecar?: (artifact: OpenUiArtifact) => void;
 }
 
 /** 与 ChatContentArea.getChatMessageRenderKey 同规则（复制实现避免循环依赖） */
@@ -86,20 +89,24 @@ const V1FallbackList: React.FC<
 /** 单轮展示块：标题栏 + 工作轨迹 + 最终回答 */
 const TurnBlock: React.FC<{
   turn: ConversationTurnPresentationV2;
+  conversationId?: number | string;
   roleInfo: RoleInfo;
   messageBottomMode?: 'none' | 'home' | 'chat';
   showDebug?: boolean;
   showStatusDesc?: boolean;
   preferences: ConversationRenderPreferencesV2;
   onOpenToolResource?: (resource: ConversationToolResource) => void;
+  onOpenOpenUiSidecar?: (artifact: OpenUiArtifact) => void;
 }> = ({
   turn,
+  conversationId,
   roleInfo,
   messageBottomMode,
   showDebug,
   showStatusDesc,
   preferences,
   onOpenToolResource,
+  onOpenOpenUiSidecar,
 }) => {
   const [manualExpanded, setManualExpanded] = useState<boolean | undefined>(
     undefined,
@@ -148,6 +155,8 @@ const TurnBlock: React.FC<{
             manualExpanded={manualExpanded}
             onManualToggle={setManualExpanded}
             onOpenResource={onOpenToolResource}
+            conversationId={conversationId}
+            onOpenSidecar={onOpenOpenUiSidecar}
           />
         )}
         {/* 无节点行的轮次（纯说明）：narration 直接以正文展示 */}
@@ -166,6 +175,7 @@ const TurnBlock: React.FC<{
           turn={turn}
           messageBottomMode={messageBottomMode}
           showDebug={showDebug}
+          conversationId={conversationId}
         />
       </div>
     </div>
@@ -215,6 +225,7 @@ const ConversationRendererV2Inner: React.FC<ConversationRendererV2Props> = (
     preferences: preferencesProp,
     onPresentation,
     onOpenToolResource,
+    onOpenOpenUiSidecar,
   } = props;
   const { preferences: hookPreferences } =
     useConversationRendererPreference(conversationId);
@@ -273,12 +284,14 @@ const ConversationRendererV2Inner: React.FC<ConversationRendererV2Props> = (
           {turn.assistantMessages.length > 0 && (
             <TurnBlock
               turn={turn}
+              conversationId={conversationId}
               roleInfo={roleInfo}
               messageBottomMode={messageBottomMode}
               showDebug={showDebug}
               showStatusDesc={showStatusDesc}
               preferences={preferences}
               onOpenToolResource={onOpenToolResource}
+              onOpenOpenUiSidecar={onOpenOpenUiSidecar}
             />
           )}
         </React.Fragment>
