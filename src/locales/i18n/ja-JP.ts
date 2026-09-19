@@ -4397,6 +4397,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Square.Square.onlyOfficial": "公式{0}のみ",
   "PC.Pages.Square.Square.pageApp": "ウェブアプリ",
   "PC.Pages.Square.Square.userApp": "フルスタックアプリ",
+  "PC.Pages.Square.Square.thirdApp": "サードパーティアプリ",
   // 女媧アプリページ
   "PC.Pages.NuwaApps.title": "女媧アプリ",
   "PC.Pages.NuwaApps.searchPlaceholder": "アプリを検索",

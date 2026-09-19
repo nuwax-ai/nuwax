@@ -4674,6 +4674,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Square.Square.onlyOfficial": "仅查看官方{0}",
   "PC.Pages.Square.Square.pageApp": "网页应用",
   "PC.Pages.Square.Square.userApp": "全栈应用",
+  "PC.Pages.Square.Square.thirdApp": "三方应用",
   // 女娲应用页
   "PC.Pages.NuwaApps.title": "女娲应用",
   "PC.Pages.NuwaApps.searchPlaceholder": "搜索应用",
