@@ -6587,7 +6587,7 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.SpaceConnector.toastConnectFailed': '建立連線失敗',
   'PC.Pages.SpaceConnector.toastConnectSuccess': '連線成功',
   // 项目管理
-  "PC.Pages.SpaceProjectManage.menuTitle": "項目管理",
+  "PC.Pages.SpaceProjectManage.menuTitle": "項目&應用",
   "PC.Pages.SpaceProjectManage.tabAll": "全部",
   "PC.Pages.SpaceProjectManage.tabNormalProject": "常規項目",
   "PC.Pages.SpaceProjectManage.tabPageApp": "網頁應用",

@@ -6751,7 +6751,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceConnector.toastConnectFailed': 'Failed to connect',
   'PC.Pages.SpaceConnector.toastConnectSuccess': 'Connected',
   // 项目管理
-  "PC.Pages.SpaceProjectManage.menuTitle": "Projects",
+  "PC.Pages.SpaceProjectManage.menuTitle": "Projects & Apps",
   "PC.Pages.SpaceProjectManage.tabAll": "All",
   "PC.Pages.SpaceProjectManage.tabNormalProject": "Normal Project",
   "PC.Pages.SpaceProjectManage.tabPageApp": "Web App",

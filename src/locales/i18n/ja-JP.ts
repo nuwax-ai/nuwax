@@ -6632,7 +6632,7 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.SpaceConnector.toastConnectFailed': '接続の確立に失敗しました',
   'PC.Pages.SpaceConnector.toastConnectSuccess': '接続に成功しました',
   // 项目管理
-  "PC.Pages.SpaceProjectManage.menuTitle": "プロジェクト管理",
+  "PC.Pages.SpaceProjectManage.menuTitle": "プロジェクト&アプリ",
   "PC.Pages.SpaceProjectManage.tabAll": "すべて",
   "PC.Pages.SpaceProjectManage.tabNormalProject": "通常プロジェクト",
   "PC.Pages.SpaceProjectManage.tabPageApp": "Webアプリ",
