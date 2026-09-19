@@ -425,7 +425,16 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
           ),
         },
       ],
-      onClick: ({ key }: { key: string }) => {
+      onClick: ({
+        key,
+        domEvent,
+      }: {
+        key: string;
+        domEvent?:
+          | React.MouseEvent<HTMLElement>
+          | React.KeyboardEvent<HTMLElement>;
+      }) => {
+        domEvent?.stopPropagation();
         void handleProjectMenuClick(project, key);
       },
     });

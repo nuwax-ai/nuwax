@@ -185,7 +185,18 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
           label: t('PC.Common.Global.delete'),
         },
       ],
-      onClick: ({ key }: { key: string }) => {
+      onClick: ({
+        key,
+        domEvent,
+      }: {
+        key: string;
+        domEvent?:
+          | React.MouseEvent<HTMLElement>
+          | React.KeyboardEvent<HTMLElement>;
+      }) => {
+        // 弹层 portal 到 body 但 React 合成事件仍沿组件树冒泡，菜单项点击会穿过
+        // 行 div 的 onClick（触发钮自身的 stopPropagation 拦不住此路径），须在此截断
+        domEvent?.stopPropagation();
         if (key === 'pin') {
           void handleToggleFlag('pinned');
         } else if (key === 'archive') {

@@ -57,6 +57,7 @@ import {
 } from '@ant-design/icons';
 import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
+import type { KeyboardEvent, MouseEvent } from 'react';
 import {
   forwardRef,
   useCallback,
@@ -1002,7 +1003,14 @@ const ProjectPanel = forwardRef<
             label: dict('PC.Common.Global.delete'),
           },
         ],
-        onClick: ({ key }: { key: string }) => {
+        onClick: ({
+          key,
+          domEvent,
+        }: {
+          key: string;
+          domEvent?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>;
+        }) => {
+          domEvent?.stopPropagation();
           if (key === 'pin') {
             toggleProjectFlag('pinned', project);
           } else if (key === 'archive') {
@@ -1104,7 +1112,14 @@ const ProjectPanel = forwardRef<
           label: dict('PC.Common.Global.delete'),
         },
       ],
-      onClick: ({ key }: { key: string }) => {
+      onClick: ({
+        key,
+        domEvent,
+      }: {
+        key: string;
+        domEvent?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>;
+      }) => {
+        domEvent?.stopPropagation();
         if (key === 'rename') {
           setRenameTarget({ projectKey, childId: child.id });
           setRenameName(child.name);
