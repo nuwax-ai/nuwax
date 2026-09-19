@@ -360,6 +360,7 @@ const SpaceProjectManage: React.FC = () => {
               name: item.name,
               icon: item.icon,
               sandboxId: item.sandboxId,
+              owner: item.owner,
             });
           } finally {
             openingProjectRef.current = false;
@@ -414,6 +415,7 @@ const SpaceProjectManage: React.FC = () => {
         name: target.name,
         icon: target.icon,
         sandboxId: target.sandboxId,
+        owner: target.owner,
       });
       return;
     }

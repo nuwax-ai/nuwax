@@ -9,7 +9,9 @@ import {
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
 import { apiUserAppGetById } from '@/services/userProjectApp';
+import { UserService } from '@/services/userService';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { UserInfo } from '@/types/interfaces/login';
 import type { RequestResponse } from '@/types/interfaces/request';
 import {
   UserAppDeployTypeEnum,
@@ -19,6 +21,7 @@ import {
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { isValidDomain, normalizeDomain } from '@/utils/common';
 import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
+import { resolveProjectOwnerFlag } from '@/utils/homeSendPlan';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import {
   EyeInvisibleOutlined,
@@ -528,6 +531,12 @@ const AppProjectDetail: React.FC = () => {
       icon: projectInfo?.icon,
       sandboxId: projectInfo?.sandboxId,
       devAgentId: projectInfo?.devAgentId,
+      // 详情契约未随列表回 owner，用创建者 id 与当前用户比对等价计算
+      //（全栈不开放参与者沙箱选择，仅保持上框协议一致）
+      owner: resolveProjectOwnerFlag(
+        projectInfo?.creatorId,
+        (UserService.getUserInfoFromStorage() as UserInfo | null)?.id,
+      ),
     });
   }, [appId, pin, projectInfo, projectName, spaceId]);
 

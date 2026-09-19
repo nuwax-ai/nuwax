@@ -109,6 +109,8 @@ export interface ProjectItem {
   sandboxId?: number;
   /** 项目绑定的调试智能体 ID（全栈默认命中用；契约先行，接口暂不返回） */
   devAgentId?: number;
+  /** 当前用户是否项目创建者（上框透传，=== false 判参与者自选沙箱用） */
+  owner?: boolean;
   children?: ProjectChildItem[];
 }
 
@@ -1145,6 +1147,7 @@ const ProjectPanel = forwardRef<
               icon: project.icon,
               sandboxId: project.sandboxId,
               devAgentId: project.devAgentId,
+              owner: project.owner,
             });
           }}
         >
