@@ -14,6 +14,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  // 「⋯」绝对定位锚点（见 .conversation-topic-row 内 more-btn）
+  position: relative;
   // 右内边距 11px：让行尾「⋯」与项目面板会话子行的 ⋯ 右缘对齐
   //（子行 .child-actions 内缩 11px；2026-09-12 需求）
   padding: 11px 11px 11px 10px;
@@ -103,8 +105,15 @@
       }
 
       // 「⋯」菜单兜底按钮：hover 显示；触屏（hover: none）常显。
-      // 字号 15px 对齐项目子行 ⋯（SvgIcon icons-common-more 同款视觉大小）
+      // 字号 15px 对齐项目子行 ⋯（SvgIcon icons-common-more 同款视觉大小）。
+      // 绝对定位贴行右缘（2026-09-19：hover 隐藏时间后 ⋯ 须落在时间位=行最右，
+      // 与单栏 compact 同款；锚点=行胶囊 .conversation-item 的 relative）
       :global(.more-btn) {
+        position: absolute;
+        right: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1;
         flex-shrink: 0;
         font-size: 15px;
         opacity: 0;
@@ -115,32 +124,6 @@
         :global(.more-btn) {
           opacity: 1;
         }
-      }
-
-      .conversation-date {
-        font-size: @fontSizeSm;
-        color: @navSecondMenuAdaptiveTextTertiary;
-        white-space: nowrap;
-        flex-shrink: 0;
-      }
-    }
-
-    .conversation-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: @paddingXs;
-
-      .conversation-agent-name {
-        flex: 1;
-        min-width: 0;
-        // 同 .conversation-topic：原生省略号
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        font-size: @fontSizeSm;
-        line-height: @lineHeightSm;
-        color: @navSecondMenuAdaptiveTextSecondary;
       }
 
       .conversation-date {
@@ -174,37 +157,33 @@
           color: @colorTextTertiary;
         }
       }
+    }
+  }
 
-      .conversation-meta {
-        .conversation-agent-name {
-          color: @colorTextSecondary;
-        }
+  // hover/键盘聚焦隐藏时间（2026-09-19 定调：经典布局与单栏同口径，⋯ 出现即让位）；
+  // visibility 保占位，行内「⋯」/时间不跳位
+  &:hover .conversation-date,
+  &:focus-visible .conversation-date,
+  &:has(:focus-visible) .conversation-date {
+    visibility: hidden;
+  }
 
-        .conversation-date {
-          color: @colorTextTertiary;
-        }
-      }
+  // 触屏（hover: none）无常悬停：「⋯」常显且为绝对定位贴右缘，时间须让位防重叠
+  //（「⋯」占位约 15px + 右缘 11px 内缩）
+  @media (hover: none) {
+    .conversation-date {
+      margin-right: @marginLg;
     }
   }
 
   &.active {
-    // 选中白卡（单栏统一交互态）；主题色只落标题，日期/智能体名保持次级色
+    // 选中白卡（单栏统一交互态）；主题色只落标题，日期保持次级色
     .nav-row-selected();
 
     .conversation-item-content {
       .conversation-topic-row {
         .conversation-topic {
           color: @colorPrimaryText;
-        }
-
-        .conversation-date {
-          color: @colorTextTertiary;
-        }
-      }
-
-      .conversation-meta {
-        .conversation-agent-name {
-          color: @colorTextSecondary;
         }
 
         .conversation-date {
@@ -278,29 +257,12 @@
     }
   }
 
-  // hover/选中态直接继承基础规则（hover 灰底无阴影、active 白卡+阴影）：
-  // 原先的 box-shadow:none 覆盖已删——统一交互态后 compact 选中恢复阴影，
-  // 上方 active 的负 margin 外扩正好给阴影留出空间
+  // hover/选中态直接继承基础规则（hover 灰底无阴影、active 白卡+阴影）。
+  // 选中白卡与 hover 灰底必须同占位（2026-09-19：原负 margin 0 -5px 外扩使
+  // 选中卡比 hover 高亮左右各宽 5px 不对齐，已删）；三级阴影由列表容器 15px
+  // 侧 padding 承接，不会被 wrapper overflow 裁切
   &.active {
-    margin: 0 -5px;
-    padding-left: @padding;
-    padding-right: 15px;
-
-    // 白卡负 margin 向右外扩 5px：⋯ 右锚点同步 +5px，选中时图标视口位置不跳
-    .conversation-item-content .conversation-topic-row :global(.more-btn) {
-      right: 16px;
-    }
-  }
-
-  &:hover .conversation-date,
-  &:focus-visible .conversation-date,
-  &:has(:focus-visible) .conversation-date {
-    visibility: hidden;
-  }
-  @media (hover: none) {
-    .conversation-date {
-      margin-right: @marginLg;
-    }
+    .nav-row-selected();
   }
 }
 

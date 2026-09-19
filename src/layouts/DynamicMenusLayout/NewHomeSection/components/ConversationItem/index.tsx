@@ -49,8 +49,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
   );
-  const hasAgentName =
-    !compact && Boolean(item.agent?.name && item.agent.name.trim());
+  // 智能体名副标题已全网撤收（2026-09-19 定调：经典布局任务列表项只展示会话
+  // 标题；单栏 compact 此前即不展示），时间统一内联在标题行尾
 
   return (
     <ConversationContextMenu
@@ -84,44 +84,32 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           }}
         >
           <div className={cx(styles['conversation-item-content'])}>
-          <div className={cx(styles['conversation-topic-row'])}>
-            {leadingMark && (
-              <ConversationStatusMark
-                taskStatus={item.taskStatus}
-                unread={unreadConversationIds?.has(String(item.id))}
-              />
-            )}
-            {pinned && <PushpinFilled className={cx(styles['pin-icon'])} />}
-            {/* 原生省略号替代 Typography.Text ellipsis：antd 的省略检测会在
+            <div className={cx(styles['conversation-topic-row'])}>
+              {leadingMark && (
+                <ConversationStatusMark
+                  taskStatus={item.taskStatus}
+                  unread={unreadConversationIds?.has(String(item.id))}
+                />
+              )}
+              {pinned && <PushpinFilled className={cx(styles['pin-icon'])} />}
+              {/* 原生省略号替代 Typography.Text ellipsis：antd 的省略检测会在
                 每次重渲染插入 <em> 强制同步重排，长列表高频刷新下造成秒级卡顿 */}
-            <span className={cx(styles['conversation-topic'])}>
-              {item.topic ||
-                item.agent?.name ||
-                dict('PC.Constants.Menus.newChat')}
-            </span>
-            {/* leadingMark 开启时「执行中」由行首转圈表达（文字胶囊仅经典布局保留） */}
-            {!leadingMark && item.taskStatus === TaskStatus.EXECUTING && (
-              <span className={cx(styles['status-tag'])}>
-                {executingText}
+              <span className={cx(styles['conversation-topic'])}>
+                {item.topic ||
+                  item.agent?.name ||
+                  dict('PC.Constants.Menus.newChat')}
               </span>
-            )}
-              {moreButton}
-              {!hasAgentName && (
-                <span className={cx(styles['conversation-date'])}>
-                  {formatRelativeTime(item.modified)}
+              {/* leadingMark 开启时「执行中」由行首转圈表达（文字胶囊仅经典布局保留） */}
+              {!leadingMark && item.taskStatus === TaskStatus.EXECUTING && (
+                <span className={cx(styles['status-tag'])}>
+                  {executingText}
                 </span>
               )}
+              {moreButton}
+              <span className={cx(styles['conversation-date'])}>
+                {formatRelativeTime(item.modified)}
+              </span>
             </div>
-            {hasAgentName && (
-              <div className={cx(styles['conversation-meta'])}>
-                <span className={cx(styles['conversation-agent-name'])}>
-                  {item.agent?.name}
-                </span>
-                <span className={cx(styles['conversation-date'])}>
-                  {formatRelativeTime(item.modified)}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       )}

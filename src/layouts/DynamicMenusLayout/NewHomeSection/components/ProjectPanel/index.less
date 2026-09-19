@@ -5,7 +5,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: @paddingXxs @paddingXs;
+  // 左缘贴容器基线（2026-09-19：经典项目列表左边距过大，与任务列表统一收窄，
+  // 行内容内缩由 .row padding 承担）；单栏 compact 自带 padding:0 覆盖不受影响
+  padding: @paddingXxs @paddingXs @paddingXxs 0;
 }
 
 // 查看更多入口(项目分页追加)
@@ -65,7 +67,9 @@
     display: flex;
     align-items: center;
     gap: @marginXxs;
-    padding: @paddingXs @paddingXxs;
+    // 左 10px 与任务列表行 padding 对齐（2026-09-19：面板左缘收窄后图钉/图标
+    // 须与任务行标题同线）；单栏 compact 行有独立 padding 覆盖不受影响
+    padding: @paddingXs @paddingXxs @paddingXs 10px;
     border-radius: @borderRadius;
     cursor: pointer;
     user-select: none;
@@ -197,6 +201,14 @@
       .child-more {
         opacity: 1;
       }
+    }
+
+    // hover/键盘聚焦隐藏时间（2026-09-19 定调：经典布局与单栏同口径，⋯ 出现即
+    // 让位；visibility 保占位防跳位。原单栏 compact 专属规则上提复用）
+    &:hover .child-time,
+    &:focus-visible .child-time,
+    &:has(:focus-visible) .child-time {
+      visibility: hidden;
     }
   }
 }
@@ -345,15 +357,9 @@
     background: transparent;
   }
 
-  // 子行悬停按钮浮层与时间列同缘(243)，替代隐藏前的时间不跳位
+  // 子行悬停按钮浮层与时间列同缘(243)；时间隐藏规则已上提基础作用域
   .child-actions {
     right: 10px;
-  }
-
-  .child:hover .child-time,
-  .child:focus-visible .child-time,
-  .child:has(:focus-visible) .child-time {
-    visibility: hidden;
   }
 }
 
