@@ -7,6 +7,9 @@ export const USER_APP_TARGET_SUBTYPE = 'UserApp';
 /** 网页应用子类型标识:targetType=Agent 且 targetSubType 为该值时,点击不上报最近使用 */
 export const PAGE_APP_TARGET_SUBTYPE = 'PageApp';
 
+/** 三方应用子类型标识:回包 targetSubType 为该值时,点击卡片与全栈应用同走 /user-app 路由 */
+export const THIRD_APP_TARGET_SUBTYPE = 'ThirdApp';
+
 /** 全栈应用详情路由前缀(拼 targetId 跳转 /user-app/:appId) */
 export const USER_APP_PATH_PREFIX = '/user-app';
 
