@@ -507,7 +507,8 @@ describe('ChatCore / ChatPage', () => {
       files: [{ key: 'f1', url: '/f1', name: 'a.txt', type: 'text/plain' }],
       infos: [{ id: 9, type: 'Plugin' }],
       variableParams: { city: '杭州' },
-      sandboxId: undefined,
+      // 未选电脑时首条自动发送兜底云电脑哨兵 -1
+      sandboxId: '-1',
       currentInfo: loadedConversation,
       isSuggestEnabled: true,
       skillIds: [11],

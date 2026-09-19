@@ -128,6 +128,24 @@ describe('conversationRuntimeSession', () => {
     expect(session.getState().isAwaitingChatTerminal).toBe(true);
   });
 
+  it('send：sandboxId 随 chat 请求体透传（不传时请求体不带该字段）', () => {
+    const { session } = createSession();
+    mockOpenLive.mockReturnValue(vi.fn());
+
+    session.send({
+      conversationId: 1001,
+      message: '你好',
+      sandboxId: '4321',
+    });
+    const withSandbox = mockOpenLive.mock.calls[0][0] as ConversationChatParams;
+    expect(withSandbox.sandboxId).toBe('4321');
+
+    session.send({ conversationId: 1001, message: '再来' });
+    const withoutSandbox = mockOpenLive.mock
+      .calls[1][0] as ConversationChatParams;
+    expect(withoutSandbox.sandboxId).toBeUndefined();
+  });
+
   it('事件投影：MESSAGE chunk 归并进 assistant 占位，requestId 更新', () => {
     const { session } = createSession();
     mockOpenLive.mockReturnValue(vi.fn());

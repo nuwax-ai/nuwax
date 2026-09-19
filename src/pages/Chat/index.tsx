@@ -12,6 +12,7 @@ import ResizableSplit from '@/components/ResizableSplit';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import { useConversationChanged } from '@/hooks/useDirectorySync';
@@ -737,7 +738,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
         if (isCanMessage && (message || files?.length > 0)) {
-          const effectiveSandboxId = getEffectiveSandboxId(data);
+          const effectiveSandboxId =
+            getEffectiveSandboxId(data) || CLOUD_SANDBOX_ID;
 
           // 发送消息参数
           const sendParams: SendMessageParams = {
@@ -1781,6 +1783,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     conversationId: id,
     messageViewRef,
     allowAutoScrollRef,
+    // chat 请求携带当前生效电脑的 sandboxId，空值兜底云电脑哨兵 -1
+    getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
     effectsResources: {
       isAppSidebarMode,
       runHistory,

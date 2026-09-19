@@ -635,6 +635,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   // 关闭（默认）为空对象，旧线原值原行为。
   const runtimeLine = useConversationRuntimeSession({
     conversationId: devConversationIdRef.current || undefined,
+    // chat 请求携带当前生效电脑的 sandboxId（effectiveSandboxId 链尾已兜底云电脑 -1）
+    getSandboxId: () => effectiveSandboxId,
     effectsResources: {
       showPagePreview,
       openDesktopView,

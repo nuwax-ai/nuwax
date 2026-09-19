@@ -79,6 +79,11 @@ export interface RuntimeSessionLineOptions {
   allowAutoScrollRef?: { current: boolean };
   /** 是否同步会话记录（隔离入口传 false：不发乐观列表标记、不更新主题） */
   isSync?: boolean;
+  /**
+   * chat 请求 sandboxId 取值器（入口当前生效的电脑）：发送时求值，
+   * 未提供或返回空时请求体不带该字段（兜底口径由入口决定，本 hook 不越权补值）。
+   */
+  getSandboxId?: () => string | undefined;
 }
 
 export interface UseConversationRuntimeSessionResult {
@@ -146,6 +151,10 @@ export function useConversationRuntimeSession(
   isSuggestEnabledRef.current =
     (conversationInfo as never as { agent?: { openSuggest?: number } })?.agent
       ?.openSuggest === 1;
+
+  /** 入口当前生效的电脑 sandboxId 取值器（render 期同步最新闭包，发送时求值） */
+  const getSandboxIdRef = useRef(options.getSandboxId);
+  getSandboxIdRef.current = options.getSandboxId;
 
   const sessionRef = useRef<ConversationRuntimeSession | null>(null);
   if (enabled && !sessionRef.current) {
@@ -330,6 +339,7 @@ export function useConversationRuntimeSession(
         selectedDocs,
         modelId,
         agentMode,
+        sandboxId: getSandboxIdRef.current?.(),
       });
     },
     [session, conversationId, options.isSync],
