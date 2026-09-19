@@ -1,4 +1,5 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiConnectorBindable,
   apiSystemConnectorActionCreate,
@@ -84,10 +85,16 @@ import styles from './index.less';
  * 表单值为页面层语义（HTTP / PLUGIN / WORKFLOW）；
  * 提交时再映射为后端枚举：HTTP → DECLARATIVE，其余原样
  */
-const EXECUTION_TYPE_OPTIONS: Array<{ label: string; value: string }> = [
-  { label: 'HTTP 接口', value: 'HTTP' },
-  { label: '绑定插件', value: 'PLUGIN' },
-  { label: '绑定工作流', value: 'WORKFLOW' },
+export const getExecutionTypeOptions = (): Array<{
+  label: string;
+  value: string;
+}> => [
+  { label: dict('PC.Pages.ConnectorManage.optionExecHttp'), value: 'HTTP' },
+  { label: dict('PC.Pages.ConnectorManage.optionExecPlugin'), value: 'PLUGIN' },
+  {
+    label: dict('PC.Pages.ConnectorManage.optionExecWorkflow'),
+    value: 'WORKFLOW',
+  },
 ];
 
 /** HTTP 方法选项 */
@@ -594,7 +601,13 @@ const BodyFieldRow: React.FC<{
       <div className={styles.mappingRow}>
         <div className={styles.mappingRowName}>
           <Form.Item name={[field.name, 'name']} noStyle>
-            <Input placeholder="字段名" maxLength={100} allowClear />
+            <Input
+              placeholder={dict(
+                'PC.Pages.ConnectorManage.placeholderBodyFieldName',
+              )}
+              maxLength={100}
+              allowClear
+            />
           </Form.Item>
         </div>
         <div className={styles.mappingRowType}>
@@ -611,8 +624,12 @@ const BodyFieldRow: React.FC<{
                 <Input
                   placeholder={
                     isArray
-                      ? '值为整个数组的输入参数名'
-                      : '输入参数名 / opt:参数名'
+                      ? dict(
+                          'PC.Pages.ConnectorManage.placeholderBodyFieldArrayValue',
+                        )
+                      : dict(
+                          'PC.Pages.ConnectorManage.placeholderBodyFieldValue',
+                        )
                   }
                   maxLength={100}
                   allowClear
@@ -651,7 +668,7 @@ const BodyFieldRow: React.FC<{
                 className={styles.bodyFieldAddChild}
                 onClick={() => add({ type: 'string' })}
               >
-                添加子字段
+                {dict('PC.Pages.ConnectorManage.btnAddChildField')}
               </Button>
             </div>
           )}
@@ -698,10 +715,12 @@ const BodyFieldElementArea: React.FC<{
   return (
     <div className={styles.bodyFieldElementWrap}>
       <div className={styles.bodyFieldElementBanner}>
-        元素结构（对应输入参数 Arg，仅声明，不逐项取值）
+        {dict('PC.Pages.ConnectorManage.tipElementStructure')}
       </div>
       <div className={styles.bodyFieldElementRow}>
-        <span className={styles.bodyFieldElementTag}>元素</span>
+        <span className={styles.bodyFieldElementTag}>
+          {dict('PC.Pages.ConnectorManage.elementTag')}
+        </span>
         <div className={styles.bodyFieldElementType}>
           <Form.Item name={[...namePrefix, 'type']} noStyle>
             <Select options={BODY_FIELD_TYPE_OPTIONS} placeholder="string" />
@@ -730,7 +749,7 @@ const BodyFieldElementArea: React.FC<{
                 className={styles.bodyFieldAddChild}
                 onClick={() => add({ type: 'string' })}
               >
-                添加子字段
+                {dict('PC.Pages.ConnectorManage.btnAddChildField')}
               </Button>
             </div>
           )}
@@ -783,7 +802,9 @@ const ArgRow: React.FC<{
         <div className={styles.argRowName}>
           <Form.Item name={[field.name, 'name']} noStyle>
             <Input
-              placeholder="参数名"
+              placeholder={dict(
+                'PC.Pages.ConnectorManage.placeholderParamName',
+              )}
               maxLength={100}
               allowClear
               disabled={readOnly}
@@ -793,7 +814,9 @@ const ArgRow: React.FC<{
         <div className={styles.argRowDescription}>
           <Form.Item name={[field.name, 'description']} noStyle>
             <Input
-              placeholder="参数说明"
+              placeholder={dict(
+                'PC.Pages.ConnectorManage.placeholderParamDescription',
+              )}
               maxLength={100}
               allowClear
               disabled={readOnly}
@@ -811,7 +834,7 @@ const ArgRow: React.FC<{
           valuePropName="checked"
         >
           <Checkbox className={styles.argRowRequired} disabled={readOnly}>
-            必填
+            {dict('PC.Pages.ConnectorManage.argRequired')}
           </Checkbox>
         </Form.Item>
         {!readOnly ? (
@@ -848,7 +871,7 @@ const ArgRow: React.FC<{
                   className={styles.argAddChild}
                   onClick={() => add({ type: 'String', required: false })}
                 >
-                  添加下级参数
+                  {dict('PC.Pages.ConnectorManage.btnAddSubArg')}
                 </Button>
               ) : null}
             </div>
@@ -1030,7 +1053,7 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
     }
 
     if (!record?.service) {
-      message.error('缺少连接器 service，无法保存工具');
+      message.error(dict('PC.Pages.ConnectorManage.toastMissingService'));
       return;
     }
 
@@ -1164,11 +1187,19 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
       if (response?.code !== SUCCESS_CODE) {
         throw new Error(response?.message || 'save action failed');
       }
-      message.success(isEdit ? '工具更新成功' : '工具创建成功');
+      message.success(
+        isEdit
+          ? dict('PC.Pages.ConnectorManage.toastToolUpdateSuccess')
+          : dict('PC.Pages.ConnectorManage.toastToolCreateSuccess'),
+      );
       onClose();
       onCreated?.();
     } catch {
-      message.error(isEdit ? '更新工具失败' : '创建工具失败');
+      message.error(
+        isEdit
+          ? dict('PC.Pages.ConnectorManage.toastToolUpdateFailed')
+          : dict('PC.Pages.ConnectorManage.toastToolCreateFailed'),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -1186,7 +1217,11 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
   return (
     <Modal
       className={styles.modal}
-      title={isEdit ? '编辑工具' : '新增工具'}
+      title={
+        isEdit
+          ? dict('PC.Pages.ConnectorManage.modalEditToolTitle')
+          : dict('PC.Pages.ConnectorManage.modalCreateToolTitle')
+      }
       open={open}
       onCancel={onClose}
       footer={null}
@@ -1204,12 +1239,21 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="actionKey"
-              label="ACTIONKEY（创建后不可改）"
-              rules={[{ required: true, message: '请输入 actionKey' }]}
+              label={dict('PC.Pages.ConnectorManage.formActionKey')}
+              rules={[
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Pages.ConnectorManage.formActionKeyRequired',
+                  ),
+                },
+              ]}
             >
               {/* 编辑模式禁改（后端唯一键），值原样提交 */}
               <Input
-                placeholder="如 get_repo"
+                placeholder={dict(
+                  'PC.Pages.ConnectorManage.placeholderActionKey',
+                )}
                 maxLength={100}
                 showCount
                 allowClear
@@ -1220,11 +1264,20 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="name"
-              label="工具名称"
-              rules={[{ required: true, message: '请输入工具名称' }]}
+              label={dict('PC.Pages.ConnectorManage.formToolName')}
+              rules={[
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Pages.ConnectorManage.formToolNameRequired',
+                  ),
+                },
+              ]}
             >
               <Input
-                placeholder="如 查询仓库"
+                placeholder={dict(
+                  'PC.Pages.ConnectorManage.placeholderToolName',
+                )}
                 maxLength={100}
                 showCount
                 allowClear
@@ -1232,19 +1285,29 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
             </Form.Item>
           </Col>
         </Row>
-        <Form.Item name="description" label="工具说明（供 Agent 判断何时调用）">
+        <Form.Item
+          name="description"
+          label={dict('PC.Pages.ConnectorManage.formToolDescription')}
+        >
           <Input.TextArea
             rows={3}
-            placeholder="说明用途、关键入参约定与返回结构"
+            placeholder={dict(
+              'PC.Pages.ConnectorManage.placeholderToolDescription',
+            )}
             maxLength={10000}
             showCount
           />
         </Form.Item>
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item name="tags" label="标签（可选，逗号分隔）">
+            <Form.Item
+              name="tags"
+              label={dict('PC.Pages.ConnectorManage.formTagsOptional')}
+            >
               <Input
-                placeholder="如 演示"
+                placeholder={dict(
+                  'PC.Pages.ConnectorManage.placeholderTagsDemo',
+                )}
                 maxLength={100}
                 showCount
                 allowClear
@@ -1254,11 +1317,18 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="executionType"
-              label="执行类型"
-              rules={[{ required: true, message: '请选择执行类型' }]}
+              label={dict('PC.Pages.ConnectorManage.formExecutionType')}
+              rules={[
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Pages.ConnectorManage.formExecutionTypeRequired',
+                  ),
+                },
+              ]}
             >
               <Select
-                options={EXECUTION_TYPE_OPTIONS}
+                options={getExecutionTypeOptions()}
                 onChange={(value) => {
                   // 切换执行类型：清空上一模式的表单项，避免草稿/选中残留
                   if (value !== 'HTTP') {
@@ -1288,20 +1358,32 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
         {executionType === 'HTTP' && (
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>HTTP 请求声明</span>
+              <span className={styles.sectionTitle}>
+                {dict('PC.Pages.ConnectorManage.sectionHttpDecl')}
+              </span>
             </div>
             <div className={styles.sectionBody}>
               <Row gutter={16}>
                 <Col span={6}>
-                  <Form.Item name="method" label="方法">
+                  <Form.Item
+                    name="method"
+                    label={dict('PC.Pages.ConnectorManage.formMethod')}
+                  >
                     <Select options={HTTP_METHOD_OPTIONS} />
                   </Form.Item>
                 </Col>
                 <Col span={18}>
                   <Form.Item
                     name="path"
-                    label="路径（{名称} 占位符取输入参数）"
-                    rules={[{ required: true, message: '请输入请求路径' }]}
+                    label={dict('PC.Pages.ConnectorManage.formPath')}
+                    rules={[
+                      {
+                        required: true,
+                        message: dict(
+                          'PC.Pages.ConnectorManage.formPathRequired',
+                        ),
+                      },
+                    ]}
                   >
                     <Input
                       placeholder="/repos/{owner}/{repo}"
@@ -1314,21 +1396,31 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
               </Row>
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item name="timeoutMs" label="超时毫秒（可选）">
+                  <Form.Item
+                    name="timeoutMs"
+                    label={dict('PC.Pages.ConnectorManage.formTimeoutMs')}
+                  >
                     {/* 正整数步进选择器：min 1 + 整数精度，超时按毫秒习惯步进 1000 */}
                     <InputNumber
                       className={styles.timeoutInput}
                       min={1}
                       step={1000}
                       precision={0}
-                      placeholder="缺省"
+                      placeholder={dict(
+                        'PC.Pages.ConnectorManage.placeholderTimeout',
+                      )}
                     />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="responsePath" label="响应提取路径（可选）">
+                  <Form.Item
+                    name="responsePath"
+                    label={dict('PC.Pages.ConnectorManage.formResponsePath')}
+                  >
                     <Input
-                      placeholder="如 $.data.list；缺省取响应整体"
+                      placeholder={dict(
+                        'PC.Pages.ConnectorManage.placeholderResponsePath',
+                      )}
                       maxLength={100}
                       showCount
                       allowClear
@@ -1338,10 +1430,12 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
               </Row>
               <Form.Item
                 name="rawBodyParam"
-                label="原样请求体（可选，与 BODY 映射二选一）"
+                label={dict('PC.Pages.ConnectorManage.formRawBody')}
               >
                 <Input
-                  placeholder="填输入参数名，其值原样作为请求体发送"
+                  placeholder={dict(
+                    'PC.Pages.ConnectorManage.placeholderRawBody',
+                  )}
                   maxLength={100}
                   showCount
                   allowClear
@@ -1352,9 +1446,11 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
               <Form.List name="queryMappings">
                 {(fields, { add, remove }) => (
                   <MappingCard
-                    title="QUERY 参数映射"
-                    addText="添加"
-                    emptyText="暂无 QUERY 参数映射"
+                    title={dict('PC.Pages.ConnectorManage.cardQueryMappings')}
+                    addText={dict('PC.Pages.ConnectorManage.btnAdd')}
+                    emptyText={dict(
+                      'PC.Pages.ConnectorManage.emptyQueryMappings',
+                    )}
                     isEmpty={fields.length === 0}
                     onAdd={() => add()}
                   >
@@ -1363,8 +1459,12 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
                         key={field.key}
                         namePath={[field.name, 'name']}
                         valuePath={[field.name, 'value']}
-                        namePlaceholder="参数名"
-                        valuePlaceholder="输入参数名 / opt:参数名 / literal:值"
+                        namePlaceholder={dict(
+                          'PC.Pages.ConnectorManage.placeholderParamName',
+                        )}
+                        valuePlaceholder={dict(
+                          'PC.Pages.ConnectorManage.placeholderMappingValue',
+                        )}
                         onRemove={() => remove(field.name)}
                       />
                     ))}
@@ -1376,9 +1476,11 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
               <Form.List name="headerMappings">
                 {(fields, { add, remove }) => (
                   <MappingCard
-                    title="HEADER 映射"
-                    addText="添加"
-                    emptyText="暂无 HEADER 映射"
+                    title={dict('PC.Pages.ConnectorManage.cardHeaderMappings')}
+                    addText={dict('PC.Pages.ConnectorManage.btnAdd')}
+                    emptyText={dict(
+                      'PC.Pages.ConnectorManage.emptyHeaderMappings',
+                    )}
                     isEmpty={fields.length === 0}
                     onAdd={() => add()}
                   >
@@ -1387,8 +1489,12 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
                         key={field.key}
                         namePath={[field.name, 'name']}
                         valuePath={[field.name, 'value']}
-                        namePlaceholder="参数名"
-                        valuePlaceholder="输入参数名 / opt:参数名 / literal:值"
+                        namePlaceholder={dict(
+                          'PC.Pages.ConnectorManage.placeholderParamName',
+                        )}
+                        valuePlaceholder={dict(
+                          'PC.Pages.ConnectorManage.placeholderMappingValue',
+                        )}
                         onRemove={() => remove(field.name)}
                       />
                     ))}
@@ -1400,9 +1506,9 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
               <Form.List name="bodyFields">
                 {(fields, { add, remove }) => (
                   <MappingCard
-                    title="BODY 字段（类型化·支持嵌套）"
-                    addText="添加字段"
-                    emptyText="暂无 BODY 字段"
+                    title={dict('PC.Pages.ConnectorManage.cardBodyFields')}
+                    addText={dict('PC.Pages.ConnectorManage.btnAddField')}
+                    emptyText={dict('PC.Pages.ConnectorManage.emptyBodyFields')}
                     isEmpty={fields.length === 0}
                     onAdd={() => add({ type: 'string' })}
                   >
@@ -1421,14 +1527,9 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
 
               <div className={styles.mappingTips}>
                 <span>
-                  映射值三种写法：输入参数名（缺失即报错）·
-                  opt:参数名（可选，缺失则整个字段省略）· literal:固定值
+                  {dict('PC.Pages.ConnectorManage.tipMappingValueSyntax')}
                 </span>
-                <span>
-                  字段类型：string / number / boolean / object / array。object
-                  可加子字段；array
-                  指向一个「值为整个数组」的输入参数，其元素结构可声明。
-                </span>
+                <span>{dict('PC.Pages.ConnectorManage.tipFieldTypes')}</span>
               </div>
             </div>
           </div>
@@ -1437,7 +1538,10 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
         {/* ===== 绑定插件 / 绑定工作流（仅执行类型为二者时展示，HTTP 请求声明隐藏）===== */}
         {boundExecType ? (
           <div className={styles.bindSection}>
-            <Form.Item name="bindSpaceId" label="空间">
+            <Form.Item
+              name="bindSpaceId"
+              label={dict('PC.Pages.ConnectorManage.formSpace')}
+            >
               <Select
                 loading={spaceLoading}
                 options={spaces.map((space) => ({
@@ -1455,21 +1559,25 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
               name="bindRef"
               label={
                 boundExecType === 'PLUGIN'
-                  ? '绑定插件（仅已发布）'
-                  : '绑定工作流（仅已发布）'
+                  ? dict('PC.Pages.ConnectorManage.formBindPlugin')
+                  : dict('PC.Pages.ConnectorManage.formBindWorkflow')
               }
               // 保存前强制校验：绑定插件/工作流必须选中一项
               rules={[
                 {
                   required: true,
                   message:
-                    boundExecType === 'PLUGIN' ? '请选择插件' : '请选择工作流',
+                    boundExecType === 'PLUGIN'
+                      ? dict('PC.Pages.ConnectorManage.formBindPluginRequired')
+                      : dict(
+                          'PC.Pages.ConnectorManage.formBindWorkflowRequired',
+                        ),
                 },
               ]}
             >
               <Select
                 loading={bindableLoading}
-                placeholder="— 请选择 —"
+                placeholder={dict('PC.Pages.ConnectorManage.placeholderSelect')}
                 allowClear
                 options={bindables.map((item) => ({
                   label: item.name,
@@ -1485,7 +1593,7 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
                 fetchBindables(boundExecType, form.getFieldValue('bindSpaceId'))
               }
             >
-              刷新列表
+              {dict('PC.Pages.ConnectorManage.btnRefreshList')}
             </Button>
           </div>
         ) : null}
@@ -1494,16 +1602,16 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>
-              输入参数声明（类型化 Arg 树）
+              {dict('PC.Pages.ConnectorManage.sectionInputArgs')}
             </span>
           </div>
           <div className={styles.sectionBody}>
             <Form.List name="inputArgs">
               {(fields, { add, remove }) => (
                 <MappingCard
-                  title="输入参数（名称 / 说明 / 类型 / 必填；OBJECT 与 OBJECT 数组可加下级参数）"
-                  addText="添加"
-                  emptyText="暂无输入参数"
+                  title={dict('PC.Pages.ConnectorManage.cardInputArgs')}
+                  addText={dict('PC.Pages.ConnectorManage.btnAdd')}
+                  emptyText={dict('PC.Pages.ConnectorManage.emptyInputArgs')}
                   isEmpty={fields.length === 0}
                   rowsClassName={styles.argRows}
                   readOnly={argsReadOnly}
@@ -1533,7 +1641,7 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
           loading={submitting}
           onClick={handleSubmit}
         >
-          保存工具
+          {dict('PC.Pages.ConnectorManage.btnSaveTool')}
         </Button>
       </Form>
     </Modal>

@@ -86,6 +86,7 @@ import ConversationInstanceCacheSlot from './components/ConversationInstanceCach
 import LeftContent from './components/LeftContent';
 import ShowArea from './components/ShowArea';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
+import { useChatNormalProjectNameSync } from './hooks/useChatNormalProjectNameSync';
 import { useChatConversation } from './hooks/useChatConversation';
 import { useChatFiles } from './hooks/useChatFiles';
 import { useChatSandbox } from './hooks/useChatSandbox';
@@ -609,6 +610,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     enableDevTargetRedirect,
     redirectDevTargetConversation,
   ]);
+
+  // 常规项目：nameDefined 为 false 时 generate-info 补全项目元数据
+  useChatNormalProjectNameSync({ conversationInfo, prompt: message });
 
   // =============== 会话 icon 缺失时，补拉会话 icon ===============
 

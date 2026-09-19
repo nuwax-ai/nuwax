@@ -1,4 +1,5 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiConnectorSpaceImport,
   apiConnectorSpaceImportApply,
@@ -28,13 +29,13 @@ export interface ConnectorImportDrawerProps {
   onImported?: () => void;
 }
 
-/** diff 条目操作列文案映射（op → 中文标签） */
-const OP_LABEL_MAP: Record<string, string> = {
-  add: '新增',
-  update: '更新',
-  unchanged: '不变',
-  skip: '跳过',
-};
+/** diff 条目操作列文案映射（op → 中文标签）；包成函数避免 dict 在模块顶层早于 i18n 初始化 */
+const getOpLabelMap = (): Record<string, string> => ({
+  add: dict('PC.Common.Global.add'),
+  update: dict('PC.Pages.SpaceConnector.opUpdate'),
+  unchanged: dict('PC.Pages.SpaceConnector.opUnchanged'),
+  skip: dict('PC.Pages.SpaceConnector.opSkip'),
+});
 
 /** diff 条目操作列颜色映射（antd Tag 预设色） */
 const OP_COLOR_MAP: Record<string, string> = {
@@ -54,29 +55,33 @@ interface ConnectorImportDiffItemRow {
 }
 
 /** diff 明细列：类型（连接器/工具）、对象（service / actionKey）、操作（op 标签） */
-const DIFF_COLUMNS: ColumnsType<ConnectorImportDiffItemRow> = [
+const getDiffColumns = (): ColumnsType<ConnectorImportDiffItemRow> => [
   {
-    title: '类型',
+    title: dict('PC.Pages.SpaceConnector.colType'),
     dataIndex: 'type',
     width: 88,
     render: (type: string) =>
-      type === 'provider' ? '连接器' : type === 'action' ? '工具' : type ?? '-',
+      type === 'provider'
+        ? dict('PC.Pages.SpaceConnector.labelConnector')
+        : type === 'action'
+        ? dict('PC.Pages.SpaceConnector.labelTool')
+        : type ?? '-',
   },
   {
-    title: '对象',
+    title: dict('PC.Pages.SpaceConnector.colObject'),
     dataIndex: 'object',
     render: (object: string) => (
       <span className={styles.diffObject}>{object}</span>
     ),
   },
   {
-    title: '操作',
+    title: dict('PC.Common.Global.operation'),
     dataIndex: 'op',
     width: 88,
     render: (op: string, row) => {
       const tag = (
         <Tag color={OP_COLOR_MAP[op] ?? 'default'}>
-          {OP_LABEL_MAP[op] ?? op ?? '-'}
+          {getOpLabelMap()[op] ?? op ?? '-'}
         </Tag>
       );
       // skip 时展示跳过原因（Tooltip 悬浮查看）
@@ -147,7 +152,7 @@ const ConnectorImportDrawer: React.FC<ConnectorImportDrawerProps> = ({
       setFileName(file.name);
       setDiff(null);
     } catch {
-      message.error('读取文件失败');
+      message.error(dict('PC.Pages.SpaceConnector.toastReadFileFailed'));
     }
   }, []);
 
@@ -161,7 +166,7 @@ const ConnectorImportDrawer: React.FC<ConnectorImportDrawerProps> = ({
     try {
       parsed = JSON.parse(content.trim());
     } catch {
-      message.error('导入内容不是有效的 JSON');
+      message.error(dict('PC.Pages.SpaceConnector.toastInvalidJson'));
       return;
     }
 
@@ -173,7 +178,7 @@ const ConnectorImportDrawer: React.FC<ConnectorImportDrawerProps> = ({
       }
       setDiff(response.data);
     } catch {
-      message.error('预览导入 diff 失败');
+      message.error(dict('PC.Pages.SpaceConnector.toastPreviewDiffFailed'));
     } finally {
       setPreviewing(false);
     }
@@ -196,11 +201,11 @@ const ConnectorImportDrawer: React.FC<ConnectorImportDrawerProps> = ({
       if (response?.code !== SUCCESS_CODE) {
         throw new Error(response?.message || 'apply import failed');
       }
-      message.success('导入成功');
+      message.success(dict('PC.Pages.SpaceConnector.toastImportSuccess'));
       onClose();
       onImported?.();
     } catch {
-      message.error('确认导入失败');
+      message.error(dict('PC.Pages.SpaceConnector.toastConfirmImportFailed'));
     } finally {
       setImporting(false);
     }
@@ -215,7 +220,7 @@ const ConnectorImportDrawer: React.FC<ConnectorImportDrawerProps> = ({
   return (
     <Drawer
       className={styles.drawer}
-      title="导入连接器"
+      title={dict('PC.Pages.SpaceConnector.drawerImportTitle')}
       placement="right"
       open={open}
       onClose={onClose}
@@ -232,7 +237,7 @@ const ConnectorImportDrawer: React.FC<ConnectorImportDrawerProps> = ({
             loading={previewing}
             onClick={handlePreviewDiff}
           >
-            预览导入 diff
+            {dict('PC.Pages.SpaceConnector.btnPreviewDiff')}
           </Button>
           {/* importId 来自预览结果：未预览（或内容已变更）时不可确认 */}
           <Button
@@ -241,14 +246,14 @@ const ConnectorImportDrawer: React.FC<ConnectorImportDrawerProps> = ({
             loading={importing}
             onClick={handleConfirmImport}
           >
-            确认导入
+            {dict('PC.Pages.SpaceConnector.btnConfirmImport')}
           </Button>
         </div>
       }
     >
       <div className={styles.content}>
         <div className={styles.fieldLabel}>
-          导入包（「导出」生成的 JSON；粘贴或选择文件）
+          {dict('PC.Pages.SpaceConnector.formImportPackageLabel')}
         </div>
         <Input.TextArea
           className={styles.jsonInput}
@@ -270,31 +275,44 @@ const ConnectorImportDrawer: React.FC<ConnectorImportDrawerProps> = ({
               return false;
             }}
           >
-            <Button icon={<UploadOutlined />}>选择文件</Button>
+            <Button icon={<UploadOutlined />}>
+              {dict('PC.Pages.SpaceConnector.btnSelectFile')}
+            </Button>
           </Upload>
           <span className={styles.fileHint}>
-            {fileName || '未选择任何文件'}
+            {fileName || dict('PC.Pages.SpaceConnector.emptyNoFileSelected')}
           </span>
         </div>
         {/* 预览结果：四类变更计数 chips + 明细表格 */}
         {diff ? (
           <div className={styles.diffSection}>
             <div className={styles.diffStats}>
-              <span className={styles.statPill}>新增 {diff.addCount ?? 0}</span>
               <span className={styles.statPill}>
-                更新 {diff.updateCount ?? 0}
+                {dict('PC.Pages.SpaceConnector.statAdd', diff.addCount ?? 0)}
               </span>
               <span className={styles.statPill}>
-                不变 {diff.unchangedCount ?? 0}
+                {dict(
+                  'PC.Pages.SpaceConnector.statUpdate',
+                  diff.updateCount ?? 0,
+                )}
+              </span>
+              <span className={styles.statPill}>
+                {dict(
+                  'PC.Pages.SpaceConnector.statUnchanged',
+                  diff.unchangedCount ?? 0,
+                )}
               </span>
               {/* 受保护跳过以警示色区分 */}
               <span className={`${styles.statPill} ${styles.statPillWarning}`}>
-                跳过 {diff.skipProtectedCount ?? 0}
+                {dict(
+                  'PC.Pages.SpaceConnector.statSkip',
+                  diff.skipProtectedCount ?? 0,
+                )}
               </span>
             </div>
             <Table<ConnectorImportDiffItemRow>
               className={styles.diffTable}
-              columns={DIFF_COLUMNS}
+              columns={getDiffColumns()}
               dataSource={toDiffRows(diff.items)}
               size="small"
               pagination={{ pageSize: 10, showSizeChanger: false }}

@@ -13,12 +13,17 @@ import useSubscription from '@/hooks/useSubscription';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedAgentList,
+  apiPublishedAppList,
+  apiPublishedAppRecentlyUsedAdd,
   apiPublishedPluginList,
   apiPublishedSkillCollect,
   apiPublishedSkillList,
   apiPublishedSkillUnCollect,
   apiPublishedTemplateList,
   apiPublishedWorkflowList,
+  APP_LIST_TARGET_SUBTYPES,
+  APP_LIST_TARGET_TYPES,
+  type PublishedAppListParams,
 } from '@/services/square';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
@@ -101,10 +106,10 @@ const Square: React.FC = () => {
   const [hasMore, setHasMore] = useState<boolean>(true);
   // 文档搜索关键词
   const [keyword, setKeyword] = useState<string>('');
-  // 接口地址， 默认智能体列表
-  const apiUrlRef = useRef<(data: SquarePublishedListParams) => void>(
-    apiPublishedAgentList,
-  );
+  // 接口地址， 默认智能体列表(网页应用走 app/list 应用列表接口,其参数
+  // targetType 为 string、其余列表接口为枚举,逆变不兼容,故 ref 参数按
+  // any 放宽,各 tab 的 handleQuery 自行保证参数形状正确)
+  const apiUrlRef = useRef<(data: any) => any>(apiPublishedAgentList);
 
   // 滚动容器与内容区域，用于自动补全加载
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -231,6 +236,18 @@ const Square: React.FC = () => {
     },
   );
 
+  // 点击三方/全栈应用上报最近使用:POST /api/published/app/recentlyUsed/add
+  // (projectId=targetId、projectType=targetType),异步上报不阻塞跳转;
+  // 广场无最近使用区,成功后不重拉列表(与女娲应用页同口径,网页应用不上报)
+  const { run: runRecentlyUsedAdd } = useRequest(
+    (app: SquarePublishedItemInfo) =>
+      apiPublishedAppRecentlyUsedAdd({
+        projectId: app.targetId,
+        projectType: app.targetType,
+      }),
+    { manual: true },
+  );
+
   // 初始化配置信息
   const initValues = (params: SquareSearchParams) => {
     const { cate_type, cate_name } = params;
@@ -247,7 +264,8 @@ const Square: React.FC = () => {
         break;
       case SquareAgentTypeEnum.PageApp:
         setTitle(dict('PC.Pages.Square.Square.pageApp'));
-        apiUrlRef.current = apiPublishedAgentList;
+        // 网页应用走应用列表接口:网页/全栈/三方三类应用聚合展示
+        apiUrlRef.current = apiPublishedAppList;
         break;
       case SquareAgentTypeEnum.Skill:
         setTitle(dict('PC.Pages.Square.Square.skill'));
@@ -293,12 +311,13 @@ const Square: React.FC = () => {
     kw: string = keyword,
     official: FilterOfficialEnum = filterOfficial,
   ) => {
-    const data: SquarePublishedListParams & {
-      category?: any;
-      targetType?: any;
-      targetSubType?: 'ChatBot' | 'PageApp';
-      official?: boolean;
-    } = {
+    const data: SquarePublishedListParams &
+      PublishedAppListParams & {
+        category?: any;
+        targetType?: any;
+        targetSubType?: any;
+        official?: boolean;
+      } = {
       page: pageIndex,
       pageSize: 48,
       // 分类名称
@@ -313,10 +332,11 @@ const Square: React.FC = () => {
       data.targetSubType = 'ChatBot';
     }
 
-    // 网页应用
+    // 网页应用:应用列表接口按类型/子类型集合过滤,网页/全栈/三方三类
+    // 聚合(与女娲应用页同口径,不含 scope;official 仅官方筛选时统一补传)
     if (categoryTypeRef.current === SquareAgentTypeEnum.PageApp) {
-      data.targetType = AgentComponentTypeEnum.Agent;
-      data.targetSubType = AgentComponentTypeEnum.PageApp;
+      data.targetTypes = APP_LIST_TARGET_TYPES;
+      data.targetSubTypes = APP_LIST_TARGET_SUBTYPES;
     }
 
     /**
@@ -601,9 +621,19 @@ const Square: React.FC = () => {
                     categoryTypeRef.current === SquareAgentTypeEnum.Agent ||
                     categoryTypeRef.current === SquareAgentTypeEnum.PageApp
                   ) {
-                    // 付费未订阅的智能体先原地拦截弹统一专家卡订阅/付费
-                    const handleAgentCardClick = () =>
-                      interceptAgentClick(item, () =>
+                    // 全栈/三方应用与女娲应用页同口径:先异步上报最近使用
+                    // (不阻塞跳转)再跳全栈应用页,不经智能体付费拦截;
+                    // 网页应用(Agent+PageApp)走原链路(不上报)
+                    const handleAgentCardClick = () => {
+                      if (
+                        item.targetType === AgentComponentTypeEnum.UserApp ||
+                        item.targetType === AgentComponentTypeEnum.ThirdApp
+                      ) {
+                        runRecentlyUsedAdd(item);
+                        history.push(`/user-app/${item.targetId}`);
+                        return;
+                      }
+                      return interceptAgentClick(item, () =>
                         handleClick(
                           item.targetId,
                           item.targetType,
@@ -611,6 +641,7 @@ const Square: React.FC = () => {
                           item.ext?.conversationId,
                         ),
                       );
+                    };
                     return (
                       <SingleAgent
                         key={index}

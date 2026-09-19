@@ -27,7 +27,10 @@ import {
   apiPublishedSkillEnable,
   apiPublishedSkillUnEnable,
 } from '@/services/square';
-import { apiConnectorConnectionToggleStatus } from '@/services/systemManage';
+import {
+  apiConnectorConnectionList,
+  apiConnectorConnectionToggleStatus,
+} from '@/services/systemManage';
 import { jumpTo } from '@/utils/router';
 import { Empty, message } from 'antd';
 import classNames from 'classnames';
@@ -368,13 +371,41 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
             stats: nextStats,
           });
         } else {
-          message.error(res?.message || '操作失败，请稍后重试');
+          message.error(
+            res?.message || dict('PC.Common.Global.operationFailed'),
+          );
         }
       } finally {
         collectingRef.current.delete(item.id);
       }
     },
     [updateItem],
+  );
+
+  /**
+   * 连接器连接态的就地回写（useConnectorConnect 的 updateItem 适配）：
+   * - 「已连接的」维度断开：条目需移出列表，整区重拉同步集合（与技能
+   *   「我启用的」关闭开关同口径），不做就地回写（避免断开的条目以
+   *   未连接态残留）；
+   * - 其余维度维持就地回写，且连接态与开关联动：连接成功 → 连接即启用
+   *   （开关随之点亮），断开 → 一并停用（开关回落）——授权成功只回写
+   *   connected，列表旧值里的 connectionEnabled 不能残留，否则开关与
+   *   真实连接态脱节（与 ConnectorListView 同口径）
+   */
+  const connectUpdateItem = useCallback(
+    (id: string, patch: { connected?: boolean }) => {
+      if (source === 'connected' && patch.connected === false) {
+        reload();
+        return;
+      }
+      updateItem(id, {
+        ...patch,
+        ...(patch.connected !== undefined
+          ? { connectionEnabled: patch.connected }
+          : null),
+      });
+    },
+    [source, updateItem, reload],
   );
 
   /**
@@ -397,7 +428,7 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
     // "已连接的"维度无空间上下文，连接/断开按系统口径（不带 spaceId）
     source: source === 'team' ? 'team' : 'system',
     spaceId: listSpaceId,
-    updateItem,
+    updateItem: connectUpdateItem,
   });
 
   /** 启用开关切换请求中的卡片 id（Switch loading 防重复点击） */
@@ -407,24 +438,45 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
    * 连接器卡片「启用开关」：POST /api/connector/connections/{连接id}/status
    * （连接 id 取列表接口响应的 connectionId，非提供方主键）；成功后就地
    * 更新 connectionEnabled 驱动开关回弹，不动筛选与分页（避免整页重拉）。
+   * 刚连接成功、尚未重拉列表的条目 connectionId 缺失时，按 service 查连接
+   * 列表兜底寻址（与断开流程同口径），成功后补写 connectionId 避免重复兜底。
    * 例外——「我启用的」维度关闭开关：接口成功后整区重拉（reload），
    * 关闭启用的连接器即时移出该维度列表；其余维度维持就地更新
    * （与技能「我启用的」关闭开关同口径）
    */
   const handleToggleEnabled = useCallback(
     async (item: ResourceItem, enabled: boolean) => {
-      if (!item.connectionId) {
+      let connectionId = item.connectionId;
+      if (!connectionId && item.service) {
+        // 兜底寻址：授权连接成功后就地回写不经过列表接口，新连接 id
+        // 未随回写带上，按 service 匹配连接列表（团队空间维度带 spaceId）
+        try {
+          const connRes = await apiConnectorConnectionList({
+            spaceId: source === 'team' ? listSpaceId : undefined,
+          });
+          const connections = Array.isArray(connRes?.data) ? connRes.data : [];
+          connectionId = connections.find(
+            (conn) => (conn.providerService ?? conn.service) === item.service,
+          )?.id;
+        } catch {
+          // 兜底查询失败落入下方统一提示
+        }
+      }
+      if (!connectionId) {
         // 数据异常兜底：缺连接 id 无法寻址（开关仅已连接卡片展示，正常已有值）
         console.warn(
           '[ExpertSkillConnector] toggle enabled skipped: missing connectionId, item =',
           item.id,
+        );
+        message.error(
+          dict('PC.Pages.ExpertSkillConnector.missingConnectionId'),
         );
         return;
       }
       setTogglingIds((prev) => [...prev, item.id]);
       try {
         const res = await apiConnectorConnectionToggleStatus(
-          item.connectionId,
+          connectionId,
           enabled,
         );
         if (res?.code === SUCCESS_CODE) {
@@ -432,16 +484,22 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
           if (source === 'enabled' && !enabled) {
             reload();
           } else {
-            updateItem(item.id, { connectionEnabled: enabled });
+            updateItem(item.id, {
+              connectionEnabled: enabled,
+              ...(item.connectionId ? null : { connectionId }),
+            });
           }
         } else {
-          message.error(res?.message || '切换启用状态失败');
+          message.error(
+            res?.message ||
+              dict('PC.Pages.ExpertSkillConnector.toggleEnabledFailed'),
+          );
         }
       } finally {
         setTogglingIds((prev) => prev.filter((id) => id !== item.id));
       }
     },
-    [updateItem, reload, source],
+    [updateItem, reload, source, listSpaceId],
   );
 
   /** 技能启用开关切换请求中的卡片 id（Switch loading 防重复点击） */
@@ -489,7 +547,10 @@ const ResourceAggregation: React.FC<ResourceAggregationProps> = ({
             updateItem(item.id, { skillEnabled: enabled });
           }
         } else {
-          message.error(res?.message || '切换启用状态失败');
+          message.error(
+            res?.message ||
+              dict('PC.Pages.ExpertSkillConnector.toggleEnabledFailed'),
+          );
         }
       } finally {
         setSkillTogglingIds((prev) => prev.filter((id) => id !== item.id));

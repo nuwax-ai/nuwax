@@ -48,10 +48,10 @@ import ConnectorProviderDetailDrawer from './ConnectorProviderDetailDrawer';
 import ConnectorProviderEditDrawer from './ConnectorProviderEditDrawer';
 import {
   AUTH_TYPE_COLOR_MAP,
-  AUTH_TYPE_LABEL_MAP,
-  AUTH_TYPE_OPTIONS,
-  CONNECTED_OPTIONS,
-  STATUS_OPTIONS,
+  getAuthTypeLabelMap,
+  getAuthTypeOptions,
+  getConnectedOptions,
+  getStatusOptions,
 } from './constants';
 
 /**
@@ -137,14 +137,16 @@ const ConnectorManage: React.FC = () => {
       const text = await (response?.data as Blob).text();
       json = JSON.parse(text);
     } catch {
-      message.error('导出失败：响应不是有效的 JSON');
+      message.error(dict('PC.Pages.ConnectorManage.exportInvalidJson'));
       return false;
     }
 
     // 业务错误码：RequestResponse 模式 code !== '0000' 即失败
     if (json && typeof json === 'object' && 'code' in json) {
       if (json.code !== '0000') {
-        message.error(json.message || '导出失败');
+        message.error(
+          json.message || dict('PC.Pages.ConnectorManage.exportFailed'),
+        );
         return false;
       }
     }
@@ -152,7 +154,7 @@ const ConnectorManage: React.FC = () => {
     // 提取 data 字段；若无 data 字段则使用整个响应体
     const exportData = json && 'data' in json ? json.data : json;
     if (isExportDataEmpty(exportData)) {
-      message.warning('导出数据为空');
+      message.warning(dict('PC.Pages.ConnectorManage.exportEmpty'));
       return false;
     }
 
@@ -189,12 +191,18 @@ const ConnectorManage: React.FC = () => {
         const ok = await triggerJsonDownload(response, filename);
         if (ok) {
           message.success(
-            mode === 'single' ? '已导出连接器' : '已导出所选连接器',
+            dict(
+              mode === 'single'
+                ? 'PC.Pages.ConnectorManage.exportedSingle'
+                : 'PC.Pages.ConnectorManage.exportedSelected',
+            ),
           );
         }
         return ok;
       } catch (err: any) {
-        message.error(err?.message || '导出失败');
+        message.error(
+          err?.message || dict('PC.Pages.ConnectorManage.exportFailed'),
+        );
         return false;
       } finally {
         setExporting(null);
@@ -206,7 +214,7 @@ const ConnectorManage: React.FC = () => {
   /** 导出所选：根据 selectedRowKeys 映射出 service 列表；勾选为空时给出提示 */
   const handleExportSelected = useCallback(() => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请先勾选要导出的连接器');
+      message.warning(dict('PC.Pages.ConnectorManage.exportSelectFirst'));
       return Promise.resolve(false);
     }
     const services = draggableData
@@ -214,7 +222,7 @@ const ConnectorManage: React.FC = () => {
       .map((item) => item.service)
       .filter(Boolean);
     if (services.length === 0) {
-      message.warning('所选行缺少 service 字段，无法导出');
+      message.warning(dict('PC.Pages.ConnectorManage.exportNoService'));
       return Promise.resolve(false);
     }
     return handleExportCore(services, 'selected');
@@ -224,7 +232,7 @@ const ConnectorManage: React.FC = () => {
   const handleExportSingle = useCallback(
     (record: ConnectorProviderInfo) => {
       if (!record.service) {
-        message.error('连接器 service 缺失，无法导出');
+        message.error(dict('PC.Pages.ConnectorManage.serviceMissingForExport'));
         return;
       }
       handleExportCore([record.service], 'single', record.displayName);
@@ -281,7 +289,7 @@ const ConnectorManage: React.FC = () => {
     async (record: ConnectorProviderInfo) => {
       const service = record.service;
       if (!service) {
-        message.error('连接器 service 缺失，无法切换状态');
+        message.error(dict('PC.Pages.ConnectorManage.serviceMissingForToggle'));
         return;
       }
       // 重复点击保护：同 service 已在请求中则直接忽略
@@ -304,11 +312,23 @@ const ConnectorManage: React.FC = () => {
         if (response?.code !== SUCCESS_CODE) {
           throw new Error(response?.message || 'toggle failed');
         }
-        message.success(nextEnabled ? '已启用该连接器' : '已停用该连接器');
+        message.success(
+          dict(
+            nextEnabled
+              ? 'PC.Pages.ConnectorManage.enabledConnectorToast'
+              : 'PC.Pages.ConnectorManage.disabledConnectorToast',
+          ),
+        );
         // 刷新列表，让 status 字段以服务端为准
         actionRef.current?.reload();
       } catch (err) {
-        message.error(nextEnabled ? '启用连接器失败' : '停用连接器失败');
+        message.error(
+          dict(
+            nextEnabled
+              ? 'PC.Pages.ConnectorManage.enableConnectorFailed'
+              : 'PC.Pages.ConnectorManage.disableConnectorFailed',
+          ),
+        );
       } finally {
         setTogglingServices((prev) => {
           const next = new Set(prev);
@@ -331,19 +351,21 @@ const ConnectorManage: React.FC = () => {
    */
   const handleDelete = useCallback((record: ConnectorProviderInfo) => {
     Modal.confirm({
-      title: `删除连接器 ${record.displayName || record.service}？`,
-      content:
-        '其全部工具将一并删除。若仍有用户连接，删除会被拒绝（需先断开）。',
-      okText: '删除',
+      title: dict(
+        'PC.Pages.ConnectorManage.deleteTitle',
+        record.displayName || record.service || '',
+      ),
+      content: dict('PC.Pages.ConnectorManage.deleteContent'),
+      okText: dict('PC.Common.Global.delete'),
       okButtonProps: { danger: true },
-      cancelText: '取消',
+      cancelText: dict('PC.Common.Global.cancel'),
       onOk: async () => {
         try {
           const response = await apiSystemConnectorProviderDelete(
             record.service,
           );
           if (response?.code === SUCCESS_CODE) {
-            message.success('删除成功');
+            message.success(dict('PC.Common.Global.deleteSuccess'));
             actionRef.current?.reload();
           }
           // 非成功码理论上会被全局拦截器 reject，不会 resolve 到这里；静默关闭弹窗即可
@@ -364,7 +386,7 @@ const ConnectorManage: React.FC = () => {
         {
           // 查看：原地打开右侧详情抽屉（概览 + 工具列表表格，不跳路由保住筛选态）
           key: 'detail',
-          label: '查看',
+          label: dict('PC.Pages.ConnectorManage.actionView'),
           onClick: () => {
             setEditRecord(null);
             setDetailService(record.service);
@@ -372,25 +394,28 @@ const ConnectorManage: React.FC = () => {
         },
         {
           key: 'edit',
-          label: '编辑',
+          label: dict('PC.Common.Global.edit'),
           onClick: () => {
             setEditRecord(record);
           },
         },
         {
           key: 'export',
-          label: '导出',
+          label: dict('PC.Common.Global.export'),
           onClick: () => handleExportSingle(record),
         },
         {
           key: 'toggle',
-          label: record.status === 'enabled' ? '停用' : '启用',
+          label:
+            record.status === 'enabled'
+              ? dict('PC.Pages.ConnectorManage.statusDisabled')
+              : dict('PC.Pages.ConnectorManage.statusEnabled'),
           loading: togglingServices.has(record.service),
           onClick: () => handleToggleStatus(record),
         },
         {
           key: 'delete',
-          label: '删除',
+          label: dict('PC.Common.Global.delete'),
           onClick: () => handleDelete(record),
         },
       ];
@@ -478,11 +503,14 @@ const ConnectorManage: React.FC = () => {
     [dndBodyRow],
   );
 
+  /** 鉴权方式值→标签映射（渲染期取词，语言切换即时生效） */
+  const authTypeLabelMap = getAuthTypeLabelMap();
+
   /** 列定义 */
   const columns: ProColumns<ConnectorProviderInfo>[] = [
     {
       // 拖拽手柄列：紧跟勾选列之后、连接器列之前（勾选列由 rowSelection 自动前置）
-      title: '排序',
+      title: dict('PC.Pages.ConnectorManage.columnSort'),
       key: 'sort',
       align: 'center',
       width: 52,
@@ -493,11 +521,11 @@ const ConnectorManage: React.FC = () => {
     {
       // 连接器：仅展示名称（不加粗、无副标题，行高随之收紧）
       // 进 LightFilter：点击搜索图标展开输入框（回车 / 查询按钮触发），匹配 displayName 或 service
-      title: '连接器',
+      title: dict('PC.Pages.ConnectorManage.columnConnector'),
       dataIndex: 'displayName',
       width: 200,
       fieldProps: {
-        placeholder: '请输入连接器名称/service',
+        placeholder: dict('PC.Pages.ConnectorManage.searchPlaceholder'),
         // 弹层挂在 body 下无法用页面祖先选择器，借此 class 反查所属 popover 放宽宽度（见下方 style 标签）
         className: 'connector-name-filter-input',
       },
@@ -514,28 +542,28 @@ const ConnectorManage: React.FC = () => {
     },
     {
       // 鉴权方式
-      title: '认证方式',
+      title: dict('PC.Pages.ConnectorManage.columnAuthType'),
       dataIndex: 'authType',
       width: 120,
       align: 'center',
       valueType: 'select',
       valueEnum: Object.fromEntries(
-        Object.entries(AUTH_TYPE_LABEL_MAP).map(([k, v]) => [k, { text: v }]),
+        Object.entries(authTypeLabelMap).map(([k, v]) => [k, { text: v }]),
       ),
       fieldProps: {
-        options: AUTH_TYPE_OPTIONS.filter((v) => v.value !== ''),
+        options: getAuthTypeOptions().filter((v) => v.value !== ''),
         // 弹层挂在 body 下，借此 class 反查所属 dropdown 放宽宽度（见下方 style 标签）
         popupClassName: 'connector-auth-type-dropdown',
       },
       render: (_, record) => (
         <Tag color={AUTH_TYPE_COLOR_MAP[record.authType] ?? 'default'}>
-          {AUTH_TYPE_LABEL_MAP[record.authType] ?? record.authType}
+          {authTypeLabelMap[record.authType] ?? record.authType}
         </Tag>
       ),
     },
     {
       // 工具数
-      title: '工具数',
+      title: dict('PC.Pages.ConnectorManage.columnActionCount'),
       dataIndex: 'actionCount',
       width: 80,
       align: 'center',
@@ -543,42 +571,50 @@ const ConnectorManage: React.FC = () => {
     },
     {
       // 启用状态
-      title: '启用状态',
+      title: dict('PC.Pages.ConnectorManage.columnStatus'),
       dataIndex: 'status',
       width: 100,
       align: 'center',
       valueType: 'select',
       valueEnum: {
-        enabled: { text: '启用', status: 'Success' },
-        disabled: { text: '停用', status: 'Default' },
+        enabled: {
+          text: dict('PC.Pages.ConnectorManage.statusEnabled'),
+          status: 'Success',
+        },
+        disabled: {
+          text: dict('PC.Pages.ConnectorManage.statusDisabled'),
+          status: 'Default',
+        },
       },
       fieldProps: {
-        options: STATUS_OPTIONS.filter((v) => v.value !== ''),
+        options: getStatusOptions().filter((v) => v.value !== ''),
       },
       render: (_, record) => (
         <Tag color={record.status === 'enabled' ? 'green' : 'default'}>
-          {record.status === 'enabled' ? '启用' : '停用'}
+          {record.status === 'enabled'
+            ? dict('PC.Pages.ConnectorManage.statusEnabled')
+            : dict('PC.Pages.ConnectorManage.statusDisabled')}
         </Tag>
       ),
     },
     {
       // 连接状态筛选器：仅作为 LightFilter 筛选项（不在表格中占列），
       // 前端本地按 provider.connected 过滤
-      title: '连接状态',
+      title: dict('PC.Pages.ConnectorManage.columnConnected'),
       dataIndex: 'connected',
       valueType: 'select',
       hideInTable: true,
       valueEnum: {
-        true: { text: '已连接' },
-        false: { text: '未连接' },
+        true: { text: dict('PC.Components.CapabilityModal.connected') },
+        false: { text: dict('PC.Components.CapabilityModal.disconnected') },
       },
       fieldProps: {
-        options: CONNECTED_OPTIONS,
+        options: getConnectedOptions(),
       },
     },
     {
       // 更新时间
-      title: '更新时间',
+      title: dict('PC.Pages.ConnectorManage.columnModified'),
       dataIndex: 'modified',
       width: 170,
       hideInSearch: true,
@@ -587,7 +623,7 @@ const ConnectorManage: React.FC = () => {
     },
     {
       // 操作列：TableActions 渲染的蓝色文字链接（fixed right 保证滚动时常驻）
-      title: '操作',
+      title: dict('PC.Common.Global.operation'),
       width: 240,
       align: 'center',
       fixed: 'right',
@@ -603,7 +639,9 @@ const ConnectorManage: React.FC = () => {
       const res = await apiSystemConnectorProviderList();
 
       if (!res || res.code !== SUCCESS_CODE) {
-        message.error(res?.message || '获取连接器列表失败');
+        message.error(
+          res?.message || dict('PC.Pages.ConnectorManage.listLoadFailed'),
+        );
         return { data: [], total: 0, success: false };
       }
 
@@ -645,7 +683,7 @@ const ConnectorManage: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="官方连接器"
+      title={dict('PC.Pages.ConnectorManage.pageTitle')}
       hideScroll
       rightSlot={
         <Space size={12}>
@@ -655,14 +693,14 @@ const ConnectorManage: React.FC = () => {
             icon={<PlusOutlined />}
             onClick={() => setCreateDrawerOpen(true)}
           >
-            新增官方连接器
+            {dict('PC.Pages.ConnectorManage.createOfficial')}
           </Button>
           {/* 导入官方包：右侧滑出 ConnectorImportDrawer（粘贴/选文件导入 JSON） */}
           <Button
             icon={<UploadOutlined />}
             onClick={() => setImportDrawerOpen(true)}
           >
-            导入官方包
+            {dict('PC.Pages.ConnectorManage.importOfficial')}
           </Button>
           {/* 导出所选：需先勾选行；仅自己导出时转 loading（与行内单条导出互不影响），
               并发点击由 handleExportCore 内的 exporting 守卫拦截 */}
@@ -671,7 +709,7 @@ const ConnectorManage: React.FC = () => {
             loading={exporting === 'selected'}
             onClick={handleExportSelected}
           >
-            导出所选
+            {dict('PC.Pages.ConnectorManage.exportSelected')}
           </Button>
         </Space>
       }

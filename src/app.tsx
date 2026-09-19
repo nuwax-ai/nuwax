@@ -1,3 +1,4 @@
+import '@/utils/setupDayjsPlugins';
 import { RequestConfig } from '@@/plugin-request/request';
 import { OpenUIDevtools } from '@openuidev/devtools';
 import { theme as antdTheme, Modal } from 'antd';

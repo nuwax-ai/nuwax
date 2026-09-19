@@ -10,11 +10,12 @@ import ConnectorProviderDetailDrawer from '@/pages/SystemManagement/ConnectorMan
 import ConnectorProviderEditDrawer from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderEditDrawer';
 import {
   AUTH_TYPE_COLOR_MAP,
-  AUTH_TYPE_LABEL_MAP,
-  AUTH_TYPE_OPTIONS,
-  CONNECTED_OPTIONS,
-  STATUS_OPTIONS,
+  getAuthTypeLabelMap,
+  getAuthTypeOptions,
+  getConnectedOptions,
+  getStatusOptions,
 } from '@/pages/SystemManagement/ConnectorManage/constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiConnectorOauthSharedConfigSave,
   apiConnectorProviderCreate,
@@ -85,14 +86,16 @@ const triggerJsonDownload = async (
     const text = await (response?.data as Blob).text();
     json = JSON.parse(text);
   } catch {
-    message.error('导出失败：响应不是有效的 JSON');
+    message.error(dict('PC.Pages.ConnectorManage.exportInvalidJson'));
     return false;
   }
 
   // 业务错误码：RequestResponse 模式 code !== '0000' 即失败
   if (json && typeof json === 'object' && 'code' in json) {
     if (json.code !== SUCCESS_CODE) {
-      message.error(json.message || '导出失败');
+      message.error(
+        json.message || dict('PC.Pages.ConnectorManage.exportFailed'),
+      );
       return false;
     }
   }
@@ -100,7 +103,7 @@ const triggerJsonDownload = async (
   // 提取 data 字段；若无 data 字段则使用整个响应体
   const exportData = json && 'data' in json ? json.data : json;
   if (isExportDataEmpty(exportData)) {
-    message.warning('导出数据为空');
+    message.warning(dict('PC.Pages.ConnectorManage.exportEmpty'));
     return false;
   }
 
@@ -166,17 +169,19 @@ const SpaceConnector: React.FC = () => {
    */
   const handleDelete = useCallback((record: ConnectorProviderInfo) => {
     Modal.confirm({
-      title: `删除连接器 ${record.displayName || record.service}？`,
-      content:
-        '其全部工具将一并删除。若仍有用户连接，删除会被拒绝（需先断开）。',
-      okText: '删除',
+      title: dict(
+        'PC.Pages.ConnectorManage.deleteTitle',
+        record.displayName || record.service || '',
+      ),
+      content: dict('PC.Pages.ConnectorManage.deleteContent'),
+      okText: dict('PC.Common.Global.delete'),
       okButtonProps: { danger: true },
-      cancelText: '取消',
+      cancelText: dict('PC.Common.Global.cancel'),
       onOk: async () => {
         try {
           const response = await apiConnectorProviderDelete(record.service);
           if (response?.code === SUCCESS_CODE) {
-            message.success('删除成功');
+            message.success(dict('PC.Common.Global.deleteSuccess'));
             actionRef.current?.reload();
           }
           // 非成功码理论上会被全局拦截器 reject，不会 resolve 到这里；静默关闭弹窗即可
@@ -195,7 +200,7 @@ const SpaceConnector: React.FC = () => {
   const handleExport = useCallback(
     async (record: ConnectorProviderInfo) => {
       if (!record.service || !spaceIdReady) {
-        message.error('连接器 service 缺失，无法导出');
+        message.error(dict('PC.Pages.ConnectorManage.serviceMissingForExport'));
         return;
       }
       if (exportingService) return;
@@ -210,10 +215,12 @@ const SpaceConnector: React.FC = () => {
           `${record.service}.connector.json`,
         );
         if (ok) {
-          message.success('已导出连接器');
+          message.success(dict('PC.Pages.ConnectorManage.exportedSingle'));
         }
       } catch (err: any) {
-        message.error(err?.message || '导出失败');
+        message.error(
+          err?.message || dict('PC.Pages.ConnectorManage.exportFailed'),
+        );
       } finally {
         setExportingService(null);
       }
@@ -230,7 +237,7 @@ const SpaceConnector: React.FC = () => {
   const handleToggleStatus = useCallback(
     async (record: ConnectorProviderInfo) => {
       if (!record.service) {
-        message.error('连接器 service 缺失，无法操作');
+        message.error(dict('PC.Pages.SpaceConnector.serviceMissingForToggle'));
         return;
       }
       if (togglingService) return;
@@ -243,14 +250,31 @@ const SpaceConnector: React.FC = () => {
         );
         if (response?.code !== SUCCESS_CODE) {
           message.error(
-            response?.message || (nextEnabled ? '启用失败' : '停用失败'),
+            response?.message ||
+              dict(
+                nextEnabled
+                  ? 'PC.Pages.SpaceConnector.enableFailed'
+                  : 'PC.Pages.SpaceConnector.disableFailed',
+              ),
           );
           return;
         }
-        message.success(nextEnabled ? '已启用' : '已停用');
+        message.success(
+          dict(
+            nextEnabled
+              ? 'PC.Common.Global.enableSuccess'
+              : 'PC.Common.Global.disableSuccess',
+          ),
+        );
         actionRef.current?.reload();
       } catch {
-        message.error(nextEnabled ? '启用失败' : '停用失败');
+        message.error(
+          dict(
+            nextEnabled
+              ? 'PC.Pages.SpaceConnector.enableFailed'
+              : 'PC.Pages.SpaceConnector.disableFailed',
+          ),
+        );
       } finally {
         setTogglingService(null);
       }
@@ -291,29 +315,32 @@ const SpaceConnector: React.FC = () => {
       const actions: ActionItem<ConnectorProviderInfo>[] = [
         {
           key: 'detail',
-          label: '查看',
+          label: dict('PC.Pages.ConnectorManage.actionView'),
           onClick: () => handleView(record),
         },
         {
           key: 'edit',
-          label: '编辑',
+          label: dict('PC.Common.Global.edit'),
           onClick: () => handleEdit(record),
         },
         {
           key: 'export',
-          label: '导出',
+          label: dict('PC.Common.Global.export'),
           loading: exportingService === record.service,
           onClick: () => handleExport(record),
         },
         {
           key: 'toggle',
-          label: record.status === 'enabled' ? '停用' : '启用',
+          label:
+            record.status === 'enabled'
+              ? dict('PC.Pages.ConnectorManage.statusDisabled')
+              : dict('PC.Pages.ConnectorManage.statusEnabled'),
           loading: togglingService === record.service,
           onClick: () => handleToggleStatus(record),
         },
         {
           key: 'delete',
-          label: '删除',
+          label: dict('PC.Common.Global.delete'),
           onClick: () => handleDelete(record),
         },
       ];
@@ -335,17 +362,20 @@ const SpaceConnector: React.FC = () => {
     ],
   );
 
+  /** 鉴权方式值→标签映射（渲染期取词，语言切换即时生效） */
+  const authTypeLabelMap = getAuthTypeLabelMap();
+
   /** 列定义（与管理端一致，去掉勾选列与拖拽排序列；新增「已连接」列） */
   const columns: ProColumns<ConnectorProviderInfo>[] = [
     {
       // 连接器：仅展示名称（不加粗、无副标题，行高随之收紧）
       // 进 LightFilter：点击搜索图标展开输入框（回车 / 查询按钮触发），
       // 提交后作为接口 keyword 参数（服务端匹配 displayName/service）
-      title: '连接器',
+      title: dict('PC.Pages.ConnectorManage.columnConnector'),
       dataIndex: 'displayName',
       width: 200,
       fieldProps: {
-        placeholder: '请输入连接器名称/service',
+        placeholder: dict('PC.Pages.ConnectorManage.searchPlaceholder'),
         // 弹层挂在 body 下无法用页面祖先选择器，借此 class 反查所属 popover 放宽宽度（见下方 style 标签）
         className: 'connector-name-filter-input',
       },
@@ -362,28 +392,28 @@ const SpaceConnector: React.FC = () => {
     },
     {
       // 认证方式（本地筛选：接口不支持 authType 参数）
-      title: '认证方式',
+      title: dict('PC.Pages.ConnectorManage.columnAuthType'),
       dataIndex: 'authType',
       width: 120,
       align: 'center',
       valueType: 'select',
       valueEnum: Object.fromEntries(
-        Object.entries(AUTH_TYPE_LABEL_MAP).map(([k, v]) => [k, { text: v }]),
+        Object.entries(authTypeLabelMap).map(([k, v]) => [k, { text: v }]),
       ),
       fieldProps: {
-        options: AUTH_TYPE_OPTIONS.filter((v) => v.value !== ''),
+        options: getAuthTypeOptions().filter((v) => v.value !== ''),
         // 弹层挂在 body 下，借此 class 反查所属 dropdown 放宽宽度（见下方 style 标签）
         popupClassName: 'connector-auth-type-dropdown',
       },
       render: (_, record) => (
         <Tag color={AUTH_TYPE_COLOR_MAP[record.authType] ?? 'default'}>
-          {AUTH_TYPE_LABEL_MAP[record.authType] ?? record.authType}
+          {authTypeLabelMap[record.authType] ?? record.authType}
         </Tag>
       ),
     },
     {
       // 工具数
-      title: '工具数',
+      title: dict('PC.Pages.ConnectorManage.columnActionCount'),
       dataIndex: 'actionCount',
       width: 80,
       align: 'center',
@@ -391,47 +421,57 @@ const SpaceConnector: React.FC = () => {
     },
     {
       // 启用状态
-      title: '启用状态',
+      title: dict('PC.Pages.ConnectorManage.columnStatus'),
       dataIndex: 'status',
       width: 100,
       align: 'center',
       valueType: 'select',
       valueEnum: {
-        enabled: { text: '启用', status: 'Success' },
-        disabled: { text: '停用', status: 'Default' },
+        enabled: {
+          text: dict('PC.Pages.ConnectorManage.statusEnabled'),
+          status: 'Success',
+        },
+        disabled: {
+          text: dict('PC.Pages.ConnectorManage.statusDisabled'),
+          status: 'Default',
+        },
       },
       fieldProps: {
-        options: STATUS_OPTIONS.filter((v) => v.value !== ''),
+        options: getStatusOptions().filter((v) => v.value !== ''),
       },
       render: (_, record) => (
         <Tag color={record.status === 'enabled' ? 'green' : 'default'}>
-          {record.status === 'enabled' ? '启用' : '停用'}
+          {record.status === 'enabled'
+            ? dict('PC.Pages.ConnectorManage.statusEnabled')
+            : dict('PC.Pages.ConnectorManage.statusDisabled')}
         </Tag>
       ),
     },
     {
       // 连接状态（空间维度特有，对应接口 connected 参数）
-      title: '连接状态',
+      title: dict('PC.Pages.ConnectorManage.columnConnected'),
       dataIndex: 'connected',
       width: 100,
       align: 'center',
       valueType: 'select',
       valueEnum: {
-        true: { text: '已连接' },
-        false: { text: '未连接' },
+        true: { text: dict('PC.Components.CapabilityModal.connected') },
+        false: { text: dict('PC.Components.CapabilityModal.disconnected') },
       },
       fieldProps: {
-        options: CONNECTED_OPTIONS,
+        options: getConnectedOptions(),
       },
       render: (_, record) => (
         <Tag color={record.connected ? 'green' : 'default'}>
-          {record.connected ? '已连接' : '未连接'}
+          {record.connected
+            ? dict('PC.Components.CapabilityModal.connected')
+            : dict('PC.Components.CapabilityModal.disconnected')}
         </Tag>
       ),
     },
     {
       // 更新时间
-      title: '更新时间',
+      title: dict('PC.Pages.ConnectorManage.columnModified'),
       dataIndex: 'modified',
       width: 170,
       hideInSearch: true,
@@ -440,7 +480,7 @@ const SpaceConnector: React.FC = () => {
     },
     {
       // 操作列：TableActions 渲染的蓝色文字链接（fixed right 保证滚动时常驻）
-      title: '操作',
+      title: dict('PC.Common.Global.operation'),
       width: 240,
       align: 'center',
       fixed: 'right',
@@ -472,7 +512,9 @@ const SpaceConnector: React.FC = () => {
         pageSize: 500,
       });
       if (response?.code !== SUCCESS_CODE) {
-        message.error(response?.message || '获取连接器列表失败');
+        message.error(
+          response?.message || dict('PC.Pages.ConnectorManage.listLoadFailed'),
+        );
         return { data: [], total: 0, success: false };
       }
       let data = response.data?.records ?? [];
@@ -488,7 +530,7 @@ const SpaceConnector: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="连接器"
+      title={dict('PC.Pages.SpaceConnector.pageTitle')}
       rightSlot={
         <Space size={12}>
           {/* 新增连接器：与管理端同款 primary 按钮，右侧滑出创建抽屉；
@@ -499,7 +541,7 @@ const SpaceConnector: React.FC = () => {
             onClick={() => setCreateDrawerOpen(true)}
             disabled={!spaceIdReady}
           >
-            新增连接器
+            {dict('PC.Pages.SpaceConnector.createConnector')}
           </Button>
           {/* 导入：右侧滑出导入抽屉（预览 diff + 确认导入） */}
           <Button
@@ -507,7 +549,7 @@ const SpaceConnector: React.FC = () => {
             onClick={() => setImportOpen(true)}
             disabled={!spaceIdReady}
           >
-            导入
+            {dict('PC.Common.Global.import')}
           </Button>
         </Space>
       }
@@ -529,7 +571,9 @@ const SpaceConnector: React.FC = () => {
         {/* 表格列表（与管理端同款呈现；无勾选列、无拖拽排序） */}
         {!spaceIdReady ? (
           <div className={styles.emptyWrap}>
-            <Empty description="空间参数缺失" />
+            <Empty
+              description={dict('PC.Pages.SpaceConnector.missingSpaceParam')}
+            />
           </div>
         ) : (
           <XProTable<ConnectorProviderInfo>
@@ -582,7 +626,7 @@ const SpaceConnector: React.FC = () => {
           })
         }
         saveOauthConfig={apiConnectorOauthSharedConfigSave}
-        successMessage="创建成功，请到查看工具里面添加工具"
+        successMessage={dict('PC.Pages.SpaceConnector.createSuccessHint')}
         servicePrefix="s_"
       />
 

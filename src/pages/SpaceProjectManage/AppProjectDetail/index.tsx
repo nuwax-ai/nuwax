@@ -396,7 +396,7 @@ const AppProjectDetail: React.FC = () => {
     setOauthLoading(true);
     setSecretVisible(false);
     try {
-      const settingRes = await apiThirdAppOauth2SettingGet(appId);
+      const settingRes = await apiThirdAppOauth2SettingGet(appId, AgentComponentTypeEnum.UserApp);
       const info = pickResponseData(settingRes);
       setOauthInfo(info);
       setHomepageUrl(info?.homepageUrl || '');
@@ -406,7 +406,7 @@ const AppProjectDetail: React.FC = () => {
         return;
       }
       try {
-        const secretRes = await apiThirdAppOauth2SecretGet(appId);
+        const secretRes = await apiThirdAppOauth2SecretGet(appId, AgentComponentTypeEnum.UserApp);
         const secret = pickResponseData(secretRes);
         setClientSecret(typeof secret === 'string' ? secret : '');
       } catch (error) {
@@ -1077,6 +1077,7 @@ const AppProjectDetail: React.FC = () => {
         </div>
       )}
 
+      {/* 私有服务器部署选择弹窗 */}
       <SelectDeployServerModal
         open={deployTargetOpen}
         servers={privateServers}
@@ -1088,6 +1089,7 @@ const AppProjectDetail: React.FC = () => {
         onCancel={handleCloseDeployTargetModal}
       />
 
+      {/* 绑定域名弹窗 */}
       <Modal
         title={dict('PC.Pages.AppProjectDetail.bindDomain')}
         open={bindOpen}

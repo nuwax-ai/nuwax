@@ -2,7 +2,13 @@ import { SANDBOX } from '@/constants/common.constants';
 import { dict } from '@/services/i18nRuntime';
 import { Button, Empty } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { waitUntilPreviewUrlReady } from '../../utils/previewHealthCheck';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -64,10 +70,12 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
   onRetry,
 }) => {
   const [loadError, setLoadError] = useState(false);
+  const [loadErrorStatus, setLoadErrorStatus] = useState<number>();
   const [reloadNonce, setReloadNonce] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const instanceId = `${src}::${String(iframeKey ?? '')}::${reloadNonce}`;
   const settledInstanceRef = useRef('');
+  const verifyAbortRef = useRef<AbortController | null>(null);
   const onLoadRef = useRef(onLoad);
   const onErrorRef = useRef(onError);
   const onRetryRef = useRef(onRetry);
@@ -79,9 +87,68 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
 
   /** 地址变化时重置 settled，禁止在 render 阶段 setState */
   useLayoutEffect(() => {
+    verifyAbortRef.current?.abort();
+    verifyAbortRef.current = null;
     settledInstanceRef.current = '';
     setLoadError((prev) => (prev ? false : prev));
+    setLoadErrorStatus((prev) => (prev !== undefined ? undefined : prev));
   }, [srcKey]);
+
+  useLayoutEffect(
+    () => () => {
+      verifyAbortRef.current?.abort();
+    },
+    [],
+  );
+
+  const settleSuccess = useCallback(() => {
+    if (settledInstanceRef.current === instanceId) {
+      return;
+    }
+    settledInstanceRef.current = instanceId;
+    setLoadError(false);
+    setLoadErrorStatus(undefined);
+    onLoadRef.current?.();
+  }, [instanceId]);
+
+  const settleFailure = useCallback(
+    (status?: number) => {
+      if (settledInstanceRef.current === instanceId) {
+        return;
+      }
+      settledInstanceRef.current = instanceId;
+      setLoadError(true);
+      setLoadErrorStatus(status);
+      onErrorRef.current?.();
+    },
+    [instanceId],
+  );
+
+  const verifyAfterIframeLoad = useCallback(async () => {
+    verifyAbortRef.current?.abort();
+    const controller = new AbortController();
+    verifyAbortRef.current = controller;
+
+    const result = await waitUntilPreviewUrlReady(
+      src,
+      iframeRef.current,
+      { signal: controller.signal },
+    );
+
+    if (
+      controller.signal.aborted ||
+      settledInstanceRef.current === instanceId
+    ) {
+      return;
+    }
+
+    if (result.ok) {
+      settleSuccess();
+      return;
+    }
+
+    settleFailure(result.status);
+  }, [instanceId, settleFailure, settleSuccess, src]);
 
   const handleLoad = useCallback(() => {
     if (settledInstanceRef.current === instanceId) {
@@ -90,26 +157,30 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
     if (isBlankIframeLoad(iframeRef.current)) {
       return;
     }
-    settledInstanceRef.current = instanceId;
-    setLoadError((prev) => (prev ? false : prev));
-    onLoadRef.current?.();
-  }, [instanceId]);
+    void verifyAfterIframeLoad();
+  }, [instanceId, verifyAfterIframeLoad]);
 
   const handleError = useCallback(() => {
-    if (settledInstanceRef.current === instanceId) {
-      return;
-    }
-    settledInstanceRef.current = instanceId;
-    setLoadError(true);
-    onErrorRef.current?.();
-  }, [instanceId]);
+    settleFailure();
+  }, [settleFailure]);
 
   const handleRetry = useCallback(() => {
+    verifyAbortRef.current?.abort();
+    verifyAbortRef.current = null;
     settledInstanceRef.current = '';
     setLoadError(false);
+    setLoadErrorStatus(undefined);
     onRetryRef.current?.();
     setReloadNonce((prev) => prev + 1);
   }, []);
+
+  const errorDescription =
+    loadErrorStatus !== undefined
+      ? dict('PC.Pages.AppDevPro.iframeLoadFailedWithStatus').replace(
+          '{0}',
+          String(loadErrorStatus),
+        )
+      : dict('PC.Pages.AppDevPro.iframeLoadFailed');
 
   return (
     <div className={cx(styles.wrap, className)}>
@@ -128,7 +199,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
         <div className={cx(styles.errorOverlay)}>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={dict('PC.Pages.AppDevPro.iframeLoadFailed')}
+            description={errorDescription}
           />
           <Button type="primary" onClick={handleRetry}>
             {dict('PC.Common.Global.refresh')}

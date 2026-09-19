@@ -38,7 +38,6 @@ import {
   WORKSPACE_PREVIEW_TOOL_IDS,
 } from '../hooks/usePreviewTabs';
 import PreviewChromeActions from './PreviewChromeActions';
-import PreviewRuntimeButtons from './PreviewRuntimeButtons';
 import PreviewTabContextMenu from './PreviewTabContextMenu';
 import PreviewTabLabel from './PreviewTabLabel';
 import PreviewTabModelSelect from './PreviewTabModelSelect';
@@ -90,28 +89,6 @@ export interface PreviewTabBarProps {
   onNavigatePreview?: (url: string) => void;
   /** 刷新应用预览 iframe */
   onRefreshPreview?: () => void;
-  /** 启动当前环境预览服务 */
-  onStartPreviewRuntime?: () => void;
-  /** 重启当前环境预览服务 */
-  onRestartPreviewRuntime?: () => void;
-  /** 停止当前环境预览服务 */
-  onStopPreviewRuntime?: () => void;
-  /** 启动 / 重启进行中 */
-  previewRuntimeBusy?: boolean;
-  /** 重启进行中（仅重启按钮 loading） */
-  previewRuntimeRestarting?: boolean;
-  /** 服务是否已启动 */
-  previewRuntimeRunning?: boolean;
-  /** 停止进行中 */
-  previewRuntimeStopping?: boolean;
-  /** 预览容器是否已就绪 */
-  previewRuntimeReady?: boolean;
-  /** 当前环境容器启动失败，停止应用不可点 */
-  previewContainerFailed?: boolean;
-  /**
-   * 开发环境进行中任务锁定启动 / 重启（线上环境不传或 false）
-   */
-  previewDevActionLocked?: boolean;
 }
 
 interface TabItemFaceProps {
@@ -347,16 +324,6 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   previewUrl,
   onNavigatePreview,
   onRefreshPreview,
-  onStartPreviewRuntime,
-  onRestartPreviewRuntime,
-  onStopPreviewRuntime,
-  previewRuntimeBusy = false,
-  previewRuntimeRestarting = false,
-  previewRuntimeRunning = false,
-  previewRuntimeStopping = false,
-  previewRuntimeReady = true,
-  previewContainerFailed = false,
-  previewDevActionLocked = false,
 }) => {
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
@@ -765,18 +732,6 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
             onRestartAgent={onRestartAgent}
             onExportProject={onExportProject}
             isCloudComputer={isCloudComputer}
-          />
-        ) : null}
-        {onRestartPreviewRuntime ? (
-          <PreviewRuntimeButtons
-            onRestartPreviewRuntime={onRestartPreviewRuntime}
-            onStopPreviewRuntime={onStopPreviewRuntime}
-            previewRuntimeBusy={previewRuntimeBusy}
-            previewRuntimeRestarting={previewRuntimeRestarting}
-            previewRuntimeStopping={previewRuntimeStopping}
-            previewRuntimeReady={previewRuntimeReady}
-            previewContainerFailed={previewContainerFailed}
-            previewDevActionLocked={previewDevActionLocked}
           />
         ) : null}
       </div>
