@@ -16,6 +16,42 @@ import type {
 // OpenUI 渲染工具名：仅考虑后端下发的 Backend.Sandbox.Event.renderUI（大小写变体）
 const OPEN_UI_NAME = /Backend\.Sandbox\.Event\.renderUI/i;
 
+export interface ConversationPlanStep {
+  status: 'completed' | 'in_progress' | 'pending' | 'failed';
+  content: string;
+}
+
+/**
+ * 提取 Plan 工具的结构化任务清单：result.data = [{status, content}]
+ * （与 V1 MarkdownCustomProcess 任务列表、utils getPlanProgress 同源契约）。
+ * 非数组或无有效项（content 缺失）返回 null，调用方回落普通轨迹行。
+ */
+export const readPlanSteps = (
+  result: unknown,
+): ConversationPlanStep[] | null => {
+  const data = (result as { data?: unknown } | null | undefined)?.data;
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const steps: ConversationPlanStep[] = [];
+  for (const entry of data) {
+    if (!entry || typeof entry !== 'object') continue;
+    const step = entry as { status?: unknown; content?: unknown };
+    if (typeof step.content !== 'string' || !step.content.trim()) continue;
+    const status =
+      step.status === 'completed' ||
+      step.status === 'in_progress' ||
+      step.status === 'pending' ||
+      step.status === 'failed'
+        ? step.status
+        : 'pending';
+    steps.push({ status, content: step.content });
+  }
+  return steps.length > 0 ? steps : null;
+};
+
+/** 待办卡接管判定：Plan 节点且能提取非空结构化步骤（否则回落 ProcessNodeRow） */
+export const isTodoTraceNode = (node: ConversationProcessNode): boolean =>
+  node.kind === 'plan' && readPlanSteps(node.processing?.result) !== null;
+
 export const getNodeToolActionKind = (
   node: ConversationProcessNode,
 ): ConversationToolActionKind =>

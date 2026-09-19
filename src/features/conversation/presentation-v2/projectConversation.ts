@@ -51,6 +51,38 @@ const firstLine = (text: string, max = 80): string => {
   return line.length > max ? `${line.slice(0, max)}…` : line;
 };
 
+/**
+ * 思考段时长锚点（会话页面内存）：思考段没有任何后端时间戳，投影在
+ * 首见 running / 翻 finished 时打点推 durationMs。锚点放投影层而非
+ * 渲染层 effect——focused 预设/轨迹收起时思考行不挂载也能记录。
+ * TODO(后端契约)：思考段补 startTime/endTime 后替换此内存锚点。
+ */
+const thinkTimingAnchors = new Map<string, { start: number; end?: number }>();
+
+const thinkDurationMs = (
+  nodeId: string,
+  running: boolean,
+): number | undefined => {
+  const anchor = thinkTimingAnchors.get(nodeId);
+  if (running) {
+    if (!anchor) {
+      thinkTimingAnchors.set(nodeId, { start: Date.now() });
+    }
+    return undefined;
+  }
+  // 历史消息（刷新后加载）首见即终态：无锚点，不臆造时长
+  if (!anchor) return undefined;
+  if (anchor.end === undefined) {
+    anchor.end = Date.now();
+  }
+  return Math.max(0, anchor.end - anchor.start);
+};
+
+/** 测试专用：清空思考时长锚点（测试夹具常复用同一 node id，防用例间串扰） */
+export const __resetThinkTimingAnchorsForTest = (): void => {
+  thinkTimingAnchors.clear();
+};
+
 const messageStableKey = (
   message: MessageInfo,
   fallbackIndex: number,
@@ -414,14 +446,17 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
 
     dedupeProcessSegments(segments).forEach((segment, segmentIndex) => {
       if (segment.type === 'think') {
+        const thinkNodeId = `${messageKey}-think-${segmentIndex}`;
+        const thinkRunning = segment.status === 'thinking';
         nodes.push({
-          id: `${messageKey}-think-${segmentIndex}`,
+          id: thinkNodeId,
           kind: 'reasoning',
           title: '',
           summary: firstLine(segment.content),
-          status: segment.status === 'thinking' ? 'running' : 'finished',
+          status: thinkRunning ? 'running' : 'finished',
           failed: false,
           thinkText: segment.content,
+          durationMs: thinkDurationMs(thinkNodeId, thinkRunning),
         });
         return;
       }

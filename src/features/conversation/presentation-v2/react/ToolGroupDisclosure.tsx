@@ -1,5 +1,6 @@
 /** 连续工具组：组头负责压缩动作类型，组内保留每次真实执行及其详情。 */
 import { getToolGroupStatus } from '@/features/conversation/presentation-v2/traceItems';
+import { dict } from '@/services/i18nRuntime';
 import {
   CloseCircleOutlined,
   DownOutlined,
@@ -10,6 +11,7 @@ import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import type {
   ConversationProcessNode,
+  ConversationToolActionKind,
   ConversationToolGroupTraceItem,
   ConversationToolResource,
 } from '../types';
@@ -21,6 +23,18 @@ import ProcessNodeRow, {
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/** 终态组头计数词条（ConversationRendererV2 命名空间内词条名） */
+const TOOL_GROUP_COUNT_KEYS: Record<ConversationToolActionKind, string> = {
+  terminal: 'toolGroupCountTerminal',
+  'file-read': 'toolGroupCountFileRead',
+  'file-edit': 'toolGroupCountFileEdit',
+  search: 'toolGroupCountSearch',
+  browser: 'toolGroupCountBrowser',
+  skill: 'toolGroupCountSkill',
+  todo: 'toolGroupCountTodo',
+  generic: 'toolGroupCountGeneric',
+};
 
 export interface ToolGroupDisclosureProps {
   group: ConversationToolGroupTraceItem;
@@ -50,10 +64,18 @@ const ToolGroupDisclosure: React.FC<ToolGroupDisclosureProps> = ({
     .map((kind) => {
       const matching = presentations.filter((item) => item.kind === kind);
       if (!matching.length) return '';
-      return toolActionLabel(
-        kind,
-        getToolGroupStatus(matching.map((item) => item.node)),
-        kind === 'file-edit' && matching.every((item) => item.isCreate),
+      const allCreate =
+        kind === 'file-edit' && matching.every((item) => item.isCreate);
+      const kindStatus = getToolGroupStatus(matching.map((item) => item.node));
+      // 运行中的动作类保持动词词条（live 语义）；终态按组内节点数计数拼接
+      if (kindStatus === 'running') {
+        return toolActionLabel(kind, kindStatus, allCreate);
+      }
+      return dict(
+        `PC.Components.ConversationRendererV2.${
+          allCreate ? 'toolGroupCountFileCreate' : TOOL_GROUP_COUNT_KEYS[kind]
+        }`,
+        matching.length,
       );
     })
     .filter(Boolean);

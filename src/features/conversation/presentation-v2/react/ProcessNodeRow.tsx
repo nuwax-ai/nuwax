@@ -43,6 +43,7 @@ import type {
   ConversationToolResource,
 } from '../types';
 import FileResourceLink from './FileResourceLink';
+import { formatElapsed } from './formatElapsed';
 import styles from './index.less';
 import ToolNodeDetail from './ToolNodeDetail';
 
@@ -420,6 +421,13 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
   const accessibleName = Array.from(
     new Set([title, summaryText, node.title].filter(Boolean)),
   ).join(' ');
+  // 完成态思考行有时长锚点时以「持续了 N 秒」替代首行摘要（历史无锚点保摘要）
+  const finishedReasoningDuration =
+    node.kind === 'reasoning' &&
+    node.status !== 'running' &&
+    typeof node.durationMs === 'number'
+      ? formatElapsed(node.durationMs)
+      : '';
 
   const content = (
     <>
@@ -470,6 +478,18 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
             <span className={cx(styles['node-summary-ticker-text'])}>
               {node.thinkText}
             </span>
+          </span>
+        </>
+      ) : finishedReasoningDuration ? (
+        <>
+          <span className={cx(styles['node-dot'])} aria-hidden="true">
+            ·
+          </span>
+          <span className={cx(styles['node-summary'])}>
+            {dict(
+              'PC.Components.ConversationRendererV2.nodeThinkingDuration',
+              finishedReasoningDuration,
+            )}
           </span>
         </>
       ) : (

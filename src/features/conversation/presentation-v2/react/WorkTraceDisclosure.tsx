@@ -20,6 +20,7 @@ import {
   getToolGroupActionKinds,
   getToolGroupStatus,
   isOpenUiRenderElementNode,
+  isTodoTraceNode,
 } from '../traceItems';
 import type {
   ConversationProcessNode,
@@ -30,6 +31,7 @@ import type {
 } from '../types';
 import OpenUiTraceNode from './OpenUiTraceNode';
 import ProcessNodeRow from './ProcessNodeRow';
+import TodoTraceNode from './TodoTraceNode';
 import ToolGroupDisclosure from './ToolGroupDisclosure';
 import { formatElapsed, formatElapsedClock } from './formatElapsed';
 import styles from './index.less';
@@ -298,58 +300,62 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
             );
           }
           if (!expanded) return null;
+          // Plan 结构化任务清单由待办卡接管（无有效步骤数据时回落普通行）
+          if (item.kind === 'standalone' && isTodoTraceNode(item.node)) {
+            return <TodoTraceNode key={item.id} node={item.node} />;
+          }
           if (item.kind === 'narration') {
-              return (
-                <NarrationText key={item.id} narrationId={item.id}>
-                  {item.node.text ?? ''}
-                </NarrationText>
-              );
-            }
-            if (item.kind === 'tool-group') {
-              return (
-                <ToolGroupDisclosure
-                  key={item.id}
-                  group={item}
-                  nodes={item.nodes}
-                  expanded={groupIsExpanded(item)}
-                  onToggle={() =>
-                    setGroupExpanded((previous) => {
-                      const current =
-                        typeof previous[item.id] === 'boolean'
-                          ? previous[item.id]
-                          : item.active;
-                      return { ...previous, [item.id]: !current };
-                    })
-                  }
-                  nodeIsExpanded={nodeIsExpanded}
-                  onToggleNode={toggleNode}
-                  onOpenResource={onOpenResource}
-                />
-              );
-            }
             return (
-              <ProcessNodeRow
+              <NarrationText key={item.id} narrationId={item.id}>
+                {item.node.text ?? ''}
+              </NarrationText>
+            );
+          }
+          if (item.kind === 'tool-group') {
+            return (
+              <ToolGroupDisclosure
                 key={item.id}
-                node={item.node}
-                expanded={nodeIsExpanded(item.node)}
-                onToggle={() => toggleNode(item.node.id)}
+                group={item}
+                nodes={item.nodes}
+                expanded={groupIsExpanded(item)}
+                onToggle={() =>
+                  setGroupExpanded((previous) => {
+                    const current =
+                      typeof previous[item.id] === 'boolean'
+                        ? previous[item.id]
+                        : item.active;
+                    return { ...previous, [item.id]: !current };
+                  })
+                }
+                nodeIsExpanded={nodeIsExpanded}
+                onToggleNode={toggleNode}
                 onOpenResource={onOpenResource}
               />
             );
-          })}
-          {expanded && !revealHidden && hiddenCount > 0 && (
-            <button
-              type="button"
-              className={cx(styles['hidden-entry'])}
-              data-testid="v2-hidden-entry"
-              onClick={() => setRevealHidden(true)}
-            >
-              {dict(
-                'PC.Components.ConversationRendererV2.hiddenEntry',
-                hiddenCount,
-              )}
-            </button>
-          )}
+          }
+          return (
+            <ProcessNodeRow
+              key={item.id}
+              node={item.node}
+              expanded={nodeIsExpanded(item.node)}
+              onToggle={() => toggleNode(item.node.id)}
+              onOpenResource={onOpenResource}
+            />
+          );
+        })}
+        {expanded && !revealHidden && hiddenCount > 0 && (
+          <button
+            type="button"
+            className={cx(styles['hidden-entry'])}
+            data-testid="v2-hidden-entry"
+            onClick={() => setRevealHidden(true)}
+          >
+            {dict(
+              'PC.Components.ConversationRendererV2.hiddenEntry',
+              hiddenCount,
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@
  * 复制范围、投影/渲染异常回退 V1。
  */
 import type { ConversationRenderPreferencesV2 } from '@/features/conversation/presentation-v2';
+import { __resetThinkTimingAnchorsForTest } from '@/features/conversation/presentation-v2/projectConversation';
 import ConversationRendererV2 from '@/features/conversation/presentation-v2/react/ConversationRendererV2';
 import { AgentComponentTypeEnum, AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
@@ -14,7 +15,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const unifiedThemeState = vi.hoisted(() => ({
   antdTheme: 'light' as 'light' | 'dark',
@@ -111,6 +112,11 @@ vi.mock('@/features/conversation/presentation-v2/react/ToolNodeDetail', () => ({
     );
   },
 }));
+
+beforeEach(() => {
+  // 思考时长锚点是模块级会话内存；测试夹具复用同一 node id，用例间须清空
+  __resetThinkTimingAnchorsForTest();
+});
 
 const processTag = (attrs: {
   executeId?: string;
@@ -638,8 +644,9 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     expect(group?.getAttribute('data-tool-group-active')).toBe('true');
     const toggle = group?.querySelector('button');
     expect(toggle?.getAttribute('aria-expanded')).toBe('true');
-    expect(toggle?.textContent).toContain('toolActionFileReadFinished');
-    expect(toggle?.textContent).toContain('toolActionTerminalFinished');
+    // 终态动作类按组内节点数计数（2026-09-19 组头计数定调）
+    expect(toggle?.textContent).toContain('toolGroupCountFileRead');
+    expect(toggle?.textContent).toContain('toolGroupCountTerminal');
     expect(
       Array.from(group?.querySelectorAll('[data-node-id]') ?? []).map((item) =>
         item.getAttribute('data-node-id'),
