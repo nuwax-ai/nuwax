@@ -84,7 +84,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   skill_dev: 'icons-nav-skill',
   // MCP管理
   mcp_dev: 'icons-nav-mcp',
-  // 连接器（空间侧，与管理侧共用图标）
+  // 连接器（空间侧，与管理侧共用图标；后端实际下发 code 为 connector，lianjieqi 保留兼容）
+  connector: 'icons-nav-connector',
   lianjieqi: 'icons-nav-connector',
   // 任务中心
   space_task_dev: 'icons-nav-task-time',
