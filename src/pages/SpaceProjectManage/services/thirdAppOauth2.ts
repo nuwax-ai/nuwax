@@ -60,6 +60,9 @@ export interface ThirdAppOauth2SettingSaveParams {
   /*统一项目 ID（user_project 主键） */
   projectId: number;
 
+  /*项目类型：可用值:Agent,Plugin,Skill,PageApp,UserApp,NormalProject,Connector,ThirdApp,Workflow,Knowledge,Table,Model,Mcp */
+  projectType: AgentComponentTypeEnum;
+
   /*应用主页地址；留空表示不修改 */
   homepageUrl?: string;
 
