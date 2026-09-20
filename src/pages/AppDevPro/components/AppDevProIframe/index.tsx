@@ -75,6 +75,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const instanceId = `${src}::${String(iframeKey ?? '')}::${reloadNonce}`;
   const settledInstanceRef = useRef('');
+  const loadStartedAtRef = useRef(0);
   const verifyAbortRef = useRef<AbortController | null>(null);
   const onLoadRef = useRef(onLoad);
   const onErrorRef = useRef(onError);
@@ -90,6 +91,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
     verifyAbortRef.current?.abort();
     verifyAbortRef.current = null;
     settledInstanceRef.current = '';
+    loadStartedAtRef.current = performance.now();
     setLoadError((prev) => (prev ? false : prev));
     setLoadErrorStatus((prev) => (prev !== undefined ? undefined : prev));
   }, [srcKey]);
@@ -132,7 +134,10 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
     const result = await waitUntilPreviewUrlReady(
       src,
       iframeRef.current,
-      { signal: controller.signal },
+      {
+        signal: controller.signal,
+        sinceStartTime: loadStartedAtRef.current,
+      },
     );
 
     if (
@@ -168,6 +173,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
     verifyAbortRef.current?.abort();
     verifyAbortRef.current = null;
     settledInstanceRef.current = '';
+    loadStartedAtRef.current = performance.now();
     setLoadError(false);
     setLoadErrorStatus(undefined);
     onRetryRef.current?.();
