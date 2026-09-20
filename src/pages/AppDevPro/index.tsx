@@ -118,6 +118,15 @@ const DATABASE_WORKSPACE_TOOL_IDS: PreviewToolId[] = [
   'database',
   'database-config',
 ];
+
+/** 工作区根目录 manifest 文件名；存在时才视为可自动启动预览的有效项目 */
+const WORKSPACE_MANIFEST_ROOT_FILE = 'workspace.manifest.toml';
+
+/** 是否为根目录下的 workspace.manifest.toml（非目录） */
+const isRootWorkspaceManifestFile = (file: StaticFileInfo): boolean => {
+  const path = (file.fileId ?? file.name).replace(/^\/+/, '');
+  return path === WORKSPACE_MANIFEST_ROOT_FILE && !file.isDir;
+};
 const noop = () => undefined;
 // const devConversationPollLogger = createLogger(
 //   '[ConversationAgent][DevConversationPoll]',
@@ -1474,8 +1483,11 @@ const AppDevPro: React.FC = () => {
 
   previewTabsRef.current = previewTabs;
 
-  /** 文件树已有节点，才允许自动 start（空项目不拉预览） */
-  const hasFileTreeData = (fileTreeData?.length ?? 0) > 0;
+  /** 根目录已有 workspace.manifest.toml 时才允许自动 start（空项目/未初始化工作区不拉预览） */
+  const hasFileTreeData = useMemo(
+    () => (fileTreeData ?? []).some(isRootWorkspaceManifestFile),
+    [fileTreeData],
+  );
   /** 无会话，或会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
   const conversationReady = !queryConversationId || !!conversationInfo;
 
@@ -1483,7 +1495,7 @@ const AppDevPro: React.FC = () => {
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
    * 开发环境须等 tasks/active 首包：允许则先探测 dev 域名，可达直接 iframe，否则 start；
    * 不允许（服务已在跑）且已有预览域名则直接 iframe，不再 start / stream。
-   * 允许 start 时还须文件树已有数据，避免空项目拉起预览。
+   * 允许 start 时还须根目录已有 workspace.manifest.toml，避免空项目拉起预览。
    * 会话进行中或仍有待回复确认卡时不启动；会话结束后不自动 restart，仅首次 start。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
    */
@@ -1522,7 +1534,7 @@ const AppDevPro: React.FC = () => {
       setPreviewEnterSettled(true);
       return;
     }
-    // 可以 start，但文件树还没数据时不启动（等文件列表回来后再走本 effect）
+    // 可以 start，但根目录尚无 workspace.manifest.toml 时不启动（等 manifest 出现后再走本 effect）
     if (!hasFileTreeData) {
       return;
     }
