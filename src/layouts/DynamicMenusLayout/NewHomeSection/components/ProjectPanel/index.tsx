@@ -248,6 +248,10 @@ const ProjectPanel = forwardRef<
     // ⋯菜单「归档」都汇入 armed 态，红色「确认」二次点击才执行
     const [archiveArmingKey, setArchiveArmingKey] = useState<string>();
     const [projectArchiving, setProjectArchiving] = useState(false);
+    // 项目子会话删除与归档同口径：首次点击进入行内确认，二次点击才请求删除。
+    const [childDeleteArmingKey, setChildDeleteArmingKey] =
+      useState<string>();
+    const [childDeleting, setChildDeleting] = useState(false);
     // 分页：首屏 PROJECT_PAGE_SIZE 条，「查看更多」按页追加（tab 接口 current/pageSize/total 契约）
     const [total, setTotal] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -1090,36 +1094,41 @@ const ProjectPanel = forwardRef<
       }
     };
 
-    const openChildDelete = (projectKey: string, child: ProjectChildItem) => {
-      Modal.confirm({
-        title: dict('PC.Common.Global.deleteConfirmTitle'),
-        content: dict('PC.Common.Global.deleteConfirmContent'),
-        okButtonProps: { danger: true },
-        okText: dict('PC.Common.Global.delete'),
-        cancelText: dict('PC.Common.Global.cancel'),
-        onOk: async () => {
-          const res = await apiAgentConversationDelete(child.id);
-          if (res?.success) {
-            window.dispatchEvent(
-              new CustomEvent('conversation-deleted', {
-                detail: { id: child.id },
-              }),
-            );
-            setProjects((prev) =>
-              prev.map((project) =>
-                projectKeyOf(project) !== projectKey
-                  ? project
-                  : {
-                      ...project,
-                      children: project.children?.filter(
-                        (item) => item.id !== child.id,
-                      ),
-                    },
-              ),
-            );
-          }
-        },
-      });
+    const handleChildDeleteConfirm = async (
+      projectKey: string,
+      child: ProjectChildItem,
+    ) => {
+      if (childDeleting) return;
+      setChildDeleting(true);
+      try {
+        const res = await apiAgentConversationDelete(child.id).catch(
+          () => null,
+        );
+        if (!res?.success) {
+          message.error(dict('PC.Common.Global.operationFailed'));
+          return;
+        }
+        window.dispatchEvent(
+          new CustomEvent('conversation-deleted', {
+            detail: { id: child.id },
+          }),
+        );
+        setProjects((prev) =>
+          prev.map((project) =>
+            projectKeyOf(project) !== projectKey
+              ? project
+              : {
+                  ...project,
+                  children: project.children?.filter(
+                    (item) => item.id !== child.id,
+                  ),
+                },
+          ),
+        );
+        setChildDeleteArmingKey(undefined);
+      } finally {
+        setChildDeleting(false);
+      }
     };
 
     // 「+ 新建会话」（项目行）：常规/全栈项目 → 跳 /home 首页项目上框（同类型智能体
@@ -1208,7 +1217,11 @@ const ProjectPanel = forwardRef<
                 trigger={['contextMenu']}
               >
                 <div
-                  className={cx(styles.row, { [styles.expanded]: expanded })}
+                  className={cx(styles.row, {
+                    [styles.expanded]: expanded,
+                    [styles['project-archive-arming']]:
+                      archiveArmingKey === projectKeyOf(project),
+                  })}
                   onClick={() => handleProjectClick(project)}
                   role="button"
                   tabIndex={0}
@@ -1246,33 +1259,40 @@ const ProjectPanel = forwardRef<
                         />
                       )}
                     </span>
-                    <button
-                      type="button"
-                      className={cx(styles['project-pin-toggle'])}
-                      aria-label={dict(
-                        pinnedIds.has(projectKeyOf(project))
-                          ? 'PC.Components.ConversationContextMenu.unpin'
-                          : 'PC.Components.ConversationContextMenu.pin',
-                      )}
+                    <Tooltip
                       title={dict(
                         pinnedIds.has(projectKeyOf(project))
                           ? 'PC.Components.ConversationContextMenu.unpin'
                           : 'PC.Components.ConversationContextMenu.pin',
                       )}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void toggleProjectFlag('pinned', project);
-                      }}
+                      mouseEnterDelay={0.3}
                     >
-                      {pinnedIds.has(projectKeyOf(project)) ? (
-                        <span className={cx(styles['unpin-icon'])} aria-hidden>
-                          <PushpinFilled />
-                          <span className={cx(styles['unpin-slash'])} />
-                        </span>
-                      ) : (
-                        <PushpinOutlined />
-                      )}
-                    </button>
+                      <button
+                        type="button"
+                        className={cx(styles['project-pin-toggle'])}
+                        aria-label={dict(
+                          pinnedIds.has(projectKeyOf(project))
+                            ? 'PC.Components.ConversationContextMenu.unpin'
+                            : 'PC.Components.ConversationContextMenu.pin',
+                        )}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void toggleProjectFlag('pinned', project);
+                        }}
+                      >
+                        {pinnedIds.has(projectKeyOf(project)) ? (
+                          <span
+                            className={cx(styles['unpin-icon'])}
+                            aria-hidden
+                          >
+                            <PushpinFilled />
+                            <span className={cx(styles['unpin-slash'])} />
+                          </span>
+                        ) : (
+                          <PushpinOutlined />
+                        )}
+                      </button>
+                    </Tooltip>
                   </span>
                   <span className={cx(styles.name)}>{project.name}</span>
                   <div className={styles['project-actions']}>
@@ -1305,22 +1325,26 @@ const ProjectPanel = forwardRef<
                           </button>
                         </Dropdown>
                         {/* 行尾归档入口：点击后操作区收敛为单独的红色确认按钮。 */}
-                        <button
-                          type="button"
-                          className={cx(styles['project-archive'])}
-                          aria-label={dict(
-                            'PC.Components.ConversationContextMenu.archive',
-                          )}
+                        <Tooltip
                           title={dict(
                             'PC.Components.ConversationContextMenu.archive',
                           )}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setArchiveArmingKey(projectKeyOf(project));
-                          }}
+                          mouseEnterDelay={0.3}
                         >
-                          <InboxOutlined />
-                        </button>
+                          <button
+                            type="button"
+                            className={cx(styles['project-archive'])}
+                            aria-label={dict(
+                              'PC.Components.ConversationContextMenu.archive',
+                            )}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setArchiveArmingKey(projectKeyOf(project));
+                            }}
+                          >
+                            <InboxOutlined />
+                          </button>
+                        </Tooltip>
                       </>
                     )}
                   </div>
@@ -1337,11 +1361,15 @@ const ProjectPanel = forwardRef<
                   const isChildActive =
                     activeConversationId !== undefined &&
                     String(child.id) === activeConversationId;
+                  const childActionKey = `${projectKeyOf(project)}:${child.id}`;
+                  const childDeleteArmed =
+                    childDeleteArmingKey === childActionKey;
                   return (
                     <div
                       key={child.id}
                       className={cx(styles.child, {
                         [styles['child-active']]: isChildActive,
+                        [styles['child-delete-arming']]: childDeleteArmed,
                       })}
                       onClick={() => {
                         if (child.conversation) {
@@ -1352,6 +1380,11 @@ const ProjectPanel = forwardRef<
                       tabIndex={0}
                       aria-current={isChildActive ? 'page' : undefined}
                       onKeyDown={(event) => {
+                        if (childDeleteArmed && event.key === 'Escape') {
+                          event.stopPropagation();
+                          setChildDeleteArmingKey(undefined);
+                          return;
+                        }
                         if (event.target !== event.currentTarget) return;
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
@@ -1378,23 +1411,30 @@ const ProjectPanel = forwardRef<
                             }
                           />
                         </span>
-                        <button
-                          type="button"
-                          className={styles['child-rename']}
-                          aria-label={dict(
+                        <Tooltip
+                          title={dict(
                             'PC.Components.ConversationContextMenu.rename',
                           )}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setRenameTarget({
-                              projectKey: projectKeyOf(project),
-                              childId: child.id,
-                            });
-                            setRenameName(child.name);
-                          }}
+                          mouseEnterDelay={0.3}
                         >
-                          <EditOutlined />
-                        </button>
+                          <button
+                            type="button"
+                            className={styles['child-rename']}
+                            aria-label={dict(
+                              'PC.Components.ConversationContextMenu.rename',
+                            )}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setRenameTarget({
+                                projectKey: projectKeyOf(project),
+                                childId: child.id,
+                              });
+                              setRenameName(child.name);
+                            }}
+                          >
+                            <EditOutlined />
+                          </button>
+                        </Tooltip>
                       </span>
                       <span className={cx(styles['child-name'])}>
                         {child.name}
@@ -1412,20 +1452,39 @@ const ProjectPanel = forwardRef<
                         </span>
                       )}
                       <div className={styles['child-actions']}>
-                        {/* 行尾删除入口（2026-09-20 定调：子会话行=行首重命名/
-                            行尾删除，⋯菜单撤收）；删除走既有二次确认弹窗 */}
-                        <button
-                          type="button"
-                          className={cx(styles['child-delete'])}
-                          aria-label={dict('PC.Common.Global.delete')}
-                          title={dict('PC.Common.Global.delete')}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openChildDelete(projectKeyOf(project), child);
-                          }}
-                        >
-                          <DeleteOutlined />
-                        </button>
+                        {childDeleteArmed ? (
+                          <button
+                            type="button"
+                            className={cx(styles['delete-confirm'])}
+                            disabled={childDeleting}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void handleChildDeleteConfirm(
+                                projectKeyOf(project),
+                                child,
+                              );
+                            }}
+                          >
+                            {dict('PC.Common.Global.confirm')}
+                          </button>
+                        ) : (
+                          <Tooltip
+                            title={dict('PC.Common.Global.delete')}
+                            mouseEnterDelay={0.3}
+                          >
+                            <button
+                              type="button"
+                              className={cx(styles['child-delete'])}
+                              aria-label={dict('PC.Common.Global.delete')}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setChildDeleteArmingKey(childActionKey);
+                              }}
+                            >
+                              <DeleteOutlined />
+                            </button>
+                          </Tooltip>
+                        )}
                       </div>
                     </div>
                   );

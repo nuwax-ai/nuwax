@@ -12,7 +12,7 @@ import {
   PushpinFilled,
   PushpinOutlined,
 } from '@ant-design/icons';
-import { message } from 'antd';
+import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { formatRelativeTime } from '../../utils';
@@ -173,36 +173,40 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                     }
                   />
                 </span>
-                <button
-                  type="button"
-                  className={cx(styles['pin-toggle'], {
-                    [styles['pin-toggle-pinned']]: pinned,
-                  })}
-                  aria-label={dict(
-                    pinned
-                      ? 'PC.Components.ConversationContextMenu.unpin'
-                      : 'PC.Components.ConversationContextMenu.pin',
-                  )}
+                <Tooltip
                   title={dict(
                     pinned
                       ? 'PC.Components.ConversationContextMenu.unpin'
                       : 'PC.Components.ConversationContextMenu.pin',
                   )}
-                  disabled={pinning}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    void handleTogglePinned();
-                  }}
+                  mouseEnterDelay={0.3}
                 >
-                  {pinned ? (
-                    <span className={cx(styles['unpin-icon'])} aria-hidden>
-                      <PushpinFilled />
-                      <span className={cx(styles['unpin-slash'])} />
-                    </span>
-                  ) : (
-                    <PushpinOutlined />
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    className={cx(styles['pin-toggle'], {
+                      [styles['pin-toggle-pinned']]: pinned,
+                    })}
+                    aria-label={dict(
+                      pinned
+                        ? 'PC.Components.ConversationContextMenu.unpin'
+                        : 'PC.Components.ConversationContextMenu.pin',
+                    )}
+                    disabled={pinning}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleTogglePinned();
+                    }}
+                  >
+                    {pinned ? (
+                      <span className={cx(styles['unpin-icon'])} aria-hidden>
+                        <PushpinFilled />
+                        <span className={cx(styles['unpin-slash'])} />
+                      </span>
+                    ) : (
+                      <PushpinOutlined />
+                    )}
+                  </button>
+                </Tooltip>
               </span>
               {/* 原生省略号替代 Typography.Text ellipsis：antd 的省略检测会在
                 每次重渲染插入 <em> 强制同步重排，长列表高频刷新下造成秒级卡顿 */}
@@ -233,22 +237,26 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                     {dict('PC.Common.Global.confirm')}
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    className={cx(styles['archive-trigger'])}
-                    aria-label={dict(
-                      'PC.Components.ConversationContextMenu.archive',
-                    )}
+                  <Tooltip
                     title={dict(
                       'PC.Components.ConversationContextMenu.archive',
                     )}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setArchiveArming(true);
-                    }}
+                    mouseEnterDelay={0.3}
                   >
-                    <InboxOutlined />
-                  </button>
+                    <button
+                      type="button"
+                      className={cx(styles['archive-trigger'])}
+                      aria-label={dict(
+                        'PC.Components.ConversationContextMenu.archive',
+                      )}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setArchiveArming(true);
+                      }}
+                    >
+                      <InboxOutlined />
+                    </button>
+                  </Tooltip>
                 )}
               </span>
               {moreButton}

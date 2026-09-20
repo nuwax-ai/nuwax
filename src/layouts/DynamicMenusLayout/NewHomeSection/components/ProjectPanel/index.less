@@ -81,7 +81,7 @@
     top: -5px;
     right: -6px;
     font-size: 9px;
-    color: @colorPrimary;
+    color: @navSecondMenuAdaptiveTextSecondary;
   }
 
   .project-pin-toggle {
@@ -93,7 +93,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: @colorPrimary;
+    color: @navSecondMenuAdaptiveTextSecondary;
     font-size: @sidebarRowIconSize;
     cursor: pointer;
     opacity: 0;
@@ -171,7 +171,7 @@
     .project-icon {
       flex-shrink: 0;
       font-size: @sidebarRowIconSize;
-      color: @navSecondMenuAdaptiveTextTertiary;
+      color: @navSecondMenuAdaptiveTextSecondary;
     }
   }
 
@@ -229,7 +229,7 @@
       border: 0;
       background: transparent;
       font-size: @sidebarRowIconSize;
-      color: @navSecondMenuAdaptiveTextTertiary;
+      color: @navSecondMenuAdaptiveTextSecondary;
       cursor: pointer;
       opacity: 0;
 
@@ -268,13 +268,13 @@
       flex-shrink: 0;
       border: 0;
       border-radius: 7px;
-      color: @navSecondMenuAdaptiveTextTertiary;
+      color: @navSecondMenuAdaptiveTextSecondary;
       background: transparent;
       cursor: pointer;
 
       &:hover {
-        color: @colorError;
-        background: @colorErrorBg;
+        color: @navSecondMenuAdaptiveText;
+        background: @colorPrimaryBg;
       }
     }
 
@@ -399,7 +399,7 @@
   .project-icon {
     flex-shrink: 0;
     font-size: @sidebarRowIconSize;
-    color: @navSecondMenuAdaptiveTextTertiary;
+    color: @navSecondMenuAdaptiveTextSecondary;
     margin-right: 0;
   }
 
@@ -416,6 +416,11 @@
     // 86px 让位绝对定位的 actions 浮层（right:10px + 三枚 24px 按钮 +
     // 两个 2px gap），避免新建会话图标覆盖项目标题。
     padding-right: 86px;
+  }
+
+  // 归档确认态移出 hover 后仍常显，只为单枚「确认」保留操作宽度。
+  .row.project-archive-arming .name {
+    padding-right: 60px;
   }
 
   .children {
@@ -515,7 +520,7 @@
     border: 0;
     border-radius: 7px;
     // Ant 图标与 SvgIcon 都继承统一 14px 图形尺寸。
-    color: @navSecondMenuAdaptiveTextTertiary;
+    color: @navSecondMenuAdaptiveTextSecondary;
     background: transparent;
     cursor: pointer;
 
@@ -526,7 +531,7 @@
 
     &:hover,
     &:focus-visible {
-      color: @colorPrimary;
+      color: @navSecondMenuAdaptiveText;
       background: @colorPrimaryBg;
     }
 
@@ -543,32 +548,6 @@
   .project-more {
     opacity: 1;
   }
-
-  // 行内归档红色「确认」（二次点击，2026-09-20 同任务行口径）；特异性压过
-  // 上方 .project-actions button 共享皮
-  .archive-confirm {
-    height: 22px;
-    width: auto;
-    padding: 0 10px;
-    border: 0;
-    border-radius: 4px;
-    background: @colorError;
-    color: @colorWhite;
-    font-size: 12px;
-    line-height: 22px;
-    cursor: pointer;
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: default;
-    }
-
-    &:hover,
-    &:focus-visible {
-      color: @colorWhite;
-      background: @colorError;
-    }
-  }
 }
 
 .child-actions {
@@ -582,6 +561,32 @@
   // 不再浮白色小卡片
 }
 
+// 删除/归档统一为行内红色「确认」：文字按钮不受 24px 图标槽限制。
+.project-actions .archive-confirm,
+.child-actions .delete-confirm {
+  height: 22px;
+  width: auto;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: @colorError;
+  color: @colorWhite;
+  font-size: 12px;
+  line-height: 22px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: @colorWhite;
+    background: @colorError;
+  }
+}
+
 // 白底卡片浮层只在 hover 或键盘焦点时出现;鼠标点击后的焦点残留不算
 // (见上方 :focus-visible 注释)
 // hover 灰底轻提示（单栏统一交互态，见 nav-item-state.less）：原 72% 半透明白卡
@@ -589,15 +594,26 @@
 .project .row:hover,
 .project .row:focus-visible,
 .project .row:has(:focus-visible),
+.project .row.project-archive-arming,
 .project .child:hover,
 .project .child:focus-visible,
-.project .child:has(:focus-visible) {
+.project .child:has(:focus-visible),
+.project .child.child-delete-arming {
   background-color: @navRowHoverBg;
 
   .project-actions,
   .child-actions {
     opacity: 1;
     pointer-events: auto;
+  }
+}
+
+// 删除确认态在鼠标移出后仍占固定操作区；时间退出，标题在确认按钮前截断。
+.project .child.child-delete-arming {
+  padding-right: 64px;
+
+  .child-time {
+    display: none;
   }
 }
 @media (hover: none) {
