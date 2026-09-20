@@ -280,5 +280,17 @@ export function initBrandTheme(): () => void {
   }
   syncBrandThemeCssOverride();
   unifiedThemeService.addListener(syncBrandThemeCssOverride);
-  return () => unifiedThemeService.removeListener(syncBrandThemeCssOverride);
+  // 后置钩子封静默应用路径：app.tsx applyThemeConfig 的 updateData({emitEvent:false})
+  // 与 storage 事件 clearThemeFlag 后的 reloadConfiguration(false) 都会跑 applyToDOM
+  // 把通用变量整组覆写却不通知 listeners，仅靠 addListener 续写时品牌覆盖被冲掉后
+  // 无人恢复——侧栏「项目/任务」吸顶分组头（背景取 --xagi-layout-bg-secondary）
+  // 显出通栏白带（2026-09-20 实证）。钩子在每次 applyToDOM 后同步续写，幂等；
+  // 卸载与 listener 同生命周期。
+  const disposePostApplyHook = unifiedThemeService.registerPostApplyHook(
+    syncBrandThemeCssOverride,
+  );
+  return () => {
+    unifiedThemeService.removeListener(syncBrandThemeCssOverride);
+    disposePostApplyHook();
+  };
 }
