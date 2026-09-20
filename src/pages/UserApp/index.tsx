@@ -34,33 +34,26 @@ const normalizeDomainUrl = (domain?: string): string => {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 };
 
-const UserApp: React.FC = () => {
-  // 路由参数:全栈应用 appId(发布对象 targetId)
-  const params = useParams();
-  const appId = Number(params.appId);
-  // 三方应用主页地址:女娲应用页点击时随跳转附带(query),有值时直接
-  // iframe 该地址,不拉域名列表(三方应用无域名数据,接口返回空)。
-  // react-router v6 无 location.query,用 URLSearchParams 读(同 OpenIframePage)
-  const location = useLocation();
-  const homepageUrl =
-    new URLSearchParams(location.search).get('homepageUrl')?.trim() || '';
-
+/** 内层实现:单应用实例,appId/homepageUrl 由外层按 key 重挂载保证不变 */
+const UserAppPage: React.FC<{ appId: number; homepageUrl: string }> = ({
+  appId,
+  homepageUrl,
+}) => {
   // 域名列表:GET /api/userapp/domain/list(appId query);homepageUrl 直载
-  // 场景跳过请求(ready=false 不发也不进 loading)
+  // 场景 ready=false,首挂即不请求也不进 loading(appId 变化由外层 key
+  // 重挂载处理,不走 refreshDeps——umi 的 useRequest 底层为 ahooks v2,
+  // refreshDeps 触发的 refresh() 不受 ready 拦截,见文件尾外层注释)
   const { data, loading, error } = useRequest(
     () => apiUserAppDomainList(appId),
-    {
-      refreshDeps: [appId],
-      ready: !homepageUrl,
-    },
+    { ready: !homepageUrl },
   );
   const domainList: UserAppDomainInfo[] = data || [];
 
   // 应用详情:GET /api/userapp/get/:id,仅取 name 作 header 标题;
   // 失败时全局请求层已 toast,标题缺省不影响 iframe 展示。三方应用
-  // (homepageUrl 直载)该接口无回包,一并跳过,标题改从多开标签兜底
+  // (homepageUrl 直载)该接口无回包,ready=false 一并跳过,标题改从
+  // 多开标签兜底
   const { data: appInfo } = useRequest(() => apiUserAppGetById(appId), {
-    refreshDeps: [appId],
     ready: !homepageUrl,
   });
 
@@ -123,6 +116,34 @@ const UserApp: React.FC = () => {
         title={appInfo?.name || tabTitle}
       />
     </div>
+  );
+};
+
+/**
+ * 路由层薄壳:解析路由参数,按 appId+homepageUrl 加 key 强制重挂内层页面。
+ * /user-app/:appId 之间切换时组件实例被复用,而 umi 的 useRequest 底层是
+ * @ahooksjs/use-request v2,其 refreshDeps 变化触发的 refresh() 不受 ready
+ * 拦截——全栈(ready=true)切三方(homepageUrl 直载,ready 变 false)时
+ * 依旧会发出 domain/list 与 get 请求。任一参数变化即整体重挂载:
+ * useRequest 全新实例、ready 首值即正确,同时消除旧应用 data/loading
+ * 残留串台。
+ */
+const UserApp: React.FC = () => {
+  // 路由参数:全栈应用 appId(发布对象 targetId)
+  const params = useParams();
+  const appId = Number(params.appId);
+  // 三方应用主页地址:女娲应用页点击时随跳转附带(query),有值时直接
+  // iframe 该地址,不拉域名列表(三方应用无域名数据,接口返回空)。
+  // react-router v6 无 location.query,用 URLSearchParams 读(同 OpenIframePage)
+  const location = useLocation();
+  const homepageUrl =
+    new URLSearchParams(location.search).get('homepageUrl')?.trim() || '';
+  return (
+    <UserAppPage
+      key={`${appId}-${homepageUrl}`}
+      appId={appId}
+      homepageUrl={homepageUrl}
+    />
   );
 };
 
