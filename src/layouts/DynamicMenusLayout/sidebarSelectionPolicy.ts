@@ -1,4 +1,4 @@
-import { parseAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
+import { parseAppProRoute } from '@/utils/appProRoute';
 
 /**
  * 侧栏选中关系策略纯函数单源（2026-09-12 抽取）。

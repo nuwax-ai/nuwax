@@ -1,5 +1,5 @@
-import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { buildAppProRoute } from '@/utils/appProRoute';
 
 /**
  * 项目会话点击路由分流（复刻 useHomeSectionData.handleConversationClick，

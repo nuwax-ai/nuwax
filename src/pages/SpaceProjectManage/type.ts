@@ -1,6 +1,6 @@
 import type { UserProjectItem } from '@/pages/AppDevPro/type';
-import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { buildAppProRoute } from '@/utils/appProRoute';
 import { history } from 'umi';
 
 /** 项目类型 tab（全部 = projectTypes 含三种可管理类型） */

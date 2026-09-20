@@ -31,7 +31,6 @@ import {
 } from '@/features/conversation/react/useConversationPageCache';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import AgentDetailModal from '@/pages/Chat/components/AgentDetailModal';
-import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
@@ -47,6 +46,7 @@ import type {
   RoleInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
+import { buildAppProRoute } from '@/utils/appProRoute';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
 
 import {
@@ -87,9 +87,9 @@ import ConversationInstanceCacheSlot from './components/ConversationInstanceCach
 import LeftContent from './components/LeftContent';
 import ShowArea from './components/ShowArea';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
-import { useChatNormalProjectNameSync } from './hooks/useChatNormalProjectNameSync';
 import { useChatConversation } from './hooks/useChatConversation';
 import { useChatFiles } from './hooks/useChatFiles';
+import { useChatNormalProjectNameSync } from './hooks/useChatNormalProjectNameSync';
 import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
@@ -554,9 +554,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       } else if (devTargetType === 'PageApp') {
         history.replace(`/space/${devSpaceId}/app-dev/${devTargetId}`);
       } else if (devTargetType === 'UserApp') {
-        history.replace(
-          buildAppProRoute(devSpaceId, devTargetId, info.id),
-        );
+        history.replace(buildAppProRoute(devSpaceId, devTargetId, info.id));
       }
     },
     [],
