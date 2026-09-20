@@ -1,6 +1,5 @@
 /** AppDevPro 路由 pathname 匹配：/space/:spaceId/app-pro/:appId/:conversationId */
-export const APP_PRO_PATH_REGEX =
-  /^\/space\/(\d+)\/app-pro\/(\d+)\/(\d+)/;
+export const APP_PRO_PATH_REGEX = /^\/space\/(\d+)\/app-pro\/(\d+)\/(\d+)/;
 
 export interface AppProRouteParams {
   spaceId: number;
@@ -14,7 +13,9 @@ export interface AppProRouteParams {
  * @param pathname 当前 pathname（不含 search）
  * @returns 解析结果；非 app-pro 路由返回 null
  */
-export const parseAppProRoute = (pathname: string): AppProRouteParams | null => {
+export const parseAppProRoute = (
+  pathname: string,
+): AppProRouteParams | null => {
   const match = pathname.match(APP_PRO_PATH_REGEX);
   if (!match) {
     return null;
@@ -37,8 +38,7 @@ export const buildAppProRoute = (
   spaceId: number | string,
   appId: number | string,
   conversationId: number | string,
-): string =>
-  `/space/${spaceId}/app-pro/${appId}/${conversationId}`;
+): string => `/space/${spaceId}/app-pro/${appId}/${conversationId}`;
 
 /**
  * 创建会话成功后拼接 conversationId 的 URL 前缀（末尾带 `/`）。

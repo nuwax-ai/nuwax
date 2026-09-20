@@ -4,7 +4,6 @@ import {
   showSpaceSelectorForFunctionType,
 } from '@/constants/recommendAgentPolicy.constants';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
-import { buildAppProRedirectPrefix } from '@/pages/AppDevPro/utils/appProRoute';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type {
@@ -13,6 +12,7 @@ import type {
 } from '@/types/interfaces/common';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { PinnedProjectInfo } from '@/types/interfaces/userProject';
+import { buildAppProRedirectPrefix } from '@/utils/appProRoute';
 
 /**
  * 首页发送计划纯函数（收编原 src/pages/Home/index.tsx handleEnter 的

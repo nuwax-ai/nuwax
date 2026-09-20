@@ -5,12 +5,12 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentSubTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
+import { buildAppProRoute } from '@/utils/appProRoute';
 import {
   emitConversationChanged,
   emitProjectChanged,
 } from '@/utils/directorySyncEvents';
 import { message } from 'antd';
-import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import { history } from 'umi';
 
 export interface ProjectCreatePayload {

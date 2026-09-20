@@ -1,6 +1,6 @@
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { apiNotifyMessageUnreadCount } from '@/services/message';
-import { useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 
 const useLayout = () => {
@@ -28,15 +28,20 @@ const useLayout = () => {
   // 悬浮菜单隐藏定时器引用
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleCloseMobileMenu = () => {
+  // 注意：本 model 的函数与返回对象必须保持引用稳定（useCallback/useMemo）。
+  // umi plugin-model 对返回值做深比较广播，函数每轮重建会让比较恒失败，
+  // 导致所有 useModel('layout') 订阅者在无关变更时被全量重渲染
+  // （侧栏收起/展开一次即重渲染整个会话列表与常驻弹窗，见 2026-09 收展卡顿排查）。
+
+  const handleCloseMobileMenu = useCallback(() => {
     if (isMobile) {
       setRealHidden(true);
       setFullMobileMenu(false);
     }
-  };
+  }, [isMobile]);
 
   // 切换二级菜单收起/展开状态
-  const toggleSecondMenuCollapse = () => {
+  const toggleSecondMenuCollapse = useCallback(() => {
     setIsSecondMenuCollapsed(!isSecondMenuCollapsed);
     // 收起时隐藏悬浮菜单
     if (!isSecondMenuCollapsed) {
@@ -49,24 +54,27 @@ const useLayout = () => {
         hideTimerRef.current = null;
       }
     }
-  };
+  }, [isSecondMenuCollapsed]);
 
   // 显示悬浮菜单
-  const handleShowHoverMenu = (menuType: string) => {
-    if (isSecondMenuCollapsed) {
-      // 清除之前的隐藏定时器
-      if (hideTimerRef.current) {
-        clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
+  const handleShowHoverMenu = useCallback(
+    (menuType: string) => {
+      if (isSecondMenuCollapsed) {
+        // 清除之前的隐藏定时器
+        if (hideTimerRef.current) {
+          clearTimeout(hideTimerRef.current);
+          hideTimerRef.current = null;
+        }
+        setShowHoverMenu(true);
+        setHoverMenuType(menuType);
+        setIsMouseInHoverMenu(false);
       }
-      setShowHoverMenu(true);
-      setHoverMenuType(menuType);
-      setIsMouseInHoverMenu(false);
-    }
-  };
+    },
+    [isSecondMenuCollapsed],
+  );
 
   // 隐藏悬浮菜单（带延迟）
-  const handleHideHoverMenu = () => {
+  const handleHideHoverMenu = useCallback(() => {
     // 如果鼠标在悬浮菜单内，不隐藏
     if (isMouseInHoverMenu) {
       return;
@@ -82,10 +90,10 @@ const useLayout = () => {
       setIsMouseInHoverMenu(false);
       hideTimerRef.current = null;
     }, 200); // 200ms延迟，足够用户移动到悬浮菜单
-  };
+  }, [isMouseInHoverMenu]);
 
   // 立即隐藏悬浮菜单（用于清理）
-  const handleImmediateHideHoverMenu = () => {
+  const handleImmediateHideHoverMenu = useCallback(() => {
     if (hideTimerRef.current) {
       clearTimeout(hideTimerRef.current);
       hideTimerRef.current = null;
@@ -93,29 +101,29 @@ const useLayout = () => {
     setShowHoverMenu(false);
     setHoverMenuType('');
     setIsMouseInHoverMenu(false);
-  };
+  }, []);
 
   // 取消隐藏定时器（用于鼠标进入悬浮菜单时保持显示）
-  const handleCancelHideHoverMenu = () => {
+  const handleCancelHideHoverMenu = useCallback(() => {
     if (hideTimerRef.current) {
       clearTimeout(hideTimerRef.current);
       hideTimerRef.current = null;
     }
-  };
+  }, []);
 
   // 设置鼠标在悬浮菜单内的状态
-  const setMouseInHoverMenu = (isIn: boolean) => {
+  const setMouseInHoverMenu = useCallback((isIn: boolean) => {
     setIsMouseInHoverMenu(isIn);
-  };
+  }, []);
 
   // 动态计算菜单宽度
   // 单栏模式（style3 默认）：一级 icon 竖栏已移除，菜单宽度=侧栏宽度；
   // 经典模式（style1/2）下仅用于移动端菜单平移动画的偏移基准
-  const getCurrentMenuWidth = () => {
+  const getCurrentMenuWidth = useCallback(() => {
     return isSecondMenuCollapsed
       ? 0
       : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH;
-  };
+  }, [isSecondMenuCollapsed]);
 
   // 查询用户未读消息数量
   const { run: runNotifyMessageUnreadCount } = useRequest(
@@ -130,40 +138,64 @@ const useLayout = () => {
     },
   );
 
-  return {
-    isMobile,
-    setIsMobile,
-    realHidden,
-    setRealHidden,
-    fullMobileMenu,
-    setFullMobileMenu,
-    handleCloseMobileMenu,
-    unreadCount,
-    setUnreadCount,
-    runNotifyMessageUnreadCount,
-    openMessage,
-    setOpenMessage,
-    openSearchModal,
-    setOpenSearchModal,
-    openAdmin,
-    setOpenAdmin,
-    openSetting,
-    setOpenSetting,
-    // 二级菜单相关状态和方法
-    isSecondMenuCollapsed,
-    setIsSecondMenuCollapsed,
-    toggleSecondMenuCollapse,
-    showHoverMenu,
-    setShowHoverMenu,
-    hoverMenuType,
-    setHoverMenuType,
-    handleShowHoverMenu,
-    handleHideHoverMenu,
-    handleImmediateHideHoverMenu,
-    handleCancelHideHoverMenu,
-    getCurrentMenuWidth,
-    setMouseInHoverMenu,
-  };
+  return useMemo(
+    () => ({
+      isMobile,
+      setIsMobile,
+      realHidden,
+      setRealHidden,
+      fullMobileMenu,
+      setFullMobileMenu,
+      handleCloseMobileMenu,
+      unreadCount,
+      setUnreadCount,
+      runNotifyMessageUnreadCount,
+      openMessage,
+      setOpenMessage,
+      openSearchModal,
+      setOpenSearchModal,
+      openAdmin,
+      setOpenAdmin,
+      openSetting,
+      setOpenSetting,
+      // 二级菜单相关状态和方法
+      isSecondMenuCollapsed,
+      setIsSecondMenuCollapsed,
+      toggleSecondMenuCollapse,
+      showHoverMenu,
+      setShowHoverMenu,
+      hoverMenuType,
+      setHoverMenuType,
+      handleShowHoverMenu,
+      handleHideHoverMenu,
+      handleImmediateHideHoverMenu,
+      handleCancelHideHoverMenu,
+      getCurrentMenuWidth,
+      setMouseInHoverMenu,
+    }),
+    [
+      isMobile,
+      realHidden,
+      fullMobileMenu,
+      handleCloseMobileMenu,
+      unreadCount,
+      runNotifyMessageUnreadCount,
+      openMessage,
+      openSearchModal,
+      openAdmin,
+      openSetting,
+      isSecondMenuCollapsed,
+      toggleSecondMenuCollapse,
+      showHoverMenu,
+      hoverMenuType,
+      handleShowHoverMenu,
+      handleHideHoverMenu,
+      handleImmediateHideHoverMenu,
+      handleCancelHideHoverMenu,
+      getCurrentMenuWidth,
+      setMouseInHoverMenu,
+    ],
+  );
 };
 
 export default useLayout;
