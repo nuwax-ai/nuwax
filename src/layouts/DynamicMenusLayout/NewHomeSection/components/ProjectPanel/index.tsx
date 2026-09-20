@@ -54,6 +54,7 @@ import {
   PushpinOutlined,
   StarFilled,
   StarOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { Button, Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -1324,7 +1325,17 @@ const ProjectPanel = forwardRef<
                       </button>
                     </Tooltip>
                   </span>
-                  <span className={cx(styles.name)}>{project.name}</span>
+                  <span className={cx(styles.name)}>
+                    {/* 非创建者项目标题前「团队」图标（2026-09-20 定调，
+                        两轮迭代：文字 tag → TeamOutlined 图标；颜色随标题）：
+                        owner===false 严格等于判定（接口未回不标） */}
+                    {project.owner === false && (
+                      <TeamOutlined
+                        className={cx(styles['project-team-tag'])}
+                      />
+                    )}
+                    {project.name}
+                  </span>
                   <div className={styles['project-actions']}>
                     {archiveArmingKey === projectKeyOf(project) ? (
                       <button

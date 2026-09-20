@@ -147,6 +147,15 @@
       font-size: @fontSize;
       color: @navSecondMenuAdaptiveTextSecondary;
       line-height: 20px;
+
+      // 非创建者项目「团队」图标（2026-09-20 定调，两轮：文字→TeamOutlined）：
+      // 颜色随标题（inherit），尺寸略小于标题字号
+      .project-team-tag {
+        margin-right: @marginXxs;
+        font-size: @fontSize;
+        color: inherit;
+        vertical-align: -1.5px;
+      }
     }
 
     .add {
