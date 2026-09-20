@@ -6,9 +6,8 @@
  * - 主 Chat Adapter 全量执行；
  * - 隔离 Preview Adapter 只执行允许子集。
  */
-import { EVENT_TYPE } from '@/constants/event.constants';
-import { createMainChatEffectsAdapter } from '@/features/conversation/adapters/mainChatEffectsAdapter';
 import { createPreviewEffectsAdapter } from '@/features/conversation/adapters/previewEffectsAdapter';
+import { createRuntimeLineEffectsAdapter } from '@/features/conversation/react/runtimeLineHttp';
 import { createConversationRuntime } from '@/features/conversation/runtime/createConversationRuntime';
 import {
   createEffectDispatcher,
@@ -49,6 +48,17 @@ vi.mock('@/utils/eventBus', () => ({
 vi.mock('@/utils/conversationTaskStatusSync', () => ({
   emitConversationListTaskStatus: (...args: unknown[]) =>
     mockEmitConversationListTaskStatus(...args),
+  // runtimeLineHttp 从该模块 re-export applyTerminalTaskStatus，桩需含此导出
+  applyTerminalTaskStatus: vi.fn(),
+}));
+
+// runtimeLineHttp 顶层 import services（umi request 链），非 umi 测试环境桩掉
+vi.mock('@/services/agentConfig', () => ({
+  apiAgentConversation: vi.fn(),
+  apiAgentConversationChatStop: vi.fn(),
+  apiAgentConversationChatSuggest: vi.fn(),
+  apiAgentConversationMessageList: vi.fn(),
+  apiAgentConversationUpdate: vi.fn(),
 }));
 
 vi.mock('@/utils/conversationEffectsDiagnostics', () => ({
@@ -90,23 +100,9 @@ const topicUpdate: ConversationEffect = {
   } as never,
 };
 
-/** mainChat Adapter 依赖构造器（默认全 mock，按用例覆盖） */
-const createMainDeps = (
-  overrides: Record<string, unknown> = {},
-): Parameters<typeof createMainChatEffectsAdapter>[0] => ({
-  fetchSuggest: mockFetchSuggest,
-  updateTopic: vi.fn(),
-  setConversationInfo: vi.fn(),
-  needUpdateTopicRef: { current: true },
-  getTopicContext: () => ({
-    isAppSidebarMode: false,
-    runHistory: vi.fn(),
-    runHistoryItem: vi.fn(),
-  }),
-  showPagePreview: mockShowPagePreview,
-  openDesktop: mockOpenDesktop,
-  setCardList: vi.fn(),
-  setShowType: vi.fn(),
+/** runtimeLine 版页面资源构造器（默认全 mock，按用例覆盖；生产执行体
+ *  为 createRuntimeLineEffectsAdapter——原 mainChatEffectsAdapter 参考实现已删除） */
+const createRuntimeResources = (overrides: Record<string, unknown> = {}) => ({
   refreshFileListThrottled: mockRefreshFileListThrottled,
   refreshFileListImmediately: vi
     .fn()
@@ -119,51 +115,17 @@ const createMainDeps = (
   ...overrides,
 });
 
-const createMainAdapter = (overrides: Record<string, unknown> = {}) =>
-  createMainChatEffectsAdapter(createMainDeps(overrides));
+const createRuntimeAdapter = (overrides: Record<string, unknown> = {}) =>
+  createRuntimeLineEffectsAdapter({
+    setConversationInfo: vi.fn(),
+    resources: createRuntimeResources(overrides) as never,
+  });
 
 const createPreviewAdapter = () =>
   createPreviewEffectsAdapter({
     fetchSuggest: mockFetchSuggest,
     showPagePreview: mockShowPagePreview,
   });
-
-/** 构建带主题更新依赖的 mainChat Adapter（成功/失败与两种侧栏模式可配） */
-const createTopicAdapter = (
-  overrides: {
-    updateTopicResult?: Promise<unknown>;
-    isAppSidebarMode?: boolean;
-  } = {},
-) => {
-  const setConversationInfo = vi.fn();
-  const needUpdateTopicRef = { current: true };
-  const runHistory = vi.fn();
-  const runHistoryItem = vi.fn();
-  const adapter = createMainChatEffectsAdapter(
-    createMainDeps({
-      updateTopic: vi.fn().mockReturnValue(
-        overrides.updateTopicResult ??
-          Promise.resolve({
-            data: { topic: '新主题', topicUpdated: 1 },
-          }),
-      ) as never,
-      setConversationInfo: setConversationInfo as never,
-      needUpdateTopicRef: needUpdateTopicRef as never,
-      getTopicContext: () => ({
-        isAppSidebarMode: overrides.isAppSidebarMode ?? false,
-        runHistory,
-        runHistoryItem,
-      }),
-    }),
-  );
-  return {
-    adapter,
-    setConversationInfo,
-    needUpdateTopicRef,
-    runHistory,
-    runHistoryItem,
-  };
-};
 
 describe('effectDispatcher', () => {
   beforeEach(() => {
@@ -230,202 +192,16 @@ describe('effectDispatcher', () => {
   });
 });
 
-describe('mainChatEffectsAdapter', () => {
+describe('runtimeLineEffectsAdapter（生产 effects 执行体）', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('无 context 的终态补丁经领域守卫入口 emitConversationListTaskStatus', () => {
-    createMainAdapter().dispatch(terminalPatch);
-
-    expect(mockEmitConversationListTaskStatus).toHaveBeenCalledWith(
-      1001,
-      TaskStatus.FAILED,
-    );
-    expect(mockEventBusEmit).not.toHaveBeenCalled();
-  });
-
-  it('带 context 的乐观「执行中」标记直接发射事件（不经终态守卫）', () => {
-    createMainAdapter().dispatch(optimisticPatch);
-
-    expect(mockEventBusEmit).toHaveBeenCalledWith(
-      EVENT_TYPE.UpdateConversationListTaskStatus,
-      {
-        conversationId: 1001,
-        agentId: 9,
-        topic: '会话主题',
-        taskStatus: TaskStatus.EXECUTING,
-      },
-    );
-    expect(mockEmitConversationListTaskStatus).not.toHaveBeenCalled();
-  });
-
-  it('recent.list.refresh 发射侧栏列表刷新', () => {
-    createMainAdapter().dispatch(listRefresh);
-
-    expect(mockEventBusEmit).toHaveBeenCalledWith(
-      EVENT_TYPE.RefreshConversationList,
-      { conversationId: 1001, reason: 'stream-closed' },
-    );
-  });
-
-  it('suggest.fetch 交给注入的建议拉取句柄', () => {
-    createMainAdapter().dispatch(suggestFetch);
-
-    expect(mockFetchSuggest).toHaveBeenCalledWith(suggestFetch.params);
-    expect(mockEventBusEmit).not.toHaveBeenCalled();
-  });
-
-  it('topic.update 成功后写回快照、刷新列表与历史，并落下「仅一次」标记', async () => {
-    const {
-      adapter,
-      setConversationInfo,
-      needUpdateTopicRef,
-      runHistory,
-      runHistoryItem,
-    } = createTopicAdapter();
-
-    adapter.dispatch(topicUpdate);
-    // 异步执行体：等待 updateTopic promise 链
-    await vi.waitFor(() => {
-      expect(setConversationInfo).toHaveBeenCalled();
-    });
-
-    expect(setConversationInfo).toHaveBeenCalledWith({
-      id: 1001,
-      agentId: 9,
-      topicUpdated: 1,
-      topic: '新主题',
-    });
-    // 非侧栏模式：刷新侧栏列表 + 双历史拉取
-    expect(mockEventBusEmit).toHaveBeenCalledWith(
-      EVENT_TYPE.RefreshConversationList,
-      { conversationId: 1001, reason: 'topic-updated' },
-    );
-    expect(runHistory).toHaveBeenCalledWith({ agentId: null, limit: 5 });
-    expect(runHistoryItem).toHaveBeenCalledWith({ agentId: 9, limit: 20 });
-    expect(needUpdateTopicRef.current).toBe(false);
-  });
-
-  it('topic.update 应用侧栏模式走单历史分支且不发列表刷新', async () => {
-    const { adapter, runHistory, runHistoryItem } = createTopicAdapter({
-      isAppSidebarMode: true,
-    });
-
-    adapter.dispatch(topicUpdate);
-    await vi.waitFor(() => {
-      expect(runHistory).toHaveBeenCalled();
-    });
-
-    expect(runHistory).toHaveBeenCalledWith({ agentId: 9, limit: 8 });
-    expect(runHistoryItem).not.toHaveBeenCalled();
-    expect(
-      mockEventBusEmit.mock.calls.filter(
-        ([type]) => type === EVENT_TYPE.RefreshConversationList,
-      ),
-    ).toEqual([]);
-  });
-
-  it('topic.update 失败时回滚「仅一次」标记允许重试', async () => {
-    const { adapter, needUpdateTopicRef, setConversationInfo } =
-      createTopicAdapter({
-        updateTopicResult: Promise.reject(new Error('network')),
-      });
-
-    adapter.dispatch(topicUpdate);
-    await vi.waitFor(() => {
-      expect(needUpdateTopicRef.current).toBe(true);
-    });
-
-    expect(setConversationInfo).not.toHaveBeenCalled();
-    expect(
-      mockEventBusEmit.mock.calls.filter(
-        ([type]) => type === EVENT_TYPE.RefreshConversationList,
-      ),
-    ).toEqual([]);
-  });
-
-  it('preview.page.open 交给页面预览句柄；preview.link.open 打开新窗口', () => {
-    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
-
-    createMainAdapter().dispatch({
-      type: 'preview.page.open',
-      preview: {
-        uri: '/page',
-        params: { a: 1 },
-        executeId: 'exec-1',
-      },
-    });
-    createMainAdapter().dispatch({
-      type: 'preview.link.open',
-      url: 'https://example.com?a=1',
-    });
-
-    expect(mockShowPagePreview).toHaveBeenCalledWith({
-      uri: '/page',
-      params: { a: 1 },
-      executeId: 'exec-1',
-    });
-    expect(openSpy).toHaveBeenCalledWith('https://example.com?a=1', '_blank');
-    openSpy.mockRestore();
-  });
-
-  it('card.result.apply LIST 样式过滤空对象、按 append 决定追加或替换', () => {
-    const setCardList = vi.fn((updater: (prev: unknown[]) => unknown[]) =>
-      updater([{ cardKey: 'old' }]),
-    );
-    const setShowType = vi.fn();
-    const adapter = createMainAdapter({
-      setCardList: setCardList as never,
-      setShowType: setShowType as never,
-    });
-
-    adapter.dispatch({
-      type: 'card.result.apply',
-      cardBindConfig: { bindCardStyle: 'LIST', cardKey: 'card-key' },
-      cardData: [{ a: 1 }, {}, { a: 2 }] as never,
-      append: true,
-    });
-
-    expect(setShowType).toHaveBeenCalled();
-    expect(setCardList).toHaveReturnedWith([
-      { cardKey: 'old' },
-      { a: 1, cardKey: 'card-key' },
-      { a: 2, cardKey: 'card-key' },
-    ]);
-  });
-
-  it('card.result.apply 单卡样式写入单元素列表（append=false 时替换）', () => {
-    const setCardList = vi.fn((updater: (prev: unknown[]) => unknown[]) =>
-      updater([{ cardKey: 'old' }]),
-    );
-    const adapter = createMainAdapter({
-      setCardList: setCardList as never,
-    });
-
-    adapter.dispatch({
-      type: 'card.result.apply',
-      cardBindConfig: { cardKey: 'solo' },
-      cardData: { title: '单卡' } as never,
-      append: false,
-    });
-
-    expect(setCardList).toHaveReturnedWith([
-      { title: '单卡', cardKey: 'solo' },
-    ]);
-  });
-
-  it('desktop.open 交给打开远程桌面句柄', () => {
-    createMainAdapter().dispatch({ type: 'desktop.open', conversationId: 77 });
-
-    expect(mockOpenDesktop).toHaveBeenCalledWith(77);
   });
 
   it('preview.file.refresh 按模式路由节流/立即刷新', () => {
     const refreshFileListImmediately = vi
       .fn()
       .mockReturnValue(Promise.resolve());
-    const adapter = createMainAdapter({ refreshFileListImmediately });
+    const adapter = createRuntimeAdapter({ refreshFileListImmediately });
 
     adapter.dispatch({
       type: 'preview.file.refresh',
@@ -442,11 +218,11 @@ describe('mainChatEffectsAdapter', () => {
     expect(refreshFileListImmediately).toHaveBeenCalledWith(1001);
   });
 
-  it('taskResult.settle 保序：立即刷树 → Git → 文件选中打开，未命中发兜底 trigger', async () => {
+  it('taskResult.settle 保序：立即刷树 → Git → 文件选中打开，命中不发兜底 trigger', async () => {
     const setTaskAgentSelectedFileId = vi.fn();
     const setTaskAgentSelectTrigger = vi.fn();
     const setFileTreeRefreshTrigger = vi.fn();
-    const adapter = createMainAdapter({
+    const adapter = createRuntimeAdapter({
       setTaskAgentSelectedFileId,
       setTaskAgentSelectTrigger,
       setFileTreeRefreshTrigger,
@@ -472,7 +248,7 @@ describe('mainChatEffectsAdapter', () => {
 
   it('taskResult.settle 未命中文件或未开版本管理时的分支', async () => {
     const setFileTreeRefreshTrigger = vi.fn();
-    const adapter = createMainAdapter({ setFileTreeRefreshTrigger });
+    const adapter = createRuntimeAdapter({ setFileTreeRefreshTrigger });
 
     adapter.dispatch({
       type: 'taskResult.settle',

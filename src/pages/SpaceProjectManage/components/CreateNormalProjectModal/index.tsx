@@ -11,10 +11,7 @@ import { apiNormalProjectCreate } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetUserSelectableSandboxList } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import {
-  emitConversationChanged,
-  emitProjectChanged,
-} from '@/utils/directorySyncEvents';
+import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import {
@@ -135,8 +132,9 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
             ? workspacePath || undefined
             : undefined,
       });
-      const newId = res?.data?.id ?? res?.data?.targetId;
+      const newId = res?.data?.projectId;
       if (res?.code === SUCCESS_CODE && newId) {
+        // 发送项目创建事件
         emitProjectChanged({
           operation: 'created',
           project: {
@@ -147,26 +145,15 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
           origin: 'create-normal-project-modal',
           reason: 'create',
         });
-        if (res.data?.conversationId) {
-          emitConversationChanged({
-            operation: 'created',
-            conversationId: String(res.data.conversationId),
-            project: {
-              projectId: String(newId),
-              projectType: AgentComponentTypeEnum.NormalProject,
-              ...(spaceId !== undefined ? { spaceId: String(spaceId) } : {}),
-            },
-            origin: 'create-normal-project-modal',
-            reason: 'create',
-          });
-        }
+
         message.success(dict('PC.Pages.SpaceProjectManage.createSuccess'));
+
+        // 回调创建成功
         onConfirm({
           id: newId,
           name: values.name.trim(),
           sandboxId: numericSandboxId,
-          conversationId: res?.data?.conversationId,
-          agentId: res?.data?.agentId,
+          conversationId: res.data.conversationId ?? undefined,
         });
       } else {
         message.error(
@@ -204,6 +191,20 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
+        <h5 className={cx(styles['section-title'])}>
+          {dict('PC.Pages.SpaceProjectManage.projectInfoSection')}
+        </h5>
+        <Form.Item
+          name="icon"
+          label={dict('PC.Pages.SpaceProjectManage.iconLabel')}
+        >
+          <UploadAvatar
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            defaultImage={agentImage as string}
+            svgIconName="icons-workspace-agent"
+          />
+        </Form.Item>
         <Form.Item
           name="name"
           label={dict('PC.Pages.SpaceProjectManage.nameLabel')}
@@ -239,6 +240,9 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
           )}
           maxLength={10000}
         />
+        <h5 className={cx(styles['section-title'])}>
+          {dict('PC.Pages.SpaceProjectManage.personalDevEnvSection')}
+        </h5>
         <Form.Item
           name="sandboxId"
           label={dict('PC.Pages.SpaceProjectManage.runtimeEnv')}
@@ -298,17 +302,6 @@ const CreateNormalProjectModal: React.FC<CreateNormalProjectModalProps> = ({
             </Dropdown>
           </Form.Item>
         ) : null}
-        <Form.Item
-          name="icon"
-          label={dict('PC.Pages.SpaceProjectManage.iconLabel')}
-        >
-          <UploadAvatar
-            onUploadSuccess={setImageUrl}
-            imageUrl={imageUrl}
-            defaultImage={agentImage as string}
-            svgIconName="icons-workspace-agent"
-          />
-        </Form.Item>
       </GuardedFormModalForm>
       <WorkspaceDirPickerModal
         sandboxId={sandboxId}

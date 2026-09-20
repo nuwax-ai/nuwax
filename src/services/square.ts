@@ -104,6 +104,19 @@ export interface PublishedAppListParams {
 }
 
 /**
+ * 应用列表接口(app/list)的类型过滤口径——网页/全栈/三类应用聚合:
+ * 女娲应用页(系统应用/团队空间)与广场-网页应用共用,跨页消费勿各自复制
+ */
+export const APP_LIST_TARGET_TYPES: string[] = ['Agent', 'UserApp', 'ThirdApp'];
+
+/** 应用列表接口(app/list)的子类型过滤口径,与 APP_LIST_TARGET_TYPES 配套 */
+export const APP_LIST_TARGET_SUBTYPES: string[] = [
+  'PageApp',
+  'UserApp',
+  'ThirdApp',
+];
+
+/**
  * 女娲应用-应用列表接口（系统应用/团队空间两维度共用）
  * @description POST /api/published/app/list——两维度均携带
  * targetTypes=[Agent, UserApp, ThirdApp] + targetSubTypes=[PageApp, UserApp, ThirdApp] 过滤；
@@ -130,6 +143,25 @@ export async function apiPublishedAppRecentlyUsedList(data: {
   pageSize?: number;
 }): Promise<RequestResponse<SquarePublishedItemInfo[]>> {
   return request('/api/published/app/recentlyUsed/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 女娲应用-新增最近使用记录接口
+ * @description POST /api/published/app/recentlyUsed/add——
+ * 点击应用时上报使用记录：projectId=应用条目的 targetId、
+ * projectType=应用条目的 targetType；调用成功后由调用方
+ * 重拉最近使用与系统应用/团队空间应用列表
+ */
+export async function apiPublishedAppRecentlyUsedAdd(data: {
+  /** 目标对象 ID（应用条目的 targetId） */
+  projectId: number;
+  /** 目标类型（应用条目的 targetType,app/list 口径含 UserApp/ThirdApp） */
+  projectType: string;
+}): Promise<RequestResponse<null>> {
+  return request('/api/published/app/recentlyUsed/add', {
     method: 'POST',
     data,
   });

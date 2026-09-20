@@ -46,3 +46,33 @@ export const buildUserAppAppPreviewUrl = (
 ): string => {
   return getUserAppAppProxyUrl(pickUserAppEnvDomain(env, domains));
 };
+
+/** 预览域名探测超时（毫秒） */
+const PREVIEW_PROBE_TIMEOUT_MS = 5000;
+
+/**
+ * 判断预览域名是否可访问（no-cors，不读响应体与状态码）。
+ * 与 Login 页域名预检同口径：网络可达即 resolve，DNS/连接失败/超时视为不可达。
+ *
+ * @param url 开发或线上预览根地址
+ * @returns 网络可达为 true；无地址或不可达为 false
+ */
+export const probeUserAppPreviewUrlReachable = async (
+  url: string,
+): Promise<boolean> => {
+  const trimmed = url?.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  try {
+    await fetch(trimmed, {
+      mode: 'no-cors',
+      signal: AbortSignal.timeout(PREVIEW_PROBE_TIMEOUT_MS),
+      cache: 'no-store',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+};

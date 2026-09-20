@@ -1,7 +1,8 @@
 /**
  * 发起会话选目录（wiki #17）链路测试：
  * useConversation：选个人电脑时创建参数携带 sandboxId（数值）+ workspacePath；
- * 云电脑（'-1'）不携带（避免污染云端沙箱语义）。
+ * 云电脑（'-1'）/未选统一携带 sandboxId: -1（云电脑哨兵，2026-09-18 需求），
+ * workspacePath 仍仅个人电脑携带。
  * 注：文件树侧「会话记录目录回显（seedRecordedRoot）」已随文件树本地目录
  * 数据源回滚删除（2026-09-09，需求取消），输入框工作目录栏保留。
  */
@@ -62,7 +63,7 @@ describe('useConversation 创建会话携带工作目录（wiki #17）', () => {
     );
   });
 
-  it('云电脑（-1）不携带 sandboxId/workspacePath', async () => {
+  it('云电脑（-1）携带 sandboxId:-1，不携带 workspacePath', async () => {
     const { result } = renderHook(() => useConversation());
     await result.current.handleCreateConversation(5, {
       message: 'hi',
@@ -70,7 +71,15 @@ describe('useConversation 创建会话携带工作目录（wiki #17）', () => {
       workspacePath: '/should/not/send',
     });
     const params = createMock.mock.calls[0][0];
-    expect(params.sandboxId).toBeUndefined();
+    expect(params.sandboxId).toBe(-1);
+    expect(params.workspacePath).toBeUndefined();
+  });
+
+  it('未选电脑时同样携带 sandboxId:-1', async () => {
+    const { result } = renderHook(() => useConversation());
+    await result.current.handleCreateConversation(5, { message: 'hi' });
+    const params = createMock.mock.calls[0][0];
+    expect(params.sandboxId).toBe(-1);
     expect(params.workspacePath).toBeUndefined();
   });
 

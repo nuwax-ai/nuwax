@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildHomeSendPlan,
   resolvePersonalWorkspacePath,
+  resolvePinnedSandboxSelectable,
+  resolveProjectOwnerFlag,
   type HomeSendPlanInput,
 } from './homeSendPlan';
 
@@ -179,6 +181,126 @@ describe('buildHomeSendPlan 分支决策', () => {
     });
     expect(
       plan.kind === 'createConversation' && plan.attach.sandboxId,
+    ).toBeUndefined();
+  });
+});
+
+describe('resolvePinnedSandboxSelectable（常规项目参与者判定）', () => {
+  const pinned = (overrides?: {
+    projectType?: AgentComponentTypeEnum;
+    owner?: boolean;
+  }) => ({
+    projectType: AgentComponentTypeEnum.NormalProject,
+    owner: false,
+    ...overrides,
+  });
+
+  it('常规项目 + owner === false → 参与者（开放沙箱自选）', () => {
+    expect(resolvePinnedSandboxSelectable(pinned())).toBe(true);
+  });
+
+  it('创建者（owner true）/ 字段未回包（undefined）→ 沿用项目沙箱现状', () => {
+    expect(resolvePinnedSandboxSelectable(pinned({ owner: true }))).toBe(false);
+    expect(resolvePinnedSandboxSelectable(pinned({ owner: undefined }))).toBe(
+      false,
+    );
+  });
+
+  it('无上框 / 非常规项目（全栈）→ 不开放', () => {
+    expect(resolvePinnedSandboxSelectable(undefined)).toBe(false);
+    expect(
+      resolvePinnedSandboxSelectable({
+        projectType: AgentComponentTypeEnum.UserApp,
+        owner: false,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('resolveProjectOwnerFlag（详情 creatorId → owner 布尔）', () => {
+  it('创建者 id 与当前用户一致（含字符串形态）→ true', () => {
+    expect(resolveProjectOwnerFlag(42, 42)).toBe(true);
+    expect(resolveProjectOwnerFlag(42, '42')).toBe(true);
+  });
+
+  it('不一致 → false（参与者）', () => {
+    expect(resolveProjectOwnerFlag(7, 42)).toBe(false);
+  });
+
+  it('任一侧缺失 → undefined（走现状）', () => {
+    expect(resolveProjectOwnerFlag(undefined, 42)).toBeUndefined();
+    expect(resolveProjectOwnerFlag(7, undefined)).toBeUndefined();
+    expect(resolveProjectOwnerFlag(7, null)).toBeUndefined();
+    expect(resolveProjectOwnerFlag(7, '')).toBeUndefined();
+  });
+});
+
+describe('buildHomeSendPlan 上框参与者沙箱自选', () => {
+  const PARTICIPANT_INPUT: HomeSendPlanInput = {
+    ...BASE_INPUT,
+    pinnedProject: {
+      projectId: 100,
+      spaceId: 8,
+      projectType: AgentComponentTypeEnum.NormalProject,
+      name: '常规项目A',
+      // 项目沙箱=创建者个人电脑（参与者不可用）；owner=false=当前用户是参与者
+      sandboxId: 66,
+      owner: false,
+    },
+    pinnedProjectSandboxSelection: true,
+  };
+
+  it('参与者 + 云端：显式 sandboxId=-1（防后端回落项目沙箱），不带目录', () => {
+    const plan = buildHomeSendPlan({
+      ...PARTICIPANT_INPUT,
+      selectedComputerId: '-1',
+      workspacePath: '/tmp/a',
+    });
+    expect(plan.kind).toBe('createConversation');
+    if (plan.kind !== 'createConversation') return;
+    expect(plan.attach.projectId).toBe(100);
+    expect(plan.attach.sandboxId).toBe(-1);
+    expect(plan.attach.workspacePath).toBeUndefined();
+    // selectedComputerId 随 attach 走 route state，衔接会话页首条消息沙箱链路
+    expect(plan.attach.selectedComputerId).toBe('-1');
+  });
+
+  it('参与者 + 个人电脑 + 目录：带自选 sandboxId 与 workspacePath，不用项目沙箱', () => {
+    const plan = buildHomeSendPlan({
+      ...PARTICIPANT_INPUT,
+      selectedComputerId: '9',
+      workspacePath: '/tmp/a',
+    });
+    expect(plan.kind === 'createConversation' && plan.attach.sandboxId).toBe(9);
+    expect(
+      plan.kind === 'createConversation' && plan.attach.workspacePath,
+    ).toBe('/tmp/a');
+  });
+
+  it('参与者 + 个人电脑未选目录：带 sandboxId、不带 workspacePath', () => {
+    const plan = buildHomeSendPlan({
+      ...PARTICIPANT_INPUT,
+      selectedComputerId: '9',
+      workspacePath: '',
+    });
+    expect(plan.kind === 'createConversation' && plan.attach.sandboxId).toBe(9);
+    expect(
+      plan.kind === 'createConversation' && plan.attach.workspacePath,
+    ).toBeUndefined();
+  });
+
+  it('未开参与者模式（创建者/字段未回包）：沿用项目沙箱现状', () => {
+    const plan = buildHomeSendPlan({
+      ...PARTICIPANT_INPUT,
+      pinnedProjectSandboxSelection: undefined,
+      selectedComputerId: '9',
+      workspacePath: '/tmp/a',
+    });
+    expect(plan.kind === 'createConversation' && plan.attach.sandboxId).toBe(
+      66,
+    );
+    expect(
+      plan.kind === 'createConversation' && plan.attach.workspacePath,
     ).toBeUndefined();
   });
 });

@@ -13,8 +13,8 @@ import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 export interface SquarePublishedListParams {
   // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill
   targetType?: AgentComponentTypeEnum;
-  // 模板模式下，目标类型
-  targetSubType?: 'ChatBot' | 'PageApp' | 'UserApp';
+  // 子类型,可用值:Multi,Single,WorkflowChat,ChatBot,TaskAgent,Agent,PageApp,UserApp,ThirdApp
+  targetSubType?: 'ChatBot' | 'PageApp' | 'UserApp' | 'ThirdApp';
   // 页码，从1开始
   page: number;
   // 每页数量
@@ -47,8 +47,9 @@ export interface SquarePublishedItemInfo {
   spaceId: number;
   // ChatBot、PageApp
   agentType: 'ChatBot' | 'PageApp';
-  // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,KNOWLEDGE
-  targetType: SquareAgentTypeEnum;
+  // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,KNOWLEDGE;
+  // app/list 应用列表口径下还会返回 UserApp(全栈应用)/ThirdApp(三方应用)
+  targetType: SquareAgentTypeEnum | AgentComponentTypeEnum;
   // 目标子类型,可用值:ChatBot,PageApp,UserApp(UserApp=全栈应用,卡片点击走 /user-app 路由)
   targetSubType?: 'ChatBot' | 'PageApp' | 'UserApp' | string;
   // 目标对象（智能体、工作流、插件）ID
@@ -81,6 +82,9 @@ export interface SquarePublishedItemInfo {
   collect: boolean;
   // 扩展字段
   ext: Record<string, any>;
+  // 三方应用主页地址(app/list 回包顶层下发,仅 ThirdApp 有值;有值时跳
+  // /user-app/:id 附 homepageUrl query,UserApp 页直接 iframe 该地址)
+  homepageUrl?: string;
   // 适用场景列表，如 [TaskAgent, PageApp]
   usageScenarios: string[];
   // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容

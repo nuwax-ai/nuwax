@@ -321,9 +321,9 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       };
 
       // 获取所有需要展开的文件夹ID
-      const parentFolderIds = getParentFolderIds(
-        selectedFileNode.path || selectedFileNode.id,
-      );
+      // 必须用节点 id 而非 path：外部数据源（懒加载工作区等）的文件夹节点 id
+      // 带 dataSource 前缀（如 workspace:src），path 无前缀会永不匹配
+      const parentFolderIds = getParentFolderIds(selectedFileNode.id);
 
       // 如果有父级文件夹，则展开它们
       if (parentFolderIds.length > 0) {

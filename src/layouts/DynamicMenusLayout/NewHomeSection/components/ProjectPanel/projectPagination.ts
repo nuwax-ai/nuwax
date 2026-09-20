@@ -63,6 +63,7 @@ export function toProjectItem(
     icon: record.icon,
     sandboxId: record.sandboxId,
     devAgentId: record.devAgentId,
+    owner: record.owner,
     children: toProjectChildren(record.conversations, fallbackConversationName),
   };
 }

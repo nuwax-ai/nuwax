@@ -12,8 +12,8 @@ import { useLocation } from 'umi';
 import ProjectPanel, { ProjectPanelHandle } from './components/ProjectPanel';
 import styles from './index.less';
 import TaskListSection from './TaskListSection';
-import { HomeSectionDataShell } from './useHomeSectionData';
 import { useFinishedConversationUnread } from './useFinishedConversationUnread';
+import { HomeSectionDataShell } from './useHomeSectionData';
 
 const cx = classNames.bind(styles);
 
@@ -32,15 +32,29 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
     null,
   );
   const previousPathRef = useRef(location.pathname);
-  const syncRef = useRef<() => void>(() => {});
-  syncRef.current = () => {
+  // 触发源口径：'visibility'=页签切回（受活动门控约束）；不传=路由切换
+  // （导航本身即收敛时机，不设门）
+  const syncRef = useRef<(reason?: 'visibility') => void>(() => {});
+  syncRef.current = (reason) => {
+    // 活动门控（2026-09-18 定调「切回页签只允许当前打开页面自身需要的接口」）：
+    // 页签切回本身不补刷——切走时本地没有任何执行中会话就无事可补（状态跃迁/
+    // 未读蓝点无从发生，跨端新增行交由导航/事件路径收敛）。有执行中会话才刷新，
+    // 把结束跃迁补上（蓝点亮起主场景）
+    if (
+      reason === 'visibility' &&
+      !shell.hasExecutingTask &&
+      !projectPanelRef.current?.hasExecutingChildren()
+    ) {
+      return;
+    }
     const remaining = 30_000 - (Date.now() - lastSyncAtRef.current);
     if (remaining > 0) {
       // 很快切走又返回也要核对一次；合并到节流窗口末尾，不持续轮询。
       if (!pendingSyncTimerRef.current) {
         pendingSyncTimerRef.current = setTimeout(() => {
           pendingSyncTimerRef.current = null;
-          if (document.visibilityState === 'visible') syncRef.current();
+          if (document.visibilityState === 'visible')
+            syncRef.current('visibility');
         }, remaining);
       }
       return;
@@ -56,7 +70,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
 
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible') syncRef.current();
+      if (document.visibilityState === 'visible') syncRef.current('visibility');
     };
     window.addEventListener('focus', onVisible);
     document.addEventListener('visibilitychange', onVisible);

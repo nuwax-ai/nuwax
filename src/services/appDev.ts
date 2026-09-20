@@ -22,6 +22,7 @@ import type {
 } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { RequestResponse } from '@/types/interfaces/request';
+import type { UserNormalProjectInfo } from '@/types/interfaces/userProject';
 import { parseLogEntry } from '@/utils/devLogParser';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
@@ -682,9 +683,8 @@ export const apiProjectCreate = async (data: {
 /**
  * 创建常规项目（wiki 2026-09-10：常规项目 CRUD 换 /api/normal-project/*，
  * 用于「项目管理」入口；首页对话框创建常规项目仍走 /api/project/create）。
- * 返回体字段名契约未细化，此处兼容 id / targetId 两种形态；
- * 创建即建首个会话，conversationId 一并返回（契约先行，缺省时不拼跳转参数）；
- * agentId 同为防御式透传（常规项目跳 home/chat 详情的路由参数）。
+ * 返回体与 /api/normal-project/get 同构（UserNormalProjectInfo）；
+ * 创建即建首个会话，conversationId 为传输字段。
  */
 export const apiNormalProjectCreate = async (data: {
   /** 空间 ID */
@@ -699,14 +699,7 @@ export const apiNormalProjectCreate = async (data: {
   sandboxId?: number;
   /** 工作空间目录 */
   workspacePath?: string;
-}): Promise<
-  RequestResponse<{
-    id?: number;
-    targetId?: number;
-    conversationId?: number;
-    agentId?: number;
-  }>
-> => {
+}): Promise<RequestResponse<UserNormalProjectInfo>> => {
   return request('/api/normal-project/create', {
     method: 'POST',
     data: {

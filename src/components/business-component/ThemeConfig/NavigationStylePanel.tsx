@@ -22,8 +22,8 @@ interface NavigationStylePanelProps {
   onNavigationStyleChange?: (styleId: string) => void;
   /** 当前导航风格（可选，如果不提供则使用内部状态） */
   currentNavigationStyle?: string;
-  /** 可选的导航风格集合（默认全量；租户管理页只透传经典两档，不透出单栏） */
-  availableStyles?: string[];
+  /** 深浅色切换禁用（单栏 style3 锁定纯色浅色，2026-09-20 需求）：置灰不可点 */
+  themeToggleDisabled?: boolean;
 }
 
 /** 全量导航风格（词表 key 骨架；词条在组件体内取，跟随语言切换刷新） */
@@ -54,20 +54,20 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
   onNavigationThemeToggle,
   onNavigationStyleChange,
   currentNavigationStyle = 'style3',
-  availableStyles,
+  themeToggleDisabled = false,
 }) => {
   // 商业桌面端（Nuwax 客户端 webview）锁定单栏布局：沉浸式折叠/壳同步机制只按单栏维护，
   // 风格切换整节隐藏，仅保留导航深浅色切换；社区宿主（NuwaClaw）与浏览器同形态不锁定
   const isNavStyleLocked = isDesktopHost();
 
-  // 导航栏风格配置（渲染期取词 + 按可选集合过滤）
+  // 导航栏风格配置（渲染期取词；全量三档，系统/用户两侧同源）
   const navigationStyles: NavigationStyle[] = ALL_NAVIGATION_STYLE_KEYS.map(
     ({ nameKey, descriptionKey, ...skeleton }) => ({
       ...skeleton,
       name: t(nameKey),
       description: t(descriptionKey),
     }),
-  ).filter((style) => !availableStyles || availableStyles.includes(style.id));
+  );
 
   // 导航栏风格状态管理（使用传入的值或默认值）
   const [localNavigationStyle, setLocalNavigationStyle] = useState<string>(
@@ -86,6 +86,8 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
 
   // 处理深浅色风格切换（集成到导航深浅色管理中）
   const handleColorStyleToggle = () => {
+    // 单栏锁定纯色浅色（2026-09-20 需求）：置灰态兜底，点击不生效
+    if (themeToggleDisabled) return;
     // 同时管理导航深浅色和全局布局深浅色
     onNavigationThemeToggle();
     console.log('NavigationStylePanel - switch light/dark mode');
@@ -151,12 +153,23 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
         </div>
       )}
 
-      {/* 导航栏深浅色选择 */}
+      {/* 导航栏深浅色选择（单栏 style3 锁定纯色浅色，2026-09-20 需求：置灰不可点） */}
       <div className={cx(styles.navigationColorOptions)}>
         <h4>
           {t('PC.Components.ThemeConfigNavigationStylePanel.colorSectionTitle')}
         </h4>
-        <div className={cx(styles.colorOptions)}>
+        {themeToggleDisabled && (
+          <div className={cx(styles.themeLockedHint)}>
+            {t(
+              'PC.Components.ThemeConfigNavigationStylePanel.themeLockedHint',
+            )}
+          </div>
+        )}
+        <div
+          className={cx(styles.colorOptions, {
+            [styles.disabled]: themeToggleDisabled,
+          })}
+        >
           {/* 浅色模式 */}
           <div className={cx(styles.colorOption)}>
             <div

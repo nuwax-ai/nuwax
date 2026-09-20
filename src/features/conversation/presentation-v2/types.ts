@@ -76,6 +76,9 @@ export interface ConversationProcessNode {
   /** 时间戳（ms epoch），用于排序与耗时兜底 */
   startTime?: number;
   endTime?: number;
+  /** 思考行终态耗时（ms）：思考段无后端时间戳，由投影层会话内存锚点推得；
+   *  历史消息（刷新后加载）无锚点为 undefined，展示层降级回首行摘要 */
+  durationMs?: number;
 }
 
 /** 工具在 V2 时间线中的视觉语义；只影响展示，不改变后端组件协议。 */

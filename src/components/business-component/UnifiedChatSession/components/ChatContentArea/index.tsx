@@ -10,6 +10,7 @@ import * as React from 'react';
 
 import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import type {
   MessageInfo,
   RoleInfo,
@@ -74,6 +75,8 @@ export interface ChatContentAreaProps {
   messageRenderer?: 'v1' | 'v2';
   /** V2 工具详情资源点击（文件路径/URL），透传给 ConversationRendererV2 */
   onOpenToolResource?: (resource: ConversationToolResource) => void;
+  /** V2 OpenUI sidecar 打开联动，透传给 ConversationRendererV2 */
+  onOpenOpenUiSidecar?: (artifact: OpenUiArtifact) => void;
 }
 
 export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
@@ -105,6 +108,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
   renderEmptyState,
   messageRenderer = 'v2',
   onOpenToolResource,
+  onOpenOpenUiSidecar,
 }) => {
   const renderedMessageList = React.useMemo(() => {
     if (!messageList || messageList.length <= 1) {
@@ -198,6 +202,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
                     showDebug={showDebug}
                     showStatusDesc={agentInfo?.type !== AgentTypeEnum.TaskAgent}
                     onOpenToolResource={onOpenToolResource}
+                    onOpenOpenUiSidecar={onOpenOpenUiSidecar}
                   />
                 ) : (
                   renderV1MessageList()

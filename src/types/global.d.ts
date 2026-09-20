@@ -35,6 +35,10 @@ type HostCommand =
   | {
       type: 'new-task';
     }
+  /** 打开全局搜索（壳应用菜单「文件 → 搜索」，桌面端 ⌘K/Ctrl+K 菜单化触发；打开 SidebarSearchModal） */
+  | {
+      type: 'open-search';
+    }
   /** 休眠控制：宿主可见性变化（锁屏/最小化/托盘隐藏/恢复）。壳 hostActivity 服务沿状态变化沿下发 */
   | {
       type: 'host-activity';
@@ -188,10 +192,7 @@ interface Window {
     // nuwax→nuwaclaw 壳页面元信息上报（构建版本，关于页「界面版本」展示）
     meta?: {
       /** 上报前端构建信息（appVersion 来自构建期生成的版本常量）。 */
-      syncWebInfo?: (payload: {
-        appVersion: string;
-        gitHash?: string;
-      }) => void;
+      syncWebInfo?: (payload: { appVersion: string; gitHash?: string }) => void;
     };
     // nuwaclaw 客户端宿主注入：宿主身份只读信息（host→guest，构建期注入非 IPC）
     host?: {

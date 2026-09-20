@@ -16,7 +16,10 @@ vi.mock('@/services/i18nRuntime', () => ({
 }));
 
 import { STORAGE_KEYS } from '@/constants/theme.constants';
-import { ThemeNavigationStyleType } from '@/types/enums/theme';
+import {
+  ThemeLayoutColorStyle,
+  ThemeNavigationStyleType,
+} from '@/types/enums/theme';
 import { unifiedThemeService } from './unifiedThemeService';
 
 /** 预置迁移 guard，避免 loadUserSettings 的一次性迁移干扰用例 */
@@ -215,6 +218,118 @@ describe('单栏（style3）锁定纯色背景（2026-09-12 需求）', () => {
     expect(data.navigationStyle).toBe('style3');
     expect(data.backgroundId).toBe('bg-solid');
     expect(data.source).toBe('default');
+  });
+});
+
+describe('单栏（style3）锁定浅色（2026-09-20 需求：深浅定调浅色）', () => {
+  const originalBridge = (window as any).NuwaClawBridge;
+
+  /** 商业宿主桥（isDesktopHost 判定依据，getProduct=nuwax） */
+  const seedCommercialBridge = () => {
+    (window as any).NuwaClawBridge = {
+      host: { getProduct: () => 'nuwax' },
+    };
+  };
+
+  /** 存量深色态：经典风格1 + 深色导航（旧字段语义）+ 深色图片背景 */
+  const seedStyle1Dark = (
+    backgroundId = 'bg-variant-3',
+    timestamp = Date.now(),
+  ) => {
+    localStorage.setItem(
+      STORAGE_KEYS.USER_THEME_CONFIG,
+      JSON.stringify({
+        selectedThemeColor: '#5147ff',
+        selectedBackgroundId: backgroundId,
+        navigationStyleId: 'style1',
+        navigationStyle: 'dark',
+        antdTheme: 'light',
+        timestamp,
+      }),
+    );
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    seedMigrationGuard();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    if (originalBridge === undefined) delete (window as any).NuwaClawBridge;
+    else (window as any).NuwaClawBridge = originalBridge;
+  });
+
+  it('写入路径：切入 style3 时深色导航随背景一并收敛浅色并落库', async () => {
+    seedStyle1Dark();
+    unifiedThemeService.reloadConfiguration(false);
+
+    await unifiedThemeService.updateNavigationStyle(
+      ThemeNavigationStyleType.STYLE3,
+    );
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.layoutStyle).toBe('light');
+    expect(data.backgroundId).toBe('bg-solid');
+    // 旧字段（深浅色语义）随保存链落库为干净浅色
+    expect(
+      JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG) || '{}')
+        .navigationStyle,
+    ).toBe('light');
+  });
+
+  it('写入路径：背景已是纯色但处于深色时，切入 style3 仍收敛浅色', async () => {
+    seedStyle1Dark('bg-solid');
+    unifiedThemeService.reloadConfiguration(false);
+
+    await unifiedThemeService.updateNavigationStyle(
+      ThemeNavigationStyleType.STYLE3,
+    );
+
+    expect(unifiedThemeService.getCurrentData().layoutStyle).toBe('light');
+  });
+
+  it('加载路径：租户模板 style3 + 深色 + 图片背景，双归一为纯色浅色且不回写', () => {
+    seedTenantTemplate({
+      primaryColor: '#5147ff',
+      backgroundId: 'bg-variant-4',
+      layoutStyle: 'dark',
+      navigationStyle: 'style3',
+    });
+
+    unifiedThemeService.reloadConfiguration(false);
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.backgroundId).toBe('bg-solid');
+    expect(data.layoutStyle).toBe('light');
+    // 租户配置是后端下发缓存，只收敛内存不回写
+    const tenantConfig = JSON.parse(
+      localStorage.getItem(STORAGE_KEYS.TENANT_CONFIG_INFO) || '{}',
+    );
+    expect(JSON.parse(tenantConfig.templateConfig).layoutStyle).toBe('dark');
+  });
+
+  it('经典风格：深色导航与深色背景不受 style3 浅色锁影响', () => {
+    seedStyle1Dark();
+    unifiedThemeService.reloadConfiguration(false);
+
+    const data = unifiedThemeService.getCurrentData();
+    expect(data.navigationStyle).toBe('style1');
+    expect(data.layoutStyle).toBe('dark');
+    expect(data.backgroundId).toBe('bg-variant-3');
+  });
+
+  it('桌面宿主：写入路径（租户回声把深色写回）同样收敛浅色', async () => {
+    seedCommercialBridge();
+    seedStyle1Dark('bg-variant-3', 1700000000006);
+    unifiedThemeService.reloadConfiguration(false);
+
+    await unifiedThemeService.updateData(
+      { layoutStyle: ThemeLayoutColorStyle.DARK },
+      { immediate: true, emitEvent: false },
+    );
+
+    expect(unifiedThemeService.getCurrentData().layoutStyle).toBe('light');
   });
 });
 

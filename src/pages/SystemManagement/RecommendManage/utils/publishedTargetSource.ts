@@ -66,6 +66,17 @@ export const PUBLISHED_TARGET_SOURCE_MAP: Record<
       targetSubType: 'UserApp',
     }),
   },
+  [DisplayRecommendTargetTypeEnum.ThirdApp]: {
+    fetchApi: apiPublishedAppList,
+    buildParams: (page, pageSize, kw) => ({
+      page,
+      pageSize,
+      category: '',
+      kw,
+      targetType: AgentComponentTypeEnum.ThirdApp,
+      targetSubType: 'ThirdApp',
+    }),
+  },
   [DisplayRecommendTargetTypeEnum.Skill]: {
     fetchApi: apiPublishedSkillList,
     buildParams: (page, pageSize, kw) => ({

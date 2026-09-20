@@ -95,7 +95,6 @@ const RowIcon: React.FC<{ kind: SearchRowKind; icon?: string }> = ({
 
 const SidebarSearchModal: React.FC = () => {
   const { openSearchModal, setOpenSearchModal } = useModel('layout');
-  const { getSpaceId } = useModel('spaceModel');
   const { firstLevelMenus } = useModel('menuModel');
   const { summon } = useSummonExpertHandoff();
   const { select } = useSelectSkillHandoff();
@@ -136,14 +135,6 @@ const SidebarSearchModal: React.FC = () => {
     [setOpenSearchModal],
   );
 
-  /** 当前团队空间 ID（localStorage 字符串/内存数字统一收敛为 number） */
-  const resolveSpaceId = useCallback((): number | undefined => {
-    const raw = getSpaceId();
-    if (raw === null || raw === undefined || raw === '') return undefined;
-    const num = Number(raw);
-    return Number.isFinite(num) ? num : undefined;
-  }, [getSpaceId]);
-
   /**
    * 分页拉取：append=false 拉首页（命中缓存直接回显），append=true 触底续拉
    * （游标由上一次 SearchPageResult.cursor 透传，结果追加进当前列表）
@@ -180,7 +171,6 @@ const SidebarSearchModal: React.FC = () => {
           keyword: kw,
           size: SEARCH_LIMIT,
           cursor,
-          spaceId: resolveSpaceId(),
         });
         if (seqRef.current !== seq) return;
         setView((prev) => {
@@ -212,7 +202,7 @@ const SidebarSearchModal: React.FC = () => {
         setView((prev) => ({ ...prev, loading: false, loadingMore: false }));
       }
     },
-    [resolveSpaceId],
+    [],
   );
 
   /** 打开时重置（首屏数据由下方分类加载 effect 统一拉取） */

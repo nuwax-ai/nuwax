@@ -9,13 +9,16 @@ import {
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
 import { apiNormalProjectGetById } from '@/services/userProjectApp';
+import { UserService } from '@/services/userService';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { UserInfo } from '@/types/interfaces/login';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   UserNormalProjectInfo,
   UserProjectConversationInfo,
 } from '@/types/interfaces/userProject';
 import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
+import { resolveProjectOwnerFlag } from '@/utils/homeSendPlan';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import type { TabsProps } from 'antd';
 import { Button, Result, Tabs } from 'antd';
@@ -237,6 +240,11 @@ const NormalProjectDetail: React.FC = () => {
       icon: projectInfo?.icon,
       sandboxId: projectInfo?.sandboxId,
       devAgentId: projectInfo?.devAgentId ?? undefined,
+      // 详情契约未随列表回 owner，用创建者 id 与当前用户比对等价计算
+      owner: resolveProjectOwnerFlag(
+        projectInfo?.creatorId,
+        (UserService.getUserInfoFromStorage() as UserInfo | null)?.id,
+      ),
     });
   }, [pin, projectId, projectInfo, projectName, spaceId]);
 

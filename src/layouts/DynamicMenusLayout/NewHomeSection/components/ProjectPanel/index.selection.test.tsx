@@ -36,6 +36,7 @@ const {
   conversationDeleteMock,
   pinMock,
   conversationDetailMock,
+  conversationListMock,
 } = vi.hoisted(() => ({
   pageQueryMock: vi.fn(),
   conversationsMock: vi.fn(),
@@ -43,10 +44,16 @@ const {
   conversationDeleteMock: vi.fn(),
   pinMock: vi.fn(),
   conversationDetailMock: vi.fn(),
+  conversationListMock: vi.fn(),
+}));
+
+// 可变路由参数：默认无 spaceId（/home）；个别用例改写验证「空间路由下也不传 spaceId」
+const { routeParams } = vi.hoisted(() => ({
+  routeParams: { params: {} as Record<string, string | undefined> },
 }));
 
 vi.mock('umi', () => ({
-  useParams: () => ({}),
+  useParams: () => routeParams.params,
 }));
 
 vi.mock('@/services/userProjectApp', () => ({
@@ -66,6 +73,7 @@ vi.mock('@/services/agentConfig', () => ({
   apiAgentConversationUpdate: conversationUpdateMock,
   apiAgentConversationDelete: conversationDeleteMock,
   apiAgentConversation: conversationDetailMock,
+  apiAgentConversationList: conversationListMock,
 }));
 
 vi.mock('@/hooks/useHomePinnedProjectHandoff', () => ({
@@ -176,6 +184,14 @@ describe('ProjectPanel 选中关系', () => {
     conversationDeleteMock.mockReset();
     pinMock.mockReset();
     conversationDetailMock.mockReset();
+    // 切回核对探针默认回空列表（全部子会话「消失」→ 全量兜底），个别用例按需覆写
+    conversationListMock.mockReset();
+    conversationListMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [],
+    });
+    // 路由参数复位为无 spaceId（/home）；空间路由用例自行改写
+    routeParams.params = {};
   });
 
   it('命中项目子会话：折叠态自动展开 + 子行高亮（child-active/aria-current）', async () => {
@@ -342,7 +358,7 @@ describe('ProjectPanel 选中关系', () => {
     expect(screen.queryByText('旧响应会话')).toBeNull();
   });
 
-  it('/home 无空间参数时接收带 spaceId 的新项目事件', async () => {
+  it('接收带 spaceId 的新项目事件并刷新列表', async () => {
     respondPage([buildRecord()], defaultConversations());
     render(<ProjectPanel compact />);
     await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
@@ -368,6 +384,44 @@ describe('ProjectPanel 选中关系', () => {
     });
 
     await waitFor(() => expect(screen.getByText('新项目')).toBeTruthy());
+  });
+
+  it('空间路由下也不传 spaceId 拉全量，并接收其它空间的项目事件', async () => {
+    // /space/:spaceId 路由挂载（跨空间口径：queryFilter 不带 spaceId）
+    routeParams.params = { spaceId: '100' };
+    respondPage([buildRecord()], defaultConversations());
+    render(<ProjectPanel compact />);
+    await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
+    expect(pageQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({ queryFilter: {} }),
+    );
+
+    // 其它空间（200）新建项目的事件也实时并入列表
+    pageQueryMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: {
+        records: [
+          buildRecord(),
+          buildRecord({ projectId: 3, name: '跨空间新项目' }),
+        ],
+        total: 2,
+      },
+    });
+
+    act(() => {
+      emitProjectChanged({
+        operation: 'created',
+        project: {
+          projectId: '3',
+          projectType: AgentComponentTypeEnum.NormalProject,
+          spaceId: '200',
+        },
+        origin: 'test',
+        reason: 'create',
+      });
+    });
+
+    await waitFor(() => expect(screen.getByText('跨空间新项目')).toBeTruthy());
   });
 
   it('项目子会话接收结束事件并刷新状态', async () => {
@@ -434,11 +488,139 @@ describe('ProjectPanel 选中关系', () => {
             : [],
       }),
     );
+    // 探针：11 无差异；跨端新增的 12 经 devTarget 归属命中项目 1 → 只重拉项目 1
+    conversationListMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [
+        buildConversation(11),
+        {
+          ...buildConversation(12, '跨端会话'),
+          devTargetType: AgentComponentTypeEnum.NormalProject,
+          devTargetId: '1',
+        } as ConversationInfo,
+      ],
+    });
 
     act(() => ref.current?.revalidateVisible());
 
     await waitFor(() => expect(screen.getByText('跨端项目')).toBeTruthy());
     await waitFor(() => expect(screen.getByText('跨端会话')).toBeTruthy());
+  });
+
+  it('切回核对探针：无差异时不再逐项目重拉子会话', async () => {
+    respondPage([buildRecord()], { 1: [buildConversation(11)] });
+    const ref = createRef<ProjectPanelHandle>();
+    render(<ProjectPanel ref={ref} compact />);
+    await waitFor(() => expect(screen.getByText('会话11')).toBeTruthy());
+    expect(conversationsMock).toHaveBeenCalledTimes(1);
+    expect(ref.current?.hasExecutingChildren()).toBe(false);
+
+    // 探针回包与已加载子会话指纹完全一致（常态切回：切走期间无变化）
+    conversationListMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [buildConversation(11)],
+    });
+    act(() => ref.current?.revalidateVisible());
+
+    await waitFor(() => expect(pageQueryMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(conversationListMock).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await flush();
+      await flush();
+    });
+    // 项目行重拉 + 探针各一次，子会话零重拉
+    expect(conversationsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('切回核对探针：执行中→终态先 emit 本地补丁，仅重拉受影响项目', async () => {
+    respondPage(
+      [buildRecord({ projectId: 1 }), buildRecord({ projectId: 2 })],
+      {
+        1: [
+          {
+            ...buildConversation(11, '执行任务'),
+            taskStatus: TaskStatus.EXECUTING,
+          },
+        ],
+        2: [buildConversation(21)],
+      },
+    );
+    const ref = createRef<ProjectPanelHandle>();
+    render(<ProjectPanel ref={ref} compact />);
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+        ),
+      ).toBeTruthy(),
+    );
+    expect(ref.current?.hasExecutingChildren()).toBe(true);
+    expect(conversationsMock).toHaveBeenCalledTimes(2);
+
+    // 探针：11 已终态（21 无差异）；子会话重拉也回终态（emit 补丁与重拉双路收敛）
+    conversationsMock.mockImplementation((projectId: number) =>
+      Promise.resolve({
+        code: SUCCESS_CODE,
+        data:
+          projectId === 1
+            ? [
+                {
+                  ...buildConversation(11, '执行任务'),
+                  taskStatus: TaskStatus.COMPLETE,
+                },
+              ]
+            : [buildConversation(21)],
+      }),
+    );
+    conversationListMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [
+        {
+          ...buildConversation(11, '执行任务'),
+          taskStatus: TaskStatus.COMPLETE,
+        },
+        buildConversation(21),
+      ],
+    });
+    act(() => ref.current?.revalidateVisible());
+
+    // 「执行中」标记翻新（emit 终态补丁 + 受影响项目重拉）
+    await waitFor(() =>
+      expect(
+        screen.queryByText(
+          'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+        ),
+      ).toBeNull(),
+    );
+    expect(ref.current?.hasExecutingChildren()).toBe(false);
+    // 只重拉项目 1（差异项目），项目 2 无差异不重拉
+    await waitFor(() => expect(conversationsMock).toHaveBeenCalledTimes(3));
+    expect(conversationsMock).toHaveBeenLastCalledWith(
+      1,
+      AgentComponentTypeEnum.NormalProject,
+    );
+  });
+
+  it('切回核对探针：出现未加载过的会话 id 时全量兜底发现新增行', async () => {
+    respondPage([buildRecord()], { 1: [buildConversation(11)] });
+    const ref = createRef<ProjectPanelHandle>();
+    render(<ProjectPanel ref={ref} compact />);
+    await waitFor(() => expect(screen.getByText('会话11')).toBeTruthy());
+
+    // 探针出现未知 id（切走期间新增会话，无法定位归属项目）→ 全量兜底重拉
+    conversationsMock.mockImplementation(() =>
+      Promise.resolve({
+        code: SUCCESS_CODE,
+        data: [buildConversation(11), buildConversation(12, '探针新会话')],
+      }),
+    );
+    conversationListMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: [buildConversation(11), buildConversation(12, '探针新会话')],
+    });
+    act(() => ref.current?.revalidateVisible());
+
+    await waitFor(() => expect(screen.getByText('探针新会话')).toBeTruthy());
   });
 
   it('项目刷新在途的改名事件不会被旧回包覆盖', async () => {
@@ -512,20 +694,15 @@ describe('ProjectPanel 选中关系', () => {
     render(<ProjectPanel />);
     await waitFor(() => expect(screen.getByText('待置顶丁')).toBeTruthy());
 
-    // 打开「待置顶丁」行 ⋯ 菜单 → 点「置顶」
+    // hover 行首槽中的置顶按钮与文件夹原位切换；直接点击后完成置顶
     const row = screen.getByText('待置顶丁').closest('[class*="row"]');
     expect(row).toBeTruthy();
-    const moreButton = row!.querySelector<HTMLButtonElement>(
-      'button[aria-label="PC.Components.ActionMenu.more"]',
+    const pinButton = row!.querySelector<HTMLButtonElement>(
+      'button[aria-label="PC.Components.ConversationContextMenu.pin"]',
     );
-    expect(moreButton).toBeTruthy();
+    expect(pinButton).toBeTruthy();
     await act(async () => {
-      fireEvent.click(moreButton!);
-    });
-    await act(async () => {
-      fireEvent.click(
-        screen.getByText('PC.Components.ConversationContextMenu.pin'),
-      );
+      fireEvent.click(pinButton!);
     });
 
     // 置顶成功后本地立即重排：置顶项相邻且居前，普通项目垫后
@@ -570,7 +747,7 @@ describe('ProjectPanel 选中关系', () => {
       screen
         .getByText('待置顶乙')
         .closest('[class*="row"]')
-        ?.querySelector('.anticon-pushpin'),
+        ?.querySelector('[class*="folder-badge-pin"]'),
     ).toBeNull();
 
     const row = screen.getByText('待置顶乙').closest('[class*="row"]');
@@ -597,7 +774,7 @@ describe('ProjectPanel 选中关系', () => {
         screen
           .getByText('待置顶乙')
           .closest('[class*="row"]')
-          ?.querySelector('.anticon-pushpin'),
+          ?.querySelector('[class*="folder-badge-pin"]'),
       ).toBeTruthy();
     });
   });
@@ -661,13 +838,13 @@ describe('ProjectPanel 选中关系', () => {
         screen
           .getByText('常规九四')
           .closest('[class*="row"]')
-          ?.querySelector('.anticon-pushpin'),
+          ?.querySelector('[class*="folder-badge-pin"]'),
       ).toBeTruthy();
       expect(
         screen
           .getByText('全栈九四')
           .closest('[class*="row"]')
-          ?.querySelector('.anticon-pushpin'),
+          ?.querySelector('[class*="folder-badge-pin"]'),
       ).toBeNull();
     });
   });

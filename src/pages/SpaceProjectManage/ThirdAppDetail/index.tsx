@@ -1,10 +1,16 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import PublishComponentModal from '@/components/PublishComponentModal';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import AppDevPublishVersionRecords from '@/pages/AppDevPro/components/AppDevPublishVersionRecords';
 import { dict } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { PublishStatusEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import {
+  ClockCircleOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
   ReloadOutlined,
@@ -52,7 +58,7 @@ const pickResponseData = <T,>(
 /**
  * 三方应用详情页。
  *
- * 页面仅保留设置 Tab 和 OAuth2 认证信息，不请求任务、域名或部署数据。
+ * 页面仅保留设置 Tab 和 OAuth2 认证信息；是否已发布以 oauth2/info 的 publishStatus 为准。
  *
  * @returns 三方应用详情页面
  */
@@ -68,6 +74,13 @@ const ThirdAppDetail: React.FC = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [homepageUrl, setHomepageUrl] = useState('');
   const [redirectUri, setRedirectUri] = useState('');
+  const [openPublishModal, setOpenPublishModal] = useState<boolean>(false);
+  const [publishVersionRecordsOpen, setPublishVersionRecordsOpen] =
+    useState<boolean>(false);
+
+  /** 是否已发布：以 oauth2/info 回包 publishStatus 为准 */
+  const isPublished =
+    appInfo?.publishStatus === PublishStatusEnum.Published;
 
   /** 单一设置 Tab，内容由下方主体区域渲染 */
   const tabItems = useMemo<TabsProps['items']>(
@@ -130,7 +143,31 @@ const ThirdAppDetail: React.FC = () => {
     },
   );
 
-  /** 查询应用完整信息，并在已生成密钥时查询 Client Secret 明文 */
+  /** 应用 info 回包写入页面状态（不含 Secret 拉取） */
+  const applyAppInfo = useCallback((info?: ThirdAppOauth2AppInfo) => {
+    setAppInfo(info);
+    setOauthInfo(info);
+    setHomepageUrl(info?.homepageUrl || '');
+    setRedirectUri(info?.redirectUri || '');
+  }, []);
+
+  /** 仅刷新 oauth2/info，用于发布成功后更新 publishStatus，不拉 Secret */
+  const refreshAppInfo = useCallback(async () => {
+    if (!projectId) {
+      return;
+    }
+    try {
+      const infoResponse = await apiThirdAppOauth2InfoGet(projectId);
+      const info = pickResponseData(infoResponse);
+      if (info) {
+        applyAppInfo(info);
+      }
+    } catch (error) {
+      console.error('Failed to refresh third app OAuth2 info:', error);
+    }
+  }, [applyAppInfo, projectId]);
+
+  /** 进页加载：info + 按需拉取 Client Secret 明文 */
   const loadAppInfo = useCallback(async () => {
     if (!projectId) {
       return;
@@ -140,28 +177,22 @@ const ThirdAppDetail: React.FC = () => {
     try {
       const infoResponse = await apiThirdAppOauth2InfoGet(projectId);
       const info = pickResponseData(infoResponse);
-      setAppInfo(info);
-      setOauthInfo(info);
-      setHomepageUrl(info?.homepageUrl || '');
-      setRedirectUri(info?.redirectUri || '');
+      applyAppInfo(info);
       if (!info?.hasClientSecret) {
         setClientSecret('');
         return;
       }
-      const secretResponse = await apiThirdAppOauth2SecretGet(projectId);
+      const secretResponse = await apiThirdAppOauth2SecretGet(projectId, AgentComponentTypeEnum.ThirdApp);
       const secret = pickResponseData(secretResponse);
       setClientSecret(typeof secret === 'string' ? secret : '');
     } catch (error) {
       console.error('Failed to load third app OAuth2 info:', error);
-      setAppInfo(undefined);
-      setOauthInfo(undefined);
+      applyAppInfo(undefined);
       setClientSecret('');
-      setHomepageUrl('');
-      setRedirectUri('');
     } finally {
       setOauthLoading(false);
     }
-  }, [projectId]);
+  }, [applyAppInfo, projectId]);
 
   /** 进入页面时按项目 ID 加载应用及 OAuth2 认证信息 */
   useEffect(() => {
@@ -175,6 +206,22 @@ const ThirdAppDetail: React.FC = () => {
   const handleBack = useCallback(() => {
     history.push(`/space/${spaceId}/third-app-integration`);
   }, [spaceId]);
+
+  /** 打开发布弹窗 */
+  const handleOpenPublish = useCallback(() => {
+    setOpenPublishModal(true);
+  }, []);
+
+  /** 切换发布版本记录侧栏 */
+  const handleTogglePublishVersionRecords = useCallback(() => {
+    setPublishVersionRecordsOpen((prev) => !prev);
+  }, []);
+
+  /** 发布申请提交成功后仅刷新 info，更新 publishStatus */
+  const handlePublishConfirm = useCallback(() => {
+    setOpenPublishModal(false);
+    void refreshAppInfo();
+  }, [refreshAppInfo]);
 
   /** 确认重新生成凭证 */
   const handleRegenerate = useCallback(() => {
@@ -302,61 +349,108 @@ const ThirdAppDetail: React.FC = () => {
           activeKey="setting"
           items={tabItems}
         />
+
+        {/* 头部操作区域 */}
+        <div className={cx(styles['header-actions'], 'flex', 'items-center')}>
+          {isPublished ? (
+            <TooltipIcon
+              title={dict('PC.Pages.ThirdAppDetail.publishVersionRecords')}
+              ariaLabel={dict('PC.Pages.ThirdAppDetail.publishVersionRecords')}
+              className={cx(styles['history-btn'], {
+                [styles.active]: publishVersionRecordsOpen,
+              })}
+              icon={<ClockCircleOutlined style={{ fontSize: 16 }} />}
+              onClick={handleTogglePublishVersionRecords}
+            />
+          ) : null}
+          <Button type="primary" onClick={handleOpenPublish}>
+            {dict('PC.Pages.ThirdAppDetail.publish')}
+          </Button>
+        </div>
       </header>
 
-      <main className={cx(styles.main, 'flex-1', 'scroll-container-hide')}>
-        <section className={cx(styles.card)}>
-          <h3 className={cx(styles['card-title'])}>
-            {dict('PC.Pages.ThirdAppDetail.oauthTitle')}
-          </h3>
-          <p className={cx(styles['card-desc'])}>
-            {dict('PC.Pages.ThirdAppDetail.oauthDesc')}
-          </p>
-          <Spin spinning={oauthLoading}>
-            {renderField(
-              dict('PC.Pages.ThirdAppDetail.clientId'),
-              oauthInfo?.clientId || '',
-            )}
-            {renderField(
-              dict('PC.Pages.ThirdAppDetail.clientSecret'),
-              clientSecret,
-              true,
-            )}
-            {renderUrlField(
-              dict('PC.Pages.ThirdAppDetail.homeUrl'),
-              homepageUrl,
-              setHomepageUrl,
-              dict('PC.Pages.ThirdAppDetail.homeUrlPlaceholder'),
-            )}
-            {renderUrlField(
-              dict('PC.Pages.ThirdAppDetail.callbackUrl'),
-              redirectUri,
-              setRedirectUri,
-              dict('PC.Pages.ThirdAppDetail.callbackUrlPlaceholder'),
-            )}
-            <div className={cx(styles['action-row'])}>
-              <Button
-                type="primary"
-                loading={saveOauthLoading}
-                onClick={handleSaveOauthSetting}
-              >
-                {dict('PC.Common.Global.save')}
-              </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                className={cx(styles['regenerate-btn'])}
-                loading={regenerateLoading}
-                onClick={handleRegenerate}
-              >
-                {dict('PC.Pages.ThirdAppDetail.regenerate')}
-              </Button>
-              <span className={cx(styles['regenerate-hint'])}>
-                {dict('PC.Pages.ThirdAppDetail.regenerateHint')}
-              </span>
-            </div>
-          </Spin>
-        </section>
-      </main>
+      {/* 主体区域 */}
+      <div
+        className={cx(styles.body, 'flex', 'flex-1', 'min-h-0', {
+          [styles['body-with-records']]: publishVersionRecordsOpen,
+        })}
+      >
+        <main className={cx(styles.main, 'flex-1', 'scroll-container-hide')}>
+          <section className={cx(styles.card)}>
+            <h3 className={cx(styles['card-title'])}>
+              {dict('PC.Pages.ThirdAppDetail.oauthTitle')}
+            </h3>
+            <p className={cx(styles['card-desc'])}>
+              {dict('PC.Pages.ThirdAppDetail.oauthDesc')}
+            </p>
+            <Spin spinning={oauthLoading}>
+              {renderField(
+                dict('PC.Pages.ThirdAppDetail.clientId'),
+                oauthInfo?.clientId || '',
+              )}
+              {renderField(
+                dict('PC.Pages.ThirdAppDetail.clientSecret'),
+                clientSecret,
+                true,
+              )}
+              {renderUrlField(
+                dict('PC.Pages.ThirdAppDetail.homeUrl'),
+                homepageUrl,
+                setHomepageUrl,
+                dict('PC.Pages.ThirdAppDetail.homeUrlPlaceholder'),
+              )}
+              {renderUrlField(
+                dict('PC.Pages.ThirdAppDetail.callbackUrl'),
+                redirectUri,
+                setRedirectUri,
+                dict('PC.Pages.ThirdAppDetail.callbackUrlPlaceholder'),
+              )}
+              <div className={cx(styles['action-row'])}>
+                <Button
+                  type="primary"
+                  loading={saveOauthLoading}
+                  onClick={handleSaveOauthSetting}
+                >
+                  {dict('PC.Common.Global.save')}
+                </Button>
+                <Button
+                  icon={<ReloadOutlined />}
+                  className={cx(styles['regenerate-btn'])}
+                  loading={regenerateLoading}
+                  onClick={handleRegenerate}
+                >
+                  {dict('PC.Pages.ThirdAppDetail.regenerate')}
+                </Button>
+                <span className={cx(styles['regenerate-hint'])}>
+                  {dict('PC.Pages.ThirdAppDetail.regenerateHint')}
+                </span>
+              </div>
+            </Spin>
+          </section>
+        </main>
+
+        {/* 发布版本记录侧栏 */}
+        {projectId ? (
+          <AppDevPublishVersionRecords
+            appId={projectId}
+            targetType={AgentComponentTypeEnum.ThirdApp}
+            appName={appInfo?.name}
+            visible={publishVersionRecordsOpen}
+            className={styles['publish-records-panel']}
+            onClose={() => setPublishVersionRecordsOpen(false)}
+          />
+        ) : null}
+      </div>
+
+      {/* 发布申请弹窗 */}
+      <PublishComponentModal
+        mode={AgentComponentTypeEnum.ThirdApp}
+        targetId={projectId}
+        open={openPublishModal}
+        spaceId={spaceId}
+        onCancel={() => setOpenPublishModal(false)}
+        onConfirm={handlePublishConfirm}
+      />
     </div>
   );
 };

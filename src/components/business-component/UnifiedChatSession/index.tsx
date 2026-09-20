@@ -8,7 +8,8 @@ import MessageQueuePanel from '@/components/business-component/MessageQueue';
 import { registerOpenUiActionSender } from '@/components/business-component/OpenUiArtifactView/actionRegistry';
 import { buildOpenUiResumeMessage } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
 import classNames from 'classnames';
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useModel } from 'umi';
 
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
@@ -26,6 +27,7 @@ import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import type {
   OpenUiAction,
   OpenUiActionArtifact,
+  OpenUiArtifact,
 } from '@/types/interfaces/openUi';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 
@@ -101,6 +103,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   renderEmptyState,
   messageRenderer,
   onOpenToolResource,
+  onOpenOpenUiSidecar,
   enableMention = true,
   onFetchMentionFiles,
   placeholder,
@@ -351,6 +354,28 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     [messageQueue.rawSend],
   );
 
+  // V2 OpenUI sidecar 默认联动：打开预览面板并选中 data/{artifactId}.openui.json
+  // （口径对齐 V1 MarkdownCustomProcess.handleOpenUiSidecar；外部 prop 可覆盖）
+  const {
+    openPreviewView,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
+  } = useModel('conversationInfo');
+  const defaultOpenUiSidecar = useCallback(
+    async (artifact: OpenUiArtifact) => {
+      await openPreviewView(Number(conversationId), { forceRefresh: true });
+      setTaskAgentSelectedFileId(`data/${artifact.artifactId}.openui.json`);
+      setTaskAgentSelectTrigger(Date.now());
+    },
+    [
+      conversationId,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+    ],
+  );
+  const effectiveOpenUiSidecar = onOpenOpenUiSidecar ?? defaultOpenUiSidecar;
+
   useEffect(
     () =>
       conversationId === undefined
@@ -386,6 +411,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
         renderMessageItem={renderMessageItem}
         messageRenderer={effectiveMessageRenderer}
         onOpenToolResource={onOpenToolResource}
+        onOpenOpenUiSidecar={effectiveOpenUiSidecar}
         effectiveRoleInfo={effectiveRoleInfo}
         messageBottomMode={messageBottomMode}
         showDebug={showDebug}

@@ -9,6 +9,7 @@ import {
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import {
   apiAgentConversationDelete,
+  apiAgentConversationList,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
@@ -45,7 +46,7 @@ import eventBus from '@/utils/eventBus';
 import {
   DeleteOutlined,
   EditOutlined,
-  ExclamationCircleFilled,
+  FolderOpenOutlined,
   FolderOutlined,
   InboxOutlined,
   LoadingOutlined,
@@ -53,9 +54,11 @@ import {
   PushpinOutlined,
   StarFilled,
   StarOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
-import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
+import { Button, Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
+import type { KeyboardEvent, MouseEvent } from 'react';
 import {
   forwardRef,
   useCallback,
@@ -65,9 +68,9 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useParams } from 'umi';
 import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
+import { CHILDREN_PROBE_LIMIT, diffChildrenProbe } from './childrenProbe';
 import styles from './index.less';
 import {
   appendProjectsPage,
@@ -107,6 +110,8 @@ export interface ProjectItem {
   sandboxId?: number;
   /** 项目绑定的调试智能体 ID（全栈默认命中用；契约先行，接口暂不返回） */
   devAgentId?: number;
+  /** 当前用户是否项目创建者（上框透传，=== false 判参与者自选沙箱用） */
+  owner?: boolean;
   children?: ProjectChildItem[];
 }
 
@@ -173,6 +178,8 @@ const applyProjectChildEvent = (
 export interface ProjectPanelHandle {
   toggleAll: () => void;
   revalidateVisible: () => void;
+  /** 任一已加载子会话仍在执行中（页签切回「活动门控」的前置判定用） */
+  hasExecutingChildren: () => boolean;
 }
 
 const ProjectPanel = forwardRef<
@@ -208,8 +215,6 @@ const ProjectPanel = forwardRef<
     },
     ref,
   ) => {
-    const { spaceId: spaceIdParam } = useParams() as { spaceId?: string };
-    const spaceId = Number(spaceIdParam) || undefined;
     const { pin } = useHomePinnedProjectHandoff();
 
     const [projects, setProjects] = useState<ProjectItem[]>([]);
@@ -239,11 +244,41 @@ const ProjectPanel = forwardRef<
     const [renameProjectId, setRenameProjectId] = useState<string>();
     const [projectRenameName, setProjectRenameName] = useState('');
     const [projectRenaming, setProjectRenaming] = useState(false);
+    // 项目行内归档二次确认（2026-09-20 定调，同任务行口径）：行尾归档图标与
+    // ⋯菜单「归档」都汇入 armed 态，红色「确认」二次点击才执行
+    const [archiveArmingKey, setArchiveArmingKey] = useState<string>();
+    const [projectArchiving, setProjectArchiving] = useState(false);
+    // 项目子会话删除与归档同口径：首次点击进入行内确认，二次点击才请求删除。
+    const [childDeleteArmingKey, setChildDeleteArmingKey] = useState<string>();
+    const [childDeleting, setChildDeleting] = useState(false);
+    // 行内二次确认（项目归档/子会话删除）点击外部取消（2026-09-20 定调）：
+    // armed 时点击对应「确认」按钮作用域以外的任意位置回退常规态。capture 阶段
+    // 监听（先于行内 stopPropagation 生效）；data-* scope 标记豁免本行触发/
+    // 确认钮，函数式更新避免并行 armed 相互清位；Esc 逐行取消保留
+    useEffect(() => {
+      if (!archiveArmingKey && !childDeleteArmingKey) return;
+      const onDocClick = (event: Event) => {
+        const target = event.target as Element | null;
+        const archiveScope = target
+          ?.closest('[data-archive-arming]')
+          ?.getAttribute('data-archive-arming');
+        const deleteScope = target
+          ?.closest('[data-delete-arming]')
+          ?.getAttribute('data-delete-arming');
+        setArchiveArmingKey((prev) =>
+          prev && archiveScope !== prev ? undefined : prev,
+        );
+        setChildDeleteArmingKey((prev) =>
+          prev && deleteScope !== prev ? undefined : prev,
+        );
+      };
+      document.addEventListener('click', onDocClick, true);
+      return () => document.removeEventListener('click', onDocClick, true);
+    }, [archiveArmingKey, childDeleteArmingKey]);
     // 分页：首屏 PROJECT_PAGE_SIZE 条，「查看更多」按页追加（tab 接口 current/pageSize/total 契约）
     const [total, setTotal] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
     const pageRef = useRef(1);
-    const spaceIdRef = useRef(spaceId);
     const projectsRef = useRef(projects);
     projectsRef.current = projects;
     const pageRequestVersionRef = useRef(0);
@@ -251,10 +286,10 @@ const ProjectPanel = forwardRef<
       Array<{ event: ProjectChangedEvent; at: number }>
     >([]);
 
-    // 拉取指定页项目列表(page=1 整体替换,后续页追加合并;失败保持现状由空态兜底)
+    // 拉取指定页项目列表(page=1 整体替换,后续页追加合并;失败保持现状由空态兜底)。
+    // 不传 spaceId:拉该用户全部空间的项目(跨空间口径,所有布局风格共用本面板)
     const fetchPage = useCallback(
       async (page: number, options: { append: boolean }) => {
-        const requestSpaceId = spaceIdRef.current;
         const requestVersion = ++pageRequestVersionRef.current;
         const pageSize = options.append
           ? PROJECT_PAGE_SIZE
@@ -262,19 +297,15 @@ const ProjectPanel = forwardRef<
         if (options.append) setLoadingMore(true);
         try {
           const res = await apiUserProjectPageQuery({
-            queryFilter: { spaceId: requestSpaceId },
+            queryFilter: {},
             current: page,
             pageSize,
             orders: [],
             filters: [],
             columns: [],
           });
-          // 空间已切换:丢弃过期响应
-          if (
-            requestSpaceId !== spaceIdRef.current ||
-            requestVersion !== pageRequestVersionRef.current
-          )
-            return;
+          // 已有更新的分页请求在途:丢弃过期响应
+          if (requestVersion !== pageRequestVersionRef.current) return;
           if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
             const records = res.data.records;
             const fallback = dict('PC.Constants.Menus.newChat');
@@ -340,11 +371,10 @@ const ProjectPanel = forwardRef<
     );
 
     useEffect(() => {
-      spaceIdRef.current = spaceId;
       pageRequestVersionRef.current += 1;
       pageRef.current = 1;
       void fetchPage(1, { append: false }).finally(() => setLoading(false));
-    }, [spaceId, fetchPage]);
+    }, [fetchPage]);
 
     // 子会话按项目加载。刷新时保留旧行；在途事件通过 revision 和补拉收敛。
     const loadingChildrenRef = useRef<Set<string>>(new Set());
@@ -478,13 +508,6 @@ const ProjectPanel = forwardRef<
     });
 
     useProjectChanged((event) => {
-      if (
-        spaceId !== undefined &&
-        event.project.spaceId !== undefined &&
-        event.project.spaceId !== String(spaceId)
-      ) {
-        return;
-      }
       const now = Date.now();
       recentProjectEventsRef.current = recentProjectEventsRef.current
         .filter(({ at }) => now - at < 60_000)
@@ -530,9 +553,6 @@ const ProjectPanel = forwardRef<
 
     const executingText = dict(
       'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
-    );
-    const failedText = dict(
-      'PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask',
     );
 
     const handleProjectClick = (project: ProjectItem) => {
@@ -627,6 +647,20 @@ const ProjectPanel = forwardRef<
       );
     }, [activeChildProjectKey, activeConversationId, onActiveChildResolved]);
 
+    // 子会话按 4 个一批并发重拉（探针命中差异/全量兜底共用）
+    const requestChildrenBatched = useCallback(
+      async (candidates: ProjectItem[]) => {
+        for (let index = 0; index < candidates.length; index += 4) {
+          await Promise.all(
+            candidates
+              .slice(index, index + 4)
+              .map((project) => requestChildren(project)),
+          );
+        }
+      },
+      [requestChildren],
+    );
+
     useImperativeHandle(
       ref,
       () => ({
@@ -643,30 +677,108 @@ const ProjectPanel = forwardRef<
             });
             return next;
           }),
+        hasExecutingChildren: () =>
+          projectsRef.current.some((project) =>
+            (project.children ?? []).some(
+              (child) => child.taskStatus === TaskStatus.EXECUTING,
+            ),
+          ),
         revalidateVisible: () => {
           void (async () => {
             await fetchPage(1, { append: false });
-            const candidates = projectsRef.current.filter(
-              (project) =>
-                !archivedIds.has(projectKeyOf(project)) &&
-                !collapsedIds.has(projectKeyOf(project)),
-            );
-            for (let index = 0; index < candidates.length; index += 4) {
-              await Promise.all(
-                candidates
-                  .slice(index, index + 4)
-                  .map((project) => requestChildren(project)),
+            const revalidateAll = () => {
+              const candidates = projectsRef.current.filter(
+                (project) =>
+                  !archivedIds.has(projectKeyOf(project)) &&
+                  !collapsedIds.has(projectKeyOf(project)),
               );
+              return requestChildrenBatched(candidates);
+            };
+            // 探针：一次拉回全部项目会话与已加载子会话指纹比对（见
+            // childrenProbe.ts）。无差异零子会话请求；探针异常/不可靠全量兜底
+            let rows: ConversationInfo[] | undefined;
+            try {
+              const res = await apiAgentConversationList({
+                agentId: null,
+                projectFilter: 'only',
+                archivedFilter: 'all',
+                limit: CHILDREN_PROBE_LIMIT,
+              });
+              if (res?.code === SUCCESS_CODE && Array.isArray(res.data)) {
+                rows = res.data;
+              }
+            } catch {
+              // 忽略：走全量兜底
             }
+            if (!rows) {
+              void revalidateAll();
+              return;
+            }
+            const result = diffChildrenProbe(projectsRef.current, rows);
+            // EXECUTING→终态先经统一入口 emit：本地补丁翻新 + 未读蓝点标记
+            result.finishedTransitions.forEach(
+              ({ conversationId, taskStatus }) =>
+                emitConversationListTaskStatus(conversationId, taskStatus),
+            );
+            if (result.truncated || result.hasUnknownConversation) {
+              void revalidateAll();
+              return;
+            }
+            if (result.changedProjectKeys.size === 0) return;
+            void requestChildrenBatched(
+              projectsRef.current.filter((project) =>
+                result.changedProjectKeys.has(projectKeyOf(project)),
+              ),
+            );
           })();
         },
       }),
-      [visibleProjects, archivedIds, collapsedIds, fetchPage, requestChildren],
+      [
+        visibleProjects,
+        archivedIds,
+        collapsedIds,
+        fetchPage,
+        requestChildrenBatched,
+      ],
     );
 
     useEffect(() => {
       onVisibleCountChange?.(visibleProjects.length);
     }, [visibleProjects.length, onVisibleCountChange]);
+
+    // 项目行内归档确认执行（红「确认」二次点击）：常规/全栈走真实接口置归档，
+    // PageApp 契约未覆盖维持本地；成败都向服务端真值收敛一次（同 toggleProjectFlag）
+    const handleProjectArchiveConfirm = async (project: ProjectItem) => {
+      if (projectArchiving) return;
+      setProjectArchiving(true);
+      try {
+        const key = projectKeyOf(project);
+        const usesRealApi =
+          project.projectType === AgentComponentTypeEnum.NormalProject ||
+          project.projectType === AgentComponentTypeEnum.UserApp;
+        let ok = true;
+        if (usesRealApi) {
+          const res = await apiUserProjectArchive(
+            project.id,
+            true,
+            project.projectType as string,
+          ).catch(() => null);
+          ok = res?.code === SUCCESS_CODE;
+        }
+        if (!ok) {
+          message.error(dict('PC.Common.Global.operationFailed'));
+          return;
+        }
+        setArchivedIds((prev) => new Set(prev).add(key));
+        message.success(
+          dict('PC.Components.ConversationContextMenu.archivedToast'),
+        );
+        setArchiveArmingKey(undefined);
+        void fetchPage(1, { append: false });
+      } finally {
+        setProjectArchiving(false);
+      }
+    };
 
     // 项目标记 toggle：置顶/归档走项目级后端接口（常规/全栈项目；
     // PageApp 契约未覆盖暂本地）。后端成功才更新标记，
@@ -938,11 +1050,23 @@ const ProjectPanel = forwardRef<
             label: dict('PC.Common.Global.delete'),
           },
         ],
-        onClick: ({ key }: { key: string }) => {
+        onClick: ({
+          key,
+          domEvent,
+        }: {
+          key: string;
+          domEvent?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>;
+        }) => {
+          domEvent?.stopPropagation();
           if (key === 'pin') {
             toggleProjectFlag('pinned', project);
           } else if (key === 'archive') {
-            toggleProjectFlag('archived', project);
+            // 归档走行内二次确认（2026-09-20 定调，同任务行）；取消归档仍直接切换
+            if (archivedIds.has(flagKey)) {
+              toggleProjectFlag('archived', project);
+            } else {
+              setArchiveArmingKey(flagKey);
+            }
           } else if (key === 'collect') {
             toggleProjectCollected(project);
           } else if (key === 'rename') {
@@ -993,62 +1117,67 @@ const ProjectPanel = forwardRef<
       }
     };
 
-    const openChildDelete = (projectKey: string, child: ProjectChildItem) => {
-      Modal.confirm({
-        title: dict('PC.Common.Global.deleteConfirmTitle'),
-        content: dict('PC.Common.Global.deleteConfirmContent'),
-        okButtonProps: { danger: true },
-        okText: dict('PC.Common.Global.delete'),
-        cancelText: dict('PC.Common.Global.cancel'),
-        onOk: async () => {
-          const res = await apiAgentConversationDelete(child.id);
-          if (res?.success) {
-            window.dispatchEvent(
-              new CustomEvent('conversation-deleted', {
-                detail: { id: child.id },
-              }),
-            );
-            setProjects((prev) =>
-              prev.map((project) =>
-                projectKeyOf(project) !== projectKey
-                  ? project
-                  : {
-                      ...project,
-                      children: project.children?.filter(
-                        (item) => item.id !== child.id,
-                      ),
-                    },
-              ),
-            );
-          }
-        },
-      });
+    const handleChildDeleteConfirm = async (
+      projectKey: string,
+      child: ProjectChildItem,
+    ) => {
+      if (childDeleting) return;
+      setChildDeleting(true);
+      try {
+        const res = await apiAgentConversationDelete(child.id).catch(
+          () => null,
+        );
+        if (!res?.success) {
+          message.error(dict('PC.Common.Global.operationFailed'));
+          return;
+        }
+        window.dispatchEvent(
+          new CustomEvent('conversation-deleted', {
+            detail: { id: child.id },
+          }),
+        );
+        setProjects((prev) =>
+          prev.map((project) =>
+            projectKeyOf(project) !== projectKey
+              ? project
+              : {
+                  ...project,
+                  children: project.children?.filter(
+                    (item) => item.id !== child.id,
+                  ),
+                },
+          ),
+        );
+        setChildDeleteArmingKey(undefined);
+      } finally {
+        setChildDeleting(false);
+      }
     };
 
-    // 子项菜单:项目下的会话不做置顶(2026-09-08 定调),仅 重命名/删除
-    const buildChildMenu = (projectKey: string, child: ProjectChildItem) => ({
-      items: [
-        {
-          key: 'rename',
-          icon: <EditOutlined />,
-          label: dict('PC.Components.ConversationContextMenu.rename'),
-        },
-        {
-          key: 'delete',
-          icon: <DeleteOutlined />,
-          danger: true,
-          label: dict('PC.Common.Global.delete'),
-        },
-      ],
-      onClick: ({ key }: { key: string }) => {
-        if (key === 'rename') {
-          setRenameTarget({ projectKey, childId: child.id });
-          setRenameName(child.name);
-        } else if (key === 'delete') {
-          openChildDelete(projectKey, child);
-        }
-      },
-    });
+    // 「+ 新建会话」/ 空态「新建会话」共用：常规/全栈项目 → 跳 /home 首页项目
+    // 上框（同类型智能体约束 + 建会话绑定项目）；PageApp 契约未覆盖维持提示；
+    // 无类型按常规项目兜底
+    const handleAddConversation = (project: ProjectItem) => {
+      if (project.projectType === AgentComponentTypeEnum.PageApp) {
+        message.info(
+          dict(
+            'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable',
+          ),
+        );
+        return;
+      }
+      pin({
+        projectId: project.id,
+        spaceId: project.spaceId,
+        projectType:
+          project.projectType ?? AgentComponentTypeEnum.NormalProject,
+        name: project.name,
+        icon: project.icon,
+        sandboxId: project.sandboxId,
+        devAgentId: project.devAgentId,
+        owner: project.owner,
+      });
+    };
 
     // 「+ 新建会话」（项目行）：常规/全栈项目 → 跳 /home 首页项目上框（同类型智能体
     // 约束 + 建会话绑定项目）；PageApp 契约未覆盖维持提示；无类型按常规项目兜底
@@ -1066,26 +1195,10 @@ const ProjectPanel = forwardRef<
           )}
           onClick={(event) => {
             event.stopPropagation();
-            if (project.projectType === AgentComponentTypeEnum.PageApp) {
-              message.info(
-                dict(
-                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable',
-                ),
-              );
-              return;
-            }
-            pin({
-              projectId: project.id,
-              spaceId: project.spaceId,
-              projectType:
-                project.projectType ?? AgentComponentTypeEnum.NormalProject,
-              name: project.name,
-              icon: project.icon,
-              sandboxId: project.sandboxId,
-              devAgentId: project.devAgentId,
-            });
+            handleAddConversation(project);
           }}
         >
+          {/* 2026-09-20 定调：新建会话图标回归 + 号（与行图标族 icons-common-* 统一） */}
           <SvgIcon name="icons-common-plus" style={{ fontSize: 15 }} />
         </button>
       </Tooltip>
@@ -1135,12 +1248,24 @@ const ProjectPanel = forwardRef<
                 trigger={['contextMenu']}
               >
                 <div
-                  className={cx(styles.row, { [styles.expanded]: expanded })}
+                  className={cx(styles.row, {
+                    [styles.expanded]: expanded,
+                    [styles['project-archive-arming']]:
+                      archiveArmingKey === projectKeyOf(project),
+                  })}
                   onClick={() => handleProjectClick(project)}
                   role="button"
                   tabIndex={0}
                   aria-expanded={expanded}
                   onKeyDown={(event) => {
+                    if (
+                      archiveArmingKey === projectKeyOf(project) &&
+                      event.key === 'Escape'
+                    ) {
+                      event.stopPropagation();
+                      setArchiveArmingKey(undefined);
+                      return;
+                    }
                     if (event.target !== event.currentTarget) return;
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
@@ -1148,39 +1273,124 @@ const ProjectPanel = forwardRef<
                     }
                   }}
                 >
-                  {compact && (
-                    <FolderOutlined className={styles['project-icon']} />
-                  )}
-                  {pinnedIds.has(projectKeyOf(project)) && (
-                    <PushpinFilled className={cx(styles['pin-icon'])} />
-                  )}
-                  <span className={cx(styles.name)}>{project.name}</span>
-                  <div className={styles['project-actions']}>
-                    {renderAddConversationButton(project)}
-                    <Dropdown
-                      menu={buildProjectMenu(project)}
-                      trigger={['click']}
+                  {/* 固定行首状态槽：默认显示文件夹开合与置顶徽标；hover 在同一
+                      槽位切换为置顶/取消置顶操作，项目名不发生横向位移。 */}
+                  <span className={cx(styles['project-leading-slot'])}>
+                    <span className={cx(styles['folder-badge'])}>
+                      {expanded ? (
+                        <FolderOpenOutlined
+                          className={styles['project-icon']}
+                        />
+                      ) : (
+                        <FolderOutlined className={styles['project-icon']} />
+                      )}
+                      {pinnedIds.has(projectKeyOf(project)) && (
+                        <PushpinFilled
+                          className={cx(styles['folder-badge-pin'])}
+                        />
+                      )}
+                    </span>
+                    <Tooltip
+                      title={dict(
+                        pinnedIds.has(projectKeyOf(project))
+                          ? 'PC.Components.ConversationContextMenu.unpin'
+                          : 'PC.Components.ConversationContextMenu.pin',
+                      )}
+                      mouseEnterDelay={0.3}
                     >
                       <button
                         type="button"
-                        className={styles['project-more']}
-                        aria-label={dict('PC.Components.ActionMenu.more')}
-                        onClick={(event) => event.stopPropagation()}
+                        className={cx(styles['project-pin-toggle'])}
+                        aria-label={dict(
+                          pinnedIds.has(projectKeyOf(project))
+                            ? 'PC.Components.ConversationContextMenu.unpin'
+                            : 'PC.Components.ConversationContextMenu.pin',
+                        )}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void toggleProjectFlag('pinned', project);
+                        }}
                       >
-                        <SvgIcon
-                          name="icons-common-more"
-                          style={{ fontSize: 15 }}
-                        />
+                        {pinnedIds.has(projectKeyOf(project)) ? (
+                          <span
+                            className={cx(styles['unpin-icon'])}
+                            aria-hidden
+                          >
+                            <PushpinFilled />
+                            <span className={cx(styles['unpin-slash'])} />
+                          </span>
+                        ) : (
+                          <PushpinOutlined />
+                        )}
                       </button>
-                    </Dropdown>
+                    </Tooltip>
+                  </span>
+                  <span className={cx(styles.name)}>
+                    {/* 非创建者项目标题前「团队」图标（2026-09-20 定调，
+                        两轮迭代：文字 tag → TeamOutlined 图标；颜色随标题）：
+                        owner===false 严格等于判定（接口未回不标） */}
+                    {project.owner === false && (
+                      <TeamOutlined
+                        className={cx(styles['project-team-tag'])}
+                      />
+                    )}
+                    {project.name}
+                  </span>
+                  <div className={styles['project-actions']}>
+                    {archiveArmingKey === projectKeyOf(project) ? (
+                      <button
+                        type="button"
+                        className={cx(styles['archive-confirm'])}
+                        data-archive-arming={projectKeyOf(project)}
+                        disabled={projectArchiving}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleProjectArchiveConfirm(project);
+                        }}
+                      >
+                        {dict('PC.Common.Global.confirm')}
+                      </button>
+                    ) : (
+                      <>
+                        {renderAddConversationButton(project)}
+                        <Dropdown
+                          menu={buildProjectMenu(project)}
+                          trigger={['click']}
+                        >
+                          <button
+                            type="button"
+                            className={styles['project-more']}
+                            aria-label={dict('PC.Components.ActionMenu.more')}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <SvgIcon name="icons-common-more" />
+                          </button>
+                        </Dropdown>
+                        {/* 行尾归档入口：点击后操作区收敛为单独的红色确认按钮。 */}
+                        <Tooltip
+                          title={dict(
+                            'PC.Components.ConversationContextMenu.archive',
+                          )}
+                          mouseEnterDelay={0.3}
+                        >
+                          <button
+                            type="button"
+                            className={cx(styles['project-archive'])}
+                            data-archive-arming={projectKeyOf(project)}
+                            aria-label={dict(
+                              'PC.Components.ConversationContextMenu.archive',
+                            )}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setArchiveArmingKey(projectKeyOf(project));
+                            }}
+                          >
+                            <InboxOutlined />
+                          </button>
+                        </Tooltip>
+                      </>
+                    )}
                   </div>
-                  <SvgIcon
-                    name="icons-common-caret_down"
-                    style={{ fontSize: 18 }}
-                    className={cx(styles.arrow, {
-                      [styles.arrowExpanded]: expanded,
-                    })}
-                  />
                 </div>
               </Dropdown>
               <div className={styles.children} hidden={!expanded}>
@@ -1190,15 +1400,46 @@ const ProjectPanel = forwardRef<
                     <Spin size="small" />
                   </div>
                 )}
+                {/* 项目下暂无会话：空状态（与项目/任务列表空态同款插图）+
+                    「新建会话」按钮，按钮功能与项目行「+」一致（2026-09-20 定调） */}
+                {project.children !== undefined &&
+                  project.children.length === 0 && (
+                    <div className={cx(styles['child-empty-state'])}>
+                      <img
+                        className={cx(styles['child-empty-img'])}
+                        src={emptyStateNoData}
+                        alt=""
+                      />
+                      <span className={cx(styles['child-empty-text'])}>
+                        {dict(
+                          'PC.Components.HistoryConversationList.projectNoConversations',
+                        )}
+                      </span>
+                      <Button
+                        size="small"
+                        className={cx(styles['child-create-btn'])}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleAddConversation(project);
+                        }}
+                      >
+                        {dict('PC.Constants.Menus.newChat')}
+                      </Button>
+                    </div>
+                  )}
                 {(project.children ?? []).map((child) => {
                   const isChildActive =
                     activeConversationId !== undefined &&
                     String(child.id) === activeConversationId;
+                  const childActionKey = `${projectKeyOf(project)}:${child.id}`;
+                  const childDeleteArmed =
+                    childDeleteArmingKey === childActionKey;
                   return (
                     <div
                       key={child.id}
                       className={cx(styles.child, {
                         [styles['child-active']]: isChildActive,
+                        [styles['child-delete-arming']]: childDeleteArmed,
                       })}
                       onClick={() => {
                         if (child.conversation) {
@@ -1209,6 +1450,11 @@ const ProjectPanel = forwardRef<
                       tabIndex={0}
                       aria-current={isChildActive ? 'page' : undefined}
                       onKeyDown={(event) => {
+                        if (childDeleteArmed && event.key === 'Escape') {
+                          event.stopPropagation();
+                          setChildDeleteArmingKey(undefined);
+                          return;
+                        }
                         if (event.target !== event.currentTarget) return;
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
@@ -1218,50 +1464,99 @@ const ProjectPanel = forwardRef<
                         }
                       }}
                     >
-                      {leadingMark && (
-                        <ConversationStatusMark
-                          taskStatus={child.taskStatus}
-                          unread={unreadConversationIds?.has(String(child.id))}
-                        />
-                      )}
-                      {child.taskStatus === TaskStatus.FAILED && (
-                        <ExclamationCircleFilled
-                          className={cx(styles['status-failed'])}
-                          aria-label={failedText}
-                        />
-                      )}
+                      {/* 固定行首状态槽：默认展示运行/失败/未读，hover 在同一位置
+                          切换为重命名入口；能力不同但三类行的标题起点保持稳定。 */}
+                      <span className={cx(styles['child-leading-slot'])}>
+                        <span className={cx(styles['child-leading-status'])}>
+                          <ConversationStatusMark
+                            taskStatus={
+                              leadingMark ||
+                              child.taskStatus === TaskStatus.FAILED
+                                ? child.taskStatus
+                                : undefined
+                            }
+                            unread={
+                              leadingMark &&
+                              unreadConversationIds?.has(String(child.id))
+                            }
+                          />
+                        </span>
+                        <Tooltip
+                          title={dict(
+                            'PC.Components.ConversationContextMenu.rename',
+                          )}
+                          mouseEnterDelay={0.3}
+                        >
+                          <button
+                            type="button"
+                            className={styles['child-rename']}
+                            aria-label={dict(
+                              'PC.Components.ConversationContextMenu.rename',
+                            )}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setRenameTarget({
+                                projectKey: projectKeyOf(project),
+                                childId: child.id,
+                              });
+                              setRenameName(child.name);
+                            }}
+                          >
+                            <EditOutlined />
+                          </button>
+                        </Tooltip>
+                      </span>
                       <span className={cx(styles['child-name'])}>
                         {child.name}
                       </span>
                       {/* leadingMark 开启时「执行中」由行首转圈表达（文字胶囊仅经典布局保留） */}
-                      {!leadingMark && child.taskStatus === TaskStatus.EXECUTING && (
-                        <span className={cx(styles['status-tag'])}>
-                          {executingText}
-                        </span>
-                      )}
+                      {!leadingMark &&
+                        child.taskStatus === TaskStatus.EXECUTING && (
+                          <span className={cx(styles['status-tag'])}>
+                            {executingText}
+                          </span>
+                        )}
                       {child.modified && (
                         <span className={cx(styles['child-time'])}>
                           {formatRelativeTime(child.modified)}
                         </span>
                       )}
                       <div className={styles['child-actions']}>
-                        {/* 子任务悬停操作浮层 */}
-                        <Dropdown
-                          menu={buildChildMenu(projectKeyOf(project), child)}
-                          trigger={['click']}
-                        >
+                        {childDeleteArmed ? (
                           <button
                             type="button"
-                            aria-label={dict('PC.Components.ActionMenu.more')}
-                            className={cx(styles['child-more'])}
-                            onClick={(event) => event.stopPropagation()}
+                            className={cx(styles['delete-confirm'])}
+                            data-delete-arming={childActionKey}
+                            disabled={childDeleting}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void handleChildDeleteConfirm(
+                                projectKeyOf(project),
+                                child,
+                              );
+                            }}
                           >
-                            <SvgIcon
-                              name="icons-common-more"
-                              style={{ fontSize: 15 }}
-                            />
+                            {dict('PC.Common.Global.confirm')}
                           </button>
-                        </Dropdown>
+                        ) : (
+                          <Tooltip
+                            title={dict('PC.Common.Global.delete')}
+                            mouseEnterDelay={0.3}
+                          >
+                            <button
+                              type="button"
+                              className={cx(styles['child-delete'])}
+                              data-delete-arming={childActionKey}
+                              aria-label={dict('PC.Common.Global.delete')}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setChildDeleteArmingKey(childActionKey);
+                              }}
+                            >
+                              <DeleteOutlined />
+                            </button>
+                          </Tooltip>
+                        )}
                       </div>
                     </div>
                   );

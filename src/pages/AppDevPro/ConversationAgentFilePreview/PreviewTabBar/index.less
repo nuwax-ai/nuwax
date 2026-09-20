@@ -255,11 +255,18 @@
   gap: @marginXs;
 }
 
-.preview-runtime-text-actions {
+.preview-runtime-text-actions,
+.preview-runtime-icon-actions {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
   gap: @marginXs;
+}
+
+.preview-runtime-icon-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .preview-address-bar {

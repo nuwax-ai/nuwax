@@ -1,6 +1,7 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
@@ -184,7 +185,7 @@ export const useChatConversation = ({
       files,
       infos: mergedInfos,
       variableParams: variableParams || undefined,
-      sandboxId: effectiveSandboxId || undefined,
+      sandboxId: effectiveSandboxId || CLOUD_SANDBOX_ID,
       skillIds,
       selectedDocs,
       modelId: modelId || selectedModelId,

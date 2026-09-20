@@ -220,6 +220,12 @@ export interface ChatInputUnifiedProps {
     /** 项目图标 URL（可为受保护地址，展示走 useAuthProtectedImageSrc） */
     icon?: string;
   };
+  /**
+   * 参与者上框常规项目时开放沙箱自选（多人参与）：解除上框期间电脑选择器与
+   * 工作目录栏的隐藏（项目沙箱可能绑定创建者的个人电脑，参与者不可用）。
+   * 默认 false 维持「上框期间沙箱由项目隐含」现状。
+   */
+  pinnedProjectSandboxSelectable?: boolean;
   /** 移除项目上框（恢复首页默认形态） */
   onClearPinnedProject?: () => void;
   /** 会话调试悬浮按钮（会话页默认展示；首页等场景传 false 关闭） */
@@ -355,6 +361,7 @@ const ChatInputUnifiedImpl: React.FC<
   selectedTag,
   onClearSelectedTag,
   pinnedProject,
+  pinnedProjectSandboxSelectable = false,
   onClearPinnedProject,
   showDebugFab = true,
   showExpertCapability = false,
@@ -2007,8 +2014,9 @@ const ChatInputUnifiedImpl: React.FC<
                     {prefix}
                     {(isTaskAgentActive ||
                       agentType === AgentTypeEnum.TaskAgent) &&
-                      // 项目上框期间沙箱由项目隐含，隐藏电脑选择器
-                      !pinnedProject &&
+                      // 项目上框期间沙箱由项目隐含，隐藏电脑选择器；
+                      // 参与者自选沙箱场景（pinnedProjectSandboxSelectable）除外
+                      (!pinnedProject || pinnedProjectSandboxSelectable) &&
                       !readonly && (
                         <ComputerTypeSelector
                           value={
@@ -2117,7 +2125,8 @@ const ChatInputUnifiedImpl: React.FC<
                 {(isTaskAgentActive || agentType === AgentTypeEnum.TaskAgent) &&
                   !readonly &&
                   !fixedSelection &&
-                  !pinnedProject &&
+                  // 上框期间沙箱由项目隐含隐藏目录栏；参与者自选场景除外
+                  (!pinnedProject || pinnedProjectSandboxSelectable) &&
                   !disablePersonalComputer &&
                   selectedComputerId &&
                   selectedComputerId !== '-1' &&

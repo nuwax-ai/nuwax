@@ -21,6 +21,8 @@ export interface AppDevBuildVersionDrawerProps {
   appId?: number;
   /** 当前生产部署版本号，用于标记「当前」 */
   currentReleaseId?: string;
+  /** 是否已部署到生产环境；未部署时不展示「当前」标记 */
+  prodDeployed?: boolean;
   /** 部署指定版本（releaseId 取 version 字段） */
   onDeployVersion?: (version: string) => void;
   /** 当前正在部署的版本号 */
@@ -82,6 +84,7 @@ const shortGitCommit = (gitCommit?: string): string => {
  * @param props.visible 是否显示
  * @param props.appId 应用 ID
  * @param props.currentReleaseId 当前生产部署版本
+ * @param props.prodDeployed 是否已部署到生产环境
  * @param props.onDeployVersion 部署指定版本
  * @param props.deployingVersion 当前部署中的版本
  * @param props.onClose 关闭回调
@@ -91,6 +94,7 @@ const AppDevBuildVersionDrawer: React.FC<AppDevBuildVersionDrawerProps> = ({
   visible,
   appId,
   currentReleaseId,
+  prodDeployed = false,
   onDeployVersion,
   deployingVersion = '',
   onClose,
@@ -119,7 +123,9 @@ const AppDevBuildVersionDrawer: React.FC<AppDevBuildVersionDrawerProps> = ({
     <div className={cx(styles.list)}>
       {versions.map((item) => {
         const isCurrent =
-          !!currentReleaseId && item.version === currentReleaseId;
+          prodDeployed &&
+          !!currentReleaseId &&
+          item.version === currentReleaseId;
         const isDeploying = deployingVersion === item.version;
         return (
           <div

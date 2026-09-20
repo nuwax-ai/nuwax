@@ -67,6 +67,8 @@ export interface AppDevAppPreviewPanelProps {
   directPreview?: boolean;
   /** 正在调用停止接口，避免 iframe 被关掉后露出空白 */
   stopping?: boolean;
+  /** 线上环境重启进行中：展示重启提示，隐藏 iframe */
+  restarting?: boolean;
 }
 
 /**
@@ -252,6 +254,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   allowStoppedHero = false,
   directPreview = false,
   stopping = false,
+  restarting = false,
 }) => {
   const logs = useMemo(() => {
     const lines = flattenTaskLogs(services);
@@ -271,7 +274,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   /** 启动任务进行中：展示日志区与取消，不是进度条 */
   const isStarting = busy || phase === 'starting' || phase === 'building';
   const startFailed = phase === 'failed' || phase === 'cancelled';
-  const canShowIframe = !!previewUrl && (running || directPreview);
+  const canShowIframe = !!previewUrl && running;
 
   const handleIframeLoad = useCallback(() => {
     setLoadedInstanceKey((prev) =>
@@ -300,8 +303,75 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  /** 线上环境容器就绪后直接预览，不展示开发环境的准备中 / 启动日志 */
+  /** 线上环境：停止 / 重启 / 启动与开发环境同一套提示，仅在服务运行中展示 iframe */
   if (directPreview) {
+    if (restarting) {
+      return (
+        <div className={cx(styles.container, styles.stage)}>
+          <PreviewHero
+            spinning
+            title={dict('PC.Pages.AppDevPro.previewRestarting')}
+            hint={dict('PC.Pages.AppDevPro.previewRestartingHint')}
+          />
+        </div>
+      );
+    }
+
+    if (stopping) {
+      return (
+        <div className={cx(styles.container, styles.stage)}>
+          <PreviewHero
+            spinning
+            title={dict('PC.Pages.AppDevPro.previewStopping')}
+            hint={dict('PC.Pages.AppDevPro.previewStoppingHint')}
+          />
+        </div>
+      );
+    }
+
+    if (!running && allowStoppedHero) {
+      return (
+        <div className={cx(styles.container, styles.stage)}>
+          <PreviewHero
+            hint={dict('PC.Pages.AppDevPro.previewStartHint')}
+            action={
+              onStart ? (
+                <Tooltip
+                  title={
+                    devActionLocked
+                      ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                      : undefined
+                  }
+                >
+                  <span>
+                    <Button
+                      type="primary"
+                      disabled={devActionLocked}
+                      onClick={onStart}
+                    >
+                      {dict('PC.Pages.AppDevPro.previewStartTitle')}
+                    </Button>
+                  </span>
+                </Tooltip>
+              ) : null
+            }
+          />
+        </div>
+      );
+    }
+
+    if (!running && !allowStoppedHero) {
+      return (
+        <div className={cx(styles.container, styles.stage)}>
+          <PreviewHero
+            spinning
+            title={dict('PC.Pages.AppDevPro.previewPreparing')}
+            hint={dict('PC.Pages.AppDevPro.previewPreparingHint')}
+          />
+        </div>
+      );
+    }
+
     if (previewUrl) {
       return (
         <div className={cx(styles.container)}>

@@ -18,7 +18,7 @@ export interface PreviewChromeActionsProps {
 
 /**
  * 应用预览工具条：地址栏 + 刷新。
- * 重启 / 停止见 PreviewRuntimeButtons，放在更多操作右侧。
+ * 重启 / 停止见 Header 右侧图标组最前的 PreviewRuntimeButtons。
  *
  * @param props 预览地址栏参数
  * @returns 预览地址栏

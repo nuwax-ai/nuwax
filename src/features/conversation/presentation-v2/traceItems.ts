@@ -5,7 +5,7 @@
  * 前后工具组；本模块为纯函数，不持有 React 展开状态。
  */
 import { getToolPresentationKind } from '@/components/MarkdownCustomProcess/toolPresentation';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { resolveOpenUiDisplayState } from '@/utils/openUiArtifact';
 import { normalizeV2ToolDetail } from './toolDetail';
 import type {
   ConversationProcessNode,
@@ -13,7 +13,44 @@ import type {
   ConversationTraceItem,
 } from './types';
 
-const OPEN_UI_NAME = /nuwax_render_openui|Backend\.Sandbox\.Event\.renderUI/i;
+// OpenUI 渲染工具名：仅考虑后端下发的 Backend.Sandbox.Event.renderUI（大小写变体）
+const OPEN_UI_NAME = /Backend\.Sandbox\.Event\.renderUI/i;
+
+export interface ConversationPlanStep {
+  status: 'completed' | 'in_progress' | 'pending' | 'failed';
+  content: string;
+}
+
+/**
+ * 提取 Plan 工具的结构化任务清单：result.data = [{status, content}]
+ * （与 V1 MarkdownCustomProcess 任务列表、utils getPlanProgress 同源契约）。
+ * 非数组或无有效项（content 缺失）返回 null，调用方回落普通轨迹行。
+ */
+export const readPlanSteps = (
+  result: unknown,
+): ConversationPlanStep[] | null => {
+  const data = (result as { data?: unknown } | null | undefined)?.data;
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const steps: ConversationPlanStep[] = [];
+  for (const entry of data) {
+    if (!entry || typeof entry !== 'object') continue;
+    const step = entry as { status?: unknown; content?: unknown };
+    if (typeof step.content !== 'string' || !step.content.trim()) continue;
+    const status =
+      step.status === 'completed' ||
+      step.status === 'in_progress' ||
+      step.status === 'pending' ||
+      step.status === 'failed'
+        ? step.status
+        : 'pending';
+    steps.push({ status, content: step.content });
+  }
+  return steps.length > 0 ? steps : null;
+};
+
+/** 待办卡接管判定：Plan 节点且能提取非空结构化步骤（否则回落 ProcessNodeRow） */
+export const isTodoTraceNode = (node: ConversationProcessNode): boolean =>
+  node.kind === 'plan' && readPlanSteps(node.processing?.result) !== null;
 
 export const getNodeToolActionKind = (
   node: ConversationProcessNode,
@@ -26,12 +63,23 @@ export const getNodeToolActionKind = (
 
 export const isOpenUiToolNode = (node: ConversationProcessNode): boolean => {
   if (node.kind !== 'tool') return false;
-  const componentType = node.processing?.type ?? node.componentType;
+  // 只认工具名（对齐 V1 isOpenUiRenderToolName 口径）：流式 applier
+  // （applyOpenUiToolCallSseEvent）把 RENDER_UI 项 type 记为 ToolCall，
+  // 历史 finalResult 里可能保留 Event——两种 componentType 都需独立展示。
   const name = node.processing?.name ?? node.title;
-  return (
-    componentType === AgentComponentTypeEnum.Event && OPEN_UI_NAME.test(name)
-  );
+  return OPEN_UI_NAME.test(name);
 };
+
+/**
+ * 是否由 OpenUI 渲染元素接管：产物 presentation 为 inline / sidecar 两种形态之一
+ * （resolveOpenUiDisplayState 的 ready / input-only 均已按 mode 校验）。
+ * 生成中无产物、失败、终态退化一律回落普通轨迹行（动作词条替代协议名）。
+ */
+export const isOpenUiRenderElementNode = (
+  node: ConversationProcessNode,
+): boolean =>
+  isOpenUiToolNode(node) &&
+  resolveOpenUiDisplayState(node.processing?.result).status !== 'absent';
 
 export const isGroupableToolNode = (node: ConversationProcessNode): boolean =>
   node.kind === 'tool' &&

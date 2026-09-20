@@ -40,6 +40,7 @@ const TARGET_ICON_TYPE_MAP: Record<
   [DisplayRecommendTargetTypeEnum.Agent]: AgentComponentTypeEnum.Agent,
   [DisplayRecommendTargetTypeEnum.PageApp]: AgentComponentTypeEnum.Page,
   [DisplayRecommendTargetTypeEnum.UserApp]: AgentComponentTypeEnum.UserApp,
+  [DisplayRecommendTargetTypeEnum.ThirdApp]: AgentComponentTypeEnum.ThirdApp,
   [DisplayRecommendTargetTypeEnum.Skill]: AgentComponentTypeEnum.Skill,
   [DisplayRecommendTargetTypeEnum.Plugin]: AgentComponentTypeEnum.Plugin,
   [DisplayRecommendTargetTypeEnum.Workflow]: AgentComponentTypeEnum.Workflow,

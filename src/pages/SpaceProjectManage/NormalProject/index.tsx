@@ -2,7 +2,6 @@ import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
-import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
 import { apiNormalProjectDelete } from '@/services/userProjectApp';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -52,8 +51,6 @@ const NormalProject: React.FC = () => {
   const location = useLocation();
   const spaceId = Number(params.spaceId);
   const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
-  const { pin } = useHomePinnedProjectHandoff();
-
   const [keyword, setKeyword] = useState<string>('');
   const [list, setList] = useState<UserProjectItem[]>([]);
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
@@ -278,34 +275,18 @@ const NormalProject: React.FC = () => {
         </div>
       )}
 
+      {/* 创建常规项目弹窗 */}
       <CreateNormalProjectModal
         spaceId={spaceId}
         open={openCreate}
         onCancel={() => setOpenCreate(false)}
         onConfirm={(project) => {
           setOpenCreate(false);
-          if (project.conversationId && project.agentId) {
-            openProject(
-              spaceId,
-              {
-                id: project.id,
-                projectType: AgentComponentTypeEnum.NormalProject,
-              },
-              project.conversationId,
-              project.agentId,
-            );
-            return;
-          }
-          pin({
-            projectId: project.id,
-            spaceId,
-            projectType: AgentComponentTypeEnum.NormalProject,
-            name: project.name,
-            sandboxId: project.sandboxId,
-          });
+          history.push(`/space/${spaceId}/normal-project-detail/${project.id}`);
         }}
       />
 
+      {/* 编辑常规项目弹窗 */}
       <EditNormalProjectModal
         project={editTarget}
         onCancel={() => setEditTarget(undefined)}

@@ -336,7 +336,7 @@ export async function apiImportProject(
 export async function apiBrowseFsRoots(
   sandboxId: string,
 ): Promise<RequestResponse<FsRootsResponse>> {
-  return request('/api/computer/fs/roots', {
+  return request('/api/computer/static/fs/roots', {
     method: 'GET',
     params: { sandboxId },
   });
@@ -347,7 +347,7 @@ export async function apiBrowseFsChildren(
   path: string,
   sandboxId: string,
 ): Promise<RequestResponse<FsChildrenResponse>> {
-  return request('/api/computer/fs/children', {
+  return request('/api/computer/static/fs/children', {
     method: 'GET',
     params: { path, sandboxId },
   });

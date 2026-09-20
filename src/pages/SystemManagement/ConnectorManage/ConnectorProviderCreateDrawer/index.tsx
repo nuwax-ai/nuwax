@@ -7,8 +7,9 @@ import ConnectorAuthConfigSection, {
   toConnectorOauthConfigParams,
   toConnectorProviderPayload,
 } from '@/pages/SystemManagement/ConnectorManage/components/ConnectorAuthConfigSection';
-import { AUTH_TYPE_OPTIONS } from '@/pages/SystemManagement/ConnectorManage/constants';
+import { getAuthTypeOptions } from '@/pages/SystemManagement/ConnectorManage/constants';
 import useConnectorCategoryOptions from '@/pages/SystemManagement/ConnectorManage/hooks/useConnectorCategoryOptions';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiSystemConnectorOauthConfigSave,
   apiSystemConnectorProviderCreate,
@@ -85,9 +86,9 @@ const ConnectorProviderCreateDrawer: React.FC<
     return Math.min(720, Math.max(360, Math.floor(w * 0.92)));
   }, []);
 
-  const authTypeOptions = useMemo(
-    () => AUTH_TYPE_OPTIONS.filter((item) => item.value !== ''),
-    [],
+  // 函数式取选项：每次渲染经 dict 取词，语言切换即时生效
+  const authTypeOptions = getAuthTypeOptions().filter(
+    (item) => item.value !== '',
   );
 
   /**
@@ -210,14 +211,18 @@ const ConnectorProviderCreateDrawer: React.FC<
           oauthConfigFailed = true;
         }
       }
-      message.success(successMessage ?? '连接器创建成功');
+      message.success(
+        successMessage ?? dict('PC.Pages.ConnectorManage.toastCreateSuccess'),
+      );
       if (oauthConfigFailed) {
-        message.warning('OAuth App 配置保存失败，请在「编辑连接器」中重试');
+        message.warning(
+          dict('PC.Pages.ConnectorManage.toastOauthConfigSaveFailedEdit'),
+        );
       }
       onClose();
       onCreated?.();
     } catch {
-      message.error('创建连接器失败');
+      message.error(dict('PC.Pages.ConnectorManage.toastCreateFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -234,7 +239,7 @@ const ConnectorProviderCreateDrawer: React.FC<
   return (
     <Drawer
       className={styles.drawer}
-      title="新增连接器"
+      title={dict('PC.Pages.ConnectorManage.drawerCreateTitle')}
       placement="right"
       open={open}
       onClose={onClose}
@@ -254,19 +259,26 @@ const ConnectorProviderCreateDrawer: React.FC<
             name="service"
             label={
               servicePrefix
-                ? `SERVICE（创建后自动加 ${servicePrefix.toUpperCase()} 前缀，如 ${servicePrefix.toUpperCase()}GITHUB）`
-                : 'SERVICE（唯一标识，创建后不可改）'
+                ? dict(
+                    'PC.Pages.ConnectorManage.formServiceLabelWithPrefix',
+                    servicePrefix.toUpperCase(),
+                    `${servicePrefix.toUpperCase()}GITHUB`,
+                  )
+                : dict('PC.Pages.ConnectorManage.formServiceLabel')
             }
             rules={[
-              { required: true, message: '请输入 service' },
+              {
+                required: true,
+                message: dict('PC.Pages.ConnectorManage.formServiceRequired'),
+              },
               {
                 pattern: /^[a-z][a-z0-9_]*$/,
-                message: '请输入小写字母开头的小写字母/数字/下划线',
+                message: dict('PC.Pages.ConnectorManage.formServicePattern'),
               },
             ]}
           >
             <Input
-              placeholder="小写字母开头，小写字母/数字/下划线，如 github"
+              placeholder={dict('PC.Pages.ConnectorManage.placeholderService')}
               maxLength={100}
               showCount
               allowClear
@@ -275,11 +287,20 @@ const ConnectorProviderCreateDrawer: React.FC<
           </Form.Item>
           <Form.Item
             name="displayName"
-            label="显示名称"
-            rules={[{ required: true, message: '请输入显示名称' }]}
+            label={dict('PC.Pages.ConnectorManage.formDisplayName')}
+            rules={[
+              {
+                required: true,
+                message: dict(
+                  'PC.Pages.ConnectorManage.formDisplayNameRequired',
+                ),
+              },
+            ]}
           >
             <Input
-              placeholder="目录卡片展示名称"
+              placeholder={dict(
+                'PC.Pages.ConnectorManage.placeholderDisplayName',
+              )}
               maxLength={100}
               showCount
               allowClear
@@ -287,7 +308,7 @@ const ConnectorProviderCreateDrawer: React.FC<
           </Form.Item>
           {/* 图标：点击上传连接器图标（jpg/png/svg、<2M，样式对齐推荐位新增弹窗），
               上传成功即回显并写入隐藏字段 icon，随表单一起提交 */}
-          <Form.Item label="图标（可选）">
+          <Form.Item label={dict('PC.Pages.ConnectorManage.formIconOptional')}>
             <UploadAvatar
               imageUrl={iconDisplaySrc}
               onUploadSuccess={(url) => form.setFieldValue('icon', url)}
@@ -297,18 +318,28 @@ const ConnectorProviderCreateDrawer: React.FC<
           <Form.Item name="icon" hidden>
             <Input />
           </Form.Item>
-          <Form.Item name="description" label="描述（可选）">
+          <Form.Item
+            name="description"
+            label={dict('PC.Pages.ConnectorManage.formDescriptionOptional')}
+          >
             <Input.TextArea
               rows={3}
-              placeholder="连接器介绍，展示在目录卡片"
+              placeholder={dict(
+                'PC.Pages.ConnectorManage.placeholderDescription',
+              )}
               maxLength={500}
               showCount
             />
           </Form.Item>
           <Form.Item
             name="baseUrl"
-            label="BASE URL"
-            rules={[{ required: true, message: '请输入 BASE URL' }]}
+            label={dict('PC.Pages.ConnectorManage.formBaseUrl')}
+            rules={[
+              {
+                required: true,
+                message: dict('PC.Pages.ConnectorManage.formBaseUrlRequired'),
+              },
+            ]}
           >
             <Input
               placeholder="https://api.example.com"
@@ -320,26 +351,37 @@ const ConnectorProviderCreateDrawer: React.FC<
           <Row gutter={16}>
             <Col span={12}>
               {/* 不加 required：与设计稿一致，认证方式不显示红星（默认免鉴权） */}
-              <Form.Item name="authType" label="认证方式">
+              <Form.Item
+                name="authType"
+                label={dict('PC.Pages.ConnectorManage.formAuthType')}
+              >
                 <Select options={authTypeOptions} />
               </Form.Item>
             </Col>
             <Col span={12}>
               {/* 分类：已发布分类接口 Connector.children 字典中选择，
                   打开抽屉时默认选中第一个（见上方拉取 effect） */}
-              <Form.Item name="category" label="分类">
+              <Form.Item
+                name="category"
+                label={dict('PC.Pages.ConnectorManage.formCategory')}
+              >
                 <Select
                   options={categoryOptions}
                   loading={categoryLoading}
-                  placeholder="请选择分类"
+                  placeholder={dict(
+                    'PC.Pages.ConnectorManage.placeholderCategory',
+                  )}
                   allowClear
                 />
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item name="tags" label="标签（逗号分隔）">
+          <Form.Item
+            name="tags"
+            label={dict('PC.Pages.ConnectorManage.formTags')}
+          >
             <Input
-              placeholder="如 github,dev"
+              placeholder={dict('PC.Pages.ConnectorManage.placeholderTags')}
               maxLength={100}
               showCount
               allowClear
@@ -356,7 +398,7 @@ const ConnectorProviderCreateDrawer: React.FC<
             loading={submitting}
             onClick={handleCreate}
           >
-            创建连接器
+            {dict('PC.Pages.ConnectorManage.btnCreateConnector')}
           </Button>
         </Form>
       </div>

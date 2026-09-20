@@ -268,4 +268,99 @@ describe('工作区文件树异步懒加载', () => {
 
     expect(handleRefreshFileList).toHaveBeenCalledWith(2592, 'src');
   });
+
+  // ── 首拉门控（「打开文件树面板才拉」：新会话 file-list 不先于 chat）──
+
+  it('enabled=false 挂载不预发 file-list，面板打开（enabled 翻 true）才拉根层', async () => {
+    apiGetStaticFileList.mockResolvedValue({
+      code: '0000',
+      data: { recursive: false, files: [] },
+    });
+
+    const { rerender } = renderHook(
+      ({ enabled }: { enabled: boolean }) =>
+        useWorkspaceDirectoryFiles(2592, { enabled }),
+      { initialProps: { enabled: false } },
+    );
+
+    await act(async () => {});
+    expect(apiGetStaticFileList).not.toHaveBeenCalled();
+
+    rerender({ enabled: true });
+    await waitFor(() =>
+      expect(apiGetStaticFileList).toHaveBeenCalledWith(2592, {
+        relativePath: '',
+        recursive: false,
+      }),
+    );
+  });
+
+  it('refreshAllLoaded：根层与已加载子目录一并重拉（「打开的目录不刷新」修复）', async () => {
+    apiGetStaticFileList
+      .mockResolvedValueOnce({
+        code: '0000',
+        data: {
+          recursive: false,
+          files: [
+            { name: 'src', isDir: true },
+            { name: 'README.md', isDir: false },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({
+        code: '0000',
+        data: {
+          recursive: false,
+          files: [{ name: 'src/index.ts', isDir: false }],
+        },
+      })
+      .mockResolvedValueOnce({
+        code: '0000',
+        data: {
+          recursive: false,
+          files: [
+            { name: 'src', isDir: true },
+            { name: 'README.md', isDir: false },
+            { name: 'new.md', isDir: false },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({
+        code: '0000',
+        data: {
+          recursive: false,
+          files: [
+            { name: 'src/index.ts', isDir: false },
+            { name: 'src/new-file.ts', isDir: false },
+          ],
+        },
+      });
+
+    const { result } = renderHook(() => useWorkspaceDirectoryFiles(2592));
+    await waitFor(() => expect(result.current.files).toHaveLength(2));
+
+    await act(async () => {
+      await result.current.loadDirectory('src');
+    });
+    await waitFor(() =>
+      expect(result.current.loadedDirectoryPaths.has('src')).toBe(true),
+    );
+
+    await act(async () => {
+      result.current.refreshAllLoaded();
+    });
+
+    // 根层与已加载的 src 都被重拉（请求序列：首拉根 → 展开 src → 全量刷新两条）
+    const requestedPaths = apiGetStaticFileList.mock.calls.map(
+      (call) => (call[1] as { relativePath: string }).relativePath,
+    );
+    expect(requestedPaths).toEqual(['', 'src', '', 'src']);
+    // 新文件进入列表（无需整页刷新）
+    await waitFor(() =>
+      expect(result.current.files.map((item) => item.name)).toContain('new.md'),
+    );
+    expect(result.current.files.map((item) => item.name)).toContain(
+      'src/new-file.ts',
+    );
+  });
 });

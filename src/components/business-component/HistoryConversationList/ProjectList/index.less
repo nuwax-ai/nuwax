@@ -138,8 +138,9 @@
 
     .more-btn {
       position: absolute;
-      // 让出右侧箭头位（arrow 18px + gap 8px），叠在日期区域原位显隐
-      right: 26px;
+      // 原让出右侧箭头位（arrow 18px + gap 8px），行尾箭头已去除（2026-09-19
+      // 展开指示改行首文件夹图标双态），叠在日期区域原位显隐
+      right: 0;
       top: 50%;
       transform: translateY(-50%);
       display: inline-flex;
@@ -159,16 +160,6 @@
         color: var(--ant-color-primary);
         background-color: rgba(0, 0, 0, 5%);
       }
-    }
-
-    .arrow {
-      flex-shrink: 0;
-      color: rgba(0, 0, 0, 45%);
-      transition: transform 0.2s;
-    }
-
-    .arrow-expanded {
-      transform: rotate(180deg);
     }
   }
 }

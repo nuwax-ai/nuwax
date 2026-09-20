@@ -1,4 +1,5 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -64,7 +65,7 @@ const useConversation = () => {
       projectType?: AgentComponentTypeEnum;
       /** 项目绑定的调试智能体 ID（全栈项目上框携带） */
       devAgentId?: number;
-      /** 项目沙箱（上框项目自带，优先于个人电脑选择） */
+      /** 项目沙箱（创建者上框=项目绑定沙箱；参与者自选=云端 -1/个人电脑 id） */
       sandboxId?: number;
       /** 创建成功后的跳转 URL 前缀（尾部拼接会话 id；全栈跳 app-pro 用） */
       redirectUrl?: string;
@@ -90,8 +91,9 @@ const useConversation = () => {
       agentId,
       devMode: false,
       variables: variableParams,
-      // 项目上框：绑定已有项目（工作区由项目隐含，不携带 workspacePath）；
-      // 否则维持个人电脑口径（sandboxId + workspacePath）
+      // 项目上框：绑定已有项目（工作区由项目隐含，不携带 workspacePath；
+      // 参与者自选个人电脑沙箱例外，工作目录随会话记录）；
+      // 否则统一携带 sandboxId：个人电脑传其 id（附 workspacePath），云端/未选传云电脑哨兵 -1
       ...(attach?.projectId
         ? {
             projectId: attach.projectId,
@@ -100,13 +102,16 @@ const useConversation = () => {
               attach.projectType ?? AgentComponentTypeEnum.NormalProject,
             ...(attach.devAgentId ? { devAgentId: attach.devAgentId } : {}),
             ...(attach.sandboxId ? { sandboxId: attach.sandboxId } : {}),
+            ...(attach.workspacePath
+              ? { workspacePath: attach.workspacePath }
+              : {}),
           }
-        : personalComputerId
-        ? {
-            sandboxId: Number(personalComputerId),
-            workspacePath: attach?.workspacePath || undefined,
-          }
-        : {}),
+        : {
+            sandboxId: Number(personalComputerId ?? CLOUD_SANDBOX_ID),
+            ...(personalComputerId
+              ? { workspacePath: attach?.workspacePath || undefined }
+              : {}),
+          }),
     });
 
     if (!res?.success) {

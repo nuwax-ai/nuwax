@@ -1,4 +1,5 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { PublishStatusEnum } from '@/types/enums/common';
 import { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -50,6 +51,8 @@ export interface ThirdAppOauth2AppInfo extends ThirdAppOauth2Info {
   created: string;
   /** 修改时间 */
   modified: string;
+  /** 发布状态（与列表页 publishStatus 语义一致） */
+  publishStatus?: PublishStatusEnum;
 }
 
 /** 保存主页地址与回调地址（留空表示不修改） */
@@ -142,18 +145,26 @@ export async function apiThirdAppOauth2CredentialCreate(
 // 查询 OAuth2 认证信息（首次访问自动生成凭证，不含密钥明文）
 export async function apiThirdAppOauth2SettingGet(
   projectId: number,
+  projectType?: AgentComponentTypeEnum,
 ): Promise<RequestResponse<ThirdAppOauth2Info>> {
   return request(`/api/user-project/oauth2/setting/${projectId}`, {
     method: 'GET',
+    params: {
+      projectType,
+    },
   });
 }
 
 // 查看 Client Secret 明文（审计留痕）
 export async function apiThirdAppOauth2SecretGet(
   projectId: number,
+  projectType?: AgentComponentTypeEnum,
 ): Promise<RequestResponse<string>> {
   return request(`/api/user-project/oauth2/secret/${projectId}`, {
     method: 'GET',
+    params: {
+      projectType,
+    },
   });
 }
 
