@@ -1398,6 +1398,16 @@ const AppDevPro: React.FC = () => {
   );
   /** 会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
   const conversationReady = !!conversationInfo;
+  /**
+   * 会话已结束且文件树已加载，但无有效项目文件。
+   * 此时不应继续展示「预览准备中」，而应提示用户继续对话生成项目。
+   */
+  const missingProjectFiles =
+    conversationReady &&
+    !isConversationActive &&
+    !hasPendingIntervention &&
+    !fileTreeDataLoading &&
+    !hasFileTreeData;
 
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
@@ -1444,6 +1454,14 @@ const AppDevPro: React.FC = () => {
     }
     // 可以 start，但根目录尚无 workspace.manifest.toml 时不启动（等 manifest 出现后再走本 effect）
     if (!hasFileTreeData) {
+      if (
+        conversationReady &&
+        !isConversationActive &&
+        !hasPendingIntervention &&
+        !fileTreeDataLoading
+      ) {
+        setPreviewEnterSettled(true);
+      }
       return;
     }
     // 先探测 dev 域名是否已可访问，可达则跳过 start / stream
@@ -1461,6 +1479,7 @@ const AppDevPro: React.FC = () => {
     appId,
     conversationReady,
     dbEnv,
+    fileTreeDataLoading,
     hasFileTreeData,
     hasPendingIntervention,
     isConversationActive,
@@ -2058,6 +2077,7 @@ const AppDevPro: React.FC = () => {
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={isConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
+        missingProjectFiles={missingProjectFiles}
         podReady={podReady}
         containerStatus={
           envPodConversationId
@@ -2090,6 +2110,7 @@ const AppDevPro: React.FC = () => {
       handleStartPreviewRuntime,
       hasPendingIntervention,
       isConversationActive,
+      missingProjectFiles,
       podReady,
       previewDevActionLocked,
       previewRefreshKey,

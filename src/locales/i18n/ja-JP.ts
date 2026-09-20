@@ -2733,6 +2733,9 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.previewGeneratingHint": "会話からプロジェクトファイルを生成しています",
   "PC.Pages.AppDevPro.previewPreparing": "プレビューを準備中…",
   "PC.Pages.AppDevPro.previewPreparingHint": "プロジェクトファイル生成後にプレビューを自動起動します",
+  "PC.Pages.AppDevPro.previewNoProjectFiles": "プレビュー可能なプロジェクトがありません",
+  "PC.Pages.AppDevPro.previewNoProjectFilesHint":
+    "この会話では有効なプロジェクトファイル（workspace.manifest.toml）が生成されていません。左側で会話を続けるか、新しいタスクを作成してください",
   "PC.Pages.AppDevPro.previewAppLoading": "アプリを読み込み中",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "しばらくお待ちください。まもなく画面が表示されます",
   "PC.Pages.AppDevPro.iframeLoadFailed": "ページの読み込みに失敗しました。更新して再試行してください。",

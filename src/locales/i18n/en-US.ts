@@ -2818,6 +2818,9 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.previewGeneratingHint": "Generating project files from the conversation",
   "PC.Pages.AppDevPro.previewPreparing": "Preparing preview…",
   "PC.Pages.AppDevPro.previewPreparingHint": "Preview will start automatically after project files are generated",
+  "PC.Pages.AppDevPro.previewNoProjectFiles": "No previewable project yet",
+  "PC.Pages.AppDevPro.previewNoProjectFilesHint":
+    "This conversation has not produced valid project files (workspace.manifest.toml is missing). Continue chatting on the left or start a new task.",
   "PC.Pages.AppDevPro.previewAppLoading": "Loading app",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "Please wait, the interface will appear shortly",
   "PC.Pages.AppDevPro.iframeLoadFailed": "Failed to load the page. Please refresh and try again.",

@@ -2696,6 +2696,9 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppDevPro.previewGeneratingHint": "正在透過會話產生專案檔案",
   "PC.Pages.AppDevPro.previewPreparing": "預覽準備中…",
   "PC.Pages.AppDevPro.previewPreparingHint": "專案檔案產生後將自動啟動預覽",
+  "PC.Pages.AppDevPro.previewNoProjectFiles": "暫無可預覽的專案",
+  "PC.Pages.AppDevPro.previewNoProjectFilesHint":
+    "目前對話未產生有效專案檔案（缺少 workspace.manifest.toml），請在左側繼續對話或新建任務",
   "PC.Pages.AppDevPro.previewAppLoading": "應用載入中",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "請稍候，介面即將呈現",
   "PC.Pages.AppDevPro.iframeLoadFailed": "頁面載入失敗，請重新整理後重試",
