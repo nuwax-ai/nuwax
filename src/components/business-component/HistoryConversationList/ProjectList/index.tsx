@@ -128,6 +128,7 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
           const res = await apiUserProjectPageQuery({
             queryFilter: {
               name: keyword || undefined,
+              projectTypes: [AgentComponentTypeEnum.NormalProject, AgentComponentTypeEnum.UserApp],
               // 收藏/归档过滤均走服务端，口径与任务 tab 一致（testagent
               // 2026-09-15 实测 archivedFilter 不传=剔除归档行）：
               // 已收藏传 all——收藏是跨归档的个人视图，归档的收藏项仍可见
