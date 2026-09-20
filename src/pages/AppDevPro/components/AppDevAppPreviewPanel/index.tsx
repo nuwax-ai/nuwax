@@ -65,6 +65,10 @@ export interface AppDevAppPreviewPanelProps {
    * 线上环境预览：容器就绪后直接展示 iframe，不走开发环境的「预览准备中」。
    */
   directPreview?: boolean;
+  /**
+   * 会话已结束且文件树已加载，但无有效项目（空列表或缺少 workspace.manifest.toml）。
+   */
+  missingProjectFiles?: boolean;
   /** 正在调用停止接口，避免 iframe 被关掉后露出空白 */
   stopping?: boolean;
   /** 线上环境重启进行中：展示重启提示，隐藏 iframe */
@@ -253,9 +257,19 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   devActionLocked = false,
   allowStoppedHero = false,
   directPreview = false,
+  missingProjectFiles = false,
   stopping = false,
   restarting = false,
 }) => {
+  /** 无有效项目文件时的居中提示 */
+  const emptyProjectHero = (
+    <div className={cx(styles.container, styles.stage)}>
+      <PreviewHero
+        title={dict('PC.Pages.AppDevPro.previewNoProjectFiles')}
+        hint={dict('PC.Pages.AppDevPro.previewNoProjectFilesHint')}
+      />
+    </div>
+  );
   const logs = useMemo(() => {
     const lines = flattenTaskLogs(services);
     const errorText = errorMessage?.trim();
@@ -327,6 +341,10 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
           />
         </div>
       );
+    }
+
+    if (missingProjectFiles) {
+      return emptyProjectHero;
     }
 
     if (!running && allowStoppedHero) {
@@ -416,6 +434,10 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
         />
       </div>
     );
+  }
+
+  if (missingProjectFiles) {
+    return emptyProjectHero;
   }
 
   // 已有可预览内容时，新会话进行中仍保留当前页面，不切回准备中

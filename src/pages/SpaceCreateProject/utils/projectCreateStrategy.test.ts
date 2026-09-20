@@ -71,7 +71,7 @@ describe('createProjectAndNavigate 跳转策略', () => {
     [AgentComponentTypeEnum.PageApp, '/space/1/app-dev/92'],
     [
       AgentComponentTypeEnum.UserApp,
-      '/space/1/app-pro?appId=92&conversationId=1562257',
+      '/space/1/app-pro/92/1562257',
     ],
     [AgentComponentTypeEnum.NormalProject, '/home/chat/1562257/7'],
     [
@@ -121,7 +121,7 @@ describe('createProjectAndNavigate 跳转策略', () => {
     await runCreate(AgentComponentTypeEnum.UserApp);
 
     expect(historyPushMock).toHaveBeenCalledWith(
-      '/space/1/app-pro?appId=92&conversationId=1562257',
+      '/space/1/app-pro/92/1562257',
       expect.anything(),
     );
   });

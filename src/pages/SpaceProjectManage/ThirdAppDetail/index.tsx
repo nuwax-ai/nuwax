@@ -249,14 +249,20 @@ const ThirdAppDetail: React.FC = () => {
       return;
     }
     const trimmedHomepageUrl = homepageUrl.trim();
+    const trimmedRedirectUri = redirectUri.trim();
     if (!trimmedHomepageUrl) {
       message.warning(dict('PC.Pages.ThirdAppDetail.homeUrlRequired'));
       return;
     }
+    if (!trimmedRedirectUri) {
+      message.warning(dict('PC.Pages.ThirdAppDetail.callbackUrlRequired'));
+      return;
+    }
     runSaveOauthSetting({
       projectId,
+      projectType: AgentComponentTypeEnum.ThirdApp,
       homepageUrl: trimmedHomepageUrl,
-      redirectUri: redirectUri.trim() || undefined,
+      redirectUri: trimmedRedirectUri,
     });
   }, [homepageUrl, projectId, redirectUri, runSaveOauthSetting]);
 
@@ -439,6 +445,7 @@ const ThirdAppDetail: React.FC = () => {
                 redirectUri,
                 setRedirectUri,
                 dict('PC.Pages.ThirdAppDetail.callbackUrlPlaceholder'),
+                true,
               )}
               <div className={cx(styles['action-row'])}>
                 <Button

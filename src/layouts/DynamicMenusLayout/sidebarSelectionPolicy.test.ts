@@ -35,26 +35,24 @@ describe('extractConversationIdFromPath', () => {
     expect(extractConversationIdFromPath('/space/1')).toBeNull();
   });
 
-  it('工作空间域路由取查询参数 conversationId（/space/app-pro 项目会话）', () => {
-    expect(
-      extractConversationIdFromPath(
-        '/space/752/app-pro',
-        '?appId=29&conversationId=1562236',
-      ),
-    ).toBe('1562236');
+  it('app-pro 路由从路径段取 conversationId', () => {
+    expect(extractConversationIdFromPath('/space/752/app-pro/29/1562236')).toBe(
+      '1562236',
+    );
+    expect(extractConversationIdFromPath('/space/752/app-pro/29')).toBeNull();
+    expect(extractConversationIdFromPath('/space/752/app-project-detail/29')).toBeNull();
+  });
+
+  it('其他工作空间域路由仍从 query 取 conversationId', () => {
     expect(
       extractConversationIdFromPath('/space/752', '?conversationId=42'),
     ).toBe('42');
-  });
-
-  it('工作空间域路由无 conversationId 参数返回 null', () => {
     expect(
-      extractConversationIdFromPath('/space/752/app-pro', '?appId=29'),
-    ).toBeNull();
-    expect(
-      extractConversationIdFromPath('/space/752/app-pro', '?conversationId='),
-    ).toBeNull();
-    expect(extractConversationIdFromPath('/space/752/app-pro')).toBeNull();
+      extractConversationIdFromPath(
+        '/space/752/agent-dev',
+        '?agentId=29&conversationId=1562236',
+      ),
+    ).toBe('1562236');
   });
 });
 

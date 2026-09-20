@@ -409,8 +409,8 @@ describe('useHomeSectionData', () => {
   it('删除当前 /space 会话后移除 conversationId 并留在项目页', async () => {
     apiAgentConversationListMock.mockResolvedValue({ data: [] });
     umiState.location = {
-      pathname: '/space/752/app-pro',
-      search: '?appId=29&conversationId=42&panel=chat',
+      pathname: '/space/752/app-pro/29/42',
+      search: '?panel=chat',
       state: null,
     };
     const useHomeSectionData = await freshHook();
@@ -423,7 +423,7 @@ describe('useHomeSectionData', () => {
     });
 
     expect(historyReplace).toHaveBeenCalledWith(
-      '/space/752/app-pro?appId=29&panel=chat',
+      '/space/752/app-project-detail/29',
     );
   });
 

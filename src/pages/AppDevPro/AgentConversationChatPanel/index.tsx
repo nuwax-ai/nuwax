@@ -6,8 +6,8 @@ import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { TaskStatus } from '@/types/enums/agent';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useLocation, useModel } from 'umi';
+import React, { useEffect, useRef, useState } from 'react';
+import { history, useLocation, useModel, useParams } from 'umi';
 
 /**
  * Props 类型定义
@@ -134,10 +134,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   // @ 文件提及数据源：URL 会话 id 进页即得——若等会话详情回填 conversationInfo，
   // 进入后一段时间内 @ 会是纯文本；开发会话均为任务型智能体，文件按会话维度取数，
   // 无需 agent 类型门槛
-  const queryConversationId = useMemo(() => {
-    const id = new URLSearchParams(location.search).get('conversationId');
-    return id ? Number(id) : undefined;
-  }, [location.search]);
+  const params = useParams();
+  const queryConversationId = Number(params.conversationId);
   const mentionConversationId = conversationInfo?.id ?? queryConversationId;
   const fetchMentionFiles = useConversationMentionFiles(mentionConversationId);
   const mentionFilesEnabled = !!mentionConversationId;

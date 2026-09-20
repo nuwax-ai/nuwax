@@ -1,4 +1,5 @@
 import type { UserProjectItem } from '@/pages/AppDevPro/type';
+import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { history } from 'umi';
 
@@ -32,7 +33,7 @@ export const projectTypeBadgeClass = (type: string): string =>
  * - PageApp → 网页应用 IDE（沉浸式路由）
  * - NormalProject → home/chat 会话详情（常规项目无独立 IDE）；会话 id 与
  *   智能体 id 需齐备，缺任一回退全栈 IDE 路由（由 IDE 内自行建立会话）
- * - UserApp → 全栈应用 IDE（可携带最新会话 id 直达续聊）
+ * - UserApp → 有会话 id 时进全栈 IDE，否则进应用详情页
  * - ThirdApp → 三方应用详情页
  */
 export const openProject = (
@@ -49,18 +50,23 @@ export const openProject = (
     history.push(`/space/${spaceId}/third-app-detail/${item.id}`);
     return;
   }
-  if (
-    item.projectType === AgentComponentTypeEnum.NormalProject &&
-    conversationId &&
-    agentId
-  ) {
-    history.push(`/home/chat/${conversationId}/${agentId}`);
+  if (item.projectType === AgentComponentTypeEnum.NormalProject) {
+    if (conversationId && agentId) {
+      history.push(`/home/chat/${conversationId}/${agentId}`);
+      return;
+    }
+    history.push(`/space/${spaceId}/normal-project-detail/${item.id}`);
     return;
   }
-  const conversationSuffix = conversationId
-    ? `&conversationId=${conversationId}`
-    : '';
-  history.push(
-    `/space/${spaceId}/app-pro?appId=${item.id}${conversationSuffix}`,
-  );
+  if (item.projectType === AgentComponentTypeEnum.UserApp) {
+    if (conversationId) {
+      history.push(buildAppProRoute(spaceId, item.id, conversationId));
+      return;
+    }
+    history.push(`/space/${spaceId}/app-project-detail/${item.id}`);
+    return;
+  }
+  if (conversationId) {
+    history.push(buildAppProRoute(spaceId, item.id, conversationId));
+  }
 };

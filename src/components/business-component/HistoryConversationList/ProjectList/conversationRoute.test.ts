@@ -45,7 +45,7 @@ describe('项目会话点击路由分流（resolveConversationRoute）', () => {
           devSpaceId: 3,
         }),
       ),
-    ).toBe('/space/3/app-pro?appId=9&conversationId=5');
+    ).toBe('/space/3/app-pro/9/5');
   });
 
   it('常规项目会话（无 devTarget 系列字段）跳 home/chat 详情', () => {

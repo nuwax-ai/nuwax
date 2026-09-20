@@ -1,3 +1,5 @@
+import { parseAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
+
 /**
  * 侧栏选中关系策略纯函数单源（2026-09-12 抽取）。
  *
@@ -33,7 +35,7 @@ export const isConversationDetailPath = (pathname: string): boolean =>
  * 从路由提取当前会话 id；无法识别返回 null。
  * 两类承载路由：
  * - /home/chat/:id/:agentId —— 会话 id 取路径段
- * - /space/:spaceId/app-pro?conversationId=… —— 全栈 IDE 会话面板，id 取查询参数
+ * - /space/:spaceId/app-pro/:appId/:conversationId —— 全栈 IDE 会话面板，id 取路径段
  *   （项目子会话点击即跳此路由，2026-09-15 侧栏选中补全）
  */
 export const extractConversationIdFromPath = (
@@ -43,8 +45,12 @@ export const extractConversationIdFromPath = (
   if (isConversationDetailPath(pathname)) {
     return pathname.match(CONVERSATION_ID_SEGMENT)?.[1] ?? null;
   }
+  const appProRoute = parseAppProRoute(pathname);
+  if (appProRoute) {
+    return String(appProRoute.conversationId);
+  }
   if (WORKSPACE_PATH_PREFIX.test(pathname)) {
-    // 空值参数不算会话 id（'' 会穿过 ?? 链被当成有效 chatId）
+    // agent-dev 等仍走 query；app-pro 已在上方路径段解析
     const id = new URLSearchParams(search).get('conversationId');
     return id ? id : null;
   }

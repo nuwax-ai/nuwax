@@ -4,6 +4,7 @@ import {
   showSpaceSelectorForFunctionType,
 } from '@/constants/recommendAgentPolicy.constants';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
+import { buildAppProRedirectPrefix } from '@/pages/AppDevPro/utils/appProRoute';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type {
@@ -230,7 +231,10 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
               // 全栈创建成功直接跳全栈 IDE（缺 spaceId 时降级走默认 /home/chat）
               ...(pinnedProject.spaceId
                 ? {
-                    redirectUrl: `/space/${pinnedProject.spaceId}/app-pro?appId=${pinnedProject.projectId}&conversationId=`,
+                    redirectUrl: buildAppProRedirectPrefix(
+                      pinnedProject.spaceId,
+                      pinnedProject.projectId,
+                    ),
                   }
                 : {}),
             }

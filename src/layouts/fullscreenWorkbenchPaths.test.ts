@@ -9,7 +9,7 @@ const workbenchPaths = [
   '/space/752/workflow/351',
   '/space/752/agent/433',
   '/space/752/app-dev/9352423779995648',
-  '/space/752/app-pro',
+  '/space/752/app-pro/29/42',
   '/space/752/app-dev-design/9352423779995648',
   '/space/752/agent-dev',
 ];
@@ -84,6 +84,8 @@ describe('工作台页历史栈兜底判定（shouldSeedWorkbenchHistoryBase）'
   );
 
   it('历史栈长度为 0（异常兜底）按需垫栈底', () => {
-    expect(shouldSeedWorkbenchHistoryBase('/space/752/app-pro', 0)).toBe(true);
+    expect(
+      shouldSeedWorkbenchHistoryBase('/space/752/app-pro/29/42', 0),
+    ).toBe(true);
   });
 });
