@@ -1,3 +1,4 @@
+import { USER_INFO } from '@/constants/home.constants';
 import {
   apiNormalProjectDelete,
   apiNormalProjectGetById,
@@ -5,9 +6,11 @@ import {
   apiNormalProjectUpdate,
   apiUserProjectArchive,
   apiUserProjectCollect,
+  apiUserProjectConversations,
   apiUserProjectPin,
   apiUserProjectUnCollect,
 } from '@/services/userProjectApp';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { request } from 'umi';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -78,6 +81,53 @@ describe('常规项目与项目标记接口契约', () => {
     expect(request).toHaveBeenLastCalledWith('/api/user-project/unCollect/32', {
       method: 'POST',
       params: { projectType: 'UserApp' },
+    });
+  });
+
+  // bug 2465：后端按项目维度回该项目下所有用户的会话，侧栏消费方只要自己的。
+  // 过滤落在共享层 apiUserProjectConversations；详情页走页面自己的接口副本不受影响。
+  describe('项目会话列表按归属过滤（bug 2465）', () => {
+    const conversation = (id: number, userId: number) => ({ id, userId });
+
+    beforeEach(() => {
+      localStorage.removeItem(USER_INFO);
+    });
+
+    it('丢弃协作者会话，保留自己的', async () => {
+      localStorage.setItem(
+        USER_INFO,
+        JSON.stringify({ id: 7, userName: '罗东' }),
+      );
+      vi.mocked(request).mockResolvedValue({
+        code: '0000',
+        data: [conversation(1, 7), conversation(2, 99), conversation(3, 7)],
+      } as any);
+
+      const res = await apiUserProjectConversations(
+        32,
+        AgentComponentTypeEnum.NormalProject,
+      );
+
+      expect(res.data?.map((item) => item.id)).toEqual([1, 3]);
+      // 请求形态不变：过滤只动响应
+      expect(request).toHaveBeenLastCalledWith(
+        '/api/user-project/conversations/32',
+        { method: 'GET', params: { projectType: 'NormalProject' } },
+      );
+    });
+
+    it('本地用户信息缺失时原样返回（不清空列表）', async () => {
+      vi.mocked(request).mockResolvedValue({
+        code: '0000',
+        data: [conversation(1, 7), conversation(2, 99)],
+      } as any);
+
+      const res = await apiUserProjectConversations(
+        32,
+        AgentComponentTypeEnum.NormalProject,
+      );
+
+      expect(res.data?.map((item) => item.id)).toEqual([1, 2]);
     });
   });
 });

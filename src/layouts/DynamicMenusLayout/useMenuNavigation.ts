@@ -74,12 +74,15 @@ export function useMenuNavigation(): UseMenuNavigationResult {
   // 是否点击菜单
   const isClickMenu = useRef<boolean>(false);
 
-  const handlerClick = async () => {
+  // useCallback 固定引用（bug 2348）：SidebarNavLayout.handleNewTask 依赖本引用，
+  // 不固定会随每次渲染变引用、致宿主桥监听 effect 反复摘挂；上游
+  // handleCreateConversation 已同步 useCallback 固定
+  const handlerClick = useCallback(async () => {
     if (tenantConfigInfo) {
       // 创建智能体会话
       await handleCreateConversation(tenantConfigInfo.defaultAgentId);
     }
-  };
+  }, [tenantConfigInfo, handleCreateConversation]);
 
   // 新对话菜单特殊处理
   const handleNewConversation = useCallback(() => {

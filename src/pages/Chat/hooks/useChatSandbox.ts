@@ -1,4 +1,5 @@
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface UseChatSandboxProps {
@@ -41,34 +42,18 @@ export const useChatSandbox = ({
   }, [history.action, location.key]);
 
   const getEffectiveSandboxId = useCallback(
-    (info: ConversationInfo | undefined = conversationInfo) => {
-      try {
-        // 优先级 1: 手动选择 (selectedComputerId)
-        if (selectedComputerId) {
-          return selectedComputerId;
-        }
-
-        // 优先级 2: 兜底从 location.state 获取 (仅 PUSH 跳转)。
-        // 解决首次加载发消息时，状态未及时更新导致获取到内置 sandboxId 的问题。
-        if (history.action === 'PUSH' && location.state?.selectedComputerId) {
-          return location.state.selectedComputerId;
-        }
-
-        // 优先级 3: 个人电脑 (sandboxId)
-        if (effectiveAgent?.sandboxId) {
-          return effectiveAgent.sandboxId;
-        }
-
-        // 优先级 4: 共享电脑 (sandboxServerId)
-        const sandboxServerId = info?.sandboxServerId;
-        if (sandboxServerId) {
-          return String(sandboxServerId);
-        }
-
-        return '';
-      } catch {
-        return selectedComputerId;
-      }
+    (info: ConversationInfo | undefined = conversationInfo): string => {
+      // 四级取值链单源（bug 2451）：手动 > PUSH 携带 > 智能体绑定 > 共享电脑，
+      // 详见 src/utils/effectiveSandbox.ts
+      return resolveEffectiveSandboxId({
+        selectedComputerId,
+        pushStateComputerId:
+          history.action === 'PUSH'
+            ? location.state?.selectedComputerId
+            : undefined,
+        agentSandboxId: effectiveAgent?.sandboxId,
+        sandboxServerId: info?.sandboxServerId,
+      });
     },
     [
       selectedComputerId,

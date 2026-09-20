@@ -44,6 +44,13 @@ type HostCommand =
       type: 'host-activity';
       /** true=宿主可见（恢复轮询并立即补拉）；false=不可见（暂停后台轮询） */
       visible: boolean;
+    }
+  /** 壳设置切语言（bug 2428）：壳 i18n:setLang 后下发，web 应用该语种并持久化到账号；
+   * 壳随后会重载本 webview，使新语种全量渲染 */
+  | {
+      type: 'set-lang';
+      /** 语言代码（壳侧枚举 en-us/zh-cn/zh-tw/zh-hk，web 侧 normalizeLang 归一） */
+      lang: string;
     };
 
 /**

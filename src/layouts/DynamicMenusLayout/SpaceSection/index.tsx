@@ -14,6 +14,13 @@ import SpaceTitle from './SpaceTitle';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 空间标题缓存（bug 2348）：key=spaceId，value=详情解析出的展示名
+ * （含「创建者 - 空间名」形态）。悬浮菜单/侧栏反复挂载时命中缓存免重拉
+ * apiGetSpaceDetail；空间名变更低频，成本可接受，未命中仍按原链路请求
+ */
+const spaceTitleCache = new Map<string, string>();
+
 const SpaceSection: React.FC<{
   activeTab: string;
   style?: React.CSSProperties;
@@ -49,33 +56,45 @@ const SpaceSection: React.FC<{
           dict('PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace'),
       );
     } else {
-      // Fetch details
-      apiGetSpaceDetail(finalSpaceId)
-        .then((res) => {
-          if (res.code === SUCCESS_CODE && res.data) {
-            const { creatorName, name, currentUserRole } = res.data;
-            // 如果当前用户不是空间所有者，则显示空间所有者名称 （当前登录用户在空间的角色,可用值:Owner,Admin,User）
-            const display =
-              currentUserRole !== TeamStatusEnum.Owner && creatorName
-                ? `${creatorName} - ${name}`
-                : name;
-            setDynamicTitle(
-              display ||
+      // 命中标题缓存直接用，未命中才拉详情（bug 2348：反复挂载不重发请求）
+      const cacheKey = String(finalSpaceId);
+      const cachedTitle = spaceTitleCache.get(cacheKey);
+      if (cachedTitle) {
+        setDynamicTitle(cachedTitle);
+      } else {
+        // Fetch details
+        apiGetSpaceDetail(finalSpaceId)
+          .then((res) => {
+            if (res.code === SUCCESS_CODE && res.data) {
+              const { creatorName, name, currentUserRole } = res.data;
+              // 如果当前用户不是空间所有者，则显示空间所有者名称 （当前登录用户在空间的角色,可用值:Owner,Admin,User）
+              const display =
+                currentUserRole !== TeamStatusEnum.Owner && creatorName
+                  ? `${creatorName} - ${name}`
+                  : name;
+              if (display) {
+                spaceTitleCache.set(cacheKey, display);
+              }
+              setDynamicTitle(
+                display ||
+                  dict(
+                    'PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace',
+                  ),
+              );
+            } else {
+              setDynamicTitle(
                 dict(
                   'PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace',
                 ),
-            );
-          } else {
+              );
+            }
+          })
+          .catch(() => {
             setDynamicTitle(
               dict('PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace'),
             );
-          }
-        })
-        .catch(() => {
-          setDynamicTitle(
-            dict('PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace'),
-          );
-        });
+          });
+      }
 
       /**
        * 保存当前路径到本地, 用于后续从其他菜单跳转回工作空间时，在space页面能够跳转到当前路径

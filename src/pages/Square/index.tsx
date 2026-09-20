@@ -638,7 +638,8 @@ const Square: React.FC = () => {
                           item.targetId,
                           item.targetType,
                           'square',
-                          item.ext?.conversationId,
+                          // 智能体上框展示信息（bug 2398）
+                          { name: item.name, icon: item.icon },
                         ),
                       );
                     };
@@ -709,7 +710,11 @@ const Square: React.FC = () => {
                           key={index}
                           publishedItemInfo={item}
                           onClick={() =>
-                            handleClick(item.targetId, item.targetType)
+                            // 智能体条目同样走上框（bug 2398），非智能体类型分支内自行分流
+                            handleClick(item.targetId, item.targetType, 'square', {
+                              name: item.name,
+                              icon: item.icon,
+                            })
                           }
                         />
                       );

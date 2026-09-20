@@ -27,6 +27,7 @@ import {
 } from '@/services/userProjectApp';
 import type {
   ConversationChangedEvent,
+  DirectoryProjectRef,
   ProjectChangedEvent,
 } from '@/types/directorySync';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
@@ -85,6 +86,14 @@ import {
 } from './projectPagination';
 
 const cx = classNames.bind(styles);
+
+/**
+ * created 项目有界重拉的间隔与轮数（bug 2407 / 2413）。
+ * 首轮立即重拉 + 3 次补偿，总窗 ≈ 2.5s，覆盖后端列表接口的秒级可见性延迟
+ * （docs/project-conversation-sync.md）。窗口内后端始终不回该行则有界结束，
+ * 由后续任一重拉 / 路由回流收敛，不做无限轮询。
+ */
+const CREATED_SETTLE_DELAYS_MS = [300, 700, 1500];
 
 /** 项目子项(项目下的会话,来自 tab 接口 conversations) */
 export interface ProjectChildItem {
@@ -285,11 +294,20 @@ const ProjectPanel = forwardRef<
     const recentProjectEventsRef = useRef<
       Array<{ event: ProjectChangedEvent; at: number }>
     >([]);
+    /** 卸载标记：created 有界重试跨多个异步 tick，卸载后不再写状态 */
+    const unmountedRef = useRef(false);
+    /** 正在重试收敛的 created 项目复合键（按复合键去重，防双事件触发两条并行链） */
+    const settlingCreatedKeysRef = useRef<Set<string>>(new Set());
 
     // 拉取指定页项目列表(page=1 整体替换,后续页追加合并;失败保持现状由空态兜底)。
     // 不传 spaceId:拉该用户全部空间的项目(跨空间口径,所有布局风格共用本面板)
+    // 返回「本轮回包是否已包含 awaitKey 指定的项目」(传了 awaitKey 才有意义)，
+    // 供 created 事件的有界重试判断是否收敛。
     const fetchPage = useCallback(
-      async (page: number, options: { append: boolean }) => {
+      async (
+        page: number,
+        options: { append: boolean; awaitKey?: string },
+      ): Promise<boolean> => {
         const requestVersion = ++pageRequestVersionRef.current;
         const pageSize = options.append
           ? PROJECT_PAGE_SIZE
@@ -304,8 +322,8 @@ const ProjectPanel = forwardRef<
             filters: [],
             columns: [],
           });
-          // 已有更新的分页请求在途:丢弃过期响应
-          if (requestVersion !== pageRequestVersionRef.current) return;
+          // 已有更新的分页请求在途:丢弃过期响应(是否收敛交由重试下一轮判断)
+          if (requestVersion !== pageRequestVersionRef.current) return false;
           if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
             const records = res.data.records;
             const fallback = dict('PC.Constants.Menus.newChat');
@@ -360,9 +378,21 @@ const ProjectPanel = forwardRef<
               ? page
               : Math.max(1, Math.ceil(records.length / PROJECT_PAGE_SIZE));
             setTotal(res.data.total ?? 0);
+            if (options.awaitKey !== undefined) {
+              return records.some(
+                (item) =>
+                  projectKeyOf({
+                    id: item.projectId,
+                    projectType: item.projectType,
+                  }) === options.awaitKey,
+              );
+            }
+            return true;
           }
+          return options.awaitKey === undefined;
         } catch {
           // 忽略:保持现有列表
+          return false;
         } finally {
           if (options.append) setLoadingMore(false);
         }
@@ -371,10 +401,63 @@ const ProjectPanel = forwardRef<
     );
 
     useEffect(() => {
+      unmountedRef.current = false;
       pageRequestVersionRef.current += 1;
       pageRef.current = 1;
       void fetchPage(1, { append: false }).finally(() => setLoading(false));
+      return () => {
+        unmountedRef.current = true;
+      };
     }, [fetchPage]);
+
+    /**
+     * created 项目有界重拉（bug 2407 / 2413，2026-09-20）。
+     *
+     * 后端列表接口对新项目有秒级可见性延迟（docs/project-conversation-sync.md），
+     * 单轮重拉在延迟窗口内会用「还没有新项目」的旧回包整表替换列表；而 60s 事件重放
+     * 走 applyProjectChangedToList，created 事件不带 patch 且行不在列表里时直接返回
+     * ——**插不进新行**。行自此永久缺失，只有重挂载（F5）才恢复。
+     * 这里重试到行出现为止，窗口 ≈ 2.5s；双事件（ProjectChanged + ConversationChanged）
+     * 都会触发，按复合键去重避免两条并行重试链。
+     */
+    const settleCreatedProject = useCallback(
+      async (project: DirectoryProjectRef) => {
+        const key = projectKeyOf({
+          id: project.projectId,
+          projectType: project.projectType,
+        });
+        if (settlingCreatedKeysRef.current.has(key)) return;
+        if (projectsRef.current.some((item) => projectKeyOf(item) === key)) {
+          return;
+        }
+        settlingCreatedKeysRef.current.add(key);
+        try {
+          for (
+            let attempt = 0;
+            attempt <= CREATED_SETTLE_DELAYS_MS.length;
+            attempt += 1
+          ) {
+            if (unmountedRef.current) return;
+            const settled = await fetchPage(1, {
+              append: false,
+              awaitKey: key,
+            });
+            if (settled) return;
+            if (
+              projectsRef.current.some((item) => projectKeyOf(item) === key)
+            ) {
+              return;
+            }
+            const delay = CREATED_SETTLE_DELAYS_MS[attempt];
+            if (delay === undefined) return;
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
+        } finally {
+          settlingCreatedKeysRef.current.delete(key);
+        }
+      },
+      [fetchPage],
+    );
 
     // 子会话按项目加载。刷新时保留旧行；在途事件通过 revision 和补拉收敛。
     const loadingChildrenRef = useRef<Set<string>>(new Set());
@@ -501,8 +584,9 @@ const ProjectPanel = forwardRef<
         (event.operation === 'created' || event.operation === 'deleted')
       ) {
         const found = invalidateProjectChildren(event.project);
+        // 行还不在本地列表（后端可见性延迟）：落到 created 有界重拉补行
         if (!found && event.operation === 'created') {
-          void fetchPage(1, { append: false });
+          void settleCreatedProject(event.project);
         }
       }
     });
@@ -514,7 +598,7 @@ const ProjectPanel = forwardRef<
         .slice(-199);
       recentProjectEventsRef.current.push({ event, at: now });
       if (event.operation === 'created') {
-        void fetchPage(1, { append: false });
+        void settleCreatedProject(event.project);
         return;
       }
       setProjects((previous) => applyProjectChangedToList(previous, event));

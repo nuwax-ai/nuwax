@@ -172,14 +172,16 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     [activeTab, location.pathname, conversationRowActive, appTabActive],
   );
 
-  // 新建任务入口（侧栏顶部操作区）：租户配置未就绪时兜底回首页
-  const handleNewTask = () => {
+  // 新建任务入口（侧栏顶部操作区）：租户配置未就绪时兜底回首页。
+  // useCallback 固定引用（bug 2348）：下方宿主桥 effect 与 SidebarNavHeader
+  // onNewTask 都消费本引用，不固定会逐渲染摘挂监听并打断子树 memo
+  const handleNewTask = useCallback(() => {
     if (tenantConfigInfo) {
-      handlerClick();
+      void handlerClick();
     } else {
       history.push('/home');
     }
-  };
+  }, [tenantConfigInfo, handlerClick]);
 
   useEffect(() => {
     // 强制刷新获取用户信息

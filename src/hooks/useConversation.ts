@@ -16,6 +16,7 @@ import { emitConversationChanged } from '@/utils/directorySyncEvents';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import { history } from 'umi';
+import { useCallback } from 'react';
 
 const useConversation = () => {
   // 创建会话
@@ -28,7 +29,11 @@ const useConversation = () => {
   );
 
   // 创建智能体会话
-  const handleCreateConversation = async (
+  // useCallback 固定引用（bug 2348）：下游 useMenuNavigation.handlerClick →
+  // SidebarNavLayout.handleNewTask 逐层依赖本引用，不固定会导致消费者 effect
+  // 逐层摘挂、侧栏全树重渲染；body 仅消费入参与模块级稳定引用（message/dict/
+  // history 均为 import，runAsync 为 ahooks 稳定句柄），无活动 state 闭包
+  const handleCreateConversation = useCallback(async (
     agentId: number,
     attach?: {
       /** 首条消息（项目直建会话等场景可不带，目标页无 message 即不自动发送） */
@@ -147,7 +152,7 @@ const useConversation = () => {
         : `/home/chat/${id}/${agentId}`;
       history.push(url, attach);
     }
-  };
+  }, [runAsyncConversationCreate]);
 
   return {
     handleCreateConversation,

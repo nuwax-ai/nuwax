@@ -6813,6 +6813,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ThirdAppDetail.clientSecret": "Client Secret",
   "PC.Pages.ThirdAppDetail.homeUrl": "Homepage URL",
   "PC.Pages.ThirdAppDetail.homeUrlPlaceholder": "Enter homepage URL",
+  "PC.Pages.ThirdAppDetail.homeUrlRequired": "Please enter the homepage URL",
   "PC.Pages.ThirdAppDetail.callbackUrl": "Callback URL",
   "PC.Pages.ThirdAppDetail.callbackUrlPlaceholder": "Enter callback URL",
   "PC.Pages.ThirdAppDetail.regenerate": "Regenerate credentials",
@@ -6820,6 +6821,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ThirdAppDetail.regenerateConfirmTitle": "Regenerate credentials?",
   "PC.Pages.ThirdAppDetail.regenerateSuccess": "Credentials regenerated",
   "PC.Pages.ThirdAppDetail.publish": "Publish",
+  "PC.Pages.ThirdAppDetail.publishDisabledHomepageHint": "Please configure the homepage URL in OAuth2 authentication settings first",
   "PC.Pages.ThirdAppDetail.publishVersionRecords": "Publish history",
   // 常规项目详情页
   "PC.Pages.NormalProjectDetail.tabPlan": "Plan",

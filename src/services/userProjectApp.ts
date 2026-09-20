@@ -5,6 +5,7 @@
  * 页面层原路径再导出保持既有引用不变。
  */
 
+import { UserService } from '@/services/userService';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { HistoryData } from '@/types/interfaces/publish';
@@ -20,6 +21,7 @@ import type {
   UserProjectPageQueryParams,
   UserProjectTabPageResult,
 } from '@/types/interfaces/userProject';
+import { pickMineConversations } from '@/utils/projectConversationOwnership';
 import { request } from 'umi';
 
 /**
@@ -44,15 +46,33 @@ export async function apiUserProjectPageQuery(
  * 下沉自 SpaceProjectManage/services（页面层原路径原签名保持不动）；
  * 会话行与 tab 接口 conversations 同构，按 ConversationInfo 消费
  * （agent 等字段消费侧防御式可选访问）。
+ *
+ * ⚠️ 归属过滤（bug 2465，2026-09-20）：后端本项目维度回该项目下**所有用户**的会话
+ * （回包行带 userId / userName），而侧栏三处消费方——项目面板 ProjectPanel、
+ * 历史会话页「项目」tab、侧栏全局搜索 sources——语义上都只要当前用户自己的会话。
+ * 后端暂不支持 onlyMine 参数，契约缺口期在此按 userId 收敛。
+ *
+ * 本函数是共享层，当前**仅**上述侧栏三处消费；两个项目管理详情页
+ * （SpaceProjectManage/NormalProjectDetail、AppProjectDetail）走的是页面自己的
+ * 接口副本 `pages/SpaceProjectManage/services`，语义上要看全员、靠 ConversationPanel
+ * 的 userName 展示 + 置灰区分，**不受本过滤影响**。后端支持 onlyMine 后删除此处过滤。
  */
 export async function apiUserProjectConversations(
   projectId: number,
   projectType: AgentComponentTypeEnum,
 ): Promise<RequestResponse<ConversationInfo[]>> {
-  return request(`/api/user-project/conversations/${projectId}`, {
+  const res = await request(`/api/user-project/conversations/${projectId}`, {
     method: 'GET',
     params: { projectType },
   });
+  if (Array.isArray(res?.data)) {
+    // 当前用户 id 取不到（本地用户信息缺失）时不过滤，与修复前行为一致
+    res.data = pickMineConversations(
+      res.data,
+      UserService.getUserInfoFromStorage()?.id,
+    );
+  }
+  return res;
 }
 
 /** 更新常规项目基本信息 */

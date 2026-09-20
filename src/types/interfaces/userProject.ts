@@ -228,6 +228,11 @@ export interface UserProjectTabItem {
 
 /**
  * 项目会话列表项（/api/user-project/conversations/{projectId}）。
+ *
+ * ⚠️ 后端按项目维度回该项目下**所有用户**的会话；侧栏三处消费方（项目面板 /
+ * 历史会话页「项目」tab / 侧栏全局搜索）只要自己的会话，过滤落在共享层
+ * `@/services/userProjectApp` 的 `apiUserProjectConversations`（bug 2465）。
+ * 项目管理详情页走页面自己的接口副本，语义上要看全员，不过滤。
  */
 export interface UserProjectConversationInfo {
   /** 会话 ID */

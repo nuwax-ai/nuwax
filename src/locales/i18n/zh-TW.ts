@@ -6640,6 +6640,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ThirdAppDetail.clientSecret": "Client Secret",
   "PC.Pages.ThirdAppDetail.homeUrl": "主頁地址",
   "PC.Pages.ThirdAppDetail.homeUrlPlaceholder": "請輸入主頁地址",
+  "PC.Pages.ThirdAppDetail.homeUrlRequired": "請輸入主頁地址",
   "PC.Pages.ThirdAppDetail.callbackUrl": "回調地址",
   "PC.Pages.ThirdAppDetail.callbackUrlPlaceholder": "請輸入回調地址",
   "PC.Pages.ThirdAppDetail.regenerate": "重新產生憑證",
@@ -6647,6 +6648,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ThirdAppDetail.regenerateConfirmTitle": "確認重新產生憑證",
   "PC.Pages.ThirdAppDetail.regenerateSuccess": "憑證已重新產生",
   "PC.Pages.ThirdAppDetail.publish": "發布",
+  "PC.Pages.ThirdAppDetail.publishDisabledHomepageHint": "請先配置 OAuth2 認證資訊中的主頁地址",
   "PC.Pages.ThirdAppDetail.publishVersionRecords": "發布版本記錄",
   // 常規項目詳情頁
   "PC.Pages.NormalProjectDetail.tabPlan": "計畫",

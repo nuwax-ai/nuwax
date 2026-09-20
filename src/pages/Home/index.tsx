@@ -22,6 +22,7 @@ import useConversation from '@/hooks/useConversation';
 import useHomePinnedProjectHandoff, {
   type PinnedProjectInfo,
 } from '@/hooks/useHomePinnedProjectHandoff';
+import usePinnedAgentHandoff from '@/hooks/usePinnedAgentHandoff';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSelectSkillHandoff, {
   type SelectedSkillInfo,
@@ -82,6 +83,8 @@ const Home: React.FC = () => {
   const { consume: consumePinnedProject } = useHomePinnedProjectHandoff();
   const chatInputRef = useRef<ChatInputUnifiedRef>(null);
   const { consume: consumeSummonedExpert } = useSummonExpertHandoff();
+  // 广场智能体上框通道（bug 2398）：广场/空间广场卡片点击透传进本页
+  const { consume: consumePinnedAgent } = usePinnedAgentHandoff();
   const { consume: consumeSelectedSkill } = useSelectSkillHandoff();
   // 导航键：同路由 push（如侧栏搜索弹窗在 /home 内发起召唤/选择）也会生成新 key，
   // 供下方消费 effect 依赖触发重读（handoff 写入方不重挂 Home）
@@ -144,11 +147,13 @@ const Home: React.FC = () => {
   // 召唤透传消费：读取即清；if 守卫规避 StrictMode 双执行把一次性值洗掉。
   // 依赖 location.key：侧栏搜索弹窗在 /home 内发起召唤时 push 同路由不重挂，
   // 凭新导航键重读透传值（一次性值已清，重复执行为 no-op）
+  // 广场智能体上框（bug 2398）与召唤专家是同一「会话智能体槽位」（chip 展示 +
+  // 提交时以该智能体创建会话）：payload 结构一致，后到者覆盖（两通道不会同时写入）
   useEffect(() => {
-    const payload = consumeSummonedExpert();
+    const payload = consumeSummonedExpert() ?? consumePinnedAgent();
     if (payload) {
       setSummonedExpert(payload);
-      // 召唤专家优先于推荐 pill：显式清掉 pill 选中态
+      // 指定智能体优先于推荐 pill：显式清掉 pill 选中态
       setSelectedRecommend(undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
