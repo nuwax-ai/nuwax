@@ -23,6 +23,7 @@ import type {
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import { formatModifiedTime } from '../NewHomeSection/utils';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 
 /** 搜索分类 tab key */
 export type SearchTab =
@@ -183,7 +184,10 @@ export async function fetchProjectPage({
 }: SearchPageParams): Promise<SearchPageResult> {
   const current = cursor.page ?? 1;
   const res = await apiUserProjectPageQuery({
-    queryFilter: { name: keyword || undefined },
+    queryFilter: { 
+      name: keyword || undefined,
+      projectTypes: [AgentComponentTypeEnum.NormalProject, AgentComponentTypeEnum.UserApp],
+     },
     current,
     pageSize: size,
     orders: [],
