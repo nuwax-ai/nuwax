@@ -334,7 +334,8 @@ const SpaceSection: React.FC = () => {
               item.targetId,
               item.targetType,
               'space',
-              item?.ext?.conversationId,
+              // 智能体上框展示信息（bug 2398）
+              { name: item.name, icon: item.icon },
             ),
           );
         return (
@@ -361,7 +362,13 @@ const SpaceSection: React.FC = () => {
               type,
               true,
             )}
-            onClick={() => handleClick(item.targetId, item.targetType, 'space')}
+            onClick={() =>
+              // 智能体条目同样走上框（bug 2398），非智能体类型分支内自行分流
+              handleClick(item.targetId, item.targetType, 'space', {
+                name: item.name,
+                icon: item.icon,
+              })
+            }
           />
         );
       } else {
