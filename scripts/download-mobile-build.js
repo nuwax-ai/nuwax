@@ -8,7 +8,7 @@ const source = args.includes('gitlab') ? 'gitlab' : 'github';
 // const BRANCH = args.find((a) => a !== 'gitlab' && a !== 'github') || 'dev';
 const BRANCH =
   args.find((a) => a !== 'gitlab' && a !== 'github') ||
-  'feat/nuwa-zhuoda-2026.07';
+  'feat/nuwa-zhuoda-2026.09.30';
 const TARGET_DIR = 'unpackage/dist/build/web';
 
 let REPO_URL = '';
