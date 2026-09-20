@@ -64,7 +64,7 @@ export type UserProjectPageQueryParams = TablePageRequest<
     spaceId: number;
     creatorId: number;
     // 项目类型：NormalProject/UserApp/PageApp,可用值:Agent,Plugin,Skill,PageApp,UserApp,NormalProject,Workflow,Knowledge,Table,Model,Mcp
-    projectType: AgentComponentTypeEnum;
+    projectTypes: AgentComponentTypeEnum[];
     // 项目名称（模糊匹配）
     name: string;
     // 收藏过滤：all=全部（后端默认）；only=仅收藏。2026-09-14 两接口统一：

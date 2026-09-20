@@ -315,7 +315,9 @@ const ProjectPanel = forwardRef<
         if (options.append) setLoadingMore(true);
         try {
           const res = await apiUserProjectPageQuery({
-            queryFilter: {},
+            queryFilter: {
+              projectTypes: [AgentComponentTypeEnum.NormalProject, AgentComponentTypeEnum.UserApp],
+            },
             current: page,
             pageSize,
             orders: [],

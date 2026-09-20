@@ -174,9 +174,13 @@ export async function apiThirdAppOauth2SecretGet(
 // 查询三方应用信息（仅读，不自动生成凭证）
 export async function apiThirdAppOauth2InfoGet(
   projectId: number,
+  projectType?: AgentComponentTypeEnum,
 ): Promise<RequestResponse<ThirdAppOauth2AppInfo>> {
   return request(`/api/user-project/oauth2/info/${projectId}`, {
     method: 'GET',
+    params: {
+      projectType,
+    },
   });
 }
 

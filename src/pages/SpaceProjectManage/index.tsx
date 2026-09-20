@@ -43,6 +43,7 @@ import EditThirdAppModal, {
 } from './ThirdAppIntegration/EditThirdAppModal';
 import {
   openProject,
+  PROJECT_ALL_TAB_TYPES,
   PROJECT_TAB_LABEL_KEYS,
   PROJECT_TAB_TYPES,
   type ProjectTabKey,
@@ -56,7 +57,7 @@ const SCROLL_CONTAINER_ID = 'space-project-manage-scroll';
  * 空间项目管理页：聚合展示常规项目、全栈应用、三方应用（及历史网页应用）。
  *
  * 功能概览：
- * - Tab 筛选：「全部」单次 page-query 不传 projectType；切换类型 Tab 时附带 projectType
+ * - Tab 筛选：「全部」传 projectTypes 三种类型；单 Tab 传对应单个 projectType
  * - 搜索：按项目名称模糊匹配；列表滚动到底部分页加载（pageSize=48）
  * - 新建：下拉菜单支持创建常规项目 / 全栈应用 / 三方应用，成功后跳转对应详情页
  * - 卡片操作：常规/全栈/三方均支持编辑（各类型对应编辑弹窗）与删除
@@ -92,8 +93,11 @@ const SpaceProjectManage: React.FC = () => {
   const [editThirdAppTarget, setEditThirdAppTarget] =
     useState<ProjectListItem>();
 
-  const projectTypeFilter =
-    activeTab === 'all' ? undefined : activeTab;
+  /** 当前 Tab 对应的 projectTypes：全部三种类型，单 Tab 仅一种 */
+  const queryProjectTypes = useMemo(
+    () => (activeTab === 'all' ? PROJECT_ALL_TAB_TYPES : [activeTab]),
+    [activeTab],
+  );
 
   /** 分页查询当前 Tab + 关键词下的项目列表 */
   const { run, loading } = useRequest(
@@ -102,7 +106,7 @@ const SpaceProjectManage: React.FC = () => {
         queryFilter: {
           spaceId,
           name: name?.trim() || undefined,
-          ...(projectTypeFilter ? { projectType: projectTypeFilter } : {}),
+          projectTypes: queryProjectTypes,
         },
         current: pageIndex,
         pageSize: PAGE_SIZE,
@@ -127,7 +131,7 @@ const SpaceProjectManage: React.FC = () => {
         const current = pageResult.current || params[1] || 1;
         const size = pageResult.size || PAGE_SIZE;
         const records = Array.isArray(pageResult.records)
-          ? normalizeProjectRows(pageResult.records, projectTypeFilter)
+          ? normalizeProjectRows(pageResult.records, queryProjectTypes)
           : [];
         setList((previous) => {
           if (current === 1) {
