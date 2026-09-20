@@ -194,6 +194,10 @@ const EditAgent: React.FC = () => {
   // 是否隐藏返回箭头
   const [hideBack, setHideBack] = useState<boolean>(false);
 
+  // 单栏风格（style3）下页面内容最小宽度：横向滚动收敛在 page-container
+  // 容器内时，靠它保证窄窗口内容不被裁剪；经典风格下为空（走 html 最小宽度）
+  const [style3MinWidth, setStyle3MinWidth] = useState<string>();
+
   // 查询可使用模型列表接口
   const runMode = async (params: ModelListParams) => {
     const result = await apiModelList(params);
@@ -1072,12 +1076,35 @@ const EditAgent: React.FC = () => {
     /**
      * 设置最小宽度
      */
+    const pageContainerEl = document.getElementById('page-container-selector');
     // 单栏风格（style3）：滚动区域收敛在 page-container 内，
-    // 不再拓宽 html（否则窗口窄于阈值时出现窗口级全局滚动条）
+    // 不再拓宽 html（否则窗口窄于阈值时出现窗口级全局滚动条）；
+    // 横向滚动同样收敛为容器内滚动——内联放开 page-container 的 overflow-x
+    //（压过布局层的 overflow-x: hidden，切档/卸载时还原），页面内容自带
+    // style3MinWidth，窄窗口在容器底部出横向滚动条而非被裁剪
     if (document.body.classList.contains('xagi-nav-style3')) {
       document.documentElement.style.minWidth = 'unset';
-      return;
+      pageContainerEl?.style.setProperty('overflow-x', 'auto');
+      // 与渲染处分栏 minWidth 一一对应：左栏（编排）+ 右栏（调试/预览），
+      // 保证横向滚动到最右时内容零裁剪
+      const isTaskAgent = agentConfigInfo?.type === AgentTypeEnum.TaskAgent;
+      const leftMinWidth = isTaskAgent ? 380 : 680;
+      const isRightVisible =
+        !agentConfigInfo?.hideChatArea || pagePreviewData || isFileTreeVisible;
+      const rightMinWidth = isRightVisible
+        ? pagePreviewData || isFileTreeVisible
+          ? 1290
+          : 530
+        : 0;
+      // 24px = section 左右 margin（@marginSm = 12px，styles/token.less）
+      setStyle3MinWidth(`${leftMinWidth + rightMinWidth + 24}px`);
+      return () => {
+        document.documentElement.style.minWidth = '1200px';
+        pageContainerEl?.style.removeProperty('overflow-x');
+        setStyle3MinWidth(undefined);
+      };
     }
+    pageContainerEl?.style.removeProperty('overflow-x');
     // 通用型智能体才会存在文件树，当文件树可见、扩展页面可见时，设置最小宽度为1750px
     if (isFileTreeVisible || pagePreviewData) {
       document.documentElement.style.minWidth = '1750px';
@@ -1093,7 +1120,13 @@ const EditAgent: React.FC = () => {
     return () => {
       document.documentElement.style.minWidth = '1200px';
     };
-  }, [pagePreviewData, isFileTreeVisible, showType]);
+  }, [
+    agentConfigInfo?.type,
+    agentConfigInfo?.hideChatArea,
+    pagePreviewData,
+    isFileTreeVisible,
+    showType,
+  ]);
 
   /**
    * 加载中
@@ -1115,7 +1148,10 @@ const EditAgent: React.FC = () => {
   }
 
   return (
-    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
+    <div
+      className={cx(styles.container, 'h-full', 'flex', 'flex-col')}
+      style={style3MinWidth ? { minWidth: style3MinWidth } : undefined}
+    >
       <AgentHeader
         hideBack={hideBack}
         agentConfigInfo={agentConfigInfo}

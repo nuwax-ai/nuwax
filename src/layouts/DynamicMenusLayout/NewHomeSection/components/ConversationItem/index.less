@@ -89,19 +89,58 @@
         flex-shrink: 0;
       }
 
-      // 本地标记图标（置顶/收藏）
-      .pin-icon,
+      // 本地标记图标（收藏）
       .star-icon {
         font-size: 11px;
         flex-shrink: 0;
-      }
-
-      .pin-icon {
-        color: @colorPrimary;
-      }
-
-      .star-icon {
         color: @colorWarning;
+      }
+
+      // 行首置顶位（2026-09-20 定调）：实心=已置顶常显（点击取消置顶）；空心=
+      // 未置顶 hover 展开（宽度 0→14px 过渡，负 margin 抵掉展开前的占位 gap，
+      // 标题不永久缩进）
+      .pin-toggle {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        font-size: 11px;
+        color: @colorPrimary;
+        cursor: pointer;
+        overflow: hidden;
+      }
+
+      .pin-toggle-pinned {
+        width: 14px;
+        height: 16px;
+      }
+
+      .pin-toggle:not(.pin-toggle-pinned) {
+        width: 0;
+        height: 16px;
+        // token 是 var() 不可直接取负，calc 绕（仓内既有坑）
+        margin-left: calc(-1 * @paddingXs);
+        opacity: 0;
+        transition: width 0.2s ease, margin 0.2s ease, opacity 0.2s ease;
+      }
+
+      &:hover .pin-toggle:not(.pin-toggle-pinned),
+      &:focus-visible .pin-toggle:not(.pin-toggle-pinned),
+      &:has(:focus-visible) .pin-toggle:not(.pin-toggle-pinned) {
+        width: 14px;
+        margin-left: 0;
+        opacity: 1;
+      }
+
+      @media (hover: none) {
+        .pin-toggle:not(.pin-toggle-pinned) {
+          width: 14px;
+          margin-left: 0;
+          opacity: 1;
+        }
       }
 
       // 「⋯」菜单兜底按钮：hover 显示；触屏（hover: none）常显。
@@ -126,6 +165,63 @@
         }
       }
 
+      // 归档行内二次确认（参考原型 2026-09-19）：hover 显示归档图标（时间让位
+      // 同 ⋯ 口径），点击换红色「确认」二次点击执行；anchored ⋯ 左侧留 2px
+      .archive-action {
+        position: absolute;
+        right: 37px; // ⋯ right 11px + 宽 24px + 间距 2px
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .archive-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: @controlHeightSm;
+        height: @controlHeightSm;
+        padding: 0;
+        border: 0;
+        border-radius: 7px;
+        font-size: 14px;
+        color: @navSecondMenuAdaptiveTextTertiary;
+        background: transparent;
+        cursor: pointer;
+
+        &:hover {
+          color: @colorPrimary;
+          background: @colorPrimaryBg;
+        }
+      }
+
+      .archive-confirm {
+        height: 22px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: 4px;
+        background: @colorError;
+        color: @colorWhite;
+        font-size: 12px;
+        line-height: 22px;
+        cursor: pointer;
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: default;
+        }
+      }
+
+      @media (hover: none) {
+        .archive-action {
+          opacity: 1;
+        }
+      }
+
       .conversation-date {
         font-size: @fontSizeSm;
         color: @navSecondMenuAdaptiveTextTertiary;
@@ -142,8 +238,9 @@
   }
 
   &:hover {
-    // hover 会话项时显示「⋯」菜单兜底按钮
-    .conversation-topic-row :global(.more-btn) {
+    // hover 会话项时显示「⋯」菜单兜底按钮与归档确认入口
+    .conversation-topic-row :global(.more-btn),
+    .conversation-topic-row .archive-action {
       opacity: 1;
     }
 
@@ -168,11 +265,11 @@
     visibility: hidden;
   }
 
-  // 触屏（hover: none）无常悬停：「⋯」常显且为绝对定位贴右缘，时间须让位防重叠
-  //（「⋯」占位约 15px + 右缘 11px 内缩）
+  // 触屏（hover: none）无常悬停：「⋯」与归档入口常显且绝对定位贴右缘，时间须
+  // 让位防重叠（两枚 24px 按钮 + 2px 间距 + 右缘 11px 内缩 ≈ 61px）
   @media (hover: none) {
     .conversation-date {
-      margin-right: @marginLg;
+      margin-right: 62px;
     }
   }
 
@@ -214,6 +311,12 @@
 .conversation-item:has(:focus-visible)
   .conversation-topic-row
   :global(.more-btn) {
+  opacity: 1;
+}
+// 键盘聚焦与确认态常显：归档入口同 ⋯ 口径；armed 后鼠标移出「确认」不消失
+.conversation-item:focus-visible .conversation-topic-row .archive-action,
+.conversation-item:has(:focus-visible) .conversation-topic-row .archive-action,
+.conversation-item.archive-arming .archive-action {
   opacity: 1;
 }
 
@@ -267,7 +370,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .conversation-item {
+  .conversation-item,
+  .conversation-item .archive-action,
+  .conversation-item .pin-toggle {
     transition: none;
   }
 }

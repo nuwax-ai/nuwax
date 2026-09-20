@@ -56,10 +56,20 @@
 }
 
 .project {
-  // 项目行置顶图钉
-  .pin-icon {
+  // 行首文件夹徽标容器（2026-09-20 四态定调）：未置顶=关闭/打开双态；已置顶=
+  // 右上叠一枚小图钉徽标（收起+置顶/展开+置顶两态新做），置顶态由文件夹图标
+  // 本身表达，原文案行首图钉已移除
+  .folder-badge {
+    position: relative;
+    display: inline-flex;
     flex-shrink: 0;
-    font-size: 11px;
+  }
+
+  .folder-badge-pin {
+    position: absolute;
+    top: -5px;
+    right: -6px;
+    font-size: 9px;
     color: @colorPrimary;
   }
 
@@ -127,12 +137,7 @@
     cursor: pointer;
 
     // hover 背景统一走文件尾 .project .child:hover 的 @navRowHoverBg（原灰底声明
-    // 与后置 color-mix 规则同优先级、恒被覆盖，已删）；此处只保留⋯按钮显隐
-    &:hover {
-      .child-more {
-        opacity: 1;
-      }
-    }
+    // 与后置 color-mix 规则同优先级、恒被覆盖，已删）
 
     // 执行中标签（与任务列表 ConversationItem 的 status-tag 同款同参：
     // 11px 主色胶囊，置于行尾时间之前）
@@ -153,11 +158,61 @@
       color: @colorError;
     }
 
-    // 置顶图钉
-    .pin-icon {
+    // 行首重命名入口（2026-09-19 定调：子会话不支持置顶，原型图钉位让给
+    // 重命名；点击走既有重命名弹窗）。hover 才出现（参考原型显隐口径），
+    // opacity 占位防跳位；触屏（hover:none）无常悬停故常显
+    .child-rename {
       flex-shrink: 0;
-      font-size: 11px;
-      color: @colorPrimary;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font-size: 12px;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+
+      &:hover {
+        color: @navSecondMenuAdaptiveText;
+      }
+    }
+
+    &:hover .child-rename,
+    &:focus-visible .child-rename,
+    &:has(:focus-visible) .child-rename {
+      opacity: 1;
+    }
+
+    @media (hover: none) {
+      .child-rename {
+        opacity: 1;
+      }
+    }
+
+    // 行尾删除入口（2026-09-20 定调：子会话行=行首重命名/行尾删除，⋯菜单撤收）；
+    // 显隐由 .child-actions 容器统一（hover 显现/触屏常显），删除走既有确认弹窗
+    .child-delete {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: @controlHeightSm;
+      height: @controlHeightSm;
+      padding: 0;
+      border: 0;
+      border-radius: 7px;
+      font-size: 13px;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      background: transparent;
+      cursor: pointer;
+
+      &:hover {
+        color: @colorError;
+        background: @colorErrorBg;
+      }
     }
 
     .child-name {
@@ -177,25 +232,10 @@
       color: @navSecondMenuAdaptiveTextTertiary;
     }
 
-    // 「⋯」操作菜单按钮:默认隐藏,hover 行时显示;触屏常显
-    .child-more {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: @fontSizeSm;
-      color: @navSecondMenuAdaptiveTextTertiary;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-
-      &:hover {
-        color: @navSecondMenuAdaptiveText;
-      }
-    }
-
     @media (hover: none) {
-      .child-more {
-        opacity: 1;
+      .child-time {
+        // 触屏（hover:none）无常悬停：child-actions（删除入口）常显，时间让位
+        margin-right: @controlHeightSm;
       }
     }
 
@@ -330,11 +370,6 @@
       font-size: 13.5px;
       line-height: 19px;
     }
-
-    &:focus-visible .child-more,
-    &:has(:focus-visible) .child-more {
-      opacity: 1;
-    }
   }
 
   // 紧凑态 actions 浮层覆盖：行 hover 本身已是白卡，浮层不再叠第二层白底
@@ -424,6 +459,32 @@
   .project-more {
     opacity: 1;
   }
+
+  // 行内归档红色「确认」（二次点击，2026-09-20 同任务行口径）；特异性压过
+  // 上方 .project-actions button 共享皮
+  .archive-confirm {
+    height: 22px;
+    width: auto;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 4px;
+    background: @colorError;
+    color: @colorWhite;
+    font-size: 12px;
+    line-height: 22px;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: @colorWhite;
+      background: @colorError;
+    }
+  }
 }
 
 .child-actions {
@@ -433,12 +494,8 @@
   transform: translateY(-50%);
   padding: 1px;
   border-radius: @borderRadius;
-  // 白底+投影已去除（2026-09-12 走查定调）：行 hover 灰底上只留 ⋯ 图标本体，
+  // 白底+投影已去除（2026-09-12 走查定调）：行 hover 灰底上只留动作图标本体，
   // 不再浮白色小卡片
-}
-
-.project .child .child-actions .child-more {
-  opacity: 1;
 }
 
 // 白底卡片浮层只在 hover 或键盘焦点时出现;鼠标点击后的焦点残留不算

@@ -43,6 +43,11 @@ interface ConversationContextMenuProps {
   onCollectedChanged?: (collected: boolean) => void;
   /** 自定义重命名入口（缺省时组件内置 Modal + API + 全局事件） */
   onRename?: () => void;
+  /**
+   * 自定义归档入口（行内二次确认透出，2026-09-19 定调）：传则菜单「归档」不再
+   * 直接调接口，改由调用方进入行内确认态；「取消归档」仍走内置切换
+   */
+  onArchive?: () => void;
   /** 自定义删除入口（缺省时组件内置确认框 + API + 全局事件） */
   onDelete?: () => void;
   /** 内置删除成功后的回调（如列表本地移除） */
@@ -70,6 +75,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   onFlagChanged,
   onCollectedChanged,
   onRename,
+  onArchive,
   onDelete,
   onDeleted,
   onRenamed,
@@ -200,7 +206,12 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
         if (key === 'pin') {
           void handleToggleFlag('pinned');
         } else if (key === 'archive') {
-          void handleToggleFlag('archived');
+          // 归档走行内二次确认（onArchive 透出，2026-09-19 定调）；取消归档仍内置
+          if (!archived && onArchive) {
+            onArchive();
+          } else {
+            void handleToggleFlag('archived');
+          }
         } else if (key === 'collect') {
           void handleToggleCollect();
         } else if (key === 'rename') {
@@ -226,6 +237,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
       collected,
       currentTopic,
       onRename,
+      onArchive,
       onDelete,
       onFlagChanged,
       onCollectedChanged,

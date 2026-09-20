@@ -9,8 +9,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { TaskStatus } from '@/types/enums/agent';
+import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
@@ -19,9 +19,17 @@ vi.mock('@/services/i18nRuntime', () => ({
 
 // ConversationContextMenu（antd Dropdown 包装）整体替身：透传 render-prop
 vi.mock('@/components/business-component/ConversationContextMenu', () => ({
-  default: ({ children }: { children: (more: React.ReactNode) => React.ReactNode }) => (
-    <>{children(<button type="button">more</button>)}</>
-  ),
+  default: ({
+    children,
+  }: {
+    children: (more: React.ReactNode) => React.ReactNode;
+  }) => <>{children(<button type="button">more</button>)}</>,
+}));
+
+// 行内归档二次确认引入的会话服务：umi request 链在 vitest 下拉崩 esbuild，mock 断链
+vi.mock('@/services/agentConfig', () => ({
+  apiAgentConversationArchive: () =>
+    Promise.resolve({ code: 200, success: true }),
 }));
 
 // vitest 下 plain .less 非 CSS Modules、默认导出 undefined（仓内既有坑）

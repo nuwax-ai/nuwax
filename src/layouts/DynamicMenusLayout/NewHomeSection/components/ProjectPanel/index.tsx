@@ -68,7 +68,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useParams } from 'umi';
 import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
 import { CHILDREN_PROBE_LIMIT, diffChildrenProbe } from './childrenProbe';
@@ -216,8 +215,6 @@ const ProjectPanel = forwardRef<
     },
     ref,
   ) => {
-    const { spaceId: spaceIdParam } = useParams() as { spaceId?: string };
-    const spaceId = Number(spaceIdParam) || undefined;
     const { pin } = useHomePinnedProjectHandoff();
 
     const [projects, setProjects] = useState<ProjectItem[]>([]);
@@ -247,11 +244,14 @@ const ProjectPanel = forwardRef<
     const [renameProjectId, setRenameProjectId] = useState<string>();
     const [projectRenameName, setProjectRenameName] = useState('');
     const [projectRenaming, setProjectRenaming] = useState(false);
+    // 项目行内归档二次确认（2026-09-20 定调，同任务行口径）：行尾归档图标与
+    // ⋯菜单「归档」都汇入 armed 态，红色「确认」二次点击才执行
+    const [archiveArmingKey, setArchiveArmingKey] = useState<string>();
+    const [projectArchiving, setProjectArchiving] = useState(false);
     // 分页：首屏 PROJECT_PAGE_SIZE 条，「查看更多」按页追加（tab 接口 current/pageSize/total 契约）
     const [total, setTotal] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
     const pageRef = useRef(1);
-    const spaceIdRef = useRef(spaceId);
     const projectsRef = useRef(projects);
     projectsRef.current = projects;
     const pageRequestVersionRef = useRef(0);
@@ -259,10 +259,10 @@ const ProjectPanel = forwardRef<
       Array<{ event: ProjectChangedEvent; at: number }>
     >([]);
 
-    // 拉取指定页项目列表(page=1 整体替换,后续页追加合并;失败保持现状由空态兜底)
+    // 拉取指定页项目列表(page=1 整体替换,后续页追加合并;失败保持现状由空态兜底)。
+    // 不传 spaceId:拉该用户全部空间的项目(跨空间口径,所有布局风格共用本面板)
     const fetchPage = useCallback(
       async (page: number, options: { append: boolean }) => {
-        const requestSpaceId = spaceIdRef.current;
         const requestVersion = ++pageRequestVersionRef.current;
         const pageSize = options.append
           ? PROJECT_PAGE_SIZE
@@ -270,19 +270,15 @@ const ProjectPanel = forwardRef<
         if (options.append) setLoadingMore(true);
         try {
           const res = await apiUserProjectPageQuery({
-            queryFilter: { spaceId: requestSpaceId },
+            queryFilter: {},
             current: page,
             pageSize,
             orders: [],
             filters: [],
             columns: [],
           });
-          // 空间已切换:丢弃过期响应
-          if (
-            requestSpaceId !== spaceIdRef.current ||
-            requestVersion !== pageRequestVersionRef.current
-          )
-            return;
+          // 已有更新的分页请求在途:丢弃过期响应
+          if (requestVersion !== pageRequestVersionRef.current) return;
           if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
             const records = res.data.records;
             const fallback = dict('PC.Constants.Menus.newChat');
@@ -348,11 +344,10 @@ const ProjectPanel = forwardRef<
     );
 
     useEffect(() => {
-      spaceIdRef.current = spaceId;
       pageRequestVersionRef.current += 1;
       pageRef.current = 1;
       void fetchPage(1, { append: false }).finally(() => setLoading(false));
-    }, [spaceId, fetchPage]);
+    }, [fetchPage]);
 
     // 子会话按项目加载。刷新时保留旧行；在途事件通过 revision 和补拉收敛。
     const loadingChildrenRef = useRef<Set<string>>(new Set());
@@ -486,13 +481,6 @@ const ProjectPanel = forwardRef<
     });
 
     useProjectChanged((event) => {
-      if (
-        spaceId !== undefined &&
-        event.project.spaceId !== undefined &&
-        event.project.spaceId !== String(spaceId)
-      ) {
-        return;
-      }
       const now = Date.now();
       recentProjectEventsRef.current = recentProjectEventsRef.current
         .filter(({ at }) => now - at < 60_000)
@@ -733,6 +721,40 @@ const ProjectPanel = forwardRef<
     useEffect(() => {
       onVisibleCountChange?.(visibleProjects.length);
     }, [visibleProjects.length, onVisibleCountChange]);
+
+    // 项目行内归档确认执行（红「确认」二次点击）：常规/全栈走真实接口置归档，
+    // PageApp 契约未覆盖维持本地；成败都向服务端真值收敛一次（同 toggleProjectFlag）
+    const handleProjectArchiveConfirm = async (project: ProjectItem) => {
+      if (projectArchiving) return;
+      setProjectArchiving(true);
+      try {
+        const key = projectKeyOf(project);
+        const usesRealApi =
+          project.projectType === AgentComponentTypeEnum.NormalProject ||
+          project.projectType === AgentComponentTypeEnum.UserApp;
+        let ok = true;
+        if (usesRealApi) {
+          const res = await apiUserProjectArchive(
+            project.id,
+            true,
+            project.projectType as string,
+          ).catch(() => null);
+          ok = res?.code === SUCCESS_CODE;
+        }
+        if (!ok) {
+          message.error(dict('PC.Common.Global.operationFailed'));
+          return;
+        }
+        setArchivedIds((prev) => new Set(prev).add(key));
+        message.success(
+          dict('PC.Components.ConversationContextMenu.archivedToast'),
+        );
+        setArchiveArmingKey(undefined);
+        void fetchPage(1, { append: false });
+      } finally {
+        setProjectArchiving(false);
+      }
+    };
 
     // 项目标记 toggle：置顶/归档走项目级后端接口（常规/全栈项目；
     // PageApp 契约未覆盖暂本地）。后端成功才更新标记，
@@ -1015,7 +1037,12 @@ const ProjectPanel = forwardRef<
           if (key === 'pin') {
             toggleProjectFlag('pinned', project);
           } else if (key === 'archive') {
-            toggleProjectFlag('archived', project);
+            // 归档走行内二次确认（2026-09-20 定调，同任务行）；取消归档仍直接切换
+            if (archivedIds.has(flagKey)) {
+              toggleProjectFlag('archived', project);
+            } else {
+              setArchiveArmingKey(flagKey);
+            }
           } else if (key === 'collect') {
             toggleProjectCollected(project);
           } else if (key === 'rename') {
@@ -1097,38 +1124,6 @@ const ProjectPanel = forwardRef<
         },
       });
     };
-
-    // 子项菜单:项目下的会话不做置顶(2026-09-08 定调),仅 重命名/删除
-    const buildChildMenu = (projectKey: string, child: ProjectChildItem) => ({
-      items: [
-        {
-          key: 'rename',
-          icon: <EditOutlined />,
-          label: dict('PC.Components.ConversationContextMenu.rename'),
-        },
-        {
-          key: 'delete',
-          icon: <DeleteOutlined />,
-          danger: true,
-          label: dict('PC.Common.Global.delete'),
-        },
-      ],
-      onClick: ({
-        key,
-        domEvent,
-      }: {
-        key: string;
-        domEvent?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>;
-      }) => {
-        domEvent?.stopPropagation();
-        if (key === 'rename') {
-          setRenameTarget({ projectKey, childId: child.id });
-          setRenameName(child.name);
-        } else if (key === 'delete') {
-          openChildDelete(projectKey, child);
-        }
-      },
-    });
 
     // 「+ 新建会话」（项目行）：常规/全栈项目 → 跳 /home 首页项目上框（同类型智能体
     // 约束 + 建会话绑定项目）；PageApp 契约未覆盖维持提示；无类型按常规项目兜底
@@ -1222,6 +1217,14 @@ const ProjectPanel = forwardRef<
                   tabIndex={0}
                   aria-expanded={expanded}
                   onKeyDown={(event) => {
+                    if (
+                      archiveArmingKey === projectKeyOf(project) &&
+                      event.key === 'Escape'
+                    ) {
+                      event.stopPropagation();
+                      setArchiveArmingKey(undefined);
+                      return;
+                    }
                     if (event.target !== event.currentTarget) return;
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
@@ -1229,16 +1232,21 @@ const ProjectPanel = forwardRef<
                     }
                   }}
                 >
-                  {/* 展开指示=文件夹图标双态（2026-09-19 定调：行尾箭头去除，
-                      展开=打开态/收起=默认态），经典/单栏统一渲染 */}
-                  {expanded ? (
-                    <FolderOpenOutlined className={styles['project-icon']} />
-                  ) : (
-                    <FolderOutlined className={styles['project-icon']} />
-                  )}
-                  {pinnedIds.has(projectKeyOf(project)) && (
-                    <PushpinFilled className={cx(styles['pin-icon'])} />
-                  )}
+                  {/* 行首文件夹图标四态（2026-09-20 定调）：未置顶=关闭/打开双态，
+                      已置顶=右上叠小图钉徽标（收起/展开两态新做），置顶态由文件夹
+                      图标本身表达，原文案行首图钉移除 */}
+                  <span className={cx(styles['folder-badge'])}>
+                    {expanded ? (
+                      <FolderOpenOutlined className={styles['project-icon']} />
+                    ) : (
+                      <FolderOutlined className={styles['project-icon']} />
+                    )}
+                    {pinnedIds.has(projectKeyOf(project)) && (
+                      <PushpinFilled
+                        className={cx(styles['folder-badge-pin'])}
+                      />
+                    )}
+                  </span>
                   <span className={cx(styles.name)}>{project.name}</span>
                   <div className={styles['project-actions']}>
                     {renderAddConversationButton(project)}
@@ -1258,6 +1266,37 @@ const ProjectPanel = forwardRef<
                         />
                       </button>
                     </Dropdown>
+                    {/* 行尾归档入口（2026-09-20 新增，行走内二次确认同任务行） */}
+                    {archiveArmingKey === projectKeyOf(project) ? (
+                      <button
+                        type="button"
+                        className={cx(styles['archive-confirm'])}
+                        disabled={projectArchiving}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleProjectArchiveConfirm(project);
+                        }}
+                      >
+                        {dict('PC.Common.Global.confirm')}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={cx(styles['project-archive'])}
+                        aria-label={dict(
+                          'PC.Components.ConversationContextMenu.archive',
+                        )}
+                        title={dict(
+                          'PC.Components.ConversationContextMenu.archive',
+                        )}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setArchiveArmingKey(projectKeyOf(project));
+                        }}
+                      >
+                        <InboxOutlined />
+                      </button>
+                    )}
                   </div>
                 </div>
               </Dropdown>
@@ -1296,6 +1335,25 @@ const ProjectPanel = forwardRef<
                         }
                       }}
                     >
+                      {/* 行首重命名入口（2026-09-19 定调：子会话不支持置顶，
+                          原型图钉位让给重命名；hover 显现，点击走既有重命名弹窗） */}
+                      <button
+                        type="button"
+                        className={styles['child-rename']}
+                        aria-label={dict(
+                          'PC.Components.ConversationContextMenu.rename',
+                        )}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setRenameTarget({
+                            projectKey: projectKeyOf(project),
+                            childId: child.id,
+                          });
+                          setRenameName(child.name);
+                        }}
+                      >
+                        <EditOutlined />
+                      </button>
                       {leadingMark && (
                         <ConversationStatusMark
                           taskStatus={child.taskStatus}
@@ -1324,23 +1382,20 @@ const ProjectPanel = forwardRef<
                         </span>
                       )}
                       <div className={styles['child-actions']}>
-                        {/* 子任务悬停操作浮层 */}
-                        <Dropdown
-                          menu={buildChildMenu(projectKeyOf(project), child)}
-                          trigger={['click']}
+                        {/* 行尾删除入口（2026-09-20 定调：子会话行=行首重命名/
+                            行尾删除，⋯菜单撤收）；删除走既有二次确认弹窗 */}
+                        <button
+                          type="button"
+                          className={cx(styles['child-delete'])}
+                          aria-label={dict('PC.Common.Global.delete')}
+                          title={dict('PC.Common.Global.delete')}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openChildDelete(projectKeyOf(project), child);
+                          }}
                         >
-                          <button
-                            type="button"
-                            aria-label={dict('PC.Components.ActionMenu.more')}
-                            className={cx(styles['child-more'])}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <SvgIcon
-                              name="icons-common-more"
-                              style={{ fontSize: 15 }}
-                            />
-                          </button>
-                        </Dropdown>
+                          <DeleteOutlined />
+                        </button>
                       </div>
                     </div>
                   );
