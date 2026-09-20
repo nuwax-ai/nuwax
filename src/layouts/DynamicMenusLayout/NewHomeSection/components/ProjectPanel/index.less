@@ -78,8 +78,8 @@
 
   .folder-badge-pin {
     position: absolute;
-    top: -5px;
-    right: -6px;
+    top: 0;
+    right: -2px;
     font-size: 9px;
     color: @navSecondMenuAdaptiveTextSecondary;
   }
@@ -310,6 +310,39 @@
       visibility: hidden;
     }
   }
+}
+
+// 项目下暂无会话空状态（2026-09-20 定调）：与项目/任务列表空态同款插图的
+// 缩小版（40px，嵌套子行区不宜 64px）+ 次级文案 + 「新建会话」主色小按钮
+// （功能同项目行「+」）。独立于 .child 声明：容器不挂行类，无行点击/悬停皮
+.child-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: @paddingXxs;
+  padding: @paddingXs 0;
+  text-align: center;
+  cursor: default;
+  margin-left: -15px;
+}
+
+.child-empty-img {
+  width: 40px;
+  height: 40px;
+}
+
+.child-empty-text {
+  font-size: @fontSizeSm;
+  line-height: @lineHeightSm;
+  color: @navSecondMenuAdaptiveTextTertiary;
+}
+
+.child-create-btn {
+  height: 24px;
+  padding: 0 @paddingMd;
+  border-radius: 12px;
+  font-size: @fontSizeSm;
+  line-height: 22px;
 }
 
 .project-more {

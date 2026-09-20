@@ -14,7 +14,7 @@ import {
 } from '@ant-design/icons';
 import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
 import styles from './index.less';
@@ -65,6 +65,20 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   // 二次点击执行；⋯菜单「归档」经 onArchive 汇入同一状态，入口确认口径统一
   const [archiveArming, setArchiveArming] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  // 确认态点击外部取消（2026-09-20 定调）：armed 时点击「确认」以外任意位置
+  // （其他行/菜单/空白）回退常规态。capture 阶段监听先于行内 stopPropagation；
+  // ref 包容判断豁免确认钮本体，Esc 取消保留
+  const archiveActionRef = useRef<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    if (!archiveArming) return;
+    const onDocClick = (event: MouseEvent) => {
+      if (!archiveActionRef.current?.contains(event.target as Node)) {
+        setArchiveArming(false);
+      }
+    };
+    document.addEventListener('click', onDocClick, true);
+    return () => document.removeEventListener('click', onDocClick, true);
+  }, [archiveArming]);
   const handleArchiveConfirm = async () => {
     if (archiving) return;
     setArchiving(true);
@@ -223,7 +237,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
               )}
               {/* 归档行内二次确认：hover 显示归档图标（时间让位），点击换红色
                   「确认」再点执行；位置与 ⋯ 并排贴行右缘 */}
-              <span className={cx(styles['archive-action'])}>
+              <span
+                className={cx(styles['archive-action'])}
+                ref={archiveActionRef}
+              >
                 {archiveArming ? (
                   <button
                     type="button"

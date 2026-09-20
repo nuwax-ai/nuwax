@@ -44,7 +44,6 @@ import {
 } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
 import {
-  CommentOutlined,
   DeleteOutlined,
   EditOutlined,
   FolderOpenOutlined,
@@ -56,7 +55,7 @@ import {
   StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
-import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
+import { Button, Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import {
@@ -249,9 +248,32 @@ const ProjectPanel = forwardRef<
     const [archiveArmingKey, setArchiveArmingKey] = useState<string>();
     const [projectArchiving, setProjectArchiving] = useState(false);
     // 项目子会话删除与归档同口径：首次点击进入行内确认，二次点击才请求删除。
-    const [childDeleteArmingKey, setChildDeleteArmingKey] =
-      useState<string>();
+    const [childDeleteArmingKey, setChildDeleteArmingKey] = useState<string>();
     const [childDeleting, setChildDeleting] = useState(false);
+    // 行内二次确认（项目归档/子会话删除）点击外部取消（2026-09-20 定调）：
+    // armed 时点击对应「确认」按钮作用域以外的任意位置回退常规态。capture 阶段
+    // 监听（先于行内 stopPropagation 生效）；data-* scope 标记豁免本行触发/
+    // 确认钮，函数式更新避免并行 armed 相互清位；Esc 逐行取消保留
+    useEffect(() => {
+      if (!archiveArmingKey && !childDeleteArmingKey) return;
+      const onDocClick = (event: Event) => {
+        const target = event.target as Element | null;
+        const archiveScope = target
+          ?.closest('[data-archive-arming]')
+          ?.getAttribute('data-archive-arming');
+        const deleteScope = target
+          ?.closest('[data-delete-arming]')
+          ?.getAttribute('data-delete-arming');
+        setArchiveArmingKey((prev) =>
+          prev && archiveScope !== prev ? undefined : prev,
+        );
+        setChildDeleteArmingKey((prev) =>
+          prev && deleteScope !== prev ? undefined : prev,
+        );
+      };
+      document.addEventListener('click', onDocClick, true);
+      return () => document.removeEventListener('click', onDocClick, true);
+    }, [archiveArmingKey, childDeleteArmingKey]);
     // 分页：首屏 PROJECT_PAGE_SIZE 条，「查看更多」按页追加（tab 接口 current/pageSize/total 契约）
     const [total, setTotal] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -1131,6 +1153,31 @@ const ProjectPanel = forwardRef<
       }
     };
 
+    // 「+ 新建会话」/ 空态「新建会话」共用：常规/全栈项目 → 跳 /home 首页项目
+    // 上框（同类型智能体约束 + 建会话绑定项目）；PageApp 契约未覆盖维持提示；
+    // 无类型按常规项目兜底
+    const handleAddConversation = (project: ProjectItem) => {
+      if (project.projectType === AgentComponentTypeEnum.PageApp) {
+        message.info(
+          dict(
+            'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable',
+          ),
+        );
+        return;
+      }
+      pin({
+        projectId: project.id,
+        spaceId: project.spaceId,
+        projectType:
+          project.projectType ?? AgentComponentTypeEnum.NormalProject,
+        name: project.name,
+        icon: project.icon,
+        sandboxId: project.sandboxId,
+        devAgentId: project.devAgentId,
+        owner: project.owner,
+      });
+    };
+
     // 「+ 新建会话」（项目行）：常规/全栈项目 → 跳 /home 首页项目上框（同类型智能体
     // 约束 + 建会话绑定项目）；PageApp 契约未覆盖维持提示；无类型按常规项目兜底
     const renderAddConversationButton = (project: ProjectItem) => (
@@ -1147,28 +1194,11 @@ const ProjectPanel = forwardRef<
           )}
           onClick={(event) => {
             event.stopPropagation();
-            if (project.projectType === AgentComponentTypeEnum.PageApp) {
-              message.info(
-                dict(
-                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable',
-                ),
-              );
-              return;
-            }
-            pin({
-              projectId: project.id,
-              spaceId: project.spaceId,
-              projectType:
-                project.projectType ?? AgentComponentTypeEnum.NormalProject,
-              name: project.name,
-              icon: project.icon,
-              sandboxId: project.sandboxId,
-              devAgentId: project.devAgentId,
-              owner: project.owner,
-            });
+            handleAddConversation(project);
           }}
         >
-          <CommentOutlined />
+          {/* 2026-09-20 定调：新建会话图标回归 + 号（与行图标族 icons-common-* 统一） */}
+          <SvgIcon name="icons-common-plus" style={{ fontSize: 15 }} />
         </button>
       </Tooltip>
     );
@@ -1300,6 +1330,7 @@ const ProjectPanel = forwardRef<
                       <button
                         type="button"
                         className={cx(styles['archive-confirm'])}
+                        data-archive-arming={projectKeyOf(project)}
                         disabled={projectArchiving}
                         onClick={(event) => {
                           event.stopPropagation();
@@ -1334,6 +1365,7 @@ const ProjectPanel = forwardRef<
                           <button
                             type="button"
                             className={cx(styles['project-archive'])}
+                            data-archive-arming={projectKeyOf(project)}
                             aria-label={dict(
                               'PC.Components.ConversationContextMenu.archive',
                             )}
@@ -1357,6 +1389,33 @@ const ProjectPanel = forwardRef<
                     <Spin size="small" />
                   </div>
                 )}
+                {/* 项目下暂无会话：空状态（与项目/任务列表空态同款插图）+
+                    「新建会话」按钮，按钮功能与项目行「+」一致（2026-09-20 定调） */}
+                {project.children !== undefined &&
+                  project.children.length === 0 && (
+                    <div className={cx(styles['child-empty-state'])}>
+                      <img
+                        className={cx(styles['child-empty-img'])}
+                        src={emptyStateNoData}
+                        alt=""
+                      />
+                      <span className={cx(styles['child-empty-text'])}>
+                        {dict(
+                          'PC.Components.HistoryConversationList.projectNoConversations',
+                        )}
+                      </span>
+                      <Button
+                        size="small"
+                        className={cx(styles['child-create-btn'])}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleAddConversation(project);
+                        }}
+                      >
+                        {dict('PC.Constants.Menus.newChat')}
+                      </Button>
+                    </div>
+                  )}
                 {(project.children ?? []).map((child) => {
                   const isChildActive =
                     activeConversationId !== undefined &&
@@ -1456,6 +1515,7 @@ const ProjectPanel = forwardRef<
                           <button
                             type="button"
                             className={cx(styles['delete-confirm'])}
+                            data-delete-arming={childActionKey}
                             disabled={childDeleting}
                             onClick={(event) => {
                               event.stopPropagation();
@@ -1475,6 +1535,7 @@ const ProjectPanel = forwardRef<
                             <button
                               type="button"
                               className={cx(styles['child-delete'])}
+                              data-delete-arming={childActionKey}
                               aria-label={dict('PC.Common.Global.delete')}
                               onClick={(event) => {
                                 event.stopPropagation();

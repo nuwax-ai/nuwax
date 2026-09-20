@@ -1,6 +1,6 @@
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
-import { ExclamationCircleFilled, LoadingOutlined } from '@ant-design/icons';
+import { LoadingOutlined, WarningOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -41,7 +41,7 @@ const ConversationStatusMark: React.FC<ConversationStatusMarkProps> = ({
   }
   if (taskStatus === TaskStatus.FAILED) {
     return (
-      <ExclamationCircleFilled
+      <WarningOutlined
         className={cx(styles['mark-failed'])}
         aria-label={dict(
           'PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask',
