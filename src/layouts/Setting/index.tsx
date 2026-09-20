@@ -130,6 +130,11 @@ const Setting: React.FC = () => {
       footer={null}
       onCancel={() => setOpenSetting(false)}
       className={cx(styles['modal-container'])}
+      // 钉死基础层级（bug 2439）：antd 弹层 zIndex 会随打开次数爬升，客户端壳的
+      // 顶行/拖拽热区固定在 1099–1101 层——爬升越过后遮罩盖住工具栏（不可点）。
+      // 固定 1000=antd 默认基线，PC web 无壳层不受影响；内部下拉等次级弹层
+      // 相对爬升仍在 1000+ 区间，低于壳层。
+      zIndex={1000}
       modalRender={() => (
         <div
           className={cx(styles.container, 'flex', 'overflow-hide', {
