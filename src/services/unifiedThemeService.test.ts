@@ -561,3 +561,74 @@ describe('桌面端锁单栏：生效态收敛（2026-09-14 客户端渐变背�
     ).toBe('none');
   });
 });
+
+describe('registerPostApplyHook（applyToDOM 后置钩子，2026-09-20 白带根因）', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    seedMigrationGuard();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('emitEvent:false 的静默 updateData 也触发钩子，且钩子看到的是本次新写的通用变量', async () => {
+    // brandTheme 靠钩子在通用变量落地后续写品牌覆盖——钩子必须晚于 applyToDOM
+    // 的整组 setProperty 执行，否则读到旧值、续写语义失效
+    let seenPrimary: string | null = null;
+    const hook = vi.fn(() => {
+      seenPrimary = document.documentElement.style.getPropertyValue(
+        '--xagi-color-primary',
+      );
+    });
+    const dispose = unifiedThemeService.registerPostApplyHook(hook);
+
+    try {
+      await unifiedThemeService.updateData(
+        { primaryColor: '#52c41a' },
+        { immediate: true, saveToStorage: false, emitEvent: false },
+      );
+    } finally {
+      dispose();
+    }
+
+    expect(hook).toHaveBeenCalled();
+    expect(seenPrimary).toBe('#52c41a');
+  });
+
+  it('卸载函数生效：dispose 后 applyToDOM 不再调用钩子', async () => {
+    const hook = vi.fn();
+    unifiedThemeService.registerPostApplyHook(hook)();
+
+    await unifiedThemeService.updateData(
+      { primaryColor: '#52c41a' },
+      { immediate: true, saveToStorage: false, emitEvent: false },
+    );
+
+    expect(hook).not.toHaveBeenCalled();
+  });
+
+  it('单钩子抛错不拖垮其余钩子', async () => {
+    const bad = vi.fn(() => {
+      throw new Error('hook boom');
+    });
+    const good = vi.fn();
+    const disposeBad = unifiedThemeService.registerPostApplyHook(bad);
+    const disposeGood = unifiedThemeService.registerPostApplyHook(good);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await unifiedThemeService.updateData(
+        { primaryColor: '#52c41a' },
+        { immediate: true, saveToStorage: false, emitEvent: false },
+      );
+    } finally {
+      errorSpy.mockRestore();
+      disposeBad();
+      disposeGood();
+    }
+
+    expect(bad).toHaveBeenCalled();
+    expect(good).toHaveBeenCalled();
+  });
+});

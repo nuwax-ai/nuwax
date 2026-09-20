@@ -12,6 +12,12 @@
  */
 import { hostBridge } from '@/utils/hostBridge';
 import { handleHostActivityPayload } from './hostVisibility';
+import { saveUserLang } from '@/services/i18n';
+import {
+  fetchAndApplyLangMap,
+  markLangUserSet,
+} from '@/services/i18nRuntime';
+import { normalizeLang } from '@/services/i18nLangPolicy';
 
 /** 宿主命令需要驱动的业务能力（由调用方注入）。 */
 export interface HostBridgeEventHandlers {
@@ -26,6 +32,24 @@ export interface HostBridgeEventHandlers {
 
 /** 最近一次注入的 handlers（handleHostCommand 闭包读取，保证读到最新）。 */
 let currentHandlers: HostBridgeEventHandlers | null = null;
+
+/** set-lang 命令处理：归一语种 → 标记用户显式选择 → 拉取并应用字典 → 尽力持久化账号。 */
+function handleSetLangPayload(lang: unknown): void {
+  const normalized = normalizeLang(typeof lang === 'string' ? lang : null);
+  markLangUserSet();
+  void (async () => {
+    try {
+      await fetchAndApplyLangMap(normalized, 'PC');
+      try {
+        await saveUserLang(normalized);
+      } catch {
+        // 后端持久化失败不阻断本地切换（与 web 自身语言面板同策略）
+      }
+    } catch (error) {
+      console.error('[hostBridgeEvents] set-lang apply failed:', error);
+    }
+  })();
+}
 
 /** 宿主命令分发：按 payload.type 路由到对应业务能力。 */
 function handleHostCommand(payload: HostCommand): void {
@@ -43,6 +67,11 @@ function handleHostCommand(payload: HostCommand): void {
     case 'host-activity':
       // 休眠控制：壳 hostActivity 服务下发的宿主可见性沿，不依赖注入 handlers
       handleHostActivityPayload(payload);
+      break;
+    case 'set-lang':
+      // 壳设置切语言（bug 2428）：应用语种+标记显式选择+尽力持久化到账号；
+      // 壳随后重载本 webview 全量渲染新语种，持久化失败不阻断本地切换
+      handleSetLangPayload(payload.lang);
       break;
     default:
       console.warn(

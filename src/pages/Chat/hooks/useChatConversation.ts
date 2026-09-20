@@ -27,6 +27,12 @@ export interface UseChatConversationProps {
   isSendMessageRef: React.MutableRefObject<boolean>;
   variableParams: any;
   getEffectiveSandboxId: () => string | undefined;
+  /**
+   * 清空上下文新建会话时绑定的沙箱 id（bug 2451：执行按创建时绑定路由）。
+   * 语义=清空重置手动选择后的生效值（智能体绑定/云电脑哨兵），
+   * 由页面以渲染期值传入（handleClear 内 state 闭包已过时，不可现场求值）。
+   */
+  createConversationSandboxId?: number;
   setClearLoading: (loading: boolean) => void;
   handleClearSideEffect: () => void;
   setIsMoreMessage: (isMore: boolean) => void;
@@ -56,6 +62,7 @@ export const useChatConversation = ({
   isSendMessageRef,
   variableParams,
   getEffectiveSandboxId,
+  createConversationSandboxId,
   setClearLoading,
   handleClearSideEffect,
   setIsMoreMessage,
@@ -91,6 +98,9 @@ export const useChatConversation = ({
       const res = await apiAgentConversationCreate({
         agentId,
         devMode: false,
+        // 执行按创建时绑定的沙箱路由（bug 2451）：创建即带清空重置后的生效
+        // 绑定（智能体绑定/云电脑哨兵），与选择器清空后显示一致
+        sandboxId: createConversationSandboxId ?? Number(CLOUD_SANDBOX_ID),
       });
 
       if (res.code === SUCCESS_CODE && res.data) {

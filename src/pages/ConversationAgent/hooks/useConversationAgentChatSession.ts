@@ -2,6 +2,7 @@ import type {
   AgentInterventionHandlersOverride,
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversation from '@/hooks/useConversation';
 import {
@@ -21,6 +22,7 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
@@ -180,10 +182,18 @@ export function useConversationAgentChatSession(
 
     try {
       setIsLoadingOtherInterface(true);
-      // 创建智能体会话(智能体编排页面devMode为true)
+      // 创建智能体会话(智能体编排页面devMode为true)；执行按创建时绑定的沙箱
+      // 路由（bug 2451 口径），创建即带当前生效选择（手动 > 旧会话智能体快照
+      // 绑定 > 云电脑哨兵）
       const { success, data } = await runAsyncConversationCreate({
         agentId,
         devMode: true,
+        sandboxId: Number(
+          resolveEffectiveSandboxId({
+            selectedComputerId,
+            agentSandboxId: conversationInfo?.agent?.sandboxId,
+          }) || CLOUD_SANDBOX_ID,
+        ),
       });
 
       if (success) {
@@ -220,7 +230,9 @@ export function useConversationAgentChatSession(
   }, [
     agentId,
     agentConfigInfo,
+    conversationInfo?.agent?.sandboxId,
     onAgentConfigInfo,
+    selectedComputerId,
     handleClearSideEffect,
     setIsMoreMessage,
     clearFilePanelInfo,

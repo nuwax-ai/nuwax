@@ -825,6 +825,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   }, [infos, messageSourceType, manualComponents]);
 
   // 会话相关 props
+  // 清空上下文新会话的创建绑定（bug 2451：执行按创建时绑定路由）：清空已重置
+  // 手动选择，绑定=智能体绑定/云哨兵，与选择器清空后显示一致（hook 内 state
+  // 闭包过时，须以渲染期值传入）
+  const createConversationSandboxId = useMemo(
+    () => Number(effectiveAgent?.sandboxId || CLOUD_SANDBOX_ID),
+    [effectiveAgent?.sandboxId],
+  );
   const { handleClear, handleMessageSend } = useChatConversation({
     id,
     agentId,
@@ -835,6 +842,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isSendMessageRef,
     variableParams,
     getEffectiveSandboxId,
+    createConversationSandboxId,
     setClearLoading,
     handleClearSideEffect,
     setIsMoreMessage,

@@ -1,12 +1,15 @@
+import usePinnedAgentHandoff from '@/hooks/usePinnedAgentHandoff';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
-import { jumpTo } from '@/utils/router';
 import { useState } from 'react';
 import { history } from 'umi';
 
 // 广场组件列表
 const useSpaceSquare = () => {
+  // 广场智能体上框通道（bug 2398）：智能体卡片点击改跳 /home 上框
+  const { pin: pinAgent } = usePinnedAgentHandoff();
+
   // 广场组件列表
   const [squareComponentList, setSquareComponentList] = useState<
     SquarePublishedItemInfo[]
@@ -18,17 +21,19 @@ const useSpaceSquare = () => {
     targetId: number,
     targetType: SquareAgentTypeEnum | AgentComponentTypeEnum,
     from: 'space' | 'square' = 'square',
-    conversationId?: number,
+    // 智能体上框所需展示信息（bug 2398：智能体分支必传，其余类型不消费）
+    itemInfo?: { name: string; icon?: string },
   ) => {
-    // 智能体
+    // 智能体（bug 2398）：广场卡片点击改为跳 /home 上框该智能体（替代原
+    // /agent/:id 详情页与 /home/chat/:cid/:aid 会话页两跳转）；付费拦截在
+    // 调用方 interceptAgentClick 包装，订阅放行后进入本分支同样走上框
     if (targetType === SquareAgentTypeEnum.Agent) {
-      if (conversationId) {
-        // 跳转到智能体应用内聊天页面
-        history.push(`/home/chat/${conversationId}/${targetId}`);
-      } else {
-        // 跳转到智能体详情页面
-        jumpTo(`/agent/${targetId}`);
-      }
+      pinAgent({
+        agentId: targetId,
+        name: itemInfo?.name ?? '',
+        icon: itemInfo?.icon,
+      });
+      return;
     }
     // 插件
     if (targetType === SquareAgentTypeEnum.Plugin) {

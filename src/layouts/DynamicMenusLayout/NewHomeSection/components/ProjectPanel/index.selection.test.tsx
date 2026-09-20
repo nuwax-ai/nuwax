@@ -386,6 +386,137 @@ describe('ProjectPanel 选中关系', () => {
     await waitFor(() => expect(screen.getByText('新项目')).toBeTruthy());
   });
 
+  // bug 2407 / 2413：后端列表接口对新项目有秒级可见性延迟
+  // （docs/project-conversation-sync.md）。上面的用例只覆盖「第二拉就回了新行」，
+  // 下面三条守的是延迟窗口内的行为——首轮回包还没有新行时不能就此永久缺失。
+  describe('created 项目有界重拉（bug 2407 / 2413）', () => {
+    it('首轮回包还没有新项目：重拉到行出现，无需手动刷新', async () => {
+      respondPage([buildRecord()], defaultConversations());
+      render(<ProjectPanel compact />);
+      await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
+      const callsAfterMount = pageQueryMock.mock.calls.length;
+
+      // 首轮（事件后第一次）仍只回旧行——模拟后端可见性延迟
+      pageQueryMock.mockResolvedValue({
+        code: SUCCESS_CODE,
+        data: { records: [buildRecord()], total: 1 },
+      });
+
+      act(() => {
+        emitProjectChanged({
+          operation: 'created',
+          project: {
+            projectId: '3',
+            projectType: AgentComponentTypeEnum.NormalProject,
+            spaceId: '100',
+          },
+          origin: 'test',
+          reason: 'create',
+        });
+      });
+
+      // 立刻再拉了一轮（而不是就此放弃）
+      await waitFor(() =>
+        expect(pageQueryMock.mock.calls.length).toBeGreaterThan(
+          callsAfterMount,
+        ),
+      );
+      expect(screen.queryByText('新项目')).toBeNull();
+
+      // 后端延迟过后回包带上新行 → 列表无需手动刷新即出现
+      pageQueryMock.mockResolvedValue({
+        code: SUCCESS_CODE,
+        data: {
+          records: [
+            buildRecord(),
+            buildRecord({ projectId: 3, name: '新项目' }),
+          ],
+          total: 2,
+        },
+      });
+      await waitFor(() => expect(screen.getByText('新项目')).toBeTruthy());
+    });
+
+    it('重试窗口内后端始终不回：有界结束，不会无限请求', async () => {
+      respondPage([buildRecord()], defaultConversations());
+      render(<ProjectPanel compact />);
+      await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
+      const callsAfterMount = pageQueryMock.mock.calls.length;
+      // 窗口内始终只回旧行
+      pageQueryMock.mockResolvedValue({
+        code: SUCCESS_CODE,
+        data: { records: [buildRecord()], total: 1 },
+      });
+
+      act(() => {
+        emitProjectChanged({
+          operation: 'created',
+          project: {
+            projectId: '3',
+            projectType: AgentComponentTypeEnum.NormalProject,
+            spaceId: '100',
+          },
+          origin: 'test',
+          reason: 'create',
+        });
+      });
+
+      // 挂载 1 次 + 首轮立即 1 次 + 3 次补偿 = 5，到此收敛不再增长
+      await waitFor(
+        () => expect(pageQueryMock.mock.calls.length).toBe(callsAfterMount + 4),
+        { timeout: 5000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      expect(pageQueryMock.mock.calls.length).toBe(callsAfterMount + 4);
+      expect(screen.queryByText('新项目')).toBeNull();
+    });
+
+    it('ProjectChanged 与 ConversationChanged 双事件不触发两条并行重试链', async () => {
+      respondPage([buildRecord()], defaultConversations());
+      render(<ProjectPanel compact />);
+      await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
+      const callsAfterMount = pageQueryMock.mock.calls.length;
+      pageQueryMock.mockResolvedValue({
+        code: SUCCESS_CODE,
+        data: {
+          records: [
+            buildRecord(),
+            buildRecord({ projectId: 3, name: '新项目' }),
+          ],
+          total: 2,
+        },
+      });
+
+      act(() => {
+        emitProjectChanged({
+          operation: 'created',
+          project: {
+            projectId: '3',
+            projectType: AgentComponentTypeEnum.NormalProject,
+            spaceId: '100',
+          },
+          origin: 'test',
+          reason: 'create',
+        });
+        emitConversationChanged({
+          operation: 'created',
+          conversationId: '11',
+          project: {
+            projectId: '3',
+            projectType: AgentComponentTypeEnum.NormalProject,
+            spaceId: '100',
+          },
+          origin: 'test',
+          reason: 'create',
+        });
+      });
+
+      await waitFor(() => expect(screen.getByText('新项目')).toBeTruthy());
+      // 双事件去重：收敛后总请求数 = 挂载 1 + 重试链最多 1（首轮即命中）
+      expect(pageQueryMock.mock.calls.length).toBe(callsAfterMount + 1);
+    });
+  });
+
   it('空间路由下也不传 spaceId 拉全量，并接收其它空间的项目事件', async () => {
     // /space/:spaceId 路由挂载（跨空间口径：queryFilter 不带 spaceId）
     routeParams.params = { spaceId: '100' };

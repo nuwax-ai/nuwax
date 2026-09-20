@@ -98,6 +98,8 @@ interface UpdateOptions {
 class UnifiedThemeService {
   private currentData: UnifiedThemeData;
   private listeners: Set<(data: UnifiedThemeData) => void> = new Set();
+  /** applyToDOM 后置钩子：变量写完后同步执行，见 registerPostApplyHook */
+  private postApplyHooks: Set<() => void> = new Set();
   private clearThemeFlag: boolean = false;
   constructor() {
     this.currentData = this.loadConfiguration();
@@ -598,6 +600,18 @@ class UnifiedThemeService {
           : 'expanded',
       );
       this.updateBodyClasses(navigationStyleKey);
+
+      // 后置钩子：本方法把 STYLE_CONFIGS 变量整组覆写后同步执行。emitEvent:false /
+      // needNotify:false 等静默应用路径不触发 listeners，靠通知续写自己变量的覆盖层
+      // （brandTheme）会被这里冲掉后无人恢复（2026-09-20 侧栏吸顶分组头白带根因）；
+      // 钩子在每条应用路径收尾处续写，单钩子失败不拖垮其余钩子
+      this.postApplyHooks.forEach((hook) => {
+        try {
+          hook();
+        } catch (error) {
+          console.error('Post-apply hook failed:', error);
+        }
+      });
     } catch (error) {
       console.error('Failed to apply theme data to DOM:', error);
     }
@@ -690,6 +704,20 @@ class UnifiedThemeService {
    */
   addListener(callback: (data: UnifiedThemeData) => void): void {
     this.listeners.add(callback);
+  }
+
+  /**
+   * 注册 applyToDOM 后置钩子，返回卸载函数。
+   * 与 listeners 的区别：listeners 只在通知型更新（emitEvent/needNotify=true）触发，
+   * 钩子在每一次 applyToDOM 之后同步执行——包括 updateData({emitEvent:false})、
+   * reloadConfiguration(false) 等静默路径。供不依赖 React 通知、但必须在通用变量
+   * 落地后续写/收敛自己变量的覆盖层使用（如 brandTheme 的品牌 CSS 变量）。
+   */
+  registerPostApplyHook(hook: () => void): () => void {
+    this.postApplyHooks.add(hook);
+    return () => {
+      this.postApplyHooks.delete(hook);
+    };
   }
 
   /**
@@ -814,6 +842,7 @@ export const {
   updateLanguage,
   addListener,
   removeListener,
+  registerPostApplyHook,
   reloadConfiguration,
   resetToDefault,
   getConfigSource,

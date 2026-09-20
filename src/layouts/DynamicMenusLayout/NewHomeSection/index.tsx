@@ -44,4 +44,7 @@ const NewHomeSection: React.FC<{
   );
 };
 
-export default NewHomeSection;
+// memo 隔离（bug 2348）：侧栏收起/展开（isSecondMenuCollapsed）触发布局层
+// 重渲染时，会话列表子树（含 ProjectPanel 全部行）凭稳定 props 跳过重渲染；
+// 数据层 useHomeSectionData 在组件内部订阅（useModel/事件），不受 memo 影响
+export default React.memo(NewHomeSection);
