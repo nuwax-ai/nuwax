@@ -694,20 +694,15 @@ describe('ProjectPanel 选中关系', () => {
     render(<ProjectPanel />);
     await waitFor(() => expect(screen.getByText('待置顶丁')).toBeTruthy());
 
-    // 打开「待置顶丁」行 ⋯ 菜单 → 点「置顶」
+    // hover 行首槽中的置顶按钮与文件夹原位切换；直接点击后完成置顶
     const row = screen.getByText('待置顶丁').closest('[class*="row"]');
     expect(row).toBeTruthy();
-    const moreButton = row!.querySelector<HTMLButtonElement>(
-      'button[aria-label="PC.Components.ActionMenu.more"]',
+    const pinButton = row!.querySelector<HTMLButtonElement>(
+      'button[aria-label="PC.Components.ConversationContextMenu.pin"]',
     );
-    expect(moreButton).toBeTruthy();
+    expect(pinButton).toBeTruthy();
     await act(async () => {
-      fireEvent.click(moreButton!);
-    });
-    await act(async () => {
-      fireEvent.click(
-        screen.getByText('PC.Components.ConversationContextMenu.pin'),
-      );
+      fireEvent.click(pinButton!);
     });
 
     // 置顶成功后本地立即重排：置顶项相邻且居前，普通项目垫后
@@ -752,7 +747,7 @@ describe('ProjectPanel 选中关系', () => {
       screen
         .getByText('待置顶乙')
         .closest('[class*="row"]')
-        ?.querySelector('.anticon-pushpin'),
+        ?.querySelector('[class*="folder-badge-pin"]'),
     ).toBeNull();
 
     const row = screen.getByText('待置顶乙').closest('[class*="row"]');
@@ -779,7 +774,7 @@ describe('ProjectPanel 选中关系', () => {
         screen
           .getByText('待置顶乙')
           .closest('[class*="row"]')
-          ?.querySelector('.anticon-pushpin'),
+          ?.querySelector('[class*="folder-badge-pin"]'),
       ).toBeTruthy();
     });
   });
@@ -843,13 +838,13 @@ describe('ProjectPanel 选中关系', () => {
         screen
           .getByText('常规九四')
           .closest('[class*="row"]')
-          ?.querySelector('.anticon-pushpin'),
+          ?.querySelector('[class*="folder-badge-pin"]'),
       ).toBeTruthy();
       expect(
         screen
           .getByText('全栈九四')
           .closest('[class*="row"]')
-          ?.querySelector('.anticon-pushpin'),
+          ?.querySelector('[class*="folder-badge-pin"]'),
       ).toBeNull();
     });
   });

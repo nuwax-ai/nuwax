@@ -7,7 +7,9 @@
   gap: 2px;
   // 左缘贴容器基线（2026-09-19：经典项目列表左边距过大，与任务列表统一收窄，
   // 行内容内缩由 .row padding 承担）；单栏 compact 自带 padding:0 覆盖不受影响
-  padding: @paddingXxs @paddingXs @paddingXxs 0;
+  // 经典布局右侧 15px 与任务列表容器一致，保证项目/项目会话/任务会话的
+  // hover 胶囊右边界完全对齐；compact 会在下方归零，由外层统一控制。
+  padding: @paddingXxs 15px @paddingXxs 0;
 }
 
 // 查看更多入口(项目分页追加)
@@ -56,13 +58,27 @@
 }
 
 .project {
-  // 行首文件夹徽标容器（2026-09-20 四态定调）：未置顶=关闭/打开双态；已置顶=
-  // 右上叠一枚小图钉徽标（收起+置顶/展开+置顶两态新做），置顶态由文件夹图标
-  // 本身表达，原文案行首图钉已移除
-  .folder-badge {
+  width: 100%;
+
+  // 固定行首状态槽：默认承载文件夹开合/置顶徽标，hover 原位切为置顶操作。
+  // 两层绝对叠放，避免图标出现时推动项目名。
+  .project-leading-slot {
     position: relative;
     display: inline-flex;
-    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 20px;
+    flex: 0 0 18px;
+  }
+
+  .folder-badge {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.16s ease;
   }
 
   .folder-badge-pin {
@@ -73,10 +89,28 @@
     color: @colorPrimary;
   }
 
+  .project-pin-toggle {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: @colorPrimary;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.16s ease;
+  }
+
   .row {
     display: flex;
     align-items: center;
     gap: @marginXxs;
+    width: 100%;
+    box-sizing: border-box;
     // 左 10px 与任务列表行 padding 对齐（2026-09-19：面板左缘收窄后图钉/图标
     // 须与任务行标题同线）；单栏 compact 行有独立 padding 覆盖不受影响
     padding: @paddingXs @paddingXxs @paddingXs 10px;
@@ -131,8 +165,11 @@
     display: flex;
     align-items: center;
     gap: @marginXxs;
-    margin-left: @paddingXs;
-    padding: 3px @paddingXxs;
+    width: 100%;
+    box-sizing: border-box;
+    margin-left: 0;
+    // 背景从项目行同一左缘开始，内容仍保留 12px 层级缩进。
+    padding: 3px @paddingXxs 3px 12px;
     border-radius: @borderRadiusSm;
     cursor: pointer;
 
@@ -158,14 +195,33 @@
       color: @colorError;
     }
 
-    // 行首重命名入口（2026-09-19 定调：子会话不支持置顶，原型图钉位让给
-    // 重命名；点击走既有重命名弹窗）。hover 才出现（参考原型显隐口径），
-    // opacity 占位防跳位；触屏（hover:none）无常悬停故常显
+    // 固定行首状态槽：运行/失败/未读和重命名操作叠在同一位置，hover 只切换
+    // 可见性，标题列不再左右跳动。
+    .child-leading-slot {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 18px;
+      flex: 0 0 16px;
+    }
+
+    .child-leading-status,
     .child-rename {
-      flex-shrink: 0;
+      position: absolute;
+      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: opacity 0.16s ease;
+    }
+
+    .child-leading-status {
+      pointer-events: none;
+    }
+
+    .child-rename {
       padding: 0;
       border: 0;
       background: transparent;
@@ -173,20 +229,29 @@
       color: @navSecondMenuAdaptiveTextTertiary;
       cursor: pointer;
       opacity: 0;
-      transition: opacity 0.2s ease;
 
       &:hover {
         color: @navSecondMenuAdaptiveText;
       }
     }
 
-    &:hover .child-rename,
-    &:focus-visible .child-rename,
-    &:has(:focus-visible) .child-rename {
-      opacity: 1;
+    &:hover,
+    &:focus-visible,
+    &:has(:focus-visible) {
+      .child-leading-status {
+        opacity: 0;
+      }
+
+      .child-rename {
+        opacity: 1;
+      }
     }
 
     @media (hover: none) {
+      .child-leading-status {
+        opacity: 0;
+      }
+
       .child-rename {
         opacity: 1;
       }
@@ -291,6 +356,18 @@
   opacity: 1;
 }
 
+.project .row:hover,
+.project .row:focus-visible,
+.project .row:has(:focus-visible) {
+  .folder-badge {
+    opacity: 0;
+  }
+
+  .project-pin-toggle {
+    opacity: 1;
+  }
+}
+
 .project .row:focus-visible {
   outline: @lineWidthBold solid @colorPrimary;
   outline-offset: -2px;
@@ -359,11 +436,12 @@
   }
 
   .child {
-    margin-left: 0;
-    // 对齐网格：左 = 父行名称列(children 缩进 10+10 后再留 11)，右 = 全局右列
-    // (父行箭头/任务列表时间右缘同为 253-10=243)；原 8px 4px 使子行文字/时间
-    // 相对父行各凸出 7px/6px，形成半步错位
-    padding: 8px 10px 8px 11px;
+    // 胶囊向左反向覆盖 children 的 20px 树缩进，hover 左右边界与项目行、
+    // 任务会话一致；内容仍用 31px 左 padding 保持树状层级。
+    width: calc(100% + 20px);
+    box-sizing: border-box;
+    margin-left: -20px;
+    padding: 8px 10px 8px 31px;
     border-radius: 10px;
 
     .child-name {
@@ -398,13 +476,25 @@
     opacity: 1;
   }
 
+  .project .folder-badge {
+    opacity: 0;
+  }
+
+  .project .project-pin-toggle {
+    opacity: 1;
+  }
+
   .compact .row .name {
     padding-right: @paddingLg;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .project-more {
+  .project-more,
+  .folder-badge,
+  .project-pin-toggle,
+  .child-leading-status,
+  .child-rename {
     transition: none;
   }
 }

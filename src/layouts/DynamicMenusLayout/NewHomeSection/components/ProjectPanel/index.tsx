@@ -1232,20 +1232,47 @@ const ProjectPanel = forwardRef<
                     }
                   }}
                 >
-                  {/* 行首文件夹图标四态（2026-09-20 定调）：未置顶=关闭/打开双态，
-                      已置顶=右上叠小图钉徽标（收起/展开两态新做），置顶态由文件夹
-                      图标本身表达，原文案行首图钉移除 */}
-                  <span className={cx(styles['folder-badge'])}>
-                    {expanded ? (
-                      <FolderOpenOutlined className={styles['project-icon']} />
-                    ) : (
-                      <FolderOutlined className={styles['project-icon']} />
-                    )}
-                    {pinnedIds.has(projectKeyOf(project)) && (
-                      <PushpinFilled
-                        className={cx(styles['folder-badge-pin'])}
-                      />
-                    )}
+                  {/* 固定行首状态槽：默认显示文件夹开合与置顶徽标；hover 在同一
+                      槽位切换为置顶/取消置顶操作，项目名不发生横向位移。 */}
+                  <span className={cx(styles['project-leading-slot'])}>
+                    <span className={cx(styles['folder-badge'])}>
+                      {expanded ? (
+                        <FolderOpenOutlined
+                          className={styles['project-icon']}
+                        />
+                      ) : (
+                        <FolderOutlined className={styles['project-icon']} />
+                      )}
+                      {pinnedIds.has(projectKeyOf(project)) && (
+                        <PushpinFilled
+                          className={cx(styles['folder-badge-pin'])}
+                        />
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      className={cx(styles['project-pin-toggle'])}
+                      aria-label={dict(
+                        pinnedIds.has(projectKeyOf(project))
+                          ? 'PC.Components.ConversationContextMenu.unpin'
+                          : 'PC.Components.ConversationContextMenu.pin',
+                      )}
+                      title={dict(
+                        pinnedIds.has(projectKeyOf(project))
+                          ? 'PC.Components.ConversationContextMenu.unpin'
+                          : 'PC.Components.ConversationContextMenu.pin',
+                      )}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void toggleProjectFlag('pinned', project);
+                      }}
+                    >
+                      {pinnedIds.has(projectKeyOf(project)) ? (
+                        <PushpinFilled />
+                      ) : (
+                        <PushpinOutlined />
+                      )}
+                    </button>
                   </span>
                   <span className={cx(styles.name)}>{project.name}</span>
                   <div className={styles['project-actions']}>
@@ -1335,37 +1362,44 @@ const ProjectPanel = forwardRef<
                         }
                       }}
                     >
-                      {/* 行首重命名入口（2026-09-19 定调：子会话不支持置顶，
-                          原型图钉位让给重命名；hover 显现，点击走既有重命名弹窗） */}
-                      <button
-                        type="button"
-                        className={styles['child-rename']}
-                        aria-label={dict(
-                          'PC.Components.ConversationContextMenu.rename',
-                        )}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setRenameTarget({
-                            projectKey: projectKeyOf(project),
-                            childId: child.id,
-                          });
-                          setRenameName(child.name);
-                        }}
-                      >
-                        <EditOutlined />
-                      </button>
-                      {leadingMark && (
-                        <ConversationStatusMark
-                          taskStatus={child.taskStatus}
-                          unread={unreadConversationIds?.has(String(child.id))}
-                        />
-                      )}
-                      {child.taskStatus === TaskStatus.FAILED && (
-                        <ExclamationCircleFilled
-                          className={cx(styles['status-failed'])}
-                          aria-label={failedText}
-                        />
-                      )}
+                      {/* 固定行首状态槽：默认展示运行/失败/未读，hover 在同一位置
+                          切换为重命名入口；能力不同但三类行的标题起点保持稳定。 */}
+                      <span className={cx(styles['child-leading-slot'])}>
+                        <span className={cx(styles['child-leading-status'])}>
+                          {leadingMark &&
+                            child.taskStatus !== TaskStatus.FAILED && (
+                              <ConversationStatusMark
+                                taskStatus={child.taskStatus}
+                                unread={unreadConversationIds?.has(
+                                  String(child.id),
+                                )}
+                              />
+                            )}
+                          {child.taskStatus === TaskStatus.FAILED && (
+                            <ExclamationCircleFilled
+                              className={cx(styles['status-failed'])}
+                              aria-label={failedText}
+                            />
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          className={styles['child-rename']}
+                          aria-label={dict(
+                            'PC.Components.ConversationContextMenu.rename',
+                          )}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setRenameTarget({
+                              projectKey: projectKeyOf(project),
+                              childId: child.id,
+                            });
+                            setRenameName(child.name);
+                          }}
+                        >
+                          <EditOutlined />
+                        </button>
+                      </span>
                       <span className={cx(styles['child-name'])}>
                         {child.name}
                       </span>

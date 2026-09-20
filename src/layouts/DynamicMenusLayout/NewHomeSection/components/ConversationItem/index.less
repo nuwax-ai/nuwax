@@ -14,6 +14,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
   // 「⋯」绝对定位锚点（见 .conversation-topic-row 内 more-btn）
   position: relative;
   // 右内边距 11px：让行尾「⋯」与项目面板会话子行的 ⋯ 右缘对齐
@@ -96,49 +98,48 @@
         color: @colorWarning;
       }
 
-      // 行首置顶位（2026-09-20 定调）：实心=已置顶常显（点击取消置顶）；空心=
-      // 未置顶 hover 展开（宽度 0→14px 过渡，负 margin 抵掉展开前的占位 gap，
-      // 标题不永久缩进）
+      // 固定行首状态槽：状态和置顶操作叠在同一几何位置，hover 只切透明度，
+      // 不再通过 width/margin 展开挤动标题。
+      .leading-slot {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 20px;
+        flex: 0 0 16px;
+      }
+
+      .leading-status,
       .pin-toggle {
-        flex-shrink: 0;
+        position: absolute;
+        inset: 0;
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: opacity 0.16s ease;
+      }
+
+      .leading-status {
+        pointer-events: none;
+      }
+
+      .pin-toggle {
         padding: 0;
         border: 0;
         background: transparent;
-        font-size: 11px;
+        font-size: 12px;
         color: @colorPrimary;
         cursor: pointer;
-        overflow: hidden;
+        opacity: 0;
       }
 
       .pin-toggle-pinned {
-        width: 14px;
-        height: 16px;
-      }
-
-      .pin-toggle:not(.pin-toggle-pinned) {
-        width: 0;
-        height: 16px;
-        // token 是 var() 不可直接取负，calc 绕（仓内既有坑）
-        margin-left: calc(-1 * @paddingXs);
-        opacity: 0;
-        transition: width 0.2s ease, margin 0.2s ease, opacity 0.2s ease;
-      }
-
-      &:hover .pin-toggle:not(.pin-toggle-pinned),
-      &:focus-visible .pin-toggle:not(.pin-toggle-pinned),
-      &:has(:focus-visible) .pin-toggle:not(.pin-toggle-pinned) {
-        width: 14px;
-        margin-left: 0;
         opacity: 1;
       }
 
       @media (hover: none) {
         .pin-toggle:not(.pin-toggle-pinned) {
-          width: 14px;
-          margin-left: 0;
           opacity: 1;
         }
       }
@@ -238,6 +239,14 @@
   }
 
   &:hover {
+    .conversation-item-content .conversation-topic-row .leading-status {
+      opacity: 0;
+    }
+
+    .conversation-item-content .conversation-topic-row .pin-toggle {
+      opacity: 1;
+    }
+
     // hover 会话项时显示「⋯」菜单兜底按钮与归档确认入口
     .conversation-topic-row :global(.more-btn),
     .conversation-topic-row .archive-action {
@@ -313,6 +322,29 @@
   :global(.more-btn) {
   opacity: 1;
 }
+
+.conversation-item:focus-visible
+  .conversation-item-content
+  .conversation-topic-row
+  .leading-status,
+.conversation-item:has(:focus-visible)
+  .conversation-item-content
+  .conversation-topic-row
+  .leading-status {
+  opacity: 0;
+}
+
+.conversation-item:focus-visible
+  .conversation-item-content
+  .conversation-topic-row
+  .pin-toggle,
+.conversation-item:has(:focus-visible)
+  .conversation-item-content
+  .conversation-topic-row
+  .pin-toggle {
+  opacity: 1;
+}
+
 // 键盘聚焦与确认态常显：归档入口同 ⋯ 口径；armed 后鼠标移出「确认」不消失
 .conversation-item:focus-visible .conversation-topic-row .archive-action,
 .conversation-item:has(:focus-visible) .conversation-topic-row .archive-action,
@@ -372,6 +404,7 @@
 @media (prefers-reduced-motion: reduce) {
   .conversation-item,
   .conversation-item .archive-action,
+  .conversation-item .leading-status,
   .conversation-item .pin-toggle {
     transition: none;
   }

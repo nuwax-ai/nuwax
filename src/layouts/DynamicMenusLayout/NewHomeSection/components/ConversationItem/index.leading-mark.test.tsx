@@ -76,6 +76,14 @@ const renderRow = (props: {
 };
 
 describe('ConversationItem 行首状态标记（leadingMark）', () => {
+  it('空闲态也保留固定行首槽，置顶操作与标题不争抢宽度', () => {
+    const { container } = renderRow({ leadingMark: true });
+    expect(container.querySelector('[class*="leading-slot"]')).toBeTruthy();
+    expect(
+      screen.getByLabelText('PC.Components.ConversationContextMenu.pin'),
+    ).toBeTruthy();
+  });
+
   it('开启 + 执行中：行首转圈替换文字胶囊', () => {
     renderRow({ leadingMark: true, taskStatus: TaskStatus.EXECUTING });
     expect(screen.getByLabelText(EXECUTING_KEY)).toBeTruthy(); // 转圈 aria-label

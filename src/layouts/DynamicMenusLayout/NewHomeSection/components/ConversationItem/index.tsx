@@ -156,37 +156,41 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         >
           <div className={cx(styles['conversation-item-content'])}>
             <div className={cx(styles['conversation-topic-row'])}>
-              {leadingMark && (
-                <ConversationStatusMark
-                  taskStatus={item.taskStatus}
-                  unread={unreadConversationIds?.has(String(item.id))}
-                />
-              )}
-              {/* 行首置顶位（2026-09-20 定调）：已置顶=常显实心图钉（点击取消）、
-                  未置顶=hover 展开空心图钉（点击置顶） */}
-              <button
-                type="button"
-                className={cx(styles['pin-toggle'], {
-                  [styles['pin-toggle-pinned']]: pinned,
-                })}
-                aria-label={dict(
-                  pinned
-                    ? 'PC.Components.ConversationContextMenu.unpin'
-                    : 'PC.Components.ConversationContextMenu.pin',
+              {/* 固定行首状态槽：空闲时承载运行/未读或已置顶状态，hover 时在
+                  同一位置切换成置顶操作，不改变标题起点。 */}
+              <span className={cx(styles['leading-slot'])}>
+                {leadingMark && (
+                  <span className={cx(styles['leading-status'])}>
+                    <ConversationStatusMark
+                      taskStatus={item.taskStatus}
+                      unread={unreadConversationIds?.has(String(item.id))}
+                    />
+                  </span>
                 )}
-                title={dict(
-                  pinned
-                    ? 'PC.Components.ConversationContextMenu.unpin'
-                    : 'PC.Components.ConversationContextMenu.pin',
-                )}
-                disabled={pinning}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void handleTogglePinned();
-                }}
-              >
-                {pinned ? <PushpinFilled /> : <PushpinOutlined />}
-              </button>
+                <button
+                  type="button"
+                  className={cx(styles['pin-toggle'], {
+                    [styles['pin-toggle-pinned']]: pinned,
+                  })}
+                  aria-label={dict(
+                    pinned
+                      ? 'PC.Components.ConversationContextMenu.unpin'
+                      : 'PC.Components.ConversationContextMenu.pin',
+                  )}
+                  title={dict(
+                    pinned
+                      ? 'PC.Components.ConversationContextMenu.unpin'
+                      : 'PC.Components.ConversationContextMenu.pin',
+                  )}
+                  disabled={pinning}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void handleTogglePinned();
+                  }}
+                >
+                  {pinned ? <PushpinFilled /> : <PushpinOutlined />}
+                </button>
+              </span>
               {/* 原生省略号替代 Typography.Text ellipsis：antd 的省略检测会在
                 每次重渲染插入 <em> 强制同步重排，长列表高频刷新下造成秒级卡顿 */}
               <span className={cx(styles['conversation-topic'])}>
