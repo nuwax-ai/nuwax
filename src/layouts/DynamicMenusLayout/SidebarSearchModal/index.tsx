@@ -18,6 +18,7 @@ import type { SkillListItem } from '@/components/business-component/SkillListVie
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
+import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import { dict } from '@/services/i18nRuntime';
 import { Modal, Spin } from 'antd';
 import classNames from 'classnames';
@@ -255,9 +256,7 @@ const SidebarSearchModal: React.FC = () => {
         history.push(`/space/${devSpaceId}/app-dev/${devTargetId}`);
       } else if (devTargetType === 'UserApp' && devSpaceId && devTargetId) {
         // 全栈应用会话：跳全栈应用开发详情页，conversationId 用于恢复该会话
-        history.push(
-          `/space/${devSpaceId}/app-pro?appId=${devTargetId}&conversationId=${id}`,
-        );
+        history.push(buildAppProRoute(devSpaceId, devTargetId, id));
       } else {
         history.push('/home/chat/' + id + '/' + agentId);
       }

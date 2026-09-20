@@ -10,6 +10,7 @@ import {
   emitProjectChanged,
 } from '@/utils/directorySyncEvents';
 import { message } from 'antd';
+import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import { history } from 'umi';
 
 export interface ProjectCreatePayload {
@@ -53,7 +54,7 @@ const PROJECT_STRATEGIES: Partial<
   },
   [AgentComponentTypeEnum.UserApp]: {
     getUrl: ({ spaceId, targetId, conversationId }) =>
-      `/space/${spaceId}/app-pro?appId=${targetId}&conversationId=${conversationId}`,
+      buildAppProRoute(spaceId, targetId, conversationId),
   },
   [AgentComponentTypeEnum.NormalProject]: {
     // 常规项目会话落会话页（与 openProject 双 id 分支同口径），不走全栈 IDE
