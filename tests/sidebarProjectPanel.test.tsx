@@ -126,7 +126,8 @@ describe('项目侧栏原型交互', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // 复位 mock 的服务端真值，避免上一条用例的置顶/归档泄漏到下一条
-    apiUserProjectPageQuery.resetServerFlags();
+    // （resetServerFlags 挂在 mock 实例上，import 类型来自真实模块，须断言）
+    (apiUserProjectPageQuery as unknown as { resetServerFlags: () => void }).resetServerFlags();
   });
 
   it('混合展开状态批量展开，再批量收起；键盘独立切换项目', async () => {
