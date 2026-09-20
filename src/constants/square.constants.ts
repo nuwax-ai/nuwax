@@ -34,3 +34,8 @@ export const getSquareTemplateSegmentedList = (enabledSandbox?: boolean) => {
 // 兼容旧代码
 export const SQUARE_TEMPLATE_SEGMENTED_LIST =
   SQUARE_TEMPLATE_SEGMENTED_LIST_ALL;
+
+/** 全栈应用详情路由前缀(拼 targetId 跳转 /user-app/:appId)。
+ *  跨页共享(NuwaApps 点击跳转、UserApp 页标签标题兜底匹配)故下沉
+ *  本层——页面之间禁止互相 import(engineering-conventions §4.3) */
+export const USER_APP_PATH_PREFIX = '/user-app';
