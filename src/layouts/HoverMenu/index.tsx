@@ -7,7 +7,7 @@ import { MenuItemDto } from '@/types/interfaces/menu';
 import { isImmersiveShell, shellAvoid } from '@/utils/hostBridge';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useModel } from 'umi';
 import DynamicSecondMenu from '../DynamicMenusLayout/DynamicSecondMenu';
 import NewHomeSection from '../DynamicMenusLayout/NewHomeSection';
@@ -15,6 +15,14 @@ import SpaceSection from '../DynamicMenusLayout/SpaceSection';
 import SquareSection from '../DynamicMenusLayout/SquareSection';
 import styles from './index.less';
 const cx = classNames.bind(styles);
+
+// 悬浮场景的 Section 样式常量（bug 2348）：模块级固定引用，配合保持挂载
+// 避免逐渲染新对象打断子组件 memo
+const HOME_SECTION_HOVER_STYLE: React.CSSProperties = {
+  marginTop: 7,
+  height: 'calc(100% - 7px)',
+};
+const SPACE_SECTION_HOVER_STYLE: React.CSSProperties = { paddingTop: '12px' };
 
 /**
  * 悬浮菜单组件
@@ -33,11 +41,17 @@ const HoverMenu: React.FC = () => {
   const { navigationStyle } = useUnifiedTheme();
   const { firstLevelMenus } = useModel('menuModel');
 
-  // 计算动态导航宽度
-  const firstMenuWidth =
-    navigationStyle === ThemeNavigationStyleType.STYLE2
-      ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
-      : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1;
+  // 保持挂载（bug 2348，参考 fa8facf938 二级列同款思路）：二级菜单收起期间
+  // 常驻挂载（含 SpaceSection 等带请求的重内容），悬浮显隐只走 .visible/.hidden
+  // 类切换（less 已带 opacity 0.2s 过渡），避免「悬浮→隐藏→再悬浮」反复
+  // 卸载重挂载并重发空间详情请求；隐藏时 model 会清空 hoverMenuType，用
+  // 「最近一次非空类型」保持内容树不卸载；展开二级菜单时仍整体卸载，
+  // 避免与经典布局内联二级菜单双挂载 SpaceSection
+  const lastHoverTypeRef = useRef(hoverMenuType);
+  if (hoverMenuType) {
+    lastHoverTypeRef.current = hoverMenuType;
+  }
+  const contentHoverType = hoverMenuType || lastHoverTypeRef.current;
 
   /**
    * 渲染二级菜单
@@ -48,39 +62,40 @@ const HoverMenu: React.FC = () => {
      */
     // 主页、系统广场特殊处理：直接渲染对应的 Section 组件
     // 主页 homepage: 最近使用 + 会话记录
-    if (hoverMenuType === 'homepage' || hoverMenuType === 'new_conversation') {
-      return (
-        <NewHomeSection style={{ marginTop: 7, height: 'calc(100% - 7px)' }} />
-      );
+    if (
+      contentHoverType === 'homepage' ||
+      contentHoverType === 'new_conversation'
+    ) {
+      return <NewHomeSection style={HOME_SECTION_HOVER_STYLE} />;
     }
 
     // 工作空间
-    if (hoverMenuType === 'space' || hoverMenuType === 'workspace') {
+    if (contentHoverType === 'space' || contentHoverType === 'workspace') {
       return (
         <SpaceSection
-          activeTab={hoverMenuType}
-          style={{ paddingTop: '12px' }}
+          activeTab={contentHoverType}
+          style={SPACE_SECTION_HOVER_STYLE}
         />
       );
     }
 
     // 系统广场
-    if (hoverMenuType === 'system_square') {
+    if (contentHoverType === 'system_square') {
       return <SquareSection />;
     }
 
-    return <DynamicSecondMenu parentCode={hoverMenuType} />;
-  }, [hoverMenuType]);
+    return <DynamicSecondMenu parentCode={contentHoverType} />;
+  }, [contentHoverType]);
 
   /**
    * 获取当前一级菜单的标题
    */
   const currentTitle = useMemo(() => {
     const current = firstLevelMenus.find(
-      (m: MenuItemDto) => m.code === hoverMenuType,
+      (m: MenuItemDto) => m.code === contentHoverType,
     );
     return current?.name;
-  }, [hoverMenuType, firstLevelMenus]);
+  }, [contentHoverType, firstLevelMenus]);
 
   /**
    * 是否显示标题
@@ -88,19 +103,27 @@ const HoverMenu: React.FC = () => {
   const isShowTitle = useMemo(() => {
     // 工作空间不显示标题（因为有自己的标题组件）
     // 支持静态菜单的 'space' 和 动态菜单的 'workspace'
-    return hoverMenuType !== 'space' && hoverMenuType !== 'workspace';
-  }, [hoverMenuType]);
+    return contentHoverType !== 'space' && contentHoverType !== 'workspace';
+  }, [contentHoverType]);
 
-  // 只在二级菜单收起且有悬浮菜单类型时显示
-  if (!isSecondMenuCollapsed || !hoverMenuType) {
+  // 二级菜单展开时悬浮面板整体卸载（见上：避免与内联二级菜单双挂载）
+  if (!isSecondMenuCollapsed) {
     return null;
   }
+  // 显隐只切类：hover 且有目标类型才可见，隐藏期常驻挂载仅降低透明度
+  const menuVisible = showHoverMenu && !!hoverMenuType;
+
+  // 计算动态导航宽度
+  const firstMenuWidth =
+    navigationStyle === ThemeNavigationStyleType.STYLE2
+      ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
+      : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1;
 
   return (
     <div
       className={cx(
         styles['hover-menu'],
-        showHoverMenu ? styles.visible : styles.hidden,
+        menuVisible ? styles.visible : styles.hidden,
         isSecondMenuCollapsed && styles['hover-menu-container-collapsed'],
       )}
       onMouseEnter={() => {
@@ -125,7 +148,8 @@ const HoverMenu: React.FC = () => {
           : {}),
       }}
     >
-      {hoverMenuType === 'homepage' || hoverMenuType === 'new_conversation' ? (
+      {contentHoverType === 'homepage' ||
+      contentHoverType === 'new_conversation' ? (
         renderSecondMenu
       ) : (
         <HoverScrollbar
@@ -161,7 +185,10 @@ const HoverMenu: React.FC = () => {
               </Typography.Title>
             </div>
           </ConditionRender>
-          <div style={{ flex: 1, minHeight: 0 }}>{renderSecondMenu}</div>
+          {/* 收起后从未悬浮（无最近类型）时不渲染内容，防 DynamicSecondMenu 空参挂载 */}
+          <div style={{ flex: 1, minHeight: 0 }}>
+            {contentHoverType ? renderSecondMenu : null}
+          </div>
         </HoverScrollbar>
       )}
     </div>
