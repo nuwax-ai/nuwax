@@ -61,7 +61,7 @@ const UserAppProject: React.FC = () => {
       apiUserProjectPageQuery({
         queryFilter: {
           spaceId,
-          projectType: AgentComponentTypeEnum.UserApp,
+          projectTypes: [AgentComponentTypeEnum.UserApp],
           name: name?.trim() || undefined,
         },
         current: pageIndex,

@@ -64,7 +64,7 @@ const ThirdAppIntegration: React.FC = () => {
       apiUserProjectPageQuery({
         queryFilter: {
           spaceId,
-          projectType: AgentComponentTypeEnum.ThirdApp,
+          projectTypes: [AgentComponentTypeEnum.ThirdApp],
           name: name?.trim() || undefined,
         },
         current: pageIndex,
