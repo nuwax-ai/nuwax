@@ -3,13 +3,20 @@ import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { history } from 'umi';
 
-/** 项目类型 tab（全部 = 不传 projectType，单次查询） */
+/** 项目类型 tab（全部 = projectTypes 含三种可管理类型） */
 export type ProjectTabKey = 'all' | AgentComponentTypeEnum;
 
-/** 项目管理页可筛选的类型 tab（不含网页应用；「全部」由后端返回混合列表） */
+/** 项目管理页可筛选的类型 tab（不含网页应用） */
 export const PROJECT_TAB_TYPES: AgentComponentTypeEnum[] = [
   AgentComponentTypeEnum.NormalProject,
   AgentComponentTypeEnum.UserApp,
+  AgentComponentTypeEnum.ThirdApp,
+];
+
+/** 「全部」Tab 查询时传入的 projectTypes */
+export const PROJECT_ALL_TAB_TYPES: AgentComponentTypeEnum[] = [
+  AgentComponentTypeEnum.UserApp,
+  AgentComponentTypeEnum.NormalProject,
   AgentComponentTypeEnum.ThirdApp,
 ];
 

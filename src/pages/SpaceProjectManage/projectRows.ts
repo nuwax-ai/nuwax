@@ -14,12 +14,17 @@ export type ProjectListItem = Omit<UserProjectTabItem, 'projectId'> & {
  */
 export const normalizeProjectRows = (
   rows: UserProjectTabItem[],
-  projectType?: AgentComponentTypeEnum,
+  projectType?: AgentComponentTypeEnum | AgentComponentTypeEnum[],
 ): ProjectListItem[] => {
   const uniqueRows = new Map<string, ProjectListItem>();
+  const allowedTypes = projectType
+    ? Array.isArray(projectType)
+      ? projectType
+      : [projectType]
+    : undefined;
 
   rows.forEach((row) => {
-    if (projectType && row.projectType !== projectType) return;
+    if (allowedTypes && !allowedTypes.includes(row.projectType)) return;
     const { projectId, ...rest } = row;
     uniqueRows.set(`${row.projectType}-${projectId}`, {
       ...rest,

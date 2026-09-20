@@ -25,7 +25,6 @@ import EditNormalProjectModal, {
 } from '../components/EditNormalProjectModal';
 import ProjectListCard from '../components/ProjectListCard';
 import { apiUserProjectPageQuery } from '../services';
-import { openProject } from '../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -64,7 +63,7 @@ const NormalProject: React.FC = () => {
       apiUserProjectPageQuery({
         queryFilter: {
           spaceId,
-          projectType: AgentComponentTypeEnum.NormalProject,
+          projectTypes: [AgentComponentTypeEnum.NormalProject],
           name: name?.trim() || undefined,
         },
         current: pageIndex,
