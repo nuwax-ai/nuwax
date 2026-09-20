@@ -163,7 +163,7 @@ const ThirdAppDetail: React.FC = () => {
       return;
     }
     try {
-      const infoResponse = await apiThirdAppOauth2InfoGet(projectId);
+      const infoResponse = await apiThirdAppOauth2InfoGet(projectId, AgentComponentTypeEnum.ThirdApp);
       const info = pickResponseData(infoResponse);
       if (info) {
         applyAppInfo(info);
@@ -181,7 +181,7 @@ const ThirdAppDetail: React.FC = () => {
     setOauthLoading(true);
     setSecretVisible(false);
     try {
-      const infoResponse = await apiThirdAppOauth2InfoGet(projectId);
+      const infoResponse = await apiThirdAppOauth2InfoGet(projectId, AgentComponentTypeEnum.ThirdApp);
       const info = pickResponseData(infoResponse);
       applyAppInfo(info);
       if (!info?.hasClientSecret) {
@@ -249,14 +249,20 @@ const ThirdAppDetail: React.FC = () => {
       return;
     }
     const trimmedHomepageUrl = homepageUrl.trim();
+    const trimmedRedirectUri = redirectUri.trim();
     if (!trimmedHomepageUrl) {
       message.warning(dict('PC.Pages.ThirdAppDetail.homeUrlRequired'));
       return;
     }
+    if (!trimmedRedirectUri) {
+      message.warning(dict('PC.Pages.ThirdAppDetail.callbackUrlRequired'));
+      return;
+    }
     runSaveOauthSetting({
       projectId,
+      projectType: AgentComponentTypeEnum.ThirdApp,
       homepageUrl: trimmedHomepageUrl,
-      redirectUri: redirectUri.trim() || undefined,
+      redirectUri: trimmedRedirectUri,
     });
   }, [homepageUrl, projectId, redirectUri, runSaveOauthSetting]);
 
@@ -439,6 +445,7 @@ const ThirdAppDetail: React.FC = () => {
                 redirectUri,
                 setRedirectUri,
                 dict('PC.Pages.ThirdAppDetail.callbackUrlPlaceholder'),
+                true,
               )}
               <div className={cx(styles['action-row'])}>
                 <Button

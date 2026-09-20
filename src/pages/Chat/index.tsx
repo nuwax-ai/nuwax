@@ -31,6 +31,7 @@ import {
 } from '@/features/conversation/react/useConversationPageCache';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import AgentDetailModal from '@/pages/Chat/components/AgentDetailModal';
+import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
@@ -554,7 +555,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         history.replace(`/space/${devSpaceId}/app-dev/${devTargetId}`);
       } else if (devTargetType === 'UserApp') {
         history.replace(
-          `/space/${devSpaceId}/app-pro?appId=${devTargetId}&conversationId=${info.id}`,
+          buildAppProRoute(devSpaceId, devTargetId, info.id),
         );
       }
     },

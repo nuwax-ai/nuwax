@@ -1,3 +1,4 @@
+import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 
 /**
@@ -21,7 +22,7 @@ export function resolveConversationRoute(
     return `/space/${devSpaceId}/app-dev/${devTargetId}`;
   }
   if (devTargetType === 'UserApp' && devSpaceId && devTargetId) {
-    return `/space/${devSpaceId}/app-pro?appId=${devTargetId}&conversationId=${id}`;
+    return buildAppProRoute(devSpaceId, devTargetId, id);
   }
   return `/home/chat/${id}/${agentId}`;
 }

@@ -119,6 +119,15 @@ const DATABASE_WORKSPACE_TOOL_IDS: PreviewToolId[] = [
   'database',
   'database-config',
 ];
+
+/** 工作区根目录 manifest 文件名；存在时才视为可自动启动预览的有效项目 */
+const WORKSPACE_MANIFEST_ROOT_FILE = 'workspace.manifest.toml';
+
+/** 是否为根目录下的 workspace.manifest.toml（非目录） */
+const isRootWorkspaceManifestFile = (file: StaticFileInfo): boolean => {
+  const path = (file.fileId ?? file.name).replace(/^\/+/, '');
+  return path === WORKSPACE_MANIFEST_ROOT_FILE && !file.isDir;
+};
 const noop = () => undefined;
 // const devConversationPollLogger = createLogger(
 //   '[ConversationAgent][DevConversationPoll]',
@@ -146,26 +155,13 @@ const AppDevPro: React.FC = () => {
   /** 当前空间 ID，从路由参数中获取 */
   const spaceId = Number(params.spaceId);
 
-  /**
-   * 从 URL query 参数中提取 appId
-   * 支持通过 URL 直接指定要加载的应用（如 ?appId=123）
-   */
-  const appIdFromQuery = useMemo(() => {
-    const queryAppId = new URLSearchParams(location.search).get('appId');
-    return queryAppId ? Number(queryAppId) : 0;
-  }, [location.search]);
-
-  /**
-   * 从 URL query 参数中提取 conversationId
-   */
-  const queryConversationId = useMemo(() => {
-    const queryId = new URLSearchParams(location.search).get('conversationId');
-    return queryId ? Number(queryId) : undefined;
-  }, [location.search]);
+  /** 路由参数：/space/:spaceId/app-pro/:appId/:conversationId */
+  const routeAppId = Number(params.appId) || 0;
+  const queryConversationId = Number(params.conversationId);
 
   // ==================== 本地状态 ====================
   /** 当前应用 ID */
-  const [appId, setAppId] = useState<number>(appIdFromQuery);
+  const [appId, setAppId] = useState<number>(routeAppId);
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
@@ -207,9 +203,8 @@ const AppDevPro: React.FC = () => {
   const { navigationStyle } = useUnifiedTheme();
 
   /** 会话/页面数据加载中（用于首屏 Loading） */
-  const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] = useState<boolean>(
-    !!queryConversationId,
-  );
+  const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] =
+    useState<boolean>(true);
   /** 当前选中的电脑 ID */
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
   /** 文件树区域是否显示（header 图标控制，默认折叠） */
@@ -463,7 +458,7 @@ const AppDevPro: React.FC = () => {
   const terminalExternalContainerStatus = useMemo(():
     | ConsoleExternalContainerStatus
     | undefined => {
-    if (!queryConversationId || finalSelectedComputerId !== '-1') {
+    if (finalSelectedComputerId !== '-1') {
       return undefined;
     }
     if (podStatus === 'running') {
@@ -556,26 +551,19 @@ const AppDevPro: React.FC = () => {
     onMessageSend,
   });
 
-  /** URL 中的 appId 变化时同步到本地状态 */
+  /** 路由 appId 变化时同步到本地状态 */
   useEffect(() => {
-    setAppId(appIdFromQuery);
-  }, [appIdFromQuery]);
+    setAppId(routeAppId);
+  }, [routeAppId]);
 
   /** 打开导入项目弹窗 */
   const handleImportProject = useCallback(async () => {
-    if (!queryConversationId) {
-      return;
-    }
     setOpenImportProject(true);
-  }, [queryConversationId]);
+  }, []);
 
   /** 确认导入项目：上传 zip、刷新文件树与 Git 列表、安装依赖 */
   const handleImportProjectConfirm = useCallback(
     async (file: File) => {
-      if (!queryConversationId) {
-        return;
-      }
-
       try {
         setIsImportingProject(true);
         const { code } = await apiImportProject({
@@ -608,16 +596,11 @@ const AppDevPro: React.FC = () => {
     ],
   );
 
-  // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
+  // 路由 conversationId 变更时查询当前会话
   useEffect(() => {
-    if (queryConversationId) {
-      setLoadingAgentConfigInfo(true);
+    setLoadingAgentConfigInfo(true);
+    runQueryConversation(queryConversationId);
 
-      // 查询会话
-      runQueryConversation(queryConversationId);
-    }
-
-    // 在 queryConversationId 变更前或组件卸载时清理会话数据
     return () => {
       resetInit();
     };
@@ -871,18 +854,14 @@ const AppDevPro: React.FC = () => {
    * - 刷新 Git 源代码管理列表
    */
   const handleConversationEnd = useCallback(() => {
-    // 刷新文件树；如果当前有选中文件，同步刷新当前文件内容
-    if (queryConversationId) {
-      const refreshFileTreeAndSelectedFile =
-        refreshFileTreeAndSelectedFileRef.current;
-      if (refreshFileTreeAndSelectedFile) {
-        void refreshFileTreeAndSelectedFile();
-      } else {
-        void refreshFileListImmediately(queryConversationId);
-      }
+    const refreshFileTreeAndSelectedFile =
+      refreshFileTreeAndSelectedFileRef.current;
+    if (refreshFileTreeAndSelectedFile) {
+      void refreshFileTreeAndSelectedFile();
+    } else {
+      void refreshFileListImmediately(queryConversationId);
     }
 
-    // 刷新 Git 源代码管理状态列表
     void refreshGitListIfEnabled();
   }, [
     queryConversationId,
@@ -904,9 +883,6 @@ const AppDevPro: React.FC = () => {
     fileNode: FileNode,
     newName: string,
   ): Promise<boolean> => {
-    if (!queryConversationId) {
-      return false;
-    }
     // 去除空格
     const trimmedName = newName.trim();
     if (!trimmedName) {
@@ -951,10 +927,6 @@ const AppDevPro: React.FC = () => {
         dict('PC.Pages.EditAgent.deleteFileConfirmTitle'),
         fileNode.name,
         async () => {
-          if (!queryConversationId) {
-            resolve(false);
-            return;
-          }
           let updatedFilesList: UpdateFileInfo[] = [];
           if (fileNode.type === 'folder') {
             // 文件夹删除：直接发送文件夹 ID
@@ -1004,9 +976,6 @@ const AppDevPro: React.FC = () => {
     fileNode: FileNode,
     newName: string,
   ) => {
-    if (!queryConversationId) {
-      return false;
-    }
     const updatedFilesList = updateFilesListName(
       fileTreeData || [],
       fileNode,
@@ -1036,9 +1005,6 @@ const AppDevPro: React.FC = () => {
       originalFileContent: string;
     }[],
   ) => {
-    if (!queryConversationId) {
-      return false;
-    }
     const updatedFilesList = updateFilesListContent(
       fileTreeData || [],
       data,
@@ -1062,9 +1028,6 @@ const AppDevPro: React.FC = () => {
           content: string,
           originalFileContent: string,
         ): Promise<boolean> => {
-          if (!queryConversationId) {
-            return false;
-          }
           const updatedFilesList = updateFilesListContent(
             fileTreeDataRef.current || [],
             [{ fileId, fileContent: content, originalFileContent }],
@@ -1095,10 +1058,6 @@ const AppDevPro: React.FC = () => {
     files: File[],
     filePaths: string[],
   ) => {
-    if (!queryConversationId) {
-      return;
-    }
-
     // 检查文件大小是否超过最大上传文件大小
     const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit(
       files || [],
@@ -1137,9 +1096,7 @@ const AppDevPro: React.FC = () => {
       }
       setWorkspaceView('files');
       setCanShowFileView(true);
-      if (queryConversationId) {
-        handleRefreshFileList(queryConversationId);
-      }
+      handleRefreshFileList(queryConversationId);
       return;
     }
 
@@ -1147,16 +1104,14 @@ const AppDevPro: React.FC = () => {
     if (isTerminalExpanded) {
       setDevConsoleCollapseSignal((n) => n + 1);
       setCanShowFileView(true);
-      if (queryConversationId) {
-        handleRefreshFileList(queryConversationId);
-      }
+      handleRefreshFileList(queryConversationId);
       return;
     }
 
     // 切换文件树显隐
     setCanShowFileView((prev) => {
       const nextVisible = !prev;
-      if (nextVisible && queryConversationId) {
+      if (nextVisible) {
         handleRefreshFileList(queryConversationId);
       }
       return nextVisible;
@@ -1204,9 +1159,7 @@ const AppDevPro: React.FC = () => {
     startEnvPodIfNeeded(dbEnv);
 
     setSelectedChangeFile(null);
-    if (queryConversationId) {
-      void openPreviewView(queryConversationId);
-    }
+    void openPreviewView(queryConversationId);
     // 清除陈旧 collapse 信号，避免从智能体电脑切回时 remount 折叠 effect 覆盖 expand
     setDevConsoleCollapseSignal(0);
     setDevConsoleExpandSignal((n) => n + 1);
@@ -1242,24 +1195,20 @@ const AppDevPro: React.FC = () => {
       taskAgentSelectTrigger, // 触发选中的事件标识
       originalFiles: fileTreeData, // 原始文件树数据
       fileTreeDataLoading, // 文件树加载状态
-      targetId: queryConversationId?.toString() || '', // 关联的会话 ID
+      targetId: String(queryConversationId), // 关联的会话 ID
       readOnly: false, // 文件是否只读
       onUploadFiles: async (files, filePaths) => {
         await handleUploadMultipleFiles(files, filePaths);
       },
       onExportProject: async () => {
-        if (queryConversationId) {
-          await apiDownloadAllFiles(queryConversationId);
-        }
+        await apiDownloadAllFiles(queryConversationId);
       },
       /** 导入项目 */
       onImportProject: handleImportProject,
       /** 是否正在导入项目 */
       isImportingProject,
       onRestartServer: () => {
-        if (queryConversationId) {
-          restartVncPod(queryConversationId, finalSelectedComputerId);
-        }
+        restartVncPod(queryConversationId, finalSelectedComputerId);
       },
       /** 全栈应用环境，computer/pod 老接口附带 appStage */
       appStage: dbEnv,
@@ -1289,9 +1238,7 @@ const AppDevPro: React.FC = () => {
       isFileTreeSidebarVisible: canShowFileView,
       isCanDeleteSkillFile: true, // 是否允许删除技能文件
       onRefreshFileTree: async () => {
-        if (queryConversationId) {
-          await refreshFileListImmediately(queryConversationId);
-        }
+        await refreshFileListImmediately(queryConversationId);
       },
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
@@ -1308,9 +1255,7 @@ const AppDevPro: React.FC = () => {
             skipActivate: true,
           });
         }
-        if (queryConversationId) {
-          openPreviewView(queryConversationId);
-        }
+        openPreviewView(queryConversationId);
       },
       /** 文件重命名后同步更新预览区标签页标题与 fileId */
       onFileRenamed: (oldFileId, newFileId) => {
@@ -1415,10 +1360,7 @@ const AppDevPro: React.FC = () => {
           await fileView.tree.handleFileSelect(fileId);
         }
       }
-      // 打开预览视图
-      if (queryConversationId) {
-        openPreviewView(queryConversationId);
-      }
+      openPreviewView(queryConversationId);
     },
     // 打开工具标签
     onToolTabActivate: (toolId: PreviewToolId) => {
@@ -1426,10 +1368,7 @@ const AppDevPro: React.FC = () => {
       if (skipDevConsoleResetRef.current) {
         skipDevConsoleResetRef.current = false;
         setSelectedChangeFile(null);
-        // 打开预览视图
-        if (queryConversationId) {
-          openPreviewView(queryConversationId);
-        }
+        openPreviewView(queryConversationId);
         return;
       }
       // 重置终端布局
@@ -1446,25 +1385,35 @@ const AppDevPro: React.FC = () => {
         return;
       }
 
-      // 打开预览视图
-      if (queryConversationId) {
-        openPreviewView(queryConversationId);
-      }
+      openPreviewView(queryConversationId);
     },
   });
 
   previewTabsRef.current = previewTabs;
 
-  /** 文件树已有节点，才允许自动 start（空项目不拉预览） */
-  const hasFileTreeData = (fileTreeData?.length ?? 0) > 0;
-  /** 无会话，或会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
-  const conversationReady = !queryConversationId || !!conversationInfo;
+  /** 根目录已有 workspace.manifest.toml 时才允许自动 start（空项目/未初始化工作区不拉预览） */
+  const hasFileTreeData = useMemo(
+    () => (fileTreeData ?? []).some(isRootWorkspaceManifestFile),
+    [fileTreeData],
+  );
+  /** 会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
+  const conversationReady = !!conversationInfo;
+  /**
+   * 会话已结束且文件树已加载，但无有效项目文件。
+   * 此时不应继续展示「预览准备中」，而应提示用户继续对话生成项目。
+   */
+  const missingProjectFiles =
+    conversationReady &&
+    !isConversationActive &&
+    !hasPendingIntervention &&
+    !fileTreeDataLoading &&
+    !hasFileTreeData;
 
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
    * 开发环境须等 tasks/active 首包：允许则先探测 dev 域名，可达直接 iframe，否则 start；
    * 不允许（服务已在跑）且已有预览域名则直接 iframe，不再 start / stream。
-   * 允许 start 时还须文件树已有数据，避免空项目拉起预览。
+   * 允许 start 时还须根目录已有 workspace.manifest.toml，避免空项目拉起预览。
    * 会话进行中或仍有待回复确认卡时不启动；会话结束后不自动 restart，仅首次 start。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
    */
@@ -1503,7 +1452,7 @@ const AppDevPro: React.FC = () => {
       setPreviewEnterSettled(true);
       return;
     }
-    // 可以 start，但文件树还没数据时不启动（等文件列表回来后再走本 effect）
+    // 可以 start，但根目录尚无 workspace.manifest.toml 时不启动（等 manifest 出现后再走本 effect）
     if (!hasFileTreeData) {
       return;
     }
@@ -1522,6 +1471,7 @@ const AppDevPro: React.FC = () => {
     appId,
     conversationReady,
     dbEnv,
+    fileTreeDataLoading,
     hasFileTreeData,
     hasPendingIntervention,
     isConversationActive,
@@ -1536,10 +1486,6 @@ const AppDevPro: React.FC = () => {
   /** 将文件路径添加到 .gitignore */
   const handleAddToGitignore = useCallback(
     async (fileId: string) => {
-      if (!queryConversationId) {
-        return;
-      }
-
       const gitignoreId = '.gitignore';
       const existing = fileTreeData?.find(
         (item: StaticFileInfo) => item.fileId === gitignoreId,
@@ -1616,7 +1562,7 @@ const AppDevPro: React.FC = () => {
   const gitSourceControl = useSourceControl({
     workspace: {
       workspaceType: 'taskAgent',
-      cid: queryConversationId ?? null,
+      cid: queryConversationId,
     },
     changeFiles: fileView.changeFiles,
     selectedChangeFile,
@@ -2123,6 +2069,7 @@ const AppDevPro: React.FC = () => {
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={isConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
+        missingProjectFiles={missingProjectFiles}
         podReady={podReady}
         containerStatus={
           envPodConversationId
@@ -2140,7 +2087,9 @@ const AppDevPro: React.FC = () => {
           void handleRetryContainer();
         }}
         devActionLocked={previewDevActionLocked}
-        allowStoppedHero={previewUserStopped || previewEnterSettled}
+        allowStoppedHero={
+          (previewUserStopped || previewEnterSettled) && hasFileTreeData
+        }
         stopping={previewRuntime.stopping}
         restarting={
           dbEnv === UserAppDbEnvEnum.Prod && previewRuntime.restarting
@@ -2155,6 +2104,7 @@ const AppDevPro: React.FC = () => {
       handleStartPreviewRuntime,
       hasPendingIntervention,
       isConversationActive,
+      missingProjectFiles,
       podReady,
       previewDevActionLocked,
       previewRefreshKey,
@@ -2171,6 +2121,7 @@ const AppDevPro: React.FC = () => {
       canDirectProdPreview,
       devPod.status,
       envPodConversationId,
+      hasFileTreeData,
       previewEnterSettled,
       previewUserStopped,
       prodPod.status,
@@ -2195,13 +2146,11 @@ const AppDevPro: React.FC = () => {
       <GitVersionRecordPanel
         workspace={{
           workspaceType: 'taskAgent',
-          cid: queryConversationId ?? null,
+          cid: queryConversationId,
         }}
         branch={fileView.gitBranch}
         onRollbackSuccess={() => {
-          if (queryConversationId) {
-            handleRefreshFileList(queryConversationId);
-          }
+          handleRefreshFileList(queryConversationId);
           // 回滚成功后同步刷新 Git 源代码管理状态列表
           void refreshGitListIfEnabled();
         }}
@@ -2225,14 +2174,10 @@ const AppDevPro: React.FC = () => {
     const moreActions = isProdEnv ? null : (
       <MoreActionsMenu
         onRestartServer={() => {
-          if (queryConversationId) {
-            restartVncPod(queryConversationId, finalSelectedComputerId);
-          }
+          restartVncPod(queryConversationId, finalSelectedComputerId);
         }}
         onRestartAgent={() => {
-          if (queryConversationId) {
-            restartAgent(queryConversationId);
-          }
+          restartAgent(queryConversationId);
         }}
         onExportProject={() => {
           void fileView.tree.handleExportProject?.();
@@ -2256,14 +2201,10 @@ const AppDevPro: React.FC = () => {
               permanentWorkspaceToolIds={workspaceToolIds}
               showMoreActions={!isProdEnv}
               onRestartServer={() => {
-                if (queryConversationId) {
-                  restartVncPod(queryConversationId, finalSelectedComputerId);
-                }
+                restartVncPod(queryConversationId, finalSelectedComputerId);
               }}
               onRestartAgent={() => {
-                if (queryConversationId) {
-                  restartAgent(queryConversationId);
-                }
+                restartAgent(queryConversationId);
               }}
               onExportProject={() => {
                 void fileView.tree.handleExportProject?.();
@@ -2283,14 +2224,10 @@ const AppDevPro: React.FC = () => {
               permanentWorkspaceToolIds={DATABASE_WORKSPACE_TOOL_IDS}
               showMoreActions={!isProdEnv}
               onRestartServer={() => {
-                if (queryConversationId) {
-                  restartVncPod(queryConversationId, finalSelectedComputerId);
-                }
+                restartVncPod(queryConversationId, finalSelectedComputerId);
               }}
               onRestartAgent={() => {
-                if (queryConversationId) {
-                  restartAgent(queryConversationId);
-                }
+                restartAgent(queryConversationId);
               }}
               onExportProject={() => {
                 void fileView.tree.handleExportProject?.();
@@ -2421,7 +2358,7 @@ const AppDevPro: React.FC = () => {
 
   // ==================== 加载状态 ====================
   // 会话加载中时显示全屏 Loading，避免渲染不完整的页面
-  if (loadingAgentConfigInfo && queryConversationId) {
+  if (loadingAgentConfigInfo) {
     return (
       <div
         className={cx(

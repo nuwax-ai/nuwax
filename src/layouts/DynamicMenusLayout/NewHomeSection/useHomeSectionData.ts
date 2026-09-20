@@ -11,6 +11,10 @@
  * 时自动发；经典形态按初始 tab 决定，由视图挂载时调 initialLoad()。
  */
 import { EVENT_TYPE } from '@/constants/event.constants';
+import {
+  buildAppProRoute,
+  removeAppProConversationFromLocation,
+} from '@/pages/AppDevPro/utils/appProRoute';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
@@ -113,7 +117,7 @@ export function useHomeSectionData(options: {
   const { id: chatIdParam } = useParams();
   const location = useLocation();
   // 当前路由会话 id：会话详情路径识别与提取收敛在侧栏选中策略单源
-  // （含 /space/app-pro?conversationId 全栈 IDE 会话面板，项目子会话点击即跳该路由）
+  // （含 /space/:spaceId/app-pro/:appId/:conversationId 全栈 IDE 会话面板，项目子会话点击即跳该路由）
   const chatId =
     chatIdParam ??
     extractConversationIdFromPath(location.pathname, location.search) ??
@@ -328,10 +332,22 @@ export function useHomeSectionData(options: {
           location.pathname === '/space' ||
           location.pathname.startsWith('/space/')
         ) {
-          const searchParams = new URLSearchParams(location.search);
-          searchParams.delete('conversationId');
-          const search = searchParams.toString();
-          history.replace(`${location.pathname}${search ? `?${search}` : ''}`);
+          const withoutConversation = removeAppProConversationFromLocation(
+            location.pathname,
+            location.search,
+          );
+          if (withoutConversation.pathname !== location.pathname) {
+            history.replace(
+              `${withoutConversation.pathname}${withoutConversation.search}`,
+            );
+          } else {
+            const searchParams = new URLSearchParams(location.search);
+            searchParams.delete('conversationId');
+            const search = searchParams.toString();
+            history.replace(
+              `${location.pathname}${search ? `?${search}` : ''}`,
+            );
+          }
         }
       }
     }
@@ -560,9 +576,7 @@ export function useHomeSectionData(options: {
         jumpTo(`/space/${devSpaceId}/app-dev/${devTargetId}`);
       } else if (devTargetType === 'UserApp' && devSpaceId && devTargetId) {
         // 全栈应用会话：跳全栈应用开发详情页，conversationId 用于恢复该会话
-        jumpTo(
-          `/space/${devSpaceId}/app-pro?appId=${devTargetId}&conversationId=${id}`,
-        );
+        jumpTo(buildAppProRoute(devSpaceId, devTargetId, id));
       } else {
         history.push('/home/chat/' + id + '/' + agentId);
       }

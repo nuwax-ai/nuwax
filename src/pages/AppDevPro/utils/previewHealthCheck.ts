@@ -13,6 +13,12 @@ export interface PreviewHealthResult {
   opaque?: boolean;
 }
 
+export interface PreviewHealthCheckOptions {
+  signal?: AbortSignal;
+  /** 仅统计该时间点（performance.now）之后写入的 Resource Timing，避免误读历史 5xx */
+  sinceStartTime?: number;
+}
+
 const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
     if (signal?.aborted) {
@@ -41,8 +47,21 @@ const normalizePreviewEntryUrl = (raw: string): string => {
   }
 };
 
-/** 判断 Performance 条目是否对应预览 URL（含 iframe 导航与 cors fetch）。 */
-const urlsMatchForPreviewTiming = (
+const normalizePathname = (pathname: string): string =>
+  pathname.replace(/\/+$/, '') || '/';
+
+/** 根路径与常见 index 文档视为同一预览入口（重定向场景）。 */
+const isIndexPathEquivalent = (a: string, b: string): boolean => {
+  const paths = [normalizePathname(a), normalizePathname(b)];
+  const indexPaths = new Set(['/', '/index.html', '/index.htm']);
+  return paths.every((path) => indexPaths.has(path));
+};
+
+/**
+ * 判断 Performance 条目是否对应预览文档 URL（iframe 导航 / 同源 cors 探测）。
+ * 不按 origin 整域匹配，避免同域其它资源（API、静态文件）的历史 5xx 误判。
+ */
+export const urlsMatchForPreviewTiming = (
   entryName: string,
   previewUrl: string,
 ): boolean => {
@@ -52,11 +71,14 @@ const urlsMatchForPreviewTiming = (
     return true;
   }
   try {
-    const preview = new URL(previewUrl);
     const entry = new URL(entryName);
-    return entry.origin === preview.origin;
+    const preview = new URL(previewUrl);
+    if (entry.origin !== preview.origin) {
+      return false;
+    }
+    return isIndexPathEquivalent(entry.pathname, preview.pathname);
   } catch {
-    return entryName.startsWith(previewUrl) || previewUrl.startsWith(entryName);
+    return false;
   }
 };
 
@@ -66,6 +88,7 @@ const urlsMatchForPreviewTiming = (
  */
 export const readPreviewResponseStatusFromTiming = (
   previewUrl: string,
+  sinceStartTime?: number,
 ): number | undefined => {
   const trimmed = previewUrl?.trim();
   if (!trimmed || typeof performance === 'undefined') {
@@ -80,6 +103,12 @@ export const readPreviewResponseStatusFromTiming = (
 
   for (let index = entries.length - 1; index >= 0; index -= 1) {
     const entry = entries[index];
+    if (
+      sinceStartTime !== undefined &&
+      entry.startTime < sinceStartTime
+    ) {
+      continue;
+    }
     if (!urlsMatchForPreviewTiming(entry.name, trimmed)) {
       continue;
     }
@@ -101,7 +130,7 @@ export const readPreviewResponseStatusFromTiming = (
  */
 export const fetchPreviewUrlHealthOnce = async (
   previewUrl: string,
-  signal?: AbortSignal,
+  options?: Pick<PreviewHealthCheckOptions, 'signal' | 'sinceStartTime'>,
 ): Promise<PreviewHealthResult> => {
   const url = previewUrl?.trim();
   if (!url) {
@@ -115,14 +144,17 @@ export const fetchPreviewUrlHealthOnce = async (
       credentials: 'omit',
       cache: 'no-store',
       redirect: 'follow',
-      signal: signal ?? AbortSignal.timeout(CHECK_TIMEOUT_MS),
+      signal: options?.signal ?? AbortSignal.timeout(CHECK_TIMEOUT_MS),
     });
     return {
       ok: response.ok,
       status: response.status,
     };
   } catch {
-    const timingStatus = readPreviewResponseStatusFromTiming(url);
+    const timingStatus = readPreviewResponseStatusFromTiming(
+      url,
+      options?.sinceStartTime,
+    );
     if (timingStatus !== undefined && timingStatus >= 400) {
       return { ok: false, status: timingStatus };
     }
@@ -158,13 +190,17 @@ export const getPreviewIframeDocumentEmptyState = (
 const readPreviewSyncSignals = (
   previewUrl: string,
   frame: HTMLIFrameElement | null,
+  sinceStartTime?: number,
 ): PreviewHealthResult | null => {
   const emptyState = getPreviewIframeDocumentEmptyState(frame);
   if (emptyState === true) {
     return { ok: false };
   }
 
-  const timingStatus = readPreviewResponseStatusFromTiming(previewUrl);
+  const timingStatus = readPreviewResponseStatusFromTiming(
+    previewUrl,
+    sinceStartTime,
+  );
   if (timingStatus !== undefined && timingStatus >= 200 && timingStatus < 300) {
     return { ok: true, status: timingStatus };
   }
@@ -180,16 +216,19 @@ const readPreviewSyncSignals = (
  */
 const pollPreviewTimingStatus = async (
   previewUrl: string,
-  signal?: AbortSignal,
+  options?: Pick<PreviewHealthCheckOptions, 'signal' | 'sinceStartTime'>,
 ): Promise<PreviewHealthResult | null> => {
   const deadline = Date.now() + TIMING_POLL_MAX_MS;
 
   while (Date.now() < deadline) {
-    if (signal?.aborted) {
+    if (options?.signal?.aborted) {
       return null;
     }
 
-    const timingStatus = readPreviewResponseStatusFromTiming(previewUrl);
+    const timingStatus = readPreviewResponseStatusFromTiming(
+      previewUrl,
+      options?.sinceStartTime,
+    );
     if (timingStatus !== undefined && timingStatus >= 400) {
       return { ok: false, status: timingStatus };
     }
@@ -198,7 +237,7 @@ const pollPreviewTimingStatus = async (
     }
 
     try {
-      await sleep(TIMING_POLL_INTERVAL_MS, signal);
+      await sleep(TIMING_POLL_INTERVAL_MS, options?.signal);
     } catch {
       return null;
     }
@@ -211,25 +250,25 @@ const pollPreviewTimingStatus = async (
  * iframe onLoad 后校验预览是否就绪（单次 cors + 短轮询 Timing，不长时间轮询）。
  *
  * - Timing / cors 明确 2xx → 成功
- * - Timing / cors 明确 4xx/5xx → 立即失败，展示错误 UI
- * - cors 跨域拦截且无法确认 2xx → 失败（避免 502 白屏）
+ * - Timing / cors 明确 4xx/5xx（且为本次加载写入的条目）→ 失败
+ * - iframe 已 onLoad 且跨域无法 cors：视为成功（由浏览器导航结果为准）
  */
 export const waitUntilPreviewUrlReady = async (
   previewUrl: string,
   frame: HTMLIFrameElement | null,
-  options?: { signal?: AbortSignal },
+  options?: PreviewHealthCheckOptions,
 ): Promise<PreviewHealthResult> => {
   const url = previewUrl?.trim();
   if (!url) {
     return { ok: false, status: 0 };
   }
 
-  const sync = readPreviewSyncSignals(url, frame);
+  const sync = readPreviewSyncSignals(url, frame, options?.sinceStartTime);
   if (sync) {
     return sync;
   }
 
-  const cors = await fetchPreviewUrlHealthOnce(url, options?.signal);
+  const cors = await fetchPreviewUrlHealthOnce(url, options);
   if (cors.ok) {
     return cors;
   }
@@ -237,12 +276,15 @@ export const waitUntilPreviewUrlReady = async (
     return cors;
   }
 
-  const polled = await pollPreviewTimingStatus(url, options?.signal);
+  const polled = await pollPreviewTimingStatus(url, options);
   if (polled) {
     return polled;
   }
 
-  const timingAfterFetch = readPreviewResponseStatusFromTiming(url);
+  const timingAfterFetch = readPreviewResponseStatusFromTiming(
+    url,
+    options?.sinceStartTime,
+  );
   if (
     timingAfterFetch !== undefined &&
     timingAfterFetch >= 200 &&
@@ -255,6 +297,10 @@ export const waitUntilPreviewUrlReady = async (
   }
 
   if (cors.opaque) {
+    const emptyState = getPreviewIframeDocumentEmptyState(frame);
+    if (emptyState !== true) {
+      return { ok: true, opaque: true };
+    }
     return { ok: false, opaque: true };
   }
 

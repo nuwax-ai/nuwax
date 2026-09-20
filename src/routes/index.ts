@@ -119,7 +119,7 @@ const routes = [
         layout: false,
       },
       {
-        path: '/space/:spaceId/app-pro',
+        path: '/space/:spaceId/app-pro/:appId/:conversationId',
         component: '@/pages/AppDevPro',
         wrappers: ['@/wrappers/immersiveShellAvoid'],
         layout: false,

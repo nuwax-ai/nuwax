@@ -152,7 +152,7 @@ describe('buildHomeSendPlan 分支决策', () => {
     expect(plan.attach.devAgentId).toBe(42);
     expect(plan.attach.sandboxId).toBe(88);
     expect(plan.attach.redirectUrl).toBe(
-      '/space/8/app-pro?appId=200&conversationId=',
+      '/space/8/app-pro/200/',
     );
   });
 

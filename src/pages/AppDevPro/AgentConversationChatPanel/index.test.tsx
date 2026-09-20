@@ -33,6 +33,7 @@ vi.mock('umi', () => ({
   history: mockHistory,
   useLocation: (...args: unknown[]) => mockUseLocation(...args),
   useModel: (...args: unknown[]) => mockUseModel(...args),
+  useParams: () => ({}),
 }));
 
 // useConversationMentionFiles → services 链（vncDesktop → userService → 常量表）

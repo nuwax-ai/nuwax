@@ -10,7 +10,7 @@ const FULLSCREEN_WORKBENCH_PATH_PATTERNS: RegExp[] = [
   /^\/space\/[^/]+\/workflow\/[^/]+$/, // 工作流编排（Antv-X6）
   /^\/space\/[^/]+\/agent\/[^/]+$/, // 智能体编排（EditAgent）
   /^\/space\/[^/]+\/app-dev\/[^/]+$/, // 全栈应用 Web IDE（AppDev）
-  /^\/space\/[^/]+\/app-pro$/, // 全栈应用会话（AppDevPro）
+  /^\/space\/[^/]+\/app-pro\/[^/]+\/[^/]+$/, // 全栈应用会话（AppDevPro）
   /^\/space\/[^/]+\/app-dev-design\/[^/]+$/, // 应用设计页（AppDevDesign）
   /^\/space\/[^/]+\/agent-dev$/, // 智能体会话开发（ConversationAgent）
 ];

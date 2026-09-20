@@ -60,6 +60,9 @@ export interface ThirdAppOauth2SettingSaveParams {
   /*统一项目 ID（user_project 主键） */
   projectId: number;
 
+  /*项目类型：可用值:Agent,Plugin,Skill,PageApp,UserApp,NormalProject,Connector,ThirdApp,Workflow,Knowledge,Table,Model,Mcp */
+  projectType: AgentComponentTypeEnum;
+
   /*应用主页地址；留空表示不修改 */
   homepageUrl?: string;
 
@@ -171,9 +174,13 @@ export async function apiThirdAppOauth2SecretGet(
 // 查询三方应用信息（仅读，不自动生成凭证）
 export async function apiThirdAppOauth2InfoGet(
   projectId: number,
+  projectType?: AgentComponentTypeEnum,
 ): Promise<RequestResponse<ThirdAppOauth2AppInfo>> {
   return request(`/api/user-project/oauth2/info/${projectId}`, {
     method: 'GET',
+    params: {
+      projectType,
+    },
   });
 }
 

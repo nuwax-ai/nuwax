@@ -608,17 +608,26 @@ const AppProjectDetail: React.FC = () => {
     });
   }, [appId, runRegenerate]);
 
-  /**
-   * 保存主页地址与回调地址；空字符串按接口约定视为不修改。
-   */
+  /** 保存主页地址与回调地址（两项均必填） */
   const handleSaveOauthSetting = useCallback(() => {
     if (!appId) {
       return;
     }
+    const trimmedHomepageUrl = homepageUrl.trim();
+    const trimmedRedirectUri = redirectUri.trim();
+    if (!trimmedHomepageUrl) {
+      message.warning(dict('PC.Pages.AppProjectDetail.homeUrlRequired'));
+      return;
+    }
+    if (!trimmedRedirectUri) {
+      message.warning(dict('PC.Pages.AppProjectDetail.callbackUrlRequired'));
+      return;
+    }
     runSaveOauthSetting({
       projectId: appId,
-      homepageUrl: homepageUrl.trim() || undefined,
-      redirectUri: redirectUri.trim() || undefined,
+      projectType: AgentComponentTypeEnum.UserApp,
+      homepageUrl: trimmedHomepageUrl,
+      redirectUri: trimmedRedirectUri,
     });
   }, [appId, homepageUrl, redirectUri, runSaveOauthSetting]);
 
@@ -686,6 +695,7 @@ const AppProjectDetail: React.FC = () => {
    * @param value 输入值
    * @param onChange 变更回调
    * @param placeholder 空态占位
+   * @param required 是否在 label 后展示必填星号
    * @returns 字段行
    */
   const renderUrlField = (
@@ -693,9 +703,17 @@ const AppProjectDetail: React.FC = () => {
     value: string,
     onChange: (next: string) => void,
     placeholder: string,
+    required?: boolean,
   ) => (
     <div className={cx(styles.field)}>
-      <span className={cx(styles['field-label'])}>{label}</span>
+      <span className={cx(styles['field-label'])}>
+        {label}
+        {required ? (
+          <span className={cx(styles['field-required'])} aria-hidden>
+            *
+          </span>
+        ) : null}
+      </span>
       <Input
         className={cx(styles['field-input'])}
         value={value}
@@ -786,12 +804,14 @@ const AppProjectDetail: React.FC = () => {
             homepageUrl,
             setHomepageUrl,
             dict('PC.Pages.AppProjectDetail.homeUrlPlaceholder'),
+            true,
           )}
           {renderUrlField(
             dict('PC.Pages.AppProjectDetail.callbackUrl'),
             redirectUri,
             setRedirectUri,
             dict('PC.Pages.AppProjectDetail.callbackUrlPlaceholder'),
+            true,
           )}
           <div className={cx(styles['regen-row'])}>
             <Button
