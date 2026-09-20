@@ -60,8 +60,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
   );
   const unread = unreadConversationIds?.has(String(item.id)) === true;
-  const hasRuntimeLeadingStatus =
-    leadingMark && (item.taskStatus === TaskStatus.EXECUTING || unread);
 
   // 归档行内二次确认（2026-09-19 定调，参考原型）：hover 归档图标→红色「确认」
   // 二次点击执行；⋯菜单「归档」经 onArchive 汇入同一状态，入口确认口径统一
@@ -163,18 +161,17 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                   同一位置切换成置顶操作，不改变标题起点。 */}
               <span className={cx(styles['leading-slot'])}>
                 <span className={cx(styles['leading-status'])}>
-                  {hasRuntimeLeadingStatus ? (
-                    <ConversationStatusMark
-                      taskStatus={item.taskStatus}
-                      unread={unread}
-                    />
-                  ) : (
-                    pinned && (
-                      <PushpinFilled
-                        className={cx(styles['pinned-state-icon'])}
-                      />
-                    )
-                  )}
+                  <ConversationStatusMark
+                    taskStatus={leadingMark ? item.taskStatus : undefined}
+                    unread={leadingMark && unread}
+                    fallback={
+                      pinned ? (
+                        <PushpinFilled
+                          className={cx(styles['pinned-state-icon'])}
+                        />
+                      ) : null
+                    }
+                  />
                 </span>
                 <button
                   type="button"

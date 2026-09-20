@@ -1,5 +1,6 @@
 @import '@/styles/token.less';
 @import '@/styles/nav-item-state.less';
+@import '@/styles/sidebar-row-icon.less';
 
 @statusTagFontSize: 11px; // 运行中标签专用字号
 @statusTagPadding: 0 6px; // 运行中标签内边距
@@ -20,7 +21,8 @@
   position: relative;
   // 右内边距 11px：让行尾「⋯」与项目面板会话子行的 ⋯ 右缘对齐
   //（子行 .child-actions 内缩 11px；2026-09-12 需求）
-  padding: 11px 11px 11px 10px;
+  // 行首槽由 20px 统一为 24px 后同步收紧纵向 padding，经典行高保持 42px。
+  padding: 9px 11px 9px 10px;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -66,7 +68,7 @@
     .conversation-topic-row {
       display: flex;
       align-items: center;
-      gap: @paddingXs;
+      gap: @sidebarRowIconGap;
       width: 100%;
 
       .conversation-topic {
@@ -101,13 +103,7 @@
       // 固定行首状态槽：状态和置顶操作叠在同一几何位置，hover 只切透明度，
       // 不再通过 width/margin 展开挤动标题。
       .leading-slot {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 16px;
-        height: 20px;
-        flex: 0 0 16px;
+        .sidebar-row-leading-slot();
       }
 
       .leading-status,
@@ -125,7 +121,7 @@
       }
 
       .pinned-state-icon {
-        font-size: 12px;
+        font-size: @sidebarRowIconSize;
         color: @colorPrimary;
       }
 
@@ -133,7 +129,7 @@
         padding: 0;
         border: 0;
         background: transparent;
-        font-size: 12px;
+        font-size: @sidebarRowIconSize;
         color: @colorPrimary;
         cursor: pointer;
         opacity: 0;
@@ -175,7 +171,8 @@
         transform: translateY(-50%);
         z-index: 1;
         flex-shrink: 0;
-        font-size: 15px;
+        .sidebar-row-action-slot();
+
         opacity: 0;
         transition: opacity 0.2s ease;
       }
@@ -201,15 +198,10 @@
       }
 
       .archive-trigger {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: @controlHeightSm;
-        height: @controlHeightSm;
-        padding: 0;
+        .sidebar-row-action-slot();
+
         border: 0;
         border-radius: 7px;
-        font-size: 14px;
         color: @navSecondMenuAdaptiveTextTertiary;
         background: transparent;
         cursor: pointer;
@@ -389,12 +381,12 @@
   position: relative;
   min-height: 36px;
   box-sizing: border-box;
-  // 右内边距 11px：⋯ 右缘与项目子行对齐（同上）
-  padding: 8px 11px;
+  padding: 6px @sidebarRowCompactTrailingPadding 6px
+    @sidebarRowCompactLeadingPadding;
   transition: background 0.18s ease;
 
   .conversation-item-content .conversation-topic-row {
-    gap: @paddingXs;
+    gap: @sidebarRowIconGap;
 
     .conversation-topic {
       font-size: @fontSize;
@@ -405,8 +397,7 @@
 
     :global(.more-btn) {
       position: absolute;
-      // 右锚 11px：⋯ 右缘与项目面板会话子行的 ⋯ 对齐（2026-09-12 需求）
-      right: 11px;
+      right: @sidebarRowCompactTrailingPadding;
       z-index: 1;
       // 视觉与项目子行 ⋯ 统一（2026-09-12）：24px、7px 圆角、静默透明、
       // hover 浅品牌色底。此处用 :global 字面量声明——组件自带 index.less 的
@@ -422,6 +413,10 @@
         background: @colorPrimaryBg;
         color: rgba(0, 0, 0, 88%);
       }
+    }
+
+    .archive-action {
+      right: 36px; // 行尾 10px + 24px 操作槽 + 2px 间距
     }
   }
 

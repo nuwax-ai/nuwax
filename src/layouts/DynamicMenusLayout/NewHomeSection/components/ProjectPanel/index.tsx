@@ -47,7 +47,6 @@ import {
   CommentOutlined,
   DeleteOutlined,
   EditOutlined,
-  ExclamationCircleFilled,
   FolderOpenOutlined,
   FolderOutlined,
   InboxOutlined,
@@ -527,9 +526,6 @@ const ProjectPanel = forwardRef<
 
     const executingText = dict(
       'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
-    );
-    const failedText = dict(
-      'PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask',
     );
 
     const handleProjectClick = (project: ProjectItem) => {
@@ -1305,10 +1301,7 @@ const ProjectPanel = forwardRef<
                             aria-label={dict('PC.Components.ActionMenu.more')}
                             onClick={(event) => event.stopPropagation()}
                           >
-                            <SvgIcon
-                              name="icons-common-more"
-                              style={{ fontSize: 15 }}
-                            />
+                            <SvgIcon name="icons-common-more" />
                           </button>
                         </Dropdown>
                         {/* 行尾归档入口：点击后操作区收敛为单独的红色确认按钮。 */}
@@ -1372,21 +1365,18 @@ const ProjectPanel = forwardRef<
                           切换为重命名入口；能力不同但三类行的标题起点保持稳定。 */}
                       <span className={cx(styles['child-leading-slot'])}>
                         <span className={cx(styles['child-leading-status'])}>
-                          {leadingMark &&
-                            child.taskStatus !== TaskStatus.FAILED && (
-                              <ConversationStatusMark
-                                taskStatus={child.taskStatus}
-                                unread={unreadConversationIds?.has(
-                                  String(child.id),
-                                )}
-                              />
-                            )}
-                          {child.taskStatus === TaskStatus.FAILED && (
-                            <ExclamationCircleFilled
-                              className={cx(styles['status-failed'])}
-                              aria-label={failedText}
-                            />
-                          )}
+                          <ConversationStatusMark
+                            taskStatus={
+                              leadingMark ||
+                              child.taskStatus === TaskStatus.FAILED
+                                ? child.taskStatus
+                                : undefined
+                            }
+                            unread={
+                              leadingMark &&
+                              unreadConversationIds?.has(String(child.id))
+                            }
+                          />
                         </span>
                         <button
                           type="button"

@@ -1,16 +1,23 @@
 @import '@/styles/token.less';
+@import '@/styles/sidebar-row-icon.less';
 
-// 会话行首状态标记：执行中转圈 / 结束未读蓝点（互斥，见组件注释）
+// 会话行首状态标记：执行中 / 失败 / 结束未读互斥，图形共享侧栏视觉尺寸。
 .mark-spin {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: @sidebarRowIconSize;
   color: @colorPrimary;
+}
+
+.mark-failed {
+  flex-shrink: 0;
+  font-size: @sidebarRowIconSize;
+  color: @colorError;
 }
 
 .mark-dot {
   flex-shrink: 0;
-  width: 6px;
-  height: 6px;
+  width: @sidebarRowStatusDotSize;
+  height: @sidebarRowStatusDotSize;
   border-radius: 50%;
   background-color: @colorPrimary;
 }

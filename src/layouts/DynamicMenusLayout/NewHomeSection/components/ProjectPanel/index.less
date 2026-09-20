@@ -1,5 +1,6 @@
 @import '@/styles/token.less';
 @import '@/styles/nav-item-state.less';
+@import '@/styles/sidebar-row-icon.less';
 
 .project-panel {
   display: flex;
@@ -63,13 +64,7 @@
   // 固定行首状态槽：默认承载文件夹开合/置顶徽标，hover 原位切为置顶操作。
   // 两层绝对叠放，避免图标出现时推动项目名。
   .project-leading-slot {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 20px;
-    flex: 0 0 18px;
+    .sidebar-row-leading-slot();
   }
 
   .folder-badge {
@@ -99,7 +94,7 @@
     border: 0;
     background: transparent;
     color: @colorPrimary;
-    font-size: 12px;
+    font-size: @sidebarRowIconSize;
     cursor: pointer;
     opacity: 0;
     transition: opacity 0.16s ease;
@@ -132,7 +127,8 @@
     box-sizing: border-box;
     // 左 10px 与任务列表行 padding 对齐（2026-09-19：面板左缘收窄后图钉/图标
     // 须与任务行标题同线）；单栏 compact 行有独立 padding 覆盖不受影响
-    padding: @paddingXs @paddingXxs @paddingXs 10px;
+    // 24px 统一槽位下维持经典项目行原 36px 高度。
+    padding: 6px @paddingXxs 6px 10px;
     border-radius: @borderRadius;
     cursor: pointer;
     user-select: none;
@@ -174,7 +170,7 @@
     // caret 箭头作展开指示）；经典行间距由 flex gap 承担，不加 margin
     .project-icon {
       flex-shrink: 0;
-      font-size: 15px;
+      font-size: @sidebarRowIconSize;
       color: @navSecondMenuAdaptiveTextTertiary;
     }
   }
@@ -187,8 +183,9 @@
     width: 100%;
     box-sizing: border-box;
     margin-left: 0;
-    // 背景从项目行同一左缘开始，内容仍保留 12px 层级缩进。
-    padding: 3px @paddingXxs 3px 12px;
+    // 行首槽与项目行、任务会话共享中心线；树层级只由 children 容器表达。
+    // 24px 槽位本身即为经典子行高度，避免统一槽位后把列表纵向撑松。
+    padding: 0 @paddingXxs 0 10px;
     border-radius: @borderRadiusSm;
     cursor: pointer;
 
@@ -207,23 +204,10 @@
       line-height: 16px;
     }
 
-    // 失败红叹号
-    .status-failed {
-      flex-shrink: 0;
-      font-size: 11px;
-      color: @colorError;
-    }
-
     // 固定行首状态槽：运行/失败/未读和重命名操作叠在同一位置，hover 只切换
     // 可见性，标题列不再左右跳动。
     .child-leading-slot {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 18px;
-      flex: 0 0 16px;
+      .sidebar-row-leading-slot();
     }
 
     .child-leading-status,
@@ -244,7 +228,7 @@
       padding: 0;
       border: 0;
       background: transparent;
-      font-size: 12px;
+      font-size: @sidebarRowIconSize;
       color: @navSecondMenuAdaptiveTextTertiary;
       cursor: pointer;
       opacity: 0;
@@ -279,16 +263,11 @@
     // 行尾删除入口（2026-09-20 定调：子会话行=行首重命名/行尾删除，⋯菜单撤收）；
     // 显隐由 .child-actions 容器统一（hover 显现/触屏常显），删除走既有确认弹窗
     .child-delete {
+      .sidebar-row-action-slot();
+
       flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: @controlHeightSm;
-      height: @controlHeightSm;
-      padding: 0;
       border: 0;
       border-radius: 7px;
-      font-size: 13px;
       color: @navSecondMenuAdaptiveTextTertiary;
       background: transparent;
       cursor: pointer;
@@ -398,8 +377,9 @@
 
   .row {
     position: relative;
-    gap: 2px;
-    padding: @paddingXs 10px;
+    gap: @sidebarRowIconGap;
+    padding: 6px @sidebarRowCompactTrailingPadding 6px
+      @sidebarRowCompactLeadingPadding;
     border-radius: 15px;
     min-height: 36px;
     box-sizing: border-box;
@@ -415,18 +395,18 @@
     }
   }
 
-  // 紧凑行 gap 2px，图标与名称间距由 margin 补齐（覆盖基础 .row 的 gap 口径）
+  // 紧凑行直接复用统一槽位与 4px 间距，不再为单个图标追加 margin。
   .project-icon {
     flex-shrink: 0;
-    font-size: 15px;
+    font-size: @sidebarRowIconSize;
     color: @navSecondMenuAdaptiveTextTertiary;
-    margin-right: @marginXxs;
+    margin-right: 0;
   }
 
   // 原让位行尾 caret 箭头（18px+边距=30px），箭头已去除改为贴行右 padding
   .project-more {
     position: absolute;
-    right: 10px;
+    right: @sidebarRowCompactTrailingPadding;
     background: @colorBgContainer;
   }
 
@@ -456,12 +436,12 @@
 
   .child {
     // 胶囊向左反向覆盖 children 的 20px 树缩进，hover 左右边界与项目行、
-    // 任务会话一致；行首槽左边距收敛为 11px，与任务会话的 16px 槽同轴，
-    // 也与项目行 10px + 18px 槽共享 19px 中心线；不改变 hover 胶囊宽度。
+    // 任务会话一致；7px 左 padding + 24px 槽统一出 19px 行首中心线。
     width: calc(100% + 20px);
     box-sizing: border-box;
     margin-left: -20px;
-    padding: 8px 10px 8px 11px;
+    padding: 6px @sidebarRowCompactTrailingPadding 6px
+      @sidebarRowCompactLeadingPadding;
     border-radius: 10px;
 
     .child-name {
@@ -475,7 +455,7 @@
   // （原 30px 让位行尾箭头，箭头已去除）
   .project-actions {
     position: absolute;
-    right: 10px;
+    right: @sidebarRowCompactTrailingPadding;
     background: transparent;
     border-radius: @borderRadius;
   }
@@ -487,7 +467,7 @@
 
   // 子行悬停按钮浮层与时间列同缘(243)；时间隐藏规则已上提基础作用域
   .child-actions {
-    right: 10px;
+    right: @sidebarRowCompactTrailingPadding;
   }
 }
 
@@ -530,17 +510,11 @@
   transition: opacity 0.16s ease;
 
   button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: @controlHeightSm;
-    height: @controlHeightSm;
-    padding: 0;
+    .sidebar-row-action-slot();
+
     border: 0;
     border-radius: 7px;
-    // 项目图标(plus/more)尺寸由 SvgIcon style.fontSize 传入(15px，视觉宽约 11px)；
-    // 此处字号仅作用于非 SvgIcon 内容(创建中转圈 LoadingOutlined)
-    font-size: 15px;
+    // Ant 图标与 SvgIcon 都继承统一 14px 图形尺寸。
     color: @navSecondMenuAdaptiveTextTertiary;
     background: transparent;
     cursor: pointer;

@@ -46,6 +46,7 @@ const EXECUTING_KEY =
   'PC.Layouts.DynamicMenusLayout.ConversationItem.executing';
 const UNREAD_KEY =
   'PC.Layouts.DynamicMenusLayout.ConversationItem.unreadFinished';
+const FAILED_KEY = 'PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask';
 
 const buildItem = (
   overrides: Partial<ConversationInfo> = {},
@@ -115,6 +116,17 @@ describe('ConversationItem 行首状态标记（leadingMark）', () => {
       unread: true,
     });
     expect(screen.getByLabelText(EXECUTING_KEY)).toBeTruthy();
+    expect(screen.queryByLabelText(UNREAD_KEY)).toBeNull();
+  });
+
+  it('开启 + 失败：失败状态优先于未读和置顶', () => {
+    renderRow({
+      leadingMark: true,
+      taskStatus: TaskStatus.FAILED,
+      unread: true,
+      pinned: true,
+    });
+    expect(screen.getByLabelText(FAILED_KEY)).toBeTruthy();
     expect(screen.queryByLabelText(UNREAD_KEY)).toBeNull();
   });
 
