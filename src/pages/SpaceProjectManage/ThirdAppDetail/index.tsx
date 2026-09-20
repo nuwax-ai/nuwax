@@ -82,6 +82,9 @@ const ThirdAppDetail: React.FC = () => {
   const isPublished =
     appInfo?.publishStatus === PublishStatusEnum.Published;
 
+  /** 发布前须已配置 OAuth2 主页地址（以 info 回包为准） */
+  const canPublish = Boolean(appInfo?.homepageUrl?.trim());
+
   /** 单一设置 Tab，内容由下方主体区域渲染 */
   const tabItems = useMemo<TabsProps['items']>(
     () => [
@@ -135,6 +138,9 @@ const ThirdAppDetail: React.FC = () => {
         const info = pickResponseData(result);
         if (info) {
           setOauthInfo(info);
+          setAppInfo((previous) =>
+            previous ? { ...previous, ...info } : previous,
+          );
           setHomepageUrl(info.homepageUrl || '');
           setRedirectUri(info.redirectUri || '');
         }
@@ -237,14 +243,19 @@ const ThirdAppDetail: React.FC = () => {
     });
   }, [projectId, runRegenerate]);
 
-  /** 保存主页地址与回调地址 */
+  /** 保存主页地址与回调地址（主页地址必填） */
   const handleSaveOauthSetting = useCallback(() => {
     if (!projectId) {
       return;
     }
+    const trimmedHomepageUrl = homepageUrl.trim();
+    if (!trimmedHomepageUrl) {
+      message.warning(dict('PC.Pages.ThirdAppDetail.homeUrlRequired'));
+      return;
+    }
     runSaveOauthSetting({
       projectId,
-      homepageUrl: homepageUrl.trim() || undefined,
+      homepageUrl: trimmedHomepageUrl,
       redirectUri: redirectUri.trim() || undefined,
     });
   }, [homepageUrl, projectId, redirectUri, runSaveOauthSetting]);
@@ -256,6 +267,7 @@ const ThirdAppDetail: React.FC = () => {
    * @param value 当前值
    * @param onChange 变更回调
    * @param placeholder 占位文案
+   * @param required 是否在 label 后展示必填星号
    * @returns URL 输入行
    */
   const renderUrlField = (
@@ -263,9 +275,17 @@ const ThirdAppDetail: React.FC = () => {
     value: string,
     onChange: (next: string) => void,
     placeholder: string,
+    required?: boolean,
   ) => (
     <div className={cx(styles.field)}>
-      <span className={cx(styles['field-label'])}>{label}</span>
+      <span className={cx(styles['field-label'])}>
+        {label}
+        {required ? (
+          <span className={cx(styles['field-required'])} aria-hidden>
+            *
+          </span>
+        ) : null}
+      </span>
       <Input
         className={cx(styles['field-input'])}
         value={value}
@@ -363,9 +383,23 @@ const ThirdAppDetail: React.FC = () => {
               onClick={handleTogglePublishVersionRecords}
             />
           ) : null}
-          <Button type="primary" onClick={handleOpenPublish}>
-            {dict('PC.Pages.ThirdAppDetail.publish')}
-          </Button>
+          <TooltipIcon
+            title={
+              canPublish
+                ? undefined
+                : dict('PC.Pages.ThirdAppDetail.publishDisabledHomepageHint')
+            }
+          >
+            <span>
+              <Button
+                type="primary"
+                disabled={!canPublish}
+                onClick={handleOpenPublish}
+              >
+                {dict('PC.Pages.ThirdAppDetail.publish')}
+              </Button>
+            </span>
+          </TooltipIcon>
         </div>
       </header>
 
@@ -398,6 +432,7 @@ const ThirdAppDetail: React.FC = () => {
                 homepageUrl,
                 setHomepageUrl,
                 dict('PC.Pages.ThirdAppDetail.homeUrlPlaceholder'),
+                true,
               )}
               {renderUrlField(
                 dict('PC.Pages.ThirdAppDetail.callbackUrl'),

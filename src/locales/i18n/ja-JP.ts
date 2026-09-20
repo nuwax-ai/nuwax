@@ -6678,6 +6678,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ThirdAppDetail.clientSecret": "Client Secret",
   "PC.Pages.ThirdAppDetail.homeUrl": "ホームページ URL",
   "PC.Pages.ThirdAppDetail.homeUrlPlaceholder": "ホームページ URL を入力",
+  "PC.Pages.ThirdAppDetail.homeUrlRequired": "ホームページ URL を入力してください",
   "PC.Pages.ThirdAppDetail.callbackUrl": "コールバック URL",
   "PC.Pages.ThirdAppDetail.callbackUrlPlaceholder": "コールバック URL を入力",
   "PC.Pages.ThirdAppDetail.regenerate": "認証情報を再生成",
@@ -6685,6 +6686,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ThirdAppDetail.regenerateConfirmTitle": "認証情報を再生成しますか",
   "PC.Pages.ThirdAppDetail.regenerateSuccess": "認証情報を再生成しました",
   "PC.Pages.ThirdAppDetail.publish": "公開",
+  "PC.Pages.ThirdAppDetail.publishDisabledHomepageHint": "先に OAuth2 認証情報のホームページ URL を設定してください",
   "PC.Pages.ThirdAppDetail.publishVersionRecords": "公開履歴",
   // 通常プロジェクト詳細ページ
   "PC.Pages.NormalProjectDetail.tabPlan": "計画",

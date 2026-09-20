@@ -6775,6 +6775,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.ThirdAppDetail.clientSecret": "Client Secret",
   "PC.Pages.ThirdAppDetail.homeUrl": "主页地址",
   "PC.Pages.ThirdAppDetail.homeUrlPlaceholder": "请输入主页地址",
+  "PC.Pages.ThirdAppDetail.homeUrlRequired": "请输入主页地址",
   "PC.Pages.ThirdAppDetail.callbackUrl": "回调地址",
   "PC.Pages.ThirdAppDetail.callbackUrlPlaceholder": "请输入回调地址",
   "PC.Pages.ThirdAppDetail.regenerate": "重新生成凭证",
@@ -6782,6 +6783,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.ThirdAppDetail.regenerateConfirmTitle": "确认重新生成凭证",
   "PC.Pages.ThirdAppDetail.regenerateSuccess": "凭证已重新生成",
   "PC.Pages.ThirdAppDetail.publish": "发布",
+  "PC.Pages.ThirdAppDetail.publishDisabledHomepageHint": "请先配置 OAuth2 认证信息中的主页地址",
   "PC.Pages.ThirdAppDetail.publishVersionRecords": "发布版本记录",
   // 常规项目详情页
   "PC.Pages.NormalProjectDetail.tabPlan": "计划",
