@@ -44,6 +44,7 @@ import {
 } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
 import {
+  CommentOutlined,
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleFilled,
@@ -1162,7 +1163,7 @@ const ProjectPanel = forwardRef<
             });
           }}
         >
-          <SvgIcon name="icons-common-plus" style={{ fontSize: 15 }} />
+          <CommentOutlined />
         </button>
       </Tooltip>
     );
@@ -1268,7 +1269,10 @@ const ProjectPanel = forwardRef<
                       }}
                     >
                       {pinnedIds.has(projectKeyOf(project)) ? (
-                        <PushpinFilled />
+                        <span className={cx(styles['unpin-icon'])} aria-hidden>
+                          <PushpinFilled />
+                          <span className={cx(styles['unpin-slash'])} />
+                        </span>
                       ) : (
                         <PushpinOutlined />
                       )}
@@ -1276,24 +1280,6 @@ const ProjectPanel = forwardRef<
                   </span>
                   <span className={cx(styles.name)}>{project.name}</span>
                   <div className={styles['project-actions']}>
-                    {renderAddConversationButton(project)}
-                    <Dropdown
-                      menu={buildProjectMenu(project)}
-                      trigger={['click']}
-                    >
-                      <button
-                        type="button"
-                        className={styles['project-more']}
-                        aria-label={dict('PC.Components.ActionMenu.more')}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <SvgIcon
-                          name="icons-common-more"
-                          style={{ fontSize: 15 }}
-                        />
-                      </button>
-                    </Dropdown>
-                    {/* 行尾归档入口（2026-09-20 新增，行走内二次确认同任务行） */}
                     {archiveArmingKey === projectKeyOf(project) ? (
                       <button
                         type="button"
@@ -1307,22 +1293,42 @@ const ProjectPanel = forwardRef<
                         {dict('PC.Common.Global.confirm')}
                       </button>
                     ) : (
-                      <button
-                        type="button"
-                        className={cx(styles['project-archive'])}
-                        aria-label={dict(
-                          'PC.Components.ConversationContextMenu.archive',
-                        )}
-                        title={dict(
-                          'PC.Components.ConversationContextMenu.archive',
-                        )}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setArchiveArmingKey(projectKeyOf(project));
-                        }}
-                      >
-                        <InboxOutlined />
-                      </button>
+                      <>
+                        {renderAddConversationButton(project)}
+                        <Dropdown
+                          menu={buildProjectMenu(project)}
+                          trigger={['click']}
+                        >
+                          <button
+                            type="button"
+                            className={styles['project-more']}
+                            aria-label={dict('PC.Components.ActionMenu.more')}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <SvgIcon
+                              name="icons-common-more"
+                              style={{ fontSize: 15 }}
+                            />
+                          </button>
+                        </Dropdown>
+                        {/* 行尾归档入口：点击后操作区收敛为单独的红色确认按钮。 */}
+                        <button
+                          type="button"
+                          className={cx(styles['project-archive'])}
+                          aria-label={dict(
+                            'PC.Components.ConversationContextMenu.archive',
+                          )}
+                          title={dict(
+                            'PC.Components.ConversationContextMenu.archive',
+                          )}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setArchiveArmingKey(projectKeyOf(project));
+                          }}
+                        >
+                          <InboxOutlined />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

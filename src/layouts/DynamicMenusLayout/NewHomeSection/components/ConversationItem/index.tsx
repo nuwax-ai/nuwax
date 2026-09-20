@@ -59,6 +59,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
   );
+  const unread = unreadConversationIds?.has(String(item.id)) === true;
+  const hasRuntimeLeadingStatus =
+    leadingMark && (item.taskStatus === TaskStatus.EXECUTING || unread);
 
   // 归档行内二次确认（2026-09-19 定调，参考原型）：hover 归档图标→红色「确认」
   // 二次点击执行；⋯菜单「归档」经 onArchive 汇入同一状态，入口确认口径统一
@@ -159,14 +162,20 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
               {/* 固定行首状态槽：空闲时承载运行/未读或已置顶状态，hover 时在
                   同一位置切换成置顶操作，不改变标题起点。 */}
               <span className={cx(styles['leading-slot'])}>
-                {leadingMark && (
-                  <span className={cx(styles['leading-status'])}>
+                <span className={cx(styles['leading-status'])}>
+                  {hasRuntimeLeadingStatus ? (
                     <ConversationStatusMark
                       taskStatus={item.taskStatus}
-                      unread={unreadConversationIds?.has(String(item.id))}
+                      unread={unread}
                     />
-                  </span>
-                )}
+                  ) : (
+                    pinned && (
+                      <PushpinFilled
+                        className={cx(styles['pinned-state-icon'])}
+                      />
+                    )
+                  )}
+                </span>
                 <button
                   type="button"
                   className={cx(styles['pin-toggle'], {
@@ -188,7 +197,14 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                     void handleTogglePinned();
                   }}
                 >
-                  {pinned ? <PushpinFilled /> : <PushpinOutlined />}
+                  {pinned ? (
+                    <span className={cx(styles['unpin-icon'])} aria-hidden>
+                      <PushpinFilled />
+                      <span className={cx(styles['unpin-slash'])} />
+                    </span>
+                  ) : (
+                    <PushpinOutlined />
+                  )}
                 </button>
               </span>
               {/* 原生省略号替代 Typography.Text ellipsis：antd 的省略检测会在

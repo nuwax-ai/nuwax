@@ -124,6 +124,11 @@
         pointer-events: none;
       }
 
+      .pinned-state-icon {
+        font-size: 12px;
+        color: @colorPrimary;
+      }
+
       .pin-toggle {
         padding: 0;
         border: 0;
@@ -134,12 +139,27 @@
         opacity: 0;
       }
 
-      .pin-toggle-pinned {
-        opacity: 1;
+      // 已置顶的 hover 操作使用「斜杠图钉」表达取消置顶；静止态的实心图钉
+      // 由 leading-status 单独承载，状态与操作不再共用同一图形。
+      .unpin-icon {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .unpin-slash {
+        position: absolute;
+        width: 15px;
+        height: 1.5px;
+        border-radius: 1px;
+        background: currentcolor;
+        transform: rotate(-45deg);
+        box-shadow: 0 0 0 1px @navSecondMenuBg;
       }
 
       @media (hover: none) {
-        .pin-toggle:not(.pin-toggle-pinned) {
+        .pin-toggle {
           opacity: 1;
         }
       }
@@ -266,12 +286,25 @@
     }
   }
 
-  // hover/键盘聚焦隐藏时间（2026-09-19 定调：经典布局与单栏同口径，⋯ 出现即让位）；
-  // visibility 保占位，行内「⋯」/时间不跳位
+  // hover/键盘聚焦时右侧两枚 24px 操作按钮进入绝对定位层：时间退出流，
+  // topic-row 明确预留 52px，避免标题延伸到归档图标下方。只收窄标题宽度，
+  // 行首固定槽与标题起点不变。
+  &:hover .conversation-topic-row,
+  &:focus-visible .conversation-topic-row,
+  &:has(:focus-visible) .conversation-topic-row {
+    box-sizing: border-box;
+    padding-right: 52px;
+  }
+
   &:hover .conversation-date,
   &:focus-visible .conversation-date,
   &:has(:focus-visible) .conversation-date {
-    visibility: hidden;
+    display: none;
+  }
+
+  // 归档二次确认比图标更宽，armed 后为「确认 + ⋯」预留完整操作区。
+  &.archive-arming .conversation-topic-row {
+    padding-right: 78px;
   }
 
   // 触屏（hover: none）无常悬停：「⋯」与归档入口常显且绝对定位贴右缘，时间须

@@ -105,6 +105,25 @@
     transition: opacity 0.16s ease;
   }
 
+  // 已置顶项目的 hover 操作用斜杠图钉表达「取消置顶」，与默认文件夹右上角
+  // 的实心置顶徽标形成明确的状态/动作区分。
+  .unpin-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .unpin-slash {
+    position: absolute;
+    width: 15px;
+    height: 1.5px;
+    border-radius: 1px;
+    background: currentcolor;
+    transform: rotate(-45deg);
+    box-shadow: 0 0 0 1px @navSecondMenuBg;
+  }
+
   .row {
     display: flex;
     align-items: center;
@@ -414,9 +433,9 @@
   .row:hover .name,
   .row:focus-visible .name,
   .row:has(:focus-visible) .name {
-    // 60px 让位绝对定位的 actions 浮层（right:10px + 两枚 24px 按钮+2px gap），
-    // 见下方 .project-actions 覆盖
-    padding-right: 60px;
+    // 86px 让位绝对定位的 actions 浮层（right:10px + 三枚 24px 按钮 +
+    // 两个 2px gap），避免新建会话图标覆盖项目标题。
+    padding-right: 86px;
   }
 
   .children {
@@ -437,11 +456,12 @@
 
   .child {
     // 胶囊向左反向覆盖 children 的 20px 树缩进，hover 左右边界与项目行、
-    // 任务会话一致；内容仍用 31px 左 padding 保持树状层级。
+    // 任务会话一致；行首槽左边距收敛为 11px，与任务会话的 16px 槽同轴，
+    // 也与项目行 10px + 18px 槽共享 19px 中心线；不改变 hover 胶囊宽度。
     width: calc(100% + 20px);
     box-sizing: border-box;
     margin-left: -20px;
-    padding: 8px 10px 8px 31px;
+    padding: 8px 10px 8px 11px;
     border-radius: 10px;
 
     .child-name {
@@ -614,7 +634,7 @@
   }
 
   .compact .row .name {
-    padding-right: 60px;
+    padding-right: 86px;
   }
 
   .project .child {

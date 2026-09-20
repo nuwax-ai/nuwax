@@ -61,6 +61,7 @@ const renderRow = (props: {
   taskStatus?: TaskStatus;
   unread?: boolean;
   leadingMark?: boolean;
+  pinned?: boolean;
 }) => {
   const unreadIds = new Set(props.unread ? ['101'] : []);
   return render(
@@ -71,6 +72,7 @@ const renderRow = (props: {
       onClick={() => {}}
       leadingMark={props.leadingMark}
       unreadConversationIds={unreadIds}
+      pinned={props.pinned}
     />,
   );
 };
@@ -81,6 +83,17 @@ describe('ConversationItem 行首状态标记（leadingMark）', () => {
     expect(container.querySelector('[class*="leading-slot"]')).toBeTruthy();
     expect(
       screen.getByLabelText('PC.Components.ConversationContextMenu.pin'),
+    ).toBeTruthy();
+  });
+
+  it('已置顶静止态与取消置顶操作使用不同图形语义', () => {
+    const { container } = renderRow({ leadingMark: true, pinned: true });
+    expect(
+      container.querySelector('[class*="pinned-state-icon"]'),
+    ).toBeTruthy();
+    expect(container.querySelector('[class*="unpin-slash"]')).toBeTruthy();
+    expect(
+      screen.getByLabelText('PC.Components.ConversationContextMenu.unpin'),
     ).toBeTruthy();
   });
 
