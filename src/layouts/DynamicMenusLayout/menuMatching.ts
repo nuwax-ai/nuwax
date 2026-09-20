@@ -6,6 +6,17 @@ import { MenuItemDto } from '@/types/interfaces/menu';
 
 import { normalizeMenuPathname } from './utils';
 
+/** 女娲应用菜单 path（多开标签挂载锚点；菜单由菜单管理后台按 path 配置，code 不固定） */
+export const NUWA_APPS_MENU_PATH = '/nuwa-apps';
+
+/**
+ * 是否女娲应用菜单项（女娲应用多开标签的挂载锚点）。
+ * 按归一化 path 识别而非 code——后台各环境菜单 code 不一（如 nuwa_app /
+ * nvwayingyong），path 统一配 /nuwa-apps；去 query 与尾部斜杠容错。
+ */
+export const isNuwaAppsMenu = (menu: MenuItemDto): boolean =>
+  (menu.path || '').split('?')[0].replace(/\/+$/, '') === NUWA_APPS_MENU_PATH;
+
 /**
  * 递归检查菜单是否匹配当前路径（一级菜单用）
  */
@@ -50,10 +61,7 @@ export const isMenuMatch = (menu: MenuItemDto, pathname: string): boolean => {
  * @param pathname 当前路径
  * @returns 是否匹配
  */
-export const isPathMatch = (
-  menuPath: string,
-  pathname: string,
-): boolean => {
+export const isPathMatch = (menuPath: string, pathname: string): boolean => {
   if (!menuPath) return false;
 
   const normalizedPathname = normalizeMenuPathname(pathname);
@@ -99,10 +107,7 @@ export const findFirstLevelCodeByMenuCode = (
    * @param menus 当前遍历的菜单列表
    * @param firstLevelCode 当前遍历所在的一级菜单 code
    */
-  const dfs = (
-    menus: MenuItemDto[],
-    firstLevelCode: string,
-  ): string | null => {
+  const dfs = (menus: MenuItemDto[], firstLevelCode: string): string | null => {
     for (const menu of menus) {
       // 命中任意层级的菜单，返回对应的一级菜单 code
       if (menu.code === menuCode) {

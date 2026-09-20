@@ -82,6 +82,9 @@ export interface SquarePublishedItemInfo {
   collect: boolean;
   // 扩展字段
   ext: Record<string, any>;
+  // 三方应用主页地址(app/list 回包顶层下发,仅 ThirdApp 有值;有值时跳
+  // /user-app/:id 附 homepageUrl query,UserApp 页直接 iframe 该地址)
+  homepageUrl?: string;
   // 适用场景列表，如 [TaskAgent, PageApp]
   usageScenarios: string[];
   // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容

@@ -10,9 +10,6 @@ export const PAGE_APP_TARGET_SUBTYPE = 'PageApp';
 /** 三方应用子类型标识:回包 targetSubType 为该值时,点击卡片与全栈应用同走 /user-app 路由 */
 export const THIRD_APP_TARGET_SUBTYPE = 'ThirdApp';
 
-/** 全栈应用详情路由前缀(拼 targetId 跳转 /user-app/:appId) */
-export const USER_APP_PATH_PREFIX = '/user-app';
-
 /** 广场-网页应用地址(「更多」入口跳转) */
 export const SQUARE_PAGE_APP_PATH = '/square?cate_type=PageApp';
 

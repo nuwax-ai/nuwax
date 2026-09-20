@@ -82,6 +82,28 @@ describe('resolveNavHighlightTab', () => {
     expect(resolveNavHighlightTab('homepage', '/home/chat/1/2', true)).toBe('');
   });
 
+  it('应用标签命中时导航高亮整体让位（任意激活码，含 /agent 强制 homepage 与兜底）', () => {
+    expect(
+      resolveNavHighlightTab('homepage', '/user-app/12', false, true),
+    ).toBe('');
+    expect(resolveNavHighlightTab('homepage', '/agent/34', false, true)).toBe(
+      '',
+    );
+    expect(resolveNavHighlightTab('space', '/user-app/12', false, true)).toBe(
+      '',
+    );
+  });
+
+  it('应用标签未命中时不影响既有决策（不传第 4 参行为与旧签名一致）', () => {
+    expect(resolveNavHighlightTab('homepage', '/user-app/12')).toBe('homepage');
+    expect(
+      resolveNavHighlightTab('homepage', '/user-app/12', false, false),
+    ).toBe('homepage');
+    expect(
+      resolveNavHighlightTab('workspace', '/space/752/app-pro', false),
+    ).toBe('workspace');
+  });
+
   it('会话行未命中时导航菜单照常兜底（workspace 透传）', () => {
     expect(
       resolveNavHighlightTab('workspace', '/space/752/app-pro', false),

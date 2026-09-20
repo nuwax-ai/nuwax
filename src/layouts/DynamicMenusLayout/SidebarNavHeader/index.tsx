@@ -4,16 +4,21 @@
  * 下方为「新建任务」固定项 + 后端菜单接口下发的一级导航项（全量渲染，仅排除新对话）。
  * 点导航项时右侧并列展开原二级菜单列；分离菜单（文档/通知/我的电脑/更多）在侧栏底部栏展示。
  */
+import agentImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
+import { ClientVersionBadge } from '@/features/client-shell';
+import type { OpenedAppTabInfo } from '@/models/openedAppTabs';
+import { getAppTabNavPath, pickNextActiveTab } from '@/models/openedAppTabs';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { isImmersiveShell, isMac } from '@/utils/hostBridge';
+import { CloseOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { history, useModel } from 'umi';
+import { history, useLocation, useModel } from 'umi';
+import { isNuwaAppsMenu, NUWA_APPS_MENU_PATH } from '../menuMatching';
 import { useSidebarCollapse } from '../useSidebarCollapse';
-import { ClientVersionBadge } from '@/features/client-shell';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -85,6 +90,9 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
   const { isSecondMenuCollapsed, toggleCollapse } = useSidebarCollapse();
   const { setOpenSearchModal } = useModel('layout');
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 女娲应用多开标签（内存态，刷新即失；由女娲应用页点击应用时注册）
+  const { openedAppTabs, openApp, closeApp } = useModel('openedAppTabs');
+  const location = useLocation();
 
   /** 搜索：打开搜索弹窗（命令面板） */
   const handleSearchClick = useCallback(() => {
@@ -111,6 +119,77 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
     () => (menus || []).filter((menu) => menu.code !== 'new_conversation'),
     [menus],
   );
+
+  /** 标签点击：跳对应应用（三方应用带 homepageUrl query 直载），并刷新
+   * 「最近打开」（原位保留，位置不变） */
+  const handleAppTabClick = (tab: OpenedAppTabInfo) => {
+    openApp(tab);
+    history.push(getAppTabNavPath(tab));
+  };
+
+  /**
+   * 关闭标签：关闭的是当前激活应用时，先从关闭前快照算出剩余中最近打开
+   * 的一个并跳转（无剩余回女娲应用页），再移除标签；关闭非激活标签只移
+   * 除不跳转。stopPropagation 防止触发行点击跳转。
+   */
+  const handleCloseAppTab = (e: React.MouseEvent, tab: OpenedAppTabInfo) => {
+    e.stopPropagation();
+    if (tab.routePath === location.pathname) {
+      const next = pickNextActiveTab(openedAppTabs, tab.routePath);
+      history.push(next ? getAppTabNavPath(next) : NUWA_APPS_MENU_PATH);
+    }
+    closeApp(tab.routePath);
+  };
+
+  /** 女娲应用多开标签区：当前路由命中的标签高亮，hover 出右上角关闭钮 */
+  const renderAppTabs = () =>
+    openedAppTabs.length === 0 ? null : (
+      <div className={cx(styles['app-tab-list'])}>
+        {openedAppTabs.map((tab: OpenedAppTabInfo) => (
+          <div
+            key={tab.routePath}
+            className={cx(styles['app-tab-item'], {
+              [styles['app-tab-item-active']]:
+                tab.routePath === location.pathname,
+            })}
+            onClick={() => handleAppTabClick(tab)}
+          >
+            <span className={cx(styles['app-tab-icon'])}>
+              {/* 应用图标为下发 URL，空串/加载失败兜底默认图（同女娲应用页） */}
+              <img
+                src={tab.icon || agentImage}
+                alt={tab.name}
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = agentImage;
+                }}
+              />
+            </span>
+            <span className={cx(styles['app-tab-label'])} title={tab.name}>
+              {tab.name}
+            </span>
+            <Tooltip
+              title={dict(
+                'PC.Layouts.DynamicMenusLayout.SidebarNavHeader.closeAppTab',
+              )}
+              placement="bottom"
+              arrow={false}
+            >
+              <span
+                role="button"
+                aria-label={dict(
+                  'PC.Layouts.DynamicMenusLayout.SidebarNavHeader.closeAppTab',
+                )}
+                className={cx(styles['app-tab-close'])}
+                onClick={(e) => handleCloseAppTab(e, tab)}
+              >
+                <CloseOutlined />
+              </span>
+            </Tooltip>
+          </div>
+        ))}
+      </div>
+    );
 
   return (
     <div className={cx(styles['sidebar-nav-header'])}>
@@ -180,19 +259,23 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
       {/* 导航行：走菜单接口，选中时右侧展开原二级菜单列 */}
       <div className={cx(styles['nav-list'])}>
         {navMenus.map((menu: MenuItemDto) => (
-          <div
-            key={menu.code || menu.path || menu.name}
-            className={cx(styles['nav-item'], {
-              [styles['nav-item-active']]: activeTab === menu.code,
-            })}
-            onClick={() => onMenuClick(menu)}
-          >
-            <span className={cx(styles['nav-item-icon'])}>
-              {/* 菜单 icon 动态下发，空时走默认兜底图标（与经典布局 TabItem 同款） */}
-              <SvgIcon name={menu.icon || 'icons-nav-task-time'} />
-            </span>
-            <span className={cx(styles['nav-item-label'])}>{menu.name}</span>
-          </div>
+          <React.Fragment key={menu.code || menu.path || menu.name}>
+            <div
+              className={cx(styles['nav-item'], {
+                [styles['nav-item-active']]: activeTab === menu.code,
+              })}
+              onClick={() => onMenuClick(menu)}
+            >
+              <span className={cx(styles['nav-item-icon'])}>
+                {/* 菜单 icon 动态下发，空时走默认兜底图标（与经典布局 TabItem 同款） */}
+                <SvgIcon name={menu.icon || 'icons-nav-task-time'} />
+              </span>
+              <span className={cx(styles['nav-item-label'])}>{menu.name}</span>
+            </div>
+            {/* 女娲应用多开标签：挂在女娲应用菜单正下方（锚点按归一化 path
+                识别；菜单未加载/未配置该锚点时不渲染，避免位置跳动） */}
+            {isNuwaAppsMenu(menu) && renderAppTabs()}
+          </React.Fragment>
         ))}
       </div>
     </div>

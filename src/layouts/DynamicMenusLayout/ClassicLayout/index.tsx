@@ -8,6 +8,7 @@ import HoverScrollbar from '@/components/base/HoverScrollbar';
 import ConditionRender from '@/components/ConditionRender';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { isAppTabActive } from '@/models/openedAppTabs';
 import { initHostBridgeEvents } from '@/services/hostBridgeEvents';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
@@ -16,7 +17,7 @@ import { jumpTo } from '@/utils/router';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { history, useModel } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 import DynamicTabs from '../DynamicTabs';
 // 复用原有组件
@@ -97,6 +98,14 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
     handleTabClick,
     handlerClick,
   } = useMenuNavigation();
+
+  // 女娲应用多开标签命中当前路由时一级导航整体让位（选中关系收敛到标签项）；
+  // activeTab 本体不动——renderSecondMenu/二级列仍按原激活码渲染
+  const location = useLocation();
+  const { openedAppTabs } = useModel('openedAppTabs');
+  const navActiveTab = isAppTabActive(openedAppTabs, location.pathname)
+    ? ''
+    : activeTab;
 
   // 新建任务（壳层 ⌘N 宿主命令用）：与单栏布局同款，租户配置未就绪时兜底回首页
   const handleNewTask = () => {
@@ -302,13 +311,13 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
         }}
       >
         <Header />
-        {/* 动态一级菜单 */}
+        {/* 动态一级菜单（标签命中路由时传空激活码，一级图标整体让位给标签高亮） */}
         <DynamicTabs
           isStyleOne={
             navigationStyle === ThemeNavigationStyleType.STYLE1 || isMobile
           }
           menus={firstLevelMenus}
-          activeTab={activeTab}
+          activeTab={navActiveTab}
           onClick={handleTabClick}
         />
         {/* 用户操作区域 */}
