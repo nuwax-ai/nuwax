@@ -2,6 +2,7 @@ import { UnifiedChatSession } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
@@ -24,6 +25,7 @@ import {
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
+import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import eventBus from '@/utils/eventBus';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
@@ -379,10 +381,18 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     setIsLoadingOtherInterface(true);
 
     try {
-      // 创建智能体会话(智能体编排页面devMode为true)
+      // 创建智能体会话(智能体编排页面devMode为true)；执行按创建时绑定的
+      // 沙箱路由（bug 2451 口径），创建即带当前生效选择（预览面板清空不重置
+      // 手动选择，自然延续；旧会话智能体快照绑定兜底，最后云电脑哨兵）
       const { success, data } = await runAsyncConversationCreate({
         agentId,
         devMode: true,
+        sandboxId: Number(
+          resolveEffectiveSandboxId({
+            selectedComputerId,
+            agentSandboxId: conversationInfo?.agent?.sandboxId,
+          }) || CLOUD_SANDBOX_ID,
+        ),
       });
 
       if (success) {
@@ -432,11 +442,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     agentId,
     agentConfigInfo,
     clearFilePanelInfo,
+    conversationInfo?.agent?.sandboxId,
     form,
     handleClearSideEffect,
     hidePagePreview,
     onAgentConfigInfo,
     runAsyncConversationCreate,
+    selectedComputerId,
     setFinalResult,
     setIsLoadingConversation,
     setIsLoadingOtherInterface,
@@ -446,20 +458,23 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   ]);
 
   /**
-   * 当前生效的沙箱 ID：优先会话已绑定沙箱，其次智能体默认沙箱，最后用户手动选择
+   * 当前生效的沙箱 ID（bug 2451 修复）：手动选择最优先，其次智能体绑定，
+   * 最后共享电脑——与 Chat 页 useChatSandbox、模型层 OPEN_DESKTOP gate
+   * （64db47a9d）同序（四级链单源见 src/utils/effectiveSandbox.ts）。
+   * 旧实现把手动选择排第三，智能体存了云端记忆（sandboxId='-1'）时，
+   * 手动选个人电脑发送仍走云电脑，即本入口的 2451 根因。
    */
   const effectiveSandboxId = useMemo(
     () =>
-      String(
-        conversationInfo?.sandboxServerId ??
-          conversationInfo?.agent?.sandboxId ??
-          selectedComputerId ??
-          '-1',
-      ),
+      resolveEffectiveSandboxId({
+        selectedComputerId,
+        agentSandboxId: conversationInfo?.agent?.sandboxId,
+        sandboxServerId: conversationInfo?.sandboxServerId,
+      }) || CLOUD_SANDBOX_ID,
     [
-      conversationInfo?.sandboxServerId,
-      conversationInfo?.agent?.sandboxId,
       selectedComputerId,
+      conversationInfo?.agent?.sandboxId,
+      conversationInfo?.sandboxServerId,
     ],
   );
 
@@ -723,8 +738,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 eventBindConfig: agentConfigInfo?.eventBindConfig,
                 hasPermission: conversationInfo?.agent?.hasPermission,
                 sandboxId:
+                  // 与 Chat 页同语义（bug 2451）：智能体绑定优先、共享电脑兜底，
+                  // 两者皆无时不传（手动选择经 selectedComputerId 生效显示），
+                  // 不再用共享电脑压住手动选择
+                  conversationInfo?.agent?.sandboxId ||
                   conversationInfo?.sandboxServerId ||
-                  conversationInfo?.agent?.sandboxId,
+                  undefined,
                 allowChooseMode: agentConfigInfo?.allowChooseMode,
               }}
               onSendMessage={handleMessageSend}

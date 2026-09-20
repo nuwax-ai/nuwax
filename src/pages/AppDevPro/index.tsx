@@ -36,6 +36,7 @@ import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { emitProjectChanged } from '@/utils/directorySyncEvents';
+import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
@@ -383,39 +384,19 @@ const AppDevPro: React.FC = () => {
   // ==================== 计算属性 ====================
 
   /**
-   * 获取有效的沙箱 ID
+   * 获取有效的沙箱 ID（四级取值链单源，bug 2451，
+   * 详见 src/utils/effectiveSandbox.ts）
    */
-  const getEffectiveSandboxId = (info: any = conversationInfo) => {
-    try {
-      // 优先级 1: 手动选择 (selectedComputerId)
-      if (selectedComputerId) {
-        return selectedComputerId;
-      }
-
-      // 优先级 2: 兜底从 location.state 获取 (仅 PUSH 跳转)。
-      // 解决首次加载发消息时，状态未及时更新导致获取到内置 sandboxId 的问题。
-      if (
-        history.action === 'PUSH' &&
-        (location.state as any)?.selectedComputerId
-      ) {
-        return (location.state as any).selectedComputerId;
-      }
-
-      // 优先级 3: 个人电脑 (sandboxId)
-      if (info?.agent?.sandboxId) {
-        return info.agent.sandboxId;
-      }
-
-      // 优先级 4: 共享电脑 (sandboxServerId)
-      const sandboxServerId = info?.sandboxServerId;
-      if (sandboxServerId) {
-        return String(sandboxServerId);
-      }
-
-      return '';
-    } catch {
-      return selectedComputerId;
-    }
+  const getEffectiveSandboxId = (info: any = conversationInfo): string => {
+    return resolveEffectiveSandboxId({
+      selectedComputerId,
+      pushStateComputerId:
+        history.action === 'PUSH'
+          ? (location.state as any)?.selectedComputerId
+          : undefined,
+      agentSandboxId: info?.agent?.sandboxId,
+      sandboxServerId: info?.sandboxServerId,
+    });
   };
 
   /**
