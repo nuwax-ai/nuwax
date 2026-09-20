@@ -1454,14 +1454,6 @@ const AppDevPro: React.FC = () => {
     }
     // 可以 start，但根目录尚无 workspace.manifest.toml 时不启动（等 manifest 出现后再走本 effect）
     if (!hasFileTreeData) {
-      if (
-        conversationReady &&
-        !isConversationActive &&
-        !hasPendingIntervention &&
-        !fileTreeDataLoading
-      ) {
-        setPreviewEnterSettled(true);
-      }
       return;
     }
     // 先探测 dev 域名是否已可访问，可达则跳过 start / stream
@@ -2095,7 +2087,9 @@ const AppDevPro: React.FC = () => {
           void handleRetryContainer();
         }}
         devActionLocked={previewDevActionLocked}
-        allowStoppedHero={previewUserStopped || previewEnterSettled}
+        allowStoppedHero={
+          (previewUserStopped || previewEnterSettled) && hasFileTreeData
+        }
         stopping={previewRuntime.stopping}
         restarting={
           dbEnv === UserAppDbEnvEnum.Prod && previewRuntime.restarting
@@ -2127,6 +2121,7 @@ const AppDevPro: React.FC = () => {
       canDirectProdPreview,
       devPod.status,
       envPodConversationId,
+      hasFileTreeData,
       previewEnterSettled,
       previewUserStopped,
       prodPod.status,
