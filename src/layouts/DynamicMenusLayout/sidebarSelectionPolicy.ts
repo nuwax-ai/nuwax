@@ -53,6 +53,8 @@ export const extractConversationIdFromPath = (
 
 /**
  * 单栏导航行高亮决策。
+ * - 应用标签命中（女娲应用多开标签，/user-app/:id、/agent/:id）时导航整体让位，
+ *   选中关系收敛到标签项（判断置于最前——不依赖 activeTab 兜底到哪个 code）；
  * - 会话详情路由下抑制 homepage 兜底高亮（useMenuNavigation 匹配不到一级菜单时
  *   兜底选中第一个菜单=homepage，与会话行形成双白卡，2026-09-12 定调收敛）；
  * - 会话行命中时导航整体让位（2026-09-15 用户定调优先级：先命中项目/任务列表中
@@ -63,7 +65,11 @@ export const resolveNavHighlightTab = (
   activeTab: string,
   pathname: string,
   conversationRowActive = false,
+  appTabActive = false,
 ): string => {
+  if (appTabActive) {
+    return '';
+  }
   if (conversationRowActive) {
     return '';
   }

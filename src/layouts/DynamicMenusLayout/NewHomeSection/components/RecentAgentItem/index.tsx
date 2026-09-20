@@ -3,7 +3,7 @@ import ConversationContextMenu from '@/components/business-component/Conversatio
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { AgentInfo } from '@/types/interfaces/agent';
-import { ExclamationCircleFilled, PushpinFilled } from '@ant-design/icons';
+import { PushpinFilled, WarningOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { formatModifiedTime, getExecutingConversationCount } from '../../utils';
@@ -143,7 +143,7 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
                       />
                     )}
                     {conversation.taskStatus === TaskStatus.FAILED && (
-                      <ExclamationCircleFilled
+                      <WarningOutlined
                         className={cx(styles['status-failed'])}
                         aria-label={dict(
                           'PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask',

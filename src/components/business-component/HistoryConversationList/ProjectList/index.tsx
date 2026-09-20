@@ -14,6 +14,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import {
+  FolderOpenOutlined,
   FolderOutlined,
   InboxOutlined,
   PushpinFilled,
@@ -425,7 +426,16 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
           ),
         },
       ],
-      onClick: ({ key }: { key: string }) => {
+      onClick: ({
+        key,
+        domEvent,
+      }: {
+        key: string;
+        domEvent?:
+          | React.MouseEvent<HTMLElement>
+          | React.KeyboardEvent<HTMLElement>;
+      }) => {
+        domEvent?.stopPropagation();
         void handleProjectMenuClick(project, key);
       },
     });
@@ -465,7 +475,13 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
                 }
               }}
             >
-              <FolderOutlined className={styles['project-icon']} />
+              {/* 展开指示=文件夹图标双态（2026-09-19 定调：行尾箭头去除，
+                  展开=打开态/收起=默认态） */}
+              {expanded ? (
+                <FolderOpenOutlined className={styles['project-icon']} />
+              ) : (
+                <FolderOutlined className={styles['project-icon']} />
+              )}
               {project.pinned === true && (
                 <PushpinFilled className={styles['pin-icon']} />
               )}
@@ -495,13 +511,6 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
                     />
                   </button>
                 </Dropdown>
-                <SvgIcon
-                  name="icons-common-caret_down"
-                  style={{ fontSize: 18 }}
-                  className={cx(styles.arrow, {
-                    [styles['arrow-expanded']]: expanded,
-                  })}
-                />
               </div>
             </div>
           </Dropdown>

@@ -6,12 +6,15 @@
  * 点击应用先 POST recentlyUsed/add 上报使用记录再进应用详情 /agent/:id,
  * 智能体网页应用(targetType=Agent + targetSubType=PageApp)不上报;
  * 全栈应用(targetSubType=UserApp)与三方应用(targetSubType=ThirdApp)
- * 跳全栈应用页 /user-app/:appId);
+ * 跳全栈应用页 /user-app/:appId,三方应用回包 homepageUrl 有值时附
+ * query 直载 iframe;多开标签满 5 个时点击新应用仅提示,
+ * 不注册标签、不上报、不跳转);
  * 「更多」跳广场-网页应用
  */
 import agentImage from '@/assets/images/agent_image.png';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import { getAppTabNavPath, isAppTabLimitReached } from '@/models/openedAppTabs';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedAppList,
@@ -30,10 +33,10 @@ import type {
 } from '@/types/interfaces/square';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
-import { Empty, Input, Segmented } from 'antd';
+import { Empty, Input, message, Segmented } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useRequest } from 'umi';
+import { history, useModel, useRequest } from 'umi';
 import AppCard from './components/AppCard';
 import {
   APP_LIST_PAGE_SIZE,
@@ -44,9 +47,10 @@ import {
   RECENT_USED_SIZE,
   SQUARE_PAGE_APP_PATH,
   THIRD_APP_TARGET_SUBTYPE,
-  USER_APP_PATH_PREFIX,
   USER_APP_TARGET_SUBTYPE,
 } from './constants';
+// USER_APP_PATH_PREFIX 下沉 constants 层(UserApp 页也用,页面间禁止互引)
+import { USER_APP_PATH_PREFIX } from '@/constants/square.constants';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -359,21 +363,40 @@ const NuwaApps: React.FC = () => {
   // (targetSubType=UserApp)与三方应用(targetSubType=ThirdApp)均跳
   // 全栈应用页 /user-app/:appId;其余应用进应用详情
   // /agent/:targetId(新接口条目为发布对象,无会话字段,不再续上次会话)
+  // 跳转前把应用注册进左侧多开标签(内存态,刷新即失;重复打开原位保留)
+  const { openApp, openedAppTabs } = useModel('openedAppTabs');
   const handleAppClick = (app: SquarePublishedItemInfo) => {
     const isAgentPageApp =
       app.targetType === SquareAgentTypeEnum.Agent &&
       app.targetSubType === PAGE_APP_TARGET_SUBTYPE;
+    const routePath =
+      app.targetSubType === USER_APP_TARGET_SUBTYPE ||
+      app.targetSubType === THIRD_APP_TARGET_SUBTYPE
+        ? `${USER_APP_PATH_PREFIX}/${app.targetId}`
+        : `/agent/${app.targetId}`;
+    // 多开标签已满 5 个时拦截新应用打开：不注册标签、不上报最近使用、
+    // 不跳转，仅提示（重复打开已存在标签不受限，原位刷新）
+    if (isAppTabLimitReached(openedAppTabs, routePath)) {
+      message.warning(dict('PC.Pages.NuwaApps.appTabLimitReached'));
+      return;
+    }
     if (!isAgentPageApp) {
       runRecentlyUsedAdd(app);
     }
-    if (
-      app.targetSubType === USER_APP_TARGET_SUBTYPE ||
+    // 三方应用主页地址:有值时随标签保存并附 query 跳转
+    // (UserApp 页跳过域名接口,iframe 直接加载该地址)
+    const homepageUrl =
       app.targetSubType === THIRD_APP_TARGET_SUBTYPE
-    ) {
-      history.push(`${USER_APP_PATH_PREFIX}/${app.targetId}`);
-    } else {
-      history.push(`/agent/${app.targetId}`);
-    }
+        ? app.homepageUrl?.trim() || undefined
+        : undefined;
+    openApp({
+      targetId: app.targetId,
+      name: app.name,
+      icon: app.icon,
+      routePath,
+      homepageUrl,
+    });
+    history.push(getAppTabNavPath({ routePath, homepageUrl }));
   };
 
   // 当前 tab 的展示列表与加载态:仅首屏(第一页且列表为空)显示整屏 Loading,

@@ -158,7 +158,7 @@ describe('fetchTaskPage（lastId 游标分页）', () => {
 });
 
 describe('fetchProjectPage（页码分页 + 当页补拉子会话）', () => {
-  it('首页 current=1 + queryFilter.name；pages 回读时按页码判定 hasMore', async () => {
+  it('首页 current=1 + queryFilter.name（不传 spaceId，跨空间全量）；pages 回读时按页码判定 hasMore', async () => {
     mocked.apiUserProjectPageQuery.mockResolvedValue(
       ok({
         records: [{ projectId: 7, name: 'P', modified: '', created: '' }],
@@ -172,11 +172,10 @@ describe('fetchProjectPage（页码分页 + 当页补拉子会话）', () => {
       keyword: 'P',
       size: 20,
       cursor: {},
-      spaceId: 52,
     });
     expect(mocked.apiUserProjectPageQuery).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryFilter: { spaceId: 52, name: 'P' },
+        queryFilter: { name: 'P' },
         current: 1,
         pageSize: 20,
       }),

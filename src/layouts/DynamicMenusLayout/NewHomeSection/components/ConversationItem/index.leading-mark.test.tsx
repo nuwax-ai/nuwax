@@ -9,8 +9,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { TaskStatus } from '@/types/enums/agent';
+import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
@@ -19,9 +19,17 @@ vi.mock('@/services/i18nRuntime', () => ({
 
 // ConversationContextMenu（antd Dropdown 包装）整体替身：透传 render-prop
 vi.mock('@/components/business-component/ConversationContextMenu', () => ({
-  default: ({ children }: { children: (more: React.ReactNode) => React.ReactNode }) => (
-    <>{children(<button type="button">more</button>)}</>
-  ),
+  default: ({
+    children,
+  }: {
+    children: (more: React.ReactNode) => React.ReactNode;
+  }) => <>{children(<button type="button">more</button>)}</>,
+}));
+
+// 行内归档二次确认引入的会话服务：umi request 链在 vitest 下拉崩 esbuild，mock 断链
+vi.mock('@/services/agentConfig', () => ({
+  apiAgentConversationArchive: () =>
+    Promise.resolve({ code: 200, success: true }),
 }));
 
 // vitest 下 plain .less 非 CSS Modules、默认导出 undefined（仓内既有坑）
@@ -38,6 +46,7 @@ const EXECUTING_KEY =
   'PC.Layouts.DynamicMenusLayout.ConversationItem.executing';
 const UNREAD_KEY =
   'PC.Layouts.DynamicMenusLayout.ConversationItem.unreadFinished';
+const FAILED_KEY = 'PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask';
 
 const buildItem = (
   overrides: Partial<ConversationInfo> = {},
@@ -53,6 +62,7 @@ const renderRow = (props: {
   taskStatus?: TaskStatus;
   unread?: boolean;
   leadingMark?: boolean;
+  pinned?: boolean;
 }) => {
   const unreadIds = new Set(props.unread ? ['101'] : []);
   return render(
@@ -63,11 +73,31 @@ const renderRow = (props: {
       onClick={() => {}}
       leadingMark={props.leadingMark}
       unreadConversationIds={unreadIds}
+      pinned={props.pinned}
     />,
   );
 };
 
 describe('ConversationItem 行首状态标记（leadingMark）', () => {
+  it('空闲态也保留固定行首槽，置顶操作与标题不争抢宽度', () => {
+    const { container } = renderRow({ leadingMark: true });
+    expect(container.querySelector('[class*="leading-slot"]')).toBeTruthy();
+    expect(
+      screen.getByLabelText('PC.Components.ConversationContextMenu.pin'),
+    ).toBeTruthy();
+  });
+
+  it('已置顶静止态与取消置顶操作使用不同图形语义', () => {
+    const { container } = renderRow({ leadingMark: true, pinned: true });
+    expect(
+      container.querySelector('[class*="pinned-state-icon"]'),
+    ).toBeTruthy();
+    expect(container.querySelector('[class*="unpin-slash"]')).toBeTruthy();
+    expect(
+      screen.getByLabelText('PC.Components.ConversationContextMenu.unpin'),
+    ).toBeTruthy();
+  });
+
   it('开启 + 执行中：行首转圈替换文字胶囊', () => {
     renderRow({ leadingMark: true, taskStatus: TaskStatus.EXECUTING });
     expect(screen.getByLabelText(EXECUTING_KEY)).toBeTruthy(); // 转圈 aria-label
@@ -86,6 +116,17 @@ describe('ConversationItem 行首状态标记（leadingMark）', () => {
       unread: true,
     });
     expect(screen.getByLabelText(EXECUTING_KEY)).toBeTruthy();
+    expect(screen.queryByLabelText(UNREAD_KEY)).toBeNull();
+  });
+
+  it('开启 + 失败：失败状态优先于未读和置顶', () => {
+    renderRow({
+      leadingMark: true,
+      taskStatus: TaskStatus.FAILED,
+      unread: true,
+      pinned: true,
+    });
+    expect(screen.getByLabelText(FAILED_KEY)).toBeTruthy();
     expect(screen.queryByLabelText(UNREAD_KEY)).toBeNull();
   });
 

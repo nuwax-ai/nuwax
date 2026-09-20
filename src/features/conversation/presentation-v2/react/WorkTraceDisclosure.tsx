@@ -3,10 +3,10 @@
  * 展开状态全部保存在本层，外层收起导致子树卸载时不会丢失用户选择。
  */
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
+import SvgIcon from '@/components/base/SvgIcon';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import type { OpenUiArtifact } from '@/types/interfaces/openUi';
-import { DownOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -20,6 +20,7 @@ import {
   getToolGroupActionKinds,
   getToolGroupStatus,
   isOpenUiRenderElementNode,
+  isTodoTraceNode,
 } from '../traceItems';
 import type {
   ConversationProcessNode,
@@ -30,6 +31,7 @@ import type {
 } from '../types';
 import OpenUiTraceNode from './OpenUiTraceNode';
 import ProcessNodeRow from './ProcessNodeRow';
+import TodoTraceNode from './TodoTraceNode';
 import ToolGroupDisclosure from './ToolGroupDisclosure';
 import { formatElapsed, formatElapsedClock } from './formatElapsed';
 import styles from './index.less';
@@ -271,14 +273,16 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
         onClick={() => onManualToggle(!expanded)}
       >
         <TraceMetrics turn={turn} />
-        <DownOutlined
+        <span
           className={cx(
             styles['trace-chevron'],
             styles['trace-chevron-trailing'],
             { [styles['trace-chevron-open']]: expanded },
           )}
           aria-hidden="true"
-        />
+        >
+          <SvgIcon name="icons-common-caret_down" style={{ fontSize: 10 }} />
+        </span>
       </button>
       {/* 轨迹体：产物为 inline/sidecar 的 OpenUI 节点原位渲染看板/摘要行，收起态保持
           显示；失败与无产物退化态回落普通工具行（词条化动作，协议名不外露） */}
@@ -298,58 +302,62 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
             );
           }
           if (!expanded) return null;
+          // Plan 结构化任务清单由待办卡接管（无有效步骤数据时回落普通行）
+          if (item.kind === 'standalone' && isTodoTraceNode(item.node)) {
+            return <TodoTraceNode key={item.id} node={item.node} />;
+          }
           if (item.kind === 'narration') {
-              return (
-                <NarrationText key={item.id} narrationId={item.id}>
-                  {item.node.text ?? ''}
-                </NarrationText>
-              );
-            }
-            if (item.kind === 'tool-group') {
-              return (
-                <ToolGroupDisclosure
-                  key={item.id}
-                  group={item}
-                  nodes={item.nodes}
-                  expanded={groupIsExpanded(item)}
-                  onToggle={() =>
-                    setGroupExpanded((previous) => {
-                      const current =
-                        typeof previous[item.id] === 'boolean'
-                          ? previous[item.id]
-                          : item.active;
-                      return { ...previous, [item.id]: !current };
-                    })
-                  }
-                  nodeIsExpanded={nodeIsExpanded}
-                  onToggleNode={toggleNode}
-                  onOpenResource={onOpenResource}
-                />
-              );
-            }
             return (
-              <ProcessNodeRow
+              <NarrationText key={item.id} narrationId={item.id}>
+                {item.node.text ?? ''}
+              </NarrationText>
+            );
+          }
+          if (item.kind === 'tool-group') {
+            return (
+              <ToolGroupDisclosure
                 key={item.id}
-                node={item.node}
-                expanded={nodeIsExpanded(item.node)}
-                onToggle={() => toggleNode(item.node.id)}
+                group={item}
+                nodes={item.nodes}
+                expanded={groupIsExpanded(item)}
+                onToggle={() =>
+                  setGroupExpanded((previous) => {
+                    const current =
+                      typeof previous[item.id] === 'boolean'
+                        ? previous[item.id]
+                        : item.active;
+                    return { ...previous, [item.id]: !current };
+                  })
+                }
+                nodeIsExpanded={nodeIsExpanded}
+                onToggleNode={toggleNode}
                 onOpenResource={onOpenResource}
               />
             );
-          })}
-          {expanded && !revealHidden && hiddenCount > 0 && (
-            <button
-              type="button"
-              className={cx(styles['hidden-entry'])}
-              data-testid="v2-hidden-entry"
-              onClick={() => setRevealHidden(true)}
-            >
-              {dict(
-                'PC.Components.ConversationRendererV2.hiddenEntry',
-                hiddenCount,
-              )}
-            </button>
-          )}
+          }
+          return (
+            <ProcessNodeRow
+              key={item.id}
+              node={item.node}
+              expanded={nodeIsExpanded(item.node)}
+              onToggle={() => toggleNode(item.node.id)}
+              onOpenResource={onOpenResource}
+            />
+          );
+        })}
+        {expanded && !revealHidden && hiddenCount > 0 && (
+          <button
+            type="button"
+            className={cx(styles['hidden-entry'])}
+            data-testid="v2-hidden-entry"
+            onClick={() => setRevealHidden(true)}
+          >
+            {dict(
+              'PC.Components.ConversationRendererV2.hiddenEntry',
+              hiddenCount,
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

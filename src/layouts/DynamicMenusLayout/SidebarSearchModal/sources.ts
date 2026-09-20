@@ -86,8 +86,6 @@ export interface SearchPageParams {
   size: number;
   /** 分页游标（首页传空对象） */
   cursor: SearchPageCursor;
-  /** 当前团队空间 ID（项目/空间维度依赖；缺省跳过空间源） */
-  spaceId?: number;
 }
 
 /** 响应信封解包（code 非成功返回 null） */
@@ -174,18 +172,18 @@ export async function fetchTaskPage({
   };
 }
 
-/** 项目：page-query 页码分页（name 模糊匹配契约已实证生效）+ 当页项目并行
+/** 项目：page-query 页码分页（name 模糊匹配契约已实证生效；不传 spaceId 拉该
+ * 用户全部空间的项目，与左侧面板同口径）+ 当页项目并行
  * 补拉子会话（统一接口不随列表回包 conversations，projectConversation
  * 依赖它决定项目行可点性与跳转目标；个别项目失败置空行置灰，不拖垮整页） */
 export async function fetchProjectPage({
   keyword,
   size,
   cursor,
-  spaceId,
 }: SearchPageParams): Promise<SearchPageResult> {
   const current = cursor.page ?? 1;
   const res = await apiUserProjectPageQuery({
-    queryFilter: { spaceId, name: keyword || undefined },
+    queryFilter: { name: keyword || undefined },
     current,
     pageSize: size,
     orders: [],

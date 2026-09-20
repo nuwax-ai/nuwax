@@ -47,8 +47,13 @@ const {
   conversationListMock: vi.fn(),
 }));
 
+// 可变路由参数：默认无 spaceId（/home）；个别用例改写验证「空间路由下也不传 spaceId」
+const { routeParams } = vi.hoisted(() => ({
+  routeParams: { params: {} as Record<string, string | undefined> },
+}));
+
 vi.mock('umi', () => ({
-  useParams: () => ({}),
+  useParams: () => routeParams.params,
 }));
 
 vi.mock('@/services/userProjectApp', () => ({
@@ -185,6 +190,8 @@ describe('ProjectPanel 选中关系', () => {
       code: SUCCESS_CODE,
       data: [],
     });
+    // 路由参数复位为无 spaceId（/home）；空间路由用例自行改写
+    routeParams.params = {};
   });
 
   it('命中项目子会话：折叠态自动展开 + 子行高亮（child-active/aria-current）', async () => {
@@ -351,7 +358,7 @@ describe('ProjectPanel 选中关系', () => {
     expect(screen.queryByText('旧响应会话')).toBeNull();
   });
 
-  it('/home 无空间参数时接收带 spaceId 的新项目事件', async () => {
+  it('接收带 spaceId 的新项目事件并刷新列表', async () => {
     respondPage([buildRecord()], defaultConversations());
     render(<ProjectPanel compact />);
     await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
@@ -377,6 +384,44 @@ describe('ProjectPanel 选中关系', () => {
     });
 
     await waitFor(() => expect(screen.getByText('新项目')).toBeTruthy());
+  });
+
+  it('空间路由下也不传 spaceId 拉全量，并接收其它空间的项目事件', async () => {
+    // /space/:spaceId 路由挂载（跨空间口径：queryFilter 不带 spaceId）
+    routeParams.params = { spaceId: '100' };
+    respondPage([buildRecord()], defaultConversations());
+    render(<ProjectPanel compact />);
+    await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
+    expect(pageQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({ queryFilter: {} }),
+    );
+
+    // 其它空间（200）新建项目的事件也实时并入列表
+    pageQueryMock.mockResolvedValue({
+      code: SUCCESS_CODE,
+      data: {
+        records: [
+          buildRecord(),
+          buildRecord({ projectId: 3, name: '跨空间新项目' }),
+        ],
+        total: 2,
+      },
+    });
+
+    act(() => {
+      emitProjectChanged({
+        operation: 'created',
+        project: {
+          projectId: '3',
+          projectType: AgentComponentTypeEnum.NormalProject,
+          spaceId: '200',
+        },
+        origin: 'test',
+        reason: 'create',
+      });
+    });
+
+    await waitFor(() => expect(screen.getByText('跨空间新项目')).toBeTruthy());
   });
 
   it('项目子会话接收结束事件并刷新状态', async () => {
@@ -649,20 +694,15 @@ describe('ProjectPanel 选中关系', () => {
     render(<ProjectPanel />);
     await waitFor(() => expect(screen.getByText('待置顶丁')).toBeTruthy());
 
-    // 打开「待置顶丁」行 ⋯ 菜单 → 点「置顶」
+    // hover 行首槽中的置顶按钮与文件夹原位切换；直接点击后完成置顶
     const row = screen.getByText('待置顶丁').closest('[class*="row"]');
     expect(row).toBeTruthy();
-    const moreButton = row!.querySelector<HTMLButtonElement>(
-      'button[aria-label="PC.Components.ActionMenu.more"]',
+    const pinButton = row!.querySelector<HTMLButtonElement>(
+      'button[aria-label="PC.Components.ConversationContextMenu.pin"]',
     );
-    expect(moreButton).toBeTruthy();
+    expect(pinButton).toBeTruthy();
     await act(async () => {
-      fireEvent.click(moreButton!);
-    });
-    await act(async () => {
-      fireEvent.click(
-        screen.getByText('PC.Components.ConversationContextMenu.pin'),
-      );
+      fireEvent.click(pinButton!);
     });
 
     // 置顶成功后本地立即重排：置顶项相邻且居前，普通项目垫后
@@ -707,7 +747,7 @@ describe('ProjectPanel 选中关系', () => {
       screen
         .getByText('待置顶乙')
         .closest('[class*="row"]')
-        ?.querySelector('.anticon-pushpin'),
+        ?.querySelector('[class*="folder-badge-pin"]'),
     ).toBeNull();
 
     const row = screen.getByText('待置顶乙').closest('[class*="row"]');
@@ -734,7 +774,7 @@ describe('ProjectPanel 选中关系', () => {
         screen
           .getByText('待置顶乙')
           .closest('[class*="row"]')
-          ?.querySelector('.anticon-pushpin'),
+          ?.querySelector('[class*="folder-badge-pin"]'),
       ).toBeTruthy();
     });
   });
@@ -798,13 +838,13 @@ describe('ProjectPanel 选中关系', () => {
         screen
           .getByText('常规九四')
           .closest('[class*="row"]')
-          ?.querySelector('.anticon-pushpin'),
+          ?.querySelector('[class*="folder-badge-pin"]'),
       ).toBeTruthy();
       expect(
         screen
           .getByText('全栈九四')
           .closest('[class*="row"]')
-          ?.querySelector('.anticon-pushpin'),
+          ?.querySelector('[class*="folder-badge-pin"]'),
       ).toBeNull();
     });
   });

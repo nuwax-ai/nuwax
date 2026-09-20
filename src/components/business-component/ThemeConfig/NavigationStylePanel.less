@@ -42,6 +42,20 @@
   justify-content: flex-start;
 }
 
+// 单栏锁定纯色浅色：深浅选项区置灰不可点（2026-09-20 需求，对齐背景面板 disabled）
+.colorOptions.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+// 深浅锁定说明（置于区块标题下）
+.themeLockedHint {
+  margin: 0 0 @paddingSm;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  line-height: @fontHeightSm;
+}
+
 .styleOption,
 .colorOption {
   cursor: pointer;

@@ -125,17 +125,24 @@ class UnifiedThemeService {
       }
     }
 
-    // 单栏（style3）锁定纯色背景（2026-09-12 需求）：历史「单栏 + 图片背景」
-    // 状态在加载时归一（不回写存储，仅收敛生效态），与 updateNavigationStyle
-    // 的切入收敛同源。判据用生效风格（resolveEffectiveNavigationStyle）：
-    // 桌面端锁定单栏时，存储 style1/2 的渐变壁纸同样收敛为纯色
+    // 单栏（style3）锁定纯色浅色背景（2026-09-12 需求；2026-09-20 追加深浅定调
+    // 浅色）：历史「单栏 + 图片背景/深色导航」状态在加载时归一（不回写存储，仅
+    // 收敛生效态），与 updateNavigationStyle 的切入收敛同源。判据用生效风格
+    // （resolveEffectiveNavigationStyle）：桌面端锁定单栏时，存储 style1/2 的
+    // 渐变壁纸/深色导航同样收敛为纯色浅色
     if (
       resolveEffectiveNavigationStyle(data.navigationStyle) ===
-        ThemeNavigationStyleType.STYLE3 &&
-      singleColumnBackgroundId &&
-      data.backgroundId !== singleColumnBackgroundId
+      ThemeNavigationStyleType.STYLE3
     ) {
-      data.backgroundId = singleColumnBackgroundId;
+      if (
+        singleColumnBackgroundId &&
+        data.backgroundId !== singleColumnBackgroundId
+      ) {
+        data.backgroundId = singleColumnBackgroundId;
+      }
+      if (data.layoutStyle !== ThemeLayoutColorStyle.LIGHT) {
+        data.layoutStyle = ThemeLayoutColorStyle.LIGHT;
+      }
     }
     return data;
   }
@@ -349,19 +356,26 @@ class UnifiedThemeService {
     style: ThemeNavigationStyleType,
     options: UpdateOptions = {},
   ): Promise<void> {
-    // 单栏（style3）锁定纯色背景（2026-09-12 需求：只能第一个纯色、不允许修改）：
-    // 切入单栏时把背景一并收敛，随后的背景写入由设置面板置灰拦在 UI 层。
-    // 不在 updateData 里做全局不变量——租户管理页的背景预览共用本服务，
+    // 单栏（style3）锁定纯色浅色背景（2026-09-12 需求：只能第一个纯色、不允许
+    // 修改；2026-09-20 追加：深浅色随之定调浅色）：切入单栏时把背景与深浅一并
+    // 收敛，随后的背景/深浅写入由设置面板置灰拦在 UI 层。
+    // 不在 updateData 里做全局不变量——租户管理页的背景/深浅预览共用本服务，
     // 管理员运行态为单栏时会被误强转
-    if (
-      style === ThemeNavigationStyleType.STYLE3 &&
-      this.currentData.backgroundId !== singleColumnBackgroundId
-    ) {
-      await this.updateData(
-        { navigationStyle: style, backgroundId: singleColumnBackgroundId! },
-        options,
-      );
-      return;
+    if (style === ThemeNavigationStyleType.STYLE3) {
+      const updates: Partial<UnifiedThemeData> = { navigationStyle: style };
+      if (
+        singleColumnBackgroundId &&
+        this.currentData.backgroundId !== singleColumnBackgroundId
+      ) {
+        updates.backgroundId = singleColumnBackgroundId;
+      }
+      if (this.currentData.layoutStyle !== ThemeLayoutColorStyle.LIGHT) {
+        updates.layoutStyle = ThemeLayoutColorStyle.LIGHT;
+      }
+      if (Object.keys(updates).length > 1) {
+        await this.updateData(updates, options);
+        return;
+      }
     }
     await this.updateData({ navigationStyle: style }, options);
   }
@@ -429,17 +443,20 @@ class UnifiedThemeService {
       source: 'user', // 用户操作都标记为用户来源
     };
     // 桌面端生效单栏（resolveEffectiveNavigationStyle 单源）：任何写入路径都不得
-    // 把图片背景带回生效态——加载收敛之后到达的登录/租户回声（tenantConfigInfo
-    // 把模板并进 updateData）会把渐变壁纸写回，2026-09-14 客户端实证（浏览器手动
-    // 切换正常、客户端仍渐变的差异根因）。浏览器端不收敛：租户管理页背景预览
-    // 共用本服务，管理员误强转顾虑照旧（2026-09-12 注释）。
+    // 把图片背景/深色导航带回生效态——加载收敛之后到达的登录/租户回声
+    // （tenantConfigInfo 把模板并进 updateData）会把渐变壁纸/深色写回，
+    // 2026-09-14 客户端实证（浏览器手动切换正常、客户端仍渐变的差异根因）。
+    // 浏览器端不收敛：租户管理页背景/深浅预览共用本服务，管理员误强转顾虑照旧
+    // （2026-09-12 注释）
     if (
       isDesktopHost() &&
       resolveEffectiveNavigationStyle(next.navigationStyle) ===
-        ThemeNavigationStyleType.STYLE3 &&
-      singleColumnBackgroundId
+        ThemeNavigationStyleType.STYLE3
     ) {
-      next.backgroundId = singleColumnBackgroundId;
+      if (singleColumnBackgroundId) {
+        next.backgroundId = singleColumnBackgroundId;
+      }
+      next.layoutStyle = ThemeLayoutColorStyle.LIGHT;
     }
     this.currentData = next;
 

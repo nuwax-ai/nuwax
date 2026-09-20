@@ -1,12 +1,17 @@
 /**
  * 动态一级菜单组件
- * @description 直接复用现有 TabItem 组件，保持样式一致
+ * @description 直接复用现有 TabItem 组件，保持样式一致；
+ * 女娲应用菜单项正下方挂载多开标签（AppTabItem，内存态刷新即失）
  */
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
+import type { OpenedAppTabInfo } from '@/models/openedAppTabs';
+import { getAppTabNavPath, pickNextActiveTab } from '@/models/openedAppTabs';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
-import { useModel } from 'umi';
+import { history, useLocation, useModel } from 'umi';
+import { isNuwaAppsMenu, NUWA_APPS_MENU_PATH } from '../menuMatching';
+import AppTabItem from './AppTabItem';
 import TabItem from './TabItem';
 import styles from './index.less';
 
@@ -34,6 +39,30 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
 }) => {
   const { handleShowHoverMenu, handleHideHoverMenu, isSecondMenuCollapsed } =
     useModel('layout');
+  // 女娲应用多开标签（内存态，刷新即失；由女娲应用页点击应用时注册）
+  const { openedAppTabs, openApp, closeApp } = useModel('openedAppTabs');
+  const location = useLocation();
+
+  /** 标签点击：跳对应应用（三方应用带 homepageUrl query 直载），并刷新
+   * 「最近打开」（原位保留，位置不变） */
+  const handleAppTabClick = (tab: OpenedAppTabInfo) => {
+    openApp(tab);
+    history.push(getAppTabNavPath(tab));
+  };
+
+  /**
+   * 关闭标签：关闭的是当前激活应用时，先从关闭前快照算出剩余中最近打开
+   * 的一个并跳转（无剩余回女娲应用页），再移除标签；关闭非激活标签只移
+   * 除不跳转。stopPropagation 防止触发行点击跳转。
+   */
+  const handleCloseAppTab = (e: React.MouseEvent, tab: OpenedAppTabInfo) => {
+    e.stopPropagation();
+    if (tab.routePath === location.pathname) {
+      const next = pickNextActiveTab(openedAppTabs, tab.routePath);
+      history.push(next ? getAppTabNavPath(next) : NUWA_APPS_MENU_PATH);
+    }
+    closeApp(tab.routePath);
+  };
 
   /**
    * 经典滚动条浏览器（Safari / Firefox）
@@ -117,20 +146,34 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
           style={classicScrollbarListStyle}
         >
           {tabItems.map((item) => (
-            <TabItem
-              key={item.type}
-              icon={item.icon || ''}
-              text={item.text}
-              active={item.active}
-              onClick={() => onClick(item.menu)}
-              onMouseEnter={() => {
-                if (item.menu?.code !== 'new_conversation') {
-                  handleShowHoverMenu(item.menu?.code || '');
-                }
-              }}
-              onMouseLeave={handleHideHoverMenu}
-              isSecondMenuCollapsed={isSecondMenuCollapsed}
-            />
+            <React.Fragment key={item.type}>
+              <TabItem
+                icon={item.icon || ''}
+                text={item.text}
+                active={item.active}
+                onClick={() => onClick(item.menu)}
+                onMouseEnter={() => {
+                  if (item.menu?.code !== 'new_conversation') {
+                    handleShowHoverMenu(item.menu?.code || '');
+                  }
+                }}
+                onMouseLeave={handleHideHoverMenu}
+                isSecondMenuCollapsed={isSecondMenuCollapsed}
+              />
+              {/* 女娲应用多开标签：挂在女娲应用菜单正下方（锚点按归一化
+                  path 识别；菜单未配置该锚点时不渲染，同单栏布局决策） */}
+              {isNuwaAppsMenu(item.menu) &&
+                openedAppTabs.map((tab: OpenedAppTabInfo) => (
+                  <AppTabItem
+                    key={`app-tab-${tab.routePath}`}
+                    tab={tab}
+                    active={tab.routePath === location.pathname}
+                    onClick={() => handleAppTabClick(tab)}
+                    onClose={(e) => handleCloseAppTab(e, tab)}
+                    isSecondMenuCollapsed={isSecondMenuCollapsed}
+                  />
+                ))}
+            </React.Fragment>
           ))}
         </div>
       </div>

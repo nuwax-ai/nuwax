@@ -1,0 +1,30 @@
+@import './token.less';
+
+// 侧栏项目/项目会话/任务会话共用的图标几何规范。
+// 槽位决定排版与点击热区，图形尺寸只决定视觉重量；两者不要再分别按图标微调。
+@sidebarRowIconSlotSize: @controlHeightSm; // 24px
+@sidebarRowIconSize: 14px;
+@sidebarRowStatusDotSize: 7px;
+@sidebarRowIconGap: @marginXxs; // 4px
+@sidebarRowCompactLeadingPadding: 7px; // 7 + 24 / 2 = 19px，共享行首中心线
+@sidebarRowCompactTrailingPadding: 10px;
+
+.sidebar-row-leading-slot() {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: @sidebarRowIconSlotSize;
+  height: @sidebarRowIconSlotSize;
+  flex: 0 0 @sidebarRowIconSlotSize;
+}
+
+.sidebar-row-action-slot() {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: @sidebarRowIconSlotSize;
+  height: @sidebarRowIconSlotSize;
+  padding: 0;
+  font-size: @sidebarRowIconSize;
+}

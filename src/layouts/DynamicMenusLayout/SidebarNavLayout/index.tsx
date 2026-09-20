@@ -39,6 +39,7 @@ import { history, useLocation, useModel } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 // 复用原有组件
 import SvgIcon from '@/components/base/SvgIcon';
+import { isAppTabActive } from '@/models/openedAppTabs';
 import {
   resolveCurrentTitle,
   resolveIsShowTitle,
@@ -152,18 +153,23 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   // 导航行高亮决策走策略单源（sidebarSelectionPolicy）：
   // - 会话详情路由下抑制 homepage 兜底高亮，选中关系收敛到会话列表行（2026-09-12 定调）；
   // - 会话行命中（项目子行/任务行）时导航整体让位（2026-09-15 定调：先命中
-  //   项目/任务中会话，然后才是导航菜单——/space/app-pro 项目会话不亮「工作空间」）。
+  //   项目/任务中会话，然后才是导航菜单——/space/app-pro 项目会话不亮「工作空间」）；
+  // - 应用标签命中（女娲应用多开标签 /user-app/:id、/agent/:id）时导航整体
+  //   让位，选中关系收敛到 SidebarNavHeader 的标签项（由标签行自行高亮）。
   // activeTab 本体保持不变——单栏会话列表常驻、二级列判定不受影响；
   // 经典布局 renderSecondMenu 依赖 activeTab 渲染会话列表，抑制只在单栏消费
   const [conversationRowActive, setConversationRowActive] = useState(false);
+  const { openedAppTabs } = useModel('openedAppTabs');
+  const appTabActive = isAppTabActive(openedAppTabs, location.pathname);
   const navHighlightTab = useMemo(
     () =>
       resolveNavHighlightTab(
         activeTab,
         location.pathname,
         conversationRowActive,
+        appTabActive,
       ),
-    [activeTab, location.pathname, conversationRowActive],
+    [activeTab, location.pathname, conversationRowActive, appTabActive],
   );
 
   // 新建任务入口（侧栏顶部操作区）：租户配置未就绪时兜底回首页

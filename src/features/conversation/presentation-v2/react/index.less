@@ -65,9 +65,13 @@
 
 .trace-chevron,
 .tool-group-chevron,
-.node-disclosure {
+.node-disclosure,
+.todo-trace-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  font-size: 10px;
+  width: 10px;
   color: var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
   transform: rotate(-90deg);
   transition: transform 0.18s ease, color 0.18s ease;
@@ -75,7 +79,8 @@
 
 .trace-chevron-open,
 .tool-group-chevron-open,
-.node-disclosure-open {
+.node-disclosure-open,
+.todo-trace-chevron-open {
   transform: rotate(0deg);
 }
 
@@ -189,6 +194,138 @@
     width: 1px;
     background: var(--v2-color-border, rgba(5, 5, 5, 8%));
   }
+}
+
+// ---- 待办卡（Plan 结构化任务清单）----
+.todo-trace {
+  min-width: 0;
+}
+
+.todo-trace-toggle {
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: -1px;
+  }
+}
+
+.todo-trace-icon {
+  width: 14px;
+  font-size: 14px;
+  flex-shrink: 0;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+}
+
+.todo-trace-title {
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  font-weight: 500;
+}
+
+.todo-trace-progress {
+  margin-left: 2px;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font-variant-numeric: tabular-nums;
+}
+
+.todo-trace-status {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+// 列表承载：浅灰圆角面板（对齐参考样式），不再用引导竖线
+.todo-trace-body {
+  margin: 2px 0 6px;
+  padding: 6px 16px;
+  background: var(--v2-color-fill, rgba(5, 5, 5, 4%));
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.todo-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+}
+
+// 状态图标定高居中盒：svg 基线排会高于 20px 行高的中文文字，须盒内居中
+.todo-step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 20px;
+  font-size: 14px;
+  flex-shrink: 0;
+  color: var(--v2-color-text-quaternary, rgba(5, 5, 5, 32%));
+}
+
+// 待办项空心圆（对齐参考 ○）：图标集无素圈，CSS 圆环代替
+.todo-step-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 20px;
+  flex-shrink: 0;
+
+  &::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
+    border-radius: 50%;
+  }
+}
+
+.todo-step-text {
+  min-width: 0;
+  word-break: break-word;
+}
+
+// 完成：绿圈勾 + 删除线灰字；进行中：→ + 主文字加粗；失败：红 ✗
+.todo-step.is-completed .todo-step-icon {
+  color: var(--v2-color-success, #52c41a);
+}
+
+.todo-step.is-completed .todo-step-text {
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  text-decoration: line-through;
+}
+
+.todo-step.is-in-progress .todo-step-icon {
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+}
+
+.todo-step.is-in-progress .todo-step-text {
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  font-weight: 500;
+}
+
+.todo-step.is-failed .todo-step-icon {
+  color: var(--v2-color-error, #ff4d4f);
+}
+
+.todo-step.is-failed .todo-step-text {
+  color: var(--v2-color-error, #ff4d4f);
 }
 
 // ---- 单行过程节点 / 工具事件 ----

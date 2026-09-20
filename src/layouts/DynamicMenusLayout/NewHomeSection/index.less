@@ -98,7 +98,7 @@
     }
 
     .project-list-section,
-    .conversation-list {
+    .conversation-list-wrapper .conversation-list {
       padding-right: 10px;
       padding-left: 10px;
     }
@@ -221,9 +221,8 @@
   }
 
   // 经典布局（style1/2）任务列表左缘贴容器基线（2026-09-19：经典左边距过大
-  // 收窄，标题内缩由行 padding 承担）。单栏 style3 不在此作用域、维持既有内缩
-  // 不动；本规则须在上方 .conversation-list-wrapper 基础规则之后——style3 的
-  // 10px 覆盖块在文件更靠前处，同优先级下靠后规则胜出，故收窄只走经典作用域
+  // 收窄，标题内缩由行 padding 承担）。单栏 style3 由上方带 wrapper 的高权重
+  // 规则固定 10px，此处只处理经典布局。
   :global(.xagi-nav-style1) &,
   :global(.xagi-nav-style2) & {
     .conversation-list-wrapper .conversation-list {

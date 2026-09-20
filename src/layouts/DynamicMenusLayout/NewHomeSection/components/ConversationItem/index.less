@@ -1,5 +1,6 @@
 @import '@/styles/token.less';
 @import '@/styles/nav-item-state.less';
+@import '@/styles/sidebar-row-icon.less';
 
 @statusTagFontSize: 11px; // 运行中标签专用字号
 @statusTagPadding: 0 6px; // 运行中标签内边距
@@ -14,11 +15,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
   // 「⋯」绝对定位锚点（见 .conversation-topic-row 内 more-btn）
   position: relative;
   // 右内边距 11px：让行尾「⋯」与项目面板会话子行的 ⋯ 右缘对齐
   //（子行 .child-actions 内缩 11px；2026-09-12 需求）
-  padding: 11px 11px 11px 10px;
+  // 行首槽由 20px 统一为 24px 后同步收紧纵向 padding，经典行高保持 42px。
+  padding: 9px 11px 9px 10px;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -64,7 +68,7 @@
     .conversation-topic-row {
       display: flex;
       align-items: center;
-      gap: @paddingXs;
+      gap: @sidebarRowIconGap;
       width: 100%;
 
       .conversation-topic {
@@ -89,19 +93,71 @@
         flex-shrink: 0;
       }
 
-      // 本地标记图标（置顶/收藏）
-      .pin-icon,
+      // 本地标记图标（收藏）
       .star-icon {
         font-size: 11px;
         flex-shrink: 0;
-      }
-
-      .pin-icon {
-        color: @colorPrimary;
-      }
-
-      .star-icon {
         color: @colorWarning;
+      }
+
+      // 固定行首状态槽：状态和置顶操作叠在同一几何位置，hover 只切透明度，
+      // 不再通过 width/margin 展开挤动标题。
+      .leading-slot {
+        .sidebar-row-leading-slot();
+      }
+
+      .leading-status,
+      .pin-toggle {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.16s ease;
+      }
+
+      .leading-status {
+        pointer-events: none;
+      }
+
+      .pinned-state-icon {
+        font-size: @sidebarRowIconSize;
+        color: @navSecondMenuAdaptiveTextSecondary;
+      }
+
+      .pin-toggle {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        font-size: @sidebarRowIconSize;
+        color: @navSecondMenuAdaptiveTextSecondary;
+        cursor: pointer;
+        opacity: 0;
+      }
+
+      // 已置顶的 hover 操作使用「斜杠图钉」表达取消置顶；静止态的实心图钉
+      // 由 leading-status 单独承载，状态与操作不再共用同一图形。
+      .unpin-icon {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .unpin-slash {
+        position: absolute;
+        width: 15px;
+        height: 1.5px;
+        border-radius: 1px;
+        background: currentcolor;
+        transform: rotate(-45deg);
+        box-shadow: 0 0 0 1px @navSecondMenuBg;
+      }
+
+      @media (hover: none) {
+        .pin-toggle {
+          opacity: 1;
+        }
       }
 
       // 「⋯」菜单兜底按钮：hover 显示；触屏（hover: none）常显。
@@ -115,13 +171,66 @@
         transform: translateY(-50%);
         z-index: 1;
         flex-shrink: 0;
-        font-size: 15px;
+        .sidebar-row-action-slot();
+
         opacity: 0;
         transition: opacity 0.2s ease;
       }
 
       @media (hover: none) {
         :global(.more-btn) {
+          opacity: 1;
+        }
+      }
+
+      // 归档行内二次确认（参考原型 2026-09-19）：hover 显示归档图标（时间让位
+      // 同 ⋯ 口径），点击换红色「确认」二次点击执行；anchored ⋯ 左侧留 2px
+      .archive-action {
+        position: absolute;
+        right: 37px; // ⋯ right 11px + 宽 24px + 间距 2px
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .archive-trigger {
+        .sidebar-row-action-slot();
+
+        border: 0;
+        border-radius: 7px;
+        color: @navSecondMenuAdaptiveTextTertiary;
+        background: transparent;
+        cursor: pointer;
+
+        &:hover {
+          color: @navSecondMenuAdaptiveText;
+          background: @colorPrimaryBg;
+        }
+      }
+
+      .archive-confirm {
+        height: 22px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: 4px;
+        background: @colorError;
+        color: @colorWhite;
+        font-size: 12px;
+        line-height: 22px;
+        cursor: pointer;
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: default;
+        }
+      }
+
+      @media (hover: none) {
+        .archive-action {
           opacity: 1;
         }
       }
@@ -142,8 +251,17 @@
   }
 
   &:hover {
-    // hover 会话项时显示「⋯」菜单兜底按钮
-    .conversation-topic-row :global(.more-btn) {
+    .conversation-item-content .conversation-topic-row .leading-status {
+      opacity: 0;
+    }
+
+    .conversation-item-content .conversation-topic-row .pin-toggle {
+      opacity: 1;
+    }
+
+    // hover 会话项时显示「⋯」菜单兜底按钮与归档确认入口
+    .conversation-topic-row :global(.more-btn),
+    .conversation-topic-row .archive-action {
       opacity: 1;
     }
 
@@ -160,19 +278,32 @@
     }
   }
 
-  // hover/键盘聚焦隐藏时间（2026-09-19 定调：经典布局与单栏同口径，⋯ 出现即让位）；
-  // visibility 保占位，行内「⋯」/时间不跳位
+  // hover/键盘聚焦时右侧两枚 24px 操作按钮进入绝对定位层：时间退出流，
+  // topic-row 明确预留 52px，避免标题延伸到归档图标下方。只收窄标题宽度，
+  // 行首固定槽与标题起点不变。
+  &:hover .conversation-topic-row,
+  &:focus-visible .conversation-topic-row,
+  &:has(:focus-visible) .conversation-topic-row {
+    box-sizing: border-box;
+    padding-right: 52px;
+  }
+
   &:hover .conversation-date,
   &:focus-visible .conversation-date,
   &:has(:focus-visible) .conversation-date {
-    visibility: hidden;
+    display: none;
   }
 
-  // 触屏（hover: none）无常悬停：「⋯」常显且为绝对定位贴右缘，时间须让位防重叠
-  //（「⋯」占位约 15px + 右缘 11px 内缩）
+  // 归档二次确认比图标更宽，armed 后为「确认 + ⋯」预留完整操作区。
+  &.archive-arming .conversation-topic-row {
+    padding-right: 78px;
+  }
+
+  // 触屏（hover: none）无常悬停：「⋯」与归档入口常显且绝对定位贴右缘，时间须
+  // 让位防重叠（两枚 24px 按钮 + 2px 间距 + 右缘 11px 内缩 ≈ 61px）
   @media (hover: none) {
     .conversation-date {
-      margin-right: @marginLg;
+      margin-right: 62px;
     }
   }
 
@@ -217,16 +348,45 @@
   opacity: 1;
 }
 
+.conversation-item:focus-visible
+  .conversation-item-content
+  .conversation-topic-row
+  .leading-status,
+.conversation-item:has(:focus-visible)
+  .conversation-item-content
+  .conversation-topic-row
+  .leading-status {
+  opacity: 0;
+}
+
+.conversation-item:focus-visible
+  .conversation-item-content
+  .conversation-topic-row
+  .pin-toggle,
+.conversation-item:has(:focus-visible)
+  .conversation-item-content
+  .conversation-topic-row
+  .pin-toggle {
+  opacity: 1;
+}
+
+// 键盘聚焦与确认态常显：归档入口同 ⋯ 口径；armed 后鼠标移出「确认」不消失
+.conversation-item:focus-visible .conversation-topic-row .archive-action,
+.conversation-item:has(:focus-visible) .conversation-topic-row .archive-action,
+.conversation-item.archive-arming .archive-action {
+  opacity: 1;
+}
+
 .conversation-item.compact {
   position: relative;
   min-height: 36px;
   box-sizing: border-box;
-  // 右内边距 11px：⋯ 右缘与项目子行对齐（同上）
-  padding: 8px 11px;
+  padding: 6px @sidebarRowCompactTrailingPadding 6px
+    @sidebarRowCompactLeadingPadding;
   transition: background 0.18s ease;
 
   .conversation-item-content .conversation-topic-row {
-    gap: @paddingXs;
+    gap: @sidebarRowIconGap;
 
     .conversation-topic {
       font-size: @fontSize;
@@ -237,8 +397,7 @@
 
     :global(.more-btn) {
       position: absolute;
-      // 右锚 11px：⋯ 右缘与项目面板会话子行的 ⋯ 对齐（2026-09-12 需求）
-      right: 11px;
+      right: @sidebarRowCompactTrailingPadding;
       z-index: 1;
       // 视觉与项目子行 ⋯ 统一（2026-09-12）：24px、7px 圆角、静默透明、
       // hover 浅品牌色底。此处用 :global 字面量声明——组件自带 index.less 的
@@ -255,6 +414,10 @@
         color: rgba(0, 0, 0, 88%);
       }
     }
+
+    .archive-action {
+      right: 36px; // 行尾 10px + 24px 操作槽 + 2px 间距
+    }
   }
 
   // hover/选中态直接继承基础规则（hover 灰底无阴影、active 白卡+阴影）。
@@ -267,7 +430,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .conversation-item {
+  .conversation-item,
+  .conversation-item .archive-action,
+  .conversation-item .leading-status,
+  .conversation-item .pin-toggle {
     transition: none;
   }
 }

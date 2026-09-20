@@ -2,6 +2,7 @@
  * V2 轨迹原子事件行：类型图标 + 动作 + 目标 + 局部状态。
  * 只有存在有效详情的节点才渲染 button/disclosure，避免空节点伪装成可展开项。
  */
+import SvgIcon from '@/components/base/SvgIcon';
 import {
   getToolPresentationKind,
   type ToolPresentationKind,
@@ -16,7 +17,6 @@ import {
   CloseCircleOutlined,
   CodeOutlined,
   CommentOutlined,
-  DownOutlined,
   EditOutlined,
   FileTextOutlined,
   GlobalOutlined,
@@ -43,6 +43,7 @@ import type {
   ConversationToolResource,
 } from '../types';
 import FileResourceLink from './FileResourceLink';
+import { formatElapsed } from './formatElapsed';
 import styles from './index.less';
 import ToolNodeDetail from './ToolNodeDetail';
 
@@ -420,6 +421,13 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
   const accessibleName = Array.from(
     new Set([title, summaryText, node.title].filter(Boolean)),
   ).join(' ');
+  // 完成态思考行有时长锚点时以「持续了 N 秒」替代首行摘要（历史无锚点保摘要）
+  const finishedReasoningDuration =
+    node.kind === 'reasoning' &&
+    node.status !== 'running' &&
+    typeof node.durationMs === 'number'
+      ? formatElapsed(node.durationMs)
+      : '';
 
   const content = (
     <>
@@ -472,6 +480,18 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
             </span>
           </span>
         </>
+      ) : finishedReasoningDuration ? (
+        <>
+          <span className={cx(styles['node-dot'])} aria-hidden="true">
+            ·
+          </span>
+          <span className={cx(styles['node-summary'])}>
+            {dict(
+              'PC.Components.ConversationRendererV2.nodeThinkingDuration',
+              finishedReasoningDuration,
+            )}
+          </span>
+        </>
       ) : (
         <span className={cx(styles['node-summary'])}>{summaryText}</span>
       )}
@@ -494,13 +514,15 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
         />
       )}
       {hasDetail && (
-        <DownOutlined
+        <span
           data-testid="v2-node-disclosure"
           className={cx(styles['node-disclosure'], {
             [styles['node-disclosure-open']]: expanded,
           })}
           aria-hidden="true"
-        />
+        >
+          <SvgIcon name="icons-common-caret_down" style={{ fontSize: 10 }} />
+        </span>
       )}
     </>
   );

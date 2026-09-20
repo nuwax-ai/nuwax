@@ -1,5 +1,6 @@
 @import '@/styles/token.less';
 @import '@/styles/nav-item-state.less';
+@import '@/styles/sidebar-row-icon.less';
 
 .project-panel {
   display: flex;
@@ -7,7 +8,9 @@
   gap: 2px;
   // 左缘贴容器基线（2026-09-19：经典项目列表左边距过大，与任务列表统一收窄，
   // 行内容内缩由 .row padding 承担）；单栏 compact 自带 padding:0 覆盖不受影响
-  padding: @paddingXxs @paddingXs @paddingXxs 0;
+  // 经典布局右侧 15px 与任务列表容器一致，保证项目/项目会话/任务会话的
+  // hover 胶囊右边界完全对齐；compact 会在下方归零，由外层统一控制。
+  padding: @paddingXxs 15px @paddingXxs 0;
 }
 
 // 查看更多入口(项目分页追加)
@@ -56,20 +59,76 @@
 }
 
 .project {
-  // 项目行置顶图钉
-  .pin-icon {
-    flex-shrink: 0;
-    font-size: 11px;
-    color: @colorPrimary;
+  width: 100%;
+
+  // 固定行首状态槽：默认承载文件夹开合/置顶徽标，hover 原位切为置顶操作。
+  // 两层绝对叠放，避免图标出现时推动项目名。
+  .project-leading-slot {
+    .sidebar-row-leading-slot();
+  }
+
+  .folder-badge {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.16s ease;
+  }
+
+  .folder-badge-pin {
+    position: absolute;
+    top: 0;
+    right: -2px;
+    font-size: 9px;
+    color: @navSecondMenuAdaptiveTextSecondary;
+  }
+
+  .project-pin-toggle {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    font-size: @sidebarRowIconSize;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.16s ease;
+  }
+
+  // 已置顶项目的 hover 操作用斜杠图钉表达「取消置顶」，与默认文件夹右上角
+  // 的实心置顶徽标形成明确的状态/动作区分。
+  .unpin-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .unpin-slash {
+    position: absolute;
+    width: 15px;
+    height: 1.5px;
+    border-radius: 1px;
+    background: currentcolor;
+    transform: rotate(-45deg);
+    box-shadow: 0 0 0 1px @navSecondMenuBg;
   }
 
   .row {
     display: flex;
     align-items: center;
     gap: @marginXxs;
+    width: 100%;
+    box-sizing: border-box;
     // 左 10px 与任务列表行 padding 对齐（2026-09-19：面板左缘收窄后图钉/图标
     // 须与任务行标题同线）；单栏 compact 行有独立 padding 覆盖不受影响
-    padding: @paddingXs @paddingXxs @paddingXs 10px;
+    // 24px 统一槽位下维持经典项目行原 36px 高度。
+    padding: 6px @paddingXxs 6px 10px;
     border-radius: @borderRadius;
     cursor: pointer;
     user-select: none;
@@ -88,6 +147,15 @@
       font-size: @fontSize;
       color: @navSecondMenuAdaptiveTextSecondary;
       line-height: 20px;
+
+      // 非创建者项目「团队」图标（2026-09-20 定调，两轮：文字→TeamOutlined）：
+      // 颜色随标题（inherit），尺寸略小于标题字号
+      .project-team-tag {
+        margin-right: @marginXxs;
+        font-size: @fontSize;
+        color: inherit;
+        vertical-align: -1.5px;
+      }
     }
 
     .add {
@@ -107,16 +175,12 @@
       color: @navSecondMenuAdaptiveText;
     }
 
-    .arrow {
+    // 行首文件夹图标（2026-09-19 定调：展开=打开态/收起=默认态，替代原行尾
+    // caret 箭头作展开指示）；经典行间距由 flex gap 承担，不加 margin
+    .project-icon {
       flex-shrink: 0;
-      // 尺寸由 SvgIcon style.fontSize 传入（组件内联字号优先于此处，18px 时
-      // 项目图标 caret_down 视觉宽约 10px）；此处只管颜色与旋转
-      color: @navSecondMenuAdaptiveTextTertiary;
-      transition: transform 0.3s ease-in-out;
-    }
-
-    .arrowExpanded {
-      transform: rotate(180deg);
+      font-size: @sidebarRowIconSize;
+      color: @navSecondMenuAdaptiveTextSecondary;
     }
   }
 
@@ -125,18 +189,17 @@
     display: flex;
     align-items: center;
     gap: @marginXxs;
-    margin-left: @paddingXs;
-    padding: 3px @paddingXxs;
+    width: 100%;
+    box-sizing: border-box;
+    margin-left: 0;
+    // 行首槽与项目行、任务会话共享中心线；树层级只由 children 容器表达。
+    // 24px 槽位本身即为经典子行高度，避免统一槽位后把列表纵向撑松。
+    padding: 0 @paddingXxs 0 10px;
     border-radius: @borderRadiusSm;
     cursor: pointer;
 
     // hover 背景统一走文件尾 .project .child:hover 的 @navRowHoverBg（原灰底声明
-    // 与后置 color-mix 规则同优先级、恒被覆盖，已删）；此处只保留⋯按钮显隐
-    &:hover {
-      .child-more {
-        opacity: 1;
-      }
-    }
+    // 与后置 color-mix 规则同优先级、恒被覆盖，已删）
 
     // 执行中标签（与任务列表 ConversationItem 的 status-tag 同款同参：
     // 11px 主色胶囊，置于行尾时间之前）
@@ -150,18 +213,78 @@
       line-height: 16px;
     }
 
-    // 失败红叹号
-    .status-failed {
-      flex-shrink: 0;
-      font-size: 11px;
-      color: @colorError;
+    // 固定行首状态槽：运行/失败/未读和重命名操作叠在同一位置，hover 只切换
+    // 可见性，标题列不再左右跳动。
+    .child-leading-slot {
+      .sidebar-row-leading-slot();
     }
 
-    // 置顶图钉
-    .pin-icon {
+    .child-leading-status,
+    .child-rename {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.16s ease;
+    }
+
+    .child-leading-status {
+      pointer-events: none;
+    }
+
+    .child-rename {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font-size: @sidebarRowIconSize;
+      color: @navSecondMenuAdaptiveTextSecondary;
+      cursor: pointer;
+      opacity: 0;
+
+      &:hover {
+        color: @navSecondMenuAdaptiveText;
+      }
+    }
+
+    &:hover,
+    &:focus-visible,
+    &:has(:focus-visible) {
+      .child-leading-status {
+        opacity: 0;
+      }
+
+      .child-rename {
+        opacity: 1;
+      }
+    }
+
+    @media (hover: none) {
+      .child-leading-status {
+        opacity: 0;
+      }
+
+      .child-rename {
+        opacity: 1;
+      }
+    }
+
+    // 行尾删除入口（2026-09-20 定调：子会话行=行首重命名/行尾删除，⋯菜单撤收）；
+    // 显隐由 .child-actions 容器统一（hover 显现/触屏常显），删除走既有确认弹窗
+    .child-delete {
+      .sidebar-row-action-slot();
+
       flex-shrink: 0;
-      font-size: 11px;
-      color: @colorPrimary;
+      border: 0;
+      border-radius: 7px;
+      color: @navSecondMenuAdaptiveTextSecondary;
+      background: transparent;
+      cursor: pointer;
+
+      &:hover {
+        color: @navSecondMenuAdaptiveText;
+        background: @colorPrimaryBg;
+      }
     }
 
     .child-name {
@@ -181,25 +304,10 @@
       color: @navSecondMenuAdaptiveTextTertiary;
     }
 
-    // 「⋯」操作菜单按钮:默认隐藏,hover 行时显示;触屏常显
-    .child-more {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: @fontSizeSm;
-      color: @navSecondMenuAdaptiveTextTertiary;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-
-      &:hover {
-        color: @navSecondMenuAdaptiveText;
-      }
-    }
-
     @media (hover: none) {
-      .child-more {
-        opacity: 1;
+      .child-time {
+        // 触屏（hover:none）无常悬停：child-actions（删除入口）常显，时间让位
+        margin-right: @controlHeightSm;
       }
     }
 
@@ -211,6 +319,39 @@
       visibility: hidden;
     }
   }
+}
+
+// 项目下暂无会话空状态（2026-09-20 定调）：与项目/任务列表空态同款插图的
+// 缩小版（40px，嵌套子行区不宜 64px）+ 次级文案 + 「新建会话」主色小按钮
+// （功能同项目行「+」）。独立于 .child 声明：容器不挂行类，无行点击/悬停皮
+.child-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: @paddingXxs;
+  padding: @paddingXs 0;
+  text-align: center;
+  cursor: default;
+  margin-left: -15px;
+}
+
+.child-empty-img {
+  width: 40px;
+  height: 40px;
+}
+
+.child-empty-text {
+  font-size: @fontSizeSm;
+  line-height: @lineHeightSm;
+  color: @navSecondMenuAdaptiveTextTertiary;
+}
+
+.child-create-btn {
+  height: 24px;
+  padding: 0 @paddingMd;
+  border-radius: 12px;
+  font-size: @fontSizeSm;
+  line-height: 22px;
 }
 
 .project-more {
@@ -255,6 +396,18 @@
   opacity: 1;
 }
 
+.project .row:hover,
+.project .row:focus-visible,
+.project .row:has(:focus-visible) {
+  .folder-badge {
+    opacity: 0;
+  }
+
+  .project-pin-toggle {
+    opacity: 1;
+  }
+}
+
 .project .row:focus-visible {
   outline: @lineWidthBold solid @colorPrimary;
   outline-offset: -2px;
@@ -266,8 +419,9 @@
 
   .row {
     position: relative;
-    gap: 2px;
-    padding: @paddingXs 10px;
+    gap: @sidebarRowIconGap;
+    padding: 6px @sidebarRowCompactTrailingPadding 6px
+      @sidebarRowCompactLeadingPadding;
     border-radius: 15px;
     min-height: 36px;
     box-sizing: border-box;
@@ -281,31 +435,34 @@
     &.expanded .name {
       font-weight: 400;
     }
-
-    .arrow {
-      width: 18px;
-      margin-left: 2px;
-    }
   }
 
+  // 紧凑行直接复用统一槽位与 4px 间距，不再为单个图标追加 margin。
   .project-icon {
     flex-shrink: 0;
-    font-size: 15px;
-    color: @navSecondMenuAdaptiveTextTertiary;
-    margin-right: @marginXxs;
+    font-size: @sidebarRowIconSize;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    margin-right: 0;
   }
 
+  // 原让位行尾 caret 箭头（18px+边距=30px），箭头已去除改为贴行右 padding
   .project-more {
     position: absolute;
-    right: 30px;
+    right: @sidebarRowCompactTrailingPadding;
     background: @colorBgContainer;
   }
 
   .row:hover .name,
   .row:focus-visible .name,
   .row:has(:focus-visible) .name {
-    // 50px 让位绝对定位的 actions 浮层(见下方 .project-actions 覆盖)
-    padding-right: 50px;
+    // 86px 让位绝对定位的 actions 浮层（right:10px + 三枚 24px 按钮 +
+    // 两个 2px gap），避免新建会话图标覆盖项目标题。
+    padding-right: 86px;
+  }
+
+  // 归档确认态移出 hover 后仍常显，只为单枚「确认」保留操作宽度。
+  .row.project-archive-arming .name {
+    padding-right: 60px;
   }
 
   .children {
@@ -325,29 +482,27 @@
   }
 
   .child {
-    margin-left: 0;
-    // 对齐网格：左 = 父行名称列(children 缩进 10+10 后再留 11)，右 = 全局右列
-    // (父行箭头/任务列表时间右缘同为 253-10=243)；原 8px 4px 使子行文字/时间
-    // 相对父行各凸出 7px/6px，形成半步错位
-    padding: 8px 10px 8px 11px;
+    // 胶囊向左反向覆盖 children 的 20px 树缩进，hover 左右边界与项目行、
+    // 任务会话一致；7px 左 padding + 24px 槽统一出 19px 行首中心线。
+    width: calc(100% + 20px);
+    box-sizing: border-box;
+    margin-left: -20px;
+    padding: 6px @sidebarRowCompactTrailingPadding 6px
+      @sidebarRowCompactLeadingPadding;
     border-radius: 10px;
 
     .child-name {
       font-size: 13.5px;
       line-height: 19px;
     }
-
-    &:focus-visible .child-more,
-    &:has(:focus-visible) .child-more {
-      opacity: 1;
-    }
   }
 
   // 紧凑态 actions 浮层覆盖：行 hover 本身已是白卡，浮层不再叠第二层白底
-  // （行名 padding-right 让位已保证不重叠），仅保留定位
+  // （行名 padding-right 让位已保证不重叠），仅保留定位；右缘贴行 padding
+  // （原 30px 让位行尾箭头，箭头已去除）
   .project-actions {
     position: absolute;
-    right: 30px;
+    right: @sidebarRowCompactTrailingPadding;
     background: transparent;
     border-radius: @borderRadius;
   }
@@ -359,12 +514,20 @@
 
   // 子行悬停按钮浮层与时间列同缘(243)；时间隐藏规则已上提基础作用域
   .child-actions {
-    right: 10px;
+    right: @sidebarRowCompactTrailingPadding;
   }
 }
 
 @media (hover: none) {
   .project-more {
+    opacity: 1;
+  }
+
+  .project .folder-badge {
+    opacity: 0;
+  }
+
+  .project .project-pin-toggle {
     opacity: 1;
   }
 
@@ -374,8 +537,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .project .row .arrow,
-  .project-more {
+  .project-more,
+  .folder-badge,
+  .project-pin-toggle,
+  .child-leading-status,
+  .child-rename {
     transition: none;
   }
 }
@@ -391,18 +557,12 @@
   transition: opacity 0.16s ease;
 
   button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: @controlHeightSm;
-    height: @controlHeightSm;
-    padding: 0;
+    .sidebar-row-action-slot();
+
     border: 0;
     border-radius: 7px;
-    // 项目图标(plus/more)尺寸由 SvgIcon style.fontSize 传入(15px，视觉宽约 11px)；
-    // 此处字号仅作用于非 SvgIcon 内容(创建中转圈 LoadingOutlined)
-    font-size: 15px;
-    color: @navSecondMenuAdaptiveTextTertiary;
+    // Ant 图标与 SvgIcon 都继承统一 14px 图形尺寸。
+    color: @navSecondMenuAdaptiveTextSecondary;
     background: transparent;
     cursor: pointer;
 
@@ -413,7 +573,7 @@
 
     &:hover,
     &:focus-visible {
-      color: @colorPrimary;
+      color: @navSecondMenuAdaptiveText;
       background: @colorPrimaryBg;
     }
 
@@ -439,12 +599,34 @@
   transform: translateY(-50%);
   padding: 1px;
   border-radius: @borderRadius;
-  // 白底+投影已去除（2026-09-12 走查定调）：行 hover 灰底上只留 ⋯ 图标本体，
+  // 白底+投影已去除（2026-09-12 走查定调）：行 hover 灰底上只留动作图标本体，
   // 不再浮白色小卡片
 }
 
-.project .child .child-actions .child-more {
-  opacity: 1;
+// 删除/归档统一为行内红色「确认」：文字按钮不受 24px 图标槽限制。
+.project-actions .archive-confirm,
+.child-actions .delete-confirm {
+  height: 22px;
+  width: auto;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: @colorError;
+  color: @colorWhite;
+  font-size: 12px;
+  line-height: 22px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: @colorWhite;
+    background: @colorError;
+  }
 }
 
 // 白底卡片浮层只在 hover 或键盘焦点时出现;鼠标点击后的焦点残留不算
@@ -454,15 +636,26 @@
 .project .row:hover,
 .project .row:focus-visible,
 .project .row:has(:focus-visible),
+.project .row.project-archive-arming,
 .project .child:hover,
 .project .child:focus-visible,
-.project .child:has(:focus-visible) {
+.project .child:has(:focus-visible),
+.project .child.child-delete-arming {
   background-color: @navRowHoverBg;
 
   .project-actions,
   .child-actions {
     opacity: 1;
     pointer-events: auto;
+  }
+}
+
+// 删除确认态在鼠标移出后仍占固定操作区；时间退出，标题在确认按钮前截断。
+.project .child.child-delete-arming {
+  padding-right: 64px;
+
+  .child-time {
+    display: none;
   }
 }
 @media (hover: none) {
@@ -473,7 +666,7 @@
   }
 
   .compact .row .name {
-    padding-right: 50px;
+    padding-right: 86px;
   }
 
   .project .child {
