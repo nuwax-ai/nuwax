@@ -1123,6 +1123,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ThemeConfigNavigationStylePanel.style3Description": "单栏模式：会话侧栏常驻，配并列二级菜单列，默认布局形态",
   "PC.Components.ThemeConfigNavigationStylePanel.style2Name": "风格2",
   "PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle": "风格样式",
+  "PC.Components.ThemeConfigNavigationStylePanel.themeLockedHint": "单栏风格下仅支持浅色，切换为经典风格后可修改深浅色",
   "PC.Components.ThemeConfigThemeColorPanel.customName": "自定义",
   "PC.Components.ThemeConfigThemeColorPanel.panelTitle": "主题色",
   "PC.Components.TimedTask.addTask": "添加",

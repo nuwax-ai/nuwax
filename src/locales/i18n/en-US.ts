@@ -1116,6 +1116,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ThemeConfigNavigationStylePanel.style3Description": "Sidebar mode: persistent conversation sidebar with a parallel secondary menu column. Default layout.",
   "PC.Components.ThemeConfigNavigationStylePanel.style2Name": "Style 2",
   "PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle": "Style",
+  "PC.Components.ThemeConfigNavigationStylePanel.themeLockedHint": "Only the light theme is available in single-column style. Switch to a classic style to change light/dark mode.",
   "PC.Components.ThemeConfigThemeColorPanel.customName": "Custom",
   "PC.Components.ThemeConfigThemeColorPanel.panelTitle": "Theme Color",
   "PC.Components.TimedTask.addTask": "Add",

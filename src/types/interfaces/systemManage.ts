@@ -459,8 +459,8 @@ export interface ThemeConfigData {
   antdTheme: 'light' | 'dark';
   /** 导航栏风格（浅色/深色） */
   layoutStyle: 'light' | 'dark';
-  /** 导航风格ID（style1/style2） */
-  navigationStyle: 'style1' | 'style2';
+  /** 导航风格ID（style1/style2 经典、style3 单栏） */
+  navigationStyle: 'style1' | 'style2' | 'style3';
   /** 时间戳 */
   timestamp: number;
 }

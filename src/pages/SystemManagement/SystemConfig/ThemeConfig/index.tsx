@@ -14,7 +14,10 @@ import {
   unifiedThemeService,
 } from '@/services/unifiedThemeService';
 import { BackgroundImage } from '@/types/background';
-import { ThemeLayoutColorStyle } from '@/types/enums/theme';
+import {
+  ThemeLayoutColorStyle,
+  ThemeNavigationStyleType,
+} from '@/types/enums/theme';
 import { ThemeConfigData } from '@/types/interfaces/systemManage';
 import { App, Button } from 'antd';
 import classNames from 'classnames';
@@ -23,6 +26,10 @@ import { useLocation, useModel } from 'umi';
 import styles from './index.less';
 
 // 使用统一的存储键名
+
+/** 单栏（style3）锁定的背景：背景列表第一个纯色（无图）背景（与服务层同源口径） */
+const singleColumnBackground = backgroundConfigs.find((bg) => !bg.url);
+const singleColumnBackgroundId = singleColumnBackground?.id ?? '';
 
 const cx = classNames.bind(styles);
 
@@ -98,20 +105,47 @@ const ThemeConfig: React.FC = () => {
 
   // 处理导航风格变更（临时预览，但实时显示效果）
   const handleNavigationStyleChange = async (styleId: string) => {
-    setPreviewNavigationStyle(styleId as any);
+    setPreviewNavigationStyle(styleId as ThemeNavigationStyleType);
 
-    // 立即应用导航风格预览效果（不保存到localStorage）
-    // 使用批量更新确保导航风格和布局风格同步应用
+    // 单栏（style3）锁定纯色浅色背景（2026-09-20 需求，与用户侧同口径）：切入
+    // 时把背景/深浅一并收敛预览；保存链路里 updateNavigationStyle 服务层同样兜底
+    if (styleId === ThemeNavigationStyleType.STYLE3) {
+      const changed =
+        previewBackgroundId !== singleColumnBackgroundId ||
+        previewLayoutStyle !== ThemeLayoutColorStyle.LIGHT;
+      setPreviewBackgroundId(singleColumnBackgroundId);
+      setPreviewLayoutStyle(ThemeLayoutColorStyle.LIGHT);
+      setPreviewIsNavigationDark(false);
+      try {
+        // 批量更新（导航风格+布局风格+背景）确保 CSS 变量同步
+        await unifiedThemeService.updateData(
+          {
+            navigationStyle: ThemeNavigationStyleType.STYLE3,
+            layoutStyle: ThemeLayoutColorStyle.LIGHT,
+            backgroundId: singleColumnBackgroundId,
+          },
+          { saveToStorage: false },
+        );
+      } catch (error) {
+        console.warn('Failed to preview navigation style:', error);
+      }
+      if (changed && singleColumnBackground) {
+        message.info(
+          t(
+            'PC.Pages.SystemThemeConfig.autoSwitchedBackgroundPreview',
+            singleColumnBackground.name,
+            t('PC.Pages.SystemThemeConfig.lightMode'),
+          ),
+        );
+      }
+      return;
+    }
+
+    // 经典两档：批量更新导航风格和布局风格，确保CSS变量同步
     try {
-      // 导入 unifiedThemeService 进行批量更新
-      const { unifiedThemeService } = await import(
-        '@/services/unifiedThemeService'
-      );
-
-      // 批量更新导航风格和布局风格，确保CSS变量同步
       await unifiedThemeService.updateData(
         {
-          navigationStyle: styleId as any,
+          navigationStyle: styleId as ThemeNavigationStyleType,
           layoutStyle: previewLayoutStyle,
         },
         { saveToStorage: false },
@@ -123,6 +157,13 @@ const ThemeConfig: React.FC = () => {
 
   // 背景图片切换处理（临时预览，但实时显示效果）
   const handleBackgroundChange = async (backgroundId: string) => {
+    // 单栏锁定纯色背景（与用户侧同口径）：面板置灰，此处兜底拦截
+    if (previewNavigationStyle === ThemeNavigationStyleType.STYLE3) {
+      message.info(
+        t('PC.Components.ThemeConfigBackgroundImagePanel.lockedHint'),
+      );
+      return;
+    }
     // 设置背景图片（临时预览）
     setPreviewBackgroundId(backgroundId);
 
@@ -156,6 +197,13 @@ const ThemeConfig: React.FC = () => {
 
   // 切换导航栏深浅色（临时预览，但实时显示效果）
   const handleNavigationThemeToggle = async () => {
+    // 单栏锁定纯色浅色（2026-09-20 需求，与用户侧同口径）：深浅切换整体拦截
+    if (previewNavigationStyle === ThemeNavigationStyleType.STYLE3) {
+      message.info(
+        t('PC.Components.ThemeConfigNavigationStylePanel.themeLockedHint'),
+      );
+      return;
+    }
     const newLayoutStyle =
       previewLayoutStyle === ThemeLayoutColorStyle.DARK
         ? ThemeLayoutColorStyle.LIGHT
@@ -243,11 +291,13 @@ const ThemeConfig: React.FC = () => {
     }
   };
 
-  // 重置为默认配置
+  // 重置为默认配置（对齐平台默认 DEFAULT_THEME_CONFIG：单栏+纯色+浅色）
   const handleReset = () => {
-    setPreviewPrimaryColor('#5147ff'); // 默认蓝色
-    setPreviewBackgroundId('bg-variant-1'); // 默认背景
-    setPreviewNavigationStyle('style1' as any);
+    setPreviewPrimaryColor(DEFAULT_THEME_CONFIG.PRIMARY_COLOR);
+    setPreviewBackgroundId(singleColumnBackgroundId);
+    setPreviewNavigationStyle(
+      DEFAULT_THEME_CONFIG.NAVIGATION_STYLE as ThemeNavigationStyleType,
+    );
     setPreviewLayoutStyle(ThemeLayoutColorStyle.LIGHT);
     setPreviewIsNavigationDark(false);
     message.info(t('PC.Pages.SystemThemeConfig.resetPreview'));
@@ -312,8 +362,10 @@ const ThemeConfig: React.FC = () => {
             onNavigationThemeToggle={handleNavigationThemeToggle}
             onNavigationStyleChange={handleNavigationStyleChange}
             currentNavigationStyle={previewNavigationStyle}
-            // 租户模板仅支持经典两档：单栏（style3）为用户级布局类型，不对租户透出
-            availableStyles={['style1', 'style2']}
+            // 单栏锁定纯色浅色（与用户侧同口径）：深浅卡置灰不可点
+            themeToggleDisabled={
+              previewNavigationStyle === ThemeNavigationStyleType.STYLE3
+            }
           />
         </div>
         <div className={cx(styles.configItem)}>
@@ -322,6 +374,10 @@ const ThemeConfig: React.FC = () => {
             currentBackground={previewBackgroundId}
             onBackgroundChange={handleBackgroundChange}
             enableCustomUpload={false} //先关闭后期考虑开启
+            // 单栏锁定纯色背景（与用户侧同口径）：面板置灰不可选
+            disabled={
+              previewNavigationStyle === ThemeNavigationStyleType.STYLE3
+            }
           />
         </div>
       </div>

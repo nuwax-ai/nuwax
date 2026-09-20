@@ -974,6 +974,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ThemeConfigNavigationStylePanel.style3Description": "シングルバーモード：会話サイドバー常駐、並列サブメニュー列、既定のレイアウト。",
   "PC.Components.ThemeConfigNavigationStylePanel.style2Name": "スタイル2",
   "PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle": "スタイル",
+  "PC.Components.ThemeConfigNavigationStylePanel.themeLockedHint": "シングルカラムスタイルではライトのみ使用できます。クラシックスタイルに切り替えると変更できます",
   "PC.Components.ThemeConfigThemeColorPanel.customName": "カスタム",
   "PC.Components.ThemeConfigThemeColorPanel.panelTitle": "テーマカラー",
   "PC.Components.TimedTask.addTask": "追加",

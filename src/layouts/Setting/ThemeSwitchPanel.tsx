@@ -185,13 +185,16 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
 
   // 处理导航深浅色切换
   const handleNavigationThemeToggle = async () => {
+    // 单栏锁定纯色浅色（2026-09-20 需求，与背景锁同款口径）：深浅切换整体
+    // 拦截，不再落入「dark+纯色」白底白字的不可用态（面板置灰，此处兜底）
+    if (navigationStyle === ThemeNavigationStyleType.STYLE3) {
+      message.info(
+        dict('PC.Components.ThemeConfigNavigationStylePanel.themeLockedHint'),
+      );
+      return;
+    }
     try {
       await toggleNavigationTheme();
-      // 单栏锁定纯色背景（2026-09-12 需求）：跳过「深浅色不匹配自动换背景」
-      // 联动，背景恒为纯色（服务层不变量同样兜底）
-      if (navigationStyle === ThemeNavigationStyleType.STYLE3) {
-        return;
-      }
       const themeData = unifiedThemeService.getCurrentData();
       // 检查当前背景是否与新的导航栏深浅色匹配
       const currentBackgroundLayoutStyle = getLayoutStyleByBackgroundId(
@@ -263,6 +266,10 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
               onNavigationThemeToggle={handleNavigationThemeToggle}
               onNavigationStyleChange={handleNavigationStyleChange}
               currentNavigationStyle={navigationStyle}
+              // 单栏锁定纯色浅色（2026-09-20 需求）：深浅卡置灰不可点
+              themeToggleDisabled={
+                navigationStyle === ThemeNavigationStyleType.STYLE3
+              }
             />
           </div>
 

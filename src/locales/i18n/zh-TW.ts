@@ -992,6 +992,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.ThemeConfigNavigationStylePanel.style3Description": "單欄模式：會話側欄常駐，配並列二級選單列，預設佈局形態",
   "PC.Components.ThemeConfigNavigationStylePanel.style2Name": "風格2",
   "PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle": "風格樣式",
+  "PC.Components.ThemeConfigNavigationStylePanel.themeLockedHint": "單欄風格下僅支援淺色，切換為經典風格後可修改深淺色",
   "PC.Components.ThemeConfigThemeColorPanel.customName": "自定義",
   "PC.Components.ThemeConfigThemeColorPanel.panelTitle": "主題色",
   "PC.Components.TimedTask.addTask": "新增",
