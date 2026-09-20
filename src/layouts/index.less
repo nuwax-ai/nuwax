@@ -43,7 +43,11 @@
   box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 8%);
   z-index: 1;
   // 确保内容区域有半透明背景，提高可读性
-  transition: all 0.3s ease;
+  // 过渡只点名收展/主题实际会变的属性（margin 避让、左描边宽、圆角、背景、阴影），
+  // 不用 all 兜底：侧栏收起/展开动画期间避免无关属性被卷入逐帧重排
+  transition: margin-left 0.3s ease, margin-top 0.3s ease,
+    border-left-width 0.3s ease, border-radius 0.3s ease,
+    background-color 0.3s ease, box-shadow 0.3s ease;
   position: relative;
 
   // 侧栏整条收起后（壳顶栏折叠/展开按钮）：左侧补出与右/下一致的边距，
