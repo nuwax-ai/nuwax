@@ -57,7 +57,7 @@ import {
   StarOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
+import { Dropdown, Input, message, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import {
@@ -1484,31 +1484,21 @@ const ProjectPanel = forwardRef<
                     <Spin size="small" />
                   </div>
                 )}
-                {/* 项目下暂无会话：空状态（与项目/任务列表空态同款插图）+
-                    「新建会话」按钮，按钮功能与项目行「+」一致（2026-09-20 定调） */}
+                {/* 项目下暂无会话（2026-09-20 定调，参考原型）：子行位灰字提示，
+                    挂 .child 继承经典/单栏缩进与圆角；带同款空行首槽位使文字与
+                    兄弟子行标题同线，无插图/按钮/悬停皮 */}
                 {project.children !== undefined &&
                   project.children.length === 0 && (
-                    <div className={cx(styles['child-empty-state'])}>
-                      <img
-                        className={cx(styles['child-empty-img'])}
-                        src={emptyStateNoData}
-                        alt=""
+                    <div
+                      className={cx(styles.child, styles['child-empty-row'])}
+                    >
+                      <span
+                        className={cx(styles['child-leading-slot'])}
+                        aria-hidden
                       />
-                      <span className={cx(styles['child-empty-text'])}>
-                        {dict(
-                          'PC.Components.HistoryConversationList.projectNoConversations',
-                        )}
-                      </span>
-                      <Button
-                        size="small"
-                        className={cx(styles['child-create-btn'])}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleAddConversation(project);
-                        }}
-                      >
-                        {dict('PC.Constants.Menus.newChat')}
-                      </Button>
+                      {dict(
+                        'PC.Layouts.DynamicMenusLayout.NewHomeSection.noChats',
+                      )}
                     </div>
                   )}
                 {(project.children ?? []).map((child) => {

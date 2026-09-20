@@ -321,37 +321,23 @@
   }
 }
 
-// 项目下暂无会话空状态（2026-09-20 定调）：与项目/任务列表空态同款插图的
-// 缩小版（40px，嵌套子行区不宜 64px）+ 次级文案 + 「新建会话」主色小按钮
-// （功能同项目行「+」）。独立于 .child 声明：容器不挂行类，无行点击/悬停皮
-.child-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: @paddingXxs;
-  padding: @paddingXs 0;
-  text-align: center;
-  cursor: default;
-  margin-left: -15px;
-}
-
-.child-empty-img {
-  width: 40px;
-  height: 40px;
-}
-
-.child-empty-text {
-  font-size: @fontSizeSm;
-  line-height: @lineHeightSm;
+// 项目下暂无会话（2026-09-20 定调，参考原型）：子行位灰字提示，无插图/按钮。
+// 挂 .child 继承经典/单栏缩进与圆角；压掉行悬停底色与 pointer（纯提示不可点）
+.project .child.child-empty-row {
   color: @navSecondMenuAdaptiveTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: 18px;
+  cursor: default;
+
+  &:hover {
+    background: transparent;
+  }
 }
 
-.child-create-btn {
-  height: 24px;
-  padding: 0 @paddingMd;
-  border-radius: 12px;
-  font-size: @fontSizeSm;
-  line-height: 22px;
+.compact .child.child-empty-row {
+  // 对齐单栏子行字号（.child-name 13.5px/19px）
+  font-size: 13.5px;
+  line-height: 19px;
 }
 
 .project-more {
