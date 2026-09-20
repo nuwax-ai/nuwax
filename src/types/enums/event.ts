@@ -12,4 +12,8 @@ export enum EventTypeEnum {
   // 项目/会话目录元数据发生变化
   ConversationChanged = 'directory_conversation_changed',
   ProjectChanged = 'directory_project_changed',
+  // 移动端菜单关闭请求（会话行点击）：经事件总线下发，消费方 SidebarShell 调
+  // layout model 的 handleCloseMobileMenu——避免列表数据层直接订阅 layout
+  // 被全量广播卷入重渲染（2026-09 侧栏收展卡顿）
+  CloseMobileMenu = 'close_mobile_menu',
 }

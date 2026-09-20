@@ -18,8 +18,8 @@ import type { SkillListItem } from '@/components/business-component/SkillListVie
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSelectSkillHandoff from '@/hooks/useSelectSkillHandoff';
 import useSummonExpertHandoff from '@/hooks/useSummonExpertHandoff';
-import { buildAppProRoute } from '@/pages/AppDevPro/utils/appProRoute';
 import { dict } from '@/services/i18nRuntime';
+import { buildAppProRoute } from '@/utils/appProRoute';
 import { Modal, Spin } from 'antd';
 import classNames from 'classnames';
 import React, {

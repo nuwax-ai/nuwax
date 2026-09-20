@@ -10,6 +10,7 @@
  * （DynamicMenusLayout 及会话列表）跨跳转存活、不重新初始化；
  * 菜单/广场分类/空间列表等引导数据只装一次（bare 态跳过，回带栏态补跑一次）。
  */
+import { EVENT_TYPE } from '@/constants/event.constants';
 import {
   ANIMATION_DURATION,
   MOBILE_BREAKPOINT,
@@ -18,6 +19,7 @@ import {
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
+import eventBus from '@/utils/eventBus';
 import {
   isImmersiveShell,
   isMac,
@@ -80,6 +82,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     fullMobileMenu,
     setFullMobileMenu,
     getCurrentMenuWidth,
+    handleCloseMobileMenu,
   } = useModel('layout');
 
   const { asyncSpaceListFun } = useModel('spaceModel');
@@ -135,6 +138,17 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     // 工作空间列表查询接口
     asyncSpaceListFun();
   }, [variant]);
+
+  // 会话行点击的移动端菜单关闭：列表数据层（useHomeSectionData）经事件总线下发，
+  // 本组件本就订阅 layout model，在此统一消费——替代数据层直接订阅 layout
+  //（该订阅会让收起/展开等 layout 全量广播卷入整个会话列表子树重渲染）
+  useEffect(() => {
+    const closeMobileMenu = () => handleCloseMobileMenu();
+    eventBus.on(EVENT_TYPE.CloseMobileMenu, closeMobileMenu);
+    return () => {
+      eventBus.off(EVENT_TYPE.CloseMobileMenu, closeMobileMenu);
+    };
+  }, [handleCloseMobileMenu]);
 
   /**
    * 监听窗口尺寸变化，判断是否为移动端

@@ -11,10 +11,6 @@
  * 时自动发；经典形态按初始 tab 决定，由视图挂载时调 initialLoad()。
  */
 import { EVENT_TYPE } from '@/constants/event.constants';
-import {
-  buildAppProRoute,
-  removeAppProConversationFromLocation,
-} from '@/pages/AppDevPro/utils/appProRoute';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
@@ -22,6 +18,10 @@ import { apiAgentConversationList } from '@/services/agentConfig';
 import type { ConversationChangedEvent } from '@/types/directorySync';
 import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import {
+  buildAppProRoute,
+  removeAppProConversationFromLocation,
+} from '@/utils/appProRoute';
 import {
   applyConversationFlagOverrides,
   ConversationFlagOverride,
@@ -37,7 +37,7 @@ import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
 import { jumpTo } from '@/utils/router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { history, useLocation, useModel, useParams } from 'umi';
+import { history, useLocation, useParams } from 'umi';
 import { extractConversationIdFromPath } from '../sidebarSelectionPolicy';
 import {
   markConversationFinished,
@@ -122,8 +122,6 @@ export function useHomeSectionData(options: {
     chatIdParam ??
     extractConversationIdFromPath(location.pathname, location.search) ??
     undefined;
-
-  const { handleCloseMobileMenu } = useModel('layout');
 
   const [localList, setLocalList] = useState<ConversationInfo[]>(
     componentCache.list || [],
@@ -561,28 +559,28 @@ export function useHomeSectionData(options: {
     loadList(true);
   }, [searchKeyword]);
 
-  const handleConversationClick = useCallback(
-    (item: ConversationInfo) => {
-      handleCloseMobileMenu();
-      const { id, agentId, devTargetType, devTargetId, devSpaceId } = item;
-      // 点击即视为已进入：立即清未读蓝点（跨应用路由 chatId 派生可能滞后，先清兜底）
-      if (id !== null && id !== undefined) markConversationVisited(id);
+  const handleConversationClick = useCallback((item: ConversationInfo) => {
+    // 移动端菜单关闭改经事件总线下发（SidebarShell 消费并调 layout model）：
+    // 此处曾直接 useModel('layout') 订阅，收起/展开等 layout 全量广播会把
+    // NewHomeSection 整个会话列表子树卷进重渲染、击穿 React.memo（2026-09 收展卡顿）
+    eventBus.emit(EVENT_TYPE.CloseMobileMenu);
+    const { id, agentId, devTargetType, devTargetId, devSpaceId } = item;
+    // 点击即视为已进入：立即清未读蓝点（跨应用路由 chatId 派生可能滞后，先清兜底）
+    if (id !== null && id !== undefined) markConversationVisited(id);
 
-      if (devTargetType === 'Agent' && devSpaceId && id) {
-        history.push(
-          `/space/${devSpaceId}/agent-dev?agentId=${devTargetId}&conversationId=${id}`,
-        );
-      } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
-        jumpTo(`/space/${devSpaceId}/app-dev/${devTargetId}`);
-      } else if (devTargetType === 'UserApp' && devSpaceId && devTargetId) {
-        // 全栈应用会话：跳全栈应用开发详情页，conversationId 用于恢复该会话
-        jumpTo(buildAppProRoute(devSpaceId, devTargetId, id));
-      } else {
-        history.push('/home/chat/' + id + '/' + agentId);
-      }
-    },
-    [handleCloseMobileMenu],
-  );
+    if (devTargetType === 'Agent' && devSpaceId && id) {
+      history.push(
+        `/space/${devSpaceId}/agent-dev?agentId=${devTargetId}&conversationId=${id}`,
+      );
+    } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
+      jumpTo(`/space/${devSpaceId}/app-dev/${devTargetId}`);
+    } else if (devTargetType === 'UserApp' && devSpaceId && devTargetId) {
+      // 全栈应用会话：跳全栈应用开发详情页，conversationId 用于恢复该会话
+      jumpTo(buildAppProRoute(devSpaceId, devTargetId, id));
+    } else {
+      history.push('/home/chat/' + id + '/' + agentId);
+    }
+  }, []);
 
   // 会话结束未读蓝点：当前会话 id 变化 = 已进入（面板点击/搜索弹窗/快捷导航等
   // 一切路径统一在此清除），同时同步「结束时是否在场」的判定基准
