@@ -3,6 +3,7 @@ import ProjectPanel, {
 } from '@/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel';
 import {
   apiUserProjectArchive,
+  apiUserProjectPageQuery,
   apiUserProjectPin,
 } from '@/services/userProjectApp';
 import {
@@ -48,21 +49,41 @@ vi.mock('@/services/agentConfig', () => ({
 vi.mock('@/services/userProjectApp', async () => {
   // 子会话时间取「5 分钟前」,断言走 relativeMinutes 分支
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  // 服务端真值（读己之写）：置顶/归档接口提交后列表回包随之带上标记，
+  // 供 ProjectPanel「成败都向服务端真值收敛重拉」消费（2e17f6669 起）。
+  // 不回写的话，收敛重拉会把本地刚落上的标记洗掉——本文件曾因此常红。
+  const serverFlags = {
+    pinned: new Set<number>(),
+    archived: new Set<number>(),
+  };
+  const buildRecords = () =>
+    [
+      {
+        projectId: 1,
+        name: '项目甲',
+        projectType: 'UserApp',
+        modified: fiveMinutesAgo,
+        created: fiveMinutesAgo,
+      },
+      { projectId: 2, name: '项目乙', projectType: 'NormalProject' },
+    ].map((record) => ({
+      ...record,
+      ...(serverFlags.pinned.has(record.projectId) ? { pinned: true } : {}),
+      ...(serverFlags.archived.has(record.projectId) ? { archived: true } : {}),
+    }));
+  const { SUCCESS_CODE } = await import('@/constants/codes.constants');
+  const pageQueryMock = vi.fn().mockImplementation(() =>
+    Promise.resolve({
+      code: SUCCESS_CODE,
+      data: { records: buildRecords(), total: 2 },
+    }),
+  );
   return {
-    apiUserProjectPageQuery: vi.fn().mockResolvedValue({
-      code: (await import('@/constants/codes.constants')).SUCCESS_CODE,
-      data: {
-        records: [
-          {
-            projectId: 1,
-            name: '项目甲',
-            projectType: 'UserApp',
-            modified: fiveMinutesAgo,
-            created: fiveMinutesAgo,
-          },
-          { projectId: 2, name: '项目乙', projectType: 'NormalProject' },
-        ],
-        total: 2,
+    apiUserProjectPageQuery: Object.assign(pageQueryMock, {
+      /** 复位服务端真值（beforeEach 用，防跨用例泄漏） */
+      resetServerFlags: () => {
+        serverFlags.pinned.clear();
+        serverFlags.archived.clear();
       },
     }),
     apiUserProjectConversations: vi.fn().mockImplementation((projectId) =>
@@ -86,8 +107,16 @@ vi.mock('@/services/userProjectApp', async () => {
     apiNormalProjectDelete: vi.fn().mockResolvedValue({ code: '0000' }),
     apiUserAppUpdate: vi.fn().mockResolvedValue({ code: '0000' }),
     apiUserAppDelete: vi.fn().mockResolvedValue({ code: '0000' }),
-    apiUserProjectPin: vi.fn().mockResolvedValue({ code: '0000' }),
-    apiUserProjectArchive: vi.fn().mockResolvedValue({ code: '0000' }),
+    apiUserProjectPin: vi.fn().mockImplementation((id, pinned) => {
+      if (pinned) serverFlags.pinned.add(id);
+      else serverFlags.pinned.delete(id);
+      return Promise.resolve({ code: '0000' });
+    }),
+    apiUserProjectArchive: vi.fn().mockImplementation((id, archived) => {
+      if (archived) serverFlags.archived.add(id);
+      else serverFlags.archived.delete(id);
+      return Promise.resolve({ code: '0000' });
+    }),
     apiUserProjectCollect: vi.fn().mockResolvedValue({ code: '0000' }),
     apiUserProjectUnCollect: vi.fn().mockResolvedValue({ code: '0000' }),
   };
@@ -96,6 +125,8 @@ vi.mock('@/services/userProjectApp', async () => {
 describe('项目侧栏原型交互', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // 复位 mock 的服务端真值，避免上一条用例的置顶/归档泄漏到下一条
+    apiUserProjectPageQuery.resetServerFlags();
   });
 
   it('混合展开状态批量展开，再批量收起；键盘独立切换项目', async () => {
@@ -163,7 +194,8 @@ describe('项目侧栏原型交互', () => {
       expect(apiUserProjectPin).toHaveBeenCalledWith(2, true, 'NormalProject'),
     );
     await waitFor(() =>
-      expect(normalProject.querySelector('.pin-icon')).toBeInTheDocument(),
+      // 置顶态图标自 5e5028a87 起改渲染「实心图钉 + 斜杠」的 unpin-icon 槽位
+      expect(normalProject.querySelector('.unpin-icon')).toBeInTheDocument(),
     );
 
     const userAppProject = screen.getByRole('button', { name: /项目甲/ });
@@ -178,6 +210,9 @@ describe('项目侧栏原型交互', () => {
         .getAllByText('PC.Components.ConversationContextMenu.archive')
         .at(-1)!,
     );
+    // 归档自 9f3292a79 起下沉为行内二次确认：先点「归档」进入 armed 态，
+    // 再点红色「确认」才真正请求（防误触）
+    fireEvent.click(await screen.findByText('PC.Common.Global.confirm'));
     await waitFor(() =>
       expect(apiUserProjectArchive).toHaveBeenCalledWith(1, true, 'UserApp'),
     );
