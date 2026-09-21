@@ -13,6 +13,7 @@ import type {
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { PinnedProjectInfo } from '@/types/interfaces/userProject';
 import { buildAppProRedirectPrefix } from '@/utils/appProRoute';
+import { normalizeSandboxIdValue } from '@/utils/effectiveSandbox';
 
 /**
  * 首页发送计划纯函数（收编原 src/pages/Home/index.tsx handleEnter 的
@@ -26,7 +27,7 @@ import { buildAppProRedirectPrefix } from '@/utils/appProRoute';
  * 2. 项目类推荐（functionType 映射出项目类型）→ 建项目分支 payload；
  * 3. 其余 → 纯会话分支 attach。
  *
- * 纯函数（仅依赖 types/constants 层），页面侧只做 build → execute。
+ * 纯函数（仅依赖 types/constants/utils 纯函数层），页面侧只做 build → execute。
  */
 
 /**
@@ -114,8 +115,9 @@ export interface HomeConversationAttach {
   projectType?: AgentComponentTypeEnum;
   /** 上框项目为全栈时携带（= 当前选中的全栈类智能体） */
   devAgentId?: number;
-  /** 上框项目沙箱（创建者走项目绑定；参与者自选=云端 -1/个人电脑 id，优先于项目沙箱） */
-  sandboxId?: number;
+  /** 上框项目沙箱（创建者走项目绑定；参与者自选=云端 -1/个人电脑 id，优先于项目沙箱）。
+   *  个人电脑 id 可能是非数字形态（新沙箱），数字归一/字符串透传（bug2443 勿 Number 转 NaN） */
+  sandboxId?: number | string;
   /** 创建成功后的跳转 URL 前缀（拼接会话 id；全栈跳 app-pro 用） */
   redirectUrl?: string;
   /** 资料库文档（首页能力弹窗选中，随首条 chat 消息发送；
@@ -196,10 +198,13 @@ export const buildHomeSendPlan = (input: HomeSendPlanInput): HomeSendPlan => {
     const sandboxAttach = pinnedProjectSandboxSelection
       ? {
           selectedComputerId,
+          // 类型归一（bug2443）：数字形态转 number，非数字沙箱 id 透传字符串
           sandboxId:
-            selectedComputerId && selectedComputerId !== CLOUD_SANDBOX_ID
-              ? Number(selectedComputerId)
-              : Number(CLOUD_SANDBOX_ID),
+            normalizeSandboxIdValue(
+              selectedComputerId && selectedComputerId !== CLOUD_SANDBOX_ID
+                ? selectedComputerId
+                : CLOUD_SANDBOX_ID,
+            ) ?? Number(CLOUD_SANDBOX_ID),
           workspacePath: resolvePersonalWorkspacePath(
             selectedComputerId,
             workspacePath,

@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ConversationContextMenu from '@/components/business-component/ConversationContextMenu';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { t } from '@/services/i18nRuntime';
 import {
   apiUserProjectArchive,
@@ -27,6 +28,7 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history } from 'umi';
+import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { resolveConversationRoute } from './conversationRoute';
 import styles from './index.less';
 import {
@@ -84,6 +86,9 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
     const [viewMode, setViewMode] = useState<ProjectViewMode>('all');
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
     const containerRef = useRef<HTMLDivElement>(null);
+    // 滚动条「仅滚动时显示」：滚动中给容器写 data-is-scrolling（配合 .scrollbar-scroll-show
+    // mixin 的属性选择器，css-modules 哈希不影响），容器常驻滚动轨道不再 hover 翻转
+    const scrollShowRef = useScrollbarScrollShow(1000, containerRef);
 
     // rows 的同步镜像：加载循环里要读最新累计行，闭包 state 会滞后
     const rowsRef = useRef<UserProjectTabItem[]>([]);
@@ -376,6 +381,21 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
               : 'PC.Components.ConversationContextMenu.pinnedToast',
           ),
         );
+        // 置顶成功广播 directorySync 事件（bug 2475）：左侧项目面板既有订阅
+        // 按补丁即时增删标记集合（排前/隐藏），无需手动刷新
+        emitProjectChanged({
+          operation: 'updated',
+          project: {
+            projectId: String(project.projectId),
+            projectType: project.projectType,
+            ...(project.spaceId !== undefined
+              ? { spaceId: String(project.spaceId) }
+              : {}),
+          },
+          patch: { pinned: !project.pinned },
+          origin: 'history-project-list',
+          reason: project.pinned ? 'unpin' : 'pin',
+        });
       } else if (key === 'archive') {
         updateProjectRow(project.projectId, { archived: !project.archived });
         message.success(
@@ -385,6 +405,19 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
               : 'PC.Components.ConversationContextMenu.archivedToast',
           ),
         );
+        emitProjectChanged({
+          operation: 'updated',
+          project: {
+            projectId: String(project.projectId),
+            projectType: project.projectType,
+            ...(project.spaceId !== undefined
+              ? { spaceId: String(project.spaceId) }
+              : {}),
+          },
+          patch: { archived: !project.archived },
+          origin: 'history-project-list',
+          reason: project.archived ? 'unarchive' : 'archive',
+        });
       } else if (key === 'collect') {
         updateProjectRow(project.projectId, { collected: !project.collected });
         message.success(
@@ -607,10 +640,7 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
             </button>
           ))}
         </div>
-        <div
-          ref={containerRef}
-          className={cx(styles.container, 'scroll-container')}
-        >
+        <div ref={scrollShowRef} className={styles.container}>
           <div className={styles['list-content']}>
             {visibleRows.map(renderProjectRow)}
             {loading && (

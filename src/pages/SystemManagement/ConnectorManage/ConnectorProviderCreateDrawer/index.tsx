@@ -247,6 +247,9 @@ const ConnectorProviderCreateDrawer: React.FC<
       destroyOnHidden
       rootStyle={{ overflow: 'hidden' }}
       styles={{ body: { padding: 0 } }}
+      // 钉死基础层级（bug 2456，同查看/编辑抽屉）：防 antd 默认 1100 压过
+      // 壳工具栏层（1099–1101）
+      zIndex={1000}
     >
       <div className={styles.content}>
         <Form

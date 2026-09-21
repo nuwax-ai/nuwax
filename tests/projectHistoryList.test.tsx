@@ -4,9 +4,16 @@ import {
   apiUserProjectCollect,
   apiUserProjectConversations,
   apiUserProjectPageQuery,
+  apiUserProjectPin,
   apiUserProjectUnCollect,
 } from '@/services/userProjectApp';
+import type {
+  DirectoryProjectRef,
+  ProjectChangedEvent,
+} from '@/types/directorySync';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
+import { subscribeProjectChanged } from '@/utils/directorySyncEvents';
 import {
   cleanup,
   fireEvent,
@@ -177,10 +184,43 @@ describe('历史会话页「项目」tab（ProjectList）', () => {
     expect(screen.queryByText('项目A')).not.toBeInTheDocument();
   });
 
+  it('项目菜单置顶调 pin 接口，成功后广播 project.changed 置顶补丁（bug 2475）', async () => {
+    vi.mocked(apiUserProjectPageQuery).mockResolvedValue(
+      pageOf([buildProject({ projectId: 1 })]) as never,
+    );
+    const events: ProjectChangedEvent[] = [];
+    const unsubscribe = subscribeProjectChanged((event) => events.push(event));
+    render(<ProjectList />);
+    await screen.findByText('项目A');
+
+    openProjectMenu();
+    fireEvent.click(
+      await screen.findByText(
+        'PC.Components.HistoryConversationList.projectPin',
+      ),
+    );
+
+    await waitFor(() =>
+      expect(apiUserProjectPin).toHaveBeenCalledWith(1, true, 'NormalProject'),
+    );
+    await waitFor(() => expect(events).toHaveLength(1));
+    expect(events[0].operation).toBe('updated');
+    // 引用字段齐全（复合键定位）：左侧项目面板按此匹配本地行增删标记集合
+    expect(events[0].project).toEqual({
+      projectId: '1',
+      projectType: AgentComponentTypeEnum.NormalProject,
+      spaceId: '10',
+    } satisfies DirectoryProjectRef);
+    expect(events[0].patch).toEqual({ pinned: true });
+    unsubscribe();
+  });
+
   it('项目菜单归档调 archive 接口（projectType 必传），成功后行从全部视图消失', async () => {
     vi.mocked(apiUserProjectPageQuery).mockResolvedValue(
       pageOf([buildProject({ projectId: 1 })]) as never,
     );
+    const events: ProjectChangedEvent[] = [];
+    const unsubscribe = subscribeProjectChanged((event) => events.push(event));
     render(<ProjectList />);
     await screen.findByText('项目A');
 
@@ -199,6 +239,16 @@ describe('历史会话页「项目」tab（ProjectList）', () => {
     await waitFor(() =>
       expect(screen.queryByText('项目A')).not.toBeInTheDocument(),
     );
+    // 归档成功同样广播（bug 2475）：左侧项目面板即时隐藏该行，无需手动刷新
+    await waitFor(() => expect(events).toHaveLength(1));
+    expect(events[0].operation).toBe('updated');
+    expect(events[0].project).toEqual({
+      projectId: '1',
+      projectType: AgentComponentTypeEnum.NormalProject,
+      spaceId: '10',
+    } satisfies DirectoryProjectRef);
+    expect(events[0].patch).toEqual({ archived: true });
+    unsubscribe();
   });
 
   it('已收藏视图取消收藏调 unCollect，成功后行消失', async () => {

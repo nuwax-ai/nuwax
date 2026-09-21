@@ -979,4 +979,73 @@ describe('ProjectPanel 选中关系', () => {
       ).toBeNull();
     });
   });
+
+  it('跨页置顶/归档事件补丁：标记集合即时增删，零额外列表请求（bug 2475）', async () => {
+    respondPage(defaultRecords(), defaultConversations());
+    render(<ProjectPanel compact />);
+    await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
+
+    // 历史会话页置顶「项目二」：事件补丁即时排前 + 亮图钉，无需手动刷新
+    act(() => {
+      emitProjectChanged({
+        operation: 'updated',
+        project: {
+          projectId: '2',
+          projectType: AgentComponentTypeEnum.NormalProject,
+          spaceId: '100',
+        },
+        patch: { pinned: true },
+        origin: 'test',
+        reason: 'pin',
+      });
+    });
+    expect(
+      screen
+        .getByText('项目二')
+        .compareDocumentPosition(screen.getByText('项目一')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByText('项目二')
+        .closest('[class*="row"]')
+        ?.querySelector('[class*="folder-badge-pin"]'),
+    ).toBeTruthy();
+
+    // 归档「项目二」：行即时从可见列表消失（侧栏不设归档查看入口）
+    act(() => {
+      emitProjectChanged({
+        operation: 'updated',
+        project: {
+          projectId: '2',
+          projectType: AgentComponentTypeEnum.NormalProject,
+          spaceId: '100',
+        },
+        patch: { archived: true },
+        origin: 'test',
+        reason: 'archive',
+      });
+    });
+    expect(screen.queryByText('项目二')).toBeNull();
+
+    // 取消归档：行恢复可见（行仍在本地列表，补丁只需摘掉归档标记）
+    act(() => {
+      emitProjectChanged({
+        operation: 'updated',
+        project: {
+          projectId: '2',
+          projectType: AgentComponentTypeEnum.NormalProject,
+          spaceId: '100',
+        },
+        patch: { archived: false },
+        origin: 'test',
+        reason: 'unarchive',
+      });
+    });
+    expect(screen.getByText('项目二')).toBeTruthy();
+
+    // 标记补丁全走本地集合收敛：除挂载首拉外不再发列表请求（无重复请求风暴；
+    // 后续翻页/回流由 fetchPage 以服务端真值整体覆盖标记集合）
+    expect(pageQueryMock).toHaveBeenCalledTimes(1);
+  });
 });

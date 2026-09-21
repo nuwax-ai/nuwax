@@ -391,6 +391,11 @@ const ConnectorProviderEditDrawer: React.FC<
       destroyOnHidden
       rootStyle={{ overflow: 'hidden' }}
       styles={{ body: { padding: 0 } }}
+      // 钉死基础层级（bug 2456）：antd 5.26 起 Drawer 不传 zIndex 默认爬到
+      // 1000+100=1100，恰好压过客户端壳工具栏固定层（1099–1101）导致遮罩
+      // 盖住工具栏不可点。固定 1000=antd 基线（同 2439 设置弹窗修法），
+      // 壳工具栏（1099+）恒在遮罩之上；PC 浏览器无壳层不受影响。
+      zIndex={1000}
     >
       <div className={styles.content}>
         <Form

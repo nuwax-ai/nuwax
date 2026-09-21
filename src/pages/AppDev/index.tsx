@@ -146,6 +146,8 @@ const AppDev: React.FC = () => {
   const appDevModel = useModel('appDev');
   // 获取统一主题
   const { navigationStyle } = useUnifiedTheme();
+  // 移动端判定：单栏风格横向滚动兜底仅桌面启用（移动端 bare 形态无 page-container）
+  const { isMobile } = useModel('layout');
   const {
     workspace,
     isServiceRunning,
@@ -164,6 +166,10 @@ const AppDev: React.FC = () => {
   // 组件内部状态
   const [missingProjectId, setMissingProjectId] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  // 单栏风格（style3）下页面内容最小宽度：横向滚动收敛在 page-container
+  // 容器内时，靠它保证窄窗口内容不被裁剪；经典风格下为空（走 .appDev 的
+  // min-width: 1200px + html 全局最小宽）
+  const [style3MinWidth, setStyle3MinWidth] = useState<string>();
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
@@ -1474,6 +1480,48 @@ const AppDev: React.FC = () => {
     };
   }, []); // 空依赖数组，只在组件卸载时执行清理
 
+  /**
+   * 单栏风格（style3）下补横向滚动（禅道 bug2460）：
+   * 滚动区域收敛在 page-container 内，不拓宽 html（否则窗口窄于阈值时出现
+   * 窗口级全局滚动条）；横向滚动同样收敛为容器内滚动——内联放开
+   * page-container 的 overflow-x（压过布局层的 overflow-x: hidden，
+   * 切档/卸载时还原），页面内容自带 style3MinWidth，窄窗口在容器底部出
+   * 横向滚动条而非被裁剪（同 EditAgent 2462 修复模式）
+   */
+  useEffect(() => {
+    const pageContainerEl = document.getElementById('page-container-selector');
+    // 移动端无 page-container（bare 形态）且无窄窗横滚诉求，跳过
+    if (
+      document.body.classList.contains('xagi-nav-style3') &&
+      !isMobile
+    ) {
+      document.documentElement.style.minWidth = 'unset';
+      pageContainerEl?.style.setProperty('overflow-x', 'auto');
+      // 与分栏最小宽一一对应：左栏（AI 助手对话 380px 固定宽）+ 右栏
+      //（代码页 = 文件树 280px + 编辑器 540px；预览页 = 预览独占 820px，
+      // 锚定经典风格 .appDev min-width:1200px 下右栏可用宽），
+      // 保证横向滚动到最右时内容零裁剪
+      const leftMinWidth = 380;
+      const fileTreeMinWidth = activeTab !== 'preview' ? 280 : 0;
+      const editorMinWidth = activeTab === 'preview' ? 820 : 540;
+      // 24px = section 左右 margin（@marginSm = 12px，styles/token.less）
+      setStyle3MinWidth(
+        `${leftMinWidth + fileTreeMinWidth + editorMinWidth + 24}px`,
+      );
+      return () => {
+        document.documentElement.style.minWidth = '1200px';
+        pageContainerEl?.style.removeProperty('overflow-x');
+        setStyle3MinWidth(undefined);
+      };
+    }
+    pageContainerEl?.style.removeProperty('overflow-x');
+    // 经典风格：html 全局 min-width:1200px（global.less）+ .appDev 自身
+    // min-width:1200px 由窗口级滚动条兜底，维持现状
+    return () => {
+      document.documentElement.style.minWidth = '1200px';
+    };
+  }, [activeTab, isMobile]);
+
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {
     return (
@@ -1562,12 +1610,14 @@ const AppDev: React.FC = () => {
           'flex-col',
         )}
         /* isFileOperating 动态调整可交互性（禁用+暗色）；顶部退让由路由层
-           wrappers/immersiveShellAvoid 统一承担 */
-        style={
-          isFileOperating || isDeploying
+           wrappers/immersiveShellAvoid 统一承担；
+           style3MinWidth：单栏风格窄窗口横向滚动的内容最小宽（bug2460） */
+        style={{
+          ...(isFileOperating || isDeploying
             ? { pointerEvents: 'none', userSelect: 'none', opacity: 0.7 }
-            : undefined
-        }
+            : null),
+          ...(style3MinWidth ? { minWidth: style3MinWidth } : null),
+        }}
       >
         {/* 顶部头部区域 */}
         <AppDevHeader

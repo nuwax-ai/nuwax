@@ -302,6 +302,10 @@ const ConnectorActionDebugModal: React.FC<ConnectorActionDebugModalProps> = ({
       width={modalWidth}
       centered
       destroyOnHidden
+      // 钉层级（bug 2456）：本弹窗只在详情抽屉（zIndex=1000）内打开，
+      // 不传会从父层爬 100 到 1100 压过壳工具栏层（1099–1101）。
+      // 1001=父抽屉之上、壳工具栏之下。
+      zIndex={1001}
     >
       <Spin spinning={loading}>
         <div className={styles.layout}>

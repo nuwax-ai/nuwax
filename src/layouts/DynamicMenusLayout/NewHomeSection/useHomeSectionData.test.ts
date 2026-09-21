@@ -260,6 +260,66 @@ describe('useHomeSectionData', () => {
     ]);
   });
 
+  it('置顶/归档事件补丁：本地即时排前/隐藏并触发节流静默重拉（bug 2475）', async () => {
+    apiAgentConversationListMock.mockResolvedValue({
+      data: [buildConversation({ id: 1 }), buildConversation({ id: 2 })],
+    });
+    const useHomeSectionData = await freshHook();
+    const { emitConversationChanged } = await import(
+      '@/utils/directorySyncEvents'
+    );
+    const { result } = renderHook(() =>
+      useHomeSectionData({ isSidebarNavMode: true }),
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    apiAgentConversationListMock.mockClear();
+
+    // 历史会话页置顶会话 2：本地补丁即时排前（不等重拉回包）
+    act(() => {
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '2',
+        patch: { pinned: true },
+        origin: 'test',
+        reason: 'pin',
+      });
+    });
+    expect(result.current.visibleConversationList.map((i) => i.id)).toEqual([
+      2, 1,
+    ]);
+
+    // 归档会话 1：即时隐藏；标记补丁走 3s 合并节流的静默重拉（两事件只发一次请求）
+    act(() => {
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '1',
+        patch: { archived: true },
+        origin: 'test',
+        reason: 'archive',
+      });
+    });
+    expect(result.current.visibleConversationList.map((i) => i.id)).toEqual([
+      2,
+    ]);
+    await waitFor(() =>
+      expect(apiAgentConversationListMock).toHaveBeenCalledTimes(1),
+    );
+
+    // 取消归档会话 1：本地补丁即时恢复可见（未加载行由静默重拉兜底）
+    act(() => {
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '1',
+        patch: { archived: false },
+        origin: 'test',
+        reason: 'unarchive',
+      });
+    });
+    expect(result.current.visibleConversationList.map((i) => i.id)).toEqual([
+      2, 1,
+    ]);
+  });
+
   it('蓝点本地信号：列表 EXECUTING→终态 跃迁且不在该会话 → 记蓝点；首见终态不记', async () => {
     apiAgentConversationListMock.mockResolvedValueOnce({
       data: [

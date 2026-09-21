@@ -5,6 +5,8 @@ import {
   apiAgentConversationPin,
   apiAgentConversationUnCollect,
 } from '@/services/agentConfig';
+import type { ConversationChangedEvent } from '@/types/directorySync';
+import { subscribeConversationChanged } from '@/utils/directorySyncEvents';
 import {
   cleanup,
   fireEvent,
@@ -74,6 +76,67 @@ describe('会话菜单服务端标记', () => {
       expect(apiAgentConversationPin).toHaveBeenCalledWith(42, true),
     );
     expect(onFlagChanged).toHaveBeenCalledWith('pinned', true);
+  });
+
+  it('置顶成功广播 conversation.changed 标记补丁（bug 2475 左列表联动）', async () => {
+    const events: ConversationChangedEvent[] = [];
+    const unsubscribe = subscribeConversationChanged((event) =>
+      events.push(event),
+    );
+    render(
+      <ConversationContextMenu conversationId={42} showMoreButton>
+        {(moreButton) => <div>{moreButton}会话</div>}
+      </ConversationContextMenu>,
+    );
+    openMenu();
+    fireEvent.click(
+      await screen.findByText('PC.Components.ConversationContextMenu.pin'),
+    );
+
+    await waitFor(() => expect(events).toHaveLength(1));
+    expect(events[0]).toMatchObject({
+      type: 'conversation.changed',
+      operation: 'updated',
+      conversationId: '42',
+      patch: { pinned: true },
+      origin: 'conversation-context-menu',
+      reason: 'pin',
+    });
+    unsubscribe();
+  });
+
+  it('归档成功广播归档补丁，取消归档补丁值为 false', async () => {
+    const events: ConversationChangedEvent[] = [];
+    const unsubscribe = subscribeConversationChanged((event) =>
+      events.push(event),
+    );
+    render(
+      <ConversationContextMenu
+        conversationId={42}
+        archived
+        showMoreButton
+      >
+        {(moreButton) => <div>{moreButton}会话</div>}
+      </ConversationContextMenu>,
+    );
+    openMenu();
+    // 已归档态菜单项为「取消归档」：切换成功后补丁 archived=false（取消归档
+    // 也要广播，左列表才能让会话重新可见）
+    fireEvent.click(
+      await screen.findByText('PC.Components.ConversationContextMenu.unarchive'),
+    );
+
+    await waitFor(() =>
+      expect(apiAgentConversationArchive).toHaveBeenCalledWith(42, false),
+    );
+    await waitFor(() => expect(events).toHaveLength(1));
+    expect(events[0]).toMatchObject({
+      operation: 'updated',
+      conversationId: '42',
+      patch: { archived: false },
+      reason: 'unarchive',
+    });
+    unsubscribe();
   });
 
   it('收藏调 collect 接口，成功后回传 true（2026-09-13 后端化）', async () => {
@@ -158,6 +221,10 @@ describe('会话菜单服务端标记', () => {
     vi.mocked(apiAgentConversationArchive).mockResolvedValueOnce({
       code: '1001',
     } as never);
+    const events: ConversationChangedEvent[] = [];
+    const unsubscribe = subscribeConversationChanged((event) =>
+      events.push(event),
+    );
     render(
       <ConversationContextMenu
         conversationId={42}
@@ -176,5 +243,8 @@ describe('会话菜单服务端标记', () => {
       expect(apiAgentConversationArchive).toHaveBeenCalledWith(42, true),
     );
     expect(onFlagChanged).not.toHaveBeenCalled();
+    // 失败不广播：左列表不应被无效事件触发收敛动作
+    expect(events).toHaveLength(0);
+    unsubscribe();
   });
 });

@@ -288,14 +288,36 @@ export async function apiAgentCardList(): Promise<
   });
 }
 
+// 会话详情在途单飞（bug 2477）：同一会话的详情拉取存在多条并发通道——
+// 快照轮询（fetchConversationSnapshot）、model 首拉（useRequest）、V2 runtime
+// 线 loadConversation、进页首条消息自动发送前查询、ChatFinished 终态补偿。
+// 跳转会话/流结束瞬间它们会同时开火，对同一会话打出 2~4 发重复请求
+// （实测 app-pro 进页 1s 内 4 发）。这里按会话 id 合并真正在途的请求：
+// 并发调用共享同一请求；已完成的响应不缓存，顺序调用语义不变。
+const agentConversationInFlight = new Map<
+  string,
+  Promise<RequestResponse<ConversationInfo>>
+>();
+
 // 查询会话
-export async function apiAgentConversation(
+export function apiAgentConversation(
   conversationId: number,
 ): Promise<RequestResponse<ConversationInfo>> {
-  return await request(
+  const key = String(conversationId);
+  const existing = agentConversationInFlight.get(key);
+  if (existing) {
+    return existing;
+  }
+  const promise = request(
     conversationApiUrl(`/api/agent/conversation/${conversationId}`),
     { method: 'POST' },
-  );
+  ).finally(() => {
+    if (agentConversationInFlight.get(key) === promise) {
+      agentConversationInFlight.delete(key);
+    }
+  });
+  agentConversationInFlight.set(key, promise);
+  return promise;
 }
 
 // 查询会话消息列表

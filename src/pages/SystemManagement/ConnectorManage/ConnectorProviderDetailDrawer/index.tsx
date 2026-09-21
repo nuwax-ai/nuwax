@@ -776,6 +776,12 @@ const ConnectorProviderDetailDrawer: React.FC<
       destroyOnHidden
       rootStyle={{ overflow: 'hidden' }}
       styles={{ body: { padding: 0 } }}
+      // 钉死基础层级（bug 2456）：antd 5.26 起 Drawer 不传 zIndex 默认爬到
+      // 1000+100=1100，压过客户端壳工具栏固定层（1099–1101），全屏遮罩把
+      // 工具栏盖住不可点。固定 1000=antd 基线（同 2439 设置弹窗修法）。
+      // 抽屉内嵌的二级弹层（连接抽屉/调试弹窗等）需钉 1001（见各自调用处），
+      // 否则会从 1000 上下文再爬 100 到 1100 重新盖住工具栏。
+      zIndex={1000}
     >
       <div className={styles.content}>
         {!service ? (
@@ -946,6 +952,8 @@ const ConnectorProviderDetailDrawer: React.FC<
           fetchDetail();
           onConnectionChanged?.();
         }}
+        // 钉在父抽屉（1000）之上、壳工具栏层（1099–1101）之下（bug 2456）
+        zIndex={1001}
       />
 
       {/* 扫码连接（设备码 oauth2_device）弹窗（共享组件，广场页卡片连接
@@ -960,6 +968,8 @@ const ConnectorProviderDetailDrawer: React.FC<
           void fetchDetail();
           onConnectionChanged?.();
         }}
+        // 钉在父抽屉（1000）之上、壳工具栏层（1099–1101）之下（bug 2456）
+        zIndex={1001}
       />
     </Drawer>
   );
