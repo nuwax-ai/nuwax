@@ -107,6 +107,9 @@ const Home: React.FC = () => {
   const [recommendNavList, setRecommendNavList] = useState<
     DisplayRecommendInfo[]
   >([]);
+  // 推荐位/内容分类两接口完成标记:输入框上方异步区块空态判定用(见 aboveInputEmpty)
+  const [recommendLoaded, setRecommendLoaded] = useState(false);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   /** 内容分类 pill 数据源:已发布分类接口的 ChatBox 分类(与推荐管理配置同源) */
   const [chatboxCategories, setChatboxCategories] = useState<
     SquareCategoryInfo[]
@@ -231,6 +234,9 @@ const Home: React.FC = () => {
       );
     } catch {
       setRecommendNavList([]);
+    } finally {
+      // 成败均算完成:空态判定(aboveInputEmpty)依赖两接口都已落定
+      setRecommendLoaded(true);
     }
   }, []);
 
@@ -244,10 +250,15 @@ const Home: React.FC = () => {
       .then((children) => {
         if (!cancelled) {
           setChatboxCategories(children);
+          setCategoriesLoaded(true);
         }
       })
       .catch((error) => {
         console.error('fetch chatbox categories failed:', error);
+        // 失败也标记完成:空态判定(aboveInputEmpty)不因失败挂起
+        if (!cancelled) {
+          setCategoriesLoaded(true);
+        }
       });
     return () => {
       cancelled = true;
@@ -478,6 +489,14 @@ const Home: React.FC = () => {
   const activeCategoryItems =
     categoryNavList.find((c) => c.key === activeCategory)?.items ?? [];
 
+  // 输入框上方异步区块(分类排+推荐 pill 行)终态空判定:两接口都完成且任一
+  // 无数据 → 该区域永远不会有内容,收起高度预留避免长期留白;有数据时
+  // 预留与真实内容等高,输入框自首帧起钉在最终位置(禅道bug2493)
+  const aboveInputEmpty =
+    recommendLoaded &&
+    categoriesLoaded &&
+    (recommendNavList.length === 0 || chatboxCategories.length === 0);
+
   const handleCategoryChange = (key: string) => {
     setUserPickedCategory(key);
     // 切换分类后清掉已选 pill 与召唤态，避免跨分类残留选中态；
@@ -549,26 +568,36 @@ const Home: React.FC = () => {
             {dict('PC.Pages.Home.heroSubtitle')}
           </p>
         </div>
-        {/* 推荐数据到达后再渲染分类区:Segmented 首挂时选中值即最终值,
-            避免挂载后调整引发滑块从起始分类滑过来的动画 */}
-        {recommendNavList.length > 0 && (
-          <HomeCategoryTabs
-            categories={categoryNavList}
-            activeKey={activeCategory}
-            onChange={handleCategoryChange}
+        {/* 输入框上方异步区块高度预留(禅道bug2493):分类排与推荐 pill 行
+            由接口数据晚到才渲染,不预留时输入框先高位出现、数据到位后被
+            整体推下 ~118px(上下跳动);槽位自首帧钉住最终高度,数据到位
+            恰好填满不再移位;终态确认无内容时收起(见 above-input-slot) */}
+        <div
+          className={cx(styles['above-input-slot'], {
+            [styles['above-input-slot-empty']]: aboveInputEmpty,
+          })}
+        >
+          {/* 推荐数据到达后再渲染分类区:Segmented 首挂时选中值即最终值,
+              避免挂载后调整引发滑块从起始分类滑过来的动画 */}
+          {recommendNavList.length > 0 && (
+            <HomeCategoryTabs
+              categories={categoryNavList}
+              activeKey={activeCategory}
+              onChange={handleCategoryChange}
+            />
+          )}
+          <ChatBoxRecommendNav
+            items={activeCategoryItems}
+            selectedId={selectedRecommend?.id}
+            onSelect={handleRecommendSelect}
+            // 上框期间非同类型智能体置灰不可选（全部展示不过滤）
+            isItemSelectable={
+              pinnedProject
+                ? (item) => isAgentSelectable(item, pinnedProject)
+                : undefined
+            }
           />
-        )}
-        <ChatBoxRecommendNav
-          items={activeCategoryItems}
-          selectedId={selectedRecommend?.id}
-          onSelect={handleRecommendSelect}
-          // 上框期间非同类型智能体置灰不可选（全部展示不过滤）
-          isItemSelectable={
-            pinnedProject
-              ? (item) => isAgentSelectable(item, pinnedProject)
-              : undefined
-          }
-        />
+        </div>
         <ChatInputUnified
           ref={chatInputRef}
           className={cx(styles.textarea)}
