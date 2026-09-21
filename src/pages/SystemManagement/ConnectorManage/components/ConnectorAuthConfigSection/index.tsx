@@ -29,9 +29,10 @@ import styles from './index.less';
  * - custom：凭证字段 + 注入规则两组动态行（行可增删；凭证字段
  *   至少一行填了字段名，提交时列表级校验拦截）
  * - oauth2 / oauth2_device（扫描授权（设备码））：表单结构一致——
- *   OAUTH APP 模式二选一；platform 展示平台 App 配置（Client ID /
- *   Secret / 授权端点 / 令牌端点必填，scopes / 回调地址），byo 仅提示；
- *   区别仅 platform 模式的 placeholder（device_code 以飞书设备码流程为例）
+ *   OAUTH APP 模式二选一；platform 展示平台 App 配置（授权端点 /
+ *   令牌端点必填，scopes / 回调地址；Client ID / Secret 仅 oauth2
+ *   展示，设备码模式的 App 凭证由平台托管），byo 仅提示；区别仅
+ *   platform 模式的 placeholder（device_code 以飞书设备码流程为例）
  *
  * 表单字段直接挂在所属抽屉的 form 上（name 与两处抽屉的表单值类型
  * ConnectorAuthFormValues 对齐），本组件不维护自身状态。
@@ -491,62 +492,69 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
             </div>
           ) : (
             <>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="oauthClientId"
-                    label="CLIENT ID"
-                    rules={[
-                      {
-                        required: true,
-                        message: dict(
-                          'PC.Pages.ConnectorManage.formClientIdRequired',
-                        ),
-                      },
-                    ]}
-                  >
-                    <Input
-                      placeholder={platformPlaceholders.clientId}
-                      maxLength={100}
-                      showCount
-                      allowClear
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  {/* 密文输入：新增必填；编辑不强制重填（留空保持已存配置） */}
-                  <Form.Item
-                    name="oauthClientSecret"
-                    label="CLIENT SECRET"
-                    rules={
-                      editMode
-                        ? []
-                        : [
-                            {
-                              required: true,
-                              message: dict(
-                                'PC.Pages.ConnectorManage.formClientSecretRequired',
-                              ),
-                            },
-                          ]
-                    }
-                  >
-                    <Input.Password
-                      placeholder={
+              {/* CLIENT ID / CLIENT SECRET：仅 oauth2（标准授权码流程）展示。
+                  扫描授权（设备码）platform 模式的 App 凭证由平台侧统一
+                  托管，用户无需填写，不展示这两项（required 校验随字段
+                  卸载自动失效；编辑回显的已存值经 form preserve 保留，
+                  切回 oauth2 仍可继续编辑） */}
+              {authType !== 'oauth2_device' && (
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="oauthClientId"
+                      label="CLIENT ID"
+                      rules={[
+                        {
+                          required: true,
+                          message: dict(
+                            'PC.Pages.ConnectorManage.formClientIdRequired',
+                          ),
+                        },
+                      ]}
+                    >
+                      <Input
+                        placeholder={platformPlaceholders.clientId}
+                        maxLength={100}
+                        showCount
+                        allowClear
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    {/* 密文输入：新增必填；编辑不强制重填（留空保持已存配置） */}
+                    <Form.Item
+                      name="oauthClientSecret"
+                      label="CLIENT SECRET"
+                      rules={
                         editMode
-                          ? dict(
-                              'PC.Pages.ConnectorManage.placeholderClientSecretKeep',
-                            )
-                          : dict(
-                              'PC.Pages.ConnectorManage.placeholderClientSecretFirst',
-                            )
+                          ? []
+                          : [
+                              {
+                                required: true,
+                                message: dict(
+                                  'PC.Pages.ConnectorManage.formClientSecretRequired',
+                                ),
+                              },
+                            ]
                       }
-                      maxLength={100}
-                      autoComplete="new-password"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
+                    >
+                      <Input.Password
+                        placeholder={
+                          editMode
+                            ? dict(
+                                'PC.Pages.ConnectorManage.placeholderClientSecretKeep',
+                              )
+                            : dict(
+                                'PC.Pages.ConnectorManage.placeholderClientSecretFirst',
+                              )
+                        }
+                        maxLength={100}
+                        autoComplete="new-password"
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              )}
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
@@ -595,9 +603,11 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                 name="oauthScopes"
                 label={dict('PC.Pages.ConnectorManage.formOauthScopes')}
               >
+                {/* scopes 上限 10000（oauth2 / 扫描授权两种认证方式一致，
+                    部分 IdP 的 scope 清单较长） */}
                 <Input
                   placeholder={platformPlaceholders.scopes}
-                  maxLength={100}
+                  maxLength={10000}
                   showCount
                   allowClear
                 />
