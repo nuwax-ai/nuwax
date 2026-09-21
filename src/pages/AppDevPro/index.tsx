@@ -201,6 +201,11 @@ const AppDevPro: React.FC = () => {
   >(null);
   /** 统一主题样式（导航栏风格等） */
   const { navigationStyle } = useUnifiedTheme();
+  /** 移动端判定：单栏风格横向滚动兜底仅桌面启用（移动端 main-row 纵向堆叠） */
+  const { isMobile } = useModel('layout');
+  /** 单栏风格（style3）下页面内容最小宽度：横向滚动收敛在 page-container
+   * 容器内时，靠它保证窄窗口内容不被裁剪；经典风格下为空（走 html 全局最小宽） */
+  const [style3MinWidth, setStyle3MinWidth] = useState<string>();
 
   /** 会话/页面数据加载中（用于首屏 Loading） */
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] =
@@ -2004,6 +2009,48 @@ const AppDevPro: React.FC = () => {
     setPreviewIframeUrl(appPreviewUrl);
   }, [appPreviewUrl]);
 
+  /**
+   * 单栏风格（style3）下补横向滚动（禅道 bug2461）：
+   * 滚动区域收敛在 page-container 内，不拓宽 html（否则窗口窄于阈值时出现
+   * 窗口级全局滚动条）；横向滚动同样收敛为容器内滚动——内联放开
+   * page-container 的 overflow-x（压过布局层的 overflow-x: hidden，
+   * 切档/卸载时还原），页面内容自带 style3MinWidth，窄窗口在容器底部出
+   * 横向滚动条而非右侧工作区被压缩到不可用（同 EditAgent 2462 修复模式）
+   */
+  useEffect(() => {
+    const pageContainerEl = document.getElementById('page-container-selector');
+    // 移动端 main-row 纵向堆叠（≤768 media query），无 page-container，跳过
+    if (
+      document.body.classList.contains('xagi-nav-style3') &&
+      !isMobile
+    ) {
+      document.documentElement.style.minWidth = 'unset';
+      pageContainerEl?.style.setProperty('overflow-x', 'auto');
+      // 与分栏最小宽一一对应：左栏（应用信息+会话 480px 固定宽）+ 中间
+      // 文件树（仅 files 视图可见时 280px）+ 右栏工作区（预览/终端，
+      // 680px 锚定经典风格 html min-width:1200px 下右栏可用宽），
+      // 保证横向滚动到最右时内容零裁剪
+      const leftMinWidth = 480;
+      const middleMinWidth =
+        workspaceView === 'files' && canShowFileView ? 280 : 0;
+      const rightMinWidth = 680;
+      // 24px = section 左右 margin；12px = main-row 左右栏 gap（均 @marginSm）
+      setStyle3MinWidth(
+        `${leftMinWidth + middleMinWidth + rightMinWidth + 24 + 12}px`,
+      );
+      return () => {
+        document.documentElement.style.minWidth = '1200px';
+        pageContainerEl?.style.removeProperty('overflow-x');
+        setStyle3MinWidth(undefined);
+      };
+    }
+    pageContainerEl?.style.removeProperty('overflow-x');
+    // 经典风格：html 全局 min-width:1200px（global.less）由窗口级滚动条兜底
+    return () => {
+      document.documentElement.style.minWidth = '1200px';
+    };
+  }, [workspaceView, canShowFileView, isMobile]);
+
   /** 地址栏与 iframe 实际使用的预览地址（含用户跳转路径） */
   const activePreviewUrl = previewIframeUrl || appPreviewUrl;
 
@@ -2376,7 +2423,11 @@ const AppDevPro: React.FC = () => {
 
   // ==================== 主渲染 ====================
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col')}>
+    <div
+      className={cx(styles.container, 'flex', 'flex-col')}
+      /* style3MinWidth：单栏风格窄窗口横向滚动的内容最小宽（bug2461） */
+      style={style3MinWidth ? { minWidth: style3MinWidth } : undefined}
+    >
       {/* 主内容区域：左（应用信息 + 聊天） | 右（环境切换与操作 + 内容） */}
       <section
         className={cx(
