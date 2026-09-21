@@ -273,8 +273,23 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
   /**
    * 内容区：主站同款 page-container（全屏工作台页也走此容器，
    * 二级列差异由 suppressSecondMenu 承担）
+   *
+   * page / bare 两种形态共用同一插槽位置：variant 切换（窗口缩放跨越移动断点
+   * 768 时 layouts/index 依 isMobile 换形态）只换类名不换子树结构，React 复用
+   * 原 DOM 节点——工作台页（如 AppDevPro）与其中的预览 iframe 不再整体重挂
+   * （禅道bug2487：缩放浏览器导致全栈应用预览自动重启）。
    */
   const contentNode = useMemo(() => {
+    // 裸全屏形态：不挂侧栏容器与弹窗，仅满铺渲染页面内容（历史顶层全屏路由
+    // 行为）。保留一层透传容器（w-full h-full）占住与 page 形态相同的子树
+    // 位置，形态互切时 children 不重挂。
+    if (variant === 'bare') {
+      return (
+        <div className={cx('w-full', 'h-full', 'overflow-hide')}>
+          {children}
+        </div>
+      );
+    }
     // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
     // - Win/Linux 避让 shellAvoid.CONTENT_TOP（32 < 顶行行高 40：顶行透明，
     //   字形只占行上部，内容卡贴字形下沿留出间隙，减少顶部空白）；
@@ -332,60 +347,64 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     isSecondMenuCollapsed,
     layoutStyle,
     effectiveNavigationStyle,
+    variant,
   ]);
 
-  // 裸全屏形态：不挂侧栏容器与弹窗，仅满铺渲染页面内容（历史顶层全屏路由行为）
-  if (variant === 'bare') {
-    return (
-      <div
-        className={cx(
-          'flex-1',
-          'h-full',
-          'overflow-hide',
-          styles['fullscreen-page-container'],
-        )}
-      >
-        {children}
-      </div>
-    );
-  }
-
+  /**
+   * 根容器：page / bare 同构双插槽渲染。
+   * 槽位 0 = 侧栏（bare 态置 null 不挂）；槽位 1 = 内容区 contentNode。
+   * 两形态下 children 始终在相同位置，variant 翻转（窗口缩放跨移动断点）
+   * 只触发类名与侧栏挂载变化，内容区 DOM 被复用、不重挂。
+   */
   return (
-    <div className={mainContainerClassName}>
+    <div
+      className={
+        variant === 'bare'
+          ? cx(
+              'flex-1',
+              'h-full',
+              'overflow-hide',
+              styles['fullscreen-page-container'],
+            )
+          : mainContainerClassName
+      }
+    >
       {/* 侧边菜单栏及弹窗区域 */}
-      <div
-        ref={mobileMenuContainerRef}
-        className={containerClassName}
-        id="mobile-menu-container"
-        style={sidebarStyle}
-      >
-        {/* 菜单栏（suppressSecondMenu：全屏工作台页宿主只保留主会话列） */}
-        <DynamicMenusLayout
-          overrideContainerStyle={menuOverrideStyle}
-          isMobile={isMobile}
-          suppressSecondMenu={suppressSecondMenu}
-        />
-
-        {/* 悬浮菜单（经典布局折叠态专用；单栏模式不渲染） */}
-        {effectiveNavigationStyle !== ThemeNavigationStyleType.STYLE3 && (
-          <HoverMenu />
-        )}
-
-        {/* 消息弹窗 */}
-        <Message />
-
-        {/* 设置弹窗 */}
-        <Setting />
-
-        {/* 移动端菜单按钮和遮罩层 */}
-        {isMobile && (
-          <MobileMenu
-            isOpen={fullMobileMenu}
-            onToggle={toggleFullMobileMenu}
-            menuWidth={getCurrentMenuWidth()}
+      {variant === 'bare' ? null : (
+        <div
+          ref={mobileMenuContainerRef}
+          className={containerClassName}
+          id="mobile-menu-container"
+          style={sidebarStyle}
+        >
+          {/* 菜单栏（suppressSecondMenu：全屏工作台页宿主只保留主会话列） */}
+          <DynamicMenusLayout
+            overrideContainerStyle={menuOverrideStyle}
+            isMobile={isMobile}
+            suppressSecondMenu={suppressSecondMenu}
           />
-        )}
-      </div>
+
+          {/* 悬浮菜单（经典布局折叠态专用；单栏模式不渲染） */}
+          {effectiveNavigationStyle !== ThemeNavigationStyleType.STYLE3 && (
+            <HoverMenu />
+          )}
+
+          {/* 消息弹窗 */}
+          <Message />
+
+          {/* 设置弹窗 */}
+          <Setting />
+
+          {/* 移动端菜单按钮和遮罩层 */}
+          {isMobile && (
+            <MobileMenu
+              isOpen={fullMobileMenu}
+              onToggle={toggleFullMobileMenu}
+              menuWidth={getCurrentMenuWidth()}
+            />
+          )}
+        </div>
+      )}
 
       {/* 主内容区 */}
       {contentNode}
