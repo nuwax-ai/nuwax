@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 
 <head>
-  <link rel="stylesheet" href="/m/assets/uni.d57851e2.css">
+  <link rel="stylesheet" href="/m/assets/uni.4da2cd66.css">
 
 	<meta charset="UTF-8" />
 	<script>
@@ -58,13 +58,27 @@
 				// PC 端访问 M 页面 => 跳转 PC
 				if (!isMobile && href.includes('/m/')) {
 					if (hash && hash.indexOf(agentDetailPathMobile) !== -1) {
+						// matchId: ['?id=16', '16']
 						const matchId = hash.match(new RegExp('[?&]id=([^&#]+)'));
+						// matchConversationId: ['&conversationId=1561872', '1561872']
 						const matchConversationId = hash.match(new RegExp('[?&]conversationId=([^&#]+)'));
+						// matchPType: ['&pType=UserApp', 'UserApp']
+						const matchPType = hash.match(new RegExp('[?&]pType=([^&#]+)'));
 						if (matchId && matchId[1]) {
 							const agentId = matchId[1];
 							// 若带 conversationId 则跳转到 PC 会话详情页，否则跳转到智能体详情页
 							if (matchConversationId && matchConversationId[1]) {
 								const conversationId = matchConversationId[1];
+
+								// 若带 pType 则跳转到 PC 常规应用聊天页，否则跳转到全栈应用聊天页
+								if (matchPType && matchPType[1]) {
+									const pType = matchPType[1];
+									if (pType === 'NormalProject') {
+										window.location.replace(baseUrl + '/home/chat/' + conversationId + '/' + agentId + '?pType=NormalProject');
+										return;
+									}
+								}
+
 								window.location.replace(baseUrl + '/home/chat/' + conversationId + '/' + agentId);
 							} else {
 								window.location.replace(baseUrl + '/agent/' + agentId);
@@ -75,7 +89,9 @@
 
 					// 应用详情页
 					if (hash && hash.indexOf(appDetailsPathMobile) !== -1) {
+						// matchId: ['?id=16', '16']
 						const matchId = hash.match(new RegExp('[?&]id=([^&#]+)'));
+						// matchConversationId: ['&conversationId=1561872', '1561872']
 						const matchConversationId = hash.match(new RegExp('[?&]conversationId=([^&#]+)'));
 
 						if (matchId && matchId[1]) {
@@ -153,8 +169,8 @@
 				}
 			})();
 	</script>
-  <script type="module" crossorigin src="/m/assets/index-BuFQTKS5.js"></script>
-  <link rel="stylesheet" crossorigin href="/m/assets/index-DXzsTNfg.css">
+  <script type="module" crossorigin src="/m/assets/index-Bks5TpEf.js"></script>
+  <link rel="stylesheet" crossorigin href="/m/assets/index-BMms9UR9.css">
 </head>
 
 <body>
