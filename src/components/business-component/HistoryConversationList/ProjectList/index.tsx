@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ConversationContextMenu from '@/components/business-component/ConversationContextMenu';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { t } from '@/services/i18nRuntime';
 import {
   apiUserProjectArchive,
@@ -84,6 +85,9 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
     const [viewMode, setViewMode] = useState<ProjectViewMode>('all');
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
     const containerRef = useRef<HTMLDivElement>(null);
+    // 滚动条「仅滚动时显示」：滚动中给容器写 data-is-scrolling（配合 .scrollbar-scroll-show
+    // mixin 的属性选择器，css-modules 哈希不影响），容器常驻滚动轨道不再 hover 翻转
+    const scrollShowRef = useScrollbarScrollShow(1000, containerRef);
 
     // rows 的同步镜像：加载循环里要读最新累计行，闭包 state 会滞后
     const rowsRef = useRef<UserProjectTabItem[]>([]);
@@ -607,10 +611,7 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
             </button>
           ))}
         </div>
-        <div
-          ref={containerRef}
-          className={cx(styles.container, 'scroll-container')}
-        >
+        <div ref={scrollShowRef} className={styles.container}>
           <div className={styles['list-content']}>
             {visibleRows.map(renderProjectRow)}
             {loading && (

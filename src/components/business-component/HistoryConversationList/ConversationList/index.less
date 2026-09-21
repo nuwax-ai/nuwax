@@ -1,5 +1,6 @@
 @import '@/styles/color';
 @import '@/styles/token';
+@import '@/styles/scrollbar.less';
 
 .view {
   height: 100%;
@@ -44,8 +45,12 @@
 .container {
   flex: 1;
   min-height: 0;
-  overflow: hidden; /* 默认隐藏，配合全局 .scroll-container 在 hover 时显示 */
-  transition: overflow 0.3s;
+  // 滚动容器常驻（不再 hover 翻转 overflow）：横/竖滚动条突现挤压布局的抖动源
+  // 即旧方案（全局 .scroll-container 的 hidden→hover:auto），改为始终预留轨道；
+  // 滑块仅滚动时显示（data-is-scrolling 由 useScrollbarScrollShow 维护），停止约 1s 后淡出
+  overflow-x: hidden;
+  overflow-y: auto;
+  .scrollbar-scroll-show();
 
   .list-content {
     display: flex;

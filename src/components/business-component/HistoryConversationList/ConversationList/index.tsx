@@ -1,4 +1,5 @@
 import ConversationContextMenu from '@/components/business-component/ConversationContextMenu';
+import useScrollbarScrollShow from '@/hooks/useScrollbarScrollShow';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { migrateLocalConversationFavorites } from '@/services/conversationFavoriteMigration';
 import { t } from '@/services/i18nRuntime';
@@ -60,6 +61,9 @@ const ConversationList = React.forwardRef<
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const containerRef = useRef<HTMLDivElement>(null);
+    // 滚动条「仅滚动时显示」：滚动中给容器写 data-is-scrolling（配合 .scrollbar-scroll-show
+    // mixin 的属性选择器，css-modules 哈希不影响），容器常驻滚动轨道不再 hover 翻转
+    const scrollShowRef = useScrollbarScrollShow(1000, containerRef);
     const size = useSize(containerRef);
     const [viewMode, setViewMode] = useState<ListViewMode>('all');
     // 旧 localStorage 收藏一次性迁移上报后端（幂等标记防重入，2026-09-13 收藏后端化）
@@ -253,10 +257,7 @@ const ConversationList = React.forwardRef<
             </button>
           ))}
         </div>
-        <div
-          ref={containerRef}
-          className={cx(styles.container, 'scroll-container')}
-        >
+        <div ref={scrollShowRef} className={styles.container}>
           <div className={styles['list-content']}>
             {visibleList.map((item) => (
               <ConversationContextMenu
