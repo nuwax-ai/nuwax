@@ -1577,7 +1577,7 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation": "New conversation",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable": "Creating a conversation in this project is not available yet.",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.projectDetail": "Project details",
-  "PC.Layouts.DynamicMenusLayout.NewHomeSection.noChats": "No chats yet",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.noChats": "No conversations",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.toggleAllProjects": "Expand/collapse all projects",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "Failed",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder": "Search",

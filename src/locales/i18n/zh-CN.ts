@@ -1577,7 +1577,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation": "新建会话",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversationUnavailable": "项目新建会话暂未接入，当前无法创建。",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.projectDetail": "项目详情",
-  "PC.Layouts.DynamicMenusLayout.NewHomeSection.noChats": "暂无聊天",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.noChats": "暂无会话",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.toggleAllProjects": "展开/收起所有项目",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "失败",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder": "搜索",
