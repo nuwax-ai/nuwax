@@ -221,8 +221,10 @@ export interface ConversationCreateParams {
   /**
    * 会话沙箱 ID（用户个人电脑或云端沙箱）。
    * 发起会话时选择了个人电脑则携带（wiki #17：选择个人电脑时可选目录）。
+   * 类型（bug2443）：数字形态 id 为 number；非数字形态（新沙箱）以字符串
+   * 透传，后端字段需放宽为字符串后即可放行（前端勿 Number() 转 NaN）。
    */
-  sandboxId?: number;
+  sandboxId?: number | string;
   /**
    * 会话工作目录，仅当 sandboxId 为用户个人电脑（USER 类型沙箱）时生效。
    */
