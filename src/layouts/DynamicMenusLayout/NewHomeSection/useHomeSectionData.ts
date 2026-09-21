@@ -350,9 +350,36 @@ export function useHomeSectionData(options: {
       }
     }
     setLocalList((previous) => applyConversationChangedToList(previous, event));
+    // 置顶/归档补丁（bug 2475）：本地补丁已即时排前/隐藏（applyConversationChangedToList），
+    // 覆盖记录同本地 toggle——防随后的静默重拉读到滞后回包把刚归档的会话复活回列表
+    if (event.operation === 'updated' && event.patch) {
+      const { pinned, archived } = event.patch;
+      if (pinned !== undefined) {
+        recordConversationFlagOverride(
+          flagOverridesRef.current,
+          event.conversationId,
+          'pinned',
+          pinned,
+        );
+      }
+      if (archived !== undefined) {
+        recordConversationFlagOverride(
+          flagOverridesRef.current,
+          event.conversationId,
+          'archived',
+          archived,
+        );
+      }
+    }
     if (
       event.operation === 'updated' &&
-      (event.patch?.topic !== undefined || event.patch?.icon !== undefined)
+      (event.patch?.topic !== undefined ||
+        event.patch?.icon !== undefined ||
+        // 标记补丁同样收敛一次服务端真值（bug 2475）：本地补丁解决「已加载行」的
+        // 排前/隐藏，重拉兜底未加载行（如取消归档后会话需重新进入列表）；
+        // 用户级低频操作 + 3s 合并节流，不会形成重复请求风暴
+        event.patch?.pinned !== undefined ||
+        event.patch?.archived !== undefined)
     ) {
       // 本地补丁已先行同步，重拉仅兜底对齐后端，高频突发走节流合并
       throttledConversationReload();

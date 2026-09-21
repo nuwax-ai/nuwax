@@ -33,6 +33,14 @@ export interface ConnectorDeviceAuthModalProps {
   onClose: () => void;
   /** 连接成功回调（触发前已先 onClose，父级只需更新连接状态） */
   onConnected: () => void;
+  /**
+   * 弹窗 zIndex（可选）：不传走 antd 默认。
+   * 嵌在连接器详情抽屉内打开时（管理侧），antd 5.26 会从父层上下文爬
+   * +100 到 1100 压过客户端壳工具栏层（1099–1101），遮罩盖住工具栏
+   * 不可点（禅道 bug2456）——父抽屉已钉 1000，这里由调用方传 1001；
+   * 广场页独立打开暂不传，保持原行为。
+   */
+  zIndex?: number;
 }
 
 const ConnectorDeviceAuthModal: React.FC<ConnectorDeviceAuthModalProps> = ({
@@ -41,6 +49,7 @@ const ConnectorDeviceAuthModal: React.FC<ConnectorDeviceAuthModalProps> = ({
   spaceId,
   onClose,
   onConnected,
+  zIndex,
 }) => {
   /** authorize 结果（state / 二维码 / 核对码 / 有效期；重新获取后整体替换） */
   const [deviceAuth, setDeviceAuth] =
@@ -251,6 +260,7 @@ const ConnectorDeviceAuthModal: React.FC<ConnectorDeviceAuthModalProps> = ({
       title={`扫码连接 · ${service}`}
       onCancel={closeDeviceAuth}
       footer={null}
+      zIndex={zIndex}
     >
       <div className={styles.deviceBody}>
         <div className={styles.deviceQrWrap}>

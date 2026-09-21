@@ -153,6 +153,38 @@ describe('terminal history reload helpers', () => {
     );
   });
 
+  it('尾部消息变化时未变化消息保留原对象引用（bug 2486 执行期整树重渲染）', () => {
+    // 执行中快照轮询：只有末条 in-progress 消息在增长，历史消息内容不变
+    const current = [
+      { id: 1, role: AssistantRoleEnum.USER, text: 'u1' },
+      {
+        id: 2,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'done',
+        status: MessageStatusEnum.Complete,
+      },
+      {
+        id: 3,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '流式输出前半段',
+        status: MessageStatusEnum.Incomplete,
+      },
+    ] as MessageInfo[];
+    const incoming = current.map((message, index) =>
+      index === current.length - 1
+        ? { ...message, text: '流式输出前半段+新增' }
+        : { ...message },
+    ) as MessageInfo[];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    // 未变化的消息沿用旧引用 → React 只重渲染真正变化的末条消息
+    expect(merged[0]).toBe(current[0]);
+    expect(merged[1]).toBe(current[1]);
+    expect(merged[2]).not.toBe(current[2]);
+    expect(merged[2].text).toBe('流式输出前半段+新增');
+  });
+
   it('preserves older pages that are absent from the latest polling window', () => {
     const current = [
       { id: 1, role: AssistantRoleEnum.USER, text: 'older page' },

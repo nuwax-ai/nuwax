@@ -216,6 +216,9 @@ const ConnectorImportDrawer: React.FC<ConnectorImportDrawerProps> = ({
       destroyOnHidden
       rootStyle={{ overflow: 'hidden' }}
       styles={{ body: { padding: 0 }, footer: { padding: '12px 24px 16px' } }}
+      // 钉死基础层级（bug 2456，同查看/编辑抽屉）：防 antd 默认 1100 压过
+      // 壳工具栏层（1099–1101）
+      zIndex={1000}
       footer={
         /* 原生 footer 插槽：结构上位于滚动区之外，diff 明细再长按钮也吸底常驻 */
         <div className={styles.footer}>

@@ -479,6 +479,18 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   );
 
   /**
+   * 会话共享电脑是否为「真实绑定」（bug 2490）：云端哨兵 -1 是创建默认值
+   * （b9016c651 起会话创建统一携带 sandboxId，未选默认 -1，后端回填到
+   * sandboxServerId），不是绑定。若把它当绑定，空会话会同时命中
+   * agentInfo.sandboxId 与 isSelectionLocked，输入区选择器被 fixedSelection
+   * 锁死（菜单除当前项全部禁用）——即「空会话选不了电脑」。仅真实共享
+   * 电脑 id 视为绑定（2451 的四级链里 -1 与「未绑定」同义，兜底即云电脑）。
+   */
+  const isSharedSandboxBound =
+    !!conversationInfo?.sandboxServerId &&
+    conversationInfo.sandboxServerId !== CLOUD_SANDBOX_ID;
+
+  /**
    * 切到非云端电脑时，若停留在智能体电脑视图则关闭，
    * 避免入口隐藏后残留桌面预览（与 Chat 页兜底同口径，见 3f8a2426a）。
    */
@@ -623,29 +635,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     }
   }, [pagePreviewData, showType, setShowType]);
 
-  /**
-   * 是否显示文件面板：
-   * 1. 仅通用型智能体 (TaskAgent) 才显示
-   * 2. 必须存在消息
-   * 3. 如果只有一条消息，则该消息的 id 不能为空（id 为空视为无效消息）
-   */
-  const isShowFilePanel = useMemo(() => {
-    if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
-      return false;
-    }
-
-    if (!messageList || messageList.length === 0) {
-      return false;
-    }
-
-    if (messageList.length === 1) {
-      const first = messageList[0];
-      return !!first?.id;
-    }
-
-    return true;
-  }, [agentConfigInfo?.type, messageList]);
-
   // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
   // 关闭（默认）为空对象，旧线原值原行为。
   const runtimeLine = useConversationRuntimeSession({
@@ -669,6 +658,37 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       setFileTreeRefreshTrigger,
     },
   });
+
+  /**
+   * 当前生效的消息列表（bug 2490）：V2 新线消息只写 runtime store，不回写
+   * conversationInfo model（RefreshChatMessage 事件已无生产者），旧线才写
+   * model 的 messageList。头部工具图标（文件系统/终端/远程电脑）的显隐判定
+   * 必须取「实际渲染的那份列表」——新线启用取 runtime 投影，关闭回落旧 model。
+   */
+  const effectiveMessageList = runtimeLine?.messageList ?? messageList;
+
+  /**
+   * 是否显示文件面板：
+   * 1. 仅通用型智能体 (TaskAgent) 才显示
+   * 2. 必须存在消息
+   * 3. 如果只有一条消息，则该消息的 id 不能为空（id 为空视为无效消息）
+   */
+  const isShowFilePanel = useMemo(() => {
+    if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
+      return false;
+    }
+
+    if (!effectiveMessageList || effectiveMessageList.length === 0) {
+      return false;
+    }
+
+    if (effectiveMessageList.length === 1) {
+      const first = effectiveMessageList[0];
+      return !!first?.id;
+    }
+
+    return true;
+  }, [agentConfigInfo?.type, effectiveMessageList]);
 
   return (
     <div className={cx(styles.container, 'flex', 'h-full')}>
@@ -740,10 +760,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 sandboxId:
                   // 与 Chat 页同语义（bug 2451）：智能体绑定优先、共享电脑兜底，
                   // 两者皆无时不传（手动选择经 selectedComputerId 生效显示），
-                  // 不再用共享电脑压住手动选择
+                  // 不再用共享电脑压住手动选择；云端哨兵 -1 不算绑定（bug 2490，
+                  // 否则空会话选择器被 fixedSelection 锁死）
                   conversationInfo?.agent?.sandboxId ||
-                  conversationInfo?.sandboxServerId ||
-                  undefined,
+                  (isSharedSandboxBound
+                    ? conversationInfo?.sandboxServerId
+                    : undefined),
                 allowChooseMode: agentConfigInfo?.allowChooseMode,
               }}
               onSendMessage={handleMessageSend}
@@ -761,7 +783,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               isVariablesFilled={true}
               clearLoading={isConversationTransitioning}
               chatInputDisabled={isConversationTransitioning}
-              isSelectionLocked={!!conversationInfo?.sandboxServerId}
+              isSelectionLocked={isSharedSandboxBound}
               hasUserSentMessage={hasUserSentMessage}
               selectedComputerId={selectedComputerId}
               onComputerSelect={(id) => {

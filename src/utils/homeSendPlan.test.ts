@@ -151,9 +151,7 @@ describe('buildHomeSendPlan 分支决策', () => {
     expect(plan.attach.projectId).toBe(200);
     expect(plan.attach.devAgentId).toBe(42);
     expect(plan.attach.sandboxId).toBe(88);
-    expect(plan.attach.redirectUrl).toBe(
-      '/space/8/app-pro/200/',
-    );
+    expect(plan.attach.redirectUrl).toBe('/space/8/app-pro/200/');
   });
 
   it('上框（全栈项目）缺 spaceId：降级不带 redirectUrl', () => {
@@ -287,6 +285,21 @@ describe('buildHomeSendPlan 上框参与者沙箱自选', () => {
     expect(
       plan.kind === 'createConversation' && plan.attach.workspacePath,
     ).toBeUndefined();
+  });
+
+  it('参与者 + 非数字形态个人电脑 id：透传字符串，勿 Number 转 NaN（bug2443）', () => {
+    const plan = buildHomeSendPlan({
+      ...PARTICIPANT_INPUT,
+      selectedComputerId: 'sb-a1b2c3',
+      workspacePath: '/tmp/a',
+    });
+    expect(plan.kind === 'createConversation' && plan.attach.sandboxId).toBe(
+      'sb-a1b2c3',
+    );
+    // route state 仍携带原始选择，衔接会话页首条消息沙箱链路
+    expect(
+      plan.kind === 'createConversation' && plan.attach.selectedComputerId,
+    ).toBe('sb-a1b2c3');
   });
 
   it('未开参与者模式（创建者/字段未回包）：沿用项目沙箱现状', () => {

@@ -48,6 +48,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { buildAppProRoute } from '@/utils/appProRoute';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
+import { normalizeSandboxIdValue } from '@/utils/effectiveSandbox';
 
 import {
   useSourceControl,
@@ -826,9 +827,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // 会话相关 props
   // 清空上下文新会话的创建绑定（bug 2451：执行按创建时绑定路由）：清空已重置
   // 手动选择，绑定=智能体绑定/云哨兵，与选择器清空后显示一致（hook 内 state
-  // 闭包过时，须以渲染期值传入）
+  // 闭包过时，须以渲染期值传入）；类型归一（bug2443）：智能体绑定沙箱可能为
+  // 非数字形态，归一透传勿 Number 转 NaN（NaN 非空值，下游 ?? 兜底拦不住）
   const createConversationSandboxId = useMemo(
-    () => Number(effectiveAgent?.sandboxId || CLOUD_SANDBOX_ID),
+    () =>
+      normalizeSandboxIdValue(effectiveAgent?.sandboxId) ??
+      Number(CLOUD_SANDBOX_ID),
     [effectiveAgent?.sandboxId],
   );
   const { handleClear, handleMessageSend } = useChatConversation({

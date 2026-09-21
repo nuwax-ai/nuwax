@@ -35,6 +35,9 @@ vi.mock('@/services/unifiedThemeService', () => ({
     updateData: mockUpdateData,
     addListener: () => {},
     removeListener: () => {},
+    // cff3ec670 起 initBrandTheme 会注册 applyToDOM 后置钩子（真实钩子行为
+    // 在 unifiedThemeService.test.ts 专测）；此处隔离 mock 补 no-op 桩即可
+    registerPostApplyHook: () => () => {},
   },
 }));
 

@@ -57,6 +57,12 @@ const ExpertSummonModal: React.FC<ExpertSummonModalProps> = ({
     width="fit-content"
     centered
     destroyOnHidden
+    // 钉死基础层级（bug 2489，同 2439 先例）：未钉 zIndex 的 antd Modal 会向内
+    // 注入 1100 的 zIndex 上下文，卡内 EllipsisTooltip 等嵌套弹层按 useZIndex
+    // 语义升到 1200，越过客户端壳工具栏固定层（1099–1101）盖住工具栏。
+    // 固定 1000 后嵌套弹层回到 1000+ 低区间；本弹窗是付费专家进收银台链路的
+    // 拦截弹层，与 PaymentSubscriptionModal 同批收敛。
+    zIndex={1000}
     className={cx(styles['expert-summon-modal'])}
   >
     {expert && <ExpertSummonCard expert={expert} onSummon={onSummon} />}

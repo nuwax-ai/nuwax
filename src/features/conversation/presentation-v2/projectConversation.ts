@@ -59,13 +59,27 @@ const firstLine = (text: string, max = 80): string => {
  */
 const thinkTimingAnchors = new Map<string, { start: number; end?: number }>();
 
+/**
+ * 思考行时长的最小可信窗口（ms）。锚点量的是「客户端观测到的思考流式窗口」
+ * （首见 running → 翻 finished），而不是模型真实思考时长：后端常把整段思考
+ * 一次性突发落盘（分片间隔远小于思考时长），不足 1 秒的窗口在秒级粒度下
+ * 既无法与 0 区分、也无法区分「真实思考不足 1 秒」与「突发落盘 / 刷新恢复
+ * 中途接入」造成的观测截断——按不可推断处理（回落首行摘要），绝不显示
+ * 「持续了 0 秒」（禅道bug2492）。展示层以同一阈值双保险过滤。
+ */
+export const THINK_DURATION_MIN_MS = 1000;
+
 const thinkDurationMs = (
   nodeId: string,
   running: boolean,
 ): number | undefined => {
   const anchor = thinkTimingAnchors.get(nodeId);
   if (running) {
-    if (!anchor) {
+    // 首见 running 打点。已带 end 的旧锚点说明同一 nodeId 被复用（跨会话
+    // 切换不清锚点、无 id 消息的位置兜底键随列表漂移）：同一思考段的状态
+    // 只会 thinking→finished 单向翻转，不会再回 running，故重开新锚点，
+    // 避免把上一任的起止时间套在本行头上（陈旧差值可能正是 0 秒来源）。
+    if (!anchor || anchor.end !== undefined) {
       thinkTimingAnchors.set(nodeId, { start: Date.now() });
     }
     return undefined;
@@ -75,7 +89,10 @@ const thinkDurationMs = (
   if (anchor.end === undefined) {
     anchor.end = Date.now();
   }
-  return Math.max(0, anchor.end - anchor.start);
+  const durationMs = anchor.end - anchor.start;
+  // 观测窗口不足 1 秒（含时钟回拨产生的负差值）视为不可推断：
+  // 不做 Math.max(0,·) 钳制——钳成 0 正是「持续了 0 秒」的显示来源
+  return durationMs >= THINK_DURATION_MIN_MS ? durationMs : undefined;
 };
 
 /** 测试专用：清空思考时长锚点（测试夹具常复用同一 node id，防用例间串扰） */

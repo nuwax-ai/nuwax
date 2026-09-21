@@ -47,3 +47,30 @@ export const resolveEffectiveSandboxId = ({
 
   return '';
 };
+
+/**
+ * sandboxId 报文归一（禅道 bug2443）：沙箱 id 全链是字符串形态（电脑选择器 /
+ * agentSelected 记忆 / 智能体绑定 / 会话 sandboxServerId）。历史发送链上的
+ * `Number(sandboxId)` 转换点会把非数字形态的新沙箱 id 转成 NaN（JSON 序列化为
+ * null），create 被后端静默按「未选沙箱」建会话、chat 再携带原始字符串报 400。
+ *
+ * 归一规则：数字形态（'377' / '-1'，且可安全还原）转 number 对齐后端 Long 契约；
+ * 非数字 id 原样透传（勿再转 NaN）——后端 chat/create 的 sandboxId 字段需放宽为
+ * 字符串后即可端到端放行；空值返回 undefined，由调用方按云电脑哨兵兜底。
+ */
+export const normalizeSandboxIdValue = (
+  id?: string | number | null,
+): string | number | undefined => {
+  if (id === undefined || id === null) {
+    return undefined;
+  }
+  const text = String(id).trim();
+  if (!text) {
+    return undefined;
+  }
+  // 仅纯数字且 Number 往返无损（防前导零/超安全整数精度丢失）才转 number
+  if (/^-?\d+$/.test(text) && String(Number(text)) === text) {
+    return Number(text);
+  }
+  return text;
+};

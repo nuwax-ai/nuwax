@@ -105,6 +105,21 @@ export interface ProjectChildItem {
   conversation?: ConversationInfo;
 }
 
+/** 标记集合按事件补丁增删（bug 2475）：enabled 真增假删，幂等可重放 */
+const toggleFlagSet = (
+  previous: Set<string>,
+  key: string,
+  enabled: boolean,
+): Set<string> => {
+  const next = new Set(previous);
+  if (enabled) {
+    next.add(key);
+  } else {
+    next.delete(key);
+  }
+  return next;
+};
+
 /** 项目列表项 */
 export interface ProjectItem {
   id: number;
@@ -604,6 +619,29 @@ const ProjectPanel = forwardRef<
         return;
       }
       setProjects((previous) => applyProjectChangedToList(previous, event));
+      // 置顶/归档标记补丁（bug 2475）：历史会话页等入口操作成功后广播，标记集合
+      // 按补丁即时增删（行在已加载页内即可见排序/隐藏变化，无需手动刷新）。
+      // 仅行已加载时改集合，防行外键泄漏；后续 fetchPage 以服务端真值整体覆盖
+      const patchPinned = event.patch?.pinned;
+      const patchArchived = event.patch?.archived;
+      if (patchPinned !== undefined || patchArchived !== undefined) {
+        const matched = projectsRef.current.find((project) =>
+          matchesProjectRef(project, event.project),
+        );
+        if (matched) {
+          const flagKey = projectKeyOf(matched);
+          if (patchPinned !== undefined) {
+            setPinnedIds((previous) =>
+              toggleFlagSet(previous, flagKey, patchPinned),
+            );
+          }
+          if (patchArchived !== undefined) {
+            setArchivedIds((previous) =>
+              toggleFlagSet(previous, flagKey, patchArchived),
+            );
+          }
+        }
+      }
       if (event.operation === 'deleted') {
         const deletedKey = projectKeyOf({
           id: event.project.projectId,

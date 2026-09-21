@@ -597,9 +597,14 @@ export function reconcileConversationSnapshotMessages(
             getIdlessMessageSignature(message))
       ) {
         const existing = serverMerged[existingIndex];
-        serverMerged[existingIndex] = existing.clientRenderKey
+        const next = existing.clientRenderKey
           ? { ...message, clientRenderKey: existing.clientRenderKey }
           : message;
+        // 保留未变化消息的对象引用（bug 2486）：快照轮询期间只要有一条消息在变
+        // （执行中尾部持续增长），若把所有服务端消息都换成新对象，整条消息区
+        // 每个轮询周期都会因引用全量更换而重渲染（Markdown 重解析 → 肉眼重刷）。
+        // 深比较相等时沿用旧引用，React 只重渲染真正变化的消息。
+        serverMerged[existingIndex] = isEqual(existing, next) ? existing : next;
       }
       return;
     }

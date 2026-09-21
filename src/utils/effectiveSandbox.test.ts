@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { resolveEffectiveSandboxId } from './effectiveSandbox';
+import {
+  normalizeSandboxIdValue,
+  resolveEffectiveSandboxId,
+} from './effectiveSandbox';
 
 describe('resolveEffectiveSandboxId 四级取值链（bug 2451 单源）', () => {
   it('手动选择最优先，压过 PUSH 携带/智能体绑定/共享电脑', () => {
@@ -53,5 +56,38 @@ describe('resolveEffectiveSandboxId 四级取值链（bug 2451 单源）', () =>
     expect(resolveEffectiveSandboxId({ agentSandboxId: 88 })).toBe('88');
     expect(resolveEffectiveSandboxId({ sandboxServerId: 99 })).toBe('99');
     expect(resolveEffectiveSandboxId({ selectedComputerId: -1 })).toBe('-1');
+  });
+});
+
+describe('normalizeSandboxIdValue 报文归一（bug2443：勿 Number 转 NaN）', () => {
+  it('数字形态字符串转 number（对齐后端 Long 契约，含云哨兵 -1）', () => {
+    expect(normalizeSandboxIdValue('377')).toBe(377);
+    expect(normalizeSandboxIdValue('-1')).toBe(-1);
+    expect(normalizeSandboxIdValue('0')).toBe(0);
+  });
+
+  it('number 原样保留', () => {
+    expect(normalizeSandboxIdValue(377)).toBe(377);
+    expect(normalizeSandboxIdValue(-1)).toBe(-1);
+  });
+
+  it('非数字形态 id（新沙箱）原样透传字符串，绝不转 NaN', () => {
+    expect(normalizeSandboxIdValue('sb-a1b2c3')).toBe('sb-a1b2c3');
+    expect(normalizeSandboxIdValue('uuid-377-x')).toBe('uuid-377-x');
+  });
+
+  it('空值（undefined/null/空串/空白）返回 undefined，由调用方兜底', () => {
+    expect(normalizeSandboxIdValue(undefined)).toBeUndefined();
+    expect(normalizeSandboxIdValue(null)).toBeUndefined();
+    expect(normalizeSandboxIdValue('')).toBeUndefined();
+    expect(normalizeSandboxIdValue('   ')).toBeUndefined();
+  });
+
+  it('非纯数字或往返无损失败的数字串保持字符串（防前导零/超精度损坏）', () => {
+    expect(normalizeSandboxIdValue('0377')).toBe('0377');
+    expect(normalizeSandboxIdValue('9007199254740993')).toBe(
+      '9007199254740993',
+    );
+    expect(normalizeSandboxIdValue('37.5')).toBe('37.5');
   });
 });
