@@ -19,7 +19,6 @@ import type {
 } from '@/types/interfaces/userProject';
 import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
 import { resolveProjectOwnerFlag } from '@/utils/homeSendPlan';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import type { TabsProps } from 'antd';
 import { Button, Result, Tabs } from 'antd';
 import classNames from 'classnames';
@@ -313,12 +312,7 @@ const NormalProjectDetail: React.FC = () => {
 
   return (
     <div className={cx(styles.page, 'h-full', 'flex', 'flex-col')}>
-      <header
-        className={cx(styles.header)}
-        style={{
-          paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
-        }}
-      >
+      <header className={cx(styles.header)}>
         <Button
           type="text"
           className={cx(styles.back)}

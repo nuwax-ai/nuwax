@@ -3,24 +3,22 @@ import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   UserProjectItem,
   UserProjectPageResult,
 } from '@/types/interfaces/userProject';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
+import ProjectListCard from '../components/ProjectListCard';
 import { apiUserProjectPageQuery } from '../services';
 import { apiThirdAppOauth2Delete } from '../services/thirdAppOauth2';
 import CreateThirdAppModal from './CreateThirdAppModal';
 import EditThirdAppModal, {
   type EditedThirdAppInfo,
 } from './EditThirdAppModal';
-import ProjectListCard from '../components/ProjectListCard';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -200,12 +198,7 @@ const ThirdAppIntegration: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div
-        className={cx(styles['header-area'])}
-        style={{
-          paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
-        }}
-      >
+      <div className={cx(styles['header-area'])}>
         <div className={cx(styles['header-left'])}>
           <h3 className={cx(styles.title)}>
             {dict('PC.Pages.ThirdAppIntegration.title')}
