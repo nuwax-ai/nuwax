@@ -327,9 +327,9 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
       }
     };
 
-    // 每次 effect 执行前先清理
+    // 每次 effect 执行前先清理（loading 状态仅在真正重设 src 时置起，
+    // 见下方同值跳过分支：跳过重载就没有 load 事件可复位，不能误置）
     cleanupObserver();
-    setIsLoading(true);
 
     const handleLoad = debounce(async () => {
       let iframeDoc: Document | null = null;
@@ -415,7 +415,21 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     // 绑定 onload
     iframe.onload = handleLoad;
 
-    // 设置 src
+    // 设置 src:同值不重赋——iframe.src 赋值(即使与当前值相同)也按导航
+    // 处理会触发整页重载。上层重渲染带来的依赖抖动(pagePreviewData 对象
+    // 引用变化等)且目标地址未变时,改为直接重挂内容监听(等价一次不触发
+    // load 事件的重新绑定,不重载页面)。iframe.src getter 返回当前导航
+    // 地址:iframe 内部已导航到别处时与目标不一致,仍会重设拉回(原语义)
+    if (iframe.src === pageUrl) {
+      handleLoad();
+      return () => {
+        iframe.onload = null;
+        handleLoad.cancel();
+        cleanupObserver();
+      };
+    }
+    setIsLoading(true);
+
     const hasHash = pageUrl.includes('#');
     if (hasHash) {
       iframe.src = '';

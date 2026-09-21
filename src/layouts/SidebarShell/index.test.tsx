@@ -14,28 +14,33 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import SidebarShell from './index';
 
-const { layoutState, loadMenusMock, runQueryCategoryMock, asyncSpaceListFunMock } =
-  vi.hoisted(() => ({
-    layoutState: {
-      isMobile: false,
-      setIsMobile: vi.fn(),
-      realHidden: false,
-      setRealHidden: vi.fn(),
-      fullMobileMenu: false,
-      setFullMobileMenu: vi.fn(),
-      getCurrentMenuWidth: vi.fn(() => 200),
-      handleCloseMobileMenu: vi.fn(),
-      isSecondMenuCollapsed: false,
-    },
-    loadMenusMock: vi.fn(),
-    runQueryCategoryMock: vi.fn(),
-    asyncSpaceListFunMock: vi.fn(),
-  }));
+const {
+  layoutState,
+  loadMenusMock,
+  runQueryCategoryMock,
+  asyncSpaceListFunMock,
+} = vi.hoisted(() => ({
+  layoutState: {
+    isMobile: false,
+    setIsMobile: vi.fn(),
+    realHidden: false,
+    setRealHidden: vi.fn(),
+    fullMobileMenu: false,
+    setFullMobileMenu: vi.fn(),
+    getCurrentMenuWidth: vi.fn(() => 200),
+    handleCloseMobileMenu: vi.fn(),
+    isSecondMenuCollapsed: false,
+  },
+  loadMenusMock: vi.fn(),
+  runQueryCategoryMock: vi.fn(),
+  asyncSpaceListFunMock: vi.fn(),
+}));
 
 vi.mock('umi', () => ({
   useModel: (name: string) => {
     if (name === 'layout') return layoutState;
-    if (name === 'spaceModel') return { asyncSpaceListFun: asyncSpaceListFunMock };
+    if (name === 'spaceModel')
+      return { asyncSpaceListFun: asyncSpaceListFunMock };
     if (name === 'menuModel') return { loadMenus: loadMenusMock };
     return {};
   },
@@ -43,6 +48,18 @@ vi.mock('umi', () => ({
 
 vi.mock('@/hooks/useCategory', () => ({
   default: () => ({ runQueryCategory: runQueryCategoryMock }),
+}));
+
+// i18nRuntime 打桩：组件收集链上多个模块（userService → home.constants、
+// square.constants 等）在模块顶层调 dict()，真实实现依赖 umi 运行时
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+}));
+
+// 保活容器替身：本测试关注 variant 翻转的插槽结构，容器内的
+// openedAppTabs/appTabKeepAlive model 语义由 tests/openedAppTabsKeepAlive.test.tsx 专测
+vi.mock('./OpenedAppTabsKeepAlive', () => ({
+  default: () => <div data-testid="keep-alive-container" />,
 }));
 
 vi.mock('@/hooks/useUnifiedTheme', () => ({
@@ -56,7 +73,9 @@ vi.mock('../DynamicMenusLayout', () => ({
   default: () => <div data-testid="dynamic-menus" />,
 }));
 
-vi.mock('../HoverMenu', () => ({ default: () => <div data-testid="hover-menu" /> }));
+vi.mock('../HoverMenu', () => ({
+  default: () => <div data-testid="hover-menu" />,
+}));
 vi.mock('../Message', () => ({ default: () => <div data-testid="message" /> }));
 vi.mock('../Setting', () => ({ default: () => <div data-testid="setting" /> }));
 vi.mock('../MobileMenu', () => ({
@@ -81,7 +100,11 @@ const Probe: React.FC = () => {
       probeUnmountCount += 1;
     };
   }, []);
-  return <div ref={ref} data-testid="probe">workbench-content</div>;
+  return (
+    <div ref={ref} data-testid="probe">
+      workbench-content
+    </div>
+  );
 };
 
 describe('SidebarShell variant 翻转不重挂 children', () => {

@@ -65,6 +65,7 @@ import React, {
 import { history, useLocation, useModel, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
+import usePagePreviewController from './usePagePreviewController';
 
 const cx = classNames.bind(styles);
 const SKIP_DETAIL_QUERY_ON_POP_BACK_KEY =
@@ -85,6 +86,14 @@ interface ConversationDetailsProps {
     // 技能名称
     name: string;
   } | null;
+  // 保活实例模式(默认 false):页面预览/付费弹窗等全局单槽状态改为本实例
+  // 自持,不读写全局——多开保活下多个实例并存,读写全局会互相串扰(后挂载
+  // 实例的预览会把先挂载实例的预览 iframe 整页重载掉);/app 树与单实例
+  // 路由不传,行为与现状一致
+  instanceScoped?: boolean;
+  // 实例是否激活(默认 true):多开保活容器隐藏实例为 false——失活时关闭
+  // 本地弹窗(传送门悬浮问题),重新激活时重同步全局归属与历史列表
+  active?: boolean;
 }
 
 /**
@@ -95,6 +104,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   agentId,
   conversationUrl,
   skillInfo,
+  instanceScoped = false,
+  active = true,
 }) => {
   const location = useLocation();
   const chromeFlags = useOpenAppChromeFlags();
@@ -108,14 +119,26 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     setAppAgentDetailLoading,
-    openPaymentModal,
-    setOpenPaymentModal,
+    openPaymentModal: globalOpenPaymentModal,
+    setOpenPaymentModal: globalSetOpenPaymentModal,
     incrementCalledTrialCount,
     localCalledTrialCount,
   } = useModel('useOpenApp');
-  // 获取 chat model 中的页面预览状态
+  // 付费弹窗实例化:useOpenApp 的 openPaymentModal 是全局裸 boolean,多实例
+  // 并存时 B 实例的弹窗会弹到 A 头上(并误触发 A 的套餐拉取 effect)——
+  // instanceScoped 实例改自持本地 state;/app 树(非 instanceScoped)保留全局
+  // 读写,BaseTemplate 弹窗语义不变。两端 setter 引用恒稳,effect deps 不抖
+  const [localOpenPaymentModal, setLocalOpenPaymentModal] = useState(false);
+  const openPaymentModal = instanceScoped
+    ? localOpenPaymentModal
+    : globalOpenPaymentModal;
+  const setOpenPaymentModal = instanceScoped
+    ? setLocalOpenPaymentModal
+    : globalSetOpenPaymentModal;
+  // 页面预览状态:默认全局 chat model 单槽(现状);instanceScoped 改本实例
+  // 自持——全局槽会被并存实例的后写入覆盖,导致本实例预览 iframe 整页重载
   const { pagePreviewData, hidePagePreview, showPagePreview } =
-    useModel('chat');
+    usePagePreviewController(instanceScoped);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
@@ -435,15 +458,23 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     setLoading(false);
     setAgentDetail(result);
 
-    // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
+    // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗。
+    // 失活实例不自动弹:runDetail 有 debounce,切走后回包仍会到达,而弹窗
+    // 传送门渲染到 document.body,display:none 拦不住会悬浮在激活页面上
     if (result.paymentRequired && !result.subscribed) {
-      setOpenPaymentModal(true);
+      if (active) {
+        setOpenPaymentModal(true);
+      }
     } else {
       setOpenPaymentModal(false);
     }
 
-    // 设置应用智能体详情
-    handleSetAppAgentDetail(result);
+    // 设置应用智能体详情:全局单槽(appAgentDetail/试用计数归属)仅激活实例
+    // 可写——失活回包写全局会把归属记到别人名下,失活实例的归属由激活沿
+    // 重同步 effect 补写
+    if (active) {
+      handleSetAppAgentDetail(result);
+    }
 
     handleOpenPreview(result);
     setConversationId(result?.conversationId || null);
@@ -531,15 +562,44 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
   useEffect(() => {
     // 应用智能体模式下，不获取当前智能体的历史记录
-    if (isAppSidebarMode) {
+    if (isAppSidebarMode || !active) {
       return;
     }
-    // 获取当前智能体的历史记录
+    // 获取当前智能体的历史记录(历史列表是全局单份,保活实例隐藏期间可能被
+    // 其他实例覆盖,重新激活时重拉本智能体的最新历史)
     runHistoryItem({
       agentId,
       limit: 20,
     });
-  }, [agentId, isAppSidebarMode]);
+  }, [agentId, isAppSidebarMode, active]);
+
+  // 保活实例激活沿归属重同步:仅「失活过再激活」执行——首挂激活时全局归属
+  // 已由 onResultSuccess 写入,不双跑。用本地 agentDetail 重写全局
+  // appAgentDetail,修正试用计数等按全局详情 agentId 归属的状态
+  const wasInactiveRef = useRef(false);
+  useEffect(() => {
+    if (active) {
+      if (!wasInactiveRef.current) {
+        return;
+      }
+      wasInactiveRef.current = false;
+      if (agentDetail) {
+        handleSetAppAgentDetail(agentDetail);
+      }
+      return;
+    }
+    wasInactiveRef.current = true;
+  }, [active]);
+
+  // 失活关闭本地弹窗:antd Modal / 复制模板弹窗传送门渲染到 document.body,
+  // 父容器 display:none 拦不住,隐藏实例的弹窗会悬浮在当前激活页面上方
+  useEffect(() => {
+    if (active) {
+      return;
+    }
+    setLocalOpenPaymentModal(false);
+    setOpenPageCopyModal(false);
+  }, [active]);
 
   useEffect(() => {
     // 初始化选中的组件列表
