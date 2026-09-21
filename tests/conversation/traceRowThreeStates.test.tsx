@@ -83,6 +83,31 @@ describe('思考行完成态时长', () => {
     expect(row.textContent).toContain(SUMMARY_TEXT);
     expect(row.textContent).not.toContain('nodeThinkingDuration');
   });
+
+  it('durationMs 不足 1 秒（bug2492 突发落盘形态）:不显示「持续了 0 秒」，回落首行摘要', () => {
+    render(
+      <ProcessNodeRow
+        expanded={false}
+        onToggle={() => {}}
+        node={
+          {
+            id: 'think-burst',
+            kind: 'reasoning',
+            title: '',
+            summary: SUMMARY_TEXT,
+            thinkText: `${SUMMARY_TEXT}\n第二行`,
+            status: 'finished',
+            failed: false,
+            durationMs: 300,
+          } as any
+        }
+      />,
+    );
+    const row = screen.getByRole('button');
+    // 展示层双保险：秒级粒度不可读的窗口回落摘要，绝不渲染「持续了 0 秒」
+    expect(row.textContent).toContain(SUMMARY_TEXT);
+    expect(row.textContent).not.toContain('nodeThinkingDuration');
+  });
 });
 
 describe('待办清单数据判定 readPlanSteps / isTodoTraceNode', () => {

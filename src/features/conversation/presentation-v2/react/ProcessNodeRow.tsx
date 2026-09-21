@@ -32,6 +32,7 @@ import {
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef } from 'react';
+import { THINK_DURATION_MIN_MS } from '../projectConversation';
 import {
   getNodeToolActionKind,
   hasProcessNodeDetail,
@@ -421,11 +422,14 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
   const accessibleName = Array.from(
     new Set([title, summaryText, node.title].filter(Boolean)),
   ).join(' ');
-  // 完成态思考行有时长锚点时以「持续了 N 秒」替代首行摘要（历史无锚点保摘要）
+  // 完成态思考行有时长锚点时以「持续了 N 秒」替代首行摘要（历史无锚点保摘要）；
+  // 不足 THINK_DURATION_MIN_MS 的窗口在秒级粒度下不可读（「持续了 0 秒」误导，
+  // 禅道bug2492），与投影层同阈值双保险，回落首行摘要
   const finishedReasoningDuration =
     node.kind === 'reasoning' &&
     node.status !== 'running' &&
-    typeof node.durationMs === 'number'
+    typeof node.durationMs === 'number' &&
+    node.durationMs >= THINK_DURATION_MIN_MS
       ? formatElapsed(node.durationMs)
       : '';
 
