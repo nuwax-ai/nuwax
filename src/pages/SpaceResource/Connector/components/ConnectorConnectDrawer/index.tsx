@@ -42,6 +42,14 @@ export interface ConnectorConnectDrawerProps {
   onClose: () => void;
   /** 连接成功回调（刷新详情抽屉与卡片列表） */
   onConnected?: () => void;
+  /**
+   * 抽屉 zIndex（可选）：不传走 antd 默认。
+   * 嵌在详情抽屉内打开时（管理侧），antd 5.26 会从父层上下文爬 +100 到
+   * 1100 压过客户端壳工具栏层（1099–1101），遮罩盖住工具栏不可点
+   * （禅道 bug2456）——父抽屉已钉 1000，这里由调用方传 1001 压住父层
+   * 遮罩且不越壳层；空间侧独立打开暂不传，保持原行为。
+   */
+  zIndex?: number;
 }
 
 const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
@@ -51,6 +59,7 @@ const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
   spaceId,
   onClose,
   onConnected,
+  zIndex,
 }) => {
   const [form] = Form.useForm();
   // 提交中：给「加密保存并建立连接」按钮加 loading，防止重复提交
@@ -134,6 +143,7 @@ const ConnectorConnectDrawer: React.FC<ConnectorConnectDrawerProps> = ({
       destroyOnHidden
       rootStyle={{ overflow: 'hidden' }}
       styles={{ body: { padding: 0 } }}
+      zIndex={zIndex}
     >
       <div className={styles.content}>
         {/* 连接器名称：静态展示当前连接器（设计稿是选择框，按需求不做选择） */}
