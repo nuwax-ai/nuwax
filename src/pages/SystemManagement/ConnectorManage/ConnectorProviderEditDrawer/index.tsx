@@ -452,7 +452,7 @@ const ConnectorProviderEditDrawer: React.FC<
               placeholder={dict(
                 'PC.Pages.ConnectorManage.placeholderDescription',
               )}
-              maxLength={500}
+              maxLength={1000}
               showCount
             />
           </Form.Item>
