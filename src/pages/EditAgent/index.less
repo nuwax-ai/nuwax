@@ -30,6 +30,13 @@
     }
   }
 
+  // 单栏窄窗口横向滚动收敛层：包住 section，min-width 挂在 section 上，
+  // 滚动条只出现在内容区底部，顶部 AgentHeader 不随滚
+  .section-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
   .section {
     overflow: hidden;
     border-radius: @pageContainerBorderRadius;
