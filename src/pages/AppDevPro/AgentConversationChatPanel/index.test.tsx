@@ -3,30 +3,19 @@ import { TaskStatus } from '@/types/enums/agent';
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const {
-  mockUnifiedChatSession,
-  mockUseModel,
-  mockUseLocation,
-  mockHistory,
-  mockUseRuntimeSession,
-} = vi.hoisted(() => ({
-  mockUnifiedChatSession: vi.fn(),
-  mockUseModel: vi.fn(),
-  mockUseLocation: vi.fn(),
-  mockHistory: { action: 'PUSH' },
-  mockUseRuntimeSession: vi.fn(),
-}));
+const { mockUnifiedChatSession, mockUseModel, mockUseLocation, mockHistory } =
+  vi.hoisted(() => ({
+    mockUnifiedChatSession: vi.fn(),
+    mockUseModel: vi.fn(),
+    mockUseLocation: vi.fn(),
+    mockHistory: { action: 'PUSH' },
+  }));
 
 vi.mock('@/components/business-component', () => ({
   UnifiedChatSession: (props: any) => {
     mockUnifiedChatSession(props);
     return <div data-testid="unified-chat-session" />;
   },
-}));
-
-vi.mock('@/features/conversation/react/useConversationRuntimeSession', () => ({
-  useConversationRuntimeSession: (...args: unknown[]) =>
-    mockUseRuntimeSession(...args),
 }));
 
 vi.mock('umi', () => ({
@@ -86,8 +75,6 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockHistory.action = 'PUSH';
-    // 默认无 runtime 线（V1 形态），V2 用例自行覆写
-    mockUseRuntimeSession.mockReturnValue(null);
     mockUseLocation.mockReturnValue({
       key: 'route-1',
       state: {},
@@ -98,7 +85,12 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     const model = createConversationInfoModel();
     mockUseModel.mockReturnValue(model);
 
-    render(<AgentConversationChatPanel selectedComputerId="computer-prop" />);
+    render(
+      <AgentConversationChatPanel
+        runtimeLine={null}
+        selectedComputerId="computer-prop"
+      />,
+    );
     latestUnifiedProps().onSendMessage(
       'build it',
       [{ name: 'a.ts' }],
@@ -119,35 +111,39 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     });
   });
 
-  it('V2 线：runtimeLine 以会话 id 与面板选中电脑挂载，conversationProps 末尾展开覆盖', () => {
+  it('V2 线：runtimeLine prop 的 conversationProps 末尾展开覆盖（页面级外提注入，bug 2477）', () => {
+    // session 由页面级外提（URL id 即建）经 runtimeLine prop 注入，面板不自建
     const model = createConversationInfoModel();
     mockUseModel.mockReturnValue(model);
     const runtimeOnSendMessage = vi.fn();
-    mockUseRuntimeSession.mockReturnValue({
-      conversationProps: { onSendMessage: runtimeOnSendMessage },
-    });
+    const runtimeMessageList = [{ id: 'r1' }];
 
-    render(<AgentConversationChatPanel selectedComputerId="computer-prop" />);
-
-    expect(mockUseRuntimeSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        conversationId: 7001,
-        // 空串兜底 undefined 的取沙箱链：选中电脑透传给 runtime 线发送
-        getSandboxId: expect.any(Function),
-      }),
+    render(
+      <AgentConversationChatPanel
+        runtimeLine={
+          {
+            conversationProps: {
+              onSendMessage: runtimeOnSendMessage,
+              messageList: runtimeMessageList,
+            },
+          } as any
+        }
+      />,
     );
-    // 末尾展开覆盖：UnifiedChatSession 收到的发送实现是 runtime 线版本
+
+    // 末尾展开覆盖：UnifiedChatSession 收到的发送实现与消息列表是 runtime 线版本
     expect(latestUnifiedProps().onSendMessage).toBe(runtimeOnSendMessage);
+    expect(latestUnifiedProps().messageList).toBe(runtimeMessageList);
   });
 
-  it('V2 线：getSandboxId 返回面板当前选中电脑（空串兜底 undefined）', () => {
-    mockUseModel.mockReturnValue(createConversationInfoModel());
-    mockUseRuntimeSession.mockReturnValue({ conversationProps: {} });
+  it('V2 线：runtimeLine prop 为 null 时回落旧线原值（flag 关，页面透传 null）', () => {
+    const model = createConversationInfoModel();
+    mockUseModel.mockReturnValue(model);
 
-    render(<AgentConversationChatPanel selectedComputerId="" />);
+    render(<AgentConversationChatPanel runtimeLine={null} />);
 
-    const options = mockUseRuntimeSession.mock.calls.at(-1)?.[0] as any;
-    expect(options.getSandboxId()).toBeUndefined();
+    expect(latestUnifiedProps().messageList).toBe(model.messageList);
+    expect(latestUnifiedProps().onSendMessage).not.toBeUndefined();
   });
 
   it('V1 回落：model 活跃态下降沿触发会话结束回调（原触发点不回归）', () => {
@@ -157,38 +153,50 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     mockUseModel.mockReturnValue(model);
     const onConversationEnd = vi.fn();
     const { rerender } = render(
-      <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
+      <AgentConversationChatPanel
+        runtimeLine={null}
+        onConversationEnd={onConversationEnd}
+      />,
     );
 
     model.isConversationActive = false;
     rerender(
-      <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
+      <AgentConversationChatPanel
+        runtimeLine={null}
+        onConversationEnd={onConversationEnd}
+      />,
     );
 
     expect(onConversationEnd).toHaveBeenCalledTimes(1);
   });
 
-  it('V2 线：结束沿消费 conversationProps 生效值，model 置位点不执行（恒 false 不干扰）', () => {
+  it('V2 线：结束沿消费 runtimeLine 生效值，model 置位点不执行（恒 false 不干扰）', () => {
     const model = createConversationInfoModel({
       isConversationActive: false,
     });
     mockUseModel.mockReturnValue(model);
     const onConversationEnd = vi.fn();
-    mockUseRuntimeSession.mockReturnValue({
+    const runtimeLineActive = {
       conversationProps: { isConversationActive: true },
       effectiveIsActive: true,
-    });
+    } as any;
+    const runtimeLineInactive = {
+      conversationProps: { isConversationActive: false },
+      effectiveIsActive: false,
+    } as any;
     const { rerender } = render(
-      <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
+      <AgentConversationChatPanel
+        runtimeLine={runtimeLineActive}
+        onConversationEnd={onConversationEnd}
+      />,
     );
     expect(onConversationEnd).not.toHaveBeenCalled();
 
-    mockUseRuntimeSession.mockReturnValue({
-      conversationProps: { isConversationActive: false },
-      effectiveIsActive: false,
-    });
     rerender(
-      <AgentConversationChatPanel onConversationEnd={onConversationEnd} />,
+      <AgentConversationChatPanel
+        runtimeLine={runtimeLineInactive}
+        onConversationEnd={onConversationEnd}
+      />,
     );
 
     expect(onConversationEnd).toHaveBeenCalledTimes(1);
