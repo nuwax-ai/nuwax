@@ -2,20 +2,20 @@
 @import '@/styles/token';
 
 .modal-container {
-  // 按视口收敛（bug 2439「弹窗太大」）：商业客户端最小窗口 1200×720，固定 1000px
-  // 在窄窗两侧仅剩 100px、更窄视口直接溢出。vw+max-width 组合（不用 min()，
-  // 规避 less 对 min() 的求值改写）。
-  width: 86vw !important;
-  max-width: 1000px !important;
-  min-width: 560px !important;
+  // 按视口收敛（bug 2439「弹窗太大」）：商业客户端最小窗口 1200×720。两轮定尺：
+  // 1000 宽在 ≥1163px 视口下观感仍铺满，收敛到 66vw/720 上限（约 58% 窗宽），
+  // 保底 480；vw+max-width 组合（不用 min()，规避 less 对 min() 的求值改写）。
+  width: 66vw !important;
+  max-width: 720px !important;
+  min-width: 480px !important;
   overflow-x: auto;
 }
 
 .container {
-  // 高度同理（bug 2439）：固定 750px 在 720 高的最小窗口直接超窗；
-  // 上下面各保 60px 边距，超高时内容区（.right）内部滚动。
-  height: 750px;
-  max-height: calc(100vh - 120px);
+  // 高度同理（bug 2439）：默认 640、上下面各保 80px 边距，
+  // 超高时内容区（.right）内部滚动。
+  height: 640px;
+  max-height: calc(100vh - 160px);
   border-radius: @borderRadiusLg;
   background: @colorBgContainer;
   pointer-events: auto;
