@@ -151,23 +151,27 @@
     }
   }
 
-  // 女娲应用多开标签（挂在女娲应用菜单正下方，内存态刷新即失）
+  // 女娲应用多开标签（插在系统菜单与自定义菜单之间，顶部带分割线；内存态刷新即失）
   .app-tab-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    // 顶部分割线：与侧栏描边同源颜色，上下留白与菜单行呼吸感对齐
+    margin: 4px 0 2px;
+    padding-top: 8px;
+    border-top: 1px solid var(--xagi-layout-border-primary);
     // 标签无上限，防多开挤压下方会话滚动区：超高自身滚动
     max-height: 35vh;
     overflow-y: auto;
   }
 
-  // 标签行：几何同 .nav-item，左缘多一层缩进落在菜单图标基线右侧（子项层级）
+  // 标签行：几何与 .nav-item 完全一致（左对齐菜单，无子项缩进）
   .app-tab-item {
     display: flex;
     align-items: center;
     gap: 10px;
     height: 33px;
-    padding: 7px 12px 7px 26px;
+    padding: 7px 12px;
     border-radius: 11px;
     cursor: pointer;
     color: #4b4a53;
@@ -182,18 +186,19 @@
     }
   }
 
-  // 应用图标为下发 URL（img），非 SvgIcon 字标
+  // 应用图标为下发 URL（img），非 SvgIcon 字标。尺寸 20px 对齐菜单行的
+  // SvgIcon 实际渲染尺寸（组件默认 fontSize 20 内联生效，CSS 类的 16 压不过）
   .app-tab-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
 
     img {
-      width: 16px;
-      height: 16px;
+      width: 20px;
+      height: 20px;
       border-radius: 4px;
       object-fit: cover;
     }
