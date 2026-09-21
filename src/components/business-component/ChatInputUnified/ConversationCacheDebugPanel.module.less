@@ -285,3 +285,117 @@
     color: #d4380d;
   }
 }
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 10px;
+  background: rgba(23, 33, 43, 5%);
+  border-radius: 7px;
+}
+
+.tab {
+  flex: 1;
+  padding: 4px 0;
+  color: rgba(23, 33, 43, 55%);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.tabActive {
+  color: var(--cache-ink);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(23, 33, 43, 14%);
+}
+
+.envBody {
+  display: flex;
+  max-height: 384px;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.envToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .eyebrow {
+    margin-bottom: 0;
+  }
+}
+
+.envToolbarHint {
+  color: rgba(23, 33, 43, 40%);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.envCopy {
+  padding: 1px 7px;
+  color: rgba(23, 33, 43, 55%);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  background: transparent;
+  border: 1px solid rgba(23, 33, 43, 14%);
+  border-radius: 999px;
+  cursor: pointer;
+
+  &:hover {
+    color: #d4380d;
+    border-color: rgba(255, 107, 53, 40%);
+  }
+}
+
+.envSection {
+  padding: 8px 9px;
+  background: #fff;
+  border: 1px solid rgba(23, 33, 43, 10%);
+  border-radius: 7px;
+}
+
+.envSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+
+  .eyebrow {
+    margin-bottom: 0;
+  }
+}
+
+.envRow {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.envLabel {
+  flex: 0 0 60px;
+  color: rgba(23, 33, 43, 50%);
+}
+
+.envValue {
+  min-width: 0;
+  flex: 1;
+  color: var(--cache-ink);
+  word-break: break-all;
+}
+
+.envValueMuted {
+  color: rgba(23, 33, 43, 45%);
+}
