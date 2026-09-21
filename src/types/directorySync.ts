@@ -23,6 +23,9 @@ export interface ConversationChangedEvent extends DirectoryEventBase {
     topic?: string;
     icon?: string;
     taskStatus?: TaskStatus;
+    /** 置顶/归档标记切换（bug 2475）：历史页等入口操作成功后广播，侧栏本地补丁即时收敛 */
+    pinned?: boolean;
+    archived?: boolean;
   };
 }
 
@@ -34,6 +37,9 @@ export interface ProjectChangedEvent extends DirectoryEventBase {
     name?: string;
     description?: string;
     icon?: string | null;
+    /** 置顶/归档标记切换（bug 2475）：ProjectPanel 标记集合按补丁即时增删 */
+    pinned?: boolean;
+    archived?: boolean;
   };
 }
 

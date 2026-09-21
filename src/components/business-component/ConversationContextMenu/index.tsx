@@ -9,6 +9,7 @@ import {
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
+import { emitConversationChanged } from '@/utils/directorySyncEvents';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -121,6 +122,22 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
       return;
     }
     onFlagChanged?.(kind, next);
+    // 置顶/归档成功广播 directorySync 事件（bug 2475）：历史会话页等入口操作后，
+    // 左侧任务列表既有订阅按补丁即时排前/隐藏并节流静默重拉对齐服务端真值。
+    // 本入口自身（如首页侧栏）收到回声时同值补丁幂等，不会重复变更
+    emitConversationChanged({
+      operation: 'updated',
+      conversationId: String(conversationId),
+      patch: kind === 'pinned' ? { pinned: next } : { archived: next },
+      origin: 'conversation-context-menu',
+      reason: next
+        ? kind === 'pinned'
+          ? 'pin'
+          : 'archive'
+        : kind === 'pinned'
+        ? 'unpin'
+        : 'unarchive',
+    });
     const toastKeyMap = {
       pinned: next
         ? 'PC.Components.ConversationContextMenu.pinnedToast'

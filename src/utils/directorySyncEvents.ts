@@ -125,6 +125,10 @@ export function applyConversationChangedToList<
   assign(topicField as keyof T, event.patch.topic);
   assign('icon' as keyof T, event.patch.icon);
   assign('taskStatus' as keyof T, event.patch.taskStatus);
+  // 置顶/归档标记补丁（bug 2475）：历史页等入口切换成功后广播，任务列表
+  // 本地补丁即时排前/隐藏（可见列表由行内 pinned/archived 派生）
+  assign('pinned' as keyof T, event.patch.pinned);
+  assign('archived' as keyof T, event.patch.archived);
   if (!changed) return list;
 
   const next = [...list];
