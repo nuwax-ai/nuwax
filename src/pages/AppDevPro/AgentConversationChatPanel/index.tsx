@@ -1,6 +1,6 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
+import type { UseConversationRuntimeSessionResult } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversationMentionFiles from '@/hooks/useConversationMentionFiles';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { TaskStatus } from '@/types/enums/agent';
@@ -19,6 +19,11 @@ export interface AgentConversationChatPanelProps {
   onChangeSelectedComputerId?: (id: string) => void;
   /** 当前选中的电脑 ID */
   selectedComputerId?: string;
+  /**
+   * 页面级 V2 runtime 线（bug 2477）：页面用 URL id 外提创建（供进页自动发送
+   * 直发 runtime store），面板消费同一实例不自建；flag 关时为 null（旧线原行为）。
+   */
+  runtimeLine?: UseConversationRuntimeSessionResult | null;
   /** 会话结束后回调（用于刷新文件树、Git 状态、智能体编排等） */
   onConversationEnd?: () => void;
 }
@@ -30,6 +35,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   className,
   onChangeSelectedComputerId,
   selectedComputerId,
+  runtimeLine,
   onConversationEnd,
 }) => {
   const location = useLocation();
@@ -141,20 +147,15 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   const mentionFilesEnabled = !!mentionConversationId;
 
   // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
-  // 关闭（默认）为空对象，旧线原值原行为。
-  const runtimeLine = useConversationRuntimeSession({
-    conversationId: conversationInfo?.id,
-    // chat 请求携带面板当前选中电脑（空串兜底 undefined）
-    getSandboxId: () => selectedComputerId || undefined,
-    effectsResources: {}, // 面板入口无 chat model 资源；页面预览类 effect 静默忽略
-  });
-
+  // 关闭（默认）为空对象，旧线原值原行为。session 由页面级外提（URL id 即建，bug 2477），
+  // 面板经 runtimeLine prop 消费同一实例。
   // 结束沿必须消费「实际生效」的活跃态：V2 下 onSendMessage 被 conversationProps
   // 覆盖走 runtime 线，model 的置位点不再执行——生效值以 runtime 线合成的
-  // effectiveIsActive 为准（session.getState + taskStatus，即传给
-  // UnifiedChatSession 的同一值），V1（无 runtime 线）回落 model 值（原行为）。
+  // effectiveIsActive 为准（session.getState + taskStatus，即传给 UnifiedChatSession
+  // 的同一值），V1（无 runtime 线）回落 model 值（原行为）。
   // 监听 true → false 触发会话结束回调（页面刷文件树/Git/编排的唯一触发点）。
-  const effectiveIsActive = runtimeLine?.effectiveIsActive ?? isConversationActive;
+  const effectiveIsActive =
+    runtimeLine?.effectiveIsActive ?? isConversationActive;
   useEffect(() => {
     if (prevIsActiveRef.current && !effectiveIsActive) {
       onConversationEnd?.();

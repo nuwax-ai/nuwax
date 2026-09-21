@@ -262,20 +262,31 @@ export function useConversationRuntimeSession(
     if (!session || conversationId === undefined) {
       return;
     }
-    void resetLocalAndLoadConversation().then(() => {
-      // 会话加载后置底（对齐旧线 load 后强制置底；rAF 连续 800ms）
-      const startTime = Date.now();
-      const forceScrollToBottom = () => {
-        const element = messageViewRef?.current;
-        if (element) {
-          element.scrollTo({ top: element.scrollHeight, behavior: 'instant' });
-        }
-        if (Date.now() - startTime < 800) {
-          requestAnimationFrame(forceScrollToBottom);
-        }
-      };
-      requestAnimationFrame(forceScrollToBottom);
-    });
+    void resetLocalAndLoadConversation()
+      .then(() => {
+        // 会话加载后置底（对齐旧线 load 后强制置底；rAF 连续 800ms）
+        const startTime = Date.now();
+        const forceScrollToBottom = () => {
+          const element = messageViewRef?.current;
+          if (element) {
+            element.scrollTo({
+              top: element.scrollHeight,
+              behavior: 'instant',
+            });
+          }
+          if (Date.now() - startTime < 800) {
+            requestAnimationFrame(forceScrollToBottom);
+          }
+        };
+        requestAnimationFrame(forceScrollToBottom);
+      })
+      // URL id 外提后（bug 2477）无效会话也会发起 load，防 unhandled rejection
+      .catch((error) =>
+        console.error(
+          '[useConversationRuntimeSession] load conversation failed:',
+          error,
+        ),
+      );
   }, [session, conversationId, messageViewRef, resetLocalAndLoadConversation]);
 
   /**

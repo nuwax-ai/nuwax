@@ -10,9 +10,9 @@ import { useFileTreePreviewView } from '@/components/business-component/FileTree
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
-import AppDevPublishVersionRecords from './components/AppDevPublishVersionRecords';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
 import {
   useInitialConversationAutoSend,
@@ -70,6 +70,7 @@ import AppDevDatabaseWorkspace, {
   type AppDevDatabaseWorkspaceTab,
 } from './components/AppDevDatabaseWorkspace';
 import AppDevPublishProgressModal from './components/AppDevPublishProgressModal';
+import AppDevPublishVersionRecords from './components/AppDevPublishVersionRecords';
 import AppDevRemoteDesktopPanel from './components/AppDevRemoteDesktopPanel';
 import AppDevSettingsModal from './components/AppDevSettingsModal';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
@@ -102,8 +103,8 @@ import {
   type UserAppDomainInfo,
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
-import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { probePreviewReachable } from './utils/previewHealthCheck';
+import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 const cx = classNames.bind(styles);
 
@@ -547,6 +548,18 @@ const AppDevPro: React.FC = () => {
 
   // ==================== 副作用 (Effects) ====================
 
+  /**
+   * 页面级 V2 runtime 线（bug 2477）：URL id 即建（不等 model 首拉回填），
+   * 进页自动发送直发 runtime store——乐观轮次与面板渲染同线，首条消息立即可见，
+   * 不再等 5s 快照轮询从后端捞回；AgentConversationChatPanel 消费同一实例不自建。
+   */
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: queryConversationId,
+    // chat 请求携带面板当前选中电脑（空串兜底 undefined）
+    getSandboxId: () => finalSelectedComputerId || undefined,
+    effectsResources: {}, // 页面入口无 chat model 资源；预览类 effect 静默忽略
+  });
+
   useInitialConversationAutoSend({
     conversationId: queryConversationId,
     routeState: (location.state || history.location.state) as
@@ -554,6 +567,7 @@ const AppDevPro: React.FC = () => {
       | undefined,
     getEffectiveSandboxId,
     onMessageSend,
+    runtimeSession: runtimeLine?.session,
   });
 
   /** 路由 appId 变化时同步到本地状态 */
@@ -1774,9 +1788,7 @@ const AppDevPro: React.FC = () => {
       previewRuntimeRestarting: previewRuntime.restarting,
       previewRuntimeStopping: previewRuntime.stopping,
       previewRuntimeReady:
-        currentEnvPodReady &&
-        !isConversationActive &&
-        !hasPendingIntervention,
+        currentEnvPodReady && !isConversationActive && !hasPendingIntervention,
       previewEnvPodReady: currentEnvPodReady,
       previewPodEnsuring,
       previewContainerFailed,
@@ -2020,10 +2032,7 @@ const AppDevPro: React.FC = () => {
   useEffect(() => {
     const pageContainerEl = document.getElementById('page-container-selector');
     // 移动端 main-row 纵向堆叠（≤768 media query），无 page-container，跳过
-    if (
-      document.body.classList.contains('xagi-nav-style3') &&
-      !isMobile
-    ) {
+    if (document.body.classList.contains('xagi-nav-style3') && !isMobile) {
       document.documentElement.style.minWidth = 'unset';
       pageContainerEl?.style.setProperty('overflow-x', 'auto');
       // 与分栏最小宽一一对应：左栏（应用信息+会话 480px 固定宽）+ 中间
@@ -2448,6 +2457,7 @@ const AppDevPro: React.FC = () => {
             />
             <div className={cx(styles['left-panel-body'])}>
               <AgentConversationChatPanel
+                runtimeLine={runtimeLine}
                 selectedComputerId={finalSelectedComputerId}
                 onChangeSelectedComputerId={setSelectedComputerId}
                 onConversationEnd={handleConversationEnd}

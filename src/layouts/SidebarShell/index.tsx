@@ -36,6 +36,7 @@ import styles from '../index.less';
 import Message from '../Message';
 import MobileMenu from '../MobileMenu';
 import Setting from '../Setting';
+import OpenedAppTabsKeepAlive from './OpenedAppTabsKeepAlive';
 
 // 绑定 classNames，便于动态样式组合
 const cx = classNames.bind(styles);
@@ -282,11 +283,13 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
   const contentNode = useMemo(() => {
     // 裸全屏形态：不挂侧栏容器与弹窗，仅满铺渲染页面内容（历史顶层全屏路由
     // 行为）。保留一层透传容器（w-full h-full）占住与 page 形态相同的子树
-    // 位置，形态互切时 children 不重挂。
+    // 位置，形态互切时 children 不重挂。保活容器同挂（/user-app、/agent 路由
+    // 组件是空壳，页面实例全在容器内；两形态子树同构，翻转不销毁保活实例）。
     if (variant === 'bare') {
       return (
         <div className={cx('w-full', 'h-full', 'overflow-hide')}>
           {children}
+          <OpenedAppTabsKeepAlive />
         </div>
       );
     }
@@ -339,6 +342,9 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
         }}
       >
         {children}
+        {/* 女娲应用多开标签保活容器:与路由出口并列常驻(命中 user-app 标签时
+            可见,路由组件空壳让位;其余路由整体隐藏不占位,iframe 保活不重载) */}
+        <OpenedAppTabsKeepAlive />
       </div>
     );
   }, [

@@ -1,8 +1,19 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
+.modal-container {
+  // 视口收敛（bug 2439「个人中心弹窗太大」）：「个人中心」弹窗由调用方传 width=1000，
+  // 在商业客户端最小窗口 1200×720 下铺满。统一收敛 66vw/上限 720（约 58% 窗宽），
+  // !important 压过 antd 内联 width；保底 480。
+  width: 66vw !important;
+  max-width: 720px !important;
+  min-width: 480px !important;
+}
+
 .container {
-  height: 750px;
+  // 高度同理：默认 640，上下面各保 80px，超高时内容区滚动。
+  height: 640px;
+  max-height: calc(100vh - 160px);
   border-radius: 10px;
   background: @WHITE04;
   pointer-events: auto;
@@ -52,6 +63,9 @@
   .right {
     background-color: @WHITE;
     padding: 40px 10px;
+    // 高度收敛后内容超高在面板内滚动
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .close {

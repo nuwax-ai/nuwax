@@ -18,7 +18,12 @@ const ConversationCacheDebugFab: React.FC = () => {
   const [open, setOpen] = useState(false);
   const { token } = theme.useToken();
 
-  const content = useMemo(() => <ConversationCacheDebugPanel />, []);
+  // open 变化时重建元素：面板内部据此在弹层打开沿刷新环境信息快照；
+  // 其余渲染（如输入框按键）元素引用不变，跳过重渲染
+  const content = useMemo(
+    () => <ConversationCacheDebugPanel active={open} />,
+    [open],
+  );
 
   return (
     <Popover

@@ -3,7 +3,7 @@ import { UnifiedChatSession } from '@/components/business-component';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
-import { AgentTypeEnum } from '@/types/enums/space';
+import { AgentTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
@@ -95,6 +95,16 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     }
   }, [conversationInfo]);
 
+  // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
+  // 关闭（默认）为空对象，旧线原值原行为。getSandboxId 对齐旧线发送参数
+  // （selectedComputerId 空值兜底云电脑哨兵 '-1'；此前 V2 手动发送不带 sandboxId）。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId,
+    getSandboxId: () => selectedComputerId || '-1',
+    effectsResources: {}, // plugin 入口无 chat model 资源；页面预览类 effect 静默忽略
+  });
+  const runtimeSession = runtimeLine?.session;
+
   // 3. 进入页面携带首条消息自动触发发送会话
   useEffect(() => {
     if (hasAutoSentRef.current) return;
@@ -112,18 +122,38 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
 
         if (isCanMessage) {
           hasAutoSentRef.current = true;
-          onMessageSend({
-            id: conversationId,
-            messageInfo: state.message || '',
-            files: state.files || [],
-            infos: state.infos || [],
-            sandboxId: String(selectedComputerId || '-1'),
-            debug: true,
-            skillIds: state.skillIds || [],
-            modelId: selectedModelId,
-            agentMode: state.agentMode || 'yolo',
-            data: conversationInfo,
-          });
+          // V2：直发 runtime store，乐观轮次与面板渲染同线（bug 2477：此前写 V1
+          // model 列表而面板渲染 V2 store，首条消息要等 5s 快照轮询捞回才可见）；
+          // V1（flag 关）：回落 model 线原路径。
+          if (runtimeSession) {
+            runtimeSession.send({
+              conversationId,
+              message: state.message || '',
+              files: state.files || [],
+              infos: state.infos || [],
+              sandboxId: String(selectedComputerId || '-1'),
+              debug: true,
+              skillIds: state.skillIds || [],
+              modelId: selectedModelId,
+              agentMode: state.agentMode || 'yolo',
+              currentInfo: conversationInfo,
+              isSuggestEnabled:
+                conversationInfo?.agent?.openSuggest === OpenCloseEnum.Open,
+            });
+          } else {
+            onMessageSend({
+              id: conversationId,
+              messageInfo: state.message || '',
+              files: state.files || [],
+              infos: state.infos || [],
+              sandboxId: String(selectedComputerId || '-1'),
+              debug: true,
+              skillIds: state.skillIds || [],
+              modelId: selectedModelId,
+              agentMode: state.agentMode || 'yolo',
+              data: conversationInfo,
+            });
+          }
         } else {
           hasAutoSentRef.current = true;
         }
@@ -133,6 +163,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     conversationId,
     conversationInfo,
     onMessageSend,
+    runtimeSession,
     location.state,
     selectedComputerId,
     selectedModelId,
@@ -201,13 +232,6 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       agentMode: agentMode || 'yolo',
     });
   };
-
-  // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
-  // 关闭（默认）为空对象，旧线原值原行为。
-  const runtimeLine = useConversationRuntimeSession({
-    conversationId,
-    effectsResources: {}, // plugin 入口无 chat model 资源；页面预览类 effect 静默忽略
-  });
 
   return (
     <UnifiedChatSession

@@ -1,5 +1,7 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import type { ConversationRuntimeSession } from '@/features/conversation/runtime/createConversationRuntimeSession';
 import { MessageTypeEnum } from '@/types/enums/agent';
+import { OpenCloseEnum } from '@/types/enums/space';
 import type { SendMessageParams } from '@/types/interfaces/conversationInfo';
 import { fetchConversationSnapshot } from '@/utils/conversationTaskStatusSync';
 import { useEffect, useRef } from 'react';
@@ -18,6 +20,12 @@ interface UseInitialConversationAutoSendParams {
   routeState?: InitialConversationState | null;
   getEffectiveSandboxId: (conversationInfo?: unknown) => string | number;
   onMessageSend: (params: SendMessageParams) => void;
+  /**
+   * V2 runtime 线 session：存在时首条消息直发 runtime store（乐观轮次立即可见，
+   * 与渲染同线），缺省（flag 关）回落 V1 onMessageSend（bug 2477：进页自动发送
+   * 写 V1 model 列表而面板渲染 V2 store，消息要等 5s 快照轮询捞回才可见）。
+   */
+  runtimeSession?: ConversationRuntimeSession | null;
 }
 
 const hasInitialPayload = (state?: InitialConversationState | null) =>
@@ -37,6 +45,7 @@ export const useInitialConversationAutoSend = ({
   routeState,
   getEffectiveSandboxId,
   onMessageSend,
+  runtimeSession,
 }: UseInitialConversationAutoSendParams) => {
   const autoSentConversationIdRef = useRef<number | null>(null);
 
@@ -71,6 +80,24 @@ export const useInitialConversationAutoSend = ({
         return;
       }
 
+      // V2：直发 runtime store，乐观轮次与面板渲染同线（参数映射对齐 Chat 页
+      // runtimeSession.send）；V1（flag 关）：回落 model 线原路径。
+      if (runtimeSession) {
+        runtimeSession.send({
+          conversationId,
+          message: routeState?.message || '',
+          files: routeState?.files,
+          infos: routeState?.infos,
+          sandboxId: String(getEffectiveSandboxId(data)),
+          currentInfo: data,
+          isSuggestEnabled: data?.agent?.openSuggest === OpenCloseEnum.Open,
+          skillIds: routeState?.skillIds,
+          modelId: routeState?.modelId,
+          agentMode: routeState?.agentMode || 'yolo',
+        });
+        return;
+      }
+
       onMessageSend({
         id: conversationId,
         messageInfo: routeState?.message || '',
@@ -83,5 +110,11 @@ export const useInitialConversationAutoSend = ({
         data,
       });
     })();
-  }, [conversationId, getEffectiveSandboxId, onMessageSend, routeState]);
+  }, [
+    conversationId,
+    getEffectiveSandboxId,
+    onMessageSend,
+    routeState,
+    runtimeSession,
+  ]);
 };

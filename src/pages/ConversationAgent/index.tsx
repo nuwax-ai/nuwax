@@ -20,6 +20,7 @@ import VersionHistory from '@/components/VersionHistory';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import {
   useInitialConversationAutoSend,
   type InitialConversationState,
@@ -454,6 +455,18 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
+  /**
+   * 页面级 V2 runtime 线（bug 2477）：URL id 即建（不等 model 首拉回填），
+   * 进页自动发送直发 runtime store——乐观轮次与面板渲染同线，首条消息立即可见，
+   * 不再等 5s 快照轮询从后端捞回；AgentConversationChatPanel 消费同一实例不自建。
+   */
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: queryConversationId,
+    // chat 请求携带面板当前选中电脑（空串兜底 undefined）
+    getSandboxId: () => finalSelectedComputerId || undefined,
+    effectsResources: {}, // 页面入口无 chat model 资源；预览类 effect 静默忽略
+  });
+
   useInitialConversationAutoSend({
     conversationId: queryConversationId,
     routeState: (location.state || history.location.state) as
@@ -461,6 +474,7 @@ const ConversationAgent: React.FC = () => {
       | undefined,
     getEffectiveSandboxId,
     onMessageSend,
+    runtimeSession: runtimeLine?.session,
   });
 
   /** 空间变化时重新加载模型列表 */
@@ -1763,6 +1777,7 @@ const ConversationAgent: React.FC = () => {
           {/* 左侧面板：聊天区域（始终显示） */}
           <div className={cx(styles['left-panel'])}>
             <AgentConversationChatPanel
+              runtimeLine={runtimeLine}
               selectedComputerId={finalSelectedComputerId}
               onChangeSelectedComputerId={setSelectedComputerId}
               onConversationEnd={handleConversationEnd}
