@@ -31,8 +31,9 @@ export interface UseChatConversationProps {
    * 清空上下文新建会话时绑定的沙箱 id（bug 2451：执行按创建时绑定路由）。
    * 语义=清空重置手动选择后的生效值（智能体绑定/云电脑哨兵），
    * 由页面以渲染期值传入（handleClear 内 state 闭包已过时，不可现场求值）。
+   * 类型归一（bug2443）：智能体绑定沙箱可能为非数字形态，number | string。
    */
-  createConversationSandboxId?: number;
+  createConversationSandboxId?: number | string;
   setClearLoading: (loading: boolean) => void;
   handleClearSideEffect: () => void;
   setIsMoreMessage: (isMore: boolean) => void;
