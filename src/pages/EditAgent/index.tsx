@@ -1085,7 +1085,7 @@ const EditAgent: React.FC = () => {
     if (document.body.classList.contains('xagi-nav-style3')) {
       document.documentElement.style.minWidth = 'unset';
       pageContainerEl?.style.setProperty('overflow-x', 'auto');
-      // 与渲染处分栏 minWidth 一一对应：左栏（编排）+ 右栏（调试/预览），
+      // 与渲染处分栏 minWidth 一一对应：左栏（编排）+ 右栏（调试/预览）+ 第三栏（调试详情），
       // 保证横向滚动到最右时内容零裁剪
       const isTaskAgent = agentConfigInfo?.type === AgentTypeEnum.TaskAgent;
       const leftMinWidth = isTaskAgent ? 380 : 680;
@@ -1096,8 +1096,14 @@ const EditAgent: React.FC = () => {
           ? 1290
           : 530
         : 0;
+      // 调试详情第三栏（ToggleWrap min-width 300）：不计时窄窗口下该栏被
+      // section 的 overflow:hidden 裁掉且无任何滚动条可滚（与经典风格 1540 特例对齐）
+      const debugDetailsMinWidth =
+        showType === EditAgentShowType.Debug_Details ? 300 : 0;
       // 24px = section 左右 margin（@marginSm = 12px，styles/token.less）
-      setStyle3MinWidth(`${leftMinWidth + rightMinWidth + 24}px`);
+      setStyle3MinWidth(
+        `${leftMinWidth + rightMinWidth + debugDetailsMinWidth + 24}px`,
+      );
       return () => {
         document.documentElement.style.minWidth = '1200px';
         pageContainerEl?.style.removeProperty('overflow-x');
@@ -1476,8 +1482,9 @@ const EditAgent: React.FC = () => {
               </div>
             )}
 
-            {/*调试详情*/}
+            {/*调试详情（宽度收窄：默认 434 太占空间，压到 320）*/}
             <DebugDetails
+              className={styles['debug-details-panel']}
               visible={showType === EditAgentShowType.Debug_Details}
               onClose={() => setShowType(EditAgentShowType.Hide)}
             />

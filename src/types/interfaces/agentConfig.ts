@@ -348,6 +348,8 @@ export interface AttachFileProps {
 export interface DebugDetailsProps {
   visible?: boolean;
   onClose: () => void;
+  /** 容器自定义类名（透传 ToggleWrap，供页面侧覆盖默认宽度等） */
+  className?: string;
 }
 
 // 节点详情

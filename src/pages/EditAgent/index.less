@@ -60,6 +60,12 @@
       border-left: @lineWidth solid @colorSplit;
       background-color: @colorBgContainer;
     }
+
+    // 调试详情第三栏收窄（ToggleWrap 默认 max-width 434 太占空间）；
+    // 挂在 .section 下提高特异度以稳定压过 ToggleWrap 的 .container
+    .debug-details-panel {
+      max-width: 320px;
+    }
   }
 
   :global {
