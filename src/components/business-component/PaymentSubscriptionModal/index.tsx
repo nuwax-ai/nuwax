@@ -339,6 +339,13 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
       width={modalWidth}
       centered
       destroyOnHidden
+      // 钉死基础层级（bug 2489，同 2439 先例）：未钉 zIndex 的 antd Modal 自身
+      // 虽在默认 1000，但会向内注入 1100 的 zIndex 上下文，卡内 EllipsisTooltip
+      // 等嵌套弹层按 useZIndex 语义升到 1200，越过客户端壳工具栏固定层
+      // （1099–1101）盖住工具栏。固定 1000 后内部下拉/提示类在 1000+ 低区间，
+      // PC web 无壳层不受影响。本弹窗是收银台（window.location.href 跳
+      // cashierUrl）前的最后一层内容区弹层。
+      zIndex={1000}
     >
       <div className={cx(styles.body)}>
         {loading ? (
