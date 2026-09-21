@@ -1,7 +1,7 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { apiAgentConversation } from '@/services/agentConfig';
 import { MessageTypeEnum } from '@/types/enums/agent';
 import type { SendMessageParams } from '@/types/interfaces/conversationInfo';
+import { fetchConversationSnapshot } from '@/utils/conversationTaskStatusSync';
 import { useEffect, useRef } from 'react';
 
 export interface InitialConversationState {
@@ -55,8 +55,9 @@ export const useInitialConversationAutoSend = ({
     void (async () => {
       let data = null;
       try {
-        const result = await apiAgentConversation(conversationId);
-        data = result.data;
+        // 经共享快照入口拉取（bug 2477）：与进页首拉的轮询/详情查询走同一
+        // 单飞通道，同瞬间的重复详情请求合并为一发，首条消息更快发出。
+        data = (await fetchConversationSnapshot(conversationId)) ?? null;
       } catch (error) {
         console.error('Failed to query conversation before auto-send', error);
       }

@@ -1,16 +1,17 @@
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { isTerminalTaskStatus } from '@/features/conversation/domain/taskStatus';
 import { createResumeConsistencyController } from '@/features/conversation/runtime/resumeConsistencyController';
-import {
-  getHostVisibility,
-  subscribeHostVisibility,
-} from '@/services/hostVisibility';
 import {
   createSnapshotConsistencyController,
   type SnapshotDecision,
   type SnapshotRequestToken,
 } from '@/features/conversation/runtime/snapshotConsistencyController';
 import { createTerminalConsistencyController } from '@/features/conversation/runtime/terminalConsistencyController';
+import {
+  getHostVisibility,
+  subscribeHostVisibility,
+} from '@/services/hostVisibility';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import type {
   ConversationInfo,
@@ -88,6 +89,18 @@ const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
     globalThis.setTimeout(resolve, ms);
   });
+
+/**
+ * 会话终态后的轮询退避间隔（bug 2477 / 2486）。
+ *
+ * 轮询存在的目的有二：检测 EXECUTING 以续接 sub、观察终态补偿侧栏。会话已到
+ * 终态且不再执行时，唯一剩余价值是「另一窗口重新发起执行」的跨端检测——这类
+ * 状态跃迁本身是稀疏事件，维持 5s 全量详情拉取会让会话页无限期打接口
+ * （实测终态后每 5s 一发 / 永不停止）。终态退避到 30s：调用量降 6 倍，
+ * 跨端重启执行的最坏检测延迟 30s（检测到 EXECUTING 或本地重新发送后
+ * 立即恢复 5s / 停轮询语义，机制不变）。
+ */
+const TERMINAL_POLLING_INTERVAL_MS = 30_000;
 
 const getUserMessageCount = (list: MessageInfo[] | undefined | null): number =>
   (list || []).filter((m) => m.role === AssistantRoleEnum.USER).length;
@@ -507,7 +520,11 @@ export function useConversationStreamResume(
         : Promise.resolve(undefined);
     },
     {
-      pollingInterval: GLOBAL_POLLING_INTERVAL,
+      // 终态退避（bug 2477）：终态会话轮询周期 5s → 30s；EXECUTING / 未知状态
+      // 维持原 5s（执行检测灵敏度不变）。pollingInterval 每轮重排时读取最新值。
+      pollingInterval: isTerminalTaskStatus(taskStatus)
+        ? TERMINAL_POLLING_INTERVAL_MS
+        : GLOBAL_POLLING_INTERVAL,
       // 屏幕不可见时暂停定时任务（多窗口/多标签仅可见者轮询）
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,

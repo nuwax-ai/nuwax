@@ -114,7 +114,7 @@ describe('实际恢复 hook 的首次进入', () => {
     expect(fetchConversationSnapshot).not.toHaveBeenCalled();
   });
 
-  it('非执行会话正常发起首次轮询并按间隔继续', async () => {
+  it('非执行会话正常发起首次轮询，终态按退避间隔继续（bug 2477 收敛）', async () => {
     const deps = options({ taskStatus: TaskStatus.COMPLETE });
     renderHook(() => useConversationStreamResume(deps));
     await flush();
@@ -122,6 +122,27 @@ describe('实际恢复 hook 的首次进入', () => {
     expect(fetchConversationSnapshot).toHaveBeenCalledTimes(1);
     expect(deps.reloadHistoryAsync).not.toHaveBeenCalled();
     expect(deps.resumeStream).not.toHaveBeenCalled();
+    // 终态退避：常规轮询间隔（此处 mock 为 1s）内不再重复拉取
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(fetchConversationSnapshot).toHaveBeenCalledTimes(1);
+    // 退避间隔（30s）到达后才发出第二次
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30000);
+    });
+    expect(fetchConversationSnapshot).toHaveBeenCalledTimes(2);
+  });
+
+  it('非终态会话维持常规轮询间隔（终态退避不影响执行检测灵敏度）', async () => {
+    // taskStatus 未知（非终态）：轮询维持常规间隔；不触发 sub 订阅
+    const deps = options({
+      taskStatus: undefined,
+      resumeStream: vi.fn(),
+    });
+    renderHook(() => useConversationStreamResume(deps));
+    await flush();
+    expect(fetchConversationSnapshot).toHaveBeenCalledTimes(1);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });

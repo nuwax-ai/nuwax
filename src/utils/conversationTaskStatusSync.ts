@@ -51,6 +51,10 @@ export function hasExecutingTaskInList(
 /**
  * 拉取完整会话快照。状态轮询需要同时消费 messageList，避免接口已经返回新消息、
  * 前端却只读取 taskStatus 而导致历史会话更新滞后。
+ *
+ * 去重说明（bug 2477）：并发的重复详情请求在服务层 `apiAgentConversation`
+ * 的在途单飞中合并——快照轮询 / 终态补偿 / 列表兜底 / 首拉等通道同时开火时
+ * 只发一发；本函数无需（也不再）自行缓存。
  */
 export async function fetchConversationSnapshot(
   conversationId: number | string,
