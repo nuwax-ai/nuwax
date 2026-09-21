@@ -28,7 +28,10 @@ const routes = [
   },
   {
     path: '/chat-temp/:chatKey',
+    // 沉浸壳顶行退让（禅道 2429，同 /app 树）：临时会话页头部/预览关闭键
+    // 不再渲染进壳工具栏带；浏览器下 wrapper 直通零影响
     component: '@/pages/ChatTemp',
+    wrappers: ['@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
@@ -658,16 +661,23 @@ const routes = [
     ],
   },
   {
-    // 原文对照独立页面：不挂 layouts（无左侧菜单），仅保留登录鉴权
+    // 原文对照独立页面：不挂 layouts（无左侧菜单），仅保留登录鉴权；
+    // 沉浸壳顶行退让（禅道 2429：无菜单独立页头部/关闭键原样渲染在壳
+    // 工具栏透明带下，与 Win/Linux 窗口三键错位叠置）
     path: '/space/original-text/:segmentId/:agentId',
     component: '@/pages/SpaceKnowledgeOriginalText',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
+    // 女娲应用独立页组（应用详情/应用内会话/历史会话/订阅订单等）：不挂
+    // layouts（自带应用侧栏）。沉浸壳顶行退让同上——整树页头/预览面板
+    // 关闭键此前渲染进壳工具栏带（真机证据：页面自身 ×(x≈1235,y≈28) 与
+    // 壳窗口关闭 ×(x≈1258,y≈14) 错位双叠，禅道 2429）。浏览器/独立窗口
+    // 下 wrapper 直通零影响。
     path: '/app',
     component: '@/pages/OpenApp/BaseTemplate',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
     routes: [
       {
