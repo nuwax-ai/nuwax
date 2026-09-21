@@ -89,6 +89,43 @@ describe('directorySyncEvents', () => {
     ).toBe(next);
   });
 
+  it('会话列表补丁应用置顶/归档标记（bug 2475）', () => {
+    const list = [
+      { id: 1, topic: '会话一', pinned: false, archived: false },
+      { id: 2, topic: '会话二', pinned: false, archived: false },
+    ];
+    const pinEvent = emitConversationChanged({
+      operation: 'updated',
+      conversationId: '2',
+      patch: { pinned: true },
+      origin: 'test',
+      reason: 'pin',
+    });
+    const pinnedList = applyConversationChangedToList(list, pinEvent);
+    expect(pinnedList).not.toBe(list);
+    expect(pinnedList[1]).toMatchObject({ id: 2, pinned: true });
+    expect(pinnedList[0]).toMatchObject({ id: 1, pinned: false });
+    // 不可变更新：原列表不被改写
+    expect(list[1].pinned).toBe(false);
+
+    const archiveEvent = emitConversationChanged({
+      operation: 'updated',
+      conversationId: '1',
+      patch: { archived: true },
+      origin: 'test',
+      reason: 'archive',
+    });
+    const archivedList = applyConversationChangedToList(
+      pinnedList,
+      archiveEvent,
+    );
+    expect(archivedList[0]).toMatchObject({ id: 1, archived: true });
+    // 同值重放幂等：返回原引用不触发无谓重渲染
+    expect(
+      applyConversationChangedToList(archivedList, archiveEvent),
+    ).toBe(archivedList);
+  });
+
   it('项目补丁按项目类型和空间匹配', () => {
     const list = [
       {

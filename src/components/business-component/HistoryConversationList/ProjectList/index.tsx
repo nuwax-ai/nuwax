@@ -28,6 +28,7 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history } from 'umi';
+import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { resolveConversationRoute } from './conversationRoute';
 import styles from './index.less';
 import {
@@ -380,6 +381,21 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
               : 'PC.Components.ConversationContextMenu.pinnedToast',
           ),
         );
+        // 置顶成功广播 directorySync 事件（bug 2475）：左侧项目面板既有订阅
+        // 按补丁即时增删标记集合（排前/隐藏），无需手动刷新
+        emitProjectChanged({
+          operation: 'updated',
+          project: {
+            projectId: String(project.projectId),
+            projectType: project.projectType,
+            ...(project.spaceId !== undefined
+              ? { spaceId: String(project.spaceId) }
+              : {}),
+          },
+          patch: { pinned: !project.pinned },
+          origin: 'history-project-list',
+          reason: project.pinned ? 'unpin' : 'pin',
+        });
       } else if (key === 'archive') {
         updateProjectRow(project.projectId, { archived: !project.archived });
         message.success(
@@ -389,6 +405,19 @@ const ProjectList = React.forwardRef<ProjectListRef, ProjectListProps>(
               : 'PC.Components.ConversationContextMenu.archivedToast',
           ),
         );
+        emitProjectChanged({
+          operation: 'updated',
+          project: {
+            projectId: String(project.projectId),
+            projectType: project.projectType,
+            ...(project.spaceId !== undefined
+              ? { spaceId: String(project.spaceId) }
+              : {}),
+          },
+          patch: { archived: !project.archived },
+          origin: 'history-project-list',
+          reason: project.archived ? 'unarchive' : 'archive',
+        });
       } else if (key === 'collect') {
         updateProjectRow(project.projectId, { collected: !project.collected });
         message.success(
