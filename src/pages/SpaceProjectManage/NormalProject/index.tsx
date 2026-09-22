@@ -63,6 +63,7 @@ const NormalProject: React.FC = () => {
         queryFilter: {
           spaceId,
           projectTypes: [AgentComponentTypeEnum.NormalProject],
+          archivedFilter: 'all',
           name: name?.trim() || undefined,
         },
         current: pageIndex,
