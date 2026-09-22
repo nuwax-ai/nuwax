@@ -57,6 +57,26 @@
   width: 100%;
 }
 
+.inputSection .expert-guid-questions {
+  width: 100%;
+  margin-bottom: @marginSm;
+  flex-flow: row nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.expert-guid-question {
+  flex-shrink: 0;
+  max-width: none;
+  white-space: nowrap;
+}
+
 // 输入框上方异步区块(分类排+推荐 pill 行)高度预留(禅道bug2493):
 // 45(分类排 Segmented large 实测高) + 24(分类排下间距 @marginLg)
 // + 40(推荐 pill 行 = controlHeight 32 + 上下 4 padding) + 9(推荐行下间距)

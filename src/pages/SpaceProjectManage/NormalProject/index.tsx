@@ -24,6 +24,12 @@ import EditNormalProjectModal, {
   type EditedNormalProjectInfo,
 } from '../components/EditNormalProjectModal';
 import ProjectListCard from '../components/ProjectListCard';
+import {
+  DEFAULT_ARCHIVED_FILTER,
+  DEFAULT_COLLECTED_FILTER,
+  type ArchivedFilter,
+  type CollectedFilter,
+} from '../components/ProjectListFilterBar';
 import { apiUserProjectPageQuery } from '../services';
 import styles from './index.less';
 
@@ -51,6 +57,15 @@ const NormalProject: React.FC = () => {
   const spaceId = Number(params.spaceId);
   const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
   const [keyword, setKeyword] = useState<string>('');
+  /** 收藏过滤值 */
+  // 筛选条 UI 注释态（随头部重构暂缓接线），先以默认值参与查询过滤
+  const [collectedFilter] = useState<CollectedFilter>(
+    DEFAULT_COLLECTED_FILTER,
+  );
+  /** 归档过滤值 */
+  const [archivedFilter] = useState<ArchivedFilter>(
+    DEFAULT_ARCHIVED_FILTER,
+  );
   const [list, setList] = useState<UserProjectItem[]>([]);
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
@@ -64,6 +79,8 @@ const NormalProject: React.FC = () => {
         queryFilter: {
           spaceId,
           projectTypes: [AgentComponentTypeEnum.NormalProject],
+          collectedFilter,
+          archivedFilter,
           name: name?.trim() || undefined,
         },
         current: pageIndex,
@@ -127,7 +144,7 @@ const NormalProject: React.FC = () => {
       return;
     }
     run(keyword, 1);
-  }, [keyword, refreshToken, run, spaceId]);
+  }, [archivedFilter, collectedFilter, keyword, refreshToken, run, spaceId]);
 
   useProjectChanged((event) => {
     if (

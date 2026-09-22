@@ -34,7 +34,6 @@ import {
   ArrowDownOutlined,
   CheckOutlined,
   CloseOutlined,
-  DesktopOutlined,
   DownOutlined,
   FolderOpenOutlined,
   FolderOutlined,
@@ -113,9 +112,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       showAnnouncement = false,
       onTempChatStop,
       loadingStopTempConversation,
-      showTaskAgentToggle = false,
       isTaskAgentActive = false,
-      onToggleTaskAgent,
       selectedComputerId,
       onComputerSelect,
       workspacePath,
@@ -1061,41 +1058,6 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                         </Dropdown>
                       )}
                     </VoiceFooter.HideWhenActive>
-                    <VoiceFooter.HideWhenActive>
-                      {showTaskAgentToggle && (
-                        <Tooltip
-                          title={
-                            isTaskAgentActive
-                              ? t(
-                                  'PC.Components.ChatInputHome.switchToNormalMode',
-                                )
-                              : t(
-                                  'PC.Components.ChatInputHome.useAgentComputerTask',
-                                )
-                          }
-                        >
-                          <span
-                            className={cx(
-                              'flex',
-                              'items-center',
-                              'content-center',
-                              'cursor-pointer',
-                              styles.box,
-                              styles['plus-box'],
-                              styles['task-agent-box'],
-                              {
-                                [styles['task-agent-active']]:
-                                  isTaskAgentActive,
-                              },
-                            )}
-                            onClick={onToggleTaskAgent}
-                          >
-                            <DesktopOutlined style={{ fontSize: '14px' }} />
-                          </span>
-                        </Tooltip>
-                      )}
-                    </VoiceFooter.HideWhenActive>
-
                     <VoiceFooter.HideWhenActive>
                       <ManualComponentItem
                         manualComponents={commandManualComponents}
