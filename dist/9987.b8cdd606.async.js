@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[9987],{119987:function(e,n,_){_.d(n,{createArchitectureServices:function(){return u.i}});var u=_(306375),c=_(10610)}}]);

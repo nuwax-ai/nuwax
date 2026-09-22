@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[7534,5450],{192113:function(d,a,n){n.r(a);var t=n(417605),_=n(133333),e=n(30135),s=n(517936),u=n(577743),r=function(){var o=(0,s.useParams)(),E=o.agentId;return(0,u.jsx)(t.default,{onClickBack:function(){s.history.push((0,_._u)("/app/".concat(E,"/my-subscriptions")))}})};a.default=r}}]);

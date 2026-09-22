@@ -487,12 +487,12 @@ export const updater = {
       return null;
     }
   },
-  /** 重启并安装（仅 downloaded 状态有意义）。 */
-  async install(): Promise<void> {
+  /** 重启并安装（仅 downloaded 状态有意义）；返回宿主原始回包（success/error），宿主无能力/异常 → null。 */
+  async install(): Promise<{ success: boolean; error?: string } | null> {
     try {
-      await getBridge()?.updater?.install?.();
+      return (await getBridge()?.updater?.install?.()) ?? null;
     } catch {
-      /* 忽略 */
+      return null;
     }
   },
 };
