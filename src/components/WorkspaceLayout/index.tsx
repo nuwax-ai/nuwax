@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -55,47 +56,38 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <div
+      <PageContainerHeader
         className={cx(styles['header-area'])}
-        style={{
-          // 顶部退让由最外层 page-container 统一处理（沉浸态 marginTop），
-          // 页面级不叠加，避免双重下移。右侧不再特判让位：头部已在壳顶行
-          // （28px 窗控带）之下的内容区，贴右对齐（禅道 2429）。
-          padding: headerPadding,
-        }}
-      >
-        <div
-          className={cx(styles['header-left'], 'flex', 'items-center', 'gap-2')}
-        >
-          {/* 标题左侧插槽 (若存在则不显示内置返回按钮) */}
-          {titleLeftSlot ||
-            (back && (
-              <SvgIcon
-                name="icons-nav-backward"
-                className={cx(styles['icon-back'], 'cursor-pointer')}
-                onClick={handleBack}
-              />
-            ))}
-          <h3 className={cx(styles.title)}>
+        titlePrefix={
+          titleLeftSlot ||
+          (back && (
+            <SvgIcon
+              name="icons-nav-backward"
+              className={cx(styles['icon-back'], 'cursor-pointer')}
+              onClick={handleBack}
+            />
+          ))
+        }
+        title={
+          <>
             {title || ''}
             {tips && (
               <Tooltip title={tips}>
                 <QuestionCircleOutlined className={cx(styles['tips-icon'])} />
               </Tooltip>
             )}
-          </h3>
-          {/* 标题右侧插槽 */}
-          {leftSlot}
-        </div>
-        <div>
-          {/* 中间区域插槽 */}
-          {centerSlot}
-        </div>
-        <div className={cx(styles['header-right'])}>
-          {/* 右侧区域插槽 */}
-          {rightSlot}
-        </div>
-      </div>
+          </>
+        }
+        titleExtra={leftSlot}
+        middle={centerSlot}
+        actions={rightSlot}
+        style={{
+          // 顶部退让由最外层 page-container 统一处理（沉浸态 marginTop），
+          // 页面级不叠加，避免双重下移。右侧不再特判让位：头部已在壳顶行
+          // （28px 窗控带）之下的内容区，贴右对齐（禅道 2429）。
+          padding: headerPadding,
+        }}
+      />
       <div
         className={cx(
           styles.content,
