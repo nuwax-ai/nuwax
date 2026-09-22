@@ -15,7 +15,6 @@ import {
   applyProjectChangedToList,
   emitProjectChanged,
 } from '@/utils/directorySyncEvents';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
@@ -23,6 +22,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
 import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
 import ProjectListCard from '../components/ProjectListCard';
+import {
+  DEFAULT_ARCHIVED_FILTER,
+  DEFAULT_COLLECTED_FILTER,
+  type ArchivedFilter,
+  type CollectedFilter,
+} from '../components/ProjectListFilterBar';
 import { apiUserProjectPageQuery } from '../services';
 import styles from './index.less';
 const cx = classNames.bind(styles);
@@ -47,8 +52,16 @@ const UserAppProject: React.FC = () => {
   const location = useLocation();
   const spaceId = Number(params.spaceId);
   const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
-
+  /** 搜索关键词 */
   const [keyword, setKeyword] = useState<string>('');
+  /** 收藏过滤值 */
+  const [collectedFilter, setCollectedFilter] = useState<CollectedFilter>(
+    DEFAULT_COLLECTED_FILTER,
+  );
+  /** 归档过滤值 */
+  const [archivedFilter, setArchivedFilter] = useState<ArchivedFilter>(
+    DEFAULT_ARCHIVED_FILTER,
+  );
   const [list, setList] = useState<UserProjectItem[]>([]);
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
@@ -62,6 +75,8 @@ const UserAppProject: React.FC = () => {
         queryFilter: {
           spaceId,
           projectTypes: [AgentComponentTypeEnum.UserApp],
+          collectedFilter,
+          archivedFilter,
           name: name?.trim() || undefined,
         },
         current: pageIndex,
@@ -125,7 +140,7 @@ const UserAppProject: React.FC = () => {
       return;
     }
     run(keyword, 1);
-  }, [keyword, refreshToken, run, spaceId]);
+  }, [archivedFilter, collectedFilter, keyword, refreshToken, run, spaceId]);
 
   useProjectChanged((event) => {
     if (
@@ -212,16 +227,17 @@ const UserAppProject: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div
-        className={cx(styles['header-area'])}
-        style={{
-          paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
-        }}
-      >
+      <div className={cx(styles['header-area'])}>
         <div className={cx(styles['header-left'])}>
           <h3 className={cx(styles.title)}>
             {dict('PC.Pages.SpaceProjectManage.tabUserApp')}
           </h3>
+          {/* <ProjectListFilterBar
+            archivedFilter={archivedFilter}
+            collectedFilter={collectedFilter}
+            onArchivedFilterChange={setArchivedFilter}
+            onCollectedFilterChange={setCollectedFilter}
+          /> */}
         </div>
         <div className={cx(styles['header-right'])}>
           <Input

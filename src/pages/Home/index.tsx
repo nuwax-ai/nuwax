@@ -8,6 +8,7 @@ import ChatInputUnified, {
   type ChatInputUnifiedRef,
 } from '@/components/business-component/ChatInputUnified';
 import type { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
+import RecommendList from '@/components/RecommendList';
 import {
   findDefaultAgent,
   findTypeFallbackAgent,
@@ -38,6 +39,7 @@ import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
 } from '@/types/enums/agent';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentDetailDto,
   AgentManualComponentInfo,
@@ -97,7 +99,6 @@ const Home: React.FC = () => {
   } = useSelectedComponent();
 
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
-  const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
   const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
   /** 发起会话时选择的工作目录（wiki #17：仅个人电脑时随会话创建记录） */
   const [workspacePath, setWorkspaceDir] = useState<string>('');
@@ -171,10 +172,7 @@ const Home: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
 
-  const defaultAgentId =
-    isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
-      ? tenantConfigInfo.defaultTaskAgentId
-      : tenantConfigInfo?.defaultAgentId;
+  const defaultAgentId = tenantConfigInfo?.defaultAgentId;
   const isUserAppPinned =
     pinnedProject?.projectType === AgentComponentTypeEnum.UserApp;
   // 常规项目参与者判定（多人参与）：owner === false（后端按当前用户视角回的
@@ -191,6 +189,10 @@ const Home: React.FC = () => {
     summonedExpert?.agentId ||
     selectedRecommend?.targetId ||
     (isUserAppPinned ? undefined : defaultAgentId);
+  const agentTypeLoading =
+    !!currentAgentId && agentDetail?.agentId !== currentAgentId;
+  const supportsAgentCapabilities =
+    !agentTypeLoading && agentDetail?.type !== AgentTypeEnum.ChatBot;
 
   const handleAgentModeChange = useCallback(
     (mode: AgentMode) => {
@@ -212,7 +214,7 @@ const Home: React.FC = () => {
     : false;
   const effectiveTaskAgentActive = selectedRecommend
     ? isTaskAgentFunctionType(selectedFunctionType)
-    : isTaskAgentMode;
+    : false;
   // 上框项目自带空间（会话绑定项目），不再展示空间选择器
   const showSpaceSelector = pinnedProject
     ? false
@@ -387,16 +389,18 @@ const Home: React.FC = () => {
     }
 
     // 专家 chip 合并进组件列表：与外部受控列表按 id+type 去重（对齐会话页规则）
-    const mergedInfos = [
-      ...selectedComponentList,
-      ...(expertComponents || []).filter(
-        (expert) =>
-          !selectedComponentList.some(
-            (selected) =>
-              selected.id === expert.id && selected.type === expert.type,
+    const mergedInfos = supportsAgentCapabilities
+      ? [
+          ...selectedComponentList,
+          ...(expertComponents || []).filter(
+            (expert) =>
+              !selectedComponentList.some(
+                (selected) =>
+                  selected.id === expert.id && selected.type === expert.type,
+              ),
           ),
-      ),
-    ];
+        ]
+      : [];
 
     setSubmitting(true);
     try {
@@ -409,11 +413,11 @@ const Home: React.FC = () => {
         selectedFunctionType,
         message: inputMessage,
         files,
-        skillIds,
+        skillIds: supportsAgentCapabilities ? skillIds : [],
         modelId: modelId || selectedModelId,
         agentMode,
         infos: mergedInfos,
-        selectedDocs,
+        selectedDocs: supportsAgentCapabilities ? selectedDocs : [],
         selectedComputerId,
         workspacePath,
         selectedSpaceId,
@@ -449,16 +453,6 @@ const Home: React.FC = () => {
       setSubmitting(false);
     }
   };
-
-  const showTaskAgentToggle = !!(
-    // 上框期间隐藏任务智能体开关（会话归属已由项目约束）
-    (
-      !pinnedProject &&
-      !selectedRecommend &&
-      tenantConfigInfo?.defaultTaskAgentId &&
-      tenantConfigInfo.defaultTaskAgentId > 0
-    )
-  );
 
   // 内容分类列表(对话任务/项目开发/AI教育等):pill 来自已发布分类接口的
   // ChatBox 分类,推荐按 category(分类 key)归入对应 pill;
@@ -598,6 +592,16 @@ const Home: React.FC = () => {
             }
           />
         </div>
+        {summonedExpert &&
+          agentDetail?.agentId === summonedExpert.agentId &&
+          !submitting && (
+            <RecommendList
+              className={cx(styles['expert-guid-questions'])}
+              itemClassName={cx(styles['expert-guid-question'])}
+              chatSuggestList={agentDetail.guidQuestionDtos || []}
+              onClick={(text) => chatInputRef.current?.setText(text)}
+            />
+          )}
         <ChatInputUnified
           ref={chatInputRef}
           className={cx(styles.textarea)}
@@ -618,13 +622,7 @@ const Home: React.FC = () => {
           }
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
-          showTaskAgentToggle={showTaskAgentToggle}
           isTaskAgentActive={effectiveTaskAgentActive}
-          onToggleTaskAgent={() => {
-            // 电脑开关 = 显式切换会话对象，清掉召唤态
-            setSummonedExpert(undefined);
-            setIsTaskAgentMode((prev) => !prev);
-          }}
           selectedComputerId={selectedComputerId}
           onComputerSelect={(id) => {
             setSelectedComputerId(id);
@@ -642,9 +640,8 @@ const Home: React.FC = () => {
           readonly={!agentDetail?.allowPrivateSandbox}
           // 沙箱按 agent 绑定：切换后由选择器解析该 agent 的记忆（未绑定回落云端默认）
           strictAgentMemory
-          /* / 能力弹窗是首页自身特性（选技能/连接器/专家/资料库发起会话），
-             不随 agentDetail 重载/专家切换抖动 —— 不传 enableMention，
-             维持组件默认恒开（首页无 onFetchMentionFiles，@ 仍是纯文本） */
+          /* / 能力弹窗默认由首页开放；ChatBot 或详情加载期间由
+             agentType/agentTypeLoading 统一关闭。 */
           allowOtherModel={agentDetail?.allowOtherModel}
           selectedModelId={selectedModelId}
           onModelSelect={setSelectedModelId}
@@ -652,6 +649,7 @@ const Home: React.FC = () => {
           selectedSpaceId={selectedSpaceId}
           onSpaceSelect={setSelectedSpaceId}
           agentType={agentDetail?.type}
+          agentTypeLoading={agentTypeLoading}
           selectedTag={
             selectedRecommend
               ? {

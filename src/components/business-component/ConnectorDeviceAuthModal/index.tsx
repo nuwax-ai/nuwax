@@ -15,11 +15,15 @@ import styles from './index.less';
  * （useConnectorConnect）共用：
  * open 展开后自动 GET /api/connector/oauth/device/authorize 拿二维码 /
  * 核对码并按 expiresIn 倒计时；弹窗展开期间轮询
- * POST /api/connector/oauth/device/poll（body 回传 state + interval），
- * 响应 status 为 authorized / already_completed 即连接成功自动关弹窗
- * 并回调 onConnected（成功提示由本组件完成）；倒计时结束或点
- * 「重新获取二维码」重新调 authorize（旧 state 作废，重新获取失败
- * 沿用旧二维码，首次获取失败自动关闭弹窗）。
+ * POST /api/connector/oauth/device/poll（body 回传 state + interval）：
+ * - status=authorized 且 connectionId 非空 / already_completed 即连接
+ *   成功，自动关弹窗并回调 onConnected（成功提示由本组件完成）；
+ * - status=authorized 且 connectionId 为 null 需二次再授权（部分连接器
+ *   如飞书：首轮扫码以管理者身份创建应用，还需用户身份再授权一轮），
+ *   弹窗切中间态提示页（回包 message + 原核对码 + 「继续授权」），
+ *   点击后重新调 authorize 换新二维码走第二轮扫码与轮询；
+ * 倒计时结束或点「重新获取二维码」重新调 authorize（旧 state 作废，
+ * 重新获取失败沿用旧二维码，首次获取失败自动关闭弹窗）。
  */
 
 export interface ConnectorDeviceAuthModalProps {
@@ -59,6 +63,16 @@ const ConnectorDeviceAuthModal: React.FC<ConnectorDeviceAuthModalProps> = ({
   /** 二维码剩余有效秒数（每秒递减，到 0 自动重新获取二维码） */
   const [deviceCountdown, setDeviceCountdown] = useState<number>(0);
   /**
+   * 二次再授权中间态提示文案（null = 扫码页形态；非 null = 中间态）：
+   * poll 回包 status=authorized 且 connectionId 为 null 时进入——应用已
+   * 创建但需用户身份再授权一轮，弹窗不关，展示提示文案（回包 message）
+   * + 原核对码 + 「继续授权」按钮，点击后重新调 authorize 换新二维码
+   * 并按新 state 继续轮询
+   */
+  const [deviceReauthNotice, setDeviceReauthNotice] = useState<string | null>(
+    null,
+  );
+  /**
    * 扫码连接代数标记：重新获取二维码 / 关闭弹窗时 +1，
    * 在飞请求的响应凭代数比对自行作废（请求本身无法取消）
    */
@@ -91,6 +105,7 @@ const ConnectorDeviceAuthModal: React.FC<ConnectorDeviceAuthModalProps> = ({
     stopDeviceTimers();
     setDeviceAuth(null);
     setDeviceCountdown(0);
+    setDeviceReauthNotice(null);
     onClose();
   }, [stopDeviceTimers, onClose]);
 
@@ -127,9 +142,14 @@ const ConnectorDeviceAuthModal: React.FC<ConnectorDeviceAuthModalProps> = ({
   /**
    * 启动授权结果轮询（弹窗展开后调用）：
    * POST /api/connector/oauth/device/poll（body 回传 state + interval），
-   * 链式 setTimeout —— 上一次请求落地后再排下一次，响应慢（长轮询）也不叠加；
-   * 响应 data.status 为 authorized / already_completed 即连接成功：
-   * 关弹窗、提示并回调 onConnected（父级就地更新连接状态）；
+   * 链式 setTimeout —— 上一次请求落地后再排下一次，响应慢（长轮询）也不叠加。
+   * 响应处理：
+   * - status=authorized 且 connectionId 非空 / status=already_completed：
+   *   连接成功——关弹窗、提示（回包 message 兜底「连接成功」）并回调
+   *   onConnected（父级就地更新连接状态）；
+   * - status=authorized 且 connectionId 为 null：需二次再授权——不关弹窗，
+   *   停轮询与倒计时，切换到中间态提示页（回包 message + 原核对码 +
+   *   「继续授权」按钮，点击后重新调 authorize 走第二轮扫码）；
    * 其余状态（如 pending）按 interval 秒继续轮询
    */
   const startDevicePoll = (stateValue: string, intervalSeconds: number) => {
@@ -142,10 +162,20 @@ const ConnectorDeviceAuthModal: React.FC<ConnectorDeviceAuthModalProps> = ({
         });
         // 已重新获取二维码 / 已关弹窗：丢弃过期的轮询响应
         if (deviceGenRef.current !== gen) return;
-        const status = response?.data?.status ?? '';
+        const data = response?.data;
+        const status = data?.status ?? '';
+        // connectionId 为 null / undefined 均视为「未建立连接」（eqeqeq 全严格）
+        const hasConnection = (data?.connectionId ?? null) !== null;
+        if (status === 'authorized' && !hasConnection) {
+          // 二次再授权中间态：作废本轮轮询与倒计时（gen+1 链路自止），
+          // 弹窗不关，等用户点「继续授权」再走第二轮
+          stopDeviceTimers();
+          setDeviceReauthNotice(data?.message || '请继续完成授权');
+          return;
+        }
         if (status === 'authorized' || status === 'already_completed') {
           closeDeviceAuth();
-          message.success('连接成功');
+          message.success(data?.message || '连接成功');
           onConnected();
           return;
         }
@@ -193,6 +223,8 @@ const ConnectorDeviceAuthModal: React.FC<ConnectorDeviceAuthModalProps> = ({
       // 作废旧二维码的轮询与倒计时（gen + 1 后旧轮询链自行失效）
       stopDeviceTimers();
       setDeviceAuth(data);
+      // 退出二次再授权中间态，回到扫码页形态（首次获取时本就是 null）
+      setDeviceReauthNotice(null);
       const intervalSeconds =
         data.interval && data.interval > 0 ? data.interval : 5;
       startDeviceCountdown(
@@ -220,11 +252,12 @@ const ConnectorDeviceAuthModal: React.FC<ConnectorDeviceAuthModalProps> = ({
   }, [open, service]);
 
   // 弹窗关闭：清空本地展示状态（父级直接置 open=false 的路径不经
-  // closeDeviceAuth，兜底清理避免下次打开闪现上一轮旧二维码）
+  // closeDeviceAuth，兜底清理避免下次打开闪现上一轮旧二维码 / 中间态）
   useEffect(() => {
     if (!open) {
       setDeviceAuth(null);
       setDeviceCountdown(0);
+      setDeviceReauthNotice(null);
     }
   }, [open]);
 
@@ -262,46 +295,79 @@ const ConnectorDeviceAuthModal: React.FC<ConnectorDeviceAuthModalProps> = ({
       footer={null}
       zIndex={zIndex}
     >
-      <div className={styles.deviceBody}>
-        <div className={styles.deviceQrWrap}>
-          {/* 请求中或尚未拿到 authorize 结果（弹窗刚展开）：Spin 占位 */}
-          {deviceAuthLoading || !deviceAuth ? (
-            <Spin size="large" />
-          ) : !deviceQrContent ? (
-            <span className={styles.deviceQrEmpty}>二维码图片缺失</span>
-          ) : (
-            <img
-              src={deviceQrContent}
-              alt="扫码连接二维码"
-              width={240}
-              height={240}
-            />
-          )}
-        </div>
-        <div className={styles.deviceHint}>
-          请用 App 扫描上方二维码，在手机上确认授权
-        </div>
-        <div className={styles.deviceMeta}>
+      {/* 二次再授权中间态：绿色提示（poll 回包 message）+ 原核对码 + 继续
+          授权按钮；点「继续授权」/「重新获取二维码」都重新调 authorize 换
+          新二维码回到扫码页形态（fetchDeviceAuthorize 内有防重入） */}
+      {deviceReauthNotice !== null ? (
+        <div className={styles.deviceBody}>
+          <div className={styles.deviceReauthTip}>{deviceReauthNotice}</div>
           {deviceUserCode ? (
-            <>
+            <div className={styles.deviceMeta}>
               核对码 <span className={styles.deviceCode}>{deviceUserCode}</span>
-              <span className={styles.deviceMetaDivider}>·</span>
-            </>
+            </div>
           ) : null}
-          剩余{' '}
-          <span className={styles.deviceCountdown}>{deviceCountdownText}</span>
+          <Button
+            type="primary"
+            block
+            className={styles.deviceRefreshBtn}
+            loading={deviceAuthLoading}
+            onClick={() => void fetchDeviceAuthorize()}
+          >
+            继续授权
+          </Button>
+          <Button
+            block
+            loading={deviceAuthLoading}
+            onClick={() => void fetchDeviceAuthorize()}
+          >
+            重新获取二维码
+          </Button>
         </div>
-        {/* 重新获取二维码：底部通栏主按钮（与项目弹窗底部的提交按钮同款排布） */}
-        <Button
-          type="primary"
-          block
-          className={styles.deviceRefreshBtn}
-          loading={deviceAuthLoading}
-          onClick={() => void fetchDeviceAuthorize()}
-        >
-          重新获取二维码
-        </Button>
-      </div>
+      ) : (
+        <div className={styles.deviceBody}>
+          <div className={styles.deviceQrWrap}>
+            {/* 请求中或尚未拿到 authorize 结果（弹窗刚展开）：Spin 占位 */}
+            {deviceAuthLoading || !deviceAuth ? (
+              <Spin size="large" />
+            ) : !deviceQrContent ? (
+              <span className={styles.deviceQrEmpty}>二维码图片缺失</span>
+            ) : (
+              <img
+                src={deviceQrContent}
+                alt="扫码连接二维码"
+                width={240}
+                height={240}
+              />
+            )}
+          </div>
+          <div className={styles.deviceHint}>
+            请用 App 扫描上方二维码，在手机上确认授权
+          </div>
+          <div className={styles.deviceMeta}>
+            {deviceUserCode ? (
+              <>
+                核对码{' '}
+                <span className={styles.deviceCode}>{deviceUserCode}</span>
+                <span className={styles.deviceMetaDivider}>·</span>
+              </>
+            ) : null}
+            剩余{' '}
+            <span className={styles.deviceCountdown}>
+              {deviceCountdownText}
+            </span>
+          </div>
+          {/* 重新获取二维码：底部通栏主按钮（与项目弹窗底部的提交按钮同款排布） */}
+          <Button
+            type="primary"
+            block
+            className={styles.deviceRefreshBtn}
+            loading={deviceAuthLoading}
+            onClick={() => void fetchDeviceAuthorize()}
+          >
+            重新获取二维码
+          </Button>
+        </div>
+      )}
     </Modal>
   );
 };

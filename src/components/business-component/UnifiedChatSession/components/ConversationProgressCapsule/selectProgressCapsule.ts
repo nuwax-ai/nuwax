@@ -7,7 +7,10 @@ import { normalizeV2ToolDetail } from '@/features/conversation/presentation-v2/t
 import { t } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { extractOpenUiArtifactId, resolveOpenUiDisplayState } from '@/utils/openUiArtifact';
+import {
+  extractOpenUiArtifactId,
+  resolveOpenUiDisplayState,
+} from '@/utils/openUiArtifact';
 
 export type ProgressStepStatus = 'completed' | 'active' | 'pending';
 
@@ -147,8 +150,9 @@ const extractTaskResults = (
 
 /**
  * 从 V2 投影抽取最近一轮的 Plan / 终端 / 子智能体。
- * 终态常驻：会话结束后继续产出最后一轮内容；只有新消息开出的新轮
- * 尚无任何可展示内容时才返回 null（胶囊隐藏）。
+ * 终态常驻：会话结束后继续产出最后一轮内容；无可展示内容（steps/
+ * terminals/subagents/fileEdits/taskResults/openuiRenders 全空，currentAction
+ * 文案不算内容——面板无分区时不展示空壳）时才返回 null（胶囊隐藏）。
  */
 export function selectProgressCapsule(
   messageList: MessageInfo[] | undefined,
@@ -229,9 +233,7 @@ export function selectProgressCapsule(
     .find((node) => node.kind === 'tool' || node.kind === 'subagent');
   const running = active && turn.running;
   const currentAction = running
-    ? nodeActionText(runningNode) ||
-      activeStep?.content ||
-      nodeAction(planNode)
+    ? nodeActionText(runningNode) || activeStep?.content || nodeAction(planNode)
     : nodeActionText(runningNode) ||
       nodeActionText(lastActionNode) ||
       activeStep?.content ||
@@ -284,14 +286,15 @@ export function selectProgressCapsule(
     }
   }
 
+  // currentAction 只是触发器文案，不算可展示内容：六类分区内容全空时
+  // 胶囊整体隐藏，避免「✓ 动作文案」空壳点开无分区。
   const hasContent =
     steps.length > 0 ||
     terminals.length > 0 ||
     subagents.length > 0 ||
     fileEdits.length > 0 ||
     taskResults.length > 0 ||
-    openuiRenders.length > 0 ||
-    Boolean(currentAction);
+    openuiRenders.length > 0;
   if (!hasContent) return null;
 
   return {

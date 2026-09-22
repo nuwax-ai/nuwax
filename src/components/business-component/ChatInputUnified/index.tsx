@@ -56,7 +56,6 @@ import {
   ArrowDownOutlined,
   BranchesOutlined,
   CloseOutlined,
-  DesktopOutlined,
   DownOutlined,
   FolderOpenOutlined,
   FolderOutlined,
@@ -68,15 +67,7 @@ import {
   RightOutlined,
   SafetyOutlined,
 } from '@ant-design/icons';
-import {
-  Avatar,
-  Dropdown,
-  message,
-  Switch,
-  Tooltip,
-  Upload,
-  UploadProps,
-} from 'antd';
+import { Avatar, Dropdown, message, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, {
   forwardRef,
@@ -183,9 +174,7 @@ export interface ChatInputUnifiedProps {
   showAnnouncement?: boolean;
   onTempChatStop?: (requestId: string) => void;
   loadingStopTempConversation?: boolean;
-  showTaskAgentToggle?: boolean;
   isTaskAgentActive?: boolean;
-  onToggleTaskAgent?: () => void;
   selectedComputerId?: string;
   onComputerSelect?: (id: string) => void;
   /**
@@ -270,6 +259,8 @@ export interface ChatInputUnifiedProps {
   selectedModelId?: number;
   onModelSelect?: (modelId: number) => void;
   agentType?: string;
+  /** 智能体详情加载中：能力边界未确认前按不支持处理，避免入口短暂露出 */
+  agentTypeLoading?: boolean;
   agentMode?: AgentMode;
   onAgentModeChange?: (mode: AgentMode) => void;
   /** agent 侧版本管理开关，作为会话框配置（chatbox.config）未配置过时的默认值 */
@@ -310,10 +301,11 @@ export interface ChatInputUnifiedProps {
   conversationInfo?: ConversationInfo | null;
 }
 
-/** 组件 ref 协议：外部清空/聚焦输入（首页切推荐/分类时使用） */
+/** 组件 ref 协议：首页清空、聚焦和提示问题填入。 */
 export interface ChatInputUnifiedRef {
   focus: () => void;
   clear: () => void;
+  setText: (text: string) => void;
 }
 
 /**
@@ -343,9 +335,7 @@ const ChatInputUnifiedImpl: React.FC<
   showAnnouncement = false,
   onTempChatStop,
   loadingStopTempConversation,
-  showTaskAgentToggle = false,
   isTaskAgentActive = false,
-  onToggleTaskAgent,
   selectedComputerId,
   onComputerSelect,
   workspacePath,
@@ -386,6 +376,7 @@ const ChatInputUnifiedImpl: React.FC<
   selectedModelId,
   onModelSelect,
   agentType,
+  agentTypeLoading = false,
   tabsSlot,
   prefix,
   voiceInputMock = false,
@@ -411,6 +402,8 @@ const ChatInputUnifiedImpl: React.FC<
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+  const supportsAgentCapabilities =
+    !agentTypeLoading && agentType !== AgentTypeEnum.ChatBot;
 
   const {
     createSubscriptionOrder,
@@ -457,6 +450,13 @@ const ChatInputUnifiedImpl: React.FC<
   const [isStoppingConversation, setIsStoppingConversation] =
     useState<boolean>(false);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!supportsAgentCapabilities) {
+      setPlusMenuOpen(false);
+    }
+  }, [supportsAgentCapabilities]);
   // 已连接连接器（服务端过滤，与能力弹窗连接器页签同域）：
   // 工具栏头像组数据源；弹窗内连接/断开后经 onCapabilityModalClose 刷新
   const [connectedConnectors, setConnectedConnectors] = useState<
@@ -549,6 +549,14 @@ const ChatInputUnifiedImpl: React.FC<
     clear: () => {
       mentionEditorRef.current?.clear?.();
     },
+    setText: (text: string) => {
+      if (wholeDisabled) return;
+      // 提示问题替换草稿，同时清空技能、资料选择，避免旧附件随新问题发送。
+      setSkillIds([]);
+      setSelectedDocs([]);
+      mentionEditorRef.current?.setEditorText(text);
+      mentionEditorRef.current?.focus();
+    },
   }));
 
   const [isHoveringBtn, setIsHoveringBtn] = useState<boolean>(false);
@@ -637,11 +645,11 @@ const ChatInputUnifiedImpl: React.FC<
       onEnter(
         value,
         files,
-        skillIds,
+        supportsAgentCapabilities ? skillIds : [],
         selectedModelId,
         agentMode,
-        selectedDocs,
-        expertComponents,
+        supportsAgentCapabilities ? selectedDocs : [],
+        supportsAgentCapabilities ? expertComponents : [],
       );
       // 已发送内容不再是草稿：无论 isClearInput 与否都清除（isClearInput=false
       // 时输入保留供失败重试，但草稿已消费，卸载兜底不再回写旧内容）
@@ -827,21 +835,6 @@ const ChatInputUnifiedImpl: React.FC<
       }
     },
     [applyServerUploadResult, getDefaultFileName, token, wholeDisabled],
-  );
-
-  /**
-   * + 菜单附件上传：beforeUpload 接管式——antd Upload 仅作文件选择器
-   * （return false 阻止其内置 XHR），文件统一走 uploadFilesToServer。
-   * 不能改回 action 上传：Upload 挂在 Dropdown 菜单项内，点菜单项弹层
-   * 即关闭，内置上传的成功回调在已关闭的弹层里找不到文件列表会静默
-   * 丢弃 done 状态，导致附件上传成功后永远 loading。
-   */
-  const handleBeforeUpload: UploadProps['beforeUpload'] = useCallback(
-    (file: Parameters<NonNullable<UploadProps['beforeUpload']>>[0]) => {
-      uploadFilesToServer([file]);
-      return false;
-    },
-    [uploadFilesToServer],
   );
 
   const handlePaste = useCallback(
@@ -1132,11 +1125,12 @@ const ChatInputUnifiedImpl: React.FC<
   // 智能体 allowAtSkill 非 1（enableMention=false）时收敛技能维度
   // （/ 技能弹层与能力弹窗技能入口一并屏蔽）
   const capabilityResourceTypes = useMemo<CapabilityTypeEnum[]>(() => {
+    if (!supportsAgentCapabilities) return [];
     const types: CapabilityTypeEnum[] = showExpertCapability
       ? [...DEFAULT_CAPABILITY_RESOURCE_TYPES, 'expert']
       : [...DEFAULT_CAPABILITY_RESOURCE_TYPES];
     return enableMention ? types : types.filter((type) => type !== 'skill');
-  }, [showExpertCapability, enableMention]);
+  }, [showExpertCapability, enableMention, supportsAgentCapabilities]);
 
   /** 资料库文档 chip 派生（编辑器内容变化自动同步，替代此前的单选追加） */
   const handleDocsChange = useCallback((docs: SelectedDocInfo[]) => {
@@ -1333,7 +1327,9 @@ const ChatInputUnifiedImpl: React.FC<
             )}
             <MentionEditor
               onPluginSelect={onPluginSelect}
-              onFetchMentionFiles={onFetchMentionFiles}
+              onFetchMentionFiles={
+                supportsAgentCapabilities ? onFetchMentionFiles : undefined
+              }
               ref={mentionEditorRef}
               className={cx(styles.input)}
               disabled={wholeDisabled}
@@ -1344,9 +1340,9 @@ const ChatInputUnifiedImpl: React.FC<
               onEditorScroll={handleEditorScroll}
               onChange={setMessageInfo}
               onSkillIdsChange={setSkillIds}
-              enableMention={enableMention}
+              enableMention={supportsAgentCapabilities && enableMention}
               capabilityResourceTypes={capabilityResourceTypes}
-              atHomePanel={atHomePanel}
+              atHomePanel={supportsAgentCapabilities && atHomePanel}
               onDocsChange={handleDocsChange}
               // 能力弹窗关闭：刷新已连接连接器（弹窗内连接/断开就绪）
               onCapabilityModalClose={refreshConnectedConnectors}
@@ -1355,7 +1351,14 @@ const ChatInputUnifiedImpl: React.FC<
               mentionPlacement={mentionPlacement}
               onPressEnter={handlePressEnter}
               onPaste={handlePaste}
-              placeholder={placeholder}
+              placeholder={
+                placeholder ??
+                (!supportsAgentCapabilities
+                  ? t(
+                      'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
+                    )
+                  : undefined)
+              }
               defaultMentions={defaultMentions}
               enableSubscription={isEnableSubscription}
               onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
@@ -1387,34 +1390,65 @@ const ChatInputUnifiedImpl: React.FC<
                 >
                   {/* + 号聚合菜单：附件上传 / @ 上下文 / / 能力（原独立入口收进此处） */}
                   <VoiceFooter.HideWhenActive>
+                    {/* 文件选择器常驻输入区，菜单关闭后仍能接收文件并完成上传。 */}
+                    <input
+                      ref={attachmentInputRef}
+                      type="file"
+                      hidden
+                      multiple
+                      disabled={wholeDisabled}
+                      onChange={(event) => {
+                        const pickedFiles = Array.from(
+                          event.currentTarget.files || [],
+                        );
+                        event.currentTarget.value = '';
+                        void uploadFilesToServer(pickedFiles);
+                      }}
+                    />
                     <Dropdown
                       trigger={['click']}
+                      disabled={!supportsAgentCapabilities}
+                      open={supportsAgentCapabilities && plusMenuOpen}
+                      onOpenChange={(open, info) => {
+                        if (
+                          supportsAgentCapabilities &&
+                          info.source === 'trigger'
+                        ) {
+                          setPlusMenuOpen(open);
+                        }
+                      }}
                       placement="topLeft"
                       overlayClassName={cx(styles['plus-menu-overlay'])}
                       menu={{
+                        onClick: ({ key }) => {
+                          if (
+                            ![
+                              'version-control',
+                              'auto-commit',
+                              'approval-mode',
+                            ].includes(key)
+                          ) {
+                            setPlusMenuOpen(false);
+                          }
+                        },
                         items: [
                           {
                             key: 'attachment',
+                            disabled: wholeDisabled,
+                            onClick: () => attachmentInputRef.current?.click(),
                             label: (
-                              <Upload
-                                disabled={wholeDisabled}
-                                beforeUpload={handleBeforeUpload}
-                                multiple={true}
-                                showUploadList={false}
+                              <span
+                                className={cx(
+                                  'flex',
+                                  'items-center',
+                                  styles['plus-menu-label'],
+                                )}
                               >
-                                <span
-                                  className={cx(
-                                    'flex',
-                                    'items-center',
-                                    styles['plus-menu-label'],
-                                  )}
-                                >
-                                  <span className={styles['trigger-pill']}>
-                                    <PaperClipOutlined />
-                                  </span>
-                                  {t('PC.Components.ChatInputHome.attachFile')}
+                                <span className={styles['trigger-pill']}>
+                                  <PaperClipOutlined />
                                 </span>
-                              </Upload>
+                                {t('PC.Components.ChatInputHome.attachFile')}
+                              </span>
                             ),
                           },
                           {
@@ -1498,9 +1532,11 @@ const ChatInputUnifiedImpl: React.FC<
                           },
                           { type: 'divider', key: 'plus-menu-divider' },
                           {
-                            // 开关行：点击整行切换并阻止菜单收起
-                            // （Switch 设为 pointer-events:none 纯展示，交互统一由行承接）
+                            // 菜单项承接整行点击；受控 open 保持开关操作后菜单展开。
                             key: 'version-control',
+                            disabled: wholeDisabled || isSessionActive,
+                            onClick: () =>
+                              setEnableVersionControl(!versionControlEnabled),
                             label: (
                               <div
                                 className={cx(
@@ -1509,14 +1545,6 @@ const ChatInputUnifiedImpl: React.FC<
                                   'justify-between',
                                   styles['plus-menu-switch-row'],
                                 )}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!wholeDisabled && !isSessionActive) {
-                                    setEnableVersionControl(
-                                      !versionControlEnabled,
-                                    );
-                                  }
-                                }}
                               >
                                 <span
                                   className={cx(
@@ -1547,6 +1575,9 @@ const ChatInputUnifiedImpl: React.FC<
                             ? [
                                 {
                                   key: 'auto-commit',
+                                  disabled: wholeDisabled || isSessionActive,
+                                  onClick: () =>
+                                    setAutoCommit(!autoCommitEnabled),
                                   label: (
                                     <div
                                       className={cx(
@@ -1555,15 +1586,6 @@ const ChatInputUnifiedImpl: React.FC<
                                         'justify-between',
                                         styles['plus-menu-switch-row'],
                                       )}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (
-                                          !wholeDisabled &&
-                                          !isSessionActive
-                                        ) {
-                                          setAutoCommit(!autoCommitEnabled);
-                                        }
-                                      }}
                                     >
                                       <span
                                         className={cx(
@@ -1597,6 +1619,11 @@ const ChatInputUnifiedImpl: React.FC<
                             : []),
                           {
                             key: 'approval-mode',
+                            disabled: wholeDisabled || isSessionActive,
+                            onClick: () =>
+                              setChatboxMode(
+                                agentMode === 'ask' ? 'yolo' : 'ask',
+                              ),
                             label: (
                               <div
                                 className={cx(
@@ -1605,14 +1632,6 @@ const ChatInputUnifiedImpl: React.FC<
                                   'justify-between',
                                   styles['plus-menu-switch-row'],
                                 )}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!wholeDisabled && !isSessionActive) {
-                                    setChatboxMode(
-                                      agentMode === 'ask' ? 'yolo' : 'ask',
-                                    );
-                                  }
-                                }}
                               >
                                 <span
                                   className={cx(
@@ -1638,11 +1657,19 @@ const ChatInputUnifiedImpl: React.FC<
                               </div>
                             ),
                           },
-                        ],
+                        ].filter(
+                          (item) =>
+                            supportsAgentCapabilities ||
+                            item.key === 'attachment',
+                        ),
                       }}
                     >
                       <Tooltip
-                        title={t('PC.Components.ChatInputHome.plusMenu')}
+                        title={t(
+                          supportsAgentCapabilities
+                            ? 'PC.Components.ChatInputHome.plusMenu'
+                            : 'PC.Components.ChatInputHome.attachFile',
+                        )}
                       >
                         <span
                           className={cx(
@@ -1654,6 +1681,11 @@ const ChatInputUnifiedImpl: React.FC<
                             styles['plus-box'],
                             { [styles.disabled]: wholeDisabled },
                           )}
+                          onClick={() => {
+                            if (!supportsAgentCapabilities && !wholeDisabled) {
+                              attachmentInputRef.current?.click();
+                            }
+                          }}
                         >
                           <PlusOutlined className={cx(styles['svg-icon'])} />
                         </span>
@@ -1699,7 +1731,7 @@ const ChatInputUnifiedImpl: React.FC<
 
                   {/* 审批模式回执 pill：开启审批时显示在 + 号旁，x 关闭即切回自动 */}
                   <VoiceFooter.HideWhenActive>
-                    {agentMode === 'ask' && (
+                    {supportsAgentCapabilities && agentMode === 'ask' && (
                       <Tooltip
                         title={t(
                           'PC.Components.ChatInputHome.agentModeApprovalDesc',
@@ -1744,47 +1776,13 @@ const ChatInputUnifiedImpl: React.FC<
                       </Tooltip>
                     )}
                   </VoiceFooter.HideWhenActive>
-                  <VoiceFooter.HideWhenActive>
-                    {showTaskAgentToggle && (
-                      <Tooltip
-                        title={
-                          isTaskAgentActive
-                            ? t(
-                                'PC.Components.ChatInputHome.switchToNormalMode',
-                              )
-                            : t(
-                                'PC.Components.ChatInputHome.useAgentComputerTask',
-                              )
-                        }
-                      >
-                        <span
-                          className={cx(
-                            'flex',
-                            'items-center',
-                            'content-center',
-                            'cursor-pointer',
-                            styles.box,
-                            styles['plus-box'],
-                            styles['task-agent-box'],
-                            {
-                              [styles['task-agent-active']]: isTaskAgentActive,
-                            },
-                          )}
-                          onClick={onToggleTaskAgent}
-                        >
-                          <DesktopOutlined style={{ fontSize: '14px' }} />
-                        </span>
-                      </Tooltip>
-                    )}
-                  </VoiceFooter.HideWhenActive>
-
                   {/* 专家/召唤专家/推荐类型回执 pill 已上框：内联至输入框最前面
                       （input-line 行首），不再占位工具栏 */}
 
                   {/* 已连接连接器头像组（重叠，最多 3 个，超出尾部 +N）：
                       点击唤起能力弹窗并定位连接器页签；数据在弹窗关闭后刷新。
-                      ChatBot 类型智能体不展示（未传 agentType 的普通入口不受影响） */}
-                  {agentType !== AgentTypeEnum.ChatBot &&
+                      ChatBot 类型或智能体详情加载期间不展示 */}
+                  {supportsAgentCapabilities &&
                     connectedConnectors.length > 0 && (
                       <VoiceFooter.HideWhenActive>
                         <Tooltip
@@ -1834,13 +1832,15 @@ const ChatInputUnifiedImpl: React.FC<
                       </VoiceFooter.HideWhenActive>
                     )}
 
-                  <VoiceFooter.HideWhenActive>
-                    <ManualComponentItem
-                      manualComponents={commandManualComponents}
-                      selectedComponentList={selectedComponentList}
-                      onSelectComponent={onSelectComponent}
-                    />
-                  </VoiceFooter.HideWhenActive>
+                  {supportsAgentCapabilities && (
+                    <VoiceFooter.HideWhenActive>
+                      <ManualComponentItem
+                        manualComponents={commandManualComponents}
+                        selectedComponentList={selectedComponentList}
+                        onSelectComponent={onSelectComponent}
+                      />
+                    </VoiceFooter.HideWhenActive>
+                  )}
 
                   <VoiceFooter.Expand />
 

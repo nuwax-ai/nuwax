@@ -3,7 +3,6 @@
  * 复制内容只含最终回答本身，不含隐藏过程；调试入口读取整轮 finalResult。
  */
 import CopyButton from '@/components/base/CopyButton';
-import ShareMessageButton from '@/components/business-component/ConversationShareModal/ShareMessageButton';
 import ChatBottomDebug from '@/components/ChatView/ChatBottomDebug';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
@@ -121,7 +120,6 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
           <CopyButton text={answerText} onCopy={handleCopy}>
             {dict('PC.Components.ChatView.copy')}
           </CopyButton>
-          <ShareMessageButton text={answerText} isUser={false} />
           {showDebug && lastAssistant && (
             <ChatBottomDebug messageInfo={lastAssistant} />
           )}
