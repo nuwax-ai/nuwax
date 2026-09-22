@@ -3011,6 +3011,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.DeveloperPermissionForm.maxScheduledTaskCountTooltip": "スケジュールされたタスクの最大数、-1 は無制限を意味します",
   "PC.Pages.DeveloperPermissionForm.maxSpaceCount": "最大ワークスペース数",
   "PC.Pages.DeveloperPermissionForm.maxSpaceCountTooltip": "最大ワークスペース数、-1 は無制限を意味します",
+  "PC.Pages.DeveloperPermissionForm.maxUserAppCount": "フルスタックアプリの最大数",
+  "PC.Pages.DeveloperPermissionForm.maxUserAppCountTooltip": "フルスタックアプリの最大数、-1 は無制限を意味します",
   "PC.Pages.DeveloperPermissionForm.pageDailyPromptLimit": "Web アプリ開発の 1 日の会話制限",
   "PC.Pages.DeveloperPermissionForm.pageDailyPromptLimitTooltip": "Web アプリ開発者の日常会話の制限、-1 は無制限を意味します",
   "PC.Pages.EcosystemMcp.disableFailed": "無効化に失敗しました",
