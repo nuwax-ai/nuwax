@@ -15,6 +15,7 @@ import {
   hostBridge,
   isDesktopHost,
   isImmersiveShell,
+  isWinLinuxShell,
   shellAvoid,
 } from '@/utils/hostBridge';
 import { jumpTo } from '@/utils/router';
@@ -44,6 +45,7 @@ import {
   resolveCurrentTitle,
   resolveIsShowTitle,
   resolveSecondaryBackgroundColor,
+  resolveSecondColumnShellGeometry,
   resolveSecondMenuVisibility,
 } from '../secondMenuPolicy';
 import { resolveSidebarCollapsePolicy } from '../sidebarCollapsePolicy';
@@ -302,6 +304,17 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     [isMobile, effectiveNavigationStyle, token.colorBgContainer],
   );
 
+  const secondColumnShellGeometry = useMemo(
+    () =>
+      resolveSecondColumnShellGeometry({
+        immersiveShell: isImmersiveShell(),
+        winLinuxShell: isWinLinuxShell(),
+        menuTop: shellAvoid.TOP,
+        contentTop: shellAvoid.CONTENT_TOP,
+      }),
+    [],
+  );
+
   /**
    * 导航容器样式类名
    */
@@ -503,7 +516,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             // 21px 底色条，收起时须同步归零（展开交还 less 默认值）
             padding: secondMenuVisible ? undefined : 0,
             borderRightWidth: secondMenuVisible ? undefined : 0,
-            paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
+            ...secondColumnShellGeometry,
             // 底色交给 less（原型 #fafafa，2026-09-12）：此处原内联 transparent
             // 会盖掉 less 背景，移除后单栏二级列按原型配色渲染
           }}
