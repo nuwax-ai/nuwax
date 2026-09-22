@@ -139,13 +139,15 @@ const useConnectorList = ({
   const pageRef = useRef<number>(0);
   const requestIdRef = useRef<number>(0);
   const loadingRef = useRef<boolean>(false);
+  const hasMoreRef = useRef<boolean>(true);
 
   const load = useCallback(
     async (reset: boolean) => {
       // 防重入仅限追加加载；条件变化的重置加载由 requestId 过期丢弃
-      if (!reset && loadingRef.current) {
+      if (!reset && (loadingRef.current || !hasMoreRef.current)) {
         return;
       }
+      if (reset) hasMoreRef.current = true;
       const requestId = ++requestIdRef.current;
       const nextPage = reset ? 1 : pageRef.current + 1;
       loadingRef.current = true;
@@ -202,6 +204,9 @@ const useConnectorList = ({
             type,
           ));
         }
+        // 与 loadingRef 同步收口：末页响应后、React 提交前到达的旧触底
+        // 回调仍可能看到 hasMore=true，数据层必须先阻止越过末页再发请求。
+        hasMoreRef.current = more;
         setList((prev) => (reset ? items : [...prev, ...items]));
         pageRef.current = nextPage;
         setHasMore(more);
@@ -211,6 +216,7 @@ const useConnectorList = ({
           if (reset) {
             setList([]);
           }
+          hasMoreRef.current = false;
           setHasMore(false);
         }
       } finally {

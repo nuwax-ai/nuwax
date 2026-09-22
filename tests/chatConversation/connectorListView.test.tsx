@@ -12,10 +12,13 @@
  */
 import type { ConnectorListViewProps } from '@/components/business-component/ConnectorListView';
 import ConnectorListView from '@/components/business-component/ConnectorListView';
+import useConnectorList from '@/components/business-component/ConnectorListView/hooks/useConnectorList';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
+  renderHook,
   screen,
   waitFor,
 } from '@testing-library/react';
@@ -92,11 +95,22 @@ const pageOf = (records: unknown[], pageNum = 1) => ({
   data: { records, pageNum, total: records.length },
 });
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const renderView = (props: Partial<ConnectorListViewProps>) =>
   render(<ConnectorListView type="system" {...props} />);
@@ -200,21 +214,141 @@ describe('ConnectorListView·场景接口参数契约', () => {
 });
 
 describe('ConnectorListView·分页与连接流程', () => {
-  it('服务端分页：触底追加下一页（本页取满判定 hasMore）', async () => {
+  it('末页响应已完成而视图尚未提交时，旧补拉回调不能越过末页', async () => {
+    const lastPage = deferred<ReturnType<typeof pageOf>>();
     apiConnectorProviderPageList
       .mockResolvedValueOnce(
         pageOf(
           Array.from({ length: 20 }, (_, i) => provider({ service: `s-${i}` })),
-          1,
+        ),
+      )
+      .mockReturnValueOnce(lastPage.promise)
+      .mockResolvedValue(pageOf([], 3));
+    const { result } = renderHook(() => useConnectorList({ type: 'search' }));
+    await waitFor(() => expect(result.current.list).toHaveLength(20));
+    const loadMore = result.current.loadMore;
+    act(() => loadMore());
+    expect(apiConnectorProviderPageList).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      lastPage.resolve(pageOf([provider({ service: 'last' })], 2));
+      // 请求已在 microtask 中完成，但仍在同一 React batch，模拟旧触底回调重入。
+      await Promise.resolve();
+      loadMore();
+    });
+
+    expect(
+      apiConnectorProviderPageList.mock.calls.map(([params]) => params.pageNum),
+    ).toEqual([1, 2]);
+    expect(result.current.hasMore).toBe(false);
+    expect(result.current.list).toHaveLength(21);
+  });
+
+  it('容器高度为 0 时不自动翻页（隐藏页签或尚未布局）', async () => {
+    const firstPage = deferred<ReturnType<typeof pageOf>>();
+    apiConnectorProviderPageList
+      .mockReturnValueOnce(firstPage.promise)
+      .mockResolvedValue(pageOf([], 2));
+    const { container } = renderView({ type: 'search' });
+    const scroller = container.firstElementChild as HTMLElement;
+    expect(scroller.clientHeight).toBe(0);
+
+    await act(async () => {
+      firstPage.resolve(
+        pageOf(
+          Array.from({ length: 20 }, (_, i) => provider({ service: `s-${i}` })),
+        ),
+      );
+    });
+
+    expect(apiConnectorProviderPageList).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('s-0')).toBeInTheDocument();
+    fireEvent.scroll(scroller);
+    expect(apiConnectorProviderPageList).toHaveBeenCalledTimes(1);
+  });
+
+  it('隐藏容器恢复可见且未填满时，恢复首屏补拉', async () => {
+    let notifyResize: (() => void) | undefined;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          notifyResize = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    apiConnectorProviderPageList
+      .mockResolvedValueOnce(
+        pageOf(
+          Array.from({ length: 20 }, (_, i) => provider({ service: `s-${i}` })),
         ),
       )
       .mockResolvedValueOnce(pageOf([provider({ service: 'last' })], 2));
     const { container } = renderView({ type: 'search' });
     await screen.findByText('s-0');
+    expect(apiConnectorProviderPageList).toHaveBeenCalledTimes(1);
 
+    const scroller = container.firstElementChild as HTMLElement;
+    Object.defineProperty(scroller, 'scrollHeight', { value: 100 });
+    Object.defineProperty(scroller, 'clientHeight', { value: 480 });
+    act(() => notifyResize?.());
+    await screen.findByText('last');
+
+    expect(apiConnectorProviderPageList).toHaveBeenCalledTimes(2);
+  });
+
+  it('条件重置后重新允许分页，不继承上一查询的末页标记', async () => {
+    apiConnectorProviderPageList
+      .mockResolvedValueOnce(pageOf([]))
+      .mockResolvedValueOnce(
+        pageOf(
+          Array.from({ length: 20 }, (_, i) => provider({ service: `s-${i}` })),
+        ),
+      )
+      .mockResolvedValueOnce(pageOf([provider({ service: 'last' })], 2));
+    const { result, rerender } = renderHook(
+      ({ category }) => useConnectorList({ type: 'system', category }),
+      { initialProps: { category: 'first' } },
+    );
+    await waitFor(() => expect(result.current.hasMore).toBe(false));
+    rerender({ category: 'second' });
+    await waitFor(() => expect(result.current.list).toHaveLength(20));
+    act(() => result.current.loadMore());
+    await waitFor(() => expect(result.current.list).toHaveLength(21));
+
+    expect(
+      apiConnectorProviderPageList.mock.calls.map(([params]) => [
+        params.category,
+        params.pageNum,
+      ]),
+    ).toEqual([
+      ['first', 1],
+      ['second', 1],
+      ['second', 2],
+    ]);
+  });
+
+  it('服务端分页：触底追加下一页（本页取满判定 hasMore）', async () => {
+    const firstPage = deferred<ReturnType<typeof pageOf>>();
+    apiConnectorProviderPageList
+      .mockReturnValueOnce(firstPage.promise)
+      .mockResolvedValueOnce(pageOf([provider({ service: 'last' })], 2));
+    const { container } = renderView({ type: 'search' });
     const scroller = container.firstElementChild as HTMLElement;
     Object.defineProperty(scroller, 'scrollHeight', { value: 500 });
     Object.defineProperty(scroller, 'clientHeight', { value: 480 });
+    await act(async () =>
+      firstPage.resolve(
+        pageOf(
+          Array.from({ length: 20 }, (_, i) => provider({ service: `s-${i}` })),
+          1,
+        ),
+      ),
+    );
+    await screen.findByText('s-0');
+
     fireEvent.scroll(scroller);
     await screen.findByText('last');
     expect(apiConnectorProviderPageList).toHaveBeenCalledTimes(2);
