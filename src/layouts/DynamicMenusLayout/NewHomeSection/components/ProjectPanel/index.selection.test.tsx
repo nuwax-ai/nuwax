@@ -224,6 +224,90 @@ describe('ProjectPanel 选中关系', () => {
     ).toBeTruthy();
   });
 
+  it.each([
+    {
+      label: '跨页重复导致去重后不足 total',
+      total: 24,
+      tail: [20, 21, 22, 23],
+    },
+    { label: '空末页且 total 陈旧', total: 25, tail: [] },
+    {
+      label: '末页全为重复记录',
+      total: 40,
+      tail: Array.from({ length: 20 }, (_, i) => i + 1),
+    },
+  ])('2397 $label 时停止查看更多', async ({ total, tail }) => {
+    const first = Array.from({ length: 20 }, (_, i) =>
+      buildRecord({
+        projectId: i + 1,
+        name: `分页项目${i + 1}`,
+      }),
+    );
+    respondPage(first);
+    pageQueryMock
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: { records: first, total },
+      })
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: {
+          records: tail.map((id) =>
+            buildRecord({ projectId: id, name: `分页项目${id}` }),
+          ),
+          total,
+        },
+      });
+    render(<ProjectPanel compact />);
+    fireEvent.click(
+      await screen.findByText(
+        `PC.Components.AgentConversation.viewMore (${total - 20})`,
+      ),
+    );
+    await waitFor(() => expect(pageQueryMock).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(document.querySelector('[class*="load-more-entry"]')).toBeNull(),
+    );
+    expect(screen.getByText('分页项目1')).toBeVisible();
+  });
+
+  it('2397 下一页请求失败仍可重试，成功末页后才关闭入口', async () => {
+    const first = Array.from({ length: 20 }, (_, i) =>
+      buildRecord({
+        projectId: i + 1,
+        name: `分页项目${i + 1}`,
+      }),
+    );
+    respondPage(first);
+    pageQueryMock
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: { records: first, total: 21 },
+      })
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: {
+          records: [buildRecord({ projectId: 21, name: '分页项目21' })],
+          total: 21,
+        },
+      });
+    render(<ProjectPanel compact />);
+    fireEvent.click(
+      await screen.findByText('PC.Components.AgentConversation.viewMore (1)'),
+    );
+    await waitFor(() => expect(pageQueryMock).toHaveBeenCalledTimes(2));
+    fireEvent.click(
+      await screen.findByText('PC.Components.AgentConversation.viewMore (1)'),
+    );
+    await screen.findByText('分页项目21');
+    await waitFor(() =>
+      expect(document.querySelector('[class*="load-more-entry"]')).toBeNull(),
+    );
+    expect(pageQueryMock.mock.calls[1][0].current).toBe(2);
+    expect(pageQueryMock.mock.calls[2][0].current).toBe(2);
+  });
+
   it('自动展开只触发一次：命中后手动折叠不被强制弹回', async () => {
     respondPage(defaultRecords(), defaultConversations());
     const { rerender } = render(

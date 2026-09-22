@@ -324,6 +324,9 @@ const ProjectPanel = forwardRef<
     }, [archiveArmingKey, childDeleteArmingKey]);
     // 分页：首屏 PROJECT_PAGE_SIZE 条，「查看更多」按页追加（tab 接口 current/pageSize/total 契约）
     const [total, setTotal] = useState(0);
+    // 分页游标按原始回包推进，不能用去重/事件过滤后的列表长度判断末页。
+    const [consumedCount, setConsumedCount] = useState(0);
+    const [lastPageIsShort, setLastPageIsShort] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const pageRef = useRef(1);
     const projectsRef = useRef(projects);
@@ -421,6 +424,8 @@ const ProjectPanel = forwardRef<
               ? page
               : Math.max(1, Math.ceil(records.length / PROJECT_PAGE_SIZE));
             setTotal(res.data.total ?? 0);
+            setConsumedCount((page - 1) * pageSize + records.length);
+            setLastPageIsShort(records.length < pageSize);
             if (options.awaitKey !== undefined) {
               return records.some(
                 (item) =>
@@ -696,8 +701,8 @@ const ProjectPanel = forwardRef<
       }
     });
 
-    const hasMore = hasMoreProjects(projects.length, total);
-    const remainingCount = remainingProjects(projects.length, total);
+    const hasMore = !lastPageIsShort && hasMoreProjects(consumedCount, total);
+    const remainingCount = remainingProjects(consumedCount, total);
     const handleLoadMore = () => {
       if (loadingMore || !hasMore) return;
       void fetchPage(pageRef.current + 1, { append: true });
