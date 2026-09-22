@@ -1,5 +1,4 @@
 import SvgIcon from '@/components/base/SvgIcon';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -60,9 +59,9 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         className={cx(styles['header-area'])}
         style={{
           // 顶部退让由最外层 page-container 统一处理（沉浸态 marginTop），
-          // 页面级不叠加，避免双重下移；右让仅 Win/Linux 自绘三键需要。
+          // 页面级不叠加，避免双重下移。右侧不再特判让位：头部已在壳顶行
+          // （28px 窗控带）之下的内容区，贴右对齐（禅道 2429）。
           padding: headerPadding,
-          paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
         }}
       >
         <div

@@ -1,5 +1,7 @@
 # 需求 5c 交付:会话内搜索收尾 + 会话/消息分享落地页
 
+> **⚠️ 2026-09-21 更新:分享功能已整体下线**(产品定调「这次不搞了」,后端契约始终未 ready)。第三节起的分享链路、§四后端替换点、§五分享验收项与 §六分享相关文件均为历史记录,对应代码(ConversationShareModal/ShareMessageButton、conversationShareMd util+mock+单测、apiConversationShareMd、四处入口、五语言词条)已全部移除;会话内搜索部分仍有效。
+
 > 分支:`feat/conversation-share`(基于 `feat/conversation-renderer-v2` @`08b8597a3`) 状态:mock 全链路可验收,后端契约定型后按「后端替换点」切换
 
 ## 一、范围与决策

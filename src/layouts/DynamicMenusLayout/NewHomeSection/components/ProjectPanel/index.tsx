@@ -51,6 +51,7 @@ import {
   FolderOutlined,
   InboxOutlined,
   LoadingOutlined,
+  ProfileOutlined,
   PushpinFilled,
   PushpinOutlined,
   StarFilled,
@@ -69,6 +70,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { history } from 'umi';
 import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
 import { CHILDREN_PROBE_LIMIT, diffChildrenProbe } from './childrenProbe';
@@ -138,6 +140,24 @@ export interface ProjectItem {
   owner?: boolean;
   children?: ProjectChildItem[];
 }
+
+/**
+ * 项目详情页路径：与 SpaceProjectManage 卡片点击同映射，仅三类有详情页的
+ * 类型可构造；spaceId 缺失或类型未覆盖（PageApp 等）返回 null，菜单项隐藏。
+ */
+const projectDetailPath = (project: ProjectItem): string | null => {
+  if (project.spaceId === undefined) return null;
+  switch (project.projectType) {
+    case AgentComponentTypeEnum.NormalProject:
+      return `/space/${project.spaceId}/normal-project-detail/${project.id}`;
+    case AgentComponentTypeEnum.UserApp:
+      return `/space/${project.spaceId}/app-project-detail/${project.id}`;
+    case AgentComponentTypeEnum.ThirdApp:
+      return `/space/${project.spaceId}/third-app-detail/${project.id}`;
+    default:
+      return null;
+  }
+};
 
 const applyProjectChildEvent = (
   children: ProjectChildItem[],
@@ -331,7 +351,10 @@ const ProjectPanel = forwardRef<
         try {
           const res = await apiUserProjectPageQuery({
             queryFilter: {
-              projectTypes: [AgentComponentTypeEnum.NormalProject, AgentComponentTypeEnum.UserApp],
+              projectTypes: [
+                AgentComponentTypeEnum.NormalProject,
+                AgentComponentTypeEnum.UserApp,
+              ],
             },
             current: page,
             pageSize,
@@ -467,7 +490,9 @@ const ProjectPanel = forwardRef<
             }
             const delay = CREATED_SETTLE_DELAYS_MS[attempt];
             if (delay === undefined) return;
-            await new Promise((resolve) => setTimeout(resolve, delay));
+            await new Promise((resolve) => {
+              setTimeout(resolve, delay);
+            });
           }
         } finally {
           settlingCreatedKeysRef.current.delete(key);
@@ -1128,10 +1153,12 @@ const ProjectPanel = forwardRef<
       });
     };
 
-    // 项目行右键菜单:置顶/归档/收藏/重命名/删除（标记判断走复合键；
-    // flagKey 避免与 onClick 解参 key 遮蔽）
+    // 项目行右键菜单:置顶/归档/收藏/项目详情/重命名/删除（标记判断走复合键；
+    // flagKey 避免与 onClick 解参 key 遮蔽）。置顶文案全站统一「置顶/取消置顶」
+    // （2026-09-21 定调），与会话行共用 ConversationContextMenu 词条
     const buildProjectMenu = (project: ProjectItem) => {
       const flagKey = projectKeyOf(project);
+      const detailPath = projectDetailPath(project);
       return {
         items: [
           {
@@ -1161,6 +1188,17 @@ const ProjectPanel = forwardRef<
                 : 'PC.Components.ConversationContextMenu.favorite',
             ),
           },
+          ...(detailPath
+            ? [
+                {
+                  key: 'detail',
+                  icon: <ProfileOutlined />,
+                  label: dict(
+                    'PC.Layouts.DynamicMenusLayout.NewHomeSection.projectDetail',
+                  ),
+                },
+              ]
+            : []),
           { type: 'divider' as const },
           {
             key: 'rename',
@@ -1193,6 +1231,8 @@ const ProjectPanel = forwardRef<
             }
           } else if (key === 'collect') {
             toggleProjectCollected(project);
+          } else if (key === 'detail') {
+            if (detailPath) history.push(detailPath);
           } else if (key === 'rename') {
             setRenameProjectId(flagKey);
             setProjectRenameName(project.name);

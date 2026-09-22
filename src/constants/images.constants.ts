@@ -21,7 +21,6 @@ import { ReactComponent as ICON_PLUGIN } from '@/assets/svg/icon_plugin.svg';
 import { ReactComponent as ICON_PLUGIN_BOLD } from '@/assets/svg/icon_plugin_bold.svg';
 import { ReactComponent as ICON_PUBLISHED } from '@/assets/svg/icon_published.svg';
 import { ReactComponent as ICON_SETTING_SMALL } from '@/assets/svg/icon_setting_small.svg';
-import { ReactComponent as ICON_SHARE } from '@/assets/svg/icon_share.svg';
 import { ReactComponent as ICON_SPACE_SQUARE } from '@/assets/svg/icon_space_square.svg';
 import { ReactComponent as ICON_TEMPLATE } from '@/assets/svg/icon_template.svg';
 import { ReactComponent as ICON_KNOWLEDGE } from '@/assets/svg/knowledge_icon.svg';
@@ -165,7 +164,6 @@ export {
   ICON_PUBLISHED,
   ICON_SETTING,
   ICON_SETTING_SMALL,
-  ICON_SHARE,
   ICON_SPACE_SQUARE,
   ICON_STAR,
   ICON_STAR_FILL,

@@ -1,5 +1,4 @@
 import ActionMenu, { ActionItem } from '@/components/base/ActionMenu';
-import ConversationShareModal from '@/components/business-component/ConversationShareModal';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
@@ -7,13 +6,11 @@ import { apiPublishTemplateCopy } from '@/services/publish';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { AgentDetailDto } from '@/types/interfaces/agent';
-import { copyTextToClipboard } from '@/utils/clipboard';
-import { buildConversationMarkdown } from '@/utils/conversationShareMd';
 import { jumpToAgent } from '@/utils/router';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -45,13 +42,6 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   const [openMove, setOpenMove] = useState<boolean>(false);
   const [copyTemplateLoading, setCopyTemplateLoading] =
     useState<boolean>(false);
-
-  // 会话分享(需求 5c):当前会话消息组装 markdown 后分享
-  const [shareConversationOpen, setShareConversationOpen] = useState(false);
-  const { conversationInfo, messageList } = useModel('conversationInfo');
-  const hasShareableConversation = Boolean(
-    conversationInfo?.id && messageList?.length,
-  );
 
   // 切换收藏与取消收藏
   const handleToggleCollect = useCallback(() => {
@@ -89,24 +79,6 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
         });
     }
   }, [agentInfo?.statistics?.targetId, isCollected]);
-
-  // 分享功能
-  const handleShare = async () => {
-    if (agentInfo?.shareLink) {
-      // 使用统一的复制工具
-      await copyTextToClipboard(
-        agentInfo.shareLink,
-        () => {
-          message.success(
-            dict('PC.Components.ChatTitleActions.shareLinkCopied'),
-          );
-        },
-        false, // 不显示默认成功消息，使用自定义消息
-      );
-    } else {
-      message.info(dict('PC.Components.ChatTitleActions.noShareLink'));
-    }
-  };
 
   // 智能体、工作流模板复制
   const { run: runCopyTemplate } = useRequest(apiPublishTemplateCopy, {
@@ -155,24 +127,6 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   const actions: ActionItem[] = useMemo(
     () =>
       [
-        ...(hasShareableConversation
-          ? [
-              {
-                key: 'share-conversation',
-                icon: 'icons-chat-share',
-                title: dict(
-                  'PC.Components.ConversationShareModal.titleConversation',
-                ),
-                onClick: () => setShareConversationOpen(true),
-              },
-            ]
-          : []),
-        {
-          key: 'share',
-          icon: 'icons-chat-share',
-          title: dict('PC.Components.ChatTitleActions.share'),
-          onClick: handleShare,
-        },
         {
           key: isCollected ? 'collected' : 'collect',
           icon: isCollected ? 'icons-chat-collected' : 'icons-chat-collect',
@@ -193,7 +147,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
             ]
           : []),
       ].filter(Boolean) as ActionItem[],
-    [isCollected, agentInfo, showCopyTemplate, hasShareableConversation],
+    [isCollected, agentInfo, showCopyTemplate],
   );
 
   return (
@@ -204,20 +158,6 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
         showArrow={false}
         className={styles['action-menu']}
       />
-      {/* 会话分享弹窗(需求 5c) */}
-      {hasShareableConversation && (
-        <ConversationShareModal
-          visible={shareConversationOpen}
-          onClose={() => setShareConversationOpen(false)}
-          kind="conversation"
-          conversationId={conversationInfo?.id}
-          title={conversationInfo?.topic || ''}
-          markdown={buildConversationMarkdown(
-            conversationInfo?.topic || '',
-            messageList,
-          )}
-        />
-      )}
       {/* 复制模板弹窗 */}
       <MoveCopyComponent
         spaceId={agentInfo?.spaceId || 0}

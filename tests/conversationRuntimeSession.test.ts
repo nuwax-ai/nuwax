@@ -409,6 +409,47 @@ describe('conversationRuntimeSession', () => {
     expect(stopRequest).toHaveBeenCalledWith('1001');
   });
 
+  it('stop：发送后立即停止（无时间间隔）活跃态必须强制复位（禅道bug2528）', () => {
+    // 复现路径：发送后 3s 保活窗口内用户点停止——修复前 stop 走受窗口
+    // 约束的复位被拒绝，isConversationActive 永久卡 true，叠加输入框
+    // isStoppingConversation 只在会话不活跃时复位 → 停止/发送双双卡死
+    const stopRequest = vi.fn().mockResolvedValue(undefined);
+    const { session } = createSession({ stopRequest });
+    mockOpenLive.mockReturnValue(vi.fn());
+
+    session.send({ conversationId: 1001, message: '你好' });
+    expect(session.getState().isConversationActive).toBe(true);
+
+    // 同步立即停止（Date.now 与 send 同毫秒，保活窗口内）
+    session.stop(1001);
+
+    expect(session.getState().isConversationActive).toBe(false);
+    // 活跃态复位后可立即发起新一轮发送（不被残留活跃态拦截）
+    session.send({ conversationId: 1001, message: '再次提问' });
+    expect(session.getState().isConversationActive).toBe(true);
+    const secondRoundUser = session.store
+      .getSnapshot()
+      .find((message) => message.text === '再次提问');
+    expect(secondRoundUser).toBeTruthy();
+  });
+
+  it('stop：任务终态后 setConversationActive 保活窗口机制随窗口一并移除——onClose 复位不再受 3s 约束', () => {
+    const { session } = createSession();
+    let liveOnClose: () => void = () => {};
+    mockOpenLive.mockImplementation(
+      (_params: unknown, callbacks: LiveCallbacks) => {
+        liveOnClose = callbacks.onClose;
+        return vi.fn();
+      },
+    );
+
+    session.send({ conversationId: 1001, message: '你好' });
+    // 发送同毫秒连接即被服务端关闭（异常结束最快路径）
+    liveOnClose();
+
+    expect(session.getState().isConversationActive).toBe(false);
+  });
+
   it('disableConversationActive：仅清前端活跃态，不发送空 ID stop 请求', () => {
     const stopRequest = vi.fn().mockResolvedValue(undefined);
     const { session } = createSession({ stopRequest });

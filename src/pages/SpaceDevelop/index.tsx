@@ -37,7 +37,6 @@ import {
 import { modalConfirm } from '@/utils/ant-custom';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { exportConfigFile } from '@/utils/exportImportFile';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { jumpToAgent } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message, Upload } from 'antd';
@@ -517,13 +516,7 @@ const SpaceDevelop: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div
-        className={cx(styles['header-area'])}
-        style={{
-          // 顶部退让由最外层 page-container 统一处理，页面级不叠加
-          paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
-        }}
-      >
+      <div className={cx(styles['header-area'])}>
         <div className={cx(styles['header-left'])}>
           <h3 className={cx(styles.title)}>
             {dict('PC.Pages.SpaceDevelop.Index.agentDevelop')}
