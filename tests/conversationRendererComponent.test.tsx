@@ -38,9 +38,21 @@ vi.mock('@/features/conversation/presentation-v2/react/index.less', () => ({
   // 返回真实 key 名：动效 class 等样式断言需要区分类名
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
+// mock 结构对齐真实 ChatView 用户消息关键链路：附件区 + 灰底气泡(.ds-markdown)
+// 内正文(.ds-markdown-answer)——UserBubbleCollapse 的阈值测量/截断/控件挂载都锚定它们。
+// 正文不渲染 messageInfo.text 本身：投影异常用例的 text getter 会抛，fallback 渲染不能连带炸。
 vi.mock('@/components/ChatView', () => ({
   default: ({ messageInfo }: { messageInfo: MessageInfo }) => (
-    <div data-testid="chat-view" data-message-id={String(messageInfo.id)} />
+    <div data-testid="chat-view" data-message-id={String(messageInfo.id)}>
+      {!!messageInfo.attachments?.length && (
+        <div data-testid="attach-files" className="attach-file-container" />
+      )}
+      <div className="ds-markdown">
+        <div className="ds-markdown-answer">
+          <div className="ds-markdown-paragraph" />
+        </div>
+      </div>
+    </div>
   ),
 }));
 vi.mock('@/components/ChatView/RunOver', () => ({
@@ -1058,6 +1070,13 @@ describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
 });
 
 describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
+  const restoreScrollHeight = () =>
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get() {
+        return 0;
+      },
+    });
   const stubScrollHeight = (value: number) => {
     Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
       configurable: true,
@@ -1065,16 +1084,22 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
         return value;
       },
     });
-    return () =>
-      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
-        configurable: true,
-        get() {
-          return 0;
-        },
-      });
+    return restoreScrollHeight;
+  };
+  /** 按节点分流测高：正文(.ds-markdown-answer)取 answerHeight，其余节点取 fallbackHeight */
+  const stubScrollHeightByNode = (answerHeight: number, fallbackHeight: number) => {
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.classList?.contains('ds-markdown-answer')
+          ? answerHeight
+          : fallbackHeight;
+      },
+    });
+    return restoreScrollHeight;
   };
 
-  it('内容高超 200px：默认收起（clamped），点击展开/收起切换', async () => {
+  it('内容高超 200px：默认收起（clamped），点击展开/收起切换；控件渲染在气泡框内', async () => {
     const restore = stubScrollHeight(600);
     const user = userEvent.setup();
     renderV2([
@@ -1087,8 +1112,15 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
     ]);
     const content = screen.getByTestId('v2-user-bubble-content');
     const toggle = screen.getByTestId('v2-user-bubble-toggle');
+    // 阈值与截断都只作用于气泡正文节点（.ds-markdown-answer）
+    const body = content.querySelector<HTMLElement>('.ds-markdown-answer');
+    expect(body).not.toBeNull();
     expect(content.getAttribute('data-collapsed')).toBe('true');
-    expect(content.style.maxHeight).toBe('200px');
+    expect(body?.style.maxHeight).toBe('200px');
+    expect(body?.style.overflow).toBe('hidden');
+    // bug 2529：收起/展开控件经 portal 挂进气泡框（正文所在 .ds-markdown 灰底气泡）内，
+    // 不再在气泡外独立成行
+    expect(toggle.parentElement).toBe(body?.closest('.ds-markdown') ?? null);
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(toggle).toHaveTextContent(
       'PC.Components.ConversationRendererV2.userBubbleExpand',
@@ -1096,7 +1128,8 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
 
     await user.click(toggle);
     expect(content.getAttribute('data-collapsed')).toBeNull();
-    expect(content.style.maxHeight).toBe('');
+    expect(body?.style.maxHeight).toBe('');
+    expect(body?.style.overflow).toBe('');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(toggle).toHaveTextContent(
       'PC.Components.ConversationRendererV2.userBubbleCollapse',
@@ -1104,6 +1137,31 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
 
     await user.click(toggle);
     expect(content.getAttribute('data-collapsed')).toBe('true');
+    expect(body?.style.maxHeight).toBe('200px');
+    restore();
+  });
+
+  it('短文案即使整体渲染高超限（高附件）：阈值只测正文，不出现折叠与切换入口', () => {
+    // bug 2529 口径①：字数不多（正文矮）一律不展示控件——附件与操作行不计入阈值
+    const restore = stubScrollHeightByNode(100, 600);
+    renderV2([
+      msg({
+        id: 'u1',
+        role: AssistantRoleEnum.USER,
+        text: '短输入',
+        attachments: [
+          {
+            id: 1,
+          } as unknown as NonNullable<MessageInfo['attachments']>[number],
+        ],
+      }),
+      msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '回答' }),
+    ]);
+    expect(screen.getByTestId('attach-files')).toBeInTheDocument();
+    expect(screen.queryByTestId('v2-user-bubble-toggle')).toBeNull();
+    expect(
+      screen.getByTestId('v2-user-bubble-content').getAttribute('data-collapsed'),
+    ).toBeNull();
     restore();
   });
 

@@ -776,9 +776,10 @@ a.tool-detail-resource {
   width: 100%;
 }
 
-// ---- 用户输入气泡折叠：内容超限（默认 200px，阈值常量在 UserBubbleCollapse）默认收起 ----
+// ---- 用户输入气泡折叠：正文高超限（默认 200px，阈值常量在 UserBubbleCollapse）默认收起 ----
+// 「展开/收起」控件经 portal 渲染进气泡框（.chat-content 灰底气泡）内尾部，
+// 贴内容右下、留在气泡背景内（bug 2529：不再在气泡外独立成行）。
 .user-bubble-collapse {
-  position: relative;
   width: 100%;
 }
 
@@ -786,12 +787,16 @@ a.tool-detail-resource {
   appearance: none;
   border: none;
   background: transparent;
-  padding: 4px 6px;
-  margin-top: 2px;
+  display: block;
+  width: fit-content;
+  // 贴气泡内右侧（长文场景气泡宽为可用宽，auto 外边距吸收剩余空间）
+  margin-left: auto;
+  margin-top: 4px;
+  padding: 2px 6px;
   font-size: 12px;
+  line-height: 18px;
   color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
   cursor: pointer;
-  text-align: left;
   border-radius: 6px;
 
   &:hover {
