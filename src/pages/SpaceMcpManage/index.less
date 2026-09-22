@@ -12,11 +12,43 @@
     margin-right: 20px;
   }
 
+  .header-area {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 5px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      flex: 1 1 330px;
+      min-width: 0;
+    }
+
+    .header-segmented {
+      flex: 0 0 auto;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex: 1 1 300px;
+      min-width: 0;
+
+      > button {
+        flex: 0 0 auto;
+      }
+    }
+  }
+
   .input {
-    margin-left: auto;
-    width: 200px;
+    flex: 1 1 160px;
+    min-width: 140px;
+    max-width: 200px;
     height: 32px;
-    margin-right: 20px;
   }
 
   .main-container {
