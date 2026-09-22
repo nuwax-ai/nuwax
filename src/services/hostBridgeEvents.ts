@@ -10,14 +10,15 @@
  * 本模块不直接依赖 umi model，保持纯函数可测性。注册的回调固定为 handleHostCommand，
  * 内部经 currentHandlers 读最新 handlers，故 handlers 变化无需重新注册。
  */
-import { hostBridge } from '@/utils/hostBridge';
-import { handleHostActivityPayload } from './hostVisibility';
 import { saveUserLang } from '@/services/i18n';
+import { normalizeLang } from '@/services/i18nLangPolicy';
 import {
   fetchAndApplyLangMap,
   markLangUserSet,
+  setCurrentLang,
 } from '@/services/i18nRuntime';
-import { normalizeLang } from '@/services/i18nLangPolicy';
+import { hostBridge } from '@/utils/hostBridge';
+import { handleHostActivityPayload } from './hostVisibility';
 
 /** 宿主命令需要驱动的业务能力（由调用方注入）。 */
 export interface HostBridgeEventHandlers {
@@ -37,6 +38,9 @@ let currentHandlers: HostBridgeEventHandlers | null = null;
 function handleSetLangPayload(lang: unknown): void {
   const normalized = normalizeLang(typeof lang === 'string' ? lang : null);
   markLangUserSet();
+  // 弱网下壳约 800ms 后重载 webview：语种必须在异步拉字典前同步落定（ACTIVE_LANG
+  // 立即写入），否则慢网拉取被打断→按旧语种启动→回声 syncLang(旧语种) 拖回壳（bug 2428）
+  setCurrentLang(normalized);
   void (async () => {
     try {
       await fetchAndApplyLangMap(normalized, 'PC');

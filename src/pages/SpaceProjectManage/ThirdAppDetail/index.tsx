@@ -1,6 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
-import PublishComponentModal from '@/components/PublishComponentModal';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import PublishComponentModal from '@/components/PublishComponentModal';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import AppDevPublishVersionRecords from '@/pages/AppDevPro/components/AppDevPublishVersionRecords';
 import { dict } from '@/services/i18nRuntime';
@@ -8,7 +8,6 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { copyTextToClipboard } from '@/utils/clipboard';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import {
   ClockCircleOutlined,
   EyeInvisibleOutlined,
@@ -79,8 +78,7 @@ const ThirdAppDetail: React.FC = () => {
     useState<boolean>(false);
 
   /** 是否已发布：以 oauth2/info 回包 publishStatus 为准 */
-  const isPublished =
-    appInfo?.publishStatus === PublishStatusEnum.Published;
+  const isPublished = appInfo?.publishStatus === PublishStatusEnum.Published;
 
   /** 发布前须已配置 OAuth2 主页地址（以 info 回包为准） */
   const canPublish = Boolean(appInfo?.homepageUrl?.trim());
@@ -163,7 +161,10 @@ const ThirdAppDetail: React.FC = () => {
       return;
     }
     try {
-      const infoResponse = await apiThirdAppOauth2InfoGet(projectId, AgentComponentTypeEnum.ThirdApp);
+      const infoResponse = await apiThirdAppOauth2InfoGet(
+        projectId,
+        AgentComponentTypeEnum.ThirdApp,
+      );
       const info = pickResponseData(infoResponse);
       if (info) {
         applyAppInfo(info);
@@ -181,14 +182,20 @@ const ThirdAppDetail: React.FC = () => {
     setOauthLoading(true);
     setSecretVisible(false);
     try {
-      const infoResponse = await apiThirdAppOauth2InfoGet(projectId, AgentComponentTypeEnum.ThirdApp);
+      const infoResponse = await apiThirdAppOauth2InfoGet(
+        projectId,
+        AgentComponentTypeEnum.ThirdApp,
+      );
       const info = pickResponseData(infoResponse);
       applyAppInfo(info);
       if (!info?.hasClientSecret) {
         setClientSecret('');
         return;
       }
-      const secretResponse = await apiThirdAppOauth2SecretGet(projectId, AgentComponentTypeEnum.ThirdApp);
+      const secretResponse = await apiThirdAppOauth2SecretGet(
+        projectId,
+        AgentComponentTypeEnum.ThirdApp,
+      );
       const secret = pickResponseData(secretResponse);
       setClientSecret(typeof secret === 'string' ? secret : '');
     } catch (error) {
@@ -355,12 +362,7 @@ const ThirdAppDetail: React.FC = () => {
 
   return (
     <div className={cx(styles.page, 'h-full', 'flex', 'flex-col')}>
-      <header
-        className={cx(styles.header)}
-        style={{
-          paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
-        }}
-      >
+      <header className={cx(styles.header)}>
         <Button
           type="text"
           className={cx(styles.back)}
