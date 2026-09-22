@@ -194,8 +194,8 @@ const EditAgent: React.FC = () => {
   // 是否隐藏返回箭头
   const [hideBack, setHideBack] = useState<boolean>(false);
 
-  // 单栏风格（style3）下页面内容最小宽度：横向滚动收敛在 page-container
-  // 容器内时，靠它保证窄窗口内容不被裁剪；经典风格下为空（走 html 最小宽度）
+  // 单栏风格（style3）下内容区（section）最小宽度：横向滚动收敛在
+  // AgentHeader 之下的滚动层内（顶栏不随滚）；经典风格下为空（走 html 最小宽度）
   const [style3MinWidth, setStyle3MinWidth] = useState<string>();
 
   // 查询可使用模型列表接口
@@ -1077,15 +1077,13 @@ const EditAgent: React.FC = () => {
      * 设置最小宽度
      */
     const pageContainerEl = document.getElementById('page-container-selector');
-    // 单栏风格（style3）：滚动区域收敛在 page-container 内，
-    // 不再拓宽 html（否则窗口窄于阈值时出现窗口级全局滚动条）；
-    // 横向滚动同样收敛为容器内滚动——内联放开 page-container 的 overflow-x
-    //（压过布局层的 overflow-x: hidden，切档/卸载时还原），页面内容自带
-    // style3MinWidth，窄窗口在容器底部出横向滚动条而非被裁剪
+    // 单栏风格（style3）：不拓宽 html（否则窗口窄于阈值时出现窗口级全局
+    // 滚动条）；横向滚动收敛在本页 section 外层滚动层（AgentHeader 顶栏
+    // 不随滚），section 自带 style3MinWidth，窄窗口在内容区底部出横向
+    // 滚动条而非被裁剪
     if (document.body.classList.contains('xagi-nav-style3')) {
       document.documentElement.style.minWidth = 'unset';
-      pageContainerEl?.style.setProperty('overflow-x', 'auto');
-      // 与渲染处分栏 minWidth 一一对应：左栏（编排）+ 右栏（调试/预览），
+      // 与渲染处分栏 minWidth 一一对应：左栏（编排）+ 右栏（调试/预览）+ 第三栏（调试详情），
       // 保证横向滚动到最右时内容零裁剪
       const isTaskAgent = agentConfigInfo?.type === AgentTypeEnum.TaskAgent;
       const leftMinWidth = isTaskAgent ? 380 : 680;
@@ -1096,8 +1094,14 @@ const EditAgent: React.FC = () => {
           ? 1290
           : 530
         : 0;
+      // 调试详情第三栏（ToggleWrap min-width 300）：不计时窄窗口下该栏被
+      // section 的 overflow:hidden 裁掉且无任何滚动条可滚（与经典风格 1540 特例对齐）
+      const debugDetailsMinWidth =
+        showType === EditAgentShowType.Debug_Details ? 300 : 0;
       // 24px = section 左右 margin（@marginSm = 12px，styles/token.less）
-      setStyle3MinWidth(`${leftMinWidth + rightMinWidth + 24}px`);
+      setStyle3MinWidth(
+        `${leftMinWidth + rightMinWidth + debugDetailsMinWidth + 24}px`,
+      );
       return () => {
         document.documentElement.style.minWidth = '1200px';
         pageContainerEl?.style.removeProperty('overflow-x');
@@ -1148,10 +1152,7 @@ const EditAgent: React.FC = () => {
   }
 
   return (
-    <div
-      className={cx(styles.container, 'h-full', 'flex', 'flex-col')}
-      style={style3MinWidth ? { minWidth: style3MinWidth } : undefined}
-    >
+    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
         hideBack={hideBack}
         agentConfigInfo={agentConfigInfo}
@@ -1169,336 +1170,344 @@ const EditAgent: React.FC = () => {
         activeTab={headerTab}
         onTabChange={setHeaderTab}
       />
-      <section
-        className={cx(
-          'flex',
-          'flex-1',
-          styles.section,
-          `xagi-nav-${navigationStyle}`,
-        )}
-      >
-        {headerTab === 'subscriptionSetting' ? (
-          <SubscriptionSetting
-            agentId={agentId}
-            spaceId={spaceId}
-            visible={true}
-          />
-        ) : headerTab === 'subscriptionStats' ? (
-          <SubscriptionStats agentId={agentId} visible={true} />
-        ) : (
-          <>
-            {/*编排*/}
-            <div
-              className={cx(
-                'radius-6',
-                'flex',
-                'flex-col',
-                styles['edit-info'],
-                {
-                  [styles['chat-bot-edit-info']]:
-                    agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
-                },
-              )}
-            >
-              {/*编排title*/}
-              <ArrangeTitle
-                originalModelConfigList={originalModelConfigList}
-                agentConfigInfo={agentConfigInfo}
-                icon={agentConfigInfo?.modelComponentConfig?.icon}
-                modelName={agentConfigInfo?.modelComponentConfig?.name}
-                onClick={() => setOpenAgentModel(true)}
-                onModelChange={async (modelId, name) => {
-                  // 通用智能体直接切换模型，无需弹窗
-                  const componentId = agentConfigInfo?.modelComponentConfig?.id;
-                  if (!componentId) return;
-                  const bindConfig = agentConfigInfo?.modelComponentConfig
-                    ?.bindConfig as ComponentModelBindConfig;
-                  await apiAgentComponentModelUpdate({
-                    id: componentId,
-                    targetId: modelId,
-                    bindConfig,
-                  });
-                  const _agentConfigInfo = cloneDeep(
-                    agentConfigInfo,
-                  ) as AgentConfigInfo;
-                  _agentConfigInfo.modelComponentConfig.targetId = modelId;
-                  _agentConfigInfo.modelComponentConfig.name = name;
-                  setAgentConfigInfo(_agentConfigInfo);
-                }}
-              />
+      {/*单栏窄窗口：横向滚动收敛层——仅内容（面板区）横滚，顶部 AgentHeader 不动*/}
+      <div className={cx('flex-1', 'flex', styles['section-scroll'])}>
+        <section
+          className={cx(
+            'flex',
+            'flex-1',
+            styles.section,
+            `xagi-nav-${navigationStyle}`,
+          )}
+          style={style3MinWidth ? { minWidth: style3MinWidth } : undefined}
+        >
+          {headerTab === 'subscriptionSetting' ? (
+            <SubscriptionSetting
+              agentId={agentId}
+              spaceId={spaceId}
+              visible={true}
+            />
+          ) : headerTab === 'subscriptionStats' ? (
+            <SubscriptionStats agentId={agentId} visible={true} />
+          ) : (
+            <>
+              {/*编排*/}
               <div
                 className={cx(
-                  'flex-1',
+                  'radius-6',
                   'flex',
-                  'overflow-y',
-                  styles['edit-content'],
+                  'flex-col',
+                  styles['edit-info'],
+                  {
+                    [styles['chat-bot-edit-info']]:
+                      agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+                  },
                 )}
               >
-                {/* 问答型智能体、应用页面 */}
-                {agentConfigInfo?.type !== AgentTypeEnum.TaskAgent && (
-                  // 系统提示词/用户提示词
-                  <SystemUserTipsWord
-                    ref={systemUserTipsWordRef}
-                    agentConfigInfo={agentConfigInfo}
-                    valueUser={agentConfigInfo?.userPrompt}
-                    valueSystem={agentConfigInfo?.systemPrompt}
-                    onChangeUser={(value) =>
-                      handleChangeAgent(value, 'userPrompt')
-                    }
-                    onChangeSystem={(value) =>
-                      handleChangeAgent(value, 'systemPrompt')
-                    }
-                    onReplace={(value) =>
-                      handleChangeAgent(value!, 'systemPrompt')
-                    }
-                    variables={promptVariables}
-                    skills={promptTools}
-                  />
-                )}
-
-                {/*配置区域*/}
-                <AgentArrangeConfig
-                  extraComponent={
-                    agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
-                      <>
-                        {/* AgentFlow 画布（自带全屏）：位于系统提示词之前，与提示词同处编排流 */}
-                        {isFlowAgent && agentFlowWorkflowId && (
-                          <AgentFlowCanvas
-                            ref={agentFlowCanvasRef}
-                            workflowId={agentFlowWorkflowId}
-                            spaceId={spaceId}
-                          />
-                        )}
-                        <SystemUserTipsWord
-                          className={cx(styles['prompt-wrapper'], 'w-full')}
-                          ref={systemUserTipsWordRef}
-                          agentConfigInfo={agentConfigInfo}
-                          valueUser={agentConfigInfo?.userPrompt}
-                          valueSystem={agentConfigInfo?.systemPrompt}
-                          onChangeUser={(value) =>
-                            handleChangeAgent(value, 'userPrompt')
-                          }
-                          onChangeSystem={(value) =>
-                            handleChangeAgent(value, 'systemPrompt')
-                          }
-                          onReplace={(value) =>
-                            handleChangeAgent(value!, 'systemPrompt')
-                          }
-                          variables={promptVariables}
-                          skills={promptTools}
-                        />
-                      </>
-                    )
-                  }
-                  agentId={agentId}
+                {/*编排title*/}
+                <ArrangeTitle
+                  originalModelConfigList={originalModelConfigList}
                   agentConfigInfo={agentConfigInfo}
-                  onChangeAgent={handleChangeAgent}
-                  onVariablesChange={handleVariablesChange}
-                  onMemoryVariablesConfirmed={handleMemoryVariablesConfirmed}
-                  onToolsChange={handleToolsChange}
+                  icon={agentConfigInfo?.modelComponentConfig?.icon}
+                  modelName={agentConfigInfo?.modelComponentConfig?.name}
+                  onClick={() => setOpenAgentModel(true)}
+                  onModelChange={async (modelId, name) => {
+                    // 通用智能体直接切换模型，无需弹窗
+                    const componentId =
+                      agentConfigInfo?.modelComponentConfig?.id;
+                    if (!componentId) return;
+                    const bindConfig = agentConfigInfo?.modelComponentConfig
+                      ?.bindConfig as ComponentModelBindConfig;
+                    await apiAgentComponentModelUpdate({
+                      id: componentId,
+                      targetId: modelId,
+                      bindConfig,
+                    });
+                    const _agentConfigInfo = cloneDeep(
+                      agentConfigInfo,
+                    ) as AgentConfigInfo;
+                    _agentConfigInfo.modelComponentConfig.targetId = modelId;
+                    _agentConfigInfo.modelComponentConfig.name = name;
+                    setAgentConfigInfo(_agentConfigInfo);
+                  }}
                 />
-              </div>
-            </div>
+                <div
+                  className={cx(
+                    'flex-1',
+                    'flex',
+                    'overflow-y',
+                    styles['edit-content'],
+                  )}
+                >
+                  {/* 问答型智能体、应用页面 */}
+                  {agentConfigInfo?.type !== AgentTypeEnum.TaskAgent && (
+                    // 系统提示词/用户提示词
+                    <SystemUserTipsWord
+                      ref={systemUserTipsWordRef}
+                      agentConfigInfo={agentConfigInfo}
+                      valueUser={agentConfigInfo?.userPrompt}
+                      valueSystem={agentConfigInfo?.systemPrompt}
+                      onChangeUser={(value) =>
+                        handleChangeAgent(value, 'userPrompt')
+                      }
+                      onChangeSystem={(value) =>
+                        handleChangeAgent(value, 'systemPrompt')
+                      }
+                      onReplace={(value) =>
+                        handleChangeAgent(value!, 'systemPrompt')
+                      }
+                      variables={promptVariables}
+                      skills={promptTools}
+                    />
+                  )}
 
-            {(!agentConfigInfo?.hideChatArea ||
-              pagePreviewData ||
-              isFileTreeVisible) && (
-              <div
-                style={{
-                  flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-                  minWidth:
-                    pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
-                }}
-              >
-                {/*预览与调试和预览页面*/}
-                <ResizableSplit
-                  resetTrigger={
-                    pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
-                  }
-                  minRightWidth={530}
-                  defaultLeftWidth={33}
-                  left={
-                    agentConfigInfo?.hideChatArea ? null : (
-                      // 预览与调试
-                      <PreviewAndDebug
-                        agentConfigInfo={agentConfigInfo}
-                        agentId={agentId}
-                        onPressDebug={() =>
-                          handleClosePreview(EditAgentShowType.Debug_Details)
-                        }
-                        onAgentConfigInfo={setAgentConfigInfo}
-                        onOpenPreview={handleOpenPreview}
-                        onOpenTerminalPanel={handleOpenTerminalPanel}
-                        onCloseTerminalPanel={handleCloseTerminalPanel}
-                        onCollapseTerminalPanel={handleCollapseTerminalPanel}
-                        isTerminalActive={
-                          isTerminalExpanded && viewMode === 'preview'
-                        }
-                        onChangeSelectedComputerId={
-                          setCurrentSelectedComputerId
-                        }
-                        getSelectedPreviewFileId={getSelectedPreviewFileId}
-                      />
-                    )
-                  }
-                  right={
-                    // 页面预览可见时，显示页面预览
-                    pagePreviewData && !isFileTreeVisible ? (
-                      <PagePreviewIframe
-                        pagePreviewData={pagePreviewData}
-                        showHeader={true}
-                        onClose={hidePagePreview}
-                        showCloseButton={!agentConfigInfo?.hideChatArea}
-                        titleClassName={cx(styles['title-style'])}
-                      />
-                    ) : (
-                      isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
-                      devConversationId && (
-                        <div
-                          className={cx(
-                            styles['file-tree-sidebar'],
-                            'flex',
-                            'w-full',
+                  {/*配置区域*/}
+                  <AgentArrangeConfig
+                    extraComponent={
+                      agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+                        <>
+                          {/* AgentFlow 画布（自带全屏）：位于系统提示词之前，与提示词同处编排流 */}
+                          {isFlowAgent && agentFlowWorkflowId && (
+                            <AgentFlowCanvas
+                              ref={agentFlowCanvasRef}
+                              workflowId={agentFlowWorkflowId}
+                              spaceId={spaceId}
+                            />
                           )}
-                        >
-                          {/*文件树侧边栏 - 只在文件树可见时显示 */}
-                          <FileTreeViewPanel
-                            ref={fileTreePanelRef}
-                            taskAgentSelectedFileId={taskAgentSelectedFileId}
-                            clearTaskAgentSelectedFileId={() =>
-                              setTaskAgentSelectedFileId('')
+                          <SystemUserTipsWord
+                            className={cx(styles['prompt-wrapper'], 'w-full')}
+                            ref={systemUserTipsWordRef}
+                            agentConfigInfo={agentConfigInfo}
+                            valueUser={agentConfigInfo?.userPrompt}
+                            valueSystem={agentConfigInfo?.systemPrompt}
+                            onChangeUser={(value) =>
+                              handleChangeAgent(value, 'userPrompt')
                             }
-                            taskAgentSelectTrigger={taskAgentSelectTrigger}
-                            originalFiles={fileTreeData}
-                            fileTreeDataLoading={fileTreeDataLoading}
-                            targetId={devConversationId.toString()}
-                            viewMode={viewMode}
-                            readOnly={false}
-                            // 导出项目
-                            onExportProject={handleExportProject}
-                            // 上传文件
-                            onUploadFiles={handleUploadMultipleFiles}
-                            // 重命名文件
-                            onRenameFile={handleConfirmRenameFile}
-                            // 新建文件、文件夹
-                            onCreateFileNode={handleCreateFileNode}
-                            // 删除文件
-                            onDeleteFile={handleDeleteFile}
-                            // 保存文件
-                            onSaveFiles={handleSaveFiles}
-                            // 用户选择的智能体电脑ID
-                            agentSandboxId={finalSelectedComputerId}
-                            // 用户选择的智能体电脑名称
-                            agentSandboxName={''}
-                            // 重启容器
-                            onRestartServer={() =>
-                              restartVncPod(
-                                devConversationId,
-                                finalSelectedComputerId,
-                              )
+                            onChangeSystem={(value) =>
+                              handleChangeAgent(value, 'systemPrompt')
                             }
-                            // 重启智能体
-                            onRestartAgent={() =>
-                              restartAgent(devConversationId)
+                            onReplace={(value) =>
+                              handleChangeAgent(value!, 'systemPrompt')
                             }
-                            // VNC 重连前回调：应先 ensurePod 并恢复 keepalive 轮询
-                            onReconnect={() =>
-                              ensureDesktopConnection(devConversationId)
-                            }
-                            // 关闭整个面板
-                            onClose={handleCloseFileTreeViewPanel}
-                            // 文件树是否固定（用户点击后固定）
-                            isFileTreePinned={isFileTreePinned}
-                            // 文件树固定状态变化回调
-                            onFileTreePinnedChange={setIsFileTreePinned}
-                            isCanDeleteSkillFile={true}
-                            // 刷新文件树回调
-                            onRefreshFileTree={() =>
-                              refreshFileListImmediately(devConversationId)
-                            }
-                            // 刷新后目标文件不存在时，清除会话内待选文件，避免空树死循环
-                            onSelectedFileMissing={() => {
-                              setTaskAgentSelectedFileId('');
-                            }}
-                            // VNC 空闲检测配置（仅通用型智能体启用）
-                            idleDetection={{
-                              enabled:
-                                agentConfigInfo?.type ===
-                                AgentTypeEnum.TaskAgent,
-                              onIdleTimeout: () =>
-                                openPreviewView(devConversationId),
-                            }}
-                            hideDesktop={agentConfigInfo?.hideDesktop}
-                            // 静态资源文件基础路径
-                            staticFileBasePath={`/api/computer/static/${devConversationId}`}
-                            gitSourceControl={{
-                              workspace: {
-                                workspaceType: 'taskAgent',
-                                cid: devConversationId,
-                              },
-                            }}
-                            enableVersionControl={
-                              agentConfigInfo?.enableVersionControl
-                            }
-                            enableGitStatus={
-                              agentConfigInfo?.type ===
-                                AgentTypeEnum.TaskAgent && gitStatusEnabled
-                            }
-                            bottomContent={
-                              hasTerminalConsoleRendered ? (
-                                <ConversationBottomConsole
-                                  // 在EditAgent中，conversationId 为 devConversationId
-                                  conversationId={
-                                    finalSelectedComputerId === '-1'
-                                      ? devConversationId
-                                      : undefined
-                                  }
-                                  visible={terminalConsoleVisible}
-                                  terminalSignal={terminalExpandSignal}
-                                  collapseSignal={terminalCollapseSignal}
-                                  wsUrl={terminalWsUrl}
-                                  wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-                                  wsSubprotocols={[
-                                    ...TTYD_TERMINAL_WS_SUBPROTOCOLS,
-                                  ]}
-                                  defaultActiveTab="terminal"
-                                  defaultLayoutMode="default"
-                                  showLogsTab={false}
-                                />
-                              ) : null
-                            }
+                            variables={promptVariables}
+                            skills={promptTools}
                           />
-                        </div>
+                        </>
                       )
-                    )
-                  }
-                />
+                    }
+                    agentId={agentId}
+                    agentConfigInfo={agentConfigInfo}
+                    onChangeAgent={handleChangeAgent}
+                    onVariablesChange={handleVariablesChange}
+                    onMemoryVariablesConfirmed={handleMemoryVariablesConfirmed}
+                    onToolsChange={handleToolsChange}
+                  />
+                </div>
               </div>
-            )}
 
-            {/*调试详情*/}
-            <DebugDetails
-              visible={showType === EditAgentShowType.Debug_Details}
-              onClose={() => setShowType(EditAgentShowType.Hide)}
-            />
-            {/*展示台*/}
-            <ShowStand
-              cardList={cardList}
-              visible={showType === EditAgentShowType.Show_Stand}
-              onClose={() => setShowType(EditAgentShowType.Hide)}
-            />
-            {/*版本历史*/}
-            <VersionHistory
-              targetId={agentId}
-              targetName={agentConfigInfo?.name}
-              targetType={AgentComponentTypeEnum.Agent}
-              permissions={agentConfigInfo?.permissions || []}
-              visible={showType === EditAgentShowType.Version_History}
-              onClose={() => setShowType(EditAgentShowType.Hide)}
-            />
-          </>
-        )}
-      </section>
+              {(!agentConfigInfo?.hideChatArea ||
+                pagePreviewData ||
+                isFileTreeVisible) && (
+                <div
+                  style={{
+                    flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
+                    minWidth:
+                      pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
+                  }}
+                >
+                  {/*预览与调试和预览页面*/}
+                  <ResizableSplit
+                    resetTrigger={
+                      pagePreviewData || isFileTreeVisible
+                        ? 'visible'
+                        : 'hidden'
+                    }
+                    minRightWidth={530}
+                    defaultLeftWidth={33}
+                    left={
+                      agentConfigInfo?.hideChatArea ? null : (
+                        // 预览与调试
+                        <PreviewAndDebug
+                          agentConfigInfo={agentConfigInfo}
+                          agentId={agentId}
+                          onPressDebug={() =>
+                            handleClosePreview(EditAgentShowType.Debug_Details)
+                          }
+                          onAgentConfigInfo={setAgentConfigInfo}
+                          onOpenPreview={handleOpenPreview}
+                          onOpenTerminalPanel={handleOpenTerminalPanel}
+                          onCloseTerminalPanel={handleCloseTerminalPanel}
+                          onCollapseTerminalPanel={handleCollapseTerminalPanel}
+                          isTerminalActive={
+                            isTerminalExpanded && viewMode === 'preview'
+                          }
+                          onChangeSelectedComputerId={
+                            setCurrentSelectedComputerId
+                          }
+                          getSelectedPreviewFileId={getSelectedPreviewFileId}
+                        />
+                      )
+                    }
+                    right={
+                      // 页面预览可见时，显示页面预览
+                      pagePreviewData && !isFileTreeVisible ? (
+                        <PagePreviewIframe
+                          pagePreviewData={pagePreviewData}
+                          showHeader={true}
+                          onClose={hidePagePreview}
+                          showCloseButton={!agentConfigInfo?.hideChatArea}
+                          titleClassName={cx(styles['title-style'])}
+                        />
+                      ) : (
+                        isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
+                        devConversationId && (
+                          <div
+                            className={cx(
+                              styles['file-tree-sidebar'],
+                              'flex',
+                              'w-full',
+                            )}
+                          >
+                            {/*文件树侧边栏 - 只在文件树可见时显示 */}
+                            <FileTreeViewPanel
+                              ref={fileTreePanelRef}
+                              taskAgentSelectedFileId={taskAgentSelectedFileId}
+                              clearTaskAgentSelectedFileId={() =>
+                                setTaskAgentSelectedFileId('')
+                              }
+                              taskAgentSelectTrigger={taskAgentSelectTrigger}
+                              originalFiles={fileTreeData}
+                              fileTreeDataLoading={fileTreeDataLoading}
+                              targetId={devConversationId.toString()}
+                              viewMode={viewMode}
+                              readOnly={false}
+                              // 导出项目
+                              onExportProject={handleExportProject}
+                              // 上传文件
+                              onUploadFiles={handleUploadMultipleFiles}
+                              // 重命名文件
+                              onRenameFile={handleConfirmRenameFile}
+                              // 新建文件、文件夹
+                              onCreateFileNode={handleCreateFileNode}
+                              // 删除文件
+                              onDeleteFile={handleDeleteFile}
+                              // 保存文件
+                              onSaveFiles={handleSaveFiles}
+                              // 用户选择的智能体电脑ID
+                              agentSandboxId={finalSelectedComputerId}
+                              // 用户选择的智能体电脑名称
+                              agentSandboxName={''}
+                              // 重启容器
+                              onRestartServer={() =>
+                                restartVncPod(
+                                  devConversationId,
+                                  finalSelectedComputerId,
+                                )
+                              }
+                              // 重启智能体
+                              onRestartAgent={() =>
+                                restartAgent(devConversationId)
+                              }
+                              // VNC 重连前回调：应先 ensurePod 并恢复 keepalive 轮询
+                              onReconnect={() =>
+                                ensureDesktopConnection(devConversationId)
+                              }
+                              // 关闭整个面板
+                              onClose={handleCloseFileTreeViewPanel}
+                              // 文件树是否固定（用户点击后固定）
+                              isFileTreePinned={isFileTreePinned}
+                              // 文件树固定状态变化回调
+                              onFileTreePinnedChange={setIsFileTreePinned}
+                              isCanDeleteSkillFile={true}
+                              // 刷新文件树回调
+                              onRefreshFileTree={() =>
+                                refreshFileListImmediately(devConversationId)
+                              }
+                              // 刷新后目标文件不存在时，清除会话内待选文件，避免空树死循环
+                              onSelectedFileMissing={() => {
+                                setTaskAgentSelectedFileId('');
+                              }}
+                              // VNC 空闲检测配置（仅通用型智能体启用）
+                              idleDetection={{
+                                enabled:
+                                  agentConfigInfo?.type ===
+                                  AgentTypeEnum.TaskAgent,
+                                onIdleTimeout: () =>
+                                  openPreviewView(devConversationId),
+                              }}
+                              hideDesktop={agentConfigInfo?.hideDesktop}
+                              // 静态资源文件基础路径
+                              staticFileBasePath={`/api/computer/static/${devConversationId}`}
+                              gitSourceControl={{
+                                workspace: {
+                                  workspaceType: 'taskAgent',
+                                  cid: devConversationId,
+                                },
+                              }}
+                              enableVersionControl={
+                                agentConfigInfo?.enableVersionControl
+                              }
+                              enableGitStatus={
+                                agentConfigInfo?.type ===
+                                  AgentTypeEnum.TaskAgent && gitStatusEnabled
+                              }
+                              bottomContent={
+                                hasTerminalConsoleRendered ? (
+                                  <ConversationBottomConsole
+                                    // 在EditAgent中，conversationId 为 devConversationId
+                                    conversationId={
+                                      finalSelectedComputerId === '-1'
+                                        ? devConversationId
+                                        : undefined
+                                    }
+                                    visible={terminalConsoleVisible}
+                                    terminalSignal={terminalExpandSignal}
+                                    collapseSignal={terminalCollapseSignal}
+                                    wsUrl={terminalWsUrl}
+                                    wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+                                    wsSubprotocols={[
+                                      ...TTYD_TERMINAL_WS_SUBPROTOCOLS,
+                                    ]}
+                                    defaultActiveTab="terminal"
+                                    defaultLayoutMode="default"
+                                    showLogsTab={false}
+                                  />
+                                ) : null
+                              }
+                            />
+                          </div>
+                        )
+                      )
+                    }
+                  />
+                </div>
+              )}
+
+              {/*调试详情（宽度收窄：默认 434 太占空间，压到 320）*/}
+              <DebugDetails
+                className={styles['debug-details-panel']}
+                visible={showType === EditAgentShowType.Debug_Details}
+                onClose={() => setShowType(EditAgentShowType.Hide)}
+              />
+              {/*展示台*/}
+              <ShowStand
+                cardList={cardList}
+                visible={showType === EditAgentShowType.Show_Stand}
+                onClose={() => setShowType(EditAgentShowType.Hide)}
+              />
+              {/*版本历史*/}
+              <VersionHistory
+                targetId={agentId}
+                targetName={agentConfigInfo?.name}
+                targetType={AgentComponentTypeEnum.Agent}
+                permissions={agentConfigInfo?.permissions || []}
+                visible={showType === EditAgentShowType.Version_History}
+                onClose={() => setShowType(EditAgentShowType.Hide)}
+              />
+            </>
+          )}
+        </section>
+      </div>
       {/*发布智能体弹窗*/}
       <PublishComponentModal
         targetId={agentId}

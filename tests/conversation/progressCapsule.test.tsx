@@ -290,6 +290,51 @@ describe('会话进度胶囊', () => {
     expect(selectProgressCapsule(messages, true)).toBeNull();
   });
 
+  it('仅普通工具（无计划/终端/编辑/子代理/产物）时返回 null：currentAction 文案不算内容', () => {
+    const build = (finished: boolean) =>
+      [
+        {
+          id: 'user-generic',
+          role: AssistantRoleEnum.USER,
+          text: '查一下资料',
+          time: '2026-09-21 09:00:00',
+          status: MessageStatusEnum.Complete,
+        },
+        {
+          id: 'assistant-generic',
+          role: AssistantRoleEnum.ASSISTANT,
+          text: processTag(
+            'search-1',
+            AgentComponentTypeEnum.ToolCall,
+            '联网搜索',
+          ),
+          time: '2026-09-21 09:00:01',
+          status: finished
+            ? MessageStatusEnum.Complete
+            : MessageStatusEnum.Loading,
+          processingList: [
+            {
+              executeId: 'search-1',
+              type: AgentComponentTypeEnum.ToolCall,
+              name: '联网搜索',
+              executingMessage: '正在检索相关资料',
+              status: finished
+                ? ProcessingEnum.FINISHED
+                : ProcessingEnum.EXECUTING,
+              // 搜索类结果（title/url）：非终端、非文件编辑，六类分区内容全空
+              result: {
+                data: [{ title: '搜索结果', url: 'https://example.com' }],
+              },
+            },
+          ],
+        },
+      ] as unknown as MessageInfo[];
+    // 运行中：仅 spinner+动作文案、面板无分区 → 隐藏
+    expect(selectProgressCapsule(build(false), true)).toBeNull();
+    // 终态：仅「✓ 动作文案」空壳 → 同样隐藏
+    expect(selectProgressCapsule(build(true), false)).toBeNull();
+  });
+
   it('OpenUI 节点动作文案收敛：currentAction 不外露协议工具名', () => {
     const artifactId = '1219fcb4-a107-4f92-abff-7f8922f1228d';
     const ref = {
@@ -337,7 +382,9 @@ describe('会话进度胶囊', () => {
     ] as unknown as MessageInfo[];
     const model = selectProgressCapsule(messages, false);
     expect(model).not.toBeNull();
-    expect(model?.currentAction).not.toContain('Backend.Sandbox.Event.renderUI');
+    expect(model?.currentAction).not.toContain(
+      'Backend.Sandbox.Event.renderUI',
+    );
     expect(model?.currentAction).toContain('toolActionOpenUiFinished');
     expect(model?.currentAction).toContain('演示看板');
     // OpenUI 产物行收集：标题 + artifactId（供面板重开预览）
@@ -405,14 +452,13 @@ describe('会话进度胶囊', () => {
     fireEvent.click(screen.getByTestId('capsule-trigger'));
     fireEvent.click(await screen.findByText('演示看板'));
     await waitFor(() =>
-      expect(conversationInfoModel.setTaskAgentSelectedFileId).toHaveBeenCalledWith(
-        `data/${artifactId}.openui.json`,
-      ),
+      expect(
+        conversationInfoModel.setTaskAgentSelectedFileId,
+      ).toHaveBeenCalledWith(`data/${artifactId}.openui.json`),
     );
-    expect(conversationInfoModel.openPreviewView).toHaveBeenCalledWith(
-      999,
-      { forceRefresh: true },
-    );
+    expect(conversationInfoModel.openPreviewView).toHaveBeenCalledWith(999, {
+      forceRefresh: true,
+    });
   });
 
   it('终态常驻：会话结束后仍显示最后一轮内容并带终态标记', () => {

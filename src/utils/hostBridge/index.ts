@@ -155,6 +155,14 @@ export function syncShellAvoidanceCss(): void {
   const vars: Array<[string, string | null]> = immersive
     ? [
         ['--immersive-shell-top', `${shellAvoid.TOP}px`],
+        // Win/Linux 固定定位浮层（全高 Drawer 等）顶部退让：浮层锚视口顶
+        // （top:0），无视 page-container 的内容避让，头部（标题/关闭键）会
+        // 半截塞进壳顶行透明带下——与窗口三键错位、关闭键上沿落进拖拽带
+        // （禅道 2429）。与内容区同源取 CONTENT_TOP；mac 浮层无此冲突恒 0。
+        [
+          '--immersive-shell-content-top',
+          isMac() ? '0px' : `${shellAvoid.CONTENT_TOP}px`,
+        ],
         // 独立全屏页（layout:false 路由）顶部退让：mac 不做——红绿灯悬浮于左上、
         // 图标簇只占左侧 300px，页头（返回/标题/tabs）自 x≈260 起，无需让位；
         // 侧栏收起后的让位由 SidebarShell page-container 统一补（mac 收起态
@@ -168,6 +176,7 @@ export function syncShellAvoidanceCss(): void {
       ]
     : [
         ['--immersive-shell-top', null],
+        ['--immersive-shell-content-top', null],
         ['--immersive-shell-toolbar', null],
         ['--immersive-shell-right', null],
       ];
