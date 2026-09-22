@@ -6,6 +6,7 @@ import {
   useConversationChanged,
   useProjectChanged,
 } from '@/hooks/useDirectorySync';
+import useExclusiveDropdown from '@/hooks/useExclusiveDropdown';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import {
   apiAgentConversationDelete,
@@ -261,6 +262,8 @@ const ProjectPanel = forwardRef<
   ) => {
     const { pin } = useHomePinnedProjectHandoff();
 
+    const { getDropdownProps, close: closeProjectMenu } =
+      useExclusiveDropdown();
     const [projects, setProjects] = useState<ProjectItem[]>([]);
     // 空态仅在接口返回后展示：加载中先渲染 Spin，避免一进来就闪「暂无项目」
     const [loading, setLoading] = useState(true);
@@ -1220,6 +1223,7 @@ const ProjectPanel = forwardRef<
           domEvent?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>;
         }) => {
           domEvent?.stopPropagation();
+          closeProjectMenu();
           if (key === 'pin') {
             toggleProjectFlag('pinned', project);
           } else if (key === 'archive') {
@@ -1408,6 +1412,7 @@ const ProjectPanel = forwardRef<
           return (
             <div key={projectKeyOf(project)} className={cx(styles.project)}>
               <Dropdown
+                {...getDropdownProps(`${projectKeyOf(project)}:context`)}
                 menu={buildProjectMenu(project)}
                 trigger={['contextMenu']}
               >
@@ -1518,6 +1523,7 @@ const ProjectPanel = forwardRef<
                       <>
                         {renderAddConversationButton(project)}
                         <Dropdown
+                          {...getDropdownProps(`${projectKeyOf(project)}:more`)}
                           menu={buildProjectMenu(project)}
                           trigger={['click']}
                         >
