@@ -32,6 +32,7 @@ import classNames from 'classnames';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -88,6 +89,18 @@ const SECOND_COLUMN_WIDTH = 200;
  * padding（原型 tm-side 10px）联动——改 CSS 须同步改这里，否则行 pill 左右不对称
  */
 const SECOND_COLUMN_SCROLL_BODY_INSET = 21;
+/**
+ * 主列（.nav-menus）less 的 padding-top：菜单头部（SidebarNavHeader）上沿 =
+ * 列顶 + 该值，分隔条可用高度顶部从此起（沉浸式被内联 shellAvoid.TOP 整体替换，
+ * 走 hostBridge 常量不经过这里）——改 .nav-menus 的 padding-top 须同步改这里
+ */
+const NAV_MENUS_PADDING_TOP = 8;
+/**
+ * SidebarNavHeader 顶栏（logo+搜索+折叠 的 .header-bar）高度：分隔条可用高度
+ * 顶部从其下沿（新建任务起的菜单列表区）起，logo 行不纳入可触发区（09-22 截图
+ * 红框口径）——改 SidebarNavHeader/index.less 的 .header-bar 高度须同步改这里
+ */
+const NAV_HEADER_BAR_HEIGHT = 41;
 /** 折叠态展开按钮（主站页形态）：贴屏幕最左侧、与收起按钮同一水平线，
  *  样式/大小/图标与 SidebarNavHeader 的收起按钮完全一致（34×34 图标钮 +
  *  PanelToggleSvg 面板图标）。left: 0 贴死左缘；
@@ -396,6 +409,38 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     [resolveNavWidthFromClientX],
   );
 
+  // 分隔条可用高度（09-22 截图红框圈定）：顶 = logo/搜索顶栏（.header-bar）下沿起，
+  // 即「新建任务」起的菜单列表区上沿——logo 行不纳入可触发区；= 主列 paddingTop
+  // （less 的 8px / 沉浸式被内联 shellAvoid.TOP 整体替换）+ header-bar 高 41px，
+  // 常量直算须与两处同源联动；底 = 底部用户栏上沿上浮 8px 边距，按 .sidebar-footer
+  // 真实 DOM 测量，根容器尺寸变化（窗口缩放/列宽拖拽）时复算
+  const navFooterRef = useRef<HTMLDivElement>(null);
+  const navDividerInsetTop =
+    (isImmersiveShell() ? shellAvoid.TOP : NAV_MENUS_PADDING_TOP) +
+    NAV_HEADER_BAR_HEIGHT;
+  const [navDividerInsetBottom, setNavDividerInsetBottom] = useState(0);
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const measure = () => {
+      const rootRect = root.getBoundingClientRect();
+      const footerRect = navFooterRef.current?.getBoundingClientRect();
+      const next = footerRect
+        ? Math.max(0, Math.round(rootRect.bottom - footerRect.top - 8))
+        : 0;
+      setNavDividerInsetBottom((prev) => (prev === next ? prev : next));
+    };
+
+    measure();
+    // jsdom 无 ResizeObserver（组件测试环境），仅浏览器观测
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(measure);
+      observer.observe(root);
+      return () => observer.disconnect();
+    }
+  }, []);
+
   return (
     <div
       className={navigationClassName}
@@ -451,7 +496,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
         {/* 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右：消息/设备/更多/文档，走接口）+
             最右「客户端设置」（仅 Nuwax 客户端渲染，打开壳设置弹窗） */}
-        <div className={cx(styles['sidebar-footer'])}>
+        <div ref={navFooterRef} className={cx(styles['sidebar-footer'])}>
           {/* topLeft：弹窗底部贴用户区顶部、左缘与用户区对齐 */}
           <User placement="topLeft">
             <div
@@ -584,6 +629,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           onDraggingChange={setIsNavResizing}
           onDragMove={handleNavDividerMove}
           onDragEnd={handleNavDividerEnd}
+          // 可用高度：顶从 logo 顶栏下方菜单列表区起、底到用户栏上沿留 8px（见上方注释）
+          insetTop={navDividerInsetTop}
+          insetBottom={navDividerInsetBottom}
         />
       )}
 
