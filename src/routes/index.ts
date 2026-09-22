@@ -723,6 +723,11 @@ const routes = [
   ...(isDevelopment
     ? [
         {
+          path: '/desktop-shell-preview',
+          component: '@/pages/DesktopShellPreview',
+          layout: false,
+        },
+        {
           path: '/mock-chat',
           component: '@/examples/MockChat',
           layout: false,

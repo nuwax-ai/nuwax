@@ -13,7 +13,10 @@ import {
 import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import { APP_NAME, APP_VERSION } from './constants/version';
-import { initClientShell } from './features/client-shell';
+import {
+  DesktopShellPreviewChrome,
+  initClientShell,
+} from './features/client-shell';
 import useEventPolling from './hooks/useEventPolling';
 import {
   BRAND_PRIMARY,
@@ -35,6 +38,7 @@ import {
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
+import { isDesktopShellPreviewPage } from './utils/desktopShellPreview';
 import { installDirectorySyncLegacyBridge } from './utils/directorySyncEvents';
 import { hostBridge, syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
@@ -68,7 +72,11 @@ export async function getInitialState(): Promise<InitialStateType> {
     if (token) localStorage.setItem(ACCESS_TOKEN, token);
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
-    const publicPaths = ['/login', '/examples/agent-intervention-demo'];
+    const publicPaths = [
+      '/login',
+      '/examples/agent-intervention-demo',
+      ...(isDesktopShellPreviewPage() ? ['/desktop-shell-preview'] : []),
+    ];
     const initialPathname =
       typeof window === 'undefined'
         ? history.location.pathname
@@ -359,7 +367,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     <>
       <OpenUIDevtools enabled={false} />
       {/* 只有用户已登录时才启动事件轮询 */}
-      <GlobalEventPolling />
+      {!isDesktopShellPreviewPage() && <GlobalEventPolling />}
       {children}
     </>
   );
@@ -377,7 +385,12 @@ const InitialStateBoundary: React.FC<{ children: React.ReactElement }> = ({
   children,
 }) => {
   const { error } = useModel('@@initialState');
-  return error ? <AppStartup failed /> : children;
+  return (
+    <>
+      <DesktopShellPreviewChrome />
+      {error ? <AppStartup failed /> : children}
+    </>
+  );
 };
 
 // innerProvider 位于 Umi model provider 内部，rootContainer 不能读取初始状态。
