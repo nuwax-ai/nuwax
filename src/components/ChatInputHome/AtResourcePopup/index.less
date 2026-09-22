@@ -55,6 +55,15 @@
     padding: 4px;
   }
 
+  // 双 tab 必须给出明确高度：仅有 flex-basis 时，父弹层为内容高度，
+  // 文件数量少会按内容塌缩；切到带 320px 空态/列表的资料库后再被撑高。
+  // 文件页把「更多」的 40px 让给内容区，资料库页则由内容区 + 更多区
+  // 共同保持 366px，总高度一致；flex-shrink 保留视口不足时的收缩能力。
+  .content-multi-tabs {
+    height: calc(366px - var(--more-h));
+    flex: 0 1 calc(366px - var(--more-h));
+  }
+
   // 单 tab（无切换器，无切换即无跳动）：高度随内容，上限即固定基准
   .content-no-tabs {
     flex: 0 1 auto;

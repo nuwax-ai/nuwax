@@ -1365,10 +1365,19 @@ export interface ConnectorOauthDeviceAuthorizeResult {
  */
 export interface ConnectorOauthDevicePollResult {
   /**
-   * 授权状态：authorized = 授权成功连接已建立；already_completed = 此前已完成；
-   * 其余（如 pending）视为待授权，前端按 interval 继续轮询
+   * 授权状态：authorized = 授权成功；already_completed = 此前已完成；
+   * 其余（如 pending）视为待授权，前端按 interval 继续轮询。
+   * authorized 需再看 connectionId：为 null 表示需二次再授权（应用已创建，
+   * 需用户身份再走一轮扫码），非 null 表示连接已建立
    */
   status?: string;
+  /**
+   * 连接 ID：authorized 且为 null 时需二次再授权（前端展示中间态提示页，
+   * 用户点「继续授权」重新调 authorize 换新二维码再轮询）
+   */
+  connectionId?: number | null;
+  /** 展示文案：二次再授权时为中间态提示文案；连接成功时为成功提示文案 */
+  message?: string;
 }
 
 /**

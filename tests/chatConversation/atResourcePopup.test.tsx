@@ -225,6 +225,11 @@ describe('AtResourcePopup·双模式 tab 结构', () => {
     // 文件 tab：更多区不渲染（高度让渡给列表区，弹层总高不变）
     expect(screen.queryByText('PC.Components.AtResourcePopup.more')).toBeNull();
     expect(document.querySelector('[data-at-more]')).toBeNull();
+    const content = document.querySelector('.content');
+    expect(content).toHaveClass('content-multi-tabs');
+    expect(document.querySelector('[data-at-popup]')).toHaveClass(
+      'popup-no-more',
+    );
     // → 切资料库：列表挂载（recent/list）+「更多」出现
     act(() => ref.current?.handleArrowRight());
     await waitFor(() =>
@@ -235,6 +240,10 @@ describe('AtResourcePopup·双模式 tab 结构', () => {
       variant: 'list',
     });
     expect(document.querySelector('[data-at-more]')).toBeTruthy();
+    expect(content).toHaveClass('content-multi-tabs');
+    expect(document.querySelector('[data-at-popup]')).not.toHaveClass(
+      'popup-no-more',
+    );
   });
 
   it('home 且专家未开放（expertAvailable=false）：收敛为纯资料库，无切换器无专家列表', async () => {

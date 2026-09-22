@@ -9,6 +9,7 @@
  */
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -94,7 +95,7 @@ vi.mock('@/components/ChatInputHome/ModelSelector', () => ({
   default: () => null,
 }));
 vi.mock('@/components/ChatInputHome/ManualComponentItem', () => ({
-  default: () => null,
+  default: () => <div data-testid="manual-components" />,
 }));
 vi.mock('@/components/ChatUploadFile', () => ({ default: () => null }));
 vi.mock('@/components/base/SvgIcon', () => ({
@@ -175,6 +176,56 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('+ 号弹层结构', () => {
+  it('点击附件行本身只打开一次选择器，禁用时不打开', () => {
+    const { rerender } = renderInput();
+    openPlusMenu();
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const click = vi.spyOn(fileInput, 'click').mockImplementation(() => {});
+    fireEvent.click(screen.getByRole('menuitem', { name: /attachFile/ }));
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(fileInput).toBeInTheDocument();
+    rerender(<ChatInputUnified onEnter={vi.fn()} wholeDisabled />);
+    openPlusMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: /attachFile/ }));
+    expect(click).toHaveBeenCalledTimes(1);
+    click.mockRestore();
+  });
+
+  it.each([
+    ['versionControlSwitch', { enableVersionControl: 0 }],
+    ['autoCommitSwitch', { autoCommit: 0 }],
+    ['approvalModeSwitch', { mode: 'ask' }],
+  ])('点击 %s 行的留白切换一次且保持菜单展开', async (label, changed) => {
+    renderInput({ agentEnableVersionControl: 1 });
+    openPlusMenu();
+    fireEvent.click(
+      screen.getByRole('menuitem', { name: new RegExp(label as string) }),
+    );
+    expect(userConfig.set).toHaveBeenCalledTimes(1);
+    expect(userConfig.set).toHaveBeenCalledWith({
+      key: `chatbox.config.${AGENT_ID}`,
+      value: expect.objectContaining(changed),
+    });
+    await waitFor(() => expect(screen.getByRole('menu')).toBeVisible());
+  });
+
+  it('禁用的开关项点击整行不修改配置', () => {
+    renderInput({ agentEnableVersionControl: 1, wholeDisabled: true });
+    openPlusMenu();
+    for (const label of [
+      'versionControlSwitch',
+      'autoCommitSwitch',
+      'approvalModeSwitch',
+    ]) {
+      fireEvent.click(
+        screen.getByRole('menuitem', { name: new RegExp(label) }),
+      );
+    }
+    expect(userConfig.set).not.toHaveBeenCalled();
+  });
+
   it('渲染四入口 + 分隔线 + 产物版本管理/审批模式开关（未配置时无自动提交行）', () => {
     renderInput({ agentEnableVersionControl: 0 });
     openPlusMenu();
@@ -246,6 +297,77 @@ describe('+ 号弹层结构', () => {
     expect(
       screen.getByText('PC.Components.ChatInputHome.plusMenuConnector'),
     ).toBeInTheDocument();
+  });
+
+  it('ChatBot 只保留附件入口，并关闭能力触发与手动组件回显', () => {
+    const onEnter = vi.fn();
+    renderInput({ agentType: 'ChatBot', agentMode: 'ask', onEnter });
+
+    expect(editor.lastProps.enableMention).toBe(false);
+    expect(editor.lastProps.atHomePanel).toBe(false);
+    expect(editor.lastProps.capabilityResourceTypes).toEqual([]);
+    expect(editor.lastProps.placeholder).toBe(
+      'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
+    );
+    expect(screen.queryByTestId('manual-components')).toBeNull();
+    expect(
+      screen.queryByText('PC.Components.ChatInputHome.agentModeApproval'),
+    ).toBeNull();
+
+    openPlusMenu();
+    expect(
+      screen.getByText('PC.Components.ChatInputHome.attachFile'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('PC.Components.ChatInputHome.atContext'),
+    ).toBeNull();
+    expect(
+      screen.queryByText('PC.Components.ChatInputHome.slashCapability'),
+    ).toBeNull();
+    expect(
+      screen.queryByText('PC.Components.ChatInputHome.plusMenuConnector'),
+    ).toBeNull();
+    expect(
+      screen.queryByText('PC.Components.ChatInputHome.versionControlSwitch'),
+    ).toBeNull();
+    expect(
+      screen.queryByText('PC.Components.ChatInputHome.approvalModeSwitch'),
+    ).toBeNull();
+
+    act(() => {
+      editor.lastProps.onChange('测试问题');
+      editor.lastProps.onSkillIdsChange([11]);
+      editor.lastProps.onDocsChange([{ slugId: 12 }]);
+      editor.lastProps.onExpertSelect({ targetId: 13, name: '专家' });
+    });
+    act(() => editor.lastProps.onPressEnter());
+    expect(onEnter).toHaveBeenCalledWith(
+      '测试问题',
+      [],
+      [],
+      undefined,
+      'ask',
+      [],
+      [],
+    );
+  });
+
+  it('智能体类型加载期间按 ChatBot 能力边界处理', () => {
+    renderInput({ agentTypeLoading: true });
+    expect(editor.lastProps.enableMention).toBe(false);
+    expect(editor.lastProps.placeholder).toBe(
+      'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
+    );
+    expect(screen.queryByTestId('manual-components')).toBeNull();
+    openPlusMenu();
+    expect(
+      screen.queryByText('PC.Components.ChatInputHome.atContext'),
+    ).toBeNull();
+  });
+
+  it('ChatBot 保留业务方显式配置的 placeholder', () => {
+    renderInput({ agentType: 'ChatBot', placeholder: '请输入咨询问题' });
+    expect(editor.lastProps.placeholder).toBe('请输入咨询问题');
   });
 });
 

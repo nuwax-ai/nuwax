@@ -425,6 +425,7 @@ const AtResourcePopup = forwardRef<AtResourcePopupHandle, AtResourcePopupProps>(
             // 单 tab 收敛（无切换器）时高度随内容；判定期间仍走多 tab
             // 定高形态（切换器占位隐藏），避免判定完成弹层高度跳动；
             // slash 单技能 tab 定高占满，与多 tab 形态（@ 专家弹层）等高
+            multiForm && styles['content-multi-tabs'],
             !multiForm && !isSlash && styles['content-no-tabs'],
             isSlash && styles['content-slash-full'],
           )}
