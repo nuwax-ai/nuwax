@@ -22,7 +22,6 @@ import { copyTextToClipboard } from '@/utils/clipboard';
 import { isValidDomain, normalizeDomain } from '@/utils/common';
 import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
 import { resolveProjectOwnerFlag } from '@/utils/homeSendPlan';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import {
   EyeInvisibleOutlined,
   EyeOutlined,
@@ -396,7 +395,10 @@ const AppProjectDetail: React.FC = () => {
     setOauthLoading(true);
     setSecretVisible(false);
     try {
-      const settingRes = await apiThirdAppOauth2SettingGet(appId, AgentComponentTypeEnum.UserApp);
+      const settingRes = await apiThirdAppOauth2SettingGet(
+        appId,
+        AgentComponentTypeEnum.UserApp,
+      );
       const info = pickResponseData(settingRes);
       setOauthInfo(info);
       setHomepageUrl(info?.homepageUrl || '');
@@ -406,7 +408,10 @@ const AppProjectDetail: React.FC = () => {
         return;
       }
       try {
-        const secretRes = await apiThirdAppOauth2SecretGet(appId, AgentComponentTypeEnum.UserApp);
+        const secretRes = await apiThirdAppOauth2SecretGet(
+          appId,
+          AgentComponentTypeEnum.UserApp,
+        );
         const secret = pickResponseData(secretRes);
         setClientSecret(typeof secret === 'string' ? secret : '');
       } catch (error) {
@@ -1029,12 +1034,7 @@ const AppProjectDetail: React.FC = () => {
 
   return (
     <div className={cx(styles.page, 'h-full', 'flex', 'flex-col')}>
-      <header
-        className={cx(styles.header)}
-        style={{
-          paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
-        }}
-      >
+      <header className={cx(styles.header)}>
         <Button
           type="text"
           className={cx(styles.back)}

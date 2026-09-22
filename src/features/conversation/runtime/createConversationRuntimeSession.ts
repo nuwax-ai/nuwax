@@ -143,8 +143,6 @@ export interface ConversationRuntimeSession {
   subscribeState(listener: RuntimeSessionListener): () => void;
 }
 
-const SEND_KEEPALIVE_MS = 3000;
-
 /**
  * 新线（runtime line）的会话运行时核心（双线方案 §3.2-3，R2 片）。
  *
@@ -153,6 +151,11 @@ const SEND_KEEPALIVE_MS = 3000;
  * 编排顺序逐字对齐旧线 model（handleConversation / onMessageSend / handleChangeMessageList
  * 的消息面），差异仅：写入经 store、副作用经 effects、连接经 transport。
  * load/snapshot/干预/恢复编排在 R3 片补全。
+ *
+ * 活跃态复位语义：所有非活跃路径（用户停止 stop / 连接关闭 onClose / 网络
+ * 错误 onError / 协议终态）一律走 disableConversationActive 强制复位，
+ * 不做「发送后 N 秒保活」——保活窗口会让发送后快速停止的会话永久卡在
+ * 「执行中」（禅道 bug2528），且旧线停止路径同样是强制复位（user-stop）。
  */
 export function createConversationRuntimeSession(
   config: RuntimeSessionConfig,
@@ -182,7 +185,6 @@ export function createConversationRuntimeSession(
    * send（新一轮）/ 切会话时清空。
    */
   let settledTerminalStatus: TaskStatus | null = null;
-  let lastSendAt = 0;
   const stateListeners = new Set<RuntimeSessionListener>();
 
   const notifyState = () => {
@@ -191,17 +193,7 @@ export function createConversationRuntimeSession(
     });
   };
 
-  const setConversationActive = (value: boolean) => {
-    // 发送后保活窗口内拒绝置 false（与旧线「发送后 3s 保活」一致）
-    if (!value && Date.now() - lastSendAt < SEND_KEEPALIVE_MS) {
-      return;
-    }
-    isConversationActive = value;
-    notifyState();
-  };
-
   const disableConversationActive = () => {
-    lastSendAt = 0;
     isConversationActive = false;
     notifyState();
   };
@@ -212,8 +204,11 @@ export function createConversationRuntimeSession(
     runtime.resetStreamProjection();
     // 2. 消息终态：Loading → Stopped，执行中 processing → FAILED
     store.finalizeOnClose();
-    // 3. 活跃态：与旧线 stop 路径一致——受「发送后 3s 保活」窗口约束（不强制落 false）
-    setConversationActive(false);
+    // 3. 活跃态：用户主动停止必须强制复位（对齐旧线 runStopConversation 的
+    //    disabledConversationActive('user-stop')），不走 setConversationActive——
+    //    它受「发送后 3s 保活」窗口约束，发送后快速停止时活跃态会被窗口
+    //    拒绝落 false 而永久卡「执行中」，输入框停止/发送双双失效（禅道 bug2528）
+    disableConversationActive();
     // 4. 后端 stop 请求（绑定层注入句柄）
     if (config.stopRequest) {
       void config.stopRequest(String(conversationId)).catch((error) => {
@@ -233,7 +228,6 @@ export function createConversationRuntimeSession(
     ) {
       return;
     }
-    lastSendAt = 0;
     isConversationActive = false;
     isAwaitingChatTerminal = false;
     settledTerminalStatus = status;
@@ -456,7 +450,6 @@ export function createConversationRuntimeSession(
 
     isAwaitingChatTerminal = true;
     isConversationActive = true;
-    lastSendAt = Date.now();
     notifyState();
 
     // 乐观「执行中」标记（经 effects；旧线 eventBus 直发等价）。
@@ -582,7 +575,6 @@ export function createConversationRuntimeSession(
           store.finalizeOwnedOnStaleClose(currentMessageId);
           return;
         }
-        lastSendAt = 0;
         store.finalizeOnClose();
         disableConversationActive();
 
@@ -681,7 +673,6 @@ export function createConversationRuntimeSession(
     resumeController.abortResumeStream();
     runtime.resetStreamProjection();
     store.reset();
-    lastSendAt = 0;
     isConversationActive = false;
     isAwaitingChatTerminal = false;
     currentRequestId = '';

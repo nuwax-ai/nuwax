@@ -252,12 +252,6 @@ const ActionMenuDemo: React.FC = () => {
           <ActionMenu
             actions={[
               {
-                key: 'share',
-                icon: 'icons-chat-share',
-                title: '分享',
-                onClick: () => message.success('分享链接已复制'),
-              },
-              {
                 key: 'collect',
                 icon: 'icons-chat-collect',
                 title: '收藏',

@@ -15,7 +15,6 @@ import {
   applyProjectChangedToList,
   emitProjectChanged,
 } from '@/utils/directorySyncEvents';
-import { needsTopRightAvoid, shellAvoid } from '@/utils/hostBridge';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
@@ -212,12 +211,7 @@ const UserAppProject: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div
-        className={cx(styles['header-area'])}
-        style={{
-          paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
-        }}
-      >
+      <div className={cx(styles['header-area'])}>
         <div className={cx(styles['header-left'])}>
           <h3 className={cx(styles.title)}>
             {dict('PC.Pages.SpaceProjectManage.tabUserApp')}

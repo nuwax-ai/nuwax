@@ -25,7 +25,11 @@ const cx = classNames.bind(styles);
 /**
  * 调试详情组件
  */
-const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
+const DebugDetails: React.FC<DebugDetailsProps> = ({
+  visible,
+  onClose,
+  className,
+}) => {
   const { requestId, finalResult, setFinalResult } =
     useModel('conversationInfo');
   // 当前执行结果
@@ -103,6 +107,7 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   return (
     <ToggleWrap
       title={dict('PC.Pages.EditAgent.DebugDetails.title')}
+      className={className}
       onClose={onClose}
       visible={visible}
     >

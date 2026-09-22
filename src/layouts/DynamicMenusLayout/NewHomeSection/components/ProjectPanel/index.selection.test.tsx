@@ -48,12 +48,14 @@ const {
 }));
 
 // 可变路由参数：默认无 spaceId（/home）；个别用例改写验证「空间路由下也不传 spaceId」
-const { routeParams } = vi.hoisted(() => ({
+const { routeParams, historyPush } = vi.hoisted(() => ({
   routeParams: { params: {} as Record<string, string | undefined> },
+  historyPush: vi.fn(),
 }));
 
 vi.mock('umi', () => ({
   useParams: () => routeParams.params,
+  history: { push: historyPush },
 }));
 
 vi.mock('@/services/userProjectApp', () => ({
@@ -466,7 +468,9 @@ describe('ProjectPanel 选中关系', () => {
         () => expect(pageQueryMock.mock.calls.length).toBe(callsAfterMount + 4),
         { timeout: 5000 },
       );
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 600);
+      });
       expect(pageQueryMock.mock.calls.length).toBe(callsAfterMount + 4);
       expect(screen.queryByText('新项目')).toBeNull();
     });
@@ -1047,5 +1051,88 @@ describe('ProjectPanel 选中关系', () => {
     // 标记补丁全走本地集合收敛：除挂载首拉外不再发列表请求（无重复请求风暴；
     // 后续翻页/回流由 fetchPage 以服务端真值整体覆盖标记集合）
     expect(pageQueryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('项目详情菜单项：按类型跳对应详情页，未覆盖类型（PageApp）不展示', async () => {
+    // 各类型单独挂载验证：antd Dropdown 展开过的菜单在 jsdom 不卸载，
+    // 同屏多行会捞出多个同名菜单项干扰断言
+    const openDetailOf = async (
+      record: UserProjectTabItem,
+      expectedPath: string,
+    ) => {
+      respondPage([record]);
+      const view = render(<ProjectPanel />);
+      await waitFor(() => expect(screen.getByText(record.name)).toBeTruthy());
+      historyPush.mockClear();
+      const row = screen.getByText(record.name).closest('[class*="row"]');
+      await act(async () => {
+        fireEvent.click(
+          row!.querySelector<HTMLButtonElement>(
+            'button[aria-label="PC.Components.ActionMenu.more"]',
+          )!,
+        );
+      });
+      await act(async () => {
+        fireEvent.click(
+          screen.getByText(
+            'PC.Layouts.DynamicMenusLayout.NewHomeSection.projectDetail',
+          ),
+        );
+      });
+      expect(historyPush).toHaveBeenCalledWith(expectedPath);
+      view.unmount();
+    };
+
+    // 跳转映射与 SpaceProjectManage 卡片点击一致，spaceId 取行数据自带
+    await openDetailOf(
+      buildRecord({
+        projectId: 1,
+        name: '常规一',
+        projectType: AgentComponentTypeEnum.NormalProject,
+      }),
+      '/space/100/normal-project-detail/1',
+    );
+    await openDetailOf(
+      buildRecord({
+        projectId: 2,
+        name: '全栈二',
+        projectType: AgentComponentTypeEnum.UserApp,
+      }),
+      '/space/100/app-project-detail/2',
+    );
+    await openDetailOf(
+      buildRecord({
+        projectId: 3,
+        name: '三方三',
+        projectType: AgentComponentTypeEnum.ThirdApp,
+      }),
+      '/space/100/third-app-detail/3',
+    );
+
+    // PageApp 无详情页契约：菜单不出现项目详情项，也不发生跳转
+    respondPage([
+      buildRecord({
+        projectId: 4,
+        name: '网页四',
+        projectType: AgentComponentTypeEnum.PageApp,
+      }),
+    ]);
+    render(<ProjectPanel />);
+    await waitFor(() => expect(screen.getByText('网页四')).toBeTruthy());
+    historyPush.mockClear();
+    const row = screen.getByText('网页四').closest('[class*="row"]');
+    await act(async () => {
+      fireEvent.click(
+        row!.querySelector<HTMLButtonElement>(
+          'button[aria-label="PC.Components.ActionMenu.more"]',
+        )!,
+      );
+    });
+    expect(
+      screen.queryByText(
+        'PC.Layouts.DynamicMenusLayout.NewHomeSection.projectDetail',
+      ),
+    ).toBeNull();
+    expect(historyPush).not.toHaveBeenCalled();
   });
 });

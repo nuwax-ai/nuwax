@@ -248,6 +248,7 @@ describe('hostBridge（统一对外接入层）', () => {
     const root = document.documentElement;
     const vars = [
       '--immersive-shell-top',
+      '--immersive-shell-content-top',
       '--immersive-shell-toolbar',
       '--immersive-shell-right',
     ] as const;
@@ -273,8 +274,12 @@ describe('hostBridge（统一对外接入层）', () => {
       expect(root.style.getPropertyValue('--immersive-shell-top')).toBe(
         `${shellAvoid.TOP}px`,
       );
-      // mac 独立全屏页不做顶部退让（红绿灯/图标簇不占内容区页头位置）
+      // mac 独立全屏页不做顶部退让（红绿灯/图标簇不占内容区页头位置）；
+      // 固定定位浮层（全高 Drawer）mac 无右侧窗控冲突，同恒 0（禅道 2429）
       expect(root.style.getPropertyValue('--immersive-shell-toolbar')).toBe(
+        '0px',
+      );
+      expect(root.style.getPropertyValue('--immersive-shell-content-top')).toBe(
         '0px',
       );
       expect(root.style.getPropertyValue('--immersive-shell-right')).toBe(
@@ -289,6 +294,11 @@ describe('hostBridge（统一对外接入层）', () => {
       expect(root.classList.contains('immersive-shell-frameless')).toBe(true);
       expect(root.style.getPropertyValue('--immersive-shell-toolbar')).toBe(
         `${shellAvoid.TOOLBAR}px`,
+      );
+      // 固定定位浮层顶部退让与内容区同源（全高 Drawer 关闭键不再塞进
+      // 壳顶行透明带，禅道 2429）
+      expect(root.style.getPropertyValue('--immersive-shell-content-top')).toBe(
+        `${shellAvoid.CONTENT_TOP}px`,
       );
     });
 
