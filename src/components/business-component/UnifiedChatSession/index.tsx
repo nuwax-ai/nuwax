@@ -8,10 +8,15 @@ import MessageQueuePanel from '@/components/business-component/MessageQueue';
 import { registerOpenUiActionSender } from '@/components/business-component/OpenUiArtifactView/actionRegistry';
 import { buildOpenUiResumeMessage } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
 import classNames from 'classnames';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { useModel } from 'umi';
 
-import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import {
   ConversationSessionProvider,
@@ -34,7 +39,6 @@ import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
 import ChatContentArea from './components/ChatContentArea';
-import ConversationProgressCapsule from './components/ConversationProgressCapsule';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
 import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
 
@@ -86,7 +90,6 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   clearLoading = false,
   showClearIcon = true,
   showConversationStatus = true,
-  showConversationProgressCapsule = false,
   isSelectionLocked = false,
   hasUserSentMessage = false,
   readonly,
@@ -428,18 +431,6 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
         scrollContainerRef={messageViewRef}
         messageList={messageList ?? []}
       />
-
-      {/* 右上角进度胶囊：数据来自同一份 V2 投影，终态常驻，仅新消息开出的新轮无内容时隐藏。 */}
-      {showConversationProgressCapsule && (
-        <ConversationProgressCapsule
-          conversationId={conversationId}
-          messageList={messageList ?? []}
-          active={session.shouldShowStop}
-          enableVersionControl={isAgentVersionControlEnabled(
-            agentInfo?.enableVersionControl,
-          )}
-        />
-      )}
 
       {/* 会话执行状态栏 */}
       {showConversationStatus &&

@@ -6,6 +6,8 @@ import {
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
+import ConversationProgressCapsule from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule';
+import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
 import type { FileMentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import ConditionRender from '@/components/ConditionRender';
 import ResizableSplit from '@/components/ResizableSplit';
@@ -193,6 +195,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // 智能体详情悬浮弹窗（取代原 AgentSidebar 互斥侧栏，与右侧面板共存）
   const [isAgentDetailModalOpen, setIsAgentDetailModalOpen] =
     useState<boolean>(false);
+
+  // 会话进度面板展开态（受控）：页头「会话进度」按钮驱动胶囊组件
+  const [capsulePanelOpen, setCapsulePanelOpen] = useState<boolean>(false);
 
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
@@ -1769,6 +1774,41 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     };
   }, [pagePreviewData, isFileTreeVisible, isMobile]);
 
+  // 会话活跃口径：本地流式 + 后台 EXECUTING（chatSessionProps.isConversationActive 同一来源）
+  const effectiveConversationActive =
+    isConversationActive ||
+    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
+  // 进度面板可用性：与胶囊组件同源纯选择器；有内容才渲染页头「会话进度」按钮，
+  // running 只驱动按钮转圈，面板内状态以胶囊组件内部模型为准
+  const capsuleModel = useMemo(
+    () => selectProgressCapsule(messageList, effectiveConversationActive),
+    [messageList, effectiveConversationActive],
+  );
+  const handleToggleCapsulePanel = useCallback(
+    () => setCapsulePanelOpen((value) => !value),
+    [],
+  );
+  const handleCloseCapsulePanel = useCallback(
+    () => setCapsulePanelOpen(false),
+    [],
+  );
+  // 进度面板节点：由页面层组装（数据/受控态/TaskAgent 门控），经 LeftContent 挂到
+  // left 栏与 chat-section 平级——距栏顶/栏右等距（原先锚在 session-container，
+  // 会多出 chat-section 的 padding-right 导致右边距偏大）
+  const chatPaneCapsule =
+    effectiveAgent?.type === AgentTypeEnum.TaskAgent ? (
+      <ConversationProgressCapsule
+        conversationId={id}
+        messageList={messageList}
+        active={effectiveConversationActive}
+        enableVersionControl={isAgentVersionControlEnabled(
+          effectiveAgent?.enableVersionControl,
+        )}
+        open={capsulePanelOpen}
+        onClose={handleCloseCapsulePanel}
+      />
+    ) : null;
+
   // 聊天会话头部相关 props
   const headerProps = {
     showSidebar,
@@ -1787,6 +1827,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setOpenPaymentModal,
     isAgentDetailModalOpen,
     handleOpenAgentDetail: () => setIsAgentDetailModalOpen(true),
+    // 会话进度面板（TaskAgent）：有内容才显示页头按钮，运行中按钮转圈
+    hasCapsuleContent: capsuleModel !== null,
+    capsuleRunning: capsuleModel?.running ?? false,
+    isCapsulePanelOpen: capsulePanelOpen,
+    handleToggleCapsulePanel,
     closePreviewView: handleClosePreviewView,
     handleOpenPreview,
     isShowFilePanel,
@@ -1915,9 +1960,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     loadingMore,
     isMoreMessage,
     // 流式输出中 + 后台 taskStatus 执行中，驱动停止按钮与「智能体执行中」提示
-    isConversationActive:
-      isConversationActive ||
-      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    isConversationActive: effectiveConversationActive,
     // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
     isLocallyStreaming: isConversationActive,
     isAwaitingChatTerminal,
@@ -1958,8 +2001,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       allowChooseMode: effectiveAgent?.allowChooseMode,
       enableVersionControl: effectiveAgent?.enableVersionControl,
     },
-    showConversationProgressCapsule:
-      effectiveAgent?.type === AgentTypeEnum.TaskAgent,
     onSendMessage: handleMessageSend,
     onClear: showClearContext && !chromeFlags.hideNew ? handleClear : undefined,
     onLoadMoreMessage: handleLoadMoreMessage,
@@ -2100,6 +2141,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   fileSidebarProps={fileSidebarProps}
                   externalFilePreview={externalPreviewFile}
                   onExternalFilePreviewBack={exitExternalPreview}
+                  chatPaneCapsule={chatPaneCapsule}
                 />
               )
             }
@@ -2130,6 +2172,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   fileSidebarProps={fileSidebarProps}
                   externalFilePreview={externalPreviewFile}
                   onExternalFilePreviewBack={exitExternalPreview}
+                  chatPaneCapsule={chatPaneCapsule}
                 />
               </div>
             )}

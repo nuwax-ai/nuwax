@@ -9,6 +9,7 @@
  * 应用内嵌形态：访问 /app/mock-chat（/app 前缀由 useOpenApp 自动识别）。
  */
 import { UnifiedChatSession } from '@/components/business-component';
+import ConversationProgressCapsule from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import { apiAgentConversation } from '@/services/agentConfig';
@@ -160,6 +161,8 @@ const MockChat: React.FC = () => {
   const [scenarios, setScenarios] = useState<ScenarioMeta[]>([]);
   const [serverStatus, setServerStatus] = useState<MockServerStatus>();
   const [lastError, setLastError] = useState('');
+  // 进度胶囊面板受控展开态（胶囊已无自带触发器，由本页开关按钮驱动）
+  const [capsuleOpen, setCapsuleOpen] = useState(false);
   const subTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const didInitialPrepareRef = useRef(false);
   // 「曾经出现」语义的观测标记：E2E 断言非空转（终态场景先活跃再收敛）
@@ -670,6 +673,12 @@ const MockChat: React.FC = () => {
               停止会话
             </Button>
             <Button onClick={() => void prepareScenario()}>仅重置</Button>
+            <Button
+              data-testid="mock-capsule-toggle"
+              onClick={() => setCapsuleOpen((value) => !value)}
+            >
+              进度面板
+            </Button>
           </Space>
           <Paragraph type="secondary" style={{ margin: '10px 0 0' }}>
             {scenario.description}；验证：{scenario.verifies}
@@ -692,7 +701,13 @@ const MockChat: React.FC = () => {
           }}
         >
           <Card size="small" styles={{ body: { padding: 0 } }}>
-            <div style={{ height: 'calc(100vh - 190px)', minHeight: 620 }}>
+            <div
+              style={{
+                position: 'relative',
+                height: 'calc(100vh - 190px)',
+                minHeight: 620,
+              }}
+            >
               <UnifiedChatSession
                 conversationId={MOCK_CONVERSATION_ID}
                 messageList={messageList}
@@ -712,7 +727,6 @@ const MockChat: React.FC = () => {
                   hasPermission: true,
                   sandboxId: 'mock-sandbox',
                 }}
-                showConversationProgressCapsule
                 initialAgentMode="yolo"
                 onSendMessage={sendMessage}
                 onLoadMoreMessage={model.handleLoadMoreMessage}
@@ -772,6 +786,14 @@ const MockChat: React.FC = () => {
                     : undefined
                 }
                 {...runtimeProps}
+              />
+              {/* 进度面板：与 UnifiedChatSession 平级挂同一相对容器（对齐 Chat 页 left 栏挂载口径） */}
+              <ConversationProgressCapsule
+                conversationId={MOCK_CONVERSATION_ID}
+                messageList={messageList}
+                active={model.isConversationActive}
+                open={capsuleOpen}
+                onClose={() => setCapsuleOpen(false)}
               />
             </div>
           </Card>

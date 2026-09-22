@@ -2,48 +2,52 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
+// 面板卡片：仅展开态挂载（无收起胶囊），悬浮在会话区右上角、页头「会话进度」按钮下方
 .capsule {
   position: absolute;
   z-index: 20;
   top: @marginMd;
   right: @marginMd;
-  // 收起态贴合内容宽度；320px 为整体上限
-  width: fit-content;
-  max-width: min(320px, calc(100% - 2 * @marginMd));
+  width: min(320px, calc(100% - 2 * @marginMd));
   color: @colorText;
   border: 1px solid @colorBorderSecondary;
-  border-radius: 999px;
+  border-radius: @borderRadiusLg;
   background: @colorBgElevated;
   box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
   overflow: hidden;
 }
 
-.expanded {
-  width: min(320px, calc(100% - 2 * @marginMd));
-  border-radius: @borderRadiusLg;
-}
-
-.trigger {
-  width: 100%;
-  min-height: 32px;
+.panel-header {
   display: flex;
   align-items: center;
   gap: @marginXs;
-  padding: 3px 6px 3px @paddingXs;
-  border: 0;
-  color: inherit;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
+  padding: 2px 0 @paddingXs;
+  margin-bottom: @marginXs;
+  border-bottom: 1px solid @colorBorderSecondary;
 }
 
-.trigger-label {
+.panel-header-label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: @fontSizeSm;
+}
+
+.panel-close {
+  flex: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  line-height: 1;
+  padding: 2px;
+
+  &:hover {
+    color: @colorText;
+  }
 }
 
 .chip {
@@ -87,34 +91,14 @@
   color: @colorError;
 }
 
-// 面板动效由组件内 JS 逐帧驱动（见 index.tsx animatePanelStyle）：
+// 面板动效由组件内 JS 逐帧驱动（见 index.tsx animatePanelFade）：
 // CSS 动画在部分环境（系统减弱动态效果）冻结在起点会让面板不可见。
-// 面板条件渲染（收起态 DOM 无面板），胶囊收起宽度只贴合触发器内容。
+// 面板条件渲染（收起态 DOM 无面板）。
 .panel {
   position: relative;
-  border-top: 1px solid @colorBorderSecondary;
-  padding: @paddingSm 32px @paddingSm @paddingSm;
+  padding: @paddingSm;
   max-height: min(60cqh, 480px);
   overflow-y: auto;
-}
-
-.panel-collapse {
-  // 固定在面板右上角内空区（胶囊根 absolute），不随面板内容滚动
-  position: absolute;
-  top: 43px;
-  right: 12px;
-  z-index: 2;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  color: @colorTextSecondary;
-  font-size: @fontSizeSm;
-  line-height: 1;
-  padding: 2px;
-
-  &:hover {
-    color: @colorText;
-  }
 }
 
 .group + .group {
@@ -346,8 +330,7 @@
 }
 
 @container (max-width: 520px) {
-  .capsule,
-  .expanded {
+  .capsule {
     top: @marginXs;
     right: @marginXs;
     width: calc(100% - 2 * @marginXs);

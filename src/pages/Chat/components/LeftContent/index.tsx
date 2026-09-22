@@ -14,7 +14,11 @@ import {
   loadChatPanelWidthPercent,
   saveChatPanelWidthPercent,
 } from '@/utils/chatPanelWidthPreference';
-import { CodeOutlined } from '@ant-design/icons';
+import {
+  CodeOutlined,
+  LoadingOutlined,
+  OrderedListOutlined,
+} from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import ConversationInstanceCacheSlot from '../ConversationInstanceCacheSlot';
@@ -40,6 +44,8 @@ interface LeftContentProps {
   externalFilePreview?: ExternalFilePreviewTarget | null;
   /** 退出工作区外文件独立预览，右侧面板回落工作区文件树 */
   onExternalFilePreviewBack?: () => void;
+  /** 会话进度面板节点：挂 left 栏与 chat-section 平级（页面层组装数据与受控态） */
+  chatPaneCapsule?: React.ReactNode;
 }
 
 // 内容区域
@@ -53,6 +59,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
   fileSidebarProps,
   externalFilePreview,
   onExternalFilePreviewBack,
+  chatPaneCapsule,
 }) => {
   // 拖拽分栏默认宽度（持久化偏好，仅作 ResizableSplit 初始值）
   const [chatPanelWidth] = useState<number>(loadChatPanelWidthPercent);
@@ -147,6 +154,27 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   onClick={() => headerProps.setOpenPaymentModal(true)}
                 />
               )}
+
+            {/* 会话进度面板（TaskAgent）：胶囊有内容才显示按钮，运行中转圈，点击展开/收起面板；
+                data-capsule-panel-trigger 标记自身，胶囊外点收起不把按钮当外点 */}
+            {headerProps.hasCapsuleContent && !isAppSidebarMode && (
+              <span data-capsule-panel-trigger>
+                <TooltipIcon
+                  title={t('PC.Pages.Chat.conversationProgress')}
+                  className={cx(styles['icon-box'], {
+                    [styles['active']]: headerProps.isCapsulePanelOpen,
+                  })}
+                  icon={
+                    headerProps.capsuleRunning ? (
+                      <LoadingOutlined spin style={{ fontSize: 16 }} />
+                    ) : (
+                      <OrderedListOutlined style={{ fontSize: 16 }} />
+                    )
+                  }
+                  onClick={headerProps.handleToggleCapsulePanel}
+                />
+              </span>
+            )}
 
             {/* 这里放「查看智能体详情」入口：点击弹出悬浮弹窗，与右侧面板共存不再互斥 */}
             {headerProps.showSidebar && !isAppSidebarMode && (
@@ -259,13 +287,17 @@ const LeftContent: React.FC<LeftContentProps> = ({
           defaultLeftWidth={chatPanelWidth}
           onResizeEnd={saveChatPanelWidthPercent}
           left={
-            <div className={cx(styles['chat-section'])}>
-              <UnifiedChatSession
-                {...chatSessionProps}
-                showClearIcon={
-                  effectiveAgent?.deviceAgent !== 1 && !headerProps.hideNew
-                }
-              />
+            <div className={cx(styles['chat-pane'])}>
+              <div className={cx(styles['chat-section'])}>
+                <UnifiedChatSession
+                  {...chatSessionProps}
+                  showClearIcon={
+                    effectiveAgent?.deviceAgent !== 1 && !headerProps.hideNew
+                  }
+                />
+              </div>
+              {/* 会话进度面板：挂 left 栏与 chat-section 平级，定位/容器查询上下文 = chat-pane */}
+              {chatPaneCapsule}
             </div>
           }
           rightHidden={!showFileTreePanel}

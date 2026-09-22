@@ -55,6 +55,15 @@
     display: flex;
     position: relative;
 
+    // left 栏内容包装：会话进度面板的定位上下文（与 chat-section 平级、距顶/距右等距），
+    // 并接管胶囊面板的 cqh/@container 容器查询上下文（原为 session-container）
+    .chat-pane {
+      position: relative;
+      container-type: size;
+      width: 100%;
+      height: 100%;
+    }
+
     .chat-section {
       width: 100%;
       height: 100%;

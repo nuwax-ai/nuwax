@@ -70,10 +70,6 @@ vi.mock('@/components/RecommendList', () => ({
 vi.mock('@/pages/Chat/components/ConversationStatus', () => ({
   default: () => null,
 }));
-vi.mock(
-  '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule',
-  () => ({ default: () => <div data-testid="progress-capsule" /> }),
-);
 
 vi.mock('@/components/business-component/AgentIntervention', () => ({
   AgentInterventionChatLayer: () => null,
@@ -141,17 +137,6 @@ const askItem = (): InterventionQueueItem =>
   } as any);
 
 describe('UnifiedChatSession：权限审批 / ask/question 出现时隐藏队列消息', () => {
-  it('进度胶囊默认关闭，仅由主会话入口显式开启', () => {
-    vi.mocked(useActiveInterventionQueue).mockReturnValue([]);
-    const { rerender } = render(<UnifiedChatSession messageList={[]} />);
-    expect(screen.queryByTestId('progress-capsule')).toBeNull();
-
-    rerender(
-      <UnifiedChatSession messageList={[]} showConversationProgressCapsule />,
-    );
-    expect(screen.getByTestId('progress-capsule')).toBeInTheDocument();
-  });
-
   it('有待处理 intervention 时，队列消息面板不渲染', () => {
     vi.mocked(useActiveInterventionQueue).mockReturnValue([askItem()]);
     render(<UnifiedChatSession messageList={[]} />);
