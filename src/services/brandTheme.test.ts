@@ -17,7 +17,8 @@ const { STORAGE_KEYS_MOCK, mockCurrentData, mockUpdateData } = vi.hoisted(
       antdTheme: 'light' as const,
       source: 'default',
       primaryColor: '#5147ff',
-      layoutStyle: 'light' as const,
+      layoutStyle: 'light' as 'light' | 'dark',
+      navigationStyle: 'style1' as 'style1' | 'style2',
       backgroundId: '',
     },
     mockUpdateData: vi.fn(),
@@ -74,6 +75,7 @@ describe('brandTheme · nuwaclaw 桌面专属主题适配', () => {
     // 复位各用例可能动态修改的生效数据
     mockCurrentData.primaryColor = '#5147ff';
     mockCurrentData.layoutStyle = 'light';
+    mockCurrentData.navigationStyle = 'style1';
     mockCurrentData.backgroundId = '';
   });
 
@@ -287,6 +289,53 @@ describe('brandTheme · nuwaclaw 桌面专属主题适配', () => {
     mockCurrentData.layoutStyle = 'light';
     expect(isBrandThemeActive()).toBe(true);
   });
+
+  it.each(['style1', 'style2'] as const)(
+    '浏览器深色 %s → 灰白覆盖让位时保留通用层刚写入的白色导航变量',
+    (navigationStyle) => {
+      delete (window as any).NuwaClawBridge;
+      localStorage.setItem(
+        STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
+        JSON.stringify({ selectedBackgroundId: 'bg-variant-3' }),
+      );
+      mockCurrentData.backgroundId = 'bg-variant-3';
+      mockCurrentData.layoutStyle = 'dark';
+      mockCurrentData.navigationStyle = navigationStyle;
+
+      // 模拟 unifiedThemeService.applyToDOM 已按 dark-style1/2 写完通用变量，
+      // brandTheme 随后作为 postApplyHook 执行。覆盖层不得删除这些值。
+      const root = document.documentElement;
+      root.style.setProperty('--xagi-layout-text-primary', '#ffffff');
+      root.style.setProperty(
+        '--xagi-layout-text-secondary',
+        'rgba(255, 255, 255, 0.85)',
+      );
+      root.style.setProperty('--xagi-layout-bg-primary', 'rgba(0, 0, 0, 0.85)');
+      root.style.setProperty(
+        '--xagi-background-image',
+        'url(/bg/bg-variant-3.png)',
+      );
+      // 上一态若残留品牌层独有值，仍应被覆盖层自己回收。
+      root.style.setProperty('--xagi-nav-item-hover-bg', '#F0F1F5');
+
+      expect(isBrandThemeActive()).toBe(false);
+      dispose = initBrandTheme();
+
+      expect(root.style.getPropertyValue('--xagi-layout-text-primary')).toBe(
+        '#ffffff',
+      );
+      expect(root.style.getPropertyValue('--xagi-layout-text-secondary')).toBe(
+        'rgba(255, 255, 255, 0.85)',
+      );
+      expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe(
+        'rgba(0, 0, 0, 0.85)',
+      );
+      expect(root.style.getPropertyValue('--xagi-background-image')).toBe(
+        'url(/bg/bg-variant-3.png)',
+      );
+      expect(root.style.getPropertyValue('--xagi-nav-item-hover-bg')).toBe('');
+    },
+  );
 
   it('nuwaclaw + 用户层为租户模板回声（值全等）→ 不算显式定制，女娲主题生效', () => {
     // 网关形态不命中的根因场景（用户 dump 实证）：登录同步把 templateConfig

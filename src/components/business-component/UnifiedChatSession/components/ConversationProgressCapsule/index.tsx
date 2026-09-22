@@ -15,7 +15,6 @@ import {
   OrderedListOutlined,
   RightOutlined,
   RobotOutlined,
-  ShrinkOutlined,
   StopOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
@@ -102,6 +101,10 @@ interface ConversationProgressCapsuleProps {
   enableVersionControl?: boolean;
   /** 「提交或推送」入口回调；未提供时该行不渲染 */
   onCommitOrPush?: () => void;
+  /** 面板展开态（受控）：由页头「会话进度」按钮驱动，组件自身无触发器 */
+  open: boolean;
+  /** 请求收起面板：关闭按钮 / 外点 / Esc / 新轮次时回调，由外部置 open=false */
+  onClose: () => void;
 }
 
 /** 触发器右侧「更改」统计（git 口径优先，回退 V2 编辑行数聚合） */
@@ -250,6 +253,8 @@ const ConversationProgressCapsule: React.FC<
   active,
   enableVersionControl,
   onCommitOrPush,
+  open,
+  onClose,
 }) => {
   const model = useMemo(
     () => selectProgressCapsule(messageList, active),
@@ -267,14 +272,17 @@ const ConversationProgressCapsule: React.FC<
     setTaskAgentSelectedFileId: (fileId: string) => void;
     setTaskAgentSelectTrigger: (trigger: number) => void;
   };
-  const [expanded, setExpanded] = useState(false);
-  const [closing, setClosing] = useState(false);
+  // 面板可见性：受控 open 的当帧落地值，退场动效播完才置 false 卸载 DOM
+  const [panelVisible, setPanelVisible] = useState(open);
   const [completedOpen, setCompletedOpen] = useState(true);
   const [agentsOpen, setAgentsOpen] = useState(false);
   const [terminalsOpen, setTerminalsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const motionCleanupRef = useRef<(() => void) | undefined>(undefined);
+  // onClose 常为页面内联箭头函数，经 ref 转发避免外点/Esc 订阅随父渲染反复重建
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   /** 打开任务结果产物文件：对齐会话输出 <task-result> 的点击口径 */
   const handleOpenTaskResult = async (file: string) => {
@@ -295,12 +303,35 @@ const ConversationProgressCapsule: React.FC<
     setTaskAgentSelectTrigger(Date.now());
   };
 
-  // 挂载即播进场动效（从右向左滑出揭示）
+  // open 翻转衔接（声明须早于淡入 effect，同帧先处理状态再播动效）：
+  // true → 挂载面板；false → 先播退场动效再卸载，收起态 DOM 无面板。
+  // panelVisible 取当帧渲染值即可，勿入 deps（入 deps 会在动效收尾重渲染后重复执行）。
   useEffect(() => {
-    if (!expanded || !panelRef.current) return;
+    if (open) {
+      // 快速关-开场景：中断进行中的退场动效，恢复可见由淡入 effect 接管
+      motionCleanupRef.current?.();
+      motionCleanupRef.current = undefined;
+      setPanelVisible(true);
+      return;
+    }
+    if (!panelVisible) return;
+    const panel = panelRef.current;
+    if (!panel) {
+      setPanelVisible(false);
+      return;
+    }
+    motionCleanupRef.current?.();
+    motionCleanupRef.current = animatePanelFade(panel, 240, true, () => {
+      setPanelVisible(false);
+    });
+  }, [open]);
+
+  // 面板挂载即播进场淡入；同轮内容更新（turnKey 不变）不重播
+  useEffect(() => {
+    if (!panelVisible || !open || !panelRef.current) return;
     motionCleanupRef.current?.();
     motionCleanupRef.current = animatePanelFade(panelRef.current, 280, false);
-  }, [expanded, model?.turnKey]);
+  }, [panelVisible, open, model?.turnKey]);
 
   useEffect(
     () => () => {
@@ -309,21 +340,6 @@ const ConversationProgressCapsule: React.FC<
     [],
   );
 
-  // 收起先播退场动效（向右收回）再卸载面板：收起态 DOM 无面板，胶囊宽度贴合触发器内容
-  const closePanel = () => {
-    if (closing) return;
-    const panel = panelRef.current;
-    if (!panel) {
-      setExpanded(false);
-      return;
-    }
-    setClosing(true);
-    motionCleanupRef.current?.();
-    motionCleanupRef.current = animatePanelFade(panel, 240, true, () => {
-      setExpanded(false);
-      setClosing(false);
-    });
-  };
   const gitDiff = useGitDiffFiles({
     conversationId,
     enabled: enableVersionControl,
@@ -331,15 +347,34 @@ const ConversationProgressCapsule: React.FC<
     running: model?.running,
   });
 
-  useEffect(() => setExpanded(false), [conversationId, model?.turnKey]);
-
+  // 切会话 / 新一轮开跑：面板自动收起（同轮终态常驻不收起）。
+  // 挂载首帧跳过：open=true 挂载属于外部既定状态，不触发误收起。
+  const skipFirstTurnEffectRef = useRef(true);
   useEffect(() => {
-    if (!expanded) return;
+    if (skipFirstTurnEffectRef.current) {
+      skipFirstTurnEffectRef.current = false;
+      return;
+    }
+    if (open) onCloseRef.current?.();
+  }, [conversationId, model?.turnKey]);
+
+  // 无可展示内容（新轮未产出）：组件整体隐藏，同时收敛外部展开态防悬空
+  useEffect(() => {
+    if (open && !model) onCloseRef.current?.();
+  }, [open, model]);
+
+  // 外点 / Esc 收起：页头触发按钮区域（data-capsule-panel-trigger）不算外点，
+  // 点击按钮的开关交给按钮自身 toggle，避免「先外点收起又立即展开」打架
+  useEffect(() => {
+    if (!open) return;
     const onPointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) closePanel();
+      const target = event.target as HTMLElement;
+      if (rootRef.current?.contains(target)) return;
+      if (target.closest?.('[data-capsule-panel-trigger]')) return;
+      onCloseRef.current?.();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closePanel();
+      if (event.key === 'Escape') onCloseRef.current?.();
     };
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
@@ -347,9 +382,9 @@ const ConversationProgressCapsule: React.FC<
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [expanded]);
+  }, [open]);
 
-  if (!model) return null;
+  if (!model || !panelVisible) return null;
 
   const activeSteps = model.steps.filter((step) => step.status === 'active');
   const completedSteps = model.steps.filter(
@@ -381,341 +416,320 @@ const ConversationProgressCapsule: React.FC<
   return (
     <div
       ref={rootRef}
-      className={cx(safeStyles.capsule, expanded && safeStyles.expanded)}
+      className={cx(safeStyles.capsule)}
       data-testid="conversation-progress-capsule"
     >
-      <button
-        type="button"
-        className={cx(safeStyles.trigger)}
-        data-testid="capsule-trigger"
-        aria-expanded={expanded}
-        aria-label={
-          expanded
-            ? t('PC.Components.ConversationProgressCapsule.collapse')
-            : t('PC.Components.ConversationProgressCapsule.expand')
-        }
-        onClick={() => setExpanded((value) => !value)}
+      <div
+        ref={panelRef}
+        className={cx(safeStyles.panel)}
+        data-testid="capsule-panel"
       >
-        {model.running ? (
-          <LoadingOutlined spin className={cx(safeStyles.spinner)} />
-        ) : (
-          terminalStatusIcon(model.terminalStatus)
-        )}
-        <span className={cx(safeStyles['trigger-label'])}>
-          {model.currentAction ||
-            (model.running
-              ? t('PC.Components.ConversationProgressCapsule.running')
-              : terminalStatusLabel(model.terminalStatus))}
-        </span>
-        {changeStats && (
-          <span className={cx(safeStyles.chip)}>
-            <DiffOutlined />
-            <span>
-              {t('PC.Components.ConversationProgressCapsule.changes')}
-            </span>
-            <ChangeStatsView stats={changeStats} />
+        {/* 头部状态行：原触发器信息（状态图标+当前动作+更改统计）移入面板 */}
+        <div className={cx(safeStyles['panel-header'])}>
+          {model.running ? (
+            <LoadingOutlined spin className={cx(safeStyles.spinner)} />
+          ) : (
+            terminalStatusIcon(model.terminalStatus)
+          )}
+          <span className={cx(safeStyles['panel-header-label'])}>
+            {model.currentAction ||
+              (model.running
+                ? t('PC.Components.ConversationProgressCapsule.running')
+                : terminalStatusLabel(model.terminalStatus))}
           </span>
-        )}
-      </button>
-
-      {expanded && (
-        <button
-          type="button"
-          className={cx(safeStyles['panel-collapse'])}
-          data-testid="capsule-collapse"
-          aria-label={t('PC.Components.ConversationProgressCapsule.collapse')}
-          onClick={closePanel}
-        >
-          <ShrinkOutlined />
-        </button>
-      )}
-
-      {expanded && (
-        <div ref={panelRef} className={cx(safeStyles.panel)}>
-          {model.taskResults.length > 0 && (
-            <section className={cx(safeStyles.group)}>
-              <GroupTitle icon={<FileTextOutlined />}>
-                {t('PC.Components.ConversationProgressCapsule.taskResult')}
-              </GroupTitle>
-              {model.taskResults.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={cx(safeStyles['result-row'])}
-                  title={item.description || item.file}
-                  onClick={() => handleOpenTaskResult(item.file)}
-                >
-                  <span
-                    className={cx(safeStyles['node-kind-icon'])}
-                    aria-hidden
-                  >
-                    <FileTextOutlined />
-                  </span>
-                  <span
-                    className={cx(safeStyles['node-text'], safeStyles.truncate)}
-                  >
-                    {item.description || item.file}
-                  </span>
-                  <span className={cx(safeStyles['chevron-dim'])} aria-hidden>
-                    <RightOutlined />
-                  </span>
-                </button>
-              ))}
-            </section>
+          {changeStats && (
+            <span className={cx(safeStyles.chip)}>
+              <DiffOutlined />
+              <span>
+                {t('PC.Components.ConversationProgressCapsule.changes')}
+              </span>
+              <ChangeStatsView stats={changeStats} />
+            </span>
           )}
-          {model.openuiRenders.length > 0 && (
-            <section className={cx(safeStyles.group)}>
-              <GroupTitle icon={<LayoutOutlined />}>
-                {t('PC.Components.ConversationProgressCapsule.openUi')}
-              </GroupTitle>
-              {model.openuiRenders.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={cx(safeStyles['result-row'])}
-                  title={item.title}
-                  onClick={() => handleOpenOpenUiPreview(item.artifactId)}
-                >
-                  <span
-                    className={cx(safeStyles['node-kind-icon'])}
-                    aria-hidden
-                  >
-                    <LayoutOutlined />
-                  </span>
-                  <span
-                    className={cx(safeStyles['node-text'], safeStyles.truncate)}
-                  >
-                    {item.title}
-                  </span>
-                  <span className={cx(safeStyles['chevron-dim'])} aria-hidden>
-                    <RightOutlined />
-                  </span>
-                </button>
-              ))}
-            </section>
-          )}
-          {enableVersionControl &&
-            (gitDiff.summary || gitDiff.loading || gitDiff.branch) && (
-              <section className={cx(safeStyles.group)}>
-                <GroupTitle icon={<BranchesOutlined />}>
-                  {t('PC.Components.ConversationProgressCapsule.gitTools')}
-                </GroupTitle>
-                <div className={cx(safeStyles.node)}>
-                  <span
-                    className={cx(safeStyles['node-kind-icon'])}
-                    aria-hidden
-                  >
-                    <DiffOutlined />
-                  </span>
-                  <span className={cx(safeStyles['node-text'])}>
-                    {t('PC.Components.ConversationProgressCapsule.changes')}
-                  </span>
-                  <span className={cx(safeStyles.stat)}>
-                    {gitDiff.loading ? (
-                      <LoadingOutlined spin />
-                    ) : gitDiff.summary ? (
-                      <ChangeStatsView
-                        stats={{
-                          insertions: gitDiff.summary.insertions,
-                          deletions: gitDiff.summary.deletions,
-                        }}
-                      />
-                    ) : null}
-                  </span>
-                </div>
-                {gitDiff.branch && (
-                  <div className={cx(safeStyles.node)} title={gitDiff.branch}>
-                    <span
-                      className={cx(safeStyles['node-kind-icon'])}
-                      aria-hidden
-                    >
-                      <BranchesOutlined />
-                    </span>
-                    <span className={cx(safeStyles['node-text'])}>
-                      {gitDiff.branch}
-                    </span>
-                    <DownOutlined className={cx(safeStyles['chevron-dim'])} />
-                  </div>
-                )}
-                {onCommitOrPush && (
-                  <button
-                    type="button"
-                    className={cx(safeStyles['action-row'])}
-                    onClick={onCommitOrPush}
-                  >
-                    <CloudUploadOutlined />
-                    <span>
-                      {t(
-                        'PC.Components.ConversationProgressCapsule.commitOrPush',
-                      )}
-                    </span>
-                  </button>
-                )}
-              </section>
-            )}
-
-          <StepGroup
-            title={t('PC.Components.ConversationProgressCapsule.plan')}
-            icon={<OrderedListOutlined />}
-            steps={[...activeSteps, ...pendingSteps]}
-          />
-
-          {model.totalCount > 0 && (
-            <section className={cx(safeStyles.group)}>
-              <div className={cx(safeStyles['group-title'])}>
-                <span className={cx(safeStyles['group-title-main'])}>
-                  <span
-                    className={cx(safeStyles['group-title-icon'])}
-                    aria-hidden
-                  >
-                    <OrderedListOutlined />
-                  </span>
-                  <span className={cx(safeStyles['group-title-text'])}>
-                    {t('PC.Components.ConversationProgressCapsule.progress')}
-                  </span>
+          <button
+            type="button"
+            className={cx(safeStyles['panel-close'])}
+            data-testid="capsule-close"
+            aria-label={t('PC.Components.ConversationProgressCapsule.close')}
+            onClick={() => onCloseRef.current?.()}
+          >
+            <CloseOutlined />
+          </button>
+        </div>
+        {model.taskResults.length > 0 && (
+          <section className={cx(safeStyles.group)}>
+            <GroupTitle icon={<FileTextOutlined />}>
+              {t('PC.Components.ConversationProgressCapsule.taskResult')}
+            </GroupTitle>
+            {model.taskResults.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                className={cx(safeStyles['result-row'])}
+                title={item.description || item.file}
+                onClick={() => handleOpenTaskResult(item.file)}
+              >
+                <span className={cx(safeStyles['node-kind-icon'])} aria-hidden>
+                  <FileTextOutlined />
                 </span>
-                <span className={cx(safeStyles.counter)}>
-                  {model.completedCount}/{model.totalCount}
+                <span
+                  className={cx(safeStyles['node-text'], safeStyles.truncate)}
+                >
+                  {item.description || item.file}
+                </span>
+                <span className={cx(safeStyles['chevron-dim'])} aria-hidden>
+                  <RightOutlined />
+                </span>
+              </button>
+            ))}
+          </section>
+        )}
+        {model.openuiRenders.length > 0 && (
+          <section className={cx(safeStyles.group)}>
+            <GroupTitle icon={<LayoutOutlined />}>
+              {t('PC.Components.ConversationProgressCapsule.openUi')}
+            </GroupTitle>
+            {model.openuiRenders.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                className={cx(safeStyles['result-row'])}
+                title={item.title}
+                onClick={() => handleOpenOpenUiPreview(item.artifactId)}
+              >
+                <span className={cx(safeStyles['node-kind-icon'])} aria-hidden>
+                  <LayoutOutlined />
+                </span>
+                <span
+                  className={cx(safeStyles['node-text'], safeStyles.truncate)}
+                >
+                  {item.title}
+                </span>
+                <span className={cx(safeStyles['chevron-dim'])} aria-hidden>
+                  <RightOutlined />
+                </span>
+              </button>
+            ))}
+          </section>
+        )}
+        {enableVersionControl &&
+          (gitDiff.summary || gitDiff.loading || gitDiff.branch) && (
+            <section className={cx(safeStyles.group)}>
+              <GroupTitle icon={<BranchesOutlined />}>
+                {t('PC.Components.ConversationProgressCapsule.gitTools')}
+              </GroupTitle>
+              <div className={cx(safeStyles.node)}>
+                <span className={cx(safeStyles['node-kind-icon'])} aria-hidden>
+                  <DiffOutlined />
+                </span>
+                <span className={cx(safeStyles['node-text'])}>
+                  {t('PC.Components.ConversationProgressCapsule.changes')}
+                </span>
+                <span className={cx(safeStyles.stat)}>
+                  {gitDiff.loading ? (
+                    <LoadingOutlined spin />
+                  ) : gitDiff.summary ? (
+                    <ChangeStatsView
+                      stats={{
+                        insertions: gitDiff.summary.insertions,
+                        deletions: gitDiff.summary.deletions,
+                      }}
+                    />
+                  ) : null}
                 </span>
               </div>
-              {completedSteps.length > 0 && (
-                <>
-                  <button
-                    type="button"
-                    className={cx(safeStyles['group-toggle'])}
-                    aria-expanded={completedOpen}
-                    onClick={() => setCompletedOpen((value) => !value)}
+              {gitDiff.branch && (
+                <div className={cx(safeStyles.node)} title={gitDiff.branch}>
+                  <span
+                    className={cx(safeStyles['node-kind-icon'])}
+                    aria-hidden
                   >
-                    <RightOutlined
-                      className={cx(
-                        safeStyles['toggle-chevron'],
-                        completedOpen && safeStyles['toggle-chevron-open'],
-                      )}
-                    />
-                    <span>
-                      {t(
-                        'PC.Components.ConversationProgressCapsule.completed',
-                        completedSteps.length,
-                      )}
-                    </span>
-                  </button>
-                  {completedOpen && (
-                    <ul className={cx(safeStyles['step-list'])}>
-                      {completedSteps.map((step, index) => (
-                        <StepRow
-                          key={`${step.status}-${index}-${step.content}`}
-                          step={step}
-                          strike
-                        />
-                      ))}
-                    </ul>
-                  )}
-                </>
+                    <BranchesOutlined />
+                  </span>
+                  <span className={cx(safeStyles['node-text'])}>
+                    {gitDiff.branch}
+                  </span>
+                  <DownOutlined className={cx(safeStyles['chevron-dim'])} />
+                </div>
+              )}
+              {onCommitOrPush && (
+                <button
+                  type="button"
+                  className={cx(safeStyles['action-row'])}
+                  onClick={onCommitOrPush}
+                >
+                  <CloudUploadOutlined />
+                  <span>
+                    {t(
+                      'PC.Components.ConversationProgressCapsule.commitOrPush',
+                    )}
+                  </span>
+                </button>
               )}
             </section>
           )}
 
-          {model.terminals.length > 0 && (
-            <section className={cx(safeStyles.group)}>
-              <GroupTitle icon={<CodeOutlined />}>
-                {t('PC.Components.ConversationProgressCapsule.terminal')}
-              </GroupTitle>
-              <ul className={cx(safeStyles['step-list'])}>
-                {(terminalsOpen
-                  ? model.terminals
-                  : model.terminals.slice(0, TERMINAL_COLLAPSE_LIMIT)
-                ).map((node) => (
-                  <NodeRow
-                    key={node.id}
-                    node={node}
-                    icon={<CodeOutlined />}
-                    monospace
-                  />
-                ))}
-              </ul>
-              {model.terminals.length > TERMINAL_COLLAPSE_LIMIT && (
+        <StepGroup
+          title={t('PC.Components.ConversationProgressCapsule.plan')}
+          icon={<OrderedListOutlined />}
+          steps={[...activeSteps, ...pendingSteps]}
+        />
+
+        {model.totalCount > 0 && (
+          <section className={cx(safeStyles.group)}>
+            <div className={cx(safeStyles['group-title'])}>
+              <span className={cx(safeStyles['group-title-main'])}>
+                <span
+                  className={cx(safeStyles['group-title-icon'])}
+                  aria-hidden
+                >
+                  <OrderedListOutlined />
+                </span>
+                <span className={cx(safeStyles['group-title-text'])}>
+                  {t('PC.Components.ConversationProgressCapsule.progress')}
+                </span>
+              </span>
+              <span className={cx(safeStyles.counter)}>
+                {model.completedCount}/{model.totalCount}
+              </span>
+            </div>
+            {completedSteps.length > 0 && (
+              <>
                 <button
                   type="button"
                   className={cx(safeStyles['group-toggle'])}
-                  aria-expanded={terminalsOpen}
-                  onClick={() => setTerminalsOpen((value) => !value)}
+                  aria-expanded={completedOpen}
+                  onClick={() => setCompletedOpen((value) => !value)}
                 >
-                  <DownOutlined
+                  <RightOutlined
                     className={cx(
                       safeStyles['toggle-chevron'],
-                      terminalsOpen && safeStyles['toggle-chevron-down-open'],
+                      completedOpen && safeStyles['toggle-chevron-open'],
                     )}
                   />
                   <span>
-                    {terminalsOpen
-                      ? t(
-                          'PC.Components.ConversationProgressCapsule.terminalCollapse',
-                          model.terminals.length,
-                        )
-                      : t(
-                          'PC.Components.ConversationProgressCapsule.terminalExpand',
-                          model.terminals.length,
-                        )}
+                    {t(
+                      'PC.Components.ConversationProgressCapsule.completed',
+                      completedSteps.length,
+                    )}
                   </span>
                 </button>
-              )}
-            </section>
-          )}
+                {completedOpen && (
+                  <ul className={cx(safeStyles['step-list'])}>
+                    {completedSteps.map((step, index) => (
+                      <StepRow
+                        key={`${step.status}-${index}-${step.content}`}
+                        step={step}
+                        strike
+                      />
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </section>
+        )}
 
-          {model.subagents.length > 0 && (
-            <section className={cx(safeStyles.group)}>
+        {model.terminals.length > 0 && (
+          <section className={cx(safeStyles.group)}>
+            <GroupTitle icon={<CodeOutlined />}>
+              {t('PC.Components.ConversationProgressCapsule.terminal')}
+            </GroupTitle>
+            <ul className={cx(safeStyles['step-list'])}>
+              {(terminalsOpen
+                ? model.terminals
+                : model.terminals.slice(0, TERMINAL_COLLAPSE_LIMIT)
+              ).map((node) => (
+                <NodeRow
+                  key={node.id}
+                  node={node}
+                  icon={<CodeOutlined />}
+                  monospace
+                />
+              ))}
+            </ul>
+            {model.terminals.length > TERMINAL_COLLAPSE_LIMIT && (
               <button
                 type="button"
                 className={cx(safeStyles['group-toggle'])}
-                aria-expanded={agentsOpen}
-                onClick={() => setAgentsOpen((value) => !value)}
+                aria-expanded={terminalsOpen}
+                onClick={() => setTerminalsOpen((value) => !value)}
               >
-                <span>
-                  {t('PC.Components.ConversationProgressCapsule.agents')}
-                </span>
                 <DownOutlined
                   className={cx(
                     safeStyles['toggle-chevron'],
-                    agentsOpen && safeStyles['toggle-chevron-down-open'],
+                    terminalsOpen && safeStyles['toggle-chevron-down-open'],
                   )}
                 />
+                <span>
+                  {terminalsOpen
+                    ? t(
+                        'PC.Components.ConversationProgressCapsule.terminalCollapse',
+                        model.terminals.length,
+                      )
+                    : t(
+                        'PC.Components.ConversationProgressCapsule.terminalExpand',
+                        model.terminals.length,
+                      )}
+                </span>
               </button>
-              {agentsOpen ? (
-                <ul className={cx(safeStyles['step-list'])}>
-                  {model.subagents.map((agent) => (
-                    <NodeRow
-                      key={agent.id}
-                      node={agent}
-                      icon={<RobotOutlined />}
-                    />
-                  ))}
-                </ul>
-              ) : (
-                <button
-                  type="button"
-                  className={cx(safeStyles['summary-row'])}
-                  onClick={() => setAgentsOpen(true)}
-                >
-                  {agentsRunning ? (
-                    <LoadingOutlined spin />
-                  ) : (
-                    <CheckOutlined className={cx(safeStyles['summary-done'])} />
-                  )}
-                  <span className={cx(safeStyles['node-text'])}>
-                    {agentsRunning
-                      ? t('PC.Components.ConversationProgressCapsule.running')
-                      : t(
-                          'PC.Components.ConversationProgressCapsule.finished',
-                        )}{' '}
-                    {model.subagents.length}
-                  </span>
-                  <RightOutlined className={cx(safeStyles['chevron-dim'])} />
-                </button>
-              )}
-            </section>
-          )}
-        </div>
-      )}
+            )}
+          </section>
+        )}
+
+        {model.subagents.length > 0 && (
+          <section className={cx(safeStyles.group)}>
+            <button
+              type="button"
+              className={cx(safeStyles['group-toggle'])}
+              aria-expanded={agentsOpen}
+              onClick={() => setAgentsOpen((value) => !value)}
+            >
+              <span>
+                {t('PC.Components.ConversationProgressCapsule.agents')}
+              </span>
+              <DownOutlined
+                className={cx(
+                  safeStyles['toggle-chevron'],
+                  agentsOpen && safeStyles['toggle-chevron-down-open'],
+                )}
+              />
+            </button>
+            {agentsOpen ? (
+              <ul className={cx(safeStyles['step-list'])}>
+                {model.subagents.map((agent) => (
+                  <NodeRow
+                    key={agent.id}
+                    node={agent}
+                    icon={<RobotOutlined />}
+                  />
+                ))}
+              </ul>
+            ) : (
+              <button
+                type="button"
+                className={cx(safeStyles['summary-row'])}
+                onClick={() => setAgentsOpen(true)}
+              >
+                {agentsRunning ? (
+                  <LoadingOutlined spin />
+                ) : (
+                  <CheckOutlined className={cx(safeStyles['summary-done'])} />
+                )}
+                <span className={cx(safeStyles['node-text'])}>
+                  {agentsRunning
+                    ? t('PC.Components.ConversationProgressCapsule.running')
+                    : t(
+                        'PC.Components.ConversationProgressCapsule.finished',
+                      )}{' '}
+                  {model.subagents.length}
+                </span>
+                <RightOutlined className={cx(safeStyles['chevron-dim'])} />
+              </button>
+            )}
+          </section>
+        )}
+      </div>
     </div>
   );
 };

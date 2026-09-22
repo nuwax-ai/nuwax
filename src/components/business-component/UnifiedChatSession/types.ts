@@ -106,8 +106,6 @@ export interface UnifiedChatSessionProps {
   showClearIcon?: boolean;
   /** 是否展示 TaskAgent 会话底部执行状态栏（默认 true） */
   showConversationStatus?: boolean;
-  /** 是否展示执行期右上角进度胶囊；仅主 Chat 的 TaskAgent 入口显式开启。 */
-  showConversationProgressCapsule?: boolean;
   isSelectionLocked?: boolean;
   hasUserSentMessage?: boolean;
   readonly?: boolean;

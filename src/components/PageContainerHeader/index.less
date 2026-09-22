@@ -1,0 +1,61 @@
+@import '@/styles/token';
+
+.root {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+}
+
+.leading {
+  display: flex;
+  align-items: center;
+  // 外层不压扁左组：当前行放不下右侧操作时，应让操作组整体换行；
+  // max-width 保证左组本身过宽时仍在组内换行，不制造横向溢出。
+  flex: 1 0 auto;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: fit-content;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.title {
+  flex: 0 0 auto;
+  margin: 0 8px 0 0;
+  color: var(--xagi-color-text, @colorText);
+  font-size: @fontSizeLg;
+  font-weight: 600;
+  line-height: 32px;
+  white-space: nowrap;
+}
+
+.title-extra,
+.middle {
+  display: flex;
+  align-items: center;
+  // 不参与首行挤压；空间不足时以完整操作组进入下一行。
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  // 操作区只允许内部换行，不参与首行挤压；空间不足时整组进入下一行。
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  margin-left: auto;
+  width: fit-content;
+
+  > * {
+    max-width: 100%;
+  }
+}

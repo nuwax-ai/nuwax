@@ -196,6 +196,26 @@
     --xagi-nav-second-row-active-shadow: none;
     // 选中项字重加粗 500（2026-09-12 需求）：仅单栏注入，base 组件默认 normal
     --xagi-nav-second-row-active-font-weight: 500;
+    // 二级菜单 h5（24px）放进与 page-container h3 相同的 32px 标题行，按同一
+    // 水平中心线对齐；标题块总高仍为 48px，下面菜单首项位置不变。
+    --xagi-nav-second-title-padding-top: 0;
+    --xagi-nav-second-title-padding-bottom: 16px;
+
+    // Windows/Linux 的列顶仅保留 4px（32px 背景退让后），标题需补 11px；
+    // 浏览器和 macOS 的列自身已有 16px 顶内边距，不再重复补偿。
+    :global(html.immersive-shell-frameless) & {
+      --xagi-nav-second-title-padding-top: 11px;
+      --xagi-nav-second-title-padding-bottom: 5px;
+    }
+
+    .second-menu-title-box {
+      display: flex;
+      align-items: center;
+      box-sizing: content-box;
+      min-height: 32px;
+      padding: var(--xagi-nav-second-title-padding-top) 10px
+        var(--xagi-nav-second-title-padding-bottom);
+    }
 
     // 与 .nav-menus-scroll 同名复用：本列不在 .nav-menus 内，需自带尺寸链
     .nav-menus-scroll {

@@ -87,6 +87,7 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
         'overflow-hide',
         {
           [styles['fullscreen-mode']]: isFullscreen,
+          'immersive-shell-fullscreen': isFullscreen,
         },
         styles['file-tree-preview-panel'],
         className,

@@ -220,6 +220,7 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     if (
+      el.clientHeight > 0 &&
       el.scrollHeight - el.scrollTop - el.clientHeight < 48 &&
       !loading &&
       hasMore
@@ -230,12 +231,24 @@ const ConnectorListView: React.FC<ConnectorListViewProps> = ({
   // 列表未填满容器且还有数据时自动补拉
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el || loading || !hasMore || list.length === 0) {
-      return;
-    }
-    if (el.scrollHeight <= el.clientHeight) {
-      loadMore();
-    }
+    if (!el) return;
+    const fillViewport = () => {
+      if (
+        !loading &&
+        hasMore &&
+        list.length > 0 &&
+        el.clientHeight > 0 &&
+        el.scrollHeight <= el.clientHeight
+      ) {
+        loadMore();
+      }
+    };
+    fillViewport();
+    // 隐藏容器先不翻页；恢复可见或容器变高时重新检查，避免短列表无法滚动。
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(fillViewport);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [list, loading, hasMore, loadMore]);
 
   const initialLoading = loading && list.length === 0;

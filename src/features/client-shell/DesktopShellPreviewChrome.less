@@ -1,0 +1,133 @@
+.chrome {
+  position: fixed;
+  z-index: 2147483600;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  color: var(--xagi-layout-text-primary, #30343b);
+  font-size: 12px;
+  pointer-events: none;
+  user-select: none;
+  // 商业客户端是沉浸式透明标题栏：壳只绘制菜单/窗口按钮，底色由 webview 提供。
+  background: transparent;
+  border-bottom: 0;
+}
+
+.windows,
+.linux {
+  height: 32px;
+  padding-left: 12px;
+}
+
+.macos {
+  height: 36px;
+  justify-content: center;
+  background: transparent;
+}
+
+.menus,
+.controls,
+.traffic-lights {
+  display: flex;
+  align-items: center;
+}
+
+.menus {
+  gap: 18px;
+}
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 24px;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+
+  &:hover:not(:disabled) {
+    background: rgba(16, 24, 40, 8%);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.45;
+  }
+}
+
+.mac-toolbar {
+  position: absolute;
+  left: 76px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #5f6368;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.controls {
+  align-self: stretch;
+  margin-left: auto;
+
+  span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+  }
+}
+
+.badge {
+  position: absolute;
+  left: 50%;
+  padding: 2px 8px;
+  color: #6b7280;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 78%);
+  border: 1px solid rgba(16, 24, 40, 8%);
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+
+.traffic-lights {
+  position: absolute;
+  left: 14px;
+  gap: 8px;
+
+  span {
+    width: 12px;
+    height: 12px;
+    border: 1px solid rgba(0, 0, 0, 8%);
+    border-radius: 50%;
+  }
+}
+
+.close {
+  background: #ff5f57;
+}
+
+.minimize {
+  background: #febc2e;
+}
+
+.maximize {
+  background: #28c840;
+}

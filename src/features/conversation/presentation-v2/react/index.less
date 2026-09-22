@@ -776,31 +776,31 @@ a.tool-detail-resource {
   width: 100%;
 }
 
-// ---- 用户输入气泡折叠：正文高超限（默认 200px，阈值常量在 UserBubbleCollapse）默认收起 ----
-// 「展开/收起」控件经 portal 渲染进气泡框（.chat-content 灰底气泡）内尾部，
-// 贴内容右下、留在气泡背景内（bug 2529：不再在气泡外独立成行）。
+// ---- 用户输入气泡折叠：正文超 10 行才收起（阈值常量在 UserBubbleCollapse） ----
+// 「展开/收起」为圆形 chevron 控件，经 portal 渲染进气泡框（.chat-content 灰底气泡）
+// 内尾部，文档流底部居中、留在气泡背景内（bug 2529/2470 + 视觉走查定稿）。
 .user-bubble-collapse {
   width: 100%;
 }
 
 .user-bubble-toggle {
-  appearance: none;
-  border: none;
-  background: transparent;
-  display: block;
-  width: fit-content;
-  // 贴气泡内右侧（长文场景气泡宽为可用宽，auto 外边距吸收剩余空间）
-  margin-left: auto;
-  margin-top: 4px;
-  padding: 2px 6px;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 20px;
+  margin: 4px auto 0;
+  padding: 0;
+  border: 1px solid var(--xagi-color-border, rgba(5, 5, 5, 15%));
+  border-radius: 10px;
+  background: var(--xagi-color-bg-container, #fff);
+  color: var(--xagi-color-text-secondary, rgba(5, 5, 5, 65%));
   cursor: pointer;
-  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
 
   &:hover {
-    color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+    color: var(--xagi-color-text-tertiary, rgba(5, 5, 5, 45%));
+    border-color: var(--xagi-color-text-tertiary, rgba(5, 5, 5, 45%));
   }
 }
 

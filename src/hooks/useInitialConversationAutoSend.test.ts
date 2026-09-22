@@ -2,7 +2,8 @@ import type { ConversationRuntimeSession } from '@/features/conversation/runtime
 import { useInitialConversationAutoSend } from '@/hooks/useInitialConversationAutoSend';
 import { AgentComponentTypeEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { OpenCloseEnum } from '@/types/enums/space';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { createElement, StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockFetchConversationSnapshot } = vi.hoisted(() => ({
@@ -17,6 +18,14 @@ vi.mock('@/utils/conversationTaskStatusSync', () => ({
 /** 只用到 send 的最小 session 桩（完整接口由 hook 类型约束，测试只验证发送分派） */
 const createRuntimeSessionStub = () =>
   ({ send: vi.fn() } as unknown as ConversationRuntimeSession);
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
 
 const routeState = {
   message: 'build a dashboard',
@@ -167,5 +176,126 @@ describe('useInitialConversationAutoSend（bug 2477：V2 直发与 V1 回退二�
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({ currentInfo: null, isSuggestEnabled: false }),
     );
+  });
+
+  it('A 预查询迟到时不得在 B 已发送后向共用 runtime 发送 A', async () => {
+    const pendingA = deferred<typeof snapshot>();
+    mockFetchConversationSnapshot.mockImplementation((id: number) =>
+      id === 101 ? pendingA.promise : Promise.resolve({ ...snapshot, id }),
+    );
+    const runtimeSession = createRuntimeSessionStub();
+    const onMessageSend = vi.fn();
+    const { rerender } = renderHook(
+      ({ conversationId }) =>
+        useInitialConversationAutoSend({
+          ...baseParams,
+          conversationId,
+          runtimeSession,
+          onMessageSend,
+        }),
+      { initialProps: { conversationId: 101 } },
+    );
+
+    rerender({ conversationId: 202 });
+    await waitFor(() => expect(runtimeSession.send).toHaveBeenCalledTimes(1));
+    await act(async () => pendingA.resolve({ ...snapshot, id: 101 }));
+
+    expect(runtimeSession.send).toHaveBeenCalledTimes(1);
+    expect(runtimeSession.send).toHaveBeenCalledWith(
+      expect.objectContaining({ conversationId: 202 }),
+    );
+    expect(onMessageSend).not.toHaveBeenCalled();
+  });
+
+  it.each(['runtime', 'legacy'] as const)(
+    '%s 入口卸载后预查询返回，不得后台自动发送',
+    async (line) => {
+      const pending = deferred<typeof snapshot>();
+      mockFetchConversationSnapshot.mockReturnValue(pending.promise);
+      const runtimeSession = createRuntimeSessionStub();
+      const onMessageSend = vi.fn();
+      const { unmount } = renderHook(() =>
+        useInitialConversationAutoSend({
+          ...baseParams,
+          runtimeSession: line === 'runtime' ? runtimeSession : null,
+          onMessageSend,
+        }),
+      );
+
+      unmount();
+      await act(async () => pending.resolve(snapshot));
+
+      expect(runtimeSession.send).not.toHaveBeenCalled();
+      expect(onMessageSend).not.toHaveBeenCalled();
+    },
+  );
+
+  it('A→B→A 时只允许第二次进入 A 的预查询触发首发', async () => {
+    const staleA = deferred<typeof snapshot>();
+    const currentA = deferred<typeof snapshot>();
+    mockFetchConversationSnapshot
+      .mockReturnValueOnce(staleA.promise)
+      .mockReturnValueOnce(currentA.promise);
+    const runtimeSession = createRuntimeSessionStub();
+    const onMessageSend = vi.fn();
+    const { rerender } = renderHook(
+      ({ conversationId, initialMessage }) =>
+        useInitialConversationAutoSend({
+          ...baseParams,
+          conversationId,
+          routeState: initialMessage ? routeState : null,
+          runtimeSession,
+          onMessageSend,
+        }),
+      { initialProps: { conversationId: 101, initialMessage: true } },
+    );
+
+    rerender({ conversationId: 202, initialMessage: false });
+    rerender({ conversationId: 101, initialMessage: true });
+    await act(async () => staleA.resolve({ ...snapshot, id: 101 }));
+    expect(runtimeSession.send).not.toHaveBeenCalled();
+    await act(async () => currentA.resolve({ ...snapshot, id: 101 }));
+
+    expect(runtimeSession.send).toHaveBeenCalledTimes(1);
+    expect(mockFetchConversationSnapshot).toHaveBeenCalledTimes(2);
+  });
+
+  it('同会话查询期间回调引用变化，不取消或重复首发', async () => {
+    const pending = deferred<typeof snapshot>();
+    mockFetchConversationSnapshot.mockReturnValue(pending.promise);
+    const runtimeSession = createRuntimeSessionStub();
+    const onMessageSend = vi.fn();
+    const { rerender } = renderHook(() =>
+      useInitialConversationAutoSend({
+        ...baseParams,
+        getEffectiveSandboxId: () => '-1',
+        runtimeSession,
+        onMessageSend,
+      }),
+    );
+
+    rerender();
+    await act(async () => pending.resolve(snapshot));
+
+    expect(runtimeSession.send).toHaveBeenCalledTimes(1);
+    expect(mockFetchConversationSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('StrictMode 清理并重放 effect 后仍恰好首发一次', async () => {
+    const pending = deferred<typeof snapshot>();
+    mockFetchConversationSnapshot.mockReturnValue(pending.promise);
+    const runtimeSession = createRuntimeSessionStub();
+    renderHook(
+      () =>
+        useInitialConversationAutoSend({
+          ...baseParams,
+          runtimeSession,
+          onMessageSend: vi.fn(),
+        }),
+      { wrapper: ({ children }) => createElement(StrictMode, null, children) },
+    );
+
+    await act(async () => pending.resolve(snapshot));
+    expect(runtimeSession.send).toHaveBeenCalledTimes(1);
   });
 });

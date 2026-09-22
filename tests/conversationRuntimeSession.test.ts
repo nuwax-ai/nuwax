@@ -33,8 +33,9 @@ vi.mock('@/features/conversation/runtime/conversationTransport', () => ({
 
 vi.mock('@/utils/conversationTaskStatusSync', () => ({
   // 全量 stub：真实模块经 services 引入 umi 传递依赖，会破坏非 umi 测试环境
-  syncTerminalConversationTaskStatus: (...args: unknown[]) =>
+  fetchConversationTaskStatus: (...args: unknown[]) =>
     mockSyncTerminal(...args),
+  emitConversationListTaskStatus: vi.fn(),
 }));
 
 vi.mock('@/utils/fetchEventSourceConversationInfo', () => ({
@@ -311,7 +312,7 @@ describe('conversationRuntimeSession', () => {
     );
     expect(session.getState().isConversationActive).toBe(false);
     // FINAL 未带明确终态 → 兜底查询发生
-    expect(mockSyncTerminal).toHaveBeenCalledWith(1001, expect.anything());
+    expect(mockSyncTerminal).toHaveBeenCalledWith(1001);
   });
 
   it('FINAL 已解析终态时 onClose 不做兜底查询', () => {

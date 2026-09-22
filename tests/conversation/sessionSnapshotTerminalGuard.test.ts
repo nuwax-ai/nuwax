@@ -25,7 +25,8 @@ vi.mock('@/features/conversation/runtime/conversationTransport', () => ({
 }));
 
 vi.mock('@/utils/conversationTaskStatusSync', () => ({
-  syncTerminalConversationTaskStatus: vi.fn().mockResolvedValue(undefined),
+  fetchConversationTaskStatus: vi.fn().mockResolvedValue(undefined),
+  emitConversationListTaskStatus: vi.fn(),
 }));
 
 vi.mock('@/utils/fetchEventSourceConversationInfo', () => ({

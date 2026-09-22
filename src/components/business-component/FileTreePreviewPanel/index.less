@@ -138,7 +138,8 @@
 
   .fullscreen-content-wrapper {
     width: 100% !important;
-    height: 100vh !important;
+    // 外盒在客户端会扣除宿主工具栏，内层不可再强撑整个视口。
+    height: 100% !important;
     flex: 1 !important;
   }
 }

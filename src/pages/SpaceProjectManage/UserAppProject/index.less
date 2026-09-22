@@ -3,37 +3,8 @@
 .container {
   padding: @padding @padding @padding @paddingLg;
 
-  .title {
-    line-height: @controlHeight;
-    font-size: @fontSizeLg;
-    font-weight: @fontWeightStrong;
-    color: @colorText;
-    margin-right: @marginMd;
-  }
-
-  .header-area {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: @marginSm;
+  .page-header {
     margin-bottom: @marginXxs;
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: @marginSm;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: @marginSm;
-      flex-wrap: wrap;
-    }
   }
 
   .main-container {
@@ -51,26 +22,6 @@
   }
 
   @media (min-width: 641px) and (max-width: 768px) {
-    .header-area {
-      flex-direction: column;
-      align-items: flex-start;
-
-      .header-left {
-        width: 100%;
-
-        .title {
-          width: 100%;
-          margin-bottom: @marginXxs;
-          margin-right: 0;
-        }
-      }
-
-      .header-right {
-        width: 100%;
-        justify-content: flex-start !important;
-      }
-    }
-
     .main-container {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }

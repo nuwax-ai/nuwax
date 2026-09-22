@@ -1416,12 +1416,20 @@ const AppDevPro: React.FC = () => {
   /** 会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
   const conversationReady = !!conversationInfo;
   /**
+   * 会话是否仍在进行。
+   * 从主页发起进入本页走 V2 runtime，model 的 isConversationActive 不会置位，
+   * 须同时看 runtime effectiveIsActive，避免会话未结束就被当成已结束。
+   */
+  const previewConversationActive =
+    isConversationActive || Boolean(runtimeLine?.effectiveIsActive);
+  /**
    * 会话已结束且文件树已加载，但无有效项目文件。
    * 此时不应继续展示「预览准备中」，而应提示用户继续对话生成项目。
+   * 会话进行中即使 fileList 尚未包含 workspace.manifest.toml，也保持预览加载。
    */
   const missingProjectFiles =
     conversationReady &&
-    !isConversationActive &&
+    !previewConversationActive &&
     !hasPendingIntervention &&
     !fileTreeDataLoading &&
     !hasFileTreeData;
@@ -1448,7 +1456,11 @@ const AppDevPro: React.FC = () => {
       return;
     }
     // 会话详情未回填、会话进行中、或仍有待回复确认卡时，先不启动/重启
-    if (!conversationReady || isConversationActive || hasPendingIntervention) {
+    if (
+      !conversationReady ||
+      previewConversationActive ||
+      hasPendingIntervention
+    ) {
       return;
     }
     // 等待 tasks/active 首包，避免与进行中任务抢 start
@@ -1491,7 +1503,7 @@ const AppDevPro: React.FC = () => {
     fileTreeDataLoading,
     hasFileTreeData,
     hasPendingIntervention,
-    isConversationActive,
+    previewConversationActive,
     podReady,
     queryConversationId,
     tasksActiveReady,
@@ -1738,7 +1750,7 @@ const AppDevPro: React.FC = () => {
     if (
       podReady &&
       !previewDevActionLocked &&
-      !isConversationActive &&
+      !previewConversationActive &&
       !hasPendingIntervention
     ) {
       void prepareDevPreviewIfNeededRef.current();
@@ -1746,7 +1758,7 @@ const AppDevPro: React.FC = () => {
   }, [
     dbEnv,
     hasPendingIntervention,
-    isConversationActive,
+    previewConversationActive,
     podReady,
     previewDevActionLocked,
     resetDevConsoleExpandedLayout,
@@ -1786,7 +1798,9 @@ const AppDevPro: React.FC = () => {
       previewRuntimeRestarting: previewRuntime.restarting,
       previewRuntimeStopping: previewRuntime.stopping,
       previewRuntimeReady:
-        currentEnvPodReady && !isConversationActive && !hasPendingIntervention,
+        currentEnvPodReady &&
+        !previewConversationActive &&
+        !hasPendingIntervention,
       previewEnvPodReady: currentEnvPodReady,
       previewPodEnsuring,
       previewContainerFailed,
@@ -1800,7 +1814,7 @@ const AppDevPro: React.FC = () => {
       handleStopPreviewRuntime,
       hasFileTreeData,
       hasPendingIntervention,
-      isConversationActive,
+      previewConversationActive,
       previewContainerFailed,
       previewDevActionLocked,
       previewPodEnsuring,
@@ -1904,8 +1918,9 @@ const AppDevPro: React.FC = () => {
   }, []);
 
   /**
-   * 打开 / 关闭独立远程桌面工作区
-   * 内容区与数据库工作区同一尺寸；再次点击还原打开前的工作区
+   * 打开 / 关闭独立远程桌面工作区。
+   * 再次点击还原打开前的工作区。
+   * 打开时复用开发环境容器：已启动或启动中不再 ensure，未启动或失败才拉起。
    */
   const handleOpenDesktopPanel = useCallback(() => {
     resetDevConsoleExpandedLayout();
@@ -1923,7 +1938,14 @@ const AppDevPro: React.FC = () => {
     workspaceViewBeforeRemoteDesktopRef.current = workspaceView;
     previewTabs.closeTab(getToolTabId('remote-desktop'));
     setWorkspaceView('remote-desktop');
-  }, [appId, previewTabs, resetDevConsoleExpandedLayout, workspaceView]);
+    startEnvPodIfNeeded(UserAppDbEnvEnum.Dev);
+  }, [
+    appId,
+    previewTabs,
+    resetDevConsoleExpandedLayout,
+    startEnvPodIfNeeded,
+    workspaceView,
+  ]);
 
   /**
    * 切换环境：线上环境没有文件树，隐藏图标与中间栏。
@@ -2085,7 +2107,7 @@ const AppDevPro: React.FC = () => {
         services={previewRuntime.services}
         errorMessage={previewRuntime.errorMessage}
         cancelLoading={previewRuntime.cancelLoading}
-        isGeneratingFiles={isConversationActive}
+        isGeneratingFiles={previewConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
         missingProjectFiles={missingProjectFiles}
         podReady={podReady}
@@ -2121,7 +2143,7 @@ const AppDevPro: React.FC = () => {
       handleRetryContainer,
       handleStartPreviewRuntime,
       hasPendingIntervention,
-      isConversationActive,
+      previewConversationActive,
       missingProjectFiles,
       podReady,
       previewDevActionLocked,
@@ -2147,11 +2169,24 @@ const AppDevPro: React.FC = () => {
     ],
   );
 
-  /** 远程桌面工作区：与数据库同一内容区嵌入 iframe */
-  const remoteDesktopWorkspace = useMemo(
-    () => <AppDevRemoteDesktopPanel appId={appId} />,
-    [appId],
-  );
+  /**
+   * 远程桌面仅在用户打开后挂载。
+   * 容器未 running 时面板只展示启动状态，不请求 VNC 代理；已 running 直接嵌入。
+   */
+  const remoteDesktopWorkspace = useMemo(() => {
+    if (workspaceView !== 'remote-desktop') {
+      return null;
+    }
+    return (
+      <AppDevRemoteDesktopPanel
+        appId={appId}
+        containerStatus={envPodConversationId ? podStatus : undefined}
+        onRetryContainer={() => {
+          void ensureEnvPodRef.current(UserAppDbEnvEnum.Dev, true);
+        }}
+      />
+    );
+  }, [appId, envPodConversationId, podStatus, workspaceView]);
 
   // ==================================== 渲染组件元素 ====================================
 

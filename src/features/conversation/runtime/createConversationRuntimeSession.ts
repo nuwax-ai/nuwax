@@ -1,5 +1,8 @@
 import type { ConversationEventReducerAdapters } from '@/features/conversation/domain/reduceConversationEvent';
-import { resolveTerminalTaskStatus } from '@/features/conversation/domain/taskStatus';
+import {
+  isTerminalTaskStatus,
+  resolveTerminalTaskStatus,
+} from '@/features/conversation/domain/taskStatus';
 import {
   AgentComponentTypeEnum,
   AssistantRoleEnum,
@@ -19,7 +22,10 @@ import type {
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 // 直连纯函数模块：勿改回 '@/utils' 桶——桶转发组件链会在非 umi 环境（vitest/parity）
 // 拉起 @umijs/bundler-utils 的 esbuild 触发 TextEncoder 不变量崩溃
-import { syncTerminalConversationTaskStatus } from '@/utils/conversationTaskStatusSync';
+import {
+  emitConversationListTaskStatus,
+  fetchConversationTaskStatus,
+} from '@/utils/conversationTaskStatusSync';
 import { extractTaskResult } from '@/utils/taskResult';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -570,8 +576,11 @@ export function createConversationRuntimeSession(
         }
       },
       onClose: () => {
+        const ownsClose = () =>
+          currentConversationId === conversationId &&
+          !runtime.liveConnection.isSuperseded(liveRunId);
         // 过期连接：只清理自己的消息，不触碰新一轮（与旧线 superseded 保护一致）
-        if (runtime.liveConnection.isSuperseded(liveRunId)) {
+        if (!ownsClose()) {
           store.finalizeOwnedOnStaleClose(currentMessageId);
           return;
         }
@@ -580,15 +589,16 @@ export function createConversationRuntimeSession(
 
         // FINAL 已解析出明确终态时不重复查询；否则异步兜底（与旧线一致）
         if (conversationId && !hasResolvedTerminalStatus) {
-          // 终态兜底查询：taskStatus 写回经绑定层注入通道（与旧线 onClose 兜底一致）
-          void syncTerminalConversationTaskStatus(conversationId, ((
-            updater: unknown,
-          ) => {
-            const next = (updater as { taskStatus?: TaskStatus }).taskStatus;
-            if (next) {
-              config.applyTaskStatus?.(conversationId, next);
-            }
-          }) as never)
+          // runtime 消费明确的状态值，不把 React setter 的函数式 updater
+          // 误当对象读取（bug2528）。旧查询迟到时也不能终结新一轮或其列表状态。
+          void fetchConversationTaskStatus(conversationId)
+            .then((status) => {
+              if (!ownsClose() || !status || !isTerminalTaskStatus(status)) {
+                return;
+              }
+              config.applyTaskStatus?.(conversationId, status);
+              emitConversationListTaskStatus(conversationId, status);
+            })
             .catch((error) => {
               console.error(
                 '[runtimeSession] sync terminal taskStatus failed:',
@@ -596,6 +606,7 @@ export function createConversationRuntimeSession(
               );
             })
             .finally(() => {
+              if (!ownsClose()) return;
               isAwaitingChatTerminal = false;
               notifyState();
             });

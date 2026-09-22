@@ -2,6 +2,15 @@
 @import '@/styles/token';
 
 .container {
+  // 弹层是白色浮面，积分卡等内部内容消费的导航令牌在 style1/2 暗黑下解析成
+  // 白色前景（深色导航面专用），白底上不可见；就地改写为面板文字同源变量
+  --xagi-layout-text-secondary: var(--xagi-color-text-secondary);
+  --xagi-layout-second-menu-text-color: var(--xagi-color-text);
+  --xagi-layout-second-menu-text-color-secondary: var(
+    --xagi-color-text-secondary
+  );
+  --xagi-layout-border-secondary: var(--xagi-color-border-secondary);
+
   // 加宽到 240px：保证「积分: 余额 + 购买」单排放下不换行
   width: 240px;
   padding-top: 6px;

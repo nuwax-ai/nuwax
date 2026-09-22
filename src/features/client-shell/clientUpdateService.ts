@@ -98,9 +98,14 @@ export async function download(): Promise<boolean> {
   return ok;
 }
 
-/** 重启并安装（仅 downloaded 状态有意义）。 */
-export async function install(): Promise<void> {
-  await hostBridge.updater.install();
+/**
+ * 重启并安装（仅 downloaded 状态有意义）。
+ * 透传宿主执行结果：success 后宿主进程将退出（清理+quitAndInstall 有数秒~数十秒空窗），
+ * 失败（dev 包/MSI/宿主拒绝）由调用方浮出错误。
+ */
+export async function install(): Promise<{ success: boolean; error?: string }> {
+  const res = await hostBridge.updater.install();
+  return { success: !!res?.success, error: res?.error };
 }
 
 /** 测试隔离：复位模块态。 */

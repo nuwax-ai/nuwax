@@ -4,6 +4,7 @@ import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
 import CustomPopover from '@/components/CustomPopover';
 import PageCard from '@/components/PageCard';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import { ICON_MORE } from '@/constants/images.constants';
 import {
   PAGE_DEVELOP_ALL_TYPE,
@@ -444,52 +445,55 @@ const SpacePageDevelop: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <div className={cx(styles['header-area'])}>
-        <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>
-            {dict('PC.Pages.SpacePageDevelop.Index.pageTitle')}
-          </h3>
-          <SelectList
-            value={type}
-            options={PAGE_DEVELOP_ALL_TYPE}
-            onChange={handlerChangeType}
-          />
-          {/* 单选模式 */}
-          <ButtonToggle
-            options={FILTER_STATUS_DEV}
-            value={status}
-            onChange={(value) => handlerChangeStatus(value as React.Key)}
-          />
-          <ButtonToggle
-            options={CREATE_LIST}
-            value={create}
-            onChange={(value) => handlerChangeCreate(value as React.Key)}
-          />
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <Input
-            rootClassName={cx(styles.input)}
-            placeholder={dict(
-              'PC.Pages.SpacePageDevelop.Index.searchPlaceholder',
-            )}
-            value={keyword}
-            onChange={handleQueryPage}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={handleClearKeyword}
-            style={{ width: 214 }}
-          />
-          {/*添加*/}
-          <CustomPopover
-            list={PAGE_DEVELOP_CREATE_TYPE_LIST}
-            onClick={handleClickPopoverItem}
-          >
-            <Button type="primary" icon={<PlusOutlined />}>
-              {dict('PC.Pages.SpacePageDevelop.Index.create')}
-            </Button>
-          </CustomPopover>
-        </div>
-      </div>
+      <PageContainerHeader
+        className={cx(styles['page-header'])}
+        title={dict('PC.Pages.SpacePageDevelop.Index.pageTitle')}
+        titleExtra={
+          <>
+            <SelectList
+              value={type}
+              options={PAGE_DEVELOP_ALL_TYPE}
+              onChange={handlerChangeType}
+            />
+            {/* 单选模式 */}
+            <ButtonToggle
+              options={FILTER_STATUS_DEV}
+              value={status}
+              onChange={(value) => handlerChangeStatus(value as React.Key)}
+            />
+            <ButtonToggle
+              options={CREATE_LIST}
+              value={create}
+              onChange={(value) => handlerChangeCreate(value as React.Key)}
+            />
+          </>
+        }
+        actions={
+          <>
+            <Input
+              rootClassName={cx(styles.input)}
+              placeholder={dict(
+                'PC.Pages.SpacePageDevelop.Index.searchPlaceholder',
+              )}
+              value={keyword}
+              onChange={handleQueryPage}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={handleClearKeyword}
+              style={{ width: 214 }}
+            />
+            {/*添加*/}
+            <CustomPopover
+              list={PAGE_DEVELOP_CREATE_TYPE_LIST}
+              onClick={handleClickPopoverItem}
+            >
+              <Button type="primary" icon={<PlusOutlined />}>
+                {dict('PC.Pages.SpacePageDevelop.Index.create')}
+              </Button>
+            </CustomPopover>
+          </>
+        }
+      />
 
       {loading ? (
         <Loading />

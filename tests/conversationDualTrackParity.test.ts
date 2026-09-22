@@ -30,6 +30,9 @@ vi.mock('@/features/conversation/runtime/conversationTransport', () => ({
 vi.mock('@/utils/conversationTaskStatusSync', () => ({
   syncTerminalConversationTaskStatus: (...args: unknown[]) =>
     mockSyncTerminal(...args),
+  fetchConversationTaskStatus: (...args: unknown[]) =>
+    mockSyncTerminal(...args),
+  emitConversationListTaskStatus: vi.fn(),
 }));
 
 vi.mock('@/utils/fetchEventSourceConversationInfo', () => ({

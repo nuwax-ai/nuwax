@@ -6,6 +6,7 @@ import {
   useConversationChanged,
   useProjectChanged,
 } from '@/hooks/useDirectorySync';
+import useExclusiveDropdown from '@/hooks/useExclusiveDropdown';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import {
   apiAgentConversationDelete,
@@ -32,6 +33,7 @@ import type {
 } from '@/types/directorySync';
 import { AgentComponentTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import type { UserProjectTabItem } from '@/types/interfaces/userProject';
 import {
   emitConversationListTaskStatus,
   fetchConversationTaskStatus,
@@ -261,6 +263,8 @@ const ProjectPanel = forwardRef<
   ) => {
     const { pin } = useHomePinnedProjectHandoff();
 
+    const { getDropdownProps, close: closeProjectMenu } =
+      useExclusiveDropdown();
     const [projects, setProjects] = useState<ProjectItem[]>([]);
     // 空态仅在接口返回后展示：加载中先渲染 Spin，避免一进来就闪「暂无项目」
     const [loading, setLoading] = useState(true);
@@ -321,6 +325,11 @@ const ProjectPanel = forwardRef<
     }, [archiveArmingKey, childDeleteArmingKey]);
     // 分页：首屏 PROJECT_PAGE_SIZE 条，「查看更多」按页追加（tab 接口 current/pageSize/total 契约）
     const [total, setTotal] = useState(0);
+    // 分页游标按原始回包推进，不能用去重/事件过滤后的列表长度判断末页。
+    const [consumedCount, setConsumedCount] = useState(0);
+    const [lastPageIsShort, setLastPageIsShort] = useState(false);
+    const [serverPages, setServerPages] = useState<number>();
+    const [loadedPage, setLoadedPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
     const pageRef = useRef(1);
     const projectsRef = useRef(projects);
@@ -344,92 +353,134 @@ const ProjectPanel = forwardRef<
         options: { append: boolean; awaitKey?: string },
       ): Promise<boolean> => {
         const requestVersion = ++pageRequestVersionRef.current;
-        const pageSize = options.append
-          ? PROJECT_PAGE_SIZE
-          : Math.max(PROJECT_PAGE_SIZE, pageRef.current * PROJECT_PAGE_SIZE);
+        // 接口是标准 current/pageSize 页码分页。静默刷新已加载范围时也必须
+        // 逐页回读，不能把 pageSize 放大成 N * 20，否则排序漂移后会跳页，且
+        // 后端 pages/current 语义被破坏，末页「查看更多」无法可靠收口。
+        const pagesToFetch = options.append
+          ? [page]
+          : Array.from(
+              { length: Math.max(1, pageRef.current) },
+              (_, index) => index + 1,
+            );
         if (options.append) setLoadingMore(true);
         try {
-          const res = await apiUserProjectPageQuery({
-            queryFilter: {
-              projectTypes: [
-                AgentComponentTypeEnum.NormalProject,
-                AgentComponentTypeEnum.UserApp,
-              ],
-            },
-            current: page,
-            pageSize,
-            orders: [],
-            filters: [],
-            columns: [],
-          });
-          // 已有更新的分页请求在途:丢弃过期响应(是否收敛交由重试下一轮判断)
-          if (requestVersion !== pageRequestVersionRef.current) return false;
-          if (res?.code === SUCCESS_CODE && Array.isArray(res.data?.records)) {
-            const records = res.data.records;
-            const fallback = dict('PC.Constants.Menus.newChat');
-            const now = Date.now();
-            recentProjectEventsRef.current =
-              recentProjectEventsRef.current.filter(
-                ({ at }) => now - at < 60_000,
-              );
-            const mapped = recentProjectEventsRef.current.reduce(
-              (list, { event }) => applyProjectChangedToList(list, event),
-              records.map((item) => toProjectItem(item, fallback)),
-            );
-            setProjects((previous) => {
-              if (options.append) return appendProjectsPage(previous, mapped);
-              return mapped.map((item) => {
-                const cached = previous.find(
-                  (old) =>
-                    old.id === item.id && old.projectType === item.projectType,
-                );
-                return cached ? { ...item, children: cached.children } : item;
-              });
+          const records: UserProjectTabItem[] = [];
+          let responseTotal = 0;
+          let responsePages: number | undefined;
+          let lastFetchedPage = 1;
+          let lastPageRecordCount = 0;
+
+          for (const current of pagesToFetch) {
+            const res = await apiUserProjectPageQuery({
+              queryFilter: {
+                projectTypes: [
+                  AgentComponentTypeEnum.NormalProject,
+                  AgentComponentTypeEnum.UserApp,
+                ],
+              },
+              current,
+              pageSize: PROJECT_PAGE_SIZE,
+              orders: [],
+              filters: [],
+              columns: [],
             });
-            // 置顶/归档/收藏回读恢复(wiki 2026-09-11 行6 契约先行:字段未返回时不标记;
-            // 追加页只并入新标记,不回退已加载页)。键=复合键,防 projectId 跨类型撞车串标记
-            const pageFlagIds = (flag: 'pinned' | 'archived' | 'collected') =>
-              new Set(
-                records
-                  .filter((item) => item[flag] === true)
-                  .map((item) =>
-                    projectKeyOf({
-                      id: item.projectId,
-                      projectType: item.projectType,
-                    }),
-                  ),
+            // 已有更新的分页请求在途:丢弃过期响应(是否收敛交由重试下一轮判断)
+            if (requestVersion !== pageRequestVersionRef.current) return false;
+            if (
+              res?.code !== SUCCESS_CODE ||
+              !Array.isArray(res.data?.records)
+            ) {
+              return options.awaitKey === undefined;
+            }
+            records.push(...res.data.records);
+            responseTotal = res.data.total ?? responseTotal;
+            responsePages =
+              typeof res.data.pages === 'number'
+                ? res.data.pages
+                : responsePages;
+            lastFetchedPage =
+              typeof res.data.current === 'number' ? res.data.current : current;
+            lastPageRecordCount = res.data.records.length;
+
+            // 静默回读时，若服务端页数已缩短，不再请求已不存在的旧页码。
+            if (
+              !options.append &&
+              ((responsePages !== undefined &&
+                lastFetchedPage >= responsePages) ||
+                lastPageRecordCount < PROJECT_PAGE_SIZE)
+            ) {
+              break;
+            }
+          }
+
+          const fallback = dict('PC.Constants.Menus.newChat');
+          const now = Date.now();
+          recentProjectEventsRef.current =
+            recentProjectEventsRef.current.filter(
+              ({ at }) => now - at < 60_000,
+            );
+          const mapped = recentProjectEventsRef.current.reduce(
+            (list, { event }) => applyProjectChangedToList(list, event),
+            records.map((item) => toProjectItem(item, fallback)),
+          );
+          setProjects((previous) => {
+            if (options.append) return appendProjectsPage(previous, mapped);
+            return mapped.map((item) => {
+              const cached = previous.find(
+                (old) =>
+                  old.id === item.id && old.projectType === item.projectType,
               );
-            setPinnedIds((previous) =>
-              options.append
-                ? mergeFlagIds(previous, pageFlagIds('pinned'))
-                : pageFlagIds('pinned'),
-            );
-            setArchivedIds((previous) =>
-              options.append
-                ? mergeFlagIds(previous, pageFlagIds('archived'))
-                : pageFlagIds('archived'),
-            );
-            setCollectedIds((previous) =>
-              options.append
-                ? mergeFlagIds(previous, pageFlagIds('collected'))
-                : pageFlagIds('collected'),
-            );
-            pageRef.current = options.append
-              ? page
-              : Math.max(1, Math.ceil(records.length / PROJECT_PAGE_SIZE));
-            setTotal(res.data.total ?? 0);
-            if (options.awaitKey !== undefined) {
-              return records.some(
-                (item) =>
+              return cached ? { ...item, children: cached.children } : item;
+            });
+          });
+          // 置顶/归档/收藏回读恢复(wiki 2026-09-11 行6 契约先行:字段未返回时不标记;
+          // 追加页只并入新标记,不回退已加载页)。键=复合键,防 projectId 跨类型撞车串标记
+          const pageFlagIds = (flag: 'pinned' | 'archived' | 'collected') =>
+            new Set(
+              records
+                .filter((item) => item[flag] === true)
+                .map((item) =>
                   projectKeyOf({
                     id: item.projectId,
                     projectType: item.projectType,
-                  }) === options.awaitKey,
-              );
-            }
-            return true;
+                  }),
+                ),
+            );
+          setPinnedIds((previous) =>
+            options.append
+              ? mergeFlagIds(previous, pageFlagIds('pinned'))
+              : pageFlagIds('pinned'),
+          );
+          setArchivedIds((previous) =>
+            options.append
+              ? mergeFlagIds(previous, pageFlagIds('archived'))
+              : pageFlagIds('archived'),
+          );
+          setCollectedIds((previous) =>
+            options.append
+              ? mergeFlagIds(previous, pageFlagIds('collected'))
+              : pageFlagIds('collected'),
+          );
+          pageRef.current = lastFetchedPage;
+          setLoadedPage(lastFetchedPage);
+          setServerPages(responsePages);
+          setTotal(responseTotal);
+          setConsumedCount(
+            options.append
+              ? (lastFetchedPage - 1) * PROJECT_PAGE_SIZE + lastPageRecordCount
+              : records.length,
+          );
+          setLastPageIsShort(lastPageRecordCount < PROJECT_PAGE_SIZE);
+          if (options.awaitKey !== undefined) {
+            return records.some(
+              (item) =>
+                projectKeyOf({
+                  id: item.projectId,
+                  projectType: item.projectType,
+                }) === options.awaitKey,
+            );
           }
-          return options.awaitKey === undefined;
+          return true;
         } catch {
           // 忽略:保持现有列表
           return false;
@@ -693,8 +744,11 @@ const ProjectPanel = forwardRef<
       }
     });
 
-    const hasMore = hasMoreProjects(projects.length, total);
-    const remainingCount = remainingProjects(projects.length, total);
+    const hasMore =
+      serverPages !== undefined
+        ? loadedPage < serverPages
+        : !lastPageIsShort && hasMoreProjects(consumedCount, total);
+    const remainingCount = remainingProjects(consumedCount, total);
     const handleLoadMore = () => {
       if (loadingMore || !hasMore) return;
       void fetchPage(pageRef.current + 1, { append: true });
@@ -1220,6 +1274,7 @@ const ProjectPanel = forwardRef<
           domEvent?: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>;
         }) => {
           domEvent?.stopPropagation();
+          closeProjectMenu();
           if (key === 'pin') {
             toggleProjectFlag('pinned', project);
           } else if (key === 'archive') {
@@ -1408,6 +1463,7 @@ const ProjectPanel = forwardRef<
           return (
             <div key={projectKeyOf(project)} className={cx(styles.project)}>
               <Dropdown
+                {...getDropdownProps(`${projectKeyOf(project)}:context`)}
                 menu={buildProjectMenu(project)}
                 trigger={['contextMenu']}
               >
@@ -1518,6 +1574,7 @@ const ProjectPanel = forwardRef<
                       <>
                         {renderAddConversationButton(project)}
                         <Dropdown
+                          {...getDropdownProps(`${projectKeyOf(project)}:more`)}
                           menu={buildProjectMenu(project)}
                           trigger={['click']}
                         >

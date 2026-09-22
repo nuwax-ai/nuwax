@@ -72,6 +72,7 @@ const OrderList: React.FC = () => {
         title: dict('PC.Pages.MorePage.MyOrders.colOrderId'),
         dataIndex: 'id',
         search: false,
+        width: 100,
       },
       {
         title: dict('PC.Pages.MorePage.MyOrders.colDescription'),
@@ -83,6 +84,8 @@ const OrderList: React.FC = () => {
         title: dict('PC.Pages.MorePage.MyOrders.colBizType'),
         dataIndex: 'bizType',
         search: false,
+        /** 固定宽度保证「业务类型 + 收货信息」小屏不换行不被挤压，超出走表格横向滚动 */
+        width: 180,
         render: (_, record) => {
           const extraObj = parseExtra(record.extra);
           const hasShippingInfo =
@@ -115,11 +118,13 @@ const OrderList: React.FC = () => {
         title: dict('PC.Pages.MorePage.MyOrders.colAmount'),
         dataIndex: 'amount',
         search: false,
+        width: 100,
         render: (_, record) => `¥${Number(record.amount).toFixed(2)}`,
       },
       {
         title: dict('PC.Pages.MorePage.MyOrders.colOrderStatus'),
         dataIndex: 'orderStatus',
+        width: 170,
         valueType: 'select',
         valueEnum: Object.entries(ORDER_STATUS_MAP).reduce(
           (acc, [key, val]) => ({ ...acc, [key]: { text: val.text } }),
@@ -171,6 +176,8 @@ const OrderList: React.FC = () => {
         formRef={formRef}
         rowKey="id"
         columns={columns}
+        /** 固定列宽合计 720 + 描述列最小约 220；容器不足 940 时出横向滚动条，保证业务类型/订单状态完整展示 */
+        scroll={{ x: 940 }}
         request={async (params) => {
           const { current, pageSize, orderStatus } = params;
           const res = await apiGetMyBillOrders({

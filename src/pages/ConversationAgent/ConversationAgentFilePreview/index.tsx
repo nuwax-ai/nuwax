@@ -151,6 +151,7 @@ const ConversationAgentFilePreview: React.FC<
         {
           [fileTreeCx('fullscreen-mode')]: isFullscreen,
           [fileTreeCx('fullscreen-content-wrapper')]: isFullscreen,
+          'immersive-shell-fullscreen': isFullscreen,
         },
         providerClassName,
         className,

@@ -387,6 +387,12 @@ export function useConversationStreamResume(
               id,
               latestRef.current.messageList,
             );
+          // confirmAfterStreamClose 可能等待后端状态查询；等待期间用户可能已经
+          // 切到另一会话。此时不能再通过 ref 中的最新回调把旧会话终态写给
+          // 新会话，也不能重启新会话的轮询（bug2520 审查补漏）。
+          if (latestRef.current.conversationId !== id) {
+            return;
+          }
           if (terminalDecision.type === 'terminal.confirmed') {
             // 本地消息无法自证终态（source=snapshot-fallback）＝ sub 未回放完整
             // 输出（任务已结束时 sub 秒关 / 只推终态不推正文）：本地最后一轮
@@ -404,6 +410,11 @@ export function useConversationStreamResume(
                   '[useConversationStreamResume] fallback snapshot merge failed:',
                   e,
                 );
+              }
+              // 快照请求同样跨越异步边界；切会话后必须终止旧回调，避免下面的
+              // onTerminalTaskStatus 使用当前 session id 污染新会话状态。
+              if (latestRef.current.conversationId !== id) {
+                return;
               }
             }
             onTerminalTaskStatusRef.current?.(terminalDecision.status);
