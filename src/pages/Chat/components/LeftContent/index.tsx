@@ -7,13 +7,16 @@ import UnifiedChatSession from '@/components/business-component/UnifiedChatSessi
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import ResizableSplit from '@/components/ResizableSplit';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import {
   loadChatPanelWidthPercent,
   saveChatPanelWidthPercent,
 } from '@/utils/chatPanelWidthPreference';
+import { isImmersiveShell } from '@/utils/hostBridge';
 import {
   CodeOutlined,
   LoadingOutlined,
@@ -61,6 +64,10 @@ const LeftContent: React.FC<LeftContentProps> = ({
   onExternalFilePreviewBack,
   chatPaneCapsule,
 }) => {
+  const { effectiveNavigationStyle } = useUnifiedTheme();
+  const alignBrowserStyle3Title =
+    effectiveNavigationStyle === ThemeNavigationStyleType.STYLE3 &&
+    !isImmersiveShell();
   // 拖拽分栏默认宽度（持久化偏好，仅作 ResizableSplit 初始值）
   const [chatPanelWidth] = useState<number>(loadChatPanelWidthPercent);
 
@@ -79,7 +86,11 @@ const LeftContent: React.FC<LeftContentProps> = ({
             [styles['title-container-collapsed']]: isAppSidebarMode,
           })}
         >
-          <div className={cx('flex', 'items-center', 'gap-4')}>
+          <div
+            className={cx('flex', 'items-center', 'gap-4', {
+              [styles['browser-style3-title-leading']]: alignBrowserStyle3Title,
+            })}
+          >
             {/* 应用智能体模式下，显示内容导航按钮；hideMenu 时隐藏展开导航图标 */}
             <ConditionRender
               condition={

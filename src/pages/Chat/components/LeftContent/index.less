@@ -33,6 +33,12 @@
         padding-left: @paddingXs;
       }
 
+      // 浏览器 style3 的侧栏 logo 中心比会话标题中心低 7px；只下移左侧标题组，
+      // 右侧文件/终端/云电脑操作保持原有顶栏布局。客户端按各平台壳避让单独处理。
+      .browser-style3-title-leading {
+        transform: translateY(7px);
+      }
+
       .icon-box {
         width: 32px;
         height: 32px;
