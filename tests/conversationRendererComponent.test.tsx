@@ -1099,7 +1099,7 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
     return restoreScrollHeight;
   };
 
-  it('内容高超 200px：默认收起（clamped），点击展开/收起切换；控件渲染在气泡框内', async () => {
+  it('正文超 10 行（行高兜底 24px 下 600px）：默认收起（3 行截断），点击圆形控件展开/收起切换', async () => {
     const restore = stubScrollHeight(600);
     const user = userEvent.setup();
     renderV2([
@@ -1112,32 +1112,53 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
     ]);
     const content = screen.getByTestId('v2-user-bubble-content');
     const toggle = screen.getByTestId('v2-user-bubble-toggle');
-    // 阈值与截断都只作用于气泡正文节点（.ds-markdown-answer）
+    // 阈值与截断都只作用于气泡正文节点（.ds-markdown-answer）：3×行高(兜底24)整行截断
     const body = content.querySelector<HTMLElement>('.ds-markdown-answer');
     expect(body).not.toBeNull();
     expect(content.getAttribute('data-collapsed')).toBe('true');
-    expect(body?.style.maxHeight).toBe('200px');
+    expect(body?.style.maxHeight).toBe('72px');
     expect(body?.style.overflow).toBe('hidden');
-    // bug 2529：收起/展开控件经 portal 挂进气泡框（正文所在 .ds-markdown 灰底气泡）内，
-    // 不再在气泡外独立成行
+    // 控件经 portal 挂进气泡框（正文所在 .ds-markdown 灰底气泡）内尾部
     expect(toggle.parentElement).toBe(body?.closest('.ds-markdown') ?? null);
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(toggle).toHaveTextContent(
+    // 圆形 chevron 控件：收起态朝下 caret + 展开语义 aria-label（无可见文案）
+    expect(
+      toggle.querySelector('[data-svg-icon="icons-common-caret_down"]'),
+    ).not.toBeNull();
+    expect(toggle.getAttribute('aria-label')).toBe(
       'PC.Components.ConversationRendererV2.userBubbleExpand',
     );
+    expect(toggle).not.toHaveTextContent('展开');
 
     await user.click(toggle);
     expect(content.getAttribute('data-collapsed')).toBeNull();
     expect(body?.style.maxHeight).toBe('');
     expect(body?.style.overflow).toBe('');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(toggle).toHaveTextContent(
+    expect(toggle.getAttribute('aria-label')).toBe(
       'PC.Components.ConversationRendererV2.userBubbleCollapse',
     );
+    expect(
+      toggle.querySelector('[data-svg-icon="icons-common-caret_up"]'),
+    ).not.toBeNull();
 
     await user.click(toggle);
     expect(content.getAttribute('data-collapsed')).toBe('true');
-    expect(body?.style.maxHeight).toBe('200px');
+    expect(body?.style.maxHeight).toBe('72px');
+    restore();
+  });
+
+  it('正文恰为 10 行：不折叠（超过 10 行才展示折叠入口）', () => {
+    // 240px / 兜底行高 24px = 10 行整——边界上不折叠
+    const restore = stubScrollHeightByNode(240, 600);
+    renderV2([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '短输入' }),
+      msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '回答' }),
+    ]);
+    expect(screen.queryByTestId('v2-user-bubble-toggle')).toBeNull();
+    expect(
+      screen.getByTestId('v2-user-bubble-content').getAttribute('data-collapsed'),
+    ).toBeNull();
     restore();
   });
 
