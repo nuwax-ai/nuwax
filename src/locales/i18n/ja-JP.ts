@@ -1460,6 +1460,11 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ClientUpdate.releaseDate": "リリース日",
   "PC.Components.ClientUpdate.releaseNotesTitle": "更新ログ",
   "PC.Components.ClientUpdate.errorTitle": "アップデート失敗",
+  "PC.Components.ClientUpdate.installing": "更新のため再起動中",
+  "PC.Components.ClientUpdate.installingHint":
+    "新バージョンをインストールするため終了しています。完了後、自動的に再起動します",
+  "PC.Components.ClientUpdate.installFailed": "再起動して更新できませんでした",
+  "PC.Components.ClientUpdate.close": "閉じる",
   "PC.Layouts.DynamicMenusLayout.newConversation": "新しい会話",
   "PC.Layouts.DynamicMenusLayout.newProject": "新規プロジェクト",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace": "パーソナルスペース",

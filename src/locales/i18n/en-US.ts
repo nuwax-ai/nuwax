@@ -1619,6 +1619,11 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ClientUpdate.releaseDate": "Release Date",
   "PC.Components.ClientUpdate.releaseNotesTitle": "What's New",
   "PC.Components.ClientUpdate.errorTitle": "Update Failed",
+  "PC.Components.ClientUpdate.installing": "Restarting to Update",
+  "PC.Components.ClientUpdate.installingHint":
+    "Exiting and installing the new version. The app will restart automatically.",
+  "PC.Components.ClientUpdate.installFailed": "Failed to restart for update",
+  "PC.Components.ClientUpdate.close": "Got it",
   "PC.Layouts.DynamicMenusLayout.newConversation": "New Conversation",
   "PC.Layouts.DynamicMenusLayout.newProject": "New Project",
   "PC.Layouts.HistoryConversation.title": "History Conversations",
