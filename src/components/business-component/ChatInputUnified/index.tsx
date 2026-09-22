@@ -452,6 +452,11 @@ const ChatInputUnifiedImpl: React.FC<
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!supportsAgentCapabilities) {
+      setPlusMenuOpen(false);
+    }
+  }, [supportsAgentCapabilities]);
   // 已连接连接器（服务端过滤，与能力弹窗连接器页签同域）：
   // 工具栏头像组数据源；弹窗内连接/断开后经 onCapabilityModalClose 刷新
   const [connectedConnectors, setConnectedConnectors] = useState<
@@ -1402,9 +1407,15 @@ const ChatInputUnifiedImpl: React.FC<
                     />
                     <Dropdown
                       trigger={['click']}
-                      open={plusMenuOpen}
+                      disabled={!supportsAgentCapabilities}
+                      open={supportsAgentCapabilities && plusMenuOpen}
                       onOpenChange={(open, info) => {
-                        if (info.source === 'trigger') setPlusMenuOpen(open);
+                        if (
+                          supportsAgentCapabilities &&
+                          info.source === 'trigger'
+                        ) {
+                          setPlusMenuOpen(open);
+                        }
                       }}
                       placement="topLeft"
                       overlayClassName={cx(styles['plus-menu-overlay'])}
@@ -1654,7 +1665,11 @@ const ChatInputUnifiedImpl: React.FC<
                       }}
                     >
                       <Tooltip
-                        title={t('PC.Components.ChatInputHome.plusMenu')}
+                        title={t(
+                          supportsAgentCapabilities
+                            ? 'PC.Components.ChatInputHome.plusMenu'
+                            : 'PC.Components.ChatInputHome.attachFile',
+                        )}
                       >
                         <span
                           className={cx(
@@ -1666,6 +1681,11 @@ const ChatInputUnifiedImpl: React.FC<
                             styles['plus-box'],
                             { [styles.disabled]: wholeDisabled },
                           )}
+                          onClick={() => {
+                            if (!supportsAgentCapabilities && !wholeDisabled) {
+                              attachmentInputRef.current?.click();
+                            }
+                          }}
                         >
                           <PlusOutlined className={cx(styles['svg-icon'])} />
                         </span>

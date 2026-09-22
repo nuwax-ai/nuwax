@@ -299,7 +299,7 @@ describe('+ 号弹层结构', () => {
     ).toBeInTheDocument();
   });
 
-  it('ChatBot 只保留附件入口，并关闭能力触发与手动组件回显', () => {
+  it('ChatBot 点击 + 直接打开附件选择器，不显示弹层', () => {
     const onEnter = vi.fn();
     renderInput({ agentType: 'ChatBot', agentMode: 'ask', onEnter });
 
@@ -314,10 +314,13 @@ describe('+ 号弹层结构', () => {
       screen.queryByText('PC.Components.ChatInputHome.agentModeApproval'),
     ).toBeNull();
 
-    openPlusMenu();
-    expect(
-      screen.getByText('PC.Components.ChatInputHome.attachFile'),
-    ).toBeInTheDocument();
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const click = vi.spyOn(fileInput, 'click').mockImplementation(() => {});
+    fireEvent.click(document.querySelector('.plus-box')!);
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menu')).toBeNull();
     expect(
       screen.queryByText('PC.Components.ChatInputHome.atContext'),
     ).toBeNull();
@@ -350,6 +353,7 @@ describe('+ 号弹层结构', () => {
       [],
       [],
     );
+    click.mockRestore();
   });
 
   it('智能体类型加载期间按 ChatBot 能力边界处理', () => {
@@ -359,10 +363,17 @@ describe('+ 号弹层结构', () => {
       'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
     );
     expect(screen.queryByTestId('manual-components')).toBeNull();
-    openPlusMenu();
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const click = vi.spyOn(fileInput, 'click').mockImplementation(() => {});
+    fireEvent.click(document.querySelector('.plus-box')!);
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menu')).toBeNull();
     expect(
       screen.queryByText('PC.Components.ChatInputHome.atContext'),
     ).toBeNull();
+    click.mockRestore();
   });
 
   it('ChatBot 保留业务方显式配置的 placeholder', () => {
