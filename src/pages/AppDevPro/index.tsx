@@ -1416,12 +1416,20 @@ const AppDevPro: React.FC = () => {
   /** 会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
   const conversationReady = !!conversationInfo;
   /**
+   * 会话是否仍在进行。
+   * 从主页发起进入本页走 V2 runtime，model 的 isConversationActive 不会置位，
+   * 须同时看 runtime effectiveIsActive，避免会话未结束就被当成已结束。
+   */
+  const previewConversationActive =
+    isConversationActive || Boolean(runtimeLine?.effectiveIsActive);
+  /**
    * 会话已结束且文件树已加载，但无有效项目文件。
    * 此时不应继续展示「预览准备中」，而应提示用户继续对话生成项目。
+   * 会话进行中即使 fileList 尚未包含 workspace.manifest.toml，也保持预览加载。
    */
   const missingProjectFiles =
     conversationReady &&
-    !isConversationActive &&
+    !previewConversationActive &&
     !hasPendingIntervention &&
     !fileTreeDataLoading &&
     !hasFileTreeData;
@@ -1448,7 +1456,11 @@ const AppDevPro: React.FC = () => {
       return;
     }
     // 会话详情未回填、会话进行中、或仍有待回复确认卡时，先不启动/重启
-    if (!conversationReady || isConversationActive || hasPendingIntervention) {
+    if (
+      !conversationReady ||
+      previewConversationActive ||
+      hasPendingIntervention
+    ) {
       return;
     }
     // 等待 tasks/active 首包，避免与进行中任务抢 start
@@ -1491,7 +1503,7 @@ const AppDevPro: React.FC = () => {
     fileTreeDataLoading,
     hasFileTreeData,
     hasPendingIntervention,
-    isConversationActive,
+    previewConversationActive,
     podReady,
     queryConversationId,
     tasksActiveReady,
@@ -1738,7 +1750,7 @@ const AppDevPro: React.FC = () => {
     if (
       podReady &&
       !previewDevActionLocked &&
-      !isConversationActive &&
+      !previewConversationActive &&
       !hasPendingIntervention
     ) {
       void prepareDevPreviewIfNeededRef.current();
@@ -1746,7 +1758,7 @@ const AppDevPro: React.FC = () => {
   }, [
     dbEnv,
     hasPendingIntervention,
-    isConversationActive,
+    previewConversationActive,
     podReady,
     previewDevActionLocked,
     resetDevConsoleExpandedLayout,
@@ -1786,7 +1798,9 @@ const AppDevPro: React.FC = () => {
       previewRuntimeRestarting: previewRuntime.restarting,
       previewRuntimeStopping: previewRuntime.stopping,
       previewRuntimeReady:
-        currentEnvPodReady && !isConversationActive && !hasPendingIntervention,
+        currentEnvPodReady &&
+        !previewConversationActive &&
+        !hasPendingIntervention,
       previewEnvPodReady: currentEnvPodReady,
       previewPodEnsuring,
       previewContainerFailed,
@@ -1800,7 +1814,7 @@ const AppDevPro: React.FC = () => {
       handleStopPreviewRuntime,
       hasFileTreeData,
       hasPendingIntervention,
-      isConversationActive,
+      previewConversationActive,
       previewContainerFailed,
       previewDevActionLocked,
       previewPodEnsuring,
@@ -2093,7 +2107,7 @@ const AppDevPro: React.FC = () => {
         services={previewRuntime.services}
         errorMessage={previewRuntime.errorMessage}
         cancelLoading={previewRuntime.cancelLoading}
-        isGeneratingFiles={isConversationActive}
+        isGeneratingFiles={previewConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
         missingProjectFiles={missingProjectFiles}
         podReady={podReady}
@@ -2129,7 +2143,7 @@ const AppDevPro: React.FC = () => {
       handleRetryContainer,
       handleStartPreviewRuntime,
       hasPendingIntervention,
-      isConversationActive,
+      previewConversationActive,
       missingProjectFiles,
       podReady,
       previewDevActionLocked,
