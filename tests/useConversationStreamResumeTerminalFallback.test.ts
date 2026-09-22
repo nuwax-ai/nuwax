@@ -213,4 +213,65 @@ describe('useConversationStreamResume sub 关闭终态确认(bug2520)', () => {
     expect(snapshotCalls).toHaveLength(0);
     expect(terminalCalls).toEqual([TaskStatus.COMPLETE]);
   });
+
+  it('fallback 快照等待期间切会话：旧回调不得把终态写给新会话', async () => {
+    let resolveSnapshot: ((value: unknown) => void) | undefined;
+    const terminalCalls: (string | undefined)[] = [];
+    mockFetchConversationTaskStatus.mockResolvedValue(TaskStatus.COMPLETE);
+    mockFetchConversationSnapshot.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSnapshot = resolve;
+        }),
+    );
+
+    const resumeStream = vi.fn(
+      (_id: number, _list: MessageInfo[], onClose: () => Promise<void>) => {
+        subOnClose = onClose;
+      },
+    );
+    const abortSub = vi.fn();
+    const { rerender } = renderHook(
+      ({ conversationId }: { conversationId: number }) =>
+        useConversationStreamResume({
+          conversationId,
+          taskStatus: TaskStatus.EXECUTING,
+          isLocallyStreaming: false,
+          isAwaitingChatTerminal: false,
+          messageList,
+          resumeStream,
+          abortSub,
+          onConversationSnapshot: vi.fn(),
+          onTerminalTaskStatus: (status: string | undefined) =>
+            terminalCalls.push(status),
+          resumeDebugSource: 'test',
+        } as never),
+      { initialProps: { conversationId: 1001 } },
+    );
+    const oldOnClose = subOnClose;
+    expect(oldOnClose).toBeTypeOf('function');
+
+    let closePromise: Promise<void> | undefined;
+    await act(async () => {
+      closePromise = oldOnClose?.();
+      await Promise.resolve();
+    });
+    expect(mockFetchConversationSnapshot).toHaveBeenCalledWith(1001);
+
+    rerender({ conversationId: 2002 });
+    resolveSnapshot?.({
+      id: 1001,
+      taskStatus: TaskStatus.COMPLETE,
+      messageList,
+    });
+    await act(async () => {
+      await closePromise;
+    });
+
+    expect(terminalCalls).toEqual([]);
+    expect(mockEmitConversationListTaskStatus).not.toHaveBeenCalledWith(
+      1001,
+      TaskStatus.COMPLETE,
+    );
+  });
 });
