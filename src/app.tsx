@@ -3,11 +3,17 @@ import { RequestConfig } from '@@/plugin-request/request';
 import { OpenUIDevtools } from '@openuidev/devtools';
 import { theme as antdTheme, Modal } from 'antd';
 import React, { useEffect, useRef } from 'react';
-import { history, useAntdConfigSetter } from 'umi';
-import { SUCCESS_CODE } from './constants/codes.constants';
+import { history, useAntdConfigSetter, useModel } from 'umi';
+import AppStartup from './components/business-component/AppStartup';
+import {
+  REDIRECT_LOGIN,
+  SUCCESS_CODE,
+  USER_NO_LOGIN,
+} from './constants/codes.constants';
 import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import { APP_NAME, APP_VERSION } from './constants/version';
+import { initClientShell } from './features/client-shell';
 import useEventPolling from './hooks/useEventPolling';
 import {
   BRAND_PRIMARY,
@@ -30,7 +36,6 @@ import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
 import { installDirectorySyncLegacyBridge } from './utils/directorySyncEvents';
-import { initClientShell } from './features/client-shell';
 import { hostBridge, syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
 import { isConversationMockPage } from './utils/isConversationMockPage';
@@ -81,13 +86,18 @@ export async function getInitialState(): Promise<InitialStateType> {
         if (res.code === SUCCESS_CODE && res.data) {
           return { menuData: res.data };
         }
+        // 鉴权失效已有请求层业务跳转，不要用启动错误遮挡登录页。
+        if (res.code !== USER_NO_LOGIN && res.code !== REDIRECT_LOGIN) {
+          throw new Error('App startup menu request failed');
+        }
       }
     }
     return { menuData: [] };
   } catch (error) {
-    console.error('getInitialState: failed to load menu data', error);
+    // 请求层可能无 reason 地 reject；必须给 Umi 一个可识别的错误态。
+    // 不把原始服务 payload、宿主凭据或请求信息渲染到错误界面。
+    throw error instanceof Error ? error : new Error('App startup failed');
   }
-  return { menuData: [] };
 }
 
 /**
@@ -361,6 +371,18 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
  */
 export function rootContainer(container: React.ReactElement) {
   return <AppContainer>{container}</AppContainer>;
+}
+
+const InitialStateBoundary: React.FC<{ children: React.ReactElement }> = ({
+  children,
+}) => {
+  const { error } = useModel('@@initialState');
+  return error ? <AppStartup failed /> : children;
+};
+
+// innerProvider 位于 Umi model provider 内部，rootContainer 不能读取初始状态。
+export function innerProvider(container: React.ReactElement) {
+  return <InitialStateBoundary>{container}</InitialStateBoundary>;
 }
 
 /**

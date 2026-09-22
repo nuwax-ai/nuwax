@@ -1,6 +1,12 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_TW: SystemLangMap = {
+  "PC.Components.AppStartup.loading": "正在載入應用程式",
+  "PC.Components.AppStartup.waitingHint": "載入時間較長，請檢查網路後重試。你也可以繼續等待。",
+  "PC.Components.AppStartup.failed": "應用程式載入失敗",
+  "PC.Components.AppStartup.failedHint": "暫時無法完成初始化，請檢查網路後重新載入。",
+  "PC.Components.AppStartup.reload": "重新載入",
+  "PC.Components.AppStartup.reloading": "正在重新載入…",
   "PC.Common.Global.action": "操作",
   "PC.Common.Global.add": "新增",
   "PC.Common.Global.agent": "智慧體",

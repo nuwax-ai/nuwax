@@ -1,6 +1,12 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
+  "PC.Components.AppStartup.loading": "Loading the app",
+  "PC.Components.AppStartup.waitingHint": "Loading is taking longer than expected. Check your connection and retry, or keep waiting.",
+  "PC.Components.AppStartup.failed": "Unable to load the app",
+  "PC.Components.AppStartup.failedHint": "The app could not finish starting. Check your connection and reload.",
+  "PC.Components.AppStartup.reload": "Reload",
+  "PC.Components.AppStartup.reloading": "Reloading…",
   "PC.Common.Global.action": "Action",
   "PC.Common.Global.add": "Add",
   "PC.Common.Global.agent": "Agent",

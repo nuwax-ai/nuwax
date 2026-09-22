@@ -1,6 +1,12 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const JA_JP: SystemLangMap = {
+  "PC.Components.AppStartup.loading": "アプリを読み込んでいます",
+  "PC.Components.AppStartup.waitingHint": "読み込みに時間がかかっています。ネットワークを確認して再試行するか、そのままお待ちください。",
+  "PC.Components.AppStartup.failed": "アプリを読み込めませんでした",
+  "PC.Components.AppStartup.failedHint": "初期化を完了できませんでした。ネットワークを確認して再読み込みしてください。",
+  "PC.Components.AppStartup.reload": "再読み込み",
+  "PC.Components.AppStartup.reloading": "再読み込み中…",
   "PC.Common.Global.action": "操作",
   "PC.Common.Global.add": "追加",
   "PC.Common.Global.agent": "エージェント",
