@@ -7,6 +7,12 @@
 import type { ConversationRenderPreferencesV2 } from '@/features/conversation/presentation-v2';
 import { __resetThinkTimingAnchorsForTest } from '@/features/conversation/presentation-v2/projectConversation';
 import ConversationRendererV2 from '@/features/conversation/presentation-v2/react/ConversationRendererV2';
+// 行数阈值常量直接从组件取值：常量调参（并行调优）时测试无需跟着改硬编码
+import {
+  USER_BUBBLE_COLLAPSE_LINES,
+  USER_BUBBLE_COLLAPSED_LINES,
+  USER_BUBBLE_FALLBACK_LINE_HEIGHT,
+} from '@/features/conversation/presentation-v2/react/UserBubbleCollapse';
 import { AgentComponentTypeEnum, AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -1087,7 +1093,10 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
     return restoreScrollHeight;
   };
   /** 按节点分流测高：正文(.ds-markdown-answer)取 answerHeight，其余节点取 fallbackHeight */
-  const stubScrollHeightByNode = (answerHeight: number, fallbackHeight: number) => {
+  const stubScrollHeightByNode = (
+    answerHeight: number,
+    fallbackHeight: number,
+  ) => {
     Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
       configurable: true,
       get(this: HTMLElement) {
@@ -1099,7 +1108,7 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
     return restoreScrollHeight;
   };
 
-  it('正文超 10 行（行高兜底 24px 下 600px）：默认收起（3 行截断），点击圆形控件展开/收起切换', async () => {
+  it('正文超过阈值行数：默认收起（保留行数整行截断），点击圆形控件展开/收起切换', async () => {
     const restore = stubScrollHeight(600);
     const user = userEvent.setup();
     renderV2([
@@ -1112,11 +1121,15 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
     ]);
     const content = screen.getByTestId('v2-user-bubble-content');
     const toggle = screen.getByTestId('v2-user-bubble-toggle');
-    // 阈值与截断都只作用于气泡正文节点（.ds-markdown-answer）：3×行高(兜底24)整行截断
+    // 阈值与截断都只作用于气泡正文节点（.ds-markdown-answer）：
+    // 收起态按保留行数×行高整行截断（截断值随常量调参联动）
     const body = content.querySelector<HTMLElement>('.ds-markdown-answer');
     expect(body).not.toBeNull();
+    const collapsedMaxHeight = `${
+      USER_BUBBLE_COLLAPSED_LINES * USER_BUBBLE_FALLBACK_LINE_HEIGHT
+    }px`;
     expect(content.getAttribute('data-collapsed')).toBe('true');
-    expect(body?.style.maxHeight).toBe('72px');
+    expect(body?.style.maxHeight).toBe(collapsedMaxHeight);
     expect(body?.style.overflow).toBe('hidden');
     // 控件经 portal 挂进气泡框（正文所在 .ds-markdown 灰底气泡）内尾部
     expect(toggle.parentElement).toBe(body?.closest('.ds-markdown') ?? null);
@@ -1144,20 +1157,25 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
 
     await user.click(toggle);
     expect(content.getAttribute('data-collapsed')).toBe('true');
-    expect(body?.style.maxHeight).toBe('72px');
+    expect(body?.style.maxHeight).toBe(collapsedMaxHeight);
     restore();
   });
 
-  it('正文恰为 10 行：不折叠（超过 10 行才展示折叠入口）', () => {
-    // 240px / 兜底行高 24px = 10 行整——边界上不折叠
-    const restore = stubScrollHeightByNode(240, 600);
+  it('正文行数恰等于阈值：不折叠（超过阈值才展示折叠入口）', () => {
+    // 正文高 = 阈值行数 × 兜底行高 → 行数恰达阈值，边界上不折叠
+    const restore = stubScrollHeightByNode(
+      USER_BUBBLE_COLLAPSE_LINES * USER_BUBBLE_FALLBACK_LINE_HEIGHT,
+      600,
+    );
     renderV2([
       msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '短输入' }),
       msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '回答' }),
     ]);
     expect(screen.queryByTestId('v2-user-bubble-toggle')).toBeNull();
     expect(
-      screen.getByTestId('v2-user-bubble-content').getAttribute('data-collapsed'),
+      screen
+        .getByTestId('v2-user-bubble-content')
+        .getAttribute('data-collapsed'),
     ).toBeNull();
     restore();
   });
@@ -1181,7 +1199,9 @@ describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
     expect(screen.getByTestId('attach-files')).toBeInTheDocument();
     expect(screen.queryByTestId('v2-user-bubble-toggle')).toBeNull();
     expect(
-      screen.getByTestId('v2-user-bubble-content').getAttribute('data-collapsed'),
+      screen
+        .getByTestId('v2-user-bubble-content')
+        .getAttribute('data-collapsed'),
     ).toBeNull();
     restore();
   });

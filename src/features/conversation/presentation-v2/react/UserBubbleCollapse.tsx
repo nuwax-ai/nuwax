@@ -84,7 +84,10 @@ const UserBubbleCollapse: React.FC<UserBubbleCollapseProps> = ({
       // 每次同步重新定位：子树重挂后目标节点实例会更换
       const current = locateBubbleNodes(root);
       setNodes((prev) =>
-        prev && current && prev.bubble === current.bubble && prev.body === current.body
+        prev &&
+        current &&
+        prev.bubble === current.bubble &&
+        prev.body === current.body
           ? prev
           : current,
       );
@@ -116,9 +119,10 @@ const UserBubbleCollapse: React.FC<UserBubbleCollapseProps> = ({
   }, []);
 
   // 展开后正文显著变高，气泡尾部的收起控件会随之下移出视口；
-  // 以 nearest 最小滚动把它带回可视区（收起态不额外滚动）
+  // 以 nearest 最小滚动把它带回可视区（收起态不额外滚动）。
+  // scrollIntoView 走可选调用：jsdom 未实现该方法，直接调用会中断同批后续 effect
   useEffect(() => {
-    if (expanded) toggleRef.current?.scrollIntoView({ block: 'nearest' });
+    if (expanded) toggleRef.current?.scrollIntoView?.({ block: 'nearest' });
   }, [expanded, nodes]);
 
   // 截断只作用于正文节点（ChatView 对该节点无受控 style，本层独占管理）；
@@ -154,7 +158,9 @@ const UserBubbleCollapse: React.FC<UserBubbleCollapseProps> = ({
             aria-expanded={expanded}
             aria-label={
               expanded
-                ? dict('PC.Components.ConversationRendererV2.userBubbleCollapse')
+                ? dict(
+                    'PC.Components.ConversationRendererV2.userBubbleCollapse',
+                  )
                 : dict('PC.Components.ConversationRendererV2.userBubbleExpand')
             }
             onClick={handleToggle}
