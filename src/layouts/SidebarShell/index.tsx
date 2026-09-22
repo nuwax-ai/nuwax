@@ -20,12 +20,7 @@ import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import eventBus from '@/utils/eventBus';
-import {
-  isImmersiveShell,
-  isMac,
-  isWinLinuxShell,
-  shellAvoid,
-} from '@/utils/hostBridge';
+import { isImmersiveShell, isMac, shellAvoid } from '@/utils/hostBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -329,15 +324,6 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
             isImmersiveShell() &&
             (immersiveMarginTop || macWorkbenchCollapsedAvoid)
               ? immersiveMargin
-              : undefined,
-          // 单栏展开态默认贴边方角；Windows/Linux 沉浸主窗口在顶栏与
-          // 内容区交界处留一个圆角。mac、浏览器和独立窗口维持现状。
-          borderTopLeftRadius:
-            isWinLinuxShell() &&
-            immersiveMarginTop &&
-            !isSecondMenuCollapsed &&
-            effectiveNavigationStyle === ThemeNavigationStyleType.STYLE3
-              ? 12
               : undefined,
         }}
       >

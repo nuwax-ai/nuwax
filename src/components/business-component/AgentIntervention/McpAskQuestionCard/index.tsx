@@ -89,8 +89,16 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
     if (!el) {
       return;
     }
-    // line-clamp 折叠态：scrollHeight=全文高、clientHeight=2 行高；恰好两行则相等
-    setDescOverflow(el.scrollHeight > el.clientHeight);
+    // 溢出检测不能直接比对 scrollHeight/clientHeight：line-clamp 生效时部分内核
+    // （WebKit/WKWebView 及部分 Chromium 版本）scrollHeight 会塌缩成 clamp 高度，
+    // 检不出截断。改为临时把 display 切成 block 彻底解除 clamp 上下文量一次全文高，
+    // 量完即恢复；同步执行不落帧，无闪烁，Chrome/WebKit 行为一致
+    const clampedHeight = el.clientHeight;
+    const prevDisplay = el.style.display;
+    el.style.display = 'block';
+    const fullHeight = el.scrollHeight;
+    el.style.display = prevDisplay;
+    setDescOverflow(fullHeight > clampedHeight);
   }, []);
 
   useLayoutEffect(() => {

@@ -16,15 +16,23 @@
   }
 
   // 头部（空间选择器）包裹层间距：经典布局/HoverMenu 维持原 0 12px 12px 不动；
-  // 单栏（style3）对齐标题分支落位（2026-09-16）——顶部 3px 使头部自然落位
-  // 19px（列 padding 16 + 3，24px 行高中点 31 对齐顶栏中线）、水平 10px 与
-  // 标题/行内容同起点（容器 10 + 10 = 20px）、底部 21px 与标题块一致。
+  // 单栏（style3）与通用二级菜单标题共用变量：工作空间/广场/系统管理/更多
+  // 四类入口在 page-container 标题顶边使用同一口径。
   // 勿改用负 margin 上提：.second-column 为 overflow:hidden，顶出盒顶即被裁
   .header-box {
     padding: 0 12px 12px;
 
     :global(.xagi-nav-style3) & {
-      padding: 3px 10px 21px;
+      display: flex;
+      align-items: center;
+      box-sizing: content-box;
+      min-height: 32px;
+      padding: var(--xagi-nav-second-title-padding-top, 0) 10px
+        var(--xagi-nav-second-title-padding-bottom, 16px);
+
+      > * {
+        width: 100%;
+      }
     }
   }
 }

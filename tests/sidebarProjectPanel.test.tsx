@@ -127,7 +127,9 @@ describe('项目侧栏原型交互', () => {
     vi.clearAllMocks();
     // 复位 mock 的服务端真值，避免上一条用例的置顶/归档泄漏到下一条
     // （resetServerFlags 挂在 mock 实例上，import 类型来自真实模块，须断言）
-    (apiUserProjectPageQuery as unknown as { resetServerFlags: () => void }).resetServerFlags();
+    (
+      apiUserProjectPageQuery as unknown as { resetServerFlags: () => void }
+    ).resetServerFlags();
   });
 
   it('混合展开状态批量展开，再批量收起；键盘独立切换项目', async () => {
@@ -162,6 +164,31 @@ describe('项目侧栏原型交互', () => {
         screen.getByText('PC.Components.ConversationContextMenu.rename'),
       ).toBeVisible(),
     );
+  });
+
+  it('项目右键与更多互斥，切换项目后也只保留当前菜单（2536）', async () => {
+    render(<ProjectPanel compact />);
+    const first = await screen.findByRole('button', { name: /项目甲/ });
+    const second = screen.getByRole('button', { name: /项目乙/ });
+    fireEvent.contextMenu(first);
+    await waitFor(() => expect(screen.getAllByRole('menu')).toHaveLength(1));
+    fireEvent.click(
+      within(first).getByRole('button', {
+        name: 'PC.Components.ActionMenu.more',
+      }),
+    );
+    await waitFor(() => expect(screen.getAllByRole('menu')).toHaveLength(1));
+    fireEvent.contextMenu(first);
+    await waitFor(() => expect(screen.getAllByRole('menu')).toHaveLength(1));
+    fireEvent.contextMenu(second);
+    await waitFor(() => expect(screen.getAllByRole('menu')).toHaveLength(1));
+    expect(first).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(
+      screen.getByRole('menuitem', {
+        name: /PC.Components.ConversationContextMenu.rename/,
+      }),
+    );
+    await waitFor(() => expect(screen.queryAllByRole('menu')).toHaveLength(0));
   });
 
   it('tab 接口子会话渲染:相对时间 + 点击回调携带原始会话', async () => {

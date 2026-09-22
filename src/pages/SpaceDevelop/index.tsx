@@ -4,6 +4,7 @@ import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
 import CustomPopover from '@/components/CustomPopover';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import UploadImportConfig from '@/components/UploadImportConfig';
 import {
   AGENT_TYPE_LIST,
@@ -516,54 +517,60 @@ const SpaceDevelop: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div className={cx(styles['header-area'])}>
-        <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>
-            {dict('PC.Pages.SpaceDevelop.Index.agentDevelop')}
-          </h3>
-          <SelectList
-            value={subType}
-            options={AGENT_TYPE_LIST_DEV}
-            onChange={handlerChangeSubType}
-            size="middle"
-          />
-          {/* 单选模式 */}
-          <ButtonToggle
-            options={FILTER_STATUS}
-            value={status}
-            onChange={(value) => handlerChangeStatus(value as React.Key)}
-          />
-          <ButtonToggle
-            options={CREATE_LIST}
-            value={create}
-            onChange={(value) => handlerChangeCreate(value as React.Key)}
-          />
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <Input
-            rootClassName={cx(styles.input)}
-            placeholder={dict('PC.Pages.SpaceDevelop.Index.searchAgent')}
-            value={keyword}
-            onChange={handleQueryAgent}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={handleClearKeyword}
-            style={{ width: 214 }}
-          />
-          <UploadImportConfig
-            spaceId={spaceId}
-            onUploadSuccess={handleImportConfig}
-            beforeUpload={beforeUploadDefault}
-          />
+      <PageContainerHeader
+        className={cx(styles['page-header'])}
+        title={dict('PC.Pages.SpaceDevelop.Index.agentDevelop')}
+        titleExtra={
+          <>
+            <SelectList
+              value={subType}
+              options={AGENT_TYPE_LIST_DEV}
+              onChange={handlerChangeSubType}
+              size="middle"
+            />
+            {/* 单选模式 */}
+            <ButtonToggle
+              options={FILTER_STATUS}
+              value={status}
+              onChange={(value) => handlerChangeStatus(value as React.Key)}
+            />
+            <ButtonToggle
+              options={CREATE_LIST}
+              value={create}
+              onChange={(value) => handlerChangeCreate(value as React.Key)}
+            />
+          </>
+        }
+        actions={
+          <>
+            <Input
+              rootClassName={cx(styles.input)}
+              placeholder={dict('PC.Pages.SpaceDevelop.Index.searchAgent')}
+              value={keyword}
+              onChange={handleQueryAgent}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={handleClearKeyword}
+              style={{ width: 214 }}
+            />
+            <UploadImportConfig
+              spaceId={spaceId}
+              onUploadSuccess={handleImportConfig}
+              beforeUpload={beforeUploadDefault}
+            />
 
-          {/* 创建智能体按钮：如果只有一种类型则直接创建，否则显示下拉选择 */}
-          <CustomPopover list={AGENT_TYPE_LIST} onClick={handlerClickAgentType}>
-            <Button type="primary" icon={<PlusOutlined />}>
-              {dict('PC.Pages.SpaceDevelop.Index.createAgent')}
-            </Button>
-          </CustomPopover>
-        </div>
-      </div>
+            {/* 创建智能体按钮：如果只有一种类型则直接创建，否则显示下拉选择 */}
+            <CustomPopover
+              list={AGENT_TYPE_LIST}
+              onClick={handlerClickAgentType}
+            >
+              <Button type="primary" icon={<PlusOutlined />}>
+                {dict('PC.Pages.SpaceDevelop.Index.createAgent')}
+              </Button>
+            </CustomPopover>
+          </>
+        }
+      />
       {loading ? (
         <Loading />
       ) : agentList?.length > 0 ? (

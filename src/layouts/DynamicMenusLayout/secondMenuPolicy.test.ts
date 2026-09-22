@@ -5,9 +5,47 @@ import type { MenuItemDto } from '@/types/interfaces/menu';
 import {
   resolveCurrentTitle,
   resolveIsShowTitle,
+  resolveSecondColumnShellGeometry,
   resolveSecondMenuVisibility,
   resolveSecondaryBackgroundColor,
 } from './secondMenuPolicy';
+
+describe('resolveSecondColumnShellGeometry', () => {
+  it('Windows/Linux 背景与内容区同顶边，正文位置保持不变', () => {
+    expect(
+      resolveSecondColumnShellGeometry({
+        immersiveShell: true,
+        winLinuxShell: true,
+        menuTop: 36,
+        contentTop: 32,
+      }),
+    ).toEqual({
+      marginTop: 32,
+      height: 'calc(100% - 32px)',
+      paddingTop: 4,
+      borderTopLeftRadius: 12,
+    });
+  });
+
+  it('macOS 左侧两列共同为红绿灯工具栏退让，浏览器不注入', () => {
+    expect(
+      resolveSecondColumnShellGeometry({
+        immersiveShell: true,
+        winLinuxShell: false,
+        menuTop: 36,
+        contentTop: 32,
+      }),
+    ).toEqual({ paddingTop: 36 });
+    expect(
+      resolveSecondColumnShellGeometry({
+        immersiveShell: false,
+        winLinuxShell: false,
+        menuTop: 36,
+        contentTop: 32,
+      }),
+    ).toEqual({});
+  });
+});
 
 const stubDict = (key: string) => `@${key}`;
 

@@ -14,6 +14,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import { getAppTabNavPath, isAppTabLimitReached } from '@/models/openedAppTabs';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -429,21 +430,24 @@ const NuwaApps: React.FC = () => {
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       {/* 头部:标题 + 搜索 + 更多 */}
-      <header className={cx('flex', 'items-center', styles.header)}>
-        <h3 className={cx(styles.title)}>{dict('PC.Pages.NuwaApps.title')}</h3>
-        <div className={cx('flex', 'items-center', styles['header-actions'])}>
-          {/* 「更多」入口:样式对齐专家·技能·连接器页工具栏 more-btn,排布在搜索框左侧 */}
-          <a className={cx(styles['more-btn'])} onClick={handleGoSquare}>
-            {dict('PC.Pages.NuwaApps.more')}
-          </a>
-          <Input.Search
-            className={cx(styles['search-input'])}
-            allowClear
-            placeholder={dict('PC.Pages.NuwaApps.searchPlaceholder')}
-            onSearch={(value) => setKeyword(value || '')}
-          />
-        </div>
-      </header>
+      <PageContainerHeader
+        className={cx(styles.header)}
+        title={dict('PC.Pages.NuwaApps.title')}
+        actions={
+          <>
+            {/* 「更多」入口:样式对齐专家·技能·连接器页工具栏 more-btn,排布在搜索框左侧 */}
+            <a className={cx(styles['more-btn'])} onClick={handleGoSquare}>
+              {dict('PC.Pages.NuwaApps.more')}
+            </a>
+            <Input.Search
+              className={cx(styles['search-input'])}
+              allowClear
+              placeholder={dict('PC.Pages.NuwaApps.searchPlaceholder')}
+              onSearch={(value) => setKeyword(value || '')}
+            />
+          </>
+        }
+      />
 
       <div
         id={APP_SCROLL_CONTAINER_ID}

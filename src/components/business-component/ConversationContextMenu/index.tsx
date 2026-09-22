@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useExclusiveDropdown from '@/hooks/useExclusiveDropdown';
 import {
   apiAgentConversationArchive,
   apiAgentConversationCollect,
@@ -82,6 +83,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   onRenamed,
   showMoreButton = false,
 }) => {
+  const { getDropdownProps, close: closeMenu } = useExclusiveDropdown();
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameTopic, setRenameTopic] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -220,6 +222,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
         // 弹层 portal 到 body 但 React 合成事件仍沿组件树冒泡，菜单项点击会穿过
         // 行 div 的 onClick（触发钮自身的 stopPropagation 拦不住此路径），须在此截断
         domEvent?.stopPropagation();
+        closeMenu();
         if (key === 'pin') {
           void handleToggleFlag('pinned');
         } else if (key === 'archive') {
@@ -258,6 +261,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
       onDelete,
       onFlagChanged,
       onCollectedChanged,
+      closeMenu,
     ],
   );
 
@@ -287,6 +291,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
 
   const moreButton = showMoreButton ? (
     <Dropdown
+      {...getDropdownProps('more')}
       menu={menuProps}
       trigger={['click']}
       overlayClassName="context-menu-overlay"
@@ -305,6 +310,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   return (
     <>
       <Dropdown
+        {...getDropdownProps('context')}
         menu={menuProps}
         trigger={['contextMenu']}
         overlayClassName="context-menu-overlay"

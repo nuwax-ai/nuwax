@@ -30,12 +30,15 @@ import {
   __resetForTest,
   download,
   getState,
+  install,
   isAvailable,
   start,
   subscribe,
 } from './clientUpdateService';
 
-function makeState(overrides: Partial<ClientUpdateState> = {}): ClientUpdateState {
+function makeState(
+  overrides: Partial<ClientUpdateState> = {},
+): ClientUpdateState {
   return {
     status: 'available',
     hostVersion: '1.0.6',
@@ -87,7 +90,10 @@ describe('clientUpdateService', () => {
     await vi.waitFor(() => expect(getState()).toEqual(available));
 
     getStateMock.mockResolvedValueOnce(
-      makeState({ status: 'downloading', progress: { percent: 12, bytesPerSecond: 1, transferred: 1, total: 10 } }),
+      makeState({
+        status: 'downloading',
+        progress: { percent: 12, bytesPerSecond: 1, transferred: 1, total: 10 },
+      }),
     );
     downloadMock.mockResolvedValue({ success: true });
     const events: Array<string | undefined> = [];
@@ -111,5 +117,25 @@ describe('clientUpdateService', () => {
     const ok = await download();
     expect(ok).toBe(false);
     expect(getState()?.status).toBe('available');
+  });
+
+  it('install：透传宿主回包（success/error），不再吞结果', async () => {
+    installMock.mockResolvedValue({ success: true });
+    await expect(install()).resolves.toEqual({
+      success: true,
+      error: undefined,
+    });
+
+    installMock.mockResolvedValue({ success: false, error: 'dev build' });
+    await expect(install()).resolves.toEqual({
+      success: false,
+      error: 'dev build',
+    });
+
+    installMock.mockResolvedValue(null);
+    await expect(install()).resolves.toEqual({
+      success: false,
+      error: undefined,
+    });
   });
 });

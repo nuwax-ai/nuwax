@@ -32,7 +32,9 @@ export default defineConfig({
   layout: false,
   access: {},
   model: {},
-  initialState: {},
+  initialState: {
+    loading: '@/components/business-component/AppStartup/Loading',
+  },
   request: {},
   routes,
   npmClient: 'pnpm',

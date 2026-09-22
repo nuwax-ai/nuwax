@@ -7,6 +7,7 @@ import CreateWorkflow from '@/components/CreateWorkflow';
 import CreatedItem from '@/components/CreatedItem';
 import CustomPopover from '@/components/CustomPopover';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import UploadImportConfig from '@/components/UploadImportConfig';
 import CreateModel from '@/components/business-component/CreateModel';
 import Loading from '@/components/custom/Loading';
@@ -673,54 +674,57 @@ const SpaceLibrary: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <div className={cx(styles['header-area'])}>
-        <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>
-            {dict('PC.Pages.SpaceLibrary.Index.pageTitle')}
-          </h3>
-          <SelectList
-            value={type}
-            options={LIBRARY_ALL_TYPE}
-            onChange={handlerChangeType}
-          />
-          {/* 单选模式 */}
-          <ButtonToggle
-            options={CREATE_LIST}
-            value={create}
-            onChange={(value) => handlerChangeCreate(value as React.Key)}
-          />
-          <ButtonToggle
-            options={FILTER_STATUS}
-            value={status}
-            onChange={(value) => handlerChangeStatus(value as React.Key)}
-          />
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <Input
-            rootClassName={cx(styles.input)}
-            placeholder={dict('PC.Pages.SpaceLibrary.Index.searchComponent')}
-            value={keyword}
-            onChange={handleQueryAgent}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={handleClearKeyword}
-            style={{ width: 214 }}
-          />
-          <UploadImportConfig
-            spaceId={spaceId}
-            onUploadSuccess={handleImportConfig}
-          />
-          {/*添加资源*/}
-          <CustomPopover
-            list={LIBRARY_ALL_RESOURCE}
-            onClick={handleClickPopoverItem}
-          >
-            <Button type="primary" icon={<PlusOutlined />}>
-              {dict('PC.Pages.SpaceLibrary.Index.addComponent')}
-            </Button>
-          </CustomPopover>
-        </div>
-      </div>
+      <PageContainerHeader
+        className={cx(styles['header-area'])}
+        title={dict('PC.Pages.SpaceLibrary.Index.pageTitle')}
+        titleExtra={
+          <>
+            <SelectList
+              value={type}
+              options={LIBRARY_ALL_TYPE}
+              onChange={handlerChangeType}
+            />
+            {/* 单选模式 */}
+            <ButtonToggle
+              options={CREATE_LIST}
+              value={create}
+              onChange={(value) => handlerChangeCreate(value as React.Key)}
+            />
+            <ButtonToggle
+              options={FILTER_STATUS}
+              value={status}
+              onChange={(value) => handlerChangeStatus(value as React.Key)}
+            />
+          </>
+        }
+        actions={
+          <>
+            <Input
+              rootClassName={cx(styles.input)}
+              placeholder={dict('PC.Pages.SpaceLibrary.Index.searchComponent')}
+              value={keyword}
+              onChange={handleQueryAgent}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={handleClearKeyword}
+              style={{ width: 214 }}
+            />
+            <UploadImportConfig
+              spaceId={spaceId}
+              onUploadSuccess={handleImportConfig}
+            />
+            {/*添加资源*/}
+            <CustomPopover
+              list={LIBRARY_ALL_RESOURCE}
+              onClick={handleClickPopoverItem}
+            >
+              <Button type="primary" icon={<PlusOutlined />}>
+                {dict('PC.Pages.SpaceLibrary.Index.addComponent')}
+              </Button>
+            </CustomPopover>
+          </>
+        }
+      />
 
       {loading ? (
         <Loading />

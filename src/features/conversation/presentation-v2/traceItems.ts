@@ -21,36 +21,90 @@ export interface ConversationPlanStep {
   content: string;
 }
 
-/**
- * 提取 Plan 工具的结构化任务清单：result.data = [{status, content}]
- * （与 V1 MarkdownCustomProcess 任务列表、utils getPlanProgress 同源契约）。
- * 非数组或无有效项（content 缺失）返回 null，调用方回落普通轨迹行。
- */
-export const readPlanSteps = (
-  result: unknown,
+const PLAN_STEP_STATUSES: ReadonlySet<string> = new Set([
+  'completed',
+  'in_progress',
+  'pending',
+  'failed',
+]);
+
+/** 步骤条目归一：非数组或无有效项（content 非字符串）返回 null */
+const normalizePlanStepEntries = (
+  entries: unknown,
 ): ConversationPlanStep[] | null => {
-  const data = (result as { data?: unknown } | null | undefined)?.data;
-  if (!Array.isArray(data) || data.length === 0) return null;
+  if (!Array.isArray(entries) || entries.length === 0) return null;
   const steps: ConversationPlanStep[] = [];
-  for (const entry of data) {
+  for (const entry of entries) {
     if (!entry || typeof entry !== 'object') continue;
     const step = entry as { status?: unknown; content?: unknown };
     if (typeof step.content !== 'string' || !step.content.trim()) continue;
-    const status =
-      step.status === 'completed' ||
-      step.status === 'in_progress' ||
-      step.status === 'pending' ||
-      step.status === 'failed'
-        ? step.status
-        : 'pending';
-    steps.push({ status, content: step.content });
+    steps.push({
+      status: PLAN_STEP_STATUSES.has(step.status as string)
+        ? (step.status as ConversationPlanStep['status'])
+        : 'pending',
+      content: step.content,
+    });
   }
   return steps.length > 0 ? steps : null;
 };
 
-/** 待办卡接管判定：Plan 节点且能提取非空结构化步骤（否则回落 ProcessNodeRow） */
-export const isTodoTraceNode = (node: ConversationProcessNode): boolean =>
-  node.kind === 'plan' && readPlanSteps(node.processing?.result) !== null;
+const safeJsonParse = (text: string): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+};
+
+/** content 包裹文本：data[0] = {type:'content', content:{type:'text', text}} */
+const readContentText = (data: unknown): string | null => {
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const text = (data[0] as { content?: { text?: unknown } } | null)?.content
+    ?.text;
+  return typeof text === 'string' && text.trim() ? text : null;
+};
+
+/**
+ * 提取任务清单步骤，按优先级尝试三种载体：
+ * 1) Plan 组件契约：result.data = [{status, content}]（与 V1
+ *    MarkdownCustomProcess 任务列表、utils getPlanProgress 同源契约）；
+ * 2) deepagents TodoWrite：下发 type=ToolCall、清单在 input.todos
+ *    （input 可能是对象或 JSON 字符串）；
+ * 3) 兜底：result.data[0].content.text 为清单 JSON 文本（数组或 {todos:[...]}）。
+ * 全部无有效项返回 null，调用方回落普通轨迹行。
+ */
+export const readPlanSteps = (
+  result: unknown,
+): ConversationPlanStep[] | null => {
+  const record =
+    result && typeof result === 'object'
+      ? (result as { data?: unknown; input?: unknown })
+      : null;
+  const fromData = normalizePlanStepEntries(record?.data);
+  if (fromData) return fromData;
+  const rawInput = record?.input;
+  const parsedInput =
+    typeof rawInput === 'string' ? safeJsonParse(rawInput) : rawInput;
+  const inputTodos =
+    parsedInput && typeof parsedInput === 'object'
+      ? (parsedInput as { todos?: unknown }).todos
+      : undefined;
+  const fromInput = normalizePlanStepEntries(inputTodos);
+  if (fromInput) return fromInput;
+  const text = readContentText(record?.data);
+  if (text) {
+    const parsed = safeJsonParse(text);
+    const fromText = normalizePlanStepEntries(
+      Array.isArray(parsed)
+        ? parsed
+        : parsed && typeof parsed === 'object'
+        ? (parsed as { todos?: unknown }).todos
+        : undefined,
+    );
+    if (fromText) return fromText;
+  }
+  return null;
+};
 
 export const getNodeToolActionKind = (
   node: ConversationProcessNode,
@@ -60,6 +114,17 @@ export const getNodeToolActionKind = (
     name: node.processing?.name ?? node.title,
     result: node.processing?.result,
   });
+
+/**
+ * 待办卡接管判定：节点语义是计划且能提取非空结构化步骤（否则回落
+ * ProcessNodeRow）。语义计划 = Plan 组件节点，或名称命中 todo 启发式的
+ * 工具节点（deepagents TodoWrite 的 ToolCall 调用；启发式与行文案
+ * 「已更新计划」同源，语义上本就是计划更新）。
+ */
+export const isTodoTraceNode = (node: ConversationProcessNode): boolean =>
+  (node.kind === 'plan' ||
+    (node.kind === 'tool' && getNodeToolActionKind(node) === 'todo')) &&
+  readPlanSteps(node.processing?.result) !== null;
 
 export const isOpenUiToolNode = (node: ConversationProcessNode): boolean => {
   if (node.kind !== 'tool') return false;

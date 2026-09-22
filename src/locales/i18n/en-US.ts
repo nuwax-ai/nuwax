@@ -1,6 +1,12 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
+  "PC.Components.AppStartup.loading": "Loading the app",
+  "PC.Components.AppStartup.waitingHint": "Loading is taking longer than expected. Check your connection and retry, or keep waiting.",
+  "PC.Components.AppStartup.failed": "Unable to load the app",
+  "PC.Components.AppStartup.failedHint": "The app could not finish starting. Check your connection and reload.",
+  "PC.Components.AppStartup.reload": "Reload",
+  "PC.Components.AppStartup.reloading": "Reloading…",
   "PC.Common.Global.action": "Action",
   "PC.Common.Global.add": "Add",
   "PC.Common.Global.agent": "Agent",
@@ -370,8 +376,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ConversationDetails.startConversationWithAgent": "Start a conversation with {0}",
   "PC.Components.ConversationDetails.viewAgentDetails": "View agent details",
   "PC.Components.ConversationProgressCapsule.running": "Running",
-  "PC.Components.ConversationProgressCapsule.expand": "Expand task progress",
-  "PC.Components.ConversationProgressCapsule.collapse": "Collapse task progress",
+  "PC.Components.ConversationProgressCapsule.close": "Close",
   "PC.Components.ConversationProgressCapsule.progress": "Progress",
   "PC.Components.ConversationProgressCapsule.current": "Current",
   "PC.Components.ConversationProgressCapsule.completed": "Completed {0}",
@@ -1611,6 +1616,11 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ClientUpdate.releaseDate": "Release Date",
   "PC.Components.ClientUpdate.releaseNotesTitle": "What's New",
   "PC.Components.ClientUpdate.errorTitle": "Update Failed",
+  "PC.Components.ClientUpdate.installing": "Restarting to Update",
+  "PC.Components.ClientUpdate.installingHint":
+    "Exiting and installing the new version. The app will restart automatically.",
+  "PC.Components.ClientUpdate.installFailed": "Failed to restart for update",
+  "PC.Components.ClientUpdate.close": "Got it",
   "PC.Layouts.DynamicMenusLayout.newConversation": "New Conversation",
   "PC.Layouts.DynamicMenusLayout.newProject": "New Project",
   "PC.Layouts.HistoryConversation.title": "History Conversations",
@@ -2996,6 +3006,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Chat.conversationName": "Conversation Name",
   "PC.Pages.Chat.taskExecuting": "Task in progress",
   "PC.Pages.Chat.uploadSuccess": "Uploaded successfully",
+  "PC.Pages.Chat.conversationProgress": "Conversation progress",
   "PC.Pages.Chat.viewAgentDetails": "View agent details",
   "PC.Pages.ChatTemp.enterInstruction": "Enter instructions directly; press Enter for new line",
   "PC.Pages.ChatTemp.fillRequiredParams": "Please fill in the required parameters",

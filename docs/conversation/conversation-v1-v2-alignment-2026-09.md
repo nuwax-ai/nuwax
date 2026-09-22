@@ -97,7 +97,7 @@
 
 ### 3.3 V2 独有增量（➕）
 
-- **进度胶囊**（✅ 09-17 多笔）：Chat 页 TaskAgent 专属（🔴 ChatBot 不显示，用户定调勿放开类型判断）；终态常驻（新消息新轮才隐藏）、分区面板（任务结果=task-result 标签产物行 / Git 工具 / 计划 / 进程 / 终端超 5 折叠 / 智能体摘要）、扫光、JS 逐帧纯淡入（🔴 用户机器减弱动态效果冻结 CSS 动画，勿改回）。
+- **进度胶囊**（✅ 09-17 多笔；🔁 09-22 交互改按钮驱动）：Chat 页 TaskAgent 专属（🔴 ChatBot 不显示，用户定调勿放开类型判断）；终态常驻（新消息新轮才隐藏）、分区面板（任务结果=task-result 标签产物行 / Git 工具 / 计划 / 进程 / 终端超 5 折叠 / 智能体摘要）、扫光、JS 逐帧纯淡入（🔴 用户机器减弱动态效果冻结 CSS 动画，勿改回）。09-22 起删除右上角常驻 pill 触发器：改由页头「查看智能体详情」左侧「会话进度」图标按钮驱动（hasContent 才显示、运行中转圈），面板受控 open/onClose、头部状态行（状态图标+当前动作+更改统计）带 × 关闭钮，外点/Esc/新轮次自动收起。同日二次调整挂载位：胶囊由 UnifiedChatSession 内部摘除、改 Chat 页面层组装，经 LeftContent 挂 left 栏与 chat-section 平级（chat-pane 为定位与 cqh/@container 容器查询上下文），距栏顶/栏右等距（原锚 session-container 会多吃 chat-section 的 padding-right 致右边距偏大）；MockChat 自渲染同款。
 - **过程叙述折叠方案 A**（🟣 demo 待走查）：去外层大折叠 / 纯统计行 / 折叠下沉组行级；demo 在 `/examples/trace-structure-demo`（3 文件未提交），**过审才动源码**。演进史：两版直出方案（`83f579c27`/`3e5a5e196`）已两连 revert 净零。
 
 ### 3.4 保险与接入面

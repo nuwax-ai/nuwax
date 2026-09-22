@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[7314],{584143:function(E,a,n){n.r(a);var t=n(646821),v=n(30135),s=n(517936),e=n(577743),r=function(){var _=(0,s.useParams)(),o=Number(_.agentId),u="/app/chat/:agentId/:id";return(0,e.jsx)(t.Z,{agentId:o,conversationUrl:u})};a.default=r}}]);

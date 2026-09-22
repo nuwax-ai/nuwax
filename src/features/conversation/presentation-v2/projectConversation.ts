@@ -10,6 +10,7 @@
  * - 工具按稳定 executeId 去重（保留最后一次出现的位置与属性，与 V1 分组算法一致）；
  * - 本函数不做异常吞噬：投影层自身 bug 抛出，由渲染层捕获并整份回退 V1。
  */
+import { getToolPresentationKind } from '@/components/MarkdownCustomProcess/toolPresentation';
 import {
   AgentComponentTypeEnum,
   AssistantRoleEnum,
@@ -188,6 +189,15 @@ const isPlainEventSegment = (segment: MessageSegment): boolean =>
   segment.componentType === AgentComponentTypeEnum.Event &&
   !isOpenUiRenderName(segment.name);
 
+/** 计划呈现语义段：Plan 组件，或名称命中 todo 启发式的工具段（TodoWrite） */
+const isTodoPresentingSegment = (
+  segment: Extract<MessageSegment, { type: 'process' }>,
+): boolean =>
+  getToolPresentationKind({
+    componentType: segment.componentType,
+    name: segment.name,
+  }) === 'todo';
+
 /** process 段过滤+去重：丢弃纯 Event 与无 executeId 段（与 V1 渲染 null 分支一致）；executeId 去重保留最后一次出现 */
 const dedupeProcessSegments = (
   segments: MessageSegment[],
@@ -203,15 +213,17 @@ const dedupeProcessSegments = (
     if (!segment.executeId) return false;
     return lastIndexOf.get(segment.executeId) === index;
   });
-  // 相邻连续 Plan 去冗余（只保留最后一个），与 groupMarkdownProcesses 同规则
+  // 相邻「计划呈现」段去冗余（只保留最后一个）：Plan 组件段（原规则，与
+  // groupMarkdownProcesses 同源），扩展到名称命中 todo 启发式的工具段——
+  // deepagents TodoWrite 下发 type=ToolCall，连续多次更新只留最新清单
   const result: MessageSegment[] = [];
   kept.forEach((segment) => {
     const prev = result[result.length - 1];
     if (
       segment.type === 'process' &&
-      segment.componentType === AgentComponentTypeEnum.Plan &&
       prev?.type === 'process' &&
-      prev.componentType === AgentComponentTypeEnum.Plan
+      isTodoPresentingSegment(segment) &&
+      isTodoPresentingSegment(prev)
     ) {
       result.pop();
     }

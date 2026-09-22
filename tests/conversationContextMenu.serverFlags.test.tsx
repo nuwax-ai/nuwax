@@ -47,6 +47,23 @@ const openMenu = () => {
 };
 
 describe('会话菜单服务端标记', () => {
+  it('右键菜单与更多菜单互斥，两个方向切换都只展示一个菜单（2536）', async () => {
+    render(
+      <ConversationContextMenu conversationId={42} showMoreButton>
+        {(moreButton) => (
+          <div data-testid="conversation-row">{moreButton}会话</div>
+        )}
+      </ConversationContextMenu>,
+    );
+    const row = screen.getByTestId('conversation-row');
+    fireEvent.contextMenu(row);
+    await waitFor(() => expect(screen.getAllByRole('menu')).toHaveLength(1));
+    openMenu();
+    await waitFor(() => expect(screen.getAllByRole('menu')).toHaveLength(1));
+    fireEvent.contextMenu(row);
+    await waitFor(() => expect(screen.getAllByRole('menu')).toHaveLength(1));
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
@@ -111,11 +128,7 @@ describe('会话菜单服务端标记', () => {
       events.push(event),
     );
     render(
-      <ConversationContextMenu
-        conversationId={42}
-        archived
-        showMoreButton
-      >
+      <ConversationContextMenu conversationId={42} archived showMoreButton>
         {(moreButton) => <div>{moreButton}会话</div>}
       </ConversationContextMenu>,
     );
@@ -123,7 +136,9 @@ describe('会话菜单服务端标记', () => {
     // 已归档态菜单项为「取消归档」：切换成功后补丁 archived=false（取消归档
     // 也要广播，左列表才能让会话重新可见）
     fireEvent.click(
-      await screen.findByText('PC.Components.ConversationContextMenu.unarchive'),
+      await screen.findByText(
+        'PC.Components.ConversationContextMenu.unarchive',
+      ),
     );
 
     await waitFor(() =>

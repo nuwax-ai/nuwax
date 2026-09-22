@@ -1,5 +1,6 @@
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
 import { dict } from '@/services/i18nRuntime';
@@ -57,11 +58,12 @@ const NormalProject: React.FC = () => {
   const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
   const [keyword, setKeyword] = useState<string>('');
   /** 收藏过滤值 */
-  const [collectedFilter, setCollectedFilter] = useState<CollectedFilter>(
+  // 筛选条 UI 注释态（随头部重构暂缓接线），先以默认值参与查询过滤
+  const [collectedFilter] = useState<CollectedFilter>(
     DEFAULT_COLLECTED_FILTER,
   );
   /** 归档过滤值 */
-  const [archivedFilter, setArchivedFilter] = useState<ArchivedFilter>(
+  const [archivedFilter] = useState<ArchivedFilter>(
     DEFAULT_ARCHIVED_FILTER,
   );
   const [list, setList] = useState<UserProjectItem[]>([]);
@@ -225,37 +227,32 @@ const NormalProject: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div className={cx(styles['header-area'])}>
-        <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>
-            {dict('PC.Pages.SpaceProjectManage.tabNormalProject')}
-          </h3>
-          {/* <ProjectListFilterBar
-            archivedFilter={archivedFilter}
-            collectedFilter={collectedFilter}
-            onArchivedFilterChange={setArchivedFilter}
-            onCollectedFilterChange={setCollectedFilter}
-          /> */}
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <Input
-            placeholder={dict('PC.Pages.SpaceProjectManage.searchPlaceholder')}
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={() => setKeyword('')}
-            style={{ width: 214 }}
-          />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setOpenCreate(true)}
-          >
-            {dict('PC.Pages.SpaceProjectManage.createNormalProjectBtn')}
-          </Button>
-        </div>
-      </div>
+      <PageContainerHeader
+        className={cx(styles['page-header'])}
+        title={dict('PC.Pages.SpaceProjectManage.tabNormalProject')}
+        actions={
+          <>
+            <Input
+              placeholder={dict(
+                'PC.Pages.SpaceProjectManage.searchPlaceholder',
+              )}
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={() => setKeyword('')}
+              style={{ width: 214 }}
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setOpenCreate(true)}
+            >
+              {dict('PC.Pages.SpaceProjectManage.createNormalProjectBtn')}
+            </Button>
+          </>
+        }
+      />
 
       {!hasLoaded ? (
         <Loading />

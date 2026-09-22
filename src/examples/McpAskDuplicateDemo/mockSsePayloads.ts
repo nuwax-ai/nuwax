@@ -99,7 +99,8 @@ function buildAskQuestionSsePayload(
             fields: [...sharedFields],
           },
           requestId,
-          description: '请选择\n\n',
+          description:
+            '批 B 代码 + 单测已全绿并 commit（bc2ff3d，未 push）。但 IT / 全量回归连的是 192.168.1.17（★它就是线上库），而 im.schema.fail-on-locked-tables 这条闸门只挂在 IT 库上，所以全量回归会绕过闸门直接写线上库的 im_worker_lease 行，存在脏数据风险；并且全量回归跑完还会触发 lease 续约与心跳双写，一旦落库口径不一致会造成后续每日增量任务重复消费，需要先确认落库状态再决定跑不跑全量。',
           title: '补充回复',
           revision: 1,
         },

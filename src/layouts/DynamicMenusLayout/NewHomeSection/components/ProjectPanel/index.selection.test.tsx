@@ -224,6 +224,166 @@ describe('ProjectPanel 选中关系', () => {
     ).toBeTruthy();
   });
 
+  it.each([
+    {
+      label: '跨页重复导致去重后不足 total',
+      total: 24,
+      tail: [20, 21, 22, 23],
+    },
+    { label: '空末页且 total 陈旧', total: 25, tail: [] },
+    {
+      label: '末页全为重复记录',
+      total: 40,
+      tail: Array.from({ length: 20 }, (_, i) => i + 1),
+    },
+  ])('2397 $label 时停止查看更多', async ({ total, tail }) => {
+    const first = Array.from({ length: 20 }, (_, i) =>
+      buildRecord({
+        projectId: i + 1,
+        name: `分页项目${i + 1}`,
+      }),
+    );
+    respondPage(first);
+    pageQueryMock
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: { records: first, total },
+      })
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: {
+          records: tail.map((id) =>
+            buildRecord({ projectId: id, name: `分页项目${id}` }),
+          ),
+          total,
+        },
+      });
+    render(<ProjectPanel compact />);
+    fireEvent.click(
+      await screen.findByText(
+        `PC.Components.AgentConversation.viewMore (${total - 20})`,
+      ),
+    );
+    await waitFor(() => expect(pageQueryMock).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(document.querySelector('[class*="load-more-entry"]')).toBeNull(),
+    );
+    expect(screen.getByText('分页项目1')).toBeVisible();
+  });
+
+  it('2397 下一页请求失败仍可重试，成功末页后才关闭入口', async () => {
+    const first = Array.from({ length: 20 }, (_, i) =>
+      buildRecord({
+        projectId: i + 1,
+        name: `分页项目${i + 1}`,
+      }),
+    );
+    respondPage(first);
+    pageQueryMock
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: { records: first, total: 21 },
+      })
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: {
+          records: [buildRecord({ projectId: 21, name: '分页项目21' })],
+          total: 21,
+        },
+      });
+    render(<ProjectPanel compact />);
+    fireEvent.click(
+      await screen.findByText('PC.Components.AgentConversation.viewMore (1)'),
+    );
+    await waitFor(() => expect(pageQueryMock).toHaveBeenCalledTimes(2));
+    fireEvent.click(
+      await screen.findByText('PC.Components.AgentConversation.viewMore (1)'),
+    );
+    await screen.findByText('分页项目21');
+    await waitFor(() =>
+      expect(document.querySelector('[class*="load-more-entry"]')).toBeNull(),
+    );
+    expect(pageQueryMock.mock.calls[1][0].current).toBe(2);
+    expect(pageQueryMock.mock.calls[2][0].current).toBe(2);
+    expect(pageQueryMock.mock.calls[1][0].pageSize).toBe(20);
+    expect(pageQueryMock.mock.calls[2][0].pageSize).toBe(20);
+  });
+
+  it('2397 优先按 current/pages 收口：末页满 20 条且 total 漂移也不残留查看更多', async () => {
+    const first = Array.from({ length: 20 }, (_, i) =>
+      buildRecord({ projectId: i + 1, name: `分页项目${i + 1}` }),
+    );
+    const second = Array.from({ length: 20 }, (_, i) =>
+      buildRecord({ projectId: i + 21, name: `分页项目${i + 21}` }),
+    );
+    respondPage(first);
+    pageQueryMock
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: { records: first, total: 41, current: 1, size: 20, pages: 2 },
+      })
+      .mockResolvedValueOnce({
+        code: SUCCESS_CODE,
+        data: { records: second, total: 41, current: 2, size: 20, pages: 2 },
+      });
+
+    render(<ProjectPanel compact />);
+    fireEvent.click(
+      await screen.findByText('PC.Components.AgentConversation.viewMore (21)'),
+    );
+    await screen.findByText('分页项目40');
+    await waitFor(() =>
+      expect(document.querySelector('[class*="load-more-entry"]')).toBeNull(),
+    );
+    expect(pageQueryMock.mock.calls[1][0]).toEqual(
+      expect.objectContaining({ current: 2, pageSize: 20 }),
+    );
+  });
+
+  it('2397 已加载多页的静默回读仍逐页请求，不放大 pageSize', async () => {
+    const first = Array.from({ length: 20 }, (_, i) =>
+      buildRecord({ projectId: i + 1, name: `分页项目${i + 1}` }),
+    );
+    const second = Array.from({ length: 20 }, (_, i) =>
+      buildRecord({ projectId: i + 21, name: `分项项目${i + 21}` }),
+    );
+    conversationsMock.mockResolvedValue({ code: SUCCESS_CODE, data: [] });
+    pageQueryMock.mockImplementation(({ current }: { current: number }) =>
+      Promise.resolve({
+        code: SUCCESS_CODE,
+        data: {
+          records: current === 1 ? first : second,
+          total: 60,
+          current,
+          size: 20,
+          pages: 3,
+        },
+      }),
+    );
+    const ref = createRef<ProjectPanelHandle>();
+    render(<ProjectPanel ref={ref} compact />);
+    fireEvent.click(
+      await screen.findByText('PC.Components.AgentConversation.viewMore (40)'),
+    );
+    await screen.findByText('分项项目40');
+    const callsBeforeRefresh = pageQueryMock.mock.calls.length;
+
+    act(() => ref.current?.revalidateVisible());
+    await waitFor(() =>
+      expect(pageQueryMock.mock.calls.length).toBe(callsBeforeRefresh + 2),
+    );
+    expect(
+      pageQueryMock.mock.calls.slice(callsBeforeRefresh).map(([params]) => ({
+        current: params.current,
+        pageSize: params.pageSize,
+      })),
+    ).toEqual([
+      { current: 1, pageSize: 20 },
+      { current: 2, pageSize: 20 },
+    ]);
+  });
+
   it('自动展开只触发一次：命中后手动折叠不被强制弹回', async () => {
     respondPage(defaultRecords(), defaultConversations());
     const { rerender } = render(
@@ -527,8 +687,8 @@ describe('ProjectPanel 选中关系', () => {
     respondPage([buildRecord()], defaultConversations());
     render(<ProjectPanel compact />);
     await waitFor(() => expect(screen.getByText('项目一')).toBeTruthy());
-    expect(pageQueryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ queryFilter: {} }),
+    expect(pageQueryMock.mock.calls[0][0].queryFilter).not.toHaveProperty(
+      'spaceId',
     );
 
     // 其它空间（200）新建项目的事件也实时并入列表

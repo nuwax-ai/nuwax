@@ -29,9 +29,10 @@ export function initClientShell(): () => void {
   };
 }
 
-export { default as ClientVersionBadge } from './ClientVersionBadge';
 export {
   download as downloadClientUpdate,
   install as installClientUpdate,
   isAvailable as isClientUpdateAvailable,
 } from './clientUpdateService';
+export { default as ClientVersionBadge } from './ClientVersionBadge';
+export { default as DesktopShellPreviewChrome } from './DesktopShellPreviewChrome';

@@ -33,6 +33,12 @@
         padding-left: @paddingXs;
       }
 
+      // 浏览器 style3 的侧栏 logo 中心比会话标题中心低 7px；只下移左侧标题组，
+      // 右侧文件/终端/云电脑操作保持原有顶栏布局。客户端按各平台壳避让单独处理。
+      .browser-style3-title-leading {
+        transform: translateY(7px);
+      }
+
       .icon-box {
         width: 32px;
         height: 32px;
@@ -54,6 +60,15 @@
     flex: 1;
     display: flex;
     position: relative;
+
+    // left 栏内容包装：会话进度面板的定位上下文（与 chat-section 平级、距顶/距右等距），
+    // 并接管胶囊面板的 cqh/@container 容器查询上下文（原为 session-container）
+    .chat-pane {
+      position: relative;
+      container-type: size;
+      width: 100%;
+      height: 100%;
+    }
 
     .chat-section {
       width: 100%;
