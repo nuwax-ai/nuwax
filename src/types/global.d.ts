@@ -129,6 +129,9 @@ interface Window {
     // nuwaclaw 客户端宿主注入：ACCESS_TOKEN 双向同步（重启免登）
     auth?: {
       getToken?: () => Promise<string | null>;
+      getContext?: () => Promise<
+        import('./interfaces/hostAuth').HostAuthContext | null
+      >;
       persistToken?: (token: string) => Promise<boolean>;
       clear?: () => Promise<boolean>;
       /** 企业登录：切换客户端后端域名并重新初始化（仅壳内有效） */
