@@ -509,6 +509,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       {shouldShowSecondMenu && (
         <div
           className={cx(styles['second-column'], 'noselect')}
+          data-shell-second-menu-visible={
+            secondMenuVisible ? 'true' : undefined
+          }
           style={{
             width: secondMenuVisible ? SECOND_COLUMN_WIDTH : 0,
             opacity: secondMenuVisible ? 1 : 0,

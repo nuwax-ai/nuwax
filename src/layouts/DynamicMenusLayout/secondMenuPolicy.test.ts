@@ -23,10 +23,11 @@ describe('resolveSecondColumnShellGeometry', () => {
       marginTop: 32,
       height: 'calc(100% - 32px)',
       paddingTop: 4,
+      borderTopLeftRadius: 12,
     });
   });
 
-  it('macOS 保留整高背景，浏览器不注入避让', () => {
+  it('macOS 左侧两列共同为红绿灯工具栏退让，浏览器不注入', () => {
     expect(
       resolveSecondColumnShellGeometry({
         immersiveShell: true,
