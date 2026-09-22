@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import PageContainerHeader from './index';
 
@@ -39,5 +40,17 @@ describe('PageContainerHeader', () => {
     rerender(<PageContainerHeader title="标题" />);
     expect(container.querySelector('.leading')).toBeTruthy();
     expect(container.querySelector('.actions')).toBeNull();
+  });
+
+  it('右侧操作区禁止收缩，空间不足时整组换行', () => {
+    const styleSource = readFileSync(
+      `${process.cwd()}/src/components/PageContainerHeader/index.less`,
+      'utf8',
+    );
+    const actionsRule = styleSource.match(/\.actions\s*\{([\s\S]*?)\n\}/)?.[1];
+
+    expect(actionsRule).toContain('flex: 0 0 auto;');
+    expect(actionsRule).toContain('margin-left: auto;');
+    expect(actionsRule).toContain('justify-content: flex-end;');
   });
 });

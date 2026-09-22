@@ -46,7 +46,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex: 0 1 auto;
+  // 操作区只允许内部换行，不参与首行挤压；空间不足时整组进入下一行。
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: 10px;
   min-width: 0;
