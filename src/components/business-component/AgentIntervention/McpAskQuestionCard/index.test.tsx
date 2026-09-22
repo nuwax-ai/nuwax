@@ -240,4 +240,33 @@ describe('McpAskQuestionCard', () => {
       delete (HTMLElement.prototype as any).clientHeight;
     }
   });
+
+  it('detects overflow when line-clamp collapses scrollHeight (WebKit/Chrome semantics)', () => {
+    // WebKit 及部分 Chromium 内核在 line-clamp 生效时会把 scrollHeight 塌缩成
+    // clamp 高度（此处 mock：-webkit-box 上下文恒 36），只有切到 display:block
+    // 解除 clamp 才能量出全文高 60；实现须临时切 block 再比对，直接比对必挂
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get: () => 36,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.style.display === 'block' ? 60 : 36;
+      },
+    });
+    try {
+      render(
+        <McpAskQuestionCard
+          interaction={interaction}
+          keyboardShortcutsEnabled={false}
+        />,
+      );
+
+      expect(screen.getByText('展开全文')).toBeTruthy();
+    } finally {
+      delete (HTMLElement.prototype as any).scrollHeight;
+      delete (HTMLElement.prototype as any).clientHeight;
+    }
+  });
 });
