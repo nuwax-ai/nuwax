@@ -388,6 +388,24 @@ export function useConversationStreamResume(
               latestRef.current.messageList,
             );
           if (terminalDecision.type === 'terminal.confirmed') {
+            // 本地消息无法自证终态（source=snapshot-fallback）＝ sub 未回放完整
+            // 输出（任务已结束时 sub 秒关 / 只推终态不推正文）：本地最后一轮
+            // assistant 是空占位或残缺内容，若只写终态不补快照，服务端已落库的
+            // 完整消息要等终态轮询退避（30s）或切页可见性才补齐——重进会话后
+            // 末轮消息断档（禅道 bug2520）。终态写回前先拉全量快照静默归并。
+            if (terminalDecision.source === 'snapshot-fallback') {
+              try {
+                const snapshot = await fetchConversationSnapshot(id);
+                if (snapshot && latestRef.current.conversationId === id) {
+                  onConversationSnapshotRef.current?.(snapshot);
+                }
+              } catch (e) {
+                console.error(
+                  '[useConversationStreamResume] fallback snapshot merge failed:',
+                  e,
+                );
+              }
+            }
             onTerminalTaskStatusRef.current?.(terminalDecision.status);
             emitConversationListTaskStatus(id, terminalDecision.status);
           }
