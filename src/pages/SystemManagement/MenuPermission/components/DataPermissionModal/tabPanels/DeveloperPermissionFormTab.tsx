@@ -124,6 +124,26 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
+            label={dict('PC.Pages.DeveloperPermissionForm.maxUserAppCount')}
+            name="maxUserAppCount"
+            tooltip={{
+              icon: <InfoCircleOutlined />,
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.maxUserAppCountTooltip',
+              ),
+            }}
+          >
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item
             label={dict('PC.Pages.DeveloperPermissionForm.maxKnowledgeCount')}
             name="maxKnowledgeCount"
             tooltip={{

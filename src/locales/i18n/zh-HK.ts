@@ -2990,6 +2990,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.DeveloperPermissionForm.maxScheduledTaskCountTooltip": "可創建定時任務數量，-1 表示不限制",
   "PC.Pages.DeveloperPermissionForm.maxSpaceCount": "可創建工作空間數量",
   "PC.Pages.DeveloperPermissionForm.maxSpaceCountTooltip": "可創建工作空間數量，-1 表示不限制",
+  "PC.Pages.DeveloperPermissionForm.maxUserAppCount": "可創建全棧應用數量",
+  "PC.Pages.DeveloperPermissionForm.maxUserAppCountTooltip": "可創建全棧應用數量，-1 表示不限制",
   "PC.Pages.DeveloperPermissionForm.pageDailyPromptLimit": "網頁應用開發每天對話次數",
   "PC.Pages.DeveloperPermissionForm.pageDailyPromptLimitTooltip": "網頁應用開發每天對話次數，-1表示不限制",
   "PC.Pages.EcosystemMcp.disableFailed": "停用失敗",
