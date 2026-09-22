@@ -409,6 +409,32 @@ describe('首页工具栏能力', () => {
     expect(editor.clear).toHaveBeenCalled();
     expect(editor.focus).toHaveBeenCalled();
   });
+
+  it('提示问题替换草稿并清除技能资料，不自动发送；禁用期间不可修改', () => {
+    const ref = createRef<ChatInputUnifiedRef>();
+    const onEnter = vi.fn();
+    const { rerender } = render(
+      <ChatInputUnified ref={ref} onEnter={onEnter} />,
+    );
+    act(() => {
+      editor.lastProps.onChange('旧草稿');
+      editor.lastProps.onSkillIdsChange([42]);
+      editor.lastProps.onDocsChange([{ uid: 'doc-1', name: '资料' }]);
+    });
+    act(() => ref.current?.setText('如何开始？'));
+    expect(editor.lastProps.value).toBe('如何开始？');
+    expect(editor.focus).toHaveBeenCalled();
+    expect(onEnter).not.toHaveBeenCalled();
+    rerender(<ChatInputUnified ref={ref} onEnter={onEnter} wholeDisabled />);
+    act(() => ref.current?.setText('不可插入'));
+    expect(editor.lastProps.value).toBe('如何开始？');
+    rerender(<ChatInputUnified ref={ref} onEnter={onEnter} />);
+    act(() => editor.lastProps.onPressEnter());
+    expect(onEnter).toHaveBeenCalledTimes(1);
+    expect(onEnter.mock.calls[0][0]).toBe('如何开始？');
+    expect(onEnter.mock.calls[0][2]).toEqual([]);
+    expect(onEnter.mock.calls[0][5]).toEqual([]);
+  });
 });
 
 describe('能力弹窗开放范围（专家仅首页开放）', () => {

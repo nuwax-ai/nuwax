@@ -1,10 +1,8 @@
 /**
  * ChatInputUnified + 号菜单附件上传回归测试：
- * Upload 嵌在 Dropdown 菜单项内，点菜单项弹层即关闭——antd 内置
- * action 上传的 done 回调会在已关闭弹层的旧 fileList 闭包里被静默
- * 丢弃（附件上传成功后永远 loading）。修复后 beforeUpload 接管：
- * antd Upload 仅作文件选择器（不发 XHR），文件统一走
- * uploadFilesToServer（fetch），弹层生命周期不再影响状态更新。
+ * 文件选择器常驻输入区，菜单项整行点击打开选择器，文件统一走
+ * uploadFilesToServer（fetch）。菜单关闭不卸载选择器，弹层生命周期
+ * 不影响文件选择及上传状态更新。
  * 桩法对齐 chatInputUnified.plusMenu.test.tsx。
  */
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
@@ -163,7 +161,7 @@ async function pickFileThroughPlusMenu(file: File) {
     ).toBeInTheDocument(),
   );
 
-  fireEvent.click(screen.getByText('PC.Components.ChatInputHome.attachFile'));
+  fireEvent.click(screen.getByRole('menuitem', { name: /attachFile/ }));
 
   const fileInput = await waitFor(() => {
     const input = document.querySelector(
@@ -215,7 +213,7 @@ const IMG_SUCCESS_RESP = {
   },
 };
 
-describe('+ 号菜单附件上传（beforeUpload 接管）', () => {
+describe('+ 号菜单附件上传（常驻文件选择器）', () => {
   it('选文件后走 fetch 上传，成功后附件从 uploading 变 done', async () => {
     const fetchMock = vi
       .fn()
