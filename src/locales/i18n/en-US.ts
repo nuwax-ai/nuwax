@@ -6795,6 +6795,9 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.deleteConfirmContent": "Are you sure you want to delete \"{0}\"?",
   "PC.Pages.SpaceProjectManage.createFailed": "Creation failed, please try again later",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "No conversation yet. Open the project before exporting.",
+  "PC.Pages.SpaceProjectManage.filterArchivedOnly": "Archived",
+  "PC.Pages.SpaceProjectManage.filterCollectedOnly": "Collected",
+  "PC.Pages.SpaceProjectManage.filterUnarchived": "Unarchived",
   // Third-party app integration
   "PC.Pages.ThirdAppIntegration.title": "Third-party app integration",
   "PC.Pages.ThirdAppIntegration.createButton": "Create third-party app",

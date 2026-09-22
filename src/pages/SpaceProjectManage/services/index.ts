@@ -16,7 +16,7 @@ export type UserProjectPageQueryParams = TablePageRequest<
     // 项目名称（模糊匹配）
     name: string;
     /*收藏过滤：all=全部（默认）；only=仅含收藏。值大小写不敏感 */
-    collectedFilter?: string;
+    collectedFilter?: 'all' | 'only';
     // 归档过滤：all=全部；exclude=排除归档（默认）；only=仅归档。值大小写不敏感
     archivedFilter?: 'all' | 'exclude' | 'only';
   }>

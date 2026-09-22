@@ -6659,6 +6659,9 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.deleteConfirmContent": "「{0}」を削除してもよろしいですか？",
   "PC.Pages.SpaceProjectManage.createFailed": "作成に失敗しました。しばらくしてから再試行してください",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "まだ会話がありません。プロジェクトに入ってから書き出してください。",
+  "PC.Pages.SpaceProjectManage.filterArchivedOnly": "アーカイブ済み",
+  "PC.Pages.SpaceProjectManage.filterCollectedOnly": "お気に入り",
+  "PC.Pages.SpaceProjectManage.filterUnarchived": "未アーカイブ",
   // サードパーティアプリ連携
   "PC.Pages.ThirdAppIntegration.title": "サードパーティアプリ連携",
   "PC.Pages.ThirdAppIntegration.createButton": "サードパーティアプリを作成",
