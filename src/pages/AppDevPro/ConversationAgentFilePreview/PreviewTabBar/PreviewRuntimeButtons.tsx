@@ -30,6 +30,11 @@ export interface PreviewRuntimeButtonsProps {
   previewContainerFailed?: boolean;
   /** 开发环境进行中任务锁定启动 / 重启 */
   previewDevActionLocked?: boolean;
+  /**
+   * 查询出的文件树非空且根目录含 workspace.manifest.toml。
+   * 为 false 时重启 / 停止均不可点。
+   */
+  previewWorkspaceManifestReady?: boolean;
   /** 展示形态：Header 图标 / 预览区文字按钮 */
   variant?: 'icon' | 'text';
   /** 图标按钮外层类名（Header panel-btn） */
@@ -53,6 +58,7 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
   previewPodEnsuring = false,
   previewContainerFailed = false,
   previewDevActionLocked = false,
+  previewWorkspaceManifestReady = true,
   variant = 'text',
   iconButtonClassName,
 }) => {
@@ -62,8 +68,11 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
 
   const podActionBlocked =
     previewPodEnsuring || previewContainerFailed || !previewEnvPodReady;
+  /** 文件树为空，或根目录没有 workspace.manifest.toml */
+  const workspaceManifestBlocked = !previewWorkspaceManifestReady;
 
   const restartDisabled =
+    workspaceManifestBlocked ||
     podActionBlocked ||
     !previewRuntimeReady ||
     previewDevActionLocked ||
@@ -71,7 +80,10 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
     previewRuntimeStopping;
 
   const stopDisabled =
-    podActionBlocked || previewRuntimeStopping || previewRuntimeRestarting;
+    workspaceManifestBlocked ||
+    podActionBlocked ||
+    previewRuntimeStopping ||
+    previewRuntimeRestarting;
 
   if (variant === 'icon') {
     return (

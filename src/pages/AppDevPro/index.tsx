@@ -1405,11 +1405,14 @@ const AppDevPro: React.FC = () => {
 
   previewTabsRef.current = previewTabs;
 
-  /** 根目录已有 workspace.manifest.toml 时才允许自动 start（空项目/未初始化工作区不拉预览） */
-  const hasFileTreeData = useMemo(
-    () => (fileTreeData ?? []).some(isRootWorkspaceManifestFile),
-    [fileTreeData],
-  );
+  /**
+   * 查询出的文件树非空，且根目录含 workspace.manifest.toml。
+   * 满足时才允许自动 start，并开放 Header 重启 / 停止。
+   */
+  const hasFileTreeData = useMemo(() => {
+    const files = fileTreeData ?? [];
+    return files.length > 0 && files.some(isRootWorkspaceManifestFile);
+  }, [fileTreeData]);
   /** 会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
   const conversationReady = !!conversationInfo;
   /**
@@ -1788,11 +1791,14 @@ const AppDevPro: React.FC = () => {
       previewPodEnsuring,
       previewContainerFailed,
       previewDevActionLocked,
+      // 根目录已有 workspace.manifest.toml 时才允许自动 start（空项目/未初始化工作区不拉预览）
+      previewWorkspaceManifestReady: hasFileTreeData,
     }),
     [
       currentEnvPodReady,
       handleRestartPreviewRuntime,
       handleStopPreviewRuntime,
+      hasFileTreeData,
       hasPendingIntervention,
       isConversationActive,
       previewContainerFailed,

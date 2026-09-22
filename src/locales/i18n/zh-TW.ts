@@ -6621,6 +6621,9 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceProjectManage.deleteConfirmContent": "確定要刪除「{0}」嗎？",
   "PC.Pages.SpaceProjectManage.createFailed": "創建失敗，請稍後重試",
   "PC.Pages.SpaceProjectManage.exportRequiresConversation": "項目暫無會話，請進入項目後再導出",
+  "PC.Pages.SpaceProjectManage.filterArchivedOnly": "已歸檔",
+  "PC.Pages.SpaceProjectManage.filterCollectedOnly": "已收藏",
+  "PC.Pages.SpaceProjectManage.filterUnarchived": "未歸檔",
   // 三方應用接入
   "PC.Pages.ThirdAppIntegration.title": "三方應用接入",
   "PC.Pages.ThirdAppIntegration.createButton": "建立三方應用",
