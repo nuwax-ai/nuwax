@@ -18,23 +18,16 @@ export interface SSEOptions<T = any> {
   abortController?: AbortController;
 }
 
-// 共享级别的定时器引用与所有者标记，防止上一请求残留的定时器影响新请求
-let sharedTimeoutCheckInterval: NodeJS.Timeout | null = null;
-let sharedTimeoutOwner: symbol | null = null;
-
-const clearSharedTimeout = (owner?: symbol) => {
-  if (sharedTimeoutCheckInterval && (!owner || owner === sharedTimeoutOwner)) {
-    clearInterval(sharedTimeoutCheckInterval);
-    sharedTimeoutCheckInterval = null;
-    sharedTimeoutOwner = null;
-  }
-};
+// 仅供显式全局清理使用；连接自身只清理闭包内的 interval，不能移除其他活跃流
+// 的静默检查，否则重叠的 live/sub 连接会永久失去超时 close 和上层恢复轮询。
+const timeoutChecks = new Set<NodeJS.Timeout>();
 
 /**
  * 对外暴露的共享定时器清理函数，便于在组件层主动清除残留定时器
  */
 export const clearSSESharedTimeout = () => {
-  clearSharedTimeout();
+  timeoutChecks.forEach((timer) => clearInterval(timer));
+  timeoutChecks.clear();
 };
 
 export function createSSEConnection<T = any>(
@@ -51,8 +44,13 @@ export function createSSEConnection<T = any>(
   // 超时检查定时器
   let timeoutCheckInterval: NodeJS.Timeout | null = null;
 
-  // 为当前连接生成唯一标识，用于共享定时器管理
-  const timerOwner = Symbol('sse-timeout-owner');
+  const clearTimeoutCheck = () => {
+    if (timeoutCheckInterval) {
+      clearInterval(timeoutCheckInterval);
+      timeoutChecks.delete(timeoutCheckInterval);
+      timeoutCheckInterval = null;
+    }
+  };
 
   const safeOnClose = () => {
     if (hasClosed) {
@@ -73,11 +71,7 @@ export function createSSEConnection<T = any>(
   // 清理定时器并标记中止
   const markAborted = () => {
     isAborted = true;
-    if (timeoutCheckInterval) {
-      clearInterval(timeoutCheckInterval);
-      timeoutCheckInterval = null;
-    }
-    clearSharedTimeout(timerOwner);
+    clearTimeoutCheck();
   };
 
   const abortFunction = () => {
@@ -97,25 +91,15 @@ export function createSSEConnection<T = any>(
     }
   };
 
-  // 在真正发起新的 SSE 连接前，先清理可能残留的共享定时器，避免上一次请求影响本次
-  clearSharedTimeout();
-
   // 超时检查函数：每5秒检查一次，超过60秒未收到消息则断开连接
   const startTimeoutCheck = () => {
-    // 清除之前的定时器（如果存在），并清理潜在的上一请求残留
-    if (timeoutCheckInterval) {
-      clearInterval(timeoutCheckInterval);
-    }
-    clearSharedTimeout();
+    // 同一连接重复打开时只替换自己的检查，不影响并发或尚在收尾的连接。
+    clearTimeoutCheck();
 
     timeoutCheckInterval = setInterval(() => {
       // 如果连接已中止，清除定时器
       if (isAborted) {
-        if (timeoutCheckInterval) {
-          clearInterval(timeoutCheckInterval);
-          timeoutCheckInterval = null;
-        }
-        clearSharedTimeout(timerOwner);
+        clearTimeoutCheck();
         return;
       }
 
@@ -143,9 +127,7 @@ export function createSSEConnection<T = any>(
       }
     }, 5 * 1000); // 每5秒检查一次
 
-    // 记录共享定时器引用，避免旧连接遗留的定时器干扰新连接
-    sharedTimeoutCheckInterval = timeoutCheckInterval;
-    sharedTimeoutOwner = timerOwner;
+    timeoutChecks.add(timeoutCheckInterval);
   };
 
   // 异步执行连接逻辑，但同步返回 abortFunction
