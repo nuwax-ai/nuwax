@@ -43,3 +43,9 @@
 - 单测：`useInitialConversationAutoSend` runtime/V1 二分+参数映射；PluginChatSession 既有自动发送测试更新。
 - 质量门：`npm run test:conversation` 全绿；tsc 触达路径零新增；`npm run lint:arch`。
 - dev 走查：首页全栈上框发送 → app-pro 首条消息与回复立即可见；插件分支同样； app-pro 内切换会话正常；`?conversationRuntime=0` 回退 V1 自动发送仍正常。
+
+## 2026-09-22 接管补修：迟到首发的会话归属
+
+- 独立复现：A 的首发前详情查询挂起，切到 B 并完成首发，再返回 A 的空快照；原 hook 仍向共用 runtime 发送 A，覆盖当前会话并中断 B 的流。卸载后也会继续自动发送（V1/V2 均受影响）。
+- 最小修复：共享自动首发 hook 在会话离开/卸载时使请求代际失效，await 后同时核对请求代际与最新会话 ID；普通 render 的回调引用变化不取消有效首发，重新进入同一 ID 可重新查询。
+- 验证：延迟 A→B、A→B→A、V1/V2 卸载、同会话 pending render 与 StrictMode 复放；既有参数映射/失败兜底仍保留。跑共享 hook 定向与会话合同网，由集成方补部署后的真实全栈首发/切换验收。
