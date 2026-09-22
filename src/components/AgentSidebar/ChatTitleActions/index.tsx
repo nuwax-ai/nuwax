@@ -6,7 +6,6 @@ import { apiPublishTemplateCopy } from '@/services/publish';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { AgentDetailDto } from '@/types/interfaces/agent';
-import { copyTextToClipboard } from '@/utils/clipboard';
 import { jumpToAgent } from '@/utils/router';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -81,24 +80,6 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
     }
   }, [agentInfo?.statistics?.targetId, isCollected]);
 
-  // 分享功能
-  const handleShare = async () => {
-    if (agentInfo?.shareLink) {
-      // 使用统一的复制工具
-      await copyTextToClipboard(
-        agentInfo.shareLink,
-        () => {
-          message.success(
-            dict('PC.Components.ChatTitleActions.shareLinkCopied'),
-          );
-        },
-        false, // 不显示默认成功消息，使用自定义消息
-      );
-    } else {
-      message.info(dict('PC.Components.ChatTitleActions.noShareLink'));
-    }
-  };
-
   // 智能体、工作流模板复制
   const { run: runCopyTemplate } = useRequest(apiPublishTemplateCopy, {
     manual: true,
@@ -146,12 +127,6 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   const actions: ActionItem[] = useMemo(
     () =>
       [
-        {
-          key: 'share',
-          icon: 'icons-chat-share',
-          title: dict('PC.Components.ChatTitleActions.share'),
-          onClick: handleShare,
-        },
         {
           key: isCollected ? 'collected' : 'collect',
           icon: isCollected ? 'icons-chat-collected' : 'icons-chat-collect',
