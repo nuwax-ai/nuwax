@@ -182,12 +182,19 @@ export function syncShellAvoidanceCss(): void {
           '--immersive-shell-toolbar',
           isMac() ? '0px' : `${shellAvoid.TOOLBAR}px`,
         ],
+        // fixed 全屏根独立锚定视口：Windows/Linux 与 page-container 起点对齐；
+        // macOS 按折叠应用标题栏高度避让，不复用普通独立页的 0px toolbar 值。
+        [
+          '--immersive-shell-fullscreen-top',
+          `${isMac() ? shellAvoid.TOOLBAR : shellAvoid.CONTENT_TOP}px`,
+        ],
         ['--immersive-shell-right', `${shellAvoid.RIGHT}px`],
       ]
     : [
         ['--immersive-shell-top', null],
         ['--immersive-shell-content-top', null],
         ['--immersive-shell-toolbar', null],
+        ['--immersive-shell-fullscreen-top', null],
         ['--immersive-shell-right', null],
       ];
   for (const [name, value] of vars) {
