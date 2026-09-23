@@ -5594,6 +5594,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.UserManage.DataPermissionModal.maxScheduledTaskCountTooltip": "可创建定时任务数量，-1 表示不限制",
   "PC.Pages.UserManage.DataPermissionModal.maxSpaceCount": "可创建工作空间数量",
   "PC.Pages.UserManage.DataPermissionModal.maxSpaceCountTooltip": "可创建工作空间数量，-1 表示不限制",
+  "PC.Pages.UserManage.DataPermissionModal.maxUserAppCount": "可创建全栈应用数量",
+  "PC.Pages.UserManage.DataPermissionModal.maxUserAppCountTooltip": "可创建全栈应用数量，-1 表示不限制",
   "PC.Pages.UserManage.DataPermissionModal.pageDailyPromptLimit": "网页应用开发每天对话次数",
   "PC.Pages.UserManage.DataPermissionModal.pageDailyPromptLimitTooltip": "网页应用开发每天对话次数，-1表示不限制",
   "PC.Pages.UserManage.Index.action": "操作",
