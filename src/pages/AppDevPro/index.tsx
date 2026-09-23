@@ -1,4 +1,7 @@
-import { GitVersionRecordPanel } from '@/components/business-component';
+import {
+  GitVersionRecordPanel,
+  type GitVersionRecordPanelHandle,
+} from '@/components/business-component';
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import FileTreeGitSourcePanel, {
   useSourceControl,
@@ -103,7 +106,10 @@ import {
   type UserAppDomainInfo,
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
-import { probePreviewReachable } from './utils/previewHealthCheck';
+import {
+  pollPreviewUrlHealth,
+  probePreviewReachable,
+} from './utils/previewHealthCheck';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 const cx = classNames.bind(styles);
@@ -234,6 +240,8 @@ const AppDevPro: React.FC = () => {
     useState<boolean>(false);
   /** 全栈应用详情 */
   const [userAppInfo, setUserAppInfo] = useState<UserAppInfo | null>(null);
+  /** 右侧版本记录，提交成功后直接刷新 git log */
+  const gitLogPanelRef = useRef<GitVersionRecordPanelHandle>(null);
   /** 是否已完成首次 apiUserAppGetById（用于 gate 自动生成名称） */
   const [userAppInfoFetched, setUserAppInfoFetched] = useState(false);
   useProjectChanged((event) => {
@@ -765,10 +773,30 @@ const AppDevPro: React.FC = () => {
       setPreviewIframeUrl(appPreviewUrlRef.current);
       setPreviewRefreshKey((prev) => prev + 1);
     },
+    confirmPreviewReachable: async () => {
+      const previewUrl = appPreviewUrlRef.current?.trim();
+      if (!previewUrl) {
+        return dict('PC.Pages.AppDevPro.iframeLoadFailed');
+      }
+      // 开发 / 线上共用：先轮询域名最多 5 次。中途 200 立刻结束。
+      // 5 次都失败（含跨域无 CORS 头）时不拦截预览，交给 iframe 再加载一次该域名。
+      await pollPreviewUrlHealth(previewUrl, {
+        shouldStop: () => previewUserStoppedRef.current,
+      });
+      if (previewUserStoppedRef.current) {
+        return dict('PC.Pages.AppDevPro.iframeLoadFailed');
+      }
+      return '';
+    },
     onStopped: () => {
       previewUserStoppedRef.current = true;
       setPreviewUserStopped(true);
       markDevStartIdle();
+    },
+    onDetailRefresh: () => {
+      if (appId) {
+        runGetUserAppInfo(appId);
+      }
     },
   });
   const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
@@ -781,20 +809,35 @@ const AppDevPro: React.FC = () => {
   previewRunningRef.current = previewRuntime.running;
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
+  const dismissPreviewLoadErrorRef = useRef(
+    previewRuntime.dismissPreviewLoadError,
+  );
+  dismissPreviewLoadErrorRef.current = previewRuntime.dismissPreviewLoadError;
+  const previewLoadErrorRef = useRef(previewRuntime.previewLoadError);
+  previewLoadErrorRef.current = previewRuntime.previewLoadError;
 
   /**
    * 开发环境进页 / 打开预览：先探测 dev 域名是否可访问，可达则直接 iframe，否则走 start。
    */
   const prepareDevPreviewIfNeeded = useCallback(async () => {
+    if (previewUserStoppedRef.current) {
+      return;
+    }
     const previewUrl = appPreviewUrlRef.current;
     if (previewUrl) {
       const reachable = await probePreviewReachable(previewUrl);
+      if (previewUserStoppedRef.current) {
+        return;
+      }
       if (reachable) {
         setPreviewIframeUrl(previewUrl);
         markPreviewReadyRef.current();
         setPreviewRefreshKey((prev) => prev + 1);
         return;
       }
+    }
+    if (previewUserStoppedRef.current) {
+      return;
     }
     startPreviewIfNeededRef.current();
   }, []);
@@ -1489,7 +1532,7 @@ const AppDevPro: React.FC = () => {
     let cancelled = false;
     void (async () => {
       await prepareDevPreviewIfNeededRef.current();
-      if (!cancelled) {
+      if (!cancelled && !previewUserStoppedRef.current) {
         setPreviewEnterSettled(true);
       }
     })();
@@ -1617,9 +1660,10 @@ const AppDevPro: React.FC = () => {
       onAfterDiscardChanges: async () => {
         await fileView.tree.handleRefreshFileList();
       },
-      // 提交成功后刷新 Git 状态，不关闭顶部工作区/文件标签
+      // 提交成功后刷新 Git 状态，并更新右侧版本记录
       onCommitSuccess: async () => {
         await fileView.refreshGitList();
+        gitLogPanelRef.current?.refresh();
       },
       // 刷新 Git 变更列表（git status + 文件树）
       onRefreshGitList: async () => {
@@ -1774,6 +1818,8 @@ const AppDevPro: React.FC = () => {
 
   /** 重启预览服务；回到当前环境预览根地址，不沿用地址栏手动跳转 */
   const handleRestartPreviewRuntime = useCallback(() => {
+    previewUserStoppedRef.current = false;
+    setPreviewUserStopped(false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
     void previewRuntime.restart();
   }, [previewRuntime]);
@@ -1784,7 +1830,15 @@ const AppDevPro: React.FC = () => {
       dict('PC.Pages.AppDevPro.confirmStopTitle'),
       dict('PC.Pages.AppDevPro.confirmStopContent'),
       () => {
-        void previewRuntime.stop();
+        previewUserStoppedRef.current = true;
+        setPreviewUserStopped(true);
+        void previewRuntime.stop().then((stopped) => {
+          if (stopped) {
+            return;
+          }
+          previewUserStoppedRef.current = false;
+          setPreviewUserStopped(false);
+        });
       },
     );
   }, [previewRuntime]);
@@ -1890,8 +1944,20 @@ const AppDevPro: React.FC = () => {
     void publishFlow.startPublish();
   }, [appId, publishFlow]);
 
-  /** 刷新应用预览 iframe */
+  /**
+   * 刷新当前预览页。
+   * 预览已打开或正显示加载失败时，先进入加载态再重新加载 iframe。
+   */
   const handleRefreshPreview = useCallback(() => {
+    const showingPreview =
+      previewRunningRef.current || !!previewLoadErrorRef.current.trim();
+    if (!showingPreview) {
+      return;
+    }
+    dismissPreviewLoadErrorRef.current();
+    if (!previewRunningRef.current) {
+      markPreviewReadyRef.current();
+    }
     setPreviewRefreshKey((prev) => prev + 1);
   }, []);
 
@@ -2106,6 +2172,7 @@ const AppDevPro: React.FC = () => {
         phase={previewRuntime.phase}
         services={previewRuntime.services}
         errorMessage={previewRuntime.errorMessage}
+        previewLoadError={previewRuntime.previewLoadError}
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={previewConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
@@ -2123,6 +2190,7 @@ const AppDevPro: React.FC = () => {
         onCancelTask={previewRuntime.cancelTask}
         onRetryStart={handleRestartPreviewRuntime}
         onStart={handleStartPreviewRuntime}
+        onRefreshPreview={handleRefreshPreview}
         onRetryContainer={() => {
           void handleRetryContainer();
         }}
@@ -2140,6 +2208,7 @@ const AppDevPro: React.FC = () => {
     [
       activePreviewUrl,
       handleRestartPreviewRuntime,
+      handleRefreshPreview,
       handleRetryContainer,
       handleStartPreviewRuntime,
       hasPendingIntervention,
@@ -2152,6 +2221,7 @@ const AppDevPro: React.FC = () => {
       previewRuntime.cancelLoading,
       previewRuntime.cancelTask,
       previewRuntime.errorMessage,
+      previewRuntime.previewLoadError,
       previewRuntime.phase,
       previewRuntime.running,
       previewRuntime.services,
@@ -2197,6 +2267,7 @@ const AppDevPro: React.FC = () => {
     }
     return (
       <GitVersionRecordPanel
+        ref={gitLogPanelRef}
         workspace={{
           workspaceType: 'taskAgent',
           cid: queryConversationId,

@@ -122,6 +122,15 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
 
   /** 部署与发布只在开发环境操作 */
   const isDevEnv = env === UserAppDbEnvEnum.Dev;
+  /**
+   * 线上环境停止后 prodDeployed 会变为 false，但 prodReleaseId 仍在，用户还可以重启。
+   * 已部署或仍有生产版本号时都显示重启 / 停止。
+   */
+  const canShowPreviewRuntime =
+    !!previewRuntimeControls &&
+    (isDevEnv
+      ? isShowAppPreview
+      : userAppInfo?.prodDeployed === true || !!userAppInfo?.prodReleaseId);
   /** 已部署到生产环境后才可发布到广场 / 空间 */
   const showMarketPublish = userAppInfo?.prodDeployed === true;
   /** 已发布到广场 / 空间后才展示发布版本记录 */
@@ -204,7 +213,7 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/* 应用预览：重启 / 停止（图标，置于右侧图标组最前） */}
-        <ConditionRender condition={isShowAppPreview && !!previewRuntimeControls}>
+        <ConditionRender condition={canShowPreviewRuntime}>
           <PreviewRuntimeButtons
             {...previewRuntimeControls}
             variant="icon"
@@ -215,7 +224,10 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
         {/* 线上环境更多：域名绑定 / 构建包版本记录 / 发布版本记录 */}
         <ConditionRender condition={env === UserAppDbEnvEnum.Prod}>
           <div className={cx(styles['fold-box'])}>
-            <Dropdown menu={{ items: prodMoreMenuItems }} placement="bottomLeft">
+            <Dropdown
+              menu={{ items: prodMoreMenuItems }}
+              placement="bottomLeft"
+            >
               <span
                 className={cx(
                   'flex',

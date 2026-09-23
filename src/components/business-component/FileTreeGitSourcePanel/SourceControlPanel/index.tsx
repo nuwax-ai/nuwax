@@ -5,7 +5,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { ReloadOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { collectFilesUnderFolder } from '../utils/buildChangeFileTree';
 import {
   splitChangeFilesForDisplay,
@@ -77,6 +77,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   onAddToGitignore,
 }) => {
   const [commitMessage, setCommitMessage] = useState<string>('');
+  const changesScrollRef = useRef<HTMLDivElement>(null);
   // 视图模式：tree / list
   const [viewMode, setViewMode] = useState<ChangeListViewMode>('list');
   // 提交消息
@@ -431,7 +432,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
         </Button>
       </div>
 
-      <div className={cx(styles['changes-scroll'])}>
+      <div ref={changesScrollRef} className={cx(styles['changes-scroll'])}>
         {/* 暂存的变更 */}
         {stagedItems.length > 0 && (
           <ChangeFileListSection
@@ -448,6 +449,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
             onOpenFile={handleListOpenFile}
             onUnstageChange={handleListUnstageChange}
             onUnstageAllChanges={handleUnstageAllStagedChanges}
+            scrollParentRef={changesScrollRef}
           />
         )}
         {/* 未暂存的变更 */}
@@ -466,6 +468,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
           onStageChange={handleListStageChange}
           onDiscardAllChanges={handleDiscardAllUnstagedChanges}
           onStageAllChanges={handleStageAllUnstagedChanges}
+          scrollParentRef={changesScrollRef}
         />
       </div>
 

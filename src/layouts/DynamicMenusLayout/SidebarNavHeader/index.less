@@ -248,11 +248,44 @@
     }
   }
 
-  // hover 行时显示关闭钮：须整链后代选择器——若在 .app-tab-close 内用
+  // 标签行操作区（刷新/复制链接/关闭）：区内 2px 紧凑排布，控制触屏
+  // 常显三枚 icon 的固定占宽，label 由既有 ellipsis 截断让位
+  .app-tab-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    margin-left: 2px;
+  }
+
+  // 刷新/链接操作钮：几何与显隐范式同 .app-tab-close（桌面 hover 行显示、
+  // 触屏常显）；SvgIcon 须显式传 style fontSize（组件默认 20 内联压过类字号）
+  .app-tab-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    cursor: pointer;
+    transition: color 0.16s ease;
+
+    &:hover {
+      color: @navSecondMenuAdaptiveText;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      visibility: hidden;
+    }
+  }
+
+  // hover 行时显示操作钮：须整链后代选择器——若在 .app-tab-close 内用
   // `.app-tab-item:hover &` 反引父，& 带上 .sidebar-nav-header 父链会编译出
   // 双容器死选择器，hover 永不生效（触屏无 hover 不命中 media，关闭钮常显）
   @media (hover: hover) and (pointer: fine) {
-    .app-tab-item:hover .app-tab-close {
+    .app-tab-item:hover .app-tab-close,
+    .app-tab-item:hover .app-tab-action {
       visibility: visible;
     }
   }

@@ -11,6 +11,7 @@ import { UserService } from '@/services/userService';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
+import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { getNumbersOnly, isWeakNumber } from '@/utils/common';
 import { hostBridge } from '@/utils/hostBridge';
 import { Button, Input, InputRef } from 'antd';
@@ -90,7 +91,7 @@ const VerifyCode: React.FC = () => {
         if (isWeakNumber(redirect)) {
           history.go(Number(redirect));
         } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
-          window.location.href = responseRedirectUrl;
+          void navigateToAuthUrl(responseRedirectUrl);
         } else if (redirect) {
           history.replace(redirect);
         } else {

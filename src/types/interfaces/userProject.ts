@@ -603,6 +603,21 @@ export interface UserAppLogsSourcesQueryParams {
   env?: UserAppStageEnum;
 }
 
+/**
+ * 应用日志来源。
+ * /api/userapp/logs/sources/query 的 data 是该结构的数组。
+ */
+export interface UserAppLogSourceItem {
+  /** 服务 ID，如 app-cli、backend-python */
+  service_id: string;
+  /** 日志源 ID，如 orchestrator、application、runtime */
+  source_id: string;
+  /** 日志格式，如 jsonl、text */
+  format: string;
+  /** 该来源匹配到的日志文件名 */
+  matched_files: string[];
+}
+
 /** 查询应用日志返回 */
 export interface UserAppLogsQueryResult {
   /** 增量拉取游标 */

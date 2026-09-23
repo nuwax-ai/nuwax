@@ -1,12 +1,9 @@
 import classNames from 'classnames';
-import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 
 import {
-  DesktopShellPreviewLayoutState,
   emitDesktopShellPreviewHostCommand,
   getDesktopShellPreviewPlatform,
-  subscribeDesktopShellPreviewLayoutState,
 } from '@/utils/desktopShellPreview';
 
 import styles from './DesktopShellPreviewChrome.less';
@@ -27,13 +24,6 @@ export default function DesktopShellPreviewChrome() {
   const platform = getDesktopShellPreviewPlatform();
   const { isSecondMenuCollapsed, setIsSecondMenuCollapsed } =
     useModel('layout');
-  const [layoutState, setLayoutState] =
-    useState<DesktopShellPreviewLayoutState>({
-      secondMenuAvailable: false,
-      secondMenuCollapsed: false,
-    });
-
-  useEffect(() => subscribeDesktopShellPreviewLayoutState(setLayoutState), []);
 
   if (!platform) return null;
 
@@ -42,8 +32,8 @@ export default function DesktopShellPreviewChrome() {
     <button
       aria-label={isSecondMenuCollapsed ? '展开左侧导航' : '收起左侧导航'}
       className={classNames(styles['sidebar-toggle'], extraClassName)}
-      disabled={!layoutState.secondMenuAvailable}
       onClick={() => {
+        // style3 的收起范围是整条左导航，主页没有二级列时也应能预览收起状态。
         const collapsed = !isSecondMenuCollapsed;
         // 预览标题栏与页面处于同一个 Umi model provider：直接驱动真实布局，
         // 同时广播宿主命令，覆盖 initHostBridgeEvents 的真实客户端协议路径。

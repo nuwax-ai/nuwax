@@ -22,6 +22,31 @@ import { useLocation, useModel } from 'umi';
 import OffshelfModal from './components/OffshelfModal';
 
 /**
+ * 已发布管理目标类型对应的多语言文案。
+ * 下拉筛选与表格展示共用，避免表格回显原始枚举值。
+ */
+const getPublishedManageTargetTypeText = (targetType?: string): string => {
+  switch (targetType) {
+    case SquareAgentTypeEnum.Agent:
+      return dict('PC.Pages.PublishedManage.typeAgent');
+    case SquareAgentTypeEnum.UserApp:
+      return dict('PC.Pages.PublishedManage.typeUserApp');
+    case SquareAgentTypeEnum.ThirdApp:
+      return dict('PC.Pages.PublishedManage.typeThirdApp');
+    case SquareAgentTypeEnum.NormalProject:
+      return dict('PC.Pages.PublishedManage.typeNormalProject');
+    case SquareAgentTypeEnum.Plugin:
+      return dict('PC.Pages.PublishedManage.typePlugin');
+    case SquareAgentTypeEnum.Workflow:
+      return dict('PC.Pages.PublishedManage.typeWorkflow');
+    case SquareAgentTypeEnum.Skill:
+      return dict('PC.Pages.PublishedManage.typeSkill');
+    default:
+      return '--';
+  }
+};
+
+/**
  * 已发布管理
  */
 const PublishedManage: React.FC = () => {
@@ -72,6 +97,12 @@ const PublishedManage: React.FC = () => {
       );
     } else if (record.targetType === SquareAgentTypeEnum.Skill) {
       url = `/space/${record.spaceId}/published/skill-details/${record.targetId}?publishId=${record.id}`;
+    } else if (record.targetType === SquareAgentTypeEnum.UserApp) {
+      url = `/space/${record.spaceId}/app-project-detail/${record.targetId}`;
+    } else if (record.targetType === SquareAgentTypeEnum.ThirdApp) {
+      url = `/space/${record.spaceId}/third-app-detail/${record.targetId}`;
+    } else if (record.targetType === SquareAgentTypeEnum.NormalProject) {
+      url = `/space/${record.spaceId}/normal-project-detail/${record.targetId}`;
     }
 
     if (url) {
@@ -119,19 +150,31 @@ const PublishedManage: React.FC = () => {
       valueType: 'select',
       valueEnum: {
         [SquareAgentTypeEnum.Agent]: {
-          text: dict('PC.Pages.PublishedManage.typeAgent'),
+          text: getPublishedManageTargetTypeText(SquareAgentTypeEnum.Agent),
         },
-        // [SquareAgentTypeEnum.PageApp]: { text: '网页应用' },
+        [SquareAgentTypeEnum.UserApp]: {
+          text: getPublishedManageTargetTypeText(SquareAgentTypeEnum.UserApp),
+        },
+        [SquareAgentTypeEnum.ThirdApp]: {
+          text: getPublishedManageTargetTypeText(SquareAgentTypeEnum.ThirdApp),
+        },
+        [SquareAgentTypeEnum.NormalProject]: {
+          text: getPublishedManageTargetTypeText(
+            SquareAgentTypeEnum.NormalProject,
+          ),
+        },
         [SquareAgentTypeEnum.Plugin]: {
-          text: dict('PC.Pages.PublishedManage.typePlugin'),
+          text: getPublishedManageTargetTypeText(SquareAgentTypeEnum.Plugin),
         },
         [SquareAgentTypeEnum.Workflow]: {
-          text: dict('PC.Pages.PublishedManage.typeWorkflow'),
+          text: getPublishedManageTargetTypeText(SquareAgentTypeEnum.Workflow),
         },
         [SquareAgentTypeEnum.Skill]: {
-          text: dict('PC.Pages.PublishedManage.typeSkill'),
+          text: getPublishedManageTargetTypeText(SquareAgentTypeEnum.Skill),
         },
       },
+      render: (_, record) =>
+        getPublishedManageTargetTypeText(record.targetType),
     },
     {
       title: dict('PC.Pages.PublishedManage.description'),

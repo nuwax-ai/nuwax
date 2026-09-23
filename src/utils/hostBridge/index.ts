@@ -9,11 +9,16 @@
  * 新增宿主能力时：先在 global.d.ts 补类型，再在此封装，最后由业务方调用。
  */
 
+import type { HostAuthContext } from '@/types/interfaces/hostAuth';
 import {
   getDesktopShellPreviewPlatform,
   setDesktopShellPreviewHostCommandHandler,
   updateDesktopShellPreviewLayoutState,
 } from '@/utils/desktopShellPreview';
+import {
+  resolveImmersiveShellGeometry,
+  type ImmersiveShellPlatform,
+} from './shellAvoidancePolicy';
 
 type NuwaClawBridgeLike = NonNullable<Window['NuwaClawBridge']>;
 
@@ -105,6 +110,14 @@ export function isWinLinuxShell(): boolean {
   return isImmersiveShell() && !isMac();
 }
 
+/** 当前 Nuwax 沉浸主窗口的平台；浏览器、社区宿主和独立窗口返回 undefined。 */
+export function getImmersiveShellPlatform():
+  | ImmersiveShellPlatform
+  | undefined {
+  if (!isImmersiveShell()) return undefined;
+  return isMac() ? 'macos' : 'windows-linux';
+}
+
 /**
  * 是否需要右上角避让：右上角浮层让位壳自绘三键（CtrlButton）。
  */
@@ -156,38 +169,34 @@ export function immersiveHeaderCompact():
 export function syncShellAvoidanceCss(): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  const immersive = isImmersiveShell();
+  const platform = getImmersiveShellPlatform();
+  const immersive = platform !== undefined;
+  const rootGeometry = platform
+    ? resolveImmersiveShellGeometry(
+        { platform, surface: 'standalone' },
+        shellAvoid,
+      )
+    : undefined;
   root.classList.toggle('immersive-shell', immersive);
   root.classList.toggle(
     'immersive-shell-frameless',
-    immersive && isWinLinuxShell(),
+    platform === 'windows-linux',
   );
-  const vars: Array<[string, string | null]> = immersive
+  const vars: Array<[string, string | null]> = rootGeometry
     ? [
         ['--immersive-shell-top', `${shellAvoid.TOP}px`],
         // Win/Linux 固定定位浮层（全高 Drawer 等）顶部退让：浮层锚视口顶
         // （top:0），无视 page-container 的内容避让，头部（标题/关闭键）会
         // 半截塞进壳顶行透明带下——与窗口三键错位、关闭键上沿落进拖拽带
         // （禅道 2429）。与内容区同源取 CONTENT_TOP；mac 浮层无此冲突恒 0。
-        [
-          '--immersive-shell-content-top',
-          isMac() ? '0px' : `${shellAvoid.CONTENT_TOP}px`,
-        ],
+        ['--immersive-shell-content-top', `${rootGeometry.contentTop}px`],
         // 独立全屏页（layout:false 路由）顶部退让：mac 不做——红绿灯悬浮于左上、
         // 图标簇只占左侧 300px，页头（返回/标题/tabs）自 x≈260 起，无需让位；
         // 侧栏收起后的让位由 SidebarShell page-container 统一补（mac 收起态
         // TOOLBAR）。Win/Linux 保留——自绘菜单栏横跨到内容区（x 至 ~400），
         // 不避让会压住页头。
-        [
-          '--immersive-shell-toolbar',
-          isMac() ? '0px' : `${shellAvoid.TOOLBAR}px`,
-        ],
-        // fixed 全屏根独立锚定视口：Windows/Linux 与 page-container 起点对齐；
-        // macOS 按折叠应用标题栏高度避让，不复用普通独立页的 0px toolbar 值。
-        [
-          '--immersive-shell-fullscreen-top',
-          `${isMac() ? shellAvoid.TOOLBAR : shellAvoid.CONTENT_TOP}px`,
-        ],
+        ['--immersive-shell-toolbar', `${rootGeometry.toolbarTop}px`],
+        ['--immersive-shell-fullscreen-top', `${rootGeometry.fullscreenTop}px`],
         ['--immersive-shell-right', `${shellAvoid.RIGHT}px`],
       ]
     : [
@@ -208,6 +217,15 @@ export function syncShellAvoidanceCss(): void {
  * 浏览器环境无桥，各方法均为 no-op / 返回空值，不影响 nuwax 自身流程。
  */
 export const auth = {
+  /** 当前业务域与网关形态；普通浏览器、旧宿主或桥调用失败时不改写导航。 */
+  async getContext(): Promise<HostAuthContext | null> {
+    try {
+      return (await getBridge()?.auth?.getContext?.()) ?? null;
+    } catch (e) {
+      console.warn('[hostBridge] read auth context failed', e);
+      return null;
+    }
+  },
   /** 启动时从宿主恢复 token（getInitialState 内，须早于首个鉴权请求）。 */
   async getToken(): Promise<string | null> {
     try {
@@ -537,6 +555,7 @@ export const hostBridge = {
   isImmersiveShell,
   isMac,
   isWinLinuxShell,
+  getImmersiveShellPlatform,
   needsTopRightAvoid,
   shellAvoid,
   syncShellAvoidanceCss,
