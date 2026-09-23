@@ -33,13 +33,19 @@ html.immersive-shell {
   /* 公共/agent-dev 全屏预览（fixed 覆盖视口；module 类被哈希，故 JSX 在
    * 真正 fixed 的根挂稳定全局类）。不能只标记 agent-dev 外层：内层 fixed
    * 仍锚视口，且 Chat 入口不在 immersive-shell-page 内（bug2469）。
-   * top 下移工具栏高度，
-   * height 同步收缩避免底部溢出视口。带 !important 盖过页面自身的
+   * top 下移折叠应用标题栏高度（fullscreen-top）；Mac 不复用普通独立页的
+   * toolbar=0。height 同步收缩避免底部溢出视口。带 !important 盖过页面自身的
    * top:0/height:100vh !important；保留页根选择器以覆盖外层的高特异性规则。 */
   .immersive-shell-fullscreen,
   .immersive-shell-page .immersive-shell-fullscreen {
-    top: var(--immersive-shell-toolbar, 0) !important;
-    height: calc(100vh - var(--immersive-shell-toolbar, 0)) !important;
+    top: var(
+      --immersive-shell-fullscreen-top,
+      var(--immersive-shell-toolbar, 0)
+    ) !important;
+    height: calc(
+      100vh -
+        var(--immersive-shell-fullscreen-top, var(--immersive-shell-toolbar, 0))
+    ) !important;
   }
 }
 
@@ -51,6 +57,15 @@ html.immersive-shell {
  * 均为 right placement。mac（红绿灯在左、无右侧窗控）与浏览器/独立窗口
  * 不命中本层，PC web 形态零影响。 */
 html.immersive-shell-frameless {
+  // 单栏工作台页的内容与 fixed 全屏根都对齐 page-container 的 CONTENT_TOP；
+  // wrapper 只保留二者差值（当前为 0），避免比 Mac 多退让一段。
+  #page-container-selector > .immersive-shell-page {
+    padding-top: calc(
+      var(--immersive-shell-fullscreen-top, var(--immersive-shell-toolbar, 0px)) -
+        var(--immersive-shell-content-top, 0px)
+    );
+  }
+
   .ant-drawer-left > .ant-drawer-content-wrapper,
   .ant-drawer-right > .ant-drawer-content-wrapper {
     top: var(--immersive-shell-content-top, 0);

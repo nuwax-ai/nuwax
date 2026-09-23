@@ -4,6 +4,7 @@ import { Button, Empty } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -72,6 +73,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
   const [loadError, setLoadError] = useState(false);
   const [loadErrorStatus, setLoadErrorStatus] = useState<number>();
   const [reloadNonce, setReloadNonce] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const instanceId = `${src}::${String(iframeKey ?? '')}::${reloadNonce}`;
   const settledInstanceRef = useRef('');
@@ -85,6 +87,18 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
   onRetryRef.current = onRetry;
 
   const srcKey = `${src}::${String(iframeKey ?? '')}`;
+
+  useEffect(() => {
+    const syncFullscreenState = () => {
+      setIsFullscreen(document.fullscreenElement === iframeRef.current);
+    };
+
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    syncFullscreenState();
+    return () => {
+      document.removeEventListener('fullscreenchange', syncFullscreenState);
+    };
+  }, [instanceId]);
 
   /** 地址变化时重置 settled，禁止在 render 阶段 setState */
   useLayoutEffect(() => {
@@ -131,14 +145,10 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
     const controller = new AbortController();
     verifyAbortRef.current = controller;
 
-    const result = await waitUntilPreviewUrlReady(
-      src,
-      iframeRef.current,
-      {
-        signal: controller.signal,
-        sinceStartTime: loadStartedAtRef.current,
-      },
-    );
+    const result = await waitUntilPreviewUrlReady(src, iframeRef.current, {
+      signal: controller.signal,
+      sinceStartTime: loadStartedAtRef.current,
+    });
 
     if (
       controller.signal.aborted ||
@@ -193,7 +203,9 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
       <iframe
         ref={iframeRef}
         key={instanceId}
-        className={cx(styles.iframe)}
+        className={cx(styles.iframe, {
+          'immersive-shell-fullscreen': isFullscreen,
+        })}
         src={src}
         title={title}
         sandbox={SANDBOX}

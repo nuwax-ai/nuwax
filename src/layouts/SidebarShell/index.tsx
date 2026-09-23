@@ -20,7 +20,12 @@ import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import eventBus from '@/utils/eventBus';
-import { isImmersiveShell, isMac, shellAvoid } from '@/utils/hostBridge';
+import {
+  isImmersiveShell,
+  isMac,
+  isWinLinuxShell,
+  shellAvoid,
+} from '@/utils/hostBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -299,13 +304,18 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     //   承担避让，此处叠加会造成双重下移。
     const macAvoidance = isSecondMenuCollapsed ? shellAvoid.TOOLBAR : undefined;
     const immersiveMargin = isMac() ? macAvoidance : shellAvoid.CONTENT_TOP;
-    // 全屏工作台页（immersiveMarginTop=false）的顶部避让整体交由路由层
-    // immersiveShellAvoid 承担；但 mac 该层写死 0px（无菜单详情页前提，页头
-    // 自 x≈260 起），侧栏收起后内容区顶到 x=0，左上角被壳悬浮工具栏压住——
-    // mac 收起态在此统一补 TOOLBAR 退让（与主站页同款）；Win/Linux 工作台页
-    // 仍由 immersiveShellAvoid 的 44px 承担，不叠加。
-    const macWorkbenchCollapsedAvoid =
-      isMac() && isSecondMenuCollapsed && !immersiveMarginTop;
+    // Windows/Linux 单栏工作台页的背景和内容统一从 CONTENT_TOP 起；子 wrapper
+    // 由 immersiveShell.less 与 page-container 起点对齐，不再额外补到 TOOLBAR。
+    const winLinuxWorkbenchBackgroundMargin =
+      isWinLinuxShell() && suppressSecondMenu
+        ? shellAvoid.CONTENT_TOP
+        : undefined;
+    // 全屏工作台页（immersiveMarginTop=false）由 page-container 负责背景退让；
+    // Windows/Linux 页面内容由路由 wrapper 与 CONTENT_TOP 起点对齐。
+    // mac 全屏工作台页由 page-container 统一承担 TOOLBAR 退让，保证背景与
+    // 页面标题都从折叠标题栏下方开始；Win/Linux 仍由 CONTENT_TOP + 路由 wrapper
+    // 的差值补齐，不叠加。
+    const macWorkbenchTopAvoid = isMac() && !immersiveMarginTop;
     return (
       <div
         className={cx(
@@ -322,8 +332,12 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
         style={{
           marginTop:
             isImmersiveShell() &&
-            (immersiveMarginTop || macWorkbenchCollapsedAvoid)
-              ? immersiveMargin
+            (immersiveMarginTop ||
+              macWorkbenchTopAvoid ||
+              winLinuxWorkbenchBackgroundMargin !== undefined)
+              ? macWorkbenchTopAvoid
+                ? shellAvoid.TOOLBAR
+                : immersiveMargin
               : undefined,
         }}
       >

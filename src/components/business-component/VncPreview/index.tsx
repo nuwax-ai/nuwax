@@ -12,6 +12,7 @@ import {
 import { createLogger } from '@/utils/logger';
 import { DesktopOutlined } from '@ant-design/icons';
 import { Alert, Button, message, Spin, Tag } from 'antd';
+import classNames from 'classnames';
 import {
   forwardRef,
   useCallback,
@@ -47,6 +48,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const [status, setStatus] = useState<ConnectionStatus>('disconnected');
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [iframeUrl, setIframeUrl] = useState<string | null>(null);
+    const [isIframeFullscreen, setIsIframeFullscreen] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const appStageRef = useRef(appStage);
     appStageRef.current = appStage;
@@ -55,6 +57,18 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const [showIdleWarning, setShowIdleWarning] = useState<boolean>(false);
     // 防止重复触发空闲超时弹窗
     const isIdleWarningActiveRef = useRef<boolean>(false);
+
+    useEffect(() => {
+      const syncFullscreenState = () => {
+        setIsIframeFullscreen(document.fullscreenElement === iframeRef.current);
+      };
+
+      document.addEventListener('fullscreenchange', syncFullscreenState);
+      syncFullscreenState();
+      return () => {
+        document.removeEventListener('fullscreenchange', syncFullscreenState);
+      };
+    }, []);
 
     // 解构空闲检测配置
     const {
@@ -470,9 +484,14 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
               data-vnc-id={cId}
               title="VNC Preview"
               sandbox={SANDBOX}
+              allow="fullscreen"
+              allowFullScreen
               scrolling="no"
               onLoad={handleIframeLoad}
               onError={handleIframeError}
+              className={classNames({
+                'immersive-shell-fullscreen': isIframeFullscreen,
+              })}
               style={{ display: status === 'disconnected' ? 'none' : 'block' }}
             />
           )}
