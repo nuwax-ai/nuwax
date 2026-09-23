@@ -20,7 +20,12 @@ import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import eventBus from '@/utils/eventBus';
-import { isImmersiveShell, isMac, shellAvoid } from '@/utils/hostBridge';
+import {
+  isImmersiveShell,
+  isMac,
+  isWinLinuxShell,
+  shellAvoid,
+} from '@/utils/hostBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -299,6 +304,13 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     //   承担避让，此处叠加会造成双重下移。
     const macAvoidance = isSecondMenuCollapsed ? shellAvoid.TOOLBAR : undefined;
     const immersiveMargin = isMac() ? macAvoidance : shellAvoid.CONTENT_TOP;
+    // Windows/Linux 单栏工作台页仍由子路由的 immersiveShellAvoid 将内容下移
+    // TOOLBAR；page-container 背景也需要和普通主站页面一样从 CONTENT_TOP 起。
+    // 子 wrapper 会扣除这段已由容器承担的距离，保持页面内容总偏移不变。
+    const winLinuxWorkbenchBackgroundMargin =
+      isWinLinuxShell() && suppressSecondMenu
+        ? shellAvoid.CONTENT_TOP
+        : undefined;
     // 全屏工作台页（immersiveMarginTop=false）的顶部避让整体交由路由层
     // immersiveShellAvoid 承担；但 mac 该层写死 0px（无菜单详情页前提，页头
     // 自 x≈260 起），侧栏收起后内容区顶到 x=0，左上角被壳悬浮工具栏压住——
@@ -322,7 +334,9 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
         style={{
           marginTop:
             isImmersiveShell() &&
-            (immersiveMarginTop || macWorkbenchCollapsedAvoid)
+            (immersiveMarginTop ||
+              macWorkbenchCollapsedAvoid ||
+              winLinuxWorkbenchBackgroundMargin !== undefined)
               ? immersiveMargin
               : undefined,
         }}

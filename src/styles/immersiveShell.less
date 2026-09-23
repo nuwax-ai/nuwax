@@ -51,6 +51,15 @@ html.immersive-shell {
  * 均为 right placement。mac（红绿灯在左、无右侧窗控）与浏览器/独立窗口
  * 不命中本层，PC web 形态零影响。 */
 html.immersive-shell-frameless {
+  // 单栏工作台页外层 page-container 已按 CONTENT_TOP 退让背景；wrapper 仍负责
+  // 将编辑器内容总共下移 TOOLBAR，因此这里只保留两种尺寸的差值，避免双重下移。
+  #page-container-selector > .immersive-shell-page {
+    padding-top: calc(
+      var(--immersive-shell-toolbar, 0px) -
+        var(--immersive-shell-content-top, 0px)
+    );
+  }
+
   .ant-drawer-left > .ant-drawer-content-wrapper,
   .ant-drawer-right > .ant-drawer-content-wrapper {
     top: var(--immersive-shell-content-top, 0);
