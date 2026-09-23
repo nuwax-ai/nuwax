@@ -43,8 +43,15 @@ export interface UseUserAppRuntimeOptions {
   userAppInfo?: UserAppInfo | null;
   /** 启动或重启成功后刷新预览 */
   onReady?: () => void;
+  /**
+   * 启动或重启成功后、展示预览前，检查预览域名是否可访问。
+   * 返回错误文案表示不可访问；返回空字符串表示可以展示。
+   */
+  confirmPreviewReachable?: () => Promise<string>;
   /** 停止成功，立刻切到「服务已停止」 */
   onStopped?: () => void;
+  /** 重启或停止成功后，重新拉取应用详情 */
+  onDetailRefresh?: () => void;
 }
 
 const getFailedMessage = (action: UserAppRuntimeAction): string => {
@@ -65,18 +72,28 @@ const getFailedMessage = (action: UserAppRuntimeAction): string => {
  * @param options.userAppInfo 应用详情
  * @param options.onReady 启动完成回调
  * @param options.onStopped 停止成功回调
+ * @param options.onDetailRefresh 重启或停止成功后刷新应用详情
  * @returns 运行时状态与操作
  */
 export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
-  const { appId, env, userAppInfo, onReady, onStopped } = options;
+  const { appId, env, userAppInfo, onReady, onStopped, onDetailRefresh } =
+    options;
   const onStoppedRef = useRef(onStopped);
   onStoppedRef.current = onStopped;
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+  const onDetailRefreshRef = useRef(onDetailRefresh);
+  onDetailRefreshRef.current = onDetailRefresh;
+  const confirmPreviewReachableRef = useRef(options.confirmPreviewReachable);
+  confirmPreviewReachableRef.current = options.confirmPreviewReachable;
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<UserAppPublishPhase>('idle');
   const [action, setAction] = useState<UserAppRuntimeAction>('start');
   const [services, setServices] = useState<UserAppTaskServiceProgress[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  /** 启动接口已成功，但预览域名不可访问。不进入启动失败日志板 */
+  const [previewLoadError, setPreviewLoadError] = useState('');
   const [taskId, setTaskId] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
   const [running, setRunning] = useState(false);
@@ -89,6 +106,11 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
   const servicesRef = useRef<UserAppTaskServiceProgress[]>([]);
   const envRef = useRef(env);
   const phaseRef = useRef(phase);
+  /**
+   * 用户已确认停止。
+   * resetTaskState 会清掉 cancelledRef，不能用它挡住停止后仍在进行的域名探测。
+   */
+  const stoppedByUserRef = useRef(false);
   /** 各环境是否已成功启动过，切换环境时保留，避免重复 start */
   const runningByEnvRef = useRef<Record<UserAppDbEnvEnum, boolean>>({
     [UserAppDbEnvEnum.Dev]: false,
@@ -100,6 +122,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
   const resetTaskState = useCallback(() => {
     setServices([]);
     setErrorMessage('');
+    setPreviewLoadError('');
     setTaskId('');
     taskIdRef.current = '';
     lastSeqRef.current = undefined;
@@ -116,6 +139,47 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     runningByEnvRef.current[envRef.current] = value;
     setRunning(value);
   }, []);
+
+  /**
+   * 启动或重启的任务已成功后，先检查预览域名。
+   * 不可访问时只记录页面加载失败，不进入启动失败日志，也不回调 onReady。
+   *
+   * @returns 是否可以展示预览
+   */
+  const finishPreviewReady = useCallback(async (): Promise<boolean> => {
+    if (stoppedByUserRef.current) {
+      return false;
+    }
+    if (cancelledRef.current) {
+      setPhase('cancelled');
+      return false;
+    }
+    const confirm = confirmPreviewReachableRef.current;
+    if (confirm) {
+      const failureText = (await confirm()).trim();
+      if (stoppedByUserRef.current) {
+        return false;
+      }
+      if (cancelledRef.current) {
+        setPhase('cancelled');
+        return false;
+      }
+      if (failureText) {
+        setPreviewLoadError(failureText);
+        setErrorMessage('');
+        phaseRef.current = 'idle';
+        setPhase('idle');
+        setEnvRunning(false);
+        return false;
+      }
+    }
+    if (stoppedByUserRef.current) {
+      return false;
+    }
+    setPhase('success');
+    setEnvRunning(true);
+    return true;
+  }, [setEnvRunning]);
 
   const applyEvent = useCallback((event: UserAppTaskLogEvent) => {
     if (typeof event.seq === 'number') {
@@ -183,6 +247,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         return;
       }
 
+      stoppedByUserRef.current = false;
       resetTaskState();
       setAction(nextAction);
       setPhase('starting');
@@ -212,6 +277,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           taskIdRef.current = currentTaskId;
         }
 
+        if (stoppedByUserRef.current) {
+          return;
+        }
         if (cancelledRef.current) {
           if (currentTaskId) {
             await apiUserAppBuildCancel(currentTaskId);
@@ -232,6 +300,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         if (currentTaskId && immediate !== 'succeeded') {
           setPhase('building');
           const streamResult = await listenProgress(currentTaskId, nextAction);
+          if (stoppedByUserRef.current) {
+            return;
+          }
           if (streamResult === 'cancelled' || cancelledRef.current) {
             setPhase('cancelled');
             return;
@@ -241,20 +312,32 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           }
         }
 
+        if (stoppedByUserRef.current) {
+          return;
+        }
         if (cancelledRef.current) {
           setPhase('cancelled');
           return;
         }
 
-        setPhase('success');
-        setEnvRunning(true);
+        if (nextAction === 'restart') {
+          onDetailRefreshRef.current?.();
+        }
+
+        const previewReady = await finishPreviewReady();
+        if (!previewReady) {
+          return;
+        }
         message.success(
           nextAction === 'restart'
             ? dict('PC.Pages.AppDevPro.restartSuccess')
             : dict('PC.Pages.AppDevPro.startSuccess'),
         );
-        onReady?.();
+        onReadyRef.current?.();
       } catch (error) {
+        if (stoppedByUserRef.current) {
+          return;
+        }
         if (
           cancelledRef.current ||
           (error instanceof Error && error.name === 'AbortError')
@@ -272,8 +355,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       appId,
       buildParams,
       env,
+      finishPreviewReady,
       listenProgress,
-      onReady,
       phase,
       resetTaskState,
       setEnvRunning,
@@ -338,9 +421,10 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         }
         if (immediate === 'succeeded') {
           if (!isBuild) {
-            setPhase('success');
-            setEnvRunning(true);
-            onReady?.();
+            const previewReady = await finishPreviewReady();
+            if (previewReady) {
+              onReadyRef.current?.();
+            }
           } else {
             setPhase('idle');
           }
@@ -362,10 +446,13 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           return;
         }
 
-        setPhase('success');
-        if (!isBuild) {
-          setEnvRunning(true);
-          onReady?.();
+        if (isBuild) {
+          setPhase('success');
+          return;
+        }
+        const previewReady = await finishPreviewReady();
+        if (previewReady) {
+          onReadyRef.current?.();
         }
       } catch (error) {
         if (
@@ -381,13 +468,16 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         setEnvRunning(false);
       }
     },
-    [listenProgress, onReady, resetTaskState, setEnvRunning],
+    [finishPreviewReady, listenProgress, resetTaskState, setEnvRunning],
   );
 
   /**
    * 打开预览时：未运行则自动启动。
    */
   const startIfNeeded = useCallback(() => {
+    if (stoppedByUserRef.current) {
+      return;
+    }
     if (phase === 'starting' || phase === 'building') {
       return;
     }
@@ -403,9 +493,10 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
   const stop = useCallback(async () => {
     if (!appId) {
       message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
-      return;
+      return false;
     }
     setStopping(true);
+    stoppedByUserRef.current = true;
     cancelledRef.current = true;
     stopStream();
     try {
@@ -424,14 +515,13 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       phaseRef.current = 'idle';
       setPhase('idle');
       resetTaskState();
+      onDetailRefreshRef.current?.();
       onStoppedRef.current?.();
       message.success(dict('PC.Pages.AppDevPro.stopSuccess'));
+      return true;
     } catch (error) {
-      const text =
-        error instanceof Error
-          ? error.message
-          : dict('PC.Pages.AppDevPro.stopFailed');
-      message.error(text);
+      stoppedByUserRef.current = false;
+      return false;
     } finally {
       setStopping(false);
     }
@@ -466,14 +556,21 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
 
   /**
    * 线上环境可直接用预览地址打开，不走启动接口。
+   * 同时收起「页面加载失败」，以便刷新后重新进入加载。
    */
   const markReady = useCallback(() => {
     if (phase === 'starting' || phase === 'building') {
       return;
     }
+    setPreviewLoadError('');
     setEnvRunning(true);
     setPhase('success');
   }, [phase, setEnvRunning]);
+
+  /** 收起预览域名检查失败提示，不改变运行状态 */
+  const dismissPreviewLoadError = useCallback(() => {
+    setPreviewLoadError('');
+  }, []);
 
   const closeModal = useCallback(() => {
     if (phase === 'starting' || phase === 'building') {
@@ -517,6 +614,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     action,
     services,
     errorMessage,
+    previewLoadError,
     cancelLoading,
     busy,
     restarting,
@@ -527,6 +625,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     stop,
     startIfNeeded,
     markReady,
+    dismissPreviewLoadError,
     attachExistingTask,
     cancelTask,
     closeModal,

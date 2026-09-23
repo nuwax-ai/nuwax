@@ -1,6 +1,12 @@
 /** 单次 cors 探测超时（毫秒） */
 const CHECK_TIMEOUT_MS = 8000;
 
+/** 启动成功后域名检查的最多尝试次数 */
+const PREVIEW_HEALTH_POLL_MAX_ATTEMPTS = 5;
+
+/** 两次域名检查之间的间隔（毫秒） */
+const PREVIEW_HEALTH_POLL_INTERVAL_MS = 2000;
+
 /** iframe onLoad 后等待 Performance 写入的轮询间隔（毫秒） */
 const TIMING_POLL_INTERVAL_MS = 300;
 
@@ -17,6 +23,8 @@ export interface PreviewHealthCheckOptions {
   signal?: AbortSignal;
   /** 仅统计该时间点（performance.now）之后写入的 Resource Timing，避免误读历史 5xx */
   sinceStartTime?: number;
+  /** 轮询过程中返回 true 则不再继续（例如用户已停止） */
+  shouldStop?: () => boolean;
 }
 
 const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
@@ -99,14 +107,9 @@ export const readPreviewResponseStatusFromTiming = (
     'resource',
   ) as PerformanceResourceTiming[];
 
-  let latestOkStatus: number | undefined;
-
   for (let index = entries.length - 1; index >= 0; index -= 1) {
     const entry = entries[index];
-    if (
-      sinceStartTime !== undefined &&
-      entry.startTime < sinceStartTime
-    ) {
+    if (sinceStartTime !== undefined && entry.startTime < sinceStartTime) {
       continue;
     }
     if (!urlsMatchForPreviewTiming(entry.name, trimmed)) {
@@ -116,13 +119,10 @@ export const readPreviewResponseStatusFromTiming = (
     if (!status || status <= 0) {
       continue;
     }
-    if (status >= 400) {
-      return status;
-    }
-    latestOkStatus = status;
+    return status;
   }
 
-  return latestOkStatus;
+  return undefined;
 };
 
 /**
@@ -155,11 +155,74 @@ export const fetchPreviewUrlHealthOnce = async (
       url,
       options?.sinceStartTime,
     );
+    if (
+      timingStatus !== undefined &&
+      timingStatus >= 200 &&
+      timingStatus < 300
+    ) {
+      return { ok: true, status: timingStatus };
+    }
     if (timingStatus !== undefined && timingStatus >= 400) {
       return { ok: false, status: timingStatus };
     }
     return { ok: false, opaque: true };
   }
+};
+
+/**
+ * 启动成功后轮询预览域名。
+ * 某一次返回 200 立刻结束；否则继续，直到达到尝试上限。
+ * 每一次只读取该次请求之后写入的状态，不沿用更早的 502。
+ *
+ * @param previewUrl 预览地址
+ * @param options 次数上限、间隔、取消信号
+ * @returns 最后一次检查结果；中途 200 时即为该次成功结果
+ */
+export const pollPreviewUrlHealth = async (
+  previewUrl: string,
+  options?: PreviewHealthCheckOptions & {
+    maxAttempts?: number;
+    intervalMs?: number;
+  },
+): Promise<PreviewHealthResult> => {
+  const url = previewUrl?.trim();
+  const maxAttempts = Math.max(
+    1,
+    options?.maxAttempts ?? PREVIEW_HEALTH_POLL_MAX_ATTEMPTS,
+  );
+  const intervalMs = options?.intervalMs ?? PREVIEW_HEALTH_POLL_INTERVAL_MS;
+  let last: PreviewHealthResult = { ok: false, status: 0 };
+
+  if (!url) {
+    return last;
+  }
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (options?.signal?.aborted || options?.shouldStop?.()) {
+      return last;
+    }
+
+    const sinceStartTime =
+      typeof performance !== 'undefined' ? performance.now() : undefined;
+    last = await fetchPreviewUrlHealthOnce(url, {
+      signal: options?.signal,
+      sinceStartTime,
+    });
+    if (last.status === 200) {
+      return last;
+    }
+    if (attempt >= maxAttempts - 1) {
+      break;
+    }
+
+    try {
+      await sleep(intervalMs, options?.signal);
+    } catch {
+      return last;
+    }
+  }
+
+  return last;
 };
 
 /** iframe 文档是否为空；跨域时为 null。 */

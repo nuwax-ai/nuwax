@@ -103,7 +103,10 @@ import {
   type UserAppDomainInfo,
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
-import { probePreviewReachable } from './utils/previewHealthCheck';
+import {
+  pollPreviewUrlHealth,
+  probePreviewReachable,
+} from './utils/previewHealthCheck';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 const cx = classNames.bind(styles);
@@ -765,10 +768,34 @@ const AppDevPro: React.FC = () => {
       setPreviewIframeUrl(appPreviewUrlRef.current);
       setPreviewRefreshKey((prev) => prev + 1);
     },
+    confirmPreviewReachable: async () => {
+      const previewUrl = appPreviewUrlRef.current?.trim();
+      if (!previewUrl) {
+        return dict('PC.Pages.AppDevPro.iframeLoadFailed');
+      }
+      const health = await pollPreviewUrlHealth(previewUrl, {
+        shouldStop: () => previewUserStoppedRef.current,
+      });
+      if (health.ok) {
+        return '';
+      }
+      if (health.status) {
+        return dict('PC.Pages.AppDevPro.iframeLoadFailedWithStatus').replace(
+          '{0}',
+          String(health.status),
+        );
+      }
+      return dict('PC.Pages.AppDevPro.iframeLoadFailed');
+    },
     onStopped: () => {
       previewUserStoppedRef.current = true;
       setPreviewUserStopped(true);
       markDevStartIdle();
+    },
+    onDetailRefresh: () => {
+      if (appId) {
+        runGetUserAppInfo(appId);
+      }
     },
   });
   const startPreviewIfNeededRef = useRef(previewRuntime.startIfNeeded);
@@ -781,20 +808,35 @@ const AppDevPro: React.FC = () => {
   previewRunningRef.current = previewRuntime.running;
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
+  const dismissPreviewLoadErrorRef = useRef(
+    previewRuntime.dismissPreviewLoadError,
+  );
+  dismissPreviewLoadErrorRef.current = previewRuntime.dismissPreviewLoadError;
+  const previewLoadErrorRef = useRef(previewRuntime.previewLoadError);
+  previewLoadErrorRef.current = previewRuntime.previewLoadError;
 
   /**
    * 开发环境进页 / 打开预览：先探测 dev 域名是否可访问，可达则直接 iframe，否则走 start。
    */
   const prepareDevPreviewIfNeeded = useCallback(async () => {
+    if (previewUserStoppedRef.current) {
+      return;
+    }
     const previewUrl = appPreviewUrlRef.current;
     if (previewUrl) {
       const reachable = await probePreviewReachable(previewUrl);
+      if (previewUserStoppedRef.current) {
+        return;
+      }
       if (reachable) {
         setPreviewIframeUrl(previewUrl);
         markPreviewReadyRef.current();
         setPreviewRefreshKey((prev) => prev + 1);
         return;
       }
+    }
+    if (previewUserStoppedRef.current) {
+      return;
     }
     startPreviewIfNeededRef.current();
   }, []);
@@ -1489,7 +1531,7 @@ const AppDevPro: React.FC = () => {
     let cancelled = false;
     void (async () => {
       await prepareDevPreviewIfNeededRef.current();
-      if (!cancelled) {
+      if (!cancelled && !previewUserStoppedRef.current) {
         setPreviewEnterSettled(true);
       }
     })();
@@ -1774,6 +1816,8 @@ const AppDevPro: React.FC = () => {
 
   /** 重启预览服务；回到当前环境预览根地址，不沿用地址栏手动跳转 */
   const handleRestartPreviewRuntime = useCallback(() => {
+    previewUserStoppedRef.current = false;
+    setPreviewUserStopped(false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
     void previewRuntime.restart();
   }, [previewRuntime]);
@@ -1784,7 +1828,15 @@ const AppDevPro: React.FC = () => {
       dict('PC.Pages.AppDevPro.confirmStopTitle'),
       dict('PC.Pages.AppDevPro.confirmStopContent'),
       () => {
-        void previewRuntime.stop();
+        previewUserStoppedRef.current = true;
+        setPreviewUserStopped(true);
+        void previewRuntime.stop().then((stopped) => {
+          if (stopped) {
+            return;
+          }
+          previewUserStoppedRef.current = false;
+          setPreviewUserStopped(false);
+        });
       },
     );
   }, [previewRuntime]);
@@ -1890,8 +1942,20 @@ const AppDevPro: React.FC = () => {
     void publishFlow.startPublish();
   }, [appId, publishFlow]);
 
-  /** 刷新应用预览 iframe */
+  /**
+   * 刷新当前预览页。
+   * 预览已打开或正显示加载失败时，先进入加载态再重新加载 iframe。
+   */
   const handleRefreshPreview = useCallback(() => {
+    const showingPreview =
+      previewRunningRef.current || !!previewLoadErrorRef.current.trim();
+    if (!showingPreview) {
+      return;
+    }
+    dismissPreviewLoadErrorRef.current();
+    if (!previewRunningRef.current) {
+      markPreviewReadyRef.current();
+    }
     setPreviewRefreshKey((prev) => prev + 1);
   }, []);
 
@@ -2106,6 +2170,7 @@ const AppDevPro: React.FC = () => {
         phase={previewRuntime.phase}
         services={previewRuntime.services}
         errorMessage={previewRuntime.errorMessage}
+        previewLoadError={previewRuntime.previewLoadError}
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={previewConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
@@ -2123,6 +2188,7 @@ const AppDevPro: React.FC = () => {
         onCancelTask={previewRuntime.cancelTask}
         onRetryStart={handleRestartPreviewRuntime}
         onStart={handleStartPreviewRuntime}
+        onRefreshPreview={handleRefreshPreview}
         onRetryContainer={() => {
           void handleRetryContainer();
         }}
@@ -2140,6 +2206,7 @@ const AppDevPro: React.FC = () => {
     [
       activePreviewUrl,
       handleRestartPreviewRuntime,
+      handleRefreshPreview,
       handleRetryContainer,
       handleStartPreviewRuntime,
       hasPendingIntervention,
@@ -2152,6 +2219,7 @@ const AppDevPro: React.FC = () => {
       previewRuntime.cancelLoading,
       previewRuntime.cancelTask,
       previewRuntime.errorMessage,
+      previewRuntime.previewLoadError,
       previewRuntime.phase,
       previewRuntime.running,
       previewRuntime.services,
