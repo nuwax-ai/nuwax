@@ -224,7 +224,10 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
         {/* 线上环境更多：域名绑定 / 构建包版本记录 / 发布版本记录 */}
         <ConditionRender condition={env === UserAppDbEnvEnum.Prod}>
           <div className={cx(styles['fold-box'])}>
-            <Dropdown menu={{ items: prodMoreMenuItems }} placement="bottomLeft">
+            <Dropdown
+              menu={{ items: prodMoreMenuItems }}
+              placement="bottomLeft"
+            >
               <span
                 className={cx(
                   'flex',
