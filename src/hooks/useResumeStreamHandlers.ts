@@ -1,5 +1,4 @@
 import { CONVERSATION_CHAT_SUB_URL } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
@@ -398,14 +397,12 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
         currentList,
         debugSource,
       );
-      const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
       const scrollGeneration = scrollGenerationRef.current;
       let scrollClosed = false;
       resumeAbortRef.current = createSSEConnection({
         url: `${CONVERSATION_CHAT_SUB_URL}/${conversationId}`,
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${token}`,
           Accept: 'application/json, text/plain, */*',
         },
         onMessage: (res: ConversationChatResponse) => {

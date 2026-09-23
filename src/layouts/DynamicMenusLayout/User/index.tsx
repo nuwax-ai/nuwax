@@ -3,6 +3,7 @@ import { USER_AVATAR_LIST } from '@/constants/menus.constants';
 import { apiLogout } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import { UserAvatarEnum } from '@/types/enums/menus';
+import { clearStoragePreservingUserPrefs } from '@/utils/authStorageCleanup';
 import { hostBridge } from '@/utils/hostBridge';
 import { redirectToLogin } from '@/utils/router';
 import { Popover } from 'antd';
@@ -48,10 +49,9 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
   const { run } = useRequest(apiLogout, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
-      localStorage.clear();
-      // nuwaclaw 客户端：联动清除宿主持久化 token（无桥/失败自动忽略）
-      void hostBridge.auth.clear();
+    onSuccess: async () => {
+      clearStoragePreservingUserPrefs();
+      await hostBridge.auth.clear();
       // 清除菜单信息
       clearMenuInfo();
 

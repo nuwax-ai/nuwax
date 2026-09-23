@@ -20,7 +20,6 @@ import {
   EditOutlined,
   FileTextOutlined,
   GlobalOutlined,
-  LoadingOutlined,
   OrderedListOutlined,
   QuestionCircleOutlined,
   ReadOutlined,
@@ -501,14 +500,6 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
       )}
       {toolPresentation?.meta && (
         <span className={cx(styles['node-meta'])}>{toolPresentation.meta}</span>
-      )}
-      {node.status === 'running' && (
-        <LoadingOutlined
-          className={cx(styles['node-status-icon'])}
-          style={{ color: token.colorPrimary }}
-          spin
-          aria-hidden="true"
-        />
       )}
       {node.failed && node.status !== 'running' && (
         <CloseCircleOutlined

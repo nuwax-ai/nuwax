@@ -6,7 +6,9 @@
 @chat-max-width: 800px;
 @zero-value: 0;
 @slide-in-offset: 10px;
-@scroll-btn-bottom-offset: 100px;
+@scroll-btn-bottom-offset: 32px;
+@scroll-btn-size: 32px;
+@scroll-btn-icon-size: @fontSize;
 
 .session-container {
   display: flex;
@@ -98,6 +100,8 @@
   --scroll-btn-bottom-offset: calc(
     @scroll-btn-bottom-offset + var(--queue-panel-height, 0px)
   );
+  --scroll-btn-size: @scroll-btn-size;
+  --scroll-btn-icon-size: @scroll-btn-icon-size;
 }
 
 // 队列面板高度测量容器（无内容时高度为 0）

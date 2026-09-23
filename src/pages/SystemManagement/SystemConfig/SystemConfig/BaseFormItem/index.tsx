@@ -177,11 +177,7 @@ export default function BaseFormItem({
             return (
               <Upload
                 action={process.env.BASE_URL + '/api/file/upload'}
-                headers={{
-                  Authorization: `Bearer ${localStorage.getItem(
-                    'ACCESS_TOKEN',
-                  )}`,
-                }}
+                withCredentials
                 listType="picture-card"
                 accept="image/*"
                 maxCount={1}

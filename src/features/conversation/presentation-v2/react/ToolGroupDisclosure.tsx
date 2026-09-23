@@ -2,7 +2,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { getToolGroupStatus } from '@/features/conversation/presentation-v2/traceItems';
 import { dict } from '@/services/i18nRuntime';
-import { CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -107,14 +107,6 @@ const ToolGroupDisclosure: React.FC<ToolGroupDisclosureProps> = ({
           aria-hidden="true"
         />
         <span className={cx(styles['tool-group-title'])}>{title}</span>
-        {group.status === 'running' && (
-          <LoadingOutlined
-            className={cx(styles['tool-group-status'])}
-            style={{ color: token.colorPrimary }}
-            spin
-            aria-hidden="true"
-          />
-        )}
         {group.status === 'failed' && (
           <CloseCircleOutlined
             className={cx(styles['tool-group-status'])}

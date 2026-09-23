@@ -2,7 +2,6 @@ import {
   CONVERSATION_CHAT_SUB_URL,
   CONVERSATION_CONNECTION_URL,
 } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type {
   ConversationChatParams,
   ConversationChatResponse,
@@ -32,12 +31,10 @@ export function openLiveConversationStream(
   params: ConversationChatParams,
   callbacks: LiveStreamCallbacks,
 ): () => void {
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   return createSSEConnection({
     url: CONVERSATION_CONNECTION_URL,
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
       Accept: 'application/json, text/plain, */* ',
     },
     body: params,
@@ -53,12 +50,10 @@ export function openResumeConversationStream(
   conversationId: number | string,
   callbacks: ResumeStreamCallbacks,
 ): () => void {
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   return createSSEConnection({
     url: `${CONVERSATION_CHAT_SUB_URL}/${conversationId}`,
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${token}`,
       Accept: 'application/json, text/plain, */*',
     },
     onMessage: callbacks.onMessage,

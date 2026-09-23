@@ -231,11 +231,13 @@ describe('+ 号菜单附件上传（常驻文件选择器）', () => {
     await waitFor(() => expect(uploadListState.files.length).toBe(1));
     expect(['uploading', 'done']).toContain(uploadListState.files[0].status);
 
-    // 上传走 fetch（带 token 与 type=tmp），而非 antd 内置 XHR
+    // 上传走 fetch（cookie 同源鉴权 + type=tmp），而非 antd 内置 XHR
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toEqual(UPLOAD_URL);
-    expect(init.headers.Authorization).toBe('Bearer test-token');
+    // cookie 登录线（033cd84a2）起上传鉴权走同源 cookie，不再携带 Bearer 头
+    expect(init.credentials).toBe('include');
+    expect(init.headers).toBeUndefined();
     expect(init.body.get('type')).toBe('tmp');
 
     // fetch 成功返回后状态落 done

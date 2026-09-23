@@ -1,5 +1,4 @@
 import { CONVERSATION_CHAT_SUB_URL } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { ConversationRuntime } from '@/features/conversation/runtime/createConversationRuntime';
 import {
   AssistantRoleEnum,
@@ -312,12 +311,10 @@ export function createResumeController(
     );
     const runController = runtime.resumeConnection;
     const runId = runController.startRun();
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     const abortConnection = createSSEConnection({
       url: `${CONVERSATION_CHAT_SUB_URL}/${conversationId}`,
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
         Accept: 'application/json, text/plain, */*',
       },
       onMessage: (res: ConversationChatResponse) => {

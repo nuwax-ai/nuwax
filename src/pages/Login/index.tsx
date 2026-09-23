@@ -1,6 +1,6 @@
 import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
-import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
+import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
 import { apiLogin } from '@/services/account';
 import { dict, initI18n, syncLangFromUserInfo } from '@/services/i18nRuntime';
@@ -9,6 +9,7 @@ import { UserService } from '@/services/userService';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
+import { finishBusinessLogin } from '@/utils/businessAuth';
 import {
   isValidEmail,
   isValidPhone,
@@ -24,6 +25,7 @@ import {
   Form,
   FormProps,
   Input,
+  message,
   Modal,
   Segmented,
   Space,
@@ -189,9 +191,15 @@ const Login: React.FC = () => {
       debounceInterval: 300,
       onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
         const { expireDate, token, redirect: responseRedirectUrl } = result;
-        localStorage.setItem(ACCESS_TOKEN, token);
-        // nuwaclaw 客户端：登录后持久化 token 到宿主（重启免登）；无桥自动跳过
-        await hostBridge.auth.persistToken(token);
+        const authResult = await finishBusinessLogin(token);
+        if (authResult !== 'ready') {
+          message.error(
+            authResult === 'missing-dev-token'
+              ? '登录接口未返回本地调试所需的 Token'
+              : '客户端登录会话同步失败，请升级客户端后重试',
+          );
+          return;
+        }
         localStorage.setItem(EXPIRE_DATE, expireDate);
         localStorage.setItem(PHONE, params[0].phoneOrEmail);
         try {

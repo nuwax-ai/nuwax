@@ -11,17 +11,18 @@
  * - 本函数不做异常吞噬：投影层自身 bug 抛出，由渲染层捕获并整份回退 V1。
  */
 import { getToolPresentationKind } from '@/components/MarkdownCustomProcess/toolPresentation';
-import {
-  AgentComponentTypeEnum,
-  AssistantRoleEnum,
-  MessageModeEnum,
-} from '@/types/enums/agent';
+import { AgentComponentTypeEnum, AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
   ExecuteResultInfo,
   MessageInfo,
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
+import {
+  findLastAnswerCandidateSegment,
+  isAnswerCandidateMessage,
+  selectFinalResultAnswerText,
+} from './finalAnswerSelection';
 import {
   parseMessageSegments,
   stripCustomTags,
@@ -316,16 +317,9 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
       ? 'stopped'
       : 'complete';
 
-  // ---- 最终回答候选消息：仅 ASSISTANT 的 CHAT/ANSWER（缺省视为 CHAT）----
-  // SYSTEM/FUNCTION 是上下文、THINK 已单列、QUESTION/GUID 不是回答——都不得外显为最终回答
-  const isAnswerCandidateMessage = (message: MessageInfo): boolean =>
-    message.role === AssistantRoleEnum.ASSISTANT &&
-    (message.type === undefined ||
-      message.type === MessageModeEnum.CHAT ||
-      message.type === MessageModeEnum.ANSWER);
-
   // ---- 最终回答第一优先级：最后一条非空 finalResult.outputText（剥标签后仍非空）----
   let answerFromFinalResult: string | undefined;
+  let answerFromFinalResultMessageIndex: number | undefined;
   for (let i = assistantMessages.length - 1; i >= 0; i -= 1) {
     if (!isAnswerCandidateMessage(assistantMessages[i])) continue;
     const outputText = assistantMessages[i].finalResult?.outputText;
@@ -333,6 +327,7 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
     const stripped = stripCustomTags(outputText);
     if (stripped) {
       answerFromFinalResult = stripped;
+      answerFromFinalResultMessageIndex = i;
       break;
     }
   }
@@ -341,23 +336,10 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
   const parsedSegments = assistantMessages.map((message) =>
     parseMessageSegments(message.text),
   );
-  // 最后一条候选正文段（从后向前，只看 ASSISTANT 的 CHAT/ANSWER 消息）
-  const findLastAnswerCandidateSegment = (): {
-    messageIndex: number;
-    segmentIndex: number;
-  } | null => {
-    for (let mi = parsedSegments.length - 1; mi >= 0; mi -= 1) {
-      if (!isAnswerCandidateMessage(assistantMessages[mi])) continue;
-      const segs = parsedSegments[mi];
-      for (let si = segs.length - 1; si >= 0; si -= 1) {
-        const seg = segs[si];
-        if (seg.type === 'text' && seg.content.trim()) {
-          return { messageIndex: mi, segmentIndex: si };
-        }
-      }
-    }
-    return null;
-  };
+  const lastAnswerSegment = findLastAnswerCandidateSegment(
+    assistantMessages,
+    parsedSegments,
+  );
   const normalizeForCompare = (text: string): string =>
     text.replace(/\s+/g, '');
   /** outputText 与正文段同源判定：任一方向包含即视为同一内容（终态 outputText 常为正文段的聚合/截断） */
@@ -374,7 +356,7 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
     (() => {
       if (answerFromFinalResult) {
         // 去重：消息末尾与 outputText 同源的正文段即最终回答本身，不得再入轨迹
-        const tail = findLastAnswerCandidateSegment();
+        const tail = lastAnswerSegment;
         if (
           tail &&
           isSameAnswerContent(
@@ -398,7 +380,7 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
         const last = parsedSegments.length - 1;
         if (last < 0) return null;
         if (!isAnswerCandidateMessage(assistantMessages[last])) {
-          return findLastAnswerCandidateSegment();
+          return lastAnswerSegment;
         }
         const segs = parsedSegments[last];
         const tail = segs[segs.length - 1];
@@ -407,11 +389,18 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
           : null;
       }
       // 终态回退：全轮最后一个非空候选正文段
-      return findLastAnswerCandidateSegment();
+      return lastAnswerSegment;
     })();
 
-  const finalAnswer: ConversationFinalAnswer = answerFromFinalResult
-    ? { text: answerFromFinalResult, source: 'finalResult' }
+  const resolvedFinalResultAnswer = selectFinalResultAnswerText({
+    outputText: answerFromFinalResult,
+    outputMessageIndex: answerFromFinalResultMessageIndex,
+    running,
+    messages: assistantMessages,
+    parsedSegments,
+  });
+  const finalAnswer: ConversationFinalAnswer = resolvedFinalResultAnswer
+    ? { text: resolvedFinalResultAnswer, source: 'finalResult' }
     : answerRef
     ? {
         text: (

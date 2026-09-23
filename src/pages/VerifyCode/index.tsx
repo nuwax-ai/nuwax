@@ -1,7 +1,7 @@
 import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
 import SvgIcon from '@/components/base/SvgIcon';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
-import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
+import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
 import useSendCode from '@/hooks/useSendCode';
 import BasicLayout from '@/pages/Login/BasicLayout';
@@ -12,9 +12,10 @@ import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
+import { finishBusinessLogin } from '@/utils/businessAuth';
 import { getNumbersOnly, isWeakNumber } from '@/utils/common';
 import { hostBridge } from '@/utils/hostBridge';
-import { Button, Input, InputRef } from 'antd';
+import { Button, Input, InputRef, message } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -70,11 +71,17 @@ const VerifyCode: React.FC = () => {
         token,
         redirect: responseRedirectUrl,
       } = result;
-      localStorage.setItem(ACCESS_TOKEN, token);
+      const authResult = await finishBusinessLogin(token);
+      if (authResult !== 'ready') {
+        message.error(
+          authResult === 'missing-dev-token'
+            ? '登录接口未返回本地调试所需的 Token'
+            : '客户端登录会话同步失败，请升级客户端后重试',
+        );
+        return;
+      }
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phone);
-      // nuwaclaw 客户端：登录后持久化 token 到宿主（重启免登/登录联动）；无桥自动跳过
-      await hostBridge.auth.persistToken(token);
       try {
         const latestUserInfo = await UserService.refreshUserInfo();
         await syncLangFromUserInfo(latestUserInfo);
