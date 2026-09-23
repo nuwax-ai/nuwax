@@ -2,6 +2,36 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
+.expert-guid-questions {
+  width: 100%;
+  margin-bottom: @marginSm;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// RecommendList 自带 flex-col 工具类，双重选择器保证提示始终单行。
+.expert-guid-questions.expert-guid-questions {
+  flex-flow: row nowrap;
+}
+
+.expert-guid-question {
+  flex-shrink: 0;
+  max-width: none;
+  white-space: nowrap;
+}
+
+.expert-guid-arrow {
+  display: inline-flex;
+  flex-shrink: 0;
+  transform: rotate(-45deg);
+}
+
 .chat-container {
   width: 100%;
   margin: 0 auto;
@@ -529,15 +559,9 @@
 /* 项目上框栏：与工作目录栏同槽位（复用 workspace-dir-bar 基样式），
    直接展示项目名（类型不作徽标、降级为整行 title 悬停提示）+ 移除按钮；
    清空按钮贴文案并排（后续目录选择等同行并排时各自按钮跟各自文案），
-   hover 整行时才出现 */
+   始终可见 */
 .pinned-project-bar {
   gap: 6px;
-
-  &:hover .pinned-project-remove,
-  .pinned-project-remove:focus-visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
 }
 
 .pinned-project-icon {
@@ -570,10 +594,7 @@
   cursor: pointer;
   color: @colorTextQuaternary;
   font-size: 11px;
-  // 默认隐藏，hover 上框栏出现（占位保留，避免出现时行内跳动）
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 
   &:hover {
     background-color: @colorFillTertiary;

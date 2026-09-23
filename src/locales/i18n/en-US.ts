@@ -238,6 +238,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ChatInputHome.plusMenu": "Add",
   "PC.Components.ChatInputHome.attachFile": "Add attachment",
   "PC.Components.ChatInputHome.atContext": "Use @ to add experts or documents",
+  "PC.Components.ChatInputHome.atContextDocs": "Use @ to add documents",
   "PC.Components.ChatInputHome.slashCapability": "Use / to select skills",
   "PC.Components.ChatInputHome.plusMenuConnector": "Connectors",
   "PC.Components.ChatInputHome.versionControlSwitch": "Artifact version control",
@@ -6953,4 +6954,6 @@ export const EN_US: SystemLangMap = {
   "PC.Components.CapabilityModal.connected": "Connected",
   "PC.Components.CapabilityModal.disconnected": "Not connected",
   "PC.Components.CapabilityModal.close": "Close",
+  "PC.Pages.Home.previousQuestions": "Scroll left for more prompts",
+  "PC.Pages.Home.moreQuestions": "Scroll right for more prompts",
 };

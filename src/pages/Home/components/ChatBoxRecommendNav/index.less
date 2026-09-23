@@ -131,6 +131,39 @@
   }
 }
 
+// 提示与小分类占用同一行，滚动由外层 recommend-list 统一负责。
+.guid-question-list.guid-question-list {
+  flex: none;
+  min-width: 100%;
+  flex-flow: row nowrap;
+  gap: @margin;
+  padding: 0;
+
+  .guid-question {
+    flex: none;
+    max-width: none;
+    height: @controlHeight;
+    padding: 0 @paddingSm;
+    border: 0;
+    background: transparent;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .guid-question:first-child {
+    margin-left: auto;
+  }
+
+  .guid-question:last-child {
+    margin-right: auto;
+  }
+}
+
+.guid-arrow {
+  flex-shrink: 0;
+  transform: rotate(-45deg);
+}
+
 .icon {
   width: 20px;
   height: 20px;

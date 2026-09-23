@@ -161,6 +161,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ChatInputHome.plusMenu": "追加",
   "PC.Components.ChatInputHome.attachFile": "添付ファイルを追加",
   "PC.Components.ChatInputHome.atContext": "@ で専門家やドキュメントを追加",
+  "PC.Components.ChatInputHome.atContextDocs": "@ でドキュメントを追加",
   "PC.Components.ChatInputHome.slashCapability": "/ でスキルを選択",
   "PC.Components.ChatInputHome.plusMenuConnector": "コネクタ",
   "PC.Components.ChatInputHome.versionControlSwitch": "アーティファクトのバージョン管理",
@@ -6817,4 +6818,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.CapabilityModal.connected": "接続済み",
   "PC.Components.CapabilityModal.disconnected": "未接続",
   "PC.Components.CapabilityModal.close": "閉じる",
+  "PC.Pages.Home.previousQuestions": "左にスクロールして他のヒントを表示",
+  "PC.Pages.Home.moreQuestions": "右にスクロールして他のヒントを表示",
 };

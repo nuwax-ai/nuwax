@@ -489,6 +489,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
           selectedComputerId={selectedComputerId}
           onComputerSelect={onComputerSelect}
           agentId={agentInfo?.id}
+          showGuidQuestions={false}
           agentSandboxId={agentInfo?.sandboxId || selectedComputerId}
           hasPermission={agentInfo?.hasPermission !== false}
           maskText={

@@ -920,13 +920,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         return defaultPlaceholder;
       }
       // / 能力弹窗随时可唤起，统一展示含 / 引导的默认占位文案；
-      // @ 的引用对象随形态分流：首页模式引用专家、会话页模式引用文件
+      // @ 的引用对象随可用能力分流；项目上框限制专家时提示引用文件。
       return t(
-        atHomePanel
+        atHomePanel && capabilityResourceTypes.includes('expert')
           ? 'PC.Components.ChatInputCommands.hintHome'
           : 'PC.Components.ChatInputCommands.hint',
       );
-    }, [defaultPlaceholder, atHomePanel]);
+    }, [defaultPlaceholder, atHomePanel, capabilityResourceTypes]);
 
     /**
      * 弹窗最大高度：不超过视口内从弹窗 top 到底部的空间，避免弹窗撑出页面滚动条导致左右闪动

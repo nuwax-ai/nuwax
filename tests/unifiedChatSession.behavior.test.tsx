@@ -258,6 +258,7 @@ describe('UnifiedChatSession 行为', () => {
       />,
     );
     expect(screen.getByTestId('whole-disabled')).toHaveTextContent('true');
+    expect(chatInputPropsRef.current.showGuidQuestions).toBe(false);
     expect(screen.queryByTestId('queue-panel')).toBeNull();
   });
 
