@@ -142,7 +142,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
 
   /**
    * 启动或重启的任务已成功后，先检查预览域名。
-   * 不可访问时只记录页面加载失败，不进入启动失败日志，也不回调 onReady。
+   * 探测返回失败文案时只记录页面加载失败，不进入启动失败日志，也不回调 onReady。
+   * 5 次探测都失败时由调用方返回空串，继续 onReady，用 iframe 再加载一次域名。
    *
    * @returns 是否可以展示预览
    */

@@ -265,9 +265,11 @@ export function useFileTreePreviewView(
     trigger?: number | string;
   } | null>(null);
   /** 是否已发起过文件树拉取（用于区分「初始空数组」与「接口已返回空列表」） */
-  const fileTreeFetchStartedRef = useRef(false);
+  const fileTreeFetchStartedRef = useRef<boolean>(false);
   /** 是否已至少完成一次文件树拉取（含成功返回空列表） */
-  const fileTreeFetchResolvedRef = useRef(false);
+  const fileTreeFetchResolvedRef = useRef<boolean>(false);
+  /** 已同步进本地树的文件签名，内容未变时不再 setFiles */
+  const syncedOriginalFilesKeyRef = useRef<string>('');
 
   useEffect(() => {
     if (fileTreeDataLoading) {
@@ -415,12 +417,16 @@ export function useFileTreePreviewView(
    * 切换会话 / 工作区（targetId 变化）时重置文件树与预览区本地状态。
    * Chat 切换历史会话时组件不会卸载，若不清理会残留上一会话的 selectedFileNode 与预览内容。
    */
+  const clearSelectedFileRef = useRef(clearSelectedFile);
+  clearSelectedFileRef.current = clearSelectedFile;
+
   useEffect(() => {
     fileTreeFetchStartedRef.current = false;
     fileTreeFetchResolvedRef.current = false;
+    syncedOriginalFilesKeyRef.current = '';
     filesRef.current = [];
     setFiles([]);
-    clearSelectedFile();
+    clearSelectedFileRef.current();
     setSelectedFolderId('');
     setRenamingNode(null);
     setContextMenuVisible(false);
@@ -435,7 +441,8 @@ export function useFileTreePreviewView(
     pendingSelectFileRef.current = null;
     pendingTaskAgentAutoSelectRef.current = null;
     pendingRefreshSelectedAfterFilesUpdateRef.current = false;
-  }, [targetId, clearSelectedFile, initViewFileType]);
+    // 只跟会话 / 视图类型走。clearSelectedFile 若放进依赖，引用一变就会 Date.now() 死循环
+  }, [targetId, initViewFileType]);
 
   /** 通过当前选中文件的 fileProxyUrl 重新拉取文件内容 */
   const refreshSelectedFileContent = useCallback(
@@ -821,9 +828,30 @@ export function useFileTreePreviewView(
       originalFiles,
       enableVersionControl,
     );
+    const syncKey = `${String(enableVersionControl ?? '')}:${(
+      visibleOriginalFiles ?? []
+    )
+      .map((file) => {
+        const record = file as {
+          fileId?: string;
+          name?: string;
+          fileProxyUrl?: string;
+        };
+        return `${record.fileId ?? record.name ?? ''}:${record.fileProxyUrl ?? ''}`;
+      })
+      .join('|')}`;
+    // 父级每次传入新数组但内容未变时直接返回，避免 setFiles 把更新打满。
+    // 丢弃 / 回滚后要按最新树重拉当前文件，这类刷新不能被签名挡住。
+    if (
+      syncedOriginalFilesKeyRef.current === syncKey &&
+      !pendingRefreshSelectedAfterFilesUpdateRef.current
+    ) {
+      return;
+    }
+    syncedOriginalFilesKeyRef.current = syncKey;
 
     if (!visibleOriginalFiles || visibleOriginalFiles.length === 0) {
-      setFiles([]);
+      setFiles((prev) => (prev.length === 0 ? prev : []));
       filesRef.current = [];
       const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
       if (currentSelectedFileId) {

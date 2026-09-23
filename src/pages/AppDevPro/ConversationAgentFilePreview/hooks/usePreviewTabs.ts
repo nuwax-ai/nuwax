@@ -196,6 +196,16 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
         mergedIds.add(tab.id);
         merged.push(tab);
       }
+      // 页签集合未变时返回原数组，避免依赖引用抖动时 setState 自激
+      if (
+        prev.length === merged.length &&
+        prev.every(
+          (tab, index) =>
+            tab.id === merged[index]?.id && tab.type === merged[index]?.type,
+        )
+      ) {
+        return prev;
+      }
       return merged;
     });
     setActiveTabId((current) => {
