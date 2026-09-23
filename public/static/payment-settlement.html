@@ -215,24 +215,24 @@
   }
 
   function fetchStatus(orderId) {
-    var isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-    var baseUrl = isDev ? 'https://testagent.xspaceagi.com' : '';
-    var url = baseUrl + API + '?orderId=' + encodeURIComponent(orderId);
+    var url = API + '?orderId=' + encodeURIComponent(orderId);
     
     var headers = { Accept: 'application/json' };
-    if (isDev || isWechatMp()) {
+    var token = '';
+    try { token = localStorage.getItem('ACCESS_TOKEN') || ''; } catch (e) { /* 存储不可用时交给同源鉴权 */ }
+    if (!token && isWechatMp()) {
       var sp = new URLSearchParams(window.location.search);
-      var token = localStorage.getItem('ACCESS_TOKEN') || sp.get('token') || '';
+      token = sp.get('token') || '';
       // 容错提取：若 token 因重定向解码被浏览器误吞到了 hash 中，尝试通过正则从 hash 中安全提取
       if (!token && window.location.hash) {
         var match = window.location.hash.match(/[&?]token=([^&]*)/);
         if (match) {
-          token = decodeURIComponent(match[1]);
+          try { token = decodeURIComponent(match[1]); } catch (e) { /* 非法编码不阻断结算页 */ }
         }
       }
-      if (token) {
-        headers['Authorization'] = 'Bearer ' + token;
-      }
+    }
+    if (token) {
+      headers['Authorization'] = 'Bearer ' + token;
     }
     
     return fetch(url, { 
@@ -240,7 +240,14 @@
       credentials: 'include', 
       headers: headers 
     })
-      .then(function (r) { return r.json(); });
+      .then(function (r) {
+        if (r.status === 401) {
+          var error = new Error('auth-expired');
+          error.authExpired = true;
+          throw error;
+        }
+        return r.json();
+      });
   }
 
   var ctx = parseParams();
@@ -260,6 +267,20 @@
 
   var pollCount = 0;
   var timer = null;
+  var pollingStopped = false;
+  var requestPending = false;
+
+  function stopPolling() {
+    pollingStopped = true;
+    clearInterval(timer);
+  }
+
+  function showAuthExpired() {
+    stopPolling();
+    showError('登录已失效', '请返回业务页面重新登录后查看支付结果', true);
+    // 鉴权失效无法判断支付结果，保留 pending，不标记为支付失败。
+    $('btnReturn').href = buildFinalUrl(target, ctx.passthrough, { payResult: 'pending' });
+  }
 
 
   function redirectSuccess() {
@@ -286,11 +307,18 @@
   }
 
   function tick() {
+    if (pollingStopped || requestPending) return;
+    requestPending = true;
     pollCount++;
     fetchStatus(ctx.orderId).then(function (j) {
+      if (pollingStopped) return;
+      if (j && (String(j.code) === '4010' || String(j.code) === '4011')) {
+        showAuthExpired();
+        return;
+      }
       if (!j || j.code !== '0000' || !j.data) {
         if (pollCount >= ctx.pollMaxTimes) {
-          clearInterval(timer);
+          stopPolling();
           showError('查询超时', (j && j.message) ? j.message : '请稍后在业务页面刷新查看', true);
           return;
         }
@@ -298,25 +326,32 @@
       }
       var d = j.data;
       if (d.settled) {
-        clearInterval(timer);
+        stopPolling();
         redirectSuccess();
         return;
       }
       if (d.terminalFailed) {
-        clearInterval(timer);
+        stopPolling();
         redirectFailed(d.message);
         return;
       }
       if (pollCount >= ctx.pollMaxTimes) {
-        clearInterval(timer);
+        stopPolling();
         showError('仍在处理中', '同步时间较长，请返回业务页稍后刷新', true);
         $('btnReturn').href = buildFinalUrl(target, ctx.passthrough, { payResult: 'pending' });
       }
-    }).catch(function () {
+    }).catch(function (error) {
+      if (pollingStopped) return;
+      if (error && error.authExpired) {
+        showAuthExpired();
+        return;
+      }
       if (pollCount >= ctx.pollMaxTimes) {
-        clearInterval(timer);
+        stopPolling();
         showError('网络异常', '无法连接服务器，请检查网络后重试', true);
       }
+    }).then(function () {
+      requestPending = false;
     });
   }
 

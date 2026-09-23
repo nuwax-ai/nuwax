@@ -8,16 +8,14 @@ import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { UserService } from '@/services/userService';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
+import { navigateToAuthUrl } from '@/utils/authNavigation';
 import {
   isValidEmail,
   isValidPhone,
   isWeakNumber,
   validatePassword,
 } from '@/utils/common';
-import {
-  hostBridge,
-  isDesktopHost,
-} from '@/utils/hostBridge';
+import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
@@ -174,7 +172,7 @@ const Login: React.FC = () => {
       if (isWeakNumber(redirect)) {
         history.go(Number(redirect));
       } else if (responseRedirectUrl?.includes('://')) {
-        window.location.href = responseRedirectUrl;
+        void navigateToAuthUrl(responseRedirectUrl);
       } else if (redirect) {
         history.replace(redirect);
       } else {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isRealAgentSandboxBinding,
   normalizeSandboxIdValue,
   resolveEffectiveSandboxId,
 } from './effectiveSandbox';
@@ -56,6 +57,25 @@ describe('resolveEffectiveSandboxId 四级取值链（bug 2451 单源）', () =>
     expect(resolveEffectiveSandboxId({ agentSandboxId: 88 })).toBe('88');
     expect(resolveEffectiveSandboxId({ sandboxServerId: 99 })).toBe('99');
     expect(resolveEffectiveSandboxId({ selectedComputerId: -1 })).toBe('-1');
+  });
+});
+
+describe('isRealAgentSandboxBinding 真实绑定判定（bug 2490：云端记忆 -1 不锁选择器）', () => {
+  it('云端哨兵 -1（string/number）不算绑定——空会话仍可改选个人电脑', () => {
+    expect(isRealAgentSandboxBinding('-1')).toBe(false);
+    expect(isRealAgentSandboxBinding(-1)).toBe(false);
+  });
+
+  it('空值（undefined/null/空串）不算绑定', () => {
+    expect(isRealAgentSandboxBinding(undefined)).toBe(false);
+    expect(isRealAgentSandboxBinding(null)).toBe(false);
+    expect(isRealAgentSandboxBinding('')).toBe(false);
+  });
+
+  it('个人电脑 id（数字串/非数字新沙箱形态）算真绑定，维持固定锁选', () => {
+    expect(isRealAgentSandboxBinding('377')).toBe(true);
+    expect(isRealAgentSandboxBinding(377)).toBe(true);
+    expect(isRealAgentSandboxBinding('sb-a1b2c3')).toBe(true);
   });
 });
 

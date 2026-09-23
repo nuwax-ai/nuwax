@@ -2564,6 +2564,9 @@ const AppDevPro: React.FC = () => {
                 className={cx('flex', 'flex-1', styles['content-container'], {
                   [styles['content-container-fullscreen']]:
                     fileView.preview.isFullscreen,
+                  // 与 ConversationAgent 的文件预览一致：交由客户端壳层为
+                  // Windows/Linux 沉浸工具栏补偿 fixed 全屏根节点。
+                  'immersive-shell-fullscreen': fileView.preview.isFullscreen,
                 })}
               >
                 {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}

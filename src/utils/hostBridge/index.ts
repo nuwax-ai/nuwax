@@ -9,6 +9,7 @@
  * 新增宿主能力时：先在 global.d.ts 补类型，再在此封装，最后由业务方调用。
  */
 
+import type { HostAuthContext } from '@/types/interfaces/hostAuth';
 import {
   getDesktopShellPreviewPlatform,
   setDesktopShellPreviewHostCommandHandler,
@@ -182,12 +183,19 @@ export function syncShellAvoidanceCss(): void {
           '--immersive-shell-toolbar',
           isMac() ? '0px' : `${shellAvoid.TOOLBAR}px`,
         ],
+        // fixed 全屏根独立锚定视口：Windows/Linux 与 page-container 起点对齐；
+        // macOS 按折叠应用标题栏高度避让，不复用普通独立页的 0px toolbar 值。
+        [
+          '--immersive-shell-fullscreen-top',
+          `${isMac() ? shellAvoid.TOOLBAR : shellAvoid.CONTENT_TOP}px`,
+        ],
         ['--immersive-shell-right', `${shellAvoid.RIGHT}px`],
       ]
     : [
         ['--immersive-shell-top', null],
         ['--immersive-shell-content-top', null],
         ['--immersive-shell-toolbar', null],
+        ['--immersive-shell-fullscreen-top', null],
         ['--immersive-shell-right', null],
       ];
   for (const [name, value] of vars) {
@@ -201,6 +209,15 @@ export function syncShellAvoidanceCss(): void {
  * 浏览器环境无桥，各方法均为 no-op / 返回空值，不影响 nuwax 自身流程。
  */
 export const auth = {
+  /** 当前业务域与网关形态；普通浏览器、旧宿主或桥调用失败时不改写导航。 */
+  async getContext(): Promise<HostAuthContext | null> {
+    try {
+      return (await getBridge()?.auth?.getContext?.()) ?? null;
+    } catch (e) {
+      console.warn('[hostBridge] read auth context failed', e);
+      return null;
+    }
+  },
   /** 启动时从宿主恢复 token（getInitialState 内，须早于首个鉴权请求）。 */
   async getToken(): Promise<string | null> {
     try {

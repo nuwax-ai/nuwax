@@ -100,6 +100,12 @@ export function useMenuNavigation(): UseMenuNavigationResult {
   // 刷新的时候触发，如果点击了一级菜单，则不触发
   // 根据路径匹配当前激活的一级菜单
   useEffect(() => {
+    // 点击一级菜单后由点击处理器先更新 activeTab，因此普通菜单路由无需再次同步。
+    // 先消费标记，避免下面的特殊路由分支提前返回时把它遗留到下一次路由变化；
+    // 例如 /square → /agent/:id → /home 会因此跳过 /home 的首页选中同步。
+    const shouldSkipMenuSync = isClickMenu.current;
+    isClickMenu.current = false;
+
     /**
      * 这里特殊处理，如果路径是/agent/xxx，则设置为首页
      * 场景：从工作空间-空间广场，点击智能体，跳转至智能体详情页，此时路径为/agent/xxx，但是需要显示为首页，不然二级菜单点击会因为无法匹配动态路径而报错
@@ -136,10 +142,8 @@ export function useMenuNavigation(): UseMenuNavigationResult {
       return;
     }
 
-    // 如果点击了一级菜单，并且没有悬浮菜单，则不触发刷新
-    // if (isClickMenu.current && !showHoverMenu) {
-    if (isClickMenu.current) {
-      isClickMenu.current = false;
+    // 如果点击了一级菜单，activeTab 已由点击处理器设置，无需路径兜底覆盖。
+    if (shouldSkipMenuSync) {
       return;
     }
 

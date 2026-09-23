@@ -15,12 +15,15 @@
   "scripts": {
     "prebuild:dev": "node scripts/generate-version.js",
     "build:dev": "cross-env UMI_ENV=development max build",
+    "postbuild:dev": "node scripts/write-dist-version.js",
     "build:m": "node scripts/download-mobile-build.js",
     "prebuild:prod": "node scripts/generate-version.js",
     "build:prod": "cross-env UMI_ENV=production max build",
+    "postbuild:prod": "node scripts/write-dist-version.js",
     "build:prod:m": "cross-env UMI_ENV=production max build && node scripts/download-mobile-build.js",
     "predev": "node scripts/generate-version.js",
     "dev": "cross-env UMI_ENV=development NODE_OPTIONS=--max-old-space-size=8192 max dev",
+    "dev:desktop-shell-preview": "cross-env UMI_ENV=development NODE_OPTIONS=--max-old-space-size=8192 max dev",
     "e2e:conversation": "ego-browser nodejs < scripts/e2e/conversation-acceptance.mjs",
     "e2e:mock-chat": "node scripts/e2e/ego-run.mjs scripts/e2e/mock-chat-acceptance.mjs",
     "format": "prettier --cache --write .",
@@ -41,9 +44,7 @@
     "test": "vitest",
     "test:conversation": "vitest run tests/conversation tests/chatConversation tests/createConversation tests/liveConnection tests/resume tests/snapshot tests/terminal tests/runtimeLine tests/messageQueue tests/queueStorage tests/unifiedChatSession tests/useConversation tests/useExecutingTaskStatusPoll tests/useChatFinishedWhenListExecuting tests/interventionDock",
     "verify-commit": "max verify-commit",
-    "verify:conversation": "npm run test:conversation && npm run e2e:conversation",
-    "postbuild:prod": "node scripts/write-dist-version.js",
-    "postbuild:dev": "node scripts/write-dist-version.js"
+    "verify:conversation": "npm run test:conversation && npm run e2e:conversation"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

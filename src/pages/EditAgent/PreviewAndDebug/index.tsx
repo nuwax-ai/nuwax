@@ -479,16 +479,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   );
 
   /**
-   * 会话共享电脑是否为「真实绑定」（bug 2490）：云端哨兵 -1 是创建默认值
-   * （b9016c651 起会话创建统一携带 sandboxId，未选默认 -1，后端回填到
-   * sandboxServerId），不是绑定。若把它当绑定，空会话会同时命中
-   * agentInfo.sandboxId 与 isSelectionLocked，输入区选择器被 fixedSelection
-   * 锁死（菜单除当前项全部禁用）——即「空会话选不了电脑」。仅真实共享
-   * 电脑 id 视为绑定（2451 的四级链里 -1 与「未绑定」同义，兜底即云电脑）。
+   * 会话共享电脑不参与锁选（bug 2490 收尾，2026-09-23 走查实证）：空会话
+   * （无消息）可能延续创建时的共享沙箱绑定（sandboxServerId=真实 id），
+   * 若当绑定锁 fixedSelection，菜单点击全被吞——即「空会话选不了电脑」。
+   * 与 Chat 页同口径：共享绑定仅经 effectiveSandboxId 四级链第 4 级做展示
+   * （云哨兵 -1 与未绑定同义）；锁选只留智能体真实绑定（UnifiedChatSession
+   * isAgentSandboxBound）与会话进度锁（hasUserSentMessage / messageList）。
    */
-  const isSharedSandboxBound =
-    !!conversationInfo?.sandboxServerId &&
-    conversationInfo.sandboxServerId !== CLOUD_SANDBOX_ID;
 
   /**
    * 切到非云端电脑时，若停留在智能体电脑视图则关闭，
@@ -758,14 +755,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 eventBindConfig: agentConfigInfo?.eventBindConfig,
                 hasPermission: conversationInfo?.agent?.hasPermission,
                 sandboxId:
-                  // 与 Chat 页同语义（bug 2451）：智能体绑定优先、共享电脑兜底，
-                  // 两者皆无时不传（手动选择经 selectedComputerId 生效显示），
-                  // 不再用共享电脑压住手动选择；云端哨兵 -1 不算绑定（bug 2490，
-                  // 否则空会话选择器被 fixedSelection 锁死）
-                  conversationInfo?.agent?.sandboxId ||
-                  (isSharedSandboxBound
-                    ? conversationInfo?.sandboxServerId
-                    : undefined),
+                  // 与 Chat 页同语义（bug 2451/2490）：只传智能体自身绑定，
+                  // 会话共享电脑不进此位（共享绑定经 selectedComputerId=
+                  // effectiveSandboxId 四级链第 4 级仅做展示，勿锁选——空会话
+                  // 延续创建绑定时会锁死选择器）；云端哨兵 -1 由
+                  // UnifiedChatSession isRealAgentSandboxBinding 排除
+                  conversationInfo?.agent?.sandboxId || undefined,
                 allowChooseMode: agentConfigInfo?.allowChooseMode,
               }}
               onSendMessage={handleMessageSend}
@@ -783,9 +778,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               isVariablesFilled={true}
               clearLoading={isConversationTransitioning}
               chatInputDisabled={isConversationTransitioning}
-              isSelectionLocked={isSharedSandboxBound}
+              // 共享绑定不锁选（见上方口径注释）：空会话必须可改选电脑，
+              // 有消息后由 UnifiedChatSession 进度锁（messageList/hasUserSentMessage）接管
+              isSelectionLocked={false}
               hasUserSentMessage={hasUserSentMessage}
-              selectedComputerId={selectedComputerId}
+              // 与 Chat 页 finalSelectedId 同模式：传四级链解析值而非原始手动
+              // 选择，空会话（未手选）也正确显示云端勾选（agent 云端记忆 -1 不
+              // 再经 agentSandboxId 压值，见 UnifiedChatSession isAgentSandboxBound）
+              selectedComputerId={effectiveSandboxId}
               onComputerSelect={(id) => {
                 setSelectedComputerId(id);
                 onChangeSelectedComputerId?.(id);

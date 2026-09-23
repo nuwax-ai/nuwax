@@ -8,6 +8,8 @@
  *
  * 全空返回 ''，由调用方按场景兜底（如云电脑哨兵 CLOUD_SANDBOX_ID）。
  */
+import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
+
 export interface EffectiveSandboxSources {
   /** 用户手动选择的电脑 id（云电脑哨兵 '-1' 或个人沙箱 id） */
   selectedComputerId?: string | number | null;
@@ -47,6 +49,17 @@ export const resolveEffectiveSandboxId = ({
 
   return '';
 };
+
+/**
+ * 智能体 sandboxId 是否为「真实绑定」（bug 2490 收尾）：云端哨兵 -1 与空值
+ * 都不算——四级链口径里 -1 与未绑定同义（兜底即云电脑）。智能体只存过云端
+ * 记忆（sandboxId='-1'，apiSaveSelectedSandbox '-1' 表示云电脑）时若当绑定
+ * 处理，空会话输入区选择器会被 fixedSelection 锁死（菜单除云端外全禁用），
+ * 即「空会话选不了电脑」；真绑定（个人电脑 id）仍固定锁选。
+ */
+export const isRealAgentSandboxBinding = (
+  sandboxId?: string | number | null,
+): boolean => !!sandboxId && String(sandboxId) !== CLOUD_SANDBOX_ID;
 
 /**
  * sandboxId 报文归一（禅道 bug2443）：沙箱 id 全链是字符串形态（电脑选择器 /

@@ -31,7 +31,11 @@ export interface UnifiedAgentInfo {
   guidQuestionDtos?: any[];
   eventBindConfig?: any;
   hasPermission?: boolean;
-  /** Agent 绑定的沙箱 id（透传 ChatInputUnified agentSandboxId，后端 string/number 两态都有） */
+  /**
+   * Agent 绑定的沙箱 id（透传 ChatInputUnified agentSandboxId，后端 string/number
+   * 两态都有）。云端哨兵 '-1' 不算绑定（2451/2490 口径）：仅展示回落，不锁
+   * fixedSelection——空会话仍可改选个人电脑
+   */
   sandboxId?: string | number;
   hideDesktop?: number;
   expandPageArea?: number;

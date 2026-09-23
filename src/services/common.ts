@@ -10,6 +10,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { clearStoragePreservingUserPrefs } from '@/utils/authStorageCleanup';
 import { hostBridge } from '@/utils/hostBridge';
 import { isConversationMockPage } from '@/utils/isConversationMockPage';
@@ -177,7 +178,7 @@ const errorHandler = (error: any, opts: any) => {
             return;
           }
           clearLoginStatusCache();
-          window.location.href = errorMessage;
+          void navigateToAuthUrl(errorMessage);
           break;
 
         // 智能体不存在或已下架
