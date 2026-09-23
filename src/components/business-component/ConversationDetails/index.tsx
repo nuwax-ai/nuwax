@@ -995,6 +995,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 onClose={hidePagePreview}
                 showCloseButton={!agentDetail?.hideChatArea}
                 titleClassName={cx(styles['title-style'])}
+                // 应用标签行命令订阅:仅保活实例(instanceScoped)订阅,键与
+                // openedAppTabs 的 /agent/:targetId 同源;/app 树不订阅不变
+                commandKey={instanceScoped ? `/agent/${agentId}` : undefined}
                 // 复制模板按钮相关 props
                 showCopyButton={showCopyButton}
                 allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
