@@ -237,6 +237,8 @@ const AppDevPro: React.FC = () => {
     useState<boolean>(false);
   /** 全栈应用详情 */
   const [userAppInfo, setUserAppInfo] = useState<UserAppInfo | null>(null);
+  /** 提交成功后递增，让右侧版本记录重新请求 git log */
+  const [gitLogRefreshKey, setGitLogRefreshKey] = useState(0);
   /** 是否已完成首次 apiUserAppGetById（用于 gate 自动生成名称） */
   const [userAppInfoFetched, setUserAppInfoFetched] = useState(false);
   useProjectChanged((event) => {
@@ -1659,9 +1661,10 @@ const AppDevPro: React.FC = () => {
       onAfterDiscardChanges: async () => {
         await fileView.tree.handleRefreshFileList();
       },
-      // 提交成功后刷新 Git 状态，不关闭顶部工作区/文件标签
+      // 提交成功后刷新 Git 状态，并更新右侧版本记录
       onCommitSuccess: async () => {
         await fileView.refreshGitList();
+        setGitLogRefreshKey((key) => key + 1);
       },
       // 刷新 Git 变更列表（git status + 文件树）
       onRefreshGitList: async () => {
@@ -2270,6 +2273,7 @@ const AppDevPro: React.FC = () => {
           cid: queryConversationId,
         }}
         branch={fileView.gitBranch}
+        logRefreshKey={gitLogRefreshKey}
         onRollbackSuccess={() => {
           handleRefreshFileList(queryConversationId);
           // 回滚成功后同步刷新 Git 源代码管理状态列表
@@ -2279,6 +2283,7 @@ const AppDevPro: React.FC = () => {
     );
   }, [
     isVersionControlEnabled,
+    gitLogRefreshKey,
     queryConversationId,
     fileView.gitBranch,
     handleRefreshFileList,

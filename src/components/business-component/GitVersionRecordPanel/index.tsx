@@ -3,7 +3,7 @@ import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
 import { Empty } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiGitLogList } from '../FileTreeGitSourcePanel/services/git-version-management';
 import type { GitCommitLogItem } from '../FileTreeGitSourcePanel/types/git-version-management';
 import {
@@ -35,6 +35,11 @@ export interface GitVersionRecordPanelProps {
   onViewChanges?: (commit: GitCommitLogItem) => void;
   /** 回滚成功后的回调（如刷新文件树） */
   onRollbackSuccess?: () => void;
+  /**
+   * 外部提交成功后递增。
+   * 变化时重新请求 git log，刷新右侧版本记录。
+   */
+  logRefreshKey?: number;
   /** 自定义根节点类名 */
   className?: string;
 }
@@ -66,6 +71,7 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   branch = 'main',
   onViewChanges,
   onRollbackSuccess,
+  logRefreshKey,
   className,
 }) => {
   // ---------- 列表与交互状态 ----------
@@ -174,6 +180,19 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     setCurrentPage(0);
     void fetchLogPage(1, false);
   }, [fetchLogPage]);
+
+  /** 跳过首次渲染，仅在提交成功令牌变化时刷新 git log */
+  const logRefreshKeyRef = useRef(logRefreshKey);
+  useEffect(() => {
+    if (logRefreshKey === logRefreshKeyRef.current) {
+      return;
+    }
+    logRefreshKeyRef.current = logRefreshKey;
+    if (!workspaceReady || !workspaceParams || logRefreshKey === undefined) {
+      return;
+    }
+    refreshLog();
+  }, [logRefreshKey, refreshLog, workspaceParams, workspaceReady]);
 
   const {
     rollbackCommit,
