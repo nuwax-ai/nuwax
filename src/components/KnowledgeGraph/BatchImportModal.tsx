@@ -6,7 +6,6 @@ import {
   UPLOAD_FILE_ACTION,
   UPLOAD_FILE_SUFFIX,
 } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { DownloadOutlined, InboxOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd';
 import {
@@ -72,17 +71,14 @@ export const BatchImportModal: React.FC<BatchImportModalProps> = ({
     message.success('模板下载成功');
   };
 
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
   // 上传配置
   const uploadProps: UploadProps = {
     name: 'file',
     multiple: true,
     action: UPLOAD_FILE_ACTION,
+    withCredentials: true,
     fileList,
-    headers: {
-      Authorization: token ? `Bearer ${token}` : '',
-    },
+
     beforeUpload: (file: File) => {
       const { name, size } = file;
       if (!name.includes('.')) {

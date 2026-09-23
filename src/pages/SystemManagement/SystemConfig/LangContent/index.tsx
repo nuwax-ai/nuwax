@@ -4,7 +4,6 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   apiI18nConfigBatchDelete,
   apiI18nConfigExport,
@@ -133,7 +132,6 @@ const LangContent: React.FC = () => {
   const handleTranslateAll = async () => {
     setTranslateAllLoading(true);
     setTranslateAllPercent(0);
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
     // 避免重复点击导致并发 SSE
     translateAllAbortRef.current?.();
@@ -142,7 +140,6 @@ const LangContent: React.FC = () => {
       url: `${process.env.BASE_URL}/api/system/i18n/config/translateAll?sourceLang=${defaultLang}&targetLang=${lang}`,
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
         Accept: 'application/json, text/plain, */* ',
       },
       onMessage: (res) => {

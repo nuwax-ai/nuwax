@@ -1,5 +1,4 @@
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { useWorkflowModel } from '@/hooks/useWorkflowModel';
 import { dict } from '@/services/i18nRuntime';
 import { InputTypeEnum } from '@/types/enums/agent';
@@ -32,7 +31,6 @@ interface InputBoxProps {
 }
 
 const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   const { message } = App.useApp();
   const form = Form.useFormInstance();
   const { getWorkflow } = useWorkflowModel();
@@ -161,13 +159,11 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
           {...uploadRestProps}
           fileList={fileList}
           action={UPLOAD_FILE_ACTION}
+          withCredentials
           onChange={(info: any) => {
             handleChange(info);
           }}
           multiple={isMultiple}
-          headers={{
-            Authorization: token ? `Bearer ${token}` : '',
-          }}
           accept={getAccept(
             isMultiple
               ? (item.dataType?.replace('Array_', '') as DataTypeEnum)

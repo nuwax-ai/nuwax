@@ -6,12 +6,12 @@ import {
   SUCCESS_CODE,
   USER_NO_LOGIN,
 } from '@/constants/codes.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { clearStoragePreservingUserPrefs } from '@/utils/authStorageCleanup';
+import { businessCredentials } from '@/utils/businessCookie';
 import { hostBridge } from '@/utils/hostBridge';
 import { isConversationMockPage } from '@/utils/isConversationMockPage';
 import { redirectToLogin } from '@/utils/router';
@@ -141,7 +141,11 @@ const errorHandler = (error: any, opts: any) => {
   const url = error?.config?.url || opts?.config?.url;
   const isSilentRequest = url && beSilentRequestList(url);
 
-  if (isSilentRequest) {
+  if (
+    isSilentRequest &&
+    ![USER_NO_LOGIN, REDIRECT_LOGIN].includes(error?.info?.code) &&
+    error?.response?.status !== 401
+  ) {
     return;
   }
 
@@ -166,7 +170,7 @@ const errorHandler = (error: any, opts: any) => {
           // 会话闪断清理须保留用户显式偏好：整体 clear 会毁掉主题配置
           // （含导航风格显式选择）与语言偏好（显式选过的语言）
           clearStoragePreservingUserPrefs();
-          // nuwaclaw 客户端：联动清除宿主持久化 token（无桥/失败自动忽略）
+          // Clear the host's cookie mirror and running services as well.
           void hostBridge.auth.clear();
           clearLoginStatusCache();
           redirectToLogin(-1);
@@ -178,6 +182,7 @@ const errorHandler = (error: any, opts: any) => {
             return;
           }
           clearLoginStatusCache();
+          void hostBridge.auth.clear();
           void navigateToAuthUrl(errorMessage);
           break;
 
@@ -220,6 +225,17 @@ const errorHandler = (error: any, opts: any) => {
     }
   } else if (error.response) {
     // 处理HTTP错误
+    if (
+      error.response.status === 401 &&
+      url &&
+      businessCredentials(url) === 'include'
+    ) {
+      clearStoragePreservingUserPrefs();
+      void hostBridge.auth.clear();
+      clearLoginStatusCache();
+      redirectToLogin(-1);
+      return Promise.reject();
+    }
     // message.error(`Request error ${error.response.status}`);
     const networkErrorMsg = dict('PC.Toast.Global.networkError');
     if (shouldShowErrorMessage(networkErrorMsg)) {
@@ -252,17 +268,14 @@ const requestInterceptors = [
   (url: string, options: any) => {
     // 调用方显式传入绝对地址时保持原样；Mock 页用它绕过远端 BASE_URL。
     const newUrl = /^https?:\/\//.test(url) ? url : process.env.BASE_URL + url;
-    return { url: newUrl, options };
+    return {
+      url: newUrl,
+      options: { ...options, credentials: businessCredentials(newUrl) },
+    };
   },
 
   // 添加认证头和通用头信息
   (config: any) => {
-    // 添加token认证
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
     // FormData 上传不需要设置 Content-Type，浏览器会自动设置 multipart/form-data; boundary=...
     if (config.data instanceof FormData) {
       config.headers['Accept'] = 'application/json, text/plain, */*';

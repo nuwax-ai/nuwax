@@ -28,7 +28,6 @@ import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { selectSessionActive } from '@/features/conversation/domain/runtimeSelectors';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { useChatboxAgentConfig } from '@/hooks/useChatboxAgentConfig';
@@ -585,8 +584,6 @@ const ChatInputUnifiedImpl: React.FC<
     };
   }, [visible, isHoveringBtn]);
 
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
   useEffect(() => {
     setFiles(
       uploadFiles.filter(
@@ -791,10 +788,9 @@ const ChatInputUnifiedImpl: React.FC<
           formData.append('type', 'tmp');
 
           const response = await fetch(UPLOAD_FILE_ACTION, {
+            credentials: 'include',
             method: 'POST',
-            headers: {
-              Authorization: token ? `Bearer ${token}` : '',
-            },
+
             body: formData,
           });
 
@@ -834,7 +830,7 @@ const ChatInputUnifiedImpl: React.FC<
         }
       }
     },
-    [applyServerUploadResult, getDefaultFileName, token, wholeDisabled],
+    [applyServerUploadResult, getDefaultFileName, wholeDisabled],
   );
 
   const handlePaste = useCallback(

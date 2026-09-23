@@ -66,10 +66,9 @@ export async function getInitialState(): Promise<InitialStateType> {
   try {
     await initI18n();
 
-    // nuwaclaw 客户端：启动时从宿主恢复 ACCESS_TOKEN（重启免登）。
-    // 浏览器环境无桥自动跳过；须在 UserService.getUserInfo 之前执行，确保首个鉴权请求带 token。
-    const token = await hostBridge.auth.getToken();
-    if (token) localStorage.setItem(ACCESS_TOKEN, token);
+    // 旧客户端升级后丢弃 ACCESS_TOKEN；在首次查询用户前让宿主确认 cookie 会话。
+    localStorage.removeItem(ACCESS_TOKEN);
+    await hostBridge.auth.syncSession();
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
     const publicPaths = [
@@ -412,7 +411,7 @@ export function render(oldRender: () => void) {
  */
 export function onRouteChange() {
   // 如果是登录成功后的路由变化，确保轮询启动
-  if (localStorage.getItem(ACCESS_TOKEN) && location.pathname !== '/login') {
+  if (location.pathname !== '/login') {
     // 这里不需要特别处理，因为GlobalEventPolling组件会确保轮询只启动一次
   }
 }

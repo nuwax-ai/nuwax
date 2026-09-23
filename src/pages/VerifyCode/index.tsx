@@ -13,8 +13,8 @@ import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { getNumbersOnly, isWeakNumber } from '@/utils/common';
-import { hostBridge } from '@/utils/hostBridge';
-import { Button, Input, InputRef } from 'antd';
+import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
+import { Button, Input, InputRef, message } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -64,17 +64,16 @@ const VerifyCode: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: ILoginResult, params: CodeLogin[]) => {
-      const {
-        resetPass,
-        expireDate,
-        token,
-        redirect: responseRedirectUrl,
-      } = result;
-      localStorage.setItem(ACCESS_TOKEN, token);
+      const { resetPass, expireDate, redirect: responseRedirectUrl } = result;
+      localStorage.removeItem(ACCESS_TOKEN);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phone);
-      // nuwaclaw 客户端：登录后持久化 token 到宿主（重启免登/登录联动）；无桥自动跳过
-      await hostBridge.auth.persistToken(token);
+      // 登录响应中的 token 仅供旧客户端；当前宿主从 cookie 确认会话。
+      const synced = await hostBridge.auth.syncSession();
+      if (isDesktopHost() && !synced) {
+        message.error('客户端登录会话同步失败，请升级客户端后重试');
+        return;
+      }
       try {
         const latestUserInfo = await UserService.refreshUserInfo();
         await syncLangFromUserInfo(latestUserInfo);

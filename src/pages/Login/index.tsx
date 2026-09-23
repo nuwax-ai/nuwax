@@ -24,6 +24,7 @@ import {
   Form,
   FormProps,
   Input,
+  message,
   Modal,
   Segmented,
   Space,
@@ -188,10 +189,15 @@ const Login: React.FC = () => {
       normalizeUnknownError: true,
       debounceInterval: 300,
       onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
-        const { expireDate, token, redirect: responseRedirectUrl } = result;
-        localStorage.setItem(ACCESS_TOKEN, token);
-        // nuwaclaw 客户端：登录后持久化 token 到宿主（重启免登）；无桥自动跳过
-        await hostBridge.auth.persistToken(token);
+        const { expireDate, redirect: responseRedirectUrl } = result;
+        localStorage.removeItem(ACCESS_TOKEN);
+        // x-client-type may still make the backend return a token. The ticket
+        // from Set-Cookie is the sole credential for both web and host.
+        const synced = await hostBridge.auth.syncSession();
+        if (isDesktopHost() && !synced) {
+          message.error('客户端登录会话同步失败，请升级客户端后重试');
+          return;
+        }
         localStorage.setItem(EXPIRE_DATE, expireDate);
         localStorage.setItem(PHONE, params[0].phoneOrEmail);
         try {

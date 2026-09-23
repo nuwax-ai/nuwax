@@ -11,7 +11,6 @@ import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   selectSessionActive,
   selectSessionStreamActive,
@@ -301,8 +300,6 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       };
     }, [visible, isHoveringBtn]);
 
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
     useEffect(() => {
       setFiles(
         uploadFiles.filter(
@@ -514,10 +511,9 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
             formData.append('type', 'tmp');
 
             const response = await fetch(UPLOAD_FILE_ACTION, {
+              credentials: 'include',
               method: 'POST',
-              headers: {
-                Authorization: token ? `Bearer ${token}` : '',
-              },
+
               body: formData,
             });
 
@@ -557,7 +553,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
           }
         }
       },
-      [applyServerUploadResult, getDefaultFileName, token, wholeDisabled],
+      [applyServerUploadResult, getDefaultFileName, wholeDisabled],
     );
 
     /**
@@ -961,13 +957,11 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                     {/*上传按钮*/}
                     <Upload
                       action={UPLOAD_FILE_ACTION}
+                      withCredentials
                       disabled={wholeDisabled}
                       onChange={handleChange}
                       multiple={true}
                       fileList={uploadFiles}
-                      headers={{
-                        Authorization: token ? `Bearer ${token}` : '',
-                      }}
                       data={{
                         type: 'tmp',
                       }}

@@ -213,10 +213,27 @@ export function syncShellAvoidanceCss(): void {
 }
 
 /**
- * 鉴权态同步：ACCESS_TOKEN 在 nuwax 与 nuwaclaw 宿主之间的双向同步（重启免登）。
+ * 商业版由宿主确认和镜像 ticket cookie 会话；旧 token 桥仅供兼容调用。
  * 浏览器环境无桥，各方法均为 no-op / 返回空值，不影响 nuwax 自身流程。
  */
 export const auth = {
+  /** Cookie session is owned by the browser; the host only validates and mirrors it. */
+  async syncSession(): Promise<boolean> {
+    try {
+      return (await getBridge()?.auth?.syncSession?.()) ?? false;
+    } catch (e) {
+      console.warn('[hostBridge] sync cookie session failed', e);
+      return false;
+    }
+  },
+  async beginLogin(): Promise<boolean> {
+    try {
+      return (await getBridge()?.auth?.beginLogin?.()) ?? false;
+    } catch (e) {
+      console.warn('[hostBridge] begin cookie login failed', e);
+      return false;
+    }
+  },
   /** 当前业务域与网关形态；普通浏览器、旧宿主或桥调用失败时不改写导航。 */
   async getContext(): Promise<HostAuthContext | null> {
     try {

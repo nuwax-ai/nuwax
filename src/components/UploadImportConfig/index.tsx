@@ -1,5 +1,4 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import type {
   FileType,
@@ -80,17 +79,13 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
     return isValidFile || Upload.LIST_IGNORE;
   };
 
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
   return (
     <>
       <Upload
         action={`${process.env.BASE_URL}/api/template/import/${spaceId}`}
+        withCredentials
         onChange={handleChange}
         style={{ display: 'none' }}
-        headers={{
-          Authorization: token ? `Bearer ${token}` : '',
-        }}
         showUploadList={false}
         beforeUpload={beforeUpload || beforeUploadDefault}
       >

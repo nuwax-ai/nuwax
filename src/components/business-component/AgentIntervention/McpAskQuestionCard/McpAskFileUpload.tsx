@@ -1,6 +1,5 @@
 import ChatUploadFile from '@/components/ChatUploadFile';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { t } from '@/services/i18nRuntime';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import { handleUploadFileList } from '@/utils/upload';
@@ -32,7 +31,6 @@ const McpAskFileUpload: React.FC<McpAskFileUploadProps> = ({
   multiple,
   accept,
 }) => {
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   const fileList = value ?? [];
 
   const emitChange = useCallback(
@@ -57,7 +55,7 @@ const McpAskFileUpload: React.FC<McpAskFileUploadProps> = ({
       ) : null}
       <Upload
         action={UPLOAD_FILE_ACTION}
-        headers={{ Authorization: token ? `Bearer ${token}` : '' }}
+        withCredentials
         data={{ type: 'tmp' }}
         disabled={disabled}
         multiple={multiple}

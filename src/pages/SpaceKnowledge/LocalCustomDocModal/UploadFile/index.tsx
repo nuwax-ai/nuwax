@@ -3,7 +3,6 @@ import {
   UPLOAD_FILE_ACTION,
   UPLOAD_FILE_SUFFIX,
 } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { FileType } from '@/types/interfaces/common';
 import type { UploadFileProps } from '@/types/interfaces/knowledge';
@@ -70,8 +69,6 @@ const UploadFile: React.FC<UploadFileProps> = ({
     return (isFile && isLt100M) || Upload.LIST_IGNORE;
   };
 
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
   return (
     <div
       className={cx('flex flex-col content-center', styles.container)}
@@ -80,12 +77,10 @@ const UploadFile: React.FC<UploadFileProps> = ({
       <Dragger
         className={cx('h-full')}
         action={UPLOAD_FILE_ACTION}
+        withCredentials
         onChange={handleChange}
         multiple={multiple}
         fileList={fileList}
-        headers={{
-          Authorization: token ? `Bearer ${token}` : '',
-        }}
         showUploadList={false}
         beforeUpload={beforeUpload ?? beforeUploadDefault}
       >

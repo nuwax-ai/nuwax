@@ -19,7 +19,6 @@ import {
   CONVERSATION_CONNECTION_URL,
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { useConversationActiveState } from '@/hooks/useConversationActiveState';
 import { useConversationTerminalFinalizer } from '@/hooks/useConversationTerminalFinalizer';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
@@ -855,8 +854,6 @@ export default () => {
     currentMessageId: string,
     perfLifecycle: MessagePerfLifecycle,
   ) => {
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
     // 请求即将发起：用于计算前端从发送动作到真正网络发起的耗时。
     perfLifecycle.onHttpStart();
 
@@ -865,7 +862,6 @@ export default () => {
       url: CONVERSATION_CONNECTION_URL,
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
         Accept: 'application/json, text/plain, */* ',
       },
       body: params,
