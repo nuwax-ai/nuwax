@@ -37,6 +37,11 @@ import {
 export interface UseUserAppRuntimeOptions {
   /** 应用 ID */
   appId?: number;
+  /**
+   * 会话 ID。
+   * 和应用 ID 一起作为运行时隔离键：切换应用或会话时丢弃上一份启动 stream，避免串到新页面。
+   */
+  conversationId?: number;
   /** 当前环境：开发 / 线上 */
   env: UserAppDbEnvEnum;
   /** 应用详情（线上启动需要最新发布版本） */
@@ -76,8 +81,15 @@ const getFailedMessage = (action: UserAppRuntimeAction): string => {
  * @returns 运行时状态与操作
  */
 export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
-  const { appId, env, userAppInfo, onReady, onStopped, onDetailRefresh } =
-    options;
+  const {
+    appId,
+    conversationId,
+    env,
+    userAppInfo,
+    onReady,
+    onStopped,
+    onDetailRefresh,
+  } = options;
   const onStoppedRef = useRef(onStopped);
   onStoppedRef.current = onStopped;
   const onReadyRef = useRef(onReady);
@@ -116,7 +128,41 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     [UserAppDbEnvEnum.Dev]: false,
     [UserAppDbEnvEnum.Prod]: false,
   });
+  /**
+   * 应用 + 会话隔离。切换后递增，进行中的 start / stream 回写发现代际变化就丢弃，
+   * 不能把上一应用的启动日志写进新会话。
+   */
+  const sessionRef = useRef(0);
+  const sessionKey = `${appId ?? ''}:${conversationId ?? ''}`;
+  const boundSessionKeyRef = useRef(sessionKey);
   phaseRef.current = phase;
+  if (boundSessionKeyRef.current !== sessionKey) {
+    boundSessionKeyRef.current = sessionKey;
+    sessionRef.current += 1;
+    stoppedByUserRef.current = false;
+    cancelledRef.current = false;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    taskIdRef.current = '';
+    lastSeqRef.current = undefined;
+    servicesRef.current = [];
+    runningByEnvRef.current = {
+      [UserAppDbEnvEnum.Dev]: false,
+      [UserAppDbEnvEnum.Prod]: false,
+    };
+    phaseRef.current = 'idle';
+    envRef.current = env;
+    setOpen(false);
+    setPhase('idle');
+    setAction('start');
+    setServices([]);
+    setErrorMessage('');
+    setPreviewLoadError('');
+    setTaskId('');
+    setCancelLoading(false);
+    setRunning(false);
+    setStopping(false);
+  }
 
   /** 清空当前任务现场（服务日志、错误、taskId、SSE 序号），不改 phase / running */
   const resetTaskState = useCallback(() => {
@@ -148,7 +194,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
    * @returns 是否可以展示预览
    */
   const finishPreviewReady = useCallback(async (): Promise<boolean> => {
-    if (stoppedByUserRef.current) {
+    const session = sessionRef.current;
+    const alive = () => sessionRef.current === session;
+    if (!alive() || stoppedByUserRef.current) {
       return false;
     }
     if (cancelledRef.current) {
@@ -158,7 +206,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     const confirm = confirmPreviewReachableRef.current;
     if (confirm) {
       const failureText = (await confirm()).trim();
-      if (stoppedByUserRef.current) {
+      if (!alive() || stoppedByUserRef.current) {
         return false;
       }
       if (cancelledRef.current) {
@@ -174,7 +222,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         return false;
       }
     }
-    if (stoppedByUserRef.current) {
+    if (!alive() || stoppedByUserRef.current) {
       return false;
     }
     setPhase('success');
@@ -195,6 +243,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
 
   const listenProgress = useCallback(
     (currentTaskId: string, currentAction: UserAppRuntimeAction) => {
+      const session = sessionRef.current;
       // 先关掉上一条，避免进页 effect 重入时两条 SSE 并存
       abortRef.current?.abort();
       const controller = new AbortController();
@@ -203,8 +252,14 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         taskId: currentTaskId,
         fromSeq: lastSeqRef.current,
         abortController: controller,
-        isCancelled: () => cancelledRef.current,
-        onEvent: applyEvent,
+        isCancelled: () =>
+          cancelledRef.current || sessionRef.current !== session,
+        onEvent: (event) => {
+          if (sessionRef.current !== session) {
+            return;
+          }
+          applyEvent(event);
+        },
         getServices: () => servicesRef.current,
         failedMessage: getFailedMessage(currentAction),
         streamClosedMessage: dict('PC.Pages.AppDevPro.publishStreamClosed'),
@@ -248,6 +303,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         return;
       }
 
+      const session = sessionRef.current;
+      const alive = () => sessionRef.current === session;
       stoppedByUserRef.current = false;
       resetTaskState();
       setAction(nextAction);
@@ -271,6 +328,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           await requestApi(params),
           failedMessage,
         ) as UserAppDevTaskInfo;
+        if (!alive()) {
+          return;
+        }
 
         const currentTaskId = pickUserAppTaskId(task);
         if (currentTaskId) {
@@ -284,6 +344,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         if (cancelledRef.current) {
           if (currentTaskId) {
             await apiUserAppBuildCancel(currentTaskId);
+          }
+          if (!alive()) {
+            return;
           }
           setPhase('cancelled');
           return;
@@ -301,7 +364,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         if (currentTaskId && immediate !== 'succeeded') {
           setPhase('building');
           const streamResult = await listenProgress(currentTaskId, nextAction);
-          if (stoppedByUserRef.current) {
+          if (!alive() || stoppedByUserRef.current) {
             return;
           }
           if (streamResult === 'cancelled' || cancelledRef.current) {
@@ -313,7 +376,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           }
         }
 
-        if (stoppedByUserRef.current) {
+        if (!alive() || stoppedByUserRef.current) {
           return;
         }
         if (cancelledRef.current) {
@@ -326,7 +389,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         }
 
         const previewReady = await finishPreviewReady();
-        if (!previewReady) {
+        if (!alive() || !previewReady) {
           return;
         }
         message.success(
@@ -336,7 +399,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         );
         onReadyRef.current?.();
       } catch (error) {
-        if (stoppedByUserRef.current) {
+        if (!alive() || stoppedByUserRef.current) {
           return;
         }
         if (
@@ -391,10 +454,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       if (taskIdRef.current === currentTaskId) {
         return;
       }
-      if (
-        phaseRef.current === 'starting' ||
-        phaseRef.current === 'building'
-      ) {
+      if (phaseRef.current === 'starting' || phaseRef.current === 'building') {
         return;
       }
 
@@ -402,6 +462,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         task.taskType === UserAppTaskTypeEnum.DevRestart ? 'restart' : 'start';
       const isBuild = task.taskType === UserAppTaskTypeEnum.Build;
       const failedMessage = getFailedMessage(nextAction);
+      const session = sessionRef.current;
+      const alive = () => sessionRef.current === session;
 
       resetTaskState();
       cancelledRef.current = false;
@@ -423,10 +485,10 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         if (immediate === 'succeeded') {
           if (!isBuild) {
             const previewReady = await finishPreviewReady();
-            if (previewReady) {
+            if (alive() && previewReady) {
               onReadyRef.current?.();
             }
-          } else {
+          } else if (alive()) {
             setPhase('idle');
           }
           return;
@@ -435,6 +497,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         phaseRef.current = 'building';
         setPhase('building');
         const streamResult = await listenProgress(currentTaskId, nextAction);
+        if (!alive()) {
+          return;
+        }
         if (streamResult === 'cancelled' || cancelledRef.current) {
           setPhase('cancelled');
           return;
@@ -452,10 +517,13 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
           return;
         }
         const previewReady = await finishPreviewReady();
-        if (previewReady) {
+        if (alive() && previewReady) {
           onReadyRef.current?.();
         }
       } catch (error) {
+        if (!alive()) {
+          return;
+        }
         if (
           cancelledRef.current ||
           (error instanceof Error && error.name === 'AbortError')
@@ -496,6 +564,8 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       message.warning(dict('PC.Pages.AppDevPro.publishNoApp'));
       return false;
     }
+    const session = sessionRef.current;
+    const alive = () => sessionRef.current === session;
     setStopping(true);
     stoppedByUserRef.current = true;
     cancelledRef.current = true;
@@ -506,6 +576,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         env === UserAppDbEnvEnum.Prod
           ? await apiUserAppProdStop(params)
           : await apiUserAppStopDev(params);
+      if (!alive()) {
+        return false;
+      }
       if (result && typeof result === 'object' && 'code' in result) {
         const res = result as RequestResponse<null>;
         if (res.code && res.code !== SUCCESS_CODE) {
@@ -521,15 +594,21 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       message.success(dict('PC.Pages.AppDevPro.stopSuccess'));
       return true;
     } catch (error) {
-      stoppedByUserRef.current = false;
+      if (alive()) {
+        stoppedByUserRef.current = false;
+      }
       return false;
     } finally {
-      setStopping(false);
+      if (alive()) {
+        setStopping(false);
+      }
     }
   }, [appId, buildParams, env, resetTaskState, setEnvRunning, stopStream]);
 
   // 取消当前启动 / 重启任务
   const cancelTask = useCallback(async () => {
+    const session = sessionRef.current;
+    const alive = () => sessionRef.current === session;
     const currentTaskId = taskIdRef.current || taskId;
     if (!currentTaskId) {
       cancelledRef.current = true;
@@ -541,6 +620,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     try {
       cancelledRef.current = true;
       await apiUserAppBuildCancel(currentTaskId);
+      if (!alive()) {
+        return;
+      }
       stopStream();
       setPhase('cancelled');
       message.success(dict('PC.Pages.AppDevPro.startCancelled'));
@@ -549,9 +631,13 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         error instanceof Error
           ? error.message
           : dict('PC.Pages.AppDevPro.startFailed');
-      message.error(text);
+      if (alive()) {
+        message.error(text);
+      }
     } finally {
-      setCancelLoading(false);
+      if (alive()) {
+        setCancelLoading(false);
+      }
     }
   }, [stopStream, taskId]);
 

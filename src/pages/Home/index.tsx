@@ -8,10 +8,10 @@ import ChatInputUnified, {
   type ChatInputUnifiedRef,
 } from '@/components/business-component/ChatInputUnified';
 import type { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
-import RecommendList from '@/components/RecommendList';
 import {
   findDefaultAgent,
   findTypeFallbackAgent,
+  getAllowedFunctionType,
   getProjectTypeByFunctionType,
   isAgentSelectable,
   isTaskAgentFunctionType,
@@ -175,6 +175,10 @@ const Home: React.FC = () => {
   const defaultAgentId = tenantConfigInfo?.defaultAgentId;
   const isUserAppPinned =
     pinnedProject?.projectType === AgentComponentTypeEnum.UserApp;
+  // 与推荐位的项目类型限制保持一致：项目上框后不允许通过 @ 绕过类型限制选择专家。
+  const isProjectExpertRestricted = !!getAllowedFunctionType(pinnedProject);
+  // 全栈项目自动确定智能体后，隐藏其关闭按钮。
+  const isProjectAgentLocked = isUserAppPinned && !!selectedRecommend;
   // 常规项目参与者判定（多人参与）：owner === false（后端按当前用户视角回的
   // 布尔）时开放沙箱自选（云端/个人电脑+工作目录）——项目沙箱可能绑定创建者的
   // 个人电脑，参与者不可用；创建者本人/字段未回包走项目沙箱现状
@@ -322,6 +326,7 @@ const Home: React.FC = () => {
     if (isSameProject) return;
     agentMissedPromptedRef.current = undefined;
     // 上框项目自带空间/沙箱/工作区，复位与之互斥的选择
+    setSummonedExpert(undefined);
     setSelectedRecommend(undefined);
     setUserPickedCategory(null);
     setSelectedComputerId('-1');
@@ -339,15 +344,15 @@ const Home: React.FC = () => {
   useEffect(() => {
     // 常规项目上框不自动命中，但必须保留用户手选的常规项目 Agent。
     // 切入上框时的旧推荐项由 consume effect 清理，不能在这里反复清空。
-    if (!isUserAppPinned || selectedRecommend) return;
+    // 用户随后显式选专家时也不再自动命中项目智能体，否则会叠出两个回执。
+    if (!isUserAppPinned || selectedRecommend || summonedExpert) return;
     if (!recommendNavList.length) return; // 推荐列表未就绪不做未命中判定
     const hit =
       findDefaultAgent(recommendNavList, pinnedProject) ??
       findTypeFallbackAgent(recommendNavList, pinnedProject?.projectType);
     if (hit) {
       setSelectedRecommend(hit);
-      // 同步切到命中项所在分类（受控 Segmented 直接置 key；不复用
-      // handleCategoryChange——其含清空/清输入副作用）。category 为空时
+      // 同步切到命中项所在分类（受控 Segmented 直接置 key）。category 为空时
       // pill 归第一个分类且该分类必非空，autoCategoryKey 天然正确无需设置
       // （显式设置反而引入分类数据未到的竞态）
       if (hit.category) {
@@ -359,7 +364,13 @@ const Home: React.FC = () => {
       agentMissedPromptedRef.current = pinnedProject?.projectId;
       message.warning(dict('PC.Pages.Home.pinnedProject.agentMissed'));
     }
-  }, [isUserAppPinned, pinnedProject, recommendNavList, selectedRecommend]);
+  }, [
+    isUserAppPinned,
+    pinnedProject,
+    recommendNavList,
+    selectedRecommend,
+    summonedExpert,
+  ]);
 
   const handleEnter = async (
     inputMessage: string,
@@ -492,23 +503,8 @@ const Home: React.FC = () => {
     (recommendNavList.length === 0 || chatboxCategories.length === 0);
 
   const handleCategoryChange = (key: string) => {
+    // 大类 Tab 仅切换推荐列表；会话框中已选智能体、草稿及其他配置保持不变。
     setUserPickedCategory(key);
-    // 切换分类后清掉已选 pill 与召唤态，避免跨分类残留选中态；
-    // 上框全栈保留命中项（只能同类切换，清掉会回落到出范围的租户默认智能体）；
-    // 无选中时不清输入（用户可能只是浏览分类）
-    const shouldClearRecommend = !!selectedRecommend && !isUserAppPinned;
-    if (shouldClearRecommend || summonedExpert) {
-      if (shouldClearRecommend) {
-        setSelectedRecommend(undefined);
-      }
-      setSummonedExpert(undefined);
-      // 输入被清，消息级技能 chip 一并清（对齐召唤态口径）
-      setSelectedSkill(undefined);
-      // 智能体随分类重选：模型/空间复位（沙箱按 agent 绑定，由选择器解析该 agent 的记忆）
-      setSelectedModelId(undefined);
-      setSelectedSpaceId(undefined);
-      chatInputRef.current?.clear();
-    }
   };
 
   const handleRecommendSelect = (item: DisplayRecommendInfo) => {
@@ -582,6 +578,12 @@ const Home: React.FC = () => {
           )}
           <ChatBoxRecommendNav
             items={activeCategoryItems}
+            guidQuestions={
+              agentDetail?.agentId === currentAgentId
+                ? agentDetail?.guidQuestionDtos
+                : []
+            }
+            onQuestionClick={(text) => chatInputRef.current?.setText(text)}
             selectedId={selectedRecommend?.id}
             onSelect={handleRecommendSelect}
             // 上框期间非同类型智能体置灰不可选（全部展示不过滤）
@@ -592,16 +594,6 @@ const Home: React.FC = () => {
             }
           />
         </div>
-        {summonedExpert &&
-          agentDetail?.agentId === summonedExpert.agentId &&
-          !submitting && (
-            <RecommendList
-              className={cx(styles['expert-guid-questions'])}
-              itemClassName={cx(styles['expert-guid-question'])}
-              chatSuggestList={agentDetail.guidQuestionDtos || []}
-              onClick={(text) => chatInputRef.current?.setText(text)}
-            />
-          )}
         <ChatInputUnified
           ref={chatInputRef}
           className={cx(styles.textarea)}
@@ -612,9 +604,10 @@ const Home: React.FC = () => {
           draftKey="home"
           // 首页不展示会话调试悬浮按钮
           showDebugFab={false}
-          // 选择专家仅首页开放（其余入口能力弹窗隐藏专家导航）
-          showExpertCapability
-          // 首页 @：弹「专家（便捷视图）+ 资料库（最近访问）」资源弹层
+          showGuidQuestions={false}
+          // 项目类型受限时，@ 与能力弹窗都不开放专家，资料库等入口保留。
+          showExpertCapability={!isProjectExpertRestricted}
+          // 首页 @：未受项目限制时显示专家与资料库，受限时只显示资料库。
           atHomePanel
           placeholder={selectedRecommend?.placeholder || undefined}
           manualComponents={
@@ -636,6 +629,11 @@ const Home: React.FC = () => {
           }
           disablePersonalComputer={disablePersonalComputer}
           agentId={agentDetail?.agentId}
+          guidQuestionDtos={
+            agentDetail && agentDetail.agentId === currentAgentId
+              ? agentDetail.guidQuestionDtos
+              : []
+          }
           agentSandboxId={agentDetail?.sandboxId}
           readonly={!agentDetail?.allowPrivateSandbox}
           // 沙箱按 agent 绑定：切换后由选择器解析该 agent 的记忆（未绑定回落云端默认）
@@ -657,11 +655,15 @@ const Home: React.FC = () => {
                 }
               : undefined
           }
-          onClearSelectedTag={() => {
-            setSelectedRecommend(undefined);
-            chatInputRef.current?.clear();
-            chatInputRef.current?.focus();
-          }}
+          onClearSelectedTag={
+            isProjectAgentLocked
+              ? undefined
+              : () => {
+                  setSelectedRecommend(undefined);
+                  chatInputRef.current?.clear();
+                  chatInputRef.current?.focus();
+                }
+          }
           pinnedProject={
             pinnedProject
               ? {
@@ -698,6 +700,7 @@ const Home: React.FC = () => {
           // 输入内容与电脑/模型/空间等已选项保持；复用召唤链路
           // （chip 展示 + 提交时以专家 agentId 走会话创建）
           onExpertAgentSelect={(expert) => {
+            if (isProjectExpertRestricted) return;
             setSelectedRecommend(undefined);
             setSummonedExpert({
               agentId: expert.targetId,

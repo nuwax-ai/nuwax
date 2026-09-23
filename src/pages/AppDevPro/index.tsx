@@ -167,8 +167,11 @@ const AppDevPro: React.FC = () => {
   const queryConversationId = Number(params.conversationId);
 
   // ==================== 本地状态 ====================
-  /** 当前应用 ID */
+  /** 当前应用 ID。路由切换时同步，避免 effect 晚一拍仍用上一应用发 start */
   const [appId, setAppId] = useState<number>(routeAppId);
+  if (appId !== routeAppId) {
+    setAppId(routeAppId);
+  }
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
@@ -573,10 +576,6 @@ const AppDevPro: React.FC = () => {
     runtimeSession: runtimeLine?.session,
   });
 
-  /** 路由 appId 变化时同步到本地状态 */
-  useEffect(() => {
-    setAppId(routeAppId);
-  }, [routeAppId]);
 
   /** 打开导入项目弹窗 */
   const handleImportProject = useCallback(async () => {
@@ -758,15 +757,34 @@ const AppDevPro: React.FC = () => {
   /** 进页已执行 start 或 attach，未完成前不画「服务已停止」 */
   const [previewEnterSettled, setPreviewEnterSettled] = useState(false);
 
+  /**
+   * 换应用时立刻丢掉上一应用的详情、域名和预览地址。
+   * 这些如果留到 effect，进页启动会拿旧域名判断「已经可访问」从而不再 start。
+   */
+  const previewScopeAppIdRef = useRef(appId);
+  if (previewScopeAppIdRef.current !== appId) {
+    previewScopeAppIdRef.current = appId;
+    setUserAppInfo(null);
+    setUserAppInfoFetched(false);
+    setUserAppDomainList([]);
+    setPreviewIframeUrl('');
+    setPreviewRefreshKey(0);
+    setDbEnv(UserAppDbEnvEnum.Dev);
+    previewUserStoppedRef.current = false;
+    setPreviewUserStopped(false);
+    setPreviewEnterSettled(false);
+  }
+
   useEffect(() => {
     previewUserStoppedRef.current = false;
     setPreviewUserStopped(false);
     setPreviewEnterSettled(false);
-  }, [appId]);
+  }, [appId, queryConversationId]);
 
   /** 应用预览：按环境启动 / 重启 / 停止，启动过程走任务 SSE */
   const previewRuntime = useUserAppRuntime({
     appId,
+    conversationId: queryConversationId,
     env: dbEnv,
     userAppInfo,
     onReady: () => {

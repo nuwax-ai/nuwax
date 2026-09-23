@@ -3,7 +3,7 @@ import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
 import { Empty } from 'antd';
 import classNames from 'classnames';
-import React, {
+import {
   forwardRef,
   useCallback,
   useEffect,

@@ -1,6 +1,12 @@
+import RecommendList from '@/components/RecommendList';
 import { dict } from '@/services/i18nRuntime';
+import type { GuidQuestionDto } from '@/types/interfaces/agent';
 import type { DisplayRecommendInfo } from '@/types/interfaces/displayRecommend';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import {
+  ArrowDownOutlined,
+  LeftOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
@@ -11,6 +17,9 @@ interface ChatBoxRecommendNavProps {
   items: DisplayRecommendInfo[];
   selectedId?: number;
   onSelect: (item: DisplayRecommendInfo) => void;
+  /** 当前智能体有有效提示时，以提示替代推荐小分类，共用滚动区域。 */
+  guidQuestions?: GuidQuestionDto[];
+  onQuestionClick?: (text: string) => void;
   /**
    * 单项可选性判定（返回 false 置灰不可点；不传 = 全部可选）。
    * 用于项目上框期间非同类型智能体的「展示但不可选」形态。
@@ -22,8 +31,12 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
   items,
   selectedId,
   onSelect,
+  guidQuestions,
+  onQuestionClick,
   isItemSelectable,
 }) => {
+  const questions = (guidQuestions || []).filter((item) => item?.info?.trim());
+  const showQuestions = questions.length > 0;
   const listRef = useRef<HTMLDivElement>(null);
   // pill 元素索引（id → button），供选中项定位（自动命中场景滚动到可见）
   const itemRefsRef = useRef<Map<number, HTMLButtonElement>>(new Map());
@@ -31,12 +44,15 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
   const updateEdges = useCallback(() => {
     const list = listRef.current;
     if (!list) return;
+    const maxScroll = Math.max(0, list.scrollWidth - list.clientWidth);
     setEdges({
-      left: list.scrollLeft > 1,
-      right: list.scrollWidth - list.clientWidth - list.scrollLeft > 1,
+      left: maxScroll > 1 && list.scrollLeft > 1,
+      right: maxScroll > 1 && maxScroll - list.scrollLeft > 1,
     });
   }, []);
-  const itemKey = items.map((item) => item.id).join(',');
+  const itemKey = showQuestions
+    ? `questions:${JSON.stringify(questions)}`
+    : `items:${items.map((item) => item.id).join(',')}`;
   const lastItemKeyRef = useRef<string>('');
 
   useEffect(() => {
@@ -49,7 +65,7 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
       // 列表重建（切分类/上框命中换列表）后把选中 pill 滚动到居中可见——
       // 必须在 reset 之后执行否则被吞；手动算居中（scrollIntoView 会带动页面纵向滚动）
       const selectedEl =
-        selectedId !== undefined
+        !showQuestions && selectedId !== undefined
           ? itemRefsRef.current.get(selectedId)
           : undefined;
       if (selectedEl) {
@@ -65,7 +81,7 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
     observer.observe(list);
     Array.from(list.children).forEach((child) => observer.observe(child));
     return () => observer.disconnect();
-  }, [itemKey, selectedId, updateEdges]);
+  }, [itemKey, selectedId, showQuestions, updateEdges]);
 
   const scroll = (direction: number) => {
     const list = listRef.current;
@@ -78,7 +94,7 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
     });
   };
 
-  if (!items.length) {
+  if (!items.length && !showQuestions) {
     return null;
   }
 
@@ -89,71 +105,96 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
         [styles['has-right']]: edges.right,
       })}
     >
-      <button
-        type="button"
-        className={cx(styles.arrow, styles['arrow-left'])}
-        aria-label={dict('PC.Pages.Home.previousTypes')}
-        disabled={!edges.left}
-        onClick={() => scroll(-1)}
-      >
-        <LeftOutlined />
-      </button>
+      {edges.left && (
+        <button
+          type="button"
+          className={cx(styles.arrow, styles['arrow-left'])}
+          aria-label={dict(
+            showQuestions
+              ? 'PC.Pages.Home.previousQuestions'
+              : 'PC.Pages.Home.previousTypes',
+          )}
+          onClick={() => scroll(-1)}
+        >
+          <LeftOutlined />
+        </button>
+      )}
       <div
         ref={listRef}
         className={styles['recommend-list']}
         onScroll={updateEdges}
       >
-        {items.map((item) => {
-          const active = selectedId === item.id;
-          // 上框期间非同类型智能体置灰不可选（展示不过滤）
-          const selectable = !isItemSelectable || isItemSelectable(item);
+        {showQuestions ? (
+          <RecommendList
+            className={styles['guid-question-list']}
+            itemClassName={styles['guid-question']}
+            itemPrefix={
+              <ArrowDownOutlined
+                className={styles['guid-arrow']}
+                aria-hidden="true"
+              />
+            }
+            chatSuggestList={questions}
+            onClick={(text) => onQuestionClick?.(text)}
+          />
+        ) : (
+          items.map((item) => {
+            const active = selectedId === item.id;
+            // 上框期间非同类型智能体置灰不可选（展示不过滤）
+            const selectable = !isItemSelectable || isItemSelectable(item);
 
-          return (
-            <button
-              key={item.id}
-              ref={(el) => {
-                if (el) {
-                  itemRefsRef.current.set(item.id, el);
-                } else {
-                  itemRefsRef.current.delete(item.id);
-                }
-              }}
-              type="button"
-              className={cx(styles['recommend-item'], {
-                [styles.active]: active,
-                [styles.disabled]: !selectable,
-              })}
-              title={item.label}
-              aria-pressed={active}
-              disabled={!selectable}
-              onClick={() => {
-                if (selectable) {
-                  onSelect(item);
-                }
-              }}
-            >
-              {item.icon && (
-                <img
-                  className={cx(styles.icon)}
-                  src={item.icon}
-                  alt=""
-                  aria-hidden="true"
-                />
-              )}
-              <span className={cx(styles.label)}>{item.label}</span>
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={item.id}
+                ref={(el) => {
+                  if (el) {
+                    itemRefsRef.current.set(item.id, el);
+                  } else {
+                    itemRefsRef.current.delete(item.id);
+                  }
+                }}
+                type="button"
+                className={cx(styles['recommend-item'], {
+                  [styles.active]: active,
+                  [styles.disabled]: !selectable,
+                })}
+                title={item.label}
+                aria-pressed={active}
+                disabled={!selectable}
+                onClick={() => {
+                  if (selectable) {
+                    onSelect(item);
+                  }
+                }}
+              >
+                {item.icon && (
+                  <img
+                    className={cx(styles.icon)}
+                    src={item.icon}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                )}
+                <span className={cx(styles.label)}>{item.label}</span>
+              </button>
+            );
+          })
+        )}
       </div>
-      <button
-        type="button"
-        className={cx(styles.arrow, styles['arrow-right'])}
-        aria-label={dict('PC.Pages.Home.moreTypes')}
-        disabled={!edges.right}
-        onClick={() => scroll(1)}
-      >
-        <RightOutlined />
-      </button>
+      {edges.right && (
+        <button
+          type="button"
+          className={cx(styles.arrow, styles['arrow-right'])}
+          aria-label={dict(
+            showQuestions
+              ? 'PC.Pages.Home.moreQuestions'
+              : 'PC.Pages.Home.moreTypes',
+          )}
+          onClick={() => scroll(1)}
+        >
+          <RightOutlined />
+        </button>
+      )}
     </div>
   );
 };
