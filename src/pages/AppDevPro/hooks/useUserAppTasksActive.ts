@@ -1,7 +1,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { useRequest } from 'ahooks';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   apiUserAppBuildCancel,
   apiUserAppTasksActive,
@@ -43,23 +43,53 @@ export function useUserAppTasksActive(appId?: number) {
   const holdDevIdleRef = useRef<boolean>(false);
   /** 部署弹窗打开时暂停轮询，避免 onSuccess 又把 polling 打开 */
   const pausedRef = useRef<boolean>(false);
-
-  useEffect(() => {
+  /**
+   * 应用切换时在渲染阶段清空上一应用的 tasks/active。
+   * 若等到 effect，进页启动会先读到旧应用的 devActionAllowed，从而跳过新应用的 start。
+   */
+  const boundAppIdRef = useRef(appId);
+  /** 应用切换后作废仍在途的上一应用 tasks/active 回写 */
+  const tasksGenerationRef = useRef(0);
+  if (boundAppIdRef.current !== appId) {
+    boundAppIdRef.current = appId;
+    tasksGenerationRef.current += 1;
+    holdDevIdleRef.current = false;
+    pausedRef.current = false;
     setDevActionAllowed(true);
     setBuildAllowed(true);
     setReady(false);
     setTasks([]);
     setPolling(true);
-    holdDevIdleRef.current = false;
-    pausedRef.current = false;
-  }, [appId]);
+  }
 
-  useRequest(() => apiUserAppTasksActive(appId as number), {
+  useRequest(
+    async () => {
+      const generation = tasksGenerationRef.current;
+      try {
+        const result = await apiUserAppTasksActive(appId as number);
+        return { ok: true as const, result, generation };
+      } catch {
+        return { ok: false as const, generation };
+      }
+    },
+    {
     ready: !!appId,
     refreshDeps: [appId, refreshVersion],
     pollingInterval: polling ? TASKS_ACTIVE_POLL_INTERVAL : 0,
     pollingWhenHidden: false,
-    onSuccess: (result: RequestResponse<UserAppTasksActiveResult>) => {
+    onSuccess: (payload: {
+      ok: boolean;
+      result?: RequestResponse<UserAppTasksActiveResult>;
+      generation: number;
+    }) => {
+      if (payload.generation !== tasksGenerationRef.current) {
+        return;
+      }
+      if (!payload.ok) {
+        setReady(true);
+        return;
+      }
+      const result = payload.result;
       if (result?.code === SUCCESS_CODE && result.data) {
         const nextDevAllowed = result.data.devActionAllowed !== false;
         const nextBuildAllowed = result.data.buildAllowed !== false;
@@ -97,10 +127,8 @@ export function useUserAppTasksActive(appId?: number) {
       }
       setReady(true);
     },
-    onError: () => {
-      setReady(true);
-    },
-  });
+  },
+  );
 
   /** 手动刷新并恢复轮询（取消构建后同步状态） */
   const refresh = useCallback(() => {
