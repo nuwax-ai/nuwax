@@ -249,8 +249,11 @@ export async function apiUserAppBuildVersions(
  */
 export const getUserAppVncProxyUrl = (appId: number): string => {
   const params = new URLSearchParams();
+  // resize=scale：画面按容器缩放
   params.set('resize', 'scale');
+  // autoconnect=true：页面加载后直接连接
   params.set('autoconnect', 'true');
+  // 断开后自动重连
   params.set('reconnect', 'true');
   params.set('reconnect_delay', '500');
   const path = `/api/userapp/proxy/vnc/dev/${appId}/?${params.toString()}`;
