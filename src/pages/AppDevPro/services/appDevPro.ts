@@ -241,11 +241,19 @@ export async function apiUserAppBuildVersions(
  * 开发环境远程桌面代理地址（iframe）
  * /api/userapp/proxy/vnc/dev/{appId}/
  *
+ * 与文件预览里的 VncPreview 一致，带上 noVNC 自动连接参数。
+ * 不带 autoconnect 时，打开远程桌面只会停在「连接」按钮，需要再点一次。
+ *
  * @param appId 应用 ID
  * @returns 可嵌入 iframe 的绝对或相对地址
  */
 export const getUserAppVncProxyUrl = (appId: number): string => {
-  const path = `/api/userapp/proxy/vnc/dev/${appId}/`;
+  const params = new URLSearchParams();
+  params.set('resize', 'scale');
+  params.set('autoconnect', 'true');
+  params.set('reconnect', 'true');
+  params.set('reconnect_delay', '500');
+  const path = `/api/userapp/proxy/vnc/dev/${appId}/?${params.toString()}`;
   const baseUrl = process.env.BASE_URL || '';
   return `${baseUrl}${path}`;
 };
