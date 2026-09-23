@@ -35,6 +35,7 @@ import type {
   OpenUiArtifact,
 } from '@/types/interfaces/openUi';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
+import { isRealAgentSandboxBinding } from '@/utils/effectiveSandbox';
 
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
@@ -338,6 +339,14 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   }, [requiredNameList, variableParams]);
 
   /**
+   * 智能体 sandboxId 是否为「真实绑定」（云端哨兵 -1 不算）：单源见
+   * utils/effectiveSandbox.ts isRealAgentSandboxBinding——智能体只存过云端
+   * 记忆（sandboxId='-1'）时若当绑定，空会话选择器会被 fixedSelection 锁死
+   * （bug 2490「空会话选不了电脑」）；真绑定（个人电脑 id）仍固定锁选。
+   */
+  const isAgentSandboxBound = isRealAgentSandboxBinding(agentInfo?.sandboxId);
+
+  /**
    * 「智能体正在执行，请稍等」仅在后端 taskStatus=EXECUTING 且流式已结束时展示。
    * 不用 isConversationActive：队列自动发送会乐观置活跃，末条仍为 Complete 时会误显示。
    * 语义统一由 session 视图提供（§5.6：页面不再用原始字段重新推导）。
@@ -489,7 +498,9 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
           selectedComputerId={selectedComputerId}
           onComputerSelect={onComputerSelect}
           agentId={agentInfo?.id}
-          agentSandboxId={agentInfo?.sandboxId || selectedComputerId}
+          agentSandboxId={
+            isAgentSandboxBound ? agentInfo?.sandboxId : selectedComputerId
+          }
           hasPermission={agentInfo?.hasPermission !== false}
           maskText={
             agentInfo?.hasPermission !== false
@@ -497,12 +508,12 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
               : dict('PC.Components.ChatInputHome.noAgentPermission')
           }
           fixedSelection={
-            !!agentInfo?.sandboxId ||
+            isAgentSandboxBound ||
             isSelectionLocked ||
             hasUserSentMessage ||
             messageList?.some((message) => Boolean(message?.id))
           }
-          isPersonalComputer={!!agentInfo?.sandboxId}
+          isPersonalComputer={isAgentSandboxBound}
           {...interventionLayer.agentModeInputProps}
           agentEnableVersionControl={agentInfo?.enableVersionControl}
           onFetchMentionFiles={onFetchMentionFiles}
