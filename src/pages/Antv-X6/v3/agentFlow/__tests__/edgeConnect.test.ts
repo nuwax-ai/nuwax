@@ -3,7 +3,7 @@
  */
 import { NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { extensionRegistry } from '../../extensions/registry';
 import {
   applyAgentFlowBranchEdgeDisconnect,
@@ -12,6 +12,12 @@ import {
 import { HitlAnswerTypeEnum } from '../enums/hitlAnswerType';
 import { humanInteractionHandler } from '../handlers/humanInteraction';
 import { routeDecisionHandler } from '../handlers/routeDecision';
+
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+  t: (key: string) => key,
+  getCurrentLang: () => 'zh-CN',
+}));
 
 beforeEach(() => {
   extensionRegistry.register(humanInteractionHandler);

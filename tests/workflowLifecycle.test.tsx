@@ -55,6 +55,10 @@ vi.mock('@/constants/codes.constants', () => ({
   default: { success: '0000' },
 }));
 
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+}));
+
 vi.mock('@/utils/logger', () => ({
   workflowLogger: { log: vi.fn() },
 }));

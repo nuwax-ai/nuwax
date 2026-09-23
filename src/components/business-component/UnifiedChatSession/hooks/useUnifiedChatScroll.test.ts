@@ -83,7 +83,8 @@ describe('useUnifiedChatScroll', () => {
     expect((element as any).__isProgrammaticScroll).toBe(true);
 
     act(() => {
-      vi.advanceTimersByTime(100);
+      // 多级延迟置底最后一次在 800ms，程序滚动标记于其后 100ms 复位。
+      vi.advanceTimersByTime(901);
     });
 
     expect((element as any).__isProgrammaticScroll).toBe(false);
