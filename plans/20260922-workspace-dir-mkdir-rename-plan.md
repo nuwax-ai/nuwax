@@ -1,7 +1,7 @@
 # 实施计划：工作空间目录选择——新建目录 / 重命名
 
 - 对应 spec：无（用户直提需求，接口契约取自 knife4j「沙箱文件接口」分组）
-- 状态：待接受
+- 状态：已完成（含偏离记录）
 
 ## 背景
 
@@ -10,7 +10,7 @@
 ## 接口契约（OpenAPI 实测抽取，2026-09-22）
 
 | 接口 | 方法与路径 | 请求 | 响应 data |
-| ---- | ---- | ---- | ---- |
+| --- | --- | --- | --- |
 | fsMkdir | POST `/api/computer/static/fs/mkdir` | JSON `{sandboxId: number, parentPath: string, dirName: string}` | `FsEntryItem`（新目录条目） |
 | fsRename | POST `/api/computer/static/fs/rename` | JSON `{sandboxId: number, path: string, newName: string}` | `FsEntryItem`（改后条目） |
 
@@ -20,8 +20,8 @@
 
 ## 改动文件清单
 
-| #   | 文件 | 动作 | 说明 |
-| --- | ---- | ---- | ---- |
+| # | 文件 | 动作 | 说明 |
+| --- | --- | --- | --- |
 | 1 | `src/types/interfaces/vncDesktop.ts` | 改 | 新增 `FsMkdirParams`（`{sandboxId, parentPath, dirName}`）、`FsRenameParams`（`{sandboxId, path, newName}`）；顺手修正 L35-38 注释漂移（`/api/computer/fs/*` → `/api/computer/static/fs/*`） |
 | 2 | `src/services/vncDesktop.ts` | 改 | 紧挨 `apiBrowseFsChildren` 之后新增 `apiFsMkdir` / `apiFsRename`：`request(url, { method: 'POST', data })`，返回 `Promise<RequestResponse<FsEntryItem>>`；body 里 `sandboxId` 转 `Number`（契约 integer；入参签名保持 string 与 `apiBrowseFs*` 一致）；同处修正 L329 注释漂移 |
 | 3 | `src/components/ChatInputHome/WorkspaceDirPickerModal/index.tsx` | 改 | UI 主体，见「交互设计」 |
@@ -29,7 +29,8 @@
 | 5 | `src/locales/i18n/{zh-CN,en-US,zh-TW,zh-HK,ja-JP}.ts` | 改 | `PC.Components.WorkspaceDir.*` 新增 key（见「i18n」） |
 | 6 | `tests/conversation/workspaceDirRouting.test.ts` | 改 | 补 mkdir/rename 的 URL + JSON body 路由断言（沿用现有 `vi.mock('umi')` 写法） |
 | 7 | `tests/conversation/workspaceDirPickerOps.test.tsx` | 增 | 弹窗新建/重命名交互测试（注入 ops，无网络） |
-| 8 | `mock/fsBrowseAPI.ts` | 改（可选） | mock 路径对齐 `/api/computer/static/fs/*` 并补 mkdir/rename 假端点（mock 默认 exclude，纯浏览器走查时启用） |
+| 8 | `mock/fsBrowseAPI.ts` | 改 | mock 路径对齐 `/api/computer/static/fs/*` 并补 mkdir/rename 假端点（mock 默认 exclude，纯浏览器走查时启用） |
+| 9 | `src/utils/workspaceDirRecent.ts` | 改（偏离新增） | 新增 `renameRecentWorkspaceDir(oldPath, newPath)` 前缀同步（原计划隐含在弹窗内，落到 util） |
 
 ## 交互设计
 
@@ -62,12 +63,12 @@
 - **路由测试**（改 `workspaceDirRouting.test.ts`）：`apiFsMkdir` 打 `POST /api/computer/static/fs/mkdir` 且 body 为 `{sandboxId, parentPath, dirName}`；`apiFsRename` 打 `POST /api/computer/static/fs/rename` 且 body 为 `{sandboxId, path, newName}`。
 - **交互测试**（新 `workspaceDirPickerOps.test.tsx`）：根视图「新建文件夹」禁用；子目录视图确认后调 `ops.mkdir(currentPath, name)` 并触发列表刷新；非法名不调 ops；目录行 hover 出重命名入口而文件行没有；rename 确认调 `ops.rename(path, newName)`；rename 后最近目录前缀同步。
 - **回归**：`npm run test:conversation` 全绿（该套件含 workspaceDirRouting）；`npx vitest run` 全绿。
-- **手工走查**：`npm run dev` + ego-browser，真实个人电脑三入口各验一次：新建→列表刷新、重命名→列表与最近目录同步、非法名提示、失败 toast。
+- **手工走查**：`npm run dev` + ego-browser，真实个人电脑三入口各验一次：新建 → 列表刷新、重命名 → 列表与最近目录同步、非法名提示、失败 toast。
 
 ## 风险与回退
 
 | 风险 | 缓解 | 回退方式 |
-| ---- | ---- | -------- |
+| --- | --- | --- |
 | body `sandboxId` integer 与前端字符串链路（bug2443）不一致 | body 内 `Number(sandboxId)` 对齐 OpenAPI integer；联调验证 | 改回字符串透传再试 |
 | rename 使最近目录/路径失效 | recents 前缀同步更新；rename 目标仅 currentPath 的子项，不动 currentPath 本身 | 清 `workspace_dir_recent_list` 即可恢复 |
 | 重名/非法名业务失败 | 前端预检 + 后端报错全局 toast，输入保留可重试 | — |
@@ -75,4 +76,11 @@
 
 ## 偏离记录
 
-（实现中偏离原计划的逐条补记：原因 + 同步的 commit）
+1. **`src/utils/workspaceDirRecent.ts` 新增 `renameRecentWorkspaceDir`**：最近目录前缀同步原计划隐含在弹窗里做，落到 util 可独立测试（原因：单一职责 + 交互测试可直接断言 localStorage 结果）。
+2. **`mock/fsBrowseAPI.ts` 从「可选」升级为已做**：原 mock 路径是旧契约 `/api/computer/fs/*`，与 service 实际路径不一致、本来就打不中；本次对齐 `static` 前缀并补可变的 mkdir/rename 假端点。
+3. **弹窗内防御**：行内编辑会话用 `editSessionRef` 递增做收尾失效防护（导航/切换编辑后，在飞请求的收尾动作丢弃），并新增 `ops` 可注入 prop——与既有 `browse` 注入模式对齐，供单测使用。
+4. 工具性新增 `.claude/launch.json`（preview 启动 dev server 的配置，不属功能交付）。
+5. 验证补充：全量 vitest 有 ~51 个**预存**失败（stash 基线对照：HEAD 上同样失败；基线 57 = 预存 51 + 本新测试在旧组件上的 6 个必挂），本次改动零回归；`test:conversation` 100 文件 897 测试全绿。真机走查（个人电脑 + 登录态）留待人工验收。
+6. 图标优化（后续追加需求）：弹窗图标全部换用项目内资产并补 lucide `icon_folder.svg`（文件树图标同族），详见同批提交。
+
+（实现中偏离原计划的逐条补记：原因 + 同步的 commit——已随 workspace-dir 功能提交落地）

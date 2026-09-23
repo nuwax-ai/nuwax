@@ -40,7 +40,8 @@
   padding-bottom: 14px;
 }
 
-.up-button {
+.up-button,
+.action-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -150,8 +151,49 @@
 
   .row-arrow {
     flex-shrink: 0;
-    font-size: 12px;
+    font-size: 14px;
     color: @colorTextQuaternary;
+  }
+
+  // 行内操作（重命名）：hover 浮现，降低列表视觉噪声
+  .row-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: @borderRadiusLg;
+    background: transparent;
+    color: @colorTextSecondary;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s ease, background-color 0.12s ease;
+
+    &:hover:not(:disabled) {
+      background: @colorFillTertiary;
+      color: @colorPrimary;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+  }
+
+  &:hover .row-action:not(:disabled) {
+    opacity: 1;
+  }
+
+  // 新建/重命名行内编辑：输入框接管名称区
+  &.row-editing {
+    .row-input {
+      flex: 1;
+      min-width: 0;
+      height: 28px;
+    }
   }
 
   // 文件行：不可选弱化态（目录才可作为工作目录）

@@ -32,9 +32,11 @@ export interface StaticFileListResponse {
 }
 
 /**
- * 目录选择弹窗（wiki「选择目录/弹框选目录」）：GET /api/computer/fs/roots、
- * GET /api/computer/fs/children，按绝对路径浏览本机目录，不锚定工作区、
- * 不带会话上下文（file-server v1.4.3 fsBrowserUtils）。
+ * 目录选择弹窗（wiki「选择目录/弹框选目录」）：GET /api/computer/static/fs/roots、
+ * GET /api/computer/static/fs/children，按绝对路径浏览本机目录，不锚定工作区、
+ * 不带会话上下文（file-server v1.4.3 fsBrowserUtils）；写操作 POST
+ * /api/computer/static/fs/mkdir、/api/computer/static/fs/rename。
+ * 仅用户个人沙箱可用，云端沙箱不支持选目录。
  */
 export interface FsRootItem {
   // 展示名（如盘符 / 根名）
@@ -61,6 +63,23 @@ export interface FsEntryItem {
 export interface FsChildrenResponse {
   path: string;
   entries: FsEntryItem[];
+}
+
+export interface FsMkdirParams {
+  // 沙箱 id（仅用户个人沙箱支持选目录；契约 integer，service 内转数字）
+  sandboxId: string;
+  // 父目录绝对路径（分隔符统一 /，来自 fsChildren 返回的 path）
+  parentPath: string;
+  // 新目录名（支持中文等任意合法文件名，不含路径分隔符）
+  dirName: string;
+}
+
+export interface FsRenameParams {
+  sandboxId: string;
+  // 现目录绝对路径（分隔符统一 /，来自 fsChildren 返回的 path）
+  path: string;
+  // 新名字（仅名字、不含路径分隔符，不支持跨目录移动；支持中文）
+  newName: string;
 }
 
 // 静态文件修改参数
