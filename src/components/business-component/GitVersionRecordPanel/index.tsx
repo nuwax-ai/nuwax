@@ -3,7 +3,15 @@ import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
 import { Empty } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { apiGitLogList } from '../FileTreeGitSourcePanel/services/git-version-management';
 import type { GitCommitLogItem } from '../FileTreeGitSourcePanel/types/git-version-management';
 import {
@@ -35,13 +43,14 @@ export interface GitVersionRecordPanelProps {
   onViewChanges?: (commit: GitCommitLogItem) => void;
   /** 回滚成功后的回调（如刷新文件树） */
   onRollbackSuccess?: () => void;
-  /**
-   * 外部提交成功后递增。
-   * 变化时重新请求 git log，刷新右侧版本记录。
-   */
-  logRefreshKey?: number;
   /** 自定义根节点类名 */
   className?: string;
+}
+
+/** 供父组件在提交成功后直接刷新 git log，避免用 state 驱动 effect */
+export interface GitVersionRecordPanelHandle {
+  /** 重置列表并从第 1 页重新请求 git log */
+  refresh: () => void;
 }
 
 /**
@@ -66,14 +75,13 @@ const getWorkspaceEmptyDescription = (workspace?: GitWorkspaceConfig) => {
  * - workspaceParams 仅依赖 workspaceKey，避免父组件内联 workspace 对象触发重复请求
  * - 列表滚动到底部时通过 InfiniteScrollDiv 自动加载下一页
  */
-const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
-  workspace,
-  branch = 'main',
-  onViewChanges,
-  onRollbackSuccess,
-  logRefreshKey,
-  className,
-}) => {
+const GitVersionRecordPanel = forwardRef<
+  GitVersionRecordPanelHandle,
+  GitVersionRecordPanelProps
+>(function GitVersionRecordPanel(
+  { workspace, branch = 'main', onViewChanges, onRollbackSuccess, className },
+  ref,
+) {
   // ---------- 列表与交互状态 ----------
   /** 已加载的提交列表（多页累加） */
   const [commits, setCommits] = useState<GitCommitLogItem[]>([]);
@@ -172,7 +180,7 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     [workspaceParams],
   );
 
-  /** 重置列表并重新从第 1 页加载（回滚成功后调用） */
+  /** 重置列表并重新从第 1 页加载（回滚成功、外部提交成功后调用） */
   const refreshLog = useCallback(() => {
     setActiveCommit(null);
     setCommits([]);
@@ -181,18 +189,7 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     void fetchLogPage(1, false);
   }, [fetchLogPage]);
 
-  /** 跳过首次渲染，仅在提交成功令牌变化时刷新 git log */
-  const logRefreshKeyRef = useRef(logRefreshKey);
-  useEffect(() => {
-    if (logRefreshKey === logRefreshKeyRef.current) {
-      return;
-    }
-    logRefreshKeyRef.current = logRefreshKey;
-    if (!workspaceReady || !workspaceParams || logRefreshKey === undefined) {
-      return;
-    }
-    refreshLog();
-  }, [logRefreshKey, refreshLog, workspaceParams, workspaceReady]);
+  useImperativeHandle(ref, () => ({ refresh: refreshLog }), [refreshLog]);
 
   const {
     rollbackCommit,
@@ -230,23 +227,28 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     void fetchLogPage(currentPage + 1, true);
   }, [loading, loadingMore, hasMore, currentPage, fetchLogPage]);
 
+  const fetchLogPageRef = useRef(fetchLogPage);
+  fetchLogPageRef.current = fetchLogPage;
+  /** 同一工作空间只在 key 变化时重置列表，避免请求参数引用抖动反复 setState */
+  const loadedWorkspaceKeyRef = useRef<string | null>(null);
+
   // 工作空间切换时重置并拉取首屏数据
   useEffect(() => {
     if (!workspaceReady || !workspaceParams) {
+      loadedWorkspaceKeyRef.current = null;
       return;
     }
+    const key = `${workspace?.workspaceType ?? ''}:${String(workspaceKey)}`;
+    if (loadedWorkspaceKeyRef.current === key) {
+      return;
+    }
+    loadedWorkspaceKeyRef.current = key;
     setActiveCommit(null);
     setCommits([]);
     setTotal(0);
     setCurrentPage(0);
-    void fetchLogPage(1, false);
-  }, [
-    workspaceKey,
-    workspace?.workspaceType,
-    workspaceReady,
-    workspaceParams,
-    fetchLogPage,
-  ]);
+    void fetchLogPageRef.current(1, false);
+  }, [workspaceKey, workspace?.workspaceType, workspaceReady, workspaceParams]);
 
   // 工作空间 ID 未就绪时展示空状态
   if (!workspaceReady) {
@@ -352,6 +354,6 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
       />
     </div>
   );
-};
+});
 
 export default GitVersionRecordPanel;

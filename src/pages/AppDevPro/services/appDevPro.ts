@@ -8,6 +8,7 @@ import type {
   ProjectLatestConversationResult,
   UserAppDevTaskInfo,
   UserAppInfo,
+  UserAppLogSourceItem,
   UserAppLogsQueryParams,
   UserAppLogsQueryResult,
   UserAppLogsSourcesQueryParams,
@@ -180,10 +181,10 @@ export async function apiUserAppLogsQuery(
   });
 }
 
-/** 查询应用日志来源 */
+/** 查询应用日志来源，data 为来源列表（服务、日志源、格式、匹配文件） */
 export async function apiUserAppLogsSourcesQuery(
   data: UserAppLogsSourcesQueryParams,
-): Promise<RequestResponse<UserAppLogsQueryResult>> {
+): Promise<RequestResponse<UserAppLogSourceItem[]>> {
   return request('/api/userapp/logs/sources/query', {
     method: 'POST',
     data,
