@@ -1,6 +1,7 @@
 import { REDIRECT_LOGIN, USER_NO_LOGIN } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserInfo } from '@/services/account';
+import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { isChatTemp, redirectToLogin } from '@/utils/router';
 import { message } from 'antd';
 const LOGIN_STATUS_KEY = 'userLoginStatus';
@@ -99,7 +100,7 @@ export class UserService {
           // 重定向到登录页
           case REDIRECT_LOGIN:
             clearLoginStatusCache();
-            window.location.href = errorMessage;
+            void navigateToAuthUrl(errorMessage);
             break;
           // 默认错误处理
           default:

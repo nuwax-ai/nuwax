@@ -2,6 +2,9 @@ node_modules
 .umi
 .umi-production
 
+# 构建产物保留打包器输出，避免提交 hook 改写带内容哈希的资源
+/dist/
+
 k8s
 Dockerfile
 devspace_start.sh
