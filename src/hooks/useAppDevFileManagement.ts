@@ -19,6 +19,7 @@ import type {
 } from '@/types/interfaces/appDev';
 import {
   findFileNode,
+  indexFileNodesById,
   isFileModified as isContentModified,
   isPreviewableFile,
   transformFlatListToTree,
@@ -26,7 +27,7 @@ import {
 } from '@/utils/appDevUtils';
 import { message } from 'antd';
 import debounce from 'lodash/debounce';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface UseAppDevFileManagementProps {
   projectId: string;
@@ -951,6 +952,11 @@ export const useAppDevFileManagement = ({
     }
   }, [projectId, hasPermission]); // 移除 loadFileTree 依赖，避免重复执行
 
+  const fileNodeIndex = useMemo(
+    () => indexFileNodesById(fileTreeState.data),
+    [fileTreeState.data],
+  );
+
   return {
     // 文件树相关
     fileTreeState,
@@ -980,8 +986,8 @@ export const useAppDevFileManagement = ({
     // 文件树初始化 loading 状态
     isFileTreeInitializing,
 
-    // 工具函数
-    findFileNode: (fileId: string) => findFileNode(fileId, fileTreeState.data),
+    // 工具函数。git status 会按路径批量查找，先建索引避免对每个文件整树递归
+    findFileNode: (fileId: string) => fileNodeIndex.get(fileId) ?? null,
     findFileNodeByPath: (path: string) =>
       findFileNodeByPath(path, fileTreeState.data),
 

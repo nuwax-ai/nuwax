@@ -63,6 +63,14 @@ vi.mock('umi', () => ({
   useParams: (...args: unknown[]) => mockUseParams(...args),
   useLocation: (...args: unknown[]) => mockUseLocation(...args),
   history: mockHistory,
+  // useChatNormalProjectNameSync 等页面内 hook 经 umi 取 useRequest（ahooks）；
+  // 此前 mock 缺该导出导致本套件在分支上整体红（预存），补最小桩
+  useRequest: vi.fn(() => ({
+    data: undefined,
+    loading: false,
+    error: undefined,
+    run: vi.fn(),
+  })),
 }));
 
 vi.mock('@/services/i18nRuntime', () => ({
@@ -233,7 +241,8 @@ vi.mock('@/hooks/useSelectedComponent', () => ({
 }));
 
 vi.mock('@/hooks/useTerminalWsUrl', () => ({
-  default: () => ({ terminalWsUrl: '', refreshTerminalWsUrl: vi.fn() }),
+  // 同步真实签名：hook 返回 string（原 { terminalWsUrl, refreshTerminalWsUrl } 为陈旧形状）
+  default: () => '',
 }));
 
 vi.mock('./hooks/useAutoPreviewFile', () => ({

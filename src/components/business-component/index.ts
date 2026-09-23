@@ -51,6 +51,7 @@ export {
 } from './FileTreePreviewPanel';
 export {
   default as GitVersionRecordPanel,
+  type GitVersionRecordPanelHandle,
   type GitVersionRecordPanelProps,
 } from './GitVersionRecordPanel';
 export {

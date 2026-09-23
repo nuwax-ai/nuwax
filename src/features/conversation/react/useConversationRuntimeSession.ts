@@ -346,13 +346,24 @@ export function useConversationRuntimeSession(
   // 的 rAF 派生同步，runtime 轨在此对齐。session 为空（flag 关闭）时不同步，
   // 避免清掉旧线写入的数据。
   const { handleChatProcessingList } = useModel('chat');
+  /** 处理明细签名不变时不再写入 chat model，避免 messageList 换引用后 effect 自激 */
+  const processingSignatureRef = useRef('');
   useEffect(() => {
     if (!session) return;
-    handleChatProcessingList?.(
-      messageList.flatMap((message) =>
-        Array.isArray(message.processingList) ? message.processingList : [],
-      ),
+    const list = messageList.flatMap((message) =>
+      Array.isArray(message.processingList) ? message.processingList : [],
     );
+    const signature = list
+      .map(
+        (item) =>
+          `${item.executeId ?? ''}:${item.type ?? ''}:${item.status ?? ''}`,
+      )
+      .join('|');
+    if (signature === processingSignatureRef.current) {
+      return;
+    }
+    processingSignatureRef.current = signature;
+    handleChatProcessingList?.(list);
   }, [session, messageList, handleChatProcessingList]);
 
   const onSendMessage = useCallback(

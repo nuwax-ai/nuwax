@@ -1,14 +1,13 @@
 /**
  * 全栈应用页(女娲应用-全栈应用卡片入口 /user-app/:appId)
- * @description 应用页面 iframe(PagePreviewIframe)占满全屏。header 左侧展示
- * 应用详情名称(应用域名与宿主跨域,iframe 文档标题读不到:contentDocument
- * 为 null,组件内 querySelector('head > title') 不会执行,故由本页显式传入
- * title)。iframe 地址取值优先级:三方应用随标签保存的 homepageUrl(女娲
- * 应用页点击时注册,直载不拉域名接口)> GET /api/userapp/domain/list
- * (appId 入参)回包:优先自定义域名(Custom),无则生产域名(Prod),再回退
- * 首条。加载失败或无可用域名时对齐 /agent/:agentId(ConversationDetails)
- * 口径:错误 toast 由全局请求层弹出,页面退出 loading 后仅展示空态,无专属
- * 错误页。左侧会话区后续按需求迭代。
+ * @description 应用页面 iframe(PagePreviewIframe)占满全屏,无 header(刷新/
+ * 复制链接能力由侧栏应用标签行承载,经 eventBus 命令本实例执行;原 header
+ * 标题与应用详情名称接口已随标题栏一并移除)。iframe 地址取值优先级:三方
+ * 应用随标签保存的 homepageUrl(女娲应用页点击时注册,直载不拉域名接口)>
+ * GET /api/userapp/domain/list(appId 入参)回包:优先自定义域名(Custom),
+ * 无则生产域名(Prod),再回退首条。加载失败或无可用域名时对齐
+ * /agent/:agentId(ConversationDetails)口径:错误 toast 由全局请求层弹出,
+ * 页面退出 loading 后仅展示空态,无专属错误页。左侧会话区后续按需求迭代。
  *
  * 分层与缓存:实际页面渲染上移 SidebarShell 的 OpenedAppTabsKeepAlive
  * 保活容器(所有已打开标签实例常驻,当前路由命中者可见,切回不重载);本
@@ -18,12 +17,8 @@
 import { PagePreviewIframe } from '@/components/business-component';
 import { USER_APP_PATH_PREFIX } from '@/constants/square.constants';
 import type { AppTabInstanceProps } from '@/models/appTabKeepAlive';
-import type { OpenedAppTabInfo } from '@/models/openedAppTabs';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiUserAppDomainList,
-  apiUserAppGetById,
-} from '@/services/userProjectApp';
+import { apiUserAppDomainList } from '@/services/userProjectApp';
 import {
   UserAppDomainTypeEnum,
   type UserAppDomainInfo,
@@ -54,22 +49,6 @@ const UserAppPage: React.FC<{ appId: number; homepageUrl: string }> = ({
     { ready: !homepageUrl },
   );
   const domainList: UserAppDomainInfo[] = data || [];
-
-  // 应用详情:GET /api/userapp/get/:id,仅取 name 作 header 标题;
-  // 失败时全局请求层已 toast,标题缺省不影响 iframe 展示。三方应用
-  // (homepageUrl 直载)该接口无回包,ready=false 一并跳过,标题改从
-  // 多开标签兜底
-  const { data: appInfo } = useRequest(() => apiUserAppGetById(appId), {
-    ready: !homepageUrl,
-  });
-
-  // 标题兜底:多开标签存有应用名(女娲应用页点击时注册),三方应用
-  // 详情接口无回包时从这里取;直连本页(无标签)时缺省,与现状一致
-  const { openedAppTabs } = useModel('openedAppTabs');
-  const tabTitle = openedAppTabs.find(
-    (tab: OpenedAppTabInfo) =>
-      tab.routePath === `${USER_APP_PATH_PREFIX}/${appId}`,
-  )?.name;
 
   // iframe 域名优先级:homepageUrl(三方应用直载)> 自定义域名(Custom)>
   // 生产域名(Prod)> 首条兜底
@@ -122,13 +101,14 @@ const UserAppPage: React.FC<{ appId: number; homepageUrl: string }> = ({
 
   return (
     <div className="flex h-full w-full">
-      {/* 全栈应用页面:iframe 占满全屏,跨域读不到文档标题,header 显式传应用名 */}
+      {/* 全栈应用页面:iframe 占满全屏无 header(刷新/复制链接由侧栏应用
+          标签行经 eventBus 命令触发,commandKey 与标签 routePath 同源) */}
       <PagePreviewIframe
         className="flex-1"
         pagePreviewData={pagePreviewData}
-        showHeader={true}
+        showHeader={false}
         showCloseButton={false}
-        title={appInfo?.name || tabTitle}
+        commandKey={`${USER_APP_PATH_PREFIX}/${appId}`}
       />
     </div>
   );

@@ -12,15 +12,26 @@ import {
   UndoOutlined,
 } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  CHANGE_LIST_ROW_HEIGHT,
+  useVirtualSlice,
+} from '../../hooks/useVirtualSlice';
 import type { ChangeListItem } from '../../utils/buildChangeFileTree';
 import {
   buildChangeFileTree,
+  flattenVisibleChangeTree,
   type ChangeTreeNode,
 } from '../../utils/buildChangeFileTree';
 import {
-  type ChangeListSection,
   isChangeFileSelected,
+  type ChangeListSection,
   type SelectedChangeFile,
 } from '../../utils/changeFileStatus';
 import styles from './index.less';
@@ -63,6 +74,8 @@ export interface ChangeFileListSectionProps {
   onStageAllChanges?: () => void;
   /** 取消区块内所有暂存 */
   onUnstageAllChanges?: () => void;
+  /** 外层滚动容器。行数很多时只渲染视口内的行 */
+  scrollParentRef?: React.RefObject<HTMLElement | null>;
 }
 
 /**
@@ -86,6 +99,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
   onDiscardAllChanges,
   onStageAllChanges,
   onUnstageAllChanges,
+  scrollParentRef,
 }) => {
   const [expanded, setExpanded] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
@@ -95,6 +109,24 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
   const treeNodes = useMemo(
     () => (viewMode === 'tree' ? buildChangeFileTree(items) : []),
     [items, viewMode],
+  );
+
+  const flatTreeRows = useMemo(
+    () =>
+      viewMode === 'tree'
+        ? flattenVisibleChangeTree(treeNodes, expandedFolders)
+        : [],
+    [viewMode, treeNodes, expandedFolders],
+  );
+
+  const fallbackScrollRef = useRef<HTMLElement | null>(null);
+  const virtualRowCount =
+    viewMode === 'tree' ? flatTreeRows.length : items.length;
+  const virtual = useVirtualSlice(
+    scrollParentRef ? virtualRowCount : 0,
+    scrollParentRef ?? fallbackScrollRef,
+    expanded,
+    viewMode,
   );
 
   /** 树形视图下默认展开所有文件夹 */
@@ -304,22 +336,26 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
   const sectionHeaderActions = renderSectionHeaderActions();
 
   /** 列表视图：平铺展示文件名与路径 */
-  const renderListFileRow = (item: ChangeListItem) => {
+  const renderListFileRow = (item: ChangeListItem, virtualRow = false) => {
     const listRowActions = renderListRowActions(item);
 
     return (
       <div
         key={`${section}-${item.fileId}`}
-        className={cx(styles['change-item'], {
-          [styles['change-item-active']]: isChangeFileSelected(
-            item.fileId,
-            section,
-            selectedChangeFile,
-          ),
-          [styles['change-item-deleted']]: isDeletedFile(item),
-          [styles['change-item-conflict']]: isConflictFile(item),
-          [styles['change-item-has-actions']]: Boolean(listRowActions),
-        })}
+        className={cx(
+          styles['change-item'],
+          virtualRow && styles['virtual-row-inner'],
+          {
+            [styles['change-item-active']]: isChangeFileSelected(
+              item.fileId,
+              section,
+              selectedChangeFile,
+            ),
+            [styles['change-item-deleted']]: isDeletedFile(item),
+            [styles['change-item-conflict']]: isConflictFile(item),
+            [styles['change-item-has-actions']]: Boolean(listRowActions),
+          },
+        )}
         onClick={() => onFileClick?.(item.fileId, section)}
         onContextMenu={(e) => onContextMenu?.(e, item.fileId)}
         title={item.fileId}
@@ -358,7 +394,11 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
   /**
    * 树形视图：对齐 FileTree 的文件夹/文件行样式与 caret 展开交互
    */
-  const renderTreeFileRow = (item: ChangeListItem, level: number) => {
+  const renderTreeFileRow = (
+    item: ChangeListItem,
+    level: number,
+    virtualRow = false,
+  ) => {
     const isSelected = isChangeFileSelected(
       item.fileId,
       section,
@@ -371,6 +411,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
         className={fileTreeCx(
           fileTreeStyles.fileItem,
           styles['tree-file-item'],
+          virtualRow && styles['virtual-row-inner'],
           {
             [fileTreeStyles.activeFile]: isSelected,
           },
@@ -399,6 +440,78 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
       </div>
     );
   };
+
+  const renderTreeFolderHeader = (
+    folderId: string,
+    folderName: string,
+    level: number,
+    virtualRow = false,
+  ) => {
+    const isFolderExpanded = expandedFolders.has(folderId);
+    return (
+      <div
+        key={folderId}
+        className={fileTreeCx(
+          fileTreeStyles.folderItem,
+          styles['tree-folder-item'],
+          virtualRow && styles['virtual-row-inner'],
+        )}
+        style={{ paddingLeft: level * 8 }}
+      >
+        <div
+          className={fileTreeCx(fileTreeStyles.folderHeader)}
+          onClick={() => toggleFolder(folderId)}
+          onContextMenu={(e) => {
+            if (viewMode !== 'tree') {
+              return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            onFolderContextMenu?.(e, folderId);
+          }}
+        >
+          <SvgIcon
+            name="icons-common-caret_right"
+            style={{ fontSize: '16px' }}
+            className={fileTreeCx(fileTreeStyles.folderIcon, {
+              [fileTreeStyles.expanded]: isFolderExpanded,
+            })}
+          />
+          <span
+            className={fileTreeCx(fileTreeStyles.folderName, 'text-ellipsis')}
+          >
+            {folderName}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  /** 行数较多时只挂载视口内的行，占位高度仍按全量计算，滚动条长度不变 */
+  const renderVirtualRows = (
+    rowCount: number,
+    getRowKey: (index: number) => string,
+    renderRow: (index: number) => React.ReactNode,
+  ) => (
+    <div
+      ref={virtual.containerRef}
+      className={cx(styles['virtual-list'])}
+      style={{ height: rowCount * CHANGE_LIST_ROW_HEIGHT }}
+    >
+      {Array.from({ length: virtual.end - virtual.start }, (_, offset) => {
+        const index = virtual.start + offset;
+        return (
+          <div
+            key={getRowKey(index)}
+            className={cx(styles['virtual-row'])}
+            style={{ top: index * CHANGE_LIST_ROW_HEIGHT }}
+          >
+            {renderRow(index)}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   /** 树形视图：渲染文件夹与文件 */
   const renderTreeNodes = (nodes: ChangeTreeNode[], level = 0) =>
@@ -488,18 +601,52 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
           className={cx(styles['changes-list'], styles['changes-list-nested'])}
         >
           {items.length ? (
-            // 树形视图
             viewMode === 'tree' ? (
-              <div
-                className={fileTreeCx(
-                  fileTreeStyles.fileTree,
-                  styles['change-file-tree'],
-                )}
-              >
-                {renderTreeNodes(treeNodes)}
-              </div>
+              virtual.enabled ? (
+                <div
+                  className={fileTreeCx(
+                    fileTreeStyles.fileTree,
+                    styles['change-file-tree'],
+                  )}
+                >
+                  {renderVirtualRows(
+                    flatTreeRows.length,
+                    (index) => flatTreeRows[index]?.key ?? String(index),
+                    (index) => {
+                      const row = flatTreeRows[index];
+                      if (!row) {
+                        return null;
+                      }
+                      if (row.type === 'file' && row.fileItem) {
+                        return renderTreeFileRow(row.fileItem, row.level, true);
+                      }
+                      return renderTreeFolderHeader(
+                        row.folderId || '',
+                        row.folderName || '',
+                        row.level,
+                        true,
+                      );
+                    },
+                  )}
+                </div>
+              ) : (
+                <div
+                  className={fileTreeCx(
+                    fileTreeStyles.fileTree,
+                    styles['change-file-tree'],
+                  )}
+                >
+                  {renderTreeNodes(treeNodes)}
+                </div>
+              )
+            ) : virtual.enabled ? (
+              renderVirtualRows(
+                items.length,
+                (index) => `${section}-${items[index]?.fileId ?? index}`,
+                (index) =>
+                  items[index] ? renderListFileRow(items[index], true) : null,
+              )
             ) : (
-              // 列表视图
               items.map((item) => renderListFileRow(item))
             )
           ) : (

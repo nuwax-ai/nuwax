@@ -26,12 +26,21 @@
   overflow: visible;
 }
 
+// 嵌套列表要盖过后面的 .changes-list（flex:1 + overflow:auto），
+// 否则区块自己变成滚动层，外层滚动时虚拟行不会跟着换
+.changes-section.changes-section-nested .changes-list.changes-list-nested {
+  flex: none;
+  min-height: auto;
+  overflow: visible;
+}
+
 .change-file-tree {
   padding: 0 @paddingSm;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden;
+  // 滚动交给外层 changes-scroll，避免树容器自己再套一层滚动条
+  overflow: visible;
 }
 
 .tree-folder-item {
@@ -318,4 +327,29 @@
   text-align: center;
   font-size: @fontSizeSm;
   color: @colorTextTertiary;
+}
+
+// 虚拟列表占位高度由行数决定，只把视口内的行绝对定位挂上来
+.virtual-list {
+  position: relative;
+  width: 100%;
+}
+
+// 高度需与 useVirtualSlice 中的 CHANGE_LIST_ROW_HEIGHT 保持一致
+.virtual-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 30px;
+  overflow: hidden;
+}
+
+.virtual-row-inner {
+  height: 100%;
+  box-sizing: border-box;
+
+  > div {
+    height: 100%;
+    box-sizing: border-box;
+  }
 }
