@@ -20,12 +20,8 @@ import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import eventBus from '@/utils/eventBus';
-import {
-  isImmersiveShell,
-  isMac,
-  isWinLinuxShell,
-  shellAvoid,
-} from '@/utils/hostBridge';
+import { getImmersiveShellPlatform, shellAvoid } from '@/utils/hostBridge';
+import { resolveImmersiveShellGeometry } from '@/utils/hostBridge/shellAvoidancePolicy';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -293,29 +289,19 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
         </div>
       );
     }
-    // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
-    // - Win/Linux 避让 shellAvoid.CONTENT_TOP（32 < 顶行行高 40：顶行透明，
-    //   字形只占行上部，内容卡贴字形下沿留出间隙，减少顶部空白）；
-    // - mac 默认不退让（顶行透明、图标组悬浮于侧栏列上方，展开态内容区
-    //   直接顶到窗口上沿）；仅整条侧栏收起后内容区顶到窗口上沿时，
-    //   才避让工具栏整条高度（图标簇悬浮于内容区左上，需要让位）；
-    // - 独立窗口（系统标题栏）与浏览器不避让；
-    // - 全屏工作台页（immersiveMarginTop=false）由路由层 immersiveShellAvoid
-    //   承担避让，此处叠加会造成双重下移。
-    const macAvoidance = isSecondMenuCollapsed ? shellAvoid.TOOLBAR : undefined;
-    const immersiveMargin = isMac() ? macAvoidance : shellAvoid.CONTENT_TOP;
-    // Windows/Linux 单栏工作台页的背景和内容统一从 CONTENT_TOP 起；子 wrapper
-    // 由 immersiveShell.less 与 page-container 起点对齐，不再额外补到 TOOLBAR。
-    const winLinuxWorkbenchBackgroundMargin =
-      isWinLinuxShell() && suppressSecondMenu
-        ? shellAvoid.CONTENT_TOP
-        : undefined;
-    // 全屏工作台页（immersiveMarginTop=false）由 page-container 负责背景退让；
-    // Windows/Linux 页面内容由路由 wrapper 与 CONTENT_TOP 起点对齐。
-    // mac 全屏工作台页由 page-container 统一承担 TOOLBAR 退让，保证背景与
-    // 页面标题都从折叠标题栏下方开始；Win/Linux 仍由 CONTENT_TOP + 路由 wrapper
-    // 的差值补齐，不叠加。
-    const macWorkbenchTopAvoid = isMac() && !immersiveMarginTop;
+    const platform = getImmersiveShellPlatform();
+    const shellGeometry = platform
+      ? resolveImmersiveShellGeometry(
+          {
+            platform,
+            surface: 'page-container',
+            navigationCollapsed: isSecondMenuCollapsed,
+            immersiveMarginTop,
+            suppressSecondMenu,
+          },
+          shellAvoid,
+        )
+      : undefined;
     return (
       <div
         className={cx(
@@ -330,15 +316,13 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
         )}
         id="page-container-selector"
         style={{
-          marginTop:
-            isImmersiveShell() &&
-            (immersiveMarginTop ||
-              macWorkbenchTopAvoid ||
-              winLinuxWorkbenchBackgroundMargin !== undefined)
-              ? macWorkbenchTopAvoid
-                ? shellAvoid.TOOLBAR
-                : immersiveMargin
-              : undefined,
+          marginTop: shellGeometry?.pageContainerMarginTop,
+          ...(shellGeometry
+            ? ({
+                '--immersive-shell-fullscreen-top': `${shellGeometry.fullscreenTop}px`,
+                '--immersive-shell-page-content-offset': `${shellGeometry.pageContentOffset}px`,
+              } as React.CSSProperties)
+            : {}),
         }}
       >
         {children}
@@ -351,6 +335,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     children,
     immersiveMarginTop,
     isSecondMenuCollapsed,
+    suppressSecondMenu,
     layoutStyle,
     effectiveNavigationStyle,
     variant,
