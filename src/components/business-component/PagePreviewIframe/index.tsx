@@ -3,6 +3,10 @@ import { SANDBOX } from '@/constants/common.constants';
 import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils';
+import eventBus, {
+  EVENT_NAMES,
+  type AppTabPreviewCommandPayload,
+} from '@/utils/eventBus';
 import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import { debounce } from 'lodash';
@@ -73,6 +77,13 @@ interface PagePreviewIframeProps {
   copyButtonText?: string;
   /** 复制按钮自定义类名 */
   copyButtonClassName?: string;
+  /**
+   * 预览命令订阅键（应用标签 routePath，如 /user-app/5、/agent/11）：
+   * 传入后订阅 eventBus 的应用标签预览命令，侧栏标签行的刷新/复制链接
+   * 按钮经事件总线触发本实例 reload/goCopy（与 header 图标同源行为）；
+   * 不传（默认）不订阅，既有消费方行为完全不变
+   */
+  commandKey?: string;
 }
 
 /**
@@ -99,6 +110,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   onCopyClick,
   copyButtonText = t('PC.Components.PagePreviewIframe.copyTemplate'),
   copyButtonClassName,
+  commandKey,
 }) => {
   const [iframeKey, setIframeKey] = useState(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -169,6 +181,23 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     setCanGoBack(canBack);
     setCanGoForward(canForward);
   }, []);
+
+  // 应用标签行命令分发：handler 经 ref 取最新闭包（pageUrl 随 iframe 内导航
+  // 变化后 goCopy 仍复制当前地址）；订阅仅在 commandKey 存在时建立、卸载按
+  // 引用精确 off。ref.current 的实际赋值在 reload/goCopy 定义之后（见下方）
+  const commandHandlerRef = useRef<
+    (payload: AppTabPreviewCommandPayload) => void
+  >(() => {});
+
+  useEffect(() => {
+    if (!commandKey) return undefined;
+    const handler = (payload: AppTabPreviewCommandPayload) =>
+      commandHandlerRef.current(payload);
+    eventBus.on(EVENT_NAMES.APP_TAB_PREVIEW_COMMAND, handler);
+    return () => {
+      eventBus.off(EVENT_NAMES.APP_TAB_PREVIEW_COMMAND, handler);
+    };
+  }, [commandKey]);
 
   /**
    * 处理来自 dev-monitor 的历史变化消息
@@ -600,6 +629,17 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     }
     copyTextToClipboard(url, () => {}, true);
   }
+
+  // 应用标签行命令的实际分发（在 reload/goCopy 定义后赋值，每渲染刷新为
+  // 最新闭包）：routePath 精确匹配本实例才执行，与 header 图标同源行为
+  commandHandlerRef.current = (payload) => {
+    if (payload.routePath !== commandKey) return;
+    if (payload.action === 'reload') {
+      reload();
+    } else {
+      goCopy();
+    }
+  };
 
   return (
     <div
