@@ -1,4 +1,7 @@
-import { GitVersionRecordPanel } from '@/components/business-component';
+import {
+  GitVersionRecordPanel,
+  type GitVersionRecordPanelHandle,
+} from '@/components/business-component';
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import FileTreeGitSourcePanel, {
   useSourceControl,
@@ -237,8 +240,8 @@ const AppDevPro: React.FC = () => {
     useState<boolean>(false);
   /** 全栈应用详情 */
   const [userAppInfo, setUserAppInfo] = useState<UserAppInfo | null>(null);
-  /** 提交成功后递增，让右侧版本记录重新请求 git log */
-  const [gitLogRefreshKey, setGitLogRefreshKey] = useState(0);
+  /** 右侧版本记录，提交成功后直接刷新 git log */
+  const gitLogPanelRef = useRef<GitVersionRecordPanelHandle>(null);
   /** 是否已完成首次 apiUserAppGetById（用于 gate 自动生成名称） */
   const [userAppInfoFetched, setUserAppInfoFetched] = useState(false);
   useProjectChanged((event) => {
@@ -775,19 +778,15 @@ const AppDevPro: React.FC = () => {
       if (!previewUrl) {
         return dict('PC.Pages.AppDevPro.iframeLoadFailed');
       }
-      const health = await pollPreviewUrlHealth(previewUrl, {
+      // 开发 / 线上共用：先轮询域名最多 5 次。中途 200 立刻结束。
+      // 5 次都失败（含跨域无 CORS 头）时不拦截预览，交给 iframe 再加载一次该域名。
+      await pollPreviewUrlHealth(previewUrl, {
         shouldStop: () => previewUserStoppedRef.current,
       });
-      if (health.ok) {
-        return '';
+      if (previewUserStoppedRef.current) {
+        return dict('PC.Pages.AppDevPro.iframeLoadFailed');
       }
-      if (health.status) {
-        return dict('PC.Pages.AppDevPro.iframeLoadFailedWithStatus').replace(
-          '{0}',
-          String(health.status),
-        );
-      }
-      return dict('PC.Pages.AppDevPro.iframeLoadFailed');
+      return '';
     },
     onStopped: () => {
       previewUserStoppedRef.current = true;
@@ -1664,7 +1663,7 @@ const AppDevPro: React.FC = () => {
       // 提交成功后刷新 Git 状态，并更新右侧版本记录
       onCommitSuccess: async () => {
         await fileView.refreshGitList();
-        setGitLogRefreshKey((key) => key + 1);
+        gitLogPanelRef.current?.refresh();
       },
       // 刷新 Git 变更列表（git status + 文件树）
       onRefreshGitList: async () => {
@@ -2268,12 +2267,12 @@ const AppDevPro: React.FC = () => {
     }
     return (
       <GitVersionRecordPanel
+        ref={gitLogPanelRef}
         workspace={{
           workspaceType: 'taskAgent',
           cid: queryConversationId,
         }}
         branch={fileView.gitBranch}
-        logRefreshKey={gitLogRefreshKey}
         onRollbackSuccess={() => {
           handleRefreshFileList(queryConversationId);
           // 回滚成功后同步刷新 Git 源代码管理状态列表
@@ -2283,7 +2282,6 @@ const AppDevPro: React.FC = () => {
     );
   }, [
     isVersionControlEnabled,
-    gitLogRefreshKey,
     queryConversationId,
     fileView.gitBranch,
     handleRefreshFileList,
