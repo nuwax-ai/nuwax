@@ -64,6 +64,10 @@ const cleanExpiredErrorCache = () => {
   }
 };
 
+const isLoginPage = (): boolean =>
+  typeof window !== 'undefined' &&
+  /^\/login(?:\/|$)/i.test(window.location.pathname);
+
 // 每 5 秒清理一次过期缓存
 setInterval(cleanExpiredErrorCache, 5000);
 
@@ -167,6 +171,9 @@ const errorHandler = (error: any, opts: any) => {
           if (isConversationMockPage()) {
             return;
           }
+          // 登录页仍会发全局通知等请求。它们的未登录响应不能再次导航，
+          // 否则整个页面会不断重新挂载，用户无法填写登录表单。
+          if (isLoginPage()) return;
           // 会话闪断清理须保留用户显式偏好：整体 clear 会毁掉主题配置
           // （含导航风格显式选择）与语言偏好（显式选过的语言）
           clearStoragePreservingUserPrefs();
@@ -181,6 +188,7 @@ const errorHandler = (error: any, opts: any) => {
           if (isConversationMockPage()) {
             return;
           }
+          if (isLoginPage()) return;
           clearLoginStatusCache();
           void hostBridge.auth.clear();
           void navigateToAuthUrl(errorMessage);
@@ -230,6 +238,7 @@ const errorHandler = (error: any, opts: any) => {
       url &&
       businessCredentials(url) === 'include'
     ) {
+      if (isLoginPage()) return Promise.reject();
       clearStoragePreservingUserPrefs();
       void hostBridge.auth.clear();
       clearLoginStatusCache();
