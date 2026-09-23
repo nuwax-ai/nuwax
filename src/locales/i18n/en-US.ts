@@ -2976,6 +2976,12 @@ export const EN_US: SystemLangMap = {
   "PC.Components.WorkspaceDir.emptyDir": "This folder is empty",
   "PC.Components.WorkspaceDir.homeDir": "Home",
   "PC.Components.WorkspaceDir.recent": "Recent",
+  "PC.Components.WorkspaceDir.newFolder": "New folder",
+  "PC.Components.WorkspaceDir.rename": "Rename",
+  "PC.Components.WorkspaceDir.newFolderPlaceholder": "Enter folder name",
+  "PC.Components.WorkspaceDir.renamePlaceholder": "Enter new name",
+  "PC.Components.WorkspaceDir.nameInvalid":
+    "Name cannot be empty or contain / or \\",
   "PC.Components.WorkspaceDir.createConversationFailed":
     "Failed to create conversation",
   "PC.Components.WorkspaceDir.createProjectFailed": "Failed to create project",

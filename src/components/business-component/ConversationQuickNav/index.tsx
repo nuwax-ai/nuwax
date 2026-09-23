@@ -27,7 +27,8 @@ import { buildQuickNavBlocks, QuickNavBlock } from './blocks';
  *   （会使 fixed 退化为相对该祖先定位）。
  *
  * 行为：块数 ≥4 且内容可滚动（scrollHeight ≥ 1.5×clientHeight）且容器宽 ≥600px
- * 时才显示；点击平滑定位到对应轮次；鼠标滑过时线条波浪式变长；样式在
+ * 时才显示；点击平滑定位到对应轮次；鼠标滑过时线条波浪式变长，悬停 400ms 后
+ * 展示该轮预览卡（浮层以命中线条的垂直中点对齐）；样式在
  * src/global.less（conversation-quick-nav-* 全局类）。
  */
 
@@ -74,7 +75,8 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
   const [navLeft, setNavLeft] = useState<number | null>(null);
   const rafRef = useRef(0);
   const navRef = useRef<HTMLDivElement>(null);
-  const linesRef = useRef<Array<HTMLButtonElement | null>>([]);
+  /** 线条按钮缓存：与 centersRef 同步重建（readCenters 时按 data-nav-index 取序） */
+  const lineElsRef = useRef<HTMLButtonElement[]>([]);
   const peakIndexRef = useRef<number | null>(null);
   const previewTimerRef = useRef<number | null>(null);
   /** 线条纵向中心缓存：波浪内零布局读取，手势进入/导航滚动/块数变化时重建 */
@@ -82,9 +84,28 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
   /** 锚点 id → 相对内容顶部偏移缓存：与滚动无关，仅内容布局变化时重建 */
   const anchorTopsRef = useRef<Map<string, number> | null>(null);
 
+  /**
+   * 事件目标 → 命中线条索引。走 data-nav-index 直读而非 linesRef.indexOf：
+   * 流式追加/历史前插会让 ref 数组与渲染顺序错位，indexOf 会把命中的线
+   * 认成别的块（tooltip 内容与锚点错位的根因）。
+   */
+  const lineIndexFromTarget = useCallback(
+    (target: EventTarget | null): number => {
+      const el = (target as HTMLElement | null)?.closest?.('[data-nav-index]');
+      const raw = el?.getAttribute('data-nav-index');
+      const index = raw === null || raw === undefined ? -1 : Number(raw);
+      return Number.isInteger(index) && index >= 0 ? index : -1;
+    },
+    [],
+  );
+
   const readCenters = useCallback(() => {
-    centersRef.current = linesRef.current.map((el) => {
-      if (!el) return null;
+    const nav = navRef.current;
+    const els = nav
+      ? Array.from(nav.querySelectorAll<HTMLButtonElement>('[data-nav-index]'))
+      : [];
+    lineElsRef.current = els;
+    centersRef.current = els.map((el) => {
       const rect = el.getBoundingClientRect();
       return rect.top + rect.height / 2;
     });
@@ -144,8 +165,7 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
         });
       }
       schedulePreview(peakIndex < 0 ? null : peakIndex);
-      linesRef.current.forEach((el, i) => {
-        if (!el) return;
+      lineElsRef.current.forEach((el, i) => {
         const center = centers[i];
         const distance = center === null ? Infinity : Math.abs(center - waveY);
         const extra =
@@ -163,10 +183,8 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
   const resetWave = useCallback(() => {
     schedulePreview(null);
     centersRef.current = null;
-    linesRef.current.forEach((el) => {
-      if (el) {
-        el.style.transform = '';
-      }
+    lineElsRef.current.forEach((el) => {
+      el.style.transform = '';
     });
   }, [schedulePreview]);
 
@@ -353,10 +371,6 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       ref={navRef}
       className="conversation-quick-nav"
       data-testid="conversation-quick-nav"
-      data-dbg={JSON.stringify({
-        p: previewIndex,
-        t: blocks.map((b) => `${b.anchorId}:${b.title.slice(0, 8)}`),
-      })}
       aria-label={t('PC.Components.ConversationQuickNav.tooltip')}
       style={
         centerTop !== null && navLeft !== null
@@ -365,11 +379,11 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       }
       onMouseEnter={(e) => {
         readCenters();
-        const index = linesRef.current.indexOf(e.target as HTMLButtonElement);
+        const index = lineIndexFromTarget(e.target);
         applyWave(e.clientY, index < 0 ? undefined : index);
       }}
       onMouseMove={(e) => {
-        const index = linesRef.current.indexOf(e.target as HTMLButtonElement);
+        const index = lineIndexFromTarget(e.target);
         applyWave(e.clientY, index < 0 ? undefined : index);
       }}
       onMouseLeave={resetWave}
@@ -403,9 +417,7 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
         >
           <button
             type="button"
-            ref={(el) => {
-              linesRef.current[index] = el;
-            }}
+            data-nav-index={index}
             className={`conversation-quick-nav-line${
               index === activeIndex ? ' active' : ''
             }`}

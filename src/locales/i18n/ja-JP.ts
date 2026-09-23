@@ -2893,6 +2893,11 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.WorkspaceDir.emptyDir": "このフォルダは空です",
   "PC.Components.WorkspaceDir.homeDir": "ホーム",
   "PC.Components.WorkspaceDir.recent": "最近の選択",
+  "PC.Components.WorkspaceDir.newFolder": "新しいフォルダー",
+  "PC.Components.WorkspaceDir.rename": "名前の変更",
+  "PC.Components.WorkspaceDir.newFolderPlaceholder": "フォルダー名を入力",
+  "PC.Components.WorkspaceDir.renamePlaceholder": "新しい名前を入力",
+  "PC.Components.WorkspaceDir.nameInvalid": "名前は空にできず、/ または \\ を含められません",
   "PC.Components.WorkspaceDir.createConversationFailed": "会話の作成に失敗しました",
   "PC.Components.WorkspaceDir.createProjectFailed":
     "プロジェクトの作成に失敗しました",

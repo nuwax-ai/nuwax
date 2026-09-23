@@ -323,6 +323,37 @@ describe('ConversationQuickNav 组件', () => {
     expect(await screen.findByText('消息内容 3')).toBeInTheDocument();
   });
 
+  it('容器 mousemove 命中路径按 data-nav-index 对位（悬停哪条线预览哪一块）', async () => {
+    const container = buildContainer();
+    renderNav(container, longMessageList());
+    const lines = screen.getAllByTestId('conversation-quick-nav-line');
+    mockLineRects(lines);
+
+    // 走导航容器的 move 处理（原 linesRef.indexOf 路径）：逐条悬停断言预览内容
+    for (const [index, expectText] of [
+      [0, '消息内容 1'],
+      [2, '消息内容 5'],
+      [4, '消息内容 9'],
+    ] as const) {
+      fireEvent.mouseMove(lines[index], { clientY: index * 10 + 4 });
+      expect(await screen.findByText(expectText)).toBeInTheDocument();
+    }
+  });
+
+  it('预览浮层锚定命中线条：悬停第 N 条只打开第 N 条的浮层', async () => {
+    const container = buildContainer();
+    renderNav(container, longMessageList());
+    const lines = screen.getAllByTestId('conversation-quick-nav-line');
+    mockLineRects(lines);
+
+    fireEvent.mouseEnter(lines[2], { clientY: 24 });
+    await screen.findByText('消息内容 5');
+    // 受控 Tooltip 只允许命中那条线的浮层带内容（各线一块、内容互斥）
+    fireEvent.mouseEnter(lines[0], { clientY: 4 });
+    expect(await screen.findByText('消息内容 1')).toBeInTheDocument();
+    expect(screen.queryByText('消息内容 5')).not.toBeInTheDocument();
+  });
+
   it('点击导航行在容器内滚动定位到目标块', () => {
     const container = buildContainer();
     container.innerHTML = longMessageList()

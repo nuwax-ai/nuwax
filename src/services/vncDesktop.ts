@@ -4,6 +4,9 @@ import { RequestResponse } from '@/types/interfaces/request';
 import type {
   EnsurePodResponse,
   FsChildrenResponse,
+  FsEntryItem,
+  FsMkdirParams,
+  FsRenameParams,
   FsRootsResponse,
   ISkillUploadFileParams,
   IUpdateStaticFileParams,
@@ -350,5 +353,30 @@ export async function apiBrowseFsChildren(
   return request('/api/computer/static/fs/children', {
     method: 'GET',
     params: { path, sandboxId },
+  });
+}
+
+/**
+ * 在 parentPath 下新建一层目录（目录选择弹窗用），返回新目录条目。
+ * body sandboxId 契约为 integer，此处由字符串链路转数字。
+ */
+export async function apiFsMkdir(
+  params: FsMkdirParams,
+): Promise<RequestResponse<FsEntryItem>> {
+  const { sandboxId, parentPath, dirName } = params;
+  return request('/api/computer/static/fs/mkdir', {
+    method: 'POST',
+    data: { sandboxId: Number(sandboxId), parentPath, dirName },
+  });
+}
+
+/** 同目录重命名（newName 仅名字，不支持跨目录移动），返回改后条目 */
+export async function apiFsRename(
+  params: FsRenameParams,
+): Promise<RequestResponse<FsEntryItem>> {
+  const { sandboxId, path, newName } = params;
+  return request('/api/computer/static/fs/rename', {
+    method: 'POST',
+    data: { sandboxId: Number(sandboxId), path, newName },
   });
 }

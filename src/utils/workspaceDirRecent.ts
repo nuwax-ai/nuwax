@@ -45,3 +45,32 @@ export const addRecentWorkspaceDir = (dir: string): string[] => {
   }
   return next;
 };
+
+/**
+ * 重命名后同步最近目录：以 oldPath 为前缀的项（含自身）映射到 newPath 前缀，
+ * 去重后写回并返回最新列表（前缀匹配兼容 / 与 \ 两种分隔符）。
+ */
+export const renameRecentWorkspaceDir = (
+  oldPath: string,
+  newPath: string,
+): string[] => {
+  const current = loadRecentWorkspaceDirs();
+  if (!oldPath || !newPath || oldPath === newPath) return current;
+  const mapped = current.map((item) => {
+    if (item === oldPath) return newPath;
+    if (item.startsWith(`${oldPath}/`) || item.startsWith(`${oldPath}\\`)) {
+      return newPath + item.slice(oldPath.length);
+    }
+    return item;
+  });
+  const next = [...new Set(mapped)];
+  try {
+    localStorage.setItem(
+      WORKSPACE_DIR_RECENT_STORAGE_KEY,
+      JSON.stringify(next),
+    );
+  } catch {
+    // ignore: localStorage 不可用，降级为仅本次会话生效
+  }
+  return next;
+};
