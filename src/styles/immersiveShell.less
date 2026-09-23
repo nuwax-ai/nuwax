@@ -30,10 +30,13 @@ html.immersive-shell {
    * 锚定 #container：#container 处于 inner（padding 之下）内，top:0 天然落在
    * 工具栏下方，无需再按 fixed 语义做 top 补偿（补偿会造成双重下移）。 */
 
-  /* agent-dev 全屏预览（fixed 覆盖视口；module 类被哈希，避让层无法用全局
-   * 选择器命中，故 JSX 在全屏态挂此稳定全局类）：top 下移工具栏高度，
+  /* 公共/agent-dev 全屏预览（fixed 覆盖视口；module 类被哈希，故 JSX 在
+   * 真正 fixed 的根挂稳定全局类）。不能只标记 agent-dev 外层：内层 fixed
+   * 仍锚视口，且 Chat 入口不在 immersive-shell-page 内（bug2469）。
+   * top 下移工具栏高度，
    * height 同步收缩避免底部溢出视口。带 !important 盖过页面自身的
-   * top:0/height:100vh !important（双方 important 下此处选择器特异性更高）。 */
+   * top:0/height:100vh !important；保留页根选择器以覆盖外层的高特异性规则。 */
+  .immersive-shell-fullscreen,
   .immersive-shell-page .immersive-shell-fullscreen {
     top: var(--immersive-shell-toolbar, 0) !important;
     height: calc(100vh - var(--immersive-shell-toolbar, 0)) !important;

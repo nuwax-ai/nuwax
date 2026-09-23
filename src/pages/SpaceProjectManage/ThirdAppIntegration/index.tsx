@@ -1,5 +1,6 @@
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -198,31 +199,32 @@ const ThirdAppIntegration: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div className={cx(styles['header-area'])}>
-        <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>
-            {dict('PC.Pages.ThirdAppIntegration.title')}
-          </h3>
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <Input
-            placeholder={dict('PC.Pages.SpaceProjectManage.searchPlaceholder')}
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={() => setKeyword('')}
-            style={{ width: 214 }}
-          />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateOpen(true)}
-          >
-            {dict('PC.Pages.ThirdAppIntegration.createButton')}
-          </Button>
-        </div>
-      </div>
+      <PageContainerHeader
+        className={cx(styles['page-header'])}
+        title={dict('PC.Pages.ThirdAppIntegration.title')}
+        actions={
+          <>
+            <Input
+              placeholder={dict(
+                'PC.Pages.SpaceProjectManage.searchPlaceholder',
+              )}
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={() => setKeyword('')}
+              style={{ width: 214 }}
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateOpen(true)}
+            >
+              {dict('PC.Pages.ThirdAppIntegration.createButton')}
+            </Button>
+          </>
+        }
+      />
 
       {!hasLoaded ? (
         <Loading />

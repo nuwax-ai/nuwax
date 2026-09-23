@@ -215,16 +215,6 @@
         }
       }
 
-      &.task-agent-box {
-        transition: all ease-in-out 0.2s;
-
-        &.task-agent-active {
-          color: @colorPrimary;
-          border-color: @colorPrimary;
-          background-color: @colorPrimaryBg;
-        }
-      }
-
       &.upload-box-disabled {
         cursor: not-allowed;
         color: @colorIcon !important;
@@ -614,7 +604,9 @@
   flex: 1;
   gap: 12px;
   color: @colorText;
-  font-size: 14px;
+  font-size: @fontSize;
+  font-weight: 400;
+  line-height: 20px;
 }
 
 /* 连接器行右侧展开箭头 */
@@ -624,7 +616,7 @@
   font-size: 11px;
 }
 
-/* 开关行（产物版本管理 / 变更自动提交 / 审批模式）：点整行切换并阻止菜单收起，
+/* 开关行（产物版本管理 / 变更自动提交 / 审批模式）：点整行切换，受控菜单保持展开，
    Switch 纯展示（pointer-events:none）靠右，交互统一由行承接避免双重触发 */
 .plus-menu-switch-row {
   gap: 12px;

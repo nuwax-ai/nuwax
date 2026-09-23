@@ -73,7 +73,7 @@
 }
 
 .ds-markdown {
-  --ds-md-zoom: 1.143;
+  --ds-md-zoom: 1;
   --ds-md-font-size: calc(var(--ds-md-zoom) * var(--ds-font-size-m));
   --ds-md-line-height: calc(var(--ds-md-zoom) * var(--ds-line-height-m));
   font-size: var(--ds-md-font-size);

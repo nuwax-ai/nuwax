@@ -48,6 +48,19 @@ export const useInitialConversationAutoSend = ({
   runtimeSession,
 }: UseInitialConversationAutoSendParams) => {
   const autoSentConversationIdRef = useRef<number | null>(null);
+  const latestConversationIdRef = useRef(conversationId);
+  latestConversationIdRef.current = conversationId;
+  const requestGenerationRef = useRef(0);
+
+  // 只在离开当前会话时作废预查询；普通 render 中回调引用变化不应取消首发。
+  // 清掉占位后，同一 ID 再进入（含 StrictMode effect 重放）仍可重新查询。
+  useEffect(
+    () => () => {
+      requestGenerationRef.current += 1;
+      autoSentConversationIdRef.current = null;
+    },
+    [conversationId],
+  );
 
   useEffect(() => {
     if (
@@ -60,6 +73,7 @@ export const useInitialConversationAutoSend = ({
 
     // 请求前占位，防止 effect 重跑时并发查询后重复发送。
     autoSentConversationIdRef.current = conversationId;
+    const requestGeneration = requestGenerationRef.current;
 
     void (async () => {
       let data = null;
@@ -69,6 +83,15 @@ export const useInitialConversationAutoSend = ({
         data = (await fetchConversationSnapshot(conversationId)) ?? null;
       } catch (error) {
         console.error('Failed to query conversation before auto-send', error);
+      }
+
+      // 详情请求迟到时，页面可能已切会话或卸载；旧首发会中断共用 session
+      // 的新会话流。代际同时覆盖 A→B→A，ID 检查补齐 render 到 effect 的窗口。
+      if (
+        requestGeneration !== requestGenerationRef.current ||
+        latestConversationIdRef.current !== conversationId
+      ) {
+        return;
       }
 
       const messageList = data?.messageList || [];

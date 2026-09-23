@@ -1,3 +1,4 @@
+import { resetDesktopShellPreviewRuntimeForTest } from '@/utils/desktopShellPreview';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   auth,
@@ -31,6 +32,7 @@ describe('hostBridge（统一对外接入层）', () => {
     if (original === undefined) delete (window as any).NuwaClawBridge;
     else (window as any).NuwaClawBridge = original;
     warnSpy.mockClear();
+    resetDesktopShellPreviewRuntimeForTest();
   });
 
   /** 桌面适配用例的商业宿主桥（产品规则 2026-09-13：沉浸避让等仅商业宿主启用） */
@@ -228,6 +230,34 @@ describe('hostBridge（统一对外接入层）', () => {
       vi.stubGlobal('navigator', { platform: 'Win32' });
       delete (window as any).NuwaClawBridge;
       expect(needsTopRightAvoid()).toBe(false);
+    });
+    it('开发态浏览器预览参数复用真实桌面平台与沉浸避让分支', () => {
+      const originalHref = window.location.href;
+      delete (window as any).NuwaClawBridge;
+      try {
+        window.history.replaceState(
+          null,
+          '',
+          '/home?__desktop_shell_preview=windows',
+        );
+        expect(hasHostBridge()).toBe(false);
+        expect(isDesktopHost()).toBe(true);
+        expect(isImmersiveShell()).toBe(true);
+        expect(isMac()).toBe(false);
+        expect(isWinLinuxShell()).toBe(true);
+        expect(needsTopRightAvoid()).toBe(true);
+
+        window.history.replaceState(
+          null,
+          '',
+          '/home?__desktop_shell_preview=macos',
+        );
+        expect(isMac()).toBe(true);
+        expect(isWinLinuxShell()).toBe(false);
+        expect(needsTopRightAvoid()).toBe(false);
+      } finally {
+        window.history.replaceState(null, '', originalHref);
+      }
     });
     it('独立窗口（_shell=1）→ 无需右上避让（系统标题栏承担顶部）', () => {
       vi.stubGlobal('navigator', { platform: 'Win32' });

@@ -54,3 +54,6 @@ package-lock.json
 public/MP_verify_*.txt
 public/Nd28jPGzj4.txt
 .claude/cache/
+
+tasks/
+debug-shots/

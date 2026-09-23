@@ -15,6 +15,7 @@ import {
   hostBridge,
   isDesktopHost,
   isImmersiveShell,
+  isWinLinuxShell,
   shellAvoid,
 } from '@/utils/hostBridge';
 import { jumpTo } from '@/utils/router';
@@ -31,6 +32,7 @@ import classNames from 'classnames';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -44,6 +46,7 @@ import {
   resolveCurrentTitle,
   resolveIsShowTitle,
   resolveSecondaryBackgroundColor,
+  resolveSecondColumnShellGeometry,
   resolveSecondMenuVisibility,
 } from '../secondMenuPolicy';
 import { resolveSidebarCollapsePolicy } from '../sidebarCollapsePolicy';
@@ -86,6 +89,18 @@ const SECOND_COLUMN_WIDTH = 200;
  * padding（原型 tm-side 10px）联动——改 CSS 须同步改这里，否则行 pill 左右不对称
  */
 const SECOND_COLUMN_SCROLL_BODY_INSET = 21;
+/**
+ * 主列（.nav-menus）less 的 padding-top：菜单头部（SidebarNavHeader）上沿 =
+ * 列顶 + 该值，分隔条可用高度顶部从此起（沉浸式被内联 shellAvoid.TOP 整体替换，
+ * 走 hostBridge 常量不经过这里）——改 .nav-menus 的 padding-top 须同步改这里
+ */
+const NAV_MENUS_PADDING_TOP = 8;
+/**
+ * SidebarNavHeader 顶栏（logo+搜索+折叠 的 .header-bar）高度：分隔条可用高度
+ * 顶部从其下沿（新建任务起的菜单列表区）起，logo 行不纳入可触发区（09-22 截图
+ * 红框口径）——改 SidebarNavHeader/index.less 的 .header-bar 高度须同步改这里
+ */
+const NAV_HEADER_BAR_HEIGHT = 41;
 /** 折叠态展开按钮（主站页形态）：贴屏幕最左侧、与收起按钮同一水平线，
  *  样式/大小/图标与 SidebarNavHeader 的收起按钮完全一致（34×34 图标钮 +
  *  PanelToggleSvg 面板图标）。left: 0 贴死左缘；
@@ -302,6 +317,17 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     [isMobile, effectiveNavigationStyle, token.colorBgContainer],
   );
 
+  const secondColumnShellGeometry = useMemo(
+    () =>
+      resolveSecondColumnShellGeometry({
+        immersiveShell: isImmersiveShell(),
+        winLinuxShell: isWinLinuxShell(),
+        menuTop: shellAvoid.TOP,
+        contentTop: shellAvoid.CONTENT_TOP,
+      }),
+    [],
+  );
+
   /**
    * 导航容器样式类名
    */
@@ -383,6 +409,38 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     [resolveNavWidthFromClientX],
   );
 
+  // 分隔条可用高度（09-22 截图红框圈定）：顶 = logo/搜索顶栏（.header-bar）下沿起，
+  // 即「新建任务」起的菜单列表区上沿——logo 行不纳入可触发区；= 主列 paddingTop
+  // （less 的 8px / 沉浸式被内联 shellAvoid.TOP 整体替换）+ header-bar 高 41px，
+  // 常量直算须与两处同源联动；底 = 底部用户栏上沿上浮 8px 边距，按 .sidebar-footer
+  // 真实 DOM 测量，根容器尺寸变化（窗口缩放/列宽拖拽）时复算
+  const navFooterRef = useRef<HTMLDivElement>(null);
+  const navDividerInsetTop =
+    (isImmersiveShell() ? shellAvoid.TOP : NAV_MENUS_PADDING_TOP) +
+    NAV_HEADER_BAR_HEIGHT;
+  const [navDividerInsetBottom, setNavDividerInsetBottom] = useState(0);
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const measure = () => {
+      const rootRect = root.getBoundingClientRect();
+      const footerRect = navFooterRef.current?.getBoundingClientRect();
+      const next = footerRect
+        ? Math.max(0, Math.round(rootRect.bottom - footerRect.top - 8))
+        : 0;
+      setNavDividerInsetBottom((prev) => (prev === next ? prev : next));
+    };
+
+    measure();
+    // jsdom 无 ResizeObserver（组件测试环境），仅浏览器观测
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(measure);
+      observer.observe(root);
+      return () => observer.disconnect();
+    }
+  }, []);
+
   return (
     <div
       className={navigationClassName}
@@ -438,7 +496,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
         {/* 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右：消息/设备/更多/文档，走接口）+
             最右「客户端设置」（仅 Nuwax 客户端渲染，打开壳设置弹窗） */}
-        <div className={cx(styles['sidebar-footer'])}>
+        <div ref={navFooterRef} className={cx(styles['sidebar-footer'])}>
           {/* topLeft：弹窗底部贴用户区顶部、左缘与用户区对齐 */}
           <User placement="topLeft">
             <div
@@ -496,6 +554,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       {shouldShowSecondMenu && (
         <div
           className={cx(styles['second-column'], 'noselect')}
+          data-shell-second-menu-visible={
+            secondMenuVisible ? 'true' : undefined
+          }
           style={{
             width: secondMenuVisible ? SECOND_COLUMN_WIDTH : 0,
             opacity: secondMenuVisible ? 1 : 0,
@@ -503,7 +564,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             // 21px 底色条，收起时须同步归零（展开交还 less 默认值）
             padding: secondMenuVisible ? undefined : 0,
             borderRightWidth: secondMenuVisible ? undefined : 0,
-            paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
+            ...secondColumnShellGeometry,
             // 底色交给 less（原型 #fafafa，2026-09-12）：此处原内联 transparent
             // 会盖掉 less 背景，移除后单栏二级列按原型配色渲染
           }}
@@ -521,12 +582,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                 }
                 // 滚动条贴列右缘（2026-09-12 需求）：外扩进右 padding 带，不叠压行内容
                 scrollbarEdge
-                // 顶部 3px：标题行自然落位 19px（列 padding 16 + 3），行高中点
-                // 31px 对齐顶栏 logo/搜索/内容区标题中线；勿用负 margin 上提——
-                // 本组件 content 为 overflow:hidden，负 margin 顶出盒顶的部分
-                // 会被裁（「广场/更多/系统管理」标题首字缺角的根因）
+                // 标题具体上下间距统一交给 second-menu-title-box / SpaceSection；
+                // 滚动体本身不再额外垫顶，避免工作空间与通用标题两套口径。
                 style={{
-                  padding: '3px 0 12px',
+                  padding: '0 0 12px',
                 }}
               >
                 <div
@@ -537,13 +596,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                 >
                   {/* 标题（选中导航项名称） */}
                   <ConditionRender condition={isShowTitle && currentTitle}>
-                    {/* 水平 10px 与行内容（容器 10 + 行 padding 10 = 20px）对齐；
-                        垂直落位由 HoverScrollbar 顶部 padding 3px 承担（列 padding
-                        16 + 3 = 19px 顶，行高中点 31px 对齐顶栏中线）——此处禁止
-                        再用负 margin 上提：外层 content overflow:hidden 会裁掉
-                        盒顶（「广场/更多」首字缺角根因）；底部 21px 使后续菜单
-                        落点与旧负 margin 方案逐像素一致（19+24+21 = 28+24+12） */}
-                    <div style={{ padding: '0 10px 21px' }}>
+                    {/* 工作空间/广场/系统管理/更多共用标题顶边口径；上下间距
+                        定义在 second-column，标题下菜单首项位置保持不变。 */}
+                    <div className={cx(styles['second-menu-title-box'])}>
                       <Typography.Title
                         level={5}
                         style={{ marginBottom: 0 }}
@@ -574,6 +629,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           onDraggingChange={setIsNavResizing}
           onDragMove={handleNavDividerMove}
           onDragEnd={handleNavDividerEnd}
+          // 可用高度：顶从 logo 顶栏下方菜单列表区起、底到用户栏上沿留 8px（见上方注释）
+          insetTop={navDividerInsetTop}
+          insetBottom={navDividerInsetBottom}
         />
       )}
 

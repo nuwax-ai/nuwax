@@ -235,7 +235,14 @@ function syncBrandThemeCssOverride(): void {
   const shouldApply = isBrandThemeActive();
   Object.keys(BRAND_CSS_VARS).forEach((key) => {
     if (shouldApply) root.style.setProperty(key, BRAND_CSS_VARS[key]);
-    else root.style.removeProperty(key);
+    // 本层只是覆盖层，不拥有 unifiedThemeService 写入的通用主题变量。
+    // applyToDOM 后置钩子执行时，通用层已把 style1/style2 深色值写到同一批 key；
+    // 若让位时无条件 removeProperty，会把刚写好的白色导航文字一起删掉，最终回退
+    // token.less 的黑色 fallback，造成深色一级导航黑字黑图标。只回收仍等于本层
+    // 覆盖值的属性：通用层已接管的值必须原样保留。
+    else if (root.style.getPropertyValue(key) === BRAND_CSS_VARS[key]) {
+      root.style.removeProperty(key);
+    }
   });
   // 主色仅在「默认女娲主题」（未显式定制）时由本层兜底为品牌蓝——配置层主色
   // 可能仍是平台默认/租户回声色；显式定制后 --xagi-color-primary 完全交给

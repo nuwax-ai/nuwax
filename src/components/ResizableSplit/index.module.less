@@ -55,13 +55,14 @@
   // transform: translate(Xpx, 0px)，优先级更高，写了也不会生效
   will-change: transform;
 
-  // 拖拽热区：左右各外扩 4px（总计 8px），透明不可见，只负责接住鼠标
+  // 拖拽热区：左右各外扩 6px（总计 12px），透明不可见，只负责接住鼠标；
+  // 由 4px 加宽到 6px（09-22）：更好命中，透明性不变
   &::after {
     content: '';
     position: absolute;
     top: 0;
-    left: -4px;
-    right: -4px;
+    left: -6px;
+    right: -6px;
     height: 100%;
     cursor: col-resize;
   }
@@ -92,8 +93,11 @@
   z-index: 11;
 }
 
-// 悬停与拖拽中均显示（拖拽热区外鼠标事件走全局监听，:hover 会丢，故用 .dragging 兜底）
-.divider:hover .resizeGrip,
+// 悬停意图与拖拽中均显示：hover-intent 类由组件 JS 定时器满 800ms 意图判定后加上
+// （防路过分隔条误闪）；拖拽热区外鼠标事件走全局监听，:hover 会丢，故用 .dragging 兜底。
+// 延时不用 CSS transition-delay——被打断重入时会把半透明中间值冻结整个延时周期，
+// 表现为指示态抖动/残影
+.divider.hover-intent .resizeGrip,
 .divider.dragging .resizeGrip {
   opacity: 1;
 }
@@ -101,7 +105,7 @@
 .divider.dragging .resizeGrip {
   background-color: var(--divider-dragging-color, #595959);
   box-shadow: 1px 0 0 0 var(--divider-dragging-color, #595959);
-  transition: none; // 拖拽时禁用过渡
+  transition: none; // 拖拽时禁用过渡（不经 hover 延时，按下即拖立即反馈）
 }
 
 .divider.disabled .resizeGrip {
@@ -130,10 +134,15 @@
   z-index: 11;
 }
 
-// 悬停与拖拽中均显示（拖拽热区外鼠标事件走全局监听，:hover 会丢，故用 .dragging 兜底）
-.divider:hover .resizeHint,
+// 悬停意图与拖拽中均显示（机制见上方 grip 同名规则注释）
+.divider.hover-intent .resizeHint,
 .divider.dragging .resizeHint {
   opacity: 1;
+}
+
+// 拖拽时禁用过渡（与 grip 的 .dragging 规则同款）
+.divider.dragging .resizeHint {
+  transition: none;
 }
 
 .divider.disabled .resizeHint {

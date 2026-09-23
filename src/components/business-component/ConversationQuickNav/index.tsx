@@ -353,6 +353,10 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       ref={navRef}
       className="conversation-quick-nav"
       data-testid="conversation-quick-nav"
+      data-dbg={JSON.stringify({
+        p: previewIndex,
+        t: blocks.map((b) => `${b.anchorId}:${b.title.slice(0, 8)}`),
+      })}
       aria-label={t('PC.Components.ConversationQuickNav.tooltip')}
       style={
         centerTop !== null && navLeft !== null

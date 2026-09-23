@@ -83,3 +83,21 @@
     overflow-y: auto;
   }
 }
+
+// Windows/Linux 透明沉浸标题栏下，展开态侧栏与内容区共用一张视觉卡片：
+// 无二级列时圆角在 page-container；有二级列时圆角迁到二级列左上，内容区接缝方角。
+:global(html.immersive-shell-frameless) {
+  .container
+    > :global(#mobile-menu-container)
+    + .page-container.xagi-layout-expanded.xagi-nav-style3 {
+    border-top-left-radius: 12px;
+  }
+
+  .container
+    > :global(#mobile-menu-container):has(
+      [data-shell-second-menu-visible='true']
+    )
+    + .page-container.xagi-layout-expanded.xagi-nav-style3 {
+    border-top-left-radius: 0;
+  }
+}

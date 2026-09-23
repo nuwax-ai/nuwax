@@ -15,6 +15,42 @@
  */
 import type { MenuItemDto } from '@/types/interfaces/menu';
 
+export interface SecondColumnShellGeometry {
+  marginTop?: number;
+  height?: string;
+  paddingTop?: number;
+  borderTopLeftRadius?: number;
+}
+
+/**
+ * 二级列在沉浸式客户端中的顶部几何：
+ * - Windows/Linux 的背景顶边与 page-container 同退让；内部只保留两种避让量之差，
+ *   因而菜单正文仍落在原来的纵坐标；
+ * - macOS 保持整列背景满高，主导航与二级导航共同为左上角红绿灯/工具按钮退让；
+ *   右侧 page-container 不退让，符合原生客户端的分区布局；
+ * - 浏览器/独立窗口不注入样式。
+ */
+export const resolveSecondColumnShellGeometry = (options: {
+  immersiveShell: boolean;
+  winLinuxShell: boolean;
+  menuTop: number;
+  contentTop: number;
+}): SecondColumnShellGeometry => {
+  if (!options.immersiveShell) return {};
+
+  if (!options.winLinuxShell) {
+    return { paddingTop: options.menuTop };
+  }
+
+  return {
+    marginTop: options.contentTop,
+    height: `calc(100% - ${options.contentTop}px)`,
+    paddingTop: Math.max(options.menuTop - options.contentTop, 0),
+    // 有二级列时，沉浸卡片的左上圆角由内容区迁到二级导航外壳。
+    borderTopLeftRadius: 12,
+  };
+};
+
 /** 二级列背景色：移动端实底、style2 半透明白（2026-09-12 page-container 对齐口径）、其余透明 */
 export const resolveSecondaryBackgroundColor = (options: {
   isMobile: boolean;

@@ -447,9 +447,10 @@ describe('会话进度胶囊', () => {
         conversationId={999}
         messageList={messages}
         active={false}
+        open
+        onClose={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByTestId('capsule-trigger'));
     fireEvent.click(await screen.findByText('演示看板'));
     await waitFor(() =>
       expect(
@@ -510,21 +511,30 @@ describe('会话进度胶囊', () => {
     expect(resumed?.terminals[0]).toMatchObject({ command: 'npm run build' });
   });
 
-  it('默认折叠，展开后按分区展示（计划/进程/终端/智能体摘要），终态不卸载', () => {
+  it('open=false 面板不在 DOM；展开后按分区展示（计划/进程/终端/智能体摘要）', () => {
+    const messages = buildMessages();
     const { rerender, container } = render(
       <ConversationProgressCapsule
         conversationId={1}
-        messageList={buildMessages()}
+        messageList={messages}
         active
+        open={false}
+        onClose={vi.fn()}
       />,
     );
-    const trigger = screen.getByTestId('capsule-trigger');
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    // 收起态面板不在 DOM（条件渲染），胶囊宽度只贴合触发器内容
-    expect(screen.queryByText('步骤1')).toBeNull();
+    // 收起态：组件整体不在 DOM（有内容才由页面渲染页头按钮）
+    expect(screen.queryByTestId('conversation-progress-capsule')).toBeNull();
 
-    fireEvent.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    rerender(
+      <ConversationProgressCapsule
+        conversationId={1}
+        messageList={messages}
+        active
+        open
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('capsule-panel')).toBeInTheDocument();
     // 计划：活跃 + 待处理步骤（单行截断）
     expect(screen.getByText('运行验收')).toBeInTheDocument();
     expect(screen.getByText('生成交付说明')).toBeInTheDocument();
@@ -537,37 +547,58 @@ describe('会话进度胶囊', () => {
     expect(
       screen.getByText('PC.Components.ConversationProgressCapsule.running 1'),
     ).toBeInTheDocument();
-    // 点分区头展开子代理行（触发器动态文案也含子代理名，存在即可）
+    // 点分区头展开子代理行（头部动态文案也含子代理名，存在即可）
     fireEvent.click(
       screen.getByText('PC.Components.ConversationProgressCapsule.agents'),
     );
     expect(screen.getAllByText('检索子代理').length).toBeGreaterThan(0);
+    // 头部状态行：运行中 spinner
+    expect(container.querySelector('.spinner')).toBeTruthy();
+  });
 
-    // 会话结束：胶囊常驻，触发器换终态图标
+  it('终态面板常驻；新轮无内容隐藏并收敛展开态，新轮产出内容后恢复', async () => {
+    const onClose = vi.fn();
+    const { rerender, container } = render(
+      <ConversationProgressCapsule
+        conversationId={1}
+        messageList={buildMessages()}
+        active
+        open
+        onClose={onClose}
+      />,
+    );
+    // 会话结束（同轮终态）：面板常驻，头部换终态图标，不自动收起
     rerender(
       <ConversationProgressCapsule
         conversationId={1}
         messageList={buildMessages({ finished: true })}
         active={false}
+        open
+        onClose={onClose}
       />,
     );
+    expect(onClose).not.toHaveBeenCalled();
     expect(
       screen.getByTestId('conversation-progress-capsule'),
     ).toBeInTheDocument();
     expect(container.querySelector('.status-done')).toBeTruthy();
     expect(container.querySelector('.status-error')).toBeNull();
 
-    // 新消息新轮无内容：胶囊隐藏
+    // 新消息新轮无内容：组件隐藏，且回调 onClose 收敛外部展开态
     rerender(
       <ConversationProgressCapsule
         conversationId={1}
         messageList={buildMessages({ finished: true, withEmptyNewTurn: true })}
         active
+        open
+        onClose={onClose}
       />,
     );
     expect(screen.queryByTestId('conversation-progress-capsule')).toBeNull();
+    expect(onClose).toHaveBeenCalled();
 
-    // 新轮产出内容：恢复显示，面板自动收起
+    // 新轮产出内容：恢复显示；新一轮开跑同样请求自动收起
+    onClose.mockClear();
     rerender(
       <ConversationProgressCapsule
         conversationId={1}
@@ -576,15 +607,77 @@ describe('会话进度胶囊', () => {
           withResumedNewTurn: true,
         })}
         active
+        open
+        onClose={onClose}
       />,
     );
     expect(
       screen.getByTestId('conversation-progress-capsule'),
     ).toBeInTheDocument();
-    expect(screen.getByTestId('capsule-trigger')).toHaveAttribute(
-      'aria-expanded',
-      'false',
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it('面板头部关闭按钮点击回调 onClose', () => {
+    const onClose = vi.fn();
+    render(
+      <ConversationProgressCapsule
+        conversationId={1}
+        messageList={buildMessages()}
+        active
+        open
+        onClose={onClose}
+      />,
     );
+    const closeBtn = screen.getByTestId('capsule-close');
+    expect(closeBtn).toHaveAttribute(
+      'aria-label',
+      'PC.Components.ConversationProgressCapsule.close',
+    );
+    fireEvent.click(closeBtn);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('外点与 Esc 收起；页头触发按钮（data-capsule-panel-trigger）不算外点', () => {
+    const onClose = vi.fn();
+    render(
+      <ConversationProgressCapsule
+        conversationId={1}
+        messageList={buildMessages()}
+        active
+        open
+        onClose={onClose}
+      />,
+    );
+    // 面板内部交互不触发外点收起
+    fireEvent.mouseDown(screen.getByTestId('capsule-panel'));
+    expect(onClose).not.toHaveBeenCalled();
+    // 页头触发按钮区域：交给按钮自身 toggle
+    const triggerMark = document.createElement('div');
+    triggerMark.setAttribute('data-capsule-panel-trigger', '');
+    document.body.appendChild(triggerMark);
+    fireEvent.mouseDown(triggerMark);
+    expect(onClose).not.toHaveBeenCalled();
+    triggerMark.remove();
+
+    fireEvent.mouseDown(document.body);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('无可展示内容时组件隐藏并回调 onClose 收敛悬空的展开态', async () => {
+    const onClose = vi.fn();
+    render(
+      <ConversationProgressCapsule
+        conversationId={1}
+        messageList={[]}
+        active
+        open
+        onClose={onClose}
+      />,
+    );
+    expect(screen.queryByTestId('conversation-progress-capsule')).toBeNull();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
   it('开启版本管理：终态后 Git 工具区展示更改聚合与分支（worktree 口径优先）', async () => {
@@ -623,22 +716,25 @@ describe('会话进度胶囊', () => {
         messageList={buildMessages()}
         active
         enableVersionControl
+        open
+        onClose={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByTestId('capsule-trigger'));
     rerender(
       <ConversationProgressCapsule
         conversationId={1}
         messageList={buildMessages({ finished: true })}
         active={false}
         enableVersionControl
+        open
+        onClose={vi.fn()}
       />,
     );
     // 分支行（/api/git/status current）
     expect(
       await screen.findByText('feat-test', {}, { timeout: 2000 }),
     ).toBeInTheDocument();
-    // 聚合统计：触发器胶囊与面板「更改」行各一份
+    // 聚合统计：头部更改胶囊与面板「更改」行各一份
     expect(screen.getAllByText('+11').length).toBeGreaterThan(0);
     expect(screen.getAllByText('−2').length).toBeGreaterThan(0);
     expect(apiGitDiff).toHaveBeenCalledWith(
@@ -686,10 +782,11 @@ describe('会话进度胶囊', () => {
         messageList={buildMessages({ finished: true })}
         active={false}
         enableVersionControl
+        open
+        onClose={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByTestId('capsule-trigger'));
-    // 聚合统计同时出现在触发器胶囊与面板「更改」行
+    // 聚合统计同时出现在头部更改胶囊与面板「更改」行
     await waitFor(
       () => {
         expect(screen.getAllByText('+3').length).toBeGreaterThan(0);
@@ -702,7 +799,7 @@ describe('会话进度胶囊', () => {
     );
   });
 
-  it('任务结果展示+终端超 5 折叠+触发器动态文案', async () => {
+  it('任务结果展示+终端超 5 折叠+头部动态文案', async () => {
     const model = selectProgressCapsule(
       buildMessages({ finished: true, richContent: true }),
       false,
@@ -720,17 +817,16 @@ describe('会话进度胶囊', () => {
         conversationId={1}
         messageList={buildMessages({ finished: true, richContent: true })}
         active={false}
+        open
+        onClose={vi.fn()}
       />,
     );
-    // 触发器文案为终态词条（动态），非写死的「展开状态」
-    expect(screen.getByTestId('capsule-trigger').textContent).not.toContain(
+    // 头部状态行动态文案：非写死的「展开状态」
+    expect(screen.getByTestId('capsule-panel').textContent).not.toContain(
       'PC.Components.ConversationProgressCapsule.expandStatus',
     );
     // 终态动态文案优先取最后执行的动作（最后一条终端命令）
-    expect(screen.getByTestId('capsule-trigger').textContent).toContain(
-      '命令6',
-    );
-    fireEvent.click(screen.getByTestId('capsule-trigger'));
+    expect(screen.getByTestId('capsule-panel').textContent).toContain('命令6');
     // 任务结果：task-result 标签行（会话输出同款），正文卡片被替代
     expect(screen.getByText('月度报表页面')).toBeInTheDocument();
     expect(screen.getByText('数据明细导出')).toBeInTheDocument();
@@ -746,16 +842,17 @@ describe('会话进度胶囊', () => {
     expect(screen.getByText('echo step-6')).toBeInTheDocument();
   });
 
-  it('未开启版本管理不请求 git 接口，触发器更改胶囊回退 V2 编辑口径', async () => {
+  it('未开启版本管理不请求 git 接口，头部更改胶囊回退 V2 编辑口径', async () => {
     render(
       <ConversationProgressCapsule
         conversationId={1}
         messageList={buildMessages({ finished: true })}
         active={false}
+        open
+        onClose={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByTestId('capsule-trigger'));
-    // 收起态更改胶囊来自 V2 编辑聚合
+    // 头部更改胶囊来自 V2 编辑聚合
     expect(
       screen.getAllByText('PC.Components.ConversationProgressCapsule.changes')
         .length,

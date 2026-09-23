@@ -10,6 +10,11 @@
  */
 
 import type { HostAuthContext } from '@/types/interfaces/hostAuth';
+import {
+  getDesktopShellPreviewPlatform,
+  setDesktopShellPreviewHostCommandHandler,
+  updateDesktopShellPreviewLayoutState,
+} from '@/utils/desktopShellPreview';
 
 type NuwaClawBridgeLike = NonNullable<Window['NuwaClawBridge']>;
 
@@ -64,6 +69,7 @@ export function isShellWindow(): boolean {
  * 时视为无桌面适配（回落浏览器行为）。
  */
 export function isDesktopHost(): boolean {
+  if (getDesktopShellPreviewPlatform()) return true;
   const p = getBridge()?.host?.getProduct?.();
   return p === 'nuwax' || p === 'nuwawork';
 }
@@ -75,6 +81,7 @@ export function isDesktopHost(): boolean {
  * 浏览器恒为 false（见 isDesktopHost 产品规则）。
  */
 export function isImmersiveShell(): boolean {
+  if (getDesktopShellPreviewPlatform()) return true;
   return isDesktopHost() && !isShellWindow();
 }
 
@@ -84,6 +91,8 @@ export function isImmersiveShell(): boolean {
  * 「壳画自绘窗口三键的场合」恰好是「guest 需右上避让的场合」。
  */
 export function isMac(): boolean {
+  const previewPlatform = getDesktopShellPreviewPlatform();
+  if (previewPlatform) return previewPlatform === 'macos';
   return typeof navigator !== 'undefined' && /mac/i.test(navigator.platform);
 }
 
@@ -319,6 +328,10 @@ export const events = {
    */
   onHostCommand(cb: ((payload: HostCommand) => void) | null): boolean {
     try {
+      if (getDesktopShellPreviewPlatform()) {
+        setDesktopShellPreviewHostCommandHandler(cb);
+        return true;
+      }
       const handler = getBridge()?.events?.onHostCommand;
       if (!handler) return false;
       handler(cb);
@@ -355,6 +368,12 @@ export const layout = {
   /** 告知壳当前页是否有二级菜单可收起（fire-and-forget，失败静默）。 */
   setSecondMenuAvailable(available: boolean): void {
     try {
+      if (getDesktopShellPreviewPlatform()) {
+        updateDesktopShellPreviewLayoutState({
+          secondMenuAvailable: available,
+        });
+        return;
+      }
       getBridge()?.layout?.setSecondMenuAvailable?.(available);
     } catch {
       /* 宿主缺失或调用失败均忽略 */
@@ -363,6 +382,12 @@ export const layout = {
   /** 同步二级菜单真实收起态给壳（fire-and-forget，失败静默）。 */
   setSecondMenuCollapsed(collapsed: boolean): void {
     try {
+      if (getDesktopShellPreviewPlatform()) {
+        updateDesktopShellPreviewLayoutState({
+          secondMenuCollapsed: collapsed,
+        });
+        return;
+      }
       getBridge()?.layout?.setSecondMenuCollapsed?.(collapsed);
     } catch {
       /* 宿主缺失或调用失败均忽略 */
@@ -472,12 +497,12 @@ export const updater = {
       return null;
     }
   },
-  /** 重启并安装（仅 downloaded 状态有意义）。 */
-  async install(): Promise<void> {
+  /** 重启并安装（仅 downloaded 状态有意义）；返回宿主原始回包（success/error），宿主无能力/异常 → null。 */
+  async install(): Promise<{ success: boolean; error?: string } | null> {
     try {
-      await getBridge()?.updater?.install?.();
+      return (await getBridge()?.updater?.install?.()) ?? null;
     } catch {
-      /* 忽略 */
+      return null;
     }
   },
 };

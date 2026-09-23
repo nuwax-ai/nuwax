@@ -149,6 +149,73 @@ describe('实际恢复 hook 的首次进入', () => {
     expect(fetchConversationSnapshot).toHaveBeenCalledTimes(2);
   });
 
+  it('消息与快照回调连续重渲染不会重启正常轮询（bug 2486）', async () => {
+    const deps = options({ taskStatus: undefined });
+    const { rerender } = renderHook(
+      ({ text }) =>
+        useConversationStreamResume({
+          ...deps,
+          messageList: [{ ...user(), text }],
+          onConversationSnapshot: () => {},
+        }),
+      { initialProps: { text: '初始' } },
+    );
+    await flush();
+    expect(fetchConversationSnapshot).toHaveBeenCalledTimes(1);
+    for (let cycle = 1; cycle <= 12; cycle += 1) {
+      rerender({ text: `更新 ${cycle}` });
+      await flush();
+      // 新快照回写引起 render 不应在间隔到达前再次请求。
+      expect(fetchConversationSnapshot).toHaveBeenCalledTimes(cycle);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(fetchConversationSnapshot).toHaveBeenCalledTimes(cycle + 1);
+    }
+  });
+
+  it('持续本地流或 sub 订阅时消息重渲染不恢复快照轮询（bug 2486）', async () => {
+    const deps = options();
+    const { rerender } = renderHook(
+      ({ local, text }) =>
+        useConversationStreamResume({
+          ...deps,
+          isLocallyStreaming: local,
+          messageList: [{ ...user(), text }],
+        }),
+      { initialProps: { local: true, text: '初始' } },
+    );
+    for (let cycle = 1; cycle <= 12; cycle += 1) {
+      rerender({ local: true, text: `本地流 ${cycle}` });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+    }
+    expect(fetchConversationSnapshot).not.toHaveBeenCalled();
+    expect(deps.resumeStream).not.toHaveBeenCalled();
+
+    cleanup();
+    const resumed = renderHook(
+      ({ text }) =>
+        useConversationStreamResume({
+          ...deps,
+          messageList: [{ ...user(), text }],
+        }),
+      { initialProps: { text: '初始' } },
+    );
+    await flush();
+    expect(deps.resumeStream).toHaveBeenCalledTimes(1);
+    for (let cycle = 1; cycle <= 12; cycle += 1) {
+      resumed.rerender({ text: `恢复流 ${cycle}` });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+    }
+    expect(fetchConversationSnapshot).not.toHaveBeenCalled();
+    expect(deps.reloadHistoryAsync).toHaveBeenCalledTimes(1);
+    expect(deps.resumeStream).toHaveBeenCalledTimes(1);
+  });
+
   it('历史尚未出现本轮 user 时保留重试等待，期间不启动轮询', async () => {
     const previous = [
       user(),

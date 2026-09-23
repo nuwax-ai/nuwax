@@ -1,5 +1,6 @@
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import PageContainerHeader from '@/components/PageContainerHeader';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
 import { dict } from '@/services/i18nRuntime';
@@ -22,6 +23,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
 import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
 import ProjectListCard from '../components/ProjectListCard';
+import {
+  DEFAULT_ARCHIVED_FILTER,
+  DEFAULT_COLLECTED_FILTER,
+  type ArchivedFilter,
+  type CollectedFilter,
+} from '../components/ProjectListFilterBar';
 import { apiUserProjectPageQuery } from '../services';
 import styles from './index.less';
 const cx = classNames.bind(styles);
@@ -46,8 +53,17 @@ const UserAppProject: React.FC = () => {
   const location = useLocation();
   const spaceId = Number(params.spaceId);
   const refreshToken = (location.state as { _t?: number } | null)?._t ?? 0;
-
+  /** 搜索关键词 */
   const [keyword, setKeyword] = useState<string>('');
+  /** 收藏过滤值 */
+  // 筛选条 UI 注释态（随头部重构暂缓接线），先以默认值参与查询过滤
+  const [collectedFilter] = useState<CollectedFilter>(
+    DEFAULT_COLLECTED_FILTER,
+  );
+  /** 归档过滤值 */
+  const [archivedFilter] = useState<ArchivedFilter>(
+    DEFAULT_ARCHIVED_FILTER,
+  );
   const [list, setList] = useState<UserProjectItem[]>([]);
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
@@ -61,6 +77,8 @@ const UserAppProject: React.FC = () => {
         queryFilter: {
           spaceId,
           projectTypes: [AgentComponentTypeEnum.UserApp],
+          collectedFilter,
+          archivedFilter,
           name: name?.trim() || undefined,
         },
         current: pageIndex,
@@ -124,7 +142,7 @@ const UserAppProject: React.FC = () => {
       return;
     }
     run(keyword, 1);
-  }, [keyword, refreshToken, run, spaceId]);
+  }, [archivedFilter, collectedFilter, keyword, refreshToken, run, spaceId]);
 
   useProjectChanged((event) => {
     if (
@@ -211,31 +229,32 @@ const UserAppProject: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div className={cx(styles['header-area'])}>
-        <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>
-            {dict('PC.Pages.SpaceProjectManage.tabUserApp')}
-          </h3>
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <Input
-            placeholder={dict('PC.Pages.SpaceProjectManage.searchPlaceholder')}
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={() => setKeyword('')}
-            style={{ width: 214 }}
-          />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setOpenCreate(true)}
-          >
-            {dict('PC.Pages.SpaceProjectManage.createUserAppBtn')}
-          </Button>
-        </div>
-      </div>
+      <PageContainerHeader
+        className={cx(styles['page-header'])}
+        title={dict('PC.Pages.SpaceProjectManage.tabUserApp')}
+        actions={
+          <>
+            <Input
+              placeholder={dict(
+                'PC.Pages.SpaceProjectManage.searchPlaceholder',
+              )}
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={() => setKeyword('')}
+              style={{ width: 214 }}
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setOpenCreate(true)}
+            >
+              {dict('PC.Pages.SpaceProjectManage.createUserAppBtn')}
+            </Button>
+          </>
+        }
+      />
 
       {!hasLoaded ? (
         <Loading />
