@@ -35,6 +35,11 @@ export interface AppDevAppPreviewPanelProps {
   services?: UserAppTaskServiceProgress[];
   /** 启动失败时的接口错误文案，展示在日志区 */
   errorMessage?: string;
+  /**
+   * 启动接口已成功，但预览域名不可访问。
+   * 只展示页面加载失败，不进入启动进度日志。
+   */
+  previewLoadError?: string;
   /** 取消任务 loading */
   cancelLoading?: boolean;
   /** 容器是否已就绪 */
@@ -51,6 +56,8 @@ export interface AppDevAppPreviewPanelProps {
   onRetryStart?: () => void;
   /** 停止后重新启动预览（dev/start 或 prod/start） */
   onStart?: () => void;
+  /** 页面加载失败后只刷新当前预览 iframe，不重启服务 */
+  onRefreshPreview?: () => void;
   /** 容器启动失败后重新启动 */
   onRetryContainer?: () => void;
   /** 开发环境进行中任务锁定启动 / 重启 */
@@ -245,6 +252,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   phase = 'idle',
   services,
   errorMessage,
+  previewLoadError = '',
   cancelLoading = false,
   podReady = false,
   containerStatus,
@@ -253,6 +261,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   onCancelTask,
   onRetryStart,
   onStart,
+  onRefreshPreview,
   onRetryContainer,
   devActionLocked = false,
   allowStoppedHero = false,
@@ -289,6 +298,23 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   const isStarting = busy || phase === 'starting' || phase === 'building';
   const startFailed = phase === 'failed' || phase === 'cancelled';
   const canShowIframe = !!previewUrl && running;
+  const loadErrorText = previewLoadError.trim();
+  /** 启动已成功但页面打不开：不要复用进度流日志板 */
+  const previewLoadErrorHero = loadErrorText ? (
+    <div className={cx(styles.container, styles.stage)}>
+      <PreviewHero
+        error
+        title={loadErrorText}
+        action={
+          onRefreshPreview ? (
+            <Button type="primary" onClick={onRefreshPreview}>
+              {dict('PC.Pages.AppDevEditorHeaderRight.refreshPreview')}
+            </Button>
+          ) : null
+        }
+      />
+    </div>
+  ) : null;
 
   const handleIframeLoad = useCallback(() => {
     setLoadedInstanceKey((prev) =>
@@ -318,7 +344,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   }
 
   /** 线上环境：停止 / 重启 / 启动与开发环境同一套提示，仅在服务运行中展示 iframe */
-  if (directPreview) {
+  if (directPreview && !startFailed) {
     if (restarting) {
       return (
         <div className={cx(styles.container, styles.stage)}>
@@ -345,6 +371,10 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
 
     if (missingProjectFiles) {
       return emptyProjectHero;
+    }
+
+    if (previewLoadErrorHero && !isStarting) {
+      return previewLoadErrorHero;
     }
 
     if (!running && allowStoppedHero) {
@@ -439,6 +469,10 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
 
   if (missingProjectFiles) {
     return emptyProjectHero;
+  }
+
+  if (previewLoadErrorHero && !isStarting) {
+    return previewLoadErrorHero;
   }
 
   // 已有可预览内容时，新会话进行中仍保留当前页面，不切回准备中
