@@ -379,6 +379,34 @@ describe('hostBridge（统一对外接入层）', () => {
     });
   });
 
+  describe('auth.getContext', () => {
+    it('透传宿主当前业务域与网关信息', async () => {
+      const context = {
+        businessOrigin: 'https://tenant.example:8443',
+        gatewayOrigin: 'http://127.0.0.1:46801',
+        loadMode: 'gateway',
+      };
+      (window as any).NuwaClawBridge = {
+        auth: { getContext: vi.fn().mockResolvedValue(context) },
+      };
+      await expect(hostBridge.auth.getContext()).resolves.toEqual(context);
+    });
+    it('普通浏览器与旧宿主返回 null', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(auth.getContext()).resolves.toBeNull();
+      (window as any).NuwaClawBridge = { auth: {} };
+      await expect(auth.getContext()).resolves.toBeNull();
+    });
+    it('桥调用失败返回 null', async () => {
+      (window as any).NuwaClawBridge = {
+        auth: {
+          getContext: vi.fn().mockRejectedValue(new Error('unavailable')),
+        },
+      };
+      await expect(auth.getContext()).resolves.toBeNull();
+    });
+  });
+
   describe('auth.getToken', () => {
     it('桥返回 token → 透传', async () => {
       (window as any).NuwaClawBridge = {
