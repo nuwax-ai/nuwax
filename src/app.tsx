@@ -10,7 +10,8 @@ import {
   SUCCESS_CODE,
   USER_NO_LOGIN,
 } from './constants/codes.constants';
-import { ACCESS_TOKEN } from './constants/home.constants';
+// 首页常量须先于主题链求值：其顶层文案依赖已初始化的 i18nRuntime。
+import './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import { APP_NAME, APP_VERSION } from './constants/version';
 import {
@@ -37,14 +38,11 @@ import {
 } from './services/unifiedThemeService';
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
+import { restoreBusinessAuthSession } from './utils/businessAuth';
 import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
 import { isDesktopShellPreviewPage } from './utils/desktopShellPreview';
 import { installDirectorySyncLegacyBridge } from './utils/directorySyncEvents';
-import {
-  hostBridge,
-  isDesktopHost,
-  syncShellAvoidanceCss,
-} from './utils/hostBridge';
+import { isDesktopHost, syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
 import { isConversationMockPage } from './utils/isConversationMockPage';
 // 工作台页历史栈兜底：模块副作用须在 umi router history 创建前执行（仍在
@@ -70,9 +68,7 @@ export async function getInitialState(): Promise<InitialStateType> {
   try {
     await initI18n();
 
-    // 旧客户端升级后丢弃 ACCESS_TOKEN；在首次查询用户前让宿主确认 cookie 会话。
-    localStorage.removeItem(ACCESS_TOKEN);
-    const hostSessionReady = await hostBridge.auth.syncSession();
+    const hostSessionReady = await restoreBusinessAuthSession();
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
     const publicPaths = [

@@ -11,7 +11,7 @@ import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { clearStoragePreservingUserPrefs } from '@/utils/authStorageCleanup';
-import { businessCredentials } from '@/utils/businessCookie';
+import { getBusinessRequestAuth } from '@/utils/businessAuth';
 import { hostBridge } from '@/utils/hostBridge';
 import { isConversationMockPage } from '@/utils/isConversationMockPage';
 import { redirectToLogin } from '@/utils/router';
@@ -233,10 +233,11 @@ const errorHandler = (error: any, opts: any) => {
     }
   } else if (error.response) {
     // 处理HTTP错误
+    const auth = url ? getBusinessRequestAuth(url) : null;
     if (
       error.response.status === 401 &&
-      url &&
-      businessCredentials(url) === 'include'
+      auth &&
+      (auth.credentials === 'include' || !!auth.headers.Authorization)
     ) {
       if (isLoginPage()) return Promise.reject();
       clearStoragePreservingUserPrefs();
@@ -277,9 +278,14 @@ const requestInterceptors = [
   (url: string, options: any) => {
     // 调用方显式传入绝对地址时保持原样；Mock 页用它绕过远端 BASE_URL。
     const newUrl = /^https?:\/\//.test(url) ? url : process.env.BASE_URL + url;
+    const auth = getBusinessRequestAuth(newUrl);
     return {
       url: newUrl,
-      options: { ...options, credentials: businessCredentials(newUrl) },
+      options: {
+        ...options,
+        credentials: auth.credentials,
+        headers: { ...options.headers, ...auth.headers },
+      },
     };
   },
 

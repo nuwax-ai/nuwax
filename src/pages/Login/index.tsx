@@ -1,6 +1,6 @@
 import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
-import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
+import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
 import { apiLogin } from '@/services/account';
 import { dict, initI18n, syncLangFromUserInfo } from '@/services/i18nRuntime';
@@ -9,6 +9,7 @@ import { UserService } from '@/services/userService';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
+import { finishBusinessLogin } from '@/utils/businessAuth';
 import {
   isValidEmail,
   isValidPhone,
@@ -189,13 +190,14 @@ const Login: React.FC = () => {
       normalizeUnknownError: true,
       debounceInterval: 300,
       onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
-        const { expireDate, redirect: responseRedirectUrl } = result;
-        localStorage.removeItem(ACCESS_TOKEN);
-        // x-client-type may still make the backend return a token. The ticket
-        // from Set-Cookie is the sole credential for both web and host.
-        const synced = await hostBridge.auth.syncSession();
-        if (isDesktopHost() && !synced) {
-          message.error('客户端登录会话同步失败，请升级客户端后重试');
+        const { expireDate, token, redirect: responseRedirectUrl } = result;
+        const authResult = await finishBusinessLogin(token);
+        if (authResult !== 'ready') {
+          message.error(
+            authResult === 'missing-dev-token'
+              ? '登录接口未返回本地调试所需的 Token'
+              : '客户端登录会话同步失败，请升级客户端后重试',
+          );
           return;
         }
         localStorage.setItem(EXPIRE_DATE, expireDate);

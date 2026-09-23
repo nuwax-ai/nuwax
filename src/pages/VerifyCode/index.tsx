@@ -1,7 +1,7 @@
 import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
 import SvgIcon from '@/components/base/SvgIcon';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
-import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
+import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
 import useSendCode from '@/hooks/useSendCode';
 import BasicLayout from '@/pages/Login/BasicLayout';
@@ -12,8 +12,9 @@ import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
+import { finishBusinessLogin } from '@/utils/businessAuth';
 import { getNumbersOnly, isWeakNumber } from '@/utils/common';
-import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
+import { hostBridge } from '@/utils/hostBridge';
 import { Button, Input, InputRef, message } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -64,16 +65,23 @@ const VerifyCode: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: ILoginResult, params: CodeLogin[]) => {
-      const { resetPass, expireDate, redirect: responseRedirectUrl } = result;
-      localStorage.removeItem(ACCESS_TOKEN);
-      localStorage.setItem(EXPIRE_DATE, expireDate);
-      localStorage.setItem(PHONE, params[0].phone);
-      // 登录响应中的 token 仅供旧客户端；当前宿主从 cookie 确认会话。
-      const synced = await hostBridge.auth.syncSession();
-      if (isDesktopHost() && !synced) {
-        message.error('客户端登录会话同步失败，请升级客户端后重试');
+      const {
+        resetPass,
+        expireDate,
+        token,
+        redirect: responseRedirectUrl,
+      } = result;
+      const authResult = await finishBusinessLogin(token);
+      if (authResult !== 'ready') {
+        message.error(
+          authResult === 'missing-dev-token'
+            ? '登录接口未返回本地调试所需的 Token'
+            : '客户端登录会话同步失败，请升级客户端后重试',
+        );
         return;
       }
+      localStorage.setItem(EXPIRE_DATE, expireDate);
+      localStorage.setItem(PHONE, params[0].phone);
       try {
         const latestUserInfo = await UserService.refreshUserInfo();
         await syncLangFromUserInfo(latestUserInfo);
