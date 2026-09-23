@@ -1,17 +1,19 @@
+import SvgIcon from '@/components/base/SvgIcon';
+import { ICON_FOLDER } from '@/constants/fileTreeImages.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiBrowseFsChildren, apiBrowseFsRoots } from '@/services/vncDesktop';
+import {
+  apiBrowseFsChildren,
+  apiBrowseFsRoots,
+  apiFsMkdir,
+  apiFsRename,
+} from '@/services/vncDesktop';
+import { getFileIcon } from '@/utils/fileTree';
 import {
   addRecentWorkspaceDir,
   loadRecentWorkspaceDirs,
+  renameRecentWorkspaceDir,
 } from '@/utils/workspaceDirRecent';
-import {
-  FileOutlined,
-  FolderOutlined,
-  HomeOutlined,
-  RedoOutlined,
-  RightOutlined,
-} from '@ant-design/icons';
-import { Button, Modal, Spin } from 'antd';
+import { Button, Input, Modal, Spin, message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
@@ -26,6 +28,12 @@ export interface FsDirEntry {
   isDir: boolean;
   /** 主目录快捷入口（仅根视图出现） */
   isHome?: boolean;
+}
+
+/** 目录写操作（默认走 fs/mkdir + fs/rename 网关端点；单测可替换） */
+export interface FsDirOps {
+  mkdir: (parentPath: string, dirName: string) => Promise<void>;
+  rename: (path: string, newName: string) => Promise<void>;
 }
 
 /**
@@ -56,6 +64,21 @@ const parentPath = (path: string): string => {
   return crumbPath(path, crumbs.length - 2);
 };
 
+/** 目录名合法：非空、非 . / ..、不含路径分隔符（后端契约兜底再拒） */
+const isValidDirName = (name: string): boolean =>
+  !!name && name !== '.' && name !== '..' && !/[\\/]/.test(name);
+
+/** 由旧绝对路径与新名字拼出改后绝对路径（兼容 posix 与 windows 分隔符） */
+const pathWithNewName = (oldPath: string, newName: string): string => {
+  const sepIndex = Math.max(
+    oldPath.lastIndexOf('/'),
+    oldPath.lastIndexOf('\\'),
+  );
+  return sepIndex >= 0
+    ? `${oldPath.slice(0, sepIndex + 1)}${newName}`
+    : newName;
+};
+
 interface WorkspaceDirPickerModalProps {
   open: boolean;
   sandboxId: string;
@@ -67,6 +90,8 @@ interface WorkspaceDirPickerModalProps {
    * path 为空串表示取根视图（含 home 快捷项），否则取该绝对路径下的一层子项。
    */
   browse?: (path: string) => Promise<FsDirEntry[]>;
+  /** 写操作注入（默认走 fs/mkdir + fs/rename 网关端点；单测/演示可替换） */
+  ops?: FsDirOps;
 }
 
 const defaultBrowse = async (
@@ -99,11 +124,23 @@ const defaultBrowse = async (
   }));
 };
 
+const defaultOps = (sandboxId: string): FsDirOps => ({
+  mkdir: async (parentPath, dirName) => {
+    const res = await apiFsMkdir({ sandboxId, parentPath, dirName });
+    if (!res?.success) throw new Error(res?.message || 'mkdir failed');
+  },
+  rename: async (path, newName) => {
+    const res = await apiFsRename({ sandboxId, path, newName });
+    if (!res?.success) throw new Error(res?.message || 'rename failed');
+  },
+});
+
 /**
  * 工作目录选择弹窗（原型 fspicker 移植，nuwax_desktop.html「选择工作目录」）：
  * 根视图（磁盘/主目录）→ 逐级进入 + 面包屑跳转 + 上一级，目录可进、文件不可选，
  * 取消/使用此文件夹。按绝对路径浏览本机（fs/roots + fs/children，wiki 契约），
  * 仅发起会话/创建项目前使用，当前所在目录即选中目录。
+ * 子目录视图支持新建目录（fs/mkdir）与目录重命名（fs/rename），行内输入编辑。
  */
 const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
   open,
@@ -111,6 +148,7 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
   onCancel,
   onConfirm,
   browse,
+  ops,
 }) => {
   // 当前所在目录：'' = 根视图（尚未进入任何目录，不可确认）
   const [currentPath, setCurrentPath] = useState<string>('');
@@ -120,6 +158,13 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
   const loadSeqRef = useRef(0);
   // 最近选择的工作目录（根视图顶部快速重选，localStorage 持久化）
   const [recentDirs, setRecentDirs] = useState<string[]>([]);
+  // 行内编辑态：新建临时行 / 某行重命名，共用一个草稿输入
+  const [creating, setCreating] = useState(false);
+  const [renamingPath, setRenamingPath] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState('');
+  const [opsBusy, setOpsBusy] = useState(false);
+  // 编辑会话序号：导航/切换编辑时递增，让在飞请求的收尾动作失效
+  const editSessionRef = useRef(0);
 
   const load = useCallback(
     async (nextPath: string) => {
@@ -144,20 +189,30 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
     [browse, sandboxId],
   );
 
+  const cancelEdit = useCallback(() => {
+    editSessionRef.current += 1;
+    setCreating(false);
+    setRenamingPath(null);
+    setDraftName('');
+  }, []);
+
   // 打开时回到根视图重新加载（弹窗随开随用，每次进入都取最新目录）
   useEffect(() => {
     if (!open) return;
     setCurrentPath('');
+    cancelEdit();
     setRecentDirs(loadRecentWorkspaceDirs());
     void load('');
-  }, [open, load]);
+  }, [open, load, cancelEdit]);
 
   const enterDir = (entry: FsDirEntry) => {
+    cancelEdit();
     setCurrentPath(entry.path);
     void load(entry.path);
   };
 
   const navigateTo = (index: number) => {
+    cancelEdit();
     const next = crumbPath(currentPath, index);
     setCurrentPath(next);
     void load(next);
@@ -165,9 +220,92 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
 
   const goUp = () => {
     if (!currentPath) return;
+    cancelEdit();
     const next = parentPath(currentPath);
     setCurrentPath(next);
     void load(next);
+  };
+
+  const startCreate = () => {
+    editSessionRef.current += 1;
+    setRenamingPath(null);
+    setDraftName('');
+    setCreating(true);
+  };
+
+  const startRename = (entry: FsDirEntry) => {
+    editSessionRef.current += 1;
+    setCreating(false);
+    setRenamingPath(entry.path);
+    setDraftName(entry.name);
+  };
+
+  /** Enter/blur 确认新建或重命名；空名等同取消，非法名提示后保留输入 */
+  const confirmEdit = async () => {
+    if (opsBusy || (!creating && !renamingPath)) return;
+    const session = editSessionRef.current;
+    const name = draftName.trim();
+    const op = ops ?? defaultOps(sandboxId);
+    if (creating) {
+      if (!name) {
+        cancelEdit();
+        return;
+      }
+      if (!isValidDirName(name)) {
+        message.warning(dict('PC.Components.WorkspaceDir.nameInvalid'));
+        return;
+      }
+      setOpsBusy(true);
+      try {
+        await op.mkdir(currentPath, name);
+        if (session !== editSessionRef.current) return;
+        cancelEdit();
+        void load(currentPath);
+      } catch {
+        // 业务失败已由全局 errorHandler 提示，保留输入框供改名重试
+      } finally {
+        setOpsBusy(false);
+      }
+      return;
+    }
+    if (!renamingPath) return;
+    const prev = entries.find((item) => item.path === renamingPath);
+    if (!name || name === prev?.name) {
+      cancelEdit();
+      return;
+    }
+    if (!isValidDirName(name)) {
+      message.warning(dict('PC.Components.WorkspaceDir.nameInvalid'));
+      return;
+    }
+    setOpsBusy(true);
+    try {
+      await op.rename(renamingPath, name);
+      // 最近目录存绝对路径，改名后前缀同步防失效
+      setRecentDirs(
+        renameRecentWorkspaceDir(
+          renamingPath,
+          pathWithNewName(renamingPath, name),
+        ),
+      );
+      if (session !== editSessionRef.current) return;
+      cancelEdit();
+      void load(currentPath);
+    } catch {
+      // 同上：全局提示后保留输入
+    } finally {
+      setOpsBusy(false);
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      void confirmEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit();
+    }
   };
 
   const handleConfirm = () => {
@@ -185,6 +323,22 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
   // 仅根视图展示最近选择（进入目录后让位给子项列表）
   const showRecent =
     !currentPath && !loading && !error && recentDirs.length > 0;
+  // 新建/重命名只在子目录视图可用（根视图无合法 parentPath，盘符/home 不可改名）
+  const canOperate = !!currentPath;
+
+  const renderEditInput = (placeholderKey: string) => (
+    <Input
+      className={cx(styles['row-input'])}
+      autoFocus
+      value={draftName}
+      disabled={opsBusy}
+      placeholder={dict(placeholderKey)}
+      onChange={(e) => setDraftName(e.target.value)}
+      onKeyDown={handleEditKeyDown}
+      onBlur={() => void confirmEdit()}
+      onFocus={(e) => e.currentTarget.select()}
+    />
+  );
 
   return (
     <Modal
@@ -195,7 +349,7 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
       destroyOnHidden
       title={
         <div className={cx(styles.header)}>
-          <FolderOutlined className={cx(styles['header-icon'])} />
+          <ICON_FOLDER className={cx(styles['header-icon'])} />
           <span className={cx(styles['header-title'])}>
             {dict('PC.Components.WorkspaceDir.pickerTitle')}
           </span>
@@ -216,9 +370,20 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
           disabled={!currentPath || loading}
           onClick={goUp}
         >
-          <RightOutlined />
+          <SvgIcon name="icons-common-caret_left" style={{ fontSize: 16 }} />
           {dict('PC.Components.WorkspaceDir.parentLevel')}
         </button>
+        {canOperate && (
+          <button
+            type="button"
+            className={cx(styles['action-button'])}
+            disabled={loading || opsBusy}
+            onClick={startCreate}
+          >
+            <SvgIcon name="icons-common-plus" style={{ fontSize: 14 }} />
+            {dict('PC.Components.WorkspaceDir.newFolder')}
+          </button>
+        )}
         <div className={cx(styles['breadcrumb-box'])}>
           {displayCrumbs.map(({ name, crumbIndex }, index) => (
             <React.Fragment key={crumbIndex}>
@@ -245,7 +410,9 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
           <div className={cx(styles.state)}>
             <Button
               size="small"
-              icon={<RedoOutlined />}
+              icon={
+                <SvgIcon name="icons-common-refresh" style={{ fontSize: 14 }} />
+              }
               onClick={() => void load(currentPath)}
             >
               {dict('PC.Components.WorkspaceDir.reload')}
@@ -268,43 +435,102 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
                     title={dir}
                   >
                     <span className={cx(styles['row-icon'])}>
-                      <FolderOutlined />
+                      <ICON_FOLDER />
                     </span>
                     <span className={cx(styles['row-name'])}>{dir}</span>
-                    <RightOutlined className={cx(styles['row-arrow'])} />
+                    <SvgIcon
+                      name="icons-common-caret_right"
+                      className={cx(styles['row-arrow'])}
+                      style={{ fontSize: 14 }}
+                    />
                   </div>
                 ))}
               </div>
             )}
-            {entries.length === 0 && !showRecent ? (
+            {creating && (
+              <div className={cx(styles.row, styles['row-editing'])}>
+                <span className={cx(styles['row-icon'])}>
+                  <ICON_FOLDER />
+                </span>
+                {renderEditInput(
+                  'PC.Components.WorkspaceDir.newFolderPlaceholder',
+                )}
+              </div>
+            )}
+            {entries.length === 0 && !showRecent && !creating ? (
               <div className={cx(styles.state)}>
                 {dict('PC.Components.WorkspaceDir.emptyDir')}
               </div>
             ) : (
-              entries.map((entry) => (
-                <div
-                  key={entry.path}
-                  className={cx(styles.row, {
-                    [styles['row-file']]: !entry.isDir,
-                  })}
-                  onClick={entry.isDir ? () => enterDir(entry) : undefined}
-                  title={entry.path}
-                >
-                  <span className={cx(styles['row-icon'])}>
-                    {entry.isHome ? (
-                      <HomeOutlined />
-                    ) : entry.isDir ? (
-                      <FolderOutlined />
+              entries.map((entry) => {
+                const isRenaming = renamingPath === entry.path;
+                return (
+                  <div
+                    key={entry.path}
+                    className={cx(styles.row, {
+                      [styles['row-file']]: !entry.isDir,
+                      [styles['row-editing']]: isRenaming,
+                    })}
+                    onClick={
+                      entry.isDir && !isRenaming
+                        ? () => enterDir(entry)
+                        : undefined
+                    }
+                    title={entry.path}
+                  >
+                    <span className={cx(styles['row-icon'])}>
+                      {entry.isHome ? (
+                        <SvgIcon
+                          name="icons-nav-home"
+                          style={{ fontSize: 18 }}
+                        />
+                      ) : entry.isDir ? (
+                        <ICON_FOLDER />
+                      ) : (
+                        getFileIcon(entry.name)
+                      )}
+                    </span>
+                    {isRenaming ? (
+                      renderEditInput(
+                        'PC.Components.WorkspaceDir.renamePlaceholder',
+                      )
                     ) : (
-                      <FileOutlined />
+                      <>
+                        <span className={cx(styles['row-name'])}>
+                          {entry.name}
+                        </span>
+                        {canOperate && entry.isDir && (
+                          <button
+                            type="button"
+                            className={cx(styles['row-action'])}
+                            title={dict('PC.Components.WorkspaceDir.rename')}
+                            aria-label={dict(
+                              'PC.Components.WorkspaceDir.rename',
+                            )}
+                            disabled={opsBusy}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startRename(entry);
+                            }}
+                          >
+                            <SvgIcon
+                              name="icons-common-edit"
+                              style={{ fontSize: 14 }}
+                            />
+                          </button>
+                        )}
+                        {entry.isDir && (
+                          <SvgIcon
+                            name="icons-common-caret_right"
+                            className={cx(styles['row-arrow'])}
+                            style={{ fontSize: 14 }}
+                          />
+                        )}
+                      </>
                     )}
-                  </span>
-                  <span className={cx(styles['row-name'])}>{entry.name}</span>
-                  {entry.isDir && (
-                    <RightOutlined className={cx(styles['row-arrow'])} />
-                  )}
-                </div>
-              ))
+                  </div>
+                );
+              })
             )}
           </>
         )}

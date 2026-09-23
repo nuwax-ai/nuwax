@@ -280,6 +280,7 @@ describe('hostBridge（统一对外接入层）', () => {
       '--immersive-shell-top',
       '--immersive-shell-content-top',
       '--immersive-shell-toolbar',
+      '--immersive-shell-fullscreen-top',
       '--immersive-shell-right',
     ] as const;
 

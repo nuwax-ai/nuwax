@@ -248,6 +248,18 @@ body {
   cursor: pointer;
   transform-origin: left center;
 
+  // 命中区扩展（透明、不参与绘制）：铺满 2px 行距死区 + 线条右侧到导航条
+  // 右缘的死区，整条导航条 24px×10px 行距内任意位置都算命中该线条；
+  // 事件 target 仍是按钮本体（伪元素命中归属宿主），不影响波浪/索引逻辑
+  &::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    bottom: -1px;
+    left: -2px;
+    right: -12px;
+  }
+
   &::before {
     content: '';
     position: absolute;
