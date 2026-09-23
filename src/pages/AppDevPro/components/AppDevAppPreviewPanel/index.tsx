@@ -364,6 +364,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
                   <span>
                     <Button
                       type="primary"
+                      loading={isStarting}
                       disabled={devActionLocked}
                       onClick={onStart}
                     >
