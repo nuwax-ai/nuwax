@@ -126,8 +126,10 @@ interface Window {
         payload?: Record<string, unknown>,
       ) => void;
     };
-    // nuwaclaw 客户端宿主注入：ACCESS_TOKEN 双向同步（重启免登）
+    // Nuwax 客户端宿主注入：cookie 会话确认；旧 token 桥仅为兼容字段。
     auth?: {
+      syncSession?: () => Promise<boolean>;
+      beginLogin?: () => Promise<boolean>;
       getToken?: () => Promise<string | null>;
       getContext?: () => Promise<
         import('./interfaces/hostAuth').HostAuthContext | null

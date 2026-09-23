@@ -10,7 +10,8 @@ import {
   SUCCESS_CODE,
   USER_NO_LOGIN,
 } from './constants/codes.constants';
-import { ACCESS_TOKEN } from './constants/home.constants';
+// 首页常量须先于主题链求值：其顶层文案依赖已初始化的 i18nRuntime。
+import './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import { APP_NAME, APP_VERSION } from './constants/version';
 import {
@@ -37,10 +38,11 @@ import {
 } from './services/unifiedThemeService';
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
+import { restoreBusinessAuthSession } from './utils/businessAuth';
 import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
 import { isDesktopShellPreviewPage } from './utils/desktopShellPreview';
 import { installDirectorySyncLegacyBridge } from './utils/directorySyncEvents';
-import { hostBridge, syncShellAvoidanceCss } from './utils/hostBridge';
+import { isDesktopHost, syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
 import { isConversationMockPage } from './utils/isConversationMockPage';
 // 工作台页历史栈兜底：模块副作用须在 umi router history 创建前执行（仍在
@@ -66,14 +68,14 @@ export async function getInitialState(): Promise<InitialStateType> {
   try {
     await initI18n();
 
-    // nuwaclaw 客户端：启动时从宿主恢复 ACCESS_TOKEN（重启免登）。
-    // 浏览器环境无桥自动跳过；须在 UserService.getUserInfo 之前执行，确保首个鉴权请求带 token。
-    const token = await hostBridge.auth.getToken();
-    if (token) localStorage.setItem(ACCESS_TOKEN, token);
+    const hostSessionReady = await restoreBusinessAuthSession();
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
     const publicPaths = [
       '/login',
+      '/verify-code',
+      '/set-password',
+      '/chat-temp',
       '/examples/agent-intervention-demo',
       ...(isDesktopShellPreviewPage() ? ['/desktop-shell-preview'] : []),
     ];
@@ -82,10 +84,20 @@ export async function getInitialState(): Promise<InitialStateType> {
         ? history.location.pathname
         : window.location.pathname;
     // Mock 验收页（dev-only 路由）跳过用户信息请求，避免未登录时被重定向
-    if (
-      !publicPaths.some((path) => initialPathname.includes(path)) &&
-      !isConversationMockPage()
-    ) {
+    const isPublicPath = publicPaths.some((path) =>
+      initialPathname.toLowerCase().startsWith(path),
+    );
+    // An upgraded client has no cookie until the user signs in again. Resolve
+    // Umi's startup state before navigation so a 401 cannot remount the guest.
+    if (!isPublicPath && isDesktopHost() && !hostSessionReady) {
+      window.location.replace(
+        `/login?redirect=${encodeURIComponent(
+          initialPathname + window.location.search,
+        )}`,
+      );
+      return { menuData: [] };
+    }
+    if (!isPublicPath && !isConversationMockPage()) {
       const userInfo = await UserService.getUserInfo();
       await syncLangFromUserInfo(userInfo);
 
@@ -102,6 +114,9 @@ export async function getInitialState(): Promise<InitialStateType> {
     }
     return { menuData: [] };
   } catch (error) {
+    if (history.location.pathname.toLowerCase().includes('/login')) {
+      return { menuData: [] };
+    }
     // 请求层可能无 reason 地 reject；必须给 Umi 一个可识别的错误态。
     // 不把原始服务 payload、宿主凭据或请求信息渲染到错误界面。
     throw error instanceof Error ? error : new Error('App startup failed');
@@ -412,7 +427,7 @@ export function render(oldRender: () => void) {
  */
 export function onRouteChange() {
   // 如果是登录成功后的路由变化，确保轮询启动
-  if (localStorage.getItem(ACCESS_TOKEN) && location.pathname !== '/login') {
+  if (location.pathname !== '/login') {
     // 这里不需要特别处理，因为GlobalEventPolling组件会确保轮询只启动一次
   }
 }

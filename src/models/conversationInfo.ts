@@ -14,7 +14,6 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { useConversationActiveState } from '@/hooks/useConversationActiveState';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
@@ -1661,7 +1660,6 @@ export default () => {
     isSync: boolean = true,
     data: any = null,
   ) => {
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     // 当前 SSE 连接是否已从 FINAL_RESULT 解析出明确终态。
     // 使用连接级闭包隔离并发/前后轮次，避免共享 ref 被新一轮发送覆盖。
     let hasResolvedTerminalStatus = false;
@@ -1674,7 +1672,6 @@ export default () => {
       url: CONVERSATION_CONNECTION_URL,
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
         Accept: 'application/json, text/plain, */* ',
       },
       body: params,

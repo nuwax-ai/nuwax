@@ -1,78 +1,23 @@
 import {
-  fetchAuthProtectedFileBlobUrl,
   isAuthProtectedFileUrl,
+  resolveAuthProtectedFileFetchUrl,
 } from '@/utils/authProtectedFileUrl';
-import { useEffect, useState } from 'react';
 
 interface UseAuthProtectedImageSrcResult {
-  /** 可直接用于 img / antd Image 的地址 */
+  /** Real URL stays on the element so copy-image-address remains useful. */
   displaySrc?: string;
   loading: boolean;
   error: boolean;
 }
 
-/**
- * 展示受保护文件图片：公开 URL 原样返回，/api/f/ 等需鉴权地址走 Bearer fetch + blob。
- */
+/** Browser and Electron webview both attach their ticket cookie to image loads. */
 export function useAuthProtectedImageSrc(
   remoteUrl: string | undefined,
 ): UseAuthProtectedImageSrcResult {
-  // 公开 URL 首帧即返回（受保护地址需异步 fetch，先 undefined 走占位/默认图），
-  // 避免公开图标也先渲染一帧默认图再切换
-  const [displaySrc, setDisplaySrc] = useState<string | undefined>(() =>
-    remoteUrl?.trim() && !isAuthProtectedFileUrl(remoteUrl)
-      ? remoteUrl
-      : undefined,
-  );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    if (!remoteUrl?.trim()) {
-      setDisplaySrc(undefined);
-      setLoading(false);
-      setError(false);
-      return;
-    }
-
-    if (!isAuthProtectedFileUrl(remoteUrl)) {
-      setDisplaySrc(remoteUrl);
-      setLoading(false);
-      setError(false);
-      return;
-    }
-
-    let cancelled = false;
-    let blobUrl: string | undefined;
-
-    setLoading(true);
-    setError(false);
-    setDisplaySrc(undefined);
-
-    fetchAuthProtectedFileBlobUrl(remoteUrl)
-      .then((objectUrl) => {
-        if (cancelled) {
-          URL.revokeObjectURL(objectUrl);
-          return;
-        }
-        blobUrl = objectUrl;
-        setDisplaySrc(objectUrl);
-        setLoading(false);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setError(true);
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
-    };
-  }, [remoteUrl]);
-
-  return { displaySrc, loading, error };
+  const displaySrc = remoteUrl?.trim()
+    ? isAuthProtectedFileUrl(remoteUrl)
+      ? resolveAuthProtectedFileFetchUrl(remoteUrl)
+      : remoteUrl
+    : undefined;
+  return { displaySrc, loading: false, error: false };
 }

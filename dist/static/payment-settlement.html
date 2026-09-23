@@ -218,22 +218,6 @@
     var url = API + '?orderId=' + encodeURIComponent(orderId);
     
     var headers = { Accept: 'application/json' };
-    var token = '';
-    try { token = localStorage.getItem('ACCESS_TOKEN') || ''; } catch (e) { /* 存储不可用时交给同源鉴权 */ }
-    if (!token && isWechatMp()) {
-      var sp = new URLSearchParams(window.location.search);
-      token = sp.get('token') || '';
-      // 容错提取：若 token 因重定向解码被浏览器误吞到了 hash 中，尝试通过正则从 hash 中安全提取
-      if (!token && window.location.hash) {
-        var match = window.location.hash.match(/[&?]token=([^&]*)/);
-        if (match) {
-          try { token = decodeURIComponent(match[1]); } catch (e) { /* 非法编码不阻断结算页 */ }
-        }
-      }
-    }
-    if (token) {
-      headers['Authorization'] = 'Bearer ' + token;
-    }
     
     return fetch(url, { 
       method: 'GET', 

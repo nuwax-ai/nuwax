@@ -407,6 +407,24 @@ describe('hostBridge（统一对外接入层）', () => {
     });
   });
 
+  describe('cookie session bridge', () => {
+    it('validates an already stored cookie without passing a token', async () => {
+      const syncSession = vi.fn(async () => true);
+      const beginLogin = vi.fn(async () => true);
+      (window as any).NuwaClawBridge = { auth: { syncSession, beginLogin } };
+      await expect(auth.syncSession()).resolves.toBe(true);
+      await expect(auth.beginLogin()).resolves.toBe(true);
+      expect(syncSession).toHaveBeenCalledWith();
+      expect(beginLogin).toHaveBeenCalledWith();
+    });
+    it('returns false for a browser or an old host bridge', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(auth.syncSession()).resolves.toBe(false);
+      (window as any).NuwaClawBridge = { auth: {} };
+      await expect(auth.syncSession()).resolves.toBe(false);
+    });
+  });
+
   describe('auth.getToken', () => {
     it('桥返回 token → 透传', async () => {
       (window as any).NuwaClawBridge = {

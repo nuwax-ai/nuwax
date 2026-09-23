@@ -6,12 +6,12 @@ import {
   SUCCESS_CODE,
   USER_NO_LOGIN,
 } from '@/constants/codes.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { clearStoragePreservingUserPrefs } from '@/utils/authStorageCleanup';
+import { getBusinessRequestAuth } from '@/utils/businessAuth';
 import { hostBridge } from '@/utils/hostBridge';
 import { isConversationMockPage } from '@/utils/isConversationMockPage';
 import { redirectToLogin } from '@/utils/router';
@@ -63,6 +63,10 @@ const cleanExpiredErrorCache = () => {
     }
   }
 };
+
+const isLoginPage = (): boolean =>
+  typeof window !== 'undefined' &&
+  /^\/login(?:\/|$)/i.test(window.location.pathname);
 
 // 每 5 秒清理一次过期缓存
 setInterval(cleanExpiredErrorCache, 5000);
@@ -137,11 +141,23 @@ const errorHandler = (error: any, opts: any) => {
   if (!error) {
     return;
   }
+  // 请求方明确自行处理错误时，不弹全局网络提示；认证失效仍走统一登出。
+  if (
+    (error?.config?.skipErrorHandler || opts?.skipErrorHandler) &&
+    ![USER_NO_LOGIN, REDIRECT_LOGIN].includes(error?.info?.code) &&
+    error?.response?.status !== 401
+  ) {
+    return;
+  }
   // 检查是否为不需要显示错误消息的请求
   const url = error?.config?.url || opts?.config?.url;
   const isSilentRequest = url && beSilentRequestList(url);
 
-  if (isSilentRequest) {
+  if (
+    isSilentRequest &&
+    ![USER_NO_LOGIN, REDIRECT_LOGIN].includes(error?.info?.code) &&
+    error?.response?.status !== 401
+  ) {
     return;
   }
 
@@ -163,10 +179,13 @@ const errorHandler = (error: any, opts: any) => {
           if (isConversationMockPage()) {
             return;
           }
+          // 登录页仍会发全局通知等请求。它们的未登录响应不能再次导航，
+          // 否则整个页面会不断重新挂载，用户无法填写登录表单。
+          if (isLoginPage()) return;
           // 会话闪断清理须保留用户显式偏好：整体 clear 会毁掉主题配置
           // （含导航风格显式选择）与语言偏好（显式选过的语言）
           clearStoragePreservingUserPrefs();
-          // nuwaclaw 客户端：联动清除宿主持久化 token（无桥/失败自动忽略）
+          // Clear the host's cookie mirror and running services as well.
           void hostBridge.auth.clear();
           clearLoginStatusCache();
           redirectToLogin(-1);
@@ -177,7 +196,9 @@ const errorHandler = (error: any, opts: any) => {
           if (isConversationMockPage()) {
             return;
           }
+          if (isLoginPage()) return;
           clearLoginStatusCache();
+          void hostBridge.auth.clear();
           void navigateToAuthUrl(errorMessage);
           break;
 
@@ -220,6 +241,19 @@ const errorHandler = (error: any, opts: any) => {
     }
   } else if (error.response) {
     // 处理HTTP错误
+    const auth = url ? getBusinessRequestAuth(url) : null;
+    if (
+      error.response.status === 401 &&
+      auth &&
+      (auth.credentials === 'include' || !!auth.headers.Authorization)
+    ) {
+      if (isLoginPage()) return Promise.reject();
+      clearStoragePreservingUserPrefs();
+      void hostBridge.auth.clear();
+      clearLoginStatusCache();
+      redirectToLogin(-1);
+      return Promise.reject();
+    }
     // message.error(`Request error ${error.response.status}`);
     const networkErrorMsg = dict('PC.Toast.Global.networkError');
     if (shouldShowErrorMessage(networkErrorMsg)) {
@@ -252,17 +286,19 @@ const requestInterceptors = [
   (url: string, options: any) => {
     // 调用方显式传入绝对地址时保持原样；Mock 页用它绕过远端 BASE_URL。
     const newUrl = /^https?:\/\//.test(url) ? url : process.env.BASE_URL + url;
-    return { url: newUrl, options };
+    const auth = getBusinessRequestAuth(newUrl);
+    return {
+      url: newUrl,
+      options: {
+        ...options,
+        credentials: auth.credentials,
+        headers: { ...options.headers, ...auth.headers },
+      },
+    };
   },
 
   // 添加认证头和通用头信息
   (config: any) => {
-    // 添加token认证
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
     // FormData 上传不需要设置 Content-Type，浏览器会自动设置 multipart/form-data; boundary=...
     if (config.data instanceof FormData) {
       config.headers['Accept'] = 'application/json, text/plain, */*';

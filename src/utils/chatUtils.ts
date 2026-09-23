@@ -922,9 +922,7 @@ export const generateAIChatSSEUrl = (): string => {
  * @returns 认证头对象
  */
 export const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem('ACCESS_TOKEN') ?? '';
   return {
-    Authorization: `Bearer ${token}`,
     Accept: 'application/json, text/plain, */* ',
   };
 };

@@ -1,5 +1,4 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { getUserAppTaskLogsStreamUrl } from '../services/appDevPro';
@@ -170,7 +169,6 @@ export const listenUserAppTaskStream = (
   } = options;
 
   return new Promise<UserAppTaskTerminalStatus>((resolve, reject) => {
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     let settled = false;
     let lastSeq = fromSeq;
     let lagged = false;
@@ -236,8 +234,8 @@ export const listenUserAppTaskStream = (
 
       void fetchEventSource(getUserAppTaskLogsStreamUrl(taskId, lastSeq), {
         method: 'GET',
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
           Accept: 'text/event-stream',
         },
         signal: inner.signal,

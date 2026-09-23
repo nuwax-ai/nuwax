@@ -9,7 +9,6 @@ import {
   MAX_IMAGE_COUNT,
   UPLOAD_FILE_ACTION,
 } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import useClickOutside from '@/hooks/useClickOutside';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
@@ -170,7 +169,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     UploadFileInfo[]
   >([]);
   const [open, setOpen] = useState(false);
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   // TextArea ref，用于处理粘贴事件
   const textAreaRef = useRef<any>(null);
 
@@ -756,10 +754,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
           // 上传文件
           const response = await fetch(UPLOAD_FILE_ACTION, {
+            credentials: 'include',
             method: 'POST',
-            headers: {
-              Authorization: token ? `Bearer ${token}` : '',
-            },
+
             body: formData,
           });
 
@@ -833,7 +830,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         );
       }
     },
-    [attachmentPrototypeImages, token],
+    [attachmentPrototypeImages],
   );
 
   // 订阅发送消息事件
@@ -1223,12 +1220,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             {/*上传附件文件*/}
             <Upload
               action={UPLOAD_FILE_ACTION}
+              withCredentials
               onChange={handleChange}
               multiple={true}
               fileList={attachmentFiles}
-              headers={{
-                Authorization: token ? `Bearer ${token}` : '',
-              }}
               data={{
                 type: 'tmp',
               }}
@@ -1254,13 +1249,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             {/*上传原型图片附件*/}
             <Upload
               action={UPLOAD_FILE_ACTION}
+              withCredentials
               accept="image/*"
               onChange={handleChangePrototypeImages}
               multiple={true}
               fileList={attachmentPrototypeImages}
-              headers={{
-                Authorization: token ? `Bearer ${token}` : '',
-              }}
               data={{
                 type: 'tmp',
               }}

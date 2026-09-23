@@ -4,7 +4,6 @@
  * 从 indexV3.tsx 提取，负责管理工作流和节点的试运行功能
  */
 
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { ITestRun } from '@/services/workflow';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { GraphContainerRef, RunResultItem } from '@/types/interfaces/graph';
@@ -102,7 +101,6 @@ export const useTestRun = ({
         url: `${process.env.BASE_URL}/api/workflow/test/node/execute`,
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
           Accept: ' application/json, text/plain, */* ',
         },
         body: _params,
@@ -157,7 +155,6 @@ export const useTestRun = ({
         url: `${process.env.BASE_URL}/api/workflow/test/execute`,
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
           Accept: ' application/json, text/plain, */* ',
         },
         body: params,

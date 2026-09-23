@@ -11,7 +11,6 @@ import {
   TEMP_CONVERSATION_CONNECTION_URL,
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
@@ -69,7 +68,6 @@ import ChatInputPhone from './ChatInputPhone';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-const isDev = process.env.NODE_ENV === 'development';
 /**
  * 主页咨询聊天页面
  */
@@ -469,9 +467,6 @@ const ChatTemp: React.FC = () => {
       method: 'POST',
       headers: {
         Accept: 'application/json, text/plain, */* ',
-        ...(isDev
-          ? { Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}` }
-          : {}), // 只有在开发模式下才需要
       },
       body: params,
       onMessage: (res: ConversationChatResponse) => {

@@ -1,4 +1,3 @@
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { UnifiedSessionMessage } from '@/types/interfaces/appDev';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useCallback } from 'react';
@@ -36,8 +35,6 @@ export default () => {
   const initializeAppDevSSEConnection = useCallback(
     (config: AppDevSSEManagerConfig) => {
       // 初始化 AppDev SSE 连接
-
-      const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
       const sseUrl = `${process.env.BASE_URL}/api/custom-page/ai-session-sse?session_id=${config.sessionId}`;
       // 连接到 SSE 服务
 
@@ -46,7 +43,6 @@ export default () => {
         url: sseUrl,
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${token}`,
           Accept: 'application/json, text/plain, */* ',
         },
         onOpen: () => {

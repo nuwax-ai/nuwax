@@ -2,7 +2,6 @@ import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
@@ -34,7 +33,6 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
   // 文档
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [messageInfo, setMessageInfo] = useState<string>('');
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
   // 发送按钮disabled
   const disabledSend = useMemo(() => {
@@ -147,10 +145,8 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
           {/*上传按钮*/}
           <Upload
             action={UPLOAD_FILE_ACTION}
+            withCredentials
             onChange={handleChange}
-            headers={{
-              Authorization: token ? `Bearer ${token}` : '',
-            }}
             data={{
               type: 'tmp',
             }}

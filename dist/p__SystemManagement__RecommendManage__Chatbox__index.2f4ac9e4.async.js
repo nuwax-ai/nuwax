@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[8157],{963849:function(s,t,n){n.r(t);var E=n(974629),o=n(828918),e=n(13063),_=n(443860),a=function(){return(0,_.jsx)(o.Z,{titleKey:"PC.Routes.chatboxRecommend",config:e.hs})};t.default=a}}]);
