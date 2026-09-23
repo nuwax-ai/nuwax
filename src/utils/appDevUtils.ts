@@ -311,6 +311,32 @@ export const buildUploadFilePaths = (
 };
 
 /**
+ * 把文件树索引成 id -> 节点。
+ * 一次遍历后可以 O(1) 查找，避免 git status 对每个路径都从根重新递归。
+ * @param treeData 文件树
+ * @returns 以节点 id 为键的映射，重复 id 保留先出现的节点
+ */
+export const indexFileNodesById = (
+  treeData: FileNode[],
+): Map<string, FileNode> => {
+  const index = new Map<string, FileNode>();
+
+  const walk = (nodes: FileNode[]) => {
+    for (const node of nodes) {
+      if (node.id && !index.has(node.id)) {
+        index.set(node.id, node);
+      }
+      if (node.children?.length) {
+        walk(node.children);
+      }
+    }
+  };
+
+  walk(treeData);
+  return index;
+};
+
+/**
  * 在文件树中查找文件节点
  */
 export const findFileNode = (

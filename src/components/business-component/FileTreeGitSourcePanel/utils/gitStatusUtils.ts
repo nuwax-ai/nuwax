@@ -22,22 +22,66 @@ export interface ResolvedGitFileStatuses {
   unstagedStatus?: ChangeFileGitStatusKind;
 }
 
-const includes = (list: string[] | undefined, fileId: string): boolean =>
-  list?.includes(fileId) ?? false;
+/** 各状态数组的 Set 索引，同一份 status 对象只构建一次 */
+interface GitStatusMembership {
+  staged: Set<string>;
+  created: Set<string>;
+  modified: Set<string>;
+  deleted: Set<string>;
+  untracked: Set<string>;
+  conflicted: Set<string>;
+  renamed: Set<string>;
+}
+
+const statusMembershipCache = new WeakMap<
+  GitStatusResponse,
+  GitStatusMembership
+>();
+
+const toPathSet = (list: string[] | undefined): Set<string> =>
+  new Set(list ?? []);
+
+/**
+ * 把 git status 各数组转成 Set。
+ * 列表可能有数千条，逐条 Array.includes 会变成平方级扫描并卡住主线程。
+ */
+const getGitStatusMembership = (
+  status: GitStatusResponse,
+): GitStatusMembership => {
+  const cached = statusMembershipCache.get(status);
+  if (cached) {
+    return cached;
+  }
+
+  const membership: GitStatusMembership = {
+    staged: toPathSet(status.staged),
+    created: toPathSet(status.created),
+    modified: toPathSet(status.modified),
+    deleted: toPathSet(status.deleted),
+    untracked: toPathSet(status.untracked),
+    conflicted: toPathSet(status.conflicted),
+    renamed: toPathSet(status.renamed),
+  };
+  statusMembershipCache.set(status, membership);
+  return membership;
+};
 
 /** 读取 fileId 在各 Git status 数组中的归属 */
 export const getGitFileStatusFlags = (
   fileId: string,
   status: GitStatusResponse,
-): GitFileStatusFlags => ({
-  inStaged: includes(status.staged, fileId),
-  inCreated: includes(status.created, fileId),
-  inModified: includes(status.modified, fileId),
-  inDeleted: includes(status.deleted, fileId),
-  inUntracked: includes(status.untracked, fileId),
-  inConflicted: includes(status.conflicted, fileId),
-  inRenamed: includes(status.renamed, fileId),
-});
+): GitFileStatusFlags => {
+  const membership = getGitStatusMembership(status);
+  return {
+    inStaged: membership.staged.has(fileId),
+    inCreated: membership.created.has(fileId),
+    inModified: membership.modified.has(fileId),
+    inDeleted: membership.deleted.has(fileId),
+    inUntracked: membership.untracked.has(fileId),
+    inConflicted: membership.conflicted.has(fileId),
+    inRenamed: membership.renamed.has(fileId),
+  };
+};
 
 /**
  * 将 Git status 各数组 map 为「暂存的更改 / 更改」双区状态

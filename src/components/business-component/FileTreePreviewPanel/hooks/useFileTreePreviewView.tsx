@@ -23,6 +23,7 @@ import {
   filterFlatFileListForVersionControl,
   findBestMatchingFileNode,
   findFileNode,
+  indexFileNodesById,
   isAudioFile,
   isDocumentFile,
   isIgnoredUploadRelativePath,
@@ -602,13 +603,14 @@ export function useFileTreePreviewView(
       setGitBranch(statusResponse.data.current || 'main');
 
       const statusFileIds = mergeGitStatusFileIds(statusResponse.data);
+      const fileNodeById = indexFileNodesById(filesRef.current);
 
       setChangeFiles((prev) =>
         buildChangeFilesFromGitStatus(
           statusResponse.data!,
           statusFileIds,
           prev,
-          (fileId) => findFileNode(fileId, filesRef.current),
+          (fileId) => fileNodeById.get(fileId) ?? null,
         ),
       );
     } finally {
@@ -837,7 +839,9 @@ export function useFileTreePreviewView(
           name?: string;
           fileProxyUrl?: string;
         };
-        return `${record.fileId ?? record.name ?? ''}:${record.fileProxyUrl ?? ''}`;
+        return `${record.fileId ?? record.name ?? ''}:${
+          record.fileProxyUrl ?? ''
+        }`;
       })
       .join('|')}`;
     // 父级每次传入新数组但内容未变时直接返回，避免 setFiles 把更新打满。

@@ -40,21 +40,24 @@ export const buildChangeFileTree = (
   items: ChangeListItem[],
 ): ChangeTreeNode[] => {
   const root: ChangeTreeNode[] = [];
+  /** 每一层用 Map 定位子节点，避免在同级上千个节点上线性查找 */
+  const levelIndexes = new Map<string, Map<string, ChangeTreeNode>>();
+  levelIndexes.set('', new Map());
 
   items.forEach((item) => {
     const segments = item.fileId.split('/').filter(Boolean);
     let currentLevel = root;
-    let pathSoFar = '';
+    let parentPath = '';
 
     segments.forEach((segment, index) => {
       const isFile = index === segments.length - 1;
-      pathSoFar = pathSoFar ? `${pathSoFar}/${segment}` : segment;
-
-      let node = currentLevel.find(
-        (existing) =>
-          existing.name === segment &&
-          existing.type === (isFile ? 'file' : 'folder'),
-      );
+      const pathSoFar = parentPath ? `${parentPath}/${segment}` : segment;
+      const levelIndex = levelIndexes.get(parentPath) ?? new Map();
+      if (!levelIndexes.has(parentPath)) {
+        levelIndexes.set(parentPath, levelIndex);
+      }
+      const nodeKey = `${isFile ? 'file' : 'folder'}:${segment}`;
+      let node = levelIndex.get(nodeKey);
 
       if (!node) {
         node = {
@@ -65,17 +68,73 @@ export const buildChangeFileTree = (
           children: isFile ? undefined : [],
           fileItem: isFile ? item : undefined,
         };
+        levelIndex.set(nodeKey, node);
         currentLevel.push(node);
+        if (!isFile) {
+          levelIndexes.set(pathSoFar, new Map());
+        }
       }
 
       if (!isFile && node.children) {
         currentLevel = node.children;
+        parentPath = pathSoFar;
       }
     });
   });
 
   sortTreeNodes(root);
   return root;
+};
+
+/** 树形视图摊平后的一行（仅包含当前展开状态下可见的节点） */
+export interface FlatChangeTreeRow {
+  key: string;
+  type: 'folder' | 'file';
+  level: number;
+  folderId?: string;
+  folderName?: string;
+  fileItem?: ChangeListItem;
+}
+
+/**
+ * 按展开状态把变更树摊成行列表，供虚拟滚动只挂载可见行
+ * @param nodes 变更树根节点
+ * @param expandedFolderIds 已展开的文件夹 id
+ */
+export const flattenVisibleChangeTree = (
+  nodes: ChangeTreeNode[],
+  expandedFolderIds: Set<string>,
+): FlatChangeTreeRow[] => {
+  const rows: FlatChangeTreeRow[] = [];
+
+  const walk = (list: ChangeTreeNode[], level: number) => {
+    list.forEach((node) => {
+      if (node.type === 'file' && node.fileItem) {
+        rows.push({
+          key: `file:${node.fileItem.fileId}`,
+          type: 'file',
+          level,
+          fileItem: node.fileItem,
+        });
+        return;
+      }
+
+      rows.push({
+        key: `folder:${node.id}`,
+        type: 'folder',
+        level,
+        folderId: node.id,
+        folderName: node.name,
+      });
+
+      if (node.children?.length && expandedFolderIds.has(node.id)) {
+        walk(node.children, level + 1);
+      }
+    });
+  };
+
+  walk(nodes, 0);
+  return rows;
 };
 
 /**
