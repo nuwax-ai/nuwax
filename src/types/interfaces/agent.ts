@@ -125,7 +125,9 @@ export interface AgentPublishApplyParams {
 export interface GuidQuestionDto {
   // 问题类型,可用值:Question,Page,Link
   type: GuidQuestionSetTypeEnum;
-  // 问题信息
+  // 标题，最多 10 个字
+  title?: string;
+  // 问题内容
   info: string;
   // 图标
   icon?: string;
