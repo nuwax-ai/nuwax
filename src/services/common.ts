@@ -141,6 +141,14 @@ const errorHandler = (error: any, opts: any) => {
   if (!error) {
     return;
   }
+  // 请求方明确自行处理错误时，不弹全局网络提示；认证失效仍走统一登出。
+  if (
+    (error?.config?.skipErrorHandler || opts?.skipErrorHandler) &&
+    ![USER_NO_LOGIN, REDIRECT_LOGIN].includes(error?.info?.code) &&
+    error?.response?.status !== 401
+  ) {
+    return;
+  }
   // 检查是否为不需要显示错误消息的请求
   const url = error?.config?.url || opts?.config?.url;
   const isSilentRequest = url && beSilentRequestList(url);
