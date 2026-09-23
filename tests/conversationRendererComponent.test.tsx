@@ -429,6 +429,7 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(
       reasoningRow?.querySelectorAll('[class*="shimmer"]').length,
     ).toBeGreaterThan(0);
+    expect(reasoningRow?.querySelector('[aria-label="loading"]')).toBeNull();
     // 运行中工具行同样挂扫光
     const runningToolRow = [
       ...document.querySelectorAll('[data-node-kind="tool"]'),
@@ -693,6 +694,13 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
           ?.getAttribute('aria-expanded'),
       ).toBe('true');
     });
+    const activeGroup = document.querySelector(
+      '[data-tool-group-id="tool-group:edit-1"]',
+    );
+    expect(activeGroup?.querySelector('button')?.textContent).toContain(
+      'toolActionTerminalRunning',
+    );
+    expect(activeGroup?.querySelector('[aria-label="loading"]')).toBeNull();
 
     fireEvent.click(document.querySelector(oldGroupSelector)!);
     expect(
@@ -884,7 +892,7 @@ describe('ConversationRendererV2 · 回答与异常', () => {
     );
   });
 
-  it('运行中节点保留类型图标：行尾 spinner 指示活动，不吞类型语义', () => {
+  it('运行中节点保留类型图标和动态文案，行尾不显示 loading', () => {
     renderV2(
       buildTurn({
         status: MessageStatusEnum.Loading,
@@ -900,9 +908,10 @@ describe('ConversationRendererV2 · 回答与异常', () => {
     );
     const row = document.querySelector('[data-node-id="r1"]');
     expect(row).not.toBeNull();
-    // 前导仍为类型图标（tool），活动指示由行尾 loading spinner 承担
+    // 前导类型图标仍在，运行态由文案和扫光表达。
     expect(row!.querySelector('span[aria-label="tool"]')).not.toBeNull();
-    expect(row!.querySelector('span[aria-label="loading"]')).not.toBeNull();
+    expect(row!.querySelector('[class*="shimmer"]')).not.toBeNull();
+    expect(row!.querySelector('span[aria-label="loading"]')).toBeNull();
   });
 
   it('操作栏只归属最终回答：复制内容不含隐藏过程', () => {
