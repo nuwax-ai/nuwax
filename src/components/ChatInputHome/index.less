@@ -433,8 +433,8 @@
   transform: translate(-50%);
 
   .to-bottom {
-    width: 44px;
-    height: 44px;
+    width: var(--scroll-btn-size, 44px);
+    height: var(--scroll-btn-size, 44px);
     position: absolute;
     // 可由上层（如 UnifiedChatSession）通过 CSS 变量上调，避免与队列面板重叠
     bottom: var(--scroll-btn-bottom-offset, 24px);
@@ -446,7 +446,7 @@
     transform: translate(-50%);
     display: flex;
     align-items: center;
-    font-size: @fontSizeXl;
+    font-size: var(--scroll-btn-icon-size, @fontSizeXl);
     justify-content: center;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 25%);
     z-index: 100;
