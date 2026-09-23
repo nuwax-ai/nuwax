@@ -5300,6 +5300,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.UserManage.DataPermissionModal.maxScheduledTaskCountTooltip": "スケジュールされたタスクの最大数、-1 は無制限を意味します",
   "PC.Pages.UserManage.DataPermissionModal.maxSpaceCount": "最大ワークスペース数",
   "PC.Pages.UserManage.DataPermissionModal.maxSpaceCountTooltip": "最大ワークスペース数、-1 は無制限を意味します",
+  "PC.Pages.UserManage.DataPermissionModal.maxUserAppCount": "フルスタックアプリの最大数",
+  "PC.Pages.UserManage.DataPermissionModal.maxUserAppCountTooltip": "フルスタックアプリの最大数、-1 は無制限を意味します",
   "PC.Pages.UserManage.DataPermissionModal.pageDailyPromptLimit": "1 日あたりの Web アプリのチャット制限",
   "PC.Pages.UserManage.DataPermissionModal.pageDailyPromptLimitTooltip": "1 日あたりの Web アプリのチャット制限、-1 は無制限を意味します",
   "PC.Pages.UserManage.Index.action": "アクション",

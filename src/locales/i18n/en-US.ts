@@ -5598,6 +5598,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.UserManage.DataPermissionModal.maxScheduledTaskCountTooltip": "Max scheduled task count, -1 means unlimited",
   "PC.Pages.UserManage.DataPermissionModal.maxSpaceCount": "Max Workspace Count",
   "PC.Pages.UserManage.DataPermissionModal.maxSpaceCountTooltip": "Max workspace count, -1 means unlimited",
+  "PC.Pages.UserManage.DataPermissionModal.maxUserAppCount": "Max Full-stack App Count",
+  "PC.Pages.UserManage.DataPermissionModal.maxUserAppCountTooltip": "Max full-stack app count, -1 means unlimited",
   "PC.Pages.UserManage.DataPermissionModal.pageDailyPromptLimit": "Daily Web App Chat Limit",
   "PC.Pages.UserManage.DataPermissionModal.pageDailyPromptLimitTooltip": "Daily web app chat limit, -1 means unlimited",
   "PC.Pages.UserManage.Index.action": "Action",

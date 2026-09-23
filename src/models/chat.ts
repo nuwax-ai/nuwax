@@ -107,7 +107,14 @@ export default () => {
         prevList.forEach(upsert);
         incomingList.forEach(upsert);
 
-        return Array.from(processedMap.values());
+        const nextList = Array.from(processedMap.values());
+        if (
+          nextList.length === prevList.length &&
+          nextList.every((item, index) => item === prevList[index])
+        ) {
+          return prevList;
+        }
+        return nextList;
       });
     },
     [],
