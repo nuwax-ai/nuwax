@@ -13,6 +13,10 @@ import { getAppTabNavPath, pickNextActiveTab } from '@/models/openedAppTabs';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { MenuSourceEnum } from '@/types/menuPermission/menu-manage';
+import eventBus, {
+  EVENT_NAMES,
+  type AppTabPreviewCommandPayload,
+} from '@/utils/eventBus';
 import { isImmersiveShell, isMac } from '@/utils/hostBridge';
 import { CloseOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
@@ -154,6 +158,24 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
     closeApp(tab.routePath);
   };
 
+  /**
+   * 标签行预览命令:刷新/复制链接经 eventBus 通知对应保活实例内的
+   * PagePreviewIframe 执行(与详情页 header 图标同源行为;分层禁令下
+   * 布局层不能直引页面实例,eventBus 是既有合规通道);stopPropagation
+   * 防止触发行点击跳转
+   */
+  const handleAppTabCommand = (
+    e: React.MouseEvent,
+    tab: OpenedAppTabInfo,
+    action: AppTabPreviewCommandPayload['action'],
+  ) => {
+    e.stopPropagation();
+    eventBus.emit(EVENT_NAMES.APP_TAB_PREVIEW_COMMAND, {
+      routePath: tab.routePath,
+      action,
+    });
+  };
+
   /** 导航行单项（系统/自定义菜单共用行结构） */
   const renderNavItem = (menu: MenuItemDto) => (
     <div
@@ -198,24 +220,63 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
             <span className={cx(styles['app-tab-label'])} title={tab.name}>
               {tab.name}
             </span>
-            <Tooltip
-              title={dict(
-                'PC.Layouts.DynamicMenusLayout.SidebarNavHeader.closeAppTab',
-              )}
-              placement="bottom"
-              arrow={false}
-            >
-              <span
-                role="button"
-                aria-label={dict(
+            {/* 操作区:刷新 / 复制链接 / 关闭(前两者同详情页 header 图标行为,
+                tooltip 复用 PagePreviewIframe 既有词条,与详情页文案一致) */}
+            <span className={cx(styles['app-tab-actions'])}>
+              <Tooltip
+                title={dict('PC.Components.PagePreviewIframe.tooltipRefresh')}
+                placement="bottom"
+                arrow={false}
+              >
+                <span
+                  role="button"
+                  aria-label={dict(
+                    'PC.Components.PagePreviewIframe.tooltipRefresh',
+                  )}
+                  className={cx(styles['app-tab-action'])}
+                  onClick={(e) => handleAppTabCommand(e, tab, 'reload')}
+                >
+                  <SvgIcon
+                    name="icons-common-refresh"
+                    style={{ fontSize: 12 }}
+                  />
+                </span>
+              </Tooltip>
+              <Tooltip
+                title={dict('PC.Components.PagePreviewIframe.tooltipCopyLink')}
+                placement="bottom"
+                arrow={false}
+              >
+                <span
+                  role="button"
+                  aria-label={dict(
+                    'PC.Components.PagePreviewIframe.tooltipCopyLink',
+                  )}
+                  className={cx(styles['app-tab-action'])}
+                  onClick={(e) => handleAppTabCommand(e, tab, 'copyLink')}
+                >
+                  <SvgIcon name="icons-common-link" style={{ fontSize: 12 }} />
+                </span>
+              </Tooltip>
+              <Tooltip
+                title={dict(
                   'PC.Layouts.DynamicMenusLayout.SidebarNavHeader.closeAppTab',
                 )}
-                className={cx(styles['app-tab-close'])}
-                onClick={(e) => handleCloseAppTab(e, tab)}
+                placement="bottom"
+                arrow={false}
               >
-                <CloseOutlined />
-              </span>
-            </Tooltip>
+                <span
+                  role="button"
+                  aria-label={dict(
+                    'PC.Layouts.DynamicMenusLayout.SidebarNavHeader.closeAppTab',
+                  )}
+                  className={cx(styles['app-tab-close'])}
+                  onClick={(e) => handleCloseAppTab(e, tab)}
+                >
+                  <CloseOutlined />
+                </span>
+              </Tooltip>
+            </span>
           </div>
         ))}
       </div>
