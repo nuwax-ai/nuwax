@@ -1,0 +1,196 @@
+import { resetDesktopShellPreviewRuntimeForTest } from '@/utils/desktopShellPreview';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type MockInstance,
+} from 'vitest';
+import {
+  canOpenKnownBusinessRouteInHost,
+  openBusinessRouteWindow,
+  openKnownBusinessRouteWindow,
+} from './openBusinessRouteWindow';
+
+describe('openBusinessRouteWindow', () => {
+  const originalHref = window.location.href;
+  const originalBridge = window.NuwaClawBridge;
+  let browserOpen: MockInstance<Window['open']>;
+
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/home');
+    browserOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+  });
+
+  afterEach(() => {
+    browserOpen.mockRestore();
+    window.history.replaceState(null, '', originalHref);
+    window.NuwaClawBridge = originalBridge;
+    resetDesktopShellPreviewRuntimeForTest();
+  });
+
+  const useHost = (product = 'nuwax') => {
+    const openWindow = vi.fn().mockResolvedValue({ success: true });
+    (window as any).NuwaClawBridge = {
+      host: { getProduct: () => product },
+      native: { openWindow },
+    };
+    return openWindow;
+  };
+
+  it('opens a business route in a separate trusted window with an absolute current-origin URL', async () => {
+    const openWindow = useHost();
+    await openBusinessRouteWindow('/space/12/agent/34?file=56');
+    expect(openWindow).toHaveBeenCalledTimes(1);
+    expect(openWindow).toHaveBeenCalledWith(
+      `${window.location.origin}/space/12/agent/34?file=56`,
+    );
+    expect(browserOpen).not.toHaveBeenCalled();
+  });
+
+  it('uses the bridge from an existing shell window as well as the immersive main window', async () => {
+    const openWindow = useHost();
+    window.history.replaceState(null, '', '/home?_shell=1');
+    await openBusinessRouteWindow('/square/publish/plugin/7');
+    expect(openWindow).toHaveBeenCalledTimes(1);
+    expect(openWindow).toHaveBeenCalledWith(
+      `${window.location.origin}/square/publish/plugin/7`,
+    );
+    expect(browserOpen).not.toHaveBeenCalled();
+  });
+
+  it('preserves the browser URL when the business route uses a different BASE_URL', async () => {
+    const openWindow = useHost();
+    const fallback = 'https://agent.example/square/publish/workflow/7';
+    await openBusinessRouteWindow('/square/publish/workflow/7', fallback);
+    expect(openWindow).toHaveBeenCalledTimes(1);
+    expect(openWindow).toHaveBeenCalledWith(
+      `${window.location.origin}/square/publish/workflow/7`,
+    );
+    expect(browserOpen).not.toHaveBeenCalled();
+
+    (window as any).NuwaClawBridge = undefined;
+    await openBusinessRouteWindow('/square/publish/workflow/7', fallback);
+    expect(browserOpen).toHaveBeenCalledTimes(1);
+    expect(browserOpen).toHaveBeenCalledWith(
+      fallback,
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
+  it('keeps browser and community hosts on the original window.open path', async () => {
+    (window as any).NuwaClawBridge = undefined;
+    await openBusinessRouteWindow('/space/1/agent/2');
+    expect(browserOpen).toHaveBeenCalledWith(
+      '/space/1/agent/2',
+      '_blank',
+      'noopener,noreferrer',
+    );
+    browserOpen.mockClear();
+    const openWindow = useHost('nuwaclaw');
+    await openBusinessRouteWindow('/space/1/agent/2');
+    expect(openWindow).not.toHaveBeenCalled();
+    expect(browserOpen).toHaveBeenCalledWith(
+      '/space/1/agent/2',
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
+  it('does not lend the business session to external or credentialed URLs', async () => {
+    const openWindow = useHost();
+    for (const url of [
+      'https://outside.example/docs',
+      '//outside.example/docs',
+      `https://user:pass@${window.location.host}/space/1/agent/2`,
+      '/api/app-proxy/preview/index.html',
+    ]) {
+      await openBusinessRouteWindow(url);
+      expect(browserOpen).toHaveBeenLastCalledWith(
+        url,
+        '_blank',
+        'noopener,noreferrer',
+      );
+    }
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+
+  it('falls back once when an older commercial host rejects the route', async () => {
+    const openWindow = useHost();
+    openWindow.mockResolvedValueOnce({ success: false });
+    await openBusinessRouteWindow('/space/1/agent/2');
+    expect(browserOpen).toHaveBeenCalledTimes(1);
+    expect(browserOpen).toHaveBeenCalledWith(
+      '/space/1/agent/2',
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
+  it('uses the host for a dynamic URL only when it names a known first-party page', async () => {
+    const openWindow = useHost();
+    const target = `${window.location.origin}/space/1/agent/2?source=tool`;
+    expect(canOpenKnownBusinessRouteInHost(target)).toBe(true);
+    await openKnownBusinessRouteWindow(target);
+    expect(openWindow).toHaveBeenCalledWith(target);
+    expect(browserOpen).not.toHaveBeenCalled();
+  });
+
+  it('recognizes the publish-detail destinations generated by both management pages', () => {
+    useHost();
+    for (const url of [
+      '/space/1/plugin/2/cloud-tool?applyId=3',
+      '/space/1/workflow/2?publishId=3',
+      '/space/1/app-dev/2',
+      '/space/1/app-project-detail/2',
+      '/space/1/third-app-detail/2',
+      '/space/1/normal-project-detail/2',
+      '/space/1/apply/skill-details/2',
+      '/space/1/published/skill-details/2',
+    ]) {
+      expect(canOpenKnownBusinessRouteInHost(url)).toBe(true);
+    }
+  });
+
+  it('keeps same-origin files, APIs and deployed app content isolated', async () => {
+    const openWindow = useHost();
+    const targets = [
+      '/api/f/s3/private/report.html',
+      '/api/app-proxy/preview/index.html',
+      '/static/uploads/report.html',
+      '/app/my-deployed-app',
+      '/space/1/agent/2/preview',
+      'https://outside.example/space/1/agent/2',
+    ];
+    for (const target of targets) {
+      expect(canOpenKnownBusinessRouteInHost(target)).toBe(false);
+      await openKnownBusinessRouteWindow(target);
+      expect(browserOpen).toHaveBeenLastCalledWith(
+        target,
+        '_blank',
+        'noopener,noreferrer',
+      );
+    }
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+
+  it('does not intercept known dynamic pages in browser and community hosts', async () => {
+    const target = '/square/publish/workflow/7';
+    expect(canOpenKnownBusinessRouteInHost(target)).toBe(false);
+    await openKnownBusinessRouteWindow(target);
+    expect(browserOpen).toHaveBeenCalledWith(
+      target,
+      '_blank',
+      'noopener,noreferrer',
+    );
+
+    const openWindow = useHost('nuwaclaw');
+    expect(canOpenKnownBusinessRouteInHost(target)).toBe(false);
+    await openKnownBusinessRouteWindow(target);
+    expect(openWindow).not.toHaveBeenCalled();
+    expect(browserOpen).toHaveBeenCalledTimes(2);
+  });
+});
