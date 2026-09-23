@@ -63,6 +63,20 @@ const thinkTag = (status: 'thinking' | 'finished', content: string) =>
     content,
   )}"></markdown-custom-think></div>\n\n`;
 
+const finishedResult = (
+  outputText: string,
+): NonNullable<MessageInfo['finalResult']> => ({
+  completionTokens: 0,
+  componentExecuteResults: [],
+  endTime: 0,
+  error: '',
+  outputText,
+  promptTokens: 0,
+  startTime: 0,
+  success: true,
+  totalTokens: 0,
+});
+
 describe('parseMessageSegments', () => {
   it('无标签文本整体为正文段', () => {
     const segments = parseMessageSegments('你好，这是一段回答');
@@ -595,6 +609,117 @@ describe('projectConversation · 已完成交互', () => {
 });
 
 describe('projectConversation · 最终回答去重（验收返工 P1）', () => {
+  it('outputText 汇总了过程说明时，只把末段正文留作最终回答', () => {
+    const before = '让我先核对 IM 侧的判据，再给出完整链路。';
+    const during = '源码已核完，这条路径需要由发消息的人本人执行。';
+    const answer = '## 你要的链路\n\nH 在私聊里撤回自己发出的消息。';
+    const text = `${before}${processTag({
+      executeId: 'read-im',
+      type: 'ToolCall',
+      status: 'FINISHED',
+    })}${during}${thinkTag('finished', '整理结论')}${answer}`;
+    const turn = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '核对撤回链路' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text,
+        finalResult: finishedResult(`${before}\n\n${during}\n\n${answer}`),
+      }),
+    ]).turns[0];
+
+    expect(turn.finalAnswer).toMatchObject({
+      source: 'finalResult',
+      text: answer,
+    });
+    expect(
+      turn.nodes
+        .filter((node) => node.kind === 'narration')
+        .map((node) => node.text),
+    ).toEqual([before, during]);
+  });
+
+  it('outputText 自带新引言而未重复过程段时，保留完整最终回答', () => {
+    const processText = '先读取仓库状态。';
+    const answer = '已完成检查。';
+    const outputText = `核对结果如下：\n\n${answer}`;
+    const turn = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '检查' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: `${processText}${processTag({
+          executeId: 'read-repo',
+          type: 'ToolCall',
+          status: 'FINISHED',
+        })}${answer}`,
+        finalResult: finishedResult(outputText),
+      }),
+    ]).turns[0];
+
+    expect(turn.finalAnswer.text).toBe(outputText);
+  });
+
+  it('outputText 虽重复过程段但还有新内容时，不截断现有回答', () => {
+    const processText = '先读取仓库状态。';
+    const answer = '已完成检查。';
+    const outputText = `${processText}\n\n另有一项提醒。\n\n${answer}`;
+    const turn = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '检查' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: `${processText}${processTag({
+          executeId: 'read-repo',
+          type: 'ToolCall',
+          status: 'FINISHED',
+        })}${answer}`,
+        finalResult: finishedResult(outputText),
+      }),
+    ]).turns[0];
+
+    expect(turn.finalAnswer.text).toBe(outputText);
+  });
+
+  it('没有思考或工具分界时，保留 outputText 的多段回答', () => {
+    const outputText = '先说背景。\n\n再给结论。';
+    const turn = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '说明' }),
+      msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '先说背景。' }),
+      msg({
+        id: 'a2',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '再给结论。',
+        finalResult: finishedResult(outputText),
+      }),
+    ]).turns[0];
+
+    expect(turn.finalAnswer.text).toBe(outputText);
+  });
+
+  it('运行态即使收到汇总文本，也保持原有实时回答选择', () => {
+    const before = '正在读取仓库。';
+    const answer = '初步结论。';
+    const outputText = `${before}\n\n${answer}`;
+    const turn = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '检查' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: `${before}${processTag({
+          executeId: 'read-repo',
+          type: 'ToolCall',
+          status: 'FINISHED',
+        })}${answer}`,
+        status: MessageStatusEnum.Loading,
+        finalResult: finishedResult(outputText),
+      }),
+    ]).turns[0];
+
+    expect(turn.running).toBe(true);
+    expect(turn.finalAnswer.text).toBe(outputText);
+  });
+
   it('outputText 与末段正文同源时，该段不再重复直出（去重入 answerRef）', () => {
     const answerText = '竞品分析完成：三家定价与功能矩阵已核对。';
     const text = `第一段说明${processTag({

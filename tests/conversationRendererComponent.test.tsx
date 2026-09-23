@@ -845,6 +845,49 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
 });
 
 describe('ConversationRendererV2 · 回答与异常', () => {
+  it('终态汇总文本包含过程说明时，默认收起说明且复制只包含末段回答', () => {
+    const narration = '让我再核一遍判据，确认后给你完整链路。';
+    const answer = '## 你要的链路\n\n由发消息的人本人撤回。';
+    renderV2([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '核对链路' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: `${narration}${processTag({
+          executeId: 'read-im',
+          type: 'ToolCall',
+          status: 'FINISHED',
+        })}${answer}`,
+        finalResult: {
+          completionTokens: 0,
+          promptTokens: 0,
+          totalTokens: 0,
+          startTime: 0,
+          endTime: 0,
+          error: '',
+          outputText: `${narration}\n\n${answer}`,
+          success: true,
+          componentExecuteResults: [],
+        },
+      }),
+    ]);
+
+    expect(screen.getByTestId('v2-trace-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(screen.getByTestId('markdown-renderer').textContent).toBe(answer);
+    expect(screen.getByTestId('v2-final-answer')).not.toHaveTextContent(
+      narration,
+    );
+    expect(screen.getByTestId('copy-button')).toHaveAttribute(
+      'data-copy-text',
+      answer,
+    );
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    expect(screen.getByTestId('v2-narration')).toHaveTextContent(narration);
+  });
+
   it('停止轮无正文：只显示停止状态，不冒充回答；操作栏不出现', () => {
     renderV2([
       msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
