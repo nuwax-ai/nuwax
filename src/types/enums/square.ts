@@ -12,6 +12,12 @@ export enum SquareAgentTypeEnum {
   Template = 'Template',
   // 技能
   Skill = 'Skill',
+  // 全栈应用
+  UserApp = 'UserApp',
+  // 第三方应用
+  ThirdApp = 'ThirdApp',
+  // 常规项目
+  NormalProject = 'NormalProject',
 }
 
 // 自定义广场-模板目标类型（全部、智能体、工作流、页面应用）
