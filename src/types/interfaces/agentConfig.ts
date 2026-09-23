@@ -286,6 +286,8 @@ export interface AgentChatEmptyProps {
 export interface RecommendListProps {
   className?: string;
   itemClassName?: string;
+  /** 提供时替代每项配置的图标，显示在文案前。 */
+  itemPrefix?: React.ReactNode;
   loading?: boolean;
   chatSuggestList: GuidQuestionDto[] | string[];
   onClick: (message: string) => void;

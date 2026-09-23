@@ -12,6 +12,7 @@ import {
   loadDraft,
   saveDraft,
 } from '@/components/business-component/ChatInputUnified/draftStorage';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
   act,
   cleanup,
@@ -27,6 +28,10 @@ vi.mock('@/components/ChatInputHome/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
 
+vi.mock('@/components/RecommendList/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+
 vi.mock('umi', () => ({
   useModel: () => ({ tenantConfigInfo: { enableSubscription: 0 } }),
   useLocation: () => ({ pathname: '/home', search: '' }),
@@ -35,6 +40,10 @@ vi.mock('umi', () => ({
 vi.mock('@/services/i18nRuntime', () => ({
   t: (key: string) => key,
   dict: (key: string) => key,
+}));
+
+vi.mock('@/services/agentDev', () => ({
+  apiPublishedAgentInfo: vi.fn(async () => ({ data: undefined })),
 }));
 
 vi.mock('@/hooks/useSubscription', () => ({
@@ -229,6 +238,9 @@ function renderHomeInput(props: Record<string, any> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(apiPublishedAgentInfo).mockResolvedValue({
+    data: undefined,
+  } as any);
   localStorage.clear();
 });
 
@@ -326,6 +338,17 @@ describe('首页工具栏能力', () => {
       screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
     );
     expect(onClearSelectedTag).toHaveBeenCalledTimes(1);
+  });
+
+  it('项目智能体未提供关闭回调时只显示标签，不显示关闭按钮', () => {
+    const { container } = renderHomeInput({
+      selectedTag: { label: '项目智能体' },
+      atHomePanel: true,
+      showExpertCapability: false,
+    });
+    expect(screen.getByText('项目智能体')).toBeInTheDocument();
+    expect(container.querySelector('.expert-pill-remove')).toBeNull();
+    expect(editor.lastProps.capabilityResourceTypes).not.toContain('expert');
   });
 
   it('已连接连接器头像组：最多 3 个 + 尾部 +N，点击唤起弹窗连接器页签', async () => {
@@ -438,6 +461,50 @@ describe('首页工具栏能力', () => {
 });
 
 describe('能力弹窗开放范围（专家仅首页开放）', () => {
+  it('会话输入框关闭提示后，当前智能体和消息级 @ 专家都不显示提示', () => {
+    renderHomeInput({
+      showGuidQuestions: false,
+      guidQuestionDtos: [{ type: 'Question', info: '默认问题' }],
+    });
+    expect(screen.queryByText('默认问题')).toBeNull();
+    act(() => {
+      editor.lastProps.onExpertSelect({ targetId: 66, name: '智慧校园助手' });
+    });
+    expect(screen.queryByText('默认问题')).toBeNull();
+    expect(vi.mocked(apiPublishedAgentInfo)).not.toHaveBeenCalled();
+  });
+
+  it('会话内 @ 专家覆盖当前智能体问题，点击回填，移除后恢复', async () => {
+    vi.mocked(apiPublishedAgentInfo).mockResolvedValue({
+      data: {
+        agentId: 66,
+        guidQuestionDtos: [
+          {
+            type: 'Question',
+            info: '如何开始？',
+            icon: '/configured-icon.png',
+          },
+        ],
+      },
+    } as any);
+    renderHomeInput({
+      guidQuestionDtos: [{ type: 'Question', info: '默认问题' }],
+    });
+    expect(screen.getByText('默认问题')).toBeInTheDocument();
+    act(() => {
+      editor.lastProps.onExpertSelect({ targetId: 66, name: '智慧校园助手' });
+    });
+    expect(screen.queryByText('默认问题')).toBeNull();
+    fireEvent.click(await screen.findByText('如何开始？'));
+    expect(document.querySelector('.expert-guid-questions img')).toBeNull();
+    expect(document.querySelector('.expert-guid-arrow')).not.toBeNull();
+    expect(editor.lastProps.value).toBe('如何开始？');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'PC.Common.Global.delete' }),
+    );
+    expect(screen.getByText('默认问题')).toBeInTheDocument();
+  });
+
   it('默认不含专家类型，showExpertCapability 开放', () => {
     const { unmount } = renderHomeInput();
     expect(editor.lastProps.capabilityResourceTypes).not.toContain('expert');

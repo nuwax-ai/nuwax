@@ -14,6 +14,7 @@ const cx = classNames.bind(styles);
 const RecommendList: React.FC<RecommendListProps> = ({
   className,
   itemClassName,
+  itemPrefix,
   loading,
   chatSuggestList,
   onClick,
@@ -121,9 +122,12 @@ const RecommendList: React.FC<RecommendListProps> = ({
               'text-ellipsis-2',
             )}
           >
-            {typeof item === 'object' && item?.icon && (
-              <img className={cx(styles.icon)} src={item?.icon} />
-            )}
+            {itemPrefix !== undefined
+              ? itemPrefix
+              : typeof item === 'object' &&
+                item?.icon && (
+                  <img className={cx(styles.icon)} src={item.icon} />
+                )}
             {typeof item === 'string' ? item : item.info}
           </div>
         );

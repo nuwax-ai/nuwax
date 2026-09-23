@@ -161,6 +161,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.ChatInputHome.plusMenu": "添加",
   "PC.Components.ChatInputHome.attachFile": "添加附件",
   "PC.Components.ChatInputHome.atContext": "使用 @ 添加專家或文檔",
+  "PC.Components.ChatInputHome.atContextDocs": "使用 @ 添加文檔",
   "PC.Components.ChatInputHome.slashCapability": "使用 / 選擇技能",
   "PC.Components.ChatInputHome.plusMenuConnector": "連接器",
   "PC.Components.ChatInputHome.versionControlSwitch": "產物版本管理",
@@ -6784,4 +6785,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.CapabilityModal.connected": "已連接",
   "PC.Components.CapabilityModal.disconnected": "未連接",
   "PC.Components.CapabilityModal.close": "關閉",
+  "PC.Pages.Home.previousQuestions": "向左查看更多提示",
+  "PC.Pages.Home.moreQuestions": "向右查看更多提示",
 };

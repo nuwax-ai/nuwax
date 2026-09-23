@@ -498,6 +498,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
           selectedComputerId={selectedComputerId}
           onComputerSelect={onComputerSelect}
           agentId={agentInfo?.id}
+          showGuidQuestions={false}
           agentSandboxId={
             isAgentSandboxBound ? agentInfo?.sandboxId : selectedComputerId
           }

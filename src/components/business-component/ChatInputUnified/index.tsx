@@ -25,6 +25,7 @@ import WorkspaceDirPickerModal from '@/components/ChatInputHome/WorkspaceDirPick
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
+import RecommendList from '@/components/RecommendList';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
@@ -32,6 +33,7 @@ import { selectSessionActive } from '@/features/conversation/domain/runtimeSelec
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import { useChatboxAgentConfig } from '@/hooks/useChatboxAgentConfig';
 import useSubscription from '@/hooks/useSubscription';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { t } from '@/services/i18nRuntime';
 import { apiConnectorProviderPageList } from '@/services/systemManage';
 import {
@@ -41,7 +43,10 @@ import {
 } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
-import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
+import type {
+  AgentSelectedComponentInfo,
+  GuidQuestionDto,
+} from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
@@ -240,6 +245,10 @@ export interface ChatInputUnifiedProps {
    */
   onExpertAgentSelect?: (expert: ExpertMentionInfo) => void;
   agentId?: number;
+  /** 当前会话智能体详情配置的提示问题；消息级 @ 专家选中时由其配置覆盖。 */
+  guidQuestionDtos?: GuidQuestionDto[];
+  /** 首页在小分类区域展示提示时，关闭输入框内部的重复展示。 */
+  showGuidQuestions?: boolean;
   agentSandboxId?: string | number;
   fixedSelection?: boolean;
   hasPermission?: boolean;
@@ -356,6 +365,8 @@ const ChatInputUnifiedImpl: React.FC<
   onClearSummonedExpert,
   onExpertAgentSelect,
   agentId,
+  guidQuestionDtos,
+  showGuidQuestions = true,
   agentSandboxId,
   fixedSelection,
   hasPermission = true,
@@ -446,6 +457,36 @@ const ChatInputUnifiedImpl: React.FC<
       defaultSelected: DefaultSelectedEnum;
     })[]
   >([]);
+  const selectedExpertId = expertComponents[0]?.id;
+  const [expertQuestions, setExpertQuestions] = useState<{
+    agentId: number;
+    items: GuidQuestionDto[];
+  }>();
+  useEffect(() => {
+    setExpertQuestions(undefined);
+    if (!showGuidQuestions || !selectedExpertId) return;
+    let cancelled = false;
+    apiPublishedAgentInfo(selectedExpertId)
+      .then(({ data }) => {
+        if (!cancelled && data?.agentId === selectedExpertId) {
+          setExpertQuestions({
+            agentId: selectedExpertId,
+            items: data.guidQuestionDtos || [],
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setExpertQuestions(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedExpertId, showGuidQuestions]);
+  const visibleGuidQuestions = selectedExpertId
+    ? expertQuestions?.agentId === selectedExpertId
+      ? expertQuestions.items
+      : []
+    : guidQuestionDtos || [];
   const [isStoppingConversation, setIsStoppingConversation] =
     useState<boolean>(false);
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
@@ -541,6 +582,18 @@ const ChatInputUnifiedImpl: React.FC<
     return () => resizeObserver.disconnect();
   }, [hasInputPrefixPill]);
 
+  const fillPromptText = useCallback(
+    (text: string) => {
+      if (wholeDisabled) return;
+      // 提示问题替换草稿，同时清空技能、资料选择。
+      setSkillIds([]);
+      setSelectedDocs([]);
+      mentionEditorRef.current?.setEditorText(text);
+      mentionEditorRef.current?.focus();
+    },
+    [wholeDisabled],
+  );
+
   useImperativeHandle(forwardedRef, () => ({
     focus: () => {
       mentionEditorRef.current?.focus?.();
@@ -548,14 +601,7 @@ const ChatInputUnifiedImpl: React.FC<
     clear: () => {
       mentionEditorRef.current?.clear?.();
     },
-    setText: (text: string) => {
-      if (wholeDisabled) return;
-      // 提示问题替换草稿，同时清空技能、资料选择，避免旧附件随新问题发送。
-      setSkillIds([]);
-      setSelectedDocs([]);
-      mentionEditorRef.current?.setEditorText(text);
-      mentionEditorRef.current?.focus();
-    },
+    setText: fillPromptText,
   }));
 
   const [isHoveringBtn, setIsHoveringBtn] = useState<boolean>(false);
@@ -1168,6 +1214,22 @@ const ChatInputUnifiedImpl: React.FC<
 
   return (
     <div className={cx('w-full', 'relative', className)}>
+      {showGuidQuestions &&
+        visibleGuidQuestions.length > 0 &&
+        !wholeDisabled && (
+          <RecommendList
+            className={cx(styles['expert-guid-questions'])}
+            itemClassName={cx(styles['expert-guid-question'])}
+            itemPrefix={
+              <ArrowDownOutlined
+                className={cx(styles['expert-guid-arrow'])}
+                aria-hidden="true"
+              />
+            }
+            chatSuggestList={visibleGuidQuestions}
+            onClick={fillPromptText}
+          />
+        )}
       <div
         className={cx(styles['chat-container'], 'flex', 'flex-col', {
           [styles['drag-over']]: isDragging,
@@ -1302,21 +1364,23 @@ const ChatInputUnifiedImpl: React.FC<
                     <span className={cx(styles['expert-pill-name'])}>
                       {selectedTag.label}
                     </span>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      aria-label={t('PC.Common.Global.delete')}
-                      className={cx(styles['expert-pill-remove'])}
-                      onClick={onClearSelectedTag}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          onClearSelectedTag?.();
-                        }
-                      }}
-                    >
-                      <CloseOutlined />
-                    </span>
+                    {onClearSelectedTag && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label={t('PC.Common.Global.delete')}
+                        className={cx(styles['expert-pill-remove'])}
+                        onClick={onClearSelectedTag}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onClearSelectedTag();
+                          }
+                        }}
+                      >
+                        <CloseOutlined />
+                      </span>
+                    )}
                   </span>
                 )}
               </div>
@@ -1463,7 +1527,12 @@ const ChatInputUnifiedImpl: React.FC<
                                 <span className={styles['trigger-pill']}>
                                   @
                                 </span>
-                                {t('PC.Components.ChatInputHome.atContext')}
+                                {t(
+                                  atHomePanel &&
+                                    !capabilityResourceTypes.includes('expert')
+                                    ? 'PC.Components.ChatInputHome.atContextDocs'
+                                    : 'PC.Components.ChatInputHome.atContext',
+                                )}
                               </span>
                             ),
                             onClick: () =>
@@ -1958,7 +2027,7 @@ const ChatInputUnifiedImpl: React.FC<
                 {/**
                  * 项目上框栏（项目列表「+ 新建会话」）：与工作目录栏同槽位同基样式
                  * （workspace-dir-bar 灰底贴边栏），直接展示项目名并可移除
-                 * （清空按钮贴文案并排、hover 整行出现；项目类型不作徽标展示，
+                 * （清空按钮贴文案并排、始终可见；项目类型不作徽标展示，
                  * 降级为整行 title 悬停提示）；存在期间工作区由项目隐含，
                  * 不渲染工作目录栏与电脑选择器。
                  */}

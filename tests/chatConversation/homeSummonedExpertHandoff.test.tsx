@@ -63,6 +63,9 @@ vi.mock('umi', () => ({
 vi.mock('@/pages/Home/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
+vi.mock('@/pages/Home/components/ChatBoxRecommendNav/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
 
 vi.mock('antd', () => ({
   App: { useApp: () => ({ message: { warning: vi.fn(), error: vi.fn() } }) },
@@ -126,42 +129,39 @@ vi.mock(
   }),
 );
 
-vi.mock('@/pages/Home/components/ChatBoxRecommendNav', () => ({
-  default: ({ items, onSelect, isItemSelectable }: any) =>
-    items.map((item: any) => (
-      <button
-        key={item.id}
-        type="button"
-        disabled={isItemSelectable && !isItemSelectable(item)}
-        onClick={() => onSelect(item)}
-      >
-        {item.label}
+vi.mock('@/components/RecommendList', () => ({
+  default: ({ chatSuggestList, onClick }: any) =>
+    chatSuggestList.map((item: any) => (
+      <button key={item.info} type="button" onClick={() => onClick(item.info)}>
+        {item.info}
       </button>
     )),
 }));
 
 vi.mock('@/pages/Home/components/HomeCategoryTabs', () => ({
-  default: () => null,
+  default: ({ categories, onChange }: any) =>
+    categories.map((category: any) => (
+      <button
+        key={category.key}
+        type="button"
+        onClick={() => onChange(category.key)}
+      >
+        {category.label}
+      </button>
+    )),
 }));
 
 // 统一输入框桩：捕获 props（断言透传收敛），渲染召唤专家名供回显断言
 const input = vi.hoisted(() => ({ props: {} as Record<string, any> }));
 const setText = vi.hoisted(() => vi.fn());
-vi.mock('@/components/RecommendList', () => ({
-  default: ({ chatSuggestList, onClick }: any) =>
-    chatSuggestList.map((item: any) => (
-      <button type="button" key={item.info} onClick={() => onClick(item.info)}>
-        {item.info}
-      </button>
-    )),
-}));
+const clearInput = vi.hoisted(() => vi.fn());
 vi.mock('@/components/business-component/ChatInputUnified', async () => {
   const React = await import('react');
   return {
     default: React.forwardRef((props: any, _ref) => {
       React.useImperativeHandle(_ref, () => ({
         setText,
-        clear: vi.fn(),
+        clear: clearInput,
         focus: vi.fn(),
       }));
       input.props = props;
@@ -169,12 +169,31 @@ vi.mock('@/components/business-component/ChatInputUnified', async () => {
         'div',
         { 'data-testid': 'home-input' },
         props.summonedExpert?.name ?? '',
+        props.showGuidQuestions !== false &&
+          props.guidQuestionDtos?.map((item: any) =>
+            React.createElement(
+              'button',
+              {
+                key: item.info,
+                type: 'button',
+                onClick: () => setText(item.info),
+              },
+              item.info,
+            ),
+          ),
       );
     }),
   };
 });
 
 beforeEach(() => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  );
   vi.clearAllMocks();
   vi.mocked(apiPublishedAgentInfo).mockResolvedValue({
     data: undefined,
@@ -182,9 +201,103 @@ beforeEach(() => {
   Object.keys(handoffMap).forEach((key) => delete handoffMap[key]);
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe('首页项目上框与专家透传消费', () => {
+  it('大类 Tab 只切换推荐列表，保留已选智能体、专家及会话框配置', async () => {
+    vi.mocked(apiDisplayRecommendList).mockResolvedValueOnce({
+      data: {
+        recChatBoxNav: {
+          Agent: [
+            {
+              id: 1,
+              targetId: 71,
+              label: '普通对话',
+              functionType: 'Chat',
+              category: 'chat',
+            },
+          ],
+        },
+      },
+    } as any);
+    vi.mocked(fetchChatboxCategories).mockResolvedValueOnce([
+      { key: 'chat', label: '对话任务' },
+      { key: 'projects', label: '项目开发' },
+    ] as any);
+
+    render(<Home />);
+    fireEvent.click(await screen.findByRole('button', { name: '普通对话' }));
+    expect(input.props.selectedTag?.label).toBe('普通对话');
+    act(() => {
+      input.props.onModelSelect(101);
+      input.props.onSpaceSelect(202);
+    });
+    clearInput.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: '项目开发' }));
+    expect(screen.queryByRole('button', { name: '普通对话' })).toBeNull();
+    expect(input.props.selectedTag?.label).toBe('普通对话');
+    expect(input.props.selectedModelId).toBe(101);
+    expect(input.props.selectedSpaceId).toBe(202);
+    expect(clearInput).not.toHaveBeenCalled();
+
+    act(() =>
+      input.props.onExpertAgentSelect({ targetId: 72, name: '专家 A' }),
+    );
+    expect(input.props.summonedExpert?.name).toBe('专家 A');
+    act(() => {
+      input.props.onModelSelect(303);
+      input.props.onSpaceSelect(404);
+    });
+    fireEvent.click(screen.getByRole('button', { name: '对话任务' }));
+    expect(screen.getByRole('button', { name: '普通对话' })).toBeEnabled();
+    expect(input.props.summonedExpert?.name).toBe('专家 A');
+    expect(input.props.selectedModelId).toBe(303);
+    expect(input.props.selectedSpaceId).toBe(404);
+    expect(clearInput).not.toHaveBeenCalled();
+  });
+
+  it('选中智能体有提示时替换小分类，清除后无提示则恢复小分类', async () => {
+    vi.mocked(apiDisplayRecommendList).mockResolvedValueOnce({
+      data: {
+        recChatBoxNav: {
+          Agent: [
+            { id: 1, targetId: 71, label: '普通对话', functionType: 'Chat' },
+          ],
+        },
+      },
+    } as any);
+    vi.mocked(fetchChatboxCategories).mockResolvedValueOnce([
+      { key: 'chat', label: '对话任务' },
+    ] as any);
+    vi.mocked(apiPublishedAgentInfo).mockImplementation(
+      async (id) =>
+        ({
+          data: {
+            agentId: id,
+            guidQuestionDtos:
+              id === 7 ? [] : [{ type: 'Question', info: `问题 ${id}` }],
+          },
+        } as any),
+    );
+
+    render(<Home />);
+    fireEvent.click(await screen.findByRole('button', { name: '普通对话' }));
+    fireEvent.click(await screen.findByRole('button', { name: '问题 71' }));
+    expect(screen.queryByRole('button', { name: '普通对话' })).toBeNull();
+    expect(
+      screen.getByRole('button', { name: '对话任务' }),
+    ).toBeInTheDocument();
+    expect(setText).toHaveBeenCalledWith('问题 71');
+    expect(handleCreateConversation).not.toHaveBeenCalled();
+    act(() => input.props.onClearSelectedTag());
+    expect(screen.queryByRole('button', { name: '问题 71' })).toBeNull();
+    await screen.findByRole('button', { name: '普通对话' });
+  });
+
   it('展示当前专家问题，点击仅填入草稿，切换与移除后清理', async () => {
     handoffMap.homeSummonedExpert = { agentId: 8, name: '专家 A' };
     vi.mocked(apiPublishedAgentInfo).mockImplementation(
@@ -281,6 +394,8 @@ describe('首页项目上框与专家透传消费', () => {
     await waitFor(() =>
       expect(input.props.selectedTag?.label).toBe('项目 Agent'),
     );
+    expect(input.props.showExpertCapability).toBe(false);
+    expect(input.props.onClearSelectedTag).toBeTypeOf('function');
     await act(async () => {
       await input.props.onEnter('新任务');
     });

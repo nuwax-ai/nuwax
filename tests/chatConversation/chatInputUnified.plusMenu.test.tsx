@@ -32,6 +32,10 @@ vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
 }));
 
+vi.mock('@/services/agentDev', () => ({
+  apiPublishedAgentInfo: vi.fn(async () => ({ data: undefined })),
+}));
+
 vi.mock('@/hooks/useSubscription', () => ({
   default: () => ({
     createSubscriptionOrder: vi.fn(),
@@ -297,6 +301,18 @@ describe('+ 号弹层结构', () => {
     expect(
       screen.getByText('PC.Components.ChatInputHome.plusMenuConnector'),
     ).toBeInTheDocument();
+  });
+
+  it('项目智能体锁定时 + 菜单仅提示 @ 文档，专家能力不开放', () => {
+    renderInput({ atHomePanel: true, showExpertCapability: false });
+    expect(editor.lastProps.capabilityResourceTypes).not.toContain('expert');
+    openPlusMenu();
+    expect(
+      screen.getByText('PC.Components.ChatInputHome.atContextDocs'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('PC.Components.ChatInputHome.atContext'),
+    ).toBeNull();
   });
 
   it('ChatBot 点击 + 直接打开附件选择器，不显示弹层', () => {
