@@ -42,7 +42,8 @@ export interface ImmersiveShellGeometry {
  *
  * | 页面形态 | macOS 展开 | macOS 收起 | Windows/Linux |
  * | --- | ---: | ---: | ---: |
- * | page-container 背景 / 全屏根 | 0 | TOOLBAR | CONTENT_TOP |
+ * | page-container 背景 | 0 | TOOLBAR | CONTENT_TOP |
+ * | page-container 内全屏根 | TOOLBAR | TOOLBAR | CONTENT_TOP |
  * | 独立全屏页 | 0 | 不适用 | TOOLBAR |
  *
  * Windows/Linux 的 page-container 背景始终从 CONTENT_TOP 开始；普通页面与
@@ -66,13 +67,14 @@ export const resolveImmersiveShellGeometry = (
   }
 
   const navigationCollapsed = input.navigationCollapsed ?? false;
-  let fullscreenTop: number;
+  // 全屏层覆盖整个 page-container，会连同左侧导航区域一起铺满；macOS
+  // 客户端标题栏无论导航展开还是收起都在视口顶部，因此全屏根始终让出 TOOLBAR。
+  // page-container 自身的背景退让仍按导航状态区分，避免影响普通页面内容布局。
+  const fullscreenTop = isMac ? metrics.TOOLBAR : metrics.CONTENT_TOP;
   let pageContainerMarginTop: number | undefined;
   if (isMac) {
-    fullscreenTop = navigationCollapsed ? metrics.TOOLBAR : 0;
     pageContainerMarginTop = navigationCollapsed ? metrics.TOOLBAR : undefined;
   } else {
-    fullscreenTop = metrics.CONTENT_TOP;
     pageContainerMarginTop =
       input.immersiveMarginTop || input.suppressSecondMenu
         ? metrics.CONTENT_TOP
