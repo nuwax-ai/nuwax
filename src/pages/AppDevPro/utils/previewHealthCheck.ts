@@ -295,7 +295,11 @@ const pollPreviewTimingStatus = async (
     if (timingStatus !== undefined && timingStatus >= 400) {
       return { ok: false, status: timingStatus };
     }
-    if (timingStatus !== undefined && timingStatus >= 200 && timingStatus < 300) {
+    if (
+      timingStatus !== undefined &&
+      timingStatus >= 200 &&
+      timingStatus < 300
+    ) {
       return { ok: true, status: timingStatus };
     }
 

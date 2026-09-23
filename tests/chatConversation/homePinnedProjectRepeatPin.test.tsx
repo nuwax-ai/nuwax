@@ -239,6 +239,91 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('项目上框重复触发与默认智能体竞态（禅道bug2394）', () => {
+  it('项目行 + 上框新项目时清掉输入框里原有专家，只保留项目智能体', async () => {
+    mockHitRecommend();
+    vi.mocked(apiPublishedAgentInfo).mockImplementation(
+      async (id: number) =>
+        ({ data: agentDetailOf(id as number, HIT_AGENT_TOOLS) } as any),
+    );
+
+    const { rerender } = render(<Home />);
+    act(() => {
+      input.props.onExpertAgentSelect({ targetId: 66, name: '原有专家' });
+    });
+    expect(input.props.summonedExpert?.name).toBe('原有专家');
+
+    // 左侧项目行点击 +：在已挂载的首页写入项目上框上下文。
+    handoffState.setContext('homePinnedProject', {
+      projectId: 5,
+      projectType: 'UserApp',
+      name: '全栈 A',
+      devAgentId: 88,
+    });
+    rerender(<Home />);
+
+    await waitFor(() =>
+      expect(input.props.selectedTag?.label).toBe('全栈应用开发'),
+    );
+    expect(input.props.summonedExpert).toBeUndefined();
+    expect(input.props.pinnedProject?.name).toBe('全栈 A');
+  });
+
+  it('常规项目行 + 上框时也清掉原有专家，等待用户选择项目智能体', async () => {
+    const { rerender } = render(<Home />);
+    act(() => {
+      input.props.onExpertAgentSelect({ targetId: 66, name: '原有专家' });
+    });
+    expect(input.props.summonedExpert?.name).toBe('原有专家');
+
+    handoffState.setContext('homePinnedProject', {
+      projectId: 6,
+      projectType: 'NormalProject',
+      name: '常规项目 B',
+    });
+    rerender(<Home />);
+
+    await waitFor(() =>
+      expect(input.props.pinnedProject?.name).toBe('常规项目 B'),
+    );
+    expect(input.props.summonedExpert).toBeUndefined();
+    expect(input.props.selectedTag).toBeUndefined();
+    expect(input.props.showExpertCapability).toBe(false);
+
+    act(() => {
+      input.props.onExpertAgentSelect({ targetId: 67, name: '新专家' });
+    });
+    expect(input.props.summonedExpert).toBeUndefined();
+
+    act(() => input.props.onClearPinnedProject());
+    expect(input.props.showExpertCapability).toBe(true);
+  });
+
+  it('全栈项目自动选中智能体后锁定专家入口，不能再用 @ 替换', async () => {
+    pinUserAppProject();
+    mockHitRecommend();
+    vi.mocked(apiPublishedAgentInfo).mockImplementation(
+      async (id: number) =>
+        ({ data: agentDetailOf(id as number, HIT_AGENT_TOOLS) } as any),
+    );
+
+    render(<Home />);
+    await waitFor(() =>
+      expect(input.props.selectedTag?.label).toBe('全栈应用开发'),
+    );
+    expect(input.props.showExpertCapability).toBe(false);
+    expect(input.props.onClearSelectedTag).toBeUndefined();
+    await act(async () => {
+      input.props.onExpertAgentSelect({ targetId: 66, name: '新专家' });
+    });
+
+    expect(input.props.summonedExpert).toBeUndefined();
+    expect(input.props.selectedTag?.label).toBe('全栈应用开发');
+    expect(input.props.pinnedProject?.name).toBe('全栈 A');
+
+    act(() => input.props.onClearPinnedProject());
+    expect(input.props.showExpertCapability).toBe(true);
+  });
+
   it('全栈上框推荐位未命中时不回落租户默认智能体，工具栏不被默认工具占据', async () => {
     pinUserAppProject();
     // 推荐列表非空但无 UserAppDev 同类型：精确/类型兜底双双未命中——修复前

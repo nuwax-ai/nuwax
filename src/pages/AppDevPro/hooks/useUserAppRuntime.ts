@@ -454,10 +454,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       if (taskIdRef.current === currentTaskId) {
         return;
       }
-      if (
-        phaseRef.current === 'starting' ||
-        phaseRef.current === 'building'
-      ) {
+      if (phaseRef.current === 'starting' || phaseRef.current === 'building') {
         return;
       }
 
