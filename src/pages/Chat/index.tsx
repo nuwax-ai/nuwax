@@ -89,6 +89,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import ConversationInstanceCacheSlot from './components/ConversationInstanceCacheSlot';
 import LeftContent from './components/LeftContent';
 import ShowArea from './components/ShowArea';
+import { isNormalProjectConversation } from './hooks/isNormalProjectConversation';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
 import { useChatConversation } from './hooks/useChatConversation';
 import { useChatFiles } from './hooks/useChatFiles';
@@ -1322,20 +1323,20 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     useState<boolean>(false);
 
   /**
-   * 常规项目（NormalProject）会话判定（判定范式对齐 useChatNormalProjectNameSync）：
-   * 终端 URL 携带 service_type=computer-normal-project，服务端/本机网关据此把
-   * 终端初始目录落到 normalProject 业务目录（云端 /home/user/normalProject/{pid}、
-   * 本机镜像布局）。
+   * 常规项目（NormalProject）会话判定（含 conversationInfo 与路由 id 的守恒
+   * 校验，防切换会话窗口期错配）：终端 URL 携带 service_type=
+   * computer-normal-project，服务端/本机网关据此把终端初始目录落到 normalProject
+   * 业务目录（云端 /home/user/normalProject/{pid}、本机镜像布局）。
    */
-  const isNormalProjectConversation =
-    conversationInfo?.devTargetType === AgentComponentTypeEnum.NormalProject &&
-    Number.isFinite(Number(conversationInfo?.devTargetId)) &&
-    Number(conversationInfo?.devTargetId) > 0;
+  const normalProjectConversation = isNormalProjectConversation(
+    conversationInfo,
+    id,
+  );
 
   /** 终端 WebSocket 连接地址（ttyd） */
   const terminalWsUrl = useTerminalWsUrl(
     id,
-    isNormalProjectConversation
+    normalProjectConversation
       ? { serviceType: 'computer-normal-project' }
       : undefined,
   );

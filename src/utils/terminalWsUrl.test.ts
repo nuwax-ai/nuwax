@@ -45,6 +45,13 @@ describe('buildTtydTerminalWsUrl', () => {
     expect(queryOf(url).get('cwd')).toBe('/home/user/我的项目');
   });
 
+  it('cwd 含字面 + → 编码为 %2B（具体形态断言，防被当普通字符编码丢语义）', () => {
+    const url = buildTtydTerminalWsUrl(42, { cwd: '/a+b' });
+    // form 语义下裸 + 会被解码端当空格——必须 %2B；同时解码回合仍还原原值
+    expect(url).toContain('cwd=%2Fa%2Bb');
+    expect(queryOf(url).get('cwd')).toBe('/a+b');
+  });
+
   it('serviceType + cwd 同传 → 两参数齐', () => {
     const url = buildTtydTerminalWsUrl(42, {
       serviceType: 'computer-normal-project',
@@ -76,5 +83,11 @@ describe('normalizeTerminalWsUrl（保留 query 修复锁定）', () => {
     );
     expect(normalizeTerminalWsUrl('http://h:3000/')).toBe('ws://h:3000/ws');
     expect(normalizeTerminalWsUrl('not a url')).toBe('not a url');
+  });
+
+  it('根 path 兜底与 query 保留交叉：/?a=1 → /ws?a=1', () => {
+    expect(normalizeTerminalWsUrl('https://h.example.com/?a=1')).toBe(
+      'wss://h.example.com/ws?a=1',
+    );
   });
 });
