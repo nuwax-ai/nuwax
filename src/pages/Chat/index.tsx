@@ -2035,9 +2035,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   };
 
   // 聊天会话相关 props
-  // 渲染线（V2 双线重构）：URL > 会话覆盖 > 全局偏好 > 默认 V2，与数据线正交
+  // 渲染线（V2 双线重构）：URL 调试覆盖 > 默认 V2，与数据线正交
   const { renderer: conversationRendererVersion } =
-    useConversationRendererPreference(id);
+    useConversationRendererPreference();
   // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线 session 的
   // 会话面 props 覆盖旧线字段；flag 关闭（默认）时 conversationProps 为空对象，
   // 旧线路径原值原行为。页面资源（卡片/桌面/文件树等）单份共享注入新线 effects。

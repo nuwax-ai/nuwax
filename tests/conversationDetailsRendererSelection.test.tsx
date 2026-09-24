@@ -1,9 +1,7 @@
 /**
  * ConversationDetails 渲染线选择合同测试（V2 双线重构·调试接入）：
- * - 详情页已纳入 UnifiedChatSession，默认跟随全局 V2；
- * - 会话覆盖（session override）仍可显式回退 V1。
- * （头部 RendererLineToggle 已于 2026-09-12 需求去除——调试统一走会话框
- *  悬浮按钮的「会话显示」设置；示例页 examples/MockChat* 自带切换不受影响）
+ * - 详情页已纳入 UnifiedChatSession，默认使用 V2；
+ * - URL `?conversationRenderer=v1` 可显式回退 V1。
  */
 import ConversationDetails from '@/components/business-component/ConversationDetails';
 import type { AgentDetailDto } from '@/types/interfaces/agent';
@@ -21,8 +19,8 @@ class ResizeObserverStub {
 global.ResizeObserver = ResizeObserverStub;
 
 const { detailResult } = vi.hoisted(() => ({
-  // onResultSuccess 读取的字段：openingChatMsg 走入 messageList、conversationId
-  // 决定会话覆盖的 key、paymentRequired/subscribed 走付费分支
+  // onResultSuccess 读取的字段：openingChatMsg 进入 messageList，付费字段
+  // 走订阅分支。
   detailResult: {
     name: 'Mock Agent',
     icon: '',
@@ -201,11 +199,6 @@ vi.mock('@/features/conversation/presentation-v2/react', () => ({
   ConversationRendererV2: () => <div data-testid="conversation-renderer-v2" />,
 }));
 
-import {
-  setGlobalRendererVersion,
-  setSessionRendererOverride,
-} from '@/utils/conversationRendererPreference';
-
 const setSearch = (search: string) => {
   window.history.replaceState(null, '', search || location.pathname);
 };
@@ -222,8 +215,7 @@ describe('ConversationDetails 统一渲染线选择', () => {
     vi.restoreAllMocks();
   });
 
-  it('默认跟随全局 V2', async () => {
-    setGlobalRendererVersion('v2');
+  it('默认使用 V2', async () => {
     render(<ConversationDetails agentId={1} />);
     await waitFor(() => {
       expect(
@@ -233,8 +225,8 @@ describe('ConversationDetails 统一渲染线选择', () => {
     expect(screen.queryByTestId('chat-view')).toBeNull();
   });
 
-  it('会话覆盖 v1：可紧急回退逐消息 ChatView', async () => {
-    setSessionRendererOverride(777, 'v1');
+  it('URL 指定 v1 时可紧急回退逐消息 ChatView', async () => {
+    setSearch('?conversationRenderer=v1');
     render(<ConversationDetails agentId={1} />);
     await waitFor(() => {
       expect(screen.getAllByTestId('chat-view')).toHaveLength(1);

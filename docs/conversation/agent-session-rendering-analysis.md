@@ -70,7 +70,7 @@
 | 子 agent | 无 | ❌ `SubAgent` 枚举落通用卡片，零专属渲染 |
 | 消息队列 | `useUnifiedChatQueue` + 排队面板 | ✅ 拖拽排序 / 编辑 / 立即发送 |
 | 消息重试 | 无 | ❌ 仅复制按钮 |
-| 会话密度设置 | 无 | ❌ 折叠策略已参数化但无用户偏好入口 |
+| 会话密度调试设置 | 无 | 已于 2026-09-24 取消，PC 固定使用标准折叠行为 |
 | 三栏工作区 | 文件树 + 预览 Tab + VNC 电脑 | ✅（ConversationAgent 页） |
 
 工具类型枚举全集（`src/types/enums/agent.ts:12-37`）：Plugin / Workflow / Knowledge / Variable / Table / Model / Agent / MCP / Page / PageApp / Event / Skill / **SubAgent** / ToolCall / **Plan** / ApiKey / Hook——除 Plan / Page / Event / diff / OpenUI 有专属渲染外，其余全部落「通用单行卡 + JSON 详情弹窗」。
@@ -84,7 +84,7 @@
 | 1 | **终端/命令输出渲染** | 所有编码类 agent 标配（等宽折叠块 + 退出码） | Bash 工具落通用卡；xterm 控制台与消息流脱钩 | 中：`MarkdownCustomProcess` 新增分支 + `result.data` 协议约定 |
 | 2 | **TodoList 交互** | Cursor/Devin 计划可编辑、扣子计划需确认、Manus 全量重写 | Plan 只读，无 x/y 概览、无确认门 | 小-中：进度摘要纯前端；确认门复用干预队列 |
 | 3 | **子 agent 渲染** | Claude Code 折叠行（社区还嫌不够）、K3 并行协调 | 零专属渲染 | 中：渲染分支小；归属协议需后端确认 |
-| 4 | 会话密度设置 | Cursor 三档密度 | 无 | 小：折叠基建已参数化 |
+| 4 | 会话密度调试设置 | 原计划为 Cursor 三档密度 | 2026-09-24 决定移除开发期入口，PC 固定标准折叠行为 | 已取消 |
 | 5 | 消息重试/重新生成 | 普遍标配 | 无 | 前端小；后端依赖强 |
 | 6 | 工具耗时 | 多数产品单步耗时可见 | 只在 RunOver hover 弹层 | 小：`result.startTime/endTime` 已有 |
 | 7 | diff 直达/side-by-side | Cursor/Devin | 点标题展开 diff，无文件树直达；固定 Unified | 小 |
@@ -99,7 +99,7 @@
 按「复用刚建立的折叠基建程度 × 用户感知 × 后端依赖」排序：
 
 - **P0**：终端输出渲染、Plan 进度升级、工具耗时徽标——与文本协议/折叠组件完全同构，边际成本最低，且都是任务型 agent 高频感知项。
-- **P1**：子 agent 渲染（先只读形态）、消息重试（等后端）、会话密度设置。
+- **P1**：子 agent 渲染（先只读形态）、消息重试（等后端）；会话密度设置已取消。
 - **P2**：自动跟随预览、diff 直达/side-by-side、状态条停止、回放分享。
 
 后端需确认三件事：① Bash 类工具 `result.data` 的实际形状；② PROCESSING 事件能否携带子 agent 归属标识；③ 重发消息接口是否存在。

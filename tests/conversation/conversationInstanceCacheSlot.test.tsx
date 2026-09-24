@@ -1,4 +1,3 @@
-import { DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY } from '@/features/conversation/domain/conversationPageCache';
 import { conversationPageCacheManager } from '@/features/conversation/runtime/conversationPageCacheManager';
 import ConversationInstanceCacheSlot from '@/pages/Chat/components/ConversationInstanceCacheSlot';
 import { act, cleanup, render } from '@testing-library/react';
@@ -17,16 +16,12 @@ describe('ConversationInstanceCacheSlot', () => {
   afterEach(() => {
     cleanup();
     conversationPageCacheManager.invalidateAll('test-cleanup');
-    conversationPageCacheManager.setCapacity(
-      DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
-    );
     localStorage.clear();
   });
 
   it('切换会话只隐藏旧实例，LRU 淘汰后才卸载', () => {
     const onUnmount = vi.fn();
     act(() => {
-      conversationPageCacheManager.setCapacity(2);
       conversationPageCacheManager.activate({
         surface: 'chat',
         conversationId: 1,
@@ -56,14 +51,16 @@ describe('ConversationInstanceCacheSlot', () => {
     ).toHaveStyle({ display: 'none' });
 
     act(() => {
-      conversationPageCacheManager.activate({
-        surface: 'chat',
-        conversationId: 3,
-      });
+      for (let conversationId = 3; conversationId <= 6; conversationId += 1) {
+        conversationPageCacheManager.activate({
+          surface: 'chat',
+          conversationId,
+        });
+      }
     });
     view.rerender(
-      <ConversationInstanceCacheSlot activeKey="chat:3" active retain>
-        <Probe name="three" onUnmount={onUnmount} />
+      <ConversationInstanceCacheSlot activeKey="chat:6" active retain>
+        <Probe name="six" onUnmount={onUnmount} />
       </ConversationInstanceCacheSlot>,
     );
 

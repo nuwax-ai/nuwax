@@ -602,8 +602,6 @@ const Home: React.FC = () => {
           wholeDisabled={submitting}
           // 首页草稿：固定作用域 key（无会话 id），24h 内回首页恢复未发送输入
           draftKey="home"
-          // 首页不展示会话调试悬浮按钮
-          showDebugFab={false}
           showGuidQuestions={false}
           // 项目类型受限时，@ 与能力弹窗都不开放专家，资料库等入口保留。
           showExpertCapability={!isProjectExpertRestricted}

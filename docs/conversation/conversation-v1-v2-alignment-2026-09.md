@@ -31,7 +31,7 @@
 | 面板结束沿 | model isConversationActive | conversationProps 生效值优先 | 🔵 09-19 对齐 |
 | 渲染：轨迹结构 | 扁平消息 + 工具卡 | 三层分组轨迹（轮次/工具组/类型化详情） | ⚪ 重构目标 |
 | 渲染：OpenUI | MarkdownCustomProcess 内嵌卡 | OpenUiTraceNode 常显节点 | ✅ 09-19 补齐（用户确认） |
-| 渲染：密度体系 | conversation_density 三档 | focused/balanced/detailed + 逐类覆盖 | ⚪ 两套独立键并存 |
+| 渲染：默认折叠 | 固定标准密度行为 | balanced 预设、节点覆盖为空 | ✅ 开发期密度/展示调试设置已于 2026-09-24 移除 |
 | 渲染：异常保险 | — | 投影/渲染异常整份回退 V1，不白屏 | ➕ |
 | 进度胶囊 | 无 | TaskAgent 专属、终态常驻、分区面板 | ➕ 09-17 |
 | 文件树数据面 | model 全量递归树 | file-server 单层「面包屑」+ 懒加载 | ⚪ #5a 改造 |
@@ -85,7 +85,7 @@
 | --- | --- | --- |
 | 轨迹结构 | 扁平消息列表 + MarkdownCustomProcess 工具卡（已冻结） | `MessageInfo[] → 纯投影 → 整轮轨迹 / 工具组 / 类型化详情` 三层 |
 | 工具详情 | 旧式卡片（重复标题、参数 JSON） | 类型化：终端/文件/Diff/搜索/浏览器/Skill/Plan/Generic，协议 `result.kind` 优先 |
-| 折叠 | V1 三档密度（conversation_density）原样保留 | focused/balanced/detailed 预设 + 逐类 hidden/summary/expanded 覆盖（独立键）；三层严格懒挂载（`{expanded &&}` 收起即卸载、运行转完成自动收起） |
+| 折叠 | 标准密度：执行中展开、终态收起 | balanced 默认 + 空节点覆盖；三层严格懒挂载（`{expanded &&}` 收起即卸载、运行转完成自动收起） |
 | 中间正文 | — | narration 原位直出，不受预设/覆盖影响 |
 | 轮次分组 | — | requestId 优先归组、USER 边界兜底 |
 
@@ -102,8 +102,8 @@
 
 ### 3.4 保险与接入面
 
-- **回退三保险**：用户级设置/URL 回切 V1；投影抛错 try/catch、渲染抛错 ErrorBoundary → 整份回退 V1 不白屏；`renderMessageItem` 自定义入口恒优先（AppDev/预览扩展点）。
-- **接入面现状**：`ChatContentArea` 默认 `messageRenderer='v2'`（`index.tsx:109`），五入口经 UnifiedChatSession 全走 V2；Chat 页透传偏好链（URL > 会话覆盖 > 全局 > 默认 v2）。⚠️ renderer-v2.md「接入面」段（PreviewAndDebug/ConversationAgent 面板/AppDev 恒 V1）为 09-04 默认切换前记录，**已过时**，以代码为准。
+- **回退三保险**：URL `?conversationRenderer=v1` 回切 V1；投影抛错 try/catch、渲染抛错 ErrorBoundary → 整份回退 V1 不白屏；`renderMessageItem` 自定义入口恒优先（AppDev/预览扩展点）。
+- **接入面现状**：`ChatContentArea` 默认 `messageRenderer='v2'`（`index.tsx:109`），五入口经 UnifiedChatSession 全走 V2；渲染线按 URL 覆盖或默认 V2 选择。⚠️ renderer-v2.md「接入面」段（PreviewAndDebug/ConversationAgent 面板/AppDev 恒 V1）为 09-04 默认切换前记录，**已过时**，以代码为准。
 
 ---
 

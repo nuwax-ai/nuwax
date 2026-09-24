@@ -1,15 +1,4 @@
 export const DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY = 5;
-export const MIN_CONVERSATION_PAGE_CACHE_CAPACITY = 1;
-export const MAX_CONVERSATION_PAGE_CACHE_CAPACITY = 12;
-
-export const normalizeConversationPageCacheCapacity = (value: unknown) => {
-  const parsed = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(parsed)) return DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY;
-  return Math.min(
-    MAX_CONVERSATION_PAGE_CACHE_CAPACITY,
-    Math.max(MIN_CONVERSATION_PAGE_CACHE_CAPACITY, Math.floor(parsed)),
-  );
-};
 
 export type ConversationWorkspaceView =
   | 'closed'
@@ -61,7 +50,6 @@ export interface ConversationPageCacheEntry {
 }
 
 export interface ConversationPageCacheSnapshot {
-  capacity: number;
   activeKey: string | null;
   sharedVncOwnerConversationId: string | null;
   entries: ConversationPageCacheEntry[];

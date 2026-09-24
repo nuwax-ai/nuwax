@@ -2,7 +2,7 @@
  * ChatInputUnified 首页场景测试：
  * 统一输入框在 /home（无会话）场景下的能力开关与行为——
  * 工作目录栏渲染条件、cloudOnly 透传、切云清目录、空间选择器、推荐标签 pill（行首内联）、
- * ref 清空/聚焦、'home' 草稿作用域、召唤专家 chip、调试 FAB 开关。
+ * ref 清空/聚焦、'home' 草稿作用域、召唤专家 chip。
  * 桩法对齐 mentionCommands.test.tsx：services/umi 一律 mock，子组件以捕获 props 的桩替代。
  */
 import ChatInputUnified, {
@@ -183,16 +183,6 @@ vi.mock('@/components/PermissionMask', () => ({ default: () => null }));
 vi.mock('@/components/business-component/PaymentSubscriptionModal', () => ({
   default: () => null,
 }));
-vi.mock(
-  '@/components/business-component/ChatInputUnified/ConversationDebugFab',
-  async () => {
-    const React = await import('react');
-    return {
-      default: () => React.createElement('div', { 'data-testid': 'debug-fab' }),
-    };
-  },
-);
-
 // 语音底座桩：Provider 消费 render-prop（isVoiceActive=false），子槽原样透传
 vi.mock('@/components/business-component/VoiceInput', async () => {
   const React = await import('react');
@@ -394,15 +384,6 @@ describe('首页工具栏能力', () => {
     renderHomeInput();
     await waitFor(() => expect(connectorPage).toHaveBeenCalled());
     expect(document.querySelector('.connector-group')).toBeNull();
-  });
-
-  it('showDebugFab 默认渲染，首页场景传 false 关闭', () => {
-    const { unmount } = renderHomeInput();
-    expect(screen.getByTestId('debug-fab')).toBeInTheDocument();
-    unmount();
-
-    renderHomeInput({ showDebugFab: false });
-    expect(screen.queryByTestId('debug-fab')).not.toBeInTheDocument();
   });
 
   it('召唤专家 chip 行首内联展示名称并可取消', () => {

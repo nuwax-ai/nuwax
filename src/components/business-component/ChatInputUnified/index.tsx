@@ -85,8 +85,6 @@ import React, {
 } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import ConversationCacheDebugFab from './ConversationCacheDebugFab';
-import ConversationDebugFab from './ConversationDebugFab';
 import { clearDraft, loadDraft, saveDraft } from './draftStorage';
 import { useConversationDraftScope } from './useConversationDraftScope';
 
@@ -213,8 +211,6 @@ export interface ChatInputUnifiedProps {
   pinnedProjectSandboxSelectable?: boolean;
   /** 移除项目上框（恢复首页默认形态） */
   onClearPinnedProject?: () => void;
-  /** 会话调试悬浮按钮（会话页默认展示；首页等场景传 false 关闭） */
-  showDebugFab?: boolean;
   /**
    * / 能力弹窗是否开放「专家」类型（产品策略：选择专家仅首页开放；
    * 默认 false 仅隐藏入口，专家选中链路 expertComponents 保持可用）
@@ -353,7 +349,6 @@ const ChatInputUnifiedImpl: React.FC<
   pinnedProject,
   pinnedProjectSandboxSelectable = false,
   onClearPinnedProject,
-  showDebugFab = true,
   showExpertCapability = false,
   atHomePanel = false,
   draftKey,
@@ -1245,14 +1240,6 @@ const ChatInputUnifiedImpl: React.FC<
               : t('PC.Components.ChatInputHome.agentComputerUnavailable'))
           }
         />
-
-        {/* 会话调试悬浮按钮：收纳「会话密度」「会话显示」两个调试入口（首页等场景关闭） */}
-        {showDebugFab && (
-          <ConversationDebugFab conversationId={ownConversationId} />
-        )}
-
-        {/* 页面缓存遥测独立悬浮按钮：LRU 实例 + 执行中实例（TODO 上线前随调试入口统一移除） */}
-        {showDebugFab && <ConversationCacheDebugFab />}
 
         {tabsSlot && (
           <div className={cx(styles['tabs-wrapper'])}>{tabsSlot}</div>
