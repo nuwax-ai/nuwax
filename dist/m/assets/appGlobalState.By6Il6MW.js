@@ -1,1 +1,0 @@
-import"./index-DDkNUy_R.js";const e=new class{constructor(){this.localAgentList=[],this.searchPlaceholder="",this.pendingHomeAgentTargetId=0,this.pendingHomeAgentName="",this.pendingHomeAgentIcon=""}};export{e as a};
