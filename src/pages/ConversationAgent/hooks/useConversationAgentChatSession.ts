@@ -10,6 +10,7 @@ import {
   needsTerminalHistoryReload,
   preserveOptimisticMessageTail,
 } from '@/models/conversationInfoMessageList';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { dict } from '@/services/i18nRuntime';
 import { ExpandPageAreaEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -25,7 +26,6 @@ import type {
 import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useMemo } from 'react';
-import { useModel } from 'umi';
 
 export interface UseConversationAgentChatSessionOptions {
   /** 当前智能体 ID */
@@ -109,9 +109,9 @@ export function useConversationAgentChatSession(
     abortResumeStream,
     respondAcpPermission,
     respondMcpAsk,
-  } = useModel('conversationAgent');
+  } = usePageModel('conversationAgent');
 
-  const { hidePagePreview, showPagePreview } = useModel('chat');
+  const { hidePagePreview, showPagePreview } = usePageModel('chat');
   const { runAsyncConversationCreate } = useConversation();
 
   const roleInfo: RoleInfo = useMemo(

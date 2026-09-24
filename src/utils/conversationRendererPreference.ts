@@ -45,9 +45,11 @@ const SESSION_OVERRIDES_STORAGE_KEY =
 
 export const CONVERSATION_RENDERER_EVENT = 'conversation-renderer-v2-changed';
 
-const readFromLocation = (): ConversationRendererVersion | undefined => {
+const readFromLocation = (
+  routeSearch?: string,
+): ConversationRendererVersion | undefined => {
   try {
-    const match = window.location.search.match(
+    const match = (routeSearch ?? window.location.search).match(
       new RegExp(`[?&]${URL_PARAM}=([^&]*)`),
     );
     if (!match) return undefined;
@@ -118,6 +120,7 @@ const broadcast = (): void => {
  */
 export function resolveConversationRendererDetails(
   conversationId?: number | string | null,
+  routeSearch?: string,
 ): ConversationRendererDetails {
   const sessionKey =
     conversationId === null || conversationId === undefined
@@ -126,7 +129,7 @@ export function resolveConversationRendererDetails(
   const sessionOverride = sessionKey
     ? readSessionOverrides()[sessionKey]
     : undefined;
-  const urlOverride = readFromLocation();
+  const urlOverride = readFromLocation(routeSearch);
   const storedGlobal = readGlobalVersion();
   const globalVersion = storedGlobal ?? CONVERSATION_RENDERER_DEFAULT;
   if (urlOverride) {

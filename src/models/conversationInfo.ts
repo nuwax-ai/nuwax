@@ -1,3 +1,7 @@
+import {
+  PageModelScopeContext,
+  usePageModel,
+} from '@/modelScopes/usePageModel';
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import {
   hydrateMcpAskInteractionsInMessageList,
@@ -113,7 +117,14 @@ import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import dayjs from 'dayjs';
 import { throttle } from 'lodash';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -133,9 +144,14 @@ const FINAL_EVENT_PROCESS_TAG_RE =
 export default () => {
   // 历史记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
-  const { showPagePreview, handleChatProcessingList } = useModel('chat');
+  const { showPagePreview, handleChatProcessingList } = usePageModel('chat');
   // 是否是应用智能体模式
-  const { isAppSidebarMode } = useModel('useOpenApp');
+  const { isAppSidebarMode: globalIsAppSidebarMode } = useModel('useOpenApp');
+  // 商业客户端常驻实例对应独立 /home/chat 或工作台，不属于开放应用侧栏。
+  // 避免别的标签改变全局 useOpenApp 后影响隐藏实例的消息和列表同步。
+  const isAppSidebarMode = useContext(PageModelScopeContext)
+    ? false
+    : globalIsAppSidebarMode;
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();

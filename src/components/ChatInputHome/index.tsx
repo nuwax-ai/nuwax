@@ -17,6 +17,7 @@ import {
 } from '@/features/conversation/domain/runtimeSelectors';
 import { useAuthProtectedImageSrc } from '@/hooks/useAuthProtectedImageSrc';
 import useSubscription from '@/hooks/useSubscription';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
@@ -176,7 +177,7 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
       loadingConversation,
       isLoadingOtherInterface,
       conversationInfo,
-    } = useModel('conversationInfo');
+    } = usePageModel('conversationInfo');
 
     /** 使用独立会话 model（如预览 Tab），勿改动全局 conversationInfo 活跃状态 */
     const isIsolatedSessionSource = streamActiveOverride !== undefined;

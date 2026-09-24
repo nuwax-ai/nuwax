@@ -109,6 +109,11 @@
   padding: 10px 0 8px;
 }
 
+// 收起后普通轨迹行不渲染，空容器不应继续占位；原位展示的产物节点仍保留间距。
+.trace[data-trace-expanded='false'] .trace-body:empty {
+  padding: 0;
+}
+
 // OpenUI 渲染元素原位容器（看板/摘要行替换工具行；收起态仍在 DOM 中保持显示）
 .openui-trace-node {
   min-width: 0;

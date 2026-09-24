@@ -1,6 +1,6 @@
+import { usePageModel } from '@/modelScopes/usePageModel';
 import type { PagePreviewData } from '@/models/chat';
 import React, { useCallback, useState } from 'react';
-import { useModel } from 'umi';
 
 /**
  * 页面预览控制器:统一「全局单槽」与「实例自持」两种来源的读写面。
@@ -26,7 +26,7 @@ export const usePagePreviewController = (
     pagePreviewData: globalData,
     showPagePreview: globalShow,
     hidePagePreview: globalHide,
-  } = useModel('chat');
+  } = usePageModel('chat');
   const [localData, setLocalData] = useState<PagePreviewData | null>(null);
   const showLocal = useCallback((data: PagePreviewData | null) => {
     setLocalData(data);

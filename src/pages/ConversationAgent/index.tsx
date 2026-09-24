@@ -21,13 +21,20 @@ import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
+import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
+import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import {
   useInitialConversationAutoSend,
   type InitialConversationState,
 } from '@/hooks/useInitialConversationAutoSend';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
+import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
+import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
+import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import DebugDetails from '@/pages/EditAgent/DebugDetails';
 import {
   apiAgentComponentModelUpdate,
@@ -82,6 +89,7 @@ import debounce from 'lodash/debounce';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -136,29 +144,55 @@ const cx = classNames.bind(styles);
  * - 用户操作 → handleChangeAgent → 调用 API 更新 → 同步本地状态
  * - conversationInfo model 管理聊天消息、文件树、预览等页面状态
  */
-const ConversationAgent: React.FC = () => {
+export interface ConversationAgentRouteSnapshot {
+  spaceId: number;
+  agentId: number;
+  conversationId?: number;
+  search: string;
+  key: string;
+  state?: InitialConversationState;
+  action: 'PUSH' | 'POP' | 'REPLACE';
+}
+
+export interface ConversationAgentProps {
+  /** 常驻工作区传入固定路由身份；普通路由页面不传，继续读取当前 URL。 */
+  routeSnapshot?: ConversationAgentRouteSnapshot;
+  /** 隐藏实例暂停页面级请求和全局 model 写入。 */
+  active?: boolean;
+}
+
+const ConversationAgent: React.FC<ConversationAgentProps> = ({
+  routeSnapshot,
+  active = true,
+}) => {
   // ==================== 路由参数 ====================
   const params = useParams();
   const location = useLocation();
   /** 当前空间 ID，从路由参数中获取 */
-  const spaceId = Number(params.spaceId);
+  const spaceId = routeSnapshot?.spaceId ?? Number(params.spaceId);
+  const routeSearch = routeSnapshot?.search ?? location.search;
+  const routeState = routeSnapshot ? routeSnapshot.state : location.state;
+  const routeAction = routeSnapshot?.action ?? history.action;
+  const routeKey = routeSnapshot?.key ?? location.key;
 
   /**
    * 从 URL query 参数中提取 agentId
    * 支持通过 URL 直接指定要加载的智能体（如 ?agentId=123）
    */
   const agentIdFromQuery = useMemo(() => {
-    const queryAgentId = new URLSearchParams(location.search).get('agentId');
+    if (routeSnapshot) return routeSnapshot.agentId;
+    const queryAgentId = new URLSearchParams(routeSearch).get('agentId');
     return queryAgentId ? Number(queryAgentId) : 0;
-  }, [location.search]);
+  }, [routeSnapshot, routeSearch]);
 
   /**
    * 从 URL query 参数中提取 conversationId
    */
   const queryConversationId = useMemo(() => {
-    const queryId = new URLSearchParams(location.search).get('conversationId');
+    if (routeSnapshot) return routeSnapshot.conversationId;
+    const queryId = new URLSearchParams(routeSearch).get('conversationId');
     return queryId ? Number(queryId) : undefined;
-  }, [location.search]);
+  }, [routeSnapshot, routeSearch]);
 
   // ==================== 本地状态 ====================
   /** 当前智能体 ID */
@@ -259,7 +293,25 @@ const ConversationAgent: React.FC = () => {
     restartAgent,
     isConversationActive,
     refreshGitListRef,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
+
+  useEffect(() => {
+    if (
+      routeSnapshot &&
+      queryConversationId &&
+      conversationInfo?.id === queryConversationId
+    ) {
+      fullPageInstanceCacheManager.markStatus(
+        queryConversationId,
+        conversationInfo.taskStatus,
+      );
+    }
+  }, [
+    routeSnapshot,
+    queryConversationId,
+    conversationInfo?.id,
+    conversationInfo?.taskStatus,
+  ]);
 
   /** 关闭远程智能体桌面（切换标签/文件等预览操作时调用） */
   const closeAgentDesktop = useCallback(() => {
@@ -280,7 +332,7 @@ const ConversationAgent: React.FC = () => {
     setIsMoreMessage: setAgentIsMoreMessage,
     setIsLoadingConversation: setAgentIsLoadingConversation,
     handleClearSideEffect: handleClearAgentConversationSideEffect,
-  } = useModel('conversationAgent');
+  } = usePageModel('conversationAgent');
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
@@ -363,8 +415,8 @@ const ConversationAgent: React.FC = () => {
     return resolveEffectiveSandboxId({
       selectedComputerId,
       pushStateComputerId:
-        history.action === 'PUSH'
-          ? (location.state as any)?.selectedComputerId
+        routeAction === 'PUSH'
+          ? (routeState as any)?.selectedComputerId
           : undefined,
       agentSandboxId: info?.agent?.sandboxId,
       sandboxServerId: info?.sandboxServerId,
@@ -377,7 +429,7 @@ const ConversationAgent: React.FC = () => {
    */
   const finalSelectedComputerId = useMemo(() => {
     return getEffectiveSandboxId();
-  }, [selectedComputerId, conversationInfo, history.action, location.state]);
+  }, [selectedComputerId, conversationInfo, routeAction, routeState]);
 
   /**
    * 终端 WebSocket 连接地址（ttyd）
@@ -387,6 +439,7 @@ const ConversationAgent: React.FC = () => {
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(queryConversationId, {
     enabled:
+      active &&
       showDevConsole &&
       devConsoleActiveTab === 'logs' &&
       devConsoleLayoutMode !== 'collapsed' &&
@@ -427,7 +480,7 @@ const ConversationAgent: React.FC = () => {
   // 仅合并 devConversationId 单字段 + 变化守卫，绝不整体覆盖 agentConfigInfo（以免冲掉未保存的编排/模型/提示词编辑）。
   // 值变化即触发上面的 useEffect → runQueryAgentConversation 自动切到新会话。
   useRequest(() => apiAgentConfigInfo(agentId), {
-    ready: !!agentId,
+    ready: active && !!agentId,
     pollingInterval: GLOBAL_POLLING_INTERVAL,
     pollingWhenHidden: false,
     pollingErrorRetryCount: -1,
@@ -466,7 +519,9 @@ const ConversationAgent: React.FC = () => {
 
   useInitialConversationAutoSend({
     conversationId: queryConversationId,
-    routeState: (location.state || history.location.state) as
+    routeState: (routeSnapshot
+      ? routeState
+      : routeState || history.location.state) as
       | InitialConversationState
       | undefined,
     getEffectiveSandboxId,
@@ -476,11 +531,12 @@ const ConversationAgent: React.FC = () => {
 
   /** 空间变化时重新加载模型列表 */
   useEffect(() => {
+    if (!active) return;
     runMode({
       spaceId,
       modelType: ModelTypeEnum.Chat,
     });
-  }, [spaceId]);
+  }, [active, spaceId]);
 
   /** URL 中的 agentId 变化时同步到本地状态 */
   useEffect(() => {
@@ -551,7 +607,7 @@ const ConversationAgent: React.FC = () => {
 
   // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
   useEffect(() => {
-    if (queryConversationId) {
+    if (active && queryConversationId) {
       setLoadingAgentConfigInfo(true);
 
       // 安装项目依赖
@@ -594,15 +650,11 @@ const ConversationAgent: React.FC = () => {
       setLoadingAgentConfigInfo(false);
       const data = result?.data;
       // 回显模型选择 (如果从创建项目页面带过来)
-      if (
-        data &&
-        history.action === 'PUSH' &&
-        (location.state as any)?.modelId
-      ) {
+      if (data && routeAction === 'PUSH' && (routeState as any)?.modelId) {
         if (!data.modelComponentConfig) {
           data.modelComponentConfig = {} as any;
         }
-        const stateModelId = (location.state as any).modelId;
+        const stateModelId = (routeState as any).modelId;
         data.modelComponentConfig.targetId = stateModelId;
 
         // 尝试从列表中回显名称
@@ -637,6 +689,8 @@ const ConversationAgent: React.FC = () => {
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.Agent,
     targetId: agentId,
+    routeSnapshot,
+    ready: active,
     onSuccess: () => {
       if (agentId) runAgentConfigInfo(agentId);
     },
@@ -644,15 +698,20 @@ const ConversationAgent: React.FC = () => {
 
   /** 将配置加载状态同步到全局 model，供其他组件感知 */
   useEffect(() => {
-    setIsLoadingOtherInterface(loadingAgentConfigInfo);
-  }, [loadingAgentConfigInfo]);
+    if (active) setIsLoadingOtherInterface(loadingAgentConfigInfo);
+  }, [active, loadingAgentConfigInfo]);
 
   /**
    * agentId 变化时触发配置加载
    * - agentId 为 0 时（新建场景）跳过请求
    * - 同时重置页面标题
    */
+  const loadedAgentIdRef = useRef<number>();
   useEffect(() => {
+    if (!active) return;
+    // 常驻页重新激活时保留工作区 DOM，避免全屏 Loading 卸载预览和终端。
+    if (loadedAgentIdRef.current === agentId) return;
+    loadedAgentIdRef.current = agentId;
     if (!agentId) {
       setLoadingAgentConfigInfo(false);
       setAgentConfigInfo(undefined);
@@ -661,12 +720,12 @@ const ConversationAgent: React.FC = () => {
     setAgentConfigInfo(undefined);
     setLoadingAgentConfigInfo(true);
     runAgentConfigInfo(agentId);
-  }, [agentId, runAgentConfigInfo]);
+  }, [active, agentId, runAgentConfigInfo]);
 
   /** 初始化页面基础配置：为页面中所有链接添加 target 属性 */
   useEffect(() => {
-    addBaseTarget();
-  }, [location]);
+    if (active) addBaseTarget();
+  }, [active, routeKey]);
 
   // 任务结果文件点击自定义拦截处理器：跳转至 EditAgent 并携带 file 参数
   const handleTaskResultClick = useCallback(
@@ -1303,7 +1362,7 @@ const ConversationAgent: React.FC = () => {
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useFileTreePreviewView(fileViewProviderProps);
   // 刷新 Git 列表
-  refreshGitListRef.current = fileView.refreshGitList;
+  if (active) refreshGitListRef.current = fileView.refreshGitList;
   // 清空文件树选中
   clearFileTreeSelectionRef.current = fileView.tree.clearSelection ?? null;
 
@@ -1606,7 +1665,7 @@ const ConversationAgent: React.FC = () => {
       <VncPreview
         serviceUrl={process.env.BASE_URL || ''}
         cId={String(queryConversationId)}
-        autoConnect
+        autoConnect={active}
         className={styles['agent-desktop-vnc']}
         idleDetection={{
           enabled: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
@@ -1631,6 +1690,7 @@ const ConversationAgent: React.FC = () => {
       <div className={cx(styles['right-panel-body'])}>
         {/* 顶部标签栏 */}
         <PreviewTabBar
+          active={active}
           // 标签列表
           tabs={previewTabs.tabs}
           // 选中标签 ID
@@ -1674,6 +1734,7 @@ const ConversationAgent: React.FC = () => {
         <div className={cx(styles['right-panel-main'])}>
           <div className={cx(styles['right-panel-content'])}>
             <ConversationAgentFilePreview
+              active={active}
               // 预览文件
               preview={fileView.preview}
               // 差异文件
@@ -1694,9 +1755,11 @@ const ConversationAgent: React.FC = () => {
           <ConversationBottomConsole
             // 在ConversationAgent中，conversationId 为 queryConversationId
             conversationId={
-              finalSelectedComputerId === '-1' ? queryConversationId : undefined
+              active && finalSelectedComputerId === '-1'
+                ? queryConversationId
+                : undefined
             }
-            visible={showDevConsole}
+            visible={active && showDevConsole}
             wsUrl={terminalWsUrl}
             wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
             wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
@@ -1774,6 +1837,12 @@ const ConversationAgent: React.FC = () => {
           {/* 左侧面板：聊天区域（始终显示） */}
           <div className={cx(styles['left-panel'])}>
             <AgentConversationChatPanel
+              routeSnapshot={{
+                search: routeSearch,
+                state: routeState,
+                key: routeKey,
+                action: routeAction,
+              }}
               runtimeLine={runtimeLine}
               selectedComputerId={finalSelectedComputerId}
               onChangeSelectedComputerId={setSelectedComputerId}
@@ -1791,7 +1860,7 @@ const ConversationAgent: React.FC = () => {
             })}
           >
             {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
-            {isAgentDesktopOpen && queryConversationId ? (
+            {active && isAgentDesktopOpen && queryConversationId ? (
               renderAgentDesktopPanel()
             ) : (
               <>
@@ -1843,7 +1912,7 @@ const ConversationAgent: React.FC = () => {
 
         {/* 调试详情抽屉（按需显示） */}
         <DebugDetails
-          visible={showType === EditAgentShowType.Debug_Details}
+          visible={active && showType === EditAgentShowType.Debug_Details}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
         <VersionHistory
@@ -1851,7 +1920,7 @@ const ConversationAgent: React.FC = () => {
           targetName={agentConfigInfo?.name}
           targetType={AgentComponentTypeEnum.Agent}
           permissions={agentConfigInfo?.permissions || []}
-          visible={showType === EditAgentShowType.Version_History}
+          visible={active && showType === EditAgentShowType.Version_History}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
       </section>
@@ -1861,7 +1930,7 @@ const ConversationAgent: React.FC = () => {
       {/* 发布智能体弹窗 */}
       <PublishComponentModal
         targetId={agentId}
-        open={open}
+        open={active && open}
         spaceId={spaceId}
         category={agentConfigInfo?.category}
         onCancel={() => setOpen(false)}
@@ -1873,13 +1942,13 @@ const ConversationAgent: React.FC = () => {
         spaceId={spaceId}
         mode={CreateUpdateModeEnum.Update}
         agentConfigInfo={agentConfigInfo}
-        open={openEditAgent}
+        open={active && openEditAgent}
         onCancel={() => setOpenEditAgent(false)}
         onConfirmUpdate={handlerConfirmEditAgent}
       />
       {/* 导入项目弹窗 */}
       <ImportProjectModal
-        open={openImportProject}
+        open={active && openImportProject}
         loading={isImportingProject}
         onCancel={() => setOpenImportProject(false)}
         onConfirm={handleImportProjectConfirm}
@@ -1888,4 +1957,63 @@ const ConversationAgent: React.FC = () => {
   );
 };
 
-export default ConversationAgent;
+/** 仅供已完成隔离验证的常驻宿主使用；每个实例拥有独立会话 model。 */
+export const CachedConversationAgent: React.FC<
+  ClientConversationPageInstanceProps
+> = ({ route, active }) => {
+  const initialRouteRef = useRef(route);
+  const initialRoute = initialRouteRef.current;
+  const entryActionRef = useRef(
+    initialRoute.navigationAction ?? history.action,
+  );
+  const routeSnapshot = useMemo<ConversationAgentRouteSnapshot>(
+    () => ({
+      spaceId: Number(initialRoute.params.spaceId),
+      agentId: Number(initialRoute.params.agentId),
+      conversationId: initialRoute.conversationId,
+      search: initialRoute.search,
+      key: initialRoute.key,
+      state: initialRoute.state as InitialConversationState | undefined,
+      action: entryActionRef.current,
+    }),
+    [initialRoute],
+  );
+  return (
+    <ConversationPagePathnameContext.Provider value={initialRoute.pathname}>
+      <ConversationRendererRouteSearchContext.Provider
+        value={initialRoute.search}
+      >
+        <ConversationPageModelProvider includeAgentModel>
+          <ConversationAgent routeSnapshot={routeSnapshot} active={active} />
+        </ConversationPageModelProvider>
+      </ConversationRendererRouteSearchContext.Provider>
+    </ConversationPagePathnameContext.Provider>
+  );
+};
+
+/** 路由入口只负责注册 PC style3 渲染器，避免首帧双挂载与自动发送重复。 */
+const ConversationAgentRoute: React.FC = () => {
+  const { registerClientConversationRenderer } = useModel('appTabKeepAlive');
+  const params = useParams();
+  const location = useLocation();
+  const keepAliveEnabled = useStyle3PcKeepAliveEnabled();
+  const query = new URLSearchParams(location.search);
+  const validRouteId = (value: string | null | undefined) =>
+    /^\d+$/.test(value ?? '') && Number(value) > 0;
+  const cacheable =
+    keepAliveEnabled &&
+    validRouteId(params.spaceId) &&
+    validRouteId(query.get('agentId')) &&
+    validRouteId(query.get('conversationId'));
+  useLayoutEffect(() => {
+    if (cacheable) {
+      registerClientConversationRenderer(
+        'agent-workspace',
+        CachedConversationAgent,
+      );
+    }
+  }, [cacheable, registerClientConversationRenderer]);
+  return cacheable ? null : <ConversationAgent />;
+};
+
+export default ConversationAgentRoute;

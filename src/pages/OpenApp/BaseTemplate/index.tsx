@@ -14,6 +14,7 @@ import User from '@/layouts/DynamicMenusLayout/User';
 import Message from '@/layouts/Message';
 import Setting from '@/layouts/Setting';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
+import { setOpenAppSkipHtmlBackground } from '@/services/brandTheme';
 import { dict } from '@/services/i18nRuntime';
 import { UserAvatarEnum } from '@/types/enums/menus';
 import { AgentDetailDto, CustomPageNavItem } from '@/types/interfaces/agent';
@@ -157,6 +158,12 @@ const BaseTemplate: React.FC = () => {
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     setShowFooterTopGradient(distanceFromBottom > threshold);
   }, [loadingHistory]);
+
+  useEffect(() => {
+    // 本页没有主布局缝隙，不需要 html 灰底；离开后由 brandTheme 按主题铺回
+    setOpenAppSkipHtmlBackground(true);
+    return () => setOpenAppSkipHtmlBackground(false);
+  }, []);
 
   useEffect(() => {
     // 获取用户信息

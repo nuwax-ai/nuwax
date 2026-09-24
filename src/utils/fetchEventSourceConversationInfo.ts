@@ -5,6 +5,7 @@ import {
   EventSourceMessage,
   fetchEventSource,
 } from '@microsoft/fetch-event-source';
+import { getBusinessRequestAuth } from './businessAuth';
 
 export interface SSEOptions<T = any> {
   url: string;
@@ -133,11 +134,14 @@ export function createSSEConnection<T = any>(
   // 异步执行连接逻辑，但同步返回 abortFunction
   (async () => {
     try {
+      const auth = getBusinessRequestAuth(options.url);
       await fetchEventSource(options.url, {
         method: options.method || 'GET',
+        credentials: auth.credentials,
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
+          ...auth.headers,
         },
         body:
           typeof options.body === 'object'

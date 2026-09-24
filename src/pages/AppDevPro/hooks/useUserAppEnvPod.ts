@@ -22,6 +22,7 @@ export type UserAppEnvPodStatus = 'idle' | 'starting' | 'running' | 'error';
 export function useUserAppEnvPod(
   conversationId: number | undefined,
   env: UserAppDbEnvEnum,
+  enabled = true,
 ) {
   const [status, setStatus] = useState<UserAppEnvPodStatus>('idle');
   const statusRef = useRef(status);
@@ -54,7 +55,7 @@ export function useUserAppEnvPod(
     };
     // 仅会话 / 环境变化时重置；stopKeepalive 引用变化不得清掉失败态
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId, env]);
+  }, [conversationId, env, enabled]);
 
   /**
    * 接入指定环境容器。
@@ -63,7 +64,7 @@ export function useUserAppEnvPod(
    */
   const ensure = useCallback(
     async (force = false): Promise<boolean> => {
-      if (!conversationId) {
+      if (!enabled || !conversationId) {
         return false;
       }
       if (statusRef.current === 'running') {
@@ -120,7 +121,7 @@ export function useUserAppEnvPod(
         }
       }
     },
-    [conversationId, env, runKeepalive],
+    [conversationId, enabled, env, runKeepalive],
   );
 
   return { status, ensure };

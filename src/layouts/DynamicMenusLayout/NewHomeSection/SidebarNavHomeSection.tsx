@@ -31,17 +31,21 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
   const pendingSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  // 路由切换可以与页签切回共用节流定时器，但不能在定时器触发时降级成
+  // visibility：静止列表的活动门控只适用于单纯的页签切回。
+  const pendingNavigationSyncRef = useRef(false);
   const previousPathRef = useRef(location.pathname);
   // 触发源口径：'visibility'=页签切回（受活动门控约束）；不传=路由切换
   // （导航本身即收敛时机，不设门）
   const syncRef = useRef<(reason?: 'visibility') => void>(() => {});
   syncRef.current = (reason) => {
+    if (reason !== 'visibility') pendingNavigationSyncRef.current = true;
     // 活动门控（2026-09-18 定调「切回页签只允许当前打开页面自身需要的接口」）：
     // 页签切回本身不补刷——切走时本地没有任何执行中会话就无事可补（状态跃迁/
     // 未读蓝点无从发生，跨端新增行交由导航/事件路径收敛）。有执行中会话才刷新，
     // 把结束跃迁补上（蓝点亮起主场景）
     if (
-      reason === 'visibility' &&
+      !pendingNavigationSyncRef.current &&
       !shell.hasExecutingTask &&
       !projectPanelRef.current?.hasExecutingChildren()
     ) {
@@ -49,7 +53,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
     }
     const remaining = 30_000 - (Date.now() - lastSyncAtRef.current);
     if (remaining > 0) {
-      // 很快切走又返回也要核对一次；合并到节流窗口末尾，不持续轮询。
+      // 路由切换与页签切回合并到节流窗口末尾；待执行的路由刷新保留优先级。
       if (!pendingSyncTimerRef.current) {
         pendingSyncTimerRef.current = setTimeout(() => {
           pendingSyncTimerRef.current = null;
@@ -64,6 +68,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
       pendingSyncTimerRef.current = null;
     }
     lastSyncAtRef.current = Date.now();
+    pendingNavigationSyncRef.current = false;
     shell.refreshList(true, { silent: true });
     if (!projectCollapsed) projectPanelRef.current?.revalidateVisible();
   };
@@ -215,19 +220,32 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
           onToggle: () => setTaskCollapsed((prev) => !prev),
         })}
         {!taskCollapsed && (
-          <TaskListSection
-            compact
-            leadingMark
-            unreadConversationIds={unreadConversationIds}
-            list={shell.visibleConversationList}
-            loading={shell.loading}
-            keyword={shell.keyword}
-            chatId={shell.chatId}
-            activeProjectChildId={shell.activeProjectChildId}
-            onConversationClick={shell.handleConversationClick}
-            onFlagChanged={shell.handleConversationFlagChanged}
-            onCollectedChanged={shell.handleConversationCollectedChanged}
-          />
+          <>
+            <TaskListSection
+              compact
+              leadingMark
+              unreadConversationIds={unreadConversationIds}
+              list={shell.visibleConversationList}
+              loading={shell.loading}
+              keyword={shell.keyword}
+              chatId={shell.chatId}
+              activeProjectChildId={shell.activeProjectChildId}
+              onConversationClick={shell.handleConversationClick}
+              onFlagChanged={shell.handleConversationFlagChanged}
+              onCollectedChanged={shell.handleConversationCollectedChanged}
+            />
+            {/* 首屏未撑出滚动区时没有 scroll 事件，仍须提供下一页入口。 */}
+            {shell.hasMore && (
+              <button
+                type="button"
+                className={styles['task-load-more']}
+                disabled={shell.loading}
+                onClick={() => shell.refreshList()}
+              >
+                {dict('PC.Components.AgentConversation.viewMore')}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

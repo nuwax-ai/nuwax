@@ -1,3 +1,4 @@
+import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
 import { dict } from '@/services/i18nRuntime';
 import { UserService } from '@/services/userService';
 import type { UserInfo } from '@/types/interfaces/login';
@@ -75,6 +76,7 @@ export default () => {
    * 用户登出
    */
   const logout = useCallback(() => {
+    fullPageInstanceCacheManager.invalidateAll('logout');
     UserService.logout();
     setUserInfo(null);
     setError(null);

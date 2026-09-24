@@ -4,6 +4,7 @@ import ChangeFileGitDiffView, {
 import MarkdownCustomPlanDoc, {
   extractPlanDocument,
 } from '@/components/MarkdownCustomPlanDoc';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
@@ -48,7 +49,6 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { useModel } from 'umi';
 import styles from './index.less';
 import ParamsResponseView from './ParamsResponseView';
 import SeeDetailModal from './SeeDetailModal';
@@ -151,13 +151,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     pagePreviewData,
     showPagePreview,
     agentPageConfig,
-  } = useModel('chat');
+  } = usePageModel('chat');
 
   const {
     openPreviewView,
     setTaskAgentSelectedFileId,
     setTaskAgentSelectTrigger,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
 
   const [detailData, setDetailData] = useState<{
     params: Record<string, any>;

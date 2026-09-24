@@ -309,4 +309,48 @@ describe('AgentConversationChatPanel', () => {
     // 首帧即拿到 @ 文件数据源：输入 @ 不再退化为纯文本
     expect(typeof latestUnifiedProps().onFetchMentionFiles).toBe('function');
   });
+
+  it('常驻实例固定入页路由，其他页面导航不重置电脑与模型选择', () => {
+    const model = createConversationInfoModel({ loadingConversation: true });
+    mockUseModel.mockReturnValue(model);
+    const onChangeSelectedComputerId = vi.fn();
+    const routeSnapshot = {
+      search: '?agentId=88&conversationId=7001',
+      key: 'agent-route',
+      state: {
+        selectedComputerId: 'computer-from-agent',
+        modelId: 456,
+        agentMode: 'ask',
+      },
+      action: 'PUSH' as const,
+    };
+    const { rerender } = render(
+      <AgentConversationChatPanel
+        routeSnapshot={routeSnapshot}
+        onChangeSelectedComputerId={onChangeSelectedComputerId}
+      />,
+    );
+    expect(latestUnifiedProps().isLoading).toBe(false);
+    expect(latestUnifiedProps().selectedModelId).toBe(456);
+    expect(latestUnifiedProps().initialAgentMode).toBe('ask');
+
+    mockUseLocation.mockReturnValue({
+      key: 'other-route',
+      search: '?conversationId=9002',
+      state: { selectedComputerId: 'other-computer', modelId: 999 },
+    });
+    rerender(
+      <AgentConversationChatPanel
+        routeSnapshot={routeSnapshot}
+        onChangeSelectedComputerId={onChangeSelectedComputerId}
+      />,
+    );
+
+    expect(onChangeSelectedComputerId).toHaveBeenCalledTimes(1);
+    expect(onChangeSelectedComputerId).toHaveBeenCalledWith(
+      'computer-from-agent',
+    );
+    expect(latestUnifiedProps().selectedModelId).toBe(456);
+    expect(latestUnifiedProps().isLoading).toBe(false);
+  });
 });

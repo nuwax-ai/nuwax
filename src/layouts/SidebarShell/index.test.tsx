@@ -62,6 +62,10 @@ vi.mock('./OpenedAppTabsKeepAlive', () => ({
   default: () => <div data-testid="keep-alive-container" />,
 }));
 
+vi.mock('./ClientConversationKeepAlive', () => ({
+  default: () => <div data-testid="client-conversation-keep-alive" />,
+}));
+
 vi.mock('@/hooks/useUnifiedTheme', () => ({
   useUnifiedTheme: () => ({
     effectiveNavigationStyle: 'style3',

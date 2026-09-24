@@ -17,6 +17,8 @@ const cx = classNames.bind(styles);
 const fileTreeCx = classNames.bind(fileTreePreviewStyles);
 
 export interface ConversationAgentFilePreviewProps {
+  /** 当前工作台是否可见；隐藏时关闭文件分享 portal。 */
+  active?: boolean;
   /** 文件预览状态与渲染函数 */
   preview: FileTreePreviewViewPreview;
   /** 源代码管理选中的 diff 文件（优先于普通预览） */
@@ -43,6 +45,7 @@ export interface ConversationAgentFilePreviewProps {
 const ConversationAgentFilePreview: React.FC<
   ConversationAgentFilePreviewProps
 > = ({
+  active = true,
   preview,
   diffFile,
   activeTab,
@@ -113,7 +116,7 @@ const ConversationAgentFilePreview: React.FC<
     if (showFilePreview) {
       return (
         <div className={cx(styles['file-preview-layout'])}>
-          <FilePathHeader {...filePathHeaderProps} />
+          <FilePathHeader {...filePathHeaderProps} active={active} />
           <div className={cx(styles['file-preview-scroll'])}>
             {renderPreviewContent()}
           </div>
@@ -158,6 +161,7 @@ const ConversationAgentFilePreview: React.FC<
     diffFile,
     diffFileName,
     showFilePreview,
+    active,
     filePathHeaderProps,
     renderPreviewContent,
     activeWorkspaceToolId,

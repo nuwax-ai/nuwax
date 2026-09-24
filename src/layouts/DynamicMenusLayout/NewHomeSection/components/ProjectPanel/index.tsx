@@ -1778,8 +1778,11 @@ const ProjectPanel = forwardRef<
         })}
         {/* 查看更多:项目层分页追加 */}
         {hasMore && (
-          <div
+          <button
+            type="button"
             className={cx(styles['load-more-entry'])}
+            disabled={loadingMore}
+            aria-busy={loadingMore}
             onClick={handleLoadMore}
           >
             {loadingMore ? (
@@ -1789,7 +1792,7 @@ const ProjectPanel = forwardRef<
                 'PC.Components.AgentConversation.viewMore',
               )} (${remainingCount})`
             )}
-          </div>
+          </button>
         )}
         <Modal
           title={dict('PC.Components.HistoryConversationList.renameModalTitle')}

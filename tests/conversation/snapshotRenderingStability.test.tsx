@@ -21,6 +21,8 @@ const probe = vi.hoisted(() => ({
   mount: vi.fn(),
   unmount: vi.fn(),
   render: vi.fn(),
+  chatViewRender: vi.fn(),
+  runOverRender: vi.fn(),
 }));
 
 vi.mock('umi', () => ({ useModel: () => ({}) }));
@@ -39,8 +41,18 @@ vi.mock('@/components/MarkdownRenderer/index.less', () => ({
 }));
 vi.mock('@/components/base/SvgIcon', () => ({ default: () => null }));
 vi.mock('@/components/base/CopyButton', () => ({ default: () => null }));
-vi.mock('@/components/ChatView', () => ({ default: () => null }));
-vi.mock('@/components/ChatView/RunOver', () => ({ default: () => null }));
+vi.mock('@/components/ChatView', () => ({
+  default: ({ messageInfo }: { messageInfo: MessageInfo }) => {
+    probe.chatViewRender(messageInfo.id);
+    return null;
+  },
+}));
+vi.mock('@/components/ChatView/RunOver', () => ({
+  default: ({ messageInfo }: { messageInfo: MessageInfo }) => {
+    probe.runOverRender(messageInfo.id);
+    return null;
+  },
+}));
 vi.mock('@/components/ChatView/ChatBottomDebug', () => ({
   default: () => null,
 }));
@@ -188,10 +200,24 @@ describe('#2486 快照渲染稳定性', () => {
     const store = createConversationMessageStore(initial);
     const { container } = render(<Harness store={store} />);
     await flushMarkdown();
-    const oldAnswer = container.querySelector('[data-key="v2-answer-turn-u1"]');
+    const oldAnswer = container.querySelector(
+      '[data-key^="v2-answer-turn-u1"]',
+    );
     expect(oldAnswer).not.toBeNull();
+    const oldAnswerId = oldAnswer?.getAttribute('data-key');
+    const newAnswerId = container
+      .querySelector('[data-key^="v2-answer-turn-u2"]')
+      ?.getAttribute('data-key');
+    expect(oldAnswerId).toBeTruthy();
+    expect(newAnswerId).toBeTruthy();
     const oldRenders = probe.render.mock.calls.filter(
-      ([id]) => id === 'v2-answer-turn-u1',
+      ([id]) => id === oldAnswerId,
+    ).length;
+    const oldUserRenders = probe.chatViewRender.mock.calls.filter(
+      ([id]) => id === 'u1',
+    ).length;
+    const oldStatusRenders = probe.runOverRender.mock.calls.filter(
+      ([id]) => id === 'a1',
     ).length;
     for (let cycle = 1; cycle <= 12; cycle += 1) {
       const incoming = messages();
@@ -201,29 +227,50 @@ describe('#2486 快照渲染稳定性', () => {
       });
       await flushMarkdown();
       expect(store.getSnapshot()[1]).toBe(initial[1]);
-      expect(container.querySelector('[data-key="v2-answer-turn-u1"]')).toBe(
+      expect(container.querySelector('[data-key^="v2-answer-turn-u1"]')).toBe(
         oldAnswer,
       );
     }
     expect(
-      probe.render.mock.calls.filter(([id]) => id === 'v2-answer-turn-u1'),
+      probe.render.mock.calls.filter(([id]) => id === oldAnswerId),
     ).toHaveLength(oldRenders);
     expect(
-      probe.push.mock.calls.filter(([id]) => id === 'v2-answer-turn-u1'),
-    ).toEqual([['v2-answer-turn-u1', '旧回答', 'answer']]);
+      probe.chatViewRender.mock.calls.filter(([id]) => id === 'u1'),
+    ).toHaveLength(oldUserRenders);
     expect(
-      probe.push.mock.calls
-        .filter(([id]) => id === 'v2-answer-turn-u2')
-        .slice(1),
+      probe.runOverRender.mock.calls.filter(([id]) => id === 'a1'),
+    ).toHaveLength(oldStatusRenders);
+    expect(probe.push.mock.calls.filter(([id]) => id === oldAnswerId)).toEqual([
+      [oldAnswerId, '旧回答', 'answer'],
+    ]);
+    expect(
+      probe.push.mock.calls.filter(([id]) => id === newAnswerId).slice(1),
     ).toEqual(
-      Array.from({ length: 12 }, () => [
-        'v2-answer-turn-u2',
-        '+新片段',
-        'answer',
-      ]),
+      Array.from({ length: 12 }, () => [newAnswerId, '+新片段', 'answer']),
     );
     expect(probe.clear).not.toHaveBeenCalled();
     expect(probe.mount).toHaveBeenCalledTimes(2);
     expect(probe.unmount).not.toHaveBeenCalled();
+  });
+
+  it('历史轮内容确实变化时重新渲染该轮，流式尾轮仍增量更新', async () => {
+    const store = createConversationMessageStore(messages());
+    const { container } = render(<Harness store={store} />);
+    await flushMarkdown();
+    const oldStatusRenders = probe.runOverRender.mock.calls.filter(
+      ([id]) => id === 'a1',
+    ).length;
+
+    await act(async () => {
+      store.patchMessage('a1', { text: '旧回答已修订' });
+    });
+    await flushMarkdown();
+
+    expect(
+      probe.runOverRender.mock.calls.filter(([id]) => id === 'a1'),
+    ).toHaveLength(oldStatusRenders + 1);
+    expect(
+      container.querySelector('[data-key^="v2-answer-turn-u1"]')?.textContent,
+    ).toContain('旧回答已修订');
   });
 });

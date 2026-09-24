@@ -9,13 +9,15 @@ import type { UserNormalProjectInfo } from '@/types/interfaces/userProject';
 import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { fetchGeneratedMetadata } from '@/utils/generatedMetadata';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useRequest } from 'umi';
+import { useRequest } from 'umi';
 
 export interface UseChatNormalProjectNameSyncOptions {
   /** 当前会话详情 */
   conversationInfo?: ConversationInfo | null;
   /** 创建跳转携带的首条 Prompt，用于 generate-info */
   prompt?: string;
+  /** 会话实例创建时的导航动作，避免常驻页读取之后其他页面的动作。 */
+  navigationAction?: string;
 }
 
 /**
@@ -28,6 +30,7 @@ export interface UseChatNormalProjectNameSyncOptions {
 export const useChatNormalProjectNameSync = ({
   conversationInfo,
   prompt,
+  navigationAction,
 }: UseChatNormalProjectNameSyncOptions): void => {
   const normalProjectId = useMemo(() => {
     if (
@@ -89,7 +92,7 @@ export const useChatNormalProjectNameSync = ({
 
     const trimmedPrompt = prompt?.trim();
     // 与 AppDevPro 一致：仅 Prompt 创建 PUSH 跳转时补全元数据
-    if (history.action !== 'PUSH' || !trimmedPrompt) {
+    if (navigationAction !== 'PUSH' || !trimmedPrompt) {
       return;
     }
 
@@ -161,6 +164,7 @@ export const useChatNormalProjectNameSync = ({
     normalProjectInfo?.nameDefined,
     normalProjectInfoFetched,
     prompt,
+    navigationAction,
     runGetNormalProjectInfo,
   ]);
 };

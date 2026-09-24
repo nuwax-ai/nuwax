@@ -2,7 +2,7 @@ import { SvgIcon } from '@/components/base';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { LoadingOutlined, PoweroffOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
+import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -30,6 +30,10 @@ export interface PreviewRuntimeButtonsProps {
   previewContainerFailed?: boolean;
   /** 开发环境进行中任务锁定启动 / 重启 */
   previewDevActionLocked?: boolean;
+  /** 会话仍在生成项目，重启不可点 */
+  previewConversationActive?: boolean;
+  /** 仍有待回复的确认卡，重启不可点 */
+  previewWaitingConfirmation?: boolean;
   /**
    * 查询出的文件树非空且根目录含 workspace.manifest.toml。
    * 为 false 时重启 / 停止均不可点。
@@ -58,6 +62,8 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
   previewPodEnsuring = false,
   previewContainerFailed = false,
   previewDevActionLocked = false,
+  previewConversationActive = false,
+  previewWaitingConfirmation = false,
   previewWorkspaceManifestReady = true,
   variant = 'text',
   iconButtonClassName,
@@ -85,13 +91,66 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
     previewRuntimeStopping ||
     previewRuntimeRestarting;
 
+  /**
+   * 禁用时悬停说明当前为什么不能点。
+   * 优先说正在进行的重启 / 停止 / 启动，再说明容器、会话和项目文件。
+   *
+   * @param action 要提示的按钮
+   * @returns 禁用原因；可点击时返回空，沿用「重启应用 / 停止应用」
+   */
+  const pickBlockedHint = (action: 'restart' | 'stop'): string => {
+    const disabled = action === 'restart' ? restartDisabled : stopDisabled;
+    if (!disabled) {
+      return '';
+    }
+    if (action === 'restart' && previewRuntimeRestarting) {
+      return dict('PC.Pages.AppDevPro.previewRestarting');
+    }
+    if (previewRuntimeStopping) {
+      return dict('PC.Pages.AppDevPro.previewStopping');
+    }
+    if (previewRuntimeRestarting) {
+      return dict('PC.Pages.AppDevPro.previewRestarting');
+    }
+    if (action === 'restart' && previewRuntimeBusy) {
+      return dict('PC.Pages.AppDevPro.startingService');
+    }
+    if (action === 'restart' && previewDevActionLocked) {
+      return dict('PC.Pages.AppDevPro.devActionBusyHint');
+    }
+    if (previewContainerFailed) {
+      return dict('PC.Pages.AppDevPro.containerStartFailed');
+    }
+    if (previewPodEnsuring) {
+      return dict('PC.Pages.AppDevPro.containerStarting');
+    }
+    if (action === 'restart' && previewWaitingConfirmation) {
+      return dict('PC.Pages.AppDevPro.confirmingDevelopment');
+    }
+    if (action === 'restart' && previewConversationActive) {
+      return dict('PC.Pages.AppDevPro.previewGeneratingHint');
+    }
+    if (!previewEnvPodReady) {
+      return dict('PC.Pages.AppDevPro.previewPreparing');
+    }
+    if (workspaceManifestBlocked) {
+      return dict('PC.Pages.AppDevPro.previewNoProjectFiles');
+    }
+    return dict('PC.Pages.AppDevPro.previewPreparing');
+  };
+
+  const restartLabel = dict('PC.Pages.AppDevPro.restartService');
+  const stopLabel = dict('PC.Pages.AppDevPro.stopService');
+  const restartTitle = pickBlockedHint('restart') || restartLabel;
+  const stopTitle = pickBlockedHint('stop') || stopLabel;
+
   if (variant === 'icon') {
     return (
       <div className={cx(styles['preview-runtime-icon-actions'])}>
         {onRestartPreviewRuntime ? (
           <TooltipIcon
-            title={dict('PC.Pages.AppDevPro.restartService')}
-            ariaLabel={dict('PC.Pages.AppDevPro.restartService')}
+            title={restartTitle}
+            ariaLabel={restartTitle}
             className={classNames(iconButtonClassName, {
               [styles['preview-runtime-icon-disabled']]: restartDisabled,
             })}
@@ -102,15 +161,13 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
                 <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />
               )
             }
-            onClick={
-              restartDisabled ? undefined : onRestartPreviewRuntime
-            }
+            onClick={restartDisabled ? undefined : onRestartPreviewRuntime}
           />
         ) : null}
         {onStopPreviewRuntime ? (
           <TooltipIcon
-            title={dict('PC.Pages.AppDevPro.stopService')}
-            ariaLabel={dict('PC.Pages.AppDevPro.stopService')}
+            title={stopTitle}
+            ariaLabel={stopTitle}
             className={classNames(iconButtonClassName, {
               [styles['preview-runtime-icon-disabled']]: stopDisabled,
             })}
@@ -131,25 +188,33 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
   return (
     <div className={cx(styles['preview-runtime-text-actions'])}>
       {onRestartPreviewRuntime ? (
-        <Button
-          size="small"
-          disabled={restartDisabled}
-          loading={previewRuntimeRestarting}
-          onClick={onRestartPreviewRuntime}
-        >
-          {dict('PC.Pages.AppDevPro.restartService')}
-        </Button>
+        <Tooltip title={restartTitle}>
+          <span className={cx(styles['preview-runtime-text-trigger'])}>
+            <Button
+              size="small"
+              disabled={restartDisabled}
+              loading={previewRuntimeRestarting}
+              onClick={onRestartPreviewRuntime}
+            >
+              {restartLabel}
+            </Button>
+          </span>
+        </Tooltip>
       ) : null}
       {onStopPreviewRuntime ? (
-        <Button
-          size="small"
-          danger
-          disabled={stopDisabled}
-          loading={previewRuntimeStopping}
-          onClick={onStopPreviewRuntime}
-        >
-          {dict('PC.Pages.AppDevPro.stopService')}
-        </Button>
+        <Tooltip title={stopTitle}>
+          <span className={cx(styles['preview-runtime-text-trigger'])}>
+            <Button
+              size="small"
+              danger
+              disabled={stopDisabled}
+              loading={previewRuntimeStopping}
+              onClick={onStopPreviewRuntime}
+            >
+              {stopLabel}
+            </Button>
+          </span>
+        </Tooltip>
       ) : null}
     </div>
   );

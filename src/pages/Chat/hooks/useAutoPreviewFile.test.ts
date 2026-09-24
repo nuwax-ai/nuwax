@@ -17,8 +17,8 @@ const { mockUseModel, mockApiGetStaticFileList, mockExtract } = vi.hoisted(
   }),
 );
 
-vi.mock('umi', () => ({
-  useModel: () => mockUseModel(),
+vi.mock('@/modelScopes/usePageModel', () => ({
+  usePageModel: () => mockUseModel(),
 }));
 
 vi.mock('@/services/vncDesktop', () => ({

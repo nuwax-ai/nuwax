@@ -1,9 +1,9 @@
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useModel } from 'umi';
 import type { AgentInterventionChatLayerProps } from '../AgentInterventionChatLayer';
 import {
   PLAN_MODE_ENABLED,
@@ -358,7 +358,7 @@ export function useAgentInterventionLayer(
     };
   }, [agentId, skipStorage]);
 
-  const conversationInfoModel = useModel('conversationInfo');
+  const conversationInfoModel = usePageModel('conversationInfo');
 
   const respondAcpPermission =
     interventionHandlers?.respondAcpPermission ??

@@ -7,6 +7,7 @@ import {
   type ConversationPageCacheEntry,
 } from '@/features/conversation/domain/conversationPageCache';
 import { conversationPageCacheManager } from '@/features/conversation/runtime/conversationPageCacheManager';
+import { fullPageInstanceCacheManager } from '@/features/conversation/runtime/fullPageInstanceCacheManager';
 import { TaskStatus } from '@/types/enums/agent';
 import eventBus from '@/utils/eventBus';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -31,12 +32,14 @@ const entry = (
 
 describe('conversationPageCache', () => {
   afterEach(() => {
+    fullPageInstanceCacheManager.invalidateAll('test-cleanup');
     conversationPageCacheManager.invalidateAll('test-cleanup');
     conversationPageCacheManager.setCapacity(
       DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
     );
     localStorage.clear();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('LRU 不淘汰当前实例', () => {
@@ -174,6 +177,36 @@ describe('conversationPageCache', () => {
 
     conversationPageCacheManager.deactivate('chat:203');
     expect(conversationPageCacheManager.getEntry('chat:203')).toBeUndefined();
+  });
+
+  it('整页仍在终态宽限期时保留右侧工作区，整页释放后同步释放', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-23T00:00:00.000Z'));
+    fullPageInstanceCacheManager.activate({
+      key: 'conversation:205',
+      kind: 'conversation',
+      conversationId: 205,
+      executing: true,
+    });
+    conversationPageCacheManager.activate({
+      surface: 'chat',
+      conversationId: 205,
+    });
+    conversationPageCacheManager.deactivate('chat:205');
+    fullPageInstanceCacheManager.deactivate('conversation:205');
+
+    eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+      conversationId: 205,
+      taskStatus: TaskStatus.COMPLETE,
+    });
+    expect(conversationPageCacheManager.getEntry('chat:205')).toBeDefined();
+    vi.advanceTimersByTime(59_999);
+    expect(conversationPageCacheManager.getEntry('chat:205')).toBeDefined();
+    vi.advanceTimersByTime(1);
+    expect(
+      fullPageInstanceCacheManager.getEntry('conversation:205'),
+    ).toBeUndefined();
+    expect(conversationPageCacheManager.getEntry('chat:205')).toBeUndefined();
   });
 
   it('终态后同会话重新执行，离开时继续保活', () => {

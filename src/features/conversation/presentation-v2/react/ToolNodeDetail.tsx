@@ -112,6 +112,7 @@ const ToolNodeDetail: React.FC<ToolNodeDetailProps> = ({
   onOpenResource,
 }) => {
   const { data } = useUnifiedTheme();
+  const markdownId = `v2-skill-detail-${React.useId().replace(/:/g, '')}`;
   const detail = normalizeV2ToolDetail({
     componentType: node.processing?.type ?? node.componentType,
     name: node.processing?.name ?? node.title,
@@ -272,7 +273,7 @@ const ToolNodeDetail: React.FC<ToolNodeDetailProps> = ({
     return (
       <div className={cx(styles['tool-detail'])} data-tool-detail-kind="skill">
         <PureMarkdownRenderer
-          id={`v2-skill-detail-${node.id}`}
+          id={markdownId}
           theme={data.antdTheme === 'dark' ? 'dark' : 'light'}
           disableTyping
         >

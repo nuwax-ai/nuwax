@@ -25,10 +25,10 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /** 收起触发行数：气泡正文超过该行数才折叠出切换控件 */
-export const USER_BUBBLE_COLLAPSE_LINES = 15;
+export const USER_BUBBLE_COLLAPSE_LINES = 10;
 
 /** 收起态保留可见行数（视觉走查定稿） */
-export const USER_BUBBLE_COLLAPSED_LINES = 15;
+export const USER_BUBBLE_COLLAPSED_LINES = 3;
 
 /** 行高兜底值（px）：正文节点 getComputedStyle 取不到行高时使用（单测环境） */
 export const USER_BUBBLE_FALLBACK_LINE_HEIGHT = 24;

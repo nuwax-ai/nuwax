@@ -83,16 +83,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useModel } from 'umi';
+import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import ConversationCacheDebugFab from './ConversationCacheDebugFab';
 import ConversationDebugFab from './ConversationDebugFab';
-import {
-  clearDraft,
-  loadDraft,
-  resolveDraftSurface,
-  saveDraft,
-} from './draftStorage';
+import { clearDraft, loadDraft, saveDraft } from './draftStorage';
+import { useConversationDraftScope } from './useConversationDraftScope';
 
 const cx = classNames.bind(styles);
 
@@ -672,12 +668,7 @@ const ChatInputUnifiedImpl: React.FC<
   // 草稿作用域：会话页面地址 × 会话 id（2026-09-15 定调「结合会话页面地址」）——
   // 同一会话在不同路由面（/home/chat 会话页、/agent 智能体面板、/space 全栈 IDE）
   // 各自独立草稿互不串扰；首页等无会话场景由 draftKey 指定（如 'home'）
-  const location = useLocation();
-  const draftScope =
-    draftKey ??
-    (ownConversationId !== null
-      ? `${resolveDraftSurface(location.pathname)}:${ownConversationId}`
-      : null);
+  const draftScope = useConversationDraftScope(draftKey, ownConversationId);
   // 发送后草稿已消费：卸载兜底跳过回写（isClearInput=false 时输入仍在，
   // 不把已发送内容重新落成草稿）；后续再次编辑会复位该标记
   const draftConsumedRef = useRef(false);

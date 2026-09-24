@@ -3,7 +3,7 @@ import {
   EventSourceMessage,
   fetchEventSource,
 } from '@microsoft/fetch-event-source';
-import { businessCredentials } from './businessCookie';
+import { getBusinessRequestAuth } from './businessAuth';
 
 export interface SSEOptions<T = any> {
   url: string;
@@ -154,12 +154,14 @@ export async function createSSEConnection<T = any>(
   };
 
   try {
+    const auth = getBusinessRequestAuth(options.url);
     await fetchEventSource(options.url, {
       method: options.method || 'GET',
-      credentials: businessCredentials(options.url),
+      credentials: auth.credentials,
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
+        ...auth.headers,
       },
       body:
         typeof options.body === 'object'

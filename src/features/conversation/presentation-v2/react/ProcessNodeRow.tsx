@@ -319,14 +319,12 @@ export const ToolPresentationIcon: React.FC<{
   return <Icon {...props} />;
 };
 
-const NodeDetailMarkdown: React.FC<{ nodeId: string; text: string }> = ({
-  nodeId,
-  text,
-}) => {
+const NodeDetailMarkdown: React.FC<{ text: string }> = ({ text }) => {
   const { data } = useUnifiedTheme();
+  const markdownId = `v2-node-detail-${React.useId().replace(/:/g, '')}`;
   return (
     <PureMarkdownRenderer
-      id={`v2-node-detail-${nodeId}`}
+      id={markdownId}
       theme={data.antdTheme === 'dark' ? 'dark' : 'light'}
       disableTyping
     >
@@ -366,7 +364,7 @@ const NodeDetail: React.FC<{
       </div>
     );
   }
-  return <NodeDetailMarkdown nodeId={node.id} text={node.text ?? ''} />;
+  return <NodeDetailMarkdown text={node.text ?? ''} />;
 };
 
 export interface ProcessNodeRowProps {
@@ -401,7 +399,7 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
     : node.kind === 'narration'
     ? QuestionCircleOutlined
     : KIND_ICONS[node.kind] ?? QuestionCircleOutlined;
-  const detailId = `v2-node-${node.id}`;
+  const detailId = `v2-node-${React.useId().replace(/:/g, '')}`;
   const hasDetail = hasProcessNodeDetail(node);
   // 运行中的思考行走「正在思考 · 摘要贴尾滚动」形态（对齐参考交互），结束后回「思考」静态行
   const isRunningReasoning =

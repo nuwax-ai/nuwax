@@ -17,6 +17,11 @@ interface UseInitProjectMetadataProps {
   ready?: boolean;
   /** 为 false 时跳过 generate-info；默认 true */
   shouldInit?: boolean;
+  /** 常驻页面的入页路由；传入后绝不读取其它页面的全局路由状态。 */
+  routeSnapshot?: {
+    state?: unknown;
+    action: 'PUSH' | 'POP' | 'REPLACE';
+  };
 }
 
 /**
@@ -29,8 +34,10 @@ export const useInitProjectMetadata = ({
   onSuccess,
   ready = true,
   shouldInit = true,
+  routeSnapshot,
 }: UseInitProjectMetadataProps) => {
   const location = useLocation();
+  const currentRouteState = routeSnapshot ? undefined : location.state;
   const hasInitRef = useRef(false);
 
   useEffect(() => {
@@ -43,12 +50,15 @@ export const useInitProjectMetadata = ({
       return;
     }
 
-    const state = (location.state || history.location.state) as
-      | { message?: string }
-      | undefined;
+    const state = (
+      routeSnapshot
+        ? routeSnapshot.state
+        : currentRouteState || history.location.state
+    ) as { message?: string } | undefined;
     const prompt = state?.message?.trim();
 
-    if (history.action !== 'PUSH' || !prompt) {
+    const action = routeSnapshot ? routeSnapshot.action : history.action;
+    if (action !== 'PUSH' || !prompt) {
       return;
     }
 
@@ -77,7 +87,9 @@ export const useInitProjectMetadata = ({
   }, [
     targetType,
     targetId,
-    location.state,
+    currentRouteState,
+    routeSnapshot?.state,
+    routeSnapshot?.action,
     applyMetadata,
     onSuccess,
     ready,

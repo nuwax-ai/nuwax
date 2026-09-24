@@ -1,12 +1,12 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { selectQueueGate } from '@/features/conversation/domain/runtimeSelectors';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { useCallback } from 'react';
-import { useModel } from 'umi';
 import type { QueuedMessage } from './types';
 import { useChatMessageQueue } from './useChatMessageQueue';
 
@@ -73,7 +73,7 @@ export const useUnifiedChatQueue = ({
   // 双线分支语义：queueContext（新线 Provider / 隔离入口）显式注入优先；
   // 未提供时保持基线行为——回落全局 conversationInfo model（旧线入口零改动）。
   const { isConversationActive: modelStreamActive, conversationInfo } =
-    useModel('conversationInfo');
+    usePageModel('conversationInfo');
 
   const queueGate = selectQueueGate(
     queueContext?.streamActive ?? modelStreamActive,
