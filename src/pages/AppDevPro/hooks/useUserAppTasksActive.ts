@@ -26,7 +26,7 @@ const isDevStartTask = (taskType?: string) =>
  * @param appId 应用 ID
  * @returns 开发操作 / 构建是否允许、进行中任务、暂停/恢复轮询，以及是否已拿到首次结果
  */
-export function useUserAppTasksActive(appId?: number) {
+export function useUserAppTasksActive(appId?: number, enabled = true) {
   /** 开发环境是否允许启动 / 重启；首包前默认允许，避免误锁 */
   const [devActionAllowed, setDevActionAllowed] = useState<boolean>(true);
   /** 是否允许发起构建 */
@@ -73,61 +73,60 @@ export function useUserAppTasksActive(appId?: number) {
       }
     },
     {
-    ready: !!appId,
-    refreshDeps: [appId, refreshVersion],
-    pollingInterval: polling ? TASKS_ACTIVE_POLL_INTERVAL : 0,
-    pollingWhenHidden: false,
-    onSuccess: (payload: {
-      ok: boolean;
-      result?: RequestResponse<UserAppTasksActiveResult>;
-      generation: number;
-    }) => {
-      if (payload.generation !== tasksGenerationRef.current) {
-        return;
-      }
-      if (!payload.ok) {
-        setReady(true);
-        return;
-      }
-      const result = payload.result;
-      if (result?.code === SUCCESS_CODE && result.data) {
-        const nextDevAllowed = result.data.devActionAllowed !== false;
-        const nextBuildAllowed = result.data.buildAllowed !== false;
-        const nextTasks = result.data.tasks || [];
-        const hasDevStartTask = nextTasks.some((item) =>
-          isDevStartTask(item.taskType),
-        );
-        if (pausedRef.current) {
-          setDevActionAllowed(nextDevAllowed);
-          setBuildAllowed(nextBuildAllowed);
-          setTasks(nextTasks);
-          setPolling(false);
+      ready: enabled && !!appId,
+      refreshDeps: [appId, enabled, refreshVersion],
+      pollingInterval: polling ? TASKS_ACTIVE_POLL_INTERVAL : 0,
+      pollingWhenHidden: false,
+      onSuccess: (payload: {
+        ok: boolean;
+        result?: RequestResponse<UserAppTasksActiveResult>;
+        generation: number;
+      }) => {
+        if (payload.generation !== tasksGenerationRef.current) {
+          return;
+        }
+        if (!payload.ok) {
           setReady(true);
           return;
         }
-        if (
-          holdDevIdleRef.current &&
-          (!nextDevAllowed || hasDevStartTask)
-        ) {
-          setDevActionAllowed(true);
-          setBuildAllowed(nextBuildAllowed);
-          setTasks(nextTasks.filter((item) => !isDevStartTask(item.taskType)));
-          setPolling(true);
-        } else {
-          holdDevIdleRef.current = false;
-          setDevActionAllowed(nextDevAllowed);
-          setBuildAllowed(nextBuildAllowed);
-          setTasks(nextTasks);
-          if (nextDevAllowed && nextBuildAllowed && nextTasks.length === 0) {
+        const result = payload.result;
+        if (result?.code === SUCCESS_CODE && result.data) {
+          const nextDevAllowed = result.data.devActionAllowed !== false;
+          const nextBuildAllowed = result.data.buildAllowed !== false;
+          const nextTasks = result.data.tasks || [];
+          const hasDevStartTask = nextTasks.some((item) =>
+            isDevStartTask(item.taskType),
+          );
+          if (pausedRef.current) {
+            setDevActionAllowed(nextDevAllowed);
+            setBuildAllowed(nextBuildAllowed);
+            setTasks(nextTasks);
             setPolling(false);
-          } else {
+            setReady(true);
+            return;
+          }
+          if (holdDevIdleRef.current && (!nextDevAllowed || hasDevStartTask)) {
+            setDevActionAllowed(true);
+            setBuildAllowed(nextBuildAllowed);
+            setTasks(
+              nextTasks.filter((item) => !isDevStartTask(item.taskType)),
+            );
             setPolling(true);
+          } else {
+            holdDevIdleRef.current = false;
+            setDevActionAllowed(nextDevAllowed);
+            setBuildAllowed(nextBuildAllowed);
+            setTasks(nextTasks);
+            if (nextDevAllowed && nextBuildAllowed && nextTasks.length === 0) {
+              setPolling(false);
+            } else {
+              setPolling(true);
+            }
           }
         }
-      }
-      setReady(true);
+        setReady(true);
+      },
     },
-  },
   );
 
   /** 手动刷新并恢复轮询（取消构建后同步状态） */

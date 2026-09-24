@@ -3,16 +3,24 @@ import type { AgentMode } from '@/components/business-component/AgentInterventio
 import type { UseConversationRuntimeSessionResult } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversationMentionFiles from '@/hooks/useConversationMentionFiles';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { TaskStatus } from '@/types/enums/agent';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useLocation, useModel } from 'umi';
+import { history, useLocation } from 'umi';
 
 /**
  * Props 类型定义
  */
 export interface AgentConversationChatPanelProps {
+  /** 常驻页面提供的入页路由快照，避免隐藏实例读取另一页的 URL。 */
+  routeSnapshot?: {
+    search: string;
+    key: string;
+    state?: unknown;
+    action: 'PUSH' | 'POP' | 'REPLACE';
+  };
   /** 自定义容器类名 */
   className?: string;
   /** 沙箱电脑 ID 变更回调 */
@@ -33,15 +41,20 @@ export interface AgentConversationChatPanelProps {
  */
 const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   className,
+  routeSnapshot,
   onChangeSelectedComputerId,
   selectedComputerId,
   runtimeLine,
   onConversationEnd,
 }) => {
   const location = useLocation();
+  const routeSearch = routeSnapshot?.search ?? location.search;
+  const routeKey = routeSnapshot?.key ?? location.key;
+  const routeState = routeSnapshot ? routeSnapshot.state : location.state;
+  const routeAction = routeSnapshot?.action ?? history.action;
 
   // 从新建项目页透传过来的初始 Agent 模式（yolo/ask）
-  const initialAgentMode = (location.state as any)?.agentMode as
+  const initialAgentMode = (routeState as any)?.agentMode as
     | AgentMode
     | undefined;
 
@@ -50,16 +63,16 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
 
   // 模型ID
   const [selectedModelId, setSelectedModelId] = useState<number>(
-    (location.state as any)?.modelId,
+    (routeState as any)?.modelId,
   );
 
   // 仅在本次会话中使用从其它页面带过来的 selectedComputerId；
   // 刷新（POP）或新建会话（REPLACE）时，不再沿用之前的选择。
   useEffect(() => {
-    const passedDetails = (location.state as any)?.selectedComputerId;
+    const passedDetails = (routeState as any)?.selectedComputerId;
 
     // PUSH: 正常跳转
-    const isPushWithComputer = history.action === 'PUSH' && !!passedDetails;
+    const isPushWithComputer = routeAction === 'PUSH' && !!passedDetails;
 
     if (isPushWithComputer) {
       onChangeSelectedComputerId?.(passedDetails);
@@ -68,7 +81,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       onChangeSelectedComputerId?.('');
       setIsSelectionLocked(false);
     }
-  }, [history.action, location.key, onChangeSelectedComputerId]);
+  }, [routeAction, routeKey, onChangeSelectedComputerId]);
 
   // 追踪会话活跃状态的上一次值，用于检测「活跃→非活跃」的转换
   const prevIsActiveRef = useRef<boolean>(false);
@@ -98,7 +111,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     resumeConversationStream,
     abortResumeStream,
     runAsync,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
 
   const {
     selectedComponentList,
@@ -108,9 +121,9 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   } = useSelectedComponent();
   const selectionInitKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    const key = location.key || '';
+    const key = routeKey || '';
     if (!key || selectionInitKeyRef.current === key) return;
-    const state = location.state as
+    const state = routeState as
       | { messageSourceType?: string; infos?: AgentSelectedComponentInfo[] }
       | undefined;
     if (
@@ -125,15 +138,15 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       selectionInitKeyRef.current = key;
       initSelectedComponentList(manualComponents);
     }
-  }, [location.key, location.state, manualComponents]);
+  }, [routeKey, routeState, manualComponents]);
 
   // @ 文件提及数据源：URL 会话 id 进页即得——若等会话详情回填 conversationInfo，
   // 进入后一段时间内 @ 会是纯文本；开发会话均为任务型智能体，文件按会话维度取数，
   // 无需 agent 类型门槛
   const queryConversationId = useMemo(() => {
-    const id = new URLSearchParams(location.search).get('conversationId');
+    const id = new URLSearchParams(routeSearch).get('conversationId');
     return id ? Number(id) : undefined;
-  }, [location.search]);
+  }, [routeSearch]);
   const mentionConversationId = conversationInfo?.id ?? queryConversationId;
   const fetchMentionFiles = useConversationMentionFiles(mentionConversationId);
   const mentionFilesEnabled = !!mentionConversationId;

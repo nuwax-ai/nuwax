@@ -87,6 +87,35 @@
     padding: 7px 15px 16px;
   }
 
+  .task-load-more {
+    display: block;
+    width: calc(100% - 20px);
+    margin: 0 10px 12px;
+    padding: @paddingXs @paddingSm;
+    border: 0;
+    border-radius: @borderRadiusSm;
+    background: transparent;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    font-family: inherit;
+    font-size: @fontSizeSm;
+    line-height: inherit;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: @colorFillQuaternary;
+      color: @navSecondMenuAdaptiveTextSecondary;
+    }
+
+    &:focus-visible {
+      outline: @lineWidthBold solid @colorPrimary;
+      outline-offset: -2px;
+    }
+
+    &:disabled {
+      cursor: default;
+    }
+  }
+
   // 单栏（style3）主栏外内缩 15→10（2026-09-14，与 SidebarNavHeader 同批）：
   // 分组头文字左缘 24→19、列表行外缘 15→10，整列相对关系原样平移；经典布局
   // （.tabs 双 tab 线）不在此作用域，维持 15px 栅格

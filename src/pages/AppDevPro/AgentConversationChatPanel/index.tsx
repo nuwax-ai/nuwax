@@ -3,16 +3,24 @@ import type { AgentMode } from '@/components/business-component/AgentInterventio
 import type { UseConversationRuntimeSessionResult } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversationMentionFiles from '@/hooks/useConversationMentionFiles';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { TaskStatus } from '@/types/enums/agent';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useLocation, useModel, useParams } from 'umi';
+import { history, useLocation, useParams } from 'umi';
 
 /**
  * Props 类型定义
  */
 export interface AgentConversationChatPanelProps {
+  /** 常驻页面的固定路由快照，隐藏时不读取其他页面的 URL。 */
+  routeSnapshot?: {
+    conversationId: number;
+    key: string;
+    state?: unknown;
+    action: 'PUSH' | 'POP' | 'REPLACE';
+  };
   /** 自定义容器类名 */
   className?: string;
   /** 沙箱电脑 ID 变更回调 */
@@ -33,15 +41,19 @@ export interface AgentConversationChatPanelProps {
  */
 const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   className,
+  routeSnapshot,
   onChangeSelectedComputerId,
   selectedComputerId,
   runtimeLine,
   onConversationEnd,
 }) => {
   const location = useLocation();
+  const routeKey = routeSnapshot?.key ?? location.key;
+  const routeState = routeSnapshot ? routeSnapshot.state : location.state;
+  const routeAction = routeSnapshot?.action ?? history.action;
 
   // 从新建项目页透传过来的初始 Agent 模式（yolo/ask）
-  const initialAgentMode = (location.state as any)?.agentMode as
+  const initialAgentMode = (routeState as any)?.agentMode as
     | AgentMode
     | undefined;
 
@@ -50,16 +62,16 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
 
   // 模型ID
   const [selectedModelId, setSelectedModelId] = useState<number>(
-    (location.state as any)?.modelId,
+    (routeState as any)?.modelId,
   );
 
   // 仅在本次会话中使用从其它页面带过来的 selectedComputerId；
   // 刷新（POP）或新建会话（REPLACE）时，不再沿用之前的选择。
   useEffect(() => {
-    const passedDetails = (location.state as any)?.selectedComputerId;
+    const passedDetails = (routeState as any)?.selectedComputerId;
 
     // PUSH: 正常跳转
-    const isPushWithComputer = history.action === 'PUSH' && !!passedDetails;
+    const isPushWithComputer = routeAction === 'PUSH' && !!passedDetails;
 
     if (isPushWithComputer) {
       onChangeSelectedComputerId?.(passedDetails);
@@ -68,7 +80,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       onChangeSelectedComputerId?.('');
       setIsSelectionLocked(false);
     }
-  }, [history.action, location.key, onChangeSelectedComputerId]);
+  }, [routeAction, routeKey, onChangeSelectedComputerId]);
 
   // 追踪会话活跃状态的上一次值，用于检测「活跃→非活跃」的转换
   const prevIsActiveRef = useRef<boolean>(false);
@@ -98,7 +110,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     resumeConversationStream,
     abortResumeStream,
     runAsync,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
 
   // 会话输入框已选择组件。此前面板未接选中态：工具 chips 永不点亮、
   // 首页上框带过来的工具选中态丢失、发送恒带全量 manualComponents（禅道 bug2352）
@@ -116,11 +128,11 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   // 反复刷新 manualComponents 引用，重放会把用户正在挑选的选中态重置。
   const selectionInitKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    const key = location.key || '';
+    const key = routeKey || '';
     if (!key || selectionInitKeyRef.current === key) {
       return;
     }
-    const state = location.state as
+    const state = routeState as
       | { messageSourceType?: string; infos?: AgentSelectedComponentInfo[] }
       | undefined;
     if (
@@ -135,13 +147,14 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       selectionInitKeyRef.current = key;
       initSelectedComponentList(manualComponents);
     }
-  }, [location.key, location.state, manualComponents]);
+  }, [routeKey, routeState, manualComponents]);
 
   // @ 文件提及数据源：URL 会话 id 进页即得——若等会话详情回填 conversationInfo，
   // 进入后一段时间内 @ 会是纯文本；开发会话均为任务型智能体，文件按会话维度取数，
   // 无需 agent 类型门槛
   const params = useParams();
-  const queryConversationId = Number(params.conversationId);
+  const queryConversationId =
+    routeSnapshot?.conversationId ?? Number(params.conversationId);
   const mentionConversationId = conversationInfo?.id ?? queryConversationId;
   const fetchMentionFiles = useConversationMentionFiles(mentionConversationId);
   const mentionFilesEnabled = !!mentionConversationId;

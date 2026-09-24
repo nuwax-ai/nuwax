@@ -37,6 +37,33 @@ export interface AgentTabRendererPair {
   direct: React.FC<AgentDirectInstanceProps>;
 }
 
+/** 商业客户端常驻会话工作台的固定路由快照。 */
+export interface ClientConversationRouteSnapshot {
+  key: string;
+  kind: 'conversation' | 'agent-workspace' | 'ide-workspace';
+  conversationId: number;
+  pathname: string;
+  search: string;
+  state?: unknown;
+  navigationAction?: 'PUSH' | 'POP' | 'REPLACE';
+  params: Record<string, string>;
+}
+
+export interface ClientConversationPageInstanceProps {
+  route: ClientConversationRouteSnapshot;
+  active: boolean;
+}
+
+export type ClientConversationPageRenderer =
+  React.FC<ClientConversationPageInstanceProps>;
+
+type ClientConversationPageRenderers = Partial<
+  Record<
+    ClientConversationRouteSnapshot['kind'],
+    ClientConversationPageRenderer
+  >
+>;
+
 export default function AppTabKeepAliveModel() {
   /** 单应用实例渲染器(UserApp 页注册;组件引用入 state,注册即触发容器渲染) */
   const [renderer, setRenderer] =
@@ -44,6 +71,8 @@ export default function AppTabKeepAliveModel() {
   /** agent 实例渲染器对(AgentDetails 页注册) */
   const [agentRenderer, setAgentRenderer] =
     useState<AgentTabRendererPair | null>(null);
+  const [clientConversationRenderers, setClientConversationRenderers] =
+    useState<ClientConversationPageRenderers>({});
   /** 注册渲染器:先注册者优先(路由组件重挂载不覆盖同一实现、不触发多余渲染) */
   const registerRenderer = useCallback(
     (next: React.FC<AppTabInstanceProps>) => {
@@ -55,10 +84,24 @@ export default function AppTabKeepAliveModel() {
   const registerAgentTabRenderer = useCallback((next: AgentTabRendererPair) => {
     setAgentRenderer((prev: AgentTabRendererPair | null) => prev ?? next);
   }, []);
+  /** 各路由 chunk 首次加载后注册；已注册的同类 renderer 保持引用稳定。 */
+  const registerClientConversationRenderer = useCallback(
+    (
+      kind: ClientConversationRouteSnapshot['kind'],
+      renderer: ClientConversationPageRenderer,
+    ) => {
+      setClientConversationRenderers((prev) =>
+        prev[kind] ? prev : { ...prev, [kind]: renderer },
+      );
+    },
+    [],
+  );
   return {
     renderer,
     registerRenderer,
     agentRenderer,
     registerAgentTabRenderer,
+    clientConversationRenderers,
+    registerClientConversationRenderer,
   };
 }

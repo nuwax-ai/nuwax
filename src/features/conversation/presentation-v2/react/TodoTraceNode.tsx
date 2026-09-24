@@ -38,6 +38,7 @@ const TodoTraceNode: React.FC<{ node: ConversationProcessNode }> = ({
   node,
 }) => {
   const { token } = theme.useToken();
+  const bodyId = `v2-todo-${React.useId().replace(/:/g, '')}`;
   const steps = useMemo(
     () => readPlanSteps(node.processing?.result),
     [node.processing?.result],
@@ -59,7 +60,6 @@ const TodoTraceNode: React.FC<{ node: ConversationProcessNode }> = ({
 
   if (!steps || !progress) return null;
 
-  const bodyId = `v2-todo-${node.id}`;
   return (
     <div
       className={cx(styles['todo-trace'])}

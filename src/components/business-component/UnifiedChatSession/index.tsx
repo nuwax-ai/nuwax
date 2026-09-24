@@ -7,6 +7,7 @@ import ConversationStatus from '@/components/business-component/ConversationStat
 import MessageQueuePanel from '@/components/business-component/MessageQueue';
 import { registerOpenUiActionSender } from '@/components/business-component/OpenUiArtifactView/actionRegistry';
 import { buildOpenUiResumeMessage } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import classNames from 'classnames';
 import {
   useCallback,
@@ -15,7 +16,6 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { useModel } from 'umi';
 
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import {
@@ -372,7 +372,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     openPreviewView,
     setTaskAgentSelectedFileId,
     setTaskAgentSelectTrigger,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
   const defaultOpenUiSidecar = useCallback(
     async (artifact: OpenUiArtifact) => {
       await openPreviewView(Number(conversationId), { forceRefresh: true });

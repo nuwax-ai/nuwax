@@ -36,6 +36,7 @@ const cx = classNames.bind(styles);
  * 显示文件路径、预览/代码切换与下载、复制、分享、全屏操作
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
+  active = true,
   className,
   targetNode,
   viewMode = 'preview',
@@ -201,7 +202,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       <ShareDesktopModal
         fileProxyUrl={targetNode?.fileProxyUrl ?? null}
         shareType="CONVERSATION"
-        visible={shareDesktopModalVisible}
+        visible={active && shareDesktopModalVisible}
         conversationId={conversationId}
         onClose={() => setShareDesktopModalVisible(false)}
       />

@@ -126,6 +126,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       prevProps.answer === nextProps.answer &&
       prevProps.status === nextProps.status &&
       prevProps.thinkingFinished === nextProps.thinkingFinished &&
+      prevProps.theme === nextProps.theme &&
       prevProps.collapseProcessGroups === nextProps.collapseProcessGroups &&
       prevProps.conversationId === nextProps.conversationId
     );

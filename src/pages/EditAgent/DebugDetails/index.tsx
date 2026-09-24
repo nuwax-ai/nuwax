@@ -6,6 +6,7 @@ import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import ToggleWrap from '@/components/ToggleWrap';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { DebugDetailsProps } from '@/types/interfaces/agentConfig';
@@ -16,7 +17,6 @@ import { Empty, message } from 'antd';
 import classNames from 'classnames';
 import React, { memo, useEffect, useState } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
-import { useModel } from 'umi';
 import styles from './index.less';
 import { NodeDetails } from './NodeDetails';
 
@@ -31,7 +31,7 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({
   className,
 }) => {
   const { requestId, finalResult, setFinalResult } =
-    useModel('conversationInfo');
+    usePageModel('conversationInfo');
   // 当前执行结果
   const [executeInfo, setExecuteInfo] = useState<ExecuteResultInfo | null>();
   // 当前执行结果索引，默认为0

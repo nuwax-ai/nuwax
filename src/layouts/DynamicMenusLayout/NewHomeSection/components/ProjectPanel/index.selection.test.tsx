@@ -14,6 +14,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -309,6 +310,42 @@ describe('ProjectPanel 选中关系', () => {
     expect(pageQueryMock.mock.calls[1][0].pageSize).toBe(20);
     expect(pageQueryMock.mock.calls[2][0].pageSize).toBe(20);
   });
+
+  it.each(['{Enter}', ' '])(
+    '项目查看更多可由键盘 %s 打开下一页',
+    async (key) => {
+      const first = Array.from({ length: 20 }, (_, i) =>
+        buildRecord({ projectId: i + 1, name: `分页项目${i + 1}` }),
+      );
+      pageQueryMock
+        .mockResolvedValueOnce({
+          code: SUCCESS_CODE,
+          data: { records: first, total: 21, current: 1, pages: 2 },
+        })
+        .mockResolvedValueOnce({
+          code: SUCCESS_CODE,
+          data: {
+            records: [buildRecord({ projectId: 21, name: '分页项目21' })],
+            total: 21,
+            current: 2,
+            pages: 2,
+          },
+        });
+      const user = userEvent.setup();
+      render(<ProjectPanel compact />);
+      const more = await screen.findByRole('button', {
+        name: 'PC.Components.AgentConversation.viewMore (1)',
+      });
+
+      more.focus();
+      expect(more).toHaveFocus();
+      await user.keyboard(key);
+      await screen.findByText('分页项目21');
+      expect(pageQueryMock.mock.calls[1][0]).toEqual(
+        expect.objectContaining({ current: 2, pageSize: 20 }),
+      );
+    },
+  );
 
   it('2397 优先按 current/pages 收口：末页满 20 条且 total 漂移也不残留查看更多', async () => {
     const first = Array.from({ length: 20 }, (_, i) =>

@@ -32,6 +32,7 @@ import styles from '../index.less';
 import Message from '../Message';
 import MobileMenu from '../MobileMenu';
 import Setting from '../Setting';
+import ClientConversationKeepAlive from './ClientConversationKeepAlive';
 import OpenedAppTabsKeepAlive from './OpenedAppTabsKeepAlive';
 
 // 绑定 classNames，便于动态样式组合
@@ -286,6 +287,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
         <div className={cx('w-full', 'h-full', 'overflow-hide')}>
           {children}
           <OpenedAppTabsKeepAlive />
+          <ClientConversationKeepAlive />
         </div>
       );
     }
@@ -329,6 +331,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
         {/* 女娲应用多开标签保活容器:与路由出口并列常驻(命中 user-app 标签时
             可见,路由组件空壳让位;其余路由整体隐藏不占位,iframe 保活不重载) */}
         <OpenedAppTabsKeepAlive />
+        <ClientConversationKeepAlive />
       </div>
     );
   }, [

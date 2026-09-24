@@ -34,6 +34,7 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
   conversationId,
 }) => {
   const { data: themeData } = useUnifiedTheme();
+  const instanceId = React.useId().replace(/:/g, '');
   const lastAssistant = [...turn.assistantMessages]
     .reverse()
     .find((message) => message.role === AssistantRoleEnum.ASSISTANT);
@@ -54,7 +55,7 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
     return () => window.clearInterval(timerId);
   }, [messageTime]);
   const answerText = turn.finalAnswer.text;
-  const answerId = `v2-answer-${turn.key}`;
+  const answerId = `v2-answer-${turn.key}-${instanceId}`;
   const { markdownRef, messageIdRef } = useMarkdownRender({
     id: answerId,
     answer: answerText,

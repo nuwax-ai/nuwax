@@ -15,18 +15,33 @@
 
 // 查看更多入口(项目分页追加)
 .load-more-entry {
+  display: block;
+  width: 100%;
   padding: @paddingXs @paddingSm;
+  border: 0;
+  background: transparent;
   text-align: center;
+  font-family: inherit;
   font-size: @fontSizeSm;
+  line-height: inherit;
   color: @navSecondMenuAdaptiveTextTertiary;
   border-radius: @borderRadiusSm;
   cursor: pointer;
   user-select: none;
   transition: all 0.2s ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: @colorFillQuaternary;
     color: @navSecondMenuAdaptiveTextSecondary;
+  }
+
+  &:focus-visible {
+    outline: @lineWidthBold solid @colorPrimary;
+    outline-offset: -2px;
+  }
+
+  &:disabled {
+    cursor: default;
   }
 }
 

@@ -1,6 +1,7 @@
 import debugImage from '@/assets/images/debug_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { dict } from '@/services/i18nRuntime';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
@@ -8,7 +9,6 @@ import { ChatBottomDebugProps } from '@/types/interfaces/common';
 import { formatFinalResultElapsedSeconds } from '@/utils/conversationFinalResult';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
-import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -17,8 +17,8 @@ const cx = classNames.bind(styles);
 const ChatBottomDebug: React.FC<ChatBottomDebugProps> = ({ messageInfo }) => {
   // finalResult 自定义添加字段：chat 会话结果
   const { finalResult } = messageInfo || {};
-  const { handleDebug, showType } = useModel('conversationInfo');
-  const { pagePreviewData, hidePagePreview } = useModel('chat');
+  const { handleDebug, showType } = usePageModel('conversationInfo');
+  const { pagePreviewData, hidePagePreview } = usePageModel('chat');
 
   const handleClick = () => {
     // 如果当前显示的是页面预览，先关闭页面预览

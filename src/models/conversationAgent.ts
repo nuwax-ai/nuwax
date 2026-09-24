@@ -1,3 +1,4 @@
+import { usePageModel } from '@/modelScopes/usePageModel';
 /**
  * ConversationAgent 页面专用会话状态 Model
  *
@@ -81,7 +82,6 @@ import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import {
   appendOutgoingConversationMessages,
@@ -90,7 +90,7 @@ import {
 } from './conversationInfoMessageList';
 
 export default () => {
-  const { showPagePreview, handleChatProcessingList } = useModel('chat');
+  const { showPagePreview, handleChatProcessingList } = usePageModel('chat');
 
   // 会话信息
   const [conversationInfo, setConversationInfo] =

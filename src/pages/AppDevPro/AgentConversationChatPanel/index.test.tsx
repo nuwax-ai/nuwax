@@ -1,4 +1,6 @@
+import { PageModelScopeContext } from '@/modelScopes/usePageModel';
 import AgentConversationChatPanel from '@/pages/AppDevPro/AgentConversationChatPanel';
+import AgentWorkbenchChatPanel from '@/pages/ConversationAgent/AgentConversationChatPanel';
 import { TaskStatus } from '@/types/enums/agent';
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -200,5 +202,101 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     );
 
     expect(onConversationEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('常驻实例使用固定会话 ID 和入页状态，不跟随当前路由变化', () => {
+    const model = createConversationInfoModel({ loadingConversation: true });
+    mockUseModel.mockReturnValue(model);
+    const onChangeSelectedComputerId = vi.fn();
+    const routeSnapshot = {
+      conversationId: 7001,
+      key: 'app-route',
+      state: { selectedComputerId: 'app-computer', modelId: 456 },
+      action: 'PUSH' as const,
+    };
+    const { rerender } = render(
+      <AgentConversationChatPanel
+        routeSnapshot={routeSnapshot}
+        onChangeSelectedComputerId={onChangeSelectedComputerId}
+      />,
+    );
+    expect(latestUnifiedProps().isLoading).toBe(false);
+    expect(latestUnifiedProps().selectedModelId).toBe(456);
+
+    mockUseLocation.mockReturnValue({
+      key: 'other-route',
+      state: { selectedComputerId: 'other-computer', modelId: 999 },
+    });
+    rerender(
+      <AgentConversationChatPanel
+        routeSnapshot={routeSnapshot}
+        onChangeSelectedComputerId={onChangeSelectedComputerId}
+      />,
+    );
+
+    expect(onChangeSelectedComputerId).toHaveBeenCalledTimes(1);
+    expect(onChangeSelectedComputerId).toHaveBeenCalledWith('app-computer');
+    expect(latestUnifiedProps().selectedModelId).toBe(456);
+    expect(latestUnifiedProps().isLoading).toBe(false);
+  });
+
+  it('Agent 与 IDE 两个并存面板只消费各自作用域的消息和发送动作', () => {
+    const globalModel = createConversationInfoModel({
+      conversationInfo: { id: 9999 },
+      messageList: [{ id: 'global' }],
+    });
+    const agentModel = createConversationInfoModel({
+      conversationInfo: { id: 7001, agent: { agentId: 88 } },
+      messageList: [{ id: 'agent-message' }],
+      manualComponents: [],
+    });
+    const ideModel = createConversationInfoModel({
+      conversationInfo: { id: 7002, agent: { agentId: 89 } },
+      messageList: [{ id: 'ide-message' }],
+      manualComponents: [],
+    });
+    mockUseModel.mockReturnValue(globalModel);
+
+    render(
+      <>
+        <PageModelScopeContext.Provider
+          value={{ conversationInfo: agentModel }}
+        >
+          <AgentWorkbenchChatPanel
+            routeSnapshot={{
+              search: '?agentId=88&conversationId=7001',
+              key: 'agent-a',
+              state: {},
+              action: 'POP',
+            }}
+          />
+        </PageModelScopeContext.Provider>
+        <PageModelScopeContext.Provider value={{ conversationInfo: ideModel }}>
+          <AgentConversationChatPanel
+            routeSnapshot={{
+              conversationId: 7002,
+              key: 'ide-b',
+              state: {},
+              action: 'POP',
+            }}
+          />
+        </PageModelScopeContext.Provider>
+      </>,
+    );
+
+    const [agentProps, ideProps] = mockUnifiedChatSession.mock.calls.map(
+      (call) => call[0],
+    );
+    expect(agentProps.messageList).toEqual([{ id: 'agent-message' }]);
+    expect(ideProps.messageList).toEqual([{ id: 'ide-message' }]);
+    agentProps.onSendMessage('agent prompt');
+    ideProps.onSendMessage('ide prompt');
+    expect(agentModel.onMessageSend).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 7001, messageInfo: 'agent prompt' }),
+    );
+    expect(ideModel.onMessageSend).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 7002, messageInfo: 'ide prompt' }),
+    );
+    expect(globalModel.onMessageSend).not.toHaveBeenCalled();
   });
 });

@@ -642,11 +642,32 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     // 轨迹头同样为原生 button 且带 aria-controls 联动
     const traceToggle = screen.getByTestId('v2-trace-toggle');
     expect(traceToggle.nodeName).toBe('BUTTON');
-    expect(traceToggle.getAttribute('aria-controls')).toBe(
-      `v2-trace-body-${document
-        .querySelector('[data-trace-key]')
-        ?.getAttribute('data-trace-key')}`,
+    const traceBodyId = traceToggle.getAttribute('aria-controls');
+    expect(traceBodyId).toMatch(/^v2-trace-body-/);
+    expect(document.getElementById(traceBodyId!)).toBeInTheDocument();
+  });
+
+  it('两个常驻会话的折叠控件指向各自唯一的内容区', () => {
+    const messages = buildTurn();
+    render(
+      <>
+        {[1, 2].map((conversationId) => (
+          <ConversationRendererV2
+            key={conversationId}
+            messageList={messages}
+            conversationId={conversationId}
+            roleInfo={ROLE_INFO}
+            preferences={PREFS('balanced')}
+          />
+        ))}
+      </>,
     );
+    const toggles = screen.getAllByTestId('v2-trace-toggle');
+    const ids = toggles.map((toggle) => toggle.getAttribute('aria-controls'));
+    expect(new Set(ids).size).toBe(2);
+    ids.forEach((id) => {
+      expect(document.getElementById(id!)).toBeInTheDocument();
+    });
   });
 
   it('连续工具压缩为动作摘要组，活动尾组默认展开并逐条保序', () => {

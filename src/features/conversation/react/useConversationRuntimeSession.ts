@@ -23,6 +23,7 @@ import {
   type ConversationRuntimeSession,
 } from '@/features/conversation/runtime/createConversationRuntimeSession';
 import { useConversationChanged } from '@/hooks/useDirectorySync';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   appendThinkChunk,
@@ -46,7 +47,6 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { useModel } from 'umi';
 
 /** store → React Dispatch 形状适配（AgentIntervention 件以 setMessageList 为 deps） */
 const storeAsDispatch = (
@@ -345,7 +345,7 @@ export function useConversationRuntimeSession(
   // chat model 的 getProcessingById 读实时数据；旧线由 useConversationActiveState
   // 的 rAF 派生同步，runtime 轨在此对齐。session 为空（flag 关闭）时不同步，
   // 避免清掉旧线写入的数据。
-  const { handleChatProcessingList } = useModel('chat');
+  const { handleChatProcessingList } = usePageModel('chat');
   /** 处理明细签名不变时不再写入 chat model，避免 messageList 换引用后 effect 自激 */
   const processingSignatureRef = useRef('');
   useEffect(() => {

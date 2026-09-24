@@ -1,5 +1,5 @@
 /**
- * Chat / ChatCore 页面组装单测（不改业务代码）
+ * Chat / ChatCore 页面组装与客户端常驻入口测试
  *
  * 覆盖：
  * - ChatPage 将路由 params 传给 ChatCore
@@ -11,12 +11,16 @@
  * - new_chat 时默认选中 DefaultSelected=Yes 的 manualComponents
  */
 import { conversationPageCacheManager } from '@/features/conversation/react/useConversationPageCache';
+import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
+import { CONVERSATION_RENDERER_EVENT } from '@/utils/conversationRendererPreference';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
@@ -31,6 +35,14 @@ const {
   mockInitSelectedComponentList,
   mockUseConversationRuntimeSession,
   mockRuntimeSend,
+  mockRegisterClientConversationRenderer,
+  mockIsDesktopHost,
+  mockUseRealScope,
+  mockScopedResets,
+  mockScopedLoads,
+  mockSetOpenPaymentModal,
+  mockHandleSetAppAgentDetail,
+  mockGlobalAppSidebarMode,
   conversationInfoState,
   agentDetailState,
   modelOverrides,
@@ -46,6 +58,14 @@ const {
   mockInitSelectedComponentList: vi.fn(),
   mockUseConversationRuntimeSession: vi.fn(),
   mockRuntimeSend: vi.fn(),
+  mockRegisterClientConversationRenderer: vi.fn(),
+  mockIsDesktopHost: { current: false },
+  mockUseRealScope: { current: false },
+  mockScopedResets: [] as number[],
+  mockScopedLoads: [] as number[],
+  mockSetOpenPaymentModal: vi.fn(),
+  mockHandleSetAppAgentDetail: vi.fn(),
+  mockGlobalAppSidebarMode: { current: false },
   conversationInfoState: {
     current: null as any,
   },
@@ -78,9 +98,82 @@ vi.mock('@/services/i18nRuntime', () => ({
   dict: (k: string) => k,
 }));
 
+vi.mock('@/utils/hostBridge', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/hostBridge')>();
+  return {
+    ...actual,
+    isDesktopHost: () => mockIsDesktopHost.current,
+  };
+});
+
 vi.mock('@/features/conversation/react/useConversationRuntimeSession', () => ({
   useConversationRuntimeSession: (...args: unknown[]) =>
     mockUseConversationRuntimeSession(...args),
+}));
+
+// 通常只测页面组装；并存用例切入真实 Provider，底层 model 接口仍由可控桩驱动。
+vi.mock(
+  '@/modelScopes/ConversationPageModelProvider',
+  async (importOriginal) => {
+    const actual = await importOriginal<
+      typeof import('@/modelScopes/ConversationPageModelProvider')
+    >();
+    return {
+      ConversationPageModelProvider: ({
+        children,
+      }: {
+        children: React.ReactNode;
+      }) =>
+        mockUseRealScope.current ? (
+          <actual.ConversationPageModelProvider>
+            {children}
+          </actual.ConversationPageModelProvider>
+        ) : (
+          <>{children}</>
+        ),
+    };
+  },
+);
+
+vi.mock('@/models/conversationInfo', () => ({
+  default: function MockConversationInfoModel() {
+    const [conversationInfo, setConversationInfo] = React.useState<any>(null);
+    const [messageList, setMessageList] = React.useState<any[]>([]);
+    const currentIdRef = React.useRef<number | null>(null);
+    // Vitest 在模块初始化完成后才挂载这个 mock 组件。
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    const base = React.useMemo(() => buildConversationInfoModel(), []);
+    const runAsync = React.useCallback(async (id: number) => {
+      mockScopedLoads.push(id);
+      currentIdRef.current = id;
+      const data = {
+        id,
+        agent: { id: 200, name: `Agent-${id}` },
+        messageList: [{ id: `message-${id}`, text: `内容-${id}` }],
+      };
+      setConversationInfo(data);
+      setMessageList(data.messageList);
+      return { data };
+    }, []);
+    const resetInit = React.useCallback(() => {
+      if (currentIdRef.current !== null) {
+        mockScopedResets.push(currentIdRef.current);
+      }
+      currentIdRef.current = null;
+      setConversationInfo(null);
+      setMessageList([]);
+    }, []);
+    return {
+      ...base,
+      conversationInfo,
+      setConversationInfo,
+      messageList,
+      setMessageList,
+      runAsync,
+      resetInit,
+      getCurrentConversationId: () => currentIdRef.current,
+    };
+  },
 }));
 
 vi.mock('@/services/skill', () => ({
@@ -101,6 +194,10 @@ vi.mock('./components/LeftContent', () => ({
       <div
         data-testid="left-content"
         data-agent-name={props.effectiveAgent?.name || ''}
+        data-message-text={props.chatSessionProps?.messageList
+          ?.map((item: any) => item.text)
+          .join(',')}
+        data-renderer={props.chatSessionProps?.messageRenderer}
       />
     );
   },
@@ -312,12 +409,10 @@ vi.mock('@/constants/agent.constants', () => ({
   isAgentVersionControlEnabled: () => false,
 }));
 
-import ChatPage, { ChatCore } from './index';
+import ChatPage, { CachedChatPage, ChatCore } from './index';
 
 /** 构造 conversationInfo model 返回值 */
-const buildConversationInfoModel = (
-  overrides: Record<string, unknown> = {},
-) => {
+function buildConversationInfoModel(overrides: Record<string, unknown> = {}) {
   const messageViewRef = { current: null };
   const allowAutoScrollRef = { current: true };
   const scrollTimeoutRef = { current: null };
@@ -398,15 +493,22 @@ const buildConversationInfoModel = (
     respondMcpAsk: vi.fn(),
     ...overrides,
   };
-};
+}
 
 describe('ChatCore / ChatPage', () => {
   beforeEach(() => {
     conversationPageCacheManager.invalidateAll('test-setup');
+    fullPageInstanceCacheManager.invalidateAll('test-setup');
     localStorage.clear();
+    window.history.replaceState(null, '', '/');
     vi.clearAllMocks();
     conversationInfoState.current = null;
     modelOverrides.current = {};
+    mockIsDesktopHost.current = false;
+    mockGlobalAppSidebarMode.current = false;
+    mockUseRealScope.current = false;
+    mockScopedResets.length = 0;
+    mockScopedLoads.length = 0;
     mockUseConversationRuntimeSession.mockReturnValue(null);
     agentDetailState.current = { name: 'DetailAgent', agentId: 200 };
     mockUseParams.mockReturnValue({ id: '100', agentId: '200' });
@@ -443,13 +545,13 @@ describe('ChatCore / ChatPage', () => {
       }
       if (name === 'useOpenApp') {
         return {
-          handleSetAppAgentDetail: vi.fn(),
-          isAppSidebarMode: false,
+          handleSetAppAgentDetail: mockHandleSetAppAgentDetail,
+          isAppSidebarMode: mockGlobalAppSidebarMode.current,
           isAppSidebarVisible: false,
           toggleAppSidebarVisible: vi.fn(),
           createAppNewConversation: vi.fn(),
           openPaymentModal: false,
-          setOpenPaymentModal: vi.fn(),
+          setOpenPaymentModal: mockSetOpenPaymentModal,
           localCalledTrialCount: 0,
           incrementCalledTrialCount: vi.fn(),
         };
@@ -457,13 +559,21 @@ describe('ChatCore / ChatPage', () => {
       if (name === 'tenantConfigInfo') {
         return { tenantConfigInfo: { enableSubscription: 0 } };
       }
+      if (name === 'appTabKeepAlive') {
+        return {
+          registerClientConversationRenderer:
+            mockRegisterClientConversationRenderer,
+        };
+      }
       return {};
     });
   });
 
   afterEach(() => {
     conversationPageCacheManager.invalidateAll('test-cleanup');
+    fullPageInstanceCacheManager.invalidateAll('test-cleanup');
     localStorage.clear();
+    window.history.replaceState(null, '', '/');
   });
 
   it('ChatPage：将路由 params 转为数字传给 ChatCore，并渲染主区域', async () => {
@@ -476,6 +586,395 @@ describe('ChatCore / ChatPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('left-content')).toBeInTheDocument();
     });
+  });
+
+  it('商业客户端路由只注册常驻渲染器，不在 Outlet 重复挂载会话', () => {
+    mockIsDesktopHost.current = true;
+    render(<ChatPage />);
+    expect(mockRegisterClientConversationRenderer).toHaveBeenCalledWith(
+      'conversation',
+      CachedChatPage,
+    );
+    expect(mockRunAsync).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('left-content')).toBeNull();
+  });
+
+  it('商业客户端无效会话 id 仍走原路由页面兜底', () => {
+    mockIsDesktopHost.current = true;
+    mockUseParams.mockReturnValue({ id: '0', agentId: '200' });
+    const { container } = render(<ChatPage />);
+    expect(mockRegisterClientConversationRenderer).not.toHaveBeenCalled();
+    expect(container.querySelector('.anticon-loading')).toBeInTheDocument();
+  });
+
+  it('隐藏页不挂载共享会话模型，重新激活时再按固定 id 加载', async () => {
+    const { rerender } = render(
+      <ChatCore id={100} agentId={200} active={false} />,
+    );
+    expect(mockUseModel).not.toHaveBeenCalled();
+    expect(mockRunAsync).not.toHaveBeenCalled();
+
+    rerender(<ChatCore id={100} agentId={200} active />);
+    await waitFor(() => expect(mockRunAsync).toHaveBeenCalledWith(100));
+
+    rerender(<ChatCore id={100} agentId={200} active={false} />);
+    expect(screen.queryByTestId('left-content')).toBeNull();
+  });
+
+  it('旧页详情回包到达时不再发送首条消息', async () => {
+    let resolveRequest: (value: any) => void = () => {};
+    mockRunAsync.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRequest = resolve;
+        }),
+    );
+    mockUseConversationRuntimeSession.mockReturnValue({
+      session: { send: mockRuntimeSend },
+      conversationProps: {},
+    });
+
+    const { unmount } = render(
+      <ChatCore
+        id={100}
+        agentId={200}
+        initialLocationState={{ message: '离开前待发的消息' }}
+      />,
+    );
+    await waitFor(() => expect(mockRunAsync).toHaveBeenCalledWith(100));
+    unmount();
+    await act(async () => {
+      resolveRequest({ data: { id: 100, messageList: [] } });
+    });
+    expect(mockRuntimeSend).not.toHaveBeenCalled();
+  });
+
+  it('旧页卸载时不清空已经由其他会话接管的共享模型', async () => {
+    const resetInit = vi.fn();
+    modelOverrides.current = {
+      getCurrentConversationId: () => 101,
+      resetInit,
+    };
+    const { unmount } = render(<ChatCore id={100} agentId={200} />);
+    await waitFor(() => expect(mockRunAsync).toHaveBeenCalledWith(100));
+    unmount();
+    expect(resetInit).not.toHaveBeenCalled();
+  });
+
+  it('客户端实例切出再切回时保留固定路由与已挂载会话', async () => {
+    const route = {
+      key: 'conversation:100',
+      kind: 'conversation' as const,
+      conversationId: 100,
+      pathname: '/home/chat/100/200',
+      search: '',
+      state: { message: '本会话消息' },
+      params: { id: '100', agentId: '200' },
+      navigationAction: 'PUSH' as const,
+    };
+    const { rerender } = render(<CachedChatPage route={route} active />);
+    await waitFor(() => expect(mockRunAsync).toHaveBeenCalledTimes(1));
+
+    mockUseLocation.mockReturnValue({
+      pathname: '/home/chat/101/201',
+      search: '',
+      state: { message: '其他会话消息' },
+      key: 'k2',
+    });
+    rerender(<CachedChatPage route={route} active={false} />);
+    rerender(
+      <CachedChatPage
+        route={{
+          ...route,
+          search: '?conversationRenderer=v1',
+          state: { message: '同 key 后续 state 不应重发' },
+          navigationAction: 'REPLACE',
+        }}
+        active
+      />,
+    );
+    expect(mockRunAsync).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('left-content')).toHaveAttribute(
+      'data-renderer',
+      'v2',
+    );
+  });
+
+  it('隐藏桌面会话时卸载 VNC 视图并释放独占标记，切回恢复', async () => {
+    modelOverrides.current = {
+      isFileTreeVisible: true,
+      viewMode: 'desktop',
+    };
+    const route = {
+      key: 'conversation:100',
+      kind: 'conversation' as const,
+      conversationId: 100,
+      pathname: '/home/chat/100/200',
+      search: '',
+      state: null,
+      params: { id: '100', agentId: '200' },
+      navigationAction: 'PUSH' as const,
+    };
+    const { rerender } = render(<CachedChatPage route={route} active />);
+    await waitFor(() =>
+      expect(screen.getByTestId('left-content')).toBeInTheDocument(),
+    );
+    expect(mockLeftContent.mock.lastCall?.[0].fileSidebarProps.viewMode).toBe(
+      'desktop',
+    );
+    expect(
+      conversationPageCacheManager.getSnapshot().sharedVncOwnerConversationId,
+    ).toBe('100');
+    expect(
+      fullPageInstanceCacheManager.getSnapshot().sharedVncOwnerConversationId,
+    ).toBe('100');
+
+    rerender(<CachedChatPage route={route} active={false} />);
+    expect(mockLeftContent.mock.lastCall?.[0].fileSidebarProps.viewMode).toBe(
+      'preview',
+    );
+    expect(
+      conversationPageCacheManager.getSnapshot().sharedVncOwnerConversationId,
+    ).toBeNull();
+    expect(
+      fullPageInstanceCacheManager.getSnapshot().sharedVncOwnerConversationId,
+    ).toBeNull();
+
+    rerender(<CachedChatPage route={route} active />);
+    expect(mockLeftContent.mock.lastCall?.[0].fileSidebarProps.viewMode).toBe(
+      'desktop',
+    );
+    expect(
+      conversationPageCacheManager.getSnapshot().sharedVncOwnerConversationId,
+    ).toBe('100');
+    expect(
+      fullPageInstanceCacheManager.getSnapshot().sharedVncOwnerConversationId,
+    ).toBe('100');
+  });
+
+  it('隐藏页的详情状态更新会同步整页缓存执行优先级', async () => {
+    fullPageInstanceCacheManager.activate({
+      key: 'conversation:100',
+      kind: 'conversation',
+      conversationId: 100,
+    });
+    conversationInfoState.current = {
+      id: 100,
+      taskStatus: TaskStatus.EXECUTING,
+      agent: { id: 200, name: 'Agent' },
+    };
+    const route = {
+      key: 'conversation:100',
+      kind: 'conversation' as const,
+      conversationId: 100,
+      pathname: '/home/chat/100/200',
+      search: '',
+      state: null,
+      params: { id: '100', agentId: '200' },
+      navigationAction: 'PUSH' as const,
+    };
+    const { rerender } = render(<CachedChatPage route={route} active />);
+    expect(fullPageInstanceCacheManager.getEntry(route.key)?.running).toBe(
+      true,
+    );
+
+    conversationInfoState.current = {
+      ...conversationInfoState.current,
+      taskStatus: TaskStatus.COMPLETE,
+    };
+    rerender(<CachedChatPage route={route} active={false} />);
+    expect(fullPageInstanceCacheManager.getEntry(route.key)?.running).toBe(
+      false,
+    );
+    expect(
+      fullPageInstanceCacheManager.getEntry(route.key)?.terminalAt,
+    ).not.toBeNull();
+  });
+
+  it('隐藏页关闭详情弹窗入口，切回仍保留本页展开状态', async () => {
+    const route = {
+      key: 'conversation:100',
+      kind: 'conversation' as const,
+      conversationId: 100,
+      pathname: '/home/chat/100/200',
+      search: '',
+      state: null,
+      params: { id: '100', agentId: '200' },
+      navigationAction: 'PUSH' as const,
+    };
+    const { rerender } = render(<CachedChatPage route={route} active />);
+    await waitFor(() =>
+      expect(screen.getByTestId('left-content')).toBeInTheDocument(),
+    );
+    act(() => {
+      mockLeftContent.mock.lastCall?.[0].headerProps.handleOpenAgentDetail();
+    });
+    expect(screen.getByTestId('agent-detail-modal')).toBeInTheDocument();
+
+    rerender(<CachedChatPage route={route} active={false} />);
+    expect(screen.queryByTestId('agent-detail-modal')).toBeNull();
+    rerender(<CachedChatPage route={route} active />);
+    expect(screen.getByTestId('agent-detail-modal')).toBeInTheDocument();
+  });
+
+  it('后台会话详情到达时不改写开放应用全局弹窗与智能体详情', async () => {
+    mockGlobalAppSidebarMode.current = true;
+    conversationInfoState.current = {
+      id: 100,
+      agent: {
+        agentId: 200,
+        name: 'Background Agent',
+        paymentRequired: true,
+        subscribed: false,
+      },
+    };
+    const route = {
+      key: 'conversation:100',
+      kind: 'conversation' as const,
+      conversationId: 100,
+      pathname: '/home/chat/100/200',
+      search: '',
+      state: null,
+      params: { id: '100', agentId: '200' },
+      navigationAction: 'PUSH' as const,
+    };
+    render(<CachedChatPage route={route} active={false} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('left-content')).toBeInTheDocument(),
+    );
+    expect(mockLeftContent.mock.lastCall?.[0].isAppSidebarMode).toBe(false);
+    expect(mockSetOpenPaymentModal).not.toHaveBeenCalled();
+    expect(mockHandleSetAppAgentDetail).not.toHaveBeenCalled();
+  });
+
+  it('真实局部 Provider 下 A/B 消息互不覆盖，淘汰 A 不清理 B', async () => {
+    mockUseRealScope.current = true;
+    const routeA = {
+      key: 'conversation:100',
+      kind: 'conversation' as const,
+      conversationId: 100,
+      pathname: '/home/chat/100/200',
+      search: '',
+      state: null,
+      params: { id: '100', agentId: '200' },
+      navigationAction: 'PUSH' as const,
+    };
+    const routeB = {
+      ...routeA,
+      key: 'conversation:101',
+      conversationId: 101,
+      pathname: '/home/chat/101/200',
+      params: { id: '101', agentId: '200' },
+    };
+    const { rerender } = render(
+      <>
+        <CachedChatPage key="A" route={routeA} active />
+      </>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('left-content')).toHaveAttribute(
+        'data-message-text',
+        '内容-100',
+      );
+    });
+
+    rerender(
+      <>
+        <CachedChatPage key="A" route={routeA} active={false} />
+        <CachedChatPage key="B" route={routeB} active />
+      </>,
+    );
+    await waitFor(() => {
+      const contents = screen
+        .getAllByTestId('left-content')
+        .map((element) => element.getAttribute('data-message-text'));
+      expect(contents).toContain('内容-100');
+      expect(contents).toContain('内容-101');
+    });
+    expect(mockScopedLoads).toEqual([100, 101]);
+    expect(mockScopedResets).toEqual([]);
+
+    rerender(
+      <>
+        <CachedChatPage key="A" route={routeA} active />
+        <CachedChatPage key="B" route={routeB} active={false} />
+      </>,
+    );
+    expect(mockScopedLoads).toEqual([100, 101]);
+
+    rerender(
+      <>
+        <CachedChatPage key="B" route={routeB} active />
+      </>,
+    );
+    expect(screen.getByTestId('left-content')).toHaveAttribute(
+      'data-message-text',
+      '内容-101',
+    );
+    expect(mockScopedResets).toContain(100);
+    expect(mockScopedResets).not.toContain(101);
+  });
+
+  it('A/B 固定各自的 URL 渲染偏好，隐藏期间全局 query 变化不串页', async () => {
+    const routeA = {
+      key: 'conversation:100',
+      kind: 'conversation' as const,
+      conversationId: 100,
+      pathname: '/home/chat/100/200',
+      search: '?conversationRenderer=v1',
+      state: null,
+      params: { id: '100', agentId: '200' },
+      navigationAction: 'PUSH' as const,
+    };
+    const routeB = {
+      ...routeA,
+      key: 'conversation:101',
+      conversationId: 101,
+      pathname: '/home/chat/101/200',
+      search: '?conversationRenderer=v2',
+      params: { id: '101', agentId: '200' },
+    };
+    render(
+      <>
+        <div data-testid="route-A">
+          <CachedChatPage route={routeA} active={false} />
+        </div>
+        <div data-testid="route-B">
+          <CachedChatPage route={routeB} active />
+        </div>
+      </>,
+    );
+    await waitFor(() => {
+      expect(
+        screen
+          .getByTestId('route-A')
+          .querySelector('[data-testid="left-content"]'),
+      ).toHaveAttribute('data-renderer', 'v1');
+      expect(
+        screen
+          .getByTestId('route-B')
+          .querySelector('[data-testid="left-content"]'),
+      ).toHaveAttribute('data-renderer', 'v2');
+    });
+
+    window.history.replaceState(
+      null,
+      '',
+      '/home/chat/101/200?conversationRenderer=v2',
+    );
+    act(() => {
+      window.dispatchEvent(new Event(CONVERSATION_RENDERER_EVENT));
+    });
+    expect(
+      screen
+        .getByTestId('route-A')
+        .querySelector('[data-testid="left-content"]'),
+    ).toHaveAttribute('data-renderer', 'v1');
+    expect(
+      screen
+        .getByTestId('route-B')
+        .querySelector('[data-testid="left-content"]'),
+    ).toHaveAttribute('data-renderer', 'v2');
   });
 
   it('runtime 开启时首条自动发送直接进入 runtime session', async () => {

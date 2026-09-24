@@ -1,5 +1,5 @@
+import { usePageModel } from '@/modelScopes/usePageModel';
 import React, { useContext } from 'react';
-import { useModel } from 'umi';
 import { TaskResultContext } from './context';
 import TaskResultRow from './TaskResultRow';
 
@@ -27,7 +27,7 @@ const TaskResult: React.FC<TaskResultProps> = ({
     openPreviewView,
     setTaskAgentSelectedFileId,
     setTaskAgentSelectTrigger,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
 
   // 生成唯一 key
   const {

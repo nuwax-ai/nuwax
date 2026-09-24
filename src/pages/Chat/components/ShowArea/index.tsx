@@ -1,15 +1,15 @@
 import ShowStand from '@/components/ShowStand';
 // import { ICON_FOLD } from '@/constants/images.constants';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { EditAgentShowType } from '@/types/enums/space';
 import classNames from 'classnames';
 import React from 'react';
-import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const ShowArea: React.FC<{ className?: string }> = ({ className }) => {
-  const { cardList, showType, setShowType } = useModel('conversationInfo');
+  const { cardList, showType, setShowType } = usePageModel('conversationInfo');
 
   // const handlerVisible = () => {
   //   if (showType === EditAgentShowType.Hide) {

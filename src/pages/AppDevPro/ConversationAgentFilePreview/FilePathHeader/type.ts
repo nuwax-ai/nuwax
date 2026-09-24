@@ -1,6 +1,8 @@
 import { FileNode } from '@/types/interfaces/appDev';
 
 export interface FilePathHeaderProps {
+  /** 缓存工作台是否可见。 */
+  active?: boolean;
   className?: string;
   /** 文件节点 */
   targetNode: FileNode | null;

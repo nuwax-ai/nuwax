@@ -1,3 +1,4 @@
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { t } from '@/services/i18nRuntime';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import {
@@ -20,7 +21,6 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useModel } from 'umi';
 import styles from './index.less';
 import {
   selectProgressCapsule,
@@ -264,7 +264,7 @@ const ConversationProgressCapsule: React.FC<
     openPreviewView,
     setTaskAgentSelectedFileId,
     setTaskAgentSelectTrigger,
-  } = useModel('conversationInfo') as {
+  } = usePageModel('conversationInfo') as {
     openPreviewView: (
       cid: number,
       opts?: { forceRefresh?: boolean },

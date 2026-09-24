@@ -78,7 +78,7 @@ const ToolGroupDisclosure: React.FC<ToolGroupDisclosureProps> = ({
     .filter(Boolean);
   const title = labels.join(' · ');
   const firstKind = presentations[0]?.kind ?? 'generic';
-  const bodyId = `v2-tool-group-${group.id}`;
+  const bodyId = `v2-tool-group-${React.useId().replace(/:/g, '')}`;
 
   return (
     <div

@@ -16,7 +16,8 @@ import {
   type ConversationRendererSource,
   type ConversationRendererVersion,
 } from '@/utils/conversationRendererPreference';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { ConversationRendererRouteSearchContext } from './ConversationRendererRouteSearchContext';
 
 /**
  * V2 会话渲染器偏好 hook：渲染器版本（V1/V2，URL>会话覆盖>全局>默认 V2）
@@ -39,8 +40,9 @@ export const useConversationRendererPreference = (
   ) => void;
   setSessionVersion: (value: ConversationRendererVersion | null) => void;
 } => {
+  const routeSearch = useContext(ConversationRendererRouteSearchContext);
   const [rendererDetails, setRendererDetails] = useState(() =>
-    resolveConversationRendererDetails(conversationId),
+    resolveConversationRendererDetails(conversationId, routeSearch),
   );
   const [sessionOverride, setSessionOverrideState] = useState<
     ConversationRendererVersion | undefined
@@ -52,19 +54,23 @@ export const useConversationRendererPreference = (
 
   useEffect(() => {
     // 会话切换后重读（URL/覆盖均按 conversationId 求值）
-    setRendererDetails(resolveConversationRendererDetails(conversationId));
+    setRendererDetails(
+      resolveConversationRendererDetails(conversationId, routeSearch),
+    );
     setSessionOverrideState(getSessionRendererOverride(conversationId));
-  }, [conversationId]);
+  }, [conversationId, routeSearch]);
 
   useEffect(() => {
     const sync = () => {
-      setRendererDetails(resolveConversationRendererDetails(conversationId));
+      setRendererDetails(
+        resolveConversationRendererDetails(conversationId, routeSearch),
+      );
       setSessionOverrideState(getSessionRendererOverride(conversationId));
       setPreferencesState(loadConversationRendererPreferences());
     };
     window.addEventListener(CONVERSATION_RENDERER_EVENT, sync);
     return () => window.removeEventListener(CONVERSATION_RENDERER_EVENT, sync);
-  }, [conversationId]);
+  }, [conversationId, routeSearch]);
 
   const setGlobalVersion = useCallback((value: ConversationRendererVersion) => {
     setGlobalRendererVersion(value);

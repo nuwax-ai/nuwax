@@ -16,6 +16,9 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
+import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
+import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
 import {
   useInitialConversationAutoSend,
@@ -23,6 +26,9 @@ import {
 } from '@/hooks/useInitialConversationAutoSend';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
+import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
+import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiDownloadAllFiles,
@@ -41,6 +47,7 @@ import { addBaseTarget } from '@/utils/common';
 import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
+import { isDesktopHost } from '@/utils/hostBridge';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -52,6 +59,7 @@ import debounce from 'lodash/debounce';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -155,16 +163,39 @@ const noop = () => undefined;
  * │                 模态弹窗层 (导入项目等)                    │
  * └─────────────────────────────────────────────────────────┘
  */
-const AppDevPro: React.FC = () => {
+export interface AppDevProRouteSnapshot {
+  spaceId: number;
+  appId: number;
+  conversationId: number;
+  key: string;
+  state?: InitialConversationState;
+  action: 'PUSH' | 'POP' | 'REPLACE';
+}
+
+export interface AppDevProProps {
+  /** 常驻工作区传入固定身份；普通路由页面仍使用 Umi 参数。 */
+  routeSnapshot?: AppDevProRouteSnapshot;
+  /** 隐藏时暂停仅服务于可见工作区的请求和连接。 */
+  active?: boolean;
+}
+
+const AppDevPro: React.FC<AppDevProProps> = ({
+  routeSnapshot,
+  active = true,
+}) => {
   // ==================== 路由参数 ====================
   const params = useParams();
   const location = useLocation();
   /** 当前空间 ID，从路由参数中获取 */
-  const spaceId = Number(params.spaceId);
+  const spaceId = routeSnapshot?.spaceId ?? Number(params.spaceId);
+  const routeState = routeSnapshot ? routeSnapshot.state : location.state;
+  const routeAction = routeSnapshot?.action ?? history.action;
+  const routeKey = routeSnapshot?.key ?? location.key;
 
   /** 路由参数：/space/:spaceId/app-pro/:appId/:conversationId */
-  const routeAppId = Number(params.appId) || 0;
-  const queryConversationId = Number(params.conversationId);
+  const routeAppId = routeSnapshot?.appId ?? (Number(params.appId) || 0);
+  const queryConversationId =
+    routeSnapshot?.conversationId ?? Number(params.conversationId);
 
   // ==================== 本地状态 ====================
   /** 当前应用 ID。路由切换时同步，避免 effect 晚一拍仍用上一应用发 start */
@@ -257,7 +288,7 @@ const AppDevPro: React.FC = () => {
       return;
     }
     if (event.operation === 'deleted') {
-      history.replace(`/space/${spaceId}/project-manage`);
+      if (active) history.replace(`/space/${spaceId}/project-manage`);
       return;
     }
     if (event.operation !== 'updated' || !event.patch) return;
@@ -324,11 +355,26 @@ const AppDevPro: React.FC = () => {
     restartAgent,
     refreshGitListRef,
     isConversationActive,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
+
+  useEffect(() => {
+    if (routeSnapshot && conversationInfo?.id === queryConversationId) {
+      fullPageInstanceCacheManager.markStatus(
+        queryConversationId,
+        conversationInfo.taskStatus,
+      );
+    }
+  }, [
+    routeSnapshot,
+    queryConversationId,
+    conversationInfo?.id,
+    conversationInfo?.taskStatus,
+  ]);
 
   const activeInterventions = useActiveInterventionQueue(messageList);
   /** 会话结束后仍有待回复确认卡时，继续阻止预览服务启动 */
   const hasPendingIntervention =
+    conversationInfo?.id === queryConversationId &&
     conversationInfo?.taskStatus !== TaskStatus.FAILED &&
     conversationInfo?.taskStatus !== TaskStatus.CANCEL &&
     activeInterventions.length > 0;
@@ -398,8 +444,8 @@ const AppDevPro: React.FC = () => {
     return resolveEffectiveSandboxId({
       selectedComputerId,
       pushStateComputerId:
-        history.action === 'PUSH'
-          ? (location.state as any)?.selectedComputerId
+        routeAction === 'PUSH'
+          ? (routeState as any)?.selectedComputerId
           : undefined,
       agentSandboxId: info?.agent?.sandboxId,
       sandboxServerId: info?.sandboxServerId,
@@ -412,13 +458,21 @@ const AppDevPro: React.FC = () => {
    */
   const finalSelectedComputerId = useMemo(() => {
     return getEffectiveSandboxId();
-  }, [selectedComputerId, conversationInfo, history.action, location.state]);
+  }, [selectedComputerId, conversationInfo, routeAction, routeState]);
 
   /** 开发、线上容器分别维护状态与保活，同环境由终端和数据库共同复用 */
   const envPodConversationId =
     finalSelectedComputerId === '-1' ? queryConversationId : undefined;
-  const devPod = useUserAppEnvPod(envPodConversationId, UserAppDbEnvEnum.Dev);
-  const prodPod = useUserAppEnvPod(envPodConversationId, UserAppDbEnvEnum.Prod);
+  const devPod = useUserAppEnvPod(
+    envPodConversationId,
+    UserAppDbEnvEnum.Dev,
+    active,
+  );
+  const prodPod = useUserAppEnvPod(
+    envPodConversationId,
+    UserAppDbEnvEnum.Prod,
+    active,
+  );
   const podStatus = devPod.status;
   const podReady = podStatus === 'running';
   /** 当前 Header 环境（开发 / 线上）的 pod ensure 状态 */
@@ -434,7 +488,7 @@ const AppDevPro: React.FC = () => {
    * 容器就绪后再加载文件树；后续终端和数据库直接复用该状态。
    */
   useEffect(() => {
-    if (!envPodConversationId) {
+    if (!active || !envPodConversationId) {
       return;
     }
     let cancelled = false;
@@ -446,7 +500,7 @@ const AppDevPro: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [devPod.ensure, envPodConversationId]);
+  }, [active, devPod.ensure, envPodConversationId]);
 
   /**
    * 单一终端入口按 Header 环境选择对应 ttyd 代理。
@@ -544,6 +598,7 @@ const AppDevPro: React.FC = () => {
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(appId, {
     enabled:
+      active &&
       showDevConsole &&
       devConsoleActiveTab === 'logs' &&
       devConsoleLayoutMode !== 'collapsed' &&
@@ -568,14 +623,15 @@ const AppDevPro: React.FC = () => {
 
   useInitialConversationAutoSend({
     conversationId: queryConversationId,
-    routeState: (location.state || history.location.state) as
+    routeState: (routeSnapshot
+      ? routeState
+      : routeState || history.location.state) as
       | InitialConversationState
       | undefined,
     getEffectiveSandboxId,
     onMessageSend,
     runtimeSession: runtimeLine?.session,
   });
-
 
   /** 打开导入项目弹窗 */
   const handleImportProject = useCallback(async () => {
@@ -652,7 +708,8 @@ const AppDevPro: React.FC = () => {
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.UserApp,
     targetId: appId,
-    ready: userAppInfoFetched,
+    ready: active && userAppInfoFetched,
+    routeSnapshot,
     shouldInit: userAppInfo?.nameDefined === false,
     applyMetadata: async (meta) => {
       await apiUserAppUpdate({
@@ -694,7 +751,7 @@ const AppDevPro: React.FC = () => {
     resume: resumeTasksActive,
     cancelUnfinishedBuild,
     markDevStartIdle,
-  } = useUserAppTasksActive(appId);
+  } = useUserAppTasksActive(appId, active);
 
   /** 查询应用绑定的域名列表 */
   const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
@@ -893,33 +950,34 @@ const AppDevPro: React.FC = () => {
 
   /** 将加载状态同步到全局 model，供其他组件感知 */
   useEffect(() => {
-    setIsLoadingOtherInterface(loadingAgentConfigInfo);
-  }, [loadingAgentConfigInfo]);
+    if (active) setIsLoadingOtherInterface(loadingAgentConfigInfo);
+  }, [active, loadingAgentConfigInfo]);
 
   /** appId 变化时拉取应用详情 */
   useEffect(() => {
+    if (!active) return;
     if (!appId) {
       setUserAppInfo(null);
       setUserAppInfoFetched(false);
       return;
     }
-    setUserAppInfoFetched(false);
     runGetUserAppInfo(appId);
-  }, [appId, runGetUserAppInfo]);
+  }, [active, appId, runGetUserAppInfo]);
 
   /** appId 变化时拉取域名列表 */
   useEffect(() => {
+    if (!active) return;
     if (!appId) {
       setUserAppDomainList([]);
       return;
     }
     runGetUserAppDomainList(appId);
-  }, [appId, runGetUserAppDomainList]);
+  }, [active, appId, runGetUserAppDomainList]);
 
   /** 初始化页面基础配置：为页面中所有链接添加 target 属性 */
   useEffect(() => {
-    addBaseTarget();
-  }, [location]);
+    if (active) addBaseTarget();
+  }, [active, routeKey]);
 
   // ==================== 事件处理函数 ====================
 
@@ -1399,7 +1457,7 @@ const AppDevPro: React.FC = () => {
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useFileTreePreviewView(fileViewProviderProps);
   // 刷新 Git 列表
-  refreshGitListRef.current = fileView.refreshGitList;
+  if (active) refreshGitListRef.current = fileView.refreshGitList;
   // 清空文件树选中
   clearFileTreeSelectionRef.current = fileView.tree.clearSelection ?? null;
 
@@ -1475,7 +1533,7 @@ const AppDevPro: React.FC = () => {
     return files.length > 0 && files.some(isRootWorkspaceManifestFile);
   }, [fileTreeData]);
   /** 会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
-  const conversationReady = !!conversationInfo;
+  const conversationReady = conversationInfo?.id === queryConversationId;
   /**
    * 会话是否仍在进行。
    * 从主页发起进入本页走 V2 runtime，model 的 isConversationActive 不会置位，
@@ -1505,7 +1563,7 @@ const AppDevPro: React.FC = () => {
    */
   useEffect(() => {
     // 没有应用时无法启动预览
-    if (!appId) {
+    if (!active || !appId) {
       return;
     }
     // 线上环境用域名直接预览，不在这里自动 start
@@ -1558,6 +1616,7 @@ const AppDevPro: React.FC = () => {
       cancelled = true;
     };
   }, [
+    active,
     appId,
     conversationReady,
     dbEnv,
@@ -2103,14 +2162,14 @@ const AppDevPro: React.FC = () => {
 
   /** 进入线上应用预览：未启动则先拉起，已启动直接 iframe，失败可点终端或重试再拉起 */
   useEffect(() => {
-    if (!canDirectProdPreview || !envPodConversationId) {
+    if (!active || !canDirectProdPreview || !envPodConversationId) {
       return;
     }
     if (prodPod.status !== 'idle') {
       return;
     }
     void ensureEnvPodRef.current(UserAppDbEnvEnum.Prod);
-  }, [canDirectProdPreview, envPodConversationId, prodPod.status]);
+  }, [active, canDirectProdPreview, envPodConversationId, prodPod.status]);
 
   /** 线上环境有预览地址且容器就绪时直接视为可预览，不调用启动接口（用户主动停止后不再自动 markReady） */
   useEffect(() => {
@@ -2157,7 +2216,7 @@ const AppDevPro: React.FC = () => {
         appId={appId}
         activeTab={databaseActiveTab}
         env={dbEnv}
-        visible={workspaceView === 'database'}
+        visible={active && workspaceView === 'database'}
         devContainerStatus={envPodConversationId ? podStatus : undefined}
         prodContainerStatus={envPodConversationId ? prodPod.status : undefined}
         iframeKey={databaseIframeKey}
@@ -2167,6 +2226,7 @@ const AppDevPro: React.FC = () => {
       />
     ),
     [
+      active,
       appId,
       databaseActiveTab,
       databaseIframeKey,
@@ -2262,7 +2322,7 @@ const AppDevPro: React.FC = () => {
    * 容器未 running 时面板只展示启动状态，不请求 VNC 代理；已 running 直接嵌入。
    */
   const remoteDesktopWorkspace = useMemo(() => {
-    if (workspaceView !== 'remote-desktop') {
+    if (!active || workspaceView !== 'remote-desktop') {
       return null;
     }
     return (
@@ -2274,7 +2334,7 @@ const AppDevPro: React.FC = () => {
         }}
       />
     );
-  }, [appId, envPodConversationId, podStatus, workspaceView]);
+  }, [active, appId, envPodConversationId, podStatus, workspaceView]);
 
   // ==================================== 渲染组件元素 ====================================
 
@@ -2313,25 +2373,27 @@ const AppDevPro: React.FC = () => {
   const renderRightPanel = () => {
     const isFilesWorkspace = workspaceView === 'files';
     const isProdEnv = dbEnv === UserAppDbEnvEnum.Prod;
-    const moreActions = isProdEnv ? null : (
-      <MoreActionsMenu
-        onRestartServer={() => {
-          restartVncPod(queryConversationId, finalSelectedComputerId);
-        }}
-        onRestartAgent={() => {
-          restartAgent(queryConversationId);
-        }}
-        onExportProject={() => {
-          void fileView.tree.handleExportProject?.();
-        }}
-        isCloudComputer={finalSelectedComputerId === '-1'}
-      />
-    );
+    const moreActions =
+      isProdEnv || !active ? null : (
+        <MoreActionsMenu
+          onRestartServer={() => {
+            restartVncPod(queryConversationId, finalSelectedComputerId);
+          }}
+          onRestartAgent={() => {
+            restartAgent(queryConversationId);
+          }}
+          onExportProject={() => {
+            void fileView.tree.handleExportProject?.();
+          }}
+          isCloudComputer={finalSelectedComputerId === '-1'}
+        />
+      );
     return (
       <div className={cx(styles['right-panel'])}>
         <div className={cx(styles['right-panel-body'])}>
           {isFilesWorkspace ? (
             <PreviewTabBar
+              active={active}
               tabs={previewTabs.tabs}
               activeTabId={previewTabs.activeTabId}
               onTabSelect={handlePreviewTabSelect}
@@ -2355,6 +2417,7 @@ const AppDevPro: React.FC = () => {
             />
           ) : workspaceView === 'database' ? (
             <PreviewTabBar
+              active={active}
               tabs={databaseTabs}
               activeTabId={databaseTabId}
               onTabSelect={handleDatabaseTabSelect}
@@ -2409,6 +2472,7 @@ const AppDevPro: React.FC = () => {
                 })}
               >
                 <ConversationAgentFilePreview
+                  active={active}
                   preview={fileView.preview}
                   diffFile={gitSourceControl.selectedDiffFile ?? undefined}
                   activeTab={previewTabs.activeTab}
@@ -2450,7 +2514,7 @@ const AppDevPro: React.FC = () => {
             {/* 底部控制台 */}
             <AppDevBottomConsole
               conversationId={
-                finalSelectedComputerId === '-1'
+                active && finalSelectedComputerId === '-1'
                   ? queryConversationId
                   : undefined
               }
@@ -2468,7 +2532,7 @@ const AppDevPro: React.FC = () => {
                 void ensureEnvPodRef.current(terminalEnv, true);
               }}
               enableKeepalivePolling={false}
-              visible={showDevConsole}
+              visible={active && showDevConsole}
               devWsUrl={terminalDevWsUrl}
               prodWsUrl={terminalProdWsUrl}
               wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
@@ -2536,10 +2600,17 @@ const AppDevPro: React.FC = () => {
               userAppInfo={userAppInfo}
               spaceId={spaceId}
               appId={appId}
+              active={active}
               onConfirmUpdate={setUserAppInfo}
             />
             <div className={cx(styles['left-panel-body'])}>
               <AgentConversationChatPanel
+                routeSnapshot={{
+                  conversationId: queryConversationId,
+                  state: routeState,
+                  key: routeKey,
+                  action: routeAction,
+                }}
                 runtimeLine={runtimeLine}
                 selectedComputerId={finalSelectedComputerId}
                 onChangeSelectedComputerId={setSelectedComputerId}
@@ -2638,7 +2709,7 @@ const AppDevPro: React.FC = () => {
 
               {/* 线上环境构建包版本记录侧栏 */}
               <AppDevBuildVersionDrawer
-                visible={buildVersionsOpen}
+                visible={active && buildVersionsOpen}
                 appId={appId}
                 currentReleaseId={userAppInfo?.prodReleaseId}
                 prodDeployed={userAppInfo?.prodDeployed === true}
@@ -2653,7 +2724,7 @@ const AppDevPro: React.FC = () => {
                 <AppDevPublishVersionRecords
                   appId={appId}
                   appName={userAppInfo?.name}
-                  visible={publishVersionRecordsOpen}
+                  visible={active && publishVersionRecordsOpen}
                   onClose={() => setPublishVersionRecordsOpen(false)}
                 />
               ) : null}
@@ -2666,7 +2737,7 @@ const AppDevPro: React.FC = () => {
 
       {/* 导入项目弹窗 */}
       <ImportProjectModal
-        open={openImportProject}
+        open={active && openImportProject}
         loading={isImportingProject}
         onCancel={() => setOpenImportProject(false)}
         onConfirm={handleImportProjectConfirm}
@@ -2674,7 +2745,7 @@ const AppDevPro: React.FC = () => {
 
       {/* 域名绑定 */}
       <AppDevSettingsModal
-        open={settingsOpen}
+        open={active && settingsOpen}
         projectInfo={
           userAppInfo
             ? {
@@ -2697,7 +2768,7 @@ const AppDevPro: React.FC = () => {
       <PublishComponentModal
         mode={AgentComponentTypeEnum.UserApp}
         targetId={appId || 0}
-        open={openPublishModal}
+        open={active && openPublishModal}
         spaceId={spaceId}
         onCancel={() => setOpenPublishModal(false)}
         onConfirm={() => {
@@ -2710,7 +2781,7 @@ const AppDevPro: React.FC = () => {
 
       {/* 部署进度：构建日志 + 生产部署 */}
       <AppDevPublishProgressModal
-        open={publishFlow.open}
+        open={active && publishFlow.open}
         phase={publishFlow.phase}
         prodAccessUrl={publishFlow.prodAccessUrl}
         services={publishFlow.services}
@@ -2727,4 +2798,58 @@ const AppDevPro: React.FC = () => {
   );
 };
 
-export default AppDevPro;
+/** 仅供完成隔离验证后的常驻宿主使用，每个实例拥有独立会话 model。 */
+export const CachedAppDevPro: React.FC<ClientConversationPageInstanceProps> = ({
+  route,
+  active,
+}) => {
+  const initialRouteRef = useRef(route);
+  const initialRoute = initialRouteRef.current;
+  const entryActionRef = useRef(
+    initialRoute.navigationAction ?? history.action,
+  );
+  const routeSnapshot = useMemo<AppDevProRouteSnapshot>(
+    () => ({
+      spaceId: Number(initialRoute.params.spaceId),
+      appId: Number(initialRoute.params.appId),
+      conversationId: initialRoute.conversationId,
+      key: initialRoute.key,
+      state: initialRoute.state as InitialConversationState | undefined,
+      action: entryActionRef.current,
+    }),
+    [initialRoute],
+  );
+  return (
+    <ConversationPagePathnameContext.Provider value={initialRoute.pathname}>
+      <ConversationRendererRouteSearchContext.Provider
+        value={initialRoute.search}
+      >
+        <ConversationPageModelProvider>
+          <AppDevPro routeSnapshot={routeSnapshot} active={active} />
+        </ConversationPageModelProvider>
+      </ConversationRendererRouteSearchContext.Provider>
+    </ConversationPagePathnameContext.Provider>
+  );
+};
+
+/** 客户端首次进入只注册实例渲染器，避免普通路由与缓存实例同时启动。 */
+const AppDevProRoute: React.FC = () => {
+  const { registerClientConversationRenderer } = useModel('appTabKeepAlive');
+  const params = useParams();
+  const desktopHost = isDesktopHost();
+  const validRouteId = (value: string | null | undefined) =>
+    /^\d+$/.test(value ?? '') && Number(value) > 0;
+  const cacheable =
+    desktopHost &&
+    validRouteId(params.spaceId) &&
+    validRouteId(params.appId) &&
+    validRouteId(params.conversationId);
+  useLayoutEffect(() => {
+    if (cacheable) {
+      registerClientConversationRenderer('ide-workspace', CachedAppDevPro);
+    }
+  }, [cacheable, registerClientConversationRenderer]);
+  return cacheable ? null : <AppDevPro />;
+};
+
+export default AppDevProRoute;

@@ -1,9 +1,9 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { apiGetStaticFileList } from '@/services/vncDesktop';
 import { MessageTypeEnum } from '@/types/enums/agent';
 import { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { extractLastTaskResultFile } from '@/utils';
-import { useModel } from 'umi';
 
 import { parentDirectory } from '../utils/fileDataSource';
 
@@ -15,7 +15,7 @@ export const useAutoPreviewFile = () => {
     openPreviewView,
     setTaskAgentSelectedFileId,
     setTaskAgentSelectTrigger,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
 
   const handleAutoPreviewLastFile = (list: MessageInfo[], id: number) => {
     if (!list || list.length === 0) return;

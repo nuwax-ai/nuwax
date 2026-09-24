@@ -43,6 +43,7 @@ export const NarrationText: React.FC<{
   children: string;
 }> = ({ narrationId, children }) => {
   const { data } = useUnifiedTheme();
+  const markdownId = `v2-narration-${React.useId().replace(/:/g, '')}`;
   return (
     <div
       data-testid="v2-narration"
@@ -50,7 +51,7 @@ export const NarrationText: React.FC<{
       className={cx(styles['narration-text'])}
     >
       <PureMarkdownRenderer
-        id={`v2-narration-${narrationId}`}
+        id={markdownId}
         theme={data.antdTheme === 'dark' ? 'dark' : 'light'}
         disableTyping
       >
@@ -240,7 +241,8 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
     return typeof manual === 'boolean' ? manual : item.active;
   };
 
-  const traceBodyId = `v2-trace-body-${turn.key}`;
+  // 多个缓存会话会同时留在 DOM 中，turn.key 不能作为跨实例唯一 id。
+  const traceBodyId = `v2-trace-body-${React.useId().replace(/:/g, '')}`;
   const traceThemeStyle = {
     '--v2-color-text': token.colorText,
     '--v2-color-text-secondary': token.colorTextSecondary,

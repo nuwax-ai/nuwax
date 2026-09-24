@@ -13,11 +13,11 @@ import ChatView from '@/components/ChatView';
 import RunOver from '@/components/ChatView/RunOver';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import { AssistantRoleEnum } from '@/types/enums/agent';
-import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { projectConversation } from '../projectConversation';
@@ -182,6 +182,88 @@ const TurnBlock: React.FC<{
   );
 };
 
+interface TurnRowProps {
+  turn: ConversationTurnPresentationV2;
+  conversationId?: number | string;
+  roleInfo: RoleInfo;
+  messageBottomMode?: 'none' | 'home' | 'chat';
+  showDebug?: boolean;
+  showStatusDesc?: boolean;
+  preferences: ConversationRenderPreferencesV2;
+  onOpenToolResource?: (resource: ConversationToolResource) => void;
+  onOpenOpenUiSidecar?: (artifact: OpenUiArtifact) => void;
+}
+
+const TurnRowInner: React.FC<TurnRowProps> = ({
+  turn,
+  conversationId,
+  roleInfo,
+  messageBottomMode,
+  showDebug,
+  showStatusDesc,
+  preferences,
+  onOpenToolResource,
+  onOpenOpenUiSidecar,
+}) => (
+  <>
+    {turn.userMessage && (
+      <div className={cx(styles['user-message-wrapper'])}>
+        {/* 用户气泡超限折叠（V2 专属）：超过 10 行默认收起，可展开 */}
+        <UserBubbleCollapse>
+          <ChatView
+            conversationId={conversationId}
+            messageInfo={turn.userMessage}
+            roleInfo={roleInfo}
+            mode={messageBottomMode}
+            showDebug={showDebug}
+          />
+        </UserBubbleCollapse>
+      </div>
+    )}
+    {turn.assistantMessages.length > 0 && (
+      <TurnBlock
+        turn={turn}
+        conversationId={conversationId}
+        roleInfo={roleInfo}
+        messageBottomMode={messageBottomMode}
+        showDebug={showDebug}
+        showStatusDesc={showStatusDesc}
+        preferences={preferences}
+        onOpenToolResource={onOpenToolResource}
+        onOpenOpenUiSidecar={onOpenOpenUiSidecar}
+      />
+    )}
+  </>
+);
+
+const TurnRow = React.memo(TurnRowInner, (previous, next) => {
+  if (
+    previous.conversationId !== next.conversationId ||
+    previous.roleInfo !== next.roleInfo ||
+    previous.messageBottomMode !== next.messageBottomMode ||
+    previous.showDebug !== next.showDebug ||
+    previous.showStatusDesc !== next.showStatusDesc ||
+    previous.preferences !== next.preferences ||
+    previous.onOpenToolResource !== next.onOpenToolResource ||
+    previous.onOpenOpenUiSidecar !== next.onOpenOpenUiSidecar
+  ) {
+    return false;
+  }
+
+  const before = previous.turn;
+  const after = next.turn;
+  // 投影每次会重建 turn/nodes；消息仓的未变更消息保持原引用。只比较本轮
+  // 来源消息即可跳过历史轮 DOM 提交，运行轮的 SSE 新对象仍会正常重渲染。
+  return (
+    before.key === after.key &&
+    before.userMessage === after.userMessage &&
+    before.assistantMessages.length === after.assistantMessages.length &&
+    before.assistantMessages.every(
+      (message, index) => message === after.assistantMessages[index],
+    )
+  );
+});
+
 class V2ErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback: React.ReactNode; resetKey: string },
   { hasError: boolean }
@@ -266,35 +348,18 @@ const ConversationRendererV2Inner: React.FC<ConversationRendererV2Props> = (
   return (
     <>
       {projection.data.turns.map((turn) => (
-        <React.Fragment key={`${conversationId ?? 'unknown'}:${turn.key}`}>
-          {turn.userMessage && (
-            <div className={cx(styles['user-message-wrapper'])}>
-              {/* 用户气泡超限折叠（V2 专属）：内容高超 200px 默认收起可切换 */}
-              <UserBubbleCollapse>
-                <ChatView
-                  conversationId={conversationId}
-                  messageInfo={turn.userMessage}
-                  roleInfo={roleInfo}
-                  mode={messageBottomMode}
-                  showDebug={showDebug}
-                />
-              </UserBubbleCollapse>
-            </div>
-          )}
-          {turn.assistantMessages.length > 0 && (
-            <TurnBlock
-              turn={turn}
-              conversationId={conversationId}
-              roleInfo={roleInfo}
-              messageBottomMode={messageBottomMode}
-              showDebug={showDebug}
-              showStatusDesc={showStatusDesc}
-              preferences={preferences}
-              onOpenToolResource={onOpenToolResource}
-              onOpenOpenUiSidecar={onOpenOpenUiSidecar}
-            />
-          )}
-        </React.Fragment>
+        <TurnRow
+          key={`${conversationId ?? 'unknown'}:${turn.key}`}
+          turn={turn}
+          conversationId={conversationId}
+          roleInfo={roleInfo}
+          messageBottomMode={messageBottomMode}
+          showDebug={showDebug}
+          showStatusDesc={showStatusDesc}
+          preferences={preferences}
+          onOpenToolResource={onOpenToolResource}
+          onOpenOpenUiSidecar={onOpenOpenUiSidecar}
+        />
       ))}
     </>
   );

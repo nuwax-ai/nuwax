@@ -16,6 +16,7 @@ import {
   type ConversationWorkspaceView,
 } from '../domain/conversationPageCache';
 import { isTerminalTaskStatus } from '../domain/taskStatus';
+import { fullPageInstanceCacheManager } from './fullPageInstanceCacheManager';
 
 const PANEL_STORAGE_KEY = 'conversation_page_panel_state:v1';
 const CAPACITY_STORAGE_KEY = 'conversation_page_cache_capacity';
@@ -319,6 +320,11 @@ class ConversationPageCacheManager {
 
   releaseEndedHidden(conversationId: number | string) {
     const normalizedId = String(conversationId);
+    // 商业客户端整页仍在宽限期时，右侧工作区也要跟随保留；否则整页切回
+    // 只剩消息区，预览/终端子树已被旧缓存 manager 提前卸载。
+    if (fullPageInstanceCacheManager.hasConversation(normalizedId)) {
+      return;
+    }
     [...this.entries.values()]
       .filter(
         (entry) =>
@@ -575,6 +581,12 @@ class ConversationPageCacheManager {
 }
 
 export const conversationPageCacheManager = new ConversationPageCacheManager();
+
+fullPageInstanceCacheManager.subscribeDispose((entry) => {
+  if (entry.conversationId !== null) {
+    conversationPageCacheManager.releaseEndedHidden(entry.conversationId);
+  }
+});
 
 eventBus.on(
   EVENT_TYPE.UpdateConversationListTaskStatus,

@@ -15,12 +15,13 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
+import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
+import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
-import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
@@ -32,6 +33,10 @@ import {
   type ConversationWorkspaceView,
 } from '@/features/conversation/react/useConversationPageCache';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
+import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
+import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import AgentDetailModal from '@/pages/Chat/components/AgentDetailModal';
 import { t } from '@/services/i18nRuntime';
 import {
@@ -51,6 +56,8 @@ import type {
 import { buildAppProRoute } from '@/utils/appProRoute';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
 import { normalizeSandboxIdValue } from '@/utils/effectiveSandbox';
+import { isDesktopHost } from '@/utils/hostBridge';
+import { parseOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 
 import {
   useSourceControl,
@@ -81,6 +88,7 @@ import { throttle } from 'lodash';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -111,6 +119,19 @@ export interface ChatCoreProps {
   id: number;
   agentId: number;
   locationState?: any;
+  /** 直渲染入口切出时传 false；客户端局部模型入口由 CachedChatPage 常驻。 */
+  active?: boolean;
+  /** 宿主创建实例时的路由 state，优先于后来导航产生的全局 location.state。 */
+  initialLocationState?: any;
+  /** 仅常驻实例使用：固定创建时的路由参数，隐藏后不读取其他页面的 location。 */
+  freezeRouteLocation?: boolean;
+  routeLocationSnapshot?: {
+    pathname: string;
+    search: string;
+    state?: any;
+    key?: string;
+    navigationAction?: 'PUSH' | 'POP' | 'REPLACE';
+  };
   showSidebar?: boolean; // 是否渲染右侧属性面板，默认 true
   showPayment?: boolean; // 是否包含订阅/扣费弹窗等逻辑，默认 true
   enableResizable?: boolean; // 是否开启拖拽分栏布局，默认 true
@@ -139,10 +160,14 @@ export interface ChatCoreProps {
 /**
  * 主页咨询聊天页面
  */
-export const ChatCore: React.FC<ChatCoreProps> = ({
+const ChatCoreInner: React.FC<ChatCoreProps> = ({
   id,
   agentId,
   locationState,
+  initialLocationState,
+  freezeRouteLocation = false,
+  routeLocationSnapshot,
+  active = true,
   showSidebar = true,
   showPayment = true,
   enableResizable = true,
@@ -158,9 +183,36 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     [id],
   );
   const location = useLocation();
-  const chromeFlags = useOpenAppChromeFlags();
+  const initialRouteRef = useRef({
+    location: routeLocationSnapshot
+      ? { ...location, ...routeLocationSnapshot }
+      : location,
+    action: routeLocationSnapshot?.navigationAction ?? history.action,
+  });
+  const routeLocation = freezeRouteLocation
+    ? {
+        ...initialRouteRef.current.location,
+        state:
+          initialLocationState !== undefined
+            ? initialLocationState
+            : initialRouteRef.current.location.state,
+      }
+    : location;
+  const routeAction = freezeRouteLocation
+    ? initialRouteRef.current.action
+    : history.action;
+  const chromeFlags = useMemo(
+    () => parseOpenAppChromeFlags(routeLocation.search),
+    [routeLocation.search],
+  );
   const { handleAutoPreviewLastFile } = useAutoPreviewFile();
-  const stateToUse = locationState || location.state;
+  const stateToUse = freezeRouteLocation
+    ? routeLocation.state
+    : initialLocationState !== undefined
+    ? initialLocationState
+    : locationState !== undefined
+    ? locationState
+    : location.state;
   // 附加state
   const message = stateToUse?.message;
   const files = stateToUse?.files;
@@ -214,7 +266,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // 开放应用智能体会话聊天页面相关状态
   const {
     handleSetAppAgentDetail,
-    isAppSidebarMode,
+    isAppSidebarMode: globalIsAppSidebarMode,
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     createAppNewConversation,
@@ -223,6 +275,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     localCalledTrialCount,
     incrementCalledTrialCount,
   } = useModel('useOpenApp');
+  const isAppSidebarMode = freezeRouteLocation
+    ? routeLocation.pathname.startsWith('/app/')
+    : globalIsAppSidebarMode;
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
@@ -244,13 +299,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   } = useSubscription();
 
   useEffect(() => {
-    if (!showPayment || !openPaymentModal || isAppSidebarMode) {
+    if (!active || !showPayment || !openPaymentModal || isAppSidebarMode) {
       return;
     }
 
     // 打开智能体订阅套餐弹窗
     queryAgentSubscriptionPlans(agentId);
   }, [
+    active,
     showPayment,
     openPaymentModal,
     isAppSidebarMode,
@@ -347,12 +403,34 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     resumeConversationStream,
     abortResumeStream,
     refreshGitListRef,
-  } = useModel('conversationInfo');
+  } = usePageModel('conversationInfo');
+
+  const previousAutoScrollRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!active) {
+      if (previousAutoScrollRef.current === null) {
+        previousAutoScrollRef.current = allowAutoScrollRef.current;
+      }
+      allowAutoScrollRef.current = false;
+      return;
+    }
+    if (previousAutoScrollRef.current === null) return;
+    const shouldFollowTail = previousAutoScrollRef.current;
+    previousAutoScrollRef.current = null;
+    allowAutoScrollRef.current = shouldFollowTail;
+    if (shouldFollowTail) {
+      const frame = requestAnimationFrame(() => {
+        const element = messageViewRef.current;
+        if (element) element.scrollTop = element.scrollHeight;
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [active, allowAutoScrollRef, messageViewRef]);
 
   // 工作区目录懒加载（#5a 单层树）：首拉门控 = 文件树面板可见——「打开面板才拉」，
   // 新会话挂载不预发 file-list（后端契约：工作区在 chat 之后才建立）
   const workspaceDirectoryFiles = useWorkspaceDirectoryFiles(id, {
-    enabled: isFileTreeVisible,
+    enabled: active && isFileTreeVisible,
   });
 
   useConversationChanged((event) => {
@@ -387,7 +465,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =
-    useModel('chat');
+    usePageModel('chat');
 
   const { isMobile } = useModel('layout');
 
@@ -408,8 +486,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     getEffectiveSandboxId,
     finalSelectedId,
   } = useChatSandbox({
-    location: { ...location, state: stateToUse },
-    history,
+    location: { ...routeLocation, state: stateToUse },
+    history: { action: routeAction },
     effectiveAgent,
     conversationInfo,
   });
@@ -569,7 +647,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // ① 详情已出：仅项目型（Agent/PageApp/UserApp）才跳，普通会话不动
   useEffect(() => {
-    if (!enableDevTargetRedirect) return;
+    if (!active || !enableDevTargetRedirect) return;
     const info = conversationInfo;
     if (!info || info.id !== id) return;
     redirectDevTargetConversation(info);
@@ -577,6 +655,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     conversationInfo,
     id,
     enableDevTargetRedirect,
+    active,
     redirectDevTargetConversation,
   ]);
 
@@ -584,7 +663,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   //    正常会话在窗口内加载成功即取消定时器，不产生额外请求
   const devTargetLookupFiredRef = useRef(false);
   useEffect(() => {
-    if (!enableDevTargetRedirect) return;
+    if (!active || !enableDevTargetRedirect) return;
+    let cancelled = false;
     devTargetLookupFiredRef.current = false;
     if (conversationInfo?.id === id) return;
     const conversationId = id;
@@ -601,7 +681,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           const hit = (res?.data || []).find(
             (item) => item.id === conversationId,
           );
-          if (hit) {
+          if (hit && !cancelled) {
             redirectDevTargetConversation(hit);
           }
         })
@@ -609,16 +689,24 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           // 反查失败维持现状（与详情 404 的空壳表现一致，不额外打扰）
         });
     }, 2500);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [
     conversationInfo?.id,
     id,
     enableDevTargetRedirect,
+    active,
     redirectDevTargetConversation,
   ]);
 
   // 常规项目：nameDefined 为 false 时 generate-info 补全项目元数据
-  useChatNormalProjectNameSync({ conversationInfo, prompt: message });
+  useChatNormalProjectNameSync({
+    conversationInfo,
+    prompt: message,
+    navigationAction: routeAction,
+  });
 
   // =============== 会话 icon 缺失时，补拉会话 icon ===============
 
@@ -696,15 +784,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
 
     setAgentDetail(targetAgent);
-
-    // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
-    if (targetAgent.paymentRequired && !targetAgent.subscribed) {
-      setOpenPaymentModal(true);
-    } else {
-      setOpenPaymentModal(false);
-    }
-    // 设置应用智能体详情
-    handleSetAppAgentDetail(targetAgent);
     const preferredView =
       conversationPageCacheManager.getPanelPreference(pageCacheKey);
     if (!defaultFileTreeVisible && preferredView === undefined) {
@@ -725,7 +804,33 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     showPagePreview,
   ]);
 
+  // 这两项由开放应用全局模型持有，后台缓存实例不得覆盖当前页。
   useEffect(() => {
+    if (!active) return;
+    const targetAgent =
+      conversationInfo?.id === id
+        ? conversationInfo.agent
+        : defaultAgentDetail?.agentId === agentId
+        ? defaultAgentDetail
+        : null;
+    if (!targetAgent) return;
+    setOpenPaymentModal(
+      Boolean(targetAgent.paymentRequired && !targetAgent.subscribed),
+    );
+    handleSetAppAgentDetail(targetAgent);
+  }, [
+    active,
+    agentId,
+    conversationInfo?.agent,
+    conversationInfo?.id,
+    defaultAgentDetail,
+    id,
+    handleSetAppAgentDetail,
+    setOpenPaymentModal,
+  ]);
+
+  useEffect(() => {
+    let cancelled = false;
     if (id) {
       setIsLoadingConversation(false);
       // 切换会话时，重置自动滚动标志，确保新会话能够自动滚动到底部
@@ -737,9 +842,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         try {
           setLoadingAsync(true);
           const { data: _data } = await runAsync(id);
+          if (cancelled) return;
           data = _data;
         } finally {
-          setLoadingAsync(false);
+          if (!cancelled) setLoadingAsync(false);
         }
         // 会话消息列表
         const list = data?.messageList || [];
@@ -792,8 +898,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           }
         }
       };
-      asyncFun();
+      void asyncFun();
     }
+    // 路由离开后，旧请求的回包不得再触发预览和首条消息发送。
+    return () => {
+      cancelled = true;
+    };
   }, [
     id,
     message,
@@ -806,7 +916,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   useEffect(() => {
     // 应用智能体模式下，不获取当前智能体的历史记录
-    if (isAppSidebarMode) {
+    if (!active || isAppSidebarMode) {
       return;
     }
     // 获取当前智能体的历史记录
@@ -814,7 +924,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       agentId,
       limit: 20,
     });
-  }, [id, agentId, isAppSidebarMode]);
+  }, [id, agentId, isAppSidebarMode, active]);
 
   useEffect(() => {
     addBaseTarget();
@@ -870,23 +980,31 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     selectedModelId,
   });
 
+  const getCurrentConversationIdRef = useRef(getCurrentConversationId);
+  getCurrentConversationIdRef.current = getCurrentConversationId;
+  const activeRef = useRef(active);
+  activeRef.current = active;
+
   useEffect(() => {
     // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
     clearFilePanelInfo();
-    setOpenPaymentModal(false);
+    if (activeRef.current) setOpenPaymentModal(false);
 
     // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
     // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
     setClearLoading(false);
 
     return () => {
-      // 组件卸载时重置全局会话状态，防止污染其他页面
+      // 直渲染入口仍可能共享全局模型。只清理本实例当前持有的会话；
+      // 局部模型入口也用同一守卫，避免过期回包误触发清理。
+      if (Number(getCurrentConversationIdRef.current()) !== Number(id)) {
+        return;
+      }
       resetInit();
       setSelectedComponentList([]);
       hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
-
-      setOpenPaymentModal(false);
+      if (activeRef.current) setOpenPaymentModal(false);
     };
   }, [id]);
 
@@ -1010,6 +1128,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       !fileTreeRefreshTrigger ||
       handledDirectoryRefreshTriggerRef.current === fileTreeRefreshTrigger ||
       // 面板关闭期间不刷目录（打开面板时 openPreviewView 的 needRefresh 会补拉）
+      !active ||
       !isFileTreeVisible
     ) {
       return;
@@ -1019,6 +1138,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   }, [
     fileTreeRefreshTrigger,
     throttledRefreshActiveDirectory,
+    active,
     isFileTreeVisible,
   ]);
 
@@ -1081,6 +1201,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     staticFileBasePath: `/api/computer/static/${id}`,
     isDynamicTheme: true,
     enableGitStatus:
+      active &&
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
       hasValidMessageList &&
       isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl),
@@ -1511,13 +1632,20 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsFileTreePinned,
   };
 
-  // 每个缓存 key 只激活一次；回调通过 ref 取最新值，避免 model 回调引用变化触发恢复循环。
+  const restoredWorkspaceKeyRef = useRef<string | null>(null);
+
+  // 激活只更新当前页所有权；已有实例切回来沿用内存中的面板，不重复恢复初始视图。
   useEffect(() => {
+    if (!active) return;
     const entry = conversationPageCacheManager.activate({
       surface: 'chat',
       conversationId: id,
       agentId,
     });
+    const deactivate = () =>
+      conversationPageCacheManager.deactivate(pageCacheKey);
+    if (restoredWorkspaceKeyRef.current === pageCacheKey) return deactivate;
+    restoredWorkspaceKeyRef.current = pageCacheKey;
     const targetView = defaultFileTreeVisible ? 'filePreview' : entry.view;
 
     if (defaultFileTreeVisible && entry.view !== 'filePreview') {
@@ -1527,7 +1655,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     if (targetView === 'filePreview') {
       workspaceRestoreActionsRef.current.openPreviewView(id);
       workspaceRestoreActionsRef.current.setIsFileTreePinned(true);
-      return;
+      return deactivate;
     }
     if (targetView === 'terminal') {
       setHasTerminalConsoleRendered(true);
@@ -1536,7 +1664,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       setTerminalConsoleActiveTab('terminal');
       setTerminalConsoleExpandSignal((value) => value + 1);
       workspaceRestoreActionsRef.current.openPreviewView(id);
-      return;
+      return deactivate;
     }
     if (targetView === 'desktop' || targetView === 'pagePreview') {
       pendingWorkspaceRestoreRef.current = {
@@ -1544,12 +1672,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         view: targetView,
       };
     }
-  }, [pageCacheKey, agentId, defaultFileTreeVisible, rememberWorkspaceView]);
-
-  useEffect(
-    () => () => conversationPageCacheManager.deactivate(pageCacheKey),
-    [pageCacheKey],
-  );
+    return deactivate;
+  }, [
+    active,
+    pageCacheKey,
+    agentId,
+    defaultFileTreeVisible,
+    rememberWorkspaceView,
+  ]);
 
   useEffect(() => {
     if (conversationInfo?.id === id) {
@@ -1557,8 +1687,19 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         id,
         conversationInfo.taskStatus,
       );
+      if (freezeRouteLocation) {
+        fullPageInstanceCacheManager.markStatus(
+          id,
+          conversationInfo.taskStatus,
+        );
+      }
     }
-  }, [id, conversationInfo?.id, conversationInfo?.taskStatus]);
+  }, [
+    freezeRouteLocation,
+    id,
+    conversationInfo?.id,
+    conversationInfo?.taskStatus,
+  ]);
 
   // desktop/pagePreview 依赖异步到达的 agent/沙箱信息，仅消费当前 key 的待恢复任务一次。
   useEffect(() => {
@@ -1581,11 +1722,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   useEffect(() => {
     conversationPageCacheManager.updateResources(pageCacheKey, {
       terminalMounted: hasTerminalConsoleRendered,
-      terminalConnected: hasTerminalConsoleRendered && terminalConsoleVisible,
+      terminalConnected:
+        active && hasTerminalConsoleRendered && terminalConsoleVisible,
       pageIframeMounted: Boolean(pagePreviewData),
-      desktopVisible: isFileTreeVisible && viewMode === 'desktop',
+      desktopVisible: active && isFileTreeVisible && viewMode === 'desktop',
     });
   }, [
+    active,
     pageCacheKey,
     hasTerminalConsoleRendered,
     terminalConsoleVisible,
@@ -1593,6 +1736,26 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isFileTreeVisible,
     viewMode,
   ]);
+
+  useEffect(() => {
+    if (active && isFileTreeVisible && viewMode === 'desktop') {
+      conversationPageCacheManager.setSharedVncOwner(id);
+      fullPageInstanceCacheManager.setSharedVncOwner(id);
+    } else if (
+      !active &&
+      conversationPageCacheManager.getSnapshot()
+        .sharedVncOwnerConversationId === String(id)
+    ) {
+      conversationPageCacheManager.setSharedVncOwner(null);
+    }
+    if (
+      !active &&
+      fullPageInstanceCacheManager.getSnapshot()
+        .sharedVncOwnerConversationId === String(id)
+    ) {
+      fullPageInstanceCacheManager.setSharedVncOwner(null);
+    }
+  }, [active, id, isFileTreeVisible, viewMode]);
 
   // 切换视图时，关闭 Git 版本记录面板
   useEffect(() => {
@@ -1645,7 +1808,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     <ConversationBottomConsole
       className={cx(styles['terminal-console'])}
       conversationId={finalSelectedId === '-1' ? id : undefined}
-      visible={terminalConsoleVisible}
+      visible={active && terminalConsoleVisible}
       wsUrl={terminalWsUrl}
       wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
       wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
@@ -1669,7 +1832,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     () => ({
       tree: chatFileTree,
       preview: fileView.preview,
-      viewMode,
+      // 桌面 VNC 是全局唯一连接；隐藏整页时让 FileTreePreviewPanel 卸载 iframe。
+      viewMode: active ? viewMode : 'preview',
       hideDesktop: effectiveAgent?.hideDesktop,
       diffFile: gitSourceControl.selectedDiffFile,
       gitVersionPanelOpen,
@@ -1752,6 +1916,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       terminalConsole,
       fileView.gitBranch,
       viewMode,
+      active,
       id,
       effectiveAgent?.hideDesktop,
       effectiveAgent?.type,
@@ -1769,6 +1934,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 设置最小宽度
   useEffect(() => {
+    if (!active) return;
     // 单栏风格（style3）：侧边面板固定、滚动区域收敛在 page-container 内，
     // 不再拓宽 html（否则窗口窄于阈值时出现窗口级全局滚动条）
     if (document.body.classList.contains('xagi-nav-style3')) {
@@ -1789,7 +1955,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [pagePreviewData, isFileTreeVisible, isMobile]);
+  }, [active, pagePreviewData, isFileTreeVisible, isMobile]);
 
   // 会话活跃口径：本地流式 + 后台 EXECUTING（chatSessionProps.isConversationActive 同一来源）
   const effectiveConversationActive =
@@ -1821,7 +1987,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         enableVersionControl={isAgentVersionControlEnabled(
           effectiveAgent?.enableVersionControl,
         )}
-        open={capsulePanelOpen}
+        open={active && capsulePanelOpen}
         onClose={handleCloseCapsulePanel}
       />
     ) : null;
@@ -2100,7 +2266,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           mode={AgentComponentTypeEnum.Page}
           componentId={parsePageAppProjectId(pagePreviewData.uri)}
           title={''}
-          open={openCopyModal}
+          open={active && openCopyModal}
           isTemplate={true}
           onSuccess={(_: any, targetSpaceId: number) => {
             setOpenCopyModal(false);
@@ -2207,7 +2373,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       </div>
       {/* 智能体详情悬浮弹窗：与文件树/终端/云电脑面板共存，不再互斥 */}
       <AgentDetailModal
-        open={isAgentDetailModalOpen}
+        open={active && isAgentDetailModalOpen}
         onClose={() => setIsAgentDetailModalOpen(false)}
         agentId={agentId}
         loading={loadingConversation}
@@ -2221,7 +2387,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       >
         {/* 付费订阅套餐弹窗 */}
         <PaymentSubscriptionModal
-          open={openPaymentModal}
+          open={active && openPaymentModal}
           targetType="Agent"
           calledTrialCount={localCalledTrialCount}
           trialCount={agentDetail?.trialCount}
@@ -2245,9 +2411,66 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   );
 };
 
+/**
+ * 普通路由和内嵌宿主沿用全局 model；未包局部 Provider 时隐藏即卸载，
+ * 防止后台 SSE、轮询及 cleanup 改写当前页。客户端常驻入口另用 CachedChatPage。
+ */
+export const ChatCore: React.FC<ChatCoreProps> = ({
+  active = true,
+  ...props
+}) => (active ? <ChatCoreInner {...props} /> : null);
+
+/** 商业客户端的会话实例：独立 model 和固定路由快照随宿主实例存活。 */
+export const CachedChatPage: React.FC<ClientConversationPageInstanceProps> = ({
+  route,
+  active,
+}) => {
+  // 同 key 回访仍复用首次实例；后续导航 state/query 不得重放首条消息或改写渲染偏好。
+  const initialRouteRef = useRef(route);
+  const initialRoute = initialRouteRef.current;
+  return (
+    <ConversationPagePathnameContext.Provider value={initialRoute.pathname}>
+      <ConversationRendererRouteSearchContext.Provider
+        value={initialRoute.search}
+      >
+        <ConversationPageModelProvider>
+          <div
+            style={{ display: active ? 'contents' : 'none' }}
+            aria-hidden={!active}
+          >
+            <ChatCoreInner
+              id={initialRoute.conversationId}
+              agentId={Number(initialRoute.params.agentId)}
+              initialLocationState={initialRoute.state}
+              freezeRouteLocation
+              routeLocationSnapshot={initialRoute}
+              active={active}
+              enableDevTargetRedirect
+            />
+          </div>
+        </ConversationPageModelProvider>
+      </ConversationRendererRouteSearchContext.Provider>
+    </ConversationPagePathnameContext.Provider>
+  );
+};
+
 const ChatPage: React.FC = () => {
   const params = useParams();
   const location = useLocation();
+  const { registerClientConversationRenderer } = useModel('appTabKeepAlive');
+  const desktopHost = isDesktopHost();
+  const isCacheableRoute =
+    desktopHost &&
+    /^\d+$/.test(String(params.id ?? '')) &&
+    /^\d+$/.test(String(params.agentId ?? '')) &&
+    Number(params.id) > 0 &&
+    Number(params.agentId) > 0;
+  useLayoutEffect(() => {
+    if (isCacheableRoute) {
+      registerClientConversationRenderer('conversation', CachedChatPage);
+    }
+  }, [isCacheableRoute, registerClientConversationRenderer]);
+  if (isCacheableRoute) return null;
   return (
     <ChatCore
       id={Number(params.id)}

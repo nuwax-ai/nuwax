@@ -33,6 +33,8 @@ export interface AppDevProHeaderBrandProps {
   spaceId?: number;
   /** 全栈应用 ID（返回项目详情页） */
   appId?: number;
+  /** 缓存工作区是否当前可见；隐藏时关闭 portal 弹窗。 */
+  active?: boolean;
   /** 更新应用成功 */
   onConfirmUpdate?: (info: UserAppInfo) => void;
 }
@@ -52,6 +54,7 @@ const AppDevProHeaderBrand: React.FC<AppDevProHeaderBrandProps> = ({
   userAppInfo,
   spaceId,
   appId,
+  active = true,
   onConfirmUpdate,
 }) => {
   const [editOpen, setEditOpen] = useState(false);
@@ -83,9 +86,7 @@ const AppDevProHeaderBrand: React.FC<AppDevProHeaderBrandProps> = ({
     const targetSpaceId = spaceId ?? userAppInfo?.spaceId;
     const targetAppId = appId ?? userAppInfo?.id;
     if (targetSpaceId && targetAppId) {
-      history.push(
-        `/space/${targetSpaceId}/app-project-detail/${targetAppId}`,
-      );
+      history.push(`/space/${targetSpaceId}/app-project-detail/${targetAppId}`);
       return;
     }
     if (targetSpaceId) {
@@ -150,7 +151,7 @@ const AppDevProHeaderBrand: React.FC<AppDevProHeaderBrandProps> = ({
       </header>
 
       <CreateUserApp
-        open={editOpen}
+        open={active && editOpen}
         mode={CreateUpdateModeEnum.Update}
         spaceId={spaceId ?? userAppInfo?.spaceId}
         userAppInfo={userAppInfo}

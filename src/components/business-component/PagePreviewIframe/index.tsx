@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { SANDBOX } from '@/constants/common.constants';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils';
@@ -18,7 +19,6 @@ import React, {
   useState,
 } from 'react';
 import TurndownService from 'turndown';
-import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -168,7 +168,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     setIsLoading(false);
   };
 
-  const { previewPageTitle, setPreviewPageTitle } = useModel('chat');
+  const { previewPageTitle, setPreviewPageTitle } = usePageModel('chat');
 
   /**
    * 更新按钮状态
