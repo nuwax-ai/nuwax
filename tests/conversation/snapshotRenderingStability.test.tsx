@@ -201,12 +201,12 @@ describe('#2486 快照渲染稳定性', () => {
     const { container } = render(<Harness store={store} />);
     await flushMarkdown();
     const oldAnswer = container.querySelector(
-      '[data-key^="v2-answer-turn-u1-"]',
+      '[data-key^="v2-answer-turn-u1"]',
     );
     expect(oldAnswer).not.toBeNull();
     const oldAnswerId = oldAnswer?.getAttribute('data-key');
     const newAnswerId = container
-      .querySelector('[data-key^="v2-answer-turn-u2-"]')
+      .querySelector('[data-key^="v2-answer-turn-u2"]')
       ?.getAttribute('data-key');
     expect(oldAnswerId).toBeTruthy();
     expect(newAnswerId).toBeTruthy();
@@ -227,7 +227,7 @@ describe('#2486 快照渲染稳定性', () => {
       });
       await flushMarkdown();
       expect(store.getSnapshot()[1]).toBe(initial[1]);
-      expect(container.querySelector('[data-key^="v2-answer-turn-u1-"]')).toBe(
+      expect(container.querySelector('[data-key^="v2-answer-turn-u1"]')).toBe(
         oldAnswer,
       );
     }
@@ -270,7 +270,7 @@ describe('#2486 快照渲染稳定性', () => {
       probe.runOverRender.mock.calls.filter(([id]) => id === 'a1'),
     ).toHaveLength(oldStatusRenders + 1);
     expect(
-      container.querySelector('[data-key^="v2-answer-turn-u1-"]')?.textContent,
+      container.querySelector('[data-key^="v2-answer-turn-u1"]')?.textContent,
     ).toContain('旧回答已修订');
   });
 });

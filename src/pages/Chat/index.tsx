@@ -58,6 +58,7 @@ import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
 import { normalizeSandboxIdValue } from '@/utils/effectiveSandbox';
 import { isDesktopHost } from '@/utils/hostBridge';
 import { parseOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
+import { openKnownBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 
 import {
   useSourceControl,
@@ -2092,7 +2093,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
    */
   const handleOpenToolResource = (resource: ConversationToolResource) => {
     if (resource.kind === 'url') {
-      window.open(resource.target, '_blank', 'noopener,noreferrer');
+      void openKnownBusinessRouteWindow(resource.target);
       return;
     }
     if (resource.kind !== 'file') {

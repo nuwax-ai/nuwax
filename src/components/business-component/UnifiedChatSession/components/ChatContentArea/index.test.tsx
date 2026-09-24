@@ -48,6 +48,7 @@ describe('ChatContentArea', () => {
   it('终态快照补齐 index 时复用已有消息节点', () => {
     const createProps = (message: MessageInfo) => ({
       conversationId: '1557156',
+      messageRenderer: 'v1' as const,
       messageViewRef: createRef<HTMLDivElement>(),
       handleMouseEnter: vi.fn(),
       handleMouseLeave: vi.fn(),
@@ -82,6 +83,7 @@ describe('ChatContentArea', () => {
     render(
       <ChatContentArea
         conversationId="1557156"
+        messageRenderer="v1"
         messageViewRef={createRef<HTMLDivElement>()}
         handleMouseEnter={vi.fn()}
         handleMouseLeave={vi.fn()}
@@ -114,6 +116,7 @@ describe('ChatContentArea', () => {
     render(
       <ChatContentArea
         conversationId="1557156"
+        messageRenderer="v1"
         messageViewRef={createRef<HTMLDivElement>()}
         handleMouseEnter={vi.fn()}
         handleMouseLeave={vi.fn()}
@@ -147,6 +150,7 @@ describe('ChatContentArea', () => {
     render(
       <ChatContentArea
         conversationId="1557156"
+        messageRenderer="v1"
         messageViewRef={createRef<HTMLDivElement>()}
         handleMouseEnter={vi.fn()}
         handleMouseLeave={vi.fn()}

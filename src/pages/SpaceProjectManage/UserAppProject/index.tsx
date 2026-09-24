@@ -1,3 +1,4 @@
+import CreateUserApp from '@/components/business-component/CreateUserApp';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import PageContainerHeader from '@/components/PageContainerHeader';
@@ -21,7 +22,6 @@ import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
-import CreateUserApp from '../../AppDevPro/components/CreateUserApp';
 import ProjectListCard from '../components/ProjectListCard';
 import {
   DEFAULT_ARCHIVED_FILTER,
@@ -57,13 +57,9 @@ const UserAppProject: React.FC = () => {
   const [keyword, setKeyword] = useState<string>('');
   /** 收藏过滤值 */
   // 筛选条 UI 注释态（随头部重构暂缓接线），先以默认值参与查询过滤
-  const [collectedFilter] = useState<CollectedFilter>(
-    DEFAULT_COLLECTED_FILTER,
-  );
+  const [collectedFilter] = useState<CollectedFilter>(DEFAULT_COLLECTED_FILTER);
   /** 归档过滤值 */
-  const [archivedFilter] = useState<ArchivedFilter>(
-    DEFAULT_ARCHIVED_FILTER,
-  );
+  const [archivedFilter] = useState<ArchivedFilter>(DEFAULT_ARCHIVED_FILTER);
   const [list, setList] = useState<UserProjectItem[]>([]);
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);

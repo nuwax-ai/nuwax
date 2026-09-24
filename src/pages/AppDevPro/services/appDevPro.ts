@@ -3,11 +3,9 @@ import { normalizeTerminalWsUrl } from '@/utils/terminalWsUrl';
 import { request } from 'umi';
 import type {
   BuildVersionDto,
-  CreateUserAppParams,
   CreateUserProjectParams,
   ProjectLatestConversationResult,
   UserAppDevTaskInfo,
-  UserAppInfo,
   UserAppLogSourceItem,
   UserAppLogsQueryParams,
   UserAppLogsQueryResult,
@@ -21,6 +19,7 @@ import { UserAppDbEnvEnum } from './appDb';
 // 基础 CRUD 已下沉共享层 @/services/userProjectApp（首页侧栏项目面板等非页面层消费），
 // 此处再导出保持页面内既有引用不变
 export {
+  apiUserAppCreate,
   apiUserAppDelete,
   apiUserAppGetById,
   apiUserAppUpdate,
@@ -53,16 +52,6 @@ export async function apiUserAppLatestConversation(
 ): Promise<RequestResponse<ProjectLatestConversationResult>> {
   return request(`/api/userapp/conversation/${id}`, {
     method: 'GET',
-  });
-}
-
-/** 创建全栈应用 */
-export async function apiUserAppCreate(
-  data: CreateUserAppParams,
-): Promise<RequestResponse<UserAppInfo>> {
-  return request('/api/userapp/create', {
-    method: 'POST',
-    data,
   });
 }
 

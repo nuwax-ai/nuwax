@@ -1,11 +1,17 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentSubTypeEnum, AgentTypeEnum } from '@/types/enums/space';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   isAgentFlowSelectableAgent,
   normalizePublishedAgentSubType,
   resolveAgentFlowCreatedModalTabs,
 } from '../createdPicker';
+
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+  t: (key: string) => key,
+  getCurrentLang: () => 'zh-CN',
+}));
 
 describe('createdPicker', () => {
   const workflowTabs = [

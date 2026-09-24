@@ -4,6 +4,10 @@ import { isConversationSandboxPath } from '@/features/conversation/presentation-
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import {
+  canOpenKnownBusinessRouteInHost,
+  openBusinessRouteWindow,
+} from '@/utils/hostBridge/openBusinessRouteWindow';
+import {
   CheckCircleOutlined,
   CheckSquareOutlined,
   ClockCircleOutlined,
@@ -78,6 +82,18 @@ const ResourceLink: React.FC<{
         href={target}
         target="_blank"
         rel="noreferrer"
+        onClick={(event) => {
+          if (event.button !== 0 || !canOpenKnownBusinessRouteInHost(target))
+            return;
+          event.preventDefault();
+          void openBusinessRouteWindow(target);
+        }}
+        onAuxClick={(event) => {
+          if (event.button !== 1 || !canOpenKnownBusinessRouteInHost(target))
+            return;
+          event.preventDefault();
+          void openBusinessRouteWindow(target);
+        }}
       >
         {target}
       </a>

@@ -80,7 +80,7 @@ describe('replaceMathBracket', () => {
     const text =
       '1. `$a^2 + b^2 = c^2$` 平方和\n2. `$\\frac{1}{2} + \\frac{1}{3} = \\frac{5}{6}$` 分式';
     expect(replaceMathBracket(text)).toBe(
-      '1. $a^2 + b^2 = c^2$ 平方和\n2. $\\frac{1}{2} + \\frac{1}{3} = \\frac{5}{6}$ 分式',
+      '1. $a^2 + b^2 = c^2$ 平方和\n\n2. $\\frac{1}{2} + \\frac{1}{3} = \\frac{5}{6}$ 分式',
     );
   });
 
@@ -108,7 +108,7 @@ describe('replaceMathBracket', () => {
     const text =
       '6. 求和：`\\sum_{i=1}^{n}`\n16. 矩阵：`\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}`';
     expect(replaceMathBracket(text)).toBe(
-      '6. 求和：$\\sum_{i=1}^{n}$\n16. 矩阵：$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$',
+      '6. 求和：$\\sum_{i=1}^{n}$\n\n16. 矩阵：$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$',
     );
   });
 

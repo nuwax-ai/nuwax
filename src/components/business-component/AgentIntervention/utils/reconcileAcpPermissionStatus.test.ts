@@ -6,6 +6,8 @@ import type { AcpPermissionInteraction } from '../types/acpIntervention';
 
 vi.mock('./mcpAskResumeMessage', () => ({
   hasMcpAskResumeMessage: vi.fn(() => false),
+  sortMessagesByConversationIndex: (messages: MessageInfo[]) =>
+    [...messages].sort((a, b) => (a.index ?? 0) - (b.index ?? 0)),
 }));
 
 import { hasMcpAskResumeMessage } from './mcpAskResumeMessage';

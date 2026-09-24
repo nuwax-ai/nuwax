@@ -1,4 +1,5 @@
 import { businessCredentials } from './businessCookie';
+import { openKnownBusinessRouteWindow } from './hostBridge/openBusinessRouteWindow';
 
 const AUTH_PROTECTED_FILE_PATH_RE = /\/api\/f\//i;
 
@@ -81,5 +82,5 @@ export async function openRemoteFileUrl(
     return;
   }
 
-  window.open(url, '_blank', 'noopener,noreferrer');
+  await openKnownBusinessRouteWindow(url);
 }
