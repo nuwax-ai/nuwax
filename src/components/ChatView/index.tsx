@@ -11,7 +11,6 @@ import {
   groupMarkdownProcesses,
 } from '@/components/MarkdownRenderer/utils';
 import { USER_INFO } from '@/constants/home.constants';
-import { useConversationDensity } from '@/hooks/useConversationDensity';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { getLegacyThinkBlock } from '@/plugins/ds-markdown-think';
@@ -22,7 +21,6 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
-import { resolveDensityPolicy } from '@/utils/conversationDensity';
 import { message, theme } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
@@ -52,13 +50,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const { data } = useUnifiedTheme();
     const isDarkMode = data.antdTheme === 'dark';
 
-    // 会话密度（P1-6）：compact 流式也收起 / normal 现行 / detailed 恒展开不聚合
-    const { density } = useConversationDensity();
-    const densityPolicy = useMemo(
-      () => resolveDensityPolicy(density),
-      [density],
-    );
-
     // 任务终态（非流式中）：终态聚合只展示最后一段正文，其余统一进「执行过程」折叠区
     const isTerminalStatus = useMemo(
       () =>
@@ -67,10 +58,8 @@ const ChatView: React.FC<ChatViewProps> = memo(
       [messageInfo?.status],
     );
 
-    // 工具组默认收起：compact 恒收起；normal 终态收起；detailed 恒展开
-    const groupDefaultCollapsed =
-      densityPolicy.collapseDuringStreaming ||
-      (isTerminalStatus && densityPolicy.collapseTerminal);
+    // 工具组在执行中展开，终态默认收起进「执行过程」区域。
+    const groupDefaultCollapsed = isTerminalStatus;
 
     const processedText = useMemo(() => {
       const rawText = messageInfo?.text || '';
@@ -82,15 +71,10 @@ const ChatView: React.FC<ChatViewProps> = memo(
         !rawText.includes('markdown-custom-think') && messageInfo?.think
           ? `${getLegacyThinkBlock(messageInfo.think)}${grouped}`
           : grouped;
-      return isTerminalStatus && densityPolicy.terminalAggregate
+      return isTerminalStatus
         ? collapseTerminalProcesses(withLegacyThink)
         : withLegacyThink;
-    }, [
-      messageInfo?.text,
-      messageInfo?.think,
-      isTerminalStatus,
-      densityPolicy.terminalAggregate,
-    ]);
+    }, [messageInfo?.text, messageInfo?.think, isTerminalStatus]);
 
     // text 含内联思考标签（含历史合成）时不再走旧顶部思考区，避免双份渲染
     const hasInlineThink = useMemo(
@@ -265,7 +249,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     status={messageInfo?.status}
                     thinkingFinished={messageInfo?.thinkingFinished}
                     collapseProcessGroups={groupDefaultCollapsed}
-                    autoCollapseEnabled={densityPolicy.autoCollapseEnabled}
+                    autoCollapseEnabled
                   />
                 </div>
               </div>

@@ -109,11 +109,6 @@ vi.mock('@/components/PermissionMask', () => ({ default: () => null }));
 vi.mock('@/components/business-component/PaymentSubscriptionModal', () => ({
   default: () => null,
 }));
-vi.mock(
-  '@/components/business-component/ChatInputUnified/ConversationDebugFab',
-  () => ({ default: () => null }),
-);
-
 // 语音底座桩：子槽原样透传（isVoiceActive=false）
 vi.mock('@/components/business-component/VoiceInput', async () => {
   const React = await import('react');

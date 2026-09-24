@@ -7,7 +7,6 @@ import {
   EMPTY_DRAFT_SUMMARY,
   EMPTY_RESOURCE_STATE,
   createConversationPageCacheKey,
-  normalizeConversationPageCacheCapacity,
   selectConversationPageCacheEvictionKey,
   type ConversationDraftData,
   type ConversationPageCacheEntry,
@@ -19,7 +18,6 @@ import { isTerminalTaskStatus } from '../domain/taskStatus';
 import { fullPageInstanceCacheManager } from './fullPageInstanceCacheManager';
 
 const PANEL_STORAGE_KEY = 'conversation_page_panel_state:v1';
-const CAPACITY_STORAGE_KEY = 'conversation_page_cache_capacity';
 const DRAFT_STORAGE_PREFIX = 'chat_draft:';
 const DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -93,25 +91,12 @@ class ConversationPageCacheManager {
   /** 执行中（CREATE/EXECUTING）的会话 id → 进入执行态的时间戳。 */
   private executingConversations = new Map<string, number>();
   private sharedVncOwnerConversationId: string | null = null;
-  private capacity = this.readCapacity();
+  private capacity = DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY;
   private snapshot: ConversationPageCacheSnapshot = {
-    capacity: this.capacity,
     activeKey: null,
     sharedVncOwnerConversationId: null,
     entries: [],
   };
-
-  private readCapacity() {
-    if (!canUseStorage()) return DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY;
-    try {
-      const stored = localStorage.getItem(CAPACITY_STORAGE_KEY);
-      return stored === null
-        ? DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY
-        : normalizeConversationPageCacheCapacity(stored);
-    } catch {
-      return DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY;
-    }
-  }
 
   subscribe = (listener: Listener) => {
     this.listeners.add(listener);
@@ -127,7 +112,6 @@ class ConversationPageCacheManager {
 
   private emit() {
     this.snapshot = {
-      capacity: this.capacity,
       activeKey: this.activeKey,
       sharedVncOwnerConversationId: this.sharedVncOwnerConversationId,
       entries: [...this.entries.values()]
@@ -462,26 +446,6 @@ class ConversationPageCacheManager {
     }
     if (this.sharedVncOwnerConversationId === normalizedId) {
       this.sharedVncOwnerConversationId = null;
-    }
-    this.emit();
-  }
-
-  setCapacity(value: number) {
-    this.capacity = normalizeConversationPageCacheCapacity(value);
-    if (canUseStorage()) {
-      try {
-        localStorage.setItem(CAPACITY_STORAGE_KEY, String(this.capacity));
-      } catch {
-        // ignore
-      }
-    }
-    while (this.entries.size > this.capacity) {
-      const evictionKey = selectConversationPageCacheEvictionKey(
-        this.entries.values(),
-        this.activeKey,
-      );
-      if (!evictionKey) break;
-      this.invalidate(evictionKey, 'capacity-changed');
     }
     this.emit();
   }

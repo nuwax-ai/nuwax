@@ -32,7 +32,7 @@
 | P0-3 工具耗时徽标 | `RENDER_SHOWCASE`（endTime 载荷） | showcase 探针（`1.8s/2.4s/3.2s` 断言） | ✅ |
 | P1-4 子 agent 渲染 | `SUBAGENT_NESTED`（待建） | `driveSubagentProbe`（待建） | ⬜ |
 | P1-5 消息重试 | 手动矩阵 + 单测 | —（交互在输入框区，不适合回放断言） | ⬜ |
-| P1-6 会话密度设置 | `/mock-chat` 手动三档对照 + 映射单测 | —（偏好类，手动验收） | ⬜ |
+| P1-6 会话密度设置 | 开发期调试功能已按 2026-09-24 决定移除 | 不再作为产品验收项 | 已取消 |
 | P2 各项 | 立项时补 | 立项时补 | ⬜ |
 
 ## 2. P0：紧跟折叠基建，边际成本最低
@@ -82,11 +82,9 @@
 - **涉及文件**：`ChatView/ChatBottomMore`（按钮）、`conversationInfo` model（动作）、i18n。
 - **演示**：交互在输入区发起，不适合回放断言；以单测 + `/mock-chat` 手动矩阵验收。
 
-### P1-6 会话密度设置
+### P1-6 会话密度设置（已取消）
 
-- **目标**：Cursor 式 Conversation Density：compact / normal / detailed 三档。
-- **方案**：localStorage 偏好 + 输入框工具条入口；映射折叠策略——compact：工具组与思考块始终收起（`defaultCollapsed=true` 恒定）；normal（默认）：现行「被超越即收起」；detailed：`autoCollapse=false` 恒展开。折叠基建（`autoCollapse` / `defaultCollapsed`）已参数化，`ChatView → MarkdownRenderer → genCustomPlugin` 透传链已有。
-- **演示**：密度 → 参数映射单测；`/mock-chat` 三档手动对照。
+2026-09-24 移除输入区调试入口及其 compact/normal/detailed 偏好存取；PC `ChatView` 固定使用标准折叠行为：执行中展开，终态聚合并默认收起。
 
 ## 4. P2：体验加分项
 

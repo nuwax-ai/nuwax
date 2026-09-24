@@ -222,7 +222,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   // + 队列/干预态派生；resumeSubscribed 仍在恢复 hook 内部，其轮询门禁自持真实值）。
   const session = sessionView ?? derivedSessionView;
   const { renderer: preferredMessageRenderer } =
-    useConversationRendererPreference(conversationId);
+    useConversationRendererPreference();
   const effectiveMessageRenderer = messageRenderer ?? preferredMessageRenderer;
 
   // 滚到底部按钮需避开队列面板：测量队列区域高度写入 CSS 变量

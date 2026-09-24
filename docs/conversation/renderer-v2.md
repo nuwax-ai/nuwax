@@ -29,11 +29,9 @@ src/features/conversation/presentation-v2/          纯投影层（无 React，�
     ToolNodeDetail.tsx           类型化详情（终端/文件/Diff/搜索/浏览器/Skill/Plan/通用）
     FinalAnswerBlock.tsx         最终回答常显 + 回答操作栏（复制/分享 + V1 相对消息时间）
     formatElapsed.ts             耗时文案
-src/utils/conversationRendererPreference.ts   偏好存取（URL>会话覆盖>全局>默认 V2）
-src/hooks/useConversationRendererPreference.ts 偏好 hook（CustomEvent 即时同步）
+src/utils/conversationRendererPreference.ts   URL 调试覆盖与默认 V2
+src/hooks/useConversationRendererPreference.ts 渲染线 hook（CustomEvent 即时同步）
 UnifiedChatSession/components/ChatContentArea  渲染线选择边界（messageRenderer prop，默认 v2）
-UnifiedChatSession/components/ChatInputHomeIndependent/ConversationDisplaySettings.tsx
-                                              输入区「会话显示」入口
 ```
 
 ## 关键契约
@@ -53,14 +51,14 @@ UnifiedChatSession/components/ChatInputHomeIndependent/ConversationDisplaySettin
 
 ## 配置
 
-- 优先级：URL `conversationRenderer=v1|v2` > 会话覆盖（可清除）> 全局偏好 > 构建默认 `v2`（`CONVERSATION_RENDERER_DEFAULT`）。
-- localStorage 键：`conversation_renderer_v2` / `conversation_renderer_v2_preset` / `conversation_renderer_v2_node_overrides` / `conversation_renderer_v2_session_overrides`。独立于旧 `conversation_density`（V1 三档密度行为原样保留）。
-- 入口：输入区「会话显示」（Eye 图标）统一配置渲染版本 / 会话覆盖 / V2 预设（focused/balanced/detailed）/ 逐类 hidden/summary/expanded 高级覆盖。
+- 渲染线仅接受 URL `conversationRenderer=v1|v2` 调试覆盖；未指定时使用构建默认 `v2`（`CONVERSATION_RENDERER_DEFAULT`）。
+- 输入区的调试按钮和渲染设置面板已移除；启动迁移会清理旧面板写入的 renderer localStorage 值。
+- V2 使用 `balanced` 预设和空节点覆盖作为固定默认值；预设/逐类展示规则仍由 `renderPreferences.ts` 定义。
 - 接入面：`pages/Chat` 与 `/mock-chat` 已接入；`PreviewAndDebug`、 `ConversationAgent` 面板、AppDev 未传 `messageRenderer`，恒走 V1。
 
 ## 回退
 
-1. 用户级：设置切 V1 / 会话覆盖 / `?conversationRenderer=v1`，即时生效。
+1. 调试回退：`?conversationRenderer=v1`，即时生效。
 2. 代码级：投影抛错（try/catch）或渲染抛错（ErrorBoundary）→ 整份会话回退 V1 逐消息 ChatView 列表，console 记录 `[ConversationRendererV2]` 诊断，不白屏。
 3. `renderMessageItem` 自定义入口恒优先于 V2（AppDev/预览扩展点不受影响）。
 

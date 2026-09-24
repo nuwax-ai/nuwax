@@ -948,7 +948,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
             onModelSelect={setSelectedModelId}
             chatInputProps={{
               isClearInput: false,
-              showDebugFab: false,
               atHomePanel: true,
               defaultMentions,
               agentMode,

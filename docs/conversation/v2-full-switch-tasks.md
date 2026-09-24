@@ -59,14 +59,14 @@
 | T4.3 | 测试资产处置 | 4 个纯 V1 测试退役/迁移（conversationInfoModel 33 + useResumeStreamHandlers 19 + useConversationStreamResume 17 + fetchEventSourceConversationInfo 6 ≈ 75 用例）；conversationDualTrackParity 改写（V1 基准消失后转 V2 快照锚）；conversation-acceptance.mjs 的 E2E-02/05/06 改写；mock-chat legacy 半矩阵与 KNOWN_ISSUES legacy 条目收缩 | T4.2 | 🔴 tests/useConversationStreamResume.test.ts 经 `tests/useConversation` 子串过滤**在合同网内**，删码须同步处置测试 |
 | T4.4 | 双副本清理 | 组件目录版 `UnifiedChatSession/hooks/useConversationStreamResume.ts`（757 行，零生产引用）+ 其测试（726 行）；useResumeStreamHandlers（届时生产调用方只剩 legacy model） | T4.2 | 同上网内子串匹配机制 |
 | T4.5 | 死代码清理 | `apiGetStaticFileDetail`（services/vncDesktop.ts:94，零调用）；`previewEffectsAdapter.ts`（生产零引用仅测试用）；V1-only 渲染组件 MarkdownCustomThink/MarkdownCustomProcessGroup/MarkdownCustomPlanDoc（~478 行） | T4.2 | 🔴 ChatView/MarkdownRenderer/MarkdownCustomProcess 被 V2 复用且是 V2 异常回退路径，**禁删** |
-| T4.6 | 开关退役 | conversationRuntimeFlag / conversationRendererPreference 的 v1 选项（ConversationDisplaySettings Segmented）/ MockChat 调试开关 / conversationV2Rollout 迁移标记 | T4.1-T4.5 全清 | 紧急回退 `?conversationRuntime=0` 保留至本项执行时才拆 |
+| T4.6 | 开关退役 | conversationRuntimeFlag / conversationRendererPreference 的 URL 回退 / MockChat 调试开关 / conversationV2Rollout 迁移标记 | T4.1-T4.5 全清 | 紧急回退 `?conversationRuntime=0` 保留至本项执行时才拆 |
 
 ---
 
 ## 风险与备注
 
 1. **conversationDualTrackParity 的 esbuild/TextEncoder 崩溃是存量环境问题**（HEAD worktree 对照同崩，非回归）——验收时勿误判为任务引入。
-2. **回退开关是发布保险**：阶段一全程保留 `?conversationRuntime=0` / `?conversationRenderer=v1`；用户级设置（ConversationDisplaySettings）的 v1 选项也保留至 T4.6。
+2. **回退开关是发布保险**：阶段一保留 `?conversationRuntime=0` / `?conversationRenderer=v1`；输入区调试面板和用户级 renderer 设置已于 2026-09-24 移除，URL 渲染回退仍保留至 T4.6。
 3. **V1 渲染器是 V2 的回退路径**：投影/渲染异常整份回退 V1 是设计保险（ConversationRendererV2 双保险），任何「删 V1」动作前必须确认回退路径改走何处。
 4. **阶段二最大工程不是删 SSE，是 model 职责迁移**（T4.1）——预估占阶段二一半以上工作量。
 5. 本清单任务状态变化时同步更新 [对齐清单](./conversation-v1-v2-alignment-2026-09.md) 对应状态列，两文档互为视图（清单=待办，对齐=现状）。

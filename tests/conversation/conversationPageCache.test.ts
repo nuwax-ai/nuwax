@@ -34,9 +34,6 @@ describe('conversationPageCache', () => {
   afterEach(() => {
     fullPageInstanceCacheManager.invalidateAll('test-cleanup');
     conversationPageCacheManager.invalidateAll('test-cleanup');
-    conversationPageCacheManager.setCapacity(
-      DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
-    );
     localStorage.clear();
     vi.restoreAllMocks();
     vi.useRealTimers();
@@ -71,48 +68,24 @@ describe('conversationPageCache', () => {
     expect(snapshot.activeKey).toBe('chat:6');
   });
 
-  it('运行时调整容量后立即按 LRU 收敛', () => {
-    for (let id = 1; id <= 5; id += 1) {
+  it('容量已满时后台草稿只持久化，不挤掉当前页面实例', () => {
+    for (let id = 1; id <= DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY; id += 1) {
       conversationPageCacheManager.activate({
         surface: 'chat',
         conversationId: id,
       });
     }
-    conversationPageCacheManager.setCapacity(2);
-    const snapshot = conversationPageCacheManager.getSnapshot();
-    expect(snapshot.capacity).toBe(2);
-    expect(snapshot.entries).toHaveLength(2);
-    expect(snapshot.activeKey).toBe('chat:5');
-  });
-
-  it('容量为 1 时激活新页面会淘汰旧 active，始终不突破硬上限', () => {
-    conversationPageCacheManager.setCapacity(1);
-    conversationPageCacheManager.activate({
-      surface: 'chat',
-      conversationId: 1,
-    });
-    conversationPageCacheManager.activate({
-      surface: 'chat',
-      conversationId: 2,
-    });
-
-    expect(conversationPageCacheManager.getSnapshot().entries).toHaveLength(1);
-    expect(conversationPageCacheManager.getSnapshot().activeKey).toBe('chat:2');
-  });
-
-  it('容量已满时后台草稿只持久化，不挤掉当前页面实例', () => {
-    conversationPageCacheManager.setCapacity(1);
-    conversationPageCacheManager.activate({
-      surface: 'chat',
-      conversationId: 1,
-    });
     conversationPageCacheManager.saveDraft('agent:2', {
       version: 1,
       text: 'background draft',
     });
 
-    expect(conversationPageCacheManager.getSnapshot().entries).toHaveLength(1);
-    expect(conversationPageCacheManager.getSnapshot().activeKey).toBe('chat:1');
+    expect(conversationPageCacheManager.getSnapshot().entries).toHaveLength(
+      DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY,
+    );
+    expect(conversationPageCacheManager.getSnapshot().activeKey).toBe(
+      `chat:${DEFAULT_CONVERSATION_PAGE_CACHE_CAPACITY}`,
+    );
     expect(conversationPageCacheManager.loadDraft('agent:2')?.text).toBe(
       'background draft',
     );

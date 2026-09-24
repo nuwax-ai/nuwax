@@ -309,8 +309,7 @@ const ConversationRendererV2Inner: React.FC<ConversationRendererV2Props> = (
     onOpenToolResource,
     onOpenOpenUiSidecar,
   } = props;
-  const { preferences: hookPreferences } =
-    useConversationRendererPreference(conversationId);
+  const { preferences: hookPreferences } = useConversationRendererPreference();
   const preferences = preferencesProp ?? hookPreferences;
 
   const projection = useMemo(() => {
