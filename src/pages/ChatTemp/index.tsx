@@ -374,6 +374,7 @@ const ChatTemp: React.FC = () => {
             ...currentMessage,
             text: getCustomBlock(currentMessage.text || '', data),
             status: MessageStatusEnum.Loading,
+            thinkingFinished: true,
             processingList: [
               ...(currentMessage?.processingList || []),
               data,
@@ -388,6 +389,7 @@ const ChatTemp: React.FC = () => {
             newMessage = {
               ...currentMessage,
               think: `${currentMessage.think}${text}`,
+              thinkingFinished: finished === true,
               status: MessageStatusEnum.Incomplete,
             };
           }
@@ -396,6 +398,7 @@ const ChatTemp: React.FC = () => {
             newMessage = {
               ...currentMessage,
               text: `${currentMessage.text}${text}`,
+              thinkingFinished: true,
               // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
               status: finished ? null : MessageStatusEnum.Incomplete,
             };
@@ -410,6 +413,7 @@ const ChatTemp: React.FC = () => {
                 ...currentMessage,
                 id,
                 text: `${currentMessage.text}${text}`,
+                thinkingFinished: true,
                 status: null, // 隐藏运行状态
               };
               // 插入新的消息
@@ -419,6 +423,7 @@ const ChatTemp: React.FC = () => {
               newMessage = {
                 ...currentMessage,
                 text: `${currentMessage.text}${text}`,
+                thinkingFinished: true,
                 status: finished
                   ? MessageStatusEnum.Complete
                   : MessageStatusEnum.Incomplete,
@@ -433,6 +438,7 @@ const ChatTemp: React.FC = () => {
           newMessage = {
             ...currentMessage,
             status: MessageStatusEnum.Complete,
+            thinkingFinished: true,
             finalResult: data,
             // 保持本地消息 ID 稳定，避免流结束时重挂载消息和 Markdown 渲染器。
             requestId: res.requestId,
@@ -443,6 +449,7 @@ const ChatTemp: React.FC = () => {
           newMessage = {
             ...currentMessage,
             status: MessageStatusEnum.Error,
+            thinkingFinished: true,
           };
         }
 

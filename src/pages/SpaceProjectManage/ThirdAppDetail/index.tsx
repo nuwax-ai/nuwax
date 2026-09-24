@@ -1,8 +1,8 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import AppDevPublishVersionRecords from '@/components/business-component/AppDevPublishVersionRecords';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import AppDevPublishVersionRecords from '@/pages/AppDevPro/components/AppDevPublishVersionRecords';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';

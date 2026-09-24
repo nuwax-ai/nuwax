@@ -1202,8 +1202,26 @@ function groupMarkdownProcesses(text: string): string {
 
       const quoteLen = marker.includes('\\') ? 2 : 1;
       const valueEnd = tagContentEnd - quoteLen;
-
-      const rawNameVal = tagMatch.slice(valueStart, valueEnd);
+      const closingQuote = marker.includes('\\')
+        ? `\\${marker.slice(-1)}`
+        : marker.slice(-1);
+      const closingQuoteIndex = tagMatch.indexOf(closingQuote, valueStart);
+      const attributeTail =
+        closingQuoteIndex >= 0
+          ? tagMatch.slice(
+              closingQuoteIndex + closingQuote.length,
+              tagContentEnd,
+            )
+          : '';
+      // 规范的 name 后面仍可带 type/status 等属性；旧逻辑将这些属性
+      // 一并 URL 编码进 name，导致过程状态丢失。畸形属性仍沿用兜底编码。
+      const hasValidAttributeTail =
+        closingQuoteIndex >= 0 &&
+        (attributeTail.trim() === '' ||
+          /^\s+[\w:-]+=(?:\\?["'])/.test(attributeTail));
+      const rawNameVal = hasValidAttributeTail
+        ? tagMatch.slice(valueStart, closingQuoteIndex)
+        : tagMatch.slice(valueStart, valueEnd);
 
       // 解码 HTML 实体
       let decodedNameVal = rawNameVal
@@ -1237,7 +1255,10 @@ function groupMarkdownProcesses(text: string): string {
         .replace(/\\"/g, '"')
         .replace(/\\'/g, "'");
 
-      processedTag = `${normalizedBeforeName}name="${encodedNameVal}"${closingTag}`;
+      const normalizedTail = hasValidAttributeTail
+        ? attributeTail.replace(/\\"/g, '"').replace(/\\'/g, "'")
+        : '';
+      processedTag = `${normalizedBeforeName}name="${encodedNameVal}"${normalizedTail}${closingTag}`;
     }
 
     // 规范化标签（确保有闭合）

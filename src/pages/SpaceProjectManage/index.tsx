@@ -1,3 +1,4 @@
+import CreateUserApp from '@/components/business-component/CreateUserApp';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
@@ -26,9 +27,14 @@ import {
 import { DownOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useParams, useRequest } from 'umi';
-import CreateUserApp from '../AppDevPro/components/CreateUserApp';
 import CreateNormalProjectModal from './components/CreateNormalProjectModal';
 import EditNormalProjectModal, {
   type EditedNormalProjectInfo,
@@ -88,8 +94,7 @@ const SpaceProjectManage: React.FC = () => {
   // ---- 编辑弹窗态 ----
   const [editNormalProjectTarget, setEditNormalProjectTarget] =
     useState<ProjectListItem>();
-  const [editUserAppTarget, setEditUserAppTarget] =
-    useState<ProjectListItem>();
+  const [editUserAppTarget, setEditUserAppTarget] = useState<ProjectListItem>();
   const [editThirdAppTarget, setEditThirdAppTarget] =
     useState<ProjectListItem>();
 
@@ -351,7 +356,8 @@ const SpaceProjectManage: React.FC = () => {
   const handleUserAppEdited = useCallback((info: UserAppInfo) => {
     setList((previous) =>
       previous.map((item) =>
-        item.id === info.id && item.projectType === AgentComponentTypeEnum.UserApp
+        item.id === info.id &&
+        item.projectType === AgentComponentTypeEnum.UserApp
           ? {
               ...item,
               name: info.name,
@@ -408,8 +414,8 @@ const SpaceProjectManage: React.FC = () => {
             item.projectType === AgentComponentTypeEnum.UserApp
               ? await apiUserAppDelete(item.id)
               : item.projectType === AgentComponentTypeEnum.ThirdApp
-                ? await apiThirdAppOauth2Delete(item.id)
-                : await apiNormalProjectDelete(item.id);
+              ? await apiThirdAppOauth2Delete(item.id)
+              : await apiNormalProjectDelete(item.id);
           if (res?.code === SUCCESS_CODE) {
             emitProjectChanged({
               operation: 'deleted',
@@ -481,7 +487,9 @@ const SpaceProjectManage: React.FC = () => {
       }
     >
       {/* 列表区：Loading / 滚动分页卡片网格 / 空态 */}
-      <div className={cx(styles['project-manage'], 'flex', 'flex-col', 'h-full')}>
+      <div
+        className={cx(styles['project-manage'], 'flex', 'flex-col', 'h-full')}
+      >
         {!hasLoaded ? (
           <Loading />
         ) : list.length > 0 ? (
@@ -518,8 +526,12 @@ const SpaceProjectManage: React.FC = () => {
             </InfiniteScrollDiv>
           </div>
         ) : (
-          <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-            <Empty description={dict('PC.Pages.SpaceProjectManage.emptyText')} />
+          <div
+            className={cx('flex', 'h-full', 'items-center', 'content-center')}
+          >
+            <Empty
+              description={dict('PC.Pages.SpaceProjectManage.emptyText')}
+            />
           </div>
         )}
       </div>

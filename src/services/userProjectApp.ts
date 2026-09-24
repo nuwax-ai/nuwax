@@ -11,6 +11,7 @@ import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { HistoryData } from '@/types/interfaces/publish';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type {
+  CreateUserAppParams,
   ProjectLatestConversationResult,
   UpdateUserAppParams,
   UpdateUserProjectParams,
@@ -99,6 +100,16 @@ export async function apiUserAppUpdate(
   data: UpdateUserAppParams,
 ): Promise<RequestResponse<UserAppInfo>> {
   return request('/api/userapp/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/** 创建全栈应用，供首页和空间项目页共用。 */
+export async function apiUserAppCreate(
+  data: CreateUserAppParams,
+): Promise<RequestResponse<UserAppInfo>> {
+  return request('/api/userapp/create', {
     method: 'POST',
     data,
   });

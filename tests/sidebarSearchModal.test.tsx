@@ -1,24 +1,25 @@
-/**
- * 命令面板（侧栏搜索弹窗）权限门禁与折叠入口测试（#16 review 修复）：
- * 1. 工作空间入口与侧栏同源门禁：后端菜单树未下发 workspace/space 菜单
- *    （或状态为停用）时不渲染「打开工作空间」，杜绝 /space URL 直达绕过菜单权限；
- * 2. 菜单树含启用的工作空间菜单时渲染入口，点击跳转 /space；
- * 3. ⌘B / 面板动作统一走 toggleCollapse（移动端切抽屉、桌面端折叠含持久化）。
- */
+/** 侧栏搜索弹窗当前六分类、结果跳转与快捷键行为。 */
 import SidebarSearchModal from '@/layouts/DynamicMenusLayout/SidebarSearchModal';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { MenuEnabledEnum } from '@/types/menuPermission/menu-manage';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { historyPush, handleCreateConversation, toggleCollapse } = vi.hoisted(
-  () => ({
-    historyPush: vi.fn(),
-    handleCreateConversation: vi.fn(),
-    toggleCollapse: vi.fn(),
-  }),
-);
+const {
+  historyPush,
+  handleCreateConversation,
+  toggleCollapse,
+  fetchTask,
+  fetchProject,
+  fetchRepo,
+} = vi.hoisted(() => ({
+  historyPush: vi.fn(),
+  handleCreateConversation: vi.fn(),
+  toggleCollapse: vi.fn(),
+  fetchTask: vi.fn(),
+  fetchProject: vi.fn(),
+  fetchRepo: vi.fn(),
+}));
 
 const layoutState: Record<string, unknown> = {
   openSearchModal: true,
@@ -69,6 +70,10 @@ vi.mock('@/services/agentConfig', () => ({
   apiAgentConversationList: vi.fn().mockResolvedValue({ data: [] }),
 }));
 
+vi.mock('@/layouts/DynamicMenusLayout/SidebarSearchModal/sources', () => ({
+  SEARCH_FETCHERS: { task: fetchTask, project: fetchProject, repo: fetchRepo },
+}));
+
 vi.mock('@/components/base/SvgIcon', () => ({
   default: () => <span data-testid="svg-icon" />,
 }));
@@ -81,73 +86,77 @@ vi.mock('@/layouts/DynamicMenusLayout/NewHomeSection/utils', () => ({
   formatModifiedTime: (value?: string) => value ?? '',
 }));
 
-const workspaceLabel =
-  'PC.Layouts.DynamicMenusLayout.SidebarSearchModal.actionOpenWorkspace';
-
-const menu = (code: string, status: MenuEnabledEnum): MenuItemDto =>
-  ({
-    code,
-    status,
-    name: code,
-    children: [],
-  } as unknown as MenuItemDto);
+const label = (key: string) =>
+  `PC.Layouts.DynamicMenusLayout.SidebarSearchModal.${key}`;
 
 beforeEach(() => {
   vi.clearAllMocks();
   menuModelState.firstLevelMenus = [];
+  fetchTask.mockResolvedValue({
+    items: [
+      {
+        id: 'task-11',
+        kind: 'task',
+        name: '任务一',
+        conversation: { id: 11, agentId: 9 },
+      },
+    ],
+    hasMore: false,
+    cursor: {},
+  });
+  fetchProject.mockResolvedValue({ items: [], hasMore: false, cursor: {} });
+  fetchRepo.mockResolvedValue({ items: [], hasMore: false, cursor: {} });
 });
 
-describe('SidebarSearchModal 工作空间入口权限门禁', () => {
-  it('菜单树未下发工作空间菜单时不渲染「打开工作空间」', async () => {
-    menuModelState.firstLevelMenus = [
-      menu('homepage', MenuEnabledEnum.Enabled),
-    ];
+describe('SidebarSearchModal 六分类搜索', () => {
+  it('展示六个分类，并且打开时只加载一次最近任务', async () => {
     render(<SidebarSearchModal />);
-    await screen.findByText(
-      'PC.Layouts.DynamicMenusLayout.SidebarSearchModal.actionNewTask',
-    );
-    expect(screen.queryByText(workspaceLabel)).toBeNull();
+    for (const key of [
+      'tabTask',
+      'tabProject',
+      'tabExpert',
+      'tabSkill',
+      'tabConnector',
+      'tabRepo',
+    ]) {
+      expect(
+        screen.getByRole('button', { name: label(key) }),
+      ).toBeInTheDocument();
+    }
+    await screen.findByText('任务一');
+    expect(fetchTask).toHaveBeenCalledTimes(1);
   });
 
-  it('工作空间菜单为停用状态时同样不渲染入口', async () => {
-    menuModelState.firstLevelMenus = [
-      menu('workspace', MenuEnabledEnum.Disabled),
-    ];
-    render(<SidebarSearchModal />);
-    await screen.findByText(
-      'PC.Layouts.DynamicMenusLayout.SidebarSearchModal.actionNewTask',
-    );
-    expect(screen.queryByText(workspaceLabel)).toBeNull();
-  });
-
-  it('动态菜单 code=workspace 启用时渲染入口，点击跳转 /space', async () => {
+  it('任务结果点击跳转到对应会话', async () => {
     const user = userEvent.setup();
-    menuModelState.firstLevelMenus = [
-      menu('homepage', MenuEnabledEnum.Enabled),
-      menu('workspace', MenuEnabledEnum.Enabled),
-    ];
     render(<SidebarSearchModal />);
-    const entry = await screen.findByText(workspaceLabel);
-    await user.click(entry);
-    await waitFor(() => expect(historyPush).toHaveBeenCalledWith('/space'));
+    await user.click(await screen.findByText('任务一'));
+    expect(historyPush).toHaveBeenCalledWith('/home/chat/11/9');
+    expect(layoutState.setOpenSearchModal).toHaveBeenCalledWith(false);
   });
 
-  it('静态菜单 code=space 启用时同样渲染入口', async () => {
-    menuModelState.firstLevelMenus = [menu('space', MenuEnabledEnum.Enabled)];
+  it('切换到项目分类后按第一页加载', async () => {
+    const user = userEvent.setup();
     render(<SidebarSearchModal />);
-    expect(await screen.findByText(workspaceLabel)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: label('tabProject') }));
+    await waitFor(() =>
+      expect(fetchProject).toHaveBeenCalledWith({
+        keyword: '',
+        size: 20,
+        cursor: {},
+      }),
+    );
   });
 });
 
-describe('SidebarSearchModal 折叠入口统一走 toggleCollapse', () => {
-  it('面板「切换侧边栏」动作调用 toggleCollapse 而非直改折叠状态', async () => {
-    const user = userEvent.setup();
+describe('SidebarSearchModal 快捷键', () => {
+  it('⌘B 调用统一折叠入口并关闭搜索', () => {
     render(<SidebarSearchModal />);
-    const action = await screen.findByText(
-      'PC.Layouts.DynamicMenusLayout.SidebarSearchModal.panelToggleSidebar',
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'b', metaKey: true, bubbles: true }),
     );
-    await user.click(action);
     expect(toggleCollapse).toHaveBeenCalledTimes(1);
+    expect(layoutState.setOpenSearchModal).toHaveBeenCalledWith(false);
     expect(layoutState.setIsSecondMenuCollapsed).not.toHaveBeenCalled();
   });
 });

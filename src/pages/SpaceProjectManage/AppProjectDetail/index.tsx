@@ -8,6 +8,13 @@ import {
 } from '@/hooks/useDirectorySync';
 import useHomePinnedProjectHandoff from '@/hooks/useHomePinnedProjectHandoff';
 import { dict } from '@/services/i18nRuntime';
+import {
+  apiUserAppDomainCreate,
+  apiUserAppDomainDelete,
+  apiUserAppDomainList,
+  UserAppDomainTypeEnum,
+  type UserAppDomainInfo,
+} from '@/services/userAppDomain';
 import { apiUserAppGetById } from '@/services/userProjectApp';
 import { UserService } from '@/services/userService';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -43,13 +50,6 @@ import {
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
-import {
-  apiUserAppDomainCreate,
-  apiUserAppDomainDelete,
-  apiUserAppDomainList,
-  UserAppDomainTypeEnum,
-  type UserAppDomainInfo,
-} from '../../AppDevPro/services/appDomain';
 import ConversationPanel from '../components/ConversationPanel';
 import { apiUserProjectConversations } from '../services';
 import {

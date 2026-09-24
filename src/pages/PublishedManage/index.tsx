@@ -10,6 +10,7 @@ import { dict } from '@/services/i18nRuntime';
 import { apiPublishList } from '@/services/publishManage';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishListInfo } from '@/types/interfaces/publishManage';
+import { openBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 import { buildWorkflowRoute } from '@/utils/router';
 import type {
   ActionType,
@@ -106,7 +107,7 @@ const PublishedManage: React.FC = () => {
     }
 
     if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      void openBusinessRouteWindow(url);
     }
   }, []);
 

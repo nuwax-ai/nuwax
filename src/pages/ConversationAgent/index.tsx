@@ -68,6 +68,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
+import { openBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 // import { createLogger } from '@/utils/logger';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
@@ -316,11 +317,7 @@ const ConversationAgent: React.FC = () => {
     if (!spaceId || !agentId) {
       return;
     }
-    window.open(
-      `/space/${spaceId}/agent/${agentId}`,
-      '_blank',
-      'noopener,noreferrer',
-    );
+    void openBusinessRouteWindow(`/space/${spaceId}/agent/${agentId}`);
   }, [spaceId, agentId]);
 
   /** 预览 Tab 栏切换模型（与 EditAgent ArrangeTitle 一致） */

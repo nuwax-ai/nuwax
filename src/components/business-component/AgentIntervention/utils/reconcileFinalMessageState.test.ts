@@ -1,7 +1,13 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { reconcileFinalMessageState } from './reconcileFinalMessageState';
+
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+  t: (key: string) => key,
+  getCurrentLang: () => 'zh-CN',
+}));
 
 describe('reconcileFinalMessageState', () => {
   it('hydrates missed ACP permission events from final component results', () => {

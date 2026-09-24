@@ -175,11 +175,14 @@ describe('fetchProjectPage（页码分页 + 当页补拉子会话）', () => {
     });
     expect(mocked.apiUserProjectPageQuery).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryFilter: { name: 'P' },
+        queryFilter: expect.objectContaining({ name: 'P' }),
         current: 1,
         pageSize: 20,
       }),
     );
+    expect(
+      mocked.apiUserProjectPageQuery.mock.calls[0][0].queryFilter,
+    ).not.toHaveProperty('spaceId');
     expect(mocked.apiUserProjectConversations).toHaveBeenCalledTimes(1);
     expect(res.items[0]).toMatchObject({ kind: 'project', id: 'project-7' });
     // 子会话补拉回填 → 项目行可点（projectConversation 就位）
