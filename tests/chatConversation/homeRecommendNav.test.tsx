@@ -83,6 +83,30 @@ it('有效提示替换小分类，点击回填；空提示恢复小分类', () =
   expect(onSelect).toHaveBeenCalledWith(items[0]);
 });
 
+it('提示优先展示 title，未配置时展示描述；点击仍填入描述', () => {
+  const onQuestionClick = vi.fn();
+  render(
+    <ChatBoxRecommendNav
+      items={items}
+      onSelect={vi.fn()}
+      guidQuestions={[
+        { type: 'Question', title: '提问标题', info: '完整的问题描述' },
+        { type: 'Question', info: '旧配置描述' },
+        { type: 'Question', title: '   ', info: '空标题回退描述' },
+      ]}
+      onQuestionClick={onQuestionClick}
+    />,
+  );
+
+  expect(screen.getByText('提问标题')).toBeInTheDocument();
+  expect(screen.queryByText('完整的问题描述')).toBeNull();
+  expect(screen.getByText('旧配置描述')).toBeInTheDocument();
+  expect(screen.getByText('空标题回退描述')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByText('提问标题'));
+  expect(onQuestionClick).toHaveBeenCalledWith('完整的问题描述');
+});
+
 it('提示只在对应方向有溢出时显示箭头，尺寸变化和切换提示后重新判断', () => {
   const { container, rerender } = render(
     <ChatBoxRecommendNav

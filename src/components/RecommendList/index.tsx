@@ -128,7 +128,7 @@ const RecommendList: React.FC<RecommendListProps> = ({
                 item?.icon && (
                   <img className={cx(styles.icon)} src={item.icon} />
                 )}
-            {typeof item === 'string' ? item : item.info}
+            {typeof item === 'string' ? item : item.title?.trim() || item.info}
           </div>
         );
       })}
