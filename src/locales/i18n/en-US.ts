@@ -3438,8 +3438,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Login.codeLoginOrRegister": "Sign In / Sign Up with Code",
   "PC.Pages.Login.inputEmailPlaceholder": "Please enter your email",
   "PC.Pages.Login.inputEmailRequired": "Please input email",
-  "PC.Pages.Login.inputAccountPlaceholder": "Username / Email / Phone",
-  "PC.Pages.Login.inputAccountRequired": "Please enter your username, email, or phone number",
   "PC.Pages.Login.inputUnifiedAccountPlaceholder": "Username / Email / Phone",
   "PC.Pages.Login.inputUnifiedAccountRequired": "Please enter your username, email, or phone number",
   "PC.Pages.Login.inputPasswordPlaceholder": "Please enter a password with at least 6 characters",

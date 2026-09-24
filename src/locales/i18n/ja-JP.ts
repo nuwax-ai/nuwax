@@ -3336,8 +3336,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Login.codeLoginOrRegister": "コードでサインイン / サインアップ",
   "PC.Pages.Login.inputEmailPlaceholder": "メールアドレスを入力してください",
   "PC.Pages.Login.inputEmailRequired": "メールアドレスを入力してください",
-  "PC.Pages.Login.inputAccountPlaceholder": "ユーザー名/メールアドレス/電話番号",
-  "PC.Pages.Login.inputAccountRequired": "ユーザー名/メールアドレス/電話番号を入力してください",
   "PC.Pages.Login.inputUnifiedAccountPlaceholder": "ユーザー名/メールアドレス/電話番号",
   "PC.Pages.Login.inputUnifiedAccountRequired": "ユーザー名/メールアドレス/電話番号を入力してください",
   "PC.Pages.Login.inputPasswordPlaceholder": "6文字以上のパスワードを入力してください",

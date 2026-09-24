@@ -3314,8 +3314,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.Login.codeLoginOrRegister": "驗證碼登錄/註冊",
   "PC.Pages.Login.inputEmailPlaceholder": "請輸入郵箱",
   "PC.Pages.Login.inputEmailRequired": "請輸入郵箱",
-  "PC.Pages.Login.inputAccountPlaceholder": "用戶名稱/電郵/手機號碼",
-  "PC.Pages.Login.inputAccountRequired": "請輸入用戶名稱/電郵/手機號碼",
   "PC.Pages.Login.inputUnifiedAccountPlaceholder": "用戶名稱/電郵/手機號碼",
   "PC.Pages.Login.inputUnifiedAccountRequired": "請輸入用戶名稱/電郵/手機號碼",
   "PC.Pages.Login.inputPasswordPlaceholder": "請輸入不少於 6 位的密碼",
