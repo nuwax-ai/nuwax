@@ -1,4 +1,4 @@
-import { businessCredentials } from './businessCookie';
+import { getBusinessRequestAuth } from './businessAuth';
 import { openKnownBusinessRouteWindow } from './hostBridge/openBusinessRouteWindow';
 
 const AUTH_PROTECTED_FILE_PATH_RE = /\/api\/f\//i;
@@ -43,10 +43,12 @@ export async function fetchAuthProtectedFileBlobUrl(
   url: string,
 ): Promise<string> {
   const fetchUrl = resolveAuthProtectedFileFetchUrl(url);
+  const auth = getBusinessRequestAuth(fetchUrl);
   const response = await fetch(fetchUrl, {
     method: 'GET',
     cache: 'no-store',
-    credentials: businessCredentials(fetchUrl),
+    credentials: auth.credentials,
+    headers: auth.headers,
   });
 
   if (!response.ok) {

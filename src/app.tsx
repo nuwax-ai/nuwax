@@ -42,7 +42,7 @@ import { restoreBusinessAuthSession } from './utils/businessAuth';
 import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
 import { isDesktopShellPreviewPage } from './utils/desktopShellPreview';
 import { installDirectorySyncLegacyBridge } from './utils/directorySyncEvents';
-import { isDesktopHost, syncShellAvoidanceCss } from './utils/hostBridge';
+import { syncShellAvoidanceCss } from './utils/hostBridge';
 import { getAntdLocale } from './utils/i18nAdapters';
 import { isConversationMockPage } from './utils/isConversationMockPage';
 // 工作台页历史栈兜底：模块副作用须在 umi router history 创建前执行（仍在
@@ -87,9 +87,9 @@ export async function getInitialState(): Promise<InitialStateType> {
     const isPublicPath = publicPaths.some((path) =>
       initialPathname.toLowerCase().startsWith(path),
     );
-    // An upgraded client has no cookie until the user signs in again. Resolve
-    // Umi's startup state before navigation so a 401 cannot remount the guest.
-    if (!isPublicPath && isDesktopHost() && !hostSessionReady) {
+    // 客户端 Cookie 或本地开发 Token 尚未就绪时先进入登录页，避免首屏鉴权请求
+    // 失败后反复重挂；Mock 验收页保持独立的匿名供数链路。
+    if (!isPublicPath && !isConversationMockPage() && !hostSessionReady) {
       window.location.replace(
         `/login?redirect=${encodeURIComponent(
           initialPathname + window.location.search,

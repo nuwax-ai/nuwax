@@ -3,9 +3,8 @@ import { defineConfig } from 'umi';
 export default defineConfig({
   define: {
     'process.env.BASE_URL': 'https://testagent.xspaceagi.com',
-    // 只有 max dev 使用本地 Token 调试；build:dev 仍走 Cookie。
-    'process.env.NUWAX_UMI_DEV_SERVER':
-      process.env.NODE_ENV === 'development' ? 'true' : 'false',
+    // 本地 Token/Cookie 环境判定在 businessAuth.ts 内按 NODE_ENV 区分（umi 核心
+    // define），此处无需自定义开关；build:dev 走本文件但 NODE_ENV=production → Cookie。
   },
   hash: true,
   mock: {

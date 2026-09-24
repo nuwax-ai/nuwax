@@ -33,7 +33,10 @@ vi.mock('@/utils/conversationV2Rollout', () => ({
 }));
 vi.mock('@/utils/directorySyncEvents', () => ({}));
 vi.mock('@/utils/hostBridge', () => ({
-  hostBridge: { auth: { syncSession: vi.fn().mockResolvedValue(true) } },
+  hostBridge: {
+    auth: { syncSession: vi.fn().mockResolvedValue(true) },
+    host: { getProduct: () => null },
+  },
   isDesktopHost: () => false,
   syncShellAvoidanceCss: vi.fn(),
 }));
