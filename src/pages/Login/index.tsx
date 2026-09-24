@@ -301,33 +301,27 @@ const Login: React.FC = () => {
   }, []);
 
   const getPhoneOrEmailRules = () => {
+    if (loginType === LoginTypeEnum.Password) {
+      return [
+        {
+          required: true,
+          whitespace: true,
+          message: dict('PC.Pages.Login.inputUnifiedAccountRequired'),
+        },
+      ];
+    }
+
     const isEmailAuth = tenantConfigInfo?.authType === 3;
-    const supportsUsernameLogin =
-      isEmailAuth && loginType === LoginTypeEnum.Password;
     return [
       {
         required: true,
-        message: supportsUsernameLogin
-          ? dict('PC.Pages.Login.inputAccountRequired')
-          : isEmailAuth
+        message: isEmailAuth
           ? dict('PC.Pages.Login.inputEmailRequired')
           : dict('PC.Pages.Login.inputPhoneRequired'),
       },
       {
         validator(_: any, value: string) {
           if (!value) return Promise.resolve();
-          if (supportsUsernameLogin) {
-            if (!value.trim()) {
-              return Promise.reject(
-                new Error(dict('PC.Pages.Login.inputAccountRequired')),
-              );
-            }
-            return /\s/.test(value)
-              ? Promise.reject(
-                  new Error(dict('PC.Pages.Login.invalidAccountWhitespace')),
-                )
-              : Promise.resolve();
-          }
           if (isEmailAuth) {
             return isValidEmail(value)
               ? Promise.resolve()
@@ -376,11 +370,7 @@ const Login: React.FC = () => {
       'preview:',
       captchaVerifyParam?.substring(0, 100),
     );
-    const {
-      phoneOrEmail,
-      areaCode = '86',
-      password,
-    } = form.getFieldsValue() || {};
+    const { phoneOrEmail, password } = form.getFieldsValue() || {};
     const normalizedCaptchaParam =
       typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
 
@@ -404,7 +394,6 @@ const Login: React.FC = () => {
     try {
       await runPasswordLogin({
         phoneOrEmail,
-        areaCode,
         password,
         captchaVerifyParam: normalizedCaptchaParam,
       });
@@ -688,7 +677,8 @@ const Login: React.FC = () => {
                   </Title>
                 </Form.Item>
                 <Form.Item>
-                  {tenantConfigInfo?.authType === 3 ? (
+                  {loginType === LoginTypeEnum.Password ||
+                  tenantConfigInfo?.authType === 3 ? (
                     <Form.Item
                       name="phoneOrEmail"
                       noStyle
@@ -698,7 +688,7 @@ const Login: React.FC = () => {
                         rootClassName={cx(styles.input)}
                         placeholder={dict(
                           loginType === LoginTypeEnum.Password
-                            ? 'PC.Pages.Login.inputAccountPlaceholder'
+                            ? 'PC.Pages.Login.inputUnifiedAccountPlaceholder'
                             : 'PC.Pages.Login.inputEmailPlaceholder',
                         )}
                       />
