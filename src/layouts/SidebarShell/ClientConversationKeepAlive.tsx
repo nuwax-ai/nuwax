@@ -2,15 +2,15 @@ import {
   fullPageInstanceCacheManager,
   useFullPageInstanceCache,
 } from '@/features/conversation/react/useFullPageInstanceCache';
-import { isDesktopHost } from '@/utils/hostBridge';
+import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import { ConfigProvider } from 'antd';
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import { parseClientConversationRoute } from './clientConversationRoute';
 
 /**
- * 商业客户端的整页宿主。页面渲染器由对应路由 chunk 注册，布局层不反向依赖页面。
- * 浏览器与社区宿主保持原路由出口；页面未注册或未完成隔离时也不会生成实例。
+ * PC style3 的整页宿主。页面渲染器由对应路由 chunk 注册，布局层不反向依赖页面。
+ * style1/style2、移动端及未完成隔离的页面保持原路由生命周期。
  */
 const ClientConversationKeepAlive: React.FC = () => {
   const location = useLocation();
@@ -19,8 +19,8 @@ const ClientConversationKeepAlive: React.FC = () => {
   const routeSnapshots = useRef(
     new Map<string, ReturnType<typeof parseClientConversationRoute>>(),
   );
-  const clientEnabled = isDesktopHost();
-  const currentRoute = clientEnabled
+  const keepAliveEnabled = useStyle3PcKeepAliveEnabled();
+  const currentRoute = keepAliveEnabled
     ? parseClientConversationRoute({
         ...location,
         navigationAction: history.action,
@@ -36,6 +36,12 @@ const ClientConversationKeepAlive: React.FC = () => {
   }
 
   useLayoutEffect(() => {
+    if (!keepAliveEnabled) {
+      fullPageInstanceCacheManager.invalidateAll('style3-pc-disabled');
+      routeSnapshots.current.clear();
+      return;
+    }
+
     const oldActiveKey = fullPageInstanceCacheManager.getSnapshot().activeKey;
     if (!activeKey || !currentRoute) {
       if (oldActiveKey) fullPageInstanceCacheManager.deactivate(oldActiveKey);
@@ -71,7 +77,7 @@ const ClientConversationKeepAlive: React.FC = () => {
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [activeKey]);
+  }, [activeKey, keepAliveEnabled]);
 
   useEffect(() => {
     const liveKeys = new Set(cache.entries.map((entry) => entry.key));

@@ -36,7 +36,7 @@ const {
   mockUseConversationRuntimeSession,
   mockRuntimeSend,
   mockRegisterClientConversationRenderer,
-  mockIsDesktopHost,
+  mockStyle3PcKeepAliveEnabled,
   mockUseRealScope,
   mockScopedResets,
   mockScopedLoads,
@@ -59,7 +59,7 @@ const {
   mockUseConversationRuntimeSession: vi.fn(),
   mockRuntimeSend: vi.fn(),
   mockRegisterClientConversationRenderer: vi.fn(),
-  mockIsDesktopHost: { current: false },
+  mockStyle3PcKeepAliveEnabled: { current: false },
   mockUseRealScope: { current: false },
   mockScopedResets: [] as number[],
   mockScopedLoads: [] as number[],
@@ -98,13 +98,9 @@ vi.mock('@/services/i18nRuntime', () => ({
   dict: (k: string) => k,
 }));
 
-vi.mock('@/utils/hostBridge', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/utils/hostBridge')>();
-  return {
-    ...actual,
-    isDesktopHost: () => mockIsDesktopHost.current,
-  };
-});
+vi.mock('@/hooks/useStyle3PcKeepAliveEnabled', () => ({
+  default: () => mockStyle3PcKeepAliveEnabled.current,
+}));
 
 vi.mock('@/features/conversation/react/useConversationRuntimeSession', () => ({
   useConversationRuntimeSession: (...args: unknown[]) =>
@@ -504,7 +500,7 @@ describe('ChatCore / ChatPage', () => {
     vi.clearAllMocks();
     conversationInfoState.current = null;
     modelOverrides.current = {};
-    mockIsDesktopHost.current = false;
+    mockStyle3PcKeepAliveEnabled.current = false;
     mockGlobalAppSidebarMode.current = false;
     mockUseRealScope.current = false;
     mockScopedResets.length = 0;
@@ -588,8 +584,8 @@ describe('ChatCore / ChatPage', () => {
     });
   });
 
-  it('商业客户端路由只注册常驻渲染器，不在 Outlet 重复挂载会话', () => {
-    mockIsDesktopHost.current = true;
+  it('PC style3 路由只注册常驻渲染器，不在 Outlet 重复挂载会话', () => {
+    mockStyle3PcKeepAliveEnabled.current = true;
     render(<ChatPage />);
     expect(mockRegisterClientConversationRenderer).toHaveBeenCalledWith(
       'conversation',
@@ -599,8 +595,8 @@ describe('ChatCore / ChatPage', () => {
     expect(screen.queryByTestId('left-content')).toBeNull();
   });
 
-  it('商业客户端无效会话 id 仍走原路由页面兜底', () => {
-    mockIsDesktopHost.current = true;
+  it('PC style3 无效会话 id 仍走原路由页面兜底', () => {
+    mockStyle3PcKeepAliveEnabled.current = true;
     mockUseParams.mockReturnValue({ id: '0', agentId: '200' });
     const { container } = render(<ChatPage />);
     expect(mockRegisterClientConversationRenderer).not.toHaveBeenCalled();

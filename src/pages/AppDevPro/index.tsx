@@ -25,6 +25,7 @@ import {
   type InitialConversationState,
 } from '@/hooks/useInitialConversationAutoSend';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
+import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
 import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
@@ -47,7 +48,6 @@ import { addBaseTarget } from '@/utils/common';
 import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
-import { isDesktopHost } from '@/utils/hostBridge';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -2832,15 +2832,15 @@ export const CachedAppDevPro: React.FC<ClientConversationPageInstanceProps> = ({
   );
 };
 
-/** 客户端首次进入只注册实例渲染器，避免普通路由与缓存实例同时启动。 */
+/** PC style3 首次进入只注册实例渲染器，避免普通路由与缓存实例同时启动。 */
 const AppDevProRoute: React.FC = () => {
   const { registerClientConversationRenderer } = useModel('appTabKeepAlive');
   const params = useParams();
-  const desktopHost = isDesktopHost();
+  const keepAliveEnabled = useStyle3PcKeepAliveEnabled();
   const validRouteId = (value: string | null | undefined) =>
     /^\d+$/.test(value ?? '') && Number(value) > 0;
   const cacheable =
-    desktopHost &&
+    keepAliveEnabled &&
     validRouteId(params.spaceId) &&
     validRouteId(params.appId) &&
     validRouteId(params.conversationId);

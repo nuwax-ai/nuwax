@@ -23,6 +23,7 @@ import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
@@ -56,9 +57,8 @@ import type {
 import { buildAppProRoute } from '@/utils/appProRoute';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
 import { normalizeSandboxIdValue } from '@/utils/effectiveSandbox';
-import { isDesktopHost } from '@/utils/hostBridge';
-import { parseOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 import { openKnownBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
+import { parseOpenAppChromeFlags } from '@/utils/openAppChromeFlags';
 
 import {
   useSourceControl,
@@ -2459,9 +2459,9 @@ const ChatPage: React.FC = () => {
   const params = useParams();
   const location = useLocation();
   const { registerClientConversationRenderer } = useModel('appTabKeepAlive');
-  const desktopHost = isDesktopHost();
+  const keepAliveEnabled = useStyle3PcKeepAliveEnabled();
   const isCacheableRoute =
-    desktopHost &&
+    keepAliveEnabled &&
     /^\d+$/.test(String(params.id ?? '')) &&
     /^\d+$/.test(String(params.agentId ?? '')) &&
     Number(params.id) > 0 &&

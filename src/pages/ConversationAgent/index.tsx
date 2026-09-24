@@ -29,6 +29,7 @@ import {
   type InitialConversationState,
 } from '@/hooks/useInitialConversationAutoSend';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
+import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
@@ -74,7 +75,6 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
-import { isDesktopHost } from '@/utils/hostBridge';
 import { openBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 // import { createLogger } from '@/utils/logger';
 import {
@@ -1991,17 +1991,17 @@ export const CachedConversationAgent: React.FC<
   );
 };
 
-/** 路由入口只负责注册商业客户端渲染器，避免首帧双挂载与自动发送重复。 */
+/** 路由入口只负责注册 PC style3 渲染器，避免首帧双挂载与自动发送重复。 */
 const ConversationAgentRoute: React.FC = () => {
   const { registerClientConversationRenderer } = useModel('appTabKeepAlive');
   const params = useParams();
   const location = useLocation();
-  const desktopHost = isDesktopHost();
+  const keepAliveEnabled = useStyle3PcKeepAliveEnabled();
   const query = new URLSearchParams(location.search);
   const validRouteId = (value: string | null | undefined) =>
     /^\d+$/.test(value ?? '') && Number(value) > 0;
   const cacheable =
-    desktopHost &&
+    keepAliveEnabled &&
     validRouteId(params.spaceId) &&
     validRouteId(query.get('agentId')) &&
     validRouteId(query.get('conversationId'));

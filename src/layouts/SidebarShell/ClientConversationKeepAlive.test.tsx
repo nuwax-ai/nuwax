@@ -6,8 +6,12 @@ import ClientConversationKeepAlive from './ClientConversationKeepAlive';
 
 const mocks = vi.hoisted(() => ({
   location: { pathname: '/home', search: '', state: undefined as unknown },
-  desktop: true,
+  enabled: true,
   mounts: [] as string[],
+}));
+
+vi.mock('@/hooks/useStyle3PcKeepAliveEnabled', () => ({
+  default: () => mocks.enabled,
 }));
 
 vi.mock('umi', () => ({
@@ -27,13 +31,9 @@ vi.mock('umi', () => ({
   })(),
 }));
 
-vi.mock('@/utils/hostBridge', () => ({
-  isDesktopHost: () => mocks.desktop,
-}));
-
 beforeEach(() => {
   mocks.location = { pathname: '/home', search: '', state: undefined };
-  mocks.desktop = true;
+  mocks.enabled = true;
   mocks.mounts.length = 0;
   fullPageInstanceCacheManager.invalidateAll('test-setup');
 });
@@ -42,7 +42,7 @@ afterEach(() => {
   act(() => fullPageInstanceCacheManager.invalidateAll('test-cleanup'));
 });
 
-describe('商业客户端整页实例宿主', () => {
+describe('PC style3 整页实例宿主', () => {
   it('A→B→菜单→A 时复用 A 的真实 React 实例', () => {
     const view = render(<ClientConversationKeepAlive />);
     act(() => {
@@ -86,14 +86,32 @@ describe('商业客户端整页实例宿主', () => {
     );
   });
 
-  it('浏览器风格不创建整页实例', () => {
-    mocks.desktop = false;
+  it('style1/style2 或移动端不创建整页实例', () => {
+    mocks.enabled = false;
     mocks.location = {
       pathname: '/home/chat/1/10',
       search: '',
       state: undefined,
     };
     render(<ClientConversationKeepAlive />);
+    expect(fullPageInstanceCacheManager.getSnapshot().entries).toHaveLength(0);
+    expect(screen.queryByTestId('conversation:1')).toBeNull();
+  });
+
+  it('离开 PC style3 时立即释放已有实例', () => {
+    mocks.location = {
+      pathname: '/home/chat/1/10',
+      search: '',
+      state: undefined,
+    };
+    const view = render(<ClientConversationKeepAlive />);
+    expect(fullPageInstanceCacheManager.getSnapshot().entries).toHaveLength(1);
+
+    act(() => {
+      mocks.enabled = false;
+      view.rerender(<ClientConversationKeepAlive />);
+    });
+
     expect(fullPageInstanceCacheManager.getSnapshot().entries).toHaveLength(0);
     expect(screen.queryByTestId('conversation:1')).toBeNull();
   });
