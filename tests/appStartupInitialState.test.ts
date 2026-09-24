@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   initI18n: vi.fn(),
-  getToken: vi.fn(),
   getUserInfo: vi.fn(),
   syncLangFromUserInfo: vi.fn(),
   queryMenus: vi.fn(),
@@ -24,14 +23,19 @@ vi.mock('@/services/common', () => ({ request: {} }));
 vi.mock('@/services/brandTheme', () => ({}));
 vi.mock('@/services/unifiedThemeService', () => ({}));
 vi.mock('@/layouts/workbenchHistoryBase', () => ({}));
-vi.mock('@/features/client-shell', () => ({}));
+vi.mock('@/features/client-shell', () => ({
+  DesktopShellPreviewChrome: () => null,
+  initClientShell: vi.fn(),
+}));
 vi.mock('@/utils/i18nAdapters', () => ({}));
 vi.mock('@/utils/conversationV2Rollout', () => ({
   migrateConversationDefaultsToV2: vi.fn(),
 }));
 vi.mock('@/utils/directorySyncEvents', () => ({}));
 vi.mock('@/utils/hostBridge', () => ({
-  hostBridge: { auth: { getToken: mocks.getToken } },
+  hostBridge: { auth: { syncSession: vi.fn().mockResolvedValue(true) } },
+  isDesktopHost: () => false,
+  syncShellAvoidanceCss: vi.fn(),
 }));
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
@@ -51,29 +55,29 @@ describe('首屏初始数据失败可恢复', () => {
     window.history.replaceState(null, '', '/home');
     localStorage.clear();
     mocks.initI18n.mockResolvedValue(undefined);
-    mocks.getToken.mockResolvedValue('existing-token');
     mocks.getUserInfo.mockResolvedValue({ id: 1 });
     mocks.syncLangFromUserInfo.mockResolvedValue(undefined);
     mocks.queryMenus.mockResolvedValue({ code: '0000', data: [{ id: 1 }] });
     mocks.initialState.mockReturnValue({ error: undefined });
   });
 
-  it.each([
-    'initI18n',
-    'getToken',
-    'getUserInfo',
-    'syncLangFromUserInfo',
-    'queryMenus',
-  ] as const)(
-    '%s 意外失败交给启动兜底，不能吞成空菜单或清除已有token',
+  it.each(['getUserInfo', 'syncLangFromUserInfo', 'queryMenus'] as const)(
+    '%s 意外失败交给启动兜底，Cookie 模式清除旧 token',
     async (step) => {
       localStorage.setItem('ACCESS_TOKEN', 'existing-token');
       const failure = new Error('server payload must not appear in UI');
       mocks[step].mockRejectedValue(failure);
       await expect(getInitialState()).rejects.toBe(failure);
-      expect(localStorage.getItem('ACCESS_TOKEN')).toBe('existing-token');
+      expect(localStorage.getItem('ACCESS_TOKEN')).toBeNull();
     },
   );
+
+  it('i18n 初始化失败交给启动兜底，不继续执行鉴权流程', async () => {
+    const failure = new Error('i18n failed');
+    mocks.initI18n.mockRejectedValue(failure);
+    await expect(getInitialState()).rejects.toBe(failure);
+    expect(mocks.getUserInfo).not.toHaveBeenCalled();
+  });
 
   it('请求层无 reason 拒绝也必须形成可见错误态', async () => {
     mocks.queryMenus.mockRejectedValue(undefined);

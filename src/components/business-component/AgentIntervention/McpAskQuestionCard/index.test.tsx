@@ -99,11 +99,12 @@ describe('McpAskQuestionCard', () => {
       <McpAskQuestionCard
         interaction={defaultedInteraction}
         keyboardShortcutsEnabled={false}
+        onRespond={vi.fn()}
       />,
     );
 
-    const deploy = screen.getByRole('radio', { name: '鐩存帴閮ㄧ讲' });
-    const test = screen.getByRole('radio', { name: '鍏堣窇娴嬭瘯' });
+    const deploy = screen.getByRole('radio', { name: '直接部署' });
+    const test = screen.getByRole('radio', { name: '先跑测试' });
     expect(deploy).toBeChecked();
 
     fireEvent.click(test);
@@ -124,6 +125,7 @@ describe('McpAskQuestionCard', () => {
           },
         }}
         keyboardShortcutsEnabled={false}
+        onRespond={vi.fn()}
       />,
     );
 
@@ -153,7 +155,7 @@ describe('McpAskQuestionCard', () => {
       target: { value: '先跑关键链路' },
     });
     fireEvent.click(screen.getByText('代码检查'));
-    fireEvent.click(screen.getByRole('button', { name: '提 交' }));
+    fireEvent.click(screen.getByRole('button', { name: /提交/ }));
 
     await waitFor(() => expect(onRespond).toHaveBeenCalledTimes(1));
     expect(onRespond).toHaveBeenCalledWith(

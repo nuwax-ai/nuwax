@@ -51,6 +51,7 @@ import type {
 import { buildAppProRoute } from '@/utils/appProRoute';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
 import { normalizeSandboxIdValue } from '@/utils/effectiveSandbox';
+import { openKnownBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 
 import {
   useSourceControl,
@@ -1926,7 +1927,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
    */
   const handleOpenToolResource = (resource: ConversationToolResource) => {
     if (resource.kind === 'url') {
-      window.open(resource.target, '_blank', 'noopener,noreferrer');
+      void openKnownBusinessRouteWindow(resource.target);
       return;
     }
     if (resource.kind !== 'file') {

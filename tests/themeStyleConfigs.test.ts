@@ -17,24 +17,25 @@ const LAYOUT_STYLES = ['light', 'dark'] as const;
 const NAVIGATION_STYLES = ['style1', 'style2', 'style3'] as const;
 
 describe('STYLE_CONFIGS 布局组合完整性（style3 单栏接入）', () => {
-  it.each(LAYOUT_STYLES.flatMap(
-    (layoutStyle) =>
+  it.each(
+    LAYOUT_STYLES.flatMap((layoutStyle) =>
       NAVIGATION_STYLES.map(
         (navigationStyle) => `${layoutStyle}-${navigationStyle}`,
       ),
-  ))('组合键 %s 存在且含 navigation 变量', (comboKey) => {
+    ),
+  )('组合键 %s 存在且含 navigation 变量', (comboKey) => {
     const config = STYLE_CONFIGS[comboKey];
     expect(config).toBeDefined();
     expect(config.navigation['--xagi-nav-first-menu-width']).toBeTruthy();
     expect(Object.keys(config.layout).length).toBeGreaterThan(0);
   });
 
-  it('style3 变量组克隆自 style1（保持单栏改造上线时的线上表现）', () => {
+  it('style3 沿用 style1 布局色与 style2 贴边容器', () => {
     expect(STYLE_CONFIGS['light-style3'].layout).toEqual(
       STYLE_CONFIGS['light-style1'].layout,
     );
     expect(STYLE_CONFIGS['dark-style3'].navigation).toEqual(
-      STYLE_CONFIGS['dark-style1'].navigation,
+      STYLE_CONFIGS['dark-style2'].navigation,
     );
   });
 

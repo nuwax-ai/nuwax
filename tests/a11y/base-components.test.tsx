@@ -1,16 +1,33 @@
 /**
  * Axe smoke coverage for low-level shared UI components.
  */
-import {
-  ActionMenu,
-  CopyButton,
-  CopyIconButton,
-  MenuListItem,
-  SecondMenuItem,
-} from '@/components/base';
+import ActionMenu from '@/components/base/ActionMenu';
+import CopyButton from '@/components/base/CopyButton';
+import CopyIconButton from '@/components/base/CopyIconButton';
+import MenuListItem from '@/components/base/MenuListItem';
+import SecondMenuItem from '@/components/base/SecondMenuItem';
 import { render } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+  t: (key: string) => key,
+  getCurrentLang: () => 'zh-CN',
+}));
+vi.mock('@/components/base/ActionMenu/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+vi.mock('@/components/base/CopyButton/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+vi.mock('@/components/base/MenuListItem/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+vi.mock('@/components/base/SecondMenuItem/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
+vi.mock('@/components/base/SvgIcon', () => ({ default: () => null }));
 
 const assertNoViolations = async (element: HTMLElement) => {
   const results = await axe(element);

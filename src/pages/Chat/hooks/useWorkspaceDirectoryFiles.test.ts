@@ -1,9 +1,16 @@
 import { transformFlatListToTree } from '@/utils/appDevUtils';
+import { vi } from 'vitest';
 import {
   parentDirectory,
   workspaceNodeId,
   workspaceRelativePath,
 } from '../utils/fileDataSource';
+
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+  t: (key: string) => key,
+  getCurrentLang: () => 'zh-CN',
+}));
 
 describe('workspace directory file helpers', () => {
   it('normalizes legacy relative paths and source-qualified node ids', () => {

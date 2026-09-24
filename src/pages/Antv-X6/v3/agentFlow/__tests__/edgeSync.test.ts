@@ -14,6 +14,12 @@ import { HitlAnswerTypeEnum } from '../enums/hitlAnswerType';
 import { humanInteractionHandler } from '../handlers/humanInteraction';
 import { routeDecisionHandler } from '../handlers/routeDecision';
 
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+  t: (key: string) => key,
+  getCurrentLang: () => 'zh-CN',
+}));
+
 const mockDeleteEdge = vi.fn();
 const mockGetEdges = vi.fn();
 const mockGetNodeById = vi.fn();
@@ -31,10 +37,11 @@ vi.mock('../../services/workflowProxyV3', () => ({
 beforeEach(() => {
   extensionRegistry.register(humanInteractionHandler);
   extensionRegistry.register(routeDecisionHandler);
-  mockDeleteEdge.mockClear();
+  // 清除上一个用例未消费的 mockReturnValueOnce，避免边删除结果串用。
+  mockDeleteEdge.mockReset().mockReturnValue({ success: true });
   mockGetEdges.mockReturnValue([]);
   mockGetNodeById.mockReturnValue(undefined);
-  mockUpdateNode.mockReturnValue({ success: true });
+  mockUpdateNode.mockReset().mockReturnValue({ success: true });
 });
 
 const makeEdge = (id: string, source: string, target: string): Edge =>

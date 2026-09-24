@@ -13,6 +13,7 @@ import styles from '@/styles/systemManage.less';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishApplyListInfo } from '@/types/interfaces/publishManage';
+import { openBusinessRouteWindow } from '@/utils/hostBridge/openBusinessRouteWindow';
 import { buildWorkflowRoute } from '@/utils/router';
 import type {
   ActionType,
@@ -113,7 +114,7 @@ const PublishAudit: React.FC = () => {
     }
 
     if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      void openBusinessRouteWindow(url);
     }
   }, []);
 

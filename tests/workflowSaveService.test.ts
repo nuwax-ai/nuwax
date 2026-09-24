@@ -12,6 +12,11 @@ import WorkflowSaveService from '@/pages/Antv-X6/v3/services/WorkflowSaveService
 import { NodeTypeEnum } from '@/types/enums/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string) => key,
+  t: (key: string) => key,
+}));
+
 // Mock Graph 实例
 const createMockGraph = (nodes: any[] = [], edges: any[] = []) => ({
   getNodes: () =>
