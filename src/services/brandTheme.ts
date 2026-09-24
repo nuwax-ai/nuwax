@@ -17,6 +17,8 @@
  * antd 运行时主色由 app.tsx applyThemeConfig 据 isDefaultBrandThemeActive()
  * 条件传入（默认态强制品牌蓝，显式定制后跟随用户主色）；CSS 变量覆盖由
  * syncBrandThemeCssOverride 维护。
+ * OpenApp 挂载期间只跳过 html 灰底（setOpenAppSkipHtmlBackground），
+ * 女娲 CSS 变量仍照常写入；离开页面后灰底铺回。
  */
 import {
   DEFAULT_THEME_CONFIG,
@@ -195,6 +197,12 @@ export function isDefaultBrandThemeActive(): boolean {
 /** 桌面端禁用背景图的变量名（单独处理，不并入 BRAND_CSS_VARS 的移除集） */
 const BG_IMAGE_VAR = '--xagi-background-image';
 
+/**
+ * OpenApp 是否正在挂载。为 true 时不给 html 写灰底（该页没有主布局缝隙），
+ * 女娲 CSS 变量照常；解除后若品牌主题仍生效则把灰底铺回。
+ */
+let openAppSkipHtmlBackground = false;
+
 /** 桌面主题生效时给 html 铺的灰底（style1 主内容是带边距的浮动圆角面板，缝隙会露出 html 白底） */
 const BRAND_HTML_BG = BRAND_LIGHT_STYLE_OVERRIDE['--xagi-layout-bg-secondary'];
 
@@ -251,10 +259,11 @@ function syncBrandThemeCssOverride(): void {
     root.style.setProperty('--xagi-color-primary', BRAND_PRIMARY);
   }
   // 桌面端不用背景图（灰白纯色）；html 铺灰底兜住面板缝隙/滚动区。
-  // 让位时仅回收自己设的 'none' 与灰底，不动用户图（灰底清空回落 global.less 的 #fff）
+  // OpenApp 无此缝隙，挂载期间不写 html 背景（清空后回落 global.less 的 #fff）。
+  // 让位时仅回收自己设的 'none' 与灰底，不动用户图。
   if (shouldApply) {
     root.style.setProperty(BG_IMAGE_VAR, 'none');
-    root.style.backgroundColor = BRAND_HTML_BG;
+    root.style.backgroundColor = openAppSkipHtmlBackground ? '' : BRAND_HTML_BG;
   } else {
     root.style.backgroundColor = '';
     if (root.style.getPropertyValue(BG_IMAGE_VAR) === 'none') {
@@ -266,6 +275,16 @@ function syncBrandThemeCssOverride(): void {
   if (isDesktopHost()) {
     hostBridge.theme.syncTheme(buildShellThemePayload(shouldApply));
   }
+}
+
+/**
+ * OpenApp 挂载时跳过 html 灰底，卸载后按当前品牌态铺回。
+ * 只动 backgroundColor，不改女娲 CSS 变量。重复设置同一值是空操作。
+ */
+export function setOpenAppSkipHtmlBackground(skip: boolean): void {
+  if (openAppSkipHtmlBackground === skip) return;
+  openAppSkipHtmlBackground = skip;
+  syncBrandThemeCssOverride();
 }
 
 /**

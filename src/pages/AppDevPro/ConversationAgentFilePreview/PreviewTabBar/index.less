@@ -255,6 +255,10 @@
   gap: @marginXs;
 }
 
+.preview-runtime-text-trigger {
+  display: inline-flex;
+}
+
 .preview-runtime-text-actions,
 .preview-runtime-icon-actions {
   display: inline-flex;
@@ -265,8 +269,12 @@
 
 .preview-runtime-icon-disabled {
   opacity: 0.45;
-  cursor: not-allowed;
-  pointer-events: none;
+  cursor: not-allowed !important;
+
+  &:hover {
+    color: inherit !important;
+    background-color: transparent !important;
+  }
 }
 
 .preview-address-bar {

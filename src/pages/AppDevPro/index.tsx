@@ -284,6 +284,9 @@ const AppDevPro: React.FC = () => {
   >([]);
   /** 当前环境：开发 / 线上，Header 中间切换 */
   const [dbEnv, setDbEnv] = useState<UserAppDbEnvEnum>(UserAppDbEnvEnum.Dev);
+  /** 与 dbEnv 同步，供停止、探测等异步回调判断发起时的环境是否仍在前台 */
+  const dbEnvRef = useRef(dbEnv);
+  dbEnvRef.current = dbEnv;
   /** 应用预览 iframe 刷新计数 */
   const [previewRefreshKey, setPreviewRefreshKey] = useState<number>(0);
   /** 容器重启成功后强制重挂数据库 iframe */
@@ -576,7 +579,6 @@ const AppDevPro: React.FC = () => {
     runtimeSession: runtimeLine?.session,
   });
 
-
   /** 打开导入项目弹窗 */
   const handleImportProject = useCallback(async () => {
     setOpenImportProject(true);
@@ -751,11 +753,28 @@ const AppDevPro: React.FC = () => {
     resumeTasksActive();
   }, [publishFlow, resumeTasksActive]);
 
-  /** 用户点停止后不再自动 start；刷新后为 false */
-  const previewUserStoppedRef = useRef(false);
+  /**
+   * 用户点停止后不再自动 start。
+   * 开发 / 线上分开记，停止一侧时另一侧仍可继续预览。
+   */
+  const previewUserStoppedByEnvRef = useRef<Record<UserAppDbEnvEnum, boolean>>({
+    [UserAppDbEnvEnum.Dev]: false,
+    [UserAppDbEnvEnum.Prod]: false,
+  });
   const [previewUserStopped, setPreviewUserStopped] = useState(false);
-  /** 进页已执行 start 或 attach，未完成前不画「服务已停止」 */
+  /**
+   * 进页准备是否结束。未结束前不画「服务已停止」。
+   * 与停止标记一样按环境分开，避免开发环境的空态带到线上。
+   */
+  const previewEnterSettledByEnvRef = useRef<Record<UserAppDbEnvEnum, boolean>>(
+    {
+      [UserAppDbEnvEnum.Dev]: false,
+      [UserAppDbEnvEnum.Prod]: false,
+    },
+  );
   const [previewEnterSettled, setPreviewEnterSettled] = useState(false);
+  /** 上次已经同步到页面上的环境，环境变化时换上该环境自己的停止 / 准备标记 */
+  const [previewFlagsEnv, setPreviewFlagsEnv] = useState(dbEnv);
 
   /**
    * 换应用时立刻丢掉上一应用的详情、域名和预览地址。
@@ -770,13 +789,56 @@ const AppDevPro: React.FC = () => {
     setPreviewIframeUrl('');
     setPreviewRefreshKey(0);
     setDbEnv(UserAppDbEnvEnum.Dev);
-    previewUserStoppedRef.current = false;
+    previewUserStoppedByEnvRef.current = {
+      [UserAppDbEnvEnum.Dev]: false,
+      [UserAppDbEnvEnum.Prod]: false,
+    };
+    previewEnterSettledByEnvRef.current = {
+      [UserAppDbEnvEnum.Dev]: false,
+      [UserAppDbEnvEnum.Prod]: false,
+    };
     setPreviewUserStopped(false);
     setPreviewEnterSettled(false);
   }
 
+  if (previewFlagsEnv !== dbEnv) {
+    setPreviewFlagsEnv(dbEnv);
+    setPreviewUserStopped(previewUserStoppedByEnvRef.current[dbEnv]);
+    setPreviewEnterSettled(previewEnterSettledByEnvRef.current[dbEnv]);
+  }
+
+  /** 写入指定环境的「用户已停止」。只有正在看这个环境时才改当前页面 */
+  const setPreviewStoppedForEnv = useCallback(
+    (targetEnv: UserAppDbEnvEnum, stopped: boolean) => {
+      previewUserStoppedByEnvRef.current[targetEnv] = stopped;
+      if (dbEnvRef.current !== targetEnv) {
+        return;
+      }
+      setPreviewUserStopped(stopped);
+    },
+    [],
+  );
+
+  /** 写入指定环境的进页准备标记。只有正在看这个环境时才改当前页面 */
+  const setPreviewEnterSettledForEnv = useCallback(
+    (targetEnv: UserAppDbEnvEnum, settled: boolean) => {
+      previewEnterSettledByEnvRef.current[targetEnv] = settled;
+      if (dbEnvRef.current === targetEnv) {
+        setPreviewEnterSettled(settled);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
-    previewUserStoppedRef.current = false;
+    previewUserStoppedByEnvRef.current = {
+      [UserAppDbEnvEnum.Dev]: false,
+      [UserAppDbEnvEnum.Prod]: false,
+    };
+    previewEnterSettledByEnvRef.current = {
+      [UserAppDbEnvEnum.Dev]: false,
+      [UserAppDbEnvEnum.Prod]: false,
+    };
     setPreviewUserStopped(false);
     setPreviewEnterSettled(false);
   }, [appId, queryConversationId]);
@@ -791,24 +853,24 @@ const AppDevPro: React.FC = () => {
       setPreviewIframeUrl(appPreviewUrlRef.current);
       setPreviewRefreshKey((prev) => prev + 1);
     },
-    confirmPreviewReachable: async () => {
+    confirmPreviewReachable: async (targetEnv) => {
       const previewUrl = appPreviewUrlRef.current?.trim();
       if (!previewUrl) {
         return dict('PC.Pages.AppDevPro.iframeLoadFailed');
       }
-      // 开发 / 线上共用：先轮询域名最多 5 次。中途 200 立刻结束。
+      // 开发 / 线上分开判断：只在这次启动所属的环境被停止，或已经切走时结束探测。
       // 5 次都失败（含跨域无 CORS 头）时不拦截预览，交给 iframe 再加载一次该域名。
-      await pollPreviewUrlHealth(previewUrl, {
-        shouldStop: () => previewUserStoppedRef.current,
-      });
-      if (previewUserStoppedRef.current) {
+      const shouldStop = () =>
+        previewUserStoppedByEnvRef.current[targetEnv] ||
+        dbEnvRef.current !== targetEnv;
+      await pollPreviewUrlHealth(previewUrl, { shouldStop });
+      if (previewUserStoppedByEnvRef.current[targetEnv]) {
         return dict('PC.Pages.AppDevPro.iframeLoadFailed');
       }
       return '';
     },
-    onStopped: () => {
-      previewUserStoppedRef.current = true;
-      setPreviewUserStopped(true);
+    onStopped: (stoppedEnv) => {
+      setPreviewStoppedForEnv(stoppedEnv, true);
       markDevStartIdle();
     },
     onDetailRefresh: () => {
@@ -838,26 +900,29 @@ const AppDevPro: React.FC = () => {
    * 开发环境进页 / 打开预览：先探测 dev 域名是否可访问，可达则直接 iframe，否则走 start。
    */
   const prepareDevPreviewIfNeeded = useCallback(async () => {
-    if (previewUserStoppedRef.current) {
+    const devStopped = () =>
+      previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Dev] ||
+      dbEnvRef.current !== UserAppDbEnvEnum.Dev;
+    if (devStopped()) {
       return;
     }
     const previewUrl = appPreviewUrlRef.current;
     if (previewUrl) {
       const reachable = await probePreviewReachable(previewUrl);
-      if (previewUserStoppedRef.current) {
+      if (devStopped()) {
         return;
       }
       if (reachable) {
         setPreviewIframeUrl(previewUrl);
-        markPreviewReadyRef.current();
+        markPreviewReadyRef.current(UserAppDbEnvEnum.Dev);
         setPreviewRefreshKey((prev) => prev + 1);
         return;
       }
     }
-    if (previewUserStoppedRef.current) {
+    if (devStopped()) {
       return;
     }
-    startPreviewIfNeededRef.current();
+    startPreviewIfNeededRef.current(UserAppDbEnvEnum.Dev);
   }, []);
   const prepareDevPreviewIfNeededRef = useRef(prepareDevPreviewIfNeeded);
   prepareDevPreviewIfNeededRef.current = prepareDevPreviewIfNeeded;
@@ -1528,8 +1593,8 @@ const AppDevPro: React.FC = () => {
     if (!tasksActiveReady) {
       return;
     }
-    // 用户刚停止：只展示停止态，不自动 start / attach
-    if (previewUserStoppedRef.current) {
+    // 用户刚停止开发环境：只展示停止态，不自动 start / attach
+    if (previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Dev]) {
       return;
     }
     // 服务已在跑（不允许再 start）：有预览域名就直接 iframe，不必再挂 stream
@@ -1538,8 +1603,8 @@ const AppDevPro: React.FC = () => {
         return;
       }
       setPreviewIframeUrl(appPreviewUrlRef.current);
-      markPreviewReadyRef.current();
-      setPreviewEnterSettled(true);
+      markPreviewReadyRef.current(UserAppDbEnvEnum.Dev);
+      setPreviewEnterSettledForEnv(UserAppDbEnvEnum.Dev, true);
       return;
     }
     // 可以 start，但根目录尚无 workspace.manifest.toml 时不启动（等 manifest 出现后再走本 effect）
@@ -1550,8 +1615,12 @@ const AppDevPro: React.FC = () => {
     let cancelled = false;
     void (async () => {
       await prepareDevPreviewIfNeededRef.current();
-      if (!cancelled && !previewUserStoppedRef.current) {
-        setPreviewEnterSettled(true);
+      if (
+        !cancelled &&
+        dbEnvRef.current === UserAppDbEnvEnum.Dev &&
+        !previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Dev]
+      ) {
+        setPreviewEnterSettledForEnv(UserAppDbEnvEnum.Dev, true);
       }
     })();
     return () => {
@@ -1567,6 +1636,7 @@ const AppDevPro: React.FC = () => {
     previewConversationActive,
     podReady,
     queryConversationId,
+    setPreviewEnterSettledForEnv,
     tasksActiveReady,
     userAppDomainList,
   ]);
@@ -1826,40 +1896,39 @@ const AppDevPro: React.FC = () => {
     resetDevConsoleExpandedLayout,
   ]);
 
-  /** 启动预览服务；回到当前环境预览根地址，不沿用地址栏手动跳转 */
+  /** 启动当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
   const handleStartPreviewRuntime = useCallback(() => {
-    previewUserStoppedRef.current = false;
-    setPreviewUserStopped(false);
+    const envToStart = dbEnv;
+    setPreviewStoppedForEnv(envToStart, false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
-    void previewRuntime.start();
-  }, [previewRuntime]);
+    void previewRuntime.start(envToStart);
+  }, [dbEnv, previewRuntime, setPreviewStoppedForEnv]);
 
-  /** 重启预览服务；回到当前环境预览根地址，不沿用地址栏手动跳转 */
+  /** 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
   const handleRestartPreviewRuntime = useCallback(() => {
-    previewUserStoppedRef.current = false;
-    setPreviewUserStopped(false);
+    const envToRestart = dbEnv;
+    setPreviewStoppedForEnv(envToRestart, false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
-    void previewRuntime.restart();
-  }, [previewRuntime]);
+    void previewRuntime.restart(envToRestart);
+  }, [dbEnv, previewRuntime, setPreviewStoppedForEnv]);
 
-  /** 停止当前环境预览服务 */
+  /** 停止当前环境预览服务。确认前记下环境，避免确认时已经切到另一侧 */
   const handleStopPreviewRuntime = useCallback(() => {
+    const envToStop = dbEnv;
     modalConfirm(
       dict('PC.Pages.AppDevPro.confirmStopTitle'),
       dict('PC.Pages.AppDevPro.confirmStopContent'),
       () => {
-        previewUserStoppedRef.current = true;
-        setPreviewUserStopped(true);
-        void previewRuntime.stop().then((stopped) => {
+        setPreviewStoppedForEnv(envToStop, true);
+        void previewRuntime.stop(envToStop).then((stopped) => {
           if (stopped) {
             return;
           }
-          previewUserStoppedRef.current = false;
-          setPreviewUserStopped(false);
+          setPreviewStoppedForEnv(envToStop, false);
         });
       },
     );
-  }, [previewRuntime]);
+  }, [dbEnv, previewRuntime, setPreviewStoppedForEnv]);
 
   /** Header 应用预览重启 / 停止图标（逻辑与预览区原按钮一致） */
   const previewRuntimeControls = useMemo(
@@ -1877,6 +1946,8 @@ const AppDevPro: React.FC = () => {
       previewPodEnsuring,
       previewContainerFailed,
       previewDevActionLocked,
+      previewConversationActive,
+      previewWaitingConfirmation: hasPendingIntervention,
       // 根目录已有 workspace.manifest.toml 时才允许自动 start（空项目/未初始化工作区不拉预览）
       previewWorkspaceManifestReady: hasFileTreeData,
     }),
@@ -1901,8 +1972,9 @@ const AppDevPro: React.FC = () => {
    * 数据库页重挂管理 iframe；应用预览页重新启动预览（线上环境直接刷新 iframe）。
    */
   const handleRetryContainer = useCallback(async () => {
-    const ready = await ensureEnvPodRef.current(dbEnv, true);
-    if (!ready) {
+    const envToRetry = dbEnv;
+    const ready = await ensureEnvPodRef.current(envToRetry, true);
+    if (!ready || dbEnvRef.current !== envToRetry) {
       return;
     }
     const view = workspaceViewRef.current;
@@ -1913,20 +1985,19 @@ const AppDevPro: React.FC = () => {
     if (view !== 'app-preview') {
       return;
     }
-    previewUserStoppedRef.current = false;
-    setPreviewUserStopped(false);
+    setPreviewStoppedForEnv(envToRetry, false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
-    if (dbEnv === UserAppDbEnvEnum.Prod) {
+    if (envToRetry === UserAppDbEnvEnum.Prod) {
       setPreviewRefreshKey((key) => key + 1);
-      markPreviewReadyRef.current();
+      markPreviewReadyRef.current(UserAppDbEnvEnum.Prod);
       return;
     }
     if (previewRunningRef.current) {
-      void restartPreviewRuntimeRef.current();
+      void restartPreviewRuntimeRef.current(UserAppDbEnvEnum.Dev);
       return;
     }
     void prepareDevPreviewIfNeededRef.current();
-  }, [dbEnv]);
+  }, [dbEnv, setPreviewStoppedForEnv]);
 
   /** 取消 tasks/active 中的远程构建任务 */
   const handleCancelRemotePublish = useCallback(async () => {
@@ -2117,10 +2188,10 @@ const AppDevPro: React.FC = () => {
     if (!canDirectProdPreview || prodPod.status !== 'running') {
       return;
     }
-    if (previewUserStoppedRef.current) {
+    if (previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Prod]) {
       return;
     }
-    markPreviewReadyRef.current();
+    markPreviewReadyRef.current(UserAppDbEnvEnum.Prod);
   }, [canDirectProdPreview, prodPod.status]);
 
   /** 环境或应用变化时，地址栏与 iframe 回到对应代理根路径 */
