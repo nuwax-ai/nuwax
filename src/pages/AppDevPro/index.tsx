@@ -18,6 +18,7 @@ import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import { useWorkspaceFileRefresh } from '@/features/conversation/react/useWorkspaceFileRefresh';
 import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
 import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
@@ -631,11 +632,23 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 进页自动发送直发 runtime store——乐观轮次与面板渲染同线，首条消息立即可见，
    * 不再等 5s 快照轮询从后端捞回；AgentConversationChatPanel 消费同一实例不自建。
    */
+  // 共用文件树刷新（含当前选中文件正文）；仅文件变更完成事件调用，仍按 2s 合并。
+  const refreshRuntimeFileTree = useWorkspaceFileRefresh({
+    active,
+    conversationId: queryConversationId,
+    refresh: () => {
+      const refresh = refreshFileTreeAndSelectedFileRef.current;
+      return refresh
+        ? refresh()
+        : refreshFileListImmediately(queryConversationId);
+    },
+  });
+
   const runtimeLine = useConversationRuntimeSession({
     conversationId: queryConversationId,
     // chat 请求携带面板当前选中电脑（空串兜底 undefined）
     getSandboxId: () => finalSelectedComputerId || undefined,
-    effectsResources: {}, // 页面入口无 chat model 资源；预览类 effect 静默忽略
+    effectsResources: { refreshFileListThrottled: refreshRuntimeFileTree },
   });
 
   useInitialConversationAutoSend({

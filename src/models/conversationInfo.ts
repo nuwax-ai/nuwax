@@ -18,6 +18,7 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
+import { shouldRefreshWorkspaceFiles } from '@/features/conversation/domain/workspaceFileChange';
 import { useConversationActiveState } from '@/hooks/useConversationActiveState';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
@@ -1358,7 +1359,7 @@ export default () => {
 
         // 通用型任务处理(刷新文件树)
         if (
-          data.type === AgentComponentTypeEnum.ToolCall &&
+          shouldRefreshWorkspaceFiles(data) &&
           isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
           viewModeRef.current === 'preview' && // 文件预览
           // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值

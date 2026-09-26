@@ -1047,27 +1047,84 @@ describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录�
     mockSyncTerminal.mockResolvedValue(undefined);
   });
 
-  it('PROCESSING ToolCall：dispatch preview.file.refresh（throttled）', () => {
-    const { session, dispatched } = createSessionWith();
-    mockOpenLive.mockReturnValue(vi.fn());
-    session.send({ conversationId: 1001, message: '调工具' });
+  it.each([
+    { name: 'search', status: 'EXECUTING', result: {}, refresh: false },
+    { name: 'search', status: 'FINISHED', result: {}, refresh: false },
+    {
+      name: '读取文件',
+      status: 'FINISHED',
+      result: { kind: 'read' },
+      refresh: false,
+    },
+    {
+      name: '写入文件',
+      status: 'EXECUTING',
+      result: { kind: 'write' },
+      refresh: false,
+    },
+    {
+      name: '写入文件',
+      status: 'FINISHED',
+      result: { kind: 'write' },
+      refresh: true,
+    },
+    {
+      name: '编辑文件',
+      status: 'FINISHED',
+      result: { kind: 'edit' },
+      refresh: true,
+    },
+    {
+      name: '终端',
+      status: 'FINISHED',
+      result: { kind: 'execute', input: { command: 'echo done > output.txt' } },
+      refresh: true,
+    },
+    {
+      name: '终端',
+      status: 'FINISHED',
+      result: { kind: 'execute', input: { command: 'pwd' } },
+      refresh: false,
+    },
+    { name: 'apply_patch', status: 'FINISHED', result: {}, refresh: true },
+    {
+      name: '删除文件',
+      status: 'FINISHED',
+      result: { kind: 'delete' },
+      refresh: true,
+    },
+  ])(
+    'PROCESSING ToolCall 按完成后的文件变更刷新：$name/$status/$refresh',
+    ({ name, status, result, refresh }) => {
+      const { session, dispatched } = createSessionWith();
+      mockOpenLive.mockReturnValue(vi.fn());
+      session.send({ conversationId: 1001, message: '调工具' });
 
-    getCallbacks().onMessage({
-      requestId: 'req-tool',
-      eventType: ConversationEventTypeEnum.PROCESSING,
-      data: {
-        type: 'ToolCall',
-        name: 'search',
-        executeId: 'exec-1',
-        status: 'EXECUTING',
-        result: {},
-      },
-    } as ConversationChatResponse);
+      getCallbacks().onMessage({
+        requestId: 'req-tool',
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          type: 'ToolCall',
+          name,
+          executeId: 'exec-1',
+          status,
+          result,
+        },
+      } as ConversationChatResponse);
 
-    expect(fileRefreshDispatches(dispatched)).toEqual([
-      { type: 'preview.file.refresh', conversationId: 1001, mode: 'throttled' },
-    ]);
-  });
+      expect(fileRefreshDispatches(dispatched)).toEqual(
+        refresh
+          ? [
+              {
+                type: 'preview.file.refresh',
+                conversationId: 1001,
+                mode: 'throttled',
+              },
+            ]
+          : [],
+      );
+    },
+  );
 
   it('PROCESSING 非 ToolCall（Page）不发文件树刷新', () => {
     const { session, dispatched } = createSessionWith();

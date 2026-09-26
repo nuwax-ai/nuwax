@@ -3,8 +3,8 @@ import {
   isTerminalTaskStatus,
   resolveTerminalTaskStatus,
 } from '@/features/conversation/domain/taskStatus';
+import { shouldRefreshWorkspaceFiles } from '@/features/conversation/domain/workspaceFileChange';
 import {
-  AgentComponentTypeEnum,
   AssistantRoleEnum,
   DefaultSelectedEnum,
   MessageModeEnum,
@@ -317,10 +317,9 @@ export function createConversationRuntimeSession(
     if (res.eventType === 'PROCESSING' && conversationId !== null) {
       const processing = (reduction.processing ?? data) as Record<string, any>;
       const input = processing?.result?.input ?? {};
-      // 文件树节流刷新（对齐旧线 ToolCall 分支）。旧线的「面板可见且处于
-      // preview 视图」门控在懒加载单层刷新下放开：消费端 2s 节流兜底，
-      // runtime 核心不反向依赖 UI 状态；面板关闭期间由消费端按可见性跳过
-      if (data.type === AgentComponentTypeEnum.ToolCall) {
+      // 编辑/新增等结束后才刷新；搜索和工具开始不代表树有变化。
+      // live / sub 与旧线使用同一语义，消费端继续保留 2s 节流与可见性门控。
+      if (shouldRefreshWorkspaceFiles(processing)) {
         runtime.effects.dispatch({
           type: 'preview.file.refresh',
           conversationId: conversationId as number,
