@@ -191,6 +191,8 @@ export function createConversationRuntimeSession(
    * send（新一轮）/ 切会话时清空。
    */
   let settledTerminalStatus: TaskStatus | null = null;
+  // 停止接口跨异步边界：同会话新一轮或切页后，旧停止成功不得取消当前轮。
+  let stopRequestGeneration = 0;
   const stateListeners = new Set<RuntimeSessionListener>();
 
   const notifyState = () => {
@@ -205,8 +207,10 @@ export function createConversationRuntimeSession(
   };
 
   const stop = (conversationId: number | string) => {
-    // 1. 中断 live 连接（Controller 保证 abort exactly-once）并重置投影
+    const stopGeneration = ++stopRequestGeneration;
+    // 1. 同时中断 live/sub；恢复流已接管时，只关闭 live 会使订阅标记与轮询永久悬挂。
     runtime.liveConnection.abortCurrent();
+    resumeController.abortResumeStream();
     runtime.resetStreamProjection();
     // 2. 消息终态：Loading → Stopped，执行中 processing → FAILED
     store.finalizeOnClose();
@@ -214,12 +218,32 @@ export function createConversationRuntimeSession(
     //    disabledConversationActive('user-stop')），不走 setConversationActive——
     //    它受「发送后 3s 保活」窗口约束，发送后快速停止时活跃态会被窗口
     //    拒绝落 false 而永久卡「执行中」，输入框停止/发送双双失效（禅道 bug2528）
+    isAwaitingChatTerminal = false;
     disableConversationActive();
     // 4. 后端 stop 请求（绑定层注入句柄）
     if (config.stopRequest) {
-      void config.stopRequest(String(conversationId)).catch((error) => {
-        console.error('[runtimeSession] stop request failed:', error);
-      });
+      void config
+        .stopRequest(String(conversationId))
+        .then(() => {
+          if (
+            stopGeneration !== stopRequestGeneration ||
+            String(currentConversationId) !== String(conversationId)
+          ) {
+            return;
+          }
+          // 等待停止接口期间可能已续接 sub，再清理一次；成功终态须写回绑定层，
+          // 否则页面仍被 conversationInfo 的 EXECUTING 撑住，发送按钮不能恢复。
+          resumeController.abortResumeStream();
+          finalizeConversationTerminal(conversationId, TaskStatus.CANCEL);
+          runtime.effects.dispatch({
+            type: 'recent.status.patch',
+            conversationId,
+            status: TaskStatus.CANCEL,
+          });
+        })
+        .catch((error) => {
+          console.error('[runtimeSession] stop request failed:', error);
+        });
     }
   };
 
@@ -442,6 +466,7 @@ export function createConversationRuntimeSession(
   };
 
   const send = (input: RuntimeSessionSendInput) => {
+    stopRequestGeneration += 1;
     const { conversationId, message } = input;
     // 取代上一轮连接：中断、重置投影
     runtime.liveConnection.abortCurrent();
@@ -680,6 +705,7 @@ export function createConversationRuntimeSession(
   });
 
   const resetForConversationSwitch = () => {
+    stopRequestGeneration += 1;
     runtime.liveConnection.abortCurrent();
     resumeController.abortResumeStream();
     runtime.resetStreamProjection();

@@ -434,6 +434,45 @@ describe('conversationRuntimeSession', () => {
     expect(secondRoundUser).toBeTruthy();
   });
 
+  it('stop：sub 恢复中也要断开连接，成功后写 CANCEL 释放合成活跃态', async () => {
+    const abortSub = vi.fn();
+    mockCreateSSE.mockReturnValue(abortSub);
+    const applyTaskStatus = vi.fn();
+    const { session } = createSession({
+      stopRequest: vi.fn().mockResolvedValue(undefined),
+      applyTaskStatus,
+    });
+    session.resumeConversationStream(1001, []);
+
+    session.stop(1001);
+    await Promise.resolve();
+
+    expect(abortSub).toHaveBeenCalledOnce();
+    expect(applyTaskStatus).toHaveBeenCalledWith(1001, TaskStatus.CANCEL);
+    expect(session.getState().isAwaitingChatTerminal).toBe(false);
+    expect(session.getState().isConversationActive).toBe(false);
+  });
+
+  it('stop：旧停止请求成功迟到不能取消同会话新一轮', async () => {
+    let resolveStop!: () => void;
+    const applyTaskStatus = vi.fn();
+    const { session } = createSession({
+      stopRequest: () =>
+        new Promise<void>((resolve) => (resolveStop = resolve)),
+      applyTaskStatus,
+    });
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '旧轮' });
+    session.stop(1001);
+    session.send({ conversationId: 1001, message: '新轮' });
+    resolveStop();
+    await Promise.resolve();
+
+    expect(applyTaskStatus).not.toHaveBeenCalled();
+    expect(session.getState().isConversationActive).toBe(true);
+    expect(session.getState().isAwaitingChatTerminal).toBe(true);
+  });
+
   it('stop：任务终态后 setConversationActive 保活窗口机制随窗口一并移除——onClose 复位不再受 3s 约束', () => {
     const { session } = createSession();
     let liveOnClose: () => void = () => {};
