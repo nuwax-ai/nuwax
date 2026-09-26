@@ -978,8 +978,7 @@ export function useFileTreePreviewView(
    * 监听 taskAgentSelectedFileId / taskAgentSelectTrigger，自动定位并打开消息中的目标文件。
    *
    * 典型入口：TaskResult、Markdown 内联文件链接点击。
-   * 调用方通常会先 openPreviewView({ forceRefresh: true }) 拉取最新文件树，
-   * 再设置 fileId + trigger；本 effect 负责在树就绪后完成选中，并避免重复请求文件列表。
+   * Chat 懒加载会先搜索并打开文件；文件已经选中时这里不再打开第二次。
    */
   useEffect(() => {
     // 重新导入项目后触发 taskAgentSelectTrigger 时，用最新 filesRef 判断是否可自动选中
@@ -1113,24 +1112,23 @@ export function useFileTreePreviewView(
     // 本地树尚未构建：记录 pending，必要时触发一次刷新；files 更新后依赖项变化会重入
     if (!files?.length) {
       if (isTriggerUpdate || isPendingRetry || hasSelectionChanged) {
+        // 懒加载宿主正在加载目标目录时，不要再刷当前层（通常是根目录）
+        if (
+          isAutoSelectDirectoryLoadedRef.current &&
+          !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
+        ) {
+          pendingTaskAgentAutoSelectRef.current = {
+            fileId: taskAgentSelectedFileId,
+            trigger: taskAgentSelectTrigger,
+          };
+          resolveMissingFileFromSearch();
+          return;
+        }
         if (
           hasFetchedOriginalFiles &&
           !originalFiles?.length &&
           !isFileTreeFetchInFlight
         ) {
-          // 懒加载宿主：目标所在目录尚未加载（父目录导航在途）时保持等待，
-          // 目录层到达后 files 变化重入本 effect 完成选中，不误判 miss
-          if (
-            isAutoSelectDirectoryLoadedRef.current &&
-            !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
-          ) {
-            pendingTaskAgentAutoSelectRef.current = {
-              fileId: taskAgentSelectedFileId,
-              trigger: taskAgentSelectTrigger,
-            };
-            resolveMissingFileFromSearch();
-            return;
-          }
           if (resolveMissingFileFromSearch()) {
             return;
           }
@@ -1175,6 +1173,23 @@ export function useFileTreePreviewView(
     };
 
     if (isFileInTreeForAutoSelect(taskAgentSelectedFileId)) {
+      const openedNode = findFileNode(
+        taskAgentSelectedFileId,
+        filesRef.current,
+      );
+      const openedId = selectedFileIdRef.current;
+      // 搜索路径已经打开过该文件，目录列表到达后不要再请求一次正文
+      if (
+        openedId &&
+        (openedId === taskAgentSelectedFileId || openedId === openedNode?.id)
+      ) {
+        prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+        if (taskAgentSelectTrigger !== undefined) {
+          prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+        }
+        pendingTaskAgentAutoSelectRef.current = null;
+        return;
+      }
       applyAutoSelect(taskAgentSelectedFileId);
       return;
     }

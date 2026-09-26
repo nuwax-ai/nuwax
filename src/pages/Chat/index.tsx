@@ -1098,6 +1098,30 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   } | null>(null);
   const taskAgentSelectedFileIdRef = useRef(taskAgentSelectedFileId);
   taskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+  /**
+   * 同一次点击只标记一次。必须在预览 hook 的 effect 之前写上，
+   * 否则自动选中会先把目标当已加载，再打开一次文件。
+   */
+  const taskResultOpenMarkRef = useRef<number | string | undefined>(undefined);
+  if (
+    taskAgentSelectTrigger &&
+    taskAgentSelectedFileId &&
+    taskResultOpenMarkRef.current !== taskAgentSelectTrigger
+  ) {
+    taskResultOpenMarkRef.current = taskAgentSelectTrigger;
+    const openingParent = parentDirectory(
+      workspaceRelativePath(taskAgentSelectedFileId).replace(
+        /^\/+|\/+$/g,
+        '',
+      ),
+    );
+    if (openingParent && typeof taskAgentSelectTrigger === 'number') {
+      openingTaskResultRef.current = {
+        parent: openingParent,
+        trigger: taskAgentSelectTrigger,
+      };
+    }
+  }
 
   /**
    * #5a 文件树懒加载收尾：向模型声明本页自管文件树（单层 hook）。
