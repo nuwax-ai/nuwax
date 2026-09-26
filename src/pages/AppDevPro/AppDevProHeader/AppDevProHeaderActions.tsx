@@ -1,9 +1,9 @@
 import { SvgIcon } from '@/components/base';
+import ConversationPanelActions from '@/components/business-component/ConversationPanelActions';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { PublishStatusEnum } from '@/types/enums/common';
-import { CodeOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo } from 'react';
@@ -202,7 +202,15 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
     isBuildVersionRecordsOpen || isPublishVersionRecordsOpen;
 
   return (
-    <header className={cx('flex', 'items-center', styles.header, className)}>
+    <header
+      className={cx(
+        'flex',
+        'items-center',
+        styles.header,
+        styles['actions-header'],
+        className,
+      )}
+    >
       {/* 环境切换：开发 / 线上始终展示，图标入口仍按当前环境显隐 */}
       <Segmented
         className={cx(styles['env-switch'], styles.segmented)}
@@ -256,36 +264,29 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
           onClick={onOpenDatabase}
         />
 
-        {/* 文件树：仅开发环境。线上环境无沙箱文件树，入口一并隐藏 */}
-        <ConditionRender condition={env === UserAppDbEnvEnum.Dev}>
-          <TooltipIcon
-            title={
-              isFileTreeSidebarVisible
-                ? dict('PC.Components.FilePathHeader.collapseFileTree')
-                : dict('PC.Components.FilePathHeader.expandFileTree')
-            }
-            className={cx(styles['panel-btn'], {
-              [styles.active]: isFileTreeSidebarVisible,
-            })}
-            icon={
-              <SvgIcon
-                name="icons-common-file_preview"
-                style={{ fontSize: 16 }}
-              />
-            }
-            onClick={onToggleFileTreeSidebar}
-          />
-        </ConditionRender>
-
-        {/* 终端按钮（再次点击收起，active 态由父组件互斥控制） */}
-        <TooltipIcon
-          title={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
-          ariaLabel={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
-          className={cx(styles['panel-btn'], {
-            [styles.active]: isTerminalPanelOpen,
-          })}
-          icon={<CodeOutlined style={{ fontSize: 16 }} />}
-          onClick={onOpenTerminalPanel}
+        <ConversationPanelActions
+          iconClassName={styles['panel-btn']}
+          activeClassName={styles.active}
+          files={
+            env === UserAppDbEnvEnum.Dev
+              ? {
+                  open: isFileTreeSidebarVisible,
+                  onClick: () => onToggleFileTreeSidebar?.(),
+                }
+              : undefined
+          }
+          terminal={{
+            open: isTerminalPanelOpen,
+            onClick: () => onOpenTerminalPanel?.(),
+          }}
+          desktop={
+            isShowDesktop
+              ? {
+                  open: isAgentDesktopOpen,
+                  onClick: () => onOpenDesktopPanel?.(),
+                }
+              : undefined
+          }
         />
 
         {/* 应用预览页签：线上环境未部署时无预览地址，入口隐藏 */}
@@ -300,31 +301,6 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
               <SvgIcon name="icons-common-preview" style={{ fontSize: 16 }} />
             }
             onClick={onOpenAppPreview}
-          />
-        </ConditionRender>
-
-        {/* 远程桌面：仅开发环境显示，交互对齐 ConversationAgent */}
-        <ConditionRender condition={isShowDesktop}>
-          <TooltipIcon
-            title={
-              isAgentDesktopOpen
-                ? dict(
-                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeAgentDesktop',
-                  )
-                : dict(
-                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openAgentDesktop',
-                  )
-            }
-            className={cx(styles['panel-btn'], {
-              [styles.active]: isAgentDesktopOpen,
-            })}
-            icon={
-              <SvgIcon
-                name="icons-nav-computer-star"
-                style={{ fontSize: 16 }}
-              />
-            }
-            onClick={onOpenDesktopPanel}
           />
         </ConditionRender>
 

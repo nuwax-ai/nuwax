@@ -1,5 +1,10 @@
 import { UnifiedChatSession } from '@/components/business-component';
+import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import ConversationPanelActions from '@/components/business-component/ConversationPanelActions';
+import ConversationProgressCapsule from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule';
+import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import type { UseConversationRuntimeSessionResult } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversationMentionFiles from '@/hooks/useConversationMentionFiles';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -14,6 +19,7 @@ import { history, useLocation, useParams } from 'umi';
  * Props 类型定义
  */
 export interface AgentConversationChatPanelProps {
+  active?: boolean;
   /** 常驻页面的固定路由快照，隐藏时不读取其他页面的 URL。 */
   routeSnapshot?: {
     conversationId: number;
@@ -41,6 +47,7 @@ export interface AgentConversationChatPanelProps {
  */
 const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   className,
+  active = true,
   routeSnapshot,
   onChangeSelectedComputerId,
   selectedComputerId,
@@ -176,6 +183,19 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     prevIsActiveRef.current = effectiveIsActive;
   }, [effectiveIsActive, onConversationEnd]);
 
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const effectiveMessages =
+    runtimeLine?.conversationProps.messageList ?? messageList;
+  const capsuleModel = selectProgressCapsule(
+    effectiveMessages,
+    effectiveIsActive,
+  );
+  useEffect(() => {
+    setProgressOpen(false);
+    setDetailOpen(false);
+  }, [queryConversationId, active]);
+
   return (
     <div
       className={classNames(
@@ -187,84 +207,141 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       )}
       style={{ minHeight: 0 }}
     >
-      <UnifiedChatSession
-        conversationId={conversationInfo?.id}
-        messageList={messageList}
-        isLoading={
-          loadingConversation &&
-          !(messageList?.length && conversationInfo?.id === queryConversationId)
-        }
-        loadingMore={loadingMore}
-        isMoreMessage={isMoreMessage}
-        isConversationActive={
-          isConversationActive ||
-          conversationInfo?.taskStatus === TaskStatus.EXECUTING
-        }
-        isLocallyStreaming={isConversationActive}
-        isAwaitingChatTerminal={isAwaitingChatTerminal}
-        messageBottomMode="chat"
-        showDebug={false}
-        chatSuggestList={chatSuggestList}
-        agentInfo={{
-          ...conversationInfo?.agent,
-          id: conversationInfo?.agent?.agentId,
-          sandboxId: selectedComputerId,
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 8,
+          flexShrink: 0,
+          padding: '0 8px 4px',
         }}
-        allowOtherModel={conversationInfo?.agent?.allowOtherModel}
-        onFetchMentionFiles={
-          mentionFilesEnabled ? fetchMentionFiles : undefined
-        }
-        initialAgentMode={initialAgentMode}
-        selectedModelId={selectedModelId}
-        onModelSelect={setSelectedModelId}
-        isSelectionLocked={isSelectionLocked}
-        onSendMessage={(
-          messageInfo,
-          files,
-          skillIds,
-          modelId,
-          selectedAgentMode,
-        ) => {
-          const id = conversationInfo?.id;
-          if (id) {
-            onMessageSend({
-              id,
-              messageInfo,
-              files,
-              infos: selectedComponentList,
-              sandboxId: selectedComputerId,
-              debug: true,
-              skillIds,
-              modelId: modelId || selectedModelId,
-              agentMode: selectedAgentMode,
-            });
+      >
+        <ConversationPanelActions
+          progress={
+            capsuleModel
+              ? {
+                  open: progressOpen,
+                  running: capsuleModel.running,
+                  onClick: () => setProgressOpen((value) => !value),
+                }
+              : undefined
           }
+          detail={
+            conversationInfo?.agent?.agentId
+              ? { open: detailOpen, onClick: () => setDetailOpen(true) }
+              : undefined
+          }
+        />
+      </div>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          position: 'relative',
+          containerType: 'size',
+          display: 'flex',
+          flexDirection: 'column',
         }}
-        onLoadMoreMessage={handleLoadMoreMessage}
-        manualComponents={manualComponents}
-        selectedComponentList={selectedComponentList}
-        onSelectComponent={handleSelectComponent}
-        selectedComputerId={selectedComputerId}
-        onComputerSelect={(id) => {
-          onChangeSelectedComputerId?.(id);
-        }}
-        // 原 conversationInfo model 数据，传给独立版输入组件
-        runStopConversation={runStopConversation}
-        loadingStopConversation={loadingStopConversation}
-        getCurrentConversationId={getCurrentConversationId}
-        getCurrentConversationRequestId={getCurrentConversationRequestId}
-        disabledConversationActive={disabledConversationActive}
-        loadingConversation={loadingConversation}
-        isLoadingOtherInterface={isLoadingOtherInterface}
-        conversationInfo={conversationInfo}
-        // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
-        onResumeConversationStream={resumeConversationStream}
-        onAbortResumeStream={abortResumeStream}
-        onReloadConversationHistoryAsync={async (id) =>
-          (await runAsync(Number(id)))?.data?.messageList
-        }
-        resumeDebugSource="agent-dev:left-dev-agent-session"
-        {...(runtimeLine?.conversationProps ?? {})}
+      >
+        <UnifiedChatSession
+          conversationId={conversationInfo?.id}
+          messageList={messageList}
+          isLoading={
+            loadingConversation &&
+            !(
+              messageList?.length &&
+              conversationInfo?.id === queryConversationId
+            )
+          }
+          loadingMore={loadingMore}
+          isMoreMessage={isMoreMessage}
+          isConversationActive={
+            isConversationActive ||
+            conversationInfo?.taskStatus === TaskStatus.EXECUTING
+          }
+          isLocallyStreaming={isConversationActive}
+          isAwaitingChatTerminal={isAwaitingChatTerminal}
+          messageBottomMode="chat"
+          showDebug={false}
+          chatSuggestList={chatSuggestList}
+          agentInfo={{
+            ...conversationInfo?.agent,
+            id: conversationInfo?.agent?.agentId,
+            sandboxId: selectedComputerId,
+          }}
+          allowOtherModel={conversationInfo?.agent?.allowOtherModel}
+          onFetchMentionFiles={
+            mentionFilesEnabled ? fetchMentionFiles : undefined
+          }
+          initialAgentMode={initialAgentMode}
+          selectedModelId={selectedModelId}
+          onModelSelect={setSelectedModelId}
+          isSelectionLocked={isSelectionLocked}
+          onSendMessage={(
+            messageInfo,
+            files,
+            skillIds,
+            modelId,
+            selectedAgentMode,
+          ) => {
+            const id = conversationInfo?.id;
+            if (id) {
+              onMessageSend({
+                id,
+                messageInfo,
+                files,
+                infos: selectedComponentList,
+                sandboxId: selectedComputerId,
+                debug: true,
+                skillIds,
+                modelId: modelId || selectedModelId,
+                agentMode: selectedAgentMode,
+              });
+            }
+          }}
+          onLoadMoreMessage={handleLoadMoreMessage}
+          manualComponents={manualComponents}
+          selectedComponentList={selectedComponentList}
+          onSelectComponent={handleSelectComponent}
+          selectedComputerId={selectedComputerId}
+          onComputerSelect={(id) => {
+            onChangeSelectedComputerId?.(id);
+          }}
+          // 原 conversationInfo model 数据，传给独立版输入组件
+          runStopConversation={runStopConversation}
+          loadingStopConversation={loadingStopConversation}
+          getCurrentConversationId={getCurrentConversationId}
+          getCurrentConversationRequestId={getCurrentConversationRequestId}
+          disabledConversationActive={disabledConversationActive}
+          loadingConversation={loadingConversation}
+          isLoadingOtherInterface={isLoadingOtherInterface}
+          conversationInfo={conversationInfo}
+          // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+          onResumeConversationStream={resumeConversationStream}
+          onAbortResumeStream={abortResumeStream}
+          onReloadConversationHistoryAsync={async (id) =>
+            (await runAsync(Number(id)))?.data?.messageList
+          }
+          resumeDebugSource="agent-dev:left-dev-agent-session"
+          {...(runtimeLine?.conversationProps ?? {})}
+        />
+        <ConversationProgressCapsule
+          conversationId={queryConversationId}
+          messageList={effectiveMessages}
+          active={effectiveIsActive}
+          enableVersionControl={isAgentVersionControlEnabled(
+            conversationInfo?.agent?.enableVersionControl,
+          )}
+          open={active && progressOpen}
+          onClose={() => setProgressOpen(false)}
+        />
+      </div>
+      <AgentDetailModal
+        open={active && detailOpen}
+        onClose={() => setDetailOpen(false)}
+        agentId={conversationInfo?.agent?.agentId || 0}
+        agentDetail={conversationInfo?.agent}
+        loading={loadingConversation}
       />
     </div>
   );

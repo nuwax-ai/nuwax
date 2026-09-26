@@ -33,6 +33,8 @@ export interface VncPreviewProps {
    * e.g., "http://rcoder-service.example.com"
    */
   serviceUrl?: string;
+  /** 可选业务文档代理 URL；cId 仍为真实会话 ID，用于状态检查。 */
+  sourceUrl?: string;
   /**
    * Container ID or Session ID
    */

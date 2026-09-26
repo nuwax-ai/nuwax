@@ -1,0 +1,8 @@
+# #2461 面板复用实施计划
+
+1. 提取公共面板入口与详情 Modal；Chat 和 AppDevPro 消费同源。
+2. AppDevPro 聊天面板复用进度胶囊并用 runtime 生效消息/活跃态。
+3. 共用 ResizableSplit 分隔条，补窄容器边界、全栈聊天/工作区和文件树拖拽。
+4. 消除终端副本，保留 dev/prod 缓冲与容器启动单源；桌面复用 VncPreview。
+5. 定向行为测试、test:conversation、lint:arch；启动本 worktree 本地服务，用同一 TaskSpace 对照真实环境走查五面板和窄窗。
+6. 分离源码/测试/部署/真机证据，不修改禅道或发版。

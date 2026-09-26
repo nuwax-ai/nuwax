@@ -1,4 +1,8 @@
 import { SvgIcon } from '@/components/base';
+import type { EmbeddedConsoleTerminalRef } from '@/components/business-component/Terminal/EmbeddedConsoleTerminal';
+import EmbeddedConsoleTerminal from '@/components/business-component/Terminal/EmbeddedConsoleTerminal';
+import { DEFAULT_TERMINAL_RECONNECT } from '@/components/business-component/Terminal/terminalReconnect';
+import type { TerminalWireProtocol } from '@/components/business-component/Terminal/type';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -27,10 +31,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import type { EmbeddedConsoleTerminalRef } from '../Terminal/EmbeddedConsoleTerminal';
-import EmbeddedConsoleTerminal from '../Terminal/EmbeddedConsoleTerminal';
-import { DEFAULT_TERMINAL_RECONNECT } from '../Terminal/terminalReconnect';
-import type { TerminalWireProtocol } from '../Terminal/type';
 import DevLogPanel from './DevLogPanel';
 import styles from './index.less';
 import {
@@ -44,14 +44,42 @@ export type { TerminalAppearanceMode } from './terminalTheme';
 
 const cx = classNames.bind(styles);
 
+export type ConsoleTerminalEnvironment = 'dev' | 'prod';
+
+export interface ConsoleTerminalSession {
+  wsUrl?: string;
+  containerStatus?: ConsoleExternalContainerStatus;
+}
+
+/**
+ * 底部控制台内部状态。
+ * 两个终端键仅用于区分环境缓冲区，界面统一展示为一个“终端”入口。
+ */
+export type ConversationConsoleTab = 'terminal-dev' | 'terminal-prod' | 'logs';
+
+/** 对外仍按「终端 / 日志」两组回传，避免页面其它逻辑改动 */
+export type ConversationConsoleTabGroup = 'terminal' | 'logs';
+
 /** 底部控制台布局模式 */
 export type ConsoleLayoutMode = 'default' | 'expanded' | 'collapsed';
 
 /**
- * 页面层容器状态（仅 AppDevPro 传入）。
+ * 页面层容器状态。
  * 未传时打开终端仍由本组件 ensure；传入后打开终端优先复用进页启动结果。
  */
-export type ConsoleExternalContainerStatus = 'starting' | 'running' | 'error';
+export type ConsoleExternalContainerStatus =
+  | 'idle'
+  | 'starting'
+  | 'running'
+  | 'error';
+
+/** 按 Header 环境落到对应终端 Tab */
+const tabFromEnv = (env: ConsoleTerminalEnvironment): ConversationConsoleTab =>
+  env === 'prod' ? 'terminal-prod' : 'terminal-dev';
+
+/** 内部 Tab 映射为页面对外感知的终端 / 日志分组 */
+const toTabGroup = (tab: ConversationConsoleTab): ConversationConsoleTabGroup =>
+  tab === 'logs' ? 'logs' : 'terminal';
 
 /** 开发服务器日志相关配置（网页应用） */
 export interface ConversationBottomConsoleDevLogProps {
@@ -66,12 +94,18 @@ export interface ConversationBottomConsoleDevLogProps {
 export interface ConversationBottomConsoleProps {
   /** 是否显示面板 @default true */
   visible?: boolean;
-  /** 运行日志纯文本（会话智能体） */
+  /** 运行日志纯文本 */
   runtimeLogs?: string;
   /** 开发服务器结构化日志；传入后日志 Tab 使用 DevLogPanel */
   devLog?: ConversationBottomConsoleDevLogProps;
-  /** 终端 WebSocket 地址；传入后终端 Tab 渲染 XtermTerminal */
+  /** 单终端会话入口（保持原接口与不带 appStage 的后端契约） */
   wsUrl?: string;
+  /** 可选环境终端；两份 xterm 常驻，缓冲与连接各自隔离 */
+  terminalSessions?: Partial<
+    Record<ConsoleTerminalEnvironment, ConsoleTerminalSession>
+  >;
+  /** 当前可见环境，仅 terminalSessions 模式使用 */
+  terminalEnvironment?: ConsoleTerminalEnvironment;
   /**
    * 会话 ID；传入后首次展开终端时按需接入容器，
    * 容器就绪后才允许终端发起 WebSocket 连接。
@@ -79,18 +113,24 @@ export interface ConversationBottomConsoleProps {
    */
   conversationId?: number;
   /**
-   * 全栈应用环境，仅 AppDevPro 传入。
-   * 未传时 computer/pod 老接口不带 appStage，会话智能体等页面行为不变。
+   * 全栈应用环境，用于 computer/pod 接口的 appStage。
+   * 打开某个终端 Tab 时按该 Tab 对应环境 ensure；此值作为日志 Tab 下的兜底。
    */
   appStage?: ComputerPodAppStage;
   /**
-   * 页面层容器状态，仅 AppDevPro 传入。
-   * - running：进页已启动成功，打开终端只保活并连接，不再 ensure
-   * - starting：进页正在启动，打开终端等待页面结果
-   * - error：进页启动失败，打开终端再 ensure
-   * 未传时保持原行为：首次展开终端时 ensure。
+   * 页面层容器状态。
+   * - running：已启动成功，打开终端只连接
+   * - starting：正在启动，打开终端等待结果
+   * - idle / error：打开终端由页面先拉起（失败会强制重试）
+   * 开发、线上都走这套规则。
    */
   externalContainerStatus?: ConsoleExternalContainerStatus;
+  /** 当前可见终端环境变化（折叠或日志 Tab 时为 null） */
+  onActiveTerminalEnvironmentChange?: (
+    env: ConsoleTerminalEnvironment | null,
+  ) => void;
+  /** 当前环境容器失败后，由页面统一强制重试 ensure */
+  onRetryContainer?: (env: ConsoleTerminalEnvironment) => void;
   /**
    * 容器启动成功后是否开启保活轮询 @default true
    * 网页应用开发只需要确保/重启服务，不需要轮询保活接口。
@@ -121,7 +161,7 @@ export interface ConversationBottomConsoleProps {
   /** 布局模式变化回调（供外部感知折叠/展开状态） */
   onLayoutModeChange?: (mode: ConsoleLayoutMode) => void;
   /** 激活 Tab 变化回调（供外部感知当前显示终端还是日志） */
-  onActiveTabChange?: (tab: 'terminal' | 'logs') => void;
+  onActiveTabChange?: (tab: ConversationConsoleTabGroup) => void;
   /** 打开控制台时的默认 Tab @default 'terminal' */
   defaultActiveTab?: 'terminal' | 'logs';
   /** 打开控制台时的默认布局模式 @default 'collapsed' */
@@ -134,8 +174,8 @@ export interface ConversationBottomConsoleProps {
 }
 
 /**
- * 底部终端 + 日志合集面板
- * - 终端 Tab：XtermTerminal（wsUrl）或空态
+ * 公共会话终端 + 日志面板；全栈应用仅适配环境数据，不另维护一份 UI。
+ * - 开发 / 线上两个终端 Tab 常驻挂载，Header 环境切换时展示对应终端
  * - 日志 Tab：DevLogPanel（devLog）或 runtimeLogs 纯文本
  */
 const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
@@ -143,9 +183,13 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   runtimeLogs = '',
   devLog,
   wsUrl,
+  terminalSessions,
+  terminalEnvironment = 'dev',
   conversationId,
   appStage,
-  externalContainerStatus,
+  externalContainerStatus: externalContainerStatusProp,
+  onActiveTerminalEnvironmentChange,
+  onRetryContainer,
   enableKeepalivePolling = true,
   wsSubprotocols,
   wireProtocol,
@@ -166,9 +210,17 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   logsExtra,
   className,
 }) => {
-  /** 当前激活的 Tab（终端 / 日志） */
-  const [activeTab, setActiveTab] = useState<'terminal' | 'logs'>(
-    showLogsTab ? defaultActiveTab : 'terminal',
+  const isMultiEnvironment = terminalSessions !== undefined;
+  const env = terminalEnvironment;
+  const devWsUrl = isMultiEnvironment ? terminalSessions.dev?.wsUrl : wsUrl;
+  const prodWsUrl = terminalSessions?.prod?.wsUrl;
+  const externalContainerStatus = isMultiEnvironment
+    ? terminalSessions.dev?.containerStatus
+    : externalContainerStatusProp;
+  const prodExternalContainerStatus = terminalSessions?.prod?.containerStatus;
+  /** 当前激活的内部面板（界面仅展示“终端 / 日志”） */
+  const [activeTab, setActiveTab] = useState<ConversationConsoleTab>(
+    showLogsTab && defaultActiveTab === 'logs' ? 'logs' : tabFromEnv(env),
   );
   /** 面板布局模式：default 默认高度 / expanded 全屏 / collapsed 仅保留头部 */
   const [layoutMode, setLayoutMode] =
@@ -176,12 +228,18 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   /** 终端主题（非受控时的内部状态） */
   const [internalAppearance, setInternalAppearance] =
     useState<TerminalAppearanceMode>(defaultTerminalAppearance);
-  /** 终端实例引用（用于主动 refresh 修复切换 Tab 后的渲染残影） */
-  const terminalRef = useRef<EmbeddedConsoleTerminalRef>(null);
+  /** 开发环境终端实例 */
+  const devTerminalRef = useRef<EmbeddedConsoleTerminalRef>(null);
+  /** 线上环境终端实例 */
+  const prodTerminalRef = useRef<EmbeddedConsoleTerminalRef>(null);
   /** 终端当前连接状态（用于控制断连后再触发容器兜底重启） */
   const terminalConnectedRef = useRef<boolean>(false);
   /** 终端是否曾成功连接过（避免首次连接前误判为”断开”） */
   const terminalConnectedOnceRef = useRef<boolean>(false);
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+  const layoutModeRef = useRef(layoutMode);
+  layoutModeRef.current = layoutMode;
   /** 用户是否曾展开过终端面板（首次展开后才触发容器启动/WS连接） */
   const terminalActivatedRef = useRef<boolean>(false);
   /** 上一次 layoutMode 值，用于检测首次从 collapsed 展开 */
@@ -196,9 +254,40 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const ensurePodOnDisconnectTimerRef = useRef<number | null>(null);
   /** ensure 进行中，避免 handleFirstExpand 重复触发 */
   const ensureInFlightRef = useRef<boolean>(false);
+  /**
+   * 用户刚打开终端，等待当前环境（开发 / 线上）容器拉起。
+   * 避免页面仍是失败态时，终端立刻画出「重启服务」。
+   */
+  const pendingOpenRef = useRef(false);
+  const containerGenerationRef = useRef(0);
+  const readyContainerStageRef = useRef<ComputerPodAppStage | undefined>(
+    undefined,
+  );
 
   /** 是否需要先启动服务再连接终端（由 conversationId 决定） */
   const requiresServiceStart = Boolean(conversationId);
+
+  const getTerminalRef = (targetEnv: ConsoleTerminalEnvironment) =>
+    targetEnv === 'prod' ? prodTerminalRef : devTerminalRef;
+
+  const getTerminalWsUrl = (targetEnv: ConsoleTerminalEnvironment) =>
+    targetEnv === 'prod' ? prodWsUrl : devWsUrl;
+
+  /** 当前可见终端对应的环境（日志 Tab 时按开发兜底，ensure 另用上次环境） */
+  const activeTerminalEnv: ConsoleTerminalEnvironment =
+    activeTab === 'terminal-prod' ? 'prod' : 'dev';
+  const activeWsUrl = getTerminalWsUrl(activeTerminalEnv);
+  const lastEnsureStageRef = useRef<ComputerPodAppStage | undefined>(appStage);
+  const activeEnsureStage: ComputerPodAppStage | undefined = isMultiEnvironment
+    ? activeTab === 'logs'
+      ? lastEnsureStageRef.current
+      : activeTerminalEnv
+    : appStage;
+  if (activeTab !== 'logs') {
+    lastEnsureStageRef.current = activeEnsureStage;
+  }
+  const activeEnsureStageRef = useRef(activeEnsureStage);
+  activeEnsureStageRef.current = activeEnsureStage;
 
   /**
    * 容器启动状态机：
@@ -219,9 +308,11 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
    */
   const runKeepaliveRef = useRef<(cId: number) => void>(() => {});
   const stopKeepaliveRef = useRef<() => void>(() => {});
-  /** 用 ref 持有 appStage，避免保活轮询闭包读到过期环境 */
-  const appStageRef = useRef<ComputerPodAppStage | undefined>(appStage);
-  appStageRef.current = appStage;
+  /** 用 ref 持有当前终端环境，避免保活轮询闭包读到过期环境 */
+  const appStageRef = useRef<ComputerPodAppStage | undefined>(
+    activeEnsureStage,
+  );
+  appStageRef.current = activeEnsureStage;
 
   const ensurePodWithStage = useCallback(
     (cId: number) => apiEnsurePod(cId, appStageRef.current),
@@ -246,7 +337,10 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           document.visibilityState === 'visible' &&
           params[0] &&
           terminalConnectedOnceRef.current &&
-          !terminalConnectedRef.current;
+          !terminalConnectedRef.current &&
+          (appStageRef.current === 'prod'
+            ? prodExternalContainerStatusRef.current
+            : externalContainerStatusRef.current) === undefined;
 
         if (shouldEnsureContainer) {
           try {
@@ -277,10 +371,14 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   /** 启动容器并开启保活轮询 */
   const startContainer = useCallback(
     async (cId: number): Promise<boolean> => {
+      const generation = containerGenerationRef.current;
+      const stage = appStageRef.current;
       setContainerStatus('starting');
       try {
-        const { code } = await ensurePodWithStage(cId);
+        const { code } = await apiEnsurePod(cId, stage);
+        if (generation !== containerGenerationRef.current) return false;
         if (code === SUCCESS_CODE) {
+          readyContainerStageRef.current = stage;
           setContainerStatus('running');
           if (enableKeepalivePolling) {
             runKeepaliveRef.current(cId);
@@ -291,8 +389,10 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           return false;
         }
       } catch (error: unknown) {
+        if (generation !== containerGenerationRef.current) return false;
         // 智能体电脑等外部刚调过 ensure 时会被 5s 限流，容器已在运行，终端可直接连接
         if (isEnsurePodThrottledError(error)) {
+          readyContainerStageRef.current = stage;
           setContainerStatus('running');
           if (enableKeepalivePolling) {
             runKeepaliveRef.current(cId);
@@ -303,11 +403,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         return false;
       }
     },
-    [enableKeepalivePolling, ensurePodWithStage],
+    [enableKeepalivePolling],
   );
 
   /** 挂载时仅清理状态，不自动启动容器；等用户首次展开时触发 */
   useLayoutEffect(() => {
+    containerGenerationRef.current += 1;
     ensureInFlightRef.current = false;
 
     if (!conversationId) {
@@ -326,6 +427,9 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     terminalConnectedOnceRef.current = false;
 
     return () => {
+      // ensure 可能在卸载后返回，禁止重新启动保活轮询。
+      containerGenerationRef.current += 1;
+      ensureInFlightRef.current = false;
       if (enableKeepalivePolling) {
         stopKeepaliveRef.current();
       }
@@ -344,20 +448,36 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   /** 用 ref 持有页面层容器状态，避免 attach 闭包读到过期值 */
   const externalContainerStatusRef = useRef(externalContainerStatus);
   externalContainerStatusRef.current = externalContainerStatus;
+  const prodExternalContainerStatusRef = useRef(prodExternalContainerStatus);
+  prodExternalContainerStatusRef.current = prodExternalContainerStatus;
 
   /**
-   * 打开终端时接入容器：
+   * 打开终端时接入当前环境容器（开发 / 线上同一套）：
    * - 页面层已 running：不再 ensure，只保活后连接
    * - 页面层正在 starting：等待页面结果
-   * - 页面层失败或未接管：由终端 ensure 成功后再连接
+   * - 页面层 idle / 刚打开时的 error：先展示启动中，由页面拉起容器
+   * - 页面层再次失败：展示重试
    */
   const attachOrStartContainer = useCallback(() => {
-    if (!conversationId || ensureInFlightRef.current) {
+    // 折叠时不 ensure / 不拉起新连接，等展开或点击终端图标再接入
+    if (
+      !conversationId ||
+      ensureInFlightRef.current ||
+      (isMultiEnvironment && layoutModeRef.current === 'collapsed')
+    ) {
       return;
     }
 
-    const external = externalContainerStatusRef.current;
+    // 开发 / 线上都复用页面 ensure；未传入时才由终端自己拉起
+    const external =
+      activeEnsureStageRef.current === 'prod'
+        ? prodExternalContainerStatusRef.current
+        : externalContainerStatusRef.current;
     const status = containerStatusRef.current;
+
+    if (external === 'running' || external === 'starting') {
+      pendingOpenRef.current = false;
+    }
 
     if (external === 'running') {
       if (status !== 'running') {
@@ -376,44 +496,82 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       return;
     }
 
-    // 页面未接管或启动失败：running 说明终端侧已经拉起过，不再重复 ensure
+    // 页面尚未启动：先展示启动中，由页面打开终端时 ensure。
+    if (external === 'idle') {
+      if (status !== 'starting') {
+        setContainerStatus('starting');
+      }
+      return;
+    }
+
+    // 刚打开终端时沿用页面失败态：先进入启动中等页面重试，不要立刻展示重启按钮。
+    if (external === 'error' && isMultiEnvironment) {
+      if (pendingOpenRef.current || status === 'idle') {
+        if (status !== 'starting') {
+          setContainerStatus('starting');
+        }
+        return;
+      }
+      if (status !== 'error') {
+        setContainerStatus('error');
+      }
+      return;
+    }
+
+    // 页面未接管：running 说明终端侧已经拉起过，不再重复 ensure
     if (status === 'running') {
       return;
     }
 
     ensureInFlightRef.current = true;
+    const generation = containerGenerationRef.current;
     void startContainer(conversationId).finally(() => {
-      ensureInFlightRef.current = false;
+      if (generation === containerGenerationRef.current) {
+        ensureInFlightRef.current = false;
+      }
     });
-  }, [conversationId, enableKeepalivePolling, startContainer]);
+  }, [
+    conversationId,
+    enableKeepalivePolling,
+    startContainer,
+    isMultiEnvironment,
+  ]);
 
-  /** 用户首次展开终端面板时，触发容器接入 / 终端直接连接 */
+  /** 用户展开终端面板时，触发当前环境容器接入 / 直接连接 */
   const handleFirstExpand = useCallback(() => {
     terminalActivatedRef.current = true;
+    pendingOpenRef.current = true;
     attachOrStartContainer();
   }, [attachOrStartContainer]);
 
   /**
    * 进页容器状态变化后，若用户已打开终端，按最新结果接入：
-   * 启动成功则只保活；启动失败则由终端 ensure。
+   * 启动成功则连接；启动中继续等待；再次失败则展示重试。
    */
   useEffect(() => {
     if (!conversationId || !terminalActivatedRef.current) {
       return;
     }
     attachOrStartContainer();
-  }, [attachOrStartContainer, conversationId, externalContainerStatus]);
+  }, [
+    attachOrStartContainer,
+    conversationId,
+    externalContainerStatus,
+    prodExternalContainerStatus,
+  ]);
 
   /**
-   * 切换开发/线上环境后，当前容器状态作废。
+   * 切换开发/线上终端后，当前容器状态作废。
    * 若终端已打开，按新环境重新接入（已就绪则只保活，否则 ensure）。
    */
-  const prevAppStageRef = useRef(appStage);
+  const prevEnsureStageRef = useRef(activeEnsureStage);
   useEffect(() => {
-    if (prevAppStageRef.current === appStage) {
+    if (prevEnsureStageRef.current === activeEnsureStage) {
       return;
     }
-    prevAppStageRef.current = appStage;
+    prevEnsureStageRef.current = activeEnsureStage;
+    containerGenerationRef.current += 1;
+    ensureInFlightRef.current = false;
     if (!conversationId) {
       return;
     }
@@ -423,11 +581,14 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     }
     setContainerStatus('idle');
     containerStatusRef.current = 'idle';
-    if (terminalActivatedRef.current) {
+    setShowTerminalReconnect(false);
+    pendingOpenRef.current = true;
+    // 折叠时只记住新环境，不 ensure、不连 WS；展开后再接入
+    if (terminalActivatedRef.current && layoutModeRef.current !== 'collapsed') {
       attachOrStartContainer();
     }
   }, [
-    appStage,
+    activeEnsureStage,
     attachOrStartContainer,
     conversationId,
     enableKeepalivePolling,
@@ -435,12 +596,17 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 终端可见后 fit / sync / focus（委托给 EmbeddedConsoleTerminal） */
   const syncTerminalLayoutAndFocus = useCallback(() => {
-    terminalRef.current?.restoreAfterVisibilityChange();
+    const targetEnv = activeTabRef.current === 'terminal-prod' ? 'prod' : 'dev';
+    getTerminalRef(targetEnv).current?.restoreAfterVisibilityChange();
   }, []);
 
   /** 折叠恢复可见后多轮 restore，覆盖布局动画与浏览器重排延迟 */
   const scheduleTerminalRestoreAfterExpand = useCallback(() => {
-    const restore = () => terminalRef.current?.restoreAfterVisibilityChange();
+    const restore = () => {
+      const targetEnv =
+        activeTabRef.current === 'terminal-prod' ? 'prod' : 'dev';
+      getTerminalRef(targetEnv).current?.restoreAfterVisibilityChange();
+    };
     window.requestAnimationFrame(() => {
       restore();
       window.setTimeout(restore, 50);
@@ -467,8 +633,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     if (
       layoutMode !== 'collapsed' &&
       prevMode === 'collapsed' &&
-      activeTab === 'terminal' &&
-      wsUrl &&
+      activeTab !== 'logs' &&
+      activeWsUrl &&
       visible
     ) {
       scheduleTerminalRestoreAfterExpand();
@@ -477,11 +643,11 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     prevLayoutModeRef.current = layoutMode;
   }, [
     activeTab,
+    activeWsUrl,
     handleFirstExpand,
     layoutMode,
     scheduleTerminalRestoreAfterExpand,
     visible,
-    wsUrl,
   ]);
 
   /**
@@ -489,18 +655,32 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
    * - 未传 conversationId：无需启动服务，有 wsUrl 且面板可见时直接连接
    * - 传入 conversationId：仅 containerStatus === 'running' 后连接
    * - starting / error：服务未就绪，终端不可连接
-   * 面板折叠或整体隐藏时不建立连接，避免在 display:none 容器内 init ttyd 导致无法输入
-   * 例外：用户已首次展开过终端面板后，即使折叠也保持连接不断
+   * 面板折叠或整体隐藏时不建立连接，避免在 display:none 内 init ttyd；
+   * Header 切环境时若仍折叠，也不预连，等展开或点击终端图标再连
    * 终端重连失败展示重试面板时暂停自动连接
    */
-  const isServiceReadyForTerminal = requiresServiceStart
-    ? containerStatus === 'running'
-    : true;
-  const terminalAutoConnect =
+  const currentExternalStatus =
+    activeEnsureStage === 'prod'
+      ? prodExternalContainerStatus
+      : externalContainerStatus;
+  // 首次渲染新环境就按该环境的状态判断，不能先借旧环境 running 再等 effect 重置。
+  const isServiceReadyForTerminal =
+    !requiresServiceStart ||
+    (currentExternalStatus !== undefined
+      ? currentExternalStatus === 'running'
+      : containerStatus === 'running' &&
+        readyContainerStageRef.current === activeEnsureStage);
+  const canAutoConnect =
     isServiceReadyForTerminal &&
     visible &&
     !showTerminalReconnect &&
-    (layoutMode !== 'collapsed' || terminalActivatedRef.current);
+    (layoutMode !== 'collapsed' ||
+      (!isMultiEnvironment && terminalActivatedRef.current));
+  /** 仅当前可见环境的终端自动连接，避免隐藏环境连到错误容器 */
+  const devTerminalAutoConnect =
+    canAutoConnect && (!isMultiEnvironment || activeTab === 'terminal-dev');
+  const prodTerminalAutoConnect =
+    canAutoConnect && activeTab === 'terminal-prod';
   /** 上一次 visible 值（用于识别「重新打开」时机） */
   const prevVisibleRef = useRef(visible);
   /** 外部信号上一次值（undefined 表示未消费，避免 lazy mount 时与当前 signal 相同而跳过） */
@@ -522,11 +702,40 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   /** 面板重新打开时恢复默认 Tab；若上次处于折叠状态则恢复默认高度 */
   useEffect(() => {
     if (visible && !prevVisibleRef.current) {
-      setActiveTab(defaultActiveTab);
+      setActiveTab(
+        defaultActiveTab === 'logs' && showLogsTab ? 'logs' : tabFromEnv(env),
+      );
       setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
     }
     prevVisibleRef.current = visible;
-  }, [visible, defaultActiveTab]);
+  }, [defaultActiveTab, env, showLogsTab, visible]);
+
+  /**
+   * Header 环境切换时切换终端缓冲区。
+   * 先断开旧环境并清除旧容器状态，再切换到新环境，避免新终端复用旧环境
+   * 的 running 状态提前连接。两个常驻 xterm 实例不卸载，各自保留屏幕及回滚日志。
+   */
+  const prevEnvRef = useRef(env);
+  useEffect(() => {
+    const previousEnv = prevEnvRef.current;
+    if (previousEnv === env) {
+      return;
+    }
+    prevEnvRef.current = env;
+    if (activeTabRef.current === 'logs') {
+      return;
+    }
+
+    getTerminalRef(previousEnv).current?.disconnect();
+    ensureInFlightRef.current = false;
+    if (enableKeepalivePolling) {
+      stopKeepaliveRef.current();
+    }
+    setContainerStatus('idle');
+    containerStatusRef.current = 'idle';
+    setShowTerminalReconnect(false);
+    setActiveTab(tabFromEnv(env));
+  }, [enableKeepalivePolling, env]);
 
   /** 切换终端深浅色主题（受控模式下仅触发回调） */
   const handleToggleTerminalAppearance = useCallback(() => {
@@ -540,8 +749,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   useEffect(() => {
     if (
-      activeTab !== 'terminal' ||
-      !wsUrl ||
+      activeTab === 'logs' ||
+      !activeWsUrl ||
       !visible ||
       layoutMode === 'collapsed' ||
       (requiresServiceStart && containerStatus !== 'running')
@@ -560,7 +769,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     requiresServiceStart,
     layoutMode,
     syncTerminalLayoutAndFocus,
-    wsUrl,
+    activeWsUrl,
     terminalAppearance,
     visible,
   ]);
@@ -588,9 +797,9 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     }
     prevExpandSignalRef.current = expandSignal;
     if (!expandSignal) return;
-    setActiveTab('terminal');
+    setActiveTab(tabFromEnv(env));
     setLayoutMode('expanded');
-  }, [expandSignal]);
+  }, [env, expandSignal]);
 
   /** 外部信号：切到终端 Tab（折叠时恢复默认高度） */
   useEffect(() => {
@@ -602,9 +811,9 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     }
     prevTerminalSignalRef.current = terminalSignal;
     if (!terminalSignal) return;
-    setActiveTab('terminal');
+    setActiveTab(tabFromEnv(env));
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
-  }, [terminalSignal]);
+  }, [env, terminalSignal]);
 
   /** 外部信号：折叠面板（仅保留头部） */
   useEffect(() => {
@@ -641,8 +850,25 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 激活 Tab 变化时通知外部 */
   useEffect(() => {
-    onActiveTabChange?.(activeTab);
+    onActiveTabChange?.(toTabGroup(activeTab));
   }, [activeTab, onActiveTabChange]);
+
+  const onActiveTerminalEnvironmentChangeRef = useRef(
+    onActiveTerminalEnvironmentChange,
+  );
+  onActiveTerminalEnvironmentChangeRef.current =
+    onActiveTerminalEnvironmentChange;
+
+  /** 展开且位于终端 Tab 时，通知页面按环境 ensure 容器（不跟回调引用走，避免父级重渲染连打） */
+  useEffect(() => {
+    if (!visible || layoutMode === 'collapsed' || activeTab === 'logs') {
+      onActiveTerminalEnvironmentChangeRef.current?.(null);
+      return;
+    }
+    onActiveTerminalEnvironmentChangeRef.current?.(
+      activeTab === 'terminal-prod' ? 'prod' : 'dev',
+    );
+  }, [activeTab, layoutMode, visible, conversationId]);
 
   /** 全屏展开 / 恢复默认高度 */
   const handleToggleExpand = () => {
@@ -660,8 +886,21 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
    * 容器已停而前端状态未更新时，必须先拉起服务才能连终端。
    * apiEnsurePod 对已在运行的容器是幂等的，重复调用开销可接受。
    */
+  const onRetryContainerRef = useRef(onRetryContainer);
+  onRetryContainerRef.current = onRetryContainer;
+
   const handleReconnectTerminal = useCallback(async () => {
-    if (!wsUrl || isTerminalReconnecting) {
+    const targetEnv = activeTabRef.current === 'terminal-prod' ? 'prod' : 'dev';
+    const targetWsUrl = getTerminalWsUrl(targetEnv);
+    if (!targetWsUrl || isTerminalReconnecting) {
+      return;
+    }
+
+    // 页面统一 ensure，终端和数据库共享当前环境的启动及保活状态。
+    if (onRetryContainerRef.current) {
+      setShowTerminalReconnect(false);
+      setContainerStatus('starting');
+      onRetryContainerRef.current(targetEnv);
       return;
     }
 
@@ -675,16 +914,22 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       }
 
       setShowTerminalReconnect(false);
-      setActiveTab('terminal');
+      setActiveTab(tabFromEnv(targetEnv));
       setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
 
       window.requestAnimationFrame(() => {
-        terminalRef.current?.reconnect(wsUrl);
+        getTerminalRef(targetEnv).current?.reconnect(targetWsUrl);
       });
     } finally {
       setIsTerminalReconnecting(false);
     }
-  }, [conversationId, isTerminalReconnecting, startContainer, wsUrl]);
+  }, [
+    conversationId,
+    isTerminalReconnecting,
+    startContainer,
+    devWsUrl,
+    prodWsUrl,
+  ]);
 
   /** 容器启动失败或终端连接失败时，展示统一的重启服务面板（叠加层内容） */
   const renderTerminalRetryOverlay = () => (
@@ -712,13 +957,13 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   );
 
   /** 切换 Tab；折叠状态下点击 Tab 自动恢复默认高度 */
-  const handleTabClick = (tab: 'terminal' | 'logs') => {
+  const handleTabClick = (tab: ConversationConsoleTab) => {
     const wasCollapsed = layoutMode === 'collapsed';
     setActiveTab(tab);
     if (wasCollapsed) {
       setLayoutMode('default');
     }
-    if (tab === 'terminal') {
+    if (tab !== 'logs') {
       if (wasCollapsed) {
         scheduleTerminalRestoreAfterExpand();
       } else {
@@ -727,13 +972,26 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     }
   };
 
-  /** 终端 Tab：终端始终挂载，加载/错误态以叠加层淡入淡出展示 */
-  const renderTerminalTab = () => {
-    const showStartingOverlay = containerStatus === 'starting';
+  /**
+   * 终端 Tab：终端始终挂载，加载/错误态以叠加层淡入淡出展示。
+   * 两个环境各渲染一份，通过样式切换显隐以保持各自连接。
+   */
+  const renderTerminalTab = (targetEnv: ConsoleTerminalEnvironment) => {
+    const targetWsUrl = getTerminalWsUrl(targetEnv);
+    const targetRef = getTerminalRef(targetEnv);
+    const isCurrentEnvironment = () =>
+      !isMultiEnvironment || activeTabRef.current === tabFromEnv(targetEnv);
+    const isActivePane =
+      targetEnv === 'prod'
+        ? activeTab === 'terminal-prod'
+        : activeTab === 'terminal-dev';
+    const showStartingOverlay = isActivePane && containerStatus === 'starting';
     const showRetryOverlay =
-      containerStatus === 'error' || showTerminalReconnect;
+      isActivePane && (containerStatus === 'error' || showTerminalReconnect);
+    const autoConnect =
+      targetEnv === 'prod' ? prodTerminalAutoConnect : devTerminalAutoConnect;
 
-    if (!wsUrl) {
+    if (!targetWsUrl) {
       return (
         <div className={cx(styles['console-body'])}>
           <div
@@ -764,19 +1022,19 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             if (event.button !== 0 || showStartingOverlay || showRetryOverlay) {
               return;
             }
-            terminalRef.current?.focus();
+            targetRef.current?.focus();
           }}
         >
           <EmbeddedConsoleTerminal
-            ref={terminalRef}
+            ref={targetRef}
             className={cx(styles['terminal-embedded'], {
               [styles['terminal-embedded-light']]: isLightTerminal,
               [styles['terminal-embedded-dark']]: !isLightTerminal,
             })}
-            wsUrl={wsUrl}
+            wsUrl={targetWsUrl}
             wsSubprotocols={wsSubprotocols}
             wireProtocol={wireProtocol}
-            autoConnect={terminalAutoConnect}
+            autoConnect={autoConnect}
             theme={getConsoleTerminalTheme(terminalAppearance)}
             fontSize={13}
             fontFamily={CONSOLE_TERMINAL_FONT_FAMILY}
@@ -785,35 +1043,51 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             reconnect={DEFAULT_TERMINAL_RECONNECT}
             onConnect={() => {
               const isReconnect = terminalConnectedOnceRef.current;
-              terminalConnectedRef.current = true;
-              terminalConnectedOnceRef.current = true;
-              setShowTerminalReconnect(false);
-              if (isReconnect) {
-                terminalRef.current?.getTerminal()?.write('\r\n');
+              if (isCurrentEnvironment()) {
+                terminalConnectedRef.current = true;
+                terminalConnectedOnceRef.current = true;
+                setShowTerminalReconnect(false);
               }
-              terminalRef.current?.writeln(
+              if (isReconnect) {
+                targetRef.current?.getTerminal()?.write('\r\n');
+              }
+              targetRef.current?.writeln(
                 '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
               );
+              // 隐藏环境迟到的连接事件不能抢走当前终端焦点。
+              if (!isCurrentEnvironment()) return;
               // 重连后 fit + focus；shell 提示符由 EmbeddedConsoleTerminal 内 requestShellPrompt 补发
-              terminalRef.current?.restoreAfterVisibilityChange();
+              targetRef.current?.restoreAfterVisibilityChange();
               window.setTimeout(
-                () => terminalRef.current?.restoreAfterVisibilityChange(),
+                () => targetRef.current?.restoreAfterVisibilityChange(),
                 50,
               );
               window.setTimeout(
-                () => terminalRef.current?.restoreAfterVisibilityChange(),
+                () => targetRef.current?.restoreAfterVisibilityChange(),
                 250,
               );
             }}
             onDisconnect={() => {
-              terminalConnectedRef.current = false;
-              terminalRef.current?.getTerminal()?.write('\r\n');
-              terminalRef.current?.writeln(
+              if (isCurrentEnvironment()) terminalConnectedRef.current = false;
+              targetRef.current?.getTerminal()?.write('\r\n');
+              targetRef.current?.writeln(
                 '\x1b[1;38;2;220;38;38m[Terminal disconnected]\x1b[0m',
               );
-              // 仅「需先启动容器」模式（传入 conversationId）才在断连后预热服务；
-              // 未传 conversationId 时终端直连 wsUrl，由 EmbeddedConsoleTerminal 自动重连即可
-              if (requiresServiceStart && containerStatus === 'running') {
+              // 仅当前可见终端、且需先启动容器时，断连后预热服务
+              const isCurrentEnv =
+                (targetEnv === 'prod' &&
+                  activeTabRef.current === 'terminal-prod') ||
+                (targetEnv === 'dev' &&
+                  (!isMultiEnvironment ||
+                    activeTabRef.current === 'terminal-dev'));
+              if (
+                isCurrentEnv &&
+                (targetEnv === 'prod'
+                  ? prodExternalContainerStatusRef.current
+                  : externalContainerStatusRef.current) === undefined &&
+                requiresServiceStart &&
+                containerStatus === 'running'
+              ) {
                 if (ensurePodOnDisconnectTimerRef.current) {
                   window.clearTimeout(ensurePodOnDisconnectTimerRef.current);
                 }
@@ -835,8 +1109,16 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               }
             }}
             onReconnectFailed={() => {
-              terminalConnectedRef.current = false;
-              setShowTerminalReconnect(true);
+              if (isCurrentEnvironment()) terminalConnectedRef.current = false;
+              if (
+                (targetEnv === 'prod' &&
+                  activeTabRef.current === 'terminal-prod') ||
+                (targetEnv === 'dev' &&
+                  (!isMultiEnvironment ||
+                    activeTabRef.current === 'terminal-dev'))
+              ) {
+                setShowTerminalReconnect(true);
+              }
             }}
           />
         </div>
@@ -934,15 +1216,15 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         className,
       )}
     >
-      {/* 头部：左侧 Tab 切换 + 右侧操作按钮 */}
+      {/* 头部：终端入口已合并，具体环境跟随页面 Header */}
       <div className={cx(styles['console-header'])}>
         <div className={cx(styles['console-tabs'])}>
           <span
             className={cx(styles['console-tab'], {
               [styles.active]:
-                activeTab === 'terminal' && layoutMode !== 'collapsed',
+                activeTab !== 'logs' && layoutMode !== 'collapsed',
             })}
-            onClick={() => handleTabClick('terminal')}
+            onClick={() => handleTabClick(tabFromEnv(env))}
           >
             {dict('PC.Components.ConversationBottomConsole.tabTerminal')}
           </span>
@@ -1025,16 +1307,26 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           />
         </div>
       </div>
-      {/* 内容区：两个 Tab 面板常驻渲染，通过样式切换显隐（保持终端连接不断开） */}
+      {/* 内容区：开发/线上终端与日志常驻渲染，通过样式切换显隐 */}
       <div className={cx(styles['console-content'])}>
         <div
           className={cx(styles['tab-pane'], {
-            [styles['tab-pane-active']]: activeTab === 'terminal',
+            [styles['tab-pane-active']]: activeTab === 'terminal-dev',
           })}
-          aria-hidden={activeTab !== 'terminal'}
+          aria-hidden={activeTab !== 'terminal-dev'}
         >
-          {renderTerminalTab()}
+          {renderTerminalTab('dev')}
         </div>
+        {isMultiEnvironment && (
+          <div
+            className={cx(styles['tab-pane'], {
+              [styles['tab-pane-active']]: activeTab === 'terminal-prod',
+            })}
+            aria-hidden={activeTab !== 'terminal-prod'}
+          >
+            {renderTerminalTab('prod')}
+          </div>
+        )}
         <div
           className={cx(styles['tab-pane'], {
             [styles['tab-pane-active']]: activeTab === 'logs',

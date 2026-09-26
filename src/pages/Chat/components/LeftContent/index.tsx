@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import ConversationPanelActions from '@/components/business-component/ConversationPanelActions';
 import ExternalFilePreview from '@/components/business-component/ExternalFilePreview';
 import FileTreePreviewPanel, {
   type FileTreePreviewPanelProps,
@@ -17,11 +18,6 @@ import {
   saveChatPanelWidthPercent,
 } from '@/utils/chatPanelWidthPreference';
 import { isImmersiveShell } from '@/utils/hostBridge';
-import {
-  CodeOutlined,
-  LoadingOutlined,
-  OrderedListOutlined,
-} from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import ConversationInstanceCacheSlot from '../ConversationInstanceCacheSlot';
@@ -166,40 +162,27 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 />
               )}
 
-            {/* 会话进度面板（TaskAgent）：胶囊有内容才显示按钮，运行中转圈，点击展开/收起面板；
-                data-capsule-panel-trigger 标记自身，胶囊外点收起不把按钮当外点 */}
-            {headerProps.hasCapsuleContent && !isAppSidebarMode && (
-              <span data-capsule-panel-trigger>
-                <TooltipIcon
-                  title={t('PC.Pages.Chat.conversationProgress')}
-                  className={cx(styles['icon-box'], {
-                    [styles['active']]: headerProps.isCapsulePanelOpen,
-                  })}
-                  icon={
-                    headerProps.capsuleRunning ? (
-                      <LoadingOutlined spin style={{ fontSize: 16 }} />
-                    ) : (
-                      <OrderedListOutlined style={{ fontSize: 16 }} />
-                    )
-                  }
-                  onClick={headerProps.handleToggleCapsulePanel}
-                />
-              </span>
-            )}
-
-            {/* 这里放「查看智能体详情」入口：点击弹出悬浮弹窗，与右侧面板共存不再互斥 */}
-            {headerProps.showSidebar && !isAppSidebarMode && (
-              <TooltipIcon
-                title={t('PC.Pages.Chat.viewAgentDetails')}
-                className={cx(styles['icon-box'], {
-                  [styles['active']]: headerProps.isAgentDetailModalOpen,
-                })}
-                icon={
-                  <SvgIcon name="icons-common-book" style={{ fontSize: 16 }} />
-                }
-                onClick={headerProps.handleOpenAgentDetail}
-              />
-            )}
+            <ConversationPanelActions
+              iconClassName={styles['icon-box']}
+              activeClassName={styles.active}
+              progress={
+                headerProps.hasCapsuleContent && !isAppSidebarMode
+                  ? {
+                      open: headerProps.isCapsulePanelOpen,
+                      running: headerProps.capsuleRunning,
+                      onClick: headerProps.handleToggleCapsulePanel,
+                    }
+                  : undefined
+              }
+              detail={
+                headerProps.showSidebar && !isAppSidebarMode
+                  ? {
+                      open: headerProps.isAgentDetailModalOpen,
+                      onClick: headerProps.handleOpenAgentDetail,
+                    }
+                  : undefined
+              }
+            />
 
             {/*打开预览页面*/}
             {!!effectiveAgent?.expandPageArea &&
@@ -220,66 +203,34 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 />
               )}
 
-            {/* 通用智能体, 有有效消息时，文件预览/智能体电脑切换按钮 */}
-            {headerProps.isShowFilePanel && (
-              <>
-                {/* 文件预览视图；hideTree 时隐藏文件树图标 */}
-                {!headerProps.hideTree && (
-                  <TooltipIcon
-                    title={
-                      headerProps.isFileTreeIconActive
-                        ? t('PC.Pages.Chat.closeFilePreview')
-                        : t('PC.Pages.Chat.openFilePreview')
+            <ConversationPanelActions
+              iconClassName={styles['icon-box']}
+              activeClassName={styles.active}
+              files={
+                headerProps.isShowFilePanel && !headerProps.hideTree
+                  ? {
+                      open: headerProps.isFileTreeIconActive,
+                      onClick: headerProps.handleFileTreeVisible,
                     }
-                    className={cx(styles['icon-box'], {
-                      [styles['active']]: headerProps.isFileTreeIconActive,
-                    })}
-                    icon={
-                      <SvgIcon
-                        name="icons-common-file_preview"
-                        style={{ fontSize: 16 }}
-                      />
+                  : undefined
+              }
+              terminal={
+                headerProps.isShowFilePanel && !headerProps.hideTerminal
+                  ? {
+                      open: headerProps.isTerminalIconActive,
+                      onClick: headerProps.handleOpenTerminalPanel,
                     }
-                    onClick={headerProps.handleFileTreeVisible}
-                  />
-                )}
-
-                {/* 终端视图；hideTerminal 时隐藏终端图标 */}
-                {!headerProps.hideTerminal && (
-                  <TooltipIcon
-                    title={t(
-                      'PC.Components.ConversationBottomConsole.tabTerminal',
-                    )}
-                    className={cx(styles['icon-box'], {
-                      [styles['active']]: headerProps.isTerminalIconActive,
-                    })}
-                    icon={<CodeOutlined style={{ fontSize: 16 }} />}
-                    onClick={headerProps.handleOpenTerminalPanel}
-                  />
-                )}
-
-                {/* 智能体电脑视图：仅云端电脑 + 未隐藏远程桌面时展示 */}
-                <ConditionRender condition={headerProps.isShowDesktop}>
-                  <TooltipIcon
-                    title={
-                      headerProps.isDesktopIconActive
-                        ? t('PC.Pages.Chat.closeAgentDesktop')
-                        : t('PC.Pages.Chat.openAgentDesktop')
+                  : undefined
+              }
+              desktop={
+                headerProps.isShowFilePanel && headerProps.isShowDesktop
+                  ? {
+                      open: headerProps.isDesktopIconActive,
+                      onClick: headerProps.handleOpenDesktopView,
                     }
-                    className={cx(styles['icon-box'], {
-                      [styles['active']]: headerProps.isDesktopIconActive,
-                    })}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-computer-star"
-                        style={{ fontSize: 16 }}
-                      />
-                    }
-                    onClick={headerProps.handleOpenDesktopView}
-                  />
-                </ConditionRender>
-              </>
-            )}
+                  : undefined
+              }
+            />
 
             {/* 会话内搜索入口暂时移除（ConversationSearchPanel 组件保留，恢复时在此回挂） */}
 

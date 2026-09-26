@@ -1,25 +1,28 @@
+import VncPreview from '@/components/business-component/VncPreview';
 import { dict } from '@/services/i18nRuntime';
 import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import { getUserAppVncProxyUrl } from '../../services/appDevPro';
-import AppDevProIframe from '../AppDevProIframe';
-import AppDevServiceStartStatus from '../AppDevStatusHero';
 import styles from '../AppDevDatabasePanel/index.less';
+import AppDevServiceStartStatus from '../AppDevStatusHero';
 
 const cx = classNames.bind(styles);
 
 export interface AppDevRemoteDesktopPanelProps {
   /** 应用 ID，用于拼远程桌面代理地址 */
   appId?: number;
+  /** 真实开发会话 ID；不以 appId 替代会话/容器身份。 */
+  conversationId?: number;
+  serviceUrl?: string;
   /**
    * 开发环境容器状态。未传时直接加载 iframe。
    * 已传入时须 running 后才嵌入远程桌面，避免容器未就绪就请求 VNC 代理。
    */
   containerStatus?: UserAppEnvPodStatus;
   /** 容器启动失败时重试 */
-  onRetryContainer?: () => void;
+  onRetryContainer?: () => Promise<void> | void;
 }
 
 /**
@@ -32,6 +35,8 @@ export interface AppDevRemoteDesktopPanelProps {
  */
 const AppDevRemoteDesktopPanel: React.FC<AppDevRemoteDesktopPanelProps> = ({
   appId,
+  conversationId,
+  serviceUrl = process.env.BASE_URL || '',
   containerStatus,
   onRetryContainer,
 }) => {
@@ -56,7 +61,7 @@ const AppDevRemoteDesktopPanel: React.FC<AppDevRemoteDesktopPanelProps> = ({
     );
   }
 
-  if (!iframeSrc) {
+  if (!iframeSrc || !conversationId) {
     return (
       <div className={cx(styles.container)}>
         <div className={cx(styles.empty)}>
@@ -71,9 +76,15 @@ const AppDevRemoteDesktopPanel: React.FC<AppDevRemoteDesktopPanelProps> = ({
 
   return (
     <div className={cx(styles.container)}>
-      <AppDevProIframe
-        src={iframeSrc}
-        title={dict('PC.Pages.AppDevPro.remoteDesktop')}
+      <VncPreview
+        key={`${appId}:${conversationId}`}
+        cId={String(conversationId)}
+        serviceUrl={serviceUrl}
+        sourceUrl={iframeSrc}
+        appStage="dev"
+        autoConnect
+        onReconnect={onRetryContainer}
+        style={{ width: '100%', height: '100%' }}
       />
     </div>
   );

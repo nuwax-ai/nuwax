@@ -27,6 +27,7 @@ import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
+import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import {
   conversationPageCacheManager,
@@ -38,7 +39,6 @@ import { fullPageInstanceCacheManager } from '@/features/conversation/react/useF
 import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
 import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
 import { usePageModel } from '@/modelScopes/usePageModel';
-import AgentDetailModal from '@/pages/Chat/components/AgentDetailModal';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
