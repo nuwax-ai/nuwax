@@ -2074,6 +2074,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     const response = await apiGetStaticFileList(id, {
       relativePath: '',
       recursive: true,
+      type: 'file',
+      limit: 100,
     });
     if (response.code !== SUCCESS_CODE) throw new Error('会话文件列表加载失败');
     return (response.data?.files ?? [])
