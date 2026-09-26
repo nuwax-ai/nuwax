@@ -1,5 +1,7 @@
 import { SvgIcon } from '@/components/base';
-import ConversationPanelActions from '@/components/business-component/ConversationPanelActions';
+import ConversationPanelActions, {
+  type ConversationPanelActionsProps,
+} from '@/components/business-component/ConversationPanelActions';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
@@ -20,6 +22,8 @@ const cx = classNames.bind(styles);
 export interface AppDevProHeaderActionsProps {
   /** 外层容器类名 */
   className?: string;
+  /** 会话胶囊入口，放在右侧按钮组最左。 */
+  progress?: ConversationPanelActionsProps['progress'];
   /** 全栈应用详情 */
   userAppInfo?: UserAppInfo | null;
   /** 点击部署 */
@@ -84,6 +88,7 @@ export interface AppDevProHeaderActionsProps {
  */
 const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   className,
+  progress,
   userAppInfo,
   onPublish,
   onOpenMarketPublish,
@@ -220,7 +225,12 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
       />
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        {/* 应用预览：重启 / 停止（图标，置于右侧图标组最前） */}
+        <ConversationPanelActions
+          progress={progress}
+          iconClassName={styles['panel-btn']}
+          activeClassName={styles.active}
+        />
+        {/* 应用预览：重启 / 停止 */}
         <ConditionRender condition={canShowPreviewRuntime}>
           <PreviewRuntimeButtons
             {...previewRuntimeControls}

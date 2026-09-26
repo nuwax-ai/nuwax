@@ -11,6 +11,7 @@ import FileTreeGitSourcePanel, {
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
+import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
@@ -211,6 +212,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   }
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
+  const [progressOpen, setProgressOpen] = useState(false);
+  useEffect(() => {
+    setProgressOpen(false);
+  }, [queryConversationId, active]);
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
   const [devConsoleLayoutResetSignal, setDevConsoleLayoutResetSignal] =
     useState<number>(0);
@@ -650,6 +655,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     getSandboxId: () => finalSelectedComputerId || undefined,
     effectsResources: { refreshFileListThrottled: refreshRuntimeFileTree },
   });
+  const capsuleModel = selectProgressCapsule(
+    runtimeLine?.conversationProps.messageList ?? messageList,
+    runtimeLine?.effectiveIsActive ?? isConversationActive,
+  );
 
   useInitialConversationAutoSend({
     conversationId: queryConversationId,
@@ -2720,6 +2729,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                     action: routeAction,
                   }}
                   runtimeLine={runtimeLine}
+                  progressOpen={progressOpen}
+                  onCloseProgress={() => setProgressOpen(false)}
                   selectedComputerId={finalSelectedComputerId}
                   onChangeSelectedComputerId={setSelectedComputerId}
                   onConversationEnd={handleConversationEnd}
@@ -2730,6 +2741,15 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           right={
             <div className={cx(styles['right-column'])}>
               <AppDevProHeaderActions
+                progress={
+                  capsuleModel
+                    ? {
+                        open: progressOpen,
+                        running: capsuleModel.running,
+                        onClick: () => setProgressOpen((value) => !value),
+                      }
+                    : undefined
+                }
                 userAppInfo={userAppInfo}
                 onPublish={handleOpenPublish}
                 onOpenMarketPublish={() => setOpenPublishModal(true)}

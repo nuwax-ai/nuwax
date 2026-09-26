@@ -1,9 +1,6 @@
 import { UnifiedChatSession } from '@/components/business-component';
-import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import ConversationPanelActions from '@/components/business-component/ConversationPanelActions';
 import ConversationProgressCapsule from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule';
-import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import type { UseConversationRuntimeSessionResult } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversationMentionFiles from '@/hooks/useConversationMentionFiles';
@@ -40,6 +37,9 @@ export interface AgentConversationChatPanelProps {
   runtimeLine?: UseConversationRuntimeSessionResult | null;
   /** 会话结束后回调（用于刷新文件树、Git 状态、智能体编排等） */
   onConversationEnd?: () => void;
+  /** 由右上角共享面板入口控制会话胶囊。 */
+  progressOpen?: boolean;
+  onCloseProgress?: () => void;
 }
 
 /**
@@ -53,6 +53,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   selectedComputerId,
   runtimeLine,
   onConversationEnd,
+  progressOpen = false,
+  onCloseProgress,
 }) => {
   const location = useLocation();
   const routeKey = routeSnapshot?.key ?? location.key;
@@ -183,18 +185,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     prevIsActiveRef.current = effectiveIsActive;
   }, [effectiveIsActive, onConversationEnd]);
 
-  const [progressOpen, setProgressOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
   const effectiveMessages =
     runtimeLine?.conversationProps.messageList ?? messageList;
-  const capsuleModel = selectProgressCapsule(
-    effectiveMessages,
-    effectiveIsActive,
-  );
-  useEffect(() => {
-    setProgressOpen(false);
-    setDetailOpen(false);
-  }, [queryConversationId, active]);
 
   return (
     <div
@@ -207,32 +199,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       )}
       style={{ minHeight: 0 }}
     >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: 8,
-          flexShrink: 0,
-          padding: '0 8px 4px',
-        }}
-      >
-        <ConversationPanelActions
-          progress={
-            capsuleModel
-              ? {
-                  open: progressOpen,
-                  running: capsuleModel.running,
-                  onClick: () => setProgressOpen((value) => !value),
-                }
-              : undefined
-          }
-          detail={
-            conversationInfo?.agent?.agentId
-              ? { open: detailOpen, onClick: () => setDetailOpen(true) }
-              : undefined
-          }
-        />
-      </div>
       <div
         style={{
           flex: 1,
@@ -333,16 +299,9 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
             conversationInfo?.agent?.enableVersionControl,
           )}
           open={active && progressOpen}
-          onClose={() => setProgressOpen(false)}
+          onClose={() => onCloseProgress?.()}
         />
       </div>
-      <AgentDetailModal
-        open={active && detailOpen}
-        onClose={() => setDetailOpen(false)}
-        agentId={conversationInfo?.agent?.agentId || 0}
-        agentDetail={conversationInfo?.agent}
-        loading={loadingConversation}
-      />
     </div>
   );
 };
