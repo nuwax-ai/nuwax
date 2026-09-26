@@ -487,6 +487,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     getEffectiveSandboxId,
     finalSelectedId,
   } = useChatSandbox({
+    conversationId: id,
     location: { ...routeLocation, state: stateToUse },
     history: { action: routeAction },
     effectiveAgent,
@@ -2205,6 +2206,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isSelectionLocked,
     hasUserSentMessage,
     selectedComputerId: finalSelectedId,
+    restoreConversationSandbox: true,
     onComputerSelect: setSelectedComputerId,
     showScrollBtn,
     allowAutoScrollRef,

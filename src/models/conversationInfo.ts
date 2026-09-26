@@ -1333,14 +1333,14 @@ export default () => {
           // 优先使用本次会话请求携带的 conversationId，避免闭包中拿到的旧会话信息
           params.conversationId &&
           conversationInfo?.agent?.hideDesktop !== HideDesktopEnum.Yes &&
-          // 生效电脑判定：发送参数（live 路径页面传入的生效 id）> 智能体绑定
-          // 个人电脑 > 共享电脑 > 兜底云电脑；resume 路径 params 仅含
-          // conversationId，须由 agent.sandboxId / sandboxServerId 推导拦截，
+          // 生效电脑判定：发送参数（live 路径页面传入的生效 id）> 会话创建时
+          // 绑定的电脑 > 智能体默认电脑 > 兜底云电脑。resume 路径 params 仅含
+          // conversationId，须优先由 sandboxServerId 推导拦截，
           // 避免对非云电脑会话 ensurePod 拉起云端容器
           String(
             params.sandboxId ||
-              conversationInfo?.agent?.sandboxId ||
               conversationInfo?.sandboxServerId ||
+              conversationInfo?.agent?.sandboxId ||
               '-1',
           ) === '-1'
         ) {
