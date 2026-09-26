@@ -35,13 +35,13 @@ import type {
   OpenUiArtifact,
 } from '@/types/interfaces/openUi';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
-import { isRealAgentSandboxBinding } from '@/utils/effectiveSandbox';
 
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import ConversationQuickNav from '@/components/business-component/ConversationQuickNav';
 import ChatContentArea from './components/ChatContentArea';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
 import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
+import { resolveComputerSelection } from './resolveComputerSelection';
 
 import styles from './index.less';
 import type { UnifiedChatSessionProps } from './types';
@@ -97,6 +97,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   showAnnouncement,
   mentionPlacement,
   selectedComputerId = '',
+  restoreConversationSandbox = false,
   onComputerSelect,
 
   showScrollBtn = false,
@@ -338,13 +339,16 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     return false;
   }, [requiredNameList, variableParams]);
 
-  /**
-   * 智能体 sandboxId 是否为「真实绑定」（云端哨兵 -1 不算）：单源见
-   * utils/effectiveSandbox.ts isRealAgentSandboxBinding——智能体只存过云端
-   * 记忆（sandboxId='-1'）时若当绑定，空会话选择器会被 fixedSelection 锁死
-   * （bug 2490「空会话选不了电脑」）；真绑定（个人电脑 id）仍固定锁选。
-   */
-  const isAgentSandboxBound = isRealAgentSandboxBinding(agentInfo?.sandboxId);
+  const computerSelection = resolveComputerSelection({
+    conversationId,
+    conversationInfo,
+    restoreConversationSandbox,
+    selectedComputerId,
+    agentSandboxId: agentInfo?.sandboxId,
+    isSelectionLocked,
+    hasUserSentMessage,
+    hasPersistedMessage: messageList.some((message) => Boolean(message?.id)),
+  });
 
   /**
    * 「智能体正在执行，请稍等」仅在后端 taskStatus=EXECUTING 且流式已结束时展示。
@@ -499,22 +503,15 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
           onComputerSelect={onComputerSelect}
           agentId={agentInfo?.id}
           showGuidQuestions={false}
-          agentSandboxId={
-            isAgentSandboxBound ? agentInfo?.sandboxId : selectedComputerId
-          }
+          agentSandboxId={computerSelection.agentSandboxId}
           hasPermission={agentInfo?.hasPermission !== false}
           maskText={
             agentInfo?.hasPermission !== false
               ? ''
               : dict('PC.Components.ChatInputHome.noAgentPermission')
           }
-          fixedSelection={
-            isAgentSandboxBound ||
-            isSelectionLocked ||
-            hasUserSentMessage ||
-            messageList?.some((message) => Boolean(message?.id))
-          }
-          isPersonalComputer={isAgentSandboxBound}
+          fixedSelection={computerSelection.fixedSelection}
+          isPersonalComputer={computerSelection.isPersonalComputer}
           {...interventionLayer.agentModeInputProps}
           agentEnableVersionControl={agentInfo?.enableVersionControl}
           onFetchMentionFiles={onFetchMentionFiles}

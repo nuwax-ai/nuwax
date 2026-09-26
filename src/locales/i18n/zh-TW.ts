@@ -6754,6 +6754,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "請選擇一台私有伺服器",
   "PC.Pages.AppProjectDetail.emptyPrivateServer": "暫無私有伺服器，請先新增",
   'PC.Components.ExpertSummonCard.summon': '召喚專家',
+  'PC.Components.ExpertSummonCard.trial': '試用專家',
   'PC.Components.ExpertSummonCard.usageTimes': '{0}次使用',
   'PC.Components.ExpertSummonCard.subscribeFirst': '請先訂閱套餐後再召喚',
   'PC.Components.CapabilityModal.title': '添加能力',

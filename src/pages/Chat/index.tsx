@@ -487,6 +487,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     getEffectiveSandboxId,
     finalSelectedId,
   } = useChatSandbox({
+    conversationId: id,
     location: { ...routeLocation, state: stateToUse },
     history: { action: routeAction },
     effectiveAgent,
@@ -2073,6 +2074,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     const response = await apiGetStaticFileList(id, {
       relativePath: '',
       recursive: true,
+      type: 'file',
+      limit: 100,
     });
     if (response.code !== SUCCESS_CODE) throw new Error('会话文件列表加载失败');
     return (response.data?.files ?? [])
@@ -2205,6 +2208,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isSelectionLocked,
     hasUserSentMessage,
     selectedComputerId: finalSelectedId,
+    restoreConversationSandbox: true,
     onComputerSelect: setSelectedComputerId,
     showScrollBtn,
     allowAutoScrollRef,

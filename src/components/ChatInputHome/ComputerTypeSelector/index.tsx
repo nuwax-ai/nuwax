@@ -220,13 +220,20 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       name: dict('PC.Components.ComputerTypeSelector.selectComputer'),
       description: '',
     };
-  }, [value, computerList, unavailable, initialized, fixedSelection]);
+  }, [
+    value,
+    computerList,
+    unavailable,
+    initialized,
+    fixedSelection,
+    isPersonalComputer,
+  ]);
 
   // 处理选择
   const handleSelect = useCallback(
     async (option: ComputerOption) => {
       // 如果选中的是当前已选中的，直接返回，不触发接口
-      if (String(option.id) === String(value) || readonly) {
+      if (String(option.id) === String(value) || readonly || fixedSelection) {
         setOpen(false);
         return;
       }
@@ -252,7 +259,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
         }
       }
     },
-    [onChange, agentId, value, saveOnSelect],
+    [onChange, agentId, value, saveOnSelect, readonly, fixedSelection],
   );
 
   // 构建菜单项
@@ -306,7 +313,14 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     }
 
     return items;
-  }, [computerList, initialized, handleSelect, value]);
+  }, [
+    computerList,
+    initialized,
+    handleSelect,
+    value,
+    readonly,
+    fixedSelection,
+  ]);
 
   // 计算是否真正禁用
   const isDisabled =

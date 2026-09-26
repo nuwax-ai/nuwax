@@ -24,6 +24,9 @@ export async function apiGetStaticFileList(
   options?: {
     relativePath?: string;
     recursive?: boolean;
+    /** 服务端先按类型过滤，再按 limit 截取；不传则不限制。 */
+    type?: 'file' | 'dir' | 'all';
+    limit?: number;
     /**
      * 目标根目录（沙箱内绝对目录，可跳出会话工作区）。
      * 网关侧仅个人电脑会话放行；云端会话放开为后端契约，未放开前接口会拒绝。
@@ -39,6 +42,8 @@ export async function apiGetStaticFileList(
         ? {
             relativePath: options.relativePath || '',
             recursive: options.recursive ?? false,
+            ...(options.type ? { type: options.type } : {}),
+            ...(options.limit !== undefined ? { limit: options.limit } : {}),
             ...(options.customTargetDir
               ? { customTargetDir: options.customTargetDir }
               : {}),
