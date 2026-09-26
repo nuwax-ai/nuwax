@@ -346,6 +346,9 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
         const isRenaming = renamingNode?.id === node.id;
 
         const nodeKey = node.id;
+        // 子节点已经嵌在父节点里，每层只再缩进固定一步。
+        // 若按 level * 8 叠加上去，深层会越偏越快，展开箭头连成弧线。
+        const indent = level > 0 ? 16 : 0;
 
         // 文件夹节点
         if (node.type === 'folder') {
@@ -353,7 +356,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
             <div
               key={nodeKey}
               className={styles.folderItem}
-              style={{ marginLeft: level * 8 }}
+              style={{ marginLeft: indent }}
             >
               <div
                 className={cx(styles.folderHeader, {
@@ -420,7 +423,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
                 onFileSelect(node.id);
               }}
               onContextMenu={(e) => onContextMenu(e, node)}
-              style={{ marginLeft: level * 8 }}
+              style={{ marginLeft: indent }}
             >
               {/* 文件图标 */}
               {getFileIcon(node.name)}

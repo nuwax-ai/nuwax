@@ -62,6 +62,7 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
     !diffFile &&
     viewMode !== 'desktop';
 
+  // 文件树预览面板
   const { header, content, restartOverlay } = useFileTreePreviewPanel({
     preview,
     viewMode,
@@ -73,8 +74,10 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
     ...previewPanelProps,
   });
 
+  // 全屏模式
   const isFullscreen = preview.isFullscreen;
 
+  // 空源代码管理
   const emptySourceControl = {
     changeFiles: preview.changeFiles,
   };
@@ -110,6 +113,7 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
         <div className={cx('preview-header-shell')}>{header}</div>
 
         <div className={cx(styles['content-container'], 'flex')}>
+          {/* 文件树 */}
           {showFileTree && (
             <FileTreeGitSourcePanel
               showSourceControl={resolvedShowSourceControl}
@@ -132,13 +136,16 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
               'relative',
             )}
           >
+            {/* 文件路径栏 */}
             {viewMode !== 'desktop' && !showGitVersionPanel && !diffFile && (
               <FilePreviewPathBar
                 fileNode={preview.selectedFileNode}
                 onRefresh={() => preview.refreshSelectedFileContent()}
               />
             )}
+            {/* 预览内容 */}
             <div className={cx(styles['preview-body'])}>
+              {/* 版本控制 */}
               {showGitVersionPanel && gitVersionControl ? (
                 <GitVersionRecordPanel
                   className={cx('git-version-panel', 'h-full')}
@@ -149,10 +156,12 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
               ) : (
                 content
               )}
+              {/* 重启提示 */}
               {restartOverlay}
             </div>
           </div>
         </div>
+        {/* 底部内容 */}
         {bottomContent && (
           <div className={cx(styles['bottom-content'])}>{bottomContent}</div>
         )}
