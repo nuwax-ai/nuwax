@@ -1,4 +1,5 @@
 import FileTreeGitSourcePanel from '@/components/business-component/FileTreeGitSourcePanel';
+import FilePreviewPathBar from '@/components/business-component/FileTreePreviewPanel/FilePreviewPathBar';
 import GitVersionRecordPanel from '@/components/business-component/GitVersionRecordPanel';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import classNames from 'classnames';
@@ -121,18 +122,35 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
             />
           )}
 
-          <div className={cx('preview-panel', 'flex-1', 'h-full', 'relative')}>
-            {showGitVersionPanel && gitVersionControl ? (
-              <GitVersionRecordPanel
-                className={cx('git-version-panel', 'h-full')}
-                workspace={gitVersionControl.workspace}
-                branch={gitVersionControl.branch}
-                onRollbackSuccess={gitVersionControl.onRollbackSuccess}
-              />
-            ) : (
-              content
+          <div
+            className={cx(
+              'preview-panel',
+              'flex',
+              'flex-col',
+              'flex-1',
+              'h-full',
+              'relative',
             )}
-            {restartOverlay}
+          >
+            {viewMode !== 'desktop' && !showGitVersionPanel && !diffFile && (
+              <FilePreviewPathBar
+                fileNode={preview.selectedFileNode}
+                onRefresh={() => preview.refreshSelectedFileContent()}
+              />
+            )}
+            <div className={cx(styles['preview-body'])}>
+              {showGitVersionPanel && gitVersionControl ? (
+                <GitVersionRecordPanel
+                  className={cx('git-version-panel', 'h-full')}
+                  workspace={gitVersionControl.workspace}
+                  branch={gitVersionControl.branch}
+                  onRollbackSuccess={gitVersionControl.onRollbackSuccess}
+                />
+              ) : (
+                content
+              )}
+              {restartOverlay}
+            </div>
           </div>
         </div>
         {bottomContent && (

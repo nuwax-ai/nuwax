@@ -1,0 +1,32 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.pathBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: 49px;
+  padding: 0 8px 0 16px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 49px;
+  color: @colorTextTertiary;
+  // 与会话文件树容器 LeftContent .file-tree-container 一致
+  background: #f5f5f5;
+  border-bottom: @lineWidth solid rgba(5, 5, 5, 6%);
+}
+
+.pathLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.refreshButton {
+  flex-shrink: 0;
+  color: @colorTextTertiary;
+}
