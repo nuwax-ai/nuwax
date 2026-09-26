@@ -6906,6 +6906,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "Select a private server",
   "PC.Pages.AppProjectDetail.emptyPrivateServer": "No private servers yet. Add one first.",
   'PC.Components.ExpertSummonCard.summon': 'Summon',
+  'PC.Components.ExpertSummonCard.trial': 'Try Expert',
   'PC.Components.ExpertSummonCard.usageTimes': '{0} uses',
   'PC.Components.ExpertSummonCard.subscribeFirst': 'Subscribe to a plan before summoning',
   'PC.Components.CapabilityModal.title': 'Add Capability',
