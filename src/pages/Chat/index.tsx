@@ -2462,6 +2462,8 @@ const ChatPage: React.FC = () => {
   const keepAliveEnabled = useStyle3PcKeepAliveEnabled();
   const isCacheableRoute =
     keepAliveEnabled &&
+    // 仅主壳的 /home/chat 有常驻宿主；独立 /app/chat 必须在自身 Outlet 渲染。
+    location.pathname === `/home/chat/${params.id}/${params.agentId}` &&
     /^\d+$/.test(String(params.id ?? '')) &&
     /^\d+$/.test(String(params.agentId ?? '')) &&
     Number(params.id) > 0 &&
