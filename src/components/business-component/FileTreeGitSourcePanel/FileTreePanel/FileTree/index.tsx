@@ -207,6 +207,11 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       // 延迟执行，避免与点击事件冲突
       setTimeout(() => {
         if (renamingNode) {
+          const input = renameInputRef.current?.input;
+          // 目录列表刷新会卸掉再挂上输入框，焦点回到输入框时不要当成用户取消
+          if (input && document.activeElement === input) {
+            return;
+          }
           // 对于新建节点（status === 'create'），根据输入值决定是创建还是取消
           if (renamingNode.status === 'create') {
             const trimmedValue = renameValue.trim();
@@ -226,41 +231,75 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
 
     // 重命名输入框自动聚焦
     useEffect(() => {
-      // 当进入重命名 / 新建状态，且输入框已经渲染到 DOM 中时，自动聚焦并选中
-      if (renamingNode && renameInputRef.current) {
-        renameInputRef.current.focus();
-        renameInputRef.current.select();
-      }
-
       if (renamingNode) {
         setRenameValue(renamingNode.name);
       }
-    }, [renamingNode, expandedFolders]);
+    }, [renamingNode]);
+
+    useEffect(() => {
+      // 目录刷新后输入框可能重新挂载，未聚焦时再补一次焦点
+      if (!renamingNode || !renameInputRef.current) {
+        return;
+      }
+      const input = renameInputRef.current.input;
+      if (input && document.activeElement === input) {
+        return;
+      }
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }, [renamingNode, expandedFolders, files]);
 
     /**
-     * 当进入新建状态时，自动展开其父级及祖先文件夹
-     * 确保在折叠状态下新建文件/文件夹也能立刻可见
+     * 新建文件/文件夹时展开父级及祖先。
+     * 必须用树上的节点 id：工作区文件夹 id 带 workspace: 前缀，
+     * 只用 parentPath 拼出来的路径对不上，折叠的文件夹不会打开。
      */
     useEffect(() => {
       if (!renamingNode || renamingNode.status !== 'create') {
         return;
       }
 
-      const parentPath = renamingNode.parentPath;
-      if (!parentPath) return;
+      const ancestorIds: string[] = [];
+      const findAncestors = (nodes: FileNode[], trail: string[]): boolean => {
+        for (const node of nodes) {
+          if (node.id === renamingNode.id) {
+            ancestorIds.push(...trail);
+            return true;
+          }
+          if (
+            node.children?.length &&
+            findAncestors(node.children, [...trail, node.id])
+          ) {
+            return true;
+          }
+        }
+        return false;
+      };
 
-      const parts = parentPath.split('/').filter(Boolean);
+      if (!findAncestors(files || [], []) && renamingNode.parentPath) {
+        let currentPath = '';
+        renamingNode.parentPath
+          .split('/')
+          .filter(Boolean)
+          .forEach((part) => {
+            currentPath = currentPath ? `${currentPath}/${part}` : part;
+            ancestorIds.push(currentPath);
+          });
+      }
+
+      if (ancestorIds.length === 0) {
+        return;
+      }
 
       setExpandedFolders((prev) => {
+        if (ancestorIds.every((id) => prev.has(id))) {
+          return prev;
+        }
         const next = new Set(prev);
-        let currentPath = '';
-        parts.forEach((part) => {
-          currentPath = currentPath ? `${currentPath}/${part}` : part;
-          next.add(currentPath);
-        });
+        ancestorIds.forEach((id) => next.add(id));
         return next;
       });
-    }, [renamingNode]);
+    }, [renamingNode, files]);
 
     /**
      * 根据 taskAgentSelectedFileId 自动展开包含该文件的文件夹路径
