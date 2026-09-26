@@ -998,6 +998,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
     clearFilePanelInfo();
+    // 发送标记属于上一会话；新会话在用户再次发送前不能沿用
+    setHasUserSentMessage(false);
     if (activeRef.current) setOpenPaymentModal(false);
 
     // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
@@ -1047,9 +1049,51 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     onFileMutationSuccessRef: refreshGitListRef,
   });
 
-  /** 存在有效消息列表时才允许查询 Git status；单条开场白不算有效消息 */
+  // 渲染线放在产物入口判断之前：V2 的消息列表在 runtime，不回写页面模型。
+  // 图标是否出现直接看这份正在展示的列表，不必在 onSendMessage 上再打发送标记。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: id,
+    messageViewRef,
+    allowAutoScrollRef,
+    getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
+    effectsResources: {
+      isAppSidebarMode,
+      runHistory,
+      runHistoryItem,
+      showPagePreview,
+      openDesktopView,
+      setCardList,
+      setShowType,
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshFileListImmediately,
+      refreshGitListRef,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+      setFileTreeRefreshTrigger,
+    },
+  });
+  runtimeLineRef.current = runtimeLine;
+
+  /**
+   * 当前会话是否已有有效消息。空列表、或只有一条开场白，都不算。
+   * V2 看运行时消息列表；旧线看页面模型。详情未对上当前路由时视为还没有有效消息，
+   * 避免清空后用上一会话的列表去显示产物入口、请求 git。
+   */
   const hasValidMessageList = useMemo(() => {
-    const currentMessageList = messageList || [];
+    const sessionInfo = runtimeLine
+      ? (runtimeLine.conversationProps?.conversationInfo as
+          | { id?: number | string }
+          | null
+          | undefined)
+      : conversationInfo;
+    const sessionMessageList = runtimeLine
+      ? runtimeLine.messageList
+      : messageList;
+    if (sessionInfo?.id === undefined || String(sessionInfo.id) !== String(id)) {
+      return false;
+    }
+    const currentMessageList = sessionMessageList || [];
     if (!currentMessageList.length) {
       return false;
     }
@@ -1057,10 +1101,21 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       currentMessageList.length === 1 &&
       currentMessageList[0]?.messageType === MessageTypeEnum.ASSISTANT
     );
-  }, [messageList]);
+  }, [runtimeLine, conversationInfo, id, messageList]);
 
-  /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
-  const isGitStatusRefreshDisabled = !hasValidMessageList;
+  /** 有有效消息后才显示产物入口，并允许在预览面板展开时请求 git */
+  const canUseFilePreview = hasValidMessageList;
+
+  /**
+   * 文件预览面板是否展开。未展开时工作区可能还没有文件，甚至尚未建立，
+   * 此时不请求 git status / diff。
+   */
+  const isFilePreviewPanelOpen =
+    isFileTreeVisible && viewMode === 'preview';
+
+  /** 面板未展开或会话未开始时，不允许刷新 Git status */
+  const isGitStatusRefreshDisabled =
+    !canUseFilePreview || !isFilePreviewPanelOpen;
 
   /** V2 工具详情点击打开的文件（相对路径）；用于选中失败时精确归因提示 */
   const toolResourceSelectRef = useRef('');
@@ -1234,8 +1289,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isDynamicTheme: true,
     enableGitStatus:
       active &&
+      isFilePreviewPanelOpen &&
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-      hasValidMessageList &&
+      canUseFilePreview &&
       isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl),
     enableVersionControl: effectiveAgent?.enableVersionControl,
     onSelectedFileMissing: (fileId?: string) => {
@@ -1969,6 +2025,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       showSourceControl: isVersionControlEnabled,
       enableVersionControl: effectiveAgent?.enableVersionControl,
       gitVersionControl:
+        isFilePreviewPanelOpen &&
+        canUseFilePreview &&
         effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
         isVersionControlEnabled
           ? {
@@ -2049,6 +2107,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       effectiveAgent?.type,
       effectiveAgent?.enableVersionControl,
       isVersionControlEnabled,
+      canUseFilePreview,
+      isFilePreviewPanelOpen,
       finalSelectedId,
       handleExportProject,
       openPreviewView,
@@ -2111,9 +2171,11 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         conversationId={id}
         messageList={messageList}
         active={effectiveConversationActive}
-        enableVersionControl={isAgentVersionControlEnabled(
-          effectiveAgent?.enableVersionControl,
-        )}
+        enableVersionControl={
+          isFilePreviewPanelOpen &&
+          canUseFilePreview &&
+          isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl)
+        }
         open={active && capsulePanelOpen}
         onClose={handleCloseCapsulePanel}
       />
@@ -2145,6 +2207,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     closePreviewView: handleClosePreviewView,
     handleOpenPreview,
     isShowFilePanel,
+    showFilePreview: canUseFilePreview,
     isShowDesktop,
     viewMode,
     handleFileTreeVisible: handleFileTreeVisibleClick,
@@ -2166,31 +2229,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     useConversationRendererPreference();
   // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线 session 的
   // 会话面 props 覆盖旧线字段；flag 关闭（默认）时 conversationProps 为空对象，
-  // 旧线路径原值原行为。页面资源（卡片/桌面/文件树等）单份共享注入新线 effects。
-  const runtimeLine = useConversationRuntimeSession({
-    conversationId: id,
-    messageViewRef,
-    allowAutoScrollRef,
-    // chat 请求携带当前生效电脑的 sandboxId，空值兜底云电脑哨兵 -1
-    getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
-    effectsResources: {
-      isAppSidebarMode,
-      runHistory,
-      runHistoryItem,
-      showPagePreview,
-      openDesktopView,
-      setCardList,
-      setShowType,
-      refreshFileListThrottled: handleRefreshFileList,
-      refreshFileListImmediately,
-      refreshGitListRef,
-      openPreviewView,
-      setTaskAgentSelectedFileId,
-      setTaskAgentSelectTrigger,
-      setFileTreeRefreshTrigger,
-    },
-  });
-  runtimeLineRef.current = runtimeLine;
+  // 旧线路径原值原行为。runtimeLine 已在产物入口判断前创建。
 
   const fetchMentionFiles = useCallback(async (): Promise<
     FileMentionItem[]
