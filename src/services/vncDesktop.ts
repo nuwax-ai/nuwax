@@ -22,8 +22,15 @@ import { request } from 'umi';
 export async function apiGetStaticFileList(
   cId: number,
   options?: {
+    // 相对路径，点击文件夹时候传这个文件夹路径，列出子文件列表
     relativePath?: string;
+    // 是否递归全文件。不传默认 true（原逻辑）；false 为单层浏览，新逻辑应该传false， 如果recursive=null，表示file-server没有升级，也是返回的全量，走原逻辑。
     recursive?: boolean;
+    /** 服务端先按类型过滤，再按 limit 截取；不传则不限制。 */
+    // 返回条目类型：file-仅文件、dir-仅目录、all-全部（默认，非法值按 all 处理）
+    type?: 'file' | 'dir' | 'all';
+    // 最多返回条目数量（类型过滤后截取）。不传不限制
+    limit?: number;
     /**
      * 目标根目录（沙箱内绝对目录，可跳出会话工作区）。
      * 网关侧仅个人电脑会话放行；云端会话放开为后端契约，未放开前接口会拒绝。
@@ -39,6 +46,8 @@ export async function apiGetStaticFileList(
         ? {
             relativePath: options.relativePath || '',
             recursive: options.recursive ?? false,
+            ...(options.type ? { type: options.type } : {}),
+            ...(options.limit !== undefined ? { limit: options.limit } : {}),
             ...(options.customTargetDir
               ? { customTargetDir: options.customTargetDir }
               : {}),
@@ -52,10 +61,17 @@ export async function apiGetStaticFileList(
 // 若网关未透传该端点会失败，调用方需准备本地过滤兜底）
 export interface ISearchFilesParams {
   cId: number;
+  // 搜索关键词（至少 1 个字符；目录名/相对路径子串也可命中）
   kw: string;
+  // 自定义根目录（绝对路径）
+  customTargetDir?: string;
+  // 相对路径
   relativePath?: string;
+  // 最多返回命中条数。未传时默认 100，上限 200
   limit?: number;
+  // 最多访问节点数。未传时100000，上限 200000
   maxVisit?: number;
+  // 搜索超时（毫秒）。未传时 默认 3000，上限 15000；到期后停止扫描并可能返回已截断
   timeoutMs?: number;
 }
 
@@ -64,12 +80,14 @@ export interface SearchFilesResponse extends StaticFileListResponse {
   visited?: number;
 }
 
+// 搜索文件
 export async function apiSearchFiles(
   params: ISearchFilesParams,
 ): Promise<RequestResponse<SearchFilesResponse>> {
   const {
     cId,
     kw,
+    customTargetDir = '',
     relativePath = '',
     limit = 200,
     maxVisit = 20000,
@@ -80,6 +98,7 @@ export async function apiSearchFiles(
     params: {
       cId,
       kw,
+      customTargetDir,
       relativePath,
       limit,
       maxVisit,

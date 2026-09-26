@@ -6,8 +6,8 @@
  *   列表口径付费 → 挂载即按详情口径复核（/agent/:id 权威判定
  *   paymentRequired/subscribed/试用次数）并拉取套餐与「我的订阅」；
  * - 召唤拦截：免费/已订阅/租户未开启订阅 → 直接回调 onSummon；
- *   付费未订阅 → 先按详情复核（列表状态可能滞后，如已领免费套餐），
- *   复核已订阅则放行回传 subscribed=true，仍待订阅则提示先订阅并高亮套餐区；
+ *   付费未订阅但仍有试用次数 → 以试用专家入口直接回调；剩余次数为 0 时，
+ *   按详情复核订阅状态，已订阅则放行回传 subscribed=true，否则提示先订阅；
  * - 订阅下单走 useSubscription.createSubscriptionOrder（统一支付收银台），
  *   支付回流后重挂载/重渲染即按最新「我的订阅」展示当前套餐。
  *
@@ -73,7 +73,7 @@ export interface ExpertSummonCardInfo {
 
 export interface ExpertSummonCardProps {
   expert: ExpertSummonCardInfo;
-  /** 召唤回调：免费/已订阅（含详情复核出的已订阅）/租户未开启订阅时触发 */
+  /** 召唤回调：免费/已订阅/可试用/租户未开启订阅时触发 */
   onSummon: (expert: ExpertSummonCardInfo, subscribed?: boolean) => void;
   /** 召唤按钮 loading（外部业务请求态） */
   summonLoading?: boolean;
@@ -194,7 +194,7 @@ const ExpertSummonCard: React.FC<ExpertSummonCardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetId, expert.paymentRequired, isEnableSubscription]);
 
-  /** 召唤拦截：付费未订阅 → 提示先订阅并高亮套餐区 */
+  /** 召唤拦截：付费未订阅且无剩余试用次数 → 提示先订阅并高亮套餐区 */
   const promptSubscribeFirst = useCallback(() => {
     message.warning(dict('PC.Components.ExpertSummonCard.subscribeFirst'));
     setPlansHighlighted(true);
@@ -207,8 +207,14 @@ const ExpertSummonCard: React.FC<ExpertSummonCardProps> = ({
     );
   }, []);
 
-  /** 召唤：免费/已订阅/租户未开启订阅直通；付费未订阅先按详情复核放行 */
+  /** 可试用的付费专家直通；否则按免费、订阅、租户开关与详情复核处理 */
   const handleSummon = useCallback(() => {
+    const hasTrialRemaining =
+      (detailPatch.trialCount ?? 0) > (detailPatch.calledTrialCount ?? 0);
+    if (paymentRequired && !subscribed && hasTrialRemaining) {
+      onSummon(expert);
+      return;
+    }
     if (!isEnableSubscription || !paymentRequired || subscribed) {
       onSummon(expert, paymentRequired ? true : undefined);
       return;
@@ -235,6 +241,8 @@ const ExpertSummonCard: React.FC<ExpertSummonCardProps> = ({
     targetId,
     onSummon,
     promptSubscribeFirst,
+    detailPatch.calledTrialCount,
+    detailPatch.trialCount,
   ]);
 
   /** 套餐订阅下单（走统一支付收银台；回流后按最新我的订阅展示） */
@@ -274,6 +282,10 @@ const ExpertSummonCard: React.FC<ExpertSummonCardProps> = ({
   /** 试用次数小字：仅待订阅且有总额度时展示（同弹窗口径） */
   const showTrialCount =
     paymentRequired && !subscribed && (detailPatch.trialCount ?? 0) > 0;
+  const hasTrialRemaining =
+    paymentRequired &&
+    !subscribed &&
+    (detailPatch.trialCount ?? 0) > (detailPatch.calledTrialCount ?? 0);
 
   /** 付费才展示套餐区；租户未开启订阅时整段隐藏 */
   const showPlans = isEnableSubscription && paymentRequired;
@@ -314,7 +326,11 @@ const ExpertSummonCard: React.FC<ExpertSummonCardProps> = ({
             loading={summonLoading}
             onClick={handleSummon}
           >
-            {dict('PC.Components.ExpertSummonCard.summon')}
+            {dict(
+              hasTrialRemaining
+                ? 'PC.Components.ExpertSummonCard.trial'
+                : 'PC.Components.ExpertSummonCard.summon',
+            )}
           </Button>
         </div>
         {usageText && (

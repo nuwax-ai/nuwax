@@ -1,1 +1,0 @@
-.chat-swipe[data-v-fbf84a64]{position:relative;overflow:hidden}.chat-swipe__acts[data-v-fbf84a64]{position:absolute;top:0;right:0;bottom:0;z-index:2}.chat-swipe__act[data-v-fbf84a64]{position:absolute;top:0;right:0;bottom:0;transform:translate(calc(var(--swipe-x, 0px) + var(--i, 0) * var(--btn-w, 0px)))}

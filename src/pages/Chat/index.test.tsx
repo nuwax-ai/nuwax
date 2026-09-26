@@ -207,7 +207,7 @@ vi.mock('./components/ShowArea', () => ({
   default: () => <div data-testid="show-area" />,
 }));
 
-vi.mock('@/pages/Chat/components/AgentDetailModal', () => ({
+vi.mock('@/components/business-component/AgentDetailModal', () => ({
   default: (props: any) => {
     mockAgentDetailModal(props);
     // open 受控：关闭时不渲染（与 antd Modal 行为一致）
@@ -586,6 +586,11 @@ describe('ChatCore / ChatPage', () => {
 
   it('PC style3 路由只注册常驻渲染器，不在 Outlet 重复挂载会话', () => {
     mockStyle3PcKeepAliveEnabled.current = true;
+    mockUseLocation.mockReturnValue({
+      pathname: '/home/chat/100/200',
+      search: '',
+      state: null,
+    });
     render(<ChatPage />);
     expect(mockRegisterClientConversationRenderer).toHaveBeenCalledWith(
       'conversation',
@@ -594,6 +599,28 @@ describe('ChatCore / ChatPage', () => {
     expect(mockRunAsync).not.toHaveBeenCalled();
     expect(screen.queryByTestId('left-content')).toBeNull();
   });
+
+  it.each([
+    '',
+    '?hideMenu=true&hideNew=true&hideTitle=true&hideTerminal=true&hideTree=true',
+  ])(
+    'PC style3 独立 /app/chat 会话仍在 Outlet 渲染（query=%s）',
+    async (search) => {
+      mockStyle3PcKeepAliveEnabled.current = true;
+      mockGlobalAppSidebarMode.current = true;
+      mockUseLocation.mockReturnValue({
+        pathname: '/app/chat/200/100',
+        search,
+        state: null,
+      });
+      render(<ChatPage />);
+      await waitFor(() =>
+        expect(screen.getByTestId('left-content')).toBeInTheDocument(),
+      );
+      expect(mockRunAsync).toHaveBeenCalledWith(100);
+      expect(mockRegisterClientConversationRenderer).not.toHaveBeenCalled();
+    },
+  );
 
   it('PC style3 无效会话 id 仍走原路由页面兜底', () => {
     mockStyle3PcKeepAliveEnabled.current = true;

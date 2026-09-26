@@ -3,7 +3,8 @@
  * - 免费专家：无套餐区，召唤直通 onSummon(expert)，不拉详情复核/套餐；
  * - 付费未订阅：挂载即按详情复核（/agent/:id 权威口径）+ 拉套餐与我的订阅，
  *   内联渲染套餐卡（名称/价格/订阅按钮/可调用次数）；
- * - 召唤拦截：详情复核仍付费未订阅 → 不触发 onSummon，提示先订阅；
+ * - 付费未订阅但有剩余试用次数：按钮展示「试用专家」，召唤直通不再复核拦截；
+ * - 召唤拦截：详情复核仍付费未订阅且试用次数用尽 → 不触发 onSummon，提示先订阅；
  *   复核出已订阅（如已领免费套餐）→ 放行并回传 subscribed=true；
  * - 租户未开启订阅：付费未订阅也直通；
  * - 套餐订阅按钮 → createSubscriptionOrder(plan)（统一支付收银台）。
@@ -207,7 +208,38 @@ describe('统一专家组件·付费链路（逻辑自闭环）', () => {
     });
   });
 
-  it('召唤拦截：详情复核仍付费未订阅 → 不触发 onSummon，提示先订阅', async () => {
+  it('付费未订阅但有剩余试用次数：按钮展示试用文案，召唤直通不再复核拦截', async () => {
+    const onSummon = vi.fn();
+    renderCard(expert({}), onSummon);
+    await screen.findByText('基础版');
+
+    // 挂载复核后有剩余试用次数（trialCount=2 > calledTrialCount=0）→ 按钮切换为「试用专家」
+    fireEvent.click(
+      screen
+        .getAllByText('PC.Components.ExpertSummonCard.trial')[0]
+        .closest('button')!,
+    );
+    await waitFor(() => expect(onSummon).toHaveBeenCalledTimes(1));
+    expect(onSummon.mock.calls[0][0]).toMatchObject({ targetId: 101 });
+    expect(onSummon.mock.calls[0][1]).toBeUndefined();
+    // 直通不再次复核详情，也不提示先订阅
+    expect(apiPublishedAgentInfo).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByText('PC.Components.ExpertSummonCard.subscribeFirst'),
+    ).toBeNull();
+  });
+
+  it('召唤拦截：详情复核仍付费未订阅且试用次数用尽 → 不触发 onSummon，提示先订阅', async () => {
+    // 试用次数已用尽（calledTrialCount=2 = trialCount=2）→ 走订阅拦截口径
+    apiPublishedAgentInfo.mockResolvedValue({
+      code: '0000',
+      data: {
+        paymentRequired: true,
+        subscribed: false,
+        calledTrialCount: 2,
+        trialCount: 2,
+      },
+    });
     const onSummon = vi.fn();
     renderCard(expert({}), onSummon);
     await screen.findByText('基础版');

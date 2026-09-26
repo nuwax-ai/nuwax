@@ -6793,6 +6793,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "プライベートサーバーを選択してください",
   "PC.Pages.AppProjectDetail.emptyPrivateServer": "プライベートサーバーがありません。先に追加してください",
   'PC.Components.ExpertSummonCard.summon': '召喚',
+  'PC.Components.ExpertSummonCard.trial': '専門家を試す',
   'PC.Components.ExpertSummonCard.usageTimes': '{0}回使用',
   'PC.Components.ExpertSummonCard.subscribeFirst': 'プランを購読してから召喚してください',
   'PC.Components.CapabilityModal.title': '能力を追加',

@@ -8,6 +8,7 @@
  * - 页面资源面（卡片/桌面/文件树/Git/taskResult）：经 effectsResources 注入，
  *   未注入时静默忽略（与隔离子集语义一致）。
  */
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import type { ConversationEffectsAdapter } from '@/features/conversation/runtime/effectDispatcher';
 import {
@@ -30,8 +31,13 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 export { applyTerminalTaskStatus };
 
 export const runtimeLineHttp = {
-  stopConversation: (conversationId: string) =>
-    apiAgentConversationChatStop(conversationId),
+  stopConversation: async (conversationId: string) => {
+    const result = await apiAgentConversationChatStop(conversationId);
+    if (result?.code !== SUCCESS_CODE) {
+      throw new Error(result?.message || 'Conversation stop request failed');
+    }
+    return result;
+  },
   loadConversation: (conversationId: number) =>
     apiAgentConversation(conversationId),
   fetchMessagePage: (conversationId: number, index: number, size: number) =>

@@ -38,6 +38,8 @@ type MockConversationState = {
   chatConnectionRound: number;
   /** 在飞的回放连接数（keep-open 挂起的不归还）——status 据此报告 replaySettled */
   replayPendingCount: number;
+  /** 仅开发验收：按会话记录实际 HTTP SSE，支持断流故障注入。 */
+  activeStreams: Set<any>;
 };
 
 const createState = (speed = 1): MockConversationState => ({
@@ -49,6 +51,7 @@ const createState = (speed = 1): MockConversationState => ({
   speed,
   chatConnectionRound: 0,
   replayPendingCount: 0,
+  activeStreams: new Set(),
 });
 
 /** conversationId → 回放状态（惰性初始化）；无 id 的调用统一落默认键 */
@@ -89,13 +92,15 @@ const writeEvent = (
   res.write(`data:${JSON.stringify(payload)}\n\n`);
 };
 
-const openSse = (res: any) => {
+const openSse = (state: MockConversationState, res: any) => {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
+  state.activeStreams.add(res);
+  res.on('close', () => state.activeStreams.delete(res));
 };
 
 /**
@@ -157,7 +162,7 @@ const replay = (
   });
 
   const next = () => {
-    if (cancelled) return;
+    if (cancelled || res.writableEnded || res.destroyed) return;
     if (index >= scenario.events.length) {
       if (scenario.transport === 'keep-open') return;
       if (
@@ -187,7 +192,7 @@ const replay = (
     }
     const baseDelay = event.delayMs ?? (options.sub ? 50 : 100);
     setTimeout(() => {
-      if (cancelled) return;
+      if (cancelled || res.writableEnded || res.destroyed) return;
       // 干预卡事件已发出过（跨连接去重）：跳过继续回放剩余输出
       const eventId = interventionEventId(event);
       if (
@@ -268,14 +273,38 @@ export default {
         // 续连轮只发 FINAL_RESULT 时 emittedCount 永远到不了 scriptLength，
         // 以此为准而非计数比较
         replaySettled: state.replayPendingCount === 0,
+        activeStreamCount: state.activeStreams.size,
       }),
     );
+  },
+
+  // 开发验收故障注入：不发送 ERROR/FINAL，直接关闭实际 HTTP SSE。
+  // 保持 EXECUTING 可验多次断流后恢复；明确终态可验 onClose 的详情兜底。
+  'POST /api/mock/conversation/disconnect/:id': (req: any, res: any) => {
+    const mode = req.body?.mode || 'error';
+    const taskStatus = req.body?.taskStatus;
+    if (
+      !['error', 'close'].includes(mode) ||
+      (taskStatus !== undefined &&
+        !['EXECUTING', 'COMPLETE', 'FAILED', 'CANCEL'].includes(taskStatus))
+    ) {
+      res.status(400).json({ code: 'MOCK_DISCONNECT_INVALID' });
+      return;
+    }
+    const state = getState(resolveKey(req.params?.id));
+    if (taskStatus !== undefined) state.taskStatus = taskStatus;
+    const streams = [...state.activeStreams];
+    streams.forEach((stream) => {
+      if (mode === 'close') stream.end();
+      else stream.destroy();
+    });
+    res.json(S({ disconnected: streams.length, taskStatus: state.taskStatus }));
   },
 
   'POST /api/agent/conversation/chat': (req: any, res: any) => {
     const state = getState(resolveKey(req.body?.conversationId));
     const scenario = stateScenario(state);
-    openSse(res);
+    openSse(state, res);
     state.chatConnectionRound += 1;
     state.taskStatus = 'EXECUTING';
     state.messages.push({
@@ -299,7 +328,7 @@ export default {
   'GET /api/agent/conversation/chat/sub/:id': (req: any, res: any) => {
     const state = getState(resolveKey(req.params?.id));
     const scenario = stateScenario(state);
-    openSse(res);
+    openSse(state, res);
     replay(state, scenario, res, { sub: true });
   },
 

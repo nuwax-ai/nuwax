@@ -18,6 +18,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -26,6 +27,7 @@ import IdleWarningModal from './components/IdleWarningModal';
 import styles from './index.less';
 import { ConnectionStatus, VncPreviewProps, VncPreviewRef } from './type';
 import { useUrlRetry } from './useUrlRetry';
+import { buildVncClientUrl } from './vncClientUrl';
 
 // 创建 VncPreview 空闲检测专用 logger
 const vncIdleLogger = createLogger('[Idle:VncPreview]');
@@ -34,6 +36,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
   (
     {
       serviceUrl,
+      sourceUrl,
       cId,
       readOnly = false,
       autoConnect = false,
@@ -50,6 +53,9 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const [iframeUrl, setIframeUrl] = useState<string | null>(null);
     const [isIframeFullscreen, setIsIframeFullscreen] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const connectionGenerationRef = useRef(0);
+    const statusRef = useRef(status);
+    statusRef.current = status;
     const appStageRef = useRef(appStage);
     appStageRef.current = appStage;
 
@@ -98,22 +104,11 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         return null;
       }
 
-      const cleanBaseUrl = serviceUrl?.replace(/\/+$/, '');
-      const params = new URLSearchParams();
-
-      params.set('resize', 'scale');
-      params.set('autoconnect', 'true');
-      params.set('reconnect', 'true');
-      params.set('reconnect_delay', '500');
-
-      if (readOnly) {
-        params.set('view_only', 'true');
-      }
-
-      return `${cleanBaseUrl}/computer/desktop/${cId}/vnc.html?${params.toString()}`;
-    }, [serviceUrl, cId, readOnly]);
+      return buildVncClientUrl({ serviceUrl, sourceUrl, cId, readOnly });
+    }, [serviceUrl, sourceUrl, cId, readOnly]);
 
     const connect = useCallback(async () => {
+      const generation = connectionGenerationRef.current;
       const url = buildVncUrl();
       if (!url) {
         setStatus('error');
@@ -127,6 +122,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         connect();
       });
 
+      if (generation !== connectionGenerationRef.current || result.cancelled)
+        return;
       if (result.shouldRetry) {
         return;
       }
@@ -168,6 +165,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     }, [buildVncUrl, checkWithRetry]);
 
     const disconnect = useCallback(() => {
+      connectionGenerationRef.current += 1;
       resetRetry();
       setStatus('disconnected');
       setIframeUrl(null);
@@ -180,6 +178,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
      * 未传入 onReconnect 时行为与 connect 一致，保持向后兼容。
      */
     const handleRetry = useCallback(async () => {
+      const generation = ++connectionGenerationRef.current;
       setStatus('connecting');
       setErrorMessage('');
       // 重置重试计时窗口，避免沿用上次 60s 超时累计
@@ -189,6 +188,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         try {
           await onReconnect();
         } catch (error) {
+          if (generation !== connectionGenerationRef.current) return;
           // ensurePod 5s 本地限流属于正常情况（容器可能已在运行），继续尝试连接
           if (!isEnsurePodThrottledError(error)) {
             console.error('[VncPreview] onReconnect failed:', error);
@@ -206,12 +206,14 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         }
       }
 
+      if (generation !== connectionGenerationRef.current) return;
       await connect();
     }, [onReconnect, resetRetry, connect]);
 
     // 组件卸载时清除重试定时器
     useEffect(() => {
       return () => {
+        connectionGenerationRef.current += 1;
         resetRetry();
       };
     }, [resetRetry]);
@@ -219,6 +221,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     // 监听来自 noVNC iframe 的消息
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
+        // 只接收当前 iframe 的消息，旧配置页面或其它窗口不能改连接状态。
+        if (event.source !== iframeRef.current?.contentWindow) return;
         if (!event.data || typeof event.data !== 'object') return;
 
         const { type, msg } = event.data;
@@ -255,22 +259,28 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       };
     }, []);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => {
-      if (autoConnect && status === 'disconnected') {
-        connect();
-      }
-    }, [autoConnect]);
-
-    // Handle re-connection when configuration changes
-    useEffect(() => {
-      if (status === 'connected' || status === 'connecting') {
-        connect();
-      }
+    // 配置提交时即清理旧请求和文档，阻止旧结果在新配置渲染后的间隙落地。
+    useLayoutEffect(() => {
+      const shouldConnect =
+        autoConnect ||
+        statusRef.current === 'connected' ||
+        statusRef.current === 'connecting';
+      connectionGenerationRef.current += 1;
+      resetRetry();
+      setIframeUrl(null);
+      setErrorMessage('');
+      setStatus('disconnected');
+      if (shouldConnect) void connect();
+      return () => {
+        connectionGenerationRef.current += 1;
+        resetRetry();
+      };
+      // connect 的底层 retry 回调每次 render 都更新；仅业务配置变化才重新连接。
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [serviceUrl, cId, readOnly]);
+    }, [serviceUrl, sourceUrl, cId, readOnly, appStage, autoConnect]);
 
-    const handleIframeLoad = () => {
+    const handleIframeLoad = (event: { currentTarget: HTMLIFrameElement }) => {
+      if (event.currentTarget !== iframeRef.current) return;
       // 使用函数式 setState 避免闭包陈旧值问题
       setStatus((prevStatus) => {
         if (prevStatus === 'connecting' || prevStatus === 'error') {
@@ -281,7 +291,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       });
     };
 
-    const handleIframeError = () => {
+    const handleIframeError = (event: { currentTarget: HTMLIFrameElement }) => {
+      if (event.currentTarget !== iframeRef.current) return;
       setStatus('error');
       setErrorMessage('Failed to load VNC client.');
     };
@@ -479,6 +490,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
 
           {iframeUrl && (
             <iframe
+              key={iframeUrl}
               ref={iframeRef}
               src={iframeUrl}
               data-vnc-id={cId}

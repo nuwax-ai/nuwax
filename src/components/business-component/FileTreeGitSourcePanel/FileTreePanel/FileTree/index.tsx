@@ -52,15 +52,10 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     const [renameValue, setRenameValue] = useState<string>('');
     const renameInputRef = useRef<InputRef>(null);
     const restoredDirectoryRequestsRef = useRef(new Set<string>());
-    // 已展开的文件夹ID集合
+    // 已展开的文件夹 ID。初始全部收起，避免一进页面就展开第一层；
+    // 之后只随点击、新建或定位文件更新，文件列表刷新不重置，避免已展开的节点被折叠。
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-      () =>
-        // 初次渲染时自动展开第一层文件夹，后续文件列表变更时不重置，避免已展开的节点被折叠
-        new Set(
-          (files || [])
-            .filter((node) => node.type === 'folder')
-            .map((node) => node.id),
-        ),
+      () => new Set(),
     );
 
     useImperativeHandle(

@@ -109,10 +109,22 @@ export interface FileTreeContainerProps {
   hideFileTree: boolean;
   /** 是否显示文件树刷新按钮 */
   showRefreshButton: boolean;
+  /**
+   * 文件搜索走服务端（会话工作区）。
+   * 不传时仍用已加载树做前端过滤（应用开发页）。
+   */
+  remoteFileSearch?: {
+    /** 会话 ID */
+    cId: number;
+    /** 把接口返回的相对路径转成树节点 id，需与文件树 id 规则一致 */
+    toNodeId?: (relativePath: string) => string;
+    /** 写入搜索结果节点，便于与工作区树节点对齐 */
+    dataSourceId?: string;
+  };
   /** 选中文件并在右侧预览区打开；selectFolder 为 true 时仅选中文件夹 */
   handleFileSelect: (
     fileId: string,
-    options?: { selectFolder?: boolean },
+    options?: { selectFolder?: boolean; fallbackNode?: FileNode },
   ) => Promise<void>;
   /** 清空文件树选中态（文件 + 文件夹） */
   clearSelection?: () => void;

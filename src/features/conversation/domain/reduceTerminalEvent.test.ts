@@ -75,3 +75,44 @@ describe('reduceTerminalEvent FINAL_RESULT text 投影', () => {
     expect(message?.text).toContain('<!--think-closed-->');
   });
 });
+
+describe('reduceTerminalEvent ERROR 合同', () => {
+  const safeError =
+    'Agent execution failed. Please retry or contact the administrator.';
+  const event = {
+    requestId: 'req-failed',
+    eventType: ConversationEventTypeEnum.ERROR,
+    completed: true,
+    error: safeError,
+    data: null,
+  } as unknown as ConversationChatResponse;
+
+  it('重复 ERROR 不重复追加安全错误，并保留原正文与服务端 requestId', () => {
+    const first = reduceTerminalEvent(
+      [currentMessage()],
+      'm1',
+      event,
+      stubReconciler,
+    );
+    const repeated = reduceTerminalEvent(
+      first.messages,
+      'm1',
+      event,
+      stubReconciler,
+    );
+    expect(repeated.message?.text).toBe(`回答正文\n\n${safeError}`);
+    expect(repeated.message?.requestId).toBe('req-failed');
+    expect(repeated.message?.status).toBe(MessageStatusEnum.Error);
+  });
+
+  it('ERROR 缺 requestId 时保留当前消息的 requestId', () => {
+    const message = { ...currentMessage(), requestId: 'req-existing' };
+    const result = reduceTerminalEvent(
+      [message],
+      'm1',
+      { ...event, requestId: '' },
+      stubReconciler,
+    );
+    expect(result.message?.requestId).toBe('req-existing');
+  });
+});

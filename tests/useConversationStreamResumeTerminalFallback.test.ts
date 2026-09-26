@@ -118,10 +118,7 @@ describe('useConversationStreamResume sub 关闭终态确认(bug2520)', () => {
     subOnClose = undefined;
     vi.clearAllMocks();
     mockGetHostVisibility.mockReturnValue(true);
-    mockUseRequest.mockImplementation((_service: unknown, options: any) => {
-      options?.onSuccess?.(undefined);
-      return { run: runPolling, cancel: cancelPolling };
-    });
+    mockUseRequest.mockReturnValue({ run: runPolling, cancel: cancelPolling });
   });
 
   afterEach(() => {
@@ -273,5 +270,101 @@ describe('useConversationStreamResume sub 关闭终态确认(bug2520)', () => {
       1001,
       TaskStatus.COMPLETE,
     );
+  });
+
+  it.each([
+    'before-close',
+    'after-new-round-ended',
+    'during-status',
+    'during-snapshot',
+  ])('停止后的旧 sub close 不得覆盖同 ID 新轮：%s', async (phase) => {
+    let resolveStatus: ((value: TaskStatus) => void) | undefined;
+    let resolveSnapshot: ((value: unknown) => void) | undefined;
+    mockFetchConversationTaskStatus.mockImplementation(() =>
+      phase === 'during-status'
+        ? new Promise((resolve) => {
+            resolveStatus = resolve;
+          })
+        : Promise.resolve(TaskStatus.CANCEL),
+    );
+    mockFetchConversationSnapshot.mockImplementation(() =>
+      phase === 'during-snapshot'
+        ? new Promise((resolve) => {
+            resolveSnapshot = resolve;
+          })
+        : Promise.resolve({
+            id: 1001,
+            taskStatus: TaskStatus.CANCEL,
+            messageList,
+          }),
+    );
+    const onConversationSnapshot = vi.fn();
+    const onTerminalTaskStatus = vi.fn();
+    const abortSub = vi.fn();
+    const resumeStream = vi.fn((_id, _list, onClose) => {
+      subOnClose = onClose;
+    });
+    const { rerender } = renderHook(
+      ({ streaming }) =>
+        useConversationStreamResume({
+          conversationId: 1001,
+          taskStatus: TaskStatus.EXECUTING,
+          isLocallyStreaming: streaming,
+          isAwaitingChatTerminal: streaming,
+          messageList,
+          resumeStream,
+          abortSub,
+          onConversationSnapshot,
+          onTerminalTaskStatus,
+        }),
+      { initialProps: { streaming: false } },
+    );
+    const oldOnClose = subOnClose;
+    expect(oldOnClose).toBeTypeOf('function');
+    let closePromise: Promise<void> | undefined;
+    if (phase.startsWith('during-')) {
+      await act(async () => {
+        closePromise = oldOnClose?.();
+        await Promise.resolve();
+      });
+      expect(
+        phase === 'during-status' ? resolveStatus : resolveSnapshot,
+      ).toBeTypeOf('function');
+    }
+    rerender({ streaming: true });
+    if (phase === 'after-new-round-ended') rerender({ streaming: false });
+    runPolling.mockClear();
+    mockEventBusEmit.mockClear();
+    await act(async () => {
+      if (phase === 'during-status') resolveStatus?.(TaskStatus.CANCEL);
+      if (phase === 'during-snapshot')
+        resolveSnapshot?.({
+          id: 1001,
+          taskStatus: TaskStatus.CANCEL,
+          messageList,
+        });
+      await (closePromise || oldOnClose?.());
+    });
+    expect(onConversationSnapshot).not.toHaveBeenCalled();
+    expect(onTerminalTaskStatus).not.toHaveBeenCalled();
+    expect(mockEmitConversationListTaskStatus).not.toHaveBeenCalled();
+    expect(runPolling).not.toHaveBeenCalled();
+    expect(mockEventBusEmit).not.toHaveBeenCalled();
+    expect(abortSub).toHaveBeenCalledTimes(phase.startsWith('during-') ? 0 : 1);
+    // 新轮结束后旧订阅不再阻塞 ready；旧 close 无须被允许来释放标记。
+    expect(mockUseRequest.mock.lastCall?.[1].ready).toBe(
+      phase === 'after-new-round-ended',
+    );
+  });
+
+  it('停止请求失败且无新轮：abort 后的 sub close 仍恢复轮询', async () => {
+    mockFetchConversationTaskStatus.mockResolvedValue(TaskStatus.EXECUTING);
+    renderResumeHook();
+    runPolling.mockClear();
+    await act(async () => {
+      await subOnClose?.();
+    });
+    expect(mockEmitConversationListTaskStatus).not.toHaveBeenCalled();
+    expect(runPolling).toHaveBeenCalledOnce();
   });
 });

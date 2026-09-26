@@ -147,6 +147,16 @@ interface Window {
         url: string,
         filename?: string,
       ) => Promise<{ success: boolean; path?: string; error?: string }>;
+      /** 产物文件下载；旧版宿主可缺失，调用方回落 saveImage。 */
+      saveFile?: (
+        url: string,
+        filename?: string,
+      ) => Promise<{
+        success: boolean;
+        path?: string;
+        canceled?: boolean;
+        error?: string;
+      }>;
       /** 新开独立窗口打开站内页面（全屏页承载：智能体详情/工作流/网页应用开发/我的电脑等）。 */
       openWindow?: (
         path: string,

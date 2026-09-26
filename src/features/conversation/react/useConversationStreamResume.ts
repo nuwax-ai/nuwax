@@ -216,6 +216,14 @@ export function useConversationStreamResume(
     if (!resumeStream) return; // 未注入 action（页面未启用恢复）
     if (isResumeSubscribedRef.current) return; // 防重复订阅
     if (latestRef.current.isLocallyStreaming) return; // live 正在驱动输出，不重复订阅
+    // 同 ID 新轮也会失效旧 sub：仅比较会话 ID 无法挡住 abort 延迟关闭，
+    // 或关闭后正在等待的旧终态/快照。复用本地发送已维护的代际，不另建轮次状态。
+    const subscriptionGeneration =
+      consistencyControllerRef.current.getGeneration();
+    const ownsSubscription = () =>
+      latestRef.current.conversationId === id &&
+      consistencyControllerRef.current.getGeneration() ===
+        subscriptionGeneration;
     // 同一会话内，本地流式刚结束的冷却窗口内不订阅（等待 taskStatus 稳定后再由轮询决定）
     const resumeGate = resumeConsistencyControllerRef.current.evaluateGate(id);
     if (!resumeGate.allowed) {
@@ -257,6 +265,7 @@ export function useConversationStreamResume(
     if (polledMessageList === undefined && reloadHistoryAsync) {
       try {
         const reloaded = await reloadHistoryAsync(id);
+        if (!ownsSubscription()) return;
         conversationResumeLogger.info('reload before sub:done', {
           source: debugSource,
           conversationId: id,
@@ -282,13 +291,14 @@ export function useConversationStreamResume(
             .historyUserRetryDelaysMs) {
             await sleep(delayMs);
             if (
-              latestRef.current.conversationId !== id ||
+              !ownsSubscription() ||
               latestRef.current.isLocallyStreaming ||
               !isResumeSubscribedRef.current
             ) {
               break;
             }
             const retryList = await reloadHistoryAsync(id);
+            if (!ownsSubscription()) return;
             if (retryList && retryList.length) {
               list = retryList;
             }
@@ -301,6 +311,7 @@ export function useConversationStreamResume(
               break;
             }
           }
+          if (!ownsSubscription()) return;
           if (
             !resumeConsistencyControllerRef.current.isHistoryUserReady(
               latestRef.current.messageList,
@@ -331,7 +342,7 @@ export function useConversationStreamResume(
     // 此时再调 resumeStream 会用旧 id 触发 model 级共享 abortResumeStream，误杀新会话 sub。
     // 放弃本次订阅并回滚乐观标记，由当前会话自身的轮询/订阅逻辑接管。
     if (
-      latestRef.current.conversationId !== id ||
+      !ownsSubscription() ||
       latestRef.current.isLocallyStreaming ||
       !isResumeSubscribedRef.current
     ) {
@@ -342,8 +353,11 @@ export function useConversationStreamResume(
         isLocallyStreaming: latestRef.current.isLocallyStreaming,
         isResumeSubscribed: !!isResumeSubscribedRef.current,
       });
-      isResumeSubscribedRef.current = false;
-      setIsResumeSubscribed(false);
+      // 新轮/新会话自行释放旧订阅标记；旧异步 reload 不能清掉后来建立的订阅。
+      if (ownsSubscription()) {
+        isResumeSubscribedRef.current = false;
+        setIsResumeSubscribed(false);
+      }
       return;
     }
 
@@ -361,13 +375,10 @@ export function useConversationStreamResume(
       list,
       async () => {
         // sub 自动断开(end_turn/completed/超时)或被 abort 时回调
+        // 门禁先于订阅状态清理：旧 close 不能清新轮/新会话的订阅标记。
+        if (!ownsSubscription()) return;
         isResumeSubscribedRef.current = false;
         setIsResumeSubscribed(false);
-        // 过期 sub 的延迟关闭（切会话后 cleanup 触发 abort 后回调）：
-        // 不再回写状态，否则 reloadHistoryAsync(旧id) 与 RefreshConversationList 会覆盖/干扰新会话。
-        if (latestRef.current.conversationId !== id) {
-          return;
-        }
         // 失败退避计数（仅当前会话）：存活不足阈值视为秒关/报错，累计退避；长连接后关闭则重置
         const closeResult =
           resumeConsistencyControllerRef.current.recordClosed();
@@ -388,9 +399,8 @@ export function useConversationStreamResume(
               latestRef.current.messageList,
             );
           // confirmAfterStreamClose 可能等待后端状态查询；等待期间用户可能已经
-          // 切到另一会话。此时不能再通过 ref 中的最新回调把旧会话终态写给
-          // 新会话，也不能重启新会话的轮询（bug2520 审查补漏）。
-          if (latestRef.current.conversationId !== id) {
+          // 切会话或发送同 ID 新轮。此时不能把旧终态写给当前轮，也不能恢复旧轮询。
+          if (!ownsSubscription()) {
             return;
           }
           if (terminalDecision.type === 'terminal.confirmed') {
@@ -402,7 +412,7 @@ export function useConversationStreamResume(
             if (terminalDecision.source === 'snapshot-fallback') {
               try {
                 const snapshot = await fetchConversationSnapshot(id);
-                if (snapshot && latestRef.current.conversationId === id) {
+                if (snapshot && ownsSubscription()) {
                   onConversationSnapshotRef.current?.(snapshot);
                 }
               } catch (e) {
@@ -411,9 +421,8 @@ export function useConversationStreamResume(
                   e,
                 );
               }
-              // 快照请求同样跨越异步边界；切会话后必须终止旧回调，避免下面的
-              // onTerminalTaskStatus 使用当前 session id 污染新会话状态。
-              if (latestRef.current.conversationId !== id) {
+              // 快照请求同样跨越异步边界；切会话/同 ID 新轮后必须终止旧回调。
+              if (!ownsSubscription()) {
                 return;
               }
             }
@@ -428,6 +437,8 @@ export function useConversationStreamResume(
         }
 
         // 终态同步完成后再恢复轮询，避免 EXECUTING 期间误重订阅 sub
+        // 请求失败同样可能跨过新轮边界，catch 后也不能恢复旧轮询。
+        if (!ownsSubscription()) return;
         pollingControlsRef.current.start();
 
         // 发送事件，刷新会话列表以清除“执行中”标记，使其消失
@@ -622,6 +633,11 @@ export function useConversationStreamResume(
   // 这里主动 cancel，避免该窗口继续发出下一轮请求。
   useEffect(() => {
     if (isLocallyStreaming) {
+      // local live 接管输出；清旧 sub 标记而不等待 abort 的延迟 onClose。
+      // 旧回调已因代际改变失效，发送结束后仍能由 ready 恢复轮询。
+      if (isResumeSubscribedRef.current) abortSub?.();
+      isResumeSubscribedRef.current = false;
+      setIsResumeSubscribed(false);
       conversationPollLogger.info('cancel polling: local send started', {
         conversationId,
         pollGeneration: consistencyControllerRef.current.getGeneration(),
@@ -629,7 +645,7 @@ export function useConversationStreamResume(
       });
       cancel();
     }
-  }, [isLocallyStreaming, cancel, conversationId]);
+  }, [isLocallyStreaming, cancel, conversationId, abortSub]);
 
   // 切换会话：先重置订阅状态。必须在 entry effect 之前执行，否则 entry subscribe 后会被这里覆盖。
   // cleanup 里 abortSub 触发的 onClose 有 ~500ms 延迟，这里立即重置 state，避免新会话卡在「不轮询」。

@@ -636,10 +636,18 @@ export function useFileTreePreviewView(
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
-    async (fileId: string, options?: { selectFolder?: boolean }) => {
+    async (
+      fileId: string,
+      options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+    ) => {
       const currentFiles = filesRef.current;
       // 根据文件ID查找文件节点（精确匹配）
       let fileNode = findFileNode(fileId, currentFiles);
+
+      // 搜索结果可能尚未懒加载进树，用接口带回的节点直接打开
+      if (!fileNode && options?.fallbackNode?.id === fileId) {
+        fileNode = options.fallbackNode;
+      }
 
       // 如果仍然没有找到，尝试模糊匹配
       if (!fileNode && fileId && fileId.includes('.')) {
@@ -803,7 +811,10 @@ export function useFileTreePreviewView(
 
   // 文件选择（对外接口，用于用户主动选择）
   const handleFileSelect = useCallback(
-    async (fileId: string, options?: { selectFolder?: boolean }) => {
+    async (
+      fileId: string,
+      options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+    ) => {
       if (options?.selectFolder) {
         await handleFileSelectInternal(fileId, options);
         return;

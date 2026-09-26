@@ -118,6 +118,8 @@ export interface UnifiedChatSessionProps {
 
   // 文件预览与智能体电脑状态/操作 (通用型智能体 TaskAgent 专属)
   selectedComputerId?: string;
+  /** 当前会话详情已加载时，按 sandboxServerId 恢复历史会话的电脑与锁定状态。 */
+  restoreConversationSandbox?: boolean;
   onComputerSelect?: (id: string) => void;
 
   showScrollBtn?: boolean;

@@ -27,6 +27,7 @@ import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
+import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import {
   conversationPageCacheManager,
@@ -38,7 +39,6 @@ import { fullPageInstanceCacheManager } from '@/features/conversation/react/useF
 import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
 import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
 import { usePageModel } from '@/modelScopes/usePageModel';
-import AgentDetailModal from '@/pages/Chat/components/AgentDetailModal';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
@@ -48,6 +48,7 @@ import {
   TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
+import type { FileNode } from '@/types/interfaces/appDev';
 import type { MessageSourceType } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
@@ -110,6 +111,7 @@ import { useWorkspaceDirectoryFiles } from './hooks/useWorkspaceDirectoryFiles';
 import styles from './index.less';
 import {
   parentDirectory,
+  WORKSPACE_SOURCE_ID,
   workspaceNodeId,
   workspaceRelativePath,
 } from './utils/fileDataSource';
@@ -487,6 +489,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     getEffectiveSandboxId,
     finalSelectedId,
   } = useChatSandbox({
+    conversationId: id,
     location: { ...routeLocation, state: stateToUse },
     history: { action: routeAction },
     effectiveAgent,
@@ -1781,9 +1784,16 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       ...fileView.tree,
       loadedFolderIds: loadedWorkspaceFolderIds,
       onLoadDirectory: workspaceDirectoryFiles.loadDirectory,
+      remoteFileSearch: id
+        ? {
+            cId: Number(id),
+            toNodeId: workspaceNodeId,
+            dataSourceId: WORKSPACE_SOURCE_ID,
+          }
+        : undefined,
       handleFileSelect: async (
         fileId: string,
-        options?: { selectFolder?: boolean },
+        options?: { selectFolder?: boolean; fallbackNode?: FileNode },
       ) => {
         if (!options?.selectFolder) {
           setTaskAgentSelectedFileId('');
@@ -1791,11 +1801,23 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
           gitSourceControl.setSelectedChangeFile(null);
           collapseTerminalConsole();
         }
+        // 搜索命中可能还没懒加载进树，先拉所在目录，避免随后同步树时把预览清掉
+        const fallbackPath = options?.fallbackNode?.relativePath;
+        if (
+          options?.fallbackNode?.type === 'file' &&
+          fallbackPath &&
+          !options.selectFolder
+        ) {
+          await workspaceDirectoryFiles.loadDirectory(
+            parentDirectory(fallbackPath),
+          );
+        }
         await fileView.tree.handleFileSelect(fileId, options);
       },
     }),
     [
       fileView.tree,
+      id,
       loadedWorkspaceFolderIds,
       workspaceDirectoryFiles.loadDirectory,
       setTaskAgentSelectedFileId,
@@ -2073,6 +2095,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     const response = await apiGetStaticFileList(id, {
       relativePath: '',
       recursive: true,
+      type: 'file',
+      limit: 100,
     });
     if (response.code !== SUCCESS_CODE) throw new Error('会话文件列表加载失败');
     return (response.data?.files ?? [])
@@ -2205,6 +2229,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isSelectionLocked,
     hasUserSentMessage,
     selectedComputerId: finalSelectedId,
+    restoreConversationSandbox: true,
     onComputerSelect: setSelectedComputerId,
     showScrollBtn,
     allowAutoScrollRef,
@@ -2462,6 +2487,8 @@ const ChatPage: React.FC = () => {
   const keepAliveEnabled = useStyle3PcKeepAliveEnabled();
   const isCacheableRoute =
     keepAliveEnabled &&
+    // 仅主壳的 /home/chat 有常驻宿主；独立 /app/chat 必须在自身 Outlet 渲染。
+    location.pathname === `/home/chat/${params.id}/${params.agentId}` &&
     /^\d+$/.test(String(params.id ?? '')) &&
     /^\d+$/.test(String(params.agentId ?? '')) &&
     Number(params.id) > 0 &&
