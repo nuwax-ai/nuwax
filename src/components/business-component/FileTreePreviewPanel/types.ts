@@ -48,7 +48,10 @@ export interface FileTreePreviewViewProps {
   viewMode?: 'preview' | 'desktop';
   /** 是否只读 */
   readOnly?: boolean;
-  /** 上传多个文件回调 */
+  /**
+   * 上传多个文件。
+   * filePaths 由文件树按节点路径生成，已是工作区根起算的完整相对路径，按原样提交。
+   */
   onUploadFiles?: (files: File[], filePaths: string[]) => Promise<void>;
   /** 导出项目回调 */
   onExportProject?: () => Promise<void>;
