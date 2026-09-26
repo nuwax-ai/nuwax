@@ -48,6 +48,7 @@ import {
   TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
+import type { FileNode } from '@/types/interfaces/appDev';
 import type { MessageSourceType } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
@@ -110,6 +111,7 @@ import { useWorkspaceDirectoryFiles } from './hooks/useWorkspaceDirectoryFiles';
 import styles from './index.less';
 import {
   parentDirectory,
+  WORKSPACE_SOURCE_ID,
   workspaceNodeId,
   workspaceRelativePath,
 } from './utils/fileDataSource';
@@ -1782,9 +1784,16 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       ...fileView.tree,
       loadedFolderIds: loadedWorkspaceFolderIds,
       onLoadDirectory: workspaceDirectoryFiles.loadDirectory,
+      remoteFileSearch: id
+        ? {
+            cId: Number(id),
+            toNodeId: workspaceNodeId,
+            dataSourceId: WORKSPACE_SOURCE_ID,
+          }
+        : undefined,
       handleFileSelect: async (
         fileId: string,
-        options?: { selectFolder?: boolean },
+        options?: { selectFolder?: boolean; fallbackNode?: FileNode },
       ) => {
         if (!options?.selectFolder) {
           setTaskAgentSelectedFileId('');
@@ -1792,11 +1801,23 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
           gitSourceControl.setSelectedChangeFile(null);
           collapseTerminalConsole();
         }
+        // 搜索命中可能还没懒加载进树，先拉所在目录，避免随后同步树时把预览清掉
+        const fallbackPath = options?.fallbackNode?.relativePath;
+        if (
+          options?.fallbackNode?.type === 'file' &&
+          fallbackPath &&
+          !options.selectFolder
+        ) {
+          await workspaceDirectoryFiles.loadDirectory(
+            parentDirectory(fallbackPath),
+          );
+        }
         await fileView.tree.handleFileSelect(fileId, options);
       },
     }),
     [
       fileView.tree,
+      id,
       loadedWorkspaceFolderIds,
       workspaceDirectoryFiles.loadDirectory,
       setTaskAgentSelectedFileId,
