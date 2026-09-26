@@ -2705,8 +2705,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       >
         <ResizableSplit
           className={styles['main-row']}
-          stackBelowWidth={580}
-          minLeftWidth={260}
+          stackBelowWidth={750}
+          minLeftWidth={430}
           minRightWidth={320}
           defaultLeftWidth={chatPanelWidth}
           onResizeEnd={saveChatPanelWidthPercent}
