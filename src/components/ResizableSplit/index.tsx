@@ -1,12 +1,17 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import ResizeDivider from './ResizeDivider';
 import styles from './index.module.less';
+import ResizeDivider from './ResizeDivider';
+import { getSplitBounds } from './splitBounds';
 
 interface Props {
   left?: React.ReactNode;
+  /** 左侧子树保活但不占布局。 */
+  leftHidden?: boolean;
   right?: React.ReactNode;
   /** 保持右侧子树挂载，但从布局中隐藏（用于 iframe / 终端实例保活） */
   rightHidden?: boolean;
+  /** 容器窄于此宽度时上下排列，两栏各占一半高度。 */
+  stackBelowWidth?: number;
   minLeftWidth?: number;
   minRightWidth?: number;
   defaultLeftWidth?: number;
@@ -26,8 +31,10 @@ interface Props {
 
 const ResizableSplit: React.FC<Props> = ({
   left,
+  leftHidden = false,
   right,
   rightHidden = false,
+  stackBelowWidth = 0,
   minLeftWidth = 350,
   minRightWidth = 350,
   defaultLeftWidth = 50, // 默认左侧占比50%
@@ -42,6 +49,11 @@ const ResizableSplit: React.FC<Props> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const { minLeft, minRight } = getSplitBounds(
+    containerWidth,
+    minLeftWidth,
+    minRightWidth,
+  );
   const [leftWidthPercent, setLeftWidthPercent] = useState(defaultLeftWidth);
   const [isDragging, setIsDragging] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -146,28 +158,28 @@ const ResizableSplit: React.FC<Props> = ({
     const targetRightWidth = containerWidth - targetLeftWidth;
 
     // 检查是否超出最小宽度限制
-    const leftBelowMin = targetLeftWidth < minLeftWidth;
-    const rightBelowMin = targetRightWidth < minRightWidth;
+    const leftBelowMin = targetLeftWidth < minLeft;
+    const rightBelowMin = targetRightWidth < minRight;
 
     // 如果两侧都低于最小宽度，优先保证左侧最小宽度，固定左侧
     if (leftBelowMin && rightBelowMin) {
-      fixedLeftWidthRef.current = minLeftWidth;
-      const newLeftPercent = (minLeftWidth / containerWidth) * 100;
+      fixedLeftWidthRef.current = minLeft;
+      const newLeftPercent = (minLeft / containerWidth) * 100;
       setLeftWidthPercent(newLeftPercent);
       return;
     }
 
     // 如果左侧低于最小宽度，固定左侧为最小宽度
     if (leftBelowMin) {
-      fixedLeftWidthRef.current = minLeftWidth;
-      const newLeftPercent = (minLeftWidth / containerWidth) * 100;
+      fixedLeftWidthRef.current = minLeft;
+      const newLeftPercent = (minLeft / containerWidth) * 100;
       setLeftWidthPercent(newLeftPercent);
       return;
     }
 
     // 如果右侧低于最小宽度，调整左侧宽度以保证右侧最小宽度
     if (rightBelowMin) {
-      const newLeftWidth = containerWidth - minRightWidth;
+      const newLeftWidth = containerWidth - minRight;
       fixedLeftWidthRef.current = newLeftWidth;
       const newLeftPercent = (newLeftWidth / containerWidth) * 100;
       setLeftWidthPercent(Math.max(0, newLeftPercent));
@@ -183,7 +195,7 @@ const ResizableSplit: React.FC<Props> = ({
 
     // 正常情况：容器放大/缩小，但都没有达到最小宽度限制
     // 检查右侧是否会超出最大范围
-    const maxLeftWidth = containerWidth - minRightWidth;
+    const maxLeftWidth = containerWidth - minRight;
     if (targetLeftWidth > maxLeftWidth) {
       const newLeftPercent = (maxLeftWidth / containerWidth) * 100;
       setLeftWidthPercent(newLeftPercent);
@@ -192,18 +204,24 @@ const ResizableSplit: React.FC<Props> = ({
     containerWidth,
     isInitialized,
     leftWidthPercent,
-    minLeftWidth,
-    minRightWidth,
+    minLeft,
+    minRight,
     isDragging,
   ]);
 
   // 检查是否有内容
-  const hasLeftContent = !!left;
+  const shouldRenderLeft = !!left;
+  const hasLeftContent = shouldRenderLeft && !leftHidden;
   const shouldRenderRight = !!right;
   const hasRightContent = shouldRenderRight && !rightHidden;
 
   // 如果只有一侧有内容，则不需要分隔线
-  const showDivider = hasLeftContent && hasRightContent;
+  const isStacked =
+    hasLeftContent &&
+    hasRightContent &&
+    containerWidth > 0 &&
+    containerWidth < stackBelowWidth;
+  const showDivider = hasLeftContent && hasRightContent && !isStacked;
 
   // 计算实际宽度百分比
   const actualLeftPercent =
@@ -218,14 +236,14 @@ const ResizableSplit: React.FC<Props> = ({
   // 按最小宽度约束把容器相对坐标（px）夹到合法百分比
   const clampLeftPercent = useCallback(
     (containerX: number) => {
-      const minLeftPercent = (minLeftWidth / containerWidth) * 100;
-      const maxLeftPercent = 100 - (minRightWidth / containerWidth) * 100;
+      const minLeftPercent = (minLeft / containerWidth) * 100;
+      const maxLeftPercent = 100 - (minRight / containerWidth) * 100;
       return Math.max(
         minLeftPercent,
         Math.min(maxLeftPercent, (containerX / containerWidth) * 100),
       );
     },
-    [containerWidth, minLeftWidth, minRightWidth],
+    [containerWidth, minLeft, minRight],
   );
 
   // 分隔条拖拽中（Draggable onDrag 与全局 mousemove 统一出口）：
@@ -257,14 +275,19 @@ const ResizableSplit: React.FC<Props> = ({
   return (
     <div
       className={`${styles.container} ${className || ''}`}
-      style={style}
+      style={{
+        ...style,
+        flexDirection: isStacked ? 'column' : style?.flexDirection,
+      }}
       ref={containerRef}
     >
-      {hasLeftContent && (
+      {shouldRenderLeft && (
         <div
           className={styles.left}
           style={{
-            width: `${actualLeftPercent}%`,
+            width: isStacked ? '100%' : `${actualLeftPercent}%`,
+            height: isStacked ? '50%' : undefined,
+            display: leftHidden ? 'none' : undefined,
             // 初始化完成前使用 CSS 过渡，避免抖动
             transition: isInitialized ? 'none' : 'width 0ms',
             // 拖拽时禁用滚动，避免滚动条闪烁
@@ -278,8 +301,8 @@ const ResizableSplit: React.FC<Props> = ({
       {showDivider && containerWidth > 0 && (
         <ResizeDivider
           position={(leftWidthPercent / 100) * containerWidth}
-          minX={minLeftWidth}
-          maxX={containerWidth - minRightWidth}
+          minX={minLeft}
+          maxX={containerWidth - minRight}
           disabled={disabled}
           dividerHoverColor={dividerHoverColor}
           dividerDraggingColor={dividerDraggingColor}
@@ -293,7 +316,8 @@ const ResizableSplit: React.FC<Props> = ({
         <div
           className={styles.right}
           style={{
-            width: `${100 - actualLeftPercent}%`,
+            width: isStacked ? '100%' : `${100 - actualLeftPercent}%`,
+            height: isStacked ? '50%' : undefined,
             display: rightHidden ? 'none' : undefined,
             // 初始化完成前使用 CSS 过渡，避免抖动
             transition: isInitialized ? 'none' : 'width 0ms',

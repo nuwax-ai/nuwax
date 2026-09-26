@@ -27,11 +27,14 @@
   }
 
   .header-info {
+    min-width: 0;
     padding-left: @paddingSm;
     gap: @marginSm;
 
     .h-title {
       max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
       margin-right: 0;
       font-size: 16px;
       font-weight: @fontWeightStrong;
@@ -47,6 +50,9 @@
   }
 
   .right-box {
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     margin-left: auto;
     gap: 8px;
   }
@@ -108,4 +114,9 @@
       }
     }
   }
+}
+
+.actions-header {
+  flex-wrap: wrap;
+  gap: 8px;
 }

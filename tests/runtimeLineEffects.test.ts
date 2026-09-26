@@ -324,6 +324,10 @@ describe('runtimeLine effects adapter', () => {
       apiAgentConversation,
       apiAgentConversationMessageList,
     } = await import('@/services/agentConfig');
+    vi.mocked(apiAgentConversationChatStop).mockResolvedValue({
+      code: '0000',
+      data: null,
+    } as never);
     await runtimeLineHttp.stopConversation('42');
     await runtimeLineHttp.loadConversation(7);
     await runtimeLineHttp.fetchMessagePage(7, 0, 20);
@@ -334,5 +338,19 @@ describe('runtimeLine effects adapter', () => {
       index: 0,
       size: 20,
     });
+  });
+
+  it('停止接口业务失败必须 reject，避免 runtime 将 HTTP 200 误写成 CANCEL', async () => {
+    const { apiAgentConversationChatStop } = await import(
+      '@/services/agentConfig'
+    );
+    vi.mocked(apiAgentConversationChatStop).mockResolvedValue({
+      code: '4000',
+      message: '任务停止失败',
+      data: null,
+    } as never);
+    await expect(runtimeLineHttp.stopConversation('42')).rejects.toThrow(
+      '任务停止失败',
+    );
   });
 });

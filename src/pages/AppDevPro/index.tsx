@@ -11,12 +11,15 @@ import FileTreeGitSourcePanel, {
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
+import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import ResizableSplit from '@/components/ResizableSplit';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
+import { useWorkspaceFileRefresh } from '@/features/conversation/react/useWorkspaceFileRefresh';
 import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
 import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
@@ -44,6 +47,10 @@ import { RequestResponse } from '@/types/interfaces/request';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
+import {
+  loadChatPanelWidthPercent,
+  saveChatPanelWidthPercent,
+} from '@/utils/chatPanelWidthPreference';
 import { addBaseTarget } from '@/utils/common';
 import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
@@ -205,6 +212,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   }
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
+  const [progressOpen, setProgressOpen] = useState(false);
+  useEffect(() => {
+    setProgressOpen(false);
+  }, [queryConversationId, active]);
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
   const [devConsoleLayoutResetSignal, setDevConsoleLayoutResetSignal] =
     useState<number>(0);
@@ -374,6 +385,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     conversationInfo?.taskStatus,
   ]);
 
+  const [chatPanelWidth] = useState(loadChatPanelWidthPercent);
   const activeInterventions = useActiveInterventionQueue(messageList);
   /** 会话结束后仍有待回复确认卡时，继续阻止预览服务启动 */
   const hasPendingIntervention =
@@ -466,6 +478,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /** 开发、线上容器分别维护状态与保活，同环境由终端和数据库共同复用 */
   const envPodConversationId =
     finalSelectedComputerId === '-1' ? queryConversationId : undefined;
+  useEffect(() => {
+    // 本机电脑不能沿用云端桌面连接，切换后回到文件工作区。
+    if (!envPodConversationId) {
+      setWorkspaceView((current) =>
+        current === 'remote-desktop' ? 'files' : current,
+      );
+    }
+  }, [envPodConversationId]);
   const devPod = useUserAppEnvPod(
     envPodConversationId,
     UserAppDbEnvEnum.Dev,
@@ -617,12 +637,28 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 进页自动发送直发 runtime store——乐观轮次与面板渲染同线，首条消息立即可见，
    * 不再等 5s 快照轮询从后端捞回；AgentConversationChatPanel 消费同一实例不自建。
    */
+  // 共用文件树刷新（含当前选中文件正文）；仅文件变更完成事件调用，仍按 2s 合并。
+  const refreshRuntimeFileTree = useWorkspaceFileRefresh({
+    active,
+    conversationId: queryConversationId,
+    refresh: () => {
+      const refresh = refreshFileTreeAndSelectedFileRef.current;
+      return refresh
+        ? refresh()
+        : refreshFileListImmediately(queryConversationId);
+    },
+  });
+
   const runtimeLine = useConversationRuntimeSession({
     conversationId: queryConversationId,
     // chat 请求携带面板当前选中电脑（空串兜底 undefined）
     getSandboxId: () => finalSelectedComputerId || undefined,
-    effectsResources: {}, // 页面入口无 chat model 资源；预览类 effect 静默忽略
+    effectsResources: { refreshFileListThrottled: refreshRuntimeFileTree },
   });
+  const capsuleModel = selectProgressCapsule(
+    runtimeLine?.conversationProps.messageList ?? messageList,
+    runtimeLine?.effectiveIsActive ?? isConversationActive,
+  );
 
   useInitialConversationAutoSend({
     conversationId: queryConversationId,
@@ -2139,7 +2175,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    */
   const handleOpenDesktopPanel = useCallback(() => {
     resetDevConsoleExpandedLayout();
-    if (!appId) {
+    if (!appId || !envPodConversationId) {
       message.warning(dict('PC.Pages.AppDevPro.remoteDesktopEmpty'));
       return;
     }
@@ -2156,6 +2192,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     startEnvPodIfNeeded(UserAppDbEnvEnum.Dev);
   }, [
     appId,
+    envPodConversationId,
     previewTabs,
     resetDevConsoleExpandedLayout,
     startEnvPodIfNeeded,
@@ -2400,6 +2437,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     return (
       <AppDevRemoteDesktopPanel
         appId={appId}
+        conversationId={envPodConversationId}
         containerStatus={envPodConversationId ? podStatus : undefined}
         onRetryContainer={() => {
           void ensureEnvPodRef.current(UserAppDbEnvEnum.Dev, true);
@@ -2653,7 +2691,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   }
 
   // ==================== 主渲染 ====================
-  // （窄窗口不做横向滚动兜底：页面内面板后续改造支持拖拽调宽，09-21 产品定调）
+  // 与 home/chat 共用可拖拽面板，不再固定 480px 聊天栏或拓宽全局页面。
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       {/* 主内容区域：左（应用信息 + 聊天） | 右（环境切换与操作 + 内容） */}
@@ -2665,144 +2703,172 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           `xagi-nav-${navigationStyle}`,
         )}
       >
-        <div className={cx(styles['main-row'])}>
-          {/* 左栏：顶部应用信息 + 聊天区域（始终显示） */}
-          <div className={cx(styles['left-panel'])}>
-            <AppDevProHeaderBrand
-              userAppInfo={userAppInfo}
-              spaceId={spaceId}
-              appId={appId}
-              active={active}
-              onConfirmUpdate={setUserAppInfo}
-            />
-            <div className={cx(styles['left-panel-body'])}>
-              <AgentConversationChatPanel
-                routeSnapshot={{
-                  conversationId: queryConversationId,
-                  state: routeState,
-                  key: routeKey,
-                  action: routeAction,
-                }}
-                runtimeLine={runtimeLine}
-                selectedComputerId={finalSelectedComputerId}
-                onChangeSelectedComputerId={setSelectedComputerId}
-                onConversationEnd={handleConversationEnd}
+        <ResizableSplit
+          className={styles['main-row']}
+          stackBelowWidth={750}
+          minLeftWidth={430}
+          minRightWidth={320}
+          defaultLeftWidth={chatPanelWidth}
+          onResizeEnd={saveChatPanelWidthPercent}
+          left={
+            <div className={cx(styles['left-panel'])}>
+              <AppDevProHeaderBrand
+                userAppInfo={userAppInfo}
+                spaceId={spaceId}
+                appId={appId}
+                active={active}
+                onConfirmUpdate={setUserAppInfo}
               />
+              <div className={cx(styles['left-panel-body'])}>
+                <AgentConversationChatPanel
+                  active={active}
+                  routeSnapshot={{
+                    conversationId: queryConversationId,
+                    state: routeState,
+                    key: routeKey,
+                    action: routeAction,
+                  }}
+                  runtimeLine={runtimeLine}
+                  progressOpen={progressOpen}
+                  onCloseProgress={() => setProgressOpen(false)}
+                  selectedComputerId={finalSelectedComputerId}
+                  onChangeSelectedComputerId={setSelectedComputerId}
+                  onConversationEnd={handleConversationEnd}
+                />
+              </div>
             </div>
-          </div>
+          }
+          right={
+            <div className={cx(styles['right-column'])}>
+              <AppDevProHeaderActions
+                progress={
+                  capsuleModel
+                    ? {
+                        open: progressOpen,
+                        running: capsuleModel.running,
+                        onClick: () => setProgressOpen((value) => !value),
+                      }
+                    : undefined
+                }
+                userAppInfo={userAppInfo}
+                onPublish={handleOpenPublish}
+                onOpenMarketPublish={() => setOpenPublishModal(true)}
+                publishing={publishFlow.publishing}
+                remotePublishing={showRemotePublishing}
+                onCancelRemotePublish={handleCancelRemotePublish}
+                cancelRemotePublishLoading={cancelRemotePublishLoading}
+                isFileTreeSidebarVisible={isFileTreeIconActive}
+                onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+                isTerminalPanelOpen={isTerminalIconActive}
+                onOpenTerminalPanel={handleOpenTerminalPanel}
+                onOpenDomainBinding={() => setSettingsOpen(true)}
+                isDatabasePanelOpen={isDatabasePanelOpen}
+                onOpenDatabase={handleOpenDatabasePanel}
+                isShowAppPreview={isShowAppPreview}
+                isAppPreviewOpen={isAppPreviewOpen}
+                onOpenAppPreview={handleOpenAppPreview}
+                isShowDesktop={
+                  dbEnv === UserAppDbEnvEnum.Dev && !!envPodConversationId
+                }
+                isAgentDesktopOpen={isAgentDesktopOpen}
+                onOpenDesktopPanel={handleOpenDesktopPanel}
+                isBuildVersionRecordsOpen={buildVersionsOpen}
+                onToggleBuildVersionRecords={handleToggleBuildVersionRecords}
+                isPublishVersionRecordsOpen={publishVersionRecordsOpen}
+                onTogglePublishVersionRecords={
+                  handleTogglePublishVersionRecords
+                }
+                env={dbEnv}
+                onEnvChange={handleEnvChange}
+                previewRuntimeControls={previewRuntimeControls}
+              />
 
-          {/* 右栏：顶部环境切换与操作入口 + 内容区 */}
-          <div className={cx(styles['right-column'])}>
-            <AppDevProHeaderActions
-              userAppInfo={userAppInfo}
-              onPublish={handleOpenPublish}
-              onOpenMarketPublish={() => setOpenPublishModal(true)}
-              publishing={publishFlow.publishing}
-              remotePublishing={showRemotePublishing}
-              onCancelRemotePublish={handleCancelRemotePublish}
-              cancelRemotePublishLoading={cancelRemotePublishLoading}
-              isFileTreeSidebarVisible={isFileTreeIconActive}
-              onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-              isTerminalPanelOpen={isTerminalIconActive}
-              onOpenTerminalPanel={handleOpenTerminalPanel}
-              onOpenDomainBinding={() => setSettingsOpen(true)}
-              isDatabasePanelOpen={isDatabasePanelOpen}
-              onOpenDatabase={handleOpenDatabasePanel}
-              isShowAppPreview={isShowAppPreview}
-              isAppPreviewOpen={isAppPreviewOpen}
-              onOpenAppPreview={handleOpenAppPreview}
-              isShowDesktop={dbEnv === UserAppDbEnvEnum.Dev}
-              isAgentDesktopOpen={isAgentDesktopOpen}
-              onOpenDesktopPanel={handleOpenDesktopPanel}
-              isBuildVersionRecordsOpen={buildVersionsOpen}
-              onToggleBuildVersionRecords={handleToggleBuildVersionRecords}
-              isPublishVersionRecordsOpen={publishVersionRecordsOpen}
-              onTogglePublishVersionRecords={handleTogglePublishVersionRecords}
-              env={dbEnv}
-              onEnvChange={handleEnvChange}
-              previewRuntimeControls={previewRuntimeControls}
-            />
-
-            <div className={cx(styles['right-column-body'])}>
-              <div
-                className={cx('flex', 'flex-1', styles['content-container'], {
-                  [styles['content-container-fullscreen']]:
-                    fileView.preview.isFullscreen,
-                  // 与 ConversationAgent 的文件预览一致：交由客户端壳层为
-                  // Windows/Linux 沉浸工具栏补偿 fixed 全屏根节点。
-                  'immersive-shell-fullscreen': fileView.preview.isFullscreen,
-                })}
-              >
-                {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
+              <div className={cx(styles['right-column-body'])}>
                 <div
-                  className={cx(styles['middle-panel'], {
-                    [styles['middle-panel-visible']]:
-                      workspaceView === 'files' && canShowFileView,
-                    [styles['middle-panel-hidden']]: !(
-                      workspaceView === 'files' && canShowFileView
-                    ),
+                  className={cx('flex', 'flex-1', styles['content-container'], {
+                    [styles['content-container-fullscreen']]:
+                      fileView.preview.isFullscreen,
+                    // 与 ConversationAgent 的文件预览一致：交由客户端壳层为
+                    // Windows/Linux 沉浸工具栏补偿 fixed 全屏根节点。
+                    'immersive-shell-fullscreen': fileView.preview.isFullscreen,
                   })}
                 >
-                  {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
-                  <FileTreeGitSourcePanel
-                    className={cx(styles['file-tree-sidebar'], 'w-full')}
-                    showSourceControl={isVersionControlEnabled}
-                    enableVersionControl={enableVersionControl}
-                    tree={fileView.tree}
-                    treeClassName="w-full h-full"
-                    onImportProject={handleImportProject}
-                    importProjectLabel={dict(
-                      'PC.Pages.AppDevFileTreeContextMenu.importProject',
-                    )}
-                    isImportingProject={isImportingProject}
-                    sourceControl={{
-                      changeFiles: fileView.changeFiles,
-                      selectedChangeFile: gitSourceControl.selectedChangeFile,
-                      isCommitting:
-                        gitSourceControl.isCommitting ||
-                        fileView.preview.isSavingFiles,
-                      isRefreshingGitList: fileView.isRefreshingGitList,
-                      onRefreshGitList: fileView.refreshGitList,
-                      onDiffFileSelect: handleGitDiffFileSelect,
-                      onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                      onDiscardChanges: gitSourceControl.handleDiscardChange,
-                      onStageChanges: gitSourceControl.handleStageChanges,
-                      onUnstageChanges: gitSourceControl.handleUnstageChanges,
-                      onAddToGitignore: (fileId) => {
-                        void gitSourceControl.handleAddToGitignore(fileId);
-                      },
-                      onCommit: gitSourceControl.handleCommit,
-                    }}
+                  <ResizableSplit
+                    stackBelowWidth={420}
+                    minLeftWidth={180}
+                    minRightWidth={240}
+                    defaultLeftWidth={30}
+                    leftHidden={!(workspaceView === 'files' && canShowFileView)}
+                    left={
+                      <div className={styles['middle-panel']}>
+                        {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
+                        <FileTreeGitSourcePanel
+                          className={cx(styles['file-tree-sidebar'], 'w-full')}
+                          showSourceControl={isVersionControlEnabled}
+                          enableVersionControl={enableVersionControl}
+                          tree={fileView.tree}
+                          treeClassName="w-full h-full"
+                          onImportProject={handleImportProject}
+                          importProjectLabel={dict(
+                            'PC.Pages.AppDevFileTreeContextMenu.importProject',
+                          )}
+                          isImportingProject={isImportingProject}
+                          sourceControl={{
+                            changeFiles: fileView.changeFiles,
+                            selectedChangeFile:
+                              gitSourceControl.selectedChangeFile,
+                            isCommitting:
+                              gitSourceControl.isCommitting ||
+                              fileView.preview.isSavingFiles,
+                            isRefreshingGitList: fileView.isRefreshingGitList,
+                            onRefreshGitList: fileView.refreshGitList,
+                            onDiffFileSelect: handleGitDiffFileSelect,
+                            onOpenChangeFile:
+                              gitSourceControl.handleOpenChangeFile,
+                            onDiscardChanges:
+                              gitSourceControl.handleDiscardChange,
+                            onStageChanges: gitSourceControl.handleStageChanges,
+                            onUnstageChanges:
+                              gitSourceControl.handleUnstageChanges,
+                            onAddToGitignore: (fileId) => {
+                              void gitSourceControl.handleAddToGitignore(
+                                fileId,
+                              );
+                            },
+                            onCommit: gitSourceControl.handleCommit,
+                          }}
+                        />
+                      </div>
+                    }
+                    right={renderRightPanel()}
                   />
                 </div>
-                {/* 右侧面板：文件预览 + 终端 */}
-                {renderRightPanel()}
-              </div>
 
-              {/* 线上环境构建包版本记录侧栏 */}
-              <AppDevBuildVersionDrawer
-                visible={active && buildVersionsOpen}
-                appId={appId}
-                currentReleaseId={userAppInfo?.prodReleaseId}
-                prodDeployed={userAppInfo?.prodDeployed === true}
-                deployingVersion={publishFlow.deployingReleaseId}
-                onDeployVersion={(version) => {
-                  void publishFlow.deployVersion(version);
-                }}
-                onClose={() => setBuildVersionsOpen(false)}
-              />
-              {/* 线上环境发布版本记录侧栏 */}
-              {appId ? (
-                <AppDevPublishVersionRecords
+                {/* 线上环境构建包版本记录侧栏 */}
+                <AppDevBuildVersionDrawer
+                  visible={active && buildVersionsOpen}
                   appId={appId}
-                  appName={userAppInfo?.name}
-                  visible={active && publishVersionRecordsOpen}
-                  onClose={() => setPublishVersionRecordsOpen(false)}
+                  currentReleaseId={userAppInfo?.prodReleaseId}
+                  prodDeployed={userAppInfo?.prodDeployed === true}
+                  deployingVersion={publishFlow.deployingReleaseId}
+                  onDeployVersion={(version) => {
+                    void publishFlow.deployVersion(version);
+                  }}
+                  onClose={() => setBuildVersionsOpen(false)}
                 />
-              ) : null}
+                {/* 线上环境发布版本记录侧栏 */}
+                {appId ? (
+                  <AppDevPublishVersionRecords
+                    appId={appId}
+                    appName={userAppInfo?.name}
+                    visible={active && publishVersionRecordsOpen}
+                    onClose={() => setPublishVersionRecordsOpen(false)}
+                  />
+                ) : null}
+              </div>
             </div>
-          </div>
-        </div>
+          }
+        />
       </section>
 
       {/* ==================== 模态弹窗层 ==================== */}

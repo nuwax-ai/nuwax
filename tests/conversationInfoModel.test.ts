@@ -614,6 +614,43 @@ describe('conversationInfo model', () => {
     expect(result.current.isAwaitingChatTerminal).toBe(false);
   });
 
+  it.each(['', '此前已输出的回答'])(
+    'legacy ERROR/null 保留正文 %s 与 requestId，重复事件不重复追加，close 不查旧终态',
+    async (body) => {
+      const { result } = renderHook(() => useConversationInfo());
+      const assistantId = await sendAndGetAssistantId(result);
+      const error =
+        'Agent execution failed. Please retry or contact the administrator.';
+      const event = {
+        requestId: 'req-failed',
+        eventType: ConversationEventTypeEnum.ERROR,
+        completed: true,
+        error,
+        data: null,
+      } as unknown as ConversationChatResponse;
+      await act(async () => {
+        if (body)
+          sseHandlers.onMessage?.({
+            requestId: 'req-failed',
+            eventType: ConversationEventTypeEnum.MESSAGE,
+            data: { type: MessageModeEnum.CHAT, text: body, id: assistantId },
+          } as ConversationChatResponse);
+        sseHandlers.onMessage?.(event);
+        sseHandlers.onMessage?.(event);
+        await sseHandlers.onClose?.();
+      });
+      const assistant = result.current.messageList.find(
+        (item) => item.id === assistantId,
+      );
+      expect(assistant?.text).toBe(body ? `${body}\n\n${error}` : error);
+      expect(assistant?.requestId).toBe('req-failed');
+      expect(assistant?.status).toBe(MessageStatusEnum.Error);
+      expect(result.current.isConversationActive).toBe(false);
+      expect(result.current.isAwaitingChatTerminal).toBe(false);
+      expect(mockSyncTerminalConversationTaskStatus).not.toHaveBeenCalled();
+    },
+  );
+
   it('SSE onError：Loading 消息改 Error，processing EXECUTING→FAILED', async () => {
     const { result } = renderHook(() => useConversationInfo());
     const assistantId = await sendAndGetAssistantId(result);

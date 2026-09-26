@@ -27,6 +27,7 @@ import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
+import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
 import {
   conversationPageCacheManager,
@@ -38,7 +39,6 @@ import { fullPageInstanceCacheManager } from '@/features/conversation/react/useF
 import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
 import { ConversationPageModelProvider } from '@/modelScopes/ConversationPageModelProvider';
 import { usePageModel } from '@/modelScopes/usePageModel';
-import AgentDetailModal from '@/pages/Chat/components/AgentDetailModal';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
@@ -2566,6 +2566,8 @@ const ChatPage: React.FC = () => {
   const keepAliveEnabled = useStyle3PcKeepAliveEnabled();
   const isCacheableRoute =
     keepAliveEnabled &&
+    // 仅主壳的 /home/chat 有常驻宿主；独立 /app/chat 必须在自身 Outlet 渲染。
+    location.pathname === `/home/chat/${params.id}/${params.agentId}` &&
     /^\d+$/.test(String(params.id ?? '')) &&
     /^\d+$/.test(String(params.agentId ?? '')) &&
     Number(params.id) > 0 &&

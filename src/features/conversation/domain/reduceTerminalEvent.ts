@@ -62,11 +62,22 @@ export function reduceTerminalEvent(
     );
 
   if (event.eventType === ConversationEventTypeEnum.ERROR) {
+    const errorText = typeof event.error === 'string' ? event.error.trim() : '';
+    const currentText = closeOpenThinkBlock();
+    // 后端安全错误文本进入既有正文槽；保留流中已输出的回答，而非用错误替换正文。
+    // 同一 ERROR 重投时保留既有错误，避免在正文尾部重复追加。
+    const alreadyAppended =
+      currentMessage.status === MessageStatusEnum.Error &&
+      (currentText === errorText || currentText.endsWith(`\n\n${errorText}`));
+    const text = [currentText, alreadyAppended ? '' : errorText]
+      .filter(Boolean)
+      .join('\n\n');
     const message = {
       ...currentMessage,
-      text: closeOpenThinkBlock(),
+      text,
       thinkingFinished: true,
       status: MessageStatusEnum.Error,
+      requestId: event.requestId || currentMessage.requestId,
     };
     messages.splice(currentIndex, 1, message);
     return {

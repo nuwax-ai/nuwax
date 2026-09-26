@@ -18,6 +18,8 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
+import { reduceTerminalEvent } from '@/features/conversation/domain/reduceTerminalEvent';
+import { shouldRefreshWorkspaceFiles } from '@/features/conversation/domain/workspaceFileChange';
 import { useConversationActiveState } from '@/hooks/useConversationActiveState';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
@@ -1359,12 +1361,7 @@ export default () => {
 
         // 仅编辑、写入、新增、删除文件时刷新文件树（与会话工具文件对比同一口径）
         if (
-          data.type === AgentComponentTypeEnum.ToolCall &&
-          isFileMutatingToolCall({
-            componentType: data.type,
-            name: data.name,
-            result: data.result,
-          }) &&
+          shouldRefreshWorkspaceFiles(data) &&
           isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
           viewModeRef.current === 'preview' && // 文件预览
           // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
@@ -1632,12 +1629,13 @@ export default () => {
       }
       // ERROR事件
       if (eventType === ConversationEventTypeEnum.ERROR) {
-        newMessage = {
-          ...currentMessage,
-          text: closeOpenThinkBlock(),
-          thinkingFinished: true,
-          status: MessageStatusEnum.Error,
-        };
+        newMessage = reduceTerminalEvent(
+          list,
+          currentMessage.id,
+          res,
+          (message) => message,
+          () => closeOpenThinkBlock(),
+        ).message;
         // 会话出错即终态：立即把会话 taskStatus 落为 FAILED（等同已停止），
         // 否则本地会固化在 EXECUTING，导致停止按钮常驻、队列因 taskExecuting 永不消费。
         // 同步补偿侧栏「最近使用/会话记录」列表，清除其「执行中」标记。
@@ -1713,6 +1711,9 @@ export default () => {
           hasResolvedTerminalStatus = Boolean(
             resolveTerminalTaskStatus(res.data?.success, res.data, res),
           );
+        }
+        if (res.eventType === ConversationEventTypeEnum.ERROR) {
+          hasResolvedTerminalStatus = true;
         }
         if (
           res.eventType === ConversationEventTypeEnum.MESSAGE &&

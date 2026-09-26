@@ -3,8 +3,8 @@ import {
   isTerminalTaskStatus,
   resolveTerminalTaskStatus,
 } from '@/features/conversation/domain/taskStatus';
+import { shouldRefreshWorkspaceFiles } from '@/features/conversation/domain/workspaceFileChange';
 import {
-  AgentComponentTypeEnum,
   AssistantRoleEnum,
   DefaultSelectedEnum,
   MessageModeEnum,
@@ -192,6 +192,8 @@ export function createConversationRuntimeSession(
    * send（新一轮）/ 切会话时清空。
    */
   let settledTerminalStatus: TaskStatus | null = null;
+  // 停止接口跨异步边界：同会话新一轮或切页后，旧停止成功不得取消当前轮。
+  let stopRequestGeneration = 0;
   const stateListeners = new Set<RuntimeSessionListener>();
 
   const notifyState = () => {
@@ -206,8 +208,10 @@ export function createConversationRuntimeSession(
   };
 
   const stop = (conversationId: number | string) => {
-    // 1. 中断 live 连接（Controller 保证 abort exactly-once）并重置投影
+    const stopGeneration = ++stopRequestGeneration;
+    // 1. 同时中断 live/sub；恢复流已接管时，只关闭 live 会使订阅标记与轮询永久悬挂。
     runtime.liveConnection.abortCurrent();
+    resumeController.abortResumeStream();
     runtime.resetStreamProjection();
     // 2. 消息终态：Loading → Stopped，执行中 processing → FAILED
     store.finalizeOnClose();
@@ -215,12 +219,32 @@ export function createConversationRuntimeSession(
     //    disabledConversationActive('user-stop')），不走 setConversationActive——
     //    它受「发送后 3s 保活」窗口约束，发送后快速停止时活跃态会被窗口
     //    拒绝落 false 而永久卡「执行中」，输入框停止/发送双双失效（禅道 bug2528）
+    isAwaitingChatTerminal = false;
     disableConversationActive();
     // 4. 后端 stop 请求（绑定层注入句柄）
     if (config.stopRequest) {
-      void config.stopRequest(String(conversationId)).catch((error) => {
-        console.error('[runtimeSession] stop request failed:', error);
-      });
+      void config
+        .stopRequest(String(conversationId))
+        .then(() => {
+          if (
+            stopGeneration !== stopRequestGeneration ||
+            String(currentConversationId) !== String(conversationId)
+          ) {
+            return;
+          }
+          // 等待停止接口期间可能已续接 sub，再清理一次；成功终态须写回绑定层，
+          // 否则页面仍被 conversationInfo 的 EXECUTING 撑住，发送按钮不能恢复。
+          resumeController.abortResumeStream();
+          finalizeConversationTerminal(conversationId, TaskStatus.CANCEL);
+          runtime.effects.dispatch({
+            type: 'recent.status.patch',
+            conversationId,
+            status: TaskStatus.CANCEL,
+          });
+        })
+        .catch((error) => {
+          console.error('[runtimeSession] stop request failed:', error);
+        });
     }
   };
 
@@ -294,18 +318,9 @@ export function createConversationRuntimeSession(
     if (res.eventType === 'PROCESSING' && conversationId !== null) {
       const processing = (reduction.processing ?? data) as Record<string, any>;
       const input = processing?.result?.input ?? {};
-      // 文件树节流刷新（对齐旧线 ToolCall 分支）。旧线的「面板可见且处于
-      // preview 视图」门控在懒加载单层刷新下放开：消费端 2s 节流兜底，
-      // runtime 核心不反向依赖 UI 状态；面板关闭期间由消费端按可见性跳过
-      // 仅编辑/写入/删除等会改文件的工具调用才刷新（与会话文件对比同一口径）
-      if (
-        data.type === AgentComponentTypeEnum.ToolCall &&
-        isFileMutatingToolCall({
-          componentType: data.type,
-          name: typeof data.name === 'string' ? data.name : undefined,
-          result: data.result,
-        })
-      ) {
+      // 编辑/新增等结束后才刷新；搜索和工具开始不代表树有变化。
+      // live / sub 与旧线使用同一语义，消费端继续保留 2s 节流与可见性门控。
+      if (shouldRefreshWorkspaceFiles(processing)) {
         runtime.effects.dispatch({
           type: 'preview.file.refresh',
           conversationId: conversationId as number,
@@ -451,6 +466,7 @@ export function createConversationRuntimeSession(
   };
 
   const send = (input: RuntimeSessionSendInput) => {
+    stopRequestGeneration += 1;
     const { conversationId, message } = input;
     // 取代上一轮连接：中断、重置投影
     runtime.liveConnection.abortCurrent();
@@ -548,6 +564,8 @@ export function createConversationRuntimeSession(
           hasResolvedTerminalStatus = Boolean(terminalStatus);
         } else if (res.eventType === 'ERROR') {
           terminalStatus = TaskStatus.FAILED;
+          // Java ERROR 本身已给确定终态；close 不能再用旧详情 COMPLETE 覆盖失败。
+          hasResolvedTerminalStatus = true;
         }
 
         // 首轮消息后更新会话主题（gate 与旧线同源：快照存在且【未更名过或还没有
@@ -689,6 +707,7 @@ export function createConversationRuntimeSession(
   });
 
   const resetForConversationSwitch = () => {
+    stopRequestGeneration += 1;
     runtime.liveConnection.abortCurrent();
     resumeController.abortResumeStream();
     runtime.resetStreamProjection();

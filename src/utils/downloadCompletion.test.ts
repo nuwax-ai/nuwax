@@ -7,7 +7,7 @@ const host = vi.hoisted(() => ({
 vi.mock('./hostBridge', () => ({
   hostBridge: {
     host: { getProduct: host.getProduct },
-    native: { saveImage: host.save },
+    native: { saveFile: host.save, saveImage: vi.fn() },
   },
 }));
 describe('desktop download completion', () => {

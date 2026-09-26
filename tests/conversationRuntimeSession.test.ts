@@ -434,6 +434,45 @@ describe('conversationRuntimeSession', () => {
     expect(secondRoundUser).toBeTruthy();
   });
 
+  it('stop：sub 恢复中也要断开连接，成功后写 CANCEL 释放合成活跃态', async () => {
+    const abortSub = vi.fn();
+    mockCreateSSE.mockReturnValue(abortSub);
+    const applyTaskStatus = vi.fn();
+    const { session } = createSession({
+      stopRequest: vi.fn().mockResolvedValue(undefined),
+      applyTaskStatus,
+    });
+    session.resumeConversationStream(1001, []);
+
+    session.stop(1001);
+    await Promise.resolve();
+
+    expect(abortSub).toHaveBeenCalledOnce();
+    expect(applyTaskStatus).toHaveBeenCalledWith(1001, TaskStatus.CANCEL);
+    expect(session.getState().isAwaitingChatTerminal).toBe(false);
+    expect(session.getState().isConversationActive).toBe(false);
+  });
+
+  it('stop：旧停止请求成功迟到不能取消同会话新一轮', async () => {
+    let resolveStop!: () => void;
+    const applyTaskStatus = vi.fn();
+    const { session } = createSession({
+      stopRequest: () =>
+        new Promise<void>((resolve) => (resolveStop = resolve)),
+      applyTaskStatus,
+    });
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '旧轮' });
+    session.stop(1001);
+    session.send({ conversationId: 1001, message: '新轮' });
+    resolveStop();
+    await Promise.resolve();
+
+    expect(applyTaskStatus).not.toHaveBeenCalled();
+    expect(session.getState().isConversationActive).toBe(true);
+    expect(session.getState().isAwaitingChatTerminal).toBe(true);
+  });
+
   it('stop：任务终态后 setConversationActive 保活窗口机制随窗口一并移除——onClose 复位不再受 3s 约束', () => {
     const { session } = createSession();
     let liveOnClose: () => void = () => {};
@@ -695,6 +734,39 @@ describe('conversationRuntimeSession R6 收口', () => {
     callbacks.onMessage({ eventType: 'ERROR' } as never);
     expect(appliedStatuses).toContainEqual([1001, 'FAILED']);
   });
+
+  it.each(['', '此前已输出的回答'])(
+    'Java ERROR completed/data:null 合同：保留正文 %s，close 不覆盖 FAILED',
+    async (body) => {
+      const { session, appliedStatuses } = createSessionWith();
+      mockOpenLive.mockReturnValue(vi.fn());
+      mockSyncTerminal.mockResolvedValue(TaskStatus.COMPLETE);
+      session.send({ conversationId: 1001, message: '错误合同验收' });
+      const callbacks = mockOpenLive.mock.calls[0][1] as LiveCallbacks;
+      if (body) callbacks.onMessage(messageEvent(body));
+      const error =
+        'Agent execution failed. Please retry or contact the administrator.';
+      callbacks.onMessage({
+        requestId: 'req-failed',
+        eventType: 'ERROR',
+        completed: true,
+        error,
+        data: null,
+      } as never);
+      callbacks.onClose();
+      await Promise.resolve();
+      expect(appliedStatuses).toEqual([[1001, TaskStatus.FAILED]]);
+      expect(mockSyncTerminal).not.toHaveBeenCalled();
+      expect(session.getState()).toMatchObject({
+        isConversationActive: false,
+        isAwaitingChatTerminal: false,
+      });
+      const message = session.store.getSnapshot().at(-1);
+      expect(message?.status).toBe(MessageStatusEnum.Error);
+      expect(message?.text).toBe(body ? `${body}\n\n${error}` : error);
+      expect(message?.requestId).toBe('req-failed');
+    },
+  );
 
   it('FINAL 冲突文案：dispatch conflict.confirmStop；成功终态：写回 taskStatus', () => {
     const { session, dispatched, appliedStatuses } = createSessionWith();
@@ -1008,29 +1080,84 @@ describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录�
     mockSyncTerminal.mockResolvedValue(undefined);
   });
 
-  it('PROCESSING 编辑文件的 ToolCall：dispatch preview.file.refresh（throttled）', () => {
-    const { session, dispatched } = createSessionWith();
-    mockOpenLive.mockReturnValue(vi.fn());
-    session.send({ conversationId: 1001, message: '改文件' });
+  it.each([
+    { name: 'search', status: 'EXECUTING', result: {}, refresh: false },
+    { name: 'search', status: 'FINISHED', result: {}, refresh: false },
+    {
+      name: '读取文件',
+      status: 'FINISHED',
+      result: { kind: 'read' },
+      refresh: false,
+    },
+    {
+      name: '写入文件',
+      status: 'EXECUTING',
+      result: { kind: 'write' },
+      refresh: false,
+    },
+    {
+      name: '写入文件',
+      status: 'FINISHED',
+      result: { kind: 'write' },
+      refresh: true,
+    },
+    {
+      name: '编辑文件',
+      status: 'FINISHED',
+      result: { kind: 'edit' },
+      refresh: true,
+    },
+    {
+      name: '终端',
+      status: 'FINISHED',
+      result: { kind: 'execute', input: { command: 'echo done > output.txt' } },
+      refresh: true,
+    },
+    {
+      name: '终端',
+      status: 'FINISHED',
+      result: { kind: 'execute', input: { command: 'pwd' } },
+      refresh: false,
+    },
+    { name: 'apply_patch', status: 'FINISHED', result: {}, refresh: true },
+    {
+      name: '删除文件',
+      status: 'FINISHED',
+      result: { kind: 'delete' },
+      refresh: true,
+    },
+  ])(
+    'PROCESSING ToolCall 按完成后的文件变更刷新：$name/$status/$refresh',
+    ({ name, status, result, refresh }) => {
+      const { session, dispatched } = createSessionWith();
+      mockOpenLive.mockReturnValue(vi.fn());
+      session.send({ conversationId: 1001, message: '调工具' });
 
-    getCallbacks().onMessage({
-      requestId: 'req-tool',
-      eventType: ConversationEventTypeEnum.PROCESSING,
-      data: {
-        type: 'ToolCall',
-        name: '编辑文件',
-        executeId: 'exec-1',
-        status: 'EXECUTING',
-        result: {
-          data: [{ type: 'diff', path: 'a.ts', oldText: 'a', newText: 'b' }],
+      getCallbacks().onMessage({
+        requestId: 'req-tool',
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          type: 'ToolCall',
+          name,
+          executeId: 'exec-1',
+          status,
+          result,
         },
-      },
-    } as ConversationChatResponse);
+      } as ConversationChatResponse);
 
-    expect(fileRefreshDispatches(dispatched)).toEqual([
-      { type: 'preview.file.refresh', conversationId: 1001, mode: 'throttled' },
-    ]);
-  });
+      expect(fileRefreshDispatches(dispatched)).toEqual(
+        refresh
+          ? [
+              {
+                type: 'preview.file.refresh',
+                conversationId: 1001,
+                mode: 'throttled',
+              },
+            ]
+          : [],
+      );
+    },
+  );
 
   it('PROCESSING 非改文件的 ToolCall 不发文件树刷新', () => {
     const { session, dispatched } = createSessionWith();

@@ -313,6 +313,27 @@ export const native = {
       };
     }
   },
+  /** 保存通用产物；旧壳回落图片接口，失败或取消后不再次下载。 */
+  async saveFile(
+    url: string,
+    filename?: string,
+  ): Promise<{
+    success: boolean;
+    path?: string;
+    canceled?: boolean;
+    error?: string;
+  }> {
+    const save = getBridge()?.native?.saveFile;
+    if (!save) return native.saveImage(url, filename);
+    try {
+      return await save(url, filename);
+    } catch (e) {
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : String(e),
+      };
+    }
+  },
   /**
    * 新开独立窗口打开站内页面（全屏页承载，见 router.ts 的新窗口路由清单）。
    * 浏览器端无桥：返回 {success:false}，调用方（jumpTo 分流）会回落到页内导航。
