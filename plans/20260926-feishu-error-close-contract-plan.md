@@ -5,3 +5,5 @@
 - 最小修复：ERROR 与 FINAL 一样记为已解析终态，close 不再请求旧详情；domain ERROR 将安全文本追加到现有正文，保留已经输出的内容及既有 Error 展示协议。
 - 按空正文/已有正文两种直接合同验证 FAILED、active/awaiting 释放、无后续 COMPLETE、错误文本和已有正文均保留。
 - 单独提交，父代理独立源码复审与 combined 会话门；这是 Java→ 前端合同层验收，不代替部署后真实失败 E2E。
+- 用户限定仅修改前端：本任务仅兼容后台已经发出的 ERROR；后台吞错、只发心跳而不发 ERROR 的空流问题仍待后台负责人处理。
+- legacy 同类路径复用同一 domain ERROR 投影并记已解析终态，空正文/已有正文/重复事件/onClose 定向回归。

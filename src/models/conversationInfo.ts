@@ -18,6 +18,7 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
+import { reduceTerminalEvent } from '@/features/conversation/domain/reduceTerminalEvent';
 import { shouldRefreshWorkspaceFiles } from '@/features/conversation/domain/workspaceFileChange';
 import { useConversationActiveState } from '@/hooks/useConversationActiveState';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
@@ -1627,12 +1628,13 @@ export default () => {
       }
       // ERROR事件
       if (eventType === ConversationEventTypeEnum.ERROR) {
-        newMessage = {
-          ...currentMessage,
-          text: closeOpenThinkBlock(),
-          thinkingFinished: true,
-          status: MessageStatusEnum.Error,
-        };
+        newMessage = reduceTerminalEvent(
+          list,
+          currentMessage.id,
+          res,
+          (message) => message,
+          () => closeOpenThinkBlock(),
+        ).message;
         // 会话出错即终态：立即把会话 taskStatus 落为 FAILED（等同已停止），
         // 否则本地会固化在 EXECUTING，导致停止按钮常驻、队列因 taskExecuting 永不消费。
         // 同步补偿侧栏「最近使用/会话记录」列表，清除其「执行中」标记。
@@ -1708,6 +1710,9 @@ export default () => {
           hasResolvedTerminalStatus = Boolean(
             resolveTerminalTaskStatus(res.data?.success, res.data, res),
           );
+        }
+        if (res.eventType === ConversationEventTypeEnum.ERROR) {
+          hasResolvedTerminalStatus = true;
         }
         if (
           res.eventType === ConversationEventTypeEnum.MESSAGE &&
