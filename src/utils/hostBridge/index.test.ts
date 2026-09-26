@@ -499,6 +499,31 @@ describe('hostBridge（统一对外接入层）', () => {
     });
   });
 
+  describe('native.saveFile', () => {
+    it('prefers file capability and returns the real write result', async () => {
+      const file = vi.fn(async () => ({ success: true, path: '/tmp/report.json' }));
+      const image = vi.fn();
+      (window as any).NuwaClawBridge = { native: { saveFile: file, saveImage: image } };
+      expect(await native.saveFile('/report.json', 'report.json')).toEqual({ success: true, path: '/tmp/report.json' });
+      expect(file).toHaveBeenCalledWith('/report.json', 'report.json');
+      expect(image).not.toHaveBeenCalled();
+    });
+    it('keeps old shells compatible through saveImage', async () => {
+      const image = vi.fn(async () => ({ success: true }));
+      (window as any).NuwaClawBridge = { native: { saveImage: image } };
+      expect(await native.saveFile('/report.zip', 'report.zip')).toEqual({ success: true });
+      expect(image).toHaveBeenCalledWith('/report.zip', 'report.zip');
+    });
+    it('does not retry cancellation or a file save failure through image saving', async () => {
+      const image = vi.fn();
+      const file = vi.fn().mockResolvedValueOnce({ success: false, canceled: true }).mockRejectedValueOnce(new Error('disk full'));
+      (window as any).NuwaClawBridge = { native: { saveFile: file, saveImage: image } };
+      expect(await native.saveFile('/report.json')).toEqual({ success: false, canceled: true });
+      expect(await native.saveFile('/report.json')).toEqual({ success: false, error: 'disk full' });
+      expect(image).not.toHaveBeenCalled();
+    });
+  });
+
   describe('native.saveImage', () => {
     it('调宿主 saveImage 透传结果', async () => {
       const fn = vi.fn(async () => ({ success: true, path: '/tmp/a.png' }));
