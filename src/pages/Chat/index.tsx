@@ -1253,11 +1253,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       ),
     onExportProject: handleExportProject,
     onRenameFile: handleConfirmRenameFile,
-    onCreateFileNode: (node, newName) =>
-      handleCreateFileNode(
-        { ...node, parentPath: workspaceDirectoryFiles.currentPath },
-        newName,
-      ),
+    onCreateFileNode: (node, newName) => handleCreateFileNode(node, newName),
     onDeleteFile: (node) =>
       handleDeleteFile(
         node.type === 'folder' && node.relativePath
