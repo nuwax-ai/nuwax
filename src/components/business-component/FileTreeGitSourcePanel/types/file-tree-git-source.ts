@@ -21,8 +21,8 @@ export interface SourceControlProps {
   refreshDisabled?: boolean;
   /** 刷新 Git 变更列表 */
   onRefreshGitList?: () => void | Promise<void>;
-  /** 提交修改（保存并推送） */
-  onCommit?: (message: string) => Promise<void>;
+  /** 提交修改（保存并推送）。成功时可返回 true，供预览区刷新版本记录 */
+  onCommit?: (message: string) => Promise<void | boolean>;
   /** 选中修改文件，在右侧预览区展示 diff */
   onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件（选中并预览，非 diff） */

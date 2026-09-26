@@ -1,9 +1,11 @@
 import FileTreeGitSourcePanel from '@/components/business-component/FileTreeGitSourcePanel';
 import FilePreviewPathBar from '@/components/business-component/FileTreePreviewPanel/FilePreviewPathBar';
-import GitVersionRecordPanel from '@/components/business-component/GitVersionRecordPanel';
+import GitVersionRecordPanel, {
+  type GitVersionRecordPanelHandle,
+} from '@/components/business-component/GitVersionRecordPanel';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useFileTreePreviewPanel } from './hooks/useFileTreePreviewPanel';
 import styles from './index.less';
 import type { FileTreePreviewPanelProps } from './types';
@@ -76,11 +78,25 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
 
   // 全屏模式
   const isFullscreen = preview.isFullscreen;
+  /** 版本记录面板已挂载时才有 ref；提交成功后用它重拉 git log */
+  const gitLogPanelRef = useRef<GitVersionRecordPanelHandle>(null);
 
-  // 空源代码管理
-  const emptySourceControl = {
-    changeFiles: preview.changeFiles,
-  };
+  const sourceControlForTree = useMemo(() => {
+    if (!sourceControl?.onCommit) {
+      return sourceControl ?? { changeFiles: preview.changeFiles };
+    }
+    const commit = sourceControl.onCommit;
+    return {
+      ...sourceControl,
+      onCommit: async (message: string) => {
+        const committed = await commit(message);
+        // 版本记录面板未打开时组件未挂载，ref 为空，不会请求 git log
+        if (committed === true) {
+          gitLogPanelRef.current?.refresh();
+        }
+      },
+    };
+  }, [sourceControl, preview.changeFiles]);
 
   // 布局与 FileTreeView/index.tsx 1742-1769 保持一致
   return (
@@ -122,7 +138,7 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
               tree={tree}
               treeClassName="w-full h-full"
               treeHeaderClassName={treeHeaderClassName}
-              sourceControl={sourceControl ?? emptySourceControl}
+              sourceControl={sourceControlForTree}
             />
           )}
 
@@ -148,6 +164,7 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
               {/* 版本控制 */}
               {showGitVersionPanel && gitVersionControl ? (
                 <GitVersionRecordPanel
+                  ref={gitLogPanelRef}
                   className={cx('git-version-panel', 'h-full')}
                   workspace={gitVersionControl.workspace}
                   branch={gitVersionControl.branch}

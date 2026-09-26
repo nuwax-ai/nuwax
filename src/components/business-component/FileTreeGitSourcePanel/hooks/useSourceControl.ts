@@ -128,8 +128,8 @@ export interface UseSourceControlReturn {
   handleAfterDiscardChange: (fileId: string) => void;
   /** 添加到 .gitignore */
   handleAddToGitignore: (fileId: string) => Promise<void>;
-  /** 提交修改（保存并推送） */
-  handleCommit: (message: string) => Promise<void>;
+  /** 提交修改（保存并推送）。成功返回 true，失败返回 false */
+  handleCommit: (message: string) => Promise<boolean>;
   /** 刷新 Git 变更列表 */
   refreshGitList: () => Promise<void>;
   /** 取消编辑并同步清理 Git 状态 */
@@ -661,7 +661,7 @@ export const useSourceControl = ({
         message.error(
           dict('PC.Pages.ConversationAgent.gitPush.noConversation'),
         );
-        return;
+        return false;
       }
 
       setIsCommitting(true);
@@ -676,7 +676,7 @@ export const useSourceControl = ({
         });
 
         if (code !== SUCCESS_CODE) {
-          return;
+          return false;
         }
 
         message.success(dict('PC.Pages.ConversationAgent.gitPush.success'));
@@ -690,8 +690,10 @@ export const useSourceControl = ({
         }
 
         await callbacks.onCommitSuccess?.();
+        return true;
       } catch (error) {
         console.error('Git commit push failed:', error);
+        return false;
       } finally {
         setIsCommitting(false);
       }
