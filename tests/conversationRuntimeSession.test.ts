@@ -1159,6 +1159,26 @@ describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录�
     },
   );
 
+  it('PROCESSING 非改文件的 ToolCall 不发文件树刷新', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '搜索' });
+
+    getCallbacks().onMessage({
+      requestId: 'req-search',
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      data: {
+        type: 'ToolCall',
+        name: 'search',
+        executeId: 'exec-search',
+        status: 'EXECUTING',
+        result: {},
+      },
+    } as ConversationChatResponse);
+
+    expect(fileRefreshDispatches(dispatched)).toEqual([]);
+  });
+
   it('PROCESSING 非 ToolCall（Page）不发文件树刷新', () => {
     const { session, dispatched } = createSessionWith();
     mockOpenLive.mockReturnValue(vi.fn());

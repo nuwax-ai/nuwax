@@ -819,6 +819,17 @@ describe('conversationInfo model', () => {
       expect(vi.mocked(apiEnsurePod)).not.toHaveBeenCalled();
     });
 
+    it('resume 形态下会话个人电脑优先于智能体云端记忆', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+
+      await setupAndFeedOpenDesktop(result, {
+        agent: { sandboxId: '-1' },
+        sandboxServerId: '366',
+      } as ConversationInfo);
+
+      expect(vi.mocked(apiEnsurePod)).not.toHaveBeenCalled();
+    });
+
     it('纯云电脑会话（无个人/共享绑定，兜底 -1）放行并 ensurePod', async () => {
       vi.mocked(apiEnsurePod).mockResolvedValue({
         code: '0000',

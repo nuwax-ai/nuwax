@@ -3,6 +3,7 @@ import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface UseChatSandboxProps {
+  conversationId?: number;
   location: any;
   history: any;
   effectiveAgent: any;
@@ -10,6 +11,7 @@ interface UseChatSandboxProps {
 }
 
 export const useChatSandbox = ({
+  conversationId,
   location,
   history,
   effectiveAgent,
@@ -43,6 +45,16 @@ export const useChatSandbox = ({
 
   const getEffectiveSandboxId = useCallback(
     (info: ConversationInfo | undefined = conversationInfo): string => {
+      // 已有会话按创建时记录的电脑执行；路由刚切换时忽略旧会话快照。
+      const isCurrentConversation =
+        conversationId !== undefined &&
+        info !== undefined &&
+        String(info.id) === String(conversationId);
+      if (isCurrentConversation) {
+        const sessionSandboxId = String(info.sandboxServerId ?? '').trim();
+        if (sessionSandboxId) return sessionSandboxId;
+      }
+
       // 四级取值链单源（bug 2451）：手动 > PUSH 携带 > 智能体绑定 > 共享电脑，
       // 详见 src/utils/effectiveSandbox.ts
       return resolveEffectiveSandboxId({
@@ -52,10 +64,13 @@ export const useChatSandbox = ({
             ? location.state?.selectedComputerId
             : undefined,
         agentSandboxId: effectiveAgent?.sandboxId,
-        sandboxServerId: info?.sandboxServerId,
+        sandboxServerId: isCurrentConversation
+          ? info.sandboxServerId
+          : undefined,
       });
     },
     [
+      conversationId,
       selectedComputerId,
       history.action,
       location.state?.selectedComputerId,

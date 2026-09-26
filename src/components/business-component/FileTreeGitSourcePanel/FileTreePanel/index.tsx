@@ -52,6 +52,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     isDownloadingFile,
     hideFileTree,
     showRefreshButton,
+    remoteFileSearch,
     handleFileSelect,
     handleContextMenu,
     closeContextMenu,
@@ -168,7 +169,13 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
       <SearchView
         className={headerClassName}
         files={files}
-        onFileSelect={handleFileSelect}
+        remoteFileSearch={remoteFileSearch}
+        onFileSelect={(file) => {
+          void handleFileSelect(file.id, {
+            selectFolder: file.type === 'folder',
+            fallbackNode: file,
+          });
+        }}
       />
 
       {/* 文件树工具栏 */}
