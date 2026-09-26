@@ -563,6 +563,8 @@ export function createConversationRuntimeSession(
           hasResolvedTerminalStatus = Boolean(terminalStatus);
         } else if (res.eventType === 'ERROR') {
           terminalStatus = TaskStatus.FAILED;
+          // Java ERROR 本身已给确定终态；close 不能再用旧详情 COMPLETE 覆盖失败。
+          hasResolvedTerminalStatus = true;
         }
 
         // 首轮消息后更新会话主题（gate 与旧线同源：快照存在且【未更名过或还没有

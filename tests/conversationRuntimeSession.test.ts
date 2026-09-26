@@ -735,6 +735,39 @@ describe('conversationRuntimeSession R6 收口', () => {
     expect(appliedStatuses).toContainEqual([1001, 'FAILED']);
   });
 
+  it.each(['', '此前已输出的回答'])(
+    'Java ERROR completed/data:null 合同：保留正文 %s，close 不覆盖 FAILED',
+    async (body) => {
+      const { session, appliedStatuses } = createSessionWith();
+      mockOpenLive.mockReturnValue(vi.fn());
+      mockSyncTerminal.mockResolvedValue(TaskStatus.COMPLETE);
+      session.send({ conversationId: 1001, message: '错误合同验收' });
+      const callbacks = mockOpenLive.mock.calls[0][1] as LiveCallbacks;
+      if (body) callbacks.onMessage(messageEvent(body));
+      const error =
+        'Agent execution failed. Please retry or contact the administrator.';
+      callbacks.onMessage({
+        requestId: 'req-failed',
+        eventType: 'ERROR',
+        completed: true,
+        error,
+        data: null,
+      } as never);
+      callbacks.onClose();
+      await Promise.resolve();
+      expect(appliedStatuses).toEqual([[1001, TaskStatus.FAILED]]);
+      expect(mockSyncTerminal).not.toHaveBeenCalled();
+      expect(session.getState()).toMatchObject({
+        isConversationActive: false,
+        isAwaitingChatTerminal: false,
+      });
+      const message = session.store.getSnapshot().at(-1);
+      expect(message?.status).toBe(MessageStatusEnum.Error);
+      expect(message?.text).toBe(body ? `${body}\n\n${error}` : error);
+      expect(message?.requestId).toBe('req-failed');
+    },
+  );
+
   it('FINAL 冲突文案：dispatch conflict.confirmStop；成功终态：写回 taskStatus', () => {
     const { session, dispatched, appliedStatuses } = createSessionWith();
     mockOpenLive.mockReturnValue(vi.fn());
