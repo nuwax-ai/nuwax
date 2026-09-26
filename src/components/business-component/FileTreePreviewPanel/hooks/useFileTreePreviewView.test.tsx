@@ -302,4 +302,33 @@ describe('懒加载嵌套自动选中（abandon 竞态修复）', () => {
     await act(async () => {});
     expect(missing).toHaveBeenCalledWith('workspace:docs/report.md');
   });
+
+  it('不在已加载树中时用搜索结果的 fileProxyUrl 打开，不判 miss', async () => {
+    const missing = vi.fn();
+    const resolveAutoSelectFile = vi.fn().mockResolvedValue({
+      id: 'workspace:docs/report.md',
+      name: 'report.md',
+      type: 'file',
+      path: 'docs/report.md',
+      relativePath: 'docs/report.md',
+      fileProxyUrl: '/static/docs/report.md',
+    });
+    render(
+      <Harness
+        originalFiles={rootOnly}
+        taskAgentSelectedFileId="workspace:docs/report.md"
+        taskAgentSelectTrigger={1}
+        isAutoSelectDirectoryLoaded={() => true}
+        resolveAutoSelectFile={resolveAutoSelectFile}
+        onSelectedFileMissing={missing}
+      />,
+    );
+    await waitFor(() =>
+      expect(view.preview.selectedFileId).toBe('workspace:docs/report.md'),
+    );
+    expect(resolveAutoSelectFile).toHaveBeenCalledWith(
+      'workspace:docs/report.md',
+    );
+    expect(missing).not.toHaveBeenCalled();
+  });
 });

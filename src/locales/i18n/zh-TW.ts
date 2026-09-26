@@ -3227,7 +3227,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.Home.categoryAiEducation": "AI教育",
   "PC.Pages.Home.categoryChatTask": "對話任務",
   "PC.Pages.Home.categoryProjectDev": "專案開發",
-  "PC.Pages.Home.heroSubtitle": "與女媧Nuwax一起創造",
   "PC.Pages.Home.linkConfigError": "連結地址設定錯誤",
   "PC.Pages.Home.noTenantInfo": "租戶資訊不存在",
   "PC.Pages.Home.normalProject": "常規專案",

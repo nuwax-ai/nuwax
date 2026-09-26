@@ -3303,7 +3303,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Home.categoryAiEducation": "AI教育",
   "PC.Pages.Home.categoryChatTask": "对话任务",
   "PC.Pages.Home.categoryProjectDev": "项目开发",
-  "PC.Pages.Home.heroSubtitle": "与女娲Nuwax一起创造",
   "PC.Pages.Home.linkConfigError": "链接地址配置错误",
   "PC.Pages.Home.noTenantInfo": "租户信息不存在",
   "PC.Pages.Home.normalProject": "常规项目",

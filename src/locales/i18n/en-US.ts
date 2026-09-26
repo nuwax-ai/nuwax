@@ -3304,7 +3304,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Home.categoryAiEducation": "AI Education",
   "PC.Pages.Home.categoryChatTask": "Chat Tasks",
   "PC.Pages.Home.categoryProjectDev": "Project Dev",
-  "PC.Pages.Home.heroSubtitle": "Create with Nuwax",
   "PC.Pages.Home.linkConfigError": "Link address configuration error",
   "PC.Pages.Home.noTenantInfo": "Tenant information not found",
   "PC.Pages.Home.normalProject": "Regular project",

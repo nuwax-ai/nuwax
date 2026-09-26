@@ -614,16 +614,21 @@ export default () => {
 
   // 打开预览视图
   const openPreviewView = useCallback(
-    async (cId: number, options?: { forceRefresh?: boolean }) => {
+    async (
+      cId: number,
+      options?: { forceRefresh?: boolean; skipFileTreeRefresh?: boolean },
+    ) => {
       // 停止保活
       stopKeepalivePodPolling();
 
       // 检查是否需要刷新文件列表
-      // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新
+      // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新。
+      // 任务结果点击会自行搜索并加载所在目录，传 skipFileTreeRefresh 避免再刷根目录。
       const needRefresh =
-        options?.forceRefresh ||
-        viewModeRef.current !== 'preview' ||
-        !isFileTreeVisibleRef.current;
+        !options?.skipFileTreeRefresh &&
+        (options?.forceRefresh ||
+          viewModeRef.current !== 'preview' ||
+          !isFileTreeVisibleRef.current);
 
       // 打开预览视图或远程桌面视图时修改状态值
       openPreviewChangeState('preview');

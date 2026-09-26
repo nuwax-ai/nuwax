@@ -37,3 +37,22 @@ export function mapSearchFileToNode(
     dataSourceId: options?.dataSourceId,
   };
 }
+
+/** 在搜索结果里按任务结果的相对路径命中文件，优先完整路径一致 */
+export function findSearchFileByRelativePath<T extends { name: string }>(
+  files: T[],
+  relativePath: string,
+): T | undefined {
+  const target = relativePath.replace(/^\/+|\/+$/g, '');
+  if (!target) {
+    return undefined;
+  }
+  const normalize = (name: string) => name.replace(/^\/+|\/+$/g, '');
+  return (
+    files.find((file) => normalize(file.name) === target) ||
+    files.find((file) => {
+      const name = normalize(file.name);
+      return name.endsWith(`/${target}`) || target.endsWith(`/${name}`);
+    })
+  );
+}

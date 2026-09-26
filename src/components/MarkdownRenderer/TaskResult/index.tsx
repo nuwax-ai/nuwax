@@ -83,7 +83,9 @@ const TaskResult: React.FC<TaskResultProps> = ({
       }
 
       const cId = Number(conversationId);
-      await openPreviewView(cId, { forceRefresh: true });
+      // 只打开预览，不刷新文件树。从桌面切到预览时默认会重拉根目录，
+      // 任务结果会另搜文件并加载它所在的那一层。
+      await openPreviewView(cId, { skipFileTreeRefresh: true });
       setTaskAgentSelectedFileId(fileId);
       // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
       setTaskAgentSelectTrigger(Date.now());

@@ -3226,7 +3226,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Home.categoryAiEducation": "AI教育",
   "PC.Pages.Home.categoryChatTask": "対話タスク",
   "PC.Pages.Home.categoryProjectDev": "プロジェクト開発",
-  "PC.Pages.Home.heroSubtitle": "女媧Nuwaxと一緒に創造しよう",
   "PC.Pages.Home.linkConfigError": "リンクアドレス設定エラー",
   "PC.Pages.Home.noTenantInfo": "テナント情報が見つかりません",
   "PC.Pages.Home.normalProject": "通常プロジェクト",
