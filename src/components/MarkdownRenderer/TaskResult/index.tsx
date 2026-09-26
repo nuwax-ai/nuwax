@@ -83,7 +83,9 @@ const TaskResult: React.FC<TaskResultProps> = ({
       }
 
       const cId = Number(conversationId);
-      await openPreviewView(cId, { forceRefresh: true });
+      // 文件树已打开时不强制刷新根目录，避免多打一次 file-list。
+      // 目标文件所在目录在搜索命中后加载。
+      await openPreviewView(cId);
       setTaskAgentSelectedFileId(fileId);
       // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
       setTaskAgentSelectTrigger(Date.now());

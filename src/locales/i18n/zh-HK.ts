@@ -3204,7 +3204,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.Home.categoryAiEducation": "AI教育",
   "PC.Pages.Home.categoryChatTask": "對話任務",
   "PC.Pages.Home.categoryProjectDev": "項目開發",
-  "PC.Pages.Home.heroSubtitle": "與女媧Nuwax一起創造",
   "PC.Pages.Home.linkConfigError": "鏈接地址配置錯誤",
   "PC.Pages.Home.noTenantInfo": "租戶信息不存在",
   "PC.Pages.Home.normalProject": "常規項目",

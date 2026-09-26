@@ -290,7 +290,10 @@ const ConversationProgressCapsule: React.FC<
     let fileId = file.split(`${conversationId}/`).pop();
     if (fileId?.endsWith('/')) fileId = fileId.slice(0, -1);
     if (!fileId) return;
-    await openPreviewView(Number(conversationId), { forceRefresh: true });
+    // 文件树已打开时不再强制刷新：根目录会因此多打一次 file-list。
+    // 未打开或当前不是预览时，openPreviewView 自己会拉根目录。
+    // 目标文件所在目录由搜索命中后单独加载。
+    await openPreviewView(Number(conversationId));
     setTaskAgentSelectedFileId(fileId);
     setTaskAgentSelectTrigger(Date.now());
   };

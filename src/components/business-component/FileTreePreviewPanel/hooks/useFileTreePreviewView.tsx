@@ -149,6 +149,11 @@ export function useFileTreePreviewView(
     onSelectedFileMissing,
     /** 懒加载宿主：目标所在目录是否已加载（未命中时等待而非判 miss） */
     isAutoSelectDirectoryLoaded,
+    /**
+     * 目标不在当前已加载树中时解析文件节点（Chat 走搜索接口拿 fileProxyUrl）。
+     * 返回 null 表示未找到，再按原逻辑判 miss。
+     */
+    resolveAutoSelectFile,
     isDynamicTheme = false,
     /** 是否启用 Git status，仅通用型 TaskAgent 智能体为 true */
     enableGitStatus = false,
@@ -305,6 +310,13 @@ export function useFileTreePreviewView(
   onSelectedFileMissingRef.current = onSelectedFileMissing;
   const isAutoSelectDirectoryLoadedRef = useRef(isAutoSelectDirectoryLoaded);
   isAutoSelectDirectoryLoadedRef.current = isAutoSelectDirectoryLoaded;
+  const resolveAutoSelectFileRef = useRef(resolveAutoSelectFile);
+  resolveAutoSelectFileRef.current = resolveAutoSelectFile;
+  /** 同一次任务结果点击的搜索状态，避免重复请求，也避免未命中后无法再判 miss */
+  const autoSelectSearchRef = useRef<{
+    key: string;
+    status: 'pending' | 'found' | 'empty';
+  } | null>(null);
 
   useEffect(() => {
     if (!initViewFileType) {
@@ -1030,12 +1042,60 @@ export function useFileTreePreviewView(
 
     /** 拉取已完成但文件树仍为空，放弃自动选中并通知外部清理 */
     const abandonAutoSelectWhenTreeEmpty = () => {
+      if (
+        prevTaskAgentSelectedFileIdRef.current === taskAgentSelectedFileId &&
+        prevTaskAgentSelectTriggerRef.current === taskAgentSelectTrigger
+      ) {
+        return;
+      }
       pendingTaskAgentAutoSelectRef.current = null;
       prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
       if (taskAgentSelectTrigger !== undefined) {
         prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
       }
       onSelectedFileMissingRef.current?.(taskAgentSelectedFileId);
+    };
+
+    /**
+     * 懒加载树里没有目标文件时，先用搜索结果打开（fileProxyUrl 走原预览）。
+     * 同一次点击只请求一次；搜索未命中且父目录已加载，再判 miss。
+     */
+    const resolveMissingFileFromSearch = () => {
+      const resolve = resolveAutoSelectFileRef.current;
+      if (!resolve) {
+        return false;
+      }
+      const key = `${taskAgentSelectedFileId}::${String(
+        taskAgentSelectTrigger,
+      )}`;
+      const current = autoSelectSearchRef.current;
+      if (current?.key === key) {
+        return current.status !== 'empty';
+      }
+      autoSelectSearchRef.current = { key, status: 'pending' };
+      void resolve(taskAgentSelectedFileId).then((node) => {
+        if (autoSelectSearchRef.current?.key !== key) {
+          return;
+        }
+        if (node) {
+          autoSelectSearchRef.current = { key, status: 'found' };
+          void handleFileSelectInternal(node.id, { fallbackNode: node });
+          prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+          if (taskAgentSelectTrigger !== undefined) {
+            prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+          }
+          pendingTaskAgentAutoSelectRef.current = null;
+          return;
+        }
+        autoSelectSearchRef.current = { key, status: 'empty' };
+        const directoryLoaded =
+          !isAutoSelectDirectoryLoadedRef.current ||
+          isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId);
+        if (directoryLoaded) {
+          abandonAutoSelectWhenTreeEmpty();
+        }
+      });
+      return true;
     };
 
     /**
@@ -1068,6 +1128,10 @@ export function useFileTreePreviewView(
               fileId: taskAgentSelectedFileId,
               trigger: taskAgentSelectTrigger,
             };
+            resolveMissingFileFromSearch();
+            return;
+          }
+          if (resolveMissingFileFromSearch()) {
             return;
           }
           abandonAutoSelectWhenTreeEmpty();
@@ -1123,6 +1187,10 @@ export function useFileTreePreviewView(
         isAutoSelectDirectoryLoadedRef.current &&
         !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
       ) {
+        resolveMissingFileFromSearch();
+        return;
+      }
+      if (resolveMissingFileFromSearch()) {
         return;
       }
       abandonAutoSelectWhenTreeEmpty();

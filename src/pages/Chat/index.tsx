@@ -65,6 +65,10 @@ import {
   useSourceControl,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
+import {
+  findSearchFileByRelativePath,
+  mapSearchFileToNode,
+} from '@/components/business-component/FileTreeGitSourcePanel/FileTreePanel/SearchView/mapSearchFileToNode';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
@@ -75,6 +79,7 @@ import {
 import { fetchContentOutcome } from '@/services/skill';
 import {
   apiGetStaticFileList,
+  apiSearchFiles,
   apiUpdateStaticFile,
 } from '@/services/vncDesktop';
 
@@ -1084,16 +1089,15 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     : '';
 
   /**
-   * TaskResult/Markdown 仍传历史相对路径。逐层文件树必须先进入父目录，
-   * 再由 useFileTreePreviewView 在当前层数据到达后完成自动选中。
+   * 任务结果点击正在加载的父目录。此期间父目录视为未加载，
+   * 避免逐层树在搜索完成前把目标判成不存在。
    */
-  useEffect(() => {
-    if (!taskAgentSelectedFileId || taskAgentSelectTrigger === undefined) {
-      return;
-    }
-    const relativePath = workspaceRelativePath(taskAgentSelectedFileId);
-    workspaceDirectoryFiles.navigate(parentDirectory(relativePath));
-  }, [taskAgentSelectTrigger]);
+  const openingTaskResultRef = useRef<{
+    parent: string;
+    trigger: number;
+  } | null>(null);
+  const taskAgentSelectedFileIdRef = useRef(taskAgentSelectedFileId);
+  taskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
 
   /**
    * #5a 文件树懒加载收尾：向模型声明本页自管文件树（单层 hook）。
@@ -1222,15 +1226,90 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     },
     // 懒加载宿主：目标父目录已加载才允许「未命中判 miss」；父目录导航在途时
     // hook 保持等待（目录层到达后完成选中），修复嵌套文件打开竞态
-    isAutoSelectDirectoryLoaded: (fileId: string) =>
-      workspaceDirectoryFiles.loadedDirectoryPaths.has(
-        parentDirectory(workspaceRelativePath(fileId)),
-      ),
+    isAutoSelectDirectoryLoaded: (fileId: string) => {
+      const parentPath = parentDirectory(workspaceRelativePath(fileId));
+      if (openingTaskResultRef.current?.parent === parentPath) {
+        return false;
+      }
+      return workspaceDirectoryFiles.loadedDirectoryPaths.has(parentPath);
+    },
     /** 文件树选中文件时，关闭 Git 版本记录面板 */
     onFileSelectOpenPreview: () => {
       closeVersionPanelForFilePreviewRef.current();
     },
   });
+
+  /**
+   * 点击任务结果后直接搜索文件。
+   * 命中且路径有上级目录时，打开该目录并加载这一层文件，再用搜索结果的 fileProxyUrl 预览。
+   */
+  const openSearchedTaskFileRef = useRef(fileView.tree.handleFileSelect);
+  openSearchedTaskFileRef.current = fileView.tree.handleFileSelect;
+  const loadTaskResultDirectoryRef = useRef(
+    workspaceDirectoryFiles.loadDirectory,
+  );
+  loadTaskResultDirectoryRef.current = workspaceDirectoryFiles.loadDirectory;
+  useEffect(() => {
+    if (!id || taskAgentSelectTrigger === undefined) {
+      return;
+    }
+    const relativePath = workspaceRelativePath(
+      taskAgentSelectedFileIdRef.current,
+    ).replace(/^\/+|\/+$/g, '');
+    if (!relativePath) {
+      return;
+    }
+    const parentPath = parentDirectory(relativePath);
+    const trigger = taskAgentSelectTrigger;
+    if (parentPath) {
+      openingTaskResultRef.current = { parent: parentPath, trigger };
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await apiSearchFiles({
+          cId: Number(id),
+          kw: relativePath,
+        });
+        if (cancelled || result.code !== SUCCESS_CODE) {
+          return;
+        }
+        const hit = findSearchFileByRelativePath(
+          result.data?.files || [],
+          relativePath,
+        );
+        if (!hit) {
+          return;
+        }
+        const node = mapSearchFileToNode(hit, {
+          toNodeId: workspaceNodeId,
+          dataSourceId: WORKSPACE_SOURCE_ID,
+        });
+        const directoryPath = parentDirectory(
+          node.relativePath || relativePath,
+        );
+        if (directoryPath) {
+          await loadTaskResultDirectoryRef.current(directoryPath);
+        }
+        if (cancelled) {
+          return;
+        }
+        await openSearchedTaskFileRef.current(node.id, {
+          fallbackNode: node,
+          selectFolder: node.type === 'folder',
+        });
+      } catch (error) {
+        console.error('搜索任务结果文件失败', error);
+      } finally {
+        if (openingTaskResultRef.current?.trigger === trigger) {
+          openingTaskResultRef.current = null;
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, taskAgentSelectTrigger]);
 
   const [pendingWorkspaceSelectionId, setPendingWorkspaceSelectionId] =
     useState('');
