@@ -26,6 +26,7 @@ import {
   emitConversationListTaskStatus,
   fetchConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
+import { isFileMutatingToolCall } from '@/utils/fileMutatingToolCall';
 import { extractTaskResult } from '@/utils/taskResult';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -296,7 +297,15 @@ export function createConversationRuntimeSession(
       // 文件树节流刷新（对齐旧线 ToolCall 分支）。旧线的「面板可见且处于
       // preview 视图」门控在懒加载单层刷新下放开：消费端 2s 节流兜底，
       // runtime 核心不反向依赖 UI 状态；面板关闭期间由消费端按可见性跳过
-      if (data.type === AgentComponentTypeEnum.ToolCall) {
+      // 仅编辑/写入/删除等会改文件的工具调用才刷新（与会话文件对比同一口径）
+      if (
+        data.type === AgentComponentTypeEnum.ToolCall &&
+        isFileMutatingToolCall({
+          componentType: data.type,
+          name: typeof data.name === 'string' ? data.name : undefined,
+          result: data.result,
+        })
+      ) {
         runtime.effects.dispatch({
           type: 'preview.file.refresh',
           conversationId: conversationId as number,

@@ -1008,26 +1008,48 @@ describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录�
     mockSyncTerminal.mockResolvedValue(undefined);
   });
 
-  it('PROCESSING ToolCall：dispatch preview.file.refresh（throttled）', () => {
+  it('PROCESSING 编辑文件的 ToolCall：dispatch preview.file.refresh（throttled）', () => {
     const { session, dispatched } = createSessionWith();
     mockOpenLive.mockReturnValue(vi.fn());
-    session.send({ conversationId: 1001, message: '调工具' });
+    session.send({ conversationId: 1001, message: '改文件' });
 
     getCallbacks().onMessage({
       requestId: 'req-tool',
       eventType: ConversationEventTypeEnum.PROCESSING,
       data: {
         type: 'ToolCall',
-        name: 'search',
+        name: '编辑文件',
         executeId: 'exec-1',
         status: 'EXECUTING',
-        result: {},
+        result: {
+          data: [{ type: 'diff', path: 'a.ts', oldText: 'a', newText: 'b' }],
+        },
       },
     } as ConversationChatResponse);
 
     expect(fileRefreshDispatches(dispatched)).toEqual([
       { type: 'preview.file.refresh', conversationId: 1001, mode: 'throttled' },
     ]);
+  });
+
+  it('PROCESSING 非改文件的 ToolCall 不发文件树刷新', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '搜索' });
+
+    getCallbacks().onMessage({
+      requestId: 'req-search',
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      data: {
+        type: 'ToolCall',
+        name: 'search',
+        executeId: 'exec-search',
+        status: 'EXECUTING',
+        result: {},
+      },
+    } as ConversationChatResponse);
+
+    expect(fileRefreshDispatches(dispatched)).toEqual([]);
   });
 
   it('PROCESSING 非 ToolCall（Page）不发文件树刷新', () => {

@@ -92,6 +92,7 @@ import {
 } from '@/types/interfaces/vncDesktop';
 import { extractTaskResult } from '@/utils';
 import { emitConversationChanged } from '@/utils/directorySyncEvents';
+import { isFileMutatingToolCall } from '@/utils/fileMutatingToolCall';
 
 import { useConversationTerminalFinalizer } from '@/hooks/useConversationTerminalFinalizer';
 import { modalConfirm } from '@/utils/ant-custom';
@@ -1356,9 +1357,14 @@ export default () => {
           }
         }
 
-        // 通用型任务处理(刷新文件树)
+        // 仅编辑、写入、新增、删除文件时刷新文件树（与会话工具文件对比同一口径）
         if (
           data.type === AgentComponentTypeEnum.ToolCall &&
+          isFileMutatingToolCall({
+            componentType: data.type,
+            name: data.name,
+            result: data.result,
+          }) &&
           isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
           viewModeRef.current === 'preview' && // 文件预览
           // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
