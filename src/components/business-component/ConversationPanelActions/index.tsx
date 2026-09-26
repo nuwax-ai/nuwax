@@ -12,6 +12,8 @@ import React from 'react';
 export interface ConversationPanelAction {
   open?: boolean;
   onClick: () => void;
+  /** 覆盖默认提示文案。Chat 文件入口用「打开产物 / 关闭产物」。 */
+  title?: string;
 }
 export interface ConversationPanelActionsProps {
   progress?: ConversationPanelAction & { running?: boolean };
@@ -74,11 +76,12 @@ const ConversationPanelActions: React.FC<ConversationPanelActionsProps> = ({
       {action(
         'files',
         files,
-        t(
-          files?.open
-            ? 'PC.Pages.Chat.closeFilePreview'
-            : 'PC.Pages.Chat.openFilePreview',
-        ),
+        files?.title ||
+          t(
+            files?.open
+              ? 'PC.Pages.Chat.closeFilePreview'
+              : 'PC.Pages.Chat.openFilePreview',
+          ),
         <SvgIcon name="icons-common-file_preview" style={{ fontSize: 16 }} />,
       )}
       {action(

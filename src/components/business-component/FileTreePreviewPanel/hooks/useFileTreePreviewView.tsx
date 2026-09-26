@@ -77,6 +77,47 @@ const removeNodeByIdFromTree = (
     );
 
 /**
+ * 把新建中的临时节点插回文件树。
+ * 折叠目录展开后会重拉这一层，同步列表会丢掉本地输入框。
+ */
+const insertCreatingNode = (
+  nodes: FileNode[],
+  creating: FileNode,
+): FileNode[] => {
+  if (findFileNode(creating.id, nodes)) {
+    return nodes;
+  }
+  const parentPath = creating.parentPath;
+  if (!parentPath) {
+    return [creating, ...nodes];
+  }
+  let inserted = false;
+  const next = nodes.map((node) => {
+    if (
+      node.type === 'folder' &&
+      (node.path === parentPath ||
+        node.relativePath === parentPath ||
+        node.id === parentPath)
+    ) {
+      inserted = true;
+      return {
+        ...node,
+        children: [creating, ...(node.children || [])],
+      };
+    }
+    if (node.children?.length) {
+      const children = insertCreatingNode(node.children, creating);
+      if (children !== node.children) {
+        inserted = true;
+        return { ...node, children };
+      }
+    }
+    return node;
+  });
+  return inserted ? next : nodes;
+};
+
+/**
  * 文件树 + 预览视图 Hook
  * 从 FileTreeView 提取的状态、副作用与处理器，供 FileTreePreviewPanel 及上层页面使用
  */
@@ -183,6 +224,8 @@ export function useFileTreePreviewView(
   );
   // 内联重命名状态
   const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
+  const renamingNodeRef = useRef(renamingNode);
+  renamingNodeRef.current = renamingNode;
   // 右键菜单目标节点
   const [contextMenuTarget, setContextMenuTarget] = useState<FileNode | null>(
     null,
@@ -899,10 +942,13 @@ export function useFileTreePreviewView(
       Array.isArray(visibleOriginalFiles) &&
       visibleOriginalFiles.length > 0
     ) {
-      const treeData: FileNode[] = transformFlatListToTree(
-        visibleOriginalFiles,
-        false,
-      );
+      const creating = renamingNodeRef.current;
+      const nextTree = transformFlatListToTree(visibleOriginalFiles, false);
+      // 展开未加载目录会重拉列表，把正在输入的临时节点留在父文件夹里
+      const treeData =
+        creating?.status === 'create'
+          ? insertCreatingNode(nextTree, creating)
+          : nextTree;
       filesRef.current = treeData;
       setFiles(treeData);
 

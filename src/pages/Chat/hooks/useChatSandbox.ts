@@ -48,10 +48,10 @@ export const useChatSandbox = ({
       // 已有会话按创建时记录的电脑执行；路由刚切换时忽略旧会话快照。
       const isCurrentConversation =
         conversationId !== undefined &&
-        info !== undefined &&
-        String(info.id) === String(conversationId);
+        !!info &&
+        String(info?.id) === String(conversationId);
       if (isCurrentConversation) {
-        const sessionSandboxId = String(info.sandboxServerId ?? '').trim();
+        const sessionSandboxId = String(info?.sandboxServerId ?? '').trim();
         if (sessionSandboxId) return sessionSandboxId;
       }
 

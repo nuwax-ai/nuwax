@@ -13,6 +13,9 @@ export interface FileTreeProps {
   /** 已完成懒加载的文件夹 ID */
   loadedFolderIds?: Set<string>;
 
+  /** 正在请求子文件列表的文件夹 ID */
+  loadingFolderIds?: Set<string>;
+
   /** 缓存恢复时补拉仍处于展开状态的目录 */
   onLoadDirectory?: (path: string) => void | Promise<void>;
 
