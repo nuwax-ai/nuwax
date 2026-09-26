@@ -1886,6 +1886,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     () => ({
       ...fileView.tree,
       loadedFolderIds: loadedWorkspaceFolderIds,
+      toolbarTitle: t('PC.Pages.Chat.fileTreeFiles'),
       onLoadDirectory: workspaceDirectoryFiles.loadDirectory,
       remoteFileSearch: id
         ? {

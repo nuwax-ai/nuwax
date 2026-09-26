@@ -211,6 +211,11 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   ? {
                       open: headerProps.isFileTreeIconActive,
                       onClick: headerProps.handleFileTreeVisible,
+                      title: t(
+                        headerProps.isFileTreeIconActive
+                          ? 'PC.Pages.Chat.closeArtifacts'
+                          : 'PC.Pages.Chat.openArtifacts',
+                      ),
                     }
                   : undefined
               }

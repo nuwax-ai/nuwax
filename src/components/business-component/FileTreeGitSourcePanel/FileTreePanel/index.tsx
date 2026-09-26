@@ -72,6 +72,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     isExportingProject = false,
     isImportingProject = false,
     toolbarDisabled = false,
+    toolbarTitle,
   } = tree;
 
   const fileTreeRef = useRef<FileTreeRef>(null);
@@ -180,6 +181,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
 
       {/* 文件树工具栏 */}
       <FileTreeToolbar
+        title={toolbarTitle}
         disabled={toolbarDisabled}
         exportLoading={isExportingProject}
         onExportProject={

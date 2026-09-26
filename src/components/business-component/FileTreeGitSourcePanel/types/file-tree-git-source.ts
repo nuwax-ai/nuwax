@@ -170,4 +170,6 @@ export interface FileTreeContainerProps {
   isImportingProject?: boolean;
   /** 工具栏是否禁用（如对比模式、聊天加载中） */
   toolbarDisabled?: boolean;
+  /** 搜索框下方工具栏左侧标题，默认「项目」 */
+  toolbarTitle?: string;
 }
