@@ -31,6 +31,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       files,
       fileTreeDataLoading,
       loadedFolderIds,
+      loadingFolderIds,
       onLoadDirectory,
       taskAgentSelectedFileId,
       selectedFileId,
@@ -377,6 +378,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     const renderFileTreeNode = useCallback(
       (node: FileNode, level: number = 0) => {
         const isExpanded = expandedFolders.has(node.id);
+        const isFolderLoading = Boolean(loadingFolderIds?.has(node.id));
         // 文件夹与文件选中互斥：选中文件夹时仅高亮文件夹，预览仍由 selectedFileId 驱动
         const isSelected =
           node.type === 'folder'
@@ -434,9 +436,14 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
                   </span>
                 )}
               </div>
-              {isExpanded && node.children && (
+              {isExpanded && (isFolderLoading || node.children) && (
                 <div className={styles.fileList}>
-                  {node.children.map((child: any) =>
+                  {isFolderLoading && (
+                    <div className={styles.folderLoading}>
+                      <Loading className={styles.folderLoadingIndicator} />
+                    </div>
+                  )}
+                  {node.children?.map((child: FileNode) =>
                     renderFileTreeNode(child, level + 1),
                   )}
                 </div>
@@ -494,6 +501,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       },
       [
         expandedFolders,
+        loadingFolderIds,
         selectedFileId,
         selectedFolderId,
         renamingNode,

@@ -35,9 +35,15 @@ export function useWorkspaceDirectoryFiles(
     new Set(),
   );
   const [loading, setLoading] = useState(false);
+  /** 正在拉取文件列表的目录（相对路径）。请求结束（成功或失败）后移除。 */
+  const [loadingDirectoryPaths, setLoadingDirectoryPaths] = useState<
+    Set<string>
+  >(new Set());
   const directoryRequestTokensRef = useRef(new Map<string, number>());
   /** 在途目录请求集合（loadDirectory 写入/finally 清除；首拉与刷新去重用） */
   const inflightDirectoryRequestsRef = useRef(new Set<string>());
+  /** 同一目录可能重叠请求，用计数保证最后一次结束才关掉 loading */
+  const directoryLoadingCountRef = useRef(new Map<string, number>());
   const activeRequestCountRef = useRef(0);
   const conversationIdRef = useRef(conversationId);
 
@@ -46,11 +52,13 @@ export function useWorkspaceDirectoryFiles(
     conversationIdRef.current = conversationId;
     directoryRequestTokensRef.current.clear();
     inflightDirectoryRequestsRef.current.clear();
+    directoryLoadingCountRef.current.clear();
     activeRequestCountRef.current = 0;
     setCurrentPath('');
     setFiles([]);
     setLoadedDirectoryPaths(new Set());
     setLoading(false);
+    setLoadingDirectoryPaths(new Set());
   }, [conversationId]);
 
   const loadDirectory = useCallback(
@@ -61,6 +69,15 @@ export function useWorkspaceDirectoryFiles(
         (directoryRequestTokensRef.current.get(requestPath) || 0) + 1;
       directoryRequestTokensRef.current.set(requestPath, token);
       inflightDirectoryRequestsRef.current.add(requestPath);
+      const loadingCount =
+        (directoryLoadingCountRef.current.get(requestPath) || 0) + 1;
+      directoryLoadingCountRef.current.set(requestPath, loadingCount);
+      setLoadingDirectoryPaths((previous) => {
+        if (previous.has(requestPath)) return previous;
+        const next = new Set(previous);
+        next.add(requestPath);
+        return next;
+      });
       activeRequestCountRef.current += 1;
       setLoading(true);
       try {
@@ -130,14 +147,31 @@ export function useWorkspaceDirectoryFiles(
           );
         }
       } finally {
-        inflightDirectoryRequestsRef.current.delete(requestPath);
-        if (conversationIdRef.current === conversationId) {
-          activeRequestCountRef.current = Math.max(
-            0,
-            activeRequestCountRef.current - 1,
-          );
-          setLoading(activeRequestCountRef.current > 0);
+        // 会话已切换时，计数和 loading 已在切换 effect 里清空，不能再改新会话的状态
+        if (conversationIdRef.current !== conversationId) {
+          return;
         }
+        const loadingCount = Math.max(
+          0,
+          (directoryLoadingCountRef.current.get(requestPath) || 1) - 1,
+        );
+        if (loadingCount > 0) {
+          directoryLoadingCountRef.current.set(requestPath, loadingCount);
+        } else {
+          directoryLoadingCountRef.current.delete(requestPath);
+          inflightDirectoryRequestsRef.current.delete(requestPath);
+          setLoadingDirectoryPaths((previous) => {
+            if (!previous.has(requestPath)) return previous;
+            const next = new Set(previous);
+            next.delete(requestPath);
+            return next;
+          });
+        }
+        activeRequestCountRef.current = Math.max(
+          0,
+          activeRequestCountRef.current - 1,
+        );
+        setLoading(activeRequestCountRef.current > 0);
       }
     },
     [conversationId],
@@ -189,6 +223,7 @@ export function useWorkspaceDirectoryFiles(
   return {
     files,
     loading,
+    loadingDirectoryPaths,
     currentPath,
     loadedDirectoryPaths,
     navigate,

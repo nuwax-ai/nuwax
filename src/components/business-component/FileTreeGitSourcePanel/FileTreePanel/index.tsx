@@ -44,6 +44,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     fileTreeContainerRef,
     fileTreeDataLoading,
     loadedFolderIds,
+    loadingFolderIds,
     onLoadDirectory,
     taskAgentSelectedFileId,
     isCanDeleteSkillFile,
@@ -226,6 +227,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
           ref={fileTreeRef}
           fileTreeDataLoading={fileTreeDataLoading}
           loadedFolderIds={loadedFolderIds}
+          loadingFolderIds={loadingFolderIds}
           onLoadDirectory={onLoadDirectory}
           files={files}
           taskAgentSelectedFileId={taskAgentSelectedFileId}

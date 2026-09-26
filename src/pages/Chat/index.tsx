@@ -1942,6 +1942,11 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     () => ({
       ...fileView.tree,
       loadedFolderIds: loadedWorkspaceFolderIds,
+      loadingFolderIds: new Set(
+        [...workspaceDirectoryFiles.loadingDirectoryPaths]
+          .filter(Boolean)
+          .map(workspaceNodeId),
+      ),
       toolbarTitle: t('PC.Pages.Chat.fileTreeFiles'),
       onLoadDirectory: workspaceDirectoryFiles.loadDirectory,
       remoteFileSearch: id
@@ -1979,6 +1984,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       fileView.tree,
       id,
       loadedWorkspaceFolderIds,
+      workspaceDirectoryFiles.loadingDirectoryPaths,
       workspaceDirectoryFiles.loadDirectory,
       setTaskAgentSelectedFileId,
       gitSourceControl.setSelectedChangeFile,

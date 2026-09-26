@@ -73,9 +73,42 @@
 }
 
 .fileList {
+  min-width: fit-content;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: slide-down 0.3s ease-out;
+}
+
+.folderLoading {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 28px;
+  margin-left: 16px;
+  padding: 4px;
+
+  // Loading 默认 12px 主题色并居中；这里贴左，字号、字体与文件名一致
+  .folderLoadingIndicator {
+    flex: none;
+    justify-content: flex-start;
+    width: auto;
+    color: #5e5e5b;
+    font-size: 12px;
+    font-family: @fontFamilyCode;
+
+    span {
+      font-size: 12px;
+      font-family: @fontFamilyCode;
+      line-height: 22px;
+    }
+  }
+
+  :global {
+    .anticon {
+      font-size: 12px;
+      color: #5e5e5b;
+    }
+  }
 }
 
 @keyframes slide-down {

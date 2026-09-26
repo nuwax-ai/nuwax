@@ -93,6 +93,8 @@ export interface FileTreeContainerProps {
   fileTreeDataLoading?: boolean;
   /** 已完成懒加载的文件夹 ID */
   loadedFolderIds?: Set<string>;
+  /** 正在拉取子文件列表的文件夹 ID，用于展开后的 loading */
+  loadingFolderIds?: Set<string>;
   /** 缓存恢复时补拉仍处于展开状态的目录 */
   onLoadDirectory?: (path: string) => void | Promise<void>;
   /** TaskAgent 自动选中的文件 ID（外部驱动选中） */
