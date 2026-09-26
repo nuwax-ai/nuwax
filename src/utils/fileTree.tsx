@@ -307,7 +307,7 @@ export const downloadFileByUrl = async (
       : `${process.env.BASE_URL || ''}${fileProxyUrl}`;
 
     // 通过 a 标签直接触发浏览器下载（同源 URL + download 属性，无需先 fetch 内容）
-    exportFileViaBrowserDownload(fullUrl, fileName);
+    await exportFileViaBrowserDownload(fullUrl, fileName);
   } catch (error) {
     console.error('Failed to download file:', error);
     message.error(dict('PC.Utils.FileTree.downloadFailedRetry'));

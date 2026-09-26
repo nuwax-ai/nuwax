@@ -6,7 +6,7 @@ export async function saveWithDesktopHost(
   filename: string,
 ): Promise<boolean | undefined> {
   if (hostBridge.host.getProduct() !== 'nuwax') return undefined;
-  const result = await hostBridge.native.saveImage(url, filename);
+  const result = await hostBridge.native.saveFile(url, filename);
   if (result.success) return true;
   if (result.error) throw new Error(result.error);
   return false;
