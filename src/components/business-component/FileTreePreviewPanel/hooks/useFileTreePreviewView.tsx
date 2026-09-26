@@ -710,13 +710,18 @@ export function useFileTreePreviewView(
       }
 
       if (fileNode) {
-        // 文件树中点击文件夹：更新树选中态（与文件高亮互斥），不切换预览区
-        if (fileNode.type === 'folder' && onOpenDirectory) {
-          await onOpenDirectory(fileNode);
-          return;
-        }
+        // 文件树中点击文件夹：更新树选中态（与文件高亮互斥），不切换预览区。
+        // 懒加载宿主会同时打开目录；选中态仍要记下，否则文件夹没有高亮，
+        // 工具栏新建也无法落到这个文件夹。
         if (fileNode.type === 'folder' && options?.selectFolder) {
           setSelectedFolderId(fileNode.id);
+          if (onOpenDirectory) {
+            await onOpenDirectory(fileNode);
+          }
+          return;
+        }
+        if (fileNode.type === 'folder' && onOpenDirectory) {
+          await onOpenDirectory(fileNode);
           return;
         }
 

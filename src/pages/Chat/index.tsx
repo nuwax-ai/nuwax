@@ -1242,22 +1242,10 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     fileTreeDataLoading: workspaceDirectoryFiles.loading,
     targetId: id?.toString() || '',
     readOnly: false,
-    onUploadFiles: (files, filePaths) =>
-      handleUploadMultipleFiles(
-        files,
-        filePaths.map((filePath) =>
-          [workspaceDirectoryFiles.currentPath, filePath]
-            .filter(Boolean)
-            .join('/'),
-        ),
-      ),
+    onUploadFiles: handleUploadMultipleFiles,
     onExportProject: handleExportProject,
     onRenameFile: handleConfirmRenameFile,
-    onCreateFileNode: (node, newName) =>
-      handleCreateFileNode(
-        { ...node, parentPath: workspaceDirectoryFiles.currentPath },
-        newName,
-      ),
+    onCreateFileNode: (node, newName) => handleCreateFileNode(node, newName),
     onDeleteFile: (node) =>
       handleDeleteFile(
         node.type === 'folder' && node.relativePath

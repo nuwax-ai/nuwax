@@ -95,8 +95,8 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     }, [expandedFolders, files, loadedFolderIds, onLoadDirectory]);
 
     /**
-     * 切换文件夹展开状态，用于展开/折叠回调
-     * 当展开文件夹时，如果文件夹下有文件且当前没有选中任何文件，则自动选中第一个文件
+     * 切换文件夹展开状态。
+     * 选中文件夹由点击时的 onFileSelect 负责，这里不再改选中文件。
      */
     const onToggleFolder = useCallback(
       (folderId: string) => {
@@ -112,34 +112,11 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
               // 点击展开会由 onFileSelect 发起加载，避免恢复 effect 重复请求同一目录。
               restoredDirectoryRequestsRef.current.add(folderId);
             }
-            // 当文件夹展开时，检查是否需要自动选中第一个文件
-            // 只有当当前没有选中任何文件时，才自动选中
-            if (!selectedFileId) {
-              // 查找该文件夹节点
-              const folderNode = findFileNode(folderId, files || []);
-              if (
-                folderNode &&
-                folderNode.children &&
-                folderNode.children.length > 0
-              ) {
-                // 查找第一个文件（非隐藏文件，跳过以 . 开头的文件）
-                const firstFile = folderNode.children.find(
-                  (child) =>
-                    child.type === 'file' && !child.name.startsWith('.'),
-                );
-                if (firstFile) {
-                  // 使用 setTimeout 确保状态更新后再触发文件选择
-                  setTimeout(() => {
-                    onFileSelect(firstFile.id);
-                  }, 0);
-                }
-              }
-            }
           }
           return newExpanded;
         });
       },
-      [files, loadedFolderIds, onFileSelect, onLoadDirectory, selectedFileId],
+      [loadedFolderIds, onLoadDirectory],
     );
 
     /**

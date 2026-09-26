@@ -2,7 +2,6 @@ import TipsBox from '@/components/TipsBox';
 import FileTreeToolbar from '@/components/business-component/FileTreeGitSourcePanel/FileTreeToolbar';
 import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
-import { findFileNode } from '@/utils/appDevUtils';
 import classNames from 'classnames';
 import React, { useRef } from 'react';
 import type { FileTreeContainerProps } from '../types/file-tree-git-source';
@@ -11,6 +10,7 @@ import FileTree from './FileTree';
 import type { FileTreeRef } from './FileTree/types';
 import SearchView from './SearchView';
 import styles from './index.less';
+import { resolveToolbarCreateParent } from './resolveCreateParent';
 
 export interface FileTreePanelProps {
   /** 文件树状态与交互处理器 */
@@ -79,33 +79,11 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   const fileTreeRef = useRef<FileTreeRef>(null);
 
   /**
-   * 计算工具栏新建文件/文件夹的目标父级节点
-   * - 选中文件夹：在该文件夹下创建
-   * - 选中文件：在该文件所在层级（其父文件夹）下创建
-   * - 未选中或找不到节点：在根目录创建
+   * 计算工具栏新建文件/文件夹的目标父级节点，与右键菜单落点一致：
+   * 选中文件夹则在该文件夹下，选中文件则在该文件所在目录下。
    */
-  const resolveCreateParentNode = (): FileNode | null => {
-    if (selectedFolderId) {
-      const folderNode = findFileNode(selectedFolderId, files);
-      if (folderNode?.type === 'folder') {
-        return folderNode;
-      }
-    }
-    if (!selectedFileId) {
-      return null;
-    }
-    const selectedNode = findFileNode(selectedFileId, files);
-    if (!selectedNode) {
-      return null;
-    }
-    if (selectedNode.type === 'folder') {
-      return selectedNode;
-    }
-    // 文件节点：在其父文件夹下创建（与选中文件同级）；无父级则为根目录
-    return selectedNode.parentPath
-      ? findFileNode(selectedNode.parentPath, files)
-      : null;
-  };
+  const resolveCreateParentNode = (): FileNode | null =>
+    resolveToolbarCreateParent(files, selectedFolderId, selectedFileId);
 
   if (hideFileTree) {
     return null;

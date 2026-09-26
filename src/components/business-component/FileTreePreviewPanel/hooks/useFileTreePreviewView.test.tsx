@@ -210,6 +210,36 @@ describe('Markdown 文件树刷新', () => {
   });
 });
 
+describe('文件夹选中', () => {
+  it('打开目录时仍记下选中文件夹，供高亮和工具栏新建使用', async () => {
+    const onOpenDirectory = vi.fn();
+    render(
+      <Harness
+        originalFiles={[
+          {
+            name: 'docs',
+            isDir: true,
+            fileId: 'workspace:docs',
+            dataSourceId: 'workspace',
+            relativePath: 'docs',
+          },
+        ]}
+        onOpenDirectory={onOpenDirectory}
+      />,
+    );
+
+    await act(async () => {
+      await view.tree.handleFileSelect('workspace:docs', {
+        selectFolder: true,
+      });
+    });
+
+    expect(onOpenDirectory).toHaveBeenCalledTimes(1);
+    expect(view.tree.selectedFolderId).toBe('workspace:docs');
+    expect(view.preview.selectedFileId).toBe('');
+  });
+});
+
 describe('懒加载嵌套自动选中（abandon 竞态修复）', () => {
   /** 根层仅目录节点：嵌套目标必然不在已加载层，且模糊匹配零候选 */
   const rootOnly = [
