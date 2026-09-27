@@ -164,12 +164,17 @@ const useOpenApp = () => {
     });
   }, [appAgentDetail?.agentId]);
 
-  // 设置应用智能体详情
-  const handleSetAppAgentDetail = (info: AgentDetailDto) => {
-    setAppAgentDetail(info);
-    setAppAgentDetailLoading(false);
-    syncCalledTrialCountFromAgent(info);
-  };
+  // 引用必须稳定。本模型和 openPaymentModal 在同一个 hook 里，弹窗开关会让
+  // 模型重跑；若这里每次都是新函数，Chat 把它放进 effect 依赖后会立刻按付费
+  // 条件把用户刚改的开关写回去。
+  const handleSetAppAgentDetail = useCallback(
+    (info: AgentDetailDto) => {
+      setAppAgentDetail(info);
+      setAppAgentDetailLoading(false);
+      syncCalledTrialCountFromAgent(info);
+    },
+    [syncCalledTrialCountFromAgent],
+  );
 
   // 清除已试用次数
   const clearCalledTrialCount = useCallback(() => {

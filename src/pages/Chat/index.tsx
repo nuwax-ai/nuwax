@@ -810,19 +810,19 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     showPagePreview,
   ]);
 
-  // 这两项由开放应用全局模型持有，后台缓存实例不得覆盖当前页。
+  const resolvePaymentTargetAgent = () =>
+    conversationInfo?.id === id
+      ? conversationInfo.agent
+      : defaultAgentDetail?.agentId === agentId
+      ? defaultAgentDetail
+      : null;
+
+  // 试用次数等归属仍随当前智能体同步；后台缓存实例不得覆盖当前页。
+  // 与下方弹窗开关分开：这里的函数身份变化不能再去改写 openPaymentModal。
   useEffect(() => {
     if (!active) return;
-    const targetAgent =
-      conversationInfo?.id === id
-        ? conversationInfo.agent
-        : defaultAgentDetail?.agentId === agentId
-        ? defaultAgentDetail
-        : null;
+    const targetAgent = resolvePaymentTargetAgent();
     if (!targetAgent) return;
-    setOpenPaymentModal(
-      Boolean(targetAgent.paymentRequired && !targetAgent.subscribed),
-    );
     handleSetAppAgentDetail(targetAgent);
   }, [
     active,
@@ -832,6 +832,25 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     defaultAgentDetail,
     id,
     handleSetAppAgentDetail,
+  ]);
+
+  // 只在当前会话/智能体数据变化时按付费条件写入。不要依赖
+  // handleSetAppAgentDetail：它和 openPaymentModal 同属 useOpenApp，
+  // 用户开关弹窗会让模型重跑，若函数引用不稳，effect 会把开关立刻写回。
+  useEffect(() => {
+    if (!active) return;
+    const targetAgent = resolvePaymentTargetAgent();
+    if (!targetAgent) return;
+    setOpenPaymentModal(
+      Boolean(targetAgent.paymentRequired && !targetAgent.subscribed),
+    );
+  }, [
+    active,
+    agentId,
+    conversationInfo?.agent,
+    conversationInfo?.id,
+    defaultAgentDetail,
+    id,
     setOpenPaymentModal,
   ]);
 
@@ -995,9 +1014,10 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
     clearFilePanelInfo();
-    // 发送标记属于上一会话；新会话在用户再次发送前不能沿用
+    // 发送标记属于上一会话；新会话在用户再次发送前不能沿用。
+    // 订阅弹窗不在这里关：本 effect 每次挂上都会跑，会盖掉进入页面时的自动打开，
+    // 以及用户手动打开。切换会话由 cleanup 先收起，再由上方按新范围重判。
     setHasUserSentMessage(false);
-    if (activeRef.current) setOpenPaymentModal(false);
 
     // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
     // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
