@@ -96,7 +96,7 @@ const flattenTaskLogs = (services?: UserAppTaskServiceProgress[]): string[] => {
 };
 
 /**
- * 启动日志区域：自动滚到最新一行。
+ * 启动日志详情：自动滚到最新一行。
  *
  * @param props.logs 日志行
  * @param props.waitingText 尚无日志时的占位
@@ -293,10 +293,14 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    */
   const previewInstanceKey = `${previewUrl ?? ''}::${refreshKey}`;
   const [loadedInstanceKey, setLoadedInstanceKey] = useState('');
+  /** 启动日志详情弹窗 */
+  const [logDetailOpen, setLogDetailOpen] = useState(false);
   const iframeLoaded = loadedInstanceKey === previewInstanceKey;
   /** 启动任务进行中：展示日志区与取消，不是进度条 */
   const isStarting = busy || phase === 'starting' || phase === 'building';
   const startFailed = phase === 'failed' || phase === 'cancelled';
+  /** 仅真正失败时把「启动失败」标红，取消启动不算失败 */
+  const startError = phase === 'failed';
   const canShowIframe = !!previewUrl && running;
   const loadErrorText = previewLoadError.trim();
   /** 启动已成功但页面打不开：不要复用进度流日志板 */
@@ -513,7 +517,20 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
         <div className={cx(styles.logBoard)}>
           <div className={cx(styles.logHead)}>
             {!startFailed ? <LoadingOutlined /> : null}
-            <span className={cx(styles.logHeadText)}>{headText}</span>
+            <span
+              className={cx(
+                styles.logHeadText,
+                startError && styles.logHeadTextError,
+              )}
+            >
+              {headText}
+            </span>
+            <span
+              className={cx(styles.logDetailLink)}
+              onClick={() => setLogDetailOpen(true)}
+            >
+              {dict('PC.Pages.AppDevPro.viewStartLogs')}
+            </span>
             {isStarting && onCancelTask ? (
               <Button
                 size="small"
@@ -546,10 +563,12 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
               </Tooltip>
             ) : null}
           </div>
-          <PreviewStartLogBoard
-            logs={logs}
-            waitingText={dict('PC.Pages.AppDevPro.waitingLogs')}
-          />
+          {logDetailOpen ? (
+            <PreviewStartLogBoard
+              logs={logs}
+              waitingText={dict('PC.Pages.AppDevPro.waitingLogs')}
+            />
+          ) : null}
         </div>
       </div>
     );

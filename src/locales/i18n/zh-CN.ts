@@ -2888,6 +2888,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPro.restartingService": "正在重启服务...",
   "PC.Pages.AppDevPro.startCancelled": "已取消启动",
   "PC.Pages.AppDevPro.startFailed": "启动失败",
+  "PC.Pages.AppDevPro.viewStartLogs": "查看详情",
   "PC.Pages.AppDevPro.startService": "启动应用",
   "PC.Pages.AppDevPro.devActionBusyHint": "应用已启动，请先取消或等待完成",
   "PC.Pages.AppDevPro.startSuccess": "启动成功",
