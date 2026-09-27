@@ -1,0 +1,1 @@
+import{cQ as a,cR as t}from"./index-D8U3Tzka.js";function c(c,s,n){if(0==c.length)return n(),null;const e="".concat(c);a({data:e,showToast:!1,success:()=>{t(new UTSJSONObject({success:a=>{(null!=a.data?"".concat(a.data):"").length>0?s():n()},fail:()=>{s()}}))},fail:()=>{n()}})}export{c as w};
