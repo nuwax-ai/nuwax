@@ -48,7 +48,10 @@ export interface FileTreePreviewViewProps {
   viewMode?: 'preview' | 'desktop';
   /** 是否只读 */
   readOnly?: boolean;
-  /** 上传多个文件回调 */
+  /**
+   * 上传多个文件。
+   * filePaths 由文件树按节点路径生成，已是工作区根起算的完整相对路径，按原样提交。
+   */
   onUploadFiles?: (files: File[], filePaths: string[]) => Promise<void>;
   /** 导出项目回调 */
   onExportProject?: () => Promise<void>;
@@ -145,6 +148,11 @@ export interface FileTreePreviewViewProps {
    * 未传时维持「已拉取即判 miss」旧语义（全量树宿主）。
    */
   isAutoSelectDirectoryLoaded?: (fileId: string) => boolean;
+  /**
+   * 目标不在已加载树中时解析节点。Chat 用搜索接口拿到 fileProxyUrl 后，
+   * 仍走原有选中逻辑拉取正文。返回 null 则按未找到处理。
+   */
+  resolveAutoSelectFile?: (fileId: string) => Promise<FileNode | null>;
   /** CodeViewer 是否使用动态主题（Chat 页为 true） */
   isDynamicTheme?: boolean;
   /** 是否启用 Git status（仅通用型 TaskAgent 智能体） */

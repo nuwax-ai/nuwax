@@ -210,6 +210,64 @@ describe('Markdown 文件树刷新', () => {
   });
 });
 
+describe('文件夹选中', () => {
+  it('打开目录时仍记下选中文件夹，供高亮和工具栏新建使用', async () => {
+    const onOpenDirectory = vi.fn();
+    render(
+      <Harness
+        originalFiles={[
+          {
+            name: 'docs',
+            isDir: true,
+            fileId: 'workspace:docs',
+            dataSourceId: 'workspace',
+            relativePath: 'docs',
+          },
+        ]}
+        onOpenDirectory={onOpenDirectory}
+      />,
+    );
+
+    await act(async () => {
+      await view.tree.handleFileSelect('workspace:docs', {
+        selectFolder: true,
+      });
+    });
+
+    expect(onOpenDirectory).toHaveBeenCalledTimes(1);
+    expect(view.tree.selectedFolderId).toBe('workspace:docs');
+    expect(view.preview.selectedFileId).toBe('');
+  });
+
+  it('折叠文件夹只保留选中态，不请求这一层文件列表', async () => {
+    const onOpenDirectory = vi.fn();
+    render(
+      <Harness
+        originalFiles={[
+          {
+            name: 'docs',
+            isDir: true,
+            fileId: 'workspace:docs',
+            dataSourceId: 'workspace',
+            relativePath: 'docs',
+          },
+        ]}
+        onOpenDirectory={onOpenDirectory}
+      />,
+    );
+
+    await act(async () => {
+      await view.tree.handleFileSelect('workspace:docs', {
+        selectFolder: true,
+        openDirectory: false,
+      });
+    });
+
+    expect(onOpenDirectory).not.toHaveBeenCalled();
+    expect(view.tree.selectedFolderId).toBe('workspace:docs');
+  });
+});
+
 describe('懒加载嵌套自动选中（abandon 竞态修复）', () => {
   /** 根层仅目录节点：嵌套目标必然不在已加载层，且模糊匹配零候选 */
   const rootOnly = [
@@ -301,5 +359,34 @@ describe('懒加载嵌套自动选中（abandon 竞态修复）', () => {
     );
     await act(async () => {});
     expect(missing).toHaveBeenCalledWith('workspace:docs/report.md');
+  });
+
+  it('不在已加载树中时用搜索结果的 fileProxyUrl 打开，不判 miss', async () => {
+    const missing = vi.fn();
+    const resolveAutoSelectFile = vi.fn().mockResolvedValue({
+      id: 'workspace:docs/report.md',
+      name: 'report.md',
+      type: 'file',
+      path: 'docs/report.md',
+      relativePath: 'docs/report.md',
+      fileProxyUrl: '/static/docs/report.md',
+    });
+    render(
+      <Harness
+        originalFiles={rootOnly}
+        taskAgentSelectedFileId="workspace:docs/report.md"
+        taskAgentSelectTrigger={1}
+        isAutoSelectDirectoryLoaded={() => true}
+        resolveAutoSelectFile={resolveAutoSelectFile}
+        onSelectedFileMissing={missing}
+      />,
+    );
+    await waitFor(() =>
+      expect(view.preview.selectedFileId).toBe('workspace:docs/report.md'),
+    );
+    expect(resolveAutoSelectFile).toHaveBeenCalledWith(
+      'workspace:docs/report.md',
+    );
+    expect(missing).not.toHaveBeenCalled();
   });
 });

@@ -77,6 +77,47 @@ const removeNodeByIdFromTree = (
     );
 
 /**
+ * 把新建中的临时节点插回文件树。
+ * 折叠目录展开后会重拉这一层，同步列表会丢掉本地输入框。
+ */
+const insertCreatingNode = (
+  nodes: FileNode[],
+  creating: FileNode,
+): FileNode[] => {
+  if (findFileNode(creating.id, nodes)) {
+    return nodes;
+  }
+  const parentPath = creating.parentPath;
+  if (!parentPath) {
+    return [creating, ...nodes];
+  }
+  let inserted = false;
+  const next = nodes.map((node) => {
+    if (
+      node.type === 'folder' &&
+      (node.path === parentPath ||
+        node.relativePath === parentPath ||
+        node.id === parentPath)
+    ) {
+      inserted = true;
+      return {
+        ...node,
+        children: [creating, ...(node.children || [])],
+      };
+    }
+    if (node.children?.length) {
+      const children = insertCreatingNode(node.children, creating);
+      if (children !== node.children) {
+        inserted = true;
+        return { ...node, children };
+      }
+    }
+    return node;
+  });
+  return inserted ? next : nodes;
+};
+
+/**
  * 文件树 + 预览视图 Hook
  * 从 FileTreeView 提取的状态、副作用与处理器，供 FileTreePreviewPanel 及上层页面使用
  */
@@ -149,6 +190,11 @@ export function useFileTreePreviewView(
     onSelectedFileMissing,
     /** 懒加载宿主：目标所在目录是否已加载（未命中时等待而非判 miss） */
     isAutoSelectDirectoryLoaded,
+    /**
+     * 目标不在当前已加载树中时解析文件节点（Chat 走搜索接口拿 fileProxyUrl）。
+     * 返回 null 表示未找到，再按原逻辑判 miss。
+     */
+    resolveAutoSelectFile,
     isDynamicTheme = false,
     /** 是否启用 Git status，仅通用型 TaskAgent 智能体为 true */
     enableGitStatus = false,
@@ -178,6 +224,8 @@ export function useFileTreePreviewView(
   );
   // 内联重命名状态
   const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
+  const renamingNodeRef = useRef(renamingNode);
+  renamingNodeRef.current = renamingNode;
   // 右键菜单目标节点
   const [contextMenuTarget, setContextMenuTarget] = useState<FileNode | null>(
     null,
@@ -305,6 +353,13 @@ export function useFileTreePreviewView(
   onSelectedFileMissingRef.current = onSelectedFileMissing;
   const isAutoSelectDirectoryLoadedRef = useRef(isAutoSelectDirectoryLoaded);
   isAutoSelectDirectoryLoadedRef.current = isAutoSelectDirectoryLoaded;
+  const resolveAutoSelectFileRef = useRef(resolveAutoSelectFile);
+  resolveAutoSelectFileRef.current = resolveAutoSelectFile;
+  /** 同一次任务结果点击的搜索状态，避免重复请求，也避免未命中后无法再判 miss */
+  const autoSelectSearchRef = useRef<{
+    key: string;
+    status: 'pending' | 'found' | 'empty';
+  } | null>(null);
 
   useEffect(() => {
     if (!initViewFileType) {
@@ -638,7 +693,11 @@ export function useFileTreePreviewView(
   const handleFileSelectInternal = useCallback(
     async (
       fileId: string,
-      options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+      options?: {
+        selectFolder?: boolean;
+        openDirectory?: boolean;
+        fallbackNode?: FileNode;
+      },
     ) => {
       const currentFiles = filesRef.current;
       // 根据文件ID查找文件节点（精确匹配）
@@ -655,13 +714,19 @@ export function useFileTreePreviewView(
       }
 
       if (fileNode) {
-        // 文件树中点击文件夹：更新树选中态（与文件高亮互斥），不切换预览区
-        if (fileNode.type === 'folder' && onOpenDirectory) {
-          await onOpenDirectory(fileNode);
-          return;
-        }
+        // 文件树中点击文件夹：更新树选中态（与文件高亮互斥），不切换预览区。
+        // 懒加载宿主会同时打开目录；选中态仍要记下，否则文件夹没有高亮，
+        // 工具栏新建也无法落到这个文件夹。
         if (fileNode.type === 'folder' && options?.selectFolder) {
           setSelectedFolderId(fileNode.id);
+          // 折叠时 openDirectory 为 false，只保留选中态，不拉这一层
+          if (onOpenDirectory && options.openDirectory !== false) {
+            await onOpenDirectory(fileNode);
+          }
+          return;
+        }
+        if (fileNode.type === 'folder' && onOpenDirectory) {
+          await onOpenDirectory(fileNode);
           return;
         }
 
@@ -813,7 +878,11 @@ export function useFileTreePreviewView(
   const handleFileSelect = useCallback(
     async (
       fileId: string,
-      options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+      options?: {
+        selectFolder?: boolean;
+        openDirectory?: boolean;
+        fallbackNode?: FileNode;
+      },
     ) => {
       if (options?.selectFolder) {
         await handleFileSelectInternal(fileId, options);
@@ -887,10 +956,13 @@ export function useFileTreePreviewView(
       Array.isArray(visibleOriginalFiles) &&
       visibleOriginalFiles.length > 0
     ) {
-      const treeData: FileNode[] = transformFlatListToTree(
-        visibleOriginalFiles,
-        false,
-      );
+      const creating = renamingNodeRef.current;
+      const nextTree = transformFlatListToTree(visibleOriginalFiles, false);
+      // 展开未加载目录会重拉列表，把正在输入的临时节点留在父文件夹里
+      const treeData =
+        creating?.status === 'create'
+          ? insertCreatingNode(nextTree, creating)
+          : nextTree;
       filesRef.current = treeData;
       setFiles(treeData);
 
@@ -966,8 +1038,7 @@ export function useFileTreePreviewView(
    * 监听 taskAgentSelectedFileId / taskAgentSelectTrigger，自动定位并打开消息中的目标文件。
    *
    * 典型入口：TaskResult、Markdown 内联文件链接点击。
-   * 调用方通常会先 openPreviewView({ forceRefresh: true }) 拉取最新文件树，
-   * 再设置 fileId + trigger；本 effect 负责在树就绪后完成选中，并避免重复请求文件列表。
+   * Chat 懒加载会先搜索并打开文件；文件已经选中时这里不再打开第二次。
    */
   useEffect(() => {
     // 重新导入项目后触发 taskAgentSelectTrigger 时，用最新 filesRef 判断是否可自动选中
@@ -1030,12 +1101,60 @@ export function useFileTreePreviewView(
 
     /** 拉取已完成但文件树仍为空，放弃自动选中并通知外部清理 */
     const abandonAutoSelectWhenTreeEmpty = () => {
+      if (
+        prevTaskAgentSelectedFileIdRef.current === taskAgentSelectedFileId &&
+        prevTaskAgentSelectTriggerRef.current === taskAgentSelectTrigger
+      ) {
+        return;
+      }
       pendingTaskAgentAutoSelectRef.current = null;
       prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
       if (taskAgentSelectTrigger !== undefined) {
         prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
       }
       onSelectedFileMissingRef.current?.(taskAgentSelectedFileId);
+    };
+
+    /**
+     * 懒加载树里没有目标文件时，先用搜索结果打开（fileProxyUrl 走原预览）。
+     * 同一次点击只请求一次；搜索未命中且父目录已加载，再判 miss。
+     */
+    const resolveMissingFileFromSearch = () => {
+      const resolve = resolveAutoSelectFileRef.current;
+      if (!resolve) {
+        return false;
+      }
+      const key = `${taskAgentSelectedFileId}::${String(
+        taskAgentSelectTrigger,
+      )}`;
+      const current = autoSelectSearchRef.current;
+      if (current?.key === key) {
+        return current.status !== 'empty';
+      }
+      autoSelectSearchRef.current = { key, status: 'pending' };
+      void resolve(taskAgentSelectedFileId).then((node) => {
+        if (autoSelectSearchRef.current?.key !== key) {
+          return;
+        }
+        if (node) {
+          autoSelectSearchRef.current = { key, status: 'found' };
+          void handleFileSelectInternal(node.id, { fallbackNode: node });
+          prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+          if (taskAgentSelectTrigger !== undefined) {
+            prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+          }
+          pendingTaskAgentAutoSelectRef.current = null;
+          return;
+        }
+        autoSelectSearchRef.current = { key, status: 'empty' };
+        const directoryLoaded =
+          !isAutoSelectDirectoryLoadedRef.current ||
+          isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId);
+        if (directoryLoaded) {
+          abandonAutoSelectWhenTreeEmpty();
+        }
+      });
+      return true;
     };
 
     /**
@@ -1053,21 +1172,24 @@ export function useFileTreePreviewView(
     // 本地树尚未构建：记录 pending，必要时触发一次刷新；files 更新后依赖项变化会重入
     if (!files?.length) {
       if (isTriggerUpdate || isPendingRetry || hasSelectionChanged) {
+        // 懒加载宿主正在加载目标目录时，不要再刷当前层（通常是根目录）
+        if (
+          isAutoSelectDirectoryLoadedRef.current &&
+          !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
+        ) {
+          pendingTaskAgentAutoSelectRef.current = {
+            fileId: taskAgentSelectedFileId,
+            trigger: taskAgentSelectTrigger,
+          };
+          resolveMissingFileFromSearch();
+          return;
+        }
         if (
           hasFetchedOriginalFiles &&
           !originalFiles?.length &&
           !isFileTreeFetchInFlight
         ) {
-          // 懒加载宿主：目标所在目录尚未加载（父目录导航在途）时保持等待，
-          // 目录层到达后 files 变化重入本 effect 完成选中，不误判 miss
-          if (
-            isAutoSelectDirectoryLoadedRef.current &&
-            !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
-          ) {
-            pendingTaskAgentAutoSelectRef.current = {
-              fileId: taskAgentSelectedFileId,
-              trigger: taskAgentSelectTrigger,
-            };
+          if (resolveMissingFileFromSearch()) {
             return;
           }
           abandonAutoSelectWhenTreeEmpty();
@@ -1111,6 +1233,23 @@ export function useFileTreePreviewView(
     };
 
     if (isFileInTreeForAutoSelect(taskAgentSelectedFileId)) {
+      const openedNode = findFileNode(
+        taskAgentSelectedFileId,
+        filesRef.current,
+      );
+      const openedId = selectedFileIdRef.current;
+      // 搜索路径已经打开过该文件，目录列表到达后不要再请求一次正文
+      if (
+        openedId &&
+        (openedId === taskAgentSelectedFileId || openedId === openedNode?.id)
+      ) {
+        prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+        if (taskAgentSelectTrigger !== undefined) {
+          prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+        }
+        pendingTaskAgentAutoSelectRef.current = null;
+        return;
+      }
       applyAutoSelect(taskAgentSelectedFileId);
       return;
     }
@@ -1123,6 +1262,10 @@ export function useFileTreePreviewView(
         isAutoSelectDirectoryLoadedRef.current &&
         !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
       ) {
+        resolveMissingFileFromSearch();
+        return;
+      }
+      if (resolveMissingFileFromSearch()) {
         return;
       }
       abandonAutoSelectWhenTreeEmpty();

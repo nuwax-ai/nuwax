@@ -4,6 +4,7 @@ import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { findFileNode } from '@/utils/appDevUtils';
 import { getFileIcon } from '@/utils/fileTree';
+import { LoadingOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd';
 import { Input } from 'antd';
 import classNames from 'classnames';
@@ -31,6 +32,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       files,
       fileTreeDataLoading,
       loadedFolderIds,
+      loadingFolderIds,
       onLoadDirectory,
       taskAgentSelectedFileId,
       selectedFileId,
@@ -94,8 +96,8 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     }, [expandedFolders, files, loadedFolderIds, onLoadDirectory]);
 
     /**
-     * 切换文件夹展开状态，用于展开/折叠回调
-     * 当展开文件夹时，如果文件夹下有文件且当前没有选中任何文件，则自动选中第一个文件
+     * 切换文件夹展开状态。
+     * 选中文件夹由点击时的 onFileSelect 负责，这里不再改选中文件。
      */
     const onToggleFolder = useCallback(
       (folderId: string) => {
@@ -111,34 +113,11 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
               // 点击展开会由 onFileSelect 发起加载，避免恢复 effect 重复请求同一目录。
               restoredDirectoryRequestsRef.current.add(folderId);
             }
-            // 当文件夹展开时，检查是否需要自动选中第一个文件
-            // 只有当当前没有选中任何文件时，才自动选中
-            if (!selectedFileId) {
-              // 查找该文件夹节点
-              const folderNode = findFileNode(folderId, files || []);
-              if (
-                folderNode &&
-                folderNode.children &&
-                folderNode.children.length > 0
-              ) {
-                // 查找第一个文件（非隐藏文件，跳过以 . 开头的文件）
-                const firstFile = folderNode.children.find(
-                  (child) =>
-                    child.type === 'file' && !child.name.startsWith('.'),
-                );
-                if (firstFile) {
-                  // 使用 setTimeout 确保状态更新后再触发文件选择
-                  setTimeout(() => {
-                    onFileSelect(firstFile.id);
-                  }, 0);
-                }
-              }
-            }
           }
           return newExpanded;
         });
       },
-      [files, loadedFolderIds, onFileSelect, onLoadDirectory, selectedFileId],
+      [loadedFolderIds, onLoadDirectory],
     );
 
     /**
@@ -207,6 +186,11 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       // 延迟执行，避免与点击事件冲突
       setTimeout(() => {
         if (renamingNode) {
+          const input = renameInputRef.current?.input;
+          // 目录列表刷新会卸掉再挂上输入框，焦点回到输入框时不要当成用户取消
+          if (input && document.activeElement === input) {
+            return;
+          }
           // 对于新建节点（status === 'create'），根据输入值决定是创建还是取消
           if (renamingNode.status === 'create') {
             const trimmedValue = renameValue.trim();
@@ -226,41 +210,75 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
 
     // 重命名输入框自动聚焦
     useEffect(() => {
-      // 当进入重命名 / 新建状态，且输入框已经渲染到 DOM 中时，自动聚焦并选中
-      if (renamingNode && renameInputRef.current) {
-        renameInputRef.current.focus();
-        renameInputRef.current.select();
-      }
-
       if (renamingNode) {
         setRenameValue(renamingNode.name);
       }
-    }, [renamingNode, expandedFolders]);
+    }, [renamingNode]);
+
+    useEffect(() => {
+      // 目录刷新后输入框可能重新挂载，未聚焦时再补一次焦点
+      if (!renamingNode || !renameInputRef.current) {
+        return;
+      }
+      const input = renameInputRef.current.input;
+      if (input && document.activeElement === input) {
+        return;
+      }
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }, [renamingNode, expandedFolders, files]);
 
     /**
-     * 当进入新建状态时，自动展开其父级及祖先文件夹
-     * 确保在折叠状态下新建文件/文件夹也能立刻可见
+     * 新建文件/文件夹时展开父级及祖先。
+     * 必须用树上的节点 id：工作区文件夹 id 带 workspace: 前缀，
+     * 只用 parentPath 拼出来的路径对不上，折叠的文件夹不会打开。
      */
     useEffect(() => {
       if (!renamingNode || renamingNode.status !== 'create') {
         return;
       }
 
-      const parentPath = renamingNode.parentPath;
-      if (!parentPath) return;
+      const ancestorIds: string[] = [];
+      const findAncestors = (nodes: FileNode[], trail: string[]): boolean => {
+        for (const node of nodes) {
+          if (node.id === renamingNode.id) {
+            ancestorIds.push(...trail);
+            return true;
+          }
+          if (
+            node.children?.length &&
+            findAncestors(node.children, [...trail, node.id])
+          ) {
+            return true;
+          }
+        }
+        return false;
+      };
 
-      const parts = parentPath.split('/').filter(Boolean);
+      if (!findAncestors(files || [], []) && renamingNode.parentPath) {
+        let currentPath = '';
+        renamingNode.parentPath
+          .split('/')
+          .filter(Boolean)
+          .forEach((part) => {
+            currentPath = currentPath ? `${currentPath}/${part}` : part;
+            ancestorIds.push(currentPath);
+          });
+      }
+
+      if (ancestorIds.length === 0) {
+        return;
+      }
 
       setExpandedFolders((prev) => {
+        if (ancestorIds.every((id) => prev.has(id))) {
+          return prev;
+        }
         const next = new Set(prev);
-        let currentPath = '';
-        parts.forEach((part) => {
-          currentPath = currentPath ? `${currentPath}/${part}` : part;
-          next.add(currentPath);
-        });
+        ancestorIds.forEach((id) => next.add(id));
         return next;
       });
-    }, [renamingNode]);
+    }, [renamingNode, files]);
 
     /**
      * 根据 taskAgentSelectedFileId 自动展开包含该文件的文件夹路径
@@ -283,8 +301,11 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
         // 如果文件夹有子节点，则展开文件夹，并选中第一个子节点
         if (selectedFileNode?.children?.length) {
           setExpandedFolders((prev) => {
+            if (prev.has(selectedFileNode.id)) {
+              return prev;
+            }
             const next = new Set(prev);
-            next.add(selectedFileNode?.id);
+            next.add(selectedFileNode.id);
             return next;
           });
         }
@@ -323,6 +344,9 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       // 如果有父级文件夹，则展开它们
       if (parentFolderIds.length > 0) {
         setExpandedFolders((prev) => {
+          if (parentFolderIds.every((folderId) => prev.has(folderId))) {
+            return prev;
+          }
           const next = new Set(prev);
           parentFolderIds.forEach((folderId) => {
             next.add(folderId);
@@ -338,6 +362,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     const renderFileTreeNode = useCallback(
       (node: FileNode, level: number = 0) => {
         const isExpanded = expandedFolders.has(node.id);
+        const isFolderLoading = Boolean(loadingFolderIds?.has(node.id));
         // 文件夹与文件选中互斥：选中文件夹时仅高亮文件夹，预览仍由 selectedFileId 驱动
         const isSelected =
           node.type === 'folder'
@@ -346,6 +371,9 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
         const isRenaming = renamingNode?.id === node.id;
 
         const nodeKey = node.id;
+        // 子节点已经嵌在父节点里，每层只再缩进固定一步。
+        // 若按 level * 8 叠加上去，深层会越偏越快，展开箭头连成弧线。
+        const indent = level > 0 ? 16 : 0;
 
         // 文件夹节点
         if (node.type === 'folder') {
@@ -353,7 +381,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
             <div
               key={nodeKey}
               className={styles.folderItem}
-              style={{ marginLeft: level * 8 }}
+              style={{ marginLeft: indent }}
             >
               <div
                 className={cx(styles.folderHeader, {
@@ -364,17 +392,25 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
                     return;
                   }
                   onToggleFolder(node.id);
-                  onFileSelect(node.id, { selectFolder: true });
+                  // 折叠只收起列表；展开才请求这一层
+                  onFileSelect(node.id, {
+                    selectFolder: true,
+                    openDirectory: !isExpanded,
+                  });
                 }}
                 onContextMenu={(e) => onContextMenu(e, node)}
               >
-                <SvgIcon
-                  name="icons-common-caret_right"
-                  style={{ fontSize: '16px' }}
-                  className={`${styles.folderIcon} ${
-                    isExpanded ? styles.expanded : ''
-                  }`}
-                />
+                {isFolderLoading ? (
+                  <LoadingOutlined className={styles.folderIcon} />
+                ) : (
+                  <SvgIcon
+                    name="icons-common-caret_right"
+                    style={{ fontSize: '16px' }}
+                    className={`${styles.folderIcon} ${styles.folderCaret} ${
+                      isExpanded ? styles.expanded : ''
+                    }`}
+                  />
+                )}
 
                 {isRenaming ? (
                   <Input
@@ -392,9 +428,9 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
                   </span>
                 )}
               </div>
-              {isExpanded && node.children && (
+              {isExpanded && !!node.children?.length && (
                 <div className={styles.fileList}>
-                  {node.children.map((child: any) =>
+                  {node.children.map((child: FileNode) =>
                     renderFileTreeNode(child, level + 1),
                   )}
                 </div>
@@ -420,7 +456,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
                 onFileSelect(node.id);
               }}
               onContextMenu={(e) => onContextMenu(e, node)}
-              style={{ marginLeft: level * 8 }}
+              style={{ marginLeft: indent }}
             >
               {/* 文件图标 */}
               {getFileIcon(node.name)}
@@ -452,6 +488,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       },
       [
         expandedFolders,
+        loadingFolderIds,
         selectedFileId,
         selectedFolderId,
         renamingNode,

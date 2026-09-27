@@ -21,8 +21,8 @@ export interface SourceControlProps {
   refreshDisabled?: boolean;
   /** 刷新 Git 变更列表 */
   onRefreshGitList?: () => void | Promise<void>;
-  /** 提交修改（保存并推送） */
-  onCommit?: (message: string) => Promise<void>;
+  /** 提交修改（保存并推送）。成功时可返回 true，供预览区刷新版本记录 */
+  onCommit?: (message: string) => Promise<void | boolean>;
   /** 选中修改文件，在右侧预览区展示 diff */
   onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件（选中并预览，非 diff） */
@@ -93,6 +93,8 @@ export interface FileTreeContainerProps {
   fileTreeDataLoading?: boolean;
   /** 已完成懒加载的文件夹 ID */
   loadedFolderIds?: Set<string>;
+  /** 正在拉取子文件列表的文件夹 ID，用于展开后的 loading */
+  loadingFolderIds?: Set<string>;
   /** 缓存恢复时补拉仍处于展开状态的目录 */
   onLoadDirectory?: (path: string) => void | Promise<void>;
   /** TaskAgent 自动选中的文件 ID（外部驱动选中） */
@@ -121,10 +123,17 @@ export interface FileTreeContainerProps {
     /** 写入搜索结果节点，便于与工作区树节点对齐 */
     dataSourceId?: string;
   };
-  /** 选中文件并在右侧预览区打开；selectFolder 为 true 时仅选中文件夹 */
+  /**
+   * 选中文件并在右侧预览区打开。selectFolder 为 true 时仅选中文件夹。
+   * openDirectory 为 false 时不请求该层文件列表。
+   */
   handleFileSelect: (
     fileId: string,
-    options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+    options?: {
+      selectFolder?: boolean;
+      openDirectory?: boolean;
+      fallbackNode?: FileNode;
+    },
   ) => Promise<void>;
   /** 清空文件树选中态（文件 + 文件夹） */
   clearSelection?: () => void;
@@ -170,4 +179,6 @@ export interface FileTreeContainerProps {
   isImportingProject?: boolean;
   /** 工具栏是否禁用（如对比模式、聊天加载中） */
   toolbarDisabled?: boolean;
+  /** 搜索框下方工具栏左侧标题，默认「项目」 */
+  toolbarTitle?: string;
 }

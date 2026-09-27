@@ -78,6 +78,7 @@ import {
   apiUpdateStaticFile,
 } from '@/services/vncDesktop';
 
+import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
 import { jumpToPageDevelop } from '@/utils/router';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
@@ -86,7 +87,6 @@ import {
 import { LoadingOutlined } from '@ant-design/icons';
 import { message as antdMessage, Form } from 'antd';
 import classNames from 'classnames';
-import { throttle } from 'lodash';
 import React, {
   useCallback,
   useEffect,
@@ -107,11 +107,9 @@ import { useChatNormalProjectNameSync } from './hooks/useChatNormalProjectNameSy
 import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
-import { useWorkspaceDirectoryFiles } from './hooks/useWorkspaceDirectoryFiles';
 import styles from './index.less';
 import {
   parentDirectory,
-  WORKSPACE_SOURCE_ID,
   workspaceNodeId,
   workspaceRelativePath,
 } from './utils/fileDataSource';
@@ -430,10 +428,14 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     }
   }, [active, allowAutoScrollRef, messageViewRef]);
 
-  // 工作区目录懒加载（#5a 单层树）：首拉门控 = 文件树面板可见——「打开面板才拉」，
-  // 新会话挂载不预发 file-list（后端契约：工作区在 chat 之后才建立）
-  const workspaceDirectoryFiles = useWorkspaceDirectoryFiles(id, {
+  // 工作区目录懒加载：首拉门控 = 文件树面板可见。搜索、分层 loading、刷新已展开目录在共用 hook 里。
+  const workspaceDirectoryFiles = useWorkspaceFileTreeSession({
+    conversationId: id,
     enabled: active && isFileTreeVisible,
+    fileTreeRefreshTrigger,
+    refreshEnabled: active && isFileTreeVisible,
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
   });
 
   useConversationChanged((event) => {
@@ -993,6 +995,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
     clearFilePanelInfo();
+    // 发送标记属于上一会话；新会话在用户再次发送前不能沿用
+    setHasUserSentMessage(false);
     if (activeRef.current) setOpenPaymentModal(false);
 
     // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
@@ -1042,9 +1046,54 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     onFileMutationSuccessRef: refreshGitListRef,
   });
 
-  /** 存在有效消息列表时才允许查询 Git status；单条开场白不算有效消息 */
+  // 渲染线放在产物入口判断之前：V2 的消息列表在 runtime，不回写页面模型。
+  // 图标是否出现直接看这份正在展示的列表，不必在 onSendMessage 上再打发送标记。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: id,
+    messageViewRef,
+    allowAutoScrollRef,
+    getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
+    effectsResources: {
+      isAppSidebarMode,
+      runHistory,
+      runHistoryItem,
+      showPagePreview,
+      openDesktopView,
+      setCardList,
+      setShowType,
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshFileListImmediately,
+      refreshGitListRef,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+      setFileTreeRefreshTrigger,
+    },
+  });
+  runtimeLineRef.current = runtimeLine;
+
+  /**
+   * 当前会话是否已有有效消息。空列表、或只有一条开场白，都不算。
+   * V2 看运行时消息列表；旧线看页面模型。详情未对上当前路由时视为还没有有效消息，
+   * 避免清空后用上一会话的列表去显示产物入口、请求 git。
+   */
   const hasValidMessageList = useMemo(() => {
-    const currentMessageList = messageList || [];
+    const sessionInfo = runtimeLine
+      ? (runtimeLine.conversationProps?.conversationInfo as
+          | { id?: number | string }
+          | null
+          | undefined)
+      : conversationInfo;
+    const sessionMessageList = runtimeLine
+      ? runtimeLine.messageList
+      : messageList;
+    if (
+      sessionInfo?.id === undefined ||
+      String(sessionInfo.id) !== String(id)
+    ) {
+      return false;
+    }
+    const currentMessageList = sessionMessageList || [];
     if (!currentMessageList.length) {
       return false;
     }
@@ -1052,10 +1101,20 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       currentMessageList.length === 1 &&
       currentMessageList[0]?.messageType === MessageTypeEnum.ASSISTANT
     );
-  }, [messageList]);
+  }, [runtimeLine, conversationInfo, id, messageList]);
 
-  /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
-  const isGitStatusRefreshDisabled = !hasValidMessageList;
+  /** 有有效消息后才显示产物入口，并允许在预览面板展开时请求 git */
+  const canUseFilePreview = hasValidMessageList;
+
+  /**
+   * 文件预览面板是否展开。未展开时工作区可能还没有文件，甚至尚未建立，
+   * 此时不请求 git status / diff。
+   */
+  const isFilePreviewPanelOpen = isFileTreeVisible && viewMode === 'preview';
+
+  /** 面板未展开或会话未开始时，不允许刷新 Git status */
+  const isGitStatusRefreshDisabled =
+    !canUseFilePreview || !isFilePreviewPanelOpen;
 
   /** V2 工具详情点击打开的文件（相对路径）；用于选中失败时精确归因提示 */
   const toolResourceSelectRef = useRef('');
@@ -1084,18 +1143,6 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     : '';
 
   /**
-   * TaskResult/Markdown 仍传历史相对路径。逐层文件树必须先进入父目录，
-   * 再由 useFileTreePreviewView 在当前层数据到达后完成自动选中。
-   */
-  useEffect(() => {
-    if (!taskAgentSelectedFileId || taskAgentSelectTrigger === undefined) {
-      return;
-    }
-    const relativePath = workspaceRelativePath(taskAgentSelectedFileId);
-    workspaceDirectoryFiles.navigate(parentDirectory(relativePath));
-  }, [taskAgentSelectTrigger]);
-
-  /**
    * #5a 文件树懒加载收尾：向模型声明本页自管文件树（单层 hook）。
    * 模型层据此跳过全量递归拉取；卸载时复位，避免影响后续依赖模型树的页面。
    */
@@ -1103,48 +1150,6 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     setFileTreeSelfManaged(fileTreeSelfManaged);
     return () => setFileTreeSelfManaged(false);
   }, [fileTreeSelfManaged, setFileTreeSelfManaged]);
-
-  /**
-   * #5a 文件树懒加载收尾：订阅模型层刷新信号，节流刷新已加载目录。
-   * 门控后模型层不再全量拉树、只发 fileTreeRefreshTrigger（SSE 流式期间 /
-   * 任务结束 / 打开预览均会触发），此处刷新「已加载的全部目录」（含根层，
-   * refreshAllLoaded）补齐列表同步——不止 currentPath 单层，修复「打开的
-   * 目录不刷新」。当前打开文件的正文重拉由 useFileTreePreviewView 内已有的
-   * trigger 监听负责，两者互不重复。
-   */
-  const handledDirectoryRefreshTriggerRef = useRef<number>(0);
-  const activeDirectoryRefreshRef = useRef<() => void>(() => {});
-  activeDirectoryRefreshRef.current = workspaceDirectoryFiles.refreshAllLoaded;
-  const throttledRefreshActiveDirectory = useMemo(
-    () =>
-      throttle(() => activeDirectoryRefreshRef.current(), 2000, {
-        leading: true,
-        trailing: true,
-      }),
-    [],
-  );
-  useEffect(
-    () => () => throttledRefreshActiveDirectory.cancel(),
-    [throttledRefreshActiveDirectory],
-  );
-  useEffect(() => {
-    if (
-      !fileTreeRefreshTrigger ||
-      handledDirectoryRefreshTriggerRef.current === fileTreeRefreshTrigger ||
-      // 面板关闭期间不刷目录（打开面板时 openPreviewView 的 needRefresh 会补拉）
-      !active ||
-      !isFileTreeVisible
-    ) {
-      return;
-    }
-    handledDirectoryRefreshTriggerRef.current = fileTreeRefreshTrigger;
-    throttledRefreshActiveDirectory();
-  }, [
-    fileTreeRefreshTrigger,
-    throttledRefreshActiveDirectory,
-    active,
-    isFileTreeVisible,
-  ]);
 
   /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
   const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
@@ -1159,22 +1164,10 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     fileTreeDataLoading: workspaceDirectoryFiles.loading,
     targetId: id?.toString() || '',
     readOnly: false,
-    onUploadFiles: (files, filePaths) =>
-      handleUploadMultipleFiles(
-        files,
-        filePaths.map((filePath) =>
-          [workspaceDirectoryFiles.currentPath, filePath]
-            .filter(Boolean)
-            .join('/'),
-        ),
-      ),
+    onUploadFiles: handleUploadMultipleFiles,
     onExportProject: handleExportProject,
     onRenameFile: handleConfirmRenameFile,
-    onCreateFileNode: (node, newName) =>
-      handleCreateFileNode(
-        { ...node, parentPath: workspaceDirectoryFiles.currentPath },
-        newName,
-      ),
+    onCreateFileNode: (node, newName) => handleCreateFileNode(node, newName),
     onDeleteFile: (node) =>
       handleDeleteFile(
         node.type === 'folder' && node.relativePath
@@ -1196,18 +1189,15 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     onFileTreePinnedChange: setIsFileTreePinned,
     isCanDeleteSkillFile: true,
     onRefreshFileTree: workspaceDirectoryFiles.refresh,
-    onOpenDirectory: (node) => {
-      if (node.relativePath) {
-        workspaceDirectoryFiles.navigate(node.relativePath);
-      }
-    },
+    onOpenDirectory: workspaceDirectoryFiles.onOpenDirectory,
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
     isDynamicTheme: true,
     enableGitStatus:
       active &&
+      isFilePreviewPanelOpen &&
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-      hasValidMessageList &&
+      canUseFilePreview &&
       isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl),
     enableVersionControl: effectiveAgent?.enableVersionControl,
     onSelectedFileMissing: (fileId?: string) => {
@@ -1222,15 +1212,24 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     },
     // 懒加载宿主：目标父目录已加载才允许「未命中判 miss」；父目录导航在途时
     // hook 保持等待（目录层到达后完成选中），修复嵌套文件打开竞态
-    isAutoSelectDirectoryLoaded: (fileId: string) =>
-      workspaceDirectoryFiles.loadedDirectoryPaths.has(
-        parentDirectory(workspaceRelativePath(fileId)),
-      ),
+    isAutoSelectDirectoryLoaded: (fileId: string) => {
+      const parentPath = parentDirectory(workspaceRelativePath(fileId));
+      if (
+        workspaceDirectoryFiles.openingTaskResultRef.current?.parent ===
+        parentPath
+      ) {
+        return false;
+      }
+      return workspaceDirectoryFiles.loadedDirectoryPaths.has(parentPath);
+    },
     /** 文件树选中文件时，关闭 Git 版本记录面板 */
     onFileSelectOpenPreview: () => {
       closeVersionPanelForFilePreviewRef.current();
     },
   });
+
+  workspaceDirectoryFiles.selectFileRef.current =
+    fileView.tree.handleFileSelect;
 
   const [pendingWorkspaceSelectionId, setPendingWorkspaceSelectionId] =
     useState('');
@@ -1768,32 +1767,21 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     }
   }, [viewMode]);
 
-  // 文件树 props
-  const loadedWorkspaceFolderIds = useMemo(
-    () =>
-      new Set(
-        [...workspaceDirectoryFiles.loadedDirectoryPaths]
-          .filter(Boolean)
-          .map(workspaceNodeId),
-      ),
-    [workspaceDirectoryFiles.loadedDirectoryPaths],
-  );
-
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
-      loadedFolderIds: loadedWorkspaceFolderIds,
-      onLoadDirectory: workspaceDirectoryFiles.loadDirectory,
-      remoteFileSearch: id
-        ? {
-            cId: Number(id),
-            toNodeId: workspaceNodeId,
-            dataSourceId: WORKSPACE_SOURCE_ID,
-          }
-        : undefined,
+      loadedFolderIds: workspaceDirectoryFiles.loadedFolderIds,
+      loadingFolderIds: workspaceDirectoryFiles.loadingFolderIds,
+      toolbarTitle: t('PC.Pages.Chat.fileTreeFiles'),
+      onLoadDirectory: workspaceDirectoryFiles.onLoadDirectory,
+      remoteFileSearch: workspaceDirectoryFiles.remoteFileSearch,
       handleFileSelect: async (
         fileId: string,
-        options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+        options?: {
+          selectFolder?: boolean;
+          openDirectory?: boolean;
+          fallbackNode?: FileNode;
+        },
       ) => {
         if (!options?.selectFolder) {
           setTaskAgentSelectedFileId('');
@@ -1801,25 +1789,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
           gitSourceControl.setSelectedChangeFile(null);
           collapseTerminalConsole();
         }
-        // 搜索命中可能还没懒加载进树，先拉所在目录，避免随后同步树时把预览清掉
-        const fallbackPath = options?.fallbackNode?.relativePath;
-        if (
-          options?.fallbackNode?.type === 'file' &&
-          fallbackPath &&
-          !options.selectFolder
-        ) {
-          await workspaceDirectoryFiles.loadDirectory(
-            parentDirectory(fallbackPath),
-          );
-        }
+        await workspaceDirectoryFiles.ensureFallbackDirectory(options);
         await fileView.tree.handleFileSelect(fileId, options);
       },
     }),
     [
       fileView.tree,
-      id,
-      loadedWorkspaceFolderIds,
-      workspaceDirectoryFiles.loadDirectory,
+      workspaceDirectoryFiles.loadedFolderIds,
+      workspaceDirectoryFiles.loadingFolderIds,
+      workspaceDirectoryFiles.onLoadDirectory,
+      workspaceDirectoryFiles.remoteFileSearch,
+      workspaceDirectoryFiles.ensureFallbackDirectory,
       setTaskAgentSelectedFileId,
       gitSourceControl.setSelectedChangeFile,
       collapseTerminalConsole,
@@ -1865,6 +1845,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       showSourceControl: isVersionControlEnabled,
       enableVersionControl: effectiveAgent?.enableVersionControl,
       gitVersionControl:
+        isFilePreviewPanelOpen &&
+        canUseFilePreview &&
         effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
         isVersionControlEnabled
           ? {
@@ -1945,6 +1927,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       effectiveAgent?.type,
       effectiveAgent?.enableVersionControl,
       isVersionControlEnabled,
+      canUseFilePreview,
+      isFilePreviewPanelOpen,
       finalSelectedId,
       handleExportProject,
       openPreviewView,
@@ -2007,9 +1991,11 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         conversationId={id}
         messageList={messageList}
         active={effectiveConversationActive}
-        enableVersionControl={isAgentVersionControlEnabled(
-          effectiveAgent?.enableVersionControl,
-        )}
+        enableVersionControl={
+          isFilePreviewPanelOpen &&
+          canUseFilePreview &&
+          isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl)
+        }
         open={active && capsulePanelOpen}
         onClose={handleCloseCapsulePanel}
       />
@@ -2041,6 +2027,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     closePreviewView: handleClosePreviewView,
     handleOpenPreview,
     isShowFilePanel,
+    showFilePreview: canUseFilePreview,
     isShowDesktop,
     viewMode,
     handleFileTreeVisible: handleFileTreeVisibleClick,
@@ -2062,31 +2049,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     useConversationRendererPreference();
   // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线 session 的
   // 会话面 props 覆盖旧线字段；flag 关闭（默认）时 conversationProps 为空对象，
-  // 旧线路径原值原行为。页面资源（卡片/桌面/文件树等）单份共享注入新线 effects。
-  const runtimeLine = useConversationRuntimeSession({
-    conversationId: id,
-    messageViewRef,
-    allowAutoScrollRef,
-    // chat 请求携带当前生效电脑的 sandboxId，空值兜底云电脑哨兵 -1
-    getSandboxId: () => getEffectiveSandboxId() || CLOUD_SANDBOX_ID,
-    effectsResources: {
-      isAppSidebarMode,
-      runHistory,
-      runHistoryItem,
-      showPagePreview,
-      openDesktopView,
-      setCardList,
-      setShowType,
-      refreshFileListThrottled: handleRefreshFileList,
-      refreshFileListImmediately,
-      refreshGitListRef,
-      openPreviewView,
-      setTaskAgentSelectedFileId,
-      setTaskAgentSelectTrigger,
-      setFileTreeRefreshTrigger,
-    },
-  });
-  runtimeLineRef.current = runtimeLine;
+  // 旧线路径原值原行为。runtimeLine 已在产物入口判断前创建。
 
   const fetchMentionFiles = useCallback(async (): Promise<
     FileMentionItem[]

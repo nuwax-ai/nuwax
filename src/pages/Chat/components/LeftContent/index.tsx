@@ -207,10 +207,17 @@ const LeftContent: React.FC<LeftContentProps> = ({
               iconClassName={styles['icon-box']}
               activeClassName={styles.active}
               files={
-                headerProps.isShowFilePanel && !headerProps.hideTree
+                headerProps.isShowFilePanel &&
+                headerProps.showFilePreview &&
+                !headerProps.hideTree
                   ? {
                       open: headerProps.isFileTreeIconActive,
                       onClick: headerProps.handleFileTreeVisible,
+                      title: t(
+                        headerProps.isFileTreeIconActive
+                          ? 'PC.Pages.Chat.closeArtifacts'
+                          : 'PC.Pages.Chat.openArtifacts',
+                      ),
                     }
                   : undefined
               }

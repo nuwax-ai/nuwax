@@ -554,9 +554,6 @@ const Home: React.FC = () => {
             className={cx(styles.title)}
             dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
           />
-          <p className={cx(styles['hero-subtitle'])}>
-            {dict('PC.Pages.Home.heroSubtitle')}
-          </p>
         </div>
         {/* 输入框上方异步区块高度预留(禅道bug2493):分类排与推荐 pill 行
             由接口数据晚到才渲染,不预留时输入框先高位出现、数据到位后被

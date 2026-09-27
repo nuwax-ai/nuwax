@@ -267,7 +267,7 @@ const ConversationProgressCapsule: React.FC<
   } = usePageModel('conversationInfo') as {
     openPreviewView: (
       cid: number,
-      opts?: { forceRefresh?: boolean },
+      opts?: { forceRefresh?: boolean; skipFileTreeRefresh?: boolean },
     ) => Promise<void>;
     setTaskAgentSelectedFileId: (fileId: string) => void;
     setTaskAgentSelectTrigger: (trigger: number) => void;
@@ -290,7 +290,11 @@ const ConversationProgressCapsule: React.FC<
     let fileId = file.split(`${conversationId}/`).pop();
     if (fileId?.endsWith('/')) fileId = fileId.slice(0, -1);
     if (!fileId) return;
-    await openPreviewView(Number(conversationId), { forceRefresh: true });
+    // 只打开预览，不刷新文件树。从桌面切到预览时默认会重拉根目录，
+    // 任务结果会另搜文件并加载它所在的那一层。
+    await openPreviewView(Number(conversationId), {
+      skipFileTreeRefresh: true,
+    });
     setTaskAgentSelectedFileId(fileId);
     setTaskAgentSelectTrigger(Date.now());
   };
