@@ -10,13 +10,9 @@ import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { finishBusinessLogin } from '@/utils/businessAuth';
-import {
-  isValidEmail,
-  isValidPhone,
-  isWeakNumber,
-  validatePassword,
-} from '@/utils/common';
+import { isValidEmail, isValidPhone, validatePassword } from '@/utils/common';
 import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
+import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
@@ -166,20 +162,15 @@ const Login: React.FC = () => {
   const redirectAfterCaptchaCallback = (
     responseRedirectUrl?: string | null,
   ) => {
-    const redirect = decodeURIComponent(searchParams.get('redirect') || '');
-
     // 必须在验证码回调返回给 SDK 后再卸载登录页，避免 SDK 的成功收尾访问
     // 已移除的验证码弹窗节点。setTimeout 会在当前 Promise 回调链结束后执行。
     window.setTimeout(() => {
-      if (isWeakNumber(redirect)) {
-        history.go(Number(redirect));
-      } else if (responseRedirectUrl?.includes('://')) {
-        void navigateToAuthUrl(responseRedirectUrl);
-      } else if (redirect) {
-        history.replace(redirect);
-      } else {
-        history.replace('/');
-      }
+      navigateAfterLogin(
+        history,
+        searchParams.get('redirect'),
+        responseRedirectUrl,
+        navigateToAuthUrl,
+      );
     }, 0);
   };
 
@@ -433,14 +424,11 @@ const Login: React.FC = () => {
     }
 
     const redirect = searchParams.get('redirect');
-    const path = redirect
-      ? `/verify-code?redirect=${encodeURIComponent(redirect)}`
-      : '/verify-code';
     // 与 redirectAfterCaptchaCallback 一致：先返回验证结果给 SDK，再延迟导航，
     // 避免 SDK 成功收尾未完成时登录页已卸载触发 destroyCaptcha，
     // 导致 SDK 访问已销毁节点（innerHTML 空引用）
     window.setTimeout(() => {
-      history.push(path, {
+      replaceLoginStep(history, 'verify-code', redirect, {
         phoneOrEmail,
         areaCode,
         authType: tenantConfigInfo.authType,

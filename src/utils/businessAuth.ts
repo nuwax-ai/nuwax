@@ -73,6 +73,12 @@ export async function finishBusinessLogin(
 }
 
 /** 通用接口层鉴权：本地开发对业务域名带 Bearer Token，其余环境对业务域名带 Cookie。 */
+/** 仅把本地调试 Token 发往配置的业务 API 域名。 */
+function localDevBearerHeaders(url: string): Record<string, string> {
+  const token = isBusinessApiUrl(url) ? readLocalDevToken() : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export function getBusinessRequestAuth(url: string): {
   credentials: RequestCredentials;
   headers: Record<string, string>;
@@ -89,8 +95,24 @@ export function getBusinessRequestAuth(url: string): {
   };
 }
 
-/** 仅把本地调试 Token 发往配置的业务 API 域名。 */
-function localDevBearerHeaders(url: string): Record<string, string> {
-  const token = isBusinessApiUrl(url) ? readLocalDevToken() : null;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+/**
+ * 文件内容请求在首跳同源时只向该源发送 Cookie，避免重定向到对象存储后
+ * 仍以 include 模式读取响应，触发对象存储的凭证 CORS 限制。
+ */
+export function getBusinessFileRequestAuth(url: string): {
+  credentials: RequestCredentials;
+  headers: Record<string, string>;
+} {
+  const auth = getBusinessRequestAuth(url);
+  try {
+    if (
+      typeof window !== 'undefined' &&
+      new URL(url, window.location.origin).origin === window.location.origin
+    ) {
+      return { ...auth, credentials: 'same-origin' };
+    }
+  } catch {
+    // 非标准 URL 沿用通用鉴权策略，由 fetch 负责报告无效地址。
+  }
+  return auth;
 }

@@ -2563,6 +2563,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppDevIndex.fileUploadFailed": "檔案上傳失敗",
   "PC.Pages.AppDevIndex.fileUploadFailedWithError": "檔案上傳失敗: {0}",
   "PC.Pages.AppDevIndex.fileUploadSuccess": "檔案上傳成功: {0}",
+  "PC.Pages.AppDevIndex.importProjectFileSizeExceeded": "檔案大小不能超過100MB",
+  "PC.Pages.AppDevIndex.importProjectFileSizeHint": "檔案大小不超過100MB",
   "PC.Pages.AppDevIndex.importProjectSuccess": "專案匯入成功",
   "PC.Pages.AppDevIndex.importProjectTitle": "匯入專案",
   "PC.Pages.AppDevIndex.inputContentEmpty": "輸入內容為空",

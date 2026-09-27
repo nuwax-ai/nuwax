@@ -2662,6 +2662,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevIndex.fileUploadFailed": "文件上传失败",
   "PC.Pages.AppDevIndex.fileUploadFailedWithError": "文件上传失败: {0}",
   "PC.Pages.AppDevIndex.fileUploadSuccess": "文件上传成功: {0}",
+  "PC.Pages.AppDevIndex.importProjectFileSizeExceeded": "文件大小不能超过100MB",
+  "PC.Pages.AppDevIndex.importProjectFileSizeHint": "文件大小不超过100MB",
   "PC.Pages.AppDevIndex.importProjectSuccess": "项目导入成功",
   "PC.Pages.AppDevIndex.importProjectTitle": "导入项目",
   "PC.Pages.AppDevIndex.inputContentEmpty": "输入内容为空",
