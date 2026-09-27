@@ -3,8 +3,10 @@
 .workspace {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-width: 0;
+  flex: 1 0 auto;
+  // 管理页（侧栏 + 数据表）窄于此时会被外层裁切且 iframe 内部不出滚动条
+  width: max(100%, 1000px);
+  min-width: 1000px;
   min-height: 0;
   height: 100%;
   background: @colorBgContainer;
