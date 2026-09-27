@@ -390,10 +390,13 @@ export function createConversationRuntimeSession(
         // 否则历史会话通过 sub 恢复时只会更新 taskStatus，Loading/工具态仍残留。
         finalizeConversationTerminal(conversationId, terminalStatus);
       }
-      // TaskAgent 收尾组合体（对齐旧线 conversationInfo :1501-1547：立即刷文件树
+      // 问答型以外的智能体收尾（对齐旧线 conversationInfo：立即刷文件树
       // → 按需刷 Git → task-result 文件选中开预览 → 未命中发兜底 trigger；
       // 执行体在消费端 taskResult.settle case，file 传含会话段的原始终路径）
-      if (currentAgent?.type === AgentTypeEnum.TaskAgent) {
+      if (
+        currentAgent?.type &&
+        currentAgent.type !== AgentTypeEnum.ChatBot
+      ) {
         const taskResult = extractTaskResult(
           (data as { outputText?: string }).outputText ?? '',
         );

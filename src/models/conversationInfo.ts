@@ -1522,10 +1522,12 @@ export default () => {
         }
 
         setTimeout(async () => {
-          // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
+          // 会话结束后，问答型以外的智能体刷新文件树，避免用户点击生成的文件时无法定位，因为此时文件树未更新
+          const endedAgentType = conversationInfoRef.current?.agent?.type;
           if (
             params.conversationId &&
-            conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
+            endedAgentType &&
+            endedAgentType !== AgentTypeEnum.ChatBot
           ) {
             // 刷新文件树
             await refreshFileListImmediately(params.conversationId);
