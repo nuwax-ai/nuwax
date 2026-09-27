@@ -33,13 +33,19 @@ import {
   hasExecutingTaskInList,
   isTerminalTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
-import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
+import {
+  acknowledgeConversationTaskStatusEvents,
+  applyConversationChangedToList,
+  deduplicateConversationTaskStatusEvent,
+  observeConversationTaskStatuses,
+} from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
 import { jumpTo } from '@/utils/router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useParams } from 'umi';
 import { extractConversationIdFromPath } from '../sidebarSelectionPolicy';
 import {
+  markConversationExecuting,
   markConversationFinished,
   markConversationVisited,
   setActiveConversation,
@@ -149,6 +155,7 @@ export function useHomeSectionData(options: {
   const recentEventsRef = useRef<
     Array<{ event: ConversationChangedEvent; at: number }>
   >([]);
+  const observedTaskStatusesRef = useRef(new Map<string, TaskStatus>());
   const searchKeywordRef = useRef(searchKeyword);
   searchKeywordRef.current = searchKeyword;
   // 标记（置顶/归档）本地覆盖：防止静默刷新的滞后回包把刚归档的会话复活回列表
@@ -182,6 +189,7 @@ export function useHomeSectionData(options: {
       if (!hasMore && !isRefresh) return;
       loadingRef.current = true;
       const requestEpoch = queryEpochRef.current;
+      const requestEvents = recentEventsRef.current.map(({ event }) => event);
       if (!options?.silent) {
         setLoading(true);
       }
@@ -231,9 +239,22 @@ export function useHomeSectionData(options: {
         recentEventsRef.current = recentEventsRef.current.filter(
           ({ at }) => now - at < RECENT_EVENT_TTL_MS,
         );
+        recentEventsRef.current = acknowledgeConversationTaskStatusEvents(
+          recentEventsRef.current,
+          requestEvents,
+          Array.isArray(res?.data) ? res.data : [],
+        );
         const reconciled = recentEventsRef.current.reduce(
           (list, { event }) => applyConversationChangedToList(list, event),
           data,
+        );
+        observeConversationTaskStatuses(
+          isRefresh
+            ? reconciled
+            : reconciled.filter(
+                (row) => !localList.some((item) => item.id === row.id),
+              ),
+          observedTaskStatusesRef.current,
         );
         if (isRefresh) {
           setLocalList(reconciled);
@@ -305,7 +326,12 @@ export function useHomeSectionData(options: {
     }, interval - (now - conversationReloadAtRef.current));
   }, []);
 
-  useConversationChanged((event) => {
+  useConversationChanged((incomingEvent) => {
+    const event = deduplicateConversationTaskStatusEvent(
+      incomingEvent,
+      observedTaskStatusesRef.current,
+    );
+    if (!event) return;
     const now = Date.now();
     recentEventsRef.current = recentEventsRef.current
       .filter(({ at }) => now - at < RECENT_EVENT_TTL_MS)
@@ -628,10 +654,18 @@ export function useHomeSectionData(options: {
       if (item.taskStatus === undefined) continue;
       const id = String(item.id);
       next.set(id, item.taskStatus);
+      if (!observedTaskStatusesRef.current.has(id)) {
+        observedTaskStatusesRef.current.set(id, item.taskStatus);
+      }
+      if (
+        item.taskStatus === TaskStatus.EXECUTING &&
+        prev.get(id) !== TaskStatus.EXECUTING
+      ) {
+        markConversationExecuting(id);
+      }
       if (
         prev.get(id) === TaskStatus.EXECUTING &&
-        isTerminalTaskStatus(item.taskStatus) &&
-        id !== chatId
+        isTerminalTaskStatus(item.taskStatus)
       ) {
         markConversationFinished(id);
       }
