@@ -1,11 +1,10 @@
+import { parentDirectory } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { usePageModel } from '@/modelScopes/usePageModel';
 import { apiGetStaticFileList } from '@/services/vncDesktop';
 import { MessageTypeEnum } from '@/types/enums/agent';
 import { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { extractLastTaskResultFile } from '@/utils';
-
-import { parentDirectory } from '../utils/fileDataSource';
 
 /**
  * 自动预览最后一次任务生成的文件

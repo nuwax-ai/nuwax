@@ -693,7 +693,11 @@ export function useFileTreePreviewView(
   const handleFileSelectInternal = useCallback(
     async (
       fileId: string,
-      options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+      options?: {
+        selectFolder?: boolean;
+        openDirectory?: boolean;
+        fallbackNode?: FileNode;
+      },
     ) => {
       const currentFiles = filesRef.current;
       // 根据文件ID查找文件节点（精确匹配）
@@ -715,7 +719,8 @@ export function useFileTreePreviewView(
         // 工具栏新建也无法落到这个文件夹。
         if (fileNode.type === 'folder' && options?.selectFolder) {
           setSelectedFolderId(fileNode.id);
-          if (onOpenDirectory) {
+          // 折叠时 openDirectory 为 false，只保留选中态，不拉这一层
+          if (onOpenDirectory && options.openDirectory !== false) {
             await onOpenDirectory(fileNode);
           }
           return;
@@ -873,7 +878,11 @@ export function useFileTreePreviewView(
   const handleFileSelect = useCallback(
     async (
       fileId: string,
-      options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+      options?: {
+        selectFolder?: boolean;
+        openDirectory?: boolean;
+        fallbackNode?: FileNode;
+      },
     ) => {
       if (options?.selectFolder) {
         await handleFileSelectInternal(fileId, options);

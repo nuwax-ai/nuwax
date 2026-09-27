@@ -123,10 +123,17 @@ export interface FileTreeContainerProps {
     /** 写入搜索结果节点，便于与工作区树节点对齐 */
     dataSourceId?: string;
   };
-  /** 选中文件并在右侧预览区打开；selectFolder 为 true 时仅选中文件夹 */
+  /**
+   * 选中文件并在右侧预览区打开。selectFolder 为 true 时仅选中文件夹。
+   * openDirectory 为 false 时不请求该层文件列表。
+   */
   handleFileSelect: (
     fileId: string,
-    options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+    options?: {
+      selectFolder?: boolean;
+      openDirectory?: boolean;
+      fallbackNode?: FileNode;
+    },
   ) => Promise<void>;
   /** 清空文件树选中态（文件 + 文件夹） */
   clearSelection?: () => void;

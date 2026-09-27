@@ -1,17 +1,29 @@
 export const WORKSPACE_SOURCE_ID = 'workspace';
 
+/** 工作区相对路径转成文件树节点 id，例如 src/a.ts → workspace:src/a.ts */
 export function workspaceNodeId(relativePath: string): string {
   return `${WORKSPACE_SOURCE_ID}:${relativePath}`;
 }
 
+/** 从节点 id 还原工作区相对路径。没有 workspace: 前缀时原样返回 */
 export function workspaceRelativePath(fileId: string): string {
   return fileId.startsWith(`${WORKSPACE_SOURCE_ID}:`)
     ? fileId.slice(WORKSPACE_SOURCE_ID.length + 1)
     : fileId;
 }
 
+/** 文件所在目录。根目录下的文件返回空字符串 */
 export function parentDirectory(relativePath: string): string {
   return relativePath.split('/').slice(0, -1).join('/');
+}
+
+/**
+ * 搜索接口的关键字只用路径最后一段（文件名或目录名）。
+ * 同名文件靠完整相对路径在结果的 name 里再筛一次。
+ */
+export function workspaceSearchKeyword(relativePath: string): string {
+  const normalized = relativePath.replace(/^\/+|\/+$/g, '');
+  return normalized.split('/').pop() || normalized;
 }
 
 /**

@@ -8,6 +8,8 @@ import FileTreeGitSourcePanel, {
   type ChangeListSection,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
+import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
+import { workspaceNodeId } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
@@ -147,7 +149,10 @@ const WORKSPACE_MANIFEST_ROOT_FILE = 'workspace.manifest.toml';
 
 /** 是否为根目录下的 workspace.manifest.toml（非目录） */
 const isRootWorkspaceManifestFile = (file: StaticFileInfo): boolean => {
-  const path = (file.fileId ?? file.name).replace(/^\/+/, '');
+  const raw = (file.name || file.fileId || '').replace(/^\/+/, '');
+  const path = raw.startsWith('workspace:')
+    ? raw.slice('workspace:'.length)
+    : raw;
   return path === WORKSPACE_MANIFEST_ROOT_FILE && !file.isDir;
 };
 const noop = () => undefined;
@@ -353,10 +358,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     isFileTreePinned,
     setIsFileTreePinned,
     closePreviewView,
-    fileTreeData,
-    fileTreeDataLoading,
     handleRefreshFileList,
     refreshFileListImmediately,
+    fileTreeRefreshTrigger,
+    setFileTreeSelfManaged,
     openPreviewView,
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
@@ -370,6 +375,21 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     refreshGitListRef,
     isConversationActive,
   } = usePageModel('conversationInfo');
+
+  useEffect(() => {
+    setFileTreeSelfManaged(true);
+    return () => setFileTreeSelfManaged(false);
+  }, [setFileTreeSelfManaged]);
+
+  /** 与 Chat 相同的工作区文件树：分层加载、服务端搜索、变更后刷新已展开目录 */
+  const workspaceFiles = useWorkspaceFileTreeSession({
+    conversationId: queryConversationId,
+    enabled: active && queryConversationId > 0,
+    fileTreeRefreshTrigger,
+    refreshEnabled: active && queryConversationId > 0,
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+  });
 
   useEffect(() => {
     if (routeSnapshot && conversationInfo?.id === queryConversationId) {
@@ -394,10 +414,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     conversationInfo?.taskStatus !== TaskStatus.CANCEL &&
     activeInterventions.length > 0;
 
-  /** 文件树数据 ref，供防抖保存读取最新列表 */
-  const fileTreeDataRef = useRef(fileTreeData);
-  /** 文件树数据 ref，供防抖保存读取最新列表 */
-  fileTreeDataRef.current = fileTreeData;
+  /** 防抖保存读取分层加载后的最新列表，fileId 与树节点 id 一致 */
+  const fileTreeDataRef = useRef(workspaceFiles.files);
+  fileTreeDataRef.current = workspaceFiles.files;
 
   /**
    * 仅在 AppDevPro 把当前环境写入 conversationInfo，
@@ -1175,16 +1194,23 @@ const AppDevPro: React.FC<AppDevProProps> = ({
             ];
           } else {
             // 文件删除：需要查找完整的文件信息
-            const currentFile = fileTreeData?.find(
+            const currentFile = workspaceFiles.files?.find(
               (item: StaticFileInfo) => item.fileId === fileNode.id,
             );
             if (!currentFile) {
               resolve(false);
               return;
             }
-            currentFile.operation = 'delete';
-            currentFile.contents = '';
-            updatedFilesList = [currentFile] as UpdateFileInfo[];
+            updatedFilesList = [
+              {
+                name: currentFile.name,
+                binary: currentFile.binary,
+                sizeExceeded: currentFile.sizeExceeded,
+                isDir: currentFile.isDir,
+                operation: 'delete',
+                contents: '',
+              },
+            ];
           }
           const { code } = await apiUpdateStaticFile({
             cId: queryConversationId,
@@ -1212,7 +1238,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     newName: string,
   ) => {
     const updatedFilesList = updateFilesListName(
-      fileTreeData || [],
+      workspaceFiles.files || [],
       fileNode,
       newName,
     );
@@ -1241,7 +1267,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }[],
   ) => {
     const updatedFilesList = updateFilesListContent(
-      fileTreeData || [],
+      workspaceFiles.files || [],
       data,
       'modify',
     );
@@ -1428,8 +1454,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       className: cx(styles['file-tree-sidebar']),
       taskAgentSelectedFileId, // TaskAgent 自动选中的文件 ID
       taskAgentSelectTrigger, // 触发选中的事件标识
-      originalFiles: fileTreeData, // 原始文件树数据
-      fileTreeDataLoading, // 文件树加载状态
+      originalFiles: workspaceFiles.files,
+      fileTreeDataLoading: workspaceFiles.loading,
+      fileTreeRefreshTrigger,
       targetId: String(queryConversationId), // 关联的会话 ID
       readOnly: false, // 文件是否只读
       onUploadFiles: async (files, filePaths) => {
@@ -1452,7 +1479,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       /** 创建文件 */
       onCreateFileNode: handleCreateFileNode,
       /** 删除文件 */
-      onDeleteFile: handleDeleteFile,
+      onDeleteFile: (node) =>
+        handleDeleteFile(
+          node.type === 'folder' && node.relativePath
+            ? { ...node, id: node.relativePath }
+            : node,
+        ),
       /** 保存文件 */
       onSaveFiles: handleSaveFiles,
       /** 保存单个文件 */
@@ -1475,10 +1507,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       onRefreshFileTree: async () => {
         await refreshFileListImmediately(queryConversationId);
       },
+      onOpenDirectory: workspaceFiles.onOpenDirectory,
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
-      /** 容器启动成功且开启版本管理时才拉取 Git status */
-      enableGitStatus: isVersionControlEnabled && podReady,
+      /** 容器启动成功、开启版本管理且工作区已有文件时才拉取 Git status */
+      enableGitStatus:
+        isVersionControlEnabled && podReady && workspaceFiles.files.length > 0,
       enableVersionControl,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
@@ -1490,7 +1524,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
             skipActivate: true,
           });
         }
-        openPreviewView(queryConversationId);
+        // 文件已在当前树里，只打开预览，不重拉已展开目录
+        void openPreviewView(queryConversationId, {
+          skipFileTreeRefresh: true,
+        });
       },
       /** 文件重命名后同步更新预览区标签页标题与 fileId */
       onFileRenamed: (oldFileId, newFileId) => {
@@ -1507,17 +1544,20 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           fileNode.id,
           fileNode.type === 'folder',
         );
+        const deletedPath =
+          fileNode.relativePath || fileNode.path || fileNode.id;
         setSelectedChangeFile((current) => {
           if (!current?.fileId) {
             return current;
           }
+          const matchesPath =
+            current.fileId === deletedPath || current.fileId === fileNode.id;
           if (fileNode.type === 'folder') {
             const isUnderFolder =
-              current.fileId === fileNode.id ||
-              current.fileId.startsWith(`${fileNode.id}/`);
+              matchesPath || current.fileId.startsWith(`${deletedPath}/`);
             return isUnderFolder ? null : current;
           }
-          return current.fileId === fileNode.id ? null : current;
+          return matchesPath ? null : current;
         });
         void refreshGitListIfEnabled();
       },
@@ -1530,8 +1570,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   }, [
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
-    fileTreeData,
-    fileTreeDataLoading,
+    workspaceFiles.files,
+    workspaceFiles.loading,
+    workspaceFiles.onOpenDirectory,
+    fileTreeRefreshTrigger,
     queryConversationId,
     handleUploadMultipleFiles,
     handleConfirmRenameFile,
@@ -1558,6 +1600,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useFileTreePreviewView(fileViewProviderProps);
+  workspaceFiles.selectFileRef.current = fileView.tree.handleFileSelect;
   // 刷新 Git 列表
   if (active) refreshGitListRef.current = fileView.refreshGitList;
   // 清空文件树选中
@@ -1631,9 +1674,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 满足时才允许自动 start，并开放 Header 重启 / 停止。
    */
   const hasFileTreeData = useMemo(() => {
-    const files = fileTreeData ?? [];
-    return files.length > 0 && files.some(isRootWorkspaceManifestFile);
-  }, [fileTreeData]);
+    return (
+      workspaceFiles.files.length > 0 &&
+      workspaceFiles.files.some(isRootWorkspaceManifestFile)
+    );
+  }, [workspaceFiles.files]);
   /** 会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
   const conversationReady = conversationInfo?.id === queryConversationId;
   /**
@@ -1652,7 +1697,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     conversationReady &&
     !previewConversationActive &&
     !hasPendingIntervention &&
-    !fileTreeDataLoading &&
+    !workspaceFiles.loading &&
     !hasFileTreeData;
 
   /**
@@ -1726,7 +1771,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     appId,
     conversationReady,
     dbEnv,
-    fileTreeDataLoading,
+    workspaceFiles.loading,
     hasFileTreeData,
     hasPendingIntervention,
     previewConversationActive,
@@ -1743,8 +1788,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const handleAddToGitignore = useCallback(
     async (fileId: string) => {
       const gitignoreId = '.gitignore';
-      const existing = fileTreeData?.find(
-        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      const gitignoreNodeId = workspaceNodeId(gitignoreId);
+      const existing = workspaceFiles.files?.find(
+        (item: StaticFileInfo) =>
+          item.fileId === gitignoreNodeId || item.name === gitignoreId,
       );
       const currentContent = existing?.contents ?? '';
       const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
@@ -1769,10 +1816,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       try {
         if (existing) {
           const updatedFilesList = updateFilesListContent(
-            fileTreeData || [],
+            workspaceFiles.files || [],
             [
               {
-                fileId: gitignoreId,
+                fileId: existing?.fileId || gitignoreNodeId,
                 fileContent: newContent,
                 originalFileContent: currentContent,
               },
@@ -1808,7 +1855,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         console.error('Add to gitignore failed:', error);
       }
     },
-    [fileTreeData, handleRefreshFileList],
+    [workspaceFiles.files, handleRefreshFileList],
   );
 
   /**
@@ -2804,9 +2851,27 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                         {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
                         <FileTreeGitSourcePanel
                           className={cx(styles['file-tree-sidebar'], 'w-full')}
-                          showSourceControl={isVersionControlEnabled}
+                          showSourceControl={
+                            isVersionControlEnabled &&
+                            workspaceFiles.files.length > 0
+                          }
                           enableVersionControl={enableVersionControl}
-                          tree={fileView.tree}
+                          tree={{
+                            ...fileView.tree,
+                            loadedFolderIds: workspaceFiles.loadedFolderIds,
+                            loadingFolderIds: workspaceFiles.loadingFolderIds,
+                            onLoadDirectory: workspaceFiles.onLoadDirectory,
+                            remoteFileSearch: workspaceFiles.remoteFileSearch,
+                            handleFileSelect: async (fileId, options) => {
+                              await workspaceFiles.ensureFallbackDirectory(
+                                options,
+                              );
+                              await fileView.tree.handleFileSelect(
+                                fileId,
+                                options,
+                              );
+                            },
+                          }}
                           treeClassName="w-full h-full"
                           onImportProject={handleImportProject}
                           importProjectLabel={dict(

@@ -1,15 +1,14 @@
 /**
- * fileDataSource 纯函数测试（#5a 文件树懒加载收尾）
+ * 工作区目录裁层纯函数测试（#5a 文件树懒加载收尾）
  *
  * 覆盖降级链路：网关未透传单层参数（响应 recursive 回显非 false）时，
  * 从全量递归扁平列表裁出当前目录层。
  */
-import { describe, expect, it, vi } from 'vitest';
-
 import {
   filterDirectoryLevel,
   resolveDirectoryLevelFiles,
-} from './fileDataSource';
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
+import { describe, expect, it, vi } from 'vitest';
 
 describe('filterDirectoryLevel（全量扁平列表裁当前层）', () => {
   const flat = [

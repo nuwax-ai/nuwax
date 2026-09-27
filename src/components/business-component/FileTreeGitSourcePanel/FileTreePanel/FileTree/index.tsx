@@ -4,6 +4,7 @@ import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { findFileNode } from '@/utils/appDevUtils';
 import { getFileIcon } from '@/utils/fileTree';
+import { LoadingOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd';
 import { Input } from 'antd';
 import classNames from 'classnames';
@@ -300,8 +301,11 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
         // 如果文件夹有子节点，则展开文件夹，并选中第一个子节点
         if (selectedFileNode?.children?.length) {
           setExpandedFolders((prev) => {
+            if (prev.has(selectedFileNode.id)) {
+              return prev;
+            }
             const next = new Set(prev);
-            next.add(selectedFileNode?.id);
+            next.add(selectedFileNode.id);
             return next;
           });
         }
@@ -340,6 +344,9 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       // 如果有父级文件夹，则展开它们
       if (parentFolderIds.length > 0) {
         setExpandedFolders((prev) => {
+          if (parentFolderIds.every((folderId) => prev.has(folderId))) {
+            return prev;
+          }
           const next = new Set(prev);
           parentFolderIds.forEach((folderId) => {
             next.add(folderId);
@@ -385,17 +392,25 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
                     return;
                   }
                   onToggleFolder(node.id);
-                  onFileSelect(node.id, { selectFolder: true });
+                  // 折叠只收起列表；展开才请求这一层
+                  onFileSelect(node.id, {
+                    selectFolder: true,
+                    openDirectory: !isExpanded,
+                  });
                 }}
                 onContextMenu={(e) => onContextMenu(e, node)}
               >
-                <SvgIcon
-                  name="icons-common-caret_right"
-                  style={{ fontSize: '16px' }}
-                  className={`${styles.folderIcon} ${
-                    isExpanded ? styles.expanded : ''
-                  }`}
-                />
+                {isFolderLoading ? (
+                  <LoadingOutlined className={styles.folderIcon} />
+                ) : (
+                  <SvgIcon
+                    name="icons-common-caret_right"
+                    style={{ fontSize: '16px' }}
+                    className={`${styles.folderIcon} ${styles.folderCaret} ${
+                      isExpanded ? styles.expanded : ''
+                    }`}
+                  />
+                )}
 
                 {isRenaming ? (
                   <Input
@@ -413,14 +428,9 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
                   </span>
                 )}
               </div>
-              {isExpanded && (isFolderLoading || node.children) && (
+              {isExpanded && !!node.children?.length && (
                 <div className={styles.fileList}>
-                  {isFolderLoading && (
-                    <div className={styles.folderLoading}>
-                      <Loading className={styles.folderLoadingIndicator} />
-                    </div>
-                  )}
-                  {node.children?.map((child: FileNode) =>
+                  {node.children.map((child: FileNode) =>
                     renderFileTreeNode(child, level + 1),
                   )}
                 </div>

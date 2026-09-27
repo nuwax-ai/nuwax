@@ -42,8 +42,14 @@ export interface FileTreeProps {
   /** 右键菜单回调 */
   onContextMenu: (e: React.MouseEvent, node: FileNode | null) => void;
 
-  /** 文件选择回调；selectFolder 为 true 时仅选中文件夹（不切换预览） */
-  onFileSelect: (fileId: string, options?: { selectFolder?: boolean }) => void;
+  /**
+   * 文件选择回调。selectFolder 为 true 时仅选中文件夹。
+   * openDirectory 为 false 时只改选中态，不请求该层文件列表（折叠）。
+   */
+  onFileSelect: (
+    fileId: string,
+    options?: { selectFolder?: boolean; openDirectory?: boolean },
+  ) => void;
 
   /** 重命名文件回调 */
   onConfirmRenameFile: (node: FileNode, newName: string) => void;
