@@ -13,8 +13,9 @@ import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { finishBusinessLogin } from '@/utils/businessAuth';
-import { getNumbersOnly, isWeakNumber } from '@/utils/common';
+import { getNumbersOnly } from '@/utils/common';
 import { hostBridge } from '@/utils/hostBridge';
+import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
 import { Button, Input, InputRef, message } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -94,16 +95,12 @@ const VerifyCode: React.FC = () => {
       if (!resetPass) {
         history.push('/set-password');
       } else {
-        const redirect = decodeURIComponent(searchParams.get('redirect') || '');
-        if (isWeakNumber(redirect)) {
-          history.go(Number(redirect));
-        } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
-          void navigateToAuthUrl(responseRedirectUrl);
-        } else if (redirect) {
-          history.replace(redirect);
-        } else {
-          history.replace('/');
-        }
+        navigateAfterLogin(
+          history,
+          searchParams.get('redirect'),
+          responseRedirectUrl,
+          navigateToAuthUrl,
+        );
       }
     },
   });
@@ -277,7 +274,9 @@ const VerifyCode: React.FC = () => {
               variant="filled"
               shape="circle"
               icon={<SvgIcon name="icons-nav-backward" />}
-              onClick={() => history.back()}
+              onClick={() =>
+                replaceLoginStep(history, 'login', searchParams.get('redirect'))
+              }
             />
           </div>
           <h3>

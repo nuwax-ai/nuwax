@@ -2663,6 +2663,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevIndex.fileUploadFailed": "File upload failed",
   "PC.Pages.AppDevIndex.fileUploadFailedWithError": "File upload failed: {0}",
   "PC.Pages.AppDevIndex.fileUploadSuccess": "File uploaded successfully: {0}",
+  "PC.Pages.AppDevIndex.importProjectFileSizeExceeded": "File size cannot exceed 100MB",
+  "PC.Pages.AppDevIndex.importProjectFileSizeHint": "File size cannot exceed 100MB",
   "PC.Pages.AppDevIndex.importProjectSuccess": "Project imported successfully",
   "PC.Pages.AppDevIndex.importProjectTitle": "Import Project",
   "PC.Pages.AppDevIndex.inputContentEmpty": "Input content is empty",

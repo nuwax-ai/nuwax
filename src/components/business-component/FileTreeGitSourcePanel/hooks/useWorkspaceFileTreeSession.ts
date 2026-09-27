@@ -12,6 +12,7 @@ import {
   WORKSPACE_SOURCE_ID,
   workspaceNodeId,
   workspaceRelativePath,
+  workspaceSearchKeyword,
 } from '../utils/workspaceFileList';
 import { useWorkspaceDirectoryFiles } from './useWorkspaceDirectoryFiles';
 
@@ -110,7 +111,7 @@ export function useWorkspaceFileTreeSession(options: {
   const loadDirectoryRef = useRef(directory.loadDirectory);
   loadDirectoryRef.current = directory.loadDirectory;
 
-  // 点击会话里生成的文件：先按路径搜索，再拉它所在的那一层，最后打开内容
+  // 点击会话里生成的文件：按文件名搜索，再用完整相对路径在结果里命中，然后打开内容
   useEffect(() => {
     if (!conversationId || taskAgentSelectTrigger === undefined) {
       return;
@@ -135,7 +136,7 @@ export function useWorkspaceFileTreeSession(options: {
       try {
         const result = await apiSearchFiles({
           cId: Number(conversationId),
-          kw: relativePath,
+          kw: workspaceSearchKeyword(relativePath),
         });
         if (cancelled || result.code !== SUCCESS_CODE) {
           return;

@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { workspaceRelativePath } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import ShareDesktopModal from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/ShareDesktopModal';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
@@ -51,8 +52,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   showFullscreenIcon = true,
 }) => {
   const fileName = targetNode?.name;
-  /** 文件树中的完整路径（fileId） */
-  const fileId = targetNode?.id;
+  /** 文件树中的完整路径（fileId，可能带 workspace: 前缀） */
+  const fileId = targetNode?.relativePath || targetNode?.path || targetNode?.id;
   const fileSize = targetNode?.size;
   const formattedSize = useMemo(() => {
     if (!fileSize) return '';
@@ -61,7 +62,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
   const displayFilePath = useMemo(() => {
     if (!fileId) return '';
-    return fileId.replace(/\//g, ' > ');
+    return workspaceRelativePath(fileId).replace(/\//g, ' > ');
   }, [fileId]);
 
   const showPreviewCodeToggle = canShowPreviewCodeToggle(targetNode, fileName);
@@ -83,7 +84,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       {fileId && viewMode === 'preview' && (
         <div className={styles.fileInfo}>
           <div className={styles.fileDetails}>
-            <div className={styles.fileName} title={fileId}>
+            <div className={styles.fileName} title={displayFilePath}>
               {displayFilePath}
             </div>
             {formattedSize && (

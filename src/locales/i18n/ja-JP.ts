@@ -2601,6 +2601,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevIndex.fileUploadFailed": "ファイルのアップロードに失敗しました",
   "PC.Pages.AppDevIndex.fileUploadFailedWithError": "ファイルのアップロードに失敗しました: {0}",
   "PC.Pages.AppDevIndex.fileUploadSuccess": "ファイルが正常にアップロードされました: {0}",
+  "PC.Pages.AppDevIndex.importProjectFileSizeExceeded": "ファイルサイズは100MBを超えることはできません",
+  "PC.Pages.AppDevIndex.importProjectFileSizeHint": "ファイルサイズは100MBを超えることはできません",
   "PC.Pages.AppDevIndex.importProjectSuccess": "プロジェクトが正常にインポートされました",
   "PC.Pages.AppDevIndex.importProjectTitle": "プロジェクトのインポート",
   "PC.Pages.AppDevIndex.inputContentEmpty": "入力内容が空です",
