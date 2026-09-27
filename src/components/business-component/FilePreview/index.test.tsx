@@ -192,6 +192,46 @@ describe('FilePreview Markdown 渲染隔离', () => {
     expect(ReactMarkdown).toHaveBeenCalledTimes(1);
   });
 
+  it('子目录 Markdown 的相对图片按文件所在目录解析，绝对路径仍接工作区根', async () => {
+    const content = [
+      '![相对](images/fig-01.png)',
+      '![当前](./images/fig-02.png)',
+      '![上级](../images/fig-03.png)',
+      '![根绝对](/images/root.png)',
+      '![外链](https://example.com/a.png)',
+    ].join('\n');
+    render(
+      <FilePreview
+        src="/api/computer/static/9/docs/核心实现架构图.md"
+        fileType="markdown"
+        content={content}
+        staticFileBasePath="/api/computer/static/9"
+      />,
+    );
+    await settlePreview();
+
+    expect(screen.getByAltText('相对')).toHaveAttribute(
+      'src',
+      '/api/computer/static/9/docs/images/fig-01.png',
+    );
+    expect(screen.getByAltText('当前')).toHaveAttribute(
+      'src',
+      '/api/computer/static/9/docs/images/fig-02.png',
+    );
+    expect(screen.getByAltText('上级')).toHaveAttribute(
+      'src',
+      '/api/computer/static/9/images/fig-03.png',
+    );
+    expect(screen.getByAltText('根绝对')).toHaveAttribute(
+      'src',
+      '/api/computer/static/9/images/root.png',
+    );
+    expect(screen.getByAltText('外链')).toHaveAttribute(
+      'src',
+      'https://example.com/a.png',
+    );
+  });
+
   it('词典更新后表格标签同步变化', async () => {
     const { rerender } = render(<FilePreview {...previewProps} />);
     await settlePreview();
