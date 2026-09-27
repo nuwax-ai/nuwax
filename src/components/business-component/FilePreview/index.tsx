@@ -548,6 +548,55 @@ const getLocalizedErrorMessage = (
   }
 };
 
+/**
+ * 从 Markdown 文件地址中取出所在目录。
+ * 地址对不上静态根路径，或文件就在工作区根上时返回空，相对图片仍按旧逻辑接到根路径。
+ */
+function markdownDirectoryFromSource(
+  fileSrc: string | ArrayBuffer | Blob | File | undefined,
+  staticFileBasePath?: string,
+): string {
+  if (!staticFileBasePath || typeof fileSrc !== 'string') {
+    return '';
+  }
+  const cleanSrc = fileSrc.split(/[?#]/)[0];
+  const normalizedBase = staticFileBasePath.replace(/\/+$/, '');
+  const marker = `${normalizedBase}/`;
+  const baseIndex = cleanSrc.indexOf(marker);
+  if (baseIndex < 0) {
+    return '';
+  }
+  const relativePath = cleanSrc.slice(baseIndex + marker.length);
+  const slashIndex = relativePath.lastIndexOf('/');
+  if (slashIndex <= 0) {
+    return '';
+  }
+  return relativePath.slice(0, slashIndex);
+}
+
+/** 把图片相对路径折算到 Markdown 所在目录，`..` 停在工作区根，查询参数原样保留。 */
+function resolvePathAgainstDirectory(
+  directory: string,
+  relativePath: string,
+): string {
+  const suffixIndex = relativePath.search(/[?#]/);
+  const pathPart =
+    suffixIndex >= 0 ? relativePath.slice(0, suffixIndex) : relativePath;
+  const suffix = suffixIndex >= 0 ? relativePath.slice(suffixIndex) : '';
+  const parts = directory.split('/').filter(Boolean);
+  pathPart.split('/').forEach((segment) => {
+    if (!segment || segment === '.') {
+      return;
+    }
+    if (segment === '..') {
+      parts.pop();
+      return;
+    }
+    parts.push(segment);
+  });
+  return `${parts.join('/')}${suffix}`;
+}
+
 const FilePreview: React.FC<FilePreviewProps> = ({
   src,
   staticFileBasePath,
@@ -1041,34 +1090,46 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
   // 统一的图片路径处理函数
   const normalizeImageSrc = useCallback(
-    (src: string) => {
-      if (!src || !staticFileBasePath) return src;
+    (imageSrc: string) => {
+      if (!imageSrc || !staticFileBasePath) return imageSrc;
 
       // 外部链接直接返回
-      if (src.startsWith('http') || src.startsWith('data:')) {
-        return src;
+      if (imageSrc.startsWith('http') || imageSrc.startsWith('data:')) {
+        return imageSrc;
       }
 
       // 以 / 开头的绝对路径
-      if (src.startsWith('/')) {
+      if (imageSrc.startsWith('/')) {
         // 已经是完整的静态资源路径，直接返回
-        if (src.startsWith('/api/computer/static/')) {
-          return src;
+        if (imageSrc.startsWith('/api/computer/static/')) {
+          return imageSrc;
         }
 
         // 其他绝对路径，如果有 staticFileBasePath，则在前面拼上
-        return `${staticFileBasePath}${src}`;
+        return `${staticFileBasePath}${imageSrc}`;
       }
 
-      // 处理相对路径 ./ ../
-      const normalized = src
-        .replace(/^\.\//, '') // ./ -> 空
-        .replace(/^\.\.\//, '') // ../ -> 空
-        .replace(/\/\.\//g, '/'); // /a/./b -> /a/b
+      const markdownDirectory = markdownDirectoryFromSource(
+        src,
+        staticFileBasePath,
+      );
+      // 文件在工作区根上，或地址里看不出目录时，保持原来接到根路径的写法
+      if (!markdownDirectory) {
+        const normalized = imageSrc
+          .replace(/^\.\//, '') // ./ -> 空
+          .replace(/^\.\.\//, '') // ../ -> 空
+          .replace(/\/\.\//g, '/'); // /a/./b -> /a/b
 
-      return `${staticFileBasePath}/${normalized}`;
+        return `${staticFileBasePath}/${normalized}`;
+      }
+
+      // 子目录里的 Markdown：images/a.png、./a.png、../a.png 相对当前文件所在目录
+      return `${staticFileBasePath}/${resolvePathAgainstDirectory(
+        markdownDirectory,
+        imageSrc,
+      )}`;
     },
-    [staticFileBasePath],
+    [src, staticFileBasePath],
   );
 
   // 对 Markdown 文本中的图片链接进行统一路径处理，并拆开反引号包裹的 $...$ / LaTeX
