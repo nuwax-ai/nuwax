@@ -1,10 +1,10 @@
 import { collectUnloadedExpandedFolders } from '@/components/business-component/FileTreeGitSourcePanel/FileTreePanel/FileTree/utils';
-import { useChatFiles } from '@/pages/Chat/hooks/useChatFiles';
-import { useWorkspaceDirectoryFiles } from '@/pages/Chat/hooks/useWorkspaceDirectoryFiles';
 import {
   mergeDirectoryLevelFiles,
   workspaceNodeId,
-} from '@/pages/Chat/utils/fileDataSource';
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
+import { useChatFiles } from '@/pages/Chat/hooks/useChatFiles';
+import { useWorkspaceDirectoryFiles } from '@/pages/Chat/hooks/useWorkspaceDirectoryFiles';
 import { transformFlatListToTree } from '@/utils/appDevUtils';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

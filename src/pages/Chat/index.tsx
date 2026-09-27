@@ -67,6 +67,11 @@ import {
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
+import {
+  parentDirectory,
+  workspaceNodeId,
+  workspaceRelativePath,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import {
   apiAgentConversation,
@@ -108,11 +113,6 @@ import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
 import styles from './index.less';
-import {
-  parentDirectory,
-  workspaceNodeId,
-  workspaceRelativePath,
-} from './utils/fileDataSource';
 import { resolveSandboxFileOpen } from './utils/sandboxPath';
 
 const cx = classNames.bind(styles);
