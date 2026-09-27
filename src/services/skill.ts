@@ -8,7 +8,7 @@ import {
   SkillUploadFileParams,
   SkillUploadFilesParams,
 } from '@/types/interfaces/skill';
-import { getBusinessRequestAuth } from '@/utils/businessAuth';
+import { getBusinessFileRequestAuth } from '@/utils/businessAuth';
 import {
   apiExportFileBlob,
   ExportFileBlobResponse,
@@ -169,7 +169,7 @@ async function fetchContentResponse(url: string): Promise<Response> {
   // 判断是否为绝对路径（以 http://, https:// 或 // 开头）
   const isAbsoluteUrl = /^(https?:)?\/\//i.test(url);
   const fullUrl = isAbsoluteUrl ? url : `${process.env.BASE_URL || ''}${url}`;
-  const auth = getBusinessRequestAuth(fullUrl);
+  const auth = getBusinessFileRequestAuth(fullUrl);
   return fetch(fullUrl, {
     method: 'GET',
     credentials: auth.credentials,
