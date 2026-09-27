@@ -91,6 +91,86 @@ export function matchesProjectRef(
   );
 }
 
+/**
+ * 状态观察独立于60秒回放保存：同值轮询不重插已确认字段，也不续期。
+ * 调用方同时用实际接受的列表快照更新 observed，新的执行态才能重新开一轮。
+ * 其它字段仍按原事件回放；不能把状态去重当作主题/标记等操作的去重。
+ */
+export function deduplicateConversationTaskStatusEvent(
+  event: ConversationChangedEvent,
+  observed: Map<string, TaskStatus>,
+): ConversationChangedEvent | undefined {
+  const status = event.patch?.taskStatus;
+  if (event.operation !== 'updated' || status === undefined) return event;
+  if (observed.get(event.conversationId) !== status) {
+    observed.set(event.conversationId, status);
+    return event;
+  }
+  const patch = { ...event.patch };
+  delete patch.taskStatus;
+  return Object.values(patch).some((value) => value !== undefined)
+    ? { ...event, patch }
+    : undefined;
+}
+
+/** 只记录已通过回放和请求版本检查、会实际写入列表的快照状态。 */
+export function observeConversationTaskStatuses(
+  rows: Array<EntityWithId & { taskStatus?: TaskStatus }>,
+  observed: Map<string, TaskStatus>,
+): void {
+  for (const row of rows) {
+    if (row.taskStatus !== undefined) {
+      observed.set(String(row.id), row.taskStatus);
+    }
+  }
+}
+
+/**
+ * 服务端确认请求开始前的最新状态补丁后，仅消费该字段的回放。
+ * modified 不是执行代次，事件也没有 runId；未经确认的终态仍保护落库滞后回包。
+ * 请求期间的新事件不在 requestEvents 内，不能被在途旧快照确认/消费。
+ */
+export function acknowledgeConversationTaskStatusEvents<
+  T extends { event: ConversationChangedEvent },
+>(
+  recent: T[],
+  requestEvents: readonly ConversationChangedEvent[],
+  rows: Array<EntityWithId & { taskStatus?: TaskStatus }>,
+): T[] {
+  const eligible = new Set(requestEvents);
+  const latest = new Map<string, TaskStatus>();
+  for (const event of requestEvents) {
+    if (
+      event.operation === 'updated' &&
+      event.patch?.taskStatus !== undefined
+    ) {
+      latest.set(event.conversationId, event.patch.taskStatus);
+    }
+  }
+  const acknowledged = new Set<string>();
+  for (const row of rows) {
+    const id = String(row.id);
+    if (row.taskStatus !== undefined && latest.get(id) === row.taskStatus) {
+      acknowledged.add(id);
+    }
+  }
+  return recent.map((entry) => {
+    const { event } = entry;
+    if (
+      !eligible.has(event) ||
+      !acknowledged.has(event.conversationId) ||
+      event.patch?.taskStatus === undefined
+    ) {
+      return entry;
+    }
+    // 同一次状态确认也消费更早的状态，防止留下的旧 FAILED 覆盖已确认 COMPLETE。
+    // topic/icon/flags/deleted 继续沿用各自既有回放契约。
+    const patch = { ...event.patch };
+    delete patch.taskStatus;
+    return { ...entry, event: { ...event, patch } };
+  });
+}
+
 export function applyConversationChangedToList<
   T extends EntityWithId & {
     topic?: string;

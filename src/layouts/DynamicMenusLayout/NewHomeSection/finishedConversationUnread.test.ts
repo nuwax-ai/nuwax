@@ -2,7 +2,7 @@
  * 「会话结束未读」蓝点 store 单测（纯逻辑，零 umi 依赖）+ ChatFinished 接线行为。
  *
  * 覆盖契约：结束不在场记点 / 进入即清除（number/string 归一）/ 24h TTL 写路径
- * 清理 / 再次结束时间戳刷新 / 活跃会话基准归一 / 订阅退订；
+ * 清理 / 新执行结束时间戳刷新 / 重复结束不复活已读点 / 活跃会话基准归一 / 订阅退订；
  * 接线层：结束时在场清除、不在场记点（模块级订阅，随导入生效）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +15,7 @@ import {
   __resetFinishedConversationUnreadForTest,
   getActiveConversation,
   getFinishedConversationUnreadSnapshot,
+  markConversationExecuting,
   markConversationFinished,
   markConversationVisited,
   setActiveConversation,
@@ -87,16 +88,24 @@ describe('finishedConversationUnread 蓝点 store', () => {
     expect(snapshot.has('late')).toBe(true);
   });
 
-  it('再次结束时间戳刷新：旧记录不按首次时间过期', () => {
+  it('新执行再次结束才刷新时间戳：旧记录不按首次时间过期', () => {
+    const base = 1_700_000_000_000;
+    markConversationFinished('101', base);
+    markConversationExecuting('101');
+    markConversationFinished('101', base + UNREAD_DOT_TTL_MS / 2);
+    // 首次记点满 24h 时触发清理：按刷新后的时间戳仍在
+    markConversationFinished('202', base + UNREAD_DOT_TTL_MS + 3_600_000);
+    expect(getFinishedConversationUnreadSnapshot().has('101')).toBe(true);
+  });
+
+  it('重复结束不续期：TTL清点后旧终态也不恢复蓝点', () => {
     const base = 1_700_000_000_000;
     markConversationFinished('101', base);
     markConversationFinished('101', base + UNREAD_DOT_TTL_MS / 2);
-    // 首次记点满 24h 时触发清理：按刷新后的时间戳仍在
-    markConversationFinished(
-      '202',
-      base + UNREAD_DOT_TTL_MS + 3_600_000,
-    );
-    expect(getFinishedConversationUnreadSnapshot().has('101')).toBe(true);
+    markConversationFinished('202', base + UNREAD_DOT_TTL_MS + 1);
+    expect(getFinishedConversationUnreadSnapshot().has('101')).toBe(false);
+    markConversationFinished('101', base + UNREAD_DOT_TTL_MS + 2);
+    expect(getFinishedConversationUnreadSnapshot().has('101')).toBe(false);
   });
 
   it('活跃会话基准：空值归一为 null', () => {
@@ -149,5 +158,64 @@ describe('finishedConversationUnread 蓝点 store', () => {
       taskStatus: TaskStatus.EXECUTING,
     });
     expect(getFinishedConversationUnreadSnapshot().has('33')).toBe(false);
+  });
+
+  it('终态→读→切B：旧终态轮询和重复ChatFinished不能复活A的已读蓝点', () => {
+    const patch = () =>
+      eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+        conversationId: 31,
+        taskStatus: TaskStatus.COMPLETE,
+      });
+    setActiveConversation('32');
+    patch();
+    expect(getFinishedConversationUnreadSnapshot().has('31')).toBe(true);
+    setActiveConversation('31');
+    markConversationVisited(31);
+    setActiveConversation('32');
+    patch();
+    emitChatFinished('31');
+    markConversationFinished('31'); // 列表跃迁信号同样走该入口
+    expect(getFinishedConversationUnreadSnapshot().has('31')).toBe(false);
+  });
+
+  it('观察新EXECUTING后允许再次记点，同一结束的多路信号只通知一次', () => {
+    markConversationFinished('31');
+    markConversationVisited('31');
+    const listener = vi.fn();
+    subscribeFinishedConversationUnread(listener);
+    eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+      conversationId: 31,
+      taskStatus: TaskStatus.EXECUTING,
+    });
+    eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+      conversationId: 31,
+      taskStatus: TaskStatus.COMPLETE,
+    });
+    emitChatFinished('31');
+    markConversationFinished(31);
+    expect(getFinishedConversationUnreadSnapshot().has('31')).toBe(true);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('结束时在场也记录已处理，切走后的另一路终态不会记点', () => {
+    setActiveConversation('31');
+    emitChatFinished('31');
+    setActiveConversation('32');
+    eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+      conversationId: 31,
+      taskStatus: TaskStatus.COMPLETE,
+    });
+    expect(getFinishedConversationUnreadSnapshot().has('31')).toBe(false);
+  });
+
+  it('不同会话的执行与完成去重互不干扰', () => {
+    markConversationFinished('31');
+    markConversationFinished('32');
+    markConversationVisited('31');
+    markConversationVisited('32');
+    markConversationExecuting('31');
+    markConversationFinished('31');
+    markConversationFinished('32');
+    expect([...getFinishedConversationUnreadSnapshot()]).toEqual(['31']);
   });
 });

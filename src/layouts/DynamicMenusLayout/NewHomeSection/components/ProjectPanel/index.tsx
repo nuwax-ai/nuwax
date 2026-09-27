@@ -40,10 +40,13 @@ import {
   isTerminalTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 import {
+  acknowledgeConversationTaskStatusEvents,
   applyConversationChangedToList,
   applyProjectChangedToList,
+  deduplicateConversationTaskStatusEvent,
   emitProjectChanged,
   matchesProjectRef,
+  observeConversationTaskStatuses,
 } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
 import {
@@ -73,6 +76,10 @@ import {
   useState,
 } from 'react';
 import { history } from 'umi';
+import {
+  markConversationExecuting,
+  markConversationFinished,
+} from '../../finishedConversationUnread';
 import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
 import { CHILDREN_PROBE_LIMIT, diffChildrenProbe } from './childrenProbe';
@@ -334,6 +341,36 @@ const ProjectPanel = forwardRef<
     const pageRef = useRef(1);
     const projectsRef = useRef(projects);
     projectsRef.current = projects;
+    // 项目子会话同任务列表观察执行代次；只由新执行允许下一次完成记未读。
+    // 首见终态不记，终态探针/事件与此处的跃迁共用 store 去重。
+    const childrenTaskStatusRef = useRef(new Map<string, TaskStatus>());
+    const observedTaskStatusesRef = useRef(new Map<string, TaskStatus>());
+    useEffect(() => {
+      const previous = childrenTaskStatusRef.current;
+      const next = new Map<string, TaskStatus>();
+      for (const project of projects) {
+        for (const child of project.children ?? []) {
+          if (child.taskStatus === undefined) continue;
+          const id = String(child.id);
+          next.set(id, child.taskStatus);
+          if (!observedTaskStatusesRef.current.has(id)) {
+            observedTaskStatusesRef.current.set(id, child.taskStatus);
+          }
+          if (
+            child.taskStatus === TaskStatus.EXECUTING &&
+            previous.get(id) !== TaskStatus.EXECUTING
+          ) {
+            markConversationExecuting(id);
+          } else if (
+            previous.get(id) === TaskStatus.EXECUTING &&
+            isTerminalTaskStatus(child.taskStatus)
+          ) {
+            markConversationFinished(id);
+          }
+        }
+      }
+      childrenTaskStatusRef.current = next;
+    }, [projects]);
     const pageRequestVersionRef = useRef(0);
     const recentProjectEventsRef = useRef<
       Array<{ event: ProjectChangedEvent; at: number }>
@@ -573,6 +610,9 @@ const ProjectPanel = forwardRef<
           return;
         }
         const requestRevision = childrenRevisionRef.current.get(key) ?? 0;
+        const requestEvents = recentChildEventsRef.current.map(
+          ({ event }) => event,
+        );
         loadingChildrenRef.current.add(key);
         try {
           const res = await apiUserProjectConversations(
@@ -585,14 +625,24 @@ const ProjectPanel = forwardRef<
             ({ at }) => now - at < 60_000,
           );
           if (res?.code !== SUCCESS_CODE || !Array.isArray(res.data)) return;
-          const children = recentChildEventsRef.current.reduce(
-            (list, { event }) => applyProjectChildEvent(list, event),
-            toProjectChildren(res.data, fallback) ?? [],
-          );
           if ((childrenRevisionRef.current.get(key) ?? 0) !== requestRevision) {
             pendingChildrenRefreshRef.current.add(key);
             return;
           }
+          recentChildEventsRef.current =
+            acknowledgeConversationTaskStatusEvents(
+              recentChildEventsRef.current,
+              requestEvents,
+              res.data,
+            );
+          const children = recentChildEventsRef.current.reduce(
+            (list, { event }) => applyProjectChildEvent(list, event),
+            toProjectChildren(res.data, fallback) ?? [],
+          );
+          observeConversationTaskStatuses(
+            children,
+            observedTaskStatusesRef.current,
+          );
           setProjects((previous) =>
             previous.map((item) =>
               projectKeyOf(item) === key ? { ...item, children } : item,
@@ -657,7 +707,12 @@ const ProjectPanel = forwardRef<
       });
     }, [projects, archivedIds, requestChildren]);
 
-    useConversationChanged((event) => {
+    useConversationChanged((incomingEvent) => {
+      const event = deduplicateConversationTaskStatusEvent(
+        incomingEvent,
+        observedTaskStatusesRef.current,
+      );
+      if (!event) return;
       const now = Date.now();
       recentChildEventsRef.current = recentChildEventsRef.current
         .filter(({ at }) => now - at < 60_000)

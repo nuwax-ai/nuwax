@@ -26,6 +26,7 @@ vi.mock('umi', () => ({
     };
     const clientConversationRenderers = {
       conversation: ConversationRenderer,
+      'ide-workspace': ConversationRenderer,
     };
     return () => ({ clientConversationRenderers });
   })(),
@@ -43,6 +44,50 @@ afterEach(() => {
 });
 
 describe('PC style3 整页实例宿主', () => {
+  it('同 app147 的 A→B→A 切换各会话仅挂载一次并保留原 DOM 实例', () => {
+    mocks.location = {
+      pathname: '/space/752/app-pro/147/1694001',
+      search: '',
+      state: undefined,
+    };
+    const view = render(<ClientConversationKeepAlive />);
+    const firstWorkbench = screen.getByTestId('ide-workspace:752:147:1694001');
+
+    act(() => {
+      mocks.location = {
+        pathname: '/space/752/app-pro/147/1694002',
+        search: '',
+        state: undefined,
+      };
+      view.rerender(<ClientConversationKeepAlive />);
+    });
+    const secondWorkbench = screen.getByTestId('ide-workspace:752:147:1694002');
+    expect(firstWorkbench.textContent).toBe('hidden');
+    expect(secondWorkbench.textContent).toBe('active');
+
+    act(() => {
+      mocks.location = {
+        pathname: '/space/752/app-pro/147/1694001',
+        search: '',
+        state: undefined,
+      };
+      view.rerender(<ClientConversationKeepAlive />);
+    });
+
+    expect(screen.getByTestId('ide-workspace:752:147:1694001')).toBe(
+      firstWorkbench,
+    );
+    expect(screen.getByTestId('ide-workspace:752:147:1694002')).toBe(
+      secondWorkbench,
+    );
+    expect(firstWorkbench.textContent).toBe('active');
+    expect(secondWorkbench.textContent).toBe('hidden');
+    expect(mocks.mounts).toEqual([
+      'ide-workspace:752:147:1694001',
+      'ide-workspace:752:147:1694002',
+    ]);
+  });
+
   it('A→B→菜单→A 时复用 A 的真实 React 实例', () => {
     const view = render(<ClientConversationKeepAlive />);
     act(() => {

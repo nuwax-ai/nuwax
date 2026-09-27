@@ -373,6 +373,124 @@ describe('useHomeSectionData', () => {
     });
 
     expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
+    store.setActiveConversation('8');
+    store.markConversationFinished('7');
+    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
+  });
+
+  it('读过的任务在列表观察到新执行后可以再次记点，重复终态刷新不复活', async () => {
+    apiAgentConversationListMock.mockResolvedValueOnce({
+      data: [buildConversation({ id: 7, taskStatus: TaskStatus.COMPLETE })],
+    });
+    const useHomeSectionData = await freshHook();
+    const store = await import('./finishedConversationUnread');
+    store.markConversationFinished('7');
+    store.markConversationVisited('7');
+    const { result } = renderHook(() =>
+      useHomeSectionData({ isSidebarNavMode: true }),
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
+    for (const taskStatus of [TaskStatus.EXECUTING, TaskStatus.COMPLETE]) {
+      apiAgentConversationListMock.mockResolvedValueOnce({
+        data: [buildConversation({ id: 7, taskStatus })],
+      });
+      await act(async () => {
+        result.current.refreshList(true, { silent: true });
+        await flush();
+      });
+    }
+    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(true);
+    store.markConversationVisited('7');
+    apiAgentConversationListMock.mockResolvedValueOnce({
+      data: [buildConversation({ id: 7, taskStatus: TaskStatus.COMPLETE })],
+    });
+    await act(async () => {
+      result.current.refreshList(true, { silent: true });
+      await flush();
+    });
+    store.markConversationFinished('7');
+    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
+  });
+
+  it('任务终态在途重复轮询和确认后的重复轮询不阻断下一轮执行未读', async () => {
+    apiAgentConversationListMock.mockResolvedValueOnce({
+      data: [buildConversation({ id: 7, taskStatus: TaskStatus.EXECUTING })],
+    });
+    const useHomeSectionData = await freshHook();
+    const store = await import('./finishedConversationUnread');
+    const { emitConversationChanged } = await import(
+      '@/utils/directorySyncEvents'
+    );
+    const { result } = renderHook(() =>
+      useHomeSectionData({ isSidebarNavMode: true }),
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() =>
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '7',
+        patch: { taskStatus: TaskStatus.COMPLETE },
+        origin: 'test',
+        reason: 'terminal',
+      }),
+    );
+    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(true);
+    let resolveComplete!: (value: unknown) => void;
+    apiAgentConversationListMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveComplete = resolve;
+        }),
+    );
+    await act(async () => {
+      result.current.refreshList(true, { silent: true });
+      // C1在请求开始前，C2是另一个eventId的同值旧终态轮询。
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '7',
+        patch: { taskStatus: TaskStatus.COMPLETE },
+        origin: 'test',
+        reason: 'terminal',
+      });
+      resolveComplete({
+        data: [buildConversation({ id: 7, taskStatus: TaskStatus.COMPLETE })],
+      });
+      await flush();
+    });
+    act(() => store.markConversationVisited('7'));
+    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
+    // C3：ack清除旧覆盖后，旧轮询不能再次插入/续期相同状态覆盖。
+    act(() =>
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '7',
+        patch: { taskStatus: TaskStatus.COMPLETE },
+        origin: 'test',
+        reason: 'terminal',
+      }),
+    );
+    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
+    apiAgentConversationListMock.mockResolvedValueOnce({
+      data: [buildConversation({ id: 7, taskStatus: TaskStatus.EXECUTING })],
+    });
+    await act(async () => {
+      result.current.refreshList(true, { silent: true });
+      await flush();
+    });
+    expect(result.current.visibleConversationList[0].taskStatus).toBe(
+      TaskStatus.EXECUTING,
+    );
+    act(() =>
+      emitConversationChanged({
+        operation: 'updated',
+        conversationId: '7',
+        patch: { taskStatus: TaskStatus.COMPLETE },
+        origin: 'test',
+        reason: 'terminal',
+      }),
+    );
+    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(true);
   });
 
   it('resetSearchAndRefresh：清空关键词并按空 topic 整体刷新', async () => {
@@ -631,6 +749,13 @@ describe('useHomeSectionData', () => {
         TaskStatus.COMPLETE,
       ),
     );
+    // 旧EXECUTING没有被接受，读后下一次结束信号也不能恢复蓝点。
+    const store = await import('./finishedConversationUnread');
+    act(() => {
+      store.markConversationVisited('1');
+      store.markConversationFinished('1');
+    });
+    expect(store.getFinishedConversationUnreadSnapshot().has('1')).toBe(false);
   });
 
   it('后台任务结束时按会话 ID 查询终态，旧列表回包仍保留完成状态', async () => {
