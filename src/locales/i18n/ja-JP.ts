@@ -2827,6 +2827,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.restartingService": "サービスを再起動しています...",
   "PC.Pages.AppDevPro.startCancelled": "起動をキャンセルしました",
   "PC.Pages.AppDevPro.startFailed": "起動に失敗しました",
+  "PC.Pages.AppDevPro.viewStartLogs": "詳細を見る",
   "PC.Pages.AppDevPro.startService": "アプリを起動",
   "PC.Pages.AppDevPro.devActionBusyHint": "アプリは起動中です。キャンセルするか完了をお待ちください",
   "PC.Pages.AppDevPro.startSuccess": "起動しました",
