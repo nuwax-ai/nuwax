@@ -65,10 +65,6 @@ import {
   useSourceControl,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
-import {
-  findSearchFileByRelativePath,
-  mapSearchFileToNode,
-} from '@/components/business-component/FileTreeGitSourcePanel/FileTreePanel/SearchView/mapSearchFileToNode';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
@@ -79,10 +75,10 @@ import {
 import { fetchContentOutcome } from '@/services/skill';
 import {
   apiGetStaticFileList,
-  apiSearchFiles,
   apiUpdateStaticFile,
 } from '@/services/vncDesktop';
 
+import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
 import { jumpToPageDevelop } from '@/utils/router';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
@@ -91,7 +87,6 @@ import {
 import { LoadingOutlined } from '@ant-design/icons';
 import { message as antdMessage, Form } from 'antd';
 import classNames from 'classnames';
-import { throttle } from 'lodash';
 import React, {
   useCallback,
   useEffect,
@@ -112,11 +107,9 @@ import { useChatNormalProjectNameSync } from './hooks/useChatNormalProjectNameSy
 import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
-import { useWorkspaceDirectoryFiles } from './hooks/useWorkspaceDirectoryFiles';
 import styles from './index.less';
 import {
   parentDirectory,
-  WORKSPACE_SOURCE_ID,
   workspaceNodeId,
   workspaceRelativePath,
 } from './utils/fileDataSource';
@@ -435,10 +428,14 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     }
   }, [active, allowAutoScrollRef, messageViewRef]);
 
-  // 工作区目录懒加载（#5a 单层树）：首拉门控 = 文件树面板可见——「打开面板才拉」，
-  // 新会话挂载不预发 file-list（后端契约：工作区在 chat 之后才建立）
-  const workspaceDirectoryFiles = useWorkspaceDirectoryFiles(id, {
+  // 工作区目录懒加载：首拉门控 = 文件树面板可见。搜索、分层 loading、刷新已展开目录在共用 hook 里。
+  const workspaceDirectoryFiles = useWorkspaceFileTreeSession({
+    conversationId: id,
     enabled: active && isFileTreeVisible,
+    fileTreeRefreshTrigger,
+    refreshEnabled: active && isFileTreeVisible,
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
   });
 
   useConversationChanged((event) => {
@@ -1090,7 +1087,10 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     const sessionMessageList = runtimeLine
       ? runtimeLine.messageList
       : messageList;
-    if (sessionInfo?.id === undefined || String(sessionInfo.id) !== String(id)) {
+    if (
+      sessionInfo?.id === undefined ||
+      String(sessionInfo.id) !== String(id)
+    ) {
       return false;
     }
     const currentMessageList = sessionMessageList || [];
@@ -1110,8 +1110,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
    * 文件预览面板是否展开。未展开时工作区可能还没有文件，甚至尚未建立，
    * 此时不请求 git status / diff。
    */
-  const isFilePreviewPanelOpen =
-    isFileTreeVisible && viewMode === 'preview';
+  const isFilePreviewPanelOpen = isFileTreeVisible && viewMode === 'preview';
 
   /** 面板未展开或会话未开始时，不允许刷新 Git status */
   const isGitStatusRefreshDisabled =
@@ -1144,41 +1143,6 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     : '';
 
   /**
-   * 任务结果点击正在加载的父目录。此期间父目录视为未加载，
-   * 避免逐层树在搜索完成前把目标判成不存在。
-   */
-  const openingTaskResultRef = useRef<{
-    parent: string;
-    trigger: number;
-  } | null>(null);
-  const taskAgentSelectedFileIdRef = useRef(taskAgentSelectedFileId);
-  taskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
-  /**
-   * 同一次点击只标记一次。必须在预览 hook 的 effect 之前写上，
-   * 否则自动选中会先把目标当已加载，再打开一次文件。
-   */
-  const taskResultOpenMarkRef = useRef<number | string | undefined>(undefined);
-  if (
-    taskAgentSelectTrigger &&
-    taskAgentSelectedFileId &&
-    taskResultOpenMarkRef.current !== taskAgentSelectTrigger
-  ) {
-    taskResultOpenMarkRef.current = taskAgentSelectTrigger;
-    const openingParent = parentDirectory(
-      workspaceRelativePath(taskAgentSelectedFileId).replace(
-        /^\/+|\/+$/g,
-        '',
-      ),
-    );
-    if (openingParent && typeof taskAgentSelectTrigger === 'number') {
-      openingTaskResultRef.current = {
-        parent: openingParent,
-        trigger: taskAgentSelectTrigger,
-      };
-    }
-  }
-
-  /**
    * #5a 文件树懒加载收尾：向模型声明本页自管文件树（单层 hook）。
    * 模型层据此跳过全量递归拉取；卸载时复位，避免影响后续依赖模型树的页面。
    */
@@ -1186,48 +1150,6 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     setFileTreeSelfManaged(fileTreeSelfManaged);
     return () => setFileTreeSelfManaged(false);
   }, [fileTreeSelfManaged, setFileTreeSelfManaged]);
-
-  /**
-   * #5a 文件树懒加载收尾：订阅模型层刷新信号，节流刷新已加载目录。
-   * 门控后模型层不再全量拉树、只发 fileTreeRefreshTrigger（SSE 流式期间 /
-   * 任务结束 / 打开预览均会触发），此处刷新「已加载的全部目录」（含根层，
-   * refreshAllLoaded）补齐列表同步——不止 currentPath 单层，修复「打开的
-   * 目录不刷新」。当前打开文件的正文重拉由 useFileTreePreviewView 内已有的
-   * trigger 监听负责，两者互不重复。
-   */
-  const handledDirectoryRefreshTriggerRef = useRef<number>(0);
-  const activeDirectoryRefreshRef = useRef<() => void>(() => {});
-  activeDirectoryRefreshRef.current = workspaceDirectoryFiles.refreshAllLoaded;
-  const throttledRefreshActiveDirectory = useMemo(
-    () =>
-      throttle(() => activeDirectoryRefreshRef.current(), 2000, {
-        leading: true,
-        trailing: true,
-      }),
-    [],
-  );
-  useEffect(
-    () => () => throttledRefreshActiveDirectory.cancel(),
-    [throttledRefreshActiveDirectory],
-  );
-  useEffect(() => {
-    if (
-      !fileTreeRefreshTrigger ||
-      handledDirectoryRefreshTriggerRef.current === fileTreeRefreshTrigger ||
-      // 面板关闭期间不刷目录（打开面板时 openPreviewView 的 needRefresh 会补拉）
-      !active ||
-      !isFileTreeVisible
-    ) {
-      return;
-    }
-    handledDirectoryRefreshTriggerRef.current = fileTreeRefreshTrigger;
-    throttledRefreshActiveDirectory();
-  }, [
-    fileTreeRefreshTrigger,
-    throttledRefreshActiveDirectory,
-    active,
-    isFileTreeVisible,
-  ]);
 
   /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
   const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
@@ -1267,11 +1189,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     onFileTreePinnedChange: setIsFileTreePinned,
     isCanDeleteSkillFile: true,
     onRefreshFileTree: workspaceDirectoryFiles.refresh,
-    onOpenDirectory: (node) => {
-      if (node.relativePath) {
-        workspaceDirectoryFiles.navigate(node.relativePath);
-      }
-    },
+    onOpenDirectory: workspaceDirectoryFiles.onOpenDirectory,
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
     isDynamicTheme: true,
@@ -1296,7 +1214,10 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     // hook 保持等待（目录层到达后完成选中），修复嵌套文件打开竞态
     isAutoSelectDirectoryLoaded: (fileId: string) => {
       const parentPath = parentDirectory(workspaceRelativePath(fileId));
-      if (openingTaskResultRef.current?.parent === parentPath) {
+      if (
+        workspaceDirectoryFiles.openingTaskResultRef.current?.parent ===
+        parentPath
+      ) {
         return false;
       }
       return workspaceDirectoryFiles.loadedDirectoryPaths.has(parentPath);
@@ -1307,77 +1228,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     },
   });
 
-  /**
-   * 点击任务结果后直接搜索文件。
-   * 命中且路径有上级目录时，打开该目录并加载这一层文件，再用搜索结果的 fileProxyUrl 预览。
-   */
-  const openSearchedTaskFileRef = useRef(fileView.tree.handleFileSelect);
-  openSearchedTaskFileRef.current = fileView.tree.handleFileSelect;
-  const loadTaskResultDirectoryRef = useRef(
-    workspaceDirectoryFiles.loadDirectory,
-  );
-  loadTaskResultDirectoryRef.current = workspaceDirectoryFiles.loadDirectory;
-  useEffect(() => {
-    if (!id || taskAgentSelectTrigger === undefined) {
-      return;
-    }
-    const relativePath = workspaceRelativePath(
-      taskAgentSelectedFileIdRef.current,
-    ).replace(/^\/+|\/+$/g, '');
-    if (!relativePath) {
-      return;
-    }
-    const parentPath = parentDirectory(relativePath);
-    const trigger = taskAgentSelectTrigger;
-    if (parentPath) {
-      openingTaskResultRef.current = { parent: parentPath, trigger };
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const result = await apiSearchFiles({
-          cId: Number(id),
-          kw: relativePath,
-        });
-        if (cancelled || result.code !== SUCCESS_CODE) {
-          return;
-        }
-        const hit = findSearchFileByRelativePath(
-          result.data?.files || [],
-          relativePath,
-        );
-        if (!hit) {
-          return;
-        }
-        const node = mapSearchFileToNode(hit, {
-          toNodeId: workspaceNodeId,
-          dataSourceId: WORKSPACE_SOURCE_ID,
-        });
-        const directoryPath = parentDirectory(
-          node.relativePath || relativePath,
-        );
-        if (directoryPath) {
-          await loadTaskResultDirectoryRef.current(directoryPath);
-        }
-        if (cancelled) {
-          return;
-        }
-        await openSearchedTaskFileRef.current(node.id, {
-          fallbackNode: node,
-          selectFolder: node.type === 'folder',
-        });
-      } catch (error) {
-        console.error('搜索任务结果文件失败', error);
-      } finally {
-        if (openingTaskResultRef.current?.trigger === trigger) {
-          openingTaskResultRef.current = null;
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id, taskAgentSelectTrigger]);
+  workspaceDirectoryFiles.selectFileRef.current =
+    fileView.tree.handleFileSelect;
 
   const [pendingWorkspaceSelectionId, setPendingWorkspaceSelectionId] =
     useState('');
@@ -1915,38 +1767,21 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     }
   }, [viewMode]);
 
-  // 文件树 props
-  const loadedWorkspaceFolderIds = useMemo(
-    () =>
-      new Set(
-        [...workspaceDirectoryFiles.loadedDirectoryPaths]
-          .filter(Boolean)
-          .map(workspaceNodeId),
-      ),
-    [workspaceDirectoryFiles.loadedDirectoryPaths],
-  );
-
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
-      loadedFolderIds: loadedWorkspaceFolderIds,
-      loadingFolderIds: new Set(
-        [...workspaceDirectoryFiles.loadingDirectoryPaths]
-          .filter(Boolean)
-          .map(workspaceNodeId),
-      ),
+      loadedFolderIds: workspaceDirectoryFiles.loadedFolderIds,
+      loadingFolderIds: workspaceDirectoryFiles.loadingFolderIds,
       toolbarTitle: t('PC.Pages.Chat.fileTreeFiles'),
-      onLoadDirectory: workspaceDirectoryFiles.loadDirectory,
-      remoteFileSearch: id
-        ? {
-            cId: Number(id),
-            toNodeId: workspaceNodeId,
-            dataSourceId: WORKSPACE_SOURCE_ID,
-          }
-        : undefined,
+      onLoadDirectory: workspaceDirectoryFiles.onLoadDirectory,
+      remoteFileSearch: workspaceDirectoryFiles.remoteFileSearch,
       handleFileSelect: async (
         fileId: string,
-        options?: { selectFolder?: boolean; fallbackNode?: FileNode },
+        options?: {
+          selectFolder?: boolean;
+          openDirectory?: boolean;
+          fallbackNode?: FileNode;
+        },
       ) => {
         if (!options?.selectFolder) {
           setTaskAgentSelectedFileId('');
@@ -1954,26 +1789,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
           gitSourceControl.setSelectedChangeFile(null);
           collapseTerminalConsole();
         }
-        // 搜索命中可能还没懒加载进树，先拉所在目录，避免随后同步树时把预览清掉
-        const fallbackPath = options?.fallbackNode?.relativePath;
-        if (
-          options?.fallbackNode?.type === 'file' &&
-          fallbackPath &&
-          !options.selectFolder
-        ) {
-          await workspaceDirectoryFiles.loadDirectory(
-            parentDirectory(fallbackPath),
-          );
-        }
+        await workspaceDirectoryFiles.ensureFallbackDirectory(options);
         await fileView.tree.handleFileSelect(fileId, options);
       },
     }),
     [
       fileView.tree,
-      id,
-      loadedWorkspaceFolderIds,
-      workspaceDirectoryFiles.loadingDirectoryPaths,
-      workspaceDirectoryFiles.loadDirectory,
+      workspaceDirectoryFiles.loadedFolderIds,
+      workspaceDirectoryFiles.loadingFolderIds,
+      workspaceDirectoryFiles.onLoadDirectory,
+      workspaceDirectoryFiles.remoteFileSearch,
+      workspaceDirectoryFiles.ensureFallbackDirectory,
       setTaskAgentSelectedFileId,
       gitSourceControl.setSelectedChangeFile,
       collapseTerminalConsole,

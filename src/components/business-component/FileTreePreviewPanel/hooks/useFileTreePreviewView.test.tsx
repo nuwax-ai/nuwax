@@ -238,6 +238,34 @@ describe('文件夹选中', () => {
     expect(view.tree.selectedFolderId).toBe('workspace:docs');
     expect(view.preview.selectedFileId).toBe('');
   });
+
+  it('折叠文件夹只保留选中态，不请求这一层文件列表', async () => {
+    const onOpenDirectory = vi.fn();
+    render(
+      <Harness
+        originalFiles={[
+          {
+            name: 'docs',
+            isDir: true,
+            fileId: 'workspace:docs',
+            dataSourceId: 'workspace',
+            relativePath: 'docs',
+          },
+        ]}
+        onOpenDirectory={onOpenDirectory}
+      />,
+    );
+
+    await act(async () => {
+      await view.tree.handleFileSelect('workspace:docs', {
+        selectFolder: true,
+        openDirectory: false,
+      });
+    });
+
+    expect(onOpenDirectory).not.toHaveBeenCalled();
+    expect(view.tree.selectedFolderId).toBe('workspace:docs');
+  });
 });
 
 describe('懒加载嵌套自动选中（abandon 竞态修复）', () => {
