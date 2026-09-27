@@ -209,6 +209,12 @@
     background: @colorBgContainer;
   }
 
+  /** 数据库管理页内容比侧栏剩余宽度宽时，允许横向滚动，避免右侧表格被裁掉 */
+  .tool-workspace-scroll {
+    overflow-x: auto;
+    // overflow-y: hidden;
+  }
+
   .workspace-pane {
     flex: 1;
     min-width: 0;

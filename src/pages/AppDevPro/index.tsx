@@ -2651,10 +2651,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                 {appPreviewPanel}
               </div>
               <div
-                className={cx(styles['tool-workspace'], {
-                  [styles['workspace-pane-hidden']]:
-                    workspaceView !== 'database',
-                })}
+                className={cx(
+                  styles['tool-workspace'],
+                  styles['tool-workspace-scroll'],
+                  {
+                    [styles['workspace-pane-hidden']]:
+                      workspaceView !== 'database',
+                  },
+                )}
               >
                 {databaseWorkspace}
               </div>

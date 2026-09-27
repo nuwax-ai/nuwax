@@ -18,6 +18,15 @@ export function parentDirectory(relativePath: string): string {
 }
 
 /**
+ * 搜索接口的关键字只用路径最后一段（文件名或目录名）。
+ * 同名文件靠完整相对路径在结果的 name 里再筛一次。
+ */
+export function workspaceSearchKeyword(relativePath: string): string {
+  const normalized = relativePath.replace(/^\/+|\/+$/g, '');
+  return normalized.split('/').pop() || normalized;
+}
+
+/**
  * 将异步加载到的某一层目录合并进已加载列表。
  * 只替换该目录的直接子项，保留父级、兄弟目录及已经加载的更深层节点。
  */
