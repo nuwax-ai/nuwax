@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   finishBusinessLogin,
+  getBusinessFileRequestAuth,
   getBusinessRequestAuth,
   restoreBusinessAuthSession,
 } from './businessAuth';
@@ -36,6 +37,27 @@ afterEach(() => {
 });
 
 describe('业务鉴权环境', () => {
+  it('同源文件请求只向首跳发送 Cookie，允许跨源重定向使用匿名 CORS', () => {
+    process.env.NODE_ENV = 'production';
+    setPage('https://biz.example.com');
+    process.env.BASE_URL = '';
+
+    expect(getBusinessFileRequestAuth('/api/f/s3/file.md').credentials).toBe(
+      'same-origin',
+    );
+  });
+
+  it('跨源业务文件请求仍携带业务 Cookie', () => {
+    process.env.NODE_ENV = 'production';
+    setPage('http://localhost:3000');
+    process.env.BASE_URL = 'https://biz.example.com';
+
+    expect(
+      getBusinessFileRequestAuth('https://biz.example.com/api/f/s3/file.md')
+        .credentials,
+    ).toBe('include');
+  });
+
   it.each([
     'http://localhost:3000',
     'http://localhost:3333',
@@ -133,11 +155,12 @@ describe('业务鉴权环境', () => {
       setPage('https://biz.example.com');
       process.env.BASE_URL = '';
 
+      expect(getBusinessRequestAuth('/api/user/getLoginInfo').credentials).toBe(
+        'include',
+      );
       expect(
-        getBusinessRequestAuth('/api/user/getLoginInfo').credentials,
-      ).toBe('include');
-      expect(
-        getBusinessRequestAuth('https://biz.example.com/api/f/image').credentials,
+        getBusinessRequestAuth('https://biz.example.com/api/f/image')
+          .credentials,
       ).toBe('include');
       expect(
         getBusinessRequestAuth('https://other.example.com/api/f/image')
@@ -154,9 +177,9 @@ describe('业务鉴权环境', () => {
         getBusinessRequestAuth('https://biz.example.com/api/user/getLoginInfo')
           .credentials,
       ).toBe('include');
-      expect(getBusinessRequestAuth('http://localhost:3000/other').credentials).toBe(
-        'omit',
-      );
+      expect(
+        getBusinessRequestAuth('http://localhost:3000/other').credentials,
+      ).toBe('omit');
     });
 
     it('受保护图片地址保持真实 URL，由 Cookie 鉴权加载', () => {
