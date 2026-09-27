@@ -1,13 +1,13 @@
 import CustomFormModal from '@/components/CustomFormModal';
-import { dict, t } from '@/services/i18nRuntime';
+import { t } from '@/services/i18nRuntime';
 import { UploadOutlined } from '@ant-design/icons';
 import { Form, FormProps, message, Typography, Upload } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 
 const { Text } = Typography;
 
-/** 导入项目 zip 包大小上限 20MB */
-const IMPORT_PROJECT_MAX_FILE_SIZE = 20 * 1024 * 1024;
+/** AppDevPro 导入项目 zip 包大小上限 100MB，其他页面仍为 20MB */
+const IMPORT_PROJECT_MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 export interface ImportProjectModalProps {
   open: boolean;
@@ -47,11 +47,7 @@ const ImportProjectModal: React.FC<ImportProjectModalProps> = ({
     }
 
     if (file.size > IMPORT_PROJECT_MAX_FILE_SIZE) {
-      message.error(
-        dict(
-          'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.fileSizeExceeded',
-        ),
-      );
+      message.error(t('PC.Pages.AppDevIndex.importProjectFileSizeExceeded'));
       return false;
     }
 
@@ -140,9 +136,7 @@ const ImportProjectModal: React.FC<ImportProjectModalProps> = ({
                 {t('PC.Pages.AppDevIndex.uploadZipHint')}
               </p>
               <p className="ant-upload-hint">
-                {dict(
-                  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.fileSizeHint',
-                )}
+                {t('PC.Pages.AppDevIndex.importProjectFileSizeHint')}
               </p>
             </Upload.Dragger>
           </Form.Item>
