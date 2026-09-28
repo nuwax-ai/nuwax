@@ -22,6 +22,7 @@ const cx = classNames.bind(styles);
 const SettingAccount: React.FC = () => {
   const [form] = Form.useForm();
   const { userInfo, setUserInfo } = useModel('userInfo');
+  const { runTenantConfig } = useModel('tenantConfigInfo');
   // 动态验证码相关状态
   const [dynamicCode, setDynamicCode] = useState<number | null>(null);
   const [expireTime, setExpireTime] = useState<Date | null>(null);
@@ -43,6 +44,13 @@ const SettingAccount: React.FC = () => {
       }
       setUserInfo(_userInfo);
       localStorage.setItem(USER_INFO, JSON.stringify(_userInfo));
+      // 首页问候语由租户配置生成，姓名保存成功后同步刷新。
+      if (
+        params[0]?.userName !== undefined ||
+        params[0]?.nickName !== undefined
+      ) {
+        runTenantConfig();
+      }
       setUserNameLoading(false);
       setNickNameLoading(false);
     },

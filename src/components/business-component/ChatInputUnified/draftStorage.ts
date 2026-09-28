@@ -31,7 +31,7 @@ export const loadDraft = (
 ): ChatDraftData | null =>
   conversationPageCacheManager.loadDraft(conversationId);
 
-/** 持久化某会话草稿；空文本且无技能时删除存储键。localStorage 不可用时静默降级。 */
+/** 持久化某会话草稿；文字、技能和已上传附件均为空时删除存储键。存储不可用时静默降级。 */
 export const saveDraft = (
   conversationId: string | number | null | undefined,
   draft: Omit<ChatDraftData, 'savedAt'>,

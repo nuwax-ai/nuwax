@@ -8,6 +8,7 @@ import {
   EMPTY_RESOURCE_STATE,
   createConversationPageCacheKey,
   selectConversationPageCacheEvictionKey,
+  type ConversationDraftAttachment,
   type ConversationDraftData,
   type ConversationPageCacheEntry,
   type ConversationPageCacheSnapshot,
@@ -81,6 +82,46 @@ const isValidDraft = (value: unknown): value is ConversationDraftData =>
   (value as ConversationDraftData).version === 1 &&
   typeof (value as ConversationDraftData).text === 'string' &&
   typeof (value as ConversationDraftData).savedAt === 'number';
+
+/** 兼容旧草稿，只保留可恢复、可发送附件的必要元数据。 */
+const normalizeDraftFiles = (value: unknown): ConversationDraftAttachment[] => {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((file) => {
+    if (
+      !file ||
+      typeof file !== 'object' ||
+      typeof file.uid !== 'string' ||
+      !file.uid ||
+      typeof file.name !== 'string' ||
+      typeof file.type !== 'string' ||
+      typeof file.size !== 'number' ||
+      !Number.isFinite(file.size) ||
+      file.size < 0 ||
+      typeof file.url !== 'string' ||
+      !file.url.trim() ||
+      typeof file.key !== 'string' ||
+      !file.key.trim()
+    ) {
+      return [];
+    }
+    return [
+      {
+        uid: file.uid,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        url: file.url,
+        key: file.key,
+        ...(typeof file.width === 'number' && Number.isFinite(file.width)
+          ? { width: file.width }
+          : {}),
+        ...(typeof file.height === 'number' && Number.isFinite(file.height)
+          ? { height: file.height }
+          : {}),
+      },
+    ];
+  });
+};
 
 class ConversationPageCacheManager {
   private entries = new Map<string, ConversationPageCacheEntry>();
@@ -465,15 +506,16 @@ class ConversationPageCacheManager {
       const raw = localStorage.getItem(`${DRAFT_STORAGE_PREFIX}${key}`);
       if (!raw) return null;
       const parsed = JSON.parse(raw) as unknown;
-      if (
-        !isValidDraft(parsed) ||
-        Date.now() - parsed.savedAt > DRAFT_TTL_MS ||
-        (!parsed.text.trim() && !parsed.skillIds?.length)
-      ) {
+      if (!isValidDraft(parsed) || Date.now() - parsed.savedAt > DRAFT_TTL_MS) {
         localStorage.removeItem(`${DRAFT_STORAGE_PREFIX}${key}`);
         return null;
       }
-      return parsed;
+      const files = normalizeDraftFiles(parsed.files);
+      if (!parsed.text.trim() && !parsed.skillIds?.length && !files.length) {
+        localStorage.removeItem(`${DRAFT_STORAGE_PREFIX}${key}`);
+        return null;
+      }
+      return { ...parsed, files: files.length ? files : undefined };
     } catch {
       return null;
     }
@@ -485,7 +527,9 @@ class ConversationPageCacheManager {
   ) {
     if (key === null || key === undefined) return;
     const cacheKey = String(key);
-    const hasContent = !!draft.text.trim() || !!draft.skillIds?.length;
+    const files = normalizeDraftFiles(draft.files);
+    const hasContent =
+      !!draft.text.trim() || !!draft.skillIds?.length || !!files.length;
     const savedAt = Date.now();
     if (canUseStorage()) {
       try {
@@ -495,6 +539,7 @@ class ConversationPageCacheManager {
             storageKey,
             JSON.stringify({
               ...draft,
+              files: files.length ? files : undefined,
               savedAt,
             } satisfies ConversationDraftData),
           );

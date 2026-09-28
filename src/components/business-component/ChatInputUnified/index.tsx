@@ -54,6 +54,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
+import { getBusinessRequestAuth } from '@/utils/businessAuth';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
@@ -433,7 +434,14 @@ const ChatInputUnifiedImpl: React.FC<
 
   const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
-  const [files, setFiles] = useState<UploadFileInfo[]>([]);
+  const files = useMemo(
+    () =>
+      uploadFiles.filter(
+        (item): item is UploadFileInfo & { key: string } =>
+          item.status === UploadFileStatus.done && !!item.url && !!item.key,
+      ),
+    [uploadFiles],
+  );
   const [messageInfo, setMessageInfo] = useState<string>('');
   const [skillIds, setSkillIds] = useState<number[]>([]);
   // 资料库（空间文档仓库）已选文档：编辑器 chip 派生（增删/清空自动同步），随消息以 selectedDocs 发送
@@ -621,14 +629,6 @@ const ChatInputUnifiedImpl: React.FC<
     };
   }, [visible, isHoveringBtn]);
 
-  useEffect(() => {
-    setFiles(
-      uploadFiles.filter(
-        (item) => item.status === UploadFileStatus.done && item.url && item.key,
-      ),
-    );
-  }, [uploadFiles]);
-
   const disabledSend = useMemo(() => {
     return !messageInfo && !files?.length;
   }, [messageInfo, files]);
@@ -745,12 +745,6 @@ const ChatInputUnifiedImpl: React.FC<
     [],
   );
 
-  const handleDelFile = (uid: string) => {
-    setUploadFiles((uploadFiles) =>
-      uploadFiles.filter((item) => item.uid !== uid),
-    );
-  };
-
   const extractClipboardFiles = useCallback(
     (clipboardData: DataTransfer | null): File[] => {
       if (!clipboardData?.items) {
@@ -820,9 +814,8 @@ const ChatInputUnifiedImpl: React.FC<
           formData.append('type', 'tmp');
 
           const response = await fetch(UPLOAD_FILE_ACTION, {
-            credentials: 'include',
+            ...getBusinessRequestAuth(UPLOAD_FILE_ACTION),
             method: 'POST',
-
             body: formData,
           });
 
@@ -1016,8 +1009,8 @@ const ChatInputUnifiedImpl: React.FC<
 
   // ===== 输入草稿缓存（按「会话页面地址 × 会话 id」持久化，切回/刷新后恢复） =====
   // 最新输入镜像：卸载兜底落盘用（节流定时器可能尚未触发）
-  const draftStateRef = useRef({ text: messageInfo, skillIds });
-  draftStateRef.current = { text: messageInfo, skillIds };
+  const draftStateRef = useRef({ text: messageInfo, files });
+  draftStateRef.current = { text: messageInfo, files };
   // 草稿落盘文本镜像：mention chip 剥离后的纯文本（编辑器挂载后 DOM 直读）。
   // chip 无法跨刷新/切换还原成 chip，序列化残留的 @/ 名称字面量会污染
   // 恢复后的输入框——技能 chip 一并不再随草稿持久化
@@ -1026,6 +1019,19 @@ const ChatInputUnifiedImpl: React.FC<
     draftTextRef.current =
       mentionEditorRef.current?.getPlainText?.() ?? messageInfo;
   }, [messageInfo]);
+
+  const handleDelFile = (uid: string) => {
+    setUploadFiles(uploadFiles.filter((item) => item.uid !== uid));
+    // 删除立即同步，避免删完即切走时恢复节流窗口内的旧附件。
+    if (draftScope) {
+      saveDraft(draftScope, {
+        version: 1,
+        text: draftTextRef.current,
+        files: files.filter((item) => item.uid !== uid),
+      });
+    }
+  };
+
   // 状态文本当前归属的作用域：仅恢复 effect 建立新作用域时更新——节流落盘前
   // 校验，防「作用域已切换、文本仍旧会话」的过渡渲染把旧内容写进新桶
   const draftStateScopeRef = useRef<string | null>(null);
@@ -1045,10 +1051,16 @@ const ChatInputUnifiedImpl: React.FC<
     draftStateScopeRef.current = draftScope;
     const draft = loadDraft(draftScope);
     const text = draft?.text ?? '';
+    const restoredFiles = (draft?.files ?? []).map((file) => ({
+      ...file,
+      status: UploadFileStatus.done,
+      percent: 100,
+    }));
     if (isScopeSwitch) {
       // 技能 chip 不随草稿持久化（无法还原成 chip）：切换会话直接清空，
       // 避免上一会话技能作为不可见附件带入新会话
       setSkillIds([]);
+      setUploadFiles(restoredFiles);
       setMessageInfo(text);
       mentionEditorRef.current?.setEditorText?.(text);
       return;
@@ -1057,9 +1069,12 @@ const ChatInputUnifiedImpl: React.FC<
     if (!draftStateRef.current.text && text) {
       mentionEditorRef.current?.setEditorText?.(text);
     }
+    if (!draftStateRef.current.files.length && restoredFiles.length) {
+      setUploadFiles(restoredFiles);
+    }
   }, [draftScope]);
 
-  // 节流写回：输入 / 技能选择变化 ~1s 后落盘
+  // 节流写回：输入 / 技能 / 已上传附件变化 ~1s 后落盘
   useEffect(() => {
     if (!draftScope) return;
     if (draftSaveTimerRef.current) {
@@ -1074,6 +1089,7 @@ const ChatInputUnifiedImpl: React.FC<
       saveDraft(draftScope, {
         version: 1,
         text: draftTextRef.current,
+        files: draftStateRef.current.files,
       });
     }, 1000);
     return () => {
@@ -1082,7 +1098,7 @@ const ChatInputUnifiedImpl: React.FC<
         draftSaveTimerRef.current = null;
       }
     };
-  }, [messageInfo, skillIds, draftScope]);
+  }, [messageInfo, skillIds, files, draftScope]);
 
   // 卸载兜底：离开会话时把当前输入立即落盘（发送成功路径已在 confirmSendMessage 清除草稿）
   useEffect(() => {
@@ -1095,8 +1111,9 @@ const ChatInputUnifiedImpl: React.FC<
       // （过渡期 model 复位/二次 teardown 等），空值落盘会误删已持久化的
       // 草稿（2026-09-15 实测切会话 100% 复现丢失）；用户真正清空输入由
       // 1s 节流的空值落盘负责删键
-      if (!text.trim()) return;
-      saveDraft(scope, { version: 1, text });
+      const draftFiles = draftStateRef.current.files;
+      if (!text.trim() && !draftFiles.length) return;
+      saveDraft(scope, { version: 1, text, files: draftFiles });
     };
   }, [draftScope]);
 

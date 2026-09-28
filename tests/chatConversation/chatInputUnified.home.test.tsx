@@ -175,7 +175,26 @@ vi.mock('@/components/ChatInputHome/ManualComponentItem', async () => {
       React.createElement('div', { 'data-testid': 'manual-component' }),
   };
 });
-vi.mock('@/components/ChatUploadFile', () => ({ default: () => null }));
+const uploadList = vi.hoisted(() => ({ files: [] as any[] }));
+vi.mock('@/components/ChatUploadFile', async () => {
+  const React = await import('react');
+  return {
+    default: ({ files, onDel }: any) => {
+      uploadList.files = files;
+      return React.createElement(
+        'div',
+        {},
+        files.map((file: any) =>
+          React.createElement(
+            'button',
+            { key: file.uid, type: 'button', onClick: () => onDel(file.uid) },
+            file.name,
+          ),
+        ),
+      );
+    },
+  };
+});
 vi.mock('@/components/base/SvgIcon', () => ({
   default: () => null,
 }));
@@ -232,11 +251,13 @@ beforeEach(() => {
     data: undefined,
   } as any);
   localStorage.clear();
+  uploadList.files = [];
 });
 
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('工作目录栏（首页我的电脑场景）', () => {
@@ -535,6 +556,97 @@ describe('能力弹窗开放范围（专家仅首页开放）', () => {
 });
 
 describe('首页草稿（draftKey=home）', () => {
+  const attachment = {
+    uid: 'home-pdf',
+    name: '报告.pdf',
+    type: 'application/pdf',
+    size: 2048,
+    url: 'https://cdn.example.com/report.pdf',
+    key: 'tmp/report.pdf',
+  };
+
+  it('上传完成后立即离开再返回，纯附件草稿仍显示且只上传一次', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        code: '0000',
+        data: {
+          ...attachment,
+          fileName: attachment.name,
+          mimeType: attachment.type,
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { unmount } = renderHomeInput();
+    fireEvent.change(document.querySelector('input[type=file]')!, {
+      target: {
+        files: [new File(['pdf'], attachment.name, { type: attachment.type })],
+      },
+    });
+    await waitFor(() => expect(uploadList.files[0]?.status).toBe('done'));
+    unmount();
+
+    renderHomeInput();
+    expect(screen.getByText(attachment.name)).toBeInTheDocument();
+    expect(uploadList.files[0]).toMatchObject({
+      key: attachment.key,
+      url: attachment.url,
+      status: 'done',
+      percent: 100,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([true, false])(
+    '恢复的附件可发送，isClearInput=%s 时发送和卸载均不复活草稿',
+    (isClearInput) => {
+      vi.useFakeTimers();
+      saveDraft('home', { version: 1, text: '总结附件', files: [attachment] });
+      const onEnter = vi.fn();
+      const { unmount } = renderHomeInput({ onEnter, isClearInput });
+      act(() => editor.lastProps.onPressEnter());
+      expect(onEnter.mock.calls[0][1]).toEqual([
+        { ...attachment, status: 'done', percent: 100 },
+      ]);
+      act(() => vi.advanceTimersByTime(1100));
+      unmount();
+      expect(loadDraft('home')).toBeNull();
+      renderHomeInput();
+      expect(screen.queryByText(attachment.name)).toBeNull();
+    },
+  );
+
+  it('删除最后一个附件后立即离开，返回不恢复被删除的附件', () => {
+    saveDraft('home', { version: 1, text: '', files: [attachment] });
+    const { unmount } = renderHomeInput();
+    fireEvent.click(screen.getByText(attachment.name));
+    unmount();
+    renderHomeInput();
+    expect(screen.queryByText(attachment.name)).toBeNull();
+    expect(loadDraft('home')).toBeNull();
+  });
+
+  it('同实例切换作用域时附件随各自草稿恢复，不携带到空会话', () => {
+    const otherAttachment = {
+      ...attachment,
+      uid: 'chat-pdf',
+      name: '会话报告.pdf',
+    };
+    saveDraft('home', { version: 1, text: '', files: [attachment] });
+    saveDraft('chat:101', { version: 1, text: '', files: [otherAttachment] });
+    const onEnter = vi.fn();
+    const { rerender } = renderHomeInput({ onEnter });
+    expect(uploadList.files[0]?.name).toBe(attachment.name);
+    rerender(<ChatInputUnified onEnter={onEnter} draftKey="chat:101" />);
+    expect(uploadList.files[0]?.name).toBe(otherAttachment.name);
+    expect(loadDraft('home')?.files).toEqual([attachment]);
+    rerender(<ChatInputUnified onEnter={onEnter} draftKey="chat:202" />);
+    expect(screen.queryByText(otherAttachment.name)).toBeNull();
+    act(() => editor.lastProps.onPressEnter());
+    expect(onEnter).not.toHaveBeenCalled();
+    expect(loadDraft('chat:101')?.files).toEqual([otherAttachment]);
+  });
+
   it('挂载恢复 home 草稿到编辑器', () => {
     saveDraft('home', { version: 1, text: '上次未发送的输入' });
     renderHomeInput();

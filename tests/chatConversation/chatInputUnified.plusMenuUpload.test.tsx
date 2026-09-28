@@ -7,6 +7,7 @@
  */
 import ChatInputUnified from '@/components/business-component/ChatInputUnified';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import * as businessAuth from '@/utils/businessAuth';
 import {
   cleanup,
   fireEvent,
@@ -170,6 +171,10 @@ async function pickFileThroughPlusMenu(file: File) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(businessAuth, 'getBusinessRequestAuth').mockReturnValue({
+    credentials: 'include',
+    headers: {},
+  });
   userConfig.get.mockResolvedValue({ data: null });
   userConfig.set.mockResolvedValue({ code: '0000' });
   connectorPage.mockResolvedValue({
@@ -184,6 +189,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 const SUCCESS_RESP = {
@@ -209,6 +215,24 @@ const IMG_SUCCESS_RESP = {
 };
 
 describe('+ 号菜单附件上传（常驻文件选择器）', () => {
+  it('本地开发上传复用统一鉴权，携带该环境的 Bearer Token', async () => {
+    vi.spyOn(businessAuth, 'getBusinessRequestAuth').mockReturnValue({
+      credentials: 'same-origin',
+      headers: { Authorization: 'Bearer local-dev-token' },
+    });
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: () => Promise.resolve(SUCCESS_RESP),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderInput();
+    await pickFileThroughPlusMenu(new File(['content'], 'report.txt'));
+    await waitFor(() => expect(uploadListState.files[0]?.status).toBe('done'));
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({
+      credentials: 'same-origin',
+      headers: { Authorization: 'Bearer local-dev-token' },
+    });
+  });
+
   it('选文件后走 fetch 上传，成功后附件从 uploading 变 done', async () => {
     const fetchMock = vi
       .fn()
@@ -230,9 +254,9 @@ describe('+ 号菜单附件上传（常驻文件选择器）', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toEqual(UPLOAD_URL);
-    // cookie 登录线（033cd84a2）起上传鉴权走同源 cookie，不再携带 Bearer 头
+    // Cookie 环境由统一鉴权返回凭据，不携带本地开发 Token。
     expect(init.credentials).toBe('include');
-    expect(init.headers).toBeUndefined();
+    expect(init.headers).toEqual({});
     expect(init.body.get('type')).toBe('tmp');
 
     // fetch 成功返回后状态落 done

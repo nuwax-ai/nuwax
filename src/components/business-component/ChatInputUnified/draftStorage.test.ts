@@ -8,6 +8,14 @@ import {
 } from './draftStorage';
 
 const storageKey = (scope: string) => `chat_draft:${scope}`;
+const attachment = {
+  uid: 'uploaded-pdf',
+  name: '报告.pdf',
+  type: 'application/pdf',
+  size: 2048,
+  url: 'https://cdn.example.com/report.pdf',
+  key: 'tmp/report.pdf',
+};
 
 describe('resolveDraftSurface（会话页面地址分桶）', () => {
   it('三类会话路由面各归各桶', () => {
@@ -45,6 +53,54 @@ describe('草稿存取（作用域 = 路由面 × 会话 id）', () => {
   it('空文本落盘删除存储键；纯空白文本读取视为无草稿', () => {
     saveDraft('chat:101', { version: 1, text: '先有内容' });
     saveDraft('chat:101', { version: 1, text: '   ' });
+    expect(localStorage.getItem(storageKey('chat:101'))).toBeNull();
+  });
+
+  it('没有文字的已上传附件也属于草稿，重新读取后保留发送元数据', () => {
+    saveDraft('chat:101', { version: 1, text: '', files: [attachment] });
+    expect(loadDraft('chat:101')?.files).toEqual([attachment]);
+    clearDraft('chat:101');
+    expect(loadDraft('chat:101')).toBeNull();
+  });
+
+  it('只持久化附件元数据，不保存本地 File 和上传响应', () => {
+    const uploaded = {
+      ...attachment,
+      originFileObj: new File(['content'], attachment.name),
+      response: { data: attachment },
+      status: 'done',
+      percent: 100,
+    };
+    saveDraft('chat:101', { version: 1, text: '待发送', files: [uploaded] });
+    const stored = JSON.parse(localStorage.getItem(storageKey('chat:101'))!);
+    expect(stored.files).toEqual([attachment]);
+  });
+
+  it('非法附件被忽略，仍可恢复旧版文字草稿', () => {
+    localStorage.setItem(
+      storageKey('chat:101'),
+      JSON.stringify({
+        version: 1,
+        text: '旧版草稿',
+        savedAt: Date.now(),
+        files: [null, { ...attachment, key: '' }, { ...attachment, size: -1 }],
+      }),
+    );
+    expect(loadDraft('chat:101')?.text).toBe('旧版草稿');
+    expect(loadDraft('chat:101')?.files ?? []).toEqual([]);
+  });
+
+  it('附件草稿超过 24 小时仍按已有策略清理', () => {
+    localStorage.setItem(
+      storageKey('chat:101'),
+      JSON.stringify({
+        version: 1,
+        text: '',
+        files: [attachment],
+        savedAt: Date.now() - 24 * 60 * 60 * 1000 - 1,
+      }),
+    );
+    expect(loadDraft('chat:101')).toBeNull();
     expect(localStorage.getItem(storageKey('chat:101'))).toBeNull();
   });
 });
