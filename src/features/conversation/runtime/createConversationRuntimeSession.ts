@@ -319,7 +319,7 @@ export function createConversationRuntimeSession(
       const processing = (reduction.processing ?? data) as Record<string, any>;
       const input = processing?.result?.input ?? {};
       // 编辑/新增等结束后才刷新；搜索和工具开始不代表树有变化。
-      // live / sub 与旧线使用同一语义，消费端继续保留 2s 节流与可见性门控。
+      // live / sub 与旧线使用同一语义，消费端继续保留 5s 节流与可见性门控。
       if (shouldRefreshWorkspaceFiles(processing)) {
         runtime.effects.dispatch({
           type: 'preview.file.refresh',

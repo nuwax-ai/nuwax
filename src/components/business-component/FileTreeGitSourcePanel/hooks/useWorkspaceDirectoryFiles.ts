@@ -217,7 +217,7 @@ export function useWorkspaceDirectoryFiles(
   /**
    * 刷新全部已加载目录（含根层——切会话后集合为空也不漏）：
    * 「打开的目录不刷新」修复——刷新信号到达时不止刷 currentPath 单层，
-   * 已展开已加载的目录一并重拉（外层 2s 节流兜底）。在途目录跳过防重复。
+   * 已展开已加载的目录一并重拉（外层 5s 节流兜底）。在途目录跳过防重复。
    */
   const refreshAllLoaded = useCallback(() => {
     loadDirectoryIfIdle('');

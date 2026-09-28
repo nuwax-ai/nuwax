@@ -423,6 +423,9 @@ export default () => {
         return;
       }
       setFileTreeDataLoading(true);
+      // 模型全量列表只给依赖 fileTreeData 的页面用。技能会话等页面实际渲染的是
+      // 按层懒加载的树，这里同时发刷新信号，让已展开目录按 relativePath + recursive=false 重拉并显示最新结果。
+      setFileTreeRefreshTrigger(Date.now());
       await runGetStaticFileList(cId);
     },
     [runGetStaticFileList],
@@ -431,7 +434,7 @@ export default () => {
   // 处理文件列表刷新事件（节流，供 SSE / 自动触发场景防刷）
   const handleRefreshFileList = useMemo(
     () =>
-      throttle(refreshFileListImmediately, 2000, {
+      throttle(refreshFileListImmediately, 5000, {
         leading: true,
         trailing: true,
       }),
@@ -1638,7 +1641,7 @@ export default () => {
       if (eventType === ConversationEventTypeEnum.ERROR) {
         newMessage = reduceTerminalEvent(
           list,
-          currentMessage.id,
+          currentMessage?.id?.toString(),
           res,
           (message) => message,
           () => closeOpenThinkBlock(),
