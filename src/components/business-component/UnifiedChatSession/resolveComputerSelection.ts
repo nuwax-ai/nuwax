@@ -11,6 +11,7 @@ interface ResolveComputerSelectionParams {
   isSelectionLocked: boolean;
   hasUserSentMessage: boolean;
   hasPersistedMessage: boolean;
+  hasChangedComputerInEmptySession?: boolean;
 }
 
 /** 历史会话的电脑以会话记录为准；其他入口保留原有的智能体绑定规则。 */
@@ -23,6 +24,7 @@ export function resolveComputerSelection({
   isSelectionLocked,
   hasUserSentMessage,
   hasPersistedMessage,
+  hasChangedComputerInEmptySession = false,
 }: ResolveComputerSelectionParams) {
   const hasCurrentConversationInfo =
     restoreConversationSandbox &&
@@ -33,10 +35,25 @@ export function resolveComputerSelection({
 
   if (hasCurrentConversationInfo) {
     const savedId = String(conversationInfo.sandboxServerId ?? '').trim();
+    // 新建会话在首条消息前也会写入 sandboxServerId；此时仍允许选电脑。
+    const selectionStarted = hasUserSentMessage || hasPersistedMessage;
+    const isAgentSandboxBound = isRealAgentSandboxBinding(agentSandboxId);
+    const canUseCurrentSelection =
+      hasChangedComputerInEmptySession &&
+      selectedComputerId &&
+      !isAgentSandboxBound;
+    const activeId = canUseCurrentSelection
+      ? selectedComputerId
+      : savedId || selectedComputerId;
     return {
-      agentSandboxId: savedId || selectedComputerId,
-      fixedSelection: Boolean(savedId),
-      isPersonalComputer: Boolean(savedId) && savedId !== CLOUD_SANDBOX_ID,
+      agentSandboxId: activeId,
+      fixedSelection:
+        Boolean(savedId) &&
+        (selectionStarted || isSelectionLocked || isAgentSandboxBound),
+      isPersonalComputer:
+        Boolean(savedId) &&
+        activeId !== CLOUD_SANDBOX_ID &&
+        (selectionStarted || isAgentSandboxBound),
     };
   }
 
