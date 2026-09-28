@@ -361,10 +361,19 @@ describe('ConversationRendererV2 · 三层结构', () => {
     const toggle = screen.getByTestId('v2-trace-toggle');
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(screen.queryByTestId('v2-hidden-entry')).toBeNull();
+    expect(screen.queryByTestId('v2-narration')).toBeNull();
     expect(screen.getByTestId('v2-final-answer')).toBeVisible();
     // 终态仍允许用户手动展开查看过程。
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByTestId('v2-narration')).toHaveTextContent(
+      '天气查询完成',
+    );
+    fireEvent.click(toggle);
+    expect(screen.queryByTestId('v2-narration')).toBeNull();
+    expect(screen.getByTestId('v2-final-answer')).toHaveTextContent(
+      '今天晴，25 度',
+    );
   });
 
   it('运行轮默认展开，工作时长沿用会话状态栏的用户消息起点与 MM:SS 格式', () => {
@@ -539,6 +548,7 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     expect(
       screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
     ).toBe('false');
+    expect(screen.queryByTestId('v2-narration')).toBeNull();
     // 流式增量（新工具 + 更长正文）
     const streamed = buildTurn({
       status: MessageStatusEnum.Loading,
@@ -574,11 +584,15 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     expect(
       screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
     ).toBe('false');
+    expect(screen.queryByTestId('v2-narration')).toBeNull();
     // 运行中重新手动展开
     fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     expect(
       screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
     ).toBe('true');
+    expect(screen.getByTestId('v2-narration')).toHaveTextContent(
+      '天气查询完成',
+    );
     // 终态补齐（FINAL_RESULT）强制回到收起态
     const terminal = streamed.map((m) =>
       m.role === AssistantRoleEnum.ASSISTANT
@@ -607,11 +621,16 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
         screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
       ).toBe('false');
     });
+    expect(screen.queryByTestId('v2-narration')).toBeNull();
+    expect(screen.getByTestId('v2-final-answer')).toHaveTextContent(
+      '最终：今天晴',
+    );
     // 终态自动收起后仍可由用户再次展开
     fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     expect(
       screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
     ).toBe('true');
+    expect(screen.getAllByTestId('v2-narration').length).toBeGreaterThan(0);
   });
 
   it('节点行为原生 button（键盘 Enter/Space 由浏览器语义保证）且点击展开受限详情', async () => {
@@ -825,7 +844,7 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
       document.querySelector(`[data-node-id="${thinkId}"] button`),
     ).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(screen.getByTestId('v2-trace-toggle'));
-    expect(screen.getByTestId('v2-narration')).toBeVisible();
+    expect(screen.queryByTestId('v2-narration')).toBeNull();
     expect(document.querySelector('[data-trace-segment-id]')).toBeNull();
     fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     expect(screen.getByTestId('v2-trace-segment-toggle')).toHaveAttribute(
@@ -1082,6 +1101,7 @@ describe('ConversationRendererV2 · 回答与异常', () => {
       'data-copy-text',
       answer,
     );
+    expect(screen.queryByTestId('v2-narration')).toBeNull();
     fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     expect(screen.getByTestId('v2-narration')).toHaveTextContent(narration);
   });

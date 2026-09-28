@@ -10,7 +10,7 @@
  *
  * 高级设置可把任一类型改为 hidden/summary/expanded；失败节点即使配置隐藏
  * 也至少恢复为错误摘要；隐藏节点不占轨迹行，由「另有 N 项已隐藏」入口恢复。
- * （narration 是穿插直出正文：留在节点序列原位但渲染为文字，不受本表控制、恒可见。）
+ * （narration 是穿插过程正文：不受本表过滤，但仍随整轮轨迹展开/收起。）
  */
 import type {
   ConversationProcessNode,
@@ -100,7 +100,7 @@ export function resolveNodeMode(
 }
 
 export interface TurnNodeVisibility {
-  /** 按原序保留的可见节点（mode !== hidden；narration 恒可见） */
+  /** 按原序保留的可见节点（mode !== hidden；narration 不受逐类过滤） */
   visibleNodes: ConversationProcessNode[];
   /** 被隐藏的节点数（供「另有 N 项已隐藏」入口；narration 不计） */
   hiddenCount: number;
@@ -113,7 +113,7 @@ export function splitNodesByVisibility(
   const visibleNodes: ConversationProcessNode[] = [];
   let hiddenCount = 0;
   nodes.forEach((node) => {
-    // narration 是穿插直出正文：恒可见、不参与隐藏计数
+    // narration 不受逐类过滤、不参与隐藏计数，渲染层仍遵循整轮折叠状态。
     if (
       node.kind !== 'narration' &&
       resolveNodeMode(node, preferences) === 'hidden'
