@@ -180,7 +180,7 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
       return targetTypes[0];
     }, [defaultTargetType, targetTypes]);
 
-  /** 弹窗打开：同步 Tab 与已添加计数，并按 defaultTargetType 加载列表 */
+  /** 弹窗打开：同步 Tab 与默认排序，并按 defaultTargetType 加载列表 */
   useEffect(() => {
     if (!open) return;
 
@@ -265,6 +265,8 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
       nextSortRef.current += 1;
       message.success(dict('PC.Pages.SystemRecommendManage.createSuccess'));
       onSuccess();
+    } catch {
+      // 请求层已提示错误，失败后仍允许继续添加。
     } finally {
       addingRef.current = false;
       setAddingKey(undefined);

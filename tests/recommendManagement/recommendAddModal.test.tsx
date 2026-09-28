@@ -120,19 +120,69 @@ it('保存进行中阻止连点，完成后重新允许添加', async () => {
   );
 });
 
-it('选择模式只回填目标，不直接保存推荐', async () => {
-  const onPick = vi.fn();
+it('后端拒绝重复添加后按钮仍可用，可以再次提交', async () => {
+  vi.mocked(apiSystemSaveDisplayRecommend).mockResolvedValueOnce({
+    code: '0001',
+  } as any);
   render(
     <RecommendAddModal
       open
-      mode="pick"
-      onPick={onPick}
-      recType={DisplayRecTypeEnum.ChatBoxNav}
-      defaultSort={1}
+      recType={DisplayRecTypeEnum.Home}
+      defaultSort={10}
       {...callbacks}
     />,
   );
   fireEvent.click(await screen.findByRole('button', { name: addLabel }));
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: addLabel })).not.toHaveClass(
+      'ant-btn-loading',
+    ),
+  );
+  expect(callbacks.onSuccess).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: addLabel }));
+  await waitFor(() => expect(callbacks.onSuccess).toHaveBeenCalledOnce());
+  expect(apiSystemSaveDisplayRecommend).toHaveBeenCalledTimes(2);
+});
+
+it('接口抛出 BizError 后捕获异常，释放按钮并允许重试', async () => {
+  const error = new Error('相同功能类型、推荐类型、目标类型和目标已存在');
+  error.name = 'BizError';
+  vi.mocked(apiSystemSaveDisplayRecommend).mockRejectedValueOnce(error);
+  render(
+    <RecommendAddModal
+      open
+      recType={DisplayRecTypeEnum.Home}
+      defaultSort={10}
+      {...callbacks}
+    />,
+  );
+  const button = await screen.findByRole('button', { name: addLabel });
+  fireEvent.click(button);
+  await waitFor(() => expect(button).not.toHaveClass('ant-btn-loading'));
+  expect(callbacks.onSuccess).not.toHaveBeenCalled();
+  fireEvent.click(button);
+  await waitFor(() => expect(callbacks.onSuccess).toHaveBeenCalledOnce());
+  expect(apiSystemSaveDisplayRecommend).toHaveBeenCalledTimes(2);
+});
+
+it('选择模式重新打开后仍允许选取已推荐的目标，不直接保存推荐', async () => {
+  const onPick = vi.fn();
+  const props = {
+    mode: 'pick' as const,
+    onPick,
+    recType: DisplayRecTypeEnum.ChatBoxNav,
+    defaultSort: 1,
+    ...callbacks,
+  };
+  const { rerender } = render(<RecommendAddModal open {...props} />);
+  fireEvent.click(await screen.findByRole('button', { name: addLabel }));
+  rerender(<RecommendAddModal open={false} {...props} />);
+  rerender(<RecommendAddModal open {...props} />);
+  const button = await screen.findByRole('button', { name: addLabel });
+  expect(button).toBeEnabled();
+  fireEvent.click(button);
+  expect(onPick).toHaveBeenCalledTimes(2);
   expect(onPick).toHaveBeenCalledWith(item, 'Agent');
   expect(apiSystemSaveDisplayRecommend).not.toHaveBeenCalled();
+  expect(screen.queryByText('PC.Components.Created.added')).toBeNull();
 });

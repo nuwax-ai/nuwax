@@ -7,7 +7,11 @@ import { dict } from '@/services/i18nRuntime';
 import { fetchChatboxCategories } from '@/services/square';
 import type { DisplayRecommendPrompt } from '@/types/interfaces/displayRecommend';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
-import { CloseOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  PlusOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import { Button, Form, Input, message, Select, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -32,6 +36,7 @@ import {
 import { getChatboxFunctionTypeLabel } from '../../utils/chatboxFunctionTypeLabel';
 import { getSquareTargetTypeTitle } from '../../utils/squareTargetTypeLabel';
 import RecommendAddModal from '../RecommendAddModal';
+import PromptSettingsModal from './PromptSettingsModal';
 import SelectedAgentCard from './SelectedAgentCard';
 import styles from './index.less';
 
@@ -69,6 +74,11 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm<{ prompts: DisplayRecommendPrompt[] }>();
+  const prompts = Form.useWatch('prompts', { form, preserve: true }) || [];
+  const [promptEditor, setPromptEditor] = useState<{
+    index: number;
+    value: DisplayRecommendPrompt;
+  } | null>(null);
   const isEdit = !!editingRecord;
 
   /** 提交保存 loading */
@@ -153,6 +163,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
 
   /** 弹窗打开时：编辑回填 / 新增重置 */
   useEffect(() => {
+    setPromptEditor(null);
     if (!open) return;
     setPickModalOpen(false);
     form.resetFields();
@@ -252,6 +263,8 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
         onSuccess();
         onCancel();
       }
+    } catch {
+      // 请求层已提示错误，保留表单供修改后重试。
     } finally {
       submittingRef.current = false;
       setLoading(false);
@@ -387,96 +400,37 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
                   <span>
                     {dict('PC.Pages.SystemRecommendManage.promptsLabel')}
                   </span>
-                  <Button
-                    type="text"
-                    icon={<PlusOutlined aria-hidden="true" />}
-                    aria-label={dict(
-                      'PC.Pages.SystemRecommendManage.addPrompt',
-                    )}
-                    onClick={() => add({ title: '', content: '', icon: '' })}
+                  <Tooltip
+                    title={dict('PC.Pages.SystemRecommendManage.addPrompt')}
                   >
-                    {dict('PC.Pages.SystemRecommendManage.addPrompt')}
-                  </Button>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<PlusOutlined aria-hidden="true" />}
+                      aria-label={dict(
+                        'PC.Pages.SystemRecommendManage.addPrompt',
+                      )}
+                      onClick={() => add({ title: '', content: '', icon: '' })}
+                    />
+                  </Tooltip>
                 </div>
                 {fields.map(({ key, name, ...restField }, index) => (
-                  <div className={styles['prompt-item']} key={key}>
-                    <div className={styles['prompt-header']}>
-                      <span>
-                        {dict(
-                          'PC.Pages.SystemRecommendManage.promptNumber',
-                          index + 1,
-                        )}
-                      </span>
-                      <Tooltip
-                        title={dict(
-                          'PC.Pages.SystemRecommendManage.removePrompt',
-                        )}
-                      >
-                        <Button
-                          type="text"
-                          danger
-                          icon={<DeleteOutlined />}
-                          aria-label={dict(
-                            'PC.Pages.SystemRecommendManage.removePrompt',
-                          )}
-                          onClick={() => remove(name)}
-                        />
-                      </Tooltip>
-                    </div>
-                    <div className={styles['prompt-meta']}>
-                      <div>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'icon']}
-                          label={dict('PC.Components.CreateAgent.iconLabel')}
-                          valuePropName="imageUrl"
-                          trigger="onUploadSuccess"
-                        >
-                          <UploadAvatar
-                            className={styles['prompt-icon']}
-                            svgIconName="icons-workspace-agent"
-                          />
-                        </Form.Item>
-                        <Tooltip
-                          title={dict(
-                            'PC.Pages.SystemRecommendManage.clearPromptIcon',
-                          )}
-                        >
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<CloseOutlined />}
-                            aria-label={dict(
-                              'PC.Pages.SystemRecommendManage.clearPromptIcon',
-                            )}
-                            onClick={() =>
-                              form.setFieldValue(['prompts', name, 'icon'], '')
-                            }
-                          />
-                        </Tooltip>
-                      </div>
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'title']}
-                        label={dict(
-                          'PC.Pages.SystemRecommendManage.promptTitle',
-                        )}
-                        className={styles['prompt-title']}
-                      >
-                        <Input
-                          placeholder={dict(
-                            'PC.Pages.SystemRecommendManage.promptTitlePlaceholder',
-                          )}
-                          allowClear
-                        />
-                      </Form.Item>
-                    </div>
+                  <div
+                    key={key}
+                    className={cx(styles['prompt-row'], {
+                      [styles['prompt-has-icon']]: !!prompts[name]?.icon,
+                    })}
+                  >
+                    <Form.Item {...restField} name={[name, 'title']} hidden>
+                      <Input />
+                    </Form.Item>
+                    <Form.Item {...restField} name={[name, 'icon']} hidden>
+                      <Input />
+                    </Form.Item>
                     <Form.Item
                       {...restField}
                       name={[name, 'content']}
-                      label={dict(
-                        'PC.Pages.SystemRecommendManage.promptContent',
-                      )}
+                      className={styles['prompt-content']}
                       rules={[
                         {
                           required: true,
@@ -488,12 +442,62 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
                       ]}
                     >
                       <Input.TextArea
+                        aria-label={dict(
+                          'PC.Pages.SystemRecommendManage.promptNumber',
+                          index + 1,
+                        )}
                         placeholder={dict(
                           'PC.Pages.SystemRecommendManage.promptContentPlaceholder',
                         )}
-                        autoSize={{ minRows: 2, maxRows: 5 }}
+                        autoSize={{ minRows: 1, maxRows: 1 }}
                       />
                     </Form.Item>
+                    {prompts[name]?.icon && (
+                      <img
+                        className={styles['prompt-icon']}
+                        src={prompts[name].icon}
+                        alt=""
+                      />
+                    )}
+                    <div className={styles['prompt-actions']}>
+                      <Tooltip
+                        title={dict(
+                          'PC.Pages.SystemRecommendManage.removePrompt',
+                        )}
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          aria-label={dict(
+                            'PC.Pages.SystemRecommendManage.removePrompt',
+                          )}
+                          onClick={() => remove(name)}
+                        />
+                      </Tooltip>
+                      <Tooltip
+                        title={dict(
+                          'PC.Pages.SystemRecommendManage.editPrompt',
+                        )}
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<SettingOutlined />}
+                          aria-label={dict(
+                            'PC.Pages.SystemRecommendManage.editPrompt',
+                          )}
+                          onClick={() =>
+                            setPromptEditor({
+                              index: name,
+                              value: {
+                                ...form.getFieldValue(['prompts', name]),
+                              },
+                            })
+                          }
+                        />
+                      </Tooltip>
+                    </div>
                   </div>
                 ))}
               </section>
@@ -501,6 +505,18 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
           </Form.List>
         </Form>
       </CustomFormModal>
+
+      <PromptSettingsModal
+        open={!!promptEditor}
+        value={promptEditor?.value}
+        onCancel={() => setPromptEditor(null)}
+        onConfirm={(value) => {
+          if (promptEditor) {
+            form.setFieldValue(['prompts', promptEditor.index], value);
+          }
+          setPromptEditor(null);
+        }}
+      />
 
       {/* 选择智能体弹窗 */}
       <RecommendAddModal
