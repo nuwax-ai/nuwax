@@ -458,7 +458,9 @@ describe('conversationRuntimeSession', () => {
     const applyTaskStatus = vi.fn();
     const { session } = createSession({
       stopRequest: () =>
-        new Promise<void>((resolve) => (resolveStop = resolve)),
+        new Promise<void>((resolve) => {
+          resolveStop = resolve;
+        }),
       applyTaskStatus,
     });
     mockOpenLive.mockReturnValue(vi.fn());
@@ -1235,13 +1237,43 @@ describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录�
     ]);
   });
 
-  it('FINAL_RESULT + 非 TaskAgent：不发 taskResult.settle（对齐旧线门控）', () => {
+  it('FINAL_RESULT + 非 TaskAgent 普通智能体：也发 taskResult.settle（a73c39f86f 起问答型以外均收尾刷文件树）', () => {
     const { session, dispatched } = createSessionWith();
     mockOpenLive.mockReturnValue(vi.fn());
     session.send({
       conversationId: 1001,
       message: '普通对话',
       currentInfo: { id: 1001, agent: { type: 'Chat' } } as never,
+    });
+
+    getCallbacks().onMessage({
+      requestId: 'req-final',
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      data: {
+        success: true,
+        outputText: '答',
+        error: '',
+        componentExecuteResults: [],
+      },
+    } as ConversationChatResponse);
+
+    expect(settleDispatches(dispatched)).toEqual([
+      {
+        type: 'taskResult.settle',
+        conversationId: 1001,
+        enableVersionControl: false,
+        taskResult: { hasTaskResult: false },
+      },
+    ]);
+  });
+
+  it('FINAL_RESULT + 问答型 ChatBot：不发 taskResult.settle（问答无文件产出）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: '问答',
+      currentInfo: { id: 1001, agent: { type: 'ChatBot' } } as never,
     });
 
     getCallbacks().onMessage({
