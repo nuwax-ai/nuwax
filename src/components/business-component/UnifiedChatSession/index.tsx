@@ -97,6 +97,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   showAnnouncement,
   mentionPlacement,
   selectedComputerId = '',
+  hasChangedComputerInEmptySession = false,
   restoreConversationSandbox = false,
   onComputerSelect,
 
@@ -344,6 +345,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     conversationInfo,
     restoreConversationSandbox,
     selectedComputerId,
+    hasChangedComputerInEmptySession,
     agentSandboxId: agentInfo?.sandboxId,
     isSelectionLocked,
     hasUserSentMessage,
