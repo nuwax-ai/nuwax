@@ -38,6 +38,45 @@ describe('历史会话选择器状态', () => {
     });
   });
 
+  it('清空后新建的空会话允许改选，已选电脑保持显示到首条消息发送', () => {
+    const emptySession = {
+      ...base,
+      hasUserSentMessage: false,
+      hasPersistedMessage: false,
+      conversationInfo: { id: 1694776, sandboxServerId: '-1' },
+    };
+    expect(resolveComputerSelection(emptySession)).toEqual({
+      agentSandboxId: '-1',
+      fixedSelection: false,
+      isPersonalComputer: false,
+    });
+    expect(
+      resolveComputerSelection({
+        ...emptySession,
+        selectedComputerId: '366',
+        hasChangedComputerInEmptySession: true,
+        hasUserSentMessage: true,
+      }),
+    ).toEqual({
+      agentSandboxId: '366',
+      fixedSelection: true,
+      isPersonalComputer: true,
+    });
+    expect(
+      resolveComputerSelection({
+        ...emptySession,
+        selectedComputerId: '366',
+        hasChangedComputerInEmptySession: true,
+        hasUserSentMessage: true,
+        hasPersistedMessage: true,
+      }),
+    ).toEqual({
+      agentSandboxId: '366',
+      fixedSelection: true,
+      isPersonalComputer: true,
+    });
+  });
+
   it('会话未绑定电脑时，即使有历史消息也允许选择', () => {
     expect(
       resolveComputerSelection({

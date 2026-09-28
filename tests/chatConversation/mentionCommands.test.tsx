@@ -474,15 +474,16 @@ describe('列表数据一致性（@ 弹层·上下文文件 tab）', () => {
     expect(screen.queryByTestId('at-knowledge-list')).toBeNull();
   });
 
-  it('文件先过滤再截断、打开时刷新且搜索不再次请求', async () => {
-    const fetch = vi.fn().mockResolvedValue([
-      ...Array.from({ length: 120 }, (_, i) => ({
-        ...file,
-        name: `file${i}`,
-        relativePath: `file${i}`,
-      })),
-      file,
-    ]);
+  it('搜索词由服务端过滤，重新打开时刷新文件可用性', async () => {
+    const fetch = vi.fn(async (keyword = '') =>
+      keyword
+        ? [file]
+        : Array.from({ length: 100 }, (_, i) => ({
+            ...file,
+            name: `file${i}`,
+            relativePath: `file${i}`,
+          })),
+    );
     const props = {
       onFetchMentionFiles: fetch,
     };
@@ -509,7 +510,8 @@ describe('列表数据一致性（@ 弹层·上下文文件 tab）', () => {
       />,
     );
     await screen.findByText('报告.md');
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith('报告');
+    expect(fetch).toHaveBeenCalledTimes(2);
     rerender(
       <AtResourcePopup
         mode="session"
@@ -538,7 +540,7 @@ describe('列表数据一致性（@ 弹层·上下文文件 tab）', () => {
         {...props}
       />,
     );
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
   });
   it('切换文件数据源时忽略旧会话的迟到响应', async () => {
     let resolve!: (value: (typeof file)[]) => void;

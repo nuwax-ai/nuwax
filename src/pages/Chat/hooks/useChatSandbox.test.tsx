@@ -16,6 +16,7 @@ describe('历史会话电脑恢复', () => {
         history: { action: 'POP' },
         effectiveAgent: { sandboxId: '-1' },
         conversationInfo: info,
+        hasPersistedMessage: true,
       }),
     );
 
@@ -32,6 +33,7 @@ describe('历史会话电脑恢复', () => {
         history: { action: 'POP' },
         effectiveAgent: { sandboxId: '-1' },
         conversationInfo: undefined,
+        hasPersistedMessage: true,
       }),
     );
 
@@ -54,10 +56,34 @@ describe('历史会话电脑恢复', () => {
         history: { action: 'POP' },
         effectiveAgent: { sandboxId: '-1' },
         conversationInfo: conversation(''),
+        hasPersistedMessage: true,
       }),
     );
 
     act(() => result.current.setSelectedComputerId('366'));
+    expect(result.current.finalSelectedId).toBe('366');
+  });
+
+  it('清空后创建的空会话可改选电脑，发送时沿用选择', () => {
+    let hasPersistedMessage = false;
+    const { result, rerender } = renderHook(() =>
+      useChatSandbox({
+        conversationId: 1694776,
+        location: { key: 'new', state: undefined },
+        history: { action: 'REPLACE' },
+        effectiveAgent: { sandboxId: '-1' },
+        conversationInfo: conversation('-1'),
+        hasPersistedMessage,
+      }),
+    );
+
+    expect(result.current.finalSelectedId).toBe('-1');
+    act(() => result.current.handleComputerSelect('366'));
+    expect(result.current.finalSelectedId).toBe('366');
+    expect(result.current.getEffectiveSandboxId()).toBe('366');
+    hasPersistedMessage = true;
+    act(() => result.current.setHasUserSentMessage(true));
+    rerender();
     expect(result.current.finalSelectedId).toBe('366');
   });
 });

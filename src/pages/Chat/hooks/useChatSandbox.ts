@@ -8,6 +8,7 @@ interface UseChatSandboxProps {
   history: any;
   effectiveAgent: any;
   conversationInfo: ConversationInfo | undefined;
+  hasPersistedMessage: boolean;
 }
 
 export const useChatSandbox = ({
@@ -16,6 +17,7 @@ export const useChatSandbox = ({
   history,
   effectiveAgent,
   conversationInfo,
+  hasPersistedMessage,
 }: UseChatSandboxProps) => {
   // 是否锁定电脑选择（仅在从 AgentDetails 页面带有 selectedComputerId 且为 PUSH 跳转时生效）
   const [isSelectionLocked, setIsSelectionLocked] = useState<boolean>(false);
@@ -25,6 +27,10 @@ export const useChatSandbox = ({
 
   // 记录用户是否已发送消息（用于锁定电脑选择）
   const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
+  const [
+    hasChangedComputerInEmptySession,
+    setHasChangedComputerInEmptySession,
+  ] = useState(false);
 
   // 仅在本次会话中使用从 AgentDetails 页面带过来的 selectedComputerId；
   // 刷新（POP）或新建会话（REPLACE）时，不再沿用之前的选择。
@@ -41,7 +47,23 @@ export const useChatSandbox = ({
       setSelectedComputerId('');
       setIsSelectionLocked(false);
     }
-  }, [history.action, location.key]);
+    setHasChangedComputerInEmptySession(false);
+  }, [conversationId, history.action, location.key]);
+
+  const handleComputerSelect = useCallback(
+    (computerId: string) => {
+      if (
+        conversationInfo &&
+        String(conversationInfo.id) === String(conversationId) &&
+        !hasPersistedMessage &&
+        !isSelectionLocked
+      ) {
+        setHasChangedComputerInEmptySession(true);
+      }
+      setSelectedComputerId(computerId);
+    },
+    [conversationId, conversationInfo, hasPersistedMessage, isSelectionLocked],
+  );
 
   const getEffectiveSandboxId = useCallback(
     (info: ConversationInfo | undefined = conversationInfo): string => {
@@ -52,7 +74,12 @@ export const useChatSandbox = ({
         String(info?.id) === String(conversationId);
       if (isCurrentConversation) {
         const sessionSandboxId = String(info?.sandboxServerId ?? '').trim();
-        if (sessionSandboxId) return sessionSandboxId;
+        // 创建时的绑定不锁定空会话；首条消息前允许使用新选择的电脑。
+        const canUseCurrentSelection =
+          hasChangedComputerInEmptySession && selectedComputerId;
+        if (sessionSandboxId && !canUseCurrentSelection) {
+          return sessionSandboxId;
+        }
       }
 
       // 四级取值链单源（bug 2451）：手动 > PUSH 携带 > 智能体绑定 > 共享电脑，
@@ -71,6 +98,7 @@ export const useChatSandbox = ({
     },
     [
       conversationId,
+      hasChangedComputerInEmptySession,
       selectedComputerId,
       history.action,
       location.state?.selectedComputerId,
@@ -91,6 +119,8 @@ export const useChatSandbox = ({
     setIsSelectionLocked,
     hasUserSentMessage,
     setHasUserSentMessage,
+    hasChangedComputerInEmptySession,
+    handleComputerSelect,
     getEffectiveSandboxId,
     finalSelectedId,
   };
