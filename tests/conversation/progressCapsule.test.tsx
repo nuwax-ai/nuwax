@@ -556,6 +556,44 @@ describe('会话进度胶囊', () => {
     expect(container.querySelector('.spinner')).toBeTruthy();
   });
 
+  it('原地终态更新后 active 翻转仍显示新状态并保留展开面板', () => {
+    const messages = buildMessages();
+    const onClose = vi.fn();
+    const { rerender, container } = render(
+      <ConversationProgressCapsule
+        conversationId={1}
+        messageList={messages}
+        active
+        open
+        onClose={onClose}
+      />,
+    );
+    expect(container.querySelector('.spinner')).toBeTruthy();
+
+    // 保持数组与消息身份不变：active 原有依赖仍须触发重新投影状态字段。
+    messages[1].status = MessageStatusEnum.Complete;
+    messages[1].processingList?.forEach((process) => {
+      process.status = ProcessingEnum.FINISHED;
+    });
+    rerender(
+      <ConversationProgressCapsule
+        conversationId={1}
+        messageList={messages}
+        active={false}
+        open
+        onClose={onClose}
+      />,
+    );
+
+    expect(container.querySelector('.spinner')).toBeNull();
+    expect(container.querySelector('.status-done')).toBeTruthy();
+    expect(
+      screen.queryByText('PC.Components.ConversationProgressCapsule.running 1'),
+    ).toBeNull();
+    expect(screen.getByTestId('capsule-panel')).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('终态面板常驻；新轮无内容隐藏并收敛展开态，新轮产出内容后恢复', async () => {
     const onClose = vi.fn();
     const { rerender, container } = render(

@@ -33,8 +33,8 @@ React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-
 
 ## AI SDLC 规则层
 
-- 需求 → 规格 → 计划链：skills `requirement-analysis` → `plans/*-intent.md`、`grill-with-docs` → `specs/<slug>.md` → Plan mode 产物 `plans/*-plan.md`（模板在 `templates/`）。
-- 源码首改会被 `.claude/hooks/plan-gate.mjs` 追问一次计划工件（同会话只问一次；`NUWACLAW_SKIP_PLAN_GATE=1` 停用）；秘钥由 `.claude/hooks/guard-paths.mjs` 拦截（`.env*`/证书/credential 类拒读写，example 豁免）。
+- **需求分级，按大小走流程（勿为小修生成工件拖时间）**：① 小修/BUG 修复——改动 ≤3 文件、无新接口契约、无跨模块联动、无需产品拍板，且改前能一句话说清「改什么、为什么」——不建 intent/spec/plan，直接改 + 跑该域质量门测试；② 中等需求只出 `plans/*-plan.md` 一件；③ 新功能/大需求/跨模块才走完整链 skills `requirement-analysis` → `plans/*-intent.md`、`grill-with-docs` → `specs/<slug>.md` → Plan mode 产物 `plans/*-plan.md`（模板在 `templates/`）。
+- 源码首改会被 `.claude/hooks/plan-gate.mjs` 提醒一次（同会话只问一次）：**小修/BUG 直接重试刚才的编辑即放行，无需任何工件**；大需求先备 `plans/` 工件再动源码。`NUWACLAW_SKIP_PLAN_GATE=1` 停用；秘钥由 `.claude/hooks/guard-paths.mjs` 拦截（`.env*`/证书/credential 类拒读写，example 豁免）。
 - 大量代码合并主干分支前（提测/发版/特性分支大批量合入）走 skills `pre-commit-quality-review`（slash command `/quality-review` 可直接点名）三问自查整个待合并批次——功能逻辑内聚 / 代码分层 / 可维护性，带证据给结论、质量门测试绿了再合并；日常小 commit 可跳过。
 - PR 评审对照根目录 `REVIEW.md` 五遍清单（nit≤5；writer 不自批）。
 - **单一事实源**：本文件是正文（根 CLAUDE.md 已存在，建议人工收敛为单行 `@AGENTS.md` 指针）；勿复制出第二份。

@@ -449,7 +449,8 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
   // 禁用/启用编辑器
   useEffect(() => {
     if (editor) {
-      editor.setEditable(!readonly && !disabled);
+      // 编辑状态同步不代表内容编辑，避免初始化或权限切换触发自动保存。
+      editor.setEditable(!readonly && !disabled, false);
     }
   }, [editor, readonly, disabled]);
 

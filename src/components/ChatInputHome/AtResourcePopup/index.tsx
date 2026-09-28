@@ -5,10 +5,10 @@
  * - home    首页：专家（ExpertListView·convenient 便捷视图，最近召唤 +
  *           系统广场前 100 条去重合并）+ 资料库（KnowledgeListView·
  *           最近访问），均 variant=list；
- * - session 会话页：上下文文件（打开拉一次 + 客户端过滤，取数语义迁自
+ * - session 会话页：上下文文件（打开拉一次判定可用性，搜索词变更向服务端查询，取数语义迁自
  *           旧 MentionPopup）+ 资料库（同 home）。
  * 搜索为 @ 后在聊天输入框继续输入的实时文本（searchText 受控）：
- * 专家/资料库经列表组件 keyword 防抖过滤，文件客户端过滤。
+ * 专家/资料库经列表组件 keyword 防抖过滤，文件搜索由本组件防抖请求。
  * 键盘导航经 DOM 卡片代理（data-expert-key / data-knowledge-key /
  * data-at-file-key，↑↓ 逐项 + Enter 触发 click——专家行走 ExpertListView
  * 内聚的付费拦截门；←→ 切 tab），句柄签名对齐 MentionPopupHandle，
@@ -50,8 +50,7 @@ const CARD_SELECTOR =
 /** 键盘聚焦高亮全局类（列表行卡片样式内聚在列表组件无法经 props 传入，经 DOM 类注入） */
 const CARD_FOCUS_CLASS = 'at-popup-card-focus';
 
-/** 文件列表截断上限（先过滤再截断，确保大列表后部文件仍可搜索到——沿用旧口径） */
-const FILE_LIST_LIMIT = 100;
+const FILE_SEARCH_DEBOUNCE_MS = 300;
 
 /** 模式 → tab 组成（顺序即展示顺序与 ←→ 切换顺序；slash 单 tab 无切换器） */
 const MODE_TABS: Record<AtPopupMode, AtPopupTab[]> = {
@@ -68,7 +67,7 @@ const TAB_LABEL_KEY: Record<AtPopupTab, string> = {
 };
 
 /**
- * 上下文文件面板：打开拉一次 + 客户端过滤（取数/竞态语义迁自旧
+ * 上下文文件面板：打开拉一次判定可用性，搜索词由服务端过滤（取数/竞态语义迁自旧
  * MentionPopup：迟到响应丢弃、加载中不判定）；数据到达即回调
  * onAvailability（空=无上下文文件，宿主据此在最开始收敛 tabs——
  * 不出现「先展示文件 tab 再消失」的闪变）。
@@ -99,6 +98,11 @@ const FilePanel: React.FC<{
   // 状态更新对后者不可见，空判定必须读 ref（沿用旧组件的竞态结论）
   const loadingRef = useRef(true);
   const [error, setError] = useState(false);
+  const [searchFiles, setSearchFiles] = useState<FileMentionItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState(false);
+  const keyword = searchText.trim();
 
   useEffect(() => {
     if (!visible || !onFetchMentionFiles) {
@@ -112,7 +116,7 @@ const FilePanel: React.FC<{
     setLoading(true);
     setError(false);
     Promise.resolve()
-      .then(onFetchMentionFiles)
+      .then(() => onFetchMentionFiles())
       .then((items) => {
         if (!cancelled) setFiles(items);
       })
@@ -130,6 +134,37 @@ const FilePanel: React.FC<{
     };
   }, [visible, onFetchMentionFiles]);
 
+  useEffect(() => {
+    if (!visible || !onFetchMentionFiles || !keyword) {
+      setSearchQuery('');
+      setSearchFiles([]);
+      setSearchLoading(false);
+      setSearchError(false);
+      return;
+    }
+    let cancelled = false;
+    setSearchQuery(keyword);
+    setSearchFiles([]);
+    setSearchLoading(true);
+    setSearchError(false);
+    const timer = window.setTimeout(() => {
+      void onFetchMentionFiles(keyword)
+        .then((items) => {
+          if (!cancelled) setSearchFiles(items);
+        })
+        .catch(() => {
+          if (!cancelled) setSearchError(true);
+        })
+        .finally(() => {
+          if (!cancelled) setSearchLoading(false);
+        });
+    }, FILE_SEARCH_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [visible, onFetchMentionFiles, keyword]);
+
   // 数据到达即上报可用性（与搜索词无关——空数据=无上下文文件；
   // 加载中/失败不判定，保持当前形态）
   useEffect(() => {
@@ -137,32 +172,27 @@ const FilePanel: React.FC<{
     onAvailability(files.length === 0);
   }, [visible, loading, error, files, onAvailability]);
 
-  const items = useMemo(() => {
-    const query = searchText.toLowerCase();
-    return files
-      .filter(
-        (file) =>
-          file.name.toLowerCase().includes(query) ||
-          file.relativePath.toLowerCase().includes(query),
-      )
-      .slice(0, FILE_LIST_LIMIT);
-  }, [files, searchText]);
+  const items = keyword ? (searchQuery === keyword ? searchFiles : []) : files;
+  const itemsLoading = keyword
+    ? searchQuery !== keyword || searchLoading
+    : loading;
+  const itemsError = keyword ? searchQuery === keyword && searchError : error;
 
   // 常驻挂载仅控展示：隐藏时保持取数/可用性上报（见组件头注释）
   if (!rendered) return null;
   return (
     <div className={cx(styles['file-list'])}>
-      {(loading || error) && (
+      {(itemsLoading || itemsError) && (
         <div className={cx(styles['file-state'])} role="status">
-          {loading ? (
+          {itemsLoading ? (
             <Spin size="small" />
           ) : (
             t('PC.Components.ChatInputCommands.loadFailed')
           )}
         </div>
       )}
-      {!loading &&
-        !error &&
+      {!itemsLoading &&
+        !itemsError &&
         items.map((item) => (
           <div
             key={`file:${item.relativePath}`}
@@ -177,7 +207,7 @@ const FilePanel: React.FC<{
             </span>
           </div>
         ))}
-      {!loading && !error && items.length === 0 && (
+      {!itemsLoading && !itemsError && items.length === 0 && (
         <div className={cx(styles['file-state'])}>
           {t('PC.Components.ChatInputHomeMentionPopup.emptyNotFound')}
         </div>

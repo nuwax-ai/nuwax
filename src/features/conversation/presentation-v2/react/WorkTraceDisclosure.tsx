@@ -297,6 +297,8 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
         />
       );
     }
+    // 过程说明与工具详情同属轨迹内容，整轮收起时一并卸载。
+    if (!showDetails) return null;
     if (item.kind === 'narration') {
       return (
         <NarrationText key={item.id} narrationId={item.id}>
@@ -304,7 +306,6 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
         </NarrationText>
       );
     }
-    if (!showDetails) return null;
     if (item.kind === 'standalone' && isTodoTraceNode(item.node)) {
       return <TodoTraceNode key={item.id} node={item.node} />;
     }

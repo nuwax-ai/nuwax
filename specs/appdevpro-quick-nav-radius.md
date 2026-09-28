@@ -5,20 +5,22 @@
 
 ## 方案设计
 
-ConversationQuickNav 接受可选 minContainerWidth，默认 600；UnifiedChatSession 通过 quickNavMinContainerWidth 透传。AppDevPro 的 AgentConversationChatPanel 设置 400。页面会话主体增加 20px 左留白，供导航左移 10px 后仍落在页面内容区内。最低分栏 430px 扣除右侧 8px 间距及左侧 20px 留白，消息区约 402px。
+ConversationQuickNav 在导航项至少两个（至少两轮；一问一答算一项）时显示，不限制消息区宽度及滚动高度。显示前仍要求容器正宽高，避免隐藏缓存页留下导航。
 
-2026-09-28 跟进：用户明确要求在 `/space/752/app-pro/147/1694189` 出现会话快捷导航。实页确认只有一轮，但消息区 684px 高、内容 1034px 高，原有四轮门槛仍隐藏导航。因此新增 displayMode（auto / scrollable），由 UnifiedChatSession 的 quickNavDisplayMode 透传；AppDevPro 使用 scrollable，至少一轮且消息区实际可滚动时显示。
+用户最终明确“要两个及其以上才展示”，所有入口采用相同条件。删除此前 displayMode / quickNavDisplayMode 配置和 AppDevPro 单轮可滚动例外。`/space/752/app-pro/147/1694189` 只有一轮，按最终规则隐藏；`/space/752/app-pro/147/1694190` 有两轮，展示两个导航项。
+
+页面会话主体增加 20px 左留白，供导航左移 10px 后仍落在页面内容区内。最低分栏 430px 扣除右侧 8px 间距及左侧 20px 留白，消息区约 402px。
 
 AppDevPro 的 content-container 使用 16px 圆角，与 Chat 文件树和终端工具面板一致；沿用 overflow:hidden，让内部预览和终端在外框圆角内裁剪。现有全屏 0px 圆角覆盖继续生效。
 
 ## 数据与契约
 
-只增加可选布局属性；消息、轮次构建、滚动锚点、悬停动画及接口不变。普通会话保持默认 600px 门槛、至少四轮及内容高度至少 1.5 倍视口的原有条件。AppDevPro 的 scrollable 模式仅要求非空轮次、正高度容器及 scrollHeight > clientHeight。
+公共规则统一为至少两项且容器正宽高；消息、轮次构建、滚动锚点、悬停动画及接口不变。组件接入只需消息列表与滚动容器引用。
 
 ## 异常与失败场景
 
-消息区窄于配置门槛、没有可读轮次、内容不足以滚动时隐藏导航。auto 模式继续要求至少四轮。配置变化、分栏拖拽时重新测量。
+少于两项、隐藏页容器宽高为零时隐藏。内容更新、分栏拖拽、隐藏缓存页恢复时重新测量。
 
 ## 测试计划
 
-现有快捷导航测试覆盖工作台约 402px 显示、399px 隐藏及配置切换；补充单轮可滚动会话显示、点击和无滚动/空列表隐藏。直接在用户提供的实页验证导航出现、悬停预览及点击定位。运行 test:conversation。
+现有快捷导航测试覆盖单轮长回复隐藏、两项显示、两项在窄宽和无滚动时仍显示，消息增减在一项与两项之间切换，以及空列表/零尺寸隐藏。用上述两个真实详情页验证一轮隐藏、两轮显示，运行 test:conversation。

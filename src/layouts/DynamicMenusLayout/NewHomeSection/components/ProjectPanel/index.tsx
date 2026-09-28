@@ -76,10 +76,6 @@ import {
   useState,
 } from 'react';
 import { history } from 'umi';
-import {
-  markConversationExecuting,
-  markConversationFinished,
-} from '../../finishedConversationUnread';
 import { formatRelativeTime } from '../../utils';
 import ConversationStatusMark from '../ConversationStatusMark';
 import { CHILDREN_PROBE_LIMIT, diffChildrenProbe } from './childrenProbe';
@@ -248,12 +244,10 @@ const ProjectPanel = forwardRef<
     /** 反查结果上报:命中传会话 id、未命中传 null(任务列表据此互斥,选中只落一处) */
     onActiveChildResolved?: (conversationId: string | null) => void;
     /**
-     * 子会话行行首状态标记(单栏 style3 启用):执行中转圈替换「执行中」文字胶囊、
-     * 结束未读亮蓝点。经典布局不传维持现状(2026-09-17 定调:style1/2 待定)。
+     * 子会话行行首状态标记(单栏 style3 启用):执行中转圈替换「执行中」文字胶囊。
+     * 经典布局不传维持现状。
      */
     leadingMark?: boolean;
-    /** 会话结束未读 id 快照(leadingMark 开启时消费) */
-    unreadConversationIds?: ReadonlySet<string>;
   }
 >(
   (
@@ -264,7 +258,6 @@ const ProjectPanel = forwardRef<
       activeConversationId,
       onActiveChildResolved,
       leadingMark = false,
-      unreadConversationIds,
     },
     ref,
   ) => {
@@ -341,35 +334,18 @@ const ProjectPanel = forwardRef<
     const pageRef = useRef(1);
     const projectsRef = useRef(projects);
     projectsRef.current = projects;
-    // 项目子会话同任务列表观察执行代次；只由新执行允许下一次完成记未读。
-    // 首见终态不记，终态探针/事件与此处的跃迁共用 store 去重。
-    const childrenTaskStatusRef = useRef(new Map<string, TaskStatus>());
+    // 首次加载的项目子会话补充状态观察，供列表事件去重使用。
     const observedTaskStatusesRef = useRef(new Map<string, TaskStatus>());
     useEffect(() => {
-      const previous = childrenTaskStatusRef.current;
-      const next = new Map<string, TaskStatus>();
       for (const project of projects) {
         for (const child of project.children ?? []) {
           if (child.taskStatus === undefined) continue;
           const id = String(child.id);
-          next.set(id, child.taskStatus);
           if (!observedTaskStatusesRef.current.has(id)) {
             observedTaskStatusesRef.current.set(id, child.taskStatus);
           }
-          if (
-            child.taskStatus === TaskStatus.EXECUTING &&
-            previous.get(id) !== TaskStatus.EXECUTING
-          ) {
-            markConversationExecuting(id);
-          } else if (
-            previous.get(id) === TaskStatus.EXECUTING &&
-            isTerminalTaskStatus(child.taskStatus)
-          ) {
-            markConversationFinished(id);
-          }
         }
       }
-      childrenTaskStatusRef.current = next;
     }, [projects]);
     const pageRequestVersionRef = useRef(0);
     const recentProjectEventsRef = useRef<
@@ -973,7 +949,7 @@ const ProjectPanel = forwardRef<
               return;
             }
             const result = diffChildrenProbe(projectsRef.current, rows);
-            // EXECUTING→终态先经统一入口 emit：本地补丁翻新 + 未读蓝点标记
+            // EXECUTING→终态先经统一入口 emit，同步本地列表状态。
             result.finishedTransitions.forEach(
               ({ conversationId, taskStatus }) =>
                 emitConversationListTaskStatus(conversationId, taskStatus),
@@ -1730,7 +1706,7 @@ const ProjectPanel = forwardRef<
                         }
                       }}
                     >
-                      {/* 固定行首状态槽：默认展示运行/失败/未读，hover 在同一位置
+                      {/* 固定行首状态槽：默认展示运行/失败，hover 在同一位置
                           切换为重命名入口；能力不同但三类行的标题起点保持稳定。 */}
                       <span className={cx(styles['child-leading-slot'])}>
                         <span className={cx(styles['child-leading-status'])}>
@@ -1740,10 +1716,6 @@ const ProjectPanel = forwardRef<
                               child.taskStatus === TaskStatus.FAILED
                                 ? child.taskStatus
                                 : undefined
-                            }
-                            unread={
-                              leadingMark &&
-                              unreadConversationIds?.has(String(child.id))
                             }
                           />
                         </span>

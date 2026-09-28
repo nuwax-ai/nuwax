@@ -69,8 +69,6 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   isAwaitingChatTerminal = false,
   messageBottomMode = 'home',
   showDebug,
-  quickNavMinContainerWidth,
-  quickNavDisplayMode,
   loadingSuggest = false,
   chatSuggestList = [],
   agentInfo = {},
@@ -99,10 +97,12 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   showAnnouncement,
   mentionPlacement,
   selectedComputerId = '',
+  hasChangedComputerInEmptySession = false,
   restoreConversationSandbox = false,
   onComputerSelect,
 
   showScrollBtn = false,
+  active = true,
   allowAutoScrollRef,
   scrollTimeoutRef,
   setShowScrollBtn,
@@ -152,6 +152,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     handleMouseEnter,
     handleMouseLeave,
   } = useUnifiedChatScroll({
+    active,
     messageList,
     isConversationActive,
     chatSuggestList,
@@ -346,6 +347,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     conversationInfo,
     restoreConversationSandbox,
     selectedComputerId,
+    hasChangedComputerInEmptySession,
     agentSandboxId: agentInfo?.sandboxId,
     isSelectionLocked,
     hasUserSentMessage,
@@ -445,8 +447,6 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
       <ConversationQuickNav
         scrollContainerRef={messageViewRef}
         messageList={messageList ?? []}
-        minContainerWidth={quickNavMinContainerWidth}
-        displayMode={quickNavDisplayMode}
       />
 
       {/* 会话执行状态栏 */}

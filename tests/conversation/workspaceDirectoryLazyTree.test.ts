@@ -86,6 +86,8 @@ describe('工作区文件树异步懒加载', () => {
       expect(apiGetStaticFileList).toHaveBeenCalledWith(2592, {
         relativePath: '',
         recursive: false,
+        depth: 2,
+        type: 'file',
       }),
     );
     await waitFor(() =>
@@ -177,6 +179,8 @@ describe('工作区文件树异步懒加载', () => {
     expect(apiGetStaticFileList).toHaveBeenLastCalledWith(2592, {
       relativePath: 'src',
       recursive: false,
+      depth: 2,
+      type: 'file',
     });
   });
 
@@ -291,6 +295,8 @@ describe('工作区文件树异步懒加载', () => {
       expect(apiGetStaticFileList).toHaveBeenCalledWith(2592, {
         relativePath: '',
         recursive: false,
+        depth: 2,
+        type: 'file',
       }),
     );
   });

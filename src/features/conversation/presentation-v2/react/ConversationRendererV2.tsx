@@ -20,7 +20,7 @@ import type {
 import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import { projectConversation } from '../projectConversation';
+import { createConversationProjector } from '../projectConversation';
 import type {
   ConversationPresentationV2,
   ConversationRenderPreferencesV2,
@@ -311,6 +311,10 @@ const ConversationRendererV2Inner: React.FC<ConversationRendererV2Props> = (
   } = props;
   const { preferences: hookPreferences } = useConversationRendererPreference();
   const preferences = preferencesProp ?? hookPreferences;
+  const projectConversation = useMemo(
+    () => createConversationProjector(),
+    [conversationId],
+  );
 
   const projection = useMemo(() => {
     try {
@@ -321,7 +325,7 @@ const ConversationRendererV2Inner: React.FC<ConversationRendererV2Props> = (
     } catch (error) {
       return { data: null, error };
     }
-  }, [messageList]);
+  }, [messageList, projectConversation]);
 
   useEffect(() => {
     onPresentation?.(projection.data);

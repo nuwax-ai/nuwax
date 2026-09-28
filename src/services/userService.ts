@@ -7,6 +7,21 @@ import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { isChatTemp, redirectToLogin } from '@/utils/router';
 import { message } from 'antd';
 const LOGIN_STATUS_KEY = 'userLoginStatus';
+// 根容器在 model provider 外；仅订阅既有登录保存/失效入口，不另建鉴权机制。
+let observedLoginStatus: boolean | null = null;
+const loginStatusListeners = new Set<() => void>();
+const publishLoginStatus = (status: boolean) => {
+  if (observedLoginStatus === status) return;
+  observedLoginStatus = status;
+  loginStatusListeners.forEach((listener) => listener());
+};
+
+export const subscribeLoginStatus = (listener: () => void): (() => void) => {
+  loginStatusListeners.add(listener);
+  return () => {
+    loginStatusListeners.delete(listener);
+  };
+};
 // ===== 缓存管理方法 =====
 /**
  * 从缓存中获取登录状态
@@ -24,6 +39,7 @@ export const getLoginStatusFromCache = (): boolean | null => {
  */
 export const setLoginStatusToCache = (status: boolean): void => {
   sessionStorage.setItem(LOGIN_STATUS_KEY, status ? 'true' : 'false');
+  publishLoginStatus(status);
 };
 
 /**
@@ -31,6 +47,7 @@ export const setLoginStatusToCache = (status: boolean): void => {
  */
 export const clearLoginStatusCache = (): void => {
   sessionStorage.removeItem(LOGIN_STATUS_KEY);
+  publishLoginStatus(false);
 };
 /**
  * 用户信息服务
@@ -57,6 +74,7 @@ export class UserService {
   static saveUserInfoToStorage(userInfo: any): void {
     try {
       localStorage.setItem(USER_INFO, JSON.stringify(userInfo));
+      publishLoginStatus(!!userInfo);
     } catch (error) {
       console.error('Failed to save user info to local storage:', error);
     }
@@ -67,6 +85,7 @@ export class UserService {
    */
   static clearUserInfo(): void {
     localStorage.removeItem(USER_INFO);
+    publishLoginStatus(false);
   }
 
   /**
@@ -176,6 +195,9 @@ export class UserService {
     }
   }
 }
+
+export const getCurrentLoginStatus = (): boolean =>
+  observedLoginStatus ?? UserService.isLoggedIn();
 
 // 导出默认实例方法（如果喜欢函数式调用）
 export const userService = {

@@ -80,6 +80,7 @@ import {
 import { fetchContentOutcome } from '@/services/skill';
 import {
   apiGetStaticFileList,
+  apiSearchFiles,
   apiUpdateStaticFile,
 } from '@/services/vncDesktop';
 
@@ -488,6 +489,8 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     setIsSelectionLocked,
     hasUserSentMessage,
     setHasUserSentMessage,
+    hasChangedComputerInEmptySession,
+    handleComputerSelect,
     getEffectiveSandboxId,
     finalSelectedId,
   } = useChatSandbox({
@@ -496,6 +499,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     history: { action: routeAction },
     effectiveAgent,
     conversationInfo,
+    hasPersistedMessage: messageList.some((message) => Boolean(message?.id)),
   });
 
   /** 文件树预览区底部终端是否显示 */
@@ -2071,25 +2075,30 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   // 会话面 props 覆盖旧线字段；flag 关闭（默认）时 conversationProps 为空对象，
   // 旧线路径原值原行为。runtimeLine 已在产物入口判断前创建。
 
-  const fetchMentionFiles = useCallback(async (): Promise<
-    FileMentionItem[]
-  > => {
-    if (!id) return [];
-    const response = await apiGetStaticFileList(id, {
-      relativePath: '',
-      recursive: true,
-      type: 'file',
-      limit: 100,
-    });
-    if (response.code !== SUCCESS_CODE) throw new Error('会话文件列表加载失败');
-    return (response.data?.files ?? [])
-      .filter((file) => !file.isDir)
-      .map((file) => ({
-        kind: 'file',
-        relativePath: file.name,
-        name: file.name.split('/').pop() || file.name,
-      }));
-  }, [id]);
+  const fetchMentionFiles = useCallback(
+    async (keyword = ''): Promise<FileMentionItem[]> => {
+      if (!id) return [];
+      const kw = keyword.trim();
+      const response = kw
+        ? await apiSearchFiles({ cId: id, kw, limit: 100 })
+        : await apiGetStaticFileList(id, {
+            relativePath: '',
+            recursive: true,
+            type: 'file',
+            limit: 100,
+          });
+      if (response.code !== SUCCESS_CODE)
+        throw new Error('会话文件列表加载失败');
+      return (response.data?.files ?? [])
+        .filter((file) => !file.isDir)
+        .map((file) => ({
+          kind: 'file',
+          relativePath: file.name,
+          name: file.name.split('/').pop() || file.name,
+        }));
+    },
+    [id],
+  );
 
   /**
    * V2 工具详情资源点击：文件 → 打开预览面板（与 FINAL_RESULT task-result
@@ -2212,8 +2221,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isSelectionLocked,
     hasUserSentMessage,
     selectedComputerId: finalSelectedId,
+    hasChangedComputerInEmptySession,
     restoreConversationSandbox: true,
-    onComputerSelect: setSelectedComputerId,
+    onComputerSelect: handleComputerSelect,
     showScrollBtn,
     allowAutoScrollRef,
     scrollTimeoutRef,
@@ -2259,6 +2269,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     <>
       <PagePreviewIframe
         pagePreviewData={pagePreviewData}
+        active={active && isPagePreviewVisible}
         showHeader={true}
         onClose={handleHidePagePreview}
         showCloseButton={!effectiveAgent?.hideChatArea}

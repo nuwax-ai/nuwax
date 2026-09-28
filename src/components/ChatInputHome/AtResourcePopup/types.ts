@@ -4,7 +4,7 @@
  * 上下文文件 + 资料库；/ = 技能(便捷视图，单列表无切换器)。专家/
  * 资料库/技能列表内聚复用 ExpertListView / KnowledgeListView /
  * SkillListView（variant=list，数据/付费拦截/滚动分页自理），
- * 文件面板取数过滤迁自旧 MentionPopup；键盘导航经 DOM 卡片代理。
+ * 文件面板由服务端过滤；键盘导航经 DOM 卡片代理。
  */
 
 import type { ExpertListItem } from '@/components/business-component/ExpertListView';
@@ -37,7 +37,7 @@ export interface AtResourcePopupProps {
     /** 向上展开时使用 bottom 定位 */
     bottom?: number;
   };
-  /** 触发后实时输入的搜索文本（受控；专家/资料库/技能经列表组件内防抖，文件客户端过滤） */
+  /** 触发后实时输入的搜索文本（受控；文件搜索在弹层内防抖请求） */
   searchText?: string;
   /** 会话页上下文文件数据源（mode=session 必传） */
   onFetchMentionFiles?: FetchMentionFiles;
