@@ -19,8 +19,8 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    // 头部移入左右两栏内部，顶部间距由栏内头部 padding 提供
-    margin: 0 @marginSm @marginSm;
+    // 与 home/chat 对齐：右侧保留 20px，左侧间距由会话栏内部提供。
+    margin: 0 20px 0 0;
   }
 
   .main-row {
@@ -95,6 +95,8 @@
     min-height: 0;
     display: flex;
     overflow: hidden;
+    // 为 AI 提示的行高留出空间，使面板底边与输入框卡片底边对齐。
+    padding-bottom: @fontHeight;
   }
 
   .middle-panel {

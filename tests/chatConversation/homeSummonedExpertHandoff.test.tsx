@@ -63,6 +63,9 @@ vi.mock('umi', () => ({
 vi.mock('@/pages/Home/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
+vi.mock('@/components/SiteFooter/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
 vi.mock('@/pages/Home/components/ChatBoxRecommendNav/index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));

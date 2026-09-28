@@ -125,6 +125,8 @@ export interface UnifiedChatSessionProps {
   onComputerSelect?: (id: string) => void;
 
   showScrollBtn?: boolean;
+  /** 保活页面是否可见；隐藏时暂停滚动，切回恢复最后阅读位置。 */
+  active?: boolean;
   allowAutoScrollRef?: React.MutableRefObject<boolean>;
   scrollTimeoutRef?: React.MutableRefObject<any>;
   setShowScrollBtn?: (show: boolean) => void;

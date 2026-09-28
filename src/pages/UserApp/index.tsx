@@ -36,9 +36,10 @@ const normalizeDomainUrl = (domain?: string): string => {
 };
 
 /** 单应用实例实现:appId/homepageUrl 每标签各一份(保活容器按实例隔离渲染) */
-const UserAppPage: React.FC<{ appId: number; homepageUrl: string }> = ({
+const UserAppPage: React.FC<AppTabInstanceProps> = ({
   appId,
   homepageUrl,
+  active,
 }) => {
   // 域名列表:GET /api/userapp/domain/list(appId query);homepageUrl 直载
   // 场景 ready=false,首挂即不请求也不进 loading(应用切换 = 保活容器切
@@ -102,6 +103,7 @@ const UserAppPage: React.FC<{ appId: number; homepageUrl: string }> = ({
       <PagePreviewIframe
         className="flex-1"
         pagePreviewData={pagePreviewData}
+        active={active}
         showHeader={false}
         showCloseButton={false}
         commandKey={`${USER_APP_PATH_PREFIX}/${appId}`}
@@ -118,7 +120,8 @@ const UserAppPage: React.FC<{ appId: number; homepageUrl: string }> = ({
 const AppTabInstance: React.FC<AppTabInstanceProps> = ({
   appId,
   homepageUrl,
-}) => <UserAppPage appId={appId} homepageUrl={homepageUrl} />;
+  active,
+}) => <UserAppPage appId={appId} homepageUrl={homepageUrl} active={active} />;
 
 /**
  * 路由层空壳:/user-app/:appId 的页面渲染已上移 SidebarShell 的

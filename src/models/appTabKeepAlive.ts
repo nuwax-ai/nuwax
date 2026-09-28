@@ -15,6 +15,8 @@ export interface AppTabInstanceProps {
   appId: number;
   /** 三方应用主页直载地址(空串 = 全栈应用,走域名接口) */
   homepageUrl: string;
+  /** 缓存实例的 UI 可见性；保持实例和 iframe 常驻。 */
+  active?: boolean;
 }
 
 /** agent 标签缓存实例渲染入参(/agent/:agentId 会话发起页) */

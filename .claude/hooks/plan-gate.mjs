@@ -1,5 +1,6 @@
-// nuwa-sdlc-kit v1.3.1 · engine file — 托管件，upgrade 会覆盖手工修改
-// SDLC Stage-3 计划门禁：源码区（.sdlc.json srcPaths 正则）会话首改追问一次；
+// nuwa-sdlc-kit v1.4.0 · engine file — 托管件，upgrade 会覆盖手工修改
+// SDLC Stage-3 计划门禁：源码区（.sdlc.json srcPaths 正则）会话首改提醒一次；
+// 小修/BUG 重试即放行（提醒语第一条即快道），大需求才要求 plans/specs 工件；
 // plans/specs 类工件目录有在途改动即放行；marker 记账同会话只问一次；
 // <ENVPREFIX>_SKIP_PLAN_GATE=1 停用（envPrefix 读 .sdlc.json，默认 SDLC）。
 import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
@@ -52,9 +53,9 @@ process.stdin.on('end', () => {
 
   if (inflow) process.exit(0);
   console.error(
-    `[plan-gate:${cfg.name ?? 'repo'}] 本次仅提醒一次：检测到对源码「${rel}」的编辑，但工作区没有进行中的 ${workDirs.join('/')} 工件。\n` +
-    `· 新任务：先用 templates/plan.md 建计划（完整链见 .claude/skills/requirement-analysis → grill-with-docs）；\n` +
-    `· 计划内小修：直接重试刚才的编辑即可放行（同会话不再追问）；\n` +
+    `[plan-gate:${cfg.name ?? 'repo'}] 本次仅提醒一次：检测到对源码「${rel}」的编辑，工作区没有进行中的 ${workDirs.join('/')} 工件。\n` +
+    `· 小修/BUG 修复（≤3 文件、无新接口契约、无跨模块联动）：无需任何工件，直接重试刚才的编辑即放行（同会话不再提醒），改完跑该域测试；\n` +
+    `· 新功能/大需求：先用 templates/plan.md 备计划（完整链见 skills requirement-analysis → grill-with-docs）；\n` +
     `· 停用门禁：设置环境变量 ${prefix}_SKIP_PLAN_GATE=1。`
   );
   process.exit(2);

@@ -2,6 +2,8 @@
 @import '@/styles/token.less';
 
 .container {
+  // X6 会取整画布尺寸，约束亚像素溢出以避免外层滚动条反复触发自动调整。
+  overflow: hidden;
   background-image: @backgroundImage;
   background-size: cover;
   background-position: center;

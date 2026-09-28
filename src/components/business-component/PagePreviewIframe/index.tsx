@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { SANDBOX } from '@/constants/common.constants';
+import useHostVisibility from '@/hooks/useHostVisibility';
 import { usePageModel } from '@/modelScopes/usePageModel';
 import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
@@ -20,6 +21,7 @@ import React, {
 } from 'react';
 import TurndownService from 'turndown';
 import styles from './index.less';
+import { observePreviewDocument } from './observePreviewDocument';
 
 const cx = classNames.bind(styles);
 
@@ -84,6 +86,8 @@ interface PagePreviewIframeProps {
    * 不传（默认）不订阅，既有消费方行为完全不变
    */
   commandKey?: string;
+  /** 当前缓存实例是否可见；仅控制标题观察，不暂停业务内容上报。 */
+  active?: boolean;
 }
 
 /**
@@ -111,6 +115,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   copyButtonText = t('PC.Components.PagePreviewIframe.copyTemplate'),
   copyButtonClassName,
   commandKey,
+  active = true,
 }) => {
   const [iframeKey, setIframeKey] = useState(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -128,9 +133,26 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   const [canGoBack, setCanGoBack] = useState<boolean>(false);
   const [canGoForward, setCanGoForward] = useState<boolean>(false);
 
-  // 用于存储 MutationObserver 实例，以便清理
-  const observerRef = useRef<MutationObserver | null>(null);
-  const observerTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hostVisible = useHostVisibility();
+  const [documentVisible, setDocumentVisible] = useState(
+    () => !document.hidden,
+  );
+  const uiVisible = active && hostVisible && documentVisible;
+  const uiVisibleRef = useRef(uiVisible);
+  uiVisibleRef.current = uiVisible;
+  const observerRef = useRef<ReturnType<typeof observePreviewDocument> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const update = () => setDocumentVisible(!document.hidden);
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
+
+  useEffect(() => {
+    observerRef.current?.setVisible(uiVisible);
+  }, [uiVisible]);
 
   // 构建页面 URL（拼接 query 参数）
   const pageUrl = useMemo(() => {
@@ -339,28 +361,20 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     setCanGoForward(false);
   }
 
-  // 处理页面内容变化和上报
+  // 导航与业务内容上报保持常驻；标题观察按 UI 可见性暂停，不重设 iframe src。
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe || !pagePreviewData) return;
-
-    // 清理函数：断开 observer，清除定时器
+    let navigationTimer: ReturnType<typeof setTimeout> | undefined;
     const cleanupObserver = () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-      }
-      if (observerTimerRef.current) {
-        clearTimeout(observerTimerRef.current);
-        observerTimerRef.current = null;
-      }
+      observerRef.current?.disconnect();
+      observerRef.current = null;
     };
-
-    // 每次 effect 执行前先清理（loading 状态仅在真正重设 src 时置起，
-    // 见下方同值跳过分支：跳过重载就没有 load 事件可复位，不能误置）
     cleanupObserver();
 
-    const handleLoad = debounce(async () => {
+    const handleLoad = debounce(() => {
+      // 同一 iframe 内连续导航也会替换 Document，必须先释放上一份观察器。
+      cleanupObserver();
       let iframeDoc: Document | null = null;
       try {
         iframeDoc =
@@ -373,110 +387,72 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         setIsLoading(false);
         return;
       }
-
-      if (!iframeDoc || !iframeDoc.body) return;
-
-      const turndownService = new TurndownService();
-
-      // 定义 Observer 回调
-      const observerCallback = () => {
-        if (observerTimerRef.current) {
-          clearTimeout(observerTimerRef.current);
+      if (!iframeDoc?.body) return;
+      const doc = iframeDoc;
+      let turndownService: TurndownService | undefined;
+      const reportContent = async () => {
+        // 保持既有 navigate 请求、Nginx 特殊反馈以及完整 HTML/Markdown 内容。
+        const html =
+          pagePreviewData.data_type === 'html' ||
+          pagePreviewData.data_type === 'markdown'
+            ? doc.body.innerHTML
+            : '';
+        const nginxWelcomeText = doc.body.querySelector('body>h1')?.textContent;
+        if (nginxWelcomeText === 'Welcome to nginx!') {
+          await apiAgentComponentPageResultUpdate({
+            requestId: pagePreviewData.request_id as string,
+            html: t('PC.Components.PagePreviewIframe.unableToReadData'),
+          });
         }
-        observerTimerRef.current = setTimeout(async () => {
-          if (!iframeDoc?.body) return;
-
-          const title =
-            iframeDoc.querySelector('head > title')?.textContent ||
-            t('PC.Components.PagePreviewIframe.defaultPageTitle');
-          setPreviewPageTitle(title);
-
-          const html = iframeDoc.body.innerHTML;
-
-          // 检查 Nginx Welcome
-          if (pagePreviewData?.method === 'browser_navigate_page') {
-            const nginxWelcomeText =
-              iframeDoc.body.querySelector('body>h1')?.textContent;
-
-            if (nginxWelcomeText === 'Welcome to nginx!') {
-              const params = {
-                requestId: pagePreviewData?.request_id as string,
-                html: t('PC.Components.PagePreviewIframe.unableToReadData'),
-              };
-              console.log('CHART1', params);
-              await apiAgentComponentPageResultUpdate(params);
-              // 继续执行后续逻辑，或者 return
-            }
-          }
-
-          if (!pagePreviewData?.method) return;
-
-          let str = '';
-          if (pagePreviewData.data_type === 'html') {
-            str = html;
-          } else if (pagePreviewData.data_type === 'markdown') {
-            str = turndownService.turndown(html);
-          }
-
-          if (pagePreviewData?.method === 'browser_navigate_page') {
-            const params = {
-              requestId: pagePreviewData.request_id || '',
-              html: str,
-            };
-            console.log('CHART2', params);
-            await apiAgentComponentPageResultUpdate(params);
-          }
-        }, 500);
+        let str = '';
+        if (pagePreviewData.data_type === 'html') {
+          str = html;
+        } else if (pagePreviewData.data_type === 'markdown') {
+          turndownService ??= new TurndownService();
+          str = turndownService.turndown(html);
+        }
+        await apiAgentComponentPageResultUpdate({
+          requestId: pagePreviewData.request_id || '',
+          html: str,
+        });
       };
-
-      // 创建并启动 Observer
-      observerRef.current = new MutationObserver(observerCallback);
-      observerRef.current.observe(iframeDoc.body, {
-        childList: true,
-        subtree: true,
-        characterData: true,
+      observerRef.current = observePreviewDocument(doc, {
+        visible: uiVisibleRef.current,
+        onTitle: () => {
+          setPreviewPageTitle(
+            doc.querySelector('head > title')?.textContent ||
+              t('PC.Components.PagePreviewIframe.defaultPageTitle'),
+          );
+        },
+        onContent:
+          pagePreviewData.method === 'browser_navigate_page'
+            ? reportContent
+            : undefined,
       });
-
-      // 立即触发一次处理
-      observerCallback();
     }, 100);
-
-    // 绑定 onload
     iframe.onload = handleLoad;
 
-    // 设置 src:同值不重赋——iframe.src 赋值(即使与当前值相同)也按导航
-    // 处理会触发整页重载。上层重渲染带来的依赖抖动(pagePreviewData 对象
-    // 引用变化等)且目标地址未变时,改为直接重挂内容监听(等价一次不触发
-    // load 事件的重新绑定,不重载页面)。iframe.src getter 返回当前导航
-    // 地址:iframe 内部已导航到别处时与目标不一致,仍会重设拉回(原语义)
+    // 同值跳过，缓存页切换只更新观察器，不重新加载已打开的页面。
     if (iframe.src === pageUrl) {
       handleLoad();
-      return () => {
-        iframe.onload = null;
-        handleLoad.cancel();
-        cleanupObserver();
-      };
-    }
-    setIsLoading(true);
-
-    const hasHash = pageUrl.includes('#');
-    if (hasHash) {
-      iframe.src = '';
-      setTimeout(() => {
-        if (iframeRef.current) {
-          iframeRef.current.src = pageUrl;
-        }
-      }, 50);
     } else {
-      iframe.src = pageUrl;
+      setIsLoading(true);
+      if (pageUrl.includes('#')) {
+        iframe.src = '';
+        navigationTimer = setTimeout(() => {
+          iframe.src = pageUrl;
+        }, 50);
+      } else {
+        iframe.src = pageUrl;
+      }
     }
-
     return () => {
       iframe.onload = null;
       handleLoad.cancel();
+      clearTimeout(navigationTimer);
       cleanupObserver();
     };
-  }, [pagePreviewData, pageUrl, setPreviewPageTitle]);
+  }, [pagePreviewData, pageUrl, setPreviewPageTitle, iframeKey]);
 
   /**
    * 监听来自 iframe 的 postMessage 消息

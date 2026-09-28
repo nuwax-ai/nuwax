@@ -37,7 +37,7 @@ UnifiedChatSession/components/ChatContentArea  渲染线选择边界（messageRe
 ## 关键契约
 
 - **轮次分组**：优先 requestId 归组（同轮非空 requestId 变化切分），缺失回退 USER 消息边界；列表头部无 USER 前导的 assistant 消息自成一轮（分页半轮/resume）。
-- **节点类型**：保留原子 `reasoning | context | tool | subagent | plan | completed-interaction | unknown`；中间正文 narration 原位直出，不受预设/逐类覆盖影响。`type=Event` 丢弃（OpenUI render 例外按独立 tool）；无 executeId 的 process 段丢弃（与 V1 null 分支一致）；畸形标签碎片 → unknown。
+- **节点类型**：保留原子 `reasoning | context | tool | subagent | plan | completed-interaction | unknown`；中间正文 narration 在轨迹展开时原位直出，不受预设/逐类覆盖影响，但随整轮轨迹一起收起。`type=Event` 丢弃（OpenUI render 例外按独立 tool）；无 executeId 的 process 段丢弃（与 V1 null 分支一致）；畸形标签碎片 → unknown。
 - **展示分组**：投影后、预设过滤前将节点编排为 `narration | standalone | tool-group`。连续两条及以上普通工具成组；正文、思考、上下文、Plan、子智能体、已完成交互、OpenUI 和未知节点均切断分组；单工具保持独立。组 ID 固定取首节点 ID，重复执行逐条保留，隐藏边界不会导致前后工具误合并。
 - **组语义**：子项存在运行态时组为 running，否则失败优先于完成；组头按首次出现顺序去重显示动作短语。工具展示以协议 `result.kind` / 结构字段优先，组件类型与名称仅作兜底。
 - **最终回答**（三级选择，禁止读 `ConversationInfo.summary`）： ① 最后一条非空 `finalResult.outputText`（剥内嵌标签）② 终态最后一条非空正文段 ③ 无正文只显示停止/错误状态。运行态以末尾正文段为实时回答区。

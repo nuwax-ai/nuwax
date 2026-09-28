@@ -229,6 +229,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           isAwaitingChatTerminal={isAwaitingChatTerminal}
           messageBottomMode="chat"
           showDebug={false}
+          showAnnouncement
           chatSuggestList={chatSuggestList}
           agentInfo={{
             ...conversationInfo?.agent,
@@ -290,6 +291,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           }
           resumeDebugSource="agent-dev:left-dev-agent-session"
           {...(runtimeLine?.conversationProps ?? {})}
+          active={active}
         />
         <ConversationProgressCapsule
           conversationId={queryConversationId}

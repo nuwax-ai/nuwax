@@ -2,6 +2,7 @@ import {
   ConversationBottomConsole,
   FileTreeViewPanel,
 } from '@/components/business-component';
+import AppPageState from '@/components/business-component/AppPageState';
 import type { FileTreeViewRef } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
@@ -72,6 +73,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
+import { isPermissionDeniedError } from '@/utils/requestError';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -116,12 +118,15 @@ const EditAgent: React.FC = () => {
   const fileTreePanelRef = useRef<FileTreeViewRef>(null);
   const spaceId = Number(params.spaceId);
   const agentId = Number(params.agentId);
+  const currentAgentIdRef = useRef(agentId);
+  currentAgentIdRef.current = agentId;
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   const { navigationStyle } = useUnifiedTheme();
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
+  const [agentConfigError, setAgentConfigError] = useState<unknown>(null);
   const [promptVariables, setPromptVariables] = useState<PromptVariable[]>([]);
   const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
   const agentFlowCanvasRef = useRef<AgentFlowCanvasRef>(null);
@@ -239,9 +244,11 @@ const EditAgent: React.FC = () => {
     debounceWait: 300,
     onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
       setLoadingAgentConfigInfo(false);
+      setAgentConfigError(null);
       setAgentConfigInfo(result?.data);
     },
-    onError: () => {
+    onError: (error) => {
+      setAgentConfigError(error);
       setLoadingAgentConfigInfo(false);
     },
   });
@@ -339,6 +346,7 @@ const EditAgent: React.FC = () => {
   });
 
   useEffect(() => {
+    setAgentConfigError(null);
     setLoadingAgentConfigInfo(true);
     run(agentId);
     // 设置页面title
@@ -396,11 +404,6 @@ const EditAgent: React.FC = () => {
       ...agentConfigInfo,
       [attr]: value,
     } as AgentConfigInfo;
-
-    // 已发布的智能体，修改时需要更新修改时间
-    if (_agentConfigInfo.publishStatus === PublishStatusEnum.Published) {
-      _agentConfigInfo.modified = dayjs().toString();
-    }
 
     setAgentConfigInfo(_agentConfigInfo);
 
@@ -585,7 +588,26 @@ const EditAgent: React.FC = () => {
       } as AgentConfigUpdateParams;
 
       // 更新智能体信息
-      await runUpdate(params);
+      try {
+        await runUpdate(params);
+      } catch (error) {
+        // 全局请求层已提示失败；资源权限拒绝在页面展示对应状态，
+        // 普通保存失败保留当前输入，且不执行保存成功的后续操作。
+        if (
+          currentAgentIdRef.current === id &&
+          isPermissionDeniedError(error)
+        ) {
+          setAgentConfigError(error);
+        }
+        return;
+      }
+
+      // 保存成功后才更新时间，避免将失败的草稿标记为已保存。
+      if (_agentConfigInfo.publishStatus === PublishStatusEnum.Published) {
+        setAgentConfigInfo((prev) =>
+          prev?.id === id ? { ...prev, modified: dayjs().toString() } : prev,
+        );
+      }
 
       // 版本管控开关保存成功后：刷新文件树；开启时由 enableGitStatus effect 拉取一次 Git status
       if (attr === 'enableVersionControl' && currentConfig.devConversationId) {
@@ -1149,6 +1171,10 @@ const EditAgent: React.FC = () => {
         <Loading />
       </div>
     );
+  }
+
+  if (agentConfigError || !agentConfigInfo) {
+    return <AppPageState error={agentConfigError} />;
   }
 
   return (

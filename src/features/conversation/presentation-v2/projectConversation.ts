@@ -59,7 +59,20 @@ const firstLine = (text: string, max = 80): string => {
  * 渲染层 effect——focused 预设/轨迹收起时思考行不挂载也能记录。
  * TODO(后端契约)：思考段补 startTime/endTime 后替换此内存锚点。
  */
-const thinkTimingAnchors = new Map<string, { start: number; end?: number }>();
+type ThinkTimingAnchor = { start: number; end?: number };
+type ProjectionState = {
+  thinkTimingAnchors: Map<string, ThinkTimingAnchor>;
+  parsedMessages: WeakMap<
+    MessageInfo,
+    { text: MessageInfo['text']; segments: MessageSegment[] }
+  >;
+};
+const createProjectionState = (): ProjectionState => ({
+  thinkTimingAnchors: new Map(),
+  parsedMessages: new WeakMap(),
+});
+// 保留纯函数入口的兼容观测窗口；每次只保留当前输入里的思考段。
+const defaultProjectionState = createProjectionState();
 
 /**
  * 思考行时长的最小可信窗口（ms）。锚点量的是「客户端观测到的思考流式窗口」
@@ -74,6 +87,7 @@ export const THINK_DURATION_MIN_MS = 1000;
 const thinkDurationMs = (
   nodeId: string,
   running: boolean,
+  thinkTimingAnchors: ProjectionState['thinkTimingAnchors'],
 ): number | undefined => {
   const anchor = thinkTimingAnchors.get(nodeId);
   if (running) {
@@ -99,7 +113,18 @@ const thinkDurationMs = (
 
 /** 测试专用：清空思考时长锚点（测试夹具常复用同一 node id，防用例间串扰） */
 export const __resetThinkTimingAnchorsForTest = (): void => {
-  thinkTimingAnchors.clear();
+  defaultProjectionState.thinkTimingAnchors.clear();
+};
+
+const parseCachedMessage = (
+  message: MessageInfo,
+  state: ProjectionState,
+): MessageSegment[] => {
+  const cached = state.parsedMessages.get(message);
+  if (cached && cached.text === message.text) return cached.segments;
+  const segments = parseMessageSegments(message.text);
+  state.parsedMessages.set(message, { text: message.text, segments });
+  return segments;
 };
 
 const messageStableKey = (
@@ -300,7 +325,10 @@ const collectCompletedPermissionInteractions = (
     }));
 
 /** 单轮投影：节点序列、最终回答、指标 */
-const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
+const projectTurn = (
+  draft: TurnDraft,
+  state: ProjectionState,
+): ConversationTurnPresentationV2 => {
   const assistantMessages = draft.assistantMessages;
   const running = assistantMessages.some((message) =>
     isRunningStatus(message.status),
@@ -334,7 +362,7 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
 
   // ---- 预解析各消息段，确定「回答正文段」归属（回答不进轨迹，其余正文段为 narration）----
   const parsedSegments = assistantMessages.map((message) =>
-    parseMessageSegments(message.text),
+    parseCachedMessage(message, state),
   );
   const lastAnswerSegment = findLastAnswerCandidateSegment(
     assistantMessages,
@@ -474,7 +502,11 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
           status: thinkRunning ? 'running' : 'finished',
           failed: false,
           thinkText: segment.content,
-          durationMs: thinkDurationMs(thinkNodeId, thinkRunning),
+          durationMs: thinkDurationMs(
+            thinkNodeId,
+            thinkRunning,
+            state.thinkTimingAnchors,
+          ),
         });
         return;
       }
@@ -639,8 +671,9 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
  * USER 消息开启新轮；无 USER 前导的 assistant/system 消息（历史半轮/开场白）
  * 自成一轮；同一轮内非空 requestId 变化时切分新轮（requestId 优先归组）。
  */
-export function projectConversation(
+function projectWithState(
   messageList: MessageInfo[] | undefined | null,
+  state: ProjectionState,
 ): ConversationPresentationV2 {
   const ordered = sortMessages((messageList ?? []).slice());
   const drafts: TurnDraft[] = [];
@@ -685,5 +718,28 @@ export function projectConversation(
     current.assistantMessages.push(message);
   });
 
-  return { turns: drafts.map(projectTurn) };
+  const turns = drafts.map((draft) => projectTurn(draft, state));
+  const presentReasoningIds = new Set(
+    turns.flatMap((turn) =>
+      turn.nodes
+        .filter((node) => node.kind === 'reasoning')
+        .map((node) => node.id),
+    ),
+  );
+  for (const key of state.thinkTimingAnchors.keys()) {
+    if (!presentReasoningIds.has(key)) state.thinkTimingAnchors.delete(key);
+  }
+  return { turns };
+}
+
+export function projectConversation(
+  messageList: MessageInfo[] | undefined | null,
+): ConversationPresentationV2 {
+  return projectWithState(messageList, defaultProjectionState);
+}
+
+/** 实例持有状态，随会话渲染器释放；WeakMap 不延长历史消息的生命周期。 */
+export function createConversationProjector(): typeof projectConversation {
+  const state = createProjectionState();
+  return (messageList) => projectWithState(messageList, state);
 }

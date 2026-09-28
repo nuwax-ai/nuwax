@@ -2269,6 +2269,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     <>
       <PagePreviewIframe
         pagePreviewData={pagePreviewData}
+        active={active && isPagePreviewVisible}
         showHeader={true}
         onClose={handleHidePagePreview}
         showCloseButton={!effectiveAgent?.hideChatArea}

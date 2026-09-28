@@ -36,6 +36,8 @@ export async function apiGetStaticFileList(
      * 网关侧仅个人电脑会话放行；云端会话放开为后端契约，未放开前接口会拒绝。
      */
     customTargetDir?: string;
+    // depth 展开层级，不传默认 2。1-当前层 2-多一层 以此类推
+    depth?: number;
   },
 ): Promise<RequestResponse<StaticFileListResponse>> {
   return request('/api/computer/static/file-list', {
@@ -51,6 +53,7 @@ export async function apiGetStaticFileList(
             ...(options.customTargetDir
               ? { customTargetDir: options.customTargetDir }
               : {}),
+            depth: options.depth ?? 2,
           }
         : {}),
     },
@@ -61,7 +64,7 @@ export async function apiGetStaticFileList(
 // 若网关未透传该端点会失败，调用方需准备本地过滤兜底）
 export interface ISearchFilesParams {
   cId: number;
-  // 返回条目类型：file-仅文件、dir-仅目录、all-全部
+  // 返回条目类型：file-仅文件、dir-仅目录、all-全部；不传默认 file（服务端缺省/非法按 all）
   type?: 'file' | 'dir' | 'all';
   // 搜索关键词（至少 1 个字符；目录名/相对路径子串也可命中）
   kw: string;
@@ -94,7 +97,7 @@ export async function apiSearchFiles(
     limit = 200,
     maxVisit = 20000,
     timeoutMs = 2000,
-    type,
+    type = 'file',
   } = params;
   return request('/api/computer/static/search-files', {
     method: 'GET',
@@ -106,7 +109,7 @@ export async function apiSearchFiles(
       limit,
       maxVisit,
       timeoutMs,
-      ...(type ? { type } : {}),
+      type,
     },
   });
 }

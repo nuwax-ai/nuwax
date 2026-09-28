@@ -1,3 +1,4 @@
+import { createConversationProjector } from '@/features/conversation/presentation-v2';
 import { usePageModel } from '@/modelScopes/usePageModel';
 import { t } from '@/services/i18nRuntime';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -256,9 +257,18 @@ const ConversationProgressCapsule: React.FC<
   open,
   onClose,
 }) => {
+  const projectConversation = useMemo(
+    () => createConversationProjector(),
+    [conversationId],
+  );
   const model = useMemo(
-    () => selectProgressCapsule(messageList, active),
-    [active, messageList],
+    () =>
+      selectProgressCapsule(
+        messageList,
+        active,
+        projectConversation(messageList),
+      ),
+    [active, messageList, projectConversation],
   );
   const {
     openPreviewView,

@@ -133,7 +133,7 @@ export default () => {
     type: OptimizeTypeEnum,
   ) => {
     // 启动连接
-    abortConnectionRef.current = await createSSEConnection({
+    const connection = createSSEConnection({
       url: returnUrl(type),
       method: 'POST',
       headers: {
@@ -144,11 +144,12 @@ export default () => {
         handleChangeMessageList(res, currentMessageId);
       },
     });
-
-    // 主动关闭连接
-    // 确保 abortConnectionRef.current 是一个可调用的函数
-    if (typeof abortConnectionRef.current === 'function') {
-      abortConnectionRef.current();
+    abortConnectionRef.current = connection.abort;
+    // 仍等待流结束，避免提前执行调用方的任务收尾。
+    const abort = await connection;
+    abort();
+    if (abortConnectionRef.current === connection.abort) {
+      abortConnectionRef.current = null;
     }
   };
 

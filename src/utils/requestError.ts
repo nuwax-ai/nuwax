@@ -6,7 +6,7 @@ export function isPermissionDeniedError(error: unknown): boolean {
     response?: { status?: number };
   };
   return (
-    String(requestError.info?.code) === '4030' ||
+    ['4030', '4033'].includes(String(requestError.info?.code)) ||
     requestError.response?.status === 403
   );
 }

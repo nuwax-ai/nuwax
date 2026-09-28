@@ -29,12 +29,10 @@ interface ConversationItemProps {
   /** 服务端收藏状态（菜单「收藏/取消收藏」按此选择接口路径与文案） */
   collected?: boolean;
   /**
-   * 状态标记（单栏 style3 启用，展示在行尾）：执行中转圈替换「执行中」文字胶囊，
-   * 结束未读亮蓝点。经典布局不传维持现状（2026-09-17 定调：style1/2 待定）。
+   * 状态标记（单栏 style3 启用，展示在行尾）：执行中转圈替换「执行中」文字胶囊。
+   * 经典布局不传维持现状。
    */
   leadingMark?: boolean;
-  /** 会话结束未读 id 快照（leadingMark 开启时消费） */
-  unreadConversationIds?: ReadonlySet<string>;
   onFlagChanged?: (kind: 'pinned' | 'archived', enabled: boolean) => void;
   onCollectedChanged?: (collected: boolean) => void;
 }
@@ -48,14 +46,12 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   archived = false,
   collected = false,
   leadingMark = false,
-  unreadConversationIds,
   onFlagChanged,
   onCollectedChanged,
 }) => {
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
   );
-  const unread = unreadConversationIds?.has(String(item.id)) === true;
 
   // 行内不再提供归档图标；仅从 ⋯ 菜单进入既有二次确认。
   const [archiveArming, setArchiveArming] = useState(false);
@@ -186,7 +182,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                   <span className={cx(styles['status-mark'])}>
                     <ConversationStatusMark
                       taskStatus={leadingMark ? item.taskStatus : undefined}
-                      unread={leadingMark && unread}
                       fallback={
                         pinned ? (
                           <PushpinFilled
