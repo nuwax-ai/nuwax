@@ -8,6 +8,7 @@ import ChatInputUnified, {
   type ChatInputUnifiedRef,
 } from '@/components/business-component/ChatInputUnified';
 import type { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
+import SiteFooter from '@/components/SiteFooter';
 import {
   findDefaultAgent,
   findTypeFallbackAgent,
@@ -496,7 +497,7 @@ const Home: React.FC = () => {
 
   // 输入框上方异步区块(分类排+推荐 pill 行)终态空判定:两接口都完成且任一
   // 无数据 → 该区域永远不会有内容,收起高度预留避免长期留白;有数据时
-  // 预留与真实内容等高,输入框自首帧起钉在最终位置(禅道bug2493)
+  // 预留与真实内容等高,减少问候语跳动;输入框由独立网格轨道居中(禅道bug2493)
   const aboveInputEmpty =
     recommendLoaded &&
     categoriesLoaded &&
@@ -549,47 +550,47 @@ const Home: React.FC = () => {
       className={cx(styles.container, 'flex', 'flex-col', 'items-center')}
     >
       <main className={cx(styles.inputSection)}>
-        <div className={cx(styles.titleContainer)}>
-          <h2
-            className={cx(styles.title)}
-            dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
-          />
-        </div>
-        {/* 输入框上方异步区块高度预留(禅道bug2493):分类排与推荐 pill 行
-            由接口数据晚到才渲染,不预留时输入框先高位出现、数据到位后被
-            整体推下 ~118px(上下跳动);槽位自首帧钉住最终高度,数据到位
-            恰好填满不再移位;终态确认无内容时收起(见 above-input-slot) */}
-        <div
-          className={cx(styles['above-input-slot'], {
-            [styles['above-input-slot-empty']]: aboveInputEmpty,
-          })}
-        >
-          {/* 推荐数据到达后再渲染分类区:Segmented 首挂时选中值即最终值,
-              避免挂载后调整引发滑块从起始分类滑过来的动画 */}
-          {recommendNavList.length > 0 && (
-            <HomeCategoryTabs
-              categories={categoryNavList}
-              activeKey={activeCategory}
-              onChange={handleCategoryChange}
+        <div className={cx(styles.introSection)}>
+          <div className={cx(styles.titleContainer)}>
+            <h2
+              className={cx(styles.title)}
+              dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
             />
-          )}
-          <ChatBoxRecommendNav
-            items={activeCategoryItems}
-            guidQuestions={
-              agentDetail?.agentId === currentAgentId
-                ? agentDetail?.guidQuestionDtos
-                : []
-            }
-            onQuestionClick={(text) => chatInputRef.current?.setText(text)}
-            selectedId={selectedRecommend?.id}
-            onSelect={handleRecommendSelect}
-            // 上框期间非同类型智能体置灰不可选（全部展示不过滤）
-            isItemSelectable={
-              pinnedProject
-                ? (item) => isAgentSelectable(item, pinnedProject)
-                : undefined
-            }
-          />
+          </div>
+          {/* 保留分类与推荐区的异步高度占位(禅道bug2493)，减少问候语跳动；
+            输入框由独立的网格中间轨道居中，不随上方数据到达而移动。 */}
+          <div
+            className={cx(styles['above-input-slot'], {
+              [styles['above-input-slot-empty']]: aboveInputEmpty,
+            })}
+          >
+            {/* 推荐数据到达后再渲染分类区:Segmented 首挂时选中值即最终值,
+              避免挂载后调整引发滑块从起始分类滑过来的动画 */}
+            {recommendNavList.length > 0 && (
+              <HomeCategoryTabs
+                categories={categoryNavList}
+                activeKey={activeCategory}
+                onChange={handleCategoryChange}
+              />
+            )}
+            <ChatBoxRecommendNav
+              items={activeCategoryItems}
+              guidQuestions={
+                agentDetail?.agentId === currentAgentId
+                  ? agentDetail?.guidQuestionDtos
+                  : []
+              }
+              onQuestionClick={(text) => chatInputRef.current?.setText(text)}
+              selectedId={selectedRecommend?.id}
+              onSelect={handleRecommendSelect}
+              // 上框期间非同类型智能体置灰不可选（全部展示不过滤）
+              isItemSelectable={
+                pinnedProject
+                  ? (item) => isAgentSelectable(item, pinnedProject)
+                  : undefined
+              }
+            />
+          </div>
         </div>
         <ChatInputUnified
           ref={chatInputRef}
@@ -704,10 +705,8 @@ const Home: React.FC = () => {
             });
           }}
         />
+        <SiteFooter className={cx(styles['foot-tip'])} />
       </main>
-      <footer className={cx(styles['foot-tip'])}>
-        {dict('PC.Pages.Home.aiGeneratedTip')}
-      </footer>
     </div>
   );
 };
