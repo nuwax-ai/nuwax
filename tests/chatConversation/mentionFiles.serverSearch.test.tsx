@@ -38,6 +38,7 @@ describe('@ 文件服务端搜索', () => {
     expect(mocks.searchFiles).toHaveBeenCalledWith({
       cId: 123,
       kw: 'report',
+      type: 'file',
       limit: 100,
     });
   });

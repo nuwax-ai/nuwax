@@ -519,6 +519,27 @@
   background: var(--xagi-layout-bg-secondary, #f2f2f2);
 }
 
+.workspace-context-bar {
+  gap: 12px;
+  min-width: 0;
+
+  > .pinned-project-bar {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+
+    &.pinned-project-with-directory {
+      max-width: 50%;
+    }
+  }
+}
+
+.workspace-directory-item {
+  flex: 1;
+  min-width: 0;
+}
+
 .workspace-dir-trigger {
   display: inline-flex;
   align-items: center;

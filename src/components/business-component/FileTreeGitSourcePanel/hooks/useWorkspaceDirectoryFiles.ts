@@ -165,30 +165,29 @@ export function useWorkspaceDirectoryFiles(
         }
       } finally {
         // 会话已切换时，计数和 loading 已在切换 effect 里清空，不能再改新会话的状态
-        if (conversationIdRef.current !== conversationId) {
-          return;
+        if (conversationIdRef.current === conversationId) {
+          const loadingCount = Math.max(
+            0,
+            (directoryLoadingCountRef.current.get(requestPath) || 1) - 1,
+          );
+          if (loadingCount > 0) {
+            directoryLoadingCountRef.current.set(requestPath, loadingCount);
+          } else {
+            directoryLoadingCountRef.current.delete(requestPath);
+            inflightDirectoryRequestsRef.current.delete(requestPath);
+            setLoadingDirectoryPaths((previous) => {
+              if (!previous.has(requestPath)) return previous;
+              const next = new Set(previous);
+              next.delete(requestPath);
+              return next;
+            });
+          }
+          activeRequestCountRef.current = Math.max(
+            0,
+            activeRequestCountRef.current - 1,
+          );
+          setLoading(activeRequestCountRef.current > 0);
         }
-        const loadingCount = Math.max(
-          0,
-          (directoryLoadingCountRef.current.get(requestPath) || 1) - 1,
-        );
-        if (loadingCount > 0) {
-          directoryLoadingCountRef.current.set(requestPath, loadingCount);
-        } else {
-          directoryLoadingCountRef.current.delete(requestPath);
-          inflightDirectoryRequestsRef.current.delete(requestPath);
-          setLoadingDirectoryPaths((previous) => {
-            if (!previous.has(requestPath)) return previous;
-            const next = new Set(previous);
-            next.delete(requestPath);
-            return next;
-          });
-        }
-        activeRequestCountRef.current = Math.max(
-          0,
-          activeRequestCountRef.current - 1,
-        );
-        setLoading(activeRequestCountRef.current > 0);
       }
     },
     [conversationId],

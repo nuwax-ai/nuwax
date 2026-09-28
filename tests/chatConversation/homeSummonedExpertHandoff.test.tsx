@@ -210,6 +210,53 @@ afterEach(() => {
 });
 
 describe('首页项目上框与专家透传消费', () => {
+  it.each([true, false, undefined])(
+    '左侧添加常规项目（owner=%s）可选个人电脑与云电脑，发送采用当前选择',
+    async (owner) => {
+      handoffMap.homePinnedProject = {
+        projectId: 18,
+        projectType: 'NormalProject',
+        name: '项目 A',
+        sandboxId: 66,
+        owner,
+      };
+      render(<Home />);
+      await waitFor(() =>
+        expect(input.props.pinnedProjectSandboxSelectable).toBe(true),
+      );
+      expect(input.props.disablePersonalComputer).toBe(false);
+      act(() => input.props.onComputerSelect('sb-personal'));
+      act(() => input.props.onWorkspaceDirChange('/work/project'));
+      await act(async () => {
+        await input.props.onEnter('个人电脑任务');
+      });
+      expect(handleCreateConversation).toHaveBeenLastCalledWith(
+        7,
+        expect.objectContaining({
+          projectId: 18,
+          projectType: 'NormalProject',
+          selectedComputerId: 'sb-personal',
+          sandboxId: 'sb-personal',
+          workspacePath: '/work/project',
+        }),
+      );
+      act(() => input.props.onComputerSelect('-1'));
+      expect(input.props.workspacePath).toBe('');
+      await act(async () => {
+        await input.props.onEnter('云电脑任务');
+      });
+      expect(handleCreateConversation).toHaveBeenLastCalledWith(
+        7,
+        expect.objectContaining({
+          projectId: 18,
+          selectedComputerId: '-1',
+          sandboxId: -1,
+          workspacePath: undefined,
+        }),
+      );
+    },
+  );
+
   it('大类 Tab 只切换推荐列表，保留已选智能体、专家及会话框配置', async () => {
     vi.mocked(apiDisplayRecommendList).mockResolvedValueOnce({
       data: {
