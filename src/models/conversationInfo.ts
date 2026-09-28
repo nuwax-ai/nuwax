@@ -423,10 +423,12 @@ export default () => {
         return;
       }
       setFileTreeDataLoading(true);
-      // 模型全量列表只给依赖 fileTreeData 的页面用。技能会话等页面实际渲染的是
-      // 按层懒加载的树，这里同时发刷新信号，让已展开目录按 relativePath + recursive=false 重拉并显示最新结果。
+      // 单层刷新，并通知页面上的文件树重拉已展开目录，显示最新结果。
       setFileTreeRefreshTrigger(Date.now());
-      await runGetStaticFileList(cId);
+      await runGetStaticFileList(cId, {
+        relativePath: '',
+        recursive: false,
+      });
     },
     [runGetStaticFileList],
   );
