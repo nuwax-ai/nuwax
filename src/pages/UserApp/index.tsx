@@ -6,8 +6,8 @@
  * 应用随标签保存的 homepageUrl(女娲应用页点击时注册,直载不拉域名接口)>
  * GET /api/userapp/domain/list(appId 入参)回包:优先自定义域名(Custom),
  * 无则生产域名(Prod),再回退首条。加载失败或无可用域名时对齐
- * /agent/:agentId(ConversationDetails)口径:错误 toast 由全局请求层弹出,
- * 页面退出 loading 后仅展示空态,无专属错误页。左侧会话区后续按需求迭代。
+ * /agent/:agentId(ConversationDetails)口径:权限拒绝、一般错误与成功空数据
+ * 分别展示对应的页面状态，并在可用内容区居中。左侧会话区后续按需求迭代。
  *
  * 分层与缓存:实际页面渲染上移 SidebarShell 的 OpenedAppTabsKeepAlive
  * 保活容器(所有已打开标签实例常驻,当前路由命中者可见,切回不重载);本
@@ -15,6 +15,7 @@
  * (分层禁令:布局层禁止直引 pages,经 model 桥接)。
  */
 import { PagePreviewIframe } from '@/components/business-component';
+import AppPageState from '@/components/business-component/AppPageState';
 import { USER_APP_PATH_PREFIX } from '@/constants/square.constants';
 import type { AppTabInstanceProps } from '@/models/appTabKeepAlive';
 import { dict } from '@/services/i18nRuntime';
@@ -24,7 +25,6 @@ import {
   type UserAppDomainInfo,
 } from '@/types/interfaces/userProject';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Empty } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useModel, useRequest } from 'umi';
 
@@ -84,18 +84,14 @@ const UserAppPage: React.FC<{ appId: number; homepageUrl: string }> = ({
     );
   }
 
-  // 加载失败/无可用域名:仅展示空态(错误 toast 已由全局请求层弹出)
+  // 请求失败不能伪装成正常空数据；权限状态与其他应用页复用同一展示。
   if (error || !previewUrl) {
     return (
-      <div className="flex items-center justify-center h-full w-full">
-        <Empty
-          description={dict(
-            error
-              ? 'PC.Pages.UserApp.loadFailed'
-              : 'PC.Pages.UserApp.emptyDomain',
-          )}
-        />
-      </div>
+      <AppPageState
+        error={error}
+        emptyDescription={dict('PC.Pages.UserApp.emptyDomain')}
+        errorDescription={dict('PC.Pages.UserApp.loadFailed')}
+      />
     );
   }
 

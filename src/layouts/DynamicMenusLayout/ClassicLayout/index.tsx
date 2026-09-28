@@ -84,10 +84,11 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
 
   // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
   const { firstLevelMenus, otherMenus } = useModel('menuModel');
+  const newTaskAvailable = firstLevelMenus.some(
+    (menu: MenuItemDto) => menu.code === 'new_conversation',
+  );
 
   const { refreshUserInfo } = useModel('userInfo');
-
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 导航状态机（activeTab 路径同步/一级菜单点击等，与单栏布局共用单源实现）
   const {
@@ -96,7 +97,7 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
     isClickNewConversation,
     isClickMenu,
     handleTabClick,
-    handlerClick,
+    handleNewTask,
   } = useMenuNavigation();
 
   // 女娲应用多开标签命中当前路由时一级导航整体让位（选中关系收敛到标签项）；
@@ -106,15 +107,6 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
   const navActiveTab = isAppTabActive(openedAppTabs, location.pathname)
     ? ''
     : activeTab;
-
-  // 新建任务（壳层 ⌘N 宿主命令用）：与单栏布局同款，租户配置未就绪时兜底回首页
-  const handleNewTask = () => {
-    if (tenantConfigInfo) {
-      handlerClick();
-    } else {
-      history.push('/home');
-    }
-  };
 
   useEffect(() => {
     // 强制刷新获取用户信息
@@ -126,8 +118,9 @@ const ClassicLayout: React.FC<DynamicMenusLayoutProps> = ({
     return initHostBridgeEvents({
       setSecondMenuCollapsed: setIsSecondMenuCollapsed,
       createNewTask: handleNewTask,
+      newTaskAvailable,
     });
-  }, [setIsSecondMenuCollapsed, handleNewTask]);
+  }, [setIsSecondMenuCollapsed, handleNewTask, newTaskAvailable]);
 
   /**
    * 用户区域操作

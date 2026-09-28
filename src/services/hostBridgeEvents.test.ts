@@ -33,6 +33,7 @@ describe('hostBridgeEvents · 宿主命令响应（host→guest 通道消费端�
           registeredHandler = cb;
         }),
       },
+      layout: { setNewTaskAvailable: vi.fn() },
     };
   });
 
@@ -55,10 +56,63 @@ describe('hostBridgeEvents · 宿主命令响应（host→guest 通道消费端�
 
   it('new-task 命令 → 调用 createNewTask（壳层 ⌘N 接管下发）', () => {
     const createNewTask = vi.fn();
-    initHostBridgeEvents({ setSecondMenuCollapsed: vi.fn(), createNewTask });
+    initHostBridgeEvents({
+      setSecondMenuCollapsed: vi.fn(),
+      createNewTask,
+      newTaskAvailable: true,
+    });
 
     registeredHandler!({ type: 'new-task' });
     expect(createNewTask).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([false, undefined])(
+    'new-task 可用态为 %s → 不执行并向宿主同步 false',
+    (newTaskAvailable) => {
+      const createNewTask = vi.fn();
+      initHostBridgeEvents({
+        setSecondMenuCollapsed: vi.fn(),
+        createNewTask,
+        newTaskAvailable,
+      });
+
+      registeredHandler!({ type: 'new-task' });
+      expect(createNewTask).not.toHaveBeenCalled();
+      expect(
+        (window as any).NuwaClawBridge.layout.setNewTaskAvailable,
+      ).toHaveBeenLastCalledWith(false);
+    },
+  );
+
+  it('菜单刷新 → 同步最新可用态，已注册的分发器也遵循新状态', () => {
+    const createNewTask = vi.fn();
+    const setNewTaskAvailable = (window as any).NuwaClawBridge.layout
+      .setNewTaskAvailable;
+    initHostBridgeEvents({
+      setSecondMenuCollapsed: vi.fn(),
+      createNewTask,
+      newTaskAvailable: true,
+    });
+    const previousHandler = registeredHandler!;
+    expect(setNewTaskAvailable).toHaveBeenLastCalledWith(true);
+
+    initHostBridgeEvents({
+      setSecondMenuCollapsed: vi.fn(),
+      createNewTask,
+      newTaskAvailable: false,
+    });
+    previousHandler({ type: 'new-task' });
+    expect(createNewTask).not.toHaveBeenCalled();
+    expect(setNewTaskAvailable).toHaveBeenLastCalledWith(false);
+
+    initHostBridgeEvents({
+      setSecondMenuCollapsed: vi.fn(),
+      createNewTask,
+      newTaskAvailable: true,
+    });
+    previousHandler({ type: 'new-task' });
+    expect(createNewTask).toHaveBeenCalledTimes(1);
+    expect(setNewTaskAvailable).toHaveBeenLastCalledWith(true);
   });
 
   it('open-search 命令 → 调用注入的 openSearch（应用菜单「文件 → 搜索」下发）', () => {
@@ -143,13 +197,21 @@ describe('hostBridgeEvents · 宿主命令响应（host→guest 通道消费端�
   it('dispose → 注销回调（onHostCommand(null)）', () => {
     const onHostCommandMock = (window as any).NuwaClawBridge.events
       .onHostCommand;
+    const createNewTask = vi.fn();
     const dispose = initHostBridgeEvents({
       setSecondMenuCollapsed: vi.fn(),
-      createNewTask: vi.fn(),
+      createNewTask,
+      newTaskAvailable: true,
     });
+    const previousHandler = registeredHandler!;
 
     dispose();
+    previousHandler({ type: 'new-task' });
     expect(onHostCommandMock).toHaveBeenCalledWith(null);
+    expect(createNewTask).not.toHaveBeenCalled();
+    expect(
+      (window as any).NuwaClawBridge.layout.setNewTaskAvailable,
+    ).toHaveBeenLastCalledWith(false);
   });
 
   it('浏览器无桥（onHostCommand 缺失）→ init 仍返回 dispose 且不抛错', () => {

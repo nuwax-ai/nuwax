@@ -136,6 +136,7 @@ const errorThrower = (res: RequestResponse<null>) => {
 /**
  * 全局错误处理器
  * 处理所有请求的错误情况，并显示适当的错误消息
+ * Umi catch 同步调用此处理器；失败分支须抛出原错误，避免遗留被忽略的 rejected Promise。
  */
 const errorHandler = (error: any, opts: any) => {
   if (!error) {
@@ -169,7 +170,7 @@ const errorHandler = (error: any, opts: any) => {
 
       // 已经有后台Agent服务正在运行
       if (code === AGENT_SERVICE_RUNNING) {
-        return Promise.reject();
+        throw error;
       }
 
       // 根据错误码处理不同情况
@@ -207,7 +208,7 @@ const errorHandler = (error: any, opts: any) => {
           if (shouldShowErrorMessage(errorMessage)) {
             message.warning(errorMessage);
           }
-          return Promise.reject();
+          throw error;
 
         // 沙箱测试异常
         case SANDBOX_TEST_ERROR:
@@ -220,7 +221,7 @@ const errorHandler = (error: any, opts: any) => {
             });
           }
 
-          return Promise.reject();
+          throw error;
 
         // 默认错误处理
         default:
@@ -230,14 +231,8 @@ const errorHandler = (error: any, opts: any) => {
             message.warning(errorMessage);
           }
           // 透传原始错误，确保上层能够拿到 code/message/tid 等完整上下文。
-          return Promise.reject();
+          throw error;
       }
-
-      /**
-       * 统一返回错误信息，方便调用方处理
-       * return Promise.reject() 会立即终止当前函数的执行，并将错误状态传递给接口调用方。所以此处注释掉了
-       */
-      // return Promise.reject();
     }
   } else if (error.response) {
     // 处理HTTP错误
@@ -247,33 +242,33 @@ const errorHandler = (error: any, opts: any) => {
       auth &&
       (auth.credentials === 'include' || !!auth.headers.Authorization)
     ) {
-      if (isAnonymousLoginStep()) return Promise.reject();
+      if (isAnonymousLoginStep()) throw error;
       clearStoragePreservingUserPrefs();
       void hostBridge.auth.clear();
       clearLoginStatusCache();
       redirectToLogin(-1);
-      return Promise.reject();
+      throw error;
     }
     // message.error(`Request error ${error.response.status}`);
     const networkErrorMsg = dict('PC.Toast.Global.networkError');
     if (shouldShowErrorMessage(networkErrorMsg)) {
       message.error(networkErrorMsg);
     }
-    return Promise.reject();
+    throw error;
   } else if (error.request) {
     // 处理请求超时
     const timeoutErrorMsg = dict('PC.Toast.Global.serverTimeout');
     if (shouldShowErrorMessage(timeoutErrorMsg)) {
       message.error(timeoutErrorMsg);
     }
-    return Promise.reject();
+    throw error;
   } else {
     // 处理网络错误
     const networkErrorMsg = dict('PC.Toast.Global.serverUnreachable');
     if (shouldShowErrorMessage(networkErrorMsg)) {
       message.error(networkErrorMsg);
     }
-    return Promise.reject();
+    throw error;
   }
 };
 

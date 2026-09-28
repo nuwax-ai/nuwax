@@ -1,11 +1,19 @@
 @import '@/styles/token.less';
 
-// 参考原型分段胶囊配色(仅首页分类排使用,暂不进全局 token)
-@categoryTabsBg: #f5f5f5; // 容器浅灰底
-@categoryTabActiveBg: #141416; // 选中深色药丸(原型选中色)
-@categoryTabText: #4b4a53; // 未选中文字(原型文字色)
-
 .category-tabs {
+  // 首页分类使用中性灰黑配色，底线代替选中胶囊。
+  --category-tab-text: #807e89;
+  --category-tab-active-text: #1c1c1f;
+  --category-tab-indicator: #48464f;
+  --category-tab-icon-filter: brightness(0);
+
+  :global(html[data-theme='dark']) & {
+    --category-tab-text: #99979f;
+    --category-tab-active-text: #e8e8eb;
+    --category-tab-indicator: #c1bfc7;
+    --category-tab-icon-filter: brightness(0) invert(1);
+  }
+
   display: flex;
   justify-content: center;
   margin: 0 auto @marginLg;
@@ -14,25 +22,37 @@
   // 压过 app.tsx 全局 Segmented 主题(选中文字=品牌色),不影响其他实例;
   // antd 把文字色直接打在 .ant-segmented-item-label 上,须命中该元素才生效
   :global(.ant-segmented) {
-    padding: 4px;
-    background: @categoryTabsBg;
-    border-radius: 999px;
+    padding: 4px 0;
+    background: transparent;
+    border-radius: 0;
   }
 
-  :global(.ant-segmented) :global(.ant-segmented-thumb) {
-    background: @categoryTabActiveBg;
-    border-radius: 999px;
-    box-shadow: none;
+  :global(.ant-segmented) :global(.ant-segmented-group) {
+    gap: 24px;
   }
 
-  // rc-segmented 2.7 的 thumb 仅动效期存在,静止态选中背景由 item-selected 自身承担
+  // 动效期由 thumb 承载底线，静止态由选中 item 承载。
+  :global(.ant-segmented) :global(.ant-segmented-thumb),
   :global(.ant-segmented) :global(.ant-segmented-item-selected) {
-    background: @categoryTabActiveBg;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset-inline: 4px;
+      bottom: 0;
+      height: 3px;
+      background: var(--category-tab-indicator);
+      border-radius: 999px;
+      pointer-events: none;
+    }
   }
 
   // antd base 规则给 thumb 常驻 transform 过渡,而 rc-motion 的 appear 流程分
   // PREPARE(transform:none)→START(起点)→ACTIVE(终点)多帧推进,
-  // 常驻过渡会把 none→起点也滑成动画=选中药丸从第 1 项飞出的根因;
+  // 常驻过渡会把 none→起点也滑成动画，导致底线从第 1 项飞出;
   // 这里在非 appear-active 阶段关掉过渡,起点瞬间就位,仅 START→ACTIVE 滑动
   :global(.ant-segmented)
     :global(
@@ -42,37 +62,32 @@
   }
 
   :global(.ant-segmented) :global(.ant-segmented-item) {
-    border-radius: 999px;
+    border-radius: 0;
   }
 
   :global(.ant-segmented) :global(.ant-segmented-item-label) {
-    color: @categoryTabText;
+    color: var(--category-tab-text);
   }
 
   :global(.ant-segmented)
     :global(.ant-segmented-item-selected)
     :global(.ant-segmented-item-label) {
-    color: #fff;
+    color: var(--category-tab-active-text);
   }
 
-  // hover 白胶囊+文字加深(参考图定调:白=hover、深色=选中);
-  // :has 守卫:动效进行中全组没有 item-selected,此时不出白底,
-  // 避免悬停项的白色 ::after 盖住滑过的深色药丸(item 在 DOM 序上位于 thumb 之上)
-  :global(.ant-segmented:has(.ant-segmented-item-selected))
+  // 悬停和按下仅加深文字，避免 antd 的填充背景重新出现。
+  :global(.ant-segmented)
     :global(
-      .ant-segmented-item:hover:not(.ant-segmented-item-selected):not(
-          .ant-segmented-item-disabled
-        )
+      .ant-segmented-item:not(.ant-segmented-item-disabled):is(:hover, :active)
     ) {
     background: transparent;
 
     &::after {
-      background: #fff;
-      opacity: 1;
+      background: transparent;
     }
 
     :global(.ant-segmented-item-label) {
-      color: @categoryTabActiveBg;
+      color: var(--category-tab-active-text);
     }
   }
 }
@@ -90,14 +105,25 @@
   flex-shrink: 0;
   object-fit: cover;
   border-radius: 4px;
+  filter: var(--category-tab-icon-filter);
+  opacity: 0.5;
 
-  // 选中项图标反白(参考图选中态为白色图标),未选中保持原色
   :global(.ant-segmented-item-selected) & {
-    filter: brightness(0) invert(1);
+    opacity: 1;
   }
 }
 
 .item-text {
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .category-tabs :global(.ant-segmented) :global(.ant-segmented-group) {
+    gap: 12px;
+  }
+
+  .category-tabs :global(.ant-segmented) :global(.ant-segmented-item-label) {
+    padding-inline: 6px;
+  }
 }

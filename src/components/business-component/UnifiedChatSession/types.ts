@@ -68,6 +68,8 @@ export interface UnifiedChatSessionProps {
   isAwaitingChatTerminal?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   showDebug?: boolean;
+  /** 默认至少两个导航项时显示；工作台可额外显示单轮可滚动会话的导航。 */
+  quickNavDisplayMode?: 'auto' | 'scrollable';
   loadingSuggest?: boolean; // 会话建议加载状态
   // 与 RecommendListProps 同口径：开场白问题推荐（对象）与轮次后建议（字符串）两态
   chatSuggestList?: GuidQuestionDto[] | string[]; // 页面会话建议

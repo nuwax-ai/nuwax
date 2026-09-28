@@ -145,10 +145,11 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
   // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
   const { firstLevelMenus, otherMenus } = useModel('menuModel');
+  const newTaskAvailable = firstLevelMenus.some(
+    (menu: MenuItemDto) => menu.code === 'new_conversation',
+  );
 
   const { refreshUserInfo, userInfo } = useModel('userInfo');
-
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 折叠态展开按钮（原位复刻收起按钮位置，侧栏收起后顶栏不可点）
   const { toggleCollapse } = useSidebarCollapse();
@@ -159,7 +160,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     setActiveTab,
     isClickNewConversation,
     isClickMenu,
-    handlerClick,
+    handleNewTask,
     handleTabClick,
   } = useMenuNavigation();
 
@@ -187,17 +188,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     [activeTab, location.pathname, conversationRowActive, appTabActive],
   );
 
-  // 新建任务入口（侧栏顶部操作区）：租户配置未就绪时兜底回首页。
-  // useCallback 固定引用（bug 2348）：下方宿主桥 effect 与 SidebarNavHeader
-  // onNewTask 都消费本引用，不固定会逐渲染摘挂监听并打断子树 memo
-  const handleNewTask = useCallback(() => {
-    if (tenantConfigInfo) {
-      void handlerClick();
-    } else {
-      history.push('/home');
-    }
-  }, [tenantConfigInfo, handlerClick]);
-
   useEffect(() => {
     // 强制刷新获取用户信息
     refreshUserInfo();
@@ -209,9 +199,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     return initHostBridgeEvents({
       setSecondMenuCollapsed: setIsSecondMenuCollapsed,
       createNewTask: handleNewTask,
+      newTaskAvailable,
       openSearch: () => setOpenSearchModal(true),
     });
-  }, [setIsSecondMenuCollapsed, handleNewTask, setOpenSearchModal]);
+  }, [
+    setIsSecondMenuCollapsed,
+    handleNewTask,
+    newTaskAvailable,
+    setOpenSearchModal,
+  ]);
 
   /**
    * 用户区域操作

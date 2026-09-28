@@ -1,13 +1,13 @@
 /**
  * 用户输入气泡折叠（bug 2529/2470，视觉走查定稿）：气泡正文超过
  * USER_BUBBLE_COLLAPSE_LINES（10 行）才默认收起，收起态保留
- * USER_BUBBLE_COLLAPSED_LINES（3 行）可见；行数不足一律全文展示、不出现控件。
+ * USER_BUBBLE_COLLAPSED_LINES（10 行）可见；行数不足一律全文展示、不出现控件。
  * 仅作用于 V2 渲染线的用户消息气泡，V1 线不受影响。
  *
  * 实现要点：
  * - 行数只测气泡正文（ChatView 用户消息内的 .ds-markdown-answer）：
  *   正文 scrollHeight / 行高，排除附件与气泡外操作行——行数不足即使带高附件
- *   也不出现折叠入口；截断同样只作用于正文节点（3×行高，整行截断），
+ *   也不出现折叠入口；截断同样只作用于正文节点（10×行高，整行截断），
  *   附件与复制按钮行保持完整可见；
  * - 切换控件为圆形 chevron 按钮（收起朝下/展开朝上），经 React portal 挂进
  *   气泡框（正文所在的 .chat-content 灰底气泡）尾部，文档流底部居中、
@@ -27,8 +27,8 @@ const cx = classNames.bind(styles);
 /** 收起触发行数：气泡正文超过该行数才折叠出切换控件 */
 export const USER_BUBBLE_COLLAPSE_LINES = 10;
 
-/** 收起态保留可见行数（视觉走查定稿） */
-export const USER_BUBBLE_COLLAPSED_LINES = 3;
+/** 收起态保留 10 行，与触发阈值同源，避免只改阈值却仍按旧行数截断 */
+export const USER_BUBBLE_COLLAPSED_LINES = USER_BUBBLE_COLLAPSE_LINES;
 
 /** 行高兜底值（px）：正文节点 getComputedStyle 取不到行高时使用（单测环境） */
 export const USER_BUBBLE_FALLBACK_LINE_HEIGHT = 24;
@@ -126,7 +126,7 @@ const UserBubbleCollapse: React.FC<UserBubbleCollapseProps> = ({
   }, [expanded, nodes]);
 
   // 截断只作用于正文节点（ChatView 对该节点无受控 style，本层独占管理）；
-  // 按 3×行高整行截断，收起态圆形控件位于气泡内尾部、不被裁剪
+  // 按保留行数×行高整行截断，收起态圆形控件位于气泡内尾部、不被裁剪
   useEffect(() => {
     const body = nodes?.body;
     if (!body) return;

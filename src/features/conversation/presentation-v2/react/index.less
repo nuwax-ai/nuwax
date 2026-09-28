@@ -43,7 +43,8 @@
   margin-top: 8px;
 }
 
-.trace-toggle {
+.trace-toggle,
+.trace-segment-toggle {
   appearance: none;
   border: none;
   border-bottom: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
@@ -61,6 +62,22 @@
     outline: 2px solid var(--v2-color-primary, #6a5af9);
     outline-offset: 1px;
   }
+}
+
+.trace-segment-toggle {
+  border-bottom: none;
+  min-height: 30px;
+  padding: 0;
+}
+
+.trace-segment {
+  min-width: 0;
+}
+
+.trace-segment-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .trace-chevron,

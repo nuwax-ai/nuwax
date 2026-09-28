@@ -1,7 +1,7 @@
 /**
  * 侧栏顶部导航区
  * @description 主导航改造（单栏模式）：顶栏 = Logo + 搜索 + 折叠（固定），
- * 下方为「新建任务」固定项 + 后端菜单接口下发的一级导航项（全量渲染，仅排除新对话；
+ * 下方为「新建任务」入口 + 后端菜单接口下发的一级导航项（新建任务按新对话菜单显隐；
  * 按 source 分组：系统菜单在前，女娲应用多开标签区插中间（顶部分割线），自定义菜单在后）。
  * 点导航项时右侧并列展开原二级菜单列；分离菜单（文档/通知/我的电脑/更多）在侧栏底部栏展示。
  */
@@ -80,7 +80,7 @@ interface SidebarNavHeaderProps {
   activeTab: string;
   /** 一级菜单点击（复用原一级栏 handleTabClick 行为，展开原二级菜单列） */
   onMenuClick: (menu: MenuItemDto) => void;
-  /** 新建任务（新建会话） */
+  /** 新建任务（打开首页） */
   onNewTask: () => void;
   /** logo 旁渲染客户端版本徽标（仅布局级实例传 true；内容区复用处不重复出现） */
   showClientVersionBadge?: boolean;
@@ -100,6 +100,9 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
   const { openedAppTabs, openApp, closeApp } = useModel('openedAppTabs');
   const location = useLocation();
 
+  // menus 来自已过滤禁用项的 firstLevelMenus，固定位置入口也遵循后台显隐。
+  const showNewTask = menus.some((menu) => menu.code === 'new_conversation');
+
   /** 搜索：打开搜索弹窗（命令面板） */
   const handleSearchClick = useCallback(() => {
     setOpenSearchModal(true);
@@ -107,6 +110,8 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
 
   /** ⌘N 新建任务（⌘K 由 SidebarSearchModal 全局接管；浏览器可能占用 ⌘N，尽力拦截） */
   useEffect(() => {
+    if (!showNewTask) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) {
         return;
@@ -118,9 +123,9 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onNewTask]);
+  }, [onNewTask, showNewTask]);
 
-  /** 导航行：接口下发的一级菜单全量渲染，仅排除新对话（新建任务为固定项） */
+  /** 新对话菜单在顶部呈现为新建任务入口，不在普通导航行重复展示。 */
   const navMenus = useMemo(
     () => (menus || []).filter((menu) => menu.code !== 'new_conversation'),
     [menus],
@@ -333,19 +338,20 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* 新建任务（固定项） */}
-      <div
-        className={cx(styles['action-row'], styles['new-task-row'])}
-        onClick={onNewTask}
-      >
-        <span className={cx(styles['action-icon'])}>
-          <SvgIcon name="icons-nav-new_chat" />
-        </span>
-        <span className={cx(styles['action-label'])}>
-          {dict('PC.Layouts.DynamicMenusLayout.SidebarNavHeader.newTask')}
-        </span>
-        <span className={cx(styles['action-shortcut'])}>{`${MOD_KEY}N`}</span>
-      </div>
+      {showNewTask && (
+        <div
+          className={cx(styles['action-row'], styles['new-task-row'])}
+          onClick={onNewTask}
+        >
+          <span className={cx(styles['action-icon'])}>
+            <SvgIcon name="icons-nav-new_chat" />
+          </span>
+          <span className={cx(styles['action-label'])}>
+            {dict('PC.Layouts.DynamicMenusLayout.SidebarNavHeader.newTask')}
+          </span>
+          <span className={cx(styles['action-shortcut'])}>{`${MOD_KEY}N`}</span>
+        </div>
+      )}
 
       {/* 导航行：走菜单接口，选中时右侧展开原二级菜单列。
           分组排布：系统菜单 → 女娲应用多开标签区（顶部分割线）→ 自定义菜单 */}

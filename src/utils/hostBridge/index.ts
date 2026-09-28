@@ -418,6 +418,14 @@ export const theme = {
  * （无二级菜单的页面按钮无意义）。浏览器无桥 no-op。
  */
 export const layout = {
+  /** 同步新建任务入口可用态，壳菜单和快捷键遵循后台菜单显隐/启用状态。 */
+  setNewTaskAvailable(available: boolean): void {
+    try {
+      getBridge()?.layout?.setNewTaskAvailable?.(available);
+    } catch {
+      /* 宿主缺失或调用失败均忽略 */
+    }
+  },
   /** 告知壳当前页是否有二级菜单可收起（fire-and-forget，失败静默）。 */
   setSecondMenuAvailable(available: boolean): void {
     try {

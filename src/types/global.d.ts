@@ -176,6 +176,8 @@ interface Window {
     };
     // nuwax→nuwaclaw 壳布局状态同步通道（如当前页是否有二级菜单，壳据此显隐收起按钮）
     layout?: {
+      /** 新建任务菜单是否可用；未上报、菜单隐藏/禁用或布局卸载时均为 false。 */
+      setNewTaskAvailable?: (available: boolean) => void;
       /** 告知壳当前页是否存在可收起的二级菜单（fire-and-forget，失败静默）。 */
       setSecondMenuAvailable?: (available: boolean) => void;
       /** 同步二级菜单真实收起态给壳（壳工具栏 icon 以此为准，修 reload 后失同步）。 */

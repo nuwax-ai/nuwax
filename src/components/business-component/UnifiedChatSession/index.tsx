@@ -69,6 +69,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   isAwaitingChatTerminal = false,
   messageBottomMode = 'home',
   showDebug,
+  quickNavDisplayMode,
   loadingSuggest = false,
   chatSuggestList = [],
   agentInfo = {},
@@ -443,6 +444,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
       <ConversationQuickNav
         scrollContainerRef={messageViewRef}
         messageList={messageList ?? []}
+        displayMode={quickNavDisplayMode}
       />
 
       {/* 会话执行状态栏 */}

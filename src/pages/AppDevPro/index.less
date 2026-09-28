@@ -32,7 +32,7 @@
     gap: 0;
 
     .content-container {
-      border-radius: @pageContainerBorderRadius;
+      border-radius: 16px;
       border: @lineWidth solid @colorSplit;
       overflow: hidden;
       background-color: #f5f5f5;
@@ -69,6 +69,8 @@
   .left-panel-body {
     flex: 1;
     min-height: 0;
+    // 与任务会话一致，为左缘快捷导航预留空间。
+    padding-left: 20px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
