@@ -189,6 +189,17 @@ describe('recommendAgentPolicy 可选范围策略', () => {
       ).toBeUndefined();
     });
 
+    it('同一智能体重复推荐仍可兜底，保留排序靠前的推荐配置', () => {
+      const first = makeItem(DisplayRecommendFunctionTypeEnum.UserAppDev, 16);
+      const duplicate = { ...first, id: 999, label: '另一条推荐' };
+      expect(
+        findTypeFallbackAgent(
+          [first, duplicate],
+          AgentComponentTypeEnum.UserApp,
+        ),
+      ).toBe(first);
+    });
+
     it('未登记类型/无类型不命中', () => {
       expect(
         findTypeFallbackAgent(FULL_LIST, AgentComponentTypeEnum.PageApp),

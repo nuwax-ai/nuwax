@@ -6100,6 +6100,16 @@ export const ZH_CN: SystemLangMap = {
   // ── 系统管理 - 订阅与积分汇总卡片 ────────────────────
   // ── 系统管理 - 基础订阅套餐 ────────────────────────────
   "PC.Pages.SystemRecommendManage.addTitle": "新增推荐",
+  "PC.Pages.SystemRecommendManage.promptsLabel": "提示词",
+  "PC.Pages.SystemRecommendManage.addPrompt": "添加提示词",
+  "PC.Pages.SystemRecommendManage.promptNumber": "提示词 {0}",
+  "PC.Pages.SystemRecommendManage.removePrompt": "删除提示词",
+  "PC.Pages.SystemRecommendManage.clearPromptIcon": "清除图标",
+  "PC.Pages.SystemRecommendManage.promptTitle": "标题（选填）",
+  "PC.Pages.SystemRecommendManage.promptTitlePlaceholder": "请输入提示词标题",
+  "PC.Pages.SystemRecommendManage.promptContent": "内容",
+  "PC.Pages.SystemRecommendManage.promptContentPlaceholder": "请输入提示词内容",
+  "PC.Pages.SystemRecommendManage.promptContentRequired": "请输入提示词内容，不能只输入空格",
   "PC.Pages.SystemRecommendManage.chatboxCategory": "对话框智能体",
   "PC.Pages.SystemRecommendManage.createSuccess": "创建成功",
   "PC.Pages.SystemRecommendManage.colAction": "操作",

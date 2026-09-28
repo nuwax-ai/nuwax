@@ -210,6 +210,46 @@ afterEach(() => {
 });
 
 describe('首页项目上框与专家透传消费', () => {
+  it('同一智能体的重复推荐展示各自提示词，点击回填完整内容', async () => {
+    vi.mocked(apiDisplayRecommendList).mockResolvedValueOnce({
+      data: {
+        recChatBoxNav: {
+          Agent: [
+            {
+              id: 1,
+              targetId: 71,
+              label: '推荐一',
+              functionType: 'Chat',
+              category: 'chat',
+              prompts: [{ title: '标题一', content: '完整内容一', icon: '' }],
+            },
+            {
+              id: 2,
+              targetId: 71,
+              label: '推荐二',
+              functionType: 'Chat',
+              category: 'chat',
+              prompts: [{ title: '标题二', content: '完整内容二', icon: '' }],
+            },
+          ],
+        },
+      },
+    } as any);
+    vi.mocked(fetchChatboxCategories).mockResolvedValueOnce([
+      { key: 'chat', label: '对话任务' },
+    ] as any);
+    render(<Home />);
+    fireEvent.click(await screen.findByRole('button', { name: '推荐一' }));
+    fireEvent.click(screen.getByRole('button', { name: '标题一' }));
+    expect(setText).toHaveBeenLastCalledWith('完整内容一');
+    act(() => input.props.onClearSelectedTag());
+    fireEvent.click(screen.getByRole('button', { name: '推荐二' }));
+    expect(screen.queryByRole('button', { name: '标题一' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '标题二' }));
+    expect(setText).toHaveBeenLastCalledWith('完整内容二');
+    expect(input.props.selectedTag?.label).toBe('推荐二');
+  });
+
   it('大类 Tab 只切换推荐列表，保留已选智能体、专家及会话框配置', async () => {
     vi.mocked(apiDisplayRecommendList).mockResolvedValueOnce({
       data: {

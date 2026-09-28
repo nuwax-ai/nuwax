@@ -19,7 +19,6 @@ import React, {
 import { RECOMMEND_PAGE_CONFIG_MAP } from '../../constants';
 import { apiSystemSaveDisplayRecommend } from '../../services/recomment';
 import {
-  DisplayRecommendInfo,
   DisplayRecommendTargetTypeEnum,
   DisplayRecTypeEnum,
 } from '../../types';
@@ -51,8 +50,6 @@ export interface RecommendAddModalProps {
   open: boolean;
   /** 推荐展示类型 */
   recType: DisplayRecTypeEnum;
-  /** 当前页已添加的推荐记录，用于展示「已添加」 */
-  existingRecords: DisplayRecommendInfo[];
   /** 新增时的默认排序值（save 模式） */
   defaultSort: number;
   /** 取消回调 */
@@ -65,8 +62,6 @@ export interface RecommendAddModalProps {
    * - pick：选中后回调 onPick，不调用接口（表单内选择智能体）
    */
   mode?: 'save' | 'pick';
-  /** pick 模式：当前已选 targetKey，用于展示「已添加」 */
-  pickedTargetKeys?: string[];
   /** pick 模式：选中目标回调 */
   onPick?: (
     item: SquarePublishedItemInfo,
@@ -83,12 +78,10 @@ export interface RecommendAddModalProps {
 const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   open,
   recType,
-  existingRecords,
   defaultSort,
   onCancel,
   onSuccess,
   mode = 'save',
-  pickedTargetKeys = [],
   onPick,
   defaultTargetType,
 }) => {
@@ -104,17 +97,14 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
-  /** 本次弹窗内新添加成功的 targetKey */
-  const [sessionAddedKeys, setSessionAddedKeys] = useState<Set<string>>(
-    () => new Set(),
-  );
   /** 正在添加的 targetKey */
   const [addingKey, setAddingKey] = useState<string>();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fetchingRef = useRef(false);
   const requestVersionRef = useRef(0);
-  const addedCountRef = useRef(0);
+  const nextSortRef = useRef(defaultSort);
+  const addingRef = useRef(false);
   /** 弹窗打开时由初始化 effect 拉列表，避免 activeTargetType 未同步时重复请求 */
   const skipNextActiveTypeFetchRef = useRef(false);
 
@@ -126,20 +116,6 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
       })),
     [targetTypes],
   );
-
-  // 已添加的 targetKey 集合
-  const addedKeySet = useMemo(() => {
-    const keys = new Set<string>();
-    existingRecords.forEach((item) => {
-      keys.add(`${item.targetType}-${item.targetId}`);
-    });
-    if (isPickMode) {
-      pickedTargetKeys.forEach((key) => keys.add(key));
-      return keys;
-    }
-    sessionAddedKeys.forEach((key) => keys.add(key));
-    return keys;
-  }, [existingRecords, isPickMode, pickedTargetKeys, sessionAddedKeys]);
 
   // 构建 targetKey
   const buildTargetKey = (
@@ -215,8 +191,7 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
     setList([]);
     setPage(1);
     setTotalPages(0);
-    setSessionAddedKeys(new Set());
-    addedCountRef.current = 0;
+    nextSortRef.current = defaultSort;
     fetchList(initialTargetType, 1, '', false);
   }, [open, resolveInitialTargetType, fetchList]);
 
@@ -264,7 +239,7 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   /** 添加推荐 / 选择目标 */
   const handleAdd = async (item: SquarePublishedItemInfo) => {
     const targetKey = buildTargetKey(activeTargetType, item.targetId);
-    if (addedKeySet.has(targetKey) || addingKey === targetKey) return;
+    if (addingRef.current) return;
 
     if (isPickMode) {
       onPick?.(item, activeTargetType);
@@ -272,6 +247,7 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
       return;
     }
 
+    addingRef.current = true;
     setAddingKey(targetKey);
     try {
       const res = await apiSystemSaveDisplayRecommend({
@@ -282,15 +258,15 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
         label: item.name,
         icon: item.icon,
         placeholder: '',
-        sort: defaultSort + addedCountRef.current,
+        sort: nextSortRef.current,
       });
       if (res?.code !== SUCCESS_CODE) return;
 
-      addedCountRef.current += 1;
-      setSessionAddedKeys((prev) => new Set(prev).add(targetKey));
+      nextSortRef.current += 1;
       message.success(dict('PC.Pages.SystemRecommendManage.createSuccess'));
       onSuccess();
     } finally {
+      addingRef.current = false;
       setAddingKey(undefined);
     }
   };
@@ -298,7 +274,6 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   // 渲染列表项
   const renderListItem = (item: SquarePublishedItemInfo, index: number) => {
     const targetKey = buildTargetKey(activeTargetType, item.targetId);
-    const isAdded = addedKeySet.has(targetKey);
     const isAdding = addingKey === targetKey;
     const iconType = TARGET_ICON_TYPE_MAP[activeTargetType];
 
@@ -351,16 +326,11 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
           color="default"
           variant="filled"
           loading={isAdding}
-          disabled={!isAdding && isAdded}
-          className={cx(
-            styles['add-button'],
-            isAdded && styles['add-button-added'],
-          )}
+          disabled={!!addingKey && !isAdding}
+          className={cx(styles['add-button'])}
           onClick={() => handleAdd(item)}
         >
-          {isAdded
-            ? dict('PC.Components.Created.added')
-            : dict('PC.Components.Created.add')}
+          {dict('PC.Components.Created.add')}
         </Button>
       </div>
     );

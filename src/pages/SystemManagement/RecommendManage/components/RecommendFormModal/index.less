@@ -1,6 +1,54 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
+.form-body {
+  max-height: calc(100dvh - 220px);
+  overflow-y: auto;
+  padding-right: @paddingXs;
+}
+
+.prompts-section {
+  border-top: @lineWidth @lineType @colorBorderSecondary;
+  padding-top: @paddingXs;
+}
+
+.prompts-header,
+.prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @marginXs;
+}
+
+.prompt-item {
+  border-bottom: @lineWidth @lineType @colorBorderSecondary;
+  padding: @paddingXs 0;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  :global(.ant-form-item) {
+    margin-bottom: @marginSm;
+  }
+}
+
+.prompt-meta {
+  display: flex;
+  gap: @margin;
+  margin-top: @marginXs;
+}
+
+.prompt-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.prompt-title {
+  flex: 1;
+  min-width: 0;
+}
+
 /** 新增时：点击添加智能体占位区域 */
 .add-agent-placeholder {
   display: flex;

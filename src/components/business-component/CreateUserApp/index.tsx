@@ -25,6 +25,7 @@ import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { Form, FormProps, Input, message, Select } from 'antd';
+import uniqBy from 'lodash/uniqBy';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 
@@ -88,7 +89,7 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
   // 全栈应用开发智能体推荐项下拉选项
   const devAgentSelectOptions = useMemo(
     () =>
-      devAgentOptions.map((item) => ({
+      uniqBy(devAgentOptions, 'targetId').map((item) => ({
         label: item.label,
         value: item.targetId,
       })),

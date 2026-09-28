@@ -575,6 +575,7 @@ const Home: React.FC = () => {
             )}
             <ChatBoxRecommendNav
               items={activeCategoryItems}
+              recommendPrompts={selectedRecommend?.prompts}
               guidQuestions={
                 agentDetail?.agentId === currentAgentId
                   ? agentDetail?.guidQuestionDtos

@@ -129,11 +129,11 @@ export const findDefaultAgent = <
 
 /**
  * 类型兜底命中：devAgentId 契约未 ready 或精确未命中时，按项目类型挑
- * 唯一同类型推荐项自动选中（等价替用户手点）；同类型 0 个或多个均不命中
- * （多个时无法猜测绑定哪个，回落手选提示）。调用方决定是否提示。
+ * 唯一同类型智能体自动选中，同一智能体的多条推荐取排序靠前项；
+ * 同类型 0 个或指向多个智能体时不命中，由调用方提示手选。
  */
 export const findTypeFallbackAgent = <
-  T extends Pick<DisplayRecommendInfo, 'functionType'>,
+  T extends Pick<DisplayRecommendInfo, 'functionType' | 'targetId'>,
 >(
   list: T[],
   projectType?: AgentComponentTypeEnum,
@@ -143,5 +143,8 @@ export const findTypeFallbackAgent = <
     return undefined;
   }
   const matches = list.filter((item) => item.functionType === allowed);
-  return matches.length === 1 ? matches[0] : undefined;
+  return matches.length > 0 &&
+    matches.every((item) => item.targetId === matches[0].targetId)
+    ? matches[0]
+    : undefined;
 };
