@@ -290,6 +290,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           }
           resumeDebugSource="agent-dev:left-dev-agent-session"
           {...(runtimeLine?.conversationProps ?? {})}
+          active={active}
         />
         <ConversationProgressCapsule
           conversationId={queryConversationId}

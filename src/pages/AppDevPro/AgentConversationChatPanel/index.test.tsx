@@ -154,6 +154,16 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     expect(latestUnifiedProps().onSendMessage).not.toBeUndefined();
   });
 
+  it('向共享会话传递页面显隐态，后台执行中也暂停滚动', () => {
+    mockUseModel.mockReturnValue(createConversationInfoModel());
+    const { rerender } = render(<AgentConversationChatPanel active />);
+    expect(latestUnifiedProps().active).toBe(true);
+
+    rerender(<AgentConversationChatPanel active={false} />);
+    expect(latestUnifiedProps().active).toBe(false);
+    expect(latestUnifiedProps().isConversationActive).toBe(true);
+  });
+
   it('V1 回落：model 活跃态下降沿触发会话结束回调（原触发点不回归）', () => {
     const model = createConversationInfoModel({
       isConversationActive: true,

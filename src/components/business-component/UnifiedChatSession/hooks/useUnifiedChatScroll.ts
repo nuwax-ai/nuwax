@@ -11,6 +11,7 @@ import {
 } from 'react';
 
 export interface UseUnifiedChatScrollProps {
+  active?: boolean;
   messageList?: any[];
   isConversationActive?: boolean;
   chatSuggestList?: any[];
@@ -24,6 +25,7 @@ export interface UseUnifiedChatScrollProps {
 }
 
 export function useUnifiedChatScroll({
+  active = true,
   messageList = [],
   isConversationActive = false,
   chatSuggestList = [],
@@ -41,6 +43,10 @@ export function useUnifiedChatScroll({
   const internalAllowAutoScrollRef = useRef<boolean>(true);
   const allowAutoScrollRef =
     externalAllowAutoScrollRef || internalAllowAutoScrollRef;
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const lastVisibleScrollTopRef = useRef(0);
+  const suspendedAutoScrollRef = useRef<boolean | null>(null);
   const lastMsgCountRef = useRef<number>(0);
   // 记录上一次 messageList 引用，用于识别“内容是否发生变化”（含新增、流式分片、
   // 原地更新、轮询快照合并等），避免仅比较条数/文本长度时漏触发置底。
@@ -70,6 +76,7 @@ export function useUnifiedChatScroll({
   // 100ms 后复位标记。供各处置底逻辑（发送、流式、会话结束等）复用，避免同一套实现
   // 被复制多份后产生不一致（曾出现 4 份近乎相同的副本）。
   const pinToBottomInstant = useCallback((el: HTMLDivElement) => {
+    if (!activeRef.current || el.clientHeight === 0) return;
     if (programmaticTimerRef.current) {
       clearTimeout(programmaticTimerRef.current);
     }
@@ -83,13 +90,101 @@ export function useUnifiedChatScroll({
     }, 100);
   }, []);
 
+  // 隐藏后 scrollTop 读值为零，只记录可见时的位置。恢复跟随意图与阅读位置
+  // 在布局阶段完成，避免后台流式更新或旧滚动检测覆盖用户最后停留的位置。
+  useLayoutEffect(() => {
+    if (!active) {
+      if (suspendedAutoScrollRef.current === null) {
+        suspendedAutoScrollRef.current = allowAutoScrollRef.current;
+      }
+      allowAutoScrollRef.current = false;
+      return;
+    }
+
+    const element = messageViewRef.current;
+    if (!element) return;
+
+    if (suspendedAutoScrollRef.current !== null) {
+      const shouldFollowTail = suspendedAutoScrollRef.current;
+      suspendedAutoScrollRef.current = null;
+      allowAutoScrollRef.current = shouldFollowTail;
+      if (shouldFollowTail) {
+        pinToBottomInstant(element);
+      } else {
+        element.scrollTop = lastVisibleScrollTopRef.current;
+      }
+    }
+
+    const rememberVisiblePosition = () => {
+      if (activeRef.current && element.clientHeight > 0) {
+        lastVisibleScrollTopRef.current = element.scrollTop;
+      }
+    };
+    rememberVisiblePosition();
+    element.addEventListener('scroll', rememberVisiblePosition, {
+      passive: true,
+    });
+    return () => element.removeEventListener('scroll', rememberVisiblePosition);
+  }, [active, allowAutoScrollRef, messageViewRef, pinToBottomInstant]);
+
   // 1. 滚动检测逻辑
   useConversationScrollDetection(
     messageViewRef,
     allowAutoScrollRef,
     scrollTimeoutRef,
     setScrollBtnVisible,
+    active,
   );
+
+  // 历史正文可能在懒加载、Markdown 或图片就绪后才撑高，不能只依赖消息引用
+  // 和固定延迟。内层 flex 容器可能保持视口高度，需同时观察自然高度子节点。
+  useLayoutEffect(() => {
+    const element = messageViewRef.current;
+    if (
+      !active ||
+      loadingMore ||
+      !element ||
+      typeof ResizeObserver === 'undefined'
+    ) {
+      return;
+    }
+    const content = element.firstElementChild ?? element;
+    const followContentToBottom = () => {
+      if (
+        activeRef.current &&
+        allowAutoScrollRef.current &&
+        element.clientHeight > 0 &&
+        element.scrollHeight - element.scrollTop - element.clientHeight > 1
+      ) {
+        pinToBottomInstant(element);
+      }
+    };
+    const resizeObserver = new ResizeObserver(followContentToBottom);
+    const observeContent = () => {
+      resizeObserver.disconnect();
+      const targets = new Set<Element>([element, content, ...content.children]);
+      targets.forEach((target) => resizeObserver.observe(target));
+    };
+    // Suspense 占位替换、历史分页会改变直接子节点；正文内部高度变化由
+    // ResizeObserver 处理，不对整棵消息树建立 mutation 订阅。
+    const mutationObserver = new MutationObserver(() => {
+      observeContent();
+      followContentToBottom();
+    });
+    mutationObserver.observe(content, { childList: true });
+    observeContent();
+    followContentToBottom();
+    return () => {
+      mutationObserver.disconnect();
+      resizeObserver.disconnect();
+    };
+  }, [
+    active,
+    loadingMore,
+    allowAutoScrollRef,
+    messageViewRef,
+    pinToBottomInstant,
+  ]);
 
   // 发送消息时强制重置自动滚动状态并立即置底。
   const handleSendScrollReset = () => {
@@ -105,7 +200,7 @@ export function useUnifiedChatScroll({
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
     const element = messageViewRef.current;
-    if (element) {
+    if (activeRef.current && element && element.clientHeight > 0) {
       (element as any).__isProgrammaticScroll = 'smooth';
       element.scrollTo({
         top: element.scrollHeight,
@@ -156,7 +251,12 @@ export function useUnifiedChatScroll({
 
     // 加载更多历史时不贴底：此时是向前读取历史，需要保持视口位置不变。
     // 用户向上滚动打断自动滚动时（allowAutoScrollRef=false）同样不置底。
-    if (!shouldScroll || loadingMore || !allowAutoScrollRef.current) {
+    if (
+      !active ||
+      !shouldScroll ||
+      loadingMore ||
+      !allowAutoScrollRef.current
+    ) {
       return;
     }
 
@@ -182,6 +282,7 @@ export function useUnifiedChatScroll({
       timers.forEach(clearTimeout);
     };
   }, [
+    active,
     messageList,
     isConversationActive,
     chatSuggestList,
@@ -206,6 +307,7 @@ export function useUnifiedChatScroll({
 
     if (
       wasLoading &&
+      active &&
       !isLoading &&
       messageList.length > 0 &&
       allowAutoScrollRef.current
@@ -232,7 +334,7 @@ export function useUnifiedChatScroll({
         clearTimeout(t3);
       };
     }
-  }, [isLoading, messageList.length, pinToBottomInstant]);
+  }, [active, isLoading, messageList.length, pinToBottomInstant]);
 
   // 会话结束兜底：isConversationActive 从 true → false 时触发多级延迟置底。
   // 关键设计：此 effect 仅依赖 [isConversationActive]，不会被 onClose 中 messageList
@@ -278,7 +380,7 @@ export function useUnifiedChatScroll({
 
   useLayoutEffect(() => {
     const element = messageViewRef.current;
-    if (!element) return;
+    if (!active || !element || element.clientHeight === 0) return;
 
     if (prevLoadingMoreRef.current && !loadingMore) {
       const heightDifference =
@@ -291,7 +393,7 @@ export function useUnifiedChatScroll({
     lastScrollHeightRef.current = element.scrollHeight;
     lastScrollTopRef.current = element.scrollTop;
     prevLoadingMoreRef.current = loadingMore || false;
-  }, [messageList, loadingMore]);
+  }, [active, messageList, loadingMore]);
 
   // 处理滚动区域 hover 及滚动按钮显示逻辑
   const handleMouseEnter = () => {

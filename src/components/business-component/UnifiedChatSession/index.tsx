@@ -101,6 +101,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   onComputerSelect,
 
   showScrollBtn = false,
+  active = true,
   allowAutoScrollRef,
   scrollTimeoutRef,
   setShowScrollBtn,
@@ -150,6 +151,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
     handleMouseEnter,
     handleMouseLeave,
   } = useUnifiedChatScroll({
+    active,
     messageList,
     isConversationActive,
     chatSuggestList,
