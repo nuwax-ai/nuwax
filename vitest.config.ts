@@ -14,7 +14,6 @@ export default defineConfig({
     setupFiles: './tests/setupTests.ts',
     exclude: [
       ...configDefaults.exclude,
-      'tests/**/*[Vv]2*.test.{ts,tsx}',
       // 本地 Claude 隔离 worktree 不是当前 checkout，禁止重复收集旧测试。
       '.claude/worktrees/**',
     ],
