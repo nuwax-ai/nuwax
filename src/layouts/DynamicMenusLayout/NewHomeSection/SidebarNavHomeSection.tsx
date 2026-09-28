@@ -12,7 +12,6 @@ import { useLocation } from 'umi';
 import ProjectPanel, { ProjectPanelHandle } from './components/ProjectPanel';
 import styles from './index.less';
 import TaskListSection from './TaskListSection';
-import { useFinishedConversationUnread } from './useFinishedConversationUnread';
 import { HomeSectionDataShell } from './useHomeSectionData';
 
 const cx = classNames.bind(styles);
@@ -22,8 +21,6 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
 }) => {
   const location = useLocation();
   const projectPanelRef = useRef<ProjectPanelHandle>(null);
-  // 会话结束未读蓝点 id 快照（页面级内存态，订阅重渲染见 hook 层）
-  const unreadConversationIds = useFinishedConversationUnread();
   // 单栏分组折叠态（原型：点击分组头折叠/展开对应列表，不做持久化）
   const [projectCollapsed, setProjectCollapsed] = useState(false);
   const [taskCollapsed, setTaskCollapsed] = useState(false);
@@ -41,9 +38,8 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
   syncRef.current = (reason) => {
     if (reason !== 'visibility') pendingNavigationSyncRef.current = true;
     // 活动门控（2026-09-18 定调「切回页签只允许当前打开页面自身需要的接口」）：
-    // 页签切回本身不补刷——切走时本地没有任何执行中会话就无事可补（状态跃迁/
-    // 未读蓝点无从发生，跨端新增行交由导航/事件路径收敛）。有执行中会话才刷新，
-    // 把结束跃迁补上（蓝点亮起主场景）
+    // 页签切回时仅补刷执行中的会话，把结束状态同步到列表；
+    // 跨端新增行交由导航/事件路径收敛。
     if (
       !pendingNavigationSyncRef.current &&
       !shell.hasExecutingTask &&
@@ -209,7 +205,6 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
           ref={projectPanelRef}
           compact
           leadingMark
-          unreadConversationIds={unreadConversationIds}
           onVisibleCountChange={shell.handleProjectCountChange}
           onConversationClick={shell.handleConversationClick}
           activeConversationId={shell.chatId}
@@ -228,7 +223,6 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
           <TaskListSection
             compact
             leadingMark
-            unreadConversationIds={unreadConversationIds}
             list={shell.visibleConversationList}
             loading={shell.loading}
             keyword={shell.keyword}

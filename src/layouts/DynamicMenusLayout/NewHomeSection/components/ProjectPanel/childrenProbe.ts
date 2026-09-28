@@ -30,7 +30,7 @@ import { projectKeyOf } from './projectPagination';
 /** 探针单页上限：满页视为可能截断，比对结果不可靠 */
 export const CHILDREN_PROBE_LIMIT = 100;
 
-/** 已加载 EXECUTING、探针已终态的会话（调用方 emit 终态补丁→本地翻新+未读蓝点） */
+/** 已加载 EXECUTING、探针已终态的会话（调用方 emit 终态补丁同步本地状态） */
 export interface ChildrenProbeTransition {
   conversationId: number | string;
   taskStatus: TaskStatus;

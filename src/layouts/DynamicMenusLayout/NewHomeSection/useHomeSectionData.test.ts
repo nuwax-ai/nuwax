@@ -320,105 +320,11 @@ describe('useHomeSectionData', () => {
     ]);
   });
 
-  it('蓝点本地信号：列表 EXECUTING→终态 跃迁且不在该会话 → 记蓝点；首见终态不记', async () => {
-    apiAgentConversationListMock.mockResolvedValueOnce({
-      data: [
-        buildConversation({ id: 7, taskStatus: TaskStatus.EXECUTING }),
-        buildConversation({ id: 8, taskStatus: TaskStatus.COMPLETE }),
-      ],
-    });
-    const useHomeSectionData = await freshHook();
-    // 与 hook 同一批 resetModules 后的模块实例（同一 store）
-    const store = await import('./finishedConversationUnread');
-    const { result } = renderHook(() =>
-      useHomeSectionData({ isSidebarNavMode: true }),
-    );
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    // 刷新回包：7 终态（不在该会话）→ 记蓝点；8 首见即终态 → 不记
-    apiAgentConversationListMock.mockResolvedValueOnce({
-      data: [
-        buildConversation({ id: 7, taskStatus: TaskStatus.COMPLETE }),
-        buildConversation({ id: 8, taskStatus: TaskStatus.COMPLETE }),
-      ],
-    });
-    await act(async () => {
-      result.current.refreshList(true, { silent: true });
-      await flush();
-    });
-
-    const snapshot = store.getFinishedConversationUnreadSnapshot();
-    expect(snapshot.has('7')).toBe(true);
-    expect(snapshot.has('8')).toBe(false);
-  });
-
-  it('蓝点本地信号：结束时正在该会话里（chatId 命中）→ 不记蓝点', async () => {
-    umiState.params = { id: '7' };
+  it('任务终态在途和确认后的重复轮询不阻断下一轮执行状态同步', async () => {
     apiAgentConversationListMock.mockResolvedValueOnce({
       data: [buildConversation({ id: 7, taskStatus: TaskStatus.EXECUTING })],
     });
     const useHomeSectionData = await freshHook();
-    const store = await import('./finishedConversationUnread');
-    const { result } = renderHook(() =>
-      useHomeSectionData({ isSidebarNavMode: true }),
-    );
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    apiAgentConversationListMock.mockResolvedValueOnce({
-      data: [buildConversation({ id: 7, taskStatus: TaskStatus.COMPLETE })],
-    });
-    await act(async () => {
-      result.current.refreshList(true, { silent: true });
-      await flush();
-    });
-
-    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
-    store.setActiveConversation('8');
-    store.markConversationFinished('7');
-    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
-  });
-
-  it('读过的任务在列表观察到新执行后可以再次记点，重复终态刷新不复活', async () => {
-    apiAgentConversationListMock.mockResolvedValueOnce({
-      data: [buildConversation({ id: 7, taskStatus: TaskStatus.COMPLETE })],
-    });
-    const useHomeSectionData = await freshHook();
-    const store = await import('./finishedConversationUnread');
-    store.markConversationFinished('7');
-    store.markConversationVisited('7');
-    const { result } = renderHook(() =>
-      useHomeSectionData({ isSidebarNavMode: true }),
-    );
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
-    for (const taskStatus of [TaskStatus.EXECUTING, TaskStatus.COMPLETE]) {
-      apiAgentConversationListMock.mockResolvedValueOnce({
-        data: [buildConversation({ id: 7, taskStatus })],
-      });
-      await act(async () => {
-        result.current.refreshList(true, { silent: true });
-        await flush();
-      });
-    }
-    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(true);
-    store.markConversationVisited('7');
-    apiAgentConversationListMock.mockResolvedValueOnce({
-      data: [buildConversation({ id: 7, taskStatus: TaskStatus.COMPLETE })],
-    });
-    await act(async () => {
-      result.current.refreshList(true, { silent: true });
-      await flush();
-    });
-    store.markConversationFinished('7');
-    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
-  });
-
-  it('任务终态在途重复轮询和确认后的重复轮询不阻断下一轮执行未读', async () => {
-    apiAgentConversationListMock.mockResolvedValueOnce({
-      data: [buildConversation({ id: 7, taskStatus: TaskStatus.EXECUTING })],
-    });
-    const useHomeSectionData = await freshHook();
-    const store = await import('./finishedConversationUnread');
     const { emitConversationChanged } = await import(
       '@/utils/directorySyncEvents'
     );
@@ -435,7 +341,9 @@ describe('useHomeSectionData', () => {
         reason: 'terminal',
       }),
     );
-    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(true);
+    expect(result.current.visibleConversationList[0].taskStatus).toBe(
+      TaskStatus.COMPLETE,
+    );
     let resolveComplete!: (value: unknown) => void;
     apiAgentConversationListMock.mockImplementationOnce(
       () =>
@@ -458,8 +366,9 @@ describe('useHomeSectionData', () => {
       });
       await flush();
     });
-    act(() => store.markConversationVisited('7'));
-    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
+    expect(result.current.visibleConversationList[0].taskStatus).toBe(
+      TaskStatus.COMPLETE,
+    );
     // C3：ack清除旧覆盖后，旧轮询不能再次插入/续期相同状态覆盖。
     act(() =>
       emitConversationChanged({
@@ -470,7 +379,9 @@ describe('useHomeSectionData', () => {
         reason: 'terminal',
       }),
     );
-    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(false);
+    expect(result.current.visibleConversationList[0].taskStatus).toBe(
+      TaskStatus.COMPLETE,
+    );
     apiAgentConversationListMock.mockResolvedValueOnce({
       data: [buildConversation({ id: 7, taskStatus: TaskStatus.EXECUTING })],
     });
@@ -490,7 +401,9 @@ describe('useHomeSectionData', () => {
         reason: 'terminal',
       }),
     );
-    expect(store.getFinishedConversationUnreadSnapshot().has('7')).toBe(true);
+    expect(result.current.visibleConversationList[0].taskStatus).toBe(
+      TaskStatus.COMPLETE,
+    );
   });
 
   it('resetSearchAndRefresh：清空关键词并按空 topic 整体刷新', async () => {
@@ -749,13 +662,6 @@ describe('useHomeSectionData', () => {
         TaskStatus.COMPLETE,
       ),
     );
-    // 旧EXECUTING没有被接受，读后下一次结束信号也不能恢复蓝点。
-    const store = await import('./finishedConversationUnread');
-    act(() => {
-      store.markConversationVisited('1');
-      store.markConversationFinished('1');
-    });
-    expect(store.getFinishedConversationUnreadSnapshot().has('1')).toBe(false);
   });
 
   it('后台任务结束时按会话 ID 查询终态，旧列表回包仍保留完成状态', async () => {

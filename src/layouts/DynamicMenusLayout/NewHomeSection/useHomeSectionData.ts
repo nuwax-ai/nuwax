@@ -44,12 +44,6 @@ import { jumpTo } from '@/utils/router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useParams } from 'umi';
 import { extractConversationIdFromPath } from '../sidebarSelectionPolicy';
-import {
-  markConversationExecuting,
-  markConversationFinished,
-  markConversationVisited,
-  setActiveConversation,
-} from './finishedConversationUnread';
 
 /** 经典形态列表项高度（单栏紧凑行 36px），calcPageSize 估算首页条数用 */
 const ITEM_HEIGHT = 58;
@@ -618,8 +612,6 @@ export function useHomeSectionData(options: {
     // NewHomeSection 整个会话列表子树卷进重渲染、击穿 React.memo（2026-09 收展卡顿）
     eventBus.emit(EVENT_TYPE.CloseMobileMenu);
     const { id, agentId, devTargetType, devTargetId, devSpaceId } = item;
-    // 点击即视为已进入：立即清未读蓝点（跨应用路由 chatId 派生可能滞后，先清兜底）
-    if (id !== null && id !== undefined) markConversationVisited(id);
 
     if (devTargetType === 'Agent' && devSpaceId && id) {
       history.push(
@@ -635,43 +627,16 @@ export function useHomeSectionData(options: {
     }
   }, []);
 
-  // 会话结束未读蓝点：当前会话 id 变化 = 已进入（面板点击/搜索弹窗/快捷导航等
-  // 一切路径统一在此清除），同时同步「结束时是否在场」的判定基准
+  // 为缓存或本地新增行补充状态观察，供列表事件去重使用。
   useEffect(() => {
-    setActiveConversation(chatId);
-    if (chatId) markConversationVisited(chatId);
-  }, [chatId]);
-
-  // 会话结束未读蓝点·本地兜底信号：列表内 EXECUTING→终态 跃迁即「结束」
-  // （chat_finished 通知不覆盖普通聊天——2026-09-17 testagent 实测不下发；
-  // 静默刷新回包里观察到「之前执行中、现在已结束」且此刻不在该会话里，
-  // 即记蓝点。首见终态不算——页面没见证过「执行中」就不算「结束后未看」）
-  const listTaskStatusRef = useRef(new Map<string, TaskStatus>());
-  useEffect(() => {
-    const prev = listTaskStatusRef.current;
-    const next = new Map<string, TaskStatus>();
     for (const item of localList) {
       if (item.taskStatus === undefined) continue;
       const id = String(item.id);
-      next.set(id, item.taskStatus);
       if (!observedTaskStatusesRef.current.has(id)) {
         observedTaskStatusesRef.current.set(id, item.taskStatus);
       }
-      if (
-        item.taskStatus === TaskStatus.EXECUTING &&
-        prev.get(id) !== TaskStatus.EXECUTING
-      ) {
-        markConversationExecuting(id);
-      }
-      if (
-        prev.get(id) === TaskStatus.EXECUTING &&
-        isTerminalTaskStatus(item.taskStatus)
-      ) {
-        markConversationFinished(id);
-      }
     }
-    listTaskStatusRef.current = next;
-  }, [localList, chatId]);
+  }, [localList]);
 
   // 页签切回「活动门控」：列表里是否还有执行中会话（全量口径）
   const hasExecutingTask = useMemo(

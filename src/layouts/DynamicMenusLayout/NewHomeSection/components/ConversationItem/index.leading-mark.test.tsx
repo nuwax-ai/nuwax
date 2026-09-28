@@ -3,8 +3,7 @@
  *
  * 守卫 2026-09-17 定调的替换契约：
  * - leadingMark 开启（单栏）：执行中 → 行尾转圈，不再渲染「执行中」文字胶囊；
- *   结束未读 → 蓝点；执行中抑制蓝点。
- * - leadingMark 关闭（经典布局维持现状）：执行中仍渲染文字胶囊、无转圈/蓝点。
+ * - leadingMark 关闭（经典布局维持现状）：执行中仍渲染文字胶囊、无转圈。
  */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -44,8 +43,6 @@ import ConversationItem from './index';
 
 const EXECUTING_KEY =
   'PC.Layouts.DynamicMenusLayout.ConversationItem.executing';
-const UNREAD_KEY =
-  'PC.Layouts.DynamicMenusLayout.ConversationItem.unreadFinished';
 const FAILED_KEY = 'PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask';
 
 const buildItem = (
@@ -60,11 +57,9 @@ const buildItem = (
 
 const renderRow = (props: {
   taskStatus?: TaskStatus;
-  unread?: boolean;
   leadingMark?: boolean;
   pinned?: boolean;
 }) => {
-  const unreadIds = new Set(props.unread ? ['101'] : []);
   return render(
     <ConversationItem
       compact
@@ -72,7 +67,6 @@ const renderRow = (props: {
       isActive={false}
       onClick={() => {}}
       leadingMark={props.leadingMark}
-      unreadConversationIds={unreadIds}
       pinned={props.pinned}
     />,
   );
@@ -122,42 +116,23 @@ describe('ConversationItem 行尾状态标记（leadingMark）', () => {
     ).toBeTruthy();
   });
 
-  it('开启 + 结束未读：渲染蓝点', () => {
-    renderRow({ leadingMark: true, unread: true });
-    expect(screen.getByLabelText(UNREAD_KEY)).toBeTruthy();
-  });
-
-  it('开启 + 执行中抑制蓝点', () => {
-    renderRow({
-      leadingMark: true,
-      taskStatus: TaskStatus.EXECUTING,
-      unread: true,
-    });
-    expect(screen.getByLabelText(EXECUTING_KEY)).toBeTruthy();
-    expect(screen.queryByLabelText(UNREAD_KEY)).toBeNull();
-  });
-
-  it('开启 + 失败：失败状态优先于未读和置顶', () => {
+  it('开启 + 失败：失败状态优先于置顶', () => {
     renderRow({
       leadingMark: true,
       taskStatus: TaskStatus.FAILED,
-      unread: true,
       pinned: true,
     });
     expect(screen.getByLabelText(FAILED_KEY)).toBeTruthy();
-    expect(screen.queryByLabelText(UNREAD_KEY)).toBeNull();
   });
 
   it('开启 + 空闲：无任何标记', () => {
     renderRow({ leadingMark: true });
     expect(screen.queryByLabelText(EXECUTING_KEY)).toBeNull();
-    expect(screen.queryByLabelText(UNREAD_KEY)).toBeNull();
   });
 
-  it('关闭（经典布局）：执行中仍渲染文字胶囊、无转圈/蓝点', () => {
+  it('关闭（经典布局）：执行中仍渲染文字胶囊、无转圈', () => {
     renderRow({ taskStatus: TaskStatus.EXECUTING });
     expect(screen.getByText(EXECUTING_KEY)).toBeTruthy(); // 文字胶囊保留
     expect(screen.queryByLabelText(EXECUTING_KEY)).toBeNull(); // 无转圈
-    expect(screen.queryByLabelText(UNREAD_KEY)).toBeNull();
   });
 });

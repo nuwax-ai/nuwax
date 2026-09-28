@@ -1,7 +1,7 @@
 /**
  * ConversationStatusMark 行首状态标记组件测试。
  *
- * 守卫状态优先级：执行中 > 失败 > 未读 > fallback。
+ * 守卫状态优先级：执行中 > 失败 > fallback。
  */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -22,8 +22,6 @@ import ConversationStatusMark from './index';
 
 const EXECUTING_KEY =
   'PC.Layouts.DynamicMenusLayout.ConversationItem.executing';
-const UNREAD_KEY =
-  'PC.Layouts.DynamicMenusLayout.ConversationItem.unreadFinished';
 const FAILED_KEY = 'PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask';
 
 describe('ConversationStatusMark', () => {
@@ -35,25 +33,26 @@ describe('ConversationStatusMark', () => {
     expect(container.querySelector('.anticon')).toBeTruthy();
   });
 
-  it('结束未读：渲染蓝点（aria-label=未查看）', () => {
-    const { container } = render(<ConversationStatusMark unread />);
-    expect(screen.getByLabelText(UNREAD_KEY)).toBeTruthy();
-    expect(container.querySelector('.mark-dot')).toBeTruthy();
-  });
-
-  it('执行中抑制蓝点：双条件只出转圈', () => {
-    const { container } = render(
-      <ConversationStatusMark taskStatus={TaskStatus.EXECUTING} unread />,
+  it('执行中优先于业务图标：只出转圈', () => {
+    render(
+      <ConversationStatusMark
+        taskStatus={TaskStatus.EXECUTING}
+        fallback={<span aria-label="fallback" />}
+      />,
     );
     expect(screen.getByLabelText(EXECUTING_KEY)).toBeTruthy();
-    expect(screen.queryByLabelText(UNREAD_KEY)).toBeNull();
-    expect(container.querySelector('.mark-dot')).toBeNull();
+    expect(screen.queryByLabelText('fallback')).toBeNull();
   });
 
-  it('失败抑制蓝点：渲染失败状态', () => {
-    render(<ConversationStatusMark taskStatus={TaskStatus.FAILED} unread />);
+  it('失败优先于业务图标：渲染失败状态', () => {
+    render(
+      <ConversationStatusMark
+        taskStatus={TaskStatus.FAILED}
+        fallback={<span aria-label="fallback" />}
+      />,
+    );
     expect(screen.getByLabelText(FAILED_KEY)).toBeTruthy();
-    expect(screen.queryByLabelText(UNREAD_KEY)).toBeNull();
+    expect(screen.queryByLabelText('fallback')).toBeNull();
   });
 
   it('无运行态状态时渲染 fallback', () => {
