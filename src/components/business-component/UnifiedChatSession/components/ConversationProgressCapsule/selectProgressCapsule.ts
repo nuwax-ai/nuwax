@@ -157,8 +157,9 @@ const extractTaskResults = (
 export function selectProgressCapsule(
   messageList: MessageInfo[] | undefined,
   active: boolean,
+  presentation?: ReturnType<typeof projectConversation>,
 ): ProgressCapsuleModel | null {
-  const turns = projectConversation(messageList).turns;
+  const turns = (presentation ?? projectConversation(messageList)).turns;
   const turn =
     [...turns].reverse().find((item) => item.running) ?? turns.at(-1);
   if (!turn) return null;

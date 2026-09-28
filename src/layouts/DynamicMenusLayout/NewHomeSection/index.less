@@ -5,6 +5,7 @@
 @sectionMarginTop: 0;
 @listItemGap: 0;
 @listMarginRight: 0;
+@projectSectionHeaderHeight: 36px;
 
 .new-home-section {
   display: flex;
@@ -56,12 +57,14 @@
     padding: 2px 15px 0 24px;
   }
 
-  // 吸顶分组头：滚动到对应区域时该区分组头把上一区分组头顶出、自动替换钉在滚动区顶部
+  // 两个分组头同时吸顶；任务头向下偏移项目头高度，避免互相覆盖。
   // margin-top 并入 padding-top——吸顶条整块不透明，滚动内容不会从头顶缝隙穿出
   .section-tabs-sticky {
     position: sticky;
     top: 0;
     z-index: 1;
+    height: @projectSectionHeaderHeight;
+    box-sizing: border-box;
     margin-top: 0;
     padding-top: 15px;
     // 吸顶条背景必须与侧栏可见底色一致：@navSecondMenuBg(color-bg-layout) 在
@@ -71,19 +74,21 @@
 
     // 任务头：原 margin 6px + padding 2px 并入
     &.task-section-tabs {
+      top: @projectSectionHeaderHeight;
+      height: 28px;
       padding-top: 8px;
     }
   }
 
-  // 分组容器：sticky 的包含块，分组头只在各自分组内顶替、不会被别的分组顶走
-  .section-group {
-    position: relative;
+  .task-list-section {
+    flex-shrink: 0;
   }
 
   // 单栏项目列表：padding 7/15/16/15（右侧 15px 与顶部导航菜单项右缘对齐，
   // 均止于 x=245；原右 7px 使列表比导航宽出 8px）。
   // 原文件尾曾二次声明同名规则覆盖此处的 0 15px 16px，现按实际生效值并入，级联结果不变
   .project-list-section {
+    flex-shrink: 0;
     padding: 7px 15px 16px;
   }
 

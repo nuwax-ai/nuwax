@@ -20,6 +20,12 @@ vi.mock('@/components/business-component', () => ({
   },
 }));
 
+// 本组验证面板的数据分派与回调，进度视图由独立用例覆盖。
+vi.mock(
+  '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule',
+  () => ({ default: () => null }),
+);
+
 vi.mock('umi', () => ({
   history: mockHistory,
   useLocation: (...args: unknown[]) => mockUseLocation(...args),
@@ -93,9 +99,6 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
         selectedComputerId="computer-prop"
       />,
     );
-    expect(latestUnifiedProps()).toMatchObject({
-      quickNavDisplayMode: 'scrollable',
-    });
     latestUnifiedProps().onSendMessage(
       'build it',
       [{ name: 'a.ts' }],
@@ -139,9 +142,6 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     // 末尾展开覆盖：UnifiedChatSession 收到的发送实现与消息列表是 runtime 线版本
     expect(latestUnifiedProps().onSendMessage).toBe(runtimeOnSendMessage);
     expect(latestUnifiedProps().messageList).toBe(runtimeMessageList);
-    expect(latestUnifiedProps()).toMatchObject({
-      quickNavDisplayMode: 'scrollable',
-    });
   });
 
   it('V2 线：runtimeLine prop 为 null 时回落旧线原值（flag 关，页面透传 null）', () => {
@@ -152,6 +152,16 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
 
     expect(latestUnifiedProps().messageList).toBe(model.messageList);
     expect(latestUnifiedProps().onSendMessage).not.toBeUndefined();
+  });
+
+  it('向共享会话传递页面显隐态，后台执行中也暂停滚动', () => {
+    mockUseModel.mockReturnValue(createConversationInfoModel());
+    const { rerender } = render(<AgentConversationChatPanel active />);
+    expect(latestUnifiedProps().active).toBe(true);
+
+    rerender(<AgentConversationChatPanel active={false} />);
+    expect(latestUnifiedProps().active).toBe(false);
+    expect(latestUnifiedProps().isConversationActive).toBe(true);
   });
 
   it('V1 回落：model 活跃态下降沿触发会话结束回调（原触发点不回归）', () => {
@@ -295,8 +305,6 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     );
     expect(agentProps.messageList).toEqual([{ id: 'agent-message' }]);
     expect(ideProps.messageList).toEqual([{ id: 'ide-message' }]);
-    expect(agentProps.quickNavDisplayMode).toBeUndefined();
-    expect(ideProps.quickNavDisplayMode).toBe('scrollable');
     agentProps.onSendMessage('agent prompt');
     ideProps.onSendMessage('ide prompt');
     expect(agentModel.onMessageSend).toHaveBeenCalledWith(

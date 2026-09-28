@@ -3,7 +3,10 @@
  * React 层入口见 ./react；页面/组件消费约定见 eslint no-restricted-imports。
  */
 export { parseMessageSegments, stripCustomTags } from './parseMessageSegments';
-export { projectConversation } from './projectConversation';
+export {
+  createConversationProjector,
+  projectConversation,
+} from './projectConversation';
 export {
   DEFAULT_V2_PRESET,
   PRESET_NODE_MODES,

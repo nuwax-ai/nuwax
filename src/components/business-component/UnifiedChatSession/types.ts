@@ -68,8 +68,6 @@ export interface UnifiedChatSessionProps {
   isAwaitingChatTerminal?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   showDebug?: boolean;
-  /** 默认至少两个导航项时显示；工作台可额外显示单轮可滚动会话的导航。 */
-  quickNavDisplayMode?: 'auto' | 'scrollable';
   loadingSuggest?: boolean; // 会话建议加载状态
   // 与 RecommendListProps 同口径：开场白问题推荐（对象）与轮次后建议（字符串）两态
   chatSuggestList?: GuidQuestionDto[] | string[]; // 页面会话建议
@@ -120,11 +118,15 @@ export interface UnifiedChatSessionProps {
 
   // 文件预览与智能体电脑状态/操作 (通用型智能体 TaskAgent 专属)
   selectedComputerId?: string;
+  /** 空会话内由用户改选的电脑在首次发送后仍优先于创建时的默认绑定。 */
+  hasChangedComputerInEmptySession?: boolean;
   /** 当前会话详情已加载时，按 sandboxServerId 恢复历史会话的电脑与锁定状态。 */
   restoreConversationSandbox?: boolean;
   onComputerSelect?: (id: string) => void;
 
   showScrollBtn?: boolean;
+  /** 保活页面是否可见；隐藏时暂停滚动，切回恢复最后阅读位置。 */
+  active?: boolean;
   allowAutoScrollRef?: React.MutableRefObject<boolean>;
   scrollTimeoutRef?: React.MutableRefObject<any>;
   setShowScrollBtn?: (show: boolean) => void;

@@ -149,7 +149,9 @@ export interface ExpertMentionInfo {
 }
 
 export type MentionItem = SkillMentionItem | FileMentionItem | DocMentionItem;
-export type FetchMentionFiles = () => Promise<FileMentionItem[]>;
+export type FetchMentionFiles = (
+  keyword?: string,
+) => Promise<FileMentionItem[]>;
 
 export interface PluginCommandItem extends MentionBase {
   kind: 'plugin';

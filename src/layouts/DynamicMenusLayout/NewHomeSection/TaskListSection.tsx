@@ -25,12 +25,10 @@ interface TaskListSectionProps {
   /** 当前会话命中项目子会话 id：任务列表与项目分组选中互斥 */
   activeProjectChildId: string | null;
   /**
-   * 行首状态标记（单栏 style3 启用）：执行中转圈替换「执行中」文字胶囊、
-   * 结束未读亮蓝点。经典布局不传维持现状（2026-09-17 定调：style1/2 待定）。
+   * 行尾状态标记（单栏 style3 启用）：执行中转圈替换「执行中」文字胶囊。
+   * 经典布局不传维持现状。
    */
   leadingMark?: boolean;
-  /** 会话结束未读 id 快照（leadingMark 开启时消费） */
-  unreadConversationIds?: ReadonlySet<string>;
   onConversationClick: (item: ConversationInfo) => void;
   onFlagChanged: (
     conversationId: number,
@@ -49,7 +47,6 @@ const TaskListSection: React.FC<TaskListSectionProps> = ({
   chatId,
   activeProjectChildId,
   leadingMark = false,
-  unreadConversationIds,
   onConversationClick,
   onFlagChanged,
   onCollectedChanged,
@@ -73,7 +70,6 @@ const TaskListSection: React.FC<TaskListSectionProps> = ({
           archived={item.archived === true}
           collected={item.collected === true}
           leadingMark={leadingMark}
-          unreadConversationIds={unreadConversationIds}
           onFlagChanged={(kind, enabled) =>
             onFlagChanged(item.id, kind, enabled)
           }

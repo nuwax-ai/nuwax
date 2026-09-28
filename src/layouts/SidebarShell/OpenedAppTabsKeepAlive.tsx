@@ -135,7 +135,11 @@ const OpenedAppTabsKeepAlive: React.FC = () => {
             className="h-full w-full"
             style={{ display: ins.active ? 'block' : 'none' }}
           >
-            <Renderer appId={ins.appId} homepageUrl={ins.homepageUrl} />
+            <Renderer
+              appId={ins.appId}
+              homepageUrl={ins.homepageUrl}
+              active={ins.active}
+            />
           </div>
         ))}
       {agentRenderer &&

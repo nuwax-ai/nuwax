@@ -2,7 +2,7 @@ import '@/utils/setupDayjsPlugins';
 import { RequestConfig } from '@@/plugin-request/request';
 import { OpenUIDevtools } from '@openuidev/devtools';
 import { theme as antdTheme, Modal } from 'antd';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 import { history, useAntdConfigSetter, useModel } from 'umi';
 import AppStartup from './components/business-component/AppStartup';
 import {
@@ -36,7 +36,11 @@ import {
   resolveEffectiveNavigationStyle,
   unifiedThemeService,
 } from './services/unifiedThemeService';
-import { UserService } from './services/userService';
+import {
+  getCurrentLoginStatus,
+  subscribeLoginStatus,
+  UserService,
+} from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { restoreBusinessAuthSession } from './utils/businessAuth';
 import { migrateConversationDefaultsToV2 } from './utils/conversationV2Rollout';
@@ -133,11 +137,27 @@ const GlobalEventPolling: React.FC = () => {
   return contextHolder; // 返回 contextHolder 以支持 Modal 的动态主题
 };
 
+const subscribePollingPath = (listener: () => void) => history.listen(listener);
+const getPollingPath = () => history.location.pathname;
+
 const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   children,
 }) => {
   const setAntdConfig = useAntdConfigSetter();
   const lastAppliedRef = useRef<string>('');
+  const loggedIn = useSyncExternalStore(
+    subscribeLoginStatus,
+    getCurrentLoginStatus,
+    () => false,
+  );
+  const pathname = useSyncExternalStore(
+    subscribePollingPath,
+    getPollingPath,
+    () => '/login',
+  );
+  const isLoginPage = /^\/(?:login|verify-code|set-password)(?:\/|$)/i.test(
+    pathname,
+  );
 
   useEffect(() => installDirectorySyncLegacyBridge(), []);
 
@@ -382,7 +402,9 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     <>
       <OpenUIDevtools enabled={false} />
       {/* 只有用户已登录时才启动事件轮询 */}
-      {!isDesktopShellPreviewPage() && <GlobalEventPolling />}
+      {loggedIn && !isLoginPage && !isDesktopShellPreviewPage() && (
+        <GlobalEventPolling />
+      )}
       {children}
     </>
   );

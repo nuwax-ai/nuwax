@@ -55,6 +55,7 @@ describe('UserApp 应用页面状态', () => {
 
   it.each([
     { name: 'BizError', info: { code: '4030' } },
+    { name: 'BizError', info: { code: '4033' } },
     { response: { status: 403 } },
   ])('权限失败展示权限状态，不伪装成空数据：%j', async (error) => {
     vi.mocked(apiUserAppDomainList).mockRejectedValue(error);

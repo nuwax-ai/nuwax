@@ -14,9 +14,6 @@ const { route, refreshList, revalidateVisible, hasExecutingChildren } =
 vi.mock('umi', () => ({ useLocation: () => route }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
 vi.mock('@/components/base/SvgIcon', () => ({ default: () => null }));
-vi.mock('./useFinishedConversationUnread', () => ({
-  useFinishedConversationUnread: () => new Set<string>(),
-}));
 vi.mock('./TaskListSection', () => ({ default: () => null }));
 vi.mock('./components/ProjectPanel', async () => {
   const React = await import('react');

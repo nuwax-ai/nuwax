@@ -59,6 +59,7 @@ const ResizableSplit: React.FC<Props> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   // 保存上一次的容器宽度，用于检测容器尺寸变化
   const prevContainerWidthRef = useRef(0);
+  const prevBoundsRef = useRef({ minLeft: 0, minRight: 0 });
   // 保存左侧固定像素宽度（当达到最小宽度时）
   const fixedLeftWidthRef = useRef<number | null>(null);
   // 保存上一次的 defaultLeftWidth，用于检测变化
@@ -128,20 +129,26 @@ const ResizableSplit: React.FC<Props> = ({
     };
   }, [isInitialized]);
 
-  // 当容器宽度变化时，自动调整分隔线位置以避免出现滚动条
+  // 容器宽度或最小宽度变化时重新约束分隔线，覆盖文件树展开等动态布局。
   useEffect(() => {
     if (!containerWidth || !isInitialized) return;
 
     const prevWidth = prevContainerWidthRef.current;
 
-    // 只有在容器宽度发生变化时才处理
-    if (prevWidth === containerWidth) return;
+    const previousBounds = prevBoundsRef.current;
+    if (
+      prevWidth === containerWidth &&
+      previousBounds.minLeft === minLeft &&
+      previousBounds.minRight === minRight
+    )
+      return;
 
     // 拖动时不执行自适应逻辑，避免冲突和闪烁
     if (isDragging) return;
 
     // 更新上一次的宽度
     prevContainerWidthRef.current = containerWidth;
+    prevBoundsRef.current = { minLeft, minRight };
 
     // 优先使用固定宽度（如果已设置）
     let targetLeftWidth: number;

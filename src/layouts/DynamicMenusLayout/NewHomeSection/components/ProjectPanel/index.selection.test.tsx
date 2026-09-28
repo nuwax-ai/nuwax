@@ -28,14 +28,6 @@ import {
   emitProjectChanged,
 } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
-import {
-  __resetFinishedConversationUnreadForTest,
-  getFinishedConversationUnreadSnapshot,
-  markConversationFinished,
-  markConversationVisited,
-  setActiveConversation,
-} from '../../finishedConversationUnread';
-import '../../useFinishedConversationUnread';
 
 // vi.hoisted：mock 工厂随静态 import 提前执行，引用的 spy 必须先于 import 初始化
 const {
@@ -192,7 +184,6 @@ async function actFlush(
 
 describe('ProjectPanel 选中关系', () => {
   beforeEach(() => {
-    __resetFinishedConversationUnreadForTest();
     pageQueryMock.mockReset();
     conversationsMock.mockReset();
     conversationUpdateMock.mockReset();
@@ -807,7 +798,7 @@ describe('ProjectPanel 选中关系', () => {
     );
   });
 
-  it('项目子会话在途/确认后重复终态不续期，读后新执行仍允许下一次未读', async () => {
+  it('项目子会话在途和确认后的重复终态不阻断下一轮执行状态同步', async () => {
     respondPage([buildRecord()], {
       1: [{ ...buildConversation(11), taskStatus: TaskStatus.EXECUTING }],
     });
@@ -821,7 +812,11 @@ describe('ProjectPanel 选中关系', () => {
     // 真正发过终态补丁，留下60秒回放记录。服务端确认这一轮终态后，
     // 下一轮真实执行不应再被这份旧补丁覆盖。
     act(patchTerminal);
-    expect(getFinishedConversationUnreadSnapshot().has('11')).toBe(true);
+    expect(
+      screen.queryByText(
+        'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+      ),
+    ).toBeNull();
     let resolveComplete!: (value: unknown) => void;
     conversationsMock.mockImplementationOnce(
       () =>
@@ -842,10 +837,12 @@ describe('ProjectPanel 选中关系', () => {
       });
       await flush();
     });
-    act(() => markConversationVisited(11));
     act(patchTerminal); // C3不能在ack后重新插回旧状态覆盖。
-    act(() => markConversationFinished(11));
-    expect(getFinishedConversationUnreadSnapshot().has('11')).toBe(false);
+    expect(
+      screen.queryByText(
+        'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+      ),
+    ).toBeNull();
 
     conversationsMock.mockResolvedValue({
       code: SUCCESS_CODE,
@@ -870,14 +867,21 @@ describe('ProjectPanel 选中关系', () => {
       eventBus.emit(EVENT_TYPE.RefreshConversationList, { conversationId: 11 }),
     );
     await waitFor(() =>
-      expect(getFinishedConversationUnreadSnapshot().has('11')).toBe(true),
+      expect(
+        screen.queryByText(
+          'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+        ),
+      ).toBeNull(),
     );
-    act(() => markConversationVisited(11));
     act(patchTerminal);
-    expect(getFinishedConversationUnreadSnapshot().has('11')).toBe(false);
+    expect(
+      screen.queryByText(
+        'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+      ),
+    ).toBeNull();
   });
 
-  it('项目子会话在途旧执行回包不能覆盖新终态补丁，也不能误解锁已读', async () => {
+  it('项目子会话在途旧执行回包不能覆盖新终态补丁', async () => {
     respondPage([buildRecord()], {
       1: [{ ...buildConversation(11), taskStatus: TaskStatus.EXECUTING }],
     });
@@ -899,7 +903,6 @@ describe('ProjectPanel 选中关系', () => {
         taskStatus: TaskStatus.COMPLETE,
       }),
     );
-    act(() => markConversationVisited(11));
     await act(async () =>
       resolveRequest({
         code: SUCCESS_CODE,
@@ -917,7 +920,11 @@ describe('ProjectPanel 选中关系', () => {
         taskStatus: TaskStatus.COMPLETE,
       }),
     );
-    expect(getFinishedConversationUnreadSnapshot().has('11')).toBe(false);
+    expect(
+      screen.queryByText(
+        'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
+      ),
+    ).toBeNull();
   });
 
   it('项目子会话回包仅确认旧状态时，不能消费请求期间的新状态补丁', async () => {
@@ -1039,43 +1046,6 @@ describe('ProjectPanel 选中关系', () => {
       ).toBeTruthy(),
     );
     expect(screen.getByText('新会话名')).toBeTruthy();
-  });
-
-  it('项目子会话结束时在场，切走后迟到终态补丁仍保持已读', async () => {
-    setActiveConversation(11);
-    respondPage([buildRecord()], {
-      1: [{ ...buildConversation(11), taskStatus: TaskStatus.EXECUTING }],
-    });
-    render(<ProjectPanel compact />);
-    await waitFor(() =>
-      expect(
-        screen.getByText(
-          'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
-        ),
-      ).toBeTruthy(),
-    );
-    conversationsMock.mockResolvedValue({
-      code: SUCCESS_CODE,
-      data: [{ ...buildConversation(11), taskStatus: TaskStatus.COMPLETE }],
-    });
-    act(() =>
-      eventBus.emit(EVENT_TYPE.RefreshConversationList, { conversationId: 11 }),
-    );
-    await waitFor(() =>
-      expect(
-        screen.queryByText(
-          'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
-        ),
-      ).toBeNull(),
-    );
-    setActiveConversation(12);
-    act(() =>
-      eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
-        conversationId: 11,
-        taskStatus: TaskStatus.COMPLETE,
-      }),
-    );
-    expect(getFinishedConversationUnreadSnapshot().has('11')).toBe(false);
   });
 
   it('返回单栏时核对项目和已展开子会话，发现跨端新增行', async () => {
