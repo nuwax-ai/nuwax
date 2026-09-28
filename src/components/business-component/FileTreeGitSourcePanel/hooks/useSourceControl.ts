@@ -33,6 +33,7 @@ import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '../utils/gitStatusUtils';
+import { locateWorkspaceChangeFile } from '../utils/locateWorkspaceChangeFile';
 import {
   runGitDiscard,
   runGitStage,
@@ -349,6 +350,14 @@ export const useSourceControl = ({
 
       void (async () => {
         try {
+          // 分层文件树没有全量列表，先按文件名搜到真正的文件，再拉 diff
+          if (workspace.workspaceType === 'taskAgent') {
+            try {
+              await locateWorkspaceChangeFile(workspace.cid, fileId);
+            } catch (error) {
+              console.error('搜索源代码变更文件失败', error);
+            }
+          }
           const content = await fetchGitChangeFileContent(
             buildGitWorkspaceParams(workspace),
             fileId,
