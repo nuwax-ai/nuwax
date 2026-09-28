@@ -7,11 +7,15 @@ import {
   apiCollectEvent,
   ApiCollectEventResponse,
 } from '@/services/event';
-import { dict } from '@/services/i18nRuntime';
 import {
   getHostVisibility,
   subscribeHostVisibility,
 } from '@/services/hostVisibility';
+import { dict } from '@/services/i18nRuntime';
+import {
+  getCurrentLoginStatus,
+  subscribeLoginStatus,
+} from '@/services/userService';
 import eventBus from '@/utils/eventBus';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Modal } from 'antd';
@@ -23,7 +27,18 @@ export default function useEventPolling(): React.ReactElement | null {
   const [modal, contextHolder] = Modal.useModal();
 
   // 使用ref记录当前是否正在处理事件，避免并发处理
-  const isProcessingRef = useRef<boolean>(false);
+  const processingRef = useRef<symbol | null>(null);
+  const mountedRef = useRef(false);
+  const generationRef = useRef(0);
+  const pollingRef = useRef<{ run: () => void; cancel: () => void } | null>(
+    null,
+  );
+  const hasExecutedRef = useRef(false);
+  const canPoll = () =>
+    mountedRef.current &&
+    getCurrentLoginStatus() &&
+    getHostVisibility() &&
+    !document.hidden;
   // 使用ref记录是否已经显示过版本更新弹窗，确保弹窗唯一性
   const versionModalShownRef = useRef<boolean>(false);
   // 使用ref记录当前版本号
@@ -110,6 +125,7 @@ export default function useEventPolling(): React.ReactElement | null {
   const { run: startPolling, cancel: stopPolling } = useRequest(
     apiCollectEvent,
     {
+      manual: true,
       loading: false,
       pollingInterval: GLOBAL_POLLING_INTERVAL, // 全局轮询间隔
       // 在屏幕不可见时，暂时暂停定时任务。
@@ -118,24 +134,27 @@ export default function useEventPolling(): React.ReactElement | null {
       pollingErrorRetryCount: -1,
       throwOnError: true,
       onSuccess: async (data: ApiCollectEventResponse) => {
+        if (!canPoll()) return;
         // 检查版本更新（优先处理，不阻塞事件处理）
         if (data?.version) {
           checkVersionUpdate(data.version);
         }
 
         // 如果已经在处理事件，则跳过本次回调
-        if (isProcessingRef.current) {
+        if (processingRef.current) {
           console.log('Skipping duplicate event processing');
           return;
         }
 
         if (data?.hasEvent) {
+          const owner = Symbol('event-processing');
+          const generation = generationRef.current;
           try {
             // 标记开始处理事件
-            isProcessingRef.current = true;
+            processingRef.current = owner;
 
             // 停止轮询，避免在处理过程中重复调用
-            stopPolling();
+            pollingRef.current?.cancel();
 
             // 遍历所有事件，发布到 eventBus
             for (const event of data.eventList) {
@@ -147,30 +166,60 @@ export default function useEventPolling(): React.ReactElement | null {
           } catch (error) {
             console.error('Error processing event:', error);
           } finally {
-            // 重新开始轮询；宿主不可见（休眠控制）时不得重启，等恢复可见的 host-activity 沿拉起
-            if (getHostVisibility()) {
-              startPolling();
+            if (processingRef.current === owner) {
+              processingRef.current = null;
+              // clear 迟到响应不得复活已登出或卸载的实例。
+              if (generation === generationRef.current && canPoll()) {
+                hasExecutedRef.current = true;
+                pollingRef.current?.run();
+              }
             }
-            // 处理完成，重置标记
-            isProcessingRef.current = false;
           }
         }
       },
       onError: () => {},
     },
   );
+  pollingRef.current = { run: startPolling, cancel: stopPolling };
 
   // 休眠控制（客户端宿主）：webview 感知不到宿主最小化/托盘隐藏/锁屏（实测
   // 2026-09-17），改由壳 host-activity 事件暂停/恢复全局事件轮询；浏览器端恒
   // visible，pollingWhenHidden 的 tab 级行为不变。挂载即休眠（--hidden 冷启动）
   // 时自查停轮询（订阅不做注册即回调）。
   useEffect(() => {
-    if (!getHostVisibility()) stopPolling();
-    return subscribeHostVisibility((nextVisible) => {
-      if (nextVisible) startPolling();
-      else stopPolling();
+    mountedRef.current = true;
+    const synchronize = () => {
+      if (canPoll()) {
+        if (!processingRef.current) {
+          hasExecutedRef.current = true;
+          pollingRef.current?.run();
+        }
+      } else {
+        if (hasExecutedRef.current) pollingRef.current?.cancel();
+      }
+    };
+    const unsubscribeLogin = subscribeLoginStatus(() => {
+      if (!getCurrentLoginStatus()) {
+        generationRef.current += 1;
+        processingRef.current = null;
+      }
+      synchronize();
     });
-  }, [startPolling, stopPolling]);
+    const unsubscribeHost = subscribeHostVisibility(synchronize);
+    document.addEventListener('visibilitychange', synchronize);
+    synchronize();
+    return () => {
+      mountedRef.current = false;
+      generationRef.current += 1;
+      processingRef.current = null;
+      unsubscribeLogin();
+      unsubscribeHost();
+      document.removeEventListener('visibilitychange', synchronize);
+      if (hasExecutedRef.current) pollingRef.current?.cancel();
+    };
+    // Umi useRequest 的返回方法可能随请求状态换引用；订阅归属挂载实例，方法经 ref 取最新。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 返回 contextHolder，需要在组件中渲染
   return contextHolder;

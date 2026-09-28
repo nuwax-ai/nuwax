@@ -3,6 +3,7 @@
  * 打开日志 Tab 时轮询 /api/userapp/logs/query，渲染逻辑对齐 AppDev useDevLogs
  */
 
+import useHostVisibility from '@/hooks/useHostVisibility';
 import { apiUserAppLogsSourcesQuery } from '@/pages/AppDevPro/services/appDevPro';
 import {
   UserAppStageEnum,
@@ -158,6 +159,9 @@ export const useConversationAgentDevLogs = (
   options: UseConversationAgentDevLogsOptions = {},
 ): UseConversationAgentDevLogsReturn => {
   const { pollInterval = 5000, tailLines = 1000, enabled = false } = options;
+  const hostVisible = useHostVisibility();
+  const queryEnabledRef = useRef(false);
+  queryEnabledRef.current = enabled && hostVisible && !!appId;
 
   // ==================== 状态 ====================
   const [logs, setLogs] = useState<DevLogEntry[]>([]);
@@ -254,6 +258,7 @@ export const useConversationAgentDevLogs = (
 
   /** 启动轮询（立即执行一次并进入定时循环） */
   const startPolling = useCallback(() => {
+    if (!queryEnabledRef.current) return;
     devLogsPollingRef.current.run();
     hasExecutedRef.current = true;
     setIsPolling(true);
@@ -272,7 +277,7 @@ export const useConversationAgentDevLogs = (
   /** 清空后手动触发一次拉取 */
   const refreshLogs = useCallback(async () => {
     // appId 缺失时直接返回，避免出现“点击刷新但没有实际请求”的错觉。
-    if (!appIdRef.current) {
+    if (!appIdRef.current || !queryEnabledRef.current) {
       return;
     }
 
@@ -306,7 +311,7 @@ export const useConversationAgentDevLogs = (
 
   /** enabled 或 appId 变化时自动启停轮询 */
   useEffect(() => {
-    if (enabled && appId) {
+    if (enabled && appId && hostVisible) {
       startPolling();
     } else {
       stopPolling();
@@ -315,7 +320,7 @@ export const useConversationAgentDevLogs = (
     return () => {
       stopPolling();
     };
-  }, [enabled, appId, startPolling, stopPolling]);
+  }, [enabled, appId, hostVisible, startPolling, stopPolling]);
 
   /** 组件卸载时标记并停止轮询 */
   useEffect(() => {

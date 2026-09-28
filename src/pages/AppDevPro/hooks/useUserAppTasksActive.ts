@@ -1,7 +1,8 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import useHostVisibility from '@/hooks/useHostVisibility';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { useRequest } from 'ahooks';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   apiUserAppBuildCancel,
   apiUserAppTasksActive,
@@ -27,6 +28,8 @@ const isDevStartTask = (taskType?: string) =>
  * @returns 开发操作 / 构建是否允许、进行中任务、暂停/恢复轮询，以及是否已拿到首次结果
  */
 export function useUserAppTasksActive(appId?: number, enabled = true) {
+  const hostVisible = useHostVisibility();
+  const queryEnabled = enabled && hostVisible && !!appId;
   /** 开发环境是否允许启动 / 重启；首包前默认允许，避免误锁 */
   const [devActionAllowed, setDevActionAllowed] = useState<boolean>(true);
   /** 是否允许发起构建 */
@@ -62,7 +65,7 @@ export function useUserAppTasksActive(appId?: number, enabled = true) {
     setPolling(true);
   }
 
-  useRequest(
+  const { cancel } = useRequest(
     async () => {
       const generation = tasksGenerationRef.current;
       try {
@@ -73,9 +76,9 @@ export function useUserAppTasksActive(appId?: number, enabled = true) {
       }
     },
     {
-      ready: enabled && !!appId,
+      ready: queryEnabled && !pausedRef.current,
       refreshDeps: [appId, enabled, refreshVersion],
-      pollingInterval: polling ? TASKS_ACTIVE_POLL_INTERVAL : 0,
+      pollingInterval: queryEnabled && polling ? TASKS_ACTIVE_POLL_INTERVAL : 0,
       pollingWhenHidden: false,
       onSuccess: (payload: {
         ok: boolean;
@@ -128,6 +131,10 @@ export function useUserAppTasksActive(appId?: number, enabled = true) {
       },
     },
   );
+
+  useEffect(() => {
+    if (!queryEnabled) cancel();
+  }, [queryEnabled, cancel]);
 
   /** 手动刷新并恢复轮询（取消构建后同步状态） */
   const refresh = useCallback(() => {

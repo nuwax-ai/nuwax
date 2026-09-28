@@ -31,6 +31,7 @@ export function useUserAppEnvPod(
   const inflightPromiseRef = useRef<Promise<boolean> | null>(null);
   /** 会话 / 环境切换后忽略过期 ensure 回写 */
   const generationRef = useRef(0);
+  const mountedRef = useRef(false);
   const envRef = useRef(env);
   envRef.current = env;
 
@@ -45,12 +46,16 @@ export function useUserAppEnvPod(
   );
 
   useEffect(() => {
+    mountedRef.current = true;
     generationRef.current += 1;
     inflightPromiseRef.current = null;
     statusRef.current = 'idle';
     setStatus('idle');
     stopKeepalive();
     return () => {
+      mountedRef.current = false;
+      generationRef.current += 1;
+      inflightPromiseRef.current = null;
       stopKeepalive();
     };
     // 仅会话 / 环境变化时重置；stopKeepalive 引用变化不得清掉失败态
@@ -64,7 +69,7 @@ export function useUserAppEnvPod(
    */
   const ensure = useCallback(
     async (force = false): Promise<boolean> => {
-      if (!enabled || !conversationId) {
+      if (!mountedRef.current || !enabled || !conversationId) {
         return false;
       }
       if (statusRef.current === 'running') {

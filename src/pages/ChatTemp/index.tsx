@@ -469,7 +469,7 @@ const ChatTemp: React.FC = () => {
     currentMessageId: string,
   ) => {
     // 启动连接
-    abortConnectionRef.current = await createSSEConnection({
+    const connection = createSSEConnection({
       url: TEMP_CONVERSATION_CONNECTION_URL,
       method: 'POST',
       headers: {
@@ -542,10 +542,11 @@ const ChatTemp: React.FC = () => {
         disabledConversationActive();
       },
     });
-    // 主动关闭连接
-    // 确保 abortConnectionRef.current 是一个可调用的函数
-    if (typeof abortConnectionRef.current === 'function') {
-      abortConnectionRef.current();
+    abortConnectionRef.current = connection.abort;
+    const abort = await connection;
+    abort();
+    if (abortConnectionRef.current === connection.abort) {
+      abortConnectionRef.current = null;
     }
   };
 
