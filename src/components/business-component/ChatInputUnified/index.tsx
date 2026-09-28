@@ -1878,7 +1878,7 @@ const ChatInputUnifiedImpl: React.FC<
                               }
                             }}
                           >
-                            <Avatar.Group maxCount={3} size={20}>
+                            <Avatar.Group max={{ count: 3 }} size={20}>
                               {connectedConnectors.map((connector, index) => (
                                 <ConnectorAvatar
                                   key={connector.key}
