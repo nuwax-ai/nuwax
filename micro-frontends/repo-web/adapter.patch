@@ -10,7 +10,7 @@ diff --git a/src/App.tsx b/src/App.tsx
  import { lazy, Suspense, useEffect } from 'react'
  import { Navigate, Route, Routes } from 'react-router-dom'
  import { getSiteTitle, getTenantConfig } from './lib/api'
-@@ -34,14 +35,14 @@
+@@ -34,14 +35,17 @@
    // 站点名仅在 tab 标题仍是默认/空时才写入，避免覆盖文档页已设置的文档标题。
    // 导航保持幽灵层：门户/空间页点文档时先钉住旧页静态克隆，盖住根 Suspense 白 fallback
    // 渲染 DocPage 重骨架的 ~300ms（useTransitions 必须为 false，白闪由此层兜底，详见 navHold.ts）
@@ -18,16 +18,27 @@ diff --git a/src/App.tsx b/src/App.tsx
 +  useEffect(() => isRepoEmbedded() ? undefined : installNavHold(), [])
  
    useEffect(() => {
++    const embeddedAtMount = isRepoEmbedded()
++    let cancelled = false
      // 先用本地缓存的站点名立即占位（index.html 标题已置空，避免刷新时出现空标题/工程名闪跳）
      const cached = getSiteTitle()
 -    if (cached && document.title === '') document.title = cached
-+    if (!isRepoEmbedded() && cached && document.title === '') document.title = cached
++    if (!embeddedAtMount && cached && document.title === '') document.title = cached
      getTenantConfig().then((cfg) => {
 -      if (cfg == null) return
-+      if (cfg == null || isRepoEmbedded()) return
++      // 捕获本次挂载状态；endRuntime 变回独立默认值后，迟到响应仍不能写宿主 head。
++      if (cfg == null || embeddedAtMount || cancelled) return
        if (cfg.faviconUrl) {
          let link = document.head.querySelector<HTMLLinkElement>('link[rel="icon"]')
          if (link == null) {
+@@ -60,6 +64,7 @@
+         document.title = name
+       }
+     })
++    return () => { cancelled = true }
+   }, [])
+ 
+   return (
 diff --git a/src/pages/LibraryPortal.tsx b/src/pages/LibraryPortal.tsx
 --- a/src/pages/LibraryPortal.tsx
 +++ b/src/pages/LibraryPortal.tsx
@@ -254,10 +265,65 @@ diff --git a/src/components/DataTableEditor.tsx b/src/components/DataTableEditor
 --- a/src/components/DataTableEditor.tsx
 +++ b/src/components/DataTableEditor.tsx
 @@ -1,3 +1,4 @@
-+import { getRepoPortalRoot } from '../hostRuntime'
++import { getRepoPortalRoot, limitRepoPortalOffset, toRepoPortalRect } from '../hostRuntime'
  import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
  import type { RefObject } from 'react'
  import { createPortal } from 'react-dom'
+@@ -1295,8 +1296,8 @@
+   const openAddMenu = (el: HTMLElement) => {
+     setTableMenu(null)
+     setViewMenu(null)
+-    const r = el.getBoundingClientRect()
+-    setAddMenu({ x: Math.min(r.right - 148, window.innerWidth - 164), y: Math.min(r.bottom + 4, window.innerHeight - 132) })
++    const r = toRepoPortalRect(el.getBoundingClientRect())
++    setAddMenu({ x: limitRepoPortalOffset(r.right - 148, 164, 'x'), y: limitRepoPortalOffset(r.bottom + 4, 132, 'y') })
+   }
+ 
+   /** 校验并提交数据表改名（trim/≤31/同名查重/未变化跳过）；成功返回 true。弹窗与双击原位编辑共用。 */
+@@ -2183,13 +2184,13 @@
+                       title="数据表选项"
+                       onClick={(e) => {
+                         e.stopPropagation()
+-                        const r = e.currentTarget.getBoundingClientRect()
++                        const r = toRepoPortalRect(e.currentTarget.getBoundingClientRect())
+                         setViewMenu(null)
+                         setTableMenu({
+                           id: t.id,
+                           name: t.name,
+-                          x: Math.min(r.right + 4, window.innerWidth - 160),
+-                          y: Math.min(r.bottom + 4, window.innerHeight - 96),
++                          x: limitRepoPortalOffset(r.right + 4, 160, 'x'),
++                          y: limitRepoPortalOffset(r.bottom + 4, 96, 'y'),
+                         })
+                       }}
+                     >
+@@ -2254,12 +2255,12 @@
+                       title="视图选项"
+                       onClick={(e) => {
+                         e.stopPropagation()
+-                        const r = e.currentTarget.getBoundingClientRect()
++                        const r = toRepoPortalRect(e.currentTarget.getBoundingClientRect())
+                         setTableMenu(null)
+                         setViewMenu({
+                           id: v.id,
+-                          x: Math.min(r.left, window.innerWidth - 160),
+-                          y: Math.min(r.bottom + 4, window.innerHeight - 96),
++                          x: limitRepoPortalOffset(r.left, 160, 'x'),
++                          y: limitRepoPortalOffset(r.bottom + 4, 96, 'y'),
+                         })
+                       }}
+                     >
+@@ -2274,8 +2275,8 @@
+                   className="dt-views__add"
+                   title="新建视图"
+                   onClick={(e) => {
+-                    const r = e.currentTarget.getBoundingClientRect()
+-                    setAddViewMenu({ x: Math.min(r.left, window.innerWidth - 176), y: Math.min(r.bottom + 4, window.innerHeight - 96) })
++                    const r = toRepoPortalRect(e.currentTarget.getBoundingClientRect())
++                    setAddViewMenu({ x: limitRepoPortalOffset(r.left, 176, 'x'), y: limitRepoPortalOffset(r.bottom + 4, 96, 'y') })
+                   }}
+                 >
+                   ＋
 @@ -2769,7 +2770,7 @@
              新建透视页面
            </button>
@@ -298,10 +364,25 @@ diff --git a/src/components/DataTableKanban.tsx b/src/components/DataTableKanban
 --- a/src/components/DataTableKanban.tsx
 +++ b/src/components/DataTableKanban.tsx
 @@ -1,3 +1,4 @@
-+import { getRepoPortalRoot } from '../hostRuntime'
++import { getRepoPortalRoot, limitRepoPortalOffset, toRepoPortalRect } from '../hostRuntime'
  import { useEffect, useMemo, useRef, useState } from 'react'
  import type { ReactNode } from 'react'
  import { createPortal } from 'react-dom'
+@@ -526,11 +527,11 @@
+                       className="dtkanban__col-more"
+                       title="列操作"
+                       onClick={(e) => {
+-                        const r = e.currentTarget.getBoundingClientRect()
++                        const r = toRepoPortalRect(e.currentTarget.getBoundingClientRect())
+                         setColMenu({
+                           key: col.key,
+-                          x: Math.max(8, Math.min(r.right - 168, window.innerWidth - 184)),
+-                          y: Math.min(r.bottom + 4, window.innerHeight - 96),
++                          x: Math.max(8, limitRepoPortalOffset(r.right - 168, 184, 'x')),
++                          y: limitRepoPortalOffset(r.bottom + 4, 96, 'y'),
+                         })
+                       }}
+                     >
 @@ -607,7 +608,7 @@
              </button>
            )}
@@ -315,10 +396,28 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
 --- a/src/components/DataTableGrid.tsx
 +++ b/src/components/DataTableGrid.tsx
 @@ -1,3 +1,4 @@
-+import { getRepoPortalRoot } from '../hostRuntime'
++import { getRepoPortalRoot, getRepoPortalViewport, limitRepoPortalOffset, toRepoPortalPoint, toRepoPortalRect } from '../hostRuntime'
  import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
  import { createPortal } from 'react-dom'
  import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react'
+@@ -1339,7 +1340,7 @@
+ 
+ /** 取单元格视口矩形（浮出编辑器定位锚点） */
+ function rectOf(el: HTMLElement) {
+-  const r = el.getBoundingClientRect()
++  const r = toRepoPortalRect(el.getBoundingClientRect())
+   return { top: r.top, left: r.left, bottom: r.bottom }
+ }
+ 
+@@ -1356,7 +1357,7 @@
+  * 编辑打开期间网格滚动/窗口缩放会收起编辑器（既有 useEffect），渲染期读 innerHeight 安全。
+  */
+ function popHostStyle(anchor: { top: number; left: number; bottom: number }): CSSProperties {
+-  const vh = window.innerHeight
++  const vh = getRepoPortalViewport().height
+   const spaceBelow = vh - anchor.bottom - POP_MARGIN
+   const spaceAbove = anchor.top - POP_MARGIN
+   if (spaceBelow < POP_MIN_DROP && spaceAbove > spaceBelow) {
 @@ -1464,7 +1465,7 @@
          const content = anchor != null && POP_EDITOR_TYPES.has(f.schema.type)
            ? createPortal(
@@ -328,7 +427,44 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
              )
            : cellContent
          // 单元格级填色：命中规则的字段单元格叠加 8% 透明度渐变（与行 hover/选中底色分层共存，不盖交互态）
-@@ -2226,7 +2227,7 @@
+@@ -1950,10 +1951,11 @@
+   const onHeadContextMenu = useCallback((e: ReactMouseEvent, col: number) => {
+     if (readOnly === true || editingRef.current != null) return
+     e.preventDefault()
++    const point = toRepoPortalPoint(e.clientX, e.clientY)
+     setHeadMenu({
+       col,
+-      top: Math.min(e.clientY, window.innerHeight - 320),
+-      left: Math.min(e.clientX, window.innerWidth - 190),
++      top: limitRepoPortalOffset(point.top, 320, 'y'),
++      left: limitRepoPortalOffset(point.left, 190, 'x'),
+     })
+   }, [readOnly])
+ 
+@@ -2003,10 +2005,11 @@
+   const onRowContextMenu = useCallback((e: ReactMouseEvent, row: number) => {
+     if (readOnly === true || editingRef.current != null || onInsertRowAt == null) return
+     e.preventDefault()
++    const point = toRepoPortalPoint(e.clientX, e.clientY)
+     setRowMenu({
+       row,
+-      top: Math.min(e.clientY, window.innerHeight - 140),
+-      left: Math.min(e.clientX, window.innerWidth - 170),
++      top: limitRepoPortalOffset(point.top, 140, 'y'),
++      left: limitRepoPortalOffset(point.left, 170, 'x'),
+     })
+   }, [readOnly, onInsertRowAt])
+ 
+@@ -2157,7 +2160,7 @@
+                 style={{ ...colStyles[i], ...(frozen ? { left: `${frozenOffsets[i]}px` } : {}) }}
+                 title="点击设置该列统计"
+                 onClick={(e) => {
+-                  const r = e.currentTarget.getBoundingClientRect()
++                  const r = toRepoPortalRect(e.currentTarget.getBoundingClientRect())
+                   setFootMenu({ col: f.col, top: r.top - 4, left: r.left })
+                 }}
+               >
+@@ -2226,7 +2229,7 @@
              </button>
            )}
          </div>,
@@ -337,7 +473,7 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
        )}
  
        {/* 行右键菜单（Excel 式）：在上方/下方插入记录 + 删除记录。物理行操作，
-@@ -2273,7 +2274,7 @@
+@@ -2273,7 +2276,7 @@
              删除记录
            </button>
          </div>,
@@ -346,7 +482,7 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
        )}
  
        {/* #4 表头右键菜单：插入/移动/固定/编辑/删除字段（视觉序操作，落库只动 fieldOrder/frozenCount，
-@@ -2347,7 +2348,7 @@
+@@ -2347,7 +2350,7 @@
                </button>
              )}
            </div>,
@@ -431,11 +567,29 @@ diff --git a/src/extensions/mention.tsx b/src/extensions/mention.tsx
 --- a/src/extensions/mention.tsx
 +++ b/src/extensions/mention.tsx
 @@ -1,3 +1,4 @@
-+import { getRepoPortalRoot } from '../hostRuntime'
++import { getRepoMentionPosition, getRepoPortalRoot, getRepoPortalViewport, isRepoEmbedded } from '../hostRuntime'
  import Mention from '@tiptap/extension-mention'
  import { ReactRenderer } from '@tiptap/react'
  import type { SuggestionKeyDownProps, SuggestionOptions, SuggestionProps } from '@tiptap/suggestion'
-@@ -184,7 +185,7 @@
+@@ -146,8 +147,15 @@
+   if (popup == null) return
+   const rect = props.clientRect?.()
+   if (rect == null) return
+-  popup.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - popup.offsetWidth - 8))}px`
+-  popup.style.top = `${rect.bottom + 4}px`
++  if (isRepoEmbedded()) {
++    const viewport = getRepoPortalViewport()
++    popup.style.maxWidth = `${Math.max(0, viewport.width - 16)}px`
++    popup.style.maxHeight = `${Math.max(0, viewport.height - 16)}px`
++    popup.style.overflowY = 'auto'
++  }
++  const position = getRepoMentionPosition(rect, popup.offsetWidth, popup.offsetHeight)
++  popup.style.left = `${position.left}px`
++  popup.style.top = `${position.top}px`
+ }
+ 
+ /**
+@@ -184,7 +192,7 @@
            component = new ReactRenderer(MentionList, { props, editor: props.editor })
            popup = document.createElement('div')
            popup.className = 'mention-suggestion'

@@ -67,10 +67,6 @@ vi.mock('@/components/RecommendList', () => ({
     <div data-testid="recommend-list">{chatSuggestList?.join(',')}</div>
   ),
 }));
-vi.mock('@/pages/Chat/components/ConversationStatus', () => ({
-  default: () => null,
-}));
-
 vi.mock('@/components/business-component/AgentIntervention', () => ({
   AgentInterventionChatLayer: () => null,
   useAgentInterventionLayer: () => ({

@@ -191,3 +191,22 @@ location / { try_files $uri $uri/ /index.html; }
 - 全局事件轮询测试补齐鉴权清理广播 mock，分别校验业务事件与鉴权事件；该测试 6 项通过。
 - 合并后会话合同 110 文件 / 1061 项、微应用集成合同 16 文件 / 135 项通过，分层检查 2933 模块 / 12815 依赖，无新增违规。
 - 上面的静态产物摘要与浏览器截图是分支同步前的验证记录；本次提交前的适配 lint 收尾改变了适配摘要，合并后的发布物需重新构建。
+
+## 合回 feat-dong.0930 的质量复核（2026-09-28）
+
+已再次同步目标分支 `80e72a9fa8`，自动合并无冲突，保留其推荐功能与测试质量修复。合回采用快速前移，主工作区其它任务的未提交改动保留。
+
+| 三问 | 结论与证据 |
+| --- | --- |
+| 功能逻辑内聚 | 通过。菜单识别归 `src/utils/microAppRoutes.ts:13`，保活状态归 `src/layouts/MicroAppHost/store.ts:42`，加载/更新/卸载归同目录 `lifecycle.ts:24`；弹层几何换算归 `micro-frontends/repo-web/overlay/src/hostRuntime.ts:97` 与 `micro-frontends/message/overlay/src/hostRuntime.ts:120`。 |
+| 代码分层 | 通过。路由解析、宿主编排、`src/services/microAppAuth.ts:44` 认证服务与 `scripts/sync-micro-apps.mjs:477` 隔离构建职责独立；适配只落主仓 patch/overlay，两套 main gitlink 未改。`lint:arch` 检查 2933 模块、12815 依赖，无新增违规，97 项存量豁免。 |
+| 后续维护 | 通过。`scripts/sync-micro-apps.mjs:150` 固定 pin、`:241` 冻结输入、`:324` 对照真实类型基线、`:562` 失败清理均有合同；`micro-frontends/repo-web/adapter.patch:23` 捕获挂载态并在 cleanup 后停止 head 副作用。构建管线 Node 合同 10 项全绿。 |
+
+复核发现并修复了三处实际副作用：资料库提及/表格弹层在子根内仍用视口坐标、消息图片右键菜单的 fixed 锚点重复叠加宿主偏移，以及资料库卸载后迟到的租户配置响应改写主站 head。弹层统一转换到子根坐标，独立运行维持原定位；租户配置 effect 捕获挂载态并在 cleanup 后停止写入。
+
+- 最新合并态全量 Vitest：335 文件、2967 项通过、6 项跳过；支付测试既有失败已由目标分支的 `393b56dbb4` 修复。
+- 最终接入定向合同：14 文件、125 项全绿，包含新补的弹层位置和边界回归。
+- 资料库使用真实隔离源码和 React/Router 的合同：3 文件、8 项全绿，包含内嵌卸载后迟到 200、独立页卸载保护、独立站点标题行为；patch 校验通过。
+- 合入前运行最后一次 `npm run build:prod`，核对固定 main、当前适配摘要及 public/dist manifest。发布追溯以该次产物 `micro-apps/manifest.json` 与宿主 `version.json` 为准，上文初次构建摘要不代表本次修复产物。
+
+浏览器剩余走查与 Docker/线上发布边界仍按前文记录；本次操作为本地分支合并。

@@ -14,6 +14,7 @@ import {
   isMessageActive,
   normalizeMessagePath,
   redirectMessageAuth,
+  toMessagePortalPoint,
   updateMessageRuntime,
 } from './overlay/src/hostRuntime';
 
@@ -78,6 +79,33 @@ describe('消息宿主运行时边界', () => {
     redirectMessageAuth('https://sso.example/login');
     expect(onAuthExpired).toHaveBeenCalledWith('https://sso.example/login');
     expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('图片右键菜单扣除内嵌根的视口偏移和边框，跟随根容器移动', () => {
+    const root = document.createElement('div');
+    const rect = { left: 220, top: 72 };
+    vi.spyOn(root, 'getBoundingClientRect').mockImplementation(
+      () => rect as DOMRect,
+    );
+    Object.defineProperties(root, {
+      clientLeft: { value: 2 },
+      clientTop: { value: 3 },
+    });
+    beginMessageRuntime(root, {}, true);
+    expect(toMessagePortalPoint(302, 135)).toEqual({ x: 80, y: 60 });
+    rect.left = 260;
+    rect.top = 92;
+    expect(toMessagePortalPoint(342, 155)).toEqual({ x: 80, y: 60 });
+  });
+
+  it('独立消息页图片菜单保留视口坐标，不受应用根位置影响', () => {
+    const root = document.createElement('div');
+    const readRect = vi
+      .spyOn(root, 'getBoundingClientRect')
+      .mockReturnValue({ left: 220, top: 72 } as DOMRect);
+    beginMessageRuntime(root, {}, false);
+    expect(toMessagePortalPoint(302, 135)).toEqual({ x: 302, y: 135 });
+    expect(readRect).not.toHaveBeenCalled();
   });
 });
 

@@ -1,20 +1,24 @@
 # 会话模块维护指南（面向前端团队）
 
-> 📚 文档总入口：[README.md](./README.md) 读者：维护会话模块的前端工程师。架构决策：[adr/conversation-runtime-refactor.md](./adr/conversation-runtime-refactor.md) 方案概要：[conversation-dual-track-plan.md](./conversation-dual-track-plan.md) 业务逻辑验收底稿（逐条 ID，含自动/人工验收映射）：[conversation-business-logic-checklist.md](./conversation-business-logic-checklist.md) 测试回归方案（提测/QA 用，含影响范围与改动点）：[conversation-regression-test-plan.md](./conversation-regression-test-plan.md) 本文只讲"怎么维护"。
+> 📚 文档总入口：[README.md](../README.md) 读者：维护会话模块的前端工程师。架构决策：[adr/conversation-runtime-refactor.md](../adr/conversation-runtime-refactor.md) 方案概要：[conversation-dual-track-plan.md](./conversation-dual-track-plan.md) 业务逻辑验收底稿（逐条 ID，含自动/人工验收映射）：[conversation-business-logic-checklist.md](./conversation-business-logic-checklist.md) 测试回归方案（提测/QA 用，含影响范围与改动点）：[conversation-regression-test-plan.md](./conversation-regression-test-plan.md) 本文只讲"怎么维护"。
 
 ## 1. 验证约定（必须遵守）
 
 任何会话相关路径（`src/models/conversation*`、`src/features/conversation/**`、`UnifiedChatSession/**`、`MessageQueue/**`、`src/pages/Chat/**` 等）的调整：
 
 ```bash
-npm run test:conversation       # 合同网 33 文件 292 条（秒级，每次改动必跑）
+npm run test:conversation       # 合同网（每次改动必跑，当前规模见下文）
 npm run dev && npm run e2e:conversation   # 页面 E2E 8 场景（合入前）
 npm run verify:conversation     # 两网一键组合
 ```
 
+2026-09-28 实测合同网为 **110 文件、1061 条用例，全绿**；规模会随新增用例变化，以当次 Vitest 输出为准。
+
+`test:conversation` 的参数按 Vitest **文件路径子串**匹配，并非目录列表。例如 `tests/resume` 同时覆盖 `tests/resumeController.test.ts` 和 `tests/resumeConsistencyController.test.ts`，不能因同名目录不存在就删除参数。调整过滤器前后应对比 Vitest JSON 报告中的 `testResults[].name`，确认收集文件集合一致。
+
 **CI**：`.github/workflows/conversation-tests.yml` 在 PR/push 触及会话路径时自动跑合同网（pnpm 10.27 + Node 20 + frozen-lockfile，失败阻断合入）。E2E 需登录态不进 CI。
 
-该约定已写入 `CLAUDE.md`。两网全绿 = 会话功能未受影响。
+该约定已写入根目录 `AGENTS.md`。两网全绿 = 会话功能未受影响。
 
 ## 2. 架构速查
 

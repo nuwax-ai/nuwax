@@ -21,7 +21,15 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from 'vitest';
 
 const {
   mockUseModel,
@@ -1097,6 +1105,14 @@ describe('conversationInfo model', () => {
     });
 
     it('fileTreeSelfManaged 门控：refreshFileListImmediately 跳过全量拉取并改发刷新信号（#5a 懒加载收尾）', async () => {
+      // fileTreeRefreshTrigger 是 Date.now() 时间戳，同毫秒内两次触发会撞坏下方严格递增断言，桩成单调递增保证确定性
+      const realNow = Date.now.bind(Date);
+      let monotonicTick = 0;
+      const nowSpy = vi
+        .spyOn(Date, 'now')
+        .mockImplementation(() => realNow() + ++monotonicTick);
+      onTestFinished(() => nowSpy.mockRestore());
+
       const runStaticFileList = vi
         .fn()
         .mockResolvedValue({ code: '0000', data: { files: [] } });

@@ -92,6 +92,81 @@ export const subscribeRepoHost = (listener: () => void): (() => void) => {
 
 export const isRepoEmbedded = (): boolean => embedded;
 export const getRepoPortalRoot = (): HTMLElement => root ?? document.body;
+
+/** fixed 弹层的包含块是内嵌子根；独立页继续使用浏览器视口。 */
+export function getRepoPortalViewport() {
+  if (!embedded || root === null) {
+    return {
+      left: 0,
+      top: 0,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
+  }
+  const rect = root.getBoundingClientRect();
+  return {
+    left: rect.left + root.clientLeft,
+    top: rect.top + root.clientTop,
+    width: root.clientWidth,
+    height: root.clientHeight,
+  };
+}
+
+export function toRepoPortalPoint(clientX: number, clientY: number) {
+  const viewport = getRepoPortalViewport();
+  return { left: clientX - viewport.left, top: clientY - viewport.top };
+}
+
+export function toRepoPortalRect(
+  rect: Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>,
+) {
+  const viewport = getRepoPortalViewport();
+  return {
+    left: rect.left - viewport.left,
+    right: rect.right - viewport.left,
+    top: rect.top - viewport.top,
+    bottom: rect.bottom - viewport.top,
+  };
+}
+
+/** 保留 main 的预留空间，嵌入小容器时额外防止负坐标落到根外。 */
+export function limitRepoPortalOffset(
+  value: number,
+  reserve: number,
+  axis: 'x' | 'y',
+) {
+  const viewport = getRepoPortalViewport();
+  const next = Math.min(
+    value,
+    (axis === 'x' ? viewport.width : viewport.height) - reserve,
+  );
+  return embedded ? Math.max(0, next) : next;
+}
+
+export function getRepoMentionPosition(
+  rect: Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>,
+  width: number,
+  height: number,
+) {
+  const local = toRepoPortalRect(rect);
+  const viewport = getRepoPortalViewport();
+  const margin = 8;
+  const left = Math.max(
+    margin,
+    Math.min(local.left, viewport.width - width - margin),
+  );
+  let top = local.bottom + 4;
+  if (embedded) {
+    if (
+      top + height > viewport.height - margin &&
+      local.top - height - 4 >= margin
+    ) {
+      top = local.top - height - 4;
+    }
+    top = Math.max(margin, Math.min(top, viewport.height - height - margin));
+  }
+  return { left, top };
+}
 /** 内嵌的快捷键/复制限制只绑定自己的内容树；保活隐藏后不会拦截主站输入。 */
 export const getRepoInputRoot = (): Pick<
   Document,

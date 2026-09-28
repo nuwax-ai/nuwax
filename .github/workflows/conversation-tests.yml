@@ -1,9 +1,10 @@
-# 会话模块合同网 CI（docs/conversation/conversation-maintenance-guide.md §1）
+# 会话模块合同网 CI（docs/conversation/dual-track/conversation-maintenance-guide.md §1）
 #
 # 作用：PR / push 涉及会话相关路径时自动跑 `npm run test:conversation`
-#      （33 文件 ~292 条，秒级，无浏览器/登录态依赖），失败即阻断合入。
+#      （2026-09-28 实测 110 文件、1061 条；以当次输出为准），失败即阻断合入。
+#      合同网无浏览器/登录态依赖。
 # 真实页面 E2E（e2e:conversation）需要 dev server 与登录态，不进 CI，
-# 按 CLAUDE.md 约定在本地 / 发版前执行。
+# 按 AGENTS.md 约定在本地 / 发版前执行。
 #
 # 注：仓库托管在 gitee。gitee 的 Gitee Go 与 Jenkins 均可直接照抄本文件的
 # 三个步骤（checkout → pnpm install → npm run test:conversation）；
@@ -77,7 +78,6 @@ jobs:
 
       - name: Run conversation contract tests
         run: npm run test:conversation
-
 # ── mock 场景 E2E 接入说明（M3，独立决策点）──────────────────────────────
 # e2e:mock-chat 无登录态依赖，进 CI 仅需 dev server（~2min 首编）：
 #   1. Install 后台起 dev server：nohup npm run dev >/tmp/dev.log 2>&1 &

@@ -35,9 +35,8 @@
 #   DRY_RUN=1 bash scripts/deploy_sync_test.sh  # 演练：写操作只打印不执行（缺配置时不出交互提示，直接报错）
 #   FEATURE_BRANCH=... VERSION_BRANCH=... bash scripts/deploy_sync_test.sh   # 环境变量临时覆写
 #   KNOWN_BROKEN_TESTS="tests/a.test.tsx|tests/b.test.tsx" bash scripts/deploy_sync_test.sh
-#                                     # 质量门存量挂放行清单（| 分隔），默认放行
-#                                     # workspaceDirComputerSwitch（组件 Form 化后
-#                                     # mock 未跟上的已知存量挂，修复后请从默认值移除）
+#                                     # 质量门存量挂放行清单（| 分隔），默认清单为空。
+#                                     # 确有存量挂时显式指定，修复后移除。
 #
 # 说明：
 # - dev 仅本地合并不推送（如需推 origin/dev / gitlab/dev，在步骤 6 后补 run git push 即可）。
@@ -116,7 +115,8 @@ run() {
 }
 
 # 已知存量挂清单：失败套件若全部在清单内则显式放行（大字提示），否则一律拦截
-KNOWN_BROKEN_TESTS="${KNOWN_BROKEN_TESTS:-tests/conversation/workspaceDirComputerSwitch.test.tsx}"
+# workspaceDirComputerSwitch 已恢复全绿，不再默认豁免；只接受显式传入的清单。
+KNOWN_BROKEN_TESTS="${KNOWN_BROKEN_TESTS:-}"
 
 # 质量门：跑 test:conversation；失败时解析失败套件，仅当全部命中存量挂清单才放行
 run_test_gate() {

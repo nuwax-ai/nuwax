@@ -115,6 +115,20 @@ export const getMessageHostSnapshot = (): MessageHostSnapshot => snapshot;
 export const isMessageEmbedded = (): boolean => embedded;
 export const isMessageActive = (): boolean => !embedded || snapshot.active;
 export const getMessagePortalRoot = (): HTMLElement => root ?? document.body;
+
+/** fixed 菜单以内嵌子根的 padding 包含块定位；独立页继续使用视口坐标。 */
+export function toMessagePortalPoint(
+  clientX: number,
+  clientY: number,
+): { x: number; y: number } {
+  if (!embedded || root === null) return { x: clientX, y: clientY };
+  const rect = root.getBoundingClientRect();
+  return {
+    x: clientX - rect.left - root.clientLeft,
+    y: clientY - rect.top - root.clientTop,
+  };
+}
+
 // 保留 Document 的完整事件重载，输入监听实际注册在子根或独立页 document。
 export const getMessageInputRoot = (): Pick<
   Document,

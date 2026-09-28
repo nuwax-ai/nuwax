@@ -6122,6 +6122,16 @@ export const EN_US: SystemLangMap = {
   // ── System Management - Subscription & Credits Summary Card ────────────────────
   // ── System Management - Basic Subscription Plans ────────────────────────────
   "PC.Pages.SystemRecommendManage.addTitle": "Add Recommendation",
+  "PC.Pages.SystemRecommendManage.promptsLabel": "Prompts",
+  "PC.Pages.SystemRecommendManage.addPrompt": "Add Prompt",
+  "PC.Pages.SystemRecommendManage.promptNumber": "Prompt {0}",
+  "PC.Pages.SystemRecommendManage.removePrompt": "Remove Prompt",
+  "PC.Pages.SystemRecommendManage.clearPromptIcon": "Clear Icon",
+  "PC.Pages.SystemRecommendManage.promptTitle": "Title (Optional)",
+  "PC.Pages.SystemRecommendManage.promptTitlePlaceholder": "Enter a prompt title",
+  "PC.Pages.SystemRecommendManage.promptContent": "Content",
+  "PC.Pages.SystemRecommendManage.promptContentPlaceholder": "Enter prompt content",
+  "PC.Pages.SystemRecommendManage.promptContentRequired": "Enter prompt content; whitespace alone is not allowed",
   "PC.Pages.SystemRecommendManage.chatboxCategory": "ChatBox",
   "PC.Pages.SystemRecommendManage.createSuccess": "Created successfully",
   "PC.Pages.SystemRecommendManage.colAction": "Actions",

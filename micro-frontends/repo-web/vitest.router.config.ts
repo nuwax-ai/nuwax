@@ -11,6 +11,25 @@ if (!appRoot)
   );
 const appRequire = createRequire(path.join(appRoot, 'package.json'));
 const aliases = {
+  '@repo-app': path.join(appRoot, 'src/App.tsx'),
+  '@repo-nav-hold': path.join(appRoot, 'src/lib/navHold.ts'),
+  ...Object.fromEntries(
+    ['SpaceGate', 'SpacePage', 'LibraryPortal'].map((name) => [
+      `@repo-${name}`,
+      path.join(appRoot, `src/pages/${name}.tsx`),
+    ]),
+  ),
+  ...Object.fromEntries(
+    [
+      'FeedbackHost',
+      'UploadStatusBar',
+      'ImportBlockOverlay',
+      'ExportBusyBar',
+    ].map((name) => [
+      `@repo-${name}`,
+      path.join(appRoot, `src/components/${name}.tsx`),
+    ]),
+  ),
   '@repo-api': path.join(appRoot, 'src/lib/api.ts'),
   '@repo-host-runtime': path.join(appRoot, 'src/hostRuntime.ts'),
   'react-router-dom': appRequire.resolve('react-router-dom'),
@@ -26,6 +45,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       include: [
+        'micro-frontends/repo-web/App.contract.tsx',
         'micro-frontends/repo-web/HostRouter.contract.tsx',
         'micro-frontends/repo-web/Api.contract.ts',
       ],

@@ -5,10 +5,15 @@ import {
   captureRepoAuthRedirect,
   endRepoRuntime,
   getRepoHostSnapshot,
+  getRepoMentionPosition,
   getRepoPortalRoot,
+  getRepoPortalViewport,
+  limitRepoPortalOffset,
   normalizeRepoPath,
   recordRepoNavigation,
   setRepoDocumentTitle,
+  toRepoPortalPoint,
+  toRepoPortalRect,
   updateRepoRuntime,
 } from './overlay/src/hostRuntime';
 import { initTreeBroadcast } from './overlay/src/lib/treeBroadcast';
@@ -98,6 +103,72 @@ describe('资料库宿主路径契约', () => {
     expect(nextExpired).not.toHaveBeenCalled();
     captureRepoAuthRedirect()('/login');
     expect(nextExpired).toHaveBeenCalledWith('/login');
+  });
+});
+
+describe('资料库弹层坐标边界', () => {
+  it('按当前子根位置和边框换算鼠标与元素锚点', () => {
+    const root = document.createElement('div');
+    const rect = { left: 220, top: 72 };
+    vi.spyOn(root, 'getBoundingClientRect').mockImplementation(
+      () => rect as DOMRect,
+    );
+    Object.defineProperties(root, {
+      clientLeft: { value: 2 },
+      clientTop: { value: 3 },
+      clientWidth: { value: 400 },
+      clientHeight: { value: 300 },
+    });
+    beginRepoRuntime(root, {}, true);
+    expect(getRepoPortalViewport()).toEqual({
+      left: 222,
+      top: 75,
+      width: 400,
+      height: 300,
+    });
+    expect(toRepoPortalPoint(302, 135)).toEqual({ left: 80, top: 60 });
+    expect(
+      toRepoPortalRect({ left: 302, right: 342, top: 135, bottom: 155 }),
+    ).toEqual({ left: 80, right: 120, top: 60, bottom: 80 });
+    rect.left = 260;
+    expect(toRepoPortalPoint(342, 135)).toEqual({ left: 80, top: 60 });
+    expect(limitRepoPortalOffset(350, 190, 'x')).toBe(210);
+    expect(limitRepoPortalOffset(200, 320, 'y')).toBe(0);
+  });
+
+  it('提及靠近右下角时在子根内向上显示并限制宽度', () => {
+    const root = document.createElement('div');
+    vi.spyOn(root, 'getBoundingClientRect').mockReturnValue({
+      left: 220,
+      top: 72,
+    } as DOMRect);
+    Object.defineProperties(root, {
+      clientWidth: { value: 400 },
+      clientHeight: { value: 300 },
+    });
+    beginRepoRuntime(root, {}, true);
+    expect(
+      getRepoMentionPosition(
+        { left: 600, right: 610, top: 352, bottom: 362 },
+        180,
+        120,
+      ),
+    ).toEqual({ left: 212, top: 156 });
+  });
+
+  it('独立运行保持视口坐标和原有菜单定位', () => {
+    const root = document.createElement('div');
+    const readRect = vi.spyOn(root, 'getBoundingClientRect');
+    beginRepoRuntime(root, {}, false);
+    expect(toRepoPortalPoint(302, 135)).toEqual({ left: 302, top: 135 });
+    expect(
+      getRepoMentionPosition(
+        { left: 20, right: 30, top: 40, bottom: 60 },
+        100,
+        80,
+      ),
+    ).toEqual({ left: 20, top: 64 });
+    expect(readRect).not.toHaveBeenCalled();
   });
 });
 
