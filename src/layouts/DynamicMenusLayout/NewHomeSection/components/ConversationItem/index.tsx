@@ -7,11 +7,7 @@ import {
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import {
-  InboxOutlined,
-  PushpinFilled,
-  PushpinOutlined,
-} from '@ant-design/icons';
+import { PushpinFilled, PushpinOutlined } from '@ant-design/icons';
 import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -33,7 +29,7 @@ interface ConversationItemProps {
   /** 服务端收藏状态（菜单「收藏/取消收藏」按此选择接口路径与文案） */
   collected?: boolean;
   /**
-   * 行首状态标记（单栏 style3 启用）：执行中转圈替换「执行中」文字胶囊，
+   * 状态标记（单栏 style3 启用，展示在行尾）：执行中转圈替换「执行中」文字胶囊，
    * 结束未读亮蓝点。经典布局不传维持现状（2026-09-17 定调：style1/2 待定）。
    */
   leadingMark?: boolean;
@@ -61,8 +57,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   );
   const unread = unreadConversationIds?.has(String(item.id)) === true;
 
-  // 归档行内二次确认（2026-09-19 定调，参考原型）：hover 归档图标→红色「确认」
-  // 二次点击执行；⋯菜单「归档」经 onArchive 汇入同一状态，入口确认口径统一
+  // 行内不再提供归档图标；仅从 ⋯ 菜单进入既有二次确认。
   const [archiveArming, setArchiveArming] = useState(false);
   const [archiving, setArchiving] = useState(false);
   // 确认态点击外部取消（2026-09-20 定调）：armed 时点击「确认」以外任意位置
@@ -100,7 +95,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     }
   };
 
-  // 行首置顶/取消置顶（2026-09-20 定调）：未置顶 hover 展开空心图钉、已置顶
+  // 行尾置顶/取消置顶：未置顶 hover 展开空心图钉、已置顶
   // 常显实心图钉可点击取消；接口与 ⋯菜单同源，成功后同步调用方列表
   const [pinning, setPinning] = useState(false);
   const handleTogglePinned = async () => {
@@ -171,57 +166,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         >
           <div className={cx(styles['conversation-item-content'])}>
             <div className={cx(styles['conversation-topic-row'])}>
-              {/* 固定行首状态槽：空闲时承载运行/未读或已置顶状态，hover 时在
-                  同一位置切换成置顶操作，不改变标题起点。 */}
-              <span className={cx(styles['leading-slot'])}>
-                <span className={cx(styles['leading-status'])}>
-                  <ConversationStatusMark
-                    taskStatus={leadingMark ? item.taskStatus : undefined}
-                    unread={leadingMark && unread}
-                    fallback={
-                      pinned ? (
-                        <PushpinFilled
-                          className={cx(styles['pinned-state-icon'])}
-                        />
-                      ) : null
-                    }
-                  />
-                </span>
-                <Tooltip
-                  title={dict(
-                    pinned
-                      ? 'PC.Components.ConversationContextMenu.unpin'
-                      : 'PC.Components.ConversationContextMenu.pin',
-                  )}
-                  mouseEnterDelay={0.3}
-                >
-                  <button
-                    type="button"
-                    className={cx(styles['pin-toggle'], {
-                      [styles['pin-toggle-pinned']]: pinned,
-                    })}
-                    aria-label={dict(
-                      pinned
-                        ? 'PC.Components.ConversationContextMenu.unpin'
-                        : 'PC.Components.ConversationContextMenu.pin',
-                    )}
-                    disabled={pinning}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void handleTogglePinned();
-                    }}
-                  >
-                    {pinned ? (
-                      <span className={cx(styles['unpin-icon'])} aria-hidden>
-                        <PushpinFilled />
-                        <span className={cx(styles['unpin-slash'])} />
-                      </span>
-                    ) : (
-                      <PushpinOutlined />
-                    )}
-                  </button>
-                </Tooltip>
-              </span>
               {/* 原生省略号替代 Typography.Text ellipsis：antd 的省略检测会在
                 每次重渲染插入 <em> 强制同步重排，长列表高频刷新下造成秒级卡顿 */}
               <span className={cx(styles['conversation-topic'])}>
@@ -229,56 +173,88 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                   item.agent?.name ||
                   dict('PC.Constants.Menus.newChat')}
               </span>
-              {/* leadingMark 开启时「执行中」由行首转圈表达（文字胶囊仅经典布局保留） */}
+              {/* 状态标记开启时不再展示「执行中」文字胶囊（经典布局保留）。 */}
               {!leadingMark && item.taskStatus === TaskStatus.EXECUTING && (
                 <span className={cx(styles['status-tag'])}>
                   {executingText}
                 </span>
               )}
-              {/* 归档行内二次确认：hover 显示归档图标（时间让位），点击换红色
-                  「确认」再点执行；位置与 ⋯ 并排贴行右缘 */}
-              <span
-                className={cx(styles['archive-action'])}
-                ref={archiveActionRef}
-              >
-                {archiveArming ? (
-                  <button
-                    type="button"
-                    className={cx(styles['archive-confirm'])}
-                    disabled={archiving}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void handleArchiveConfirm();
-                    }}
-                  >
-                    {dict('PC.Common.Global.confirm')}
-                  </button>
-                ) : (
+              <span className={cx(styles['conversation-trailing'])}>
+                {/* 状态区静止时在时间前，hover 时在更多前；状态与置顶
+                    操作共用一个固定槽位，标题起点始终不变。 */}
+                <span className={cx(styles['status-slot'])}>
+                  <span className={cx(styles['status-mark'])}>
+                    <ConversationStatusMark
+                      taskStatus={leadingMark ? item.taskStatus : undefined}
+                      unread={leadingMark && unread}
+                      fallback={
+                        pinned ? (
+                          <PushpinFilled
+                            className={cx(styles['pinned-state-icon'])}
+                          />
+                        ) : null
+                      }
+                    />
+                  </span>
                   <Tooltip
                     title={dict(
-                      'PC.Components.ConversationContextMenu.archive',
+                      pinned
+                        ? 'PC.Components.ConversationContextMenu.unpin'
+                        : 'PC.Components.ConversationContextMenu.pin',
                     )}
                     mouseEnterDelay={0.3}
                   >
                     <button
                       type="button"
-                      className={cx(styles['archive-trigger'])}
+                      className={cx(styles['pin-toggle'], {
+                        [styles['pin-toggle-pinned']]: pinned,
+                      })}
                       aria-label={dict(
-                        'PC.Components.ConversationContextMenu.archive',
+                        pinned
+                          ? 'PC.Components.ConversationContextMenu.unpin'
+                          : 'PC.Components.ConversationContextMenu.pin',
                       )}
+                      disabled={pinning}
                       onClick={(event) => {
                         event.stopPropagation();
-                        setArchiveArming(true);
+                        void handleTogglePinned();
                       }}
                     >
-                      <InboxOutlined />
+                      {pinned ? (
+                        <span className={cx(styles['unpin-icon'])} aria-hidden>
+                          <PushpinFilled />
+                          <span className={cx(styles['unpin-slash'])} />
+                        </span>
+                      ) : (
+                        <PushpinOutlined />
+                      )}
                     </button>
                   </Tooltip>
+                </span>
+                {archiveArming && (
+                  <span
+                    className={cx(styles['archive-action'])}
+                    ref={archiveActionRef}
+                  >
+                    <button
+                      type="button"
+                      className={cx(styles['archive-confirm'])}
+                      disabled={archiving}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleArchiveConfirm();
+                      }}
+                    >
+                      {dict('PC.Common.Global.confirm')}
+                    </button>
+                  </span>
                 )}
-              </span>
-              {moreButton}
-              <span className={cx(styles['conversation-date'])}>
-                {formatRelativeTime(item.modified)}
+                {item.taskStatus !== TaskStatus.EXECUTING && (
+                  <span className={cx(styles['conversation-date'])}>
+                    {formatRelativeTime(item.modified)}
+                  </span>
+                )}
+                {moreButton}
               </span>
             </div>
           </div>

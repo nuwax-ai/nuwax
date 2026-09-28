@@ -1,8 +1,8 @@
 /**
- * ConversationItem 行首状态标记（leadingMark 门控）测试。
+ * ConversationItem 行尾状态标记（leadingMark 门控）测试。
  *
  * 守卫 2026-09-17 定调的替换契约：
- * - leadingMark 开启（单栏）：执行中 → 行首转圈，不再渲染「执行中」文字胶囊；
+ * - leadingMark 开启（单栏）：执行中 → 行尾转圈，不再渲染「执行中」文字胶囊；
  *   结束未读 → 蓝点；执行中抑制蓝点。
  * - leadingMark 关闭（经典布局维持现状）：执行中仍渲染文字胶囊、无转圈/蓝点。
  */
@@ -78,10 +78,10 @@ const renderRow = (props: {
   );
 };
 
-describe('ConversationItem 行首状态标记（leadingMark）', () => {
-  it('空闲态也保留固定行首槽，置顶操作与标题不争抢宽度', () => {
+describe('ConversationItem 行尾状态标记（leadingMark）', () => {
+  it('空闲态也保留固定状态槽，置顶操作与时间共用行尾区域', () => {
     const { container } = renderRow({ leadingMark: true });
-    expect(container.querySelector('[class*="leading-slot"]')).toBeTruthy();
+    expect(container.querySelector('[class*="status-slot"]')).toBeTruthy();
     expect(
       screen.getByLabelText('PC.Components.ConversationContextMenu.pin'),
     ).toBeTruthy();
@@ -98,10 +98,28 @@ describe('ConversationItem 行首状态标记（leadingMark）', () => {
     ).toBeTruthy();
   });
 
-  it('开启 + 执行中：行首转圈替换文字胶囊', () => {
-    renderRow({ leadingMark: true, taskStatus: TaskStatus.EXECUTING });
+  it('执行中用转圈替换文字胶囊并隐藏时间，结束后恢复时间', () => {
+    const { container, rerender } = renderRow({
+      leadingMark: true,
+      taskStatus: TaskStatus.EXECUTING,
+    });
     expect(screen.getByLabelText(EXECUTING_KEY)).toBeTruthy(); // 转圈 aria-label
     expect(screen.queryByText(EXECUTING_KEY)).toBeNull(); // 文字胶囊已替换
+    expect(container.querySelector('[class*="conversation-date"]')).toBeNull();
+
+    rerender(
+      <ConversationItem
+        compact
+        item={buildItem({ taskStatus: TaskStatus.COMPLETE })}
+        isActive={false}
+        onClick={() => {}}
+        leadingMark
+      />,
+    );
+    expect(screen.queryByLabelText(EXECUTING_KEY)).toBeNull();
+    expect(
+      container.querySelector('[class*="conversation-date"]'),
+    ).toBeTruthy();
   });
 
   it('开启 + 结束未读：渲染蓝点', () => {

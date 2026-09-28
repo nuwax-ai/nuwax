@@ -25,7 +25,7 @@ interface TaskListSectionProps {
   /** 当前会话命中项目子会话 id：任务列表与项目分组选中互斥 */
   activeProjectChildId: string | null;
   /**
-   * 行首状态标记（单栏 style3 启用）：执行中转圈替换「执行中」文字胶囊、
+   * 行尾状态标记（单栏 style3 启用）：执行中转圈替换「执行中」文字胶囊、
    * 结束未读亮蓝点。经典布局不传维持现状（2026-09-17 定调：style1/2 待定）。
    */
   leadingMark?: boolean;

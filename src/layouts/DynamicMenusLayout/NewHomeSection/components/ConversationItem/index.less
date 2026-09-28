@@ -17,7 +17,6 @@
   gap: 10px;
   width: 100%;
   box-sizing: border-box;
-  // 「⋯」绝对定位锚点（见 .conversation-topic-row 内 more-btn）
   position: relative;
   // 右内边距 11px：让行尾「⋯」与项目面板会话子行的 ⋯ 右缘对齐
   //（子行 .child-actions 内缩 11px；2026-09-12 需求）
@@ -100,13 +99,21 @@
         color: @colorWarning;
       }
 
-      // 固定行首状态槽：状态和置顶操作叠在同一几何位置，hover 只切透明度，
-      // 不再通过 width/margin 展开挤动标题。
-      .leading-slot {
+      // 状态、时间/更多共用行尾区域；标题只占剩余宽度，不会压到按钮下方。
+      .conversation-trailing {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: @sidebarRowIconGap;
+        flex-shrink: 0;
+        min-width: calc(2 * @sidebarRowIconSlotSize + @sidebarRowIconGap);
+      }
+
+      .status-slot {
         .sidebar-row-leading-slot();
       }
 
-      .leading-status,
+      .status-mark,
       .pin-toggle {
         position: absolute;
         inset: 0;
@@ -116,7 +123,7 @@
         transition: opacity 0.16s ease;
       }
 
-      .leading-status {
+      .status-mark {
         pointer-events: none;
       }
 
@@ -133,10 +140,11 @@
         color: @navSecondMenuAdaptiveTextSecondary;
         cursor: pointer;
         opacity: 0;
+        pointer-events: none;
       }
 
       // 已置顶的 hover 操作使用「斜杠图钉」表达取消置顶；静止态的实心图钉
-      // 由 leading-status 单独承载，状态与操作不再共用同一图形。
+      // 由 status-mark 单独承载，状态与操作不再共用同一图形。
       .unpin-icon {
         position: relative;
         display: inline-flex;
@@ -154,62 +162,18 @@
         box-shadow: 0 0 0 1px @navSecondMenuBg;
       }
 
-      @media (hover: none) {
-        .pin-toggle {
-          opacity: 1;
-        }
-      }
-
-      // 「⋯」菜单兜底按钮：hover 显示；触屏（hover: none）常显。
-      // 字号 15px 对齐项目子行 ⋯（SvgIcon icons-common-more 同款视觉大小）。
-      // 绝对定位贴行右缘（2026-09-19：hover 隐藏时间后 ⋯ 须落在时间位=行最右，
-      // 与单栏 compact 同款；锚点=行胶囊 .conversation-item 的 relative）
+      // 时间与更多交替占据行尾，状态槽随行尾一起排列。
       :global(.more-btn) {
-        position: absolute;
-        right: 11px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 1;
-        flex-shrink: 0;
         .sidebar-row-action-slot();
 
-        opacity: 0;
-        transition: opacity 0.2s ease;
+        display: none;
+        flex-shrink: 0;
       }
 
-      @media (hover: none) {
-        :global(.more-btn) {
-          opacity: 1;
-        }
-      }
-
-      // 归档行内二次确认（参考原型 2026-09-19）：hover 显示归档图标（时间让位
-      // 同 ⋯ 口径），点击换红色「确认」二次点击执行；anchored ⋯ 左侧留 2px
+      // 仅菜单触发后显示二次确认，确认按钮临时替换状态槽。
       .archive-action {
-        position: absolute;
-        right: 37px; // ⋯ right 11px + 宽 24px + 间距 2px
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 1;
         display: flex;
         align-items: center;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-      }
-
-      .archive-trigger {
-        .sidebar-row-action-slot();
-
-        border: 0;
-        border-radius: 7px;
-        color: @navSecondMenuAdaptiveTextTertiary;
-        background: transparent;
-        cursor: pointer;
-
-        &:hover {
-          color: @navSecondMenuAdaptiveText;
-          background: @colorPrimaryBg;
-        }
       }
 
       .archive-confirm {
@@ -229,12 +193,6 @@
         }
       }
 
-      @media (hover: none) {
-        .archive-action {
-          opacity: 1;
-        }
-      }
-
       .conversation-date {
         font-size: @fontSizeSm;
         color: @navSecondMenuAdaptiveTextTertiary;
@@ -251,18 +209,17 @@
   }
 
   &:hover {
-    .conversation-item-content .conversation-topic-row .leading-status {
+    .conversation-item-content .conversation-topic-row .status-mark {
       opacity: 0;
     }
 
     .conversation-item-content .conversation-topic-row .pin-toggle {
       opacity: 1;
+      pointer-events: auto;
     }
 
-    // hover 会话项时显示「⋯」菜单兜底按钮与归档确认入口
-    .conversation-topic-row :global(.more-btn),
-    .conversation-topic-row .archive-action {
-      opacity: 1;
+    .conversation-topic-row :global(.more-btn) {
+      display: inline-flex;
     }
 
     .conversation-item-content {
@@ -278,32 +235,37 @@
     }
   }
 
-  // hover/键盘聚焦时右侧两枚 24px 操作按钮进入绝对定位层：时间退出流，
-  // topic-row 明确预留 52px，避免标题延伸到归档图标下方。只收窄标题宽度，
-  // 行首固定槽与标题起点不变。
-  &:hover .conversation-topic-row,
-  &:focus-visible .conversation-topic-row,
-  &:has(:focus-visible) .conversation-topic-row {
-    box-sizing: border-box;
-    padding-right: 52px;
-  }
-
   &:hover .conversation-date,
   &:focus-visible .conversation-date,
-  &:has(:focus-visible) .conversation-date {
+  &:has(:focus-visible) .conversation-date,
+  &.archive-arming .conversation-date,
+  &.archive-arming .status-slot {
     display: none;
   }
 
-  // 归档二次确认比图标更宽，armed 后为「确认 + ⋯」预留完整操作区。
-  &.archive-arming .conversation-topic-row {
-    padding-right: 78px;
+  &.archive-arming .conversation-topic-row :global(.more-btn) {
+    display: inline-flex;
   }
 
-  // 触屏（hover: none）无常悬停：「⋯」与归档入口常显且绝对定位贴右缘，时间须
-  // 让位防重叠（两枚 24px 按钮 + 2px 间距 + 右缘 11px 内缩 ≈ 61px）
+  // 触屏没有悬停，直接展示置顶与更多入口。
   @media (hover: none) {
-    .conversation-date {
-      margin-right: 62px;
+    .conversation-topic-row {
+      .conversation-date {
+        display: none;
+      }
+
+      .status-mark {
+        opacity: 0;
+      }
+
+      .pin-toggle {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      :global(.more-btn) {
+        display: inline-flex;
+      }
     }
   }
 
@@ -345,17 +307,17 @@
 .conversation-item:has(:focus-visible)
   .conversation-topic-row
   :global(.more-btn) {
-  opacity: 1;
+  display: inline-flex;
 }
 
 .conversation-item:focus-visible
   .conversation-item-content
   .conversation-topic-row
-  .leading-status,
+  .status-mark,
 .conversation-item:has(:focus-visible)
   .conversation-item-content
   .conversation-topic-row
-  .leading-status {
+  .status-mark {
   opacity: 0;
 }
 
@@ -368,13 +330,7 @@
   .conversation-topic-row
   .pin-toggle {
   opacity: 1;
-}
-
-// 键盘聚焦与确认态常显：归档入口同 ⋯ 口径；armed 后鼠标移出「确认」不消失
-.conversation-item:focus-visible .conversation-topic-row .archive-action,
-.conversation-item:has(:focus-visible) .conversation-topic-row .archive-action,
-.conversation-item.archive-arming .archive-action {
-  opacity: 1;
+  pointer-events: auto;
 }
 
 .conversation-item.compact {
@@ -396,15 +352,11 @@
     }
 
     :global(.more-btn) {
-      position: absolute;
-      right: @sidebarRowCompactTrailingPadding;
-      z-index: 1;
       // 视觉与项目子行 ⋯ 统一（2026-09-12）：24px、7px 圆角、静默透明、
       // hover 浅品牌色底。此处用 :global 字面量声明——组件自带 index.less 的
       // styles 映射在当前 dev 运行时为空（MFSU 缓存分裂），字面量规则才可靠生效
       width: @controlHeightSm;
       height: @controlHeightSm;
-      display: flex;
       align-items: center;
       justify-content: center;
       border-radius: 7px;
@@ -413,10 +365,6 @@
         background: @colorPrimaryBg;
         color: rgba(0, 0, 0, 88%);
       }
-    }
-
-    .archive-action {
-      right: 36px; // 行尾 10px + 24px 操作槽 + 2px 间距
     }
   }
 
@@ -431,8 +379,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .conversation-item,
-  .conversation-item .archive-action,
-  .conversation-item .leading-status,
+  .conversation-item .status-mark,
   .conversation-item .pin-toggle {
     transition: none;
   }

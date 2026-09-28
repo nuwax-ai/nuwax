@@ -115,11 +115,20 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
     return () => container.removeEventListener('scroll', handleScroll);
   }, [taskListVisible, shell]);
 
-  // 单栏分组头（原型 .tabs/.tab）：12.5px 文案 + 12px chevron，折叠时箭头转 -90°
-  // sticky：滚动到对应区域时分组头相互顶替、钉在滚动区顶部（配合 .section-tabs-sticky）
+  const handleProjectHeaderClick = () => {
+    const container = shell.scrollContainerRef.current;
+    // 从吸顶标题返回项目列表；列表起点仍保留原有的展开/收起操作。
+    if (container && container.scrollTop > 0) {
+      setProjectCollapsed(false);
+      container.scrollTop = 0;
+      return;
+    }
+    setProjectCollapsed((prev) => !prev);
+  };
+
+  // 两个分组头共用滚动包含块：项目固定在顶部，任务在项目头下方吸顶。
   const renderSectionHeader = (options: {
     label: string;
-    count: number;
     collapsed: boolean;
     task?: boolean;
     onToggle: () => void;
@@ -142,9 +151,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
       }}
       aria-expanded={!options.collapsed}
     >
-      <span className={cx(styles['section-tab-text'])}>
-        {`${options.label} (${options.count})`}
-      </span>
+      <span className={cx(styles['section-tab-text'])}>{options.label}</span>
       <span className={cx(styles['section-tab-chev'])} aria-hidden>
         <SvgIcon name="icons-common-caret_down" style={{ fontSize: 14 }} />
       </span>
@@ -163,6 +170,9 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
             event.stopPropagation();
             setProjectCollapsed(false);
             projectPanelRef.current?.toggleAll();
+            if (shell.scrollContainerRef.current) {
+              shell.scrollContainerRef.current.scrollTop = 0;
+            }
           }}
         >
           <svg
@@ -181,73 +191,66 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
   );
 
   return (
-    /* 滚动区：项目/任务两个分组（原型 scroll-area 同构）。分组头 sticky 吸顶——
-       滚动到对应区域时该区分组头把上一区分组头顶出、自动替换钉在滚动区顶部 */
+    /* 分组头直接放入同一滚动容器，避免各自分组的边界把项目标题顶出。 */
     <div
       ref={shell.scrollShowRef}
       className={cx(styles['conversation-list-wrapper'])}
     >
-      <div className={cx(styles['section-group'])}>
-        {renderSectionHeader({
-          label: dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab'),
-          count: shell.projectCount,
-          collapsed: projectCollapsed,
-          onToggle: () => setProjectCollapsed((prev) => !prev),
-        })}
-        <div
-          className={cx(styles['project-list-section'])}
-          hidden={projectCollapsed}
-        >
-          <ProjectPanel
-            ref={projectPanelRef}
+      {renderSectionHeader({
+        label: dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab'),
+        collapsed: projectCollapsed,
+        onToggle: handleProjectHeaderClick,
+      })}
+      <div
+        className={cx(styles['project-list-section'])}
+        hidden={projectCollapsed}
+      >
+        <ProjectPanel
+          ref={projectPanelRef}
+          compact
+          leadingMark
+          unreadConversationIds={unreadConversationIds}
+          onVisibleCountChange={shell.handleProjectCountChange}
+          onConversationClick={shell.handleConversationClick}
+          activeConversationId={shell.chatId}
+          onActiveChildResolved={shell.setActiveProjectChildId}
+        />
+      </div>
+
+      {renderSectionHeader({
+        label: dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask'),
+        collapsed: taskCollapsed,
+        task: true,
+        onToggle: () => setTaskCollapsed((prev) => !prev),
+      })}
+      {!taskCollapsed && (
+        <div className={styles['task-list-section']}>
+          <TaskListSection
             compact
             leadingMark
             unreadConversationIds={unreadConversationIds}
-            onVisibleCountChange={shell.handleProjectCountChange}
+            list={shell.visibleConversationList}
+            loading={shell.loading}
+            keyword={shell.keyword}
+            chatId={shell.chatId}
+            activeProjectChildId={shell.activeProjectChildId}
             onConversationClick={shell.handleConversationClick}
-            activeConversationId={shell.chatId}
-            onActiveChildResolved={shell.setActiveProjectChildId}
+            onFlagChanged={shell.handleConversationFlagChanged}
+            onCollectedChanged={shell.handleConversationCollectedChanged}
           />
+          {/* 首屏未撑出滚动区时没有 scroll 事件，仍须提供下一页入口。 */}
+          {shell.hasMore && (
+            <button
+              type="button"
+              className={styles['task-load-more']}
+              disabled={shell.loading}
+              onClick={() => shell.refreshList()}
+            >
+              {dict('PC.Components.AgentConversation.viewMore')}
+            </button>
+          )}
         </div>
-      </div>
-
-      <div className={cx(styles['section-group'])}>
-        {renderSectionHeader({
-          label: dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask'),
-          count: shell.visibleConversationList.length,
-          collapsed: taskCollapsed,
-          task: true,
-          onToggle: () => setTaskCollapsed((prev) => !prev),
-        })}
-        {!taskCollapsed && (
-          <>
-            <TaskListSection
-              compact
-              leadingMark
-              unreadConversationIds={unreadConversationIds}
-              list={shell.visibleConversationList}
-              loading={shell.loading}
-              keyword={shell.keyword}
-              chatId={shell.chatId}
-              activeProjectChildId={shell.activeProjectChildId}
-              onConversationClick={shell.handleConversationClick}
-              onFlagChanged={shell.handleConversationFlagChanged}
-              onCollectedChanged={shell.handleConversationCollectedChanged}
-            />
-            {/* 首屏未撑出滚动区时没有 scroll 事件，仍须提供下一页入口。 */}
-            {shell.hasMore && (
-              <button
-                type="button"
-                className={styles['task-load-more']}
-                disabled={shell.loading}
-                onClick={() => shell.refreshList()}
-              >
-                {dict('PC.Components.AgentConversation.viewMore')}
-              </button>
-            )}
-          </>
-        )}
-      </div>
+      )}
     </div>
   );
 };
