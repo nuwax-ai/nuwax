@@ -9,10 +9,23 @@ export type ConversationWorkspaceView =
 
 export type ConversationPageCacheLifecycle = 'active' | 'cached' | 'disposing';
 
+/** 已上传附件的服务端元数据；本地 File 与上传响应不进入草稿。 */
+export interface ConversationDraftAttachment {
+  uid: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  key: string;
+  width?: number;
+  height?: number;
+}
+
 export interface ConversationDraftData {
   version: 1;
   text: string;
   skillIds?: number[];
+  files?: ConversationDraftAttachment[];
   savedAt: number;
 }
 
