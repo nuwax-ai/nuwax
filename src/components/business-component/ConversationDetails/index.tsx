@@ -9,6 +9,7 @@ import {
   readAgentModeCache,
   writeAgentModeCache,
 } from '@/components/business-component/AgentIntervention/hooks/useAgentInterventionLayer';
+import AppPageState from '@/components/business-component/AppPageState';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
 import ConditionRender from '@/components/ConditionRender';
@@ -153,6 +154,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     string | number
   > | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [detailError, setDetailError] = useState<unknown>(null);
   // 会话ID
   const [conversationId, setConversationId] = useState<number | null>(null);
   // 选中的电脑ID（用于任务智能体模式）
@@ -436,6 +438,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
   // 已发布的智能体详情接口成功回调
   const onResultSuccess = (result: AgentDetailDto) => {
+    setDetailError(null);
     // 判断是否是从聊天页返回到详情页的场景
     const isPopBackFromChatPage = handleIsPopBackFromChatPage();
 
@@ -514,7 +517,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     onSuccess: (result: AgentDetailDto) => {
       onResultSuccess(result);
     },
-    onError: () => {
+    onError: (error) => {
+      setDetailError(error ?? new Error());
       setLoading(false);
       setAppAgentDetailLoading(false);
     },
@@ -535,6 +539,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   ]);
 
   useLayoutEffect(() => {
+    setDetailError(null);
     setLoading(true);
     setAppAgentDetailLoading(true);
     runDetail(agentId, true);
@@ -975,6 +980,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     >
       <LoadingOutlined />
     </div>
+  ) : detailError ? (
+    <AppPageState error={detailError} />
   ) : (
     <div className={cx('flex', 'h-full')}>
       {/*智能体聊天和预览页面*/}

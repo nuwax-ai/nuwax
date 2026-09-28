@@ -184,3 +184,41 @@ describe('useMenuNavigation：handleTabClick', () => {
     );
   });
 });
+
+describe('useMenuNavigation：handleNewTask', () => {
+  beforeEach(() => {
+    nav.location = { pathname: '/next', search: '', state: undefined };
+    nav.params = {};
+    nav.menus = [
+      buildMenus({ code: 'new_conversation', path: undefined }),
+      buildMenus({ code: 'next_tab', path: '/next' }),
+    ];
+    vi.clearAllMocks();
+  });
+
+  it('重置新对话标题和菜单同步标记，并选中主页', () => {
+    const { result } = renderHook(() => useMenuNavigation());
+    act(() => {
+      result.current.handleTabClick(nav.menus[0]);
+    });
+    expect(result.current.isClickNewConversation).toBe(true);
+    expect(result.current.isClickMenu.current).toBe(true);
+    vi.clearAllMocks();
+
+    act(() => result.current.handleNewTask());
+
+    expect(result.current.activeTab).toBe('homepage');
+    expect(result.current.isClickNewConversation).toBe(false);
+    expect(result.current.isClickMenu.current).toBe(false);
+    expect(nav.handleCloseMobileMenu).toHaveBeenCalledTimes(1);
+    expect(nav.historyPush).toHaveBeenCalledWith('/home');
+    expect(nav.handleCreateConversation).not.toHaveBeenCalled();
+  });
+
+  it('保持回调引用稳定，供宿主命令和侧栏快捷键共用', () => {
+    const { result, rerender } = renderHook(() => useMenuNavigation());
+    const handleNewTask = result.current.handleNewTask;
+    rerender();
+    expect(result.current.handleNewTask).toBe(handleNewTask);
+  });
+});

@@ -26,6 +26,8 @@ export interface HostBridgeEventHandlers {
   setSecondMenuCollapsed: (collapsed: boolean) => void;
   /** 新建任务（与侧栏「新建任务」同一处理函数；壳层 ⌘N/Ctrl+N 接管下发）。 */
   createNewTask: () => void;
+  /** 后台菜单决定的可用态；默认 false，隐藏或禁用时忽略宿主命令。 */
+  newTaskAvailable?: boolean;
   /** 打开全局搜索（layout model 的 setOpenSearchModal(true)；壳应用菜单「文件 → 搜索」
    * 下发。可选：仅挂了 SidebarSearchModal 的单栏布局注入，经典布局无实体不注入。 */
   openSearch?: () => void;
@@ -63,7 +65,9 @@ function handleHostCommand(payload: HostCommand): void {
       currentHandlers?.setSecondMenuCollapsed(!!payload.collapsed);
       break;
     case 'new-task':
-      currentHandlers?.createNewTask();
+      if (currentHandlers?.newTaskAvailable === true) {
+        currentHandlers.createNewTask();
+      }
       break;
     case 'open-search':
       currentHandlers?.openSearch?.();
@@ -95,8 +99,10 @@ export function initHostBridgeEvents(
 ): () => void {
   currentHandlers = handlers;
   hostBridge.events.onHostCommand(handleHostCommand);
+  hostBridge.layout.setNewTaskAvailable(handlers.newTaskAvailable === true);
   return () => {
     hostBridge.events.onHostCommand(null);
     currentHandlers = null;
+    hostBridge.layout.setNewTaskAvailable(false);
   };
 }

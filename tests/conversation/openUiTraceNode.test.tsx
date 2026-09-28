@@ -209,6 +209,46 @@ describe('OpenUiTraceNode', () => {
 });
 
 describe('WorkTraceDisclosure · OpenUI 常显区', () => {
+  it('正文关闭段、整轮收起和运行结束均保持同一个 OpenUI 产物实例', async () => {
+    const turn = buildTurn([openUiNode(readyResult())], true);
+    const props = {
+      preferences: PREFS,
+      onManualToggle: () => {},
+      conversationId: 1562078,
+    };
+    const view = render(<WorkTraceDisclosure {...props} turn={turn} />);
+    const artifact = await screen.findByTestId('openui-artifact-view');
+    const node = screen.getByTestId('v2-openui-node');
+    const closedTurn: ConversationTurnPresentationV2 = {
+      ...turn,
+      finalAnswer: { text: '看板已生成', source: 'messageText' },
+    };
+    view.rerender(<WorkTraceDisclosure {...props} turn={closedTurn} />);
+    expect(screen.getByTestId('v2-trace-segment-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(screen.getByTestId('openui-artifact-view')).toBe(artifact);
+    expect(screen.getByTestId('v2-openui-node')).toBe(node);
+
+    view.rerender(
+      <WorkTraceDisclosure
+        {...props}
+        turn={closedTurn}
+        manualExpanded={false}
+      />,
+    );
+    expect(screen.getByTestId('openui-artifact-view')).toBe(artifact);
+    view.rerender(
+      <WorkTraceDisclosure
+        {...props}
+        turn={{ ...closedTurn, running: false }}
+      />,
+    );
+    expect(screen.getByTestId('openui-artifact-view')).toBe(artifact);
+    expect(screen.getByTestId('v2-openui-node')).toBe(node);
+  });
+
   it('轨迹收起态（终态轮默认）OpenUI 看板仍在 DOM，节点行不渲染', async () => {
     render(
       <WorkTraceDisclosure

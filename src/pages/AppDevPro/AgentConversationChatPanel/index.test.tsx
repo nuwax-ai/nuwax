@@ -93,6 +93,10 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
         selectedComputerId="computer-prop"
       />,
     );
+    expect(latestUnifiedProps()).toMatchObject({
+      quickNavMinContainerWidth: 400,
+      quickNavDisplayMode: 'scrollable',
+    });
     latestUnifiedProps().onSendMessage(
       'build it',
       [{ name: 'a.ts' }],
@@ -136,6 +140,10 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     // 末尾展开覆盖：UnifiedChatSession 收到的发送实现与消息列表是 runtime 线版本
     expect(latestUnifiedProps().onSendMessage).toBe(runtimeOnSendMessage);
     expect(latestUnifiedProps().messageList).toBe(runtimeMessageList);
+    expect(latestUnifiedProps()).toMatchObject({
+      quickNavMinContainerWidth: 400,
+      quickNavDisplayMode: 'scrollable',
+    });
   });
 
   it('V2 线：runtimeLine prop 为 null 时回落旧线原值（flag 关，页面透传 null）', () => {
@@ -289,6 +297,8 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     );
     expect(agentProps.messageList).toEqual([{ id: 'agent-message' }]);
     expect(ideProps.messageList).toEqual([{ id: 'ide-message' }]);
+    expect(agentProps.quickNavDisplayMode).toBeUndefined();
+    expect(ideProps.quickNavDisplayMode).toBe('scrollable');
     agentProps.onSendMessage('agent prompt');
     ideProps.onSendMessage('ide prompt');
     expect(agentModel.onMessageSend).toHaveBeenCalledWith(

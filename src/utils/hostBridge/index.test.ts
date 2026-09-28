@@ -42,6 +42,36 @@ describe('hostBridge（统一对外接入层）', () => {
     host: { getProduct: () => 'nuwax' },
   });
 
+  describe('layout.setNewTaskAvailable', () => {
+    it('桥能力存在 → 透传启用与禁用状态', () => {
+      const setNewTaskAvailable = vi.fn();
+      (window as any).NuwaClawBridge = {
+        layout: { setNewTaskAvailable },
+      };
+      hostBridge.layout.setNewTaskAvailable(true);
+      hostBridge.layout.setNewTaskAvailable(false);
+      expect(setNewTaskAvailable.mock.calls).toEqual([[true], [false]]);
+    });
+
+    it('浏览器无桥或旧宿主缺少能力 → 静默忽略', () => {
+      delete (window as any).NuwaClawBridge;
+      expect(() => hostBridge.layout.setNewTaskAvailable(false)).not.toThrow();
+      (window as any).NuwaClawBridge = { layout: {} };
+      expect(() => hostBridge.layout.setNewTaskAvailable(true)).not.toThrow();
+    });
+
+    it('宿主调用失败 → 不影响页面导航', () => {
+      (window as any).NuwaClawBridge = {
+        layout: {
+          setNewTaskAvailable: () => {
+            throw new Error('host unavailable');
+          },
+        },
+      };
+      expect(() => hostBridge.layout.setNewTaskAvailable(true)).not.toThrow();
+    });
+  });
+
   describe('hasHostBridge', () => {
     it('桥存在 → true（聚合对象与具名导出一致）', () => {
       (window as any).NuwaClawBridge = { auth: {}, native: {} };

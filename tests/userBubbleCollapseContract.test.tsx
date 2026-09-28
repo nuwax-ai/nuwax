@@ -49,13 +49,18 @@ afterEach(() => {
 });
 
 describe('用户气泡折叠产品阈值', () => {
-  it('正文恰好 10 行时完整显示，第 11 行出现折叠入口且只露出 3 行', () => {
+  it('正文恰好 10 行时完整显示，第 11 行出现折叠入口并保留前 10 行', () => {
     expect(USER_BUBBLE_COLLAPSE_LINES).toBe(10);
-    expect(USER_BUBBLE_COLLAPSED_LINES).toBe(3);
+    expect(USER_BUBBLE_COLLAPSED_LINES).toBe(10);
 
     setBodyHeight(10 * 24);
     const first = renderBubble();
     expect(screen.queryByTestId('v2-user-bubble-toggle')).toBeNull();
+    expect(
+      screen
+        .getByTestId('v2-user-bubble-content')
+        .querySelector<HTMLElement>('.ds-markdown-answer')?.style.maxHeight,
+    ).toBe('');
     first.unmount();
 
     setBodyHeight(11 * 24);
@@ -64,7 +69,7 @@ describe('用户气泡折叠产品阈值', () => {
     const body = bubble.querySelector<HTMLElement>('.ds-markdown-answer');
     const toggle = screen.getByTestId('v2-user-bubble-toggle');
     expect(bubble).toHaveAttribute('data-collapsed', 'true');
-    expect(body?.style.maxHeight).toBe('72px');
+    expect(body?.style.maxHeight).toBe('240px');
     expect(body?.style.overflow).toBe('hidden');
     expect(
       toggle.querySelector('[data-svg-icon="icons-common-caret_down"]'),
@@ -73,5 +78,13 @@ describe('用户气泡折叠产品阈值', () => {
     fireEvent.click(toggle);
     expect(bubble).not.toHaveAttribute('data-collapsed');
     expect(body?.style.maxHeight).toBe('');
+    expect(body?.style.overflow).toBe('');
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(toggle);
+    expect(bubble).toHaveAttribute('data-collapsed', 'true');
+    expect(body?.style.maxHeight).toBe('240px');
+    expect(body?.style.overflow).toBe('hidden');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
   });
 });

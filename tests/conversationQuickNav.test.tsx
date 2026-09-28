@@ -11,7 +11,13 @@ import {
 import ConversationQuickNav from '@/components/business-component/ConversationQuickNav/index';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/services/i18nRuntime', () => ({
@@ -223,6 +229,254 @@ describe('ConversationQuickNav 组件', () => {
     expect(screen.getAllByTestId('conversation-quick-nav-line')).toHaveLength(
       5,
     );
+  });
+
+  it('工作台最小分栏宽度下可显示导航，收窄到配置门槛以下时隐藏', async () => {
+    // 真实 rAF 异步执行；同步桩会在回调完成后把节流标记重新置为 1。
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) =>
+      window.setTimeout(() => cb(performance.now()), 0),
+    );
+    vi.stubGlobal('cancelAnimationFrame', window.clearTimeout);
+    const container = buildContainer();
+    const scrollContainerRef = { current: container };
+    const messageList = longMessageList();
+    Object.defineProperty(container, 'clientWidth', {
+      value: 402,
+      configurable: true,
+    });
+    const { rerender } = render(
+      <ConversationQuickNav
+        scrollContainerRef={scrollContainerRef}
+        messageList={messageList}
+        minContainerWidth={400}
+      />,
+    );
+    expect(
+      await screen.findAllByTestId('conversation-quick-nav-line'),
+    ).toHaveLength(5);
+
+    Object.defineProperty(container, 'clientWidth', {
+      value: 399,
+      configurable: true,
+    });
+    fireEvent.scroll(container);
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('conversation-quick-nav'),
+      ).not.toBeInTheDocument(),
+    );
+
+    Object.defineProperty(container, 'clientWidth', {
+      value: 402,
+      configurable: true,
+    });
+    fireEvent.scroll(container);
+    expect(
+      await screen.findByTestId('conversation-quick-nav'),
+    ).toBeInTheDocument();
+
+    // 布局配置改变时立即重新测量，回到普通会话的宽度规则。
+    rerender(
+      <ConversationQuickNav
+        scrollContainerRef={scrollContainerRef}
+        messageList={messageList}
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('conversation-quick-nav'),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  describe('工作台 scrollable 模式', () => {
+    const singleTurnMessages = () => [
+      msg(USER, '开发一个应用', 1),
+      msg(ASSISTANT, '开发过程输出\n'.repeat(100), 2),
+    ];
+
+    const buildWorkbenchContainer = () => {
+      const container = buildContainer();
+      Object.defineProperty(container, 'clientWidth', {
+        value: 463,
+        configurable: true,
+      });
+      return container;
+    };
+
+    beforeEach(() => {
+      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) =>
+        window.setTimeout(() => cb(performance.now()), 0),
+      );
+      vi.stubGlobal('cancelAnimationFrame', window.clearTimeout);
+    });
+
+    it('单轮长开发回复显示一条导航，点击只将消息区定位回该轮开头', async () => {
+      const container = buildWorkbenchContainer();
+      const messageList = singleTurnMessages();
+      container.innerHTML = messageList
+        .map(
+          (message) =>
+            `<div data-server-message-id="${message.id}">${message.text}</div>`,
+        )
+        .join('');
+      Object.defineProperty(container, 'scrollTop', {
+        value: 1000,
+        configurable: true,
+      });
+      vi.spyOn(container, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 100, 463, 800),
+      );
+      const anchor = container.querySelector('[data-server-message-id="1"]')!;
+      vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, -900, 463, 40),
+      );
+      const scrollTo = vi.fn();
+      container.scrollTo = scrollTo;
+      const outer = document.createElement('div');
+      document.body.appendChild(outer);
+      outer.appendChild(container);
+      outer.scrollTop = 50;
+      outer.scrollTo = vi.fn();
+
+      render(
+        <ConversationQuickNav
+          scrollContainerRef={{ current: container }}
+          messageList={messageList}
+          minContainerWidth={400}
+          displayMode="scrollable"
+        />,
+      );
+      const lines = await screen.findAllByTestId('conversation-quick-nav-line');
+      expect(lines).toHaveLength(1);
+
+      fireEvent.click(lines[0]);
+
+      expect(scrollTo).toHaveBeenCalledTimes(1);
+      expect(scrollTo).toHaveBeenCalledWith({
+        top: 0,
+        behavior: 'smooth',
+      });
+      expect(outer.scrollTo).not.toHaveBeenCalled();
+      expect(outer.scrollTop).toBe(50);
+    });
+
+    it('不足四轮且仅溢出 1px 的会话也显示导航', async () => {
+      const container = buildWorkbenchContainer();
+      Object.defineProperty(container, 'scrollHeight', {
+        value: 801,
+        configurable: true,
+      });
+
+      render(
+        <ConversationQuickNav
+          scrollContainerRef={{ current: container }}
+          messageList={longMessageList().slice(0, 6)}
+          minContainerWidth={400}
+          displayMode="scrollable"
+        />,
+      );
+
+      expect(
+        await screen.findAllByTestId('conversation-quick-nav-line'),
+      ).toHaveLength(3);
+    });
+
+    it.each([
+      { name: '消息区不可滚动', sizes: { scrollHeight: 800 } },
+      { name: '消息为空', sizes: {}, empty: true },
+      { name: '消息区收窄到 399px', sizes: { clientWidth: 399 } },
+      { name: '消息区高度为零', sizes: { clientHeight: 0 } },
+      {
+        name: '保活页隐藏后尺寸归零',
+        sizes: { clientWidth: 0, clientHeight: 0, scrollHeight: 0 },
+      },
+    ])('$name 时收起已显示的导航', async ({ sizes, empty }) => {
+      const container = buildWorkbenchContainer();
+      const scrollContainerRef = { current: container };
+      const messageList = singleTurnMessages();
+      const { rerender } = render(
+        <ConversationQuickNav
+          scrollContainerRef={scrollContainerRef}
+          messageList={messageList}
+          minContainerWidth={400}
+          displayMode="scrollable"
+        />,
+      );
+      expect(
+        await screen.findByTestId('conversation-quick-nav'),
+      ).toBeInTheDocument();
+
+      Object.entries(sizes).forEach(([key, value]) => {
+        Object.defineProperty(container, key, { value, configurable: true });
+      });
+      if (empty) {
+        rerender(
+          <ConversationQuickNav
+            scrollContainerRef={scrollContainerRef}
+            messageList={[]}
+            minContainerWidth={400}
+            displayMode="scrollable"
+          />,
+        );
+      } else {
+        fireEvent.scroll(container);
+      }
+
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('conversation-quick-nav'),
+        ).not.toBeInTheDocument(),
+      );
+    });
+
+    it('仅切换 displayMode 即重新测量，auto 保留普通会话的轮次门槛', async () => {
+      const container = buildWorkbenchContainer();
+      const scrollContainerRef = { current: container };
+      const messageList = singleTurnMessages();
+      const { rerender } = render(
+        <ConversationQuickNav
+          scrollContainerRef={scrollContainerRef}
+          messageList={messageList}
+          minContainerWidth={400}
+        />,
+      );
+      // 等初次异步测量完成，避免隐藏断言在测量前就通过。
+      await act(async () => {
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 0);
+        });
+      });
+      expect(
+        screen.queryByTestId('conversation-quick-nav'),
+      ).not.toBeInTheDocument();
+
+      rerender(
+        <ConversationQuickNav
+          scrollContainerRef={scrollContainerRef}
+          messageList={messageList}
+          minContainerWidth={400}
+          displayMode="scrollable"
+        />,
+      );
+      expect(
+        await screen.findAllByTestId('conversation-quick-nav-line'),
+      ).toHaveLength(1);
+
+      rerender(
+        <ConversationQuickNav
+          scrollContainerRef={scrollContainerRef}
+          messageList={messageList}
+          minContainerWidth={400}
+          displayMode="auto"
+        />,
+      );
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('conversation-quick-nav'),
+        ).not.toBeInTheDocument(),
+      );
+    });
   });
 
   it('fixed 定位：左缘=定位上下文左缘左移 10px、顶=滚动容器视口垂直中心', () => {

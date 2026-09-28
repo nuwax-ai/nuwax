@@ -48,7 +48,9 @@ export interface UseMenuNavigationResult {
   isClickNewConversation: boolean;
   /** 是否点击了一级菜单（刷新同步 effect 的跳过标记） */
   isClickMenu: MutableRefObject<boolean>;
-  /** 租户默认智能体建会话（新建任务入口/新对话菜单共用） */
+  /** 全局新建任务：进入主页，等待用户发送后创建会话 */
+  handleNewTask: () => void;
+  /** 租户默认智能体建会话（新对话菜单使用） */
   handlerClick: () => Promise<void>;
   /** 新对话菜单特殊处理：activeTab 跳到下一个菜单 */
   handleNewConversation: () => void;
@@ -74,9 +76,16 @@ export function useMenuNavigation(): UseMenuNavigationResult {
   // 是否点击菜单
   const isClickMenu = useRef<boolean>(false);
 
-  // useCallback 固定引用（bug 2348）：SidebarNavLayout.handleNewTask 依赖本引用，
-  // 不固定会随每次渲染变引用、致宿主桥监听 effect 反复摘挂；上游
-  // handleCreateConversation 已同步 useCallback 固定
+  // 侧栏点击、快捷键和宿主命令共用此入口；稳定引用避免宿主监听反复摘挂。
+  const handleNewTask = useCallback(() => {
+    isClickMenu.current = false;
+    setActiveTab('homepage');
+    setIsClickNewConversation(false);
+    handleCloseMobileMenu();
+    history.push('/home');
+  }, [handleCloseMobileMenu]);
+
+  // 新对话菜单仍按租户默认智能体创建会话。
   const handlerClick = useCallback(async () => {
     if (tenantConfigInfo) {
       // 创建智能体会话
@@ -343,6 +352,7 @@ export function useMenuNavigation(): UseMenuNavigationResult {
     setActiveTab,
     isClickNewConversation,
     isClickMenu,
+    handleNewTask,
     handlerClick,
     handleNewConversation,
     handleTabClick,

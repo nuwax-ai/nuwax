@@ -33,6 +33,7 @@ const h = vi.hoisted(() => ({
   handleSetAppAgentDetail: vi.fn(),
   setOpenPaymentModal: vi.fn(),
   runHistoryItem: vi.fn(),
+  error: null as unknown,
 }));
 
 const baseDetail = {
@@ -93,8 +94,16 @@ vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
   t: (key: string) => key,
 }));
+vi.mock('@/components/business-component/AppPageState/index.less', () => ({
+  default: { pageState: 'app-page-state' },
+}));
+vi.mock('@/components/business-component/AppDevEmptyState/index.less', () => ({
+  default: new Proxy({}, { get: (_, key) => String(key) }),
+}));
 vi.mock('@/services/agentDev', () => ({
-  apiPublishedAgentInfo: vi.fn(() => Promise.resolve(h.detail)),
+  apiPublishedAgentInfo: vi.fn(() =>
+    h.error ? Promise.reject(h.error) : Promise.resolve(h.detail),
+  ),
 }));
 vi.mock(
   '@/components/business-component/ConversationDetails/index.less',
@@ -221,6 +230,7 @@ vi.mock('@/features/conversation/presentation-v2/react', () => ({
 describe('ConversationDetails 多实例保活契约', () => {
   beforeEach(() => {
     h.detail = { ...baseDetail, paymentRequired: false, subscribed: true };
+    h.error = null;
     vi.clearAllMocks();
   });
 
@@ -313,5 +323,36 @@ describe('ConversationDetails 多实例保活契约', () => {
     await waitFor(() => {
       expect(screen.getByTestId('payment-modal').dataset.open).toBe('false');
     });
+  });
+
+  it.each([
+    { name: 'BizError', info: { code: '4030' } },
+    { response: { status: 403 } },
+  ])('详情权限失败展示统一权限状态：%j', async (error) => {
+    h.error = error;
+    render(<ConversationDetails agentId={1} instanceScoped />);
+    expect(
+      await screen.findByText(
+        'PC.Components.AppDevEmptyState.permissionDeniedTitle',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('conversation-renderer-v2')).toBeNull();
+    expect(screen.queryByTestId('page-preview')).toBeNull();
+  });
+
+  it('非权限错误展示加载失败，切换应用后清除旧错误', async () => {
+    h.error = new Error('network');
+    const view = render(<ConversationDetails agentId={1} instanceScoped />);
+    expect(
+      await screen.findByText('PC.Components.AppDevEmptyState.errorTitle'),
+    ).toBeInTheDocument();
+    h.error = null;
+    view.rerender(<ConversationDetails agentId={2} instanceScoped />);
+    expect(
+      await screen.findByTestId('conversation-renderer-v2'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('PC.Components.AppDevEmptyState.errorTitle'),
+    ).toBeNull();
   });
 });

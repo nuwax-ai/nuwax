@@ -405,7 +405,6 @@ describe('ConversationRendererV2 · 三层结构', () => {
           status: 'EXECUTING',
           name: '运行测试',
         }),
-        '天气查询完成',
       ].join(''),
       processingList: [
         {
@@ -703,11 +702,15 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
 
     const oldGroupSelector =
       '[data-tool-group-id="tool-group:read-1"] > button';
+    const oldSegmentSelector =
+      '[data-trace-segment-id="trace-segment:read-1"] > button';
     const activeGroupSelector =
       '[data-tool-group-id="tool-group:edit-1"] > button';
     await waitFor(() => {
       expect(
-        document.querySelector(oldGroupSelector)?.getAttribute('aria-expanded'),
+        document
+          .querySelector(oldSegmentSelector)
+          ?.getAttribute('aria-expanded'),
       ).toBe('false');
       expect(
         document
@@ -723,6 +726,10 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     );
     expect(activeGroup?.querySelector('[aria-label="loading"]')).toBeNull();
 
+    fireEvent.click(document.querySelector(oldSegmentSelector)!);
+    expect(
+      document.querySelector(oldGroupSelector)?.getAttribute('aria-expanded'),
+    ).toBe('false');
     fireEvent.click(document.querySelector(oldGroupSelector)!);
     expect(
       document.querySelector(oldGroupSelector)?.getAttribute('aria-expanded'),
@@ -734,6 +741,176 @@ describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
     expect(
       document.querySelector(oldGroupSelector)?.getAttribute('aria-expanded'),
     ).toBe('true');
+  });
+
+  it('普通正文首片立即将交替思考和工具折叠为该段汇总，手动重开跨后续正文和新段保持', () => {
+    const processText = [
+      processTag({ executeId: 'read-1', type: 'ToolCall', status: 'FINISHED' }),
+      thinkTag('finished', '文件已读取，继续验证'),
+      processTag({ executeId: 'run-1', type: 'ToolCall', status: 'FINISHED' }),
+      thinkTag('finished', '验证完成，整理结论'),
+    ].join('');
+    const buildMessages = (text: string) =>
+      buildTurn({
+        status: MessageStatusEnum.Loading,
+        text,
+        processingList: groupedProcessingList,
+      });
+    const view = renderV2(buildMessages(processText));
+    const rerender = (text: string) =>
+      view.rerender(
+        <ConversationRendererV2
+          messageList={buildMessages(text)}
+          conversationId={1}
+          roleInfo={ROLE_INFO}
+          preferences={PREFS('balanced')}
+        />,
+      );
+    expect(document.querySelectorAll('[data-node-id]')).toHaveLength(4);
+    expect(screen.queryByTestId('v2-trace-segment-toggle')).toBeNull();
+
+    rerender(`${processText}这一阶段已完成`);
+    const summary = screen.getByTestId('v2-trace-segment-toggle');
+    expect(summary).toHaveAttribute('aria-expanded', 'false');
+    expect(summary).toHaveTextContent('traceMetricTools:2');
+    expect(summary).toHaveTextContent('traceMetricMessages:2');
+    expect(summary).not.toHaveTextContent('traceMetricRunning');
+    expect(document.querySelectorAll('[data-node-id]')).toHaveLength(0);
+    expect(screen.getByTestId('v2-final-answer')).toHaveTextContent(
+      '这一阶段已完成',
+    );
+
+    fireEvent.click(summary);
+    expect(document.querySelectorAll('[data-node-id]')).toHaveLength(4);
+    const thinkToggle = document.querySelector(
+      '[data-node-kind="reasoning"] button',
+    )!;
+    const thinkId = thinkToggle
+      .closest('[data-node-id]')!
+      .getAttribute('data-node-id');
+    fireEvent.click(thinkToggle);
+    rerender(`${processText}这一阶段已完成，接下来优化`);
+    expect(screen.getByTestId('v2-trace-segment-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+
+    const newProcessText =
+      processTag({
+        executeId: 'edit-1',
+        type: 'ToolCall',
+        status: 'FINISHED',
+      }) + thinkTag('thinking', '现在检查下一阶段');
+    rerender(`${processText}这一阶段已完成，接下来优化${newProcessText}`);
+    expect(
+      document.querySelector(
+        '[data-trace-segment-active="true"] [data-node-id="edit-1"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      document.querySelector(
+        '[data-trace-segment-active="true"] [data-node-kind="reasoning"]',
+      ),
+    ).not.toBeNull();
+    expect(screen.getByTestId('v2-narration')).toHaveTextContent(
+      '这一阶段已完成',
+    );
+    expect(screen.getByTestId('v2-trace-segment-toggle')).toHaveTextContent(
+      'traceMetricTools:2',
+    );
+
+    fireEvent.click(screen.getByTestId('v2-trace-segment-toggle'));
+    fireEvent.click(screen.getByTestId('v2-trace-segment-toggle'));
+    expect(
+      document.querySelector(`[data-node-id="${thinkId}"] button`),
+    ).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    expect(screen.getByTestId('v2-narration')).toBeVisible();
+    expect(document.querySelector('[data-trace-segment-id]')).toBeNull();
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    expect(screen.getByTestId('v2-trace-segment-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
+  it('已关闭段初次加载默认收起，focused 隐藏入口可恢复段内思考', () => {
+    renderV2(
+      buildTurn({ status: MessageStatusEnum.Loading }),
+      PREFS('focused'),
+    );
+    const summaries = screen.getAllByTestId('v2-trace-segment-toggle');
+    expect(summaries).toHaveLength(2);
+    summaries.forEach((summary) =>
+      expect(summary).toHaveAttribute('aria-expanded', 'false'),
+    );
+    expect(document.querySelectorAll('[data-node-id]')).toHaveLength(0);
+    fireEvent.click(screen.getByTestId('v2-hidden-entry'));
+    expect(
+      document.querySelectorAll('[data-node-kind="reasoning"]'),
+    ).toHaveLength(2);
+    expect(screen.queryByTestId('v2-hidden-entry')).toBeNull();
+    expect(screen.getByTestId('v2-narration')).toHaveTextContent(
+      '天气查询完成',
+    );
+  });
+
+  it('快照恢复为活动段时继续展示，正文再次出现后自动收起', () => {
+    const processText = thinkTag('finished', '恢复后继续工作');
+    const buildMessages = (text: string) =>
+      buildTurn({
+        status: MessageStatusEnum.Loading,
+        text,
+        processingList: [],
+      });
+    const view = renderV2(buildMessages(processText));
+    const rerender = (text: string) =>
+      view.rerender(
+        <ConversationRendererV2
+          messageList={buildMessages(text)}
+          conversationId={1}
+          roleInfo={ROLE_INFO}
+          preferences={PREFS('balanced')}
+        />,
+      );
+    rerender(`${processText}阶段说明`);
+    expect(screen.getByTestId('v2-trace-segment-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    fireEvent.click(screen.getByTestId('v2-trace-segment-toggle'));
+    rerender(processText);
+    expect(screen.queryByTestId('v2-trace-segment-toggle')).toBeNull();
+    expect(
+      document.querySelector('[data-node-kind="reasoning"]'),
+    ).not.toBeNull();
+    rerender(`${processText}新的阶段说明`);
+    expect(screen.getByTestId('v2-trace-segment-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(document.querySelector('[data-node-kind="reasoning"]')).toBeNull();
+  });
+
+  it('过程段收起后保留失败提示，用户展开可查看失败工具', () => {
+    renderV2(
+      buildTurn({
+        status: MessageStatusEnum.Loading,
+        text:
+          processTag({
+            executeId: 'failed-tool',
+            type: 'ToolCall',
+            status: 'FAILED',
+          }) + '命令失败，继续排查',
+        processingList: [],
+      }),
+    );
+    expect(screen.getByTestId('v2-trace-segment-failed')).toBeInTheDocument();
+    expect(document.querySelector('[data-node-id="failed-tool"]')).toBeNull();
+    fireEvent.click(screen.getByTestId('v2-trace-segment-toggle'));
+    expect(
+      document.querySelector('[data-node-id="failed-tool"]'),
+    ).not.toBeNull();
   });
 
   it('终态历史组默认收起，打开整轮后组内详情仍由第三层独立控制', () => {

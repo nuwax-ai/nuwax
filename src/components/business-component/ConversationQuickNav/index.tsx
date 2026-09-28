@@ -26,10 +26,11 @@ import { buildQuickNavBlocks, QuickNavBlock } from './blocks';
  *   fixed 不受影响）；挂载点到视口之间不得出现带 transform/filter 的祖先
  *   （会使 fixed 退化为相对该祖先定位）。
  *
- * 行为：块数 ≥4 且内容可滚动（scrollHeight ≥ 1.5×clientHeight）且容器宽 ≥600px
- * 时才显示；点击平滑定位到对应轮次；鼠标滑过时线条波浪式变长，悬停 400ms 后
+ * 行为：块数 ≥4 且内容可滚动（scrollHeight ≥ 1.5×clientHeight）且容器宽达到
+ * minContainerWidth（默认 600px）时才显示；点击平滑定位到对应轮次；鼠标滑过时线条波浪式变长，悬停 400ms 后
  * 展示该轮预览卡（浮层以命中线条的垂直中点对齐）；样式在
  * src/global.less（conversation-quick-nav-* 全局类）。
+ * 分栏工作台可使用 scrollable 模式：有可读轮次且消息区实际可滚动时显示。
  */
 
 /** 显示门控：最少块数、内容滚动倍数、容器最小宽度（窄屏/移动隐藏） */
@@ -56,11 +57,17 @@ const NAV_LEFT_INSET = 10;
 interface ConversationQuickNavProps {
   scrollContainerRef: React.RefObject<HTMLDivElement>;
   messageList: MessageInfo[];
+  /** 分栏工作台可按会话区布局降低门槛；普通会话默认 600px。 */
+  minContainerWidth?: number;
+  /** auto 沿用长会话门槛；scrollable 支持单轮长回复的开发会话。 */
+  displayMode?: 'auto' | 'scrollable';
 }
 
 const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
   scrollContainerRef,
   messageList,
+  minContainerWidth = MIN_CONTAINER_WIDTH,
+  displayMode = 'auto',
 }) => {
   const blocks = useMemo(() => buildQuickNavBlocks(messageList), [messageList]);
   const [visible, setVisible] = useState(false);
@@ -203,10 +210,12 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       const left = sessionEl.getBoundingClientRect().left - NAV_LEFT_INSET;
       setNavLeft((prev) => (prev === left ? prev : left));
     }
-    const nextVisible =
-      blocks.length >= MIN_BLOCK_COUNT &&
-      scrollHeight >= clientHeight * SCROLLABLE_RATIO &&
-      clientWidth >= MIN_CONTAINER_WIDTH;
+    const contentVisible =
+      displayMode === 'scrollable'
+        ? blocks.length > 0 && clientHeight > 0 && scrollHeight > clientHeight
+        : blocks.length >= MIN_BLOCK_COUNT &&
+          scrollHeight >= clientHeight * SCROLLABLE_RATIO;
+    const nextVisible = contentVisible && clientWidth >= minContainerWidth;
     setVisible((prev) => (prev === nextVisible ? prev : nextVisible));
     if (!nextVisible) {
       setActiveIndex((prev) => (prev === -1 ? prev : -1));
@@ -250,7 +259,7 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       nextActive = blocks.length - 1;
     }
     setActiveIndex((prev) => (prev === nextActive ? prev : nextActive));
-  }, [blocks, scrollContainerRef]);
+  }, [blocks, scrollContainerRef, minContainerWidth, displayMode]);
 
   const scheduleMeasure = useCallback(() => {
     if (rafRef.current) return;
