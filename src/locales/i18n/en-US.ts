@@ -1,6 +1,9 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
+  'PC.Components.MicroAppHost.loading': 'Loading',
+  'PC.Components.MicroAppHost.loadFailed': 'Unable to load. Please try again.',
+  'PC.Components.MicroAppHost.retry': 'Reload',
   "PC.Components.AppStartup.loading": "Loading the app",
   "PC.Components.AppStartup.waitingHint": "Loading is taking longer than expected. Check your connection and retry, or keep waiting.",
   "PC.Components.AppStartup.failed": "Unable to load the app",

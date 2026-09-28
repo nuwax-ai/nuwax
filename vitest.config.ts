@@ -17,6 +17,8 @@ export default defineConfig({
       'tests/**/*[Vv]2*.test.{ts,tsx}',
       // 本地 Claude 隔离 worktree 不是当前 checkout，禁止重复收集旧测试。
       '.claude/worktrees/**',
+      // 子仓的 node:test/业务测试由各自管线执行，宿主只收集集成合同。
+      'submodules/**',
     ],
     alias: {
       '@': path.resolve(__dirname, 'src'),

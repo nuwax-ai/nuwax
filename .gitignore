@@ -10,6 +10,8 @@
 /.umi-production
 /.umi-test
 /dist
+/public/micro-apps/
+/.cache/micro-apps/
 /reports/a11y/*.json
 /.mfsu
 .swc

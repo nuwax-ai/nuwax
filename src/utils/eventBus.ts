@@ -76,6 +76,8 @@ export default eventBus;
 
 // 定义常用的事件名称常量
 export const EVENT_NAMES = {
+  // 登出/认证失效后释放菜单中常驻的微应用实例。
+  AUTH_SESSION_CLEARED: 'auth_session_cleared',
   // 发送聊天消息事件
   SEND_CHAT_MESSAGE: 'send_chat_message',
   // 清空聊天输入框事件

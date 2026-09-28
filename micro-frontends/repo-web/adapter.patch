@@ -1,0 +1,766 @@
+diff --git a/vite.config.ts b/vite.upstream.config.ts
+similarity index 100%
+rename from vite.config.ts
+rename to vite.upstream.config.ts
+diff --git a/src/App.tsx b/src/App.tsx
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,3 +1,4 @@
++import { isRepoEmbedded } from './hostRuntime'
+ import { lazy, Suspense, useEffect } from 'react'
+ import { Navigate, Route, Routes } from 'react-router-dom'
+ import { getSiteTitle, getTenantConfig } from './lib/api'
+@@ -34,14 +35,14 @@
+   // 站点名仅在 tab 标题仍是默认/空时才写入，避免覆盖文档页已设置的文档标题。
+   // 导航保持幽灵层：门户/空间页点文档时先钉住旧页静态克隆，盖住根 Suspense 白 fallback
+   // 渲染 DocPage 重骨架的 ~300ms（useTransitions 必须为 false，白闪由此层兜底，详见 navHold.ts）
+-  useEffect(() => installNavHold(), [])
++  useEffect(() => isRepoEmbedded() ? undefined : installNavHold(), [])
+ 
+   useEffect(() => {
+     // 先用本地缓存的站点名立即占位（index.html 标题已置空，避免刷新时出现空标题/工程名闪跳）
+     const cached = getSiteTitle()
+-    if (cached && document.title === '') document.title = cached
++    if (!isRepoEmbedded() && cached && document.title === '') document.title = cached
+     getTenantConfig().then((cfg) => {
+-      if (cfg == null) return
++      if (cfg == null || isRepoEmbedded()) return
+       if (cfg.faviconUrl) {
+         let link = document.head.querySelector<HTMLLinkElement>('link[rel="icon"]')
+         if (link == null) {
+diff --git a/src/pages/LibraryPortal.tsx b/src/pages/LibraryPortal.tsx
+--- a/src/pages/LibraryPortal.tsx
++++ b/src/pages/LibraryPortal.tsx
+@@ -110,12 +110,14 @@
+  * 最近访问另有「移除访问记录」。
+  */
+ export default function LibraryPortal() {
++  const location = useLocation()
++  const navigate = useNavigate()
+   /** 左侧目录栏收起/展开（与文档页同款，门户页此前缺失收起图标）；移动端默认收起（抽屉） */
+   const isMobile = useIsMobile()
+   const [navOpen, setNavOpen] = useState<boolean>(() => {
+     // ?nav=0/1 初始态：显式 0/1 优先；其次读本地持久化偏好（用户上次主动收起/展开）；
+     // 最后才走默认（桌面展开、移动端收起）——收起后跨页/刷新保持，除非用户主动点开
+-    const raw = new URLSearchParams(window.location.search).get('nav')
++    const raw = new URLSearchParams(location.search).get('nav')
+     if (raw === '0') return false
+     if (raw === '1') return true
+     return readNavOpenPref() ?? !isMobile
+@@ -154,7 +156,6 @@
+   const TEAM_STORAGE_KEY = 'portal.lastTeamSpaceId'
+   /** URL ?space=<id>：选中团队空间后写进地址栏，复制链接下次打开可恢复选中空间 */
+   const [searchParams] = useSearchParams()
+-  const location = useLocation()
+   // ?nav=0/1：URL 参数控制左侧目录栏默认收起/展开（0=收起、1=展开；缺省走「桌面展开/移动端收起」）。
+   // 与文档页同款：复制带参数的链接打开时按参数决定目录栏初始态。
+   const navParam = useMemo(() => {
+@@ -198,8 +199,6 @@
+   const [teamKeyword, setTeamKeyword] = useState('')
+   const teamWrapRef = useRef<HTMLSpanElement | null>(null)
+ 
+-  const navigate = useNavigate()
+-
+   // 手动切换左侧目录栏（页面树）：更新 state 并把 ?nav=0/1 写回地址栏（复制链接可携带当前收起/展开态）。
+   // 移动端抽屉收起（点遮罩）不经过这里，不写 URL。
+   const toggleNav = useCallback(() => {
+@@ -207,11 +206,11 @@
+     setNavOpen(next)
+     // 持久化：收起后跨页/刷新保持，除非用户主动点开（URL 参数在导航时会丢，由 localStorage 兜底）
+     writeNavOpenPref(next)
+-    const sp = new URLSearchParams(window.location.search)
++    const sp = new URLSearchParams(location.search)
+     sp.set('nav', next ? '1' : '0')
+     const qs = sp.toString()
+-    window.history.replaceState(window.history.state, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`)
+-  }, [navOpen])
++    navigate(`${location.pathname}${qs ? `?${qs}` : ''}${location.hash}`, { replace: true, state: location.state })
++  }, [navOpen, navigate, location.pathname, location.search, location.hash, location.state])
+ 
+   // 空闲预取表格引擎：门户页挂载后浏览器空闲时后台加载 Univer（表格/多维表格共用 chunk）。
+   // 移动端跳过（表格只读降级 + 省移动流量）。requestIdleCallback 空闲才执行，timeout 兜底防一直忙。
+@@ -423,20 +422,18 @@
+ 
+   // 选中空间/主 tab 变化 → 同步地址栏 ?space=<id>：切到团队写 id，回到「我的」清掉。
+   // 复制当前链接，下次打开按 URL 恢复选中空间（优先级高于 localStorage 记忆）。
+-  // 不用 setSearchParams：react-router basename=/repo（无尾斜杠）会把根路径 href 生成为
+-  // /repo?space=x（缺斜杠），dev 下 vite 按 base=/repo/ 校验会直接报错、复制该链接打不开。
+-  // 这里直接 replaceState 并补 /repo/ 的尾斜杠，保证可复制、可回开（history.state 原样保留，防 router idx 丢失）。
++  // 通过 Router replace 同步 query：内嵌 MemoryRouter 不得直接改宿主 history。
+   useEffect(() => {
+-    const cur = new URLSearchParams(window.location.search).get('space')
++    const cur = new URLSearchParams(location.search).get('space')
+     const target = mainTab === 'team' && selectedTeamId != null ? String(selectedTeamId) : null
+     if ((target == null ? cur == null : cur === target)) return
+-    const sp = new URLSearchParams(window.location.search)
++    const sp = new URLSearchParams(location.search)
+     if (target != null) sp.set('space', target)
+     else sp.delete('space')
+     const qs = sp.toString()
+-    const base = window.location.pathname.replace(/\/+$/, '')
+-    window.history.replaceState(window.history.state, '', `${base}/${qs ? `?${qs}` : ''}`)
+-  }, [mainTab, selectedTeamId])
++    const base = location.pathname.replace(/\/+$/, '')
++    navigate(`${base}/${qs ? `?${qs}` : ''}${location.hash}`, { replace: true, state: location.state })
++  }, [mainTab, selectedTeamId, navigate, location.pathname, location.search, location.hash, location.state])
+ 
+   // 团队下拉：点击外部关闭
+   useEffect(() => {
+diff --git a/src/pages/DocPage.tsx b/src/pages/DocPage.tsx
+--- a/src/pages/DocPage.tsx
++++ b/src/pages/DocPage.tsx
+@@ -1,3 +1,4 @@
++import { isRepoEmbedded, setRepoDocumentTitle } from '../hostRuntime'
+ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+ import type { ClipboardEvent as ReactClipboardEvent, FocusEvent as ReactFocusEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
+ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+@@ -99,6 +100,7 @@
+   // 非链接路径为 null，所有接口不传该参数（行为不变）
+   const shareToken = useMemo(() => sessionStorage.getItem(`repoShareToken:${slugId}`), [slugId])
+   const location = useLocation()
++  const navigate = useNavigate()
+   // ?just_show_content=true：只展示文档内容区域（隐藏左侧目录栏 + 顶部标题栏），
+   // 供外部嵌入/纯内容展示场景使用（正文 main 铺满整窗）
+   const justContent = useMemo(
+@@ -310,11 +312,11 @@
+   const toggleToc = useCallback(() => {
+     const next = !tocOpen
+     setTocOpen(next)
+-    const sp = new URLSearchParams(window.location.search)
++    const sp = new URLSearchParams(location.search)
+     sp.set('toc', next ? '1' : '0')
+     const qs = sp.toString()
+-    window.history.replaceState(window.history.state, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`)
+-  }, [tocOpen])
++    navigate(`${location.pathname}${qs ? `?${qs}` : ''}${location.hash}`, { replace: true, state: location.state })
++  }, [tocOpen, navigate, location.pathname, location.search, location.hash, location.state])
+   // URL 参数 ?toc=0/1 变化时同步目录栏：覆盖跨文档 SPA 导航（DocPage 跨 slugId 不重挂，useState 初始值不重算）
+   // 与直接改地址栏刷新场景。tocParam 为 null（无参数）时保持当前态不强制重置（窄屏响应式收起由上方 effect 承担）
+   useEffect(() => {
+@@ -327,11 +329,11 @@
+     setNavOpen(next)
+     // 持久化：收起后跨页/刷新保持，除非用户主动点开（URL 参数在导航时会丢，由 localStorage 兜底）
+     writeNavOpenPref(next)
+-    const sp = new URLSearchParams(window.location.search)
++    const sp = new URLSearchParams(location.search)
+     sp.set('nav', next ? '1' : '0')
+     const qs = sp.toString()
+-    window.history.replaceState(window.history.state, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`)
+-  }, [navOpen])
++    navigate(`${location.pathname}${qs ? `?${qs}` : ''}${location.hash}`, { replace: true, state: location.state })
++  }, [navOpen, navigate, location.pathname, location.search, location.hash, location.state])
+   // URL 参数 ?nav=0/1 变化时同步左侧目录栏：覆盖跨文档 SPA 导航（跨 slugId 不重挂，useState 初始值不重算）
+   // 与直接改地址栏刷新场景。navParam 为 null（无参数）时保持当前态不强制重置。
+   useEffect(() => {
+@@ -451,7 +453,6 @@
+       window.removeEventListener('focus', sync)
+     }
+   }, [pageIdForAccess, shareToken])
+-  const navigate = useNavigate()
+   // 创建副本（文档复制）：入口按 myAccess.copyable 显隐；弹出「复制到…」选目标空间/文件夹，成功后刷树并跳转副本
+   const [copyOpen, setCopyOpen] = useState<{ id: number; title: string; spaceId: number | null } | null>(null)
+   const handleCopyPage = () => {
+@@ -557,6 +558,8 @@
+   // index 记账失真（push 时 index = getIndex() + 1 → NaN，前进/后退的 delta 随之算不出）。
+   // 意图本身另有 localStorage 锁存兜底（见 lib/htmlSeed.ts），抹掉 state 不影响 html 播种。
+   useEffect(() => {
++    // 内存路由 state 不写入宿主 history；保留播种载荷直至业务异步挂载完成。
++    if (isRepoEmbedded()) return
+     if (initSheet || importHtml || importHtmlRaw || importPptx || importPdf || importSheet) {
+       const st = window.history.state as { key?: string; idx?: number } | null
+       const next: Record<string, unknown> = {}
+@@ -674,9 +677,9 @@
+   useEffect(() => {
+     const title = (page?.title ?? '').trim()
+     const site = getSiteTitle()
+-    document.title = title === '' ? site : site ? `${site} - ${title}` : title
++    setRepoDocumentTitle(title === '' ? site : site ? `${site} - ${title}` : title)
+     return () => {
+-      document.title = getSiteTitle()
++      setRepoDocumentTitle(getSiteTitle())
+     }
+   }, [page?.title])
+ 
+diff --git a/src/pages/ShareView.tsx b/src/pages/ShareView.tsx
+--- a/src/pages/ShareView.tsx
++++ b/src/pages/ShareView.tsx
+@@ -1,3 +1,4 @@
++import { captureRepoAuthRedirect, getRepoInputRoot, setRepoDocumentTitle } from '../hostRuntime'
+ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+ import { EditorContent, useEditor } from '@tiptap/react'
+@@ -184,8 +185,8 @@
+     const onKeyDown = (event: KeyboardEvent) => {
+       if (event.key === 'Escape') setLightboxSrc(null)
+     }
+-    window.addEventListener('keydown', onKeyDown)
+-    return () => window.removeEventListener('keydown', onKeyDown)
++    getRepoInputRoot().addEventListener('keydown', onKeyDown)
++    return () => getRepoInputRoot().removeEventListener('keydown', onKeyDown)
+   }, [lightboxSrc])
+ 
+   if (editor == null || json == null) {
+@@ -257,10 +258,11 @@
+   // 内容已加载时 setLoggedIn(true) 走已有跳转链（normalAccess 探测 → 跳编辑页）；
+   // 内容尚未加载（登录才可访问错误页，vo 仍为空）则直接刷新，让带 cookie 的 getPublicShare 重新加载。
+   const handleLogin = useCallback(() => {
++    const redirectAuth = captureRepoAuthRedirect()
+     checkLogin()
+       .then((res) => {
+         if (!res.loggedIn) {
+-          window.location.href = res.loginUrl
++          redirectAuth(res.loginUrl)
+           return
+         }
+         if (vo == null) {
+@@ -270,7 +272,7 @@
+         }
+       })
+       .catch(() => {
+-        window.location.href = '/login'
++        redirectAuth('/login')
+       })
+   }, [vo])
+ 
+@@ -295,9 +297,9 @@
+   useEffect(() => {
+     const title = (vo?.title ?? '').trim()
+     const site = getSiteTitle()
+-    document.title = title === '' ? site : site ? `${site} - ${title}` : title
++    setRepoDocumentTitle(title === '' ? site : site ? `${site} - ${title}` : title)
+     return () => {
+-      document.title = getSiteTitle()
++      setRepoDocumentTitle(getSiteTitle())
+     }
+   }, [vo?.title])
+ 
+@@ -470,11 +472,11 @@
+   useEffect(() => {
+     if (!noCopy) return
+     const onClobber = (event: ClipboardEvent) => event.preventDefault()
+-    document.addEventListener('copy', onClobber)
+-    document.addEventListener('cut', onClobber)
++    getRepoInputRoot().addEventListener('copy', onClobber)
++    getRepoInputRoot().addEventListener('cut', onClobber)
+     return () => {
+-      document.removeEventListener('copy', onClobber)
+-      document.removeEventListener('cut', onClobber)
++      getRepoInputRoot().removeEventListener('copy', onClobber)
++      getRepoInputRoot().removeEventListener('cut', onClobber)
+     }
+   }, [noCopy])
+ 
+diff --git a/src/components/DataTableEditor.tsx b/src/components/DataTableEditor.tsx
+--- a/src/components/DataTableEditor.tsx
++++ b/src/components/DataTableEditor.tsx
+@@ -1,3 +1,4 @@
++import { getRepoPortalRoot } from '../hostRuntime'
+ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+ import type { RefObject } from 'react'
+ import { createPortal } from 'react-dom'
+@@ -2769,7 +2770,7 @@
+             新建透视页面
+           </button>
+         </div>,
+-        document.body,
++        getRepoPortalRoot(),
+       )}
+ 
+       {/* 数据表 ⋮ 菜单（portal 到 body：fixed 定位，免受侧栏 overflow 裁剪） */}
+@@ -2797,7 +2798,7 @@
+             删除
+           </button>
+         </div>,
+-        document.body,
++        getRepoPortalRoot(),
+       )}
+ 
+       {/* 视图 ⋮ 菜单（view-0「表格」只有重命名，不可删除） */}
+@@ -2843,7 +2844,7 @@
+             </button>
+           )}
+         </div>,
+-        document.body,
++        getRepoPortalRoot(),
+       )}
+ 
+       {/* 新建视图菜单（视图栏「＋」）：先选形态——表格 / 看板是两种视图类型，
+@@ -2869,7 +2870,7 @@
+             新建看板视图
+           </button>
+         </div>,
+-        document.body,
++        getRepoPortalRoot(),
+       )}
+ 
+       {/* 底层无头引擎：挂载但离屏，驱动协作/快照/导出（可见交互全部走上面的网格） */}
+diff --git a/src/components/DataTableKanban.tsx b/src/components/DataTableKanban.tsx
+--- a/src/components/DataTableKanban.tsx
++++ b/src/components/DataTableKanban.tsx
+@@ -1,3 +1,4 @@
++import { getRepoPortalRoot } from '../hostRuntime'
+ import { useEffect, useMemo, useRef, useState } from 'react'
+ import type { ReactNode } from 'react'
+ import { createPortal } from 'react-dom'
+@@ -607,7 +608,7 @@
+             </button>
+           )}
+         </div>,
+-        document.body,
++        getRepoPortalRoot(),
+       )}
+ 
+       {/* 点击卡片弹出的记录详情（与表格视图「展开记录」同一个抽屉实现）：逐字段就地编辑 */}
+diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
+--- a/src/components/DataTableGrid.tsx
++++ b/src/components/DataTableGrid.tsx
+@@ -1,3 +1,4 @@
++import { getRepoPortalRoot } from '../hostRuntime'
+ import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+ import { createPortal } from 'react-dom'
+ import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react'
+@@ -1464,7 +1465,7 @@
+         const content = anchor != null && POP_EDITOR_TYPES.has(f.schema.type)
+           ? createPortal(
+               <div className="dtgrid__pop-host" style={popHostStyle(anchor)}>{cellContent}</div>,
+-              document.body,
++              getRepoPortalRoot(),
+             )
+           : cellContent
+         // 单元格级填色：命中规则的字段单元格叠加 8% 透明度渐变（与行 hover/选中底色分层共存，不盖交互态）
+@@ -2226,7 +2227,7 @@
+             </button>
+           )}
+         </div>,
+-        document.body,
++        getRepoPortalRoot(),
+       )}
+ 
+       {/* 行右键菜单（Excel 式）：在上方/下方插入记录 + 删除记录。物理行操作，
+@@ -2273,7 +2274,7 @@
+             删除记录
+           </button>
+         </div>,
+-        document.body,
++        getRepoPortalRoot(),
+       )}
+ 
+       {/* #4 表头右键菜单：插入/移动/固定/编辑/删除字段（视觉序操作，落库只动 fieldOrder/frozenCount，
+@@ -2347,7 +2348,7 @@
+               </button>
+             )}
+           </div>,
+-          document.body,
++          getRepoPortalRoot(),
+         )
+       })()}
+     </div>
+diff --git a/src/components/CollabEditor.tsx b/src/components/CollabEditor.tsx
+--- a/src/components/CollabEditor.tsx
++++ b/src/components/CollabEditor.tsx
+@@ -1,3 +1,4 @@
++import { getRepoInputRoot, getRepoPortalRoot } from '../hostRuntime'
+ import { useCallback, useEffect, useRef, useState } from 'react'
+ import { createPortal } from 'react-dom'
+ import { EditorContent, useEditor } from '@tiptap/react'
+@@ -1690,12 +1691,12 @@
+     const onKeyDown = (event: KeyboardEvent) => {
+       if (event.key === 'Escape') setLightboxSrc(null)
+     }
+-    const prevOverflow = document.body.style.overflow
+-    document.body.style.overflow = 'hidden'
+-    window.addEventListener('keydown', onKeyDown)
++    const prevOverflow = getRepoPortalRoot().style.overflow
++    getRepoPortalRoot().style.overflow = 'hidden'
++    getRepoInputRoot().addEventListener('keydown', onKeyDown)
+     return () => {
+-      window.removeEventListener('keydown', onKeyDown)
+-      document.body.style.overflow = prevOverflow
++      getRepoInputRoot().removeEventListener('keydown', onKeyDown)
++      getRepoPortalRoot().style.overflow = prevOverflow
+     }
+   }, [lightboxSrc])
+ 
+diff --git a/src/components/SheetEditor.tsx b/src/components/SheetEditor.tsx
+--- a/src/components/SheetEditor.tsx
++++ b/src/components/SheetEditor.tsx
+@@ -1,3 +1,4 @@
++import { getRepoInputRoot, getRepoPortalRoot } from '../hostRuntime'
+ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+ import type { Editor } from '@tiptap/core'
+ import * as Y from 'yjs'
+@@ -391,7 +392,7 @@
+       }
+       const moveTarget: HTMLElement | Window = captured ? dragger : window
+       dragger.classList.add('is-dragging')
+-      document.body.classList.add('sheet-fxbar-dragging')
++      getRepoPortalRoot().classList.add('sheet-fxbar-dragging')
+       root.style.transition = 'none' // 官方根节点带 univer-transition-[height]，拖拽必须关掉否则不跟手
+ 
+       const onMove = (ev: PointerEvent) => {
+@@ -408,7 +409,7 @@
+         moveTarget.removeEventListener('pointercancel', onUp as EventListener)
+         if (captured && dragger.hasPointerCapture(ev.pointerId)) dragger.releasePointerCapture(ev.pointerId)
+         dragger.classList.remove('is-dragging')
+-        document.body.classList.remove('sheet-fxbar-dragging')
++        getRepoPortalRoot().classList.remove('sheet-fxbar-dragging')
+         root.style.transition = ''
+         if (dragH <= FX_BAR_COLLAPSE_SNAP_H) {
+           // 收起：清存储；React 态若停在「展开」则点一下官方箭头同步态与图标，
+@@ -1530,8 +1531,8 @@
+       e.stopPropagation()
+       menuButton.click()
+     }
+-    document.addEventListener('keydown', handleMenuInputEnter, true)
+-    return () => document.removeEventListener('keydown', handleMenuInputEnter, true)
++    getRepoInputRoot().addEventListener('keydown', handleMenuInputEnter, true)
++    return () => getRepoInputRoot().removeEventListener('keydown', handleMenuInputEnter, true)
+   }, [])
+ 
+   // 跨渲染稳定的实例句柄
+@@ -2574,7 +2575,7 @@
+         const a = document.createElement('a')
+         a.href = url
+         a.download = `${title === '' ? '表格' : title}.xlsx`
+-        document.body.appendChild(a)
++        getRepoPortalRoot().appendChild(a)
+         a.click()
+         a.remove()
+         window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+diff --git a/src/extensions/mention.tsx b/src/extensions/mention.tsx
+--- a/src/extensions/mention.tsx
++++ b/src/extensions/mention.tsx
+@@ -1,3 +1,4 @@
++import { getRepoPortalRoot } from '../hostRuntime'
+ import Mention from '@tiptap/extension-mention'
+ import { ReactRenderer } from '@tiptap/react'
+ import type { SuggestionKeyDownProps, SuggestionOptions, SuggestionProps } from '@tiptap/suggestion'
+@@ -184,7 +185,7 @@
+           component = new ReactRenderer(MentionList, { props, editor: props.editor })
+           popup = document.createElement('div')
+           popup.className = 'mention-suggestion'
+-          document.body.appendChild(popup)
++          getRepoPortalRoot().appendChild(popup)
+           popup.appendChild(component.element)
+           positionPopup(props, popup)
+         },
+diff --git a/src/lib/api.ts b/src/lib/api.ts
+--- a/src/lib/api.ts
++++ b/src/lib/api.ts
+@@ -1,3 +1,4 @@
++import { captureRepoAuthRedirect, getRepoPortalRoot, isRepoEmbedded } from '../hostRuntime'
+ /**
+  * 文档协作后端 API 封装。
+  * 后端命名空间为 /api/repo（浏览器登录态，走 AuthInterceptor；/api/v1 是 ApiKey 专用，勿用）。
+@@ -35,19 +36,20 @@
+  * - code=4011：message 是服务端指定的跳转地址，直接跳过去（地址缺失时兜底 /login）。
+  * 返回 true 表示已触发跳转；其余 code 返回 false，交由调用方正常抛错。
+  */
+-function redirectOnAuthError(code: string, message?: string | null): boolean {
++function redirectOnAuthError(code: string, message: string | null | undefined, redirect: (target: string) => void): boolean {
+   if (code === '4010') {
+-    window.location.href = '/login'
++    redirect('/login')
+     return true
+   }
+   if (code === '4011') {
+-    window.location.href = message != null && message.trim() !== '' ? message : '/login'
++    redirect(message != null && message.trim() !== '' ? message : '/login')
+     return true
+   }
+   return false
+ }
+ 
+ async function request<T>(path: string, init?: RequestInit, prefix: string = '/api/repo', skipAuthRedirect = false): Promise<T> {
++  const redirectAuth = captureRepoAuthRedirect()
+   const hasJsonBody = init?.body != null && typeof init.body === 'string'
+   const resp = await fetch(`${API_BASE}${prefix}${path}`, {
+     credentials: 'include',
+@@ -64,10 +66,11 @@
+     envelope = null
+   }
+   if (envelope == null) {
++    if (isRepoEmbedded() && !skipAuthRedirect && resp.status === 401) redirectAuth('/login')
+     throw new ApiError(String(resp.status), `HTTP ${resp.status}`)
+   }
+   if (envelope.code !== REQ_SUCCESS) {
+-    if (!skipAuthRedirect) redirectOnAuthError(envelope.code, envelope.message)
++    if (!skipAuthRedirect) redirectOnAuthError(envelope.code, envelope.message, redirectAuth)
+     throw new ApiError(envelope.code, envelope.message ?? `请求失败（${envelope.code}）`)
+   }
+   return (envelope.data ?? null) as T
+@@ -264,6 +267,7 @@
+   targetId?: number,
+   onProgress?: (percent: number) => void,
+ ): Promise<FileUploadVO> {
++  const redirectAuth = captureRepoAuthRedirect()
+   const form = new FormData()
+   form.append('file', file)
+   if (targetType != null && targetType !== '') form.append('targetType', targetType)
+@@ -302,10 +306,11 @@
+     envelope = null
+   }
+   if (envelope == null) {
++    if (isRepoEmbedded() && resp.status === 401) redirectAuth('/login')
+     throw new ApiError(String(resp.status), `上传失败（HTTP ${resp.status}）`)
+   }
+   if (envelope.code !== REQ_SUCCESS) {
+-    redirectOnAuthError(envelope.code, envelope.message)
++    redirectOnAuthError(envelope.code, envelope.message, redirectAuth)
+     throw new ApiError(envelope.code, envelope.message ?? `上传失败（${envelope.code}）`)
+   }
+   const vo = (envelope.data ?? null) as FileUploadVO
+@@ -655,7 +660,7 @@
+   const a = document.createElement('a')
+   a.href = url
+   a.download = fileName
+-  document.body.appendChild(a)
++  getRepoPortalRoot().appendChild(a)
+   a.click()
+   a.remove()
+   window.setTimeout(() => URL.revokeObjectURL(url), 4000)
+diff --git a/src/lib/sheetContextMenu.ts b/src/lib/sheetContextMenu.ts
+--- a/src/lib/sheetContextMenu.ts
++++ b/src/lib/sheetContextMenu.ts
+@@ -1,3 +1,4 @@
++import { getRepoPortalRoot } from '../hostRuntime'
+ import type { IAccessor, ICommand, Univer } from '@univerjs/core'
+ import { CommandType } from '@univerjs/core'
+ import { SheetsSelectionsService } from '@univerjs/sheets'
+@@ -100,7 +101,7 @@
+       ta.value = url
+       ta.style.position = 'fixed'
+       ta.style.opacity = '0'
+-      document.body.appendChild(ta)
++      getRepoPortalRoot().appendChild(ta)
+       ta.select()
+       document.execCommand('copy')
+       ta.remove()
+diff --git a/src/lib/slidePdf.ts b/src/lib/slidePdf.ts
+--- a/src/lib/slidePdf.ts
++++ b/src/lib/slidePdf.ts
+@@ -1,3 +1,4 @@
++import { getRepoPortalRoot } from '../hostRuntime'
+ /**
+  * slidePdf：把编辑后的 SlideModel[] 导出为 PDF（前端所见即所得）。
+  * 离屏注入 renderSlidesToHtml（与画布渲染同源）→ html2canvas 逐页截图 → jspdf 合成。
+@@ -84,7 +85,7 @@
+   const slidesBox = document.createElement('div')
+   slidesBox.innerHTML = renderSlidesToHtml(models)
+   host.appendChild(slidesBox)
+-  document.body.appendChild(host)
++  getRepoPortalRoot().appendChild(host)
+ 
+   try {
+     await inlineSameOriginImages(host)
+diff --git a/src/components/ShareDialog.tsx b/src/components/ShareDialog.tsx
+--- a/src/components/ShareDialog.tsx
++++ b/src/components/ShareDialog.tsx
+@@ -1,3 +1,4 @@
++import { getRepoPortalRoot } from '../hostRuntime'
+ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+ import type { RepoShareLinkStatsVO, RepoShareLinkVO, RepoShareStatusVO, RepoShareUserVO, RepoShareVO, SpaceVO, UserSearchVO } from '../lib/api'
+ import {
+@@ -64,7 +65,7 @@
+   ta.value = text
+   ta.style.position = 'fixed'
+   ta.style.opacity = '0'
+-  document.body.appendChild(ta)
++  getRepoPortalRoot().appendChild(ta)
+   ta.select()
+   try {
+     document.execCommand('copy')
+diff --git a/src/components/EditorContextMenu.tsx b/src/components/EditorContextMenu.tsx
+--- a/src/components/EditorContextMenu.tsx
++++ b/src/components/EditorContextMenu.tsx
+@@ -1,3 +1,4 @@
++import { getRepoInputRoot } from '../hostRuntime'
+ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+ import type { Editor } from '@tiptap/core'
+ import { TextSelection } from '@tiptap/pm/state'
+@@ -86,10 +87,10 @@
+       if (event.key === 'Escape') close()
+     }
+     document.addEventListener('mousedown', onMouseDown)
+-    document.addEventListener('keydown', onKeyDown)
++    getRepoInputRoot().addEventListener('keydown', onKeyDown)
+     return () => {
+       document.removeEventListener('mousedown', onMouseDown)
+-      document.removeEventListener('keydown', onKeyDown)
++      getRepoInputRoot().removeEventListener('keydown', onKeyDown)
+     }
+   }, [menu, close])
+ 
+diff --git a/src/components/TableGridPicker.tsx b/src/components/TableGridPicker.tsx
+--- a/src/components/TableGridPicker.tsx
++++ b/src/components/TableGridPicker.tsx
+@@ -1,3 +1,4 @@
++import { getRepoInputRoot } from '../hostRuntime'
+ import { useCallback, useEffect, useRef, useState } from 'react'
+ 
+ /** 网格行列上限：5 行 × 8 列（对照飞书/Notion 的表格快速选择） */
+@@ -50,9 +51,9 @@
+         setSel((s) => ({ ...s, cols: Math.max(s.cols - 1, 1) }))
+       }
+     }
+-    document.addEventListener('keydown', onKeyDown, true)
++    getRepoInputRoot().addEventListener('keydown', onKeyDown, true)
+     return () => {
+-      document.removeEventListener('keydown', onKeyDown, true)
++      getRepoInputRoot().removeEventListener('keydown', onKeyDown, true)
+     }
+   }, [onPick, onCancel])
+ 
+diff --git a/src/components/BoardEditor.tsx b/src/components/BoardEditor.tsx
+--- a/src/components/BoardEditor.tsx
++++ b/src/components/BoardEditor.tsx
+@@ -1,3 +1,4 @@
++import { getRepoInputRoot } from '../hostRuntime'
+ import { useEffect, useRef, useState } from 'react'
+ import { BOARD_H, BOARD_SHAPES, BOARD_W, renderBoardElBody, type BoardEl, type BoardModel } from '../lib/board'
+ import { renderShapeSvgBody, type SlideShape } from '../lib/pptx'
+@@ -221,8 +222,8 @@
+         setTool('select')
+       }
+     }
+-    window.addEventListener('keydown', onKey)
+-    return () => window.removeEventListener('keydown', onKey)
++    getRepoInputRoot().addEventListener('keydown', onKey)
++    return () => getRepoInputRoot().removeEventListener('keydown', onKey)
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [sel])
+ 
+diff --git a/src/components/SlideEditor.tsx b/src/components/SlideEditor.tsx
+--- a/src/components/SlideEditor.tsx
++++ b/src/components/SlideEditor.tsx
+@@ -1,3 +1,4 @@
++import { getRepoInputRoot } from '../hostRuntime'
+ import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+ import * as Y from 'yjs'
+ import { IndexeddbPersistence } from 'y-indexeddb'
+@@ -3395,12 +3396,12 @@
+     // 点外部/失焦/Esc/滚动缩略图 → 关菜单。菜单内部 pointerdown 已 stopPropagation，不触发 window 关闭
+     window.addEventListener('pointerdown', close)
+     window.addEventListener('blur', close)
+-    window.addEventListener('keydown', onKey)
++    getRepoInputRoot().addEventListener('keydown', onKey)
+     pages?.addEventListener('wheel', close)
+     return () => {
+       window.removeEventListener('pointerdown', close)
+       window.removeEventListener('blur', close)
+-      window.removeEventListener('keydown', onKey)
++      getRepoInputRoot().removeEventListener('keydown', onKey)
+       pages?.removeEventListener('wheel', close)
+     }
+   }, [thumbCtx])
+@@ -3421,11 +3422,11 @@
+     }
+     window.addEventListener('pointerdown', onDown, true)
+     window.addEventListener('blur', close)
+-    window.addEventListener('keydown', onKey)
++    getRepoInputRoot().addEventListener('keydown', onKey)
+     return () => {
+       window.removeEventListener('pointerdown', onDown, true)
+       window.removeEventListener('blur', close)
+-      window.removeEventListener('keydown', onKey)
++      getRepoInputRoot().removeEventListener('keydown', onKey)
+     }
+   }, [elCtx])
+ 
+@@ -3718,8 +3719,8 @@
+         return
+       }
+     }
+-    window.addEventListener('keydown', onKeyDown)
+-    return () => window.removeEventListener('keydown', onKeyDown)
++    getRepoInputRoot().addEventListener('keydown', onKeyDown)
++    return () => getRepoInputRoot().removeEventListener('keydown', onKeyDown)
+   }, [])
+ 
+   // 演示模式键盘：Esc 退出 / 方向键切页
+@@ -3737,8 +3738,8 @@
+         playbackGo(-1)
+       }
+     }
+-    window.addEventListener('keydown', onKey)
+-    return () => window.removeEventListener('keydown', onKey)
++    getRepoInputRoot().addEventListener('keydown', onKey)
++    return () => getRepoInputRoot().removeEventListener('keydown', onKey)
+   }, [playback.active])
+ 
+   // 当前页切换时，左栏激活缩略图自动滚到可视区（键盘上下连按，切到被遮住的下方/上方页时能顶出来）
+diff --git a/src/components/FeedbackHost.tsx b/src/components/FeedbackHost.tsx
+--- a/src/components/FeedbackHost.tsx
++++ b/src/components/FeedbackHost.tsx
+@@ -1,3 +1,4 @@
++import { getRepoInputRoot } from '../hostRuntime'
+ import { useEffect, useRef, useSyncExternalStore, useState } from 'react'
+ import { getConfirm, getPrompt, getToasts, subscribeFeedback } from '../lib/feedback-state'
+ import { CheckIcon, InfoIcon, XIcon } from './icons'
+@@ -77,8 +78,8 @@
+         confirm.resolve(true)
+       }
+     }
+-    window.addEventListener('keydown', onKey)
+-    return () => window.removeEventListener('keydown', onKey)
++    getRepoInputRoot().addEventListener('keydown', onKey)
++    return () => getRepoInputRoot().removeEventListener('keydown', onKey)
+   }, [confirm])
+ 
+   return (
+diff --git a/src/components/InsertMenuPopover.tsx b/src/components/InsertMenuPopover.tsx
+--- a/src/components/InsertMenuPopover.tsx
++++ b/src/components/InsertMenuPopover.tsx
+@@ -1,3 +1,4 @@
++import { getRepoInputRoot } from '../hostRuntime'
+ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+ import type { Editor } from '@tiptap/core'
+ import type { FileInputHostHandle } from './FileInputHost'
+@@ -195,9 +196,9 @@
+         onClose()
+       }
+     }
+-    document.addEventListener('keydown', onKeyDown, true)
++    getRepoInputRoot().addEventListener('keydown', onKeyDown, true)
+     return () => {
+-      document.removeEventListener('keydown', onKeyDown, true)
++      getRepoInputRoot().removeEventListener('keydown', onKeyDown, true)
+     }
+   })
+ 
+diff --git a/src/pages/FolderView.tsx b/src/pages/FolderView.tsx
+--- a/src/pages/FolderView.tsx
++++ b/src/pages/FolderView.tsx
+@@ -1,3 +1,4 @@
++import { getRepoInputRoot } from '../hostRuntime'
+ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+ import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react'
+ import { useNavigate, useParams } from 'react-router-dom'
+@@ -257,8 +258,8 @@
+     const onKey = (event: KeyboardEvent) => {
+       if (event.key === 'Escape') closePreview()
+     }
+-    window.addEventListener('keydown', onKey)
+-    return () => window.removeEventListener('keydown', onKey)
++    getRepoInputRoot().addEventListener('keydown', onKey)
++    return () => getRepoInputRoot().removeEventListener('keydown', onKey)
+   }, [preview, closePreview])
+ 
+   // 空间成员映射（「更新人」列展示名）
+diff --git a/src/components/LibraryNav.tsx b/src/components/LibraryNav.tsx
+--- a/src/components/LibraryNav.tsx
++++ b/src/components/LibraryNav.tsx
+@@ -52,6 +52,13 @@
+ let cachedSections: SpaceSection[] | null = null
+ let cachedExpanded: Record<number, boolean> = {}
+ let cachedTrees: Record<number, RepoPageTreeNodeVO[]> = {}
++
++/** 宿主真正重挂/换账号时清空模块缓存，隐藏保活期间不调用。 */
++export function resetLibraryNavCache(): void {
++  cachedSections = null
++  cachedExpanded = {}
++  cachedTrees = {}
++}
+ 
+ /** 从模块缓存同步查空间名（供 SpacePage 首屏标题用，避免「空间+ID」占位闪现） */
+ export function getCachedSpaceName(spaceId: number): string | null {

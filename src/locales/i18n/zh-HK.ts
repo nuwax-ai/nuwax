@@ -1,6 +1,9 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_HK: SystemLangMap = {
+  'PC.Components.MicroAppHost.loading': '正在載入',
+  'PC.Components.MicroAppHost.loadFailed': '暫時無法載入，請重試。',
+  'PC.Components.MicroAppHost.retry': '重新載入',
   "PC.Components.AppStartup.loading": "正在載入應用程式",
   "PC.Components.AppStartup.waitingHint": "載入時間較長，請檢查網絡後重試。你也可以繼續等待。",
   "PC.Components.AppStartup.failed": "應用程式載入失敗",

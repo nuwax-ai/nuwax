@@ -1,6 +1,9 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const JA_JP: SystemLangMap = {
+  'PC.Components.MicroAppHost.loading': '読み込み中',
+  'PC.Components.MicroAppHost.loadFailed': '読み込めませんでした。もう一度お試しください。',
+  'PC.Components.MicroAppHost.retry': '再読み込み',
   "PC.Components.AppStartup.loading": "アプリを読み込んでいます",
   "PC.Components.AppStartup.waitingHint": "読み込みに時間がかかっています。ネットワークを確認して再試行するか、そのままお待ちください。",
   "PC.Components.AppStartup.failed": "アプリを読み込めませんでした",

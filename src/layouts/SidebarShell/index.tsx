@@ -30,6 +30,7 @@ import DynamicMenusLayout from '../DynamicMenusLayout';
 import HoverMenu from '../HoverMenu';
 import styles from '../index.less';
 import Message from '../Message';
+import MicroAppHost from '../MicroAppHost';
 import MobileMenu from '../MobileMenu';
 import Setting from '../Setting';
 import ClientConversationKeepAlive from './ClientConversationKeepAlive';
@@ -288,6 +289,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
           {children}
           <OpenedAppTabsKeepAlive />
           <ClientConversationKeepAlive />
+          <MicroAppHost />
         </div>
       );
     }
@@ -332,6 +334,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
             可见,路由组件空壳让位;其余路由整体隐藏不占位,iframe 保活不重载) */}
         <OpenedAppTabsKeepAlive />
         <ClientConversationKeepAlive />
+        <MicroAppHost />
       </div>
     );
   }, [
