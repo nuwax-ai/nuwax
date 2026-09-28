@@ -1119,12 +1119,15 @@ describe('conversationInfo model', () => {
 
       const { result } = renderHook(() => useConversationInfo());
 
-      // 默认（未门控）：走全量拉取，同时发刷新信号给页面上正在渲染的懒加载树
+      // 默认（未门控）：单层参数拉取，并发刷新信号更新可见树
       const triggerBeforeDefault = result.current.fileTreeRefreshTrigger;
       await act(async () => {
         await result.current.refreshFileListImmediately(1001);
       });
-      expect(runStaticFileList).toHaveBeenCalledWith(1001);
+      expect(runStaticFileList).toHaveBeenCalledWith(1001, {
+        relativePath: '',
+        recursive: false,
+      });
       expect(result.current.fileTreeRefreshTrigger).toBeGreaterThan(
         triggerBeforeDefault,
       );
@@ -1142,7 +1145,7 @@ describe('conversationInfo model', () => {
         triggerBefore,
       );
 
-      // 复位后恢复全量拉取
+      // 复位后门控关闭，再次带单层参数拉取
       act(() => {
         result.current.setFileTreeSelfManaged(false);
       });
