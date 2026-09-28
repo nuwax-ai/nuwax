@@ -68,9 +68,7 @@ export interface UnifiedChatSessionProps {
   isAwaitingChatTerminal?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   showDebug?: boolean;
-  /** 会话快捷导航最小显示宽度；分栏工作台可覆盖默认的 600px。 */
-  quickNavMinContainerWidth?: number;
-  /** 工作台可在单轮会话实际可滚动时显示导航；默认 auto 沿用长会话门槛。 */
+  /** 默认至少两个导航项时显示；工作台可额外显示单轮可滚动会话的导航。 */
   quickNavDisplayMode?: 'auto' | 'scrollable';
   loadingSuggest?: boolean; // 会话建议加载状态
   // 与 RecommendListProps 同口径：开场白问题推荐（对象）与轮次后建议（字符串）两态

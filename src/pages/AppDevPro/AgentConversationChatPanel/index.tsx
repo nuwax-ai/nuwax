@@ -229,7 +229,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           isAwaitingChatTerminal={isAwaitingChatTerminal}
           messageBottomMode="chat"
           showDebug={false}
-          quickNavMinContainerWidth={400}
           quickNavDisplayMode="scrollable"
           chatSuggestList={chatSuggestList}
           agentInfo={{

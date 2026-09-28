@@ -69,7 +69,6 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   isAwaitingChatTerminal = false,
   messageBottomMode = 'home',
   showDebug,
-  quickNavMinContainerWidth,
   quickNavDisplayMode,
   loadingSuggest = false,
   chatSuggestList = [],
@@ -445,7 +444,6 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
       <ConversationQuickNav
         scrollContainerRef={messageViewRef}
         messageList={messageList ?? []}
-        minContainerWidth={quickNavMinContainerWidth}
         displayMode={quickNavDisplayMode}
       />
 

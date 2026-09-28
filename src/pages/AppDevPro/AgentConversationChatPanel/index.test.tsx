@@ -94,7 +94,6 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
       />,
     );
     expect(latestUnifiedProps()).toMatchObject({
-      quickNavMinContainerWidth: 400,
       quickNavDisplayMode: 'scrollable',
     });
     latestUnifiedProps().onSendMessage(
@@ -141,7 +140,6 @@ describe('AppDevPro AgentConversationChatPanel 双线分派', () => {
     expect(latestUnifiedProps().onSendMessage).toBe(runtimeOnSendMessage);
     expect(latestUnifiedProps().messageList).toBe(runtimeMessageList);
     expect(latestUnifiedProps()).toMatchObject({
-      quickNavMinContainerWidth: 400,
       quickNavDisplayMode: 'scrollable',
     });
   });
