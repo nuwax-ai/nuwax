@@ -423,7 +423,12 @@ export default () => {
         return;
       }
       setFileTreeDataLoading(true);
-      await runGetStaticFileList(cId);
+      // 单层刷新，并通知页面上的文件树重拉已展开目录，显示最新结果。
+      setFileTreeRefreshTrigger(Date.now());
+      await runGetStaticFileList(cId, {
+        relativePath: '',
+        recursive: false,
+      });
     },
     [runGetStaticFileList],
   );
@@ -431,7 +436,7 @@ export default () => {
   // 处理文件列表刷新事件（节流，供 SSE / 自动触发场景防刷）
   const handleRefreshFileList = useMemo(
     () =>
-      throttle(refreshFileListImmediately, 2000, {
+      throttle(refreshFileListImmediately, 5000, {
         leading: true,
         trailing: true,
       }),
@@ -1638,7 +1643,7 @@ export default () => {
       if (eventType === ConversationEventTypeEnum.ERROR) {
         newMessage = reduceTerminalEvent(
           list,
-          currentMessage.id,
+          currentMessage?.id?.toString(),
           res,
           (message) => message,
           () => closeOpenThinkBlock(),

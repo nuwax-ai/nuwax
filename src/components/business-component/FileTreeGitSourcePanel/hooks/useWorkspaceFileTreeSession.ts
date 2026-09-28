@@ -85,10 +85,10 @@ export function useWorkspaceFileTreeSession(options: {
   refreshAllLoadedRef.current = directory.refreshAllLoaded;
   /** 同一个刷新时间戳只处理一次 */
   const handledRefreshTriggerRef = useRef<number>(0);
-  // 文件变更可能连续到达，2 秒内合并成一次，并补上节流窗口结束时的最后一次
+  // 文件变更可能连续到达，5 秒内合并成一次，并补上节流窗口结束时的最后一次
   const throttledRefresh = useMemo(
     () =>
-      throttle(() => refreshAllLoadedRef.current(), 2000, {
+      throttle(() => refreshAllLoadedRef.current(), 5000, {
         leading: true,
         trailing: true,
       }),
