@@ -61,6 +61,8 @@ export async function apiGetStaticFileList(
 // 若网关未透传该端点会失败，调用方需准备本地过滤兜底）
 export interface ISearchFilesParams {
   cId: number;
+  // 返回条目类型：file-仅文件、dir-仅目录、all-全部
+  type?: 'file' | 'dir' | 'all';
   // 搜索关键词（至少 1 个字符；目录名/相对路径子串也可命中）
   kw: string;
   // 自定义根目录（绝对路径）
@@ -92,6 +94,7 @@ export async function apiSearchFiles(
     limit = 200,
     maxVisit = 20000,
     timeoutMs = 2000,
+    type,
   } = params;
   return request('/api/computer/static/search-files', {
     method: 'GET',
@@ -103,6 +106,7 @@ export async function apiSearchFiles(
       limit,
       maxVisit,
       timeoutMs,
+      ...(type ? { type } : {}),
     },
   });
 }

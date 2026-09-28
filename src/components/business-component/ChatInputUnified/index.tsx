@@ -193,8 +193,8 @@ export interface ChatInputUnifiedProps {
   onClearSelectedTag?: () => void;
   /**
    * 首页项目上框（项目列表「+ 新建会话」透传）：输入卡底部灰底栏展示绑定项目
-   * （图标 + 名称，可删除）。存在期间工作区/沙箱由项目隐含，
-   * 隐藏工作目录栏与电脑选择器。
+   * （图标 + 名称，可删除）。常规项目可通过 pinnedProjectSandboxSelectable
+   * 开放电脑选择器和工作目录栏。
    */
   pinnedProject?: {
     /** 项目名称 */
@@ -205,8 +205,7 @@ export interface ChatInputUnifiedProps {
     icon?: string;
   };
   /**
-   * 参与者上框常规项目时开放沙箱自选（多人参与）：解除上框期间电脑选择器与
-   * 工作目录栏的隐藏（项目沙箱可能绑定创建者的个人电脑，参与者不可用）。
+   * 常规项目上框时开放沙箱自选：解除上框期间电脑选择器与工作目录栏的隐藏。
    * 默认 false 维持「上框期间沙箱由项目隐含」现状。
    */
   pinnedProjectSandboxSelectable?: boolean;
@@ -1215,6 +1214,17 @@ const ChatInputUnifiedImpl: React.FC<
     [isEnableSubscription, querySkillSubscriptionPlans],
   );
 
+  const showPinnedProjectBar = !!pinnedProject && !!onClearPinnedProject;
+  const showWorkspaceDirBar =
+    (isTaskAgentActive || agentType === AgentTypeEnum.TaskAgent) &&
+    !readonly &&
+    !fixedSelection &&
+    (!pinnedProject || pinnedProjectSandboxSelectable) &&
+    !disablePersonalComputer &&
+    !!selectedComputerId &&
+    selectedComputerId !== '-1' &&
+    !!onWorkspaceDirChange;
+
   return (
     <div className={cx('w-full', 'relative', className)}>
       {showGuidQuestions &&
@@ -1970,7 +1980,7 @@ const ChatInputUnifiedImpl: React.FC<
                     {(isTaskAgentActive ||
                       agentType === AgentTypeEnum.TaskAgent) &&
                       // 项目上框期间沙箱由项目隐含，隐藏电脑选择器；
-                      // 参与者自选沙箱场景（pinnedProjectSandboxSelectable）除外
+                      // 常规项目自选沙箱场景（pinnedProjectSandboxSelectable）除外
                       (!pinnedProject || pinnedProjectSandboxSelectable) &&
                       !readonly && (
                         <ComputerTypeSelector
@@ -2019,130 +2029,135 @@ const ChatInputUnifiedImpl: React.FC<
                     )}
                   </VoiceFooter.Right>
                 </footer>
-                {/**
-                 * 项目上框栏（项目列表「+ 新建会话」）：与工作目录栏同槽位同基样式
-                 * （workspace-dir-bar 灰底贴边栏），直接展示项目名并可移除
-                 * （清空按钮贴文案并排、始终可见；项目类型不作徽标展示，
-                 * 降级为整行 title 悬停提示）；存在期间工作区由项目隐含，
-                 * 不渲染工作目录栏与电脑选择器。
-                 */}
-                {pinnedProject && onClearPinnedProject && (
+                {/* 项目与工作目录共用底部栏，同行展示。 */}
+                {(showPinnedProjectBar || showWorkspaceDirBar) && (
                   <div
                     className={cx(
                       styles['workspace-dir-bar'],
-                      styles['pinned-project-bar'],
+                      styles['workspace-context-bar'],
                     )}
-                    title={
-                      pinnedProject.projectType ===
-                      AgentComponentTypeEnum.UserApp
-                        ? t('PC.Pages.Home.pinnedProject.userAppBadge')
-                        : t('PC.Pages.Home.pinnedProject.normalProjectBadge')
-                    }
                   >
-                    {pinnedProjectIcon.displaySrc ? (
-                      <img
-                        src={pinnedProjectIcon.displaySrc}
-                        alt=""
-                        className={cx(styles['pinned-project-icon'])}
-                      />
-                    ) : (
-                      <FolderOutlined
-                        className={cx(styles['pinned-project-icon'])}
-                      />
-                    )}
-                    <span
-                      className={cx(
-                        styles['workspace-dir-text'],
-                        styles['pinned-project-name'],
-                      )}
-                      title={pinnedProject.name}
-                    >
-                      {pinnedProject.name}
-                    </span>
-                    <Tooltip title={t('PC.Pages.Home.pinnedProject.remove')}>
-                      <button
-                        type="button"
-                        className={cx(styles['pinned-project-remove'])}
-                        aria-label={t('PC.Pages.Home.pinnedProject.remove')}
-                        onClick={onClearPinnedProject}
+                    {pinnedProject && onClearPinnedProject && (
+                      <div
+                        className={cx(styles['pinned-project-bar'], {
+                          [styles['pinned-project-with-directory']]:
+                            showWorkspaceDirBar,
+                        })}
+                        title={
+                          pinnedProject.projectType ===
+                          AgentComponentTypeEnum.UserApp
+                            ? t('PC.Pages.Home.pinnedProject.userAppBadge')
+                            : t(
+                                'PC.Pages.Home.pinnedProject.normalProjectBadge',
+                              )
+                        }
                       >
-                        <CloseOutlined />
-                      </button>
-                    </Tooltip>
+                        {pinnedProjectIcon.displaySrc ? (
+                          <img
+                            src={pinnedProjectIcon.displaySrc}
+                            alt=""
+                            className={cx(styles['pinned-project-icon'])}
+                          />
+                        ) : (
+                          <FolderOutlined
+                            className={cx(styles['pinned-project-icon'])}
+                          />
+                        )}
+                        <span
+                          className={cx(
+                            styles['workspace-dir-text'],
+                            styles['pinned-project-name'],
+                          )}
+                          title={pinnedProject.name}
+                        >
+                          {pinnedProject.name}
+                        </span>
+                        <Tooltip
+                          title={t('PC.Pages.Home.pinnedProject.remove')}
+                        >
+                          <button
+                            type="button"
+                            className={cx(styles['pinned-project-remove'])}
+                            aria-label={t('PC.Pages.Home.pinnedProject.remove')}
+                            onClick={onClearPinnedProject}
+                          >
+                            <CloseOutlined />
+                          </button>
+                        </Tooltip>
+                      </div>
+                    )}
+                    {/**
+                     * 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，
+                     * 仅用户自选个人电脑时展示（智能体绑定电脑 agentSandboxId 固定、
+                     * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspacePath）。
+                     * 「默认工作目录」=不传 workspacePath；「打开电脑文件夹」=可视化浏览弹窗。
+                     */}
+                    {showWorkspaceDirBar &&
+                      selectedComputerId &&
+                      onWorkspaceDirChange && (
+                        <div className={cx(styles['workspace-directory-item'])}>
+                          <Dropdown
+                            trigger={['click']}
+                            menu={{
+                              selectable: true,
+                              selectedKeys: [
+                                workspacePath ? 'pick-folder' : 'default',
+                              ],
+                              items: [
+                                {
+                                  key: 'default',
+                                  icon: <FolderOutlined />,
+                                  label: t(
+                                    'PC.Components.WorkspaceDir.defaultDir',
+                                  ),
+                                },
+                                {
+                                  key: 'pick-folder',
+                                  icon: <FolderOpenOutlined />,
+                                  label: t(
+                                    'PC.Components.WorkspaceDir.openComputerFolder',
+                                  ),
+                                },
+                              ],
+                              onClick: ({ key }: { key: string }) => {
+                                if (key === 'pick-folder') {
+                                  setWorkspaceDirPickerOpen(true);
+                                } else {
+                                  onWorkspaceDirChange('');
+                                }
+                              },
+                            }}
+                          >
+                            <button
+                              type="button"
+                              className={cx(styles['workspace-dir-trigger'])}
+                              title={workspacePath || undefined}
+                            >
+                              <FolderOutlined />
+                              <span
+                                className={cx(styles['workspace-dir-text'])}
+                              >
+                                {workspacePath ||
+                                  t('PC.Components.WorkspaceDir.defaultDir')}
+                              </span>
+                              <DownOutlined
+                                className={cx(styles['workspace-dir-caret'])}
+                              />
+                            </button>
+                          </Dropdown>
+                          <WorkspaceDirPickerModal
+                            sandboxId={selectedComputerId}
+                            open={workspacePathPickerOpen}
+                            onCancel={() => setWorkspaceDirPickerOpen(false)}
+                            onConfirm={(dir) => {
+                              setWorkspaceDirPickerOpen(false);
+                              onWorkspaceDirChange(dir);
+                            }}
+                          />
+                        </div>
+                      )}
                   </div>
                 )}
-                {/**
-                 * 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，
-                 * 仅用户自选个人电脑时展示（智能体绑定电脑 agentSandboxId 固定、
-                 * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspacePath）。
-                 * 「默认工作目录」=不传 workspacePath；「打开电脑文件夹」=可视化浏览弹窗。
-                 */}
-                {(isTaskAgentActive || agentType === AgentTypeEnum.TaskAgent) &&
-                  !readonly &&
-                  !fixedSelection &&
-                  // 上框期间沙箱由项目隐含隐藏目录栏；参与者自选场景除外
-                  (!pinnedProject || pinnedProjectSandboxSelectable) &&
-                  !disablePersonalComputer &&
-                  selectedComputerId &&
-                  selectedComputerId !== '-1' &&
-                  onWorkspaceDirChange && (
-                    <div className={cx(styles['workspace-dir-bar'])}>
-                      <Dropdown
-                        trigger={['click']}
-                        menu={{
-                          selectable: true,
-                          selectedKeys: [
-                            workspacePath ? 'pick-folder' : 'default',
-                          ],
-                          items: [
-                            {
-                              key: 'default',
-                              icon: <FolderOutlined />,
-                              label: t('PC.Components.WorkspaceDir.defaultDir'),
-                            },
-                            {
-                              key: 'pick-folder',
-                              icon: <FolderOpenOutlined />,
-                              label: t(
-                                'PC.Components.WorkspaceDir.openComputerFolder',
-                              ),
-                            },
-                          ],
-                          onClick: ({ key }: { key: string }) => {
-                            if (key === 'pick-folder') {
-                              setWorkspaceDirPickerOpen(true);
-                            } else {
-                              onWorkspaceDirChange('');
-                            }
-                          },
-                        }}
-                      >
-                        <button
-                          type="button"
-                          className={cx(styles['workspace-dir-trigger'])}
-                          title={workspacePath || undefined}
-                        >
-                          <FolderOutlined />
-                          <span className={cx(styles['workspace-dir-text'])}>
-                            {workspacePath ||
-                              t('PC.Components.WorkspaceDir.defaultDir')}
-                          </span>
-                          <DownOutlined
-                            className={cx(styles['workspace-dir-caret'])}
-                          />
-                        </button>
-                      </Dropdown>
-                      <WorkspaceDirPickerModal
-                        sandboxId={selectedComputerId}
-                        open={workspacePathPickerOpen}
-                        onCancel={() => setWorkspaceDirPickerOpen(false)}
-                        onConfirm={(dir) => {
-                          setWorkspaceDirPickerOpen(false);
-                          onWorkspaceDirChange(dir);
-                        }}
-                      />
-                    </div>
-                  )}
               </>
             )}
           </VoiceFooter.Provider>
