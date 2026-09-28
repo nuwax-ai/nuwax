@@ -711,7 +711,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.MonacoEditor.loadingEditorDesc": "お待ちください。Monaco Editor を初期化中です",
   "PC.Components.MonacoEditor.selectFileToEdit": "編集するファイルを選択してください",
   "PC.Components.MonacoEditor.selectFileToEditDesc": "左側のファイル ツリーからファイルを選択するか、新しいファイルを作成して編集を開始します",
-  "PC.Components.MoreActionsMenu.exportResult": "エクスポート結果",
+  "PC.Components.MoreActionsMenu.exportResult": "成果物をエクスポート",
   "PC.Components.MoreActionsMenu.importProject": "プロジェクトのインポート",
   "PC.Components.MoreActionsMenu.restartAgent": "エージェントを再起動します",
   "PC.Components.MoreActionsMenu.restartAgentTooltip": "現在のエージェントが再起動されます",

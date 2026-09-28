@@ -830,7 +830,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.MonacoEditor.loadingEditorDesc": "Please wait, Monaco Editor is initializing",
   "PC.Components.MonacoEditor.selectFileToEdit": "Select a file to edit",
   "PC.Components.MonacoEditor.selectFileToEditDesc": "Select a file from the file tree on the left, or create a new file to start editing",
-  "PC.Components.MoreActionsMenu.exportResult": "Export Result",
+  "PC.Components.MoreActionsMenu.exportResult": "Export artifacts",
   "PC.Components.MoreActionsMenu.importProject": "Import Project",
   "PC.Components.MoreActionsMenu.restartAgent": "Restart Agent",
   "PC.Components.MoreActionsMenu.restartAgentTooltip": "Current agent will restart",

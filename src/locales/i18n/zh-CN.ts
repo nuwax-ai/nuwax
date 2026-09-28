@@ -837,7 +837,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.MonacoEditor.loadingEditorDesc": "请稍候，Monaco Editor正在初始化",
   "PC.Components.MonacoEditor.selectFileToEdit": "选择文件进行编辑",
   "PC.Components.MonacoEditor.selectFileToEditDesc": "从左侧文件树中选择一个文件，或创建新文件开始编辑",
-  "PC.Components.MoreActionsMenu.exportResult": "导出结果",
+  "PC.Components.MoreActionsMenu.exportResult": "导出产物",
   "PC.Components.MoreActionsMenu.importProject": "导入项目",
   "PC.Components.MoreActionsMenu.restartAgent": "重启智能体",
   "PC.Components.MoreActionsMenu.restartAgentTooltip": "当前会话对应的智能体将重启",
