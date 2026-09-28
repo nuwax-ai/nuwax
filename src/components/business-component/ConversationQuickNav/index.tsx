@@ -30,10 +30,9 @@ import { buildQuickNavBlocks, QuickNavBlock } from './blocks';
  * 点击平滑定位到对应轮次；鼠标滑过时线条波浪式变长，悬停 400ms 后
  * 展示该轮预览卡（浮层以命中线条的垂直中点对齐）；样式在
  * src/global.less（conversation-quick-nav-* 全局类）。
- * 分栏工作台可使用 scrollable 模式：只有 1 项时，消息区实际可滚动也显示。
  */
 
-/** 至少两个导航项即显示；工作台另外支持单轮可滚动会话。 */
+/** 所有会话入口统一要求至少两个导航项。 */
 const MIN_BLOCK_COUNT = 2;
 /** scroll-spy 视口判定线：容器顶部往下 35% 处 */
 const ACTIVE_THRESHOLD_RATIO = 0.35;
@@ -55,14 +54,11 @@ const NAV_LEFT_INSET = 10;
 interface ConversationQuickNavProps {
   scrollContainerRef: React.RefObject<HTMLDivElement>;
   messageList: MessageInfo[];
-  /** auto 在至少两个导航项时显示；scrollable 额外支持单轮可滚动会话。 */
-  displayMode?: 'auto' | 'scrollable';
 }
 
 const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
   scrollContainerRef,
   messageList,
-  displayMode = 'auto',
 }) => {
   const blocks = useMemo(() => buildQuickNavBlocks(messageList), [messageList]);
   const [visible, setVisible] = useState(false);
@@ -206,12 +202,7 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       setNavLeft((prev) => (prev === left ? prev : left));
     }
     const nextVisible =
-      clientWidth > 0 &&
-      clientHeight > 0 &&
-      (blocks.length >= MIN_BLOCK_COUNT ||
-        (displayMode === 'scrollable' &&
-          blocks.length > 0 &&
-          scrollHeight > clientHeight));
+      clientWidth > 0 && clientHeight > 0 && blocks.length >= MIN_BLOCK_COUNT;
     setVisible((prev) => (prev === nextVisible ? prev : nextVisible));
     if (!nextVisible) {
       setActiveIndex((prev) => (prev === -1 ? prev : -1));
@@ -255,7 +246,7 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       nextActive = blocks.length - 1;
     }
     setActiveIndex((prev) => (prev === nextActive ? prev : nextActive));
-  }, [blocks, scrollContainerRef, displayMode]);
+  }, [blocks, scrollContainerRef]);
 
   const scheduleMeasure = useCallback(() => {
     if (rafRef.current) return;

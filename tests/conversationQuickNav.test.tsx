@@ -1,7 +1,7 @@
 /**
  * 会话快捷导航（ConversationQuickNav）合同测试：
  * 块构建纯函数（一问一答一块/空消息过滤/锚点/悬停卡片标题与正文）+
- * 两个及以上导航项显示、工作台单轮滚动补充、点击在容器内滚动定位。
+ * 所有入口统一两个及以上导航项显示、点击在容器内滚动定位。
  */
 import {
   buildQuickNavBlocks,
@@ -294,13 +294,13 @@ describe('ConversationQuickNav 组件', () => {
     ).toHaveLength(2);
   });
 
-  describe('工作台 scrollable 模式', () => {
+  describe('统一至少两轮的显示门槛', () => {
     const singleTurnMessages = () => [
       msg(USER, '开发一个应用', 1),
       msg(ASSISTANT, '开发过程输出\n'.repeat(100), 2),
     ];
 
-    const buildWorkbenchContainer = () => {
+    const buildNarrowContainer = () => {
       const container = buildContainer();
       Object.defineProperty(container, 'clientWidth', {
         value: 463,
@@ -316,9 +316,46 @@ describe('ConversationQuickNav 组件', () => {
       vi.stubGlobal('cancelAnimationFrame', window.clearTimeout);
     });
 
-    it('单轮长开发回复显示一条导航，点击只将消息区定位回该轮开头', async () => {
-      const container = buildWorkbenchContainer();
-      const messageList = singleTurnMessages();
+    it.each([
+      { width: 1200, height: 800, scrollHeight: 2400 },
+      { width: 240, height: 800, scrollHeight: 800 },
+      { width: 463, height: 400, scrollHeight: 10000 },
+    ])(
+      '单轮长回复在宽 $width、高 $height、内容高 $scrollHeight 的布局中也隐藏',
+      async ({ width, height, scrollHeight }) => {
+        const container = buildContainer();
+        Object.entries({
+          clientWidth: width,
+          clientHeight: height,
+          scrollHeight,
+        }).forEach(([key, value]) => {
+          Object.defineProperty(container, key, { value, configurable: true });
+        });
+        render(
+          <ConversationQuickNav
+            scrollContainerRef={{ current: container }}
+            messageList={singleTurnMessages()}
+          />,
+        );
+        // 等初次测量完成，防止隐藏断言在测量前就通过。
+        await act(async () => {
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, 0);
+          });
+        });
+        expect(
+          screen.queryByTestId('conversation-quick-nav'),
+        ).not.toBeInTheDocument();
+      },
+    );
+
+    it('两轮长开发回复点击导航只定位消息区，外层容器保持原位置', async () => {
+      const container = buildNarrowContainer();
+      const messageList = [
+        ...singleTurnMessages(),
+        msg(USER, '继续完善应用', 3),
+        msg(ASSISTANT, '完善过程输出\n'.repeat(100), 4),
+      ];
       container.innerHTML = messageList
         .map(
           (message) =>
@@ -348,11 +385,10 @@ describe('ConversationQuickNav 组件', () => {
         <ConversationQuickNav
           scrollContainerRef={{ current: container }}
           messageList={messageList}
-          displayMode="scrollable"
         />,
       );
       const lines = await screen.findAllByTestId('conversation-quick-nav-line');
-      expect(lines).toHaveLength(1);
+      expect(lines).toHaveLength(2);
 
       fireEvent.click(lines[0]);
 
@@ -365,64 +401,18 @@ describe('ConversationQuickNav 组件', () => {
       expect(outer.scrollTop).toBe(50);
     });
 
-    it('单轮回复仅溢出 1px 时也显示导航', async () => {
-      const container = buildWorkbenchContainer();
-      Object.defineProperty(container, 'scrollHeight', {
-        value: 801,
-        configurable: true,
-      });
-
-      render(
-        <ConversationQuickNav
-          scrollContainerRef={{ current: container }}
-          messageList={singleTurnMessages()}
-          displayMode="scrollable"
-        />,
-      );
-
-      expect(
-        await screen.findAllByTestId('conversation-quick-nav-line'),
-      ).toHaveLength(1);
-    });
-
-    it('两个导航项在 scrollable 模式下不可滚动也显示', async () => {
-      const container = buildWorkbenchContainer();
-      Object.defineProperty(container, 'scrollHeight', {
-        value: 800,
-        configurable: true,
-      });
-
-      render(
-        <ConversationQuickNav
-          scrollContainerRef={{ current: container }}
-          messageList={longMessageList().slice(0, 4)}
-          displayMode="scrollable"
-        />,
-      );
-
-      expect(
-        await screen.findAllByTestId('conversation-quick-nav-line'),
-      ).toHaveLength(2);
-    });
-
     it.each([
-      { name: '消息区不可滚动', sizes: { scrollHeight: 800 } },
       { name: '消息为空', sizes: {}, empty: true },
       { name: '消息区宽度为零', sizes: { clientWidth: 0 } },
       { name: '消息区高度为零', sizes: { clientHeight: 0 } },
-      {
-        name: '保活页隐藏后尺寸归零',
-        sizes: { clientWidth: 0, clientHeight: 0, scrollHeight: 0 },
-      },
     ])('$name 时收起已显示的导航', async ({ sizes, empty }) => {
-      const container = buildWorkbenchContainer();
+      const container = buildNarrowContainer();
       const scrollContainerRef = { current: container };
-      const messageList = singleTurnMessages();
+      const messageList = longMessageList().slice(0, 4);
       const { rerender } = render(
         <ConversationQuickNav
           scrollContainerRef={scrollContainerRef}
           messageList={messageList}
-          displayMode="scrollable"
         />,
       );
       expect(
@@ -437,7 +427,6 @@ describe('ConversationQuickNav 组件', () => {
           <ConversationQuickNav
             scrollContainerRef={scrollContainerRef}
             messageList={[]}
-            displayMode="scrollable"
           />,
         );
       } else {
@@ -451,14 +440,19 @@ describe('ConversationQuickNav 组件', () => {
       );
     });
 
-    it('仅切换 displayMode 即重新测量，auto 保留普通会话的轮次门槛', async () => {
-      const container = buildWorkbenchContainer();
+    it('消息从一轮变两轮时显示、回到一轮时隐藏，滚动容器 ref 保持不变', async () => {
+      const container = buildNarrowContainer();
       const scrollContainerRef = { current: container };
-      const messageList = singleTurnMessages();
+      const oneTurnMessages = singleTurnMessages();
+      const twoTurnMessages = [
+        ...oneTurnMessages,
+        msg(USER, '继续完善应用', 3),
+        msg(ASSISTANT, '完善过程输出\n'.repeat(100), 4),
+      ];
       const { rerender } = render(
         <ConversationQuickNav
           scrollContainerRef={scrollContainerRef}
-          messageList={messageList}
+          messageList={oneTurnMessages}
         />,
       );
       // 等初次异步测量完成，避免隐藏断言在测量前就通过。
@@ -474,19 +468,17 @@ describe('ConversationQuickNav 组件', () => {
       rerender(
         <ConversationQuickNav
           scrollContainerRef={scrollContainerRef}
-          messageList={messageList}
-          displayMode="scrollable"
+          messageList={twoTurnMessages}
         />,
       );
       expect(
         await screen.findAllByTestId('conversation-quick-nav-line'),
-      ).toHaveLength(1);
+      ).toHaveLength(2);
 
       rerender(
         <ConversationQuickNav
           scrollContainerRef={scrollContainerRef}
-          messageList={messageList}
-          displayMode="auto"
+          messageList={oneTurnMessages}
         />,
       );
       await waitFor(() =>
