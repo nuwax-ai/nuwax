@@ -61,7 +61,10 @@ export async function apiPrivateServerCreate(
 }
 
 // 更新私有部署服务器参数
-export type PrivateServerUpdateParams = PrivateServerCreateParams;
+export interface PrivateServerUpdateParams extends PrivateServerCreateParams {
+  /** 通信 key，最长 128 个字符 */
+  apiKey?: string;
+}
 
 /** 更新私服信息（变更地址-端口将回到待就绪状态，需重新健康检查通过） */
 export async function apiPrivateServerUpdate(
@@ -96,7 +99,7 @@ export async function apiPrivateServerGet(
 ): Promise<RequestResponse<PrivateServerInfo>> {
   return request('/api/userapp/private-server/get', {
     method: 'GET',
-    data: { id },
+    params: { id },
   });
 }
 

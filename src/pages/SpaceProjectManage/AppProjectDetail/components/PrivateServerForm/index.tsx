@@ -25,7 +25,7 @@ export interface PrivateServerFormProps {
   value: PrivateServerFormValue;
   /** 字段变更 */
   onChange: (next: PrivateServerFormValue) => void;
-  /** 已保存行只读 */
+  /** 已保存行用文本展示，不渲染输入控件 */
   disabled?: boolean;
 }
 
@@ -39,9 +39,11 @@ const DEFAULT_VALUE: PrivateServerFormValue = {
 
 /**
  * 私有服务器表单：协议、地址、Agent 端口、VNC 端口、文件服务端口。
+ * 已保存行用 span 展示，新增行才渲染 Select / Input。
  *
  * @param props.value 当前值
  * @param props.onChange 变更回调
+ * @param props.disabled 已保存时为 true，改为纯文本
  * @returns 表单区域
  */
 const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
@@ -55,6 +57,28 @@ const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
     },
     [onChange, value],
   );
+
+  if (disabled) {
+    return (
+      <div className={cx(styles.fields)}>
+        <span className={cx(styles.field, styles.protocol, styles.readonly)}>
+          {value.scheme}
+        </span>
+        <span className={cx(styles.field, styles.readonly)} title={value.host}>
+          {value.host}
+        </span>
+        <span className={cx(styles.field, styles.readonly)}>
+          {value.agentPort}
+        </span>
+        <span className={cx(styles.field, styles.readonly)}>
+          {value.vncPort}
+        </span>
+        <span className={cx(styles.field, styles.readonly)}>
+          {value.fileServerPort}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles.fields)}>
