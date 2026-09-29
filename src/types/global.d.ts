@@ -116,6 +116,8 @@ interface ClientUpdateState {
 // 故 interface Window 不需要 declare global 包裹）
 interface Window {
   Global: typeof Global;
+  /** 同页消息微应用安装；实例挂载完成后可订阅。 */
+  __im?: import('./interfaces/im').ImWindowBridge;
   NuwaClawBridge?: {
     perf?: {
       enabled?: () => boolean;
