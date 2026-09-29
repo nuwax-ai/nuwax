@@ -8,7 +8,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { getProjectContent, submitFilesUpdate } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
-import { treeToFlatList } from '@/utils/appDevUtils';
+import { isPreviewableFile, treeToFlatList } from '@/utils/appDevUtils';
 import { message } from 'antd';
 import {
   useCallback,
@@ -34,6 +34,7 @@ import {
   mergeGitStatusFileIds,
 } from '../utils/gitStatusUtils';
 import { locateWorkspaceChangeFile } from '../utils/locateWorkspaceChangeFile';
+import { workspaceRelativePath } from '../utils/workspaceFileList';
 import {
   runGitDiscard,
   runGitStage,
@@ -335,11 +336,22 @@ export const useSourceControl = ({
   );
 
   /**
-   * 选中修改文件并在右侧展示 diff 预览
-   * 调用 apiGitFileContent 拉取 HEAD 与 worktree/staged 文件内容
+   * 选中修改文件并在右侧展示 diff 预览。
+   * 不支持预览的文件（压缩包等）改为打开普通预览，不请求 diff。
+   * 其余文件调用 apiGitFileContent 拉取 HEAD 与 worktree/staged 内容。
    */
   const handleDiffFileSelect = useCallback(
     (fileId: string, section: ChangeListSection) => {
+      const fileName =
+        workspaceRelativePath(fileId).split('/').pop() || fileId;
+      // 压缩包等不支持预览的文件不查 diff，直接打开普通预览，由预览区提示不支持
+      if (!isPreviewableFile(fileName, true)) {
+        setSelectedChangeFile(null);
+        setDiffFileContent(null);
+        callbacks.openChangeFile(fileId);
+        return;
+      }
+
       setSelectedChangeFile({ fileId, section });
       setDiffFileContent(null);
       callbacks.onDiffFileSelect?.(fileId, section);
