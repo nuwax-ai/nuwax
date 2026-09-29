@@ -45,6 +45,13 @@ type HostCommand =
       /** true=宿主可见（恢复轮询并立即补拉）；false=不可见（暂停后台轮询） */
       visible: boolean;
     }
+  /** 商业宿主本机生命周期提示；候选列表仍以 select/list 接口为准。 */
+  | {
+      type: 'computer-service-state';
+      phase: string;
+      /** 注册配置的 sandboxId，可用于识别当前宿主电脑。 */
+      sandboxId?: string;
+    }
   /** 壳设置切语言（bug 2428）：壳 i18n:setLang 后下发，web 应用该语种并持久化到账号；
    * 壳随后会重载本 webview，使新语种全量渲染 */
   | {
@@ -170,6 +177,10 @@ interface Window {
     events?: {
       /** 注册/注销宿主命令回调（传 null 注销）。 */
       onHostCommand?: (cb: ((payload: HostCommand) => void) | null) => void;
+    };
+    /** 商业 IM 原生通知偏好；能力存在时 IM 不再发浏览器通知。 */
+    im?: {
+      setNotificationEnabled?: (enabled: boolean) => Promise<void>;
     };
     // nuwax→nuwaclaw 壳主题同步通道（女娲主题生效/让位时推送，壳侧统一原生 UI 效果）
     theme?: {
