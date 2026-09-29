@@ -53,7 +53,7 @@
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-09-29T19:19:14.804Z"
+      "builtAt": "2026-09-29T19:30:32.422Z"
     },
     {
       "schemaVersion": 1,
@@ -93,7 +93,7 @@
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-09-29T19:19:28.885Z"
+      "builtAt": "2026-09-29T19:30:46.768Z"
     }
   ]
 }
