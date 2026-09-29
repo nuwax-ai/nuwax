@@ -346,3 +346,38 @@
 - `test:conversation`：110 个文件 / 1064 个用例全绿。
 - `lint:arch`：无新增违规。
 - tsc：351 个存量错误，本分支改动的文件零新增。
+
+## 交付状态与下一步（9.29 收工）
+
+**已交付**：远端分支 `origin/feat-dong.0930-remaining`，已合入最新 `feat-dong.0930`（`2b4bece4f`）。
+
+- 5 个功能/修复提交：`a07590c01` / `17f0463c4` / `9208ac73f` / `e935d8b33` / `4fad753af`。
+- 可直接快进到 `feat-dong.0930`。
+- 门禁：`test:conversation` 1073 全绿；`lint:arch` 无新增；vitest 仅 2 个存量微应用用例失败（worktree 缺子模块）。
+
+**下一步**（按顺序）：
+
+| # | 事项 | 负责 | 阻塞 |
+| --- | --- | --- | --- |
+| 1 | 本地验收剩余页面（地址直达，见下表）并反馈问题 | 你 | — |
+| 2 | 把分支合入 `feat-dong.0930`（快进），再走 `deploy_sync_test.sh` 部署测试环境 | 你确认后我执行 | 1 |
+| 3 | 后端修 `/api/system/idp/auto-redirect` 返回 5000 | 雷林周 | 「未登录自动跳转」开关 |
+| 4 | 配置菜单：两个已有菜单补 path；新建「授权范围审核」菜单与资源码并授权管理员 | 你（后续专门配置）/ 雷林周 | 菜单点击跳转；F3b 真实数据（4033） |
+| 5 | 部署后联调：GitHub/飞书真实登录、自动跳转与 `?local=1`、绑定/注册中间页、账号绑定解绑、scope 申请 → 审核闭环 | 我 | 2、3、4 |
+| 6 | 约时段打开 `openImageCaptcha` 验收图形验证码（登录 / 验证码页重发 / 设置页发码） | 你约时段 | 2 |
+| 7 | F5：问答型智能体 Ask Question 联调（预计零改动） | 我 + 冯飞 | 后端就绪 |
+| 8 | 合入主干前按 `/quality-review` 走查本批次（96 文件） | 我 | 5 |
+
+菜单配置值（供第 4 步）：
+
+| 菜单 | 访问路径 | 资源码 |
+| --- | --- | --- |
+| `sensitive_word_config` 敏感词管控 | `/system/config/sensitive-word` | 已有 5 个 |
+| `auth_method_config` 登录方式管理 | `/system/config/auth-method` | 已有 5 个 |
+| 新建：授权范围审核 | `/system/oauth2/scope-audit` | `oauth2_scope_audit_query_list` / `_pass` / `_reject` |
+
+**仍待确认**（intent 开放问题中影响上线的项）：
+
+- Q6：登出是否整页走后端 `/api/auth/idp/logout` 做 CAS 单点登出（现为落 `/login?local=1`）。
+- Q9：桌面客户端本期不接三方登录（现为隐藏）。
+- Q13：图形验证码是否也作用于设置页的重置密码、绑定邮箱发码（现为作用）。
