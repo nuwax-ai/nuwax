@@ -40,6 +40,10 @@ export const SYSTEM_MANAGE_LIST = [
         type: SystemManageListEnum.System_Setting,
       },
       {
+        text: dict('PC.Constants.System.themeConfig'),
+        type: SystemManageListEnum.Theme_Config,
+      },
+      {
         text: dict('PC.Constants.System.sandboxConfig'),
         type: SystemManageListEnum.Sandbox_Config,
       },
