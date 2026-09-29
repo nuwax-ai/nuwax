@@ -651,6 +651,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.FileTreeView.refreshing": "Refreshing...",
   "PC.Components.FileTreeView.restarting": "Restarting...",
   "PC.Components.FileTreeView.selectFileToPreview": "Please select a file from the file tree to preview",
+  "PC.Components.FileTreeView.searchedFileNotFound": "No matching file was found",
   "PC.Components.FileTreeView.unsupportedFormat": "Preview is not supported for .{0} format",
   "PC.Components.FileTreeView.fileTooLarge": "This document is too large to preview",
   "PC.Components.FileTreeView.openUiWrongExtension": "Use *.openui.json as the OpenUI Lang data source. Bare .openui is not a valid preview type; rename to .openui.json if the content is already a nuwax.openui-file.",

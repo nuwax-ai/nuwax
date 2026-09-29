@@ -658,6 +658,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.FileTreeView.refreshing": "刷新中...",
   "PC.Components.FileTreeView.restarting": "重启中...",
   "PC.Components.FileTreeView.selectFileToPreview": "请从左侧文件树选择一个文件进行预览",
+  "PC.Components.FileTreeView.searchedFileNotFound": "未搜索到对应文件",
   "PC.Components.FileTreeView.unsupportedFormat": "当前不支持预览【{0}】格式的文件。",
   "PC.Components.FileTreeView.fileTooLarge": "当前文档过大，无法预览",
   "PC.Components.FileTreeView.openUiWrongExtension": "请使用 *.openui.json 作为 OpenUI Lang 数据源。裸 .openui 不是合法预览类型；若文件内容已是 nuwax.openui-file，请重命名为 .openui.json。",

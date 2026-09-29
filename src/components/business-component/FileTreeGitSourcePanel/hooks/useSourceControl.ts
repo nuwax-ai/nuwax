@@ -53,6 +53,11 @@ export interface SourceControlCallbacks {
   addFileToGitignore?: (fileId: string) => Promise<void>;
   /** 选中 diff 文件后的页面操作 */
   onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
+  /**
+   * 按文件名搜索后，用路径是否命中文件。
+   * 未命中时预览区提示未搜索到，不改「未选中文件」文案。
+   */
+  onWorkspaceFileSearchResult?: (found: boolean) => void;
   /** Git discard 成功后的页面操作 */
   onAfterDiscardChange?: (fileId: string) => void | Promise<void>;
   /** 批量 Git discard 完成后的页面操作（整批只调用一次） */
@@ -365,8 +370,13 @@ export const useSourceControl = ({
           // 分层文件树没有全量列表，先按文件名搜到真正的文件，再拉 diff
           if (workspace.workspaceType === 'taskAgent') {
             try {
-              await locateWorkspaceChangeFile(workspace.cid, fileId);
+              const locatedFile = await locateWorkspaceChangeFile(
+                workspace.cid,
+                fileId,
+              );
+              callbacks.onWorkspaceFileSearchResult?.(Boolean(locatedFile));
             } catch (error) {
+              callbacks.onWorkspaceFileSearchResult?.(false);
               console.error('搜索源代码变更文件失败', error);
             }
           }

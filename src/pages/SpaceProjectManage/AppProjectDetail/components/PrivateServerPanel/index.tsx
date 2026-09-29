@@ -73,7 +73,7 @@ const isValidPort = (value: string): boolean => {
  * @returns 展示名
  */
 const getServerLabel = (item: PrivateServerInfo): string =>
-  item.name || `${item.scheme}://${item.host}:${item.appPort}`;
+  item.name || `${item.scheme}://${item.host}`;
 
 /**
  * 已保存私服转成表单值。
@@ -84,7 +84,7 @@ const getServerLabel = (item: PrivateServerInfo): string =>
 const toFormValue = (item: PrivateServerInfo): PrivateServerFormValue => ({
   scheme: item.scheme === 'http' ? 'http' : 'https',
   host: item.host || '',
-  appPort: item.appPort != null ? String(item.appPort) : '',
+  appPort: '',
   agentPort: item.agentPort != null ? String(item.agentPort) : '',
 });
 

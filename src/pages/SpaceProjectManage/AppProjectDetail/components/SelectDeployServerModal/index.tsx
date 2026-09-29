@@ -30,14 +30,11 @@ export interface SelectDeployServerModalProps {
  * 拼接私服访问地址，缺字段时尽量展示已有部分。
  *
  * @param server 私服
- * @returns 如 https://host:8080
+ * @returns 如 https://host
  */
 const formatServerAddress = (server: PrivateServerInfo): string => {
   const host = [server.scheme, server.host].filter(Boolean).join('://');
-  if (!server.appPort) {
-    return host || dict('PC.Pages.AppProjectDetail.emptyValue');
-  }
-  return host ? `${host}:${server.appPort}` : String(server.appPort);
+  return host || dict('PC.Pages.AppProjectDetail.emptyValue');
 };
 
 /**

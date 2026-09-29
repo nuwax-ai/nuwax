@@ -30,8 +30,10 @@ export interface PrivateServerInfo {
   host: string;
   /** 管理端口 */
   agentPort: number;
-  /** 应用端口 */
-  appPort: number;
+  /** VNC 端口 */
+  vncPort: number;
+  /** 文件服务端口 */
+  fileServerPort: number;
   /** 接入密钥 */
   apiKey: string;
   /** 健康状态 */
