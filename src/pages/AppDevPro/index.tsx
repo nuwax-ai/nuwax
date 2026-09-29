@@ -2990,6 +2990,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         open={active && publishFlow.open}
         phase={publishFlow.phase}
         prodAccessUrl={publishFlow.prodAccessUrl}
+        prodReady={publishFlow.prodReady}
         services={publishFlow.services}
         startServices={publishFlow.startServices}
         errorMessage={publishFlow.errorMessage}

@@ -52,6 +52,11 @@ export interface AppDevProIframeProps {
   onError?: () => void;
   /** 点击刷新、即将重新加载 */
   onRetry?: () => void;
+  /**
+   * 加载失败时的提示。不传时仍用「页面加载失败，请刷新后重试」。
+   * 数据库页传入自己的文案，其它嵌入页保持原提示。
+   */
+  errorDescription?: string;
 }
 
 /**
@@ -69,6 +74,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
   onLoad,
   onError,
   onRetry,
+  errorDescription,
 }) => {
   const [loadError, setLoadError] = useState(false);
   const [loadErrorStatus, setLoadErrorStatus] = useState<number>();
@@ -190,13 +196,14 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
     setReloadNonce((prev) => prev + 1);
   }, []);
 
-  const errorDescription =
-    loadErrorStatus !== undefined
+  const resolvedErrorDescription =
+    errorDescription ||
+    (loadErrorStatus !== undefined
       ? dict('PC.Pages.AppDevPro.iframeLoadFailedWithStatus').replace(
           '{0}',
           String(loadErrorStatus),
         )
-      : dict('PC.Pages.AppDevPro.iframeLoadFailed');
+      : dict('PC.Pages.AppDevPro.iframeLoadFailed'));
 
   return (
     <div className={cx(styles.wrap, className)}>
@@ -217,7 +224,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
         <div className={cx(styles.errorOverlay)}>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={errorDescription}
+            description={resolvedErrorDescription}
           />
           <Button type="primary" onClick={handleRetry}>
             {dict('PC.Common.Global.refresh')}

@@ -61,7 +61,7 @@ export const showSpaceSelectorForFunctionType = (
   functionType ? SPACE_SELECTOR_FUNCTION_TYPES.has(functionType) : false;
 
 /**
- * 智能体可选范围上下文：携带上框/绑定项目即受限，undefined = 不受限（全量可选）。
+ * 智能体可选范围上下文：按上框/绑定项目类型判断，undefined = 不受限（全量可选）。
  * 首页项目上框是首个消费方；专家/智能体选择弹窗复用同一切面做单项可选判断。
  */
 export interface AgentSelectableContext {
@@ -76,11 +76,18 @@ const PROJECT_TYPE_ALLOWED_FUNCTION_TYPE: Partial<
   Record<AgentComponentTypeEnum, DisplayRecommendFunctionTypeEnum>
 > = {
   [AgentComponentTypeEnum.UserApp]: DisplayRecommendFunctionTypeEnum.UserAppDev,
-  [AgentComponentTypeEnum.NormalProject]:
-    DisplayRecommendFunctionTypeEnum.NormalProjectDev,
 };
 
-/** 读取上下文允许的推荐位功能类型；无上下文或未登记类型返回 undefined（=不受限） */
+/** 常规项目仅排除智能体开发、网页应用、插件、技能和全栈五类智能体，其余均可选择。 */
+const NORMAL_PROJECT_EXCLUDED_FUNCTION_TYPES = new Set<string>([
+  DisplayRecommendFunctionTypeEnum.AgentDev,
+  DisplayRecommendFunctionTypeEnum.PageAppDev,
+  DisplayRecommendFunctionTypeEnum.PluginDev,
+  DisplayRecommendFunctionTypeEnum.SkillDev,
+  DisplayRecommendFunctionTypeEnum.UserAppDev,
+]);
+
+/** 读取只能选择单一功能类型的限制；undefined 表示无单一类型限制。 */
 export const getAllowedFunctionType = (
   context?: AgentSelectableContext,
 ): DisplayRecommendFunctionTypeEnum | undefined =>
@@ -93,6 +100,9 @@ export const isAgentSelectable = (
   item: Pick<DisplayRecommendInfo, 'functionType'>,
   context?: AgentSelectableContext,
 ): boolean => {
+  if (context?.projectType === AgentComponentTypeEnum.NormalProject) {
+    return !NORMAL_PROJECT_EXCLUDED_FUNCTION_TYPES.has(item.functionType ?? '');
+  }
   const allowed = getAllowedFunctionType(context);
   return !allowed || item.functionType === allowed;
 };
@@ -104,8 +114,8 @@ export const filterSelectableAgents = <
   list: T[],
   context?: AgentSelectableContext,
 ): T[] => {
-  const allowed = getAllowedFunctionType(context);
-  return allowed ? list.filter((item) => item.functionType === allowed) : list;
+  if (!context?.projectType) return list;
+  return list.filter((item) => isAgentSelectable(item, context));
 };
 
 /**

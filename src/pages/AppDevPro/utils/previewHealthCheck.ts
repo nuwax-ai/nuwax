@@ -1,9 +1,13 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
+  apiUserAppDbReadiness,
+  UserAppDbEnvEnum,
+  type UserAppDbReadiness,
+} from '../services/appDb';
+import {
   apiUserAppReadiness,
   type UserAppReadiness,
 } from '../services/appDevPro';
-import { UserAppDbEnvEnum } from '../services/appDb';
 
 /** 单次 cors 探测超时（毫秒） */
 const CHECK_TIMEOUT_MS = 8000;
@@ -278,6 +282,60 @@ export const pollUserAppReadiness = async (
       }
     } catch {
       // 单次失败继续等下一次，直到就绪、达到上限或调用方要求停止
+    }
+    if (shouldStop?.() || attempt >= READINESS_POLL_MAX_ATTEMPTS - 1) {
+      return false;
+    }
+    try {
+      await sleep(READINESS_POLL_INTERVAL_MS);
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * 进入数据库前轮询 dbx 就绪接口。
+ * ready 为 true 时立刻结束；达到次数上限、接口报错或调用方离开时也结束。
+ * 返回值只表示是否已就绪，调用方无论 true 或 false 都继续原来的展示。
+ *
+ * @param appId 应用 ID
+ * @param env 当前数据库环境
+ * @param shouldStop 返回 true 时停止等待
+ * @returns 数据库已就绪
+ */
+export const pollUserAppDbReadiness = async (
+  appId: number,
+  env: UserAppDbEnvEnum,
+  shouldStop?: () => boolean,
+): Promise<boolean> => {
+  if (!appId) {
+    return false;
+  }
+
+  for (let attempt = 0; attempt < READINESS_POLL_MAX_ATTEMPTS; attempt += 1) {
+    if (shouldStop?.()) {
+      return false;
+    }
+    try {
+      const result = await apiUserAppDbReadiness(appId, env);
+      const payload = (
+        result && typeof result === 'object' && 'data' in result
+          ? result.data
+          : result
+      ) as UserAppDbReadiness | undefined;
+      const codeOk =
+        !result ||
+        typeof result !== 'object' ||
+        !('code' in result) ||
+        result.code === SUCCESS_CODE;
+      if (codeOk && payload?.ready === true) {
+        return true;
+      }
+    } catch {
+      // 单次失败继续下一次；全部结束后仍按未就绪返回，不抛给页面
     }
     if (shouldStop?.() || attempt >= READINESS_POLL_MAX_ATTEMPTS - 1) {
       return false;

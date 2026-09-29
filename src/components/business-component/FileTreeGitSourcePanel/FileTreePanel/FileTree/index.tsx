@@ -4,7 +4,6 @@ import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { findFileNode } from '@/utils/appDevUtils';
 import { getFileIcon } from '@/utils/fileTree';
-import { LoadingOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd';
 import { Input } from 'antd';
 import classNames from 'classnames';
@@ -32,7 +31,6 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       files,
       fileTreeDataLoading,
       loadedFolderIds,
-      loadingFolderIds,
       onLoadDirectory,
       taskAgentSelectedFileId,
       selectedFileId,
@@ -362,7 +360,6 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     const renderFileTreeNode = useCallback(
       (node: FileNode, level: number = 0) => {
         const isExpanded = expandedFolders.has(node.id);
-        const isFolderLoading = Boolean(loadingFolderIds?.has(node.id));
         // 文件夹与文件选中互斥：选中文件夹时仅高亮文件夹，预览仍由 selectedFileId 驱动
         const isSelected =
           node.type === 'folder'
@@ -400,17 +397,13 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
                 }}
                 onContextMenu={(e) => onContextMenu(e, node)}
               >
-                {isFolderLoading ? (
-                  <LoadingOutlined className={styles.folderIcon} />
-                ) : (
-                  <SvgIcon
-                    name="icons-common-caret_right"
-                    style={{ fontSize: '16px' }}
-                    className={`${styles.folderIcon} ${styles.folderCaret} ${
-                      isExpanded ? styles.expanded : ''
-                    }`}
-                  />
-                )}
+                <SvgIcon
+                  name="icons-common-caret_right"
+                  style={{ fontSize: '16px' }}
+                  className={`${styles.folderIcon} ${styles.folderCaret} ${
+                    isExpanded ? styles.expanded : ''
+                  }`}
+                />
 
                 {isRenaming ? (
                   <Input
@@ -484,7 +477,6 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       },
       [
         expandedFolders,
-        loadingFolderIds,
         selectedFileId,
         selectedFolderId,
         renamingNode,
@@ -502,7 +494,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
         className={styles.fileTree}
         onContextMenu={(e) => onContextMenu(e, null)}
       >
-        {/* 文件树数据加载状态 */}
+        {/* 首次列表未返回时显示加载动画；已有列表后刷新不再盖住当前树 */}
         {fileTreeDataLoading && !files?.length ? (
           <div
             className={cx('flex', 'content-center', 'items-center', 'h-full')}

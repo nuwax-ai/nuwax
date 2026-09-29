@@ -80,6 +80,8 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   const [deployingReleaseId, setDeployingReleaseId] = useState<string>('');
   /** 部署成功后异步拿到的线上 Prod 域名 */
   const [prodAccessUrl, setProdAccessUrl] = useState<string>('');
+  /** 部署成功后线上环境是否已就绪。未就绪时仍展示域名，并在域名下提示稍后再试 */
+  const [prodReady, setProdReady] = useState<boolean>(true);
 
   const abortRef = useRef<AbortController | null>(null);
   const cancelledRef = useRef<boolean>(false);
@@ -125,6 +127,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     setFailedStage(null);
     setTaskId('');
     setProdAccessUrl('');
+    setProdReady(true);
     taskIdRef.current = '';
     lastSeqRef.current = undefined;
     terminalRef.current = null;
@@ -241,14 +244,15 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   /**
    * 生产部署接口成功后，轮询线上环境是否可访问。
    * 用户停止部署时结束，不进入成功态。
-   * 轮询到上限仍未就绪时不抛错，交给调用方继续展示部署成功。
+   * 轮询到上限仍未就绪时不抛错，交给调用方继续展示部署成功，并标记未就绪。
+   * @returns 线上环境是否已就绪
    */
   const waitUntilProdReady = useCallback(async () => {
     if (!appId) {
       throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
     }
     setPublishPhase('checkingReadiness');
-    await pollUserAppReadiness(appId, UserAppDbEnvEnum.Prod, () =>
+    return pollUserAppReadiness(appId, UserAppDbEnvEnum.Prod, () =>
       cancelledRef.current,
     );
   }, [appId, setPublishPhase]);
@@ -392,11 +396,12 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
           markCancelled();
           return;
         }
-        await waitUntilProdReady();
+        const ready = await waitUntilProdReady();
         if (cancelledRef.current) {
           markCancelled();
           return;
         }
+        setProdReady(ready);
         await refreshAfterDeploy();
         setPhase('success');
       } catch (error) {
@@ -517,12 +522,13 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         return;
       }
 
-      await waitUntilProdReady();
+      const ready = await waitUntilProdReady();
       if (cancelledRef.current) {
         markCancelled();
         return;
       }
 
+      setProdReady(ready);
       await refreshAfterDeploy();
       setPhase('success');
     } catch (error) {
@@ -664,5 +670,6 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     closeModal,
     startServices,
     prodAccessUrl,
+    prodReady,
   };
 }
