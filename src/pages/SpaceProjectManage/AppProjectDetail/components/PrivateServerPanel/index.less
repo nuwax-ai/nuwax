@@ -5,6 +5,15 @@
   display: flex;
   align-items: center;
   gap: @marginSm;
+  padding-left: @paddingXs;
+}
+
+.row {
+  border-radius: @borderRadius;
+}
+
+.selected {
+  background-color: @colorPrimaryBg;
 }
 
 .header {
@@ -13,16 +22,21 @@
 
 .header-fields {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) 108px 108px 120px;
+  grid-template-columns:
+    minmax(72px, 88px) minmax(120px, 1fr) minmax(96px, 108px)
+    minmax(84px, 108px) minmax(90px, 120px);
   gap: @marginSm;
   flex: 1;
-  min-width: 0;
 }
 
 .header-cell {
+  min-width: 0;
+  overflow: hidden;
   color: @colorTextSecondary;
   font-size: @fontSizeSm;
   line-height: @fontHeightSm;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .list {
@@ -52,17 +66,23 @@
 .actions {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   flex-shrink: 0;
-  width: 82px;
+  width: 140px;
   height: @controlHeight;
   gap: @marginXs;
 }
 
-.delete {
+.delete,
+.detail {
   flex-shrink: 0;
   min-width: @controlHeightSm;
   padding-inline: 0;
+}
+
+.refresh {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .confirm {

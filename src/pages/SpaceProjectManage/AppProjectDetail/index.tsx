@@ -355,11 +355,20 @@ const AppProjectDetail: React.FC = () => {
       manual: true,
       onSuccess: (_result: unknown, params: SetDeployTargetParams[]) => {
         const payload = params[0];
-        if (payload?.deployType === UserAppDeployTypeEnum.Private) {
-          setDeployServerId(payload.deployServerId);
-        } else {
-          setDeployServerId(undefined);
-        }
+        const nextServerId =
+          payload?.deployType === UserAppDeployTypeEnum.Private
+            ? payload.deployServerId
+            : undefined;
+        setDeployServerId(nextServerId);
+        setProjectInfo((prev) =>
+          prev
+            ? {
+                ...prev,
+                deployType: payload?.deployType,
+                deployServerId: nextServerId,
+              }
+            : prev,
+        );
         setDeployTargetOpen(false);
         message.success(dict('PC.Common.Global.saveSuccess'));
       },
@@ -952,6 +961,7 @@ const AppProjectDetail: React.FC = () => {
         ) : (
           // 私有服务器部署区域，私有服务器列表
           <PrivateServerPanel
+            appInfo={projectInfo}
             servers={privateServers}
             loading={privateServerLoading}
             onRefresh={runPrivateServerList}

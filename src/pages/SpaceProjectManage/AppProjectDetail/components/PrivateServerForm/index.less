@@ -2,14 +2,15 @@
 
 .fields {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) 108px 108px 120px;
+  grid-template-columns:
+    minmax(72px, 88px) minmax(120px, 1fr) minmax(96px, 108px)
+    minmax(84px, 108px) minmax(90px, 120px);
   gap: @marginSm;
   flex: 1;
-  min-width: 0;
 }
 
 .protocol {
-  width: 88px;
+  min-width: 72px;
 
   .select {
     width: 100%;
@@ -18,6 +19,17 @@
 
 .field {
   min-width: 0;
+}
+
+.readonly {
+  display: block;
+  height: @controlHeight;
+  overflow: hidden;
+  color: @colorTextSecondary;
+  font-size: @fontSize;
+  line-height: @controlHeight;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 960px) {

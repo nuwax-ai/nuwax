@@ -1,0 +1,40 @@
+@import '@/styles/token';
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: @marginXs;
+  margin: 0;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  gap: @marginSm;
+  margin: 0;
+}
+
+.label,
+.value {
+  margin: 0;
+  font-size: @fontSize;
+  line-height: @fontHeight;
+}
+
+.label {
+  color: @colorTextSecondary;
+}
+
+.value {
+  color: @colorText;
+  word-break: break-all;
+}
+
+.form-item {
+  margin-bottom: 0;
+}
+
+.select {
+  width: 100%;
+}
