@@ -4,8 +4,12 @@ import {
   apiPurchaseCredits,
 } from '@/services/subscriptionService';
 import type { CreditPackageInfo } from '@/types/interfaces/subscription';
+import {
+  preparePaymentWindow,
+  type PaymentWindow,
+} from '@/utils/hostBridge/paymentWindow';
 import { Button, Modal, Spin, Tag, message } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 
 interface Props {
@@ -22,6 +26,10 @@ const CreditsPurchaseModal: React.FC<Props> = ({
   const [packages, setPackages] = useState<CreditPackageInfo[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  const purchasingRef = useRef(false);
+  const paymentWindowRef = useRef<PaymentWindow | null>(null);
+
+  useEffect(() => () => paymentWindowRef.current?.closePending(), []);
 
   const { loading, run: loadPackages } = useRequest(apiListCreditPackages, {
     manual: true,
@@ -36,17 +44,29 @@ const CreditsPurchaseModal: React.FC<Props> = ({
     if (open) {
       setSelectedId(null);
       loadPackages();
+    } else {
+      paymentWindowRef.current?.closePending();
     }
   }, [open]);
 
   const handlePurchase = async () => {
-    if (!selectedId) return;
+    if (!selectedId || purchasingRef.current) return;
+    const paymentWindow = preparePaymentWindow();
+    if (!paymentWindow) {
+      message.error(dict('PC.Components.CreditsBalance.purchaseFailed'));
+      return;
+    }
+    paymentWindowRef.current = paymentWindow;
+    purchasingRef.current = true;
     setPurchasing(true);
     try {
       const res = await apiPurchaseCredits(selectedId);
       const data = res?.data;
       if (data?.payUrl) {
-        window.open(data.payUrl, '_blank');
+        if (!(await paymentWindow.open(data.payUrl))) {
+          message.error(dict('PC.Components.CreditsBalance.purchaseFailed'));
+          return;
+        }
       } else if (data?.qrCode) {
         message.info(dict('PC.Components.CreditsBalance.payByQRCode'));
       }
@@ -56,6 +76,9 @@ const CreditsPurchaseModal: React.FC<Props> = ({
     } catch {
       message.error(dict('PC.Components.CreditsBalance.purchaseFailed'));
     } finally {
+      paymentWindow.closePending();
+      paymentWindowRef.current = null;
+      purchasingRef.current = false;
       setPurchasing(false);
     }
   };
