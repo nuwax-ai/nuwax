@@ -6740,7 +6740,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppProjectDetail.domainPlaceholder": "請輸入域名，如 app.example.com",
   "PC.Pages.AppProjectDetail.domainBound": "已綁定",
   // 发布服务器配置
-  "PC.Pages.AppProjectDetail.deployTitle": "發佈伺服器設定",
+  "PC.Pages.AppProjectDetail.deployTitle": "部署伺服器配置",
   "PC.Pages.AppProjectDetail.deployDesc": "選擇應用發佈後的執行位置。選擇私有伺服器時，需提供存取協定、伺服器地址與兩個連接埠。",
   "PC.Pages.AppProjectDetail.platformService": "平台服務",
   "PC.Pages.AppProjectDetail.platformServiceDesc": "由女媧平台託管執行，免維運，自動彈性伸縮",
@@ -6802,7 +6802,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateServerModified": "更新時間",
   "PC.Pages.AppProjectDetail.updatePrivateServer": "更新",
   "PC.Pages.AppProjectDetail.updatePrivateServerSuccess": "私有伺服器已更新",
-  "PC.Pages.AppProjectDetail.setDeployServer": "設定部署伺服器",
+  "PC.Pages.AppProjectDetail.setDeployServer": "儲存",
   "PC.Pages.AppProjectDetail.selectPrivateServerTitle": "選擇私有伺服器",
   "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "請選擇一台私有伺服器",
   "PC.Pages.AppProjectDetail.emptyPrivateServer": "暫無私有伺服器，請先新增",

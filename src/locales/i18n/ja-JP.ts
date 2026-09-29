@@ -6779,7 +6779,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectDetail.domainPlaceholder": "ドメインを入力（例: app.example.com）",
   "PC.Pages.AppProjectDetail.domainBound": "連携済み",
   // 发布服务器配置
-  "PC.Pages.AppProjectDetail.deployTitle": "公開サーバー設定",
+  "PC.Pages.AppProjectDetail.deployTitle": "デプロイサーバー設定",
   "PC.Pages.AppProjectDetail.deployDesc": "公開後のアプリ実行場所を選択します。プライベートサーバーではアクセスプロトコル、サーバーアドレス、2 つのポートが必要です。",
   "PC.Pages.AppProjectDetail.platformService": "プラットフォームサービス",
   "PC.Pages.AppProjectDetail.platformServiceDesc": "女娲プラットフォームでホスト。運用不要でオートスケール",
@@ -6841,7 +6841,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateServerModified": "更新日時",
   "PC.Pages.AppProjectDetail.updatePrivateServer": "更新",
   "PC.Pages.AppProjectDetail.updatePrivateServerSuccess": "プライベートサーバーを更新しました",
-  "PC.Pages.AppProjectDetail.setDeployServer": "デプロイサーバーを設定",
+  "PC.Pages.AppProjectDetail.setDeployServer": "保存",
   "PC.Pages.AppProjectDetail.selectPrivateServerTitle": "プライベートサーバーを選択",
   "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "プライベートサーバーを選択してください",
   "PC.Pages.AppProjectDetail.emptyPrivateServer": "プライベートサーバーがありません。先に追加してください",
