@@ -393,6 +393,11 @@ const routes = [
             component: '@/pages/PublishAudit',
           },
           {
+            path: 'oauth2/scope-audit',
+            name: getRouteLabel('PC.Routes.oauth2ScopeAudit'),
+            component: '@/pages/SystemManagement/OAuth2ScopeAudit',
+          },
+          {
             path: 'published/manage',
             name: getRouteLabel('PC.Routes.publishedManagement'),
             component: '@/pages/PublishedManage',

@@ -6,8 +6,10 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
+import { OAuth2ScopeApplyStatusEnum } from '@/types/interfaces/oauth2Scope';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { copyTextToClipboard } from '@/utils/clipboard';
+import { draftScopesOf, scopesChanged } from '@/utils/oauth2Scope';
 import {
   ClockCircleOutlined,
   EyeInvisibleOutlined,
@@ -19,10 +21,12 @@ import { Button, Input, message, Modal, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
+import OAuthScopeSetting from '../components/OAuthScopeSetting';
 import {
   apiThirdAppOauth2CredentialRegenerate,
   apiThirdAppOauth2InfoGet,
   apiThirdAppOauth2SecretGet,
+  apiThirdAppOauth2SettingGet,
   apiThirdAppOauth2SettingSave,
   type ThirdAppOauth2AppInfo,
   type ThirdAppOauth2CredentialInfo,
@@ -73,6 +77,9 @@ const ThirdAppDetail: React.FC = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [homepageUrl, setHomepageUrl] = useState('');
   const [redirectUri, setRedirectUri] = useState('');
+  /** 勾选中的 scope；与生效值不同才随保存提交审核 */
+  const [scopeDraft, setScopeDraft] = useState<string[]>([]);
+  const [scopeSetting, setScopeSetting] = useState<ThirdAppOauth2Info>();
   const [openPublishModal, setOpenPublishModal] = useState<boolean>(false);
   const [publishVersionRecordsOpen, setPublishVersionRecordsOpen] =
     useState<boolean>(false);
@@ -125,6 +132,12 @@ const ThirdAppDetail: React.FC = () => {
     },
   );
 
+  /** scope 审核态：审核中勾选待审目标，否则勾选生效值 */
+  const applyScopeSetting = useCallback((setting?: ThirdAppOauth2Info) => {
+    setScopeSetting(setting);
+    setScopeDraft(draftScopesOf(setting));
+  }, []);
+
   /** 保存 OAuth2 主页地址与回调地址 */
   const { run: runSaveOauthSetting, loading: saveOauthLoading } = useRequest(
     apiThirdAppOauth2SettingSave,
@@ -141,8 +154,14 @@ const ThirdAppDetail: React.FC = () => {
           );
           setHomepageUrl(info.homepageUrl || '');
           setRedirectUri(info.redirectUri || '');
+          applyScopeSetting(info);
         }
-        message.success(dict('PC.Common.Global.saveSuccess'));
+        message.success(
+          // 回包为待审核即本次提交了 scope 变更
+          info?.scopeApplyStatus === OAuth2ScopeApplyStatusEnum.Pending
+            ? dict('PC.Components.OAuthScopeSetting.submitted')
+            : dict('PC.Common.Global.saveSuccess'),
+        );
       },
     },
   );
@@ -154,6 +173,20 @@ const ThirdAppDetail: React.FC = () => {
     setHomepageUrl(info?.homepageUrl || '');
     setRedirectUri(info?.redirectUri || '');
   }, []);
+
+  /** info 接口不含审核字段，另取 setting（仅用于 scope 状态） */
+  const loadScopeSetting = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const res = await apiThirdAppOauth2SettingGet(
+        projectId,
+        AgentComponentTypeEnum.ThirdApp,
+      );
+      applyScopeSetting(pickResponseData(res));
+    } catch (error) {
+      console.error('Failed to load third app OAuth2 scope setting:', error);
+    }
+  }, [applyScopeSetting, projectId]);
 
   /** 仅刷新 oauth2/info，用于发布成功后更新 publishStatus，不拉 Secret */
   const refreshAppInfo = useCallback(async () => {
@@ -213,7 +246,8 @@ const ThirdAppDetail: React.FC = () => {
       return;
     }
     void loadAppInfo();
-  }, [loadAppInfo, projectId, spaceId]);
+    void loadScopeSetting();
+  }, [loadAppInfo, loadScopeSetting, projectId, spaceId]);
 
   /** 返回三方应用列表 */
   const handleBack = useCallback(() => {
@@ -270,8 +304,19 @@ const ThirdAppDetail: React.FC = () => {
       projectType: AgentComponentTypeEnum.ThirdApp,
       homepageUrl: trimmedHomepageUrl,
       redirectUri: trimmedRedirectUri,
+      // 勾选未变不传：只改地址时不产生审核单
+      ...(scopesChanged(scopeSetting?.scopes, scopeDraft)
+        ? { scopes: scopeDraft }
+        : {}),
     });
-  }, [homepageUrl, projectId, redirectUri, runSaveOauthSetting]);
+  }, [
+    homepageUrl,
+    projectId,
+    redirectUri,
+    runSaveOauthSetting,
+    scopeDraft,
+    scopeSetting,
+  ]);
 
   /**
    * 渲染可编辑 URL 字段。
@@ -449,6 +494,12 @@ const ThirdAppDetail: React.FC = () => {
                 dict('PC.Pages.ThirdAppDetail.callbackUrlPlaceholder'),
                 true,
               )}
+              <OAuthScopeSetting
+                value={scopeDraft}
+                onChange={setScopeDraft}
+                applyStatus={scopeSetting?.scopeApplyStatus}
+                rejectReason={scopeSetting?.scopeRejectReason}
+              />
               <div className={cx(styles['action-row'])}>
                 <Button
                   type="primary"

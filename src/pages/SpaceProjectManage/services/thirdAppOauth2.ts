@@ -1,5 +1,6 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
+import type { OAuth2ScopeApplyStatusEnum } from '@/types/interfaces/oauth2Scope';
 import { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -31,6 +32,12 @@ export interface ThirdAppOauth2Info {
   scopes: string[];
   /** OAuth2 接入是否启用 */
   enabled: boolean;
+  /** 最近一条 scope 申请的审核状态（setting 接口返回；从未申请为 null） */
+  scopeApplyStatus?: OAuth2ScopeApplyStatusEnum | null;
+  /** 待审核的目标 scope（仅 Pending） */
+  pendingScopes?: string[];
+  /** 拒绝原因（仅 Rejected） */
+  scopeRejectReason?: string;
 }
 
 /** OAuth2 应用完整信息（仅读接口响应） */
@@ -68,6 +75,9 @@ export interface ThirdAppOauth2SettingSaveParams {
 
   /*OAuth2 回调地址；留空表示不修改 */
   redirectUri?: string;
+
+  /*申请的 scope；不传表示不修改，空数组表示回落平台默认。提交后待管理员审核，通过前按原范围生效 */
+  scopes?: string[];
 }
 
 /**

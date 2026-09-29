@@ -19,6 +19,7 @@ import { apiUserAppGetById } from '@/services/userProjectApp';
 import { UserService } from '@/services/userService';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { UserInfo } from '@/types/interfaces/login';
+import { OAuth2ScopeApplyStatusEnum } from '@/types/interfaces/oauth2Scope';
 import type { RequestResponse } from '@/types/interfaces/request';
 import {
   UserAppDeployTypeEnum,
@@ -29,6 +30,7 @@ import { copyTextToClipboard } from '@/utils/clipboard';
 import { isValidDomain, normalizeDomain } from '@/utils/common';
 import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
 import { resolveProjectOwnerFlag } from '@/utils/homeSendPlan';
+import { draftScopesOf, scopesChanged } from '@/utils/oauth2Scope';
 import {
   EyeInvisibleOutlined,
   EyeOutlined,
@@ -51,6 +53,7 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
 import ConversationPanel from '../components/ConversationPanel';
+import OAuthScopeSetting from '../components/OAuthScopeSetting';
 import { apiUserProjectConversations } from '../services';
 import {
   apiPrivateServerList,
@@ -156,6 +159,8 @@ const AppProjectDetail: React.FC = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [homepageUrl, setHomepageUrl] = useState<string>('');
   const [redirectUri, setRedirectUri] = useState<string>('');
+  /** 勾选中的 scope；与生效值不同才随保存提交审核 */
+  const [scopeDraft, setScopeDraft] = useState<string[]>([]);
   const [privateServers, setPrivateServers] = useState<PrivateServerInfo[]>([]);
   const [deployServerId, setDeployServerId] = useState<number>();
   const [deployTargetOpen, setDeployTargetOpen] = useState<boolean>(false);
@@ -379,8 +384,14 @@ const AppProjectDetail: React.FC = () => {
           setOauthInfo(info);
           setHomepageUrl(info.homepageUrl || '');
           setRedirectUri(info.redirectUri || '');
+          setScopeDraft(draftScopesOf(info));
         }
-        message.success(dict('PC.Common.Global.saveSuccess'));
+        message.success(
+          // 回包为待审核即本次提交了 scope 变更
+          info?.scopeApplyStatus === OAuth2ScopeApplyStatusEnum.Pending
+            ? dict('PC.Components.OAuthScopeSetting.submitted')
+            : dict('PC.Common.Global.saveSuccess'),
+        );
       },
     },
   );
@@ -403,6 +414,7 @@ const AppProjectDetail: React.FC = () => {
       setOauthInfo(info);
       setHomepageUrl(info?.homepageUrl || '');
       setRedirectUri(info?.redirectUri || '');
+      setScopeDraft(draftScopesOf(info));
       if (!info?.hasClientSecret) {
         setClientSecret('');
         return;
@@ -633,8 +645,19 @@ const AppProjectDetail: React.FC = () => {
       projectType: AgentComponentTypeEnum.UserApp,
       homepageUrl: trimmedHomepageUrl,
       redirectUri: trimmedRedirectUri,
+      // 勾选未变不传：只改地址时不产生审核单
+      ...(scopesChanged(oauthInfo?.scopes, scopeDraft)
+        ? { scopes: scopeDraft }
+        : {}),
     });
-  }, [appId, homepageUrl, redirectUri, runSaveOauthSetting]);
+  }, [
+    appId,
+    homepageUrl,
+    oauthInfo,
+    redirectUri,
+    runSaveOauthSetting,
+    scopeDraft,
+  ]);
 
   /**
    * 设置部署服务器。
@@ -818,6 +841,12 @@ const AppProjectDetail: React.FC = () => {
             dict('PC.Pages.AppProjectDetail.callbackUrlPlaceholder'),
             true,
           )}
+          <OAuthScopeSetting
+            value={scopeDraft}
+            onChange={setScopeDraft}
+            applyStatus={oauthInfo?.scopeApplyStatus}
+            rejectReason={oauthInfo?.scopeRejectReason}
+          />
           <div className={cx(styles['regen-row'])}>
             <Button
               type="primary"

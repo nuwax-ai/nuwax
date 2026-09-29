@@ -1,0 +1,52 @@
+@import '@/styles/token';
+
+.container {
+  margin-top: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label {
+  font-weight: @fontWeightStrong;
+  color: @colorText;
+}
+
+.desc {
+  margin: 4px 0 12px;
+  font-size: 12px;
+  color: @colorTextTertiary;
+}
+
+.alert {
+  margin-bottom: 12px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  align-items: flex-start;
+  margin-inline-start: 0 !important;
+}
+
+.scope {
+  font-family: '~''@{fontFamilyCode}';
+}
+
+.sensitive {
+  margin-left: 6px;
+  margin-inline-end: 0;
+}
+
+.description {
+  display: block;
+  font-size: 12px;
+  color: @colorTextSecondary;
+}
