@@ -156,6 +156,7 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const loadSeqRef = useRef(0);
+  const breadcrumbRef = useRef<HTMLDivElement>(null);
   // 最近选择的工作目录（根视图顶部快速重选，localStorage 持久化）
   const [recentDirs, setRecentDirs] = useState<string[]>([]);
   // 行内编辑态：新建临时行 / 某行重命名，共用一个草稿输入
@@ -204,6 +205,13 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
     setRecentDirs(loadRecentWorkspaceDirs());
     void load('');
   }, [open, load, cancelEdit]);
+
+  // 切换目录时显示路径末端；后续列表更新不打断用户横向回看上层目录。
+  useEffect(() => {
+    if (!open) return;
+    const breadcrumb = breadcrumbRef.current;
+    if (breadcrumb) breadcrumb.scrollLeft = breadcrumb.scrollWidth;
+  }, [open, currentPath]);
 
   const enterDir = (entry: FsDirEntry) => {
     cancelEdit();
@@ -384,11 +392,17 @@ const WorkspaceDirPickerModal: React.FC<WorkspaceDirPickerModalProps> = ({
             {dict('PC.Components.WorkspaceDir.newFolder')}
           </button>
         )}
-        <div className={cx(styles['breadcrumb-box'])}>
+        <div
+          ref={breadcrumbRef}
+          className={cx(styles['breadcrumb-box'])}
+          tabIndex={0}
+          title={currentPath}
+        >
           {displayCrumbs.map(({ name, crumbIndex }, index) => (
             <React.Fragment key={crumbIndex}>
               {index > 0 && <span className={cx(styles['crumb-sep'])}>/</span>}
               <span
+                title={name}
                 className={cx(styles['crumb-item'], {
                   [styles['crumb-current']]: crumbIndex === crumbs.length - 1,
                 })}
