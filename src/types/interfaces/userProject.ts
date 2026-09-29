@@ -1,5 +1,5 @@
 /**
- * 用户项目 / 全栈应用类型定义
+ * 用户项目 / 网站应用类型定义
  * @description 下沉自 pages/AppDevPro/type.ts（分层红线：非页面层禁止依赖 @/pages/**），
  * 页面层原路径再导出保持既有引用不变，新消费方请直接从本模块引入。
  */
@@ -58,7 +58,7 @@ export enum UserAppTaskStatusEnum {
   Cancelled = 'cancelled',
 }
 
-/** 用户项目（包括常规项目、全栈应用、网页应用）分页查询 */
+/** 用户项目（包括常规项目、网站应用、网页应用）分页查询 */
 export type UserProjectPageQueryParams = TablePageRequest<
   Partial<{
     spaceId: number;
@@ -339,7 +339,7 @@ export interface CreateUserProjectParams {
   devAgentId?: number;
 }
 
-/** 更新常规项目参数（传 null 的字段不更新，与全栈应用 update 同语义） */
+/** 更新常规项目参数（传 null 的字段不更新，与网站应用 update 同语义） */
 export interface UpdateUserProjectParams {
   id: number;
   name?: string;
@@ -355,7 +355,7 @@ export interface ProjectLatestConversationResult {
   agentId?: number;
 }
 
-/** 创建全栈应用参数 */
+/** 创建网站应用参数 */
 export interface CreateUserAppParams {
   /** 空间ID，不传则默认放在个人空间 */
   spaceId?: number;
@@ -391,7 +391,7 @@ export interface BuildVersionDto {
   buildTime: string;
 }
 
-/** 全栈应用详情（创建 / get 接口返回；id 即 app_id） */
+/** 网站应用详情（创建 / get 接口返回；id 即 app_id） */
 export interface UserAppInfo {
   /** 应用ID（项目主键 id，即 app_id） */
   id: number;
@@ -452,7 +452,7 @@ export interface UserAppInfo {
   conversationId?: number;
 }
 
-/** 应用域名类型(全栈应用 domain/list 回包) */
+/** 应用域名类型(网站应用 domain/list 回包) */
 export enum UserAppDomainTypeEnum {
   /** 开发环境默认域名 */
   Dev = 'Dev',
@@ -462,7 +462,7 @@ export enum UserAppDomainTypeEnum {
   Custom = 'Custom',
 }
 
-/** 全栈应用绑定的域名(domain/list 回包行) */
+/** 网站应用绑定的域名(domain/list 回包行) */
 export interface UserAppDomainInfo {
   /** 记录 ID */
   id: number;
@@ -480,7 +480,7 @@ export interface UserAppDomainInfo {
   modified: string;
 }
 
-/** 更新全栈应用参数 */
+/** 更新网站应用参数 */
 export interface UpdateUserAppParams {
   /*应用ID */
   id: number;

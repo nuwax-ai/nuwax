@@ -1,13 +1,13 @@
 /** 已发布分类接口中,网页应用分类树的根节点 key */
 export const PAGE_APP_CATEGORY_ROOT_KEY = 'PageApp';
 
-/** 全栈应用子类型标识:回包 targetSubType 为该值时,点击卡片跳全栈应用页 */
+/** 网站应用子类型标识:回包 targetSubType 为该值时,点击卡片跳网站应用页 */
 export const USER_APP_TARGET_SUBTYPE = 'UserApp';
 
 /** 网页应用子类型标识:targetType=Agent 且 targetSubType 为该值时,点击不上报最近使用 */
 export const PAGE_APP_TARGET_SUBTYPE = 'PageApp';
 
-/** 三方应用子类型标识:回包 targetSubType 为该值时,点击卡片与全栈应用同走 /user-app 路由 */
+/** 三方应用子类型标识:回包 targetSubType 为该值时,点击卡片与网站应用同走 /user-app 路由 */
 export const THIRD_APP_TARGET_SUBTYPE = 'ThirdApp';
 
 /** 广场-网页应用地址(「更多」入口跳转) */

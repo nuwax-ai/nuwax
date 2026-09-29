@@ -24,9 +24,9 @@ const cx = classNames.bind(styles);
 export interface AppDevPublishVersionRecordsProps {
   /** 是否显示侧栏 */
   visible: boolean;
-  /** 目标 ID（全栈应用 / 三方应用等项目 ID） */
+  /** 目标 ID（网站应用 / 三方应用等项目 ID） */
   appId: number;
-  /** 目标类型，默认全栈应用 */
+  /** 目标类型，默认网站应用 */
   targetType?: AgentComponentTypeEnum;
   /** 应用名称，下架确认弹窗展示 */
   appName?: string;
@@ -37,7 +37,7 @@ export interface AppDevPublishVersionRecordsProps {
 }
 
 /**
- * 发布版本记录侧栏（全栈应用 / 三方应用共用）。
+ * 发布版本记录侧栏（网站应用 / 三方应用共用）。
  * 当前发布：POST /api/publish/item/list；发布记录：GET /api/user-project/config/history/list。
  *
  * @param props.visible 是否显示
@@ -67,7 +67,7 @@ const AppDevPublishVersionRecords: React.FC<
     [],
   );
 
-  // 查询全栈应用配置历史（发布记录）
+  // 查询网站应用配置历史（发布记录）
   const { run: runHistory } = useRequest(apiUserAppConfigHistoryList, {
     manual: true,
     debounceInterval: 300,
@@ -80,7 +80,7 @@ const AppDevPublishVersionRecords: React.FC<
     },
   });
 
-  // 查询指定全栈应用已发布列表
+  // 查询指定网站应用已发布列表
   const { run: runPublishList } = useRequest(apiPublishItemList, {
     manual: true,
     debounceInterval: 300,
@@ -101,7 +101,7 @@ const AppDevPublishVersionRecords: React.FC<
     );
   }, []);
 
-  // 下架全栈应用
+  // 下架网站应用
   const { run: runOffShelf } = useRequest(apiPublishOffShelf, {
     manual: true,
     debounceInterval: 300,

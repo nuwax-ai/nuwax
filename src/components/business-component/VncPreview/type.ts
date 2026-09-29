@@ -74,7 +74,7 @@ export interface VncPreviewProps {
    */
   onReconnect?: () => Promise<void> | void;
   /**
-   * 全栈应用环境，仅 AppDevPro 传入。
+   * 网站应用环境，仅 AppDevPro 传入。
    * 未传时 vnc-status 老接口不带 appStage。
    */
   appStage?: 'dev' | 'prod';

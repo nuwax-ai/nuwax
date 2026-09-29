@@ -35,7 +35,7 @@ export interface ThirdAppOauth2Info {
 
 /** OAuth2 应用完整信息（仅读接口响应） */
 export interface ThirdAppOauth2AppInfo extends ThirdAppOauth2Info {
-  /** 项目类型：三方应用或全栈应用 */
+  /** 项目类型：三方应用或网站应用 */
   projectType: AgentComponentTypeEnum.ThirdApp | AgentComponentTypeEnum.UserApp;
   /** 应用名称 */
   name: string;

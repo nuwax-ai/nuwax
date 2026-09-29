@@ -300,7 +300,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       items: filterPublishItemList,
     };
 
-    // 全栈应用等：先把分类、发布空间交给调用方，由其构建后再提交申请
+    // 网站应用等：先把分类、发布空间交给调用方，由其构建后再提交申请
     if (onSubmitPublish) {
       await onSubmitPublish({
         remark: values.remark,

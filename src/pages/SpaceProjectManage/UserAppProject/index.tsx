@@ -45,7 +45,7 @@ const normalizeProjectRow = (
 });
 
 /**
- * 全栈应用列表：布局、查询、卡片与常规项目页一致，
+ * 网站应用列表：布局、查询、卡片与常规项目页一致，
  * 仅 page-query 的 projectType 为 UserApp。
  */
 const UserAppProject: React.FC = () => {
@@ -285,7 +285,7 @@ const UserAppProject: React.FC = () => {
         </div>
       )}
 
-      {/* 创建全栈应用弹窗 */}
+      {/* 创建网站应用弹窗 */}
       <CreateUserApp
         spaceId={spaceId}
         mode={CreateUpdateModeEnum.Create}
@@ -297,7 +297,7 @@ const UserAppProject: React.FC = () => {
         }}
       />
 
-      {/* 编辑全栈应用弹窗 */}
+      {/* 编辑网站应用弹窗 */}
       <CreateUserApp
         mode={CreateUpdateModeEnum.Update}
         userAppInfo={editTarget as UserAppInfo | undefined}

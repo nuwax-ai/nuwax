@@ -11,9 +11,9 @@ import React, { useCallback, useState } from 'react';
 
 /** 单应用实例渲染入参(appId + 三方直载地址,与 UserAppPage props 对齐) */
 export interface AppTabInstanceProps {
-  /** 全栈应用 appId(/user-app/:appId 路由参数) */
+  /** 网站应用 appId(/user-app/:appId 路由参数) */
   appId: number;
-  /** 三方应用主页直载地址(空串 = 全栈应用,走域名接口) */
+  /** 三方应用主页直载地址(空串 = 网站应用,走域名接口) */
   homepageUrl: string;
   /** 缓存实例的 UI 可见性；保持实例和 iframe 常驻。 */
   active?: boolean;
