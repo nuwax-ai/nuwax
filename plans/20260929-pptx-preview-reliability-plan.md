@@ -204,6 +204,10 @@ DOMParser 解析出的内容并不自动安全；插入活动页面之前需要�
 
 ## 首期实施记录
 
+### 补充范围：静态分享入口
+
+按用户补充要求，将同一套兼容处理和已修复的渲染库接入 `public/static/file-preview.html`，覆盖 `?sk=` 分享入口与既有 `_ticket` / `docUrl` 入口。浏览器独立 bundle 从固定依赖和共享源码生成，分享页无需加载 React 应用。补充分享详情与文件请求的失败/取消处理、精确页数与页序校验、尺寸变化复用文件缓存、原件下载和 `dl` 开关；变更脚本同时更新 HTML 缓存版本。验收以真实分享链接和静态页面合同测试为依据。
+
 ### 已落地
 
 - `pptxPackage.ts` 在解压前检查 ZIP 中央目录及预算，解压时核验实际大小与 CRC；校验 OOXML 内部关系及原始页序。只清理缺失且未引用的母版声明；正常包复用原 buffer。
@@ -238,3 +242,15 @@ DOMParser 解析出的内容并不自动安全；插入活动页面之前需要�
 根 build 脚本未运行，避免其 prebuild 自动升级/暂存微应用。本次没有修改会话硬约束路径，也没有执行发布或推送。
 
 首期通过本任务独立提交回退；尚未增加运行时兼容开关。生成侧位置仍未定位，资料库共享引擎仍按第四节独立推进。
+
+## 静态 file-preview 接入记录
+
+按用户最终范围，先保证 `public/static/file-preview.html` 的 PPTX 渲染与页面组件一致，测试环境由用户发布后验收。
+
+- 静态 bundle 直接消费相同 `pptxPackage.ts`、`pptxSlideValidation.ts` 和 `pptx-preview@1.0.7` patched main；React 组件同步消费抽取的页序校验 helper。两端均先 `prepare` → `load` → 逐页 `renderSlide` → 校验页数/页面身份并恢复原始页序。
+- `build:file-preview-pptx` 生成已提交的 classic-script 资产；`check:file-preview-pptx` 检查版本、补丁、依赖图和产物漂移。分享页无需 React/Umi，也不使用旧 vendored UMD。
+- 静态页保留 `sk` 分享鉴权；处理详情与文件请求失败、取消、重试，缓存原件与兼容结果供 resize 复用；下载使用原件，并遵循分享 URL 的 `dl` 展示开关。
+- HTML 与动态 PPT runtime 的脚本缓存版本均更新为 `2026.9.29-pptx-sharing`。共享源码更新后须重新运行 `pnpm run build:file-preview-pptx` 并提交生成资产。
+- 代码验证：7 个 Vitest 文件、133/133，通过；独立生成/漂移测试 1/1，通过。ESLint、静态脚本语法及分层检查通过，97 条既有分层豁免不变；全库类型检查仍为 350 条已有诊断，本次路径诊断为 0。
+- 收窄范围前已完成的本机检查：真实短时 `sk` 分享配合显式后端基址渲染 45 页、9 表格，页序正确；resize 后仍为 45 页，文件请求数为 1。匿名详情/原件请求均为 200，缓存下载和匿名原件均为 1,372,636 bytes，SHA256 与原件一致。本机 dev 缺少分享详情代理，因此该检查不记作生产路由或测试环境验收。
+- 本机证据位于 `/tmp/nuwax-static-pptx-browser-20260929/`。临时上传文件已清理；短时分享自动过期。未发布、推送或修改共享 dev 配置。

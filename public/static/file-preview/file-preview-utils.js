@@ -100,20 +100,35 @@ function hideError() {
 // ============================================
 // Dynamic Script Loading
 // ============================================
+const previewScriptLoads = new Map();
+
 function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        // Check if already loaded
-        if (document.querySelector(`script[src="${src}"]`)) {
+    const url = new URL(src, document.baseURI).href;
+    if (previewScriptLoads.has(url)) return previewScriptLoads.get(url);
+
+    const promise = new Promise((resolve, reject) => {
+        const existing = Array.from(document.scripts).find(script => script.src === url);
+        if (existing && existing.dataset.previewLoaded === 'true') {
             resolve();
             return;
         }
 
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = () => reject(new Error(`Failed to load: ${src}`));
-        document.head.appendChild(script);
+        const script = existing || document.createElement('script');
+        script.src = url;
+        script.addEventListener('load', () => {
+            script.dataset.previewLoaded = 'true';
+            resolve();
+        }, { once: true });
+        script.addEventListener('error', () => {
+            // 失败的 script 不能被下次重试当作已经加载。
+            previewScriptLoads.delete(url);
+            script.remove();
+            reject(new Error(`Failed to load: ${src}`));
+        }, { once: true });
+        if (!existing) document.head.appendChild(script);
     });
+    previewScriptLoads.set(url, promise);
+    return promise;
 }
 
 function loadStylesheet(href) {
