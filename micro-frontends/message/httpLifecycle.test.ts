@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import {
   afterAll,
@@ -50,7 +50,8 @@ beforeAll(async () => {
       '-C',
       path.join(workspace, 'submodules/nuwax-im'),
       'archive',
-      'f7fd703688aba50573621f9ee8e32ecf0ef9f75c',
+      JSON.parse(readFileSync(path.join(adapterDir, 'adapter.json'), 'utf8'))
+        .pin,
       'nuwax-im-web/src',
       'nuwax-im-web/vite.config.ts',
       'nuwax-im-web/tsconfig.node.json',

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import {
   afterAll,
@@ -21,6 +21,7 @@ let source: string;
 let chat: any;
 let runtime: any;
 let notifications: any;
+let bridge: any;
 const sockets: any[] = [];
 const me = vi.fn();
 const register = vi.fn();
@@ -47,7 +48,8 @@ beforeAll(async () => {
       '-C',
       sourceRepo,
       'archive',
-      'f7fd703688aba50573621f9ee8e32ecf0ef9f75c',
+      JSON.parse(readFileSync(path.join(adapterDir, 'adapter.json'), 'utf8'))
+        .pin,
       'nuwax-im-web/src',
       'nuwax-im-web/vite.config.ts',
       'nuwax-im-web/tsconfig.node.json',
@@ -145,6 +147,38 @@ afterAll(() => {
 });
 
 describe('消息 main store 的正式适配生命周期', () => {
+  it('监听桥跟随重建后的真实 store，卸载后旧 store 不再推未读或覆盖快照', async () => {
+    bridge = await import(
+      /* @vite-ignore */ path.join(source, 'lib/imBridge.ts')
+    );
+    const unread = vi.fn();
+    const off = bridge.onImUnreadChange(unread);
+    try {
+      const previous = chat.useChatStore;
+      previous.setState({ userId: '101', unreadTotal: 100 });
+      expect(unread).toHaveBeenLastCalledWith({ total: 100 });
+      expect(bridge.getImBridgeSnapshot().unreadTotal).toBe(100);
+      chat.disposeImEmbeddedSession();
+      previous.setState({ unreadTotal: 200 });
+      expect(unread).toHaveBeenCalledOnce();
+      expect(bridge.getImBridgeSnapshot()).toMatchObject({
+        unreadTotal: 0,
+        userId: null,
+      });
+      chat.beginImEmbeddedSession();
+      chat.useChatStore.setState({ userId: '102', unreadTotal: 7 });
+      expect(unread).toHaveBeenLastCalledWith({ total: 7 });
+      expect(bridge.getImBridgeSnapshot()).toMatchObject({
+        unreadTotal: 7,
+        userId: '102',
+      });
+      previous.setState({ unreadTotal: 300 });
+      expect(unread).toHaveBeenCalledTimes(2);
+      expect(bridge.getImBridgeSnapshot().unreadTotal).toBe(7);
+    } finally {
+      off();
+    }
+  });
   it('卸载后晚到 whoami 不写状态、不注册设备、不建连', async () => {
     const request = deferred<{ userId: string; userName: string }>();
     me.mockReturnValueOnce(request.promise);
