@@ -7,6 +7,20 @@ import { initializeWithFallback } from '@/utils/styleInitializer';
 import { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 
+const setFavicon = (faviconUrl?: string) => {
+  const links = document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]');
+  const link = links[0] || document.createElement('link');
+  links.forEach((existingLink) => {
+    if (existingLink !== link) existingLink.remove();
+  });
+  link.rel = 'icon';
+  // 配置支持多种图片格式，不固定声明为 ICO。
+  link.removeAttribute('type');
+  // 空配置也要清除旧图标，同时阻止浏览器请求默认 favicon。
+  link.href = faviconUrl || 'data:,';
+  if (!link.isConnected) document.head.appendChild(link);
+};
+
 export default () => {
   const [loadEnd, setLoadEnd] = useState<boolean>(false);
   const [tenantConfigInfo, setTenantConfigInfo] = useState<TenantConfigInfo>();
@@ -37,17 +51,7 @@ export default () => {
       document.title = siteDescription
         ? `${siteName} - ${siteDescription}`
         : siteName;
-      if (faviconUrl) {
-        // 创建一个新的link元素
-        const link = document.createElement('link');
-        link.rel = 'shortcut icon';
-        link.href = faviconUrl;
-        link.type = 'image/x-icon';
-
-        // 获取head元素并添加link元素
-        const head = document.head || document.getElementsByTagName('head')[0];
-        head.appendChild(link);
-      }
+      setFavicon(faviconUrl);
 
       // 租户信息保存到localStorage后，重新初始化统一主题服务
       // 让它重新读取包含templateConfig的租户配置
@@ -111,6 +115,7 @@ export default () => {
     if (!!tenantConfigInfoString) {
       const tenantConfigInfo = JSON.parse(tenantConfigInfoString);
       setTenantConfigInfo(tenantConfigInfo);
+      setFavicon(tenantConfigInfo.faviconUrl);
     }
   }, [setTenantConfigInfo]);
 

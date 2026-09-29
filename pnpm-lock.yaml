@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  pptx-preview@1.0.7:
+    hash: 2859aae984f02bca297d7bdede01823f0d8fbea70320ed22c9c9112e2ecddf9f
+    path: patches/pptx-preview@1.0.7.patch
   vfile-location@5.0.3:
     hash: 90c619b34ed0a2fb91b2cfab03a06810ea62a02288e26d8bbadf2b18a9b24735
     path: patches/vfile-location@5.0.3.patch
@@ -184,6 +187,9 @@ importers:
       jspdf:
         specifier: ^3.0.4
         version: 3.0.4
+      jszip:
+        specifier: 3.10.1
+        version: 3.10.1
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -200,8 +206,8 @@ importers:
         specifier: 7.0.1
         version: 7.0.1(monaco-editor@0.53.0)(webpack@5.101.0(clean-css@5.3.3)(esbuild@0.27.0)(lightningcss@1.33.0)(postcss@8.5.26))
       pptx-preview:
-        specifier: ^1.0.7
-        version: 1.0.7
+        specifier: 1.0.7
+        version: 1.0.7(patch_hash=2859aae984f02bca297d7bdede01823f0d8fbea70320ed22c9c9112e2ecddf9f)
       prismjs:
         specifier: ^1.30.0
         version: 1.30.0
@@ -21634,7 +21640,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  pptx-preview@1.0.7:
+  pptx-preview@1.0.7(patch_hash=2859aae984f02bca297d7bdede01823f0d8fbea70320ed22c9c9112e2ecddf9f):
     dependencies:
       echarts: 5.6.0
       jszip: 3.10.1

@@ -76,8 +76,14 @@
   padding: 0 16px;
   border-radius: @borderRadiusLg;
   background: @colorFillQuaternary;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
   white-space: nowrap;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
 }
 
 .crumb-item {

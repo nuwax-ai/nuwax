@@ -12,6 +12,10 @@ let fileType = '';
 let originalFileType = ''; // Record original file extension for precise notification
 let downloadUrl = ''; // Download API URL
 let fileName = ''; // File name
+let activePreviewRequest = null;
+let activeDownloadController = null;
+let previewRequestId = 0;
+const PPTX_RUNTIME_URL = '/static/file-preview/file-preview-pptx.js?v=2026.9.29-pptx-sharing';
 const SHARE_EXPIRED_MESSAGE =
     'The sharing link has expired, please regenerate it';
 const params = getQueryParams();
@@ -68,26 +72,184 @@ async function renderPdf(url, container) {
     await currentPreviewer.preview(url);
 }
 
-async function renderPptx(url, container) {
-    await loadScript('/libs/js-preview/pptx-preview.umd.js');
+function isCurrentPreview(request) {
+    return activePreviewRequest === request && !request.controller.signal.aborted;
+}
 
-    if (typeof PptxPreview === 'undefined' && typeof pptxPreview === 'undefined') {
-        throw new Error('Failed to load PPTX preview library');
+function assertCurrentPreview(request) {
+    if (!isCurrentPreview(request)) throw new DOMException('Preview cancelled', 'AbortError');
+}
+
+function canDownloadCurrentFile() {
+    return fileType !== 'openui' && !!downloadUrl && (!params.sk || params.dl === '1');
+}
+
+function pptxErrorMessage(error) {
+    switch (error.code) {
+        case 'legacy': return 'Legacy PPT format is not supported. Please use PPTX.';
+        case 'damaged': return 'This presentation is damaged or incomplete.';
+        case 'invalid': return 'This file is not a valid PPTX presentation.';
+        case 'tooLarge': return 'This presentation exceeds the preview size limit.';
+        case 'incomplete': return 'Some slides could not be rendered. Please retry.';
+        default: return error.message || 'Document rendering failed';
     }
+}
 
-    const PptxLib = typeof PptxPreview !== 'undefined' ? PptxPreview : pptxPreview;
-    currentPreviewer = PptxLib.init(container, {
-        width: container.clientWidth || 800,
-        height: container.clientHeight || 600
+async function readPptxBuffer(url, request, maxBytes) {
+    // 同源首跳可用 ticket cookie，重定向到对象存储后不发送跨源凭据。
+    const response = await fetch(url, {
+        signal: request.controller.signal,
+        credentials: 'same-origin',
+        cache: 'no-cache',
     });
-
-    // Fetch file as ArrayBuffer
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`File download failed: ${response.status}`);
+    assertCurrentPreview(request);
+    if (!response.ok) throw new Error(`File download failed: ${response.status}`);
+    const tooLarge = () => Object.assign(new Error('Presentation exceeds the preview size limit'), { code: 'tooLarge' });
+    if (Number(response.headers.get('Content-Length')) > maxBytes) {
+        await response.body?.cancel();
+        throw tooLarge();
     }
-    const arrayBuffer = await response.arrayBuffer();
-    await currentPreviewer.preview(arrayBuffer);
+    if (!response.body || !response.body.getReader) {
+        const buffer = await response.arrayBuffer();
+        assertCurrentPreview(request);
+        if (buffer.byteLength > maxBytes) throw tooLarge();
+        return buffer;
+    }
+    const reader = response.body.getReader();
+    const chunks = [];
+    let size = 0;
+    const cancel = () => { reader.cancel().catch(() => {}); };
+    request.controller.signal.addEventListener('abort', cancel, { once: true });
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            assertCurrentPreview(request);
+            if (done) break;
+            size += value.byteLength;
+            if (size > maxBytes) {
+                await reader.cancel();
+                throw tooLarge();
+            }
+            chunks.push(value);
+        }
+        const buffer = new Uint8Array(size);
+        let offset = 0;
+        for (const chunk of chunks) {
+            buffer.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+        return buffer.buffer;
+    } finally {
+        request.controller.signal.removeEventListener('abort', cancel);
+        reader.releaseLock();
+    }
+}
+
+async function renderPptx(url, container, request) {
+    let disposed = false;
+    let renderId = 0;
+    let resizeTimer;
+    let observer;
+    let prepared;
+    let runtime;
+    let visiblePreviewer;
+    let requestedSize;
+    const instances = new Set();
+    const session = {
+        originalBuffer: null,
+        destroy() {
+            if (disposed) return;
+            disposed = true;
+            renderId++;
+            clearTimeout(resizeTimer);
+            observer?.disconnect();
+            window.removeEventListener('resize', onResize);
+            for (const previewer of instances) {
+                try { previewer.destroy(); } catch (e) { /* 继续释放其它实例 */ }
+            }
+            instances.clear();
+            visiblePreviewer = null;
+            prepared = null;
+        },
+    };
+    currentPreviewer = session;
+
+    const isLive = () => !disposed && isCurrentPreview(request);
+    const getSize = () => ({ width: container.clientWidth || 800, height: container.clientHeight || 600 });
+    async function render(preserveScroll) {
+        if (!isLive()) return;
+        const id = ++renderId;
+        requestedSize = getSize();
+        const scroll = preserveScroll ? { outer: container.scrollTop, inner: visiblePreviewer?.wrapper?.scrollTop || 0 } : null;
+        // 每一代解析使用独立 host；旧解析不能写入当前页面。
+        const host = document.createElement('div');
+        const previewer = runtime.init(host, { ...requestedSize, mode: 'list' });
+        instances.add(previewer);
+        try {
+            await previewer.load(prepared.buffer);
+            if (!isLive() || id !== renderId) {
+                previewer.destroy();
+                instances.delete(previewer);
+                host.replaceChildren();
+                return;
+            }
+            for (let index = 0; index < previewer.pptx.slides.length; index++) {
+                previewer.htmlRender.renderSlide(index);
+            }
+            runtime.validateAndOrderPptxSlides(previewer, host, prepared.slidePaths);
+            if (visiblePreviewer) {
+                visiblePreviewer.destroy();
+                instances.delete(visiblePreviewer);
+            }
+            visiblePreviewer = previewer;
+            container.className = 'preview-container';
+            container.replaceChildren(host);
+            if (scroll) {
+                container.scrollTop = scroll.outer;
+                if (previewer.wrapper) previewer.wrapper.scrollTop = scroll.inner;
+            }
+        } catch (error) {
+            previewer.destroy();
+            instances.delete(previewer);
+            host.replaceChildren();
+            if (!isLive() || id !== renderId) return;
+            throw error;
+        }
+    }
+    function onResize() {
+        if (!isLive() || !prepared || !requestedSize) return;
+        const size = getSize();
+        if (size.width === requestedSize.width && size.height === requestedSize.height) return;
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            render(true).catch(error => {
+                if (!isLive()) return;
+                session.destroy();
+                showError(pptxErrorMessage(error), canDownloadCurrentFile() ? downloadUrl : '');
+                notifyParent({ type: 'preview_error', error: pptxErrorMessage(error) });
+            });
+        }, 150);
+    }
+    try {
+        await loadScript(PPTX_RUNTIME_URL);
+        assertCurrentPreview(request);
+        runtime = window.NuwaxPptxPreview;
+        if (!runtime) throw new Error('Failed to load PPTX preview library');
+        session.originalBuffer = await readPptxBuffer(url, request, runtime.DEFAULT_PPTX_PACKAGE_LIMITS.maxCompressedBytes);
+        prepared = await runtime.preparePptxForPreview(session.originalBuffer, { signal: request.controller.signal });
+        assertCurrentPreview(request);
+        await render(false);
+        assertCurrentPreview(request);
+        if (typeof ResizeObserver !== 'undefined') {
+            observer = new ResizeObserver(onResize);
+            observer.observe(container);
+        } else {
+            window.addEventListener('resize', onResize);
+        }
+    } catch (error) {
+        session.destroy();
+        throw error;
+    }
 }
 
 // ============================================
@@ -128,6 +290,8 @@ async function renderHtml(url, container) {
  * （OpenUI / 其它分享预览共用；OpenUI 渲染见 file-preview-openui.js）
  */
 function handleShareExpired() {
+    activePreviewRequest?.controller.abort();
+    downloadUrl = '';
     if (currentPreviewer && typeof currentPreviewer.destroy === 'function') {
         try {
             currentPreviewer.destroy();
@@ -562,117 +726,137 @@ async function renderMarkdown(url, container) {
 // Main Preview Function
 // ============================================
 async function startPreview() {
-    const sk = params.sk || '';
-    // 1. If sk parameter exists, it's a sharing operation
-    if (sk) {
-        const response = await fetch(`${baseUrl}/api/agent/conversation/share/detail/${sk}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-        const { data, code, message } = await response.json();
-        if (code === '0000') {
-            fileUrl = baseUrl + data.content + '?sk=' + sk;
-            // Extract file name from path, excluding query parameters
-            const purePath = data.content.split('?')[0];
-            fileName = purePath.split('/').pop();
-            // 优先识别 .openui.json，避免被拆成普通 json
-            fileType = resolvePreviewFileType(purePath);
-            // .md 分享：用文件名（含后缀）作为页面标题，其它格式保持默认标题
-            applyMarkdownDocumentTitle(purePath);
-            // Set download URL
-            downloadUrl = baseUrl + data.content + '?sk=' + sk;
-            
-        } else {
-            showError(message);
-            return;
-        }
-    } 
-    
-    // 2. If _ticket parameter exists, it's a normal preview operation
-    if(params._ticket){
-        // Normal preview operation: get file URL and type
-        fileUrl = params.fileUrl + "?_ticket=" + params._ticket;
-        // 从路径中提取文件名，排除查询参数
-        const purePath = params.fileUrl.split('?')[0];
-        fileName = purePath.split('/').pop();
-        fileType = resolvePreviewFileType(purePath);
-        // 设置下载地址
-        downloadUrl = params.fileUrl + "?sk=" + params._sk;
+    activePreviewRequest?.controller.abort();
+    activeDownloadController?.abort();
+    activeDownloadController = null;
+    const request = { id: ++previewRequestId, controller: new AbortController() };
+    activePreviewRequest = request;
+    if (currentPreviewer && typeof currentPreviewer.destroy === 'function') {
+        try { currentPreviewer.destroy(); } catch (e) { /* ignore */ }
     }
-
-    // 3. If docUrl parameter exists, it's a knowledge base document preview operation
-    if (params.docUrl) {
-        fileUrl = params.docUrl;
-        // 从路径中提取文件名，排除查询参数
-        const purePath = params.docUrl.split('?')[0];
-        fileName = purePath.split('/').pop();
-        fileType = resolvePreviewFileType(purePath);
-        // 设置下载地址
-        downloadUrl = params.docUrl;
+    currentPreviewer = null;
+    fileUrl = '';
+    fileType = '';
+    downloadUrl = '';
+    fileName = '';
+    const container = document.getElementById('previewContainer');
+    if (container) container.replaceChildren();
+    document.getElementById('previewDownloadBtn')?.classList.add('hidden');
+    document.getElementById('errorDownloadBtn')?.classList.add('hidden');
+    const errorDownloadButton = document.getElementById('errorDownloadBtn');
+    if (errorDownloadButton) {
+        errorDownloadButton.disabled = false;
+        errorDownloadButton.style.opacity = '1';
     }
-
-    // Auto-detect file type from URL if not provided
-    if (!fileType && fileUrl) {
-        const purePath = fileUrl.split('?')[0];
-        const detected = resolvePreviewFileType(purePath);
-        const supportedTypes = [
-            'docx', 'xlsx', 'xls', 'pdf', 'pptx', 'ppt',
-            'md', 'html', 'css', 'js', 'ts', 'txt', 'json', 'openui',
-            'png', 'jpg', 'jpeg', 'gif', 'svg', 'py', 'java',
-            'mp4', 'webm', 'ogg', 'mov', 'avi',
-            'mp3', 'wav', 'm4a', 'aac', 'flac', 'wma'
-        ];
-        if (supportedTypes.includes(detected)) {
-            fileType = detected;
-        }
-    }
-
-    // Save original file type for subsequent precise notification
-    originalFileType = fileType;
-
-    // OpenUI 是交互式会话产物，只提供预览与表单交互，不展示文件下载入口。
-    if (fileType === 'openui') {
-        downloadUrl = '';
-        const previewDownloadButton = document.getElementById('previewDownloadBtn');
-        if (previewDownloadButton) previewDownloadButton.remove();
-        const errorDownloadButton = document.getElementById('errorDownloadBtn');
-        if (errorDownloadButton) errorDownloadButton.remove();
-    }
-
-    // Normalize file types for renderer distribution
-    if (fileType === 'xls') fileType = 'xlsx';
-    if (fileType === 'ppt') fileType = 'pptx';
-    if (fileType === 'doc') fileType = 'docx';
-
-
-    if (!fileUrl) {
-        showError('File URL not provided (missing fileUrl parameter)');
-        return;
-    }
-
-    if (!fileType) {
-        showError('File type not provided (missing fileType parameter)');
-        return;
-    }
-
     showLoading();
     hideError();
 
-    const container = document.getElementById('previewContainer');
-    if (container) {
-        container.innerHTML = '';
-
-        // Destroy previous previewer
-        if (currentPreviewer && typeof currentPreviewer.destroy === 'function') {
-            try {
-                currentPreviewer.destroy();
-            } catch (e) { /* ignore */ }
-            currentPreviewer = null;
+    try {
+        const sk = params.sk || '';
+        // 1. If sk parameter exists, it's a sharing operation
+        if (sk) {
+            const response = await fetch(`${baseUrl}/api/agent/conversation/share/detail/${sk}`, {
+                method: 'GET',
+                signal: request.controller.signal,
+                credentials: 'same-origin',
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            assertCurrentPreview(request);
+            if (!response.ok) throw new Error(`Failed to load sharing link: ${response.status}`);
+            const { data, code, message } = await response.json();
+            assertCurrentPreview(request);
+            if (code === '0000' && data && data.content) {
+                const sharedUrl = new URL(data.content, baseUrl);
+                sharedUrl.searchParams.set('sk', sk);
+                fileUrl = sharedUrl.href;
+                // Extract file name from path, excluding query parameters
+                const purePath = data.content.split('?')[0];
+                fileName = purePath.split('/').pop();
+                // 优先识别 .openui.json，避免被拆成普通 json
+                fileType = resolvePreviewFileType(purePath);
+                // .md 分享：用文件名（含后缀）作为页面标题，其它格式保持默认标题
+                applyMarkdownDocumentTitle(purePath);
+                // Set download URL
+                downloadUrl = sharedUrl.href;
+            
+            } else {
+                throw new Error(message || SHARE_EXPIRED_MESSAGE);
+            }
+        }
+    
+        // 2. If _ticket parameter exists, it's a normal preview operation
+        else if (params.fileUrl) {
+            // Normal preview operation: get file URL and type
+            const previewUrl = new URL(params.fileUrl, baseUrl);
+            if (params._ticket) previewUrl.searchParams.set('_ticket', params._ticket);
+            fileUrl = previewUrl.href;
+            // 从路径中提取文件名，排除查询参数
+            const purePath = params.fileUrl.split('?')[0];
+            fileName = purePath.split('/').pop();
+            fileType = resolvePreviewFileType(purePath);
+            // 设置下载地址
+            const originalUrl = new URL(params.fileUrl, baseUrl);
+            if (params._sk) originalUrl.searchParams.set('sk', params._sk);
+            downloadUrl = originalUrl.href;
         }
 
-        try {
+        // 3. If docUrl parameter exists, it's a knowledge base document preview operation
+        else if (params.docUrl) {
+            fileUrl = params.docUrl;
+            // 从路径中提取文件名，排除查询参数
+            const purePath = params.docUrl.split('?')[0];
+            fileName = purePath.split('/').pop();
+            fileType = resolvePreviewFileType(purePath);
+            // 设置下载地址
+            downloadUrl = params.docUrl;
+        }
+
+        // Auto-detect file type from URL if not provided
+        if (!fileType && fileUrl) {
+            const purePath = fileUrl.split('?')[0];
+            const detected = resolvePreviewFileType(purePath);
+            const supportedTypes = [
+                'docx', 'xlsx', 'xls', 'pdf', 'pptx', 'ppt',
+                'md', 'html', 'css', 'js', 'ts', 'txt', 'json', 'openui',
+                'png', 'jpg', 'jpeg', 'gif', 'svg', 'py', 'java',
+                'mp4', 'webm', 'ogg', 'mov', 'avi',
+                'mp3', 'wav', 'm4a', 'aac', 'flac', 'wma'
+            ];
+            if (supportedTypes.includes(detected)) {
+                fileType = detected;
+            }
+        }
+
+        // Save original file type for subsequent precise notification
+        originalFileType = fileType;
+
+        // OpenUI 是交互式会话产物，只提供预览与表单交互，不展示文件下载入口。
+        if (fileType === 'openui') {
+            downloadUrl = '';
+            const previewDownloadButton = document.getElementById('previewDownloadBtn');
+            if (previewDownloadButton) previewDownloadButton.remove();
+            const errorDownloadButton = document.getElementById('errorDownloadBtn');
+            if (errorDownloadButton) errorDownloadButton.remove();
+        }
+
+        // Normalize file types for renderer distribution
+        if (fileType === 'xls') fileType = 'xlsx';
+        if (fileType === 'ppt') fileType = 'pptx';
+        if (fileType === 'doc') fileType = 'docx';
+
+
+        if (!fileUrl) {
+            throw new Error('File URL not provided (missing fileUrl parameter)');
+        }
+
+        if (!fileType) {
+            throw new Error('File type not provided (missing fileType parameter)');
+        }
+
+        if (container) {
             switch (fileType) {
                 // Office documents
                 case 'docx':
@@ -685,7 +869,7 @@ async function startPreview() {
                     await renderPdf(fileUrl, container);
                     break;
                 case 'pptx':
-                    await renderPptx(fileUrl, container);
+                    await renderPptx(fileUrl, container, request);
                     break;
 
                 // Images
@@ -767,10 +951,11 @@ async function startPreview() {
                     throw new Error(`Unable to preview this file type. Previewing [${originalFileType}] format is currently not supported.`);
             }
 
+            assertCurrentPreview(request);
             hideLoading();
 
             // Show bottom-right download button only when dl=1
-            if (fileType !== 'openui' && params.dl === '1' && downloadUrl) {
+            if (params.dl === '1' && canDownloadCurrentFile()) {
                 const previewDownloadBtn = document.getElementById('previewDownloadBtn');
                 if (previewDownloadBtn) {
                     previewDownloadBtn.classList.remove('hidden');
@@ -780,11 +965,13 @@ async function startPreview() {
             // Notify parent
             notifyParent({ type: 'preview_success', fileType });
 
-        } catch (error) {
-            console.error('[FilePreview] Render error:', error);
-            showError(error.message || 'Document rendering failed', downloadUrl);
-            notifyParent({ type: 'preview_error', error: error.message });
         }
+    } catch (error) {
+        if (!isCurrentPreview(request) || error.name === 'AbortError') return;
+        console.error('[FilePreview] Render error:', error);
+        const message = fileType === 'pptx' ? pptxErrorMessage(error) : (error.message || 'Document rendering failed');
+        showError(message, canDownloadCurrentFile() ? downloadUrl : '');
+        notifyParent({ type: 'preview_error', error: message });
     }
 }
 
@@ -824,7 +1011,7 @@ function requestNuwaxAppFileDownload() {
 }
 
 async function downloadFile() {
-    if (fileType === 'openui') {
+    if (fileType === 'openui' || (params.sk && params.dl !== '1')) {
         return;
     }
 
@@ -873,6 +1060,14 @@ async function downloadFile() {
         return;
     }
 
+    activeDownloadController?.abort();
+    const controller = new AbortController();
+    activeDownloadController = controller;
+    const request = activePreviewRequest;
+    const sourceUrl = downloadUrl;
+    const sourceName = fileName;
+    const originalBuffer = fileType === 'pptx' ? currentPreviewer?.originalBuffer : null;
+    const isLive = () => activeDownloadController === controller && !controller.signal.aborted && isCurrentPreview(request);
     try {
         const downloadBtn = document.getElementById('errorDownloadBtn');
         if (downloadBtn) {
@@ -880,16 +1075,16 @@ async function downloadFile() {
             downloadBtn.style.opacity = '0.6';
         }
 
-        const response = await fetch(downloadUrl, {
+        // 缓存的是下载原件，兼容处理后的 buffer 永不作为下载内容。
+        const response = originalBuffer ? null : await fetch(sourceUrl, {
             method: 'GET',
+            credentials: 'same-origin',
+            signal: controller.signal,
         });
-
-        if (!response.ok) {
-            throw new Error(`Download failed: ${response.status}`);
-        }
-
-        const contentDisposition = response.headers.get('Content-Disposition');
-        let downloadFileName = fileName || 'download';
+        if (!isLive()) return;
+        if (response && !response.ok) throw new Error(`Download failed: ${response.status}`);
+        const contentDisposition = response?.headers.get('Content-Disposition');
+        let downloadFileName = sourceName || 'download';
         try {
             downloadFileName = decodeURIComponent(downloadFileName);
         } catch (e) {
@@ -908,7 +1103,10 @@ async function downloadFile() {
             }
         }
 
-        const blob = await response.blob();
+        const blob = originalBuffer ? new Blob([originalBuffer], {
+            type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        }) : await response.blob();
+        if (!isLive()) return;
         
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -922,9 +1120,12 @@ async function downloadFile() {
         document.body.removeChild(a);
         
     } catch (error) {
+        if (!isLive() || error.name === 'AbortError') return;
         console.error('[FilePreview] Download error:', error);
         showError(error.message || 'Download failed');
     } finally {
+        if (activeDownloadController !== controller) return;
+        activeDownloadController = null;
         const downloadBtn = document.getElementById('errorDownloadBtn');
         if (downloadBtn) {
             downloadBtn.disabled = false;
@@ -937,3 +1138,13 @@ async function downloadFile() {
 // Initialize
 // ============================================
 document.addEventListener('DOMContentLoaded', startPreview);
+window.addEventListener('pagehide', () => {
+    activePreviewRequest?.controller.abort();
+    activeDownloadController?.abort();
+    activeDownloadController = null;
+    currentPreviewer?.destroy?.();
+    currentPreviewer = null;
+});
+window.addEventListener('pageshow', event => {
+    if (event.persisted) startPreview();
+});
