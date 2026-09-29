@@ -41,9 +41,9 @@
     &::before {
       content: '';
       position: absolute;
-      inset-inline: 4px;
+      inset-inline: 0;
       bottom: 0;
-      height: 3px;
+      height: 1px;
       background: var(--category-tab-indicator);
       border-radius: 999px;
       pointer-events: none;
@@ -67,6 +67,7 @@
 
   :global(.ant-segmented) :global(.ant-segmented-item-label) {
     color: var(--category-tab-text);
+    padding-inline: 0;
   }
 
   :global(.ant-segmented)
@@ -114,7 +115,7 @@
 }
 
 .item-text {
-  font-weight: 600;
+  font-weight: 400;
   white-space: nowrap;
 }
 
