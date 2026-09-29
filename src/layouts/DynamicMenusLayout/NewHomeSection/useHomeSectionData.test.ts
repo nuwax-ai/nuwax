@@ -8,7 +8,8 @@
  * - 分页 append 按 lastId 续拉 + 回包去重
  * umi / agentConfig 走 vi.mock（仓内 vitest 不能 import umi 的既有约束）。
  */
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, render, renderHook, waitFor } from '@testing-library/react';
+import { createElement, useEffect } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TaskStatus } from '@/types/enums/agent';
@@ -144,6 +145,32 @@ describe('useHomeSectionData', () => {
     expect(result.current.visibleConversationList.map((i) => i.id)).toEqual([
       1,
     ]);
+  });
+
+  it('经典形态子组件挂载时首载：接口返回后 loading 收敛', async () => {
+    apiAgentConversationListMock.mockResolvedValue({
+      data: [buildConversation({ id: 1 })],
+    });
+    const useHomeSectionData = await freshHook();
+    let shell: ReturnType<typeof useHomeSectionData> | undefined;
+
+    const InitialLoadChild = ({ initialLoad }: { initialLoad: () => void }) => {
+      useEffect(() => {
+        initialLoad();
+      }, [initialLoad]);
+      return null;
+    };
+    const ClassicParent = () => {
+      shell = useHomeSectionData({ isSidebarNavMode: false });
+      return createElement(InitialLoadChild, {
+        initialLoad: shell.initialLoad,
+      });
+    };
+
+    const view = render(createElement(ClassicParent));
+    await waitFor(() => expect(shell?.loading).toBe(false));
+    expect(shell?.visibleConversationList.map((item) => item.id)).toEqual([1]);
+    view.unmount();
   });
 
   it('缓存互补：重挂载带缓存时 initialLoad 走静默（loading 全程不抬升）', async () => {
