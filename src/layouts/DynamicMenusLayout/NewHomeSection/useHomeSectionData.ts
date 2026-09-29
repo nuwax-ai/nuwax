@@ -41,7 +41,14 @@ import {
 } from '@/utils/directorySyncEvents';
 import eventBus from '@/utils/eventBus';
 import { jumpTo } from '@/utils/router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useParams } from 'umi';
 import { extractConversationIdFromPath } from '../sidebarSelectionPolicy';
 
@@ -291,7 +298,9 @@ export function useHomeSectionData(options: {
     [hasMore, localList, calcPageSize, searchKeyword],
   );
 
-  useEffect(() => {
+  // 经典布局的子组件会在挂载 effect 中调用 initialLoad；子 effect 先于本
+  // hook 的普通 effect 执行。布局 effect 先于子组件普通 effect，确保首载拿到请求入口。
+  useLayoutEffect(() => {
     loadListRef.current = loadList;
   }, [loadList]);
 
