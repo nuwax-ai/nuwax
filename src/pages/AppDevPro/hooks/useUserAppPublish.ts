@@ -25,6 +25,7 @@ import type {
   UserAppTaskServiceProgress,
   UserAppTaskTerminalStatus,
 } from '../type';
+import { pollUserAppReadiness } from '../utils/previewHealthCheck';
 import { pickUserAppEnvDomain } from '../utils/userAppPreviewUrl';
 import {
   USER_APP_BUILD_SSE_EVENT,
@@ -104,7 +105,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       activeStageRef.current = 'build';
     } else if (next === 'checkingDeployable') {
       activeStageRef.current = 'check';
-    } else if (next === 'deploying') {
+    } else if (next === 'deploying' || next === 'checkingReadiness') {
       activeStageRef.current = 'deploy';
     }
     setPhase(next);
@@ -238,6 +239,28 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, [appId, setPublishPhase]);
 
   /**
+   * 生产部署接口成功后，轮询线上环境直到应用真正可访问。
+   * 用户停止部署时结束，不进入成功态。
+   */
+  const waitUntilProdReady = useCallback(async () => {
+    if (!appId) {
+      throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
+    }
+    setPublishPhase('checkingReadiness');
+    const ready = await pollUserAppReadiness(
+      appId,
+      UserAppDbEnvEnum.Prod,
+      () => cancelledRef.current,
+    );
+    if (cancelledRef.current) {
+      return;
+    }
+    if (!ready) {
+      throw new Error(dict('PC.Pages.AppDevPro.startFailed'));
+    }
+  }, [appId, setPublishPhase]);
+
+  /**
    * 部署成功后并行刷新应用详情与域名列表。
    * 只回写页面状态、拼 Prod 访问地址；失败不改 phase。
    */
@@ -353,7 +376,8 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         phase === 'starting' ||
         phase === 'building' ||
         phase === 'checkingDeployable' ||
-        phase === 'deploying'
+        phase === 'deploying' ||
+        phase === 'checkingReadiness'
       ) {
         setOpen(true);
         return;
@@ -375,8 +399,13 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
           markCancelled();
           return;
         }
+        await waitUntilProdReady();
+        if (cancelledRef.current) {
+          markCancelled();
+          return;
+        }
+        await refreshAfterDeploy();
         setPhase('success');
-        void refreshAfterDeploy();
       } catch (error) {
         if (
           cancelledRef.current ||
@@ -403,6 +432,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       refreshAfterDeploy,
       resetTaskState,
       submitProdStart,
+      waitUntilProdReady,
     ],
   );
 
@@ -418,7 +448,8 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       phase === 'starting' ||
       phase === 'building' ||
       phase === 'checkingDeployable' ||
-      phase === 'deploying'
+      phase === 'deploying' ||
+      phase === 'checkingReadiness'
     ) {
       setOpen(true);
       return;
@@ -493,8 +524,14 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
         return;
       }
 
+      await waitUntilProdReady();
+      if (cancelledRef.current) {
+        markCancelled();
+        return;
+      }
+
+      await refreshAfterDeploy();
       setPhase('success');
-      void refreshAfterDeploy();
     } catch (error) {
       if (
         cancelledRef.current ||
@@ -529,6 +566,7 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     setPublishPhase,
     submitProdStart,
     waitUntilProdDeployable,
+    waitUntilProdReady,
   ]);
 
   /**
@@ -597,7 +635,8 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       phase === 'starting' ||
       phase === 'building' ||
       phase === 'checkingDeployable' ||
-      phase === 'deploying'
+      phase === 'deploying' ||
+      phase === 'checkingReadiness'
     ) {
       return;
     }
@@ -611,7 +650,8 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
     phase === 'starting' ||
     phase === 'building' ||
     phase === 'checkingDeployable' ||
-    phase === 'deploying';
+    phase === 'deploying' ||
+    phase === 'checkingReadiness';
 
   return {
     open,

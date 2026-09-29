@@ -104,7 +104,7 @@ const getStepIndex = (
       return 0;
     }
   }
-  if (phase === 'deploying') {
+  if (phase === 'deploying' || phase === 'checkingReadiness') {
     return 2;
   }
   if (phase === 'checkingDeployable') {
@@ -326,14 +326,16 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     phase === 'starting' ||
     phase === 'building' ||
     phase === 'checkingDeployable' ||
-    phase === 'deploying';
+    phase === 'deploying' ||
+    phase === 'checkingReadiness';
   /** 构建 / 检测可部署阶段可取消 build 任务 */
   const canCancelTask =
     phase === 'starting' ||
     phase === 'building' ||
     phase === 'checkingDeployable';
   /** 部署服务阶段可停止生产部署 */
-  const canStopDeploy = phase === 'deploying';
+  const canStopDeploy =
+    phase === 'deploying' || phase === 'checkingReadiness';
   /** 构建服务折叠面板展开项，新服务到来时自动展开 */
   const [buildActiveKeys, setBuildActiveKeys] = useState<string[]>([]);
   /** 已因构建成功自动收起过的面板，避免再次收起用户手动展开的项 */
@@ -401,11 +403,13 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   const passedCheckStage =
     phase === 'checkingDeployable' ||
     phase === 'deploying' ||
+    phase === 'checkingReadiness' ||
     phase === 'success' ||
     (isTerminalPhase &&
       (failedStage === 'check' || failedStage === 'deploy'));
   const passedDeployStage =
     phase === 'deploying' ||
+    phase === 'checkingReadiness' ||
     phase === 'success' ||
     (isTerminalPhase && failedStage === 'deploy');
 
@@ -474,6 +478,8 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   const startStatus: { kind: 'process' | 'finish' | 'error'; text: string } =
     phase === 'deploying'
       ? { kind: 'process', text: dict('PC.Pages.AppDevPro.deploying') }
+      : phase === 'checkingReadiness'
+      ? { kind: 'process', text: dict('PC.Pages.AppDevPro.previewChecking') }
       : isTerminalPhase && failedStage === 'deploy'
       ? {
           kind: 'error',

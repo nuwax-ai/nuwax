@@ -324,7 +324,7 @@ export interface PinnedProjectInfo {
   devAgentId?: number;
   /**
    * 当前用户是否项目创建者（来源同 UserProjectTabItem.owner，=== false 判参与者）。
-   * 参与者上框常规项目时可自选沙箱（云端/个人电脑+工作目录）。
+   * 常规项目上框时均可自选沙箱，不受此身份字段限制。
    */
   owner?: boolean;
 }
@@ -640,6 +640,7 @@ export type UserAppPublishPhase =
   | 'building'
   | 'checkingDeployable'
   | 'deploying'
+  | 'checkingReadiness'
   | 'success'
   | 'failed'
   | 'cancelled';

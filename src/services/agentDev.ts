@@ -137,11 +137,13 @@ export async function apiHomeCategoryList(options?: {
 export function apiPublishedAgentInfo(
   agentId: number,
   withConversationId: boolean = false,
+  recId?: number,
 ): Promise<RequestResponse<AgentDetailDto>> {
   return request(`/api/published/agent/${agentId}`, {
     method: 'GET',
     params: {
       withConversationId,
+      ...(recId !== undefined ? { recId } : {}),
     },
   });
 }

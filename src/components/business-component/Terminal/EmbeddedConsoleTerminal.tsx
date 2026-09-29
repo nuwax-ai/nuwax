@@ -70,6 +70,11 @@ export interface EmbeddedConsoleTerminalProps {
   lineHeight?: number;
   cursorBlink?: boolean;
   autoConnect?: boolean;
+  /**
+   * 为 true 时，面板收起或切到另一环境只暂停自动连接，不断开已有 WebSocket。
+   * 再次进入时沿用当前连接。
+   */
+  keepConnection?: boolean;
   reconnect?: TerminalReconnectConfig;
   onConnect?: () => void;
   onDisconnect?: (event?: CloseEvent) => void;
@@ -140,6 +145,7 @@ const EmbeddedConsoleTerminal = forwardRef<
       lineHeight = 1.35,
       cursorBlink = true,
       autoConnect = true,
+      keepConnection = false,
       reconnect = DEFAULT_TERMINAL_RECONNECT,
       onConnect,
       onDisconnect,
@@ -843,6 +849,9 @@ const EmbeddedConsoleTerminal = forwardRef<
       wireProtocol,
     ]);
 
+    const keepConnectionRef = useRef(keepConnection);
+    keepConnectionRef.current = keepConnection;
+
     useEffect(() => {
       if (!autoConnect || !wsUrl || !terminalReadyRef.current) return;
 
@@ -864,7 +873,9 @@ const EmbeddedConsoleTerminal = forwardRef<
       tryConnect();
       return () => {
         cancelled = true;
-        disconnect();
+        if (!keepConnectionRef.current) {
+          disconnect();
+        }
       };
     }, [autoConnect, wsUrl, connect, disconnect]);
 

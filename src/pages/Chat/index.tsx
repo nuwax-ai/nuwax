@@ -2080,7 +2080,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       if (!id) return [];
       const kw = keyword.trim();
       const response = kw
-        ? await apiSearchFiles({ cId: id, kw, limit: 100 })
+        ? await apiSearchFiles({ cId: id, kw, type: 'file', limit: 100 })
         : await apiGetStaticFileList(id, {
             relativePath: '',
             recursive: true,
