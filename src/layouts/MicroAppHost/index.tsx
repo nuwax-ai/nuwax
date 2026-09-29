@@ -1,4 +1,5 @@
 import { t } from '@/services/i18nRuntime';
+import { subscribeImEvents } from '@/services/imEventBridge';
 import { expireMicroAppSession } from '@/services/microAppAuth';
 import { prepareMicroAppAuthSession } from '@/utils/businessAuth';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
@@ -37,6 +38,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
     const container = containerRef.current;
     if (!config || !container) return;
     let mounted = true;
+    let unsubscribeImEvents: (() => void) | undefined;
 
     const onNavigate = (path: string, replace = false) => {
       if (!mounted || !currentRef.current.active || !path.startsWith('/'))
@@ -89,7 +91,12 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
     leaseRef.current = lease;
     void lease.ready.then(
       (handle) => {
-        if (handle && !lease.isDisposed()) setStatus('ready');
+        if (handle && !lease.isDisposed()) {
+          if (entry.name === 'nuwax-im-web') {
+            unsubscribeImEvents = subscribeImEvents();
+          }
+          setStatus('ready');
+        }
       },
       (error) => {
         if (!lease.isDisposed()) {
@@ -100,6 +107,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
     );
     return () => {
       mounted = false;
+      unsubscribeImEvents?.();
       lease.dispose();
       if (leaseRef.current === lease) leaseRef.current = undefined;
     };

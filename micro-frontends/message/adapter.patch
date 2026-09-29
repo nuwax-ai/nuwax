@@ -141,11 +141,11 @@ index e6422e8..47eb0af 100644
      // ★其余平台的错误码原样透出：
      //   翻译成 IM 的码会让"平台到底怎么说的"这条最重要的线索消失。
 diff --git a/nuwax-im-web/src/components/ChatWindow.tsx b/nuwax-im-web/src/components/ChatWindow.tsx
-index f16e300..5a4203c 100644
+index f16e300..6a11dba 100644
 --- a/nuwax-im-web/src/components/ChatWindow.tsx
 +++ b/nuwax-im-web/src/components/ChatWindow.tsx
 @@ -1,3 +1,4 @@
-+import { getMessageInputRoot, getMessagePortalRoot, toMessagePortalPoint } from '../hostRuntime';
++import { getMessageInputRoot, getMessagePortalRoot, isNativeMessageNotifications, toMessagePortalPoint } from '../hostRuntime';
  import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
  import { App as AntApp, Avatar, Dropdown, Image, Tooltip, type MenuProps } from 'antd';
  import type { AttachmentInput, AttachmentKind, Id, MessageDto } from '../api/types';
@@ -200,6 +200,24 @@ index f16e300..5a4203c 100644
    };
  
    const removePending = (id: string): void => {
+@@ -3062,7 +3063,7 @@ export default function ChatWindow() {
+                     ),
+                     disabled: notifyToggleDisabled(notifySt),
+                   },
+-                  {
++                  ...(isNativeMessageNotifications() ? [] : [{
+                     key: 'notifyTest',
+                     label: '发送测试通知',
+                     // ★★DEV-231 需求④：点不了的只有两种 —— 权限压根不可用（点了必然没有结果），
+@@ -3070,7 +3071,7 @@ export default function ChatWindow() {
+                     //   ★`default`（还没问过权限）时**可以点**：那正是最需要一次实际结果
+                     //   来确认的情形；而且这一次点击本身就是用户手势，权限会被顺便问出来。
+                     disabled: notifyToggleDisabled(notifySt) || !notifyOn,
+-                  },
++                  }]),
+                   // ★★DEV-254 需求③（用户原话「见附件红色圈起来的不需要」，附件把这一项圈红了）：
+                   //   这里原来还有一条 `{ type: 'divider' }` + `{ key: 'sync', label: '手动增量同步' }`，
+                   //   与它的 `onClick` 分支（`syncIncremental().then(...)`）**一并删掉**。
 @@ -3664,7 +3665,7 @@ export default function ChatWindow() {
              {imgMenu && (
                <Dropdown
@@ -274,10 +292,26 @@ index 8ee5552..ccd9ff5 100644
   * ★安装 {@code window.__im} 桥（业务方从浏览器控制台接入的那扇门）。
   *
 diff --git a/nuwax-im-web/src/lib/notify.ts b/nuwax-im-web/src/lib/notify.ts
-index 8c939bf..86421d4 100644
+index 8c939bf..8cc49b1 100644
 --- a/nuwax-im-web/src/lib/notify.ts
 +++ b/nuwax-im-web/src/lib/notify.ts
-@@ -389,6 +389,14 @@ export function resetNotifySlots(): void {
+@@ -34,6 +34,7 @@
+  * 这与 {@code lib/clipboard.ts}、{@code lib/redirectUrl.ts} 的做法一致。
+  */
+ 
++import { isNativeMessageNotifications, setNativeMessageNotificationEnabled } from '../hostRuntime';
+ import type { Id } from '../api/types';
+ import { isGroupConv } from './convType';
+ import { stripMdMark } from './digest';
+@@ -275,6 +276,7 @@ export function readNotifyEnabled(storage?: Pick<Storage, 'getItem'> | null): bo
+ 
+ /** 写用户开关。★写失败（配额满 / 隐私模式）不抛：开关在本次会话里仍然生效（内存里）。 */
+ export function writeNotifyEnabled(v: boolean, storage?: Pick<Storage, 'setItem'> | null): void {
++  if (storage === undefined) setNativeMessageNotificationEnabled(v);
+   const s = storage === undefined ? safeStorage() : storage;
+   if (!s) return;
+   try {
+@@ -389,6 +391,14 @@ export function resetNotifySlots(): void {
    notifySlots.clear();
  }
  
@@ -292,6 +326,30 @@ index 8c939bf..86421d4 100644
  /**
   * 同时挂着的通知上限。
   * ★只增不减的模块级结构迟早会被当成内存泄漏报上来；且几十条通知同时挂在通知中心里，
+@@ -445,6 +455,7 @@ function dropNotifySlot(convId: string): void {
+  * 在这里补一次就是两处判据，迟早分叉。
+  */
+ export function pushNotify(msg: NotifyMessage, deps: PushDeps = {}): boolean {
++  if (isNativeMessageNotifications()) return false;
+   const env = deps.env ?? defaultEnv();
+   const state = notifyState(env);
+   // ★★DEV-231 需求④：`force` 只压"前台不弹"这一条（见 PushDeps.force 的注释）。
+@@ -509,6 +520,7 @@ export function pushNotify(msg: NotifyMessage, deps: PushDeps = {}): boolean {
+ 
+ /** 读<b>当前</b>真实环境的状态（界面用；每次渲染读一次即可，都是同步的属性读取）。 */
+ export function notifyStateNow(): NotifyState {
++  if (isNativeMessageNotifications()) return 'granted';
+   return notifyState(defaultEnv());
+ }
+ 
+@@ -571,6 +583,7 @@ function defaultFocus(): () => void {
+ export async function requestNotifyPermission(
+   env: NotifyEnv = defaultEnv(),
+ ): Promise<NotifyState> {
++  if (isNativeMessageNotifications()) return 'granted';
+   const cur = notifyState(env);
+   if (cur !== 'default') return cur;
+   const w = globalThis as unknown as {
 diff --git a/nuwax-im-web/src/lib/titleBadge.ts b/nuwax-im-web/src/lib/titleBadge.ts
 index 71ca56f..bb7cf22 100644
 --- a/nuwax-im-web/src/lib/titleBadge.ts

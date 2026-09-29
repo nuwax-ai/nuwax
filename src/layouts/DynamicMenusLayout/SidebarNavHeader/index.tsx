@@ -7,6 +7,7 @@
  */
 import agentImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
+import ImMenuBadge from '@/components/business-component/ImMenuBadge';
 import { ClientVersionBadge } from '@/features/client-shell';
 import type { OpenedAppTabInfo } from '@/models/openedAppTabs';
 import { getAppTabNavPath, pickNextActiveTab } from '@/models/openedAppTabs';
@@ -195,6 +196,7 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
         <SvgIcon name={menu.icon || 'icons-nav-task-time'} />
       </span>
       <span className={cx(styles['nav-item-label'])}>{menu.name}</span>
+      <ImMenuBadge menu={menu} />
     </div>
   );
 
