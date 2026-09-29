@@ -7,6 +7,12 @@
 
 const REPO_DOC_PATH = '/repo/doc/';
 
+/** 嵌入聊天页时只展示文档正文，并收起资料库侧栏表格。 */
+const REPO_DOC_EMBED_QUERY = {
+  just_show_content: 'true',
+  hide_sheet: 'true',
+} as const;
+
 /** 收集允许嵌入的源站：当前页 origin，以及配置的 BASE_URL origin。 */
 const collectAllowedOrigins = (allowedOrigins?: string[]): string[] => {
   if (allowedOrigins) {
@@ -32,7 +38,7 @@ const collectAllowedOrigins = (allowedOrigins?: string[]): string[] => {
  * @param href 锚点上的原始地址，可以是相对路径或绝对 URL
  * @param options.base 相对路径的解析基准，默认当前页 origin
  * @param options.allowedOrigins 允许嵌入的源站列表；不传则用当前页和 BASE_URL
- * @returns 可交给页面预览 iframe 的绝对 URL；不是资料库链接时返回 null
+ * @returns 可交给页面预览 iframe 的绝对 URL，并带上只看正文的查询参数；不是资料库链接时返回 null
  */
 export const resolveRepoDocEmbedUrl = (
   href: string,
@@ -68,6 +74,10 @@ export const resolveRepoDocEmbedUrl = (
   if (!allowedOrigins.includes(url.origin)) {
     return null;
   }
+
+  Object.entries(REPO_DOC_EMBED_QUERY).forEach(([key, value]) => {
+    url.searchParams.set(key, value);
+  });
 
   return url.href;
 };
