@@ -1568,6 +1568,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
           openPreviewView(id);
         }
       },
+      onWorkspaceFileSearchResult: (found) => {
+        fileView.markWorkspaceFileNotFound(!found);
+      },
       onCommitSuccess: async () => {
         await fileView.refreshGitList();
         setSelectedChangeFile(null);

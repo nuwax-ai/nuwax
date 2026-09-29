@@ -217,6 +217,9 @@ export function useFileTreePreviewView(
   const [files, setFiles] = useState<FileNode[]>([]);
   // 当前选中的文件ID
   const [selectedFileId, setSelectedFileId] = useState<string>('');
+  /** 按文件名搜索后，用路径没有命中文件。与「未选中文件」分开提示 */
+  const [workspaceFileNotFound, setWorkspaceFileNotFound] =
+    useState<boolean>(false);
   /**
    * 当前选中文件ID的同步引用
    * - 用途：在异步请求返回时，判断用户是否已经切换到其他文件
@@ -482,6 +485,7 @@ export function useFileTreePreviewView(
     selectedFileIdRef.current = '';
     setSelectedFileId('');
     setSelectedFileNode(null);
+    setWorkspaceFileNotFound(false);
   }, []);
 
   /** 清空文件树选中态（文件 + 文件夹） */
@@ -738,6 +742,7 @@ export function useFileTreePreviewView(
         fileNode = options.fallbackNode;
       }
 
+      let workspaceSearchMiss = false;
       const relativePath = workspaceRelativePath(fileId).replace(
         /^\/+|\/+$/g,
         '',
@@ -774,8 +779,11 @@ export function useFileTreePreviewView(
           );
           if (locatedFile) {
             fileNode = { ...locatedFile, id: fileId };
+          } else {
+            workspaceSearchMiss = true;
           }
         } catch (error) {
+          workspaceSearchMiss = true;
           console.error('搜索工作区文件失败', error);
         }
       }
@@ -790,6 +798,7 @@ export function useFileTreePreviewView(
         // 懒加载宿主会同时打开目录；选中态仍要记下，否则文件夹没有高亮，
         // 工具栏新建也无法落到这个文件夹。
         if (fileNode.type === 'folder' && options?.selectFolder) {
+          setWorkspaceFileNotFound(false);
           setSelectedFolderId(fileNode.id);
           // 折叠时 openDirectory 为 false，只保留选中态，不拉这一层
           if (onOpenDirectory && options.openDirectory !== false) {
@@ -802,7 +811,8 @@ export function useFileTreePreviewView(
           return;
         }
 
-        // 选中文件时清除文件夹选中态
+        // 选中文件时清除文件夹选中态，并收起「未搜索到」提示
+        setWorkspaceFileNotFound(false);
         setSelectedFolderId('');
 
         // 为本次“选中文件”生成唯一 token（后续异步回写时用于判定是否过期）
@@ -945,9 +955,13 @@ export function useFileTreePreviewView(
           });
         }
       } else {
-        // 所有匹配方式都失败，设置选中文件节点为 null
+        // 路径未命中时单独提示；其它未选中仍走原来的「请选择文件」
+        setWorkspaceFileNotFound(workspaceSearchMiss);
         setSelectedFileNode(null);
         setSelectedFileId('');
+        if (workspaceSearchMiss) {
+          setSelectedFolderId('');
+        }
       }
     },
     [onFileSelectOpenPreview, initViewFileType, onOpenDirectory, targetId],
@@ -2250,6 +2264,18 @@ export function useFileTreePreviewView(
       );
     }
 
+    // 点了变更文件但按路径没搜到：不要复用「未选中文件」的文案
+    if (workspaceFileNotFound && !selectedFileNode && !selectedFolderId) {
+      return (
+        <AppDevEmptyState
+          showTitle={false}
+          showIcon={false}
+          showButtons={false}
+          description={dict('PC.Components.FileTreeView.searchedFileNotFound')}
+        />
+      );
+    }
+
     // 未选择文件、选中文件夹或新建文件时
     if (
       !selectedFileNode ||
@@ -2589,6 +2615,8 @@ export function useFileTreePreviewView(
       taskAgentSelectedFileId,
       selectedFileNode,
       selectedFileId,
+      selectedFolderId,
+      workspaceFileNotFound,
       isVideo,
       isAudio,
       isOfficeDocument,
@@ -2650,6 +2678,13 @@ export function useFileTreePreviewView(
       isExportingProject,
       isImportingProject,
       toolbarDisabled: fileTreeDataLoading || isUploadingFiles,
+    },
+    /** 源代码管理按路径没搜到文件时，预览区改提示，不影响未选中文案 */
+    markWorkspaceFileNotFound: (missing: boolean) => {
+      setWorkspaceFileNotFound(missing);
+      if (missing) {
+        setSelectedFolderId('');
+      }
     },
     preview: {
       selectedFileNode,

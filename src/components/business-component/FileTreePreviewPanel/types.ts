@@ -200,6 +200,11 @@ export interface FileTreePreviewViewValue {
   gitBranch: string;
   /** 刷新 Git 变更列表（git status） */
   refreshGitList: () => Promise<void>;
+  /**
+   * 按路径没搜到变更文件时，预览区改为「未搜索到对应文件」。
+   * missing 为 false 时收起该提示，未选中文件仍用原来的文案。
+   */
+  markWorkspaceFileNotFound: (missing: boolean) => void;
   tree: FileTreeContainerProps;
   preview: FileTreePreviewViewPreview;
 }

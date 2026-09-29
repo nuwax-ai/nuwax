@@ -533,6 +533,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.FileTreeView.refreshing": "爽やかな...",
   "PC.Components.FileTreeView.restarting": "再起動中...",
   "PC.Components.FileTreeView.selectFileToPreview": "ファイルツリーからプレビューするファイルを選択してください",
+  "PC.Components.FileTreeView.searchedFileNotFound": "対応するファイルが見つかりませんでした",
   "PC.Components.FileTreeView.unsupportedFormat": "プレビューは .{0} 形式ではサポートされていません",
   "PC.Components.FileTreeView.fileTooLarge": "ドキュメントが大きすぎるため、プレビューできません",
   "PC.Components.FileTreeView.openUiWrongExtension": "OpenUI Lang のデータソースには *.openui.json を使用してください。裸の .openui は有効なプレビュー種別ではありません。内容が nuwax.openui-file の場合は .openui.json にリネームしてください。",

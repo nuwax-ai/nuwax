@@ -1573,6 +1573,9 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
         closeAgentDesktop();
         previewTabs.openFileTab(fileId, true);
       },
+      onWorkspaceFileSearchResult: (found) => {
+        fileView.markWorkspaceFileNotFound(!found);
+      },
       // 放弃更改后关闭预览 Tab
       onAfterDiscardChange: (fileId: string) => {
         previewTabs.closeTab(getFileTabId(fileId, true));
