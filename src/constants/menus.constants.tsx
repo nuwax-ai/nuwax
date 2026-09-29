@@ -109,6 +109,10 @@ export const SETTING_ACTIONS = [
     label: dict('PC.Constants.Menus.resetPassword'),
   },
   {
+    type: SettingActionEnum.Account_Bind,
+    label: dict('PC.Layouts.Setting.AccountBind.title'),
+  },
+  {
     type: SettingActionEnum.Theme_Switch,
     label: dict('PC.Constants.Menus.themeSwitch'),
   },

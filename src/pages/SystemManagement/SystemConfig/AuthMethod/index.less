@@ -1,0 +1,67 @@
+@import '@/styles/token.less';
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.name-icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+// 无图标时显示首字
+.name-fallback {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: @colorPrimary;
+  background: @colorPrimaryBg;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: @colorTextSecondary;
+  font-size: 12px;
+}
+
+.summary-label {
+  margin-right: 4px;
+  color: @colorTextTertiary;
+}
+
+.summary-value {
+  font-family: '~''@{fontFamilyCode}';
+}
+
+// 编辑弹窗：字段映射两列
+.mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+
+  :global {
+    .ant-form-item {
+      margin-bottom: 12px;
+    }
+  }
+}
+
+.callback-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}

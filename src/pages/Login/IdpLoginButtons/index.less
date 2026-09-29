@@ -1,0 +1,55 @@
+@import '@/styles/token';
+
+.container {
+  margin-top: 8px;
+}
+
+.divider {
+  margin: 0 0 16px !important;
+  font-size: 12px !important;
+  color: @colorTextTertiary !important;
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+// 登录页全局把 .ant-btn 去了边框，这里恢复成浅色描边按钮
+.item {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  height: 36px;
+  border: 1px solid @colorBorderSecondary !important;
+  background: @colorBgContainer;
+
+  :global(.ant-btn-icon) {
+    display: inline-flex;
+  }
+
+  > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: @colorPrimary;
+  background: @colorPrimaryBg;
+}

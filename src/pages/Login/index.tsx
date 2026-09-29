@@ -5,14 +5,25 @@ import ImageCaptcha, {
   type ImageCaptchaValue,
 } from '@/components/business-component/ImageCaptcha';
 import SiteFooter from '@/components/SiteFooter';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
 import { apiLogin } from '@/services/account';
+import { apiAuthIdpLoginList } from '@/services/authIdp';
 import { dict, initI18n, syncLangFromUserInfo } from '@/services/i18nRuntime';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { UserService } from '@/services/userService';
 import { LoginTypeEnum } from '@/types/enums/login';
+import type { AuthIdpLoginItem } from '@/types/interfaces/authIdp';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
+import {
+  buildIdpAuthorizeUrl,
+  filterIdpByUa,
+  getBusinessBase,
+  IDP_RETURN_PATH_KEY,
+  resolveIdpRedirect,
+  shouldAutoRedirect,
+} from '@/utils/authIdp';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { finishBusinessLogin } from '@/utils/businessAuth';
 import { isValidEmail, isValidPhone, validatePassword } from '@/utils/common';
@@ -20,6 +31,7 @@ import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
 import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
+  Alert,
   Button,
   Checkbox,
   ConfigProvider,
@@ -38,6 +50,7 @@ import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useSearchParams } from 'umi';
 import BasicLayout from './BasicLayout';
+import IdpLoginButtons from './IdpLoginButtons';
 import styles from './index.less';
 import LoginLangSwitcher from './LoginLangSwitcher';
 import SiteProtocol from './SiteProtocol';
@@ -295,6 +308,76 @@ const Login: React.FC = () => {
     // 重载不重置，登出/闪断后残留 true 会把按钮带进登录页（无桥自动 no-op）。
     hostBridge.layout.setSecondMenuAvailable(false);
   }, []);
+
+  // ---- 三方登录（CAS / OAuth2 / 微信）：桌面客户端本期不接 ----
+  const [idpItems, setIdpItems] = useState<AuthIdpLoginItem[]>([]);
+  // 列表返回前不渲染表单，避免自动跳转前表单闪一下
+  const [idpReady, setIdpReady] = useState<boolean>(isDesktopHost());
+  const idpError = searchParams.get('idpError');
+
+  const getIdpRedirect = () =>
+    resolveIdpRedirect(
+      searchParams.get('redirect'),
+      sessionStorage.getItem(IDP_RETURN_PATH_KEY),
+    );
+
+  useEffect(() => {
+    if (isDesktopHost()) return;
+    let cancelled = false;
+    apiAuthIdpLoginList()
+      .then((res) => {
+        if (cancelled || res?.code !== SUCCESS_CODE || !res.data) return;
+        const { items = [], autoRedirectIdpId } = res.data;
+        if (
+          shouldAutoRedirect({
+            autoRedirectIdpId,
+            search: window.location.search,
+            isDesktop: false,
+          })
+        ) {
+          window.location.replace(
+            buildIdpAuthorizeUrl(
+              getBusinessBase(),
+              autoRedirectIdpId as number,
+              getIdpRedirect(),
+            ),
+          );
+          return;
+        }
+        setIdpItems(filterIdpByUa(items, navigator.userAgent));
+      })
+      // 列表失败回落普通登录
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setIdpReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const startIdpLogin = (item: AuthIdpLoginItem) => {
+    const go = () =>
+      window.location.assign(
+        buildIdpAuthorizeUrl(getBusinessBase(), item.id, getIdpRedirect()),
+      );
+    if (checked) {
+      go();
+      return;
+    }
+    // 与账号登录一致：未勾选协议先确认
+    confirm({
+      title: dict('PC.Pages.Login.serviceAgreementTitle'),
+      icon: <ExclamationCircleFilled />,
+      content: <SiteProtocol />,
+      okText: dict('PC.Pages.Login.serviceAgreementAgree'),
+      cancelText: dict('PC.Pages.Login.serviceAgreementDisagree'),
+      onOk() {
+        setChecked(true);
+        go();
+      },
+    });
+  };
 
   useEffect(() => {
     return () => {
@@ -662,8 +745,17 @@ const Login: React.FC = () => {
       <LoginLangSwitcher />
       <BasicLayout>
         <div>
-          {loadEnd && (
+          {loadEnd && idpReady && (
             <div className={cx(styles['login-form-box'])}>
+              {idpError && (
+                <Alert
+                  type="error"
+                  showIcon
+                  closable
+                  className={cx(styles['idp-error'])}
+                  message={idpError}
+                />
+              )}
               <Segmented
                 className={cx(styles.segmented)}
                 options={options}
@@ -794,6 +886,8 @@ const Login: React.FC = () => {
                   </div>
                 </Form.Item>
               </Form>
+
+              <IdpLoginButtons items={idpItems} onSelect={startIdpLogin} />
 
               {/* 企业登录：仅商业桌面宿主可见——切换客户端后端域名并重新初始化
                   （壳停服务 + webview 重载到新域登录页）；社区宿主与浏览器同形态不展示 */}

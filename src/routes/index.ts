@@ -447,6 +447,11 @@ const routes = [
                   '@/pages/SystemManagement/SystemConfig/SensitiveWord',
               },
               {
+                path: 'auth-method',
+                name: getRouteLabel('PC.Routes.authMethodConfig'),
+                component: '@/pages/SystemManagement/SystemConfig/AuthMethod',
+              },
+              {
                 path: 'i18n-lang',
                 name: getRouteLabel('PC.Routes.i18nLangManagement'),
                 component: '@/pages/SystemManagement/SystemConfig/I18nManage',

@@ -1,13 +1,16 @@
 import { SETTING_ACTIONS } from '@/constants/menus.constants';
+import { apiAuthIdpLoginList, apiUserIdentityList } from '@/services/authIdp';
 import { dict } from '@/services/i18nRuntime';
 import { getTenantThemeConfig } from '@/services/tenant';
 import { SettingActionEnum } from '@/types/enums/menus';
 import { TenantThemeConfig } from '@/types/tenant';
+import { isDesktopHost } from '@/utils/hostBridge';
 import { CloseOutlined } from '@ant-design/icons';
-import { Button, Modal } from 'antd';
+import { Button, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
+import { history, useModel } from 'umi';
+import AccountBind from './AccountBind';
 import DeveloperProfile from './DeveloperProfile';
 import styles from './index.less';
 import LanguageSwitchPanel from './LanguageSwitchPanel';
@@ -30,6 +33,43 @@ const Setting: React.FC = () => {
   const [tenantThemeConfig, setTenantThemeConfig] =
     useState<TenantThemeConfig | null>(null);
   const [loading, setLoading] = useState(false);
+  // 账号绑定入口：租户配置了三方登录或用户已有绑定时才显示（桌面客户端本期不接）
+  const [showAccountBind, setShowAccountBind] = useState(false);
+
+  // 三方绑定整页跳转回来（?setting=account-bind[&idpError=]）：打开弹窗并定位到账号绑定
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('setting') !== 'account-bind') return;
+    const idpError = params.get('idpError');
+    params.delete('setting');
+    params.delete('idpError');
+    const rest = params.toString();
+    history.replace(
+      `${window.location.pathname}${rest ? `?${rest}` : ''}${
+        window.location.hash
+      }`,
+    );
+    setAction(SettingActionEnum.Account_Bind);
+    setOpenSetting(true);
+    if (idpError) message.error(idpError);
+  }, []);
+
+  useEffect(() => {
+    if (!openSetting || isDesktopHost()) return;
+    let cancelled = false;
+    Promise.all([
+      apiAuthIdpLoginList().catch(() => null),
+      apiUserIdentityList().catch(() => null),
+    ]).then(([idpRes, identityRes]) => {
+      if (cancelled) return;
+      setShowAccountBind(
+        !!idpRes?.data?.items?.length || !!identityRes?.data?.length,
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [openSetting]);
 
   // 获取租户主题配置
   useEffect(() => {
@@ -63,6 +103,8 @@ const Setting: React.FC = () => {
         return <SettingEmail />;
       case SettingActionEnum.Reset_Password:
         return <ResetPassword />;
+      case SettingActionEnum.Account_Bind:
+        return <AccountBind />;
       case SettingActionEnum.Theme_Switch:
         if (loading) {
           return (
@@ -106,6 +148,8 @@ const Setting: React.FC = () => {
           : dict('PC.Pages.Setting.phoneBind');
       case SettingActionEnum.Reset_Password:
         return dict('PC.Pages.Setting.resetPassword');
+      case SettingActionEnum.Account_Bind:
+        return dict('PC.Layouts.Setting.AccountBind.title');
       case SettingActionEnum.Theme_Switch:
         return dict('PC.Pages.Setting.themeSwitch');
       case SettingActionEnum.Language_Switch:
@@ -147,6 +191,9 @@ const Setting: React.FC = () => {
               {SETTING_ACTIONS.filter((item) => {
                 if (item.type === SettingActionEnum.Developer_Profile) {
                   return isEnableSubscription;
+                }
+                if (item.type === SettingActionEnum.Account_Bind) {
+                  return showAccountBind;
                 }
                 return true;
               }).map((item) => (
