@@ -6870,4 +6870,10 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemSensitiveWord.actionReplace": "置換",
   "PC.Pages.SystemSensitiveWord.status": "状態",
   "PC.Pages.SystemSensitiveWord.modified": "更新日時",
+  "PC.Components.ImageCaptcha.label": "画像認証コード",
+  "PC.Components.ImageCaptcha.placeholder": "画像のコードを入力",
+  "PC.Components.ImageCaptcha.required": "画像認証コードを入力してください",
+  "PC.Components.ImageCaptcha.loadFailed": "コードの読み込みに失敗しました。画像をクリックして再試行してください",
+  "PC.Components.ImageCaptcha.unclear": "読みにくいですか？",
+  "PC.Components.ImageCaptcha.refresh": "別の画像",
 };

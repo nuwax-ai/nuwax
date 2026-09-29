@@ -6943,4 +6943,10 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemSensitiveWord.actionReplace": "替换",
   "PC.Pages.SystemSensitiveWord.status": "状态",
   "PC.Pages.SystemSensitiveWord.modified": "更新时间",
+  "PC.Components.ImageCaptcha.label": "图形验证码",
+  "PC.Components.ImageCaptcha.placeholder": "请输入图形验证码",
+  "PC.Components.ImageCaptcha.required": "请输入图形验证码",
+  "PC.Components.ImageCaptcha.loadFailed": "验证码加载失败，请点击图片重试",
+  "PC.Components.ImageCaptcha.unclear": "看不清？",
+  "PC.Components.ImageCaptcha.refresh": "换一张",
 };

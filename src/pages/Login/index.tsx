@@ -1,4 +1,9 @@
 import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
+import ImageCaptcha, {
+  imageCaptchaRules,
+  type ImageCaptchaRef,
+  type ImageCaptchaValue,
+} from '@/components/business-component/ImageCaptcha';
 import SiteFooter from '@/components/SiteFooter';
 import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
@@ -44,6 +49,12 @@ type SegmentedItemType = { label: React.ReactNode; value: string };
 const cx = classNames.bind(styles);
 
 const { confirm } = Modal;
+
+/** 图形验证码表单值 → 接口参数（未开启时表单无此字段，返回空对象） */
+const pickImageCaptcha = (value?: ImageCaptchaValue) =>
+  value?.captchaId
+    ? { captchaId: value.captchaId, captchaCode: value.captchaCode }
+    : {};
 
 /**
  * 智能溢出检测 Tooltip 组件
@@ -104,11 +115,13 @@ const Login: React.FC = () => {
   const captchaPopupWatcherTimerRef = useRef<number | null>(null);
   const captchaDelayTimerRef = useRef<number | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
+  const imageCaptchaRef = useRef<ImageCaptchaRef>(null);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
+  const needImageCaptcha = tenantConfigInfo?.openImageCaptcha === 1;
 
   // ---- 企业登录（仅 nuwaclaw/nuwax 壳内可见）：切换客户端后端域名并重新初始化 ----
   const [enterpriseOpen, setEnterpriseOpen] = useState<boolean>(false);
@@ -206,6 +219,8 @@ const Login: React.FC = () => {
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
         // SDK 的 refresh() 在 deviceToken（无弹出 DOM）模式下会崩溃并触发新 callback 形成死循环
+        // 图形验证码按一次性处理：失败后换一张
+        imageCaptchaRef.current?.refresh();
       },
     },
   );
@@ -361,7 +376,8 @@ const Login: React.FC = () => {
       'preview:',
       captchaVerifyParam?.substring(0, 100),
     );
-    const { phoneOrEmail, password } = form.getFieldsValue() || {};
+    const { phoneOrEmail, password, imageCaptcha } =
+      form.getFieldsValue() || {};
     const normalizedCaptchaParam =
       typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
 
@@ -387,6 +403,7 @@ const Login: React.FC = () => {
         phoneOrEmail,
         password,
         captchaVerifyParam: normalizedCaptchaParam,
+        ...pickImageCaptcha(imageCaptcha),
       });
       // onSuccess 处理导航，登录成功
       return { captchaResult: true, bizResult: true };
@@ -403,7 +420,11 @@ const Login: React.FC = () => {
   const handlerCodeLogin = async (
     captchaVerifyParam: string,
   ): Promise<{ captchaResult: boolean; bizResult: boolean }> => {
-    const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
+    const {
+      phoneOrEmail,
+      areaCode = '86',
+      imageCaptcha,
+    } = form.getFieldsValue() || {};
     const normalizedCaptchaParam =
       typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
 
@@ -433,6 +454,8 @@ const Login: React.FC = () => {
         areaCode,
         authType: tenantConfigInfo.authType,
         captchaVerifyParam: normalizedCaptchaParam,
+        // 首次发码沿用登录页输入的图形验证码
+        ...pickImageCaptcha(imageCaptcha),
       });
     }, 0);
     return { captchaResult: true, bizResult: true };
@@ -725,6 +748,14 @@ const Login: React.FC = () => {
                       placeholder={dict(
                         'PC.Pages.Login.inputPasswordPlaceholder',
                       )}
+                    />
+                  </Form.Item>
+                )}
+                {needImageCaptcha && (
+                  <Form.Item name="imageCaptcha" rules={imageCaptchaRules()}>
+                    <ImageCaptcha
+                      ref={imageCaptchaRef}
+                      inputClassName={cx(styles.input)}
                     />
                   </Form.Item>
                 )}

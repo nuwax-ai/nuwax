@@ -1,5 +1,8 @@
 import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
 import SvgIcon from '@/components/base/SvgIcon';
+import ImageCaptcha, {
+  useImageCaptcha,
+} from '@/components/business-component/ImageCaptcha';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
@@ -9,7 +12,10 @@ import { apiLoginCode } from '@/services/account';
 import { dict, syncLangFromUserInfo } from '@/services/i18nRuntime';
 import { UserService } from '@/services/userService';
 import { SendCodeEnum } from '@/types/enums/login';
-import type { ILoginResult } from '@/types/interfaces/login';
+import type {
+  ILoginResult,
+  ImageCaptchaParams,
+} from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { finishBusinessLogin } from '@/utils/businessAuth';
@@ -41,16 +47,28 @@ const VerifyCode: React.FC = () => {
   const elementId = 'aliyun-captcha-sms';
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { countDown, handleCount } = useCountDown();
+  const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
-  const { phoneOrEmail, areaCode, authType, captchaVerifyParam } =
-    location.state;
+  const {
+    phoneOrEmail,
+    areaCode,
+    authType,
+    captchaVerifyParam,
+    captchaId,
+    captchaCode,
+  } = location.state;
 
   const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
+  const needImageCaptcha = tenantConfigInfo?.openImageCaptcha === 1;
+  // 首次发码用登录页带来的图形验证码；重发时用本页重新输入的（验证码一次性）
+  const resendCaptcha = useImageCaptcha(needImageCaptcha);
+  const initialCaptchaUsedRef = useRef(false);
+  // 重发前已校验并取好的参数（阿里云回调异步，经 ref 传递）
+  const pendingCaptchaRef = useRef<ImageCaptchaParams>({});
 
   const { runSendCode, sendLoading } = useSendCode();
 
@@ -147,15 +165,30 @@ const VerifyCode: React.FC = () => {
 
   // 发送验证码
   const handleSendCode = (captchaVerifyParam: string) => {
+    const imageCaptcha = initialCaptchaUsedRef.current
+      ? pendingCaptchaRef.current
+      : { captchaId, captchaCode };
+    initialCaptchaUsedRef.current = true;
+    pendingCaptchaRef.current = {};
     handleCount();
     const isPhone = authType === 1;
     const _params = {
       type: SendCodeEnum.LOGIN_OR_REGISTER,
       [isPhone ? 'phone' : 'email']: phoneOrEmail,
       ...(captchaVerifyParam && { captchaVerifyParam }),
+      ...(imageCaptcha?.captchaId && {
+        captchaId: imageCaptcha.captchaId,
+        captchaCode: imageCaptcha.captchaCode,
+      }),
     };
     // 返回 Promise，让验证码组件在请求结束后再刷新实例
-    return runSendCode(_params);
+    return runSendCode(_params).catch((error: unknown) => {
+      // 发送失败不必等满倒计时，可立即重发；图形验证码已失效，换一张
+      onClearTimer();
+      setCountDown(0);
+      resendCaptcha.refresh();
+      throw error;
+    });
   };
 
   const isNeedAliyunCaptcha = () => {
@@ -242,6 +275,9 @@ const VerifyCode: React.FC = () => {
     if (countDown > 0) {
       return;
     }
+    const imageCaptcha = resendCaptcha.take();
+    if (!imageCaptcha) return;
+    pendingCaptchaRef.current = imageCaptcha;
     handleSendCodeInit();
   }, [tenantConfigInfo, handlerSuccess]);
 
@@ -327,6 +363,12 @@ const VerifyCode: React.FC = () => {
               {dict('PC.Pages.VerifyCode.resend')}
             </span>
           </div>
+          {/* 重发需重新输入图形验证码（倒计时结束才显示，避免干扰输入短信码） */}
+          {needImageCaptcha && countDown <= 0 && (
+            <div className={cx(styles['resend-captcha'])}>
+              <ImageCaptcha {...resendCaptcha.inputProps} />
+            </div>
+          )}
         </div>
         <Input
           ref={inputRef}

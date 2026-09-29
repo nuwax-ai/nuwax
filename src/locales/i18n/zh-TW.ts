@@ -6831,4 +6831,10 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SystemSensitiveWord.actionReplace": "替換",
   "PC.Pages.SystemSensitiveWord.status": "狀態",
   "PC.Pages.SystemSensitiveWord.modified": "更新時間",
+  "PC.Components.ImageCaptcha.label": "圖形驗證碼",
+  "PC.Components.ImageCaptcha.placeholder": "請輸入圖形驗證碼",
+  "PC.Components.ImageCaptcha.required": "請輸入圖形驗證碼",
+  "PC.Components.ImageCaptcha.loadFailed": "驗證碼加載失敗，請點擊圖片重試",
+  "PC.Components.ImageCaptcha.unclear": "看不清？",
+  "PC.Components.ImageCaptcha.refresh": "換一張",
 };

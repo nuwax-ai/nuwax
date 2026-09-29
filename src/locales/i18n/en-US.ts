@@ -6983,4 +6983,10 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemSensitiveWord.actionReplace": "Replace",
   "PC.Pages.SystemSensitiveWord.status": "Status",
   "PC.Pages.SystemSensitiveWord.modified": "Updated",
+  "PC.Components.ImageCaptcha.label": "Image Code",
+  "PC.Components.ImageCaptcha.placeholder": "Enter the code in the image",
+  "PC.Components.ImageCaptcha.required": "Please enter the image code",
+  "PC.Components.ImageCaptcha.loadFailed": "Failed to load the code. Click the image to retry",
+  "PC.Components.ImageCaptcha.unclear": "Can't read it?",
+  "PC.Components.ImageCaptcha.refresh": "Refresh",
 };
