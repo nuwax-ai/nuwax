@@ -6892,7 +6892,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectDetail.domainPlaceholder": "Enter a domain, e.g. app.example.com",
   "PC.Pages.AppProjectDetail.domainBound": "Bound",
   // 发布服务器配置
-  "PC.Pages.AppProjectDetail.deployTitle": "Publish server",
+  "PC.Pages.AppProjectDetail.deployTitle": "Deploy server settings",
   "PC.Pages.AppProjectDetail.deployDesc": "Choose where the app runs after publish. A private server requires the protocol, server address, and two ports.",
   "PC.Pages.AppProjectDetail.platformService": "Platform service",
   "PC.Pages.AppProjectDetail.platformServiceDesc": "Hosted by Nuwa with autoscaling and no ops overhead",
@@ -6954,7 +6954,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateServerModified": "Updated",
   "PC.Pages.AppProjectDetail.updatePrivateServer": "Update",
   "PC.Pages.AppProjectDetail.updatePrivateServerSuccess": "Private server updated",
-  "PC.Pages.AppProjectDetail.setDeployServer": "Set deploy server",
+  "PC.Pages.AppProjectDetail.setDeployServer": "Save",
   "PC.Pages.AppProjectDetail.selectPrivateServerTitle": "Select a private server",
   "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "Select a private server",
   "PC.Pages.AppProjectDetail.emptyPrivateServer": "No private servers yet. Add one first.",
