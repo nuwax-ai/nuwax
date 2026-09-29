@@ -12,7 +12,7 @@ export enum SquareAgentTypeEnum {
   Template = 'Template',
   // 技能
   Skill = 'Skill',
-  // 全栈应用
+  // 网站应用
   UserApp = 'UserApp',
   // 第三方应用
   ThirdApp = 'ThirdApp',

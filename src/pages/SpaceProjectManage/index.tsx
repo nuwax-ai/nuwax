@@ -60,12 +60,12 @@ const PAGE_SIZE = 48;
 const SCROLL_CONTAINER_ID = 'space-project-manage-scroll';
 
 /**
- * 空间项目管理页：聚合展示常规项目、全栈应用、三方应用（及历史网页应用）。
+ * 空间项目管理页：聚合展示常规项目、网站应用、三方应用（及历史网页应用）。
  *
  * 功能概览：
  * - Tab 筛选：「全部」传 projectTypes 三种类型；单 Tab 传对应单个 projectType
  * - 搜索：按项目名称模糊匹配；列表滚动到底部分页加载（pageSize=48）
- * - 新建：下拉菜单支持创建常规项目 / 全栈应用 / 三方应用，成功后跳转对应详情页
+ * - 新建：下拉菜单支持创建常规项目 / 网站应用 / 三方应用，成功后跳转对应详情页
  * - 卡片操作：常规/全栈/三方均支持编辑（各类型对应编辑弹窗）与删除
  * - 列表 UI 对齐 SpaceLibrary；卡片由 ProjectManageItem 渲染（CardWrapper 布局）
  *
@@ -352,7 +352,7 @@ const SpaceProjectManage: React.FC = () => {
     [],
   );
 
-  /** 全栈应用编辑成功后更新本地列表 */
+  /** 网站应用编辑成功后更新本地列表 */
   const handleUserAppEdited = useCallback((info: UserAppInfo) => {
     setList((previous) =>
       previous.map((item) =>
@@ -470,7 +470,7 @@ const SpaceProjectManage: React.FC = () => {
             onClear={() => setKeyword('')}
             style={{ width: 214 }}
           />
-          {/* 新建：常规项目 / 全栈应用 / 三方应用 */}
+          {/* 新建：常规项目 / 网站应用 / 三方应用 */}
           <Dropdown
             trigger={['click']}
             menu={{
@@ -546,7 +546,7 @@ const SpaceProjectManage: React.FC = () => {
           history.push(`/space/${spaceId}/normal-project-detail/${project.id}`);
         }}
       />
-      {/* 新建：全栈应用 */}
+      {/* 新建：网站应用 */}
       <CreateUserApp
         spaceId={spaceId}
         mode={CreateUpdateModeEnum.Create}
@@ -573,7 +573,7 @@ const SpaceProjectManage: React.FC = () => {
         onCancel={() => setEditNormalProjectTarget(undefined)}
         onEdited={handleNormalProjectEdited}
       />
-      {/* 编辑：全栈应用（名称/描述/图标） */}
+      {/* 编辑：网站应用（名称/描述/图标） */}
       <CreateUserApp
         mode={CreateUpdateModeEnum.Update}
         userAppInfo={editUserAppTarget as UserAppInfo | undefined}

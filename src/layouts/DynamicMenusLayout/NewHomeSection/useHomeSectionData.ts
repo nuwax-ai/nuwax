@@ -620,7 +620,7 @@ export function useHomeSectionData(options: {
     } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
       jumpTo(`/space/${devSpaceId}/app-dev/${devTargetId}`);
     } else if (devTargetType === 'UserApp' && devSpaceId && devTargetId) {
-      // 全栈应用会话：跳全栈应用开发详情页，conversationId 用于恢复该会话
+      // 网站应用会话：跳网站应用开发详情页，conversationId 用于恢复该会话
       jumpTo(buildAppProRoute(devSpaceId, devTargetId, id));
     } else {
       history.push('/home/chat/' + id + '/' + agentId);

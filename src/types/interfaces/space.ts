@@ -89,7 +89,7 @@ export interface PublishComponentModalProps {
   onBeforePublishFn?: () => Promise<void>;
   /**
    * 自定义提交：收集分类、发布空间后交由调用方处理（不再由弹窗内直接提交申请）。
-   * 用于全栈应用等「先选范围、再构建、最后申请」的流程。
+   * 用于网站应用等「先选范围、再构建、最后申请」的流程。
    */
   onSubmitPublish?: (payload: {
     remark?: string;

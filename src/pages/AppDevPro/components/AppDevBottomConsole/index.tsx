@@ -1,4 +1,4 @@
-/** 全栈应用控制台只适配环境数据；终端/日志 UI 统一由会话公共组件维护。 */
+/** 网站应用控制台只适配环境数据；终端/日志 UI 统一由会话公共组件维护。 */
 import ConversationBottomConsole, {
   type ConsoleExternalContainerStatus,
   type ConsoleLayoutMode,
