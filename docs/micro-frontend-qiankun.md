@@ -155,7 +155,7 @@ dist/
 
 ### 当前发布链的待接线项
 
-本轮已验证主站和子应用构建后的目录及内容，尚未验证线上发布。仓库原有 Docker 构建阶段仍使用 Node 22.10 + yarn，未准备新管线需要的子模块及有效 Git 上下文；该入口还需调整构建环境或改为消费预构建的完整 dist。原有 nginx 模板仅有通用 history fallback，还需加入下面的微应用静态 404 规则。仓库可见 CI 未包含业务发布任务，实际网关的 HTTP/WS 转发配置也需在发布验收时核对。
+本轮已验证主站和子应用构建后的目录及内容，尚未验证线上发布。仓库原有 Docker 构建阶段仍使用 Node 22.10 + yarn，未准备新管线需要的子模块及有效 Git 上下文；该入口还需调整构建环境或改为消费预构建的完整 dist。nginx 静态模板已增加业务路由强制主站入口及微应用静态 404 规则。仓库可见 CI 未包含业务发布任务，实际外层网关的 HTTP/WS 转发配置也需在发布验收时核对。
 
 发布整个 `dist/`；运维现有 `/api/` 和 WS 代理必须保持同源会话。以下片段中的 `business_gateway` 替换为部署环境实际网关，接入现有 nginx server；`root` 指向完整宿主 dist。
 
@@ -184,14 +184,22 @@ location ^~ /instant-message/ws {
     proxy_set_header Connection "upgrade";
 }
 
-location = /repo { try_files $uri /index.html; }
-location /repo/ { try_files $uri /index.html; }
-location = /instant-message { try_files $uri /index.html; }
-location /instant-message/ { try_files $uri /index.html; }
+location = /repo { try_files /index.html =404; }
+location /repo/ { try_files /index.html =404; }
+location = /instant-message { try_files /index.html =404; }
+location /instant-message/ { try_files /index.html =404; }
 location / { try_files $uri $uri/ /index.html; }
 ```
 
 业务路由的 fallback 是主站 `index.html`；不能指向微应用静态 index，否则直接刷新会绕开 SidebarShell 和鉴权。
+
+### 直开或刷新后主站导航消失的排查
+
+2026-09-29 实测：测试环境 `/instant-message/` 返回 `Nuwax IM` HTML 和 `/instant-message/assets/index-*.js`，`/repo/` 返回 `/repo/assets/index-*.js`；均未加载主站布局。`/home` 则返回主站 `umi.*.js`。从主站菜单进入两页均能看到主站导航和乾坤宿主，刷新后地址跳到带尾斜杠的业务路径，两者均消失。本地 3000 的两条业务路径直接访问及刷新均保留 260px 主站导航和乾坤宿主。
+
+出现这种响应差异时，需要调整实际 OpenResty/Nginx/Ingress 的入口分流：`/repo`、`/repo/` 与消息对应业务路径应返回完整主站 dist 的 `index.html`；仅 `/micro-apps/` 承载子应用静态资源。保留 `/repo/ws`、`/repo/internal`、`/instant-message/ws` 以及 `/api/` 的业务转发，不能整段代理 `/repo/` 或 `/instant-message/` 到旧独立前端。上面的业务规则强制读取主站 HTML，避免通用 `try_files $uri $uri/` 被旧静态目录抢占。
+
+验证时既要从主页菜单进入，也要在消息/资料库深链上刷新和直接打开；查看导航及 HTML 的脚本地址。修改仓库静态模板不会自动改变测试域名的外层网关，需要把对应规则应用到实际生效配置后，再核对线上响应。
 
 ## 初次接入验证记录（2026-09-28，分支同步前）
 
