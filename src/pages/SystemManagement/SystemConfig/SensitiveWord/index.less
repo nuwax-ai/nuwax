@@ -1,0 +1,14 @@
+@import '@/styles/token.less';
+
+.word-tag {
+  max-width: 100%;
+  margin-inline-end: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+// 正则表达式用等宽字体，便于辨认转义（token 是带引号字符串，需 ~ 解引号才是有效字体栈）
+.word-tag-regex {
+  font-family: '~''@{fontFamilyCode}';
+}

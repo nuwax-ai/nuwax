@@ -441,6 +441,12 @@ const routes = [
                   '@/pages/SystemManagement/SystemConfig/CategoryManage',
               },
               {
+                path: 'sensitive-word',
+                name: getRouteLabel('PC.Routes.sensitiveWordConfig'),
+                component:
+                  '@/pages/SystemManagement/SystemConfig/SensitiveWord',
+              },
+              {
                 path: 'i18n-lang',
                 name: getRouteLabel('PC.Routes.i18nLangManagement'),
                 component: '@/pages/SystemManagement/SystemConfig/I18nManage',
