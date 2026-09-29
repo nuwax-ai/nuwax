@@ -9,6 +9,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -16,7 +17,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { apiUserProjectPin } from '@/services/userProjectApp';
@@ -198,6 +199,146 @@ describe('ProjectPanel 选中关系', () => {
     });
     // 路由参数复位为无 spaceId（/home）；空间路由用例自行改写
     routeParams.params = {};
+  });
+
+  describe('首次加载恢复', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      cleanup();
+      vi.useRealTimers();
+    });
+
+    const renderPanel = async (ref?: React.RefObject<ProjectPanelHandle>) => {
+      const view = render(<ProjectPanel compact ref={ref} />);
+      await act(async () => {});
+      return view;
+    };
+
+    const finishRetries = async () => {
+      for (const delay of [300, 700, 1500]) {
+        await act(() => vi.advanceTimersByTimeAsync(delay));
+      }
+    };
+
+    it.each(['网络异常', '业务失败', '回包缺少 records'])(
+      '%s 后自动重试，不显示无项目空态',
+      async (failure) => {
+        respondPage(defaultRecords(), defaultConversations());
+        if (failure === '网络异常') {
+          pageQueryMock.mockRejectedValueOnce(new Error('network unavailable'));
+        } else {
+          pageQueryMock.mockResolvedValueOnce({
+            code: failure === '业务失败' ? '5000' : SUCCESS_CODE,
+            data: {},
+          });
+        }
+
+        await renderPanel();
+        expect(pageQueryMock).toHaveBeenCalledTimes(1);
+        expect(
+          screen.queryByText(
+            'PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects',
+          ),
+        ).not.toBeInTheDocument();
+
+        await act(() => vi.advanceTimersByTimeAsync(300));
+        expect(screen.getByText('项目一')).toBeInTheDocument();
+        expect(pageQueryMock).toHaveBeenCalledTimes(2);
+      },
+    );
+
+    it('成功返回空列表时展示暂无项目，不自动重试', async () => {
+      respondPage([]);
+      await renderPanel();
+      expect(
+        screen.getByText(
+          'PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects',
+        ),
+      ).toBeInTheDocument();
+      await finishRetries();
+      expect(pageQueryMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('持续失败有界结束，用户可重新加载恢复项目', async () => {
+      pageQueryMock.mockRejectedValue(new Error('network unavailable'));
+      await renderPanel();
+      await finishRetries();
+      expect(pageQueryMock).toHaveBeenCalledTimes(4);
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(
+        screen.queryByText(
+          'PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects',
+        ),
+      ).not.toBeInTheDocument();
+      await act(() => vi.advanceTimersByTimeAsync(30_000));
+      expect(pageQueryMock).toHaveBeenCalledTimes(4);
+
+      respondPage(defaultRecords(), defaultConversations());
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', {
+            name: 'PC.Common.Global.refresh',
+          }),
+        );
+      });
+      expect(screen.getByText('项目一')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('等待重试时卸载，取消剩余自动请求', async () => {
+      pageQueryMock.mockRejectedValue(new Error('network unavailable'));
+      const view = await renderPanel();
+      view.unmount();
+      await finishRetries();
+      expect(pageQueryMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('更新的刷新已成功时，旧的首次加载失败不覆盖数据或补发重试', async () => {
+      let rejectInitial!: (error: Error) => void;
+      respondPage(defaultRecords(), defaultConversations());
+      pageQueryMock.mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            rejectInitial = reject;
+          }),
+      );
+      const ref = createRef<ProjectPanelHandle>();
+      await renderPanel(ref);
+      await act(async () => ref.current?.revalidateVisible());
+      expect(screen.getByText('项目一')).toBeInTheDocument();
+
+      await act(async () => rejectInitial(new Error('stale request failed')));
+      await finishRetries();
+      expect(screen.getByText('项目一')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(pageQueryMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('等待重试期间已有新刷新成功，不补发首次加载请求', async () => {
+      respondPage(defaultRecords(), defaultConversations());
+      pageQueryMock.mockRejectedValueOnce(new Error('network unavailable'));
+      const ref = createRef<ProjectPanelHandle>();
+      await renderPanel(ref);
+      await act(async () => ref.current?.revalidateVisible());
+      expect(screen.getByText('项目一')).toBeInTheDocument();
+      await finishRetries();
+      expect(pageQueryMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('静默刷新失败保留已加载的项目', async () => {
+      respondPage(defaultRecords(), defaultConversations());
+      const ref = createRef<ProjectPanelHandle>();
+      await renderPanel(ref);
+      pageQueryMock.mockRejectedValue(new Error('network unavailable'));
+      await act(async () => ref.current?.revalidateVisible());
+      expect(screen.getByText('项目一')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      await finishRetries();
+      expect(pageQueryMock).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('命中项目子会话：折叠态自动展开 + 子行高亮（child-active/aria-current）', async () => {
