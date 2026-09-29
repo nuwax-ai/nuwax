@@ -95,6 +95,57 @@ async function assertClean(git, cwd, paths, label) {
     );
 }
 
+/** 允许前一轮升级留下的配对 pin；其它 staged/dirty 适配仍拒绝。 */
+async function assertSourceAndAdapterReady(git, root, app, execute) {
+  const adapterPath = repoRelative(root, app.adapterPath);
+  const status = await git(root, [
+    'status',
+    '--porcelain',
+    '--untracked-files=all',
+    '--ignore-submodules=none',
+    '--',
+    app.adapter.sourceDir,
+    repoRelative(root, app.adapterRoot),
+  ]);
+  if (!status) return;
+  const invalid = () =>
+    new Error(
+      `${app.id} 来源与适配有未提交/暂存或未跟踪改动，仅允许已配对的 gitlink/pin 暂存升级：\n${status}`,
+    );
+  const allowed = new Set([app.adapter.sourceDir, adapterPath]);
+  const changes = status.split('\n');
+  if (
+    changes.length !== 2 ||
+    changes.some(
+      (line) => line.slice(0, 3) !== 'M  ' || !allowed.has(line.slice(3)),
+    )
+  )
+    throw invalid();
+  const tree = await git(root, ['ls-tree', 'HEAD', '--', ...allowed]);
+  const entries = [...tree.matchAll(/^(\d{6}) (\w+) ([a-f0-9]{40})\t(.+)$/gm)];
+  const source = entries.find((entry) => entry[4] === app.adapter.sourceDir);
+  const adapter = entries.find((entry) => entry[4] === adapterPath);
+  const stagedSource = await indexEntry(git, root, app.adapter.sourceDir);
+  const stagedAdapter = await indexEntry(git, root, adapterPath);
+  if (
+    source?.[1] !== '160000' ||
+    source?.[2] !== 'commit' ||
+    stagedSource.mode !== '160000' ||
+    adapter?.[2] !== 'blob' ||
+    stagedAdapter.mode !== adapter?.[1]
+  )
+    throw invalid();
+  const original = await execute('git', ['show', `HEAD:${adapterPath}`], {
+    cwd: root,
+    capture: true,
+    trim: false,
+  });
+  const current = await fs.readFile(app.adapterPath, 'utf8');
+  if (JSON.parse(original).pin !== source[3]) throw invalid();
+  if (current !== updatedAdapter(original, source[3], stagedSource.oid))
+    throw invalid();
+}
+
 async function writeReceipt(directory, receipt) {
   const target = path.join(directory, 'receipt.json');
   const temporary = target + '.tmp';
@@ -296,12 +347,7 @@ export async function upgradeMicroApps({
           `${app.id} 子模块未初始化；先 git submodule update --init --recursive -- ${app.adapter.sourceDir}`,
         );
       await assertClean(git, app.source, [], `${app.id} 子仓`);
-      await assertClean(
-        git,
-        root,
-        [app.adapter.sourceDir, repoRelative(root, app.adapterRoot)],
-        `${app.id} 来源与适配`,
-      );
+      await assertSourceAndAdapterReady(git, root, app, execute);
       for (const marker of [
         'MERGE_HEAD',
         'rebase-merge',
@@ -450,15 +496,7 @@ export async function upgradeMicroApps({
     );
     for (const state of states) {
       await assertClean(git, state.app.source, [], `${state.app.id} 子仓`);
-      await assertClean(
-        git,
-        root,
-        [
-          state.app.adapter.sourceDir,
-          repoRelative(root, state.app.adapterRoot),
-        ],
-        `${state.app.id} 来源与适配`,
-      );
+      await assertSourceAndAdapterReady(git, root, state.app, execute);
       if (
         (await git(state.app.source, ['rev-parse', 'HEAD'])) !== state.head ||
         (await branchOf(git, state.app.source)) !== state.branch ||

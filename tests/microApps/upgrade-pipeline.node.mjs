@@ -442,6 +442,223 @@ test('all 完成两项升级，gitlink 与 adapter pin 可作为后续构建输�
   );
 });
 
+test('已暂存的配对升级允许重复检查和继续升级到新的 main', async (t) => {
+  const f = await fixture(t);
+  await upgradeMicroApps({ root: f.root, target: 'all' });
+  const before = await snapshot(f);
+  const events = [];
+  const repeated = await upgradeMicroApps({
+    root: f.root,
+    target: 'all',
+    execute: observeExecution(f, events),
+  });
+  assert.equal(repeated.status, 'unchanged');
+  assert.deepEqual(await snapshot(f), before);
+  assert.equal(events.filter((event) => event.args[0] === 'fetch').length, 2);
+  assert.ok(
+    !events.some((event) => ['checkout', 'add'].includes(event.args[0])),
+  );
+  const firstPins = {};
+  for (const app of Object.values(f.apps)) {
+    firstPins[app.id] = app.newPin;
+    await fs.writeFile(
+      path.join(app.upstream, 'second-feature.txt'),
+      'second main\n',
+    );
+    app.newPin = await commit(app.upstream, 'fixture second main');
+  }
+  const continued = await upgradeMicroApps({ root: f.root, target: 'all' });
+  assert.equal(continued.status, 'upgraded');
+  for (const app of Object.values(f.apps)) {
+    await assertPinned(f, app.id, app.newPin);
+    assert.equal(
+      continued.apps.find((item) => item.id === app.id).oldPin,
+      firstPins[app.id],
+    );
+  }
+  assert.equal(await git(f.root, ['rev-parse', 'HEAD']), before.head);
+});
+
+test('已暂存的单个手工升级可进入默认 all 升级，另一个应用正常更新', async (t) => {
+  const f = await fixture(t);
+  await upgradeMicroApps({ root: f.root, target: 'repo' });
+  const repoBefore = (await snapshot(f)).applications.repo;
+  const events = [];
+  const result = await upgradeMicroApps({
+    root: f.root,
+    target: 'all',
+    execute: observeExecution(f, events),
+  });
+  assert.equal(result.status, 'upgraded');
+  assert.equal(result.apps.find((app) => app.id === 'repo').changed, false);
+  assert.equal(result.apps.find((app) => app.id === 'message').changed, true);
+  assert.deepEqual((await snapshot(f)).applications.repo, repoBefore);
+  for (const app of Object.values(f.apps))
+    await assertPinned(f, app.id, app.newPin);
+  assert.ok(
+    !events.some(
+      (event) =>
+        event.cwd === f.apps.repo.source && event.args[0] === 'checkout',
+    ),
+  );
+});
+
+test('已暂存的第一轮升级在第二轮部分暂存失败后完整保留', async (t) => {
+  const f = await fixture(t);
+  await upgradeMicroApps({ root: f.root, target: 'all' });
+  await fs.writeFile(path.join(f.root, 'unrelated.txt'), 'staged work\n');
+  await git(f.root, ['add', '--', 'unrelated.txt']);
+  await fs.writeFile(
+    path.join(f.root, 'unrelated.txt'),
+    'dirty work after staging\n',
+  );
+  for (const app of Object.values(f.apps)) {
+    await fs.writeFile(
+      path.join(app.upstream, 'second-feature.txt'),
+      'second main\n',
+    );
+    await commit(app.upstream, 'fixture second main');
+  }
+  const before = await snapshot(f);
+  const events = [];
+  let injected = false;
+  const execute = observeExecution(
+    f,
+    events,
+    async (command, args, options) => {
+      if (command === 'git' && options.cwd === f.root && args[0] === 'add') {
+        injected = true;
+        await runFixtureCommand(
+          'git',
+          ['add', '--', f.apps.repo.sourceDir, f.apps.repo.adapterRelative],
+          options,
+        );
+        throw new Error('injected second upgrade staging failure');
+      }
+    },
+  );
+  await assert.rejects(
+    upgradeMicroApps({ root: f.root, target: 'all', execute }),
+    /injected second upgrade/,
+  );
+  assert.equal(injected, true);
+  assert.deepEqual(await snapshot(f), before);
+  for (const app of Object.values(f.apps))
+    await assertPinned(f, app.id, app.newPin);
+  assert.equal(await git(f.root, ['show', ':unrelated.txt']), 'staged work');
+});
+
+test('已配对的暂存 pin 不能放行其它适配改动或不完整版本指针', async (t) => {
+  const cases = {
+    'staged adapter field': async (f, app) => {
+      const file = path.join(f.root, app.adapterRelative);
+      const adapter = JSON.parse(await fs.readFile(file, 'utf8'));
+      await fs.writeFile(
+        file,
+        JSON.stringify({ ...adapter, devPort: 9999 }, null, 2) + '\n',
+      );
+      await git(f.root, ['add', '--', app.adapterRelative]);
+    },
+    'staged adapter formatting': async (f, app) => {
+      await fs.appendFile(path.join(f.root, app.adapterRelative), '\n');
+      await git(f.root, ['add', '--', app.adapterRelative]);
+    },
+    'staged adapter mode': async (f, app) => {
+      await fs.chmod(path.join(f.root, app.adapterRelative), 0o755);
+      await git(f.root, ['add', '--', app.adapterRelative]);
+    },
+    'staged patch': async (f, app) => {
+      await fs.appendFile(path.join(app.adapterRoot, 'adapter.patch'), '\n');
+      await git(f.root, [
+        'add',
+        '--',
+        path.posix.join(
+          path.posix.dirname(app.adapterRelative),
+          'adapter.patch',
+        ),
+      ]);
+    },
+    'staged overlay': async (f, app) => {
+      await fs.appendFile(
+        path.join(app.adapterRoot, 'overlay/marker.txt'),
+        'staged overlay work\n',
+      );
+      await git(f.root, [
+        'add',
+        '--',
+        path.posix.join(
+          path.posix.dirname(app.adapterRelative),
+          'overlay/marker.txt',
+        ),
+      ]);
+    },
+    'unstaged adapter': (f, app) =>
+      fs.appendFile(path.join(f.root, app.adapterRelative), '\n'),
+    'untracked adapter': (f, app) =>
+      fs.writeFile(
+        path.join(app.adapterRoot, 'local-note.txt'),
+        'untracked work\n',
+      ),
+    'gitlink only': (f, app) =>
+      git(f.root, [
+        'restore',
+        '--source=HEAD',
+        '--staged',
+        '--worktree',
+        '--',
+        app.adapterRelative,
+      ]),
+    'adapter only': async (f, app) => {
+      await git(app.source, ['checkout', '--detach', app.oldPin]);
+      await git(f.root, ['add', '--', app.sourceDir]);
+    },
+    'inconsistent pin': async (f, app) => {
+      const file = path.join(f.root, app.adapterRelative);
+      await fs.writeFile(
+        file,
+        (await fs.readFile(file, 'utf8')).replace(app.newPin, app.side),
+      );
+      await git(f.root, ['add', '--', app.adapterRelative]);
+    },
+  };
+  for (const [name, dirty] of Object.entries(cases))
+    await t.test(name, async (t) => {
+      const f = await fixture(t);
+      const app = f.apps.repo;
+      await upgradeMicroApps({ root: f.root, target: 'repo' });
+      await dirty(f, app);
+      const before = await snapshot(f);
+      const events = [];
+      await assert.rejects(
+        upgradeMicroApps({
+          root: f.root,
+          target: 'all',
+          execute: observeExecution(f, events),
+        }),
+        /未提交|暂存|未跟踪/,
+      );
+      assert.deepEqual(await snapshot(f), before);
+      assert.ok(
+        !events.some((event) =>
+          ['fetch', 'checkout', 'add'].includes(event.args[0]),
+        ),
+      );
+      if (name === 'untracked adapter')
+        assert.equal(
+          await fs.readFile(
+            path.join(app.adapterRoot, 'local-note.txt'),
+            'utf8',
+          ),
+          'untracked work\n',
+        );
+      if (name === 'staged adapter mode')
+        assert.equal(
+          (await fs.stat(path.join(f.root, app.adapterRelative))).mode & 0o777,
+          0o755,
+        );
+    });
+});
+
 test('缺少本地 origin/main 引用时先 fetch 补齐，再校验历史并升级', async (t) => {
   const f = await fixture(t);
   const app = f.apps.repo;

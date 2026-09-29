@@ -53,7 +53,7 @@ export function runCommand(command, args, options = {}) {
         error.stderr = stderr;
         reject(error);
       } else {
-        resolve(stdout.trim());
+        resolve(options.trim === false ? stdout : stdout.trim());
       }
     });
   });
@@ -230,7 +230,7 @@ export async function getPinnedSource(
     throw new Error(
       `${app.id} 固定提交不可用${
         checkMainHistory ? '或不在本地 origin/main 历史' : ''
-      }；请先初始化/核查子模块，构建不会自动 fetch/升级`,
+      }；请先初始化/核查子模块，sync:micro-apps 不会自行 fetch/升级`,
       { cause },
     );
   }

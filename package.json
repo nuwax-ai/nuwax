@@ -13,11 +13,11 @@
   "license": "Apache-2.0",
   "author": "Nuwax AI FE Team",
   "scripts": {
-    "prebuild:dev": "node scripts/generate-version.js && npm run sync:micro-apps",
+    "prebuild:dev": "npm run upgrade:micro-apps -- all && node scripts/generate-version.js && npm run sync:micro-apps",
     "build:dev": "cross-env UMI_ENV=development max build",
     "postbuild:dev": "node scripts/write-dist-version.js",
     "build:m": "node scripts/download-mobile-build.js",
-    "prebuild:prod": "node scripts/generate-version.js && npm run sync:micro-apps",
+    "prebuild:prod": "npm run upgrade:micro-apps -- all && node scripts/generate-version.js && npm run sync:micro-apps",
     "build:prod": "cross-env UMI_ENV=production max build",
     "postbuild:prod": "node scripts/write-dist-version.js",
     "build:prod:m": "npm run build:prod && node scripts/download-mobile-build.js",
