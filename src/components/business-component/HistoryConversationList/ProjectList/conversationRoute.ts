@@ -6,7 +6,7 @@ import { buildAppProRoute } from '@/utils/appProRoute';
  * 不直接复用该 hook：耦合首页 space 上下文）：
  * - Agent 开发会话 → 智能体开发页
  * - PageApp 开发会话 → 网页应用 IDE
- * - UserApp 开发会话 → 全栈应用 IDE（conversationId 恢复会话）
+ * - UserApp 开发会话 → 网站应用 IDE（conversationId 恢复会话）
  * - 其余（常规项目会话等）→ home/chat 会话详情
  * 纯函数只算路径，跳转由调用方执行（便于单测）。
  */

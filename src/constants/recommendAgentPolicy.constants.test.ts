@@ -49,7 +49,7 @@ describe('recommendAgentPolicy 可选范围策略', () => {
       expect(getAllowedFunctionType({})).toBeUndefined();
     });
 
-    it('全栈项目只允许全栈应用开发类', () => {
+    it('全栈项目只允许网站应用开发类', () => {
       expect(
         getAllowedFunctionType({
           projectType: AgentComponentTypeEnum.UserApp,

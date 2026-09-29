@@ -5,8 +5,8 @@
  * 团队空间 scope=Space,再经 official / justReturnSpaceData 区分,两 tab 均滚动触底分页追加;
  * 点击应用先 POST recentlyUsed/add 上报使用记录再进应用详情 /agent/:id,
  * 智能体网页应用(targetType=Agent + targetSubType=PageApp)不上报;
- * 全栈应用(targetSubType=UserApp)与三方应用(targetSubType=ThirdApp)
- * 跳全栈应用页 /user-app/:appId,三方应用回包 homepageUrl 有值时附
+ * 网站应用(targetSubType=UserApp)与三方应用(targetSubType=ThirdApp)
+ * 跳网站应用页 /user-app/:appId,三方应用回包 homepageUrl 有值时附
  * query 直载 iframe;多开标签满 5 个时点击新应用仅提示,
  * 不注册标签、不上报、不跳转);
  * 「更多」跳广场-网页应用
@@ -360,9 +360,9 @@ const NuwaApps: React.FC = () => {
 
   // 应用点击统一分流:先异步上报最近使用(不阻塞跳转,成功后由
   // runRecentlyUsedAdd 的 onSuccess 重拉列表);智能体网页应用
-  // (targetType=Agent 且 targetSubType=PageApp)不上报;全栈应用
+  // (targetType=Agent 且 targetSubType=PageApp)不上报;网站应用
   // (targetSubType=UserApp)与三方应用(targetSubType=ThirdApp)均跳
-  // 全栈应用页 /user-app/:appId;其余应用进应用详情
+  // 网站应用页 /user-app/:appId;其余应用进应用详情
   // /agent/:targetId(新接口条目为发布对象,无会话字段,不再续上次会话)
   // 跳转前把应用注册进左侧多开标签(内存态,刷新即失;重复打开原位保留)
   const { openApp, openedAppTabs } = useModel('openedAppTabs');

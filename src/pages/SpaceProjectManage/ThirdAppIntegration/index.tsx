@@ -38,7 +38,7 @@ const normalizeProjectRow = (
 /**
  * 第三方应用接入列表。
  *
- * 页面结构复用全栈应用列表，分页查询固定传 projectType=ThirdApp；
+ * 页面结构复用网站应用列表，分页查询固定传 projectType=ThirdApp；
  * 创建和编辑使用第三方应用 OAuth2 接口。
  *
  * @returns 第三方应用列表页面

@@ -6748,7 +6748,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.NormalProjectDetail.untitled": "名称未設定プロジェクト",
   "PC.Pages.NormalProjectDetail.hideConversationPanel": "関連タスクを隠す",
   "PC.Pages.NormalProjectDetail.showConversationPanel": "関連タスクを表示",
-  // 全栈应用详情页
+  // 网站应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "計画",
   "PC.Pages.AppProjectDetail.tabAsset": "資産",

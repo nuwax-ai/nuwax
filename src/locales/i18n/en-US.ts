@@ -6861,7 +6861,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.NormalProjectDetail.untitled": "Untitled project",
   "PC.Pages.NormalProjectDetail.hideConversationPanel": "Hide related tasks",
   "PC.Pages.NormalProjectDetail.showConversationPanel": "Show related tasks",
-  // 全栈应用详情页
+  // 网站应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "Plan",
   "PC.Pages.AppProjectDetail.tabAsset": "Assets",
