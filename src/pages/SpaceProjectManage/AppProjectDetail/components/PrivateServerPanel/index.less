@@ -1,49 +1,60 @@
 @import '@/styles/token';
 
-.header,
-.row {
-  display: flex;
-  align-items: center;
-  gap: @marginSm;
-  padding-left: @paddingXs;
+.table-wrap {
+  margin-top: @margin;
+  overflow-x: auto;
 }
 
-.row {
-  border-radius: @borderRadius;
+.table {
+  width: 100%;
+  border: none;
+  border-collapse: separate;
+  border-spacing: 0 @marginXs;
+  table-layout: auto;
+
+  th,
+  td {
+    border: none;
+    padding: 0 @paddingXs 0 0;
+    background: transparent;
+    color: @colorTextSecondary;
+    font-weight: normal;
+    font-size: @fontSizeSm;
+    line-height: @fontHeightSm;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  th:first-child,
+  td:first-child {
+    padding-left: @paddingXs;
+  }
 }
 
-.selected {
+.selected td {
   background-color: @colorPrimaryBg;
 }
 
-.header {
-  margin-top: @margin;
+.selected td:first-child {
+  border-top-left-radius: @borderRadius;
+  border-bottom-left-radius: @borderRadius;
 }
 
-.header-fields {
-  display: grid;
-  grid-template-columns:
-    minmax(72px, 88px) minmax(120px, 1fr) minmax(96px, 108px)
-    minmax(84px, 108px) minmax(90px, 120px);
-  gap: @marginSm;
-  flex: 1;
+.selected td:last-child {
+  border-top-right-radius: @borderRadius;
+  border-bottom-right-radius: @borderRadius;
 }
 
-.header-cell {
-  min-width: 0;
-  overflow: hidden;
-  color: @colorTextSecondary;
-  font-size: @fontSizeSm;
-  line-height: @fontHeightSm;
+.actions {
+  width: 160px;
+  min-width: 160px;
+  text-align: right;
   white-space: nowrap;
-  text-overflow: ellipsis;
-}
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: @marginSm;
-  margin-top: @marginXs;
+  > * + * {
+    margin-left: @marginXs;
+  }
 }
 
 .health {
@@ -63,25 +74,13 @@
   color: @colorTextTertiary;
 }
 
-.actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  width: 140px;
-  height: @controlHeight;
-  gap: @marginXs;
-}
-
 .delete,
 .detail {
-  flex-shrink: 0;
   min-width: @controlHeightSm;
   padding-inline: 0;
 }
 
 .refresh {
-  flex-shrink: 0;
   white-space: nowrap;
 }
 
@@ -105,15 +104,5 @@
 
   p + p {
     margin-top: @marginXxs;
-  }
-}
-
-@media (max-width: 960px) {
-  .header-fields {
-    grid-template-columns: 1fr;
-  }
-
-  .actions {
-    width: 100%;
   }
 }

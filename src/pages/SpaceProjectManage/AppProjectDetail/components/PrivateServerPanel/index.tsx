@@ -32,6 +32,7 @@ import PrivateServerForm, {
   getEmptyPrivateServerForm,
   type PrivateServerFormValue,
 } from '../PrivateServerForm';
+import fieldStyles from '../PrivateServerForm/index.less';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -458,105 +459,111 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
   return (
     <Spin spinning={!!loading || createLoading}>
       {rows.length > 0 ? (
-        <div className={cx(styles.header)}>
-          <div className={cx(styles['header-fields'])}>
-            <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectDetail.protocol')}
-            </span>
-            <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectDetail.serverIp')}
-            </span>
-            <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectDetail.agentPort')}
-            </span>
-            <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectDetail.vncPort')}
-            </span>
-            <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectDetail.fileServerPort')}
-            </span>
-          </div>
-          <span className={cx(styles.actions)}>
-            {servers.length > 0 ? (
-              <Button
-                size="small"
-                className={cx(styles.refresh)}
-                icon={<ReloadOutlined spin={healthChecking} />}
-                onClick={handleRefreshHealth}
-              >
-                {dict('PC.Pages.AppProjectDetail.refreshConnectionStatus')}
-              </Button>
-            ) : null}
-          </span>
+        <div className={cx(styles['table-wrap'])}>
+          <table className={cx(styles.table)}>
+            <thead>
+              <tr>
+                <th className={fieldStyles.protocol}>
+                  {dict('PC.Pages.AppProjectDetail.protocol')}
+                </th>
+                <th className={fieldStyles.host}>
+                  {dict('PC.Pages.AppProjectDetail.serverIp')}
+                </th>
+                <th className={fieldStyles.agent}>
+                  {dict('PC.Pages.AppProjectDetail.agentPort')}
+                </th>
+                <th className={fieldStyles.vnc}>
+                  {dict('PC.Pages.AppProjectDetail.vncPort')}
+                </th>
+                <th className={fieldStyles.file}>
+                  {dict('PC.Pages.AppProjectDetail.fileServerPort')}
+                </th>
+                <th className={cx(styles.actions)}>
+                  {servers.length > 0 ? (
+                    <Button
+                      size="small"
+                      className={cx(styles.refresh)}
+                      icon={<ReloadOutlined spin={healthChecking} />}
+                      onClick={handleRefreshHealth}
+                    >
+                      {dict(
+                        'PC.Pages.AppProjectDetail.refreshConnectionStatus',
+                      )}
+                    </Button>
+                  ) : null}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const selected =
+                  row.saved != null &&
+                  appInfo?.deployServerId != null &&
+                  Number(row.saved.id) === Number(appInfo.deployServerId);
+                return (
+                  <tr
+                    key={row.key}
+                    className={cx({
+                      [styles.selected]: selected,
+                    })}
+                  >
+                    <PrivateServerForm
+                      disabled={!!row.saved}
+                      value={row.value}
+                      onChange={(value) => handleRowChange(row.key, value)}
+                    />
+                    <td className={cx(styles.actions)}>
+                      {row.saved ? (
+                        renderHealth(row.saved.id)
+                      ) : (
+                        <Button
+                          type="primary"
+                          size="small"
+                          className={cx(styles.confirm)}
+                          loading={submittingKey === row.key}
+                          onClick={() => handleSubmitAdd(row)}
+                        >
+                          {dict('PC.Pages.AppProjectDetail.addServerRow')}
+                        </Button>
+                      )}
+                      {row.saved ? (
+                        <Tooltip
+                          title={dict(
+                            'PC.Pages.AppProjectDetail.viewPrivateServerDetail',
+                          )}
+                        >
+                          <Button
+                            type="text"
+                            size="small"
+                            className={cx(styles.detail)}
+                            icon={<EyeOutlined />}
+                            aria-label={dict(
+                              'PC.Pages.AppProjectDetail.viewPrivateServerDetail',
+                            )}
+                            onClick={() => {
+                              if (row.saved) {
+                                void handleViewDetail(row.saved);
+                              }
+                            }}
+                          />
+                        </Tooltip>
+                      ) : null}
+                      <Button
+                        type="text"
+                        danger
+                        size="small"
+                        className={cx(styles.delete)}
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDelete(row)}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : null}
-      <div className={cx(styles.list)}>
-        {rows.map((row) => {
-          const selected =
-            row.saved != null &&
-            appInfo?.deployServerId != null &&
-            Number(row.saved.id) === Number(appInfo.deployServerId);
-          return (
-            <div
-              key={row.key}
-              className={cx(styles.row, {
-                [styles.selected]: selected,
-              })}
-            >
-              <PrivateServerForm
-                disabled={!!row.saved}
-                value={row.value}
-                onChange={(value) => handleRowChange(row.key, value)}
-              />
-              <div className={cx(styles.actions)}>
-                {row.saved ? (
-                  renderHealth(row.saved.id)
-                ) : (
-                  <Button
-                    type="primary"
-                    size="small"
-                    className={cx(styles.confirm)}
-                    loading={submittingKey === row.key}
-                    onClick={() => handleSubmitAdd(row)}
-                  >
-                    {dict('PC.Pages.AppProjectDetail.addServerRow')}
-                  </Button>
-                )}
-                {row.saved ? (
-                  <Tooltip
-                    title={dict(
-                      'PC.Pages.AppProjectDetail.viewPrivateServerDetail',
-                    )}
-                  >
-                    <Button
-                      type="text"
-                      size="small"
-                      className={cx(styles.detail)}
-                      icon={<EyeOutlined />}
-                      aria-label={dict(
-                        'PC.Pages.AppProjectDetail.viewPrivateServerDetail',
-                      )}
-                      onClick={() => {
-                        if (row.saved) {
-                          void handleViewDetail(row.saved);
-                        }
-                      }}
-                    />
-                  </Tooltip>
-                ) : null}
-                <Button
-                  type="text"
-                  danger
-                  size="small"
-                  className={cx(styles.delete)}
-                  icon={<DeleteOutlined />}
-                  onClick={() => handleDelete(row)}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
       <Button
         icon={<PlusOutlined />}
         className={cx(styles.add)}
