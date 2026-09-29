@@ -17,6 +17,11 @@
   overflow: hidden;
   contain: layout style;
 
+  // 「文件预览」标签：keep-all 防止 CJK 文案在窄容器下被逐字折行
+  .filePreviewLabel {
+    word-break: keep-all;
+  }
+
   .fileInfo {
     display: flex;
     align-items: center;
