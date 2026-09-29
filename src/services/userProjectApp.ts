@@ -1,5 +1,5 @@
 /**
- * 用户项目 / 全栈应用基础接口（共享层）
+ * 用户项目 / 网站应用基础接口（共享层）
  * @description 下沉自 pages/AppDevPro/services/appDevPro：首页侧栏项目面板等
  * 非页面层消费方需要（分层红线：非页面层禁止依赖 @/pages/**）；
  * 页面层原路径再导出保持既有引用不变。
@@ -105,7 +105,7 @@ export async function apiUserAppUpdate(
   });
 }
 
-/** 创建全栈应用，供首页和空间项目页共用。 */
+/** 创建网站应用，供首页和空间项目页共用。 */
 export async function apiUserAppCreate(
   data: CreateUserAppParams,
 ): Promise<RequestResponse<UserAppInfo>> {
@@ -133,7 +133,7 @@ export async function apiUserAppGetById(
   });
 }
 
-/** 查询应用历史配置信息（三方应用-全栈应用的发布操作流水）*/
+/** 查询应用历史配置信息（三方应用-网站应用的发布操作流水）*/
 export async function apiUserAppConfigHistoryList(
   projectId: number,
   projectType: string,
@@ -144,7 +144,7 @@ export async function apiUserAppConfigHistoryList(
   });
 }
 
-/** 查询全栈应用绑定的域名列表(应用详情页 iframe 取生产域名) */
+/** 查询网站应用绑定的域名列表(应用详情页 iframe 取生产域名) */
 export async function apiUserAppDomainList(
   appId: number,
 ): Promise<RequestResponse<UserAppDomainInfo[]>> {

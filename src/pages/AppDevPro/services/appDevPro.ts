@@ -46,7 +46,7 @@ export async function apiUserProjectGetById(
   });
 }
 
-/** 全栈应用：获取当前用户最新会话（进项目详情无会话 id 时调用） */
+/** 网站应用：获取当前用户最新会话（进项目详情无会话 id 时调用） */
 export async function apiUserAppLatestConversation(
   id: number,
 ): Promise<RequestResponse<ProjectLatestConversationResult>> {
@@ -251,7 +251,7 @@ export const getUserAppVncProxyUrl = (appId: number): string => {
 };
 
 /**
- * 全栈应用终端 ttyd 代理 WebSocket 地址
+ * 网站应用终端 ttyd 代理 WebSocket 地址
  * 开发环境：/api/userapp/proxy/ttyd/dev/{appId}/
  * 线上环境：/api/userapp/proxy/ttyd/prod/{appId}/
  *

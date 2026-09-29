@@ -6,7 +6,7 @@ import { useCallback } from 'react';
 /**
  * @ 提及的会话文件数据源：初始列表用 file-list，搜索用 search-files。
  * 与 Chat 会话页（pages/Chat/index.tsx）的 fetchMentionFiles 同源逻辑，
- * 供各会话宿主（智能体开发 / 全栈应用开发面板等）接线 onFetchMentionFiles。
+ * 供各会话宿主（智能体开发 / 网站应用开发面板等）接线 onFetchMentionFiles。
  */
 const useConversationMentionFiles = (conversationId?: number | null) => {
   const fetchMentionFiles = useCallback(
