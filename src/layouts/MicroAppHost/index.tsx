@@ -15,6 +15,7 @@ import { history } from 'umi';
 import styles from './index.less';
 import { microAppLifecycleQueue } from './lifecycle';
 import { microAppHostStore, type MicroAppHostEntry } from './store';
+import useDelegatedScrollbarScrollShow from './useDelegatedScrollbarScrollShow';
 
 interface MicroAppInstanceProps {
   entry: MicroAppHostEntry;
@@ -176,6 +177,8 @@ const MicroAppHost: React.FC = () => {
     microAppHostStore.getSnapshot,
     microAppHostStore.getSnapshot,
   );
+  // 子应用滚动条统一「滚动时才出现」：样式锚点 styles.host + 本 hook 的事件委托
+  const hostRef = useDelegatedScrollbarScrollShow();
 
   useEffect(() => {
     const clear = () => microAppHostStore.invalidateAll();
@@ -185,7 +188,9 @@ const MicroAppHost: React.FC = () => {
 
   return (
     <div
+      ref={hostRef}
       data-micro-app-host
+      className={styles.host}
       style={{
         height: '100%',
         width: '100%',

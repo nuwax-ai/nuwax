@@ -1,3 +1,14 @@
+@import '@/styles/scrollbar.less';
+
+/* 乾坤子应用与主站共享 document（qiankun 默认不做样式隔离），global.less
+   的全局 ::-webkit-scrollbar 常驻滑块会波及子应用全部滚动容器，与主站
+   「滚动时才出现」口径不一致。以宿主为锚统一为滚动时才显示（配套
+   useDelegatedScrollbarScrollShow 维护 data-is-scrolling），子应用自带
+   滚动条规则不受影响（特异性与插入顺序约定见 mixin 注释）。 */
+.host {
+  .scrollbar-scroll-show-delegate();
+}
+
 .container {
   width: 100%;
   height: 100%;
