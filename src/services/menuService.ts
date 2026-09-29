@@ -5,6 +5,8 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { hostBridge } from '@/utils/hostBridge';
+import { normalizeHostMicroAppMenus } from '@/utils/microAppRoutes';
 import { request } from 'umi';
 
 /**
@@ -180,7 +182,15 @@ export async function apiQueryMenus(): Promise<RequestResponse<MenuItemDto[]>> {
 
   // 转换数据结构以适配前端模型
   if (res?.code === SUCCESS_CODE && Array.isArray(res?.data)) {
-    const mappedMenus = mapSysMenuToMenuItem(res.data);
+    const product = hostBridge.host.getProduct();
+    const context =
+      product === 'nuwax' || product === 'nuwawork'
+        ? await hostBridge.auth.getContext()
+        : null;
+    const mappedMenus = normalizeHostMicroAppMenus(
+      mapSysMenuToMenuItem(res.data),
+      context,
+    );
     // 替换默认图标映射
     return {
       ...res,

@@ -179,7 +179,9 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     <div className={cx(styles.filePathHeader, className)}>
       {viewMode !== 'desktop' && (
         <div className={cx('flex', 'items-center', 'gap-4')}>
-          <span>{dict('PC.Components.FilePathHeader.filePreview')}</span>
+          <span className={styles.filePreviewLabel}>
+            {dict('PC.Components.FilePathHeader.filePreview')}
+          </span>
 
           {/* 文件树展开/折叠按钮 */}
           <Tooltip
