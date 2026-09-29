@@ -6942,6 +6942,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppProjectDetail.healthOffline": "Offline",
   "PC.Pages.AppProjectDetail.viewPrivateServerDetail": "View details",
   "PC.Pages.AppProjectDetail.refreshConnectionStatus": "Refresh connection",
+  "PC.Pages.AppProjectDetail.selectedPrivateServer": "Selected",
   "PC.Pages.AppProjectDetail.privateServerDetailTitle": "Private server details",
   "PC.Pages.AppProjectDetail.privateServerName": "Name",
   "PC.Pages.AppProjectDetail.privateServerApiKey": "Communication key",
