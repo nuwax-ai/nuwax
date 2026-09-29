@@ -6,7 +6,7 @@ import {
 } from '@/types/interfaces/userProject';
 import { request } from 'umi';
 
-/** 用户项目（包括常规项目、全栈应用、网页应用、第三方应用）分页查询请求参数 */
+/** 用户项目（包括常规项目、网站应用、网页应用、第三方应用）分页查询请求参数 */
 export type UserProjectPageQueryParams = TablePageRequest<
   Partial<{
     spaceId: number;
@@ -22,7 +22,7 @@ export type UserProjectPageQueryParams = TablePageRequest<
   }>
 >;
 
-/** 用户项目（包括常规项目、全栈应用、网页应用、第三方应用）分页查询 */
+/** 用户项目（包括常规项目、网站应用、网页应用、第三方应用）分页查询 */
 export async function apiUserProjectPageQuery(
   data: UserProjectPageQueryParams,
 ): Promise<RequestResponse<UserProjectPageResult>> {

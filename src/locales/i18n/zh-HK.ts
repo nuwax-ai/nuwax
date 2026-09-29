@@ -6702,7 +6702,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.NormalProjectDetail.untitled": "未命名項目",
   "PC.Pages.NormalProjectDetail.hideConversationPanel": "隱藏相關任務",
   "PC.Pages.NormalProjectDetail.showConversationPanel": "顯示相關任務",
-  // 全栈应用详情页
+  // 网站应用详情页
   // 顶部 Tab
   "PC.Pages.AppProjectDetail.tabPlan": "計劃",
   "PC.Pages.AppProjectDetail.tabAsset": "資產",

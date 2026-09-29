@@ -118,7 +118,7 @@ export interface ConversationBottomConsoleProps {
    */
   conversationId?: number;
   /**
-   * 全栈应用环境，用于 computer/pod 接口的 appStage。
+   * 网站应用环境，用于 computer/pod 接口的 appStage。
    * 打开某个终端 Tab 时按该 Tab 对应环境 ensure；此值作为日志 Tab 下的兜底。
    */
   appStage?: ComputerPodAppStage;
@@ -179,7 +179,7 @@ export interface ConversationBottomConsoleProps {
 }
 
 /**
- * 公共会话终端 + 日志面板；全栈应用仅适配环境数据，不另维护一份 UI。
+ * 公共会话终端 + 日志面板；网站应用仅适配环境数据，不另维护一份 UI。
  * - 开发 / 线上两个终端 Tab 常驻挂载，Header 环境切换时展示对应终端
  * - 日志 Tab：DevLogPanel（devLog）或 runtimeLogs 纯文本
  */
