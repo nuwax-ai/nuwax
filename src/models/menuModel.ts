@@ -16,7 +16,6 @@ import {
   extractAllPermissions,
   isRoutePathHidden,
 } from '@/utils/permission';
-import { filterPresentationHiddenMenus } from './menuVisibility';
 
 /**
  * 菜单权限模型
@@ -91,9 +90,7 @@ export default function useMenuModel() {
 
       const filteredMenus = filterItems(menus);
 
-      // 后端权限树仍保留主题配置能力；这里只隐藏产品不再展示的菜单项，避免
-      // 误删权限集合或破坏历史直链（bug 2459）。
-      setMenuTree(filterPresentationHiddenMenus(filteredMenus));
+      setMenuTree(filteredMenus);
 
       // 提取所有权限码（从 Map 中提取所有值并打平）
       const permissionsMapData: Map<string, string[]> =
