@@ -1,27 +1,39 @@
 @import '@/styles/token';
 
-.fields {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) 108px 108px 120px;
-  gap: @marginSm;
-  flex: 1;
-  min-width: 0;
-}
-
 .protocol {
   width: 88px;
-
-  .select {
-    width: 100%;
-  }
+  min-width: 72px;
 }
 
-.field {
-  min-width: 0;
+.host {
+  min-width: 120px;
 }
 
-@media (max-width: 960px) {
-  .fields {
-    grid-template-columns: 1fr;
-  }
+.agent {
+  width: 108px;
+  min-width: 96px;
+}
+
+.vnc {
+  width: 108px;
+  min-width: 84px;
+}
+
+.file {
+  width: 120px;
+  min-width: 90px;
+}
+
+.select {
+  width: 100%;
+}
+
+.readonly {
+  display: block;
+  overflow: hidden;
+  color: @colorTextSecondary;
+  font-size: @fontSize;
+  line-height: @controlHeight;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

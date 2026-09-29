@@ -1,35 +1,60 @@
 @import '@/styles/token';
 
-.header,
-.row {
-  display: flex;
-  align-items: center;
-  gap: @marginSm;
-}
-
-.header {
+.table-wrap {
   margin-top: @margin;
+  overflow-x: auto;
 }
 
-.header-fields {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) 108px 108px 120px;
-  gap: @marginSm;
-  flex: 1;
-  min-width: 0;
+.table {
+  width: 100%;
+  border: none;
+  border-collapse: separate;
+  border-spacing: 0 @marginXs;
+  table-layout: auto;
+
+  th,
+  td {
+    border: none;
+    padding: 0 @paddingXs 0 0;
+    background: transparent;
+    color: @colorTextSecondary;
+    font-weight: normal;
+    font-size: @fontSizeSm;
+    line-height: @fontHeightSm;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  th:first-child,
+  td:first-child {
+    padding-left: @paddingXs;
+  }
 }
 
-.header-cell {
-  color: @colorTextSecondary;
-  font-size: @fontSizeSm;
-  line-height: @fontHeightSm;
+.selected td {
+  background-color: @colorPrimaryBg;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: @marginSm;
-  margin-top: @marginXs;
+.selected td:first-child {
+  border-top-left-radius: @borderRadius;
+  border-bottom-left-radius: @borderRadius;
+}
+
+.selected td:last-child {
+  border-top-right-radius: @borderRadius;
+  border-bottom-right-radius: @borderRadius;
+}
+
+.actions {
+  width: 160px;
+  min-width: 160px;
+  text-align: right;
+  white-space: nowrap;
+
+  > * + * {
+    margin-left: @marginXs;
+  }
 }
 
 .health {
@@ -49,20 +74,14 @@
   color: @colorTextTertiary;
 }
 
-.actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 82px;
-  height: @controlHeight;
-  gap: @marginXs;
-}
-
-.delete {
-  flex-shrink: 0;
+.delete,
+.detail {
   min-width: @controlHeightSm;
   padding-inline: 0;
+}
+
+.refresh {
+  white-space: nowrap;
 }
 
 .confirm {
@@ -85,15 +104,5 @@
 
   p + p {
     margin-top: @marginXxs;
-  }
-}
-
-@media (max-width: 960px) {
-  .header-fields {
-    grid-template-columns: 1fr;
-  }
-
-  .actions {
-    width: 100%;
   }
 }
