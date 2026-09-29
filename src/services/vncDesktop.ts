@@ -97,6 +97,7 @@ export async function apiSearchFiles(
     limit = 200,
     maxVisit = 20000,
     timeoutMs = 2000,
+    type = 'file',
   } = params;
   return request('/api/computer/static/search-files', {
     method: 'GET',

@@ -7,6 +7,7 @@ import {
   isWorkspaceLayeredTree,
   locateWorkspaceChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/locateWorkspaceChangeFile';
+import { workspaceRelativePath } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
@@ -68,6 +69,9 @@ import type {
 import { ChangeFileInfo } from '../types/file-tree';
 
 /** 从文件树中移除指定 ID 的节点（含子树递归） */
+/** 压缩包后缀。这类文件不搜索、不拉内容，直接提示不支持预览 */
+const ARCHIVE_FILE_PATTERN = /\.(zip|skill|rar|7z|tar|tgz|gz|bz2|xz)$/i;
+
 const removeNodeByIdFromTree = (
   nodes: FileNode[],
   targetId: string,
@@ -712,9 +716,31 @@ export function useFileTreePreviewView(
         fileNode = options.fallbackNode;
       }
 
+      const relativePath = workspaceRelativePath(fileId).replace(
+        /^\/+|\/+$/g,
+        '',
+      );
+      const fileBaseName = relativePath.split('/').pop() || '';
+      // 仅压缩包跳过搜索和内容请求，直接展示不支持预览
+      const unsupportedPreview =
+        !options?.selectFolder && ARCHIVE_FILE_PATTERN.test(fileBaseName);
+
+      if (!fileNode && unsupportedPreview) {
+        fileNode = {
+          id: fileId,
+          name: fileBaseName,
+          type: 'file',
+          path: relativePath,
+          fullPath: relativePath,
+          relativePath,
+          content: '',
+        };
+      }
+
       // 分层树里没有这个文件时，按文件名搜索并用路径命中，再走下面原有的内容请求
       if (
         !fileNode &&
+        !unsupportedPreview &&
         !options?.selectFolder &&
         targetId &&
         isWorkspaceLayeredTree(currentFiles, fileId)
@@ -2272,9 +2298,13 @@ export function useFileTreePreviewView(
       );
     }
 
+    // 展示用文件名。节点 id 带 workspace: 只用于树内选中，不能拿来当文件名
+    const selectedFileName = selectedFileNode.name || '';
+    const fileExtension =
+      selectedFileName.split('.').pop() || selectedFileName;
+
     // 软链接文件不支持编辑预览
     if (selectedFileNode?.isLink) {
-      const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
       return (
         <AppDevEmptyState
           type="error"
@@ -2289,8 +2319,6 @@ export function useFileTreePreviewView(
     }
 
     // 压缩包等不支持预览的文件（如 .zip、.skill、.rar、.7z 等）
-    const selectedFileName =
-      selectedFileNode?.name || selectedFileId?.split('/')?.pop() || '';
 
     /**
      * OpenUI 预览：
@@ -2356,7 +2384,6 @@ export function useFileTreePreviewView(
     }
 
     if (!isPreviewableFile(selectedFileName, true)) {
-      const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
       // 代码视图下允许查看裸 .openui 文本；预览模式才提示正确扩展名
       if (isBareOpenUiFileName(selectedFileName) && viewFileType === 'code') {
         // 落入下方 CodeViewer
@@ -2386,7 +2413,7 @@ export function useFileTreePreviewView(
       }
     }
 
-    const fileName = selectedFileId?.split('/')?.pop() || '';
+    const fileName = selectedFileName;
     const fileNameLower = fileName?.toLowerCase() || '';
     const isHtmlInCondition = /\.html?($|\?)/i.test(fileNameLower);
 

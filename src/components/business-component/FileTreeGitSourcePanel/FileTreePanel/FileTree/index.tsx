@@ -445,10 +445,6 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
                 isSelected ? styles.activeFile : ''
               }`}
               onClick={() => {
-                // 跳过以"."为前缀的隐藏文件和重命名模式
-                // if (node.name.startsWith('.') || isRenaming) {
-                //   return;
-                // }
                 // 重命名模式下，不进行文件选择
                 if (isRenaming) {
                   return;

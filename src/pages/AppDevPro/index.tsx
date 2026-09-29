@@ -10,7 +10,6 @@ import FileTreeGitSourcePanel, {
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
 import { workspaceNodeId } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
-import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
@@ -682,12 +681,15 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     },
   });
 
+  /** 会话运行时会话 */
   const runtimeLine = useConversationRuntimeSession({
     conversationId: queryConversationId,
     // chat 请求携带面板当前选中电脑（空串兜底 undefined）
     getSandboxId: () => finalSelectedComputerId || undefined,
     effectsResources: { refreshFileListThrottled: refreshRuntimeFileTree },
   });
+
+  /** 会话进度胶囊模型 */
   const capsuleModel = selectProgressCapsule(
     runtimeLine?.conversationProps.messageList ?? messageList,
     runtimeLine?.effectiveIsActive ?? isConversationActive,
@@ -986,7 +988,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         return dict('PC.Pages.AppDevPro.iframeLoadFailed');
       }
       // 开发 / 线上分开判断：只在这次启动所属的环境被停止，或已经切走时结束探测。
-      // 域名检查保留；能否打开预览以就绪接口持续轮询到 true 为准。
+      // 域名检查保留。就绪接口有次数上限，未就绪也不拦截预览。
       const shouldStop = () =>
         previewUserStoppedByEnvRef.current[targetEnv] ||
         dbEnvRef.current !== targetEnv;
@@ -2554,21 +2556,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const renderRightPanel = () => {
     const isFilesWorkspace = workspaceView === 'files';
     const isProdEnv = dbEnv === UserAppDbEnvEnum.Prod;
-    const moreActions =
-      isProdEnv || !active ? null : (
-        <MoreActionsMenu
-          onRestartServer={() => {
-            restartVncPod(queryConversationId, finalSelectedComputerId);
-          }}
-          onRestartAgent={() => {
-            restartAgent(queryConversationId);
-          }}
-          onExportProject={() => {
-            void fileView.tree.handleExportProject?.();
-          }}
-          isCloudComputer={finalSelectedComputerId === '-1'}
-        />
-      );
     return (
       <div className={cx(styles['right-panel'])}>
         <div className={cx(styles['right-panel-body'])}>
@@ -2591,9 +2578,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               onRestartAgent={() => {
                 restartAgent(queryConversationId);
               }}
-              onExportProject={() => {
-                void fileView.tree.handleExportProject?.();
-              }}
               isCloudComputer={finalSelectedComputerId === '-1'}
             />
           ) : workspaceView === 'database' ? (
@@ -2608,26 +2592,13 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               onTogglePinTab={noop}
               onTabReorder={noop}
               permanentWorkspaceToolIds={DATABASE_WORKSPACE_TOOL_IDS}
-              showMoreActions={!isProdEnv}
-              onRestartServer={() => {
-                restartVncPod(queryConversationId, finalSelectedComputerId);
-              }}
-              onRestartAgent={() => {
-                restartAgent(queryConversationId);
-              }}
-              onExportProject={() => {
-                void fileView.tree.handleExportProject?.();
-              }}
-              isCloudComputer={finalSelectedComputerId === '-1'}
+              showMoreActions={false}
             />
           ) : workspaceView === 'remote-desktop' ? (
             <div className={cx(styles['tool-workspace-bar'])}>
               <span className={cx(styles['tool-workspace-title'])}>
                 {dict('PC.Pages.AppDevPro.remoteDesktop')}
               </span>
-              <div className={cx(styles['tool-workspace-actions'])}>
-                {moreActions}
-              </div>
             </div>
           ) : (
             <div className={cx(styles['tool-workspace-bar'])}>
@@ -2640,9 +2611,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                   />
                 </div>
               ) : null}
-              <div className={cx(styles['tool-workspace-actions'])}>
-                {moreActions}
-              </div>
             </div>
           )}
           <div className={cx(styles['right-panel-main'])}>
@@ -2793,6 +2761,15 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                 appId={appId}
                 active={active}
                 onConfirmUpdate={setUserAppInfo}
+                progress={
+                  capsuleModel
+                    ? {
+                        open: progressOpen,
+                        running: capsuleModel.running,
+                        onClick: () => setProgressOpen((value) => !value),
+                      }
+                    : undefined
+                }
               />
               <div className={cx(styles['left-panel-body'])}>
                 <AgentConversationChatPanel
@@ -2816,15 +2793,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           right={
             <div className={cx(styles['right-column'])}>
               <AppDevProHeaderActions
-                progress={
-                  capsuleModel
-                    ? {
-                        open: progressOpen,
-                        running: capsuleModel.running,
-                        onClick: () => setProgressOpen((value) => !value),
-                      }
-                    : undefined
-                }
                 userAppInfo={userAppInfo}
                 onPublish={handleOpenPublish}
                 onOpenMarketPublish={() => setOpenPublishModal(true)}
@@ -2837,6 +2805,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                 isTerminalPanelOpen={isTerminalIconActive}
                 onOpenTerminalPanel={handleOpenTerminalPanel}
                 onOpenDomainBinding={() => setSettingsOpen(true)}
+                onRestartProdComputer={() => {
+                  setPodAppStage(UserAppDbEnvEnum.Prod);
+                  restartVncPod(queryConversationId, finalSelectedComputerId);
+                }}
                 isDatabasePanelOpen={isDatabasePanelOpen}
                 onOpenDatabase={handleOpenDatabasePanel}
                 isShowAppPreview={isShowAppPreview}

@@ -239,25 +239,18 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
   }, [appId, setPublishPhase]);
 
   /**
-   * 生产部署接口成功后，轮询线上环境直到应用真正可访问。
+   * 生产部署接口成功后，轮询线上环境是否可访问。
    * 用户停止部署时结束，不进入成功态。
+   * 轮询到上限仍未就绪时不抛错，交给调用方继续展示部署成功。
    */
   const waitUntilProdReady = useCallback(async () => {
     if (!appId) {
       throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
     }
     setPublishPhase('checkingReadiness');
-    const ready = await pollUserAppReadiness(
-      appId,
-      UserAppDbEnvEnum.Prod,
-      () => cancelledRef.current,
+    await pollUserAppReadiness(appId, UserAppDbEnvEnum.Prod, () =>
+      cancelledRef.current,
     );
-    if (cancelledRef.current) {
-      return;
-    }
-    if (!ready) {
-      throw new Error(dict('PC.Pages.AppDevPro.startFailed'));
-    }
   }, [appId, setPublishPhase]);
 
   /**

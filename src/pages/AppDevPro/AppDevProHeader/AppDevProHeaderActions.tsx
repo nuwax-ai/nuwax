@@ -1,7 +1,5 @@
 import { SvgIcon } from '@/components/base';
-import ConversationPanelActions, {
-  type ConversationPanelActionsProps,
-} from '@/components/business-component/ConversationPanelActions';
+import ConversationPanelActions from '@/components/business-component/ConversationPanelActions';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
@@ -22,8 +20,6 @@ const cx = classNames.bind(styles);
 export interface AppDevProHeaderActionsProps {
   /** 外层容器类名 */
   className?: string;
-  /** 会话胶囊入口，放在右侧按钮组最左。 */
-  progress?: ConversationPanelActionsProps['progress'];
   /** 全栈应用详情 */
   userAppInfo?: UserAppInfo | null;
   /** 点击部署 */
@@ -48,6 +44,8 @@ export interface AppDevProHeaderActionsProps {
   onOpenTerminalPanel?: () => void;
   /** 打开域名绑定弹窗（线上环境更多菜单） */
   onOpenDomainBinding?: () => void;
+  /** 重启线上环境智能体电脑 */
+  onRestartProdComputer?: () => void;
   /** 数据库页签是否处于激活状态 */
   isDatabasePanelOpen?: boolean;
   /** 打开 / 关闭数据库工作区（再次点击还原打开前状态） */
@@ -88,7 +86,6 @@ export interface AppDevProHeaderActionsProps {
  */
 const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   className,
-  progress,
   userAppInfo,
   onPublish,
   onOpenMarketPublish,
@@ -101,6 +98,7 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   isTerminalPanelOpen = false,
   onOpenTerminalPanel,
   onOpenDomainBinding,
+  onRestartProdComputer,
   isDatabasePanelOpen = false,
   onOpenDatabase,
   isShowDesktop = false,
@@ -163,9 +161,17 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
     [onEnvChange],
   );
 
-  /** 线上环境更多菜单：域名绑定、构建包版本记录、发布版本记录（已发布时） */
+  /** 线上环境更多菜单：重启线上电脑、域名绑定、构建包版本记录、发布版本记录（已发布时） */
   const prodMoreMenuItems = useMemo<MenuProps['items']>(
     () => [
+      {
+        key: 'restartProdComputer',
+        label: (
+          <div onClick={onRestartProdComputer}>
+            {dict('PC.Components.MoreActionsMenu.restartComputer')}
+          </div>
+        ),
+      },
       {
         key: 'domainBinding',
         label: (
@@ -197,6 +203,7 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
     ],
     [
       onOpenDomainBinding,
+      onRestartProdComputer,
       onToggleBuildVersionRecords,
       onTogglePublishVersionRecords,
       showPublishVersionRecords,
@@ -225,11 +232,6 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
       />
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        <ConversationPanelActions
-          progress={progress}
-          iconClassName={styles['panel-btn']}
-          activeClassName={styles.active}
-        />
         {/* 应用预览：重启 / 停止 */}
         <ConditionRender condition={canShowPreviewRuntime}>
           <PreviewRuntimeButtons
@@ -237,30 +239,6 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
             variant="icon"
             iconButtonClassName={styles['panel-btn']}
           />
-        </ConditionRender>
-
-        {/* 线上环境更多：域名绑定 / 构建包版本记录 / 发布版本记录 */}
-        <ConditionRender condition={env === UserAppDbEnvEnum.Prod}>
-          <div className={cx(styles['fold-box'])}>
-            <Dropdown
-              menu={{ items: prodMoreMenuItems }}
-              placement="bottomLeft"
-            >
-              <span
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'cursor-pointer',
-                  styles['fold-btn'],
-                  {
-                    [styles.active]: isProdMoreMenuActive,
-                  },
-                )}
-              >
-                <SvgIcon name="icons-common-more" />
-              </span>
-            </Dropdown>
-          </div>
         </ConditionRender>
 
         {/* 数据库工作区：管理页 + 配置页 */}
@@ -312,6 +290,30 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
             }
             onClick={onOpenAppPreview}
           />
+        </ConditionRender>
+
+        {/* 线上环境更多：重启智能体电脑 / 域名绑定 / 构建包版本记录 / 发布版本记录 */}
+        <ConditionRender condition={env === UserAppDbEnvEnum.Prod}>
+          <div className={cx(styles['fold-box'])}>
+            <Dropdown
+              menu={{ items: prodMoreMenuItems }}
+              placement="bottomLeft"
+            >
+              <span
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'cursor-pointer',
+                  styles['fold-btn'],
+                  {
+                    [styles.active]: isProdMoreMenuActive,
+                  },
+                )}
+              >
+                <SvgIcon name="icons-common-more" />
+              </span>
+            </Dropdown>
+          </div>
         </ConditionRender>
 
         {/* 部署按钮：仅开发环境。远程构建中可点击取消，本地部署仅展示 loading */}
