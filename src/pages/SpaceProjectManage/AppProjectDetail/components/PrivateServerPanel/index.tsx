@@ -1,11 +1,14 @@
 import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
+import type { UserAppInfo } from '@/types/interfaces/userProject';
 import {
   DeleteOutlined,
+  EyeOutlined,
   LoadingOutlined,
   PlusOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
-import { Button, Modal, Spin, message } from 'antd';
+import { Button, Modal, Spin, Tooltip, message } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -18,9 +21,13 @@ import { useRequest } from 'umi';
 import {
   apiPrivateServerCreate,
   apiPrivateServerDelete,
+  apiPrivateServerGet,
   apiPrivateServerHealthCheck,
+  apiPrivateServerUpdate,
   type PrivateServerInfo,
+  type PrivateServerUpdateParams,
 } from '../../../services/privateServer';
+import PrivateServerDetailModal from '../PrivateServerDetailModal';
 import PrivateServerForm, {
   getEmptyPrivateServerForm,
   type PrivateServerFormValue,
@@ -30,6 +37,8 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 export interface PrivateServerPanelProps {
+  /** 应用详情，用其中的 deployServerId 标出当前部署私服 */
+  appInfo?: UserAppInfo;
   /** 私服列表 */
   servers: PrivateServerInfo[];
   /** 列表加载中 */
@@ -130,14 +139,36 @@ const pickCreatedId = (
 };
 
 /**
- * 私服列表、行内追加空行与删除。
+ * 解开私服详情，兼容直接对象与包装结构。
  *
+ * @param result 接口结果
+ * @returns 私服详情
+ */
+const pickServerDetail = (
+  result?: PrivateServerInfo | RequestResponse<PrivateServerInfo>,
+): PrivateServerInfo | undefined => {
+  if (!result || typeof result !== 'object') {
+    return undefined;
+  }
+  if ('host' in result && typeof result.id === 'number') {
+    return result;
+  }
+  const wrapped = result as RequestResponse<PrivateServerInfo>;
+  return wrapped.data;
+};
+
+/**
+ * 私服列表、行内追加空行与删除。
+ * 应用详情里的 deployServerId 与列表 id 一致时，给该行加主题色背景。
+ *
+ * @param props.appInfo 应用详情
  * @param props.servers 当前列表
  * @param props.loading 列表 loading
  * @param props.onRefresh 刷新回调
  * @returns 私服管理区域
  */
 const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
+  appInfo,
   servers,
   loading,
   onRefresh,
@@ -149,6 +180,9 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
   const [hideFallback, setHideFallback] = useState(false);
 
   const [healthMap, setHealthMap] = useState<Record<number, HealthState>>({});
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailServer, setDetailServer] = useState<PrivateServerInfo>();
   const healthMapRef = useRef(healthMap);
   healthMapRef.current = healthMap;
 
@@ -195,6 +229,7 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
     },
   );
 
+  // 删除私服
   const { run: runDelete } = useRequest(apiPrivateServerDelete, {
     manual: true,
     onSuccess: () => {
@@ -202,6 +237,28 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
       onRefresh();
     },
   });
+
+  // 更新私服信息
+  const { run: runUpdate, loading: updateLoading } = useRequest(
+    apiPrivateServerUpdate,
+    {
+      manual: true,
+      onSuccess: (
+        _result: unknown,
+        params: PrivateServerUpdateParams[],
+      ) => {
+        message.success(
+          dict('PC.Pages.AppProjectDetail.updatePrivateServerSuccess'),
+        );
+        setDetailOpen(false);
+        const updatedId = params[0]?.id;
+        if (updatedId) {
+          void checkHealth(updatedId);
+        }
+        onRefresh();
+      },
+    },
+  );
 
   useEffect(() => {
     servers.forEach((item) => {
@@ -297,6 +354,59 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
     [runCreate],
   );
 
+  /**
+   * 打开已保存私服的详情。先用列表数据占位，再以详情接口结果覆盖。
+   *
+   * @param server 列表中的私服
+   */
+  const handleViewDetail = useCallback(async (server: PrivateServerInfo) => {
+    setDetailServer(server);
+    setDetailOpen(true);
+    setDetailLoading(true);
+    try {
+      const result = await apiPrivateServerGet(server.id);
+      const next = pickServerDetail(result);
+      if (next) {
+        setDetailServer(next);
+      }
+    } catch (error) {
+      console.error('Failed to load private server detail:', error);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
+  /** 关闭私服详情弹窗 */
+  const handleCloseDetail = useCallback(() => {
+    setDetailOpen(false);
+  }, []);
+
+  /**
+   * 提交私服详情更新。
+   *
+   * @param data 更新参数
+   */
+  const handleUpdateDetail = useCallback(
+    (data: PrivateServerUpdateParams) => {
+      runUpdate(data);
+    },
+    [runUpdate],
+  );
+
+  /**
+   * 重新检查已添加私服的连接状态。
+   */
+  const handleRefreshHealth = useCallback(() => {
+    servers.forEach((item) => {
+      void checkHealth(item.id);
+    });
+  }, [checkHealth, servers]);
+
+  const healthChecking = useMemo(
+    () => Object.values(healthMap).some((status) => status === 'loading'),
+    [healthMap],
+  );
+
   const handleDelete = useCallback(
     (row: ServerRow) => {
       if (!row.saved) {
@@ -366,42 +476,86 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
               {dict('PC.Pages.AppProjectDetail.fileServerPort')}
             </span>
           </div>
-          <span className={cx(styles.actions)} />
+          <span className={cx(styles.actions)}>
+            {servers.length > 0 ? (
+              <Button
+                size="small"
+                className={cx(styles.refresh)}
+                icon={<ReloadOutlined spin={healthChecking} />}
+                onClick={handleRefreshHealth}
+              >
+                {dict('PC.Pages.AppProjectDetail.refreshConnectionStatus')}
+              </Button>
+            ) : null}
+          </span>
         </div>
       ) : null}
       <div className={cx(styles.list)}>
-        {rows.map((row) => (
-          <div key={row.key} className={cx(styles.row)}>
-            <PrivateServerForm
-              disabled={!!row.saved}
-              value={row.value}
-              onChange={(value) => handleRowChange(row.key, value)}
-            />
-            <div className={cx(styles.actions)}>
-              {row.saved ? (
-                renderHealth(row.saved.id)
-              ) : (
-                <Button
-                  type="primary"
-                  size="small"
-                  className={cx(styles.confirm)}
-                  loading={submittingKey === row.key}
-                  onClick={() => handleSubmitAdd(row)}
-                >
-                  {dict('PC.Pages.AppProjectDetail.addServerRow')}
-                </Button>
-              )}
-              <Button
-                type="text"
-                danger
-                size="small"
-                className={cx(styles.delete)}
-                icon={<DeleteOutlined />}
-                onClick={() => handleDelete(row)}
+        {rows.map((row) => {
+          const selected =
+            row.saved != null &&
+            appInfo?.deployServerId != null &&
+            Number(row.saved.id) === Number(appInfo.deployServerId);
+          return (
+            <div
+              key={row.key}
+              className={cx(styles.row, {
+                [styles.selected]: selected,
+              })}
+            >
+              <PrivateServerForm
+                disabled={!!row.saved}
+                value={row.value}
+                onChange={(value) => handleRowChange(row.key, value)}
               />
+              <div className={cx(styles.actions)}>
+                {row.saved ? (
+                  renderHealth(row.saved.id)
+                ) : (
+                  <Button
+                    type="primary"
+                    size="small"
+                    className={cx(styles.confirm)}
+                    loading={submittingKey === row.key}
+                    onClick={() => handleSubmitAdd(row)}
+                  >
+                    {dict('PC.Pages.AppProjectDetail.addServerRow')}
+                  </Button>
+                )}
+                {row.saved ? (
+                  <Tooltip
+                    title={dict(
+                      'PC.Pages.AppProjectDetail.viewPrivateServerDetail',
+                    )}
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      className={cx(styles.detail)}
+                      icon={<EyeOutlined />}
+                      aria-label={dict(
+                        'PC.Pages.AppProjectDetail.viewPrivateServerDetail',
+                      )}
+                      onClick={() => {
+                        if (row.saved) {
+                          void handleViewDetail(row.saved);
+                        }
+                      }}
+                    />
+                  </Tooltip>
+                ) : null}
+                <Button
+                  type="text"
+                  danger
+                  size="small"
+                  className={cx(styles.delete)}
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDelete(row)}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <Button
         icon={<PlusOutlined />}
@@ -418,6 +572,14 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
           https: {dict('PC.Pages.AppProjectDetail.privateHint')}
         </p>
       </div>
+      <PrivateServerDetailModal
+        open={detailOpen}
+        loading={detailLoading}
+        confirmLoading={updateLoading}
+        server={detailServer}
+        onCancel={handleCloseDetail}
+        onUpdate={handleUpdateDetail}
+      />
     </Spin>
   );
 };

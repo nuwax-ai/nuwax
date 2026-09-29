@@ -165,6 +165,18 @@ resolve_machine_conflicts() { # $1=合并提交信息
   return 0
 }
 
+# pull 带自愈：远端分叉时 pull 走 merge，dist/version.ts 机器产物冲突会让 pull 失败且
+# 在 index 留 unmerged 态（下次重跑被拦，死循环——2026-09-30 四连挂实证）；
+# 失败即按机器产物消化提交合并，源码冲突才回滚交人工。
+pull_with_heal() { # pull_with_heal <remote> <branch>
+  if retry_git 3 pull --no-verify "$1" "$2"; then return 0; fi
+  if resolve_machine_conflicts "merge: 拉取 $1/$2（机器产物冲突自动消化）"; then
+    return 0
+  fi
+  git merge --abort 2>/dev/null || true
+  return 1
+}
+
 # 已知存量挂清单：失败套件若全部在清单内则显式放行（大字提示），否则一律拦截
 # workspaceDirComputerSwitch 已恢复全绿，不再默认豁免；只接受显式传入的清单。
 KNOWN_BROKEN_TESTS="${KNOWN_BROKEN_TESTS:-}"
@@ -254,6 +266,15 @@ fi
 # 依赖 symlink 主区 node_modules（pnpm 产物跨目录可用，生产 build 不依赖 src/.umi）。
 REAL_FEATURE="$FEATURE_BRANCH"
 WT_DIR=""
+# 在提测 worktree 内续跑（断点恢复）：git-dir≠common-dir 即处于某 worktree 中，且
+# 存在临时分支 deploy-sync-work ⇒ 接管 FEATURE 角色（checkout 真名分支会撞主区占用，
+# 2026-09-30 首战实证：续跑死在步骤 1 的自动切回）
+if [ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ] &&
+  git show-ref --verify --quiet refs/heads/deploy-sync-work 2>/dev/null; then
+  WT_DIR="$(git rev-parse --show-toplevel)"
+  FEATURE_BRANCH=deploy-sync-work
+  log "检测到提测 worktree 内续跑：FEATURE 角色由临时分支 ${FEATURE_BRANCH} 承接（真名 ${REAL_FEATURE}）"
+fi
 enter_worktree_if_needed() {
   [ "$USE_WORKTREE" != "0" ] || return 0
   if [ -z "$(git status --porcelain -uno)" ] && [ "$USE_WORKTREE" != "1" ]; then
@@ -277,6 +298,10 @@ enter_worktree_if_needed() {
   else
     die "主区缺少 src/.umi（先在主区跑一次 npm run dev 或 max build 生成），worktree 无法启动测试"
   fi
+  # worktree 不会带子模块内容，而步骤 7 的 upgrade:micro-apps 强制要求子模块已初始化且
+  # HEAD==pin（2026-09-30 首战实证：未 init 时 build 前置校验拦死）；按 gitlink 对齐初始化
+  (cd "$WT_DIR" && git submodule update --init --recursive) ||
+    die "worktree 子模块初始化失败（网络/子模块远端问题），重跑本脚本重试"
   cd "$WT_DIR"
   FEATURE_BRANCH=deploy-sync-work
   log "主区有未提交现场，已切换提测专用 worktree（主区零接触）：${WT_DIR}"
@@ -354,7 +379,7 @@ fi
 CURRENT_STEP="合入版本开发分支 ${VERSION_BRANCH}"
 log "步骤 5/8：合入团队版本开发分支 ${VERSION_BRANCH} 并推 origin"
 run git checkout "$VERSION_BRANCH"
-retry_git 3 pull --no-verify origin "$VERSION_BRANCH"
+pull_with_heal origin "$VERSION_BRANCH"
 if git merge-base --is-ancestor "$FEATURE_BRANCH" "$VERSION_BRANCH"; then
   log "${VERSION_BRANCH} 已包含 ${REAL_FEATURE}，跳过合并"
 else
@@ -371,7 +396,7 @@ retry_git 3 push origin "$VERSION_BRANCH"
 CURRENT_STEP="合入 ${DEV_BRANCH}"
 log "步骤 6/8：合入本地 ${DEV_BRANCH}（部署数据源，不推送远端）"
 run git checkout "$DEV_BRANCH"
-retry_git 3 pull --no-verify origin "$DEV_BRANCH"
+pull_with_heal origin "$DEV_BRANCH"
 if git merge-base --is-ancestor "$VERSION_BRANCH" "$DEV_BRANCH"; then
   log "${DEV_BRANCH} 已包含 ${VERSION_BRANCH}，跳过合并"
 else
@@ -391,8 +416,8 @@ fi
 CURRENT_STEP="${TEST_BRANCH} 分支构建部署"
 log "步骤 7/8：切 ${TEST_BRANCH}、双远端 pull、merge ${DEV_BRANCH}、构建并推送（语义同 deploy_test.sh）"
 run git checkout "$TEST_BRANCH"
-retry_git 3 pull --no-verify gitlab "$TEST_BRANCH"
-retry_git 3 pull --no-verify origin "$TEST_BRANCH"
+pull_with_heal gitlab "$TEST_BRANCH"
+pull_with_heal origin "$TEST_BRANCH"
 if ! rgit merge "$DEV_BRANCH" -X ours --no-verify \
   -m "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（冲突以本地 ${TEST_BRANCH} 为准）"; then
   # dist 产物（哈希文件名）与 version.ts 烤哈希均为机器产物，自动消化（清 dist 重建/取本地侧）

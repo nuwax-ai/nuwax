@@ -544,7 +544,7 @@ const ConnectorManage: React.FC = () => {
       // 鉴权方式
       title: dict('PC.Pages.ConnectorManage.columnAuthType'),
       dataIndex: 'authType',
-      width: 120,
+      width: 180,
       align: 'center',
       valueType: 'select',
       valueEnum: Object.fromEntries(

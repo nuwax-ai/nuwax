@@ -4,4 +4,4 @@
  */
 export const APP_VERSION = '1.2.0';
 export const APP_NAME = 'nuwax-frontend';
-export const APP_GIT_HASH = '96e35386e';
+export const APP_GIT_HASH = '05d07af1c';
