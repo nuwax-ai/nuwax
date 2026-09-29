@@ -271,7 +271,7 @@ describe('项目上框重复触发与默认智能体竞态（禅道bug2394）', 
     expect(input.props.pinnedProject?.name).toBe('全栈 A');
   });
 
-  it('常规项目行 + 上框时也清掉原有专家，等待用户选择项目智能体', async () => {
+  it('常规项目行 + 上框时也清掉原有专家，允许重新选择专家', async () => {
     const { rerender } = render(<Home />);
     act(() => {
       input.props.onExpertAgentSelect({ targetId: 66, name: '原有专家' });
@@ -290,12 +290,13 @@ describe('项目上框重复触发与默认智能体竞态（禅道bug2394）', 
     );
     expect(input.props.summonedExpert).toBeUndefined();
     expect(input.props.selectedTag).toBeUndefined();
-    expect(input.props.showExpertCapability).toBe(false);
+    expect(input.props.showExpertCapability).toBe(true);
 
     act(() => {
       input.props.onExpertAgentSelect({ targetId: 67, name: '新专家' });
     });
-    expect(input.props.summonedExpert).toBeUndefined();
+    expect(input.props.summonedExpert?.name).toBe('新专家');
+    expect(input.props.pinnedProject?.name).toBe('常规项目 B');
 
     act(() => input.props.onClearPinnedProject());
     expect(input.props.showExpertCapability).toBe(true);

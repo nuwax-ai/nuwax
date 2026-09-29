@@ -57,12 +57,12 @@ describe('recommendAgentPolicy 可选范围策略', () => {
       ).toBe(DisplayRecommendFunctionTypeEnum.UserAppDev);
     });
 
-    it('常规项目只允许常规项目类', () => {
+    it('常规项目不限制为单一功能类型', () => {
       expect(
         getAllowedFunctionType({
           projectType: AgentComponentTypeEnum.NormalProject,
         }),
-      ).toBe(DisplayRecommendFunctionTypeEnum.NormalProjectDev);
+      ).toBeUndefined();
     });
 
     it('未登记类型（PageApp 等）不受限', () => {
@@ -96,24 +96,24 @@ describe('recommendAgentPolicy 可选范围策略', () => {
       ).toBe(true);
     });
 
-    it('常规上下文：仅保留 NormalProjectDev', () => {
-      const filtered = filterSelectableAgents(FULL_LIST, {
-        projectType: AgentComponentTypeEnum.NormalProject,
-      });
-      expect(filtered).toHaveLength(1);
-      expect(filtered[0].targetId).toBe(17);
+    it('常规上下文：禁用五类开发类型，允许对话、常规项目及未配置类型', () => {
+      const ctx = { projectType: AgentComponentTypeEnum.NormalProject };
+      expect(
+        filterSelectableAgents(FULL_LIST, ctx).map((item) => item.targetId),
+      ).toEqual([15, 17, 18]);
+      for (const item of FULL_LIST) {
+        expect(isAgentSelectable(item, ctx)).toBe(
+          [15, 17, 18].includes(item.targetId),
+        );
+      }
+      expect(isAgentSelectable(makeItem('custom'), ctx)).toBe(true);
+      expect(isAgentSelectable({ functionType: undefined }, ctx)).toBe(true);
     });
 
-    it('两类上下文均排除六个开发类中的另一类与对话型/未配置', () => {
-      for (const projectType of [
-        AgentComponentTypeEnum.UserApp,
-        AgentComponentTypeEnum.NormalProject,
-      ]) {
-        const allowed = filterSelectableAgents(FULL_LIST, { projectType });
-        const rest = FULL_LIST.filter((item) => !allowed.includes(item));
-        // 各只剩 1 项，其余 7 项（另一项目类 + 对话型 + 智能体/网页/技能/插件开发 + 未配置）全排除
-        expect(allowed).toHaveLength(1);
-        expect(rest).toHaveLength(FULL_LIST.length - 1);
+    it('全栈上下文：其他所有类型仍不可选', () => {
+      const ctx = { projectType: AgentComponentTypeEnum.UserApp };
+      for (const item of FULL_LIST) {
+        expect(isAgentSelectable(item, ctx)).toBe(item.targetId === 16);
       }
     });
   });
@@ -163,11 +163,11 @@ describe('recommendAgentPolicy 可选范围策略', () => {
       ).toBe(16);
     });
 
-    it('常规：唯一 NormalProjectDev 命中', () => {
+    it('常规：不再按单一类型自动兜底', () => {
       expect(
         findTypeFallbackAgent(FULL_LIST, AgentComponentTypeEnum.NormalProject)
           ?.targetId,
-      ).toBe(17);
+      ).toBeUndefined();
     });
 
     it('同类型 0 个不命中', () => {

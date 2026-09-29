@@ -469,7 +469,7 @@ describe('首页项目上框与专家透传消费', () => {
     expect(input.props.agentId).toBe(10);
   });
 
-  it('常规项目上框允许手选常规项目 Agent，选中后保持并用于创建会话', async () => {
+  it('常规项目上框允许手选对话 Agent，选中后保持并用于创建会话', async () => {
     handoffMap.homePinnedProject = {
       projectId: 18,
       projectType: 'NormalProject',
@@ -502,23 +502,23 @@ describe('首页项目上框与专家透传消费', () => {
 
     render(<Home />);
     await screen.findByRole('button', { name: '项目 Agent' });
-    expect(screen.getByRole('button', { name: '普通对话' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '普通对话' })).toBeEnabled();
     expect(
       screen.getByRole('button', { name: '另一个项目 Agent' }),
     ).toBeEnabled();
     expect(input.props.selectedTag).toBeUndefined();
-    fireEvent.click(screen.getByRole('button', { name: '项目 Agent' }));
+    fireEvent.click(screen.getByRole('button', { name: '普通对话' }));
     await waitFor(() =>
-      expect(input.props.selectedTag?.label).toBe('项目 Agent'),
+      expect(input.props.selectedTag?.label).toBe('普通对话'),
     );
-    expect(input.props.showExpertCapability).toBe(false);
+    expect(input.props.showExpertCapability).toBe(true);
     expect(input.props.onClearSelectedTag).toBeTypeOf('function');
     await act(async () => {
       await input.props.onEnter('新任务');
     });
     expect(input.props.pinnedProject?.name).toBe('项目 A');
     expect(handleCreateConversation).toHaveBeenCalledWith(
-      72,
+      71,
       expect.objectContaining({
         projectId: 18,
         projectType: 'NormalProject',
