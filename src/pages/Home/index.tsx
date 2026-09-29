@@ -192,6 +192,10 @@ const Home: React.FC = () => {
     summonedExpert?.agentId ||
     selectedRecommend?.targetId ||
     (isUserAppPinned ? undefined : defaultAgentId);
+  // 推荐标签可指向同一智能体，详情需按标签 ID 区分；召唤专家不带推荐上下文。
+  const currentRecId = summonedExpert?.agentId
+    ? undefined
+    : selectedRecommend?.id;
   const agentTypeLoading =
     !!currentAgentId && agentDetail?.agentId !== currentAgentId;
   const supportsAgentCapabilities =
@@ -279,7 +283,7 @@ const Home: React.FC = () => {
     setAgentDetail(undefined);
     if (!currentAgentId) return;
     let cancelled = false;
-    apiPublishedAgentInfo(currentAgentId)
+    apiPublishedAgentInfo(currentAgentId, false, currentRecId)
       .then(({ data }) => {
         if (!cancelled) setAgentDetail(data);
       })
@@ -289,7 +293,7 @@ const Home: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [currentAgentId]);
+  }, [currentAgentId, currentRecId]);
 
   useEffect(() => {
     if (agentDetail) {
