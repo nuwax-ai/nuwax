@@ -59,8 +59,10 @@ export interface FileTreeGitSourcePanelProps {
   treeEmptyState?: ReactNode;
   /** 导入项目（空白区域右键菜单，覆盖 tree 内同名配置） */
   onImportProject?: () => void;
-  /** 导入项目菜单项文案 */
+  /** 导入按钮与菜单文案，不传时为「导入项目」 */
   importProjectLabel?: string;
+  /** 导出按钮提示，不传时为「导出项目」 */
+  exportProjectLabel?: string;
   /** 是否正在导入项目 */
   isImportingProject?: boolean;
   /** 源代码管理配置 */
@@ -169,8 +171,10 @@ export interface FileTreeContainerProps {
   ) => Promise<void>;
   /** 导入项目（空白区域右键菜单，可选） */
   handleImportProject?: () => void;
-  /** 导入项目菜单项文案（不传时使用默认的「导入技能」文案） */
+  /** 导入按钮与菜单文案（不传时菜单使用「导入技能」，工具栏使用「导入项目」） */
   importProjectLabel?: string;
+  /** 导出按钮提示，不传时为「导出项目」 */
+  exportProjectLabel?: string;
   /** 导出项目 */
   handleExportProject?: () => Promise<void>;
   /** 是否正在导出项目 */
