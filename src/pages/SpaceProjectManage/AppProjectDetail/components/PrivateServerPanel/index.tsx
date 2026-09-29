@@ -84,8 +84,10 @@ const getServerLabel = (item: PrivateServerInfo): string =>
 const toFormValue = (item: PrivateServerInfo): PrivateServerFormValue => ({
   scheme: item.scheme === 'http' ? 'http' : 'https',
   host: item.host || '',
-  appPort: '',
   agentPort: item.agentPort != null ? String(item.agentPort) : '',
+  vncPort: item.vncPort != null ? String(item.vncPort) : '',
+  fileServerPort:
+    item.fileServerPort != null ? String(item.fileServerPort) : '',
 });
 
 const createDraftRow = (key: string): ServerRow => ({
@@ -274,8 +276,9 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
         return;
       }
       if (
-        !isValidPort(row.value.appPort) ||
-        !isValidPort(row.value.agentPort)
+        !isValidPort(row.value.agentPort) ||
+        !isValidPort(row.value.vncPort) ||
+        !isValidPort(row.value.fileServerPort)
       ) {
         message.warning(dict('PC.Pages.AppProjectDetail.invalidPort'));
         return;
@@ -286,8 +289,9 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
         name: host,
         scheme: row.value.scheme,
         host,
-        appPort: Number(row.value.appPort),
         agentPort: Number(row.value.agentPort),
+        vncPort: Number(row.value.vncPort),
+        fileServerPort: Number(row.value.fileServerPort),
       });
     },
     [runCreate],
@@ -353,10 +357,13 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
               {dict('PC.Pages.AppProjectDetail.serverIp')}
             </span>
             <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectDetail.appPort')}
+              {dict('PC.Pages.AppProjectDetail.agentPort')}
             </span>
             <span className={cx(styles['header-cell'])}>
-              {dict('PC.Pages.AppProjectDetail.managePort')}
+              {dict('PC.Pages.AppProjectDetail.vncPort')}
+            </span>
+            <span className={cx(styles['header-cell'])}>
+              {dict('PC.Pages.AppProjectDetail.fileServerPort')}
             </span>
           </div>
           <span className={cx(styles.actions)} />
