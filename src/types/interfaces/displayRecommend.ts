@@ -4,7 +4,7 @@ export enum DisplayRecommendFunctionTypeEnum {
   SkillDev = 'SkillDev',
   PluginDev = 'PluginDev',
   Chat = 'Chat',
-  /** 全栈应用开发 */
+  /** 网站应用开发 */
   UserAppDev = 'UserAppDev',
   /** 常规项目 */
   NormalProjectDev = 'NormalProjectDev',

@@ -351,7 +351,7 @@ export default () => {
   });
 
   /**
-   * 全栈应用环境（仅 AppDevPro 设置）。
+   * 网站应用环境（仅 AppDevPro 设置）。
    * 未设置时 computer/pod 老接口不带 appStage，保证会话智能体等页面行为不变。
    */
   const podAppStageRef = useRef<ComputerPodAppStage | undefined>(undefined);

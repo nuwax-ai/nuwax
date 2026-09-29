@@ -1,5 +1,5 @@
 /**
- * 全栈应用页(女娲应用-全栈应用卡片入口 /user-app/:appId)
+ * 网站应用页(女娲应用-网站应用卡片入口 /user-app/:appId)
  * @description 应用页面 iframe(PagePreviewIframe)占满全屏,无 header(刷新/
  * 复制链接能力由侧栏应用标签行承载,经 eventBus 命令本实例执行;原 header
  * 标题与应用详情名称接口已随标题栏一并移除)。iframe 地址取值优先级:三方
@@ -98,7 +98,7 @@ const UserAppPage: React.FC<AppTabInstanceProps> = ({
 
   return (
     <div className="flex h-full w-full">
-      {/* 全栈应用页面:iframe 占满全屏无 header(刷新/复制链接由侧栏应用
+      {/* 网站应用页面:iframe 占满全屏无 header(刷新/复制链接由侧栏应用
           标签行经 eventBus 命令触发,commandKey 与标签 routePath 同源) */}
       <PagePreviewIframe
         className="flex-1"

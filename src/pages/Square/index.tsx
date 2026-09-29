@@ -236,7 +236,7 @@ const Square: React.FC = () => {
     },
   );
 
-  // 点击三方/全栈应用上报最近使用:POST /api/published/app/recentlyUsed/add
+  // 点击三方/网站应用上报最近使用:POST /api/published/app/recentlyUsed/add
   // (projectId=targetId、projectType=targetType),异步上报不阻塞跳转;
   // 广场无最近使用区,成功后不重拉列表(与女娲应用页同口径,网页应用不上报)
   const { run: runRecentlyUsedAdd } = useRequest(
@@ -622,7 +622,7 @@ const Square: React.FC = () => {
                     categoryTypeRef.current === SquareAgentTypeEnum.PageApp
                   ) {
                     // 全栈/三方应用与女娲应用页同口径:先异步上报最近使用
-                    // (不阻塞跳转)再跳全栈应用页,不经智能体付费拦截;
+                    // (不阻塞跳转)再跳网站应用页,不经智能体付费拦截;
                     // 网页应用(Agent+PageApp)走原链路(不上报)
                     const handleAgentCardClick = () => {
                       if (

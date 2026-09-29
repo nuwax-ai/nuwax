@@ -288,7 +288,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /** 线上环境发布版本记录侧栏 */
   const [publishVersionRecordsOpen, setPublishVersionRecordsOpen] =
     useState<boolean>(false);
-  /** 全栈应用详情 */
+  /** 网站应用详情 */
   const [userAppInfo, setUserAppInfo] = useState<UserAppInfo | null>(null);
   /** 右侧版本记录，提交成功后直接刷新 git log */
   const gitLogPanelRef = useRef<GitVersionRecordPanelHandle>(null);
@@ -1492,7 +1492,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       onRestartServer: () => {
         restartVncPod(queryConversationId, finalSelectedComputerId);
       },
-      /** 全栈应用环境，computer/pod 老接口附带 appStage */
+      /** 网站应用环境，computer/pod 老接口附带 appStage */
       appStage: dbEnv,
       /** 重命名文件 */
       onRenameFile: handleConfirmRenameFile,

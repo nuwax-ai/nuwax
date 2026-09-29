@@ -16,7 +16,7 @@ const useSpaceSquare = () => {
   >([]);
 
   // 点击单项(类型联合:app/list 应用列表口径下条目还可能是
-  // UserApp 全栈应用/ThirdApp 三方应用,由调用方前置分流)
+  // UserApp 网站应用/ThirdApp 三方应用,由调用方前置分流)
   const handleClick = (
     targetId: number,
     targetType: SquareAgentTypeEnum | AgentComponentTypeEnum,

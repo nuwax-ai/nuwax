@@ -33,7 +33,7 @@ export interface ProjectListCardProps {
 }
 
 /**
- * 空间项目列表卡片：用于常规项目、全栈应用、三方应用接入等列表页。
+ * 空间项目列表卡片：用于常规项目、网站应用、三方应用接入等列表页。
  * 更多操作在标题右侧，展示最后编辑时间与发布状态。
  */
 const ProjectListCard: React.FC<ProjectListCardProps> = ({

@@ -116,7 +116,7 @@ const pickResponseData = <T,>(
 };
 
 /**
- * 全栈应用详情页。
+ * 网站应用详情页。
  *
  * 布局：顶栏返回 + 应用名 + 计划/资产/设置 Tab；主体左侧为详情内容，
  * 右侧为相关任务（ConversationPanel）。
@@ -130,7 +130,7 @@ const pickResponseData = <T,>(
  * 计划 / 资产 Tab 分别通过 iframe 展示计划文档与资产目录。
  * 路由参数 spaceId、appId 来自 `/space/:spaceId/app-project-detail/:appId`。
  *
- * @returns 全栈应用详情页
+ * @returns 网站应用详情页
  */
 const AppProjectDetail: React.FC = () => {
   const params = useParams();
@@ -500,7 +500,7 @@ const AppProjectDetail: React.FC = () => {
 
   const emptyValue = dict('PC.Pages.AppProjectDetail.emptyValue');
 
-  /** 返回全栈应用列表 */
+  /** 返回网站应用列表 */
   const handleBack = useCallback(() => {
     history.push(`/space/${spaceId}/userapp-project`);
   }, [spaceId]);

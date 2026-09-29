@@ -182,7 +182,7 @@ export interface ChatInputUnifiedProps {
    */
   workspacePath?: string;
   onWorkspaceDirChange?: (dir: string) => void;
-  /** 禁用个人电脑（如全栈应用等类型）：电脑选择锁定云端、工作目录栏隐藏 */
+  /** 禁用个人电脑（如网站应用等类型）：电脑选择锁定云端、工作目录栏隐藏 */
   disablePersonalComputer?: boolean;
   /** 是否展示空间选择器（首页创建项目类推荐时使用） */
   showSpaceSelector?: boolean;

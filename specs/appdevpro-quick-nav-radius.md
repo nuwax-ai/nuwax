@@ -1,4 +1,4 @@
-# 规格：全栈应用详情快捷导航与面板圆角
+# 规格：网站应用详情快捷导航与面板圆角
 
 - 对应 intent：plans/20260928-appdevpro-quick-nav-radius-intent.md
 - 状态：方案已收敛，按用户授权修复
