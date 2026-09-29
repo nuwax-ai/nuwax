@@ -23,10 +23,14 @@ export interface FileTreeToolbarProps {
   exportLoading?: boolean;
   /** 项目导出 */
   onExportProject?: () => void;
+  /** 导出按钮提示，不传时为「导出项目」 */
+  exportLabel?: string;
   /** 项目导入 loading */
   importLoading?: boolean;
   /** 项目导入 */
   onImportProject?: () => void;
+  /** 导入按钮提示，不传时为「导入项目」 */
+  importLabel?: string;
   /** 新建文件 */
   onCreateFile?: () => void;
   /** 新建文件夹 */
@@ -53,8 +57,10 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
   disabled = false,
   exportLoading = false,
   onExportProject,
+  exportLabel,
   importLoading = false,
   onImportProject,
+  importLabel,
   onCreateFile,
   onCreateFolder,
   onUpload,
@@ -73,9 +79,10 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
       <span className={cx(styles.title, 'text-ellipsis')}>{title}</span>
       <div className={cx(styles.actions)}>
         <Tooltip
-          title={dict(
-            'PC.Components.FileTreePanel.FileTreeToolbar.exportProject',
-          )}
+          title={
+            exportLabel ??
+            dict('PC.Components.FileTreePanel.FileTreeToolbar.exportProject')
+          }
         >
           <Button
             type="text"
@@ -91,9 +98,10 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
         </Tooltip>
         {onImportProject && (
           <Tooltip
-            title={dict(
-              'PC.Components.FileTreePanel.FileTreeToolbar.importProject',
-            )}
+            title={
+              importLabel ??
+              dict('PC.Components.FileTreePanel.FileTreeToolbar.importProject')
+            }
           >
             <Button
               type="text"

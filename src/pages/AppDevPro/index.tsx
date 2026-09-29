@@ -387,12 +387,20 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     return () => setFileTreeSelfManaged(false);
   }, [setFileTreeSelfManaged]);
 
+  /**
+   * 开发容器 ensure 成功后才允许拉文件树。
+   * 由下方容器状态同步；其它页面的文件树不走这个开关。
+   */
+  const [workspaceContainerReady, setWorkspaceContainerReady] = useState(false);
+  const workspaceFilesEnabled =
+    active && queryConversationId > 0 && workspaceContainerReady;
+
   /** 与 Chat 相同的工作区文件树：分层加载、服务端搜索、变更后刷新已展开目录 */
   const workspaceFiles = useWorkspaceFileTreeSession({
     conversationId: queryConversationId,
-    enabled: active && queryConversationId > 0,
+    enabled: workspaceFilesEnabled,
     fileTreeRefreshTrigger,
-    refreshEnabled: active && queryConversationId > 0,
+    refreshEnabled: workspaceFilesEnabled,
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
   });
@@ -440,9 +448,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     },
     [setPodAppStage],
   );
-
-  const refreshFileListImmediatelyRef = useRef(refreshFileListImmediately);
-  refreshFileListImmediatelyRef.current = refreshFileListImmediately;
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
@@ -530,24 +535,27 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const previewPodEnsuring = currentEnvPodStatus === 'starting';
   /** ensure 失败时预览「重启 / 停止应用」均不可点 */
   const previewContainerFailed = currentEnvPodStatus === 'error';
+  /**
+   * 文件树和 tasks/active 的门闩。
+   * 云电脑须等开发容器 ensure 成功；非云电脑没有这层容器，会话详情确定后即可请求。
+   */
+  const containerReadyForQueries =
+    !!finalSelectedComputerId &&
+    (finalSelectedComputerId === '-1' ? podReady : true);
+
+  useEffect(() => {
+    setWorkspaceContainerReady(active && containerReadyForQueries);
+  }, [active, containerReadyForQueries]);
 
   /**
    * 进入页面即启动并保活开发环境容器。
-   * 容器就绪后再加载文件树；后续终端和数据库直接复用该状态。
+   * 文件树在容器就绪后由 workspaceContainerReady 放行，这里不再提前刷新。
    */
   useEffect(() => {
     if (!active || !envPodConversationId) {
       return;
     }
-    let cancelled = false;
-    void devPod.ensure(true).then((ready) => {
-      if (!cancelled && ready) {
-        void refreshFileListImmediatelyRef.current(envPodConversationId);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
+    void devPod.ensure(true);
   }, [active, devPod.ensure, envPodConversationId]);
 
   /**
@@ -815,7 +823,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     resume: resumeTasksActive,
     cancelUnfinishedBuild,
     markDevStartIdle,
-  } = useUserAppTasksActive(appId, active);
+  } = useUserAppTasksActive(appId, active && containerReadyForQueries);
 
   /** 查询应用绑定的域名列表 */
   const { run: runGetUserAppDomainList, loading: userAppDomainListLoading } =
@@ -2895,7 +2903,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                           treeClassName="w-full h-full"
                           onImportProject={handleImportProject}
                           importProjectLabel={dict(
-                            'PC.Pages.AppDevFileTreeContextMenu.importProject',
+                            'PC.Components.FileTreePanel.FileTreeToolbar.importArtifacts',
+                          )}
+                          exportProjectLabel={dict(
+                            'PC.Components.FileTreePanel.FileTreeToolbar.exportArtifacts',
                           )}
                           isImportingProject={isImportingProject}
                           sourceControl={{
