@@ -178,9 +178,17 @@ interface Window {
       /** 注册/注销宿主命令回调（传 null 注销）。 */
       onHostCommand?: (cb: ((payload: HostCommand) => void) | null) => void;
     };
-    /** 商业 IM 原生通知偏好；能力存在时 IM 不再发浏览器通知。 */
+    /** 商业 IM 展示；未读由壳维护，菜单无需打开 IM 页面。 */
     im?: {
       setNotificationEnabled?: (enabled: boolean) => Promise<void>;
+      getUnreadSnapshot?: () => Promise<
+        import('./interfaces/im').HostImUnreadSnapshot | null
+      >;
+      onUnreadChanged?: (
+        listener: (
+          snapshot: import('./interfaces/im').HostImUnreadSnapshot | null,
+        ) => void,
+      ) => () => void;
     };
     // nuwax→nuwaclaw 壳主题同步通道（女娲主题生效/让位时推送，壳侧统一原生 UI 效果）
     theme?: {

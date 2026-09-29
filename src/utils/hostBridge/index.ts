@@ -10,6 +10,7 @@
  */
 
 import type { HostAuthContext } from '@/types/interfaces/hostAuth';
+import type { HostImUnreadSnapshot } from '@/types/interfaces/im';
 import {
   getDesktopShellPreviewPlatform,
   setDesktopShellPreviewHostCommandHandler,
@@ -407,6 +408,22 @@ export const im = {
     } catch {
       // 偏好同步失败不阻断页面，下一次启动会重新同步保存值。
     }
+  },
+  hasNativeUnread(): boolean {
+    const bridge = getBridge();
+    return (
+      bridge?.host?.getProduct?.() === 'nuwax' &&
+      typeof bridge.im?.getUnreadSnapshot === 'function' &&
+      typeof bridge.im?.onUnreadChanged === 'function'
+    );
+  },
+  async getUnreadSnapshot(): Promise<HostImUnreadSnapshot | null> {
+    return (await getBridge()?.im?.getUnreadSnapshot?.()) ?? null;
+  },
+  onUnreadChanged(
+    listener: (snapshot: HostImUnreadSnapshot | null) => void,
+  ): () => void {
+    return getBridge()?.im?.onUnreadChanged?.(listener) ?? (() => undefined);
   },
 };
 
