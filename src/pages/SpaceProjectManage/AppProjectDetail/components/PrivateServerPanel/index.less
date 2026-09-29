@@ -32,23 +32,30 @@
   }
 }
 
-.selected td {
-  background-color: @colorPrimaryBg;
+.table .selectedMark {
+  position: sticky;
+  right: 168px;
+  z-index: 2;
+  width: 72px;
+  min-width: 72px;
+  padding-right: @paddingXs;
+  padding-left: @paddingXs;
+  background: @colorBgContainer;
+  text-align: center;
 }
 
-.selected td:first-child {
-  border-top-left-radius: @borderRadius;
-  border-bottom-left-radius: @borderRadius;
+.selectedIcon {
+  color: @colorPrimary;
+  font-size: @fontSize;
 }
 
-.selected td:last-child {
-  border-top-right-radius: @borderRadius;
-  border-bottom-right-radius: @borderRadius;
-}
-
-.actions {
-  width: 160px;
-  min-width: 160px;
+.table .actions {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  width: 168px;
+  min-width: 168px;
+  background: @colorBgContainer;
   text-align: right;
   white-space: nowrap;
 
