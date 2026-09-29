@@ -9,12 +9,15 @@
 import { APP_GIT_HASH, APP_VERSION } from '@/constants/version';
 import { initTitlebarDragGesture } from '@/services/titlebarDragGesture';
 import { hostBridge } from '@/utils/hostBridge';
+import { initImNotificationPreference } from './imNotificationPreference';
 
 /**
  * 聚合初始化：AppContainer 挂载时调用一次，返回清理函数。
  * 新增客户端适配（键位、上报、同步器……）一律在此登记，不再散落业务代码。
  */
 export function initClientShell(): () => void {
+  // IM 尚未打开时也恢复保存的原生通知开关，等待文档握手后同步。
+  const disposeImPreference = initImNotificationPreference();
   // 前端构建版本上报（壳关于页「界面版本（nuwax pc web）」展示）
   hostBridge.meta.syncWebInfo({
     appVersion: APP_VERSION,
@@ -26,6 +29,7 @@ export function initClientShell(): () => void {
 
   return () => {
     disposeDragGesture();
+    disposeImPreference();
   };
 }
 

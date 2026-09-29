@@ -58,6 +58,11 @@
   overflow: hidden;
 }
 
+.tree-file-directory {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .tree-file-name-wrap {
   flex: 1;
   min-width: 0;
@@ -173,6 +178,21 @@
 
     .row-actions {
       display: flex;
+    }
+  }
+
+  &.change-item-directory {
+    cursor: not-allowed;
+
+    .file-icon,
+    .file-info {
+      pointer-events: none;
+    }
+
+    .row-actions,
+    .row-action-btn {
+      cursor: pointer;
+      pointer-events: auto;
     }
   }
 

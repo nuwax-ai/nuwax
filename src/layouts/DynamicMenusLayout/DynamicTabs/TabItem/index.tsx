@@ -1,6 +1,8 @@
 import { SvgIcon } from '@/components/base';
+import ImMenuBadge from '@/components/business-component/ImMenuBadge';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
+import type { MenuItemDto } from '@/types/interfaces/menu';
 import { Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -9,6 +11,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface TabItemProps {
+  menu?: MenuItemDto;
   active: boolean;
   icon: string;
   text: string;
@@ -18,6 +21,7 @@ interface TabItemProps {
 }
 
 const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
+  menu,
   active,
   icon,
   onClick,
@@ -61,16 +65,18 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
       )}
     >
       <div className={cx(styles['active-box'])} style={navStyle}>
-        <div className={cx(styles['active-icon-container'])}>
-          {icon &&
-          (icon?.includes('.png') ||
-            icon?.includes('.jpg') ||
-            icon?.includes('.jpeg')) ? (
-            <img className={cx(styles['icon-image'])} src={icon} />
-          ) : (
-            <SvgIcon name={icon || 'icons-nav-task-time'} />
-          )}
-        </div>
+        <ImMenuBadge menu={menu}>
+          <div className={cx(styles['active-icon-container'])}>
+            {icon &&
+            (icon?.includes('.png') ||
+              icon?.includes('.jpg') ||
+              icon?.includes('.jpeg')) ? (
+              <img className={cx(styles['icon-image'])} src={icon} />
+            ) : (
+              <SvgIcon name={icon || 'icons-nav-task-time'} />
+            )}
+          </div>
+        </ImMenuBadge>
         <Typography.Text
           className={cx(styles.text)}
           style={{

@@ -5,6 +5,10 @@ import {
 } from '@/services/agent-subscription-plan';
 import { dict } from '@/services/i18nRuntime';
 import { apiCreateCreditOrder } from '@/services/subscriptionService';
+import {
+  preparePaymentWindow,
+  type PaymentWindow,
+} from '@/utils/hostBridge/paymentWindow';
 import { message } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { history, useLocation, useRequest } from 'umi';
@@ -18,6 +22,48 @@ export const useSubscriptionPurchase = () => {
   );
   const location = useLocation();
   const returnUrlRef = useRef<string>('');
+  const processingIdRef = useRef<number | string | null>(null);
+  const paymentWindowRef = useRef<PaymentWindow | null>(null);
+
+  const closePendingWindow = () => {
+    const paymentWindow = paymentWindowRef.current;
+    paymentWindowRef.current = null;
+    paymentWindow?.closePending();
+  };
+
+  const resetPayment = () => {
+    closePendingWindow();
+    processingIdRef.current = null;
+    setProcessingId(null);
+  };
+
+  const failPayment = () => {
+    resetPayment();
+    message.error(dict('PC.Pages.MorePage.MySubscriptions.payFailed'));
+  };
+
+  const beginPayment = (
+    id: number | string,
+    dynamicReturnUrl?: string,
+  ): boolean => {
+    if (processingIdRef.current !== null) return false;
+    processingIdRef.current = id;
+    setProcessingId(id);
+    returnUrlRef.current = dynamicReturnUrl || window.location.href;
+    paymentWindowRef.current = preparePaymentWindow();
+    if (!paymentWindowRef.current) {
+      failPayment();
+      return false;
+    }
+    return true;
+  };
+
+  const openCashier = async (cashierUrl: string) => {
+    if (await paymentWindowRef.current?.open(cashierUrl)) resetPayment();
+    else failPayment();
+  };
+
+  useEffect(() => closePendingWindow, []);
 
   // 处理支付返回的 payResult 参数并清除 URL 冗余参数
   useEffect(() => {
@@ -59,17 +105,12 @@ export const useSubscriptionPurchase = () => {
       onSuccess: (res: any) => {
         const data = res?.data || res;
         if (data && data?.cashierUrl) {
-          window.location.href = data.cashierUrl;
+          void openCashier(data.cashierUrl);
         } else {
-          setProcessingId(null);
+          failPayment();
         }
       },
-      onError: () => {
-        setProcessingId(null);
-      },
-      onFinally: () => {
-        setProcessingId(null);
-      },
+      onError: resetPayment,
     },
   );
 
@@ -101,15 +142,13 @@ export const useSubscriptionPurchase = () => {
             message.error(
               dict('PC.Pages.MorePage.MySubscriptions.orderIdNotFound'),
             );
-            setProcessingId(null);
+            resetPayment();
           }
         } else {
-          setProcessingId(null);
+          resetPayment();
         }
       },
-      onError: () => {
-        setProcessingId(null);
-      },
+      onError: resetPayment,
     },
   );
 
@@ -141,15 +180,13 @@ export const useSubscriptionPurchase = () => {
             message.error(
               dict('PC.Pages.MorePage.MySubscriptions.orderIdNotFound'),
             );
-            setProcessingId(null);
+            resetPayment();
           }
         } else {
-          setProcessingId(null);
+          resetPayment();
         }
       },
-      onError: () => {
-        setProcessingId(null);
-      },
+      onError: resetPayment,
     },
   );
 
@@ -158,9 +195,7 @@ export const useSubscriptionPurchase = () => {
     planId: number | string,
     dynamicReturnUrl?: string,
   ) => {
-    if (processingId) return;
-    setProcessingId(planId);
-    returnUrlRef.current = dynamicReturnUrl || '';
+    if (!beginPayment(planId, dynamicReturnUrl)) return;
     createSubscriptionOrder(Number(planId));
   };
 
@@ -169,9 +204,7 @@ export const useSubscriptionPurchase = () => {
     packageId: number | string,
     dynamicReturnUrl?: string,
   ) => {
-    if (processingId) return;
-    setProcessingId(packageId);
-    returnUrlRef.current = dynamicReturnUrl || '';
+    if (!beginPayment(packageId, dynamicReturnUrl)) return;
     createCreditOrder({ packageId: Number(packageId) });
   };
 
@@ -180,9 +213,7 @@ export const useSubscriptionPurchase = () => {
     orderId: number | string,
     dynamicReturnUrl?: string,
   ) => {
-    if (processingId) return;
-    setProcessingId(orderId);
-    returnUrlRef.current = dynamicReturnUrl || '';
+    if (!beginPayment(orderId, dynamicReturnUrl)) return;
 
     const settlementUrl = new URL(
       PAYMENT_SETTLEMENT_PATH,
@@ -200,7 +231,8 @@ export const useSubscriptionPurchase = () => {
     });
   };
 
-  const loading = fetchingCashier || creatingCreditOrder;
+  const loading =
+    processingId !== null || fetchingCashier || creatingCreditOrder;
 
   return {
     processingId,

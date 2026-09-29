@@ -452,8 +452,42 @@ export async function upgradeMicroApps({
       try {
         await checked(working, ['apply', '--check', snapshot.snapshot.patch]);
       } catch (cause) {
+        // 逐文件重放定位冲突文件，把「一句话报错」升级为可直接行动的诊断
+        const conflicted = [];
+        try {
+          const patchText = await fs.readFile(
+            snapshot.snapshot.patch,
+            'utf8',
+          );
+          const files = [
+            ...patchText.matchAll(/^diff --git a\/(\S+) b\/(\S+)$/gm),
+          ].map((m) => m[2]);
+          for (const file of files) {
+            try {
+              await checked(working, [
+                'apply',
+                '--check',
+                `--include=${file}`,
+                snapshot.snapshot.patch,
+              ]);
+            } catch {
+              conflicted.push(file);
+            }
+          }
+        } catch {
+          /* 逐文件诊断失败不影响主报错 */
+        }
         throw new Error(
-          `${app.id} adapter patch 与候选 main 冲突，请先调整适配`,
+          `${app.id} adapter patch 与候选 main 冲突，请先调整适配` +
+            (conflicted.length
+              ? `\n冲突文件（适配需基于新候选重制这些段）：\n${conflicted.join('\n')}`
+              : '') +
+            `\n上游：${state.oldPin.slice(0, 9)} -> ${state.newPin.slice(0, 9)}${state.oldPin === state.newPin ? '（本次为本地适配未重制，非上游前进）' : ''}` +
+            `\n处置：微应用适配负责人基于新候选重制 adapter.patch 并随构建提交；` +
+            `其他同事无需本地处理，拉取最新分支（dev/版本分支）后重跑构建即可。` +
+            (cause?.stderr
+              ? `\ngit apply 原始输出：\n${String(cause.stderr).trim()}`
+              : ''),
           { cause },
         );
       }
