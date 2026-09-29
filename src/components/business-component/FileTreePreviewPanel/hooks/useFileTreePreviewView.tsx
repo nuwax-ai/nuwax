@@ -18,7 +18,10 @@ import CodeViewer from '@/components/CodeViewer';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { fetchContentFromUrl } from '@/services/skill';
+import {
+  fetchContentFromUrl,
+  isPreviewFileTooLargeError,
+} from '@/services/skill';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { checkFileSizeExceedLimit } from '@/utils';
@@ -230,6 +233,10 @@ export function useFileTreePreviewView(
   const [selectedFileNode, setSelectedFileNode] = useState<FileNode | null>(
     null,
   );
+  /** 响应头 X-File-Size 大于 50MB 的文件，只提示无法预览 */
+  const [oversizedPreviewFileId, setOversizedPreviewFileId] = useState<
+    string | null
+  >(null);
   // 内联重命名状态
   const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
   const renamingNodeRef = useRef(renamingNode);
@@ -403,8 +410,11 @@ export function useFileTreePreviewView(
   const fetchFileContentUpdateFiles = useCallback(
     async (fileProxyUrl: string, fileId: string) => {
       try {
-        // 获取文件内容
+        // 获取文件内容。体积头大于 50MB 时不读正文
         const fileContent = await fetchContentFromUrl(fileProxyUrl);
+        setOversizedPreviewFileId((current) =>
+          current === fileId ? null : current,
+        );
 
         // 更新文件树中的文件内容
         setFiles((prevFiles) => {
@@ -420,6 +430,10 @@ export function useFileTreePreviewView(
 
         return fileContent;
       } catch (error) {
+        if (isPreviewFileTooLargeError(error)) {
+          setOversizedPreviewFileId(fileId);
+          return null;
+        }
         console.error('Failed to fetch file content:', error);
         return '';
       }
@@ -445,7 +459,7 @@ export function useFileTreePreviewView(
       );
       return {
         ...node,
-        content: fileContent,
+        content: fileContent || '',
       };
     },
     [fetchFileContentUpdateFiles],
@@ -557,6 +571,14 @@ export function useFileTreePreviewView(
 
       // 请求返回时如果用户已经切换文件，则丢弃本次回写
       if (selectedFileIdRef.current !== currentSelectedFileId) {
+        return;
+      }
+      if (newFileContent === null) {
+        setSelectedFileNode((prevNode) =>
+          prevNode || currentNode
+            ? { ...(prevNode || currentNode), ...currentNode, content: '' }
+            : prevNode,
+        );
         return;
       }
 
@@ -847,7 +869,7 @@ export function useFileTreePreviewView(
           setViewFileType('preview');
         }
 
-        // 图片、视频、音频、office 等通过 FilePreview 渲染
+        // 图片、视频、音频、office 通过 src 预览，不检测体积
         if (
           isImageFileType ||
           isVideoFileType ||
@@ -906,6 +928,13 @@ export function useFileTreePreviewView(
             latestFileSelectTokenRef.current !== selectToken ||
             selectedFileIdRef.current !== currentSelectedId
           ) {
+            return;
+          }
+          if (newFileContent === null) {
+            setSelectedFileNode({
+              ...fileNode,
+              content: '',
+            });
             return;
           }
 
@@ -2057,6 +2086,12 @@ export function useFileTreePreviewView(
       if (selectedFileIdRef.current !== currentRefreshFileId) {
         return;
       }
+      if (newFileContent === null) {
+        setSelectedFileNode((prevNode) =>
+          prevNode ? { ...prevNode, content: '' } : prevNode,
+        );
+        return;
+      }
       setSelectedFileNode((prevNode) =>
         prevNode
           ? {
@@ -2227,6 +2262,20 @@ export function useFileTreePreviewView(
           showIcon={false}
           showButtons={false}
           description={dict('PC.Components.FileTreeView.selectFileToPreview')}
+        />
+      );
+    }
+
+    if (
+      oversizedPreviewFileId &&
+      oversizedPreviewFileId === selectedFileId
+    ) {
+      return (
+        <AppDevEmptyState
+          type="error"
+          title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+          showButtons={false}
+          description={dict('PC.Components.FileTreeView.fileTooLarge')}
         />
       );
     }
