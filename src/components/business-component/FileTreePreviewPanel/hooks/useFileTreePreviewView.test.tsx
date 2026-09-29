@@ -49,6 +49,8 @@ vi.mock('@/pages/AppDev/components', () => ({ ImageViewer: () => null }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
 vi.mock('@/services/skill', () => ({
   fetchContentFromUrl: mocks.fetchContent,
+  isPreviewFileTooLargeError: (error: unknown) =>
+    error instanceof Error && error.name === 'PreviewFileTooLargeError',
 }));
 vi.mock(
   '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management',

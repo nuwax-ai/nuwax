@@ -177,6 +177,7 @@ vi.mock('@/services/skill', () => ({
   // 三态版用例未触发该流程，给个不抛错的 error 态即可
   fetchContentFromUrl: vi.fn().mockRejectedValue(new Error('not found')),
   fetchContentOutcome: vi.fn().mockResolvedValue({ status: 'error' }),
+  isPreviewFileTooLargeError: () => false,
 }));
 
 vi.mock('./index.less', () => ({

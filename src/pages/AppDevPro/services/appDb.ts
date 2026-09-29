@@ -79,3 +79,27 @@ export const getUserAppDbProxyUrl = (
   const baseUrl = process.env.BASE_URL || '';
   return `${baseUrl}${path}`;
 };
+
+/** dbx 数据库就绪探测结果 */
+export interface UserAppDbReadiness {
+  /** 消息 */
+  message: string | null;
+  /** 是否就绪 */
+  ready: boolean;
+  /** 就绪原因 */
+  reason_code: string;
+  /** 就绪状态 */
+  status: string;
+}
+
+/** dbx 数据库就绪探测 */
+export async function apiUserAppDbReadiness(
+  appId: number,
+  env: UserAppDbEnvEnum,
+): Promise<RequestResponse<UserAppDbReadiness>> {
+  return request('/api/userapp/readiness', {
+    method: 'GET',
+    params: { appId, env },
+    skipErrorHandler: true,
+  });
+}
