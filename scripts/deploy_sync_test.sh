@@ -277,6 +277,10 @@ enter_worktree_if_needed() {
   else
     die "主区缺少 src/.umi（先在主区跑一次 npm run dev 或 max build 生成），worktree 无法启动测试"
   fi
+  # worktree 不会带子模块内容，而步骤 7 的 upgrade:micro-apps 强制要求子模块已初始化且
+  # HEAD==pin（2026-09-30 首战实证：未 init 时 build 前置校验拦死）；按 gitlink 对齐初始化
+  (cd "$WT_DIR" && git submodule update --init --recursive) ||
+    die "worktree 子模块初始化失败（网络/子模块远端问题），重跑本脚本重试"
   cd "$WT_DIR"
   FEATURE_BRANCH=deploy-sync-work
   log "主区有未提交现场，已切换提测专用 worktree（主区零接触）：${WT_DIR}"
