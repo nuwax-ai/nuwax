@@ -14,7 +14,7 @@ interface UseRepoDocLinkPreviewOptions {
  * 拦截会话消息里的资料库链接点击，改为当前页预览，而不是新开浏览器页签。
  *
  * 聊天页会给 document 加 `<base target="_blank">`，普通链接点击都会新开页签。
- * 这里在捕获阶段拦住路径包含 `/repo/doc/` 的左键点击。
+ * 这里在捕获阶段拦住资料库链接（`/repo/doc/`、`/repo/share/`）的左键点击。
  * 按住 Ctrl / Command / Shift / Alt 的点击仍交给浏览器，方便用户手动新开页签。
  */
 export const useRepoDocLinkPreview = ({

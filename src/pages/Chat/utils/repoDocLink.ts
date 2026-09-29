@@ -1,11 +1,21 @@
 /**
- * 判断会话里的链接是不是资料库文档，并解析成可嵌入预览的绝对地址。
+ * 判断会话里的链接是不是资料库，并解析成可嵌入预览的绝对地址。
  *
- * 资料库深链形如 `/repo/doc/{slugId}`，路径中包含 `/repo/doc/`。
+ * 资料库深链路径中包含 `/repo/doc/` 或 `/repo/share/`。
  * 只接受当前页面或 BASE_URL 同源的 http(s) 地址，避免把外站链接嵌进预览 iframe。
  */
 
-const REPO_DOC_PATH = '/repo/doc/';
+/** 资料库路径：文档与分享都算资料库。 */
+const REPO_LIBRARY_PATHS = ['/repo/doc/', '/repo/share/'];
+
+/**
+ * 路径或完整地址里是否包含资料库段。
+ *
+ * @param value 路径或 URL
+ * @returns 包含 `/repo/doc/` 或 `/repo/share/` 时为 true
+ */
+export const isRepoLibraryPath = (value: string): boolean =>
+  REPO_LIBRARY_PATHS.some((path) => value.includes(path));
 
 /** 嵌入聊天页时只展示文档正文，并收起资料库侧栏表格。 */
 const REPO_DOC_EMBED_QUERY = {
@@ -66,7 +76,7 @@ export const resolveRepoDocEmbedUrl = (
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return null;
   }
-  if (!url.pathname.includes(REPO_DOC_PATH)) {
+  if (!isRepoLibraryPath(url.pathname)) {
     return null;
   }
 
