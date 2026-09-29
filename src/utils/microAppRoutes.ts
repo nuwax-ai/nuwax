@@ -1,3 +1,4 @@
+import type { HostAuthContext } from '@/types/interfaces/hostAuth';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { OpenTypeEnum } from '@/types/menuPermission/menu-manage';
 
@@ -50,7 +51,8 @@ const parseSameOriginUrl = (path: string, origin: string): URL | null => {
   if (!path || !/^(\/|https?:\/\/|%siteUrl%\/)/i.test(path)) return null;
   try {
     const url = new URL(path.replace(/^%siteUrl%/, origin), origin);
-    if (url.origin !== new URL(origin).origin) return null;
+    if (url.origin !== new URL(origin).origin || url.username || url.password)
+      return null;
     return url;
   } catch {
     return null;
@@ -88,6 +90,41 @@ export const resolveMicroAppMenuPath = (
       : url.pathname.replace(/\/+$/, '') || app.path;
   return `${pathname}${url.search}${url.hash}`;
 };
+
+/** 仅当前商业 loopback 业务域可跨 origin 归一；菜单渲染不依赖异步缓存。 */
+export function normalizeHostMicroAppMenus(
+  menus: MenuItemDto[],
+  context: HostAuthContext | null,
+  origin: string = currentOrigin(),
+): MenuItemDto[] {
+  if (!context || context.loadMode !== 'gateway' || !context.gatewayOrigin)
+    return menus;
+  let businessOrigin: string;
+  try {
+    const business = new URL(context.businessOrigin);
+    const gateway = new URL(context.gatewayOrigin);
+    if (
+      !/^https?:$/.test(business.protocol) ||
+      !/^https?:$/.test(gateway.protocol) ||
+      business.username ||
+      business.password ||
+      gateway.username ||
+      gateway.password ||
+      gateway.origin !== origin
+    )
+      return menus;
+    businessOrigin = business.origin;
+  } catch {
+    return menus;
+  }
+  const normalize = (items: MenuItemDto[]): MenuItemDto[] =>
+    items.map((menu) => ({
+      ...menu,
+      path: resolveMicroAppMenuPath(menu, origin, businessOrigin) ?? menu.path,
+      ...(menu.children ? { children: normalize(menu.children) } : {}),
+    }));
+  return normalize(menus);
+}
 
 /**
  * 兼容已缓存的 iframe 入口。只认已登记 code + 可信应用目标，

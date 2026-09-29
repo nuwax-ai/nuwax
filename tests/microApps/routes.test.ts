@@ -3,6 +3,7 @@ import { OpenTypeEnum } from '@/types/menuPermission/menu-manage';
 import {
   findMicroAppRoute,
   MICRO_APP_ROUTES,
+  normalizeHostMicroAppMenus,
   resolveMicroAppIframePath,
   resolveMicroAppMenuPath,
 } from '@/utils/microAppRoutes';
@@ -19,6 +20,57 @@ const repoMenu = (overrides: Partial<MenuItemDto> = {}): MenuItemDto =>
   } as MenuItemDto);
 
 describe('微应用业务路由', () => {
+  it('loopback 菜单用当前宿主业务域归一，渲染/点击可识别 IM，递归保留深链', () => {
+    const context = {
+      businessOrigin,
+      gatewayOrigin: origin,
+      loadMode: 'gateway' as const,
+    };
+    const menu = repoMenu({
+      code: 'message',
+      path: `${businessOrigin}/instant-message?conv=3#last`,
+    });
+    const menus = [
+      repoMenu({ children: [menu] }),
+      repoMenu({ path: 'https://external.example/repo' }),
+      repoMenu({
+        openType: OpenTypeEnum.NewTab,
+        path: `${businessOrigin}/repo`,
+      }),
+    ];
+    const normalized = normalizeHostMicroAppMenus(menus, context, origin);
+    expect(normalized[0].children![0].path).toBe(
+      '/instant-message?conv=3#last',
+    );
+    expect(
+      resolveMicroAppMenuPath(normalized[0].children![0], origin, ''),
+    ).toBe('/instant-message?conv=3#last');
+    expect(normalized[1].path).toBe('https://external.example/repo');
+    expect(normalized[2].path).toBe(`${businessOrigin}/repo`);
+    expect(menu.path).toBe(`${businessOrigin}/instant-message?conv=3#last`);
+    for (const context of [
+      null,
+      { businessOrigin, gatewayOrigin: origin, loadMode: 'direct' as const },
+      {
+        businessOrigin,
+        gatewayOrigin: 'http://localhost:9999',
+        loadMode: 'gateway' as const,
+      },
+      {
+        businessOrigin: 'javascript:alert(1)',
+        gatewayOrigin: origin,
+        loadMode: 'gateway' as const,
+      },
+      {
+        businessOrigin: 'https://user:pass@business.example',
+        gatewayOrigin: origin,
+        loadMode: 'gateway' as const,
+      },
+    ]) {
+      expect(normalizeHostMicroAppMenus(menus, context, origin)).toBe(menus);
+    }
+  });
+
   it('按路径段识别两个应用和稳定入口，资源入口不冒充业务路由', () => {
     expect(findMicroAppRoute('/repo/doc/a?from=search#title')?.name).toBe(
       'nuwax-repo-web',

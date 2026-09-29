@@ -35,6 +35,14 @@ export interface ImUnreadEvent {
   total: number;
 }
 
+/** 商业壳独立接收器的展示快照，不含会话内容或凭据。 */
+export interface HostImUnreadSnapshot {
+  sessionGeneration: number;
+  revision: number;
+  total: number;
+  dndTotal: number;
+}
+
 export interface ImBridgeSnapshot {
   connState: ImConnectionState;
   connected: boolean;

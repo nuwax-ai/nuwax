@@ -102,6 +102,9 @@ const cx = classNames.bind(styles);
  */
 const CREATED_SETTLE_DELAYS_MS = [300, 700, 1500];
 
+// 启动时网关/网络暂时不可用不能被当作「暂无项目」；失败后最多补拉三次。
+const INITIAL_LOAD_RETRY_DELAYS_MS = [300, 700, 1500];
+
 /** 项目子项(项目下的会话,来自 tab 接口 conversations) */
 export interface ProjectChildItem {
   id: number;
@@ -268,6 +271,7 @@ const ProjectPanel = forwardRef<
     const [projects, setProjects] = useState<ProjectItem[]>([]);
     // 空态仅在接口返回后展示：加载中先渲染 Spin，避免一进来就闪「暂无项目」
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     // 标记集合一律存复合键（projectKeyOf）：projectId 跨项目类型撞车，裸 id 会串标记
     const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
       () => new Set(),
@@ -353,17 +357,28 @@ const ProjectPanel = forwardRef<
     >([]);
     /** 卸载标记：created 有界重试跨多个异步 tick，卸载后不再写状态 */
     const unmountedRef = useRef(false);
+    const initialLoadVersionRef = useRef(0);
+    const initialLoadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+      null,
+    );
+    const cancelInitialLoad = useCallback(() => {
+      initialLoadVersionRef.current += 1;
+      if (initialLoadTimerRef.current !== null) {
+        clearTimeout(initialLoadTimerRef.current);
+        initialLoadTimerRef.current = null;
+      }
+    }, []);
     /** 正在重试收敛的 created 项目复合键（按复合键去重，防双事件触发两条并行链） */
     const settlingCreatedKeysRef = useRef<Set<string>>(new Set());
 
-    // 拉取指定页项目列表(page=1 整体替换,后续页追加合并;失败保持现状由空态兜底)。
+    // 拉取指定页项目列表(page=1 整体替换,后续页追加合并;失败保留旧数据并标记错误)。
     // 不传 spaceId:拉该用户全部空间的项目(跨空间口径,所有布局风格共用本面板)
     // 返回「本轮回包是否已包含 awaitKey 指定的项目」(传了 awaitKey 才有意义)，
     // 供 created 事件的有界重试判断是否收敛。
     const fetchPage = useCallback(
       async (
         page: number,
-        options: { append: boolean; awaitKey?: string },
+        options: { append: boolean; awaitKey?: string; initialLoad?: boolean },
       ): Promise<boolean> => {
         const requestVersion = ++pageRequestVersionRef.current;
         // 接口是标准 current/pageSize 页码分页。静默刷新已加载范围时也必须
@@ -398,12 +413,18 @@ const ProjectPanel = forwardRef<
               columns: [],
             });
             // 已有更新的分页请求在途:丢弃过期响应(是否收敛交由重试下一轮判断)
-            if (requestVersion !== pageRequestVersionRef.current) return false;
+            if (
+              unmountedRef.current ||
+              requestVersion !== pageRequestVersionRef.current
+            ) {
+              return false;
+            }
             if (
               res?.code !== SUCCESS_CODE ||
               !Array.isArray(res.data?.records)
             ) {
-              return options.awaitKey === undefined;
+              setLoadError(true);
+              return false;
             }
             records.push(...res.data.records);
             responseTotal = res.data.total ?? responseTotal;
@@ -436,6 +457,7 @@ const ProjectPanel = forwardRef<
             (list, { event }) => applyProjectChangedToList(list, event),
             records.map((item) => toProjectItem(item, fallback)),
           );
+          setLoadError(false);
           setProjects((previous) => {
             if (options.append) return appendProjectsPage(previous, mapped);
             return mapped.map((item) => {
@@ -495,24 +517,75 @@ const ProjectPanel = forwardRef<
           }
           return true;
         } catch {
-          // 忽略:保持现有列表
+          if (
+            !unmountedRef.current &&
+            requestVersion === pageRequestVersionRef.current
+          ) {
+            setLoadError(true);
+          }
           return false;
         } finally {
-          if (options.append) setLoadingMore(false);
+          if (
+            !unmountedRef.current &&
+            requestVersion === pageRequestVersionRef.current
+          ) {
+            setLoadingMore(false);
+            // 初始加载在有限重试结束前保持加载态；其他刷新接管请求后自行结束加载。
+            if (!options.initialLoad) setLoading(false);
+          }
         }
       },
       [],
     );
 
+    const loadInitialProjects = useCallback(() => {
+      cancelInitialLoad();
+      const loadVersion = initialLoadVersionRef.current;
+      setLoading(true);
+      setLoadError(false);
+      let attempt = 0;
+      const load = async () => {
+        const request = fetchPage(1, { append: false, initialLoad: true });
+        const requestVersion = pageRequestVersionRef.current;
+        const loaded = await request;
+        if (
+          unmountedRef.current ||
+          loadVersion !== initialLoadVersionRef.current ||
+          requestVersion !== pageRequestVersionRef.current
+        ) {
+          return;
+        }
+        const delay = INITIAL_LOAD_RETRY_DELAYS_MS[attempt++];
+        if (loaded || delay === undefined) {
+          setLoading(false);
+          return;
+        }
+        initialLoadTimerRef.current = setTimeout(() => {
+          initialLoadTimerRef.current = null;
+          // 事件/导航触发的新刷新已经接管时，不用旧的启动重试覆盖它。
+          if (
+            !unmountedRef.current &&
+            loadVersion === initialLoadVersionRef.current &&
+            requestVersion === pageRequestVersionRef.current
+          ) {
+            void load();
+          }
+        }, delay);
+      };
+      void load();
+    }, [cancelInitialLoad, fetchPage]);
+
     useEffect(() => {
       unmountedRef.current = false;
       pageRequestVersionRef.current += 1;
       pageRef.current = 1;
-      void fetchPage(1, { append: false }).finally(() => setLoading(false));
+      loadInitialProjects();
       return () => {
         unmountedRef.current = true;
+        pageRequestVersionRef.current += 1;
+        cancelInitialLoad();
       };
-    }, [fetchPage]);
+    }, [cancelInitialLoad, loadInitialProjects]);
 
     /**
      * created 项目有界重拉（bug 2407 / 2413，2026-09-20）。
@@ -1471,15 +1544,33 @@ const ProjectPanel = forwardRef<
         <div
           className={cx(styles['project-panel'], { [styles.compact]: compact })}
         >
-          <div className={cx(styles['project-empty'])}>
-            <img
-              className={cx(styles['project-empty-img'])}
-              src={emptyStateNoData}
-              alt=""
-            />
+          <div
+            className={cx(styles['project-empty'])}
+            role={loadError ? 'alert' : undefined}
+          >
+            {!loadError && (
+              <img
+                className={cx(styles['project-empty-img'])}
+                src={emptyStateNoData}
+                alt=""
+              />
+            )}
             <div className={cx(styles['project-empty-text'])}>
-              {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects')}
+              {dict(
+                loadError
+                  ? 'PC.Common.Global.operationFailed'
+                  : 'PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects',
+              )}
             </div>
+            {loadError && (
+              <button
+                type="button"
+                className={cx(styles['load-more-entry'])}
+                onClick={loadInitialProjects}
+              >
+                {dict('PC.Common.Global.refresh')}
+              </button>
+            )}
           </div>
         </div>
       );

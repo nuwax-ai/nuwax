@@ -7,6 +7,7 @@
  * 浏览器端全部 no-op/自隐藏（各子模块内部已做宿主 feature-detect）。
  */
 import { APP_GIT_HASH, APP_VERSION } from '@/constants/version';
+import { subscribeNativeImUnread } from '@/services/imEventBridge';
 import { initTitlebarDragGesture } from '@/services/titlebarDragGesture';
 import { hostBridge } from '@/utils/hostBridge';
 import { initImNotificationPreference } from './imNotificationPreference';
@@ -18,6 +19,7 @@ import { initImNotificationPreference } from './imNotificationPreference';
 export function initClientShell(): () => void {
   // IM 尚未打开时也恢复保存的原生通知开关，等待文档握手后同步。
   const disposeImPreference = initImNotificationPreference();
+  const disposeImUnread = subscribeNativeImUnread();
   // 前端构建版本上报（壳关于页「界面版本（nuwax pc web）」展示）
   hostBridge.meta.syncWebInfo({
     appVersion: APP_VERSION,
@@ -30,6 +32,7 @@ export function initClientShell(): () => void {
   return () => {
     disposeDragGesture();
     disposeImPreference();
+    disposeImUnread();
   };
 }
 
