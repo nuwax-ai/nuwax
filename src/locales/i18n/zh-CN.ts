@@ -6103,7 +6103,7 @@ export const ZH_CN: SystemLangMap = {
   // ── 系统管理 - 订阅与积分汇总卡片 ────────────────────
   // ── 系统管理 - 基础订阅套餐 ────────────────────────────
   "PC.Pages.SystemRecommendManage.addTitle": "新增推荐",
-  "PC.Pages.SystemRecommendManage.promptsLabel": "开场白预置问题",
+  "PC.Pages.SystemRecommendManage.promptsLabel": "预置提示词",
   "PC.Pages.SystemRecommendManage.addPrompt": "添加预置问题",
   "PC.Pages.SystemRecommendManage.promptNumber": "预置问题 {0}",
   "PC.Pages.SystemRecommendManage.removePrompt": "删除预置问题",
