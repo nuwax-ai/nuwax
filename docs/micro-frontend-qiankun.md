@@ -1,5 +1,7 @@
 # 消息与资料库微应用接入
 
+方案分类、上游 main 升级流程、客户端 loopback 兼容缺口和最终选型见 [乾坤接入方案调研](./qiankun-integration-research.md)。
+
 本轮基于 `feat-dong.0930` 的独立 worktree 实施，沿用已有 qiankun 2.x 调研，按当前菜单保活设计改为持久宿主。子应用使用各自 `main` 的固定提交，业务源码保留原样；主仓维护适配 patch 与 overlay。
 
 ## 应用与地址契约
@@ -78,6 +80,34 @@ npm run build:prod
 `/micro-apps/<id>/version.json` 包含来源 main SHA、URL、前端目录、adapter 文件清单及 SHA256、构建环境、Node/pnpm/插件版本、构建时间和可选类型基线结果；`/micro-apps/manifest.json` 汇总同批产物。
 
 升级上游是单独可审查的开发动作：先核查新 main，更新主仓 gitlink 与 `adapter.json.pin`，重做 patch 匹配和完整验收。运行构建命令本身不会改变 pin。
+
+### 单个或全部升级脚本
+
+```bash
+# 预检查：获取远程 main 并检查适配，不改变子仓 HEAD、pin 或 index。
+npm run upgrade:micro-apps -- all --dry-run
+
+# 升级单个应用。
+npm run upgrade:micro-apps -- message
+npm run upgrade:micro-apps -- repo
+
+# 升级全部已登记应用，也支持 --all。
+npm run upgrade:micro-apps -- all
+
+# 单个应用选择已经审查的 main 历史提交。
+npm run upgrade:micro-apps -- message --ref '填入已审核的40位提交SHA'
+
+# 升级后重新构建完整主站产物。
+npm run build:prod
+```
+
+[升级脚本](/Users/apple/workspace/nuwax/scripts/upgrade-micro-apps.mjs)读取登记表，只 fetch 选中的子仓 `origin/main`。所有候选先校验快进/main 历史、patch 和 overlay 覆盖范围；全部预检通过后，才更新所选子仓 HEAD 和 adapter pin，并仅暂存这些 gitlink 与 `adapter.json`。单个升级不改变另一个应用的 pin；后续主站构建仍包含全部已登记应用。
+
+选中子仓、gitlink、适配目录或共享登记文件已有 WIP 时，脚本中止；无关文件的 dirty/staged 改动保持原样。上游修改 overlay 同名文件时默认中止，需要先审查适配；明确完成审查后可加 `--allow-overlay-changes`。现有纯 rename 保存的 Vite upstream 配置不按被覆盖文件处理。
+
+正常失败或 SIGINT/SIGTERM 会尝试恢复所选原 HEAD/分支、adapter 和 index。恢复记录和原 adapter 文件保存在 `.cache/micro-apps/upgrades/upgrade-*/`；回滚失败会报告具体条目并保留记录。SIGKILL/断电后需要按记录核对恢复，不能保证自动回滚。dry-run 会更新远程跟踪 ref 并产生临时检查文件，但不修改选中源码、pin 或 index。
+
+脚本不执行 commit、push、构建或部署。升级成功后先构建、验收并提交本批变更，再交付最终提交生成的产物；下一次升级前需处理本次暂存改动。存在需要修改 patch/overlay 的上游升级时，应进入正常适配开发流程，不能仅凭脚本通过就视为功能验收完成。
 
 ## 本地 API / WS 代理
 

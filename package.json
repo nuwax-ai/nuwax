@@ -44,7 +44,8 @@
     "sync:openui-runtime": "./scripts/sync-openui-runtime.sh",
     "test": "vitest",
     "test:conversation": "vitest run tests/conversation tests/chatConversation tests/createConversation tests/liveConnection tests/resume tests/snapshot tests/terminal tests/runtimeLine tests/messageQueue tests/queueStorage tests/unifiedChatSession tests/useConversation tests/useExecutingTaskStatusPoll tests/useChatFinishedWhenListExecuting tests/interventionDock",
-    "test:micro-app-build": "node --test tests/microApps/build-pipeline.node.mjs",
+    "test:micro-app-build": "node --test tests/microApps/build-pipeline.node.mjs tests/microApps/upgrade-pipeline.node.mjs",
+    "upgrade:micro-apps": "node scripts/upgrade-micro-apps.mjs",
     "verify-commit": "max verify-commit",
     "verify:conversation": "npm run test:conversation && npm run e2e:conversation"
   },
