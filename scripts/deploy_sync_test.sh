@@ -165,6 +165,32 @@ resolve_machine_conflicts() { # $1=合并提交信息
   return 0
 }
 
+# merge/pull 后配对校验：-X ours 等自动合并会无感撕裂 gitlink/pin（2026-09-30 实证：
+# gitlink 随升级链更新而 pin 保旧值，build 前校验才拦下），以 gitlink（升级链权威侧）
+# 为准自动修齐 pin 并提交，把 build 前置校验的拦截止于源头。
+verify_microapp_pins() {
+  local changed
+  changed=$(node -e '
+    const fs = require("fs");
+    const { execSync } = require("child_process");
+    const out = [];
+    for (const { id, adapter } of JSON.parse(fs.readFileSync("micro-frontends/apps.json", "utf8"))) {
+      const conf = JSON.parse(fs.readFileSync(adapter, "utf8"));
+      const link = execSync(`git ls-tree HEAD -- ${conf.sourceDir}`).toString().split(/\s+/)[2];
+      if (link && conf.pin !== link) {
+        fs.writeFileSync(adapter, fs.readFileSync(adapter, "utf8").replace(conf.pin, link));
+        out.push(`${id}:${conf.pin.slice(0, 9)}->${link.slice(0, 9)}`);
+      }
+    }
+    console.log(out.join(" "));
+  ' 2>/dev/null || true)
+  if [ -n "$changed" ]; then
+    log "微应用配对撕裂自动修复（pin 以 gitlink 为准）：${changed}"
+    git add micro-frontends/*/adapter.json
+    rgit commit --no-verify --quiet -m "chore(micro-apps): pin 对齐 gitlink（合并撕裂自动修复 ${changed}）"
+  fi
+}
+
 # pull 带自愈：远端分叉时 pull 走 merge，dist/version.ts 机器产物冲突会让 pull 失败且
 # 在 index 留 unmerged 态（下次重跑被拦，死循环——2026-09-30 四连挂实证）；
 # 失败即按机器产物消化提交合并，源码冲突才回滚交人工。
@@ -309,6 +335,27 @@ enter_worktree_if_needed() {
 
 CURRENT_STEP="前置校验"
 log "步骤 1/8：前置校验（分支角色：个人=${REAL_FEATURE} 版本=${VERSION_BRANCH} 集成=${DEV_BRANCH} 测试=${TEST_BRANCH}）"
+# 幽灵 unmerged 防御：上次异常退出可能在 index 残留冲突条目（pull 失败/reset --soft 均会留，
+# 2026-09-30 四连挂的放大器），直接清掉（reset 到 HEAD 不动工作区文件）
+if git ls-files -u 2>/dev/null | grep -q .; then
+  log "检测到 index 残留 unmerged 条目（上次异常退出残留），自动清理"
+  git reset -q HEAD
+  git checkout -- dist 2>/dev/null || true
+fi
+# 分支被残留 worktree 占用防御：链路要 checkout 的四个分支若被残留 worktree 占用会被拒
+# （2026-09-30 实证：挂死现场 worktree 占着 test）。主区自身的占用不动。
+git worktree prune
+for b in "$FEATURE_BRANCH" "$VERSION_BRANCH" "$DEV_BRANCH" "$TEST_BRANCH"; do
+  occupied=$(git worktree list --porcelain 2>/dev/null | awk -v br="refs/heads/${b}" '
+    $1 == "worktree" { p = $2 }
+    $1 == "branch" && $2 == br { print p; exit }
+  ')
+  if [ -n "${occupied:-}" ] && [ "$occupied" != "$(git rev-parse --show-toplevel)" ]; then
+    log "分支 ${b} 被残留 worktree 占用（${occupied}），自动移除该 worktree"
+    git worktree remove --force "$occupied" 2>/dev/null ||
+      echo "⚠️ worktree ${occupied} 移除失败，若后续 checkout 报占用请手工处理" >&2
+  fi
+done
 # worktree 判定先于脏区拦截：主区有并行现场时转入隔离 worktree，而不是要求人工清场
 enter_worktree_if_needed
 if [ "$(git rev-parse --abbrev-ref HEAD)" != "$FEATURE_BRANCH" ]; then
@@ -352,6 +399,41 @@ else
       git merge --abort 2>/dev/null || true
       die "合并 origin/${VERSION_BRANCH} 冲突：已回滚。请手动 git merge 解决冲突提交后，再重跑本脚本"
     fi
+  fi
+fi
+
+CURRENT_STEP="微应用子模块升级"
+# 子模块自动升级（2026-09-30 提速项，替代每次提测前手工「先更新子模块」）：
+# 各子模块远端 main 领先 pin 时走 upgrade:micro-apps 正规通道（fetch→快进→重订 pin→staged），
+# 适配 patch 冲突时工具报错交人工（语义不可自动）。UPGRADE_MICRO_APPS=0 关闭。
+if [ "${UPGRADE_MICRO_APPS:-auto}" != "0" ]; then
+  upgrades=""
+  while IFS=$'\t' read -r app_id src_dir branch pin; do
+    [ -n "${app_id:-}" ] || continue
+    if ! git -C "$src_dir" fetch origin "$branch" --quiet 2>/dev/null; then
+      echo "⚠️ ${app_id} 子模块 fetch 失败，跳过其升级检查" >&2
+      continue
+    fi
+    tip=$(git -C "$src_dir" rev-parse "origin/${branch}" 2>/dev/null || true)
+    if [ -n "$tip" ] && [ "$tip" != "$pin" ]; then
+      upgrades="${upgrades} ${app_id}(${pin:0:9}→${tip:0:9})"
+    fi
+  done < <(node -e '
+    const fs = require("fs");
+    for (const { id, adapter } of JSON.parse(fs.readFileSync("micro-frontends/apps.json", "utf8"))) {
+      const conf = JSON.parse(fs.readFileSync(adapter, "utf8"));
+      console.log([id, conf.sourceDir, conf.branch, conf.pin].join("\t"));
+    }
+  ' 2>/dev/null || true)
+  if [ -n "$upgrades" ]; then
+    log "步骤 2.5：微应用子模块升级${upgrades}"
+    node scripts/upgrade-micro-apps.mjs all ||
+      die "微应用子模块升级失败（适配 patch 冲突需人工重制，见上方工具输出指引）"
+    rgit add micro-frontends submodules || true
+    rgit commit --no-verify --quiet -m "chore(micro-apps): 子模块升级${upgrades}（适配无冲突直迁）" ||
+      log "升级产物已在暂存外（无新增提交），继续"
+  else
+    log "步骤 2.5：微应用子模块均已是远端尖，跳过升级"
   fi
 fi
 
@@ -408,6 +490,7 @@ else
     fi
   fi
 fi
+verify_microapp_pins
 # 盲区告警：gitlab 侧集成分支若有未进入本链路的独有提交，本次 test 构建将不包含它们
 if ! git merge-base --is-ancestor "gitlab/${DEV_BRANCH}" "$DEV_BRANCH" 2>/dev/null; then
   echo "⚠️  gitlab/${DEV_BRANCH} 存在 $(git rev-list --count "$DEV_BRANCH..gitlab/${DEV_BRANCH}") 个独有提交未进入本次构建链路（本链路只经 origin/${VERSION_BRANCH}），请知悉。" >&2
@@ -426,6 +509,7 @@ if ! rgit merge "$DEV_BRANCH" -X ours --no-verify \
     die "合并 ${DEV_BRANCH} 进 ${TEST_BRANCH} 冲突：已回滚。请手动在 ${TEST_BRANCH} 上解决冲突提交后，再重跑本脚本"
   fi
 fi
+verify_microapp_pins
 run npm run build:prod:m gitlab
 rgit add -f dist
 # 产物无变化时 commit 会因空提交被拒，属正常，继续走推送（推已存在内容为 no-op）
