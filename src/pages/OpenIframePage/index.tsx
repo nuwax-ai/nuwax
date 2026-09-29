@@ -3,15 +3,16 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import useOpenAppChromeFlags from '@/hooks/useOpenAppChromeFlags';
 import { t } from '@/services/i18nRuntime';
+import { resolveMicroAppIframePath } from '@/utils/microAppRoutes';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useModel } from 'umi';
+import { Navigate, useLocation, useModel } from 'umi';
 
 /**
  * 打开iframe页面
  * @description 打开iframe页面，用于打开外部链接
  */
-const OpenIframePage: React.FC = () => {
+const LegacyIframePage: React.FC = () => {
   const location = useLocation();
   // url地址
   const [iframeUrl, setIframeUrl] = useState<string>('');
@@ -156,6 +157,25 @@ const OpenIframePage: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+const LegacyMicroAppRedirect: React.FC<{ path: string }> = ({ path }) => (
+  <Navigate to={path} replace />
+);
+
+/** 已确认的旧微应用入口迁到宿主，其余入口继续消费原 iframe 页面。 */
+const OpenIframePage: React.FC = () => {
+  const location = useLocation();
+  const microAppPath = location.pathname.startsWith('/app/')
+    ? null
+    : resolveMicroAppIframePath(
+        `${location.pathname}${location.search}${location.hash}`,
+      );
+  return microAppPath ? (
+    <LegacyMicroAppRedirect path={microAppPath} />
+  ) : (
+    <LegacyIframePage />
   );
 };
 

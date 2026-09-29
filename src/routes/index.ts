@@ -46,6 +46,11 @@ const routes = [
         path: '/open-iframe-page/:menuCode',
         component: '@/pages/OpenIframePage',
       },
+      // 稳定菜单入口及深链均由主站路由承接，微应用实例留在布局的持久宿主中。
+      { path: '/repo-entry', component: '@/pages/MicroAppEntry' },
+      { path: '/repo/*', component: '@/pages/MicroAppEntry' },
+      { path: '/message-entry', component: '@/pages/MicroAppEntry' },
+      { path: '/instant-message/*', component: '@/pages/MicroAppEntry' },
       { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
       { path: '/my-computer-manage', component: '@/pages/MyComputerManage' },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },

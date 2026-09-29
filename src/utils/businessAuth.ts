@@ -27,6 +27,33 @@ function isLocalDevBrowser(): boolean {
   );
 }
 
+function readLocalDevToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+/** 本地调试 ticket 由前端种植，失效时清除；线上 Cookie 仍由后端失效。 */
+export function clearMicroAppDevSession(): void {
+  if (isLocalDevBrowser()) {
+    document.cookie = 'ticket=; Path=/; Max-Age=0; SameSite=Lax';
+  }
+}
+
+/** 子应用以同源 Cookie 请求；只在普通浏览器开发环境镜像当前调试会话。 */
+export async function prepareMicroAppAuthSession(): Promise<boolean> {
+  if (isLocalDevBrowser()) {
+    const token = readLocalDevToken();
+    if (!token) {
+      clearMicroAppDevSession();
+      return false;
+    }
+    document.cookie = `ticket=${encodeURIComponent(
+      token,
+    )}; Path=/; SameSite=Lax`;
+    return true;
+  }
+  return isDesktopCookieHost() ? hostBridge.auth.syncSession() : true;
+}
+
 /** URL 是否指向配置的业务 API 域名——Cookie 与本地 Token 都只发给它。 */
 function isBusinessApiUrl(url: string): boolean {
   try {
@@ -36,10 +63,6 @@ function isBusinessApiUrl(url: string): boolean {
   } catch {
     return false;
   }
-}
-
-function readLocalDevToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
 function discardLocalDevToken(): void {

@@ -1,6 +1,9 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_CN: SystemLangMap = {
+  'PC.Components.MicroAppHost.loading': '正在加载',
+  'PC.Components.MicroAppHost.loadFailed': '暂时无法加载，请重试。',
+  'PC.Components.MicroAppHost.retry': '重新加载',
   "PC.Components.AppStartup.loading": "正在加载应用",
   "PC.Components.AppStartup.waitingHint": "加载耗时较长，请检查网络后重试。你也可以继续等待。",
   "PC.Components.AppStartup.failed": "应用加载失败",
@@ -6103,6 +6106,19 @@ export const ZH_CN: SystemLangMap = {
   // ── 系统管理 - 订阅与积分汇总卡片 ────────────────────
   // ── 系统管理 - 基础订阅套餐 ────────────────────────────
   "PC.Pages.SystemRecommendManage.addTitle": "新增推荐",
+  "PC.Pages.SystemRecommendManage.promptsLabel": "预置提示词",
+  "PC.Pages.SystemRecommendManage.addPrompt": "添加预置问题",
+  "PC.Pages.SystemRecommendManage.promptNumber": "预置问题 {0}",
+  "PC.Pages.SystemRecommendManage.removePrompt": "删除预置问题",
+  "PC.Pages.SystemRecommendManage.editPrompt": "设置预置问题",
+  "PC.Pages.SystemRecommendManage.promptSettingsTitle": "预置问题设置",
+  "PC.Pages.SystemRecommendManage.uploadPromptIcon": "上传图标",
+  "PC.Pages.SystemRecommendManage.clearPromptIcon": "清除图标",
+  "PC.Pages.SystemRecommendManage.promptTitle": "标题（选填）",
+  "PC.Pages.SystemRecommendManage.promptTitlePlaceholder": "请输入标题",
+  "PC.Pages.SystemRecommendManage.promptContent": "内容",
+  "PC.Pages.SystemRecommendManage.promptContentPlaceholder": "输入开场白预置问题",
+  "PC.Pages.SystemRecommendManage.promptContentRequired": "请输入预置问题内容，不能只输入空格",
   "PC.Pages.SystemRecommendManage.chatboxCategory": "对话框智能体",
   "PC.Pages.SystemRecommendManage.createSuccess": "创建成功",
   "PC.Pages.SystemRecommendManage.colAction": "操作",

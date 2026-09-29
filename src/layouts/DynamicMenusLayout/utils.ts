@@ -3,6 +3,10 @@ import { MENU_PATH_NORMALIZATION_MAP } from '@/constants/menus.constants';
 import { MenuItemDto } from '@/types/interfaces/menu';
 import { OpenTypeEnum } from '@/types/menuPermission/menu-manage';
 import { hostBridge, isImmersiveShell } from '@/utils/hostBridge';
+import {
+  resolveMicroAppIframePath,
+  resolveMicroAppMenuPath,
+} from '@/utils/microAppRoutes';
 import { history } from 'umi';
 
 /** 菜单路径中的站点 origin 占位符，点击时替换为当前 location.origin */
@@ -29,6 +33,8 @@ export const resolveSiteUrlPath = (
 /** 解析菜单路径中的 %siteUrl% 占位符 */
 export const resolveMenuPath = (menu: MenuItemDto): MenuItemDto => {
   const { path = '' } = menu;
+  const microAppPath = resolveMicroAppMenuPath(menu);
+  if (microAppPath) return { ...menu, path: microAppPath };
   if (!isSiteUrlMenuPath(path)) {
     return menu;
   }
@@ -116,6 +122,8 @@ export const isInAppIframeMenu = (menu: MenuItemDto): boolean => {
  * 构建 open-iframe-page 路由路径
  */
 export const buildOpenIframePath = (menu: MenuItemDto): string => {
+  const microAppPath = resolveMicroAppMenuPath(menu);
+  if (microAppPath) return microAppPath;
   const { path = '', code } = menu;
   return `/open-iframe-page/${code}?url=${encodeURIComponent(path)}`;
 };
@@ -191,6 +199,11 @@ export const navigateOpenIframePath = (
   path: string,
   state?: Record<string, unknown>,
 ): void => {
+  const microAppPath = resolveMicroAppIframePath(path);
+  if (microAppPath) {
+    history.push(microAppPath, { _t: Date.now(), ...state });
+    return;
+  }
   if (isCurrentOpenIframePath(path)) {
     refreshOpenIframePath(path);
     return;
@@ -207,6 +220,19 @@ export const navigateOpenIframePath = (
 export const handleOpenUrl = (menu: MenuItemDto, parentCode?: string) => {
   const resolvedMenu = resolveMenuPath(menu);
   const { openType = OpenTypeEnum.CurrentTab, path = '' } = resolvedMenu;
+  const microAppPath = resolveMicroAppMenuPath(resolvedMenu);
+  if (microAppPath) {
+    if (parentCode) updatePathUrlToLocalStorage(parentCode, microAppPath);
+    // 重复点击恢复当前实例；显式刷新由 _refresh 标记交给宿主处理。
+    if (
+      `${history.location.pathname}${history.location.search}${
+        history.location.hash || ''
+      }` !== microAppPath
+    ) {
+      history.push(microAppPath, { _t: Date.now(), menuCode: menu.code });
+    }
+    return;
+  }
   // 桌面端主窗口：NewTab 外链经宿主开独立窗口（独立窗口内 isImmersiveShell=false，
   // 回落浏览器式行为）。CurrentTab 不再经 native.openWindow same-window——那是
   // webview.loadURL 的 document 级整页导航，点击外链型菜单（消息/资源库/生态

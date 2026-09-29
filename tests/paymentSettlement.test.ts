@@ -77,8 +77,10 @@ async function flushRequests() {
 }
 
 describe('支付结算静态页面', () => {
+  // 033cd84a2a 起鉴权统一走同源 ticket cookie（credentials: 'include'），
+  // 页面不再从 localStorage/URL 取 token 附 Authorization。
   it.each(['http://127.0.0.1:46801', 'https://tenant.example:8443'])(
-    '%s 同源轮询且存在本地 token 时附 Bearer',
+    '%s 同源轮询携带 cookie，即使本地存有 token 也不附 Authorization',
     async (origin) => {
       const page = startSettlement({ origin, token: 'test-token' });
       await flushRequests();
@@ -86,41 +88,38 @@ describe('支付结算静态页面', () => {
         '/api/bill/order/settlement-status?orderId=order-1',
         expect.objectContaining({
           credentials: 'include',
-          headers: {
-            Accept: 'application/json',
-            Authorization: 'Bearer test-token',
-          },
+          headers: { Accept: 'application/json' },
         }),
       );
+      expect(page.fetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
     },
   );
 
-  it.each([
-    { query: '&isMp=1&token=query-token', hash: '', expected: 'query-token' },
-    {
+  it('小程序 query/hash 中的 token 不再进入请求头，鉴权交由同源 cookie', async () => {
+    const queryCase = startSettlement({ query: '&isMp=1&token=query-token' });
+    const hashCase = startSettlement({
       query: '&isMp=1',
       hash: '#/return?token=hash%2Dtoken',
-      expected: 'hash-token',
-    },
-  ])(
-    '保留小程序 query/hash token 回退：%j',
-    async ({ query, hash, expected }) => {
-      const page = startSettlement({ query, hash });
-      await flushRequests();
-      expect(page.fetch.mock.calls[0][1].headers.Authorization).toBe(
-        `Bearer ${expected}`,
-      );
-    },
-  );
+    });
+    await flushRequests();
+    for (const page of [queryCase, hashCase]) {
+      expect(page.fetch.mock.calls[0][1].credentials).toBe('include');
+      expect(page.fetch.mock.calls[0][1].headers).toEqual({
+        Accept: 'application/json',
+      });
+    }
+  });
 
-  it('本地 token 优先于小程序 URL，普通网页不使用 URL token', async () => {
-    const mp = startSettlement({ token: 'local', query: '&isMp=1&token=old' });
+  it('本地或 URL 携带的 token 均不影响请求头（ticket cookie 单一鉴权）', async () => {
+    const local = startSettlement({
+      token: 'local',
+      query: '&isMp=1&token=old',
+    });
     const web = startSettlement({ query: '&token=query-token' });
     await flushRequests();
-    expect(mp.fetch.mock.calls[0][1].headers.Authorization).toBe(
-      'Bearer local',
-    );
-    expect(web.fetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
+    for (const page of [local, web]) {
+      expect(page.fetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
+    }
   });
 
   it.each([

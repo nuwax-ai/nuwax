@@ -38,6 +38,7 @@ import {
 } from './services/unifiedThemeService';
 import {
   getCurrentLoginStatus,
+  setLoginStatusToCache,
   subscribeLoginStatus,
   UserService,
 } from './services/userService';
@@ -108,6 +109,8 @@ export async function getInitialState(): Promise<InitialStateType> {
       if (userInfo?.id) {
         const res = await apiQueryMenus();
         if (res.code === SUCCESS_CODE && res.data) {
+          // 菜单请求已确认登录有效，路由鉴权复用结果，避免首屏再次加载和请求。
+          setLoginStatusToCache(true);
           return { menuData: res.data };
         }
         // 鉴权失效已有请求层业务跳转，不要用启动错误遮挡登录页。

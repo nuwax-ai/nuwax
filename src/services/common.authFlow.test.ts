@@ -26,6 +26,8 @@ const mocks = vi.hoisted(() => ({
   warning: vi.fn(),
   error: vi.fn(),
   getBusinessRequestAuth: vi.fn(),
+  clearMicroAppDevSession: vi.fn(),
+  emit: vi.fn(),
   isConversationMockPage: vi.fn().mockReturnValue(false),
 }));
 
@@ -43,6 +45,11 @@ vi.mock('@/utils/hostBridge', () => ({
 }));
 vi.mock('@/utils/businessAuth', () => ({
   getBusinessRequestAuth: mocks.getBusinessRequestAuth,
+  clearMicroAppDevSession: mocks.clearMicroAppDevSession,
+}));
+vi.mock('@/utils/eventBus', () => ({
+  default: { emit: mocks.emit },
+  EVENT_NAMES: { AUTH_SESSION_CLEARED: 'auth_session_cleared' },
 }));
 vi.mock('@/utils/isConversationMockPage', () => ({
   isConversationMockPage: mocks.isConversationMockPage,
@@ -122,6 +129,8 @@ function expectErrorHandlerToThrow(error: any, opts: any = {}) {
 }
 
 function expectNoLogout() {
+  expect(mocks.clearMicroAppDevSession).not.toHaveBeenCalled();
+  expect(mocks.emit).not.toHaveBeenCalled();
   expect(mocks.clearHostAuth).not.toHaveBeenCalled();
   expect(mocks.clearLoginStatusCache).not.toHaveBeenCalled();
   expect(mocks.redirectToLogin).not.toHaveBeenCalled();
@@ -261,6 +270,7 @@ describe('匿名登录步骤的全局认证错误处理', () => {
         async (entryPoint) => {
           window.history.replaceState({}, '', pathname);
           await handleBusinessError(entryPoint, USER_NO_LOGIN);
+          expect(mocks.clearMicroAppDevSession).toHaveBeenCalledOnce();
           expect(mocks.clearHostAuth).toHaveBeenCalledOnce();
           expect(mocks.clearLoginStatusCache).toHaveBeenCalledOnce();
           expect(mocks.redirectToLogin).toHaveBeenCalledWith(-1);
@@ -279,6 +289,9 @@ describe('匿名登录步骤的全局认证错误处理', () => {
         async (entryPoint) => {
           window.history.replaceState({}, '', pathname);
           await handleBusinessError(entryPoint, REDIRECT_LOGIN);
+          expect(mocks.clearMicroAppDevSession).toHaveBeenCalledOnce();
+          expect(mocks.emit).toHaveBeenCalledOnce();
+          expect(mocks.emit).toHaveBeenCalledWith('auth_session_cleared');
           expect(mocks.clearHostAuth).toHaveBeenCalledOnce();
           expect(mocks.clearLoginStatusCache).toHaveBeenCalledOnce();
           expect(mocks.navigateToAuthUrl).toHaveBeenCalledWith(loginUrl);
@@ -294,6 +307,7 @@ describe('匿名登录步骤的全局认证错误处理', () => {
         expect(mocks.clearHostAuth).toHaveBeenCalledOnce();
         expect(mocks.clearLoginStatusCache).toHaveBeenCalledOnce();
         expect(mocks.redirectToLogin).toHaveBeenCalledWith(-1);
+        expect(mocks.clearMicroAppDevSession).toHaveBeenCalledOnce();
         expect(localStorage.getItem('login-form-draft')).toBeNull();
       });
     },

@@ -133,6 +133,7 @@
 
 // 提示与小分类占用同一行，滚动由外层 recommend-list 统一负责。
 .guid-question-list.guid-question-list {
+  display: flex;
   flex: none;
   min-width: 100%;
   flex-flow: row nowrap;
@@ -140,6 +141,9 @@
   padding: 0;
 
   .guid-question {
+    display: inline-flex;
+    align-items: center;
+    gap: @marginXs;
     flex: none;
     max-width: none;
     height: @controlHeight;
@@ -147,7 +151,23 @@
     border: 0;
     background: transparent;
     white-space: nowrap;
+    font: inherit;
     line-height: 1;
+    color: @colorTextSecondary;
+    cursor: pointer;
+
+    &:hover {
+      color: @colorPrimary;
+    }
+
+    &:focus-visible {
+      outline: @lineWidthBold solid @colorPrimary;
+      outline-offset: 2px;
+    }
+  }
+
+  .prompt-question {
+    max-width: min(320px, 70vw);
   }
 
   .guid-question:first-child {

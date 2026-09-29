@@ -1,3 +1,5 @@
+import type { DisplayRecommendPrompt } from '@/types/interfaces/displayRecommend';
+
 /**
  * 推荐展示类型
  */
@@ -56,6 +58,7 @@ export interface DisplayRecommendParams {
   icon?: string;
   placeholder?: string;
   category?: string;
+  prompts?: DisplayRecommendPrompt[];
   sort?: number;
 }
 
@@ -129,6 +132,7 @@ export interface DisplayRecommendInfo {
   icon: string;
   placeholder: string;
   category?: string;
+  prompts?: DisplayRecommendPrompt[] | null;
   sort: number;
   modified: string;
   created: string;

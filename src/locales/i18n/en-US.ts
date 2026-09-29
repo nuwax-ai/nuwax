@@ -1,6 +1,9 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
+  'PC.Components.MicroAppHost.loading': 'Loading',
+  'PC.Components.MicroAppHost.loadFailed': 'Unable to load. Please try again.',
+  'PC.Components.MicroAppHost.retry': 'Reload',
   "PC.Components.AppStartup.loading": "Loading the app",
   "PC.Components.AppStartup.waitingHint": "Loading is taking longer than expected. Check your connection and retry, or keep waiting.",
   "PC.Components.AppStartup.failed": "Unable to load the app",
@@ -6122,6 +6125,19 @@ export const EN_US: SystemLangMap = {
   // ── System Management - Subscription & Credits Summary Card ────────────────────
   // ── System Management - Basic Subscription Plans ────────────────────────────
   "PC.Pages.SystemRecommendManage.addTitle": "Add Recommendation",
+  "PC.Pages.SystemRecommendManage.promptsLabel": "Opening Preset Questions",
+  "PC.Pages.SystemRecommendManage.addPrompt": "Add Preset Question",
+  "PC.Pages.SystemRecommendManage.promptNumber": "Preset Question {0}",
+  "PC.Pages.SystemRecommendManage.removePrompt": "Remove Preset Question",
+  "PC.Pages.SystemRecommendManage.editPrompt": "Edit Preset Question",
+  "PC.Pages.SystemRecommendManage.promptSettingsTitle": "Preset Question Settings",
+  "PC.Pages.SystemRecommendManage.uploadPromptIcon": "Upload Icon",
+  "PC.Pages.SystemRecommendManage.clearPromptIcon": "Clear Icon",
+  "PC.Pages.SystemRecommendManage.promptTitle": "Title (Optional)",
+  "PC.Pages.SystemRecommendManage.promptTitlePlaceholder": "Enter a title",
+  "PC.Pages.SystemRecommendManage.promptContent": "Content",
+  "PC.Pages.SystemRecommendManage.promptContentPlaceholder": "Enter an opening preset question",
+  "PC.Pages.SystemRecommendManage.promptContentRequired": "Enter question content; whitespace alone is not allowed",
   "PC.Pages.SystemRecommendManage.chatboxCategory": "ChatBox",
   "PC.Pages.SystemRecommendManage.createSuccess": "Created successfully",
   "PC.Pages.SystemRecommendManage.colAction": "Actions",

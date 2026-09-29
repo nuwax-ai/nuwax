@@ -11,7 +11,11 @@ import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { clearStoragePreservingUserPrefs } from '@/utils/authStorageCleanup';
-import { getBusinessRequestAuth } from '@/utils/businessAuth';
+import {
+  clearMicroAppDevSession,
+  getBusinessRequestAuth,
+} from '@/utils/businessAuth';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { hostBridge } from '@/utils/hostBridge';
 import { isConversationMockPage } from '@/utils/isConversationMockPage';
 import { redirectToLogin } from '@/utils/router';
@@ -198,6 +202,8 @@ const errorHandler = (error: any, opts: any) => {
             return;
           }
           if (isAnonymousLoginStep()) return;
+          clearMicroAppDevSession();
+          eventBus.emit(EVENT_NAMES.AUTH_SESSION_CLEARED);
           clearLoginStatusCache();
           void hostBridge.auth.clear();
           void navigateToAuthUrl(errorMessage);
