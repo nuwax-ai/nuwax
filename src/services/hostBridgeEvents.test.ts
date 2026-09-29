@@ -9,6 +9,11 @@ import {
   I18N_STORAGE_KEYS,
 } from '@/constants/i18n.constants';
 import { apiI18nQuery, saveUserLang } from '@/services/i18n';
+import {
+  getComputerServiceState,
+  __resetForTest as resetComputerServiceState,
+  subscribeComputerServiceState,
+} from './computerServiceState';
 import { initHostBridgeEvents } from './hostBridgeEvents';
 import { __resetForTest, getHostVisibility } from './hostVisibility';
 import { getCurrentLang } from './i18nRuntime';
@@ -149,6 +154,43 @@ describe('hostBridgeEvents · 宿主命令响应（host→guest 通道消费端�
     registeredHandler!({ type: 'host-activity', visible: true });
     expect(getHostVisibility()).toBe(true);
     __resetForTest();
+  });
+
+  it('computer-service-state 命令集中分发，晚挂载可读且不覆盖其他命令监听', () => {
+    resetComputerServiceState();
+    const createNewTask = vi.fn();
+    initHostBridgeEvents({
+      setSecondMenuCollapsed: vi.fn(),
+      createNewTask,
+      newTaskAvailable: true,
+    });
+    registeredHandler!({
+      type: 'computer-service-state',
+      phase: 'ready',
+      sandboxId: '366',
+    });
+    const listener = vi.fn();
+    const unsubscribe = subscribeComputerServiceState(listener);
+    expect(getComputerServiceState()).toEqual({
+      phase: 'ready',
+      sandboxId: '366',
+    });
+    registeredHandler!({
+      type: 'computer-service-state',
+      phase: 'ready',
+      sandboxId: '366',
+    });
+    expect(listener).not.toHaveBeenCalled();
+    registeredHandler!({ type: 'new-task' });
+    expect(createNewTask).toHaveBeenCalledTimes(1);
+    registeredHandler!({
+      type: 'computer-service-state',
+      phase: 'starting',
+      sandboxId: '366',
+    });
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+    resetComputerServiceState();
   });
 
   it('set-lang 命令（弱网竞态）→ 字典拉取挂起时同步语种已切换（bug 2428）', async () => {
