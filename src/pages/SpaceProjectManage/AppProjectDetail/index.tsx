@@ -964,13 +964,23 @@ const AppProjectDetail: React.FC = () => {
             appInfo={projectInfo}
             servers={privateServers}
             loading={privateServerLoading}
+            selecting={setDeployLoading}
             onRefresh={runPrivateServerList}
+            onSelectDeployServer={(serverId) => {
+              if (!appId) {
+                return;
+              }
+              runSetDeployTarget({
+                appId,
+                deployType: UserAppDeployTypeEnum.Private,
+                deployServerId: serverId,
+              });
+            }}
           />
         )}
         <Button
           type="primary"
           className={cx(styles['set-deploy-btn'])}
-          loading={setDeployLoading && !deployTargetOpen}
           onClick={handleSetDeployServer}
         >
           {dict('PC.Pages.AppProjectDetail.setDeployServer')}
