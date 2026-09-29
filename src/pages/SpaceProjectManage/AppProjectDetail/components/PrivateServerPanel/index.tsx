@@ -2,14 +2,13 @@ import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserAppInfo } from '@/types/interfaces/userProject';
 import {
-  CheckOutlined,
   DeleteOutlined,
   EyeOutlined,
   LoadingOutlined,
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { Button, Modal, Spin, Tooltip, message } from 'antd';
+import { Button, Modal, Spin, Switch, Tooltip, message } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -45,8 +44,15 @@ export interface PrivateServerPanelProps {
   servers: PrivateServerInfo[];
   /** 列表加载中 */
   loading?: boolean;
+  /** 切换部署服务器提交中 */
+  selecting?: boolean;
   /** 增删后刷新列表 */
   onRefresh: () => void;
+  /**
+   * 选中一台私服作为部署目标。
+   * 已选中的开关不能关掉，只能改选另一台。
+   */
+  onSelectDeployServer?: (serverId: number) => void;
 }
 
 /** 列表行：已保存或未提交空行 */
@@ -161,7 +167,8 @@ const pickServerDetail = (
 
 /**
  * 私服列表、行内追加空行与删除。
- * 应用详情里的 deployServerId 与列表 id 一致时，在该行后显示勾选图标。
+ * 应用详情里的 deployServerId 与列表 id 一致时，该行开关为打开。
+ * 已打开的开关不能自行关闭，只能打开另一台来切换部署目标。
  *
  * @param props.appInfo 应用详情
  * @param props.servers 当前列表
@@ -173,7 +180,9 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
   appInfo,
   servers,
   loading,
+  selecting,
   onRefresh,
+  onSelectDeployServer,
 }) => {
   const draftSeqRef = useRef(0);
   const submittingKeyRef = useRef<string>();
@@ -512,12 +521,19 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
                       onChange={(value) => handleRowChange(row.key, value)}
                     />
                     <td className={cx(styles.selectedMark)}>
-                      {selected ? (
-                        <CheckOutlined
-                          className={cx(styles.selectedIcon)}
+                      {row.saved ? (
+                        <Switch
+                          checked={selected}
+                          disabled={selected || !!selecting}
                           aria-label={dict(
                             'PC.Pages.AppProjectDetail.selectedPrivateServer',
                           )}
+                          onChange={(checked) => {
+                            if (!checked || !row.saved) {
+                              return;
+                            }
+                            onSelectDeployServer?.(row.saved.id);
+                          }}
                         />
                       ) : null}
                     </td>
