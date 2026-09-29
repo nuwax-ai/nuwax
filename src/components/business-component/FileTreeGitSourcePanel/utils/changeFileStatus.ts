@@ -12,6 +12,18 @@ export interface SelectedChangeFile {
   section: ChangeListSection;
 }
 
+/**
+ * 未跟踪目录。git status porcelain 对未跟踪目录以 / 结尾，其它状态恒为文件。
+ *
+ * @param fileId 变更路径
+ * @param unstagedStatus 工作区状态
+ * @returns 是否为不可打开的目录
+ */
+export const isUntrackedDirectory = (
+  fileId: string,
+  unstagedStatus?: ChangeFileStatusKind,
+): boolean => unstagedStatus === 'untracked' && fileId.endsWith('/');
+
 /** 判断列表项是否处于选中态 */
 export const isChangeFileSelected = (
   fileId: string,
