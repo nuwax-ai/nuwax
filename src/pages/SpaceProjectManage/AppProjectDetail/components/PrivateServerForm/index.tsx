@@ -1,10 +1,7 @@
 import { dict } from '@/services/i18nRuntime';
 import { Input, Select } from 'antd';
-import classNames from 'classnames';
 import React, { useCallback } from 'react';
 import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 /** 私服表单值 */
 export interface PrivateServerFormValue {
@@ -38,13 +35,26 @@ const DEFAULT_VALUE: PrivateServerFormValue = {
 };
 
 /**
- * 私有服务器表单：协议、地址、Agent 端口、VNC 端口、文件服务端口。
- * 已保存行用 span 展示，新增行才渲染 Select / Input。
+ * 只读单元格文案。
+ *
+ * @param text 展示内容
+ * @param title 悬停全文
+ * @returns 文本节点
+ */
+const renderText = (text: string, title?: string) => (
+  <span className={styles.readonly} title={title}>
+    {text}
+  </span>
+);
+
+/**
+ * 私有服务器表单，按表格单元格输出。
+ * 已保存行用文本，新增行才渲染 Select / Input。
  *
  * @param props.value 当前值
  * @param props.onChange 变更回调
  * @param props.disabled 已保存时为 true，改为纯文本
- * @returns 表单区域
+ * @returns 五个 td
  */
 const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
   value,
@@ -60,33 +70,24 @@ const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
 
   if (disabled) {
     return (
-      <div className={cx(styles.fields)}>
-        <span className={cx(styles.field, styles.protocol, styles.readonly)}>
-          {value.scheme}
-        </span>
-        <span className={cx(styles.field, styles.readonly)} title={value.host}>
-          {value.host}
-        </span>
-        <span className={cx(styles.field, styles.readonly)}>
-          {value.agentPort}
-        </span>
-        <span className={cx(styles.field, styles.readonly)}>
-          {value.vncPort}
-        </span>
-        <span className={cx(styles.field, styles.readonly)}>
-          {value.fileServerPort}
-        </span>
-      </div>
+      <>
+        <td className={styles.protocol}>{renderText(value.scheme)}</td>
+        <td className={styles.host}>
+          {renderText(value.host, value.host)}
+        </td>
+        <td className={styles.agent}>{renderText(value.agentPort)}</td>
+        <td className={styles.vnc}>{renderText(value.vncPort)}</td>
+        <td className={styles.file}>{renderText(value.fileServerPort)}</td>
+      </>
     );
   }
 
   return (
-    <div className={cx(styles.fields)}>
-      <div className={cx(styles.field, styles.protocol)}>
+    <>
+      <td className={styles.protocol}>
         <Select
           value={value.scheme}
-          disabled={disabled}
-          className={cx(styles.select)}
+          className={styles.select}
           popupMatchSelectWidth
           onChange={(scheme) => patch({ scheme })}
           options={[
@@ -100,42 +101,38 @@ const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
             },
           ]}
         />
-      </div>
-      <div className={cx(styles.field)}>
+      </td>
+      <td className={styles.host}>
         <Input
           value={value.host}
-          disabled={disabled}
           onChange={(event) => patch({ host: event.target.value })}
           placeholder={dict('PC.Pages.AppProjectDetail.serverIpPlaceholder')}
         />
-      </div>
-      <div className={cx(styles.field)}>
+      </td>
+      <td className={styles.agent}>
         <Input
           value={value.agentPort}
-          disabled={disabled}
           onChange={(event) => patch({ agentPort: event.target.value })}
           placeholder={dict('PC.Pages.AppProjectDetail.agentPortPlaceholder')}
         />
-      </div>
-      <div className={cx(styles.field)}>
+      </td>
+      <td className={styles.vnc}>
         <Input
           value={value.vncPort}
-          disabled={disabled}
           onChange={(event) => patch({ vncPort: event.target.value })}
           placeholder={dict('PC.Pages.AppProjectDetail.vncPortPlaceholder')}
         />
-      </div>
-      <div className={cx(styles.field)}>
+      </td>
+      <td className={styles.file}>
         <Input
           value={value.fileServerPort}
-          disabled={disabled}
           onChange={(event) => patch({ fileServerPort: event.target.value })}
           placeholder={dict(
             'PC.Pages.AppProjectDetail.fileServerPortPlaceholder',
           )}
         />
-      </div>
-    </div>
+      </td>
+    </>
   );
 };
 
