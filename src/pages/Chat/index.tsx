@@ -27,6 +27,7 @@ import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 import { useRepoDocLinkPreview } from '@/pages/Chat/hooks/useRepoDocLinkPreview';
+import { isRepoLibraryPath } from '@/pages/Chat/utils/repoDocLink';
 
 import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
@@ -2309,7 +2310,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   // 资料库文档不是页面模板，不提供「复制模板」。
   const showPageCopyButton =
     showCopyButton &&
-    !String(pagePreviewData?.uri || '').includes('/repo/doc/');
+    !isRepoLibraryPath(String(pagePreviewData?.uri || ''));
   const pagePreviewContent = pagePreviewData ? (
     <>
       <PagePreviewIframe
