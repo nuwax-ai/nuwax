@@ -56,7 +56,7 @@ export default defineConfig({
   mountElementId: 'root',
   routes,
   npmClient: 'pnpm',
-  favicons: ['/favicon.ico?brand=20260928'],
+  // favicons: ['/favicon.ico?brand=20260928'],
   // 排除不兼容模块联邦的包
   // mfsu: {
   //   exclude: ['jspdf', 'html2canvas'],

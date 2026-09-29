@@ -1,7 +1,7 @@
 /**
  * 会话快捷导航（ConversationQuickNav）合同测试：
  * 块构建纯函数（一问一答一块/空消息过滤/锚点/悬停卡片标题与正文）+
- * 所有入口统一两个及以上导航项显示、点击在容器内滚动定位。
+ * 所有入口统一会话区宽度至少 450px 且两个及以上导航项显示、点击在容器内滚动定位。
  */
 import {
   buildQuickNavBlocks,
@@ -198,20 +198,8 @@ describe('ConversationQuickNav 组件', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('两个导航项在内容不可滚动时仍显示', () => {
-    const container = buildContainer();
-    Object.defineProperty(container, 'scrollHeight', {
-      value: 800,
-      configurable: true,
-    });
-    renderNav(container, longMessageList().slice(0, 4));
-    expect(screen.getAllByTestId('conversation-quick-nav-line')).toHaveLength(
-      2,
-    );
-  });
-
-  it.each([399, 240])(
-    '两个导航项在不可滚动且宽度只有 %ipx 时仍显示',
+  it.each([450, 463, 1200])(
+    '会话区宽度 %ipx 且内容不可滚动时两个导航项仍显示',
     (width) => {
       const container = buildContainer();
       Object.defineProperty(container, 'clientWidth', {
@@ -226,6 +214,26 @@ describe('ConversationQuickNav 组件', () => {
       expect(screen.getAllByTestId('conversation-quick-nav-line')).toHaveLength(
         2,
       );
+    },
+  );
+
+  it.each([449, 430, 399, 240])(
+    '窗口足够宽但会话区只有 %ipx 时隐藏导航',
+    (width) => {
+      vi.stubGlobal('innerWidth', 1920);
+      const container = buildContainer();
+      Object.defineProperty(container, 'clientWidth', {
+        value: width,
+        configurable: true,
+      });
+      Object.defineProperty(container, 'scrollHeight', {
+        value: 800,
+        configurable: true,
+      });
+      renderNav(container, longMessageList().slice(0, 4));
+      expect(
+        screen.queryByTestId('conversation-quick-nav'),
+      ).not.toBeInTheDocument();
     },
   );
 
@@ -248,7 +256,7 @@ describe('ConversationQuickNav 组件', () => {
     const scrollContainerRef = { current: container };
     const messageList = longMessageList().slice(0, 4);
     Object.defineProperty(container, 'clientWidth', {
-      value: 399,
+      value: 600,
       configurable: true,
     });
     Object.defineProperty(container, 'scrollHeight', {
@@ -281,7 +289,7 @@ describe('ConversationQuickNav 组件', () => {
     );
 
     Object.defineProperty(container, 'clientWidth', {
-      value: 399,
+      value: 600,
       configurable: true,
     });
     Object.defineProperty(container, 'clientHeight', {
@@ -294,16 +302,67 @@ describe('ConversationQuickNav 组件', () => {
     ).toHaveLength(2);
   });
 
+  it('只拖动会话分栏时通过 ResizeObserver 自动隐藏，拉宽后恢复', async () => {
+    vi.stubGlobal('innerWidth', 1920);
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) =>
+      window.setTimeout(() => cb(performance.now()), 0),
+    );
+    vi.stubGlobal('cancelAnimationFrame', window.clearTimeout);
+    let notifyResize: () => void = () => {};
+    const observe = vi.fn();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          notifyResize = () => callback([], this as unknown as ResizeObserver);
+        }
+        observe = observe;
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const container = buildContainer();
+    renderNav(container, longMessageList().slice(0, 4));
+    expect(
+      await screen.findAllByTestId('conversation-quick-nav-line'),
+    ).toHaveLength(2);
+    expect(observe).toHaveBeenCalledWith(container);
+
+    for (const width of [449, 399]) {
+      Object.defineProperty(container, 'clientWidth', {
+        value: width,
+        configurable: true,
+      });
+      const fire = notifyResize;
+      act(() => fire());
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('conversation-quick-nav'),
+        ).not.toBeInTheDocument(),
+      );
+    }
+
+    Object.defineProperty(container, 'clientWidth', {
+      value: 450,
+      configurable: true,
+    });
+    act(() => notifyResize());
+    expect(
+      await screen.findAllByTestId('conversation-quick-nav-line'),
+    ).toHaveLength(2);
+    expect(window.innerWidth).toBe(1920);
+  });
+
   describe('统一至少两轮的显示门槛', () => {
     const singleTurnMessages = () => [
       msg(USER, '开发一个应用', 1),
       msg(ASSISTANT, '开发过程输出\n'.repeat(100), 2),
     ];
 
-    const buildNarrowContainer = () => {
+    const buildWorkbenchContainer = () => {
       const container = buildContainer();
       Object.defineProperty(container, 'clientWidth', {
-        value: 463,
+        value: 600,
         configurable: true,
       });
       return container;
@@ -350,7 +409,7 @@ describe('ConversationQuickNav 组件', () => {
     );
 
     it('两轮长开发回复点击导航只定位消息区，外层容器保持原位置', async () => {
-      const container = buildNarrowContainer();
+      const container = buildWorkbenchContainer();
       const messageList = [
         ...singleTurnMessages(),
         msg(USER, '继续完善应用', 3),
@@ -367,11 +426,11 @@ describe('ConversationQuickNav 组件', () => {
         configurable: true,
       });
       vi.spyOn(container, 'getBoundingClientRect').mockReturnValue(
-        new DOMRect(0, 100, 463, 800),
+        new DOMRect(0, 100, 600, 800),
       );
       const anchor = container.querySelector('[data-server-message-id="1"]')!;
       vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue(
-        new DOMRect(0, -900, 463, 40),
+        new DOMRect(0, -900, 600, 40),
       );
       const scrollTo = vi.fn();
       container.scrollTo = scrollTo;
@@ -406,7 +465,7 @@ describe('ConversationQuickNav 组件', () => {
       { name: '消息区宽度为零', sizes: { clientWidth: 0 } },
       { name: '消息区高度为零', sizes: { clientHeight: 0 } },
     ])('$name 时收起已显示的导航', async ({ sizes, empty }) => {
-      const container = buildNarrowContainer();
+      const container = buildWorkbenchContainer();
       const scrollContainerRef = { current: container };
       const messageList = longMessageList().slice(0, 4);
       const { rerender } = render(
@@ -441,7 +500,7 @@ describe('ConversationQuickNav 组件', () => {
     });
 
     it('消息从一轮变两轮时显示、回到一轮时隐藏，滚动容器 ref 保持不变', async () => {
-      const container = buildNarrowContainer();
+      const container = buildWorkbenchContainer();
       const scrollContainerRef = { current: container };
       const oneTurnMessages = singleTurnMessages();
       const twoTurnMessages = [

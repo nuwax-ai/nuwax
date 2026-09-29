@@ -165,6 +165,45 @@ export type ContentFetchOutcome =
   | { status: 'missing' }
   | { status: 'error' };
 
+/** 预览允许的最大文件体积：50MB。超过则不读取正文 */
+const PREVIEW_FILE_SIZE_LIMIT_BYTES = 50 * 1024 * 1024;
+
+/** 静态文件响应里的体积头。为空或不存在时不拦截预览 */
+const FILE_SIZE_HEADER = 'X-File-Size';
+
+/** 文件超过预览体积上限 */
+export class PreviewFileTooLargeError extends Error {
+  constructor() {
+    super('Preview file exceeds size limit');
+    this.name = 'PreviewFileTooLargeError';
+  }
+}
+
+/** 是否为预览体积超限 */
+export const isPreviewFileTooLargeError = (
+  error: unknown,
+): error is PreviewFileTooLargeError =>
+  error instanceof PreviewFileTooLargeError;
+
+/**
+ * 读取 X-File-Size。头不存在、为空或不是数字时返回 null，调用方按原逻辑预览。
+ */
+export const readPreviewFileSize = (response: Response): number | null => {
+  const raw = response.headers.get(FILE_SIZE_HEADER);
+  if (raw == null || raw.trim() === '') {
+    return null;
+  }
+  const size = Number(raw.trim());
+  if (!Number.isFinite(size) || size < 0) {
+    return null;
+  }
+  return size;
+};
+
+/** 体积头有值且大于 50MB */
+export const isOversizedPreviewFile = (size: number | null): boolean =>
+  size != null && size > PREVIEW_FILE_SIZE_LIMIT_BYTES;
+
 async function fetchContentResponse(url: string): Promise<Response> {
   // 判断是否为绝对路径（以 http://, https:// 或 // 开头）
   const isAbsoluteUrl = /^(https?:)?\/\//i.test(url);
@@ -189,10 +228,18 @@ export async function fetchContentFromUrl(url: string): Promise<string> {
       throw new Error(`Failed to get file content: ${response.status}`);
     }
 
+    // 体积头大于 50MB 时不读取正文
+    if (isOversizedPreviewFile(readPreviewFileSize(response))) {
+      await response.body?.cancel();
+      throw new PreviewFileTooLargeError();
+    }
+
     // 关键：直接读取文本，避免自动 JSON 解析把超长数字转成 number
     return response.text();
   } catch (error) {
-    console.error('Failed to get file content: ', error);
+    if (!isPreviewFileTooLargeError(error)) {
+      console.error('Failed to get file content: ', error);
+    }
     throw error;
   }
 }
