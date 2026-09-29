@@ -2795,6 +2795,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevPro.deployFailed": "部署失敗",
   "PC.Pages.AppDevPro.deploySuccess": "部署成功",
   "PC.Pages.AppDevPro.deploySuccessAccessHint": "部署已成功，可透過下面連結地址訪問：",
+  "PC.Pages.AppDevPro.deployNotReadyHint": "應用尚未就緒，如果訪問失敗，可以稍後再試！",
   "PC.Pages.AppDevPro.stopDeploy": "停止部署",
   "PC.Pages.AppDevPro.confirmStopDeployTitle": "確認停止部署？",
   "PC.Pages.AppDevPro.confirmStopDeployContent": "停止後將中斷目前生產部署，確認停止？",

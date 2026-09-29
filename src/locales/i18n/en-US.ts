@@ -2876,6 +2876,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.deployFailed": "Deploy failed",
   "PC.Pages.AppDevPro.deploySuccess": "Deploy succeeded",
   "PC.Pages.AppDevPro.deploySuccessAccessHint": "Deploy succeeded. You can access it at:",
+  "PC.Pages.AppDevPro.deployNotReadyHint": "The app is not ready yet. If access fails, please try again later.",
   "PC.Pages.AppDevPro.stopDeploy": "Stop deploy",
   "PC.Pages.AppDevPro.confirmStopDeployTitle": "Stop deployment?",
   "PC.Pages.AppDevPro.confirmStopDeployContent": "This will interrupt the current production deployment. Continue?",

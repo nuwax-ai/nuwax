@@ -40,6 +40,8 @@ export interface AppDevPublishProgressModalProps {
   startServices?: UserAppTaskServiceProgress[];
   /** 部署成功后异步拿到的线上 Prod 访问地址 */
   prodAccessUrl?: string;
+  /** 线上环境是否已就绪。false 时在域名下提示稍后再试 */
+  prodReady?: boolean;
   /** 失败信息，优先于默认失败文案 */
   errorMessage?: string;
   /** 失败落在哪一步，避免后续步骤失败被画到前面的步骤上 */
@@ -215,9 +217,13 @@ const StepStatusLine: React.FC<{
  * 部署成功后的线上访问地址：当前域名 + 生产代理路径，可复制。
  *
  * @param props.url 完整访问地址
+ * @param props.prodReady 线上环境是否已就绪
  * @returns 带背景的地址块
  */
-const DeployAccessLink: React.FC<{ url: string }> = ({ url }) => {
+const DeployAccessLink: React.FC<{ url: string; prodReady?: boolean }> = ({
+  url,
+  prodReady = true,
+}) => {
   const handleCopy = useCallback(() => {
     copyTextToClipboard(url, undefined, true);
   }, [url]);
@@ -246,6 +252,11 @@ const DeployAccessLink: React.FC<{ url: string }> = ({ url }) => {
           {dict('PC.Common.Global.copy')}
         </Button>
       </div>
+      {prodReady ? null : (
+        <div className={cx(styles.accessNotReady)}>
+          {dict('PC.Pages.AppDevPro.deployNotReadyHint')}
+        </div>
+      )}
     </div>
   );
 };
@@ -302,6 +313,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   services,
   startServices = [],
   prodAccessUrl = '',
+  prodReady = true,
   errorMessage,
   failedStage = null,
   cancelLoading = false,
@@ -663,7 +675,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
             </div>
             <StepStatusLine kind={startStatus.kind} text={startStatus.text} />
             {displayAccessUrl ? (
-              <DeployAccessLink url={displayAccessUrl} />
+              <DeployAccessLink url={displayAccessUrl} prodReady={prodReady} />
             ) : null}
             {startCollapseItems.length > 0 ? (
               <Collapse

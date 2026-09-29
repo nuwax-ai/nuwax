@@ -2816,6 +2816,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.deployFailed": "デプロイに失敗しました",
   "PC.Pages.AppDevPro.deploySuccess": "デプロイしました",
   "PC.Pages.AppDevPro.deploySuccessAccessHint": "デプロイに成功しました。次のリンクからアクセスできます：",
+  "PC.Pages.AppDevPro.deployNotReadyHint": "アプリはまだ準備できていません。アクセスできない場合は、しばらくしてからもう一度お試しください。",
   "PC.Pages.AppDevPro.stopDeploy": "デプロイを停止",
   "PC.Pages.AppDevPro.confirmStopDeployTitle": "デプロイを停止しますか？",
   "PC.Pages.AppDevPro.confirmStopDeployContent": "停止すると現在の本番デプロイが中断されます。続行しますか？",
