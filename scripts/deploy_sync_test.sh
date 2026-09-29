@@ -259,18 +259,21 @@ enter_worktree_if_needed() {
   if [ -z "$(git status --porcelain -uno)" ] && [ "$USE_WORKTREE" != "1" ]; then
     return 0 # 主区干净且未强制：直接在主区跑，免 worktree 开销
   fi
-  WT_DIR="$(git rev-parse --show-toplevel)/.deploy-worktree"
+  # worktree 必须在主仓目录树之外（兄弟目录）：物理嵌在主仓内时 vite/pnpm 的包解析会
+  # 向上爬到主仓 package.json，把 setupFiles 等 root 相对路径全部解析去主仓（2026-09-30 首战实证）
+  WT_DIR="$(dirname "$(git rev-parse --show-toplevel)")/.nuwax-deploy-worktree"
+  MAIN_DIR="$(git rev-parse --show-toplevel)"
   git worktree remove --force "$WT_DIR" >/dev/null 2>&1 || true
   git worktree prune
   git branch -D deploy-sync-work >/dev/null 2>&1 || true
   git worktree add "$WT_DIR" -b deploy-sync-work "origin/${REAL_FEATURE}" >/dev/null 2>&1 ||
     die "创建提测 worktree 失败：${WT_DIR}（可设 USE_WORKTREE=0 回主区模式）"
-  ln -sfn "$(dirname "$WT_DIR")/node_modules" "$WT_DIR/node_modules"
+  ln -sfn "${MAIN_DIR}/node_modules" "$WT_DIR/node_modules"
   # src/.umi 是 umi 生成的 tsconfig/类型基础（主 tsconfig extends 它）：worktree 不拷则
   # vitest 全套件文件级崩（2026-09-30 首战实证）；从主区拷快照即可（不 symlink，避免主区 dev 重建抖动）
-  if [ -d "$(dirname "$WT_DIR")/src/.umi" ]; then
+  if [ -d "${MAIN_DIR}/src/.umi" ]; then
     rm -rf "$WT_DIR/src/.umi"
-    cp -R "$(dirname "$WT_DIR")/src/.umi" "$WT_DIR/src/.umi"
+    cp -R "${MAIN_DIR}/src/.umi" "$WT_DIR/src/.umi"
   else
     die "主区缺少 src/.umi（先在主区跑一次 npm run dev 或 max build 生成），worktree 无法启动测试"
   fi
