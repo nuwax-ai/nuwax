@@ -2,6 +2,7 @@ import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { UserAppInfo } from '@/types/interfaces/userProject';
 import {
+  CheckOutlined,
   DeleteOutlined,
   EyeOutlined,
   LoadingOutlined,
@@ -160,7 +161,7 @@ const pickServerDetail = (
 
 /**
  * 私服列表、行内追加空行与删除。
- * 应用详情里的 deployServerId 与列表 id 一致时，给该行加主题色背景。
+ * 应用详情里的 deployServerId 与列表 id 一致时，在该行后显示勾选图标。
  *
  * @param props.appInfo 应用详情
  * @param props.servers 当前列表
@@ -478,6 +479,9 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
                 <th className={fieldStyles.file}>
                   {dict('PC.Pages.AppProjectDetail.fileServerPort')}
                 </th>
+                <th className={cx(styles.selectedMark)}>
+                  {dict('PC.Pages.AppProjectDetail.selectedPrivateServer')}
+                </th>
                 <th className={cx(styles.actions)}>
                   {servers.length > 0 ? (
                     <Button
@@ -501,17 +505,22 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
                   appInfo?.deployServerId != null &&
                   Number(row.saved.id) === Number(appInfo.deployServerId);
                 return (
-                  <tr
-                    key={row.key}
-                    className={cx({
-                      [styles.selected]: selected,
-                    })}
-                  >
+                  <tr key={row.key}>
                     <PrivateServerForm
                       disabled={!!row.saved}
                       value={row.value}
                       onChange={(value) => handleRowChange(row.key, value)}
                     />
+                    <td className={cx(styles.selectedMark)}>
+                      {selected ? (
+                        <CheckOutlined
+                          className={cx(styles.selectedIcon)}
+                          aria-label={dict(
+                            'PC.Pages.AppProjectDetail.selectedPrivateServer',
+                          )}
+                        />
+                      ) : null}
+                    </td>
                     <td className={cx(styles.actions)}>
                       {row.saved ? (
                         renderHealth(row.saved.id)

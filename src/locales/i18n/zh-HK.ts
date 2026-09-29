@@ -6783,6 +6783,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppProjectDetail.healthOffline": "離線",
   "PC.Pages.AppProjectDetail.viewPrivateServerDetail": "查看詳情",
   "PC.Pages.AppProjectDetail.refreshConnectionStatus": "刷新連線狀態",
+  "PC.Pages.AppProjectDetail.selectedPrivateServer": "目前選中",
   "PC.Pages.AppProjectDetail.privateServerDetailTitle": "私有伺服器詳情",
   "PC.Pages.AppProjectDetail.privateServerName": "名稱",
   "PC.Pages.AppProjectDetail.privateServerApiKey": "通訊key",

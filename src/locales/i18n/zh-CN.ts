@@ -6904,6 +6904,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppProjectDetail.healthOffline": "离线",
   "PC.Pages.AppProjectDetail.viewPrivateServerDetail": "查看详情",
   "PC.Pages.AppProjectDetail.refreshConnectionStatus": "刷新连线状态",
+  "PC.Pages.AppProjectDetail.selectedPrivateServer": "当前选中",
   "PC.Pages.AppProjectDetail.privateServerDetailTitle": "私有服务器详情",
   "PC.Pages.AppProjectDetail.privateServerName": "名称",
   "PC.Pages.AppProjectDetail.privateServerApiKey": "通信key",

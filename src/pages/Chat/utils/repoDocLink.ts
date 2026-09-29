@@ -9,9 +9,8 @@ const REPO_DOC_PATH = '/repo/doc/';
 
 /** 嵌入聊天页时只展示文档正文，并收起资料库侧栏表格。 */
 const REPO_DOC_EMBED_QUERY = {
-  // just_show_content: 'true',
-  // hide_sheet: 'true',
-  hide_menu: '1',
+  just_show_content: 'true',
+  hide_sheet: 'true',
 } as const;
 
 /** 收集允许嵌入的源站：当前页 origin，以及配置的 BASE_URL origin。 */

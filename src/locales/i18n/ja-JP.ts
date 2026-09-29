@@ -6829,6 +6829,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppProjectDetail.healthOffline": "オフライン",
   "PC.Pages.AppProjectDetail.viewPrivateServerDetail": "詳細を見る",
   "PC.Pages.AppProjectDetail.refreshConnectionStatus": "接続状態を更新",
+  "PC.Pages.AppProjectDetail.selectedPrivateServer": "選択中",
   "PC.Pages.AppProjectDetail.privateServerDetailTitle": "プライベートサーバーの詳細",
   "PC.Pages.AppProjectDetail.privateServerName": "名前",
   "PC.Pages.AppProjectDetail.privateServerApiKey": "通信キー",
