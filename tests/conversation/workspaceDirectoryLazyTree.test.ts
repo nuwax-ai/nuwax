@@ -1,6 +1,7 @@
 import { collectUnloadedExpandedFolders } from '@/components/business-component/FileTreeGitSourcePanel/FileTreePanel/FileTree/utils';
 import {
   mergeDirectoryLevelFiles,
+  prefetchedChildDirectories,
   workspaceNodeId,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import { useChatFiles } from '@/pages/Chat/hooks/useChatFiles';
@@ -367,6 +368,55 @@ describe('工作区文件树异步懒加载', () => {
     );
     expect(result.current.files.map((item) => item.name)).toContain(
       'src/new-file.ts',
+    );
+  });
+
+  it('depth 2 只把直接子目录标成已加载，不把更深层标成已加载', () => {
+    expect(
+      prefetchedChildDirectories(
+        [
+          { name: 'src', isDir: true },
+          { name: 'src/index.ts', isDir: false },
+          { name: 'src/components/Button.tsx', isDir: false },
+        ],
+        '',
+      ),
+    ).toEqual(['src']);
+  });
+
+  it('下级已在树上时展开不再进入 loading，并后台请求这一层', async () => {
+    apiGetStaticFileList.mockResolvedValue({
+      code: '0000',
+      data: {
+        recursive: false,
+        files: [
+          { name: 'src', isDir: true },
+          { name: 'src/index.ts', isDir: false },
+        ],
+      },
+    });
+
+    const { result } = renderHook(() => useWorkspaceDirectoryFiles(2592));
+    await waitFor(() =>
+      expect(result.current.files.map((item) => item.name)).toContain(
+        'src/index.ts',
+      ),
+    );
+    expect(result.current.loadedDirectoryPaths.has('src')).toBe(false);
+
+    apiGetStaticFileList.mockClear();
+    await act(async () => {
+      result.current.navigate('src');
+    });
+
+    expect(result.current.loadingDirectoryPaths.has('src')).toBe(false);
+    await waitFor(() =>
+      expect(apiGetStaticFileList).toHaveBeenCalledWith(2592, {
+        relativePath: 'src',
+        recursive: false,
+        depth: 2,
+        type: 'all',
+      }),
     );
   });
 });
