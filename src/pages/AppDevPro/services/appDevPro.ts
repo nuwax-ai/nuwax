@@ -284,3 +284,61 @@ export const getUserAppTtydProxyWsUrl = (
   }
   return '';
 };
+
+/** 应用就绪探测中的单个服务 */
+export interface UserAppReadinessService {
+  /** 服务 ID */
+  service_id: string;
+  /** 该服务是否就绪 */
+  ready: boolean;
+  /** 服务状态 */
+  status: string;
+  /** 未就绪原因 */
+  reason_code: string | null;
+}
+
+/** 应用就绪探测中的代理状态 */
+export interface UserAppReadinessProxy {
+  /** 代理是否就绪 */
+  ready: boolean;
+  /** 代理状态 */
+  status: string;
+  /** 未就绪原因 */
+  reason_code: string | null;
+  /** 错误来源约定 */
+  error_origin_contract: string;
+}
+
+/** 应用就绪探测结果。应用可访问以 ready 为准。 */
+export interface UserAppReadiness {
+  /** 应用 ID */
+  app_id: string;
+  /** 应用阶段，如 dev */
+  app_stage: string;
+  /** 应用是否可以访问 */
+  ready: boolean;
+  /** 就绪状态 */
+  status: string;
+  /** 本次检查时间 */
+  checked_at: string;
+  /** 当前对外服务的版本 */
+  serving_release_id: string;
+  /** 观测修订号 */
+  observation_revision: number;
+  /** 代理就绪情况 */
+  proxy: UserAppReadinessProxy;
+  /** 各服务就绪情况 */
+  services: UserAppReadinessService[];
+}
+
+/** 应用就绪探测 */
+export async function apiUserAppReadiness(
+  appId: number,
+  env: UserAppDbEnvEnum,
+): Promise<RequestResponse<UserAppReadiness>> {
+  return request('/api/userapp/readiness', {
+    method: 'GET',
+    params: { appId, env },
+    skipErrorHandler: true,
+  });
+}

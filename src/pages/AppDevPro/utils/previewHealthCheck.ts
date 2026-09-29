@@ -1,3 +1,10 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  apiUserAppReadiness,
+  type UserAppReadiness,
+} from '../services/appDevPro';
+import { UserAppDbEnvEnum } from '../services/appDb';
+
 /** 单次 cors 探测超时（毫秒） */
 const CHECK_TIMEOUT_MS = 8000;
 
@@ -223,6 +230,61 @@ export const pollPreviewUrlHealth = async (
   }
 
   return last;
+};
+
+/** 就绪接口两次探测之间的间隔（毫秒） */
+const READINESS_POLL_INTERVAL_MS = 2000;
+
+/**
+ * 启动成功后轮询应用就绪接口，直到返回可访问。
+ * 域名检查可以另外进行；这里以就绪结果作为能否打开预览的依据。
+ * 用户停止或切走环境时结束，不把未就绪当成失败。
+ *
+ * @param appId 应用 ID
+ * @param env 发起启动的环境
+ * @param shouldStop 返回 true 时停止等待
+ * @returns 应用已就绪
+ */
+export const pollUserAppReadiness = async (
+  appId: number,
+  env: UserAppDbEnvEnum,
+  shouldStop?: () => boolean,
+): Promise<boolean> => {
+  if (!appId) {
+    return false;
+  }
+
+  while (!shouldStop?.()) {
+    try {
+      const result = await apiUserAppReadiness(appId, env);
+      const payload = (
+        result && typeof result === 'object' && 'data' in result
+          ? result.data
+          : result
+      ) as UserAppReadiness | undefined;
+      const codeOk =
+        !result ||
+        typeof result !== 'object' ||
+        !('code' in result) ||
+        result.code === SUCCESS_CODE;
+      const ready = codeOk && payload?.ready === true;
+      if (ready) {
+        return true;
+      }
+    } catch {
+      // 单次失败继续等下一次，直到应用就绪或调用方要求停止
+    }
+    if (shouldStop?.()) {
+      return false;
+    }
+    try {
+      await sleep(READINESS_POLL_INTERVAL_MS);
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
 };
 
 /** iframe 文档是否为空；跨域时为 null。 */

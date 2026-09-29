@@ -519,9 +519,47 @@
   background: var(--xagi-layout-bg-secondary, #f2f2f2);
 }
 
+// 底栏脱离文档流，出现/收起均不改变输入卡及会话的布局高度。
+.input-card-anchor {
+  &.has-announcement > .workspace-context-bar {
+    top: calc(100% - @fontHeight - 1px);
+  }
+
+  &.has-context-bar > .chat-container {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+.announcement-covered {
+  // 底栏显示时隐藏其下方提示，避免文字重叠；无底栏时恢复提示。
+  visibility: hidden;
+}
+
 .workspace-context-bar {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 50%;
+  width: min(100%, 800px);
+  transform: translateX(-50%);
+  z-index: 1;
+  margin: 0;
+  // 沿用 workspace-dir-bar 的原有上下 6px 内边距和内容自然高度。
+  box-shadow: 0 5px 16px -4px #00000012;
   gap: 12px;
   min-width: 0;
+
+  // 描边独立于布局，沿用输入卡边框与底部圆角，不增加底栏高度。
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    border: 1px solid rgba(0, 0, 0, 13%);
+    border-top: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
 
   > .pinned-project-bar {
     display: flex;
@@ -533,6 +571,11 @@
       max-width: 50%;
     }
   }
+}
+
+.workspace-space-item {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .workspace-directory-item {

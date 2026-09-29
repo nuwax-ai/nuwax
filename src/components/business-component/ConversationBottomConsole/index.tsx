@@ -104,6 +104,11 @@ export interface ConversationBottomConsoleProps {
   terminalSessions?: Partial<
     Record<ConsoleTerminalEnvironment, ConsoleTerminalSession>
   >;
+  /**
+   * 收起终端或切换环境时保留已建立的连接。
+   * 开发环境和线上环境各自一份，再次进入直接沿用。
+   */
+  preserveTerminalConnections?: boolean;
   /** 当前可见环境，仅 terminalSessions 模式使用 */
   terminalEnvironment?: ConsoleTerminalEnvironment;
   /**
@@ -191,6 +196,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   onActiveTerminalEnvironmentChange,
   onRetryContainer,
   enableKeepalivePolling = true,
+  preserveTerminalConnections = false,
   wsSubprotocols,
   wireProtocol,
   terminalAppearance: terminalAppearanceProp,
@@ -712,8 +718,9 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /**
    * Header 环境切换时切换终端缓冲区。
-   * 先断开旧环境并清除旧容器状态，再切换到新环境，避免新终端复用旧环境
-   * 的 running 状态提前连接。两个常驻 xterm 实例不卸载，各自保留屏幕及回滚日志。
+   * 默认断开旧环境，避免新终端复用旧环境的 running 状态提前连接。
+   * 保留连接时不断开，开发 / 线上各自沿用已建立的 WebSocket。
+   * 两个常驻 xterm 实例不卸载，各自保留屏幕及回滚日志。
    */
   const prevEnvRef = useRef(env);
   useEffect(() => {
@@ -726,7 +733,9 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       return;
     }
 
-    getTerminalRef(previousEnv).current?.disconnect();
+    if (!preserveTerminalConnections) {
+      getTerminalRef(previousEnv).current?.disconnect();
+    }
     ensureInFlightRef.current = false;
     if (enableKeepalivePolling) {
       stopKeepaliveRef.current();
@@ -735,7 +744,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     containerStatusRef.current = 'idle';
     setShowTerminalReconnect(false);
     setActiveTab(tabFromEnv(env));
-  }, [enableKeepalivePolling, env]);
+  }, [enableKeepalivePolling, env, preserveTerminalConnections]);
 
   /** 切换终端深浅色主题（受控模式下仅触发回调） */
   const handleToggleTerminalAppearance = useCallback(() => {
@@ -1035,6 +1044,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             wsSubprotocols={wsSubprotocols}
             wireProtocol={wireProtocol}
             autoConnect={autoConnect}
+            keepConnection={preserveTerminalConnections}
             theme={getConsoleTerminalTheme(terminalAppearance)}
             fontSize={13}
             fontFamily={CONSOLE_TERMINAL_FONT_FAMILY}

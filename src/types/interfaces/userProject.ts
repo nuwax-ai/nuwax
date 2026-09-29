@@ -640,6 +640,7 @@ export type UserAppPublishPhase =
   | 'building'
   | 'checkingDeployable'
   | 'deploying'
+  | 'checkingReadiness'
   | 'success'
   | 'failed'
   | 'cancelled';

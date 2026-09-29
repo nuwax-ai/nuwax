@@ -71,6 +71,8 @@ interface RuntimeEnvView {
   cancelLoading: boolean;
   running: boolean;
   stopping: boolean;
+  /** 启动成功后正在轮询应用是否可访问 */
+  checking: boolean;
   /** 用户确认停止后，该环境不再自动 start */
   stoppedByUser: boolean;
 }
@@ -86,6 +88,7 @@ const createRuntimeEnvView = (): RuntimeEnvView => ({
   cancelLoading: false,
   running: false,
   stopping: false,
+  checking: false,
   stoppedByUser: false,
 });
 
@@ -221,6 +224,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         previewLoadError: '',
         taskId: '',
         cancelLoading: false,
+        checking: false,
         open: false,
       };
     }
@@ -272,6 +276,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
         services: [],
         errorMessage: '',
         previewLoadError: '',
+        checking: false,
         taskId: '',
       }));
     },
@@ -279,9 +284,9 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
   );
 
   /**
-   * 启动或重启的任务已成功后，先检查预览域名。
+   * 启动或重启的任务已成功后，先检查预览域名，再轮询应用就绪。
    * 探测返回失败文案时只记录页面加载失败，不进入启动失败日志，也不回调 onReady。
-   * 5 次探测都失败时由调用方返回空串，继续 onReady，用 iframe 再加载一次域名。
+   * 轮询期间展示应用检测中；用户停止或切走环境时结束等待。
    *
    * @returns 是否可以展示预览
    */
@@ -303,7 +308,13 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
       }
       const confirm = confirmPreviewReachableRef.current;
       if (confirm) {
-        const failureText = (await confirm(actionEnv)).trim();
+        commit(actionEnv, { checking: true });
+        let failureText = '';
+        try {
+          failureText = (await confirm(actionEnv)).trim();
+        } finally {
+          commit(actionEnv, { checking: false });
+        }
         if (!still() || stopped()) {
           return false;
         }
@@ -857,6 +868,7 @@ export function useUserAppRuntime(options: UseUserAppRuntimeOptions) {
     services: view.services,
     errorMessage: view.errorMessage,
     previewLoadError: view.previewLoadError,
+    checking: view.checking,
     cancelLoading: view.cancelLoading,
     busy,
     restarting,

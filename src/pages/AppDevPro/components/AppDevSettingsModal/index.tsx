@@ -16,6 +16,29 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/** 自定义域名 CNAME 应指向的平台地址，后续改为接口下发前先写死 */
+const CNAME_TARGET = 'project-cname.nuwax.com';
+
+/**
+ * 把提示文案里的 CNAME 地址单独包出来，方便套用与默认域名相同的颜色。
+ *
+ * @param hint 已填入地址的完整提示
+ * @returns 地址高亮后的提示节点
+ */
+const renderCnameHint = (hint: string): React.ReactNode => {
+  const targetIndex = hint.indexOf(CNAME_TARGET);
+  if (targetIndex < 0) {
+    return hint;
+  }
+  return (
+    <>
+      {hint.slice(0, targetIndex)}
+      <span className={cx(styles.bindHintTarget)}>{CNAME_TARGET}</span>
+      {hint.slice(targetIndex + CNAME_TARGET.length)}
+    </>
+  );
+};
+
 /** 设置弹窗所需的应用字段（不含域名，域名由独立列表传入） */
 export interface AppDevSettingsProjectInfo {
   /** 应用 ID（即 appId） */
@@ -248,6 +271,9 @@ const AppDevSettingsModal: React.FC<AppDevSettingsModalProps> = ({
             {t('PC.Pages.AppDevSettingsModal.bind')}
           </Button>
         </Space.Compact>
+        <div className={cx(styles.bindHint)}>
+          {renderCnameHint(t('PC.Pages.AppDevSettingsModal.cnameHint', CNAME_TARGET))}
+        </div>
 
         <Spin spinning={domainListLoading}>
           <div className={cx(styles.domainList)}>
