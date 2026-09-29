@@ -266,6 +266,15 @@ fi
 # 依赖 symlink 主区 node_modules（pnpm 产物跨目录可用，生产 build 不依赖 src/.umi）。
 REAL_FEATURE="$FEATURE_BRANCH"
 WT_DIR=""
+# 在提测 worktree 内续跑（断点恢复）：git-dir≠common-dir 即处于某 worktree 中，且
+# 存在临时分支 deploy-sync-work ⇒ 接管 FEATURE 角色（checkout 真名分支会撞主区占用，
+# 2026-09-30 首战实证：续跑死在步骤 1 的自动切回）
+if [ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ] &&
+  git show-ref --verify --quiet refs/heads/deploy-sync-work 2>/dev/null; then
+  WT_DIR="$(git rev-parse --show-toplevel)"
+  FEATURE_BRANCH=deploy-sync-work
+  log "检测到提测 worktree 内续跑：FEATURE 角色由临时分支 ${FEATURE_BRANCH} 承接（真名 ${REAL_FEATURE}）"
+fi
 enter_worktree_if_needed() {
   [ "$USE_WORKTREE" != "0" ] || return 0
   if [ -z "$(git status --porcelain -uno)" ] && [ "$USE_WORKTREE" != "1" ]; then
