@@ -12,10 +12,12 @@ export interface PrivateServerFormValue {
   scheme: 'http' | 'https';
   /** 服务器地址 */
   host: string;
-  /** 应用端口 */
-  appPort: string;
-  /** 管理端口 */
+  /** Agent 端口 */
   agentPort: string;
+  /** VNC 端口 */
+  vncPort: string;
+  /** 文件服务端口 */
+  fileServerPort: string;
 }
 
 export interface PrivateServerFormProps {
@@ -30,12 +32,13 @@ export interface PrivateServerFormProps {
 const DEFAULT_VALUE: PrivateServerFormValue = {
   scheme: 'https',
   host: '',
-  appPort: '',
   agentPort: '',
+  vncPort: '',
+  fileServerPort: '',
 };
 
 /**
- * 私有服务器表单：协议、地址、应用端口、管理端口。
+ * 私有服务器表单：协议、地址、Agent 端口、VNC 端口、文件服务端口。
  *
  * @param props.value 当前值
  * @param props.onChange 变更回调
@@ -84,18 +87,28 @@ const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
       </div>
       <div className={cx(styles.field)}>
         <Input
-          value={value.appPort}
+          value={value.agentPort}
           disabled={disabled}
-          onChange={(event) => patch({ appPort: event.target.value })}
-          placeholder={dict('PC.Pages.AppProjectDetail.appPortPlaceholder')}
+          onChange={(event) => patch({ agentPort: event.target.value })}
+          placeholder={dict('PC.Pages.AppProjectDetail.agentPortPlaceholder')}
         />
       </div>
       <div className={cx(styles.field)}>
         <Input
-          value={value.agentPort}
+          value={value.vncPort}
           disabled={disabled}
-          onChange={(event) => patch({ agentPort: event.target.value })}
-          placeholder={dict('PC.Pages.AppProjectDetail.managePortPlaceholder')}
+          onChange={(event) => patch({ vncPort: event.target.value })}
+          placeholder={dict('PC.Pages.AppProjectDetail.vncPortPlaceholder')}
+        />
+      </div>
+      <div className={cx(styles.field)}>
+        <Input
+          value={value.fileServerPort}
+          disabled={disabled}
+          onChange={(event) => patch({ fileServerPort: event.target.value })}
+          placeholder={dict(
+            'PC.Pages.AppProjectDetail.fileServerPortPlaceholder',
+          )}
         />
       </div>
     </div>
