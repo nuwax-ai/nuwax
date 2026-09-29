@@ -19,6 +19,12 @@ export enum DisplayRecommendTargetTypeEnum {
   Workflow = 'Workflow',
 }
 
+export interface DisplayRecommendPrompt {
+  title: string;
+  content: string;
+  icon: string;
+}
+
 export interface DisplayRecommendInfo {
   id: number;
   tenantId: number;
@@ -30,6 +36,7 @@ export interface DisplayRecommendInfo {
   icon?: string;
   placeholder?: string;
   category?: string;
+  prompts?: DisplayRecommendPrompt[] | null;
   sort?: number;
   modified?: string;
   created?: string;

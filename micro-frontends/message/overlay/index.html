@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nuwax IM</title>
+    <style>
+      /* 启动骨架仅属于消息根，不改宿主的 html/body 或同名 root。 */
+      [data-message-app-scope] {
+        position: relative;
+        width: 100%;
+        height: 100vh;
+        font: 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        color: #1f2329;
+      }
+      [data-message-app-scope] *,
+      [data-message-app-scope] {
+        box-sizing: border-box;
+      }
+      [data-message-app-scope] #boot-skeleton {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+      }
+      [data-message-app-scope] .chat-layout {
+        display: flex;
+        height: 100%;
+      }
+      [data-message-app-scope] .conv-pane {
+        width: 250px;
+        min-width: 200px;
+        background: #fafafa;
+        border-right: 1px solid #e4e6ea;
+      }
+      [data-message-app-scope] .chat-pane {
+        flex: 1;
+        min-width: 0;
+        background: #fcfcfc;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-message-app-scope>
+      <div id="boot-skeleton" aria-hidden="true">
+        <div class="chat-layout">
+          <div class="conv-pane"></div>
+          <div class="chat-pane"></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -87,7 +87,7 @@ describe('工作区文件树异步懒加载', () => {
         relativePath: '',
         recursive: false,
         depth: 2,
-        type: 'file',
+        type: 'all',
       }),
     );
     await waitFor(() =>
@@ -180,7 +180,7 @@ describe('工作区文件树异步懒加载', () => {
       relativePath: 'src',
       recursive: false,
       depth: 2,
-      type: 'file',
+      type: 'all',
     });
   });
 
@@ -296,7 +296,7 @@ describe('工作区文件树异步懒加载', () => {
         relativePath: '',
         recursive: false,
         depth: 2,
-        type: 'file',
+        type: 'all',
       }),
     );
   });

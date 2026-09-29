@@ -1,7 +1,10 @@
 import RecommendList from '@/components/RecommendList';
 import { dict } from '@/services/i18nRuntime';
 import type { GuidQuestionDto } from '@/types/interfaces/agent';
-import type { DisplayRecommendInfo } from '@/types/interfaces/displayRecommend';
+import type {
+  DisplayRecommendInfo,
+  DisplayRecommendPrompt,
+} from '@/types/interfaces/displayRecommend';
 import {
   ArrowDownOutlined,
   LeftOutlined,
@@ -19,6 +22,7 @@ interface ChatBoxRecommendNavProps {
   onSelect: (item: DisplayRecommendInfo) => void;
   /** 当前智能体有有效提示时，以提示替代推荐小分类，共用滚动区域。 */
   guidQuestions?: GuidQuestionDto[];
+  recommendPrompts?: DisplayRecommendPrompt[] | null;
   onQuestionClick?: (text: string) => void;
   /**
    * 单项可选性判定（返回 false 置灰不可点；不传 = 全部可选）。
@@ -32,11 +36,16 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
   selectedId,
   onSelect,
   guidQuestions,
+  recommendPrompts,
   onQuestionClick,
   isItemSelectable,
 }) => {
   const questions = (guidQuestions || []).filter((item) => item?.info?.trim());
-  const showQuestions = questions.length > 0;
+  const prompts = (recommendPrompts || []).filter((item) =>
+    item?.content?.trim(),
+  );
+  const showPrompts = prompts.length > 0;
+  const showQuestions = showPrompts || questions.length > 0;
   const listRef = useRef<HTMLDivElement>(null);
   // pill 元素索引（id → button），供选中项定位（自动命中场景滚动到可见）
   const itemRefsRef = useRef<Map<number, HTMLButtonElement>>(new Map());
@@ -50,7 +59,9 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
       right: maxScroll > 1 && maxScroll - list.scrollLeft > 1,
     });
   }, []);
-  const itemKey = showQuestions
+  const itemKey = showPrompts
+    ? `prompts:${JSON.stringify(prompts)}`
+    : showQuestions
     ? `questions:${JSON.stringify(questions)}`
     : `items:${items.map((item) => item.id).join(',')}`;
   const lastItemKeyRef = useRef<string>('');
@@ -124,7 +135,39 @@ const ChatBoxRecommendNav: React.FC<ChatBoxRecommendNavProps> = ({
         className={styles['recommend-list']}
         onScroll={updateEdges}
       >
-        {showQuestions ? (
+        {showPrompts ? (
+          <div className={styles['guid-question-list']}>
+            {prompts.map((prompt, index) => (
+              <button
+                type="button"
+                key={index}
+                className={cx(
+                  styles['guid-question'],
+                  styles['prompt-question'],
+                )}
+                title={prompt.title?.trim() || prompt.content}
+                onClick={() => onQuestionClick?.(prompt.content)}
+              >
+                {prompt.icon ? (
+                  <img
+                    className={styles.icon}
+                    src={prompt.icon}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <ArrowDownOutlined
+                    className={styles['guid-arrow']}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className={styles.label}>
+                  {prompt.title?.trim() || prompt.content}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : showQuestions ? (
           <RecommendList
             className={styles['guid-question-list']}
             itemClassName={styles['guid-question']}

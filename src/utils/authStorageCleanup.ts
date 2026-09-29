@@ -12,6 +12,8 @@
  */
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { STORAGE_KEYS } from '@/constants/theme.constants';
+import { clearMicroAppDevSession } from './businessAuth';
+import eventBus, { EVENT_NAMES } from './eventBus';
 
 /** clear 时需要保留的用户显式偏好键（主题三键 + 语言两键，跨会话/跨登录态保留） */
 const USER_PREF_STORAGE_KEYS: string[] = [
@@ -28,6 +30,8 @@ const USER_PREF_STORAGE_KEYS: string[] = [
  * 显式偏好键原值恢复——只有它们是用户的选择，丢了无法自愈。
  */
 export function clearStoragePreservingUserPrefs(): void {
+  clearMicroAppDevSession();
+  eventBus.emit(EVENT_NAMES.AUTH_SESSION_CLEARED);
   const preserved = USER_PREF_STORAGE_KEYS.map(
     (key) => [key, localStorage.getItem(key)] as const,
   );

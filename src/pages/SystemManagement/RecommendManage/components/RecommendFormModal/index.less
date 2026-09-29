@@ -1,6 +1,75 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
+.form-body {
+  max-height: calc(100dvh - 220px);
+  overflow-y: auto;
+  padding-right: @paddingXs;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.prompts-section {
+  border-top: @lineWidth @lineType @colorBorderSecondary;
+  padding-top: @paddingSm;
+}
+
+.prompts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @marginXs;
+  min-height: 32px;
+  margin-bottom: @marginXs;
+  font-weight: 500;
+}
+
+.prompt-row {
+  position: relative;
+  margin-bottom: @marginSm;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  :global(.ant-form-item) {
+    margin-bottom: 0;
+  }
+}
+
+.prompt-content {
+  :global(textarea.ant-input) {
+    padding: @paddingXs 72px @paddingXs @paddingSm;
+    resize: none;
+  }
+}
+
+.prompt-has-icon {
+  :global(textarea.ant-input) {
+    padding-left: 36px;
+  }
+}
+
+.prompt-icon {
+  position: absolute;
+  top: 11px;
+  left: @paddingSm;
+  width: 16px;
+  height: 16px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.prompt-actions {
+  position: absolute;
+  top: 7px;
+  right: @paddingXs;
+  display: flex;
+  align-items: center;
+  gap: @marginXxs;
+  color: @colorTextSecondary;
+}
+
 /** 新增时：点击添加智能体占位区域 */
 .add-agent-placeholder {
   display: flex;

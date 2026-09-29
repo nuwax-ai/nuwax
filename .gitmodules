@@ -1,0 +1,8 @@
+[submodule "submodules/nuwax-repo-web"]
+	path = submodules/nuwax-repo-web
+	url = https://git.yichamao.com/agent-platform/nuwax-repo-web.git
+	branch = main
+[submodule "submodules/nuwax-im"]
+	path = submodules/nuwax-im
+	url = https://git.yichamao.com/agent-platform/nuwax-im.git
+	branch = main

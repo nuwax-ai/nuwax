@@ -3,6 +3,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { FileType, UploadAvatarProps } from '@/types/interfaces/common';
+import { getBusinessRequestAuth } from '@/utils/businessAuth';
 import { FormOutlined } from '@ant-design/icons';
 import { message, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
@@ -23,6 +24,7 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
     beforeUpload,
     svgIconName,
   } = props;
+  const uploadAuth = getBusinessRequestAuth(UPLOAD_FILE_ACTION);
 
   const handleChange: UploadProps['onChange'] = (info) => {
     if (info.file.status === 'uploading') {
@@ -61,7 +63,8 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
   return (
     <Upload
       action={UPLOAD_FILE_ACTION}
-      withCredentials
+      headers={uploadAuth.headers}
+      withCredentials={uploadAuth.credentials === 'include'}
       onChange={handleChange}
       showUploadList={false}
       beforeUpload={beforeUpload ?? beforeUploadDefault}

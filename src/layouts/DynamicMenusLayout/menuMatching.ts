@@ -3,6 +3,10 @@
  * 两布局此前各自持有一份逐字节相同的实现，收敛于此避免继续分叉。
  */
 import { MenuItemDto } from '@/types/interfaces/menu';
+import {
+  findMicroAppRoute,
+  resolveMicroAppMenuPath,
+} from '@/utils/microAppRoutes';
 
 import { normalizeMenuPathname } from './utils';
 
@@ -22,6 +26,13 @@ export const isNuwaAppsMenu = (menu: MenuItemDto): boolean =>
  */
 export const isMenuMatch = (menu: MenuItemDto, pathname: string): boolean => {
   const normalizedPathname = normalizeMenuPathname(pathname);
+  const microAppPath = resolveMicroAppMenuPath(menu);
+  if (microAppPath) {
+    return (
+      findMicroAppRoute(microAppPath)?.name ===
+      findMicroAppRoute(normalizedPathname)?.name
+    );
+  }
 
   // 检查当前菜单路径
   if (menu.path) {
@@ -65,6 +76,18 @@ export const isPathMatch = (menuPath: string, pathname: string): boolean => {
   if (!menuPath) return false;
 
   const normalizedPathname = normalizeMenuPathname(pathname);
+  const microAppPath = resolveMicroAppMenuPath({ path: menuPath });
+  if (microAppPath) {
+    const app = findMicroAppRoute(microAppPath);
+    const currentApp = findMicroAppRoute(normalizedPathname);
+    if (app?.name !== currentApp?.name) return false;
+    const targetPath = microAppPath.split(/[?#]/)[0];
+    if (targetPath === app?.path) return true;
+    return (
+      normalizedPathname === targetPath ||
+      normalizedPathname.startsWith(`${targetPath}/`)
+    );
+  }
 
   // 移除查询参数
   const menuPathWithoutQuery = menuPath.split('?')[0];
@@ -158,7 +181,7 @@ export const findFirstLevelCodeByPath = (
 
     // 检查当前菜单是否匹配（一级菜单使用 isMenuMatch，子菜单使用 isPathMatch）
     const isMatch = firstLevelCode
-      ? isPathMatch(menu.path || '', pathname)
+      ? isPathMatch(resolveMicroAppMenuPath(menu) || menu.path || '', pathname)
       : isMenuMatch(menu, pathname);
 
     if (isMatch) {

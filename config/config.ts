@@ -36,6 +36,24 @@ export default defineConfig({
     loading: '@/components/business-component/AppStartup/Loading',
   },
   request: {},
+  // 实例由 SidebarShell 的持久宿主管理；资源目录与 /repo 业务路由分开。
+  qiankun: {
+    master: {
+      apps: [
+        {
+          name: 'nuwax-repo-web',
+          entry: '/micro-apps/repo/index.html',
+        },
+        {
+          name: 'nuwax-im-web',
+          entry: '/micro-apps/message/index.html',
+        },
+      ],
+      prefetch: false,
+    },
+  },
+  // qiankun master 默认改为 root-master，主站布局继续使用既有根节点。
+  mountElementId: 'root',
   routes,
   npmClient: 'pnpm',
   favicons: ['/favicon.ico?brand=20260928'],

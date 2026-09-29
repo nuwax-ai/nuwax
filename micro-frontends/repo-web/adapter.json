@@ -1,0 +1,15 @@
+{
+  "name": "nuwax-repo-web",
+  "appName": "nuwax-repo-web",
+  "sourceDir": "submodules/nuwax-repo-web",
+  "branch": "main",
+  "typeCheckBaseline": true,
+  "pin": "1d9f19162d3991ca693e5e79758b3bc6943e6e7e",
+  "patch": "adapter.patch",
+  "overlay": "overlay",
+  "entry": "/micro-apps/repo/index.html",
+  "assetBase": "/micro-apps/repo/",
+  "businessBase": "/repo",
+  "devPort": 7100,
+  "hostRootEnvironment": "NUWAX_MICRO_APP_HOST_ROOT"
+}

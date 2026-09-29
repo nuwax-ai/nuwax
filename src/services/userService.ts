@@ -2,6 +2,8 @@ import { REDIRECT_LOGIN, USER_NO_LOGIN } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserInfo } from '@/services/account';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
+import { clearMicroAppDevSession } from '@/utils/businessAuth';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { isChatTemp, redirectToLogin } from '@/utils/router';
 import { message } from 'antd';
 const LOGIN_STATUS_KEY = 'userLoginStatus';
@@ -176,6 +178,8 @@ export class UserService {
    * 用户登出
    */
   static logout(): void {
+    clearMicroAppDevSession();
+    eventBus.emit(EVENT_NAMES.AUTH_SESSION_CLEARED);
     this.clearUserInfo();
     // 可以在这里添加其他登出逻辑，比如清除其他缓存、跳转到登录页等
   }

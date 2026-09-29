@@ -26,7 +26,10 @@ vi.mock('@/constants/home.constants', () => ({
   USER_INFO: 'userInfo',
 }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
-vi.mock('@/utils/eventBus', () => ({ default: { emit } }));
+vi.mock('@/utils/eventBus', () => ({
+  default: { emit },
+  EVENT_NAMES: { AUTH_SESSION_CLEARED: 'auth_session_cleared' },
+}));
 vi.mock('antd', () => ({
   Modal: { useModal: () => [{ confirm: vi.fn() }, null] },
 }));
@@ -37,6 +40,7 @@ import {
   handleHostActivityPayload,
 } from '@/services/hostVisibility';
 import { UserService } from '@/services/userService';
+import { EVENT_NAMES } from '@/utils/eventBus';
 
 const empty = { code: '0000', data: { hasEvent: false, eventList: [] } };
 const events = {
@@ -47,6 +51,8 @@ const events = {
   },
 };
 const login = () => UserService.saveUserInfoToStorage({ id: 1 });
+const emissionsFor = (type: string) =>
+  emit.mock.calls.filter(([eventName]) => eventName === type);
 
 describe('全局通知真实 React / Umi request 生命周期', () => {
   beforeEach(() => {
@@ -119,7 +125,7 @@ describe('全局通知真实 React / Umi request 生命周期', () => {
       await act(async () => {
         await Promise.resolve();
       });
-      expect(emit).toHaveBeenCalledTimes(1);
+      expect(emissionsFor('test-event')).toHaveLength(1);
       expect(clear).toHaveBeenCalledTimes(1);
       act(() => {
         if (ending === 'logout') UserService.logout();
@@ -130,6 +136,10 @@ describe('全局通知真实 React / Umi request 生命周期', () => {
         await vi.advanceTimersByTimeAsync(15_000);
       });
       expect(collect).toHaveBeenCalledTimes(1);
+      expect(emissionsFor('test-event')).toHaveLength(1);
+      expect(emissionsFor(EVENT_NAMES.AUTH_SESSION_CLEARED)).toHaveLength(
+        ending === 'logout' ? 1 : 0,
+      );
     },
   );
 
@@ -150,6 +160,8 @@ describe('全局通知真实 React / Umi request 生命周期', () => {
       UserService.logout();
       login();
     });
+    expect(emissionsFor(EVENT_NAMES.AUTH_SESSION_CLEARED)).toHaveLength(1);
+    expect(emissionsFor('test-event')).toHaveLength(1);
     expect(collect).toHaveBeenCalledTimes(2);
     await act(async () => {
       resolve({ code: '0000' });
