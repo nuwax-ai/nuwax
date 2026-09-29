@@ -7,31 +7,10 @@ server {
 
     charset utf-8;
 
-    root    /usr/share/nginx/html;
-
     #access_log  /var/log/nginx/host.access.log  main;
 
-    # 业务路由必须加载主站壳；即使残留旧 repo/instant-message 静态目录，
-    # 直开与刷新也不能选择子应用独立入口。API、WS 由外层业务网关分流。
-    location = /repo {
-        try_files /index.html =404;
-    }
-    location /repo/ {
-        try_files /index.html =404;
-    }
-    location = /instant-message {
-        try_files /index.html =404;
-    }
-    location /instant-message/ {
-        try_files /index.html =404;
-    }
-
-    # 微应用仅从独立资源目录加载；缺失资源不能回退为主站 HTML。
-    location ^~ /micro-apps/ {
-        try_files ${URI_NAME} =404;
-    }
-
     location / {
+        root    /usr/share/nginx/html;
         # 解决 envsubst 识别占位符解析的问题
         try_files ${URI_NAME} ${URI_NAME}/ /index.html;
         index  index.html index.htm;

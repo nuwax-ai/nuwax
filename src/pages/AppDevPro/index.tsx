@@ -988,7 +988,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         return dict('PC.Pages.AppDevPro.iframeLoadFailed');
       }
       // 开发 / 线上分开判断：只在这次启动所属的环境被停止，或已经切走时结束探测。
-      // 域名检查保留；能否打开预览以就绪接口持续轮询到 true 为准。
+      // 域名检查保留。就绪接口有次数上限，未就绪也不拦截预览。
       const shouldStop = () =>
         previewUserStoppedByEnvRef.current[targetEnv] ||
         dbEnvRef.current !== targetEnv;

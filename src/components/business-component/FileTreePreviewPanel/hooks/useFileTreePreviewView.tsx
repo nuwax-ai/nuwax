@@ -7,6 +7,7 @@ import {
   isWorkspaceLayeredTree,
   locateWorkspaceChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/locateWorkspaceChangeFile';
+import { workspaceRelativePath } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
@@ -17,7 +18,10 @@ import CodeViewer from '@/components/CodeViewer';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { fetchContentFromUrl } from '@/services/skill';
+import {
+  fetchContentFromUrl,
+  isPreviewFileTooLargeError,
+} from '@/services/skill';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { checkFileSizeExceedLimit } from '@/utils';
@@ -68,6 +72,9 @@ import type {
 import { ChangeFileInfo } from '../types/file-tree';
 
 /** 从文件树中移除指定 ID 的节点（含子树递归） */
+/** 压缩包后缀。这类文件不搜索、不拉内容，直接提示不支持预览 */
+const ARCHIVE_FILE_PATTERN = /\.(zip|skill|rar|7z|tar|tgz|gz|bz2|xz)$/i;
+
 const removeNodeByIdFromTree = (
   nodes: FileNode[],
   targetId: string,
@@ -226,6 +233,10 @@ export function useFileTreePreviewView(
   const [selectedFileNode, setSelectedFileNode] = useState<FileNode | null>(
     null,
   );
+  /** 响应头 X-File-Size 大于 50MB 的文件，只提示无法预览 */
+  const [oversizedPreviewFileId, setOversizedPreviewFileId] = useState<
+    string | null
+  >(null);
   // 内联重命名状态
   const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
   const renamingNodeRef = useRef(renamingNode);
@@ -399,8 +410,11 @@ export function useFileTreePreviewView(
   const fetchFileContentUpdateFiles = useCallback(
     async (fileProxyUrl: string, fileId: string) => {
       try {
-        // 获取文件内容
+        // 获取文件内容。体积头大于 50MB 时不读正文
         const fileContent = await fetchContentFromUrl(fileProxyUrl);
+        setOversizedPreviewFileId((current) =>
+          current === fileId ? null : current,
+        );
 
         // 更新文件树中的文件内容
         setFiles((prevFiles) => {
@@ -416,6 +430,10 @@ export function useFileTreePreviewView(
 
         return fileContent;
       } catch (error) {
+        if (isPreviewFileTooLargeError(error)) {
+          setOversizedPreviewFileId(fileId);
+          return null;
+        }
         console.error('Failed to fetch file content:', error);
         return '';
       }
@@ -441,7 +459,7 @@ export function useFileTreePreviewView(
       );
       return {
         ...node,
-        content: fileContent,
+        content: fileContent || '',
       };
     },
     [fetchFileContentUpdateFiles],
@@ -553,6 +571,14 @@ export function useFileTreePreviewView(
 
       // 请求返回时如果用户已经切换文件，则丢弃本次回写
       if (selectedFileIdRef.current !== currentSelectedFileId) {
+        return;
+      }
+      if (newFileContent === null) {
+        setSelectedFileNode((prevNode) =>
+          prevNode || currentNode
+            ? { ...(prevNode || currentNode), ...currentNode, content: '' }
+            : prevNode,
+        );
         return;
       }
 
@@ -712,9 +738,31 @@ export function useFileTreePreviewView(
         fileNode = options.fallbackNode;
       }
 
+      const relativePath = workspaceRelativePath(fileId).replace(
+        /^\/+|\/+$/g,
+        '',
+      );
+      const fileBaseName = relativePath.split('/').pop() || '';
+      // 仅压缩包跳过搜索和内容请求，直接展示不支持预览
+      const unsupportedPreview =
+        !options?.selectFolder && ARCHIVE_FILE_PATTERN.test(fileBaseName);
+
+      if (!fileNode && unsupportedPreview) {
+        fileNode = {
+          id: fileId,
+          name: fileBaseName,
+          type: 'file',
+          path: relativePath,
+          fullPath: relativePath,
+          relativePath,
+          content: '',
+        };
+      }
+
       // 分层树里没有这个文件时，按文件名搜索并用路径命中，再走下面原有的内容请求
       if (
         !fileNode &&
+        !unsupportedPreview &&
         !options?.selectFolder &&
         targetId &&
         isWorkspaceLayeredTree(currentFiles, fileId)
@@ -821,7 +869,7 @@ export function useFileTreePreviewView(
           setViewFileType('preview');
         }
 
-        // 图片、视频、音频、office 等通过 FilePreview 渲染
+        // 图片、视频、音频、office 通过 src 预览，不检测体积
         if (
           isImageFileType ||
           isVideoFileType ||
@@ -880,6 +928,13 @@ export function useFileTreePreviewView(
             latestFileSelectTokenRef.current !== selectToken ||
             selectedFileIdRef.current !== currentSelectedId
           ) {
+            return;
+          }
+          if (newFileContent === null) {
+            setSelectedFileNode({
+              ...fileNode,
+              content: '',
+            });
             return;
           }
 
@@ -2031,6 +2086,12 @@ export function useFileTreePreviewView(
       if (selectedFileIdRef.current !== currentRefreshFileId) {
         return;
       }
+      if (newFileContent === null) {
+        setSelectedFileNode((prevNode) =>
+          prevNode ? { ...prevNode, content: '' } : prevNode,
+        );
+        return;
+      }
       setSelectedFileNode((prevNode) =>
         prevNode
           ? {
@@ -2205,6 +2266,20 @@ export function useFileTreePreviewView(
       );
     }
 
+    if (
+      oversizedPreviewFileId &&
+      oversizedPreviewFileId === selectedFileId
+    ) {
+      return (
+        <AppDevEmptyState
+          type="error"
+          title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+          showButtons={false}
+          description={dict('PC.Components.FileTreeView.fileTooLarge')}
+        />
+      );
+    }
+
     // 获取文件代理URL
     let fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
     // 如果是相对路径（不以 http://, https:// 或 // 开头），则添加 BASE_URL 前缀
@@ -2272,9 +2347,13 @@ export function useFileTreePreviewView(
       );
     }
 
+    // 展示用文件名。节点 id 带 workspace: 只用于树内选中，不能拿来当文件名
+    const selectedFileName = selectedFileNode.name || '';
+    const fileExtension =
+      selectedFileName.split('.').pop() || selectedFileName;
+
     // 软链接文件不支持编辑预览
     if (selectedFileNode?.isLink) {
-      const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
       return (
         <AppDevEmptyState
           type="error"
@@ -2289,8 +2368,6 @@ export function useFileTreePreviewView(
     }
 
     // 压缩包等不支持预览的文件（如 .zip、.skill、.rar、.7z 等）
-    const selectedFileName =
-      selectedFileNode?.name || selectedFileId?.split('/')?.pop() || '';
 
     /**
      * OpenUI 预览：
@@ -2356,7 +2433,6 @@ export function useFileTreePreviewView(
     }
 
     if (!isPreviewableFile(selectedFileName, true)) {
-      const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
       // 代码视图下允许查看裸 .openui 文本；预览模式才提示正确扩展名
       if (isBareOpenUiFileName(selectedFileName) && viewFileType === 'code') {
         // 落入下方 CodeViewer
@@ -2386,7 +2462,7 @@ export function useFileTreePreviewView(
       }
     }
 
-    const fileName = selectedFileId?.split('/')?.pop() || '';
+    const fileName = selectedFileName;
     const fileNameLower = fileName?.toLowerCase() || '';
     const isHtmlInCondition = /\.html?($|\?)/i.test(fileNameLower);
 

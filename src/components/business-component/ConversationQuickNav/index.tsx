@@ -26,7 +26,7 @@ import { buildQuickNavBlocks, QuickNavBlock } from './blocks';
  *   fixed 不受影响）；挂载点到视口之间不得出现带 transform/filter 的祖先
  *   （会使 fixed 退化为相对该祖先定位）。
  *
- * 行为：导航项至少 2 个时显示，不受消息区滚动高度或宽度限制；
+ * 行为：消息滚动容器宽度至少 450px 且导航项至少 2 个时显示，不受滚动高度限制；
  * 点击平滑定位到对应轮次；鼠标滑过时线条波浪式变长，悬停 400ms 后
  * 展示该轮预览卡（浮层以命中线条的垂直中点对齐）；样式在
  * src/global.less（conversation-quick-nav-* 全局类）。
@@ -34,6 +34,8 @@ import { buildQuickNavBlocks, QuickNavBlock } from './blocks';
 
 /** 所有会话入口统一要求至少两个导航项。 */
 const MIN_BLOCK_COUNT = 2;
+/** 按消息滚动容器的实际宽度隐藏窄会话区，不使用窗口宽度。 */
+const MIN_CONTAINER_WIDTH = 450;
 /** scroll-spy 视口判定线：容器顶部往下 35% 处 */
 const ACTIVE_THRESHOLD_RATIO = 0.35;
 
@@ -202,7 +204,9 @@ const ConversationQuickNav: React.FC<ConversationQuickNavProps> = ({
       setNavLeft((prev) => (prev === left ? prev : left));
     }
     const nextVisible =
-      clientWidth > 0 && clientHeight > 0 && blocks.length >= MIN_BLOCK_COUNT;
+      clientWidth >= MIN_CONTAINER_WIDTH &&
+      clientHeight > 0 &&
+      blocks.length >= MIN_BLOCK_COUNT;
     setVisible((prev) => (prev === nextVisible ? prev : nextVisible));
     if (!nextVisible) {
       setActiveIndex((prev) => (prev === -1 ? prev : -1));
