@@ -250,6 +250,80 @@ describe('首页项目上框与专家透传消费', () => {
     expect(input.props.selectedTag?.label).toBe('推荐二');
   });
 
+  it('同一智能体的不同标签按 recId 重拉详情，取消标签及选择专家清掉 recId', async () => {
+    vi.mocked(apiDisplayRecommendList).mockResolvedValueOnce({
+      data: {
+        recChatBoxNav: {
+          Agent: [
+            { id: 11, targetId: 7, label: '标签 A', functionType: 'Chat' },
+            { id: 12, targetId: 7, label: '标签 B', functionType: 'Chat' },
+          ],
+        },
+      },
+    } as any);
+    vi.mocked(fetchChatboxCategories).mockResolvedValueOnce([
+      { key: 'chat', label: '智能体类型' },
+    ] as any);
+
+    render(<Home />);
+    fireEvent.click(await screen.findByRole('button', { name: '标签 A' }));
+    expect(apiPublishedAgentInfo).toHaveBeenLastCalledWith(7, false, 11);
+    fireEvent.click(screen.getByRole('button', { name: '标签 B' }));
+    expect(apiPublishedAgentInfo).toHaveBeenLastCalledWith(7, false, 12);
+    fireEvent.click(screen.getByRole('button', { name: '标签 B' }));
+    expect(apiPublishedAgentInfo).toHaveBeenLastCalledWith(7, false, undefined);
+    fireEvent.click(screen.getByRole('button', { name: '标签 A' }));
+    act(() => input.props.onExpertAgentSelect({ targetId: 7, name: '专家' }));
+    expect(apiPublishedAgentInfo).toHaveBeenLastCalledWith(7, false, undefined);
+  });
+
+  it.each([true, false, undefined])(
+    '左侧添加常规项目（owner=%s）可选个人电脑与云电脑，发送采用当前选择',
+    async (owner) => {
+      handoffMap.homePinnedProject = {
+        projectId: 18,
+        projectType: 'NormalProject',
+        name: '项目 A',
+        sandboxId: 66,
+        owner,
+      };
+      render(<Home />);
+      await waitFor(() =>
+        expect(input.props.pinnedProjectSandboxSelectable).toBe(true),
+      );
+      expect(input.props.disablePersonalComputer).toBe(false);
+      act(() => input.props.onComputerSelect('sb-personal'));
+      act(() => input.props.onWorkspaceDirChange('/work/project'));
+      await act(async () => {
+        await input.props.onEnter('个人电脑任务');
+      });
+      expect(handleCreateConversation).toHaveBeenLastCalledWith(
+        7,
+        expect.objectContaining({
+          projectId: 18,
+          projectType: 'NormalProject',
+          selectedComputerId: 'sb-personal',
+          sandboxId: 'sb-personal',
+          workspacePath: '/work/project',
+        }),
+      );
+      act(() => input.props.onComputerSelect('-1'));
+      expect(input.props.workspacePath).toBe('');
+      await act(async () => {
+        await input.props.onEnter('云电脑任务');
+      });
+      expect(handleCreateConversation).toHaveBeenLastCalledWith(
+        7,
+        expect.objectContaining({
+          projectId: 18,
+          selectedComputerId: '-1',
+          sandboxId: -1,
+          workspacePath: undefined,
+        }),
+      );
+    },
+  );
+
   it('大类 Tab 只切换推荐列表，保留已选智能体、专家及会话框配置', async () => {
     vi.mocked(apiDisplayRecommendList).mockResolvedValueOnce({
       data: {
@@ -506,7 +580,7 @@ describe('首页项目上框与专家透传消费', () => {
 
     render(<Home />);
     await waitFor(() => expect(resolveDefault).toBeDefined());
-    expect(apiPublishedAgentInfo).toHaveBeenCalledWith(7);
+    expect(apiPublishedAgentInfo).toHaveBeenCalledWith(7, false, undefined);
     expect(input.props.agentTypeLoading).toBe(true);
 
     await act(async () => {

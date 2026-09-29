@@ -4,6 +4,10 @@ import FilePreview, {
 } from '@/components/business-component/FilePreview';
 import { apiGitStatus } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import {
+  isWorkspaceLayeredTree,
+  locateWorkspaceChangeFile,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/locateWorkspaceChangeFile';
+import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
@@ -708,6 +712,26 @@ export function useFileTreePreviewView(
         fileNode = options.fallbackNode;
       }
 
+      // 分层树里没有这个文件时，按文件名搜索并用路径命中，再走下面原有的内容请求
+      if (
+        !fileNode &&
+        !options?.selectFolder &&
+        targetId &&
+        isWorkspaceLayeredTree(currentFiles, fileId)
+      ) {
+        try {
+          const locatedFile = await locateWorkspaceChangeFile(
+            targetId,
+            fileId,
+          );
+          if (locatedFile) {
+            fileNode = { ...locatedFile, id: fileId };
+          }
+        } catch (error) {
+          console.error('搜索工作区文件失败', error);
+        }
+      }
+
       // 如果仍然没有找到，尝试模糊匹配
       if (!fileNode && fileId && fileId.includes('.')) {
         fileNode = findBestMatchingFileNode(fileId, currentFiles);
@@ -871,7 +895,7 @@ export function useFileTreePreviewView(
         setSelectedFileId('');
       }
     },
-    [onFileSelectOpenPreview, initViewFileType, onOpenDirectory],
+    [onFileSelectOpenPreview, initViewFileType, onOpenDirectory, targetId],
   );
 
   // 文件选择（对外接口，用于用户主动选择）

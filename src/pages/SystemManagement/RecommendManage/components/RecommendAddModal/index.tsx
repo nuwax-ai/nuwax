@@ -19,6 +19,7 @@ import React, {
 import { RECOMMEND_PAGE_CONFIG_MAP } from '../../constants';
 import { apiSystemSaveDisplayRecommend } from '../../services/recomment';
 import {
+  DisplayRecommendInfo,
   DisplayRecommendTargetTypeEnum,
   DisplayRecTypeEnum,
 } from '../../types';
@@ -50,6 +51,8 @@ export interface RecommendAddModalProps {
   open: boolean;
   /** 推荐展示类型 */
   recType: DisplayRecTypeEnum;
+  /** 其他推荐页的已添加记录；对话框智能体页不限制重复目标 */
+  existingRecords?: DisplayRecommendInfo[];
   /** 新增时的默认排序值（save 模式） */
   defaultSort: number;
   /** 取消回调 */
@@ -78,6 +81,7 @@ export interface RecommendAddModalProps {
 const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   open,
   recType,
+  existingRecords = [],
   defaultSort,
   onCancel,
   onSuccess,
@@ -86,6 +90,7 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   defaultTargetType,
 }) => {
   const isPickMode = mode === 'pick';
+  const allowDuplicateTargets = recType === DisplayRecTypeEnum.ChatBoxNav;
   const pageConfig = RECOMMEND_PAGE_CONFIG_MAP[recType];
   const targetTypes = pageConfig.targetTypes;
 
@@ -97,6 +102,9 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
+  const [sessionAddedKeys, setSessionAddedKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
   /** 正在添加的 targetKey */
   const [addingKey, setAddingKey] = useState<string>();
 
@@ -116,6 +124,16 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
       })),
     [targetTypes],
   );
+
+  const addedKeySet = useMemo(() => {
+    const keys = new Set<string>();
+    if (allowDuplicateTargets) return keys;
+    existingRecords.forEach((item) => {
+      keys.add(`${item.targetType}-${item.targetId}`);
+    });
+    sessionAddedKeys.forEach((key) => keys.add(key));
+    return keys;
+  }, [allowDuplicateTargets, existingRecords, sessionAddedKeys]);
 
   // 构建 targetKey
   const buildTargetKey = (
@@ -180,7 +198,7 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
       return targetTypes[0];
     }, [defaultTargetType, targetTypes]);
 
-  /** 弹窗打开：同步 Tab 与默认排序，并按 defaultTargetType 加载列表 */
+  /** 弹窗打开：重置本次添加状态、同步 Tab 与默认排序，并加载列表 */
   useEffect(() => {
     if (!open) return;
 
@@ -191,6 +209,7 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
     setList([]);
     setPage(1);
     setTotalPages(0);
+    setSessionAddedKeys(new Set());
     nextSortRef.current = defaultSort;
     fetchList(initialTargetType, 1, '', false);
   }, [open, resolveInitialTargetType, fetchList]);
@@ -239,7 +258,7 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   /** 添加推荐 / 选择目标 */
   const handleAdd = async (item: SquarePublishedItemInfo) => {
     const targetKey = buildTargetKey(activeTargetType, item.targetId);
-    if (addingRef.current) return;
+    if (addingRef.current || addedKeySet.has(targetKey)) return;
 
     if (isPickMode) {
       onPick?.(item, activeTargetType);
@@ -263,6 +282,9 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
       if (res?.code !== SUCCESS_CODE) return;
 
       nextSortRef.current += 1;
+      if (!allowDuplicateTargets) {
+        setSessionAddedKeys((prev) => new Set(prev).add(targetKey));
+      }
       message.success(dict('PC.Pages.SystemRecommendManage.createSuccess'));
       onSuccess();
     } catch {
@@ -276,6 +298,7 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   // 渲染列表项
   const renderListItem = (item: SquarePublishedItemInfo, index: number) => {
     const targetKey = buildTargetKey(activeTargetType, item.targetId);
+    const isAdded = addedKeySet.has(targetKey);
     const isAdding = addingKey === targetKey;
     const iconType = TARGET_ICON_TYPE_MAP[activeTargetType];
 
@@ -328,11 +351,18 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
           color="default"
           variant="filled"
           loading={isAdding}
-          disabled={!!addingKey && !isAdding}
-          className={cx(styles['add-button'])}
+          disabled={isAdded || (!!addingKey && !isAdding)}
+          className={cx(
+            styles['add-button'],
+            isAdded && styles['add-button-added'],
+          )}
           onClick={() => handleAdd(item)}
         >
-          {dict('PC.Components.Created.add')}
+          {dict(
+            isAdded
+              ? 'PC.Components.Created.added'
+              : 'PC.Components.Created.add',
+          )}
         </Button>
       </div>
     );

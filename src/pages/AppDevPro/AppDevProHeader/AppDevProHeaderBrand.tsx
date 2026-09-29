@@ -1,5 +1,8 @@
 import agentImage from '@/assets/images/agent_image.png';
 import { SvgIcon } from '@/components/base';
+import ConversationPanelActions, {
+  type ConversationPanelActionsProps,
+} from '@/components/business-component/ConversationPanelActions';
 import ConditionRender from '@/components/ConditionRender';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
@@ -37,6 +40,8 @@ export interface AppDevProHeaderBrandProps {
   active?: boolean;
   /** 更新应用成功 */
   onConfirmUpdate?: (info: UserAppInfo) => void;
+  /** 会话进度入口，放在应用信息右侧 */
+  progress?: ConversationPanelActionsProps['progress'];
 }
 
 /**
@@ -56,6 +61,7 @@ const AppDevProHeaderBrand: React.FC<AppDevProHeaderBrandProps> = ({
   appId,
   active = true,
   onConfirmUpdate,
+  progress,
 }) => {
   const [editOpen, setEditOpen] = useState(false);
 
@@ -148,6 +154,15 @@ const AppDevProHeaderBrand: React.FC<AppDevProHeaderBrandProps> = ({
             </Tag>
           )}
         </div>
+        {progress ? (
+          <span className={cx(styles['progress-slot'])}>
+            <ConversationPanelActions
+              progress={progress}
+              iconClassName={styles['panel-btn']}
+              activeClassName={styles.active}
+            />
+          </span>
+        ) : null}
       </header>
 
       <CreateUserApp

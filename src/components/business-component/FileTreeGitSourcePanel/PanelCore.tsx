@@ -30,6 +30,7 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
   treeEmptyState,
   onImportProject,
   importProjectLabel,
+  exportProjectLabel,
   isImportingProject,
   sourceControl,
 }) => {
@@ -40,9 +41,16 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
       ...tree,
       ...(onImportProject ? { handleImportProject: onImportProject } : {}),
       ...(importProjectLabel ? { importProjectLabel } : {}),
+      ...(exportProjectLabel ? { exportProjectLabel } : {}),
       ...(isImportingProject !== undefined ? { isImportingProject } : {}),
     }),
-    [tree, onImportProject, importProjectLabel, isImportingProject],
+    [
+      tree,
+      onImportProject,
+      importProjectLabel,
+      exportProjectLabel,
+      isImportingProject,
+    ],
   );
 
   const {

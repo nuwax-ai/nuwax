@@ -507,6 +507,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         <RecommendAddModal
           open={addModalOpen}
           recType={config.recType}
+          existingRecords={records}
           defaultSort={defaultSort}
           defaultTargetType={isOfficialPage ? activeTargetType : undefined}
           onCancel={() => setAddModalOpen(false)}

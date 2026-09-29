@@ -1,5 +1,7 @@
 # 消息与资料库微应用接入
 
+方案分类、上游 main 升级流程、客户端 loopback 兼容缺口和最终选型见 [乾坤接入方案调研](./qiankun-integration-research.md)。
+
 本轮基于 `feat-dong.0930` 的独立 worktree 实施，沿用已有 qiankun 2.x 调研，按当前菜单保活设计改为持久宿主。子应用使用各自 `main` 的固定提交，业务源码保留原样；主仓维护适配 patch 与 overlay。
 
 ## 应用与地址契约
@@ -10,7 +12,7 @@
 | 消息 | `nuwax-im-web` | `submodules/nuwax-im` | `nuwax-im-web/` | `/instant-message/*` | `/message-entry` | `/micro-apps/message/index.html` |
 
 - 资料库 gitlink：`1d9f19162d3991ca693e5e79758b3bc6943e6e7e`；消息 gitlink：`f7fd703688aba50573621f9ee8e32ecf0ef9f75c`。
-- `.gitmodules` 的 `branch = main` 表明上游来源；本次构建输入取主仓 index 的固定 gitlink，并与 `adapter.json.pin` 交叉校验。构建不会 fetch、checkout 或自动升级 main。
+- `.gitmodules` 的 `branch = main` 表明上游来源；默认 `build:dev`、`build:prod` 先升级全部应用到远程 main，再从主仓 index 读取固定 gitlink，并与 `adapter.json.pin` 交叉校验。单独运行 `sync:micro-apps` 不会 fetch、checkout 或升级。
 - `micro-frontends/apps.json` 登记已确认的应用，每项指向独立 `adapter.json`。消息使用用户确认的 `nuwax-im` 仓库中的 PC 前端目录，后端不参与构建和适配。
 - 资源目录 `/micro-apps/<id>/` 与业务路由分开。访问业务深链必须先进入主站布局；静态 entry 仅供 qiankun 加载。
 
@@ -35,7 +37,7 @@ type HostProps = {
 
 普通浏览器开发在加载入口前将当前调试 Token 镜像为同源 `ticket`；主站 Bearer 开发链路继续工作。生产及桌面构建使用当前 Cookie 会话。
 
-## 可重复构建
+## 构建流程
 
 工具要求：Node 满足子应用主线要求、Corepack 可调用，主仓 `packageManager` 固定 `pnpm@10.27.0`。主仓直接依赖 `qiankun@2.10.17-beta.0`，适配插件固定 `@tiny-codes/vite-plugin-qiankun@2.4.0`，Vite 8 peer 固定为 `8.2.0`；子应用 package/lock 不通过构建脚本修改。
 
@@ -46,12 +48,14 @@ npm run test:micro-app-build
 npm run sync:micro-apps
 PORT=3002 npm run dev
 
-# 两种宿主构建都会由 prebuild 自动先同步全部已登记子应用。
+# 两种宿主构建都会由 prebuild 先升级全部应用，再生成版本信息并构建子应用。
 npm run build:dev
 npm run build:prod
 ```
 
 开发端口以终端输出为准；本次验收运行于 `http://localhost:3001`，原工作区的 3000 服务保持运行。
+
+默认顺序为 `upgrade:micro-apps -- all` → 版本生成 → `sync:micro-apps` → 宿主构建 → dist 版本写入。升级、网络访问或适配预检失败时，后续步骤立即停止；`build:prod:m` 通过调用 `build:prod` 沿用此顺序。默认宿主构建可能更新并暂存 gitlink 与 adapter pin，实际来源以本次 manifest 为准。
 
 `scripts/sync-micro-apps.mjs` 按以下步骤构建每个已登记应用：
 
@@ -63,7 +67,7 @@ npm run build:prod
 6. 完成类型/资产构建，验证 qiankun 2.x 入口转换、应用名、资源前缀和 JavaScript 产物。
 7. 写版本 manifest，所有应用成功后才整体发布到 `public/micro-apps/`。umi 构建将该目录复制到同一个 `dist/micro-apps/`。
 
-任一来源校验、安装、patch 或资产构建失败都会中止；旧 `public/micro-apps/`、旧 `dist/micro-apps/` 和半成品均删除，避免失败后留下可误发布的旧版本。成功同步只生成 public 目录，完整宿主构建后才重新生成 dist。隔离源码默认自动清理，可通过 `MICRO_APP_KEEP_BUILD=1 npm run sync:micro-apps` 留下诊断目录。锁只回收明确已经退出的构建进程。
+`sync:micro-apps` 内任一来源校验、安装、patch 或资产构建失败都会中止；旧 `public/micro-apps/`、旧 `dist/micro-apps/` 和半成品均删除，避免失败后留下可误发布的旧版本。升级预检失败时尚未进入同步构建，已有产物保持原样，不会生成新 dist。成功同步只生成 public 目录，完整宿主构建后才重新生成 dist。隔离源码默认自动清理，可通过 `MICRO_APP_KEEP_BUILD=1 npm run sync:micro-apps` 留下诊断目录。锁只回收明确已经退出的构建进程。
 
 ### 资料库已存在的类型基线
 
@@ -77,7 +81,35 @@ npm run build:prod
 
 `/micro-apps/<id>/version.json` 包含来源 main SHA、URL、前端目录、adapter 文件清单及 SHA256、构建环境、Node/pnpm/插件版本、构建时间和可选类型基线结果；`/micro-apps/manifest.json` 汇总同批产物。
 
-升级上游是单独可审查的开发动作：先核查新 main，更新主仓 gitlink 与 `adapter.json.pin`，重做 patch 匹配和完整验收。运行构建命令本身不会改变 pin。
+默认宿主构建自动执行全部升级；仍需审查更新后的 gitlink、`adapter.json.pin` 与适配匹配情况，并完成验收。单独运行 `sync:micro-apps` 可验证当前固定提交，不会改变 pin。
+
+### 单个或全部升级脚本
+
+```bash
+# 预检查：获取远程 main 并检查适配，不改变子仓 HEAD、pin 或 index。
+npm run upgrade:micro-apps -- all --dry-run
+
+# 升级单个应用。
+npm run upgrade:micro-apps -- message
+npm run upgrade:micro-apps -- repo
+
+# 升级全部已登记应用，也支持 --all。
+npm run upgrade:micro-apps -- all
+
+# 单个应用选择已经审查的 main 历史提交；验证该提交使用 sync:micro-apps。
+npm run upgrade:micro-apps -- message --ref '填入已审核的40位提交SHA'
+
+# 默认完整构建会再次检查并升级全部应用到最新 main。
+npm run build:prod
+```
+
+[升级脚本](/Users/apple/workspace/nuwax/scripts/upgrade-micro-apps.mjs)读取登记表，只 fetch 选中的子仓 `origin/main`。所有候选先校验快进/main 历史、patch 和 overlay 覆盖范围；全部预检通过后，才更新所选子仓 HEAD 和 adapter pin，并仅暂存这些 gitlink 与 `adapter.json`。手工单个升级不改变另一个应用的 pin；默认主站构建会另外升级全部应用。
+
+选中子仓、适配目录或共享登记文件已有 WIP 时，脚本中止；仅 gitlink 与 adapter pin 已成对暂存、两端一致且 adapter 没有其它字节或权限差异时，可以继续重复升级或构建。无关文件的 dirty/staged 改动保持原样。上游修改 overlay 同名文件时默认中止，需要先审查适配；明确完成审查后可手工加 `--allow-overlay-changes`。默认构建不会自动放行这类变化。现有纯 rename 保存的 Vite upstream 配置不按被覆盖文件处理。
+
+正常失败或 SIGINT/SIGTERM 会尝试恢复所选原 HEAD/分支、adapter 和 index。恢复记录和原 adapter 文件保存在 `.cache/micro-apps/upgrades/upgrade-*/`；回滚失败会报告具体条目并保留记录。SIGKILL/断电后需要按记录核对恢复，不能保证自动回滚。dry-run 会更新远程跟踪 ref 并产生临时检查文件，但不修改选中源码、pin 或 index。
+
+升级脚本不执行 commit、push、构建或部署。升级成功后构建、验收并提交本批变更；若后续默认构建又产生新 pin，需要重新审查与验收。存在需要修改 patch/overlay 的上游升级时，应进入正常适配开发流程，不能仅凭脚本通过就视为功能验收完成。
 
 ## 本地 API / WS 代理
 
@@ -123,7 +155,7 @@ dist/
 
 ### 当前发布链的待接线项
 
-本轮已验证主站和子应用构建后的目录及内容，尚未验证线上发布。仓库原有 Docker 构建阶段仍使用 Node 22.10 + yarn，未准备新管线需要的子模块及有效 Git 上下文；该入口还需调整构建环境或改为消费预构建的完整 dist。原有 nginx 模板仅有通用 history fallback，还需加入下面的微应用静态 404 规则。仓库可见 CI 未包含业务发布任务，实际网关的 HTTP/WS 转发配置也需在发布验收时核对。
+本轮已验证主站和子应用构建后的目录及内容，尚未验证线上发布。仓库原有 Docker 构建阶段仍使用 Node 22.10 + yarn，未准备新管线需要的子模块及有效 Git 上下文；该入口还需调整构建环境或改为消费预构建的完整 dist。nginx 静态模板已增加业务路由强制主站入口及微应用静态 404 规则。仓库可见 CI 未包含业务发布任务，实际外层网关的 HTTP/WS 转发配置也需在发布验收时核对。
 
 发布整个 `dist/`；运维现有 `/api/` 和 WS 代理必须保持同源会话。以下片段中的 `business_gateway` 替换为部署环境实际网关，接入现有 nginx server；`root` 指向完整宿主 dist。
 
@@ -152,14 +184,22 @@ location ^~ /instant-message/ws {
     proxy_set_header Connection "upgrade";
 }
 
-location = /repo { try_files $uri /index.html; }
-location /repo/ { try_files $uri /index.html; }
-location = /instant-message { try_files $uri /index.html; }
-location /instant-message/ { try_files $uri /index.html; }
+location = /repo { try_files /index.html =404; }
+location /repo/ { try_files /index.html =404; }
+location = /instant-message { try_files /index.html =404; }
+location /instant-message/ { try_files /index.html =404; }
 location / { try_files $uri $uri/ /index.html; }
 ```
 
 业务路由的 fallback 是主站 `index.html`；不能指向微应用静态 index，否则直接刷新会绕开 SidebarShell 和鉴权。
+
+### 直开或刷新后主站导航消失的排查
+
+2026-09-29 实测：测试环境 `/instant-message/` 返回 `Nuwax IM` HTML 和 `/instant-message/assets/index-*.js`，`/repo/` 返回 `/repo/assets/index-*.js`；均未加载主站布局。`/home` 则返回主站 `umi.*.js`。从主站菜单进入两页均能看到主站导航和乾坤宿主，刷新后地址跳到带尾斜杠的业务路径，两者均消失。本地 3000 的两条业务路径直接访问及刷新均保留 260px 主站导航和乾坤宿主。
+
+出现这种响应差异时，需要调整实际 OpenResty/Nginx/Ingress 的入口分流：`/repo`、`/repo/` 与消息对应业务路径应返回完整主站 dist 的 `index.html`；仅 `/micro-apps/` 承载子应用静态资源。保留 `/repo/ws`、`/repo/internal`、`/instant-message/ws` 以及 `/api/` 的业务转发，不能整段代理 `/repo/` 或 `/instant-message/` 到旧独立前端。上面的业务规则强制读取主站 HTML，避免通用 `try_files $uri $uri/` 被旧静态目录抢占。
+
+验证时既要从主页菜单进入，也要在消息/资料库深链上刷新和直接打开；查看导航及 HTML 的脚本地址。修改仓库静态模板不会自动改变测试域名的外层网关，需要把对应规则应用到实际生效配置后，再核对线上响应。
 
 ## 初次接入验证记录（2026-09-28，分支同步前）
 

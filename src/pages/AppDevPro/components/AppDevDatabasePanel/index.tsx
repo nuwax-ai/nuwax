@@ -1,7 +1,7 @@
 import { dict } from '@/services/i18nRuntime';
 import { Empty } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import { getUserAppDbProxyUrl, UserAppDbEnvEnum } from '../../services/appDb';
 import AppDevProIframe from '../AppDevProIframe';
@@ -25,8 +25,8 @@ export interface AppDevDatabasePanelProps {
   /** 容器重启成功后重挂 iframe */
   iframeKey?: number;
   /**
-   * 当前页签是否可见。不可见时不挂 iframe，避免父级 display:none
-   * 时提前加载，数据库页（尤其是线上环境）出现空白。
+   * 当前环境的数据库页是否可见。
+   * 第一次可见时才挂 iframe；之后隐藏也保留，再次进入不重新加载。
    */
   active?: boolean;
 }
@@ -52,15 +52,27 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
     }
     return getUserAppDbProxyUrl(appId, env);
   }, [appId, env]);
+  /** 本环境是否已经在可见时加载过管理页，隐藏后继续保留 iframe */
+  const [keepIframe, setKeepIframe] = useState(false);
 
   const waitingContainer =
     containerStatus !== undefined && containerStatus !== 'running';
 
-  if (!active) {
+  useEffect(() => {
+    setKeepIframe(false);
+  }, [appId]);
+
+  useEffect(() => {
+    if (active && iframeSrc && !waitingContainer) {
+      setKeepIframe(true);
+    }
+  }, [active, iframeSrc, waitingContainer]);
+
+  if (!active && !keepIframe) {
     return <div className={cx(styles.container)} />;
   }
 
-  if (waitingContainer) {
+  if (active && waitingContainer) {
     return (
       <div className={cx(styles.container)}>
         <AppDevServiceStartStatus
@@ -71,7 +83,7 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
     );
   }
 
-  if (!iframeSrc) {
+  if (active && !iframeSrc) {
     return (
       <div className={cx(styles.container)}>
         <div className={cx(styles.empty)}>

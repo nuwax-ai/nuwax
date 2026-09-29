@@ -23,15 +23,17 @@ export interface AppDevDatabaseWorkspaceProps {
   prodContainerStatus?: UserAppEnvPodStatus;
   /** 重试启动当前环境容器 */
   onRetryContainer?: () => void;
-  /** 容器重启成功后重挂 iframe */
-  iframeKey?: number;
+  /** 开发环境容器重启成功后重挂该环境 iframe */
+  devIframeKey?: number;
+  /** 线上环境容器重启成功后重挂该环境 iframe */
+  prodIframeKey?: number;
   /** 数据库工作区是否正在展示（不在应用预览等其它页时为 false） */
   visible?: boolean;
 }
 
 /**
  * 数据库工作区：开发 / 线上各保留一套面板。
- * 仅当前可见的环境才挂载管理 iframe，避免在隐藏容器里提前加载导致空白。
+ * 某个环境第一次可见时才加载；之后切走仍保留该环境 iframe，互不影响。
  *
  * @param props.appId 应用 ID
  * @param props.activeTab 当前激活的数据库 Tab
@@ -45,7 +47,8 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
   devContainerStatus,
   prodContainerStatus,
   onRetryContainer,
-  iframeKey = 0,
+  devIframeKey = 0,
+  prodIframeKey = 0,
   visible = true,
 }) => {
   const showDevDatabase =
@@ -64,7 +67,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           appId={appId}
           env={UserAppDbEnvEnum.Dev}
           containerStatus={devContainerStatus}
-          iframeKey={iframeKey}
+          iframeKey={devIframeKey}
           active={showDevDatabase}
           onRetryContainer={
             env === UserAppDbEnvEnum.Dev ? onRetryContainer : undefined
@@ -80,7 +83,7 @@ const AppDevDatabaseWorkspace: React.FC<AppDevDatabaseWorkspaceProps> = ({
           appId={appId}
           env={UserAppDbEnvEnum.Prod}
           containerStatus={prodContainerStatus}
-          iframeKey={iframeKey}
+          iframeKey={prodIframeKey}
           active={showProdDatabase}
           onRetryContainer={
             env === UserAppDbEnvEnum.Prod ? onRetryContainer : undefined

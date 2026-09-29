@@ -14,7 +14,12 @@ const useConversationMentionFiles = (conversationId?: number | null) => {
       if (!conversationId) return [];
       const kw = keyword.trim();
       const response = kw
-        ? await apiSearchFiles({ cId: conversationId, kw, limit: 100 })
+        ? await apiSearchFiles({
+            cId: conversationId,
+            kw,
+            type: 'file',
+            limit: 100,
+          })
         : await apiGetStaticFileList(conversationId, {
             relativePath: '',
             recursive: true,

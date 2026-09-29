@@ -43,6 +43,7 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
 }) => (
   <ConversationBottomConsole
     {...props}
+    preserveTerminalConnections
     terminalEnvironment={env}
     terminalSessions={{
       dev: { wsUrl: devWsUrl, containerStatus: externalContainerStatus },

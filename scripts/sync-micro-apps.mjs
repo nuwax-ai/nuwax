@@ -22,17 +22,26 @@ export function runCommand(command, args, options = {}) {
       env: options.env ?? process.env,
       stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
       shell: false,
+      signal: options.signal,
     });
     let stdout = '';
     let stderr = '';
+    let processError;
     child.stdout?.on('data', (chunk) => {
       stdout += chunk.toString();
     });
     child.stderr?.on('data', (chunk) => {
       stderr += chunk.toString();
     });
-    child.on('error', reject);
+    // AbortError 可能早于 close；必须等进程退出后才能让调用方回滚 Git。
+    child.on('error', (error) => {
+      processError = error;
+    });
     child.on('close', (code) => {
+      if (processError) {
+        reject(processError);
+        return;
+      }
       if (code !== 0) {
         const error = new Error(
           `${command} ${args.join(' ')} failed (${code})${
@@ -44,7 +53,7 @@ export function runCommand(command, args, options = {}) {
         error.stderr = stderr;
         reject(error);
       } else {
-        resolve(stdout.trim());
+        resolve(options.trim === false ? stdout : stdout.trim());
       }
     });
   });
@@ -147,7 +156,12 @@ export async function readMicroAppRegistry(root) {
 }
 
 /** 使用主仓 index 的 gitlink；子仓 HEAD、dirty 文件和 main 的新提交都不改变本次输入。 */
-export async function getPinnedSource(root, app, execute = runCommand) {
+export async function getPinnedSource(
+  root,
+  app,
+  execute = runCommand,
+  { checkMainHistory = true } = {},
+) {
   const git = (args, cwd = root) =>
     execute('git', args, { cwd, capture: true });
   const staged = await git([
@@ -206,20 +220,24 @@ export async function getPinnedSource(root, app, execute = runCommand) {
   ]);
   try {
     await git(['rev-parse', '--verify', `${pin}^{commit}`], app.source);
-    await git(
-      ['merge-base', '--is-ancestor', pin, 'refs/remotes/origin/main'],
-      app.source,
-    );
+    if (checkMainHistory) {
+      await git(
+        ['merge-base', '--is-ancestor', pin, 'refs/remotes/origin/main'],
+        app.source,
+      );
+    }
   } catch (cause) {
     throw new Error(
-      `${app.id} 固定提交不可用或不在本地 origin/main 历史；请先初始化/核查子模块，构建不会自动 fetch/升级`,
+      `${app.id} 固定提交不可用${
+        checkMainHistory ? '或不在本地 origin/main 历史' : ''
+      }；请先初始化/核查子模块，sync:micro-apps 不会自行 fetch/升级`,
       { cause },
     );
   }
   return { branch, url, commit: pin };
 }
 
-async function adapterFingerprint(app) {
+export async function adapterFingerprint(app) {
   const files = await filesUnder(app.overlay);
   const hash = createHash('sha256');
   hash.update(await fs.readFile(app.adapterPath));
@@ -238,7 +256,7 @@ async function adapterFingerprint(app) {
   };
 }
 
-async function snapshotAdapter(app, directory) {
+export async function snapshotAdapter(app, directory) {
   await fs.mkdir(directory, { recursive: true });
   const adapterPath = path.join(directory, 'adapter.json');
   const patch = localPath(directory, app.adapter.patch, 'patch');
@@ -389,7 +407,7 @@ async function compareTypeBaseline({
   return report;
 }
 
-async function acquireLock(cache) {
+export async function acquireMicroAppLock(cache) {
   const lock = path.join(cache, '.sync.lock');
   await fs.mkdir(cache, { recursive: true });
   try {
@@ -404,7 +422,7 @@ async function acquireLock(cache) {
       // 仅回收明确已退出的 owner。写 pid 前的短暂窗口仍视为占用。
       live = cause.code !== 'ESRCH';
     }
-    if (live) throw new Error('另一微应用构建正在运行，请等待它完成');
+    if (live) throw new Error('另一微应用构建或升级正在运行，请等待它完成');
     await fs.rm(lock, { recursive: true, force: true });
     await fs.mkdir(lock);
   }
@@ -413,15 +431,15 @@ async function acquireLock(cache) {
 }
 
 export async function syncMicroApps({
-  root = scriptRoot,
+  root: inputRoot = scriptRoot,
   execute = runCommand,
   keepBuild = process.env.MICRO_APP_KEEP_BUILD === '1',
 } = {}) {
-  root = path.resolve(root);
+  const root = path.resolve(inputRoot);
   const cache = path.join(root, '.cache/micro-apps');
   const destination = path.join(root, 'public/micro-apps');
   const previousDist = path.join(root, 'dist/micro-apps');
-  const release = await acquireLock(cache);
+  const release = await acquireMicroAppLock(cache);
   let scratch;
   try {
     // 先移除旧发布产物；任何校验/install/build 失败都不能留下可被宿主复制的旧版本。

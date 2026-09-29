@@ -180,10 +180,8 @@ const Home: React.FC = () => {
   const isProjectExpertRestricted = !!getAllowedFunctionType(pinnedProject);
   // 全栈项目自动确定智能体后，隐藏其关闭按钮。
   const isProjectAgentLocked = isUserAppPinned && !!selectedRecommend;
-  // 常规项目参与者判定（多人参与）：owner === false（后端按当前用户视角回的
-  // 布尔）时开放沙箱自选（云端/个人电脑+工作目录）——项目沙箱可能绑定创建者的
-  // 个人电脑，参与者不可用；创建者本人/字段未回包走项目沙箱现状
-  const pinnedParticipantSandbox = useMemo(
+  // 常规项目上框与新建常规项目共用电脑选择和工作目录行为。
+  const pinnedProjectSandboxSelectable = useMemo(
     () => resolvePinnedSandboxSelectable(pinnedProject),
     [pinnedProject],
   );
@@ -194,6 +192,10 @@ const Home: React.FC = () => {
     summonedExpert?.agentId ||
     selectedRecommend?.targetId ||
     (isUserAppPinned ? undefined : defaultAgentId);
+  // 推荐标签可指向同一智能体，详情需按标签 ID 区分；召唤专家不带推荐上下文。
+  const currentRecId = summonedExpert?.agentId
+    ? undefined
+    : selectedRecommend?.id;
   const agentTypeLoading =
     !!currentAgentId && agentDetail?.agentId !== currentAgentId;
   const supportsAgentCapabilities =
@@ -281,7 +283,7 @@ const Home: React.FC = () => {
     setAgentDetail(undefined);
     if (!currentAgentId) return;
     let cancelled = false;
-    apiPublishedAgentInfo(currentAgentId)
+    apiPublishedAgentInfo(currentAgentId, false, currentRecId)
       .then(({ data }) => {
         if (!cancelled) setAgentDetail(data);
       })
@@ -291,7 +293,7 @@ const Home: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [currentAgentId]);
+  }, [currentAgentId, currentRecId]);
 
   useEffect(() => {
     if (agentDetail) {
@@ -421,7 +423,7 @@ const Home: React.FC = () => {
       const plan = buildHomeSendPlan({
         currentAgentId,
         pinnedProject,
-        pinnedProjectSandboxSelection: pinnedParticipantSandbox,
+        pinnedProjectSandboxSelection: pinnedProjectSandboxSelectable,
         selectedFunctionType,
         message: inputMessage,
         files,
@@ -670,8 +672,8 @@ const Home: React.FC = () => {
                 }
               : undefined
           }
-          // 参与者上框常规项目：解除电脑选择器/工作目录栏隐藏（沙箱自选）
-          pinnedProjectSandboxSelectable={pinnedParticipantSandbox}
+          // 常规项目上框：开放电脑选择器和工作目录栏
+          pinnedProjectSandboxSelectable={pinnedProjectSandboxSelectable}
           onClearPinnedProject={
             pinnedProject ? handleClearPinnedProject : undefined
           }

@@ -60,11 +60,23 @@
 
   .bindRow {
     width: 100%;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 
     :global(.ant-input) {
       flex: 1;
     }
+  }
+
+  .bindHint {
+    margin-bottom: 12px;
+    font-size: 12px;
+    line-height: 18px;
+    color: @colorTextTertiary;
+  }
+
+  /** CNAME 地址使用主题色，和提示正文区分开 */
+  .bindHintTarget {
+    color: @colorPrimary;
   }
 
   .domainList {

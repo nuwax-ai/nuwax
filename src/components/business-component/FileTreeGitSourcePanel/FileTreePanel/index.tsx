@@ -69,6 +69,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     handleDownloadFileByUrl,
     handleImportProject,
     importProjectLabel,
+    exportProjectLabel,
     handleExportProject,
     isExportingProject = false,
     isImportingProject = false,
@@ -166,9 +167,11 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         onExportProject={
           handleExportProject ? () => void handleExportProject() : undefined
         }
+        exportLabel={exportProjectLabel}
         onImportProject={
           handleImportProject ? () => void handleImportProject() : undefined
         }
+        importLabel={importProjectLabel}
         importLoading={isImportingProject}
         onCreateFile={
           readOnly

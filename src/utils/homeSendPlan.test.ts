@@ -183,7 +183,7 @@ describe('buildHomeSendPlan 分支决策', () => {
   });
 });
 
-describe('resolvePinnedSandboxSelectable（常规项目参与者判定）', () => {
+describe('resolvePinnedSandboxSelectable（常规项目电脑选择）', () => {
   const pinned = (overrides?: {
     projectType?: AgentComponentTypeEnum;
     owner?: boolean;
@@ -197,10 +197,10 @@ describe('resolvePinnedSandboxSelectable（常规项目参与者判定）', () =
     expect(resolvePinnedSandboxSelectable(pinned())).toBe(true);
   });
 
-  it('创建者（owner true）/ 字段未回包（undefined）→ 沿用项目沙箱现状', () => {
-    expect(resolvePinnedSandboxSelectable(pinned({ owner: true }))).toBe(false);
+  it('创建者（owner true）/ 字段未回包（undefined）→ 同样开放电脑选择', () => {
+    expect(resolvePinnedSandboxSelectable(pinned({ owner: true }))).toBe(true);
     expect(resolvePinnedSandboxSelectable(pinned({ owner: undefined }))).toBe(
-      false,
+      true,
     );
   });
 
@@ -302,7 +302,7 @@ describe('buildHomeSendPlan 上框参与者沙箱自选', () => {
     ).toBe('sb-a1b2c3');
   });
 
-  it('未开参与者模式（创建者/字段未回包）：沿用项目沙箱现状', () => {
+  it('未开放自选时：沿用项目沙箱', () => {
     const plan = buildHomeSendPlan({
       ...PARTICIPANT_INPUT,
       pinnedProjectSandboxSelection: undefined,
