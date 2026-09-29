@@ -12,10 +12,12 @@ export interface PrivateServerCreateParams {
   scheme?: string;
   /** 服务器地址 */
   host?: string;
-  /** 管理端口 */
+  /** Agent端口 */
   agentPort?: number;
-  /** 应用端口 */
-  appPort?: number;
+  /** VNC 端口 */
+  vncPort?: number;
+  /** 文件服务端口 */
+  fileServerPort?: number;
 }
 
 /** 私有部署服务器信息 */
@@ -28,7 +30,7 @@ export interface PrivateServerInfo {
   scheme: string;
   /** 服务器地址 */
   host: string;
-  /** 管理端口 */
+  /** Agent端口 */
   agentPort: number;
   /** VNC 端口 */
   vncPort: number;
