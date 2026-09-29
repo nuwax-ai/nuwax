@@ -291,9 +291,9 @@ export function useHomeSectionData(options: {
     [hasMore, localList, calcPageSize, searchKeyword],
   );
 
-  useEffect(() => {
-    loadListRef.current = loadList;
-  }, [loadList]);
+  // 经典布局的子组件会在挂载 effect 中调用 initialLoad；子 effect 先于本
+  // hook 的 effect 执行，因此请求入口必须在渲染期就指向当前的 loadList。
+  loadListRef.current = loadList;
 
   // 会话更新（原 conversation-updated window 事件，经 directorySync 桥接进入订阅）
   // 的静默重拉做 3s 合并节流（首发立即、突发合并为末次）：智能体执行期间 SSE
