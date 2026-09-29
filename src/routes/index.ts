@@ -426,7 +426,6 @@ const routes = [
                 path: 'theme',
                 name: getRouteLabel('PC.Routes.themeConfig'),
                 component: '@/pages/SystemManagement/SystemConfig/ThemeConfig',
-                hideInMenu: true,
               },
               {
                 path: 'sandbox',
