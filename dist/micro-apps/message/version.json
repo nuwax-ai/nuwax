@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "message",
+  "appName": "nuwax-im-web",
+  "entry": "/micro-apps/message/index.html",
+  "assetBase": "/micro-apps/message/",
+  "businessBase": "/instant-message",
+  "source": {
+    "branch": "main",
+    "url": "https://git.yichamao.com/agent-platform/nuwax-im.git",
+    "commit": "f7fd703688aba50573621f9ee8e32ecf0ef9f75c"
+  },
+  "projectDir": "nuwax-im-web",
+  "workspaceMode": "standalone",
+  "buildEnvironment": {
+    "VITE_IM_AUTH_MODE": "platform"
+  },
+  "adapter": {
+    "sha256": "cfacaee060a33e7b6a5622bf878c2e13a281c808e9e23a9321eb48d15c139219",
+    "files": [
+      "adapter.json",
+      "adapter.patch",
+      "overlay/index.html",
+      "overlay/scope-styles.d.mts",
+      "overlay/scope-styles.mjs",
+      "overlay/src/host.css",
+      "overlay/src/hostRuntime.ts",
+      "overlay/src/main.tsx",
+      "overlay/src/qiankun-setup.ts",
+      "overlay/vite.config.ts"
+    ]
+  },
+  "toolchain": {
+    "node": "v24.18.0",
+    "pnpm": "10.27.0",
+    "qiankun": "2.10.17-beta.0",
+    "@tiny-codes/vite-plugin-qiankun": "2.4.0"
+  },
+  "builtAt": "2026-09-29T05:01:55.087Z"
+}
