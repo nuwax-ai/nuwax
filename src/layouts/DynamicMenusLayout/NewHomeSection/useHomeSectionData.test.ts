@@ -162,7 +162,9 @@ describe('useHomeSectionData', () => {
     };
     const ClassicParent = () => {
       shell = useHomeSectionData({ isSidebarNavMode: false });
-      return createElement(InitialLoadChild, { initialLoad: shell.initialLoad });
+      return createElement(InitialLoadChild, {
+        initialLoad: shell.initialLoad,
+      });
     };
 
     const view = render(createElement(ClassicParent));
