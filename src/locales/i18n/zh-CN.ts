@@ -2797,6 +2797,8 @@ export const ZH_CN: SystemLangMap = {
     "当前会话未生成有效项目文件（缺少 workspace.manifest.toml），继续对话可以生成项目文件",
   "PC.Pages.AppDevPro.previewAppLoading": "应用加载中",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "请稍候，界面即将呈现",
+  "PC.Pages.AppDevPro.previewChecking": "应用检测中",
+  "PC.Pages.AppDevPro.previewCheckingHint": "正在确认应用是否可以访问，请稍候",
   "PC.Pages.AppDevPro.iframeLoadFailed": "页面加载失败，请刷新后重试",
   "PC.Pages.AppDevPro.iframeLoadFailedWithStatus": "页面加载失败（HTTP {0}），请刷新后重试或检查开发服务器",
   "PC.Pages.AppDevPro.previewJumpHint": "按 Enter 跳转到: {0}",

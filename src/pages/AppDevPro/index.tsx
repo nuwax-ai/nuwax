@@ -125,6 +125,7 @@ import {
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import {
   pollPreviewUrlHealth,
+  pollUserAppReadiness,
   probePreviewReachable,
 } from './utils/previewHealthCheck';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
@@ -337,7 +338,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /** 应用预览 iframe 刷新计数 */
   const [previewRefreshKey, setPreviewRefreshKey] = useState<number>(0);
   /** 容器重启成功后强制重挂数据库 iframe */
-  const [databaseIframeKey, setDatabaseIframeKey] = useState<number>(0);
+  const [databaseIframeKeyByEnv, setDatabaseIframeKeyByEnv] = useState<
+    Record<UserAppDbEnvEnum, number>
+  >({
+    [UserAppDbEnvEnum.Dev]: 0,
+    [UserAppDbEnvEnum.Prod]: 0,
+  });
   /** 用户在地址栏跳转后的 iframe 地址（环境切换、重启服务时重置为预览根路径） */
   const [previewIframeUrl, setPreviewIframeUrl] = useState<string>('');
   /** 当前环境预览根地址，供启动 / 重启回调读取 */
@@ -972,13 +978,17 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         return dict('PC.Pages.AppDevPro.iframeLoadFailed');
       }
       // 开发 / 线上分开判断：只在这次启动所属的环境被停止，或已经切走时结束探测。
-      // 5 次都失败（含跨域无 CORS 头）时不拦截预览，交给 iframe 再加载一次该域名。
+      // 域名检查保留；能否打开预览以就绪接口持续轮询到 true 为准。
       const shouldStop = () =>
         previewUserStoppedByEnvRef.current[targetEnv] ||
         dbEnvRef.current !== targetEnv;
       await pollPreviewUrlHealth(previewUrl, { shouldStop });
-      if (previewUserStoppedByEnvRef.current[targetEnv]) {
-        return dict('PC.Pages.AppDevPro.iframeLoadFailed');
+      if (shouldStop() || !appId) {
+        return '';
+      }
+      const ready = await pollUserAppReadiness(appId, targetEnv, shouldStop);
+      if (!ready) {
+        return '';
       }
       return '';
     },
@@ -2122,7 +2132,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
     const view = workspaceViewRef.current;
     if (view === 'database') {
-      setDatabaseIframeKey((key) => key + 1);
+      setDatabaseIframeKeyByEnv((prev) => ({
+        ...prev,
+        [envToRetry]: prev[envToRetry] + 1,
+      }));
       return;
     }
     if (view !== 'app-preview') {
@@ -2375,7 +2388,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         visible={active && workspaceView === 'database'}
         devContainerStatus={envPodConversationId ? podStatus : undefined}
         prodContainerStatus={envPodConversationId ? prodPod.status : undefined}
-        iframeKey={databaseIframeKey}
+        devIframeKey={databaseIframeKeyByEnv[UserAppDbEnvEnum.Dev]}
+        prodIframeKey={databaseIframeKeyByEnv[UserAppDbEnvEnum.Prod]}
         onRetryContainer={() => {
           void handleRetryContainer();
         }}
@@ -2385,7 +2399,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       active,
       appId,
       databaseActiveTab,
-      databaseIframeKey,
+      databaseIframeKeyByEnv,
       dbEnv,
       envPodConversationId,
       handleRetryContainer,
@@ -2407,6 +2421,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         services={previewRuntime.services}
         errorMessage={previewRuntime.errorMessage}
         previewLoadError={previewRuntime.previewLoadError}
+        checking={previewRuntime.checking}
         cancelLoading={previewRuntime.cancelLoading}
         isGeneratingFiles={previewConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
@@ -2456,6 +2471,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       previewRuntime.cancelTask,
       previewRuntime.errorMessage,
       previewRuntime.previewLoadError,
+      previewRuntime.checking,
       previewRuntime.phase,
       previewRuntime.running,
       previewRuntime.services,

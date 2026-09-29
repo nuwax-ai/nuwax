@@ -40,6 +40,8 @@ export interface AppDevAppPreviewPanelProps {
    * 只展示页面加载失败，不进入启动进度日志。
    */
   previewLoadError?: string;
+  /** 启动已成功，正在轮询应用是否可以访问 */
+  checking?: boolean;
   /** 取消任务 loading */
   cancelLoading?: boolean;
   /** 容器是否已就绪 */
@@ -253,6 +255,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   services,
   errorMessage,
   previewLoadError = '',
+  checking = false,
   cancelLoading = false,
   podReady = false,
   containerStatus,
@@ -344,6 +347,18 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
         failed={containerStatus === 'error'}
         onRetry={onRetryContainer}
       />
+    );
+  }
+
+  if (checking) {
+    return (
+      <div className={cx(styles.container, styles.stage)}>
+        <PreviewHero
+          spinning
+          title={dict('PC.Pages.AppDevPro.previewChecking')}
+          hint={dict('PC.Pages.AppDevPro.previewCheckingHint')}
+        />
+      </div>
     );
   }
 

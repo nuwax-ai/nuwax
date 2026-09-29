@@ -2736,6 +2736,8 @@ export const JA_JP: SystemLangMap = {
     "この会話では有効なプロジェクトファイル（workspace.manifest.toml）が生成されていません。左側で会話を続けるか、新しいタスクを作成してください",
   "PC.Pages.AppDevPro.previewAppLoading": "アプリを読み込み中",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "しばらくお待ちください。まもなく画面が表示されます",
+  "PC.Pages.AppDevPro.previewChecking": "アプリを確認中",
+  "PC.Pages.AppDevPro.previewCheckingHint": "アプリがアクセス可能になるまでお待ちください",
   "PC.Pages.AppDevPro.iframeLoadFailed": "ページの読み込みに失敗しました。更新して再試行してください。",
   "PC.Pages.AppDevPro.iframeLoadFailedWithStatus": "ページの読み込みに失敗しました（HTTP {0}）。更新するか、開発サーバーを確認してください。",
   "PC.Pages.AppDevPro.previewJumpHint": "Enter で移動: {0}",

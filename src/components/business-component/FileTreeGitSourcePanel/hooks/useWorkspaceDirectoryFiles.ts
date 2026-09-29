@@ -93,7 +93,7 @@ export function useWorkspaceDirectoryFiles(
           relativePath: requestPath,
           recursive: false,
           depth: 2,
-          type: 'file',
+          type: 'all',
         });
         // 会话已切换，或同目录有更新的请求：不再写入，避免串数据
         if (

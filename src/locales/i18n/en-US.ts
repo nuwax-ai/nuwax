@@ -2798,6 +2798,8 @@ export const EN_US: SystemLangMap = {
     "This conversation has not produced valid project files (workspace.manifest.toml is missing). Continue chatting on the left or start a new task.",
   "PC.Pages.AppDevPro.previewAppLoading": "Loading app",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "Please wait, the interface will appear shortly",
+  "PC.Pages.AppDevPro.previewChecking": "Checking the app",
+  "PC.Pages.AppDevPro.previewCheckingHint": "Waiting until the app is ready to open",
   "PC.Pages.AppDevPro.iframeLoadFailed": "Failed to load the page. Please refresh and try again.",
   "PC.Pages.AppDevPro.iframeLoadFailedWithStatus": "Failed to load the page (HTTP {0}). Please refresh or check the development server.",
   "PC.Pages.AppDevPro.previewJumpHint": "Press Enter to jump to: {0}",

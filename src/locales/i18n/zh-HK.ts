@@ -2715,6 +2715,8 @@ export const ZH_HK: SystemLangMap = {
     "目前對話未產生有效項目文件（缺少 workspace.manifest.toml），請在左側繼續對話或新建任務",
   "PC.Pages.AppDevPro.previewAppLoading": "應用加載中",
   "PC.Pages.AppDevPro.previewAppLoadingHint": "請稍候，界面即將呈現",
+  "PC.Pages.AppDevPro.previewChecking": "應用檢測中",
+  "PC.Pages.AppDevPro.previewCheckingHint": "正在確認應用是否可以訪問，請稍候",
   "PC.Pages.AppDevPro.iframeLoadFailed": "頁面加載失敗，請刷新後重試",
   "PC.Pages.AppDevPro.iframeLoadFailedWithStatus": "頁面加載失敗（HTTP {0}），請刷新後重試或檢查開發服務器",
   "PC.Pages.AppDevPro.previewJumpHint": "按 Enter 跳轉到: {0}",
