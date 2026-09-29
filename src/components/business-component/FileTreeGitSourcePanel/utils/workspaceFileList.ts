@@ -18,6 +18,37 @@ export function parentDirectory(relativePath: string): string {
 }
 
 /**
+ * depth 为 2 时，响应里已经带上请求目录的直接子目录内容。
+ * 这些子目录视为已加载，展开时不用再转圈请求同一层。
+ * 只认「再下一层」的条目，不把更深层目录标成已加载。
+ *
+ * @param files 本次合并进树的文件
+ * @param directoryPath 本次请求的目录，根目录为空字符串
+ * @returns 已带上下级内容的直接子目录路径
+ */
+export function prefetchedChildDirectories(
+  files: { name: string; isDir: boolean }[],
+  directoryPath: string,
+): string[] {
+  const normalizedDirectoryPath = directoryPath.replace(/^\/+|\/+$/g, '');
+  const covered = new Set<string>();
+  files.forEach((file) => {
+    const name = file.name.replace(/^\/+|\/+$/g, '');
+    if (!name) {
+      return;
+    }
+    const parent = parentDirectory(name);
+    if (file.isDir && parent === normalizedDirectoryPath) {
+      covered.add(name);
+    }
+    if (parent && parentDirectory(parent) === normalizedDirectoryPath) {
+      covered.add(parent);
+    }
+  });
+  return Array.from(covered);
+}
+
+/**
  * 搜索接口的关键字只用路径最后一段（文件名或目录名）。
  * 同名文件靠完整相对路径在结果的 name 里再筛一次。
  */
