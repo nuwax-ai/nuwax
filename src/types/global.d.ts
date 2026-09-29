@@ -169,6 +169,10 @@ interface Window {
       /** 注册/注销宿主命令回调（传 null 注销）。 */
       onHostCommand?: (cb: ((payload: HostCommand) => void) | null) => void;
     };
+    /** 商业 IM 原生通知偏好；能力存在时 IM 不再发浏览器通知。 */
+    im?: {
+      setNotificationEnabled?: (enabled: boolean) => Promise<void>;
+    };
     // nuwax→nuwaclaw 壳主题同步通道（女娲主题生效/让位时推送，壳侧统一原生 UI 效果）
     theme?: {
       /** 推送主题状态给壳（fire-and-forget，失败静默）。 */
