@@ -233,12 +233,15 @@ export const pollPreviewUrlHealth = async (
 };
 
 /** 就绪接口两次探测之间的间隔（毫秒） */
-const READINESS_POLL_INTERVAL_MS = 2000;
+const READINESS_POLL_INTERVAL_MS = 3000;
+
+/** 就绪接口最多探测次数。到上限仍未就绪时结束，不继续等待。 */
+const READINESS_POLL_MAX_ATTEMPTS = 5;
 
 /**
- * 启动成功后轮询应用就绪接口，直到返回可访问。
- * 域名检查可以另外进行；这里以就绪结果作为能否打开预览的依据。
- * 用户停止或切走环境时结束，不把未就绪当成失败。
+ * 启动成功后轮询应用就绪接口。
+ * 某一次 ready 为 true 立刻结束；否则继续，直到达到次数上限或调用方要求停止。
+ * 到上限仍未就绪时返回 false，由调用方继续后续流程，不在这里一直等待。
  *
  * @param appId 应用 ID
  * @param env 发起启动的环境
@@ -254,7 +257,10 @@ export const pollUserAppReadiness = async (
     return false;
   }
 
-  while (!shouldStop?.()) {
+  for (let attempt = 0; attempt < READINESS_POLL_MAX_ATTEMPTS; attempt += 1) {
+    if (shouldStop?.()) {
+      return false;
+    }
     try {
       const result = await apiUserAppReadiness(appId, env);
       const payload = (
@@ -267,14 +273,13 @@ export const pollUserAppReadiness = async (
         typeof result !== 'object' ||
         !('code' in result) ||
         result.code === SUCCESS_CODE;
-      const ready = codeOk && payload?.ready === true;
-      if (ready) {
+      if (codeOk && payload?.ready === true) {
         return true;
       }
     } catch {
-      // 单次失败继续等下一次，直到应用就绪或调用方要求停止
+      // 单次失败继续等下一次，直到就绪、达到上限或调用方要求停止
     }
-    if (shouldStop?.()) {
+    if (shouldStop?.() || attempt >= READINESS_POLL_MAX_ATTEMPTS - 1) {
       return false;
     }
     try {
