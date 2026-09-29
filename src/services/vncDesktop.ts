@@ -200,7 +200,7 @@ export async function apiDownloadAllFiles(cId: number): Promise<void> {
   }
 }
 
-/** 全栈应用环境，仅 AppDevPro 调用 computer/pod 老接口时传入 */
+/** 网站应用环境，仅 AppDevPro 调用 computer/pod 老接口时传入 */
 export type ComputerPodAppStage = 'dev' | 'prod';
 
 const ENSURE_POD_THROTTLE_MS = 5000;
@@ -213,7 +213,7 @@ const ensurePodInFlightMap = new Map<
 /**
  * 组装 computer/pod 请求参数：仅在传入 appStage 时附加，避免老页面带上空字段。
  * @param cId 会话 ID
- * @param appStage 全栈应用环境，仅 AppDevPro 传入
+ * @param appStage 网站应用环境，仅 AppDevPro 传入
  */
 const buildPodRequestParams = (cId: number, appStage?: ComputerPodAppStage) =>
   appStage ? { cId, appStage } : { cId };

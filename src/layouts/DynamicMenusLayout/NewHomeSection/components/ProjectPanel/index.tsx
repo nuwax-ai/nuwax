@@ -1202,7 +1202,7 @@ const ProjectPanel = forwardRef<
       })();
     };
 
-    // 项目重命名:常规项目/全栈应用走真实接口,PageApp 契约未覆盖暂维持本地改名
+    // 项目重命名:常规项目/网站应用走真实接口,PageApp 契约未覆盖暂维持本地改名
     const handleProjectRenameSubmit = async () => {
       if (projectRenaming) return;
       const trimmed = projectRenameName.trim();
@@ -1255,7 +1255,7 @@ const ProjectPanel = forwardRef<
       }
     };
 
-    // 项目删除:常规项目/全栈应用走真实接口,PageApp 契约未覆盖暂维持本地移除
+    // 项目删除:常规项目/网站应用走真实接口,PageApp 契约未覆盖暂维持本地移除
     const openProjectDelete = (project: ProjectItem) => {
       const usesRealApi =
         project.projectType === AgentComponentTypeEnum.NormalProject ||

@@ -215,7 +215,7 @@ const Home: React.FC = () => {
     () => getProjectTypeByFunctionType(selectedFunctionType),
     [selectedFunctionType],
   );
-  // 全栈应用等不支持个人电脑的类型：电脑选择锁定云端、工作目录栏一并隐藏
+  // 网站应用等不支持个人电脑的类型：电脑选择锁定云端、工作目录栏一并隐藏
   const disablePersonalComputer = selectedProjectType
     ? !getWorkspaceDirPolicy(selectedProjectType).personalComputer
     : false;

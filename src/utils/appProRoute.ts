@@ -31,7 +31,7 @@ export const parseAppProRoute = (
  * 构建 AppDevPro 路由。
  *
  * @param spaceId 空间 ID
- * @param appId 全栈应用 ID
+ * @param appId 网站应用 ID
  * @param conversationId 会话 ID
  */
 export const buildAppProRoute = (
@@ -49,7 +49,7 @@ export const buildAppProRedirectPrefix = (
 ): string => `/space/${spaceId}/app-pro/${appId}/`;
 
 /**
- * 删除 app-pro 当前会话后离开 IDE，回到全栈应用详情页。
+ * 删除 app-pro 当前会话后离开 IDE，回到网站应用详情页。
  */
 export const removeAppProConversationFromLocation = (
   pathname: string,

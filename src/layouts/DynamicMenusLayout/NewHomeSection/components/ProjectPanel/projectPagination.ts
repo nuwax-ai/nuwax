@@ -10,7 +10,7 @@ export const PROJECT_PAGE_SIZE = 20;
 
 /**
  * 项目唯一键：`${projectType}:${projectId}`。
- * 后端 user-project 列表合并常规项目/全栈应用两套编号，projectId 数字会跨类型撞车
+ * 后端 user-project 列表合并常规项目/网站应用两套编号，projectId 数字会跨类型撞车
  * （2026-09-17 实测：UserApp 94 与 NormalProject 94 同列表共存），所有身份判断
  * （React key、置顶/归档/收藏/折叠标记、改名删除定位）必须走复合键。
  */

@@ -87,7 +87,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     [readonly, remoteSelectedMap, manualSelectedMap],
   );
 
-  // 仅云端模式（如全栈应用不支持个人电脑）：渲染期过滤，列表切换即时生效
+  // 仅云端模式（如网站应用不支持个人电脑）：渲染期过滤，列表切换即时生效
   const computerList = useMemo(
     () =>
       cloudOnly

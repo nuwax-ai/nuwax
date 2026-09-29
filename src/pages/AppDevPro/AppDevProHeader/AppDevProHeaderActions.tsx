@@ -20,7 +20,7 @@ const cx = classNames.bind(styles);
 export interface AppDevProHeaderActionsProps {
   /** 外层容器类名 */
   className?: string;
-  /** 全栈应用详情 */
+  /** 网站应用详情 */
   userAppInfo?: UserAppInfo | null;
   /** 点击部署 */
   onPublish?: () => void;
