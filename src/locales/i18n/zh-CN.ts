@@ -6854,7 +6854,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppProjectDetail.domainPlaceholder": "请输入域名，如 app.example.com",
   "PC.Pages.AppProjectDetail.domainBound": "已绑定",
   // 发布服务器配置
-  "PC.Pages.AppProjectDetail.deployTitle": "发布服务器配置",
+  "PC.Pages.AppProjectDetail.deployTitle": "部署服务器配置",
   "PC.Pages.AppProjectDetail.deployDesc": "选择应用发布后的运行位置。选择私有服务器时，需提供访问协议、服务器地址与两个端口。",
   "PC.Pages.AppProjectDetail.platformService": "平台服务",
   "PC.Pages.AppProjectDetail.platformServiceDesc": "由女娲平台托管运行，免运维，自动弹性伸缩",
@@ -6916,7 +6916,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppProjectDetail.privateServerModified": "更新时间",
   "PC.Pages.AppProjectDetail.updatePrivateServer": "更新",
   "PC.Pages.AppProjectDetail.updatePrivateServerSuccess": "私有服务器已更新",
-  "PC.Pages.AppProjectDetail.setDeployServer": "设置部署服务器",
+  "PC.Pages.AppProjectDetail.setDeployServer": "保存",
   "PC.Pages.AppProjectDetail.selectPrivateServerTitle": "选择私有服务器",
   "PC.Pages.AppProjectDetail.selectPrivateServerRequired": "请选择一台私有服务器",
   "PC.Pages.AppProjectDetail.emptyPrivateServer": "暂无私有服务器，请先添加",
