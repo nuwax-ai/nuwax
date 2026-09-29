@@ -266,6 +266,14 @@ enter_worktree_if_needed() {
   git worktree add "$WT_DIR" -b deploy-sync-work "origin/${REAL_FEATURE}" >/dev/null 2>&1 ||
     die "创建提测 worktree 失败：${WT_DIR}（可设 USE_WORKTREE=0 回主区模式）"
   ln -sfn "$(dirname "$WT_DIR")/node_modules" "$WT_DIR/node_modules"
+  # src/.umi 是 umi 生成的 tsconfig/类型基础（主 tsconfig extends 它）：worktree 不拷则
+  # vitest 全套件文件级崩（2026-09-30 首战实证）；从主区拷快照即可（不 symlink，避免主区 dev 重建抖动）
+  if [ -d "$(dirname "$WT_DIR")/src/.umi" ]; then
+    rm -rf "$WT_DIR/src/.umi"
+    cp -R "$(dirname "$WT_DIR")/src/.umi" "$WT_DIR/src/.umi"
+  else
+    die "主区缺少 src/.umi（先在主区跑一次 npm run dev 或 max build 生成），worktree 无法启动测试"
+  fi
   cd "$WT_DIR"
   FEATURE_BRANCH=deploy-sync-work
   log "主区有未提交现场，已切换提测专用 worktree（主区零接触）：${WT_DIR}"
