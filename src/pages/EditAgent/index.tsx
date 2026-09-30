@@ -3,6 +3,12 @@ import {
   FileTreeViewPanel,
 } from '@/components/business-component';
 import AppPageState from '@/components/business-component/AppPageState';
+import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
+import {
+  parentDirectory,
+  workspaceNodeId,
+  workspaceRelativePath,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import type { FileTreeViewRef } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
@@ -146,11 +152,10 @@ const EditAgent: React.FC = () => {
     isFileTreePinned,
     setIsFileTreePinned,
     closePreviewView,
-    // 文件树数据
-    fileTreeData,
-    fileTreeDataLoading,
     // 文件树视图模式
     viewMode,
+    fileTreeRefreshTrigger,
+    setFileTreeSelfManaged,
     // 处理文件列表刷新事件
     handleRefreshFileList,
     // 是否立即刷新文件列表
@@ -424,6 +429,39 @@ const EditAgent: React.FC = () => {
   // 获取开发会话ID
   const devConversationId = agentConfigInfo?.devConversationId;
   const terminalWsUrl = useTerminalWsUrl(devConversationId);
+
+  /**
+   * 本页自己按层拉文件树，不再走模型里的整树 file-list。
+   * 离开页面时关掉，避免其它仍依赖整树的页面被跳过。
+   */
+  useEffect(() => {
+    setFileTreeSelfManaged(true);
+    return () => setFileTreeSelfManaged(false);
+  }, [setFileTreeSelfManaged]);
+
+  /** 文件树面板打开后才拉根目录；刷新信号也只在面板可见时处理 */
+  const workspaceFilesEnabled = Boolean(devConversationId) && isFileTreeVisible;
+  const workspaceFiles = useWorkspaceFileTreeSession({
+    conversationId: devConversationId,
+    enabled: workspaceFilesEnabled,
+    fileTreeRefreshTrigger,
+    refreshEnabled: workspaceFilesEnabled,
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+  });
+  const workspaceTaskSelectedFileId = taskAgentSelectedFileId
+    ? workspaceNodeId(workspaceRelativePath(taskAgentSelectedFileId))
+    : '';
+  const isAutoSelectDirectoryLoaded = useCallback(
+    (fileId: string) => {
+      const parentPath = parentDirectory(workspaceRelativePath(fileId));
+      if (workspaceFiles.openingTaskResultRef.current?.parent === parentPath) {
+        return false;
+      }
+      return workspaceFiles.loadedDirectoryPaths.has(parentPath);
+    },
+    [workspaceFiles.loadedDirectoryPaths, workspaceFiles.openingTaskResultRef],
+  );
 
   /** 智能体配置初次加载后，同步 Git status 开关（不随乐观更新立即变化） */
   useEffect(() => {
@@ -738,14 +776,14 @@ const EditAgent: React.FC = () => {
               updatedFilesList = [
                 {
                   contents: '',
-                  name: fileNode.id,
+                  name: fileNode.relativePath || fileNode.path || fileNode.id,
                   operation: 'delete', // 操作类型
                   isDir: true,
                 },
               ];
             } else {
-              // 找到要删除的文件
-              const currentFile = fileTreeData?.find(
+              // 分层列表的 fileId 带 workspace: 前缀，提交给接口时用相对路径 name
+              const currentFile = workspaceFiles.files?.find(
                 (item: StaticFileInfo) => item.fileId === fileNode.id,
               );
               if (!currentFile) {
@@ -756,12 +794,16 @@ const EditAgent: React.FC = () => {
                 return;
               }
 
-              // 更新文件操作
-              currentFile.operation = 'delete';
-              // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
-              currentFile.contents = '';
-              // 更新文件列表
-              updatedFilesList = [currentFile] as UpdateFileInfo[];
+              updatedFilesList = [
+                {
+                  name: currentFile.name,
+                  binary: currentFile.binary,
+                  sizeExceeded: currentFile.sizeExceeded,
+                  isDir: currentFile.isDir,
+                  operation: 'delete',
+                  contents: '',
+                },
+              ];
             }
 
             // 更新技能信息
@@ -802,7 +844,7 @@ const EditAgent: React.FC = () => {
 
     // 更新原始文件列表中的文件名（用于提交更新）
     const updatedFilesList = updateFilesListName(
-      fileTreeData || [],
+      workspaceFiles.files || [],
       fileNode,
       newName,
     );
@@ -836,7 +878,7 @@ const EditAgent: React.FC = () => {
 
     // 更新文件列表(只更新修改过的文件)
     const updatedFilesList = updateFilesListContent(
-      fileTreeData || [],
+      workspaceFiles.files || [],
       data,
       'modify',
     );
@@ -1397,13 +1439,28 @@ const EditAgent: React.FC = () => {
                             {/*文件树侧边栏 - 只在文件树可见时显示 */}
                             <FileTreeViewPanel
                               ref={fileTreePanelRef}
-                              taskAgentSelectedFileId={taskAgentSelectedFileId}
+                              taskAgentSelectedFileId={
+                                workspaceTaskSelectedFileId
+                              }
                               clearTaskAgentSelectedFileId={() =>
                                 setTaskAgentSelectedFileId('')
                               }
                               taskAgentSelectTrigger={taskAgentSelectTrigger}
-                              originalFiles={fileTreeData}
-                              fileTreeDataLoading={fileTreeDataLoading}
+                              fileTreeRefreshTrigger={fileTreeRefreshTrigger}
+                              originalFiles={workspaceFiles.files}
+                              fileTreeDataLoading={workspaceFiles.loading}
+                              onOpenDirectory={workspaceFiles.onOpenDirectory}
+                              loadedFolderIds={workspaceFiles.loadedFolderIds}
+                              loadingFolderIds={workspaceFiles.loadingFolderIds}
+                              onLoadDirectory={workspaceFiles.onLoadDirectory}
+                              remoteFileSearch={workspaceFiles.remoteFileSearch}
+                              onEnsureFallbackDirectory={
+                                workspaceFiles.ensureFallbackDirectory
+                              }
+                              selectFileRef={workspaceFiles.selectFileRef}
+                              isAutoSelectDirectoryLoaded={
+                                isAutoSelectDirectoryLoaded
+                              }
                               targetId={devConversationId.toString()}
                               viewMode={viewMode}
                               readOnly={false}

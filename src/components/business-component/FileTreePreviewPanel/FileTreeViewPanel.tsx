@@ -53,6 +53,12 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       bottomContent,
       taskAgentSelectedFileId,
       taskAgentSelectTrigger,
+      loadedFolderIds,
+      loadingFolderIds,
+      onLoadDirectory,
+      remoteFileSearch,
+      onEnsureFallbackDirectory,
+      selectFileRef,
       ...fileViewProps
     } = props;
 
@@ -291,16 +297,28 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       [fileView.changeFiles, fileView.tree.selectedFileId],
     );
 
+    useEffect(() => {
+      if (!selectFileRef) {
+        return;
+      }
+      selectFileRef.current = fileView.tree.handleFileSelect;
+    }, [selectFileRef, fileView.tree.handleFileSelect]);
+
     return (
       <FileTreePreviewPanel
         className={className}
         tree={{
           ...fileView.tree,
+          ...(loadedFolderIds ? { loadedFolderIds } : {}),
+          ...(loadingFolderIds ? { loadingFolderIds } : {}),
+          ...(onLoadDirectory ? { onLoadDirectory } : {}),
+          ...(remoteFileSearch ? { remoteFileSearch } : {}),
           handleFileSelect: async (fileId, options) => {
             if (!options?.selectFolder) {
               setGitVersionPanelOpen(false);
               sourceControl.clearSelectedDiff();
             }
+            await onEnsureFallbackDirectory?.(options);
             await fileView.tree.handleFileSelect(fileId, options);
           },
         }}
