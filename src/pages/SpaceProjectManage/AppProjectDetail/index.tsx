@@ -68,7 +68,6 @@ import {
 } from '../services/thirdAppOauth2';
 import { openProject } from '../type';
 import PrivateServerPanel from './components/PrivateServerPanel';
-import SelectDeployServerModal from './components/SelectDeployServerModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -125,7 +124,7 @@ const pickResponseData = <T,>(
  * - 进页拉 apiUserAppGetById，用 name 填标题、用 deployType 回填平台/私服；
  * - 进页拉项目会话列表，设置 Tab 再拉 OAuth2 与自定义域名；
  * - 选私服时再拉私有服务器列表（进页若已是私服也会拉一次）；
- * - 「设置部署服务器」：平台直接保存；私服弹窗单选后保存。
+ * - 「设置部署服务器」直接保存当前部署方式；私服用列表里已选中的服务器。
  *
  * 计划 / 资产 Tab 分别通过 iframe 展示计划文档与资产目录。
  * 路由参数 spaceId、appId 来自 `/space/:spaceId/app-project-detail/:appId`。
@@ -157,10 +156,6 @@ const AppProjectDetail: React.FC = () => {
   const [homepageUrl, setHomepageUrl] = useState<string>('');
   const [redirectUri, setRedirectUri] = useState<string>('');
   const [privateServers, setPrivateServers] = useState<PrivateServerInfo[]>([]);
-  const [deployServerId, setDeployServerId] = useState<number>();
-  const [deployTargetOpen, setDeployTargetOpen] = useState<boolean>(false);
-  const [selectedDeployServerId, setSelectedDeployServerId] =
-    useState<number>();
   const [conversationPanelVisible, setConversationPanelVisible] =
     useState<boolean>(true);
   const [iframeLoadFailed, setIframeLoadFailed] = useState<boolean>(false);
@@ -301,7 +296,6 @@ const AppProjectDetail: React.FC = () => {
         }
         const mode = resolveDeployMode(info.deployType);
         setDeployMode(mode);
-        setDeployServerId(info.deployServerId);
         if (mode === UserAppDeployTypeEnum.Private) {
           runPrivateServerList();
         }
@@ -359,7 +353,6 @@ const AppProjectDetail: React.FC = () => {
           payload?.deployType === UserAppDeployTypeEnum.Private
             ? payload.deployServerId
             : undefined;
-        setDeployServerId(nextServerId);
         setProjectInfo((prev) =>
           prev
             ? {
@@ -369,7 +362,6 @@ const AppProjectDetail: React.FC = () => {
               }
             : prev,
         );
-        setDeployTargetOpen(false);
         message.success(dict('PC.Common.Global.saveSuccess'));
       },
     },
@@ -470,6 +462,44 @@ const AppProjectDetail: React.FC = () => {
     },
     [runPrivateServerList],
   );
+
+  /**
+   * 保存当前部署方式。
+   * 平台直接保存；私服保存列表里已选中的服务器，不再打开选择弹窗。
+   */
+  const handleSetDeployServer = useCallback(() => {
+    if (!appId) {
+      return;
+    }
+    if (deployMode === UserAppDeployTypeEnum.Platform) {
+      runSetDeployTarget({
+        appId,
+        deployType: UserAppDeployTypeEnum.Platform,
+      });
+      return;
+    }
+    const serverId = projectInfo?.deployServerId;
+    if (
+      !serverId ||
+      !privateServers.some((item) => Number(item.id) === Number(serverId))
+    ) {
+      message.warning(
+        dict('PC.Pages.AppProjectDetail.selectPrivateServerRequired'),
+      );
+      return;
+    }
+    runSetDeployTarget({
+      appId,
+      deployType: UserAppDeployTypeEnum.Private,
+      deployServerId: serverId,
+    });
+  }, [
+    appId,
+    deployMode,
+    privateServers,
+    projectInfo?.deployServerId,
+    runSetDeployTarget,
+  ]);
 
   /** 仅展示用户绑定的自定义域名，过滤平台默认域名 */
   const customDomains = useMemo(
@@ -644,63 +674,6 @@ const AppProjectDetail: React.FC = () => {
       redirectUri: trimmedRedirectUri,
     });
   }, [appId, homepageUrl, redirectUri, runSaveOauthSetting]);
-
-  /**
-   * 设置部署服务器。
-   * 平台服务直接保存；私有服务器打开单选弹窗，必须选中一台后再保存。
-   */
-  const handleSetDeployServer = useCallback(() => {
-    if (!appId) {
-      return;
-    }
-    if (deployMode === UserAppDeployTypeEnum.Platform) {
-      runSetDeployTarget({
-        appId,
-        deployType: UserAppDeployTypeEnum.Platform,
-      });
-      return;
-    }
-    setSelectedDeployServerId(deployServerId);
-    setDeployTargetOpen(true);
-    if (!privateServers.length) {
-      runPrivateServerList();
-    }
-  }, [
-    appId,
-    deployMode,
-    deployServerId,
-    privateServers.length,
-    runPrivateServerList,
-    runSetDeployTarget,
-  ]);
-
-  /** 关闭选择私服弹窗 */
-  const handleCloseDeployTargetModal = useCallback(() => {
-    setDeployTargetOpen(false);
-  }, []);
-
-  /**
-   * 保存私服部署目标；未选中时拦截。
-   */
-  const handleSavePrivateDeployTarget = useCallback(() => {
-    if (!appId) {
-      return;
-    }
-    if (
-      !selectedDeployServerId ||
-      !privateServers.some((item) => item.id === selectedDeployServerId)
-    ) {
-      message.warning(
-        dict('PC.Pages.AppProjectDetail.selectPrivateServerRequired'),
-      );
-      return;
-    }
-    runSetDeployTarget({
-      appId,
-      deployType: UserAppDeployTypeEnum.Private,
-      deployServerId: selectedDeployServerId,
-    });
-  }, [appId, privateServers, runSetDeployTarget, selectedDeployServerId]);
 
   /**
    * 主页 / 回调地址：有值回填 Input，无值显示空输入框。
@@ -964,17 +937,30 @@ const AppProjectDetail: React.FC = () => {
             appInfo={projectInfo}
             servers={privateServers}
             loading={privateServerLoading}
+            selecting={setDeployLoading}
             onRefresh={runPrivateServerList}
+            onSelectDeployServer={(serverId) => {
+              if (!appId) {
+                return;
+              }
+              runSetDeployTarget({
+                appId,
+                deployType: UserAppDeployTypeEnum.Private,
+                deployServerId: serverId,
+              });
+            }}
           />
         )}
-        <Button
-          type="primary"
-          className={cx(styles['set-deploy-btn'])}
-          loading={setDeployLoading && !deployTargetOpen}
-          onClick={handleSetDeployServer}
-        >
-          {dict('PC.Pages.AppProjectDetail.setDeployServer')}
-        </Button>
+        {deployMode === UserAppDeployTypeEnum.Platform ? (
+          <Button
+            type="primary"
+            className={cx(styles['set-deploy-btn'])}
+            loading={setDeployLoading}
+            onClick={handleSetDeployServer}
+          >
+            {dict('PC.Pages.AppProjectDetail.setDeployServer')}
+          </Button>
+        ) : null}
       </section>
     </div>
   );
@@ -1106,18 +1092,6 @@ const AppProjectDetail: React.FC = () => {
           ) : null}
         </div>
       )}
-
-      {/* 私有服务器部署选择弹窗 */}
-      <SelectDeployServerModal
-        open={deployTargetOpen}
-        servers={privateServers}
-        selectedId={selectedDeployServerId}
-        loading={privateServerLoading}
-        confirmLoading={setDeployLoading}
-        onSelect={setSelectedDeployServerId}
-        onSave={handleSavePrivateDeployTarget}
-        onCancel={handleCloseDeployTargetModal}
-      />
 
       {/* 绑定域名弹窗 */}
       <Modal

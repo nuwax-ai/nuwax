@@ -203,7 +203,7 @@ export interface DataPermission {
   /*可创建智能体数量，-1表示不限制 */
   maxAgentCount?: number;
 
-  /*可创建网页应用数量，-1表示不限制 */
+  /*可创建网页数量，-1表示不限制 */
   maxPageAppCount?: number;
 
   /*可创建网站应用数量，-1表示不限制 */
