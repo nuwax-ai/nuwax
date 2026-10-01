@@ -1095,16 +1095,21 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   restartPreviewRuntimeRef.current = previewRuntime.restart;
 
   /**
-   * 重启智能体电脑。成功后再重启当前环境的应用服务。
-   * 电脑起来不代表应用进程还在，所以要主动调一次 restart。
+   * 重启智能体电脑。
+   * 线上环境不打开远程桌面，避免顺带调用 ensure。
+   * 电脑重启成功后：线上已部署才再调应用 restart，未部署不调。
+   * 开发环境仍在成功后重启当前应用。
    */
   const handleRestartComputer = useCallback(async () => {
+    const envToRestart = dbEnvRef.current;
+    const isProd = envToRestart === UserAppDbEnvEnum.Prod;
     resumeReadinessWatch();
     let restarted = false;
     try {
       restarted = await restartVncPod(
         queryConversationId,
         finalSelectedComputerId,
+        { openDesktop: !isProd },
       );
     } catch (error) {
       console.error('[AppDevPro] Restart agent computer failed:', error);
@@ -1113,7 +1118,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (!restarted) {
       return;
     }
-    const envToRestart = dbEnvRef.current;
+    const prodHasDeployment =
+      userAppInfo?.prodDeployed === true ||
+      !!userAppInfo?.prodReleaseId?.trim();
+    if (isProd && !prodHasDeployment) {
+      return;
+    }
     setPreviewStoppedForEnv(envToRestart, false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
     void restartPreviewRuntimeRef.current(envToRestart);
@@ -1123,6 +1133,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     restartVncPod,
     resumeReadinessWatch,
     setPreviewStoppedForEnv,
+    userAppInfo?.prodDeployed,
+    userAppInfo?.prodReleaseId,
   ]);
   const previewRunningRef = useRef(previewRuntime.running);
   previewRunningRef.current = previewRuntime.running;
@@ -1172,7 +1184,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       readinessKind === 'stopped' ||
       readinessKind === 'notDeployed' ||
       readinessKind === 'failed' ||
-      readinessKind === 'unsupported' ||
       readinessKind === 'incomplete'
     ) {
       return;
@@ -1895,15 +1906,15 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const previewConversationActive =
     isConversationActive || Boolean(runtimeLine?.effectiveIsActive);
   /**
-   * 会话已结束且文件树已加载，但无有效项目文件。
-   * 此时不应继续展示「预览准备中」，而应提示用户继续对话生成项目。
-   * 会话进行中即使 fileList 尚未包含 workspace.manifest.toml，也保持预览加载。
+   * 首次进入后，根目录 file-list 还没成功返回前不提示没有项目。
+   * 返回之后才看列表：为空，或根目录没有 workspace.manifest.toml，才提示。
+   * 会话进行中即使尚未包含该文件，也保持预览加载。
    */
   const missingProjectFiles =
     conversationReady &&
     !previewConversationActive &&
     !hasPendingIntervention &&
-    !workspaceFiles.loading &&
+    workspaceFiles.fileListLoaded &&
     !hasFileTreeData;
 
   /**
@@ -2292,13 +2303,13 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       dict('PC.Pages.AppDevPro.confirmStopTitle'),
       dict('PC.Pages.AppDevPro.confirmStopContent'),
       () => {
-        resumeReadinessWatch();
         setPreviewStoppedForEnv(envToStop, true);
         void previewRuntime.stop(envToStop).then((stopped) => {
-          if (stopped) {
+          if (!stopped) {
+            setPreviewStoppedForEnv(envToStop, false);
             return;
           }
-          setPreviewStoppedForEnv(envToStop, false);
+          window.setTimeout(resumeReadinessWatch, 3000);
         });
       },
     );
