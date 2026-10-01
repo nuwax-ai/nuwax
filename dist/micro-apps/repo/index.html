@@ -1,0 +1,76 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    
+    <script>
+      if (window.__POWERED_BY_QIANKUN__) {
+        const makeLifeCycle = (hookName) => {
+          const p = new Promise((resolve, reject) => {
+            window.document[Symbol.for(`qiankun_${hookName}_nuwax-repo-web`)] = resolve;
+          });
+          return (props) => p.then(fn => fn(props));
+        };
+        window['nuwax-repo-web'] = {
+          bootstrap: makeLifeCycle('bootstrap'),
+          mount: makeLifeCycle('mount'),
+          unmount: makeLifeCycle('unmount'),
+          update: makeLifeCycle('update')
+        };
+      }
+    </script>
+    <script crossorigin="">
+      import('' + '/micro-apps/repo/assets/index-CZ8uS8d2.js').then(() => {
+        if (!window.__POWERED_BY_QIANKUN__) return;
+        const hooks = window[`qiankunLifeCycles_nuwax-repo-web`];
+        if (hooks) {
+          window.document[Symbol.for(`qiankun_bootstrap_nuwax-repo-web`)]((props) => hooks.bootstrap && hooks.bootstrap(props));
+          window.document[Symbol.for(`qiankun_mount_nuwax-repo-web`)]((props) => hooks.mount && hooks.mount(props));
+          window.document[Symbol.for(`qiankun_unmount_nuwax-repo-web`)]((props) => hooks.unmount && hooks.unmount(props));
+          window.document[Symbol.for(`qiankun_update_nuwax-repo-web`)]((props) => hooks.update && hooks.update(props));
+          window.dispatchEvent(new CustomEvent('qiankun:loaded'));
+        }
+      }).catch((error) => {
+        console.error(error);
+        if (!window.__POWERED_BY_QIANKUN__) return;
+        if (error.name === 'TypeError' && error.message && error.message.startsWith('Failed to fetch dynamically imported module:')) {
+          window.dispatchEvent(new CustomEvent('qiankun:fetchEntryError', { detail: { url: '/micro-apps/repo/assets/index-CZ8uS8d2.js', error } }));
+        } else {
+          window.dispatchEvent(new CustomEvent('qiankun:runtimeError', { detail: { error } }));
+        }
+      });
+    </script>
+    <script>
+      (() => {
+        const prefix = '';
+        const preloadUrls = [
+          `${prefix}/micro-apps/repo/assets/rolldown-runtime-C0FnF6B9.js`,
+          `${prefix}/micro-apps/repo/assets/jsx-runtime-CF8pO6-S.js`,
+          `${prefix}/micro-apps/repo/assets/react-dom-BhSiG3KY.js`,
+          `${prefix}/micro-apps/repo/assets/preload-helper-DUplO5B6.js`,
+          `${prefix}/micro-apps/repo/assets/Avatar-C4PkxSU6.js`,
+          `${prefix}/micro-apps/repo/assets/feedback-state-DTkN4OJI.js`,
+          `${prefix}/micro-apps/repo/assets/icons-QLoh3KnC.js`,
+          `${prefix}/micro-apps/repo/assets/open-file-picker-idOuoHYl.js`,
+          `${prefix}/micro-apps/repo/assets/jszip.min-BXqW2-9v.js`,
+          `${prefix}/micro-apps/repo/assets/pptx-ttoSlMzt.js`,
+          `${prefix}/micro-apps/repo/assets/import-busy-BPYUz7wi.js`,
+          `${prefix}/micro-apps/repo/assets/PageTree-Jfcy8Tn6.js`,
+          `${prefix}/micro-apps/repo/assets/collab-bC3qLwJo.js`
+        ];
+        for (const url of preloadUrls) {
+          const link = document.createElement('link');
+          link.rel = 'modulepreload';
+          link.href = url;
+          link.crossOrigin = 'anonymous';
+          document.head.appendChild(link);
+        }
+      })();
+    </script>
+    <link rel="stylesheet" crossorigin="" href="/micro-apps/repo/assets/index-DCmE-ysG.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  
+
+</body></html>
