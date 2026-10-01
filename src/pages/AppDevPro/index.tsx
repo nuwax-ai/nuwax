@@ -301,6 +301,21 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const handleCloseRepoDocPreview = useCallback(() => {
     setRepoDocPreviewUrl(null);
   }, []);
+  const repoDocPreviewUrlRef = useRef<string | null>(null);
+  repoDocPreviewUrlRef.current = repoDocPreviewUrl;
+  /**
+   * 资料库嵌入页盖住右侧工作区时，点顶部图标先关掉嵌入页。
+   * 返回 true 表示这次点击是从资料库页切走，调用方不要把已经打开的目标面板再收起。
+   */
+  const closeRepoDocPreviewOverlay = useCallback(() => {
+    if (!repoDocPreviewUrlRef.current) {
+      return false;
+    }
+    setRepoDocPreviewUrl(null);
+    return true;
+  }, []);
+  /** 资料库页展开时，顶部工作区图标都不算选中 */
+  const repoDocCoversWorkspace = Boolean(repoDocPreviewUrl);
   const workspaceViewRef = useRef<AppDevWorkspaceView>(workspaceView);
   workspaceViewRef.current = workspaceView;
   /** 打开数据库前的工作区，再次点击图标时还原 */
@@ -1694,6 +1709,25 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const handleToggleFileTreeSidebar = useCallback(() => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+    const revealingRepoDoc = closeRepoDocPreviewOverlay();
+
+    // 资料库页盖住时：关掉嵌入页。文件树已经在下面就只露出它，否则打开文件树。
+    if (revealingRepoDoc) {
+      const filesAlreadyOpen =
+        workspaceView === 'files' && canShowFileView && !isTerminalExpanded;
+      if (filesAlreadyOpen) {
+        return;
+      }
+      if (isTerminalExpanded) {
+        setDevConsoleCollapseSignal((n) => n + 1);
+      }
+      if (workspaceView !== 'files') {
+        setWorkspaceView('files');
+      }
+      setCanShowFileView(true);
+      handleRefreshFileList(queryConversationId);
+      return;
+    }
 
     // 从应用预览 / 数据库切回文件树工作区
     if (workspaceView !== 'files') {
@@ -1723,6 +1757,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       return nextVisible;
     });
   }, [
+    canShowFileView,
+    closeRepoDocPreviewOverlay,
     devConsoleActiveTab,
     devConsoleLayoutMode,
     handleRefreshFileList,
@@ -1750,6 +1786,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const handleOpenTerminalPanel = useCallback(() => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+    const revealingRepoDoc = closeRepoDocPreviewOverlay();
+
+    // 资料库页盖住且终端已全屏：只关掉嵌入页，不把终端收起。
+    if (revealingRepoDoc && isTerminalExpanded) {
+      return;
+    }
 
     if (isTerminalExpanded) {
       setDevConsoleCollapseSignal((n) => n + 1);
@@ -1775,6 +1817,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     devConsoleLayoutMode,
     openPreviewView,
     queryConversationId,
+    closeRepoDocPreviewOverlay,
     startEnvPodIfNeeded,
     workspaceView,
   ]);
@@ -1783,10 +1826,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const isTerminalPanelOpen =
     devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
 
-  /** 顶部入口互斥 active：同一时刻仅高亮一个 */
+  /** 顶部入口互斥 active：资料库嵌入页展开时全部取消选中 */
   const isFileTreeIconActive =
-    workspaceView === 'files' && canShowFileView && !isTerminalPanelOpen;
-  const isTerminalIconActive = isTerminalPanelOpen;
+    !repoDocCoversWorkspace &&
+    workspaceView === 'files' &&
+    canShowFileView &&
+    !isTerminalPanelOpen;
+  const isTerminalIconActive =
+    !repoDocCoversWorkspace && isTerminalPanelOpen;
 
   // ==================================== 文件视图 & 编排面板 ====================================
   /**
@@ -2338,8 +2385,13 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 从未选中切入时始终落到「数据库」页签，而不是停留在配置页。
    */
   const handleOpenDatabasePanel = useCallback(() => {
+    const revealingRepoDoc = closeRepoDocPreviewOverlay();
     resetDevConsoleExpandedLayout();
     if (workspaceView === 'database') {
+      // 资料库页盖住时，数据库已在下面，只关掉嵌入页。
+      if (revealingRepoDoc) {
+        return;
+      }
       const prev = workspaceViewBeforeDatabaseRef.current;
       setWorkspaceView(prev === 'database' ? 'app-preview' : prev);
       return;
@@ -2347,7 +2399,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     workspaceViewBeforeDatabaseRef.current = workspaceView;
     setDatabaseTabId(getToolTabId('database'));
     setWorkspaceView('database');
-  }, [resetDevConsoleExpandedLayout, workspaceView]);
+  }, [
+    closeRepoDocPreviewOverlay,
+    resetDevConsoleExpandedLayout,
+    workspaceView,
+  ]);
 
   const databaseTabs = useMemo<PreviewTab[]>(
     () => [
@@ -2392,6 +2448,17 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /** 打开独立应用预览视图；已启动或线上环境有地址时不再重复 start */
   const handleOpenAppPreview = useCallback(() => {
+    const revealingRepoDoc = closeRepoDocPreviewOverlay();
+    const terminalExpanded =
+      devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+    // 资料库页盖住且应用预览已在下面：只关掉嵌入页，不重复启动预览。
+    if (
+      revealingRepoDoc &&
+      workspaceView === 'app-preview' &&
+      !terminalExpanded
+    ) {
+      return;
+    }
     resetDevConsoleExpandedLayout();
     setWorkspaceView('app-preview');
     if (dbEnv === UserAppDbEnvEnum.Prod) {
@@ -2409,12 +2476,16 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       void prepareDevPreviewIfNeededRef.current();
     }
   }, [
+    closeRepoDocPreviewOverlay,
     dbEnv,
+    devConsoleActiveTab,
+    devConsoleLayoutMode,
     hasPendingIntervention,
     previewConversationActive,
     podReady,
     previewDevActionLocked,
     resetDevConsoleExpandedLayout,
+    workspaceView,
   ]);
 
   /** 启动当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
@@ -2601,6 +2672,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 打开时复用开发环境容器：已启动或启动中不再 ensure，未启动或失败才拉起。
    */
   const handleOpenDesktopPanel = useCallback(() => {
+    const revealingRepoDoc = closeRepoDocPreviewOverlay();
     resetDevConsoleExpandedLayout();
     if (!appId || !envPodConversationId) {
       message.warning(dict('PC.Pages.AppDevPro.remoteDesktopEmpty'));
@@ -2608,6 +2680,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
 
     if (workspaceView === 'remote-desktop') {
+      // 资料库页盖住时，远程桌面已在下面，只关掉嵌入页。
+      if (revealingRepoDoc) {
+        return;
+      }
       const prev = workspaceViewBeforeRemoteDesktopRef.current;
       setWorkspaceView(prev === 'remote-desktop' ? 'files' : prev);
       return;
@@ -2619,6 +2695,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     startEnvPodIfNeeded(UserAppDbEnvEnum.Dev);
   }, [
     appId,
+    closeRepoDocPreviewOverlay,
     envPodConversationId,
     previewTabs,
     resetDevConsoleExpandedLayout,
@@ -2696,10 +2773,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /** 数据库或数据库配置独立视图是否激活（Header 图标高亮，与终端互斥） */
   const isDatabasePanelOpen =
-    workspaceView === 'database' && !isTerminalPanelOpen;
+    !repoDocCoversWorkspace &&
+    workspaceView === 'database' &&
+    !isTerminalPanelOpen;
   /** 应用预览独立视图是否激活（Header 图标高亮，与终端互斥） */
   const isAppPreviewOpen =
-    workspaceView === 'app-preview' && !isTerminalPanelOpen;
+    !repoDocCoversWorkspace &&
+    workspaceView === 'app-preview' &&
+    !isTerminalPanelOpen;
   /** 应用预览入口始终保留；线上尚未部署时在预览区提示去部署 */
   const isShowAppPreview = true;
   /**
@@ -2712,7 +2793,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     !userAppInfo?.prodReleaseId?.trim();
   /** 远程桌面独立工作区是否激活（Header 图标高亮，与终端互斥） */
   const isAgentDesktopOpen =
-    workspaceView === 'remote-desktop' && !isTerminalPanelOpen;
+    !repoDocCoversWorkspace &&
+    workspaceView === 'remote-desktop' &&
+    !isTerminalPanelOpen;
 
   /** 启动成功后：使用当前环境对应的开发或线上域名 */
   const appPreviewUrl = useMemo(
