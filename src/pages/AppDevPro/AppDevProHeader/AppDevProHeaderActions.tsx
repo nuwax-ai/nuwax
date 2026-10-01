@@ -125,7 +125,7 @@ export interface AppDevProHeaderActionsProps {
   isAgentDesktopOpen?: boolean;
   /** 打开 / 关闭远程桌面 */
   onOpenDesktopPanel?: () => void;
-  /** 是否显示应用预览入口（线上环境未部署时无可预览地址） */
+  /** 是否显示应用预览入口。线上尚未部署时也保留，预览区再提示去部署 */
   isShowAppPreview?: boolean;
   /** 应用预览页签是否处于激活状态 */
   isAppPreviewOpen?: boolean;
@@ -149,6 +149,11 @@ export interface AppDevProHeaderActionsProps {
   readinessReady?: boolean | null;
   /** 应用预览重启 / 停止（Header 图标，逻辑与预览区一致） */
   previewRuntimeControls?: PreviewRuntimeButtonsProps;
+  /**
+   * 放在部署按钮前面的更多菜单。
+   * 只随开发 / 线上切换显隐，不随工作区（应用预览、数据库等）变化。
+   */
+  filePreviewMoreMenu?: React.ReactNode;
 }
 
 /**
@@ -189,6 +194,7 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   readinessStatus = null,
   readinessReady = null,
   previewRuntimeControls,
+  filePreviewMoreMenu = null,
 }) => {
   const handlePublishClick = useCallback(() => {
     if (remotePublishing) {
@@ -355,7 +361,7 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
           }
         />
 
-        {/* 应用预览页签：线上环境未部署时无预览地址，入口隐藏 */}
+        {/* 应用预览：线上尚未部署时也保留入口，预览区再提示去部署 */}
         <ConditionRender condition={isShowAppPreview}>
           <TooltipIcon
             title={dict('PC.Pages.AppDevPro.appPreview')}
@@ -392,6 +398,11 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
               </span>
             </Dropdown>
           </div>
+        </ConditionRender>
+
+        {/* 更多菜单：只在开发环境展示，紧挨部署按钮左侧 */}
+        <ConditionRender condition={isDevEnv && !!filePreviewMoreMenu}>
+          {filePreviewMoreMenu}
         </ConditionRender>
 
         {/* 部署按钮：仅开发环境。远程构建中可点击取消，本地部署仅展示 loading */}
