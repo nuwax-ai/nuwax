@@ -1,3 +1,4 @@
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiSearchFiles } from '@/services/vncDesktop';
@@ -280,10 +281,20 @@ const SearchView: React.FC<SearchViewProps> = ({
                     {getFileIcon(file.name)}
                   </div>
 
-                  {/* 文件信息 */}
+                  {/* 文件信息：仅实际被省略的文件名、路径才出现完整内容提示 */}
                   <div className={cx(styles['file-info'])}>
-                    <div className={cx(styles['file-name'])}>{file.name}</div>
-                    <div className={cx(styles['file-path'])}>{fileDirPath}</div>
+                    <EllipsisTooltip
+                      className={cx(styles['file-name'])}
+                      text={file.name}
+                      placement="topLeft"
+                    />
+                    {fileDirPath ? (
+                      <EllipsisTooltip
+                        className={cx(styles['file-path'])}
+                        text={fileDirPath}
+                        placement="topLeft"
+                      />
+                    ) : null}
                   </div>
                 </div>
               );
