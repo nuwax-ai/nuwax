@@ -542,11 +542,20 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
    * 进页自动发送直发 runtime store——乐观轮次与面板渲染同线，首条消息立即可见，
    * 不再等 5s 快照轮询从后端捞回；AgentConversationChatPanel 消费同一实例不自建。
    */
+  /** 会话事件打开桌面时调用，具体打开动作在面板回调里赋值 */
+  const openDesktopViewFromEventRef = useRef<(conversationId: number) => void>(
+    () => {},
+  );
+
   const runtimeLine = useConversationRuntimeSession({
     conversationId: queryConversationId,
     // chat 请求携带面板当前选中电脑（空串兜底 undefined）
     getSandboxId: () => finalSelectedComputerId || undefined,
-    effectsResources: {}, // 页面入口无 chat model 资源；预览类 effect 静默忽略
+    effectsResources: {
+      openDesktopView: (conversationId: number) => {
+        openDesktopViewFromEventRef.current(conversationId);
+      },
+    },
   });
 
   useInitialConversationAutoSend({
@@ -1161,6 +1170,22 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     openDesktopView,
     closePreviewView,
   ]);
+
+  /**
+   * 会话 OPEN_DESKTOP：打开智能体电脑。已经打开时不再切换关掉。
+   */
+  openDesktopViewFromEventRef.current = (conversationId: number) => {
+    if (
+      !conversationId ||
+      Number(conversationId) !== Number(queryConversationId) ||
+      isAgentDesktopOpen ||
+      finalSelectedComputerId !== '-1' ||
+      agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes
+    ) {
+      return;
+    }
+    void handleOpenDesktopPanel();
+  };
 
   /** 是否显示文件面板相关入口（通用型智能体 + 有效消息） */
   const isShowFilePanel = useMemo(() => {

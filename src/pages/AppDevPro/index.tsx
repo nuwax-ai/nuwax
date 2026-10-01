@@ -702,12 +702,22 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     },
   });
 
+  /** 会话事件打开远程桌面时调用，具体动作在工作区回调里赋值 */
+  const openDesktopViewFromEventRef = useRef<(conversationId: number) => void>(
+    () => {},
+  );
+
   /** 会话运行时会话 */
   const runtimeLine = useConversationRuntimeSession({
     conversationId: queryConversationId,
     // chat 请求携带面板当前选中电脑（空串兜底 undefined）
     getSandboxId: () => finalSelectedComputerId || undefined,
-    effectsResources: { refreshFileListThrottled: refreshRuntimeFileTree },
+    effectsResources: {
+      refreshFileListThrottled: refreshRuntimeFileTree,
+      openDesktopView: (conversationId: number) => {
+        openDesktopViewFromEventRef.current(conversationId);
+      },
+    },
   });
 
   /** 会话进度胶囊模型 */
@@ -2615,6 +2625,32 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     startEnvPodIfNeeded,
     workspaceView,
   ]);
+
+  /**
+   * 会话 OPEN_DESKTOP：开发环境打开远程桌面工作区。
+   * 已经打开时保持不动。线上环境不拉桌面。
+   */
+  openDesktopViewFromEventRef.current = (conversationId: number) => {
+    if (dbEnvRef.current !== UserAppDbEnvEnum.Dev) {
+      return;
+    }
+    if (
+      !appId ||
+      !envPodConversationId ||
+      (conversationId &&
+        Number(conversationId) !== Number(envPodConversationId))
+    ) {
+      return;
+    }
+    if (workspaceViewRef.current === 'remote-desktop') {
+      return;
+    }
+    resetDevConsoleExpandedLayout();
+    workspaceViewBeforeRemoteDesktopRef.current = workspaceViewRef.current;
+    previewTabs.closeTab(getToolTabId('remote-desktop'));
+    setWorkspaceView('remote-desktop');
+    startEnvPodIfNeeded(UserAppDbEnvEnum.Dev);
+  };
 
   /**
    * 切换环境：线上环境没有文件树，隐藏图标与中间栏。
