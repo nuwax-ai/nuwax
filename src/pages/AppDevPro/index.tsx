@@ -10,6 +10,7 @@ import FileTreeGitSourcePanel, {
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
 import { workspaceNodeId } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
+import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
@@ -2481,15 +2482,21 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 切换环境：线上环境没有文件树，隐藏图标与中间栏。
-   * 未部署且不在数据库工作区时进入数据库；已部署才进入应用预览。
+   * 切到线上后进入应用预览。尚未部署时只展示提示，不拉起容器。
    * 当前已是数据库或数据库配置时保持页签，配置页随环境重新请求。
    * 目标环境已启动成功则直接展示；未启动或上次失败则重新拉起。
    */
   const handleEnvChange = useCallback(
     (nextEnv: UserAppDbEnvEnum) => {
       setDbEnv(nextEnv);
-      // 开发 / 线上同一套：已启动直接复用，未启动或失败则先拉起
-      startEnvPodIfNeeded(nextEnv);
+      const prodAwaitingDeploy =
+        nextEnv === UserAppDbEnvEnum.Prod &&
+        userAppInfo?.prodDeployed !== true &&
+        !userAppInfo?.prodReleaseId?.trim();
+      // 线上还没有生产版本时不拉起容器，预览区只提示去部署
+      if (!prodAwaitingDeploy) {
+        startEnvPodIfNeeded(nextEnv);
+      }
       if (nextEnv === UserAppDbEnvEnum.Dev) {
         setSettingsOpen(false);
         setBuildVersionsOpen(false);
@@ -2503,19 +2510,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       if (workspaceView === 'database') {
         return;
       }
-      if (userAppInfo?.prodDeployed === true) {
-        setWorkspaceView('app-preview');
-        return;
-      }
-      workspaceViewBeforeDatabaseRef.current = workspaceView;
-      setDatabaseTabId(getToolTabId('database'));
-      setWorkspaceView('database');
+      setWorkspaceView('app-preview');
     },
     [
       previewTabs,
       resetDevConsoleExpandedLayout,
       startEnvPodIfNeeded,
       userAppInfo?.prodDeployed,
+      userAppInfo?.prodReleaseId,
       workspaceView,
     ],
   );
@@ -2526,9 +2528,16 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /** 应用预览独立视图是否激活（Header 图标高亮，与终端互斥） */
   const isAppPreviewOpen =
     workspaceView === 'app-preview' && !isTerminalPanelOpen;
-  /** 线上环境未部署时没有可预览的应用，隐藏应用预览入口 */
-  const isShowAppPreview =
-    dbEnv === UserAppDbEnvEnum.Dev || userAppInfo?.prodDeployed === true;
+  /** 应用预览入口始终保留；线上尚未部署时在预览区提示去部署 */
+  const isShowAppPreview = true;
+  /**
+   * 线上环境还没有生产版本。
+   * 停过服务但 prodReleaseId 仍在时不算未部署，继续走预览。
+   */
+  const prodAwaitingDeploy =
+    dbEnv === UserAppDbEnvEnum.Prod &&
+    userAppInfo?.prodDeployed !== true &&
+    !userAppInfo?.prodReleaseId?.trim();
   /** 远程桌面独立工作区是否激活（Header 图标高亮，与终端互斥） */
   const isAgentDesktopOpen =
     workspaceView === 'remote-desktop' && !isTerminalPanelOpen;
@@ -2697,6 +2706,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           dbEnv === UserAppDbEnvEnum.Prod && previewRuntime.restarting
         }
         directPreview={dbEnv === UserAppDbEnvEnum.Prod}
+        prodUndeployed={prodAwaitingDeploy}
+        onDeploy={handleOpenPublish}
         readinessStatus={serviceReadiness.readinessByEnv[dbEnv]?.status}
         readinessReady={serviceReadiness.readinessByEnv[dbEnv]?.ready}
         previewAlreadyPresented={previewPresentedByEnv[dbEnv]}
@@ -2739,6 +2750,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       serviceReadiness.readinessByEnv,
       prodPod.status,
       userAppInfo?.prodDeployed,
+      userAppInfo?.prodReleaseId,
+      prodAwaitingDeploy,
+      handleOpenPublish,
     ],
   );
 
@@ -2798,7 +2812,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    */
   const renderRightPanel = () => {
     const isFilesWorkspace = workspaceView === 'files';
-    const isProdEnv = dbEnv === UserAppDbEnvEnum.Prod;
     return (
       <div className={cx(styles['right-panel'])}>
         <div className={cx(styles['right-panel-body'])}>
@@ -2814,14 +2827,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               onTogglePinTab={previewTabs.togglePinTab}
               onTabReorder={previewTabs.reorderTabs}
               permanentWorkspaceToolIds={workspaceToolIds}
-              showMoreActions={!isProdEnv}
-              onRestartServer={() => {
-                void handleRestartComputer();
-              }}
-              onRestartAgent={() => {
-                restartAgent(queryConversationId);
-              }}
-              isCloudComputer={finalSelectedComputerId === '-1'}
+              showMoreActions={false}
             />
           ) : workspaceView === 'database' ? (
             <PreviewTabBar
@@ -3073,6 +3079,19 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                 readinessStatus={serviceReadiness.readinessByEnv[dbEnv]?.status}
                 readinessReady={serviceReadiness.readinessByEnv[dbEnv]?.ready}
                 previewRuntimeControls={previewRuntimeControls}
+                filePreviewMoreMenu={
+                  dbEnv === UserAppDbEnvEnum.Dev ? (
+                    <MoreActionsMenu
+                      onRestartServer={() => {
+                        void handleRestartComputer();
+                      }}
+                      onRestartAgent={() => {
+                        restartAgent(queryConversationId);
+                      }}
+                      isCloudComputer={finalSelectedComputerId === '-1'}
+                    />
+                  ) : null
+                }
               />
 
               <div className={cx(styles['right-column-body'])}>
