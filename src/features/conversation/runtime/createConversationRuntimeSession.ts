@@ -3,6 +3,7 @@ import {
   isTerminalTaskStatus,
   resolveTerminalTaskStatus,
 } from '@/features/conversation/domain/taskStatus';
+import { isOpenDesktopProcessingEvent } from '@/features/conversation/domain/openDesktopEvent';
 import { shouldRefreshWorkspaceFiles } from '@/features/conversation/domain/workspaceFileChange';
 import {
   AssistantRoleEnum,
@@ -362,6 +363,13 @@ export function createConversationRuntimeSession(
           cardBindConfig: processing.cardBindConfig,
           cardData: processing.cardData,
           append: res.requestId === currentRequestId,
+        });
+      }
+      // 打开远程桌面。各页面注入自己的 openDesktopView，条件由页面决定。
+      if (isOpenDesktopProcessingEvent(processing)) {
+        runtime.effects.dispatch({
+          type: 'desktop.open',
+          conversationId: conversationId as number,
         });
       }
       return;

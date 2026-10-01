@@ -36,6 +36,7 @@ import {
   createConversationPageCacheKey,
   type ConversationWorkspaceView,
 } from '@/features/conversation/react/useConversationPageCache';
+import { canOpenDesktopFromEvent } from '@/features/conversation/domain/openDesktopEvent';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
 import type { ClientConversationPageInstanceProps } from '@/models/appTabKeepAlive';
@@ -1111,6 +1112,35 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   // 渲染线放在产物入口判断之前：V2 的消息列表在 runtime，不回写页面模型。
   // 图标是否出现直接看这份正在展示的列表，不必在 onSendMessage 上再打发送标记。
+  /**
+   * 会话事件打开远程桌面。条件与编排页共用：未隐藏桌面，且生效电脑是云电脑。
+   */
+  const openDesktopViewFromEvent = useCallback(
+    (conversationId: number) => {
+      if (
+        !canOpenDesktopFromEvent({
+          conversationId,
+          pageConversationId: id,
+          hideDesktop: effectiveAgent?.hideDesktop,
+          sandboxId:
+            getEffectiveSandboxId() ||
+            conversationInfo?.sandboxServerId ||
+            effectiveAgent?.sandboxId,
+        })
+      ) {
+        return;
+      }
+      void openDesktopView(conversationId);
+    },
+    [
+      conversationInfo?.sandboxServerId,
+      effectiveAgent,
+      getEffectiveSandboxId,
+      id,
+      openDesktopView,
+    ],
+  );
+
   const runtimeLine = useConversationRuntimeSession({
     conversationId: id,
     messageViewRef,
@@ -1121,7 +1151,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       runHistory,
       runHistoryItem,
       showPagePreview,
-      openDesktopView,
+      openDesktopView: openDesktopViewFromEvent,
       setCardList,
       setShowType,
       refreshFileListThrottled: handleRefreshFileList,
