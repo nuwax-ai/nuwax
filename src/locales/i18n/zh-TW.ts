@@ -890,6 +890,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.RunOver.runError": "執行錯誤",
   "PC.Components.RunOver.thinking": "正在思考",
   "PC.Components.SearchView.noMatchingFiles": "暫無匹配檔案",
+  "PC.Components.SearchView.searching": "搜尋中...",
   "PC.Components.SearchView.searchPlaceholder": "搜尋檔案...",
   "PC.Components.SelectComponent.add": "新增",
   "PC.Components.SelectComponent.addBtn": "新增",

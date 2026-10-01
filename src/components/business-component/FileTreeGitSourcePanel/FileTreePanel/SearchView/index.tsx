@@ -93,11 +93,11 @@ const SearchView: React.FC<SearchViewProps> = ({
       return;
     }
 
-    // 本次请求的序号，响应对不上时说明已有更新的搜索
+    // 本次请求的序号，响应对不上时说明已有更新的搜索。
+    // 不在这里清空已有结果：清空会让下拉先收起，等接口返回再弹出。
     const seq = requestSeqRef.current + 1;
     requestSeqRef.current = seq;
     setSearching(true);
-    setRemoteFiles([]);
     const timer = window.setTimeout(() => {
       void (async () => {
         try {
@@ -141,8 +141,13 @@ const SearchView: React.FC<SearchViewProps> = ({
    */
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    const hasKeyword = value.trim().length > 0;
     setSearchValue(value);
-    setIsDropdownVisible(value.trim().length > 0);
+    setIsDropdownVisible(hasKeyword);
+    // 与打开下拉同一拍标记搜索中，避免第一帧先画出「暂无匹配」
+    if (remoteSearchRef.current) {
+      setSearching(hasKeyword);
+    }
     setSelectedIndex(0);
   };
 
@@ -261,8 +266,8 @@ const SearchView: React.FC<SearchViewProps> = ({
       {/* 搜索结果下拉列表 */}
       {isDropdownVisible && (
         <div className={cx(styles['search-dropdown'])} ref={dropdownRef}>
-          {filteredFiles.length > 0 || searching ? (
-            // 有搜索结果时显示文件列表
+          {filteredFiles.length > 0 ? (
+            // 有搜索结果时显示文件列表；新关键词的结果返回前继续展示上一份，避免下拉收起
             filteredFiles.map((file: FileNode, index: number) => {
               const isSelected = index === selectedIndex;
               const fileDirPath = getFileDirPath(file.path || file.id);
@@ -300,10 +305,11 @@ const SearchView: React.FC<SearchViewProps> = ({
               );
             })
           ) : (
-            // 没有搜索结果时显示提示
             <div className={cx(styles['search-empty'])}>
               <div className={cx(styles['empty-text'])}>
-                {dict('PC.Components.SearchView.noMatchingFiles')}
+                {searching
+                  ? dict('PC.Components.SearchView.searching')
+                  : dict('PC.Components.SearchView.noMatchingFiles')}
               </div>
             </div>
           )}

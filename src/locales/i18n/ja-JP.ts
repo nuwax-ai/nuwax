@@ -872,6 +872,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.RunOver.runError": "実行エラー",
   "PC.Components.RunOver.thinking": "考え",
   "PC.Components.SearchView.noMatchingFiles": "一致するファイルがありません",
+  "PC.Components.SearchView.searching": "検索中...",
   "PC.Components.SearchView.searchPlaceholder": "ファイルを検索...",
   "PC.Components.SelectComponent.add": "追加",
   "PC.Components.SelectComponent.addBtn": "追加",
