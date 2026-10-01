@@ -39,11 +39,14 @@
       background-color: #f5f5f5;
     }
 
-    /** 资料库文档盖在工作区上，关闭后回到原来的预览 */
+    /**
+     * 资料库文档盖在工作区上，关闭后回到原来的预览。
+     * 底部终端全屏是 z-index: 10，这里必须更高，否则先打开终端再点资料库时终端会挡住嵌入页。
+     */
     .repo-doc-preview {
       position: absolute;
       inset: 0;
-      z-index: 6;
+      z-index: 20;
       display: flex;
       min-width: 0;
       min-height: 0;
