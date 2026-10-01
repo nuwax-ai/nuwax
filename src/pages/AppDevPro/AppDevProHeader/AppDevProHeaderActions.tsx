@@ -4,6 +4,7 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { PublishStatusEnum } from '@/types/enums/common';
+import { CheckCircleFilled } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo } from 'react';
@@ -12,10 +13,78 @@ import PreviewRuntimeButtons, {
   type PreviewRuntimeButtonsProps,
 } from '../ConversationAgentFilePreview/PreviewTabBar/PreviewRuntimeButtons';
 import { UserAppDbEnvEnum } from '../services/appDb';
+import { UserAppReadinessStatusEnum } from '../services/appDevPro';
 import type { UserAppInfo } from '../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/** 环境切换后面要展示文案的就绪状态 */
+const READINESS_BADGE_TEXT: Partial<
+  Record<UserAppReadinessStatusEnum, { className: string; labelKey: string }>
+> = {
+  [UserAppReadinessStatusEnum.NotDeployed]: {
+    className: 'readiness-not-deployed',
+    labelKey: 'PC.Pages.AppDevPro.readinessNotDeployed',
+  },
+  [UserAppReadinessStatusEnum.Starting]: {
+    className: 'readiness-starting',
+    labelKey: 'PC.Pages.AppDevPro.readinessBadgeStarting',
+  },
+  [UserAppReadinessStatusEnum.Stopping]: {
+    className: 'readiness-stopping',
+    labelKey: 'PC.Pages.AppDevPro.readinessBadgeStopping',
+  },
+  [UserAppReadinessStatusEnum.Stopped]: {
+    className: 'readiness-stopped',
+    labelKey: 'PC.Pages.AppDevPro.readinessBadgeStopped',
+  },
+  [UserAppReadinessStatusEnum.Failed]: {
+    className: 'readiness-failed',
+    labelKey: 'PC.Pages.AppDevPro.readinessBadgeFailed',
+  },
+  [UserAppReadinessStatusEnum.Unsupported]: {
+    className: 'readiness-unsupported',
+    labelKey: 'PC.Pages.AppDevPro.readinessBadgeUnsupported',
+  },
+};
+
+/**
+ * 当前环境的就绪状态，跟在开发 / 线上切换后面。
+ * 真正就绪时只显示成功图标，其余状态显示短文案。
+ *
+ * @param props.status 顶层业务状态
+ * @param props.ready ready 字段
+ * @returns 状态标记；没有可展示状态时不渲染
+ */
+const ReadinessEnvBadge: React.FC<{
+  status?: UserAppReadinessStatusEnum | null;
+  ready?: boolean | null;
+}> = ({ status, ready }) => {
+  if (status === UserAppReadinessStatusEnum.Ready && ready === true) {
+    const label = dict('PC.Pages.AppDevPro.readinessBadgeReady');
+    return (
+      <Tooltip title={label}>
+        <span
+          className={cx(styles['readiness-badge'], styles['readiness-ready'])}
+          aria-label={label}
+        >
+          <CheckCircleFilled />
+        </span>
+      </Tooltip>
+    );
+  }
+
+  const text = status ? READINESS_BADGE_TEXT[status] : undefined;
+  if (!text) {
+    return null;
+  }
+  return (
+    <span className={cx(styles['readiness-badge'], styles[text.className])}>
+      <span>{dict(text.labelKey)}</span>
+    </span>
+  );
+};
 
 export interface AppDevProHeaderActionsProps {
   /** 外层容器类名 */
@@ -74,6 +143,10 @@ export interface AppDevProHeaderActionsProps {
   env?: UserAppDbEnvEnum;
   /** 切换开发 / 线上环境 */
   onEnvChange?: (env: UserAppDbEnvEnum) => void;
+  /** 当前环境最近一次就绪状态，展示在环境切换后面 */
+  readinessStatus?: UserAppReadinessStatusEnum | null;
+  /** 当前环境 ready 字段。status 为 ready 时必须为 true 才显示成功图标 */
+  readinessReady?: boolean | null;
   /** 应用预览重启 / 停止（Header 图标，逻辑与预览区一致） */
   previewRuntimeControls?: PreviewRuntimeButtonsProps;
 }
@@ -113,6 +186,8 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   onTogglePublishVersionRecords,
   env = UserAppDbEnvEnum.Dev,
   onEnvChange,
+  readinessStatus = null,
+  readinessReady = null,
   previewRuntimeControls,
 }) => {
   const handlePublishClick = useCallback(() => {
@@ -223,13 +298,16 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
         className,
       )}
     >
-      {/* 环境切换：开发 / 线上始终展示，图标入口仍按当前环境显隐 */}
-      <Segmented
-        className={cx(styles['env-switch'], styles.segmented)}
-        options={envOptions}
-        value={env}
-        onChange={(value) => handleEnvChange(value as UserAppDbEnvEnum)}
-      />
+      {/* 环境切换：开发 / 线上始终展示，后面跟着当前环境的就绪状态 */}
+      <div className={cx(styles['env-group'])}>
+        <Segmented
+          className={cx(styles['env-switch'], styles.segmented)}
+          options={envOptions}
+          value={env}
+          onChange={(value) => handleEnvChange(value as UserAppDbEnvEnum)}
+        />
+        <ReadinessEnvBadge status={readinessStatus} ready={readinessReady} />
+      </div>
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/* 应用预览：重启 / 停止 */}

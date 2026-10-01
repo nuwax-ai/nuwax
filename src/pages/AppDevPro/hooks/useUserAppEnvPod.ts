@@ -17,7 +17,7 @@ export type UserAppEnvPodStatus = 'idle' | 'starting' | 'running' | 'error';
  *
  * @param conversationId 会话 ID；未传则不启动
  * @param env 开发 / 线上
- * @returns 容器状态与 ensure 方法
+ * @returns 容器状态、ensure 与仅保活方法
  */
 export function useUserAppEnvPod(
   conversationId: number | undefined,
@@ -129,5 +129,25 @@ export function useUserAppEnvPod(
     [conversationId, enabled, env, runKeepalive],
   );
 
-  return { status, ensure };
+  /**
+   * 服务已经就绪时不调用 ensure，只把容器视为运行中并继续保活。
+   * 已经在保活时不重复启动。
+   */
+  const keepAlive = useCallback(() => {
+    if (!mountedRef.current || !enabled || !conversationId) {
+      return;
+    }
+    if (
+      statusRef.current === 'running' ||
+      statusRef.current === 'starting' ||
+      inflightPromiseRef.current
+    ) {
+      return;
+    }
+    statusRef.current = 'running';
+    setStatus('running');
+    runKeepalive(conversationId);
+  }, [conversationId, enabled, runKeepalive]);
+
+  return { status, ensure, keepAlive };
 }

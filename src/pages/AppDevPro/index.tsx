@@ -107,6 +107,7 @@ import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs
 import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
 import { useUserAppRuntime } from './hooks/useUserAppRuntime';
+import { useUserAppReadinessWatch } from './hooks/useUserAppReadinessWatch';
 import { useUserAppTasksActive } from './hooks/useUserAppTasksActive';
 import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
@@ -115,18 +116,16 @@ import {
   apiUserAppBuildCancel,
   apiUserAppGetById,
   apiUserAppUpdate,
+  getUserAppReadinessUiKind,
   getUserAppTtydProxyWsUrl,
+  isUserAppReadinessAccessible,
+  UserAppReadinessStatusEnum,
 } from './services/appDevPro';
 import {
   apiUserAppDomainList,
   type UserAppDomainInfo,
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
-import {
-  pollPreviewUrlHealth,
-  pollUserAppReadiness,
-  probePreviewReachable,
-} from './utils/previewHealthCheck';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 const cx = classNames.bind(styles);
@@ -536,7 +535,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const previewContainerFailed = currentEnvPodStatus === 'error';
   /**
    * 文件树和 tasks/active 的门闩。
-   * 云电脑须等开发容器 ensure 成功；非云电脑没有这层容器，会话详情确定后即可请求。
+   * 云电脑须等开发容器就绪（ensure 成功，或服务已就绪后直接保活）；非云电脑没有这层容器，会话详情确定后即可请求。
    */
   const containerReadyForQueries =
     !!finalSelectedComputerId &&
@@ -545,17 +544,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   useEffect(() => {
     setWorkspaceContainerReady(active && containerReadyForQueries);
   }, [active, containerReadyForQueries]);
-
-  /**
-   * 进入页面即启动并保活开发环境容器。
-   * 文件树在容器就绪后由 workspaceContainerReady 放行，这里不再提前刷新。
-   */
-  useEffect(() => {
-    if (!active || !envPodConversationId) {
-      return;
-    }
-    void devPod.ensure(true);
-  }, [active, devPod.ensure, envPodConversationId]);
 
   /**
    * 单一终端入口按 Header 环境选择对应 ttyd 代理。
@@ -902,6 +890,22 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     },
   );
   const [previewEnterSettled, setPreviewEnterSettled] = useState(false);
+  /** 当前环境的预览是否已经正常渲染过。渲染过之后不再用就绪状态提示盖住页面 */
+  const [previewPresentedByEnv, setPreviewPresentedByEnv] = useState<
+    Record<UserAppDbEnvEnum, boolean>
+  >({
+    [UserAppDbEnvEnum.Dev]: false,
+    [UserAppDbEnvEnum.Prod]: false,
+  });
+  const previewPresentedByEnvRef = useRef(previewPresentedByEnv);
+  previewPresentedByEnvRef.current = previewPresentedByEnv;
+  /** 上一拍的顶层业务状态，用来识别刚进入 stopped，避免每次轮询都 restart */
+  const prevReadinessStatusRef = useRef<
+    Record<UserAppDbEnvEnum, UserAppReadinessStatusEnum | null>
+  >({
+    [UserAppDbEnvEnum.Dev]: null,
+    [UserAppDbEnvEnum.Prod]: null,
+  });
   /** 上次已经同步到页面上的环境，环境变化时换上该环境自己的停止 / 准备标记 */
   const [previewFlagsEnv, setPreviewFlagsEnv] = useState(dbEnv);
 
@@ -926,6 +930,18 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       [UserAppDbEnvEnum.Dev]: false,
       [UserAppDbEnvEnum.Prod]: false,
     };
+    previewPresentedByEnvRef.current = {
+      [UserAppDbEnvEnum.Dev]: false,
+      [UserAppDbEnvEnum.Prod]: false,
+    };
+    prevReadinessStatusRef.current = {
+      [UserAppDbEnvEnum.Dev]: null,
+      [UserAppDbEnvEnum.Prod]: null,
+    };
+    setPreviewPresentedByEnv({
+      [UserAppDbEnvEnum.Dev]: false,
+      [UserAppDbEnvEnum.Prod]: false,
+    });
     setPreviewUserStopped(false);
     setPreviewEnterSettled(false);
   }
@@ -972,6 +988,61 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     setPreviewEnterSettled(false);
   }, [appId, queryConversationId]);
 
+  /**
+   * 应用服务就绪探测：只请求当前选中的开发或线上环境。
+   * 切到线上时，未部署且没有生产版本号才不请求。
+   * prodDeployed 为 false 但 prodReleaseId 还有值时，仍然检测。
+   * 结果按环境分开保存，切换环境不会把另一侧的上次结果冲掉。
+   */
+  const prodReadinessEnabled =
+    dbEnv !== UserAppDbEnvEnum.Prod ||
+    userAppInfo?.prodDeployed === true ||
+    !!userAppInfo?.prodReleaseId?.trim();
+  /** 用户重启 / 停止应用或重启智能体电脑后重新开始就绪轮询 */
+  const [readinessWatchNonce, setReadinessWatchNonce] = useState(0);
+  const resumeReadinessWatch = useCallback(() => {
+    setReadinessWatchNonce((value) => value + 1);
+  }, []);
+  const serviceReadiness = useUserAppReadinessWatch(
+    appId,
+    dbEnv,
+    active && prodReadinessEnabled,
+    readinessWatchNonce,
+  );
+  const serviceReadinessRef = useRef(serviceReadiness);
+  serviceReadinessRef.current = serviceReadiness;
+  const readinessAppIdRef = useRef(appId);
+
+  /**
+   * 刷新进入页面时先看开发环境就绪结果。
+   * 已经真正就绪就不再 ensure 拉起容器，只继续保活。
+   * 还没就绪或探测失败时，仍走原来的 ensure。
+   */
+  useEffect(() => {
+    if (!active || !envPodConversationId) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const readiness = await serviceReadinessRef.current.waitForSettled(
+        UserAppDbEnvEnum.Dev,
+        () => cancelled || dbEnvRef.current !== UserAppDbEnvEnum.Dev,
+      );
+      if (cancelled) {
+        return;
+      }
+      if (isUserAppReadinessAccessible(readiness)) {
+        devPod.keepAlive();
+        return;
+      }
+      void devPod.ensure(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [active, devPod.ensure, devPod.keepAlive, envPodConversationId]);
+  readinessAppIdRef.current = appId;
+
   /** 应用预览：按环境启动 / 重启 / 停止，启动过程走任务 SSE */
   const previewRuntime = useUserAppRuntime({
     appId,
@@ -987,19 +1058,22 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       if (!previewUrl) {
         return dict('PC.Pages.AppDevPro.iframeLoadFailed');
       }
-      // 开发 / 线上分开判断：只在这次启动所属的环境被停止，或已经切走时结束探测。
-      // 域名检查保留。就绪接口有次数上限，未就绪也不拦截预览。
+      // 线上未部署且没有生产版本号时，没有 readiness 探测，启动完成后不再挂起等待。
+      if (
+        targetEnv === UserAppDbEnvEnum.Prod &&
+        userAppInfo?.prodDeployed !== true &&
+        !userAppInfo?.prodReleaseId?.trim()
+      ) {
+        return '';
+      }
+      // 不再探测预览域名。挂起该环境的就绪结果，直到服务可访问或用户停止 / 切走。
       const shouldStop = () =>
         previewUserStoppedByEnvRef.current[targetEnv] ||
         dbEnvRef.current !== targetEnv;
-      await pollPreviewUrlHealth(previewUrl, { shouldStop });
       if (shouldStop() || !appId) {
         return '';
       }
-      const ready = await pollUserAppReadiness(appId, targetEnv, shouldStop);
-      if (!ready) {
-        return '';
-      }
+      await serviceReadinessRef.current.waitUntilReady(targetEnv, shouldStop);
       return '';
     },
     onStopped: (stoppedEnv) => {
@@ -1018,6 +1092,37 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   startPreviewRuntimeRef.current = previewRuntime.start;
   const restartPreviewRuntimeRef = useRef(previewRuntime.restart);
   restartPreviewRuntimeRef.current = previewRuntime.restart;
+
+  /**
+   * 重启智能体电脑。成功后再重启当前环境的应用服务。
+   * 电脑起来不代表应用进程还在，所以要主动调一次 restart。
+   */
+  const handleRestartComputer = useCallback(async () => {
+    resumeReadinessWatch();
+    let restarted = false;
+    try {
+      restarted = await restartVncPod(
+        queryConversationId,
+        finalSelectedComputerId,
+      );
+    } catch (error) {
+      console.error('[AppDevPro] Restart agent computer failed:', error);
+      return;
+    }
+    if (!restarted) {
+      return;
+    }
+    const envToRestart = dbEnvRef.current;
+    setPreviewStoppedForEnv(envToRestart, false);
+    setPreviewIframeUrl(appPreviewUrlRef.current);
+    void restartPreviewRuntimeRef.current(envToRestart);
+  }, [
+    finalSelectedComputerId,
+    queryConversationId,
+    restartVncPod,
+    resumeReadinessWatch,
+    setPreviewStoppedForEnv,
+  ]);
   const previewRunningRef = useRef(previewRuntime.running);
   previewRunningRef.current = previewRuntime.running;
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
@@ -1030,7 +1135,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   previewLoadErrorRef.current = previewRuntime.previewLoadError;
 
   /**
-   * 开发环境进页 / 打开预览：先探测 dev 域名是否可访问，可达则直接 iframe，否则走 start。
+   * 开发环境进页 / 打开预览：用就绪状态决定下一步。
+   * ready 直接打开；starting / stopping / stopped / 开发未完成不再额外 start。
+   * stopped 由状态变化时的 restart 拉起。没有探测结果时仍走原来的 start。
    */
   const prepareDevPreviewIfNeeded = useCallback(async () => {
     const devStopped = () =>
@@ -1039,18 +1146,35 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (devStopped()) {
       return;
     }
+    const watchedAppId = readinessAppIdRef.current;
+    const readiness = await serviceReadinessRef.current.waitForSettled(
+      UserAppDbEnvEnum.Dev,
+      devStopped,
+    );
+    if (devStopped() || readinessAppIdRef.current !== watchedAppId) {
+      return;
+    }
     const previewUrl = appPreviewUrlRef.current;
-    if (previewUrl) {
-      const reachable = await probePreviewReachable(previewUrl);
-      if (devStopped()) {
-        return;
-      }
-      if (reachable) {
-        setPreviewIframeUrl(previewUrl);
-        markPreviewReadyRef.current(UserAppDbEnvEnum.Dev);
-        setPreviewRefreshKey((prev) => prev + 1);
-        return;
-      }
+    if (previewUrl && isUserAppReadinessAccessible(readiness)) {
+      setPreviewIframeUrl(previewUrl);
+      markPreviewReadyRef.current(UserAppDbEnvEnum.Dev);
+      setPreviewRefreshKey((prev) => prev + 1);
+      return;
+    }
+    const readinessKind = getUserAppReadinessUiKind(
+      readiness?.status,
+      readiness?.ready,
+    );
+    if (
+      readinessKind === 'starting' ||
+      readinessKind === 'stopping' ||
+      readinessKind === 'stopped' ||
+      readinessKind === 'notDeployed' ||
+      readinessKind === 'failed' ||
+      readinessKind === 'unsupported' ||
+      readinessKind === 'incomplete'
+    ) {
+      return;
     }
     if (devStopped()) {
       return;
@@ -1059,6 +1183,67 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   }, []);
   const prepareDevPreviewIfNeededRef = useRef(prepareDevPreviewIfNeeded);
   prepareDevPreviewIfNeededRef.current = prepareDevPreviewIfNeeded;
+
+  /** iframe 已正常打开。只记住当前环境，避免把另一侧的预览也标成已渲染 */
+  const handlePreviewPresented = useCallback(() => {
+    const env = dbEnvRef.current;
+    if (previewPresentedByEnvRef.current[env]) {
+      return;
+    }
+    const next = {
+      ...previewPresentedByEnvRef.current,
+      [env]: true,
+    };
+    previewPresentedByEnvRef.current = next;
+    setPreviewPresentedByEnv(next);
+  }, []);
+
+  /**
+   * ready 后打开当前环境预览。
+   * 已经正常渲染过的环境不再因为后续探测把页面刷掉。
+   */
+  useEffect(() => {
+    const data = serviceReadiness.readinessByEnv[dbEnv];
+    if (!isUserAppReadinessAccessible(data)) {
+      return;
+    }
+    if (previewUserStoppedByEnvRef.current[dbEnv]) {
+      return;
+    }
+    if (previewPresentedByEnvRef.current[dbEnv]) {
+      return;
+    }
+    const previewUrl = appPreviewUrlRef.current?.trim();
+    if (!previewUrl) {
+      return;
+    }
+    setPreviewIframeUrl(previewUrl);
+    markPreviewReadyRef.current(dbEnv);
+  }, [dbEnv, serviceReadiness.readinessByEnv]);
+
+  /**
+   * stopped 且页面还没正常渲染时，直接 restart 把服务拉起来。
+   * 只在刚进入 stopped 时调一次。用户主动停止或页面已经打开时不重启。
+   */
+  useEffect(() => {
+    const status = serviceReadiness.readinessByEnv[dbEnv]?.status ?? null;
+    const prev = prevReadinessStatusRef.current[dbEnv];
+    if (prev === status) {
+      return;
+    }
+    prevReadinessStatusRef.current[dbEnv] = status;
+    if (getUserAppReadinessUiKind(status) !== 'stopped') {
+      return;
+    }
+    if (previewPresentedByEnvRef.current[dbEnv]) {
+      return;
+    }
+    if (previewUserStoppedByEnvRef.current[dbEnv]) {
+      return;
+    }
+    setPreviewStoppedForEnv(dbEnv, false);
+    void restartPreviewRuntimeRef.current(dbEnv);
+  }, [dbEnv, serviceReadiness.readinessByEnv, setPreviewStoppedForEnv]);
 
   /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
   const previewDevActionLocked =
@@ -1490,7 +1675,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       /** 是否正在导入项目 */
       isImportingProject,
       onRestartServer: () => {
-        restartVncPod(queryConversationId, finalSelectedComputerId);
+        void handleRestartComputer();
       },
       /** 网站应用环境，computer/pod 老接口附带 appStage */
       appStage: dbEnv,
@@ -1614,7 +1799,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     resetDevConsoleExpandedLayout,
     handleImportProject,
     isImportingProject,
-    restartVncPod,
+    handleRestartComputer,
     dbEnv,
   ]);
 
@@ -1722,8 +1907,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
-   * 开发环境须等 tasks/active 首包：允许则先探测 dev 域名，可达直接 iframe，否则 start；
-   * 不允许（服务已在跑）且已有预览域名则直接 iframe，不再 start / stream。
+   * 开发环境须等 tasks/active 首包：允许则先看 dev 就绪结果，可访问直接 iframe，否则 start；
+   * 不允许（服务已在跑）且已有预览域名时，挂起 dev 就绪探测，可访问后再 iframe，不再 start / stream。
    * 允许 start 时还须根目录已有 workspace.manifest.toml，避免空项目拉起预览。
    * 会话进行中或仍有待回复确认卡时不启动；会话结束后不自动 restart，仅首次 start。
    * 不把 devActionAllowed 放进依赖，避免停止后轮询变 true 再次自动 start。
@@ -1757,21 +1942,41 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Dev]) {
       return;
     }
-    // 服务已在跑（不允许再 start）：有预览域名就直接 iframe，不必再挂 stream
+    // 服务已在跑（不允许再 start）：挂起 dev 就绪探测，可访问后再 iframe，不必再挂 stream
     if (!devActionAllowed) {
       if (!appPreviewUrlRef.current) {
         return;
       }
-      setPreviewIframeUrl(appPreviewUrlRef.current);
-      markPreviewReadyRef.current(UserAppDbEnvEnum.Dev);
-      setPreviewEnterSettledForEnv(UserAppDbEnvEnum.Dev, true);
-      return;
+      let cancelled = false;
+      void (async () => {
+        const ready = await serviceReadinessRef.current.waitUntilReady(
+          UserAppDbEnvEnum.Dev,
+          () =>
+            cancelled ||
+            previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Dev] ||
+            dbEnvRef.current !== UserAppDbEnvEnum.Dev,
+        );
+        if (
+          cancelled ||
+          !ready ||
+          dbEnvRef.current !== UserAppDbEnvEnum.Dev ||
+          previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Dev]
+        ) {
+          return;
+        }
+        setPreviewIframeUrl(appPreviewUrlRef.current);
+        markPreviewReadyRef.current(UserAppDbEnvEnum.Dev);
+        setPreviewEnterSettledForEnv(UserAppDbEnvEnum.Dev, true);
+      })();
+      return () => {
+        cancelled = true;
+      };
     }
     // 可以 start，但根目录尚无 workspace.manifest.toml 时不启动（等 manifest 出现后再走本 effect）
     if (!hasFileTreeData) {
       return;
     }
-    // 先探测 dev 域名是否已可访问，可达则跳过 start / stream
+    // 先看 dev 就绪结果是否已可访问，可访问则跳过 start / stream
     let cancelled = false;
     void (async () => {
       await prepareDevPreviewIfNeededRef.current();
@@ -2072,11 +2277,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /** 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
   const handleRestartPreviewRuntime = useCallback(() => {
+    resumeReadinessWatch();
     const envToRestart = dbEnv;
     setPreviewStoppedForEnv(envToRestart, false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
     void previewRuntime.restart(envToRestart);
-  }, [dbEnv, previewRuntime, setPreviewStoppedForEnv]);
+  }, [dbEnv, previewRuntime, resumeReadinessWatch, setPreviewStoppedForEnv]);
 
   /** 停止当前环境预览服务。确认前记下环境，避免确认时已经切到另一侧 */
   const handleStopPreviewRuntime = useCallback(() => {
@@ -2085,6 +2291,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       dict('PC.Pages.AppDevPro.confirmStopTitle'),
       dict('PC.Pages.AppDevPro.confirmStopContent'),
       () => {
+        resumeReadinessWatch();
         setPreviewStoppedForEnv(envToStop, true);
         void previewRuntime.stop(envToStop).then((stopped) => {
           if (stopped) {
@@ -2094,7 +2301,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         });
       },
     );
-  }, [dbEnv, previewRuntime, setPreviewStoppedForEnv]);
+  }, [dbEnv, previewRuntime, resumeReadinessWatch, setPreviewStoppedForEnv]);
 
   /** Header 应用预览重启 / 停止图标（逻辑与预览区原按钮一致） */
   const previewRuntimeControls = useMemo(
@@ -2353,7 +2560,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     void ensureEnvPodRef.current(UserAppDbEnvEnum.Prod);
   }, [active, canDirectProdPreview, envPodConversationId, prodPod.status]);
 
-  /** 线上环境有预览地址且容器就绪时直接视为可预览，不调用启动接口（用户主动停止后不再自动 markReady） */
+  /** 线上环境有预览地址且容器就绪时，挂起 prod 就绪探测，可访问后再预览（用户主动停止后不再自动 markReady） */
   useEffect(() => {
     if (!canDirectProdPreview || prodPod.status !== 'running') {
       return;
@@ -2361,7 +2568,28 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Prod]) {
       return;
     }
-    markPreviewReadyRef.current(UserAppDbEnvEnum.Prod);
+    let cancelled = false;
+    void (async () => {
+      const ready = await serviceReadinessRef.current.waitUntilReady(
+        UserAppDbEnvEnum.Prod,
+        () =>
+          cancelled ||
+          previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Prod] ||
+          dbEnvRef.current !== UserAppDbEnvEnum.Prod,
+      );
+      if (
+        cancelled ||
+        !ready ||
+        dbEnvRef.current !== UserAppDbEnvEnum.Prod ||
+        previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Prod]
+      ) {
+        return;
+      }
+      markPreviewReadyRef.current(UserAppDbEnvEnum.Prod);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [canDirectProdPreview, prodPod.status]);
 
   /** 环境或应用变化时，地址栏与 iframe 回到对应代理根路径 */
@@ -2451,7 +2679,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         }
         onCancelTask={previewRuntime.cancelTask}
         onRetryStart={handleRestartPreviewRuntime}
-        onStart={handleStartPreviewRuntime}
+        onStart={
+          previewUserStopped
+            ? handleRestartPreviewRuntime
+            : handleStartPreviewRuntime
+        }
         onRefreshPreview={handleRefreshPreview}
         onRetryContainer={() => {
           void handleRetryContainer();
@@ -2465,6 +2697,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           dbEnv === UserAppDbEnvEnum.Prod && previewRuntime.restarting
         }
         directPreview={dbEnv === UserAppDbEnvEnum.Prod}
+        readinessStatus={serviceReadiness.readinessByEnv[dbEnv]?.status}
+        readinessReady={serviceReadiness.readinessByEnv[dbEnv]?.ready}
+        previewAlreadyPresented={previewPresentedByEnv[dbEnv]}
+        suppressReadinessStatus={previewUserStopped}
+        onPreviewPresented={handlePreviewPresented}
       />
     ),
     [
@@ -2496,7 +2733,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       envPodConversationId,
       hasFileTreeData,
       previewEnterSettled,
+      previewPresentedByEnv,
       previewUserStopped,
+      handlePreviewPresented,
+      serviceReadiness.readinessByEnv,
       prodPod.status,
       userAppInfo?.prodDeployed,
     ],
@@ -2576,7 +2816,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               permanentWorkspaceToolIds={workspaceToolIds}
               showMoreActions={!isProdEnv}
               onRestartServer={() => {
-                restartVncPod(queryConversationId, finalSelectedComputerId);
+                void handleRestartComputer();
               }}
               onRestartAgent={() => {
                 restartAgent(queryConversationId);
@@ -2810,7 +3050,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                 onOpenDomainBinding={() => setSettingsOpen(true)}
                 onRestartProdComputer={() => {
                   setPodAppStage(UserAppDbEnvEnum.Prod);
-                  restartVncPod(queryConversationId, finalSelectedComputerId);
+                  void handleRestartComputer();
                 }}
                 isDatabasePanelOpen={isDatabasePanelOpen}
                 onOpenDatabase={handleOpenDatabasePanel}
@@ -2830,6 +3070,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                 }
                 env={dbEnv}
                 onEnvChange={handleEnvChange}
+                readinessStatus={serviceReadiness.readinessByEnv[dbEnv]?.status}
+                readinessReady={serviceReadiness.readinessByEnv[dbEnv]?.ready}
                 previewRuntimeControls={previewRuntimeControls}
               />
 
