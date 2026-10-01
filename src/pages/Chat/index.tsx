@@ -1247,6 +1247,16 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
   const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
 
+  /**
+   * 工具栏刷新：重拉根目录和已展开的每一层。
+   * 与会话结束、AppDevPro 文件预览的刷新按钮相同，走 fileTreeRefreshTrigger，
+   * 由工作区会话去刷已加载目录，而不是只刷当前选中的那一层。
+   */
+  const refreshExpandedFileTree = useCallback(async () => {
+    if (!id) return;
+    await refreshFileListImmediately(id);
+  }, [id, refreshFileListImmediately]);
+
   // 文件视图 props
   const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId: workspaceTaskSelectedFileId,
@@ -1281,7 +1291,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isFileTreePinned,
     onFileTreePinnedChange: setIsFileTreePinned,
     isCanDeleteSkillFile: true,
-    onRefreshFileTree: workspaceDirectoryFiles.refresh,
+    onRefreshFileTree: refreshExpandedFileTree,
     onOpenDirectory: workspaceDirectoryFiles.onOpenDirectory,
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
