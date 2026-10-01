@@ -108,6 +108,13 @@ export interface AppDevAppPreviewPanelProps {
   suppressReadinessStatus?: boolean;
   /** iframe 已正常打开，通知页面记住这个环境已经渲染过 */
   onPreviewPresented?: () => void;
+  /**
+   * 线上环境应用尚未部署。
+   * 为 true 时只展示提示和部署按钮，不拉起预览。
+   */
+  prodUndeployed?: boolean;
+  /** 打开部署弹窗 */
+  onDeploy?: () => void;
 }
 
 /**
@@ -303,6 +310,8 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   previewAlreadyPresented = false,
   suppressReadinessStatus = false,
   onPreviewPresented,
+  prodUndeployed = false,
+  onDeploy,
 }) => {
   /** 无有效项目文件时的居中提示 */
   const emptyProjectHero = (
@@ -447,6 +456,24 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   const handleIframeRetry = useCallback(() => {
     setLoadedInstanceKey('');
   }, []);
+
+  if (prodUndeployed) {
+    return (
+      <div className={cx(styles.container, styles.stage)}>
+        <PreviewHero
+          title={dict('PC.Pages.AppDevPro.prodNotDeployedTitle')}
+          hint={dict('PC.Pages.AppDevPro.prodNotDeployedHint')}
+          action={
+            onDeploy ? (
+              <Button type="primary" onClick={onDeploy}>
+                {dict('PC.Pages.AppDevPro.prodNotDeployedAction')}
+              </Button>
+            ) : null
+          }
+        />
+      </div>
+    );
+  }
 
   if (containerStatus && containerStatus !== 'running') {
     return (
