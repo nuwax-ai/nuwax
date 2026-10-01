@@ -1,4 +1,4 @@
-import { resolveRepoDocEmbedUrl } from '@/pages/Chat/utils/repoDocLink';
+import { resolveRepoDocEmbedUrl } from '@/utils/repoDocLink';
 import { useEffect, type RefObject } from 'react';
 
 interface UseRepoDocLinkPreviewOptions {
@@ -13,9 +13,13 @@ interface UseRepoDocLinkPreviewOptions {
 /**
  * 拦截会话消息里的资料库链接点击，改为当前页预览，而不是新开浏览器页签。
  *
- * 聊天页会给 document 加 `<base target="_blank">`，普通链接点击都会新开页签。
+ * Chat 与 AppDevPro 都会给 document 加 `<base target="_blank">`，普通链接点击都会新开页签。
  * 这里在捕获阶段拦住资料库链接（`/repo/doc/`、`/repo/share/`）的左键点击。
  * 按住 Ctrl / Command / Shift / Alt 的点击仍交给浏览器，方便用户手动新开页签。
+ *
+ * @param options.active 当前实例是否在前台
+ * @param options.containerRef 只拦截这个容器内的链接
+ * @param options.onOpen 打开页内预览
  */
 export const useRepoDocLinkPreview = ({
   active,

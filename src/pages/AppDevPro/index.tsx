@@ -1,5 +1,6 @@
 import {
   GitVersionRecordPanel,
+  PagePreviewIframe,
   type GitVersionRecordPanelHandle,
 } from '@/components/business-component';
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
@@ -275,6 +276,27 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /** 右侧工作区：文件预览 / 独立应用预览 / 独立数据库 */
   const [workspaceView, setWorkspaceView] =
     useState<AppDevWorkspaceView>('app-preview');
+  /** 会话里点开的资料库文档，在右侧工作区页内预览 */
+  const [repoDocPreviewUrl, setRepoDocPreviewUrl] = useState<string | null>(
+    null,
+  );
+  const repoDocPreviewData = useMemo(
+    () =>
+      repoDocPreviewUrl
+        ? {
+            name: dict('PC.Pages.Chat.pagePreview'),
+            uri: repoDocPreviewUrl,
+            params: {},
+          }
+        : null,
+    [repoDocPreviewUrl],
+  );
+  const handleOpenRepoDoc = useCallback((url: string) => {
+    setRepoDocPreviewUrl(url);
+  }, []);
+  const handleCloseRepoDocPreview = useCallback(() => {
+    setRepoDocPreviewUrl(null);
+  }, []);
   const workspaceViewRef = useRef<AppDevWorkspaceView>(workspaceView);
   workspaceViewRef.current = workspaceView;
   /** 打开数据库前的工作区，再次点击图标时还原 */
@@ -1403,6 +1425,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   useEffect(() => {
     if (active) addBaseTarget();
   }, [active, routeKey]);
+
+  /** 换会话后收起资料库预览，避免上一份文档留在新会话里 */
+  useEffect(() => {
+    setRepoDocPreviewUrl(null);
+  }, [queryConversationId]);
 
   // ==================== 事件处理函数 ====================
 
@@ -3130,6 +3157,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                   selectedComputerId={finalSelectedComputerId}
                   onChangeSelectedComputerId={setSelectedComputerId}
                   onConversationEnd={handleConversationEnd}
+                  onOpenRepoDoc={handleOpenRepoDoc}
                 />
               </div>
             </div>
@@ -3269,6 +3297,18 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                     }
                     right={renderRightPanel()}
                   />
+                  {repoDocPreviewData ? (
+                    <div className={styles['repo-doc-preview']}>
+                      <PagePreviewIframe
+                        pagePreviewData={repoDocPreviewData}
+                        active={active}
+                        showHeader
+                        showCloseButton
+                        showCopyButton={false}
+                        onClose={handleCloseRepoDocPreview}
+                      />
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* 线上环境构建包版本记录侧栏 */}

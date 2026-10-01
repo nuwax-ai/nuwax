@@ -32,10 +32,22 @@
     gap: 0;
 
     .content-container {
+      position: relative;
       border-radius: 16px;
       border: @lineWidth solid @colorSplit;
       overflow: hidden;
       background-color: #f5f5f5;
+    }
+
+    /** 资料库文档盖在工作区上，关闭后回到原来的预览 */
+    .repo-doc-preview {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      display: flex;
+      min-width: 0;
+      min-height: 0;
+      background: @colorBgContainer;
     }
 
     // 预览内容区全屏模式
