@@ -53,6 +53,12 @@ import {
   loadChatPanelWidthPercent,
   saveChatPanelWidthPercent,
 } from '@/utils/chatPanelWidthPreference';
+import {
+  clearAppDevProSkipReadiness,
+  consumeAppDevProSkipReadiness,
+  isCurrentDocumentReload,
+  releaseAppDevProSkipReadiness,
+} from '@/utils/appDevProSkipReadiness';
 import { addBaseTarget } from '@/utils/common';
 import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
@@ -1004,10 +1010,59 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const resumeReadinessWatch = useCallback(() => {
     setReadinessWatchNonce((value) => value + 1);
   }, []);
+  /**
+   * 主页新建跳转带来的标记只消费一次。
+   * 刷新（reload）一律先 readiness；离开页面或换应用 / 会话时清掉标记。
+   */
+  const skipReadinessScopeRef = useRef('');
+  const skipReadinessRef = useRef(false);
+  const readinessScope =
+    appId > 0 && queryConversationId > 0
+      ? `${appId}:${queryConversationId}`
+      : '';
+  if (readinessScope && skipReadinessScopeRef.current !== readinessScope) {
+    if (skipReadinessScopeRef.current) {
+      const [prevAppId, prevConversationId] =
+        skipReadinessScopeRef.current.split(':');
+      releaseAppDevProSkipReadiness(
+        Number(prevAppId),
+        Number(prevConversationId),
+      );
+    }
+    skipReadinessScopeRef.current = readinessScope;
+    if (isCurrentDocumentReload()) {
+      clearAppDevProSkipReadiness(appId, queryConversationId);
+      skipReadinessRef.current = false;
+    } else {
+      skipReadinessRef.current = consumeAppDevProSkipReadiness(
+        appId,
+        queryConversationId,
+      );
+    }
+  }
+  const skipReadinessThisVisit = skipReadinessRef.current;
+  const skipReadinessMountedScopeRef = useRef('');
+  useEffect(() => {
+    skipReadinessMountedScopeRef.current = readinessScope;
+    return () => {
+      const scope = readinessScope;
+      skipReadinessMountedScopeRef.current = '';
+      window.setTimeout(() => {
+        if (!scope || skipReadinessMountedScopeRef.current === scope) {
+          return;
+        }
+        const [prevAppId, prevConversationId] = scope.split(':');
+        releaseAppDevProSkipReadiness(
+          Number(prevAppId),
+          Number(prevConversationId),
+        );
+      }, 0);
+    };
+  }, [readinessScope]);
   const serviceReadiness = useUserAppReadinessWatch(
     appId,
     dbEnv,
-    active && prodReadinessEnabled,
+    active && prodReadinessEnabled && !skipReadinessThisVisit,
     readinessWatchNonce,
   );
   const serviceReadinessRef = useRef(serviceReadiness);
@@ -1021,6 +1076,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    */
   useEffect(() => {
     if (!active || !envPodConversationId) {
+      return;
+    }
+    // 主页刚创建进来：应用记录还不存在，直接拉容器，不打 readiness
+    if (skipReadinessThisVisit) {
+      void devPod.ensure(true);
       return;
     }
     let cancelled = false;
@@ -1041,7 +1101,13 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [active, devPod.ensure, devPod.keepAlive, envPodConversationId]);
+  }, [
+    active,
+    devPod.ensure,
+    devPod.keepAlive,
+    envPodConversationId,
+    skipReadinessThisVisit,
+  ]);
   readinessAppIdRef.current = appId;
 
   /** 应用预览：按环境启动 / 重启 / 停止，启动过程走任务 SSE */
@@ -1071,7 +1137,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       const shouldStop = () =>
         previewUserStoppedByEnvRef.current[targetEnv] ||
         dbEnvRef.current !== targetEnv;
-      if (shouldStop() || !appId) {
+      if (shouldStop() || !appId || skipReadinessRef.current) {
         return '';
       }
       await serviceReadinessRef.current.waitUntilReady(targetEnv, shouldStop);
@@ -1157,6 +1223,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Dev] ||
       dbEnvRef.current !== UserAppDbEnvEnum.Dev;
     if (devStopped()) {
+      return;
+    }
+    // 新建这一次没有 readiness，按原来的 start 往下走，避免一直等探测
+    if (skipReadinessRef.current) {
+      startPreviewIfNeededRef.current(UserAppDbEnvEnum.Dev);
       return;
     }
     const watchedAppId = readinessAppIdRef.current;
@@ -1257,9 +1328,25 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     void restartPreviewRuntimeRef.current(dbEnv);
   }, [dbEnv, serviceReadiness.readinessByEnv, setPreviewStoppedForEnv]);
 
-  /** 仅开发环境：进行中任务未结束时锁定启动 / 重启 */
+  /**
+   * 开发环境进行中任务只在启动流还正常进行时锁定重启。
+   * stream 已结束，或已经失败 / 取消 / 服务报错后，不再因为 tasks/active 禁用。
+   */
+  const devStartStreamActive =
+    previewRuntime.phase === 'starting' || previewRuntime.phase === 'building';
+  const devStartStreamErrored =
+    previewRuntime.phase === 'failed' ||
+    previewRuntime.phase === 'cancelled' ||
+    !!previewRuntime.errorMessage?.trim() ||
+    previewRuntime.services.some((item) => {
+      const status = String(item.status || '').toLowerCase();
+      return status === 'build_fail' || status === 'failed';
+    });
   const previewDevActionLocked =
-    dbEnv === UserAppDbEnvEnum.Dev && !devActionAllowed;
+    dbEnv === UserAppDbEnvEnum.Dev &&
+    !devActionAllowed &&
+    devStartStreamActive &&
+    !devStartStreamErrored;
   /** tasks/active 中的构建任务，用于 Header 取消远程发布 */
   const remoteBuildTask = useMemo(
     () =>
@@ -1956,7 +2043,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
     // 服务已在跑（不允许再 start）：挂起 dev 就绪探测，可访问后再 iframe，不必再挂 stream
     if (!devActionAllowed) {
-      if (!appPreviewUrlRef.current) {
+      if (!appPreviewUrlRef.current || skipReadinessRef.current) {
         return;
       }
       let cancelled = false;
@@ -2320,13 +2407,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     () => ({
       onRestartPreviewRuntime: handleRestartPreviewRuntime,
       onStopPreviewRuntime: handleStopPreviewRuntime,
-      previewRuntimeBusy: previewRuntime.busy,
+      previewRuntimeBusy: previewRuntime.busy && !devStartStreamErrored,
       previewRuntimeRestarting: previewRuntime.restarting,
       previewRuntimeStopping: previewRuntime.stopping,
-      previewRuntimeReady:
-        currentEnvPodReady &&
-        !previewConversationActive &&
-        !hasPendingIntervention,
       previewEnvPodReady: currentEnvPodReady,
       previewPodEnsuring,
       previewContainerFailed,
@@ -2347,6 +2430,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       previewDevActionLocked,
       previewPodEnsuring,
       previewRuntime.busy,
+      devStartStreamErrored,
       previewRuntime.restarting,
       previewRuntime.stopping,
     ],
