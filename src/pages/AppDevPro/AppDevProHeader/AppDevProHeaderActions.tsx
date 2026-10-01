@@ -43,10 +43,6 @@ const READINESS_BADGE_TEXT: Partial<
     className: 'readiness-failed',
     labelKey: 'PC.Pages.AppDevPro.readinessBadgeFailed',
   },
-  [UserAppReadinessStatusEnum.Unsupported]: {
-    className: 'readiness-unsupported',
-    labelKey: 'PC.Pages.AppDevPro.readinessBadgeUnsupported',
-  },
 };
 
 /**

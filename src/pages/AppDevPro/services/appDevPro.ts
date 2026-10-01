@@ -361,14 +361,13 @@ export type UserAppReadinessUiKind =
   | 'stopped'
   | 'notDeployed'
   | 'failed'
-  | 'unsupported'
   | 'incomplete';
 
 /**
  * 把就绪探测的顶层状态收成预览区要处理的几类。
  * status 为 ready 时，还要 ready 字段为 true 才算正常访问。
  * starting / stopping / stopped 各有提示。
- * 未部署、启动失败可以手动重启；不支持预览单独提示。其余视为开发未完成。
+ * 未部署、启动失败可以手动重启。unsupported 视为开发未完成。unknown 先忽略。
  *
  * @param status 顶层业务状态；还没有探测结果时返回 null
  * @param ready 服务是否就绪。status 为 ready 时必须为 true 才进入正常访问
@@ -392,10 +391,10 @@ export const getUserAppReadinessUiKind = (
     case UserAppReadinessStatusEnum.Failed:
       return 'failed';
     case UserAppReadinessStatusEnum.Unsupported:
-      return 'unsupported';
     case UserAppReadinessStatusEnum.Degraded:
-    case UserAppReadinessStatusEnum.Unknown:
       return 'incomplete';
+    case UserAppReadinessStatusEnum.Unknown:
+      return null;
     default:
       return null;
   }
