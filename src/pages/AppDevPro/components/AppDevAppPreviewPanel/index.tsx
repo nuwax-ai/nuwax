@@ -1,5 +1,9 @@
 import { dict } from '@/services/i18nRuntime';
-import { CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import {
+  CloseCircleOutlined,
+  FileTextOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import { Button, Empty, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -337,8 +341,11 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    */
   const previewInstanceKey = `${previewUrl ?? ''}::${refreshKey}`;
   const [loadedInstanceKey, setLoadedInstanceKey] = useState('');
-  /** 启动日志详情弹窗 */
+  /** 启动日志默认收起，点击「查看详情」后展开日志流 */
   const [logDetailOpen, setLogDetailOpen] = useState(false);
+  const openStartLogs = useCallback(() => {
+    setLogDetailOpen(true);
+  }, []);
   const iframeLoaded = loadedInstanceKey === previewInstanceKey;
   /** 启动任务进行中：展示日志区与取消，不是进度条 */
   const isStarting = busy || phase === 'starting' || phase === 'building';
@@ -674,12 +681,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
             >
               {headText}
             </span>
-            <span
-              className={cx(styles.logDetailLink)}
-              onClick={() => setLogDetailOpen(true)}
-            >
-              {dict('PC.Pages.AppDevPro.viewStartLogs')}
-            </span>
             {isStarting && onCancelTask ? (
               <Button
                 size="small"
@@ -717,7 +718,21 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
               logs={logs}
               waitingText={dict('PC.Pages.AppDevPro.waitingLogs')}
             />
-          ) : null}
+          ) : (
+            <div className={cx(styles.logHidden)}>
+              <FileTextOutlined className={cx(styles.logHiddenIcon)} />
+              <p className={cx(styles.logHiddenText)}>
+                {dict('PC.Pages.AppDevPro.startLogsHiddenHint')}
+                <button
+                  type="button"
+                  className={cx(styles.logHiddenAction)}
+                  onClick={openStartLogs}
+                >
+                  {dict('PC.Pages.AppDevPro.viewStartLogs')}
+                </button>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
