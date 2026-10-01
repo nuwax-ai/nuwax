@@ -127,3 +127,146 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+.env-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.readiness-badge {
+  position: relative;
+  z-index: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  overflow: hidden;
+  border-radius: 11px;
+  color: #3d3a55;
+  font-size: 12px;
+  line-height: 22px;
+  white-space: nowrap;
+  background-size: 220% 100%;
+  animation: readinessFlow 2.8s linear infinite;
+
+  > span,
+  :global(.anticon) {
+    position: relative;
+    z-index: 1;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    inset: -60% -30%;
+    background: linear-gradient(
+      110deg,
+      transparent 32%,
+      rgba(255, 255, 255, 72%) 50%,
+      transparent 68%
+    );
+    animation: readinessWave 2.2s ease-in-out infinite;
+  }
+
+}
+
+.readiness-ready {
+  width: 22px;
+  padding: 0;
+  color: #0b8f62;
+  font-size: 14px;
+  background-image: linear-gradient(
+    120deg,
+    #e7fff4 0%,
+    #9aefc8 40%,
+    #d8ffe9 70%,
+    #7ddec0 100%
+  );
+}
+
+.readiness-starting {
+  background-image: linear-gradient(
+    120deg,
+    #ece8ff 0%,
+    #c9d4ff 45%,
+    #f3e9ff 100%
+  );
+}
+
+.readiness-stopping {
+  background-image: linear-gradient(
+    120deg,
+    #fff4e5 0%,
+    #ffd7a8 48%,
+    #ffe8c7 100%
+  );
+}
+
+.readiness-stopped {
+  background-image: linear-gradient(
+    120deg,
+    #eef1f6 0%,
+    #d5dbe6 46%,
+    #f4f6fa 100%
+  );
+}
+
+.readiness-not-deployed {
+  background-image: linear-gradient(
+    120deg,
+    #fff8e8 0%,
+    #ffe08a 46%,
+    #fff3cc 100%
+  );
+}
+
+.readiness-failed {
+  color: #c43b3b;
+  background-image: linear-gradient(
+    120deg,
+    #fff0f0 0%,
+    #ffc1c1 48%,
+    #ffe4e4 100%
+  );
+}
+
+.readiness-unsupported {
+  background-image: linear-gradient(
+    120deg,
+    #f3f1f8 0%,
+    #ddd6ea 48%,
+    #f7f5fb 100%
+  );
+}
+
+@keyframes readinessFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes readinessWave {
+  0% {
+    transform: translateX(-70%) skewX(-16deg);
+  }
+
+  100% {
+    transform: translateX(70%) skewX(-16deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .readiness-badge,
+  .readiness-badge::before {
+    animation: none;
+  }
+}
