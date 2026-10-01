@@ -53,6 +53,12 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       bottomContent,
       taskAgentSelectedFileId,
       taskAgentSelectTrigger,
+      loadedFolderIds,
+      loadingFolderIds,
+      onLoadDirectory,
+      remoteFileSearch,
+      onEnsureFallbackDirectory,
+      selectFileRef,
       ...fileViewProps
     } = props;
 
@@ -62,8 +68,10 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       undefined,
     );
 
+    /** 保存文件 */
     const onSaveFilesRef = useRef(onSaveFiles);
     onSaveFilesRef.current = onSaveFiles;
+    /** 刷新 Git 列表 */
     const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
 
     /** 文件树写操作成功后刷新 Git status */
@@ -291,16 +299,28 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       [fileView.changeFiles, fileView.tree.selectedFileId],
     );
 
+    useEffect(() => {
+      if (!selectFileRef) {
+        return;
+      }
+      selectFileRef.current = fileView.tree.handleFileSelect;
+    }, [selectFileRef, fileView.tree.handleFileSelect]);
+
     return (
       <FileTreePreviewPanel
         className={className}
         tree={{
           ...fileView.tree,
+          ...(loadedFolderIds ? { loadedFolderIds } : {}),
+          ...(loadingFolderIds ? { loadingFolderIds } : {}),
+          ...(onLoadDirectory ? { onLoadDirectory } : {}),
+          ...(remoteFileSearch ? { remoteFileSearch } : {}),
           handleFileSelect: async (fileId, options) => {
             if (!options?.selectFolder) {
               setGitVersionPanelOpen(false);
               sourceControl.clearSelectedDiff();
             }
+            await onEnsureFallbackDirectory?.(options);
             await fileView.tree.handleFileSelect(fileId, options);
           },
         }}
