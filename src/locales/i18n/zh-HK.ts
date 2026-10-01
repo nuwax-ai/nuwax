@@ -2751,7 +2751,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevPro.databaseStatusRetryHint": "正在繼續檢測，就緒後將自動連接",
   "PC.Pages.AppDevPro.iframeLoadFailed": "頁面加載失敗，請刷新後重試",
   "PC.Pages.AppDevPro.databaseNotReady": "數據庫還未就緒，請刷新後重試",
-  "PC.Pages.AppDevPro.iframeLoadFailedWithStatus": "頁面加載失敗（HTTP {0}），請刷新後重試或檢查開發服務器",
   "PC.Pages.AppDevPro.previewJumpHint": "按 Enter 跳轉到: {0}",
   "PC.Pages.AppDevPro.previewStartHint": "服務已停止，啟動後即可預覽應用",
   "PC.Pages.AppDevPro.previewStartRetry": "重新啟動",

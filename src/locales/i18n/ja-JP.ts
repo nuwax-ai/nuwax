@@ -2772,7 +2772,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPro.databaseStatusRetryHint": "確認を続けています。準備ができたら自動で接続します",
   "PC.Pages.AppDevPro.iframeLoadFailed": "ページの読み込みに失敗しました。更新して再試行してください。",
   "PC.Pages.AppDevPro.databaseNotReady": "データベースはまだ準備できていません。更新して再試行してください。",
-  "PC.Pages.AppDevPro.iframeLoadFailedWithStatus": "ページの読み込みに失敗しました（HTTP {0}）。更新するか、開発サーバーを確認してください。",
   "PC.Pages.AppDevPro.previewJumpHint": "Enter で移動: {0}",
   "PC.Pages.AppDevPro.previewStartHint": "サービスは停止しています。起動するとアプリをプレビューできます",
   "PC.Pages.AppDevPro.previewStartRetry": "再起動",
