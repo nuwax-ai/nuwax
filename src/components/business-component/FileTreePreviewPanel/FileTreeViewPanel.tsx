@@ -68,8 +68,10 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       undefined,
     );
 
+    // 保存文件的回调函数
     const onSaveFilesRef = useRef(onSaveFiles);
     onSaveFilesRef.current = onSaveFiles;
+    /** 刷新 Git 列表 */
     const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
 
     /** 文件树写操作成功后刷新 Git status */
