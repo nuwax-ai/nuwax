@@ -176,9 +176,15 @@ const getOauthPlatformPlaceholders = (authType?: string) =>
         scopes: dict('PC.Pages.ConnectorManage.placeholderPlatformScopes'),
       };
 
-/** OAuth 2.0 固定回调地址（展示用，请到 IdP 登记） */
-const OAUTH_CALLBACK_URL =
-  'https://testagent.xspaceagi.com/api/connector/oauth/callback';
+/**
+ * OAuth 2.0 回调地址（展示用，请到 IdP 登记）：
+ * dev 下 BASE_URL 指向 test 环境（与后端生成的 redirect_uri 同源）；
+ * 生产 BASE_URL 为空串（前后端同域），回退当前访问域名动态拼接
+ */
+const buildOauthCallbackUrl = () =>
+  `${
+    process.env.BASE_URL || window.location.origin
+  }/api/connector/oauth/callback`;
 
 /**
  * 表单值 → authConfig（按认证方式组装）
@@ -617,9 +623,9 @@ const ConnectorAuthConfigSection: React.FC<ConnectorAuthConfigSectionProps> = ({
                 <span>{dict('PC.Pages.ConnectorManage.tipOauthCallback')}</span>
                 <Typography.Text
                   className={styles.callbackUrl}
-                  copyable={{ text: OAUTH_CALLBACK_URL }}
+                  copyable={{ text: buildOauthCallbackUrl() }}
                 >
-                  {OAUTH_CALLBACK_URL}
+                  {buildOauthCallbackUrl()}
                 </Typography.Text>
               </div>
             </>
