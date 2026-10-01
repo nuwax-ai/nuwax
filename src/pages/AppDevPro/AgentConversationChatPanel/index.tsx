@@ -4,12 +4,13 @@ import ConversationProgressCapsule from '@/components/business-component/Unified
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import type { UseConversationRuntimeSessionResult } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversationMentionFiles from '@/hooks/useConversationMentionFiles';
+import { useRepoDocLinkPreview } from '@/hooks/useRepoDocLinkPreview';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { usePageModel } from '@/modelScopes/usePageModel';
 import { TaskStatus } from '@/types/enums/agent';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation, useParams } from 'umi';
 
 /**
@@ -40,6 +41,11 @@ export interface AgentConversationChatPanelProps {
   /** 由右上角共享面板入口控制会话胶囊。 */
   progressOpen?: boolean;
   onCloseProgress?: () => void;
+  /**
+   * 会话消息里的资料库链接（`/repo/doc/`、`/repo/share/`）改为当前页打开。
+   * 不传时保持新开页签。
+   */
+  onOpenRepoDoc?: (url: string) => void;
 }
 
 /**
@@ -55,6 +61,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   onConversationEnd,
   progressOpen = false,
   onCloseProgress,
+  onOpenRepoDoc,
 }) => {
   const location = useLocation();
   const routeKey = routeSnapshot?.key ?? location.key;
@@ -167,6 +174,19 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   const mentionConversationId = conversationInfo?.id ?? queryConversationId;
   const fetchMentionFiles = useConversationMentionFiles(mentionConversationId);
   const mentionFilesEnabled = !!mentionConversationId;
+  /** 会话区根节点：只拦截这里面的资料库链接。 */
+  const chatRootRef = useRef<HTMLDivElement>(null);
+  const handleOpenRepoDoc = useCallback(
+    (url: string) => {
+      onOpenRepoDoc?.(url);
+    },
+    [onOpenRepoDoc],
+  );
+  useRepoDocLinkPreview({
+    active: active && !!onOpenRepoDoc,
+    containerRef: chatRootRef,
+    onOpen: handleOpenRepoDoc,
+  });
 
   // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
   // 关闭（默认）为空对象，旧线原值原行为。session 由页面级外提（URL id 即建，bug 2477），
@@ -190,6 +210,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
 
   return (
     <div
+      ref={chatRootRef}
       className={classNames(
         'flex',
         'flex-col',
