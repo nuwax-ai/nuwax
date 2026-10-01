@@ -2921,6 +2921,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPro.startCancelled": "Start cancelled",
   "PC.Pages.AppDevPro.startFailed": "Start failed",
   "PC.Pages.AppDevPro.viewStartLogs": "View details",
+  "PC.Pages.AppDevPro.startLogsHiddenHint": "Start logs are hidden for now. ",
   "PC.Pages.AppDevPro.startService": "Start app",
   "PC.Pages.AppDevPro.devActionBusyHint": "The app is already starting. Cancel it or wait until it finishes",
   "PC.Pages.AppDevPro.startSuccess": "Started successfully",
