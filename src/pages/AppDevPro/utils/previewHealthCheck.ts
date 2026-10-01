@@ -6,6 +6,7 @@ import {
 } from '../services/appDb';
 import {
   apiUserAppReadiness,
+  UserAppReadinessStatusEnum,
   type UserAppReadiness,
 } from '../services/appDevPro';
 
@@ -296,29 +297,91 @@ export const pollUserAppReadiness = async (
   return false;
 };
 
+/** 数据库就绪轮询的一次结果，供页面展示当前状态 */
+export interface UserAppDbReadinessSnapshot {
+  /** 本次请求失败，或业务码不是成功 */
+  requestFailed: boolean;
+  /** 已识别的就绪状态；请求失败时为空 */
+  status: UserAppReadinessStatusEnum | null;
+  /** 服务端 ready 字段 */
+  ready: boolean;
+  /** 服务端说明 */
+  message: string | null;
+}
+
+/** 数据库就绪轮询参数 */
+export interface PollUserAppDbReadinessOptions {
+  /** 返回 true 时停止等待，例如面板已离开 */
+  shouldStop?: () => boolean;
+  /** 每一次探测结束后回调，用于刷新状态文案 */
+  onProgress?: (snapshot: UserAppDbReadinessSnapshot) => void;
+}
+
+const DB_READINESS_STATUS_SET = new Set<string>(
+  Object.values(UserAppReadinessStatusEnum),
+);
+
+/**
+ * 把 dbx 返回的 status 收成已知枚举。无法识别时记为未知。
+ *
+ * @param value 接口 status 字段
+ * @returns 已知状态；空字符串返回 null
+ */
+const parseDbReadinessStatus = (
+  value: string | null | undefined,
+): UserAppReadinessStatusEnum | null => {
+  if (!value) {
+    return null;
+  }
+  if (DB_READINESS_STATUS_SET.has(value)) {
+    return value as UserAppReadinessStatusEnum;
+  }
+  return UserAppReadinessStatusEnum.Unknown;
+};
+
+/**
+ * 只有 ready 为 true，且状态为空或 ready，才允许连接数据库。
+ *
+ * @param payload 就绪接口数据
+ * @param status 已解析的状态
+ * @returns 是否可以连接
+ */
+const isDatabaseReady = (
+  payload: UserAppDbReadiness | undefined,
+  status: UserAppReadinessStatusEnum | null,
+): boolean =>
+  payload?.ready === true &&
+  (status === null || status === UserAppReadinessStatusEnum.Ready);
+
 /**
  * 进入数据库前轮询 dbx 就绪接口。
- * ready 为 true 时立刻结束；达到次数上限、接口报错或调用方离开时也结束。
- * 返回值只表示是否已就绪，调用方无论 true 或 false 都继续原来的展示。
+ * 一直等到数据库就绪，或调用方离开。请求失败和未就绪都会继续下一轮。
  *
  * @param appId 应用 ID
  * @param env 当前数据库环境
- * @param shouldStop 返回 true 时停止等待
+ * @param options 停止条件和进度回调
  * @returns 数据库已就绪
  */
 export const pollUserAppDbReadiness = async (
   appId: number,
   env: UserAppDbEnvEnum,
-  shouldStop?: () => boolean,
+  options?: PollUserAppDbReadinessOptions,
 ): Promise<boolean> => {
   if (!appId) {
     return false;
   }
 
-  for (let attempt = 0; attempt < READINESS_POLL_MAX_ATTEMPTS; attempt += 1) {
-    if (shouldStop?.()) {
-      return false;
-    }
+  const shouldStop = options?.shouldStop;
+  const onProgress = options?.onProgress;
+
+  while (!shouldStop?.()) {
+    let snapshot: UserAppDbReadinessSnapshot = {
+      requestFailed: true,
+      status: null,
+      ready: false,
+      message: null,
+    };
+    let ready = false;
     try {
       const result = await apiUserAppDbReadiness(appId, env);
       const payload = (
@@ -331,14 +394,31 @@ export const pollUserAppDbReadiness = async (
         typeof result !== 'object' ||
         !('code' in result) ||
         result.code === SUCCESS_CODE;
-      if (codeOk && payload?.ready === true) {
-        return true;
+      if (codeOk && payload) {
+        const status = parseDbReadinessStatus(payload.status);
+        ready = isDatabaseReady(payload, status);
+        snapshot = {
+          requestFailed: false,
+          status,
+          ready: payload.ready === true,
+          message: payload.message ?? null,
+        };
       }
     } catch {
-      // 单次失败继续下一次；全部结束后仍按未就绪返回，不抛给页面
+      snapshot = {
+        requestFailed: true,
+        status: null,
+        ready: false,
+        message: null,
+      };
     }
-    if (shouldStop?.() || attempt >= READINESS_POLL_MAX_ATTEMPTS - 1) {
+
+    if (shouldStop?.()) {
       return false;
+    }
+    onProgress?.(snapshot);
+    if (ready) {
+      return true;
     }
     try {
       await sleep(READINESS_POLL_INTERVAL_MS);

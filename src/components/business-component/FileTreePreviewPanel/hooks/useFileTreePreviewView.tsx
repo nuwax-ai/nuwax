@@ -1325,39 +1325,47 @@ export function useFileTreePreviewView(
       trigger: taskAgentSelectTrigger,
     };
 
-    if (isFileInTreeForAutoSelect(taskAgentSelectedFileId)) {
-      const openedNode = findFileNode(
+    const openedNode = findFileNode(taskAgentSelectedFileId, filesRef.current);
+    const openedId = selectedFileIdRef.current;
+    // 搜索路径已经打开过该文件，目录列表到达后不要再请求一次正文
+    if (
+      openedId &&
+      (openedId === taskAgentSelectedFileId || openedId === openedNode?.id)
+    ) {
+      prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+      if (taskAgentSelectTrigger !== undefined) {
+        prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+      }
+      pendingTaskAgentAutoSelectRef.current = null;
+      return;
+    }
+
+    // 分层文件树：先搜索并用完整路径打开，不用当前已加载列表做模糊匹配
+    if (isAutoSelectDirectoryLoadedRef.current) {
+      const directoryLoaded = isAutoSelectDirectoryLoadedRef.current(
         taskAgentSelectedFileId,
-        filesRef.current,
       );
-      const openedId = selectedFileIdRef.current;
-      // 搜索路径已经打开过该文件，目录列表到达后不要再请求一次正文
-      if (
-        openedId &&
-        (openedId === taskAgentSelectedFileId || openedId === openedNode?.id)
-      ) {
-        prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
-        if (taskAgentSelectTrigger !== undefined) {
-          prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
-        }
-        pendingTaskAgentAutoSelectRef.current = null;
+      if (!directoryLoaded) {
+        resolveMissingFileFromSearch();
         return;
       }
+      if (resolveMissingFileFromSearch()) {
+        return;
+      }
+      if (!openedNode) {
+        abandonAutoSelectWhenTreeEmpty();
+      }
+      return;
+    }
+
+    if (isFileInTreeForAutoSelect(taskAgentSelectedFileId)) {
       applyAutoSelect(taskAgentSelectedFileId);
       return;
     }
 
-    // 目标不在当前树中（例如新产出文件）：尝试刷新后再选
+    // 目标不在当前树中（例如新产出文件）：尝试刷新后再选。
+    // 分层文件树已在上面 return，这里只处理一次拿全量列表的页面。
     if (hasFetchedOriginalFiles) {
-      // 懒加载宿主：目标所在目录尚未加载（父目录导航在途）时保持等待
-      //（pending 已记录，目录层到达后 files 变化重入完成选中），不误判 miss
-      if (
-        isAutoSelectDirectoryLoadedRef.current &&
-        !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
-      ) {
-        resolveMissingFileFromSearch();
-        return;
-      }
       if (resolveMissingFileFromSearch()) {
         return;
       }

@@ -281,17 +281,6 @@ describe('懒加载嵌套自动选中（abandon 竞态修复）', () => {
       relativePath: 'docs',
     },
   ];
-  const withReport = [
-    ...rootOnly,
-    {
-      name: 'docs/report.md',
-      isDir: false,
-      fileId: 'workspace:docs/report.md',
-      dataSourceId: 'workspace',
-      relativePath: 'docs/report.md',
-      fileProxyUrl: '/static/docs/report.md',
-    },
-  ];
   /** fileId（workspace: 前缀）→ 父目录相对路径（与 Chat 页谓词同口径） */
   const parentDirOf = (fileId: string) =>
     fileId
@@ -300,33 +289,33 @@ describe('懒加载嵌套自动选中（abandon 竞态修复）', () => {
       .slice(0, -1)
       .join('/');
 
-  it('父目录导航在途：不误判 miss，目录层到达后完成选中', async () => {
+  it('父目录导航在途：不从已加载列表打开，先用搜索结果选中', async () => {
     const missing = vi.fn();
+    const resolveAutoSelectFile = vi.fn().mockResolvedValue({
+      id: 'workspace:docs/report.md',
+      name: 'report.md',
+      type: 'file',
+      path: 'docs/report.md',
+      relativePath: 'docs/report.md',
+      fileProxyUrl: '/static/docs/report.md',
+    });
     const loadedDirs = new Set<string>(['']);
     const predicate = (fileId: string) => loadedDirs.has(parentDirOf(fileId));
-    const { rerender } = render(
+    render(
       <Harness
         originalFiles={rootOnly}
         taskAgentSelectedFileId="workspace:docs/report.md"
         taskAgentSelectTrigger={1}
         isAutoSelectDirectoryLoaded={predicate}
+        resolveAutoSelectFile={resolveAutoSelectFile}
         onSelectedFileMissing={missing}
       />,
     );
     await act(async () => {});
-    // 目标父目录 docs 尚未加载：保持等待，不通知 miss、不清空目标
+    // 目标父目录尚未加载：不判 miss，也不从根目录列表里模糊匹配
     expect(missing).not.toHaveBeenCalled();
-
-    // 父目录数据到达（navigate 完成），目标出现在树中 → 自动选中成功
-    loadedDirs.add('docs');
-    rerender(
-      <Harness
-        originalFiles={withReport}
-        taskAgentSelectedFileId="workspace:docs/report.md"
-        taskAgentSelectTrigger={1}
-        isAutoSelectDirectoryLoaded={predicate}
-        onSelectedFileMissing={missing}
-      />,
+    expect(resolveAutoSelectFile).toHaveBeenCalledWith(
+      'workspace:docs/report.md',
     );
     await waitFor(() =>
       expect(view.preview.selectedFileId).toBe('workspace:docs/report.md'),
