@@ -82,7 +82,8 @@ export interface AppDevAppPreviewPanelProps {
    */
   directPreview?: boolean;
   /**
-   * 会话已结束且文件树已加载，但无有效项目（空列表或缺少 workspace.manifest.toml）。
+   * 首次进入后 file-list 已返回，但列表为空或根目录缺少 workspace.manifest.toml。
+   * 首次 file-list 还没返回时为 false。
    */
   missingProjectFiles?: boolean;
   /** 正在调用停止接口，避免 iframe 被关掉后露出空白 */
@@ -388,7 +389,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
       readinessKind === 'stopped' ||
       readinessKind === 'notDeployed' ||
       readinessKind === 'failed' ||
-      readinessKind === 'unsupported' ||
       readinessKind === 'incomplete');
   const readinessTitle = (() => {
     switch (readinessKind) {
@@ -398,21 +398,17 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
         return dict('PC.Pages.AppDevPro.readinessNotDeployed');
       case 'failed':
         return dict('PC.Pages.AppDevPro.readinessStartFailed');
-      case 'unsupported':
-        return dict('PC.Pages.AppDevPro.readinessUnsupported');
       case 'incomplete':
         return dict('PC.Pages.AppDevPro.readinessDevIncomplete');
       default:
         return dict('PC.Pages.AppDevPro.readinessServiceStarting');
     }
   })();
-  /** 未部署和启动失败可以手动重启；不支持预览只提示，不提供重启 */
+  /** 未部署和启动失败可以手动重启；开发未完成只提示，不提供重启 */
   const showReadinessRestart =
     readinessKind === 'notDeployed' || readinessKind === 'failed';
   const readinessIsError =
-    readinessKind === 'failed' ||
-    readinessKind === 'unsupported' ||
-    readinessKind === 'incomplete';
+    readinessKind === 'failed' || readinessKind === 'incomplete';
   const readinessHero = showReadinessHero ? (
     <div className={cx(styles.container, styles.stage)}>
       <PreviewHero
