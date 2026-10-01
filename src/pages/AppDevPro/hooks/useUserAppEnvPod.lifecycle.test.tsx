@@ -62,6 +62,18 @@ describe('环境保活真实 React / ahooks 生命周期', () => {
     },
   );
 
+  it('服务已就绪时只保活，不调用 ensure', async () => {
+    const { result } = renderHook(() =>
+      useUserAppEnvPod(7001, UserAppDbEnvEnum.Dev),
+    );
+    act(() => {
+      result.current.keepAlive();
+    });
+    expect(ensurePod).not.toHaveBeenCalled();
+    expect(keepalivePod).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('running');
+  });
+
   it('正常接入保留 60 秒保活，卸载后停止后续查询', async () => {
     ensurePod.mockResolvedValue({ code: '0000' });
     const { result, unmount } = renderHook(() =>

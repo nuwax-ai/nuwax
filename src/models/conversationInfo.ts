@@ -552,9 +552,14 @@ export default () => {
     }
   }, []);
 
-  // 重启智能体电脑
+  /**
+   * 重启智能体电脑。
+   * @param cId 会话 ID
+   * @param sandboxId 电脑 ID
+   * @returns 重启接口是否成功
+   */
   const restartVncPod = useCallback(
-    async (cId: number, sandboxId: string) => {
+    async (cId: number, sandboxId: string): Promise<boolean> => {
       // 如果当前不是智能体电脑视图，并且用户选择是云端电脑（sandboxId === '-1'），则打开远程桌面视图
       if (viewMode !== 'desktop' && sandboxId === '-1') {
         // 切换到智能体电脑 tab。
@@ -581,7 +586,9 @@ export default () => {
         message.success(
           dict('PC.Models.ConversationInfo.restartVncPodSuccess'),
         );
+        return true;
       }
+      return false;
     },
     [viewMode],
   );
