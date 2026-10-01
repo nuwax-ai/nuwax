@@ -10,7 +10,11 @@ import FileTreeGitSourcePanel, {
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
-import { workspaceNodeId } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
+import {
+  parentDirectory,
+  workspaceNodeId,
+  workspaceRelativePath,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
@@ -1839,6 +1843,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         await refreshFileListImmediately(queryConversationId);
       },
       onOpenDirectory: workspaceFiles.onOpenDirectory,
+      /** 目标父目录还在加载时，不要用当前文件列表判断文件不存在 */
+      isAutoSelectDirectoryLoaded: (fileId: string) => {
+        const parentPath = parentDirectory(workspaceRelativePath(fileId));
+        if (workspaceFiles.openingTaskResultRef.current?.parent === parentPath) {
+          return false;
+        }
+        return workspaceFiles.loadedDirectoryPaths.has(parentPath);
+      },
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
       /** 容器启动成功、开启版本管理且工作区已有文件时才拉取 Git status */
@@ -1904,6 +1916,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     workspaceFiles.files,
     workspaceFiles.loading,
     workspaceFiles.onOpenDirectory,
+    workspaceFiles.loadedDirectoryPaths,
+    workspaceFiles.openingTaskResultRef,
     fileTreeRefreshTrigger,
     queryConversationId,
     handleUploadMultipleFiles,

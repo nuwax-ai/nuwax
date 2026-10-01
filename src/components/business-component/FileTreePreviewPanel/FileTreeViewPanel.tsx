@@ -299,12 +299,10 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       [fileView.changeFiles, fileView.tree.selectedFileId],
     );
 
-    useEffect(() => {
-      if (!selectFileRef) {
-        return;
-      }
+    // 与 Chat 一样在渲染时写入，搜索返回后能立刻用结果打开，不必等 effect
+    if (selectFileRef) {
       selectFileRef.current = fileView.tree.handleFileSelect;
-    }, [selectFileRef, fileView.tree.handleFileSelect]);
+    }
 
     return (
       <FileTreePreviewPanel
