@@ -32,6 +32,9 @@ export type MockScenarioId =
   | 'PERMISSION_TIMEOUT'
   | 'ASK_QUESTION'
   | 'ASK_QUESTION_UNANSWERED'
+  | 'CHATBOT_ASK_REQUIRED'
+  | 'CHATBOT_ASK_SKIPPABLE'
+  | 'CHATBOT_ASK_SEQUENTIAL'
   | 'OPENUI_RENDER'
   | 'OPENUI_INTERACTIVE'
   | 'INTERVENTION_MIXED'
@@ -65,6 +68,9 @@ export interface MockScenario {
   /** 验证的修复项 */
   verifies: string;
   events: MockSseEvent[];
+  /** 问答型专项：每题只在收到真实 chat 回应后推进，不使用定时回放。 */
+  responseDrivenAsk?: MockSseEvent[];
+  agentType?: 'ChatBot';
   /** mock 服务端使用的传输故障模式。 */
   transport?: 'normal' | 'network-error' | 'keep-open' | 'sub-only';
   /**
@@ -586,7 +592,70 @@ const planAllCompleted = () =>
 
 // ── 场景定义 ──
 
+/** 对齐后端 Event/ASK_QUESTION 的标准 v2 载荷；每题 requestId 独立。 */
+const chatbotQuestion = (index: number, allowSkip: boolean): MockSseEvent => ({
+  eventType: 'PROCESSING',
+  requestId: `mock-chatbot-turn-${index}`,
+  data: {
+    type: 'Event',
+    name: 'Backend.Sandbox.Event.AskQuestion',
+    status: 'FINISHED',
+    subEventType: 'ASK_QUESTION',
+    result: {
+      data: {
+        schemaVersion: 'nuwax.mcp_ask.v2',
+        requestId: `mock-chatbot-ask-${index}`,
+        revision: 1,
+        sessionId: MOCK_SESSION_ID,
+        toolName: 'nuwax_ask_question',
+        title: '请选择继续方式',
+        ui: {
+          version: 'nuwax.interaction.v2',
+          presentation: 'inline',
+          title: '请选择继续方式',
+          allowSkip,
+          skipLabel: '跳过此问',
+          submitLabel: '确认',
+          cancelLabel: '取消此问',
+          fields: [
+            {
+              name: 'choice',
+              title: '处理方式',
+              widget: 'radio',
+              required: true,
+              options: [
+                { value: '方案A', label: '方案A' },
+                { value: '方案B', label: '方案B' },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  },
+});
+
 export const MOCK_SCENARIOS: MockScenario[] = [
+  ...(
+    [
+      ['CHATBOT_ASK_REQUIRED', '问答型必答（回应后续跑）', false, 1],
+      ['CHATBOT_ASK_SKIPPABLE', '问答型可跳过（回应后续跑）', true, 1],
+      ['CHATBOT_ASK_SEQUENTIAL', '问答型连续同标题问题', false, 2],
+    ] as const
+  ).map(
+    ([id, label, allowSkip, count]): MockScenario => ({
+      id,
+      label,
+      description: '真实 ChatBot 身份，等待用户回应，不按定时器自动收尾',
+      verifies: '等待、提交/取消/跳过、独立 requestId 与历史恢复',
+      agentType: 'ChatBot',
+      events: [],
+      responseDrivenAsk: Array.from({ length: count }, (_, i) =>
+        chatbotQuestion(i + 1, allowSkip),
+      ),
+    }),
+  ),
+
   {
     id: 'NORMAL_SINGLE',
     label: '正常单步完成',
