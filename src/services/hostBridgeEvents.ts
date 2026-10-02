@@ -18,6 +18,7 @@ import {
   setCurrentLang,
 } from '@/services/i18nRuntime';
 import { hostBridge } from '@/utils/hostBridge';
+import { handleComputerServiceStatePayload } from './computerServiceState';
 import { handleHostActivityPayload } from './hostVisibility';
 
 /** 宿主命令需要驱动的业务能力（由调用方注入）。 */
@@ -75,6 +76,9 @@ function handleHostCommand(payload: HostCommand): void {
     case 'host-activity':
       // 休眠控制：壳 hostActivity 服务下发的宿主可见性沿，不依赖注入 handlers
       handleHostActivityPayload(payload);
+      break;
+    case 'computer-service-state':
+      handleComputerServiceStatePayload(payload);
       break;
     case 'set-lang':
       // 壳设置切语言（bug 2428）：应用语种+标记显式选择+尽力持久化到账号；

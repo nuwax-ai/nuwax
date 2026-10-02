@@ -47,7 +47,7 @@ export interface CreateUserAppProps {
 }
 
 /**
- * 创建 / 更新全栈应用弹窗。
+ * 创建 / 更新网站应用弹窗。
  *
  * 参考 CreateAgent：名称、介绍、图标表单；创建走 apiUserAppCreate，更新走 apiUserAppUpdate。
  * 创建时若未上传图标，会尝试根据名称和介绍自动生成图标。
@@ -78,15 +78,15 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
   const [imageUrl, setImageUrl] = useState<string>('');
   /** 提交中，用于弹窗确认按钮 loading */
   const [loading, setLoading] = useState<boolean>(false);
-  /** 全栈应用开发智能体推荐项（functionType=UserAppDev） */
+  /** 网站应用开发智能体推荐项（functionType=UserAppDev） */
   const [devAgentOptions, setDevAgentOptions] = useState<
     DisplayRecommendInfo[]
   >([]);
 
-  // 加载全栈应用开发智能体推荐项
+  // 加载网站应用开发智能体推荐项
   const [devAgentLoading, setDevAgentLoading] = useState<boolean>(false);
 
-  // 全栈应用开发智能体推荐项下拉选项
+  // 网站应用开发智能体推荐项下拉选项
   const devAgentSelectOptions = useMemo(
     () =>
       uniqBy(devAgentOptions, 'targetId').map((item) => ({
@@ -96,7 +96,7 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
     [devAgentOptions],
   );
 
-  // 创建全栈应用
+  // 创建网站应用
   const { run: runAdd } = useRequest(apiUserAppCreate, {
     manual: true,
     debounceInterval: 300,
@@ -125,7 +125,7 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
     },
   });
 
-  // 更新全栈应用基本信息（未传字段不更新）
+  // 更新网站应用基本信息（未传字段不更新）
   const { run: runUpdate } = useRequest(apiUserAppUpdate, {
     manual: true,
     debounceInterval: 300,
@@ -169,7 +169,7 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
    * 从推荐列表中收集 functionType=UserAppDev 的项。
    *
    * @param groups 首页 / 对话框推荐分组
-   * @returns 排序后的全栈应用开发智能体列表
+   * @returns 排序后的网站应用开发智能体列表
    */
   const pickUserAppDevAgents = useCallback(
     (groups: Array<DisplayRecommendGroup | undefined>) => {
@@ -194,7 +194,7 @@ const CreateUserApp: React.FC<CreateUserAppProps> = ({
     [],
   );
 
-  /** 打开弹窗时拉取全栈应用开发智能体推荐列表 */
+  /** 打开弹窗时拉取网站应用开发智能体推荐列表 */
   const loadDevAgentOptions = useCallback(async () => {
     setDevAgentLoading(true);
     try {

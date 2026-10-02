@@ -27,7 +27,7 @@ export enum AgentComponentTypeEnum {
   Page = 'Page',
   // 应用
   PageApp = 'PageApp',
-  // 全栈应用
+  // 网站应用
   UserApp = 'UserApp',
   // 常规项目
   NormalProject = 'NormalProject',

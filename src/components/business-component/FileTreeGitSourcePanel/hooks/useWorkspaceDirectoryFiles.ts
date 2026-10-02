@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   WORKSPACE_SOURCE_ID,
   mergeDirectoryLevelFiles,
+  prefetchedChildDirectories,
   resolveDirectoryLevelFiles,
   workspaceNodeId,
 } from '../utils/workspaceFileList';
@@ -35,10 +36,22 @@ export function useWorkspaceDirectoryFiles(
     new Set(),
   );
   const [loading, setLoading] = useState(false);
+  /**
+   * 本次进入后，根目录 file-list 是否已经成功返回过一次。
+   * 请求还没发出、还在路上时为 false；返回后再按列表内容判断有没有项目。
+   */
+  const [fileListLoaded, setFileListLoaded] = useState(false);
   /** 正在拉取文件列表的目录（相对路径）。请求结束（成功或失败）后移除。 */
   const [loadingDirectoryPaths, setLoadingDirectoryPaths] = useState<
     Set<string>
   >(new Set());
+  const loadedDirectoryPathsRef = useRef(loadedDirectoryPaths);
+  loadedDirectoryPathsRef.current = loadedDirectoryPaths;
+  /**
+   * depth 2 已经带回内容的直接子目录。
+   * 不放进 loadedDirectoryPaths，避免打开文件树时把每个子目录再请求一遍。
+   */
+  const prefetchedDirectoryPathsRef = useRef(new Set<string>());
   const directoryRequestTokensRef = useRef(new Map<string, number>());
   /** 在途目录请求集合（loadDirectory 写入/finally 清除；首拉与刷新去重用） */
   const inflightDirectoryRequestsRef = useRef(new Set<string>());
@@ -51,6 +64,7 @@ export function useWorkspaceDirectoryFiles(
   useEffect(() => {
     conversationIdRef.current = conversationId;
     directoryRequestTokensRef.current.clear();
+    prefetchedDirectoryPathsRef.current.clear();
     inflightDirectoryRequestsRef.current.clear();
     directoryLoadingCountRef.current.clear();
     activeRequestCountRef.current = 0;
@@ -58,16 +72,19 @@ export function useWorkspaceDirectoryFiles(
     setFiles([]);
     setLoadedDirectoryPaths(new Set());
     setLoading(false);
+    setFileListLoaded(false);
     setLoadingDirectoryPaths(new Set());
   }, [conversationId]);
 
   /**
-   * 只拉 path 这一层（recursive: false），并合并进已有列表。
+   * 拉取 path 及其下一层（depth: 2），并合并进已有列表。
+   * silent 用于下级已经在树上的展开：不转圈，只在后台补下下级。
    * 同一目录的后发请求会使先发响应失效，避免旧列表盖住新列表。
    */
   const loadDirectory = useCallback(
-    async (path: string) => {
+    async (path: string, loadOptions?: { silent?: boolean }) => {
       if (!conversationId) return;
+      const silent = loadOptions?.silent === true;
       // 工作区相对路径，去掉首尾斜杠；根目录是空字符串
       const requestPath = path.replace(/^\/+|\/+$/g, '');
       // 同一目录递增序号。响应回来时序号不一致，说明已有更新的请求，丢弃本次结果
@@ -75,18 +92,21 @@ export function useWorkspaceDirectoryFiles(
         (directoryRequestTokensRef.current.get(requestPath) || 0) + 1;
       directoryRequestTokensRef.current.set(requestPath, token);
       inflightDirectoryRequestsRef.current.add(requestPath);
-      // 重叠请求用计数，最后一次结束才关掉该目录的 loading
-      const loadingCount =
-        (directoryLoadingCountRef.current.get(requestPath) || 0) + 1;
-      directoryLoadingCountRef.current.set(requestPath, loadingCount);
-      setLoadingDirectoryPaths((previous) => {
-        if (previous.has(requestPath)) return previous;
-        const next = new Set(previous);
-        next.add(requestPath);
-        return next;
-      });
-      activeRequestCountRef.current += 1;
-      setLoading(true);
+      // 已有下级时静默补下下级，不进入文件夹 loading
+      if (!silent) {
+        // 重叠请求用计数，最后一次结束才关掉该目录的 loading
+        const loadingCount =
+          (directoryLoadingCountRef.current.get(requestPath) || 0) + 1;
+        directoryLoadingCountRef.current.set(requestPath, loadingCount);
+        setLoadingDirectoryPaths((previous) => {
+          if (previous.has(requestPath)) return previous;
+          const next = new Set(previous);
+          next.add(requestPath);
+          return next;
+        });
+        activeRequestCountRef.current += 1;
+        setLoading(true);
+      }
       try {
         // 只取当前层。后端若仍返回全量递归列表，resolveDirectoryLevelFiles 会裁成这一层
         const result = await apiGetStaticFileList(conversationId, {
@@ -120,6 +140,9 @@ export function useWorkspaceDirectoryFiles(
         setFiles((loadedFiles) =>
           mergeDirectoryLevelFiles(loadedFiles, directoryFiles, requestPath),
         );
+        if (!requestPath) {
+          setFileListLoaded(true);
+        }
         setLoadedDirectoryPaths((loadedPaths) => {
           // 本次响应里的直接子目录。更深的已加载目录是否保留，看它的第一段还在不在
           const directDirectoryPaths = new Set(
@@ -153,6 +176,21 @@ export function useWorkspaceDirectoryFiles(
             }),
           );
           next.add(requestPath);
+          // 只记预取，不记成已打开。刷新已加载目录时不会把这些子目录再请求一遍
+          if (result.data?.recursive === false) {
+            const prefetched = prefetchedDirectoryPathsRef.current;
+            prefetched.forEach((childPath) => {
+              const underRequest = requestPath
+                ? childPath.startsWith(`${requestPath}/`)
+                : true;
+              if (underRequest) {
+                prefetched.delete(childPath);
+              }
+            });
+            prefetchedChildDirectories(directoryFiles, requestPath).forEach(
+              (childPath) => prefetched.add(childPath),
+            );
+          }
           return next;
         });
       } catch (error) {
@@ -164,30 +202,36 @@ export function useWorkspaceDirectoryFiles(
           );
         }
       } finally {
-        // 会话已切换时，计数和 loading 已在切换 effect 里清空，不能再改新会话的状态
-        if (conversationIdRef.current === conversationId) {
-          const loadingCount = Math.max(
-            0,
-            (directoryLoadingCountRef.current.get(requestPath) || 1) - 1,
-          );
-          if (loadingCount > 0) {
-            directoryLoadingCountRef.current.set(requestPath, loadingCount);
-          } else {
-            directoryLoadingCountRef.current.delete(requestPath);
-            inflightDirectoryRequestsRef.current.delete(requestPath);
-            setLoadingDirectoryPaths((previous) => {
-              if (!previous.has(requestPath)) return previous;
-              const next = new Set(previous);
-              next.delete(requestPath);
-              return next;
-            });
-          }
-          activeRequestCountRef.current = Math.max(
-            0,
-            activeRequestCountRef.current - 1,
-          );
-          setLoading(activeRequestCountRef.current > 0);
+        // 会话已切换时，计数和在途标记已清空，不能再改新会话的状态
+        if (conversationIdRef.current !== conversationId) {
+          return;
         }
+        // 静默补层不占用 loading，只清掉在途标记，避免同一目录再也刷不了
+        if (silent) {
+          inflightDirectoryRequestsRef.current.delete(requestPath);
+          return;
+        }
+        const loadingCount = Math.max(
+          0,
+          (directoryLoadingCountRef.current.get(requestPath) || 1) - 1,
+        );
+        if (loadingCount > 0) {
+          directoryLoadingCountRef.current.set(requestPath, loadingCount);
+        } else {
+          directoryLoadingCountRef.current.delete(requestPath);
+          inflightDirectoryRequestsRef.current.delete(requestPath);
+          setLoadingDirectoryPaths((previous) => {
+            if (!previous.has(requestPath)) return previous;
+            const next = new Set(previous);
+            next.delete(requestPath);
+            return next;
+          });
+        }
+        activeRequestCountRef.current = Math.max(
+          0,
+          activeRequestCountRef.current - 1,
+        );
+        setLoading(activeRequestCountRef.current > 0);
       }
     },
     [conversationId],
@@ -231,13 +275,18 @@ export function useWorkspaceDirectoryFiles(
     (path: string) => {
       const normalizedPath = path.replace(/^\/+|\/+$/g, '');
       setCurrentPath(normalizedPath);
-      void loadDirectory(normalizedPath);
+      // 下级已在上次 depth 2 里，或这个目录已经打开过：后台补下下级，不显示 loading
+      const silent =
+        prefetchedDirectoryPathsRef.current.has(normalizedPath) ||
+        loadedDirectoryPathsRef.current.has(normalizedPath);
+      void loadDirectory(normalizedPath, { silent });
     },
     [loadDirectory],
   );
 
   return {
     files,
+    fileListLoaded,
     loading,
     loadingDirectoryPaths,
     currentPath,

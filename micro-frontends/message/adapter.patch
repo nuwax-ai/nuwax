@@ -1,7 +1,3 @@
-diff --git a/nuwax-im-web/vite.config.ts b/nuwax-im-web/vite.upstream.config.ts
-similarity index 100%
-rename from nuwax-im-web/vite.config.ts
-rename to nuwax-im-web/vite.upstream.config.ts
 diff --git a/nuwax-im-web/src/App.tsx b/nuwax-im-web/src/App.tsx
 index 4b3ea0a..88bd2a3 100644
 --- a/nuwax-im-web/src/App.tsx
@@ -56,16 +52,104 @@ index 4b3ea0a..88bd2a3 100644
        <Shell />
      </AntApp>
    );
+diff --git a/nuwax-im-web/src/api/client.ts b/nuwax-im-web/src/api/client.ts
+index 1375c89..d9fa3a9 100644
+--- a/nuwax-im-web/src/api/client.ts
++++ b/nuwax-im-web/src/api/client.ts
+@@ -32,6 +32,7 @@
+  * 以别人的身份登录了。写路径一起封掉，才不会留下"躺着等人踩"的假身份。
+  */
+ import { dispatchAuthExpired } from '../lib/authEvents';
++import { getMessageRequestGeneration, isMessageRequestCurrent } from '../hostRuntime';
+ import { isPlatformMode } from '../authMode';
+ import { readErrorEnvelope } from './errorEnvelope';
+ import { parseServerJson } from './json';
+@@ -111,6 +112,7 @@ export interface ApiOptions {
+ }
+ 
+ export async function api<T>(path: string, init: ApiOptions = {}): Promise<T> {
++  const requestGeneration = getMessageRequestGeneration();
+   const url = new URL(path, window.location.origin);
+   if (init.query) {
+     for (const [k, v] of Object.entries(init.query)) {
+@@ -145,7 +147,7 @@ export async function api<T>(path: string, init: ApiOptions = {}): Promise<T> {
+     //   于是 IM_10402 和 message 里的那个地址根本到不了前端，
+     //   后端刚做好的透传在前端这一步被无声吃掉，现象与"没做"完全一样。
+     const env = await readErrorEnvelope(resp);
+-    if (!init.silentAuthFailure) {
++    if (!init.silentAuthFailure && isMessageRequestCurrent(requestGeneration)) {
+       tokenStore.clear();
+       dispatchAuthExpired({ code: env.code, message: env.message });
+     }
+diff --git a/nuwax-im-web/src/api/upload.ts b/nuwax-im-web/src/api/upload.ts
+index e6422e8..47eb0af 100644
+--- a/nuwax-im-web/src/api/upload.ts
++++ b/nuwax-im-web/src/api/upload.ts
+@@ -36,6 +36,7 @@
+  * <p>★绝不 {@code console.log} 文件内容 / URL 查询串 / 凭据（DEV-88 同源纪律）。
+  */
+ import { dispatchAuthExpired } from '../lib/authEvents';
++import { getMessageRequestGeneration, isMessageRequestCurrent } from '../hostRuntime';
+ import { ApiError, tokenStore } from './client';
+ import { parseServerJson } from './json';
+ import type { ReqResult } from './types';
+@@ -91,12 +92,14 @@ export const UPLOAD_MAX_MB: number = (() => {
+  * 但仍要调：用户可能"mock 构建 → 平台构建"切换过，磁盘上还留着上一版的
+  * {@code mock-token-*}，不在此刻清掉它就永远躺在那儿。
+  */
+-function authExpired(status: number): ApiError {
+-  tokenStore.clear();
+-  // ★DEV-168：不带 detail。上传直连平台，拿不到 IM 的信封
+-  //   （IM_10402 是 IM 后端对平台 4011 的投影，这条链路不经过它）——
+-  //   判据会落到"留在卡片上"，与改造前一致。见 lib/authEvents.ts 的说明。
+-  dispatchAuthExpired();
++function authExpired(status: number, requestGeneration: number): ApiError {
++  if (isMessageRequestCurrent(requestGeneration)) {
++    tokenStore.clear();
++    // ★DEV-168：不带 detail。上传直连平台，拿不到 IM 的信封
++    //   （IM_10402 是 IM 后端对平台 4011 的投影，这条链路不经过它）——
++    //   判据会落到"留在卡片上"，与改造前一致。见 lib/authEvents.ts 的说明。
++    dispatchAuthExpired();
++  }
+   return new ApiError('IM_10401', '登录状态已失效，请重新登录后再上传', status);
+ }
+ 
+@@ -115,6 +118,7 @@ function authExpired(status: number): ApiError {
+  *         响应结构不认识 {@code BAD_RESPONSE}
+  */
+ export async function uploadFile(file: File, signal?: AbortSignal): Promise<UploadResult> {
++  const requestGeneration = getMessageRequestGeneration();
+   if (file.size === 0) {
+     throw new ApiError('BAD_REQUEST', `「${file.name}」是空文件，没有可上传的内容`);
+   }
+@@ -154,7 +158,7 @@ export async function uploadFile(file: File, signal?: AbortSignal): Promise<Uplo
+   }
+ 
+   if (isAuthFailure(resp.status)) {
+-    throw authExpired(resp.status);
++    throw authExpired(resp.status, requestGeneration);
+   }
+ 
+   let text: string;
+@@ -177,7 +181,7 @@ export async function uploadFile(file: File, signal?: AbortSignal): Promise<Uplo
+     // ★★未登录（HTTP 200 + 4010）必须<b>先于</b>下面的"原样透出"被拦下，
+     //   否则登录态失效被降级成一条普通业务错误（理由见 isAuthFailure）。
+     if (isAuthFailure(resp.status, envelope.code)) {
+-      throw authExpired(resp.status);
++      throw authExpired(resp.status, requestGeneration);
+     }
+     // ★其余平台的错误码原样透出：
+     //   翻译成 IM 的码会让"平台到底怎么说的"这条最重要的线索消失。
 diff --git a/nuwax-im-web/src/components/ChatWindow.tsx b/nuwax-im-web/src/components/ChatWindow.tsx
-index 2538a57..9f785a6 100644
+index f16e300..6a11dba 100644
 --- a/nuwax-im-web/src/components/ChatWindow.tsx
 +++ b/nuwax-im-web/src/components/ChatWindow.tsx
 @@ -1,3 +1,4 @@
-+import { getMessageInputRoot, getMessagePortalRoot, toMessagePortalPoint } from '../hostRuntime';
++import { getMessageInputRoot, getMessagePortalRoot, isNativeMessageNotifications, toMessagePortalPoint } from '../hostRuntime';
  import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
  import { App as AntApp, Avatar, Dropdown, Image, Tooltip, type MenuProps } from 'antd';
  import type { AttachmentInput, AttachmentKind, Id, MessageDto } from '../api/types';
-@@ -480,8 +481,8 @@ export default function ChatWindow() {
+@@ -517,8 +518,8 @@ export default function ChatWindow() {
      //   这条隐性前提撑着 —— 那正是重构时最容易踩坏的一类依赖。
      let done = false;
      function detach() {
@@ -76,7 +160,7 @@ index 2538a57..9f785a6 100644
      }
      function ask() {
        // ★`done` 与 detach 是双保险：pointerdown 与 keydown 可能在同一瞬间各来一次
-@@ -499,8 +500,8 @@ export default function ChatWindow() {
+@@ -536,8 +537,8 @@ export default function ChatWindow() {
          })
          .catch(() => undefined);
      }
@@ -87,7 +171,7 @@ index 2538a57..9f785a6 100644
      return detach;
    }, [notifyOn]);
    /**
-@@ -1144,13 +1145,13 @@ export default function ChatWindow() {
+@@ -1205,13 +1206,13 @@ export default function ChatWindow() {
        e.preventDefault();
        accept(files);
      };
@@ -107,7 +191,7 @@ index 2538a57..9f785a6 100644
      };
    });
  
-@@ -2309,7 +2310,7 @@ export default function ChatWindow() {
+@@ -2370,7 +2371,7 @@ export default function ChatWindow() {
        ?? null;
      if (!id) return;
      e.preventDefault();
@@ -116,7 +200,25 @@ index 2538a57..9f785a6 100644
    };
  
    const removePending = (id: string): void => {
-@@ -3536,7 +3537,7 @@ export default function ChatWindow() {
+@@ -3062,7 +3063,7 @@ export default function ChatWindow() {
+                     ),
+                     disabled: notifyToggleDisabled(notifySt),
+                   },
+-                  {
++                  ...(isNativeMessageNotifications() ? [] : [{
+                     key: 'notifyTest',
+                     label: '发送测试通知',
+                     // ★★DEV-231 需求④：点不了的只有两种 —— 权限压根不可用（点了必然没有结果），
+@@ -3070,7 +3071,7 @@ export default function ChatWindow() {
+                     //   ★`default`（还没问过权限）时**可以点**：那正是最需要一次实际结果
+                     //   来确认的情形；而且这一次点击本身就是用户手势，权限会被顺便问出来。
+                     disabled: notifyToggleDisabled(notifySt) || !notifyOn,
+-                  },
++                  }]),
+                   // ★★DEV-254 需求③（用户原话「见附件红色圈起来的不需要」，附件把这一项圈红了）：
+                   //   这里原来还有一条 `{ type: 'divider' }` + `{ key: 'sync', label: '手动增量同步' }`，
+                   //   与它的 `onClick` 分支（`syncIncremental().then(...)`）**一并删掉**。
+@@ -3664,7 +3665,7 @@ export default function ChatWindow() {
              {imgMenu && (
                <Dropdown
                  open
@@ -126,10 +228,10 @@ index 2538a57..9f785a6 100644
                  menu={{
                    /* ★★DEV-223：这里原来写死单项，现在走 imgMenuStickerItem ——
 diff --git a/nuwax-im-web/src/components/MessageBubble.tsx b/nuwax-im-web/src/components/MessageBubble.tsx
-index 5a9c920..0830cde 100644
+index 79fd776..3f167b8 100644
 --- a/nuwax-im-web/src/components/MessageBubble.tsx
 +++ b/nuwax-im-web/src/components/MessageBubble.tsx
-@@ -951,7 +951,7 @@ export default function MessageBubble({
+@@ -1031,7 +1031,7 @@ export default function MessageBubble({
    const canPin = useChatStore((s) => canPinInConv(s.convs.find((c) => String(c.convId) === String(m.convId)), s.userId));
    const [editing, setEditing] = useState(false);
    const [editText, setEditText] = useState('');
@@ -138,7 +240,7 @@ index 5a9c920..0830cde 100644
    const self = m.senderId != null && userId != null && String(m.senderId) === String(userId);
    const revoked = isRevokedMsg(m);
    /**
-@@ -1277,7 +1277,7 @@ export default function MessageBubble({
+@@ -1425,7 +1425,7 @@ export default function MessageBubble({
  
    const doRevoke = () => {
      if (activeConvId == null) return;
@@ -174,7 +276,7 @@ index bc75fe6..e0f8e4a 100644
    }
  }
 diff --git a/nuwax-im-web/src/lib/customEvents.ts b/nuwax-im-web/src/lib/customEvents.ts
-index 5d01ca2..5792bca 100644
+index 8ee5552..ccd9ff5 100644
 --- a/nuwax-im-web/src/lib/customEvents.ts
 +++ b/nuwax-im-web/src/lib/customEvents.ts
 @@ -159,6 +159,11 @@ export function customEventSubscriberCount(): number {
@@ -189,6 +291,65 @@ index 5d01ca2..5792bca 100644
  /**
   * ★安装 {@code window.__im} 桥（业务方从浏览器控制台接入的那扇门）。
   *
+diff --git a/nuwax-im-web/src/lib/notify.ts b/nuwax-im-web/src/lib/notify.ts
+index 8c939bf..8cc49b1 100644
+--- a/nuwax-im-web/src/lib/notify.ts
++++ b/nuwax-im-web/src/lib/notify.ts
+@@ -34,6 +34,7 @@
+  * 这与 {@code lib/clipboard.ts}、{@code lib/redirectUrl.ts} 的做法一致。
+  */
+ 
++import { isNativeMessageNotifications, setNativeMessageNotificationEnabled } from '../hostRuntime';
+ import type { Id } from '../api/types';
+ import { isGroupConv } from './convType';
+ import { stripMdMark } from './digest';
+@@ -275,6 +276,7 @@ export function readNotifyEnabled(storage?: Pick<Storage, 'getItem'> | null): bo
+ 
+ /** 写用户开关。★写失败（配额满 / 隐私模式）不抛：开关在本次会话里仍然生效（内存里）。 */
+ export function writeNotifyEnabled(v: boolean, storage?: Pick<Storage, 'setItem'> | null): void {
++  if (storage === undefined) setNativeMessageNotificationEnabled(v);
+   const s = storage === undefined ? safeStorage() : storage;
+   if (!s) return;
+   try {
+@@ -389,6 +391,14 @@ export function resetNotifySlots(): void {
+   notifySlots.clear();
+ }
+ 
++/** 真卸载时关闭通知并释放 onclick 持有的旧 store。隐藏保活时不调用。 */
++export function disposeImNotifications(): void {
++  for (const [convId, notification] of notifySlots) {
++    notification.onclick = null;
++    dropNotifySlot(convId);
++  }
++}
++
+ /**
+  * 同时挂着的通知上限。
+  * ★只增不减的模块级结构迟早会被当成内存泄漏报上来；且几十条通知同时挂在通知中心里，
+@@ -445,6 +455,7 @@ function dropNotifySlot(convId: string): void {
+  * 在这里补一次就是两处判据，迟早分叉。
+  */
+ export function pushNotify(msg: NotifyMessage, deps: PushDeps = {}): boolean {
++  if (isNativeMessageNotifications()) return false;
+   const env = deps.env ?? defaultEnv();
+   const state = notifyState(env);
+   // ★★DEV-231 需求④：`force` 只压"前台不弹"这一条（见 PushDeps.force 的注释）。
+@@ -509,6 +520,7 @@ export function pushNotify(msg: NotifyMessage, deps: PushDeps = {}): boolean {
+ 
+ /** 读<b>当前</b>真实环境的状态（界面用；每次渲染读一次即可，都是同步的属性读取）。 */
+ export function notifyStateNow(): NotifyState {
++  if (isNativeMessageNotifications()) return 'granted';
+   return notifyState(defaultEnv());
+ }
+ 
+@@ -571,6 +583,7 @@ function defaultFocus(): () => void {
+ export async function requestNotifyPermission(
+   env: NotifyEnv = defaultEnv(),
+ ): Promise<NotifyState> {
++  if (isNativeMessageNotifications()) return 'granted';
+   const cur = notifyState(env);
+   if (cur !== 'default') return cur;
+   const w = globalThis as unknown as {
 diff --git a/nuwax-im-web/src/lib/titleBadge.ts b/nuwax-im-web/src/lib/titleBadge.ts
 index 71ca56f..bb7cf22 100644
 --- a/nuwax-im-web/src/lib/titleBadge.ts
@@ -223,9 +384,11 @@ index e9e7938..04251f1 100644
 -  return doc != null && doc.visibilityState === 'visible' && doc.hasFocus() === true;
 +  return isMessageActive() && doc != null && doc.visibilityState === 'visible' && doc.hasFocus() === true;
  }
+diff --git a/nuwax-im-web/src/store/chat.ts b/nuwax-im-web/src/store/chat.ts
+index 70461bf..f42878d 100644
 --- a/nuwax-im-web/src/store/chat.ts
 +++ b/nuwax-im-web/src/store/chat.ts
-@@ -117,7 +117,7 @@
+@@ -126,7 +126,7 @@ import type { ConvUpdateFrame } from '../lib/convUpdate';
  // ★DEV-226 需求⑤：桌面通知（判据与出口都在那个文件里，store 只负责"有这么一条消息"）。
  import { notifyContentOf, pushNotify } from '../lib/notify';
  import { isPlatformMode, PLATFORM_LOGIN_URL } from '../authMode';
@@ -234,7 +397,7 @@ index e9e7938..04251f1 100644
  import { currentDeviceId, KickReason } from '../ws/protocol';
  // ★DEV-260：通讯录变更帧 → 「该不该打扰、说什么」的纯函数（含单测）。
  //   ★文案与判据<b>都</b>在 lib 层：store 一 import 就拉起 zustand/React/api，
-@@ -180,7 +180,7 @@
+@@ -199,7 +199,7 @@ import { isMentionedMe, raiseMentionAnchor } from '../lib/mentionBar';
   * 否则会出现"同一个会话两个 key、合并失效"（而它<b>没有任何症状</b>：
   * 只是偶尔多一个请求，永远不会有人来报）。见 {@code lib/singleFlight.ts}。
   */
@@ -243,7 +406,7 @@ index e9e7938..04251f1 100644
  
  /**
   * ★★DEV-247：同一个会话的「资料库」空间<b>并发只建一次</b>。
-@@ -198,7 +198,7 @@
+@@ -217,7 +217,7 @@ const membersFlight = createSingleFlight<string, void>();
   * 会话行上的 {@code spaceId} 判（第 ① 步的短路），不靠这个 Map。
   * ★与 {@code membersFlight} 同一个理由用 {@code String(convId)} 做 key。
   */
@@ -252,7 +415,7 @@ index e9e7938..04251f1 100644
  
  let tempMsgIdSeq = 1;
  const nextTempMsgId = (): Id => `tmp-${tempMsgIdSeq++}`;
-@@ -488,7 +488,7 @@
+@@ -511,7 +511,7 @@ export const EMPTY_SESSION = {
   * 被关的那条再触发客户端重连 —— 线上表现为"页面一直在请求接口"。
   * 收口放在 store 而不是各调用点：调用点会继续增加，单飞只有一处。
   */
@@ -261,7 +424,7 @@ index e9e7938..04251f1 100644
  
  interface ChatState {
    // ---- 登录态
-@@ -1443,7 +1443,7 @@
+@@ -1591,7 +1591,7 @@ function flushLocalCache(dirty: DirtySnapshot): void {
  }
  
  /** 落盘调度器（debounce + maxWait，见 lib/cacheFlush.ts）。 */
@@ -270,7 +433,7 @@ index e9e7938..04251f1 100644
  
  /**
   * ★★DEV-173 决策②：冷启动要预展示的那一份快照。
-@@ -1568,7 +1568,31 @@
+@@ -1716,7 +1716,31 @@ function preloadSnapshot(): Partial<ChatState> | null {
    }
  }
  
@@ -303,7 +466,7 @@ index e9e7938..04251f1 100644
    // ★★DEV-173 决策②：冷启动预展示。★求值一次，覆盖点只有下面那一处 spread。
    const preload = preloadSnapshot();
    // ------------------------------------------------------------------
-@@ -2121,10 +2145,11 @@
+@@ -2269,10 +2293,11 @@ export const useChatStore = create<ChatState>((set, get) => {
     */
    let lookingRetryTimer: ReturnType<typeof setTimeout> | null = null;
    function scheduleLookingRetry(): void {
@@ -316,7 +479,7 @@ index e9e7938..04251f1 100644
        if (isLooking(document)) {
          // ★判据翻真了：走正常补报入口（它自己会再查一遍判据，这里不抄近路）
          get().flushPendingRead();
-@@ -2164,7 +2189,7 @@
+@@ -2312,7 +2337,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   于是变成 1 秒一次的连接乒乓，每次重连还顺带拉一份完整会话列表。
      //   ★判据用 imSocket.active（connected/connecting/reconnecting），不是 connected：
      //   两次调用是并发到达的，第一次的 CONNECT_ACK 尚未回来时 state 还是 connecting。
@@ -325,7 +488,7 @@ index e9e7938..04251f1 100644
      set({
        userId: opts.userId,
        userName: opts.userName,
-@@ -2192,6 +2217,7 @@
+@@ -2340,6 +2365,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      } catch {
        // 注册失败不阻塞登录（设备表是推送用的辅助数据）
      }
@@ -333,7 +496,7 @@ index e9e7938..04251f1 100644
      imSocket.connect(opts.token);
      // ★★DEV-172：这里【必须】吞掉失败，两个理由各自都成立：
      //   ① enterSession 被 probePlatformSession 的 try 包着 —— 会话列表拉取失败冒出去
-@@ -2200,7 +2226,9 @@
+@@ -2348,7 +2374,9 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   ② 本次给"加载失败"做了可见的终态（failed + 重试按钮），不吞的话那条路径
      //      根本走不到：界面在跳登录页，用户永远看不到重试入口。
      await get().loadConversations().catch(() => undefined);
@@ -343,7 +506,7 @@ index e9e7938..04251f1 100644
      // ★★DEV-168：默认打开第一个会话（用户需求第三条："直接进去消息对话列表，默认打开第一个会话"）。
      //   ★★为什么放在【这里】而不是 loadConversations 里（这是个真坑，不是风格问题）：
      //   loadConversations 有 8 个调用者（onReconnected / createP2p / createGroup /
-@@ -2212,6 +2240,7 @@
+@@ -2360,6 +2388,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   拉历史消息失败若冒出去，会被那个 catch 当成【鉴权失败】——于是一次网络抖动
      //   会把用户送去登录页。这正是"两个不相干的失败共用一个 catch"的典型事故。
      await openDefaultConv().catch(() => undefined);
@@ -351,7 +514,7 @@ index e9e7938..04251f1 100644
      // ★通讯录必须**容错**：新表上线初期、平台侧资料服务抖动都可能让它失败，
      //   而它只是侧栏第二个 Tab 的内容 —— 让它把登录流程整个拖垮
      //   （症状：会话列表已经好了，界面却卡在登录页）是完全不成比例的。
-@@ -2927,6 +2956,7 @@
+@@ -3167,6 +3196,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    /** ★DEV-292 D2：窗口定时器与尾随标记收进 lib，store 只留接线。 */
    const readRefreshScheduler = createReadRefreshScheduler({
      windowMs: READ_REFRESH_DEBOUNCE_MS,
@@ -359,7 +522,7 @@ index e9e7938..04251f1 100644
      fire: (key) => {
        // ★用 `refreshReadCounts`（清签名 + 重查），不是 `ensureReadEligible`：
        //   后者会被"签名没变"那道闸门挡掉 —— 而这里签名**恰恰**不会变
-@@ -2968,6 +2998,7 @@
+@@ -3208,6 +3238,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    const pendingReportSeq = new Map<string, number>();
    const readReportSender = createReadRefreshScheduler({
      windowMs: READ_REPORT_DEBOUNCE_MS,
@@ -367,7 +530,7 @@ index e9e7938..04251f1 100644
      fire: (key) => {
        const seq = pendingReportSeq.get(key) ?? 0;
        pendingReportSeq.delete(key);
-@@ -3017,6 +3048,19 @@
+@@ -3257,6 +3288,19 @@ export const useChatStore = create<ChatState>((set, get) => {
      },
    });
    readHeartbeat.start();
@@ -387,7 +550,7 @@ index e9e7938..04251f1 100644
    /** ★与后端 `ReadStatusRequest.msgIds` 的上限一致（`store/chat.ts` 里那句 slice(0,200) 同值）。 */
    const READ_ELIGIBLE_MAX = 200;
  
-@@ -3122,12 +3166,14 @@
+@@ -3366,12 +3410,14 @@ export const useChatStore = create<ChatState>((set, get) => {
       */
      probePlatformSession: async () => {
        // ★★单飞（DEV-157）：并发调用共用同一次探测，见 platformProbeInFlight 的说明。
@@ -402,7 +565,7 @@ index e9e7938..04251f1 100644
            set({ authProbe: 'idle' });
            // ★★DEV-173 决策②：预展示的身份核对。
            //   ★位置必须在 loginFromSession【之前】：那个函数一进去就会设 userId、
-@@ -3135,8 +3181,9 @@
+@@ -3379,8 +3425,9 @@ export const useChatStore = create<ChatState>((set, get) => {
            //   发出去一串请求（包括设备注册），再把它推翻。
            reconcilePreloadedIdentity(String(user.userId));
            await get().loginFromSession(user);
@@ -413,7 +576,7 @@ index e9e7938..04251f1 100644
            const err = e as ApiError;
            // ★★DEV-168：判据全部交给 {@link enterAuthEntry}（→ lib/authEntry.ts）。
            //
-@@ -4503,7 +4550,11 @@
+@@ -4889,7 +4936,11 @@ export const useChatStore = create<ChatState>((set, get) => {
    //   ★preload 为 null 时返回的<b>就是</b>上面那个对象本身（不是一份浅拷贝）：
    //   zustand 建 store 时会自己持有它，这里多拷一份没有意义。
    return preload ? { ...initial, ...preload } : initial;
@@ -426,7 +589,7 @@ index e9e7938..04251f1 100644
  
  // ======================================================================
  // ★★DEV-173：脏标记的唯一入口
-@@ -4525,7 +4576,8 @@
+@@ -4911,7 +4962,8 @@ export const useChatStore = create<ChatState>((set, get) => {
  //   mergeMessage 收口 / 发送失败标 msgStatus / 撤回 onMsgRevoke / 已读回执
  //   onReadNotify / 已读回执聚合 onReadNotifyAgg / selectConv 拉历史 /
  //   loadOlderMessages 翻历史 / revokeMessage。
@@ -436,7 +599,7 @@ index e9e7938..04251f1 100644
    // ★登出/鉴权失效途中不标脏：那一路的磁盘处置是 purge，标脏只会把刚删的东西
    //   重新写回去（与 flushLocalCache 开头那道守卫是同一个理由，两道都留着 ——
    //   一道挡"不写"，一道挡"不排定时器"）。
-@@ -4536,7 +4588,25 @@
+@@ -4922,7 +4974,28 @@ useChatStore.subscribe((st, prev) => {
        if (st.messagesByConv[key] !== prev.messagesByConv[key]) flushScheduler.markMsgs(key);
      }
    }
@@ -449,6 +612,8 @@ index e9e7938..04251f1 100644
 +export function disposeImEmbeddedSession(): void {
 +  flushScheduler.flushNow();
 +  unsubscribeCache();
++  unsubscribeImBridge();
++  setImBridgeSnapshot({ connState: 'idle', connected: false, unreadTotal: 0, userId: null });
 +  flushScheduler.dispose();
 +  disposeStoreRuntime();
 +}
@@ -459,120 +624,51 @@ index e9e7938..04251f1 100644
 +  flushScheduler = createFlushScheduler(flushLocalCache);
 +  useChatStore = createChatStore();
 +  unsubscribeCache = subscribeCache();
++  unsubscribeImBridge = subscribeImBridge();
 +}
+ 
+ // ======================================================================
+ // ★★DEV-327：window.__im 监听桥的另外两个事件源（未读 / 连接状态）
+@@ -4939,7 +5012,8 @@ useChatStore.subscribe((st, prev) => {
+ // ★★快照**按字段分开喂**（不是无脑全量喂）：每次喂都是一份新对象，
+ //   无脑喂会让宿主每次 store 变化都拿到一个新引用 —— 白分配，
+ //   且宿主若用引用比较做变更检测会一直误判成"变了"。
+-useChatStore.subscribe((s, prev) => {
++function subscribeImBridge() {
++  const unsubscribe = useChatStore.subscribe((s, prev) => {
+   if (s.unreadTotal !== prev.unreadTotal) {
+     emitImUnread(s.unreadTotal);
+     setImBridgeSnapshot({ unreadTotal: s.unreadTotal });
+@@ -4958,7 +5032,6 @@ useChatStore.subscribe((s, prev) => {
+ //   （preload 快照那条路尤其明显）—— 那几个字段在本次会话里**一次都不会"变化"**，
+ //   于是它们永远停在模块默认值（未读 0、未登录）上，
+ //   而宿主 getSnapshot() 恰好就是在这段窗口里被调用的（它刚接进来）。
+-{
+   const s0 = useChatStore.getState();
+   setImBridgeSnapshot({
+     connState: s0.connState,
+@@ -4966,7 +5039,9 @@ useChatStore.subscribe((s, prev) => {
+     unreadTotal: s0.unreadTotal,
+     userId: s0.userId == null ? null : String(s0.userId),
+   });
++  return unsubscribe;
+ }
++let unsubscribeImBridge = subscribeImBridge();
  
  /** 供 UI 使用的已读人数查询（自己发的消息，批量 ≤200）。 */
  export async function fetchReadCounts(convId: IdInput, msgIds: IdInput[]) {
 diff --git a/nuwax-im-web/tsconfig.node.json b/nuwax-im-web/tsconfig.node.json
+index 9d92f0d..8387ffb 100644
 --- a/nuwax-im-web/tsconfig.node.json
 +++ b/nuwax-im-web/tsconfig.node.json
-@@ -14,4 +14,4 @@
+@@ -13,5 +13,5 @@
+     "composite": true,
      "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
    },
 -  "include": ["vite.config.ts"]
 +  "include": ["vite.config.ts", "vite.upstream.config.ts"]
  }
-diff --git a/nuwax-im-web/src/lib/notify.ts b/nuwax-im-web/src/lib/notify.ts
---- a/nuwax-im-web/src/lib/notify.ts
-+++ b/nuwax-im-web/src/lib/notify.ts
-@@ -387,6 +387,14 @@
-  */
- export function resetNotifySlots(): void {
-   notifySlots.clear();
-+}
-+
-+/** 真卸载时关闭通知并释放 onclick 持有的旧 store。隐藏保活时不调用。 */
-+export function disposeImNotifications(): void {
-+  for (const [convId, notification] of notifySlots) {
-+    notification.onclick = null;
-+    dropNotifySlot(convId);
-+  }
- }
- 
- /**
-diff --git a/nuwax-im-web/src/api/client.ts b/nuwax-im-web/src/api/client.ts
---- a/nuwax-im-web/src/api/client.ts
-+++ b/nuwax-im-web/src/api/client.ts
-@@ -32,6 +32,7 @@
-  * 以别人的身份登录了。写路径一起封掉，才不会留下"躺着等人踩"的假身份。
-  */
- import { dispatchAuthExpired } from '../lib/authEvents';
-+import { getMessageRequestGeneration, isMessageRequestCurrent } from '../hostRuntime';
- import { isPlatformMode } from '../authMode';
- import { readErrorEnvelope } from './errorEnvelope';
- import { parseServerJson } from './json';
-@@ -111,6 +112,7 @@
- }
- 
- export async function api<T>(path: string, init: ApiOptions = {}): Promise<T> {
-+  const requestGeneration = getMessageRequestGeneration();
-   const url = new URL(path, window.location.origin);
-   if (init.query) {
-     for (const [k, v] of Object.entries(init.query)) {
-@@ -145,7 +147,7 @@
-     //   于是 IM_10402 和 message 里的那个地址根本到不了前端，
-     //   后端刚做好的透传在前端这一步被无声吃掉，现象与"没做"完全一样。
-     const env = await readErrorEnvelope(resp);
--    if (!init.silentAuthFailure) {
-+    if (!init.silentAuthFailure && isMessageRequestCurrent(requestGeneration)) {
-       tokenStore.clear();
-       dispatchAuthExpired({ code: env.code, message: env.message });
-     }
-diff --git a/nuwax-im-web/src/api/upload.ts b/nuwax-im-web/src/api/upload.ts
---- a/nuwax-im-web/src/api/upload.ts
-+++ b/nuwax-im-web/src/api/upload.ts
-@@ -36,6 +36,7 @@
-  * <p>★绝不 {@code console.log} 文件内容 / URL 查询串 / 凭据（DEV-88 同源纪律）。
-  */
- import { dispatchAuthExpired } from '../lib/authEvents';
-+import { getMessageRequestGeneration, isMessageRequestCurrent } from '../hostRuntime';
- import { ApiError, tokenStore } from './client';
- import { parseServerJson } from './json';
- import type { ReqResult } from './types';
-@@ -91,12 +92,14 @@
-  * 但仍要调：用户可能"mock 构建 → 平台构建"切换过，磁盘上还留着上一版的
-  * {@code mock-token-*}，不在此刻清掉它就永远躺在那儿。
-  */
--function authExpired(status: number): ApiError {
--  tokenStore.clear();
--  // ★DEV-168：不带 detail。上传直连平台，拿不到 IM 的信封
--  //   （IM_10402 是 IM 后端对平台 4011 的投影，这条链路不经过它）——
--  //   判据会落到"留在卡片上"，与改造前一致。见 lib/authEvents.ts 的说明。
--  dispatchAuthExpired();
-+function authExpired(status: number, requestGeneration: number): ApiError {
-+  if (isMessageRequestCurrent(requestGeneration)) {
-+    tokenStore.clear();
-+    // ★DEV-168：不带 detail。上传直连平台，拿不到 IM 的信封
-+    //   （IM_10402 是 IM 后端对平台 4011 的投影，这条链路不经过它）——
-+    //   判据会落到"留在卡片上"，与改造前一致。见 lib/authEvents.ts 的说明。
-+    dispatchAuthExpired();
-+  }
-   return new ApiError('IM_10401', '登录状态已失效，请重新登录后再上传', status);
- }
- 
-@@ -115,6 +118,7 @@
-  *         响应结构不认识 {@code BAD_RESPONSE}
-  */
- export async function uploadFile(file: File, signal?: AbortSignal): Promise<UploadResult> {
-+  const requestGeneration = getMessageRequestGeneration();
-   if (file.size === 0) {
-     throw new ApiError('BAD_REQUEST', `「${file.name}」是空文件，没有可上传的内容`);
-   }
-@@ -154,7 +158,7 @@
-   }
- 
-   if (isAuthFailure(resp.status)) {
--    throw authExpired(resp.status);
-+    throw authExpired(resp.status, requestGeneration);
-   }
- 
-   let text: string;
-@@ -177,7 +181,7 @@
-     // ★★未登录（HTTP 200 + 4010）必须<b>先于</b>下面的"原样透出"被拦下，
-     //   否则登录态失效被降级成一条普通业务错误（理由见 isAuthFailure）。
-     if (isAuthFailure(resp.status, envelope.code)) {
--      throw authExpired(resp.status);
-+      throw authExpired(resp.status, requestGeneration);
-     }
-     // ★其余平台的错误码原样透出：
-     //   翻译成 IM 的码会让"平台到底怎么说的"这条最重要的线索消失。
+diff --git a/nuwax-im-web/vite.config.ts b/nuwax-im-web/vite.upstream.config.ts
+similarity index 100%
+rename from nuwax-im-web/vite.config.ts
+rename to nuwax-im-web/vite.upstream.config.ts

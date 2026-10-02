@@ -176,7 +176,7 @@ const Home: React.FC = () => {
   const defaultAgentId = tenantConfigInfo?.defaultAgentId;
   const isUserAppPinned =
     pinnedProject?.projectType === AgentComponentTypeEnum.UserApp;
-  // 与推荐位的项目类型限制保持一致：项目上框后不允许通过 @ 绕过类型限制选择专家。
+  // 与推荐位的项目类型限制保持一致：全栈项目不允许通过 @ 绕过单一类型限制，常规项目可选专家。
   const isProjectExpertRestricted = !!getAllowedFunctionType(pinnedProject);
   // 全栈项目自动确定智能体后，隐藏其关闭按钮。
   const isProjectAgentLocked = isUserAppPinned && !!selectedRecommend;
@@ -215,7 +215,7 @@ const Home: React.FC = () => {
     () => getProjectTypeByFunctionType(selectedFunctionType),
     [selectedFunctionType],
   );
-  // 全栈应用等不支持个人电脑的类型：电脑选择锁定云端、工作目录栏一并隐藏
+  // 网站应用等不支持个人电脑的类型：电脑选择锁定云端、工作目录栏一并隐藏
   const disablePersonalComputer = selectedProjectType
     ? !getWorkspaceDirPolicy(selectedProjectType).personalComputer
     : false;
@@ -341,11 +341,11 @@ const Home: React.FC = () => {
   // 上框默认命中：全栈优先按项目 devAgentId 精确命中推荐位（列表晚到时同样生效）；
   // devAgentId 契约未 ready 或未命中时，按类型兜底唯一同类型推荐自动选中
   // （等价替用户手点）；0 个/多个同类型无法定位 → toast 提示手动选择
-  // （同一项目只提示一次）；常规项目不自动命中智能体，保留用户手选的同类型
+  // （同一项目只提示一次）；常规项目不自动命中智能体，保留用户手选的可用类型
   // 智能体；刚消费上框时的旧选中已在上方清掉，未手选时发送由后端兜默认；
   // 推荐列表置灰（isAgentSelectable 的不可用判定）不受影响照常生效
   useEffect(() => {
-    // 常规项目上框不自动命中，但必须保留用户手选的常规项目 Agent。
+    // 常规项目上框不自动命中，但必须保留用户手选的可用 Agent。
     // 切入上框时的旧推荐项由 consume effect 清理，不能在这里反复清空。
     // 用户随后显式选专家时也不再自动命中项目智能体，否则会叠出两个回执。
     if (!isUserAppPinned || selectedRecommend || summonedExpert) return;

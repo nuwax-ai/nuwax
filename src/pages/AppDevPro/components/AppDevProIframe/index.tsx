@@ -9,7 +9,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { waitUntilPreviewUrlReady } from '../../utils/previewHealthCheck';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -52,6 +51,11 @@ export interface AppDevProIframeProps {
   onError?: () => void;
   /** 点击刷新、即将重新加载 */
   onRetry?: () => void;
+  /**
+   * 加载失败时的提示。不传时仍用「页面加载失败，请刷新后重试」。
+   * 数据库页传入自己的文案，其它嵌入页保持原提示。
+   */
+  errorDescription?: string;
 }
 
 /**
@@ -69,16 +73,14 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
   onLoad,
   onError,
   onRetry,
+  errorDescription,
 }) => {
   const [loadError, setLoadError] = useState(false);
-  const [loadErrorStatus, setLoadErrorStatus] = useState<number>();
   const [reloadNonce, setReloadNonce] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const instanceId = `${src}::${String(iframeKey ?? '')}::${reloadNonce}`;
   const settledInstanceRef = useRef('');
-  const loadStartedAtRef = useRef(0);
-  const verifyAbortRef = useRef<AbortController | null>(null);
   const onLoadRef = useRef(onLoad);
   const onErrorRef = useRef(onError);
   const onRetryRef = useRef(onRetry);
@@ -102,20 +104,9 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
 
   /** 地址变化时重置 settled，禁止在 render 阶段 setState */
   useLayoutEffect(() => {
-    verifyAbortRef.current?.abort();
-    verifyAbortRef.current = null;
     settledInstanceRef.current = '';
-    loadStartedAtRef.current = performance.now();
     setLoadError((prev) => (prev ? false : prev));
-    setLoadErrorStatus((prev) => (prev !== undefined ? undefined : prev));
   }, [srcKey]);
-
-  useLayoutEffect(
-    () => () => {
-      verifyAbortRef.current?.abort();
-    },
-    [],
-  );
 
   const settleSuccess = useCallback(() => {
     if (settledInstanceRef.current === instanceId) {
@@ -123,47 +114,17 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
     }
     settledInstanceRef.current = instanceId;
     setLoadError(false);
-    setLoadErrorStatus(undefined);
     onLoadRef.current?.();
   }, [instanceId]);
 
-  const settleFailure = useCallback(
-    (status?: number) => {
-      if (settledInstanceRef.current === instanceId) {
-        return;
-      }
-      settledInstanceRef.current = instanceId;
-      setLoadError(true);
-      setLoadErrorStatus(status);
-      onErrorRef.current?.();
-    },
-    [instanceId],
-  );
-
-  const verifyAfterIframeLoad = useCallback(async () => {
-    verifyAbortRef.current?.abort();
-    const controller = new AbortController();
-    verifyAbortRef.current = controller;
-
-    const result = await waitUntilPreviewUrlReady(src, iframeRef.current, {
-      signal: controller.signal,
-      sinceStartTime: loadStartedAtRef.current,
-    });
-
-    if (
-      controller.signal.aborted ||
-      settledInstanceRef.current === instanceId
-    ) {
+  const settleFailure = useCallback(() => {
+    if (settledInstanceRef.current === instanceId) {
       return;
     }
-
-    if (result.ok) {
-      settleSuccess();
-      return;
-    }
-
-    settleFailure(result.status);
-  }, [instanceId, settleFailure, settleSuccess, src]);
+    settledInstanceRef.current = instanceId;
+    setLoadError(true);
+    onErrorRef.current?.();
+  }, [instanceId]);
 
   const handleLoad = useCallback(() => {
     if (settledInstanceRef.current === instanceId) {
@@ -172,31 +133,22 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
     if (isBlankIframeLoad(iframeRef.current)) {
       return;
     }
-    void verifyAfterIframeLoad();
-  }, [instanceId, verifyAfterIframeLoad]);
+    settleSuccess();
+  }, [instanceId, settleSuccess]);
 
   const handleError = useCallback(() => {
     settleFailure();
   }, [settleFailure]);
 
   const handleRetry = useCallback(() => {
-    verifyAbortRef.current?.abort();
-    verifyAbortRef.current = null;
     settledInstanceRef.current = '';
-    loadStartedAtRef.current = performance.now();
     setLoadError(false);
-    setLoadErrorStatus(undefined);
     onRetryRef.current?.();
     setReloadNonce((prev) => prev + 1);
   }, []);
 
-  const errorDescription =
-    loadErrorStatus !== undefined
-      ? dict('PC.Pages.AppDevPro.iframeLoadFailedWithStatus').replace(
-          '{0}',
-          String(loadErrorStatus),
-        )
-      : dict('PC.Pages.AppDevPro.iframeLoadFailed');
+  const resolvedErrorDescription =
+    errorDescription || dict('PC.Pages.AppDevPro.iframeLoadFailed');
 
   return (
     <div className={cx(styles.wrap, className)}>
@@ -217,7 +169,7 @@ const AppDevProIframe: React.FC<AppDevProIframeProps> = ({
         <div className={cx(styles.errorOverlay)}>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={errorDescription}
+            description={resolvedErrorDescription}
           />
           <Button type="primary" onClick={handleRetry}>
             {dict('PC.Common.Global.refresh')}

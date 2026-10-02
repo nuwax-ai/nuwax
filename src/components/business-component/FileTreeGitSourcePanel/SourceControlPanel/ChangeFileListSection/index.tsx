@@ -31,6 +31,7 @@ import {
 } from '../../utils/buildChangeFileTree';
 import {
   isChangeFileSelected,
+  isUntrackedDirectory,
   type ChangeListSection,
   type SelectedChangeFile,
 } from '../../utils/changeFileStatus';
@@ -193,6 +194,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
     const stopRowClick = (e: React.MouseEvent) => {
       e.stopPropagation();
     };
+    const directory = isUntrackedDirectory(item.fileId, item.unstagedStatus);
 
     const openFileLabel = dict(
       'PC.Pages.ConversationAgentSourceControl.openFile',
@@ -205,7 +207,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
               key: 'openFile',
               title: openFileLabel,
               icon: <FileTextOutlined />,
-              enabled: Boolean(onOpenFile),
+              enabled: Boolean(onOpenFile) && !directory,
               onClick: () => onOpenFile?.(item.fileId),
             },
             {
@@ -223,7 +225,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
               key: 'openFile',
               title: openFileLabel,
               icon: <FileTextOutlined />,
-              enabled: Boolean(onOpenFile),
+              enabled: Boolean(onOpenFile) && !directory,
               onClick: () => onOpenFile?.(item.fileId),
             },
             {
@@ -338,6 +340,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
   /** 列表视图：平铺展示文件名与路径 */
   const renderListFileRow = (item: ChangeListItem, virtualRow = false) => {
     const listRowActions = renderListRowActions(item);
+    const directory = isUntrackedDirectory(item.fileId, item.unstagedStatus);
 
     return (
       <div
@@ -354,9 +357,13 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
             [styles['change-item-deleted']]: isDeletedFile(item),
             [styles['change-item-conflict']]: isConflictFile(item),
             [styles['change-item-has-actions']]: Boolean(listRowActions),
+            [styles['change-item-directory']]: directory,
           },
         )}
-        onClick={() => onFileClick?.(item.fileId, section)}
+        aria-disabled={directory || undefined}
+        onClick={
+          directory ? undefined : () => onFileClick?.(item.fileId, section)
+        }
         onContextMenu={(e) => onContextMenu?.(e, item.fileId)}
         title={item.fileId}
       >
@@ -404,6 +411,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
       section,
       selectedChangeFile,
     );
+    const directory = isUntrackedDirectory(item.fileId, item.unstagedStatus);
 
     return (
       <div
@@ -414,10 +422,19 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
           virtualRow && styles['virtual-row-inner'],
           {
             [fileTreeStyles.activeFile]: isSelected,
+            [styles['tree-file-directory']]: directory,
           },
         )}
-        style={{ paddingLeft: 4 + level * 8 }}
-        onClick={() => onFileClick?.(item.fileId, section)}
+        style={{
+          paddingLeft: 4 + level * 8,
+          ...(directory
+            ? { cursor: 'not-allowed', pointerEvents: 'none' as const }
+            : {}),
+        }}
+        aria-disabled={directory || undefined}
+        onClick={
+          directory ? undefined : () => onFileClick?.(item.fileId, section)
+        }
         onContextMenu={(e) => onContextMenu?.(e, item.fileId)}
       >
         {getFileIcon(item.fileName)}

@@ -5,6 +5,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentSubTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
+import { markAppDevProSkipReadiness } from '@/utils/appDevProSkipReadiness';
 import { buildAppProRoute } from '@/utils/appProRoute';
 import {
   emitConversationChanged,
@@ -158,6 +159,10 @@ export const createProjectAndNavigate = async ({
 
     if (payload.type === AgentComponentTypeEnum.PageApp) {
       setContext(createAppDevInitialPayloadKey(targetId), routeState);
+    }
+    // 全栈应用刚创建时记录还不存在。只标记这一次跳转，进页直接 ensure，不打 readiness。
+    if (payload.type === AgentComponentTypeEnum.UserApp && conversationId) {
+      markAppDevProSkipReadiness(targetId, conversationId);
     }
 
     const url = strategy.getUrl({

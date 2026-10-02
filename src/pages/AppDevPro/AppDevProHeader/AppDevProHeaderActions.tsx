@@ -4,6 +4,7 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { PublishStatusEnum } from '@/types/enums/common';
+import { CheckCircleFilled } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo } from 'react';
@@ -12,15 +13,79 @@ import PreviewRuntimeButtons, {
   type PreviewRuntimeButtonsProps,
 } from '../ConversationAgentFilePreview/PreviewTabBar/PreviewRuntimeButtons';
 import { UserAppDbEnvEnum } from '../services/appDb';
+import { UserAppReadinessStatusEnum } from '../services/appDevPro';
 import type { UserAppInfo } from '../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/** 环境切换后面要展示文案的就绪状态 */
+const READINESS_BADGE_TEXT: Partial<
+  Record<UserAppReadinessStatusEnum, { className: string; labelKey: string }>
+> = {
+  [UserAppReadinessStatusEnum.NotDeployed]: {
+    className: 'readiness-not-deployed',
+    labelKey: 'PC.Pages.AppDevPro.readinessNotDeployed',
+  },
+  [UserAppReadinessStatusEnum.Starting]: {
+    className: 'readiness-starting',
+    labelKey: 'PC.Pages.AppDevPro.readinessBadgeStarting',
+  },
+  [UserAppReadinessStatusEnum.Stopping]: {
+    className: 'readiness-stopping',
+    labelKey: 'PC.Pages.AppDevPro.readinessBadgeStopping',
+  },
+  [UserAppReadinessStatusEnum.Stopped]: {
+    className: 'readiness-stopped',
+    labelKey: 'PC.Pages.AppDevPro.readinessBadgeStopped',
+  },
+  [UserAppReadinessStatusEnum.Failed]: {
+    className: 'readiness-failed',
+    labelKey: 'PC.Pages.AppDevPro.readinessBadgeFailed',
+  },
+};
+
+/**
+ * 当前环境的就绪状态，跟在开发 / 线上切换后面。
+ * 真正就绪时只显示成功图标，其余状态显示短文案。
+ *
+ * @param props.status 顶层业务状态
+ * @param props.ready ready 字段
+ * @returns 状态标记；没有可展示状态时不渲染
+ */
+const ReadinessEnvBadge: React.FC<{
+  status?: UserAppReadinessStatusEnum | null;
+  ready?: boolean | null;
+}> = ({ status, ready }) => {
+  if (status === UserAppReadinessStatusEnum.Ready && ready === true) {
+    const label = dict('PC.Pages.AppDevPro.readinessBadgeReady');
+    return (
+      <Tooltip title={label}>
+        <span
+          className={cx(styles['readiness-badge'], styles['readiness-ready'])}
+          aria-label={label}
+        >
+          <CheckCircleFilled />
+        </span>
+      </Tooltip>
+    );
+  }
+
+  const text = status ? READINESS_BADGE_TEXT[status] : undefined;
+  if (!text) {
+    return null;
+  }
+  return (
+    <span className={cx(styles['readiness-badge'], styles[text.className])}>
+      <span>{dict(text.labelKey)}</span>
+    </span>
+  );
+};
+
 export interface AppDevProHeaderActionsProps {
   /** 外层容器类名 */
   className?: string;
-  /** 全栈应用详情 */
+  /** 网站应用详情 */
   userAppInfo?: UserAppInfo | null;
   /** 点击部署 */
   onPublish?: () => void;
@@ -56,7 +121,7 @@ export interface AppDevProHeaderActionsProps {
   isAgentDesktopOpen?: boolean;
   /** 打开 / 关闭远程桌面 */
   onOpenDesktopPanel?: () => void;
-  /** 是否显示应用预览入口（线上环境未部署时无可预览地址） */
+  /** 是否显示应用预览入口。线上尚未部署时也保留，预览区再提示去部署 */
   isShowAppPreview?: boolean;
   /** 应用预览页签是否处于激活状态 */
   isAppPreviewOpen?: boolean;
@@ -74,8 +139,17 @@ export interface AppDevProHeaderActionsProps {
   env?: UserAppDbEnvEnum;
   /** 切换开发 / 线上环境 */
   onEnvChange?: (env: UserAppDbEnvEnum) => void;
+  /** 当前环境最近一次就绪状态，展示在环境切换后面 */
+  readinessStatus?: UserAppReadinessStatusEnum | null;
+  /** 当前环境 ready 字段。status 为 ready 时必须为 true 才显示成功图标 */
+  readinessReady?: boolean | null;
   /** 应用预览重启 / 停止（Header 图标，逻辑与预览区一致） */
   previewRuntimeControls?: PreviewRuntimeButtonsProps;
+  /**
+   * 放在部署按钮前面的更多菜单。
+   * 只随开发 / 线上切换显隐，不随工作区（应用预览、数据库等）变化。
+   */
+  filePreviewMoreMenu?: React.ReactNode;
 }
 
 /**
@@ -113,7 +187,10 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
   onTogglePublishVersionRecords,
   env = UserAppDbEnvEnum.Dev,
   onEnvChange,
+  readinessStatus = null,
+  readinessReady = null,
   previewRuntimeControls,
+  filePreviewMoreMenu = null,
 }) => {
   const handlePublishClick = useCallback(() => {
     if (remotePublishing) {
@@ -223,13 +300,16 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
         className,
       )}
     >
-      {/* 环境切换：开发 / 线上始终展示，图标入口仍按当前环境显隐 */}
-      <Segmented
-        className={cx(styles['env-switch'], styles.segmented)}
-        options={envOptions}
-        value={env}
-        onChange={(value) => handleEnvChange(value as UserAppDbEnvEnum)}
-      />
+      {/* 环境切换：开发 / 线上始终展示，后面跟着当前环境的就绪状态 */}
+      <div className={cx(styles['env-group'])}>
+        <Segmented
+          className={cx(styles['env-switch'], styles.segmented)}
+          options={envOptions}
+          value={env}
+          onChange={(value) => handleEnvChange(value as UserAppDbEnvEnum)}
+        />
+        <ReadinessEnvBadge status={readinessStatus} ready={readinessReady} />
+      </div>
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/* 应用预览：重启 / 停止 */}
@@ -277,7 +357,7 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
           }
         />
 
-        {/* 应用预览页签：线上环境未部署时无预览地址，入口隐藏 */}
+        {/* 应用预览：线上尚未部署时也保留入口，预览区再提示去部署 */}
         <ConditionRender condition={isShowAppPreview}>
           <TooltipIcon
             title={dict('PC.Pages.AppDevPro.appPreview')}
@@ -314,6 +394,11 @@ const AppDevProHeaderActions: React.FC<AppDevProHeaderActionsProps> = ({
               </span>
             </Dropdown>
           </div>
+        </ConditionRender>
+
+        {/* 更多菜单：只在开发环境展示，紧挨部署按钮左侧 */}
+        <ConditionRender condition={isDevEnv && !!filePreviewMoreMenu}>
+          {filePreviewMoreMenu}
         </ConditionRender>
 
         {/* 部署按钮：仅开发环境。远程构建中可点击取消，本地部署仅展示 loading */}

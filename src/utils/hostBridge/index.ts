@@ -10,6 +10,7 @@
  */
 
 import type { HostAuthContext } from '@/types/interfaces/hostAuth';
+import type { HostImUnreadSnapshot } from '@/types/interfaces/im';
 import {
   getDesktopShellPreviewPlatform,
   setDesktopShellPreviewHostCommandHandler,
@@ -396,6 +397,36 @@ export const events = {
   },
 };
 
+/** 商业 IM 原生通知偏好；普通 Web 和旧宿主没有此能力。 */
+export const im = {
+  hasNativeNotifications(): boolean {
+    return typeof getBridge()?.im?.setNotificationEnabled === 'function';
+  },
+  async setNotificationEnabled(enabled: boolean): Promise<void> {
+    try {
+      await getBridge()?.im?.setNotificationEnabled?.(enabled);
+    } catch {
+      // 偏好同步失败不阻断页面，下一次启动会重新同步保存值。
+    }
+  },
+  hasNativeUnread(): boolean {
+    const bridge = getBridge();
+    return (
+      bridge?.host?.getProduct?.() === 'nuwax' &&
+      typeof bridge.im?.getUnreadSnapshot === 'function' &&
+      typeof bridge.im?.onUnreadChanged === 'function'
+    );
+  },
+  async getUnreadSnapshot(): Promise<HostImUnreadSnapshot | null> {
+    return (await getBridge()?.im?.getUnreadSnapshot?.()) ?? null;
+  },
+  onUnreadChanged(
+    listener: (snapshot: HostImUnreadSnapshot | null) => void,
+  ): () => void {
+    return getBridge()?.im?.onUnreadChanged?.(listener) ?? (() => undefined);
+  },
+};
+
 /**
  * 主题同步（guest→host）：把女娲主题状态推给 nuwaclaw 壳，壳侧给自己的
  * antd tokens / CSS 变量叠加同套调色板，让原生 UI（设置弹窗等）与 nuwax 统一。
@@ -609,6 +640,7 @@ export const hostBridge = {
   auth,
   native,
   events,
+  im,
   theme,
   layout,
   titlebar,

@@ -11,6 +11,10 @@ import FileTreeGitSourcePanel, {
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
 import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
+import {
+  parentDirectory,
+  workspaceRelativePath,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import VncPreview from '@/components/business-component/VncPreview';
@@ -538,11 +542,20 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
    * 进页自动发送直发 runtime store——乐观轮次与面板渲染同线，首条消息立即可见，
    * 不再等 5s 快照轮询从后端捞回；AgentConversationChatPanel 消费同一实例不自建。
    */
+  /** 会话事件打开桌面时调用，具体打开动作在面板回调里赋值 */
+  const openDesktopViewFromEventRef = useRef<(conversationId: number) => void>(
+    () => {},
+  );
+
   const runtimeLine = useConversationRuntimeSession({
     conversationId: queryConversationId,
     // chat 请求携带面板当前选中电脑（空串兜底 undefined）
     getSandboxId: () => finalSelectedComputerId || undefined,
-    effectsResources: {}, // 页面入口无 chat model 资源；预览类 effect 静默忽略
+    effectsResources: {
+      openDesktopView: (conversationId: number) => {
+        openDesktopViewFromEventRef.current(conversationId);
+      },
+    },
   });
 
   useInitialConversationAutoSend({
@@ -1158,6 +1171,22 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     closePreviewView,
   ]);
 
+  /**
+   * 会话 OPEN_DESKTOP：打开智能体电脑。已经打开时不再切换关掉。
+   */
+  openDesktopViewFromEventRef.current = (conversationId: number) => {
+    if (
+      !conversationId ||
+      Number(conversationId) !== Number(queryConversationId) ||
+      isAgentDesktopOpen ||
+      finalSelectedComputerId !== '-1' ||
+      agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes
+    ) {
+      return;
+    }
+    void handleOpenDesktopPanel();
+  };
+
   /** 是否显示文件面板相关入口（通用型智能体 + 有效消息） */
   const isShowFilePanel = useMemo(() => {
     if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
@@ -1315,6 +1344,16 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
         }
       },
       onOpenDirectory: workspaceFiles.onOpenDirectory,
+      /** 目标父目录还在加载时，不要用当前文件列表判断文件不存在 */
+      isAutoSelectDirectoryLoaded: (fileId: string) => {
+        const parentPath = parentDirectory(workspaceRelativePath(fileId));
+        if (
+          workspaceFiles.openingTaskResultRef.current?.parent === parentPath
+        ) {
+          return false;
+        }
+        return workspaceFiles.loadedDirectoryPaths.has(parentPath);
+      },
       hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
@@ -1383,6 +1422,8 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     workspaceFiles.files,
     workspaceFiles.loading,
     workspaceFiles.onOpenDirectory,
+    workspaceFiles.loadedDirectoryPaths,
+    workspaceFiles.openingTaskResultRef,
     fileTreeRefreshTrigger,
     queryConversationId,
     handleUploadMultipleFiles,
@@ -1572,6 +1613,9 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
       onDiffFileSelect: (fileId: string) => {
         closeAgentDesktop();
         previewTabs.openFileTab(fileId, true);
+      },
+      onWorkspaceFileSearchResult: (found) => {
+        fileView.markWorkspaceFileNotFound(!found);
       },
       // 放弃更改后关闭预览 Tab
       onAfterDiscardChange: (fileId: string) => {

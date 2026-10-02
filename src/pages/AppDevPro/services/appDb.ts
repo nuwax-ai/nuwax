@@ -97,7 +97,7 @@ export async function apiUserAppDbReadiness(
   appId: number,
   env: UserAppDbEnvEnum,
 ): Promise<RequestResponse<UserAppDbReadiness>> {
-  return request('/api/userapp/readiness', {
+  return request('/api/userapp/dbx/readiness', {
     method: 'GET',
     params: { appId, env },
     skipErrorHandler: true,

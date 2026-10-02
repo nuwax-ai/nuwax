@@ -56,7 +56,8 @@ export default defineConfig({
   mountElementId: 'root',
   routes,
   npmClient: 'pnpm',
-  // favicons: ['/favicon.ico?brand=20260928'],
+  // 阻止浏览器自动请求 /favicon.ico，站点图标只使用租户配置。
+  favicons: ['data:,'],
   // 排除不兼容模块联邦的包
   // mfsu: {
   //   exclude: ['jspdf', 'html2canvas'],
@@ -64,6 +65,23 @@ export default defineConfig({
   mfsu: false,
   // 添加阿里云验证码脚本和双向跳转脚本
   headScripts: [
+    {
+      // 在外部脚本和应用加载前恢复配置图标，避免刷新时先显示默认图标。
+      content: `
+        (function () {
+          try {
+            var config = JSON.parse(localStorage.getItem('TENANT_CONFIG_INFO') || 'null');
+            var link = document.querySelector('link[rel~="icon"]');
+            if (link && config && config.faviconUrl) {
+              link.href = config.faviconUrl;
+            }
+          } catch (error) {
+            // 缓存不可用时保持无图标，等待租户配置接口。
+          }
+        })();
+      `,
+      type: 'text/javascript',
+    },
     {
       // 注意：阿里云官方不提供带版本号的 SDK 地址，此 URL 为无版本滚动更新，
       // SDK 行为可能随阿里云发布随时变化（2026-08 曾因此发生登录验证码无法唤起故障，

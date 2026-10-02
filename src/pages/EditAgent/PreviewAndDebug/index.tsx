@@ -3,6 +3,7 @@ import { type AgentMode } from '@/components/business-component/AgentInterventio
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
+import { canOpenDesktopFromEvent } from '@/features/conversation/react/openDesktopEvent';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
@@ -632,8 +633,36 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     }
   }, [pagePreviewData, showType, setShowType]);
 
-  // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
-  // 关闭（默认）为空对象，旧线原值原行为。
+  /**
+   * 会话事件打开远程桌面。条件与 Chat 页共用：未隐藏桌面，且生效电脑是云电脑。
+   */
+  const openDesktopViewFromEvent = useCallback(
+    (conversationId: number) => {
+      const pageConversationId =
+        devConversationIdRef.current || conversationInfo?.id;
+      if (
+        !canOpenDesktopFromEvent({
+          conversationId,
+          pageConversationId,
+          hideDesktop:
+            conversationInfo?.agent?.hideDesktop ??
+            agentConfigInfo?.hideDesktop,
+          sandboxId: effectiveSandboxId,
+        })
+      ) {
+        return;
+      }
+      void openDesktopView(conversationId);
+    },
+    [
+      agentConfigInfo?.hideDesktop,
+      conversationInfo?.agent?.hideDesktop,
+      conversationInfo?.id,
+      effectiveSandboxId,
+      openDesktopView,
+    ],
+  );
+
   const runtimeLine = useConversationRuntimeSession({
     conversationId: devConversationIdRef.current || undefined,
     // 隔离入口与旧线（onMessageSend isSync:false）一致：不同步会话记录
@@ -643,7 +672,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     getSandboxId: () => effectiveSandboxId,
     effectsResources: {
       showPagePreview,
-      openDesktopView,
+      openDesktopView: openDesktopViewFromEvent,
       setCardList,
       setShowType,
       refreshFileListThrottled: handleRefreshFileList,

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import {
   afterAll,
@@ -21,10 +21,12 @@ let source: string;
 let chat: any;
 let runtime: any;
 let notifications: any;
+let bridge: any;
 const sockets: any[] = [];
 const me = vi.fn();
 const register = vi.fn();
 const unregister = vi.fn();
+const originalBridge = (window as any).NuwaClawBridge;
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -47,7 +49,8 @@ beforeAll(async () => {
       '-C',
       sourceRepo,
       'archive',
-      'f7fd703688aba50573621f9ee8e32ecf0ef9f75c',
+      JSON.parse(readFileSync(path.join(adapterDir, 'adapter.json'), 'utf8'))
+        .pin,
       'nuwax-im-web/src',
       'nuwax-im-web/vite.config.ts',
       'nuwax-im-web/tsconfig.node.json',
@@ -123,6 +126,7 @@ beforeAll(async () => {
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
+  delete (window as any).NuwaClawBridge;
   localStorage.clear();
   register.mockResolvedValue(undefined);
   unregister.mockResolvedValue(undefined);
@@ -136,8 +140,10 @@ afterEach(() => {
   notifications.disposeImNotifications();
   runtime.endMessageRuntime();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
   localStorage.clear();
+  (window as any).NuwaClawBridge = originalBridge;
 });
 
 afterAll(() => {
@@ -145,6 +151,96 @@ afterAll(() => {
 });
 
 describe('消息 main store 的正式适配生命周期', () => {
+  it('监听桥跟随重建后的真实 store，卸载后旧 store 不再推未读或覆盖快照', async () => {
+    bridge = await import(
+      /* @vite-ignore */ path.join(source, 'lib/imBridge.ts')
+    );
+    const unread = vi.fn();
+    const off = bridge.onImUnreadChange(unread);
+    try {
+      const previous = chat.useChatStore;
+      previous.setState({ userId: '101', unreadTotal: 100 });
+      expect(unread).toHaveBeenLastCalledWith({ total: 100 });
+      expect(bridge.getImBridgeSnapshot().unreadTotal).toBe(100);
+      chat.disposeImEmbeddedSession();
+      previous.setState({ unreadTotal: 200 });
+      expect(unread).toHaveBeenCalledOnce();
+      expect(bridge.getImBridgeSnapshot()).toMatchObject({
+        unreadTotal: 0,
+        userId: null,
+      });
+      chat.beginImEmbeddedSession();
+      chat.useChatStore.setState({ userId: '102', unreadTotal: 7 });
+      expect(unread).toHaveBeenLastCalledWith({ total: 7 });
+      expect(bridge.getImBridgeSnapshot()).toMatchObject({
+        unreadTotal: 7,
+        userId: '102',
+      });
+      previous.setState({ unreadTotal: 300 });
+      expect(unread).toHaveBeenCalledTimes(2);
+      expect(bridge.getImBridgeSnapshot().unreadTotal).toBe(7);
+    } finally {
+      off();
+    }
+  });
+  it('原生能力存在时不发 browser Notification、不请求浏览器权限，原开关仍写盘并转发', async () => {
+    const forward = vi.fn().mockResolvedValue(undefined);
+    (window as any).NuwaClawBridge = {
+      im: { setNotificationEnabled: forward },
+    };
+    const permission = vi.fn().mockResolvedValue('denied');
+    vi.stubGlobal('Notification', {
+      permission: 'denied',
+      requestPermission: permission,
+    });
+    const create = vi.fn();
+    expect(notifications.notifyStateNow()).toBe('granted');
+    expect(
+      await notifications.requestNotifyPermission({
+        secureContext: false,
+        hasNotification: false,
+        permission: 'denied',
+      }),
+    ).toBe('granted');
+    expect(permission).not.toHaveBeenCalled();
+    expect(
+      notifications.pushNotify(
+        { convId: '7', title: '消息', body: '内容' },
+        {
+          env: {
+            secureContext: true,
+            hasNotification: true,
+            permission: 'granted',
+          },
+          enabled: true,
+          hidden: true,
+          force: true,
+          create,
+        },
+      ),
+    ).toBe(false);
+    expect(create).not.toHaveBeenCalled();
+    notifications.writeNotifyEnabled(false);
+    expect(forward).toHaveBeenCalledWith(false);
+    expect(localStorage.getItem('nuwax-im.notify')).toBe('0');
+    expect(notifications.readNotifyEnabled()).toBe(false);
+  });
+
+  it('开关存储失败仍转发原生偏好，卸载后旧开关动作不能再影响壳', () => {
+    const forward = vi.fn().mockResolvedValue(undefined);
+    (window as any).NuwaClawBridge = {
+      im: { setNotificationEnabled: forward },
+    };
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota');
+    });
+    expect(() => notifications.writeNotifyEnabled(false)).not.toThrow();
+    expect(forward).toHaveBeenCalledWith(false);
+    runtime.invalidateMessageRequests();
+    notifications.writeNotifyEnabled(true);
+    expect(forward).toHaveBeenCalledOnce();
+  });
+
   it('卸载后晚到 whoami 不写状态、不注册设备、不建连', async () => {
     const request = deferred<{ userId: string; userName: string }>();
     me.mockReturnValueOnce(request.promise);

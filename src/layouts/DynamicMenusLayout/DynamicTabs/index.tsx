@@ -148,6 +148,7 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
           {tabItems.map((item) => (
             <React.Fragment key={item.type}>
               <TabItem
+                menu={item.menu}
                 icon={item.icon || ''}
                 text={item.text}
                 active={item.active}

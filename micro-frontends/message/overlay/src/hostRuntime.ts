@@ -23,6 +23,37 @@ let restoreStandaloneBody: (() => void) | null = null;
 let requestGeneration = 0;
 let requestsDisposed = false;
 
+interface NativeImNotifications {
+  setNotificationEnabled?: (enabled: boolean) => Promise<void>;
+}
+
+/** 微应用独立构建，不能 import 主站 utils；只消费受信 preload 的最小能力。 */
+function getNativeImNotifications(): NativeImNotifications | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return (
+    window as Window & {
+      NuwaClawBridge?: { im?: NativeImNotifications };
+    }
+  ).NuwaClawBridge?.im;
+}
+
+export function isNativeMessageNotifications(): boolean {
+  return (
+    typeof getNativeImNotifications()?.setNotificationEnabled === 'function'
+  );
+}
+
+export function setNativeMessageNotificationEnabled(enabled: boolean): void {
+  if (requestsDisposed) return;
+  try {
+    void getNativeImNotifications()
+      ?.setNotificationEnabled?.(enabled)
+      ?.catch(() => undefined);
+  } catch {
+    // 壳不支持或已经退出时保留本地开关，不阻断页面交互。
+  }
+}
+
 /** 请求在发起时记录代次；隐藏保活不换代，真卸载立即阻止晚到的鉴权副作用。 */
 export const getMessageRequestGeneration = (): number => requestGeneration;
 export const isMessageRequestCurrent = (generation: number): boolean =>

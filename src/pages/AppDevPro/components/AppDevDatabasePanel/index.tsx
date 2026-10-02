@@ -4,11 +4,84 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
 import { getUserAppDbProxyUrl, UserAppDbEnvEnum } from '../../services/appDb';
+import { UserAppReadinessStatusEnum } from '../../services/appDevPro';
+import {
+  pollUserAppDbReadiness,
+  type UserAppDbReadinessSnapshot,
+} from '../../utils/previewHealthCheck';
 import AppDevProIframe from '../AppDevProIframe';
-import AppDevServiceStartStatus from '../AppDevStatusHero';
+import AppDevServiceStartStatus, {
+  AppDevStatusHero,
+} from '../AppDevStatusHero';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/**
+ * 需要单独告诉用户的数据库状态。
+ * 降级、未知、不支持、停止中等仍在继续检测，不单独展示。
+ */
+const DATABASE_STATUS_TITLE: Partial<
+  Record<UserAppReadinessStatusEnum, string>
+> = {
+  [UserAppReadinessStatusEnum.NotDeployed]:
+    'PC.Pages.AppDevPro.databaseStatusNotDeployed',
+  [UserAppReadinessStatusEnum.Starting]:
+    'PC.Pages.AppDevPro.databaseStatusStarting',
+  [UserAppReadinessStatusEnum.Failed]:
+    'PC.Pages.AppDevPro.databaseStatusFailed',
+};
+
+/** 检测尚未结束时的转圈文案 */
+const databaseCheckingView = () => ({
+  title: dict('PC.Pages.AppDevPro.databaseChecking'),
+  hint: dict('PC.Pages.AppDevPro.databaseCheckingHint'),
+  spinning: true,
+  error: false,
+});
+
+/**
+ * 把最近一次探测结果转成居中状态。
+ * 只展示未部署、启动中、启动失败；其余状态继续按检测中显示。
+ *
+ * @param snapshot 最近一次探测；还没有结果时按检测中展示
+ * @returns 状态标题、说明、是否转圈、是否错误态
+ */
+const resolveDatabaseStatusView = (
+  snapshot: UserAppDbReadinessSnapshot | null,
+) => {
+  if (!snapshot || snapshot.status === UserAppReadinessStatusEnum.Ready) {
+    return databaseCheckingView();
+  }
+  if (snapshot.requestFailed) {
+    return {
+      title: dict('PC.Pages.AppDevPro.databaseStatusRequestError'),
+      hint:
+        snapshot.message || dict('PC.Pages.AppDevPro.databaseStatusRetryHint'),
+      spinning: true,
+      error: true,
+    };
+  }
+  const titleKey = snapshot.status
+    ? DATABASE_STATUS_TITLE[snapshot.status]
+    : undefined;
+  if (!titleKey) {
+    return databaseCheckingView();
+  }
+  const spinning = snapshot.status === UserAppReadinessStatusEnum.Starting;
+  return {
+    title: dict(titleKey),
+    hint:
+      snapshot.message ||
+      dict(
+        spinning
+          ? 'PC.Pages.AppDevPro.databaseCheckingHint'
+          : 'PC.Pages.AppDevPro.databaseStatusRetryHint',
+      ),
+    spinning,
+    error: !spinning,
+  };
+};
 
 export interface AppDevDatabasePanelProps {
   /** 应用 ID，用于拼数据库代理地址 */
@@ -52,21 +125,53 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
     }
     return getUserAppDbProxyUrl(appId, env);
   }, [appId, env]);
-  /** 本环境是否已经在可见时加载过管理页，隐藏后继续保留 iframe */
+  /** 本环境是否已经在就绪后加载过管理页，隐藏后继续保留 iframe */
   const [keepIframe, setKeepIframe] = useState(false);
+  /** 正在轮询数据库就绪。只有就绪后才展示管理页 */
+  const [checking, setChecking] = useState(false);
+  /** 最近一次就绪探测，用于展示当前状态 */
+  const [readiness, setReadiness] = useState<UserAppDbReadinessSnapshot | null>(
+    null,
+  );
 
   const waitingContainer =
     containerStatus !== undefined && containerStatus !== 'running';
 
   useEffect(() => {
     setKeepIframe(false);
-  }, [appId]);
+    setChecking(false);
+    setReadiness(null);
+  }, [appId, iframeKey]);
 
   useEffect(() => {
-    if (active && iframeSrc && !waitingContainer) {
-      setKeepIframe(true);
+    if (!active || !appId || !iframeSrc || waitingContainer || keepIframe) {
+      setChecking(false);
+      return;
     }
-  }, [active, iframeSrc, waitingContainer]);
+
+    let cancelled = false;
+    setChecking(true);
+    setReadiness(null);
+    void (async () => {
+      const ready = await pollUserAppDbReadiness(appId, env, {
+        shouldStop: () => cancelled,
+        onProgress: (snapshot) => {
+          if (!cancelled) {
+            setReadiness(snapshot);
+          }
+        },
+      });
+      if (cancelled || !ready) {
+        return;
+      }
+      setChecking(false);
+      setKeepIframe(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [active, appId, env, iframeSrc, waitingContainer, keepIframe, iframeKey]);
 
   if (!active && !keepIframe) {
     return <div className={cx(styles.container)} />;
@@ -96,13 +201,33 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
     );
   }
 
+  const showChecking = active && checking;
+  const statusView = resolveDatabaseStatusView(readiness);
+
   return (
     <div className={cx(styles.container)}>
-      <AppDevProIframe
-        src={iframeSrc}
-        iframeKey={iframeKey}
-        title={dict('PC.Pages.AppDevPro.database')}
-      />
+      {showChecking ? (
+        <AppDevStatusHero
+          spinning={statusView.spinning}
+          error={statusView.error}
+          title={statusView.title}
+          hint={statusView.hint}
+        />
+      ) : null}
+      {keepIframe ? (
+        <div
+          className={cx(styles.iframePane, {
+            [styles.iframeHold]: showChecking,
+          })}
+        >
+          <AppDevProIframe
+            src={iframeSrc}
+            iframeKey={iframeKey}
+            title={dict('PC.Pages.AppDevPro.database')}
+            errorDescription={dict('PC.Pages.AppDevPro.databaseNotReady')}
+          />
+        </div>
+      ) : null}
     </div>
   );
 };

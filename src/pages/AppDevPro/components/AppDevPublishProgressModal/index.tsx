@@ -40,6 +40,8 @@ export interface AppDevPublishProgressModalProps {
   startServices?: UserAppTaskServiceProgress[];
   /** 部署成功后异步拿到的线上 Prod 访问地址 */
   prodAccessUrl?: string;
+  /** 线上环境是否已就绪。false 时在域名下提示稍后再试 */
+  prodReady?: boolean;
   /** 失败信息，优先于默认失败文案 */
   errorMessage?: string;
   /** 失败落在哪一步，避免后续步骤失败被画到前面的步骤上 */
@@ -215,9 +217,13 @@ const StepStatusLine: React.FC<{
  * 部署成功后的线上访问地址：当前域名 + 生产代理路径，可复制。
  *
  * @param props.url 完整访问地址
+ * @param props.prodReady 线上环境是否已就绪
  * @returns 带背景的地址块
  */
-const DeployAccessLink: React.FC<{ url: string }> = ({ url }) => {
+const DeployAccessLink: React.FC<{ url: string; prodReady?: boolean }> = ({
+  url,
+  prodReady = true,
+}) => {
   const handleCopy = useCallback(() => {
     copyTextToClipboard(url, undefined, true);
   }, [url]);
@@ -246,6 +252,11 @@ const DeployAccessLink: React.FC<{ url: string }> = ({ url }) => {
           {dict('PC.Common.Global.copy')}
         </Button>
       </div>
+      {prodReady ? null : (
+        <div className={cx(styles.accessNotReady)}>
+          {dict('PC.Pages.AppDevPro.deployNotReadyHint')}
+        </div>
+      )}
     </div>
   );
 };
@@ -302,6 +313,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   services,
   startServices = [],
   prodAccessUrl = '',
+  prodReady = true,
   errorMessage,
   failedStage = null,
   cancelLoading = false,
@@ -334,8 +346,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     phase === 'building' ||
     phase === 'checkingDeployable';
   /** 部署服务阶段可停止生产部署 */
-  const canStopDeploy =
-    phase === 'deploying' || phase === 'checkingReadiness';
+  const canStopDeploy = phase === 'deploying' || phase === 'checkingReadiness';
   /** 构建服务折叠面板展开项，新服务到来时自动展开 */
   const [buildActiveKeys, setBuildActiveKeys] = useState<string[]>([]);
   /** 已因构建成功自动收起过的面板，避免再次收起用户手动展开的项 */
@@ -405,8 +416,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     phase === 'deploying' ||
     phase === 'checkingReadiness' ||
     phase === 'success' ||
-    (isTerminalPhase &&
-      (failedStage === 'check' || failedStage === 'deploy'));
+    (isTerminalPhase && (failedStage === 'check' || failedStage === 'deploy'));
   const passedDeployStage =
     phase === 'deploying' ||
     phase === 'checkingReadiness' ||
@@ -416,8 +426,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   /** 检测可部署：进入该步及之后都保留，方便回看结果 */
   const showCheckSection = passedCheckStage;
   /** 部署服务：进入 start 或已有日志时展示 */
-  const showStartSection =
-    startServices.length > 0 || passedDeployStage;
+  const showStartSection = startServices.length > 0 || passedDeployStage;
   /** 构建打包：有日志、正在构建，或后续步骤已出现时都保留 */
   const showBuildSection =
     services.length > 0 ||
@@ -663,7 +672,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
             </div>
             <StepStatusLine kind={startStatus.kind} text={startStatus.text} />
             {displayAccessUrl ? (
-              <DeployAccessLink url={displayAccessUrl} />
+              <DeployAccessLink url={displayAccessUrl} prodReady={prodReady} />
             ) : null}
             {startCollapseItems.length > 0 ? (
               <Collapse

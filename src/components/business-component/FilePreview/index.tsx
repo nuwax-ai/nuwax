@@ -46,6 +46,8 @@ import {
 } from '@/components/MarkdownRenderer/utils';
 import { SANDBOX } from '@/constants/common.constants';
 import { t } from '@/services/i18nRuntime';
+import { preparePptxForPreview } from '@/utils/pptxPackage';
+import { validateAndOrderPptxSlides } from '@/utils/pptxSlideValidation';
 import { CodeBlockActions, CodeBlockWrap, HighlightCode } from 'ds-markdown';
 import 'ds-markdown/katex.css';
 import { init as pptxInit } from 'pptx-preview';
@@ -548,6 +550,26 @@ const getLocalizedErrorMessage = (
   }
 };
 
+function getPptxErrorMessage(error: unknown): string {
+  const detail = error as { code?: string; message?: string } | undefined;
+  switch (detail?.code) {
+    case 'http':
+      return t('PC.Components.FilePreview.errorFileLoad');
+    case 'invalid':
+      return t('PC.Components.FilePreview.errorInvalid');
+    case 'legacy':
+      return t('PC.Components.FilePreview.errorLegacyPpt');
+    case 'tooLarge':
+      return t('PC.Components.FilePreview.errorPreviewTooLarge');
+    case 'damaged':
+      return t('PC.Components.FilePreview.errorPptxDamaged');
+    case 'incomplete':
+      return t('PC.Components.FilePreview.errorPptxIncomplete');
+    default:
+      return getLocalizedErrorMessage(detail?.message, 'pptx');
+  }
+}
+
 /**
  * 从 Markdown 文件地址中取出所在目录。
  * 地址对不上静态根路径，或文件就在工作区根上时返回空，相对图片仍按旧逻辑接到根路径。
@@ -625,8 +647,19 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     src: FilePreviewProps['src'];
     type: FileType;
   } | null>(null);
+  const pptxAbortControllerRef = useRef<AbortController | null>(null);
+  const downloadAbortControllerRef = useRef<AbortController | null>(null);
+  const preparedPptxRef = useRef<{
+    src: FilePreviewProps['src'];
+    result: Awaited<ReturnType<typeof preparePptxForPreview>>;
+  } | null>(null);
+  const originalPptxRef = useRef<{
+    src: FilePreviewProps['src'];
+    buffer: ArrayBuffer;
+  } | null>(null);
   const [status, setStatus] = useState<PreviewStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [downloading, setDownloading] = useState(false);
   const [detectedType, setDetectedType] = useState<FileType | undefined>();
   const [textContent, setTextContent] = useState<string>('');
   const [htmlUrl, setHtmlUrl] = useState<string | null>(null);
@@ -738,22 +771,73 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     return [];
   }, [srcList, src, resolvedType]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (!src) return;
-    const url = getSourceUrl(src);
+    // 兼容处理只供预览，下载保持用户原件；已授权加载的 URL 也可直接下载原始 bytes。
+    let downloadSource =
+      resolvedType === 'pptx' && originalPptxRef.current?.src === src
+        ? originalPptxRef.current.buffer
+        : src;
+    if (resolvedType === 'pptx' && typeof downloadSource === 'string') {
+      downloadAbortControllerRef.current?.abort();
+      const controller = new AbortController();
+      downloadAbortControllerRef.current = controller;
+      setDownloading(true);
+      try {
+        const { loadFilePreviewBuffer } = await import(
+          '@/services/filePreview'
+        );
+        // 用户主动下载原件不受预览预算限制；受保护 URL 仍经过业务鉴权。
+        downloadSource = await loadFilePreviewBuffer(downloadSource, {
+          signal: controller.signal,
+          maxBytes: Number.MAX_SAFE_INTEGER,
+        });
+        if (controller.signal.aborted) return;
+        originalPptxRef.current = { src, buffer: downloadSource };
+      } catch (error: any) {
+        if (!controller.signal.aborted) {
+          setErrorMessage(getPptxErrorMessage(error));
+          onError?.(error);
+        }
+        return;
+      } finally {
+        if (downloadAbortControllerRef.current === controller) {
+          downloadAbortControllerRef.current = null;
+          setDownloading(false);
+        }
+      }
+    }
+    const url = getSourceUrl(downloadSource);
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    if (typeof src !== 'string') URL.revokeObjectURL(url);
-  }, [src, fileName]);
+    if (typeof downloadSource !== 'string') URL.revokeObjectURL(url);
+  }, [src, fileName, resolvedType, onError]);
 
-  const initPreview = async () => {
+  const initPreview = async (
+    options: { reusePptx?: boolean; refreshPptx?: boolean } = {},
+  ) => {
+    const pptxScroll = options.reusePptx
+      ? {
+          outer: containerRef.current?.scrollTop ?? 0,
+          inner: previewerRef.current?.wrapper?.scrollTop ?? 0,
+        }
+      : null;
     const requestId = ++textRequestIdRef.current;
     textAbortControllerRef.current?.abort();
     textAbortControllerRef.current = null;
+    pptxAbortControllerRef.current?.abort();
+    pptxAbortControllerRef.current = null;
+    if (!options.reusePptx) {
+      downloadAbortControllerRef.current?.abort();
+      downloadAbortControllerRef.current = null;
+      setDownloading(false);
+      preparedPptxRef.current = null;
+      originalPptxRef.current = null;
+    }
     const isCurrentRequest = () => requestId === textRequestIdRef.current;
     if (
       !containerRef.current ||
@@ -910,11 +994,12 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     containerRef.current.innerHTML = '';
 
+    let previewer: any;
+    let pptxHost: HTMLDivElement | undefined;
     try {
-      let previewer: any;
       let previewSrc: any = src;
 
-      if (src instanceof File) {
+      if (src instanceof File && type !== 'pptx') {
         previewSrc = await src.arrayBuffer();
       }
 
@@ -932,11 +1017,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           previewer = jsPreviewPdf.init(containerRef.current, {
             width: containerRef.current.clientWidth || undefined,
             onError: (e: any) => {
+              if (!isCurrentRequest()) return;
               setStatus('error');
               setErrorMessage(getLocalizedErrorMessage(e?.message, 'pdf'));
               onError?.(e);
             },
             onRendered: () => {
+              if (!isCurrentRequest()) return;
               setStatus('success');
               onRendered?.();
             },
@@ -944,6 +1031,30 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           await previewer.preview(previewSrc);
           break;
         case 'pptx': {
+          if (!src) return;
+          const controller = new AbortController();
+          pptxAbortControllerRef.current = controller;
+          let prepared =
+            options.reusePptx && preparedPptxRef.current?.src === src
+              ? preparedPptxRef.current.result
+              : null;
+          if (!prepared) {
+            const { loadFilePreviewBuffer } = await import(
+              '@/services/filePreview'
+            );
+            if (!isCurrentRequest() || controller.signal.aborted) return;
+            const buffer = await loadFilePreviewBuffer(src, {
+              signal: controller.signal,
+              refresh: options.refreshPptx || refreshKey !== undefined,
+            });
+            if (!isCurrentRequest() || controller.signal.aborted) return;
+            originalPptxRef.current = { src, buffer };
+            prepared = await preparePptxForPreview(buffer, {
+              signal: controller.signal,
+            });
+            if (!isCurrentRequest() || controller.signal.aborted) return;
+            preparedPptxRef.current = { src, result: prepared };
+          }
           // 由于初始化时容器 display: none，clientHeight 可能为 0
           // 尝试从父容器获取尺寸，或使用传入的 height/width 属性
           const parentEl = containerRef.current.parentElement;
@@ -956,29 +1067,58 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             parentEl?.clientHeight ||
             (typeof height === 'number' ? height : 600);
 
-          previewer = pptxInit(containerRef.current, {
+          // 旧库不支持中止解析。每次使用独立 host，过期任务只能写自己的离屏 DOM。
+          pptxHost = document.createElement('div');
+          previewer = pptxInit(pptxHost, {
             width: containerWidth,
             height: containerHeight,
           });
-          if (typeof previewSrc === 'string') {
-            const response = await fetch(previewSrc);
-            previewSrc = await response.arrayBuffer();
+          previewerRef.current = previewer;
+          // load 只解析；确认请求仍有效后才创建页面和图表等渲染资源。
+          await previewer.load(prepared.buffer);
+          if (!isCurrentRequest() || controller.signal.aborted) {
+            pptxHost.replaceChildren();
+            return;
           }
-          await previewer.preview(previewSrc);
+          for (
+            let index = 0;
+            index < previewer.pptx.slides.length;
+            index += 1
+          ) {
+            previewer.htmlRender.renderSlide(index);
+          }
+          validateAndOrderPptxSlides(previewer, pptxHost, prepared.slidePaths);
+          containerRef.current.replaceChildren(pptxHost);
+          if (pptxScroll) {
+            containerRef.current.scrollTop = pptxScroll.outer;
+            if (previewer.wrapper) {
+              previewer.wrapper.scrollTop = pptxScroll.inner;
+            }
+          }
           break;
         }
       }
 
+      if (!isCurrentRequest()) return;
       previewerRef.current = previewer;
       if (type !== 'pdf') {
         setStatus('success');
         onRendered?.();
       }
     } catch (error: any) {
+      if (!isCurrentRequest() || error?.name === 'AbortError') return;
+      if (type === 'pptx') {
+        previewer?.destroy?.();
+        if (previewerRef.current === previewer) previewerRef.current = null;
+        pptxHost?.replaceChildren();
+      }
       console.error('File preview error:', error);
       setStatus('error');
       // 使用用户友好的中文错误信息
-      const friendlyMessage = getLocalizedErrorMessage(error?.message, type);
+      const friendlyMessage =
+        type === 'pptx'
+          ? getPptxErrorMessage(error)
+          : getLocalizedErrorMessage(error?.message, type);
       setErrorMessage(friendlyMessage);
       onError?.(error);
     }
@@ -993,6 +1133,11 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     return () => {
       textRequestIdRef.current += 1;
       textAbortControllerRef.current?.abort();
+      pptxAbortControllerRef.current?.abort();
+      downloadAbortControllerRef.current?.abort();
+      downloadAbortControllerRef.current = null;
+      preparedPptxRef.current = null;
+      originalPptxRef.current = null;
       if (previewerRef.current) {
         try {
           previewerRef.current.destroy?.();
@@ -1017,6 +1162,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       if (!entry) return;
 
       const { width, height } = entry.contentRect;
+      // KeepAlive / 收起面板可能报告零尺寸，不触发隐藏文稿的重渲染。
+      if (width <= 0 || height <= 0) return;
 
       // 检查尺寸是否有显著变化（阈值 10px），避免重复初始化
       const lastSize = lastSizeRef.current;
@@ -1038,7 +1185,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           ['pptx', 'xlsx', 'pdf', 'docx'].includes(resolvedType)
         ) {
           lastSizeRef.current = { width, height };
-          initPreview();
+          initPreview({ reusePptx: resolvedType === 'pptx' });
         }
       }, 500);
     });
@@ -1062,7 +1209,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   }, [status, resolvedType]);
 
   const handleRetry = () => {
-    initPreview();
+    initPreview({ refreshPptx: true });
   };
 
   const handlePrevImage = () => {
@@ -1315,6 +1462,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
               <Button
                 className={styles.toolbarBtn}
                 icon={<CloudDownloadOutlined />}
+                loading={downloading}
                 onClick={handleDownload}
                 type="text"
               />
@@ -1352,14 +1500,26 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             type="error"
             showIcon
             action={
-              <Button
-                size="small"
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={handleRetry}
-              >
-                {t('PC.Components.FilePreview.retry')}
-              </Button>
+              <div>
+                <Button
+                  size="small"
+                  type="primary"
+                  icon={<ReloadOutlined />}
+                  onClick={handleRetry}
+                >
+                  {t('PC.Components.FilePreview.retry')}
+                </Button>
+                {src && (showDownload || resolvedType === 'pptx') && (
+                  <Button
+                    size="small"
+                    icon={<CloudDownloadOutlined />}
+                    loading={downloading}
+                    onClick={handleDownload}
+                  >
+                    {t('PC.Components.FilePreview.downloadFile')}
+                  </Button>
+                )}
+              </div>
             }
           />
         </div>

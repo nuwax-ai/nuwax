@@ -276,7 +276,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
    * page / bare 两种形态共用同一插槽位置：variant 切换（窗口缩放跨越移动断点
    * 768 时 layouts/index 依 isMobile 换形态）只换类名不换子树结构，React 复用
    * 原 DOM 节点——工作台页（如 AppDevPro）与其中的预览 iframe 不再整体重挂
-   * （禅道bug2487：缩放浏览器导致全栈应用预览自动重启）。
+   * （禅道bug2487：缩放浏览器导致网站应用预览自动重启）。
    */
   const contentNode = useMemo(() => {
     // 裸全屏形态：不挂侧栏容器与弹窗，仅满铺渲染页面内容（历史顶层全屏路由

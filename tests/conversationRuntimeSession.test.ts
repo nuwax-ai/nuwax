@@ -1113,7 +1113,8 @@ describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录�
       name: '终端',
       status: 'FINISHED',
       result: { kind: 'execute', input: { command: 'echo done > output.txt' } },
-      refresh: true,
+      // 终端命令本身不作为文件变更信号；仅显式编辑/写入/diff 触发刷新。
+      refresh: false,
     },
     {
       name: '终端',

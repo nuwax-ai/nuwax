@@ -1,3 +1,4 @@
+import { isOpenDesktopProcessingEvent } from '@/features/conversation/domain/openDesktopEvent';
 import type { ConversationEventReducerAdapters } from '@/features/conversation/domain/reduceConversationEvent';
 import {
   isTerminalTaskStatus,
@@ -26,7 +27,6 @@ import {
   emitConversationListTaskStatus,
   fetchConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
-import { isFileMutatingToolCall } from '@/utils/fileMutatingToolCall';
 import { extractTaskResult } from '@/utils/taskResult';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -364,6 +364,13 @@ export function createConversationRuntimeSession(
           append: res.requestId === currentRequestId,
         });
       }
+      // 打开远程桌面。各页面注入自己的 openDesktopView，条件由页面决定。
+      if (isOpenDesktopProcessingEvent(processing)) {
+        runtime.effects.dispatch({
+          type: 'desktop.open',
+          conversationId: conversationId as number,
+        });
+      }
       return;
     }
 
@@ -393,10 +400,7 @@ export function createConversationRuntimeSession(
       // 问答型以外的智能体收尾（对齐旧线 conversationInfo：立即刷文件树
       // → 按需刷 Git → task-result 文件选中开预览 → 未命中发兜底 trigger；
       // 执行体在消费端 taskResult.settle case，file 传含会话段的原始终路径）
-      if (
-        currentAgent?.type &&
-        currentAgent.type !== AgentTypeEnum.ChatBot
-      ) {
+      if (currentAgent?.type && currentAgent.type !== AgentTypeEnum.ChatBot) {
         const taskResult = extractTaskResult(
           (data as { outputText?: string }).outputText ?? '',
         );

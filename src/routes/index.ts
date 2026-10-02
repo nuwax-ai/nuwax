@@ -54,7 +54,7 @@ const routes = [
       { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
       { path: '/my-computer-manage', component: '@/pages/MyComputerManage' },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
-      // 全栈应用页(女娲应用-全栈应用卡片入口:左侧会话区 + 右侧应用域名 iframe)
+      // 网站应用页(女娲应用-网站应用卡片入口:左侧会话区 + 右侧应用域名 iframe)
       { path: '/user-app/:appId', component: '@/pages/UserApp' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
@@ -68,7 +68,7 @@ const routes = [
         path: '/space/:spaceId/create-project',
         component: '@/pages/SpaceCreateProject',
       },
-      // 项目管理（三类项目列表：常规项目/网页应用/全栈应用）
+      // 项目管理（三类项目列表：常规项目/网页应用/网站应用）
       {
         path: '/space/:spaceId/project-manage',
         component: '@/pages/SpaceProjectManage',
@@ -83,7 +83,7 @@ const routes = [
         path: '/space/:spaceId/normal-project-detail/:projectId',
         component: '@/pages/SpaceProjectManage/NormalProjectDetail',
       },
-      // 全栈应用
+      // 网站应用
       {
         path: '/space/:spaceId/userapp-project',
         component: '@/pages/SpaceProjectManage/UserAppProject',
@@ -431,7 +431,6 @@ const routes = [
                 path: 'theme',
                 name: getRouteLabel('PC.Routes.themeConfig'),
                 component: '@/pages/SystemManagement/SystemConfig/ThemeConfig',
-                hideInMenu: true,
               },
               {
                 path: 'sandbox',

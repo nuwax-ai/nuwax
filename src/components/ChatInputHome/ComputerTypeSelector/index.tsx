@@ -1,10 +1,6 @@
 import { SvgIcon } from '@/components/base';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiGetUserSelectableSandboxList,
-  apiSaveSelectedSandbox,
-} from '@/services/systemManage';
+import { apiSaveSelectedSandbox } from '@/services/systemManage';
 import { CheckOutlined } from '@ant-design/icons';
 import { Dropdown, MenuProps } from 'antd';
 import classNames from 'classnames';
@@ -18,6 +14,7 @@ import React, {
 import styles from './index.less';
 import { resolveAutoSelection } from './resolveAutoSelection';
 import { type ComputerOption, type ComputerTypeSelectorProps } from './types';
+import { useComputerList } from './useComputerList';
 
 const cx = classNames.bind(styles);
 
@@ -68,16 +65,29 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   strictAgentMemory = false,
 }) => {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [rawComputerList, setRawComputerList] = useState<ComputerOption[]>([]);
-  const [initialized, setInitialized] = useState(false);
-  const initializedRef = useRef(false);
-
-  const [agentSelectedMap, setAgentSelectedMap] = useState<
+  const {
+    rawComputerList,
+    agentSelectedMap: remoteSelectedMap,
+    initialized,
+    refresh,
+  } = useComputerList(!cloudOnly);
+  // 手选覆盖当前组件会话内的服务器记忆，旧的在途响应不能把手选回退。
+  const [manualSelectedMap, setManualSelectedMap] = useState<
     Record<string, string>
   >({});
+  const selectionContext = useRef<{
+    key: string;
+    pendingMemory?: string;
+    pendingManual?: string;
+  } | null>(null);
+  const knownOptions = useRef(new Map<string, ComputerOption>());
+  const agentKey = agentId ? String(agentId) : 'no-agent';
+  const agentSelectedMap = useMemo(
+    () => (readonly ? {} : { ...remoteSelectedMap, ...manualSelectedMap }),
+    [readonly, remoteSelectedMap, manualSelectedMap],
+  );
 
-  // 仅云端模式（如全栈应用不支持个人电脑）：渲染期过滤，列表切换即时生效
+  // 仅云端模式（如网站应用不支持个人电脑）：渲染期过滤，列表切换即时生效
   const computerList = useMemo(
     () =>
       cloudOnly
@@ -86,36 +96,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     [rawComputerList, cloudOnly],
   );
 
-  // 获取用户电脑列表
-  const fetchComputerList = useCallback(async () => {
-    if (initializedRef.current) return;
-
-    setLoading(true);
-    try {
-      const res = await apiGetUserSelectableSandboxList();
-      if (res.code === SUCCESS_CODE && res.data) {
-        const { sandboxes, agentSelected: selectedMap } = res.data;
-        const options: ComputerOption[] = sandboxes.map((item) => ({
-          id: item.sandboxId,
-          name: item.name,
-          description: item.description,
-          raw: item,
-        }));
-        setRawComputerList(options);
-        if (selectedMap) {
-          setAgentSelectedMap(readonly ? {} : selectedMap);
-        }
-        setInitialized(true);
-        initializedRef.current = true;
-      }
-    } catch (error) {
-      console.error('Failed to get computer list:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 监听 agentId 和 agentSelectedMap 变化，自动应用选择
+  // 首次/切换 agent 按既有记忆解析；同一 agent 的刷新保留已选电脑。
   useEffect(() => {
     if (
       !autoSelect ||
@@ -126,30 +107,57 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       return;
     }
 
-    // 决策单源：strict（首页）=沙箱按 agent 绑定（其记忆/云端默认）；legacy=既有行为
-    const { selectedId } = resolveAutoSelection({
-      strictAgentMemory,
-      agentId,
-      value,
-      computerList,
-      agentSelectedMap,
-    });
+    const previousContext = selectionContext.current;
+    const switchedAgent = !!previousContext && previousContext.key !== agentKey;
+    const firstForAgent = !previousContext || switchedAgent;
+    const context: NonNullable<typeof selectionContext.current> = firstForAgent
+      ? { key: agentKey }
+      : previousContext!;
+    selectionContext.current = context;
+    const isInList = (id?: string) =>
+      !!id && computerList.some((option) => String(option.id) === String(id));
+    const rememberedId = agentId
+      ? agentSelectedMap[String(agentId)]
+      : undefined;
+    if (readonly) {
+      context.pendingMemory = undefined;
+      context.pendingManual = undefined;
+    }
+    let finalId: string | null;
 
-    // 个人电脑下线处理：如果列表中仅剩云电脑（-1），且当前状态并非云电脑，则主动同步到后端
-    let finalId = selectedId;
-    if (
-      agentId &&
-      computerList.length === 1 &&
-      String(computerList[0].id) === '-1' &&
-      agentSelectedMap?.[String(agentId)] !== '-1' &&
-      saveOnSelect
-    ) {
-      apiSaveSelectedSandbox(agentId, '-1').catch(console.error);
-      setAgentSelectedMap((prev) => ({ ...prev, [String(agentId)]: '-1' }));
-      finalId = '-1';
+    if (cloudOnly) {
+      // 场景策略变化时必须回落云端，不能沿用个人电脑的手选或记忆。
+      finalId = isInList('-1') ? '-1' : null;
+    } else if (!readonly && manualSelectedMap[agentKey]) {
+      const manualId = manualSelectedMap[agentKey];
+      // 切回时目标暂缺要留下等待目标，后续候选传播后恢复当前 agent 的手选。
+      if (!firstForAgent && context.pendingManual !== manualId) return;
+      if (!isInList(manualId)) {
+        context.pendingManual = manualId;
+        return;
+      }
+      context.pendingManual = undefined;
+      finalId = manualId;
+    } else if (context.pendingMemory && isInList(context.pendingMemory)) {
+      finalId = context.pendingMemory;
+      context.pendingMemory = undefined;
+    } else {
+      if (rememberedId && !isInList(rememberedId)) {
+        context.pendingMemory = rememberedId;
+        // 列表传播期间保留已有值与记忆，绝不据临时云端列表覆盖选择。
+        if (value) return;
+      }
+      if (!firstForAgent && value) return;
+      if (!switchedAgent && value && !rememberedId) return;
+      finalId = resolveAutoSelection({
+        strictAgentMemory,
+        agentId,
+        value,
+        computerList,
+        agentSelectedMap,
+      }).selectedId;
     }
 
-    // 如果确定了选择且与当前值不同，触发onChange
     if (finalId && finalId !== value) {
       const option = computerList.find(
         (opt) => String(opt.id) === String(finalId),
@@ -160,7 +168,9 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     }
   }, [
     agentId,
+    agentKey,
     agentSelectedMap,
+    manualSelectedMap,
     initialized,
     computerList,
     value,
@@ -168,17 +178,15 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     fixedSelection,
     autoSelect,
     strictAgentMemory,
+    cloudOnly,
+    readonly,
   ]);
-
-  // 挂载时加载数据
-  useEffect(() => {
-    if (!initialized) {
-      fetchComputerList();
-    }
-  }, [initialized, fetchComputerList]);
 
   // 当前选中的选项
   const selectedOption = useMemo(() => {
+    computerList.forEach((option) =>
+      knownOptions.current.set(String(option.id), option),
+    );
     // 如果电脑不可用，显示不可用状态
     if (unavailable) {
       return UNAVAILABLE_OPTION;
@@ -195,6 +203,11 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       // 如果是固定选择且在列表中找不到，且是个人电脑（高优先级），直接返回不可用
       if (fixedSelection && initialized && isPersonalComputer) {
         return PERSONAL_COMPUTER_UNAVAILABLE_OPTION;
+      }
+      // 后续列表暂缺当前电脑时保留其名称；固定会话仍按既有不可用提示处理。
+      if (!fixedSelection && !cloudOnly) {
+        const known = knownOptions.current.get(String(value));
+        if (known) return known;
       }
     }
 
@@ -227,13 +240,23 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     initialized,
     fixedSelection,
     isPersonalComputer,
+    cloudOnly,
   ]);
 
   // 处理选择
   const handleSelect = useCallback(
     async (option: ComputerOption) => {
       // 如果选中的是当前已选中的，直接返回，不触发接口
-      if (String(option.id) === String(value) || readonly || fixedSelection) {
+      if (readonly || fixedSelection) {
+        setOpen(false);
+        return;
+      }
+      setManualSelectedMap((prev) => ({ ...prev, [agentKey]: option.id }));
+      if (selectionContext.current?.key === agentKey) {
+        selectionContext.current.pendingMemory = undefined;
+        selectionContext.current.pendingManual = undefined;
+      }
+      if (String(option.id) === String(value)) {
         setOpen(false);
         return;
       }
@@ -243,12 +266,6 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
 
       // 如果有 agentId，保存选择并更新本地映射
       if (agentId) {
-        // 立即更新本地映射，防止 useEffect 回退选择
-        setAgentSelectedMap((prev) => ({
-          ...prev,
-          [String(agentId)]: option.id,
-        }));
-
         if (saveOnSelect) {
           try {
             await apiSaveSelectedSandbox(agentId, option.id);
@@ -259,7 +276,23 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
         }
       }
     },
-    [onChange, agentId, value, saveOnSelect, readonly, fixedSelection],
+    [
+      onChange,
+      agentId,
+      agentKey,
+      value,
+      saveOnSelect,
+      readonly,
+      fixedSelection,
+    ],
+  );
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      setOpen(nextOpen);
+      if (nextOpen) refresh();
+    },
+    [refresh],
   );
 
   // 构建菜单项
@@ -326,11 +359,10 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   const isDisabled =
     disabled ||
     unavailable ||
-    computerList.length === 0 ||
     selectedOption === UNAVAILABLE_OPTION ||
     selectedOption === PERSONAL_COMPUTER_UNAVAILABLE_OPTION;
 
-  const isShow = initialized && !loading;
+  const isShow = initialized;
 
   return (
     <div
@@ -346,7 +378,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
         trigger={['click']}
         placement="topRight"
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         disabled={isDisabled}
         overlayClassName={styles['computer-menu']}
       >

@@ -66,6 +66,12 @@ vi.mock('./ClientConversationKeepAlive', () => ({
   default: () => <div data-testid="client-conversation-keep-alive" />,
 }));
 
+// MicroAppHost 真渲染依赖 .less styles（乾坤滚动条锚点 styles.host），测试环境解析为
+// undefined 会崩——本测试关注 SidebarShell 挂载契约，微应用容器按兄弟组件惯例 mock。
+vi.mock('../MicroAppHost', () => ({
+  default: () => <div data-testid="micro-app-host" />,
+}));
+
 vi.mock('@/hooks/useUnifiedTheme', () => ({
   useUnifiedTheme: () => ({
     effectiveNavigationStyle: 'style3',

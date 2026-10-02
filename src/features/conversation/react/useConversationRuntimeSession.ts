@@ -13,6 +13,7 @@ import {
   applyTerminalTaskStatus,
   createRuntimeLineEffectsAdapter,
   runtimeLineHttp,
+  type RuntimeLineEffectsResources,
 } from '@/features/conversation/react/runtimeLineHttp';
 import {
   createConversationMessageStore,
@@ -164,6 +165,44 @@ export function useConversationRuntimeSession(
   getSandboxIdRef.current = options.getSandboxId;
 
   const sessionRef = useRef<ConversationRuntimeSession | null>(null);
+
+  /**
+   * 页面回调每次渲染写入。会话实例只创建一次，执行副作用时读这里的最新函数。
+   */
+  const effectsResourcesRef = useRef<RuntimeLineEffectsResources>({});
+  effectsResourcesRef.current = {
+    ...(effectsResources as RuntimeLineEffectsResources),
+    onSuggestLoadingChange: (loading, targetConversationId) => {
+      if (
+        sessionRef.current?.getState().currentConversationId ===
+        targetConversationId
+      ) {
+        setLoadingSuggest(loading);
+      }
+    },
+    onSuggestLoaded: (list, targetConversationId) => {
+      if (
+        sessionRef.current?.getState().currentConversationId ===
+        targetConversationId
+      ) {
+        setChatSuggestList(list);
+      }
+    },
+    confirmStop: (targetConversationId) => {
+      // 对齐旧线「正在执行任务」冲突确认：确认后停止本会话
+      modalConfirm(
+        dict('PC.Models.ConversationInfo.taskConflictTitle'),
+        dict('PC.Models.ConversationInfo.taskConflictContent'),
+        () => {
+          sessionRef.current?.stop(targetConversationId);
+          return new Promise((resolve) => {
+            setTimeout(resolve, 2000);
+          });
+        },
+      );
+    },
+  };
+
   if (enabled && !sessionRef.current) {
     sessionRef.current = createConversationRuntimeSession({
       adapters: {
@@ -182,41 +221,7 @@ export function useConversationRuntimeSession(
       hydrateHistoryMessages: hydrateMcpAskInteractionsInMessageList,
       effectsAdapter: createRuntimeLineEffectsAdapter({
         setConversationInfo,
-        resources: {
-          ...(effectsResources as never as Record<string, unknown>),
-          onSuggestLoadingChange: (
-            loading: boolean,
-            targetConversationId: number,
-          ) => {
-            if (
-              sessionRef.current?.getState().currentConversationId ===
-              targetConversationId
-            ) {
-              setLoadingSuggest(loading);
-            }
-          },
-          onSuggestLoaded: (list: string[], targetConversationId: number) => {
-            if (
-              sessionRef.current?.getState().currentConversationId ===
-              targetConversationId
-            ) {
-              setChatSuggestList(list);
-            }
-          },
-          confirmStop: (conversationId: number) => {
-            // 对齐旧线「正在执行任务」冲突确认：确认后停止本会话
-            modalConfirm(
-              dict('PC.Models.ConversationInfo.taskConflictTitle'),
-              dict('PC.Models.ConversationInfo.taskConflictContent'),
-              () => {
-                sessionRef.current?.stop(conversationId);
-                return new Promise((resolve) => {
-                  setTimeout(resolve, 2000);
-                });
-              },
-            );
-          },
-        } as never,
+        getResources: () => effectsResourcesRef.current,
       }),
       stopRequest: async (id) => {
         setLoadingStopConversation(true);

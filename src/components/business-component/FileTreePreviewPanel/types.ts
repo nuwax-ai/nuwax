@@ -64,7 +64,7 @@ export interface FileTreePreviewViewProps {
    * 典型实现：ensureDesktopConnection(conversationId)
    */
   onReconnect?: () => void | Promise<void>;
-  /** 全栈应用环境，仅 AppDevPro 传入，用于 computer/pod 老接口 */
+  /** 网站应用环境，仅 AppDevPro 传入，用于 computer/pod 老接口 */
   appStage?: 'dev' | 'prod';
   /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
@@ -200,6 +200,11 @@ export interface FileTreePreviewViewValue {
   gitBranch: string;
   /** 刷新 Git 变更列表（git status） */
   refreshGitList: () => Promise<void>;
+  /**
+   * 按路径没搜到变更文件时，预览区改为「未搜索到对应文件」。
+   * missing 为 false 时收起该提示，未选中文件仍用原来的文案。
+   */
+  markWorkspaceFileNotFound: (missing: boolean) => void;
   tree: FileTreeContainerProps;
   preview: FileTreePreviewViewPreview;
 }
@@ -229,7 +234,7 @@ export interface UseFileTreePreviewPanelParams {
    * 解决长时间空闲导致容器被回收后，仅重试检测状态永远失败的问题
    */
   onReconnect?: () => void | Promise<void>;
-  /** 全栈应用环境，仅 AppDevPro 传入，用于 VNC 状态检测 */
+  /** 网站应用环境，仅 AppDevPro 传入，用于 VNC 状态检测 */
   appStage?: 'dev' | 'prod';
   hideDesktop?: HideDesktopEnum;
   /** Git 源代码管理选中的 diff 文件（优先于普通预览） */

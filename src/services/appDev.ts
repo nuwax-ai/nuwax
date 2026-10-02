@@ -659,7 +659,7 @@ export const apiProjectCreate = async (data: {
   name?: string;
   programmingLanguage?: string;
   subType?: string;
-  /** 沙箱ID（wiki：首页对话框创建全栈应用、常规项目时必传） */
+  /** 沙箱ID（wiki：首页对话框创建网站应用、常规项目时必传） */
   sandboxId?: number;
   /** 调试关联智能体ID（首页选中 agent 创建项目时传入） */
   devAgentId?: number;

@@ -1,6 +1,6 @@
-import { request } from "umi";
-import { RequestResponse } from "@/types/interfaces/request";
-import { UserAppDeployTypeEnum } from "@/types/interfaces/userProject";
+import { RequestResponse } from '@/types/interfaces/request';
+import { UserAppDeployTypeEnum } from '@/types/interfaces/userProject';
+import { request } from 'umi';
 
 /** 登记私有部署服务器参数 */
 export interface PrivateServerCreateParams {
@@ -12,10 +12,12 @@ export interface PrivateServerCreateParams {
   scheme?: string;
   /** 服务器地址 */
   host?: string;
-  /** 管理端口 */
+  /** Agent端口 */
   agentPort?: number;
-  /** 应用端口 */
-  appPort?: number;
+  /** VNC 端口 */
+  vncPort?: number;
+  /** 文件服务端口 */
+  fileServerPort?: number;
 }
 
 /** 私有部署服务器信息 */
@@ -28,10 +30,12 @@ export interface PrivateServerInfo {
   scheme: string;
   /** 服务器地址 */
   host: string;
-  /** 管理端口 */
+  /** Agent端口 */
   agentPort: number;
-  /** 应用端口 */
-  appPort: number;
+  /** VNC 端口 */
+  vncPort: number;
+  /** 文件服务端口 */
+  fileServerPort: number;
   /** 接入密钥 */
   apiKey: string;
   /** 健康状态 */
@@ -57,7 +61,10 @@ export async function apiPrivateServerCreate(
 }
 
 // 更新私有部署服务器参数
-export type PrivateServerUpdateParams = PrivateServerCreateParams;
+export interface PrivateServerUpdateParams extends PrivateServerCreateParams {
+  /** 通信 key，最长 128 个字符 */
+  apiKey?: string;
+}
 
 /** 更新私服信息（变更地址-端口将回到待就绪状态，需重新健康检查通过） */
 export async function apiPrivateServerUpdate(
@@ -80,7 +87,9 @@ export async function apiPrivateServerDelete(
 }
 
 /** 我的私服列表 */
-export async function apiPrivateServerList(): Promise<RequestResponse<PrivateServerInfo[]>> {
+export async function apiPrivateServerList(): Promise<
+  RequestResponse<PrivateServerInfo[]>
+> {
   return request('/api/userapp/private-server/list', {
     method: 'GET',
   });
@@ -92,7 +101,7 @@ export async function apiPrivateServerGet(
 ): Promise<RequestResponse<PrivateServerInfo>> {
   return request('/api/userapp/private-server/get', {
     method: 'GET',
-    data: { id },
+    params: { id },
   });
 }
 

@@ -22,13 +22,16 @@ import { useConversationRendererPreference } from '@/hooks/useConversationRender
 import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
+import { useRepoDocLinkPreview } from '@/hooks/useRepoDocLinkPreview';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
+import { isRepoLibraryPath } from '@/utils/repoDocLink';
 
 import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
+import { canOpenDesktopFromEvent } from '@/features/conversation/react/openDesktopEvent';
 import {
   conversationPageCacheManager,
   createConversationPageCacheKey,
@@ -528,7 +531,17 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     [pageCacheKey],
   );
 
+  /**
+   * 用户从消息里点开的资料库文档。
+   * 智能体配置同步会按缓存视图重开扩展页或关掉预览，这里记下后跳过那次覆盖，
+   * 避免刚打开的资料库被刷掉。切换会话或用户主动打开/关闭扩展页时清空。
+   */
+  const repoDocPreviewRef = useRef<{ id: string | number; uri: string } | null>(
+    null,
+  );
+
   const handleHidePagePreview = useCallback(() => {
+    repoDocPreviewRef.current = null;
     hidePagePreview();
     rememberWorkspaceView('closed');
   }, [hidePagePreview, rememberWorkspaceView]);
@@ -756,6 +769,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   // 打开扩展页面；自动初始化可跳过持久化，用户操作与会话事件默认记录。
   const handleOpenPreview = useCallback(
     (agent: any, persist = true) => {
+      repoDocPreviewRef.current = null;
       if (agent && agent?.expandPageArea && agent?.pageHomeIndex) {
         showPagePreview({
           name: t('PC.Pages.Chat.pagePreview'),
@@ -794,6 +808,10 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     }
 
     setAgentDetail(targetAgent);
+    // 资料库文档正在当前页预览时，不按智能体扩展页配置覆盖或关闭。
+    if (repoDocPreviewRef.current?.id === id) {
+      return;
+    }
     const preferredView =
       conversationPageCacheManager.getPanelPreference(pageCacheKey);
     if (!defaultFileTreeVisible && preferredView === undefined) {
@@ -1035,6 +1053,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       }
       resetInit();
       setSelectedComponentList([]);
+      repoDocPreviewRef.current = null;
       hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
       if (activeRef.current) setOpenPaymentModal(false);
     };
@@ -1052,6 +1071,27 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   useMessageEventDelegate({
     containerRef: messageViewRef,
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
+  });
+
+  // 资料库链接点进当前页右侧预览，复用扩展页面的 PagePreviewIframe。
+  const openRepoDocPreview = useCallback(
+    (uri: string) => {
+      repoDocPreviewRef.current = { id, uri };
+      setTerminalConsoleVisible(false);
+      closePreviewView();
+      showPagePreview({
+        name: t('PC.Pages.Chat.pagePreview'),
+        uri,
+        params: {},
+        executeId: '',
+      });
+    },
+    [id, closePreviewView, showPagePreview],
+  );
+  useRepoDocLinkPreview({
+    active,
+    containerRef: messageViewRef,
+    onOpen: openRepoDocPreview,
   });
 
   const {
@@ -1072,6 +1112,35 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   // 渲染线放在产物入口判断之前：V2 的消息列表在 runtime，不回写页面模型。
   // 图标是否出现直接看这份正在展示的列表，不必在 onSendMessage 上再打发送标记。
+  /**
+   * 会话事件打开远程桌面。条件与编排页共用：未隐藏桌面，且生效电脑是云电脑。
+   */
+  const openDesktopViewFromEvent = useCallback(
+    (conversationId: number) => {
+      if (
+        !canOpenDesktopFromEvent({
+          conversationId,
+          pageConversationId: id,
+          hideDesktop: effectiveAgent?.hideDesktop,
+          sandboxId:
+            getEffectiveSandboxId() ||
+            conversationInfo?.sandboxServerId ||
+            effectiveAgent?.sandboxId,
+        })
+      ) {
+        return;
+      }
+      void openDesktopView(conversationId);
+    },
+    [
+      conversationInfo?.sandboxServerId,
+      effectiveAgent,
+      getEffectiveSandboxId,
+      id,
+      openDesktopView,
+    ],
+  );
+
   const runtimeLine = useConversationRuntimeSession({
     conversationId: id,
     messageViewRef,
@@ -1082,7 +1151,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       runHistory,
       runHistoryItem,
       showPagePreview,
-      openDesktopView,
+      openDesktopView: openDesktopViewFromEvent,
       setCardList,
       setShowType,
       refreshFileListThrottled: handleRefreshFileList,
@@ -1178,6 +1247,16 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
   const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
 
+  /**
+   * 工具栏刷新：重拉根目录和已展开的每一层。
+   * 与会话结束、AppDevPro 文件预览的刷新按钮相同，走 fileTreeRefreshTrigger，
+   * 由工作区会话去刷已加载目录，而不是只刷当前选中的那一层。
+   */
+  const refreshExpandedFileTree = useCallback(async () => {
+    if (!id) return;
+    await refreshFileListImmediately(id);
+  }, [id, refreshFileListImmediately]);
+
   // 文件视图 props
   const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId: workspaceTaskSelectedFileId,
@@ -1212,7 +1291,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isFileTreePinned,
     onFileTreePinnedChange: setIsFileTreePinned,
     isCanDeleteSkillFile: true,
-    onRefreshFileTree: workspaceDirectoryFiles.refresh,
+    onRefreshFileTree: refreshExpandedFileTree,
     onOpenDirectory: workspaceDirectoryFiles.onOpenDirectory,
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
@@ -1567,6 +1646,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         if (viewMode === 'desktop') {
           openPreviewView(id);
         }
+      },
+      onWorkspaceFileSearchResult: (found) => {
+        fileView.markWorkspaceFileNotFound(!found);
       },
       onCommitSuccess: async () => {
         await fileView.refreshGitList();
@@ -2265,6 +2347,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   // 是否展开视图
   const isExpandedView = !!(pagePreviewData || isFileTreeVisible);
   const isPagePreviewVisible = Boolean(pagePreviewData && !isFileTreeVisible);
+  // 资料库文档不是页面模板，不提供「复制模板」。
+  const showPageCopyButton =
+    showCopyButton && !isRepoLibraryPath(String(pagePreviewData?.uri || ''));
   const pagePreviewContent = pagePreviewData ? (
     <>
       <PagePreviewIframe
@@ -2274,13 +2359,13 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
         onClose={handleHidePagePreview}
         showCloseButton={!effectiveAgent?.hideChatArea}
         titleClassName={cx(styles['title-style'])}
-        showCopyButton={showCopyButton}
+        showCopyButton={showPageCopyButton}
         allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
         onCopyClick={() => setOpenCopyModal(true)}
         copyButtonText={t('PC.Pages.Chat.copyTemplate')}
         copyButtonClassName={styles['copy-btn']}
       />
-      {showCopyButton && effectiveAgent && pagePreviewData.uri && (
+      {showPageCopyButton && effectiveAgent && pagePreviewData.uri && (
         <CopyToSpaceComponent
           spaceId={effectiveAgent.spaceId}
           mode={AgentComponentTypeEnum.Page}

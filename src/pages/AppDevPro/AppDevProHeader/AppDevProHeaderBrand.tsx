@@ -30,11 +30,11 @@ export interface AppDevProHeaderBrandProps {
   className?: string;
   /** 是否隐藏返回箭头 */
   hideBack?: boolean;
-  /** 全栈应用详情 */
+  /** 网站应用详情 */
   userAppInfo?: UserAppInfo | null;
   /** 空间 ID（创建应用时使用） */
   spaceId?: number;
-  /** 全栈应用 ID（返回项目详情页） */
+  /** 网站应用 ID（返回项目详情页） */
   appId?: number;
   /** 缓存工作区是否当前可见；隐藏时关闭 portal 弹窗。 */
   active?: boolean;
@@ -48,7 +48,7 @@ export interface AppDevProHeaderBrandProps {
  * AppDevPro 左栏顶部：返回、应用头像、应用名称、编辑入口与发布状态。
  *
  * @param props.hideBack 是否隐藏返回箭头
- * @param props.userAppInfo 全栈应用详情
+ * @param props.userAppInfo 网站应用详情
  * @param props.spaceId 空间 ID
  * @param props.onConfirmUpdate 更新应用成功回调
  * @returns 左栏应用信息头部
