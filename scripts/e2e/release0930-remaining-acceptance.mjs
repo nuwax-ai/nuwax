@@ -2,7 +2,7 @@
  * 9.30 剩余业务的真实页面验收。需要 pnpm run dev:release0930-mock。
  * 示例：E2E_BASE_URL=http://localhost:3102 E2E_TASK_SPACE_ID=4 E2E_PAGE_LABEL=p3
  *       pnpm run e2e:release0930
- * E2E_CASES=sensitive,auth,scope,captcha 可选择用例组；使用共享空间时不关闭它。
+ * E2E_CASES=sensitive,auth,idp,scope,captcha 可选择用例组；使用共享空间时不关闭它。
  * 所有业务修改均通过真实页面；控制 API 仅负责本地假数据重置、故障与权限配置。
  */
 import assert from 'node:assert/strict';
@@ -260,6 +260,7 @@ async function passwordLogin({
   );
   if (captcha) await typeCaptcha();
   await agree();
+  const beforeLogin = await requestCount('/api/user/passwordLogin');
   await clickButton('登 录');
   await page.waitForFunction(
     (path) => location.pathname === path,
@@ -267,6 +268,11 @@ async function passwordLogin({
     { timeout: 20000 },
   );
   await visible('前端验收账号');
+  assert.equal(
+    await requestCount('/api/user/passwordLogin'),
+    beforeLogin + 1,
+    '密码登录前置必须发出本次真实表单请求',
+  );
 }
 async function idp() {
   await control('reset');
@@ -348,6 +354,17 @@ async function idp() {
   await passwordLogin({ target: '/system/config/auth-method' });
   await goto('/system/config/auth-method?setting=account-bind');
   await visible('可绑定');
+  await control('configure', { idpError: 'E2E绑定失败' });
+  await page.click('button:has-text("验收 CAS")');
+  await visible('E2E绑定失败');
+  assert.equal((await state()).identities.length, 0, '绑定错误不得新增身份');
+  assert.equal((await page.url()).includes('setting='), false);
+  assert.equal(
+    (await page.url()).includes('idpError='),
+    false,
+    '绑定错误回跳应清理一次性错误参数',
+  );
+  await control('configure', { idpError: '' });
   await page.click('button:has-text("验收 CAS")');
   await visible('mock-external-user');
   assert.equal((await state()).identities.length, 1);
@@ -356,7 +373,7 @@ async function idp() {
     false,
     '绑定回跳应清理一次性打开参数',
   );
-  pass('账号绑定从真实面板跳转并返回/清理参数');
+  pass('账号绑定错误/成功回跳与一次性参数清理');
   await control('configure', { hasPassword: false });
   await page.click('button:has-text("解绑")');
   await clickButton('确 定');
@@ -514,11 +531,46 @@ async function openSettings(tab) {
   await page.click(`li:has-text(${JSON.stringify(tab)})`);
 }
 const captchaInput = 'input[placeholder="请输入图形验证码"]';
+async function waitCaptchaReady() {
+  await page.waitForFunction(() => {
+    const button = document.querySelector('button[aria-label="换一张"]');
+    const image = button?.querySelector('img');
+    return (
+      !!image?.complete &&
+      image.naturalWidth > 0 &&
+      !button.querySelector('.ant-spin-spinning')
+    );
+  });
+}
+async function waitCodeNoticeGone() {
+  await page.waitForFunction(
+    () =>
+      !Array.from(document.querySelectorAll('.ant-message-success')).some(
+        (n) =>
+          n.getClientRects().length && n.innerText.trim() === '验证码已发送',
+      ),
+  );
+}
+async function waitCodeSuccess() {
+  // VerifyCode 的静态说明也包含“验证码已发送”，只接受新出现的成功通知。
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll('.ant-message-success')).some(
+      (n) => n.getClientRects().length && n.innerText.trim() === '验证码已发送',
+    ),
+  );
+}
 async function typeCaptcha(answer = '2468') {
   // 按用户输入速度填写新图；密码登录本身有 800ms 重复提交保护。
+  await waitCaptchaReady();
   await page.fill(captchaInput, '');
   await page.focus(captchaInput);
   await page.keyboard.type(answer, { delay: 220 });
+  await page.waitForFunction(
+    (expected) =>
+      document.querySelector('input[placeholder="请输入图形验证码"]')?.value ===
+      expected,
+    answer,
+  );
 }
 async function verifyImageRefresh(previousCount, message) {
   await waitState(
@@ -541,6 +593,7 @@ async function sendFailureThenRetry(type, fillRecipient) {
   await control('configure', {
     failNext: { path: '/api/user/code/send', message: `E2E${type}发码失败` },
   });
+  await waitCodeNoticeGone();
   await clickButton('发送验证码');
   await visible(`E2E${type}发码失败`);
   await verifyImageRefresh(imageCount, '发码失败后未换图');
@@ -553,6 +606,7 @@ async function sendFailureThenRetry(type, fillRecipient) {
     ),
   );
   await typeCaptcha();
+  await waitCodeNoticeGone();
   await clickButton('发送验证码');
   await waitState(
     (s) =>
@@ -560,6 +614,7 @@ async function sendFailureThenRetry(type, fillRecipient) {
       sends + 2,
     '发码失败后未立即重试',
   );
+  await waitCodeSuccess();
   const second = await lastRequest('/api/user/code/send');
   assert.equal(second.body.type, type);
   assert.equal(second.body.captchaCode, '2468');
@@ -615,6 +670,7 @@ async function captcha() {
     'MockPass2468!',
   );
   await agree();
+  await waitCaptchaReady();
   const images = await requestCount('/api/user/captcha/image');
   await page.fill(captchaInput, '0000');
   await clickButton('登 录');
@@ -646,6 +702,7 @@ async function captcha() {
   pass('首次验证码发码携带登录页图码/失败可立即重发');
   await typeCaptcha();
   const sends = await requestCount('/api/user/code/send');
+  await waitCodeNoticeGone();
   await page.click('text="重新发送"');
   await waitState(
     (s) =>
@@ -653,9 +710,11 @@ async function captcha() {
       sends + 1,
     'VerifyCode重发未发出',
   );
+  await waitCodeSuccess();
   const resent = await lastRequest('/api/user/code/send');
   assert.equal(resent.body.captchaCode, '2468');
   assert.notEqual(resent.body.captchaId, initial.body.captchaId);
+  await page.waitForFunction(() => /\d+\s*秒后/.test(document.body.innerText));
   await gone(captchaInput);
   pass('VerifyCode重发使用新图码/发送后恢复倒计时');
   await passwordLogin({ captcha: true });
@@ -694,6 +753,7 @@ async function captcha() {
     false,
   );
   const offSends = await requestCount('/api/user/code/send');
+  await waitCodeNoticeGone();
   await page.click('text="重新发送"');
   await waitState(
     (s) =>
@@ -701,6 +761,7 @@ async function captcha() {
       offSends + 1,
     '图码关闭后的重发未发出',
   );
+  await waitCodeSuccess();
   let offRequest = await lastRequest('/api/user/code/send');
   assert.equal(Object.hasOwn(offRequest.body, 'captchaId'), false);
   assert.equal(Object.hasOwn(offRequest.body, 'captchaCode'), false);
@@ -713,6 +774,7 @@ async function captcha() {
     false,
   );
   let count = await requestCount('/api/user/code/send');
+  await waitCodeNoticeGone();
   await clickButton('发送验证码');
   await waitState(
     (s) =>
@@ -720,6 +782,7 @@ async function captcha() {
       count + 1,
     '关闭图码后重置密码未发码',
   );
+  await waitCodeSuccess();
   offRequest = await lastRequest('/api/user/code/send');
   assert.equal(Object.hasOwn(offRequest.body, 'captchaId'), false);
   assert.equal(Object.hasOwn(offRequest.body, 'captchaCode'), false);
@@ -732,6 +795,7 @@ async function captcha() {
     false,
   );
   count = await requestCount('/api/user/code/send');
+  await waitCodeNoticeGone();
   await clickButton('发送验证码');
   await waitState(
     (s) =>
@@ -739,6 +803,7 @@ async function captcha() {
       count + 1,
     '关闭图码后绑定邮箱未发码',
   );
+  await waitCodeSuccess();
   offRequest = await lastRequest('/api/user/code/send');
   assert.equal(Object.hasOwn(offRequest.body, 'captchaId'), false);
   assert.equal(Object.hasOwn(offRequest.body, 'captchaCode'), false);
@@ -757,14 +822,17 @@ try {
       await new Promise((r) => setTimeout(r, 1000));
     }
   }
-  for (const [name, run] of [
-    ['sensitive', sensitive],
-    ['auth', auth],
-    ['idp', idp],
-    ['scope', scope],
-    ['captcha', captcha],
+  for (const [name, run, expected] of [
+    ['sensitive', sensitive, 4],
+    ['auth', auth, 2],
+    ['idp', idp, 6],
+    ['scope', scope, 6],
+    ['captcha', captcha, 6],
   ]) {
-    if (selected.includes(name)) await run();
+    if (!selected.includes(name)) continue;
+    const previous = passed.length;
+    await run();
+    assert.equal(passed.length - previous, expected, `${name} 用例未全部完成`);
   }
   console.log(`业务浏览器验收：${passed.length} 项通过`);
   if (!shared) await task.finish({ keep: [] });
