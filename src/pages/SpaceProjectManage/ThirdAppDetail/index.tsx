@@ -31,6 +31,7 @@ import {
   type ThirdAppOauth2AppInfo,
   type ThirdAppOauth2CredentialInfo,
   type ThirdAppOauth2Info,
+  type ThirdAppOauth2SettingSaveParams,
 } from '../services/thirdAppOauth2';
 import styles from './index.less';
 
@@ -77,7 +78,7 @@ const ThirdAppDetail: React.FC = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [homepageUrl, setHomepageUrl] = useState('');
   const [redirectUri, setRedirectUri] = useState('');
-  /** 勾选中的 scope；与生效值不同才随保存提交审核 */
+  /** 勾选中的 scope；与当前编辑初值不同才随保存提交审核 */
   const [scopeDraft, setScopeDraft] = useState<string[]>([]);
   const [scopeSetting, setScopeSetting] = useState<ThirdAppOauth2Info>();
   const [openPublishModal, setOpenPublishModal] = useState<boolean>(false);
@@ -145,6 +146,7 @@ const ThirdAppDetail: React.FC = () => {
       manual: true,
       onSuccess: (
         result: ThirdAppOauth2Info | RequestResponse<ThirdAppOauth2Info>,
+        requestParams: ThirdAppOauth2SettingSaveParams[],
       ) => {
         const info = pickResponseData(result);
         if (info) {
@@ -157,8 +159,9 @@ const ThirdAppDetail: React.FC = () => {
           applyScopeSetting(info);
         }
         message.success(
-          // 回包为待审核即本次提交了 scope 变更
-          info?.scopeApplyStatus === OAuth2ScopeApplyStatusEnum.Pending
+          // 本次确实提交 scope 且回包待审，才提示提交审核。
+          requestParams[0]?.scopes !== undefined &&
+            info?.scopeApplyStatus === OAuth2ScopeApplyStatusEnum.Pending
             ? dict('PC.Components.OAuthScopeSetting.submitted')
             : dict('PC.Common.Global.saveSuccess'),
         );
@@ -305,7 +308,7 @@ const ThirdAppDetail: React.FC = () => {
       homepageUrl: trimmedHomepageUrl,
       redirectUri: trimmedRedirectUri,
       // 勾选未变不传：只改地址时不产生审核单
-      ...(scopesChanged(scopeSetting?.scopes, scopeDraft)
+      ...(scopesChanged(draftScopesOf(scopeSetting), scopeDraft)
         ? { scopes: scopeDraft }
         : {}),
     });
