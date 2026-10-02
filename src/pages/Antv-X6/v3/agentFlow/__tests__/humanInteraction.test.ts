@@ -59,6 +59,44 @@ const ctx = { generatePortConfig: mockGeneratePortConfig };
 // ========== 测试用例 ==========
 
 describe('HumanInteraction Handler (ask mode)', () => {
+  describe('generateEdges', () => {
+    it('preserves complete option UUIDs and loop zIndex', () => {
+      const uuid = '376b484b-6baa-430f-ac9a-1220a2f39162';
+      const node = createHitlNode({
+        answerType: HitlAnswerTypeEnum.SELECT,
+        options: [{ uuid, nextNodeIds: [3, 5] }],
+      });
+      expect(
+        humanInteractionHandler.generateEdges!(node, { isLoopNode: true }),
+      ).toEqual([
+        { source: `10-hitl-option-${uuid}-out`, target: '3', zIndex: 5 },
+        { source: `10-hitl-option-${uuid}-out`, target: '5', zIndex: 5 },
+      ]);
+    });
+
+    it.each([HitlAnswerTypeEnum.TEXT, HitlAnswerTypeEnum.FORM])(
+      'returns null in %s mode',
+      (answerType) => {
+        const node = createHitlNode({
+          answerType,
+          options: [{ uuid: 'old-option', nextNodeIds: [3] }],
+        });
+        expect(
+          humanInteractionHandler.generateEdges!(node, { isLoopNode: false }),
+        ).toBeNull();
+      },
+    );
+
+    it('returns null when SELECT has options but no actual option edges', () => {
+      const node = createHitlNode({
+        answerType: HitlAnswerTypeEnum.SELECT,
+        options: [{ uuid: 'option-without-edges', nextNodeIds: [] }],
+      });
+      expect(
+        humanInteractionHandler.generateEdges!(node, { isLoopNode: false }),
+      ).toBeNull();
+    });
+  });
   describe('generatePorts', () => {
     it('should generate a single normal out port in ask text mode', () => {
       const node = createHitlNode({ answerType: HitlAnswerTypeEnum.TEXT });
@@ -264,8 +302,8 @@ describe('HumanInteraction Handler (ask mode)', () => {
       const result = humanInteractionHandler.initBranchMap!(node);
 
       expect(result).not.toBeNull();
-      expect(result!.get('hitl-option-o1')).toEqual([3]);
-      expect(result!.get('hitl-option-o2')).toEqual([5]);
+      expect(result!.get('hitl-option-o1')).toEqual([]);
+      expect(result!.get('hitl-option-o2')).toEqual([]);
     });
   });
 
@@ -319,9 +357,20 @@ describe('HumanInteraction Handler (ask mode)', () => {
   });
 
   describe('isSpecialBranchNode', () => {
-    it('should return true in options mode', () => {
-      const node = createHitlNode({ answerType: HitlAnswerTypeEnum.SELECT });
+    it('should return true when options mode has actual branch edges', () => {
+      const node = createHitlNode({
+        answerType: HitlAnswerTypeEnum.SELECT,
+        options: [{ uuid: 'o1', nextNodeIds: [3] }],
+      });
       expect(humanInteractionHandler.isSpecialBranchNode!(node)).toBe(true);
+    });
+
+    it('should allow normal fallback when options mode has no branch edges', () => {
+      const node = createHitlNode({
+        answerType: HitlAnswerTypeEnum.SELECT,
+        options: [{ uuid: 'o1', nextNodeIds: [] }],
+      });
+      expect(humanInteractionHandler.isSpecialBranchNode!(node)).toBe(false);
     });
 
     it('should return false in text mode', () => {

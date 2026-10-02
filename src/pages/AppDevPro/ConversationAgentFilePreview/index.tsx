@@ -5,12 +5,12 @@ import type { ChangeFileInfo } from '@/components/business-component/FileTreePre
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import FilePathHeader from './FilePathHeader';
-import {
-  WORKSPACE_PREVIEW_TOOL_IDS,
-  type PreviewTab,
-  type PreviewToolId,
-} from './hooks/usePreviewTabs';
+import type { PreviewTab } from './hooks/usePreviewTabs';
 import styles from './index.less';
+import {
+  PREVIEW_TOOL_DEFINITIONS,
+  type PreviewToolId,
+} from './previewToolDefinitions';
 import ToolTabContent from './ToolTabContent';
 
 const cx = classNames.bind(styles);
@@ -33,6 +33,8 @@ export interface ConversationAgentFilePreviewProps {
   databasePanel?: React.ReactNode;
   /** 「数据库配置」页签内容 */
   databaseConfigPanel?: React.ReactNode;
+  /** 新增工具面板通过映射注入，不必增加渲染分支；已有独立 props 继续兼容。 */
+  toolPanels?: Partial<Record<PreviewToolId, React.ReactNode>>;
   /** 外层容器类名（来自 useFileTreePreviewView） */
   providerClassName?: string;
   className?: string;
@@ -53,6 +55,7 @@ const ConversationAgentFilePreview: React.FC<
   versionPanel,
   databasePanel,
   databaseConfigPanel,
+  toolPanels,
   providerClassName,
   className,
 }) => {
@@ -76,17 +79,6 @@ const ConversationAgentFilePreview: React.FC<
 
   /** 是否显示文件预览内容 */
   const showFilePreview = activeTab?.type === 'file' && !showDiff;
-  /** 当前激活的工作区工具 ID */
-  const activeWorkspaceToolId =
-    activeTab?.type === 'tool' &&
-    activeTab.toolId &&
-    WORKSPACE_PREVIEW_TOOL_IDS.includes(activeTab.toolId)
-      ? activeTab.toolId
-      : null;
-  /** 是否显示其他工具内容 */
-  const showOtherToolContent =
-    activeTab?.type === 'tool' && !!activeTab.toolId && !activeWorkspaceToolId;
-
   /** 工作区工具页签 → 面板内容映射 */
   const workspacePanelMap = useMemo(
     (): Partial<Record<PreviewToolId, React.ReactNode>> => ({
@@ -94,8 +86,19 @@ const ConversationAgentFilePreview: React.FC<
         <div className={cx(styles['app-preview-placeholder'])} />
       ),
       'version-control': versionPanel,
+      database: databasePanel ?? <ToolTabContent toolId="database" />,
+      'database-config': databaseConfigPanel ?? (
+        <ToolTabContent toolId="database-config" />
+      ),
+      ...toolPanels,
     }),
-    [previewPanel, versionPanel],
+    [
+      previewPanel,
+      versionPanel,
+      databasePanel,
+      databaseConfigPanel,
+      toolPanels,
+    ],
   );
 
   /** 按优先级渲染预览区主体（diff > 文件 > 工作区页签 > 其他） */
@@ -124,35 +127,15 @@ const ConversationAgentFilePreview: React.FC<
       );
     }
 
-    /** 显示工作区工具页签内容 */
-    if (activeWorkspaceToolId) {
-      const panel = workspacePanelMap[activeWorkspaceToolId];
-      if (panel) {
+    if (activeTab?.type === 'tool' && activeTab.toolId) {
+      const toolId = activeTab.toolId;
+      const panel = workspacePanelMap[toolId];
+      if (panel !== null && panel !== undefined) {
         return <div className={cx(styles['workspace-panel'])}>{panel}</div>;
       }
-    }
-
-    /** 显示数据库页签内容 */
-    if (activeTab?.type === 'tool' && activeTab.toolId === 'database') {
-      return (
-        <div className={cx(styles['workspace-panel'])}>
-          {databasePanel ?? <ToolTabContent toolId="database" />}
-        </div>
-      );
-    }
-
-    /** 显示数据库配置页签内容 */
-    if (activeTab?.type === 'tool' && activeTab.toolId === 'database-config') {
-      return (
-        <div className={cx(styles['workspace-panel'])}>
-          {databaseConfigPanel ?? <ToolTabContent toolId="database-config" />}
-        </div>
-      );
-    }
-
-    /** 显示其他工具内容 */
-    if (showOtherToolContent && activeTab?.toolId) {
-      return <ToolTabContent toolId={activeTab.toolId} />;
+      if (PREVIEW_TOOL_DEFINITIONS[toolId].content === 'placeholder') {
+        return <ToolTabContent toolId={toolId} />;
+      }
     }
 
     return <div className={cx(styles['empty-preview'])} />;
@@ -164,13 +147,9 @@ const ConversationAgentFilePreview: React.FC<
     active,
     filePathHeaderProps,
     renderPreviewContent,
-    activeWorkspaceToolId,
     workspacePanelMap,
-    showOtherToolContent,
     activeTab?.type,
     activeTab?.toolId,
-    databasePanel,
-    databaseConfigPanel,
   ]);
 
   return (

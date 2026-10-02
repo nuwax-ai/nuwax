@@ -1,10 +1,9 @@
-import {
-  BG_ICON_AGENTFLOW_AGENT,
-  BG_ICON_AGENTFLOW_HUMAN_ASK,
-  BG_ICON_AGENTFLOW_ROUTE_DECISION,
-} from '@/constants/images.constants';
 import { t } from '@/services/i18nRuntime';
-import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  FlowKindEnum,
+  NodeShapeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import type { StencilChildNode, StencilList } from '@/types/interfaces/graph';
 import {
   InputConfigs,
@@ -19,7 +18,7 @@ import {
   outPutConfigs,
   tableOptions,
 } from '../params';
-import { HitlModeEnum } from './agentFlow/enums/hitlMode';
+import { getNodeDefinitionsForFlow } from './config/nodeDefinitions';
 import { assignFlowKinds } from './flowKind/flowKindConfig';
 
 /** 给子节点列表统一附加 flowKinds 标记 */
@@ -66,33 +65,20 @@ const buildV3AsideList = (): StencilList[] => {
 const agentFlowProcessGroup: StencilList = {
   name: t('PC.Pages.AgentFlowParams.groupAgentFlowProcess'),
   key: 'groupAgentFlowProcess',
-  children: tagFlowKinds([
-    {
-      name: t('PC.Pages.AgentFlowParams.nodeAgentName'),
+  children: getNodeDefinitionsForFlow(FlowKindEnum.AgentFlow).map(
+    ({ type, palette, appearance, flowKinds }) => ({
+      type,
+      name: t(palette.nameKey),
+      description: t(palette.descriptionKey),
       icon: null,
-      bgIcon: BG_ICON_AGENTFLOW_AGENT,
-      type: NodeTypeEnum.Agent,
-      shape: NodeShapeEnum.General,
-      description: t('PC.Pages.AgentFlowParams.nodeAgentDescription'),
-    },
-    {
-      name: t('PC.Pages.AgentFlowParams.nodeRouteDecisionName'),
-      icon: null,
-      bgIcon: BG_ICON_AGENTFLOW_ROUTE_DECISION,
-      type: NodeTypeEnum.RouteDecision,
-      shape: NodeShapeEnum.General,
-      description: t('PC.Pages.AgentFlowParams.nodeRouteDecisionDescription'),
-    },
-    {
-      name: t('PC.Pages.AgentFlowParams.nodeHumanAskName'),
-      icon: null,
-      bgIcon: BG_ICON_AGENTFLOW_HUMAN_ASK,
-      type: NodeTypeEnum.HumanInteraction,
-      shape: NodeShapeEnum.General,
-      description: t('PC.Pages.AgentFlowParams.nodeHumanAskDescription'),
-      nodeConfig: { hitlMode: HitlModeEnum.Ask } as any,
-    },
-  ]),
+      bgIcon: appearance.bgIcon,
+      shape: palette.shape,
+      flowKinds: [...flowKinds],
+      ...(palette.createNodeConfig && {
+        nodeConfig: palette.createNodeConfig(),
+      }),
+    }),
+  ),
 };
 
 export const asideList: StencilList[] = [

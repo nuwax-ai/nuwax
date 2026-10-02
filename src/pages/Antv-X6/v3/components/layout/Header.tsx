@@ -10,7 +10,6 @@ import { FlowKindEnum, PermissionsEnum } from '@/types/enums/common';
 import { getTime } from '@/utils';
 import { jumpBack } from '@/utils/router';
 import {
-  ApartmentOutlined,
   CaretRightOutlined,
   CheckCircleFilled,
   ClockCircleOutlined,
@@ -53,7 +52,6 @@ interface HeaderProp {
   onManualSave?: () => Promise<boolean>;
   onBack?: () => void;
   // AgentFlow 专用
-  onAutoArrange?: () => void;
   handleTestRun?: () => void;
   testRunLoading?: boolean;
   flowControlModel?: string;
@@ -75,7 +73,6 @@ const Header: React.FC<HeaderProp> = ({
   onManualSave,
   onBack,
   // AgentFlow 专用
-  onAutoArrange,
   handleTestRun,
   testRunLoading,
   flowControlModel,
@@ -276,18 +273,6 @@ const Header: React.FC<HeaderProp> = ({
                   { label: 'qwen-plus', value: 'qwen-plus' },
                 ]}
               />
-            )}
-            {/* AgentFlow: 自动排列按钮 */}
-            {isAgentFlow && onAutoArrange && (
-              <Tooltip title={t('PC.Pages.AntvX6Header.autoArrange')}>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<ApartmentOutlined />}
-                  onClick={onAutoArrange}
-                  style={{ marginLeft: 4 }}
-                />
-              </Tooltip>
             )}
             <Popover content={description}>
               <InfoCircleOutlined

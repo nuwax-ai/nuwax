@@ -1,4 +1,4 @@
-import { AssistantRoleEnum } from '@/types/enums/agent';
+import { AssistantRoleEnum, MessageTypeEnum } from '@/types/enums/agent';
 import type {
   MessageInfo,
   RoleInfo,
@@ -27,18 +27,31 @@ const roleInfo: RoleInfo = {
   system: { name: 'System', avatar: '' },
 };
 
+const createMessage = (overrides: Partial<MessageInfo> = {}): MessageInfo => ({
+  id: 'message-1',
+  index: 0,
+  role: AssistantRoleEnum.ASSISTANT,
+  time: '2026-10-02 10:00:00',
+  componentExecutedList: [],
+  messageType: MessageTypeEnum.ASSISTANT,
+  tenantId: 1,
+  senderType: 'AGENT',
+  senderId: '5',
+  userId: 1,
+  agentId: 5,
+  ...overrides,
+});
+
 describe('ChatContentArea', () => {
   it('消息 ID 不变时不因终态快照补齐 index 而更换 React key', () => {
-    const streamingMessage = {
-      id: 'message-1',
+    const streamingMessage = createMessage({
       index: undefined,
-      role: AssistantRoleEnum.ASSISTANT,
       text: 'streaming result',
-    } as MessageInfo;
-    const persistedMessage = {
+    });
+    const persistedMessage: MessageInfo = {
       ...streamingMessage,
       index: 42,
-    } as MessageInfo;
+    };
 
     expect(getChatMessageRenderKey(streamingMessage, 0)).toBe(
       getChatMessageRenderKey(persistedMessage, 0),
@@ -60,11 +73,10 @@ describe('ChatContentArea', () => {
       handleMessageSend: vi.fn(),
       showTaskExecutingWait: false,
     });
-    const message = {
-      id: 'message-1',
-      role: AssistantRoleEnum.ASSISTANT,
+    const message = createMessage({
+      index: undefined,
       text: 'streaming result',
-    } as MessageInfo;
+    });
     const { rerender } = render(<ChatContentArea {...createProps(message)} />);
     const originalNode = screen.getByTestId('chat-view');
 
@@ -74,11 +86,9 @@ describe('ChatContentArea', () => {
   });
 
   it('把会话 ID 传给历史消息 ChatView，以便读取 OpenUI artifact', () => {
-    const message = {
-      id: 'message-1',
-      role: AssistantRoleEnum.ASSISTANT,
+    const message = createMessage({
       text: 'openui result',
-    } as MessageInfo;
+    });
 
     render(
       <ChatContentArea
@@ -107,11 +117,9 @@ describe('ChatContentArea', () => {
     // 回归背景：门槛曾对比本地列表长度与 MESSAGE_PAGE_SIZE，模型层水合会把
     // 整页 10 条缩成 9，导致哨兵永不渲染、向上滚动加载历史失效
     const loadMoreRef = createRef<HTMLDivElement>();
-    const message = {
-      id: 'message-1',
-      role: AssistantRoleEnum.ASSISTANT,
+    const message = createMessage({
       text: 'result',
-    } as MessageInfo;
+    });
 
     render(
       <ChatContentArea
@@ -141,11 +149,9 @@ describe('ChatContentArea', () => {
 
   it('isMoreMessage 为 false 时不渲染哨兵', () => {
     const loadMoreRef = createRef<HTMLDivElement>();
-    const message = {
-      id: 'message-1',
-      role: AssistantRoleEnum.ASSISTANT,
+    const message = createMessage({
       text: 'result',
-    } as MessageInfo;
+    });
 
     render(
       <ChatContentArea

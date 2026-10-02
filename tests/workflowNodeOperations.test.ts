@@ -10,7 +10,13 @@
  */
 import WorkflowProxyV3 from '@/pages/Antv-X6/v3/services/workflowProxyV3';
 import type { WorkflowDataV3 } from '@/pages/Antv-X6/v3/types/interfaces';
+import {
+  AgentComponentTypeEnum,
+  AllowCopyEnum,
+  OnlyTemplateEnum,
+} from '@/types/enums/agent';
 import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { ConditionBranchTypeEnum } from '@/types/enums/node';
 import type { ChildNode } from '@/types/interfaces/graph';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -46,7 +52,7 @@ const createLinearWorkflow = (): WorkflowDataV3 => ({
       nextNodeIds: [3],
       nodeConfig: {
         extension: { x: 300, y: 200, width: 200, height: 150 },
-        modelId: 'gpt-4',
+        modelId: 1,
         skillComponentConfigs: [],
       },
     }),
@@ -81,8 +87,20 @@ const createBranchWorkflow = (): WorkflowDataV3 => ({
       nodeConfig: {
         extension: { x: 300, y: 200 },
         conditionBranchConfigs: [
-          { uuid: 'branch-1', conditionArgs: [], nextNodeIds: [3] },
-          { uuid: 'branch-2', conditionArgs: [], nextNodeIds: [4] },
+          {
+            uuid: 'branch-1',
+            branchType: ConditionBranchTypeEnum.IF,
+            conditionType: null,
+            conditionArgs: [],
+            nextNodeIds: [3],
+          },
+          {
+            uuid: 'branch-2',
+            branchType: ConditionBranchTypeEnum.ELSE,
+            conditionType: null,
+            conditionArgs: [],
+            nextNodeIds: [4],
+          },
         ],
       },
     }),
@@ -329,8 +347,25 @@ describe('Workflow 节点操作集成', () => {
         nextNodeIds: [3],
         nodeConfig: {
           extension: { x: 300, y: 200, width: 200, height: 150 },
-          modelId: 'gpt-4-turbo',
-          skillComponentConfigs: [{ typeId: 1, name: '插件1' }] as any,
+          modelId: 2,
+          skillComponentConfigs: [
+            {
+              typeId: 1,
+              name: '插件1',
+              description: '',
+              allowCopy: AllowCopyEnum.Yes,
+              category: 'plugin',
+              icon: '',
+              id: 1,
+              onlyTemplate: OnlyTemplateEnum.No,
+              publishedSpaceIds: [],
+              statistics: null,
+              targetId: 1,
+              targetType: AgentComponentTypeEnum.Plugin,
+              type: NodeTypeEnum.Plugin,
+              config: {},
+            },
+          ],
         },
       });
 
@@ -339,7 +374,7 @@ describe('Workflow 节点操作集成', () => {
 
       const node = proxy.getNodeById(2)!;
       expect(node.name).toBe('更新的大模型');
-      expect(node.nodeConfig?.modelId).toBe('gpt-4-turbo');
+      expect(node.nodeConfig?.modelId).toBe(2);
       expect(node.nodeConfig?.skillComponentConfigs).toHaveLength(1);
     });
 
@@ -479,9 +514,9 @@ describe('Workflow 节点操作集成', () => {
           uuid: 'branch-3',
           conditionArgs: [],
           nextNodeIds: [100],
-          branchType: 'condition',
-          conditionType: 'and',
-        } as any);
+          branchType: ConditionBranchTypeEnum.ELSE_IF,
+          conditionType: 'AND',
+        });
       }
       proxy.updateNode(conditionNode);
 

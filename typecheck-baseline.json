@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "typescriptVersion": "5.8.3",
+  "domains": {
+    "nodes": [],
+    "conversation": [],
+    "workspace": [],
+    "contracts": []
+  }
+}

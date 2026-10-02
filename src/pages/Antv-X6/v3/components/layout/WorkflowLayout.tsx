@@ -35,6 +35,7 @@ import { TestRunParams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, FormInstance, Spin } from 'antd';
+import classNames from 'classnames';
 import React, {
   MutableRefObject,
   useCallback,
@@ -42,6 +43,7 @@ import React, {
   useMemo,
 } from 'react';
 import VersionAction from '../../../components/VersionAction';
+import styles from '../../indexV3.less';
 import { clearPendingNodeCreateSession } from '../../utils/nodeCreateSession';
 import { returnBackgroundColor, returnImg } from '../../utils/workflowV3';
 import GraphContainer from '../graph/GraphContainer';
@@ -49,8 +51,6 @@ import NodePanelDrawer from '../panels/PropertyPanel';
 import ControlPanel from './ControlPanel';
 import ErrorList from './ErrorList';
 import Header from './Header';
-import styles from '../../indexV3.less';
-import classNames from 'classnames';
 
 const cx = classNames.bind(styles);
 
@@ -149,7 +149,7 @@ export interface WorkflowLayoutProps {
   showVersionHistory: boolean;
   onBack?: () => void;
 
-  // AgentFlow Header extensions
+  // AgentFlow canvas extensions
   onAutoArrange?: () => void;
   handleTestRun?: () => void;
   flowControlModel?: string;
@@ -221,7 +221,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   showCreateWorkflow,
   showVersionHistory,
   onBack,
-  // AgentFlow Header extensions
+  // AgentFlow canvas extensions
   onAutoArrange,
   handleTestRun: handleTestRunProp,
   flowControlModel,
@@ -294,7 +294,6 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
           onRedo={onRedo}
           onManualSave={onManualSave}
           onBack={onBack}
-          onAutoArrange={onAutoArrange}
           handleTestRun={handleTestRunProp}
           testRunLoading={testRunLoading}
           flowControlModel={flowControlModel}
@@ -335,6 +334,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         handleTestRun={testRunAll}
         testRunLoading={testRunLoading}
         zoomSize={(info?.extension?.size as number) ?? 1}
+        onAutoArrange={onAutoArrange}
       />
 
       <FoldWrap

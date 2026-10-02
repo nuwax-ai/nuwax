@@ -11,7 +11,6 @@ import KnowledgeInsertNodePanel from '../component/knowledgeInsert';
 import Library from '../component/library';
 import NodeItem from '../component/nodeItem';
 import ReferenceNode from '../component/pluginNode';
-import { isAgentFlowPanelNode } from '../flowKind/flowKindConfig';
 
 const {
   StartNode,
@@ -60,7 +59,7 @@ export interface NodeComponentProps {
 
 /**
  * AgentFlow 下有独立属性面板的节点 → 组件映射。
- * 配合 `isAgentFlowPanelNode()` 守卫使用，不在此映射中的节点走通用 nodeMap。
+ * 映射本身决定是否使用独立面板；不存在时走通用 nodeMap。
  */
 const agentFlowPanelMap: Partial<
   Record<NodeTypeEnum, (p: NodeComponentProps) => React.ReactElement>
@@ -131,12 +130,12 @@ export const getNodeComponent = (
   };
 
   // AgentFlow 模式：优先使用 AgentFlow 专属面板
-  if (
-    flowKind === FlowKindEnum.AgentFlow &&
-    isAgentFlowPanelNode(nodeType) &&
-    agentFlowPanelMap[nodeType]
-  ) {
-    return agentFlowPanelMap[nodeType]!(commonProps);
+  const agentFlowPanel =
+    flowKind === FlowKindEnum.AgentFlow
+      ? agentFlowPanelMap[nodeType]
+      : undefined;
+  if (agentFlowPanel) {
+    return agentFlowPanel(commonProps);
   }
 
   return nodeMap[nodeType]?.(commonProps) ?? <></>;

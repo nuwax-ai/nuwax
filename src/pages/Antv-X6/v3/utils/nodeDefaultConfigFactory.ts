@@ -5,10 +5,6 @@
  */
 
 import {
-  createEmptyConditionArg,
-  createOtherIntentBranch,
-} from '@/pages/Antv-X6/v3/agentFlow/adapters/routeConditionAdapter';
-import {
   AnswerTypeEnum,
   DataTypeEnum,
   NodeShapeEnum,
@@ -17,6 +13,13 @@ import {
 import { ChildNode } from '@/types/interfaces/graph';
 import { Extension, NodeConfig } from '@/types/interfaces/node';
 
+import {
+  createDefaultArg,
+  createDefaultExceptionHandleConfig,
+  createDefaultIntentConfig,
+  generateDefaultConfigUuid as generateUuid,
+} from '../config/nodeDefaultHelpers';
+import { getNodeDefinition, NODE_DEFINITIONS } from '../config/nodeDefinitions';
 import {
   LOOP_END_NODE_X_OFFSET,
   LOOP_INNER_NODE_Y_OFFSET,
@@ -61,69 +64,10 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.LoopCondition]: 'Loop Condition',
   [NodeTypeEnum.Interval]: 'Interval',
   [NodeTypeEnum.TextProcessing]: 'Text Processing',
-  // AgentFlow 专用（默认名与侧边栏 i18n 名称保持一致）
-  [NodeTypeEnum.Agent]: '智能体',
-  [NodeTypeEnum.HumanInteraction]: '询问用户',
-  [NodeTypeEnum.RouteDecision]: '路由决策',
+  ...Object.fromEntries(
+    NODE_DEFINITIONS.map(({ type, defaultName }) => [type, defaultName]),
+  ),
 };
-
-/**
- * 生成唯一 ID
- */
-function generateUuid(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-}
-
-/**
- * 创建默认参数对象
- * 与后端返回的 inputArgs/outputArgs 结构对齐
- */
-interface DefaultArgOptions {
-  key: string;
-  name: string;
-  description?: string;
-  dataType: DataTypeEnum;
-  require?: boolean;
-  systemVariable?: boolean;
-  bindValueType?: string | null;
-  bindValue?: string | null;
-  subArgs?: any[] | null;
-}
-
-function createDefaultArg(options: DefaultArgOptions): any {
-  return {
-    key: options.key,
-    name: options.name,
-    displayName: null,
-    description: options.description || '',
-    dataType: options.dataType,
-    originDataType: null,
-    require: options.require ?? false,
-    enable: true,
-    systemVariable: options.systemVariable ?? false,
-    bindValueType: options.bindValueType ?? null,
-    bindValue: options.bindValue ?? null,
-    subArgs: options.subArgs ?? null,
-    inputType: null,
-    selectConfig: null,
-    loopId: null,
-    children: options.subArgs ?? null, // 与 subArgs 保持同步
-  };
-}
-
-/**
- * 创建默认异常处理配置
- * 与后端返回的 exceptionHandleConfig 结构对齐
- */
-function createDefaultExceptionHandleConfig(): any {
-  return {
-    retryCount: 0,
-    timeout: 180,
-    exceptionHandleType: 'INTERRUPT',
-    specificContent: {},
-    exceptionHandleNodeIds: [],
-  };
-}
 
 /**
  * 创建默认条件分支配置
@@ -148,24 +92,6 @@ function createDefaultConditionBranches(): any[] {
 }
 
 /**
- * 创建默认意图配置
- */
-function createDefaultIntentConfig(): any[] {
-  return [
-    {
-      uuid: `intent-${generateUuid()}`,
-      name: '',
-      intent: '',
-      intentType: 'NORMAL',
-      conditionType: 'AND',
-      conditionArgs: [createEmptyConditionArg()],
-      nextNodeIds: [],
-    },
-    createOtherIntentBranch(),
-  ];
-}
-
-/**
  * 创建默认问答选项
  */
 function createDefaultQAOptions(): any[] {
@@ -186,6 +112,9 @@ export function createDefaultNodeConfig(
   type: NodeTypeEnum,
   extension?: Extension,
 ): NodeConfig {
+  const definition = getNodeDefinition(type);
+  if (definition) return definition.createDefaultConfig(extension);
+
   const baseConfig: NodeConfig = {
     extension: extension || { x: 0, y: 0 },
     exceptionHandleConfig: createDefaultExceptionHandleConfig(),
@@ -432,64 +361,6 @@ export function createDefaultNodeConfig(
         conditionArgs: [],
         inputArgs: [],
         outputArgs: [],
-      };
-
-    case NodeTypeEnum.Agent:
-      return {
-        ...baseConfig,
-        extraPrompt: '',
-        selfLoopTimes: 0,
-        reminderPrompt: '',
-        inputArgs: [],
-        outputArgs: [
-          createDefaultArg({
-            key: 'output',
-            name: 'output',
-            dataType: DataTypeEnum.String,
-            description: 'Agent reply',
-            require: true,
-            systemVariable: true,
-          }),
-        ],
-      };
-
-    case NodeTypeEnum.HumanInteraction:
-      return {
-        ...baseConfig,
-        question: '',
-        answerType: AnswerTypeEnum.TEXT,
-        options: [],
-        formArgs: [],
-        inputArgs: [],
-        outputArgs: [
-          createDefaultArg({
-            key: 'answer',
-            name: 'answer',
-            dataType: DataTypeEnum.String,
-            description: 'User answer',
-            require: true,
-            systemVariable: true,
-          }),
-        ],
-      };
-
-    case NodeTypeEnum.RouteDecision:
-      return {
-        ...baseConfig,
-        intentConfigs: createDefaultIntentConfig(),
-        extraPrompt: '',
-        modelId: undefined,
-        inputArgs: [],
-        outputArgs: [
-          createDefaultArg({
-            key: 'matchedIntent',
-            name: 'matchedIntent',
-            dataType: DataTypeEnum.String,
-            description: 'Matched intent',
-            require: true,
-            systemVariable: true,
-          }),
-        ],
       };
 
     default:

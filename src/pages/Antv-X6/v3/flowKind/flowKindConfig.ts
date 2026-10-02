@@ -1,14 +1,18 @@
 /**
- * flowKind 节点归属与 UI 配置（单一数据源）
+ * flowKind 节点归属与 UI 配置
  *
- * 所有 flowKind 相关的节点类型分组、AgentFlow UI 行为开关、纯工具函数
- * 统一在此维护。供 NodeRegistry / ParamsV3 / 布局组件等共享 v3 代码消费。
+ * 保留 Workflow 节点分组，AgentFlow 已迁移节点的归属和顺序从纯定义派生。
+ * UI 行为开关和纯工具函数供 ParamsV3 / 布局组件等共享 v3 代码消费。
  *
  * 注意：此处同时覆盖 Workflow 与 AgentFlow 两种模式，故置于中立位置
  *（不放在 agentFlow/ 下，避免共享代码倒依赖 AgentFlow 子目录）。
  */
 
 import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  getNodeDefinition,
+  getNodeDefinitionsForFlow,
+} from '../config/nodeDefinitions';
 
 // ──────────────────────────────────────────────
 //  1. 节点类型 → flowKind 归属
@@ -48,44 +52,20 @@ export const WORKFLOW_ONLY_NODE_TYPES: ReadonlySet<NodeTypeEnum> = new Set([
 /**
  * AgentFlow 专属节点类型（extensionRegistry 注册范围一致）。
  */
-export const AGENT_FLOW_NODE_TYPES: ReadonlySet<NodeTypeEnum> = new Set([
-  NodeTypeEnum.Agent,
-  NodeTypeEnum.HumanInteraction,
-  NodeTypeEnum.RouteDecision,
-]);
+export const AGENT_FLOW_NODE_TYPES: ReadonlySet<NodeTypeEnum> = new Set(
+  getNodeDefinitionsForFlow(FlowKindEnum.AgentFlow).map(({ type }) => type),
+);
 
 /**
  * AgentFlow 节点选择面板展示顺序（2×2 网格：从左到右、从上到下）。
  */
 export const AGENT_FLOW_STENCIL_ORDER: readonly NodeTypeEnum[] = [
-  NodeTypeEnum.Agent,
-  NodeTypeEnum.RouteDecision,
-  NodeTypeEnum.HumanInteraction,
+  ...getNodeDefinitionsForFlow(FlowKindEnum.AgentFlow).map(({ type }) => type),
   NodeTypeEnum.Workflow,
 ];
 
 // ──────────────────────────────────────────────
-//  2. AgentFlow 属性面板映射
-// ──────────────────────────────────────────────
-
-/**
- * AgentFlow 下拥有独立属性面板的节点类型。
- * 包含 AgentFlow 专属节点 + 在 AgentFlow 下有不同表单的公共节点。
- */
-export const AGENT_FLOW_PANEL_NODE_TYPES: ReadonlySet<NodeTypeEnum> = new Set([
-  // AgentFlow 专属
-  NodeTypeEnum.Agent,
-  NodeTypeEnum.HumanInteraction,
-  NodeTypeEnum.RouteDecision,
-  // 公共节点在 AgentFlow 下有独立表单
-  NodeTypeEnum.Start,
-  NodeTypeEnum.End,
-  NodeTypeEnum.Output,
-  NodeTypeEnum.Workflow,
-]);
-
-// ──────────────────────────────────────────────
-//  3. AgentFlow UI 开关配置
+//  2. AgentFlow UI 开关配置
 // ──────────────────────────────────────────────
 
 /**
@@ -104,7 +84,7 @@ export const AGENTFLOW_UI_CONFIG = {
 } as const;
 
 // ──────────────────────────────────────────────
-//  4. 工具函数
+//  3. 工具函数
 // ──────────────────────────────────────────────
 
 /**
@@ -115,13 +95,6 @@ export function isAgentFlowType(
 ): boolean {
   if (!type) return false;
   return AGENT_FLOW_NODE_TYPES.has(type as NodeTypeEnum);
-}
-
-/**
- * 判断节点类型在 AgentFlow 下是否有独立属性面板。
- */
-export function isAgentFlowPanelNode(type: NodeTypeEnum): boolean {
-  return AGENT_FLOW_PANEL_NODE_TYPES.has(type);
 }
 
 /**
@@ -141,8 +114,8 @@ export function getFlowKindsForNode(
   type: NodeTypeEnum,
 ): FlowKindEnum[] | undefined {
   if (WORKFLOW_ONLY_NODE_TYPES.has(type)) return [FlowKindEnum.Workflow];
-  if (AGENT_FLOW_NODE_TYPES.has(type)) return [FlowKindEnum.AgentFlow];
-  return undefined;
+  const definition = getNodeDefinition(type);
+  return definition ? [...definition.flowKinds] : undefined;
 }
 
 /**

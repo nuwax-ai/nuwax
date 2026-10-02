@@ -1,18 +1,12 @@
 import { dict } from '@/services/i18nRuntime';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  PREVIEW_TOOL_DEFINITIONS,
+  type PreviewToolId,
+} from '../previewToolDefinitions';
 
-/** 工具类标签 ID */
-export type PreviewToolId =
-  | 'preview'
-  | 'arrange'
-  | 'terminal'
-  | 'version-control'
-  | 'subscription-setting'
-  | 'subscription-stats'
-  | 'database'
-  | 'database-config'
-  | 'remote-desktop';
+export type { PreviewToolId } from '../previewToolDefinitions';
 
 /** 预览标签类型 */
 export type PreviewTabType = 'file' | 'tool';
@@ -55,19 +49,6 @@ export const WORKSPACE_PREVIEW_TOOL_IDS: PreviewToolId[] = [
   'version-control',
 ];
 
-const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
-  preview: 'PC.Pages.AppDevPro.appPreview',
-  arrange: 'PC.Pages.ConversationAgentTabPicker.arrange',
-  terminal: 'PC.Pages.ConversationAgentTabPicker.terminal',
-  'version-control': 'PC.Pages.ConversationAgentTabPicker.versionControl',
-  'subscription-setting':
-    'PC.Pages.ConversationAgentTabPicker.subscriptionSetting',
-  'subscription-stats': 'PC.Pages.ConversationAgentTabPicker.subscriptionStats',
-  database: 'PC.Pages.AppDevPro.database',
-  'database-config': 'PC.Pages.AppDevPro.databaseConfig',
-  'remote-desktop': 'PC.Pages.AppDevPro.remoteDesktop',
-};
-
 /** 从文件路径提取文件名 */
 export const getFileNameFromPath = (fileId: string): string => {
   const segments = fileId.split('/');
@@ -105,7 +86,7 @@ const buildToolTab = (toolId: PreviewToolId): PreviewTab => ({
   id: getToolTabId(toolId),
   type: 'tool',
   toolId,
-  label: dict(TOOL_I18N_MAP[toolId]),
+  label: dict(PREVIEW_TOOL_DEFINITIONS[toolId].titleKey),
 });
 
 /** 按 toolId 列表构建常驻工作区页签 */
@@ -291,7 +272,7 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
         return;
       }
       const tabId = getToolTabId(toolId);
-      const label = dict(TOOL_I18N_MAP[toolId]);
+      const label = dict(PREVIEW_TOOL_DEFINITIONS[toolId].titleKey);
 
       setTabs((prev) => {
         const existing = prev.find((tab) => tab.id === tabId);

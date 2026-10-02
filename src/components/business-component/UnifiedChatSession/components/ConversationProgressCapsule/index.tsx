@@ -1,5 +1,7 @@
 import { createConversationProjector } from '@/features/conversation/presentation-v2';
-import { usePageModel } from '@/modelScopes/usePageModel';
+import { ConversationWorkspaceCompatBoundary } from '@/features/conversation/react/ConversationWorkspaceCompatBoundary';
+import { useConversationWorkspaceActions } from '@/features/conversation/react/ConversationWorkspaceProvider';
+import type { ConversationWorkspaceActions } from '@/features/conversation/react/workspaceActions';
 import { t } from '@/services/i18nRuntime';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import {
@@ -106,6 +108,8 @@ interface ConversationProgressCapsuleProps {
   open: boolean;
   /** 请求收起面板：关闭按钮 / 外点 / Esc / 新轮次时回调，由外部置 open=false */
   onClose: () => void;
+  /** 可与会话共用外层 Provider；旧入口无需更改接线。 */
+  workspaceActions?: ConversationWorkspaceActions;
 }
 
 /** 触发器右侧「更改」统计（git 口径优先，回退 V2 编辑行数聚合） */
@@ -246,7 +250,7 @@ const ChangeStatsView: React.FC<{ stats: ChangeStats }> = ({ stats }) => (
   </>
 );
 
-const ConversationProgressCapsule: React.FC<
+const ConversationProgressCapsuleInner: React.FC<
   ConversationProgressCapsuleProps
 > = ({
   conversationId,
@@ -270,18 +274,7 @@ const ConversationProgressCapsule: React.FC<
       ),
     [active, messageList, projectConversation],
   );
-  const {
-    openPreviewView,
-    setTaskAgentSelectedFileId,
-    setTaskAgentSelectTrigger,
-  } = usePageModel('conversationInfo') as {
-    openPreviewView: (
-      cid: number,
-      opts?: { forceRefresh?: boolean; skipFileTreeRefresh?: boolean },
-    ) => Promise<void>;
-    setTaskAgentSelectedFileId: (fileId: string) => void;
-    setTaskAgentSelectTrigger: (trigger: number) => void;
-  };
+  const workspaceActions = useConversationWorkspaceActions()!;
   // 面板可见性：受控 open 的当帧落地值，退场动效播完才置 false 卸载 DOM
   const [panelVisible, setPanelVisible] = useState(open);
   const [completedOpen, setCompletedOpen] = useState(true);
@@ -302,19 +295,19 @@ const ConversationProgressCapsule: React.FC<
     if (!fileId) return;
     // 只打开预览，不刷新文件树。从桌面切到预览时默认会重拉根目录，
     // 任务结果会另搜文件并加载它所在的那一层。
-    await openPreviewView(Number(conversationId), {
+    await workspaceActions.openFile(Number(conversationId), fileId, {
       skipFileTreeRefresh: true,
     });
-    setTaskAgentSelectedFileId(fileId);
-    setTaskAgentSelectTrigger(Date.now());
   };
 
   /** 打开 OpenUI 产物预览：对齐 V1 handleOpenUiSidecar 口径（data/{artifactId}.openui.json） */
   const handleOpenOpenUiPreview = async (artifactId: string) => {
     if (!conversationId) return;
-    await openPreviewView(Number(conversationId), { forceRefresh: true });
-    setTaskAgentSelectedFileId(`data/${artifactId}.openui.json`);
-    setTaskAgentSelectTrigger(Date.now());
+    await workspaceActions.openFile(
+      Number(conversationId),
+      `data/${artifactId}.openui.json`,
+      { forceRefresh: true },
+    );
   };
 
   // open 翻转衔接（声明须早于淡入 effect，同帧先处理状态再播动效）：
@@ -747,5 +740,13 @@ const ConversationProgressCapsule: React.FC<
     </div>
   );
 };
+
+const ConversationProgressCapsule: React.FC<
+  ConversationProgressCapsuleProps
+> = (props) => (
+  <ConversationWorkspaceCompatBoundary actions={props.workspaceActions}>
+    <ConversationProgressCapsuleInner {...props} />
+  </ConversationWorkspaceCompatBoundary>
+);
 
 export default ConversationProgressCapsule;

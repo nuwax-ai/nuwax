@@ -30,6 +30,19 @@ import {
 export const humanInteractionHandler: BranchNodeHandler = {
   nodeType: NodeTypeEnum.HumanInteraction,
 
+  generateEdges(node, { isLoopNode }) {
+    if (!isHitlOptionsBranchMode(node.nodeConfig as any)) return null;
+    const edges = getHitlOptions(node.nodeConfig as any).flatMap((opt: any) =>
+      (opt.nextNodeIds || []).map((id: number) => ({
+        source: `${node.id}-hitl-option-${opt.uuid}-out`,
+        target: id.toString(),
+        zIndex: isLoopNode ? 5 : 1,
+      })),
+    );
+    // 即使 options 有内容，没有实际选项边时也沿用普通 nextNodeIds 回落。
+    return edges.length > 0 ? edges : null;
+  },
+
   generatePorts(data: ChildNode, ctx: PortGeneratorContext) {
     const nc = data.nodeConfig as any;
     const inputPorts = [
@@ -146,7 +159,8 @@ export const humanInteractionHandler: BranchNodeHandler = {
       const branchMap = new Map<string, number[]>();
       const options = getHitlOptions(nc);
       for (const o of options) {
-        branchMap.set(`hitl-option-${o.uuid}`, o.nextNodeIds || []);
+        // 画布现存边是事实源；沿用旧目标会让删除的选项边重新出现。
+        branchMap.set(`hitl-option-${o.uuid}`, []);
       }
       return branchMap;
     }
@@ -172,7 +186,12 @@ export const humanInteractionHandler: BranchNodeHandler = {
   },
 
   isSpecialBranchNode(node: ChildNode): boolean {
-    return isHitlOptionsBranchMode(node.nodeConfig as any);
+    return (
+      isHitlOptionsBranchMode(node.nodeConfig as any) &&
+      getHitlOptions(node.nodeConfig as any).some(
+        (option: any) => option.nextNodeIds?.length > 0,
+      )
+    );
   },
 
   handleSpecialNextIndex(

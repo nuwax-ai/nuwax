@@ -1,7 +1,6 @@
 import { useUnifiedChatScroll } from '@/components/business-component/UnifiedChatSession/hooks/useUnifiedChatScroll';
 import { MessageStatusEnum } from '@/types/enums/common';
 import { act, renderHook } from '@testing-library/react';
-import { createRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockUseConversationScrollDetection } = vi.hoisted(() => ({
@@ -56,10 +55,9 @@ describe('useUnifiedChatScroll', () => {
 
   it('发送消息时恢复自动滚动并立即置底', () => {
     const element = createScrollElement({ scrollHeight: 1200 });
-    const messageViewRef = createRef<HTMLDivElement>();
+    const messageViewRef = { current: element };
     const allowAutoScrollRef = { current: false };
     const onScrollBtnVisibleChange = vi.fn();
-    messageViewRef.current = element;
 
     const { result } = renderHook(() =>
       useUnifiedChatScroll({
@@ -92,10 +90,9 @@ describe('useUnifiedChatScroll', () => {
 
   it('点击回到底部时平滑滚动并隐藏按钮', () => {
     const element = createScrollElement({ scrollHeight: 1600 });
-    const messageViewRef = createRef<HTMLDivElement>();
+    const messageViewRef = { current: element };
     const allowAutoScrollRef = { current: false };
     const onScrollBtnVisibleChange = vi.fn();
-    messageViewRef.current = element;
 
     const { result } = renderHook(() =>
       useUnifiedChatScroll({
@@ -119,9 +116,8 @@ describe('useUnifiedChatScroll', () => {
 
   it('新增消息且允许自动滚动时置底，关闭自动滚动时不打断用户位置', () => {
     const element = createScrollElement({ scrollHeight: 900 });
-    const messageViewRef = createRef<HTMLDivElement>();
+    const messageViewRef = { current: element };
     const allowAutoScrollRef = { current: true };
-    messageViewRef.current = element;
 
     const { rerender } = renderHook(
       ({ messageList }) =>
@@ -153,9 +149,8 @@ describe('useUnifiedChatScroll', () => {
 
   it('流式结束下降沿会补一次置底，覆盖 markdown 渲染后撑高的场景', () => {
     const element = createScrollElement({ scrollHeight: 1000 });
-    const messageViewRef = createRef<HTMLDivElement>();
+    const messageViewRef = { current: element };
     const allowAutoScrollRef = { current: true };
-    messageViewRef.current = element;
 
     const { rerender } = renderHook(
       ({ messageList, isConversationActive }) =>
@@ -208,8 +203,7 @@ describe('useUnifiedChatScroll', () => {
       configurable: true,
       get: () => scrollHeight,
     });
-    const messageViewRef = createRef<HTMLDivElement>();
-    messageViewRef.current = element;
+    const messageViewRef = { current: element };
 
     const { rerender } = renderHook(
       ({ loadingMore, messageList }) =>
@@ -241,9 +235,8 @@ describe('useUnifiedChatScroll', () => {
       clientHeight: 300,
       scrollTop: 100,
     });
-    const messageViewRef = createRef<HTMLDivElement>();
+    const messageViewRef = { current: element };
     const onScrollBtnVisibleChange = vi.fn();
-    messageViewRef.current = element;
 
     const { result } = renderHook(() =>
       useUnifiedChatScroll({

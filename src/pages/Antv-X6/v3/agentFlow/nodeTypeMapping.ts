@@ -22,6 +22,7 @@
  */
 
 import { NodeTypeEnum } from '@/types/enums/common';
+import { NODE_DEFINITIONS } from '../config/nodeDefinitions';
 
 /** 节点最小结构约束（兼容 ChildNode / AddNodeResponse 等） */
 interface NodeLike {
@@ -37,13 +38,12 @@ interface TypePair {
   backend: NodeTypeEnum;
 }
 
-const TYPE_PAIRS: TypePair[] = [
-  {
-    frontend: NodeTypeEnum.RouteDecision,
-    backend: NodeTypeEnum.IntentRecognition,
-  },
-  { frontend: NodeTypeEnum.HumanInteraction, backend: NodeTypeEnum.QA },
-];
+const TYPE_PAIRS: TypePair[] = NODE_DEFINITIONS.filter(
+  ({ type, backendType }) => backendType && backendType !== type,
+).map(({ type, backendType }) => ({
+  frontend: type,
+  backend: backendType!,
+}));
 
 /** 出参：前端类型 → 后端类型 */
 const FRONTEND_TO_BACKEND = new Map<string, string>(

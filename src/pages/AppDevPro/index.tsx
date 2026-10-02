@@ -18,9 +18,11 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { ConversationWorkspaceProvider } from '@/features/conversation/react/ConversationWorkspaceProvider';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
 import { useWorkspaceFileRefresh } from '@/features/conversation/react/useWorkspaceFileRefresh';
+import type { ConversationWorkspaceActions } from '@/features/conversation/react/workspaceActions';
 import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
 import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
@@ -92,17 +94,22 @@ import AppDevPublishProgressModal from './components/AppDevPublishProgressModal'
 import AppDevPublishVersionRecords from './components/AppDevPublishVersionRecords';
 import AppDevRemoteDesktopPanel from './components/AppDevRemoteDesktopPanel';
 import AppDevSettingsModal from './components/AppDevSettingsModal';
+import AppDevWorkspacePanels, {
+  type AppDevWorkspacePanel,
+} from './components/AppDevWorkspacePanels';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
+  buildWorkspaceToolTabs,
   getFileTabId,
   getToolTabId,
   usePreviewTabs,
-  WORKSPACE_PREVIEW_TOOL_IDS,
   type PreviewTab,
   type PreviewToolId,
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/PreviewChromeActions';
+import { PREVIEW_TOOL_DEFINITIONS } from './ConversationAgentFilePreview/previewToolDefinitions';
+import { useAppDevWorkspace } from './hooks/useAppDevWorkspace';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
@@ -129,14 +136,8 @@ import {
 } from './utils/previewHealthCheck';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
+import type { AppDevWorkspaceView } from './workspaceDefinitions';
 const cx = classNames.bind(styles);
-
-/** Header 工作区：文件树预览与应用预览 / 数据库 / 远程桌面互斥，后三者不进入文件标签栏 */
-type AppDevWorkspaceView =
-  | 'files'
-  | 'app-preview'
-  | 'database'
-  | 'remote-desktop';
 
 /** 数据库工作区常驻页签，保持引用稳定，避免 Tab 栏 effect 反复执行 */
 const DATABASE_WORKSPACE_TOOL_IDS: PreviewToolId[] = [
@@ -267,20 +268,15 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /** 文件树区域是否显示（header 图标控制，默认折叠） */
   const [canShowFileView, setCanShowFileView] = useState<boolean>(false);
   /** 右侧工作区：文件预览 / 独立应用预览 / 独立数据库 */
-  const [workspaceView, setWorkspaceView] =
-    useState<AppDevWorkspaceView>('app-preview');
-  const workspaceViewRef = useRef<AppDevWorkspaceView>(workspaceView);
-  workspaceViewRef.current = workspaceView;
-  /** 打开数据库前的工作区，再次点击图标时还原 */
-  const workspaceViewBeforeDatabaseRef =
-    useRef<AppDevWorkspaceView>('app-preview');
-  /** 打开远程桌面前的工作区，再次点击图标时还原 */
-  const workspaceViewBeforeRemoteDesktopRef =
-    useRef<AppDevWorkspaceView>('files');
-  /** 数据库工作区当前 Tab */
-  const [databaseTabId, setDatabaseTabId] = useState(() =>
-    getToolTabId('database'),
-  );
+  const {
+    workspaceView,
+    setWorkspaceView,
+    workspaceViewRef,
+    databaseTabId,
+    setDatabaseTabId,
+    openWorkspace,
+    toggleWorkspace,
+  } = useAppDevWorkspace();
   /** 项目设置弹窗 */
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   /** 线上环境构建包版本记录侧栏 */
@@ -371,6 +367,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
     setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
     setIsLoadingOtherInterface,
     onMessageSend,
     resetInit,
@@ -380,6 +377,18 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     refreshGitListRef,
     isConversationActive,
   } = usePageModel('conversationInfo');
+
+  /** 页面负责工作区动作，会话展示与进度面板共享同一注入边界。 */
+  const workspaceActions = useMemo<ConversationWorkspaceActions>(
+    () => ({
+      openFile: async (conversationId, fileId, options) => {
+        await openPreviewView(conversationId, options);
+        setTaskAgentSelectedFileId(fileId);
+        setTaskAgentSelectTrigger(Date.now());
+      },
+    }),
+    [openPreviewView, setTaskAgentSelectedFileId, setTaskAgentSelectTrigger],
+  );
 
   useEffect(() => {
     setFileTreeSelfManaged(true);
@@ -1674,11 +1683,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       // 选中差异文件
       setSelectedChangeFile(null);
       // 预览 / 编排 / 版本控制 / 数据库：工作区页签，收起文件预览侧栏
-      if (
-        WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) ||
-        toolId === 'database' ||
-        toolId === 'database-config'
-      ) {
+      if (PREVIEW_TOOL_DEFINITIONS[toolId].filePreview === 'close') {
         closePreviewView();
         return;
       }
@@ -1984,31 +1989,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    */
   const handleOpenDatabasePanel = useCallback(() => {
     resetDevConsoleExpandedLayout();
-    if (workspaceView === 'database') {
-      const prev = workspaceViewBeforeDatabaseRef.current;
-      setWorkspaceView(prev === 'database' ? 'app-preview' : prev);
-      return;
-    }
-    workspaceViewBeforeDatabaseRef.current = workspaceView;
-    setDatabaseTabId(getToolTabId('database'));
-    setWorkspaceView('database');
-  }, [resetDevConsoleExpandedLayout, workspaceView]);
+    toggleWorkspace('database');
+  }, [resetDevConsoleExpandedLayout, toggleWorkspace]);
 
   const databaseTabs = useMemo<PreviewTab[]>(
-    () => [
-      {
-        id: getToolTabId('database'),
-        type: 'tool',
-        toolId: 'database',
-        label: dict('PC.Pages.AppDevPro.database'),
-      },
-      {
-        id: getToolTabId('database-config'),
-        type: 'tool',
-        toolId: 'database-config',
-        label: dict('PC.Pages.AppDevPro.databaseConfig'),
-      },
-    ],
+    () => buildWorkspaceToolTabs(DATABASE_WORKSPACE_TOOL_IDS),
     [],
   );
 
@@ -2254,14 +2239,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
 
     if (workspaceView === 'remote-desktop') {
-      const prev = workspaceViewBeforeRemoteDesktopRef.current;
-      setWorkspaceView(prev === 'remote-desktop' ? 'files' : prev);
+      toggleWorkspace('remote-desktop');
       return;
     }
 
-    workspaceViewBeforeRemoteDesktopRef.current = workspaceView;
     previewTabs.closeTab(getToolTabId('remote-desktop'));
-    setWorkspaceView('remote-desktop');
+    openWorkspace('remote-desktop');
     startEnvPodIfNeeded(UserAppDbEnvEnum.Dev);
   }, [
     appId,
@@ -2270,6 +2253,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     resetDevConsoleExpandedLayout,
     startEnvPodIfNeeded,
     workspaceView,
+    toggleWorkspace,
+    openWorkspace,
   ]);
 
   /**
@@ -2300,9 +2285,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         setWorkspaceView('app-preview');
         return;
       }
-      workspaceViewBeforeDatabaseRef.current = workspaceView;
-      setDatabaseTabId(getToolTabId('database'));
-      setWorkspaceView('database');
+      openWorkspace('database');
     },
     [
       previewTabs,
@@ -2310,6 +2293,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       startEnvPodIfNeeded,
       userAppInfo?.prodDeployed,
       workspaceView,
+      openWorkspace,
     ],
   );
 
@@ -2503,13 +2487,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   );
 
   /**
-   * 远程桌面仅在用户打开后挂载。
+   * 远程桌面内容交给工作区的静态布局策略，仅在用户打开且页面可见时挂载。
    * 容器未 running 时面板只展示启动状态，不请求 VNC 代理；已 running 直接嵌入。
    */
   const remoteDesktopWorkspace = useMemo(() => {
-    if (!active || workspaceView !== 'remote-desktop') {
-      return null;
-    }
     return (
       <AppDevRemoteDesktopPanel
         appId={appId}
@@ -2520,7 +2501,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         }}
       />
     );
-  }, [active, appId, envPodConversationId, podStatus, workspaceView]);
+  }, [appId, envPodConversationId, podStatus]);
 
   // ==================================== 渲染组件元素 ====================================
 
@@ -2551,122 +2532,99 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     handleRefreshFileList,
   ]);
 
+  /** 每个工作区的页头与内容一起配置，容器挂载与显隐由统一布局负责。 */
+  const workspacePanels: Record<AppDevWorkspaceView, AppDevWorkspacePanel> = {
+    files: {
+      chrome: (
+        <PreviewTabBar
+          active={active}
+          tabs={previewTabs.tabs}
+          activeTabId={previewTabs.activeTabId}
+          onTabSelect={handlePreviewTabSelect}
+          onTabClose={previewTabs.closeTab}
+          onCloseOtherTabs={previewTabs.closeOtherTabs}
+          onCloseAllTabs={previewTabs.closeAllTabs}
+          onTogglePinTab={previewTabs.togglePinTab}
+          onTabReorder={previewTabs.reorderTabs}
+          permanentWorkspaceToolIds={workspaceToolIds}
+          showMoreActions={dbEnv !== UserAppDbEnvEnum.Prod}
+          onRestartServer={() => {
+            restartVncPod(queryConversationId, finalSelectedComputerId);
+          }}
+          onRestartAgent={() => restartAgent(queryConversationId)}
+          isCloudComputer={finalSelectedComputerId === '-1'}
+        />
+      ),
+      content: (
+        <ConversationAgentFilePreview
+          active={active}
+          preview={fileView.preview}
+          diffFile={gitSourceControl.selectedDiffFile ?? undefined}
+          activeTab={previewTabs.activeTab}
+          versionPanel={versionControlPanel}
+          providerClassName={fileView.className}
+          className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
+        />
+      ),
+    },
+    'app-preview': {
+      chrome: (
+        <div className={cx(styles['tool-workspace-bar'])}>
+          <div className={cx(styles['tool-workspace-preview-chrome'])}>
+            <PreviewChromeActions
+              previewUrl={activePreviewUrl}
+              onNavigatePreview={handleNavigatePreview}
+              onRefreshPreview={handleRefreshPreview}
+            />
+          </div>
+        </div>
+      ),
+      content: appPreviewPanel,
+    },
+    database: {
+      chrome: (
+        <PreviewTabBar
+          active={active}
+          tabs={databaseTabs}
+          activeTabId={databaseTabId}
+          onTabSelect={handleDatabaseTabSelect}
+          onTabClose={noop}
+          onCloseOtherTabs={noop}
+          onCloseAllTabs={noop}
+          onTogglePinTab={noop}
+          onTabReorder={noop}
+          permanentWorkspaceToolIds={DATABASE_WORKSPACE_TOOL_IDS}
+          showMoreActions={false}
+        />
+      ),
+      content: databaseWorkspace,
+    },
+    'remote-desktop': {
+      chrome: (
+        <div className={cx(styles['tool-workspace-bar'])}>
+          <span className={cx(styles['tool-workspace-title'])}>
+            {dict(PREVIEW_TOOL_DEFINITIONS['remote-desktop'].titleKey)}
+          </span>
+        </div>
+      ),
+      content: remoteDesktopWorkspace,
+    },
+  };
+
   /**
    * 渲染右侧面板
    * 文件树工作区：顶部 PreviewTabBar + 文件预览
    * 应用预览 / 数据库 / 远程桌面：独立视图，不进入文件标签栏，占满工作区尺寸
    */
   const renderRightPanel = () => {
-    const isFilesWorkspace = workspaceView === 'files';
-    const isProdEnv = dbEnv === UserAppDbEnvEnum.Prod;
     return (
       <div className={cx(styles['right-panel'])}>
         <div className={cx(styles['right-panel-body'])}>
-          {isFilesWorkspace ? (
-            <PreviewTabBar
-              active={active}
-              tabs={previewTabs.tabs}
-              activeTabId={previewTabs.activeTabId}
-              onTabSelect={handlePreviewTabSelect}
-              onTabClose={previewTabs.closeTab}
-              onCloseOtherTabs={previewTabs.closeOtherTabs}
-              onCloseAllTabs={previewTabs.closeAllTabs}
-              onTogglePinTab={previewTabs.togglePinTab}
-              onTabReorder={previewTabs.reorderTabs}
-              permanentWorkspaceToolIds={workspaceToolIds}
-              showMoreActions={!isProdEnv}
-              onRestartServer={() => {
-                restartVncPod(queryConversationId, finalSelectedComputerId);
-              }}
-              onRestartAgent={() => {
-                restartAgent(queryConversationId);
-              }}
-              isCloudComputer={finalSelectedComputerId === '-1'}
-            />
-          ) : workspaceView === 'database' ? (
-            <PreviewTabBar
-              active={active}
-              tabs={databaseTabs}
-              activeTabId={databaseTabId}
-              onTabSelect={handleDatabaseTabSelect}
-              onTabClose={noop}
-              onCloseOtherTabs={noop}
-              onCloseAllTabs={noop}
-              onTogglePinTab={noop}
-              onTabReorder={noop}
-              permanentWorkspaceToolIds={DATABASE_WORKSPACE_TOOL_IDS}
-              showMoreActions={false}
-            />
-          ) : workspaceView === 'remote-desktop' ? (
-            <div className={cx(styles['tool-workspace-bar'])}>
-              <span className={cx(styles['tool-workspace-title'])}>
-                {dict('PC.Pages.AppDevPro.remoteDesktop')}
-              </span>
-            </div>
-          ) : (
-            <div className={cx(styles['tool-workspace-bar'])}>
-              {workspaceView === 'app-preview' ? (
-                <div className={cx(styles['tool-workspace-preview-chrome'])}>
-                  <PreviewChromeActions
-                    previewUrl={activePreviewUrl}
-                    onNavigatePreview={handleNavigatePreview}
-                    onRefreshPreview={handleRefreshPreview}
-                  />
-                </div>
-              ) : null}
-            </div>
-          )}
-          <div className={cx(styles['right-panel-main'])}>
-            <div className={cx(styles['right-panel-content'])}>
-              <div
-                className={cx(styles['workspace-pane'], {
-                  [styles['workspace-pane-hidden']]: workspaceView !== 'files',
-                })}
-              >
-                <ConversationAgentFilePreview
-                  active={active}
-                  preview={fileView.preview}
-                  diffFile={gitSourceControl.selectedDiffFile ?? undefined}
-                  activeTab={previewTabs.activeTab}
-                  versionPanel={versionControlPanel}
-                  providerClassName={fileView.className}
-                  className={cx(
-                    styles['file-preview-panel'],
-                    'w-full',
-                    'h-full',
-                  )}
-                />
-              </div>
-              <div
-                className={cx(styles['tool-workspace'], {
-                  [styles['workspace-pane-hidden']]:
-                    workspaceView !== 'app-preview',
-                })}
-              >
-                {appPreviewPanel}
-              </div>
-              <div
-                className={cx(
-                  styles['tool-workspace'],
-                  styles['tool-workspace-scroll'],
-                  {
-                    [styles['workspace-pane-hidden']]:
-                      workspaceView !== 'database',
-                  },
-                )}
-              >
-                {databaseWorkspace}
-              </div>
-              <div
-                className={cx(styles['tool-workspace'], {
-                  [styles['workspace-pane-hidden']]:
-                    workspaceView !== 'remote-desktop',
-                })}
-              >
-                {remoteDesktopWorkspace}
-              </div>
-            </div>
-
+          <AppDevWorkspacePanels
+            active={active}
+            workspaceView={workspaceView}
+            panels={workspacePanels}
+          >
             {/* 底部控制台 */}
             <AppDevBottomConsole
               conversationId={
@@ -2712,7 +2670,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                 />
               }
             />
-          </div>
+          </AppDevWorkspacePanels>
         </div>
       </div>
     );
@@ -2775,21 +2733,23 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                 }
               />
               <div className={cx(styles['left-panel-body'])}>
-                <AgentConversationChatPanel
-                  active={active}
-                  routeSnapshot={{
-                    conversationId: queryConversationId,
-                    state: routeState,
-                    key: routeKey,
-                    action: routeAction,
-                  }}
-                  runtimeLine={runtimeLine}
-                  progressOpen={progressOpen}
-                  onCloseProgress={() => setProgressOpen(false)}
-                  selectedComputerId={finalSelectedComputerId}
-                  onChangeSelectedComputerId={setSelectedComputerId}
-                  onConversationEnd={handleConversationEnd}
-                />
+                <ConversationWorkspaceProvider actions={workspaceActions}>
+                  <AgentConversationChatPanel
+                    active={active}
+                    routeSnapshot={{
+                      conversationId: queryConversationId,
+                      state: routeState,
+                      key: routeKey,
+                      action: routeAction,
+                    }}
+                    runtimeLine={runtimeLine}
+                    progressOpen={progressOpen}
+                    onCloseProgress={() => setProgressOpen(false)}
+                    selectedComputerId={finalSelectedComputerId}
+                    onChangeSelectedComputerId={setSelectedComputerId}
+                    onConversationEnd={handleConversationEnd}
+                  />
+                </ConversationWorkspaceProvider>
               </div>
             </div>
           }

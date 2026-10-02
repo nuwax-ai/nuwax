@@ -8,9 +8,10 @@ React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-
 - 全量测试:`npx vitest run`(裸 `npm run test` 是 watch 模式)
 - 会话合同网:`npm run test:conversation`(秒级);会话 E2E:`e2e:conversation`(需 dev server + ego-browser 登录态)、`e2e:mock-chat`(mock 场景走查);组合 `verify:conversation`
 - 分层依赖检查:`npm run lint:arch`(depcruise;存量豁免基线 `.dependency-cruiser-known-violations.json`)
+- 分域类型门:`pnpm typecheck`；脚本自测:`pnpm test:typecheck`；旧诊断修复后:`pnpm typecheck:prune`（只能收缩基线）；范围及边界见 [docs/typecheck-domains.md](./docs/typecheck-domains.md)
 - 提交:husky 钩子自动 prettier;commit message 走 conventional(`type(scope): subject`,verify-commit 校验);`standard-version` 发版
 - 同步测试部署:`bash scripts/deploy_sync_test.sh` —— 个人分支 → 版本分支(如 feat-2026.9.30,origin)→dev→test 级联合并+质量门+构建,推 gitlab/test 内网测试环境;配置 `scripts/deploy_sync_test.env`(模板 `scripts/deploy_sync_test.env.example`,`FEATURE_BRANCH`/`VERSION_BRANCH` 必填无默认,缺失时交互提示);`DRY_RUN=1` 演练、`INIT_ONLY=1` 只配置
-- 提测提速三约定(2026-09-30):①主区不干净时脚本自动转入 `.deploy-worktree` 隔离跑全链(主区/并行开发零互抢,`USE_WORKTREE=0/1` 控制)②`src/constants/version.ts` 烤哈希**只随 dist 前置提交,feat 线源码提交不携带**(合并冲突脚本自动取本地侧)③网络抖动(SSL 瞬断/fetch 断)脚本自动退避重试,勿手工重启整链;提测前**不再本地预跑质量门**(脚本步骤 4 即门,断点续跑免重付)
+- 提测提速三约定(2026-09-30):① 主区不干净时脚本自动转入 `.deploy-worktree` 隔离跑全链(主区/并行开发零互抢,`USE_WORKTREE=0/1` 控制)②`src/constants/version.ts` 烤哈希**只随 dist 前置提交,feat 线源码提交不携带**(合并冲突脚本自动取本地侧)③ 网络抖动(SSL 瞬断/fetch 断)脚本自动退避重试,勿手工重启整链;提测前**不再本地预跑质量门**(脚本步骤 4 即门,断点续跑免重付)
 
 ## 核心业务入口
 
@@ -21,7 +22,7 @@ React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-
 ## 质量门与硬约束
 
 - 会话路径(`models/conversation*`、`features/conversation/**`、`UnifiedChatSession`、`MessageQueue`、`AgentIntervention`、`pages/Chat`)改动:`test:conversation` 必跑全绿;合入前过 E2E;CI(`.github/workflows/conversation-tests.yml`)自动守门
-- tsc 全库有预存错误基线,**不作门**(改动路径零新增即可);vitest 不能 import umi 模块(含传递依赖,测试需 mock)
+- tsc 全库有预存错误基线,**不作全库门**；`typecheck` 对配置中四域执行精确诊断门，域外改动仍需核对零新增；vitest 不能 import umi 模块(含传递依赖,测试需 mock)
 - 分层依赖禁令、命名、I18n 规范见 [docs/engineering-conventions.md](./docs/engineering-conventions.md);会话模块页面层只消费 `features/conversation/react/*`
 
 ## 关键文档

@@ -7,6 +7,7 @@ import type { UnifiedChatQueueContext } from '@/components/business-component/Me
 import type { FetchMentionFiles } from '@/components/ChatInputHome/MentionPopup/types';
 import type { ConversationSessionView } from '@/features/conversation/domain/sessionView';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
+import type { ConversationWorkspaceActions } from '@/features/conversation/react/workspaceActions';
 import type { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import type {
   AgentSelectedComponentInfo,
@@ -152,6 +153,8 @@ export interface UnifiedChatSessionProps {
    * 未提供时由 UnifiedChatSession 内置默认实现兜底（打开预览面板并选中 .openui.json）。
    */
   onOpenOpenUiSidecar?: (artifact: OpenUiArtifact) => void;
+  /** 工作区文件动作；未传时消费外层 Provider，旧入口由兼容边界接入。 */
+  workspaceActions?: ConversationWorkspaceActions;
 
   // 功能配置开关
   onFetchMentionFiles?: FetchMentionFiles;

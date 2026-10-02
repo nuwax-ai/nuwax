@@ -4,6 +4,7 @@ import { DataTypeMap } from '@/constants/common.constants';
 import { optionsMap } from '@/pages/Antv-X6/v3/constants/node.constants';
 import { t } from '@/services/i18nRuntime';
 import { DataTypeEnum } from '@/types/enums/common';
+import { InputItemNameEnum } from '@/types/enums/node';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import type { InputAndOutConfig } from '@/types/interfaces/node';
 import {
@@ -456,7 +457,7 @@ export const FormList: React.FC<FormListProps> = ({
   form,
   title,
   field,
-  inputItemName = 'inputArgs',
+  inputItemName = InputItemNameEnum.inputArgs,
   showIndex,
   limitAddLength = -1,
 }) => {
