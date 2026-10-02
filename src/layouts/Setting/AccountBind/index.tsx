@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiAuthIdpLoginList,
   apiUserIdentityList,
@@ -15,10 +16,16 @@ import {
   filterIdpByUa,
   getBusinessBase,
 } from '@/utils/authIdp';
-import { Button, Empty, List, message, Spin, Typography } from 'antd';
+import { Alert, Button, Empty, List, message, Spin, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -45,25 +52,51 @@ const AccountBind: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [identities, setIdentities] = useState<UserIdentityInfo[]>([]);
   const [providers, setProviders] = useState<AuthIdpLoginItem[]>([]);
+  const [loadError, setLoadError] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const loadVersion = useRef(0);
+  const mounted = useRef(false);
+  const canOperate = useRef(false);
+  canOperate.current = hasLoaded && !loading && !loadError;
 
   const load = useCallback(async () => {
+    const version = ++loadVersion.current;
+    canOperate.current = false;
     setLoading(true);
+    setLoadError(false);
     try {
       const [identityRes, idpRes] = await Promise.all([
         apiUserIdentityList(),
-        apiAuthIdpLoginList().catch(() => null),
+        apiAuthIdpLoginList(),
       ]);
-      setIdentities(identityRes?.data ?? []);
-      setProviders(
-        filterIdpByUa(idpRes?.data?.items ?? [], navigator.userAgent),
-      );
+      // 失败或无效响应不能作为“没有绑定”；两份成功数据一起替换旧快照。
+      if (
+        identityRes?.code !== SUCCESS_CODE ||
+        !Array.isArray(identityRes.data) ||
+        idpRes?.code !== SUCCESS_CODE ||
+        !Array.isArray(idpRes.data?.items)
+      )
+        throw new Error('Invalid identity list response');
+      if (!mounted.current || version !== loadVersion.current) return;
+      setIdentities(identityRes.data);
+      setProviders(filterIdpByUa(idpRes.data.items, navigator.userAgent));
+      setHasLoaded(true);
+    } catch {
+      if (mounted.current && version === loadVersion.current)
+        setLoadError(true);
     } finally {
-      setLoading(false);
+      if (mounted.current && version === loadVersion.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    mounted.current = true;
+    void load();
+    return () => {
+      mounted.current = false;
+      canOperate.current = false;
+      loadVersion.current += 1;
+    };
   }, [load]);
 
   // 已绑定的登录方式不再出现在「可绑定」里
@@ -77,15 +110,18 @@ const AccountBind: React.FC = () => {
       dict('PC.Layouts.Setting.AccountBind.unbindConfirm'),
       identity.providerName || identity.externalUserName || '',
       async () => {
+        if (!mounted.current || !canOperate.current) return;
         // 唯一登录方式且未设密码时后端拒绝，文案由请求层提示（引导去「重置密码」）
         await apiUserIdentityUnbind(identity.id);
+        if (!mounted.current) return;
         message.success(dict('PC.Layouts.Setting.AccountBind.unbindSuccess'));
-        load();
+        await load();
       },
     );
   };
 
   const handleBind = (provider: AuthIdpLoginItem) => {
+    if (!canOperate.current) return;
     window.location.assign(
       buildIdentityBindUrl(getBusinessBase(), provider.id, buildReturnPath()),
     );
@@ -95,6 +131,18 @@ const AccountBind: React.FC = () => {
     <div className={cx(styles.container)}>
       <h3>{dict('PC.Layouts.Setting.AccountBind.title')}</h3>
       <Spin spinning={loading}>
+        {loadError && (
+          <Alert
+            showIcon
+            type="error"
+            message={dict('PC.Layouts.Setting.AccountBind.loadFailed')}
+            action={
+              <Button onClick={() => void load()}>
+                {dict('PC.Common.Global.refresh')}
+              </Button>
+            }
+          />
+        )}
         <section className={cx(styles.section)}>
           <div className={cx(styles['section-title'])}>
             {dict('PC.Layouts.Setting.AccountBind.bound')}
@@ -110,6 +158,7 @@ const AccountBind: React.FC = () => {
                       type="link"
                       danger
                       size="small"
+                      disabled={loading || loadError}
                       onClick={() => handleUnbind(identity)}
                     >
                       {dict('PC.Layouts.Setting.AccountBind.unbind')}
@@ -141,7 +190,9 @@ const AccountBind: React.FC = () => {
               )}
             />
           ) : (
-            !loading && (
+            !loading &&
+            !loadError &&
+            hasLoaded && (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={dict('PC.Layouts.Setting.AccountBind.empty')}
@@ -171,6 +222,7 @@ const AccountBind: React.FC = () => {
                     )
                   }
                   onClick={() => handleBind(provider)}
+                  disabled={loading || loadError}
                 >
                   {provider.name}
                 </Button>

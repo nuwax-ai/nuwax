@@ -53,6 +53,9 @@ const ImageCaptcha = forwardRef<ImageCaptchaRef, ImageCaptchaProps>(
     const refresh = useCallback(async () => {
       const seq = ++requestSeqRef.current;
       setLoading(true);
+      setImage('');
+      // 一次性挑战开始换图即失效，不能在 loading 期间从父 valueRef 复用旧 ID。
+      onChangeRef.current?.({ captchaId: undefined, captchaCode: '' });
       try {
         const res = await apiImageCaptcha();
         if (seq !== requestSeqRef.current) return;
@@ -74,6 +77,10 @@ const ImageCaptcha = forwardRef<ImageCaptchaRef, ImageCaptchaProps>(
 
     useEffect(() => {
       refresh();
+      // 倒计时会卸载后重挂；旧实例的迟到响应不能再改写父级验证码值。
+      return () => {
+        requestSeqRef.current += 1;
+      };
     }, [refresh]);
 
     return (

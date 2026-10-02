@@ -38,9 +38,24 @@ export function filterIdpByUa(
   );
 }
 
-/** 只接受本站相对路径（防开放重定向），其余一律回首页 */
-const toSafeRelativePath = (value?: string | null) =>
-  value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
+/** 只接受本站相对路径；反斜杠或控制字符可能被浏览器归一化为跨域地址。 */
+const toSafeRelativePath = (value?: string | null) => {
+  if (
+    !value ||
+    !value.startsWith('/') ||
+    value.startsWith('//') ||
+    /[\\\u0000-\u001f\u007f]/.test(value)
+  ) {
+    return '/';
+  }
+  // 固定基准仅供 URL 解析，不请求网络；保留业务深链接的原始 query/hash。
+  const origin = 'https://idp-redirect.invalid';
+  try {
+    return new URL(value, origin).origin === origin ? value : '/';
+  } catch {
+    return '/';
+  }
+};
 
 /**
  * 解析登录完成后的回跳目标。

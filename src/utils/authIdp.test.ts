@@ -53,10 +53,14 @@ describe('filterIdpByUa', () => {
 });
 
 describe('resolveIdpRedirect', () => {
-  it('相对路径原样使用', () => {
-    expect(resolveIdpRedirect('/space/1/agent?id=2')).toBe(
-      '/space/1/agent?id=2',
-    );
+  it.each([
+    '/space/1/agent?id=2',
+    '/space/93/app-project-detail/9302?tab=setting#oauth-scope',
+    '/home?setting=account-bind&redirect=%2Fspace%2F93#identity',
+    '/workspace/%E9%A1%B9%E7%9B%AE?name=%E8%AE%A1%E5%88%92&path=%5Cfile#details',
+  ])('正常深链接/查询参数/hash 保持原样：%s', (path) => {
+    expect(resolveIdpRedirect(path)).toBe(path);
+    expect(resolveIdpRedirect('-1', path)).toBe(path);
   });
 
   it('数字偏移或空值：取暂存路径，没有则回首页', () => {
@@ -73,6 +77,31 @@ describe('resolveIdpRedirect', () => {
     expect(resolveIdpRedirect('//evil.com/x')).toBe('/');
     expect(resolveIdpRedirect('-1', '//evil.com')).toBe('/');
     expect(resolveIdpRedirect('javascript:alert(1)')).toBe('/');
+  });
+
+  it.each([
+    '/\\evil.test/',
+    '/\\/evil.test/',
+    '/\t/evil.test/',
+    '/\n/evil.test/',
+    '/\r/evil.test/',
+    '/\t\n/evil.test/',
+  ])('浏览器可将 %j 解析为跨域地址，参数和暂存路径都必须拒绝', (path) => {
+    const origin = 'https://app.example.test';
+    expect(new URL(path, origin).origin).not.toBe(origin);
+    expect(resolveIdpRedirect(path, '/safe-fallback')).toBe('/');
+    expect(resolveIdpRedirect('-1', path)).toBe('/');
+    expect(resolveIdpRedirect(undefined, path)).toBe('/');
+  });
+
+  it.each([
+    '/space/93\\agent',
+    '/space/93\u0000agent',
+    '/space/93\u001fagent',
+    '/space/93\u007fagent',
+  ])('原始反斜杠/控制字符不作为安全业务路径：%j', (path) => {
+    expect(resolveIdpRedirect(path)).toBe('/');
+    expect(resolveIdpRedirect('-1', path)).toBe('/');
   });
 });
 
