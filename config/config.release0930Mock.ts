@@ -8,7 +8,11 @@ process.env.PORT = process.env.RELEASE0930_MOCK_PORT || '3102';
 // 本批验收独立启用；不继承远端代理，未覆盖的接口应明确失败。
 export default defineConfig({
   ...development,
-  define: { ...development.define, 'process.env.BASE_URL': '' },
+  define: {
+    ...development.define,
+    'process.env.BASE_URL': '',
+    'process.env.RELEASE0930_LICENSE_MOCK': '1',
+  },
   proxy: {},
   // Umi 按索引合并数组，删除一项会留下原 src；等长替换为空脚本。
   headScripts: base.headScripts?.map((script) =>

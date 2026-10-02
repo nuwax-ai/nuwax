@@ -7,6 +7,7 @@ import type {
   UserIdentityInfo,
 } from '../src/types/interfaces/authIdp';
 import type { SensitiveWordInfo } from '../src/types/interfaces/sensitiveWord';
+import { projectLicenseSnapshot } from '../src/utils/license';
 
 const TOKEN = 'release0930-mock-token';
 const CREATED = '2026-10-02T00:00:00Z';
@@ -47,6 +48,7 @@ const scopes = [
   { scope: 'chat:write', description: '发送消息', sensitive: true },
 ];
 const resources = {
+  license_config: ['license_query', 'license_import'],
   sensitive_word_config: ['query', 'add', 'modify', 'delete', 'enable'].map(
     (s) => `sensitive_word_${s}`,
   ),
@@ -73,7 +75,9 @@ function redact(value: any): any {
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
       key,
-      /password|secret|token|ticket|captchaVerifyParam/i.test(key)
+      /password|secret|token|ticket|captchaVerifyParam|licenseContent/i.test(
+        key,
+      )
         ? '[redacted]'
         : redact(item),
     ]),
@@ -151,6 +155,16 @@ function initialState() {
     };
   }
   return {
+    license: projectLicenseSnapshot({
+      state: 'VALID',
+      subject: '前端验收组织（本地样例）',
+      maskedId: 'MOCK-****-0930',
+      validFrom: CREATED,
+      expiresAt: '2027-10-02T00:00:00Z',
+      updatedAt: CREATED,
+      canImport: true,
+      features: [{ code: 'demo_feature', name: '样例功能', enabled: true }],
+    }),
     config: {
       permissionMode: 'admin' as PermissionMode,
       imageCaptcha: false,
@@ -328,6 +342,7 @@ export function createRelease0930Mock() {
   handlers[`GET ${PREFIX}/state`] = (req, res) =>
     success(res, {
       config: state.config,
+      license: state.license,
       words: state.words,
       idps: maskedIdps(req),
       identities: state.identities,
@@ -342,6 +357,14 @@ export function createRelease0930Mock() {
       !['admin', 'read-only', 'no-access'].includes(body.permissionMode)
     )
       return fail(res, '未知权限模式');
+    // 只接受完整的最小快照，不将任意输入字段复制到可查询状态。
+    if (body.license !== undefined) {
+      try {
+        state.license = projectLicenseSnapshot(body.license);
+      } catch {
+        return fail(res, '授权样例格式无效');
+      }
+    }
     for (const key of [
       'permissionMode',
       'imageCaptcha',
@@ -358,6 +381,40 @@ export function createRelease0930Mock() {
     state.requests = [];
     success(res);
   };
+
+  add(
+    'GET',
+    `${PREFIX}/license/info`,
+    (_req, res) => success(res, state.license),
+    'license_query',
+  );
+  add(
+    'POST',
+    `${PREFIX}/license/import`,
+    (req, res) => {
+      if (!state.license.canImport)
+        return fail(res, '当前账号不能导入授权', '4033');
+      const content = req.body?.licenseContent;
+      if (
+        typeof content !== 'string' ||
+        !content.length ||
+        Buffer.byteLength(content, 'utf8') > 1024 * 1024
+      )
+        return fail(res, '授权样例文件大小无效');
+      try {
+        // 仅本地 fixture 使用 JSON 投影；这不是实际授权签名格式或校验实现。
+        const next = projectLicenseSnapshot(JSON.parse(content));
+        state.license = projectLicenseSnapshot({
+          ...next,
+          updatedAt: new Date().toISOString(),
+        });
+        success(res, state.license);
+      } catch {
+        fail(res, '授权样例格式无效');
+      }
+    },
+    'license_import',
+  );
 
   add(
     'GET',
@@ -442,6 +499,7 @@ export function createRelease0930Mock() {
       ]),
       menu(100, 'system_manage', '系统管理', '/system', [
         menu(101, 'system_config', '系统配置', '/system/config', [
+          menu(105, 'license_config', 'License 授权', '/system/config/license'),
           menu(
             102,
             'sensitive_word_config',

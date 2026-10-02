@@ -1,0 +1,8 @@
+{
+  "state": "EXPIRED",
+  "subject": "前端验收组织（本地样例）",
+  "maskedId": "MOCK-****-OLD",
+  "expiresAt": "2026-09-30T00:00:00Z",
+  "canImport": true,
+  "features": [{ "code": "demo_feature", "name": "样例功能", "enabled": true }]
+}

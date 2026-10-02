@@ -456,6 +456,11 @@ const routes = [
                 component: '@/pages/SystemManagement/SystemConfig/AuthMethod',
               },
               {
+                path: 'license',
+                name: getRouteLabel('PC.Routes.licenseConfig'),
+                component: '@/pages/SystemManagement/SystemConfig/License',
+              },
+              {
                 path: 'i18n-lang',
                 name: getRouteLabel('PC.Routes.i18nLangManagement'),
                 component: '@/pages/SystemManagement/SystemConfig/I18nManage',
