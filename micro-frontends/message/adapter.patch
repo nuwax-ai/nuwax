@@ -1,5 +1,5 @@
 diff --git a/nuwax-im-web/src/App.tsx b/nuwax-im-web/src/App.tsx
-index 4b3ea0a..88bd2a3 100644
+index 4b3ea0a447afff3583937776d78fb4563d4e4833..88bd2a350eb70b0c783463e971c9f0d6a20d4c9a 100644
 --- a/nuwax-im-web/src/App.tsx
 +++ b/nuwax-im-web/src/App.tsx
 @@ -1,3 +1,4 @@
@@ -53,7 +53,7 @@ index 4b3ea0a..88bd2a3 100644
      </AntApp>
    );
 diff --git a/nuwax-im-web/src/api/client.ts b/nuwax-im-web/src/api/client.ts
-index 1375c89..d9fa3a9 100644
+index 1375c89d9b93d0754affa999a343dfc06e089932..d9fa3a9d010a3ebfa5a3f871cc0dd905887a5793 100644
 --- a/nuwax-im-web/src/api/client.ts
 +++ b/nuwax-im-web/src/api/client.ts
 @@ -32,6 +32,7 @@
@@ -81,8 +81,33 @@ index 1375c89..d9fa3a9 100644
        tokenStore.clear();
        dispatchAuthExpired({ code: env.code, message: env.message });
      }
+diff --git a/nuwax-im-web/src/api/conversationTasks.ts b/nuwax-im-web/src/api/conversationTasks.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..afbb51fa0626bad855df25be4e7a7eb626abe4a9
+--- /dev/null
++++ b/nuwax-im-web/src/api/conversationTasks.ts
+@@ -0,0 +1,19 @@
++import {
++  TasksError,
++  type ConversationTasksProvider,
++} from '../lib/conversationTasks';
++
++/** 接口未就绪时必须显式失败；不猜测 URL，不返回成功空列表。 */
++export const unavailableTasksProvider: ConversationTasksProvider = {
++  available: false,
++  mode: 'unavailable',
++  listTasks: async () => {
++    throw new TasksError('unavailable');
++  },
++  listArtifacts: async () => {
++    throw new TasksError('unavailable');
++  },
++  readArtifact: async () => {
++    throw new TasksError('unavailable');
++  },
++};
 diff --git a/nuwax-im-web/src/api/upload.ts b/nuwax-im-web/src/api/upload.ts
-index e6422e8..47eb0af 100644
+index e6422e84c96e939e99aad2eb473a656992d14224..47eb0afd65860360d3658afa71a3235251816ffe 100644
 --- a/nuwax-im-web/src/api/upload.ts
 +++ b/nuwax-im-web/src/api/upload.ts
 @@ -36,6 +36,7 @@
@@ -140,8 +165,565 @@ index e6422e8..47eb0af 100644
      }
      // ★其余平台的错误码原样透出：
      //   翻译成 IM 的码会让"平台到底怎么说的"这条最重要的线索消失。
+diff --git a/nuwax-im-web/src/components/ChatTasksPanel.css b/nuwax-im-web/src/components/ChatTasksPanel.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..dd8d255c251d97abd6686e75f373c3e5767c2894
+--- /dev/null
++++ b/nuwax-im-web/src/components/ChatTasksPanel.css
+@@ -0,0 +1,92 @@
++.chat-tasks-panel {
++  min-width: 0;
++}
++.chat-tasks-panel .chat-panel-scroll {
++  overflow-x: hidden;
++}
++.conversation-task-list,
++.task-artifact-list {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++}
++.conversation-task-item {
++  padding: 14px 0;
++  border-bottom: 1px solid var(--border-color, #eee);
++  min-width: 0;
++}
++.conversation-task-item h3 {
++  margin: 0 0 10px;
++  font-size: 14px;
++  font-weight: 600;
++  overflow-wrap: anywhere;
++}
++.task-meta {
++  display: flex;
++  gap: 4px;
++  align-items: baseline;
++  flex-wrap: wrap;
++  overflow-wrap: anywhere;
++}
++.task-meta .ant-tag {
++  margin-inline-end: 4px;
++}
++.task-muted {
++  color: var(--text-secondary, #737985);
++  font-size: 12px;
++  margin: 8px 0;
++  overflow-wrap: anywhere;
++}
++.task-mock-note {
++  margin-top: 0;
++}
++.task-artifacts {
++  margin-top: 10px;
++}
++.task-artifact-list > li {
++  margin: 12px 0;
++  padding: 10px;
++  border-radius: 6px;
++  background: var(--bg-secondary, #f6f7f9);
++  min-width: 0;
++}
++.task-artifact-name {
++  font-size: 13px;
++  overflow-wrap: anywhere;
++  white-space: normal;
++}
++.task-artifact-actions {
++  display: flex;
++  gap: 8px;
++  margin-top: 10px;
++  flex-wrap: wrap;
++}
++.task-artifact-loading {
++  padding: 14px 0;
++  color: var(--text-secondary, #737985);
++  font-size: 12px;
++}
++.task-artifact-preview .ant-modal-title {
++  overflow-wrap: anywhere;
++  padding-right: 24px;
++}
++.task-artifact-preview pre {
++  white-space: pre-wrap;
++  overflow-wrap: anywhere;
++  max-height: 60vh;
++  overflow-y: auto;
++  margin: 0;
++}
++.task-artifact-preview img {
++  display: block;
++  max-width: 100%;
++  max-height: 60vh;
++  margin: auto;
++  object-fit: contain;
++}
++.chat-tasks-panel .ant-alert {
++  min-width: 0;
++}
++.chat-tasks-panel .ant-alert-message {
++  overflow-wrap: anywhere;
++}
+diff --git a/nuwax-im-web/src/components/ChatTasksPanel.tsx b/nuwax-im-web/src/components/ChatTasksPanel.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..36ba2ec736be03aa810dd66d3c2e20f3ea7ca63e
+--- /dev/null
++++ b/nuwax-im-web/src/components/ChatTasksPanel.tsx
+@@ -0,0 +1,453 @@
++import { Alert, Button, Empty, Modal, Spin, Tag } from 'antd';
++import {
++  useEffect,
++  useMemo,
++  useRef,
++  useState,
++  useSyncExternalStore,
++} from 'react';
++import type { Id } from '../api/types';
++import { formatSize } from '../api/upload';
++import {
++  canPreviewTaskImage,
++  TasksError,
++  tasksErrorMessage,
++  taskStatusLabel,
++  taskTitle,
++  type ConversationTask,
++  type ConversationTasksProvider,
++  type TaskArtifact,
++  type TaskArtifactResource,
++} from '../lib/conversationTasks';
++import {
++  ConversationTasksController,
++  type TaskLoadState,
++} from '../lib/conversationTasksController';
++import './ChatTasksPanel.css';
++import PanelCloseButton from './PanelCloseButton';
++
++function taskTime(value?: string): string {
++  const date = value ? new Date(value) : undefined;
++  return date && Number.isFinite(date.getTime())
++    ? date.toLocaleString('zh-CN', { hour12: false })
++    : '更新时间未知';
++}
++
++function ErrorNotice({
++  error,
++  loading,
++  onRetry,
++}: {
++  error?: string;
++  loading: boolean;
++  onRetry: () => void;
++}) {
++  return error ? (
++    <Alert
++      type="error"
++      showIcon
++      message={error}
++      action={
++        <Button size="small" loading={loading} onClick={onRetry}>
++          重试
++        </Button>
++      }
++    />
++  ) : null;
++}
++
++/** 全部资源来自 provider 授权读取的内容/Blob；这里没有任意 URL 跳转或 HTML 执行路径。 */
++function ArtifactPreview({
++  name,
++  resource,
++  onClose,
++}: {
++  name: string;
++  resource: TaskArtifactResource;
++  onClose: () => void;
++}) {
++  const [imageUrl, setImageUrl] = useState<string>();
++  useEffect(() => {
++    if (!canPreviewTaskImage(resource) || resource.kind === 'text') return;
++    const url = URL.createObjectURL(resource.blob);
++    setImageUrl(url);
++    return () => URL.revokeObjectURL(url);
++  }, [resource]);
++  return (
++    <Modal
++      open
++      title={name}
++      footer={null}
++      onCancel={onClose}
++      getContainer={false}
++      width={640}
++      className="task-artifact-preview"
++    >
++      {resource.kind === 'text' ? (
++        <pre>{resource.text}</pre>
++      ) : canPreviewTaskImage(resource) ? (
++        <img src={imageUrl} alt={name} />
++      ) : (
++        <p>暂不支持预览此文件，可返回列表下载。</p>
++      )}
++    </Modal>
++  );
++}
++
++function downloadArtifact(resource: TaskArtifactResource, name: string): void {
++  const blob =
++    resource.kind === 'text'
++      ? new Blob([resource.text], {
++          type: resource.mimeType || 'text/plain;charset=utf-8',
++        })
++      : resource.blob;
++  const url = URL.createObjectURL(blob);
++  const anchor = document.createElement('a');
++  anchor.href = url;
++  // 只作为下载文件名，不能变成路径；下载结束后回收临时 URL。
++  anchor.download = name.replace(/[\\/\x00-\x1f]/g, '_') || '任务产物';
++  document.body.appendChild(anchor);
++  try {
++    anchor.click();
++  } finally {
++    anchor.remove();
++    setTimeout(() => URL.revokeObjectURL(url), 1000);
++  }
++}
++
++function ArtifactList({
++  task,
++  load,
++  onLoad,
++  onRead,
++  busy,
++}: {
++  task: ConversationTask;
++  load?: TaskLoadState<TaskArtifact>;
++  onLoad: (more?: boolean) => void;
++  onRead: (artifact: TaskArtifact, download: boolean) => void;
++  busy: boolean;
++}) {
++  return (
++    <div className="task-artifacts">
++      {load?.loaded && (
++        <Button size="small" loading={load.loading} onClick={() => onLoad()}>
++          刷新产物
++        </Button>
++      )}
++      <ErrorNotice
++        error={load?.error}
++        loading={!!load?.loading}
++        onRetry={() => onLoad()}
++      />
++      {load?.loading && (
++        <div className="task-artifact-loading">
++          <Spin size="small" /> 正在加载产物…
++        </div>
++      )}
++      {load?.loaded && !load.records.length && !load.error && (
++        <p className="task-muted">
++          {task.taskStatus === 'EXECUTING'
++            ? '任务执行中，暂无产物'
++            : '暂无产物'}
++        </p>
++      )}
++      {!!load?.records.length && (
++        <ul className="task-artifact-list">
++          {load.records.map((artifact) => (
++            <li key={artifact.id}>
++              <div className="task-artifact-name">
++                {artifact.name.trim() || '未命名产物'}
++              </div>
++              {artifact.description && (
++                <p className="task-muted">{artifact.description}</p>
++              )}
++              <div className="task-muted">
++                {artifact.mimeType || '文件类型未知'} ·{' '}
++                {typeof artifact.size === 'number' && artifact.size >= 0
++                  ? formatSize(artifact.size)
++                  : '大小未知'}
++              </div>
++              {artifact.availability === 'available' ? (
++                <div className="task-artifact-actions">
++                  <Button
++                    size="small"
++                    disabled={busy}
++                    onClick={() => onRead(artifact, false)}
++                  >
++                    查看
++                  </Button>
++                  <Button
++                    size="small"
++                    disabled={busy}
++                    onClick={() => onRead(artifact, true)}
++                  >
++                    下载
++                  </Button>
++                </div>
++              ) : (
++                <p className="task-muted">
++                  {artifact.unavailableReason || '产物暂不可用'}
++                </p>
++              )}
++            </li>
++          ))}
++        </ul>
++      )}
++      {load?.hasMore && (
++        <Button
++          size="small"
++          loading={load.loading}
++          onClick={() => onLoad(true)}
++        >
++          加载更多产物
++        </Button>
++      )}
++    </div>
++  );
++}
++
++/** 只读任务面板；请求状态只属于当前会话，关闭或切会话即失效。 */
++export default function ChatTasksPanel({
++  convId,
++  provider,
++  onClose,
++}: {
++  convId: Id | null;
++  provider: ConversationTasksProvider;
++  onClose: () => void;
++}) {
++  const controller = useMemo(
++    () => new ConversationTasksController(provider),
++    [provider],
++  );
++  const state = useSyncExternalStore(
++    controller.subscribe,
++    controller.getSnapshot,
++  );
++  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
++  const [preview, setPreview] = useState<{
++    taskKey: string;
++    taskId?: string;
++    name: string;
++    resource: TaskArtifactResource;
++  }>();
++  const [resourceError, setResourceError] = useState<{
++    taskKey: string;
++    message: string;
++  }>();
++  const [readingTask, setReadingTask] = useState<string>();
++  const reading = !!readingTask;
++  const resourceRequest = useRef(0);
++  const conversationId = convId == null ? null : String(convId);
++  useEffect(() => {
++    controller.selectConversation(conversationId);
++    setExpanded(new Set());
++    setPreview(undefined);
++    setResourceError(undefined);
++    setReadingTask(undefined);
++    return () => {
++      controller.deactivate();
++      resourceRequest.current += 1;
++    };
++  }, [controller, conversationId]);
++
++  useEffect(() => {
++    if (
++      preview &&
++      !state.tasks.records.some(
++        (task) =>
++          task.key === preview.taskKey && task.taskId === preview.taskId,
++      )
++    )
++      setPreview(undefined);
++  }, [state.tasks.records, preview]);
++
++  // 刷新后同一平台会话换了当前任务/产物状态，已展开项按新记录重新读取。
++  useEffect(() => {
++    if (state.conversationId !== conversationId) return;
++    expanded.forEach((key) => {
++      if (
++        state.tasks.records.some((task) => task.key === key) &&
++        !state.artifacts[key]
++      )
++        void controller.loadArtifacts(key);
++    });
++  }, [controller, state, conversationId, expanded]);
++
++  const readArtifact = async (
++    task: ConversationTask,
++    artifact: TaskArtifact,
++    download: boolean,
++  ) => {
++    if (!conversationId || reading) return;
++    const request = ++resourceRequest.current;
++    setReadingTask(task.key);
++    setResourceError(undefined);
++    try {
++      const resource = await provider.readArtifact({
++        imConversationId: conversationId,
++        taskKey: task.key,
++        artifactId: artifact.id,
++      });
++      if (request !== resourceRequest.current) return;
++      if (
++        !controller
++          .getSnapshot()
++          .tasks.records.some(
++            (item) => item.key === task.key && item.taskId === task.taskId,
++          )
++      )
++        throw new TasksError('not-found');
++      if (download) downloadArtifact(resource, artifact.name);
++      else
++        setPreview({
++          taskKey: task.key,
++          taskId: task.taskId,
++          name: artifact.name,
++          resource,
++        });
++    } catch (error) {
++      if (request === resourceRequest.current)
++        setResourceError({
++          taskKey: task.key,
++          message: tasksErrorMessage(error),
++        });
++    } finally {
++      if (request === resourceRequest.current) setReadingTask(undefined);
++    }
++  };
++
++  // key={convId} 的调用约定防止旧会话在新 props 下短暂露出；此处也做防御。
++  const tasks =
++    state.conversationId === conversationId ? state.tasks : undefined;
++  return (
++    <section className="chat-panel chat-tasks-panel" aria-label="会话关联任务">
++      <div className="chat-panel-head">
++        <span className="chat-panel-title">任务</span>
++        <div className="chat-panel-head-end">
++          <Button
++            size="small"
++            loading={tasks?.loading}
++            onClick={() => void controller.loadTasks()}
++          >
++            刷新
++          </Button>
++          <PanelCloseButton panel="任务" onClose={onClose} />
++        </div>
++      </div>
++      <div className="chat-panel-scroll">
++        {provider.mode === 'mock' && (
++          <p className="task-muted task-mock-note">本地演示数据</p>
++        )}
++        {!provider.available ? (
++          <Alert type="info" message="任务服务尚未接入" />
++        ) : (
++          <>
++            <ErrorNotice
++              error={tasks?.error}
++              loading={!!tasks?.loading}
++              onRetry={() => void controller.loadTasks()}
++            />
++            {tasks?.loading && (
++              <div className="task-artifact-loading">
++                <Spin size="small" /> 正在加载任务…
++              </div>
++            )}
++            {tasks?.loaded && !tasks.records.length && !tasks.error && (
++              <Empty
++                image={Empty.PRESENTED_IMAGE_SIMPLE}
++                description="暂无关联任务"
++              />
++            )}
++            {!!tasks?.records.length && (
++              <ul className="conversation-task-list">
++                {tasks.records.map((task) => {
++                  const open = expanded.has(task.key);
++                  return (
++                    <li key={task.key} className="conversation-task-item">
++                      <h3>{taskTitle(task)}</h3>
++                      <div className="task-meta">
++                        <Tag>{taskStatusLabel(task.taskStatus)}</Tag>
++                        <span>{task.agentName?.trim() || '未知智能体'}</span>
++                      </div>
++                      <p className="task-muted">{taskTime(task.updatedAt)}</p>
++                      <Button
++                        className="task-expand"
++                        size="small"
++                        aria-expanded={open}
++                        onClick={() => {
++                          setExpanded((current) => {
++                            const next = new Set(current);
++                            if (open) next.delete(task.key);
++                            else next.add(task.key);
++                            return next;
++                          });
++                          if (
++                            !open &&
++                            !state.artifacts[task.key]?.loaded &&
++                            !state.artifacts[task.key]?.loading
++                          )
++                            void controller.loadArtifacts(task.key);
++                        }}
++                      >
++                        {open
++                          ? '收起产物'
++                          : `查看产物${
++                              typeof task.artifactCount === 'number' &&
++                              task.artifactCount >= 0
++                                ? `（${task.artifactCount}）`
++                                : ''
++                            }`}
++                      </Button>
++                      {open && (
++                        <ArtifactList
++                          task={task}
++                          load={state.artifacts[task.key]}
++                          onLoad={(more) =>
++                            void controller.loadArtifacts(task.key, more)
++                          }
++                          onRead={(artifact, download) =>
++                            void readArtifact(task, artifact, download)
++                          }
++                          busy={reading}
++                        />
++                      )}
++                      {readingTask === task.key && (
++                        <p className="task-muted" role="status">
++                          正在读取产物…
++                        </p>
++                      )}
++                      {resourceError?.taskKey === task.key && (
++                        <Alert
++                          type="error"
++                          showIcon
++                          message={resourceError.message}
++                        />
++                      )}
++                    </li>
++                  );
++                })}
++              </ul>
++            )}
++            {tasks?.hasMore && (
++              <Button
++                loading={tasks.loading}
++                onClick={() => void controller.loadTasks(true)}
++              >
++                加载更多任务
++              </Button>
++            )}
++          </>
++        )}
++      </div>
++      {preview && (
++        <ArtifactPreview
++          name={preview.name}
++          resource={preview.resource}
++          onClose={() => setPreview(undefined)}
++        />
++      )}
++    </section>
++  );
++}
 diff --git a/nuwax-im-web/src/components/ChatWindow.tsx b/nuwax-im-web/src/components/ChatWindow.tsx
-index f16e300..6a11dba 100644
+index e97e665b04d9ef042d8fa277b6fc40d882bed3fa..51d8da52c98e14beb7dd2bcc37914f9ed1419f93 100644
 --- a/nuwax-im-web/src/components/ChatWindow.tsx
 +++ b/nuwax-im-web/src/components/ChatWindow.tsx
 @@ -1,3 +1,4 @@
@@ -149,7 +731,16 @@ index f16e300..6a11dba 100644
  import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
  import { App as AntApp, Avatar, Dropdown, Image, Tooltip, type MenuProps } from 'antd';
  import type { AttachmentInput, AttachmentKind, Id, MessageDto } from '../api/types';
-@@ -517,8 +518,8 @@ export default function ChatWindow() {
+@@ -84,6 +85,8 @@ import { useChatStore } from '../store/chat';
+ import ChatAnnouncementPanel from './ChatAnnouncementPanel';
+ import ChatDocsPanel from './ChatDocsPanel';
+ import ChatFilesPanel from './ChatFilesPanel';
++import ChatTasksPanel from './ChatTasksPanel';
++import { conversationTasksProvider } from '../tasksRuntime';
+ import ChatJoinRequestsPanel from './ChatJoinRequestsPanel';
+ import ChatMembersPanel from './ChatMembersPanel';
+ import ChatPinPanel from './ChatPinPanel';
+@@ -517,8 +520,8 @@ export default function ChatWindow() {
      //   这条隐性前提撑着 —— 那正是重构时最容易踩坏的一类依赖。
      let done = false;
      function detach() {
@@ -160,7 +751,7 @@ index f16e300..6a11dba 100644
      }
      function ask() {
        // ★`done` 与 detach 是双保险：pointerdown 与 keydown 可能在同一瞬间各来一次
-@@ -536,8 +537,8 @@ export default function ChatWindow() {
+@@ -536,8 +539,8 @@ export default function ChatWindow() {
          })
          .catch(() => undefined);
      }
@@ -171,7 +762,16 @@ index f16e300..6a11dba 100644
      return detach;
    }, [notifyOn]);
    /**
-@@ -1205,13 +1206,13 @@ export default function ChatWindow() {
+@@ -1028,7 +1031,7 @@ export default function ChatWindow() {
+   //   ★下面 active 的回退（不在 visibleTabs ⇒ 弹回 ANCHOR_TAB）**自动兜住**
+   //   "用户正停在资料库页时切到智能体/自环会话"：那一帧 docs 从可见集消失，
+   //   回退逻辑当帧把他带回「消息」，不需要另写 effect。
+-  const visibleTabs = visibleTabKeys(tabs, isGroup, amManager, isAgentP2p, isSelfP2p);
++  const visibleTabs = visibleTabKeys(tabs, isGroup, amManager, isAgentP2p, isSelfP2p, conversationTasksProvider.available);
+   const active = visibleTabs.includes(activeTab) ? activeTab : ANCHOR_TAB;
+   /**
+    * ★★DEV-256（用户原话「把搜索放到右边去只展示搜索图标」）：
+@@ -1205,13 +1208,13 @@ export default function ChatWindow() {
        e.preventDefault();
        accept(files);
      };
@@ -191,7 +791,7 @@ index f16e300..6a11dba 100644
      };
    });
  
-@@ -2370,7 +2371,7 @@ export default function ChatWindow() {
+@@ -2370,7 +2373,7 @@ export default function ChatWindow() {
        ?? null;
      if (!id) return;
      e.preventDefault();
@@ -200,7 +800,25 @@ index f16e300..6a11dba 100644
    };
  
    const removePending = (id: string): void => {
-@@ -3062,7 +3063,7 @@ export default function ChatWindow() {
+@@ -2750,7 +2753,7 @@ export default function ChatWindow() {
+   // ★★DEV-323 ③b：isSelfP2p 同样**必须成对传**（用户拍板口径就是"隐藏标签页**并**
+   //   去掉添加菜单里的入口"）—— 只改上面那一处，自聊里的「+」照样能把资料库加回来，
+   //   加完顶部什么都不多，正是这条注释警告过的那种死按钮。
+-  const missingTabs = addableTabKeys(tabs, isGroup, amManager, isAgentP2p, isSelfP2p);
++  const missingTabs = addableTabKeys(tabs, isGroup, amManager, isAgentP2p, isSelfP2p, conversationTasksProvider.available);
+   const plusItems: MenuProps['items'] = [
+     {
+       key: 'add',
+@@ -2818,6 +2821,8 @@ export default function ChatWindow() {
+       />
+     ) : active === 'files' ? (
+       <ChatFilesPanel convId={activeConvId} onClose={closeSide} />
++    ) : active === 'tasks' ? (
++      <ChatTasksPanel key={String(activeConvId)} convId={activeConvId} provider={conversationTasksProvider} onClose={closeSide} />
+     ) : active === 'search' ? (
+       <ChatSearchPanel convId={activeConvId} onGoMessages={closeSide} onClose={closeSide} />
+     ) : active === 'announcement' ? (
+@@ -3062,7 +3067,7 @@ export default function ChatWindow() {
                      ),
                      disabled: notifyToggleDisabled(notifySt),
                    },
@@ -209,7 +827,7 @@ index f16e300..6a11dba 100644
                      key: 'notifyTest',
                      label: '发送测试通知',
                      // ★★DEV-231 需求④：点不了的只有两种 —— 权限压根不可用（点了必然没有结果），
-@@ -3070,7 +3071,7 @@ export default function ChatWindow() {
+@@ -3070,7 +3075,7 @@ export default function ChatWindow() {
                      //   ★`default`（还没问过权限）时**可以点**：那正是最需要一次实际结果
                      //   来确认的情形；而且这一次点击本身就是用户手势，权限会被顺便问出来。
                      disabled: notifyToggleDisabled(notifySt) || !notifyOn,
@@ -218,7 +836,7 @@ index f16e300..6a11dba 100644
                    // ★★DEV-254 需求③（用户原话「见附件红色圈起来的不需要」，附件把这一项圈红了）：
                    //   这里原来还有一条 `{ type: 'divider' }` + `{ key: 'sync', label: '手动增量同步' }`，
                    //   与它的 `onClick` 分支（`syncIncremental().then(...)`）**一并删掉**。
-@@ -3664,7 +3665,7 @@ export default function ChatWindow() {
+@@ -3664,7 +3669,7 @@ export default function ChatWindow() {
              {imgMenu && (
                <Dropdown
                  open
@@ -227,8 +845,39 @@ index f16e300..6a11dba 100644
                  onOpenChange={(v) => { if (!v) setImgMenu(null); }}
                  menu={{
                    /* ★★DEV-223：这里原来写死单项，现在走 imgMenuStickerItem ——
+@@ -3735,6 +3740,7 @@ export default function ChatWindow() {
+         /* ★★DEV-265：决定弹窗里**列出哪些项**（单聊不列群专属的那四项）。
+            ★DEV-193 的旧口径"只影响标注、不影响能勾什么"已被 DEV-265 推翻。 */
+         isGroup={isGroup}
++        tasksAvailable={conversationTasksProvider.available}
+       />
+ 
+       {/* ★★DEV-256：顶栏右侧那个「添加群员」图标打开的弹窗。
+diff --git a/nuwax-im-web/src/components/ManageTabsModal.tsx b/nuwax-im-web/src/components/ManageTabsModal.tsx
+index 288ae89cea985de59e5ba4daf8f8a5ed88439220..c7babdc50d6d185a7d43a721dca275a283e6be1d 100644
+--- a/nuwax-im-web/src/components/ManageTabsModal.tsx
++++ b/nuwax-im-web/src/components/ManageTabsModal.tsx
+@@ -49,6 +49,7 @@ export default function ManageTabsModal({
+   onChange,
+   onClose,
+   isGroup = false,
++  tasksAvailable = false,
+ }: {
+   open: boolean;
+   keys: readonly TopTabKey[];
+@@ -67,8 +68,9 @@ export default function ManageTabsModal({
+    * ⇒ 单聊里列出它们，等于让用户去勾一个"勾完什么都不会发生"的东西。
+    */
+   isGroup?: boolean;
++  tasksAvailable?: boolean;
+ }) {
+-  const listable = manageableTabDefs(isGroup);
++  const listable = manageableTabDefs(isGroup, tasksAvailable);
+   // ★★DEV-265：**这次没渲染出来**的那些项（单聊里就是群公告 / 入群申请 / 设置 / 成员）。
+   //   它们必须在下一次 onChange 时被**原样补回**偏好里 —— 理由见下面那段（实测得来）。
+   const listableKeys = new Set(listable.map((t) => t.key));
 diff --git a/nuwax-im-web/src/components/MessageBubble.tsx b/nuwax-im-web/src/components/MessageBubble.tsx
-index 79fd776..3f167b8 100644
+index 79fd776bd20727750d48f4314d04a463579c70fe..3f167b8e37187a218ed63e358fd24d2fda4da029 100644
 --- a/nuwax-im-web/src/components/MessageBubble.tsx
 +++ b/nuwax-im-web/src/components/MessageBubble.tsx
 @@ -1031,7 +1031,7 @@ export default function MessageBubble({
@@ -249,8 +898,221 @@ index 79fd776..3f167b8 100644
        title: '撤回这条消息？',
        // ★业务失败（如 IM_20001 超撤回时限）必须 toast 出来 ——
        //   静默失败的表现是「弹窗关了但消息还在」，用户会反复重试（S8 E2E 实测教训）
+diff --git a/nuwax-im-web/src/components/TabIcon.tsx b/nuwax-im-web/src/components/TabIcon.tsx
+index 46598dc3ee999417103e9817c33b3776dbc54861..dd10e3550dc8ef188c98857a6d70421faa8a97ca 100644
+--- a/nuwax-im-web/src/components/TabIcon.tsx
++++ b/nuwax-im-web/src/components/TabIcon.tsx
+@@ -37,6 +37,7 @@ import type { ReactElement } from 'react';
+ import type { TopTabKey } from '../lib/topTabs';
+ import {
+   IconBubbleSolid,
++  IconCheckCircle,
+   IconDocSolid,
+   IconFolderSolid,
+   IconGearSolid,
+@@ -61,6 +62,7 @@ const TAB_ICONS: Record<TopTabKey, TabIconFn> = {
+   settings: (p) => <IconGearSolid {...p} />,
+   joinRequests: (p) => <IconJoinRequestSolid {...p} />,
+   docs: (p) => <IconDocSolid {...p} />,
++  tasks: (p) => <IconCheckCircle {...p} />,
+ };
+ 
+ /**
+diff --git a/nuwax-im-web/src/dev/conversationTasksMock.ts b/nuwax-im-web/src/dev/conversationTasksMock.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..143e19d36725129f2ba5eca9b012ecb5a43b5f79
+--- /dev/null
++++ b/nuwax-im-web/src/dev/conversationTasksMock.ts
+@@ -0,0 +1,187 @@
++import {
++  TasksError,
++  type ConversationTask,
++  type ConversationTasksProvider,
++  type TaskArtifact,
++  type TaskArtifactResource,
++} from '../lib/conversationTasks';
++
++export type TasksMockScenario =
++  | 'overview'
++  | 'empty'
++  | 'error'
++  | 'forbidden'
++  | 'artifact-error';
++export const TASKS_MOCK_SCENARIOS: readonly TasksMockScenario[] = [
++  'overview',
++  'empty',
++  'error',
++  'forbidden',
++  'artifact-error',
++];
++
++export function tasksMockScenario(raw: string | null): TasksMockScenario {
++  return (
++    TASKS_MOCK_SCENARIOS.find((scenario) => scenario === raw) ?? 'overview'
++  );
++}
++
++const FIXTURE_TIME = '2026-10-02T04:00:00Z';
++const LONG_NAME =
++  '0930版本交付验收报告_包含会话任务产物展示和成员可见范围的长文件名用于检查窄面板自动换行_0123456789abcdefghijklmnopqrstuvwxyz.txt';
++
++/** 仅临时演示数据，不能作为后端成员授权的实现或真实执行历史。 */
++function tasksFor(conversationId: string): ConversationTask[] {
++  const make = (
++    index: number,
++    title: string,
++    taskStatus: string,
++    artifactCount: number,
++  ): ConversationTask => ({
++    key: `${conversationId}-platform-${index}`,
++    imConversationId: conversationId,
++    platformConversationId: `${conversationId}000${index}`,
++    taskId: `demo-${conversationId}-${index}`,
++    agentSubjectId: `demo-agent-subject-${index}`,
++    agentId: `demo-agent-${index}`,
++    agentName: index === 1 ? '交付助手' : '资料整理助手',
++    title,
++    taskStatus,
++    artifactCount,
++    updatedAt: FIXTURE_TIME,
++  });
++  if (conversationId === '1001')
++    return [
++      make(1, '0930 版本交付验收报告', 'COMPLETE', 3),
++      make(
++        2,
++        '任务与产物_超长标题验证abcdefghijklmnopqrstuvwxyz0123456789_会话关联女娲任务展示',
++        'EXECUTING',
++        0,
++      ),
++      make(3, '等待生成资料摘要', 'CREATE', 0),
++      make(4, '数据核对失败（保留已有产物）', 'FAILED', 1),
++      make(5, '已取消的整理任务', 'CANCEL', 0),
++    ];
++  if (conversationId === '1002')
++    return [make(1, '张三的资料摘要', 'COMPLETE', 1)];
++  if (conversationId === '1003')
++    return [make(1, '开发者小助手正在整理资料', 'EXECUTING', 0)];
++  return [];
++}
++
++const availableArtifact = (
++  id: string,
++  name: string,
++  mimeType = 'text/plain',
++): TaskArtifact => ({
++  id,
++  name,
++  mimeType,
++  availability: 'available',
++});
++
++function artifactsFor(conversationId: string, taskKey: string): TaskArtifact[] {
++  if (taskKey === '1001-platform-1')
++    return [
++      {
++        ...availableArtifact('report', LONG_NAME),
++        description: '前端验收摘要；点击查看内容或下载。',
++      },
++      {
++        ...availableArtifact('image', '任务产物示例.png', 'image/png'),
++        description: '本地示例图片，不读取平台文件。',
++      },
++      {
++        id: 'expired',
++        name: '已失效的历史附件.pdf',
++        mimeType: 'application/pdf',
++        availability: 'unavailable',
++        unavailableReason: '产物暂不可用',
++      },
++    ];
++  if (taskKey === '1001-platform-4')
++    return [availableArtifact('partial', '执行失败前已生成的检查记录.txt')];
++  if (conversationId === '1002' && taskKey === '1002-platform-1')
++    return [availableArtifact('summary', '张三的摘要.txt')];
++  return [];
++}
++
++/** fixture 内使用固定的 PNG 字节；避免外部图片地址污染离线预览。 */
++const DEMO_PNG =
++  'iVBORw0KGgoAAAANSUhEUgAAAPAAAAB4CAIAAABD1OhwAAACWUlEQVR4nO3SQQ0CAQDEwBOBAyRgDFVowBhvMLHQhJtkFDQ9bvc3f+zyfJzKkRfnq/LDDM1SfpihWcoPMzRL+WGGZik/zNAs5YcZmqX8MEOzlB9maJbywwzNUn6YoVnKDzM0S/lhhmYpP8zQLOWHGZql/DBDs5QfZmiW8sMMzVJ+mKFZyg8zNEv5YYZmKT/M0CzlhxmapfwwQ7OUH2ZolvLDDM1SfpihWcoPMzRL+WGGZik/zNAs5YcZmqX8MEOzlB9maJbywwzNUn6YoVnKDzM0S/lhhmYpP8zQLOWHGZql/DBDs5QfZmiW8sMMzVJ+mKFZyg8zNEv5YYZmKT/M0CzlhxmapfwwQ7OUH2ZolvLDDM1SfpihWcoPMzRL+WGGZik/zNAs5YcZmqX8MEOzlB9maJbywwzNUn6YoVnKDzM0S6/H9VQM/efywwzNUn6YoVnKDzM0S/lhhmYpP8zQLOWHGZql/DBDs5QfZmiW8sMMzVJ+mKFZyg8zNEv5YYZmKT/M0CzlhxmapfwwQ7OUH2ZolvLDDM1SfpihWcoPMzRL+WGGZik/zNAs5YcZmqX8MEOzlB9maJbywwzNUn6YoVnKDzM0S/lhhmYpP8zQLOWHGZql/DBDs5QfZmiW8sMMzVJ+mKFZyg8zNEv5YYZmKT/M0CzlhxmapfwwQ7OUH2ZolvLDDM1SfpihWcoPMzRL+WGGZik/zNAs5YcZmqX8MEOzlB9maJbywwzNUn6YoVnKDzM0S/lhhmYpP8zQLOWHGZql/DBDs5QfZmiW8sMMzVJ+mKFZyg/7sQ/AXkSrte6g6wAAAABJRU5ErkJggg==';
++
++function imageResource(): TaskArtifactResource {
++  const bytes = Uint8Array.from(atob(DEMO_PNG), (character) =>
++    character.charCodeAt(0),
++  );
++  return { kind: 'image', blob: new Blob([bytes], { type: 'image/png' }) };
++}
++
++export function createTasksMockProvider(
++  scenario: TasksMockScenario = 'overview',
++  delayMs = 220,
++): ConversationTasksProvider {
++  const failedLists = new Set<string>();
++  const failedArtifacts = new Set<string>();
++  const pause = () =>
++    new Promise<void>((resolve) => setTimeout(resolve, delayMs));
++  return {
++    available: true,
++    mode: 'mock',
++    async listTasks({ imConversationId }) {
++      await pause();
++      if (scenario === 'forbidden') throw new TasksError('forbidden');
++      if (scenario === 'error' && !failedLists.has(imConversationId)) {
++        failedLists.add(imConversationId);
++        throw new TasksError('network');
++      }
++      return {
++        records: scenario === 'empty' ? [] : tasksFor(imConversationId),
++        hasMore: false,
++      };
++    },
++    async listArtifacts({ imConversationId, taskKey }) {
++      await pause();
++      if (scenario === 'forbidden') throw new TasksError('forbidden');
++      if (!tasksFor(imConversationId).some((task) => task.key === taskKey))
++        throw new TasksError('not-found');
++      if (
++        scenario === 'artifact-error' &&
++        taskKey.endsWith('-1') &&
++        !failedArtifacts.has(taskKey)
++      ) {
++        failedArtifacts.add(taskKey);
++        throw new TasksError('network', '产物加载失败，请重试');
++      }
++      return {
++        records: artifactsFor(imConversationId, taskKey),
++        hasMore: false,
++      };
++    },
++    async readArtifact({ imConversationId, taskKey, artifactId }) {
++      await pause();
++      if (scenario === 'forbidden') throw new TasksError('forbidden');
++      if (!tasksFor(imConversationId).some((task) => task.key === taskKey))
++        throw new TasksError('not-found');
++      const artifact = artifactsFor(imConversationId, taskKey).find(
++        (item) => item.id === artifactId,
++      );
++      if (!artifact || artifact.availability !== 'available')
++        throw new TasksError('not-found');
++      if (artifact.id === 'image') return imageResource();
++      return {
++        kind: 'text',
++        mimeType: 'text/plain',
++        text: [
++          artifact.name,
++          '',
++          `关联 IM 会话：${imConversationId}`,
++          '这是一份本地演示产物，用于核对任务列表、内容预览和下载。',
++          '正式任务与产物由后端按当前成员身份授权返回。',
++          '<script>这段文本会按原样展示，不会执行。</script>',
++        ].join('\n'),
++      };
++    },
++  };
++}
 diff --git a/nuwax-im-web/src/lib/clipboard.ts b/nuwax-im-web/src/lib/clipboard.ts
-index bc75fe6..e0f8e4a 100644
+index bc75fe65ba89ee8534baf9e5a9fd4bd434c4a0cc..e0f8e4a381e019227e6477f01d7915d0ce1becca 100644
 --- a/nuwax-im-web/src/lib/clipboard.ts
 +++ b/nuwax-im-web/src/lib/clipboard.ts
 @@ -1,3 +1,4 @@
@@ -275,8 +1137,803 @@ index bc75fe6..e0f8e4a 100644
 +    getMessagePortalRoot().removeChild(ta);
    }
  }
+diff --git a/nuwax-im-web/src/lib/conversationTasks.test.ts b/nuwax-im-web/src/lib/conversationTasks.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f54c6344afb908d8a0dabfc089d47108afbba04e
+--- /dev/null
++++ b/nuwax-im-web/src/lib/conversationTasks.test.ts
+@@ -0,0 +1,415 @@
++import assert from 'node:assert/strict';
++import { test } from 'node:test';
++import { unavailableTasksProvider } from '../api/conversationTasks';
++import { createTasksMockProvider } from '../dev/conversationTasksMock';
++import {
++  TasksError,
++  assertTaskPage,
++  canPreviewTaskImage,
++  taskStatusLabel,
++  taskTitle,
++  tasksMockEnabled,
++  type ConversationTask,
++  type ConversationTasksProvider,
++  type TaskPage,
++} from './conversationTasks';
++import { ConversationTasksController } from './conversationTasksController';
++import {
++  addableTabKeys,
++  isTabAllowedIn,
++  manageableTabDefs,
++  visibleTabKeys,
++} from './topTabs';
++
++const task = (
++  conversationId: string,
++  key = conversationId,
++): ConversationTask => ({
++  key,
++  imConversationId: conversationId,
++  platformConversationId: `platform-${key}`,
++  agentSubjectId: 'agent-subject',
++  agentId: 'agent',
++  taskStatus: 'COMPLETE',
++});
++const page = (...records: ConversationTask[]): TaskPage<ConversationTask> => ({
++  records,
++  hasMore: false,
++});
++function deferred<T>() {
++  let resolve!: (value: T) => void;
++  let reject!: (error: unknown) => void;
++  const promise = new Promise<T>((yes, no) => {
++    resolve = yes;
++    reject = no;
++  });
++  return { promise, resolve, reject };
++}
++const settle = async () => {
++  await Promise.resolve();
++  await Promise.resolve();
++};
++function provider(
++  listTasks: ConversationTasksProvider['listTasks'],
++  extras: Partial<ConversationTasksProvider> = {},
++): ConversationTasksProvider {
++  return {
++    ...unavailableTasksProvider,
++    available: true,
++    mode: 'live',
++    listTasks,
++    ...extras,
++  };
++}
++
++test('任务 fixture 只在 DEV 且显式值为 1 开启，不可用 provider 明确拒绝全部操作', async () => {
++  assert.equal(tasksMockEnabled(true, '1'), true);
++  for (const [dev, flag] of [
++    [false, '1'],
++    [true, undefined],
++    [true, 'true'],
++    [true, '0'],
++  ] as const)
++    assert.equal(tasksMockEnabled(dev, flag), false);
++  assert.equal(unavailableTasksProvider.available, false);
++  const unavailable = (error: unknown) =>
++    error instanceof TasksError && error.code === 'unavailable';
++  await assert.rejects(
++    unavailableTasksProvider.listTasks({ imConversationId: '1001' }),
++    unavailable,
++  );
++  await assert.rejects(
++    unavailableTasksProvider.listArtifacts({
++      imConversationId: '1001',
++      taskKey: 't',
++    }),
++    unavailable,
++  );
++  await assert.rejects(
++    unavailableTasksProvider.readArtifact({
++      imConversationId: '1001',
++      taskKey: 't',
++      artifactId: 'a',
++    }),
++    unavailable,
++  );
++});
++
++test('未接入时偏好不能绕过页签/添加/管理入口门控；就绪后单聊群聊都可添加', () => {
++  for (const isGroup of [false, true]) {
++    assert.equal(isTabAllowedIn('tasks', isGroup), false);
++    assert.deepEqual(visibleTabKeys(['messages', 'tasks'], isGroup), [
++      'messages',
++    ]);
++    assert.equal(
++      addableTabKeys(['messages'], isGroup).some((tab) => tab.key === 'tasks'),
++      false,
++    );
++    assert.equal(
++      manageableTabDefs(isGroup).some((tab) => tab.key === 'tasks'),
++      false,
++    );
++    assert.equal(
++      isTabAllowedIn('tasks', isGroup, false, false, false, true),
++      true,
++    );
++    assert.equal(
++      addableTabKeys(['messages'], isGroup, false, false, false, true).some(
++        (tab) => tab.key === 'tasks',
++      ),
++      true,
++    );
++    assert.equal(
++      manageableTabDefs(isGroup, true).some((tab) => tab.key === 'tasks'),
++      true,
++    );
++  }
++});
++
++test('初次失败不显示成功空态，重试成功空列表才 loaded；403/401 错误各有语义', async () => {
++  let calls = 0;
++  const controller = new ConversationTasksController(
++    provider(async () => {
++      if (++calls === 1) throw new TasksError('forbidden');
++      if (calls === 2) throw new TasksError('unauthenticated');
++      return page();
++    }),
++  );
++  controller.selectConversation('a');
++  await settle();
++  assert.equal(controller.getSnapshot().tasks.loaded, false);
++  assert.equal(controller.getSnapshot().tasks.error, '暂无权限查看');
++  await controller.loadTasks();
++  assert.equal(controller.getSnapshot().tasks.error, '登录已失效，请重新登录');
++  await controller.loadTasks();
++  assert.equal(controller.getSnapshot().tasks.loaded, true);
++  assert.deepEqual(controller.getSnapshot().tasks.records, []);
++  assert.equal(controller.getSnapshot().tasks.error, undefined);
++});
++
++test('刷新失败保留已加载任务；新刷新先到则旧刷新不可覆盖', async () => {
++  const requests: ReturnType<typeof deferred<TaskPage<ConversationTask>>>[] =
++    [];
++  const controller = new ConversationTasksController(
++    provider(() => {
++      const d = deferred<TaskPage<ConversationTask>>();
++      requests.push(d);
++      return d.promise;
++    }),
++  );
++  controller.selectConversation('a');
++  requests[0].resolve(page(task('a', 'initial')));
++  await settle();
++  const failing = controller.loadTasks();
++  requests[1].reject(new TasksError('network'));
++  await failing;
++  assert.equal(controller.getSnapshot().tasks.records[0].key, 'initial');
++  assert.ok(controller.getSnapshot().tasks.error);
++  const old = controller.loadTasks();
++  const newer = controller.loadTasks();
++  requests[3].resolve(page(task('a', 'new')));
++  await newer;
++  requests[2].resolve(page(task('a', 'old')));
++  await old;
++  assert.equal(controller.getSnapshot().tasks.records[0].key, 'new');
++});
++
++test('切换 A→B→A 代次隔离，旧 A 迟到不能写入新 A；卸载后也不写回', async () => {
++  const requests: ReturnType<typeof deferred<TaskPage<ConversationTask>>>[] =
++    [];
++  const controller = new ConversationTasksController(
++    provider(() => {
++      const d = deferred<TaskPage<ConversationTask>>();
++      requests.push(d);
++      return d.promise;
++    }),
++  );
++  controller.selectConversation('a');
++  controller.selectConversation('b');
++  requests[1].resolve(page(task('b')));
++  await settle();
++  assert.equal(controller.getSnapshot().tasks.records[0].imConversationId, 'b');
++  controller.selectConversation('a');
++  assert.deepEqual(controller.getSnapshot().tasks.records, []);
++  requests[0].resolve(page(task('a', 'old')));
++  await settle();
++  assert.deepEqual(controller.getSnapshot().tasks.records, []);
++  requests[2].resolve(page(task('a', 'fresh')));
++  await settle();
++  assert.equal(controller.getSnapshot().tasks.records[0].key, 'fresh');
++  const loading = controller.loadTasks();
++  controller.deactivate();
++  const snapshot = controller.getSnapshot();
++  requests[3].resolve(page(task('a', 'after-unmount')));
++  await loading;
++  assert.equal(controller.getSnapshot(), snapshot);
++});
++
++test('adapter 返回另一会话数据必须失败；分页去重且非法游标不伪装为完成', async () => {
++  const controller = new ConversationTasksController(
++    provider(async ({ cursor }) =>
++      cursor
++        ? { records: [task('a', 'first'), task('a', 'second')], hasMore: false }
++        : { records: [task('a', 'first')], hasMore: true, nextCursor: 'next' },
++    ),
++  );
++  controller.selectConversation('a');
++  await settle();
++  await controller.loadTasks(true);
++  assert.deepEqual(
++    controller.getSnapshot().tasks.records.map((item) => item.key),
++    ['first', 'second'],
++  );
++  assert.throws(
++    () => assertTaskPage({ records: [], hasMore: true }),
++    /数据格式异常/,
++  );
++  assert.throws(
++    () =>
++      assertTaskPage(
++        { records: [], hasMore: true, nextCursor: 'same' },
++        'same',
++      ),
++    /数据格式异常/,
++  );
++  const wrong = new ConversationTasksController(
++    provider(async () => page(task('b'))),
++  );
++  wrong.selectConversation('a');
++  await settle();
++  assert.equal(wrong.getSnapshot().tasks.loaded, false);
++  assert.deepEqual(wrong.getSnapshot().tasks.records, []);
++  assert.ok(wrong.getSnapshot().tasks.error);
++});
++
++test('产物局部失败不影响任务与其他产物；刷新删除任务后旧产物响应不得复活', async () => {
++  let listCalls = 0;
++  const late = deferred<{ records: []; hasMore: false }>();
++  const controller = new ConversationTasksController(
++    provider(
++      async () =>
++        ++listCalls === 1
++          ? page(task('a', 'good'), task('a', 'bad'), task('a', 'removed'))
++          : page(task('a', 'good')),
++      {
++        listArtifacts: async ({ taskKey }) => {
++          if (taskKey === 'bad') throw new TasksError('forbidden');
++          if (taskKey === 'removed') return late.promise;
++          return {
++            records: [
++              { id: 'file', name: '产物.txt', availability: 'available' },
++            ],
++            hasMore: false,
++          };
++        },
++      },
++    ),
++  );
++  controller.selectConversation('a');
++  await settle();
++  await controller.loadArtifacts('good');
++  await controller.loadArtifacts('bad');
++  assert.equal(controller.getSnapshot().tasks.records.length, 3);
++  assert.equal(
++    controller.getSnapshot().artifacts.good.records[0].name,
++    '产物.txt',
++  );
++  assert.equal(controller.getSnapshot().artifacts.bad.error, '暂无权限查看');
++  const removed = controller.loadArtifacts('removed');
++  await controller.loadTasks();
++  late.resolve({ records: [], hasMore: false });
++  await removed;
++  assert.equal(controller.getSnapshot().artifacts.removed, undefined);
++  assert.equal(controller.getSnapshot().artifacts.bad, undefined);
++});
++
++test('同一任务删除后恢复不能接收旧产物；平台会话换当前任务后失效已有产物缓存', async () => {
++  let listCalls = 0;
++  let artifactCalls = 0;
++  const late =
++    deferred<
++      TaskPage<{ id: string; name: string; availability: 'available' }>
++    >();
++  const controller = new ConversationTasksController(
++    provider(
++      async () => {
++        listCalls++;
++        if (listCalls === 2) return page();
++        return page({ ...task('a'), taskId: listCalls < 4 ? 'one' : 'two' });
++      },
++      {
++        listArtifacts: async () => {
++          if (++artifactCalls === 1) return late.promise;
++          return {
++            records: [
++              { id: 'fresh', name: '新产物', availability: 'available' },
++            ],
++            hasMore: false,
++          };
++        },
++      },
++    ),
++  );
++  controller.selectConversation('a');
++  await settle();
++  const old = controller.loadArtifacts('a');
++  await controller.loadTasks();
++  await controller.loadTasks();
++  await controller.loadArtifacts('a');
++  late.resolve({
++    records: [{ id: 'old', name: '旧产物', availability: 'available' }],
++    hasMore: false,
++  });
++  await old;
++  assert.equal(controller.getSnapshot().artifacts.a.records[0].id, 'fresh');
++  await controller.loadTasks();
++  assert.equal(controller.getSnapshot().artifacts.a, undefined);
++});
++
++test('状态、缺省名称与图片资源类型有兜底；HTML/SVG 不能进入图片预览', () => {
++  assert.deepEqual(
++    [
++      'CREATE',
++      'EXECUTING',
++      'COMPLETE',
++      'FAILED',
++      'CANCEL',
++      'WAITING',
++      undefined,
++    ].map(taskStatusLabel),
++    [
++      '待开始',
++      '执行中',
++      '已完成',
++      '执行失败',
++      '已取消',
++      '状态未知',
++      '状态未知',
++    ],
++  );
++  assert.equal(
++    taskTitle({ ...task('a'), title: ' ', agentName: '  助手  ' }),
++    '助手',
++  );
++  assert.equal(taskTitle(task('a')), '未命名任务');
++  assert.equal(
++    canPreviewTaskImage({
++      kind: 'image',
++      blob: new Blob([], { type: 'image/png' }),
++    }),
++    true,
++  );
++  for (const mime of ['image/svg+xml', 'text/html', 'application/javascript'])
++    assert.equal(
++      canPreviewTaskImage({
++        kind: 'image',
++        blob: new Blob([], { type: mime }),
++      }),
++      false,
++    );
++  assert.equal(
++    canPreviewTaskImage({
++      kind: 'file',
++      blob: new Blob([], { type: 'image/png' }),
++    }),
++    false,
++  );
++});
++
++test('显式 mock 按 IM 会话隔离；首屏与产物错误可重试，不可用文件拒绝读取', async () => {
++  const mock = createTasksMockProvider('error', 0);
++  await assert.rejects(
++    mock.listTasks({ imConversationId: '1001' }),
++    /加载失败/,
++  );
++  const group = await mock.listTasks({ imConversationId: '1001' });
++  const peer = await createTasksMockProvider('overview', 0).listTasks({
++    imConversationId: '1002',
++  });
++  assert.equal(group.records.length, 5);
++  assert.ok(group.records.every((item) => item.imConversationId === '1001'));
++  assert.ok(peer.records.every((item) => item.imConversationId === '1002'));
++  const partial = createTasksMockProvider('artifact-error', 0);
++  const input = { imConversationId: '1001', taskKey: '1001-platform-1' };
++  await assert.rejects(partial.listArtifacts(input), /产物加载失败/);
++  assert.equal((await partial.listArtifacts(input)).records.length, 3);
++  await assert.rejects(
++    partial.readArtifact({ ...input, artifactId: 'expired' }),
++    /已不存在/,
++  );
++  const resource = await partial.readArtifact({
++    ...input,
++    artifactId: 'image',
++  });
++  assert.equal(canPreviewTaskImage(resource), true);
++  await assert.rejects(
++    partial.listArtifacts({ ...input, imConversationId: '1002' }),
++    /已不存在/,
++  );
++  const forbidden = createTasksMockProvider('forbidden', 0);
++  await assert.rejects(forbidden.listArtifacts(input), /暂无权限/);
++  await assert.rejects(
++    forbidden.readArtifact({ ...input, artifactId: 'report' }),
++    /暂无权限/,
++  );
++});
+diff --git a/nuwax-im-web/src/lib/conversationTasks.ts b/nuwax-im-web/src/lib/conversationTasks.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..c24e4e9aea92fcfabf303293d5683d9fa03309c4
+--- /dev/null
++++ b/nuwax-im-web/src/lib/conversationTasks.ts
+@@ -0,0 +1,158 @@
++/** IM 关联女娲任务的前端投影；真实接口尚待对齐，不能混用 IM/平台会话 ID。 */
++export type PlatformTaskStatus =
++  | 'CREATE'
++  | 'EXECUTING'
++  | 'COMPLETE'
++  | 'FAILED'
++  | 'CANCEL';
++
++export interface ConversationTask {
++  key: string;
++  imConversationId: string;
++  platformConversationId: string;
++  agentSubjectId: string;
++  agentId: string;
++  agentName?: string;
++  title?: string;
++  taskId?: string;
++  taskStatus?: PlatformTaskStatus | string;
++  updatedAt?: string;
++  artifactCount?: number;
++}
++
++export interface TaskArtifact {
++  id: string;
++  name: string;
++  description?: string;
++  mimeType?: string;
++  size?: number;
++  availability: 'available' | 'unavailable';
++  unavailableReason?: string;
++}
++
++export interface TaskPage<T> {
++  records: T[];
++  hasMore: boolean;
++  nextCursor?: string;
++}
++
++/** 资源在明确点击时才读取；二进制由 provider 授权获取为 Blob，不接受任意跳转 URL。 */
++export type TaskArtifactResource =
++  | { kind: 'text'; text: string; mimeType?: string }
++  | { kind: 'image' | 'file'; blob: Blob };
++
++export interface ConversationTasksProvider {
++  readonly available: boolean;
++  readonly mode: 'mock' | 'live' | 'unavailable';
++  listTasks(input: {
++    imConversationId: string;
++    cursor?: string;
++  }): Promise<TaskPage<ConversationTask>>;
++  listArtifacts(input: {
++    imConversationId: string;
++    taskKey: string;
++    cursor?: string;
++  }): Promise<TaskPage<TaskArtifact>>;
++  readArtifact(input: {
++    imConversationId: string;
++    taskKey: string;
++    artifactId: string;
++  }): Promise<TaskArtifactResource>;
++}
++
++export type TasksErrorCode =
++  | 'unauthenticated'
++  | 'forbidden'
++  | 'unavailable'
++  | 'network'
++  | 'not-found';
++
++export class TasksError extends Error {
++  constructor(public readonly code: TasksErrorCode, message?: string) {
++    super(message ?? tasksErrorLabel(code));
++    this.name = 'TasksError';
++  }
++}
++
++export function tasksErrorLabel(code: TasksErrorCode): string {
++  switch (code) {
++    case 'unauthenticated':
++      return '登录已失效，请重新登录';
++    case 'forbidden':
++      return '暂无权限查看';
++    case 'unavailable':
++      return '任务服务尚未接入';
++    case 'not-found':
++      return '任务或产物已不存在';
++    default:
++      return '加载失败，请重试';
++  }
++}
++
++export function tasksErrorMessage(error: unknown): string {
++  return error instanceof TasksError
++    ? error.message
++    : tasksErrorLabel('network');
++}
++
++export function taskStatusLabel(status?: string): string {
++  switch (status) {
++    case 'CREATE':
++      return '待开始';
++    case 'EXECUTING':
++      return '执行中';
++    case 'COMPLETE':
++      return '已完成';
++    case 'FAILED':
++      return '执行失败';
++    case 'CANCEL':
++      return '已取消';
++    default:
++      return '状态未知';
++  }
++}
++
++export function taskTitle(task: ConversationTask): string {
++  return task.title?.trim() || task.agentName?.trim() || '未命名任务';
++}
++
++/** 仅构建开发模式可启用任务 fixture，生产产物不能通过 URL/localStorage 切为 mock。 */
++export function tasksMockEnabled(
++  isDevelopment: boolean,
++  flag?: string,
++): boolean {
++  return isDevelopment && flag === '1';
++}
++
++/** 图片仅允许浏览器安全的位图格式；HTML、SVG 等文件只可下载，不在任务面板执行。 */
++export function canPreviewTaskImage(resource: TaskArtifactResource): boolean {
++  return (
++    resource.kind === 'image' &&
++    /^image\/(png|jpeg|gif|webp)$/i.test(resource.blob.type)
++  );
++}
++
++/** 非法分页不可变成“已经全部加载”。 */
++export function assertTaskPage<T>(
++  page: TaskPage<T>,
++  previousCursor?: string,
++): void {
++  if (
++    !page ||
++    !Array.isArray(page.records) ||
++    typeof page.hasMore !== 'boolean' ||
++    (page.hasMore && (!page.nextCursor || page.nextCursor === previousCursor))
++  ) {
++    throw new TasksError('network', '任务数据格式异常，请重试');
++  }
++}
++
++export function mergeTaskRecords<T>(
++  previous: T[],
++  incoming: T[],
++  keyOf: (item: T) => string,
++): T[] {
++  const merged = new Map(previous.map((item) => [keyOf(item), item]));
++  incoming.forEach((item) => merged.set(keyOf(item), item));
++  return [...merged.values()];
++}
+diff --git a/nuwax-im-web/src/lib/conversationTasksController.ts b/nuwax-im-web/src/lib/conversationTasksController.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b1cf77ecddfbe8add34f0ea83a48d798569e110
+--- /dev/null
++++ b/nuwax-im-web/src/lib/conversationTasksController.ts
+@@ -0,0 +1,204 @@
++import {
++  assertTaskPage,
++  mergeTaskRecords,
++  tasksErrorMessage,
++  type ConversationTask,
++  type ConversationTasksProvider,
++  type TaskArtifact,
++} from './conversationTasks';
++
++export interface TaskLoadState<T> {
++  records: T[];
++  loading: boolean;
++  loaded: boolean;
++  error?: string;
++  hasMore: boolean;
++  nextCursor?: string;
++}
++
++export interface ConversationTasksState {
++  conversationId: string | null;
++  tasks: TaskLoadState<ConversationTask>;
++  artifacts: Record<string, TaskLoadState<TaskArtifact>>;
++}
++
++const emptyLoad = <T>(): TaskLoadState<T> => ({
++  records: [],
++  loading: false,
++  loaded: false,
++  hasMore: false,
++});
++
++/** 面板自己的请求状态，不污染消息 store；代次同时防切会话、ABA 与卸载的迟到响应。 */
++export class ConversationTasksController {
++  private state: ConversationTasksState = {
++    conversationId: null,
++    tasks: emptyLoad(),
++    artifacts: {},
++  };
++  private listeners = new Set<() => void>();
++  private generation = 0;
++  private taskRequest = 0;
++  private artifactRequest = 0;
++  private artifactRequests = new Map<string, number>();
++
++  constructor(private readonly provider: ConversationTasksProvider) {}
++
++  getSnapshot = (): ConversationTasksState => this.state;
++  subscribe = (listener: () => void): (() => void) => {
++    this.listeners.add(listener);
++    return () => this.listeners.delete(listener);
++  };
++
++  private update(state: ConversationTasksState): void {
++    this.state = state;
++    this.listeners.forEach((listener) => listener());
++  }
++
++  selectConversation(conversationId: string | null): void {
++    this.generation += 1;
++    this.artifactRequests.clear();
++    this.update({ conversationId, tasks: emptyLoad(), artifacts: {} });
++    if (conversationId) void this.loadTasks();
++  }
++
++  deactivate(): void {
++    this.generation += 1;
++    this.artifactRequests.clear();
++  }
++
++  async loadTasks(more = false): Promise<void> {
++    const conversationId = this.state.conversationId;
++    const previous = this.state.tasks;
++    if (!conversationId || (more && (previous.loading || !previous.hasMore)))
++      return;
++    const generation = this.generation;
++    const request = ++this.taskRequest;
++    const cursor = more ? previous.nextCursor : undefined;
++    const current = () =>
++      generation === this.generation && request === this.taskRequest;
++    this.update({
++      ...this.state,
++      tasks: { ...previous, loading: true, error: undefined },
++    });
++    try {
++      const page = await this.provider.listTasks({
++        imConversationId: conversationId,
++        cursor,
++      });
++      assertTaskPage(page, cursor);
++      if (!current()) return;
++      // 即使 adapter 出错，也不能把另一会话的内容渲染到当前会话。
++      if (
++        page.records.some((task) => task.imConversationId !== conversationId)
++      ) {
++        throw new Error('任务关联会话不一致');
++      }
++      const records = mergeTaskRecords(
++        more ? previous.records : [],
++        page.records,
++        (task) => task.key,
++      );
++      const keys = new Set(records.map((task) => task.key));
++      const previousTasks = new Map(
++        previous.records.map((task) => [task.key, task]),
++      );
++      const changedKeys = new Set(
++        records
++          .filter((task) => {
++            const before = previousTasks.get(task.key);
++            return (
++              before &&
++              (before.taskId !== task.taskId ||
++                before.updatedAt !== task.updatedAt ||
++                before.artifactCount !== task.artifactCount ||
++                before.taskStatus !== task.taskStatus)
++            );
++          })
++          .map((task) => task.key),
++      );
++      // 刷新删除的任务不能留下产物，也不能接受其仍在途中的产物请求。
++      this.artifactRequests.forEach((_request, key) => {
++        if (!keys.has(key) || changedKeys.has(key))
++          this.artifactRequests.delete(key);
++      });
++      this.update({
++        ...this.state,
++        artifacts: Object.fromEntries(
++          Object.entries(this.state.artifacts).filter(
++            ([key]) => keys.has(key) && !changedKeys.has(key),
++          ),
++        ),
++        tasks: {
++          records,
++          loading: false,
++          loaded: true,
++          hasMore: page.hasMore,
++          nextCursor: page.nextCursor,
++        },
++      });
++    } catch (error) {
++      if (current())
++        this.update({
++          ...this.state,
++          tasks: {
++            ...previous,
++            loading: false,
++            error: tasksErrorMessage(error),
++          },
++        });
++    }
++  }
++
++  async loadArtifacts(taskKey: string, more = false): Promise<void> {
++    const conversationId = this.state.conversationId;
++    if (
++      !conversationId ||
++      !this.state.tasks.records.some((task) => task.key === taskKey)
++    )
++      return;
++    const previous = this.state.artifacts[taskKey] ?? emptyLoad<TaskArtifact>();
++    if (more && (previous.loading || !previous.hasMore)) return;
++    const generation = this.generation;
++    // 全局递增而非每 key 从 1 重来，防刷新移除→恢复同一任务的 ABA 迟到响应。
++    const request = ++this.artifactRequest;
++    this.artifactRequests.set(taskKey, request);
++    const cursor = more ? previous.nextCursor : undefined;
++    const current = () =>
++      generation === this.generation &&
++      this.artifactRequests.get(taskKey) === request;
++    const setArtifacts = (load: TaskLoadState<TaskArtifact>) =>
++      this.update({
++        ...this.state,
++        artifacts: { ...this.state.artifacts, [taskKey]: load },
++      });
++    setArtifacts({ ...previous, loading: true, error: undefined });
++    try {
++      const page = await this.provider.listArtifacts({
++        imConversationId: conversationId,
++        taskKey,
++        cursor,
++      });
++      assertTaskPage(page, cursor);
++      if (current())
++        setArtifacts({
++          records: mergeTaskRecords(
++            more ? previous.records : [],
++            page.records,
++            (artifact) => artifact.id,
++          ),
++          loaded: true,
++          loading: false,
++          hasMore: page.hasMore,
++          nextCursor: page.nextCursor,
++        });
++    } catch (error) {
++      if (current())
++        setArtifacts({
++          ...previous,
++          loading: false,
++          error: tasksErrorMessage(error),
++        });
++    }
++  }
++}
 diff --git a/nuwax-im-web/src/lib/customEvents.ts b/nuwax-im-web/src/lib/customEvents.ts
-index 8ee5552..ccd9ff5 100644
+index 8ee555201f47e70a83bfd58f4d5f7f0f507cbec8..ccd9ff568d0feadc289a5e4b11a1327e91ad6316 100644
 --- a/nuwax-im-web/src/lib/customEvents.ts
 +++ b/nuwax-im-web/src/lib/customEvents.ts
 @@ -159,6 +159,11 @@ export function customEventSubscriberCount(): number {
@@ -292,7 +1949,7 @@ index 8ee5552..ccd9ff5 100644
   * ★安装 {@code window.__im} 桥（业务方从浏览器控制台接入的那扇门）。
   *
 diff --git a/nuwax-im-web/src/lib/notify.ts b/nuwax-im-web/src/lib/notify.ts
-index 8c939bf..8cc49b1 100644
+index 8c939bf817afb8305a23faf79229b01fea87e5df..8cc49b12050b64cd043bc7ce4465872727bbdf01 100644
 --- a/nuwax-im-web/src/lib/notify.ts
 +++ b/nuwax-im-web/src/lib/notify.ts
 @@ -34,6 +34,7 @@
@@ -350,8 +2007,26 @@ index 8c939bf..8cc49b1 100644
    const cur = notifyState(env);
    if (cur !== 'default') return cur;
    const w = globalThis as unknown as {
+diff --git a/nuwax-im-web/src/lib/selfChat.test.ts b/nuwax-im-web/src/lib/selfChat.test.ts
+index aaf96139314ec07d73ab3e088aa3fbc10cab0bde..5464d1514079fb5de5fac4f90cbaf5dd5e9d09b7 100644
+--- a/nuwax-im-web/src/lib/selfChat.test.ts
++++ b/nuwax-im-web/src/lib/selfChat.test.ts
+@@ -310,11 +310,11 @@ describe('★纪律：ChatWindow 把 isSelfP2p 传进【两个】投影（漏一
+     // 只改一处 = DEV-193 点名的"自杀式死按钮"：菜单里还列着资料库，
+     // 用户点添加后标签行毫无变化。两处必须同时读同一维。
+     assert.ok(
+-      src.includes('visibleTabKeys(tabs, isGroup, amManager, isAgentP2p, isSelfP2p)'),
++      /visibleTabKeys\(\s*tabs,\s*isGroup,\s*amManager,\s*isAgentP2p,\s*isSelfP2p(?:\s*,|\s*\))/.test(src),
+       '标签行投影漏传第 5 参 isSelfP2p（自聊里资料库标签还在）',
+     );
+     assert.ok(
+-      src.includes('addableTabKeys(tabs, isGroup, amManager, isAgentP2p, isSelfP2p)'),
++      /addableTabKeys\(\s*tabs,\s*isGroup,\s*amManager,\s*isAgentP2p,\s*isSelfP2p(?:\s*,|\s*\))/.test(src),
+       '「添加标签页」菜单漏传第 5 参 isSelfP2p（留下点不动的死按钮）',
+     );
+   });
 diff --git a/nuwax-im-web/src/lib/titleBadge.ts b/nuwax-im-web/src/lib/titleBadge.ts
-index 71ca56f..bb7cf22 100644
+index 71ca56fdc07a1d5b589036476c41869527eb635a..bb7cf2212ef2343b969e25ad7135c40dba65d7ab 100644
 --- a/nuwax-im-web/src/lib/titleBadge.ts
 +++ b/nuwax-im-web/src/lib/titleBadge.ts
 @@ -1,3 +1,4 @@
@@ -368,8 +2043,159 @@ index 71ca56f..bb7cf22 100644
    if (baseTitle === null) baseTitle = read();
    const next = formatUnreadTitle(baseTitle, unread);
    write(next);
+diff --git a/nuwax-im-web/src/lib/topTabs.test.ts b/nuwax-im-web/src/lib/topTabs.test.ts
+index 24d53cd3fcc8ea97b9f244bcdef32fef9808112f..b5345d5ed617a6ba7d7de98997832d7d5e89a1e7 100644
+--- a/nuwax-im-web/src/lib/topTabs.test.ts
++++ b/nuwax-im-web/src/lib/topTabs.test.ts
+@@ -58,7 +58,7 @@ test('★没有存过偏好（null / 空串）⇒ 默认全量（用户本轮把
+   assert.deepEqual(parseTabKeys(undefined), [...DEFAULT_TAB_KEYS]);
+   assert.deepEqual(parseTabKeys(''), [...DEFAULT_TAB_KEYS]);
+   // 默认值本身必须覆盖全部定义的标签页，且不重不漏。
+-  assert.deepEqual([...DEFAULT_TAB_KEYS], TOP_TABS.map((t) => t.key));
++  assert.deepEqual([...DEFAULT_TAB_KEYS], TOP_TABS.filter((t) => !t.optional).map((t) => t.key));
+ });
+ 
+ test('★存坏了（非 JSON / 不是数组）⇒ 回落默认全量，不能抛', () => {
+@@ -182,7 +182,7 @@ test('★normalizeTabKeys：写路径也要规范化（复选组回传的顺序
+  */
+ test('★★DEV-257：声明顺序与用户逐字点名的六项完全一致（标签行从左到右）', () => {
+   assert.deepEqual(
+-    TOP_TABS.map((t) => t.label),
++    TOP_TABS.filter((t) => !t.optional).map((t) => t.label),
+     ['消息', 'Pin', '资料库', '群公告', '文件', '入群申请', '设置', '搜索', '成员'],
+     '前六项是用户逐字点名的顺序；后三项是固定工具位（渲染在右侧，不在标签行里）',
+   );
+@@ -504,7 +504,7 @@ test('★★DEV-265：管理标签页的列表 = 全量按 groupOnly 投影（
+   //   没有这一条的话，"单聊只列 5 项"这个读数，用「恒返回那 5 项」的错实现也能拿到。
+   assert.deepEqual(
+     manageableTabDefs(true).map((t) => t.key),
+-    TOP_TABS.map((t) => t.key),
++    TOP_TABS.filter((t) => !t.requiresTasksProvider).map((t) => t.key),
+   );
+ 
+   // ★★这条才是"没有顺手多过滤"的证明，也是本函数**唯一**可能写错的地方：
+@@ -676,6 +676,7 @@ const EXPECTED_HOST: Record<TopTabKey, TabHost> = {
+   settings: 'side',
+   joinRequests: 'side',
+   docs: 'full',
++  tasks: 'side',
+ };
+ 
+ test('★★需求⑥：每个标签页的展开位置都被显式归类（漏归类 ⇒ 编译不过）', () => {
+@@ -698,7 +699,7 @@ test('★★需求⑥：每个标签页的展开位置都被显式归类（漏
+ test('★需求⑥：用户点名的 6 项在右侧侧边栏，资料库与群公告留在主区域', () => {
+   // ★恰好这 6 个，一个不多一个不少 —— 用户是逐项点名的。
+   assert.deepEqual(
+-    [...SIDE_TAB_KEYS],
++    SIDE_TAB_KEYS.filter((key) => key !== 'tasks'),
+     ['members', 'files', 'search', 'pin', 'settings', 'joinRequests'],
+   );
+   // ★资料库排除是用户**逐字拍板**的（它是一整个平台页面，塞进 320px 直接不可用）。
+diff --git a/nuwax-im-web/src/lib/topTabs.ts b/nuwax-im-web/src/lib/topTabs.ts
+index 39ee60ca8f721e767705d2ac2895e89910463829..1ca66ff38557759c26512847c61b148e52f62f4d 100644
+--- a/nuwax-im-web/src/lib/topTabs.ts
++++ b/nuwax-im-web/src/lib/topTabs.ts
+@@ -36,7 +36,8 @@ export type TopTabKey =
+   | 'announcement'
+   | 'settings'
+   | 'joinRequests'
+-  | 'docs';
++  | 'docs'
++  | 'tasks';
+ 
+ /**
+  * ★会话窗口的<b>锚</b>标签页：它是会话本体，永远排第一、且不可移除。
+@@ -195,6 +196,10 @@ export interface TopTabDef {
+    * 只在渲染与菜单这一层按会话投影（否则"自聊里看不到"会粘成"回到普通单聊也没了"）。
+    */
+   hiddenInSelfP2p?: boolean;
++  /** 新能力须由可用 provider 明确开放，偏好不能绕过能力门控。 */
++  requiresTasksProvider?: boolean;
++  /** 新功能先保留为可添加项，不重写老用户的页签偏好。 */
++  optional?: boolean;
+ }
+ 
+ /**
+@@ -272,6 +277,8 @@ export const TOP_TABS: readonly TopTabDef[] = [
+   //   空串=清空），读则来自会话详情里的 {@code notice}。所以它是真功能，不是占位。
+   { key: 'announcement', label: '群公告', ready: true, removable: true, groupOnly: true },
+   { key: 'files', label: '文件', ready: true, removable: true, groupOnly: false },
++  // 任务服务尚未接入时隐藏所有入口；仅可用 provider（含显式 DEV mock）开放。
++  { key: 'tasks', label: '任务', ready: true, removable: true, groupOnly: false, requiresTasksProvider: true, optional: true },
+   // ★2026-09-18（DEV-197-b）：入群申请（凭群号申请 / 审核）。
+   //   ★`groupOnly: true` —— 单聊没有群号、没有成员、也就没有"入群"这回事。
+   //   ★★DEV-257：它从"排在 `docs` 之前"挪到了「文件」之后 —— 用户逐字点名
+@@ -336,7 +343,7 @@ export const TOP_TABS: readonly TopTabDef[] = [
+  * <p>用户在本轮需求里把六个可选项<b>全部</b>勾了，所以这里就是 {@link TOP_TABS} 的全量 ——
+  * 不替用户筛掉"看着没用"的，那是我替他做决定。不想要的用「管理标签页」去掉，一次生效。
+  */
+-export const DEFAULT_TAB_KEYS: readonly TopTabKey[] = TOP_TABS.map((t) => t.key);
++export const DEFAULT_TAB_KEYS: readonly TopTabKey[] = TOP_TABS.filter((t) => !t.optional).map((t) => t.key);
+ 
+ /**
+  * ★★DEV-256：那些<b>固定工具位</b>（见 {@link TopTabDef.docked}），按声明顺序。
+@@ -394,6 +401,7 @@ export type TabHost = 'side' | 'full';
+  * 它就是消息区本身。{@link tabHostOf} 对它的返回值不会被读到。
+  */
+ export const SIDE_TAB_KEYS: readonly TopTabKey[] = [
++  'tasks',
+   'members',
+   'files',
+   'search',
+@@ -455,8 +463,10 @@ export function isTabAllowedIn(
+   isManager = false,
+   isAgentP2p = false,
+   isSelfP2p = false,
++  tasksAvailable = false,
+ ): boolean {
+   const def = tabDef(key);
++  if (def.requiresTasksProvider && !tasksAvailable) return false;
+   // ★四条判据分开写、各自 return：合成一个布尔表达式之后，
+   //   下一个加维度的人很容易把"与"写成"或"（表现是普通成员也看得见）。
+   if (def.groupOnly && !isGroup) return false;
+@@ -483,8 +493,8 @@ export function isTabAllowedIn(
+  * <p>★返回的数组<b>恒非空</b>：{@link ANCHOR_TAB} 的 {@code groupOnly} 是 false，
+  * 任何情况下都留在列表里 —— 会话窗口不会出现"一个标签都没有"的空壳。
+  */
+-export function visibleTabKeys(keys: readonly TopTabKey[], isGroup: boolean, isManager = false, isAgentP2p = false, isSelfP2p = false): TopTabKey[] {
+-  return keys.filter((k) => isTabAllowedIn(k, isGroup, isManager, isAgentP2p, isSelfP2p));
++export function visibleTabKeys(keys: readonly TopTabKey[], isGroup: boolean, isManager = false, isAgentP2p = false, isSelfP2p = false, tasksAvailable = false): TopTabKey[] {
++  return keys.filter((k) => isTabAllowedIn(k, isGroup, isManager, isAgentP2p, isSelfP2p, tasksAvailable));
+ }
+ 
+ /**
+@@ -495,13 +505,13 @@ export function visibleTabKeys(keys: readonly TopTabKey[], isGroup: boolean, isM
+  * {@link visibleTabKeys} 的结果 —— 两处用的是同一个 {@code keys}，
+  * 若误传投影后的列表，一个"在别处加过、只是这里不显示"的项会被重复列出。
+  */
+-export function addableTabKeys(keys: readonly TopTabKey[], isGroup: boolean, isManager = false, isAgentP2p = false, isSelfP2p = false): TopTabDef[] {
++export function addableTabKeys(keys: readonly TopTabKey[], isGroup: boolean, isManager = false, isAgentP2p = false, isSelfP2p = false, tasksAvailable = false): TopTabDef[] {
+   // ★★DEV-256：`!t.docked` —— 固定工具位**不进这个菜单**（DEV-257 起是设置/搜索/成员三项）。
+   //   它们现在不受偏好控制（见 {@link normalizeTabKeys} 的补回），列出来的后果不是"多一项"：
+   //   用户会点它、然后标签行里<b>真的多出一个同名标签</b>，与右侧那个图标
+   //   （或群名旁那个入口）指向同一页 —— 两个入口、一份状态，正是本次需求要消掉的东西。
+   return TOP_TABS.filter(
+-    (t) => !t.docked && isTabAllowedIn(t.key, isGroup, isManager, isAgentP2p, isSelfP2p) && !keys.includes(t.key),
++    (t) => !t.docked && isTabAllowedIn(t.key, isGroup, isManager, isAgentP2p, isSelfP2p, tasksAvailable) && !keys.includes(t.key),
+   );
+ }
+ 
+@@ -539,11 +549,11 @@ export function addableTabKeys(keys: readonly TopTabKey[], isGroup: boolean, isM
+  * （{@code verify-chat-tabs.mjs} 的 B 段，读数 {@code 群公告=false 入群申请=false}）。
+  * 现成的遵守范例见 {@code ManageTabsModal.tsx} 的 {@code onChange}。
+  */
+-export function manageableTabDefs(isGroup: boolean): TopTabDef[] {
++export function manageableTabDefs(isGroup: boolean, tasksAvailable = false): TopTabDef[] {
+   // ★不用 `isTabAllowedIn(key, isGroup, true)` 来表达"假装我是管理员"——
+   //   那是拿一个"权限"参数去关掉另一条判据，读的人得在脑子里绕一圈；
+   //   这里就是一句"群专属项在单聊里不列出来"，与 {@link isTabAllowedIn} 第一行同源。
+-  return TOP_TABS.filter((t) => !t.groupOnly || isGroup);
++  return TOP_TABS.filter((t) => (!t.groupOnly || isGroup) && (!t.requiresTasksProvider || tasksAvailable));
+ }
+ 
+ /**
 diff --git a/nuwax-im-web/src/lib/userPresence.ts b/nuwax-im-web/src/lib/userPresence.ts
-index e9e7938..04251f1 100644
+index e9e793872090b65bbcecaadb61610965ff77f478..04251f197fa011533324eb28d39c709b6cebc065 100644
 --- a/nuwax-im-web/src/lib/userPresence.ts
 +++ b/nuwax-im-web/src/lib/userPresence.ts
 @@ -1,3 +1,4 @@
@@ -385,7 +2211,7 @@ index e9e7938..04251f1 100644
 +  return isMessageActive() && doc != null && doc.visibilityState === 'visible' && doc.hasFocus() === true;
  }
 diff --git a/nuwax-im-web/src/store/chat.ts b/nuwax-im-web/src/store/chat.ts
-index 70461bf..f42878d 100644
+index 2e1331c5cc5ec529a4f069a67056eba31f7e5a89..081fa97fbbfbe3053c9a4a0138e2ecd787c5fa6a 100644
 --- a/nuwax-im-web/src/store/chat.ts
 +++ b/nuwax-im-web/src/store/chat.ts
 @@ -126,7 +126,7 @@ import type { ConvUpdateFrame } from '../lib/convUpdate';
@@ -514,7 +2340,7 @@ index 70461bf..f42878d 100644
      // ★通讯录必须**容错**：新表上线初期、平台侧资料服务抖动都可能让它失败，
      //   而它只是侧栏第二个 Tab 的内容 —— 让它把登录流程整个拖垮
      //   （症状：会话列表已经好了，界面却卡在登录页）是完全不成比例的。
-@@ -3167,6 +3196,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3179,6 +3208,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    /** ★DEV-292 D2：窗口定时器与尾随标记收进 lib，store 只留接线。 */
    const readRefreshScheduler = createReadRefreshScheduler({
      windowMs: READ_REFRESH_DEBOUNCE_MS,
@@ -522,7 +2348,7 @@ index 70461bf..f42878d 100644
      fire: (key) => {
        // ★用 `refreshReadCounts`（清签名 + 重查），不是 `ensureReadEligible`：
        //   后者会被"签名没变"那道闸门挡掉 —— 而这里签名**恰恰**不会变
-@@ -3208,6 +3238,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3220,6 +3250,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    const pendingReportSeq = new Map<string, number>();
    const readReportSender = createReadRefreshScheduler({
      windowMs: READ_REPORT_DEBOUNCE_MS,
@@ -530,7 +2356,7 @@ index 70461bf..f42878d 100644
      fire: (key) => {
        const seq = pendingReportSeq.get(key) ?? 0;
        pendingReportSeq.delete(key);
-@@ -3257,6 +3288,19 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3269,6 +3300,19 @@ export const useChatStore = create<ChatState>((set, get) => {
      },
    });
    readHeartbeat.start();
@@ -550,7 +2376,7 @@ index 70461bf..f42878d 100644
    /** ★与后端 `ReadStatusRequest.msgIds` 的上限一致（`store/chat.ts` 里那句 slice(0,200) 同值）。 */
    const READ_ELIGIBLE_MAX = 200;
  
-@@ -3366,12 +3410,14 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3378,12 +3422,14 @@ export const useChatStore = create<ChatState>((set, get) => {
       */
      probePlatformSession: async () => {
        // ★★单飞（DEV-157）：并发调用共用同一次探测，见 platformProbeInFlight 的说明。
@@ -565,7 +2391,7 @@ index 70461bf..f42878d 100644
            set({ authProbe: 'idle' });
            // ★★DEV-173 决策②：预展示的身份核对。
            //   ★位置必须在 loginFromSession【之前】：那个函数一进去就会设 userId、
-@@ -3379,8 +3425,9 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3391,8 +3437,9 @@ export const useChatStore = create<ChatState>((set, get) => {
            //   发出去一串请求（包括设备注册），再把它推翻。
            reconcilePreloadedIdentity(String(user.userId));
            await get().loginFromSession(user);
@@ -576,7 +2402,7 @@ index 70461bf..f42878d 100644
            const err = e as ApiError;
            // ★★DEV-168：判据全部交给 {@link enterAuthEntry}（→ lib/authEntry.ts）。
            //
-@@ -4889,7 +4936,11 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4901,7 +4948,11 @@ export const useChatStore = create<ChatState>((set, get) => {
    //   ★preload 为 null 时返回的<b>就是</b>上面那个对象本身（不是一份浅拷贝）：
    //   zustand 建 store 时会自己持有它，这里多拷一份没有意义。
    return preload ? { ...initial, ...preload } : initial;
@@ -589,7 +2415,7 @@ index 70461bf..f42878d 100644
  
  // ======================================================================
  // ★★DEV-173：脏标记的唯一入口
-@@ -4911,7 +4962,8 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -4923,7 +4974,8 @@ export const useChatStore = create<ChatState>((set, get) => {
  //   mergeMessage 收口 / 发送失败标 msgStatus / 撤回 onMsgRevoke / 已读回执
  //   onReadNotify / 已读回执聚合 onReadNotifyAgg / selectConv 拉历史 /
  //   loadOlderMessages 翻历史 / revokeMessage。
@@ -599,7 +2425,7 @@ index 70461bf..f42878d 100644
    // ★登出/鉴权失效途中不标脏：那一路的磁盘处置是 purge，标脏只会把刚删的东西
    //   重新写回去（与 flushLocalCache 开头那道守卫是同一个理由，两道都留着 ——
    //   一道挡"不写"，一道挡"不排定时器"）。
-@@ -4922,7 +4974,28 @@ useChatStore.subscribe((st, prev) => {
+@@ -4934,7 +4986,28 @@ useChatStore.subscribe((st, prev) => {
        if (st.messagesByConv[key] !== prev.messagesByConv[key]) flushScheduler.markMsgs(key);
      }
    }
@@ -629,7 +2455,7 @@ index 70461bf..f42878d 100644
  
  // ======================================================================
  // ★★DEV-327：window.__im 监听桥的另外两个事件源（未读 / 连接状态）
-@@ -4939,7 +5012,8 @@ useChatStore.subscribe((st, prev) => {
+@@ -4951,7 +5024,8 @@ useChatStore.subscribe((st, prev) => {
  // ★★快照**按字段分开喂**（不是无脑全量喂）：每次喂都是一份新对象，
  //   无脑喂会让宿主每次 store 变化都拿到一个新引用 —— 白分配，
  //   且宿主若用引用比较做变更检测会一直误判成"变了"。
@@ -639,7 +2465,7 @@ index 70461bf..f42878d 100644
    if (s.unreadTotal !== prev.unreadTotal) {
      emitImUnread(s.unreadTotal);
      setImBridgeSnapshot({ unreadTotal: s.unreadTotal });
-@@ -4958,7 +5032,6 @@ useChatStore.subscribe((s, prev) => {
+@@ -4970,7 +5044,6 @@ useChatStore.subscribe((s, prev) => {
  //   （preload 快照那条路尤其明显）—— 那几个字段在本次会话里**一次都不会"变化"**，
  //   于是它们永远停在模块默认值（未读 0、未登录）上，
  //   而宿主 getSnapshot() 恰好就是在这段窗口里被调用的（它刚接进来）。
@@ -647,7 +2473,7 @@ index 70461bf..f42878d 100644
    const s0 = useChatStore.getState();
    setImBridgeSnapshot({
      connState: s0.connState,
-@@ -4966,7 +5039,9 @@ useChatStore.subscribe((s, prev) => {
+@@ -4978,7 +5051,9 @@ useChatStore.subscribe((s, prev) => {
      unreadTotal: s0.unreadTotal,
      userId: s0.userId == null ? null : String(s0.userId),
    });
@@ -657,8 +2483,44 @@ index 70461bf..f42878d 100644
  
  /** 供 UI 使用的已读人数查询（自己发的消息，批量 ≤200）。 */
  export async function fetchReadCounts(convId: IdInput, msgIds: IdInput[]) {
+diff --git a/nuwax-im-web/src/tasksRuntime.ts b/nuwax-im-web/src/tasksRuntime.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..71c173f22701a13b6ac543c613b52e011c18bd61
+--- /dev/null
++++ b/nuwax-im-web/src/tasksRuntime.ts
+@@ -0,0 +1,17 @@
++import { unavailableTasksProvider } from './api/conversationTasks';
++import {
++  createTasksMockProvider,
++  tasksMockScenario,
++} from './dev/conversationTasksMock';
++import { tasksMockEnabled } from './lib/conversationTasks';
++
++/** URL 只在显式开启的开发 fixture 内选场景；正式 bundle 不接受运行期启用 mock。 */
++export const conversationTasksProvider =
++  import.meta.env.DEV &&
++  tasksMockEnabled(true, import.meta.env.VITE_IM_TASKS_MOCK)
++    ? createTasksMockProvider(
++        tasksMockScenario(
++          new URLSearchParams(window.location.search).get('tasksScenario'),
++        ),
++      )
++    : unavailableTasksProvider;
+diff --git a/nuwax-im-web/src/vite-env.d.ts b/nuwax-im-web/src/vite-env.d.ts
+index 282cf1ead631aac602484d234b80389f6001a72c..b6e9a1054bf9fb2c6aab7a6eb8f2cea009f0fa69 100644
+--- a/nuwax-im-web/src/vite-env.d.ts
++++ b/nuwax-im-web/src/vite-env.d.ts
+@@ -18,6 +18,8 @@ interface ImportMetaEnv {
+    * 平台换路径时改这里，不必改代码。★不要写死在组件里 —— 测试环境与生产环境可以不同。
+    */
+   readonly VITE_PLATFORM_REPO_BASE?: string;
++  /** 仅 DEV 且值为 1 时启用本地任务 fixture。 */
++  readonly VITE_IM_TASKS_MOCK?: string;
+ }
+ 
+ interface ImportMeta {
 diff --git a/nuwax-im-web/tsconfig.node.json b/nuwax-im-web/tsconfig.node.json
-index 9d92f0d..8387ffb 100644
+index 9d92f0dc04dc21544bddcf253729b743aacd22dd..8387ffb10d72536f2d5de1b5440a3ab35e430fba 100644
 --- a/nuwax-im-web/tsconfig.node.json
 +++ b/nuwax-im-web/tsconfig.node.json
 @@ -13,5 +13,5 @@
@@ -668,6 +2530,18 @@ index 9d92f0d..8387ffb 100644
 -  "include": ["vite.config.ts"]
 +  "include": ["vite.config.ts", "vite.upstream.config.ts"]
  }
+diff --git a/nuwax-im-web/tsconfig.test.json b/nuwax-im-web/tsconfig.test.json
+index 684290e167d7560c55d484ec02deeca31e547347..610b7f96be16d5bdb8a5097ab32a1d5fb8be0e7d 100644
+--- a/nuwax-im-web/tsconfig.test.json
++++ b/nuwax-im-web/tsconfig.test.json
+@@ -27,6 +27,7 @@
+     "src/lib/group.test.ts",
+     "src/lib/mdShortcut.test.ts",
+     "src/lib/topTabs.test.ts",
++    "src/lib/conversationTasks.test.ts",
+     "src/lib/convFiles.test.ts",
+     "src/lib/redirectUrl.test.ts",
+     "src/lib/authEntry.test.ts",
 diff --git a/nuwax-im-web/vite.config.ts b/nuwax-im-web/vite.upstream.config.ts
 similarity index 100%
 rename from nuwax-im-web/vite.config.ts
