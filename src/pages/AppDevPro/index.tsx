@@ -692,18 +692,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     [podStatus, prodPod.status],
   );
 
-  /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
-  const devLogs = useConversationAgentDevLogs(appId, {
-    enabled:
-      active &&
-      showDevConsole &&
-      devConsoleActiveTab === 'logs' &&
-      devConsoleLayoutMode !== 'collapsed' &&
-      !!appId,
-    pollInterval: 5000,
-    tailLines: 1000,
-  });
-
   // ==================== 副作用 (Effects) ====================
 
   /**
@@ -1146,6 +1134,20 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const serviceReadinessRef = useRef(serviceReadiness);
   serviceReadinessRef.current = serviceReadiness;
   const readinessAppIdRef = useRef(appId);
+
+  /** 日志：仅当前环境容器 running 且应用 ready 时轮询；开发 / 线上分开 */
+  const devLogs = useConversationAgentDevLogs(appId, {
+    enabled:
+      active &&
+      showDevConsole &&
+      devConsoleActiveTab === 'logs' &&
+      devConsoleLayoutMode !== 'collapsed' &&
+      !!appId,
+    env: dbEnv,
+    readiness: serviceReadiness.readinessByEnv[dbEnv],
+    pollInterval: 5000,
+    tailLines: 1000,
+  });
   /** 正在等容器 running，避免未部署时连点「重启应用」重复 restart */
   const restartPreviewWaitRef = useRef(false);
   const [awaitingContainerForRestart, setAwaitingContainerForRestart] =
@@ -3312,11 +3314,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               onActiveTabChange={(tab) => {
                 setDevConsoleActiveTab(tab);
               }}
-              devLog={{
-                logs: devLogs.logs,
-                isLoading: devLogs.isLoading,
-                lastLine: devLogs.lastLine,
-              }}
+              logSources={devLogs.sources}
+              logSourcesLoading={devLogs.isLoading}
               logsExtra={
                 <DevLogActions
                   onRefresh={devLogs.refreshLogs}
