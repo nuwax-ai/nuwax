@@ -2937,7 +2937,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ConversationAgent.devServerReady": "開發伺服器已就緒",
   "PC.Pages.ConversationAgent.gitPush.defaultMessage": "更新檔案",
   "PC.Pages.ConversationAgent.gitPush.noConversation": "無活躍會話，無法執行 Git 推送",
-  "PC.Pages.ConversationAgent.gitPush.success": "Git 提交並推送成功",
+  "PC.Pages.ConversationAgent.gitPush.success": "Git 提交成功",
   "PC.Pages.ConversationAgent.ArrangePanel.tabConfig": "配置",
   "PC.Pages.ConversationAgent.ArrangePanel.tabDebug": "除錯",
   "PC.Pages.ConversationAgent.ArrangePanel.tabVersion": "版本",
