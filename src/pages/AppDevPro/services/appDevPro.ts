@@ -307,6 +307,57 @@ export enum UserAppReadinessStatusEnum {
   Unsupported = 'unsupported',
 }
 
+/**
+ * 计算容器状态，与应用 HTTP 就绪相互独立。
+ * 旧回包没有 container 字段时视为 unknown，不是未部署。
+ */
+export enum UserAppContainerStatusEnum {
+  /** 容器记录不存在 */
+  Missing = 'missing',
+  /** 启动中 */
+  Starting = 'starting',
+  /** 重启中 */
+  Restarting = 'restarting',
+  /** 停止中 */
+  Stopping = 'stopping',
+  /** 运行中 */
+  Running = 'running',
+  /** 已停止 */
+  Stopped = 'stopped',
+  /** 失败 */
+  Failed = 'failed',
+  /** 需要恢复 */
+  RecoveryRequired = 'recovery_required',
+  /** 未知 */
+  Unknown = 'unknown',
+}
+
+/** 计算容器当前意图操作及其终态。null 不表示此前操作已成功。 */
+export interface UserAppContainerOperation {
+  /** 操作类型，如 restart / stop */
+  action: string;
+  /** 操作 ID */
+  operation_id?: string | null;
+  /** 操作修订号 */
+  revision?: number | null;
+  /** 操作阶段，如 completed */
+  stage?: string | null;
+  /** 操作结果状态，如 succeeded */
+  state?: string | null;
+  /** 错误码 */
+  error_code?: string | null;
+  /** 错误信息 */
+  error_message?: string | null;
+}
+
+/** 计算容器就绪情况，与顶层业务 ready/status 分开。 */
+export interface UserAppContainerReadiness {
+  /** 容器状态 */
+  status: UserAppContainerStatusEnum;
+  /** 当前意图操作；没有进行中的操作时为 null */
+  operation: UserAppContainerOperation | null;
+}
+
 /** 应用就绪探测中的单个服务 */
 export interface UserAppReadinessService {
   /** 服务 ID */
@@ -341,6 +392,11 @@ export interface UserAppReadiness {
   ready: boolean;
   /** 顶层业务状态：not_deployed / starting / stopping / stopped / ready / degraded / failed / unknown / unsupported */
   status: UserAppReadinessStatusEnum;
+  /**
+   * 计算容器状态。与业务 ready/status 独立。
+   * 旧回包没有此字段时视为 unknown，不是未部署。
+   */
+  container?: UserAppContainerReadiness;
   /** 本次检查时间 */
   checked_at: string;
   /** 当前对外服务的版本 */

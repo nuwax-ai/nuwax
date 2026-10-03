@@ -17,6 +17,11 @@ interface UseInitProjectMetadataProps {
   ready?: boolean;
   /** 为 false 时跳过 generate-info；默认 true */
   shouldInit?: boolean;
+  /**
+   * 为 false 时不要求导航 action 为 PUSH（AppDevPro：以 nameDefined 为准）。
+   * 默认 true，其它页面保持「仅创建 PUSH 跳转才生成」。
+   */
+  requirePushAction?: boolean;
   /** 常驻页面的入页路由；传入后绝不读取其它页面的全局路由状态。 */
   routeSnapshot?: {
     state?: unknown;
@@ -34,6 +39,7 @@ export const useInitProjectMetadata = ({
   onSuccess,
   ready = true,
   shouldInit = true,
+  requirePushAction = true,
   routeSnapshot,
 }: UseInitProjectMetadataProps) => {
   const location = useLocation();
@@ -58,7 +64,7 @@ export const useInitProjectMetadata = ({
     const prompt = state?.message?.trim();
 
     const action = routeSnapshot ? routeSnapshot.action : history.action;
-    if (action !== 'PUSH' || !prompt) {
+    if (!prompt || (requirePushAction && action !== 'PUSH')) {
       return;
     }
 
@@ -94,5 +100,6 @@ export const useInitProjectMetadata = ({
     onSuccess,
     ready,
     shouldInit,
+    requirePushAction,
   ]);
 };
