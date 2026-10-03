@@ -22,7 +22,10 @@ import React, {
 } from 'react';
 import styles from './index.less';
 import type { FileTreeProps, FileTreeRef } from './types';
-import { collectUnloadedExpandedFolders } from './utils';
+import {
+  collectUnloadedExpandedFolders,
+  stripImeFilenameSeparators,
+} from './utils';
 
 const cx = classNames.bind(styles);
 
@@ -56,6 +59,8 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     // 重命名值
     const [renameValue, setRenameValue] = useState<string>('');
     const renameInputRef = useRef<InputRef>(null);
+    // Esc 取消后输入框卸载会触发 blur，避免随后误走确认创建
+    const ignoreNextRenameBlurRef = useRef(false);
     const restoredDirectoryRequestsRef = useRef(new Set<string>());
     // 已展开的文件夹 ID。初始全部收起，避免一进页面就展开第一层；
     // 之后只随点击、新建或定位文件更新，文件列表刷新不重置，避免已展开的节点被折叠。
@@ -126,26 +131,33 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     );
 
     /**
-     * 取消重命名
+     * 退出输入框。
+     * 取消新建必须删掉临时行；确认创建只关输入框，节点交给后续创建逻辑更新。
      */
-    const cancelRename = () => {
-      const trimmedValue = renameValue.trim();
-      const shouldRemove = renamingNode?.status === 'create' && !trimmedValue;
-
+    const endRename = (removeIfNew: boolean) => {
       onCancelRename({
-        removeIfNew: shouldRemove,
+        removeIfNew: removeIfNew && renamingNode?.status === 'create',
         node: renamingNode || null,
       });
       setRenameValue('');
     };
 
+    /** Esc / 空名称：取消新建时无论有没有输入内容都移除临时行 */
+    const cancelRename = () => {
+      ignoreNextRenameBlurRef.current = true;
+      endRename(true);
+    };
+
     /**
-     * 确认重命名
+     * 确认重命名 / 新建。新建时去掉输入法空格和 '，避免中文输入法回车把拼音分隔写进文件名。
      */
     const confirmRename = () => {
       if (!renamingNode) return;
 
-      const trimmedValue = renameValue.trim();
+      const isCreate = renamingNode.status === 'create';
+      const trimmedValue = (
+        isCreate ? stripImeFilenameSeparators(renameValue) : renameValue
+      ).trim();
       if (!trimmedValue || trimmedValue === renamingNode.name) {
         cancelRename();
         return;
@@ -158,8 +170,9 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
         return;
       }
 
-      // 恢复数据状态
-      cancelRename();
+      // 确认创建时不能删临时行，否则会出现「输入过内容再 Esc」同类残留
+      ignoreNextRenameBlurRef.current = true;
+      endRename(false);
 
       // 异步执行重命名操作
       try {
@@ -176,6 +189,10 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     const handleRenameKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
+          // 中文输入法选词回车不要当成确认文件名
+          if (e.nativeEvent.isComposing || e.keyCode === 229) {
+            return;
+          }
           confirmRename();
         } else if (e.key === 'Escape') {
           cancelRename();
@@ -190,6 +207,10 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     const handleRenameBlur = useCallback(() => {
       // 延迟执行，避免与点击事件冲突
       setTimeout(() => {
+        if (ignoreNextRenameBlurRef.current) {
+          ignoreNextRenameBlurRef.current = false;
+          return;
+        }
         if (renamingNode) {
           const input = renameInputRef.current?.input;
           // 目录列表刷新会卸掉再挂上输入框，焦点回到输入框时不要当成用户取消
@@ -198,7 +219,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
           }
           // 对于新建节点（status === 'create'），根据输入值决定是创建还是取消
           if (renamingNode.status === 'create') {
-            const trimmedValue = renameValue.trim();
+            const trimmedValue = stripImeFilenameSeparators(renameValue).trim();
             // 如果输入了有效名称，则确认创建；否则取消并移除临时节点
             if (trimmedValue) {
               confirmRename();
@@ -213,9 +234,10 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       }, 100);
     }, [renamingNode, renameValue, confirmRename, cancelRename]);
 
-    // 重命名输入框自动聚焦
+    // 重命名输入框自动聚焦；新开一轮输入时清掉上一轮 Esc 留下的忽略 blur 标记
     useEffect(() => {
       if (renamingNode) {
+        ignoreNextRenameBlurRef.current = false;
         setRenameValue(renamingNode.name);
       }
     }, [renamingNode]);

@@ -2955,7 +2955,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.ChatTemp.welcomeText": "歡迎來到 {0}",
   "PC.Pages.ConversationAgent.gitPush.defaultMessage": "更新文件",
   "PC.Pages.ConversationAgent.gitPush.noConversation": "無活躍會話，無法執行 Git 推送",
-  "PC.Pages.ConversationAgent.gitPush.success": "Git 提交並推送成功",
+  "PC.Pages.ConversationAgent.gitPush.success": "Git 提交成功",
   "PC.Pages.ConversationAgent.prototypeTitle": "Agent 開發原型",
   "PC.Pages.ConversationAgentMiddlePanel.files": "文件",
   "PC.Pages.ConversationAgentMiddlePanel.sourceControl": "原始碼管理",

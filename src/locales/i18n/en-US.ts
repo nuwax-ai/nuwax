@@ -3039,7 +3039,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgent.devServerReady": "Dev server ready",
   "PC.Pages.ConversationAgent.gitPush.defaultMessage": "Update files",
   "PC.Pages.ConversationAgent.gitPush.noConversation": "No active conversation, cannot perform Git push",
-  "PC.Pages.ConversationAgent.gitPush.success": "Git commit and push successful",
+  "PC.Pages.ConversationAgent.gitPush.success": "Git commit successful",
   "PC.Pages.ConversationAgent.ArrangePanel.tabConfig": "Config",
   "PC.Pages.ConversationAgent.ArrangePanel.tabDebug": "Debug",
   "PC.Pages.ConversationAgent.ArrangePanel.tabVersion": "Version",

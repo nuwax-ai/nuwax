@@ -32,7 +32,8 @@ export interface FileTreeProps {
   renamingNode?: FileNode | null;
 
   /** 取消重命名回调
-   *  当 removeIfNew 为 true 且 node.status === 'create' 时，父组件应删除该临时节点
+   *  当 removeIfNew 为 true 且 node.status === 'create' 时，父组件应删除该临时节点。
+   *  Esc 取消新建时无论是否已输入内容都应传 true。
    */
   onCancelRename: (options?: {
     removeIfNew?: boolean;
