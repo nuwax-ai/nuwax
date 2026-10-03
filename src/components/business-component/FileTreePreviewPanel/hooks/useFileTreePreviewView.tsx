@@ -4,14 +4,14 @@ import FilePreview, {
 } from '@/components/business-component/FilePreview';
 import { apiGitStatus } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import {
+  buildChangeFilesFromGitStatus,
+  mergeGitStatusFileIds,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
+import {
   isWorkspaceLayeredTree,
   locateWorkspaceChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/locateWorkspaceChangeFile';
 import { workspaceRelativePath } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
-import {
-  buildChangeFilesFromGitStatus,
-  mergeGitStatusFileIds,
-} from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
 import ImageViewer from '@/components/business-component/ImageViewer';
 import { OpenUiRuntimeFrame } from '@/components/business-component/OpenUiArtifactView';
 import CodeViewer from '@/components/CodeViewer';
@@ -40,6 +40,7 @@ import {
   isVideoFile,
   processImageContent,
   resolveFileTreeUploadRelativePath,
+  sortFileTreeNodes,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
@@ -100,7 +101,7 @@ const insertCreatingNode = (
   }
   const parentPath = creating.parentPath;
   if (!parentPath) {
-    return [creating, ...nodes];
+    return sortFileTreeNodes([creating, ...nodes]);
   }
   let inserted = false;
   const next = nodes.map((node) => {
@@ -113,7 +114,7 @@ const insertCreatingNode = (
       inserted = true;
       return {
         ...node,
-        children: [creating, ...(node.children || [])],
+        children: sortFileTreeNodes([creating, ...(node.children || [])]),
       };
     }
     if (node.children?.length) {
@@ -773,10 +774,7 @@ export function useFileTreePreviewView(
         isWorkspaceLayeredTree(currentFiles, fileId)
       ) {
         try {
-          const locatedFile = await locateWorkspaceChangeFile(
-            targetId,
-            fileId,
-          );
+          const locatedFile = await locateWorkspaceChangeFile(targetId, fileId);
           if (locatedFile) {
             fileNode = { ...locatedFile, id: fileId };
           } else {
@@ -1805,7 +1803,7 @@ export function useFileTreePreviewView(
       ): FileNode[] => {
         // 在根目录创建
         if (!targetParentId) {
-          return [newNode, ...nodes];
+          return sortFileTreeNodes([newNode, ...nodes]);
         }
 
         return nodes.map((node) => {
@@ -1813,7 +1811,7 @@ export function useFileTreePreviewView(
             const children = node.children || [];
             return {
               ...node,
-              children: [newNode, ...children],
+              children: sortFileTreeNodes([newNode, ...children]),
             };
           }
 
@@ -2300,10 +2298,7 @@ export function useFileTreePreviewView(
       );
     }
 
-    if (
-      oversizedPreviewFileId &&
-      oversizedPreviewFileId === selectedFileId
-    ) {
+    if (oversizedPreviewFileId && oversizedPreviewFileId === selectedFileId) {
       return (
         <AppDevEmptyState
           type="error"
@@ -2383,8 +2378,7 @@ export function useFileTreePreviewView(
 
     // 展示用文件名。节点 id 带 workspace: 只用于树内选中，不能拿来当文件名
     const selectedFileName = selectedFileNode.name || '';
-    const fileExtension =
-      selectedFileName.split('.').pop() || selectedFileName;
+    const fileExtension = selectedFileName.split('.').pop() || selectedFileName;
 
     // 软链接文件不支持编辑预览
     if (selectedFileNode?.isLink) {

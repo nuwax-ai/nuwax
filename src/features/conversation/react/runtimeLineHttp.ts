@@ -18,7 +18,7 @@ import {
   apiAgentConversationMessageList,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
-import { TaskStatus } from '@/types/enums/agent';
+import { HideDesktopEnum, TaskStatus } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   applyTerminalTaskStatus,
@@ -58,6 +58,10 @@ export interface RuntimeLineEffectsResources {
   showPagePreview?: (preview: unknown) => void;
   /** 各页面自己的打开远程桌面实现，名字统一为 openDesktopView */
   openDesktopView?: (conversationId: number) => void;
+  /** 智能体是否隐藏远程桌面（会话事件打开桌面前由 react 层判断） */
+  hideDesktop?: HideDesktopEnum | null;
+  /** 打开远程桌面时的生效电脑。不传则用 hook 的 getSandboxId */
+  getOpenDesktopSandboxId?: () => string | number | null | undefined;
   setCardList?: Dispatch<SetStateAction<unknown[]>>;
   setShowType?: Dispatch<SetStateAction<unknown>>;
   refreshFileListThrottled?: (conversationId: number) => void;
@@ -147,7 +151,10 @@ export function createRuntimeLineEffectsAdapter(deps: {
               })
               .finally(() => {
                 if (requestVersion === suggestRequestVersion) {
-                  readResources().onSuggestLoadingChange?.(false, conversationId);
+                  readResources().onSuggestLoadingChange?.(
+                    false,
+                    conversationId,
+                  );
                 }
               });
           }, SUGGEST_DEBOUNCE_MS);

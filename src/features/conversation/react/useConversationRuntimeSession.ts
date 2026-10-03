@@ -8,6 +8,7 @@ import {
 import { reconcileAcpPermissionStatusesInMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus';
 import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
+import { canOpenDesktopFromEvent } from '@/features/conversation/domain/openDesktopEvent';
 import { mergeConversationInfoTaskStatus } from '@/features/conversation/domain/taskStatus';
 import {
   applyTerminalTaskStatus,
@@ -112,6 +113,7 @@ export function useConversationRuntimeSession(
     effectsResources,
     messageViewRef,
     allowAutoScrollRef,
+    getSandboxId,
   } = options;
 
   // ---- 绑定层本地会话状态（新线不写旧 model） ----
@@ -166,12 +168,30 @@ export function useConversationRuntimeSession(
 
   const sessionRef = useRef<ConversationRuntimeSession | null>(null);
 
+  const pageResources = (effectsResources as RuntimeLineEffectsResources) || {};
+  const rawOpenDesktopView = pageResources.openDesktopView;
   /**
    * 页面回调每次渲染写入。会话实例只创建一次，执行副作用时读这里的最新函数。
    */
   const effectsResourcesRef = useRef<RuntimeLineEffectsResources>({});
   effectsResourcesRef.current = {
-    ...(effectsResources as RuntimeLineEffectsResources),
+    ...pageResources,
+    openDesktopView: rawOpenDesktopView
+      ? (eventConversationId: number) => {
+          if (
+            !canOpenDesktopFromEvent({
+              conversationId: eventConversationId,
+              pageConversationId: conversationId,
+              hideDesktop: pageResources.hideDesktop,
+              sandboxId:
+                pageResources.getOpenDesktopSandboxId?.() ?? getSandboxId?.(),
+            })
+          ) {
+            return;
+          }
+          rawOpenDesktopView(eventConversationId);
+        }
+      : undefined,
     onSuggestLoadingChange: (loading, targetConversationId) => {
       if (
         sessionRef.current?.getState().currentConversationId ===

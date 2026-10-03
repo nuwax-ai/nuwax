@@ -2,7 +2,11 @@ import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
-import { findFileNode } from '@/utils/appDevUtils';
+import {
+  compareFileTreeNodes,
+  findFileNode,
+  sortFileTreeNodes,
+} from '@/utils/appDevUtils';
 import { getFileIcon } from '@/utils/fileTree';
 import type { InputRef } from 'antd';
 import { Input } from 'antd';
@@ -12,6 +16,7 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -57,6 +62,8 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
       () => new Set(),
     );
+    // 展示层每层都排序：不依赖接口插入顺序，展开/关闭/新增都同一套规则
+    const sortedFiles = useMemo(() => sortFileTreeNodes(files || []), [files]);
 
     useImperativeHandle(
       ref,
@@ -423,9 +430,11 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
               </div>
               {isExpanded && !!node.children?.length && (
                 <div className={styles.fileList}>
-                  {node.children.map((child: FileNode) =>
-                    renderFileTreeNode(child, level + 1),
-                  )}
+                  {[...node.children]
+                    .sort(compareFileTreeNodes)
+                    .map((child: FileNode) =>
+                      renderFileTreeNode(child, level + 1),
+                    )}
                 </div>
               )}
             </div>
@@ -501,8 +510,8 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
           >
             <Loading />
           </div>
-        ) : files?.length > 0 ? (
-          files?.map((node: FileNode) => renderFileTreeNode(node))
+        ) : sortedFiles.length > 0 ? (
+          sortedFiles.map((node: FileNode) => renderFileTreeNode(node))
         ) : (
           <div
             className={cx(

@@ -7,7 +7,7 @@
  * - 加载完成后渲染 LeftContent，并下发 effectiveAgent
  * - effectiveAgent：优先 conversationInfo.agent
  * - showSidebar=false 不下发智能体详情入口；弹窗默认关闭，入口回调可打开
- * - enableResizable 控制 ResizableSplit
+ * - 资料库 / Page 预览下发给 LeftContent，在顶部图标下方展开
  * - new_chat 时默认选中 DefaultSelected=Yes 的 manualComponents
  */
 import { conversationPageCacheManager } from '@/features/conversation/react/useConversationPageCache';
@@ -46,6 +46,7 @@ const {
   conversationInfoState,
   agentDetailState,
   modelOverrides,
+  chatPagePreviewState,
 } = vi.hoisted(() => ({
   mockUseModel: vi.fn(),
   mockUseParams: vi.fn(),
@@ -75,6 +76,9 @@ const {
   /** 每个用例可按需覆盖 conversationInfo model 字段（如文件树可见、任务结果选中文件） */
   modelOverrides: {
     current: {} as Record<string, unknown>,
+  },
+  chatPagePreviewState: {
+    current: null as any,
   },
 }));
 
@@ -501,6 +505,7 @@ describe('ChatCore / ChatPage', () => {
     vi.clearAllMocks();
     conversationInfoState.current = null;
     modelOverrides.current = {};
+    chatPagePreviewState.current = null;
     mockStyle3PcKeepAliveEnabled.current = false;
     mockGlobalAppSidebarMode.current = false;
     mockUseRealScope.current = false;
@@ -529,7 +534,7 @@ describe('ChatCore / ChatPage', () => {
       }
       if (name === 'chat') {
         return {
-          pagePreviewData: null,
+          pagePreviewData: chatPagePreviewState.current,
           showPagePreview: vi.fn(),
           hidePagePreview: vi.fn(),
         };
@@ -1185,7 +1190,33 @@ describe('ChatCore / ChatPage', () => {
     expect(screen.getByTestId('agent-detail-modal')).toBeInTheDocument();
   });
 
-  it('enableResizable=true 使用 ResizableSplit', async () => {
+  it('资料库或 Page 预览在顶部图标下方的内容区展开', async () => {
+    chatPagePreviewState.current = {
+      name: '页面预览',
+      uri: '/repo/doc/1',
+      params: {},
+    };
+    conversationInfoState.current = {
+      id: 100,
+      agent: { name: 'ConvAgent' },
+      messageList: [],
+    };
+
+    render(<ChatCore id={100} agentId={200} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('left-content')).toBeInTheDocument();
+    });
+    const leftProps = mockLeftContent.mock.calls.at(-1)?.[0] as {
+      isPagePreviewVisible?: boolean;
+      pagePreview?: React.ReactNode;
+    };
+    expect(leftProps.isPagePreviewVisible).toBe(true);
+    expect(leftProps.pagePreview).toBeTruthy();
+    expect(screen.queryByTestId('resizable-split')).toBeNull();
+  });
+
+  it('enableResizable=true 仍渲染会话主区', async () => {
     conversationInfoState.current = {
       id: 100,
       agent: { name: 'ConvAgent' },
@@ -1195,12 +1226,11 @@ describe('ChatCore / ChatPage', () => {
     render(<ChatCore id={100} agentId={200} enableResizable />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('resizable-split')).toBeInTheDocument();
+      expect(screen.getByTestId('left-content')).toBeInTheDocument();
     });
-    expect(mockResizableSplit).toHaveBeenCalled();
   });
 
-  it('enableResizable=false 不使用 ResizableSplit', async () => {
+  it('enableResizable=false 仍渲染会话主区', async () => {
     conversationInfoState.current = {
       id: 100,
       agent: { name: 'ConvAgent' },
