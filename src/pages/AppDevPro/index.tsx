@@ -55,19 +55,20 @@ import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
-  loadChatPanelWidthPercent,
-  saveChatPanelWidthPercent,
-} from '@/utils/chatPanelWidthPreference';
-import {
   clearAppDevProSkipReadiness,
   consumeAppDevProSkipReadiness,
   isCurrentDocumentReload,
   releaseAppDevProSkipReadiness,
 } from '@/utils/appDevProSkipReadiness';
+import {
+  loadChatPanelWidthPercent,
+  saveChatPanelWidthPercent,
+} from '@/utils/chatPanelWidthPreference';
 import { addBaseTarget } from '@/utils/common';
 import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
+import type { GeneratedMetadata } from '@/utils/generatedMetadata';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -118,8 +119,8 @@ import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/P
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
-import { useUserAppRuntime } from './hooks/useUserAppRuntime';
 import { useUserAppReadinessWatch } from './hooks/useUserAppReadinessWatch';
+import { useUserAppRuntime } from './hooks/useUserAppRuntime';
 import { useUserAppTasksActive } from './hooks/useUserAppTasksActive';
 import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
@@ -138,6 +139,7 @@ import {
   type UserAppDomainInfo,
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
+import { isProjectNameDefined } from './utils/isProjectNameDefined';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 const cx = classNames.bind(styles);
@@ -824,14 +826,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     },
   });
 
-  /** Prompt 创建并进入页面后：nameDefined 为 false 时才 generate-info 并更新名称 */
-  useInitProjectMetadata({
-    targetType: AgentComponentTypeEnum.UserApp,
-    targetId: appId,
-    ready: active && userAppInfoFetched,
-    routeSnapshot,
-    shouldInit: userAppInfo?.nameDefined === false,
-    applyMetadata: async (meta) => {
+  /**
+   * 网站应用：详情已返回且 nameDefined 不为 true 时 generate-info 并回写名称。
+   * 不依赖 PUSH（等 get/:id 回来时 action 往往已不是 PUSH）；其它页面仍走默认 PUSH 门。
+   */
+  const applyUserAppMetadata = useCallback(
+    async (meta: GeneratedMetadata) => {
       await apiUserAppUpdate({
         id: appId,
         name: meta.name?.trim() || undefined,
@@ -854,11 +854,23 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         reason: 'auto-metadata',
       });
     },
-    onSuccess: () => {
-      if (appId) {
-        runGetUserAppInfo(appId);
-      }
-    },
+    [appId, spaceId],
+  );
+  const refreshUserAppInfoAfterMetadata = useCallback(() => {
+    if (appId) {
+      runGetUserAppInfo(appId);
+    }
+  }, [appId, runGetUserAppInfo]);
+
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.UserApp,
+    targetId: appId,
+    ready: active && userAppInfoFetched && !!userAppInfo,
+    routeSnapshot,
+    requirePushAction: false,
+    shouldInit: !isProjectNameDefined(userAppInfo?.nameDefined),
+    applyMetadata: applyUserAppMetadata,
+    onSuccess: refreshUserAppInfoAfterMetadata,
   });
 
   /** 进入页面后轮询开发启动 / 发布构建是否占用中 */
@@ -1832,8 +1844,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     workspaceView === 'files' &&
     canShowFileView &&
     !isTerminalPanelOpen;
-  const isTerminalIconActive =
-    !repoDocCoversWorkspace && isTerminalPanelOpen;
+  const isTerminalIconActive = !repoDocCoversWorkspace && isTerminalPanelOpen;
 
   // ==================================== 文件视图 & 编排面板 ====================================
   /**
@@ -1903,7 +1914,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       /** 目标父目录还在加载时，不要用当前文件列表判断文件不存在 */
       isAutoSelectDirectoryLoaded: (fileId: string) => {
         const parentPath = parentDirectory(workspaceRelativePath(fileId));
-        if (workspaceFiles.openingTaskResultRef.current?.parent === parentPath) {
+        if (
+          workspaceFiles.openingTaskResultRef.current?.parent === parentPath
+        ) {
           return false;
         }
         return workspaceFiles.loadedDirectoryPaths.has(parentPath);
