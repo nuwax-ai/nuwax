@@ -17,7 +17,7 @@ export type UserAppEnvPodStatus = 'idle' | 'starting' | 'running' | 'error';
  *
  * @param conversationId 会话 ID；未传则不启动
  * @param env 开发 / 线上
- * @returns 容器状态、ensure 与仅保活方法
+ * @returns 容器状态、ensure、仅保活，以及电脑重启后复用已有保活的方法
  */
 export function useUserAppEnvPod(
   conversationId: number | undefined,
@@ -34,6 +34,8 @@ export function useUserAppEnvPod(
   const mountedRef = useRef(false);
   const envRef = useRef(env);
   envRef.current = env;
+  /** 60 秒保活轮询是否已经在跑，避免电脑重启后再 run 一遍把间隔重置掉 */
+  const keepalivePollingRef = useRef(false);
 
   const { run: runKeepalive, cancel: stopKeepalive } = useRequest(
     (cId: number) => apiKeepalivePod(cId, envRef.current),
@@ -45,10 +47,19 @@ export function useUserAppEnvPod(
     },
   );
 
+  const beginKeepalivePolling = useCallback(
+    (cId: number) => {
+      keepalivePollingRef.current = true;
+      runKeepalive(cId);
+    },
+    [runKeepalive],
+  );
+
   useEffect(() => {
     mountedRef.current = true;
     generationRef.current += 1;
     inflightPromiseRef.current = null;
+    keepalivePollingRef.current = false;
     statusRef.current = 'idle';
     setStatus('idle');
     stopKeepalive();
@@ -56,6 +67,7 @@ export function useUserAppEnvPod(
       mountedRef.current = false;
       generationRef.current += 1;
       inflightPromiseRef.current = null;
+      keepalivePollingRef.current = false;
       stopKeepalive();
     };
     // 仅会话 / 环境变化时重置；stopKeepalive 引用变化不得清掉失败态
@@ -94,7 +106,7 @@ export function useUserAppEnvPod(
           if (code === SUCCESS_CODE) {
             statusRef.current = 'running';
             setStatus('running');
-            runKeepalive(conversationId);
+            beginKeepalivePolling(conversationId);
             return true;
           }
           statusRef.current = 'error';
@@ -107,7 +119,7 @@ export function useUserAppEnvPod(
           if (isEnsurePodThrottledError(error)) {
             statusRef.current = 'running';
             setStatus('running');
-            runKeepalive(conversationId);
+            beginKeepalivePolling(conversationId);
             return true;
           }
           console.error('[useUserAppEnvPod] ensurePod failed:', error);
@@ -126,7 +138,7 @@ export function useUserAppEnvPod(
         }
       }
     },
-    [conversationId, enabled, env, runKeepalive],
+    [conversationId, enabled, env, beginKeepalivePolling],
   );
 
   /**
@@ -146,8 +158,29 @@ export function useUserAppEnvPod(
     }
     statusRef.current = 'running';
     setStatus('running');
-    runKeepalive(conversationId);
-  }, [conversationId, enabled, runKeepalive]);
+    beginKeepalivePolling(conversationId);
+  }, [beginKeepalivePolling, conversationId, enabled]);
 
-  return { status, ensure, keepAlive };
+  /**
+   * 电脑重启成功后接上保活。
+   * 轮询还在跑：只补打一次 keepalive，不重新 run，60 秒间隔保持不变。
+   * 还没开始：按 keepAlive 启动轮询。
+   */
+  const touchKeepAlive = useCallback(() => {
+    if (!mountedRef.current || !enabled || !conversationId) {
+      return;
+    }
+    if (keepalivePollingRef.current) {
+      void apiKeepalivePod(conversationId, envRef.current);
+      return;
+    }
+    if (statusRef.current === 'starting' || inflightPromiseRef.current) {
+      return;
+    }
+    statusRef.current = 'running';
+    setStatus('running');
+    beginKeepalivePolling(conversationId);
+  }, [beginKeepalivePolling, conversationId, enabled]);
+
+  return { status, ensure, keepAlive, touchKeepAlive };
 }

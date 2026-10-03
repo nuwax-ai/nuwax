@@ -1255,8 +1255,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 重启智能体电脑。
-   * 线上环境不打开远程桌面，避免顺带调用 ensure。
-   * 电脑重启成功后，轮询 readiness 直到 container.status 为 running。
+   * 只调 pod/restart，不打开远程桌面，避免顺带调用 ensure。
+   * 电脑重启成功后先接上当前环境保活：已有轮询则只补打一次，不重置间隔。
+   * 然后再等 container.status 为 running。
    * 开发环境还要已有有效项目文件才 restart；线上环境容器 running 即可 restart。
    * 线上未部署则不调应用 restart。
    */
@@ -1269,7 +1270,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       restarted = await restartVncPod(
         queryConversationId,
         finalSelectedComputerId,
-        { openDesktop: !isProd },
+        { openDesktop: false },
       );
     } catch (error) {
       console.error('[AppDevPro] Restart agent computer failed:', error);
@@ -1277,6 +1278,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
     if (!restarted) {
       return;
+    }
+    if (isProd) {
+      prodPod.touchKeepAlive();
+    } else {
+      devPod.touchKeepAlive();
     }
     const prodHasDeployment =
       userAppInfo?.prodDeployed === true ||
@@ -1311,6 +1317,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     setPreviewStoppedForEnv,
     userAppInfo?.prodDeployed,
     userAppInfo?.prodReleaseId,
+    devPod.touchKeepAlive,
+    prodPod.touchKeepAlive,
   ]);
   const previewRunningRef = useRef(previewRuntime.running);
   previewRunningRef.current = previewRuntime.running;
