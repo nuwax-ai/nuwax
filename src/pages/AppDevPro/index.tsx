@@ -168,6 +168,10 @@ const isRootWorkspaceManifestFile = (file: StaticFileInfo): boolean => {
     : raw;
   return path === WORKSPACE_MANIFEST_ROOT_FILE && !file.isDir;
 };
+
+/** 根目录是否已有可预览的有效项目（非空且含 workspace.manifest.toml） */
+const hasValidWorkspaceProjectFiles = (files: StaticFileInfo[]): boolean =>
+  files.length > 0 && files.some(isRootWorkspaceManifestFile);
 const noop = () => undefined;
 // const devConversationPollLogger = createLogger(
 //   '[ConversationAgent][DevConversationPoll]',
@@ -1074,6 +1078,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     setReadinessWatchNonce((value) => value + 1);
   }, []);
   /**
+   * 主页新建：进页时应用可能还不存在，先 ensure 再开始 readiness 轮询。
+   * 刷新 / 再次进入仍先 readiness，再决定 keepalive 还是 ensure。
+   */
+  const [createEnsureSettled, setCreateEnsureSettled] = useState(false);
+  /**
    * 主页新建跳转带来的标记只消费一次。
    * 刷新（reload）一律先 readiness；离开页面或换应用 / 会话时清掉标记。
    */
@@ -1093,6 +1102,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       );
     }
     skipReadinessScopeRef.current = readinessScope;
+    setCreateEnsureSettled(false);
     if (isCurrentDocumentReload()) {
       clearAppDevProSkipReadiness(appId, queryConversationId);
       skipReadinessRef.current = false;
@@ -1104,6 +1114,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
   }
   const skipReadinessThisVisit = skipReadinessRef.current;
+  /** 新建跳转：ensure 完成前不打、不等待 readiness，避免项目尚未落库时报错 */
+  const skipReadinessUntilWatch =
+    skipReadinessThisVisit && !createEnsureSettled;
+  const skipReadinessUntilWatchRef = useRef(skipReadinessUntilWatch);
+  skipReadinessUntilWatchRef.current = skipReadinessUntilWatch;
   const skipReadinessMountedScopeRef = useRef('');
   useEffect(() => {
     skipReadinessMountedScopeRef.current = readinessScope;
@@ -1125,12 +1140,16 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const serviceReadiness = useUserAppReadinessWatch(
     appId,
     dbEnv,
-    active && prodReadinessEnabled && !skipReadinessThisVisit,
+    active && prodReadinessEnabled && !skipReadinessUntilWatch,
     readinessWatchNonce,
   );
   const serviceReadinessRef = useRef(serviceReadiness);
   serviceReadinessRef.current = serviceReadiness;
   const readinessAppIdRef = useRef(appId);
+  /** 正在等容器 running，避免未部署时连点「重启应用」重复 restart */
+  const restartPreviewWaitRef = useRef(false);
+  const [awaitingContainerForRestart, setAwaitingContainerForRestart] =
+    useState(false);
 
   /**
    * 刷新进入页面时先看开发环境就绪结果。
@@ -1141,10 +1160,21 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (!active || !envPodConversationId) {
       return;
     }
-    // 主页刚创建进来：应用记录还不存在，直接拉容器，不打 readiness
+    // 主页刚创建进来：应用记录可能还不存在，先拉容器，ensure 后再开始 readiness 轮询
     if (skipReadinessThisVisit) {
-      void devPod.ensure(true);
-      return;
+      let cancelled = false;
+      void (async () => {
+        try {
+          await devPod.ensure(true);
+        } finally {
+          if (!cancelled) {
+            setCreateEnsureSettled(true);
+          }
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
     }
     let cancelled = false;
     void (async () => {
@@ -1200,7 +1230,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       const shouldStop = () =>
         previewUserStoppedByEnvRef.current[targetEnv] ||
         dbEnvRef.current !== targetEnv;
-      if (shouldStop() || !appId || skipReadinessRef.current) {
+      if (shouldStop() || !appId || skipReadinessUntilWatchRef.current) {
         return '';
       }
       await serviceReadinessRef.current.waitUntilReady(targetEnv, shouldStop);
@@ -1226,8 +1256,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /**
    * 重启智能体电脑。
    * 线上环境不打开远程桌面，避免顺带调用 ensure。
-   * 电脑重启成功后：线上已部署才再调应用 restart，未部署不调。
-   * 开发环境仍在成功后重启当前应用。
+   * 电脑重启成功后，轮询 readiness 直到 container.status 为 running。
+   * 开发环境还要已有有效项目文件才 restart；线上环境容器 running 即可 restart。
+   * 线上未部署则不调应用 restart。
    */
   const handleRestartComputer = useCallback(async () => {
     const envToRestart = dbEnvRef.current;
@@ -1253,6 +1284,22 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (isProd && !prodHasDeployment) {
       return;
     }
+    const containerRunningPromise =
+      serviceReadinessRef.current.waitUntilContainerRunning(
+        envToRestart,
+        () => dbEnvRef.current !== envToRestart,
+      );
+    resumeReadinessWatch();
+    // 等待容器 running
+    const containerRunning = await containerRunningPromise;
+    if (!containerRunning || dbEnvRef.current !== envToRestart) {
+      return;
+    }
+    // 开发环境重启：必须已有有效项目文件才 restart
+    if (!isProd && !hasValidWorkspaceProjectFiles(fileTreeDataRef.current)) {
+      return;
+    }
+    resumeReadinessWatch();
     setPreviewStoppedForEnv(envToRestart, false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
     void restartPreviewRuntimeRef.current(envToRestart);
@@ -1288,8 +1335,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (devStopped()) {
       return;
     }
-    // 新建这一次没有 readiness，按原来的 start 往下走，避免一直等探测
-    if (skipReadinessRef.current) {
+    // 新建跳转 ensure 完成前还没有探测，按原来的 start 走，避免一直等
+    if (skipReadinessUntilWatchRef.current) {
       startPreviewIfNeededRef.current(UserAppDbEnvEnum.Dev);
       return;
     }
@@ -2089,10 +2136,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 满足时才允许自动 start，并开放 Header 重启 / 停止。
    */
   const hasFileTreeData = useMemo(() => {
-    return (
-      workspaceFiles.files.length > 0 &&
-      workspaceFiles.files.some(isRootWorkspaceManifestFile)
-    );
+    return hasValidWorkspaceProjectFiles(workspaceFiles.files);
   }, [workspaceFiles.files]);
   /** 会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
   const conversationReady = conversationInfo?.id === queryConversationId;
@@ -2154,7 +2198,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
     // 服务已在跑（不允许再 start）：挂起 dev 就绪探测，可访问后再 iframe，不必再挂 stream
     if (!devActionAllowed) {
-      if (!appPreviewUrlRef.current || skipReadinessRef.current) {
+      if (!appPreviewUrlRef.current || skipReadinessUntilWatchRef.current) {
         return;
       }
       let cancelled = false;
@@ -2213,6 +2257,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     podReady,
     queryConversationId,
     setPreviewEnterSettledForEnv,
+    skipReadinessUntilWatch,
     tasksActiveReady,
     userAppDomainList,
   ]);
@@ -2509,14 +2554,37 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     void previewRuntime.start(envToStart);
   }, [dbEnv, previewRuntime, setPreviewStoppedForEnv]);
 
-  /** 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
-  const handleRestartPreviewRuntime = useCallback(() => {
-    resumeReadinessWatch();
-    const envToRestart = dbEnv;
-    setPreviewStoppedForEnv(envToRestart, false);
-    setPreviewIframeUrl(appPreviewUrlRef.current);
-    void previewRuntime.restart(envToRestart);
-  }, [dbEnv, previewRuntime, resumeReadinessWatch, setPreviewStoppedForEnv]);
+  /**
+   * 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转。
+   * 未部署等状态下也要等计算容器 running，再调应用 restart。
+   */
+  const handleRestartPreviewRuntime = useCallback(async () => {
+    const envToRestart = dbEnvRef.current;
+    if (restartPreviewWaitRef.current) {
+      return;
+    }
+    restartPreviewWaitRef.current = true;
+    setAwaitingContainerForRestart(true);
+    try {
+      const containerRunningPromise =
+        serviceReadinessRef.current.waitUntilContainerRunning(
+          envToRestart,
+          () => dbEnvRef.current !== envToRestart,
+          { acceptCached: true },
+        );
+      resumeReadinessWatch();
+      const containerRunning = await containerRunningPromise;
+      if (!containerRunning || dbEnvRef.current !== envToRestart) {
+        return;
+      }
+      setPreviewStoppedForEnv(envToRestart, false);
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      void previewRuntime.restart(envToRestart);
+    } finally {
+      restartPreviewWaitRef.current = false;
+      setAwaitingContainerForRestart(false);
+    }
+  }, [previewRuntime, resumeReadinessWatch, setPreviewStoppedForEnv]);
 
   /** 停止当前环境预览服务。确认前记下环境，避免确认时已经切到另一侧 */
   const handleStopPreviewRuntime = useCallback(() => {
@@ -2543,7 +2611,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       onRestartPreviewRuntime: handleRestartPreviewRuntime,
       onStopPreviewRuntime: handleStopPreviewRuntime,
       previewRuntimeBusy: previewRuntime.busy && !devStartStreamErrored,
-      previewRuntimeRestarting: previewRuntime.restarting,
+      previewRuntimeRestarting:
+        previewRuntime.restarting || awaitingContainerForRestart,
       previewRuntimeStopping: previewRuntime.stopping,
       previewEnvPodReady: currentEnvPodReady,
       previewPodEnsuring,
@@ -2568,6 +2637,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       devStartStreamErrored,
       previewRuntime.restarting,
       previewRuntime.stopping,
+      awaitingContainerForRestart,
     ],
   );
 
@@ -2944,6 +3014,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         isGeneratingFiles={previewConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
         missingProjectFiles={missingProjectFiles}
+        hasValidProjectFiles={
+          workspaceFiles.fileListLoaded ? hasFileTreeData : null
+        }
         podReady={podReady}
         containerStatus={
           envPodConversationId
@@ -2971,7 +3044,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         }
         stopping={previewRuntime.stopping}
         restarting={
-          dbEnv === UserAppDbEnvEnum.Prod && previewRuntime.restarting
+          awaitingContainerForRestart ||
+          (dbEnv === UserAppDbEnvEnum.Prod && previewRuntime.restarting)
         }
         directPreview={dbEnv === UserAppDbEnvEnum.Prod}
         prodUndeployed={prodAwaitingDeploy}
@@ -3006,11 +3080,13 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       previewRuntime.services,
       previewRuntime.stopping,
       previewRuntime.restarting,
+      awaitingContainerForRestart,
       dbEnv,
       canDirectProdPreview,
       devPod.status,
       envPodConversationId,
       hasFileTreeData,
+      workspaceFiles.fileListLoaded,
       previewEnterSettled,
       previewPresentedByEnv,
       previewUserStopped,

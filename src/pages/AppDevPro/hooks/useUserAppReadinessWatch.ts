@@ -7,6 +7,10 @@ import {
   isUserAppReadinessAccessible,
   type UserAppReadiness,
 } from '../services/appDevPro';
+import {
+  isUserAppContainerRunning,
+  shouldResolveContainerRunningWaiter,
+} from '../utils/isUserAppContainerRunning';
 
 /** 就绪探测间隔。页面停留期间一直重复请求，不设次数上限。 */
 const READINESS_WATCH_INTERVAL_MS = 3000;
@@ -41,6 +45,12 @@ type ReadinessWaiter =
       kind: 'ready';
       shouldStop?: () => boolean;
       resolve: (ready: boolean) => void;
+    }
+  | {
+      env: UserAppDbEnvEnum;
+      kind: 'container-running';
+      shouldStop?: () => boolean;
+      resolve: (running: boolean) => void;
     };
 
 const createSlots = (): Record<UserAppDbEnvEnum, ReadinessSlot> => ({
@@ -72,9 +82,10 @@ const pickReadinessPayload = (
   if (hasCode && result.code !== SUCCESS_CODE) {
     return { ok: false, data: null };
   }
-  const payload = (
-    hasCode && 'data' in result ? result.data : result
-  ) as UserAppReadiness | null | undefined;
+  const payload = (hasCode && 'data' in result ? result.data : result) as
+    | UserAppReadiness
+    | null
+    | undefined;
   if (!payload || typeof payload !== 'object' || !('ready' in payload)) {
     return { ok: true, data: null };
   }
@@ -89,6 +100,7 @@ const buildReadinessViewKey = (data: UserAppReadiness | null): string => {
   return JSON.stringify({
     ready: data.ready,
     status: data.status,
+    container: data.container,
     app_stage: data.app_stage,
     serving_release_id: data.serving_release_id,
     proxy: data.proxy,
@@ -101,6 +113,7 @@ const buildReadinessViewKey = (data: UserAppReadiness | null): string => {
  * 只探测当前选中的环境，开发 / 线上不会同时请求。
  * 结果仍按环境分开保存，切走后另一侧的上次结果留着，不会被覆盖。
  * 当前环境已经真正就绪（status 为 ready 且 ready 为 true）后停止轮询。
+ * 若仍有人在等计算容器 running（例如重启智能体电脑后要再 restart 应用），即使业务已就绪也继续探测。
  * watchNonce 变化时重新开始，用于用户重启应用、停止应用或重启智能体电脑之后。
  *
  * @param appId 应用 ID
@@ -143,7 +156,7 @@ export function useUserAppReadinessWatch(
   }, []);
 
   const notifyWaiters = useCallback(
-    (env?: UserAppDbEnvEnum) => {
+    (env?: UserAppDbEnvEnum, source: 'poll' | 'tick' = 'tick') => {
       if (waitersRef.current.length === 0) {
         clearStopWatch();
         return;
@@ -153,10 +166,11 @@ export function useUserAppReadinessWatch(
           return true;
         }
         if (waiter.shouldStop?.()) {
-          if (waiter.kind === 'ready') {
-            waiter.resolve(false);
-          } else {
+          // 结束等待，返回结果
+          if (waiter.kind === 'settled') {
             waiter.resolve(null);
+          } else {
+            waiter.resolve(false);
           }
           return false;
         }
@@ -165,7 +179,17 @@ export function useUserAppReadinessWatch(
           waiter.resolve(slot.data);
           return false;
         }
-        if (waiter.kind === 'ready' && isUserAppReadinessAccessible(slot.data)) {
+        if (
+          waiter.kind === 'ready' &&
+          isUserAppReadinessAccessible(slot.data)
+        ) {
+          waiter.resolve(true);
+          return false;
+        }
+        if (
+          waiter.kind === 'container-running' &&
+          shouldResolveContainerRunningWaiter(source, slot.data)
+        ) {
           waiter.resolve(true);
           return false;
         }
@@ -194,10 +218,10 @@ export function useUserAppReadinessWatch(
     readinessByEnvRef.current = empty;
     setReadinessByEnv(empty);
     waitersRef.current.splice(0).forEach((waiter) => {
-      if (waiter.kind === 'ready') {
-        waiter.resolve(false);
-      } else {
+      if (waiter.kind === 'settled') {
         waiter.resolve(null);
+      } else {
+        waiter.resolve(false);
       }
     });
     clearStopWatch();
@@ -222,7 +246,7 @@ export function useUserAppReadinessWatch(
       if (prev.viewKey !== viewKey) {
         setReadinessByEnv(next);
       }
-      notifyWaiters(env);
+      notifyWaiters(env, 'poll');
     },
     [notifyWaiters],
   );
@@ -275,10 +299,17 @@ export function useUserAppReadinessWatch(
         timers.add(timer);
       });
 
+    const hasContainerRunningWaiter = (targetEnv: UserAppDbEnvEnum) =>
+      waitersRef.current.some(
+        (waiter) =>
+          waiter.env === targetEnv && waiter.kind === 'container-running',
+      );
+
     const watchEnv = async (targetEnv: UserAppDbEnvEnum) => {
       if (
         !holdReadyStopRef.current &&
-        isUserAppReadinessAccessible(slotsRef.current[targetEnv].data)
+        isUserAppReadinessAccessible(slotsRef.current[targetEnv].data) &&
+        !hasContainerRunningWaiter(targetEnv)
       ) {
         return;
       }
@@ -292,7 +323,10 @@ export function useUserAppReadinessWatch(
           if (picked.ok) {
             commitSlot(targetEnv, picked.data);
             if (isUserAppReadinessAccessible(picked.data)) {
-              if (!holdReadyStopRef.current) {
+              if (
+                !holdReadyStopRef.current &&
+                !hasContainerRunningWaiter(targetEnv)
+              ) {
                 return;
               }
             } else {
@@ -392,10 +426,49 @@ export function useUserAppReadinessWatch(
     [ensureStopWatch],
   );
 
+  /**
+   * 等到计算容器 status 为 running。
+   * 默认不采用当前槽位，只认之后的探测回包（电脑重启后缓存可能仍是旧的 running）。
+   * 手动重启应用时可 acceptCached：当前探测已是 running 就立刻放行。
+   *
+   * @param env 要等待的环境
+   * @param shouldStop 返回 true 时结束等待
+   * @param options.acceptCached 是否采信当前已保存的探测结果
+   * @returns 容器是否已在运行
+   */
+  const waitUntilContainerRunning = useCallback(
+    (
+      env: UserAppDbEnvEnum,
+      shouldStop?: () => boolean,
+      options?: { acceptCached?: boolean },
+    ) => {
+      if (shouldStop?.()) {
+        return Promise.resolve(false);
+      }
+      if (
+        options?.acceptCached &&
+        isUserAppContainerRunning(slotsRef.current[env].data)
+      ) {
+        return Promise.resolve(true);
+      }
+      return new Promise<boolean>((resolve) => {
+        waitersRef.current.push({
+          env,
+          kind: 'container-running',
+          shouldStop,
+          resolve,
+        });
+        ensureStopWatch();
+      });
+    },
+    [ensureStopWatch],
+  );
+
   return {
     readinessByEnv,
     readinessByEnvRef,
     waitForSettled,
     waitUntilReady,
+    waitUntilContainerRunning,
   };
 }
