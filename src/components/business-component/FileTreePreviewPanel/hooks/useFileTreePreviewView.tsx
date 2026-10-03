@@ -1480,7 +1480,7 @@ export function useFileTreePreviewView(
     removeIfNew?: boolean;
     node?: FileNode | null;
   }) => {
-    // 如果是新建节点且未输入内容，则需要从文件树中移除该临时节点
+    // 取消新建时从文件树中移除临时节点（无论输入框是否已有内容）
     if (options?.removeIfNew && options.node) {
       const targetId = options.node.id;
 
