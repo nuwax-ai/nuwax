@@ -692,18 +692,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     [podStatus, prodPod.status],
   );
 
-  /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
-  const devLogs = useConversationAgentDevLogs(appId, {
-    enabled:
-      active &&
-      showDevConsole &&
-      devConsoleActiveTab === 'logs' &&
-      devConsoleLayoutMode !== 'collapsed' &&
-      !!appId,
-    pollInterval: 5000,
-    tailLines: 1000,
-  });
-
   // ==================== 副作用 (Effects) ====================
 
   /**
@@ -1146,6 +1134,20 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const serviceReadinessRef = useRef(serviceReadiness);
   serviceReadinessRef.current = serviceReadiness;
   const readinessAppIdRef = useRef(appId);
+
+  /** 日志：仅当前环境容器 running 且应用 ready 时轮询；开发 / 线上分开 */
+  const devLogs = useConversationAgentDevLogs(appId, {
+    enabled:
+      active &&
+      showDevConsole &&
+      devConsoleActiveTab === 'logs' &&
+      devConsoleLayoutMode !== 'collapsed' &&
+      !!appId,
+    env: dbEnv,
+    readiness: serviceReadiness.readinessByEnv[dbEnv],
+    pollInterval: 5000,
+    tailLines: 1000,
+  });
   /** 正在等容器 running，避免未部署时连点「重启应用」重复 restart */
   const restartPreviewWaitRef = useRef(false);
   const [awaitingContainerForRestart, setAwaitingContainerForRestart] =
@@ -1256,7 +1258,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /**
    * 重启智能体电脑。
    * 只调 pod/restart，不打开远程桌面，避免顺带调用 ensure。
-   * 电脑重启成功后先等 readiness 里 container.status 为 running，再接上保活
+   * 电脑重启成功后先等 4 秒再打 readiness，再等 container.status 为 running，再接上保活
    * （已有轮询则只补打一次，不重置间隔）。
    * 开发环境还要已有有效项目文件才 restart；线上环境容器 running 即可 restart。
    * 线上未部署则不调应用 restart。
@@ -1264,7 +1266,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const handleRestartComputer = useCallback(async () => {
     const envToRestart = dbEnvRef.current;
     const isProd = envToRestart === UserAppDbEnvEnum.Prod;
-    resumeReadinessWatch();
     let restarted = false;
     try {
       restarted = await restartVncPod(
@@ -1277,6 +1278,16 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       return;
     }
     if (!restarted) {
+      return;
+    }
+
+    // 容器刚重启时立刻探测容易打到旧状态，等 4 秒再开始 readiness
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 4000);
+    });
+
+    // 环境切换时，不进行重启
+    if (dbEnvRef.current !== envToRestart) {
       return;
     }
 
@@ -3303,11 +3314,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               onActiveTabChange={(tab) => {
                 setDevConsoleActiveTab(tab);
               }}
-              devLog={{
-                logs: devLogs.logs,
-                isLoading: devLogs.isLoading,
-                lastLine: devLogs.lastLine,
-              }}
+              logSources={devLogs.sources}
+              logSourcesLoading={devLogs.isLoading}
               logsExtra={
                 <DevLogActions
                   onRefresh={devLogs.refreshLogs}

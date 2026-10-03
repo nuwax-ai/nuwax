@@ -1,24 +1,21 @@
 /**
  * AppDevPro 应用日志轮询 Hook
- * 打开日志 Tab 时轮询 /api/userapp/logs/query，渲染逻辑对齐 AppDev useDevLogs
+ * 打开日志 Tab 且当前环境容器 running、应用 ready 时轮询日志来源；
+ * 开发 / 线上分开请求、分开缓存。来源列表由 AppDevPro 自己的面板渲染。
  */
 
 import useHostVisibility from '@/hooks/useHostVisibility';
-import { apiUserAppLogsSourcesQuery } from '@/pages/AppDevPro/services/appDevPro';
+import { UserAppDbEnvEnum } from '@/pages/AppDevPro/services/appDb';
+import {
+  apiUserAppLogsSourcesQuery,
+  type UserAppReadiness,
+} from '@/pages/AppDevPro/services/appDevPro';
 import {
   UserAppStageEnum,
-  type UserAppLogItem,
-  type UserAppLogsQueryResult,
+  type UserAppLogSourceItem,
 } from '@/pages/AppDevPro/type';
-import type { DevLogEntry } from '@/types/interfaces/appDev';
-import type { RequestResponse } from '@/types/interfaces/request';
-import {
-  filterErrorLogs,
-  generateErrorFingerprint,
-  getNewErrors,
-  groupLogsByTimestamp,
-  parseLogEntry,
-} from '@/utils/devLogParser';
+import { canPollUserAppLogs } from '@/pages/AppDevPro/utils/isUserAppContainerRunning';
+import { normalizeUserAppLogSources } from '@/pages/AppDevPro/utils/normalizeUserAppLogSources';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 
@@ -32,121 +29,39 @@ interface UseConversationAgentDevLogsOptions {
   tailLines?: number;
   /** 是否启用轮询，默认 false（由页面在日志 Tab 激活时设为 true） */
   enabled?: boolean;
+  /** 当前查看的环境：开发 / 线上分开拉日志、分开缓存 */
+  env?: UserAppDbEnvEnum;
+  /** 当前环境的就绪探测结果；容器 running 且应用 ready 才真正开轮询 */
+  readiness?: UserAppReadiness | null;
 }
 
 /**
  * 沙盒日志 Hook 的返回值
  */
 interface UseConversationAgentDevLogsReturn {
-  /** 日志数组 */
-  logs: DevLogEntry[];
-  /** 最新日志块是否包含错误（控制一键修复按钮与错误徽标） */
-  hasErrorInLatestBlock: boolean;
+  /** 当前环境的日志来源列表 */
+  sources: UserAppLogSourceItem[];
   /** 是否正在加载 */
   isLoading: boolean;
   /** 是否正在轮询 */
   isPolling: boolean;
-  /** 最后加载的行号 */
-  lastLine: number;
-  /** 最新一组错误日志的纯文本（用于一键修复 / 加入对话） */
-  latestErrorLogs: string;
-  /** 清空本地日志缓存 */
+  /** 清空当前环境的来源缓存 */
   clearLogs: () => void;
-  /** 手动刷新日志（清空后重新拉取） */
+  /** 手动刷新来源（清空后重新拉取） */
   refreshLogs: () => Promise<void>;
   /** 停止轮询 */
   stopPolling: () => void;
   /** 开始轮询 */
   startPolling: () => void;
-  /** 获取相对上次快照新增的错误日志 */
-  getNewErrorLogs: () => DevLogEntry[];
-  /** 标记某条错误已发送，避免重复处理 */
-  markErrorAsSent: (errorFingerprint: string) => void;
-  /** 检查是否存在未发送的新错误 */
-  hasNewErrors: () => boolean;
 }
 
-/**
- * 从日志列表中提取最后一组含错误的日志块，拼接为纯文本
- * @param logs 完整日志列表
- * @returns 最新错误块内容，无错误时返回空字符串
- */
-const getLatestErrorLogs = (logs: DevLogEntry[]): string => {
-  if (!logs.length) {
-    return '';
-  }
-
-  const groups = groupLogsByTimestamp(logs);
-  const theErrorLogs =
-    groups
-      .filter((group) => filterErrorLogs(group.logs || []).length > 0)
-      .at(-1)?.logs || [];
-
-  if (!theErrorLogs.length) {
-    return '';
-  }
-
-  return theErrorLogs
-    .map((log) => log.content)
-    .join('\n')
-    .trim();
-};
-
-/**
- * 从接口回调中取出日志查询结果。
- */
-const unwrapLogsResult = (
-  result:
-    | UserAppLogsQueryResult
-    | RequestResponse<UserAppLogsQueryResult>
-    | undefined,
-): UserAppLogsQueryResult | undefined => {
-  if (!result) {
-    return undefined;
-  }
-  if ('data' in result && result.data) {
-    return result.data;
-  }
-  if ('logs' in result || 'lines' in result || 'records' in result) {
-    return result as UserAppLogsQueryResult;
-  }
-  return undefined;
-};
-
-/**
- * 将应用日志接口返回规范化为 DevLogEntry 列表。
- *
- * @param data 日志查询结果
- * @returns 可供控制台渲染的日志条目
- */
-const normalizeUserAppLogEntries = (
-  data: UserAppLogsQueryResult | string | undefined,
-): DevLogEntry[] => {
-  if (!data) {
-    return [];
-  }
-
-  if (typeof data === 'string') {
-    return data
-      .split('\n')
-      .filter((line) => line.length > 0)
-      .map((line, index) => parseLogEntry(line, index + 1));
-  }
-
-  const rawList = data.logs || data.lines || data.records;
-  if (!Array.isArray(rawList) || rawList.length === 0) {
-    return [];
-  }
-
-  return rawList.map((log: UserAppLogItem | string, index: number) => {
-    if (typeof log === 'string') {
-      return parseLogEntry(log, index + 1);
-    }
-    const content = log.content ?? log.message ?? log.text ?? '';
-    const lineNumber = log.line ?? index + 1;
-    return parseLogEntry(content, lineNumber);
-  });
-};
+const createEmptySourcesByEnv = (): Record<
+  UserAppDbEnvEnum,
+  UserAppLogSourceItem[]
+> => ({
+  [UserAppDbEnvEnum.Dev]: [],
+  [UserAppDbEnvEnum.Prod]: [],
+});
 
 /**
  * AppDevPro 应用日志管理 Hook
@@ -158,64 +73,57 @@ export const useConversationAgentDevLogs = (
   appId?: number,
   options: UseConversationAgentDevLogsOptions = {},
 ): UseConversationAgentDevLogsReturn => {
-  const { pollInterval = 5000, tailLines = 1000, enabled = false } = options;
+  const {
+    pollInterval = 5000,
+    enabled = false,
+    env = UserAppDbEnvEnum.Dev,
+    readiness = null,
+  } = options;
   const hostVisible = useHostVisibility();
+  const canPoll = canPollUserAppLogs(readiness);
   const queryEnabledRef = useRef(false);
-  queryEnabledRef.current = enabled && hostVisible && !!appId;
+  queryEnabledRef.current = enabled && hostVisible && !!appId && canPoll;
 
-  // ==================== 状态 ====================
-  const [logs, setLogs] = useState<DevLogEntry[]>([]);
-  const [hasErrorInLatestBlock, setHasErrorInLatestBlock] = useState(false);
-  const [lastLine, setLastLine] = useState<number>(0);
+  const [sourcesByEnv, setSourcesByEnv] = useState(createEmptySourcesByEnv);
+  const sources = sourcesByEnv[env];
   const [isPolling, setIsPolling] = useState<boolean>(false);
-  const [latestErrorLogs, setLatestErrorLogs] = useState('');
 
-  // ==================== Refs ====================
-  /** 已发送错误的指纹集合，用于去重 */
-  const sentErrorsRef = useRef<Set<string>>(new Set());
-  /** 上一轮日志快照，供 getNewErrors 对比增量 */
-  const previousLogsRef = useRef<DevLogEntry[]>([]);
-  /** 当前应用 ID，避免轮询闭包读取过期值 */
   const appIdRef = useRef(appId);
-  /** 当前 tailLines，避免 useRequest 因依赖变化重建 */
-  const tailLinesRef = useRef(tailLines);
-
-  // 每次渲染都同步最新参数，避免 useEffect 异步更新导致「点击刷新时偶发读到旧值」。
+  const envRef = useRef(env);
   appIdRef.current = appId;
-  tailLinesRef.current = tailLines;
+  envRef.current = env;
+
+  const updateSources = useCallback(
+    (targetEnv: UserAppDbEnvEnum, nextSources: UserAppLogSourceItem[]) => {
+      setSourcesByEnv((prev) => ({ ...prev, [targetEnv]: nextSources }));
+    },
+    [],
+  );
 
   /**
-   * 用接口返回的尾部日志快照整体更新本地状态
-   * 沙盒接口按 tailLines 返回最新片段，每次轮询直接替换而非增量追加
-   */
-  const updateLogsSnapshot = useCallback((nextLogs: DevLogEntry[]) => {
-    setLogs(nextLogs);
-    setHasErrorInLatestBlock(!!getLatestErrorLogs(nextLogs));
-    setLatestErrorLogs(getLatestErrorLogs(nextLogs));
-
-    if (nextLogs.length > 0) {
-      const maxLine = Math.max(...nextLogs.map((log) => log.line));
-      setLastLine(maxLine);
-    } else {
-      setLastLine(0);
-    }
-  }, []);
-
-  /**
-   * 使用 umi useRequest 轮询 /api/userapp/logs/query
-   * manual: true，由 enabled 变化时显式 start/stop
+   * 轮询日志来源。仅当前环境容器 running 且应用 ready 时真正请求；开发 / 线上分开。
    */
   const devLogsPolling = useRequest(
     () => {
       const currentAppId = appIdRef.current;
-      if (!currentAppId) {
-        return Promise.resolve([]);
+      const currentEnv = envRef.current;
+      if (!currentAppId || !queryEnabledRef.current) {
+        return Promise.resolve({ env: currentEnv, result: undefined });
       }
 
       return apiUserAppLogsSourcesQuery({
         appId: currentAppId,
-        env: UserAppStageEnum.Dev,
-      });
+        env:
+          currentEnv === UserAppDbEnvEnum.Prod
+            ? UserAppStageEnum.Prod
+            : UserAppStageEnum.Dev,
+      }).then((result) => ({
+        // umi useRequest 默认 formatResult 只取 data，来源列表必须放在 data 里
+        data: {
+          env: currentEnv,
+          sources: normalizeUserAppLogSources(result),
+        },
+      }));
     },
     {
       manual: true,
@@ -224,14 +132,19 @@ export const useConversationAgentDevLogs = (
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
       throwOnError: false,
-      onSuccess: (
-        result:
-          | UserAppLogsQueryResult
-          | RequestResponse<UserAppLogsQueryResult>,
-      ) => {
-        const payload = unwrapLogsResult(result);
-        const newLogs = normalizeUserAppLogEntries(payload);
-        updateLogsSnapshot(newLogs || []);
+      onSuccess: (payload?: {
+        env?: UserAppDbEnvEnum;
+        sources?: UserAppLogSourceItem[];
+        data?: {
+          env?: UserAppDbEnvEnum;
+          sources?: UserAppLogSourceItem[];
+        };
+      }) => {
+        const packed = payload?.sources ? payload : payload?.data;
+        if (!packed?.env || packed.env !== envRef.current) {
+          return;
+        }
+        updateSources(packed.env, packed.sources || []);
       },
       onError: () => {
         // 静默失败，common.ts 已配置为静默请求
@@ -264,54 +177,25 @@ export const useConversationAgentDevLogs = (
     setIsPolling(true);
   }, []);
 
-  /** 清空本地日志与错误追踪状态 */
+  /** 清空当前环境的来源缓存 */
   const clearLogs = useCallback(() => {
-    setLogs([]);
-    setHasErrorInLatestBlock(false);
-    setLatestErrorLogs('');
-    setLastLine(0);
-    sentErrorsRef.current.clear();
-    previousLogsRef.current = [];
-  }, []);
+    updateSources(envRef.current, []);
+  }, [updateSources]);
 
   /** 清空后手动触发一次拉取 */
   const refreshLogs = useCallback(async () => {
-    // appId 缺失时直接返回，避免出现“点击刷新但没有实际请求”的错觉。
     if (!appIdRef.current || !queryEnabledRef.current) {
       return;
     }
 
     clearLogs();
-    // 手动刷新同样算一次执行，便于后续 stopPolling 可以正确 cancel。
     hasExecutedRef.current = true;
     devLogsPollingRef.current.run();
   }, [clearLogs]);
 
-  /** 对比 previousLogsRef，返回本轮新增的错误日志 */
-  const getNewErrorLogs = useCallback((): DevLogEntry[] => {
-    const newErrors = getNewErrors(logs, previousLogsRef.current);
-    previousLogsRef.current = [...logs];
-    return newErrors;
-  }, [logs]);
-
-  /** 将错误指纹加入已发送集合 */
-  const markErrorAsSent = useCallback((errorFingerprint: string) => {
-    sentErrorsRef.current.add(errorFingerprint);
-  }, []);
-
-  /** 是否存在尚未发送过的新错误 */
-  const hasNewErrors = useCallback((): boolean => {
-    const newErrors = getNewErrors(logs, previousLogsRef.current);
-    return newErrors.some((error) => {
-      const fingerprint =
-        error.errorFingerprint || generateErrorFingerprint(error);
-      return !sentErrorsRef.current.has(fingerprint);
-    });
-  }, [logs]);
-
-  /** enabled 或 appId 变化时自动启停轮询 */
+  /** 日志 Tab 打开、环境就绪且可见时自动启停轮询；切换环境时按该环境重新判断 */
   useEffect(() => {
-    if (enabled && appId && hostVisible) {
+    if (enabled && appId && hostVisible && canPoll) {
       startPolling();
     } else {
       stopPolling();
@@ -320,33 +204,21 @@ export const useConversationAgentDevLogs = (
     return () => {
       stopPolling();
     };
-  }, [enabled, appId, hostVisible, startPolling, stopPolling]);
+  }, [enabled, appId, env, hostVisible, canPoll, startPolling, stopPolling]);
 
-  /** 组件卸载时标记并停止轮询 */
   useEffect(() => {
     return () => {
       stopPolling();
     };
   }, [stopPolling]);
 
-  /** logs 变化时同步 previousLogsRef，供增量错误检测使用 */
-  useEffect(() => {
-    previousLogsRef.current = [...logs];
-  }, [logs]);
-
   return {
-    logs,
-    hasErrorInLatestBlock,
+    sources,
     isLoading: devLogsPolling.loading,
     isPolling,
-    lastLine,
-    latestErrorLogs,
     clearLogs,
     refreshLogs,
     stopPolling,
     startPolling,
-    getNewErrorLogs,
-    markErrorAsSent,
-    hasNewErrors,
   };
 };
