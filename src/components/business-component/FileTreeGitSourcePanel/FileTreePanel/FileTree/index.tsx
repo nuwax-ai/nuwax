@@ -234,9 +234,10 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       }, 100);
     }, [renamingNode, renameValue, confirmRename, cancelRename]);
 
-    // 重命名输入框自动聚焦
+    // 重命名输入框自动聚焦；新开一轮输入时清掉上一轮 Esc 留下的忽略 blur 标记
     useEffect(() => {
       if (renamingNode) {
+        ignoreNextRenameBlurRef.current = false;
         setRenameValue(renamingNode.name);
       }
     }, [renamingNode]);
