@@ -1256,7 +1256,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /**
    * 重启智能体电脑。
    * 只调 pod/restart，不打开远程桌面，避免顺带调用 ensure。
-   * 电脑重启成功后先等 readiness 里 container.status 为 running，再接上保活
+   * 电脑重启成功后先等 4 秒再打 readiness，再等 container.status 为 running，再接上保活
    * （已有轮询则只补打一次，不重置间隔）。
    * 开发环境还要已有有效项目文件才 restart；线上环境容器 running 即可 restart。
    * 线上未部署则不调应用 restart。
@@ -1264,7 +1264,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const handleRestartComputer = useCallback(async () => {
     const envToRestart = dbEnvRef.current;
     const isProd = envToRestart === UserAppDbEnvEnum.Prod;
-    resumeReadinessWatch();
     let restarted = false;
     try {
       restarted = await restartVncPod(
@@ -1277,6 +1276,16 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       return;
     }
     if (!restarted) {
+      return;
+    }
+
+    // 容器刚重启时立刻探测容易打到旧状态，等 4 秒再开始 readiness
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 4000);
+    });
+
+    // 环境切换时，不进行重启
+    if (dbEnvRef.current !== envToRestart) {
       return;
     }
 
