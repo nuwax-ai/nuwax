@@ -2977,7 +2977,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ChatTemp.welcomeText": "{0} へようこそ",
   "PC.Pages.ConversationAgent.gitPush.defaultMessage": "ファイルを更新",
   "PC.Pages.ConversationAgent.gitPush.noConversation": "アクティブな会話がありません。Git プッシュを実行できません",
-  "PC.Pages.ConversationAgent.gitPush.success": "Git コミットとプッシュに成功しました",
+  "PC.Pages.ConversationAgent.gitPush.success": "Git コミットに成功しました",
   "PC.Pages.ConversationAgent.prototypeTitle": "エージェント開発プロトタイプ",
   "PC.Pages.ConversationAgentMiddlePanel.files": "ファイル",
   "PC.Pages.ConversationAgentMiddlePanel.sourceControl": "ソース管理",
