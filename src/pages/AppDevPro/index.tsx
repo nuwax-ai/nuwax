@@ -55,19 +55,20 @@ import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
-  loadChatPanelWidthPercent,
-  saveChatPanelWidthPercent,
-} from '@/utils/chatPanelWidthPreference';
-import {
   clearAppDevProSkipReadiness,
   consumeAppDevProSkipReadiness,
   isCurrentDocumentReload,
   releaseAppDevProSkipReadiness,
 } from '@/utils/appDevProSkipReadiness';
+import {
+  loadChatPanelWidthPercent,
+  saveChatPanelWidthPercent,
+} from '@/utils/chatPanelWidthPreference';
 import { addBaseTarget } from '@/utils/common';
 import { emitProjectChanged } from '@/utils/directorySyncEvents';
 import { resolveEffectiveSandboxId } from '@/utils/effectiveSandbox';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
+import type { GeneratedMetadata } from '@/utils/generatedMetadata';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -118,8 +119,8 @@ import PreviewChromeActions from './ConversationAgentFilePreview/PreviewTabBar/P
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import { useUserAppEnvPod } from './hooks/useUserAppEnvPod';
 import { useUserAppPublish } from './hooks/useUserAppPublish';
-import { useUserAppRuntime } from './hooks/useUserAppRuntime';
 import { useUserAppReadinessWatch } from './hooks/useUserAppReadinessWatch';
+import { useUserAppRuntime } from './hooks/useUserAppRuntime';
 import { useUserAppTasksActive } from './hooks/useUserAppTasksActive';
 import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
@@ -138,6 +139,7 @@ import {
   type UserAppDomainInfo,
 } from './services/appDomain';
 import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
+import { isProjectNameDefined } from './utils/isProjectNameDefined';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
 const cx = classNames.bind(styles);
@@ -166,6 +168,10 @@ const isRootWorkspaceManifestFile = (file: StaticFileInfo): boolean => {
     : raw;
   return path === WORKSPACE_MANIFEST_ROOT_FILE && !file.isDir;
 };
+
+/** 根目录是否已有可预览的有效项目（非空且含 workspace.manifest.toml） */
+const hasValidWorkspaceProjectFiles = (files: StaticFileInfo[]): boolean =>
+  files.length > 0 && files.some(isRootWorkspaceManifestFile);
 const noop = () => undefined;
 // const devConversationPollLogger = createLogger(
 //   '[ConversationAgent][DevConversationPoll]',
@@ -824,14 +830,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     },
   });
 
-  /** Prompt 创建并进入页面后：nameDefined 为 false 时才 generate-info 并更新名称 */
-  useInitProjectMetadata({
-    targetType: AgentComponentTypeEnum.UserApp,
-    targetId: appId,
-    ready: active && userAppInfoFetched,
-    routeSnapshot,
-    shouldInit: userAppInfo?.nameDefined === false,
-    applyMetadata: async (meta) => {
+  /**
+   * 网站应用：详情已返回且 nameDefined 不为 true 时 generate-info 并回写名称。
+   * 不依赖 PUSH（等 get/:id 回来时 action 往往已不是 PUSH）；其它页面仍走默认 PUSH 门。
+   */
+  const applyUserAppMetadata = useCallback(
+    async (meta: GeneratedMetadata) => {
       await apiUserAppUpdate({
         id: appId,
         name: meta.name?.trim() || undefined,
@@ -854,11 +858,23 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         reason: 'auto-metadata',
       });
     },
-    onSuccess: () => {
-      if (appId) {
-        runGetUserAppInfo(appId);
-      }
-    },
+    [appId, spaceId],
+  );
+  const refreshUserAppInfoAfterMetadata = useCallback(() => {
+    if (appId) {
+      runGetUserAppInfo(appId);
+    }
+  }, [appId, runGetUserAppInfo]);
+
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.UserApp,
+    targetId: appId,
+    ready: active && userAppInfoFetched && !!userAppInfo,
+    routeSnapshot,
+    requirePushAction: false,
+    shouldInit: !isProjectNameDefined(userAppInfo?.nameDefined),
+    applyMetadata: applyUserAppMetadata,
+    onSuccess: refreshUserAppInfoAfterMetadata,
   });
 
   /** 进入页面后轮询开发启动 / 发布构建是否占用中 */
@@ -1062,6 +1078,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     setReadinessWatchNonce((value) => value + 1);
   }, []);
   /**
+   * 主页新建：进页时应用可能还不存在，先 ensure 再开始 readiness 轮询。
+   * 刷新 / 再次进入仍先 readiness，再决定 keepalive 还是 ensure。
+   */
+  const [createEnsureSettled, setCreateEnsureSettled] = useState(false);
+  /**
    * 主页新建跳转带来的标记只消费一次。
    * 刷新（reload）一律先 readiness；离开页面或换应用 / 会话时清掉标记。
    */
@@ -1081,6 +1102,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       );
     }
     skipReadinessScopeRef.current = readinessScope;
+    setCreateEnsureSettled(false);
     if (isCurrentDocumentReload()) {
       clearAppDevProSkipReadiness(appId, queryConversationId);
       skipReadinessRef.current = false;
@@ -1092,6 +1114,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
   }
   const skipReadinessThisVisit = skipReadinessRef.current;
+  /** 新建跳转：ensure 完成前不打、不等待 readiness，避免项目尚未落库时报错 */
+  const skipReadinessUntilWatch =
+    skipReadinessThisVisit && !createEnsureSettled;
+  const skipReadinessUntilWatchRef = useRef(skipReadinessUntilWatch);
+  skipReadinessUntilWatchRef.current = skipReadinessUntilWatch;
   const skipReadinessMountedScopeRef = useRef('');
   useEffect(() => {
     skipReadinessMountedScopeRef.current = readinessScope;
@@ -1113,12 +1140,16 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const serviceReadiness = useUserAppReadinessWatch(
     appId,
     dbEnv,
-    active && prodReadinessEnabled && !skipReadinessThisVisit,
+    active && prodReadinessEnabled && !skipReadinessUntilWatch,
     readinessWatchNonce,
   );
   const serviceReadinessRef = useRef(serviceReadiness);
   serviceReadinessRef.current = serviceReadiness;
   const readinessAppIdRef = useRef(appId);
+  /** 正在等容器 running，避免未部署时连点「重启应用」重复 restart */
+  const restartPreviewWaitRef = useRef(false);
+  const [awaitingContainerForRestart, setAwaitingContainerForRestart] =
+    useState(false);
 
   /**
    * 刷新进入页面时先看开发环境就绪结果。
@@ -1129,10 +1160,21 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (!active || !envPodConversationId) {
       return;
     }
-    // 主页刚创建进来：应用记录还不存在，直接拉容器，不打 readiness
+    // 主页刚创建进来：应用记录可能还不存在，先拉容器，ensure 后再开始 readiness 轮询
     if (skipReadinessThisVisit) {
-      void devPod.ensure(true);
-      return;
+      let cancelled = false;
+      void (async () => {
+        try {
+          await devPod.ensure(true);
+        } finally {
+          if (!cancelled) {
+            setCreateEnsureSettled(true);
+          }
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
     }
     let cancelled = false;
     void (async () => {
@@ -1188,7 +1230,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       const shouldStop = () =>
         previewUserStoppedByEnvRef.current[targetEnv] ||
         dbEnvRef.current !== targetEnv;
-      if (shouldStop() || !appId || skipReadinessRef.current) {
+      if (shouldStop() || !appId || skipReadinessUntilWatchRef.current) {
         return '';
       }
       await serviceReadinessRef.current.waitUntilReady(targetEnv, shouldStop);
@@ -1213,9 +1255,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 重启智能体电脑。
-   * 线上环境不打开远程桌面，避免顺带调用 ensure。
-   * 电脑重启成功后：线上已部署才再调应用 restart，未部署不调。
-   * 开发环境仍在成功后重启当前应用。
+   * 只调 pod/restart，不打开远程桌面，避免顺带调用 ensure。
+   * 电脑重启成功后先等 readiness 里 container.status 为 running，再接上保活
+   * （已有轮询则只补打一次，不重置间隔）。
+   * 开发环境还要已有有效项目文件才 restart；线上环境容器 running 即可 restart。
+   * 线上未部署则不调应用 restart。
    */
   const handleRestartComputer = useCallback(async () => {
     const envToRestart = dbEnvRef.current;
@@ -1226,7 +1270,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       restarted = await restartVncPod(
         queryConversationId,
         finalSelectedComputerId,
-        { openDesktop: !isProd },
+        { openDesktop: false },
       );
     } catch (error) {
       console.error('[AppDevPro] Restart agent computer failed:', error);
@@ -1235,12 +1279,34 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (!restarted) {
       return;
     }
+
+    // 等待容器 running
+    const containerRunningPromise =
+      serviceReadinessRef.current.waitUntilContainerRunning(
+        envToRestart,
+        () => dbEnvRef.current !== envToRestart,
+      );
+    // 继续轮询 readiness
+    resumeReadinessWatch();
+    const containerRunning = await containerRunningPromise;
+    if (!containerRunning || dbEnvRef.current !== envToRestart) {
+      return;
+    }
+    if (isProd) {
+      prodPod.touchKeepAlive();
+    } else {
+      devPod.touchKeepAlive();
+    }
     const prodHasDeployment =
       userAppInfo?.prodDeployed === true ||
       !!userAppInfo?.prodReleaseId?.trim();
     if (isProd && !prodHasDeployment) {
       return;
     }
+    if (!isProd && !hasValidWorkspaceProjectFiles(fileTreeDataRef.current)) {
+      return;
+    }
+    resumeReadinessWatch();
     setPreviewStoppedForEnv(envToRestart, false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
     void restartPreviewRuntimeRef.current(envToRestart);
@@ -1252,6 +1318,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     setPreviewStoppedForEnv,
     userAppInfo?.prodDeployed,
     userAppInfo?.prodReleaseId,
+    devPod.touchKeepAlive,
+    prodPod.touchKeepAlive,
   ]);
   const previewRunningRef = useRef(previewRuntime.running);
   previewRunningRef.current = previewRuntime.running;
@@ -1276,8 +1344,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (devStopped()) {
       return;
     }
-    // 新建这一次没有 readiness，按原来的 start 往下走，避免一直等探测
-    if (skipReadinessRef.current) {
+    // 新建跳转 ensure 完成前还没有探测，按原来的 start 走，避免一直等
+    if (skipReadinessUntilWatchRef.current) {
       startPreviewIfNeededRef.current(UserAppDbEnvEnum.Dev);
       return;
     }
@@ -1832,8 +1900,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     workspaceView === 'files' &&
     canShowFileView &&
     !isTerminalPanelOpen;
-  const isTerminalIconActive =
-    !repoDocCoversWorkspace && isTerminalPanelOpen;
+  const isTerminalIconActive = !repoDocCoversWorkspace && isTerminalPanelOpen;
 
   // ==================================== 文件视图 & 编排面板 ====================================
   /**
@@ -1903,16 +1970,20 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       /** 目标父目录还在加载时，不要用当前文件列表判断文件不存在 */
       isAutoSelectDirectoryLoaded: (fileId: string) => {
         const parentPath = parentDirectory(workspaceRelativePath(fileId));
-        if (workspaceFiles.openingTaskResultRef.current?.parent === parentPath) {
+        if (
+          workspaceFiles.openingTaskResultRef.current?.parent === parentPath
+        ) {
           return false;
         }
         return workspaceFiles.loadedDirectoryPaths.has(parentPath);
       },
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
-      /** 容器启动成功、开启版本管理且工作区已有文件时才拉取 Git status */
+      /** 容器已 ensure 且开启版本管理、工作区已有文件时才拉取 Git status */
       enableGitStatus:
-        isVersionControlEnabled && podReady && workspaceFiles.files.length > 0,
+        isVersionControlEnabled &&
+        containerReadyForQueries &&
+        workspaceFiles.files.length > 0,
       enableVersionControl,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
@@ -1991,7 +2062,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     refreshFileListImmediately,
     enableVersionControl,
     isVersionControlEnabled,
-    podReady,
+    containerReadyForQueries,
     openPreviewView,
     resetDevConsoleExpandedLayout,
     handleImportProject,
@@ -2076,10 +2147,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 满足时才允许自动 start，并开放 Header 重启 / 停止。
    */
   const hasFileTreeData = useMemo(() => {
-    return (
-      workspaceFiles.files.length > 0 &&
-      workspaceFiles.files.some(isRootWorkspaceManifestFile)
-    );
+    return hasValidWorkspaceProjectFiles(workspaceFiles.files);
   }, [workspaceFiles.files]);
   /** 会话详情已回填；不用 conversationInfo 对象本身做依赖，避免换引用重跑 */
   const conversationReady = conversationInfo?.id === queryConversationId;
@@ -2141,7 +2209,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
     // 服务已在跑（不允许再 start）：挂起 dev 就绪探测，可访问后再 iframe，不必再挂 stream
     if (!devActionAllowed) {
-      if (!appPreviewUrlRef.current || skipReadinessRef.current) {
+      if (!appPreviewUrlRef.current || skipReadinessUntilWatchRef.current) {
         return;
       }
       let cancelled = false;
@@ -2200,6 +2268,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     podReady,
     queryConversationId,
     setPreviewEnterSettledForEnv,
+    skipReadinessUntilWatch,
     tasksActiveReady,
     userAppDomainList,
   ]);
@@ -2496,14 +2565,37 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     void previewRuntime.start(envToStart);
   }, [dbEnv, previewRuntime, setPreviewStoppedForEnv]);
 
-  /** 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
-  const handleRestartPreviewRuntime = useCallback(() => {
-    resumeReadinessWatch();
-    const envToRestart = dbEnv;
-    setPreviewStoppedForEnv(envToRestart, false);
-    setPreviewIframeUrl(appPreviewUrlRef.current);
-    void previewRuntime.restart(envToRestart);
-  }, [dbEnv, previewRuntime, resumeReadinessWatch, setPreviewStoppedForEnv]);
+  /**
+   * 重启当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转。
+   * 未部署等状态下也要等计算容器 running，再调应用 restart。
+   */
+  const handleRestartPreviewRuntime = useCallback(async () => {
+    const envToRestart = dbEnvRef.current;
+    if (restartPreviewWaitRef.current) {
+      return;
+    }
+    restartPreviewWaitRef.current = true;
+    setAwaitingContainerForRestart(true);
+    try {
+      const containerRunningPromise =
+        serviceReadinessRef.current.waitUntilContainerRunning(
+          envToRestart,
+          () => dbEnvRef.current !== envToRestart,
+          { acceptCached: true },
+        );
+      resumeReadinessWatch();
+      const containerRunning = await containerRunningPromise;
+      if (!containerRunning || dbEnvRef.current !== envToRestart) {
+        return;
+      }
+      setPreviewStoppedForEnv(envToRestart, false);
+      setPreviewIframeUrl(appPreviewUrlRef.current);
+      void previewRuntime.restart(envToRestart);
+    } finally {
+      restartPreviewWaitRef.current = false;
+      setAwaitingContainerForRestart(false);
+    }
+  }, [previewRuntime, resumeReadinessWatch, setPreviewStoppedForEnv]);
 
   /** 停止当前环境预览服务。确认前记下环境，避免确认时已经切到另一侧 */
   const handleStopPreviewRuntime = useCallback(() => {
@@ -2530,7 +2622,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       onRestartPreviewRuntime: handleRestartPreviewRuntime,
       onStopPreviewRuntime: handleStopPreviewRuntime,
       previewRuntimeBusy: previewRuntime.busy && !devStartStreamErrored,
-      previewRuntimeRestarting: previewRuntime.restarting,
+      previewRuntimeRestarting:
+        previewRuntime.restarting || awaitingContainerForRestart,
       previewRuntimeStopping: previewRuntime.stopping,
       previewEnvPodReady: currentEnvPodReady,
       previewPodEnsuring,
@@ -2555,6 +2648,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       devStartStreamErrored,
       previewRuntime.restarting,
       previewRuntime.stopping,
+      awaitingContainerForRestart,
     ],
   );
 
@@ -2931,6 +3025,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         isGeneratingFiles={previewConversationActive}
         isWaitingForUserConfirmation={hasPendingIntervention}
         missingProjectFiles={missingProjectFiles}
+        hasValidProjectFiles={
+          workspaceFiles.fileListLoaded ? hasFileTreeData : null
+        }
         podReady={podReady}
         containerStatus={
           envPodConversationId
@@ -2958,7 +3055,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         }
         stopping={previewRuntime.stopping}
         restarting={
-          dbEnv === UserAppDbEnvEnum.Prod && previewRuntime.restarting
+          awaitingContainerForRestart ||
+          (dbEnv === UserAppDbEnvEnum.Prod && previewRuntime.restarting)
         }
         directPreview={dbEnv === UserAppDbEnvEnum.Prod}
         prodUndeployed={prodAwaitingDeploy}
@@ -2993,11 +3091,13 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       previewRuntime.services,
       previewRuntime.stopping,
       previewRuntime.restarting,
+      awaitingContainerForRestart,
       dbEnv,
       canDirectProdPreview,
       devPod.status,
       envPodConversationId,
       hasFileTreeData,
+      workspaceFiles.fileListLoaded,
       previewEnterSettled,
       previewPresentedByEnv,
       previewUserStopped,
@@ -3046,6 +3146,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           cid: queryConversationId,
         }}
         branch={fileView.gitBranch}
+        enabled={containerReadyForQueries}
         onRollbackSuccess={() => {
           handleRefreshFileList(queryConversationId);
           // 回滚成功后同步刷新 Git 源代码管理状态列表
@@ -3058,6 +3159,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     queryConversationId,
     fileView.gitBranch,
     handleRefreshFileList,
+    containerReadyForQueries,
   ]);
 
   /**
@@ -3291,6 +3393,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                   onChangeSelectedComputerId={setSelectedComputerId}
                   onConversationEnd={handleConversationEnd}
                   onOpenRepoDoc={handleOpenRepoDoc}
+                  gitReady={containerReadyForQueries}
                 />
               </div>
             </div>

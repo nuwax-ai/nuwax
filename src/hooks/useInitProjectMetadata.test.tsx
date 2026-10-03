@@ -119,4 +119,62 @@ describe('useInitProjectMetadata 常驻页面路由隔离', () => {
       '当前 B 页面 prompt',
     );
   });
+
+  it('requirePushAction 为 false 时不要求 PUSH，有 prompt 即可生成', async () => {
+    mockHistory.action = 'POP';
+    const applyMetadata = vi.fn().mockResolvedValue(undefined);
+    renderHook(() =>
+      useInitProjectMetadata({
+        targetType: AgentComponentTypeEnum.UserApp,
+        targetId: 33,
+        requirePushAction: false,
+        routeSnapshot: {
+          state: { message: '首页创建 prompt' },
+          action: 'POP',
+        },
+        applyMetadata,
+      }),
+    );
+
+    await waitFor(() => expect(applyMetadata).toHaveBeenCalledTimes(1));
+    expect(mockFetchGeneratedMetadata).toHaveBeenCalledWith('首页创建 prompt');
+  });
+
+  it('默认仍要求 PUSH，POP 即使有 prompt 也不生成', () => {
+    const applyMetadata = vi.fn().mockResolvedValue(undefined);
+    renderHook(() =>
+      useInitProjectMetadata({
+        targetType: AgentComponentTypeEnum.Agent,
+        targetId: 101,
+        routeSnapshot: {
+          state: { message: '不可执行' },
+          action: 'POP',
+        },
+        applyMetadata,
+      }),
+    );
+
+    expect(mockFetchGeneratedMetadata).not.toHaveBeenCalled();
+    expect(applyMetadata).not.toHaveBeenCalled();
+  });
+
+  it('shouldInit 为 false 时即使不要求 PUSH 也不生成', () => {
+    const applyMetadata = vi.fn().mockResolvedValue(undefined);
+    renderHook(() =>
+      useInitProjectMetadata({
+        targetType: AgentComponentTypeEnum.UserApp,
+        targetId: 33,
+        requirePushAction: false,
+        shouldInit: false,
+        routeSnapshot: {
+          state: { message: '已命名项目' },
+          action: 'PUSH',
+        },
+        applyMetadata,
+      }),
+    );
+
+    expect(mockFetchGeneratedMetadata).not.toHaveBeenCalled();
+    expect(applyMetadata).not.toHaveBeenCalled();
+  });
 });
