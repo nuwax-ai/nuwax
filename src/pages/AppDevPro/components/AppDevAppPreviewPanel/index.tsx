@@ -393,7 +393,10 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    * 已经打开过的环境继续显示 iframe，后续探测抖动不再盖住页面。
    * 启动失败仍走原来的失败面板，避免把错误藏进状态文案。
    * 未部署还要已有有效项目文件，否则走「暂无可预览的项目」。
+   * 首次会话还在进行时不展示未部署，继续走「预览准备中」。
    */
+  const conversationInProgress =
+    isGeneratingFiles || isWaitingForUserConfirmation;
   const showReadinessHero =
     !previewAlreadyPresented &&
     !suppressReadinessStatus &&
@@ -401,7 +404,9 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     (readinessKind === 'starting' ||
       readinessKind === 'stopping' ||
       readinessKind === 'stopped' ||
-      (readinessKind === 'notDeployed' && hasValidProjectFiles === true) ||
+      (readinessKind === 'notDeployed' &&
+        hasValidProjectFiles === true &&
+        !conversationInProgress) ||
       readinessKind === 'failed' ||
       readinessKind === 'incomplete');
   const readinessTitle = (() => {
@@ -500,6 +505,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     !previewAlreadyPresented &&
     !suppressReadinessStatus &&
     !startFailed &&
+    !conversationInProgress &&
     readinessKind === 'notDeployed' &&
     hasValidProjectFiles === false
   ) {

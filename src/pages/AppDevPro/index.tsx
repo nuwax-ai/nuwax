@@ -1256,8 +1256,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /**
    * 重启智能体电脑。
    * 只调 pod/restart，不打开远程桌面，避免顺带调用 ensure。
-   * 电脑重启成功后先接上当前环境保活：已有轮询则只补打一次，不重置间隔。
-   * 然后再等 container.status 为 running。
+   * 电脑重启成功后先等 readiness 里 container.status 为 running，再接上保活
+   * （已有轮询则只补打一次，不重置间隔）。
    * 开发环境还要已有有效项目文件才 restart；线上环境容器 running 即可 restart。
    * 线上未部署则不调应用 restart。
    */
@@ -1279,6 +1279,19 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (!restarted) {
       return;
     }
+
+    // 等待容器 running
+    const containerRunningPromise =
+      serviceReadinessRef.current.waitUntilContainerRunning(
+        envToRestart,
+        () => dbEnvRef.current !== envToRestart,
+      );
+    // 继续轮询 readiness
+    resumeReadinessWatch();
+    const containerRunning = await containerRunningPromise;
+    if (!containerRunning || dbEnvRef.current !== envToRestart) {
+      return;
+    }
     if (isProd) {
       prodPod.touchKeepAlive();
     } else {
@@ -1290,18 +1303,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (isProd && !prodHasDeployment) {
       return;
     }
-    const containerRunningPromise =
-      serviceReadinessRef.current.waitUntilContainerRunning(
-        envToRestart,
-        () => dbEnvRef.current !== envToRestart,
-      );
-    resumeReadinessWatch();
-    // 等待容器 running
-    const containerRunning = await containerRunningPromise;
-    if (!containerRunning || dbEnvRef.current !== envToRestart) {
-      return;
-    }
-    // 开发环境重启：必须已有有效项目文件才 restart
     if (!isProd && !hasValidWorkspaceProjectFiles(fileTreeDataRef.current)) {
       return;
     }
@@ -1978,9 +1979,11 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       },
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
-      /** 容器启动成功、开启版本管理且工作区已有文件时才拉取 Git status */
+      /** 容器已 ensure 且开启版本管理、工作区已有文件时才拉取 Git status */
       enableGitStatus:
-        isVersionControlEnabled && podReady && workspaceFiles.files.length > 0,
+        isVersionControlEnabled &&
+        containerReadyForQueries &&
+        workspaceFiles.files.length > 0,
       enableVersionControl,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
@@ -2059,7 +2062,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     refreshFileListImmediately,
     enableVersionControl,
     isVersionControlEnabled,
-    podReady,
+    containerReadyForQueries,
     openPreviewView,
     resetDevConsoleExpandedLayout,
     handleImportProject,
@@ -3143,6 +3146,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
           cid: queryConversationId,
         }}
         branch={fileView.gitBranch}
+        enabled={containerReadyForQueries}
         onRollbackSuccess={() => {
           handleRefreshFileList(queryConversationId);
           // 回滚成功后同步刷新 Git 源代码管理状态列表
@@ -3155,6 +3159,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     queryConversationId,
     fileView.gitBranch,
     handleRefreshFileList,
+    containerReadyForQueries,
   ]);
 
   /**
@@ -3388,6 +3393,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
                   onChangeSelectedComputerId={setSelectedComputerId}
                   onConversationEnd={handleConversationEnd}
                   onOpenRepoDoc={handleOpenRepoDoc}
+                  gitReady={containerReadyForQueries}
                 />
               </div>
             </div>

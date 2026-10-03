@@ -162,7 +162,7 @@ export function useUserAppEnvPod(
   }, [beginKeepalivePolling, conversationId, enabled]);
 
   /**
-   * 电脑重启成功后接上保活。
+   * 电脑重启后、readiness 确认容器 running 时接上保活。
    * 轮询还在跑：只补打一次 keepalive，不重新 run，60 秒间隔保持不变。
    * 还没开始：按 keepAlive 启动轮询。
    */
