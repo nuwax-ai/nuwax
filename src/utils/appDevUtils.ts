@@ -150,21 +150,36 @@ export const transformFlatListToTree = (
     }
   });
 
-  // 排序：文件夹在前，文件在后，同类型按名称排序
-  const sortNodes = (nodes: FileNode[]): FileNode[] => {
-    return nodes.sort((a, b) => {
-      if (a.type !== b.type) {
-        return a.type === 'folder' ? -1 : 1;
-      }
-      return a.name.localeCompare(b.name);
-    });
-  };
-
-  return sortNodes(root).map((node) => ({
-    ...node,
-    children: node.children ? sortNodes(node.children) : undefined,
-  }));
+  return sortFileTreeNodes(root);
 };
+
+/**
+ * 文件树节点排序：目录在前、文件在后；同组按名称升序且忽略大小写。
+ * 固定用 en、关闭数字排序，避免 13xxx / 6xxx 在不同环境下顺序跳变。
+ */
+export const compareFileTreeNodes = (
+  a: Pick<FileNode, 'name' | 'type'>,
+  b: Pick<FileNode, 'name' | 'type'>,
+): number => {
+  const aIsFolder = a.type === 'folder' ? 0 : 1;
+  const bIsFolder = b.type === 'folder' ? 0 : 1;
+  if (aIsFolder !== bIsFolder) {
+    return aIsFolder - bIsFolder;
+  }
+  return a.name.localeCompare(b.name, 'en', {
+    sensitivity: 'base',
+    numeric: false,
+  });
+};
+
+/** 递归排序整棵文件树，展开/关闭/新增后都应走同一套规则 */
+export const sortFileTreeNodes = (nodes: FileNode[]): FileNode[] =>
+  [...nodes].sort(compareFileTreeNodes).map((node) => ({
+    ...node,
+    children: node.children?.length
+      ? sortFileTreeNodes(node.children)
+      : node.children,
+  }));
 
 /**
  * 将树形结构转换为扁平列表格式（用于保存）

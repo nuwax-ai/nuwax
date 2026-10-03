@@ -45,6 +45,10 @@ interface LeftContentProps {
   onExternalFilePreviewBack?: () => void;
   /** 会话进度面板节点：挂 left 栏与 chat-section 平级（页面层组装数据与受控态） */
   chatPaneCapsule?: React.ReactNode;
+  /** 资料库超链接 / 智能体 Page：在顶部图标下方的内容区展开，不占整列顶栏 */
+  pagePreview?: React.ReactNode;
+  /** 是否展示资料库 / Page 预览（与文件树互斥时由页面层计算） */
+  isPagePreviewVisible?: boolean;
 }
 
 // 内容区域
@@ -59,6 +63,8 @@ const LeftContent: React.FC<LeftContentProps> = ({
   externalFilePreview,
   onExternalFilePreviewBack,
   chatPaneCapsule,
+  pagePreview,
+  isPagePreviewVisible = false,
 }) => {
   const { effectiveNavigationStyle } = useUnifiedTheme();
   const alignBrowserStyle3Title =
@@ -72,6 +78,8 @@ const LeftContent: React.FC<LeftContentProps> = ({
     effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
     isFileTreeVisible &&
     !headerProps.hideTree;
+  // 资料库 / Page 也走这块内容区，避免预览顶到会话标题同一行
+  const showRightPanel = showFileTreePanel || isPagePreviewVisible;
 
   return (
     <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
@@ -269,42 +277,57 @@ const LeftContent: React.FC<LeftContentProps> = ({
               {chatPaneCapsule}
             </div>
           }
-          rightHidden={!showFileTreePanel}
+          resetTrigger={showRightPanel ? 'visible' : 'hidden'}
+          rightHidden={!showRightPanel}
           right={
-            <ConversationInstanceCacheSlot
-              activeKey={pageCacheKey}
-              active={showFileTreePanel}
-              retain={showFileTreePanel}
-              exclusive={fileSidebarProps.viewMode === 'desktop'}
-              testId="conversation-workspace-cache"
+            <div
+              className={cx(
+                styles['file-tree-sidebar'],
+                'flex',
+                'w-full',
+                'overflow-hide',
+              )}
             >
-              <div
-                className={cx(
-                  styles['file-tree-sidebar'],
-                  'flex',
-                  'w-full',
-                  'overflow-hide',
-                )}
-              >
-                {externalFilePreview ? (
-                  <ExternalFilePreview
-                    className={cx(styles['file-tree-container'])}
-                    cId={externalFilePreview.cId}
-                    targetDir={externalFilePreview.targetDir}
-                    relativePath={externalFilePreview.relativePath}
-                    onBack={onExternalFilePreviewBack}
-                  />
-                ) : (
-                  <FileTreePreviewPanel
-                    {...fileSidebarProps}
-                    className={cx(
-                      styles['file-tree-container'],
-                      fileSidebarProps.className,
+              <div className={cx(styles['right-panel-body'])}>
+                {showFileTreePanel ? (
+                  <ConversationInstanceCacheSlot
+                    activeKey={pageCacheKey}
+                    active={showFileTreePanel}
+                    retain={showFileTreePanel}
+                    exclusive={fileSidebarProps.viewMode === 'desktop'}
+                    testId="conversation-workspace-cache"
+                  >
+                    {externalFilePreview ? (
+                      <ExternalFilePreview
+                        className={cx(styles['file-tree-container'])}
+                        cId={externalFilePreview.cId}
+                        targetDir={externalFilePreview.targetDir}
+                        relativePath={externalFilePreview.relativePath}
+                        onBack={onExternalFilePreviewBack}
+                      />
+                    ) : (
+                      <FileTreePreviewPanel
+                        {...fileSidebarProps}
+                        className={cx(
+                          styles['file-tree-container'],
+                          fileSidebarProps.className,
+                        )}
+                      />
                     )}
-                  />
-                )}
+                  </ConversationInstanceCacheSlot>
+                ) : null}
+                {pagePreview ? (
+                  <div
+                    className={cx(styles['page-preview-in-content'], {
+                      [styles['page-preview-in-content-hidden']]:
+                        !isPagePreviewVisible,
+                    })}
+                  >
+                    {pagePreview}
+                  </div>
+                ) : null}
               </div>
-            </ConversationInstanceCacheSlot>
+            </div>
           }
         />
       </div>
