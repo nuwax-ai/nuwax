@@ -392,6 +392,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    * 页面还没正常打开时，才用就绪状态替换预览。
    * 已经打开过的环境继续显示 iframe，后续探测抖动不再盖住页面。
    * 启动失败仍走原来的失败面板，避免把错误藏进状态文案。
+   * 已经在调 start 时不再用就绪失败盖住启动过程。
    * 未部署还要已有有效项目文件，否则走「暂无可预览的项目」。
    * 首次会话还在进行时不展示未部署，继续走「预览准备中」。
    */
@@ -401,6 +402,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     !previewAlreadyPresented &&
     !suppressReadinessStatus &&
     !startFailed &&
+    !isStarting &&
     (readinessKind === 'starting' ||
       readinessKind === 'stopping' ||
       readinessKind === 'stopped' ||
