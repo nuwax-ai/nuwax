@@ -1093,6 +1093,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    */
   const skipReadinessScopeRef = useRef('');
   const skipReadinessRef = useRef(false);
+  /** 首次创建进入这一次只自动 start 一次，避免文件树刷新把启动再打一遍 */
+  const createVisitAutoStartedRef = useRef(false);
   const readinessScope =
     appId > 0 && queryConversationId > 0
       ? `${appId}:${queryConversationId}`
@@ -1107,6 +1109,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       );
     }
     skipReadinessScopeRef.current = readinessScope;
+    createVisitAutoStartedRef.current = false;
     setCreateEnsureSettled(false);
     if (isCurrentDocumentReload()) {
       clearAppDevProSkipReadiness(appId, queryConversationId);
@@ -1364,53 +1367,60 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 开发环境进页 / 打开预览：用就绪状态决定下一步。
    * ready 直接打开；starting / stopping / stopped / 开发未完成不再额外 start。
    * stopped 由状态变化时的 restart 拉起。没有探测结果时仍走原来的 start。
+   * 主页首次创建进入时，调用方传入 ignoreReadiness：条件已满足就直接 start，
+   * 不看 readiness，避免探测中途变成 failed 等状态把启动拦住。刷新仍走就绪判断。
+   *
+   * @param options.ignoreReadiness 为 true 时不根据就绪状态提前返回
    */
-  const prepareDevPreviewIfNeeded = useCallback(async () => {
-    const devStopped = () =>
-      previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Dev] ||
-      dbEnvRef.current !== UserAppDbEnvEnum.Dev;
-    if (devStopped()) {
-      return;
-    }
-    // 新建跳转 ensure 完成前还没有探测，按原来的 start 走，避免一直等
-    if (skipReadinessUntilWatchRef.current) {
+  const prepareDevPreviewIfNeeded = useCallback(
+    async (options?: { ignoreReadiness?: boolean }) => {
+      const devStopped = () =>
+        previewUserStoppedByEnvRef.current[UserAppDbEnvEnum.Dev] ||
+        dbEnvRef.current !== UserAppDbEnvEnum.Dev;
+      if (devStopped()) {
+        return;
+      }
+      // 首次创建，或新建跳转 ensure 完成前还没有探测：直接 start
+      if (options?.ignoreReadiness || skipReadinessUntilWatchRef.current) {
+        startPreviewIfNeededRef.current(UserAppDbEnvEnum.Dev);
+        return;
+      }
+      const watchedAppId = readinessAppIdRef.current;
+      const readiness = await serviceReadinessRef.current.waitForSettled(
+        UserAppDbEnvEnum.Dev,
+        devStopped,
+      );
+      if (devStopped() || readinessAppIdRef.current !== watchedAppId) {
+        return;
+      }
+      const previewUrl = appPreviewUrlRef.current;
+      if (previewUrl && isUserAppReadinessAccessible(readiness)) {
+        // 服务已在跑，只接上现有页面，不改刷新次数，避免 iframe 被重新挂载
+        setPreviewIframeUrl(previewUrl);
+        markPreviewReadyRef.current(UserAppDbEnvEnum.Dev);
+        return;
+      }
+      const readinessKind = getUserAppReadinessUiKind(
+        readiness?.status,
+        readiness?.ready,
+      );
+      if (
+        readinessKind === 'starting' ||
+        readinessKind === 'stopping' ||
+        readinessKind === 'stopped' ||
+        readinessKind === 'notDeployed' ||
+        readinessKind === 'failed' ||
+        readinessKind === 'incomplete'
+      ) {
+        return;
+      }
+      if (devStopped()) {
+        return;
+      }
       startPreviewIfNeededRef.current(UserAppDbEnvEnum.Dev);
-      return;
-    }
-    const watchedAppId = readinessAppIdRef.current;
-    const readiness = await serviceReadinessRef.current.waitForSettled(
-      UserAppDbEnvEnum.Dev,
-      devStopped,
-    );
-    if (devStopped() || readinessAppIdRef.current !== watchedAppId) {
-      return;
-    }
-    const previewUrl = appPreviewUrlRef.current;
-    if (previewUrl && isUserAppReadinessAccessible(readiness)) {
-      // 服务已在跑，只接上现有页面，不改刷新次数，避免 iframe 被重新挂载
-      setPreviewIframeUrl(previewUrl);
-      markPreviewReadyRef.current(UserAppDbEnvEnum.Dev);
-      return;
-    }
-    const readinessKind = getUserAppReadinessUiKind(
-      readiness?.status,
-      readiness?.ready,
-    );
-    if (
-      readinessKind === 'starting' ||
-      readinessKind === 'stopping' ||
-      readinessKind === 'stopped' ||
-      readinessKind === 'notDeployed' ||
-      readinessKind === 'failed' ||
-      readinessKind === 'incomplete'
-    ) {
-      return;
-    }
-    if (devStopped()) {
-      return;
-    }
-    startPreviewIfNeededRef.current(UserAppDbEnvEnum.Dev);
-  }, []);
+    },
+    [],
+  );
   const prepareDevPreviewIfNeededRef = useRef(prepareDevPreviewIfNeeded);
   prepareDevPreviewIfNeededRef.current = prepareDevPreviewIfNeeded;
 
@@ -2214,7 +2224,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 进页后按环境准备预览：开发环境按需启动服务；线上环境有地址则直接预览，不重复 start。
-   * 开发环境须等 tasks/active 首包：允许则先看 dev 就绪结果，可访问直接 iframe，否则 start；
+   * 开发环境须等 tasks/active 首包：刷新进入时允许则先看 dev 就绪结果，可访问直接 iframe，否则 start；
+   * 主页首次创建进入时，条件齐了直接 start，不看中途 readiness。
    * 不允许（服务已在跑）且已有预览域名时，挂起 dev 就绪探测，可访问后再 iframe，不再 start / stream。
    * 允许 start 时还须根目录已有 workspace.manifest.toml，避免空项目拉起预览。
    * 会话进行中或仍有待回复确认卡时不启动；会话结束后不自动 restart，仅首次 start。
@@ -2283,10 +2294,18 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (!hasFileTreeData) {
       return;
     }
-    // 先看 dev 就绪结果是否已可访问，可访问则跳过 start / stream
+    // 刷新已有页面：先看 dev 就绪结果，可访问则跳过 start / stream。
+    // 首次创建进入：上面的条件已经齐了，直接 start，不看中途的 readiness。
+    const ignoreReadiness =
+      skipReadinessRef.current && !createVisitAutoStartedRef.current;
+    if (ignoreReadiness) {
+      createVisitAutoStartedRef.current = true;
+    }
     let cancelled = false;
     void (async () => {
-      await prepareDevPreviewIfNeededRef.current();
+      await prepareDevPreviewIfNeededRef.current(
+        ignoreReadiness ? { ignoreReadiness: true } : undefined,
+      );
       if (
         !cancelled &&
         dbEnvRef.current === UserAppDbEnvEnum.Dev &&

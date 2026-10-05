@@ -42,7 +42,7 @@ export interface AgentConversationChatPanelProps {
   progressOpen?: boolean;
   onCloseProgress?: () => void;
   /**
-   * 会话消息里的资料库链接（`/repo/doc/`、`/repo/share/`）改为当前页打开。
+   * 会话消息里的资料库链接（路径以 `/repo/` 开头）改为当前页打开。
    * 不传时保持新开页签。
    */
   onOpenRepoDoc?: (url: string) => void;
