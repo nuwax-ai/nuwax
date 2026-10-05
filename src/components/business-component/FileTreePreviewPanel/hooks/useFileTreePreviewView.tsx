@@ -1325,7 +1325,8 @@ export function useFileTreePreviewView(
 
     const openedNode = findFileNode(taskAgentSelectedFileId, filesRef.current);
     const openedId = selectedFileIdRef.current;
-    // 搜索路径已经打开过该文件，目录列表到达后不要再请求一次正文
+    // 搜索路径已经打开过该文件，目录列表到达后不要再请求一次正文。
+    // 技能导入会再次触发同一文件：正文在 fileProxyUrl 上，需重拉，不能用详情里可能为空的 contents 覆盖编辑器。
     if (
       openedId &&
       (openedId === taskAgentSelectedFileId || openedId === openedNode?.id)
@@ -1335,6 +1336,27 @@ export function useFileTreePreviewView(
         prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
       }
       pendingTaskAgentAutoSelectRef.current = null;
+
+      /**
+       * 技能详情导入后刷新已打开文件
+       * 文件名不变时，用新的技能正文替换编辑器里的旧内容
+       */
+      if (isTriggerUpdate && isProjectSkill && openedNode) {
+        if (openedNode.fileProxyUrl) {
+          void refreshSelectedFileContent(openedNode);
+        } else {
+          const source = (originalFiles ?? []).find((file) => {
+            const record = file as { name?: string; fileId?: string };
+            return (
+              record.name === openedNode.id || record.fileId === openedNode.id
+            );
+          }) as { contents?: string } | undefined;
+          if (typeof source?.contents === 'string') {
+            setSelectedFileNode({ ...openedNode, content: source.contents });
+            setFileRefreshTimestamp(Date.now());
+          }
+        }
+      }
       return;
     }
 
