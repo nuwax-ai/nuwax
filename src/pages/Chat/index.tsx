@@ -1719,6 +1719,23 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   const restoredWorkspaceKeyRef = useRef<string | null>(null);
 
+  // 离开会话页时卸掉终端。页面隐藏期间不再保留终端连接，切回后是未打开状态。
+  useLayoutEffect(() => {
+    if (active) {
+      return;
+    }
+    setTerminalConsoleVisible(false);
+    setHasTerminalConsoleRendered(false);
+    setTerminalConsoleLayoutMode('collapsed');
+    setTerminalConsoleExpandSignal(0);
+    setTerminalConsoleCollapseSignal(0);
+    if (
+      conversationPageCacheManager.getEntry(pageCacheKey)?.view === 'terminal'
+    ) {
+      rememberWorkspaceView('filePreview');
+    }
+  }, [active, pageCacheKey, rememberWorkspaceView]);
+
   // 激活只更新当前页所有权；已有实例切回来沿用内存中的面板，不重复恢复初始视图。
   useEffect(() => {
     if (!active) return;
@@ -1731,24 +1748,21 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       conversationPageCacheManager.deactivate(pageCacheKey);
     if (restoredWorkspaceKeyRef.current === pageCacheKey) return deactivate;
     restoredWorkspaceKeyRef.current = pageCacheKey;
-    const targetView = defaultFileTreeVisible ? 'filePreview' : entry.view;
+    const targetView =
+      defaultFileTreeVisible || entry.view === 'terminal'
+        ? 'filePreview'
+        : entry.view;
 
-    if (defaultFileTreeVisible && entry.view !== 'filePreview') {
+    if (
+      entry.view === 'terminal' ||
+      (defaultFileTreeVisible && entry.view !== 'filePreview')
+    ) {
       rememberWorkspaceView('filePreview');
     }
     pendingWorkspaceRestoreRef.current = null;
     if (targetView === 'filePreview') {
       workspaceRestoreActionsRef.current.openPreviewView(id);
       workspaceRestoreActionsRef.current.setIsFileTreePinned(true);
-      return deactivate;
-    }
-    if (targetView === 'terminal') {
-      setHasTerminalConsoleRendered(true);
-      setTerminalConsoleVisible(true);
-      setTerminalConsoleLayoutMode('expanded');
-      setTerminalConsoleActiveTab('terminal');
-      setTerminalConsoleExpandSignal((value) => value + 1);
-      workspaceRestoreActionsRef.current.openPreviewView(id);
       return deactivate;
     }
     if (targetView === 'desktop' || targetView === 'pagePreview') {

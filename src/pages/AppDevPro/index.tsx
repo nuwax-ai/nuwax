@@ -254,6 +254,20 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /** 底部控制台布局模式（collapsed 时停止日志轮询） */
   const [devConsoleLayoutMode, setDevConsoleLayoutMode] =
     useState<ConsoleLayoutMode>('collapsed');
+  /**
+   * 页面切走后卸掉终端。展开信号也清掉，避免切回来时按上次信号又把终端打开。
+   * 开发 / 线上容器保活和远程桌面由 active 在页面层停下，不放在终端组件里。
+   */
+  useLayoutEffect(() => {
+    if (active) {
+      return;
+    }
+    setDevConsoleExpandSignal(0);
+    setDevConsoleCollapseSignal(0);
+    setDevConsoleLayoutResetSignal(0);
+    setDevConsoleLayoutMode('collapsed');
+    setDevConsoleActiveTab('terminal');
+  }, [active]);
   /** 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置 */
   const skipDevConsoleResetRef = useRef<boolean>(false);
   /** 源代码管理中选中的变更文件（含区块） */
@@ -3281,48 +3295,50 @@ const AppDevPro: React.FC<AppDevProProps> = ({
               </div>
             </div>
 
-            {/* 底部控制台 */}
-            <AppDevBottomConsole
-              conversationId={
-                active && finalSelectedComputerId === '-1'
-                  ? queryConversationId
-                  : undefined
-              }
-              env={dbEnv}
-              appStage={dbEnv}
-              externalContainerStatus={terminalExternalContainerStatus}
-              prodExternalContainerStatus={prodExternalContainerStatus}
-              onActiveTerminalEnvChange={(terminalEnv) => {
-                if (!terminalEnv) {
-                  return;
+            {/* 底部控制台：页面隐藏时卸载，终端连接随页面保活一起停 */}
+            {active ? (
+              <AppDevBottomConsole
+                conversationId={
+                  finalSelectedComputerId === '-1'
+                    ? queryConversationId
+                    : undefined
                 }
-                startEnvPodIfNeeded(terminalEnv);
-              }}
-              onRetryContainer={(terminalEnv) => {
-                void ensureEnvPodRef.current(terminalEnv, true);
-              }}
-              enableKeepalivePolling={false}
-              visible={active && showDevConsole}
-              devWsUrl={terminalDevWsUrl}
-              prodWsUrl={terminalProdWsUrl}
-              wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-              wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
-              layoutResetSignal={devConsoleLayoutResetSignal}
-              expandSignal={devConsoleExpandSignal}
-              collapseSignal={devConsoleCollapseSignal}
-              onLayoutModeChange={setDevConsoleLayoutMode}
-              onActiveTabChange={(tab) => {
-                setDevConsoleActiveTab(tab);
-              }}
-              logSources={devLogs.sources}
-              logSourcesLoading={devLogs.isLoading}
-              logsExtra={
-                <DevLogActions
-                  onRefresh={devLogs.refreshLogs}
-                  onClear={devLogs.clearLogs}
-                />
-              }
-            />
+                env={dbEnv}
+                appStage={dbEnv}
+                externalContainerStatus={terminalExternalContainerStatus}
+                prodExternalContainerStatus={prodExternalContainerStatus}
+                onActiveTerminalEnvChange={(terminalEnv) => {
+                  if (!terminalEnv) {
+                    return;
+                  }
+                  startEnvPodIfNeeded(terminalEnv);
+                }}
+                onRetryContainer={(terminalEnv) => {
+                  void ensureEnvPodRef.current(terminalEnv, true);
+                }}
+                enableKeepalivePolling={false}
+                visible={showDevConsole}
+                devWsUrl={terminalDevWsUrl}
+                prodWsUrl={terminalProdWsUrl}
+                wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+                wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+                layoutResetSignal={devConsoleLayoutResetSignal}
+                expandSignal={devConsoleExpandSignal}
+                collapseSignal={devConsoleCollapseSignal}
+                onLayoutModeChange={setDevConsoleLayoutMode}
+                onActiveTabChange={(tab) => {
+                  setDevConsoleActiveTab(tab);
+                }}
+                logSources={devLogs.sources}
+                logSourcesLoading={devLogs.isLoading}
+                logsExtra={
+                  <DevLogActions
+                    onRefresh={devLogs.refreshLogs}
+                    onClear={devLogs.clearLogs}
+                  />
+                }
+              />
+            ) : null}
           </div>
         </div>
       </div>
