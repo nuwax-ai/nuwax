@@ -1351,9 +1351,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   ]);
   const previewRunningRef = useRef(previewRuntime.running);
   previewRunningRef.current = previewRuntime.running;
-  /** 会话结束后文件树再刷新时，跳过紧接着的那一次重复重载 */
-  const skipNextDevPreviewReloadRef = useRef(false);
-  const previewConversationActiveRef = useRef(false);
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
   const dismissPreviewLoadErrorRef = useRef(
@@ -1390,16 +1387,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
     const previewUrl = appPreviewUrlRef.current;
     if (previewUrl && isUserAppReadinessAccessible(readiness)) {
+      // 服务已在跑，只接上现有页面，不改刷新次数，避免 iframe 被重新挂载
       setPreviewIframeUrl(previewUrl);
       markPreviewReadyRef.current(UserAppDbEnvEnum.Dev);
-      if (skipNextDevPreviewReloadRef.current) {
-        skipNextDevPreviewReloadRef.current = false;
-        return;
-      }
-      setPreviewRefreshKey((prev) => prev + 1);
-      if (!previewConversationActiveRef.current) {
-        skipNextDevPreviewReloadRef.current = true;
-      }
       return;
     }
     const readinessKind = getUserAppReadinessUiKind(
@@ -2210,7 +2200,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    */
   const previewConversationActive =
     isConversationActive || Boolean(runtimeLine?.effectiveIsActive);
-  previewConversationActiveRef.current = previewConversationActive;
   /**
    * 首次进入后，根目录 file-list 还没成功返回前不提示没有项目。
    * 返回之后才看列表：为空，或根目录没有 workspace.manifest.toml，才提示。
@@ -2612,7 +2601,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 本轮会话改过工作区文件后，回到开发环境的应用预览。
-   * 只切换工作区。预览刷新交给会话结束后的既有准备逻辑，避免再刷一次 iframe。
+   * 只切换工作区，不重新加载已经打开的预览页。
    */
   const returnToDevAppPreview = useCallback(() => {
     try {
