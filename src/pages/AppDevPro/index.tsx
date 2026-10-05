@@ -27,6 +27,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { fullPageInstanceCacheManager } from '@/features/conversation/react/useFullPageInstanceCache';
 import { useWorkspaceFileRefresh } from '@/features/conversation/react/useWorkspaceFileRefresh';
+import { latestRoundChangedWorkspaceFiles } from '@/features/conversation/react/workspaceFileChange';
 import { ConversationPagePathnameContext } from '@/hooks/ConversationPagePathnameContext';
 import { ConversationRendererRouteSearchContext } from '@/hooks/ConversationRendererRouteSearchContext';
 import { useProjectChanged } from '@/hooks/useDirectorySync';
@@ -344,6 +345,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /** 打开远程桌面前的工作区，再次点击图标时还原 */
   const workspaceViewBeforeRemoteDesktopRef =
     useRef<AppDevWorkspaceView>('files');
+  /** 本轮改过文件时，会话结束后回到开发环境预览。具体动作在预览回调里赋值 */
+  const returnToDevAppPreviewRef = useRef<() => void>(() => {});
   /** 数据库工作区当前 Tab */
   const [databaseTabId, setDatabaseTabId] = useState(() =>
     getToolTabId('database'),
@@ -1348,6 +1351,9 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   ]);
   const previewRunningRef = useRef(previewRuntime.running);
   previewRunningRef.current = previewRuntime.running;
+  /** 会话结束后文件树再刷新时，跳过紧接着的那一次重复重载 */
+  const skipNextDevPreviewReloadRef = useRef(false);
+  const previewConversationActiveRef = useRef(false);
   const markPreviewReadyRef = useRef(previewRuntime.markReady);
   markPreviewReadyRef.current = previewRuntime.markReady;
   const dismissPreviewLoadErrorRef = useRef(
@@ -1386,7 +1392,14 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (previewUrl && isUserAppReadinessAccessible(readiness)) {
       setPreviewIframeUrl(previewUrl);
       markPreviewReadyRef.current(UserAppDbEnvEnum.Dev);
+      if (skipNextDevPreviewReloadRef.current) {
+        skipNextDevPreviewReloadRef.current = false;
+        return;
+      }
       setPreviewRefreshKey((prev) => prev + 1);
+      if (!previewConversationActiveRef.current) {
+        skipNextDevPreviewReloadRef.current = true;
+      }
       return;
     }
     const readinessKind = getUserAppReadinessUiKind(
@@ -1570,10 +1583,24 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     }
 
     void refreshGitListIfEnabled();
+
+    const endedMessages =
+      runtimeLine?.conversationProps.messageList ?? messageList;
+    // 本轮有新增、修改、删除等文件变化时，回到开发环境应用预览。只查阅文件不切换。
+    // 判断或切换失败时只记日志，不影响上面的文件树和 Git 刷新。
+    try {
+      if (latestRoundChangedWorkspaceFiles(endedMessages)) {
+        returnToDevAppPreviewRef.current();
+      }
+    } catch (error) {
+      console.error('[AppDevPro] 会话结束后回到开发环境预览失败', error);
+    }
   }, [
+    messageList,
     queryConversationId,
     refreshFileListImmediately,
     refreshGitListIfEnabled,
+    runtimeLine?.conversationProps.messageList,
   ]);
 
   // ==================================== 文件操作处理函数 ====================================
@@ -2183,6 +2210,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    */
   const previewConversationActive =
     isConversationActive || Boolean(runtimeLine?.effectiveIsActive);
+  previewConversationActiveRef.current = previewConversationActive;
   /**
    * 首次进入后，根目录 file-list 还没成功返回前不提示没有项目。
    * 返回之后才看列表：为空，或根目录没有 workspace.manifest.toml，才提示。
@@ -2581,6 +2609,34 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     resetDevConsoleExpandedLayout,
     workspaceView,
   ]);
+
+  /**
+   * 本轮会话改过工作区文件后，回到开发环境的应用预览。
+   * 只切换工作区。预览刷新交给会话结束后的既有准备逻辑，避免再刷一次 iframe。
+   */
+  const returnToDevAppPreview = useCallback(() => {
+    try {
+      if (hasPendingIntervention) {
+        return;
+      }
+      closeRepoDocPreviewOverlay();
+      resetDevConsoleExpandedLayout();
+      if (dbEnvRef.current !== UserAppDbEnvEnum.Dev) {
+        dbEnvRef.current = UserAppDbEnvEnum.Dev;
+        setDbEnv(UserAppDbEnvEnum.Dev);
+        startEnvPodIfNeeded(UserAppDbEnvEnum.Dev);
+      }
+      setWorkspaceView('app-preview');
+    } catch (error) {
+      console.error('[AppDevPro] 回到开发环境预览失败', error);
+    }
+  }, [
+    closeRepoDocPreviewOverlay,
+    hasPendingIntervention,
+    resetDevConsoleExpandedLayout,
+    startEnvPodIfNeeded,
+  ]);
+  returnToDevAppPreviewRef.current = returnToDevAppPreview;
 
   /** 启动当前环境预览服务；回到该环境预览根地址，不沿用地址栏手动跳转 */
   const handleStartPreviewRuntime = useCallback(() => {
