@@ -4741,7 +4741,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.NuwaApps.appTag": "应用",
   "PC.Pages.NuwaApps.expand": "展开",
   "PC.Pages.NuwaApps.collapse": "收起",
-  "PC.Pages.NuwaApps.appTabLimitReached": "最多同时打开 5 个应用，请先关闭已打开的应用",
+  "PC.Pages.NuwaApps.appTabLimitReached": "最多同时打开5个应用，请先关闭已打开的应用，鼠标放到已打开的应用标签上展示删除按钮",
   "PC.Pages.UserApp.emptyDomain": "暂无域名数据",
   "PC.Pages.UserApp.loadFailed": "域名信息加载失败",
   "PC.Pages.Square.Square.plugin": "插件",
