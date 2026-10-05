@@ -82,7 +82,7 @@ index 1375c89..d9fa3a9 100644
        dispatchAuthExpired({ code: env.code, message: env.message });
      }
 diff --git a/nuwax-im-web/src/api/upload.ts b/nuwax-im-web/src/api/upload.ts
-index e6422e8..47eb0af 100644
+index 4babfea..bf2ce1a 100644
 --- a/nuwax-im-web/src/api/upload.ts
 +++ b/nuwax-im-web/src/api/upload.ts
 @@ -36,6 +36,7 @@
@@ -114,24 +114,24 @@ index e6422e8..47eb0af 100644
    return new ApiError('IM_10401', '登录状态已失效，请重新登录后再上传', status);
  }
  
-@@ -115,6 +118,7 @@ function authExpired(status: number): ApiError {
-  *         响应结构不认识 {@code BAD_RESPONSE}
-  */
- export async function uploadFile(file: File, signal?: AbortSignal): Promise<UploadResult> {
+@@ -204,6 +207,7 @@ export async function uploadFile(
+   signal?: AbortSignal,
+   onProgress?: UploadProgressHandler,
+ ): Promise<UploadResult> {
 +  const requestGeneration = getMessageRequestGeneration();
    if (file.size === 0) {
      throw new ApiError('BAD_REQUEST', `「${file.name}」是空文件，没有可上传的内容`);
    }
-@@ -154,7 +158,7 @@ export async function uploadFile(file: File, signal?: AbortSignal): Promise<Uplo
-   }
+@@ -237,7 +241,7 @@ export async function uploadFile(
+   );
  
    if (isAuthFailure(resp.status)) {
 -    throw authExpired(resp.status);
 +    throw authExpired(resp.status, requestGeneration);
    }
  
-   let text: string;
-@@ -177,7 +181,7 @@ export async function uploadFile(file: File, signal?: AbortSignal): Promise<Uplo
+   const text = resp.text;
+@@ -255,7 +259,7 @@ export async function uploadFile(
      // ★★未登录（HTTP 200 + 4010）必须<b>先于</b>下面的"原样透出"被拦下，
      //   否则登录态失效被降级成一条普通业务错误（理由见 isAuthFailure）。
      if (isAuthFailure(resp.status, envelope.code)) {
@@ -141,7 +141,7 @@ index e6422e8..47eb0af 100644
      // ★其余平台的错误码原样透出：
      //   翻译成 IM 的码会让"平台到底怎么说的"这条最重要的线索消失。
 diff --git a/nuwax-im-web/src/components/ChatWindow.tsx b/nuwax-im-web/src/components/ChatWindow.tsx
-index f16e300..6a11dba 100644
+index b59df75..59ea59e 100644
 --- a/nuwax-im-web/src/components/ChatWindow.tsx
 +++ b/nuwax-im-web/src/components/ChatWindow.tsx
 @@ -1,3 +1,4 @@
@@ -149,7 +149,7 @@ index f16e300..6a11dba 100644
  import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
  import { App as AntApp, Avatar, Dropdown, Image, Tooltip, type MenuProps } from 'antd';
  import type { AttachmentInput, AttachmentKind, Id, MessageDto } from '../api/types';
-@@ -517,8 +518,8 @@ export default function ChatWindow() {
+@@ -525,8 +526,8 @@ export default function ChatWindow() {
      //   这条隐性前提撑着 —— 那正是重构时最容易踩坏的一类依赖。
      let done = false;
      function detach() {
@@ -160,7 +160,7 @@ index f16e300..6a11dba 100644
      }
      function ask() {
        // ★`done` 与 detach 是双保险：pointerdown 与 keydown 可能在同一瞬间各来一次
-@@ -536,8 +537,8 @@ export default function ChatWindow() {
+@@ -544,8 +545,8 @@ export default function ChatWindow() {
          })
          .catch(() => undefined);
      }
@@ -171,7 +171,7 @@ index f16e300..6a11dba 100644
      return detach;
    }, [notifyOn]);
    /**
-@@ -1205,13 +1206,13 @@ export default function ChatWindow() {
+@@ -1213,13 +1214,13 @@ export default function ChatWindow() {
        e.preventDefault();
        accept(files);
      };
@@ -191,7 +191,7 @@ index f16e300..6a11dba 100644
      };
    });
  
-@@ -2370,7 +2371,7 @@ export default function ChatWindow() {
+@@ -2425,7 +2426,7 @@ export default function ChatWindow() {
        ?? null;
      if (!id) return;
      e.preventDefault();
@@ -200,7 +200,7 @@ index f16e300..6a11dba 100644
    };
  
    const removePending = (id: string): void => {
-@@ -3062,7 +3063,7 @@ export default function ChatWindow() {
+@@ -3144,7 +3145,7 @@ export default function ChatWindow() {
                      ),
                      disabled: notifyToggleDisabled(notifySt),
                    },
@@ -209,7 +209,7 @@ index f16e300..6a11dba 100644
                      key: 'notifyTest',
                      label: '发送测试通知',
                      // ★★DEV-231 需求④：点不了的只有两种 —— 权限压根不可用（点了必然没有结果），
-@@ -3070,7 +3071,7 @@ export default function ChatWindow() {
+@@ -3152,7 +3153,7 @@ export default function ChatWindow() {
                      //   ★`default`（还没问过权限）时**可以点**：那正是最需要一次实际结果
                      //   来确认的情形；而且这一次点击本身就是用户手势，权限会被顺便问出来。
                      disabled: notifyToggleDisabled(notifySt) || !notifyOn,
@@ -218,7 +218,7 @@ index f16e300..6a11dba 100644
                    // ★★DEV-254 需求③（用户原话「见附件红色圈起来的不需要」，附件把这一项圈红了）：
                    //   这里原来还有一条 `{ type: 'divider' }` + `{ key: 'sync', label: '手动增量同步' }`，
                    //   与它的 `onClick` 分支（`syncIncremental().then(...)`）**一并删掉**。
-@@ -3664,7 +3665,7 @@ export default function ChatWindow() {
+@@ -3746,7 +3747,7 @@ export default function ChatWindow() {
              {imgMenu && (
                <Dropdown
                  open
@@ -228,11 +228,11 @@ index f16e300..6a11dba 100644
                  menu={{
                    /* ★★DEV-223：这里原来写死单项，现在走 imgMenuStickerItem ——
 diff --git a/nuwax-im-web/src/components/MessageBubble.tsx b/nuwax-im-web/src/components/MessageBubble.tsx
-index 79fd776..3f167b8 100644
+index 21dd427..3e60bad 100644
 --- a/nuwax-im-web/src/components/MessageBubble.tsx
 +++ b/nuwax-im-web/src/components/MessageBubble.tsx
-@@ -1031,7 +1031,7 @@ export default function MessageBubble({
-   const canPin = useChatStore((s) => canPinInConv(s.convs.find((c) => String(c.convId) === String(m.convId)), s.userId));
+@@ -1150,7 +1150,7 @@ export default function MessageBubble({
+   const viewerIsManager = useChatStore((s) => isOwnerOrManager(s.convs.find((c) => String(c.convId) === String(m.convId)), s.userId));
    const [editing, setEditing] = useState(false);
    const [editText, setEditText] = useState('');
 -  const { message: toast } = AntApp.useApp();
@@ -240,7 +240,7 @@ index 79fd776..3f167b8 100644
    const self = m.senderId != null && userId != null && String(m.senderId) === String(userId);
    const revoked = isRevokedMsg(m);
    /**
-@@ -1425,7 +1425,7 @@ export default function MessageBubble({
+@@ -1565,7 +1565,7 @@ export default function MessageBubble({
  
    const doRevoke = () => {
      if (activeConvId == null) return;
@@ -249,6 +249,24 @@ index 79fd776..3f167b8 100644
        title: '撤回这条消息？',
        // ★业务失败（如 IM_20001 超撤回时限）必须 toast 出来 ——
        //   静默失败的表现是「弹窗关了但消息还在」，用户会反复重试（S8 E2E 实测教训）
+@@ -1583,7 +1583,7 @@ export default function MessageBubble({
+    */
+   const doDeleteMe = () => {
+     if (activeConvId == null) return;
+-    Modal.confirm({
++    modal.confirm({
+       title: '删除这条消息？',
+       content: '仅从你自己的聊天记录中删除，对方的记录不受影响。',
+       okText: '删除',
+@@ -1602,7 +1602,7 @@ export default function MessageBubble({
+    */
+   const doDeleteAll = () => {
+     if (activeConvId == null) return;
+-    Modal.confirm({
++    modal.confirm({
+       title: '对全员删除这条消息？',
+       content: '将从所有群成员的聊天记录中删除，各端会看到「消息已被管理员删除」占位，不可恢复。',
+       okText: '删除',
 diff --git a/nuwax-im-web/src/lib/clipboard.ts b/nuwax-im-web/src/lib/clipboard.ts
 index bc75fe6..e0f8e4a 100644
 --- a/nuwax-im-web/src/lib/clipboard.ts
@@ -385,10 +403,10 @@ index e9e7938..04251f1 100644
 +  return isMessageActive() && doc != null && doc.visibilityState === 'visible' && doc.hasFocus() === true;
  }
 diff --git a/nuwax-im-web/src/store/chat.ts b/nuwax-im-web/src/store/chat.ts
-index 70461bf..f42878d 100644
+index ab7c907..8c71679 100644
 --- a/nuwax-im-web/src/store/chat.ts
 +++ b/nuwax-im-web/src/store/chat.ts
-@@ -126,7 +126,7 @@ import type { ConvUpdateFrame } from '../lib/convUpdate';
+@@ -130,7 +130,7 @@ import type { ConvUpdateFrame } from '../lib/convUpdate';
  // ★DEV-226 需求⑤：桌面通知（判据与出口都在那个文件里，store 只负责"有这么一条消息"）。
  import { notifyContentOf, pushNotify } from '../lib/notify';
  import { isPlatformMode, PLATFORM_LOGIN_URL } from '../authMode';
@@ -397,7 +415,7 @@ index 70461bf..f42878d 100644
  import { currentDeviceId, KickReason } from '../ws/protocol';
  // ★DEV-260：通讯录变更帧 → 「该不该打扰、说什么」的纯函数（含单测）。
  //   ★文案与判据<b>都</b>在 lib 层：store 一 import 就拉起 zustand/React/api，
-@@ -199,7 +199,7 @@ import { isMentionedMe, raiseMentionAnchor } from '../lib/mentionBar';
+@@ -203,7 +203,7 @@ import { isMentionedMe, raiseMentionAnchor } from '../lib/mentionBar';
   * 否则会出现"同一个会话两个 key、合并失效"（而它<b>没有任何症状</b>：
   * 只是偶尔多一个请求，永远不会有人来报）。见 {@code lib/singleFlight.ts}。
   */
@@ -406,7 +424,7 @@ index 70461bf..f42878d 100644
  
  /**
   * ★★DEV-247：同一个会话的「资料库」空间<b>并发只建一次</b>。
-@@ -217,7 +217,7 @@ const membersFlight = createSingleFlight<string, void>();
+@@ -221,7 +221,7 @@ const membersFlight = createSingleFlight<string, void>();
   * 会话行上的 {@code spaceId} 判（第 ① 步的短路），不靠这个 Map。
   * ★与 {@code membersFlight} 同一个理由用 {@code String(convId)} 做 key。
   */
@@ -415,7 +433,7 @@ index 70461bf..f42878d 100644
  
  let tempMsgIdSeq = 1;
  const nextTempMsgId = (): Id => `tmp-${tempMsgIdSeq++}`;
-@@ -511,7 +511,7 @@ export const EMPTY_SESSION = {
+@@ -515,7 +515,7 @@ export const EMPTY_SESSION = {
   * 被关的那条再触发客户端重连 —— 线上表现为"页面一直在请求接口"。
   * 收口放在 store 而不是各调用点：调用点会继续增加，单飞只有一处。
   */
@@ -424,7 +442,7 @@ index 70461bf..f42878d 100644
  
  interface ChatState {
    // ---- 登录态
-@@ -1591,7 +1591,7 @@ function flushLocalCache(dirty: DirtySnapshot): void {
+@@ -1676,7 +1676,7 @@ function flushLocalCache(dirty: DirtySnapshot): void {
  }
  
  /** 落盘调度器（debounce + maxWait，见 lib/cacheFlush.ts）。 */
@@ -433,7 +451,7 @@ index 70461bf..f42878d 100644
  
  /**
   * ★★DEV-173 决策②：冷启动要预展示的那一份快照。
-@@ -1716,7 +1716,31 @@ function preloadSnapshot(): Partial<ChatState> | null {
+@@ -1801,7 +1801,31 @@ function preloadSnapshot(): Partial<ChatState> | null {
    }
  }
  
@@ -466,7 +484,7 @@ index 70461bf..f42878d 100644
    // ★★DEV-173 决策②：冷启动预展示。★求值一次，覆盖点只有下面那一处 spread。
    const preload = preloadSnapshot();
    // ------------------------------------------------------------------
-@@ -2269,10 +2293,11 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2419,10 +2443,11 @@ export const useChatStore = create<ChatState>((set, get) => {
     */
    let lookingRetryTimer: ReturnType<typeof setTimeout> | null = null;
    function scheduleLookingRetry(): void {
@@ -479,7 +497,7 @@ index 70461bf..f42878d 100644
        if (isLooking(document)) {
          // ★判据翻真了：走正常补报入口（它自己会再查一遍判据，这里不抄近路）
          get().flushPendingRead();
-@@ -2312,7 +2337,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2462,7 +2487,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   于是变成 1 秒一次的连接乒乓，每次重连还顺带拉一份完整会话列表。
      //   ★判据用 imSocket.active（connected/connecting/reconnecting），不是 connected：
      //   两次调用是并发到达的，第一次的 CONNECT_ACK 尚未回来时 state 还是 connecting。
@@ -488,7 +506,7 @@ index 70461bf..f42878d 100644
      set({
        userId: opts.userId,
        userName: opts.userName,
-@@ -2340,6 +2365,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2490,6 +2515,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      } catch {
        // 注册失败不阻塞登录（设备表是推送用的辅助数据）
      }
@@ -496,7 +514,7 @@ index 70461bf..f42878d 100644
      imSocket.connect(opts.token);
      // ★★DEV-172：这里【必须】吞掉失败，两个理由各自都成立：
      //   ① enterSession 被 probePlatformSession 的 try 包着 —— 会话列表拉取失败冒出去
-@@ -2348,7 +2374,9 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2498,7 +2524,9 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   ② 本次给"加载失败"做了可见的终态（failed + 重试按钮），不吞的话那条路径
      //      根本走不到：界面在跳登录页，用户永远看不到重试入口。
      await get().loadConversations().catch(() => undefined);
@@ -506,7 +524,7 @@ index 70461bf..f42878d 100644
      // ★★DEV-168：默认打开第一个会话（用户需求第三条："直接进去消息对话列表，默认打开第一个会话"）。
      //   ★★为什么放在【这里】而不是 loadConversations 里（这是个真坑，不是风格问题）：
      //   loadConversations 有 8 个调用者（onReconnected / createP2p / createGroup /
-@@ -2360,6 +2388,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -2510,6 +2538,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      //   拉历史消息失败若冒出去，会被那个 catch 当成【鉴权失败】——于是一次网络抖动
      //   会把用户送去登录页。这正是"两个不相干的失败共用一个 catch"的典型事故。
      await openDefaultConv().catch(() => undefined);
@@ -514,7 +532,7 @@ index 70461bf..f42878d 100644
      // ★通讯录必须**容错**：新表上线初期、平台侧资料服务抖动都可能让它失败，
      //   而它只是侧栏第二个 Tab 的内容 —— 让它把登录流程整个拖垮
      //   （症状：会话列表已经好了，界面却卡在登录页）是完全不成比例的。
-@@ -3167,6 +3196,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3339,6 +3368,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    /** ★DEV-292 D2：窗口定时器与尾随标记收进 lib，store 只留接线。 */
    const readRefreshScheduler = createReadRefreshScheduler({
      windowMs: READ_REFRESH_DEBOUNCE_MS,
@@ -522,7 +540,7 @@ index 70461bf..f42878d 100644
      fire: (key) => {
        // ★用 `refreshReadCounts`（清签名 + 重查），不是 `ensureReadEligible`：
        //   后者会被"签名没变"那道闸门挡掉 —— 而这里签名**恰恰**不会变
-@@ -3208,6 +3238,7 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3380,6 +3410,7 @@ export const useChatStore = create<ChatState>((set, get) => {
    const pendingReportSeq = new Map<string, number>();
    const readReportSender = createReadRefreshScheduler({
      windowMs: READ_REPORT_DEBOUNCE_MS,
@@ -530,7 +548,7 @@ index 70461bf..f42878d 100644
      fire: (key) => {
        const seq = pendingReportSeq.get(key) ?? 0;
        pendingReportSeq.delete(key);
-@@ -3257,6 +3288,19 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3429,6 +3460,19 @@ export const useChatStore = create<ChatState>((set, get) => {
      },
    });
    readHeartbeat.start();
@@ -550,7 +568,7 @@ index 70461bf..f42878d 100644
    /** ★与后端 `ReadStatusRequest.msgIds` 的上限一致（`store/chat.ts` 里那句 slice(0,200) 同值）。 */
    const READ_ELIGIBLE_MAX = 200;
  
-@@ -3366,12 +3410,14 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3538,12 +3582,14 @@ export const useChatStore = create<ChatState>((set, get) => {
       */
      probePlatformSession: async () => {
        // ★★单飞（DEV-157）：并发调用共用同一次探测，见 platformProbeInFlight 的说明。
@@ -565,7 +583,7 @@ index 70461bf..f42878d 100644
            set({ authProbe: 'idle' });
            // ★★DEV-173 决策②：预展示的身份核对。
            //   ★位置必须在 loginFromSession【之前】：那个函数一进去就会设 userId、
-@@ -3379,8 +3425,9 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -3551,8 +3597,9 @@ export const useChatStore = create<ChatState>((set, get) => {
            //   发出去一串请求（包括设备注册），再把它推翻。
            reconcilePreloadedIdentity(String(user.userId));
            await get().loginFromSession(user);
@@ -576,7 +594,7 @@ index 70461bf..f42878d 100644
            const err = e as ApiError;
            // ★★DEV-168：判据全部交给 {@link enterAuthEntry}（→ lib/authEntry.ts）。
            //
-@@ -4889,7 +4936,11 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -5224,7 +5271,11 @@ export const useChatStore = create<ChatState>((set, get) => {
    //   ★preload 为 null 时返回的<b>就是</b>上面那个对象本身（不是一份浅拷贝）：
    //   zustand 建 store 时会自己持有它，这里多拷一份没有意义。
    return preload ? { ...initial, ...preload } : initial;
@@ -589,7 +607,7 @@ index 70461bf..f42878d 100644
  
  // ======================================================================
  // ★★DEV-173：脏标记的唯一入口
-@@ -4911,7 +4962,8 @@ export const useChatStore = create<ChatState>((set, get) => {
+@@ -5246,7 +5297,8 @@ export const useChatStore = create<ChatState>((set, get) => {
  //   mergeMessage 收口 / 发送失败标 msgStatus / 撤回 onMsgRevoke / 已读回执
  //   onReadNotify / 已读回执聚合 onReadNotifyAgg / selectConv 拉历史 /
  //   loadOlderMessages 翻历史 / revokeMessage。
@@ -599,7 +617,7 @@ index 70461bf..f42878d 100644
    // ★登出/鉴权失效途中不标脏：那一路的磁盘处置是 purge，标脏只会把刚删的东西
    //   重新写回去（与 flushLocalCache 开头那道守卫是同一个理由，两道都留着 ——
    //   一道挡"不写"，一道挡"不排定时器"）。
-@@ -4922,7 +4974,28 @@ useChatStore.subscribe((st, prev) => {
+@@ -5257,7 +5309,28 @@ useChatStore.subscribe((st, prev) => {
        if (st.messagesByConv[key] !== prev.messagesByConv[key]) flushScheduler.markMsgs(key);
      }
    }
@@ -629,7 +647,7 @@ index 70461bf..f42878d 100644
  
  // ======================================================================
  // ★★DEV-327：window.__im 监听桥的另外两个事件源（未读 / 连接状态）
-@@ -4939,7 +5012,8 @@ useChatStore.subscribe((st, prev) => {
+@@ -5274,7 +5347,8 @@ useChatStore.subscribe((st, prev) => {
  // ★★快照**按字段分开喂**（不是无脑全量喂）：每次喂都是一份新对象，
  //   无脑喂会让宿主每次 store 变化都拿到一个新引用 —— 白分配，
  //   且宿主若用引用比较做变更检测会一直误判成"变了"。
@@ -639,7 +657,7 @@ index 70461bf..f42878d 100644
    if (s.unreadTotal !== prev.unreadTotal) {
      emitImUnread(s.unreadTotal);
      setImBridgeSnapshot({ unreadTotal: s.unreadTotal });
-@@ -4958,7 +5032,6 @@ useChatStore.subscribe((s, prev) => {
+@@ -5293,7 +5367,6 @@ useChatStore.subscribe((s, prev) => {
  //   （preload 快照那条路尤其明显）—— 那几个字段在本次会话里**一次都不会"变化"**，
  //   于是它们永远停在模块默认值（未读 0、未登录）上，
  //   而宿主 getSnapshot() 恰好就是在这段窗口里被调用的（它刚接进来）。
@@ -647,7 +665,7 @@ index 70461bf..f42878d 100644
    const s0 = useChatStore.getState();
    setImBridgeSnapshot({
      connState: s0.connState,
-@@ -4966,7 +5039,9 @@ useChatStore.subscribe((s, prev) => {
+@@ -5301,7 +5374,9 @@ useChatStore.subscribe((s, prev) => {
      unreadTotal: s0.unreadTotal,
      userId: s0.userId == null ? null : String(s0.userId),
    });
