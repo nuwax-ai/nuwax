@@ -10,6 +10,7 @@ import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import useAgentPaymentIntercept from '@/hooks/useAgentPaymentIntercept';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
 import useSubscription from '@/hooks/useSubscription';
+import { isAppTabLimitReached } from '@/models/openedAppTabs';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedAgentList,
@@ -56,6 +57,7 @@ const cx = classNames.bind(styles);
 const Square: React.FC = () => {
   const { templateList } = useModel('squareModel');
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const { openApp, openedAppTabs } = useModel('openedAppTabs');
 
   // 是否开启订阅功能
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
@@ -247,6 +249,26 @@ const Square: React.FC = () => {
       }),
     { manual: true },
   );
+
+  /**
+   * 网页应用（Agent + PageApp）点击与女娲应用页一致：
+   * 标签满 5 个只提示；不上报最近使用；登记多开标签后打开智能体页。
+   */
+  const handlePageAppClick = (app: SquarePublishedItemInfo) => {
+    const routePath = `/agent/${app.targetId}`;
+    if (isAppTabLimitReached(openedAppTabs, routePath)) {
+      // message.warning(dict('PC.Pages.NuwaApps.appTabLimitReached'));
+      history.push(routePath);
+      return;
+    }
+    openApp({
+      targetId: app.targetId,
+      name: app.name,
+      icon: app.icon,
+      routePath,
+    });
+    history.push(routePath);
+  };
 
   // 初始化配置信息
   const initValues = (params: SquareSearchParams) => {
@@ -633,6 +655,15 @@ const Square: React.FC = () => {
                         history.push(`/user-app/${item.targetId}`);
                         return;
                       }
+
+                      if (
+                        item.targetType === AgentComponentTypeEnum.Agent &&
+                        item.targetSubType === AgentComponentTypeEnum.PageApp
+                      ) {
+                        handlePageAppClick(item);
+                        return;
+                      }
+
                       return interceptAgentClick(item, () =>
                         handleClick(
                           item.targetId,
@@ -711,10 +742,15 @@ const Square: React.FC = () => {
                           publishedItemInfo={item}
                           onClick={() =>
                             // 智能体条目同样走上框（bug 2398），非智能体类型分支内自行分流
-                            handleClick(item.targetId, item.targetType, 'square', {
-                              name: item.name,
-                              icon: item.icon,
-                            })
+                            handleClick(
+                              item.targetId,
+                              item.targetType,
+                              'square',
+                              {
+                                name: item.name,
+                                icon: item.icon,
+                              },
+                            )
                           }
                         />
                       );
