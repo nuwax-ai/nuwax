@@ -2,6 +2,8 @@
 const CONTAINER_STATUS_RUNNING = 'running';
 /** 与 UserAppReadinessStatusEnum.Ready 对齐。 */
 const APP_STATUS_READY = 'ready';
+/** 与 UserAppReadinessStatusEnum.NotDeployed 对齐。 */
+const APP_STATUS_NOT_DEPLOYED = 'not_deployed';
 
 /**
  * 计算容器是否已在运行。
@@ -46,16 +48,25 @@ export function canPollUserAppLogs(
 }
 
 /**
- * 电脑重启后是否可以结束「等容器 running」。
+ * 电脑重启后是否可以结束等待并重启应用。
  * 只有新一轮 readiness 探测结果才作数；定时 tick 会扫到重启前的 running 缓存，不能据此放行。
+ * 开发环境还要求顶层 status 为 not_deployed，容器先 running 但应用状态未落到未部署时继续等。
  *
  * @param source poll 表示本次是接口回包；tick 表示等待方定时巡检
  * @param data 当前保存的探测结果
- * @returns 是否可以视为容器已在运行
+ * @param options.requireNotDeployed 为 true 时，顶层 status 也必须是 not_deployed
+ * @returns 是否可以开始下一步重启应用
  */
 export function shouldResolveContainerRunningWaiter(
   source: 'poll' | 'tick',
-  data?: { container?: { status?: string } | null } | null,
+  data?: { status?: string; container?: { status?: string } | null } | null,
+  options?: { requireNotDeployed?: boolean },
 ): boolean {
-  return source === 'poll' && isUserAppContainerRunning(data);
+  if (source !== 'poll' || !isUserAppContainerRunning(data)) {
+    return false;
+  }
+  if (options?.requireNotDeployed && data?.status !== APP_STATUS_NOT_DEPLOYED) {
+    return false;
+  }
+  return true;
 }

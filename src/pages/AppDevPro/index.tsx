@@ -1248,11 +1248,12 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       ) {
         return '';
       }
-      // 不再探测预览域名。挂起该环境的就绪结果，直到服务可访问或用户停止 / 切走。
+      // 启动 stream 已成功也不算能访问。一直等到 status 为 ready 且 ready 为 true，
+      // 或用户停止 / 切走。首次创建时容器还在接入，也要等探测开始后再判断，不能直接当成成功。
       const shouldStop = () =>
         previewUserStoppedByEnvRef.current[targetEnv] ||
         dbEnvRef.current !== targetEnv;
-      if (shouldStop() || !appId || skipReadinessUntilWatchRef.current) {
+      if (shouldStop() || !appId) {
         return '';
       }
       await serviceReadinessRef.current.waitUntilReady(targetEnv, shouldStop);
@@ -1278,10 +1279,10 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   /**
    * 重启智能体电脑。
    * 只调 pod/restart，不打开远程桌面，避免顺带调用 ensure。
-   * 电脑重启成功后先等 4 秒再打 readiness，再等 container.status 为 running，再接上保活
+   * 电脑重启成功后先等 4 秒再打 readiness，再接上保活
    * （已有轮询则只补打一次，不重置间隔）。
-   * 开发环境还要已有有效项目文件才 restart；线上环境容器 running 即可 restart。
-   * 线上未部署则不调应用 restart。
+   * 开发环境要 container.status 为 running，且顶层 status 为 not_deployed，并已有有效项目文件，才调 dev/restart。
+   * 线上环境容器 running 即可 restart。线上未部署则不调应用 restart。
    */
   const handleRestartComputer = useCallback(async () => {
     const envToRestart = dbEnvRef.current;
@@ -1311,11 +1312,13 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       return;
     }
 
-    // 等待容器 running
+    // 开发环境：容器 running 且顶层 status 为 not_deployed 才重启应用。
+    // 线上环境只等容器 running。
     const containerRunningPromise =
       serviceReadinessRef.current.waitUntilContainerRunning(
         envToRestart,
         () => dbEnvRef.current !== envToRestart,
+        isProd ? undefined : { requireNotDeployed: true },
       );
     // 继续轮询 readiness
     resumeReadinessWatch();

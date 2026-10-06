@@ -7,10 +7,7 @@ import {
   isUserAppReadinessAccessible,
   type UserAppReadiness,
 } from '../services/appDevPro';
-import {
-  isUserAppContainerRunning,
-  shouldResolveContainerRunningWaiter,
-} from '../utils/isUserAppContainerRunning';
+import { shouldResolveContainerRunningWaiter } from '../utils/isUserAppContainerRunning';
 
 /** 就绪探测间隔。页面停留期间一直重复请求，不设次数上限。 */
 const READINESS_WATCH_INTERVAL_MS = 3000;
@@ -50,6 +47,8 @@ type ReadinessWaiter =
       env: UserAppDbEnvEnum;
       kind: 'container-running';
       shouldStop?: () => boolean;
+      /** 开发环境重启电脑：容器 running 之外，顶层 status 还要是 not_deployed */
+      requireNotDeployed?: boolean;
       resolve: (running: boolean) => void;
     };
 
@@ -188,7 +187,9 @@ export function useUserAppReadinessWatch(
         }
         if (
           waiter.kind === 'container-running' &&
-          shouldResolveContainerRunningWaiter(source, slot.data)
+          shouldResolveContainerRunningWaiter(source, slot.data, {
+            requireNotDeployed: waiter.requireNotDeployed,
+          })
         ) {
           waiter.resolve(true);
           return false;
@@ -430,24 +431,32 @@ export function useUserAppReadinessWatch(
    * 等到计算容器 status 为 running。
    * 默认不采用当前槽位，只认之后的探测回包（电脑重启后缓存可能仍是旧的 running）。
    * 手动重启应用时可 acceptCached：当前探测已是 running 就立刻放行。
+   * requireNotDeployed 时还要顶层 status 为 not_deployed，才结束等待。
    *
    * @param env 要等待的环境
    * @param shouldStop 返回 true 时结束等待
    * @param options.acceptCached 是否采信当前已保存的探测结果
-   * @returns 容器是否已在运行
+   * @param options.requireNotDeployed 是否同时要求顶层 status 为 not_deployed
+   * @returns 容器是否已在运行，且在要求未部署时 status 已是 not_deployed
    */
   const waitUntilContainerRunning = useCallback(
     (
       env: UserAppDbEnvEnum,
       shouldStop?: () => boolean,
-      options?: { acceptCached?: boolean },
+      options?: { acceptCached?: boolean; requireNotDeployed?: boolean },
     ) => {
       if (shouldStop?.()) {
         return Promise.resolve(false);
       }
       if (
         options?.acceptCached &&
-        isUserAppContainerRunning(slotsRef.current[env].data)
+        shouldResolveContainerRunningWaiter(
+          'poll',
+          slotsRef.current[env].data,
+          {
+            requireNotDeployed: options.requireNotDeployed,
+          },
+        )
       ) {
         return Promise.resolve(true);
       }
@@ -456,6 +465,7 @@ export function useUserAppReadinessWatch(
           env,
           kind: 'container-running',
           shouldStop,
+          requireNotDeployed: options?.requireNotDeployed,
           resolve,
         });
         ensureStopWatch();

@@ -514,20 +514,22 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     return emptyProjectHero;
   }
 
-  if (readinessHero) {
-    return readinessHero;
-  }
-
+  // 启动 stream 已成功，应用还不能访问：只显示 iframe 加载动画，先不放域名。
+  // 放在就绪提示前面，避免探测先返回 failed 等状态把等待盖住。
   if (checking) {
     return (
-      <div className={cx(styles.container, styles.stage)}>
-        <PreviewHero
-          spinning
-          title={dict('PC.Pages.AppDevPro.previewChecking')}
-          hint={dict('PC.Pages.AppDevPro.previewCheckingHint')}
-        />
+      <div className={cx(styles.container)}>
+        <div className={cx(styles.iframeWrap)}>
+          <div className={cx(styles.loadingOverlay)}>
+            <PreviewIframeLoading />
+          </div>
+        </div>
       </div>
     );
+  }
+
+  if (readinessHero) {
+    return readinessHero;
   }
 
   /** 线上环境：停止 / 重启 / 启动与开发环境同一套提示，仅在服务运行中展示 iframe */
