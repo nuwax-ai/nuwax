@@ -143,7 +143,11 @@ import { UserAppTaskTypeEnum, type UserAppInfo } from './type';
 import { isProjectNameDefined } from './utils/isProjectNameDefined';
 import { resolveUserAppPreviewNavigateUrl } from './utils/previewNavigateUrl';
 import { buildUserAppAppPreviewUrl } from './utils/userAppPreviewUrl';
+
 const cx = classNames.bind(styles);
+
+/** ensure 受理后延迟再保活，不跟 readiness 的容器状态走 */
+const ENSURE_KEEPALIVE_DELAY_MS = 3000;
 
 /** Header 工作区：文件树预览与应用预览 / 数据库 / 远程桌面互斥，后三者不进入文件标签栏 */
 type AppDevWorkspaceView =
@@ -457,7 +461,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   }, [setFileTreeSelfManaged]);
 
   /**
-   * 开发容器 ensure 成功后才允许拉文件树。
+   * 开发容器被 readiness 确认 running 之后才允许拉文件树。
+   * ensure 成功只表示启动请求已受理，不能提前拉。
    * 由下方容器状态同步；其它页面的文件树不走这个开关。
    */
   const [workspaceContainerReady, setWorkspaceContainerReady] = useState(false);
@@ -606,7 +611,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   const previewContainerFailed = currentEnvPodStatus === 'error';
   /**
    * 文件树和 tasks/active 的门闩。
-   * 云电脑须等开发容器就绪（ensure 成功，或服务已就绪后直接保活）；非云电脑没有这层容器，会话详情确定后即可请求。
+   * 云电脑须等开发容器真正 running（服务已就绪后直接保活，或 ensure 受理后再等 readiness 的 container.status）；
+   * 非云电脑没有这层容器，会话详情确定后即可请求。
    */
   const containerReadyForQueries =
     !!finalSelectedComputerId &&
@@ -1175,30 +1181,66 @@ const AppDevPro: React.FC<AppDevProProps> = ({
 
   /**
    * 刷新进入页面时先看开发环境就绪结果。
-   * 已经真正就绪就不再 ensure 拉起容器，只继续保活。
-   * 还没就绪或探测失败时，仍走原来的 ensure。
+   * 已经真正就绪就不再 ensure 拉起容器，只继续保活，随后可以拉 git 和文件列表。
+   * 还没就绪或探测失败时仍走 ensure。ensure 成功只表示启动请求已受理，
+   * 几秒后开始保活，不等容器状态。git/status、git/diff、file-list 仍要等
+   * readiness 里 container.status 为 running。
    */
   useEffect(() => {
     if (!active || !envPodConversationId) {
       return;
     }
+    let cancelled = false;
+    const shouldStop = () => cancelled;
+
+    /**
+     * ensure 已受理后，丢掉可能还在路上的旧探测，等容器真正 running 再放行后续接口。
+     * 保活单独延迟几秒开始，避免启动较久时容器被收回。
+     * 主动打出的这一次若已是 running，等待会立刻结束；否则继续等后续轮询。
+     */
+    const keepAliveAfterContainerRunning = async () => {
+      const keepaliveTimer = window.setTimeout(() => {
+        if (shouldStop()) {
+          return;
+        }
+        devPod.keepAliveWhileStarting();
+      }, ENSURE_KEEPALIVE_DELAY_MS);
+      const pending = serviceReadinessRef.current.waitUntilContainerRunning(
+        UserAppDbEnvEnum.Dev,
+        shouldStop,
+      );
+      serviceReadinessRef.current.continuePolling();
+      try {
+        const running = await pending;
+        if (shouldStop() || !running) {
+          return;
+        }
+        devPod.confirmContainerRunning();
+      } finally {
+        window.clearTimeout(keepaliveTimer);
+      }
+    };
+
     // 主页刚创建进来：应用记录可能还不存在，先拉容器，ensure 后再开始 readiness 轮询
     if (skipReadinessThisVisit) {
-      let cancelled = false;
       void (async () => {
+        let accepted = false;
         try {
-          await devPod.ensure(true);
+          accepted = await devPod.ensure(true, { deferRunning: true });
         } finally {
           if (!cancelled) {
             setCreateEnsureSettled(true);
           }
         }
+        if (cancelled || !accepted) {
+          return;
+        }
+        await keepAliveAfterContainerRunning();
       })();
       return () => {
         cancelled = true;
       };
     }
-    let cancelled = false;
     void (async () => {
       const readiness = await serviceReadinessRef.current.waitForSettled(
         UserAppDbEnvEnum.Dev,
@@ -1211,15 +1253,21 @@ const AppDevPro: React.FC<AppDevProProps> = ({
         devPod.keepAlive();
         return;
       }
-      void devPod.ensure(true);
+      const accepted = await devPod.ensure(true, { deferRunning: true });
+      if (cancelled || !accepted) {
+        return;
+      }
+      await keepAliveAfterContainerRunning();
     })();
     return () => {
       cancelled = true;
     };
   }, [
     active,
+    devPod.confirmContainerRunning,
     devPod.ensure,
     devPod.keepAlive,
+    devPod.keepAliveWhileStarting,
     envPodConversationId,
     skipReadinessThisVisit,
   ]);
@@ -1275,6 +1323,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   startPreviewRuntimeRef.current = previewRuntime.start;
   const restartPreviewRuntimeRef = useRef(previewRuntime.restart);
   restartPreviewRuntimeRef.current = previewRuntime.restart;
+  const markPreviewReadyRef = useRef(previewRuntime.markReady);
+  markPreviewReadyRef.current = previewRuntime.markReady;
 
   /**
    * 重启智能体电脑。
@@ -1282,7 +1332,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
    * 电脑重启成功后先等 4 秒再打 readiness，再接上保活
    * （已有轮询则只补打一次，不重置间隔）。
    * 开发环境要 container.status 为 running，且顶层 status 为 not_deployed，并已有有效项目文件，才调 dev/restart。
-   * 线上环境容器 running 即可 restart。线上未部署则不调应用 restart。
+   * 线上环境容器 running 后，再看应用状态：ready 直接预览，启动中继续轮询；
+   * 变成 ready 也直接预览，其它状态才调应用 restart。线上未部署则不调。
    */
   const handleRestartComputer = useCallback(async () => {
     const envToRestart = dbEnvRef.current;
@@ -1340,6 +1391,35 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     if (!isProd && !hasValidWorkspaceProjectFiles(fileTreeDataRef.current)) {
       return;
     }
+    if (isProd) {
+      const switchedAway = () => dbEnvRef.current !== envToRestart;
+      let appStatus =
+        serviceReadinessRef.current.readinessByEnvRef.current[envToRestart]
+          ?.status;
+      while (appStatus === UserAppReadinessStatusEnum.Starting) {
+        if (switchedAway()) {
+          return;
+        }
+        const next = await serviceReadinessRef.current.waitForNextPoll(
+          envToRestart,
+          switchedAway,
+        );
+        if (switchedAway() || !next) {
+          return;
+        }
+        appStatus = next.status;
+      }
+      if (switchedAway()) {
+        return;
+      }
+      if (appStatus === UserAppReadinessStatusEnum.Ready) {
+        setPreviewStoppedForEnv(envToRestart, false);
+        setPreviewIframeUrl(appPreviewUrlRef.current);
+        setPreviewRefreshKey((prev) => prev + 1);
+        markPreviewReadyRef.current(envToRestart);
+        return;
+      }
+    }
     resumeReadinessWatch();
     setPreviewStoppedForEnv(envToRestart, false);
     setPreviewIframeUrl(appPreviewUrlRef.current);
@@ -1357,8 +1437,6 @@ const AppDevPro: React.FC<AppDevProProps> = ({
   ]);
   const previewRunningRef = useRef(previewRuntime.running);
   previewRunningRef.current = previewRuntime.running;
-  const markPreviewReadyRef = useRef(previewRuntime.markReady);
-  markPreviewReadyRef.current = previewRuntime.markReady;
   const dismissPreviewLoadErrorRef = useRef(
     previewRuntime.dismissPreviewLoadError,
   );
@@ -2034,7 +2112,7 @@ const AppDevPro: React.FC<AppDevProProps> = ({
       },
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
-      /** 容器已 ensure 且开启版本管理、工作区已有文件时才拉取 Git status */
+      /** 容器已确认 running，且开启版本管理、工作区已有文件时才拉取 Git status */
       enableGitStatus:
         isVersionControlEnabled &&
         containerReadyForQueries &&
