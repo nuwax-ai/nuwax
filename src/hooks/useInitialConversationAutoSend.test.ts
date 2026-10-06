@@ -1,5 +1,8 @@
 import type { ConversationRuntimeSession } from '@/features/conversation/runtime/createConversationRuntimeSession';
-import { useInitialConversationAutoSend } from '@/hooks/useInitialConversationAutoSend';
+import {
+  clearInitialAutoSendDedupe,
+  useInitialConversationAutoSend,
+} from '@/hooks/useInitialConversationAutoSend';
 import { AgentComponentTypeEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { OpenCloseEnum } from '@/types/enums/space';
 import { act, renderHook, waitFor } from '@testing-library/react';
@@ -297,5 +300,98 @@ describe('useInitialConversationAutoSend（bug 2477：V2 直发与 V1 回退二�
 
     await act(async () => pending.resolve(snapshot));
     expect(runtimeSession.send).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useInitialConversationAutoSend 跨挂载去重', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clearInitialAutoSendDedupe();
+    mockFetchConversationSnapshot.mockResolvedValue(snapshot);
+  });
+
+  it('两个实例同时进同一会话，只发送一次', async () => {
+    const pending = deferred<typeof snapshot>();
+    mockFetchConversationSnapshot.mockReturnValue(pending.promise);
+    const first = createRuntimeSessionStub();
+    const second = createRuntimeSessionStub();
+
+    renderHook(() =>
+      useInitialConversationAutoSend({
+        ...baseParams,
+        onMessageSend: vi.fn(),
+        runtimeSession: first,
+        dedupeAcrossRemount: true,
+      }),
+    );
+    renderHook(() =>
+      useInitialConversationAutoSend({
+        ...baseParams,
+        onMessageSend: vi.fn(),
+        runtimeSession: second,
+        dedupeAcrossRemount: true,
+      }),
+    );
+
+    await act(async () => pending.resolve(snapshot));
+    expect(first.send).toHaveBeenCalledTimes(1);
+    expect(second.send).not.toHaveBeenCalled();
+  });
+
+  it('已经发出后重新挂载，详情仍为空也不再发', async () => {
+    const runtimeSession = createRuntimeSessionStub();
+    const { unmount } = renderHook(() =>
+      useInitialConversationAutoSend({
+        ...baseParams,
+        onMessageSend: vi.fn(),
+        runtimeSession,
+        dedupeAcrossRemount: true,
+      }),
+    );
+    await waitFor(() => expect(runtimeSession.send).toHaveBeenCalledTimes(1));
+    unmount();
+
+    const remounted = createRuntimeSessionStub();
+    renderHook(() =>
+      useInitialConversationAutoSend({
+        ...baseParams,
+        onMessageSend: vi.fn(),
+        runtimeSession: remounted,
+        dedupeAcrossRemount: true,
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(remounted.send).not.toHaveBeenCalled();
+  });
+
+  it('查询尚未发出就卸载，重新挂载仍然会发', async () => {
+    const pending = deferred<typeof snapshot>();
+    mockFetchConversationSnapshot.mockReturnValue(pending.promise);
+    const first = createRuntimeSessionStub();
+    const { unmount } = renderHook(() =>
+      useInitialConversationAutoSend({
+        ...baseParams,
+        onMessageSend: vi.fn(),
+        runtimeSession: first,
+        dedupeAcrossRemount: true,
+      }),
+    );
+    unmount();
+    await act(async () => pending.resolve(snapshot));
+    expect(first.send).not.toHaveBeenCalled();
+
+    mockFetchConversationSnapshot.mockResolvedValue(snapshot);
+    const second = createRuntimeSessionStub();
+    renderHook(() =>
+      useInitialConversationAutoSend({
+        ...baseParams,
+        onMessageSend: vi.fn(),
+        runtimeSession: second,
+        dedupeAcrossRemount: true,
+      }),
+    );
+    await waitFor(() => expect(second.send).toHaveBeenCalledTimes(1));
   });
 });

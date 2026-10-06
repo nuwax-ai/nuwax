@@ -768,6 +768,8 @@ const AppDevPro: React.FC<AppDevProProps> = ({
     getEffectiveSandboxId,
     onMessageSend,
     runtimeSession: runtimeLine?.session,
+    // 页面重新挂载时路由里的提示词还在，详情却可能尚未写入第一条用户消息
+    dedupeAcrossRemount: true,
   });
 
   /** 打开导入项目弹窗 */
