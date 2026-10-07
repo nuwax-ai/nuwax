@@ -126,6 +126,8 @@ export function toRepoPortalRect(
     right: rect.right - viewport.left,
     top: rect.top - viewport.top,
     bottom: rect.bottom - viewport.top,
+    width: rect.right - rect.left,
+    height: rect.bottom - rect.top,
   };
 }
 

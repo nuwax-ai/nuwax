@@ -1,4 +1,4 @@
-/** 主页新建全栈应用后，这一次进入先不打 readiness */
+/** 主页新建全栈应用后，这一次进入先 ensure，完成后再开始 readiness 轮询 */
 const storageKey = (appId: number, conversationId: number): string =>
   `nuwax:appDevPro:skipReadiness:${appId}:${conversationId}`;
 
@@ -65,7 +65,7 @@ export const markAppDevProSkipReadiness = (
  *
  * @param appId 当前应用 ID
  * @param conversationId 当前会话 ID
- * @returns 这一次进入是否跳过 readiness
+ * @returns 这一次进入是否先跳过「用 readiness 决定 ensure」，ensure 后仍会轮询
  */
 export const consumeAppDevProSkipReadiness = (
   appId: number,

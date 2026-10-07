@@ -123,6 +123,31 @@ describe('真实账号绑定面板的读取失败与恢复', () => {
     expect(screen.queryByText('external-user')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '已绑定方式' })).toBeEnabled();
   });
+  it('解绑被拒绝时消费异常、保留身份，重新确认后可以重试', async () => {
+    render(<AccountBind />);
+    await screen.findByText('external-user');
+    const unbindButton = () =>
+      screen.getByRole('button', {
+        name: 'PC.Layouts.Setting.AccountBind.unbind',
+      });
+    h.unbind.mockRejectedValueOnce(new Error('set password first'));
+    fireEvent.click(unbindButton());
+    await act(async () => {
+      await expect(h.confirm.mock.calls[0][2]()).resolves.toBeUndefined();
+    });
+    expect(screen.getByText('external-user')).toBeInTheDocument();
+    expect(unbindButton()).toBeEnabled();
+    expect(h.success).not.toHaveBeenCalled();
+    expect(h.identityList).toHaveBeenCalledTimes(1);
+    h.identityList.mockResolvedValueOnce(response([]));
+    fireEvent.click(unbindButton());
+    await act(async () => {
+      await h.confirm.mock.calls[1][2]();
+    });
+    expect(await screen.findByText(emptyKey)).toBeInTheDocument();
+    expect(h.unbind).toHaveBeenCalledTimes(2);
+    expect(h.success).toHaveBeenCalledTimes(1);
+  });
   it('StrictMode 旧读迟到不能覆盖新列表或清掉新错误', async () => {
     const older = deferred<unknown>();
     h.identityList.mockReturnValueOnce(older.promise);

@@ -3,7 +3,11 @@ import useLicense from '@/hooks/useLicense';
 import { dict } from '@/services/i18nRuntime';
 import { MAX_LICENSE_FILE_BYTES } from '@/services/license';
 import { UserService } from '@/services/userService';
-import type { LicenseFeature, LicenseState } from '@/types/interfaces/license';
+import type {
+  LicenseErrorKind,
+  LicenseFeature,
+  LicenseState,
+} from '@/types/interfaces/license';
 import { canExecuteLicenseFeature } from '@/utils/license';
 import { UploadOutlined } from '@ant-design/icons';
 import {
@@ -30,6 +34,20 @@ const colors: Record<LicenseState, string> = {
   VALID: 'green',
   EXPIRED: 'orange',
   INVALID: 'red',
+};
+// 领域枚举包含大写/下划线，错误类别包含连字符；翻译键末段须为 camelCase。
+const stateKeys: Record<LicenseState, string> = {
+  NOT_INSTALLED: 'notInstalled',
+  VALID: 'valid',
+  EXPIRED: 'expired',
+  INVALID: 'invalid',
+};
+const errorKeys: Record<LicenseErrorKind, string> = {
+  unavailable: 'unavailable',
+  unauthenticated: 'unauthenticated',
+  forbidden: 'forbidden',
+  network: 'network',
+  'invalid-response': 'invalidResponse',
 };
 const timeOf = (value?: string) => {
   const date = value ? new Date(value) : null;
@@ -103,7 +121,9 @@ export default function License() {
               <Alert
                 showIcon
                 type="error"
-                message={dict(`PC.Pages.License.error.${state.error.kind}`)}
+                message={dict(
+                  `PC.Pages.License.error.${errorKeys[state.error.kind]}`,
+                )}
                 description={
                   snapshot ? dict('PC.Pages.License.staleSnapshot') : undefined
                 }
@@ -125,7 +145,9 @@ export default function License() {
                 <Descriptions bordered column={{ xs: 1, sm: 1, md: 2 }}>
                   <Descriptions.Item label={dict('PC.Pages.License.state')}>
                     <Tag color={colors[snapshot.state]}>
-                      {dict(`PC.Pages.License.state.${snapshot.state}`)}
+                      {dict(
+                        `PC.Pages.License.state.${stateKeys[snapshot.state]}`,
+                      )}
                     </Tag>
                   </Descriptions.Item>
                   <Descriptions.Item label={dict('PC.Pages.License.subject')}>
@@ -237,7 +259,9 @@ export default function License() {
             <Alert
               type="error"
               showIcon
-              message={dict(`PC.Pages.License.error.${state.error.kind}`)}
+              message={dict(
+                `PC.Pages.License.error.${errorKeys[state.error.kind]}`,
+              )}
             />
           )}
         </Space>

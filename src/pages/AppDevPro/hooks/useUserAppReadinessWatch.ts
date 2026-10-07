@@ -7,6 +7,7 @@ import {
   isUserAppReadinessAccessible,
   type UserAppReadiness,
 } from '../services/appDevPro';
+import { shouldResolveContainerRunningWaiter } from '../utils/isUserAppContainerRunning';
 
 /** 就绪探测间隔。页面停留期间一直重复请求，不设次数上限。 */
 const READINESS_WATCH_INTERVAL_MS = 3000;
@@ -41,6 +42,20 @@ type ReadinessWaiter =
       kind: 'ready';
       shouldStop?: () => boolean;
       resolve: (ready: boolean) => void;
+    }
+  | {
+      env: UserAppDbEnvEnum;
+      kind: 'container-running';
+      shouldStop?: () => boolean;
+      /** 开发环境重启电脑：容器 running 之外，顶层 status 还要是 not_deployed */
+      requireNotDeployed?: boolean;
+      resolve: (running: boolean) => void;
+    }
+  | {
+      env: UserAppDbEnvEnum;
+      kind: 'next-poll';
+      shouldStop?: () => boolean;
+      resolve: (data: UserAppReadiness | null) => void;
     };
 
 const createSlots = (): Record<UserAppDbEnvEnum, ReadinessSlot> => ({
@@ -90,6 +105,7 @@ const buildReadinessViewKey = (data: UserAppReadiness | null): string => {
   return JSON.stringify({
     ready: data.ready,
     status: data.status,
+    container: data.container,
     app_stage: data.app_stage,
     serving_release_id: data.serving_release_id,
     proxy: data.proxy,
@@ -102,6 +118,7 @@ const buildReadinessViewKey = (data: UserAppReadiness | null): string => {
  * 只探测当前选中的环境，开发 / 线上不会同时请求。
  * 结果仍按环境分开保存，切走后另一侧的上次结果留着，不会被覆盖。
  * 当前环境已经真正就绪（status 为 ready 且 ready 为 true）后停止轮询。
+ * 若仍有人在等计算容器 running（例如重启智能体电脑后要再 restart 应用），即使业务已就绪也继续探测。
  * watchNonce 变化时重新开始，用于用户重启应用、停止应用或重启智能体电脑之后。
  *
  * @param appId 应用 ID
@@ -130,6 +147,16 @@ export function useUserAppReadinessWatch(
   const boundAppIdRef = useRef(appId);
   const watchNonceRef = useRef(watchNonce);
   /**
+   * 重新打一轮当前探测。不走 watchNonce，避免把「等状态离开就绪」的暂停打开。
+   * ensure 成功后用来丢掉已经发出、可能还停在旧容器状态上的那一次请求。
+   */
+  const [pollEpoch, setPollEpoch] = useState(0);
+  const pollEpochRef = useRef(0);
+  const continuePolling = useCallback(() => {
+    pollEpochRef.current += 1;
+    setPollEpoch(pollEpochRef.current);
+  }, []);
+  /**
    * 用户刚触发重启 / 停止时，当前结果可能还是上一次的 ready。
    * 为 true 时先等到状态离开就绪，再允许下一次就绪停掉轮询。
    */
@@ -144,7 +171,7 @@ export function useUserAppReadinessWatch(
   }, []);
 
   const notifyWaiters = useCallback(
-    (env?: UserAppDbEnvEnum) => {
+    (env?: UserAppDbEnvEnum, source: 'poll' | 'tick' = 'tick') => {
       if (waitersRef.current.length === 0) {
         clearStopWatch();
         return;
@@ -154,10 +181,11 @@ export function useUserAppReadinessWatch(
           return true;
         }
         if (waiter.shouldStop?.()) {
-          if (waiter.kind === 'ready') {
-            waiter.resolve(false);
-          } else {
+          // 结束等待，返回结果
+          if (waiter.kind === 'settled' || waiter.kind === 'next-poll') {
             waiter.resolve(null);
+          } else {
+            waiter.resolve(false);
           }
           return false;
         }
@@ -171,6 +199,19 @@ export function useUserAppReadinessWatch(
           isUserAppReadinessAccessible(slot.data)
         ) {
           waiter.resolve(true);
+          return false;
+        }
+        if (
+          waiter.kind === 'container-running' &&
+          shouldResolveContainerRunningWaiter(source, slot.data, {
+            requireNotDeployed: waiter.requireNotDeployed,
+          })
+        ) {
+          waiter.resolve(true);
+          return false;
+        }
+        if (waiter.kind === 'next-poll' && source === 'poll') {
+          waiter.resolve(slot.data);
           return false;
         }
         return true;
@@ -198,10 +239,10 @@ export function useUserAppReadinessWatch(
     readinessByEnvRef.current = empty;
     setReadinessByEnv(empty);
     waitersRef.current.splice(0).forEach((waiter) => {
-      if (waiter.kind === 'ready') {
-        waiter.resolve(false);
-      } else {
+      if (waiter.kind === 'settled' || waiter.kind === 'next-poll') {
         waiter.resolve(null);
+      } else {
+        waiter.resolve(false);
       }
     });
     clearStopWatch();
@@ -226,7 +267,7 @@ export function useUserAppReadinessWatch(
       if (prev.viewKey !== viewKey) {
         setReadinessByEnv(next);
       }
-      notifyWaiters(env);
+      notifyWaiters(env, 'poll');
     },
     [notifyWaiters],
   );
@@ -279,24 +320,43 @@ export function useUserAppReadinessWatch(
         timers.add(timer);
       });
 
+    const hasContainerRunningWaiter = (targetEnv: UserAppDbEnvEnum) =>
+      waitersRef.current.some(
+        (waiter) =>
+          waiter.env === targetEnv && waiter.kind === 'container-running',
+      );
+
     const watchEnv = async (targetEnv: UserAppDbEnvEnum) => {
       if (
         !holdReadyStopRef.current &&
-        isUserAppReadinessAccessible(slotsRef.current[targetEnv].data)
+        isUserAppReadinessAccessible(slotsRef.current[targetEnv].data) &&
+        !hasContainerRunningWaiter(targetEnv)
       ) {
         return;
       }
       while (!cancelled && generationRef.current === generation) {
+        // 头部切到另一环境后，这边只为等容器 running 才顺带打。等完就停，避免一直双份轮询。
+        if (targetEnv !== env && !hasContainerRunningWaiter(targetEnv)) {
+          return;
+        }
+        const epoch = pollEpochRef.current;
         try {
           const result = await apiUserAppReadiness(requestAppId, targetEnv);
-          if (cancelled || generationRef.current !== generation) {
+          if (
+            cancelled ||
+            generationRef.current !== generation ||
+            epoch !== pollEpochRef.current
+          ) {
             return;
           }
           const picked = pickReadinessPayload(result);
           if (picked.ok) {
             commitSlot(targetEnv, picked.data);
             if (isUserAppReadinessAccessible(picked.data)) {
-              if (!holdReadyStopRef.current) {
+              if (
+                !holdReadyStopRef.current &&
+                !hasContainerRunningWaiter(targetEnv)
+              ) {
                 return;
               }
             } else {
@@ -306,19 +366,38 @@ export function useUserAppReadinessWatch(
             markSettled(targetEnv);
           }
         } catch {
-          if (cancelled || generationRef.current !== generation) {
+          if (
+            cancelled ||
+            generationRef.current !== generation ||
+            epoch !== pollEpochRef.current
+          ) {
             return;
           }
           markSettled(targetEnv);
         }
-        if (cancelled || generationRef.current !== generation) {
+        if (
+          cancelled ||
+          generationRef.current !== generation ||
+          epoch !== pollEpochRef.current
+        ) {
+          return;
+        }
+        if (targetEnv !== env && !hasContainerRunningWaiter(targetEnv)) {
           return;
         }
         await delay(READINESS_WATCH_INTERVAL_MS);
       }
     };
 
-    void watchEnv(env);
+    const targets = new Set<UserAppDbEnvEnum>([env]);
+    waitersRef.current.forEach((waiter) => {
+      if (waiter.kind === 'container-running') {
+        targets.add(waiter.env);
+      }
+    });
+    targets.forEach((targetEnv) => {
+      void watchEnv(targetEnv);
+    });
 
     return () => {
       cancelled = true;
@@ -327,7 +406,7 @@ export function useUserAppReadinessWatch(
       });
       timers.clear();
     };
-  }, [appId, commitSlot, enabled, env, markSettled, watchNonce]);
+  }, [appId, commitSlot, enabled, env, markSettled, pollEpoch, watchNonce]);
 
   useEffect(
     () => () => {
@@ -396,10 +475,86 @@ export function useUserAppReadinessWatch(
     [ensureStopWatch],
   );
 
+  /**
+   * 等到下一次 readiness 回包。
+   * 不采用当前槽位，定时巡检也不算，避免把重启前的状态当成新结果。
+   *
+   * @param env 要等待的环境
+   * @param shouldStop 返回 true 时结束等待，结果为 null
+   * @returns 这一次探测结果；被打断时为 null
+   */
+  const waitForNextPoll = useCallback(
+    (env: UserAppDbEnvEnum, shouldStop?: () => boolean) => {
+      if (shouldStop?.()) {
+        return Promise.resolve<UserAppReadiness | null>(null);
+      }
+      return new Promise<UserAppReadiness | null>((resolve) => {
+        waitersRef.current.push({
+          env,
+          kind: 'next-poll',
+          shouldStop,
+          resolve,
+        });
+        ensureStopWatch();
+      });
+    },
+    [ensureStopWatch],
+  );
+
+  /**
+   * 等到计算容器 status 为 running。
+   * 默认不采用当前槽位，只认之后的探测回包（电脑重启后缓存可能仍是旧的 running）。
+   * 手动重启应用时可 acceptCached：当前探测已是 running 就立刻放行。
+   * requireNotDeployed 时还要顶层 status 为 not_deployed，才结束等待。
+   *
+   * @param env 要等待的环境
+   * @param shouldStop 返回 true 时结束等待
+   * @param options.acceptCached 是否采信当前已保存的探测结果
+   * @param options.requireNotDeployed 是否同时要求顶层 status 为 not_deployed
+   * @returns 容器是否已在运行，且在要求未部署时 status 已是 not_deployed
+   */
+  const waitUntilContainerRunning = useCallback(
+    (
+      env: UserAppDbEnvEnum,
+      shouldStop?: () => boolean,
+      options?: { acceptCached?: boolean; requireNotDeployed?: boolean },
+    ) => {
+      if (shouldStop?.()) {
+        return Promise.resolve(false);
+      }
+      if (
+        options?.acceptCached &&
+        shouldResolveContainerRunningWaiter(
+          'poll',
+          slotsRef.current[env].data,
+          {
+            requireNotDeployed: options.requireNotDeployed,
+          },
+        )
+      ) {
+        return Promise.resolve(true);
+      }
+      return new Promise<boolean>((resolve) => {
+        waitersRef.current.push({
+          env,
+          kind: 'container-running',
+          shouldStop,
+          requireNotDeployed: options?.requireNotDeployed,
+          resolve,
+        });
+        ensureStopWatch();
+      });
+    },
+    [ensureStopWatch],
+  );
+
   return {
     readinessByEnv,
     readinessByEnvRef,
     waitForSettled,
     waitUntilReady,
+    waitUntilContainerRunning,
+    waitForNextPoll,
+    continuePolling,
   };
 }

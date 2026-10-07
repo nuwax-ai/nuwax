@@ -22,6 +22,7 @@ import {
   indexFileNodesById,
   isFileModified as isContentModified,
   isPreviewableFile,
+  sortFileTreeNodes,
   transformFlatListToTree,
   treeToFlatList,
 } from '@/utils/appDevUtils';
@@ -693,7 +694,7 @@ export const useAppDevFileManagement = ({
         targetParentId: string | null,
       ): FileNode[] => {
         if (!targetParentId) {
-          return [newNode, ...nodes];
+          return sortFileTreeNodes([newNode, ...nodes]);
         }
 
         return nodes.map((node) => {
@@ -701,7 +702,7 @@ export const useAppDevFileManagement = ({
             const children = node.children || [];
             return {
               ...node,
-              children: [newNode, ...children],
+              children: sortFileTreeNodes([newNode, ...children]),
             };
           }
 

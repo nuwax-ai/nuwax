@@ -112,7 +112,13 @@ const AccountBind: React.FC = () => {
       async () => {
         if (!mounted.current || !canOperate.current) return;
         // 唯一登录方式且未设密码时后端拒绝，文案由请求层提示（引导去「重置密码」）
-        await apiUserIdentityUnbind(identity.id);
+        try {
+          await apiUserIdentityUnbind(identity.id);
+        } catch {
+          // 请求层已显示失败原因；消费拒绝，避免确认框产生未处理异常。
+          // 保留已绑定列表，用户可重新确认后重试。
+          return;
+        }
         if (!mounted.current) return;
         message.success(dict('PC.Layouts.Setting.AccountBind.unbindSuccess'));
         await load();

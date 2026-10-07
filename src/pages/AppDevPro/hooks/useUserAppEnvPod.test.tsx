@@ -1,6 +1,6 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserAppDbEnvEnum } from '../services/appDb';
 import { useUserAppEnvPod } from './useUserAppEnvPod';
 
@@ -30,6 +30,10 @@ vi.mock('ahooks', () => ({
 }));
 
 describe('useUserAppEnvPod 常驻实例可见性', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('隐藏时停止容器保活，拒绝新 ensure；重新激活后可恢复', async () => {
     mockEnsurePod.mockResolvedValue({ code: SUCCESS_CODE });
     const { result, rerender } = renderHook(
@@ -55,5 +59,51 @@ describe('useUserAppEnvPod 常驻实例可见性', () => {
       expect(await result.current.ensure()).toBe(true);
     });
     expect(mockEnsurePod).toHaveBeenCalledTimes(2);
+  });
+
+  it('deferRunning 时接口成功只保持启动中，确认容器 running 后才保活', async () => {
+    mockEnsurePod.mockResolvedValue({ code: SUCCESS_CODE });
+    const { result } = renderHook(() =>
+      useUserAppEnvPod(7001, UserAppDbEnvEnum.Dev),
+    );
+
+    await act(async () => {
+      expect(await result.current.ensure(true, { deferRunning: true })).toBe(
+        true,
+      );
+    });
+    expect(result.current.status).toBe('starting');
+    expect(mockRunKeepalive).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.confirmContainerRunning();
+    });
+    expect(result.current.status).toBe('running');
+    expect(mockRunKeepalive).toHaveBeenCalledTimes(1);
+    expect(mockRunKeepalive).toHaveBeenCalledWith(7001);
+  });
+
+  it('启动中可以先保活，确认 running 后不重复启动轮询', async () => {
+    mockEnsurePod.mockResolvedValue({ code: SUCCESS_CODE });
+    const { result } = renderHook(() =>
+      useUserAppEnvPod(7001, UserAppDbEnvEnum.Dev),
+    );
+
+    await act(async () => {
+      expect(await result.current.ensure(true, { deferRunning: true })).toBe(
+        true,
+      );
+    });
+    act(() => {
+      result.current.keepAliveWhileStarting();
+    });
+    expect(result.current.status).toBe('starting');
+    expect(mockRunKeepalive).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      result.current.confirmContainerRunning();
+    });
+    expect(result.current.status).toBe('running');
+    expect(mockRunKeepalive).toHaveBeenCalledTimes(1);
   });
 });

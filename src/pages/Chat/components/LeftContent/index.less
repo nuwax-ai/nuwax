@@ -184,10 +184,40 @@
       opacity: 1;
       transition: opacity 0.3s ease-in-out;
 
+      .right-panel-body {
+        position: relative;
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+      }
+
       .file-tree-container {
         border-radius: 16px;
         border: 1px solid rgba(5, 5, 5, 6%);
         background: #f5f5f5;
+      }
+
+      /**
+       * 资料库 / Page 盖在顶部图标下方的内容区（对齐 AppDevPro .repo-doc-preview）。
+       * 相对 file-tree-sidebar，不越过会话顶栏。
+       */
+      .page-preview-in-content {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        border-radius: 16px;
+        border: 1px solid rgba(5, 5, 5, 6%);
+        background: @colorBgContainer;
+      }
+
+      .page-preview-in-content-hidden {
+        display: none;
       }
     }
   }

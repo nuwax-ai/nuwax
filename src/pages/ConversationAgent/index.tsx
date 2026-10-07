@@ -230,6 +230,17 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
   /** 底部控制台布局模式（collapsed 时停止日志轮询） */
   const [devConsoleLayoutMode, setDevConsoleLayoutMode] =
     useState<ConsoleLayoutMode>('collapsed');
+  /** 页面切走后卸掉终端，并清掉上次展开信号，避免切回时终端自己打开 */
+  useLayoutEffect(() => {
+    if (active) {
+      return;
+    }
+    setDevConsoleExpandSignal(0);
+    setDevConsoleCollapseSignal(0);
+    setDevConsoleLayoutResetSignal(0);
+    setDevConsoleLayoutMode('collapsed');
+    setDevConsoleActiveTab('terminal');
+  }, [active]);
   /** 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置 */
   const skipDevConsoleResetRef = useRef<boolean>(false);
   /** 源代码管理中选中的变更文件（含区块） */
@@ -568,6 +579,8 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     getEffectiveSandboxId,
     onMessageSend,
     runtimeSession: runtimeLine?.session,
+    // 页面重新挂载时路由里的提示词还在，详情却可能尚未写入第一条用户消息
+    dedupeAcrossRemount: true,
   });
 
   /** 空间变化时重新加载模型列表 */
@@ -1846,38 +1859,39 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
             />
           </div>
 
-          {/* 底部终端、开发日志合集面板 */}
-          {/** 云端电脑传入 conversationId 以启动容器；个人电脑直接通过 wsUrl 连接终端 */}
-          <ConversationBottomConsole
-            // 在ConversationAgent中，conversationId 为 queryConversationId
-            conversationId={
-              active && finalSelectedComputerId === '-1'
-                ? queryConversationId
-                : undefined
-            }
-            visible={active && showDevConsole}
-            wsUrl={terminalWsUrl}
-            wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-            wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
-            layoutResetSignal={devConsoleLayoutResetSignal}
-            expandSignal={devConsoleExpandSignal}
-            collapseSignal={devConsoleCollapseSignal}
-            onLayoutModeChange={setDevConsoleLayoutMode}
-            onActiveTabChange={(tab) => {
-              setDevConsoleActiveTab(tab);
-            }}
-            devLog={{
-              logs: devLogs.logs,
-              isLoading: devLogs.isLoading,
-              lastLine: devLogs.lastLine,
-            }}
-            logsExtra={
-              <DevLogActions
-                onRefresh={devLogs.refreshLogs}
-                onClear={devLogs.clearLogs}
-              />
-            }
-          />
+          {/* 底部终端：页面隐藏时卸载，连接不留在终端组件里 */}
+          {active ? (
+            <ConversationBottomConsole
+              // 在ConversationAgent中，conversationId 为 queryConversationId
+              conversationId={
+                finalSelectedComputerId === '-1'
+                  ? queryConversationId
+                  : undefined
+              }
+              visible={showDevConsole}
+              wsUrl={terminalWsUrl}
+              wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+              wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+              layoutResetSignal={devConsoleLayoutResetSignal}
+              expandSignal={devConsoleExpandSignal}
+              collapseSignal={devConsoleCollapseSignal}
+              onLayoutModeChange={setDevConsoleLayoutMode}
+              onActiveTabChange={(tab) => {
+                setDevConsoleActiveTab(tab);
+              }}
+              devLog={{
+                logs: devLogs.logs,
+                isLoading: devLogs.isLoading,
+                lastLine: devLogs.lastLine,
+              }}
+              logsExtra={
+                <DevLogActions
+                  onRefresh={devLogs.refreshLogs}
+                  onClear={devLogs.clearLogs}
+                />
+              }
+            />
+          ) : null}
         </div>
       </div>
     </div>

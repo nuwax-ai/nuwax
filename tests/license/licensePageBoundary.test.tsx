@@ -305,6 +305,27 @@ describe('实际 License 页面文件导入', () => {
     expect(h.importLicense).not.toHaveBeenCalled();
   });
 
+  it('无效响应错误在页面与导入弹窗均使用运行时认可的翻译键', async () => {
+    h.importLicense.mockRejectedValueOnce(
+      new LicenseRequestError('invalid-response'),
+    );
+    render(<License />);
+    const dialog = await showImport();
+    await selectFile(dialog, new File(['opaque'], 'retry.lic'));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: keys.confirmImport }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getAllByText('PC.Pages.License.error.invalidResponse'),
+      ).toHaveLength(2),
+    );
+    expect(
+      screen.queryByText('PC.Pages.License.error.invalid-response'),
+    ).not.toBeInTheDocument();
+    expect(within(dialog).getByText('retry.lic')).toBeInTheDocument();
+  });
+
   it('导入过程中防重复点击；账号切换清文件和弹窗，迟到成功不提示当前账号激活成功', async () => {
     const pendingImport = deferred<unknown>();
     h.importLicense.mockReturnValue(pendingImport.promise);

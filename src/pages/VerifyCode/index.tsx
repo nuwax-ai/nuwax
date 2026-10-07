@@ -204,7 +204,8 @@ const VerifyCode: React.FC = () => {
   };
 
   const handlerSuccess = (value: string = '') => {
-    return handleSendCode(value);
+    // 自动发码和点击重发没有 Promise 接收方；失败反馈及重试状态已由发送链处理。
+    void handleSendCode(value).catch(() => {});
   };
 
   const handleCaptchaVerify = async (captchaVerifyParam: string) => {

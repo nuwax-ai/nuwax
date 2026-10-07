@@ -243,9 +243,28 @@ async function agree() {
 async function logout() {
   await page.click('[aria-label="用户头像"]');
   await visible('退出登录');
-  await page.click('text="退出登录"');
+  // Popover 的入场动画会改变点击位置；等它稳定后再派发真实鼠标事件。
+  await page.waitForFunction(() => {
+    const popover = document.querySelector(
+      '.ant-popover:not(.ant-popover-hidden)',
+    );
+    return (
+      popover &&
+      getComputedStyle(popover).opacity === '1' &&
+      popover
+        .getAnimations({ subtree: true })
+        .every((animation) => animation.playState !== 'running')
+    );
+  });
+  const beforeLogout = await requestCount('/api/user/logout');
+  await page.click('.ant-popover:not(.ant-popover-hidden) [class*="log-out"]');
   await page.waitForFunction(() => location.pathname === '/login');
   await visible('密码登录');
+  assert.equal(
+    await requestCount('/api/user/logout'),
+    beforeLogout + 1,
+    '退出登录必须发出本次真实退出请求',
+  );
 }
 async function passwordLogin({
   captcha = false,
@@ -380,8 +399,7 @@ async function idp() {
   await visible('请先设置账号密码后再解绑');
   assert.equal((await state()).identities.length, 1);
   pass('仅一身份未设密码时拒绝解绑并保留绑定');
-  // antd 确认框在 onOk 请求被拒绝时保留，先取消本次确认再重试。
-  await clickButton('取 消');
+  // 业务拒绝已由页面消费，确认框正常结束；绑定仍保留，可重新确认重试。
   await gone('.ant-modal-confirm');
   await control('configure', { hasPassword: true });
   await page.click('button:has-text("解绑")');

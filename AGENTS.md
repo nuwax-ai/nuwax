@@ -22,6 +22,7 @@ React 18 + TypeScript + umi max;中文交流与注释。包管理器 pnpm(`pnpm-
 
 - 会话路径(`models/conversation*`、`features/conversation/**`、`UnifiedChatSession`、`MessageQueue`、`AgentIntervention`、`pages/Chat`)改动:`test:conversation` 必跑全绿;合入前过 E2E;CI(`.github/workflows/conversation-tests.yml`)自动守门
 - tsc 全库有预存错误基线,**不作门**(改动路径零新增即可);vitest 不能 import umi 模块(含传递依赖,测试需 mock)
+- 自动请求和 UI 事件发起的 Promise 必须消费拒绝；请求层已提示的业务失败不能泄漏为全局未处理异常。账号解绑、验证码发码等失败后重试路径需用真实页面验证。
 - 分层依赖禁令、命名、I18n 规范见 [docs/engineering-conventions.md](./docs/engineering-conventions.md);会话模块页面层只消费 `features/conversation/react/*`
 
 ## 关键文档

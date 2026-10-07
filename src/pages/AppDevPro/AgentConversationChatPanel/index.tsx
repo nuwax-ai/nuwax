@@ -42,10 +42,15 @@ export interface AgentConversationChatPanelProps {
   progressOpen?: boolean;
   onCloseProgress?: () => void;
   /**
-   * 会话消息里的资料库链接（`/repo/doc/`、`/repo/share/`）改为当前页打开。
+   * 会话消息里的资料库链接（路径以 `/repo/` 开头）改为当前页打开。
    * 不传时保持新开页签。
    */
   onOpenRepoDoc?: (url: string) => void;
+  /**
+   * 沙箱容器已 ensure / 就绪。
+   * 为 false 时会话胶囊不请求 git/diff、git/status。
+   */
+  gitReady?: boolean;
 }
 
 /**
@@ -62,6 +67,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   progressOpen = false,
   onCloseProgress,
   onOpenRepoDoc,
+  gitReady = true,
 }) => {
   const location = useLocation();
   const routeKey = routeSnapshot?.key ?? location.key;
@@ -321,6 +327,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           enableVersionControl={isAgentVersionControlEnabled(
             conversationInfo?.agent?.enableVersionControl,
           )}
+          gitReady={gitReady}
           open={active && progressOpen}
           onClose={() => onCloseProgress?.()}
         />

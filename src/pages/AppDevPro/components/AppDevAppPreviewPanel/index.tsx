@@ -90,6 +90,11 @@ export interface AppDevAppPreviewPanelProps {
    * 首次 file-list 还没返回时为 false。
    */
   missingProjectFiles?: boolean;
+  /**
+   * 根目录是否已有可预览的有效项目（非空且含 workspace.manifest.toml）。
+   * null：file-list 还没返回，不据此覆盖就绪态。
+   */
+  hasValidProjectFiles?: boolean | null;
   /** 正在调用停止接口，避免 iframe 被关掉后露出空白 */
   stopping?: boolean;
   /** 线上环境重启进行中：展示重启提示，隐藏 iframe */
@@ -308,6 +313,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   allowStoppedHero = false,
   directPreview = false,
   missingProjectFiles = false,
+  hasValidProjectFiles = null,
   stopping = false,
   restarting = false,
   readinessStatus = null,
@@ -386,15 +392,23 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    * 页面还没正常打开时，才用就绪状态替换预览。
    * 已经打开过的环境继续显示 iframe，后续探测抖动不再盖住页面。
    * 启动失败仍走原来的失败面板，避免把错误藏进状态文案。
+   * 已经在调 start 时不再用就绪失败盖住启动过程。
+   * 未部署还要已有有效项目文件，否则走「暂无可预览的项目」。
+   * 首次会话还在进行时不展示未部署，继续走「预览准备中」。
    */
+  const conversationInProgress =
+    isGeneratingFiles || isWaitingForUserConfirmation;
   const showReadinessHero =
     !previewAlreadyPresented &&
     !suppressReadinessStatus &&
     !startFailed &&
+    !isStarting &&
     (readinessKind === 'starting' ||
       readinessKind === 'stopping' ||
       readinessKind === 'stopped' ||
-      readinessKind === 'notDeployed' ||
+      (readinessKind === 'notDeployed' &&
+        hasValidProjectFiles === true &&
+        !conversationInProgress) ||
       readinessKind === 'failed' ||
       readinessKind === 'incomplete');
   const readinessTitle = (() => {
@@ -478,6 +492,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
+  // 容器启动失败时展示失败提示
   if (containerStatus && containerStatus !== 'running') {
     return (
       <AppDevServiceStartStatus
@@ -487,20 +502,34 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
-  if (readinessHero) {
-    return readinessHero;
+  // 没有有效项目文件时展示空项目提示
+  if (
+    !previewAlreadyPresented &&
+    !suppressReadinessStatus &&
+    !startFailed &&
+    !conversationInProgress &&
+    readinessKind === 'notDeployed' &&
+    hasValidProjectFiles === false
+  ) {
+    return emptyProjectHero;
   }
 
+  // 启动 stream 已成功，应用还不能访问：只显示 iframe 加载动画，先不放域名。
+  // 放在就绪提示前面，避免探测先返回 failed 等状态把等待盖住。
   if (checking) {
     return (
-      <div className={cx(styles.container, styles.stage)}>
-        <PreviewHero
-          spinning
-          title={dict('PC.Pages.AppDevPro.previewChecking')}
-          hint={dict('PC.Pages.AppDevPro.previewCheckingHint')}
-        />
+      <div className={cx(styles.container)}>
+        <div className={cx(styles.iframeWrap)}>
+          <div className={cx(styles.loadingOverlay)}>
+            <PreviewIframeLoading />
+          </div>
+        </div>
       </div>
     );
+  }
+
+  if (readinessHero) {
+    return readinessHero;
   }
 
   /** 线上环境：停止 / 重启 / 启动与开发环境同一套提示，仅在服务运行中展示 iframe */
