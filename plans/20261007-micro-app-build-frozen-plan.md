@@ -4,7 +4,7 @@
 
 今天的客户端 beta 前端构建被微应用适配阻塞。宿主 prebuild 自动升级远程 main，使已审查候选在构建时再次变化；消息 chat.ts 补丁随后因上游 DEV-347 插入代码而失配。资料库既有重制补丁还暴露浮出编辑器锚点缺少 width/height 的新增类型错误。
 
-改动集中在构建入口、消息 adapter/gitlink、资料库坐标 helper 和相关契约文档；保留业务功能、显式升级入口与既有类型门。仅本地提交和构建，不推送、打 tag 或发布，不覆盖客户端外层既存 WIP。
+改动集中在构建入口、消息 adapter/gitlink、资料库坐标 helper 和相关契约文档；保留业务功能、显式升级入口与既有类型门。按已授权的 beta 交付流程在隔离候选提交并非强推源码分支；源码 SHA 与 dist 必须一致，发布标签和资产由外层流程处理，保留客户端原工作区 WIP。
 
 ## 实施与验收
 
@@ -16,6 +16,8 @@
 - [x] 构建/升级管线 60 项、宿主微应用 70 项、矩形回归 2 项通过。
 - [x] 冻结消息 store 的异步生命周期诊断 3 项通过；消息上游前端 1438 项通过。
 - [x] 完整生产构建通过，资料库类型基线 72/72、新增 0，消息类型构建通过，public/dist manifest 字节一致。
-- [ ] 本地提交后通过壳 buildFrontend 入口重建，校验最终源码 SHA 与 dist 版本印记，并记录产物摘要。
+- [x] 初版修复提交后通过壳 buildFrontend 入口重建，源码 SHA 与 dist 版本印记一致，并记录产物摘要。
+- [x] 外层 CI 复核发现整包 revert 误撤既有 host/type 门，纯契约已恢复；完整 source gate 修复与验收见 [恢复计划](20261007-frontend-source-gates-plan.md)。
+- [ ] source gate 最终提交后，由外层交付流程重新构建 dist 并更新最终双 pin。
 
 初次构建失败与最终构建日志保存在 `/private/tmp/nuwax-micro-frozen-build-20261007*.log`；旧消息补丁保存在 `/private/tmp/nuwax-message-adapter-before-20261007.patch`。

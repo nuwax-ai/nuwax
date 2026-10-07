@@ -148,6 +148,7 @@ describe('智能体编排页错误状态', () => {
     h.conversationModel = {
       messageList: [],
       closePreviewView: vi.fn(),
+      setFileTreeSelfManaged: vi.fn<(value: boolean) => void>(),
       setIsLoadingOtherInterface: vi.fn(),
       setIsSuggest: vi.fn(),
       setChatSuggestList: vi.fn(),

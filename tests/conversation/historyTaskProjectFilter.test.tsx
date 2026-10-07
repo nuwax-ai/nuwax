@@ -8,6 +8,7 @@
 import ConversationList from '@/components/business-component/HistoryConversationList/ConversationList';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import type { RequestResponse } from '@/types/interfaces/request';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -45,14 +46,20 @@ const buildConversation = (): ConversationInfo =>
     summary: '摘要',
   } as ConversationInfo);
 
-const pageOf = (records: ConversationInfo[]) => ({
+const pageOf = (
+  records: ConversationInfo[],
+): RequestResponse<ConversationInfo[]> => ({
   code: '0000',
+  displayCode: '0000',
+  message: '',
+  debugInfo: {},
+  tid: 'history-list-test',
   success: true,
   data: records,
 });
 
 beforeEach(() => {
-  listMock.mockResolvedValue(pageOf([buildConversation({ id: 1 })]));
+  listMock.mockResolvedValue(pageOf([buildConversation()]));
 });
 
 afterEach(() => {
