@@ -20,8 +20,6 @@ export interface PreviewRuntimeButtonsProps {
   previewRuntimeRestarting?: boolean;
   /** 停止进行中 */
   previewRuntimeStopping?: boolean;
-  /** 预览容器是否已就绪 */
-  previewRuntimeReady?: boolean;
   /** 当前 Header 环境 pod ensure 已成功（running） */
   previewEnvPodReady?: boolean;
   /** 当前环境 pod ensure 进行中 */
@@ -57,7 +55,6 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
   previewRuntimeBusy = false,
   previewRuntimeRestarting = false,
   previewRuntimeStopping = false,
-  previewRuntimeReady = true,
   previewEnvPodReady = true,
   previewPodEnsuring = false,
   previewContainerFailed = false,
@@ -77,10 +74,14 @@ const PreviewRuntimeButtons: React.FC<PreviewRuntimeButtonsProps> = ({
   /** 文件树为空，或根目录没有 workspace.manifest.toml */
   const workspaceManifestBlocked = !previewWorkspaceManifestReady;
 
+  /**
+   * 还没有有效项目文件时，会话进行中或待确认会禁用重启。
+   * 已经有有效文件列表后，这两种状态不再禁用。
+   * 没有有效文件时，workspaceManifestBlocked 已经禁用，悬停仍按会话 / 确认优先提示。
+   */
   const restartDisabled =
     workspaceManifestBlocked ||
     podActionBlocked ||
-    !previewRuntimeReady ||
     previewDevActionLocked ||
     previewRuntimeBusy ||
     previewRuntimeStopping;

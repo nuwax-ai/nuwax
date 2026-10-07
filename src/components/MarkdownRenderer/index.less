@@ -38,7 +38,9 @@
   }
 
   p,
-  .markdown-paragraph {
+  .markdown-paragraph,
+  li {
+    // 列表中的长行内代码也要随面板宽度断行，避免撑出会话区横向滚动条。
     word-wrap: break-word;
   }
 

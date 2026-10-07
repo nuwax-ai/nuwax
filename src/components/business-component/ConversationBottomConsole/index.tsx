@@ -175,13 +175,18 @@ export interface ConversationBottomConsoleProps {
   showLogsTab?: boolean;
   /** 头部操作区额外内容（渲染在内置按钮之前），仅日志 Tab 激活时显示 */
   logsExtra?: React.ReactNode;
+  /**
+   * 自定义日志 Tab 内容。传入后不再使用 DevLogPanel / 纯文本日志。
+   * 仅 AppDevPro 日志来源列表使用，其它页面不传则保持原渲染。
+   */
+  logsPanel?: React.ReactNode;
   className?: string;
 }
 
 /**
  * 公共会话终端 + 日志面板；网站应用仅适配环境数据，不另维护一份 UI。
  * - 开发 / 线上两个终端 Tab 常驻挂载，Header 环境切换时展示对应终端
- * - 日志 Tab：DevLogPanel（devLog）或 runtimeLogs 纯文本
+ * - 日志 Tab：自定义 logsPanel、DevLogPanel（devLog）或 runtimeLogs 纯文本
  */
 const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   visible = true,
@@ -214,6 +219,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   defaultLayoutMode = 'collapsed',
   showLogsTab = true,
   logsExtra,
+  logsPanel,
   className,
 }) => {
   const isMultiEnvironment = terminalSessions !== undefined;
@@ -319,6 +325,11 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     activeEnsureStage,
   );
   appStageRef.current = activeEnsureStage;
+  /** 用 ref 持有页面层容器状态，避免保活和终端连接闭包读到过期值 */
+  const externalContainerStatusRef = useRef(externalContainerStatus);
+  externalContainerStatusRef.current = externalContainerStatus;
+  const prodExternalContainerStatusRef = useRef(prodExternalContainerStatus);
+  prodExternalContainerStatusRef.current = prodExternalContainerStatus;
 
   const ensurePodWithStage = useCallback(
     (cId: number) => apiEnsurePod(cId, appStageRef.current),
@@ -450,12 +461,6 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       }
     };
   }, [conversationId]);
-
-  /** 用 ref 持有页面层容器状态，避免 attach 闭包读到过期值 */
-  const externalContainerStatusRef = useRef(externalContainerStatus);
-  externalContainerStatusRef.current = externalContainerStatus;
-  const prodExternalContainerStatusRef = useRef(prodExternalContainerStatus);
-  prodExternalContainerStatusRef.current = prodExternalContainerStatus;
 
   /**
    * 打开终端时接入当前环境容器（开发 / 线上同一套）：
@@ -1174,8 +1179,11 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     );
   };
 
-  /** 日志 Tab 内容：有 devLog 时渲染结构化日志面板，否则展示纯文本/空态 */
+  /** 日志 Tab 内容：自定义面板优先，其次结构化日志，否则纯文本/空态 */
   const renderLogsTab = () => {
+    if (logsPanel) {
+      return <div className={cx(styles['dev-log-pane'])}>{logsPanel}</div>;
+    }
     if (useDevLogPanel && devLog) {
       return (
         <div className={cx(styles['dev-log-pane'])}>

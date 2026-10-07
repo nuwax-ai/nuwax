@@ -102,6 +102,11 @@ interface ConversationProgressCapsuleProps {
   active: boolean;
   /** 智能体开启 git 版本管理：终态后展示更改统计与分支 */
   enableVersionControl?: boolean;
+  /**
+   * 容器已 ensure / 就绪后才拉 git/diff、git/status。
+   * 不传时视为已就绪，其它页面行为不变。
+   */
+  gitReady?: boolean;
   /** 「提交或推送」入口回调；未提供时该行不渲染 */
   onCommitOrPush?: () => void;
   /** 面板展开态（受控）：由页头「会话进度」按钮驱动，组件自身无触发器 */
@@ -257,6 +262,7 @@ const ConversationProgressCapsuleInner: React.FC<
   messageList,
   active,
   enableVersionControl,
+  gitReady = true,
   onCommitOrPush,
   open,
   onClose,
@@ -349,7 +355,7 @@ const ConversationProgressCapsuleInner: React.FC<
 
   const gitDiff = useGitDiffFiles({
     conversationId,
-    enabled: enableVersionControl,
+    enabled: Boolean(enableVersionControl && gitReady),
     turnKey: model?.turnKey,
     running: model?.running,
   });

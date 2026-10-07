@@ -285,6 +285,79 @@ export const getUserAppTtydProxyWsUrl = (
   return '';
 };
 
+/** 应用就绪探测的顶层业务状态 */
+export enum UserAppReadinessStatusEnum {
+  /** 未部署 */
+  NotDeployed = 'not_deployed',
+  /** 启动中 */
+  Starting = 'starting',
+  /** 停止中 */
+  Stopping = 'stopping',
+  /** 已停止 */
+  Stopped = 'stopped',
+  /** 可访问 */
+  Ready = 'ready',
+  /** 降级 */
+  Degraded = 'degraded',
+  /** 失败 */
+  Failed = 'failed',
+  /** 未知 */
+  Unknown = 'unknown',
+  /** 不支持 */
+  Unsupported = 'unsupported',
+}
+
+/**
+ * 计算容器状态，与应用 HTTP 就绪相互独立。
+ * 旧回包没有 container 字段时视为 unknown，不是未部署。
+ */
+export enum UserAppContainerStatusEnum {
+  /** 容器记录不存在 */
+  Missing = 'missing',
+  /** 启动中 */
+  Starting = 'starting',
+  /** 重启中 */
+  Restarting = 'restarting',
+  /** 停止中 */
+  Stopping = 'stopping',
+  /** 运行中 */
+  Running = 'running',
+  /** 已停止 */
+  Stopped = 'stopped',
+  /** 失败 */
+  Failed = 'failed',
+  /** 需要恢复 */
+  RecoveryRequired = 'recovery_required',
+  /** 未知 */
+  Unknown = 'unknown',
+}
+
+/** 计算容器当前意图操作及其终态。null 不表示此前操作已成功。 */
+export interface UserAppContainerOperation {
+  /** 操作类型，如 restart / stop */
+  action: string;
+  /** 操作 ID */
+  operation_id?: string | null;
+  /** 操作修订号 */
+  revision?: number | null;
+  /** 操作阶段，如 completed */
+  stage?: string | null;
+  /** 操作结果状态，如 succeeded */
+  state?: string | null;
+  /** 错误码 */
+  error_code?: string | null;
+  /** 错误信息 */
+  error_message?: string | null;
+}
+
+/** 计算容器就绪情况，与顶层业务 ready/status 分开。 */
+export interface UserAppContainerReadiness {
+  /** 容器状态 */
+  status: UserAppContainerStatusEnum;
+  /** 当前意图操作；没有进行中的操作时为 null */
+  operation: UserAppContainerOperation | null;
+}
+
 /** 应用就绪探测中的单个服务 */
 export interface UserAppReadinessService {
   /** 服务 ID */
@@ -317,8 +390,13 @@ export interface UserAppReadiness {
   app_stage: string;
   /** 应用是否可以访问 */
   ready: boolean;
-  /** 就绪状态 */
-  status: string;
+  /** 顶层业务状态：not_deployed / starting / stopping / stopped / ready / degraded / failed / unknown / unsupported */
+  status: UserAppReadinessStatusEnum;
+  /**
+   * 计算容器状态。与业务 ready/status 独立。
+   * 旧回包没有此字段时视为 unknown，不是未部署。
+   */
+  container?: UserAppContainerReadiness;
   /** 本次检查时间 */
   checked_at: string;
   /** 当前对外服务的版本 */
@@ -330,6 +408,61 @@ export interface UserAppReadiness {
   /** 各服务就绪情况 */
   services: UserAppReadinessService[];
 }
+
+/** 顶层业务状态在预览区的展示分类 */
+export type UserAppReadinessUiKind =
+  | 'access'
+  | 'starting'
+  | 'stopping'
+  | 'stopped'
+  | 'notDeployed'
+  | 'failed'
+  | 'incomplete';
+
+/**
+ * 把就绪探测的顶层状态收成预览区要处理的几类。
+ * status 为 ready 时，还要 ready 字段为 true 才算正常访问。
+ * starting / stopping / stopped 各有提示。
+ * 未部署、启动失败可以手动重启。unsupported 视为开发未完成。unknown 先忽略。
+ *
+ * @param status 顶层业务状态；还没有探测结果时返回 null
+ * @param ready 服务是否就绪。status 为 ready 时必须为 true 才进入正常访问
+ * @returns 展示分类；没有状态，或 status 为 ready 但字段还不是 true 时返回 null
+ */
+export const getUserAppReadinessUiKind = (
+  status?: UserAppReadinessStatusEnum | null,
+  ready?: boolean | null,
+): UserAppReadinessUiKind | null => {
+  switch (status) {
+    case UserAppReadinessStatusEnum.Ready:
+      return ready === true ? 'access' : null;
+    case UserAppReadinessStatusEnum.Starting:
+      return 'starting';
+    case UserAppReadinessStatusEnum.Stopping:
+      return 'stopping';
+    case UserAppReadinessStatusEnum.Stopped:
+      return 'stopped';
+    case UserAppReadinessStatusEnum.NotDeployed:
+      return 'notDeployed';
+    case UserAppReadinessStatusEnum.Failed:
+      return 'failed';
+    case UserAppReadinessStatusEnum.Unsupported:
+    case UserAppReadinessStatusEnum.Degraded:
+      return 'incomplete';
+    case UserAppReadinessStatusEnum.Unknown:
+      return null;
+    default:
+      return null;
+  }
+};
+
+/** 探测结果是否已经可以正常打开预览。status 为 ready 且 ready 字段为 true 才算真正就绪。 */
+export const isUserAppReadinessAccessible = (
+  data?: Pick<UserAppReadiness, 'ready' | 'status'> | null,
+): boolean =>
+  !!data &&
+  data.status === UserAppReadinessStatusEnum.Ready &&
+  data.ready === true;
 
 /** 应用就绪探测 */
 export async function apiUserAppReadiness(

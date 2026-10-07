@@ -43,6 +43,11 @@ export interface GitVersionRecordPanelProps {
   onViewChanges?: (commit: GitCommitLogItem) => void;
   /** 回滚成功后的回调（如刷新文件树） */
   onRollbackSuccess?: () => void;
+  /**
+   * 容器就绪后才拉 git log。
+   * 不传时视为已就绪，其它页面进页即请求。
+   */
+  enabled?: boolean;
   /** 自定义根节点类名 */
   className?: string;
 }
@@ -79,7 +84,14 @@ const GitVersionRecordPanel = forwardRef<
   GitVersionRecordPanelHandle,
   GitVersionRecordPanelProps
 >(function GitVersionRecordPanel(
-  { workspace, branch = 'main', onViewChanges, onRollbackSuccess, className },
+  {
+    workspace,
+    branch = 'main',
+    onViewChanges,
+    onRollbackSuccess,
+    enabled = true,
+    className,
+  },
   ref,
 ) {
   // ---------- 列表与交互状态 ----------
@@ -99,6 +111,7 @@ const GitVersionRecordPanel = forwardRef<
   );
 
   const workspaceReady = workspace ? isGitWorkspaceReady(workspace) : false;
+  const gitQueryReady = enabled && workspaceReady;
 
   /** 是否还有未加载的提交 */
   const hasMore = commits.length < total;
@@ -123,6 +136,7 @@ const GitVersionRecordPanel = forwardRef<
    */
   const workspaceParams = useMemo(() => {
     if (
+      !gitQueryReady ||
       !workspaceReady ||
       workspaceKey === null ||
       workspaceKey === undefined ||
@@ -140,7 +154,7 @@ const GitVersionRecordPanel = forwardRef<
       workspaceType: 'taskAgent',
       cid: workspaceKey,
     });
-  }, [workspaceKey, workspace?.workspaceType, workspaceReady]);
+  }, [workspaceKey, workspace?.workspaceType, workspaceReady, gitQueryReady]);
 
   /**
    * 拉取指定页的 Git log

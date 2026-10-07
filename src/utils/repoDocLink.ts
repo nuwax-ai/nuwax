@@ -1,23 +1,44 @@
 /**
  * 判断会话里的链接是不是资料库，并解析成可嵌入预览的绝对地址。
  *
- * 资料库深链路径中包含 `/repo/doc/` 或 `/repo/share/`。
+ * 路径以 `/repo/` 开头即算资料库（如 `/repo/doc/`、`/repo/share/`）。
  * 只接受当前页面或 BASE_URL 同源的 http(s) 地址，避免把外站链接嵌进预览 iframe。
+ * Chat 与 AppDevPro 共用，避免两套相同判断。
  */
-
-/** 资料库路径：文档与分享都算资料库。 */
-const REPO_LIBRARY_PATHS = ['/repo/doc/', '/repo/share/'];
 
 /**
- * 路径或完整地址里是否包含资料库段。
+ * 路径是否落在资料库下。
  *
- * @param value 路径或 URL
- * @returns 包含 `/repo/doc/` 或 `/repo/share/` 时为 true
+ * @param pathname URL 的 pathname
+ * @returns 以 `/repo/` 开头时为 true
  */
-export const isRepoLibraryPath = (value: string): boolean =>
-  REPO_LIBRARY_PATHS.some((path) => value.includes(path));
+const isRepoPathname = (pathname: string): boolean =>
+  pathname.startsWith('/repo/');
 
-/** 嵌入聊天页时只展示文档正文，并收起资料库侧栏表格。 */
+/**
+ * 路径或完整地址是不是资料库。
+ *
+ * @param value 相对路径或绝对 URL。完整地址按 pathname 判断。
+ * @returns pathname 以 `/repo/` 开头时为 true
+ */
+export const isRepoLibraryPath = (value: string): boolean => {
+  const raw = value?.trim();
+  if (!raw) {
+    return false;
+  }
+
+  if (raw.startsWith('/')) {
+    return isRepoPathname(raw.split(/[?#]/)[0]);
+  }
+
+  try {
+    return isRepoPathname(new URL(raw).pathname);
+  } catch {
+    return false;
+  }
+};
+
+/** 嵌入当前页时只展示文档正文，并收起资料库侧栏表格。 */
 const REPO_DOC_EMBED_QUERY = {
   just_show_content: 'true',
   hide_sheet: 'true',
@@ -45,6 +66,7 @@ const collectAllowedOrigins = (allowedOrigins?: string[]): string[] => {
 
 /**
  * 解析资料库文档链接。
+ *
  * @param href 锚点上的原始地址，可以是相对路径或绝对 URL
  * @param options.base 相对路径的解析基准，默认当前页 origin
  * @param options.allowedOrigins 允许嵌入的源站列表；不传则用当前页和 BASE_URL

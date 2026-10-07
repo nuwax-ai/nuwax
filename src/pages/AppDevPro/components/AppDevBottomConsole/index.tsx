@@ -1,12 +1,14 @@
-/** 网站应用控制台只适配环境数据；终端/日志 UI 统一由会话公共组件维护。 */
+/** 网站应用控制台：终端仍走公共组件，日志来源列表单独渲染，不影响其它页面的 DevLogPanel。 */
 import ConversationBottomConsole, {
   type ConsoleExternalContainerStatus,
   type ConsoleLayoutMode,
   type ConversationBottomConsoleDevLogProps,
   type ConversationBottomConsoleProps,
 } from '@/components/business-component/ConversationBottomConsole';
+import type { UserAppLogSourceItem } from '@/types/interfaces/userProject';
 import React from 'react';
 import { UserAppDbEnvEnum } from '../../services/appDb';
+import LogSourcesPanel from './LogSourcesPanel';
 
 export type { TerminalAppearanceMode } from '@/components/business-component/ConversationBottomConsole/terminalTheme';
 export type { ConsoleExternalContainerStatus, ConsoleLayoutMode };
@@ -29,6 +31,9 @@ export interface AppDevBottomConsoleProps
   prodExternalContainerStatus?: ConsoleExternalContainerStatus;
   onActiveTerminalEnvChange?: (env: UserAppDbEnvEnum | null) => void;
   onRetryContainer?: (env: UserAppDbEnvEnum) => void;
+  /** 当前环境日志来源；传入后日志 Tab 只渲染来源列表 */
+  logSources?: UserAppLogSourceItem[];
+  logSourcesLoading?: boolean;
 }
 
 const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
@@ -39,10 +44,19 @@ const AppDevBottomConsole: React.FC<AppDevBottomConsoleProps> = ({
   prodExternalContainerStatus,
   onActiveTerminalEnvChange,
   onRetryContainer,
+  logSources,
+  logSourcesLoading,
   ...props
 }) => (
   <ConversationBottomConsole
     {...props}
+    logsPanel={
+      logSources ? (
+        <LogSourcesPanel sources={logSources} isLoading={logSourcesLoading} />
+      ) : (
+        props.logsPanel
+      )
+    }
     preserveTerminalConnections
     terminalEnvironment={env}
     terminalSessions={{

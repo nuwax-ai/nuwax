@@ -4,14 +4,14 @@ import FilePreview, {
 } from '@/components/business-component/FilePreview';
 import { apiGitStatus } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import {
+  buildChangeFilesFromGitStatus,
+  mergeGitStatusFileIds,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
+import {
   isWorkspaceLayeredTree,
   locateWorkspaceChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/locateWorkspaceChangeFile';
 import { workspaceRelativePath } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
-import {
-  buildChangeFilesFromGitStatus,
-  mergeGitStatusFileIds,
-} from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
 import ImageViewer from '@/components/business-component/ImageViewer';
 import { OpenUiRuntimeFrame } from '@/components/business-component/OpenUiArtifactView';
 import CodeViewer from '@/components/CodeViewer';
@@ -40,6 +40,7 @@ import {
   isVideoFile,
   processImageContent,
   resolveFileTreeUploadRelativePath,
+  sortFileTreeNodes,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
@@ -100,7 +101,7 @@ const insertCreatingNode = (
   }
   const parentPath = creating.parentPath;
   if (!parentPath) {
-    return [creating, ...nodes];
+    return sortFileTreeNodes([creating, ...nodes]);
   }
   let inserted = false;
   const next = nodes.map((node) => {
@@ -113,7 +114,7 @@ const insertCreatingNode = (
       inserted = true;
       return {
         ...node,
-        children: [creating, ...(node.children || [])],
+        children: sortFileTreeNodes([creating, ...(node.children || [])]),
       };
     }
     if (node.children?.length) {
@@ -773,10 +774,7 @@ export function useFileTreePreviewView(
         isWorkspaceLayeredTree(currentFiles, fileId)
       ) {
         try {
-          const locatedFile = await locateWorkspaceChangeFile(
-            targetId,
-            fileId,
-          );
+          const locatedFile = await locateWorkspaceChangeFile(targetId, fileId);
           if (locatedFile) {
             fileNode = { ...locatedFile, id: fileId };
           } else {
@@ -1325,39 +1323,69 @@ export function useFileTreePreviewView(
       trigger: taskAgentSelectTrigger,
     };
 
-    if (isFileInTreeForAutoSelect(taskAgentSelectedFileId)) {
-      const openedNode = findFileNode(
-        taskAgentSelectedFileId,
-        filesRef.current,
-      );
-      const openedId = selectedFileIdRef.current;
-      // 搜索路径已经打开过该文件，目录列表到达后不要再请求一次正文
-      if (
-        openedId &&
-        (openedId === taskAgentSelectedFileId || openedId === openedNode?.id)
-      ) {
-        prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
-        if (taskAgentSelectTrigger !== undefined) {
-          prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+    const openedNode = findFileNode(taskAgentSelectedFileId, filesRef.current);
+    const openedId = selectedFileIdRef.current;
+    // 搜索路径已经打开过该文件，目录列表到达后不要再请求一次正文。
+    // 技能导入会再次触发同一文件：正文在 fileProxyUrl 上，需重拉，不能用详情里可能为空的 contents 覆盖编辑器。
+    if (
+      openedId &&
+      (openedId === taskAgentSelectedFileId || openedId === openedNode?.id)
+    ) {
+      prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+      if (taskAgentSelectTrigger !== undefined) {
+        prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+      }
+      pendingTaskAgentAutoSelectRef.current = null;
+
+      /**
+       * 技能详情导入后刷新已打开文件
+       * 文件名不变时，用新的技能正文替换编辑器里的旧内容
+       */
+      if (isTriggerUpdate && isProjectSkill && openedNode) {
+        if (openedNode.fileProxyUrl) {
+          void refreshSelectedFileContent(openedNode);
+        } else {
+          const source = (originalFiles ?? []).find((file) => {
+            const record = file as { name?: string; fileId?: string };
+            return (
+              record.name === openedNode.id || record.fileId === openedNode.id
+            );
+          }) as { contents?: string } | undefined;
+          if (typeof source?.contents === 'string') {
+            setSelectedFileNode({ ...openedNode, content: source.contents });
+            setFileRefreshTimestamp(Date.now());
+          }
         }
-        pendingTaskAgentAutoSelectRef.current = null;
+      }
+      return;
+    }
+
+    // 分层文件树：先搜索并用完整路径打开，不用当前已加载列表做模糊匹配
+    if (isAutoSelectDirectoryLoadedRef.current) {
+      const directoryLoaded = isAutoSelectDirectoryLoadedRef.current(
+        taskAgentSelectedFileId,
+      );
+      if (!directoryLoaded) {
+        resolveMissingFileFromSearch();
         return;
       }
+      if (resolveMissingFileFromSearch()) {
+        return;
+      }
+      if (!openedNode) {
+        abandonAutoSelectWhenTreeEmpty();
+      }
+      return;
+    }
+
+    if (isFileInTreeForAutoSelect(taskAgentSelectedFileId)) {
       applyAutoSelect(taskAgentSelectedFileId);
       return;
     }
 
-    // 目标不在当前树中（例如新产出文件）：尝试刷新后再选
+    // 目标不在当前树中（例如新产出文件）：尝试刷新后再选。
+    // 分层文件树已在上面 return，这里只处理一次拿全量列表的页面。
     if (hasFetchedOriginalFiles) {
-      // 懒加载宿主：目标所在目录尚未加载（父目录导航在途）时保持等待
-      //（pending 已记录，目录层到达后 files 变化重入完成选中），不误判 miss
-      if (
-        isAutoSelectDirectoryLoadedRef.current &&
-        !isAutoSelectDirectoryLoadedRef.current(taskAgentSelectedFileId)
-      ) {
-        resolveMissingFileFromSearch();
-        return;
-      }
       if (resolveMissingFileFromSearch()) {
         return;
       }
@@ -1474,7 +1502,7 @@ export function useFileTreePreviewView(
     removeIfNew?: boolean;
     node?: FileNode | null;
   }) => {
-    // 如果是新建节点且未输入内容，则需要从文件树中移除该临时节点
+    // 取消新建时从文件树中移除临时节点（无论输入框是否已有内容）
     if (options?.removeIfNew && options.node) {
       const targetId = options.node.id;
 
@@ -1797,7 +1825,7 @@ export function useFileTreePreviewView(
       ): FileNode[] => {
         // 在根目录创建
         if (!targetParentId) {
-          return [newNode, ...nodes];
+          return sortFileTreeNodes([newNode, ...nodes]);
         }
 
         return nodes.map((node) => {
@@ -1805,7 +1833,7 @@ export function useFileTreePreviewView(
             const children = node.children || [];
             return {
               ...node,
-              children: [newNode, ...children],
+              children: sortFileTreeNodes([newNode, ...children]),
             };
           }
 
@@ -2292,10 +2320,7 @@ export function useFileTreePreviewView(
       );
     }
 
-    if (
-      oversizedPreviewFileId &&
-      oversizedPreviewFileId === selectedFileId
-    ) {
+    if (oversizedPreviewFileId && oversizedPreviewFileId === selectedFileId) {
       return (
         <AppDevEmptyState
           type="error"
@@ -2375,8 +2400,7 @@ export function useFileTreePreviewView(
 
     // 展示用文件名。节点 id 带 workspace: 只用于树内选中，不能拿来当文件名
     const selectedFileName = selectedFileNode.name || '';
-    const fileExtension =
-      selectedFileName.split('.').pop() || selectedFileName;
+    const fileExtension = selectedFileName.split('.').pop() || selectedFileName;
 
     // 软链接文件不支持编辑预览
     if (selectedFileNode?.isLink) {

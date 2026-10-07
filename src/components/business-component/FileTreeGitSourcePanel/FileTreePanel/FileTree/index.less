@@ -1,6 +1,9 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
 
+// 默认主色浅底 #f3f0ff，写成固定色，不跟随主题
+@fileTreeSelectedBg: #f3f0ff;
+
 // 文件树样式
 .fileTree {
   max-width: 100%;
@@ -42,7 +45,7 @@
   }
 
   &.activeFolder {
-    background: @colorPrimaryBg;
+    background: @fileTreeSelectedBg;
   }
 
   .folderIcon {
@@ -118,7 +121,7 @@
   }
 
   &.activeFile {
-    background: @colorPrimaryBg;
+    background: @fileTreeSelectedBg;
   }
 }
 

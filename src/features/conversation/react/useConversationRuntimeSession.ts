@@ -8,11 +8,13 @@ import {
 import { reconcileAcpPermissionStatusesInMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus';
 import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
+import { canOpenDesktopFromEvent } from '@/features/conversation/domain/openDesktopEvent';
 import { mergeConversationInfoTaskStatus } from '@/features/conversation/domain/taskStatus';
 import {
   applyTerminalTaskStatus,
   createRuntimeLineEffectsAdapter,
   runtimeLineHttp,
+  type RuntimeLineEffectsResources,
 } from '@/features/conversation/react/runtimeLineHttp';
 import {
   createConversationMessageStore,
@@ -111,6 +113,7 @@ export function useConversationRuntimeSession(
     effectsResources,
     messageViewRef,
     allowAutoScrollRef,
+    getSandboxId,
   } = options;
 
   // ---- 绑定层本地会话状态（新线不写旧 model） ----
@@ -164,6 +167,62 @@ export function useConversationRuntimeSession(
   getSandboxIdRef.current = options.getSandboxId;
 
   const sessionRef = useRef<ConversationRuntimeSession | null>(null);
+
+  const pageResources = (effectsResources as RuntimeLineEffectsResources) || {};
+  const rawOpenDesktopView = pageResources.openDesktopView;
+  /**
+   * 页面回调每次渲染写入。会话实例只创建一次，执行副作用时读这里的最新函数。
+   */
+  const effectsResourcesRef = useRef<RuntimeLineEffectsResources>({});
+  effectsResourcesRef.current = {
+    ...pageResources,
+    openDesktopView: rawOpenDesktopView
+      ? (eventConversationId: number) => {
+          if (
+            !canOpenDesktopFromEvent({
+              conversationId: eventConversationId,
+              pageConversationId: conversationId,
+              hideDesktop: pageResources.hideDesktop,
+              sandboxId:
+                pageResources.getOpenDesktopSandboxId?.() ?? getSandboxId?.(),
+            })
+          ) {
+            return;
+          }
+          rawOpenDesktopView(eventConversationId);
+        }
+      : undefined,
+    onSuggestLoadingChange: (loading, targetConversationId) => {
+      if (
+        sessionRef.current?.getState().currentConversationId ===
+        targetConversationId
+      ) {
+        setLoadingSuggest(loading);
+      }
+    },
+    onSuggestLoaded: (list, targetConversationId) => {
+      if (
+        sessionRef.current?.getState().currentConversationId ===
+        targetConversationId
+      ) {
+        setChatSuggestList(list);
+      }
+    },
+    confirmStop: (targetConversationId) => {
+      // 对齐旧线「正在执行任务」冲突确认：确认后停止本会话
+      modalConfirm(
+        dict('PC.Models.ConversationInfo.taskConflictTitle'),
+        dict('PC.Models.ConversationInfo.taskConflictContent'),
+        () => {
+          sessionRef.current?.stop(targetConversationId);
+          return new Promise((resolve) => {
+            setTimeout(resolve, 2000);
+          });
+        },
+      );
+    },
+  };
+
   if (enabled && !sessionRef.current) {
     sessionRef.current = createConversationRuntimeSession({
       adapters: {
@@ -182,41 +241,7 @@ export function useConversationRuntimeSession(
       hydrateHistoryMessages: hydrateMcpAskInteractionsInMessageList,
       effectsAdapter: createRuntimeLineEffectsAdapter({
         setConversationInfo,
-        resources: {
-          ...(effectsResources as never as Record<string, unknown>),
-          onSuggestLoadingChange: (
-            loading: boolean,
-            targetConversationId: number,
-          ) => {
-            if (
-              sessionRef.current?.getState().currentConversationId ===
-              targetConversationId
-            ) {
-              setLoadingSuggest(loading);
-            }
-          },
-          onSuggestLoaded: (list: string[], targetConversationId: number) => {
-            if (
-              sessionRef.current?.getState().currentConversationId ===
-              targetConversationId
-            ) {
-              setChatSuggestList(list);
-            }
-          },
-          confirmStop: (conversationId: number) => {
-            // 对齐旧线「正在执行任务」冲突确认：确认后停止本会话
-            modalConfirm(
-              dict('PC.Models.ConversationInfo.taskConflictTitle'),
-              dict('PC.Models.ConversationInfo.taskConflictContent'),
-              () => {
-                sessionRef.current?.stop(conversationId);
-                return new Promise((resolve) => {
-                  setTimeout(resolve, 2000);
-                });
-              },
-            );
-          },
-        } as never,
+        getResources: () => effectsResourcesRef.current,
       }),
       stopRequest: async (id) => {
         setLoadingStopConversation(true);

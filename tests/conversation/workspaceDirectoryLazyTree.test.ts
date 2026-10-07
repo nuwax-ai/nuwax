@@ -6,7 +6,10 @@ import {
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import { useChatFiles } from '@/pages/Chat/hooks/useChatFiles';
 import { useWorkspaceDirectoryFiles } from '@/pages/Chat/hooks/useWorkspaceDirectoryFiles';
-import { transformFlatListToTree } from '@/utils/appDevUtils';
+import {
+  compareFileTreeNodes,
+  transformFlatListToTree,
+} from '@/utils/appDevUtils';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -113,6 +116,98 @@ describe('工作区文件树异步懒加载', () => {
     expect(src?.children?.map((node) => node.name)).toEqual([
       'components',
       'index.ts',
+    ]);
+  });
+
+  it('数字开头的目录名按字母排，不按数字大小排', () => {
+    const names = ['6dd6d55a-2410', '13bfdeb6-7c74', '6f1e1038-939e'];
+    const sorted = [...names]
+      .map((name) => ({ name, type: 'folder' as const }))
+      .sort(compareFileTreeNodes)
+      .map((node) => node.name);
+    expect(sorted).toEqual(['13bfdeb6-7c74', '6dd6d55a-2410', '6f1e1038-939e']);
+  });
+
+  it('父目录再次打开或接口顺序变化时，子节点仍按同一规则排序', () => {
+    const work = 'state/225/work';
+    const first = `${work}/13bfdeb6-7c74`;
+    const second = `${work}/6dd6d55a-2410`;
+    const third = `${work}/6f1e1038-939e`;
+    const endpoint = `${work}/endpoint.json`;
+    const loadedAfterChildExpand = mergeDirectoryLevelFiles(
+      mergeDirectoryLevelFiles(
+        [file('state/225/work', true)],
+        [
+          file(first, true),
+          file(second, true),
+          file(third, true),
+          file(endpoint, false),
+        ],
+        work,
+      ),
+      [
+        file(`${first}/command-adn`, false),
+        file(`${first}/generation.json`, false),
+      ],
+      first,
+    );
+    const loadedAfterReopenWork = mergeDirectoryLevelFiles(
+      loadedAfterChildExpand,
+      [
+        file(third, true),
+        file(second, true),
+        file(first, true),
+        file(endpoint, false),
+      ],
+      work,
+    );
+
+    const tree = transformFlatListToTree(loadedAfterReopenWork, false);
+    const workNode = tree
+      .find((node) => node.name === 'state')
+      ?.children?.find((node) => node.name === '225')
+      ?.children?.find((node) => node.name === 'work');
+
+    expect(workNode?.children?.map((node) => node.name)).toEqual([
+      '13bfdeb6-7c74',
+      '6dd6d55a-2410',
+      '6f1e1038-939e',
+      'endpoint.json',
+    ]);
+  });
+
+  it('深层目录按文件夹在前、同组忽略大小写升序，不随展开跳动', () => {
+    const loadedBeforeExpand = [
+      file('src/ctl/oauth2', true),
+      file('src/ctl/HealthController.java', false),
+      file('src/ctl/DTO', true),
+      file('src/ctl/interceptor', true),
+    ];
+    const beforeTree = transformFlatListToTree(loadedBeforeExpand, false);
+    const beforeCtl = beforeTree[0]?.children?.find(
+      (node) => node.name === 'ctl',
+    );
+    expect(beforeCtl?.children?.map((node) => node.name)).toEqual([
+      'DTO',
+      'interceptor',
+      'oauth2',
+      'HealthController.java',
+    ]);
+
+    const loadedAfterExpand = mergeDirectoryLevelFiles(
+      loadedBeforeExpand,
+      [file('src/ctl/oauth2/AuthController.java', false)],
+      'src/ctl/oauth2',
+    );
+    const afterTree = transformFlatListToTree(loadedAfterExpand, false);
+    const afterCtl = afterTree[0]?.children?.find(
+      (node) => node.name === 'ctl',
+    );
+    expect(afterCtl?.children?.map((node) => node.name)).toEqual([
+      'DTO',
+      'interceptor',
+      'oauth2',
+      'HealthController.java',
     ]);
   });
 

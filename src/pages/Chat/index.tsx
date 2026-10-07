@@ -10,7 +10,6 @@ import ConversationProgressCapsule from '@/components/business-component/Unified
 import { selectProgressCapsule } from '@/components/business-component/UnifiedChatSession/components/ConversationProgressCapsule/selectProgressCapsule';
 import type { FileMentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import ConditionRender from '@/components/ConditionRender';
-import ResizableSplit from '@/components/ResizableSplit';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
@@ -22,12 +21,12 @@ import { useConversationRendererPreference } from '@/hooks/useConversationRender
 import { useConversationChanged } from '@/hooks/useDirectorySync';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
+import { useRepoDocLinkPreview } from '@/hooks/useRepoDocLinkPreview';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useStyle3PcKeepAliveEnabled from '@/hooks/useStyle3PcKeepAliveEnabled';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
-import { useRepoDocLinkPreview } from '@/pages/Chat/hooks/useRepoDocLinkPreview';
-import { isRepoLibraryPath } from '@/pages/Chat/utils/repoDocLink';
+import { isRepoLibraryPath } from '@/utils/repoDocLink';
 
 import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
@@ -54,6 +53,7 @@ import type { FileNode } from '@/types/interfaces/appDev';
 import type { MessageSourceType } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
+  MessageInfo,
   RoleInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
@@ -138,7 +138,7 @@ export interface ChatCoreProps {
   };
   showSidebar?: boolean; // 是否渲染右侧属性面板，默认 true
   showPayment?: boolean; // 是否包含订阅/扣费弹窗等逻辑，默认 true
-  enableResizable?: boolean; // 是否开启拖拽分栏布局，默认 true
+  enableResizable?: boolean; // 兼容旧调用；资料库 / Page 已在顶部图标下方的内容区展开
   showClearContext?: boolean; // 是否展示清除上下文按钮（刷子），默认 true
   defaultFileTreeVisible?: boolean; // 是否默认显示文件树，默认 false
   /**
@@ -174,7 +174,6 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   active = true,
   showSidebar = true,
   showPayment = true,
-  enableResizable = true,
   showClearContext = true,
   defaultFileTreeVisible = false,
   fileTreeSelfManaged = true,
@@ -501,7 +500,9 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     history: { action: routeAction },
     effectiveAgent,
     conversationInfo,
-    hasPersistedMessage: messageList.some((message) => Boolean(message?.id)),
+    hasPersistedMessage: messageList.some((message: MessageInfo) =>
+      Boolean(message?.id),
+    ),
   });
 
   /** 文件树预览区底部终端是否显示 */
@@ -1122,6 +1123,11 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       runHistoryItem,
       showPagePreview,
       openDesktopView,
+      hideDesktop: effectiveAgent?.hideDesktop,
+      getOpenDesktopSandboxId: () =>
+        getEffectiveSandboxId() ||
+        conversationInfo?.sandboxServerId ||
+        effectiveAgent?.sandboxId,
       setCardList,
       setShowType,
       refreshFileListThrottled: handleRefreshFileList,
@@ -1217,6 +1223,16 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
   const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
 
+  /**
+   * 工具栏刷新：重拉根目录和已展开的每一层。
+   * 与会话结束、AppDevPro 文件预览的刷新按钮相同，走 fileTreeRefreshTrigger，
+   * 由工作区会话去刷已加载目录，而不是只刷当前选中的那一层。
+   */
+  const refreshExpandedFileTree = useCallback(async () => {
+    if (!id) return;
+    await refreshFileListImmediately(id);
+  }, [id, refreshFileListImmediately]);
+
   // 文件视图 props
   const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId: workspaceTaskSelectedFileId,
@@ -1251,7 +1267,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     isFileTreePinned,
     onFileTreePinnedChange: setIsFileTreePinned,
     isCanDeleteSkillFile: true,
-    onRefreshFileTree: workspaceDirectoryFiles.refresh,
+    onRefreshFileTree: refreshExpandedFileTree,
     onOpenDirectory: workspaceDirectoryFiles.onOpenDirectory,
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
@@ -1703,6 +1719,23 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
 
   const restoredWorkspaceKeyRef = useRef<string | null>(null);
 
+  // 离开会话页时卸掉终端。页面隐藏期间不再保留终端连接，切回后是未打开状态。
+  useLayoutEffect(() => {
+    if (active) {
+      return;
+    }
+    setTerminalConsoleVisible(false);
+    setHasTerminalConsoleRendered(false);
+    setTerminalConsoleLayoutMode('collapsed');
+    setTerminalConsoleExpandSignal(0);
+    setTerminalConsoleCollapseSignal(0);
+    if (
+      conversationPageCacheManager.getEntry(pageCacheKey)?.view === 'terminal'
+    ) {
+      rememberWorkspaceView('filePreview');
+    }
+  }, [active, pageCacheKey, rememberWorkspaceView]);
+
   // 激活只更新当前页所有权；已有实例切回来沿用内存中的面板，不重复恢复初始视图。
   useEffect(() => {
     if (!active) return;
@@ -1715,24 +1748,21 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
       conversationPageCacheManager.deactivate(pageCacheKey);
     if (restoredWorkspaceKeyRef.current === pageCacheKey) return deactivate;
     restoredWorkspaceKeyRef.current = pageCacheKey;
-    const targetView = defaultFileTreeVisible ? 'filePreview' : entry.view;
+    const targetView =
+      defaultFileTreeVisible || entry.view === 'terminal'
+        ? 'filePreview'
+        : entry.view;
 
-    if (defaultFileTreeVisible && entry.view !== 'filePreview') {
+    if (
+      entry.view === 'terminal' ||
+      (defaultFileTreeVisible && entry.view !== 'filePreview')
+    ) {
       rememberWorkspaceView('filePreview');
     }
     pendingWorkspaceRestoreRef.current = null;
     if (targetView === 'filePreview') {
       workspaceRestoreActionsRef.current.openPreviewView(id);
       workspaceRestoreActionsRef.current.setIsFileTreePinned(true);
-      return deactivate;
-    }
-    if (targetView === 'terminal') {
-      setHasTerminalConsoleRendered(true);
-      setTerminalConsoleVisible(true);
-      setTerminalConsoleLayoutMode('expanded');
-      setTerminalConsoleActiveTab('terminal');
-      setTerminalConsoleExpandSignal((value) => value + 1);
-      workspaceRestoreActionsRef.current.openPreviewView(id);
       return deactivate;
     }
     if (targetView === 'desktop' || targetView === 'pagePreview') {
@@ -2309,8 +2339,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
   const isPagePreviewVisible = Boolean(pagePreviewData && !isFileTreeVisible);
   // 资料库文档不是页面模板，不提供「复制模板」。
   const showPageCopyButton =
-    showCopyButton &&
-    !isRepoLibraryPath(String(pagePreviewData?.uri || ''));
+    showCopyButton && !isRepoLibraryPath(String(pagePreviewData?.uri || ''));
   const pagePreviewContent = pagePreviewData ? (
     <>
       <PagePreviewIframe
@@ -2364,77 +2393,29 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
           <LoadingOutlined />
         </div>
       )}
-      {/* 智能体聊天和预览页面 */}
+      {/* 智能体聊天和预览页面；资料库 / Page 在顶部图标下方的内容区展开 */}
       <div
         className={cx(styles['main-area'], {
           [styles['main-area-expanded']]: isExpandedView,
         })}
       >
-        {enableResizable ? (
-          <ResizableSplit
-            resetTrigger={
-              pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
-            }
-            minLeftWidth={430}
-            defaultLeftWidth={40}
-            // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
-            left={
-              effectiveAgent?.hideChatArea ? null : (
-                <LeftContent
-                  pageCacheKey={pageCacheKey}
-                  isFileTreeVisible={isFileTreeVisible}
-                  effectiveAgent={effectiveAgent}
-                  isAppSidebarMode={isAppSidebarMode}
-                  headerProps={headerProps}
-                  chatSessionProps={chatSessionProps}
-                  fileSidebarProps={fileSidebarProps}
-                  externalFilePreview={externalPreviewFile}
-                  onExternalFilePreviewBack={exitExternalPreview}
-                  chatPaneCapsule={chatPaneCapsule}
-                />
-              )
-            }
-            rightHidden={!isPagePreviewVisible}
-            right={pagePreviewCache}
-          />
+        {effectiveAgent?.hideChatArea ? (
+          pagePreviewCache
         ) : (
-          <div
-            className={cx('flex', 'w-full', 'h-full')}
-            style={{
-              gap: '16px',
-            }}
-          >
-            {effectiveAgent?.hideChatArea ? null : (
-              <div
-                style={{
-                  flex: pagePreviewData && !isFileTreeVisible ? '0 0 50%' : '1',
-                  minWidth: 0,
-                }}
-              >
-                <LeftContent
-                  pageCacheKey={pageCacheKey}
-                  isFileTreeVisible={isFileTreeVisible}
-                  effectiveAgent={effectiveAgent}
-                  isAppSidebarMode={isAppSidebarMode}
-                  headerProps={headerProps}
-                  chatSessionProps={chatSessionProps}
-                  fileSidebarProps={fileSidebarProps}
-                  externalFilePreview={externalPreviewFile}
-                  onExternalFilePreviewBack={exitExternalPreview}
-                  chatPaneCapsule={chatPaneCapsule}
-                />
-              </div>
-            )}
-            <div
-              style={{
-                display: isPagePreviewVisible ? 'block' : 'none',
-                flex: '1',
-                minWidth: 0,
-              }}
-            >
-              {pagePreviewCache}
-            </div>
-          </div>
+          <LeftContent
+            pageCacheKey={pageCacheKey}
+            isFileTreeVisible={isFileTreeVisible}
+            effectiveAgent={effectiveAgent}
+            isAppSidebarMode={isAppSidebarMode}
+            headerProps={headerProps}
+            chatSessionProps={chatSessionProps}
+            fileSidebarProps={fileSidebarProps}
+            externalFilePreview={externalPreviewFile}
+            onExternalFilePreviewBack={exitExternalPreview}
+            chatPaneCapsule={chatPaneCapsule}
+            pagePreview={pagePreviewData ? pagePreviewCache : null}
+            isPagePreviewVisible={isPagePreviewVisible}
+          />
         )}
       </div>
       {/* 智能体详情悬浮弹窗：与文件树/终端/云电脑面板共存，不再互斥 */}
