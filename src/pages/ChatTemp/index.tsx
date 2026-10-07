@@ -167,11 +167,15 @@ const ChatTemp: React.FC = () => {
       .catch(() => setVariableParams(null));
   }, [form, values]);
 
+  // 接口有时返回空对象 {}，不能当成用户已经填写过变量
+  const hasUserFillVariables =
+    !!userFillVariables && Object.keys(userFillVariables).length > 0;
+
   useEffect(() => {
-    if (!!userFillVariables) {
+    if (hasUserFillVariables) {
       setVariableParams(userFillVariables);
     }
-  }, [userFillVariables]);
+  }, [hasUserFillVariables, userFillVariables]);
 
   // 停止临时会话
   const { run: runStopTempConversation, loading: loadingStopTempConversation } =
@@ -886,7 +890,7 @@ const ChatTemp: React.FC = () => {
                     variables={variables}
                     userFillVariables={userFillVariables}
                     isFilled={!!variableParams}
-                    disabled={!!userFillVariables || isSendMessageRef.current}
+                    disabled={hasUserFillVariables || isSendMessageRef.current}
                   />
                   {messageList?.length > 0 ? (
                     <>

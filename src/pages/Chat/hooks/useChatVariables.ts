@@ -22,12 +22,16 @@ export const useChatVariables = ({
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
 
+  // 接口有时返回空对象 {}，不能当成用户已经填写过变量
+  const hasUserFillVariables =
+    !!firstVariableParams && Object.keys(firstVariableParams).length > 0;
+
   // 用户在智能体主页填写的变量信息
   useEffect(() => {
-    if (!!firstVariableParams) {
+    if (hasUserFillVariables) {
       setVariableParams(firstVariableParams);
     }
-  }, [firstVariableParams]);
+  }, [hasUserFillVariables, firstVariableParams]);
 
   const values = Form.useWatch([], { form, preserve: true });
 
@@ -63,5 +67,6 @@ export const useChatVariables = ({
     setVariableParams,
     isSendMessageRef,
     isChatInputDisabled,
+    hasUserFillVariables,
   };
 };
