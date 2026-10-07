@@ -938,10 +938,10 @@ index 46598dc..dd10e35 100644
  /**
 diff --git a/nuwax-im-web/src/dev/conversationTasksMock.ts b/nuwax-im-web/src/dev/conversationTasksMock.ts
 new file mode 100644
-index 0000000..143e19d
+index 0000000..f3365d9
 --- /dev/null
 +++ b/nuwax-im-web/src/dev/conversationTasksMock.ts
-@@ -0,0 +1,187 @@
+@@ -0,0 +1,254 @@
 +import {
 +  TasksError,
 +  type ConversationTask,
@@ -955,13 +955,17 @@ index 0000000..143e19d
 +  | 'empty'
 +  | 'error'
 +  | 'forbidden'
-+  | 'artifact-error';
++  | 'artifact-error'
++  | 'edge-cases'
++  | 'resource-error';
 +export const TASKS_MOCK_SCENARIOS: readonly TasksMockScenario[] = [
 +  'overview',
 +  'empty',
 +  'error',
 +  'forbidden',
 +  'artifact-error',
++  'edge-cases',
++  'resource-error',
 +];
 +
 +export function tasksMockScenario(raw: string | null): TasksMockScenario {
@@ -975,7 +979,10 @@ index 0000000..143e19d
 +  '0930版本交付验收报告_包含会话任务产物展示和成员可见范围的长文件名用于检查窄面板自动换行_0123456789abcdefghijklmnopqrstuvwxyz.txt';
 +
 +/** 仅临时演示数据，不能作为后端成员授权的实现或真实执行历史。 */
-+function tasksFor(conversationId: string): ConversationTask[] {
++function tasksFor(
++  conversationId: string,
++  scenario?: TasksMockScenario,
++): ConversationTask[] {
 +  const make = (
 +    index: number,
 +    title: string,
@@ -994,8 +1001,8 @@ index 0000000..143e19d
 +    artifactCount,
 +    updatedAt: FIXTURE_TIME,
 +  });
-+  if (conversationId === '1001')
-+    return [
++  if (conversationId === '1001') {
++    const records = [
 +      make(1, '0930 版本交付验收报告', 'COMPLETE', 3),
 +      make(
 +        2,
@@ -1007,6 +1014,14 @@ index 0000000..143e19d
 +      make(4, '数据核对失败（保留已有产物）', 'FAILED', 1),
 +      make(5, '已取消的整理任务', 'CANCEL', 0),
 +    ];
++    if (scenario === 'edge-cases')
++      records.push({
++        ...make(6, '', 'UNRECOGNIZED', 2),
++        agentName: undefined,
++        updatedAt: undefined,
++      });
++    return records;
++  }
 +  if (conversationId === '1002')
 +    return [make(1, '张三的资料摘要', 'COMPLETE', 1)];
 +  if (conversationId === '1003')
@@ -1026,6 +1041,22 @@ index 0000000..143e19d
 +});
 +
 +function artifactsFor(conversationId: string, taskKey: string): TaskArtifact[] {
++  if (taskKey === '1001-platform-6')
++    return [
++      {
++        ...availableArtifact(
++          'binary',
++          '边界下载示例.dat',
++          'application/octet-stream',
++        ),
++        size: 4,
++        description: '固定四字节二进制，仅用于核对下载内容。',
++      },
++      {
++        ...availableArtifact('svg', '仅下载的矢量示例.svg', 'image/svg+xml'),
++        description: '此图片格式不进入预览，返回列表可显式下载。',
++      },
++    ];
 +  if (taskKey === '1001-platform-1')
 +    return [
 +      {
@@ -1068,27 +1099,36 @@ index 0000000..143e19d
 +): ConversationTasksProvider {
 +  const failedLists = new Set<string>();
 +  const failedArtifacts = new Set<string>();
++  const failedResources = new Set<string>();
 +  const pause = () =>
 +    new Promise<void>((resolve) => setTimeout(resolve, delayMs));
 +  return {
 +    available: true,
 +    mode: 'mock',
 +    async listTasks({ imConversationId }) {
++      // 在异步等待前固定本批请求的错误，StrictMode 并发首屏不能提前耗掉故障。
++      const failInitialList =
++        scenario === 'error' && !failedLists.has(imConversationId);
 +      await pause();
 +      if (scenario === 'forbidden') throw new TasksError('forbidden');
-+      if (scenario === 'error' && !failedLists.has(imConversationId)) {
++      if (failInitialList) {
 +        failedLists.add(imConversationId);
 +        throw new TasksError('network');
 +      }
 +      return {
-+        records: scenario === 'empty' ? [] : tasksFor(imConversationId),
++        records:
++          scenario === 'empty' ? [] : tasksFor(imConversationId, scenario),
 +        hasMore: false,
 +      };
 +    },
 +    async listArtifacts({ imConversationId, taskKey }) {
 +      await pause();
 +      if (scenario === 'forbidden') throw new TasksError('forbidden');
-+      if (!tasksFor(imConversationId).some((task) => task.key === taskKey))
++      if (
++        !tasksFor(imConversationId, scenario).some(
++          (task) => task.key === taskKey,
++        )
++      )
 +        throw new TasksError('not-found');
 +      if (
 +        scenario === 'artifact-error' &&
@@ -1106,13 +1146,40 @@ index 0000000..143e19d
 +    async readArtifact({ imConversationId, taskKey, artifactId }) {
 +      await pause();
 +      if (scenario === 'forbidden') throw new TasksError('forbidden');
-+      if (!tasksFor(imConversationId).some((task) => task.key === taskKey))
++      if (
++        !tasksFor(imConversationId, scenario).some(
++          (task) => task.key === taskKey,
++        )
++      )
 +        throw new TasksError('not-found');
 +      const artifact = artifactsFor(imConversationId, taskKey).find(
 +        (item) => item.id === artifactId,
 +      );
 +      if (!artifact || artifact.availability !== 'available')
 +        throw new TasksError('not-found');
++      // 仅显式开发场景注入一次读取失败；同一会话/任务/产物重试可恢复。
++      const resourceKey = `${imConversationId}:${taskKey}:${artifactId}`;
++      if (scenario === 'resource-error' && !failedResources.has(resourceKey)) {
++        failedResources.add(resourceKey);
++        throw new TasksError('network', '产物读取失败，请重试');
++      }
++      if (artifact.id === 'binary')
++        return {
++          kind: 'file',
++          blob: new Blob([Uint8Array.of(0x00, 0x41, 0xff, 0x10)], {
++            type: 'application/octet-stream',
++          }),
++        };
++      if (artifact.id === 'svg')
++        return {
++          kind: 'image',
++          blob: new Blob(
++            [
++              '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="#3370ff"/></svg>',
++            ],
++            { type: 'image/svg+xml' },
++          ),
++        };
 +      if (artifact.id === 'image') return imageResource();
 +      return {
 +        kind: 'text',
@@ -1157,14 +1224,18 @@ index bc75fe6..e0f8e4a 100644
  }
 diff --git a/nuwax-im-web/src/lib/conversationTasks.test.ts b/nuwax-im-web/src/lib/conversationTasks.test.ts
 new file mode 100644
-index 0000000..f54c634
+index 0000000..04c32a3
 --- /dev/null
 +++ b/nuwax-im-web/src/lib/conversationTasks.test.ts
-@@ -0,0 +1,415 @@
+@@ -0,0 +1,543 @@
 +import assert from 'node:assert/strict';
 +import { test } from 'node:test';
 +import { unavailableTasksProvider } from '../api/conversationTasks';
-+import { createTasksMockProvider } from '../dev/conversationTasksMock';
++import {
++  createTasksMockProvider,
++  tasksMockScenario,
++  TASKS_MOCK_SCENARIOS,
++} from '../dev/conversationTasksMock';
 +import {
 +  TasksError,
 +  assertTaskPage,
@@ -1575,6 +1646,130 @@ index 0000000..f54c634
 +    forbidden.readArtifact({ ...input, artifactId: 'report' }),
 +    /暂无权限/,
 +  );
++});
++
++test('边界场景显式选择且保留 overview 的五任务；未知状态和缺省内容不编造数据', async () => {
++  assert.deepEqual(TASKS_MOCK_SCENARIOS.slice(0, 5), [
++    'overview',
++    'empty',
++    'error',
++    'forbidden',
++    'artifact-error',
++  ]);
++  assert.equal(tasksMockScenario('edge-cases'), 'edge-cases');
++  assert.equal(tasksMockScenario('resource-error'), 'resource-error');
++  assert.equal(tasksMockScenario('unknown'), 'overview');
++  const input = { imConversationId: '1001' };
++  const ordinary = await createTasksMockProvider('overview', 0).listTasks(
++    input,
++  );
++  const edge = await createTasksMockProvider('edge-cases', 0).listTasks(input);
++  assert.equal(ordinary.records.length, 5);
++  assert.equal(edge.records.length, 6);
++  assert.deepEqual(edge.records.slice(0, 5), ordinary.records);
++  const extra = edge.records[5];
++  assert.equal(taskStatusLabel(extra.taskStatus), '状态未知');
++  assert.equal(taskTitle(extra), '未命名任务');
++  assert.equal(extra.updatedAt, undefined);
++  assert.equal(extra.agentName, undefined);
++  assert.equal(extra.artifactCount, 2);
++});
++
++test('边界产物返回可下载的固定二进制与不进入图片预览的 SVG，不能跨会话或场景读取', async () => {
++  const mock = createTasksMockProvider('edge-cases', 0);
++  const input = { imConversationId: '1001', taskKey: '1001-platform-6' };
++  const list = await mock.listArtifacts(input);
++  assert.deepEqual(
++    list.records.map((item) => item.id),
++    ['binary', 'svg'],
++  );
++  const binary = await mock.readArtifact({ ...input, artifactId: 'binary' });
++  assert.equal(binary.kind, 'file');
++  assert.equal(binary.blob.type, 'application/octet-stream');
++  assert.equal(binary.blob.size, list.records[0].size);
++  assert.deepEqual(
++    [...new Uint8Array(await binary.blob.arrayBuffer())],
++    [0, 65, 255, 16],
++  );
++  const svg = await mock.readArtifact({ ...input, artifactId: 'svg' });
++  assert.equal(svg.kind, 'image');
++  assert.equal(canPreviewTaskImage(svg), false);
++  assert.equal(svg.blob.type, 'image/svg+xml');
++  assert.match(await svg.blob.text(), /^<svg /);
++  const notFound = (error: unknown) =>
++    error instanceof TasksError && error.code === 'not-found';
++  await assert.rejects(
++    mock.readArtifact({
++      ...input,
++      imConversationId: '1002',
++      artifactId: 'binary',
++    }),
++    notFound,
++  );
++  await assert.rejects(
++    createTasksMockProvider('overview', 0).listArtifacts(input),
++    notFound,
++  );
++});
++
++test('资源读取一次失败可重试；失败按会话任务产物隔离，重新创建 mock 时恢复初始故障', async () => {
++  const mock = createTasksMockProvider('resource-error', 0);
++  const report = {
++    imConversationId: '1001',
++    taskKey: '1001-platform-1',
++    artifactId: 'report',
++  };
++  const failed = (error: unknown) =>
++    error instanceof TasksError &&
++    error.code === 'network' &&
++    error.message === '产物读取失败，请重试';
++  await assert.rejects(mock.readArtifact(report), failed);
++  const recovered = await mock.readArtifact(report);
++  assert.equal(recovered.kind, 'text');
++  if (recovered.kind !== 'text') throw new Error('报告必须恢复为纯文本');
++  assert.match(recovered.text, /关联 IM 会话：1001/);
++  const image = { ...report, artifactId: 'image' };
++  await assert.rejects(mock.readArtifact(image), failed);
++  assert.equal(canPreviewTaskImage(await mock.readArtifact(image)), true);
++  const other = {
++    imConversationId: '1002',
++    taskKey: '1002-platform-1',
++    artifactId: 'summary',
++  };
++  await assert.rejects(mock.readArtifact(other), failed);
++  assert.equal((await mock.readArtifact(other)).kind, 'text');
++  await assert.rejects(
++    createTasksMockProvider('resource-error', 0).readArtifact(report),
++    failed,
++  );
++  assert.equal(
++    (await mock.listTasks({ imConversationId: '1001' })).records.length,
++    5,
++  );
++  assert.equal((await mock.listArtifacts(report)).records.length, 3);
++});
++
++test('首屏失败场景的并发初始请求都失败，不能被 StrictMode 的第二次请求消耗；显式重试成功', async () => {
++  const mock = createTasksMockProvider('error', 10);
++  const input = { imConversationId: '1001' };
++  const initial = await Promise.allSettled([
++    mock.listTasks(input),
++    mock.listTasks(input),
++  ]);
++  assert.deepEqual(
++    initial.map((result) => result.status),
++    ['rejected', 'rejected'],
++  );
++  for (const result of initial) {
++    assert.equal(result.status, 'rejected');
++    if (result.status === 'rejected') {
++      assert.ok(result.reason instanceof TasksError);
++      assert.equal(result.reason.code, 'network');
++    }
++  }
++  const retry = await mock.listTasks(input);
++  assert.equal(retry.records.length, 5);
++  assert.ok(retry.records.every((task) => task.imConversationId === '1001'));
 +});
 diff --git a/nuwax-im-web/src/lib/conversationTasks.ts b/nuwax-im-web/src/lib/conversationTasks.ts
 new file mode 100644
