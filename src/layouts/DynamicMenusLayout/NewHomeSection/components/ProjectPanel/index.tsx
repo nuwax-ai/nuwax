@@ -897,7 +897,51 @@ const ProjectPanel = forwardRef<
       [],
     );
 
+    // 子会话按 4 个一批并发重拉（探针命中差异/全量兜底共用）
+    const requestChildrenBatched = useCallback(
+      async (candidates: ProjectItem[]) => {
+        for (let index = 0; index < candidates.length; index += 4) {
+          await Promise.all(
+            candidates
+              .slice(index, index + 4)
+              .map((project) => requestChildren(project)),
+          );
+        }
+      },
+      [requestChildren],
+    );
+
     useEffect(() => {
+      let disposed = false;
+      let startRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+      let refreshingStartedTask = false;
+      let pendingStartedTask = false;
+      // batch 与 IM 均按原事件名分发。跨端任务可能属于尚未加载的项目，
+      // 不依赖 payload 的未确认字段或本地会话索引，回读已加载的分页范围。
+      const onChatStarted = () => {
+        if (disposed) return;
+        pendingStartedTask = true;
+        if (startRefreshTimer !== undefined || refreshingStartedTask) return;
+        startRefreshTimer = setTimeout(() => {
+          startRefreshTimer = undefined;
+          pendingStartedTask = false;
+          refreshingStartedTask = true;
+          void (async () => {
+            try {
+              const loaded = await fetchPage(1, { append: false });
+              if (loaded && !disposed && !unmountedRef.current) {
+                await requestChildrenBatched(projectsRef.current);
+              }
+            } catch {
+              if (!disposed && !unmountedRef.current) setLoadError(true);
+            } finally {
+              refreshingStartedTask = false;
+              if (pendingStartedTask && !disposed && !unmountedRef.current)
+                onChatStarted();
+            }
+          })();
+        }, 250);
+      };
       const refreshConversation = (payload?: {
         conversationId?: number | string;
       }) => {
@@ -919,11 +963,21 @@ const ProjectPanel = forwardRef<
       };
       eventBus.on(EVENT_TYPE.RefreshConversationList, refreshConversation);
       eventBus.on(EVENT_TYPE.ChatFinished, onChatFinished);
+      eventBus.on('chat_start', onChatStarted);
       return () => {
+        disposed = true;
+        if (startRefreshTimer !== undefined) clearTimeout(startRefreshTimer);
+        pendingStartedTask = false;
+        eventBus.off('chat_start', onChatStarted);
         eventBus.off(EVENT_TYPE.RefreshConversationList, refreshConversation);
         eventBus.off(EVENT_TYPE.ChatFinished, onChatFinished);
       };
-    }, [findProjectByConversation, requestChildren]);
+    }, [
+      fetchPage,
+      findProjectByConversation,
+      requestChildren,
+      requestChildrenBatched,
+    ]);
 
     // 当前路由会话反查所属项目（会话条目无项目归属字段，只能扫已加载的子会话）；
     // 命中结果为复合键，与 collapsedIds 键口径一致
@@ -953,20 +1007,6 @@ const ProjectPanel = forwardRef<
           : null,
       );
     }, [activeChildProjectKey, activeConversationId, onActiveChildResolved]);
-
-    // 子会话按 4 个一批并发重拉（探针命中差异/全量兜底共用）
-    const requestChildrenBatched = useCallback(
-      async (candidates: ProjectItem[]) => {
-        for (let index = 0; index < candidates.length; index += 4) {
-          await Promise.all(
-            candidates
-              .slice(index, index + 4)
-              .map((project) => requestChildren(project)),
-          );
-        }
-      },
-      [requestChildren],
-    );
 
     useImperativeHandle(
       ref,

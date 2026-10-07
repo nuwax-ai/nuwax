@@ -201,6 +201,44 @@ describe('ProjectPanel 选中关系', () => {
     routeParams.params = {};
   });
 
+  it('跨端 chat_start 后新增项目和子会话无需手动刷新即可出现', async () => {
+    respondPage(defaultRecords(), defaultConversations());
+    render(<ProjectPanel compact />);
+    await screen.findByText('会话11');
+    const callsBeforeStart = pageQueryMock.mock.calls.length;
+    respondPage(
+      [...defaultRecords(), buildRecord({ projectId: 3, name: '手机新项目' })],
+      { ...defaultConversations(), 3: [buildConversation(31, '手机新任务')] },
+    );
+    act(() => eventBus.emit('chat_start', { conversationId: '31' }));
+    await screen.findByText('手机新任务');
+    expect(screen.getByText('手机新项目')).toBeTruthy();
+    expect(pageQueryMock.mock.calls.length).toBe(callsBeforeStart + 1);
+  });
+
+  it('重复 chat_start 合并刷新既有项目子会话，卸载后不再补发', async () => {
+    respondPage(defaultRecords(), defaultConversations());
+    const view = render(<ProjectPanel compact />);
+    await screen.findByText('会话11');
+    const callsBeforeStart = pageQueryMock.mock.calls.length;
+    respondPage(defaultRecords(), {
+      ...defaultConversations(),
+      1: [buildConversation(11), buildConversation(12), buildConversation(13)],
+    });
+    act(() => {
+      eventBus.emit('chat_start', { conversationId: '13' });
+      eventBus.emit('chat_start', { conversationId: '13' });
+      eventBus.emit('chat_start', null);
+    });
+    await screen.findByText('会话13');
+    expect(pageQueryMock.mock.calls.length).toBe(callsBeforeStart + 1);
+    act(() => eventBus.emit('chat_start', { conversationId: '14' }));
+    view.unmount();
+    const callsAtUnmount = pageQueryMock.mock.calls.length;
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    expect(pageQueryMock.mock.calls.length).toBe(callsAtUnmount);
+  });
+
   describe('首次加载恢复', () => {
     beforeEach(() => {
       vi.useFakeTimers();
