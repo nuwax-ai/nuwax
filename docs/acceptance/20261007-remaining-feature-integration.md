@@ -47,6 +47,8 @@
 
 客户端专用目录已恢复到 `/Users/apple/.codex/worktrees/release0930-client-compat/nuwax-client`，分支 `codex/release0930-client-compat@76bfc5a34`；本轮未动正在交付的 Beta 工作区。前端/dist pin 同步与客户端构建、安装验收仍待单独执行。
 
+客户端只读核查：旧前端 pin 到本轮 `hostBridge / client-shell` 契约未变，现有桥已提供会话同步、IM 通知/未读及深链，本轮 License 文件读取和 IM Blob 下载未引入新 IPC。当前范围未发现必须新增的客户端源码适配；实际下载保存仍需安装包验证。桌面登录仍跳过 IdP、设置仍隐藏绑定入口，这是尚未确认的历史默认。若本期桌面也启用 SSO/绑定，须补认证窗口、回跳及受信会话交接，不能仅靠更新前端 pin 判作完成。若 License 受控名单包含原生/本地服务能力，客户端管控也须另行设计。
+
 ## 输入与归属
 
 - 原执行对话：`01a0facb-fb4f-7150-b077-d16b2afd4c94`「核对 Claude Code 计划开发进度」。本轮管理对话：`01a1156a-0746-7bc0-8a71-58425faae6c5`。
