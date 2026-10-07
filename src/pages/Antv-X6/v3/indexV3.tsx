@@ -1187,7 +1187,6 @@ const Workflow: React.FC<WorkflowV3Props> = ({
             ? () => {
                 const graph = graphRef.current?.getGraphRef?.();
                 if (graph) {
-                  // Simple auto-arrange: sort nodes by x position with equal spacing
                   const nodes = graph.getNodes();
                   if (nodes.length === 0) return;
                   const startNodes = nodes.filter(
@@ -1204,11 +1203,21 @@ const Workflow: React.FC<WorkflowV3Props> = ({
                   let y = 100;
                   const xStep = 280;
                   const yStep = 120;
+                  let hasMoved = false;
                   while (queue.length > 0) {
                     const nodeId = queue.shift()!;
                     const node = graph.getCellById(nodeId);
                     if (node && node.isNode()) {
-                      node.setPosition(x, y);
+                      const position = node.getPosition();
+                      if (position.x !== x || position.y !== y) {
+                        node.setPosition(x, y);
+                        workflowProxy.updateNodePosition(
+                          node.getData<ChildNode>().id,
+                          x,
+                          y,
+                        );
+                        hasMoved = true;
+                      }
                       y += yStep;
                     }
                     const outgoingEdges = graph.getOutgoingEdges(nodeId) || [];
@@ -1232,6 +1241,11 @@ const Workflow: React.FC<WorkflowV3Props> = ({
                         }
                       }
                     }
+                  }
+                  if (hasMoved) {
+                    // X6 setPosition 不触发拖拽结束的 node:moved，需接入原保存链。
+                    workflowSaveService.markDirty();
+                    debouncedSaveFullWorkflow();
                   }
                 }
               }
