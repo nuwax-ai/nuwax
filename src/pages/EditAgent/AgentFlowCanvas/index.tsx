@@ -27,9 +27,6 @@ import {
 
 import './index.less';
 
-// 子画布首轮 render/effect 即可能读取分支 handler，需在模块初始化时幂等注册。
-registerAgentFlowHandlers();
-
 export interface AgentFlowCanvasProps {
   workflowId: number;
   spaceId: number;
@@ -61,6 +58,11 @@ const AgentFlowCanvas = forwardRef<AgentFlowCanvasRef, AgentFlowCanvasProps>(
       }),
       [],
     );
+
+    // 注册 AgentFlow 节点分支处理器（幂等）
+    useEffect(() => {
+      registerAgentFlowHandlers();
+    }, []);
 
     // ESC 退出全屏（与系统提示词全屏弹窗的退出交互一致）
     useEffect(() => {

@@ -6,7 +6,7 @@
  */
 
 import type { NodeTypeEnum } from '@/types/enums/common';
-import type { ChildNode, Edge as EdgeConfig } from '@/types/interfaces/graph';
+import type { ChildNode } from '@/types/interfaces/graph';
 import type {
   outputOrInputPortConfig,
   PortConfig,
@@ -16,11 +16,6 @@ import type { SpecialPortType } from '../types/enums';
 /** 端口生成上下文：提供给扩展 handler 的工具函数 */
 export interface PortGeneratorContext {
   generatePortConfig: (config: PortConfig) => outputOrInputPortConfig;
-}
-
-/** 重载边生成上下文；校验目标、去重和异常边由画布工具统一处理。 */
-export interface EdgeGeneratorContext {
-  isLoopNode: boolean;
 }
 
 /** 解析端口的返回结果 */
@@ -43,12 +38,6 @@ export interface BranchNodeHandler {
     outputPorts: outputOrInputPortConfig[];
   } | null;
 
-  /** 生成业务分支边；null 回落普通 nextNodeIds，[] 表示已处理且无边。 */
-  generateEdges?(
-    node: ChildNode,
-    ctx: EdgeGeneratorContext,
-  ): EdgeConfig[] | null;
-
   /** 解析特殊分支端口，返回 null 表示非特殊端口 */
   parseSourcePort?(
     sourceNode: ChildNode,
@@ -69,7 +58,7 @@ export interface BranchNodeHandler {
   /** 从画布边重建保存数据前，清空该节点的分支目标 */
   resetBranchData?(node: ChildNode): void;
 
-  /** syncFromGraph: 初始化空分支映射，由画布现存边重建 nextNodeIds */
+  /** syncFromGraph: 初始化分支 nextNodeIds 映射 */
   initBranchMap?(node: ChildNode): Map<string, number[]> | null;
 
   /** syncFromGraph: 从端口信息获取分支 key */

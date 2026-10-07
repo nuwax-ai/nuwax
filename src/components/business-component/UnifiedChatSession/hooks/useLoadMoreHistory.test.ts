@@ -2,8 +2,6 @@ import { useLoadMoreHistory } from '@/components/business-component/UnifiedChatS
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-type LoadMoreHistoryProps = Parameters<typeof useLoadMoreHistory>[0];
-
 const { mockUseIntersectionObserver, intersectionState } = vi.hoisted(() => ({
   mockUseIntersectionObserver: vi.fn(),
   intersectionState: {
@@ -82,10 +80,7 @@ describe('useLoadMoreHistory', () => {
 
   it('缺少会话、消息、更多历史或正在加载时不触发', () => {
     const onLoadMoreMessage = vi.fn();
-    const { rerender } = renderHook<
-      ReturnType<typeof useLoadMoreHistory>,
-      LoadMoreHistoryProps
-    >((props) => useLoadMoreHistory(props), {
+    const { rerender } = renderHook((props) => useLoadMoreHistory(props), {
       initialProps: {
         conversationId: undefined,
         messageList: [{ id: 'm1' }],

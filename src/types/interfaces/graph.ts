@@ -9,7 +9,6 @@ import {
   outputOrInputPortConfig,
   PortsConfig,
 } from '@/types/interfaces/node';
-import type { NodeMetadata as X6NodeMetadata } from '@antv/x6';
 import { Graph, Node } from '@antv/x6';
 import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
@@ -294,7 +293,7 @@ export interface ExceptionItemProps extends ExceptionHandleConfig {
   disabled?: boolean;
 }
 
-export interface NodeMetadata extends X6NodeMetadata {
+export interface NodeMetadata extends Node.Metadata {
   shape: NodeShapeEnum;
   data: ChildNode & {
     nodeConfig: NodeConfig;

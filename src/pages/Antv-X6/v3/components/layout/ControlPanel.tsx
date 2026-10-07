@@ -4,14 +4,13 @@ import { t } from '@/services/i18nRuntime';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import {
-  ApartmentOutlined,
   CaretRightOutlined,
   CompressOutlined,
   MinusOutlined,
   PlusOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
-import { Button, Popover, Select, Tooltip } from 'antd';
+import { Button, Popover, Select } from 'antd';
 import React, { useState } from 'react';
 
 import StencilContent from './Sidebar';
@@ -32,8 +31,6 @@ interface ControlPanelProps {
   foldWrapItem?: ChildNode;
   // 试运行loading
   testRunLoading: boolean;
-  // AgentFlow 自动布局
-  onAutoArrange?: () => void;
 }
 const options = [
   { label: t('PC.Pages.AntvX6ControlPanel.zoomIn10Percent'), value: '+' },
@@ -72,7 +69,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   changeGraph,
   foldWrapItem,
   testRunLoading,
-  onAutoArrange,
 }) => {
   const [open, setOpen] = useState(false);
   const [continueDragCount, setContinueDragCount] = useState(0);
@@ -160,18 +156,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             onClick={() => changeGraph(-1)}
           />
         </Popover>
-        {isAgentFlow && onAutoArrange && (
-          <Tooltip title={t('PC.Pages.AntvX6Header.autoArrange')}>
-            <Button
-              type="text"
-              size={btnSize}
-              icon={<ApartmentOutlined />}
-              aria-label={t('PC.Pages.AntvX6Header.autoArrange')}
-              onClick={onAutoArrange}
-              style={{ marginRight: gap }}
-            />
-          </Tooltip>
-        )}
         {showStencil && (
           <Popover
             content={

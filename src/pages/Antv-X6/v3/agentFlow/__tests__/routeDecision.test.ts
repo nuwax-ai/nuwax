@@ -10,35 +10,20 @@
  * - isSpecialBranchNode
  */
 
-import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
-import type {
-  IntentConfigs,
-  NodeConfig,
-  PortConfig,
-} from '@/types/interfaces/node';
+import type { PortConfig } from '@/types/interfaces/node';
 import { describe, expect, it } from 'vitest';
-import type { ParsedPort } from '../../extensions/types';
 import { SpecialPortType } from '../../types/enums';
 import { routeDecisionHandler } from '../handlers/routeDecision';
 
-// The legacy default targets are deliberately not part of the current wire schema.
-type LegacyRouteConfig = NodeConfig & {
-  defaultNextNodeIds: number[];
-  intentConfigs: IntentConfigs[];
-};
-type LegacyRouteNode = ChildNode & { nodeConfig: LegacyRouteConfig };
-const createRouteNode = (
-  overrides: Omit<Partial<ChildNode>, 'nodeConfig'> & {
-    nodeConfig?: LegacyRouteConfig;
-  } = {},
-): LegacyRouteNode => ({
+const createRouteNode = (overrides: Partial<ChildNode> = {}): ChildNode => ({
   id: 50,
   type: NodeTypeEnum.RouteDecision,
   name: 'RouteDecision',
   description: '',
   workflowId: 1,
-  shape: NodeShapeEnum.General,
+  shape: 'custom-react' as any,
   icon: '',
   nextNodeIds: [],
   nodeConfig: {
@@ -78,43 +63,11 @@ const mockGeneratePortConfig = (config: PortConfig) => ({
 const ctx = { generatePortConfig: mockGeneratePortConfig };
 
 describe('RouteDecision Handler', () => {
-  describe('generateEdges', () => {
-    it('preserves legacy default and complete route UUID with loop zIndex', () => {
-      const uuid = '9f9d9478-8b79-4201-b995-93f339d7dce8';
-      const node = createRouteNode({
-        nodeConfig: {
-          defaultNextNodeIds: [3],
-          intentConfigs: [{ uuid, intentType: 'OTHER', nextNodeIds: [5] }],
-        },
-      });
-      expect(
-        routeDecisionHandler.generateEdges!(node, { isLoopNode: true }),
-      ).toEqual([
-        { source: '50-route-default-out', target: '3', zIndex: 5 },
-        { source: `50-route-${uuid}-out`, target: '5', zIndex: 5 },
-      ]);
-    });
-
-    it('returns an empty handled result instead of normal fallback', () => {
-      const node = createRouteNode({ nextNodeIds: [3] });
-      expect(
-        routeDecisionHandler.generateEdges!(node, { isLoopNode: false }),
-      ).toEqual([]);
-      // Deliberately simulate a malformed stored node, keeping the valid fixture contract.
-      const withoutNodeConfig = createRouteNode({ nextNodeIds: [3] });
-      Reflect.deleteProperty(withoutNodeConfig, 'nodeConfig');
-      expect(
-        routeDecisionHandler.generateEdges!(withoutNodeConfig, {
-          isLoopNode: false,
-        }),
-      ).toEqual([]);
-    });
-  });
   describe('generatePorts', () => {
     it('should generate default + N route ports', () => {
       const node = createRouteNode();
       // 默认兜底端口仅在 defaultNextNodeIds 非空时生成
-      node.nodeConfig.defaultNextNodeIds = [999];
+      (node.nodeConfig as any).defaultNextNodeIds = [999];
       const result = routeDecisionHandler.generatePorts!(node, ctx);
 
       expect(result).not.toBeNull();
@@ -137,7 +90,7 @@ describe('RouteDecision Handler', () => {
 
     it('should generate only default port when routes is empty', () => {
       const node = createRouteNode({
-        nodeConfig: { defaultNextNodeIds: [999], intentConfigs: [] },
+        nodeConfig: { defaultNextNodeIds: [999], intentConfigs: [] } as any,
       });
       const result = routeDecisionHandler.generatePorts!(node, ctx);
       expect(result!.outputPorts).toHaveLength(1);
@@ -146,7 +99,7 @@ describe('RouteDecision Handler', () => {
 
     it('should produce no output ports when default and routes are both empty', () => {
       const node = createRouteNode({
-        nodeConfig: { defaultNextNodeIds: [], intentConfigs: [] },
+        nodeConfig: { defaultNextNodeIds: [], intentConfigs: [] } as any,
       });
       const result = routeDecisionHandler.generatePorts!(node, ctx);
       expect(result!.outputPorts).toHaveLength(0);
@@ -157,16 +110,9 @@ describe('RouteDecision Handler', () => {
       const node = createRouteNode({
         nodeConfig: {
           defaultNextNodeIds: [],
-          intentConfigs: [
-            { uuid: 'first', intent: 'a', nextNodeIds: [] },
-            { uuid: 'second', intent: 'b', nextNodeIds: [] },
-          ],
-        },
+          intentConfigs: [{ intent: 'a' }, { intent: 'b' }],
+        } as any,
       });
-      // Legacy persisted routes can omit uuid; test that boundary explicitly.
-      node.nodeConfig.intentConfigs.forEach((route) =>
-        Reflect.deleteProperty(route, 'uuid'),
-      );
       const result = routeDecisionHandler.generatePorts!(node, ctx);
       expect(result!.outputPorts[0].id).toContain('route-r0-out');
       expect(result!.outputPorts[1].id).toContain('route-r1-out');
@@ -174,9 +120,9 @@ describe('RouteDecision Handler', () => {
 
     it('should set ROUTE_DEFAULT_PORT_COLOR for default port', () => {
       const node = createRouteNode();
-      node.nodeConfig.defaultNextNodeIds = [999];
+      (node.nodeConfig as any).defaultNextNodeIds = [999];
       const result = routeDecisionHandler.generatePorts!(node, ctx);
-      expect(result!.outputPorts[0]).toHaveProperty('color', '#bfbfbf');
+      expect(result!.outputPorts[0].color).toBe('#bfbfbf');
     });
   });
 
@@ -233,7 +179,7 @@ describe('RouteDecision Handler', () => {
         'add',
       );
       expect(ok1).toBe(true);
-      expect(node.nodeConfig.defaultNextNodeIds).toEqual([100]);
+      expect((node.nodeConfig as any).defaultNextNodeIds).toEqual([100]);
 
       routeDecisionHandler.updateConnection!(
         node,
@@ -241,7 +187,7 @@ describe('RouteDecision Handler', () => {
         100,
         'remove',
       );
-      expect(node.nodeConfig.defaultNextNodeIds).toEqual([]);
+      expect((node.nodeConfig as any).defaultNextNodeIds).toEqual([]);
     });
 
     it('should add/remove to a specific route.nextNodeIds', () => {
@@ -253,7 +199,9 @@ describe('RouteDecision Handler', () => {
         'add',
       );
       expect(ok1).toBe(true);
-      expect(node.nodeConfig.intentConfigs[0].nextNodeIds).toEqual([200]);
+      expect((node.nodeConfig as any).intentConfigs[0].nextNodeIds).toEqual([
+        200,
+      ]);
 
       routeDecisionHandler.updateConnection!(
         node,
@@ -261,9 +209,9 @@ describe('RouteDecision Handler', () => {
         200,
         'remove',
       );
-      expect(node.nodeConfig.intentConfigs[0].nextNodeIds).toEqual([]);
+      expect((node.nodeConfig as any).intentConfigs[0].nextNodeIds).toEqual([]);
       // 不影响其他 route
-      expect(node.nodeConfig.intentConfigs[1].nextNodeIds).toEqual([]);
+      expect((node.nodeConfig as any).intentConfigs[1].nextNodeIds).toEqual([]);
     });
 
     it('should return false for unknown route uuid', () => {
@@ -279,12 +227,9 @@ describe('RouteDecision Handler', () => {
 
     it('should return false for unknown portInfo type', () => {
       const node = createRouteNode();
-      const unknownPort: ParsedPort = { type: SpecialPortType.Normal };
-      // Unknown external port metadata must take the defensive fallback.
-      Reflect.set(unknownPort, 'type', 'SomethingElse');
       const ok = routeDecisionHandler.updateConnection!(
         node,
-        unknownPort,
+        { type: 'SomethingElse' as any },
         1,
         'add',
       );
@@ -295,15 +240,17 @@ describe('RouteDecision Handler', () => {
   describe('cleanupNodeReferences', () => {
     it('should remove deleted id from default + each route', () => {
       const node = createRouteNode();
-      node.nodeConfig.defaultNextNodeIds = [10, 11];
-      node.nodeConfig.intentConfigs[0].nextNodeIds = [10, 12];
-      node.nodeConfig.intentConfigs[1].nextNodeIds = [10];
+      (node.nodeConfig as any).defaultNextNodeIds = [10, 11];
+      (node.nodeConfig as any).intentConfigs[0].nextNodeIds = [10, 12];
+      (node.nodeConfig as any).intentConfigs[1].nextNodeIds = [10];
 
       routeDecisionHandler.cleanupNodeReferences!(node, 10);
 
-      expect(node.nodeConfig.defaultNextNodeIds).toEqual([11]);
-      expect(node.nodeConfig.intentConfigs[0].nextNodeIds).toEqual([12]);
-      expect(node.nodeConfig.intentConfigs[1].nextNodeIds).toEqual([]);
+      expect((node.nodeConfig as any).defaultNextNodeIds).toEqual([11]);
+      expect((node.nodeConfig as any).intentConfigs[0].nextNodeIds).toEqual([
+        12,
+      ]);
+      expect((node.nodeConfig as any).intentConfigs[1].nextNodeIds).toEqual([]);
     });
   });
 
@@ -333,9 +280,11 @@ describe('RouteDecision Handler', () => {
 
       routeDecisionHandler.mergeBranchData!(node, map);
 
-      expect(node.nodeConfig.defaultNextNodeIds).toEqual([5, 6]);
-      expect(node.nodeConfig.intentConfigs[0].nextNodeIds).toEqual([10]);
-      expect(node.nodeConfig.intentConfigs[1].nextNodeIds).toEqual([]);
+      expect((node.nodeConfig as any).defaultNextNodeIds).toEqual([5, 6]);
+      expect((node.nodeConfig as any).intentConfigs[0].nextNodeIds).toEqual([
+        10,
+      ]);
+      expect((node.nodeConfig as any).intentConfigs[1].nextNodeIds).toEqual([]);
     });
   });
 
@@ -358,10 +307,9 @@ describe('RouteDecision Handler', () => {
     });
 
     it('returns undefined for unknown type', () => {
-      const unknownPort: ParsedPort = { type: SpecialPortType.Normal };
-      // Deliberately exercise an unrecognized external port type.
-      Reflect.set(unknownPort, 'type', 'X');
-      expect(routeDecisionHandler.getBranchKey!(unknownPort)).toBeUndefined();
+      expect(
+        routeDecisionHandler.getBranchKey!({ type: 'X' as any }),
+      ).toBeUndefined();
     });
   });
 
@@ -381,7 +329,7 @@ describe('RouteDecision Handler', () => {
         '50-route-default-out',
         88,
       );
-      expect(result!.nodeConfig).toHaveProperty('defaultNextNodeIds', [88]);
+      expect((result!.nodeConfig as any).defaultNextNodeIds).toEqual([88]);
     });
 
     it('should add to specific route nextNodeIds', () => {
@@ -391,7 +339,9 @@ describe('RouteDecision Handler', () => {
         '50-route-r2-uuid-out',
         99,
       );
-      expect(result!.nodeConfig.intentConfigs?.[1].nextNodeIds).toEqual([99]);
+      expect((result!.nodeConfig as any).intentConfigs[1].nextNodeIds).toEqual([
+        99,
+      ]);
     });
 
     it('should return node unchanged for unknown port (no special branch match)', () => {

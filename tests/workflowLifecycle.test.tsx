@@ -107,7 +107,6 @@ describe('Workflow V3 生命周期', () => {
       const { result } = renderHook(() =>
         useWorkflowLifecycle({
           workflowId: 12345,
-          spaceId: 1,
           handleInitLoading: mockHandleInitLoading,
         }),
       );
@@ -155,7 +154,6 @@ describe('Workflow V3 生命周期', () => {
       const { result } = renderHook(() =>
         useWorkflowLifecycle({
           workflowId: 12345,
-          spaceId: 1,
           handleInitLoading: mockHandleInitLoading,
         }),
       );
@@ -181,7 +179,6 @@ describe('Workflow V3 生命周期', () => {
       renderHook(() =>
         useWorkflowLifecycle({
           workflowId: 0,
-          spaceId: 1,
           handleInitLoading: mockHandleInitLoading,
         }),
       );
@@ -205,7 +202,6 @@ describe('Workflow V3 生命周期', () => {
         ({ workflowId }) =>
           useWorkflowLifecycle({
             workflowId,
-            spaceId: 1,
             handleInitLoading: mockHandleInitLoading,
           }),
         { initialProps: { workflowId: 12345 } },
@@ -238,7 +234,6 @@ describe('Workflow V3 生命周期', () => {
       const { result } = renderHook(() =>
         useWorkflowLifecycle({
           workflowId: 12345,
-          spaceId: 1,
           handleInitLoading: mockHandleInitLoading,
         }),
       );
@@ -292,7 +287,6 @@ describe('Workflow V3 生命周期', () => {
       const { result } = renderHook(() =>
         useWorkflowLifecycle({
           workflowId: 12345,
-          spaceId: 1,
           handleInitLoading: mockHandleInitLoading,
         }),
       );
@@ -332,7 +326,6 @@ describe('Workflow V3 生命周期', () => {
       const { result } = renderHook(() =>
         useWorkflowLifecycle({
           workflowId: 12345,
-          spaceId: 1,
           handleInitLoading: mockHandleInitLoading,
         }),
       );
@@ -374,7 +367,6 @@ describe('Workflow V3 生命周期', () => {
       const { result } = renderHook(() =>
         useWorkflowLifecycle({
           workflowId: 12345,
-          spaceId: 1,
           handleInitLoading: mockHandleInitLoading,
         }),
       );
@@ -423,7 +415,6 @@ describe('Workflow V3 生命周期', () => {
       const { result } = renderHook(() =>
         useWorkflowLifecycle({
           workflowId: 12345,
-          spaceId: 1,
           handleInitLoading: mockHandleInitLoading,
         }),
       );
@@ -449,7 +440,6 @@ describe('Workflow V3 生命周期', () => {
       const { result } = renderHook(() =>
         useWorkflowLifecycle({
           workflowId: 12345,
-          spaceId: 1,
           handleInitLoading: mockHandleInitLoading,
         }),
       );

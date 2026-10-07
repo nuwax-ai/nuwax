@@ -32,26 +32,6 @@ import {
 export const routeDecisionHandler: BranchNodeHandler = {
   nodeType: NodeTypeEnum.RouteDecision,
 
-  generateEdges(node, { isLoopNode }) {
-    const nc = node.nodeConfig as any;
-    const zIndex = isLoopNode ? 5 : 1;
-    // source 保留 -out 后缀，兼容 route 名称含 out 时的端点解析。
-    const defaultEdges = (nc?.defaultNextNodeIds || []).map((id: number) => ({
-      source: `${node.id}-route-default-out`,
-      target: id.toString(),
-      zIndex,
-    }));
-    const routeEdges = (nc?.intentConfigs || []).flatMap((route: any) =>
-      (route.nextNodeIds || []).map((id: number) => ({
-        source: `${node.id}-route-${route.uuid}-out`,
-        target: id.toString(),
-        zIndex,
-      })),
-    );
-    // Route 始终使用专用分支；空数组也不回落到普通 nextNodeIds。
-    return [...defaultEdges, ...routeEdges];
-  },
-
   generatePorts(data: ChildNode, ctx: PortGeneratorContext) {
     const nc = data.nodeConfig as any;
     const routes: any[] = nc?.intentConfigs || [];

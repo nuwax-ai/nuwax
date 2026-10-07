@@ -1,4 +1,7 @@
-import { isHitlOptionsBranchMode } from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
+import {
+  getHitlOptions,
+  isHitlOptionsBranchMode,
+} from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
 import { shouldUseFixedSideOutPort } from '@/pages/Antv-X6/v3/agentFlow/handlers/portLayout';
 import {
   DEFAULT_NODE_CONFIG,
@@ -26,7 +29,6 @@ import { workflowLogger } from '@/utils/logger';
 import { Cell, Edge, Graph, Node } from '@antv/x6';
 import { message } from 'antd';
 import { isEqual, isPlainObject } from 'lodash';
-import { extensionRegistry } from '../extensions/registry';
 import { getWidthAndHeight } from './workflowV3';
 // 边界检查并调整子节点位置
 // 调整父节点尺寸以包含所有子节点
@@ -931,6 +933,57 @@ const handleSpecialNodes = (
   );
 };
 
+const handleAgentFlowEdges = (
+  node: ChildNode,
+  isLoopNode: boolean,
+): EdgeConfig[] => {
+  const edges: EdgeConfig[] = [];
+  const nc = node.nodeConfig as any;
+  if (!nc) return edges;
+  const z = isLoopNode ? 5 : 1;
+
+  if (node.type === NodeTypeEnum.RouteDecision) {
+    const routes: any[] = nc.intentConfigs || [];
+    // default 兜底端口（注意：source 须带 -out 后缀，因为 "route"
+    // 包含 "out" 子串，parseEndpoint 会误判 isLoop=true 导致不加 -out）
+    const defaultIds: number[] = nc.defaultNextNodeIds || [];
+    defaultIds.forEach((id) => {
+      edges.push({
+        source: `${node.id}-route-default-out`,
+        target: id.toString(),
+        zIndex: z,
+      });
+    });
+    // 各路由端口
+    routes.forEach((route) => {
+      const routeIds: number[] = route.nextNodeIds || [];
+      routeIds.forEach((id) => {
+        edges.push({
+          source: `${node.id}-route-${route.uuid}-out`,
+          target: id.toString(),
+          zIndex: z,
+        });
+      });
+    });
+  }
+
+  if (node.type === NodeTypeEnum.HumanInteraction) {
+    const options: any[] = getHitlOptions(nc);
+    options.forEach((opt: any) => {
+      const optIds: number[] = opt.nextNodeIds || [];
+      optIds.forEach((id) => {
+        edges.push({
+          source: `${node.id}-hitl-option-${opt.uuid}-out`,
+          target: id.toString(),
+          zIndex: z,
+        });
+      });
+    });
+  }
+
+  return edges;
+};
+
 // 处理 Loop 节点的边
 const handleLoopEdges = (node: ChildNode): EdgeConfig[] => {
   const edges: EdgeConfig[] = [];
@@ -1015,11 +1068,17 @@ export const getEdges = (
       if (node.type === NodeTypeEnum.Loop) {
         return handleLoopEdges(node);
       }
-      const extensionEdges = extensionRegistry
-        .get(node.type)
-        ?.generateEdges?.(node, { isLoopNode });
-      if (extensionEdges !== undefined && extensionEdges !== null) {
-        return extensionEdges;
+      if (node.type === NodeTypeEnum.RouteDecision) {
+        return handleAgentFlowEdges(node, isLoopNode);
+      }
+      if (
+        node.type === NodeTypeEnum.HumanInteraction &&
+        isHitlOptionsBranchMode(node.nodeConfig as any)
+      ) {
+        const hitlEdges = handleAgentFlowEdges(node, isLoopNode);
+        // options 数组有内容时直接返回各选项连线；
+        // options 为空（节点刚创建尚未配置选项）时回落到 nextNodeIds 路径。
+        if (hitlEdges.length > 0) return hitlEdges;
       }
       if (node.nextNodeIds && node.nextNodeIds.length > 0) {
         const _arr = node.nextNodeIds.filter(
@@ -1064,7 +1123,7 @@ export const getEdges = (
 };
 
 const FLOW_DASH = '8 4';
-const activeAnimations = new WeakMap<Edge, ReturnType<Edge['animate']>>();
+const activeAnimations = new WeakMap<Edge, Animation>();
 
 export const startEdgeFlowAnimation = (edge: Edge) => {
   if (activeAnimations.get(edge)) return;
@@ -1075,8 +1134,11 @@ export const startEdgeFlowAnimation = (edge: Edge) => {
   edge.attr('line/strokeWidth', 2);
   const pathEl = (edge as any).container?.querySelector?.('path.connection');
   if (!pathEl) {
+    const len = 20;
     const anim = edge.animate(
-      { 'attrs/line/strokeDashoffset': [20, 0] },
+      (t: number) => {
+        edge.attr('line/strokeDashoffset', len * (1 - t));
+      },
       { duration: 600, iterations: Infinity },
     );
     if (anim) activeAnimations.set(edge, anim);

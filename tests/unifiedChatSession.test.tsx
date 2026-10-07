@@ -122,6 +122,7 @@ class ResizeObserverStub {
   unobserve() {}
   disconnect() {}
 }
+// @ts-expect-error jsdom polyfill
 global.ResizeObserver = ResizeObserverStub;
 
 const askItem = (): InterventionQueueItem =>

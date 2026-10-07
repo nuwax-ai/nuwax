@@ -1,13 +1,8 @@
 /**
  * AgentFlow 分支拖线辅助函数单元测试
  */
-import {
-  DataTypeEnum,
-  NodeShapeEnum,
-  NodeTypeEnum,
-} from '@/types/enums/common';
+import { NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
-import type { NodeConfig } from '@/types/interfaces/node';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { extensionRegistry } from '../../extensions/registry';
 import {
@@ -29,94 +24,68 @@ beforeEach(() => {
   extensionRegistry.register(routeDecisionHandler);
 });
 
-const createNode = <Config extends NodeConfig>(data: {
-  id: number;
-  type: NodeTypeEnum;
-  nodeConfig: Config;
-}): ChildNode & { nodeConfig: Config } => ({
-  name: 'Test node',
-  description: '',
-  workflowId: 1,
-  shape: NodeShapeEnum.General,
-  icon: '',
-  ...data,
-});
-
 describe('isAgentFlowBranchEdgeConnect', () => {
   it('RouteDecision 任意出口端口走分支路径', () => {
-    const node = createNode({
+    const node = {
       id: 1,
       type: NodeTypeEnum.RouteDecision,
       nodeConfig: { intentConfigs: [{ uuid: 'r1', nextNodeIds: [] }] },
-    });
+    } as ChildNode;
     expect(isAgentFlowBranchEdgeConnect(node, '1-route-r1-out')).toBe(true);
   });
 
   it('HumanInteraction options 端口走分支路径', () => {
-    const node = createNode({
+    const node = {
       id: 2,
       type: NodeTypeEnum.HumanInteraction,
       nodeConfig: {
         answerType: HitlAnswerTypeEnum.SELECT,
-        options: [{ uuid: 'o1', index: 0, content: 'Option', nextNodeIds: [] }],
+        options: [{ uuid: 'o1', nextNodeIds: [] }],
       },
-    });
+    } as ChildNode;
     expect(isAgentFlowBranchEdgeConnect(node, '2-hitl-option-o1-out')).toBe(
       true,
     );
   });
 
   it('HumanInteraction 文本模式走普通边路径', () => {
-    const node = createNode({
+    const node = {
       id: 3,
       type: NodeTypeEnum.HumanInteraction,
-      nodeConfig: { answerType: HitlAnswerTypeEnum.TEXT },
-    });
+      nodeConfig: { answerType: 'TEXT' },
+    } as ChildNode;
     expect(isAgentFlowBranchEdgeConnect(node, '3-out')).toBe(false);
   });
 
   it('HumanInteraction 表单模式 -out 端口走普通边路径', () => {
-    const node = createNode({
+    const node = {
       id: 4,
       type: NodeTypeEnum.HumanInteraction,
-      nodeConfig: {
-        answerType: HitlAnswerTypeEnum.FORM,
-        formArgs: [
-          {
-            name: 'answer',
-            dataType: DataTypeEnum.String,
-            description: '',
-            require: false,
-            systemVariable: false,
-            bindValue: '',
-            key: 'answer',
-          },
-        ],
-      },
-    });
+      nodeConfig: { answerType: HitlAnswerTypeEnum.FORM, formArgs: [{}] },
+    } as ChildNode;
     expect(isAgentFlowBranchEdgeConnect(node, '4-out')).toBe(false);
   });
 
   it('HumanInteraction SELECT 但 options 为空时 -out 走普通边路径', () => {
-    const node = createNode({
+    const node = {
       id: 5,
       type: NodeTypeEnum.HumanInteraction,
       nodeConfig: { answerType: HitlAnswerTypeEnum.SELECT, options: [] },
-    });
+    } as ChildNode;
     expect(isAgentFlowBranchEdgeConnect(node, '5-out')).toBe(false);
   });
 });
 
 describe('applyAgentFlowBranchEdgeDisconnect', () => {
   it('RouteDecision 路由端口从 intentConfigs 移除目标', () => {
-    const node = createNode({
+    const node = {
       id: 1,
       type: NodeTypeEnum.RouteDecision,
       nodeConfig: {
         defaultNextNodeIds: [],
         intentConfigs: [{ uuid: 'r1', nextNodeIds: [5, 6] }],
       },
-    });
+    } as ChildNode;
 
     const result = applyAgentFlowBranchEdgeDisconnect(
       node,
@@ -128,14 +97,14 @@ describe('applyAgentFlowBranchEdgeDisconnect', () => {
   });
 
   it('RouteDecision default 端口从 defaultNextNodeIds 移除目标', () => {
-    const node = createNode({
+    const node = {
       id: 1,
       type: NodeTypeEnum.RouteDecision,
       nodeConfig: {
         defaultNextNodeIds: [8, 9],
         intentConfigs: [],
       },
-    });
+    } as ChildNode;
 
     const result = applyAgentFlowBranchEdgeDisconnect(
       node,
@@ -143,20 +112,18 @@ describe('applyAgentFlowBranchEdgeDisconnect', () => {
       '1-route-default-out',
     );
 
-    expect(result?.nodeConfig).toHaveProperty('defaultNextNodeIds', [9]);
+    expect(result?.nodeConfig?.defaultNextNodeIds).toEqual([9]);
   });
 
   it('HumanInteraction options 端口从 options 移除目标', () => {
-    const node = createNode({
+    const node = {
       id: 2,
       type: NodeTypeEnum.HumanInteraction,
       nodeConfig: {
         answerType: HitlAnswerTypeEnum.SELECT,
-        options: [
-          { uuid: 'o1', index: 0, content: 'Option', nextNodeIds: [3, 4] },
-        ],
+        options: [{ uuid: 'o1', nextNodeIds: [3, 4] }],
       },
-    });
+    } as ChildNode;
 
     const result = applyAgentFlowBranchEdgeDisconnect(
       node,
@@ -168,21 +135,21 @@ describe('applyAgentFlowBranchEdgeDisconnect', () => {
   });
 
   it('非分支端口返回 null', () => {
-    const node = createNode({
+    const node = {
       id: 3,
       type: NodeTypeEnum.HumanInteraction,
-      nodeConfig: { answerType: HitlAnswerTypeEnum.TEXT },
-    });
+      nodeConfig: { answerType: 'TEXT' },
+    } as ChildNode;
 
     expect(applyAgentFlowBranchEdgeDisconnect(node, 1, '3-out')).toBeNull();
   });
 
   it('HumanInteraction 文本模式 disconnect 返回 null（应走 proxy.deleteEdge）', () => {
-    const node = createNode({
+    const node = {
       id: 6,
       type: NodeTypeEnum.HumanInteraction,
       nodeConfig: { answerType: HitlAnswerTypeEnum.TEXT, nextNodeIds: [9] },
-    });
+    } as ChildNode;
 
     expect(applyAgentFlowBranchEdgeDisconnect(node, 9, '6-out')).toBeNull();
   });

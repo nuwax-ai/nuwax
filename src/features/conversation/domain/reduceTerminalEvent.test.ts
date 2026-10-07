@@ -1,12 +1,7 @@
-import {
-  AssistantRoleEnum,
-  ConversationEventTypeEnum,
-  MessageTypeEnum,
-} from '@/types/enums/agent';
+import { ConversationEventTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
   ConversationChatResponse,
-  ConversationFinalResult,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import { describe, expect, it } from 'vitest';
@@ -27,42 +22,19 @@ const stubReconciler = (message: MessageInfo) => ({
 });
 
 function finalResultEvent(): ConversationChatResponse {
-  const finalResult: ConversationFinalResult = {
-    success: true,
-    outputText: '回答正文',
-    completionTokens: 1,
-    promptTokens: 1,
-    totalTokens: 2,
-    componentExecuteResults: [],
-    startTime: 1000,
-    endTime: 2000,
-    error: '',
-  };
   return {
-    completed: true,
     eventType: ConversationEventTypeEnum.FINAL_RESULT,
-    data: finalResult,
-    error: '',
+    data: { success: true, outputText: '回答正文' },
     requestId: 'req-1',
-  };
+  } as unknown as ConversationChatResponse;
 }
 
 function currentMessage(): MessageInfo {
   return {
     id: 'm1',
-    index: 0,
-    role: AssistantRoleEnum.ASSISTANT,
-    time: '2026-10-02 10:00:00',
-    componentExecutedList: [],
-    messageType: MessageTypeEnum.ASSISTANT,
-    tenantId: 1,
-    senderType: 'AGENT',
-    senderId: '5',
-    userId: 1,
-    agentId: 5,
     text: '回答正文',
     processingList: [],
-  };
+  } as MessageInfo;
 }
 
 describe('reduceTerminalEvent FINAL_RESULT text 投影', () => {
@@ -107,13 +79,13 @@ describe('reduceTerminalEvent FINAL_RESULT text 投影', () => {
 describe('reduceTerminalEvent ERROR 合同', () => {
   const safeError =
     'Agent execution failed. Please retry or contact the administrator.';
-  const event: ConversationChatResponse = {
+  const event = {
     requestId: 'req-failed',
     eventType: ConversationEventTypeEnum.ERROR,
     completed: true,
     error: safeError,
     data: null,
-  };
+  } as unknown as ConversationChatResponse;
 
   it('重复 ERROR 不重复追加安全错误，并保留原正文与服务端 requestId', () => {
     const first = reduceTerminalEvent(

@@ -1,5 +1,3 @@
-export type { HostImUnreadSnapshot } from './hostBridge';
-
 /** window.__im 的宿主消费协议；来源为消息前端 DEV-327 监听桥。 */
 export interface ImCustomEvent {
   eventId: string;
@@ -35,6 +33,14 @@ export interface ImMessageEvent {
 
 export interface ImUnreadEvent {
   total: number;
+}
+
+/** 商业壳独立接收器的展示快照，不含会话内容或凭据。 */
+export interface HostImUnreadSnapshot {
+  sessionGeneration: number;
+  revision: number;
+  total: number;
+  dndTotal: number;
 }
 
 export interface ImBridgeSnapshot {

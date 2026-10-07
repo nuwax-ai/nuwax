@@ -7,6 +7,7 @@ import ConversationStatus from '@/components/business-component/ConversationStat
 import MessageQueuePanel from '@/components/business-component/MessageQueue';
 import { registerOpenUiActionSender } from '@/components/business-component/OpenUiArtifactView/actionRegistry';
 import { buildOpenUiResumeMessage } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
+import { usePageModel } from '@/modelScopes/usePageModel';
 import classNames from 'classnames';
 import {
   useCallback,
@@ -21,8 +22,6 @@ import {
   ConversationSessionProvider,
   useConversationSession,
 } from '@/features/conversation/react/ConversationSessionProvider';
-import { ConversationWorkspaceCompatBoundary } from '@/features/conversation/react/ConversationWorkspaceCompatBoundary';
-import { useConversationWorkspaceActions } from '@/features/conversation/react/ConversationWorkspaceProvider';
 import { useConversationStreamResume } from '@/features/conversation/react/useConversationStreamResume';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import { dict } from '@/services/i18nRuntime';
@@ -377,16 +376,23 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
 
   // V2 OpenUI sidecar 默认联动：打开预览面板并选中 data/{artifactId}.openui.json
   // （口径对齐 V1 MarkdownCustomProcess.handleOpenUiSidecar；外部 prop 可覆盖）
-  const workspaceActions = useConversationWorkspaceActions()!;
+  const {
+    openPreviewView,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
+  } = usePageModel('conversationInfo');
   const defaultOpenUiSidecar = useCallback(
     async (artifact: OpenUiArtifact) => {
-      await workspaceActions.openFile(
-        Number(conversationId),
-        `data/${artifact.artifactId}.openui.json`,
-        { forceRefresh: true },
-      );
+      await openPreviewView(Number(conversationId), { forceRefresh: true });
+      setTaskAgentSelectedFileId(`data/${artifact.artifactId}.openui.json`);
+      setTaskAgentSelectTrigger(Date.now());
     },
-    [conversationId, workspaceActions],
+    [
+      conversationId,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+    ],
   );
   const effectiveOpenUiSidecar = onOpenOpenUiSidecar ?? defaultOpenUiSidecar;
 
@@ -552,11 +558,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
 const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
   const outerSession = useConversationSession();
   if (outerSession) {
-    return (
-      <ConversationWorkspaceCompatBoundary actions={props.workspaceActions}>
-        <UnifiedChatSessionInner {...props} />
-      </ConversationWorkspaceCompatBoundary>
-    );
+    return <UnifiedChatSessionInner {...props} />;
   }
   const {
     conversationId,
@@ -582,9 +584,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
       minConsumeInterval={queueMinConsumeInterval}
       queueContext={queueContext}
     >
-      <ConversationWorkspaceCompatBoundary actions={props.workspaceActions}>
-        <UnifiedChatSessionInner {...props} />
-      </ConversationWorkspaceCompatBoundary>
+      <UnifiedChatSessionInner {...props} />
     </ConversationSessionProvider>
   );
 };

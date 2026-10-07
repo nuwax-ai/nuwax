@@ -8,7 +8,7 @@
  * - 端口 y 与 chip y 对齐不变量（RouteDecision 端口 0 = default, chip[0] 应对齐 port 1）
  */
 
-import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
 import { describe, expect, it } from 'vitest';
 import {
@@ -23,18 +23,6 @@ import {
   singlePortCenterY,
 } from '../portLayout';
 
-const createNode = (overrides: Partial<ChildNode> = {}): ChildNode => ({
-  id: 1,
-  type: NodeTypeEnum.Agent,
-  name: 'Test node',
-  description: '',
-  workflowId: 1,
-  shape: NodeShapeEnum.General,
-  icon: '',
-  nodeConfig: {},
-  ...overrides,
-});
-
 describe('portLayout constants', () => {
   it('should match the agreed baseline', () => {
     expect(BRANCH_PORT_BASE_Y).toBe(42);
@@ -46,12 +34,7 @@ describe('portLayout constants', () => {
 });
 
 describe('extractPortSuffix', () => {
-  const makeNode = (id: number | string): ChildNode => {
-    const node = createNode({ id: typeof id === 'number' ? id : 1 });
-    // X6/legacy wire data can expose string IDs despite the current numeric schema.
-    if (typeof id === 'string') Reflect.set(node, 'id', id);
-    return node;
-  };
+  const makeNode = (id: number | string) => ({ id } as ChildNode);
 
   it('should strip nodeId prefix and -out suffix', () => {
     expect(extractPortSuffix(makeNode(10), '10-eval-pass-out')).toBe(
@@ -135,44 +118,31 @@ describe('branchPortY', () => {
 describe('shouldUseFixedSideOutPort', () => {
   it('工作流/智能体等单 out 节点应使用 right 布局', () => {
     expect(
-      shouldUseFixedSideOutPort(
-        createNode({
-          type: NodeTypeEnum.Workflow,
-          nodeConfig: {},
-        }),
-      ),
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.Workflow,
+        nodeConfig: {},
+      } as ChildNode),
     ).toBe(true);
     expect(
-      shouldUseFixedSideOutPort(
-        createNode({
-          type: NodeTypeEnum.Agent,
-          nodeConfig: {},
-        }),
-      ),
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.Agent,
+        nodeConfig: {},
+      } as ChildNode),
     ).toBe(true);
   });
 
   it('路由决策与询问选项分支不使用 right 布局', () => {
     expect(
-      shouldUseFixedSideOutPort(
-        createNode({
-          type: NodeTypeEnum.RouteDecision,
-          nodeConfig: { intentConfigs: [] },
-        }),
-      ),
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.RouteDecision,
+        nodeConfig: { intentConfigs: [] },
+      } as ChildNode),
     ).toBe(false);
     expect(
-      shouldUseFixedSideOutPort(
-        createNode({
-          type: NodeTypeEnum.HumanInteraction,
-          nodeConfig: {
-            answerType: 'SELECT',
-            options: [
-              { uuid: '1', index: 0, content: 'Option', nextNodeIds: [] },
-            ],
-          },
-        }),
-      ),
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.HumanInteraction,
+        nodeConfig: { answerType: 'SELECT', options: [{ uuid: '1' }] },
+      } as ChildNode),
     ).toBe(false);
   });
 });

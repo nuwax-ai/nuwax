@@ -15,10 +15,9 @@ const conversationInfoModel = vi.hoisted(() => ({
   openPreviewView: vi.fn(),
   setTaskAgentSelectedFileId: vi.fn(),
   setTaskAgentSelectTrigger: vi.fn(),
-  useModel: vi.fn(),
 }));
 vi.mock('umi', () => ({
-  useModel: (...args: unknown[]) => conversationInfoModel.useModel(...args),
+  useModel: () => conversationInfoModel,
 }));
 vi.mock('@/services/i18nRuntime', () => ({
   t: (key: string, value?: number) =>
@@ -223,9 +222,6 @@ const buildMessages = ({
 
 describe('会话进度胶囊', () => {
   beforeEach(() => {
-    conversationInfoModel.useModel.mockImplementation(
-      () => conversationInfoModel,
-    );
     vi.clearAllMocks();
     // 默认安全实现：单跑用例时无残留 mock，接口返回空数据而非 undefined
     vi.mocked(apiGitDiff).mockResolvedValue({
@@ -402,136 +398,69 @@ describe('会话进度胶囊', () => {
     ]);
   });
 
-  it.each([false, true])(
-    'OpenUI 面板分区：注入=%s 时点击产物行打开预览',
-    async (injected) => {
-      const actions = { openFile: vi.fn() };
-      if (injected) {
-        conversationInfoModel.useModel.mockImplementation(() => {
-          throw new Error('未提供旧 model');
-        });
-      }
-      const artifactId = '1219fcb4-a107-4f92-abff-7f8922f1228d';
-      const messages = [
-        {
-          id: 'user-op',
-          role: AssistantRoleEnum.USER,
-          text: '生成看板',
-          time: '2026-09-19 09:00:00',
-          status: MessageStatusEnum.Complete,
-        },
-        {
-          id: 'assistant-op',
-          role: AssistantRoleEnum.ASSISTANT,
-          text: processTag(
-            'op-1',
-            AgentComponentTypeEnum.Event,
-            'Backend.Sandbox.Event.renderUI',
-          ),
-          time: '2026-09-19 09:00:01',
-          status: MessageStatusEnum.Complete,
-          processingList: [
-            {
+  it('OpenUI 面板分区：点击产物行走 openui 预览打开口径', async () => {
+    const artifactId = '1219fcb4-a107-4f92-abff-7f8922f1228d';
+    const messages = [
+      {
+        id: 'user-op',
+        role: AssistantRoleEnum.USER,
+        text: '生成看板',
+        time: '2026-09-19 09:00:00',
+        status: MessageStatusEnum.Complete,
+      },
+      {
+        id: 'assistant-op',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: processTag(
+          'op-1',
+          AgentComponentTypeEnum.Event,
+          'Backend.Sandbox.Event.renderUI',
+        ),
+        time: '2026-09-19 09:00:01',
+        status: MessageStatusEnum.Complete,
+        processingList: [
+          {
+            executeId: 'op-1',
+            type: AgentComponentTypeEnum.Event,
+            name: 'Backend.Sandbox.Event.renderUI',
+            status: ProcessingEnum.FINISHED,
+            result: {
               executeId: 'op-1',
-              type: AgentComponentTypeEnum.Event,
               name: 'Backend.Sandbox.Event.renderUI',
-              status: ProcessingEnum.FINISHED,
-              result: {
-                executeId: 'op-1',
-                name: 'Backend.Sandbox.Event.renderUI',
-                data: {
-                  type: 'nuwax.openui-ref',
-                  schemaVersion: 'nuwax.openui-ref/v1',
-                  artifactId,
-                  path: `data/${artifactId}.openui.json`,
-                  title: '演示看板',
-                  presentation: { mode: 'inline', autoOpen: false },
-                  digest: `sha256:${'a'.repeat(64)}`,
-                  operation: 'created',
-                },
+              data: {
+                type: 'nuwax.openui-ref',
+                schemaVersion: 'nuwax.openui-ref/v1',
+                artifactId,
+                path: `data/${artifactId}.openui.json`,
+                title: '演示看板',
+                presentation: { mode: 'inline', autoOpen: false },
+                digest: `sha256:${'a'.repeat(64)}`,
+                operation: 'created',
               },
             },
-          ],
-        },
-      ] as unknown as MessageInfo[];
-      render(
-        <ConversationProgressCapsule
-          conversationId={999}
-          messageList={messages}
-          active={false}
-          open
-          onClose={vi.fn()}
-          workspaceActions={injected ? actions : undefined}
-        />,
-      );
-      fireEvent.click(await screen.findByText('演示看板'));
-      if (injected) {
-        expect(actions.openFile).toHaveBeenCalledWith(
-          999,
-          `data/${artifactId}.openui.json`,
-          { forceRefresh: true },
-        );
-        expect(conversationInfoModel.useModel).not.toHaveBeenCalled();
-        return;
-      }
-      await waitFor(() =>
-        expect(
-          conversationInfoModel.setTaskAgentSelectedFileId,
-        ).toHaveBeenCalledWith(`data/${artifactId}.openui.json`),
-      );
-      expect(conversationInfoModel.openPreviewView).toHaveBeenCalledWith(999, {
-        forceRefresh: true,
-      });
-    },
-  );
-
-  it.each([false, true])(
-    '任务结果：注入=%s 时打开相对路径并跳过根文件树刷新',
-    async (injected) => {
-      const actions = { openFile: vi.fn() };
-      if (injected) {
-        conversationInfoModel.useModel.mockImplementation(() => {
-          throw new Error('未提供旧 model');
-        });
-      }
-      render(
-        <ConversationProgressCapsule
-          conversationId={999999}
-          messageList={buildMessages({ finished: true, richContent: true })}
-          active={false}
-          open
-          onClose={vi.fn()}
-          workspaceActions={injected ? actions : undefined}
-        />,
-      );
-      fireEvent.click(await screen.findByText('月度报表页面'));
-      if (injected) {
-        expect(actions.openFile).toHaveBeenCalledWith(
-          999999,
-          'report/index.html',
-          {
-            skipFileTreeRefresh: true,
           },
-        );
-        expect(conversationInfoModel.useModel).not.toHaveBeenCalled();
-        return;
-      }
-      await waitFor(() =>
-        expect(
-          conversationInfoModel.setTaskAgentSelectedFileId,
-        ).toHaveBeenCalledWith('report/index.html'),
-      );
-      expect(conversationInfoModel.openPreviewView).toHaveBeenCalledWith(
-        999999,
-        {
-          skipFileTreeRefresh: true,
-        },
-      );
+        ],
+      },
+    ] as unknown as MessageInfo[];
+    render(
+      <ConversationProgressCapsule
+        conversationId={999}
+        messageList={messages}
+        active={false}
+        open
+        onClose={vi.fn()}
+      />,
+    );
+    fireEvent.click(await screen.findByText('演示看板'));
+    await waitFor(() =>
       expect(
-        conversationInfoModel.setTaskAgentSelectTrigger,
-      ).toHaveBeenCalledWith(expect.any(Number));
-    },
-  );
+        conversationInfoModel.setTaskAgentSelectedFileId,
+      ).toHaveBeenCalledWith(`data/${artifactId}.openui.json`),
+    );
+    expect(conversationInfoModel.openPreviewView).toHaveBeenCalledWith(999, {
+      forceRefresh: true,
+    });
+  });
 
   it('终态常驻：会话结束后仍显示最后一轮内容并带终态标记', () => {
     const model = selectProgressCapsule(

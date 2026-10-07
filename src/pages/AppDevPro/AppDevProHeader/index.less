@@ -150,7 +150,7 @@
   line-height: 22px;
   white-space: nowrap;
   background-size: 220% 100%;
-  animation: readiness-flow 2.8s linear infinite;
+  animation: readinessFlow 2.8s linear infinite;
 
   > span,
   :global(.anticon) {
@@ -169,7 +169,7 @@
       rgba(255, 255, 255, 72%) 50%,
       transparent 68%
     );
-    animation: readiness-wave 2.2s ease-in-out infinite;
+    animation: readinessWave 2.2s ease-in-out infinite;
   }
 
 }
@@ -234,7 +234,7 @@
   );
 }
 
-@keyframes readiness-flow {
+@keyframes readinessFlow {
   0% {
     background-position: 0% 50%;
   }
@@ -244,7 +244,7 @@
   }
 }
 
-@keyframes readiness-wave {
+@keyframes readinessWave {
   0% {
     transform: translateX(-70%) skewX(-16deg);
   }

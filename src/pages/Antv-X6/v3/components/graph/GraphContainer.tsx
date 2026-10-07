@@ -13,7 +13,7 @@ import { ChangeEdgeProps, ChangeNodeProps } from '@/types/interfaces/graph';
 import { NodeConfig } from '@/types/interfaces/node';
 import { cloneDeep, mergeObject } from '@/utils/common';
 import { workflowLogger } from '@/utils/logger';
-import { Graph, Node, type Edge as X6Edge } from '@antv/x6';
+import { Graph, Node } from '@antv/x6';
 import { App } from 'antd';
 import {
   forwardRef,
@@ -170,7 +170,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       // 5. 批量添加边
       graphRef.current.addEdges(edges);
 
-      graphRef.current.getEdges().forEach((edge: X6Edge) => {
+      graphRef.current.getEdges().forEach((edge) => {
         setEdgeAttributes(edge);
       });
       updateEdgeArrows(graphRef.current);

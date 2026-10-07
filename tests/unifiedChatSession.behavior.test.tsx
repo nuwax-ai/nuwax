@@ -10,12 +10,7 @@
  * - effectiveRoleInfo 兜底与优先外部 roleInfo
  * - allowChooseMode 控制模式选择器
  */
-import type {
-  McpAskInterventionQueueItem,
-  useActiveInterventionQueue,
-} from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
-import { ConversationWorkspaceProvider } from '@/features/conversation/react/ConversationWorkspaceProvider';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -37,8 +32,6 @@ const {
   chatInputPropsRef,
   contentAreaPropsRef,
   mockUseActiveInterventionQueue,
-  mockUseModel,
-  legacyWorkspace,
 } = vi.hoisted(() => ({
   mockTrySend: vi.fn(),
   mockRawSend: vi.fn(),
@@ -50,15 +43,7 @@ const {
   },
   chatInputPropsRef: { current: null as any },
   contentAreaPropsRef: { current: null as any },
-  mockUseActiveInterventionQueue: vi.fn<typeof useActiveInterventionQueue>(
-    () => [],
-  ),
-  mockUseModel: vi.fn(),
-  legacyWorkspace: {
-    openPreviewView: vi.fn(),
-    setTaskAgentSelectedFileId: vi.fn(),
-    setTaskAgentSelectTrigger: vi.fn(),
-  },
+  mockUseActiveInterventionQueue: vi.fn(() => []),
 }));
 
 vi.mock('@/constants/feature.constants', () => ({
@@ -66,7 +51,7 @@ vi.mock('@/constants/feature.constants', () => ({
 }));
 
 vi.mock('umi', () => ({
-  useModel: (...args: unknown[]) => mockUseModel(...args),
+  useModel: () => ({}),
   request: vi.fn(),
   history: { push: vi.fn(), replace: vi.fn() },
   useLocation: () => ({ pathname: '/', search: '' }),
@@ -168,9 +153,8 @@ vi.mock('@/components/business-component/AgentIntervention', () => ({
 vi.mock(
   '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue',
   () => ({
-    useActiveInterventionQueue: (
-      ...args: Parameters<typeof useActiveInterventionQueue>
-    ) => mockUseActiveInterventionQueue(...args),
+    useActiveInterventionQueue: (...args: unknown[]) =>
+      mockUseActiveInterventionQueue(...args),
   }),
 );
 
@@ -229,31 +213,6 @@ class ResizeObserverStub {
   disconnect() {}
 }
 
-const askItem = (): McpAskInterventionQueueItem => ({
-  kind: 'mcp_ask',
-  messageId: 'm1',
-  messageIndex: 0,
-  sortKey: 1,
-  interaction: {
-    toolCallId: 'tool-ask-1',
-    responseStatus: 'pending',
-    input: {
-      toolName: 'nuwax_ask_question',
-      schemaVersion: 'nuwax.mcp_ask.v2',
-      requestId: 'ask-1',
-      revision: 1,
-      sessionId: 'session-1',
-      title: '待确认问题',
-      ui: {
-        version: 'nuwax.interaction.v2',
-        presentation: 'inline',
-        title: '待确认问题',
-        fields: [],
-      },
-    },
-  },
-});
-
 describe('UnifiedChatSession 行为', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -262,83 +221,9 @@ describe('UnifiedChatSession 行为', () => {
     chatInputPropsRef.current = null;
     contentAreaPropsRef.current = null;
     mockUseActiveInterventionQueue.mockReturnValue([]);
-    mockUseModel.mockImplementation(() => legacyWorkspace);
+    // @ts-expect-error jsdom polyfill
     global.ResizeObserver = ResizeObserverStub;
     Element.prototype.scrollTo = vi.fn() as typeof Element.prototype.scrollTo;
-  });
-
-  it.each(['props', 'context'] as const)(
-    'OpenUI 默认联动消费 %s 注入动作，无需旧 model',
-    async (source) => {
-      mockUseModel.mockImplementation(() => {
-        throw new Error('未提供旧 model');
-      });
-      const actions = { openFile: vi.fn().mockResolvedValue(undefined) };
-      const session = (
-        <UnifiedChatSession
-          conversationId={42}
-          messageList={[]}
-          workspaceActions={source === 'props' ? actions : undefined}
-        />
-      );
-      render(
-        source === 'context' ? (
-          <ConversationWorkspaceProvider actions={actions}>
-            {session}
-          </ConversationWorkspaceProvider>
-        ) : (
-          session
-        ),
-      );
-      await act(async () => {
-        await contentAreaPropsRef.current.onOpenOpenUiSidecar({
-          artifactId: 'dashboard',
-        });
-      });
-      expect(actions.openFile).toHaveBeenCalledWith(
-        42,
-        'data/dashboard.openui.json',
-        { forceRefresh: true },
-      );
-      expect(mockUseModel).not.toHaveBeenCalled();
-    },
-  );
-
-  it('未注入的入口保留 OpenUI 预览、选中文件和刷新触发', async () => {
-    render(<UnifiedChatSession conversationId={42} messageList={[]} />);
-    await act(async () => {
-      await contentAreaPropsRef.current.onOpenOpenUiSidecar({
-        artifactId: 'dashboard',
-      });
-    });
-    expect(legacyWorkspace.openPreviewView).toHaveBeenCalledWith(42, {
-      forceRefresh: true,
-    });
-    expect(legacyWorkspace.setTaskAgentSelectedFileId).toHaveBeenCalledWith(
-      'data/dashboard.openui.json',
-    );
-    expect(legacyWorkspace.setTaskAgentSelectTrigger).toHaveBeenCalledWith(
-      expect.any(Number),
-    );
-  });
-
-  it('OpenUI 自定义回调仍覆盖默认工作区动作', async () => {
-    const actions = { openFile: vi.fn() };
-    const onOpenOpenUiSidecar = vi.fn();
-    render(
-      <UnifiedChatSession
-        conversationId={42}
-        messageList={[]}
-        workspaceActions={actions}
-        onOpenOpenUiSidecar={onOpenOpenUiSidecar}
-      />,
-    );
-    const artifact = { artifactId: 'custom' };
-    await act(async () => {
-      await contentAreaPropsRef.current.onOpenOpenUiSidecar(artifact);
-    });
-    expect(onOpenOpenUiSidecar).toHaveBeenCalledWith(artifact);
-    expect(actions.openFile).not.toHaveBeenCalled();
   });
 
   it('必填变量未填齐时 wholeDisabled=true', () => {
@@ -364,7 +249,9 @@ describe('UnifiedChatSession 行为', () => {
   });
 
   it('有 pending intervention 时 wholeDisabled=true', () => {
-    mockUseActiveInterventionQueue.mockReturnValue([askItem()]);
+    mockUseActiveInterventionQueue.mockReturnValue([
+      { kind: 'mcp_ask', sortKey: 1 } as any,
+    ]);
     render(
       <UnifiedChatSession
         messageList={[{ id: 'm1', text: 'hi' } as MessageInfo]}
@@ -376,7 +263,9 @@ describe('UnifiedChatSession 行为', () => {
   });
 
   it('FAILED 会话忽略历史残留 pending intervention，恢复输入框', () => {
-    mockUseActiveInterventionQueue.mockReturnValue([askItem()]);
+    mockUseActiveInterventionQueue.mockReturnValue([
+      { kind: 'mcp_ask', sortKey: 1 } as any,
+    ]);
     render(
       <UnifiedChatSession
         messageList={[{ id: 'm1', text: 'failed' } as MessageInfo]}

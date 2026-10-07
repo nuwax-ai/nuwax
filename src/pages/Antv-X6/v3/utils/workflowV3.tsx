@@ -88,7 +88,6 @@ import {
   hasAgentFlowNodeDescription,
   singlePortCenterY,
 } from '../agentFlow/handlers/portLayout';
-import { getNodeDefinition, NODE_DEFINITIONS } from '../config/nodeDefinitions';
 import { extensionRegistry } from '../extensions/registry';
 import {
   adjustParentSize,
@@ -186,18 +185,7 @@ export const getImg = (data: AgentComponentTypeEnum) => {
   return imageList[data];
 };
 // 根据type返回图片
-const nodeDefinitionIcons = {
-  agent: ICON_WORKFLOW_AGENT,
-  routeDecision: ICON_WORKFLOW_ROUTE_DECISION,
-  humanAsk: ICON_WORKFLOW_HUMAN_ASK,
-};
-
 export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
-  const definition = getNodeDefinition(type);
-  if (definition) {
-    const Icon = nodeDefinitionIcons[definition.appearance.canvasIcon];
-    return <Icon />;
-  }
   switch (type) {
     case NodeTypeEnum.Start:
     case NodeTypeEnum.LoopStart:
@@ -256,6 +244,12 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
       return <ICON_WORKFLOW_DATABASE />;
     case NodeTypeEnum.MCP:
       return <ICON_WORKFLOW_MCP />;
+    case NodeTypeEnum.Agent:
+      return <ICON_WORKFLOW_AGENT />;
+    case NodeTypeEnum.RouteDecision:
+      return <ICON_WORKFLOW_ROUTE_DECISION />;
+    case NodeTypeEnum.HumanInteraction:
+      return <ICON_WORKFLOW_HUMAN_ASK />;
     default:
       return <ICON_WORKFLOW_AGENT />;
   }
@@ -263,9 +257,7 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
 
 /** 支持展示接口/选器返回自定义图标的节点类型（智能体 / 工作流 / 插件） */
 export const NODE_TYPES_WITH_CUSTOM_ICON: NodeTypeEnum[] = [
-  ...NODE_DEFINITIONS.filter(({ appearance }) => appearance.customIcon).map(
-    ({ type }) => type,
-  ),
+  NodeTypeEnum.Agent,
   NodeTypeEnum.Workflow,
   NodeTypeEnum.Plugin,
 ];
@@ -306,8 +298,6 @@ export const renderNodeIcon = (
 
 // 根据type返回背景色
 export const returnBackgroundColor = (type: NodeTypeEnum) => {
-  const definition = getNodeDefinition(type);
-  if (definition) return definition.appearance.bgColor;
   switch (type) {
     case NodeTypeEnum.Start:
     case NodeTypeEnum.End:
@@ -340,6 +330,12 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
       return '#D0FFDB';
     case NodeTypeEnum.Output:
       return '#E7E1FF';
+    case NodeTypeEnum.Agent:
+      return '#E8F5E9';
+    case NodeTypeEnum.RouteDecision:
+      return '#FFF3E0';
+    case NodeTypeEnum.HumanInteraction:
+      return '#E3F2FD';
     default:
       return '#EEEEFF';
   }

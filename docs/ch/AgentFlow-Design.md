@@ -4,8 +4,6 @@
 >
 > 文档版本：v1.0 · 维护者：前端架构组 · 关联代码：`src/pages/AgentFlow/`、`src/pages/Antv-X6/v3/`
 
-当前节点扩展的源码落点与回归要求见 [节点扩展维护入口](./agentflow-node-extension-guide.md)。下文仍包含后续产品设计，不能作为全部功能已实现的证据。
-
 ## 目录
 
 1. [背景与目标](#1-背景与目标)

@@ -318,7 +318,7 @@ class WorkflowProxyV3 {
   /**
    * 获取边列表
    */
-  getEdges(): EdgeV3[] {
+  getEdges(): Edge[] {
     return this.workflowData ? cloneDeep(this.workflowData.edges) : [];
   }
 
@@ -1162,30 +1162,17 @@ class WorkflowProxyV3 {
       if (edge.sourcePort) {
         const portInfo = this.parseSourcePort(edge.sourcePort, sourceNode);
 
-        // 扩展分支由 handler 的能力识别，不要求核心维护特殊端口枚举白名单。
-        const extensionBranchKey = extensionRegistry
-          .get(sourceNode.type)
-          ?.getBranchKey?.(portInfo);
-        if (extensionBranchKey) {
-          let branchMap = branchNextNodeIds.get(sourceId);
-          if (!branchMap) {
-            branchMap = new Map<string, number[]>();
-            branchNextNodeIds.set(sourceId, branchMap);
-          }
-          let targetIds = branchMap.get(extensionBranchKey);
-          if (!targetIds) {
-            targetIds = [];
-            branchMap.set(extensionBranchKey, targetIds);
-          }
-          if (!targetIds.includes(targetId)) targetIds.push(targetId);
-          return;
-        }
-
         switch (portInfo.type) {
           case SpecialPortType.Condition:
           case SpecialPortType.Intent:
-          case SpecialPortType.QAOption: {
-            const branchKey = portInfo.uuid;
+          case SpecialPortType.QAOption:
+          case SpecialPortType.HitlOption:
+          case SpecialPortType.RouteDecisionDefault:
+          case SpecialPortType.RouteDecisionRoute: {
+            // Condition/Intent/QA 用 uuid，AgentFlow 用 handler.getBranchKey
+            const bkHandler = extensionRegistry.get(sourceNode.type);
+            const branchKey =
+              bkHandler?.getBranchKey?.(portInfo) || portInfo.uuid;
             if (branchKey) {
               let branchMap = branchNextNodeIds.get(sourceId);
               if (!branchMap) {
@@ -1254,6 +1241,24 @@ class WorkflowProxyV3 {
       const nodeId = node.id;
       const mergedNode = cloneDeep(node);
 
+      // 更新普通 nextNodeIds
+      // 对于特殊分支节点，普通 nextNodeIds 应该保持为空
+      const isSpecialBranchNode =
+        mergedNode.type === NodeTypeEnum.Condition ||
+        mergedNode.type === NodeTypeEnum.IntentRecognition ||
+        (mergedNode.type === NodeTypeEnum.QA &&
+          mergedNode.nodeConfig?.answerType === AnswerTypeEnum.SELECT) ||
+        extensionRegistry
+          .get(mergedNode.type)
+          ?.isSpecialBranchNode?.(mergedNode);
+
+      if (!isSpecialBranchNode) {
+        mergedNode.nextNodeIds = normalNextNodeIds.get(nodeId) || [];
+      } else {
+        // 特殊分支节点的 nextNodeIds 应该为空，连接关系存储在分支配置中
+        mergedNode.nextNodeIds = [];
+      }
+
       // 更新分支连接
       const branchMap = branchNextNodeIds.get(nodeId);
       if (branchMap) {
@@ -1291,20 +1296,6 @@ class WorkflowProxyV3 {
           mbHandler.mergeBranchData(mergedNode, branchMap);
         }
       }
-
-      // 先写回现存分支边，再判断普通 nextNodeIds 是否参与保存。
-      // Human SELECT 无实际选项边时需保留普通回落，不能依据旧配置清空。
-      const isSpecialBranchNode =
-        mergedNode.type === NodeTypeEnum.Condition ||
-        mergedNode.type === NodeTypeEnum.IntentRecognition ||
-        (mergedNode.type === NodeTypeEnum.QA &&
-          mergedNode.nodeConfig?.answerType === AnswerTypeEnum.SELECT) ||
-        extensionRegistry
-          .get(mergedNode.type)
-          ?.isSpecialBranchNode?.(mergedNode);
-      mergedNode.nextNodeIds = isSpecialBranchNode
-        ? []
-        : normalNextNodeIds.get(nodeId) || [];
 
       // 更新异常处理连接
       const exceptionTargetIds = exceptionNextNodeIds.get(nodeId);
