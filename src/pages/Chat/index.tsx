@@ -595,6 +595,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     setVariableParams,
     isSendMessageRef,
     isChatInputDisabled,
+    hasUserFillVariables,
   } = useChatVariables({
     firstVariableParams,
     requiredNameList,
@@ -2288,7 +2289,7 @@ const ChatCoreInner: React.FC<ChatCoreProps> = ({
     form,
     variables,
     userFillVariables: firstVariableParams,
-    isVariablesDisabled: !!firstVariableParams || isSendMessageRef.current,
+    isVariablesDisabled: hasUserFillVariables || isSendMessageRef.current,
     clearLoading,
     isSelectionLocked,
     hasUserSentMessage,
