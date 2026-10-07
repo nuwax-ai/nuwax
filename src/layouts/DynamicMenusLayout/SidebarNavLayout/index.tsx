@@ -70,6 +70,7 @@ import { useMenuNavigation } from '../useMenuNavigation';
 import { useSidebarCollapse } from '../useSidebarCollapse';
 import { handleOpenUrl } from '../utils';
 import styles from './index.less';
+import { useSidebarUserNameVisibility } from './useSidebarUserNameVisibility';
 
 const cx = classNames.bind(styles);
 /** 桌面端沉浸式：顶部下移避让 nuwaclaw 工具栏（macOS 红绿灯在其左；Win/Linux 左侧自绘按钮组）。
@@ -150,6 +151,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   );
 
   const { refreshUserInfo, userInfo } = useModel('userInfo');
+  const userName =
+    userInfo?.nickName ||
+    userInfo?.userName ||
+    dict('PC.Components.UserMenu.defaultUserName');
+  const { userRowRef, nameThresholdRef, showUserName } =
+    useSidebarUserNameVisibility();
 
   // 折叠态展开按钮（原位复刻收起按钮位置，侧栏收起后顶栏不可点）
   const { toggleCollapse } = useSidebarCollapse();
@@ -496,18 +503,34 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           {/* topLeft：弹窗底部贴用户区顶部、左缘与用户区对齐 */}
           <User placement="topLeft">
             <div
+              ref={userRowRef}
               className={cx(styles['sidebar-user-row'])}
+              title={userName}
               onClick={() => setOpenAdmin(true)}
             >
               <UserAvatar
                 avatar={userInfo?.avatar}
                 onClick={() => setOpenAdmin(true)}
               />
-              <span className={cx(styles['sidebar-user-name'])}>
-                {userInfo?.nickName ||
-                  userInfo?.userName ||
-                  dict('PC.Components.UserMenu.defaultUserName')}
+              <span
+                className={cx(styles['sidebar-user-name'])}
+                style={{ display: showUserName ? undefined : 'none' }}
+              >
+                {userName}
               </span>
+              {/* 与姓名同字体的 2em 标尺不参与 flex 排列，隐藏姓名即回收间隔。 */}
+              <span
+                ref={nameThresholdRef}
+                className={cx(styles['sidebar-user-name'])}
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  width: '2em',
+                  height: 0,
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+              />
             </div>
           </User>
           <div className={cx(styles['footer-actions'])}>
