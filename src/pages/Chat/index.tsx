@@ -30,7 +30,6 @@ import { isRepoLibraryPath } from '@/utils/repoDocLink';
 
 import AgentDetailModal from '@/components/business-component/AgentDetailModal';
 import type { ConversationToolResource } from '@/features/conversation/presentation-v2/types';
-import { canOpenDesktopFromEvent } from '@/features/conversation/react/openDesktopEvent';
 import {
   conversationPageCacheManager,
   createConversationPageCacheKey,

@@ -5,17 +5,17 @@
 ## 输入与归属
 
 - 原执行对话：`01a0facb-fb4f-7150-b077-d16b2afd4c94`「核对 Claude Code 计划开发进度」。本轮管理对话：`01a1156a-0746-7bc0-8a71-58425faae6c5`。
-- 工作区：`/Users/apple/workspace/nuwax/.claude/worktrees/remaining-0930`，目标分支 `feat-dong.0930-remaining`。
+- 当前开发工作区：主目录 `/Users/apple/workspace/nuwax`，分支 `feat-dong.0930-remaining`。合并与首轮验收曾在恢复的独立目录进行；按用户后续要求已将该分支切到主目录，独立目录保留 detached 备份，不继续开发。
 - 目标基线：`b53bd7c2576aca1484d6581ece5816af74122efa`。备份：`codex/backup-remaining0930-before-feature-20261007`。
 - 来源：`origin/feat-2026.9.30@bcce97e0d67ebebb83464846395c045c4172dbe4`，本轮 fetch 后 gitlab 同名版本线相同。
 - 资料库 gitlink：`18ae973c890c699c678b086ad1da3b95275a3c86`；IM gitlink：`b09ac90fa3b8f82806595440ae62a1412f6dd192`。
 
-主检出的分支与 `src/constants/version.ts` 未提交改动保留。子模块使用冻结 gitlink 重建，未执行会升级 pin 的生产构建前置脚本。本轮只本地合并、提交、运行。
+主目录原分支 `feat-dong.0930@895f7725b` 保留；其唯一未提交版本文件改动已单独保存为 stash `d38e8c89a5cf93e0a83cdd5afa01456b29aed274`，并保存原文件与差异副本，未覆盖到任务分支。合并提交 `186beecef304b266d7dad59f7f6e45bcdf29380c` 的两个父提交分别为目标基线与 feature 最新输入；切换主目录前重新 fetch，远端仍为上述来源 SHA。子模块使用冻结 gitlink 重建，未执行会升级 pin 的生产构建前置脚本。本轮只本地合并、提交、运行。
 
 ## 冲突与运行中发现的问题
 
 1. IM `adapter.patch` 从旧 pin 与新 pin 的实际适配源码归并，再相对新 pin 生成补丁。唯一源码冲突为上传参数，接收新版进度回调并保留鉴权代次保护；任务页签、会话关联及产物能力保留。IM 与资料库补丁在对应干净 pin 上复放检查通过。
-2. `src/constants/version.ts` 保留 remaining 原值。它是构建烤哈希，未用上游生成值替换，也未修改主检出 WIP。
+2. `src/constants/version.ts` 保留 remaining 原值。它是构建烤哈希，未用上游生成值替换；主目录原 WIP 另行保存。
 3. 资料库表格调用适配层的弹层矩形尺寸，新版调用方需要 width/height，旧 overlay 未返回。`toRepoPortalRect` 按左右/上下边界补齐宽高，不改变坐标平移行为。
 4. 账号解绑被业务拒绝时，确认框 Promise 泄漏未处理异常。页面消费已经由请求层提示的失败，保留绑定，不报成功，用户可以重新确认重试。新增回归验证拒绝后重试成功。
 5. 验证码首次发码/点击重发的无接收方调用未消费拒绝。保留发送链的失败提示、倒计时恢复和换图，在 UI 调用边界消费拒绝；阿里云验证码的异步结果路径保留。

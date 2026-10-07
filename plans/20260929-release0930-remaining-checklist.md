@@ -7,11 +7,12 @@
 
 ## 2026-10-07：继续执行前的版本合并与启动检查
 
-原任务为 Codex 对话「核对 Claude Code 计划开发进度」（`01a0facb-fb4f-7150-b077-d16b2afd4c94`）。原计划继续使用，已补入 Nuwax PC Web 看板：NUW-17「9.30 剩余前端需求与联调收尾」，子任务 NUW-18 负责本轮合并与启动检查。原工作目录清理后，已在 `/Users/apple/workspace/nuwax/.claude/worktrees/remaining-0930` 恢复同一分支。
+原任务为 Codex 对话「核对 Claude Code 计划开发进度」（`01a0facb-fb4f-7150-b077-d16b2afd4c94`）。原计划继续使用，已补入 Nuwax PC Web 看板：NUW-17「9.30 剩余前端需求与联调收尾」，子任务 NUW-18 负责本轮合并与启动检查。原工作目录清理后先恢复同一分支完成合并和验收；按用户后续要求，当前已在主目录 `/Users/apple/workspace/nuwax` 切到 `feat-dong.0930-remaining`，后续直接在主目录继续，独立目录仅保留 detached 备份。
 
 - 本轮冻结的 feature 来源为 `bcce97e0d67ebebb83464846395c045c4172dbe4`，重新读取后的 origin/gitlab 一致；合并前目标为 `b53bd7c2576aca1484d6581ece5816af74122efa`，备份分支为 `codex/backup-remaining0930-before-feature-20261007`。
 - IM 适配补丁按实际源码归并，保留旧任务页签及产物能力，同时接收新版上传进度与鉴权代次保护；版本烤哈希保留目标原值，主检出的未提交版本文件未参与合并。
 - 修复合入后的资料库弹层尺寸字段缺失；真实页面验收发现的账号解绑拒绝、验证码发码失败未处理异常也在本轮修复。失败时保留业务状态并允许重试。
+- 主目录原分支保留，唯一未提交版本文件已单独保存为可恢复 stash，未混入任务分支。合并提交为 `186beecef`，切换主目录前再次 fetch 确认仍包含最新 feature。
 - 启动地址为 `http://localhost:3197/login?local=1`，使用原任务专用本地 mock 配置；真实接口、生产构建、共享部署和客户端联动分别待验收。
 - 本轮质量证据及最新页面结果见[合并与启动验收记录](../docs/acceptance/20261007-remaining-feature-integration.md)。10.02 节中的“浏览器未跑”“旧 pin”“原数量”属于历史快照，以本轮记录更新已覆盖项。
 
