@@ -377,6 +377,70 @@ function executableState(): LicenseControllerState {
 }
 
 describe('实际 LicenseFeatureGate 子内容执行边界', () => {
+  it('异常响应展示已注册翻译键并撤销执行授权，重试成功后才恢复子内容', async () => {
+    const failed = deferred<unknown>();
+    const recovered = deferred<unknown>();
+    h.read
+      .mockReset()
+      .mockResolvedValueOnce(snapshot())
+      .mockReturnValueOnce(failed.promise)
+      .mockReturnValueOnce(recovered.promise);
+    const execute = vi.fn();
+    function Harness() {
+      const { state, controller } = useLicense({ accountKey: '93:930' });
+      return (
+        <>
+          <button type="button" onClick={() => void controller.reload()}>
+            测试重试
+          </button>
+          <LicenseFeatureGate state={state} code="example_feature">
+            <button type="button" onClick={execute}>
+              执行受控功能
+            </button>
+          </LicenseFeatureGate>
+        </>
+      );
+    }
+    render(<Harness />);
+    fireEvent.click(
+      await screen.findByRole('button', { name: '执行受控功能' }),
+    );
+    expect(execute).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: '测试重试' }));
+    expect(
+      screen.queryByRole('button', { name: '执行受控功能' }),
+    ).not.toBeInTheDocument();
+    await act(async () => {
+      // 实际 controller 投影异常响应；不能把非布尔功能标记当作授权。
+      failed.resolve({
+        ...snapshot(),
+        features: [
+          { code: 'example_feature', name: '示例功能', enabled: 'yes' },
+        ],
+      });
+    });
+    expect(
+      await screen.findByText('PC.Pages.License.error.invalidResponse'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('PC.Pages.License.error.invalid-response'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '执行受控功能' }),
+    ).not.toBeInTheDocument();
+    expect(execute).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: '测试重试' }));
+    expect(
+      screen.queryByText('PC.Pages.License.error.invalidResponse'),
+    ).not.toBeInTheDocument();
+    await act(async () => recovered.resolve(snapshot()));
+    fireEvent.click(
+      await screen.findByRole('button', { name: '执行受控功能' }),
+    );
+    expect(h.read).toHaveBeenCalledTimes(3);
+    expect(execute).toHaveBeenCalledTimes(2);
+  });
+
   it.each([
     ['首次加载', { ...executableState(), status: 'loading' as const }],
     [
@@ -408,7 +472,7 @@ describe('实际 LicenseFeatureGate 子内容执行边界', () => {
       useEffect(() => {
         mount();
       }, []);
-      return <button>执行受控功能</button>;
+      return <button type="button">执行受控功能</button>;
     }
     render(
       <LicenseFeatureGate state={state} code="example_feature">
@@ -435,9 +499,13 @@ describe('实际 LicenseFeatureGate 子内容执行边界', () => {
       const { state, controller } = useLicense({ accountKey: '93:930' });
       return (
         <>
-          <button onClick={() => void controller.reload()}>测试刷新</button>
+          <button type="button" onClick={() => void controller.reload()}>
+            测试刷新
+          </button>
           <LicenseFeatureGate state={state} code="example_feature">
-            <button onClick={execute}>执行受控功能</button>
+            <button type="button" onClick={execute}>
+              执行受控功能
+            </button>
           </LicenseFeatureGate>
         </>
       );
