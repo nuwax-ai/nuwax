@@ -11,7 +11,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-repo-web.git",
-        "commit": "18ae973c890c699c678b086ad1da3b95275a3c86"
+        "commit": "5c676b85487f865cf7c5f72d9428b628b37f50f0"
       },
       "projectDir": ".",
       "workspaceMode": "project-workspace",
@@ -32,7 +32,7 @@
         ]
       },
       "adapter": {
-        "sha256": "42f5c5890947f1b9e1f86d8c47b1923b69a00483867a9d616d4ff99f1724a355",
+        "sha256": "ae121c8ec3ac77e56ceb0cb6df4288c9b472b18c1b8fdfb44285c05de4ee5112",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -48,12 +48,12 @@
         ]
       },
       "toolchain": {
-        "node": "v24.19.0",
+        "node": "v25.7.0",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-07T08:23:33.595Z"
+      "builtAt": "2026-10-08T03:26:07.562Z"
     },
     {
       "schemaVersion": 1,
@@ -65,7 +65,7 @@
       "source": {
         "branch": "main",
         "url": "https://git.yichamao.com/agent-platform/nuwax-im.git",
-        "commit": "f3a568275c0b3ed21537df98a7eedd6bdbf6b070"
+        "commit": "0eb27a4482fca29ddd2f0b102e65ae15b5c595b9"
       },
       "projectDir": "nuwax-im-web",
       "workspaceMode": "standalone",
@@ -73,7 +73,7 @@
         "VITE_IM_AUTH_MODE": "platform"
       },
       "adapter": {
-        "sha256": "4e3d59cfd541ed6fd6f45ed520c55fa473f1123c0b991047b8b6ae1283a75c4a",
+        "sha256": "043cbdf4b3151dec89b145ac58bbc9ac0183e03579cc208bac4bd23331cbc584",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -88,12 +88,12 @@
         ]
       },
       "toolchain": {
-        "node": "v24.19.0",
+        "node": "v25.7.0",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-07T08:23:44.027Z"
+      "builtAt": "2026-10-08T03:26:19.604Z"
     }
   ]
 }

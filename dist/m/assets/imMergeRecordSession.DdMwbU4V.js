@@ -1,1 +1,0 @@
-import{F as s,$ as t}from"./index-C4s0By8I.js";class e{constructor(){this.title="",this.items=[]}}let l="",n=null;function r(e){l=s(),n=e,t({url:"/pages/message/merge-forward-detail"})}function a(){const t=l==s()?n:null;return n=null,t}export{e as I,r as o,a as t};
