@@ -32,7 +32,7 @@
         ]
       },
       "adapter": {
-        "sha256": "ae121c8ec3ac77e56ceb0cb6df4288c9b472b18c1b8fdfb44285c05de4ee5112",
+        "sha256": "66908d70b4c6a142a70ae94f3ae108f283cc46a1e1ef994fde0e05a34606dccb",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -48,12 +48,12 @@
         ]
       },
       "toolchain": {
-        "node": "v25.7.0",
+        "node": "v24.18.0",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-08T07:12:00.294Z"
+      "builtAt": "2026-10-08T07:19:27.746Z"
     },
     {
       "schemaVersion": 1,
@@ -73,7 +73,7 @@
         "VITE_IM_AUTH_MODE": "platform"
       },
       "adapter": {
-        "sha256": "45f629bcbcba0bb34642430af4359ee662869aa92ec4d1df05ad11f56e644f55",
+        "sha256": "29abcd5b0a213c17e5cecaf9bd62e3a8e25280e33614d35634a502aed52fee29",
         "files": [
           "adapter.json",
           "adapter.patch",
@@ -88,12 +88,12 @@
         ]
       },
       "toolchain": {
-        "node": "v25.7.0",
+        "node": "v24.18.0",
         "pnpm": "10.27.0",
         "qiankun": "2.10.17-beta.0",
         "@tiny-codes/vite-plugin-qiankun": "2.4.0"
       },
-      "builtAt": "2026-10-08T07:12:12.226Z"
+      "builtAt": "2026-10-08T07:19:37.082Z"
     }
   ]
 }
