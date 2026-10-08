@@ -1,13 +1,14 @@
 /**
  * 禅道bug2394 回归：项目上框「+」重复触发不得带出租户默认智能体的工具。
  * 三守卫各有用例——全栈上框未命中不回落默认智能体（工具不被默认工具稳定
- * 占据）、同项目重复 pin 幂等（不清选中不重发请求）、切换会话对象后旧
+ * 占据）、同项目重复 pin 保留智能体（不重发智能体详情）、切换会话对象后旧
  * 详情晚到不覆盖（cancelled 守卫）。桩法对齐 homeSummonedExpertHandoff.test.tsx。
  */
 import Home from '@/pages/Home';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { fetchChatboxCategories } from '@/services/square';
+import { apiNormalProjectGetById } from '@/services/userProjectApp';
 import {
   act,
   cleanup,
@@ -16,6 +17,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // 透传上下文底层数据：与真实 pageHandoffContext 同构（setContext/consumeContext
@@ -110,6 +112,10 @@ vi.mock('@/services/displayRecommend', () => ({
 
 vi.mock('@/services/square', () => ({
   fetchChatboxCategories: vi.fn(async () => []),
+}));
+
+vi.mock('@/services/userProjectApp', () => ({
+  apiNormalProjectGetById: vi.fn(),
 }));
 
 vi.mock('@/pages/SpaceCreateProject/utils/projectCreateStrategy', () => ({
@@ -237,9 +243,378 @@ const initNeverReceivedDefaultTools = () => {
 beforeEach(() => {
   vi.clearAllMocks();
   handoffState.reset();
+  vi.mocked(apiNormalProjectGetById).mockReset();
+  vi.mocked(apiNormalProjectGetById).mockResolvedValue({
+    code: '0000',
+    data: undefined,
+  } as any);
 });
 
 afterEach(cleanup);
+
+describe('项目新建任务的电脑与工作目录', () => {
+  beforeEach(() => {
+    vi.mocked(apiDisplayRecommendList).mockResolvedValue({
+      data: { recChatBoxNav: { Agent: [] } },
+    } as any);
+    vi.mocked(fetchChatboxCategories).mockResolvedValue([]);
+    // 即便默认智能体不开放电脑选择、绑定了另一台电脑，项目配置仍可修改。
+    vi.mocked(apiPublishedAgentInfo).mockImplementation(
+      async (agentId: number) =>
+        ({
+          data: {
+            agentId,
+            type: 'ChatBot',
+            allowPrivateSandbox: 0,
+            sandboxId: 888,
+            manualComponents: [],
+          },
+        } as any),
+    );
+  });
+
+  const pinNormalProject = (overrides: Record<string, unknown> = {}) => {
+    handoffState.setContext('homePinnedProject', {
+      projectId: 6,
+      projectType: 'NormalProject',
+      name: '常规项目 B',
+      sandboxId: 366,
+      workspacePath: '/work/project',
+      ...overrides,
+    });
+  };
+
+  it.each([true, false])('owner=%s 时继承项目配置并允许修改', async (owner) => {
+    pinNormalProject({ owner });
+    render(<Home />);
+    await waitFor(() => {
+      expect(input.props.agentTypeLoading).toBe(false);
+      expect(input.props.wholeDisabled).toBe(false);
+    });
+
+    expect(input.props.selectedComputerId).toBe('366');
+    expect(input.props.workspacePath).toBe('/work/project');
+    expect(input.props.isTaskAgentActive).toBe(true);
+    expect(input.props.readonly).toBe(false);
+    expect(input.props.agentSandboxId).toBeUndefined();
+    expect(input.props.autoSelectComputer).toBe(false);
+    expect(input.props.fixedSelection).toBeFalsy();
+    expect(input.props.onWorkspaceDirChange).toBeTypeOf('function');
+    expect(apiNormalProjectGetById).toHaveBeenCalledTimes(1);
+    expect(apiNormalProjectGetById).toHaveBeenCalledWith(6);
+
+    await act(async () => input.props.onEnter('项目任务'));
+    expect(handleCreateConversation).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        projectId: 6,
+        projectType: 'NormalProject',
+        sandboxId: 366,
+        selectedComputerId: '366',
+        workspacePath: '/work/project',
+      }),
+    );
+  });
+
+  it('发送采用用户修改的目录和电脑，换电脑先清掉旧目录', async () => {
+    pinNormalProject();
+    render(<Home />);
+    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+
+    act(() => input.props.onWorkspaceDirChange('/work/edited'));
+    await act(async () => input.props.onEnter('修改目录'));
+    expect(handleCreateConversation).toHaveBeenLastCalledWith(
+      7,
+      expect.objectContaining({
+        sandboxId: 366,
+        workspacePath: '/work/edited',
+      }),
+    );
+
+    act(() => input.props.onComputerSelect('777'));
+    expect(input.props.selectedComputerId).toBe('777');
+    expect(input.props.workspacePath).toBe('');
+    act(() => input.props.onWorkspaceDirChange('/other/project'));
+    await act(async () => input.props.onEnter('修改电脑'));
+    expect(handleCreateConversation).toHaveBeenLastCalledWith(
+      7,
+      expect.objectContaining({
+        projectId: 6,
+        sandboxId: 777,
+        selectedComputerId: '777',
+        workspacePath: '/other/project',
+      }),
+    );
+
+    act(() => input.props.onComputerSelect('-1'));
+    expect(input.props.workspacePath).toBe('');
+    await act(async () => input.props.onEnter('云端任务'));
+    expect(handleCreateConversation).toHaveBeenLastCalledWith(
+      7,
+      expect.objectContaining({ sandboxId: -1, workspacePath: undefined }),
+    );
+  });
+
+  it('再次点击同项目新建任务恢复默认配置，保留智能体；切换项目继承新配置', async () => {
+    pinNormalProject();
+    const { rerender } = render(<Home />);
+    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+    act(() => input.props.onComputerSelect('777'));
+    act(() => input.props.onWorkspaceDirChange('/other/draft'));
+    const requestCount = vi.mocked(apiPublishedAgentInfo).mock.calls.length;
+
+    pinNormalProject({ name: '常规项目 B 改名', workspacePath: '/work/new' });
+    rerender(<Home />);
+    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+    expect(input.props.pinnedProject.name).toBe('常规项目 B 改名');
+    expect(input.props.selectedComputerId).toBe('366');
+    expect(input.props.workspacePath).toBe('/work/new');
+    expect(vi.mocked(apiPublishedAgentInfo)).toHaveBeenCalledTimes(
+      requestCount,
+    );
+    expect(apiNormalProjectGetById).toHaveBeenCalledTimes(2);
+
+    pinNormalProject({
+      projectId: 8,
+      name: '常规项目 C',
+      sandboxId: 999,
+      workspacePath: '/work/project-c',
+    });
+    rerender(<Home />);
+    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+    expect(input.props.selectedComputerId).toBe('999');
+    expect(input.props.workspacePath).toBe('/work/project-c');
+  });
+
+  it('项目类型不同但数字 ID 相同时也继承新项目配置', async () => {
+    pinUserAppProject();
+    const { rerender } = render(<Home />);
+    await waitFor(() => expect(input.props.pinnedProject.name).toBe('全栈 A'));
+
+    pinNormalProject({ projectId: 5 });
+    rerender(<Home />);
+    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+    expect(input.props.selectedComputerId).toBe('366');
+    expect(input.props.workspacePath).toBe('/work/project');
+  });
+
+  it.each([-1, 0, undefined])(
+    '项目电脑为 %s 时默认云端，不继承个人目录',
+    async (sandboxId) => {
+      pinNormalProject({ sandboxId });
+      render(<Home />);
+      await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+      expect(input.props.selectedComputerId).toBe('-1');
+      expect(input.props.workspacePath).toBe('');
+      expect(input.props.autoSelectComputer).toBe(false);
+    },
+  );
+
+  it('项目内换智能体保留电脑和目录，移除项目恢复智能体选择规则', async () => {
+    pinNormalProject();
+    render(<Home />);
+    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+
+    act(() =>
+      input.props.onExpertAgentSelect({ targetId: 67, name: '新专家' }),
+    );
+    await waitFor(() => expect(input.props.agentId).toBe(67));
+    expect(input.props.selectedComputerId).toBe('366');
+    expect(input.props.workspacePath).toBe('/work/project');
+    expect(input.props.autoSelectComputer).toBe(false);
+    expect(input.props.agentSandboxId).toBeUndefined();
+
+    act(() => input.props.onClearPinnedProject());
+    expect(input.props.pinnedProject).toBeUndefined();
+    expect(input.props.selectedComputerId).toBe('-1');
+    expect(input.props.workspacePath).toBe('');
+    expect(input.props.autoSelectComputer).toBe(true);
+    expect(input.props.agentSandboxId).toBe(888);
+    expect(input.props.readonly).toBe(true);
+  });
+
+  it.each([
+    {
+      workspacePath: '/explicit',
+      agentWorkspacePath: '/agent',
+      fileWorkspacePath: '/files',
+      expected: '/explicit',
+    },
+    {
+      workspacePath: null,
+      agentWorkspacePath: '/agent',
+      fileWorkspacePath: '/files',
+      expected: '/agent',
+    },
+    { fileWorkspacePath: '/files', expected: '/files' },
+    {
+      workspacePath: null,
+      agentWorkspacePath: null,
+      fileWorkspacePath: null,
+      expected: '',
+    },
+  ])(
+    '读取一次最新详情并按移动端字段优先级继承 $expected',
+    async ({ expected, ...paths }) => {
+      vi.mocked(apiNormalProjectGetById).mockResolvedValue({
+        code: '0000',
+        data: { sandboxId: 417, sandboxType: 'Personal', ...paths },
+      } as any);
+      pinNormalProject({ workspacePath: undefined });
+      render(<Home />);
+      await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+      expect(apiNormalProjectGetById).toHaveBeenCalledTimes(1);
+      expect(input.props.selectedComputerId).toBe('417');
+      expect(input.props.workspacePath).toBe(expected);
+    },
+  );
+
+  it('云端项目实际沙箱 ID 映射为云端电脑，仍可改用个人电脑', async () => {
+    vi.mocked(apiNormalProjectGetById).mockResolvedValue({
+      code: '0000',
+      data: {
+        sandboxId: 333,
+        sandboxType: 'Cloud',
+        agentWorkspacePath: '/container/project',
+      },
+    } as any);
+    pinNormalProject({ sandboxId: 333, sandboxType: 'Cloud' });
+    render(<Home />);
+    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+    expect(input.props.selectedComputerId).toBe('-1');
+    expect(input.props.workspacePath).toBe('');
+    await act(async () => input.props.onEnter('云端项目任务'));
+    expect(handleCreateConversation).toHaveBeenLastCalledWith(
+      7,
+      expect.objectContaining({
+        projectId: 6,
+        sandboxId: -1,
+        workspacePath: undefined,
+      }),
+    );
+
+    act(() => input.props.onComputerSelect('personal-computer'));
+    act(() => input.props.onWorkspaceDirChange('/work/edited'));
+    await act(async () => input.props.onEnter('改用个人电脑'));
+    expect(handleCreateConversation).toHaveBeenLastCalledWith(
+      7,
+      expect.objectContaining({
+        sandboxId: 'personal-computer',
+        workspacePath: '/work/edited',
+      }),
+    );
+  });
+
+  it('配置加载期间阻止修改和发送，A → B → A 的旧响应不能覆盖最后的配置', async () => {
+    const finishes: Array<(response: any) => void> = [];
+    vi.mocked(apiNormalProjectGetById).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishes.push(resolve);
+        }),
+    );
+    pinNormalProject();
+    const { rerender } = render(<Home />);
+    expect(input.props.wholeDisabled).toBe(true);
+    act(() => input.props.onComputerSelect('777'));
+    act(() => input.props.onWorkspaceDirChange('/ignored'));
+    await act(async () => input.props.onEnter('加载中任务'));
+    expect(input.props.selectedComputerId).toBe('366');
+    expect(input.props.workspacePath).toBe('/work/project');
+    expect(handleCreateConversation).not.toHaveBeenCalled();
+
+    pinNormalProject({ projectId: 8 });
+    rerender(<Home />);
+    pinNormalProject();
+    rerender(<Home />);
+    expect(apiNormalProjectGetById).toHaveBeenCalledTimes(3);
+    await act(async () =>
+      finishes[0]({
+        code: '0000',
+        data: { sandboxId: 111, agentWorkspacePath: '/old/a' },
+      }),
+    );
+    expect(input.props.wholeDisabled).toBe(true);
+    await act(async () =>
+      finishes[2]({
+        code: '0000',
+        data: { sandboxId: 417, agentWorkspacePath: '/new/a' },
+      }),
+    );
+    await act(async () =>
+      finishes[1]({
+        code: '0000',
+        data: { sandboxId: 222, agentWorkspacePath: '/old/b' },
+      }),
+    );
+    expect(input.props.selectedComputerId).toBe('417');
+    expect(input.props.workspacePath).toBe('/new/a');
+    expect(input.props.wholeDisabled).toBe(false);
+  });
+
+  it('移除项目后晚到配置不会重新绑定项目或覆盖首页选择', async () => {
+    let finish!: (response: any) => void;
+    vi.mocked(apiNormalProjectGetById).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    pinNormalProject();
+    render(<Home />);
+    act(() => input.props.onClearPinnedProject());
+    await act(async () =>
+      finish({
+        code: '0000',
+        data: { sandboxId: 417, agentWorkspacePath: '/old' },
+      }),
+    );
+    expect(input.props.pinnedProject).toBeUndefined();
+    expect(input.props.selectedComputerId).toBe('-1');
+    expect(input.props.workspacePath).toBe('');
+    expect(input.props.wholeDisabled).toBe(false);
+  });
+
+  it('详情请求失败被消费，保留入口默认值并允许继续修改', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(apiNormalProjectGetById).mockRejectedValue(new Error('网络失败'));
+    pinNormalProject();
+    render(<Home />);
+    await waitFor(() => expect(input.props.wholeDisabled).toBe(false));
+    expect(input.props.selectedComputerId).toBe('366');
+    expect(input.props.workspacePath).toBe('/work/project');
+    act(() => input.props.onComputerSelect('777'));
+    expect(input.props.selectedComputerId).toBe('777');
+    errorSpy.mockRestore();
+  });
+
+  it('StrictMode 重放 effect 时只读取一次配置，完成后恢复可编辑状态', async () => {
+    let finish!: (response: any) => void;
+    vi.mocked(apiNormalProjectGetById).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    pinNormalProject();
+    render(
+      <StrictMode>
+        <Home />
+      </StrictMode>,
+    );
+    expect(apiNormalProjectGetById).toHaveBeenCalledTimes(1);
+    expect(input.props.wholeDisabled).toBe(true);
+    await act(async () =>
+      finish({
+        code: '0000',
+        data: { sandboxId: 417, agentWorkspacePath: '/work/project' },
+      }),
+    );
+    expect(input.props.selectedComputerId).toBe('417');
+    expect(input.props.workspacePath).toBe('/work/project');
+    expect(input.props.wholeDisabled).toBe(false);
+  });
+});
 
 describe('项目上框重复触发与默认智能体竞态（禅道bug2394）', () => {
   it('项目行 + 上框新项目时清掉输入框里原有专家，只保留项目智能体', async () => {

@@ -42,6 +42,28 @@ export const resolvePersonalWorkspacePath = (
     ? workspacePath || undefined
     : undefined;
 
+/** 项目实际云端沙箱在电脑选择器中使用哨兵；个人电脑保留原 ID。 */
+export const resolvePinnedProjectComputerId = (
+  project: Pick<PinnedProjectInfo, 'sandboxId' | 'sandboxType'>,
+): string =>
+  project.sandboxType === 'Cloud' ||
+  project.sandboxId === undefined ||
+  project.sandboxId === null ||
+  project.sandboxId <= 0
+    ? CLOUD_SANDBOX_ID
+    : String(project.sandboxId);
+
+/** 对齐移动端项目目录：明确目录优先，其次为 agent 执行路径、文件服务路径。 */
+export const resolveProjectWorkspacePath = (project: {
+  workspacePath?: string | null;
+  agentWorkspacePath?: string | null;
+  fileWorkspacePath?: string | null;
+}): string | undefined =>
+  project.workspacePath ||
+  project.agentWorkspacePath ||
+  project.fileWorkspacePath ||
+  undefined;
+
 /** 常规项目上框与新建常规项目一致，允许选择电脑和工作目录，不受创建者身份限制。 */
 export const resolvePinnedSandboxSelectable = (
   pinned?: Pick<PinnedProjectInfo, 'projectType' | 'owner'>,
