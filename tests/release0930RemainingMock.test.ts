@@ -196,6 +196,67 @@ describe('9.30 本地业务 mock 合同', () => {
     request('POST', `${CONTROL}/reset`);
     expect(request('GET', `${CONTROL}/state`).data.requests).toEqual([]);
   });
+  it('敏感词替换字符在新增/编辑/列表持久化，空值默认星号并拒绝多字符', () => {
+    const request = client();
+    const body = {
+      word: 'C4独立验收',
+      category: 'ILLEGAL',
+      matchType: 'CONTAIN',
+      action: 'REPLACE',
+    };
+    expect(
+      request('POST', '/api/system/sensitive/word/create', {
+        ...body,
+        replaceChar: '**',
+      }).code,
+    ).not.toBe('0000');
+    request('POST', '/api/system/sensitive/word/create', body);
+    const item = request('POST', '/api/system/sensitive/word/page', {
+      queryFilter: { word: body.word },
+    }).data.records[0];
+    expect(item.replaceChar).toBe('*');
+    request('POST', '/api/system/sensitive/word/update', {
+      ...body,
+      id: item.id,
+      replaceChar: '#',
+    });
+    expect(
+      request('POST', '/api/system/sensitive/word/page', {
+        queryFilter: { word: body.word },
+      }).data.records[0].replaceChar,
+    ).toBe('#');
+    request('POST', '/api/system/sensitive/word/update', {
+      ...body,
+      id: item.id,
+      replaceChar: '',
+    });
+    expect(
+      request('POST', '/api/system/sensitive/word/page', {
+        queryFilter: { word: body.word },
+      }).data.records[0].replaceChar,
+    ).toBe('*');
+  });
+  it.each(['RESET_PASSWORD', 'BIND_EMAIL'])(
+    '登录态发码 %s 不需要图码，但匿名不能伪装设置请求绕过',
+    (type) => {
+      const request = client();
+      request('POST', `${CONTROL}/configure`, { imageCaptcha: true });
+      expect(request('POST', '/api/user/code/send', { type }).code).toBe(
+        '0000',
+      );
+      expect(request('POST', '/api/user/code/send', { type }, false).code).toBe(
+        '4010',
+      );
+      expect(
+        request(
+          'POST',
+          '/api/user/code/send',
+          { type: 'LOGIN_OR_REGISTER' },
+          false,
+        ).code,
+      ).not.toBe('0000');
+    },
+  );
   it('自动跳转只允许启用项且唯一，停用同步清除', () => {
     const request = client();
     request('POST', '/api/system/idp/auto-redirect', { id: 1 });

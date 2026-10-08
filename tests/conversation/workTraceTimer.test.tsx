@@ -126,7 +126,7 @@ describe('运行中工作轨迹计时隔离', () => {
     vi.useRealTimers();
   });
 
-  it('默认展开的活动工具组只更新耗时，不重复处理折叠工具结果或正文', () => {
+  it('默认收起的活动工具组只更新耗时，不重复处理折叠工具结果或正文', () => {
     const { container } = render(
       <WorkTraceDisclosure
         turn={createTurn()}
@@ -137,7 +137,10 @@ describe('运行中工作轨迹计时隔离', () => {
     const traceToggle = screen.getByTestId('v2-trace-toggle');
     expect(traceToggle).toHaveAttribute('aria-expanded', 'true');
     expect(traceToggle).toHaveTextContent('00:00');
-    expect(container.querySelectorAll('[data-node-id]')).toHaveLength(2);
+    expect(
+      container.querySelector('[data-tool-group-id] > button'),
+    ).toHaveAttribute('aria-expanded', 'false');
+    expect(container.querySelectorAll('[data-node-id]')).toHaveLength(0);
     expect(container.querySelector('[data-tool-detail-kind]')).toBeNull();
     const normalizedAtMount = vi.mocked(normalizeV2ToolDetail).mock.calls
       .length;
@@ -162,6 +165,9 @@ describe('运行中工作轨迹计时隔离', () => {
         manualExpanded
         onManualToggle={vi.fn()}
       />,
+    );
+    fireEvent.click(
+      view.container.querySelector('[data-tool-group-id] > button')!,
     );
     fireEvent.click(screen.getByRole('button', { name: /npm test/ }));
     expect(
