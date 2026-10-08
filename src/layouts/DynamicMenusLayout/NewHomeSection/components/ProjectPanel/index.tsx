@@ -352,6 +352,7 @@ const ProjectPanel = forwardRef<
       }
     }, [projects]);
     const pageRequestVersionRef = useRef(0);
+    const pageRequestSettledRef = useRef<Promise<void>>(Promise.resolve());
     const recentProjectEventsRef = useRef<
       Array<{ event: ProjectChangedEvent; at: number }>
     >([]);
@@ -381,6 +382,10 @@ const ProjectPanel = forwardRef<
         options: { append: boolean; awaitKey?: string; initialLoad?: boolean },
       ): Promise<boolean> => {
         const requestVersion = ++pageRequestVersionRef.current;
+        let finishRequest!: () => void;
+        pageRequestSettledRef.current = new Promise<void>((resolve) => {
+          finishRequest = resolve;
+        });
         // 接口是标准 current/pageSize 页码分页。静默刷新已加载范围时也必须
         // 逐页回读，不能把 pageSize 放大成 N * 20，否则排序漂移后会跳页，且
         // 后端 pages/current 语义被破坏，末页「查看更多」无法可靠收口。
@@ -525,6 +530,7 @@ const ProjectPanel = forwardRef<
           }
           return false;
         } finally {
+          finishRequest();
           if (
             !unmountedRef.current &&
             requestVersion === pageRequestVersionRef.current
@@ -653,6 +659,7 @@ const ProjectPanel = forwardRef<
     );
     const requestChildren = useCallback(
       async (project: ProjectItem): Promise<void> => {
+        if (unmountedRef.current) return;
         const key = projectKeyOf(project);
         if (loadingChildrenRef.current.has(key)) {
           pendingChildrenRefreshRef.current.add(key);
@@ -668,6 +675,7 @@ const ProjectPanel = forwardRef<
             project.id,
             project.projectType ?? AgentComponentTypeEnum.NormalProject,
           );
+          if (unmountedRef.current) return;
           const fallback = dict('PC.Constants.Menus.newChat');
           const now = Date.now();
           recentChildEventsRef.current = recentChildEventsRef.current.filter(
@@ -698,6 +706,7 @@ const ProjectPanel = forwardRef<
             ),
           );
         } catch {
+          if (unmountedRef.current) return;
           // 首次失败结束加载态；下次可见性核对或事件会重试。
           setProjects((previous) =>
             previous.map((item) =>
@@ -708,7 +717,8 @@ const ProjectPanel = forwardRef<
           );
         } finally {
           loadingChildrenRef.current.delete(key);
-          if (pendingChildrenRefreshRef.current.delete(key)) {
+          const pendingRefresh = pendingChildrenRefreshRef.current.delete(key);
+          if (pendingRefresh && !unmountedRef.current) {
             const current = projectsRef.current.find(
               (item) => projectKeyOf(item) === key,
             );
@@ -897,7 +907,78 @@ const ProjectPanel = forwardRef<
       [],
     );
 
+    // 子会话按 4 个一批并发重拉（探针命中差异/全量兜底共用）
+    const requestChildrenBatched = useCallback(
+      async (candidates: ProjectItem[]) => {
+        for (let index = 0; index < candidates.length; index += 4) {
+          if (unmountedRef.current) return;
+          await Promise.all(
+            candidates
+              .slice(index, index + 4)
+              .map((project) => requestChildren(project)),
+          );
+        }
+      },
+      [requestChildren],
+    );
+
     useEffect(() => {
+      let disposed = false;
+      let startRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+      let refreshingStartedTask = false;
+      let pendingStartedTask = false;
+      let supersededRefreshRetries = 0;
+      // batch 与 IM 均按原事件名分发。跨端任务可能属于尚未加载的项目，
+      // 不依赖 payload 的未确认字段或本地会话索引，回读已加载的分页范围。
+      const enqueueStartedTaskRefresh = () => {
+        if (disposed) return;
+        pendingStartedTask = true;
+        if (startRefreshTimer !== undefined || refreshingStartedTask) return;
+        startRefreshTimer = setTimeout(() => {
+          startRefreshTimer = undefined;
+          pendingStartedTask = false;
+          refreshingStartedTask = true;
+          void (async () => {
+            try {
+              // 等最新分页请求结束，避免补拉抢掉用户的「查看更多」。
+              let pendingPageRequest: Promise<void>;
+              do {
+                pendingPageRequest = pageRequestSettledRef.current;
+                await pendingPageRequest;
+              } while (
+                !disposed &&
+                !unmountedRef.current &&
+                pendingPageRequest !== pageRequestSettledRef.current
+              );
+              if (disposed || unmountedRef.current) return;
+              const request = fetchPage(1, { append: false });
+              const requestVersion = pageRequestVersionRef.current;
+              const loaded = await request;
+              if (loaded && !disposed && !unmountedRef.current) {
+                await requestChildrenBatched(projectsRef.current);
+              } else if (
+                !loaded &&
+                requestVersion !== pageRequestVersionRef.current &&
+                supersededRefreshRetries < 1
+              ) {
+                // 请求被新的分页/刷新取代时只补拉一次；网络和业务失败不循环。
+                supersededRefreshRetries += 1;
+                pendingStartedTask = true;
+              }
+            } catch {
+              if (!disposed && !unmountedRef.current) setLoadError(true);
+            } finally {
+              refreshingStartedTask = false;
+              if (pendingStartedTask && !disposed && !unmountedRef.current)
+                enqueueStartedTaskRefresh();
+            }
+          })();
+        }, 250);
+      };
+      const onChatStarted = () => {
+        supersededRefreshRetries = 0;
+        enqueueStartedTaskRefresh();
+      };
       const refreshConversation = (payload?: {
         conversationId?: number | string;
       }) => {
@@ -919,11 +1000,21 @@ const ProjectPanel = forwardRef<
       };
       eventBus.on(EVENT_TYPE.RefreshConversationList, refreshConversation);
       eventBus.on(EVENT_TYPE.ChatFinished, onChatFinished);
+      eventBus.on('chat_start', onChatStarted);
       return () => {
+        disposed = true;
+        if (startRefreshTimer !== undefined) clearTimeout(startRefreshTimer);
+        pendingStartedTask = false;
+        eventBus.off('chat_start', onChatStarted);
         eventBus.off(EVENT_TYPE.RefreshConversationList, refreshConversation);
         eventBus.off(EVENT_TYPE.ChatFinished, onChatFinished);
       };
-    }, [findProjectByConversation, requestChildren]);
+    }, [
+      fetchPage,
+      findProjectByConversation,
+      requestChildren,
+      requestChildrenBatched,
+    ]);
 
     // 当前路由会话反查所属项目（会话条目无项目归属字段，只能扫已加载的子会话）；
     // 命中结果为复合键，与 collapsedIds 键口径一致
@@ -953,20 +1044,6 @@ const ProjectPanel = forwardRef<
           : null,
       );
     }, [activeChildProjectKey, activeConversationId, onActiveChildResolved]);
-
-    // 子会话按 4 个一批并发重拉（探针命中差异/全量兜底共用）
-    const requestChildrenBatched = useCallback(
-      async (candidates: ProjectItem[]) => {
-        for (let index = 0; index < candidates.length; index += 4) {
-          await Promise.all(
-            candidates
-              .slice(index, index + 4)
-              .map((project) => requestChildren(project)),
-          );
-        }
-      },
-      [requestChildren],
-    );
 
     useImperativeHandle(
       ref,
