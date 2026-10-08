@@ -597,7 +597,12 @@ export function createRelease0930Mock() {
     'POST',
     '/api/user/code/send',
     (req, res) => {
-      if (captchaValid(req.body || {}, res)) success(res);
+      const settingRequest = ['RESET_PASSWORD', 'BIND_EMAIL'].includes(
+        req.body?.type,
+      );
+      if (settingRequest && !authenticated(req))
+        return fail(res, '请先登录', '4010');
+      if (settingRequest || captchaValid(req.body || {}, res)) success(res);
     },
     undefined,
     true,
@@ -646,8 +651,11 @@ export function createRelease0930Mock() {
     'POST',
     '/api/system/sensitive/word/create',
     (req, res) => {
+      if ((req.body?.replaceChar || '').length > 1)
+        return fail(res, '替换字符最多一个字符');
       state.words.push({
         ...req.body,
+        replaceChar: req.body?.replaceChar || '*',
         id: ++state.sequence,
         status: 1,
         created: CREATED,
@@ -662,8 +670,11 @@ export function createRelease0930Mock() {
     (req, res) => {
       const item = state.words.find((item) => item.id === Number(req.body?.id));
       if (!item) return fail(res, '敏感词不存在');
+      if ((req.body?.replaceChar || '').length > 1)
+        return fail(res, '替换字符最多一个字符');
       const { word, category, matchType, action } = req.body;
       Object.assign(item, { word, category, matchType, action });
+      if (action === 'REPLACE') item.replaceChar = req.body.replaceChar || '*';
       success(res);
     },
     'sensitive_word_modify',

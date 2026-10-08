@@ -34,6 +34,7 @@ const DEFAULT_VALUES: SensitiveWordCreateParams = {
   category: SensitiveWordCategoryEnum.Illegal,
   matchType: SensitiveWordMatchTypeEnum.Contain,
   action: SensitiveWordActionEnum.Disconnect,
+  replaceChar: '*',
 };
 
 /**
@@ -47,6 +48,7 @@ const SensitiveWordFormModal: React.FC<SensitiveWordFormModalProps> = ({
 }) => {
   const [form] = Form.useForm<SensitiveWordCreateParams>();
   const matchType = Form.useWatch('matchType', form);
+  const action = Form.useWatch('action', form);
 
   useEffect(() => {
     if (!open) return;
@@ -57,6 +59,7 @@ const SensitiveWordFormModal: React.FC<SensitiveWordFormModalProps> = ({
             category: record.category,
             matchType: record.matchType,
             action: record.action,
+            replaceChar: record.replaceChar || '*',
           }
         : DEFAULT_VALUES,
     );
@@ -74,8 +77,14 @@ const SensitiveWordFormModal: React.FC<SensitiveWordFormModalProps> = ({
       width={520}
       autoFocusFirstInput
       modalProps={{ destroyOnHidden: true, onCancel }}
-      onFinish={async (values) =>
-        onFinish({ ...values, word: values.word.trim() })
+      onFinish={async ({ replaceChar, ...values }) =>
+        onFinish({
+          ...values,
+          word: values.word.trim(),
+          ...(values.action === SensitiveWordActionEnum.Replace
+            ? { replaceChar: replaceChar || '*' }
+            : {}),
+        })
       }
     >
       <ProFormText
@@ -115,6 +124,21 @@ const SensitiveWordFormModal: React.FC<SensitiveWordFormModalProps> = ({
         options={getActionOptions()}
         rules={[{ required: true }]}
       />
+      {action === SensitiveWordActionEnum.Replace && (
+        <ProFormText
+          name="replaceChar"
+          label={dict('PC.Pages.SystemSensitiveWord.replaceChar')}
+          placeholder="*"
+          tooltip={dict('PC.Pages.SystemSensitiveWord.replaceCharTip')}
+          fieldProps={{ maxLength: 1 }}
+          rules={[
+            {
+              max: 1,
+              message: dict('PC.Pages.SystemSensitiveWord.replaceCharInvalid'),
+            },
+          ]}
+        />
+      )}
     </XModalForm>
   );
 };
