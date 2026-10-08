@@ -52,6 +52,7 @@ vi.mock('@/layouts/MicroAppHost/index.less', () => ({
   default: { container: 'micro-app-container' },
 }));
 
+import { EVENT_TYPE } from '@/constants/event.constants';
 import useEventPolling from '@/hooks/useEventPolling';
 import MicroAppHost from '@/layouts/MicroAppHost';
 import { microAppHostStore } from '@/layouts/MicroAppHost/store';
@@ -152,6 +153,28 @@ afterEach(() => {
 });
 
 describe('IM 事件桥与未读展示生命周期', () => {
+  it.each(['chat_start', 'chat_finished'])(
+    'IM %s 保留项目事件分发，同时通知导航任务刷新',
+    async (eventType) => {
+      const bridge = installImBridge();
+      const projectHandler = vi.fn();
+      const refreshTasks = vi.fn();
+      eventBus.on(eventType, projectHandler);
+      eventBus.on(EVENT_TYPE.RefreshConversationList, refreshTasks);
+      activateMessage();
+      render(<MicroAppHost />);
+      await waitFor(() => expect(bridge.onCustomEvent).toHaveBeenCalledOnce());
+      act(() => microAppHostStore.deactivate('nuwax-im-web'));
+      act(() => bridge.emit({ ...finished, eventType }));
+      expect(projectHandler).toHaveBeenCalledWith(finished.payload);
+      // 不带 ID，项目面板沿用原事件处理，避免重复请求项目子会话。
+      expect(refreshTasks).toHaveBeenCalledOnce();
+      expect(refreshTasks).toHaveBeenCalledWith();
+      expect(mocks.collect).not.toHaveBeenCalled();
+      expect(mocks.clear).not.toHaveBeenCalled();
+    },
+  );
+
   it('只在已登录且消息挂载完成后订阅，读取未读快照初值', async () => {
     const bridge = installImBridge(120);
     let finishMount!: () => void;
@@ -191,7 +214,9 @@ describe('IM 事件桥与未读展示生命周期', () => {
   it('切换菜单保留唯一订阅，隐藏时仍分发所有自定义事件及未读变化', async () => {
     const bridge = installImBridge(1);
     const paid = vi.fn();
+    const refreshTasks = vi.fn();
     eventBus.on('order_paid', paid);
+    eventBus.on(EVENT_TYPE.RefreshConversationList, refreshTasks);
     activateMessage();
     render(<MicroAppHost />);
     await waitFor(() => expect(bridge.onCustomEvent).toHaveBeenCalledOnce());
@@ -202,6 +227,7 @@ describe('IM 事件桥与未读展示生命周期', () => {
       bridge.unread(100);
     });
     expect(paid).toHaveBeenCalledWith(payload);
+    expect(refreshTasks).not.toHaveBeenCalled();
     expect(imUnreadState.getSnapshot()).toBe(100);
     act(activateMessage);
     expect(bridge.onCustomEvent).toHaveBeenCalledOnce();

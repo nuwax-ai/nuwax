@@ -346,25 +346,35 @@ const projectTurn = (
       ? 'stopped'
       : 'complete';
 
-  // ---- 最终回答第一优先级：最后一条非空 finalResult.outputText（剥标签后仍非空）----
+  const parsedSegments = assistantMessages.map((message) =>
+    parseCachedMessage(message, state),
+  );
+
+  // ---- 最终回答第一优先级：最新输出的 finalResult（剥标签后仍非空）----
   let answerFromFinalResult: string | undefined;
   let answerFromFinalResultMessageIndex: number | undefined;
   for (let i = assistantMessages.length - 1; i >= 0; i -= 1) {
     if (!isAnswerCandidateMessage(assistantMessages[i])) continue;
     const outputText = assistantMessages[i].finalResult?.outputText;
-    if (!outputText) continue;
-    const stripped = stripCustomTags(outputText);
+    const stripped = outputText ? stripCustomTags(outputText) : '';
     if (stripped) {
       answerFromFinalResult = stripped;
       answerFromFinalResultMessageIndex = i;
       break;
     }
+    // 续接的新输出尚无 finalResult 时，旧结果不得盖过新正文或流式占位。
+    // SYSTEM/QUESTION 等非回答消息已跳过；空的已完成消息仍允许历史回退。
+    if (
+      isRunningStatus(assistantMessages[i].status) ||
+      parsedSegments[i].some(
+        (segment) => segment.type === 'text' && !!segment.content.trim(),
+      )
+    ) {
+      break;
+    }
   }
 
-  // ---- 预解析各消息段，确定「回答正文段」归属（回答不进轨迹，其余正文段为 narration）----
-  const parsedSegments = assistantMessages.map((message) =>
-    parseCachedMessage(message, state),
-  );
+  // ---- 确定「回答正文段」归属（回答不进轨迹，其余正文段为 narration）----
   const lastAnswerSegment = findLastAnswerCandidateSegment(
     assistantMessages,
     parsedSegments,

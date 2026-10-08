@@ -204,25 +204,44 @@ const preserveClientRenderKeys = (
   }
 
   const result = [...incoming];
-  let cursor = -1;
-  for (let index = result.length - 1; index >= 0; index -= 1) {
-    const message = result[index];
-    if (
+  // 已落库 user 必须按 ID 定位。跨端可以连续发送相同文案，按文本倒序
+  // 匹配会把旧轮 clientRenderKey/终态正文迁移到手机新轮，污染新回答。
+  let cursor = result.findIndex(
+    (message) =>
+      message.role === AssistantRoleEnum.USER &&
+      sameStableId(message.id, clientUser.id),
+  );
+  if (cursor < 0 && isOptimisticMessageId(clientUser.id)) {
+    // 尚未落库的本地 UUID user 才需要文本兜底；重复指令无法唯一定位时
+    // 保留服务端内容，不猜测归属，否则同样会污染跨端新轮。
+    const candidates = result.flatMap((message, index) =>
       message.role === AssistantRoleEnum.USER &&
       (message.text || '').trim() === (clientUser.text || '').trim()
-    ) {
-      cursor = index;
-      break;
-    }
+        ? [index]
+        : [],
+    );
+    const requestMatches = clientUser.requestId
+      ? candidates.filter(
+          (index) => result[index].requestId === clientUser.requestId,
+        )
+      : [];
+    const matches = requestMatches.length ? requestMatches : candidates;
+    if (matches.length === 1) cursor = matches[0];
   }
   if (cursor < 0) {
     return { list: incoming, localByIncomingIndex };
   }
+  const nextUserIndex = result.findIndex(
+    (message, index) =>
+      index > cursor && message.role === AssistantRoleEnum.USER,
+  );
+  const roundEnd = nextUserIndex < 0 ? result.length : nextUserIndex;
 
   clientRound.forEach((clientMessage, clientIndex) => {
     const matchedIndex = result.findIndex(
       (message, index) =>
         index >= cursor &&
+        index < roundEnd &&
         message.role === clientMessage.role &&
         (clientIndex !== 0 ||
           (message.text || '').trim() === (clientMessage.text || '').trim()),
