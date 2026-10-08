@@ -1,7 +1,7 @@
 import SiteFooter from '@/components/SiteFooter';
 import PurchaseModal from '@/components/business-component/PurchaseModal';
-import { dict } from '@/services/i18nRuntime';
 import { getHostVisibility } from '@/services/hostVisibility';
+import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Tooltip, Typography } from 'antd';
@@ -15,12 +15,15 @@ const cx = classNames.bind(styles);
 interface CreditsBalanceProps {
   className?: string;
   showFooter?: boolean;
+  /** 弹层打开时刷新；关闭时暂停请求。常驻余额栏默认启用。 */
+  active?: boolean;
   onClick?: () => void;
 }
 
 const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   className,
   showFooter = true,
+  active = true,
   onClick,
 }) => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -29,6 +32,9 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   const location = useLocation();
 
   const showCredits = tenantConfigInfo?.enableSubscription !== 0;
+  const subscriptionRoute = location.pathname.includes('my-subscriptions')
+    ? location.pathname
+    : null;
 
   const { run: fetchCredits } = useRequest(apiGetCreditSummary, {
     manual: true,
@@ -38,27 +44,16 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   });
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-    if (showCredits) {
+    if (!showCredits || !active) return;
+    // 每次展开用户菜单以及进入订阅页都取最新余额，合并触发避免首开重复请求。
+    fetchCredits();
+    const intervalId = setInterval(() => {
+      // 不可见（浏览器 tab 切走 / 客户端休眠控制）跳过本轮。
+      if (document.hidden || !getHostVisibility()) return;
       fetchCredits();
-      // 增加定时刷新，每 1 分钟刷新一次
-      intervalId = setInterval(() => {
-        // 不可见（浏览器 tab 切走 / 客户端休眠控制）跳过本轮，回可见后下轮补上
-        if (document.hidden || !getHostVisibility()) return;
-        fetchCredits();
-      }, 60000);
-    }
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [showCredits, fetchCredits]);
-
-  // 当路由切换至“我的订阅”相关页面时，主动刷新积分余额
-  useEffect(() => {
-    if (showCredits && location.pathname.includes('my-subscriptions')) {
-      fetchCredits();
-    }
-  }, [location, showCredits, fetchCredits]);
+    }, 60000);
+    return () => clearInterval(intervalId);
+  }, [showCredits, active, subscriptionRoute, fetchCredits]);
 
   const handleClickBalance = () => {
     if (onClick) {
