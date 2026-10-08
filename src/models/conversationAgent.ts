@@ -1,3 +1,4 @@
+import { useConversationStopRequest } from '@/hooks/useConversationStopRequest';
 import { usePageModel } from '@/modelScopes/usePageModel';
 /**
  * ConversationAgent 页面专用会话状态 Model
@@ -466,80 +467,27 @@ export default () => {
   );
 
   // 停止会话请求
-  const { runAsync: runStopConversationReq, loading: loadingStopConversation } =
-    useRequest(apiAgentConversationChatStop, {
+  const { runAsync: runStopConversationReq } = useRequest(
+    apiAgentConversationChatStop,
+    {
       manual: true,
       debounceWait: 300,
-    });
-
-  // 停止会话
-  const runStopConversation = useCallback(
-    async (conversationId: string | number) => {
-      // 1. 立即清除副作用、中断前端连接
-      handleClearSideEffect();
-      disabledConversationActive('user-stop');
-
-      // 2. 立即将当前会话的 loading 状态的消息改为 Stopped 状态，并将所有正在执行 of processing 状态更新为 FAILED
-      setMessageList((list) => {
-        try {
-          if (!list?.length) return list;
-          const copyList = JSON.parse(JSON.stringify(list));
-
-          // 从后往前遍历消息列表，修复包含有工具调用的前置消息状态
-          for (let i = copyList.length - 1; i >= 0; i--) {
-            const currentMessage = copyList[i];
-
-            // 1. 结束最后一条消息的思考态；加载中的消息同时强置为 Stopped
-            if (i === copyList.length - 1) {
-              // 主动停止的是整个任务；即使正文分片已把消息标记为 Complete，
-              // 当前思考阶段也必须立即结束。
-              currentMessage.thinkingFinished = true;
-              if (
-                currentMessage.status === MessageStatusEnum.Loading ||
-                currentMessage.status === MessageStatusEnum.Incomplete
-              ) {
-                currentMessage.status = MessageStatusEnum.Stopped;
-              }
-            }
-
-            // 2. 遍历所有消息 of processingList，强置其中残余的 EXECUTING 状态为 FAILED
-            if (
-              currentMessage.processingList &&
-              Array.isArray(currentMessage.processingList)
-            ) {
-              currentMessage.processingList = currentMessage.processingList.map(
-                (item: ProcessingInfo) => {
-                  if (item.status === ProcessingEnum.EXECUTING) {
-                    return {
-                      ...item,
-                      status: ProcessingEnum.FAILED,
-                    };
-                  }
-                  return item;
-                },
-              );
-            }
-          }
-
-          messageListRef.current = copyList;
-          return copyList;
-        } catch (error) {
-          console.error('[runStopConversation] ERROR:', error);
-          return list;
-        }
-      });
-      syncMessageListRuntimeState();
-
-      // 3. 发起后端 stop 请求
-      return runStopConversationReq(String(conversationId));
     },
-    [
-      runStopConversationReq,
-      handleClearSideEffect,
-      setMessageList,
-      syncMessageListRuntimeState,
-    ],
   );
+
+  // 等待后台自然结束，不提前中断 SSE 或改写消息终态。
+  const {
+    stop: runStopConversation,
+    isStopping: waitingForStop,
+    isStopPending,
+  } = useConversationStopRequest(
+    currentConversationId,
+    isConversationActive ||
+      isAwaitingChatTerminal ||
+      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    runStopConversationReq,
+  );
+  const loadingStopConversation = waitingForStop;
 
   // 修改消息列表
   const handleChangeMessageList = (
@@ -756,7 +704,11 @@ export default () => {
             dict('PC.Models.ConversationInfo.taskConflictContent'),
             () => {
               if (params?.conversationId) {
-                runStopConversation(params?.conversationId.toString());
+                void runStopConversation(
+                  params.conversationId.toString(),
+                ).catch((error) => {
+                  console.error('[conversation] stop conflict failed', error);
+                });
               }
               return new Promise((resolve) => {
                 setTimeout(resolve, 2000);
@@ -1202,6 +1154,7 @@ export default () => {
 
   // 发送消息
   const onMessageSend = async (sendParams: SendMessageParams) => {
+    if (isStopPending()) return;
     const {
       id,
       messageInfo,

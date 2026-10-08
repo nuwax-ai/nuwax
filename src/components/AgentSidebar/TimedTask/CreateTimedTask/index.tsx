@@ -2,6 +2,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import LabelStar from '@/components/LabelStar';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import SelectList from '@/components/custom/SelectList';
+import { useTimedPeriodOptions } from '@/hooks/useTimedPeriodOptions';
 import {
   apiAgentTaskCreate,
   apiAgentTaskCronList,
@@ -9,16 +10,11 @@ import {
 } from '@/services/agentTask';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import {
-  CreateTimedTaskProps,
-  TaskCronInfo,
-  TaskCronItemDto,
-} from '@/types/interfaces/agentTask';
-import { option } from '@/types/interfaces/common';
+import { CreateTimedTaskProps } from '@/types/interfaces/agentTask';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message, Space } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -34,59 +30,22 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm();
-  const [typeName, setTypeName] = useState<string>('');
-  const [typeCron, setTypeCron] = useState<string>('');
-  // 可选定时范围 - 名称
-  const [typeNameList, setTypeNameList] = useState<option[]>([]);
-  // cron
-  const [typeCronList, setTypeCronList] = useState<option[]>([]);
-  // 保存可选定时范围
-  const taskCronListRef = useRef<TaskCronInfo[]>([]);
-
-  // 设置子项
-  const handleSetTypeCron = (cronList: TaskCronItemDto[], cron?: string) => {
-    // 子项
-    const list =
-      cronList?.map((item) => ({
-        label: item.desc,
-        value: item.cron,
-      })) || [];
-    setTypeCronList(list as option[]);
-    setTypeCron(cron || list[0]?.value || '');
-  };
-
-  // 处理定时信息
-  const handleTimedInfo = (data: TaskCronInfo[]) => {
-    if (data.length === 0) {
-      return;
-    }
-    // 任务名称列表
-    const _typeNameList = data?.map((item) => {
-      return {
-        label: item.typeName,
-        value: item.typeName,
-      };
-    });
-    setTypeNameList(_typeNameList);
-    // 取第一个
-    const firstItem = data[0];
-    setTypeName(firstItem.typeName);
-    // 子项
-    handleSetTypeCron(firstItem?.items || []);
-  };
-
-  // 可选定时范围
-  const { run: runCron } = useRequest(apiAgentTaskCronList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: TaskCronInfo[]) => {
-      if (result.length > 0) {
-        taskCronListRef.current = result;
-        handleTimedInfo(result);
-      }
-    },
-  });
-
+  const [cronValue, setCronValue] = useState<string>();
+  const editing = mode === CreateUpdateModeEnum.Update && currentTask;
+  const {
+    typeName,
+    typeCron,
+    typeNameList,
+    typeCronList,
+    isCustomCron,
+    handleChangeTypeName,
+    handleChangeTypeCron,
+  } = useTimedPeriodOptions(
+    apiAgentTaskCronList,
+    cronValue ?? (editing ? currentTask.taskCron : undefined),
+    setCronValue,
+    false,
+  );
   // 创建定时任务
   const { run: runCreate } = useRequest(apiAgentTaskCreate, {
     manual: true,
@@ -95,7 +54,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
       message.success(dict('PC.Components.CreateTimedTask.createSuccess'));
       onConfirm();
       // 重置定时周期
-      handleTimedInfo(taskCronListRef.current);
+      setCronValue(undefined);
     },
   });
 
@@ -107,39 +66,21 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
       message.success(dict('PC.Components.CreateTimedTask.updateSuccess'));
       onConfirm();
       // 重置定时周期
-      handleTimedInfo(taskCronListRef.current);
+      setCronValue(undefined);
     },
   });
 
   useEffect(() => {
-    runCron();
-  }, []);
-
-  useEffect(() => {
-    // 更新任务信息
+    setCronValue(
+      mode === CreateUpdateModeEnum.Update ? currentTask?.taskCron : undefined,
+    );
     if (open && mode === CreateUpdateModeEnum.Update && currentTask) {
-      // 回显任务名称和任务内容
       form.setFieldsValue({
-        topic: currentTask?.topic,
-        summary: currentTask?.summary,
+        topic: currentTask.topic,
+        summary: currentTask.summary,
       });
-      // 回显定时周期
-      if (taskCronListRef.current?.length > 0) {
-        const currentItem = taskCronListRef.current?.find(
-          (info: TaskCronInfo) => {
-            return info.items.some(
-              (subItem) => subItem.cron === currentTask?.taskCron,
-            );
-          },
-        );
-        // 设置定时范围以及cron
-        if (currentItem) {
-          setTypeName(currentItem.typeName);
-          handleSetTypeCron(currentItem.items, currentTask.taskCron);
-        }
-      }
     }
-  }, [mode, currentTask, taskCronListRef.current, open]);
+  }, [open, mode, currentTask?.id, currentTask?.taskCron]);
 
   // 创建、更新定时任务
   const onFinish: FormProps<any>['onFinish'] = (values) => {
@@ -158,24 +99,9 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     form.submit();
   };
 
-  // 选择定时范围 - 名称
-  const handleChangeTypeName = (value: React.Key) => {
-    setTypeName(value as string);
-    const currentItem = taskCronListRef.current?.find(
-      (item) => item.typeName === value,
-    );
-    // 子项
-    handleSetTypeCron(currentItem?.items || []);
-  };
-
-  // 选择定时范围 - cron
-  const handleChangeTypeCron = (value: React.Key) => {
-    setTypeCron(value as string);
-  };
-
   const onCancelCreate = () => {
     // 重置定时周期
-    handleTimedInfo(taskCronListRef.current);
+    setCronValue(undefined);
     onCancel();
   };
 
@@ -223,22 +149,26 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
                 onChange={handleChangeTypeName}
               />
             </Form.Item>
-            <Form.Item
-              noStyle
-              rules={[
-                {
-                  required: true,
-                  message: dict('PC.Common.Global.pleaseInput'),
-                },
-              ]}
-            >
-              <SelectList
-                className={cx(styles.select)}
-                options={typeCronList}
-                value={typeCron}
-                onChange={handleChangeTypeCron}
-              />
-            </Form.Item>
+            {isCustomCron ? (
+              <span title={typeCron}>{typeCron}</span>
+            ) : (
+              <Form.Item
+                noStyle
+                rules={[
+                  {
+                    required: true,
+                    message: dict('PC.Common.Global.pleaseInput'),
+                  },
+                ]}
+              >
+                <SelectList
+                  className={cx(styles.select)}
+                  options={typeCronList}
+                  value={typeCron}
+                  onChange={handleChangeTypeCron}
+                />
+              </Form.Item>
+            )}
           </Space>
         </Form.Item>
         <Form.Item

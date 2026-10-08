@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_TW: SystemLangMap = {
+  "PC.Components.TimedPeriodSelector.customPeriod": "自訂週期",
   "PC.Pages.Login.hostSessionSyncFailed": "用戶端登入工作階段同步失敗，請重試或升級用戶端",
   "PC.Layouts.Setting.AccountBind.loadFailed": "帳號綁定資訊載入失敗，請重新整理後重試",
   "PC.Routes.licenseConfig": "License 授權",

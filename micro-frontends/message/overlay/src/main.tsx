@@ -16,6 +16,7 @@ import {
   beginMessageRuntime,
   endMessageRuntime,
   getMessagePortalRoot,
+  getMessageHostSnapshot,
   invalidateMessageRequests,
   isMessageActive,
   updateMessageRuntime,
@@ -71,7 +72,21 @@ exportQiankunLifeCycles({
   name: 'nuwax-im-web',
   mount: async (props) => render(props as MessageHostProps, true),
   update: async (props) => {
+    const previous = getMessageHostSnapshot();
     updateMessageRuntime(props as MessageHostProps);
+    const next = getMessageHostSnapshot();
+    const state = useChatStore.getState();
+    // 未鉴权时由启动链路消费最新目标；更新不等待网络，后续目标才能及时接管。
+    if (
+      next.active &&
+      next.navigationRevision !== previous.navigationRevision &&
+      state.userId !== null &&
+      state.userId !== undefined
+    ) {
+      void state.openHostDirectConversation().catch((error) => {
+        console.error('[message-host] direct navigation failed', error);
+      });
+    }
     // 从其它菜单回来时补已读仍走源仓的真实焦点/可见性判据。
     if (isMessageActive()) useChatStore.getState().flushPendingRead();
   },

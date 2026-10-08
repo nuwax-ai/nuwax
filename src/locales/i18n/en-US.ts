@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
+  "PC.Components.TimedPeriodSelector.customPeriod": "Custom schedule",
   "PC.Pages.Login.hostSessionSyncFailed": "Could not sync the desktop login session. Retry or update the client.",
   "PC.Layouts.Setting.AccountBind.loadFailed": "Unable to load linked accounts. Please refresh and retry.",
   "PC.Routes.licenseConfig": "License",

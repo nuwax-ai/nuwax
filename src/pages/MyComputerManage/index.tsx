@@ -37,7 +37,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'umi';
+import { history, useLocation } from 'umi';
 import styles from './index.less';
 
 const { confirm } = Modal;
@@ -63,6 +63,8 @@ const MyComputerManage: React.FC = () => {
       if (res.code === SUCCESS_CODE) {
         setList(res.data || []);
       }
+    } catch (error) {
+      console.error('[myComputer] load failed', error);
     } finally {
       setLoading(false);
     }
@@ -335,7 +337,11 @@ const MyComputerManage: React.FC = () => {
                           disabled={!item.agentId}
                           onClick={() => {
                             if (item.agentId) {
-                              window.location.href = `/api/sandbox/config/redirect/${item.id}`;
+                              history.push(
+                                `/instant-message?agentId=${encodeURIComponent(
+                                  String(item.agentId),
+                                )}`,
+                              );
                             }
                           }}
                           className="action-btn"

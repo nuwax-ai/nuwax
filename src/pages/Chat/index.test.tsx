@@ -578,6 +578,91 @@ describe('ChatCore / ChatPage', () => {
     window.history.replaceState(null, '', '/');
   });
 
+  it('终端按任务保存：A 隐藏释放连接，B 首次关闭，返回 A 恢复打开', async () => {
+    conversationInfoState.current = {
+      id: 100,
+      agent: { name: 'A', type: AgentTypeEnum.TaskAgent },
+      messageList: [],
+    };
+    modelOverrides.current = { isFileTreeVisible: true };
+    const { rerender } = render(<ChatCore id={100} agentId={200} active />);
+    const header = () => mockLeftContent.mock.calls.at(-1)?.[0]?.headerProps;
+    await waitFor(() => expect(header()).toBeTruthy());
+    act(() => header().handleOpenTerminalPanel());
+    await waitFor(() =>
+      expect(conversationPageCacheManager.getEntry('chat:100')?.view).toBe(
+        'terminal',
+      ),
+    );
+    rerender(<ChatCore id={100} agentId={200} active={false} />);
+    await waitFor(() =>
+      expect(
+        conversationPageCacheManager.getEntry('chat:100')?.resources
+          .terminalConnected,
+      ).toBe(false),
+    );
+    expect(conversationPageCacheManager.getEntry('chat:100')?.view).toBe(
+      'terminal',
+    );
+    conversationInfoState.current = {
+      id: 101,
+      agent: { name: 'B', type: AgentTypeEnum.TaskAgent },
+      messageList: [],
+    };
+    rerender(<ChatCore id={101} agentId={200} active />);
+    await waitFor(() => expect(header().isTerminalIconActive).toBe(false));
+    expect(conversationPageCacheManager.getEntry('chat:101')?.view).not.toBe(
+      'terminal',
+    );
+    conversationInfoState.current = {
+      id: 100,
+      agent: { name: 'A', type: AgentTypeEnum.TaskAgent },
+      messageList: [],
+    };
+    rerender(<ChatCore id={100} agentId={200} active />);
+    await waitFor(() => expect(header().isTerminalIconActive).toBe(true));
+  });
+
+  it('常驻页隐藏后恢复终端，手动关闭与淘汰重建都保持关闭', async () => {
+    conversationInfoState.current = {
+      id: 100,
+      agent: { id: 200, type: AgentTypeEnum.TaskAgent },
+      messageList: [],
+    };
+    modelOverrides.current = { isFileTreeVisible: true };
+    const route = {
+      key: 'conversation:100',
+      kind: 'conversation' as const,
+      conversationId: 100,
+      pathname: '/home/chat/100/200',
+      search: '',
+      params: { id: '100', agentId: '200' },
+    };
+    const view = render(<CachedChatPage route={route} active />);
+    const header = () => mockLeftContent.mock.calls.at(-1)?.[0]?.headerProps;
+    await waitFor(() => expect(header()).toBeTruthy());
+    act(() => header().handleOpenTerminalPanel());
+    await waitFor(() => expect(header().isTerminalIconActive).toBe(true));
+    view.rerender(<CachedChatPage route={route} active={false} />);
+    await waitFor(() =>
+      expect(
+        conversationPageCacheManager.getEntry('chat:100')?.resources
+          .terminalConnected,
+      ).toBe(false),
+    );
+    expect(conversationPageCacheManager.getEntry('chat:100')?.view).toBe(
+      'terminal',
+    );
+    view.rerender(<CachedChatPage route={route} active />);
+    await waitFor(() => expect(header().isTerminalIconActive).toBe(true));
+    act(() => header().handleOpenTerminalPanel());
+    await waitFor(() => expect(header().isTerminalIconActive).toBe(false));
+    view.unmount();
+    conversationPageCacheManager.invalidate('chat:100', 'lru');
+    render(<CachedChatPage route={route} active />);
+    await waitFor(() => expect(header().isTerminalIconActive).toBe(false));
+  });
+
   it('ChatPage：将路由 params 转为数字传给 ChatCore，并渲染主区域', async () => {
     render(<ChatPage />);
 

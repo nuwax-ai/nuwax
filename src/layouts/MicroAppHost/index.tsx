@@ -76,6 +76,7 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
           props: {
             path: currentRef.current.entry.path,
             active: currentRef.current.active,
+            navigationRevision: currentRef.current.entry.navigationRevision,
             onNavigate,
             onAuthExpired: (target: string) => {
               if (mounted) {
@@ -117,13 +118,19 @@ const MicroAppInstance: React.FC<MicroAppInstanceProps> = ({
   useEffect(() => {
     const lease = leaseRef.current;
     if (!lease) return;
-    void lease.update({ path: entry.path, active }).catch((error) => {
-      if (!lease.isDisposed()) {
-        console.error('[micro-app] 路由同步失败', error);
-        setStatus('failed');
-      }
-    });
-  }, [entry.path, active]);
+    void lease
+      .update({
+        path: entry.path,
+        active,
+        navigationRevision: entry.navigationRevision,
+      })
+      .catch((error) => {
+        if (!lease.isDisposed()) {
+          console.error('[micro-app] 路由同步失败', error);
+          setStatus('failed');
+        }
+      });
+  }, [entry.path, entry.navigationRevision, active]);
 
   return (
     <div

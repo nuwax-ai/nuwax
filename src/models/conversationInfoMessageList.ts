@@ -2,6 +2,7 @@ import { AssistantRoleEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { conversationErrorTerminalLogger } from '@/utils/logger';
+import { preserveResolvedMcpAskInteractions } from '@/utils/mcpAskResolution';
 import { isEqual } from 'lodash';
 
 /**
@@ -574,7 +575,10 @@ export function reconcileConversationSnapshotMessages(
   incoming: MessageInfo[] | undefined | null,
 ): MessageInfo[] {
   const currentList = current || [];
-  const incomingList = incoming || [];
+  const incomingList = preserveResolvedMcpAskInteractions(
+    currentList,
+    incoming || [],
+  );
   if (!incomingList.length) {
     return currentList;
   }

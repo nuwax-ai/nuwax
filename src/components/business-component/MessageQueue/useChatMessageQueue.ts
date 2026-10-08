@@ -22,7 +22,7 @@ type SendMessage = (
   selectedAgentMode?: any,
   selectedDocs?: SelectedDocInfo[],
   expertComponents?: QueuedMessage['expertComponents'],
-) => void;
+) => void | Promise<unknown>;
 
 export interface UseChatMessageQueueParams {
   /**
@@ -143,6 +143,20 @@ export const useChatMessageQueue = ({
     }, AWAIT_STREAM_WATCHDOG_MS);
   }, [clearAwaitWatchdog]);
 
+  // UI 与自动消费均消费发送拒绝；问答直发仍由 rawSend 向上返回 Promise。
+  const dispatchMessage = useCallback(
+    (...args: Parameters<SendMessage>) => {
+      const report = (error: unknown) =>
+        console.error('[messageQueue] send failed', error);
+      try {
+        void Promise.resolve(sendMessage(...args)).catch(report);
+      } catch (error) {
+        report(error);
+      }
+    },
+    [sendMessage],
+  );
+
   const canAttemptConsume = useCallback(() => {
     if (consumeLockRef.current) {
       return false;
@@ -198,7 +212,7 @@ export const useChatMessageQueue = ({
         // 发出后立刻进入「等待流结束」，堵住发送后活跃空窗导致的双发
         markAwaitingStreamEnd();
         // 回放入队时的快照参数，避免 skillIds/modelId/agentMode/selectedDocs 丢失
-        sendMessage(
+        dispatchMessage(
           next.text,
           next.files || [],
           next.skillIds,
@@ -229,7 +243,7 @@ export const useChatMessageQueue = ({
     clearConsumeTimers,
     markAwaitingStreamEnd,
     messageQueue.dequeueFirst,
-    sendMessage,
+    dispatchMessage,
   ]);
   scheduleAutoConsumeRef.current = scheduleAutoConsume;
 
@@ -273,7 +287,7 @@ export const useChatMessageQueue = ({
         });
         return;
       }
-      sendMessage(
+      dispatchMessage(
         messageInfo,
         files,
         skillIds,
@@ -283,7 +297,7 @@ export const useChatMessageQueue = ({
         expertComponents,
       );
     },
-    [enqueueBlocked, messageQueue, sendMessage],
+    [enqueueBlocked, messageQueue, dispatchMessage],
   );
 
   useEffect(() => {
