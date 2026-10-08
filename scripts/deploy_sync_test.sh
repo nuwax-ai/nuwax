@@ -148,6 +148,13 @@ retry_git() { # retry_git <最大次数> <git 子命令...>
   done
 }
 
+# 源码冲突退出：die 前打印冲突文件清单（人工处理的第一手信息）
+conflict_files_die() { # $1=中文错误信息
+  echo "---- 源码冲突文件（需人工按语义取舍，机器产物已自动消化，此处仅列需人看的）----" >&2
+  git diff --name-only --diff-filter=U -- . ':(exclude)dist' ':(exclude)src/constants/version.ts' 2>/dev/null | sed 's/^/    /' >&2
+  die "$1"
+}
+
 # merge 冲突自动消化：机器产物冲突无须人工——dist/ 产物文件名带哈希两侧必然各异（随后全量重建）、
 # version.ts 烤哈希两侧各异（构建时统一重写，取本地侧）。仅当冲突全部属于这两类才消化并提交合并；
 # 存在源码冲突则返回 1（调用方 abort 交人工）。调用前提：merge 冲突态尚未 abort。
@@ -236,7 +243,17 @@ run_test_gate() {
     *) echo "    [未放行失败] $f" >&2; unexpected=1 ;;
     esac
   done <<<"$failed"
-  [ "$unexpected" = "0" ] || return 1
+  [ "$unexpected" = "0" ] || {
+    echo "" >&2
+    echo "---- 人工自助定位（无需 AI/agent）----" >&2
+    echo "① 逐套件隔离复跑（隔离挂=真回归需修代码/测试；隔离过=负载抖动，直接重跑本脚本）：" >&2
+    while IFS= read -r f; do
+      echo "    npx vitest run ${f}" >&2
+    done <<<"$failed"
+    echo "② 常见形态：断言与最近合入的接口契约不符（改端点/参数/鉴权方式没同步测试）——" >&2
+    echo "   对照失败断言里的期望值与实际值，找最近改该接口的提交（git log -S '<关键字>'）。" >&2
+    return 1
+  }
   echo "⚠️  质量门以「仅存量挂」放行（清单：${KNOWN_BROKEN_TESTS}）。请尽快修复存量套件并从清单移除。" >&2
   return 0
 }
@@ -507,7 +524,7 @@ else
     # 机器产物冲突（dist/version.ts）自动消化；源码冲突才回滚交人工
     if ! resolve_machine_conflicts "Merge remote-tracking branch 'origin/${VERSION_BRANCH}' into ${REAL_FEATURE}（机器产物冲突自动消化）"; then
       git merge --abort 2>/dev/null || true
-      die "合并 origin/${VERSION_BRANCH} 冲突：已回滚。请手动 git merge 解决冲突提交后，再重跑本脚本"
+      conflict_files_die "合并 origin/${VERSION_BRANCH} 冲突：已回滚。解决后 git commit，再重跑本脚本（断点续跑免重付）"
     fi
   fi
 fi
@@ -579,7 +596,7 @@ else
     -m "merge: 合并 ${REAL_FEATURE} 到 ${VERSION_BRANCH}（版本分支同步 $(date +%F)）"; then
     if ! resolve_machine_conflicts "merge: 合并 ${REAL_FEATURE} 到 ${VERSION_BRANCH}（机器产物冲突自动消化）"; then
       git merge --abort 2>/dev/null || true
-      die "合并 ${REAL_FEATURE} 进 ${VERSION_BRANCH} 冲突：已回滚。请手动在 ${VERSION_BRANCH} 上解决冲突提交后，再重跑本脚本"
+      conflict_files_die "合并 ${REAL_FEATURE} 进 ${VERSION_BRANCH} 冲突：已回滚。解决后 git commit，再重跑本脚本"
     fi
   fi
 fi
@@ -596,7 +613,7 @@ else
     -m "merge: 合并 ${VERSION_BRANCH} 到 ${DEV_BRANCH}（同步测试 $(date +%F)）"; then
     if ! resolve_machine_conflicts "merge: 合并 ${VERSION_BRANCH} 到 ${DEV_BRANCH}（机器产物冲突自动消化）"; then
       git merge --abort 2>/dev/null || true
-      die "合并 ${VERSION_BRANCH} 进 ${DEV_BRANCH} 冲突：已回滚。请手动在 ${DEV_BRANCH} 上解决冲突提交后，再重跑本脚本"
+      conflict_files_die "合并 ${VERSION_BRANCH} 进 ${DEV_BRANCH} 冲突：已回滚。解决后 git commit，再重跑本脚本"
     fi
   fi
 fi
@@ -629,7 +646,7 @@ if ! rgit merge "$DEV_BRANCH" --no-verify \
   # dist 产物（哈希文件名）与 version.ts 烤哈希均为机器产物，自动消化（清 dist 重建/取本地侧）
   if ! resolve_machine_conflicts "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（机器产物冲突自动消化）"; then
     git merge --abort 2>/dev/null || true
-    die "合并 ${DEV_BRANCH} 进 ${TEST_BRANCH} 冲突：已回滚。请手动在 ${TEST_BRANCH} 上解决冲突提交后，再重跑本脚本"
+    conflict_files_die "合并 ${DEV_BRANCH} 进 ${TEST_BRANCH} 冲突：已回滚。解决后 git commit，再重跑本脚本"
   fi
 fi
 verify_microapp_pins
