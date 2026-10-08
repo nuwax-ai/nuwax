@@ -847,6 +847,11 @@ a.tool-detail-resource {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .shimmer-text {
+    // 扫光同时表达执行中状态，降低频率而不抹掉收起组的运行提示。
+    animation-duration: 4.8s;
+  }
+
   .trace-toggle,
   .trace-chevron,
   .tool-group-chevron,

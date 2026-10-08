@@ -19,6 +19,7 @@ import type {
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
 import {
+  findAnswerSegmentsThroughAsk,
   findLastAnswerCandidateSegment,
   isAnswerCandidateMessage,
   selectFinalResultAnswerText,
@@ -427,26 +428,42 @@ const projectTurn = (
     messages: assistantMessages,
     parsedSegments,
   });
+  const answerRefs = findAnswerSegmentsThroughAsk(
+    assistantMessages,
+    parsedSegments,
+    answerRef,
+  );
   const finalAnswer: ConversationFinalAnswer = resolvedFinalResultAnswer
     ? { text: resolvedFinalResultAnswer, source: 'finalResult' }
     : answerRef
     ? {
-        text: (
-          parsedSegments[answerRef.messageIndex][
-            answerRef.segmentIndex
-          ] as Extract<MessageSegment, { type: 'text' }>
-        ).content,
+        text: answerRefs
+          .map(
+            (ref) =>
+              (
+                parsedSegments[ref.messageIndex][ref.segmentIndex] as Extract<
+                  MessageSegment,
+                  { type: 'text' }
+                >
+              ).content,
+          )
+          .join('\n\n'),
         source: 'messageText',
       }
     : { text: '', source: 'none' };
 
   // ---- 组装节点（保持真实顺序）----
   // 回答正文段按对象身份排除（dedupe 只会移除 process 段，text 段对象引用稳定）
-  const answerSegment = answerRef
-    ? (parsedSegments[answerRef.messageIndex][answerRef.segmentIndex] as
-        | MessageSegment
-        | undefined)
-    : undefined;
+  const answerSegments = new Set(
+    answerRefs
+      .map((ref) => parsedSegments[ref.messageIndex][ref.segmentIndex])
+      .filter(
+        (segment) =>
+          !resolvedFinalResultAnswer ||
+          (segment.type === 'text' &&
+            isSameAnswerContent(resolvedFinalResultAnswer, segment.content)),
+      ),
+  );
   const nodes: ConversationProcessNode[] = [];
   assistantMessages.forEach((message, messageIndex) => {
     const messageKey = messageStableKey(message, messageIndex);
@@ -557,7 +574,7 @@ const projectTurn = (
       }
       // text 段：被选为最终回答的段不进轨迹；其余为中间正文（narration）——
       // 留在节点序列原位穿插（工具之间），渲染层直出正文而非折叠行
-      if (segment === answerSegment) {
+      if (answerSegments.has(segment)) {
         return;
       }
       nodes.push({

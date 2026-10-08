@@ -1,8 +1,10 @@
 import {
   finalizeMessagesOnStreamClose,
+  finalizeMessagesOnTerminalTaskStatus,
   finalizeOwnedMessageOnStaleClose,
   markOwnedMessageStreamError,
 } from '@/features/conversation/domain/messageLifecycle';
+import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
   MessageInfo,
@@ -16,6 +18,55 @@ const processing = (id: string): ProcessingInfo =>
   ({ id, status: ProcessingEnum.EXECUTING } as unknown as ProcessingInfo);
 
 describe('conversation message lifecycle', () => {
+  it.each([TaskStatus.COMPLETE, TaskStatus.FAILED])(
+    '确认 %s 终态时清算当前轮的所有运行中消息，保留更早轮次',
+    (taskStatus) => {
+      const earlierRound = message({
+        id: 'earlier-assistant',
+        role: AssistantRoleEnum.ASSISTANT,
+        status: MessageStatusEnum.Loading,
+      });
+      const user = message({
+        id: 'current-user',
+        role: AssistantRoleEnum.USER,
+      });
+      const history = message({
+        id: 'partial-history',
+        role: AssistantRoleEnum.ASSISTANT,
+        status: MessageStatusEnum.Loading,
+        thinkingFinished: false,
+        processingList: [processing('history-tool')],
+      });
+      const resume = message({
+        id: 'resume-output',
+        role: AssistantRoleEnum.ASSISTANT,
+        status: MessageStatusEnum.Incomplete,
+        thinkingFinished: false,
+      });
+      const finishedTail = message({
+        id: 'finished-output',
+        role: AssistantRoleEnum.ASSISTANT,
+        status: MessageStatusEnum.Complete,
+        thinkingFinished: true,
+      });
+      const result = finalizeMessagesOnTerminalTaskStatus(
+        [earlierRound, user, history, resume, finishedTail],
+        taskStatus,
+      );
+      const status =
+        taskStatus === TaskStatus.FAILED
+          ? MessageStatusEnum.Error
+          : MessageStatusEnum.Complete;
+      expect(result[0]).toBe(earlierRound);
+      expect(result[1]).toBe(user);
+      expect(result[2]).toMatchObject({ status, thinkingFinished: true });
+      expect(result[3]).toMatchObject({ status, thinkingFinished: true });
+      expect(result[4]).toBe(finishedTail);
+      expect(history.status).toBe(MessageStatusEnum.Loading);
+      expect(resume.status).toBe(MessageStatusEnum.Incomplete);
+    },
+  );
+
   it('live 流关闭：清理所有 EXECUTING processing，只停止最后一条临时消息', () => {
     const first = message({
       id: 'assistant-old',
