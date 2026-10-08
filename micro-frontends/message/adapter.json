@@ -4,13 +4,15 @@
   "sourceDir": "submodules/nuwax-im",
   "projectDir": "nuwax-im-web",
   "branch": "main",
-  "pin": "f3a568275c0b3ed21537df98a7eedd6bdbf6b070",
+  "pin": "140784225e5d2605a538ac8df07d4bf0e36edf5c",
   "patch": "adapter.patch",
   "overlay": "overlay",
   "entry": "/micro-apps/message/index.html",
   "assetBase": "/micro-apps/message/",
   "businessBase": "/instant-message",
   "devPort": 7110,
-  "buildEnvironment": { "VITE_IM_AUTH_MODE": "platform" },
+  "buildEnvironment": {
+    "VITE_IM_AUTH_MODE": "platform"
+  },
   "hostRootEnvironment": "NUWAX_MICRO_APP_HOST_ROOT"
 }
