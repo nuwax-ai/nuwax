@@ -3,7 +3,7 @@
  *
  * 开发者在三方应用 / 全栈应用详情里提交 scope 变更后，由管理员在此审核：
  * 通过则目标 scope 写回生效；拒绝需填写原因（回传给申请人）。
- * 权限：oauth2_scope_audit_query_list / _pass / _reject（需后端种子）
+ * 权限：oauth2_scope_audit_query / _pass / _reject
  */
 import {
   TableActions,
@@ -94,9 +94,13 @@ const OAuth2ScopeAudit: React.FC = () => {
   }, [location.state, handleReset]);
 
   const handleApprove = async (record: OAuth2ScopeApplyInfo) => {
-    await apiOAuth2ScopeApprove(record.id);
-    message.success(t('approveSuccess'));
-    actionRef.current?.reload();
+    try {
+      await apiOAuth2ScopeApprove(record.id);
+      message.success(t('approveSuccess'));
+      actionRef.current?.reload();
+    } catch {
+      // 请求层已提示失败；消费确认操作的拒绝，保留记录供再次确认重试。
+    }
   };
 
   const handleReject = async ({ reason }: { reason: string }) => {
@@ -248,7 +252,7 @@ const OAuth2ScopeAudit: React.FC = () => {
         columns={columns}
         request={request}
         onReset={handleReset}
-        showQueryButtons={hasPermission('oauth2_scope_audit_query_list')}
+        showQueryButtons={hasPermission('oauth2_scope_audit_query')}
       />
       <XModalForm<{ reason: string }>
         title={t('rejectTitle')}

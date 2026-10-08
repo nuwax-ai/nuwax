@@ -2,6 +2,75 @@
 
 日期：2026-10-07。看板：NUW-17（原任务）、NUW-18（合并与启动）。
 
+## 10 月 8 日：菜单配置与管理页失败重试补充
+
+本轮仍在主目录 `feat-dong.0930-remaining`。原烤哈希 WIP 保留；本节对应的源码、回归测试和文档纳入本次本地提交，尚未推送或部署。下方“未提交”描述为各验收阶段当时的状态。
+
+用户后续收窄本轮范围：IM、Ask Question 和资料库暂不处理，相关历史核查保留但不计入本轮待办或阻塞条件。当前继续范围以原清单 10.08 最新章节为准。
+
+### 真实环境只读核对
+
+- 用户配置菜单后，`https://testagent.xspaceagi.com/api/user/list-menu` 返回菜单 7295/7296 的正确 path，`localhost:3000/system/config/theme` 两菜单实际点击成功，原“处理路径跳转失败”已解除。
+- 敏感词分页 `0000`、总数 0；IdP 列表 `0000`、4 项均启用、自动跳转 0 项；当前绑定 0 项；scope 13 项；租户 `openImageCaptcha=0 / openCaptcha=0`。
+- `oauth2_scope_audit` 菜单查询返回“菜单不存在”，`/api/system/oauth2/page-query` 返回 `4033`“无此资源权限”。未执行审核写入或配置修改。
+- 当日测试 OpenAPI 仍有 1205 路径，无 License/licence/entitlement 路径；21 个 `/api/nuwax-im/*` 路径无会话关联任务与产物读取合同。现有通用定时任务接口不提供 IM 会话关联及成员授权，不能代替真实 provider。
+
+### 本地修复与验证
+
+`SensitiveWord.handleToggle / handleDelete` 与 `AuthMethod.runToggle / handleDelete` 原来没有消费请求拒绝。开关事件会泄漏拒绝；删除确认链也会重新抛出。两页面在各自业务边界消费已提示的失败，不报成功、不刷新，保留原状态；`finally` 解除开关 pending，删除可再次打开确认框重试。未改共享 OperationBtn 或 Modal 组件。
+
+- `tests/systemConfigToggleBoundary.test.tsx` 新增 8 项，覆盖启用/停用、设置/取消自动跳转及两类删除的拒绝后重试。开关 6 项及删除 2 项各自在修前失败，修后通过；连同 AuthMethod utils 和业务 mock 合同，共 29 项通过。
+- 现有 `E2E_CASES=sensitive,auth` 六项页面用例通过；同一个 Ego TaskSpace 41 / p1、专用 mock `localhost:3197` 额外验证 3 类开关和两类删除故障/重试，5 项通过、未处理拒绝为 0。等待确认框入场动画结束后提交，防止自动化点击受过渡阶段影响。
+- 失败时确认原值/记录保留、没有成功通知；重试后后端本地供数及实际页面更新。真实业务环境只读，本地修改仅作用于显式 mock。
+- 改动路径 TypeScript 无报错，Prettier 和 diff 检查通过；`lint:arch` 检查 3011 modules / 13122 dependencies，无新增违规，97 项存量豁免。没有改会话路径，本轮不重复未变更的全量会话门禁。
+
+当前待办已汇总到[原清单最新章节](../../plans/20260929-release0930-remaining-checklist.md#2026-10-08当前待办与继续处理结果)。真实写入闭环、外部契约、共享部署和客户端包继续分别记账。
+
+### 用户授权后的审核菜单创建
+
+用户明确要求在 `localhost:3000/system/menu-permission/menu-manage` 新建，并指定使用 ego-browser。当前新增表单缺少菜单编码字段；通过同一个 Ego TaskSpace 42 的页面登录态调用已有菜单创建接口，填写明确编码，避免自动生成其他编码。
+
+- 菜单：`7789`「授权范围审核」，编码 `oauth2_scope_audit`，父菜单 `195`「系统配置」，路径 `/system/oauth2/scope-audit`，排序 14、启用、应用内打开。初次放在系统管理直系；用户纠正后已通过 ego-browser 编辑父菜单，重新读取确认 `parentId=195`，侧栏层级为「系统管理 → 系统配置 → 授权范围审核」。
+- 关联现有资源：模块 `20140`，查询 `20141 / oauth2_scope_audit_query`，通过 `20142 / oauth2_scope_audit_pass`，拒绝 `20143 / oauth2_scope_audit_reject`。重新读取菜单及资源树，绑定状态均为 1。
+- 实际从侧栏点击进入审核页，列表 HTTP 200 / `code=0000`、总数 0，原 `4033` 已解除；未提交任何审核记录，也没有修改角色分配。
+- 前端原查询权限误用 `_query_list`，真实资源是 `_query`。审核页面与专用 mock 已统一为 `_query`，新增按钮权限及只读查询/拒绝写入回归；修前 3 项失败，修后本文件 15 项、相关定向 33 项通过，格式/diff 与改动路径 TypeScript 检查通过。
+- 当前真实页面的查询、重置按钮已显示，实际点击查询再次返回 `0000`，无错误提示。源码修复未提交、部署；共享环境菜单配置已保存。真实通过/拒绝及生效回填仍待专用申请验证。
+- 专用 mock 的审核节点同步移入 `system_config.children`，合同测试断言不再位于系统管理直系，保留原路径、编码和资源。层级回归修前失败，修后 15 项合同测试通过。
+
+### 真实敏感词管理员操作验收
+
+用户要求继续下一个后，复用 ego-browser 操作 `localhost:3000/system/config/sensitive-word`，请求落到真实测试站；使用独立 TaskSpace 44 / p1，完成后已关闭。本节为用户继续授权后的写入结果，上方只读与 mock 记录保留为此前阶段证据。
+
+- 新增唯一测试词 `Codex验收唯一词_20261008_a11945`，列表记录 ID `3`，初始为违法违禁 / 包含 / 替换。
+- 编辑同 ID 为锚定正则 `^Codex验收唯一词_20261008_a11945[0-9]{2}$`、广告导流 / 正则 / 断开连接；列表正确回显。只匹配专用标记，未使用通配正则。
+- 停用、重新启用均保存成功，页面开关正确回显。敏感词、分类、匹配方式、触发策略、状态五条件组合查询：启用命中 1 条，禁用命中 0 条；请求 `queryFilter` 与界面条件一致，重置后恢复列表。
+- 清理时先停用该记录，再经二次确认删除 ID `3`；最后按唯一标记查询为 0 条。新增、编辑、状态更新、查询和删除接口均 HTTP 200，实际页面完成预期更新，无遗留测试记录。
+- 整个页面操作期间捕获的 `error` / `unhandledrejection` 均为 0。本次未注入真实后端故障，不据此宣称真实失败重试通过；既有本地 mock 故障回归证据仍适用。
+- 当前账号具有管理员写权限，不能证明真实只读权限。已询问专用只读账号；验收时应确认实际返回资源仅含 `sensitive_word_query`，查询可用而新增、编辑、删除、启停受限，不修改共享管理员角色。
+
+### 真实登录方式管理与自动跳转故障核对
+
+通过 ego-browser TaskSpace 45 / p1 操作 `localhost:3000/system/config/auth-method`，请求落到真实测试站；完成后已关闭空间。本次仅操作独立测试项，结束核对原列表恢复。
+
+- 新增 CUSTOM OAuth2 项 `7`，名称 `Codex验收IdP_20261008_a11945`，使用假测试 Client ID/Secret 与 `https://codex-idp-a11945.example.invalid/` 授权、Token、UserInfo 端点；`scope=openid profile`、自动注册/绑定关闭、排序 999。新增默认停用，成功弹窗回显 `https://testagent.xspaceagi.com/api/auth/idp/callback?provider=7`。
+- 编辑时 CAS/OAuth2/微信类型控件锁定，Secret 输入为空。修改名称及授权端点后保存，请求省略 `config.clientSecret`；重新打开表单核对名称与 `/authorize-v2` 端点持久化，Secret 仍为空，自动注册/绑定仍关闭。
+- 仅该测试项启用后随即停用；自动跳转始终为 0。二次确认删除 ID `7`，列表恢复原 ID `5 / 1 / 2 / 4`，其显示摘要及开关状态与操作前完全一致，无遗留测试项。页面 `error` / `unhandledrejection` 均为 0。
+- 当前全部项自动跳转已关闭，因此用相同页面登录态探测幂等取消：`POST https://testagent.xspaceagi.com/api/system/idp/auto-redirect`，JSON `{"id":null}`。返回 HTTP 200、`code=5000`、`message=系统开小差啦，请稍后重试`；重新读取列表成功，原 4 项及临时项的 `autoRedirect` 均仍为 0。
+- 当日重新读取[测试后端 OpenAPI](https://test-nvwa-api.xspaceagi.com/v3/api-docs)，1205 路径，`AuthIdpAutoRedirectDto.id` 明确说明“传空表示取消自动跳转”，operation 同样说明 id 为空表示取消。因此可以确认合法取消请求的后端故障仍存在；具体内部异常需后端日志定位，不能仅凭业务错误码推断。
+- 未测试共享租户的自动跳转正向设置：该设置影响所有未登录用户，`?local=1` 与独立 Ego Space 不隔离租户。设置、唯一性及停用清除仍需隔离租户；真实第三方认证、绑定/解绑仍需实际提供方测试身份。本次不据此宣称这些闭环完成。
+
+### 三方应用 scope 真实审核与失败重试闭环
+
+通过同一个 ego-browser TaskSpace 47 / p1 在个人空间 `752` 创建独立三方应用 `503`，名称 `Codex授权审核验收_20261008_a11945`。主页与回调为唯一 `.invalid` HTTPS 地址，全程未发布、未调用 OAuth authorize/token，未展示或复制密钥；详情按既有逻辑读取认证信息。验收后经列表二次确认删除 `/api/user-project/oauth2/delete/503`，HTTP 200，按唯一名称查询列表已无该项，空间已关闭。审核记录是否随应用删除清理及保存期限未验证。
+
+- 保存 `scopes=[profile,user:space]`，真实设置返回 `0000 / Pending`，生效 `scopes=[profile]`、待审 `pendingScopes=[profile,user:space]`。审核列表只有本次新建项，申请 ID `1`、类型 ThirdApp、projectId `503`。
+- 通过申请 1 后重新进入详情，真实设置为 `0000 / Approved`，生效范围为 `profile + user:space`，`pendingScopes=null`。
+- 再保存移除 `user:space` 的申请，真实设置为 `Pending`，待审值为 `profile`，生效值继续为 `profile + user:space`。拒绝申请 ID `2`，原因“Codex 20261008 独立验收：拒绝本次移除申请，保留已生效范围。”；重新进入详情为 `0000 / Rejected`、待审值清空、生效范围不变，页面警告和接口均正确回填原因。
+- 发现 `handleApprove` 原本没有消费拒绝，实际静态确认链会泄漏为全局未处理拒绝。仅给审核页补 catch；失败不成功提示、不刷新，保留申请供再次确认。`handleReject` 原有 catch/false 行为保持。
+- 新增 `tests/oauthScopeAuditBoundary.test.tsx` 两项实际 handler 失败/重试回归；旧实现通过 handler 用例明确失败，拒绝用例通过；修后与 `release0930RemainingMock.test.ts` 合计 17 项通过，Prettier/diff 检查通过。
+- 实际审核页面针对本次申请，用当前 Page 的 `Network.setBlockedURLs` 精确阻断 `/approve/1`、`/reject/2`，仅模拟浏览器请求故障；每项均在 finally 清空阻断后再重试，后端真实审核写入只发生在恢复后的成功请求。通过失败时提示“网络错误”、确认框关闭、Pending 记录保留；重新确认后“已通过”。拒绝失败时提示“网络错误”、弹窗/原因/Pending 记录保留；原原因重试成功后关闭。两项过程中 `error / unhandledrejection` 均为 0。
+- 本节覆盖 ThirdApp 的真实接口闭环；全栈应用类型仍以现有本地 mock 与详情保存回归为证据，不能据本节判定该类型真实联调已完成。新增源码未提交、推送或部署。
+
 ## 原任务继续收尾结果（10 月 7 日 19:01 更新）
 
 本节补充下文首轮合并与启动记录。开发仍在主目录、`feat-dong.0930-remaining`；本轮新增源码已本地提交，未推送、未部署。

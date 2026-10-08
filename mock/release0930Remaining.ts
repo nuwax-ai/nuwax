@@ -55,7 +55,7 @@ const resources = {
   auth_method_config: ['query', 'add', 'modify', 'delete', 'enable'].map(
     (s) => `auth_method_${s}`,
   ),
-  oauth2_scope_audit: ['query_list', 'pass', 'reject'].map(
+  oauth2_scope_audit: ['query', 'pass', 'reject'].map(
     (s) => `oauth2_scope_audit_${s}`,
   ),
 };
@@ -212,8 +212,7 @@ export function createRelease0930Mock() {
   const handlers: Record<string, Handler> = {};
   const allowed = (resource: string) =>
     state.config.permissionMode === 'admin' ||
-    (state.config.permissionMode === 'read-only' &&
-      /_query(?:_list)?$/.test(resource));
+    (state.config.permissionMode === 'read-only' && /_query$/.test(resource));
   const authenticated = (req: any) =>
     req.headers?.authorization === `Bearer ${TOKEN}` ||
     String(req.headers?.cookie || '').includes(`ticket=${TOKEN}`);
@@ -512,13 +511,13 @@ export function createRelease0930Mock() {
             '登录方式管理',
             '/system/config/auth-method',
           ),
+          menu(
+            104,
+            'oauth2_scope_audit',
+            '授权范围审核',
+            '/system/oauth2/scope-audit',
+          ),
         ]),
-        menu(
-          104,
-          'oauth2_scope_audit',
-          '授权范围审核',
-          '/system/oauth2/scope-audit',
-        ),
       ]),
     ]);
   });
@@ -906,32 +905,35 @@ export function createRelease0930Mock() {
         res,
       );
     },
-    'oauth2_scope_audit_query_list',
+    'oauth2_scope_audit_query',
   );
+  const createScopeAuditHandler =
+    (operation: 'approve' | 'reject'): Handler =>
+    (req, res) => {
+      const application = state.applications.find(
+        (item) => item.id === Number(req.params.id),
+      );
+      if (!application || application.status !== 'Pending')
+        return fail(res, '申请不存在或已审核');
+      if (operation === 'reject' && !req.body?.reason?.trim())
+        return fail(res, '请填写拒绝原因');
+      const setting = state.projects[application.projectId];
+      application.status = operation === 'approve' ? 'Approved' : 'Rejected';
+      application.reviewedAt = CREATED;
+      application.rejectReason = req.body?.reason || '';
+      setting.scopeApplyStatus = application.status;
+      delete setting.pendingScopes;
+      if (operation === 'approve') {
+        setting.scopes = [...application.scopes];
+        delete setting.scopeRejectReason;
+      } else setting.scopeRejectReason = application.rejectReason;
+      success(res);
+    };
   for (const operation of ['approve', 'reject'] as const)
     add(
       'POST',
       `/api/system/oauth2/${operation}/:id`,
-      (req, res) => {
-        const application = state.applications.find(
-          (item) => item.id === Number(req.params.id),
-        );
-        if (!application || application.status !== 'Pending')
-          return fail(res, '申请不存在或已审核');
-        if (operation === 'reject' && !req.body?.reason?.trim())
-          return fail(res, '请填写拒绝原因');
-        const setting = state.projects[application.projectId];
-        application.status = operation === 'approve' ? 'Approved' : 'Rejected';
-        application.reviewedAt = CREATED;
-        application.rejectReason = req.body?.reason || '';
-        setting.scopeApplyStatus = application.status;
-        delete setting.pendingScopes;
-        if (operation === 'approve') {
-          setting.scopes = [...application.scopes];
-          delete setting.scopeRejectReason;
-        } else setting.scopeRejectReason = application.rejectReason;
-        success(res);
-      },
+      createScopeAuditHandler(operation),
       operation === 'approve'
         ? 'oauth2_scope_audit_pass'
         : 'oauth2_scope_audit_reject',

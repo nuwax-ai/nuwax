@@ -1,7 +1,44 @@
-import { describe, expect, it } from 'vitest';
+import OAuth2ScopeAudit from '@/pages/SystemManagement/OAuth2ScopeAudit';
+import { cleanup, render, screen } from '@testing-library/react';
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import disabledHandlers, {
   createRelease0930Mock,
 } from '../mock/release0930Remaining';
+
+const permission = vi.hoisted(() => ({ codes: new Set<string>() }));
+vi.mock('umi', () => ({
+  request: vi.fn(),
+  useLocation: () => ({ state: null }),
+  useModel: () => ({
+    hasPermission: (code: string) => permission.codes.has(code),
+  }),
+}));
+vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
+vi.mock('@/components/WorkspaceLayout', () => ({
+  default: ({ children }: React.PropsWithChildren) =>
+    React.createElement('div', null, children),
+}));
+vi.mock('@/components/ProComponents', () => ({
+  TableActions: () => null,
+  XModalForm: () => null,
+  // 页面决定查询按钮权限，隔离表格内部供数；不替换页面权限判断。
+  XProTable: ({ showQueryButtons }: { showQueryButtons: boolean }) =>
+    showQueryButtons
+      ? React.createElement(
+          'div',
+          null,
+          React.createElement('button', { type: 'button' }, '查询'),
+          React.createElement('button', { type: 'button' }, '重置'),
+        )
+      : null,
+}));
+vi.mock('@ant-design/pro-components', () => ({ ProFormTextArea: () => null }));
+
+beforeEach(() => {
+  permission.codes.clear();
+});
+afterEach(cleanup);
 
 const CONTROL = '/api/mock/release0930';
 const AUTH = {
@@ -79,6 +116,56 @@ describe('9.30 本地业务 mock 合同', () => {
     expect(resourceCodes).toContain('auth_method_query');
     expect(resourceCodes).not.toContain('auth_method_modify');
   });
+  it('scope 审核位于系统配置下，只读菜单允许查询并拒绝审核写入', () => {
+    const request = client();
+    request('POST', `${CONTROL}/configure`, { permissionMode: 'read-only' });
+    const system = request('GET', '/api/user/list-menu').data.find(
+      (menu: any) => menu.code === 'system_manage',
+    );
+    expect(system.children.map((menu: any) => menu.code)).not.toContain(
+      'oauth2_scope_audit',
+    );
+    const audit = system.children
+      .find((menu: any) => menu.code === 'system_config')
+      .children.find((menu: any) => menu.code === 'oauth2_scope_audit');
+    expect(audit).toMatchObject({
+      id: 104,
+      code: 'oauth2_scope_audit',
+      name: '授权范围审核',
+      path: '/system/oauth2/scope-audit',
+      status: 1,
+      openType: 1,
+    });
+    expect(audit.resourceTree.map((resource: any) => resource.code)).toEqual([
+      'oauth2_scope_audit_query',
+    ]);
+    expect(request('POST', '/api/system/oauth2/page-query').code).toBe('0000');
+    expect(request('POST', '/api/system/oauth2/approve/1').code).toBe('4033');
+    expect(
+      request('POST', '/api/system/oauth2/reject/1', { reason: '原因' }).code,
+    ).toBe('4033');
+    request('POST', `${CONTROL}/configure`, { permissionMode: 'no-access' });
+    expect(request('POST', '/api/system/oauth2/page-query').code).toBe('4033');
+  });
+  it('scope 审核页面获得真实查询资源后显示查询与重置', () => {
+    permission.codes.add('oauth2_scope_audit_query');
+    render(React.createElement(OAuth2ScopeAudit));
+    expect(screen.getByRole('button', { name: '查询' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '重置' })).toBeInTheDocument();
+  });
+  it.each([{ codes: [] }, { codes: ['oauth2_scope_audit_query_list'] }])(
+    'scope 审核页面缺少真实查询资源时不提供查询按钮 (%#)',
+    ({ codes }) => {
+      permission.codes = new Set(codes);
+      render(React.createElement(OAuth2ScopeAudit));
+      expect(
+        screen.queryByRole('button', { name: '查询' }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: '重置' }),
+      ).not.toBeInTheDocument();
+    },
+  );
   it('敏感词操作与筛选真实更新数据，重置可恢复', () => {
     const request = client();
     request('POST', '/api/system/sensitive/word/create', {

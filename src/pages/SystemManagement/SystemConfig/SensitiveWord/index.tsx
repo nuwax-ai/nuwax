@@ -109,15 +109,21 @@ const SensitiveWord: React.FC = () => {
         ),
       );
       actionRef.current?.reload();
+    } catch {
+      // 请求层已提示失败；消费事件 Promise 的拒绝，保留原状态供重试。
     } finally {
       setTogglingId(undefined);
     }
   };
 
   const handleDelete = async (record: SensitiveWordInfo) => {
-    await apiSensitiveWordDelete(record.id);
-    message.success(dict('PC.Common.Global.deleteSuccess'));
-    actionRef.current?.reload();
+    try {
+      await apiSensitiveWordDelete(record.id);
+      message.success(dict('PC.Common.Global.deleteSuccess'));
+      actionRef.current?.reload();
+    } catch {
+      // 请求层已提示失败；保留列表，关闭确认框后可重新确认删除。
+    }
   };
 
   const categoryOptions = getCategoryOptions();
