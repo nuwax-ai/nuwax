@@ -232,9 +232,15 @@ describe('桌面 IdP 返回', () => {
     );
     expect(syncSession).not.toHaveBeenCalled();
   });
-  it.each(['1', 'bind'])(
-    '失败回跳原样带回成功 redirect 包装时解开目标 (%s)',
-    async (mode) => {
+  it.each([
+    ['gateway', '1'],
+    ['gateway', 'bind'],
+    ['direct', '1'],
+    ['direct', 'bind'],
+  ] as const)(
+    '失败回跳原样带回成功 redirect 包装时解开目标 (%s/%s)',
+    async (loadMode, mode) => {
+      getContext.mockResolvedValue({ ...context, loadMode });
       const callback = `/login${returned('/home?setting=account-bind', mode)}`;
       setPage(
         business,
@@ -253,11 +259,15 @@ describe('桌面 IdP 返回', () => {
       expect(target.searchParams.has('desktopIdpReturn')).toBe(false);
     },
   );
-  it('已经在目标源的普通登录错误不重复返回', async () => {
-    setPage(gateway, '?idpError=denied');
-    expect(await completeDesktopIdpReturn()).toBe('none');
-    expect(replace).not.toHaveBeenCalled();
-  });
+  it.each(['direct', 'gateway'] as const)(
+    '已经在目标源的普通登录错误不重复返回 (%s)',
+    async (loadMode) => {
+      getContext.mockResolvedValue({ ...context, loadMode });
+      setPage(loadMode === 'direct' ? business : gateway, '?idpError=denied');
+      expect(await completeDesktopIdpReturn()).toBe('none');
+      expect(replace).not.toHaveBeenCalled();
+    },
+  );
   it('外部/网关页面不能用 marker 提升 Cookie', async () => {
     setPage(gateway, returned());
     expect(await completeDesktopIdpReturn()).toBe('failed');
