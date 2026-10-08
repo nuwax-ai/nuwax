@@ -382,6 +382,10 @@ export default defineConfig({
       },
     });
 
+    // runtime（含全量 chunk 文件名映射）抽成独立单文件：任一异步 chunk 哈希
+    // 变化不再连带入口 chunk 哈希变化，增量发版时未改动页面的缓存仍可命中。
+    config.optimization.runtimeChunk('single');
+
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
         languages: [

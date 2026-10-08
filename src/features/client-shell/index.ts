@@ -6,7 +6,7 @@
  * 组件/服务同址，通用业务代码（app.tsx / 布局）只留最小挂载点。
  * 浏览器端全部 no-op/自隐藏（各子模块内部已做宿主 feature-detect）。
  */
-import { APP_GIT_HASH, APP_VERSION } from '@/constants/version';
+import { APP_VERSION } from '@/constants/version';
 import { subscribeNativeImUnread } from '@/services/imEventBridge';
 import { initTitlebarDragGesture } from '@/services/titlebarDragGesture';
 import { hostBridge } from '@/utils/hostBridge';
@@ -20,11 +20,21 @@ export function initClientShell(): () => void {
   // IM 尚未打开时也恢复保存的原生通知开关，等待文档握手后同步。
   const disposeImPreference = initImNotificationPreference();
   const disposeImUnread = subscribeNativeImUnread();
-  // 前端构建版本上报（壳关于页「界面版本（nuwax pc web）」展示）
-  hostBridge.meta.syncWebInfo({
-    appVersion: APP_VERSION,
-    ...(APP_GIT_HASH ? { gitHash: APP_GIT_HASH } : {}),
-  });
+  // 前端构建版本上报（壳关于页「界面版本（nuwax pc web）」展示）。
+  // gitHash 不再构建期烤入源码（每次提交都会扰动入口 chunk 的 contenthash），
+  // 改从构建产物 version.json 运行时读取补报；读取失败仅缺省，不影响首报。
+  hostBridge.meta.syncWebInfo({ appVersion: APP_VERSION });
+  fetch('/version.json', { cache: 'no-store' })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((info: { gitHash?: string } | null) => {
+      if (info?.gitHash) {
+        hostBridge.meta.syncWebInfo({
+          appVersion: APP_VERSION,
+          gitHash: info.gitHash,
+        });
+      }
+    })
+    .catch(() => {});
 
   // 标题栏手势（mousedown 命中判定→壳主进程拖窗/双击缩放；壳层无覆盖零吞点击）
   const disposeDragGesture = initTitlebarDragGesture();
