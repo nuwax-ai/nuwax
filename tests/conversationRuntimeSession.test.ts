@@ -7,6 +7,7 @@ import { reconcileAcpPermissionStatusesInMessageList } from '@/components/busine
 import { createConversationRuntimeSession } from '@/features/conversation/runtime/createConversationRuntimeSession';
 import type { ConversationEffectsAdapter } from '@/features/conversation/runtime/effectDispatcher';
 import {
+  AssistantRoleEnum,
   ConversationEventTypeEnum,
   MessageModeEnum,
   TaskStatus,
@@ -15,6 +16,7 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import type {
   ConversationChatParams,
   ConversationChatResponse,
+  MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -649,15 +651,25 @@ describe('conversationRuntimeSession', () => {
     expect(mockCreateSSE).toHaveBeenCalledTimes(1);
   });
 
-  it('R3 resume：sub FINAL_RESULT 统一清算占位与执行中工具', () => {
+  it('R3 resume：sub FINAL_RESULT 统一清算半途快照、恢复占位与执行中工具', () => {
     const applyTaskStatus = vi.fn();
     const { session } = createSession({ applyTaskStatus });
     mockCreateSSE.mockReturnValue(vi.fn());
 
-    session.resumeConversationStream(1001, [], undefined, 'test-terminal');
+    const history = [
+      { id: 'resume-user', role: AssistantRoleEnum.USER },
+      {
+        id: 'resume-history',
+        role: AssistantRoleEnum.ASSISTANT,
+        status: MessageStatusEnum.Loading,
+        thinkingFinished: false,
+        text: '恢复前的分析。',
+      },
+    ] as MessageInfo[];
+    session.resumeConversationStream(1001, history, undefined, 'test-terminal');
     const resumeCallbacks = mockCreateSSE.mock.calls[0][0];
-    const assistant = session.store.getSnapshot()[0];
-    session.store.patchMessage(assistant.id, {
+    const assistant = session.store.getSnapshot()[2];
+    session.store.patchMessage(String(assistant.id), {
       processingList: [
         { executeId: 'resume-tool', status: 'EXECUTING' } as never,
       ],
@@ -672,7 +684,11 @@ describe('conversationRuntimeSession', () => {
       },
     } as ConversationChatResponse);
 
-    const finalized = session.store.getSnapshot()[0];
+    expect(session.store.getSnapshot()[1]).toMatchObject({
+      status: MessageStatusEnum.Complete,
+      thinkingFinished: true,
+    });
+    const finalized = session.store.getSnapshot()[2];
     expect(finalized.status).toBe(MessageStatusEnum.Complete);
     expect(finalized.processingList?.[0].status).toBe('FINISHED');
     expect(applyTaskStatus).toHaveBeenCalledWith(1001, TaskStatus.COMPLETE);
