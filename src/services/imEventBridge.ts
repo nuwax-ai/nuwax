@@ -1,3 +1,4 @@
+import { EVENT_TYPE } from '@/constants/event.constants';
 import {
   getCurrentLoginStatus,
   subscribeLoginStatus,
@@ -60,7 +61,15 @@ export function subscribeImEvents(): () => void {
     unsubscribers.push(
       im.onCustomEvent((event) => {
         // IM 只发布 payload；消费标记仍由 batch 自己负责。
-        if (isCurrent()) eventBus.emit(event.eventType, event.payload);
+        if (!isCurrent()) return;
+        eventBus.emit(event.eventType, event.payload);
+        if (
+          event.eventType === 'chat_start' ||
+          event.eventType === EVENT_TYPE.ChatFinished
+        ) {
+          // 项目面板已有开始/结束处理器；无 ID 的刷新通知只更新导航任务列表。
+          eventBus.emit(EVENT_TYPE.RefreshConversationList);
+        }
       }),
     );
   }

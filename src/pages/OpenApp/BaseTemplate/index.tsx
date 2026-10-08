@@ -377,6 +377,18 @@ const BaseTemplate: React.FC = () => {
     onChatFinished: handleConversationUpdate,
   });
 
+  useEffect(() => {
+    const refreshHistory = () => {
+      runHistory({
+        agentId,
+        limit: Math.max(8, conversationList?.length ?? 0),
+      });
+    };
+    eventBus.on(EVENT_TYPE.RefreshConversationList, refreshHistory);
+    return () =>
+      eventBus.off(EVENT_TYPE.RefreshConversationList, refreshHistory);
+  }, [agentId, conversationList?.length, runHistory]);
+
   // 图片错误处理
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.onerror = null;
