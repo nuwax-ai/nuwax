@@ -9,6 +9,7 @@ import ChatInputUnified, {
 } from '@/components/business-component/ChatInputUnified';
 import type { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import SiteFooter from '@/components/SiteFooter';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   findDefaultAgent,
   findTypeFallbackAgent,
@@ -36,6 +37,7 @@ import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { dict } from '@/services/i18nRuntime';
 import { fetchChatboxCategories } from '@/services/square';
+import { apiNormalProjectGetById } from '@/services/userProjectApp';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
@@ -52,7 +54,10 @@ import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { SquareCategoryInfo } from '@/types/interfaces/square';
 import {
   buildHomeSendPlan,
+  resolvePersonalWorkspacePath,
+  resolvePinnedProjectComputerId,
   resolvePinnedSandboxSelectable,
+  resolveProjectWorkspacePath,
 } from '@/utils/homeSendPlan';
 import { App } from 'antd';
 import classNames from 'classnames';
@@ -120,6 +125,16 @@ const Home: React.FC = () => {
     useState<DisplayRecommendInfo>();
   /** 项目上框（项目列表「+ 新建会话」透传；存在期间约束智能体可选范围并直接建会话绑定项目） */
   const [pinnedProject, setPinnedProject] = useState<PinnedProjectInfo>();
+  const [pinnedProjectConfigLoading, setPinnedProjectConfigLoading] =
+    useState(false);
+  const pinnedProjectConfigSequence = useRef(0);
+  const homeMounted = useRef(true);
+  useEffect(() => {
+    homeMounted.current = true;
+    return () => {
+      homeMounted.current = false;
+    };
+  }, []);
   // 上框命中失败提示去重（同一项目只提示一次）
   const agentMissedPromptedRef = useRef<number>();
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -216,8 +231,9 @@ const Home: React.FC = () => {
     [selectedFunctionType],
   );
   // 网站应用等不支持个人电脑的类型：电脑选择锁定云端、工作目录栏一并隐藏
-  const disablePersonalComputer = selectedProjectType
-    ? !getWorkspaceDirPolicy(selectedProjectType).personalComputer
+  const computerProjectType = pinnedProject?.projectType ?? selectedProjectType;
+  const disablePersonalComputer = computerProjectType
+    ? !getWorkspaceDirPolicy(computerProjectType).personalComputer
     : false;
   const effectiveTaskAgentActive = selectedRecommend
     ? isTaskAgentFunctionType(selectedFunctionType)
@@ -311,8 +327,8 @@ const Home: React.FC = () => {
   }, [agentDetail?.manualComponents]);
 
   useEffect(() => {
-    // 沙箱按 agent 绑定：这里不清空（清空会触发选择器以旧 agentId 任意回落），
-    // 切换后的解析（该 agent 的记忆/云端默认）由 ComputerTypeSelector strictAgentMemory 承接
+    // 项目内保留当前电脑；项目外由选择器解析新智能体的绑定与记忆。
+    // 此处不清空，避免选择器按旧 agentId 回落。
     setSelectedModelId(undefined);
     setSelectedSpaceId(undefined);
   }, [selectedRecommend]);
@@ -321,22 +337,78 @@ const Home: React.FC = () => {
   useEffect(() => {
     const pinned = consumePinnedProject();
     if (!pinned) return;
-    // 同项目重复 pin（项目列表连续点「+」）只刷新上框数据（名称/图标可能
-    // 更新），不重置选择态：重置会把会话对象弹回租户默认智能体，其详情与
-    // 命中推荐位的详情并发，工具选中被默认工具覆盖（禅道bug2394）
-    const isSameProject = pinnedProject?.projectId === pinned.projectId;
+    // 同项目再次新建任务重读电脑与目录，保留会话对象及草稿，避免默认智能体
+    // 详情并发覆盖已选工具（禅道bug2394）。项目身份使用类型与 ID 的复合键。
+    const isSameProject =
+      pinnedProject?.projectId === pinned.projectId &&
+      pinnedProject?.projectType === pinned.projectType;
+    const requestSequence = ++pinnedProjectConfigSequence.current;
+    const isNormalProject = resolvePinnedSandboxSelectable(pinned);
+    setPinnedProjectConfigLoading(isNormalProject);
     setPinnedProject(pinned);
-    if (isSameProject) return;
-    agentMissedPromptedRef.current = undefined;
-    // 上框项目自带空间/沙箱/工作区，复位与之互斥的选择
-    setSummonedExpert(undefined);
-    setSelectedRecommend(undefined);
-    setUserPickedCategory(null);
-    setSelectedComputerId('-1');
-    setWorkspaceDir('');
-    setSelectedModelId(undefined);
-    setSelectedSpaceId(undefined);
-  }, [contextMap, consumePinnedProject, pinnedProject?.projectId]);
+    if (!isSameProject) {
+      agentMissedPromptedRef.current = undefined;
+      // 切换项目才复位与之互斥的智能体、模型和空间选择。
+      setSummonedExpert(undefined);
+      setSelectedRecommend(undefined);
+      setUserPickedCategory(null);
+      setSelectedComputerId('-1');
+      setWorkspaceDir('');
+      setSelectedModelId(undefined);
+      setSelectedSpaceId(undefined);
+    }
+    if (!isNormalProject) return;
+
+    const applyProjectComputer = (project: PinnedProjectInfo) => {
+      const computerId = resolvePinnedProjectComputerId(project);
+      setSelectedComputerId(computerId);
+      setWorkspaceDir(
+        resolvePersonalWorkspacePath(
+          computerId,
+          project.workspacePath ?? undefined,
+        ) ?? '',
+      );
+    };
+    // 先回填入口已携带的配置，读取一次最新详情补齐列表可能缺失的目录。
+    applyProjectComputer(pinned);
+    void (async () => {
+      try {
+        const res = await apiNormalProjectGetById(pinned.projectId);
+        if (
+          !homeMounted.current ||
+          requestSequence !== pinnedProjectConfigSequence.current ||
+          res?.code !== SUCCESS_CODE ||
+          res.success === false ||
+          !res.data
+        ) {
+          return;
+        }
+        const project = {
+          ...pinned,
+          sandboxId: res.data.sandboxId ?? pinned.sandboxId,
+          sandboxType: res.data.sandboxType || pinned.sandboxType,
+          workspacePath: resolveProjectWorkspacePath(res.data),
+        };
+        setPinnedProject(project);
+        applyProjectComputer(project);
+      } catch (error) {
+        // 请求层负责业务提示；读取失败时仍保留入口配置，允许用户修改或重试。
+        console.error('读取项目任务默认配置失败', error);
+      } finally {
+        if (
+          homeMounted.current &&
+          requestSequence === pinnedProjectConfigSequence.current
+        ) {
+          setPinnedProjectConfigLoading(false);
+        }
+      }
+    })();
+  }, [
+    contextMap,
+    consumePinnedProject,
+    pinnedProject?.projectId,
+    pinnedProject?.projectType,
+  ]);
 
   // 上框默认命中：全栈优先按项目 devAgentId 精确命中推荐位（列表晚到时同样生效）；
   // devAgentId 契约未 ready 或未命中时，按类型兜底唯一同类型推荐自动选中
@@ -384,7 +456,7 @@ const Home: React.FC = () => {
     selectedDocs?: SelectedDocInfo[],
     expertComponents?: AgentSelectedComponentInfo[],
   ) => {
-    if (submitting) return;
+    if (submitting || pinnedProjectConfigLoading) return;
 
     if (!tenantConfigInfo) {
       message.warning(dict('PC.Pages.Home.noTenantInfo'));
@@ -520,9 +592,8 @@ const Home: React.FC = () => {
       prev?.id === item.id ? (isUserAppPinned ? prev : undefined) : item,
     );
     if (!isDeselectBlocked) {
-      // 显式切换（或非上框取消）：沙箱交由选择器按新智能体绑定解析
-      // （strictAgentMemory：其记忆，未绑定回落云端默认；此处不清空避免旧 agentId 回落），
-      // 模型/空间复位，输入清空；外部技能 chip 随输入一并清
+      // 项目内保留电脑选择，项目外由选择器解析新智能体的绑定与记忆。
+      // 模型/空间复位，输入清空；外部技能 chip 随输入一并清。
       setSelectedSkill(undefined);
       setSelectedModelId(undefined);
       setSelectedSpaceId(undefined);
@@ -536,6 +607,8 @@ const Home: React.FC = () => {
 
   // 移除项目上框:恢复首页默认形态(全量推荐/默认门控/电脑复位)
   const handleClearPinnedProject = useCallback(() => {
+    ++pinnedProjectConfigSequence.current;
+    setPinnedProjectConfigLoading(false);
     setPinnedProject(undefined);
     agentMissedPromptedRef.current = undefined;
     setSelectedRecommend(undefined);
@@ -600,7 +673,7 @@ const Home: React.FC = () => {
           className={cx(styles.textarea)}
           onEnter={handleEnter}
           isClearInput={false}
-          wholeDisabled={submitting}
+          wholeDisabled={submitting || pinnedProjectConfigLoading}
           // 首页草稿：固定作用域 key（无会话 id），24h 内回首页恢复未发送输入
           draftKey="home"
           showGuidQuestions={false}
@@ -614,9 +687,12 @@ const Home: React.FC = () => {
           }
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
-          isTaskAgentActive={effectiveTaskAgentActive}
+          isTaskAgentActive={
+            pinnedProjectSandboxSelectable || effectiveTaskAgentActive
+          }
           selectedComputerId={selectedComputerId}
           onComputerSelect={(id) => {
+            if (pinnedProjectConfigLoading) return;
             setSelectedComputerId(id);
             // 切回云电脑时清掉已选工作目录（仅个人电脑生效）
             if (id !== selectedComputerId) setWorkspaceDir('');
@@ -624,7 +700,11 @@ const Home: React.FC = () => {
           workspacePath={workspacePath}
           onWorkspaceDirChange={
             // 无目录能力的类型（全栈等）不传回调 → 工作目录栏不渲染
-            disablePersonalComputer ? undefined : setWorkspaceDir
+            disablePersonalComputer
+              ? undefined
+              : (path) => {
+                  if (!pinnedProjectConfigLoading) setWorkspaceDir(path);
+                }
           }
           disablePersonalComputer={disablePersonalComputer}
           agentId={agentDetail?.agentId}
@@ -633,9 +713,14 @@ const Home: React.FC = () => {
               ? agentDetail.guidQuestionDtos
               : []
           }
-          agentSandboxId={agentDetail?.sandboxId}
-          readonly={!agentDetail?.allowPrivateSandbox}
-          // 沙箱按 agent 绑定：切换后由选择器解析该 agent 的记忆（未绑定回落云端默认）
+          // 常规项目继承项目配置，允许修改；项目外沿用智能体绑定和记忆。
+          agentSandboxId={
+            pinnedProjectSandboxSelectable ? undefined : agentDetail?.sandboxId
+          }
+          readonly={
+            !pinnedProjectSandboxSelectable && !agentDetail?.allowPrivateSandbox
+          }
+          autoSelectComputer={!pinnedProjectSandboxSelectable}
           strictAgentMemory
           /* / 能力弹窗默认由首页开放；ChatBot 或详情加载期间由
              agentType/agentTypeLoading 统一关闭。 */

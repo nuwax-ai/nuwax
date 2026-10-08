@@ -13,6 +13,7 @@ import {
   saveDraft,
 } from '@/components/business-component/ChatInputUnified/draftStorage';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   act,
   cleanup,
@@ -345,12 +346,14 @@ function ControlledHomeComputer({
   initialComputerId = '555',
   initialWorkspacePath = '/work/project',
   agentSandboxId = '555',
+  projectTask = false,
   onComputerSelect,
   onWorkspaceDirChange,
 }: {
   initialComputerId?: string;
   initialWorkspacePath?: string;
   agentSandboxId?: string | number;
+  projectTask?: boolean;
   onComputerSelect: (id: string) => void;
   onWorkspaceDirChange: (dir: string) => void;
 }) {
@@ -363,7 +366,18 @@ function ControlledHomeComputer({
       atHomePanel
       isTaskAgentActive
       agentId={7}
-      agentSandboxId={agentSandboxId}
+      agentSandboxId={projectTask ? undefined : agentSandboxId}
+      autoSelectComputer={projectTask ? false : undefined}
+      pinnedProject={
+        projectTask
+          ? {
+              name: '常规项目',
+              projectType: AgentComponentTypeEnum.NormalProject,
+            }
+          : undefined
+      }
+      pinnedProjectSandboxSelectable={projectTask}
+      onClearPinnedProject={projectTask ? vi.fn() : undefined}
       strictAgentMemory
       selectedComputerId={selectedComputerId}
       workspacePath={workspacePath}
@@ -381,6 +395,37 @@ function ControlledHomeComputer({
 }
 
 describe('首页私人智能体绑定电脑', () => {
+  it('项目任务保留项目配置，不恢复智能体记忆，仍可修改电脑和目录', async () => {
+    computer.useRealSelector = true;
+    const onComputerSelect = vi.fn();
+    const onWorkspaceDirChange = vi.fn();
+    render(
+      <ControlledHomeComputer
+        projectTask
+        onComputerSelect={onComputerSelect}
+        onWorkspaceDirChange={onWorkspaceDirChange}
+      />,
+    );
+
+    fireEvent.click(await screen.findByText('我的电脑'));
+    expect(screen.getByText('/work/project')).toBeInTheDocument();
+    expect(onComputerSelect).not.toHaveBeenCalled();
+    const other = await screen.findByRole('menuitem', { name: '其他电脑' });
+    expect(other).not.toHaveAttribute('aria-disabled', 'true');
+    await act(async () => fireEvent.click(other));
+    expect(onComputerSelect).toHaveBeenLastCalledWith('777');
+    expect(screen.queryByText('/work/project')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('PC.Components.WorkspaceDir.defaultDir'));
+    fireEvent.click(
+      await screen.findByText('PC.Components.WorkspaceDir.openComputerFolder'),
+    );
+    expect(dirPicker.props.sandboxId).toBe('777');
+    act(() => dirPicker.props.onConfirm('/other/project'));
+    expect(screen.getByText('/other/project')).toBeInTheDocument();
+    expect(onWorkspaceDirChange).toHaveBeenLastCalledWith('/other/project');
+  });
+
   it('点击云端或其他电脑不改绑定与目录，仍能打开并选择工作目录', async () => {
     computer.useRealSelector = true;
     const onComputerSelect = vi.fn();
