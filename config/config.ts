@@ -368,23 +368,27 @@ export default defineConfig({
       }
     }
 
-    config.optimization.splitChunks({
-      ...(config.optimization.get('splitChunks') || {}),
-      cacheGroups: {
-        ...((config.optimization.get('splitChunks') || {}).cacheGroups || {}),
-        xtermVendor: {
-          test: /[\\/]node_modules[\\/]@xterm[\\/]/,
-          name: 'xterm-vendor',
-          chunks: 'all',
-          priority: 100,
-          enforce: true,
+    // Umi 开发页只加载 umi.js；拆出初始依赖会让入口缺少 runtime/vendor 而白屏。
+    // 生产 HTML 会自动注入完整产物，独立分包与缓存优化仅在构建时启用。
+    if (process.env.NODE_ENV === 'production') {
+      config.optimization.splitChunks({
+        ...(config.optimization.get('splitChunks') || {}),
+        cacheGroups: {
+          ...((config.optimization.get('splitChunks') || {}).cacheGroups || {}),
+          xtermVendor: {
+            test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+            name: 'xterm-vendor',
+            chunks: 'all',
+            priority: 100,
+            enforce: true,
+          },
         },
-      },
-    });
+      });
 
-    // runtime（含全量 chunk 文件名映射）抽成独立单文件：任一异步 chunk 哈希
-    // 变化不再连带入口 chunk 哈希变化，增量发版时未改动页面的缓存仍可命中。
-    config.optimization.runtimeChunk('single');
+      // runtime（含全量 chunk 文件名映射）抽成独立单文件：任一异步 chunk 哈希
+      // 变化不再连带入口 chunk 哈希变化，增量发版时未改动页面的缓存仍可命中。
+      config.optimization.runtimeChunk('single');
+    }
 
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
