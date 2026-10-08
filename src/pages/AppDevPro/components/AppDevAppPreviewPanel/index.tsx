@@ -100,6 +100,11 @@ export interface AppDevAppPreviewPanelProps {
   /** 线上环境重启进行中：展示重启提示，隐藏 iframe */
   restarting?: boolean;
   /**
+   * 智能体电脑重启后、容器尚未确认启动成功。
+   * 为 true 时不挂预览 iframe，避免打到还没起来的域名。
+   */
+  holdPreview?: boolean;
+  /**
    * 当前环境最近一次就绪探测的顶层业务状态。
    * 还没有结果时不传，预览区保持原来的准备中界面。
    */
@@ -316,6 +321,7 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   hasValidProjectFiles = null,
   stopping = false,
   restarting = false,
+  holdPreview = false,
   readinessStatus = null,
   readinessReady = null,
   previewAlreadyPresented = false,
@@ -499,6 +505,19 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
         failed={containerStatus === 'error'}
         onRetry={onRetryContainer}
       />
+    );
+  }
+
+  // 电脑重启后容器还没确认起来：卸掉 iframe，避免立刻去打预览域名
+  if (holdPreview) {
+    return (
+      <div className={cx(styles.container, styles.stage)}>
+        <PreviewHero
+          spinning
+          title={dict('PC.Pages.AppDevPro.previewRestarting')}
+          hint={dict('PC.Pages.AppDevPro.previewRestartingHint')}
+        />
+      </div>
     );
   }
 

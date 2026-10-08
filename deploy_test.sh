@@ -27,9 +27,9 @@ git merge dev -X ours -m "merge: 合并 dev 分支到当前分支（冲突以本
 # 子模块「已初始化 + HEAD 等于 gitlink + 工作区干净」，否则报子模块未初始化
 git submodule update --init --recursive
 
-# 3. 执行生产构建
+# 3. 执行生产构建（DIST_RETENTION=1：构建后保留上版旧哈希资源，防发版后旧页面 404）
 echo ">>> 正在执行构建: npm run build:prod:m gitlab"
-npm run build:prod:m gitlab
+DIST_RETENTION=1 npm run build:prod:m gitlab
 
 # 4. 提交构建产物
 # 构建链路 upgrade:micro-apps 会把子模块 gitlink 与 adapter.json 的升级

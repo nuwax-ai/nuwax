@@ -179,7 +179,9 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
         return visibleIds.has(item.node.id) ? [item] : [];
       }
       const nodes = item.nodes.filter((node) => visibleIds.has(node.id));
-      if (!nodes.length) return [];
+      if (nodes.filter((node) => node.kind === 'tool').length < 2) {
+        return nodes.map((node) => ({ kind: 'standalone', id: node.id, node }));
+      }
       return [
         {
           ...item,
@@ -281,7 +283,8 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
     item: Extract<ConversationTraceItem, { kind: 'tool-group' }>,
   ): boolean => {
     const manual = groupExpanded[item.id];
-    return typeof manual === 'boolean' ? manual : item.active;
+    // live 与终态都先显示组摘要；活动标记仅用于状态展示与超越后的自动收起。
+    return manual ?? false;
   };
 
   // 多个缓存会话会同时留在 DOM 中，turn.key 不能作为跨实例唯一 id。
@@ -319,7 +322,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
           onToggle={() =>
             setGroupExpanded((previous) => ({
               ...previous,
-              [item.id]: !(previous[item.id] ?? item.active),
+              [item.id]: !(previous[item.id] ?? false),
             }))
           }
           nodeIsExpanded={nodeIsExpanded}
@@ -389,6 +392,13 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
             return renderItem(segment, expanded);
           }
           const items = itemsBySegment.get(segment.id) ?? [];
+          // 单条过程项直接使用自身的摘要与详情，不再套一层段级消息折叠。
+          const segmentCanCollapse =
+            items.reduce(
+              (count, item) =>
+                count + (item.kind === 'tool-group' ? item.nodes.length : 1),
+              0,
+            ) > 1;
           // 有常显产物的段始终使用同一父路径，避免收尾/收起时重挂载表单或 iframe。
           if (
             !expanded &&
@@ -401,11 +411,14 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
             return null;
           const segmentIsExpanded =
             !turn.running ||
+            !segmentCanCollapse ||
             segment.active ||
             Boolean(segmentExpanded[segment.id]);
           const segmentFailed = segment.nodes.some(
             (node) => node.failed || node.status === 'failed',
           );
+          const showSegmentToggle =
+            expanded && turn.running && segmentCanCollapse && !segment.active;
           const segmentBodyId = `${traceBodyId}-segment-${segmentIndex}`;
           return (
             <div
@@ -415,7 +428,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
               data-trace-segment-active={segment.active ? 'true' : 'false'}
               data-trace-segment-expanded={segmentIsExpanded ? 'true' : 'false'}
             >
-              {expanded && turn.running && !segment.active && (
+              {showSegmentToggle && (
                 <button
                   type="button"
                   className={cx(styles['trace-segment-toggle'])}

@@ -6,7 +6,17 @@
 - 分支：`feat-dong.0930-remaining`
 - worktree：`.claude/worktrees/remaining-0930`
 
-## 2026-10-02 本轮安排（当前）
+## 2026-10-08 C3/C4 确认后的增量安排
+
+用户确认 C3：重置密码、绑定邮箱为登录态操作，不接图形验证码；C4：新增 `replaceChar` 单字符字段，后端按命中字符数重复替换。最新测试 OpenAPI 的新增、编辑 DTO 及返回实体均已有该字段，`maxLength=1`，为空默认 `*`。本次沿用既有需求工件，不重建完整规格链。
+
+1. 移除两个设置入口的图码组件、租户图码开关、take/refresh 与发码参数，保留收件人校验、短信/邮箱验证码与失败重试；消费字段校验 Promise 拒绝。
+2. 敏感词表单仅替换策略显示单字符输入，默认/旧记录空值回显 `*`，新增/编辑提交 `replaceChar`，断开连接不提交该字段；多字符由输入框和表单规则共同限制。
+3. 更新本地业务 mock 合同及页面验收脚本，验证图码开启时登录态设置不取图/不传图码/失败可立即重发、匿名三入口保持图码、替换字符回显/默认/非法值拒绝。真实后端重复替换及共享环境开启后的设置发码单独记录，不由 mock 推定通过。
+
+PC Web 上一批已部署成功；本次增量的提交、测试及部署结果见最新验收记录。IM、Ask Question、资料库继续排除。
+
+## 2026-10-02 本轮安排（历史）
 
 用户确认范围为「本次版本剩余未完成内容」15 条中的前端，接口未 ready 可 mock。本轮纳入第 1、2、5、10、12、13、14、15 条；独立 IM、资料库前端不再排除。已合入版本线并推送 `429da126d`，未部署。
 
@@ -117,7 +127,7 @@
   | `_modify`、`_delete`   | 行操作的 `disabled` |
   | `_enable`              | 开关的 `disabled`   |
 
-- **不做**：替换字符（Q2），检测试用。
+- **不做**：检测试用；替换字符按 10.08 C4 单字符接口接入。
 
 ### F2a 登录方式管理（`/system/config/auth-method`）
 
@@ -259,7 +269,7 @@
 | `src/types/interfaces/login.ts` | 改 | 登录/发码参数加 `captchaId`、`captchaCode`；`TenantConfigInfo` 加 `openImageCaptcha` |
 | `src/pages/Login/index.tsx` | 改 | 两种登录模式都挂验证码 |
 | `src/pages/VerifyCode/index.tsx` | 改 | 首发与重发 |
-| `src/layouts/Setting/ResetPassword/index.tsx`、`SettingEmail/index.tsx` | 改 | 发码前校验 |
+| `src/layouts/Setting/ResetPassword/index.tsx`、`SettingEmail/index.tsx` | 改 | C3 确认移除图码，保留短信/邮箱验证码与失败重试 |
 
 - **组件**：
   - 受控值为 `{ captchaId, captchaCode }`，直接挂在 `Form.Item` 上。
@@ -274,7 +284,7 @@
   - 首次发送带上 state 里的值。
   - 「重新发送」上方内嵌 `ImageCaptcha`，重发前校验。
   - 发送失败时重置倒计时并刷新图片。现状是失败后仍要等满倒计时，验证码输错时尤其难受。
-- **设置页**（重置密码、绑定邮箱）：发码按钮前内嵌验证码，逻辑同上。Q13 若确认这两类发码不需要，删掉这两处即可。
+- **设置页**（重置密码、绑定邮箱）：10.08 C3 确认属于登录态，不取图、不传图码，保留收件人校验、短信/邮箱验证码和发送失败后的立即重发。
 - **与阿里云验证码的关系**：两者相互独立。都开启时，阿里云回调里照常从表单读取图形验证码的值。
 
 ### F5 问答型智能体 Ask Question（仅验证）
