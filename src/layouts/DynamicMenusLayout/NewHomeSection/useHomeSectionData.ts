@@ -287,10 +287,14 @@ export function useHomeSectionData(options: {
           pendingRefreshRef.current = false;
           refreshTimerRef.current = setTimeout(() => {
             refreshTimerRef.current = null;
-            loadListRef.current(true, {
-              silent: true,
-              topic: searchKeywordRef.current,
-            });
+            void loadListRef
+              .current(true, {
+                silent: true,
+                topic: searchKeywordRef.current,
+              })
+              .catch((error) =>
+                console.error('[HomeSection] 排队刷新失败', error),
+              );
           }, 0);
         }
       }
@@ -578,7 +582,11 @@ export function useHomeSectionData(options: {
   useEffect(() => {
     const handleRefreshConversationList = () => {
       // 会话结束（SSE 关闭）/主题更新时：静默刷新任务列表
-      loadListRef.current(true, { silent: true });
+      void loadListRef
+        .current(true, { silent: true })
+        .catch((error) =>
+          console.error('[HomeSection] 会话列表刷新失败', error),
+        );
     };
 
     eventBus.on(

@@ -1,24 +1,13 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
-
-/** 读取当前提交短哈希；非 git 工作区（如解包产物）容错返回空串。 */
-const readGitHash = () => {
-  try {
-    return execSync('git rev-parse --short HEAD', {
-      cwd: path.join(__dirname, '..'),
-      stdio: ['ignore', 'pipe', 'ignore'],
-    })
-      .toString()
-      .trim();
-  } catch {
-    return '';
-  }
-};
 
 /**
  * 生成版本信息常量文件
  * 从 package.json 读取版本信息并生成 TypeScript 常量文件
+ *
+ * 注意：不生成 APP_GIT_HASH——git 提交哈希曾烤入此处，导致每次提交都改变
+ * 入口 chunk 内容与 contenthash（增量发版全量失效的元凶之一）。构建期哈希
+ * 改由 scripts/write-dist-version.js 写入 dist/version.json，运行时按需读取。
  */
 const generateVersion = () => {
   try {
@@ -28,7 +17,6 @@ const generateVersion = () => {
 
     const appName = packageJson.name || 'unknown';
     const appVersion = packageJson.version || '0.0.0';
-    const gitHash = readGitHash();
 
     // 生成版本常量文件内容
     const versionContent = `/**
@@ -37,7 +25,6 @@ const generateVersion = () => {
  */
 export const APP_VERSION = '${appVersion}';
 export const APP_NAME = '${appName}';
-export const APP_GIT_HASH = '${gitHash}';
 `;
 
     // 确定输出文件路径

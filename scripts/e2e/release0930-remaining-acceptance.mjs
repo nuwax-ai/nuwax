@@ -87,6 +87,12 @@ async function sensitive() {
   await goto('/system/config/sensitive-word');
   await visible('验收敏感词');
   await clickButton('新增敏感词');
+  assert.equal(
+    await page.evaluate(
+      () => !!document.querySelector('input[id$="replaceChar"]'),
+    ),
+    false,
+  );
   await page.fill('input[placeholder="输入词语或正则表达式"]', 'E2E新增词');
   await clickButton('确 认');
   await gone('[role="dialog"]');
@@ -98,12 +104,27 @@ async function sensitive() {
   await page.click(row(item.id, 'button:has-text("编辑")'));
   await page.fill('input[placeholder="输入词语或正则表达式"]', 'E2E编辑词');
   await page.click('input[value="REPLACE"]');
+  await page.waitForSelector('input[id$="replaceChar"]');
+  assert.equal(
+    await page.evaluate(
+      () => document.querySelector('input[id$="replaceChar"]').value,
+    ),
+    '*',
+  );
+  assert.equal(
+    await page.evaluate(
+      () => document.querySelector('input[id$="replaceChar"]').maxLength,
+    ),
+    1,
+  );
+  await page.fill('input[id$="replaceChar"]', '#');
   await clickButton('确 认');
   await gone('[role="dialog"]');
   await visible('E2E编辑词');
   data = await state();
   item = data.words.find((w) => w.id === item.id);
   assert.equal(item.action, 'REPLACE');
+  assert.equal(item.replaceChar, '#');
   await page.click(row(item.id, '[role="switch"]'));
   await waitState(
     (s) => s.words.find((w) => w.id === item.id)?.status === 0,
@@ -124,6 +145,12 @@ async function sensitive() {
     },
   });
   await page.click(row(item.id, 'button:has-text("编辑")'));
+  assert.equal(
+    await page.evaluate(
+      () => document.querySelector('input[id$="replaceChar"]').value,
+    ),
+    '#',
+  );
   await page.fill('input[placeholder="输入词语或正则表达式"]', 'E2E失败未保存');
   await clickButton('确 认');
   await visible('E2E保存失败');
@@ -142,6 +169,19 @@ async function sensitive() {
   await clickButton('取 消');
   await gone('[role="dialog"]');
   pass('敏感词保存失败保留弹窗和原值');
+  await page.click(row(item.id, 'button:has-text("编辑")'));
+  await page.fill('input[id$="replaceChar"]', '');
+  await clickButton('确 认');
+  await gone('[role="dialog"]');
+  await waitState(
+    (s) => s.words.find((w) => w.id === item.id)?.replaceChar === '*',
+    '空替换字符未默认星号',
+  );
+  const replacementRequest = await lastRequest(
+    '/api/system/sensitive/word/update',
+  );
+  assert.equal(replacementRequest.body.replaceChar, '*');
+  pass('替换字符单字符提交/编辑回显/空值默认星号');
   await page.click(row(item.id, 'button:has-text("删除")'));
   await clickButton('确 定');
   await waitState(
@@ -607,23 +647,27 @@ async function sendFailureThenRetry(type, fillRecipient) {
   if (fillRecipient) await fillRecipient();
   const imageCount = await requestCount('/api/user/captcha/image');
   const sends = await requestCount('/api/user/code/send');
-  await typeCaptcha();
+  assert.equal(
+    await page.evaluate(
+      () => !!document.querySelector('input[placeholder="请输入图形验证码"]'),
+    ),
+    false,
+  );
   await control('configure', {
     failNext: { path: '/api/user/code/send', message: `E2E${type}发码失败` },
   });
   await waitCodeNoticeGone();
   await clickButton('发送验证码');
   await visible(`E2E${type}发码失败`);
-  await verifyImageRefresh(imageCount, '发码失败后未换图');
   const first = await lastRequest('/api/user/code/send');
   assert.equal(first.body.type, type);
-  assert.equal(first.body.captchaCode, '2468');
+  assert.equal(Object.hasOwn(first.body, 'captchaCode'), false);
+  assert.equal(Object.hasOwn(first.body, 'captchaId'), false);
   await page.waitForFunction(() =>
     Array.from(document.querySelectorAll('button')).some(
       (n) => n.innerText.replace(/\s/g, '') === '发送验证码' && !n.disabled,
     ),
   );
-  await typeCaptcha();
   await waitCodeNoticeGone();
   await clickButton('发送验证码');
   await waitState(
@@ -635,8 +679,13 @@ async function sendFailureThenRetry(type, fillRecipient) {
   await waitCodeSuccess();
   const second = await lastRequest('/api/user/code/send');
   assert.equal(second.body.type, type);
-  assert.equal(second.body.captchaCode, '2468');
-  assert.notEqual(second.body.captchaId, first.body.captchaId);
+  assert.equal(Object.hasOwn(second.body, 'captchaCode'), false);
+  assert.equal(Object.hasOwn(second.body, 'captchaId'), false);
+  assert.equal(
+    await requestCount('/api/user/captcha/image'),
+    imageCount,
+    '登录态设置不应取图',
+  );
   await page.waitForFunction(() =>
     Array.from(document.querySelectorAll('button')).some(
       (n) => n.disabled && /^\d+s$/.test(n.innerText.trim()),
@@ -739,13 +788,13 @@ async function captcha() {
   await openSettings('重置密码');
   const reset = await sendFailureThenRetry('RESET_PASSWORD');
   assert.equal(reset.body.phone, '13800009300');
-  pass('设置重置密码发码含图码/失败换图并立即重试');
+  pass('图码开关开启时重置密码不取图/不传图码/失败立即重试');
   await page.click('li:has-text("邮箱绑定")');
   const bind = await sendFailureThenRetry('BIND_EMAIL', () =>
     page.fill('input[placeholder="请输入邮箱地址"]', 'bind@example.test'),
   );
   assert.equal(bind.body.email, 'bind@example.test');
-  pass('设置绑定邮箱发码含图码/失败换图并立即重试');
+  pass('图码开关开启时绑定邮箱不取图/不传图码/失败立即重试');
   await control('configure', { imageCaptcha: false });
   await passwordLogin();
   assert.equal(
@@ -825,7 +874,7 @@ async function captcha() {
   offRequest = await lastRequest('/api/user/code/send');
   assert.equal(Object.hasOwn(offRequest.body, 'captchaId'), false);
   assert.equal(Object.hasOwn(offRequest.body, 'captchaCode'), false);
-  pass('关闭图码开关后五入口均恢复原流程且请求省略图码字段');
+  pass('图码关闭后匿名登录/重发及登录态设置发码均省略图码字段');
   await goto('/system/config/sensitive-word');
 }
 
@@ -841,7 +890,7 @@ try {
     }
   }
   for (const [name, run, expected] of [
-    ['sensitive', sensitive, 4],
+    ['sensitive', sensitive, 5],
     ['auth', auth, 2],
     ['idp', idp, 6],
     ['scope', scope, 6],

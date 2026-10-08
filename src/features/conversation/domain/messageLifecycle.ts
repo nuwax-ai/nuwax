@@ -91,7 +91,7 @@ export function markOwnedMessageStreamError(
 
 /**
  * 终态确认后的消息收敛。轮询、live FINAL/ERROR 与 sub 恢复必须共用同一规则，
- * 避免 taskStatus 已完成但末条恢复占位仍为 Loading。
+ * 当前轮的半途快照和恢复占位一并收口，避免旧 Loading 消息让整轮残留运行态。
  */
 export function finalizeMessagesOnTerminalTaskStatus(
   messageList: MessageInfo[],
@@ -124,10 +124,10 @@ export function finalizeMessagesOnTerminalTaskStatus(
   for (let index = lastIndex; index >= currentRoundStart; index -= 1) {
     const message = next[index];
     const isTail = index === lastIndex;
+    // sub 占位追加后，执行中的历史半轮已不在尾部；协议终态必须一起收口。
     const incomplete =
-      isTail &&
-      (message.status === MessageStatusEnum.Loading ||
-        message.status === MessageStatusEnum.Incomplete);
+      message.status === MessageStatusEnum.Loading ||
+      message.status === MessageStatusEnum.Incomplete;
     let processingChanged = false;
     const processingList = message.processingList?.map((item) => {
       if (item.status !== ProcessingEnum.EXECUTING) {
@@ -169,7 +169,7 @@ export function finalizeMessagesOnTerminalTaskStatus(
     }
     next[index] = {
       ...message,
-      thinkingFinished: isTail ? true : message.thinkingFinished,
+      thinkingFinished: isTail || incomplete ? true : message.thinkingFinished,
       status: incomplete ? messageTerminalStatus : message.status,
       processingList,
       mcpAskInteractions,

@@ -3,9 +3,22 @@
 
 // 会话状态标记：执行中 / 失败互斥，图形共享侧栏视觉尺寸。
 .mark-spin {
+  display: inline-flex;
   flex-shrink: 0;
   font-size: @sidebarRowIconSize;
   color: @navSecondMenuAdaptiveTextSecondary;
+
+  // 首次挂载即有动画，不依赖图标库 useEffect 注入的 loadingCircle。
+  // 增加选择器权重，使晚到的图标库样式也不会覆盖组件自己的动画。
+  &:global(.anticon) {
+    animation: conversation-status-mark-spin 1s linear infinite;
+  }
+}
+
+@keyframes conversation-status-mark-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .mark-failed {

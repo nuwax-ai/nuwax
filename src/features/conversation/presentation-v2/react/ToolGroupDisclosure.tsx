@@ -1,4 +1,4 @@
-/** 连续工具组：组头负责压缩动作类型，组内保留每次真实执行及其详情。 */
+/** 工具与思考合并组：组头汇总工具动作，子项按原顺序保留执行与思考详情。 */
 import SvgIcon from '@/components/base/SvgIcon';
 import { getToolGroupStatus } from '@/features/conversation/presentation-v2/traceItems';
 import { dict } from '@/services/i18nRuntime';
@@ -54,7 +54,10 @@ const ToolGroupDisclosure: React.FC<ToolGroupDisclosureProps> = ({
 }) => {
   const { token } = theme.useToken();
   const presentations = useMemo(
-    () => nodes.map((node) => ({ node, ...getToolNodePresentation(node) })),
+    () =>
+      nodes
+        .filter((node) => node.kind === 'tool')
+        .map((node) => ({ node, ...getToolNodePresentation(node) })),
     [nodes],
   );
   const labels = group.actionKinds
@@ -106,7 +109,14 @@ const ToolGroupDisclosure: React.FC<ToolGroupDisclosureProps> = ({
           }}
           aria-hidden="true"
         />
-        <span className={cx(styles['tool-group-title'])}>{title}</span>
+        <span
+          className={cx(
+            styles['tool-group-title'],
+            group.status === 'running' && styles['shimmer-text'],
+          )}
+        >
+          {title}
+        </span>
         {group.status === 'failed' && (
           <CloseCircleOutlined
             className={cx(styles['tool-group-status'])}

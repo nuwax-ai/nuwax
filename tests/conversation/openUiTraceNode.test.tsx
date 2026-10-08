@@ -209,45 +209,63 @@ describe('OpenUiTraceNode', () => {
 });
 
 describe('WorkTraceDisclosure · OpenUI 常显区', () => {
-  it('正文关闭段、整轮收起和运行结束均保持同一个 OpenUI 产物实例', async () => {
-    const turn = buildTurn([openUiNode(readyResult())], true);
-    const props = {
-      preferences: PREFS,
-      onManualToggle: () => {},
-      conversationId: 1562078,
-    };
-    const view = render(<WorkTraceDisclosure {...props} turn={turn} />);
-    const artifact = await screen.findByTestId('openui-artifact-view');
-    const node = screen.getByTestId('v2-openui-node');
-    const closedTurn: ConversationTurnPresentationV2 = {
-      ...turn,
-      finalAnswer: { text: '看板已生成', source: 'messageText' },
-    };
-    view.rerender(<WorkTraceDisclosure {...props} turn={closedTurn} />);
-    expect(screen.getByTestId('v2-trace-segment-toggle')).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
-    expect(screen.getByTestId('openui-artifact-view')).toBe(artifact);
-    expect(screen.getByTestId('v2-openui-node')).toBe(node);
+  it.each([1, 2])(
+    '过程段有 %s 项时，正文关闭段、整轮收起和运行结束均保持同一个 OpenUI 产物实例',
+    async (nodeCount) => {
+      const nodes = [openUiNode(readyResult())];
+      if (nodeCount > 1)
+        nodes.push({
+          id: 'think-1',
+          kind: 'reasoning',
+          title: '',
+          summary: '看板生成完成',
+          status: 'finished',
+          failed: false,
+          thinkText: '看板生成完成',
+        });
+      const turn = buildTurn(nodes, true);
+      const props = {
+        preferences: PREFS,
+        onManualToggle: () => {},
+        conversationId: 1562078,
+      };
+      const view = render(<WorkTraceDisclosure {...props} turn={turn} />);
+      const artifact = await screen.findByTestId('openui-artifact-view');
+      const node = screen.getByTestId('v2-openui-node');
+      const closedTurn: ConversationTurnPresentationV2 = {
+        ...turn,
+        finalAnswer: { text: '看板已生成', source: 'messageText' },
+      };
+      view.rerender(<WorkTraceDisclosure {...props} turn={closedTurn} />);
+      if (nodeCount > 1) {
+        expect(screen.getByTestId('v2-trace-segment-toggle')).toHaveAttribute(
+          'aria-expanded',
+          'false',
+        );
+      } else {
+        expect(screen.queryByTestId('v2-trace-segment-toggle')).toBeNull();
+      }
+      expect(screen.getByTestId('openui-artifact-view')).toBe(artifact);
+      expect(screen.getByTestId('v2-openui-node')).toBe(node);
 
-    view.rerender(
-      <WorkTraceDisclosure
-        {...props}
-        turn={closedTurn}
-        manualExpanded={false}
-      />,
-    );
-    expect(screen.getByTestId('openui-artifact-view')).toBe(artifact);
-    view.rerender(
-      <WorkTraceDisclosure
-        {...props}
-        turn={{ ...closedTurn, running: false }}
-      />,
-    );
-    expect(screen.getByTestId('openui-artifact-view')).toBe(artifact);
-    expect(screen.getByTestId('v2-openui-node')).toBe(node);
-  });
+      view.rerender(
+        <WorkTraceDisclosure
+          {...props}
+          turn={closedTurn}
+          manualExpanded={false}
+        />,
+      );
+      expect(screen.getByTestId('openui-artifact-view')).toBe(artifact);
+      view.rerender(
+        <WorkTraceDisclosure
+          {...props}
+          turn={{ ...closedTurn, running: false }}
+        />,
+      );
+      expect(screen.getByTestId('openui-artifact-view')).toBe(artifact);
+      expect(screen.getByTestId('v2-openui-node')).toBe(node);
+    },
+  );
 
   it('轨迹收起态（终态轮默认）OpenUI 看板仍在 DOM，节点行不渲染', async () => {
     render(

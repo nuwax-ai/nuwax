@@ -19,6 +19,7 @@ import type {
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
 import {
+  findAnswerSegmentsThroughAsk,
   findLastAnswerCandidateSegment,
   isAnswerCandidateMessage,
   selectFinalResultAnswerText,
@@ -345,25 +346,35 @@ const projectTurn = (
       ? 'stopped'
       : 'complete';
 
-  // ---- 最终回答第一优先级：最后一条非空 finalResult.outputText（剥标签后仍非空）----
+  const parsedSegments = assistantMessages.map((message) =>
+    parseCachedMessage(message, state),
+  );
+
+  // ---- 最终回答第一优先级：最新输出的 finalResult（剥标签后仍非空）----
   let answerFromFinalResult: string | undefined;
   let answerFromFinalResultMessageIndex: number | undefined;
   for (let i = assistantMessages.length - 1; i >= 0; i -= 1) {
     if (!isAnswerCandidateMessage(assistantMessages[i])) continue;
     const outputText = assistantMessages[i].finalResult?.outputText;
-    if (!outputText) continue;
-    const stripped = stripCustomTags(outputText);
+    const stripped = outputText ? stripCustomTags(outputText) : '';
     if (stripped) {
       answerFromFinalResult = stripped;
       answerFromFinalResultMessageIndex = i;
       break;
     }
+    // 续接的新输出尚无 finalResult 时，旧结果不得盖过新正文或流式占位。
+    // SYSTEM/QUESTION 等非回答消息已跳过；空的已完成消息仍允许历史回退。
+    if (
+      isRunningStatus(assistantMessages[i].status) ||
+      parsedSegments[i].some(
+        (segment) => segment.type === 'text' && !!segment.content.trim(),
+      )
+    ) {
+      break;
+    }
   }
 
-  // ---- 预解析各消息段，确定「回答正文段」归属（回答不进轨迹，其余正文段为 narration）----
-  const parsedSegments = assistantMessages.map((message) =>
-    parseCachedMessage(message, state),
-  );
+  // ---- 确定「回答正文段」归属（回答不进轨迹，其余正文段为 narration）----
   const lastAnswerSegment = findLastAnswerCandidateSegment(
     assistantMessages,
     parsedSegments,
@@ -427,26 +438,42 @@ const projectTurn = (
     messages: assistantMessages,
     parsedSegments,
   });
+  const answerRefs = findAnswerSegmentsThroughAsk(
+    assistantMessages,
+    parsedSegments,
+    answerRef,
+  );
   const finalAnswer: ConversationFinalAnswer = resolvedFinalResultAnswer
     ? { text: resolvedFinalResultAnswer, source: 'finalResult' }
     : answerRef
     ? {
-        text: (
-          parsedSegments[answerRef.messageIndex][
-            answerRef.segmentIndex
-          ] as Extract<MessageSegment, { type: 'text' }>
-        ).content,
+        text: answerRefs
+          .map(
+            (ref) =>
+              (
+                parsedSegments[ref.messageIndex][ref.segmentIndex] as Extract<
+                  MessageSegment,
+                  { type: 'text' }
+                >
+              ).content,
+          )
+          .join('\n\n'),
         source: 'messageText',
       }
     : { text: '', source: 'none' };
 
   // ---- 组装节点（保持真实顺序）----
   // 回答正文段按对象身份排除（dedupe 只会移除 process 段，text 段对象引用稳定）
-  const answerSegment = answerRef
-    ? (parsedSegments[answerRef.messageIndex][answerRef.segmentIndex] as
-        | MessageSegment
-        | undefined)
-    : undefined;
+  const answerSegments = new Set(
+    answerRefs
+      .map((ref) => parsedSegments[ref.messageIndex][ref.segmentIndex])
+      .filter(
+        (segment) =>
+          !resolvedFinalResultAnswer ||
+          (segment.type === 'text' &&
+            isSameAnswerContent(resolvedFinalResultAnswer, segment.content)),
+      ),
+  );
   const nodes: ConversationProcessNode[] = [];
   assistantMessages.forEach((message, messageIndex) => {
     const messageKey = messageStableKey(message, messageIndex);
@@ -557,7 +584,7 @@ const projectTurn = (
       }
       // text 段：被选为最终回答的段不进轨迹；其余为中间正文（narration）——
       // 留在节点序列原位穿插（工具之间），渲染层直出正文而非折叠行
-      if (segment === answerSegment) {
+      if (answerSegments.has(segment)) {
         return;
       }
       nodes.push({
