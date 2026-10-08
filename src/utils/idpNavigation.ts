@@ -116,19 +116,23 @@ export async function completeDesktopIdpReturn(): Promise<
       context.loadMode === 'gateway'
         ? context.gatewayOrigin!
         : context.businessOrigin;
-    // 普通 gateway 登录错误已经在正确页面，不重复导航。
-    if (!marked && window.location.origin === origin) return 'none';
-    if (window.location.origin !== context.businessOrigin) return 'failed';
     let redirect = resolveIdpRedirect(params.get('redirect'));
     let returnMode = marker;
     // 失败回跳可能把本次成功 redirect 原样塞回参数；解开我们的回调包装，
     // 避免普通登录完成后又进入桌面回调页，绑定错误也应回原面板。
     const nested = new URL(redirect, context.businessOrigin);
     const nestedMode = nested.searchParams.get(DESKTOP_IDP_RETURN_PARAM);
+    const wrapped =
+      nested.pathname === '/login' && ['1', 'bind'].includes(nestedMode || '');
+    // 普通错误在目标源不重复导航；direct 仍须解开后端带回的桌面包装。
     if (
-      nested.pathname === '/login' &&
-      ['1', 'bind'].includes(nestedMode || '')
-    ) {
+      !marked &&
+      window.location.origin === origin &&
+      (context.loadMode === 'gateway' || !wrapped)
+    )
+      return 'none';
+    if (window.location.origin !== context.businessOrigin) return 'failed';
+    if (wrapped) {
       redirect = resolveIdpRedirect(nested.searchParams.get('redirect'));
       returnMode = nestedMode;
       if (
