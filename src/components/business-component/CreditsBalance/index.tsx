@@ -1,6 +1,5 @@
 import SiteFooter from '@/components/SiteFooter';
 import PurchaseModal from '@/components/business-component/PurchaseModal';
-import { getHostVisibility } from '@/services/hostVisibility';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -15,7 +14,7 @@ const cx = classNames.bind(styles);
 interface CreditsBalanceProps {
   className?: string;
   showFooter?: boolean;
-  /** 弹层打开时刷新；关闭时暂停请求。常驻余额栏默认启用。 */
+  /** 展示时拉取一次余额；弹层收起即停（不发请求）。常驻余额栏默认启用。 */
   active?: boolean;
   onClick?: () => void;
 }
@@ -45,14 +44,9 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
 
   useEffect(() => {
     if (!showCredits || !active) return;
-    // 每次展开用户菜单以及进入订阅页都取最新余额，合并触发避免首开重复请求。
+    // 展示即拉一次（用户弹层展开 / 进入订阅页 / 常驻栏首次挂载）；不做轮询，
+    // 余额变化靠重新展示触发（如支付后重开弹层）。
     fetchCredits();
-    const intervalId = setInterval(() => {
-      // 不可见（浏览器 tab 切走 / 客户端休眠控制）跳过本轮。
-      if (document.hidden || !getHostVisibility()) return;
-      fetchCredits();
-    }, 60000);
-    return () => clearInterval(intervalId);
   }, [showCredits, active, subscriptionRoute, fetchCredits]);
 
   const handleClickBalance = () => {

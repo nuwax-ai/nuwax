@@ -5,16 +5,12 @@ const mocks = vi.hoisted(() => ({
   summary: vi.fn(),
   subscription: 1,
   pathname: '/home',
-  hostVisible: true,
 }));
 
 vi.mock('@/services/subscriptionService', () => ({
   apiGetCreditSummary: mocks.summary,
 }));
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
-vi.mock('@/services/hostVisibility', () => ({
-  getHostVisibility: () => mocks.hostVisible,
-}));
 vi.mock('@/components/SiteFooter', () => ({ default: () => null }));
 vi.mock('@/components/business-component/PurchaseModal', () => ({
   default: () => null,
@@ -66,7 +62,6 @@ beforeEach(() => {
   Object.assign(mocks, {
     subscription: 1,
     pathname: '/home',
-    hostVisible: true,
   });
   mocks.summary.mockResolvedValue({ totalCredit: -6711 });
 });
@@ -93,21 +88,22 @@ describe('用户菜单积分余额刷新', () => {
     expect(mocks.summary).toHaveBeenCalledTimes(2);
   });
 
-  it('收起菜单后停止轮询，展开时继续刷新', async () => {
+  it('不做轮询：时间流逝不再发请求，重新展开才再拉一次', async () => {
     const view = render(<CreditsBalance active />);
     await flushRequest();
+    expect(mocks.summary).toHaveBeenCalledTimes(1);
     await act(async () => {
-      vi.advanceTimersByTime(60000);
+      vi.advanceTimersByTime(120000);
     });
-    expect(mocks.summary).toHaveBeenCalledTimes(2);
+    expect(mocks.summary).toHaveBeenCalledTimes(1);
     view.rerender(<CreditsBalance active={false} />);
     await act(async () => {
       vi.advanceTimersByTime(120000);
     });
-    expect(mocks.summary).toHaveBeenCalledTimes(2);
+    expect(mocks.summary).toHaveBeenCalledTimes(1);
     view.rerender(<CreditsBalance active />);
     await flushRequest();
-    expect(mocks.summary).toHaveBeenCalledTimes(3);
+    expect(mocks.summary).toHaveBeenCalledTimes(2);
   });
 
   it('重新展开时接口失败保留上次成功余额', async () => {
@@ -128,19 +124,14 @@ describe('用户菜单积分余额刷新', () => {
     expect(screen.queryByText('-6,711')).toBeNull();
   });
 
-  it('常驻余额栏继续刷新，客户端不可见时跳过轮询', async () => {
+  it('常驻余额栏挂载拉一次，不随时间轮询', async () => {
     render(<CreditsBalance />);
     await flushRequest();
-    mocks.hostVisible = false;
+    expect(mocks.summary).toHaveBeenCalledTimes(1);
     await act(async () => {
-      vi.advanceTimersByTime(60000);
+      vi.advanceTimersByTime(120000);
     });
     expect(mocks.summary).toHaveBeenCalledTimes(1);
-    mocks.hostVisible = true;
-    await act(async () => {
-      vi.advanceTimersByTime(60000);
-    });
-    expect(mocks.summary).toHaveBeenCalledTimes(2);
   });
 
   it('在订阅页首次展开只请求一次，订阅路由变化时刷新', async () => {
