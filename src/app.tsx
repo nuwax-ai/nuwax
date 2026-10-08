@@ -1,7 +1,7 @@
 import '@/utils/setupDayjsPlugins';
 import { RequestConfig } from '@@/plugin-request/request';
 import { OpenUIDevtools } from '@openuidev/devtools';
-import { theme as antdTheme, Modal } from 'antd';
+import { theme as antdTheme, Modal, message } from 'antd';
 import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 import { history, useAntdConfigSetter, useModel } from 'umi';
 import AppStartup from './components/business-component/AppStartup';
@@ -187,22 +187,30 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     };
 
     const handleChunkError = () => {
-      if (sessionStorage.getItem('__chunk_reload')) return;
-      sessionStorage.setItem('__chunk_reload', '1');
-
-      Modal.confirm({
-        title: dict('PC.Modal.chunkLoadErrorTitle'),
-        content: dict('PC.Modal.chunkLoadErrorContent'),
-        okText: dict('PC.Modal.chunkLoadErrorRefresh'),
-        cancelText: dict('PC.Common.Global.cancel'),
-        onOk: () => {
-          sessionStorage.removeItem('__chunk_reload');
-          window.location.reload();
-        },
-        onCancel: () => {
-          sessionStorage.removeItem('__chunk_reload');
-        },
-      });
+      // 发版后旧 chunk 缺失是最常见成因：先自动刷新一次无感完成升级。哨兵存
+      // 刷新时间戳（60s 窗口）防循环；窗口内再次失败说明资源真缺失，只能弹
+      // 不可取消的升级提示强制刷新。成功升级后哨兵停留至下次会话也不影响——
+      // 时间戳过期即恢复自动升级能力。
+      const reloadedAt = Number(sessionStorage.getItem('__chunk_reload') || 0);
+      if (reloadedAt && Date.now() - reloadedAt < 60_000) {
+        Modal.confirm({
+          title: dict('PC.Modal.chunkLoadErrorTitle'),
+          content: dict('PC.Modal.chunkLoadErrorContent'),
+          okText: dict('PC.Modal.chunkLoadErrorRefresh'),
+          okCancel: false,
+          closable: false,
+          maskClosable: false,
+          keyboard: false,
+          onOk: () => {
+            sessionStorage.removeItem('__chunk_reload');
+            window.location.reload();
+          },
+        });
+        return;
+      }
+      sessionStorage.setItem('__chunk_reload', String(Date.now()));
+      message.info(dict('PC.Modal.chunkAutoReloading'));
+      window.setTimeout(() => window.location.reload(), 500);
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {

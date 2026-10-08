@@ -638,6 +638,9 @@ git merge-base --is-ancestor "$DELIVERY_FEATURE_HEAD" HEAD || die "本轮个人�
 run_combined_source_gate "$TEST_BRANCH" "$DEV_BRANCH" "$TEST_GATE_RECORD" "步骤 7.1"
 TEST_VERIFIED_HEAD="$(git rev-parse HEAD)"
 CURRENT_STEP="${TEST_BRANCH} 完整生产构建"
+# DIST_RETENTION=1：构建链路保留上一版 dist 的旧哈希资源（保 3 代，DIST_RETAIN_GENERATIONS 可调），
+# 发版后持有旧页面的用户懒加载旧 chunk 不再 404（详见 scripts/deploy-asset-retention.mjs）
+export DIST_RETENTION=1
 run npm run build:prod:m gitlab
 rgit add -f dist
 rgit add src/constants/version.ts
