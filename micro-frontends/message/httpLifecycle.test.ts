@@ -27,6 +27,28 @@ const failure = {
   tid: 'request-401',
 };
 
+/** 固定上游上传已改为 XHR；只控制网络完成时机，仍执行正式上传及失效处理。 */
+const uploadRequests: ControlledUploadXHR[] = [];
+class ControlledUploadXHR {
+  status = 0;
+  responseText = '';
+  withCredentials = false;
+  upload = { onprogress: null };
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  onabort: (() => void) | null = null;
+  open = vi.fn();
+  setRequestHeader = vi.fn();
+  send = vi.fn(() => uploadRequests.push(this));
+  abort = vi.fn(() => this.onabort?.());
+
+  respond401(): void {
+    this.status = 401;
+    this.responseText = JSON.stringify(failure);
+    this.onload?.();
+  }
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((finish) => {
@@ -52,9 +74,8 @@ beforeAll(async () => {
       'archive',
       JSON.parse(readFileSync(path.join(adapterDir, 'adapter.json'), 'utf8'))
         .pin,
-      'nuwax-im-web/src',
-      'nuwax-im-web/vite.config.ts',
-      'nuwax-im-web/tsconfig.node.json',
+      // 正式补丁同时涉及源码与测试配置，固定提交的前端目录是完整输入。
+      'nuwax-im-web',
     ],
     { maxBuffer: 64 * 1024 * 1024 },
   );
@@ -84,6 +105,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   vi.stubGlobal('fetch', fetchMock);
+  uploadRequests.length = 0;
+  vi.stubGlobal('XMLHttpRequest', ControlledUploadXHR);
   window.addEventListener('im:auth-expired', onExpired);
   runtime.beginMessageRuntime(document.createElement('div'), {}, true);
 });
@@ -180,28 +203,39 @@ describe('消息 HTTP 401 与挂载代次', () => {
   });
 
   it('旧上传401不影响新App；当前代上传401保持原无detail广播', async () => {
-    const request = deferred<ReturnType<typeof response401>>();
     const file = new File(['content'], 'text.txt');
-    fetchMock.mockReturnValueOnce(request.promise);
     const pending = upload.uploadFile(file);
     const result = expect(pending).rejects.toMatchObject({
       code: 'IM_10401',
       httpStatus: 401,
     });
+    expect(uploadRequests).toHaveLength(1);
+    const oldRequest = uploadRequests[0];
+    expect(oldRequest.open).toHaveBeenCalledWith(
+      'POST',
+      new URL(upload.PLATFORM_UPLOAD_PATH, window.location.origin).toString(),
+    );
+    expect(oldRequest.setRequestHeader).not.toHaveBeenCalled();
+    expect(oldRequest.withCredentials).toBe(false);
     runtime.endMessageRuntime();
     runtime.beginMessageRuntime(document.createElement('div'), {}, true);
     localStorage.setItem('im.auth.token', 'new-session');
-    request.resolve(response401());
+    oldRequest.respond401();
     await result;
     expect(onExpired).not.toHaveBeenCalled();
     expect(localStorage.getItem('im.auth.token')).toBe('new-session');
-    fetchMock.mockResolvedValueOnce(response401());
-    await expect(upload.uploadFile(file)).rejects.toMatchObject({
+
+    const currentUpload = upload.uploadFile(file);
+    const currentResult = expect(currentUpload).rejects.toMatchObject({
       code: 'IM_10401',
       httpStatus: 401,
     });
+    expect(uploadRequests).toHaveLength(2);
+    uploadRequests[1].respond401();
+    await currentResult;
     expect(localStorage.getItem('im.auth.token')).toBeNull();
     expect(onExpired).toHaveBeenCalledOnce();
     expect(onExpired.mock.calls[0][0].detail).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

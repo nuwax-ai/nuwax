@@ -1,5 +1,3 @@
-/** 页面通过 React 接入层消费打开远程桌面的判断，保持领域实现封装。 */
-export {
-  canOpenDesktopFromEvent,
-  type CanOpenDesktopFromEventInput,
-} from '@/features/conversation/domain/openDesktopEvent';
+/** 页面只通过会话 React 边界消费桌面事件策略。 */
+export { canOpenDesktopFromEvent } from '../domain/openDesktopEvent';
+export type { CanOpenDesktopFromEventInput } from '../domain/openDesktopEvent';

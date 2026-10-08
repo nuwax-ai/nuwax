@@ -170,3 +170,32 @@
 沿用[原剩余需求清单](../../plans/20260929-release0930-remaining-checklist.md)，优先继续 IM 与 License 剩余页面验收。真实 License API、签发格式、受控功能名单及资料库具体 BUG 尚未确定；Ask SSE、IdP、验证码真实开启和共享部署分别联调。客户端使用 `codex/release0930-client-compat` 专用分支，不混入正在进行的客户端 Beta 交付。
 
 本地 mock 页面通过不能作为真实后端、测试环境部署、生产主应用构建或客户端安装包验收证据。
+
+## 2026-10-08 客户端跟进分支合并
+
+目标分支 `feat-dong.0930-remaining`；输入固定为 `codex/client-followups-20261007` 的 `ceaf30f80` 与 `origin/codex/client-qa-hotfixes-20261007` 的 `307a3d6b2`。保留两个分支的祖先关系，远端重复的三项桌面修复不重复实现。主区已有 `src/constants/version.ts` 修改不进入本次源码合并。
+
+处理四处冲突：会话 React 桥出口和终端刷新断言各保留一份；资料库矩形保留相同尺寸计算与解释；IM 适配补丁保留已有任务/产物模块，并针对 `f3a568275c0b3ed21537df98a7eedd6bdbf6b070` 重新生成完整差异。补丁继续保留 `vite.config.ts` 的上游配置重命名。两项 IM 生命周期测试改为 archive 完整固定版本前端目录，以覆盖补丁涉及的测试配置。
+
+质量三问结论：
+
+- 内聚通过：跨设备启动后的项目重拉和分页竞态收敛都留在 `src/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel/index.tsx:928`，卸载取消定时器与事件订阅；账号姓名测量/观察器清理集中在 `src/layouts/DynamicMenusLayout/SidebarNavLayout/useSidebarUserNameVisibility.ts:9`。工作流排列接入既有 proxy、dirty 与防抖保存链（`src/pages/Antv-X6/v3/indexV3.tsx:1206`）。
+- 分层通过：桌面桥契约集中于 `src/types/interfaces/hostBridge.ts:1`，页面通过会话 React 出口消费领域策略（`src/features/conversation/react/openDesktopEvent.ts:1`）；架构门无新增违规，97 项存量豁免。
+- 维护通过：类型门按文件/代码/完整消息/次数比较，不扩大空基线；`scripts/check-types.mjs:484` 与 19 项负向自测覆盖新增债务、缺失输入及配置弱化。固定 pin 的微应用构建不自动升级，IM 补丁在实际固定输入上应用、类型检查与构建。
+
+验证结果（合并后的组合源码）：
+
+| 检查 | 结果 |
+| --- | --- |
+| 全量 Vitest | 373 文件，3534 项通过，6 项跳过；最终使用 4 workers。首轮高并发的 12 项超时在 2 workers 定向复跑 69 项通过；两项源码快照遗漏修正后，最终全量通过 |
+| 会话门禁 | 111 文件 / 1085 项通过 |
+| 类型门及自测 | nodes / conversation / workspace / contracts 均 0 诊断；门禁自测 19 项通过。域外 288 项存量诊断不作为全库通过结论 |
+| 架构检查 | 3014 modules / 13126 dependencies，无新增违规，97 项存量豁免 |
+| 微应用构建/升级合同 | 60 项通过 |
+| 固定输入微应用构建 | repo `18ae973c890c699c678b086ad1da3b95275a3c86`、message `f3a568275c0b3ed21537df98a7eedd6bdbf6b070` 均成功；repo 上游/适配均 72 项诊断，新增 0；message 执行 `tsc -b && vite build` |
+| 最终 IM 前端测试 | 固定 pin + 最终适配 + overlay 后 1452 项通过 |
+| ego-browser 页面 E2E | 正常完成、会话恢复、终端输出、迟到分片、未结束工具收敛，runtime/legacy 两数据线 × V2 渲染，共 10 项通过；会话状态级 console error 为 0 |
+
+浏览器使用 ego-browser TaskSpace 48 / p1，完成后已关闭。
+
+范围边界：本次完成两个已有分支的前端源码整合；未推送、部署或执行客户端安装包验收。真实 License、IdP 自动跳转取消接口的后端问题及原待办联调边界仍按各自验收记录处理。

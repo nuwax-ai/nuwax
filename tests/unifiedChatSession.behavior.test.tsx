@@ -10,6 +10,10 @@
  * - effectiveRoleInfo 兜底与优先外部 roleInfo
  * - allowChooseMode 控制模式选择器
  */
+import type {
+  McpAskInterventionQueueItem,
+  useActiveInterventionQueue,
+} from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
@@ -43,7 +47,9 @@ const {
   },
   chatInputPropsRef: { current: null as any },
   contentAreaPropsRef: { current: null as any },
-  mockUseActiveInterventionQueue: vi.fn(() => []),
+  mockUseActiveInterventionQueue: vi.fn<typeof useActiveInterventionQueue>(
+    () => [],
+  ),
 }));
 
 vi.mock('@/constants/feature.constants', () => ({
@@ -153,8 +159,9 @@ vi.mock('@/components/business-component/AgentIntervention', () => ({
 vi.mock(
   '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue',
   () => ({
-    useActiveInterventionQueue: (...args: unknown[]) =>
-      mockUseActiveInterventionQueue(...args),
+    useActiveInterventionQueue: (
+      ...args: Parameters<typeof useActiveInterventionQueue>
+    ) => mockUseActiveInterventionQueue(...args),
   }),
 );
 
@@ -213,6 +220,31 @@ class ResizeObserverStub {
   disconnect() {}
 }
 
+const askItem = (): McpAskInterventionQueueItem => ({
+  kind: 'mcp_ask',
+  messageId: 'm1',
+  messageIndex: 0,
+  sortKey: 1,
+  interaction: {
+    toolCallId: 'tool-ask-1',
+    responseStatus: 'pending',
+    input: {
+      toolName: 'nuwax_ask_question',
+      schemaVersion: 'nuwax.mcp_ask.v2',
+      requestId: 'ask-1',
+      revision: 1,
+      sessionId: 'session-1',
+      title: '待确认问题',
+      ui: {
+        version: 'nuwax.interaction.v2',
+        presentation: 'inline',
+        title: '待确认问题',
+        fields: [],
+      },
+    },
+  },
+});
+
 describe('UnifiedChatSession 行为', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -221,7 +253,6 @@ describe('UnifiedChatSession 行为', () => {
     chatInputPropsRef.current = null;
     contentAreaPropsRef.current = null;
     mockUseActiveInterventionQueue.mockReturnValue([]);
-    // @ts-expect-error jsdom polyfill
     global.ResizeObserver = ResizeObserverStub;
     Element.prototype.scrollTo = vi.fn() as typeof Element.prototype.scrollTo;
   });
@@ -249,9 +280,7 @@ describe('UnifiedChatSession 行为', () => {
   });
 
   it('有 pending intervention 时 wholeDisabled=true', () => {
-    mockUseActiveInterventionQueue.mockReturnValue([
-      { kind: 'mcp_ask', sortKey: 1 } as any,
-    ]);
+    mockUseActiveInterventionQueue.mockReturnValue([askItem()]);
     render(
       <UnifiedChatSession
         messageList={[{ id: 'm1', text: 'hi' } as MessageInfo]}
@@ -263,9 +292,7 @@ describe('UnifiedChatSession 行为', () => {
   });
 
   it('FAILED 会话忽略历史残留 pending intervention，恢复输入框', () => {
-    mockUseActiveInterventionQueue.mockReturnValue([
-      { kind: 'mcp_ask', sortKey: 1 } as any,
-    ]);
+    mockUseActiveInterventionQueue.mockReturnValue([askItem()]);
     render(
       <UnifiedChatSession
         messageList={[{ id: 'm1', text: 'failed' } as MessageInfo]}
