@@ -16,6 +16,8 @@
  *   E2E_TIMEOUT=30                                单场景收尾超时秒数（默认 30）
  *   E2E_SPEED=0.05                                场景回放速度（默认 0.05 瞬间档）
  *   E2E_REAL_TIMING=1                             追加真实时长子集（60~154s/场景）
+ *   E2E_ASK_RESPONSE=1                            R3 回应驱动 Ask 专项（runtime/V2）
+ *   E2E_TASK_SPACE_ID=4 E2E_PAGE_LABEL=p1          复用已有 TaskSpace/Page，不关闭共享空间
  *
  * 设计（docs/conversation/mock-optimization-plan.md M2/M3）：
  *   - 断言单源：页面算（window.__MOCK_CHAT_ASSERTIONS__），本脚本只读；
@@ -148,6 +150,310 @@ if (!Array.isArray(scenariosResponse?.data) || !scenariosResponse.data.length) {
   );
 }
 const allScenarios = scenariosResponse.data;
+
+/** R3 专项使用当前 ego-browser TaskSpace/Page API。实际回应必须经卡片用户
+ * 操作发出；不调用私有 hook、不直接向 mock 提交答案。单独运行以免无回应的
+ * 挂起场景进入旧定时回放矩阵。也支持仅过滤 CHATBOT_ASK_* 的快捷入口。 */
+const selectedIds = E2E.E2E_SCENARIOS?.split(',').map((id) => id.trim());
+if (selectedIds?.length) {
+  const selectedScenarios = selectedIds.map((id) =>
+    allScenarios.find((meta) => meta.id === id),
+  );
+  const missing = selectedIds.filter((_, index) => !selectedScenarios[index]);
+  if (missing.length) {
+    throw new Error(`E2E_SCENARIOS 含未知场景: ${missing.join(', ')}`);
+  }
+  if (
+    selectedScenarios.some((meta) => meta.responseDriven) &&
+    selectedScenarios.some((meta) => !meta.responseDriven)
+  ) {
+    throw new Error(
+      '回应驱动 Ask 专项与定时回放场景需分别运行，不能静默跳过指定场景',
+    );
+  }
+}
+const responseDrivenOnly =
+  E2E.E2E_ASK_RESPONSE === '1' ||
+  (selectedIds?.length &&
+    selectedIds.every((id) =>
+      allScenarios.some((meta) => meta.id === id && meta.responseDriven),
+    ));
+
+const runResponseDrivenAskSuite = async () => {
+  const sharedSpace = Number(E2E.E2E_TASK_SPACE_ID) || null;
+  const askTask = await taskSpace(
+    sharedSpace || 'mock ask response acceptance',
+  );
+  const page = askTask.page(E2E.E2E_PAGE_LABEL || 'p1');
+  console.log({
+    taskSpaceId: askTask.spaceId,
+    page: page.label,
+    suite: 'R3 Ask response',
+  });
+  const outcomes = [];
+  const check = (condition, message) => {
+    if (!condition) throw new Error(message);
+  };
+  const read = () =>
+    page.evaluate(() => window.__MOCK_CHAT_ASSERTIONS__ || null);
+  const navigate = async (scenario, restore = false) => {
+    check(
+      allScenarios.some(
+        (meta) =>
+          meta.id === scenario &&
+          meta.responseDriven &&
+          meta.agentType === 'ChatBot',
+      ),
+      `${scenario} 未加载，请重启 mock 服务或触碰 mock/conversationMock.ts`,
+    );
+    const params = new URLSearchParams({
+      scenario,
+      conversationRuntime: '1',
+      conversationRenderer: 'v2',
+      lang: 'zh-CN',
+      agentMode: 'ask',
+      autoplay: restore ? '0' : '1',
+      restore: restore ? '1' : '0',
+    });
+    await page.goto(`${APP_BASE}${PAGE_PATH}?${params}`);
+  };
+  const pending = async (requestId) => {
+    await page.waitForFunction(
+      (id) => {
+        const s = window.__MOCK_CHAT_ASSERTIONS__;
+        return (
+          s?.agentType === 'ChatBot' &&
+          s?.askState?.waiting &&
+          s.askState.currentRequestId === id &&
+          document.querySelector('[data-agent-intervention-dock]')
+        );
+      },
+      requestId,
+      { timeout: TIMEOUT_SEC * 1000 },
+    );
+    console.log(await page.snapshot());
+    const snapshot = await read();
+    check(!snapshot.hasFinalResult, '未回应不得提前输出 FINAL_RESULT');
+    return snapshot;
+  };
+  const stillPending = async (requestId, answered = []) => {
+    // 负向证明有意跨过旧脚本自动收尾时间；60 秒边界由状态机单测覆盖。
+    await page.waitForTimeout(2500);
+    const snapshot = await read();
+    check(
+      snapshot?.askState?.waiting &&
+        snapshot.askState.currentRequestId === requestId,
+      '等待期间问题提前退出待答',
+    );
+    check(
+      JSON.stringify(snapshot.askState.answeredRequestIds) ===
+        JSON.stringify(answered),
+      '等待期间擅自消费用户回应',
+    );
+    check(!snapshot.hasFinalResult, '等待期间擅自续跑出结果');
+  };
+  const clickDock = (text) =>
+    page.click(
+      `loc=css:[data-agent-intervention-dock] button:has-text("${text}")`,
+    );
+  const submit = async () => {
+    await page.click(
+      'loc=css:[data-agent-intervention-dock] .ant-radio-wrapper:has-text("方案A")',
+    );
+    await clickDock('确认');
+  };
+  const completed = async (action = 'submit', ids = ['mock-chatbot-ask-1']) => {
+    await page.waitForFunction(
+      () => {
+        const s = window.__MOCK_CHAT_ASSERTIONS__;
+        if (s?.lastError) throw new Error(s.lastError);
+        return (
+          s &&
+          !s.askState?.waiting &&
+          s.hasFinalResult &&
+          s.serverTaskStatus === 'COMPLETE' &&
+          s.assertions.every((assertion) => assertion.passed)
+        );
+      },
+      undefined,
+      { timeout: TIMEOUT_SEC * 1000 },
+    );
+    await page.waitForFunction(
+      () => {
+        const s = window.__MOCK_CHAT_ASSERTIONS__;
+        return (
+          !document.querySelector('[data-agent-intervention-dock]') &&
+          s?.messageTexts?.some((text) => text.includes('问答已收到回应')) &&
+          [
+            ...document.querySelectorAll('[data-testid="v2-final-answer"]'),
+          ].some((answer) => answer.textContent.includes('问答已收到回应'))
+        );
+      },
+      undefined,
+      { timeout: TIMEOUT_SEC * 1000 },
+    );
+    const snapshot = await read();
+    check(
+      JSON.stringify(snapshot.askState.answeredRequestIds) ===
+        JSON.stringify(ids),
+      '回应的 requestId 不匹配',
+    );
+    check(
+      snapshot.askState.responses.at(-1)?.action === action,
+      '卡片实际回应动作不匹配',
+    );
+    check(
+      snapshot.assertions.every((assertion) => assertion.passed),
+      '完成后会话状态断言未全通过',
+    );
+    check(
+      !snapshot.consoleErrors.some((error) => error.includes('[Conv:Status]')),
+      '会话状态有 console.error',
+    );
+    return snapshot;
+  };
+  const cases = [
+    {
+      scenario: 'CHATBOT_ASK_REQUIRED',
+      name: '必答等待、禁止跳过、空值校验、刷新恢复、提交后结果、已答刷新不重放',
+      run: async () => {
+        await navigate('CHATBOT_ASK_REQUIRED');
+        await pending('mock-chatbot-ask-1');
+        const allowSkip = await page.evaluate(() =>
+          [
+            ...document.querySelectorAll(
+              '[data-agent-intervention-dock] button',
+            ),
+          ].some((button) => button.textContent.includes('跳过此问')),
+        );
+        check(!allowSkip, 'allowSkip=false 时不能显示跳过按钮');
+        await clickDock('确认');
+        await stillPending('mock-chatbot-ask-1');
+        await navigate('CHATBOT_ASK_REQUIRED', true);
+        await pending('mock-chatbot-ask-1');
+        await submit();
+        const before = await completed();
+        await navigate('CHATBOT_ASK_REQUIRED', true);
+        const after = await completed();
+        check(
+          after.askState.responses.length === before.askState.responses.length,
+          '已答刷新重复发送回应',
+        );
+        check(
+          after.emittedCount === before.emittedCount,
+          '已答刷新重复回放事件',
+        );
+      },
+    },
+    {
+      scenario: 'CHATBOT_ASK_REQUIRED',
+      name: '取消按钮结束本题待答，正常完成会话',
+      run: async () => {
+        await navigate('CHATBOT_ASK_REQUIRED');
+        await pending('mock-chatbot-ask-1');
+        await clickDock('取消此问');
+        await completed('cancel');
+      },
+    },
+    {
+      scenario: 'CHATBOT_ASK_REQUIRED',
+      name: 'Esc 结束本题待答，正常完成会话',
+      run: async () => {
+        await navigate('CHATBOT_ASK_REQUIRED');
+        await pending('mock-chatbot-ask-1');
+        await page.focus('[data-agent-intervention-dock]');
+        await page.keyboard.press('Escape');
+        await completed('cancel');
+      },
+    },
+    {
+      scenario: 'CHATBOT_ASK_SKIPPABLE',
+      name: '允许跳过并继续同会话',
+      run: async () => {
+        await navigate('CHATBOT_ASK_SKIPPABLE');
+        await pending('mock-chatbot-ask-1');
+        await clickDock('跳过此问');
+        await completed('skip');
+      },
+    },
+    {
+      scenario: 'CHATBOT_ASK_SEQUENTIAL',
+      name: '同标题不同 requestId 逐题作答、第二题刷新恢复、全部已答不重放',
+      run: async () => {
+        await navigate('CHATBOT_ASK_SEQUENTIAL');
+        await pending('mock-chatbot-ask-1');
+        await submit();
+        await pending('mock-chatbot-ask-2');
+        await stillPending('mock-chatbot-ask-2', ['mock-chatbot-ask-1']);
+        await navigate('CHATBOT_ASK_SEQUENTIAL', true);
+        await pending('mock-chatbot-ask-2');
+        await submit();
+        const ids = ['mock-chatbot-ask-1', 'mock-chatbot-ask-2'];
+        await completed('submit', ids);
+        await navigate('CHATBOT_ASK_SEQUENTIAL', true);
+        await completed('submit', ids);
+      },
+    },
+    {
+      scenario: 'CHATBOT_ASK_SEQUENTIAL',
+      name: '取消首题仍继续第二题、刷新恢复后可提交',
+      run: async () => {
+        await navigate('CHATBOT_ASK_SEQUENTIAL');
+        await pending('mock-chatbot-ask-1');
+        await clickDock('取消此问');
+        await pending('mock-chatbot-ask-2');
+        await stillPending('mock-chatbot-ask-2', ['mock-chatbot-ask-1']);
+        await navigate('CHATBOT_ASK_SEQUENTIAL', true);
+        await pending('mock-chatbot-ask-2');
+        await submit();
+        const snapshot = await completed('submit', [
+          'mock-chatbot-ask-1',
+          'mock-chatbot-ask-2',
+        ]);
+        check(
+          JSON.stringify(
+            snapshot.askState.responses.map(({ action }) => action),
+          ) === JSON.stringify(['cancel', 'submit']),
+          '取消首题后第二题回应未正确关联',
+        );
+      },
+    },
+  ].filter(
+    (test) => !selectedIds?.length || selectedIds.includes(test.scenario),
+  );
+  check(cases.length > 0, '没有匹配的 R3 Ask 用例');
+  for (const test of cases) {
+    try {
+      await test.run();
+      outcomes.push({ name: test.name, ok: true });
+      console.log(`PASS ${test.name}`);
+    } catch (error) {
+      outcomes.push({ name: test.name, ok: false, error: String(error) });
+      console.log(`FAIL ${test.name}: ${error}`);
+      console.log(await page.snapshot());
+    }
+  }
+  console.log(
+    JSON.stringify(
+      {
+        suite: 'R3 Ask response',
+        passed: outcomes.filter((item) => item.ok).length,
+        failed: outcomes.filter((item) => !item.ok).length,
+        outcomes,
+      },
+      null,
+      2,
+    ),
+  );
+  if (outcomes.some((item) => !item.ok))
+    throw new Error('R3 Ask response E2E failed');
+  if (!sharedSpace) await askTask.finish({ keep: [] });
+};
+
+if (responseDrivenOnly) {
+  await runResponseDrivenAskSuite();
+  process.exit(0);
+}
 
 // ---------- 断言与报告 ----------
 const results = [];
@@ -1254,6 +1560,7 @@ const renderers = rendererFilter === 'both' ? ['v1', 'v2'] : [rendererFilter];
 // MESSAGE_QUEUE_HOLDING 无 autoplay 断言型意义（单发不排队），仅交互段覆盖
 const scenarios = allScenarios.filter(
   (meta) =>
+    !meta.responseDriven &&
     meta.id !== 'MESSAGE_QUEUE_HOLDING' &&
     !meta.realTiming &&
     (!scenarioFilter || scenarioFilter.has(meta.id)),
@@ -1261,15 +1568,6 @@ const scenarios = allScenarios.filter(
 const interactiveCases = INTERACTIVE_CASES.filter(
   (testCase) => !scenarioFilter || scenarioFilter.has(testCase.id),
 );
-if (scenarioFilter) {
-  const missing = [...scenarioFilter].filter(
-    (id) => !allScenarios.some((meta) => meta.id === id),
-  );
-  if (missing.length) {
-    throw new Error(`E2E_SCENARIOS 含未知场景: ${missing.join(', ')}`);
-  }
-}
-
 // ---------- 通用 case 执行 ----------
 const runCase = async (
   meta,

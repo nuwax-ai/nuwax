@@ -201,6 +201,265 @@ describe('ProjectPanel 选中关系', () => {
     routeParams.params = {};
   });
 
+  it('项目新建任务透传列表中的电脑与工作目录，不额外请求项目详情', async () => {
+    respondPage([
+      buildRecord({
+        sandboxId: 366,
+        sandboxType: 'Personal',
+        agentWorkspacePath: '/work/project',
+        fileWorkspacePath: '/files/project',
+        owner: false,
+      }),
+    ]);
+    render(<ProjectPanel compact />);
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation',
+      }),
+    );
+    expect(pinMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: 1,
+        projectType: AgentComponentTypeEnum.NormalProject,
+        sandboxId: 366,
+        sandboxType: 'Personal',
+        workspacePath: '/work/project',
+        owner: false,
+      }),
+    );
+    expect(pageQueryMock).toHaveBeenCalledTimes(1);
+    expect(conversationDetailMock).not.toHaveBeenCalled();
+  });
+
+  it('跨端 chat_start 后新增项目和子会话无需手动刷新即可出现', async () => {
+    respondPage(defaultRecords(), defaultConversations());
+    render(<ProjectPanel compact />);
+    await screen.findByText('会话11');
+    const callsBeforeStart = pageQueryMock.mock.calls.length;
+    respondPage(
+      [...defaultRecords(), buildRecord({ projectId: 3, name: '手机新项目' })],
+      { ...defaultConversations(), 3: [buildConversation(31, '手机新任务')] },
+    );
+    act(() => eventBus.emit('chat_start', { conversationId: '31' }));
+    await screen.findByText('手机新任务');
+    expect(screen.getByText('手机新项目')).toBeTruthy();
+    expect(pageQueryMock.mock.calls.length).toBe(callsBeforeStart + 1);
+  });
+
+  it('重复 chat_start 合并刷新既有项目子会话，卸载后不再补发', async () => {
+    respondPage(defaultRecords(), defaultConversations());
+    const view = render(<ProjectPanel compact />);
+    await screen.findByText('会话11');
+    const callsBeforeStart = pageQueryMock.mock.calls.length;
+    respondPage(defaultRecords(), {
+      ...defaultConversations(),
+      1: [buildConversation(11), buildConversation(12), buildConversation(13)],
+    });
+    act(() => {
+      eventBus.emit('chat_start', { conversationId: '13' });
+      eventBus.emit('chat_start', { conversationId: '13' });
+      eventBus.emit('chat_start', null);
+    });
+    await screen.findByText('会话13');
+    expect(pageQueryMock.mock.calls.length).toBe(callsBeforeStart + 1);
+    act(() => eventBus.emit('chat_start', { conversationId: '14' }));
+    view.unmount();
+    const callsAtUnmount = pageQueryMock.mock.calls.length;
+    await new Promise((resolve) => {
+      setTimeout(resolve, 350);
+    });
+    expect(pageQueryMock.mock.calls.length).toBe(callsAtUnmount);
+  });
+
+  it('chat_start 被查看更多抢占后补拉已加载范围，保留新增项目与子会话', async () => {
+    const first = Array.from({ length: 20 }, (_, index) =>
+      buildRecord({ projectId: index + 1, name: `跨端项目${index + 1}` }),
+    );
+    const second = Array.from({ length: 20 }, (_, index) =>
+      buildRecord({ projectId: index + 21, name: `跨端项目${index + 21}` }),
+    );
+    let releaseStartedPage!: (value: unknown) => void;
+    let firstPageCalls = 0;
+    pageQueryMock.mockImplementation(({ current }: { current: number }) => {
+      if (current === 1 && ++firstPageCalls === 2) {
+        return new Promise((resolve) => {
+          releaseStartedPage = resolve;
+        });
+      }
+      return Promise.resolve({
+        code: SUCCESS_CODE,
+        data: {
+          records:
+            current === 2
+              ? second
+              : firstPageCalls > 2
+              ? [
+                  buildRecord({ projectId: 99, name: '跨端新项目' }),
+                  ...first.slice(0, 19),
+                ]
+              : first,
+          total: 40,
+          current,
+          pages: 2,
+        },
+      });
+    });
+    let started = false;
+    conversationsMock.mockImplementation((projectId: number) =>
+      Promise.resolve({
+        code: SUCCESS_CODE,
+        data:
+          projectId === 1
+            ? started
+              ? [buildConversation(11), buildConversation(13, '跨端新增会话')]
+              : [buildConversation(11)]
+            : [],
+      }),
+    );
+    render(<ProjectPanel compact />);
+    await screen.findByText('会话11');
+    act(() => eventBus.emit('chat_start', { conversationId: '13' }));
+    await waitFor(() => expect(firstPageCalls).toBe(2));
+    started = true;
+    fireEvent.click(
+      screen.getByText('PC.Components.AgentConversation.viewMore (20)'),
+    );
+    await screen.findByText('跨端项目40');
+    await act(async () => {
+      releaseStartedPage({
+        code: SUCCESS_CODE,
+        data: { records: first, total: 40, current: 1, pages: 2 },
+      });
+    });
+    await screen.findByText('跨端新项目');
+    await screen.findByText('跨端新增会话');
+    expect(screen.getByText('跨端项目40')).toBeTruthy();
+    expect(
+      pageQueryMock.mock.calls.slice(3).map(([params]) => params.current),
+    ).toEqual([1, 2]);
+  });
+
+  it('chat_start 子会话分批刷新在途卸载后不继续下一批', async () => {
+    const records = Array.from({ length: 8 }, (_, index) =>
+      buildRecord({ projectId: index + 1, name: `分批项目${index + 1}` }),
+    );
+    respondPage(records);
+    const view = render(<ProjectPanel compact />);
+    await waitFor(() => expect(conversationsMock).toHaveBeenCalledTimes(8));
+    await act(async () => {
+      await flush();
+    });
+    const releases: Array<(value: unknown) => void> = [];
+    conversationsMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releases.push(resolve);
+        }),
+    );
+    const callsBeforeRefresh = conversationsMock.mock.calls.length;
+    act(() => eventBus.emit('chat_start', null));
+    await waitFor(() => expect(releases).toHaveLength(4));
+    view.unmount();
+    await act(async () => {
+      releases.forEach((resolve) => resolve({ code: SUCCESS_CODE, data: [] }));
+      await flush();
+    });
+    expect(conversationsMock.mock.calls.length).toBe(callsBeforeRefresh + 4);
+  });
+
+  it('chat_start 等待正在加载的分页，连续被抢占也只补拉一次', async () => {
+    const records = [buildRecord()];
+    respondPage(records, { 1: [buildConversation(11)] });
+    const ref = createRef<ProjectPanelHandle>();
+    render(<ProjectPanel ref={ref} compact />);
+    await screen.findByText('会话11');
+    const releases: Array<(value: unknown) => void> = [];
+    pageQueryMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releases.push(resolve);
+        }),
+    );
+    const response = { code: SUCCESS_CODE, data: { records, total: 1 } };
+    act(() => eventBus.emit('chat_start', null));
+    await waitFor(() => expect(releases).toHaveLength(1));
+    act(() => ref.current?.revalidateVisible());
+    await act(async () => {
+      releases[0](response);
+    });
+    await new Promise((resolve) => {
+      setTimeout(resolve, 350);
+    });
+    // 补拉已入队，但最新的用户刷新未结束时不再发请求抢占它。
+    expect(releases).toHaveLength(2);
+    await act(async () => {
+      releases[1](response);
+    });
+    await waitFor(() => expect(releases).toHaveLength(3));
+    act(() => ref.current?.revalidateVisible());
+    await act(async () => {
+      releases[2](response);
+      releases[3](response);
+      await flush();
+    });
+    await new Promise((resolve) => {
+      setTimeout(resolve, 650);
+    });
+    expect(releases).toHaveLength(4);
+  });
+
+  it('子会话重复刷新在途卸载后不补发 pending 请求', async () => {
+    respondPage([buildRecord()], { 1: [buildConversation(11)] });
+    const view = render(<ProjectPanel compact />);
+    await screen.findByText('会话11');
+    let releaseChildren!: (value: unknown) => void;
+    conversationsMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseChildren = resolve;
+        }),
+    );
+    const callsBeforeRefresh = conversationsMock.mock.calls.length;
+    act(() => {
+      eventBus.emit(EVENT_TYPE.RefreshConversationList, {
+        conversationId: '11',
+      });
+      eventBus.emit(EVENT_TYPE.RefreshConversationList, {
+        conversationId: '11',
+      });
+    });
+    expect(conversationsMock.mock.calls.length).toBe(callsBeforeRefresh + 1);
+    view.unmount();
+    await act(async () => {
+      releaseChildren({ code: SUCCESS_CODE, data: [] });
+      await flush();
+    });
+    expect(conversationsMock.mock.calls.length).toBe(callsBeforeRefresh + 1);
+  });
+
+  it.each(['network', 'business'])(
+    'chat_start 的 %s 失败不反复补拉',
+    async (failure) => {
+      respondPage([buildRecord()], { 1: [buildConversation(11)] });
+      render(<ProjectPanel compact />);
+      await screen.findByText('会话11');
+      const callsBeforeStart = pageQueryMock.mock.calls.length;
+      if (failure === 'network')
+        pageQueryMock.mockRejectedValue(new Error('offline'));
+      else pageQueryMock.mockResolvedValue({ code: 'FAIL', data: null });
+      act(() => eventBus.emit('chat_start', null));
+      await waitFor(() =>
+        expect(pageQueryMock.mock.calls.length).toBe(callsBeforeStart + 1),
+      );
+      await new Promise((resolve) => {
+        setTimeout(resolve, 650);
+      });
+      expect(pageQueryMock.mock.calls.length).toBe(callsBeforeStart + 1);
+      expect(screen.getByText('会话11')).toBeTruthy();
+    },
+  );
+
   describe('首次加载恢复', () => {
     beforeEach(() => {
       vi.useFakeTimers();

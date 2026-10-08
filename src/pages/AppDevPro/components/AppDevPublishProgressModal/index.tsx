@@ -346,8 +346,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     phase === 'building' ||
     phase === 'checkingDeployable';
   /** 部署服务阶段可停止生产部署 */
-  const canStopDeploy =
-    phase === 'deploying' || phase === 'checkingReadiness';
+  const canStopDeploy = phase === 'deploying' || phase === 'checkingReadiness';
   /** 构建服务折叠面板展开项，新服务到来时自动展开 */
   const [buildActiveKeys, setBuildActiveKeys] = useState<string[]>([]);
   /** 已因构建成功自动收起过的面板，避免再次收起用户手动展开的项 */
@@ -417,8 +416,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
     phase === 'deploying' ||
     phase === 'checkingReadiness' ||
     phase === 'success' ||
-    (isTerminalPhase &&
-      (failedStage === 'check' || failedStage === 'deploy'));
+    (isTerminalPhase && (failedStage === 'check' || failedStage === 'deploy'));
   const passedDeployStage =
     phase === 'deploying' ||
     phase === 'checkingReadiness' ||
@@ -428,8 +426,7 @@ const AppDevPublishProgressModal: React.FC<AppDevPublishProgressModalProps> = ({
   /** 检测可部署：进入该步及之后都保留，方便回看结果 */
   const showCheckSection = passedCheckStage;
   /** 部署服务：进入 start 或已有日志时展示 */
-  const showStartSection =
-    startServices.length > 0 || passedDeployStage;
+  const showStartSection = startServices.length > 0 || passedDeployStage;
   /** 构建打包：有日志、正在构建，或后续步骤已出现时都保留 */
   const showBuildSection =
     services.length > 0 ||

@@ -129,6 +129,12 @@ export interface UserNormalProjectInfo {
   sandboxId: number;
   /** 沙箱类型 */
   sandboxType: UserAppSandboxTypeEnum;
+  /** 文件服务视角的项目工作目录；旧项目可能为空 */
+  fileWorkspacePath?: string | null;
+  /** agent 执行视角的项目工作目录；旧项目可能为空 */
+  agentWorkspacePath?: string | null;
+  /** 兼容直接返回工作目录的接口 */
+  workspacePath?: string | null;
   /** 开发关联智能体ID；常规项目为空 */
   devAgentId?: number | null;
   /** 资料库目录ID */
@@ -189,12 +195,16 @@ export interface UserProjectTabItem {
   description?: string | null;
   /** 项目图标 */
   icon?: string | null;
-  /** 沙箱ID（云端项目为哨兵 -1，勿按 truthiness 判断是否个人电脑） */
+  /** 实际沙箱 ID；云端项目结合 sandboxType 映射为电脑选择器的 -1 */
   sandboxId?: number;
   /** 沙箱类型（Cloud 等） */
   sandboxType?: string;
   /** 工作目录 */
   workspacePath?: string | null;
+  /** agent 执行视角的工作目录 */
+  agentWorkspacePath?: string | null;
+  /** 文件服务视角的工作目录 */
+  fileWorkspacePath?: string | null;
   /** 项目绑定的最新会话 ID（无则为 null） */
   conversationId?: number | null;
   /**
@@ -318,8 +328,12 @@ export interface PinnedProjectInfo {
   name: string;
   /** 项目图标（上框展示，可能为 null） */
   icon?: string | null;
-  /** 项目沙箱 ID（会话创建优先携带；云端项目为哨兵 -1，勿按 truthiness 判断是否个人电脑） */
+  /** 项目实际沙箱 ID；云端项目结合 sandboxType 映射为电脑选择器的 -1 */
   sandboxId?: number;
+  /** 沙箱类型（Cloud / Personal） */
+  sandboxType?: string;
+  /** 项目工作目录（新建任务默认继承，允许本次任务修改） */
+  workspacePath?: string | null;
   /** 项目绑定的调试智能体 ID（全栈默认命中用；契约先行，缺失走手选降级） */
   devAgentId?: number;
   /**

@@ -14,8 +14,9 @@
 #   4. 跑 pnpm run test:conversation 质量门（非存量挂失败则止步，不碰后续分支；
 #      断点续跑且版本分支已包含个人分支时跳过——该批代码上一轮已过门并推送）
 #   5. 合入版本开发分支并推 origin
-#   6. 合入本地 dev（部署数据源；不推送远端）+ gitlab/dev 独有提交盲区告警
-#   7. 切 test、pull gitlab+origin 双远端，merge dev（-X ours；仅 dist/ 产物冲突自动
+#   6. 合入本地 dev（部署数据源；不推送远端），汇合 origin/dev、gitlab/dev 与版本分支；
+#      组合源码不同于已测个人分支时补过质量门，按精确 dev 提交缓存成功结果
+#   7. 切 test、pull gitlab+origin 双远端，merge dev（仅 dist/ 与版本烤哈希冲突自动
 #      按全量重建解决，源码冲突回滚交人工）→ 构建 → 提交 dist
 #      → push origin/test + gitlab/test（部署步骤已内联，语义同 deploy_test.sh）
 #      → 打印三处远端落点核验
@@ -28,6 +29,8 @@
 #   TEST_BRANCH     测试部署分支，默认 test
 #   CONFIG_FILE     配置文件路径，默认 <仓库根>/scripts/deploy_sync_test.env
 #                   （已 gitignore 含个人分支名不入库；模板见 scripts/deploy_sync_test.env.example）
+#   USE_WORKTREE    auto（默认）/ 1 强制隔离 / 0 原地执行
+#   DEPLOY_WORKTREE_DIR 首次隔离的可选目录；默认仓库兄弟目录 .nuwax-deploy-<分支摘要>
 #
 # 用法：
 #   bash scripts/deploy_sync_test.sh            # 真实执行（首次运行自动进入交互式配置）
@@ -58,6 +61,8 @@ trap 'echo "❌ 步骤失败：${CURRENT_STEP}（当前分支：$(git rev-parse 
 # 可能为空，判空自然 no-op；未提交改动/冲突态不切（git diff 非 quiet），交人工处理。
 return_to_start() {
   trap - ERR
+  [ "${DRY_RUN:-0}" != "1" ] || return 0
+  [ "${PIPELINE_STARTED:-0}" = "1" ] || return 0
   [ -n "${FEATURE_BRANCH:-}" ] || return 0
   [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)" != "$FEATURE_BRANCH" ] || return 0
   git diff --quiet && git diff --cached --quiet || return 0
@@ -236,6 +241,24 @@ run_test_gate() {
   return 0
 }
 
+# 分叉输入的组合门：忽略机器产物，成功仅登记精确 HEAD。失败不落成功记录。
+run_combined_source_gate() { # $1=角色 $2=已测参照提交 $3=记录路径 $4=日志步骤
+  local role="$1" baseline="$2" record="$3" step="$4" head
+  if git diff --quiet "$baseline" HEAD -- . ':(exclude)dist' ':(exclude)src/constants/version.ts'; then
+    return 0
+  fi
+  head="$(git rev-parse HEAD)"
+  if [ -f "$record" ] && [ "$(sed -n '1p' "$record")" = "$head" ]; then
+    log "${step}：组合 ${role} 提交 ${head:0:9} 已过质量门，断点续跑跳过"
+    return 0
+  fi
+  CURRENT_STEP="组合 ${role} 的 test:conversation 质量门"
+  log "${step}：组合 ${role} 源码不同于已测参照，执行 pnpm run test:conversation"
+  run_test_gate
+  mkdir -p "$(dirname "$record")"
+  printf '%s\n' "$head" >"$record"
+}
+
 # ---------- 配置解析：环境变量 > 配置文件 > 交互提示（回写配置文件） ----------
 if [ ! -f "$CONFIG_FILE" ] && [ "${DRY_RUN:-0}" != "1" ] && [ -t 0 ]; then
   echo "未找到配置文件 ${CONFIG_FILE}，进入首次配置（输入内容将回显并写入文件，下次免输入）："
@@ -284,37 +307,123 @@ if [ "${INIT_ONLY:-0}" = "1" ]; then
   exit 0
 fi
 
+# 演练在进入任何恢复/隔离逻辑前退出。下面的真实流程包含 Git 清理、子模块升级和
+# pin 配对修复，不能仅靠 run() 包装保证只读；演练只核对缓存引用并打印执行顺序。
+if [ "$DRY_RUN" = "1" ]; then
+  log "只读演练：不 fetch、不修改 refs/index/文件、不创建或删除 worktree；远端引用以本地缓存为准"
+  for b in "$FEATURE_BRANCH" "$VERSION_BRANCH" "$DEV_BRANCH" "$TEST_BRANCH"; do
+    git show-ref --verify --quiet "refs/heads/${b}" || die "本地分支 ${b} 不存在：请检查分支名或配置"
+  done
+  log "步骤 1/8：校验分支与干净状态；有并行现场时创建或复用本脚本登记的独立 worktree"
+  run git fetch --all --prune
+  log "步骤 2/8：合并 origin/${VERSION_BRANCH} 进 ${FEATURE_BRANCH}"
+  run git merge "origin/${VERSION_BRANCH}" --no-verify
+  if [ "${UPGRADE_MICRO_APPS:-auto}" != "0" ]; then
+    log "步骤 2.5：检查子模块 main，按正规升级工具预检适配后升级"
+  fi
+  log "步骤 3/8：推送个人分支"
+  run git push origin "HEAD:refs/heads/${FEATURE_BRANCH}"
+  log "步骤 4/8：test:conversation 质量门（已合入版本分支的同批断点续跑可跳过）"
+  run pnpm run test:conversation
+  log "步骤 5/8：合入 ${VERSION_BRANCH} 并推 origin"
+  run git checkout "$VERSION_BRANCH"
+  run git pull --no-verify origin "$VERSION_BRANCH"
+  run git merge "$FEATURE_BRANCH" --no-verify
+  run git push origin "$VERSION_BRANCH"
+  log "步骤 6/8：合入本地 ${DEV_BRANCH}，汇合双远端 dev；不推送 dev"
+  run git checkout "$DEV_BRANCH"
+  run git pull --no-verify origin "$DEV_BRANCH"
+  run git merge "$VERSION_BRANCH" --no-verify
+  run git fetch gitlab "refs/heads/${DEV_BRANCH}:refs/remotes/gitlab/${DEV_BRANCH}"
+  run git merge "gitlab/${DEV_BRANCH}" --no-verify
+  log "组合 dev 源码不同于已测个人分支时补过质量门；成功结果按精确 dev 提交缓存"
+  log "步骤 7/8：${TEST_BRANCH} 双远端合入、重建完整 dist（含微应用与移动端）、提交产物及烤哈希"
+  run git checkout "$TEST_BRANCH"
+  run git pull --no-verify gitlab "$TEST_BRANCH"
+  run git pull --no-verify origin "$TEST_BRANCH"
+  run git merge "$DEV_BRANCH" --no-verify
+  log "步骤 7.1：test 组合源码不同于已测 dev 时补过质量门；只改机器产物时不重复"
+  run npm run build:prod:m gitlab
+  run git add -f dist
+  run git add src/constants/version.ts
+  run git push origin "$TEST_BRANCH"
+  run git push gitlab "$TEST_BRANCH"
+  log "步骤 8/8：切回个人分支角色；演练完成，未执行部署"
+  exit 0
+fi
+
 # ---------- 正式流程 ----------
 
-# 提测专用 worktree（2026-09-30 提速项）：主区 tracked 不干净（并行开发 WIP/构建现场）时
-# 自动切换到 .deploy-worktree 隔离跑全链——主区现场零接触，提测也不再被挡。USE_WORKTREE=1
+# 提测专用 worktree：主区 tracked 不干净（并行开发 WIP/构建现场）时
+# 自动切换到当前个人分支登记的兄弟目录隔离跑全链。USE_WORKTREE=1
 # 强制启用 / 0 关闭。worktree 以临时分支身份承接 FEATURE_BRANCH 角色，推送时映射回真名。
 # 依赖 symlink 主区 node_modules（pnpm 产物跨目录可用，生产 build 不依赖 src/.umi）。
 REAL_FEATURE="$FEATURE_BRANCH"
+DELIVERY_FEATURE_HEAD="$(git rev-parse "refs/heads/${REAL_FEATURE}")"
+log "本轮源码输入：${REAL_FEATURE}@${DELIVERY_FEATURE_HEAD}（后续并行提交留待下一轮）"
 WT_DIR=""
-# 在提测 worktree 内续跑（断点恢复）：git-dir≠common-dir 即处于某 worktree 中，且
-# 存在临时分支 deploy-sync-work ⇒ 接管 FEATURE 角色（checkout 真名分支会撞主区占用，
-# 2026-09-30 首战实证：续跑死在步骤 1 的自动切回）
-if [ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ] &&
-  git show-ref --verify --quiet refs/heads/deploy-sync-work 2>/dev/null; then
-  WT_DIR="$(git rev-parse --show-toplevel)"
-  FEATURE_BRANCH=deploy-sync-work
-  log "检测到提测 worktree 内续跑：FEATURE 角色由临时分支 ${FEATURE_BRANCH} 承接（真名 ${REAL_FEATURE}）"
+DEPLOY_COMMON_DIR="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)"
+DEPLOY_KEY="$(printf '%s' "$REAL_FEATURE" | git hash-object --stdin | cut -c1-12)"
+DEPLOY_BRANCH="deploy-sync-${DEPLOY_KEY}"
+DEPLOY_RECORD="${DEPLOY_COMMON_DIR}/nuwax-deploy/${DEPLOY_KEY}.record"
+DEV_GATE_RECORD="${DEPLOY_COMMON_DIR}/nuwax-deploy/${DEPLOY_KEY}.dev-gate"
+TEST_GATE_RECORD="${DEPLOY_COMMON_DIR}/nuwax-deploy/${DEPLOY_KEY}.test-gate"
+DEPLOY_ROOT="$(cd "$(git rev-parse --show-toplevel)" && pwd -P)"
+
+# 登记记录属于当前 Git common-dir 和个人分支。仅已登记路径可复用，既有任意 worktree
+# 或同名分支均不被自动删除；旧版 .nuwax-deploy-worktree / deploy-sync-work 也保留原样。
+registered_worktree() {
+  [ -f "$DEPLOY_RECORD" ] || return 1
+  [ "$(sed -n '1p' "$DEPLOY_RECORD")" = "$REAL_FEATURE" ] || die "提测登记与个人分支不匹配：${DEPLOY_RECORD}"
+  [ "$(sed -n '3p' "$DEPLOY_RECORD")" = "$DEPLOY_BRANCH" ] || die "提测登记与临时分支不匹配：${DEPLOY_RECORD}"
+  local candidate listed candidate_common
+  candidate="$(sed -n '2p' "$DEPLOY_RECORD")"
+  [ -n "$candidate" ] && [ -d "$candidate" ] || die "已登记提测目录缺失，保留登记等待人工核对：${candidate}"
+  candidate_common="$(cd "$candidate" && cd "$(git rev-parse --git-common-dir)" && pwd -P)"
+  [ "$candidate_common" = "$DEPLOY_COMMON_DIR" ] || die "已登记目录不属于当前仓库：${candidate}"
+  listed="$(git worktree list --porcelain | awk -v expected="$candidate" '$1 == "worktree" && substr($0, 10) == expected { print substr($0, 10); exit }')"
+  [ "$listed" = "$candidate" ] || die "已登记目录不是当前仓库 worktree：${candidate}"
+  git show-ref --verify --quiet "refs/heads/${DEPLOY_BRANCH}" || die "已登记临时分支缺失：${DEPLOY_BRANCH}"
+  case "$(git -C "$candidate" branch --show-current)" in
+    "$DEPLOY_BRANCH"|"$VERSION_BRANCH"|"$DEV_BRANCH"|"$TEST_BRANCH") ;;
+    *) die "已登记目录当前用于其它分支，保留原样：${candidate}" ;;
+  esac
+  printf '%s' "$candidate"
+}
+
+registered="$(registered_worktree)" || { [ ! -f "$DEPLOY_RECORD" ] || exit 1; }
+if [ -n "${registered:-}" ] && [ "$registered" = "$DEPLOY_ROOT" ]; then
+  case "$(git branch --show-current)" in
+    "$DEPLOY_BRANCH"|"$VERSION_BRANCH"|"$DEV_BRANCH"|"$TEST_BRANCH") ;;
+    *) die "已登记目录当前用于其它分支，保留原样：${DEPLOY_ROOT}" ;;
+  esac
+  WT_DIR="$registered"
+  FEATURE_BRANCH="$DEPLOY_BRANCH"
+  log "检测到已登记提测 worktree 内续跑：${WT_DIR}（个人分支角色 ${REAL_FEATURE}）"
 fi
 enter_worktree_if_needed() {
+  [ -z "$WT_DIR" ] || return 0
   [ "$USE_WORKTREE" != "0" ] || return 0
   if [ -z "$(git status --porcelain -uno)" ] && [ "$USE_WORKTREE" != "1" ]; then
     return 0 # 主区干净且未强制：直接在主区跑，免 worktree 开销
   fi
   # worktree 必须在主仓目录树之外（兄弟目录）：物理嵌在主仓内时 vite/pnpm 的包解析会
   # 向上爬到主仓 package.json，把 setupFiles 等 root 相对路径全部解析去主仓（2026-09-30 首战实证）
-  WT_DIR="$(dirname "$(git rev-parse --show-toplevel)")/.nuwax-deploy-worktree"
-  MAIN_DIR="$(git rev-parse --show-toplevel)"
-  git worktree remove --force "$WT_DIR" >/dev/null 2>&1 || true
-  git worktree prune
-  git branch -D deploy-sync-work >/dev/null 2>&1 || true
-  git worktree add "$WT_DIR" -b deploy-sync-work "origin/${REAL_FEATURE}" >/dev/null 2>&1 ||
-    die "创建提测 worktree 失败：${WT_DIR}（可设 USE_WORKTREE=0 回主区模式）"
+  MAIN_DIR="$DEPLOY_ROOT"
+  if [ -n "${registered:-}" ]; then
+    WT_DIR="$registered"
+    [ -z "$(git -C "$WT_DIR" status --porcelain -uno)" ] || die "已登记提测 worktree 有未提交现场，请在该目录处理后续跑：${WT_DIR}"
+  else
+    WT_DIR="${DEPLOY_WORKTREE_DIR:-$(dirname "$(dirname "$DEPLOY_COMMON_DIR")")/.nuwax-deploy-${DEPLOY_KEY}}"
+    [ ! -e "$WT_DIR" ] || die "提测目录已存在但没有本脚本登记，保留原样：${WT_DIR}"
+    git show-ref --verify --quiet "refs/heads/${DEPLOY_BRANCH}" && die "临时分支已存在但没有本脚本登记，保留原样：${DEPLOY_BRANCH}"
+    # 从本地已提交个人分支起跑，保留尚未 push 的源码；工作区 WIP 不进入交付。
+    git worktree add "$WT_DIR" -b "$DEPLOY_BRANCH" "$DELIVERY_FEATURE_HEAD" >/dev/null 2>&1 ||
+      die "创建提测 worktree 失败：${WT_DIR}"
+    WT_DIR="$(cd "$WT_DIR" && pwd -P)"
+    mkdir -p "$(dirname "$DEPLOY_RECORD")"
+    printf '%s\n' "$REAL_FEATURE" "$WT_DIR" "$DEPLOY_BRANCH" >"$DEPLOY_RECORD"
+  fi
   ln -sfn "${MAIN_DIR}/node_modules" "$WT_DIR/node_modules"
   # src/.umi 是 umi 生成的 tsconfig/类型基础（主 tsconfig extends 它）：worktree 不拷则
   # vitest 全套件文件级崩（2026-09-30 首战实证）；从主区拷快照即可（不 symlink，避免主区 dev 重建抖动）
@@ -329,35 +438,27 @@ enter_worktree_if_needed() {
   (cd "$WT_DIR" && git submodule update --init --recursive) ||
     die "worktree 子模块初始化失败（网络/子模块远端问题），重跑本脚本重试"
   cd "$WT_DIR"
-  FEATURE_BRANCH=deploy-sync-work
-  log "主区有未提交现场，已切换提测专用 worktree（主区零接触）：${WT_DIR}"
+  FEATURE_BRANCH="$DEPLOY_BRANCH"
+  log "已切换已登记提测专用 worktree（起跑区零接触）：${WT_DIR}"
 }
 
 CURRENT_STEP="前置校验"
 log "步骤 1/8：前置校验（分支角色：个人=${REAL_FEATURE} 版本=${VERSION_BRANCH} 集成=${DEV_BRANCH} 测试=${TEST_BRANCH}）"
-# 幽灵 unmerged 防御：上次异常退出可能在 index 残留冲突条目（pull 失败/reset --soft 均会留，
-# 2026-09-30 四连挂的放大器），直接清掉（reset 到 HEAD 不动工作区文件）
+# 隔离先于恢复/分支校验：主区的冲突 index 和并行现场同样属于用户，不自动清理。
+enter_worktree_if_needed
 if git ls-files -u 2>/dev/null | grep -q .; then
-  log "检测到 index 残留 unmerged 条目（上次异常退出残留），自动清理"
-  git reset -q HEAD
-  git checkout -- dist 2>/dev/null || true
+  die "当前提测工作区存在未解决冲突，保留 index/文件，请处理后续跑"
 fi
-# 分支被残留 worktree 占用防御：链路要 checkout 的四个分支若被残留 worktree 占用会被拒
-# （2026-09-30 实证：挂死现场 worktree 占着 test）。主区自身的占用不动。
-git worktree prune
+# 链路角色被其它 worktree 占用时停止，绝不推断为残留并强制删除。
 for b in "$FEATURE_BRANCH" "$VERSION_BRANCH" "$DEV_BRANCH" "$TEST_BRANCH"; do
   occupied=$(git worktree list --porcelain 2>/dev/null | awk -v br="refs/heads/${b}" '
-    $1 == "worktree" { p = $2 }
+    $1 == "worktree" { p = substr($0, 10) }
     $1 == "branch" && $2 == br { print p; exit }
   ')
   if [ -n "${occupied:-}" ] && [ "$occupied" != "$(git rev-parse --show-toplevel)" ]; then
-    log "分支 ${b} 被残留 worktree 占用（${occupied}），自动移除该 worktree"
-    git worktree remove --force "$occupied" 2>/dev/null ||
-      echo "⚠️ worktree ${occupied} 移除失败，若后续 checkout 报占用请手工处理" >&2
+    die "分支 ${b} 被其它 worktree 占用，保留原样：${occupied}"
   fi
 done
-# worktree 判定先于脏区拦截：主区有并行现场时转入隔离 worktree，而不是要求人工清场
-enter_worktree_if_needed
 if [ "$(git rev-parse --abbrev-ref HEAD)" != "$FEATURE_BRANCH" ]; then
   # 上次失败可能停在链路中段分支（如 test）：tracked 干净时自动切回起跑分支再续跑，不干净才拦
   if git diff --quiet && git diff --cached --quiet; then
@@ -377,16 +478,25 @@ $(echo "$UNTRACKED" | sed 's/^/    /')"
 log "工作区干净，拉取全部远端最新引用……"
 retry_git 3 fetch --all --prune
 
+# 复用隔离目录时补入起跑个人分支的新提交，避免沿用上次提测快照漏交付。
+if [ -n "$WT_DIR" ] && ! git merge-base --is-ancestor "$DELIVERY_FEATURE_HEAD" "$FEATURE_BRANCH"; then
+  if ! rgit merge "$DELIVERY_FEATURE_HEAD" --no-verify -m "merge: 同步 ${REAL_FEATURE} 最新源码到提测 worktree"; then
+    git merge --abort 2>/dev/null || true
+    die "个人分支最新源码与已登记提测分支冲突，已回滚，请在提测目录解决后续跑"
+  fi
+fi
+
 # 分支角色存在性校验（fetch 后做，确保远端引用是最新的）：覆写拼错时在这里干净地拦下
 for b in "$FEATURE_BRANCH" "$VERSION_BRANCH" "$DEV_BRANCH" "$TEST_BRANCH"; do
   git show-ref --verify --quiet "refs/heads/${b}" ||
     die "本地分支 ${b} 不存在：请检查分支名或配置"
 done
-for r in "origin/${VERSION_BRANCH}" "origin/${DEV_BRANCH}" "origin/${TEST_BRANCH}" "gitlab/${TEST_BRANCH}"; do
+for r in "origin/${VERSION_BRANCH}" "origin/${DEV_BRANCH}" "gitlab/${DEV_BRANCH}" "origin/${TEST_BRANCH}" "gitlab/${TEST_BRANCH}"; do
   git show-ref --verify --quiet "refs/remotes/${r}" ||
     die "远端引用 ${r} 不存在：请检查分支名或配置"
 done
 
+PIPELINE_STARTED=1
 CURRENT_STEP="合并版本开发分支"
 log "步骤 2/8：合并 origin/${VERSION_BRANCH} 进 ${REAL_FEATURE}（客户端相关支持）"
 if git merge-base --is-ancestor "origin/${VERSION_BRANCH}" "$FEATURE_BRANCH"; then
@@ -490,19 +600,32 @@ else
     fi
   fi
 fi
-verify_microapp_pins
-# 盲区告警：gitlab 侧集成分支若有未进入本链路的独有提交，本次 test 构建将不包含它们
-if ! git merge-base --is-ancestor "gitlab/${DEV_BRANCH}" "$DEV_BRANCH" 2>/dev/null; then
-  echo "⚠️  gitlab/${DEV_BRANCH} 存在 $(git rev-list --count "$DEV_BRANCH..gitlab/${DEV_BRANCH}") 个独有提交未进入本次构建链路（本链路只经 origin/${VERSION_BRANCH}），请知悉。" >&2
+# GitLab dev 可能比 test 更早接到共享开发；仅拉取双 test 不保证这些源码已进入交付。
+# 先汇合到本地 dev，两个远端 dev 都保持原样。源冲突拒绝自动择侧，阻止后续部署。
+retry_git 3 fetch gitlab "refs/heads/${DEV_BRANCH}:refs/remotes/gitlab/${DEV_BRANCH}"
+if git merge-base --is-ancestor "gitlab/${DEV_BRANCH}" "$DEV_BRANCH"; then
+  log "本地 ${DEV_BRANCH} 已包含 gitlab/${DEV_BRANCH}，跳过合并"
+else
+  log "步骤 6.1：汇合 gitlab/${DEV_BRANCH} 的 $(git rev-list --count "$DEV_BRANCH..gitlab/${DEV_BRANCH}") 个独有提交"
+  if ! rgit merge "gitlab/${DEV_BRANCH}" --no-verify \
+    -m "merge: 汇合 gitlab/${DEV_BRANCH} 到本地 ${DEV_BRANCH}（同步测试 $(date +%F)）"; then
+    if ! resolve_machine_conflicts "merge: 汇合 gitlab/${DEV_BRANCH} 到本地 ${DEV_BRANCH}（机器产物冲突自动消化）"; then
+      git merge --abort 2>/dev/null || true
+      die "gitlab/${DEV_BRANCH} 与本地 ${DEV_BRANCH} 存在源码冲突，已回滚；处理后续跑，未进入 test 部署"
+    fi
+  fi
 fi
+verify_microapp_pins
+# 个人分支的门不能证明来自另一路 dev 的组合源码；失败续跑不能绕过。
+run_combined_source_gate "$DEV_BRANCH" "$FEATURE_BRANCH" "$DEV_GATE_RECORD" "步骤 6.2"
 
 CURRENT_STEP="${TEST_BRANCH} 分支构建部署"
 log "步骤 7/8：切 ${TEST_BRANCH}、双远端 pull、merge ${DEV_BRANCH}、构建并推送（语义同 deploy_test.sh）"
 run git checkout "$TEST_BRANCH"
 pull_with_heal gitlab "$TEST_BRANCH"
 pull_with_heal origin "$TEST_BRANCH"
-if ! rgit merge "$DEV_BRANCH" -X ours --no-verify \
-  -m "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（冲突以本地 ${TEST_BRANCH} 为准）"; then
+if ! rgit merge "$DEV_BRANCH" --no-verify \
+  -m "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（同步测试）"; then
   # dist 产物（哈希文件名）与 version.ts 烤哈希均为机器产物，自动消化（清 dist 重建/取本地侧）
   if ! resolve_machine_conflicts "merge: 合并 ${DEV_BRANCH} 到 ${TEST_BRANCH}（机器产物冲突自动消化）"; then
     git merge --abort 2>/dev/null || true
@@ -510,12 +633,28 @@ if ! rgit merge "$DEV_BRANCH" -X ours --no-verify \
   fi
 fi
 verify_microapp_pins
+git merge-base --is-ancestor "$DELIVERY_FEATURE_HEAD" HEAD || die "本轮个人分支输入未进入 test，停止构建"
+# test 的双远端可能含 dev 以外源码，必须校验真正构建的组合输入。
+run_combined_source_gate "$TEST_BRANCH" "$DEV_BRANCH" "$TEST_GATE_RECORD" "步骤 7.1"
+TEST_VERIFIED_HEAD="$(git rev-parse HEAD)"
+CURRENT_STEP="${TEST_BRANCH} 完整生产构建"
 run npm run build:prod:m gitlab
 rgit add -f dist
+rgit add src/constants/version.ts
 # 产物无变化时 commit 会因空提交被拒，属正常，继续走推送（推已存在内容为 no-op）
 if ! rgit commit -m "update $(date '+%Y%m%d%H%M')" --no-verify; then
   log "构建产物无变更，跳过提交"
 fi
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  die "生产构建留下未提交源码/子模块改动，保留现场，不推 test"
+fi
+git merge-base --is-ancestor "$DELIVERY_FEATURE_HEAD" HEAD || die "本轮个人分支输入未进入产物提交，停止推送"
+# prebuild 可能升级 gitlink/adapter。源码变动须重新过门；仅机器产物变化可把已验证
+# 输入的成功记录延续到产物提交，避免下次因 dist 提交改变 HEAD 而重复付费。
+run_combined_source_gate "$TEST_BRANCH" "$TEST_VERIFIED_HEAD" "$TEST_GATE_RECORD" "步骤 7.2"
+mkdir -p "$(dirname "$TEST_GATE_RECORD")"
+printf '%s\n' "$(git rev-parse HEAD)" >"$TEST_GATE_RECORD"
+CURRENT_STEP="推送 ${TEST_BRANCH} 产物"
 retry_git 3 push origin "$TEST_BRANCH"
 retry_git 3 push gitlab "$TEST_BRANCH"
 

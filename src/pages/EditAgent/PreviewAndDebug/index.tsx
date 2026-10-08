@@ -3,7 +3,7 @@ import { type AgentMode } from '@/components/business-component/AgentInterventio
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { CLOUD_SANDBOX_ID } from '@/constants/workspaceDirPolicy.constants';
-import { canOpenDesktopFromEvent } from '@/features/conversation/domain/openDesktopEvent';
+import { canOpenDesktopFromEvent } from '@/features/conversation/react/openDesktopEvent';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';

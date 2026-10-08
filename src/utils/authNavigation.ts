@@ -1,15 +1,41 @@
 import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
+import { getBusinessBase } from './authIdp';
 
 /** 后端认证跳转在商业客户端网关形态下保持同源，保留路径、查询和 hash。 */
 export async function resolveAuthRedirectUrl(url: string): Promise<string> {
-  if (!isDesktopHost() || !/^https?:\/\//i.test(url)) return url;
+  if (!isDesktopHost()) return url;
 
   const context = await hostBridge.auth.getContext();
-  if (context?.loadMode !== 'gateway' || !context.gatewayOrigin) return url;
+  if (!context) return url;
 
   try {
-    const target = new URL(url);
     const business = new URL(context.businessOrigin);
+    const target = new URL(url, window.location.origin);
+    // IdP 绑定/注册页由业务后端渲染；相对 /auth/ 也不能落进本地 dist。
+    const backendAuth = /^\/(auth|api\/auth\/idp)\//.test(target.pathname);
+    const configured = new URL(
+      getBusinessBase() || window.location.origin,
+      window.location.origin,
+    );
+    if (
+      backendAuth &&
+      /^https?:$/.test(business.protocol) &&
+      !business.username &&
+      !business.password &&
+      !target.username &&
+      !target.password &&
+      [business.origin, window.location.origin, configured.origin].includes(
+        target.origin,
+      )
+    ) {
+      return `${business.origin}${target.pathname}${target.search}${target.hash}`;
+    }
+    if (
+      context.loadMode !== 'gateway' ||
+      !context.gatewayOrigin ||
+      !/^https?:\/\//i.test(url)
+    )
+      return url;
     const gateway = new URL(context.gatewayOrigin);
     if (
       !/^https?:$/.test(business.protocol) ||

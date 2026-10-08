@@ -18,7 +18,10 @@ import type {
   UserProjectConversationInfo,
 } from '@/types/interfaces/userProject';
 import { applyConversationChangedToList } from '@/utils/directorySyncEvents';
-import { resolveProjectOwnerFlag } from '@/utils/homeSendPlan';
+import {
+  resolveProjectOwnerFlag,
+  resolveProjectWorkspacePath,
+} from '@/utils/homeSendPlan';
 import type { TabsProps } from 'antd';
 import { Button, Result, Tabs } from 'antd';
 import classNames from 'classnames';
@@ -238,6 +241,10 @@ const NormalProjectDetail: React.FC = () => {
       name: projectInfo?.name || projectName,
       icon: projectInfo?.icon,
       sandboxId: projectInfo?.sandboxId,
+      sandboxType: projectInfo?.sandboxType,
+      workspacePath: projectInfo
+        ? resolveProjectWorkspacePath(projectInfo)
+        : undefined,
       devAgentId: projectInfo?.devAgentId ?? undefined,
       // 详情契约未随列表回 owner，用创建者 id 与当前用户比对等价计算
       owner: resolveProjectOwnerFlag(

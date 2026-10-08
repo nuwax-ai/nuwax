@@ -1,10 +1,11 @@
-import { saveWithDesktopHost } from './downloadCompletion';
 import { apiTemplateExport } from '@/services/agentDev';
 import { apiExportExcel } from '@/services/dataTable';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { message } from 'antd';
 import { request } from 'umi';
+import { saveWithDesktopHost } from './downloadCompletion';
+import { getDownloadFileName } from './downloadFileName';
 
 /**
  * 导出文件Blob返回类型
@@ -156,9 +157,9 @@ export const exportConfigFile = async (
 
     // 从响应头中获取文件名
     const contentDisposition = res.headers?.['content-disposition'];
-    // 解码文件名
-    const fileName = decodeURIComponent(
-      contentDisposition?.split('filename=')[1].replace(/"/g, '') || '',
+    const fileName = getDownloadFileName(
+      contentDisposition,
+      `config-${id}.zip`,
     );
 
     // 当使用 getResponse: true 时，_res 是一个包含 data 属性的响应对象

@@ -393,6 +393,11 @@ const routes = [
             component: '@/pages/PublishAudit',
           },
           {
+            path: 'oauth2/scope-audit',
+            name: getRouteLabel('PC.Routes.oauth2ScopeAudit'),
+            component: '@/pages/SystemManagement/OAuth2ScopeAudit',
+          },
+          {
             path: 'published/manage',
             name: getRouteLabel('PC.Routes.publishedManagement'),
             component: '@/pages/PublishedManage',
@@ -438,6 +443,22 @@ const routes = [
                 name: getRouteLabel('PC.Routes.categoryManagement'),
                 component:
                   '@/pages/SystemManagement/SystemConfig/CategoryManage',
+              },
+              {
+                path: 'sensitive-word',
+                name: getRouteLabel('PC.Routes.sensitiveWordConfig'),
+                component:
+                  '@/pages/SystemManagement/SystemConfig/SensitiveWord',
+              },
+              {
+                path: 'auth-method',
+                name: getRouteLabel('PC.Routes.authMethodConfig'),
+                component: '@/pages/SystemManagement/SystemConfig/AuthMethod',
+              },
+              {
+                path: 'license',
+                name: getRouteLabel('PC.Routes.licenseConfig'),
+                component: '@/pages/SystemManagement/SystemConfig/License',
               },
               {
                 path: 'i18n-lang',

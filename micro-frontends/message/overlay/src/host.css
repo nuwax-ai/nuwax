@@ -14,3 +14,13 @@
   height: 100%;
   min-height: 0;
 }
+
+[data-message-app-scope][data-message-embedded='false'] {
+  /* 独立页没有宿主高度链；四边固定到视口，避免 vh/dvh 被作用域转换为 cqh。 */
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}

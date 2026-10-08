@@ -93,22 +93,22 @@ dist/
 
 ## 5. 上游 main 更新后会发生什么
 
-### 默认构建先升级全部应用
+### 默认构建使用固定提交
 
-`.gitmodules` 中的 `branch = main` 标明上游来源。默认 `build:dev`、`build:prod` 的 prebuild 首先运行 `npm run upgrade:micro-apps -- all`，获取并预检全部应用的远程 main，同步并暂存 gitlink 与 adapter pin；然后生成版本、构建子应用和宿主。构建实际读取的是**主仓 Git index 中的固定 gitlink SHA**，并要求它与对应 `adapter.json.pin` 一致。[来源校验实现](/Users/apple/workspace/nuwax/scripts/sync-micro-apps.mjs:159)。
+`.gitmodules` 中的 `branch = main` 标明上游来源。`build:dev`、`build:prod` 的 prebuild 生成版本，再按当前固定提交构建子应用和宿主。构建实际读取的是**主仓 Git index 中的固定 gitlink SHA**，并要求它与对应 `adapter.json.pin` 一致；构建不获取远程 main 或更新版本，升级通过显式 `upgrade:micro-apps` 入口完成。[来源校验实现](/Users/apple/workspace/nuwax/scripts/sync-micro-apps.mjs:159)。
 
 | 操作 | 当前构建行为 |
 | --- | --- |
 | 上游远程 main 新增提交 | 没有自动影响；已生成的 Web/客户端资源也不会改变 |
-| 执行主站 `build:dev` / `build:prod` | 先升级全部应用到最新远程 main，再构建；升级或预检失败则停止 |
+| 执行主站 `build:dev` / `build:prod` | 构建当前固定提交；来源校验或适配构建失败则停止 |
 | 单独执行 `sync:micro-apps` | 构建当前固定提交，不会 fetch、checkout 或升级子仓 |
 | 只在子仓 pull，或执行 `git submodule update --remote` | 子仓 HEAD 可能变化，但主仓 index 未更新时，构建仍读取旧 gitlink |
 | 只暂存新 gitlink，未同步 adapter pin | 固定提交校验失败，构建中止 |
 | 更新并暂存新 gitlink，同时同步 pin 和必要适配 | 使用新固定提交；仍须通过 patch、类型、构建与功能验收 |
 
-重复构建允许上一轮仅 gitlink/pin 成对暂存的版本更新，继续拒绝源码、patch、overlay 和其它 adapter 字段的未提交改动。默认构建依赖远程仓库可访问；手工 `--ref` 选择的提交不会限制随后默认构建获取最新 main。实际构建来源须核对本次 manifest。
+构建消费已记录的 gitlink/pin 及当前适配快照，不改变共享源码或暂存区，也不依赖获取远程仓库。显式升级会拒绝选中源码、patch、overlay 和其它 adapter 字段的未提交改动，仅允许已成对暂存的 gitlink/pin 更新。手工 `--ref` 选择的提交会保留到下一次显式升级。实际构建来源须核对本次 manifest。
 
-首次核查的固定提交如下，未 fetch 远端确认最新 main；默认升级后以实际 pin 为准：
+首次核查的固定提交如下，未 fetch 远端确认最新 main；显式升级后以实际 pin 为准：
 
 | 应用 | 固定 main SHA | pin 配置 |
 | --- | --- | --- |

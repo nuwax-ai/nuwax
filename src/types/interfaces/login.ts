@@ -1,12 +1,18 @@
 import type { RoleEnum, UserStatus } from '@/types/enums/common';
 import type { SendCodeEnum } from '@/types/enums/login';
 
+// 图形验证码参数（租户开启 openImageCaptcha 时必传）
+export interface ImageCaptchaParams {
+  captchaId?: string;
+  captchaCode?: string;
+}
+
 // 账号密码登录请求参数
 export type LoginFieldType = {
   phoneOrEmail: string;
   password?: string;
   captchaVerifyParam?: string;
-};
+} & ImageCaptchaParams;
 
 // 登录响应数据
 export interface ILoginResult {
@@ -17,7 +23,7 @@ export interface ILoginResult {
 }
 
 // 发送验证码
-export interface SendCode {
+export interface SendCode extends ImageCaptchaParams {
   type: SendCodeEnum;
   captchaVerifyParam?: string;
   phone?: string;
@@ -228,6 +234,9 @@ export interface TenantConfigInfo {
 
   /* */
   openCaptcha: number;
+
+  /** 是否开启图形验证码（1 开 / 0 关；与阿里云验证码相互独立） */
+  openImageCaptcha?: number;
 
   /* */
   captchaAccessKeyId: string;

@@ -1,6 +1,7 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { UserProjectTabItem } from '@/types/interfaces/userProject';
+import { resolveProjectWorkspacePath } from '@/utils/homeSendPlan';
 import type { ProjectChildItem, ProjectItem } from './index';
 
 /**
@@ -62,6 +63,8 @@ export function toProjectItem(
     spaceId: record.spaceId,
     icon: record.icon,
     sandboxId: record.sandboxId,
+    sandboxType: record.sandboxType,
+    workspacePath: resolveProjectWorkspacePath(record),
     devAgentId: record.devAgentId,
     owner: record.owner,
     children: toProjectChildren(record.conversations, fallbackConversationName),

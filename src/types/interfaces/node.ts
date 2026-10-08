@@ -10,17 +10,17 @@ import {
   CreatedNodeItem,
   VariableSelectConfig,
 } from '@/types/interfaces/common';
-import { Markup } from '@antv/x6';
+import type { CellMetadata } from '@antv/x6';
 
 export interface PortMetadata {
-  markup?: Markup; // 连接桩 DOM 结构定义。
+  markup?: CellMetadata['markup']; // X6 支持字符串、JSON DOM 对象或对象数组。
   attrs?: any; // 属性和样式。
   zIndex?: number | 'auto'; // 连接桩的 DOM 层级，值越大层级越高。
   // 群组中连接桩的布局。
   position?: [number, number] | string | { name: string; args?: object };
   label?: {
     // 连接桩标签
-    markup?: Markup;
+    markup?: CellMetadata['markup'];
     position?: {
       // 连接桩标签布局
       name: string; // 布局名称

@@ -63,7 +63,8 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
         const currentPath = location.pathname;
         redirectToLogin(currentPath);
       } else {
-        navigate('/login', { replace: true });
+        // local=1：主动登出后停在普通登录页，不被「未登录自动跳转」带回三方登录
+        navigate('/login?local=1', { replace: true });
       }
     },
   });

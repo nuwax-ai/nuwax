@@ -129,7 +129,14 @@ describe('资料库弹层坐标边界', () => {
     expect(toRepoPortalPoint(302, 135)).toEqual({ left: 80, top: 60 });
     expect(
       toRepoPortalRect({ left: 302, right: 342, top: 135, bottom: 155 }),
-    ).toEqual({ left: 80, right: 120, top: 60, bottom: 80 });
+    ).toEqual({
+      left: 80,
+      right: 120,
+      top: 60,
+      bottom: 80,
+      width: 40,
+      height: 20,
+    });
     rect.left = 260;
     expect(toRepoPortalPoint(342, 135)).toEqual({ left: 80, top: 60 });
     expect(limitRepoPortalOffset(350, 190, 'x')).toBe(210);
