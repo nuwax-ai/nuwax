@@ -24,6 +24,7 @@ bash scripts/deploy_sync_test.sh
 | 微应用 gitlink/pin 配对撕裂（合并无感撕裂） | 自动以 gitlink 为准修齐 pin |
 | 上次异常退出残留（index 幽灵 unmerged / worktree 占用分支） | 前置自动清理 |
 | 断点续跑 | 中途修完问题**直接重跑同一命令**，已过步骤自动跳过（质量门不重付） |
+| test 组合源码与已测 dev 不同 | 步骤 7.1 自动补过质量门（只改机器产物时不重复跑） |
 
 ## 会停下来的三种情况（需要人）
 
