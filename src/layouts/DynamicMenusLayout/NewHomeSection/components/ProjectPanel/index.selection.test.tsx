@@ -201,6 +201,37 @@ describe('ProjectPanel 选中关系', () => {
     routeParams.params = {};
   });
 
+  it('项目新建任务透传列表中的电脑与工作目录，不额外请求项目详情', async () => {
+    respondPage([
+      buildRecord({
+        sandboxId: 366,
+        sandboxType: 'Personal',
+        agentWorkspacePath: '/work/project',
+        fileWorkspacePath: '/files/project',
+        owner: false,
+      }),
+    ]);
+    render(<ProjectPanel compact />);
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'PC.Layouts.DynamicMenusLayout.NewHomeSection.addConversation',
+      }),
+    );
+    expect(pinMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: 1,
+        projectType: AgentComponentTypeEnum.NormalProject,
+        sandboxId: 366,
+        sandboxType: 'Personal',
+        workspacePath: '/work/project',
+        owner: false,
+      }),
+    );
+    expect(pageQueryMock).toHaveBeenCalledTimes(1);
+    expect(conversationDetailMock).not.toHaveBeenCalled();
+  });
+
   it('跨端 chat_start 后新增项目和子会话无需手动刷新即可出现', async () => {
     respondPage(defaultRecords(), defaultConversations());
     render(<ProjectPanel compact />);
@@ -235,7 +266,9 @@ describe('ProjectPanel 选中关系', () => {
     act(() => eventBus.emit('chat_start', { conversationId: '14' }));
     view.unmount();
     const callsAtUnmount = pageQueryMock.mock.calls.length;
-    await new Promise((resolve) => setTimeout(resolve, 350));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 350);
+    });
     expect(pageQueryMock.mock.calls.length).toBe(callsAtUnmount);
   });
 
@@ -319,7 +352,10 @@ describe('ProjectPanel 选中关系', () => {
     });
     const releases: Array<(value: unknown) => void> = [];
     conversationsMock.mockImplementation(
-      () => new Promise((resolve) => releases.push(resolve)),
+      () =>
+        new Promise((resolve) => {
+          releases.push(resolve);
+        }),
     );
     const callsBeforeRefresh = conversationsMock.mock.calls.length;
     act(() => eventBus.emit('chat_start', null));
@@ -340,7 +376,10 @@ describe('ProjectPanel 选中关系', () => {
     await screen.findByText('会话11');
     const releases: Array<(value: unknown) => void> = [];
     pageQueryMock.mockImplementation(
-      () => new Promise((resolve) => releases.push(resolve)),
+      () =>
+        new Promise((resolve) => {
+          releases.push(resolve);
+        }),
     );
     const response = { code: SUCCESS_CODE, data: { records, total: 1 } };
     act(() => eventBus.emit('chat_start', null));
@@ -349,7 +388,9 @@ describe('ProjectPanel 选中关系', () => {
     await act(async () => {
       releases[0](response);
     });
-    await new Promise((resolve) => setTimeout(resolve, 350));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 350);
+    });
     // 补拉已入队，但最新的用户刷新未结束时不再发请求抢占它。
     expect(releases).toHaveLength(2);
     await act(async () => {
@@ -362,7 +403,9 @@ describe('ProjectPanel 选中关系', () => {
       releases[3](response);
       await flush();
     });
-    await new Promise((resolve) => setTimeout(resolve, 650));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 650);
+    });
     expect(releases).toHaveLength(4);
   });
 
@@ -409,7 +452,9 @@ describe('ProjectPanel 选中关系', () => {
       await waitFor(() =>
         expect(pageQueryMock.mock.calls.length).toBe(callsBeforeStart + 1),
       );
-      await new Promise((resolve) => setTimeout(resolve, 650));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 650);
+      });
       expect(pageQueryMock.mock.calls.length).toBe(callsBeforeStart + 1);
       expect(screen.getByText('会话11')).toBeTruthy();
     },
