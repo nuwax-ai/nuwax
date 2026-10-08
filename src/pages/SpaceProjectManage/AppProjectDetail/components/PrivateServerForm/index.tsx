@@ -72,9 +72,7 @@ const PrivateServerForm: React.FC<PrivateServerFormProps> = ({
     return (
       <>
         <td className={styles.protocol}>{renderText(value.scheme)}</td>
-        <td className={styles.host}>
-          {renderText(value.host, value.host)}
-        </td>
+        <td className={styles.host}>{renderText(value.host, value.host)}</td>
         <td className={styles.agent}>{renderText(value.agentPort)}</td>
         <td className={styles.vnc}>{renderText(value.vncPort)}</td>
         <td className={styles.file}>{renderText(value.fileServerPort)}</td>

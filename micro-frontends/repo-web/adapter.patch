@@ -400,34 +400,34 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
  import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
  import { createPortal } from 'react-dom'
  import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from 'react'
-@@ -1339,7 +1340,7 @@
+@@ -1366,7 +1367,7 @@
  
  /** 取单元格视口矩形（浮出编辑器定位锚点） */
- function rectOf(el: HTMLElement) {
+ function rectOf(el: HTMLElement): EditorAnchor {
 -  const r = el.getBoundingClientRect()
 +  const r = toRepoPortalRect(el.getBoundingClientRect())
-   return { top: r.top, left: r.left, bottom: r.bottom }
+   return { top: r.top, left: r.left, bottom: r.bottom, width: r.width, height: r.height }
  }
  
-@@ -1356,7 +1357,7 @@
+@@ -1383,7 +1384,7 @@
   * 编辑打开期间网格滚动/窗口缩放会收起编辑器（既有 useEffect），渲染期读 innerHeight 安全。
   */
- function popHostStyle(anchor: { top: number; left: number; bottom: number }): CSSProperties {
+ function popHostStyle(anchor: EditorAnchor, type: string): CSSProperties {
 -  const vh = window.innerHeight
 +  const vh = getRepoPortalViewport().height
-   const spaceBelow = vh - anchor.bottom - POP_MARGIN
-   const spaceAbove = anchor.top - POP_MARGIN
-   if (spaceBelow < POP_MIN_DROP && spaceAbove > spaceBelow) {
-@@ -1464,7 +1465,7 @@
+   // 多行文本：**贴着单元格原位显示**（宽=单元格宽、起步高=单元格高），随内容向下增高。
+   // 视觉上就是「就地编辑」，不是另弹一个 240×72 的框——修「单行内容也弹大编辑框」的体验问题。
+   // 之所以仍走 Portal：行高固定 + .dtgrid__cell 是 overflow:hidden，就地增高必被裁掉。
+@@ -1512,7 +1513,7 @@
          const content = anchor != null && POP_EDITOR_TYPES.has(f.schema.type)
            ? createPortal(
-               <div className="dtgrid__pop-host" style={popHostStyle(anchor)}>{cellContent}</div>,
+               <div className="dtgrid__pop-host" style={popHostStyle(anchor, f.schema.type)}>{cellContent}</div>,
 -              document.body,
 +              getRepoPortalRoot(),
              )
            : cellContent
          // 单元格级填色：命中规则的字段单元格叠加 8% 透明度渐变（与行 hover/选中底色分层共存，不盖交互态）
-@@ -1950,10 +1951,11 @@
+@@ -1998,10 +1999,11 @@
    const onHeadContextMenu = useCallback((e: ReactMouseEvent, col: number) => {
      if (readOnly === true || editingRef.current != null) return
      e.preventDefault()
@@ -441,7 +441,7 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
      })
    }, [readOnly])
  
-@@ -2003,10 +2005,11 @@
+@@ -2051,10 +2053,11 @@
    const onRowContextMenu = useCallback((e: ReactMouseEvent, row: number) => {
      if (readOnly === true || editingRef.current != null || onInsertRowAt == null) return
      e.preventDefault()
@@ -455,7 +455,7 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
      })
    }, [readOnly, onInsertRowAt])
  
-@@ -2157,7 +2160,7 @@
+@@ -2205,7 +2208,7 @@
                  style={{ ...colStyles[i], ...(frozen ? { left: `${frozenOffsets[i]}px` } : {}) }}
                  title="点击设置该列统计"
                  onClick={(e) => {
@@ -464,7 +464,7 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
                    setFootMenu({ col: f.col, top: r.top - 4, left: r.left })
                  }}
                >
-@@ -2226,7 +2229,7 @@
+@@ -2274,7 +2277,7 @@
              </button>
            )}
          </div>,
@@ -473,7 +473,7 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
        )}
  
        {/* 行右键菜单（Excel 式）：在上方/下方插入记录 + 删除记录。物理行操作，
-@@ -2273,7 +2276,7 @@
+@@ -2321,7 +2324,7 @@
              删除记录
            </button>
          </div>,
@@ -482,7 +482,7 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
        )}
  
        {/* #4 表头右键菜单：插入/移动/固定/编辑/删除字段（视觉序操作，落库只动 fieldOrder/frozenCount，
-@@ -2347,7 +2350,7 @@
+@@ -2395,7 +2398,7 @@
                </button>
              )}
            </div>,
@@ -491,6 +491,7 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
          )
        })()}
      </div>
+
 diff --git a/src/components/CollabEditor.tsx b/src/components/CollabEditor.tsx
 --- a/src/components/CollabEditor.tsx
 +++ b/src/components/CollabEditor.tsx
@@ -882,25 +883,6 @@ diff --git a/src/components/InsertMenuPopover.tsx b/src/components/InsertMenuPop
      }
    })
  
-diff --git a/src/pages/FolderView.tsx b/src/pages/FolderView.tsx
---- a/src/pages/FolderView.tsx
-+++ b/src/pages/FolderView.tsx
-@@ -1,3 +1,4 @@
-+import { getRepoInputRoot } from '../hostRuntime'
- import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
- import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react'
- import { useNavigate, useParams } from 'react-router-dom'
-@@ -257,8 +258,8 @@
-     const onKey = (event: KeyboardEvent) => {
-       if (event.key === 'Escape') closePreview()
-     }
--    window.addEventListener('keydown', onKey)
--    return () => window.removeEventListener('keydown', onKey)
-+    getRepoInputRoot().addEventListener('keydown', onKey)
-+    return () => getRepoInputRoot().removeEventListener('keydown', onKey)
-   }, [preview, closePreview])
- 
-   // 空间成员映射（「更新人」列展示名）
 diff --git a/src/components/LibraryNav.tsx b/src/components/LibraryNav.tsx
 --- a/src/components/LibraryNav.tsx
 +++ b/src/components/LibraryNav.tsx

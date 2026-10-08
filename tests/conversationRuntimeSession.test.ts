@@ -1112,8 +1112,9 @@ describe('conversationRuntimeSession 文件树刷新信号生产者（V2 目录�
     {
       name: '终端',
       status: 'FINISHED',
+      // 终端字符串不推断文件修改；上游 9f2a2120c 仅允许显式 edit/write/diff。
       result: { kind: 'execute', input: { command: 'echo done > output.txt' } },
-      refresh: true,
+      refresh: false,
     },
     {
       name: '终端',

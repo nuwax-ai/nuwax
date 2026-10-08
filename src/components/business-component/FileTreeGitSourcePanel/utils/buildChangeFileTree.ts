@@ -1,4 +1,5 @@
 import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
+import { compareFileTreeNodes } from '@/utils/appDevUtils';
 import type { ChangeFileStatusMeta } from './changeFileStatus';
 
 /** 变更列表项（含展示元数据） */
@@ -18,13 +19,14 @@ export interface ChangeTreeNode {
   fileItem?: ChangeListItem;
 }
 
+/** 递归排序树节点 */
 const sortTreeNodes = (nodes: ChangeTreeNode[]) => {
-  nodes.sort((a, b) => {
-    if (a.type !== b.type) {
-      return a.type === 'folder' ? -1 : 1;
-    }
-    return a.name.localeCompare(b.name);
-  });
+  nodes.sort((a, b) =>
+    compareFileTreeNodes(
+      { name: a.name, type: a.type },
+      { name: b.name, type: b.type },
+    ),
+  );
   nodes.forEach((node) => {
     if (node.children?.length) {
       sortTreeNodes(node.children);

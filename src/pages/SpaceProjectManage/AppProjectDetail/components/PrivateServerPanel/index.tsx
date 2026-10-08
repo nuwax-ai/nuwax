@@ -254,10 +254,7 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
     apiPrivateServerUpdate,
     {
       manual: true,
-      onSuccess: (
-        _result: unknown,
-        params: PrivateServerUpdateParams[],
-      ) => {
+      onSuccess: (_result: unknown, params: PrivateServerUpdateParams[]) => {
         message.success(
           dict('PC.Pages.AppProjectDetail.updatePrivateServerSuccess'),
         );
@@ -597,12 +594,8 @@ const PrivateServerPanel: React.FC<PrivateServerPanelProps> = ({
         {dict('PC.Pages.AppProjectDetail.addPrivateServer')}
       </Button>
       <div className={cx(styles.hint)}>
-        <p>
-          http: {dict('PC.Pages.AppProjectDetail.privateHintHttp')}
-        </p>
-        <p>
-          https: {dict('PC.Pages.AppProjectDetail.privateHint')}
-        </p>
+        <p>http: {dict('PC.Pages.AppProjectDetail.privateHintHttp')}</p>
+        <p>https: {dict('PC.Pages.AppProjectDetail.privateHint')}</p>
       </div>
       <PrivateServerDetailModal
         open={detailOpen}

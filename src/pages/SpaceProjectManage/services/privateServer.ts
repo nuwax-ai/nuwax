@@ -1,6 +1,6 @@
-import { request } from "umi";
-import { RequestResponse } from "@/types/interfaces/request";
-import { UserAppDeployTypeEnum } from "@/types/interfaces/userProject";
+import { RequestResponse } from '@/types/interfaces/request';
+import { UserAppDeployTypeEnum } from '@/types/interfaces/userProject';
+import { request } from 'umi';
 
 /** 登记私有部署服务器参数 */
 export interface PrivateServerCreateParams {
@@ -87,7 +87,9 @@ export async function apiPrivateServerDelete(
 }
 
 /** 我的私服列表 */
-export async function apiPrivateServerList(): Promise<RequestResponse<PrivateServerInfo[]>> {
+export async function apiPrivateServerList(): Promise<
+  RequestResponse<PrivateServerInfo[]>
+> {
   return request('/api/userapp/private-server/list', {
     method: 'GET',
   });

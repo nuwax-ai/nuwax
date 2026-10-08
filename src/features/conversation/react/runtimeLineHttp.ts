@@ -18,7 +18,7 @@ import {
   apiAgentConversationMessageList,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
-import { TaskStatus } from '@/types/enums/agent';
+import { HideDesktopEnum, TaskStatus } from '@/types/enums/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   applyTerminalTaskStatus,
@@ -56,7 +56,12 @@ export interface RuntimeLineEffectsResources {
     limit: number;
   }) => void;
   showPagePreview?: (preview: unknown) => void;
-  openDesktop?: (conversationId: number) => void;
+  /** 各页面自己的打开远程桌面实现，名字统一为 openDesktopView */
+  openDesktopView?: (conversationId: number) => void;
+  /** 智能体是否隐藏远程桌面（会话事件打开桌面前由 react 层判断） */
+  hideDesktop?: HideDesktopEnum | null;
+  /** 打开远程桌面时的生效电脑。不传则用 hook 的 getSandboxId */
+  getOpenDesktopSandboxId?: () => string | number | null | undefined;
   setCardList?: Dispatch<SetStateAction<unknown[]>>;
   setShowType?: Dispatch<SetStateAction<unknown>>;
   refreshFileListThrottled?: (conversationId: number) => void;
@@ -84,8 +89,10 @@ export function createRuntimeLineEffectsAdapter(deps: {
     SetStateAction<ConversationInfo | null | undefined>
   >;
   resources?: RuntimeLineEffectsResources;
+  /** 每次执行时读取最新页面资源，避免会话实例只记住第一次渲染的回调 */
+  getResources?: () => RuntimeLineEffectsResources;
 }): ConversationEffectsAdapter {
-  const resources = deps.resources ?? {};
+  const readResources = () => deps.getResources?.() ?? deps.resources ?? {};
   const setConversationInfo = deps.setConversationInfo;
   let suggestDebounceTimer: ReturnType<typeof setTimeout> | undefined;
   let suggestRequestVersion = 0;
@@ -97,6 +104,7 @@ export function createRuntimeLineEffectsAdapter(deps: {
 
   return {
     dispatch(effect) {
+      const resources = readResources();
       switch (effect.type) {
         case 'recent.status.patch': {
           if (effect.context) {
@@ -126,13 +134,14 @@ export function createRuntimeLineEffectsAdapter(deps: {
           }
           suggestDebounceTimer = setTimeout(() => {
             suggestDebounceTimer = undefined;
-            resources.onSuggestLoadingChange?.(true, conversationId);
+            const latestResources = readResources();
+            latestResources.onSuggestLoadingChange?.(true, conversationId);
             void apiAgentConversationChatSuggest(effect.params as never)
               .then((result) => {
                 if (requestVersion !== suggestRequestVersion) {
                   return;
                 }
-                resources.onSuggestLoaded?.(
+                readResources().onSuggestLoaded?.(
                   ((result as { data?: string[] })?.data ?? []) as string[],
                   conversationId,
                 );
@@ -142,7 +151,10 @@ export function createRuntimeLineEffectsAdapter(deps: {
               })
               .finally(() => {
                 if (requestVersion === suggestRequestVersion) {
-                  resources.onSuggestLoadingChange?.(false, conversationId);
+                  readResources().onSuggestLoadingChange?.(
+                    false,
+                    conversationId,
+                  );
                 }
               });
           }, SUGGEST_DEBOUNCE_MS);
@@ -213,7 +225,7 @@ export function createRuntimeLineEffectsAdapter(deps: {
           resources.setShowType?.(2 as never);
           return;
         case 'desktop.open':
-          resources.openDesktop?.(effect.conversationId);
+          resources.openDesktopView?.(effect.conversationId);
           return;
         case 'preview.file.refresh':
           if (effect.mode === 'throttled') {
@@ -226,26 +238,27 @@ export function createRuntimeLineEffectsAdapter(deps: {
           return;
         case 'taskResult.settle': {
           void (async () => {
-            await (resources.refreshFileListImmediately ?? asyncNoop)(
+            const latestResources = readResources();
+            await (latestResources.refreshFileListImmediately ?? asyncNoop)(
               effect.conversationId,
             );
             if (effect.enableVersionControl) {
-              void resources.refreshGitListRef?.current?.();
+              void latestResources.refreshGitListRef?.current?.();
             }
             let selected = false;
             if (effect.taskResult.hasTaskResult && effect.taskResult.file) {
-              resources.openPreviewView?.(effect.conversationId);
+              latestResources.openPreviewView?.(effect.conversationId);
               const fileId = effect.taskResult.file
                 ?.split(`${effect.conversationId}/`)
                 .pop();
               if (fileId) {
-                resources.setTaskAgentSelectedFileId?.(fileId);
-                resources.setTaskAgentSelectTrigger?.(Date.now());
+                latestResources.setTaskAgentSelectedFileId?.(fileId);
+                latestResources.setTaskAgentSelectTrigger?.(Date.now());
                 selected = true;
               }
             }
             if (!selected) {
-              resources.setFileTreeRefreshTrigger?.(Date.now());
+              latestResources.setFileTreeRefreshTrigger?.(Date.now());
             }
           })();
           return;

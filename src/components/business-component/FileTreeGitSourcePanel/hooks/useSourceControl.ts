@@ -34,12 +34,12 @@ import {
   mergeGitStatusFileIds,
 } from '../utils/gitStatusUtils';
 import { locateWorkspaceChangeFile } from '../utils/locateWorkspaceChangeFile';
-import { workspaceRelativePath } from '../utils/workspaceFileList';
 import {
   runGitDiscard,
   runGitStage,
   runGitUnstage,
 } from '../utils/sourceControlGitActions';
+import { workspaceRelativePath } from '../utils/workspaceFileList';
 
 export type { GitWorkspaceConfig };
 
@@ -347,8 +347,7 @@ export const useSourceControl = ({
    */
   const handleDiffFileSelect = useCallback(
     (fileId: string, section: ChangeListSection) => {
-      const fileName =
-        workspaceRelativePath(fileId).split('/').pop() || fileId;
+      const fileName = workspaceRelativePath(fileId).split('/').pop() || fileId;
       // 压缩包等不支持预览的文件不查 diff，直接打开普通预览，由预览区提示不支持
       if (!isPreviewableFile(fileName, true)) {
         setSelectedChangeFile(null);

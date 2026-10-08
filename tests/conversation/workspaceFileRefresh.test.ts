@@ -55,37 +55,30 @@ describe('workspace file refresh semantics', () => {
     'cat src/a.ts',
     'head -n 5 README.md',
     'tail -n 5 output.log',
-  ])('skips a simple readonly terminal command: %s', (command) =>
+    'git status',
+    'npm test',
+    'echo hello',
+    'python build.py',
+    'echo hello > new.txt',
+    'mkdir -p generated',
+  ])('does not refresh a terminal command: %s', (command) =>
     expect(
       shouldRefreshWorkspaceFiles(
         tool({ kind: 'execute', input: { command } }),
       ),
     ).toBe(false),
   );
-  it.each([
-    'echo hello > new.txt',
-    'cat input > output',
-    'mkdir -p generated',
-    'python build.py',
-    'npm install',
-    'find . -delete',
-    'pwd; touch new.txt',
-    'ls $(touch new.txt)',
-    'cat <(python write.py)',
-  ])('keeps potential terminal file changes: %s', (command) =>
+  it('does not refresh an execute tool without a command or a failed command', () => {
+    expect(shouldRefreshWorkspaceFiles(tool({ kind: 'execute' }))).toBe(false);
     expect(
       shouldRefreshWorkspaceFiles(
-        tool({ kind: 'execute', input: { raw_input: { command } } }),
+        tool(
+          { kind: 'execute', input: { command: 'git status' }, success: false },
+          { status: 'FAILED' },
+        ),
       ),
-    ).toBe(true),
-  );
-  it('keeps opaque and failed command completion because partial writes are possible', () => {
-    expect(shouldRefreshWorkspaceFiles(tool({ kind: 'execute' }))).toBe(true);
-    expect(
-      shouldRefreshWorkspaceFiles(
-        tool({ kind: 'execute', success: false }, { status: 'FAILED' }),
-      ),
-    ).toBe(true);
+    ).toBe(false);
+    expect(shouldRefreshWorkspaceFiles(tool({}, { name: '终端' }))).toBe(false);
   });
   it.each([
     'write_file',

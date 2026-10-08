@@ -1,3 +1,4 @@
+import { IDP_RETURN_PATH_KEY } from '@/utils/authIdp';
 import { isWeakNumber } from '@/utils/common';
 import { hostBridge, isImmersiveShell } from '@/utils/hostBridge';
 import { history } from 'umi';
@@ -179,6 +180,13 @@ export const jumpToPageDevelop = (spaceId: number) => {
 };
 
 export const redirectToLogin = (redirect: string | number = '/') => {
+  // 数字是 SPA 历史偏移，整页跳三方登录后失效：暂存当前业务路径供其回跳
+  if (!Number.isNaN(Number(redirect)) && typeof window !== 'undefined') {
+    const { pathname, search, hash } = window.location;
+    if (!/^\/(login|verify-code)/.test(pathname)) {
+      sessionStorage.setItem(IDP_RETURN_PATH_KEY, pathname + search + hash);
+    }
+  }
   jumpTo(`/login?redirect=${encodeURIComponent(redirect)}`);
 };
 

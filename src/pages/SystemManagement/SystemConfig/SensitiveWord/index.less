@@ -1,0 +1,17 @@
+@import '@/styles/token.less';
+
+.word-tag {
+  max-width: 100%;
+  margin-inline-end: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+// 正则表达式用等宽字体，便于辨认转义。
+// 不用 @fontFamilyCode：该 token 是带引号的整串，直接用会被当成单个字体名，
+// 而 ~ 转义写法会被提交钩子的 stylelint --fix 改坏，故与 token 同值写字面量。
+.word-tag-regex {
+  font-family: 'JetBrains Mono', monospace, 'Fira Code', Consolas, Monaco,
+    'Courier New';
+}

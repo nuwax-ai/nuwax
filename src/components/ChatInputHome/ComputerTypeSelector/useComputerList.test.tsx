@@ -222,7 +222,8 @@ describe('useComputerList 请求生命周期', () => {
     expect(fetchList).toHaveBeenCalledTimes(2);
     await advance(2_000);
     expect(result.current.rawComputerList.map((option) => option.id)).toEqual([
-      '-1', '999',
+      '-1',
+      '999',
     ]);
     await advance(60_000);
     expect(fetchList).toHaveBeenCalledTimes(3);
@@ -252,7 +253,8 @@ describe('useComputerList 请求生命周期', () => {
     await advance(60_000);
     expect(fetchList).toHaveBeenCalledTimes(4);
     expect(result.current.rawComputerList.map((option) => option.id)).toEqual([
-      '-1', '999',
+      '-1',
+      '999',
     ]);
   });
 

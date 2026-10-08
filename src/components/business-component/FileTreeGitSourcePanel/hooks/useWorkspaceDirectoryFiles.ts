@@ -36,6 +36,11 @@ export function useWorkspaceDirectoryFiles(
     new Set(),
   );
   const [loading, setLoading] = useState(false);
+  /**
+   * 本次进入后，根目录 file-list 是否已经成功返回过一次。
+   * 请求还没发出、还在路上时为 false；返回后再按列表内容判断有没有项目。
+   */
+  const [fileListLoaded, setFileListLoaded] = useState(false);
   /** 正在拉取文件列表的目录（相对路径）。请求结束（成功或失败）后移除。 */
   const [loadingDirectoryPaths, setLoadingDirectoryPaths] = useState<
     Set<string>
@@ -67,6 +72,7 @@ export function useWorkspaceDirectoryFiles(
     setFiles([]);
     setLoadedDirectoryPaths(new Set());
     setLoading(false);
+    setFileListLoaded(false);
     setLoadingDirectoryPaths(new Set());
   }, [conversationId]);
 
@@ -134,6 +140,9 @@ export function useWorkspaceDirectoryFiles(
         setFiles((loadedFiles) =>
           mergeDirectoryLevelFiles(loadedFiles, directoryFiles, requestPath),
         );
+        if (!requestPath) {
+          setFileListLoaded(true);
+        }
         setLoadedDirectoryPaths((loadedPaths) => {
           // 本次响应里的直接子目录。更深的已加载目录是否保留，看它的第一段还在不在
           const directDirectoryPaths = new Set(
@@ -206,18 +215,18 @@ export function useWorkspaceDirectoryFiles(
           0,
           (directoryLoadingCountRef.current.get(requestPath) || 1) - 1,
         );
-          if (loadingCount > 0) {
-            directoryLoadingCountRef.current.set(requestPath, loadingCount);
-          } else {
-            directoryLoadingCountRef.current.delete(requestPath);
-            inflightDirectoryRequestsRef.current.delete(requestPath);
-            setLoadingDirectoryPaths((previous) => {
-              if (!previous.has(requestPath)) return previous;
-              const next = new Set(previous);
-              next.delete(requestPath);
-              return next;
-            });
-          }
+        if (loadingCount > 0) {
+          directoryLoadingCountRef.current.set(requestPath, loadingCount);
+        } else {
+          directoryLoadingCountRef.current.delete(requestPath);
+          inflightDirectoryRequestsRef.current.delete(requestPath);
+          setLoadingDirectoryPaths((previous) => {
+            if (!previous.has(requestPath)) return previous;
+            const next = new Set(previous);
+            next.delete(requestPath);
+            return next;
+          });
+        }
         activeRequestCountRef.current = Math.max(
           0,
           activeRequestCountRef.current - 1,
@@ -277,6 +286,7 @@ export function useWorkspaceDirectoryFiles(
 
   return {
     files,
+    fileListLoaded,
     loading,
     loadingDirectoryPaths,
     currentPath,

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "domains": {
+    "nodes": {
+      "directories": [
+        "src/pages/Antv-X6/v3",
+        "src/pages/EditAgent/AgentFlowCanvas"
+      ],
+      "files": [
+        "src/types/interfaces/node.ts",
+        "src/types/interfaces/graph.ts",
+        "src/types/interfaces/workflow.ts",
+        "src/types/enums/common.ts",
+        "src/types/enums/node.ts",
+        "src/services/workflow.ts",
+        "src/contexts/FlowKindContext.tsx",
+        "src/contexts/CanvasFullscreenContext.tsx",
+        "tests/variableReferenceV3.test.ts",
+        "src/pages/EditAgent/AgentArrangeConfig/agentFlow/__tests__/arrangePolicy.test.ts"
+      ],
+      "filePrefixes": ["tests/workflow"]
+    },
+    "conversation": {
+      "directories": [
+        "src/features/conversation",
+        "src/components/business-component/UnifiedChatSession",
+        "tests/conversation",
+        "tests/unifiedChatSession"
+      ],
+      "files": [],
+      "filePrefixes": ["tests/unifiedChatSession"]
+    },
+    "workspace": {
+      "directories": ["src/pages/AppDevPro"],
+      "files": [
+        "tests/appDevUiPolling.lifecycle.test.tsx",
+        "tests/useAppDevChat.lifecycle.test.tsx"
+      ],
+      "filePrefixes": []
+    },
+    "contracts": {
+      "directories": [],
+      "files": [
+        "src/types/interfaces/hostBridge.ts",
+        "src/types/interfaces/hostAuth.ts",
+        "src/types/interfaces/im.ts"
+      ],
+      "filePrefixes": []
+    }
+  }
+}

@@ -1,17 +1,32 @@
-import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  FlowKindEnum,
+  NodeShapeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
 import type { Cell, Edge, Graph } from '@antv/x6';
+import { describe, expect, it, vi } from 'vitest';
 import {
   handleAgentFlowStartDragInsert,
   resolveStartPortQuickAddRedirect,
   shouldRejectStartSecondDrag,
 } from '../startInsertHandlers';
 
-const tailNode: ChildNode = {
-  id: 2,
-  type: NodeTypeEnum.Agent,
-  name: 'A',
-} as ChildNode;
+const makeNode = (
+  id: number,
+  type: NodeTypeEnum,
+  name = 'Test node',
+): ChildNode => ({
+  id,
+  type,
+  name,
+  description: '',
+  workflowId: 1,
+  shape: NodeShapeEnum.General,
+  icon: '',
+  nodeConfig: {},
+});
+const tailNode = makeNode(2, NodeTypeEnum.Agent, 'A');
 
 const makeEdge = (id: string, sourceCellId: string): Edge =>
   ({
@@ -39,7 +54,7 @@ describe('startInsertHandlers', () => {
         resolveStartPortQuickAddRedirect({
           graph,
           flowKind: FlowKindEnum.Workflow,
-          sourceNode: { id: 1, type: NodeTypeEnum.Start } as ChildNode,
+          sourceNode: makeNode(1, NodeTypeEnum.Start),
         }),
       ).toEqual({ kind: 'skip' });
     });
@@ -50,7 +65,7 @@ describe('startInsertHandlers', () => {
         resolveStartPortQuickAddRedirect({
           graph,
           flowKind: FlowKindEnum.AgentFlow,
-          sourceNode: { id: 1, type: NodeTypeEnum.Start } as ChildNode,
+          sourceNode: makeNode(1, NodeTypeEnum.Start),
         }),
       ).toEqual({
         kind: 'redirect',
@@ -95,6 +110,7 @@ describe('startInsertHandlers', () => {
       const oldEdge = makeEdge('e-old', '1');
       const newEdge = makeEdge('e-new', '1');
       const graph = makeGraph([oldEdge, newEdge]);
+      const middleNode = makeNode(3, NodeTypeEnum.Agent);
       const insertNodeBetween = vi.fn().mockResolvedValue(undefined);
       const onComplete = vi.fn();
 
@@ -103,8 +119,8 @@ describe('startInsertHandlers', () => {
         flowKind: FlowKindEnum.AgentFlow,
         edge: newEdge,
         edges: graph.getEdges(),
-        sourceNode: { id: 1, type: NodeTypeEnum.Start } as ChildNode,
-        targetNode: { id: 3, type: NodeTypeEnum.Agent } as ChildNode,
+        sourceNode: makeNode(1, NodeTypeEnum.Start),
+        targetNode: middleNode,
         sourcePort: '1-out',
         insertNodeBetween,
         onComplete,
@@ -114,7 +130,7 @@ describe('startInsertHandlers', () => {
       expect(newEdge.remove).toHaveBeenCalled();
       expect(insertNodeBetween).toHaveBeenCalledWith(
         expect.objectContaining({
-          middleNode: { id: 3, type: NodeTypeEnum.Agent },
+          middleNode,
           tailNode,
           oldEdgeId: 'e-old',
         }),

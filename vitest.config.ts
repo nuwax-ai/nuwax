@@ -18,6 +18,8 @@ export default defineConfig({
       '.claude/worktrees/**',
       // 子仓的 node:test/业务测试由各自管线执行，宿主只收集集成合同。
       'submodules/**',
+      // 类型门由 test:typecheck 使用 node:test 独立执行，避免 Vitest 误收集。
+      'scripts/check-types.test.mjs',
     ],
     alias: {
       '@': path.resolve(__dirname, 'src'),

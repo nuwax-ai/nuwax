@@ -6,235 +6,14 @@ import {
 } from '../services/appDb';
 import {
   apiUserAppReadiness,
+  UserAppReadinessStatusEnum,
   type UserAppReadiness,
 } from '../services/appDevPro';
 
-/** 单次 cors 探测超时（毫秒） */
-const CHECK_TIMEOUT_MS = 8000;
-
-/** 启动成功后域名检查的最多尝试次数 */
-const PREVIEW_HEALTH_POLL_MAX_ATTEMPTS = 5;
-
-/** 两次域名检查之间的间隔（毫秒） */
-const PREVIEW_HEALTH_POLL_INTERVAL_MS = 2000;
-
-/** iframe onLoad 后等待 Performance 写入的轮询间隔（毫秒） */
-const TIMING_POLL_INTERVAL_MS = 300;
-
-/** iframe onLoad 后等待 Performance 写入的最长时间（毫秒） */
-const TIMING_POLL_MAX_MS = 2000;
-
-export interface PreviewHealthResult {
-  ok: boolean;
-  status?: number;
-  opaque?: boolean;
-}
-
-export interface PreviewHealthCheckOptions {
-  signal?: AbortSignal;
-  /** 仅统计该时间点（performance.now）之后写入的 Resource Timing，避免误读历史 5xx */
-  sinceStartTime?: number;
-  /** 轮询过程中返回 true 则不再继续（例如用户已停止） */
-  shouldStop?: () => boolean;
-}
-
-const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
-  new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(new DOMException('Aborted', 'AbortError'));
-      return;
-    }
-    const timer = window.setTimeout(resolve, ms);
-    signal?.addEventListener(
-      'abort',
-      () => {
-        window.clearTimeout(timer);
-        reject(new DOMException('Aborted', 'AbortError'));
-      },
-      { once: true },
-    );
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
   });
-
-const normalizePreviewEntryUrl = (raw: string): string => {
-  const withoutHash = raw.split('#')[0].split('?')[0];
-  try {
-    const url = new URL(withoutHash);
-    const path = url.pathname.replace(/\/+$/, '');
-    return path ? `${url.origin}${path}` : url.origin;
-  } catch {
-    return withoutHash.replace(/\/+$/, '');
-  }
-};
-
-const normalizePathname = (pathname: string): string =>
-  pathname.replace(/\/+$/, '') || '/';
-
-/** 根路径与常见 index 文档视为同一预览入口（重定向场景）。 */
-const isIndexPathEquivalent = (a: string, b: string): boolean => {
-  const paths = [normalizePathname(a), normalizePathname(b)];
-  const indexPaths = new Set(['/', '/index.html', '/index.htm']);
-  return paths.every((path) => indexPaths.has(path));
-};
-
-/**
- * 判断 Performance 条目是否对应预览文档 URL（iframe 导航 / 同源 cors 探测）。
- * 不按 origin 整域匹配，避免同域其它资源（API、静态文件）的历史 5xx 误判。
- */
-export const urlsMatchForPreviewTiming = (
-  entryName: string,
-  previewUrl: string,
-): boolean => {
-  const entryNorm = normalizePreviewEntryUrl(entryName);
-  const previewNorm = normalizePreviewEntryUrl(previewUrl);
-  if (entryNorm === previewNorm) {
-    return true;
-  }
-  try {
-    const entry = new URL(entryName);
-    const preview = new URL(previewUrl);
-    if (entry.origin !== preview.origin) {
-      return false;
-    }
-    return isIndexPathEquivalent(entry.pathname, preview.pathname);
-  } catch {
-    return false;
-  }
-};
-
-/**
- * 从 Performance Resource Timing 读取预览 URL 的 HTTP 状态。
- * 同时匹配 iframe 导航与页面发起的 cors fetch 条目。
- */
-export const readPreviewResponseStatusFromTiming = (
-  previewUrl: string,
-  sinceStartTime?: number,
-): number | undefined => {
-  const trimmed = previewUrl?.trim();
-  if (!trimmed || typeof performance === 'undefined') {
-    return undefined;
-  }
-
-  const entries = performance.getEntriesByType(
-    'resource',
-  ) as PerformanceResourceTiming[];
-
-  for (let index = entries.length - 1; index >= 0; index -= 1) {
-    const entry = entries[index];
-    if (sinceStartTime !== undefined && entry.startTime < sinceStartTime) {
-      continue;
-    }
-    if (!urlsMatchForPreviewTiming(entry.name, trimmed)) {
-      continue;
-    }
-    const status = entry.responseStatus;
-    if (!status || status <= 0) {
-      continue;
-    }
-    return status;
-  }
-
-  return undefined;
-};
-
-/**
- * cors 请求预览 URL；跨域无 CORS 头时 catch，并尝试从 Performance 读取 5xx。
- */
-export const fetchPreviewUrlHealthOnce = async (
-  previewUrl: string,
-  options?: Pick<PreviewHealthCheckOptions, 'signal' | 'sinceStartTime'>,
-): Promise<PreviewHealthResult> => {
-  const url = previewUrl?.trim();
-  if (!url) {
-    return { ok: false, status: 0 };
-  }
-
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      mode: 'cors',
-      credentials: 'omit',
-      cache: 'no-store',
-      redirect: 'follow',
-      signal: options?.signal ?? AbortSignal.timeout(CHECK_TIMEOUT_MS),
-    });
-    return {
-      ok: response.ok,
-      status: response.status,
-    };
-  } catch {
-    const timingStatus = readPreviewResponseStatusFromTiming(
-      url,
-      options?.sinceStartTime,
-    );
-    if (
-      timingStatus !== undefined &&
-      timingStatus >= 200 &&
-      timingStatus < 300
-    ) {
-      return { ok: true, status: timingStatus };
-    }
-    if (timingStatus !== undefined && timingStatus >= 400) {
-      return { ok: false, status: timingStatus };
-    }
-    return { ok: false, opaque: true };
-  }
-};
-
-/**
- * 启动成功后轮询预览域名。
- * 某一次返回 200 立刻结束；否则继续，直到达到尝试上限。
- * 每一次只读取该次请求之后写入的状态，不沿用更早的 502。
- *
- * @param previewUrl 预览地址
- * @param options 次数上限、间隔、取消信号
- * @returns 最后一次检查结果；中途 200 时即为该次成功结果
- */
-export const pollPreviewUrlHealth = async (
-  previewUrl: string,
-  options?: PreviewHealthCheckOptions & {
-    maxAttempts?: number;
-    intervalMs?: number;
-  },
-): Promise<PreviewHealthResult> => {
-  const url = previewUrl?.trim();
-  const maxAttempts = Math.max(
-    1,
-    options?.maxAttempts ?? PREVIEW_HEALTH_POLL_MAX_ATTEMPTS,
-  );
-  const intervalMs = options?.intervalMs ?? PREVIEW_HEALTH_POLL_INTERVAL_MS;
-  let last: PreviewHealthResult = { ok: false, status: 0 };
-
-  if (!url) {
-    return last;
-  }
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    if (options?.signal?.aborted || options?.shouldStop?.()) {
-      return last;
-    }
-
-    const sinceStartTime =
-      typeof performance !== 'undefined' ? performance.now() : undefined;
-    last = await fetchPreviewUrlHealthOnce(url, {
-      signal: options?.signal,
-      sinceStartTime,
-    });
-    if (last.status === 200) {
-      return last;
-    }
-    if (attempt >= maxAttempts - 1) {
-      break;
-    }
-
-    try {
-      await sleep(intervalMs, options?.signal);
-    } catch {
-      return last;
-    }
-  }
-
-  return last;
-};
 
 /** 就绪接口两次探测之间的间隔（毫秒） */
 const READINESS_POLL_INTERVAL_MS = 3000;
@@ -286,39 +65,96 @@ export const pollUserAppReadiness = async (
     if (shouldStop?.() || attempt >= READINESS_POLL_MAX_ATTEMPTS - 1) {
       return false;
     }
-    try {
-      await sleep(READINESS_POLL_INTERVAL_MS);
-    } catch {
-      return false;
-    }
+    await sleep(READINESS_POLL_INTERVAL_MS);
   }
 
   return false;
 };
+/** 数据库就绪轮询的一次结果，供页面展示当前状态 */
+export interface UserAppDbReadinessSnapshot {
+  /** 本次请求失败，或业务码不是成功 */
+  requestFailed: boolean;
+  /** 已识别的就绪状态；请求失败时为空 */
+  status: UserAppReadinessStatusEnum | null;
+  /** 服务端 ready 字段 */
+  ready: boolean;
+  /** 服务端说明 */
+  message: string | null;
+}
+
+/** 数据库就绪轮询参数 */
+export interface PollUserAppDbReadinessOptions {
+  /** 返回 true 时停止等待，例如面板已离开 */
+  shouldStop?: () => boolean;
+  /** 每一次探测结束后回调，用于刷新状态文案 */
+  onProgress?: (snapshot: UserAppDbReadinessSnapshot) => void;
+}
+
+const DB_READINESS_STATUS_SET = new Set<string>(
+  Object.values(UserAppReadinessStatusEnum),
+);
+
+/**
+ * 把 dbx 返回的 status 收成已知枚举。无法识别时记为未知。
+ *
+ * @param value 接口 status 字段
+ * @returns 已知状态；空字符串返回 null
+ */
+const parseDbReadinessStatus = (
+  value: string | null | undefined,
+): UserAppReadinessStatusEnum | null => {
+  if (!value) {
+    return null;
+  }
+  if (DB_READINESS_STATUS_SET.has(value)) {
+    return value as UserAppReadinessStatusEnum;
+  }
+  return UserAppReadinessStatusEnum.Unknown;
+};
+
+/**
+ * 只有 ready 为 true，且状态为空或 ready，才允许连接数据库。
+ *
+ * @param payload 就绪接口数据
+ * @param status 已解析的状态
+ * @returns 是否可以连接
+ */
+const isDatabaseReady = (
+  payload: UserAppDbReadiness | undefined,
+  status: UserAppReadinessStatusEnum | null,
+): boolean =>
+  payload?.ready === true &&
+  (status === null || status === UserAppReadinessStatusEnum.Ready);
 
 /**
  * 进入数据库前轮询 dbx 就绪接口。
- * ready 为 true 时立刻结束；达到次数上限、接口报错或调用方离开时也结束。
- * 返回值只表示是否已就绪，调用方无论 true 或 false 都继续原来的展示。
+ * 一直等到数据库就绪，或调用方离开。请求失败和未就绪都会继续下一轮。
  *
  * @param appId 应用 ID
  * @param env 当前数据库环境
- * @param shouldStop 返回 true 时停止等待
+ * @param options 停止条件和进度回调
  * @returns 数据库已就绪
  */
 export const pollUserAppDbReadiness = async (
   appId: number,
   env: UserAppDbEnvEnum,
-  shouldStop?: () => boolean,
+  options?: PollUserAppDbReadinessOptions,
 ): Promise<boolean> => {
   if (!appId) {
     return false;
   }
 
-  for (let attempt = 0; attempt < READINESS_POLL_MAX_ATTEMPTS; attempt += 1) {
-    if (shouldStop?.()) {
-      return false;
-    }
+  const shouldStop = options?.shouldStop;
+  const onProgress = options?.onProgress;
+
+  while (!shouldStop?.()) {
+    let snapshot: UserAppDbReadinessSnapshot = {
+      requestFailed: true,
+      status: null,
+      ready: false,
+      message: null,
+    };
+    let ready = false;
     try {
       const result = await apiUserAppDbReadiness(appId, env);
       const payload = (
@@ -331,199 +167,33 @@ export const pollUserAppDbReadiness = async (
         typeof result !== 'object' ||
         !('code' in result) ||
         result.code === SUCCESS_CODE;
-      if (codeOk && payload?.ready === true) {
-        return true;
+      if (codeOk && payload) {
+        const status = parseDbReadinessStatus(payload.status);
+        ready = isDatabaseReady(payload, status);
+        snapshot = {
+          requestFailed: false,
+          status,
+          ready: payload.ready === true,
+          message: payload.message ?? null,
+        };
       }
     } catch {
-      // 单次失败继续下一次；全部结束后仍按未就绪返回，不抛给页面
+      snapshot = {
+        requestFailed: true,
+        status: null,
+        ready: false,
+        message: null,
+      };
     }
-    if (shouldStop?.() || attempt >= READINESS_POLL_MAX_ATTEMPTS - 1) {
+
+    if (shouldStop?.()) {
       return false;
     }
-    try {
-      await sleep(READINESS_POLL_INTERVAL_MS);
-    } catch {
-      return false;
-    }
-  }
-
-  return false;
-};
-
-/** iframe 文档是否为空；跨域时为 null。 */
-export const getPreviewIframeDocumentEmptyState = (
-  frame: HTMLIFrameElement | null,
-): boolean | null => {
-  if (!frame) {
-    return null;
-  }
-  try {
-    const doc = frame.contentDocument;
-    if (!doc) {
-      return null;
-    }
-    const body = doc.body;
-    if (!body) {
+    onProgress?.(snapshot);
+    if (ready) {
       return true;
     }
-    return body.childElementCount === 0 && !body.textContent?.trim();
-  } catch {
-    return null;
-  }
-};
-
-/**
- * 同步信号：Timing / 空文档，不发起 fetch。
- */
-const readPreviewSyncSignals = (
-  previewUrl: string,
-  frame: HTMLIFrameElement | null,
-  sinceStartTime?: number,
-): PreviewHealthResult | null => {
-  const emptyState = getPreviewIframeDocumentEmptyState(frame);
-  if (emptyState === true) {
-    return { ok: false };
-  }
-
-  const timingStatus = readPreviewResponseStatusFromTiming(
-    previewUrl,
-    sinceStartTime,
-  );
-  if (timingStatus !== undefined && timingStatus >= 200 && timingStatus < 300) {
-    return { ok: true, status: timingStatus };
-  }
-  if (timingStatus !== undefined && timingStatus >= 400) {
-    return { ok: false, status: timingStatus };
-  }
-
-  return null;
-};
-
-/**
- * iframe onLoad 后短暂轮询 Performance，等待 iframe / fetch 条目写入。
- */
-const pollPreviewTimingStatus = async (
-  previewUrl: string,
-  options?: Pick<PreviewHealthCheckOptions, 'signal' | 'sinceStartTime'>,
-): Promise<PreviewHealthResult | null> => {
-  const deadline = Date.now() + TIMING_POLL_MAX_MS;
-
-  while (Date.now() < deadline) {
-    if (options?.signal?.aborted) {
-      return null;
-    }
-
-    const timingStatus = readPreviewResponseStatusFromTiming(
-      previewUrl,
-      options?.sinceStartTime,
-    );
-    if (timingStatus !== undefined && timingStatus >= 400) {
-      return { ok: false, status: timingStatus };
-    }
-    if (
-      timingStatus !== undefined &&
-      timingStatus >= 200 &&
-      timingStatus < 300
-    ) {
-      return { ok: true, status: timingStatus };
-    }
-
-    try {
-      await sleep(TIMING_POLL_INTERVAL_MS, options?.signal);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-};
-
-/**
- * iframe onLoad 后校验预览是否就绪（单次 cors + 短轮询 Timing，不长时间轮询）。
- *
- * - Timing / cors 明确 2xx → 成功
- * - Timing / cors 明确 4xx/5xx（且为本次加载写入的条目）→ 失败
- * - iframe 已 onLoad 且跨域无法 cors：视为成功（由浏览器导航结果为准）
- */
-export const waitUntilPreviewUrlReady = async (
-  previewUrl: string,
-  frame: HTMLIFrameElement | null,
-  options?: PreviewHealthCheckOptions,
-): Promise<PreviewHealthResult> => {
-  const url = previewUrl?.trim();
-  if (!url) {
-    return { ok: false, status: 0 };
-  }
-
-  const sync = readPreviewSyncSignals(url, frame, options?.sinceStartTime);
-  if (sync) {
-    return sync;
-  }
-
-  const cors = await fetchPreviewUrlHealthOnce(url, options);
-  if (cors.ok) {
-    return cors;
-  }
-  if (cors.status !== undefined && cors.status >= 400) {
-    return cors;
-  }
-
-  const polled = await pollPreviewTimingStatus(url, options);
-  if (polled) {
-    return polled;
-  }
-
-  const timingAfterFetch = readPreviewResponseStatusFromTiming(
-    url,
-    options?.sinceStartTime,
-  );
-  if (
-    timingAfterFetch !== undefined &&
-    timingAfterFetch >= 200 &&
-    timingAfterFetch < 300
-  ) {
-    return { ok: true, status: timingAfterFetch };
-  }
-  if (timingAfterFetch !== undefined && timingAfterFetch >= 400) {
-    return { ok: false, status: timingAfterFetch };
-  }
-
-  if (cors.opaque) {
-    const emptyState = getPreviewIframeDocumentEmptyState(frame);
-    if (emptyState !== true) {
-      return { ok: true, opaque: true };
-    }
-    return { ok: false, opaque: true };
-  }
-
-  return { ok: false };
-};
-
-/** 进页探测：可读 HTTP 状态时 502 视为不可达；不可读时不再把 no-cors 当成可达。 */
-export const probePreviewReachable = async (
-  previewUrl: string,
-): Promise<boolean> => {
-  const trimmed = previewUrl?.trim();
-  if (!trimmed) {
-    return false;
-  }
-
-  const timingStatus = readPreviewResponseStatusFromTiming(trimmed);
-  if (timingStatus !== undefined) {
-    return timingStatus >= 200 && timingStatus < 300;
-  }
-
-  const health = await fetchPreviewUrlHealthOnce(trimmed);
-  if (health.ok) {
-    return true;
-  }
-  if (health.status !== undefined && health.status >= 400) {
-    return false;
-  }
-
-  const timingAfterFetch = readPreviewResponseStatusFromTiming(trimmed);
-  if (timingAfterFetch !== undefined) {
-    return timingAfterFetch >= 200 && timingAfterFetch < 300;
+    await sleep(READINESS_POLL_INTERVAL_MS);
   }
 
   return false;

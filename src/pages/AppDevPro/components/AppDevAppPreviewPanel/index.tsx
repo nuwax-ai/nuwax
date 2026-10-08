@@ -1,5 +1,9 @@
 import { dict } from '@/services/i18nRuntime';
-import { CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import {
+  CloseCircleOutlined,
+  FileTextOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import { Button, Empty, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -10,6 +14,10 @@ import React, {
   useState,
 } from 'react';
 import type { UserAppEnvPodStatus } from '../../hooks/useUserAppEnvPod';
+import {
+  getUserAppReadinessUiKind,
+  type UserAppReadinessStatusEnum,
+} from '../../services/appDevPro';
 import type {
   UserAppPublishPhase,
   UserAppTaskServiceProgress,
@@ -56,7 +64,10 @@ export interface AppDevAppPreviewPanelProps {
   onCancelTask?: () => void;
   /** 启动失败后重新启动（dev/restart 或 prod/restart） */
   onRetryStart?: () => void;
-  /** 停止后重新启动预览（dev/start 或 prod/start） */
+  /**
+   * 服务未运行时的「启动预览」。
+   * 用户主动停止成功后由外层改为 restart；其余情况仍是 start。
+   */
   onStart?: () => void;
   /** 页面加载失败后只刷新当前预览 iframe，不重启服务 */
   onRefreshPreview?: () => void;
@@ -75,13 +86,45 @@ export interface AppDevAppPreviewPanelProps {
    */
   directPreview?: boolean;
   /**
-   * 会话已结束且文件树已加载，但无有效项目（空列表或缺少 workspace.manifest.toml）。
+   * 首次进入后 file-list 已返回，但列表为空或根目录缺少 workspace.manifest.toml。
+   * 首次 file-list 还没返回时为 false。
    */
   missingProjectFiles?: boolean;
+  /**
+   * 根目录是否已有可预览的有效项目（非空且含 workspace.manifest.toml）。
+   * null：file-list 还没返回，不据此覆盖就绪态。
+   */
+  hasValidProjectFiles?: boolean | null;
   /** 正在调用停止接口，避免 iframe 被关掉后露出空白 */
   stopping?: boolean;
   /** 线上环境重启进行中：展示重启提示，隐藏 iframe */
   restarting?: boolean;
+  /**
+   * 当前环境最近一次就绪探测的顶层业务状态。
+   * 还没有结果时不传，预览区保持原来的准备中界面。
+   */
+  readinessStatus?: UserAppReadinessStatusEnum | null;
+  /**
+   * 当前环境就绪探测的 ready 字段。
+   * status 为 ready 时，这个字段也必须为 true 才按正常访问展示。
+   */
+  readinessReady?: boolean | null;
+  /**
+   * 当前环境的预览是否已经正常渲染过。
+   * 为 true 时不再用就绪状态提示替换正在看的页面。
+   */
+  previewAlreadyPresented?: boolean;
+  /** 用户主动停止当前环境时，不展示「将自动重启」这类就绪提示 */
+  suppressReadinessStatus?: boolean;
+  /** iframe 已正常打开，通知页面记住这个环境已经渲染过 */
+  onPreviewPresented?: () => void;
+  /**
+   * 线上环境应用尚未部署。
+   * 为 true 时只展示提示和部署按钮，不拉起预览。
+   */
+  prodUndeployed?: boolean;
+  /** 打开部署弹窗 */
+  onDeploy?: () => void;
 }
 
 /**
@@ -270,8 +313,16 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
   allowStoppedHero = false,
   directPreview = false,
   missingProjectFiles = false,
+  hasValidProjectFiles = null,
   stopping = false,
   restarting = false,
+  readinessStatus = null,
+  readinessReady = null,
+  previewAlreadyPresented = false,
+  suppressReadinessStatus = false,
+  onPreviewPresented,
+  prodUndeployed = false,
+  onDeploy,
 }) => {
   /** 无有效项目文件时的居中提示 */
   const emptyProjectHero = (
@@ -296,8 +347,11 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
    */
   const previewInstanceKey = `${previewUrl ?? ''}::${refreshKey}`;
   const [loadedInstanceKey, setLoadedInstanceKey] = useState('');
-  /** 启动日志详情弹窗 */
+  /** 启动日志默认收起，点击「查看详情」后展开日志流 */
   const [logDetailOpen, setLogDetailOpen] = useState(false);
+  const openStartLogs = useCallback(() => {
+    setLogDetailOpen(true);
+  }, []);
   const iframeLoaded = loadedInstanceKey === previewInstanceKey;
   /** 启动任务进行中：展示日志区与取消，不是进度条 */
   const isStarting = busy || phase === 'starting' || phase === 'building';
@@ -327,7 +381,86 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     setLoadedInstanceKey((prev) =>
       prev === previewInstanceKey ? prev : previewInstanceKey,
     );
-  }, [previewInstanceKey]);
+    onPreviewPresented?.();
+  }, [onPreviewPresented, previewInstanceKey]);
+
+  const readinessKind = getUserAppReadinessUiKind(
+    readinessStatus,
+    readinessReady,
+  );
+  /**
+   * 页面还没正常打开时，才用就绪状态替换预览。
+   * 已经打开过的环境继续显示 iframe，后续探测抖动不再盖住页面。
+   * 启动失败仍走原来的失败面板，避免把错误藏进状态文案。
+   * 已经在调 start 时不再用就绪失败盖住启动过程。
+   * 未部署还要已有有效项目文件，否则走「暂无可预览的项目」。
+   * 首次会话还在进行时不展示未部署，继续走「预览准备中」。
+   */
+  const conversationInProgress =
+    isGeneratingFiles || isWaitingForUserConfirmation;
+  const showReadinessHero =
+    !previewAlreadyPresented &&
+    !suppressReadinessStatus &&
+    !startFailed &&
+    !isStarting &&
+    (readinessKind === 'starting' ||
+      readinessKind === 'stopping' ||
+      readinessKind === 'stopped' ||
+      (readinessKind === 'notDeployed' &&
+        hasValidProjectFiles === true &&
+        !conversationInProgress) ||
+      readinessKind === 'failed' ||
+      readinessKind === 'incomplete');
+  const readinessTitle = (() => {
+    switch (readinessKind) {
+      case 'stopping':
+        return dict('PC.Pages.AppDevPro.readinessServiceStopping');
+      case 'notDeployed':
+        return dict('PC.Pages.AppDevPro.readinessNotDeployed');
+      case 'failed':
+        return dict('PC.Pages.AppDevPro.readinessStartFailed');
+      case 'incomplete':
+        return dict('PC.Pages.AppDevPro.readinessDevIncomplete');
+      default:
+        return dict('PC.Pages.AppDevPro.readinessServiceStarting');
+    }
+  })();
+  /** 未部署和启动失败可以手动重启；开发未完成只提示，不提供重启 */
+  const showReadinessRestart =
+    readinessKind === 'notDeployed' || readinessKind === 'failed';
+  const readinessIsError =
+    readinessKind === 'failed' || readinessKind === 'incomplete';
+  const readinessHero = showReadinessHero ? (
+    <div className={cx(styles.container, styles.stage)}>
+      <PreviewHero
+        spinning={!readinessIsError && readinessKind !== 'notDeployed'}
+        error={readinessIsError}
+        title={readinessTitle}
+        action={
+          showReadinessRestart && onRetryStart ? (
+            <Tooltip
+              title={
+                devActionLocked
+                  ? dict('PC.Pages.AppDevPro.devActionBusyHint')
+                  : undefined
+              }
+            >
+              <span>
+                <Button
+                  type="primary"
+                  loading={isStarting || restarting}
+                  disabled={devActionLocked}
+                  onClick={onRetryStart}
+                >
+                  {dict('PC.Pages.AppDevPro.readinessRestartApp')}
+                </Button>
+              </span>
+            </Tooltip>
+          ) : null
+        }
+      />
+    </div>
+  ) : null;
 
   /** iframe 加载失败时收起加载遮罩，露出失败提示 */
   const handleIframeError = useCallback(() => {
@@ -341,6 +474,25 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     setLoadedInstanceKey('');
   }, []);
 
+  if (prodUndeployed) {
+    return (
+      <div className={cx(styles.container, styles.stage)}>
+        <PreviewHero
+          title={dict('PC.Pages.AppDevPro.prodNotDeployedTitle')}
+          hint={dict('PC.Pages.AppDevPro.prodNotDeployedHint')}
+          action={
+            onDeploy ? (
+              <Button type="primary" onClick={onDeploy}>
+                {dict('PC.Pages.AppDevPro.prodNotDeployedAction')}
+              </Button>
+            ) : null
+          }
+        />
+      </div>
+    );
+  }
+
+  // 容器启动失败时展示失败提示
   if (containerStatus && containerStatus !== 'running') {
     return (
       <AppDevServiceStartStatus
@@ -350,16 +502,34 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
     );
   }
 
+  // 没有有效项目文件时展示空项目提示
+  if (
+    !previewAlreadyPresented &&
+    !suppressReadinessStatus &&
+    !startFailed &&
+    !conversationInProgress &&
+    readinessKind === 'notDeployed' &&
+    hasValidProjectFiles === false
+  ) {
+    return emptyProjectHero;
+  }
+
+  // 启动 stream 已成功，应用还不能访问：只显示 iframe 加载动画，先不放域名。
+  // 放在就绪提示前面，避免探测先返回 failed 等状态把等待盖住。
   if (checking) {
     return (
-      <div className={cx(styles.container, styles.stage)}>
-        <PreviewHero
-          spinning
-          title={dict('PC.Pages.AppDevPro.previewChecking')}
-          hint={dict('PC.Pages.AppDevPro.previewCheckingHint')}
-        />
+      <div className={cx(styles.container)}>
+        <div className={cx(styles.iframeWrap)}>
+          <div className={cx(styles.loadingOverlay)}>
+            <PreviewIframeLoading />
+          </div>
+        </div>
       </div>
     );
+  }
+
+  if (readinessHero) {
+    return readinessHero;
   }
 
   /** 线上环境：停止 / 重启 / 启动与开发环境同一套提示，仅在服务运行中展示 iframe */
@@ -540,12 +710,6 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
             >
               {headText}
             </span>
-            <span
-              className={cx(styles.logDetailLink)}
-              onClick={() => setLogDetailOpen(true)}
-            >
-              {dict('PC.Pages.AppDevPro.viewStartLogs')}
-            </span>
             {isStarting && onCancelTask ? (
               <Button
                 size="small"
@@ -583,7 +747,21 @@ const AppDevAppPreviewPanel: React.FC<AppDevAppPreviewPanelProps> = ({
               logs={logs}
               waitingText={dict('PC.Pages.AppDevPro.waitingLogs')}
             />
-          ) : null}
+          ) : (
+            <div className={cx(styles.logHidden)}>
+              <FileTextOutlined className={cx(styles.logHiddenIcon)} />
+              <p className={cx(styles.logHiddenText)}>
+                {dict('PC.Pages.AppDevPro.startLogsHiddenHint')}
+                <button
+                  type="button"
+                  className={cx(styles.logHiddenAction)}
+                  onClick={openStartLogs}
+                >
+                  {dict('PC.Pages.AppDevPro.viewStartLogs')}
+                </button>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );

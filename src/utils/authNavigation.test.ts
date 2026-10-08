@@ -83,6 +83,35 @@ describe('认证导航同源映射', () => {
     );
   });
 
+  it.each(['/auth/bind?state=fixture', '/api/auth/idp/authorize?provider=3'])(
+    '后端认证中间页保留业务域：%s',
+    async (path) => {
+      await expect(resolveAuthRedirectUrl(path)).resolves.toBe(
+        `${context.businessOrigin}${path}`,
+      );
+      await expect(
+        resolveAuthRedirectUrl(`${context.businessOrigin}${path}`),
+      ).resolves.toBe(`${context.businessOrigin}${path}`);
+    },
+  );
+
+  it('构建期业务域中的绑定中间页使用当前企业域', async () => {
+    const base = process.env.BASE_URL;
+    process.env.BASE_URL = 'https://compiled.example';
+    try {
+      await expect(
+        resolveAuthRedirectUrl(
+          'https://compiled.example/auth/bind?state=fixture',
+        ),
+      ).resolves.toBe(`${context.businessOrigin}/auth/bind?state=fixture`);
+      await expect(
+        resolveAuthRedirectUrl('https://outside.example/auth/bind'),
+      ).resolves.toBe('https://outside.example/auth/bind');
+    } finally {
+      process.env.BASE_URL = base;
+    }
+  });
+
   it('等待桥期间用户已离开页面，迟到结果不得覆盖导航', async () => {
     let complete!: (value: HostAuthContext) => void;
     getContext.mockReturnValue(

@@ -60,6 +60,8 @@ type MockChatAssertionSnapshot = {
   /** 当前轨流式活跃（断言同源，避免 E2E 读旧 model 假绿） */
   streamActive: boolean;
   messageCount: number;
+  /** 实际会话消息文本，区分渲染结果与右侧原始事件调试面板。 */
+  messageTexts: string[];
   emittedCount: number;
   /** 事件脚本总数（mock status 透传）：E2E 判定回放完毕，防终态后事件未发完提前收尾 */
   scriptLength: number;
@@ -67,6 +69,8 @@ type MockChatAssertionSnapshot = {
   replaySettled?: boolean;
   hasFinalResult: boolean;
   serverTaskStatus: string;
+  agentType?: string;
+  askState?: MockServerStatus['askState'];
   /** 全程出现过活跃态 / EXECUTING 工具——断言非空转证明 */
   sawActive: boolean;
   sawExecutingTools: boolean;
@@ -87,6 +91,12 @@ type MockServerStatus = {
   pollCount: number;
   scriptLength?: number;
   replaySettled?: boolean;
+  askState?: {
+    waiting: boolean;
+    currentRequestId: string | null;
+    answeredRequestIds: string[];
+    responses: Array<{ requestId: string; action: string; text: string }>;
+  };
   emittedEvents: Array<{ eventType: string; data?: Record<string, unknown> }>;
 };
 
@@ -99,6 +109,8 @@ type ScenarioMeta = {
   transport?: string;
   entry?: string;
   hasFinalResult: boolean;
+  agentType?: 'ChatBot';
+  responseDriven?: boolean;
 };
 
 const speedOptions = [
@@ -118,6 +130,8 @@ const initialUrlParams = new URLSearchParams(window.location.search);
 const initialScenarioFromUrl = initialUrlParams.get('scenario') || '';
 const initialSpeedFromUrl = Number(initialUrlParams.get('speed'));
 const AUTOPLAY = initialUrlParams.get('autoplay') === '1';
+// 只恢复服务器当前快照，不重置场景；用于真正整页刷新后的待答/已答验收。
+const RESTORE = initialUrlParams.get('restore') === '1';
 // 审批 DockPanel 的业务门禁：会话框 ask 模式（审批）下权限/问答卡才走真实
 // 路径。干预类用例以 ?agentMode=ask 注入——写入智能体模式缓存（模块级执行
 // 早于 interventionLayer hook 初始化；initialAgentMode prop 仅无缓存时生效）
@@ -418,12 +432,32 @@ const MockChat: React.FC = () => {
     if (didInitialPrepareRef.current) return;
     // autoplay 依赖场景元数据（entry/transport 分派），scenarios 为异步
     // fetch——首帧为空会导致 play 提前 return、SSE 永不开流
-    if (AUTOPLAY && !scenarios.length) return;
-    if (AUTOPLAY && !langReady) return;
+    if ((AUTOPLAY || RESTORE) && !scenarios.length) return;
+    if ((AUTOPLAY || RESTORE) && !langReady) return;
     didInitialPrepareRef.current = true;
     // autoplay（E2E 入口）：直接走完整播放链（play 内部会先 prepare）；
     // 失败已写入 lastError 并以 Alert 呈现，吞掉 rejection 避免错误覆盖层整页崩
-    (AUTOPLAY ? playRef.current : prepareScenario)().catch(() => {});
+    const restore = async () => {
+      const response = await fetch('/api/mock/conversation/status');
+      const { data } = await response.json();
+      if (!scenario?.responseDriven || data.scenario !== scenario.id) {
+        throw new Error('当前服务器没有可恢复的问答场景，请先播放');
+      }
+      playingRef.current = true;
+      await lineApi.resetAndLoad();
+      await refreshServerStatus();
+      if (data.taskStatus === 'EXECUTING') {
+        subTimerRef.current = setTimeout(
+          () => lineApi.resume(`mock:restore:${scenario.id}`),
+          400,
+        );
+      }
+    };
+    (RESTORE ? restore : AUTOPLAY ? playRef.current : prepareScenario)().catch(
+      (error) => {
+        setLastError(error instanceof Error ? error.message : String(error));
+      },
+    );
     // 轨归属与 URL 参数在首帧定型；playRef 见下方声明
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prepareScenario, scenarios, langReady]);
@@ -572,11 +606,14 @@ const MockChat: React.FC = () => {
       playing: playingRef.current,
       streamActive: lineIsConversationActive,
       messageCount: messageList.length,
+      messageTexts: messageList.map((message) => message.text || ''),
       emittedCount: serverStatus?.emittedEvents.length ?? 0,
       scriptLength: serverStatus?.scriptLength ?? 0,
       replaySettled: serverStatus?.replaySettled,
       hasFinalResult,
       serverTaskStatus: serverStatus?.taskStatus ?? '',
+      agentType: lineConversationInfo?.agent?.type,
+      askState: serverStatus?.askState,
       sawActive: sawActiveRef.current,
       sawExecutingTools: sawExecutingToolsRef.current,
       consoleErrors: [...consoleErrorsRef.current],
@@ -721,7 +758,7 @@ const MockChat: React.FC = () => {
                 agentInfo={{
                   id: 44,
                   name: '会话验收 Mock Agent',
-                  type: 'TaskAgent',
+                  type: scenario.agentType ?? 'TaskAgent',
                   allowChooseMode: DefaultSelectedEnum.Yes,
                   hasPermission: true,
                   sandboxId: 'mock-sandbox',

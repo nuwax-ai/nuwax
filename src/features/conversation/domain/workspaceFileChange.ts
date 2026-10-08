@@ -11,9 +11,8 @@ const hasDiff = (value: unknown): boolean =>
   });
 
 /**
- * 只有工具结束后的文件变更才刷新树。读取/查询和 EXECUTING 不代表文件已改变。
- * 协议 kind / diff 优先，旧工具名作兜底；终端可能运行任意写文件脚本，
- * 除简单只读命令外保守刷新，失败命令也可能留下部分文件。任务 FINAL 另有兜底。
+ * 只有工具结束后的文件变更才刷新树。读取、查询、终端命令和 EXECUTING 不代表文件已改变。
+ * 协议 kind / diff 优先，旧的编辑类工具名作兜底。
  */
 export const shouldRefreshWorkspaceFiles = (value: unknown): boolean => {
   const processing = record(value);
@@ -59,25 +58,17 @@ export const shouldRefreshWorkspaceFiles = (value: unknown): boolean => {
   );
   if (hasEditedContent) return true;
 
+  // 终端命令（含 git status、npm test、echo、python，以及没有具体命令或失败的 execute）
+  // 不刷新文件树。只有上面的编辑、写入、diff 才刷新。
+  if (kind === 'execute') return false;
+
   const name = String(processing.name ?? result.name ?? '').toLowerCase();
   if (
-    /(编辑|修改|新增|新建|删除|移动|重命名|创建|写入)|(?:^|[.\s_-])(?:write|edit|create|delete|remove|move|rename|copy|mkdir|apply_patch)(?:$|[.\s_-]|files?\b|directory\b|folder\b)/.test(
-      name,
-    )
-  ) {
-    return true;
-  }
-  const command = input.command ?? rawInput.command;
-  if (
-    kind === 'execute' ||
-    typeof command === 'string' ||
     /(?:^|[.\s_-])(?:bash|shell|terminal|execute)(?:$|[.\s_-])|终端/.test(name)
   ) {
-    // 不尝试解析任意 shell；管道、重定向、替换、子命令均保守视作可能写文件。
-    return !(
-      typeof command === 'string' &&
-      /^(?:pwd|ls|cat|head|tail)(?:\s+[^;&|<>`$\n]*)?\s*$/.test(command.trim())
-    );
+    return false;
   }
-  return false;
+  return /(编辑|修改|新增|新建|删除|移动|重命名|创建|写入)|(?:^|[.\s_-])(?:write|edit|create|delete|remove|move|rename|copy|mkdir|apply_patch)(?:$|[.\s_-]|files?\b|directory\b|folder\b)/.test(
+    name,
+  );
 };

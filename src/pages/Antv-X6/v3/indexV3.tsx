@@ -52,6 +52,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import WorkflowLayout from './components/layout/WorkflowLayout';
 import useModifiedSaveUpdateV3 from './hooks/useModifiedSaveUpdateV3';
 import { calculateNodePosition } from './utils/graphV3';
+import { setNodeConfigFieldsValue } from './utils/nodeConfigForm';
 import { checkNodeModified, setFormDefaultValues } from './utils/workflowV3';
 // Components moved to WorkflowLayout
 import './indexV3.less';
@@ -277,7 +278,7 @@ const Workflow: React.FC<WorkflowV3Props> = ({
         // skip
       } else {
         const currentSkills = form.getFieldValue(SKILL_FORM_KEY);
-        form.setFieldsValue(foldWrapItem.nodeConfig);
+        setNodeConfigFieldsValue(form, foldWrapItem.nodeConfig);
         if (Array.isArray(currentSkills) && currentSkills.length > 0) {
           form.setFieldValue(SKILL_FORM_KEY, currentSkills);
         }
@@ -1033,7 +1034,7 @@ const Workflow: React.FC<WorkflowV3Props> = ({
 
       form.resetFields();
 
-      form.setFieldsValue(newFoldWrapItem.nodeConfig);
+      setNodeConfigFieldsValue(form, newFoldWrapItem.nodeConfig);
 
       setFormDefaultValues({
         type: newFoldWrapItem.type,
@@ -1184,9 +1185,8 @@ const Workflow: React.FC<WorkflowV3Props> = ({
         onAutoArrange={
           isAgentFlow
             ? () => {
-                const graph = graphRef.current?.getGraph?.();
+                const graph = graphRef.current?.getGraphRef?.();
                 if (graph) {
-                  // Simple auto-arrange: sort nodes by x position with equal spacing
                   const nodes = graph.getNodes();
                   if (nodes.length === 0) return;
                   const startNodes = nodes.filter(
@@ -1203,11 +1203,21 @@ const Workflow: React.FC<WorkflowV3Props> = ({
                   let y = 100;
                   const xStep = 280;
                   const yStep = 120;
+                  let hasMoved = false;
                   while (queue.length > 0) {
                     const nodeId = queue.shift()!;
                     const node = graph.getCellById(nodeId);
                     if (node && node.isNode()) {
-                      node.setPosition(x, y);
+                      const position = node.getPosition();
+                      if (position.x !== x || position.y !== y) {
+                        node.setPosition(x, y);
+                        workflowProxy.updateNodePosition(
+                          node.getData<ChildNode>().id,
+                          x,
+                          y,
+                        );
+                        hasMoved = true;
+                      }
                       y += yStep;
                     }
                     const outgoingEdges = graph.getOutgoingEdges(nodeId) || [];
@@ -1231,6 +1241,11 @@ const Workflow: React.FC<WorkflowV3Props> = ({
                         }
                       }
                     }
+                  }
+                  if (hasMoved) {
+                    // X6 setPosition 不触发拖拽结束的 node:moved，需接入原保存链。
+                    workflowSaveService.markDirty();
+                    debouncedSaveFullWorkflow();
                   }
                 }
               }

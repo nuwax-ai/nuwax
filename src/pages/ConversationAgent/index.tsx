@@ -11,6 +11,10 @@ import FileTreeGitSourcePanel, {
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import { useWorkspaceFileTreeSession } from '@/components/business-component/FileTreeGitSourcePanel/hooks/useWorkspaceFileTreeSession';
 import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
+import {
+  parentDirectory,
+  workspaceRelativePath,
+} from '@/components/business-component/FileTreeGitSourcePanel/utils/workspaceFileList';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import VncPreview from '@/components/business-component/VncPreview';
@@ -226,6 +230,17 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
   /** 底部控制台布局模式（collapsed 时停止日志轮询） */
   const [devConsoleLayoutMode, setDevConsoleLayoutMode] =
     useState<ConsoleLayoutMode>('collapsed');
+  /** 页面切走后卸掉终端，并清掉上次展开信号，避免切回时终端自己打开 */
+  useLayoutEffect(() => {
+    if (active) {
+      return;
+    }
+    setDevConsoleExpandSignal(0);
+    setDevConsoleCollapseSignal(0);
+    setDevConsoleLayoutResetSignal(0);
+    setDevConsoleLayoutMode('collapsed');
+    setDevConsoleActiveTab('terminal');
+  }, [active]);
   /** 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置 */
   const skipDevConsoleResetRef = useRef<boolean>(false);
   /** 源代码管理中选中的变更文件（含区块） */
@@ -538,11 +553,20 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
    * 进页自动发送直发 runtime store——乐观轮次与面板渲染同线，首条消息立即可见，
    * 不再等 5s 快照轮询从后端捞回；AgentConversationChatPanel 消费同一实例不自建。
    */
+  /** 会话事件打开桌面时调用，具体打开动作在面板回调里赋值 */
+  const openDesktopViewFromEventRef = useRef<(conversationId: number) => void>(
+    () => {},
+  );
+
   const runtimeLine = useConversationRuntimeSession({
     conversationId: queryConversationId,
     // chat 请求携带面板当前选中电脑（空串兜底 undefined）
     getSandboxId: () => finalSelectedComputerId || undefined,
-    effectsResources: {}, // 页面入口无 chat model 资源；预览类 effect 静默忽略
+    effectsResources: {
+      openDesktopView: (conversationId: number) => {
+        openDesktopViewFromEventRef.current(conversationId);
+      },
+    },
   });
 
   useInitialConversationAutoSend({
@@ -555,6 +579,8 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     getEffectiveSandboxId,
     onMessageSend,
     runtimeSession: runtimeLine?.session,
+    // 页面重新挂载时路由里的提示词还在，详情却可能尚未写入第一条用户消息
+    dedupeAcrossRemount: true,
   });
 
   /** 空间变化时重新加载模型列表 */
@@ -1158,6 +1184,22 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     closePreviewView,
   ]);
 
+  /**
+   * 会话 OPEN_DESKTOP：打开智能体电脑。已经打开时不再切换关掉。
+   */
+  openDesktopViewFromEventRef.current = (conversationId: number) => {
+    if (
+      !conversationId ||
+      Number(conversationId) !== Number(queryConversationId) ||
+      isAgentDesktopOpen ||
+      finalSelectedComputerId !== '-1' ||
+      agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes
+    ) {
+      return;
+    }
+    void handleOpenDesktopPanel();
+  };
+
   /** 是否显示文件面板相关入口（通用型智能体 + 有效消息） */
   const isShowFilePanel = useMemo(() => {
     if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
@@ -1315,6 +1357,16 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
         }
       },
       onOpenDirectory: workspaceFiles.onOpenDirectory,
+      /** 目标父目录还在加载时，不要用当前文件列表判断文件不存在 */
+      isAutoSelectDirectoryLoaded: (fileId: string) => {
+        const parentPath = parentDirectory(workspaceRelativePath(fileId));
+        if (
+          workspaceFiles.openingTaskResultRef.current?.parent === parentPath
+        ) {
+          return false;
+        }
+        return workspaceFiles.loadedDirectoryPaths.has(parentPath);
+      },
       hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
@@ -1383,6 +1435,8 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
     workspaceFiles.files,
     workspaceFiles.loading,
     workspaceFiles.onOpenDirectory,
+    workspaceFiles.loadedDirectoryPaths,
+    workspaceFiles.openingTaskResultRef,
     fileTreeRefreshTrigger,
     queryConversationId,
     handleUploadMultipleFiles,
@@ -1805,38 +1859,39 @@ const ConversationAgent: React.FC<ConversationAgentProps> = ({
             />
           </div>
 
-          {/* 底部终端、开发日志合集面板 */}
-          {/** 云端电脑传入 conversationId 以启动容器；个人电脑直接通过 wsUrl 连接终端 */}
-          <ConversationBottomConsole
-            // 在ConversationAgent中，conversationId 为 queryConversationId
-            conversationId={
-              active && finalSelectedComputerId === '-1'
-                ? queryConversationId
-                : undefined
-            }
-            visible={active && showDevConsole}
-            wsUrl={terminalWsUrl}
-            wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
-            wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
-            layoutResetSignal={devConsoleLayoutResetSignal}
-            expandSignal={devConsoleExpandSignal}
-            collapseSignal={devConsoleCollapseSignal}
-            onLayoutModeChange={setDevConsoleLayoutMode}
-            onActiveTabChange={(tab) => {
-              setDevConsoleActiveTab(tab);
-            }}
-            devLog={{
-              logs: devLogs.logs,
-              isLoading: devLogs.isLoading,
-              lastLine: devLogs.lastLine,
-            }}
-            logsExtra={
-              <DevLogActions
-                onRefresh={devLogs.refreshLogs}
-                onClear={devLogs.clearLogs}
-              />
-            }
-          />
+          {/* 底部终端：页面隐藏时卸载，连接不留在终端组件里 */}
+          {active ? (
+            <ConversationBottomConsole
+              // 在ConversationAgent中，conversationId 为 queryConversationId
+              conversationId={
+                finalSelectedComputerId === '-1'
+                  ? queryConversationId
+                  : undefined
+              }
+              visible={showDevConsole}
+              wsUrl={terminalWsUrl}
+              wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+              wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+              layoutResetSignal={devConsoleLayoutResetSignal}
+              expandSignal={devConsoleExpandSignal}
+              collapseSignal={devConsoleCollapseSignal}
+              onLayoutModeChange={setDevConsoleLayoutMode}
+              onActiveTabChange={(tab) => {
+                setDevConsoleActiveTab(tab);
+              }}
+              devLog={{
+                logs: devLogs.logs,
+                isLoading: devLogs.isLoading,
+                lastLine: devLogs.lastLine,
+              }}
+              logsExtra={
+                <DevLogActions
+                  onRefresh={devLogs.refreshLogs}
+                  onClear={devLogs.clearLogs}
+                />
+              }
+            />
+          ) : null}
         </div>
       </div>
     </div>

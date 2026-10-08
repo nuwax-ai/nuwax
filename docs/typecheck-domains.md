@@ -1,0 +1,55 @@
+# 分域 TypeScript 门禁
+
+`pnpm typecheck` 检查节点、会话核心、AppDevPro 工作台与宿主桥契约四个明确范围。它使用当前项目的严格 TypeScript 配置，按诊断所属文件与精确历史基线比较。全库仍有存量错误，分域通过不表示全库类型检查通过。
+
+## 日常入口
+
+```sh
+pnpm test:typecheck
+pnpm typecheck
+pnpm typecheck:nodes
+pnpm typecheck:conversation
+pnpm typecheck:workspace
+pnpm typecheck:contracts
+```
+
+安装依赖的 postinstall 会执行 `max setup` 生成 `.umi` 配置与类型。已有依赖但生成目录缺失时可运行 `pnpm setup`；门禁不会自动安装、下载微应用、同步产物或生成版本。
+
+检查范围以 `typecheck-domains.json` 为准。节点域包括图与节点共享契约；域内测试夹具也受约束。其它 Chat 页面、模型和布局等未列出的文件不属于首期会话/工作台类型门。修改范围配置须与代码和历史基线一起审查。
+
+初始基线由 TypeScript 5.8.3 生成并对照改前日志审查：319 个域内文件，节点 39 条历史诊断、会话核心 21 条（均为测试），工作台和宿主契约为零；另有 285 条域外诊断。后续数量以实际输出为准。
+
+节点生产源码清理后，检查范围为 323 个文件（节点 143、会话核心 117、工作台 60、宿主契约 3）；基线仅删除节点域的 7 个记录、10 条已修复诊断，剩余 26 个记录、50 条诊断。节点剩余 29 条与会话核心 21 条均来自测试，节点生产源码、工作台和宿主契约为零。域外仍有 285 条历史诊断，未并入基线。
+
+测试类型债务清理后，四域基线均为空，323 个文件的生产源码与相关测试全部为零诊断；已删除原 26 个记录、50 条已修复诊断。后续域内改动必须继续保持零诊断，不再接受历史基线额度。全库仍有 285 条域外诊断，扩大检查范围时须明确 ownership、核准既有债务并逐项修复。
+
+## 修复旧诊断
+
+`typecheck-baseline.json` 记录 TypeScript 版本、文件、错误码、完整消息及次数。行列移动不会改变诊断身份；新文件、新消息、不同错误码或同类次数增加都会失败。不会按错误码整类忽略。
+
+修复一个旧错误后，检查会提示基线需要收缩：
+
+```sh
+pnpm typecheck:prune
+pnpm typecheck
+```
+
+prune 只能删除已消失的记录；出现新增诊断或环境故障时拒绝写入。审查并提交基线的删除差异，防止已修复的错误以后回流。默认检查只读，CI 不生成基线，不提供自动接纳新错误的命令。TypeScript 升级引起的消息变化需要人工核对，不通过刷新基线绕过。
+
+## 检查边界
+
+配置/生成类型缺失、无输入、域文件没有进入编译、项目级诊断、语法错误或编译器异常会使检查失败。生成的 tsconfig、typings、exports 均须存在，生成模块也必须能通过检查；引用其他工作区源码或声明会被拒绝，共享 node_modules 依赖可以使用。域外业务诊断单独报告数量，不被当作所选域通过的证据。
+
+门禁沿用当前项目配置及第三方声明。现有 `declare module 'umi'` 仍为宽泛声明，库声明检查也遵循项目的 `skipLibCheck`；不能把门禁当作所有宿主声明与 Umi 调用已得到完整验证。宿主快照一致性继续由外层 `host-bridge:check` 验证，provider/consumer 契约回归也继续保留。
+
+CI 有两处共用入口：前端 `.github/workflows/typecheck.yml` 和外层 nuwax-client 的 frontend job。合入时先提交前端源码及基线，再更新外层源码 pin；只提交外层 CI 接线无法带入子仓未提交的 gate。
+
+类型门用于约束开发改动；运行行为继续由 Vitest、架构检查及相应 UI/后端验收验证。
+
+## 2026-10-07 构建候选的门禁恢复
+
+当天 `dd43c1730` 整包回退 merge 时误撤门禁工具与空基线。恢复保持原严格编译选项、诊断精确身份和只删不增的 prune 规则；域内新诊断在源码和 typed fixtures 中修复，空 baseline 不接受新增记录。
+
+全部原生产目录与 `tests/workflow` / `tests/unifiedChatSession` 前缀保持。两个被撤销功能的已删除测试引用作明确迁移：节点域的 `tests/agentFlowCanvas.registration.test.tsx` 改为现存 `src/pages/EditAgent/AgentArrangeConfig/agentFlow/__tests__/arrangePolicy.test.ts`；工作台域的 `tests/appDevWorkspace.test.tsx` 改为现存 `tests/appDevUiPolling.lifecycle.test.tsx` 与 `tests/useAppDevChat.lifecycle.test.tsx`。原生产目录的实际文件均继续入编译，不复活撤销功能来满足不存在测试路径。
+
+`test:typecheck` 继续以 `node --test` 执行检查器自测，完整 Vitest 门排除这一个 node:test 文件以避免错误 runner 重复收集。恢复后的实际检查为 318 文件（节点 136、会话 117、工作台 62、契约 3），四域均为零诊断；域外 284 条继续独立报告，不计入零诊断结论。详细范围与验收见 [恢复计划](../plans/20261007-frontend-source-gates-plan.md)。

@@ -32,10 +32,25 @@
     gap: 0;
 
     .content-container {
+      position: relative;
       border-radius: 16px;
       border: @lineWidth solid @colorSplit;
       overflow: hidden;
       background-color: #f5f5f5;
+    }
+
+    /**
+     * 资料库文档盖在工作区上，关闭后回到原来的预览。
+     * 底部终端全屏是 z-index: 10，这里必须更高，否则先打开终端再点资料库时终端会挡住嵌入页。
+     */
+    .repo-doc-preview {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      min-width: 0;
+      min-height: 0;
+      background: @colorBgContainer;
     }
 
     // 预览内容区全屏模式

@@ -252,8 +252,10 @@ export function useUserAppPublish(options: UseUserAppPublishOptions) {
       throw new Error(dict('PC.Pages.AppDevPro.publishNoApp'));
     }
     setPublishPhase('checkingReadiness');
-    return pollUserAppReadiness(appId, UserAppDbEnvEnum.Prod, () =>
-      cancelledRef.current,
+    return pollUserAppReadiness(
+      appId,
+      UserAppDbEnvEnum.Prod,
+      () => cancelledRef.current,
     );
   }, [appId, setPublishPhase]);
 

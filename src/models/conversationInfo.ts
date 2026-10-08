@@ -94,7 +94,6 @@ import {
 } from '@/types/interfaces/vncDesktop';
 import { extractTaskResult } from '@/utils';
 import { emitConversationChanged } from '@/utils/directorySyncEvents';
-import { isFileMutatingToolCall } from '@/utils/fileMutatingToolCall';
 
 import { useConversationTerminalFinalizer } from '@/hooks/useConversationTerminalFinalizer';
 import { modalConfirm } from '@/utils/ant-custom';
@@ -552,11 +551,25 @@ export default () => {
     }
   }, []);
 
-  // 重启智能体电脑
+  /**
+   * 重启智能体电脑。
+   * @param cId 会话 ID
+   * @param sandboxId 电脑 ID
+   * @param options.openDesktop 非桌面视图且为云电脑时，是否先打开远程桌面。打开桌面会调用 ensure，默认 true
+   * @returns 重启接口是否成功
+   */
   const restartVncPod = useCallback(
-    async (cId: number, sandboxId: string) => {
+    async (
+      cId: number,
+      sandboxId: string,
+      options?: { openDesktop?: boolean },
+    ): Promise<boolean> => {
       // 如果当前不是智能体电脑视图，并且用户选择是云端电脑（sandboxId === '-1'），则打开远程桌面视图
-      if (viewMode !== 'desktop' && sandboxId === '-1') {
+      if (
+        options?.openDesktop !== false &&
+        viewMode !== 'desktop' &&
+        sandboxId === '-1'
+      ) {
         // 切换到智能体电脑 tab。
         // AppDevPro 已通过 setPodAppStage 标记环境：打开桌面时不停进页保活。
         openDesktopView(cId, {
@@ -581,7 +594,9 @@ export default () => {
         message.success(
           dict('PC.Models.ConversationInfo.restartVncPodSuccess'),
         );
+        return true;
       }
+      return false;
     },
     [viewMode],
   );
