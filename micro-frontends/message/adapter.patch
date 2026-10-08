@@ -141,15 +141,15 @@ index 4babfea..bf2ce1a 100644
      // ★其余平台的错误码原样透出：
      //   翻译成 IM 的码会让"平台到底怎么说的"这条最重要的线索消失。
 diff --git a/nuwax-im-web/src/components/ChatWindow.tsx b/nuwax-im-web/src/components/ChatWindow.tsx
-index aad41ef..caefb7d 100644
+index cae52f8..3d6cca5 100644
 --- a/nuwax-im-web/src/components/ChatWindow.tsx
 +++ b/nuwax-im-web/src/components/ChatWindow.tsx
 @@ -1,3 +1,4 @@
 +import { getMessageInputRoot, getMessagePortalRoot, isNativeMessageNotifications, toMessagePortalPoint } from '../hostRuntime';
- import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
  import { App as AntApp, Avatar, Dropdown, Image, Tooltip, type MenuProps } from 'antd';
  import type { AttachmentInput, AttachmentKind, Id, MessageDto } from '../api/types';
-@@ -530,8 +531,8 @@ export default function ChatWindow() {
+@@ -531,8 +532,8 @@ export default function ChatWindow() {
      //   这条隐性前提撑着 —— 那正是重构时最容易踩坏的一类依赖。
      let done = false;
      function detach() {
@@ -160,7 +160,7 @@ index aad41ef..caefb7d 100644
      }
      function ask() {
        // ★`done` 与 detach 是双保险：pointerdown 与 keydown 可能在同一瞬间各来一次
-@@ -549,8 +550,8 @@ export default function ChatWindow() {
+@@ -550,8 +551,8 @@ export default function ChatWindow() {
          })
          .catch(() => undefined);
      }
@@ -171,7 +171,7 @@ index aad41ef..caefb7d 100644
      return detach;
    }, [notifyOn]);
    /**
-@@ -1303,13 +1304,13 @@ export default function ChatWindow() {
+@@ -1388,13 +1389,13 @@ export default function ChatWindow() {
        e.preventDefault();
        accept(files);
      };
@@ -191,7 +191,7 @@ index aad41ef..caefb7d 100644
      };
    });
  
-@@ -2515,7 +2516,7 @@ export default function ChatWindow() {
+@@ -2621,7 +2622,7 @@ export default function ChatWindow() {
        ?? null;
      if (!id) return;
      e.preventDefault();
@@ -200,7 +200,7 @@ index aad41ef..caefb7d 100644
    };
  
    const removePending = (id: string): void => {
-@@ -3234,7 +3235,7 @@ export default function ChatWindow() {
+@@ -3382,7 +3383,7 @@ export default function ChatWindow() {
                      ),
                      disabled: notifyToggleDisabled(notifySt),
                    },
@@ -209,7 +209,7 @@ index aad41ef..caefb7d 100644
                      key: 'notifyTest',
                      label: '发送测试通知',
                      // ★★DEV-231 需求④：点不了的只有两种 —— 权限压根不可用（点了必然没有结果），
-@@ -3242,7 +3243,7 @@ export default function ChatWindow() {
+@@ -3390,7 +3391,7 @@ export default function ChatWindow() {
                      //   ★`default`（还没问过权限）时**可以点**：那正是最需要一次实际结果
                      //   来确认的情形；而且这一次点击本身就是用户手势，权限会被顺便问出来。
                      disabled: notifyToggleDisabled(notifySt) || !notifyOn,
@@ -218,7 +218,7 @@ index aad41ef..caefb7d 100644
                    // ★★DEV-254 需求③（用户原话「见附件红色圈起来的不需要」，附件把这一项圈红了）：
                    //   这里原来还有一条 `{ type: 'divider' }` + `{ key: 'sync', label: '手动增量同步' }`，
                    //   与它的 `onClick` 分支（`syncIncremental().then(...)`）**一并删掉**。
-@@ -3867,7 +3868,7 @@ export default function ChatWindow() {
+@@ -4062,7 +4063,7 @@ export default function ChatWindow() {
              {imgMenu && (
                <Dropdown
                  open
