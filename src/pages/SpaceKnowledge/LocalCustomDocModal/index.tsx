@@ -3,6 +3,7 @@ import {
   KNOWLEDGE_CUSTOM_DOC_LIST,
   KNOWLEDGE_LOCAL_DOC_LIST,
 } from '@/constants/library.constants';
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiKnowledgeDocumentAdd,
@@ -80,6 +81,14 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     useState<boolean>(true);
   // 智能分段标识(新增)
   const [isAiSegment, setIsAiSegment] = useState<boolean>(false);
+  const { aiOSCommercialEdition } = useCommercialEdition();
+  useEffect(() => {
+    if (!aiOSCommercialEdition && isAiSegment) {
+      setIsAiSegment(false);
+      setAutoSegmentConfigFlag(true);
+      segmentConfigModelRef.current = null;
+    }
+  }, [aiOSCommercialEdition, isAiSegment]);
   // 提交防重:提交中禁用按钮,避免重复请求
   const [submitting, setSubmitting] = useState<boolean>(false);
   const fileConfigRef = useRef<{

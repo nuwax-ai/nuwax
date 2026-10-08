@@ -1,4 +1,6 @@
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { microAppHostStore } from '@/layouts/MicroAppHost/store';
+import { isWorkCommercialApp } from '@/utils/commercialEdition';
 import { findMicroAppRoute } from '@/utils/microAppRoutes';
 import { useLocation, useNavigate } from '@umijs/max';
 import { useEffect } from 'react';
@@ -8,11 +10,13 @@ const MicroAppEntry = () => {
   const { pathname, search, hash } = useLocation();
   const navigate = useNavigate();
   const app = findMicroAppRoute(pathname);
+  const { workCommercialEdition } = useCommercialEdition();
+  const blocked = isWorkCommercialApp(app?.name) && !workCommercialEdition;
   const isStableEntry =
     app !== undefined && pathname.replace(/\/+$/, '') === app.stableEntry;
 
   useEffect(() => {
-    if (!app) return;
+    if (!app || blocked) return;
     if (isStableEntry) {
       navigate(`${app.path}${search}${hash}`, { replace: true });
       return;
@@ -42,12 +46,12 @@ const MicroAppEntry = () => {
         );
       }
     }
-  }, [app?.name, isStableEntry, pathname, search, hash, navigate]);
+  }, [app?.name, blocked, isStableEntry, pathname, search, hash, navigate]);
 
   useEffect(() => {
-    if (!app || isStableEntry) return;
+    if (!app || blocked || isStableEntry) return;
     return () => microAppHostStore.deactivate(app.name);
-  }, [app?.name, isStableEntry]);
+  }, [app?.name, blocked, isStableEntry]);
 
   return null;
 };

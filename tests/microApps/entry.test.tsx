@@ -1,12 +1,14 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { location, navigate, activate, deactivate } = vi.hoisted(() => ({
-  location: { pathname: '/repo', search: '', hash: '' },
-  navigate: vi.fn(),
-  activate: vi.fn(),
-  deactivate: vi.fn(),
-}));
+const { location, navigate, activate, deactivate, commercialState } =
+  vi.hoisted(() => ({
+    location: { pathname: '/repo', search: '', hash: '' },
+    commercialState: { enabled: true },
+    navigate: vi.fn(),
+    activate: vi.fn(),
+    deactivate: vi.fn(),
+  }));
 
 vi.mock('@umijs/max', () => ({
   useLocation: () => location,
@@ -19,6 +21,7 @@ vi.mock('@/layouts/MicroAppHost/store', () => ({
 import MicroAppEntry from '@/pages/MicroAppEntry';
 
 beforeEach(() => {
+  commercialState.enabled = true;
   vi.clearAllMocks();
   activate.mockImplementation((entry) => entry);
   Object.assign(location, { pathname: '/repo', search: '', hash: '' });
@@ -104,4 +107,34 @@ describe('微应用路由控制页', () => {
     });
     expect(deactivate).not.toHaveBeenCalledWith('nuwax-im-web');
   });
+});
+
+vi.mock('@/hooks/useCommercialEdition', () => ({
+  default: () => ({
+    aiOSCommercialEdition: commercialState.enabled,
+    workCommercialEdition: commercialState.enabled,
+    pending: false,
+  }),
+}));
+
+it.each(['/repo', '/repo-entry', '/instant-message', '/message-entry'])(
+  '未授权的 %s 不激活应用或执行稳定入口跳转',
+  (pathname) => {
+    commercialState.enabled = false;
+    location.pathname = pathname;
+    render(<MicroAppEntry />);
+    expect(activate).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  },
+);
+
+it('同一路由授权恢复后激活，撤销后停用', () => {
+  commercialState.enabled = false;
+  const view = render(<MicroAppEntry />);
+  commercialState.enabled = true;
+  act(() => view.rerender(<MicroAppEntry />));
+  expect(activate).toHaveBeenCalledOnce();
+  commercialState.enabled = false;
+  act(() => view.rerender(<MicroAppEntry />));
+  expect(deactivate).toHaveBeenCalledWith('nuwax-repo-web');
 });

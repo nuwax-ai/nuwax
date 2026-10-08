@@ -26,5 +26,11 @@ describe('License 文案符合真实翻译运行时契约', () => {
       expect(map[`PC.Pages.License.state.${state}`]).toBeTruthy();
     }
     expect(map['PC.Pages.License.error.invalidResponse']).toBeTruthy();
+    expect('PC.Components.CommercialLicense.authorizationRequired').toMatch(
+      I18N_KEY_REGEX,
+    );
+    expect(
+      map['PC.Components.CommercialLicense.authorizationRequired'],
+    ).toBeTruthy();
   });
 });

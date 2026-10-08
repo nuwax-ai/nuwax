@@ -7151,4 +7151,5 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitive": "敏感",
   "PC.Components.OAuthScopeSetting.sensitiveTip": "可访问用户敏感数据或代用户执行操作，请按需申请",
   "PC.Components.OAuthScopeSetting.submitted": "已保存，授权范围变更已提交审核",
+  "PC.Components.CommercialLicense.authorizationRequired": "请联系官方获取试用授权或商业授权",
 };

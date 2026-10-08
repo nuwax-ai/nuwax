@@ -4,6 +4,7 @@
  * 折叠态、项目面板挂载与任务分组触底加载。
  */
 import SvgIcon from '@/components/base/SvgIcon';
+import useCommercialEdition from '@/hooks/useCommercialEdition';
 import { dict } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -20,6 +21,7 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
   shell,
 }) => {
   const location = useLocation();
+  const { aiOSCommercialEdition } = useCommercialEdition();
   const projectPanelRef = useRef<ProjectPanelHandle>(null);
   // 单栏分组折叠态（原型：点击分组头折叠/展开对应列表，不做持久化）
   const [projectCollapsed, setProjectCollapsed] = useState(false);
@@ -192,25 +194,29 @@ const SidebarNavHomeSection: React.FC<{ shell: HomeSectionDataShell }> = ({
       ref={shell.scrollShowRef}
       className={cx(styles['conversation-list-wrapper'])}
     >
-      {renderSectionHeader({
-        label: dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab'),
-        collapsed: projectCollapsed,
-        onToggle: handleProjectHeaderClick,
-      })}
-      <div
-        className={cx(styles['project-list-section'])}
-        hidden={projectCollapsed}
-      >
-        <ProjectPanel
-          ref={projectPanelRef}
-          compact
-          leadingMark
-          onVisibleCountChange={shell.handleProjectCountChange}
-          onConversationClick={shell.handleConversationClick}
-          activeConversationId={shell.chatId}
-          onActiveChildResolved={shell.setActiveProjectChildId}
-        />
-      </div>
+      {aiOSCommercialEdition && (
+        <>
+          {renderSectionHeader({
+            label: dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab'),
+            collapsed: projectCollapsed,
+            onToggle: handleProjectHeaderClick,
+          })}
+          <div
+            className={cx(styles['project-list-section'])}
+            hidden={projectCollapsed}
+          >
+            <ProjectPanel
+              ref={projectPanelRef}
+              compact
+              leadingMark
+              onVisibleCountChange={shell.handleProjectCountChange}
+              onConversationClick={shell.handleConversationClick}
+              activeConversationId={shell.chatId}
+              onActiveChildResolved={shell.setActiveProjectChildId}
+            />
+          </div>
+        </>
+      )}
 
       {renderSectionHeader({
         label: dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask'),

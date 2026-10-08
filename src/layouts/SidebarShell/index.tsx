@@ -10,6 +10,7 @@
  * （DynamicMenusLayout 及会话列表）跨跳转存活、不重新初始化；
  * 菜单/广场分类/空间列表等引导数据只装一次（bare 态跳过，回带栏态补跑一次）。
  */
+import WorkCommercialRouteBoundary from '@/components/business-component/WorkCommercialRouteBoundary';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import {
   ANIMATION_DURATION,
@@ -286,7 +287,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
     if (variant === 'bare') {
       return (
         <div className={cx('w-full', 'h-full', 'overflow-hide')}>
-          {children}
+          <WorkCommercialRouteBoundary>{children}</WorkCommercialRouteBoundary>
           <OpenedAppTabsKeepAlive />
           <ClientConversationKeepAlive />
           <MicroAppHost />
@@ -329,7 +330,7 @@ const SidebarShell: React.FC<SidebarShellProps> = ({
             : {}),
         }}
       >
-        {children}
+        <WorkCommercialRouteBoundary>{children}</WorkCommercialRouteBoundary>
         {/* 女娲应用多开标签保活容器:与路由出口并列常驻(命中 user-app 标签时
             可见,路由组件空壳让位;其余路由整体隐藏不占位,iframe 保活不重载) */}
         <OpenedAppTabsKeepAlive />

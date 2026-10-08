@@ -7078,4 +7078,5 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.OAuthScopeSetting.sensitive": "機密",
   "PC.Components.OAuthScopeSetting.sensitiveTip": "機密データへのアクセスやユーザーに代わる操作が可能になります。必要な場合のみ申請してください",
   "PC.Components.OAuthScopeSetting.submitted": "保存しました。権限範囲の変更を審査に提出しました",
+  "PC.Components.CommercialLicense.authorizationRequired": "試用ライセンスまたは商用ライセンスについて、公式窓口にお問い合わせください。",
 };
