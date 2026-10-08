@@ -130,8 +130,9 @@ const AppDevDatabasePanel: React.FC<AppDevDatabasePanelProps> = ({
   /** 正在轮询数据库就绪。只有就绪后才展示管理页 */
   const [checking, setChecking] = useState(false);
   /** 最近一次就绪探测，用于展示当前状态 */
-  const [readiness, setReadiness] =
-    useState<UserAppDbReadinessSnapshot | null>(null);
+  const [readiness, setReadiness] = useState<UserAppDbReadinessSnapshot | null>(
+    null,
+  );
 
   const waitingContainer =
     containerStatus !== undefined && containerStatus !== 'running';

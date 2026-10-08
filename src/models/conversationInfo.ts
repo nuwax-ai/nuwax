@@ -94,7 +94,6 @@ import {
 } from '@/types/interfaces/vncDesktop';
 import { extractTaskResult } from '@/utils';
 import { emitConversationChanged } from '@/utils/directorySyncEvents';
-import { isFileMutatingToolCall } from '@/utils/fileMutatingToolCall';
 
 import { useConversationTerminalFinalizer } from '@/hooks/useConversationTerminalFinalizer';
 import { modalConfirm } from '@/utils/ant-custom';

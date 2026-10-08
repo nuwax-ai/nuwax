@@ -70,7 +70,6 @@ export const pollUserAppReadiness = async (
 
   return false;
 };
-
 /** 数据库就绪轮询的一次结果，供页面展示当前状态 */
 export interface UserAppDbReadinessSnapshot {
   /** 本次请求失败，或业务码不是成功 */
@@ -199,4 +198,3 @@ export const pollUserAppDbReadiness = async (
 
   return false;
 };
-

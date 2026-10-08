@@ -318,7 +318,7 @@ class WorkflowProxyV3 {
   /**
    * 获取边列表
    */
-  getEdges(): Edge[] {
+  getEdges(): EdgeV3[] {
     return this.workflowData ? cloneDeep(this.workflowData.edges) : [];
   }
 

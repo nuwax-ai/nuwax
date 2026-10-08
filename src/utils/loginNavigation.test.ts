@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getBusinessBase } from './authIdp';
 import { navigateAfterLogin, replaceLoginStep } from './loginNavigation';
 
 // 使用浏览器 History，而非只断言导航函数的 mock 入参。
@@ -123,5 +124,42 @@ describe('登录步骤导航', () => {
     );
     navigateAfterLogin(history, null, null, navigateToAuthUrl);
     expect(window.location.pathname).toBe('/');
+  });
+
+  it('普通登录模式（?local / ?idpError）在验证码步骤往返中保留，返回登录页不被自动跳转带走', () => {
+    window.history.replaceState(null, '', '/login?local=1&redirect=-1');
+    replaceLoginStep(history, 'verify-code', '-1');
+    expect(window.location.search).toContain('local=1');
+    replaceLoginStep(history, 'login', '-1');
+    expect(new URLSearchParams(window.location.search).get('local')).toBe('1');
+    expect(new URLSearchParams(window.location.search).get('redirect')).toBe(
+      '-1',
+    );
+
+    window.history.replaceState(null, '', '/login?idpError=x');
+    replaceLoginStep(history, 'verify-code', null);
+    replaceLoginStep(history, 'login', null);
+    expect(window.location.pathname + window.location.search).toBe(
+      '/login?local=1',
+    );
+  });
+
+  it('三方登录中间页（后端渲染的 /auth/…）走整页跳转，不进 SPA 路由', () => {
+    const redirect = '/auth/bind-or-register?token=abc';
+    enterLogin(redirect);
+    navigateAfterLogin(history, redirect, null, navigateToAuthUrl);
+    expect(navigateToAuthUrl).toHaveBeenCalledWith(
+      `${getBusinessBase()}${redirect}`,
+    );
+    // 业务域拼接不得产生协议相对地址
+    expect(navigateToAuthUrl.mock.calls[0][0]).not.toMatch(/^\/\//);
+    expect(window.location.pathname).toBe('/login');
+  });
+
+  it('只把 /auth/ 前缀当后端页面，形似前缀的业务路径仍走 SPA', () => {
+    enterLogin('/authors');
+    navigateAfterLogin(history, '/authors', null, navigateToAuthUrl);
+    expect(navigateToAuthUrl).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/authors');
   });
 });

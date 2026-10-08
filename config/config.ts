@@ -36,6 +36,7 @@ export default defineConfig({
     loading: '@/components/business-component/AppStartup/Loading',
   },
   request: {},
+  define: { 'process.env.RELEASE0930_LICENSE_MOCK': '0' },
   // 实例由 SidebarShell 的持久宿主管理；资源目录与 /repo 业务路由分开。
   qiankun: {
     master: {

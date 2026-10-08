@@ -126,6 +126,9 @@ export function toRepoPortalRect(
     right: rect.right - viewport.left,
     top: rect.top - viewport.top,
     bottom: rect.bottom - viewport.top,
+    // 子根通过 translateZ(0) 建立 fixed 包含块；这里只平移，尺寸保持视口 CSS 像素。
+    width: rect.right - rect.left,
+    height: rect.bottom - rect.top,
   };
 }
 

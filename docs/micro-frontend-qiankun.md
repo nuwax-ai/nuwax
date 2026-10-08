@@ -12,7 +12,7 @@
 | 消息 | `nuwax-im-web` | `submodules/nuwax-im` | `nuwax-im-web/` | `/instant-message/*` | `/message-entry` | `/micro-apps/message/index.html` |
 
 - 资料库 gitlink：`1d9f19162d3991ca693e5e79758b3bc6943e6e7e`；消息 gitlink：`f7fd703688aba50573621f9ee8e32ecf0ef9f75c`。
-- `.gitmodules` 的 `branch = main` 表明上游来源；默认 `build:dev`、`build:prod` 先升级全部应用到远程 main，再从主仓 index 读取固定 gitlink，并与 `adapter.json.pin` 交叉校验。单独运行 `sync:micro-apps` 不会 fetch、checkout 或升级。
+- `.gitmodules` 的 `branch = main` 表明上游来源；`build:dev`、`build:prod` 与 `sync:micro-apps` 从主仓 index 读取固定 gitlink，并与 `adapter.json.pin` 交叉校验，不会 fetch、checkout 或升级子仓。升级通过显式 `upgrade:micro-apps` 入口进行。
 - `micro-frontends/apps.json` 登记已确认的应用，每项指向独立 `adapter.json`。消息使用用户确认的 `nuwax-im` 仓库中的 PC 前端目录，后端不参与构建和适配。
 - 资源目录 `/micro-apps/<id>/` 与业务路由分开。访问业务深链必须先进入主站布局；静态 entry 仅供 qiankun 加载。
 
@@ -48,14 +48,14 @@ npm run test:micro-app-build
 npm run sync:micro-apps
 PORT=3002 npm run dev
 
-# 两种宿主构建都会由 prebuild 先升级全部应用，再生成版本信息并构建子应用。
+# 两种宿主构建都生成版本信息，并构建已记录固定版本的子应用。
 npm run build:dev
 npm run build:prod
 ```
 
 开发端口以终端输出为准；本次验收运行于 `http://localhost:3001`，原工作区的 3000 服务保持运行。
 
-默认顺序为 `upgrade:micro-apps -- all` → 版本生成 → `sync:micro-apps` → 宿主构建 → dist 版本写入。升级、网络访问或适配预检失败时，后续步骤立即停止；`build:prod:m` 通过调用 `build:prod` 沿用此顺序。默认宿主构建可能更新并暂存 gitlink 与 adapter pin，实际来源以本次 manifest 为准。
+默认顺序为版本生成 → `sync:micro-apps` → 宿主构建 → dist 版本写入。来源校验、依赖安装或适配构建失败时，后续步骤立即停止；`build:prod:m` 通过调用 `build:prod` 沿用此顺序。宿主构建保持 gitlink 与 adapter pin，实际来源以本次 manifest 为准。
 
 `scripts/sync-micro-apps.mjs` 按以下步骤构建每个已登记应用：
 
@@ -81,7 +81,7 @@ npm run build:prod
 
 `/micro-apps/<id>/version.json` 包含来源 main SHA、URL、前端目录、adapter 文件清单及 SHA256、构建环境、Node/pnpm/插件版本、构建时间和可选类型基线结果；`/micro-apps/manifest.json` 汇总同批产物。
 
-默认宿主构建自动执行全部升级；仍需审查更新后的 gitlink、`adapter.json.pin` 与适配匹配情况，并完成验收。单独运行 `sync:micro-apps` 可验证当前固定提交，不会改变 pin。
+宿主构建与 `sync:micro-apps` 均验证当前固定提交，不改变 pin。显式升级后需审查 gitlink、`adapter.json.pin` 与适配匹配情况，并完成验收。
 
 ### 单个或全部升级脚本
 
@@ -99,17 +99,17 @@ npm run upgrade:micro-apps -- all
 # 单个应用选择已经审查的 main 历史提交；验证该提交使用 sync:micro-apps。
 npm run upgrade:micro-apps -- message --ref '填入已审核的40位提交SHA'
 
-# 默认完整构建会再次检查并升级全部应用到最新 main。
+# 完整构建消费上一步已选定并暂存的版本，不再获取远程 main。
 npm run build:prod
 ```
 
-[升级脚本](/Users/apple/workspace/nuwax/scripts/upgrade-micro-apps.mjs)读取登记表，只 fetch 选中的子仓 `origin/main`。所有候选先校验快进/main 历史、patch 和 overlay 覆盖范围；全部预检通过后，才更新所选子仓 HEAD 和 adapter pin，并仅暂存这些 gitlink 与 `adapter.json`。手工单个升级不改变另一个应用的 pin；默认主站构建会另外升级全部应用。
+[升级脚本](/Users/apple/workspace/nuwax/scripts/upgrade-micro-apps.mjs)读取登记表，只 fetch 选中的子仓 `origin/main`。所有候选先校验快进/main 历史、patch 和 overlay 覆盖范围；全部预检通过后，才更新所选子仓 HEAD 和 adapter pin，并仅暂存这些 gitlink 与 `adapter.json`。单个升级不改变另一个应用的 pin；后续主站构建沿用这些固定提交。
 
 选中子仓、适配目录或共享登记文件已有 WIP 时，脚本中止；仅 gitlink 与 adapter pin 已成对暂存、两端一致且 adapter 没有其它字节或权限差异时，可以继续重复升级或构建。无关文件的 dirty/staged 改动保持原样。上游修改 overlay 同名文件时默认中止，需要先审查适配；明确完成审查后可手工加 `--allow-overlay-changes`。默认构建不会自动放行这类变化。现有纯 rename 保存的 Vite upstream 配置不按被覆盖文件处理。
 
 正常失败或 SIGINT/SIGTERM 会尝试恢复所选原 HEAD/分支、adapter 和 index。恢复记录和原 adapter 文件保存在 `.cache/micro-apps/upgrades/upgrade-*/`；回滚失败会报告具体条目并保留记录。SIGKILL/断电后需要按记录核对恢复，不能保证自动回滚。dry-run 会更新远程跟踪 ref 并产生临时检查文件，但不修改选中源码、pin 或 index。
 
-升级脚本不执行 commit、push、构建或部署。升级成功后构建、验收并提交本批变更；若后续默认构建又产生新 pin，需要重新审查与验收。存在需要修改 patch/overlay 的上游升级时，应进入正常适配开发流程，不能仅凭脚本通过就视为功能验收完成。
+升级脚本不执行 commit、push、构建或部署。升级成功后构建、验收并提交本批变更。存在需要修改 patch/overlay 的上游升级时，应进入正常适配开发流程，不能仅凭脚本通过就视为功能验收完成。
 
 ## 本地 API / WS 代理
 

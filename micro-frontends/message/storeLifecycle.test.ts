@@ -51,9 +51,8 @@ beforeAll(async () => {
       'archive',
       JSON.parse(readFileSync(path.join(adapterDir, 'adapter.json'), 'utf8'))
         .pin,
-      'nuwax-im-web/src',
-      'nuwax-im-web/vite.config.ts',
-      'nuwax-im-web/tsconfig.node.json',
+      // 正式补丁同时涉及源码与测试配置，固定提交的前端目录是完整输入。
+      'nuwax-im-web',
     ],
     { maxBuffer: 64 * 1024 * 1024 },
   );

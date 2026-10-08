@@ -78,9 +78,7 @@ describe('workspace file refresh semantics', () => {
         ),
       ),
     ).toBe(false);
-    expect(
-      shouldRefreshWorkspaceFiles(tool({}, { name: '终端' })),
-    ).toBe(false);
+    expect(shouldRefreshWorkspaceFiles(tool({}, { name: '终端' }))).toBe(false);
   });
   it.each([
     'write_file',

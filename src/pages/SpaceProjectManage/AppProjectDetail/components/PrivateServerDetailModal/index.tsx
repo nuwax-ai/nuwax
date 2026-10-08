@@ -301,10 +301,7 @@ const PrivateServerDetailModal: React.FC<PrivateServerDetailModalProps> = ({
             </div>
             <div className={cx(styles.item)}>
               <dt className={cx(styles.label)}>
-                {renderLabel(
-                  dict('PC.Pages.AppProjectDetail.agentPort'),
-                  true,
-                )}
+                {renderLabel(dict('PC.Pages.AppProjectDetail.agentPort'), true)}
               </dt>
               <dd className={cx(styles.value)}>
                 <Form.Item

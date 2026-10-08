@@ -215,18 +215,18 @@ export function useWorkspaceDirectoryFiles(
           0,
           (directoryLoadingCountRef.current.get(requestPath) || 1) - 1,
         );
-          if (loadingCount > 0) {
-            directoryLoadingCountRef.current.set(requestPath, loadingCount);
-          } else {
-            directoryLoadingCountRef.current.delete(requestPath);
-            inflightDirectoryRequestsRef.current.delete(requestPath);
-            setLoadingDirectoryPaths((previous) => {
-              if (!previous.has(requestPath)) return previous;
-              const next = new Set(previous);
-              next.delete(requestPath);
-              return next;
-            });
-          }
+        if (loadingCount > 0) {
+          directoryLoadingCountRef.current.set(requestPath, loadingCount);
+        } else {
+          directoryLoadingCountRef.current.delete(requestPath);
+          inflightDirectoryRequestsRef.current.delete(requestPath);
+          setLoadingDirectoryPaths((previous) => {
+            if (!previous.has(requestPath)) return previous;
+            const next = new Set(previous);
+            next.delete(requestPath);
+            return next;
+          });
+        }
         activeRequestCountRef.current = Math.max(
           0,
           activeRequestCountRef.current - 1,

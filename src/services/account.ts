@@ -43,6 +43,15 @@ export async function apiSendCode(
   });
 }
 
+// 获取图形验证码（租户开启 openImageCaptcha 时可用；image 为 base64 data uri）
+export async function apiImageCaptcha(): Promise<
+  RequestResponse<{ captchaId: string; image: string }>
+> {
+  return request('/api/user/captcha/image', {
+    method: 'GET',
+  });
+}
+
 // 验证码登录/注册接口
 export async function apiLoginCode(
   data: CodeLogin,

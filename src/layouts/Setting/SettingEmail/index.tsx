@@ -1,3 +1,6 @@
+import ImageCaptcha, {
+  useImageCaptcha,
+} from '@/components/business-component/ImageCaptcha';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import useCountDown from '@/hooks/useCountDown';
 import useSendCode from '@/hooks/useSendCode';
@@ -23,6 +26,9 @@ const SettingEmail: React.FC = () => {
   const { runSendCode } = useSendCode();
   const [form] = Form.useForm<BindEmailParams>();
   const { userInfo, setUserInfo } = useModel('userInfo');
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const needImageCaptcha = tenantConfigInfo?.openImageCaptcha === 1;
+  const sendCaptcha = useImageCaptcha(needImageCaptcha);
 
   // 获取当前登录方式是否为手机登录,如果是手机登录,则为true,否则为false
   const authType = localStorage.getItem('AUTH_TYPE') === '1';
@@ -63,12 +69,24 @@ const SettingEmail: React.FC = () => {
 
   const handleSendCode = () => {
     const fieldName: 'phone' | 'email' = authType ? 'email' : 'phone';
-    form.validateFields([fieldName]).then((values) => {
+    form.validateFields([fieldName]).then(async (values) => {
+      const imageCaptcha = sendCaptcha.take();
+      if (!imageCaptcha) return;
       handleCount();
-      runSendCode({
-        type: SendCodeEnum.BIND_EMAIL,
-        [fieldName]: values[fieldName],
-      });
+      try {
+        await runSendCode({
+          type: SendCodeEnum.BIND_EMAIL,
+          [fieldName]: values[fieldName],
+          ...imageCaptcha,
+        });
+      } catch {
+        // 发送失败可立即重发（提示由请求层给出）
+        setCountDown(0);
+        onClearTimer();
+      } finally {
+        // 图形验证码一次性
+        sendCaptcha.refresh();
+      }
     });
   };
 
@@ -136,6 +154,11 @@ const SettingEmail: React.FC = () => {
             }
           />
         </Form.Item>
+        {needImageCaptcha && (
+          <Form.Item label={dict('PC.Components.ImageCaptcha.label')}>
+            <ImageCaptcha {...sendCaptcha.inputProps} />
+          </Form.Item>
+        )}
         <Form.Item
           name="code"
           label={dict('PC.Layouts.Setting.SettingEmail.verificationCode')}

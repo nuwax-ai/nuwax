@@ -40,6 +40,10 @@ type MockConversationState = {
   replayPendingCount: number;
   /** 仅开发验收：按会话记录实际 HTTP SSE，支持断流故障注入。 */
   activeStreams: Set<any>;
+  /** 仅 responseDrivenAsk 场景使用。每次 chat 回应关联当前唯一待答题。 */
+  askIndex: number;
+  askStarted: boolean;
+  askResponses: Array<{ requestId: string; action: string; text: string }>;
 };
 
 const createState = (speed = 1): MockConversationState => ({
@@ -52,6 +56,9 @@ const createState = (speed = 1): MockConversationState => ({
   chatConnectionRound: 0,
   replayPendingCount: 0,
   activeStreams: new Set(),
+  askIndex: 0,
+  askStarted: false,
+  askResponses: [],
 });
 
 /** conversationId → 回放状态（惰性初始化）；无 id 的调用统一落默认键 */
@@ -212,6 +219,152 @@ const replay = (
   next();
 };
 
+/** Ask 回应在生产中是普通 chat 文本，没有额外的 notify-resolved/requestId 字段。
+ * 专项钉中文，按当前唯一待答题关联；不臆造结构化回应端点。 */
+const currentAsk = (state: MockConversationState) =>
+  stateScenario(state).responseDrivenAsk?.[state.askIndex];
+const askInput = (event?: MockSseEvent) =>
+  (event?.data?.result as { data?: Record<string, any> } | undefined)?.data;
+
+const persistQuestion = (state: MockConversationState, event: MockSseEvent) => {
+  const input = askInput(event)!;
+  state.messages.push({
+    id: event.requestId,
+    role: 'ASSISTANT',
+    messageType: 'ASSISTANT',
+    index: state.messages.length,
+    type: 'CHAT',
+    status: 'complete',
+    text: '',
+    time: Date.now(),
+    // 刷新使用生产历史 hydrate 路径，而非直接预制 mcpAskInteractions。
+    componentExecutedList: [
+      {
+        executeId: input.requestId,
+        status: 'FINISHED',
+        result: { data: input, status: 'FINISHED' },
+      },
+    ],
+  });
+};
+
+const finishAsk = (state: MockConversationState, res: any) => {
+  const requestId = `mock-chatbot-result-${state.askResponses.length}`;
+  const text = '问答已收到回应，同一会话继续完成。';
+  state.messages.push({
+    id: requestId,
+    role: 'ASSISTANT',
+    messageType: 'ASSISTANT',
+    index: state.messages.length,
+    type: 'CHAT',
+    status: 'complete',
+    text,
+    time: Date.now(),
+  });
+  writeEvent(state, res, {
+    eventType: 'MESSAGE',
+    requestId,
+    data: {
+      role: 'ASSISTANT',
+      type: 'CHAT',
+      text,
+      finished: true,
+    },
+  });
+  writeEvent(state, res, {
+    eventType: 'FINAL_RESULT',
+    requestId,
+    data: { success: true },
+  });
+  [...state.activeStreams].forEach((stream) => stream.end());
+};
+
+const replayAsk = (state: MockConversationState, res: any) => {
+  const event = currentAsk(state);
+  if (!event || ['CANCEL', 'COMPLETE'].includes(state.taskStatus)) {
+    // 已答刷新只恢复终态，不重播历史 Ask 或重复追加结果快照。
+    const final = [...state.emittedEvents]
+      .reverse()
+      .find((e) => e.eventType === 'FINAL_RESULT');
+    if (final) res.write(`data:${JSON.stringify(final)}\n\n`);
+    res.end();
+    return;
+  }
+  writeEvent(state, res, event);
+  state.replayPendingCount += 1;
+  res.on('close', () => {
+    state.replayPendingCount = Math.max(0, state.replayPendingCount - 1);
+  });
+};
+
+const handleAskChat = (state: MockConversationState, req: any, res: any) => {
+  const text = String(req.body?.message || '');
+  if (!state.askStarted) {
+    state.askStarted = true;
+    state.taskStatus = 'EXECUTING';
+    state.messages.push({
+      id: 'mock-chatbot-start',
+      role: 'USER',
+      messageType: 'USER',
+      index: state.messages.length,
+      type: 'CHAT',
+      status: 'complete',
+      text,
+      time: Date.now(),
+    });
+    persistQuestion(state, currentAsk(state)!);
+    openSse(state, res);
+    replayAsk(state, res);
+    return;
+  }
+  const event = currentAsk(state);
+  if (!event || ['CANCEL', 'COMPLETE'].includes(state.taskStatus)) {
+    openSse(state, res);
+    replayAsk(state, res);
+    return;
+  }
+  const input = askInput(event)!;
+  const title = input.title;
+  const action = text.startsWith(`我已填写「${title}」`)
+    ? 'submit'
+    : text.startsWith(`我取消了「${title}」`)
+    ? 'cancel'
+    : text.startsWith(`我跳过了「${title}」`)
+    ? 'skip'
+    : null;
+  if (!action || (action === 'skip' && input.ui.allowSkip !== true)) {
+    res.status(400).json({
+      code: 'MOCK_ASK_RESPONSE_INVALID',
+      message: '当前题需要有效回应',
+    });
+    return;
+  }
+  state.askResponses.push({ requestId: input.requestId, action, text });
+  state.messages.push({
+    id: `mock-chatbot-reply-${state.askResponses.length}`,
+    index: state.messages.length,
+    role: 'USER',
+    messageType: 'USER',
+    type: 'CHAT',
+    status: 'complete',
+    text,
+    time: Date.now(),
+  });
+  state.askIndex += 1;
+  openSse(state, res);
+  // 同一会话的旧流不再承载后续题，刷新/回应的新流接管。
+  [...state.activeStreams]
+    .filter((stream) => stream !== res)
+    .forEach((stream) => stream.end());
+  // 取消的是当前问题，仍是普通 chat 回应；不模拟整任务 stop/CANCEL。
+  if (!currentAsk(state)) {
+    finishAsk(state, res);
+  } else {
+    persistQuestion(state, currentAsk(state)!);
+    replayAsk(state, res);
+  }
+};
+
 export default {
   'POST /api/mock/conversation/scenario': (req: any, res: any) => {
     const requested = String(req.body?.scenario || 'NORMAL_SINGLE');
@@ -247,9 +400,11 @@ export default {
           verifies: scenario.verifies,
           transport: scenario.transport,
           entry: scenario.entry,
-          hasFinalResult: scenario.events.some(
-            (event) => event.eventType === 'FINAL_RESULT',
-          ),
+          agentType: scenario.agentType,
+          responseDriven: Boolean(scenario.responseDrivenAsk),
+          hasFinalResult:
+            Boolean(scenario.responseDrivenAsk) ||
+            scenario.events.some((event) => event.eventType === 'FINAL_RESULT'),
           // 真实时长场景（60~154s）：E2E 仅在 E2E_REAL_TIMING=1 时纳入矩阵
           realTiming: Boolean(scenario.realTiming),
         })),
@@ -274,6 +429,24 @@ export default {
         // 以此为准而非计数比较
         replaySettled: state.replayPendingCount === 0,
         activeStreamCount: state.activeStreams.size,
+        ...(scenario.responseDrivenAsk
+          ? {
+              askState: {
+                waiting:
+                  state.askStarted &&
+                  state.taskStatus === 'EXECUTING' &&
+                  Boolean(currentAsk(state)),
+                currentRequestId:
+                  state.askStarted && state.taskStatus === 'EXECUTING'
+                    ? askInput(currentAsk(state))?.requestId ?? null
+                    : null,
+                answeredRequestIds: state.askResponses.map(
+                  (reply) => reply.requestId,
+                ),
+                responses: state.askResponses,
+              },
+            }
+          : {}),
       }),
     );
   },
@@ -304,6 +477,10 @@ export default {
   'POST /api/agent/conversation/chat': (req: any, res: any) => {
     const state = getState(resolveKey(req.body?.conversationId));
     const scenario = stateScenario(state);
+    if (scenario.responseDrivenAsk) {
+      handleAskChat(state, req, res);
+      return;
+    }
     openSse(state, res);
     state.chatConnectionRound += 1;
     state.taskStatus = 'EXECUTING';
@@ -329,6 +506,10 @@ export default {
     const state = getState(resolveKey(req.params?.id));
     const scenario = stateScenario(state);
     openSse(state, res);
+    if (scenario.responseDrivenAsk) {
+      replayAsk(state, res);
+      return;
+    }
     replay(state, scenario, res, { sub: true });
   },
 
@@ -391,7 +572,7 @@ export default {
           id: 44,
           name: '会话验收 Mock Agent',
           icon: '',
-          type: 'TaskAgent',
+          type: scenario.agentType ?? 'TaskAgent',
           openSuggest: 'Close',
           manualComponents: [],
           variables: [],

@@ -1,20 +1,39 @@
 import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
+import ImageCaptcha, {
+  imageCaptchaRules,
+  type ImageCaptchaRef,
+  type ImageCaptchaValue,
+} from '@/components/business-component/ImageCaptcha';
 import SiteFooter from '@/components/SiteFooter';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
 import { apiLogin } from '@/services/account';
+import { apiAuthIdpLoginList } from '@/services/authIdp';
 import { dict, initI18n, syncLangFromUserInfo } from '@/services/i18nRuntime';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { UserService } from '@/services/userService';
 import { LoginTypeEnum } from '@/types/enums/login';
+import type { AuthIdpLoginItem } from '@/types/interfaces/authIdp';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
+import {
+  filterIdpByUa,
+  IDP_RETURN_PATH_KEY,
+  resolveIdpRedirect,
+  shouldAutoRedirect,
+} from '@/utils/authIdp';
 import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { finishBusinessLogin } from '@/utils/businessAuth';
 import { isValidEmail, isValidPhone, validatePassword } from '@/utils/common';
 import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
+import {
+  completeDesktopIdpReturn,
+  startIdpNavigation,
+} from '@/utils/idpNavigation';
 import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
+  Alert,
   Button,
   Checkbox,
   ConfigProvider,
@@ -33,6 +52,7 @@ import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useSearchParams } from 'umi';
 import BasicLayout from './BasicLayout';
+import IdpLoginButtons from './IdpLoginButtons';
 import styles from './index.less';
 import LoginLangSwitcher from './LoginLangSwitcher';
 import SiteProtocol from './SiteProtocol';
@@ -44,6 +64,12 @@ type SegmentedItemType = { label: React.ReactNode; value: string };
 const cx = classNames.bind(styles);
 
 const { confirm } = Modal;
+
+/** 图形验证码表单值 → 接口参数（未开启时表单无此字段，返回空对象） */
+const pickImageCaptcha = (value?: ImageCaptchaValue) =>
+  value?.captchaId
+    ? { captchaId: value.captchaId, captchaCode: value.captchaCode }
+    : {};
 
 /**
  * 智能溢出检测 Tooltip 组件
@@ -104,11 +130,13 @@ const Login: React.FC = () => {
   const captchaPopupWatcherTimerRef = useRef<number | null>(null);
   const captchaDelayTimerRef = useRef<number | null>(null);
   const captchaRef = useRef<AliyunCaptchaRef>(null);
+  const imageCaptchaRef = useRef<ImageCaptchaRef>(null);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
+  const needImageCaptcha = tenantConfigInfo?.openImageCaptcha === 1;
 
   // ---- 企业登录（仅 nuwaclaw/nuwax 壳内可见）：切换客户端后端域名并重新初始化 ----
   const [enterpriseOpen, setEnterpriseOpen] = useState<boolean>(false);
@@ -206,6 +234,8 @@ const Login: React.FC = () => {
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
         // SDK 的 refresh() 在 deviceToken（无弹出 DOM）模式下会崩溃并触发新 callback 形成死循环
+        // 图形验证码按一次性处理：失败后换一张
+        imageCaptchaRef.current?.refresh();
       },
     },
   );
@@ -280,6 +310,99 @@ const Login: React.FC = () => {
     // 重载不重置，登出/闪断后残留 true 会把按钮带进登录页（无桥自动 no-op）。
     hostBridge.layout.setSecondMenuAvailable(false);
   }, []);
+
+  // ---- 三方登录（CAS / OAuth2 / 微信）：桌面回调先同步受信 Cookie 会话 ----
+  const [idpItems, setIdpItems] = useState<AuthIdpLoginItem[]>([]);
+  // 列表返回前不渲染表单，避免自动跳转前表单闪一下
+  const [idpReady, setIdpReady] = useState(false);
+  const [idpNavigating, setIdpNavigating] = useState(false);
+  const idpError = searchParams.get('idpError');
+
+  const getIdpRedirect = () =>
+    resolveIdpRedirect(
+      searchParams.get('redirect'),
+      sessionStorage.getItem(IDP_RETURN_PATH_KEY),
+    );
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadIdps = async () => {
+      const returned = await completeDesktopIdpReturn();
+      if (cancelled || returned === 'started' || returned === 'cancelled')
+        return;
+      if (returned === 'failed') {
+        message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
+        setIdpReady(true);
+        return;
+      }
+      return (
+        apiAuthIdpLoginList()
+          .then(async (res) => {
+            if (cancelled || res?.code !== SUCCESS_CODE || !res.data) return;
+            const { items = [], autoRedirectIdpId } = res.data;
+            if (
+              shouldAutoRedirect({
+                autoRedirectIdpId,
+                search: window.location.search,
+              })
+            ) {
+              const result = await startIdpNavigation({
+                providerId: autoRedirectIdpId as number,
+                redirect: getIdpRedirect(),
+                replace: true,
+              });
+              if (!cancelled && result === 'failed') {
+                setIdpItems(filterIdpByUa(items, navigator.userAgent));
+                message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
+              }
+              return;
+            }
+            setIdpItems(filterIdpByUa(items, navigator.userAgent));
+          })
+          // 列表失败回落普通登录
+          .catch(() => undefined)
+          .finally(() => {
+            if (!cancelled) setIdpReady(true);
+          })
+      );
+    };
+    void loadIdps().catch(() => {
+      if (!cancelled) setIdpReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const startIdpLogin = (item: AuthIdpLoginItem) => {
+    if (idpNavigating) return;
+    const go = async () => {
+      setIdpNavigating(true);
+      const result = await startIdpNavigation({
+        providerId: item.id,
+        redirect: getIdpRedirect(),
+      });
+      if (result !== 'started') setIdpNavigating(false);
+      if (result === 'failed')
+        message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
+    };
+    if (checked) {
+      void go().catch(() => setIdpNavigating(false));
+      return;
+    }
+    // 与账号登录一致：未勾选协议先确认
+    confirm({
+      title: dict('PC.Pages.Login.serviceAgreementTitle'),
+      icon: <ExclamationCircleFilled />,
+      content: <SiteProtocol />,
+      okText: dict('PC.Pages.Login.serviceAgreementAgree'),
+      cancelText: dict('PC.Pages.Login.serviceAgreementDisagree'),
+      onOk() {
+        setChecked(true);
+        return go();
+      },
+    });
+  };
 
   useEffect(() => {
     return () => {
@@ -361,7 +484,8 @@ const Login: React.FC = () => {
       'preview:',
       captchaVerifyParam?.substring(0, 100),
     );
-    const { phoneOrEmail, password } = form.getFieldsValue() || {};
+    const { phoneOrEmail, password, imageCaptcha } =
+      form.getFieldsValue() || {};
     const normalizedCaptchaParam =
       typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
 
@@ -387,6 +511,7 @@ const Login: React.FC = () => {
         phoneOrEmail,
         password,
         captchaVerifyParam: normalizedCaptchaParam,
+        ...pickImageCaptcha(imageCaptcha),
       });
       // onSuccess 处理导航，登录成功
       return { captchaResult: true, bizResult: true };
@@ -403,7 +528,11 @@ const Login: React.FC = () => {
   const handlerCodeLogin = async (
     captchaVerifyParam: string,
   ): Promise<{ captchaResult: boolean; bizResult: boolean }> => {
-    const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
+    const {
+      phoneOrEmail,
+      areaCode = '86',
+      imageCaptcha,
+    } = form.getFieldsValue() || {};
     const normalizedCaptchaParam =
       typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
 
@@ -433,6 +562,8 @@ const Login: React.FC = () => {
         areaCode,
         authType: tenantConfigInfo.authType,
         captchaVerifyParam: normalizedCaptchaParam,
+        // 首次发码沿用登录页输入的图形验证码
+        ...pickImageCaptcha(imageCaptcha),
       });
     }, 0);
     return { captchaResult: true, bizResult: true };
@@ -639,8 +770,17 @@ const Login: React.FC = () => {
       <LoginLangSwitcher />
       <BasicLayout>
         <div>
-          {loadEnd && (
+          {loadEnd && idpReady && (
             <div className={cx(styles['login-form-box'])}>
+              {idpError && (
+                <Alert
+                  type="error"
+                  showIcon
+                  closable
+                  className={cx(styles['idp-error'])}
+                  message={idpError}
+                />
+              )}
               <Segmented
                 className={cx(styles.segmented)}
                 options={options}
@@ -728,6 +868,14 @@ const Login: React.FC = () => {
                     />
                   </Form.Item>
                 )}
+                {needImageCaptcha && (
+                  <Form.Item name="imageCaptcha" rules={imageCaptchaRules()}>
+                    <ImageCaptcha
+                      ref={imageCaptchaRef}
+                      inputClassName={cx(styles.input)}
+                    />
+                  </Form.Item>
+                )}
 
                 <Form.Item className={cx(styles.login)}>
                   <Button
@@ -763,6 +911,12 @@ const Login: React.FC = () => {
                   </div>
                 </Form.Item>
               </Form>
+
+              <IdpLoginButtons
+                items={idpItems}
+                onSelect={startIdpLogin}
+                disabled={idpNavigating}
+              />
 
               {/* 企业登录：仅商业桌面宿主可见——切换客户端后端域名并重新初始化
                   （壳停服务 + webview 重载到新域登录页）；社区宿主与浏览器同形态不展示 */}
