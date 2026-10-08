@@ -11,11 +11,8 @@ import type {
   UserIdentityInfo,
 } from '@/types/interfaces/authIdp';
 import { modalConfirm } from '@/utils/ant-custom';
-import {
-  buildIdentityBindUrl,
-  filterIdpByUa,
-  getBusinessBase,
-} from '@/utils/authIdp';
+import { filterIdpByUa } from '@/utils/authIdp';
+import { startIdpNavigation } from '@/utils/idpNavigation';
 import { Alert, Button, Empty, List, message, Spin, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -128,9 +125,21 @@ const AccountBind: React.FC = () => {
 
   const handleBind = (provider: AuthIdpLoginItem) => {
     if (!canOperate.current) return;
-    window.location.assign(
-      buildIdentityBindUrl(getBusinessBase(), provider.id, buildReturnPath()),
-    );
+    canOperate.current = false;
+    void startIdpNavigation({
+      providerId: provider.id,
+      mode: 'bind',
+      redirect: buildReturnPath(),
+    })
+      .then((result) => {
+        if (!mounted.current) return;
+        if (result !== 'started') canOperate.current = true;
+        if (result === 'failed')
+          message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
+      })
+      .catch(() => {
+        if (mounted.current) canOperate.current = true;
+      });
   };
 
   return (

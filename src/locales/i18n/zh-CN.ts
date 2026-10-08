@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_CN: SystemLangMap = {
+  "PC.Pages.Login.hostSessionSyncFailed": "客户端登录会话同步失败，请重试或升级客户端",
   "PC.Layouts.Setting.AccountBind.loadFailed": "账号绑定信息加载失败，请刷新重试",
   "PC.Routes.licenseConfig": "License 授权",
   "PC.Pages.Error403.forbidden": "你没有权限访问此页面",

@@ -180,14 +180,14 @@
   - `shouldAutoRedirect({ autoRedirectIdpId, search, isDesktop })`。
 - **登录页取数**：进页并行拉 tenant config（已有逻辑）和 idp 列表。idp 列表用 `skipErrorHandler`，失败时静默。两者都就绪才渲染表单，避免跳转前表单闪一下。
 - **自动跳转**：
-  - 条件：有 `autoRedirectIdpId`，且 URL 中无 `local`、无 `idpError`，且不是桌面宿主。
+  - 条件：有 `autoRedirectIdpId`，且 URL 中无 `local`、无 `idpError`，桌面与 Web 共用此规则。
   - 满足时用 `location.replace` 跳到 authorize 地址。
 - **点击三方按钮**：未勾选协议时，复用现有的协议确认弹窗，确认后再整页跳转。
 - **错误展示**：`idpError` 用 `Alert` 显示纯文本。
-- **桌面宿主**（`isDesktopHost()`）：不拉列表、不显示按钮、不自动跳转（Q9 默认）。
+- **桌面宿主**：10.08 C2 已确认支持；列表、按钮与租户自动跳转共用 Web 规则，授权/回调按 `specs/release0930-desktop-idp.md` 处理受信 Cookie 与 direct/gateway 返回。
 - **会话过期后的回跳**：线上浏览器会话过期走 `redirectToLogin(-1)`，带回的 redirect 是数字。整页跳 IdP 后数字偏移失效，所以 `redirectToLogin` 收到数字时顺手把当前路径写进 sessionStorage，供 `resolveIdpRedirect` 使用。改动约 5 行。
 - **`navigateAfterLogin`**：redirect 以 `/auth/`、`/api/` 开头时拼 `BASE_URL` 整页跳转，用于「绑定已有账号」登录后回到后端中间页。其他情况不变，也不放开任意绝对地址（防开放重定向）。
-- **登出**：落点改为 `/login?local=1`，与后端 `/api/auth/idp/logout` 的落点一致，防止登出后又被自动跳转带回 IdP。是否整页走后端 logout 做 CAS 单点登出（SLO）见 Q6，改成那样只需一行。
+- **登出**：落点改为 `/login?local=1`，与后端 `/api/auth/idp/logout` 的落点一致，防止登出后又被自动跳转带回 IdP。10.08 C1 已确认继续原有 `/api/user/logout`，不联动 CAS。
 
 ### F2c 设置 › 账号绑定
 
@@ -403,5 +403,5 @@
 **仍待确认**（intent 开放问题中影响上线的项）：
 
 - Q6：登出是否整页走后端 `/api/auth/idp/logout` 做 CAS 单点登出（现为落 `/login?local=1`）。
-- Q9：桌面客户端本期不接三方登录（现为隐藏）。
+- Q9 / C2：10.08 已确认本期支持桌面三方登录。
 - Q13：图形验证码是否也作用于设置页的重置密码、绑定邮箱发码（现为作用）。

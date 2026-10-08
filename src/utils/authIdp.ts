@@ -97,18 +97,18 @@ export const buildIdentityBindUrl = (
 /**
  * 是否直接跳转 IdP（不展示登录表单）。
  * 逃生门：?local 显示普通登录；带 idpError 说明刚从 IdP 失败回来，再跳会死循环；
- * 桌面客户端本期不接三方登录。
+ * 桌面与浏览器共用租户自动跳转规则。
  */
 export function shouldAutoRedirect(options: {
   autoRedirectIdpId?: number | null;
   search: string;
-  isDesktop: boolean;
+  isDesktop?: boolean;
 }): boolean {
   const params = new URLSearchParams(options.search);
   return (
     !!options.autoRedirectIdpId &&
     !params.has('local') &&
     !params.has('idpError') &&
-    !options.isDesktop
+    !params.has('desktopIdpReturn')
   );
 }

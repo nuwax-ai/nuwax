@@ -126,7 +126,7 @@ describe('shouldAutoRedirect', () => {
     );
   });
 
-  it('未配置、?local、带 idpError、桌面客户端均不跳', () => {
+  it('未配置、?local、带 idpError 或桌面回跳标记均不跳', () => {
     expect(shouldAutoRedirect({ ...base, autoRedirectIdpId: null })).toBe(
       false,
     );
@@ -135,6 +135,9 @@ describe('shouldAutoRedirect', () => {
     expect(
       shouldAutoRedirect({ ...base, search: '?idpError=%E5%A4%B1%E8%B4%A5' }),
     ).toBe(false);
-    expect(shouldAutoRedirect({ ...base, isDesktop: true })).toBe(false);
+    expect(shouldAutoRedirect({ ...base, search: '?desktopIdpReturn=1' })).toBe(
+      false,
+    );
+    expect(shouldAutoRedirect({ ...base, isDesktop: true })).toBe(true);
   });
 });

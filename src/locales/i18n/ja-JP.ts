@@ -1,6 +1,7 @@
 import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const JA_JP: SystemLangMap = {
+  "PC.Pages.Login.hostSessionSyncFailed": "デスクトップのログイン状態を同期できませんでした。再試行するか、クライアントを更新してください。",
   "PC.Layouts.Setting.AccountBind.loadFailed": "連携アカウント情報を読み込めません。更新して再試行してください。",
   "PC.Routes.licenseConfig": "ライセンス",
   "PC.Pages.Error403.forbidden": "このページにアクセスする権限がありません",

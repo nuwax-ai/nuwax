@@ -17,9 +17,7 @@ import { LoginTypeEnum } from '@/types/enums/login';
 import type { AuthIdpLoginItem } from '@/types/interfaces/authIdp';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import {
-  buildIdpAuthorizeUrl,
   filterIdpByUa,
-  getBusinessBase,
   IDP_RETURN_PATH_KEY,
   resolveIdpRedirect,
   shouldAutoRedirect,
@@ -28,6 +26,10 @@ import { navigateToAuthUrl } from '@/utils/authNavigation';
 import { finishBusinessLogin } from '@/utils/businessAuth';
 import { isValidEmail, isValidPhone, validatePassword } from '@/utils/common';
 import { hostBridge, isDesktopHost } from '@/utils/hostBridge';
+import {
+  completeDesktopIdpReturn,
+  startIdpNavigation,
+} from '@/utils/idpNavigation';
 import { navigateAfterLogin, replaceLoginStep } from '@/utils/loginNavigation';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
@@ -309,10 +311,11 @@ const Login: React.FC = () => {
     hostBridge.layout.setSecondMenuAvailable(false);
   }, []);
 
-  // ---- 三方登录（CAS / OAuth2 / 微信）：桌面客户端本期不接 ----
+  // ---- 三方登录（CAS / OAuth2 / 微信）：桌面回调先同步受信 Cookie 会话 ----
   const [idpItems, setIdpItems] = useState<AuthIdpLoginItem[]>([]);
   // 列表返回前不渲染表单，避免自动跳转前表单闪一下
-  const [idpReady, setIdpReady] = useState<boolean>(isDesktopHost());
+  const [idpReady, setIdpReady] = useState(false);
+  const [idpNavigating, setIdpNavigating] = useState(false);
   const idpError = searchParams.get('idpError');
 
   const getIdpRedirect = () =>
@@ -322,47 +325,69 @@ const Login: React.FC = () => {
     );
 
   useEffect(() => {
-    if (isDesktopHost()) return;
     let cancelled = false;
-    apiAuthIdpLoginList()
-      .then((res) => {
-        if (cancelled || res?.code !== SUCCESS_CODE || !res.data) return;
-        const { items = [], autoRedirectIdpId } = res.data;
-        if (
-          shouldAutoRedirect({
-            autoRedirectIdpId,
-            search: window.location.search,
-            isDesktop: false,
+    const loadIdps = async () => {
+      const returned = await completeDesktopIdpReturn();
+      if (cancelled || returned === 'started' || returned === 'cancelled')
+        return;
+      if (returned === 'failed') {
+        message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
+        setIdpReady(true);
+        return;
+      }
+      return (
+        apiAuthIdpLoginList()
+          .then(async (res) => {
+            if (cancelled || res?.code !== SUCCESS_CODE || !res.data) return;
+            const { items = [], autoRedirectIdpId } = res.data;
+            if (
+              shouldAutoRedirect({
+                autoRedirectIdpId,
+                search: window.location.search,
+              })
+            ) {
+              const result = await startIdpNavigation({
+                providerId: autoRedirectIdpId as number,
+                redirect: getIdpRedirect(),
+                replace: true,
+              });
+              if (!cancelled && result === 'failed') {
+                setIdpItems(filterIdpByUa(items, navigator.userAgent));
+                message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
+              }
+              return;
+            }
+            setIdpItems(filterIdpByUa(items, navigator.userAgent));
           })
-        ) {
-          window.location.replace(
-            buildIdpAuthorizeUrl(
-              getBusinessBase(),
-              autoRedirectIdpId as number,
-              getIdpRedirect(),
-            ),
-          );
-          return;
-        }
-        setIdpItems(filterIdpByUa(items, navigator.userAgent));
-      })
-      // 列表失败回落普通登录
-      .catch(() => undefined)
-      .finally(() => {
-        if (!cancelled) setIdpReady(true);
-      });
+          // 列表失败回落普通登录
+          .catch(() => undefined)
+          .finally(() => {
+            if (!cancelled) setIdpReady(true);
+          })
+      );
+    };
+    void loadIdps().catch(() => {
+      if (!cancelled) setIdpReady(true);
+    });
     return () => {
       cancelled = true;
     };
   }, []);
 
   const startIdpLogin = (item: AuthIdpLoginItem) => {
-    const go = () =>
-      window.location.assign(
-        buildIdpAuthorizeUrl(getBusinessBase(), item.id, getIdpRedirect()),
-      );
+    if (idpNavigating) return;
+    const go = async () => {
+      setIdpNavigating(true);
+      const result = await startIdpNavigation({
+        providerId: item.id,
+        redirect: getIdpRedirect(),
+      });
+      if (result !== 'started') setIdpNavigating(false);
+      if (result === 'failed')
+        message.error(dict('PC.Pages.Login.hostSessionSyncFailed'));
+    };
     if (checked) {
-      go();
+      void go().catch(() => setIdpNavigating(false));
       return;
     }
     // 与账号登录一致：未勾选协议先确认
@@ -374,7 +399,7 @@ const Login: React.FC = () => {
       cancelText: dict('PC.Pages.Login.serviceAgreementDisagree'),
       onOk() {
         setChecked(true);
-        go();
+        return go();
       },
     });
   };
@@ -887,7 +912,11 @@ const Login: React.FC = () => {
                 </Form.Item>
               </Form>
 
-              <IdpLoginButtons items={idpItems} onSelect={startIdpLogin} />
+              <IdpLoginButtons
+                items={idpItems}
+                onSelect={startIdpLogin}
+                disabled={idpNavigating}
+              />
 
               {/* 企业登录：仅商业桌面宿主可见——切换客户端后端域名并重新初始化
                   （壳停服务 + webview 重载到新域登录页）；社区宿主与浏览器同形态不展示 */}

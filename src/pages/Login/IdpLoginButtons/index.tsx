@@ -11,6 +11,7 @@ interface IdpLoginButtonsProps {
   /** 已按 UA 过滤后的可用登录方式 */
   items: AuthIdpLoginItem[];
   onSelect: (item: AuthIdpLoginItem) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -19,6 +20,7 @@ interface IdpLoginButtonsProps {
 const IdpLoginButtons: React.FC<IdpLoginButtonsProps> = ({
   items,
   onSelect,
+  disabled,
 }) => {
   if (!items.length) return null;
   return (
@@ -30,6 +32,7 @@ const IdpLoginButtons: React.FC<IdpLoginButtonsProps> = ({
         {items.map((item) => (
           <Button
             key={item.id}
+            disabled={disabled}
             className={cx(styles.item)}
             icon={
               item.icon ? (

@@ -4,7 +4,6 @@ import { dict } from '@/services/i18nRuntime';
 import { getTenantThemeConfig } from '@/services/tenant';
 import { SettingActionEnum } from '@/types/enums/menus';
 import { TenantThemeConfig } from '@/types/tenant';
-import { isDesktopHost } from '@/utils/hostBridge';
 import { CloseOutlined } from '@ant-design/icons';
 import { Button, message, Modal } from 'antd';
 import classNames from 'classnames';
@@ -55,7 +54,7 @@ const Setting: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!openSetting || isDesktopHost()) return;
+    if (!openSetting) return;
     let cancelled = false;
     Promise.all([
       apiAuthIdpLoginList().catch(() => null),
