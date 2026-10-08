@@ -38,11 +38,11 @@ UnifiedChatSession/components/ChatContentArea  渲染线选择边界（messageRe
 
 - **轮次分组**：优先 requestId 归组（同轮非空 requestId 变化切分），缺失回退 USER 消息边界；列表头部无 USER 前导的 assistant 消息自成一轮（分页半轮/resume）。
 - **节点类型**：保留原子 `reasoning | context | tool | subagent | plan | completed-interaction | unknown`；中间正文 narration 在轨迹展开时原位直出，不受预设/逐类覆盖影响，但随整轮轨迹一起收起。`type=Event` 丢弃（OpenUI render 例外按独立 tool）；无 executeId 的 process 段丢弃（与 V1 null 分支一致）；畸形标签碎片 → unknown。
-- **展示分组**：投影后、预设过滤前将节点编排为 `narration | standalone | tool-group`。连续两条及以上普通工具成组；正文、思考、上下文、Plan、子智能体、已完成交互、OpenUI 和未知节点均切断分组；单工具保持独立。组 ID 固定取首节点 ID，重复执行逐条保留，隐藏边界不会导致前后工具误合并。
+- **展示分组**：投影后、预设过滤前将节点编排为 `narration | standalone | tool-group`。两条及以上普通工具成组，同段思考（包括首尾思考）一并收入组内，展开后按原序展示工具与思考。正文、上下文、Plan、子智能体、已完成交互、OpenUI 和未知节点均切断分组；单工具保持独立。组 ID 固定取首工具 ID，动作与计数仅统计工具，重复执行逐条保留，隐藏边界不会导致前后工具误合并；过滤后不足两条工具时逐项展示。
 - **组语义**：子项存在运行态时组为 running，否则失败优先于完成；组头按首次出现顺序去重显示动作短语。工具展示以协议 `result.kind` / 结构字段优先，组件类型与名称仅作兜底。
 - **最终回答**（三级选择，禁止读 `ConversationInfo.summary`）： ① 最后一条非空 `finalResult.outputText`（剥内嵌标签）② 终态最后一条非空正文段 ③ 无正文只显示停止/错误状态。运行态以末尾正文段为实时回答区。
 - **指标**：工具数 = 非 Plan/Event 的 executeId 去重；消息数 = reasoning+context+completed-interaction（narration 直出不计）；耗时优先 `finalResult.start/endTime`，其次 processing 最早开始/最晚结束，运行态每秒跳动、终态冻结；零工具时头部以「执行过程」开头，缺失指标单独省略。
-- **三层交互**：整轮运行时默认展开且头部只显示「工作中 T」；流式结束时自动收起一次，历史终态轮也默认收起，终态头保留完整指标。当前最后活动工具组默认展开，正文/思考/新组出现时旧组自动收起一次；终态组默认收起。用户手动重开后的状态不会被流式增量重复覆盖，外层收起也不会清空组和单项状态。折叠控件均使用原生 button、`aria-expanded`/`aria-controls` 和可见焦点；无有效详情的事件行为静态元素、不显示假箭头；`prefers-reduced-motion` 下停用动效。
+- **三层交互**：整轮运行时默认展开且头部只显示「工作中 T」；流式结束时自动收起一次，历史终态轮也默认收起，终态头保留完整指标。工具组在 live 与终态均默认收起，只显示一级动作摘要，单条工具直接展示自身摘要；组内工具或思考运行时标题显示扫光，全部结束后停止；正文/新组出现时旧活动组自动收起一次。用户手动重开后的状态不会被流式增量重复覆盖，外层收起也不会清空组和单项状态。折叠控件均使用原生 button、`aria-expanded`/`aria-controls` 和可见焦点；无有效详情的事件行为静态元素、不显示假箭头；`prefers-reduced-motion` 下停用折叠过渡，运行态文字扫光从 2.4 秒降速至 4.8 秒，保留执行中提示。
 - **懒挂载**：三层折叠均为严格条件渲染（`{expanded && ...}`），收起即卸载、再展开重建，非 `display:none` 常驻；终态轮/组默认收起时长会话每轮 DOM 仅剩轨迹头部行。投影数据常驻内存，卸载只影响渲染层（详见 summary 第 7.4 节）。
 - **箭头行为**：三层统一使用细线 `DownOutlined`，收起旋转为 `>`、展开为 `∨`；工具组和单工具在收起态仅 hover/focus 显示，展开态常驻，并紧跟摘要内容。
 - **类型化详情**：终端仅显示 Shell、命令、stdout/stderr 与退出码；文件读取显示路径/行范围/正文；编辑显示文件统计与统一 Diff；搜索/浏览器显示查询、标题、URL 和摘要；Skill 渲染 Markdown；Plan/Todo 作为独立状态清单；Generic 仅显示清洗后的输入/结果。原始协议 JSON 不进入普通详情。文件/URL 可通过可选资源回调联动宿主预览，否则保持可复制文本或普通链接。

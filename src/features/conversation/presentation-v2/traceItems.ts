@@ -1,8 +1,8 @@
 /**
  * V2 轨迹展示编排：原子过程节点 → 正文 / 独立节点 / 连续工具组。
  *
- * 分组在预设过滤之前完成，保证被 focused 隐藏的思考、上下文仍能切断
- * 前后工具组；本模块为纯函数，不持有 React 展开状态。
+ * 分组在预设过滤之前完成，同段工具与思考按原顺序收入组内；正文、上下文
+ * 等边界即使被隐藏也仍切断工具组。本模块不持有 React 展开状态。
  */
 import { getToolPresentationKind } from '@/components/MarkdownCustomProcess/toolPresentation';
 import { resolveOpenUiDisplayState } from '@/utils/openUiArtifact';
@@ -167,6 +167,7 @@ export const getToolGroupActionKinds = (
   const seen = new Set<ConversationToolActionKind>();
   const result: ConversationToolActionKind[] = [];
   nodes.forEach((node) => {
+    if (node.kind !== 'tool') return;
     const kind = getNodeToolActionKind(node);
     if (seen.has(kind)) return;
     seen.add(kind);
@@ -188,28 +189,37 @@ export function composeConversationTraceItems(
   running: boolean,
 ): ConversationTraceItem[] {
   const items: ConversationTraceItem[] = [];
-  let pendingTools: ConversationProcessNode[] = [];
+  let pendingNodes: ConversationProcessNode[] = [];
+  let toolCount = 0;
+  let firstToolId = '';
 
   const flushTools = () => {
-    if (!pendingTools.length) return;
-    if (pendingTools.length === 1) {
-      items.push(standaloneItem(pendingTools[0]));
-    } else {
+    if (toolCount > 1) {
       items.push({
         kind: 'tool-group',
-        id: `tool-group:${pendingTools[0].id}`,
-        nodes: pendingTools,
-        actionKinds: getToolGroupActionKinds(pendingTools),
-        status: getToolGroupStatus(pendingTools),
+        id: `tool-group:${firstToolId}`,
+        nodes: pendingNodes,
+        actionKinds: getToolGroupActionKinds(pendingNodes),
+        status: getToolGroupStatus(pendingNodes),
         active: false,
       });
+    } else {
+      items.push(...pendingNodes.map(standaloneItem));
     }
-    pendingTools = [];
+    pendingNodes = [];
+    toolCount = 0;
+    firstToolId = '';
   };
 
   nodes.forEach((node) => {
     if (isGroupableToolNode(node)) {
-      pendingTools.push(node);
+      pendingNodes.push(node);
+      if (!toolCount) firstToolId = node.id;
+      toolCount += 1;
+      return;
+    }
+    if (node.kind === 'reasoning') {
+      pendingNodes.push(node);
       return;
     }
     flushTools();

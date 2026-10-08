@@ -142,6 +142,10 @@ export interface ProjectItem {
   icon?: string | null;
   /** 项目沙箱 ID（上框会话创建携带） */
   sandboxId?: number;
+  /** 项目沙箱类型（云端实际 ID 需映射为选择器哨兵） */
+  sandboxType?: string;
+  /** 项目工作目录（新建任务默认继承） */
+  workspacePath?: string | null;
   /** 项目绑定的调试智能体 ID（全栈默认命中用；契约先行，接口暂不返回） */
   devAgentId?: number;
   /** 当前用户是否项目创建者（上框透传，=== false 判参与者自选沙箱用） */
@@ -1574,6 +1578,8 @@ const ProjectPanel = forwardRef<
         name: project.name,
         icon: project.icon,
         sandboxId: project.sandboxId,
+        sandboxType: project.sandboxType,
+        workspacePath: project.workspacePath,
         devAgentId: project.devAgentId,
         owner: project.owner,
       });

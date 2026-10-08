@@ -1,6 +1,3 @@
-import ImageCaptcha, {
-  useImageCaptcha,
-} from '@/components/business-component/ImageCaptcha';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
@@ -14,7 +11,7 @@ import { customizeRequiredNoStarMark } from '@/utils/form';
 import { Button, Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useModel, useRequest } from 'umi';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -29,9 +26,6 @@ const ResetPassword: React.FC = () => {
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const { runSendCode } = useSendCode();
   const [form] = Form.useForm<ResetPasswordForm>();
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  const needImageCaptcha = tenantConfigInfo?.openImageCaptcha === 1;
-  const sendCaptcha = useImageCaptcha(needImageCaptcha);
 
   const { run, loading } = useRequest(apiResetPassword, {
     manual: true,
@@ -57,14 +51,11 @@ const ResetPassword: React.FC = () => {
   };
 
   const handleSendCode = async () => {
-    const imageCaptcha = sendCaptcha.take();
-    if (!imageCaptcha) return;
     handleCount();
     const authType = localStorage.getItem('AUTH_TYPE') === '1';
     const _params = {
       type: SendCodeEnum.RESET_PASSWORD,
       [authType ? 'phone' : 'email']: phone,
-      ...imageCaptcha,
     };
     try {
       await runSendCode(_params);
@@ -72,9 +63,6 @@ const ResetPassword: React.FC = () => {
       // 发送失败可立即重发（提示由请求层给出）
       setCountDown(0);
       onClearTimer();
-    } finally {
-      // 图形验证码一次性
-      sendCaptcha.refresh();
     }
   };
 
@@ -160,11 +148,6 @@ const ResetPassword: React.FC = () => {
             )}
           />
         </Form.Item>
-        {needImageCaptcha && (
-          <Form.Item label={dict('PC.Components.ImageCaptcha.label')}>
-            <ImageCaptcha {...sendCaptcha.inputProps} />
-          </Form.Item>
-        )}
         <Form.Item
           name="code"
           label={dict('PC.Layouts.Setting.ResetPassword.verificationCode')}

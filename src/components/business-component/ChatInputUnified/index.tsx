@@ -55,6 +55,7 @@ import type {
 import type { SelectedDocInfo } from '@/types/interfaces/repo';
 import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import { getBusinessRequestAuth } from '@/utils/businessAuth';
+import { isRealAgentSandboxBinding } from '@/utils/effectiveSandbox';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
@@ -405,6 +406,23 @@ const ChatInputUnifiedImpl: React.FC<
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
   const supportsAgentCapabilities =
     !agentTypeLoading && agentType !== AgentTypeEnum.ChatBot;
+  const isHomeAgentSandboxBound =
+    atHomePanel && isRealAgentSandboxBinding(agentSandboxId);
+
+  useEffect(() => {
+    // 首页私人智能体以绑定电脑为准，同步目录选择和首条消息使用的受控状态。
+    if (
+      isHomeAgentSandboxBound &&
+      selectedComputerId !== String(agentSandboxId)
+    ) {
+      onComputerSelect?.(String(agentSandboxId));
+    }
+  }, [
+    isHomeAgentSandboxBound,
+    agentSandboxId,
+    selectedComputerId,
+    onComputerSelect,
+  ]);
 
   const {
     createSubscriptionOrder,
@@ -1998,7 +2016,8 @@ const ChatInputUnifiedImpl: React.FC<
                         <ComputerTypeSelector
                           value={
                             agentSandboxId !== undefined &&
-                            agentSandboxId !== null
+                            agentSandboxId !== null &&
+                            (!atHomePanel || isHomeAgentSandboxBound)
                               ? String(agentSandboxId)
                               : conversationInfo?.sandboxServerId !==
                                   undefined &&
@@ -2007,6 +2026,7 @@ const ChatInputUnifiedImpl: React.FC<
                               : selectedComputerId
                           }
                           onChange={(id: string) => {
+                            if (isHomeAgentSandboxBound) return;
                             onComputerSelect?.(id);
                             // 切回云电脑时工作目录失效，一并清空（仅个人电脑生效）
                             if (id === '-1' && workspacePath) {
@@ -2015,12 +2035,18 @@ const ChatInputUnifiedImpl: React.FC<
                           }}
                           disabled={wholeDisabled}
                           agentId={agentId}
-                          fixedSelection={fixedSelection || isSessionActive}
+                          fixedSelection={
+                            fixedSelection ||
+                            isSessionActive ||
+                            isHomeAgentSandboxBound
+                          }
                           unavailable={isSandboxUnavailable}
                           autoSelect={autoSelectComputer}
                           saveOnSelect={saveComputerOnSelect}
                           strictAgentMemory={strictAgentMemory}
-                          isPersonalComputer={isPersonalComputer}
+                          isPersonalComputer={
+                            isPersonalComputer || isHomeAgentSandboxBound
+                          }
                           readonly={readonly}
                           cloudOnly={disablePersonalComputer}
                         />
@@ -2091,8 +2117,8 @@ const ChatInputUnifiedImpl: React.FC<
           )}
           {/**
            * 工作目录栏（wiki #17 / 5-b，原型 env-bar）：输入卡底部灰底栏，
-           * 仅用户自选个人电脑时展示（智能体绑定电脑 agentSandboxId 固定、
-           * 云电脑均不展示）；目录随会话创建记录（sandboxId+workspacePath）。
+           * 首页个人电脑（含私人智能体绑定电脑）可选目录，固定会话与云电脑不展示；
+           * 目录随会话创建记录（sandboxId+workspacePath）。
            * 「默认工作目录」=不传 workspacePath；「打开电脑文件夹」=可视化浏览弹窗。
            */}
           {showWorkspaceDirBar &&

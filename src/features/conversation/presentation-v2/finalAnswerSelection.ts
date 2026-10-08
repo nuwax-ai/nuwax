@@ -36,6 +36,86 @@ export function findLastAnswerCandidateSegment(
   return null;
 }
 
+const isAskName = (name?: string): boolean =>
+  !!name &&
+  (name === '问答' ||
+    /(?:^|[^a-z0-9])nuwax_ask_question(?:$|[^a-z0-9])/i.test(name) ||
+    /^(?:Backend\.Sandbox\.Event\.)?AskQuestion$/i.test(name));
+
+const hasAskMetadata = (item: {
+  name?: string;
+  subEventType?: string | null;
+}): boolean => isAskName(item.name) || item.subEventType === 'ASK_QUESTION';
+
+/** 问答是回答中的用户交互，不能把交互前的正文划入执行过程。 */
+const isAskSegment = (
+  segment: MessageSegment,
+  message: MessageInfo,
+): boolean => {
+  if (segment.type !== 'process') return false;
+  if (isAskName(segment.name)) return true;
+  if (!segment.executeId) return false;
+  const executeId = segment.executeId;
+  if (
+    message.mcpAskInteractions?.some(
+      (interaction) => interaction.toolCallId === executeId,
+    )
+  ) {
+    return true;
+  }
+  return (
+    !!message.processingList?.some(
+      (item) =>
+        item.executeId === executeId &&
+        (hasAskMetadata(item) || isAskName(item.result?.name)),
+    ) ||
+    !!message.componentExecutedList?.some(
+      (item) =>
+        item.result?.executeId === executeId &&
+        (hasAskMetadata(item) || hasAskMetadata(item.result)),
+    ) ||
+    !!message.finalResult?.componentExecuteResults?.some(
+      (item) => item.executeId === executeId && isAskName(item.name),
+    )
+  );
+};
+
+/** 从末段向前跨过问答，保留同一回答的各段；普通工具、思考和未知内容仍是分界。 */
+export function findAnswerSegmentsThroughAsk(
+  messages: MessageInfo[],
+  parsedSegments: MessageSegment[][],
+  tail: AnswerSegmentRef | null,
+): AnswerSegmentRef[] {
+  if (!tail) return [];
+  const refs = [tail];
+  let crossedAsk = false;
+  for (let mi = tail.messageIndex; mi >= 0; mi -= 1) {
+    if (!isAnswerCandidateMessage(messages[mi])) break;
+    const segments = parsedSegments[mi];
+    for (
+      let si =
+        mi === tail.messageIndex ? tail.segmentIndex - 1 : segments.length - 1;
+      si >= 0;
+      si -= 1
+    ) {
+      const segment = segments[si];
+      if (isAskSegment(segment, messages[mi])) {
+        crossedAsk = true;
+      } else if (
+        crossedAsk &&
+        segment.type === 'text' &&
+        segment.content.trim()
+      ) {
+        refs.unshift({ messageIndex: mi, segmentIndex: si });
+        crossedAsk = false;
+      } else {
+        return refs;
+      }
+    }
+  }
+  return refs;
+}
+
 /** 逐段匹配原文，仅允许段与段之间有空白；不能删除任何段内字符。 */
 export function isExactTextAggregation(
   outputText: string,
@@ -131,7 +211,18 @@ export function selectFinalResultAnswerText({
     (index) =>
       (timeline[index] as Extract<MessageSegment, { type: 'text' }>).content,
   );
-  return isExactTextAggregation(outputText, textParts)
-    ? tailSegment.content.trim()
-    : outputText;
+  if (!isExactTextAggregation(outputText, textParts)) return outputText;
+  const answerRefs = findAnswerSegmentsThroughAsk(
+    messages,
+    parsedSegments,
+    tail,
+  );
+  // 只剥离已证明属于过程的前缀，保留问答两侧正文及其原始段间格式。
+  let answerText = outputText.replace(/\r\n?/g, '\n').trim();
+  for (const part of textParts.slice(0, textParts.length - answerRefs.length)) {
+    answerText = answerText
+      .trimStart()
+      .slice(part.replace(/\r\n?/g, '\n').trim().length);
+  }
+  return answerText.trim();
 }

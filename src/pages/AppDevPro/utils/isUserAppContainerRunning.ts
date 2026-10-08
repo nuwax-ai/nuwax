@@ -2,6 +2,8 @@
 const CONTAINER_STATUS_RUNNING = 'running';
 /** 与 UserAppReadinessStatusEnum.Ready 对齐。 */
 const APP_STATUS_READY = 'ready';
+/** 与 UserAppReadinessStatusEnum.Starting 对齐。 */
+const APP_STATUS_STARTING = 'starting';
 /** 与 UserAppReadinessStatusEnum.NotDeployed 对齐。 */
 const APP_STATUS_NOT_DEPLOYED = 'not_deployed';
 
@@ -16,6 +18,33 @@ export function isUserAppContainerRunning(
   data?: { container?: { status?: string } | null } | null,
 ): boolean {
   return data?.container?.status === CONTAINER_STATUS_RUNNING;
+}
+
+/**
+ * 切到线上、且 readiness 里容器已是 running 之后，应用该怎么处理。
+ * ready 直接预览；starting 继续等下一次探测；其余状态调用 start。
+ */
+export type ProdSwitchAppAction = 'preview' | 'wait' | 'start';
+
+/**
+ * 根据应用顶层状态决定切到线上后的下一步。
+ * 运行中必须 status 为 ready 且 ready 为 true，和预览可访问的口径一致。
+ *
+ * @param status 顶层业务状态
+ * @param ready 应用是否可访问
+ * @returns preview 直接预览，wait 继续轮询，start 调用启动接口
+ */
+export function decideProdSwitchAppAction(
+  status?: string | null,
+  ready?: boolean | null,
+): ProdSwitchAppAction {
+  if (status === APP_STATUS_READY && ready === true) {
+    return 'preview';
+  }
+  if (status === APP_STATUS_STARTING) {
+    return 'wait';
+  }
+  return 'start';
 }
 
 /**
@@ -48,9 +77,9 @@ export function canPollUserAppLogs(
 }
 
 /**
- * 电脑重启后是否可以结束等待并重启应用。
+ * 电脑重启后是否可以结束等待。
  * 只有新一轮 readiness 探测结果才作数；定时 tick 会扫到重启前的 running 缓存，不能据此放行。
- * 开发环境还要求顶层 status 为 not_deployed，容器先 running 但应用状态未落到未部署时继续等。
+ * 应用是 starting 还是 ready，由调用方拿到 running 之后再判断，这里不要求未部署。
  *
  * @param source poll 表示本次是接口回包；tick 表示等待方定时巡检
  * @param data 当前保存的探测结果

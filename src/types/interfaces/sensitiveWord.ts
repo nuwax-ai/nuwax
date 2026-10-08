@@ -26,6 +26,8 @@ export interface SensitiveWordInfo {
   category: SensitiveWordCategoryEnum;
   matchType: SensitiveWordMatchTypeEnum;
   action: SensitiveWordActionEnum;
+  /** 替换策略使用的单个字符；旧记录或空值默认 * */
+  replaceChar?: string | null;
   /** 1 启用 / 0 禁用 */
   status: number;
   created?: string;
@@ -38,6 +40,8 @@ export interface SensitiveWordCreateParams {
   category: SensitiveWordCategoryEnum;
   matchType: SensitiveWordMatchTypeEnum;
   action: SensitiveWordActionEnum;
+  /** REPLACE 时生效，单个字符；为空默认 *，重复替换由后端处理 */
+  replaceChar?: string;
 }
 
 /** 编辑敏感词（状态走单独接口） */

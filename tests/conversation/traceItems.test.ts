@@ -65,7 +65,6 @@ describe('composeConversationTraceItems', () => {
   });
 
   it.each([
-    'reasoning',
     'context',
     'plan',
     'subagent',
@@ -89,6 +88,51 @@ describe('composeConversationTraceItems', () => {
       'tool-group',
     ]);
     expect(items[2]).toMatchObject({ active: true });
+  });
+
+  it.each([true, false])(
+    '思考不拆散同一过程段的工具组，展开顺序保留（running=%s）',
+    (running) => {
+      const nodes = [
+        node('leading-think', 'reasoning'),
+        tool('read-1', { kind: 'read' }),
+        node('think-1', 'reasoning'),
+        node('think-2', 'reasoning'),
+        tool('run-1', { kind: 'execute' }),
+        node('think-3', 'reasoning'),
+        tool('edit-1', { kind: 'edit' }),
+        node('trailing-think', 'reasoning'),
+      ];
+      const items = composeConversationTraceItems(nodes, running);
+      expect(items.map((item) => item.kind)).toEqual(['tool-group']);
+      const group = items[0];
+      expect(group).toMatchObject({ id: 'tool-group:read-1', active: running });
+      if (group.kind !== 'tool-group') return;
+      expect(group.nodes.map((item) => item.id)).toEqual(
+        nodes.map((item) => item.id),
+      );
+      expect(group.actionKinds).toEqual(['file-read', 'terminal', 'file-edit']);
+      expect(
+        composeConversationTraceItems(nodes.slice(0, -1), running)[0],
+      ).toMatchObject({
+        id: group.id,
+        active: running,
+      });
+    },
+  );
+
+  it('单条工具夹着思考时仍逐条展示，不形成工具组', () => {
+    const nodes = [
+      node('think-1', 'reasoning'),
+      tool('read-1', { kind: 'read' }),
+      node('think-2', 'reasoning'),
+    ];
+    const items = composeConversationTraceItems(nodes, true);
+    expect(items.map((item) => item.kind)).toEqual([
+      'standalone',
+      'standalone',
+      'standalone',
+    ]);
   });
 
   it('OpenUI Event 独立展示并切断分组', () => {
@@ -139,7 +183,7 @@ describe('composeConversationTraceItems', () => {
     expect(getNodeToolActionKind(todo)).toBe('todo');
   });
 
-  it('组 id 随流式追加保持稳定，只有尾部活动组展开', () => {
+  it('组 id 随流式追加保持稳定，只有尾部工具组标记为活动', () => {
     const first = tool('read-1', { kind: 'read' });
     const second = tool('run-1', { kind: 'execute' });
     const before = composeConversationTraceItems([first, second], true);
