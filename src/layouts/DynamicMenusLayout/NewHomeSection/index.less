@@ -57,7 +57,7 @@
     padding: 2px 15px 0 24px;
   }
 
-  // 两个分组头同时吸顶；任务头向下偏移项目头高度，避免互相覆盖。
+  // 分组头吸顶；仅项目头可见时，任务头向下偏移，避免互相覆盖。
   // margin-top 并入 padding-top——吸顶条整块不透明，滚动内容不会从头顶缝隙穿出
   .section-tabs-sticky {
     position: sticky;
@@ -74,9 +74,13 @@
 
     // 任务头：原 margin 6px + padding 2px 并入
     &.task-section-tabs {
-      top: @projectSectionHeaderHeight;
+      top: 0;
       height: 28px;
       padding-top: 8px;
+
+      &.task-section-tabs-with-project {
+        top: @projectSectionHeaderHeight;
+      }
     }
   }
 
