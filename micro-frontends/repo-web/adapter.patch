@@ -195,9 +195,10 @@ diff --git a/src/pages/DocPage.tsx b/src/pages/DocPage.tsx
 diff --git a/src/pages/ShareView.tsx b/src/pages/ShareView.tsx
 --- a/src/pages/ShareView.tsx
 +++ b/src/pages/ShareView.tsx
-@@ -1,3 +1,4 @@
+@@ -1,4 +1,5 @@
 +import { captureRepoAuthRedirect, getRepoInputRoot, setRepoDocumentTitle } from '../hostRuntime'
  import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+ import type { CSSProperties } from 'react'
  import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
  import { EditorContent, useEditor } from '@tiptap/react'
 @@ -184,8 +185,8 @@
@@ -495,9 +496,10 @@ diff --git a/src/components/DataTableGrid.tsx b/src/components/DataTableGrid.tsx
 diff --git a/src/components/CollabEditor.tsx b/src/components/CollabEditor.tsx
 --- a/src/components/CollabEditor.tsx
 +++ b/src/components/CollabEditor.tsx
-@@ -1,3 +1,4 @@
+@@ -1,4 +1,5 @@
 +import { getRepoInputRoot, getRepoPortalRoot } from '../hostRuntime'
  import { useCallback, useEffect, useRef, useState } from 'react'
+ import type { CSSProperties } from 'react'
  import { createPortal } from 'react-dom'
  import { EditorContent, useEditor } from '@tiptap/react'
 @@ -1690,12 +1691,12 @@
