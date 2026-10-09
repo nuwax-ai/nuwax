@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Computer Sharing</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        'Helvetica Neue', Arial, sans-serif;
+      background-color: #f5f5f5;
+      overflow: hidden;
+    }
+
+    .container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background-color: #fff;
+      padding: 16px 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #262626;
+    }
+
+    .header-info {
+      font-size: 14px;
+      color: #8c8c8c;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      position: relative;
+    }
+
+    .desktop-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #f0f0f0;
+      border-top-color: #1890ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      font-size: 16px;
+      color: #595959;
+    }
+
+    .error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 48px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+    }
+
+    .error-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background-color: #fff2e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+
+    .error-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #262626;
+    }
+
+    .retry-button {
+      padding: 8px 24px;
+      background-color: #1890ff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .retry-button:hover {
+      background-color: #40a9ff;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .expire-info {
+      display: inline-block;
+      padding: 4px 12px;
+      background-color: #f0f7ff;
+      color: #1890ff;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-title">🖥️ Agent Computer Sharing</div>
+      <div class="header-info">
+        <span class="expire-info" id="expireInfo"></span>
+      </div>
+    </div>
+
+    <!-- Content area -->
+    <div class="content">
+      <!-- Loading -->
+      <div class="loading-container" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading agent computer...</div>
+      </div>
+
+      <!-- Error message -->
+      <div class="error-container hidden" id="error">
+        <div id="errorIcon" class="error-icon"></div>
+        <div id="errorTitle" class="error-title"></div>
+        <button class="retry-button" onclick="location.reload()">
+          Reload
+        </button>
+      </div>
+
+      <!-- Agent computer iframe -->
+      <iframe 
+        id="desktopFrame" 
+        class="desktop-frame hidden" 
+        allowfullscreen 
+        sandbox="allow-downloads allow-scripts allow-same-origin allow-forms allow-top-navigation allow-popups allow-modals allow-popups-to-escape-sandbox"></iframe>
+      </div>
+  </div>≈
+
+  <script>
+    // Get URL parameters
+    function getQueryParams() {
+      const params = {};
+      const queryString = window.location.search.substring(1);
+      const pairs = queryString.split('&');
+      for (let i = 0; i < pairs.length; i++) {
+        const pair = pairs[i].split('=');
+        params[decodeURIComponent(pair[0])] = decodeURIComponent(
+          pair[1] || ''
+        );
+      }
+      return params;
+    }
+
+    // Show error
+    function showError(message) {
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+
+      // Error icon, title, message
+      const errorIcon = document.getElementById('errorIcon');
+      const errorTitle = document.getElementById('errorTitle');
+
+      loading.classList.add('hidden');
+      error.classList.remove('hidden');
+      // Set error icon, title, message
+      errorIcon.textContent = '⚠️';
+      errorTitle.textContent = message || 'Failed to load agent computer, please try again later';
+    }
+
+    // Show desktop
+    function showDesktop(url) {
+      const loading = document.getElementById('loading');
+      const desktopFrame = document.getElementById('desktopFrame');
+
+      loading.classList.add('hidden');
+      desktopFrame.classList.remove('hidden');
+      desktopFrame.src = url;
+    }
+
+    // Format remaining time
+    function formatTimeRemaining(seconds) {
+      if (seconds <= 0) return 'Expired';
+
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+
+      if (hours > 0) {
+        return `Expires in ${hours} hour(s) ${minutes} minute(s)`;
+      } else if (minutes > 0) {
+        return `Expires in ${minutes} minute(s)`;
+      } else {
+        return `Expires in ${seconds} second(s)`;
+      }
+    }
+
+    // Update expiration time display
+    function updateExpireInfo(expireTime) {
+      const expireInfo = document.getElementById('expireInfo');
+      if (!expireTime) {
+        expireInfo.style.display = 'none';
+        return;
+      }
+
+      const updateCountdown = () => {
+        const now = Date.now();
+        const remaining = Math.floor((expireTime - now) / 1000);
+
+        if (remaining <= 0) {
+          expireInfo.textContent = 'Link expired';
+          expireInfo.style.backgroundColor = '#fff1f0';
+          expireInfo.style.color = '#cf1322';
+          showError('The sharing link has expired, please regenerate it');
+          return;
+        }
+
+        expireInfo.textContent = formatTimeRemaining(remaining);
+
+        // Update once per second
+        setTimeout(updateCountdown, 1000);
+      };
+
+      updateCountdown();
+    }
+
+    // Load agent computer
+    async function loadDesktop() {
+      try {
+        // 获取 URL 参数
+        const params = getQueryParams();
+        const sk = params.sk || '';
+        const isDev = params.isDev || 'false';
+
+        if (!sk) {
+          showError('Missing sharing key, please check if the link is correct');
+          return;
+        }
+
+        // Check if development environment
+        const baseUrl =
+          isDev === 'true' ? 'https://testagent.xspaceagi.com' : '';
+
+        // Call API to get sharing details
+        const response = await fetch(
+          `${baseUrl}/api/agent/conversation/share/detail/${sk}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Network request failed');
+        }
+
+        const { data, code, message } = await response.json();
+        console.log('Sharing details:', data, code, message);
+
+        if (code === '0000') {
+          // Check if expired
+          if (data.expireTime && Date.now() > data.expireTime) {
+            showError('The sharing link has expired, please regenerate it');
+            return;
+          }
+
+          // Construct agent computer URL
+          // Check if content already contains query parameters
+          const separator = data.content.includes('?') ? '&' : '?';
+          const fileUrl = baseUrl + data.content + separator + 'sk=' + sk;
+
+          // 显示桌面
+          showDesktop(fileUrl);
+
+          // 更新过期时间显示
+          if (data.expireTime) {
+            updateExpireInfo(data.expireTime);
+          }
+        } else {
+          showError(message || 'Failed to get sharing information');
+        }
+      } catch (error) {
+        console.error('加载智能体电脑失败:', error);
+        showError('Loading failed, please check your network connection or try again later');
+      }
+    }
+
+    // Execute after page load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDesktop();
+
+      // Listen for iframe messages
+      window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'vnc_share_expired') {
+          const expireInfo = document.getElementById('expireInfo');
+          if (expireInfo) {
+            expireInfo.textContent = 'Link expired';
+            expireInfo.style.backgroundColor = '#fff1f0';
+            expireInfo.style.color = '#cf1322';
+          }
+
+          // remove desktopFrame
+          const desktopFrame = document.getElementById('desktopFrame');
+          if (desktopFrame) {
+            desktopFrame.remove();
+          }
+          showError('The sharing link has expired, please regenerate it');
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

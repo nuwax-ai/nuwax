@@ -1,0 +1,1 @@
+import{dx as a,dy as t}from"./index-CxVRFL6Z.js";function s(s,n,c){if(0==s.length)return c(),null;const e="".concat(s);a({data:e,showToast:!1,success:()=>{t(new UTSJSONObject({success:a=>{(null!=a.data?"".concat(a.data):"").length>0?n():c()},fail:()=>{n()}}))},fail:()=>{c()}})}export{s as w};
