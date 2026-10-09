@@ -1624,6 +1624,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask": "任务",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search": "搜索",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.closeAppTab": "关闭应用",
+  "PC.Components.WebUpdate.update": "界面更新",
+  "PC.Components.WebUpdate.refreshHint": "网页已更新，点击刷新",
   "PC.Components.ClientUpdate.versionLabel": "客户端版本",
   "PC.Components.ClientUpdate.update": "更新",
   "PC.Components.ClientUpdate.download": "下载更新",

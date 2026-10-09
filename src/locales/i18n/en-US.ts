@@ -1624,6 +1624,8 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask": "Tasks",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search": "Search",
   "PC.Layouts.DynamicMenusLayout.SidebarNavHeader.closeAppTab": "Close app",
+  "PC.Components.WebUpdate.update": "UI Update",
+  "PC.Components.WebUpdate.refreshHint": "The web page has been updated. Click to refresh",
   "PC.Components.ClientUpdate.versionLabel": "Client Version",
   "PC.Components.ClientUpdate.update": "Update",
   "PC.Components.ClientUpdate.download": "Download Update",

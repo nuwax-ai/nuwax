@@ -86,7 +86,10 @@ vi.mock('@/utils/hostBridge', () => ({
   isMac: () => false,
   shellAvoid: { TOP: 0, CONTENT_TOP: 0 },
 }));
-vi.mock('@/features/client-shell', () => ({ ClientVersionBadge: () => null }));
+vi.mock('@/features/client-shell', () => ({
+  ClientVersionBadge: () => null,
+  WebVersionBadge: () => null,
+}));
 vi.mock('@/components/base/SvgIcon', () => ({ default: () => null }));
 vi.mock('@/components/base/HoverScrollbar', () => ({
   default: ({ children }: { children: ReactNode }) => children,
