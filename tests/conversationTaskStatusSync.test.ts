@@ -148,6 +148,19 @@ describe('conversationTaskStatusSync', () => {
       ).toBeUndefined();
     });
 
+    it('新 USER 尚无 assistant 时，不跨轮沿用上一轮终态', () => {
+      expect(
+        resolveTaskStatusFromMessageList([
+          {
+            id: 'old',
+            role: AssistantRoleEnum.ASSISTANT,
+            finalResult: { success: true },
+          } as any,
+          { id: 'new-user', role: AssistantRoleEnum.USER } as any,
+        ]),
+      ).toBeUndefined();
+    });
+
     it('无 assistant 消息时返回 undefined', () => {
       expect(
         resolveTaskStatusFromMessageList([

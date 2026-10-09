@@ -6,7 +6,7 @@ import type {
   ProjectChangedEvent,
   ProjectChangedInput,
 } from '@/types/directorySync';
-import type { TaskStatus } from '@/types/enums/agent';
+import { TaskStatus } from '@/types/enums/agent';
 import eventBus from '@/utils/eventBus';
 
 type EntityWithId = { id?: number | string };
@@ -121,6 +121,18 @@ export function observeConversationTaskStatuses(
   for (const row of rows) {
     if (row.taskStatus !== undefined) {
       observed.set(String(row.id), row.taskStatus);
+      // 独立于目录补丁广播，避免快照观察反向进入列表回放缓存。
+      // 同值执行态也通知：前一次详情可能尚未落库新 USER，由接收方单飞/退避去重。
+      if (
+        row.id !== null &&
+        row.id !== undefined &&
+        row.taskStatus === TaskStatus.EXECUTING
+      ) {
+        eventBus.emit(EVENT_TYPE.ConversationTaskStatusObserved, {
+          conversationId: String(row.id),
+          taskStatus: row.taskStatus,
+        });
+      }
     }
   }
 }

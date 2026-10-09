@@ -3,6 +3,21 @@ import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { describe, expect, it } from 'vitest';
 
 describe('snapshotConsistencyController', () => {
+  it('侧栏唤醒淘汰之前在途的终态轮询，并与可见性检查共用单飞锁', () => {
+    const controller = createSnapshotConsistencyController();
+    const scheduled = controller.beginRequest('scheduled', 1001)!;
+    const observed = controller.beginRequest('status-observed', 1001)!;
+    expect(controller.beginRequest('visibility', 1001)).toBeUndefined();
+    expect(
+      controller.consume(
+        scheduled,
+        { conversationId: 1001, isLocallyStreaming: false },
+        { id: 1001, taskStatus: TaskStatus.COMPLETE } as any,
+      ),
+    ).toMatchObject({ type: 'snapshot.rejected', reason: 'stale-generation' });
+    controller.release(observed);
+    expect(controller.beginRequest('status-observed', 1001)).toBeDefined();
+  });
   it('本地新 run 使在途旧 generation 快照失效', () => {
     const controller = createSnapshotConsistencyController();
     const token = controller.beginRequest('scheduled', 1001)!;

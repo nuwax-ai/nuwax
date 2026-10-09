@@ -475,6 +475,7 @@ const projectTurn = (
       ),
   );
   const nodes: ConversationProcessNode[] = [];
+  const processNodePositions = new Map<string, number>();
   assistantMessages.forEach((message, messageIndex) => {
     const messageKey = messageStableKey(message, messageIndex);
     const processingByKey = collectProcessingByKey(message);
@@ -548,7 +549,7 @@ const projectTurn = (
             : segment.componentType === AgentComponentTypeEnum.Plan
             ? 'plan'
             : 'tool';
-        nodes.push({
+        const node: ConversationProcessNode = {
           id: segment.executeId ?? `${messageKey}-process-${segmentIndex}`,
           kind,
           title: detail?.name || segment.name || segment.componentType || '',
@@ -567,7 +568,21 @@ const projectTurn = (
             typeof detail?.result?.endTime === 'number'
               ? detail.result.endTime
               : undefined,
-        });
+        };
+        // 同轮恢复流会重放快照已有的执行。维持节点位置和 key，只更新其状态。
+        const previousIndex = processNodePositions.get(node.id);
+        if (previousIndex !== undefined) {
+          const previous = nodes[previousIndex];
+          nodes[previousIndex] = {
+            ...node,
+            processing: node.processing ?? previous.processing,
+            startTime: node.startTime ?? previous.startTime,
+            endTime: node.endTime ?? previous.endTime,
+          };
+        } else {
+          processNodePositions.set(node.id, nodes.length);
+          nodes.push(node);
+        }
         return;
       }
       if (segment.type === 'unknown') {

@@ -651,6 +651,60 @@ describe('conversationRuntimeSession', () => {
     expect(mockCreateSSE).toHaveBeenCalledTimes(1);
   });
 
+  it('跨端新 user 后收到旧轮 FINAL_RESULT，不能复制旧回答或把新轮标为完成', () => {
+    const applyTaskStatus = vi.fn();
+    const { session } = createSession({ applyTaskStatus });
+    mockCreateSSE.mockReturnValue(vi.fn());
+    const history = [
+      {
+        id: 'old-user',
+        role: AssistantRoleEnum.USER,
+        time: '2026-10-08T13:34:53Z',
+      },
+      {
+        id: 'old-answer',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '旧回答',
+        time: '2026-10-08T13:35:02Z',
+      },
+      {
+        id: 'mobile-user',
+        role: AssistantRoleEnum.USER,
+        text: '你来确认',
+        time: '2026-10-08T13:35:12Z',
+      },
+    ] as MessageInfo[];
+    session.resumeConversationStream(1695407, history);
+    const { onMessage } = mockCreateSSE.mock.calls[0][0];
+    onMessage({
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      requestId: 'old-run',
+      completed: true,
+      data: {
+        success: true,
+        outputText: '旧回答',
+        endTime: Date.parse('2026-10-08T13:35:02Z'),
+      },
+    });
+    expect(session.store.getSnapshot()[3].finalResult).toBeUndefined();
+    expect(session.store.getSnapshot()[3].text).toBe('');
+    expect(applyTaskStatus).not.toHaveBeenCalled();
+    expect(session.getState().currentRequestId).not.toBe('old-run');
+    onMessage({ ...messageEvent('本轮新回答'), requestId: 'new-run' });
+    onMessage({
+      eventType: ConversationEventTypeEnum.FINAL_RESULT,
+      requestId: 'new-run',
+      completed: true,
+      data: {
+        success: true,
+        outputText: '本轮新回答',
+        endTime: Date.parse('2026-10-08T13:38:57Z'),
+      },
+    });
+    expect(session.store.getSnapshot()[3].text).toBe('本轮新回答');
+    expect(applyTaskStatus).toHaveBeenCalledWith(1695407, TaskStatus.COMPLETE);
+  });
+
   it('R3 resume：sub FINAL_RESULT 统一清算半途快照、恢复占位与执行中工具', () => {
     const applyTaskStatus = vi.fn();
     const { session } = createSession({ applyTaskStatus });
