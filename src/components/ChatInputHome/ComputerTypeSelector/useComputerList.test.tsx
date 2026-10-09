@@ -6,6 +6,7 @@ import {
   handleHostActivityPayload,
   __resetForTest as resetVisibility,
 } from '@/services/hostVisibility';
+import eventBus from '@/utils/eventBus';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useComputerList } from './useComputerList';
@@ -62,6 +63,45 @@ function commercialHost() {
 }
 
 describe('useComputerList 请求生命周期', () => {
+  it.each(['web', 'client'])(
+    '%s 收到 sandbox_online 后刷新其他电脑，卸载后退订',
+    async (host) => {
+      if (host === 'client') commercialHost();
+      // 关闭本机启动等待也必须消费用户沙箱上线事件。
+      const { result, unmount } = renderHook(() => useComputerList(false));
+      await settle();
+      fetchList.mockResolvedValue(response([cloud, other]));
+      await act(async () =>
+        eventBus.emit('sandbox_online', { sandboxId: '999' }),
+      );
+      expect(fetchList).toHaveBeenCalledTimes(2);
+      expect(result.current.rawComputerList.map((item) => item.id)).toEqual([
+        '-1',
+        '999',
+      ]);
+      unmount();
+      eventBus.emit('sandbox_online');
+      expect(fetchList).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('上线事件在旧请求途中到达时合并补拉，不停留在旧快照', async () => {
+    const old = deferred<ReturnType<typeof response>>();
+    fetchList
+      .mockReturnValueOnce(old.promise)
+      .mockResolvedValue(response([cloud, other]));
+    const { result } = renderHook(() => useComputerList());
+    act(() => {
+      eventBus.emit('sandbox_online');
+      eventBus.emit('sandbox_online');
+    });
+    expect(fetchList).toHaveBeenCalledTimes(1);
+    await act(async () => old.resolve(response()));
+    await settle();
+    expect(fetchList).toHaveBeenCalledTimes(2);
+    expect(result.current.rawComputerList).toHaveLength(2);
+  });
+
   it('浏览器首次加载一次，刷新途中保留列表，显式刷新获取新候选', async () => {
     const later = deferred<ReturnType<typeof response>>();
     fetchList
