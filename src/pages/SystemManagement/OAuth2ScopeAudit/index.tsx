@@ -84,7 +84,7 @@ const OAuth2ScopeAudit: React.FC = () => {
   const [rejecting, setRejecting] = useState<OAuth2ScopeApplyInfo | null>(null);
 
   const handleReset = useCallback(() => {
-    // 重置回默认筛选（待审核）
+    // 重置回默认筛选（状态为空，展示全部）
     actionRef.current?.reset?.();
   }, []);
 
@@ -159,7 +159,6 @@ const OAuth2ScopeAudit: React.FC = () => {
       dataIndex: 'status',
       width: 100,
       valueType: 'select',
-      initialValue: OAuth2ScopeApplyStatusEnum.Pending,
       valueEnum: Object.fromEntries(
         Object.entries(STATUS_META).map(([status, meta]) => [
           status,
