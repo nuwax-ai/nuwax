@@ -3437,7 +3437,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Login.enterpriseLogin": "エンタープライズログイン",
   "PC.Pages.Login.enterpriseLoginTitle": "エンタープライズログイン",
   "PC.Pages.Login.enterpriseLoginHint": "エンタープライズサーバーのドメインを入力すると、クライアントは切り替えて再初期化します",
-  "PC.Pages.Login.enterpriseDomainPlaceholder": "ドメインを入力してください（例：agent.example.com）",
+  "PC.Pages.Login.enterpriseDomainPlaceholder": "ドメインを入力してください（例：agent.nuwax.com）",
   "PC.Pages.Login.enterpriseDomainRequired": "ドメインを入力してください",
   "PC.Pages.Login.enterpriseDomainUnreachable": "ドメインに到達できません。確認して再試行してください",
   "PC.Pages.Login.enterpriseSwitchConfirm": "切り替え",

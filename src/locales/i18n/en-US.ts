@@ -3515,7 +3515,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Login.enterpriseLogin": "Enterprise Login",
   "PC.Pages.Login.enterpriseLoginTitle": "Enterprise Login",
   "PC.Pages.Login.enterpriseLoginHint": "Enter your enterprise server domain. The client will switch to it and re-initialize.",
-  "PC.Pages.Login.enterpriseDomainPlaceholder": "Enter domain, e.g. agent.example.com",
+  "PC.Pages.Login.enterpriseDomainPlaceholder": "Enter domain, e.g. agent.nuwax.com",
   "PC.Pages.Login.enterpriseDomainRequired": "Please enter the enterprise domain",
   "PC.Pages.Login.enterpriseDomainUnreachable": "Domain unreachable. Please check and retry.",
   "PC.Pages.Login.enterpriseSwitchConfirm": "Switch",

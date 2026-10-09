@@ -3514,7 +3514,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Login.enterpriseLogin": "企业登录",
   "PC.Pages.Login.enterpriseLoginTitle": "企业登录",
   "PC.Pages.Login.enterpriseLoginHint": "输入企业服务器域名，客户端将切换到该域名并重新初始化",
-  "PC.Pages.Login.enterpriseDomainPlaceholder": "请输入企业域名，如 agent.example.com",
+  "PC.Pages.Login.enterpriseDomainPlaceholder": "请输入企业域名，如 agent.nuwax.com",
   "PC.Pages.Login.enterpriseDomainRequired": "请输入企业域名",
   "PC.Pages.Login.enterpriseDomainUnreachable": "域名不可达，请检查后重试",
   "PC.Pages.Login.enterpriseSwitchConfirm": "切换",

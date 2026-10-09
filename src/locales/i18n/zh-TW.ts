@@ -3438,7 +3438,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.Login.enterpriseLogin": "企業登入",
   "PC.Pages.Login.enterpriseLoginTitle": "企業登入",
   "PC.Pages.Login.enterpriseLoginHint": "輸入企業伺服器域名，用戶端將切換到該域名並重新初始化",
-  "PC.Pages.Login.enterpriseDomainPlaceholder": "請輸入企業域名，如 agent.example.com",
+  "PC.Pages.Login.enterpriseDomainPlaceholder": "請輸入企業域名，如 agent.nuwax.com",
   "PC.Pages.Login.enterpriseDomainRequired": "請輸入企業域名",
   "PC.Pages.Login.enterpriseDomainUnreachable": "域名不可達，請檢查後重試",
   "PC.Pages.Login.enterpriseSwitchConfirm": "切換",
